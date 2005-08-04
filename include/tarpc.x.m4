@@ -37,6 +37,9 @@ typedef uint32_t    tarpc_uint;
 typedef uint8_t     tarpc_bool;
 typedef uint32_t    tarpc_ptr;
 typedef uint32_t    tarpc_signum;
+typedef uint32_t    tarpc_waitpid_opts;
+typedef uint32_t    tarpc_wait_status_flag;
+typedef uint32_t    tarpc_wait_status_value;
 
 /** RPC size_t analog */
 typedef uint32_t    tarpc_size_t;
@@ -1720,6 +1723,8 @@ struct tarpc_sigaction_out {
  * Is kill() RPC required? It seems RCF is sufficient.
  * It might be usefull, if IUT has it's own implementation,
  * but it look unreal.
+ * Yes, it is necessary for handling processes spawned by popen-like
+ * functions.
  */
 
 /* kill() */
@@ -1733,6 +1738,23 @@ struct tarpc_kill_in {
 
 typedef struct tarpc_int_retval_out tarpc_kill_out;
 
+
+/* waitpid() */
+
+struct tarpc_waitpid_in {
+    struct tarpc_in_arg common;
+
+    tarpc_pid_t         pid;
+    tarpc_waitpid_opts  options;
+};
+
+struct tarpc_waitpid_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_pid_t              pid;
+    tarpc_wait_status_flag   status_flag;
+    tarpc_wait_status_value  status_value;
+};
 
 
 /*
@@ -1987,8 +2009,37 @@ struct tarpc_popen_fd_out {
     struct tarpc_out_arg common;
     
     tarpc_int fd;
+    tarpc_pid_t pid;
 };
 
+/* system() */
+
+struct tarpc_system_in {
+    struct tarpc_in_arg common;
+
+    char cmd<>;
+};
+
+struct tarpc_system_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_wait_status_flag   status_flag;
+    tarpc_wait_status_value  status_value;
+};
+
+/* fork_and_shell() */
+
+struct tarpc_fork_and_shell_in {
+    struct tarpc_in_arg common;
+
+    char cmd<>;
+};
+
+struct tarpc_fork_and_shell_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_pid_t pid;
+};
 /* getenv() */
 struct tarpc_getenv_in {
     struct tarpc_in_arg common;
@@ -2772,6 +2823,9 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(fopen)
         RPC_DEF(fclose)
         RPC_DEF(popen_fd)
+        RPC_DEF(system)
+        RPC_DEF(fork_and_shell)
+        RPC_DEF(waitpid)
         RPC_DEF(fileno)
         RPC_DEF(getpwnam)
         RPC_DEF(getuid)

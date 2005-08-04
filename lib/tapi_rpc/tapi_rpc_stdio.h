@@ -37,6 +37,9 @@
 
 #include "rcf_rpc.h"
 
+/** Maximum resulting command length for rpc_shell() */
+#define RPC_SHELL_CMDLINE_MAX   256
+
 /** 'FILE *' equivalent */
 typedef rpc_ptr rpc_file_p;
 
@@ -77,59 +80,50 @@ extern rpc_file_p rpc_fopen(rcf_rpc_server *rpcs,
 extern int rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file);
 
 /**
- * Execute the command specified by the command string @b cmd,
- * create a pipe between the calling process and the executed command and
- * return a pointer to a stream that can be used to either read from or 
- * write to the pipe.
- *
- * @param rpcs     RPC server handle
- * @param cmd      Command string to execute
- * @param mode     stream access type. the following values
- *                 are supported
- *                 - "w" write access to the pipe
- *                 - "r" read access to the pipe
- *
- * @return Pointer to the created pipe, otherwise NULL on error
- */
-extern rpc_file_p rpc_popen(rcf_rpc_server *rpcs,
-                            const char *cmd, const char *mode);
-
-
-/** Maximum resulting command length for rpc_shell() */
-#define RPC_SHELL_CMDLINE_MAX   256
-
-/**
- * Execute shell command on the IPC server and read the output.
+ * Execute shell command on the IPC server.
  *
  * @param rpcs          RPC server handle
- * @param buf           output buffer
- * @param buflen        output buffer length
- * @param cmd           format of the command to be executed
+ * @param cmd           the command to be executed
  *
- * @return 0 (success) or -1 (failure)
+ * @return status of the process
  */
-extern int rpc_shell(rcf_rpc_server *rpcs,
-                     char *buf, int buflen, const char *cmd, ...);
+extern rpc_wait_status rpc_system(rcf_rpc_server *rpcs, const char *cmd);
+
+/**
+ * Popen-like command returning pid of spawned process and file descriptor.
+ *
+ * @param rpcs          RPC server handle
+ * @param cmd           the command to be executed
+ * @param mode          "r" or "w"
+ * @param pid           location to store pid of child
+ *
+ * @return file descriptor to read/write from/to process.
+ */
+extern int rpc_popen_fd(rcf_rpc_server *rpcs,
+                        const char *cmd, const char *mode, 
+                        tarpc_pid_t *pid);
 
 /**
  * Execute shell command on the IPC server and read the output.
  * The routine allocates memory for the output buffer and places
  * null-terminated string to it.
+ * @b pbuf pointer is initialized by NULL if no buffer is allocated.
  *
  * @param rpcs          RPC server handle
  * @param pbuf          location for the command output buffer 
  * @param cmd           format of the command to be executed
  *
- * @return 0 (success) or -1 (failure)
+ * @return status of the process
  */
-extern int rpc_shell_get_all(rcf_rpc_server *rpcs,
-                             char **pbuf, const char *cmd, ...);
+extern rpc_wait_status rpc_shell_get_all(rcf_rpc_server *rpcs,
+                                         char **pbuf, const char *cmd, ...);
 
 /**
  * Execute shell command on the IPC server and return file descriptor
  * for it's standard input or output.
  *
  * @param rpcs          RPC server handle
+ * @param pid           pid of spawned process
  * @param mode          access mode. the following values
  *                      are supported
  *                      - "w" write access
@@ -139,7 +133,8 @@ extern int rpc_shell_get_all(rcf_rpc_server *rpcs,
  *
  * @return File descriptor or -1 in the case of failure
  */
-extern int rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode,
+extern int rpc_cmd_spawn(rcf_rpc_server *rpcs, int * pid,
+                         const char *mode,
                          const char *cmd,...);
 
 
@@ -166,5 +161,33 @@ extern char *rpc_getenv(rcf_rpc_server *rpcs, const char *name);
  */
 extern int rpc_setenv(rcf_rpc_server *rpcs, 
                       const char *name, const char *value, int overwrite);
+
+/**
+ * Read all data from file descriptor in the RPC and close the @fd.
+ * The routine allocates memory for the output buffer and places
+ * null-terminated string to it.
+ * @b pbuf pointer is initialized by NULL if no buffer is allocated.
+ *
+ * @param rpcs          RPC server handle
+ * @param fd            file descriptor to read from
+ * @param pbuf          location for the command output buffer
+ * @param bytes         location for the number of bytes read
+ *
+ * @retval  0 success
+ * @retval -1 failure
+ */
+extern int rpc_read_all(rcf_rpc_server *rpcs, int fd, 
+                        char **pbuf, int *bytes);
+
+/**
+ * Fork a process from RPC server and execute a shell command.
+ *
+ * @param rpcs  RPC server handle
+ * @param cmd   command to run in a shell
+ *
+ * @return pid of child process or -1 on failure
+ */
+tarpc_pid_t
+rpc_fork_and_shell(rcf_rpc_server *rpcs, const char *cmd);
 
 #endif /* !__TE_TAPI_RPC_STDIO_H__ */

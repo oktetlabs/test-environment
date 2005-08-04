@@ -92,15 +92,25 @@ extern int ftp_open(const char *uri, int flags, int passive,
 /** Work-around for system/waitpid problem */
 extern int ta_system(char *cmd);
 
-/** popen-like function returning fd */
-extern int popen_fd(const char *command, const char *type);
-
 /**
  * Special signal handler which registers signals.
  * 
  * @param signum    received signal
  */
 extern void signal_registrar(int signum);
+
+/**
+ * Cleans up dead children list.  May be called at startup/after fork only,
+ * because it does not lock the list.
+ */
+extern void ta_children_cleanup();
+
+/**
+ * waitpid() analogue, with the same parameters/return value.
+ * Only WNOHANG option is supported for now.
+ * Process groups are not supported for now.
+ */
+extern pid_t ta_waitpid(pid_t pid, int *status, int options);
 
 /**
  * TCE-related pointers

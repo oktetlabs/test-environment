@@ -114,7 +114,7 @@ rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file)
 
 int
 rpc_popen_fd(rcf_rpc_server *rpcs,
-             const char *cmd, const char *mode)
+             const char *cmd, const char *mode, tarpc_pid_t *pid)
 {
     tarpc_popen_fd_in  in;
     tarpc_popen_fd_out out;
@@ -144,11 +144,45 @@ rpc_popen_fd(rcf_rpc_server *rpcs,
     free(cmd_dup);
     free(mode_dup);  
 
-    TAPI_RPC_LOG("RPC (%s,%s): popen_fd(%s, %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): popen_fd(%s, %s) -> %d (%s) pid=%d",
                  rpcs->ta, rpcs->name,
-                 cmd, mode, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 cmd, mode, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)), 
+                 out.pid);
 
+    if (pid != NULL)
+        *pid = out.pid;
     RETVAL_INT(popen_fd, out.fd);
+}
+
+tarpc_pid_t
+rpc_fork_and_shell(rcf_rpc_server *rpcs, const char *cmd)
+{
+    tarpc_pid_t                 pid = -1;
+    tarpc_fork_and_shell_in     in;
+    tarpc_fork_and_shell_out    out;
+
+    char *cmd_dup = strdup(cmd);
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
+        free(cmd_dup);
+        RETVAL_INT(fork_and_shell, pid);
+    }
+
+    in.cmd.cmd_len = strlen(cmd) + 1;
+    in.cmd.cmd_val = (char *)cmd_dup;
+
+    rcf_rpc_call(rpcs, "fork_and_shell", &in, &out);
+    pid = out.pid;
+    TAPI_RPC_LOG("RPC (%s,%s): fork_and_shell(%s) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 cmd, pid, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(fork_and_shell, pid);
 }
 
 int
@@ -181,18 +215,9 @@ rpc_fileno(rcf_rpc_server *rpcs,
     RETVAL_INT(fileno, out.fd);
 }
 
-/**
- * Execute shell command on the IPC server and return file descriptor
- * for it's standard input.
- *
- * @param rpcs          RPC server handle
- * @param mode          "r" or "w"
- * @param cmd           format of the command to be executed
- *
- * @return File descriptor or -1 in the case of failure
- */
 int 
-rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd, ...)
+rpc_cmd_spawn(rcf_rpc_server *rpcs, tarpc_pid_t *pid, 
+              const char *mode, const char *cmd, ...)
 {
     int         fd;
     char        cmdline[RPC_SHELL_CMDLINE_MAX];
@@ -203,7 +228,7 @@ rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd, ...)
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
     
-    if ((fd = rpc_popen_fd(rpcs, cmdline, mode)) < 0)
+    if ((fd = rpc_popen_fd(rpcs, cmdline, mode, pid)) < 0)
     {
         ERROR("Cannot execute the command: rpc_popen_fd() failed");
         return -1;
@@ -212,129 +237,144 @@ rpc_cmd_spawn(rcf_rpc_server *rpcs, const char *mode, const char *cmd, ...)
     return fd;
 }
 
-/**
- * Execute shell command on the IPC server and read the output.
- *
- * @param rpcs        RPC server handle
- * @param buf           output buffer
- * @param buflen        output buffer length
- * @param cmd           format of the command to be executed
- *
- * @return 0 (success) or -1 (failure)
- */
-int 
-rpc_shell(rcf_rpc_server *rpcs,
-          char *buf, int buflen, const char *cmd, ...)
+
+/** Chunk for memory allocation in rpc_read_all */
+#define RPC_READ_ALL_BUF_CHUNK     1024          
+
+int
+rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, int *bytes)
 {
-    int         fd;
-    int         rc = 0;
-    char        cmdline[RPC_SHELL_CMDLINE_MAX];
+    char   *buf = NULL;
+    int     buflen = RPC_READ_ALL_BUF_CHUNK;
+    int     offset = 0;
+    int     rc = 0;
 
-    va_list     ap;
-
-    va_start(ap, cmd);
-    vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
-    va_end(ap);
-    
-    if ((fd = rpc_popen_fd(rpcs, cmdline, "r")) < 0)
+    *bytes = 0;
+    if (rpcs == NULL || pbuf == NULL)
     {
-        ERROR("Cannot execute the command: rpc_popen_fd() failed");
-        return -1;
-    }
-    
-    buf[0] = 0;
-
-    if (rpc_read_gen(rpcs, fd, buf, buflen, buflen) < 0)
-    {
-        ERROR("Cannot read command output: rpc_read failed");
+        ERROR("%s(): Invalid parameters", __FUNCTION__);
         rc = -1;
     }
+    else if ((buf = calloc(1, RPC_READ_ALL_BUF_CHUNK)) == NULL)
+    {
+        ERROR("Out of memory");
+        rc = -1;
+    }
+    else while (TRUE)
+    {
+        int used;
 
-    rpc_close(rpcs, fd);
+        if ((used = rpc_read(rpcs, fd, 
+                              buf + offset, buflen - offset)) < 0)
+        {
+            ERROR("Cannot read from file descriptor: rpc_read failed");
+            rc = -1;
+            break;
+        }
+        if (used == 0)
+            break;
+
+        offset += used;
+        if (offset == buflen)
+        {
+            buflen = buflen * 2;
+            if ((buf = realloc(buf, buflen)) == NULL)
+            {
+                ERROR("Out of memory");
+                rc = -1;
+                break;
+            }
+            memset(buf + offset, 0, buflen - offset);
+        }
+    }
     
+    *pbuf = buf;
+    *bytes = offset;
+    rpc_close(rpcs, fd);
     return rc;
 }
 
-/** Chunk for memory allocation in rpc_shell_get_all */
-#define RPC_SHELL_BUF_CHUNK     1024          
-
-/**
- * Execute shell command on the IPC server and read the output.
- * The routine allocates memory for the output buffer and places
- * null-terminated string to it.
- *
- * @param rpcs        RPC server handle
- * @param buf           location for the command output buffer 
- * @param cmd           format of the command to be executed
- *
- * @return 0 (success) or -1 (failure)
- */
-int 
+rpc_wait_status
 rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
 {
-    char       *buf = calloc(1, RPC_SHELL_BUF_CHUNK);
-    int         buflen = RPC_SHELL_BUF_CHUNK;
-    int         offset = 0;
-    char        cmdline[RPC_SHELL_CMDLINE_MAX];
-    int         fd;
-    int         rc = -1;
+    int     bytes;
+    char    cmdline[RPC_SHELL_CMDLINE_MAX];
+    int     fd;
+
+    tarpc_pid_t     pid;
+    rpc_wait_status rc;
+    int iut_err_jump;
 
     va_list ap;
-    
-    if (buf == NULL)
-    {
-        ERROR("Out of memory");
-        return -1;
-    }
 
     va_start(ap, cmd);
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
+
+    rc.flag = RPC_WAIT_STATUS_UNKNOWN;
+    if (rpcs == NULL || pbuf == NULL)
+    {
+        ERROR("%s(): Invalid parameters", __FUNCTION__);
+        return rc;
+    }
     
-    if ((fd = rpc_popen_fd(rpcs, cmdline, "r")) < 0)
+    iut_err_jump = rpcs->iut_err_jump;
+    if ((fd = rpc_popen_fd(rpcs, cmdline, "r", &pid)) < 0)
     {
         ERROR("Cannot execute the command: rpc_popen_fd() failed");
-        free(buf);
-        return -1;
+        return rc;
     }
-    
-#if 1
-    sleep(1);
-#endif
-    
-    while (TRUE)
-    {
-        if (rpc_read(rpcs, fd, buf + offset, buflen - offset) < 0)
-        {
-            ERROR("Cannot read command output: rpc_read failed");
-            break;
-        }
 
-        if (buf[buflen - 1] == 0)
-        {
-            rc = 0;
-            break;
-        }
-        
-        offset = buflen;    
-        buflen = buflen * 2;
-        
-        if ((buf = realloc(buf, buflen)) == NULL)
-        {
-            ERROR("Out of memory");
-            break;
-        }
-        memset(buf + offset, 0, buflen - offset);
-    }
-    rpc_close(rpcs, fd);
+    if (rpc_read_all(rpcs, fd, pbuf, &bytes) != 0)
+        rpc_kill(rpcs, pid, RPC_SIGKILL);
 
-    if (rc == 0)
-        *pbuf = buf;
-    else
-        free(buf);
-    
+    /* Restore jump setting to avoid jump after command crash. */
+    rpcs->iut_err_jump = iut_err_jump;
+    /* 
+     * @todo if we will jump, we'd better free(buf).
+     * As test is failed in any way, this memory leak is not important.
+     * Let's think that its test responsibility to free the buf in any
+     * case.
+     */
+    rpc_waitpid(rpcs, pid, &rc, 0);
+
     return rc;
+}
+
+rpc_wait_status
+rpc_system(rcf_rpc_server *rpcs, const char *cmd)
+{
+    tarpc_system_in     in;
+    tarpc_system_out    out;
+    rpc_wait_status     rc;
+
+    char *cmd_dup = strdup(cmd);
+
+    rc.flag = RPC_WAIT_STATUS_UNKNOWN;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
     
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server", __FUNCTION__);
+        free(cmd_dup);
+        RETVAL_WAIT_STATUS(system, rc);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.cmd.cmd_len = strlen(cmd) + 1;
+    in.cmd.cmd_val = (char *)cmd_dup;
+
+    rcf_rpc_call(rpcs, "system", &in, &out);
+    rc.flag = out.status_flag;
+    rc.value = out.status_value;
+    TAPI_RPC_LOG("RPC (%s,%s): system(%s) -> %s %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 cmd, wait_status_flag_rpc2str(rc.flag), rc.value, 
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_WAIT_STATUS(system, rc);
 }
 
 /**

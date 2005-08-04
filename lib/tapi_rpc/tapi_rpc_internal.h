@@ -212,4 +212,32 @@
         return;                                                     \
     } while(0)
 
+/** 
+ * Return wait_status with check. 
+ */
+#define RETVAL_WAIT_STATUS(_func, _retval) \
+    do {                                                            \
+        rpc_wait_status __retval = (_retval);                       \
+                                                                    \
+        TAPI_RPC_OUT(_func,                                         \
+                     __retval.flag != RPC_WAIT_STATUS_EXITED ||     \
+                     __retval.value != 0);                          \
+                                                                    \
+        return __retval;                                            \
+    } while(0)
+
+/** 
+ * Return int value and check it and wait_status. 
+ */
+#define RETVAL_INT_CHECK_WAIT_STATUS(_func, _retval, _status) \
+    do {                                                            \
+        int __retval = (_retval);                                   \
+                                                                    \
+        TAPI_RPC_OUT(_func, __retval < 0 ||                         \
+                     _status.flag != RPC_WAIT_STATUS_EXITED ||      \
+                     _status.value != 0);                           \
+                                                                    \
+        return __retval;                                            \
+    } while(0)
+
 #endif /* !__TE_TAPI_RPC_INTERNAL_H__ */

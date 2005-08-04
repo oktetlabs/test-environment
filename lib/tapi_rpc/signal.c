@@ -93,7 +93,7 @@ rpc_signal(rcf_rpc_server *rpcs,
 }
 
 int
-rpc_kill(rcf_rpc_server *rpcs, pid_t pid, rpc_signum signum)
+rpc_kill(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_signum signum)
 {
     rcf_rpc_op     op;
     tarpc_kill_in  in;
@@ -123,6 +123,50 @@ rpc_kill(rcf_rpc_server *rpcs, pid_t pid, rpc_signum signum)
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(kill, out.retval);
+}
+
+tarpc_pid_t
+rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status, 
+            rpc_waitpid_opts options)
+{
+    rcf_rpc_op          op;
+    tarpc_waitpid_in    in;
+    tarpc_waitpid_out   out;
+    rpc_wait_status     stat;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(waitpid, -1);
+    }
+
+    op = rpcs->op;
+
+    in.pid = pid;
+    in.options = (rpc_waitpid_opts)options;
+
+    rcf_rpc_call(rpcs, "waitpid", &in, &out);
+    if (out.pid > 0)
+    {
+        stat.value = out.status_value;
+        stat.flag = out.status_flag;
+    }
+    else
+        stat.flag = RPC_WAIT_STATUS_UNKNOWN;
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: waitpid(%d, %p, 0x%x) -> %d (%s) "
+                 "status %s 0x%x",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 pid, status, options,
+                 out.pid, errno_rpc2str(RPC_ERRNO(rpcs)), 
+                 wait_status_flag_rpc2str(stat.flag), stat.value);
+
+    if (status != NULL)
+        *status = stat;
+    RETVAL_INT_CHECK_WAIT_STATUS(kill, out.pid, stat);
 }
 
 rpc_sigset_p

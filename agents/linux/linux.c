@@ -760,34 +760,157 @@ ta_sigpipe_handler(int sig)
     UNUSED(sig);
 }
 
+/** Status of exited child. */
+typedef struct dead_child {
+    pid_t               pid;        /**< PID of the child */
+    int                 status;     /**< status of the child */
+    struct timeval      timestamp;  /**< when child finished */
+    te_bool             valid;      /**< is this entry valid? */
+    int                 next;       /**< next id in the heap array */
+    int                 prev;       /**< prev id in the heap array */
+} dead_child;
+
+/** Length of pre-allocated list for dead children records. */
+#define DEAD_CHILDREN_MAX 7
+
+/** Head of the list with children statuses. */
+static dead_child dead_child_heap[DEAD_CHILDREN_MAX];
+
+/** Is the heap initialized? */
+static te_bool dead_child_heap_inited = FALSE;
+
+/** Best candidate for heap entry to be used */
+static int dead_child_heap_next = 0;
+
+/** Head of dead children list */
+static volatile int dead_child_list = -1;
+
+/** Reclaim to get status of child. */
+typedef struct wait_child {
+    pid_t               pid;    /**< PID to wait for */
+    sem_t               sem;    /**< semaphore to wake reclaimer */
+    struct wait_child  *prev;   /**< pointer to the prev entry */
+    struct wait_child  *next;   /**< pointer to the next entry */
+} wait_child;
+
+/** Head of wait_child list */
+static wait_child *volatile wait_child_list;
+
+/** Read-write lock for both children lists. */
+static pthread_mutex_t children_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/** Initialize dead_child heap. */
+static void
+init_dead_child_heap(void)
+{
+    int i;
+
+    for (i = 0; i < DEAD_CHILDREN_MAX; i++)
+        dead_child_heap[i].valid = FALSE;
+    dead_child_heap_inited = TRUE;
+}
+
+/** TRUE if first timeval is less than second */
+#define TV_LESS(_le, _ge) \
+    ((_le).tv_sec < (_ge).tv_sec ||                               \
+     ((_le).tv_sec == (_ge).tv_sec && (_le).tv_usec < (_ge).tv_usec))
+
+/** Is logger available in signal handler? */
+static inline te_bool
+is_logger_available(void)
+{
+    ta_lgr_lock_key key;
+
+    if (ta_lgr_trylock(key) != 0)
+    {
+        fprintf(stderr, "Logger is locked, drop the message\n");
+        return FALSE;
+    }
+    (void)ta_lgr_unlock(key);
+    return TRUE;
+}
+
 /**
  * Wait for a child and log its exit status information.
  */
 static void
 ta_sigchld_handler(int sig)
 {
-    int status;
-    int pid;
+    int     status;
+    int     pid;
+    te_bool get = FALSE;
+    te_bool logger = is_logger_available();
     
     UNUSED(sig);
+    if (!dead_child_heap_inited)
+        init_dead_child_heap();
 
-#define CHECK_LGR_LOCK \
-    do {                                                              \
-        ta_lgr_lock_key key;                                          \
-                                                                      \
-        if (ta_lgr_trylock(key) != 0)                                 \
-        {                                                             \
-            fprintf(stderr, "Logger is locked, drop the message\n");  \
-            return;                                                   \
-        }                                                             \
-        (void)ta_lgr_unlock(key);                                     \
-    } while (0)
-    
-    if ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
-        CHECK_LGR_LOCK;
+        int         dead = dead_child_heap_next;
+        wait_child *wake;
+
+        get = TRUE;
+        while (dead_child_heap[dead].valid)
+        {
+            int next;
+
+            next = (dead + 1) % DEAD_CHILDREN_MAX;
+            if (next == dead_child_heap_next)
+            {
+                struct timeval tv;
+                int i;
+
+                tv = dead_child_heap[dead = 0].timestamp;
+                for (i = 1; i < DEAD_CHILDREN_MAX; i++)
+                {
+                    if (TV_LESS(dead_child_heap[i].timestamp, tv))
+                        tv = dead_child_heap[dead = i].timestamp;
+                }
+                if (dead_child_heap[dead].prev == -1 && logger)
+                {
+                    ERROR("List of dead child statuses "
+                          "is in inconsistent state: "
+                          "oldest entry has no prev, but heap is full.");
+                }
+                else 
+                {
+                    dead_child_heap[dead_child_heap[dead].prev].next = -1;
+                    if (dead_child_heap[dead].next != -1 && logger)
+                    {
+                        ERROR("List of dead child statuses "
+                              "is in inconsistent state: "
+                              "oldest entry is not the last.");
+                    }
+                }
+                break;
+            }
+            dead = next;
+        }
+        dead_child_heap_next = (dead + 1) % DEAD_CHILDREN_MAX;
+
+        dead_child_heap[dead].pid = pid;
+        dead_child_heap[dead].status = status;
+        gettimeofday(&dead_child_heap[dead].timestamp, NULL);
+        dead_child_heap[dead].valid = TRUE;
+        dead_child_heap[dead].prev = -1;
+        dead_child_heap[dead].next = dead_child_list;
+        dead_child_list = dead;
+
+        for (wake = wait_child_list; wake != NULL; wake = wake->next)
+        {
+            if (wake->pid == pid)
+                sem_post(&wake->sem);
+        }
+
+        /* Now try to log status of the child */
+        if (!logger)
+            continue;
         if (WIFEXITED(status))
-            VERB("Child process with PID %d is deleted", pid);
+        {
+            VERB("Child process with PID %d exited with value %d", 
+                 pid, WEXITSTATUS(status));
+        }
         else if (WIFSIGNALED(status))
         {
             if (WTERMSIG(status) == SIGTERM)
@@ -804,28 +927,32 @@ ta_sigchld_handler(int sig)
             WARN("Child process with PID %d exited due unknown reason", 
                  pid);
     }
-    else if (pid == 0)
+
+    if (!logger)
+        return;
+    if (!get)
     {
-        CHECK_LGR_LOCK;
-        WARN("No child was available");
-    }
-    else
-    {
-        CHECK_LGR_LOCK;
-        if ((errno != EINTR) 
-#if 1 
-            /* 
-             * Ideally, it is necessary to consider ECHILD as an error,
-             * but it happens too often in practice. I don't know why.
-             */
-            && (errno != ECHILD)
-#endif
-            )
+        if (pid == 0)
         {
-            ERROR("waitpid() failed with errno %d", errno);
+            WARN("No child was available");
+        }
+        else
+        {
+            if ((errno != EINTR) 
+#if 1
+                /* 
+                 * Ideally, it is necessary to consider ECHILD as an error,
+                 * but it happens too often in practice. I don't know why.
+                 * The problem should disapear after rework of ta_system.
+                 */
+                && (errno != ECHILD)
+#endif
+                )
+            {
+                ERROR("waitpid() failed with errno %d", errno);
+            }
         }
     }
-#undef CHECK_LGR_LOCK
 }
 
 sigset_t rpcs_received_signals;
@@ -912,6 +1039,7 @@ main(int argc, char **argv)
     te_lgr_entity = ta_name = argv[1];
 
     (void)signal(SIGCHLD, ta_sigchld_handler);
+//    (void)signal(SIGCHLD, ta_sig_handler_dummy);
 
     VERB("Started");
 
@@ -961,61 +1089,171 @@ ta_system(char *cmd)
 
     return rc;
 }
-
 #endif
-/**
- * Self-made implementation of popen() to avoid problems with pclose().
- */
-int
-popen_fd(const char *command, const char *type)
+
+void
+ta_children_cleanup()
 {
-    int     p[2];
-    int     rc;
-    int     stdfile, child, parent;
-    int     pid;
-
-    rc = pipe(p);
-    if (rc != 0)
-        return -1;
-    if (type[0] == 'r' && type[1] == 0)
-    {
-        stdfile = 1;
-        child = p[1];
-        parent = p[0];
-    } 
-    else if (type[0] == 'w' && type[1] == 0)
-    {
-        stdfile = 0;
-        child = p[0];
-        parent = p[1];
-    } else {
-        errno = EINVAL;
-        return -1;
-    }
-
-    pid = fork();
-    if (pid == 0)
-    {
-        close(parent);
-        if (child != stdfile)
-        {
-            close(stdfile);
-            dup2(child, stdfile);
-        }
-        execl("/bin/sh", "sh", "-c", command, (char *) 0);
-        return 0;
-    }
-
-    close(child);
-    if (pid < 0)
-    {
-        close(parent);
-        return -1;
-    }
-    PRINT("popen CMD='%s' T='%s' FD=%d", command, type, parent);
-
-    return parent;
+    dead_child_list = -1;
+    init_dead_child_heap();
+    pthread_mutex_init(&children_lock, NULL);
 }
+
+/* *
+ * Log that a function returned impossible value.
+ * @todo there thould be ERROR, not PRINT, but I'd like to see this log
+ * from RPC.
+ */
+#define IMPOSSIBLE_LOG_AND_RET(_func) \
+    do {                                                    \
+        PRINT("%s: Impossible! " #_func " retured %d: %s",  \
+              __FUNCTION__, rc, strerror(errno));           \
+        return -1;                                          \
+    } while(0)
+
+/**
+ * Find an entry about dead child and remove it from the list.
+ * This function is to be called from waitpid.
+ * It should be called with lock held.
+ *
+ * @param pid pid of process to find or -1 to find any pid
+ *
+ * @return entry number with required pid or -1
+ */
+static inline int
+find_dead_child(pid_t pid)
+{
+    int     dead;
+
+    for (dead = dead_child_list;
+         dead != -1;
+         dead = dead_child_heap[dead].next)
+    {
+        if (dead_child_heap[dead].pid == pid || pid == -1)
+        {
+            if (dead_child_heap[dead].prev != -1)
+            {
+                dead_child_heap[dead_child_heap[dead].prev].next = 
+                    dead_child_heap[dead].next;
+            }
+            else
+            {
+                dead_child_list = dead_child_heap[dead].next;
+            }
+            break;
+        }
+    }
+
+    return dead;
+}
+
+pid_t
+ta_waitpid(pid_t pid, int *status, int options)
+{
+    int         dead;
+    wait_child  wake;
+    int         rc;
+    te_bool     locked;
+
+    if (!dead_child_heap_inited)
+        init_dead_child_heap();
+    if (pid < -1 || pid == 0)
+    {
+        ERROR("%s: process groups are not supported.", __FUNCTION__);
+    }
+
+#define LOCK \
+    do {                                                \
+        rc = pthread_mutex_lock(&children_lock);        \
+        if (rc != 0)                                    \
+            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock); \
+    } while(0)
+#define UNLOCK \
+    do {                                                    \
+        rc = pthread_mutex_unlock(&children_lock);          \
+        if (rc != 0)                                        \
+            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_unlock);   \
+    } while(0)
+
+    /* Lock both volatile lists. */
+    rc = pthread_mutex_lock(&children_lock);
+    if (rc != 0)
+    {
+        if (errno != EINVAL)
+            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock);
+        ERROR("%s: dead_child_lock mutex is not initialized in %d", 
+              __FUNCTION__, getpid());
+        rc = pthread_mutex_init(&children_lock, NULL);
+        if (rc != 0)
+            IMPOSSIBLE_LOG_AND_RET(pthread_mutex_init);
+        LOCK;
+    }
+
+    /* Add an entry to wait_child, so signal handler can wake us. */
+    if (!(options & WNOHANG))
+    {
+        wake.pid = pid;
+        rc = sem_init(&wake.sem, 0, 0);
+        if (rc != 0)
+        {
+            pthread_mutex_unlock(&children_lock);
+            IMPOSSIBLE_LOG_AND_RET(sem_init);
+        }
+        wake.prev = NULL;
+        wake.next = wait_child_list;
+        wait_child_list = &wake;
+        if (wake.next != NULL)
+            wake.next->prev = &wake;
+    }
+
+    /* Find dead child entry */
+    dead = find_dead_child(pid);
+    UNLOCK;
+
+    /* Sleep */
+    if (!(options & WNOHANG))
+    {
+        locked = FALSE;
+        while (dead == -1 && (rc = sem_wait(&wake.sem)) != 0)
+        {
+            if (errno != EINTR)
+                IMPOSSIBLE_LOG_AND_RET(sem_wait);
+            LOCK;
+            locked = TRUE;
+            dead = find_dead_child(pid);
+            if (dead == -1)
+                UNLOCK;
+        }
+
+        /* Clean up wait queue and release the lock */
+        if (!locked)
+        {
+            rc = pthread_mutex_lock(&children_lock);
+            if (rc != 0)
+                IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock);
+        }
+        if (wake.prev != NULL)
+            wake.prev->next = wake.next;
+        else
+            wait_child_list = wake.next;
+        if (dead == -1)
+            dead = find_dead_child(pid);
+        UNLOCK;
+    }
+
+    /* Get the results. */
+    if (dead != -1)
+    {
+        if (status != NULL)
+            *status = dead_child_heap[dead].status;
+        dead_child_heap[dead].valid = FALSE;
+    }
+    return dead == -1 ? -1 : pid;
+}
+#undef LOCK
+#undef UNLOCK
+#undef IMPOSSIBLE_LOG_AND_RET
+
 
 /** Print environment to the console */
 int

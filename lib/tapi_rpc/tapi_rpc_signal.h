@@ -65,7 +65,23 @@ extern char *rpc_signal(rcf_rpc_server *rpcs,
  *         -1 on failure   
  */
 extern int rpc_kill(rcf_rpc_server *rpcs,
-                    pid_t pid, rpc_signum signum);
+                    tarpc_pid_t pid, rpc_signum signum);
+
+/**
+ * Wait for termination of process @b pid or process group whose pid's @b
+ * pid.
+ *
+ * @param rpcs RPC server handle.
+ * @param pid  process or process group pid.
+ * @param status status of the process.
+ * @process options options how to wait for process.
+ *
+ * @return pid of the process exited, or zero if none is exited, 
+ *         or -1 on error.
+ */
+extern tarpc_pid_t rpc_waitpid(rcf_rpc_server *rpcs,
+                               tarpc_pid_t pid, rpc_wait_status *status, 
+                               rpc_waitpid_opts options);
 
 /** Maximum length of function name */
 #define RCF_RPC_MAX_FUNC_NAME    64
