@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "FTP"
+
 #include "te_config.h"
 #include "config.h"
 
@@ -48,8 +50,15 @@
 
 #include "linux_internal.h"
 
-#define TE_LGR_USER      "FTP"
 #include "logger_ta.h"
+#if 1
+#undef ERROR
+#define ERROR(_msg...)  PRINT(_msg)
+#undef VERB
+#define VERB(_msg...)   PRINT(_msg)
+#undef ENTRY
+#define ENTRY(_msg...)  PRINT(_msg)
+#endif
 
 #define FTP_TEST_LOGIN_MAX      32
 #define FTP_TEST_PASSWD_MAX     32
@@ -241,14 +250,15 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
  * @return file descriptor, which may be used for reading/writing data
  */
 int
-ftp_open(char *uri, int flags, int passive, int offset, int *sock)
+ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
 {
-    char   buf[1024];
-    char  *str;
-    int    s;
-    int    sd = -1;
-    int    sd1 = -1;
-    int    new_sock = 0;
+    te_bool new_sock;
+    int     control_socket = -1;
+    int     data_socket = -1;
+    int     active_listening = -1;
+
+    char        buf[1024];
+    char       *str;
 
     struct sockaddr_in addr;
     struct sockaddr_in addr1;
@@ -258,44 +268,48 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
     char user[FTP_TEST_LOGIN_MAX];
     char passwd[FTP_TEST_PASSWD_MAX];
     char file[FTP_TEST_PATHNAME_MAX];
-    
-    VERB("ftp_open %s %s", uri, passive ? "PASSIVE" : "");
-    
-    if (parse_ftp_uri(uri, (struct sockaddr *)&addr,
-                      user, passwd, file) != 0 ||
+
+
+    ENTRY("%s(): %s %d %s %d %p(%d)", __FUNCTION__,
+          uri, flags, passive ? "PASSIVE" : "", offset,
+          sock, (sock != NULL) ? *sock : -1);
+
+    if (parse_ftp_uri(uri, SA(&addr), user, passwd, file) != 0 ||
         (flags != O_RDONLY && flags != O_WRONLY))
     {
         ERROR("parse_ftp_uri() failed");
+        errno = EINVAL;
         return -1;
     }
-    
-#define RET_ERR(_msg...)    \
-    do {                 \
-        ERROR(_msg);     \
-        if (sd >= 0)     \
-            close(sd);   \
-        if (sd1 >= 0)    \
-            close(sd);   \
-        close(s);        \
-        return -1;       \
+
+#define RET_ERR(_msg...) \
+    do {                                \
+        ERROR(_msg);                    \
+        if (data_socket >= 0)           \
+            close(data_socket);         \
+        if (active_listening >= 0)      \
+            close(active_listening);    \
+        if (control_socket >= 0)        \
+            close(control_socket);      \
+        return -1;                      \
     } while (0)
 
 #define PUT_CMD(_cmd...) \
-    do {                                                \
-        sprintf(buf, _cmd);                             \
-        VERB("%s", buf);                                \
-        if (write(s, buf, strlen(buf)) < 0)             \
-            RET_ERR("write() failed; errno %d", errno); \
+    do {                                                    \
+        sprintf(buf, _cmd);                                 \
+        VERB("%s", buf);                                    \
+        if (write(control_socket, buf, strlen(buf)) < 0)    \
+            RET_ERR("write() failed; errno %d", errno);     \
     } while (0)
 
 #define READ_ANS \
-    do {                                           \
-        memset(buf, 0, sizeof(buf));               \
-        if (read_all(s, buf, sizeof(buf)) < 0)     \
-            RET_ERR("read_all() failed");          \
-        VERB("%s", buf);                           \
-        if (*buf == '4' || *buf == '5')            \
-            RET_ERR("Invalid answer: %s", buf);    \
+    do {                                                    \
+        memset(buf, 0, sizeof(buf));                        \
+        if (read_all(control_socket, buf, sizeof(buf)) < 0) \
+            RET_ERR("read_all() failed");                   \
+        VERB("%s", buf);                                    \
+        if (*buf == '4' || *buf == '5')                     \
+            RET_ERR("Invalid answer: %s", buf);             \
     } while (0)
     
 #define CMD(_cmd...) \
@@ -307,57 +321,60 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
     if ((sock == NULL) || (*sock == -1))
     {
         VERB("Connecting...");
-        s = socket(AF_INET, SOCK_STREAM, 0);
-        if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+        control_socket = socket(AF_INET, SOCK_STREAM, 0);
+        if (control_socket < 0)
+            RET_ERR("socket() for control connection failed: errno %d",
+                    errno);
+        if (connect(control_socket, SA(&addr), sizeof(addr)) != 0)
             RET_ERR("connect() failed; errno %d", errno);
-
-        if (sock != NULL)
-        {
-            *sock = s;
-            new_sock = 1;
-        }
         VERB("Connected");
+        new_sock = TRUE;
     }
     else
     {
-        s = *sock;
-        
-        read_all(s, buf, sizeof(buf));
+        control_socket = *sock;
+        new_sock = FALSE;
+        read_all(control_socket, buf, sizeof(buf));
     }
+
     /* Determine parameters for PORT command */
     if (!passive)
     {
-        if (getsockname(s, (struct sockaddr *)&addr1, &addr1_len) < 0)
+        if (getsockname(control_socket, SA(&addr1), &addr1_len) != 0)
             RET_ERR("getsockname() failed; errno %d", errno);
 
         memcpy(inaddr, &addr1.sin_addr, sizeof(inaddr));
         memset(&addr1, 0, sizeof(addr1));
         addr1.sin_family = AF_INET;
-        sd1 = socket(AF_INET, SOCK_STREAM, 0);
-
-        if (bind(sd1, (struct sockaddr *)&addr1, sizeof(addr1)) < 0)
+        
+        active_listening = socket(AF_INET, SOCK_STREAM, 0);
+        if (active_listening < 0)
+            RET_ERR("socket() to listen to failed: errno %d", errno);
+        
+        if (bind(active_listening, SA(&addr1), sizeof(addr1)) != 0)
             RET_ERR("bind() failed; errno %d", errno);
-            
-        if (listen(sd1, 1) < 0)
+        
+        if (listen(active_listening, 1) < 0)
             RET_ERR("listen() failed; errno %d", errno);
-
-        if (getsockname(sd1, (struct sockaddr *)&addr1, &addr1_len) < 0)
+        
+        if (getsockname(active_listening, SA(&addr1), &addr1_len) != 0)
             RET_ERR("getsockname() failed; errno %d", errno);
     }
 
     /* Read greeting */
-    if ((sock == NULL) || (new_sock))
+    if (new_sock)
     {
-        read(s, buf, sizeof(buf));
+        read(control_socket, buf, sizeof(buf));
         CMD("USER %s\n", user);
         CMD("PASS %s\n", passwd);
     }
+
     if (passive)
         CMD("PASV\n");
     else
         CMD("PORT %d,%d,%d,%d,%d,%d\n",
-                inaddr[0], inaddr[1], inaddr[2], inaddr[3],
-                ntohs(addr1.sin_port) / 256, ntohs(addr1.sin_port) % 256);
+            inaddr[0], inaddr[1], inaddr[2], inaddr[3],
+            ntohs(addr1.sin_port) / 0x100, ntohs(addr1.sin_port) % 0x100);
     
     if ((str = strchr(buf, '(')) == NULL)
     {
@@ -388,30 +405,47 @@ ftp_open(char *uri, int flags, int passive, int offset, int *sock)
     if (passive)
     {
         VERB("Connecting to data port");
-        sd = socket(AF_INET, SOCK_STREAM, 0);
-        if (connect(sd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-             RET_ERR("connect() for data connection failed; "
-                     "errno %d", errno);
+        data_socket = socket(AF_INET, SOCK_STREAM, 0);
+        if (data_socket < 0)
+            RET_ERR("socket() for data connection failed: errno %d",
+                    errno);
+        if (connect(data_socket, SA(&addr), sizeof(addr)) != 0)
+            RET_ERR("connect() for data connection failed; errno %d",
+                    errno);
         VERB("Data connection is established");                     
         READ_ANS;
     }
     else
     {
         READ_ANS;
+
         VERB("Accepting data connection");
-        if ((sd = accept(sd1, NULL, NULL)) < 0)
+        if ((data_socket = accept(active_listening, NULL, NULL)) < 0)
             RET_ERR("accept() failed; errno %d", errno);
-
         VERB("Data connection is established");                     
-        close(sd1);
-    }
-    if (sock == NULL)
-        close(s);
-    return sd;
 
-#undef RET_ERR    
+        if (close(active_listening) != 0)
+            RET_ERR("close() of active listening socket failed: "
+                    "errno %d", errno);
+    }
+
+    if (sock == NULL)
+    {
+        if (close(control_socket) != 0)
+            RET_ERR("close() of control connection socket failed: "
+                    "errno %d", errno);
+    }
+    else
+    {
+        *sock = control_socket;
+    }
+
+    return data_socket;
+
+#undef CMD
 #undef READ_ANS
 #undef PUT_CMD    
+#undef RET_ERR    
 }
 
 #define FTP_GET_BULK    6144  /**< Size to be read in one read() call */
