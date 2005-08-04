@@ -166,7 +166,7 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
 
     if (status != NULL)
         *status = stat;
-    RETVAL_INT_CHECK_WAIT_STATUS(kill, out.pid, stat);
+    RETVAL_INT_CHECK_WAIT_STATUS(waitpid, out.pid, stat);
 }
 
 rpc_sigset_p
