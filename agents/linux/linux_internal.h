@@ -86,8 +86,8 @@ extern const char *ta_name;
 /** Test Agent executable name */ 
 extern const char *ta_execname;
 
-extern int ftp_open(char *uri, int flags, int passive, int 
-                    offset, int *sock);
+extern int ftp_open(const char *uri, int flags, int passive,
+                    int offset, int *sock);
 
 /** Work-around for system/waitpid problem */
 extern int ta_system(char *cmd);
