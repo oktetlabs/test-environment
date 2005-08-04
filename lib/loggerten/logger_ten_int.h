@@ -32,6 +32,9 @@
 #ifndef __TE_LOGGER_TEN_INT_H__
 #define __TE_LOGGER_TEN_INT_H__
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -55,6 +58,12 @@
 #endif
 #if HAVE_ERRNO_H
 #include <errno.h>
+#endif
+#if HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#if HAVE_FCNTL_H
+#include <fcntl.h>
 #endif
 
 #include "te_stdint.h"
@@ -91,6 +100,9 @@ extern "C" {
 /** Maximum logger message arguments */
 #define LGR_MAX_ARGS        16
 
+/** Template for temporary file name */
+#define LGR_TMP_FILE_TMPL   "tmp_raw_log.XXXXXX"
+
 
 /** Log message transport */
 typedef void (* te_log_message_tx_f)(const void *msg, size_t len);
@@ -113,6 +125,33 @@ static inline void log_message_va(uint8_t **msg_buf, size_t *msg_buf_len,
                                   const char *user_name,
                                   const char *form_str, va_list ap);
 
+/**
+ * Write contents of the file to another file descriptor.
+ *
+ * @param out       Destination file descriptor
+ * @param filename  Name of the source file
+ *
+ * @retval 0        Success
+ * @retval -1       Failure
+ */
+static inline int
+write_file_to_fd(int out, const char *filename)
+{
+    uint8_t buf[1024];
+    int     in = open(filename, O_RDONLY);
+    ssize_t r;
+
+    while ((r = read(in, buf, sizeof(buf))) > 0)
+    {
+        if (write(out, buf, r) != r)
+        {
+            errno = EIO;
+            return -1;
+        }
+    }
+    
+    return r;
+}
 
 /**
  * Internal function for logging. It has the same prototype as
@@ -382,13 +421,18 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                     }
                     else if (*p_fs == 'f')
                     {
-                        /* FIXME */
-                        char new_path[256] = "";
-                        char templ[LGR_FILE_MAX] = "tmp_raw_log.XXXXXX";
-                        char *tmp = va_arg(ap, char *);
-                        int  fd;
+                        /* TE_LOG_DIR / LGR_TMP_FILE_TMPL */
+                        char        new_path[strlen(te_log_dir) + 1 +
+                                             sizeof(LGR_TMP_FILE_TMPL)];
+                        const char *filename = va_arg(ap, const char *);
+                        int         fd;
+                        
+                        new_path[0] = '\0';
+                        strcat(new_path, te_log_dir);
+                        strcat(new_path, "/");
+                        strcat(new_path, LGR_TMP_FILE_TMPL);
 
-                        fd =  mkstemp(templ);
+                        fd =  mkstemp(new_path);
                         if (fd < 0)
                         {
                             log_message_int(msg_buf, msg_buf_len,
@@ -398,25 +442,23 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
                             return;
                         }
 
+                        if (write_file_to_fd(fd, filename) != 0)
+                        {
+                            log_message_int(msg_buf, msg_buf_len,
+                                            TE_LL_ERROR,
+                                            te_lgr_entity, TE_LGR_USER,
+                                            "Failed to copy file '%s' to "
+                                            "'%s': %s", filename, new_path,
+                                            strerror(errno));
+                            return;
+                        }
+
                         if (close(fd) != 0)
                         {
                             log_message_int(msg_buf, msg_buf_len,
                                             TE_LL_ERROR,
                                             te_lgr_entity, TE_LGR_USER,
                                             "close() failure");
-                            return;
-                        }
-
-                        strcat(new_path, te_log_dir);
-                        strcat(new_path, "/");
-                        strcat(new_path, templ);
-                        if (rename(tmp, new_path) != 0)
-                        {
-                            log_message_int(msg_buf, msg_buf_len,
-                                            TE_LL_ERROR,
-                                            te_lgr_entity, TE_LGR_USER,
-                                            "Rename of %s to %s error: %s",
-                                            tmp, new_path, strerror(errno));
                             return;
                         }
 
