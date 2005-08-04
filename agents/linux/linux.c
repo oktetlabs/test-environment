@@ -24,6 +24,7 @@
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+ * @author Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
  * $Id$
  */
@@ -78,6 +79,25 @@
     } while (FALSE)
 
 
+/** Status of exited child. */
+typedef struct ta_children_dead {
+    pid_t               pid;        /**< PID of the child */
+    int                 status;     /**< status of the child */
+    struct timeval      timestamp;  /**< when child finished */
+    te_bool             valid;      /**< is this entry valid? */
+    int                 next;       /**< next id in the heap array */
+    int                 prev;       /**< prev id in the heap array */
+} ta_children_dead;
+
+/** Reclaim to get status of child. */
+typedef struct ta_children_wait {
+    pid_t                   pid;    /**< PID to wait for */
+    sem_t                   sem;    /**< semaphore to wake reclaimer */
+    struct ta_children_wait *prev;  /**< pointer to the prev entry */
+    struct ta_children_wait *next;  /**< pointer to the next entry */
+} ta_children_wait;
+
+
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
@@ -100,6 +120,39 @@ static pid_t           *tasks = NULL;
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
+
+/** Length of pre-allocated list for dead children records. */
+#define TA_CHILDREN_DEAD_MAX 1024
+
+/** Head of the list with children statuses. */
+static ta_children_dead ta_children_dead_heap[TA_CHILDREN_DEAD_MAX];
+
+/** Is the heap initialized? */
+static te_bool ta_children_dead_heap_inited = FALSE;
+
+/** Best candidate for heap entry to be used */
+static int ta_children_dead_heap_next = 0;
+
+/** Head of dead children list */
+static volatile int ta_children_dead_list = -1;
+
+/** Head of ta_children_wait list */
+static ta_children_wait *volatile ta_children_wait_list;
+
+/** Read-write lock for both children lists. */
+static pthread_mutex_t children_lock = PTHREAD_MUTEX_INITIALIZER;
+
+
+/** Initialize ta_children_dead heap. */
+static void
+ta_children_dead_heap_init(void)
+{
+    int i;
+
+    for (i = 0; i < TA_CHILDREN_DEAD_MAX; i++)
+        ta_children_dead_heap[i].valid = FALSE;
+    ta_children_dead_heap_inited = TRUE;
+}
 
 /** Add the talk pid into the list */
 static void
@@ -760,56 +813,6 @@ ta_sigpipe_handler(int sig)
     UNUSED(sig);
 }
 
-/** Status of exited child. */
-typedef struct dead_child {
-    pid_t               pid;        /**< PID of the child */
-    int                 status;     /**< status of the child */
-    struct timeval      timestamp;  /**< when child finished */
-    te_bool             valid;      /**< is this entry valid? */
-    int                 next;       /**< next id in the heap array */
-    int                 prev;       /**< prev id in the heap array */
-} dead_child;
-
-/** Length of pre-allocated list for dead children records. */
-#define DEAD_CHILDREN_MAX 7
-
-/** Head of the list with children statuses. */
-static dead_child dead_child_heap[DEAD_CHILDREN_MAX];
-
-/** Is the heap initialized? */
-static te_bool dead_child_heap_inited = FALSE;
-
-/** Best candidate for heap entry to be used */
-static int dead_child_heap_next = 0;
-
-/** Head of dead children list */
-static volatile int dead_child_list = -1;
-
-/** Reclaim to get status of child. */
-typedef struct wait_child {
-    pid_t               pid;    /**< PID to wait for */
-    sem_t               sem;    /**< semaphore to wake reclaimer */
-    struct wait_child  *prev;   /**< pointer to the prev entry */
-    struct wait_child  *next;   /**< pointer to the next entry */
-} wait_child;
-
-/** Head of wait_child list */
-static wait_child *volatile wait_child_list;
-
-/** Read-write lock for both children lists. */
-static pthread_mutex_t children_lock = PTHREAD_MUTEX_INITIALIZER;
-
-/** Initialize dead_child heap. */
-static void
-init_dead_child_heap(void)
-{
-    int i;
-
-    for (i = 0; i < DEAD_CHILDREN_MAX; i++)
-        dead_child_heap[i].valid = FALSE;
-    dead_child_heap_inited = TRUE;
-}
-
 /** TRUE if first timeval is less than second */
 #define TV_LESS(_le, _ge) \
     ((_le).tv_sec < (_ge).tv_sec ||                               \
@@ -842,32 +845,37 @@ ta_sigchld_handler(int sig)
     te_bool logger = is_logger_available();
     
     UNUSED(sig);
-    if (!dead_child_heap_inited)
-        init_dead_child_heap();
+    if (!ta_children_dead_heap_inited)
+        ta_children_dead_heap_init();
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
-        int         dead = dead_child_heap_next;
-        wait_child *wake;
+        int               dead = ta_children_dead_heap_next;
+        ta_children_wait *wake;
 
         get = TRUE;
-        while (dead_child_heap[dead].valid)
+        while (ta_children_dead_heap[dead].valid)
         {
             int next;
 
-            next = (dead + 1) % DEAD_CHILDREN_MAX;
-            if (next == dead_child_heap_next)
+            next = (dead + 1) % TA_CHILDREN_DEAD_MAX;
+            if (next == ta_children_dead_heap_next)
             {
                 struct timeval tv;
                 int i;
 
-                tv = dead_child_heap[dead = 0].timestamp;
-                for (i = 1; i < DEAD_CHILDREN_MAX; i++)
+                if (logger)
                 {
-                    if (TV_LESS(dead_child_heap[i].timestamp, tv))
-                        tv = dead_child_heap[dead = i].timestamp;
+                    WARN("Removing oldest entry from "
+                         "the list of dead children.");
                 }
-                if (dead_child_heap[dead].prev == -1 && logger)
+                tv = ta_children_dead_heap[dead = 0].timestamp;
+                for (i = 1; i < TA_CHILDREN_DEAD_MAX; i++)
+                {
+                    if (TV_LESS(ta_children_dead_heap[i].timestamp, tv))
+                        tv = ta_children_dead_heap[dead = i].timestamp;
+                }
+                if (ta_children_dead_heap[dead].prev == -1 && logger)
                 {
                     ERROR("List of dead child statuses "
                           "is in inconsistent state: "
@@ -875,8 +883,9 @@ ta_sigchld_handler(int sig)
                 }
                 else 
                 {
-                    dead_child_heap[dead_child_heap[dead].prev].next = -1;
-                    if (dead_child_heap[dead].next != -1 && logger)
+                    ta_children_dead_heap[
+                        ta_children_dead_heap[dead].prev].next = -1;
+                    if (ta_children_dead_heap[dead].next != -1 && logger)
                     {
                         ERROR("List of dead child statuses "
                               "is in inconsistent state: "
@@ -887,17 +896,17 @@ ta_sigchld_handler(int sig)
             }
             dead = next;
         }
-        dead_child_heap_next = (dead + 1) % DEAD_CHILDREN_MAX;
+        ta_children_dead_heap_next = (dead + 1) % TA_CHILDREN_DEAD_MAX;
 
-        dead_child_heap[dead].pid = pid;
-        dead_child_heap[dead].status = status;
-        gettimeofday(&dead_child_heap[dead].timestamp, NULL);
-        dead_child_heap[dead].valid = TRUE;
-        dead_child_heap[dead].prev = -1;
-        dead_child_heap[dead].next = dead_child_list;
-        dead_child_list = dead;
+        ta_children_dead_heap[dead].pid = pid;
+        ta_children_dead_heap[dead].status = status;
+        gettimeofday(&ta_children_dead_heap[dead].timestamp, NULL);
+        ta_children_dead_heap[dead].valid = TRUE;
+        ta_children_dead_heap[dead].prev = -1;
+        ta_children_dead_heap[dead].next = ta_children_dead_list;
+        ta_children_dead_list = dead;
 
-        for (wake = wait_child_list; wake != NULL; wake = wake->next)
+        for (wake = ta_children_wait_list; wake != NULL; wake = wake->next)
         {
             if (wake->pid == pid)
                 sem_post(&wake->sem);
@@ -1091,25 +1100,14 @@ ta_system(char *cmd)
 }
 #endif
 
+/* See description in linux_internal.h */
 void
 ta_children_cleanup()
 {
-    dead_child_list = -1;
-    init_dead_child_heap();
+    ta_children_dead_list = -1;
+    ta_children_dead_heap_init();
     pthread_mutex_init(&children_lock, NULL);
 }
-
-/* *
- * Log that a function returned impossible value.
- * @todo there thould be ERROR, not PRINT, but I'd like to see this log
- * from RPC.
- */
-#define IMPOSSIBLE_LOG_AND_RET(_func) \
-    do {                                                    \
-        PRINT("%s: Impossible! " #_func " retured %d: %s",  \
-              __FUNCTION__, rc, strerror(errno));           \
-        return -1;                                          \
-    } while(0)
 
 /**
  * Find an entry about dead child and remove it from the list.
@@ -1125,20 +1123,21 @@ find_dead_child(pid_t pid)
 {
     int     dead;
 
-    for (dead = dead_child_list;
+    for (dead = ta_children_dead_list;
          dead != -1;
-         dead = dead_child_heap[dead].next)
+         dead = ta_children_dead_heap[dead].next)
     {
-        if (dead_child_heap[dead].pid == pid || pid == -1)
+        if (ta_children_dead_heap[dead].pid == pid || pid == -1)
         {
-            if (dead_child_heap[dead].prev != -1)
+            if (ta_children_dead_heap[dead].prev != -1)
             {
-                dead_child_heap[dead_child_heap[dead].prev].next = 
-                    dead_child_heap[dead].next;
+                ta_children_dead_heap[
+                    ta_children_dead_heap[dead].prev].next = 
+                    ta_children_dead_heap[dead].next;
             }
             else
             {
-                dead_child_list = dead_child_heap[dead].next;
+                ta_children_dead_list = ta_children_dead_heap[dead].next;
             }
             break;
         }
@@ -1147,21 +1146,33 @@ find_dead_child(pid_t pid)
     return dead;
 }
 
+/* See description in linux_internal.h */
 pid_t
 ta_waitpid(pid_t pid, int *status, int options)
 {
     int         dead;
-    wait_child  wake;
+    ta_children_wait  wake;
     int         rc;
     te_bool     locked;
 
-    if (!dead_child_heap_inited)
-        init_dead_child_heap();
+    if (!ta_children_dead_heap_inited)
+        ta_children_dead_heap_init();
     if (pid < -1 || pid == 0)
     {
         ERROR("%s: process groups are not supported.", __FUNCTION__);
     }
 
+/**
+ * Log that a function returned impossible value.
+ * @todo there thould be ERROR, not PRINT, but I'd like to see this log
+ * from RPC.
+ */
+#define IMPOSSIBLE_LOG_AND_RET(_func) \
+    do {                                                    \
+        PRINT("%s: Impossible! " #_func " retured %d: %s",  \
+              __FUNCTION__, rc, strerror(errno));           \
+        return -1;                                          \
+    } while(0)
 #define LOCK \
     do {                                                \
         rc = pthread_mutex_lock(&children_lock);        \
@@ -1189,7 +1200,7 @@ ta_waitpid(pid_t pid, int *status, int options)
         LOCK;
     }
 
-    /* Add an entry to wait_child, so signal handler can wake us. */
+    /* Add an entry to ta_children_wait, so signal handler can wake us. */
     if (!(options & WNOHANG))
     {
         wake.pid = pid;
@@ -1200,8 +1211,8 @@ ta_waitpid(pid_t pid, int *status, int options)
             IMPOSSIBLE_LOG_AND_RET(sem_init);
         }
         wake.prev = NULL;
-        wake.next = wait_child_list;
-        wait_child_list = &wake;
+        wake.next = ta_children_wait_list;
+        ta_children_wait_list = &wake;
         if (wake.next != NULL)
             wake.next->prev = &wake;
     }
@@ -1235,7 +1246,7 @@ ta_waitpid(pid_t pid, int *status, int options)
         if (wake.prev != NULL)
             wake.prev->next = wake.next;
         else
-            wait_child_list = wake.next;
+            ta_children_wait_list = wake.next;
         if (dead == -1)
             dead = find_dead_child(pid);
         UNLOCK;
@@ -1245,8 +1256,8 @@ ta_waitpid(pid_t pid, int *status, int options)
     if (dead != -1)
     {
         if (status != NULL)
-            *status = dead_child_heap[dead].status;
-        dead_child_heap[dead].valid = FALSE;
+            *status = ta_children_dead_heap[dead].status;
+        ta_children_dead_heap[dead].valid = FALSE;
     }
     return dead == -1 ? -1 : pid;
 }
