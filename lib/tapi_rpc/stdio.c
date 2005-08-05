@@ -25,6 +25,7 @@
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
  * $Id$
  */
@@ -113,79 +114,6 @@ rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file)
 }
 
 int
-rpc_popen_fd(rcf_rpc_server *rpcs,
-             const char *cmd, const char *mode, tarpc_pid_t *pid)
-{
-    tarpc_popen_fd_in  in;
-    tarpc_popen_fd_out out;
-    
-    char *cmd_dup = strdup(cmd);
-    char *mode_dup = strdup(mode);
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    if (rpcs == NULL)
-    {
-        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
-        free(cmd_dup);
-        free(mode_dup);
-        RETVAL_INT(popen_fd, -1);
-    }
-
-    rpcs->op = RCF_RPC_CALL_WAIT;
-    in.cmd.cmd_len = strlen(cmd) + 1;
-    in.cmd.cmd_val = (char *)cmd_dup;
-    in.mode.mode_len = strlen(mode) + 1;
-    in.mode.mode_val = (char *)mode_dup;
-
-    rcf_rpc_call(rpcs, "popen_fd", &in, &out);
-                 
-    free(cmd_dup);
-    free(mode_dup);  
-
-    TAPI_RPC_LOG("RPC (%s,%s): popen_fd(%s, %s) -> %d (%s) pid=%d",
-                 rpcs->ta, rpcs->name,
-                 cmd, mode, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)), 
-                 out.pid);
-
-    if (pid != NULL)
-        *pid = out.pid;
-    RETVAL_INT(popen_fd, out.fd);
-}
-
-tarpc_pid_t
-rpc_fork_and_shell(rcf_rpc_server *rpcs, const char *cmd)
-{
-    tarpc_pid_t                 pid = -1;
-    tarpc_fork_and_shell_in     in;
-    tarpc_fork_and_shell_out    out;
-
-    char *cmd_dup = strdup(cmd);
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-    
-    if (rpcs == NULL)
-    {
-        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
-        free(cmd_dup);
-        RETVAL_INT(fork_and_shell, pid);
-    }
-
-    in.cmd.cmd_len = strlen(cmd) + 1;
-    in.cmd.cmd_val = (char *)cmd_dup;
-
-    rcf_rpc_call(rpcs, "fork_and_shell", &in, &out);
-    pid = out.pid;
-    TAPI_RPC_LOG("RPC (%s,%s): fork_and_shell(%s) -> %d (%s)",
-                 rpcs->ta, rpcs->name,
-                 cmd, pid, errno_rpc2str(RPC_ERRNO(rpcs)));
-
-    RETVAL_INT(fork_and_shell, pid);
-}
-
-int
 rpc_fileno(rcf_rpc_server *rpcs,
            rpc_file_p f)
 {
@@ -215,27 +143,101 @@ rpc_fileno(rcf_rpc_server *rpcs,
     RETVAL_INT(fileno, out.fd);
 }
 
+/** 
+ * See ta_shell_cmd function.
+ * cmd parameter should not be changed after call.
+ */
+static tarpc_pid_t
+rpc_ta_shell_cmd(rcf_rpc_server *rpcs, const char *cmd, 
+                 tarpc_uid_t uid, int *in_fd, int *out_fd)
+{
+    tarpc_ta_shell_cmd_in  in;
+    tarpc_ta_shell_cmd_out out;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
+        RETVAL_INT(ta_shell_cmd, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.cmd.cmd_len = strlen(cmd) + 1;
+    in.cmd.cmd_val = (char *)cmd;
+    in.in_fd = (in_fd != NULL);
+    in.out_fd = (out_fd != NULL);
+
+    rcf_rpc_call(rpcs, "ta_shell_cmd", &in, &out);
+                 
+    if (in_fd != NULL)
+        *in_fd = out.in_fd;
+    if (out_fd != NULL)
+        *out_fd = out.out_fd;
+
+    TAPI_RPC_LOG("RPC (%s,%s): ta_shell_cmd(%s, %d, %p(%d), %p(%d)) "
+                 "-> %d (%s)",
+                 rpcs->ta, rpcs->name, cmd, uid, 
+                 in_fd, (in_fd == NULL) ? 0 : *in_fd,
+                 out_fd, (out_fd == NULL) ? 0 : *out_fd,
+                 out.pid, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(ta_shell_cmd, out.pid);
+}
+
+tarpc_pid_t
+rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, const char *cmd, 
+                    tarpc_uid_t uid, int *in_fd, int *out_fd, ...)
+{
+    char    cmdline[RPC_SHELL_CMDLINE_MAX];
+    va_list ap;
+
+    va_start(ap, out_fd);
+    vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
+    va_end(ap);
+
+    return rpc_ta_shell_cmd(rpcs, cmdline, uid, in_fd, out_fd);
+}
+
+#if 1 /* Remove these functions! */
+int
+rpc_popen_fd(rcf_rpc_server *rpcs,
+             const char *cmd, const char *mode, tarpc_pid_t *pid)
+{
+    int fd;
+
+    *pid = rpc_ta_shell_cmd(rpcs, strdup(cmd), -1, 
+                               mode[0] == 'w' ? &fd : NULL,
+                               mode[0] == 'r' ? &fd : NULL);
+    return fd;
+}
+
+tarpc_pid_t
+rpc_fork_and_shell(rcf_rpc_server *rpcs, const char *cmd)
+{
+    return rpc_ta_shell_cmd(rpcs, cmd, -1, NULL, NULL);
+}
+
 int 
 rpc_cmd_spawn(rcf_rpc_server *rpcs, tarpc_pid_t *pid, 
               const char *mode, const char *cmd, ...)
 {
-    int         fd;
-    char        cmdline[RPC_SHELL_CMDLINE_MAX];
+    int     fd;
+    char    cmdline[RPC_SHELL_CMDLINE_MAX];
 
     va_list ap;
 
     va_start(ap, cmd);
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
-    
-    if ((fd = rpc_popen_fd(rpcs, cmdline, mode, pid)) < 0)
-    {
-        ERROR("Cannot execute the command: rpc_popen_fd() failed");
-        return -1;
-    }
-    
+
+    *pid = rpc_ta_shell_cmd(rpcs, cmdline, -1, 
+                               mode[0] == 'w' ? &fd : NULL,
+                               mode[0] == 'r' ? &fd : NULL);
     return fd;
 }
+#endif
 
 
 /** Chunk for memory allocation in rpc_read_all */
@@ -319,9 +321,9 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
     }
     
     iut_err_jump = rpcs->iut_err_jump;
-    if ((fd = rpc_popen_fd(rpcs, cmdline, "r", &pid)) < 0)
+    if ((pid = rpc_ta_shell_cmd(rpcs, cmdline, -1, NULL, &fd)) < 0)
     {
-        ERROR("Cannot execute the command: rpc_popen_fd() failed");
+        ERROR("Cannot execute the command: rpc_ta_shell_cmd() failed");
         return rc;
     }
 

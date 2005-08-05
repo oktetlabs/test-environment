@@ -3723,14 +3723,13 @@ TARPC_FUNC(fopen, {},
 }
 )
 
-/*-------------- popen_fd() --------------------------------*/
-TARPC_FUNC(popen_fd, {},
+/*-------------- ta_shell_cmd() --------------------------------*/
+TARPC_FUNC(ta_shell_cmd, {},
 {
-    pid_t pid;
-
-    MAKE_CALL(out->fd = 
-              func_ptr(in->cmd.cmd_val, in->mode.mode_val, &pid));
-    out->pid = pid;
+    MAKE_CALL(out->pid = 
+              func_ptr(in->cmd.cmd_val, in->uid, 
+                       in->in_fd ? &out->in_fd : NULL,
+                       in->out_fd ? &out->out_fd : NULL));
 }
 )
 
@@ -3745,13 +3744,6 @@ TARPC_FUNC(system, {},
     r_st = wait_status_h2rpc(st);
     out->status_flag = r_st.flag;
     out->status_value = r_st.value;
-}
-)
-
-/*-------------- fork_and_shell() -------------------------*/
-TARPC_FUNC(fork_and_shell, {},
-{
-    MAKE_CALL(out->pid = func_ptr(in->cmd.cmd_val));
 }
 )
 
@@ -6028,102 +6020,5 @@ overfill_buffers_exit:
 
     free(buf);
     return rc;
-}
-
-/** 
- * @b popen-like function returning fd and pid.
- *
- * @param command command to run, as in popen(3).
- * @param type    direction of the pipe, as in popen(3).
- * @param pid     pointer to pid of spwaned process.
- *
- * @return file descriptor of pipe, see popen(3).
- */
-int
-popen_fd(const char *command, const char *type, pid_t *pid)
-{
-    int     p[2];
-    int     rc;
-    int     stdfile, child, parent;
-
-    if (command == NULL || type == NULL || pid == NULL)
-    {
-        errno = EINVAL;
-        return -1;
-    }
-
-    rc = pipe(p);
-    if (rc != 0)
-        return -1;
-    if (type[0] == 'r' && type[1] == '\0')
-    {
-        stdfile = 1;
-        child = p[1];
-        parent = p[0];
-    } 
-    else if (type[0] == 'w' && type[1] == '\0')
-    {
-        stdfile = 0;
-        child = p[0];
-        parent = p[1];
-    } else {
-        errno = EINVAL;
-        close(p[0]);
-        close(p[1]);
-        return -1;
-    }
-
-    *pid = fork();
-    if (*pid == 0)
-    {
-        close(parent);
-        if (child != stdfile)
-        {
-            close(stdfile);
-            dup2(child, stdfile);
-        }
-        execl("/bin/sh", "sh", "-c", command, (char *) 0);
-        return 0;
-    }
-
-    close(child);
-    if (*pid < 0)
-    {
-        close(parent);
-        parent = -1;
-    }
-    INFO("popen_fd CMD='%s' T='%s' -> FD=%d, PID=%d", 
-         command, type, parent, pid);
-
-    return parent;
-}
-
-/**
- * Spawn a shell command and return its pid.
- *
- * @param command command to run
- *
- * @return pid of spawned process or -1 on failure.
- */
-pid_t
-fork_and_shell(const char *command)
-{
-    pid_t pid;
-
-    if (command == NULL)
-    {
-        errno = EINVAL;
-        return -1;
-    }
-
-    pid = fork();
-    if (pid == 0)
-    {
-        execl("/bin/sh", "sh", "-c", command, (char *) 0);
-        return 0;
-    }
-    INFO("fork_and_shell CMD='%s' -> PID=%d", command, pid);
-
-    return pid;
 }
 

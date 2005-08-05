@@ -775,17 +775,6 @@ ta_rtn_unlink(char *arg)
 
 
 /**
- * Dummy signal handler.
- *
- * @param sig   Signal number
- */
-static void
-ta_sig_handler_dummy(int sig)
-{
-    UNUSED(sig);
-}
-
-/**
  * Signal handler to be registered for SIGINT signal.
  * 
  * @param sig   Signal number
@@ -841,19 +830,27 @@ ta_sigchld_handler(int sig)
 {
     int     status;
     int     pid;
-    te_bool get = FALSE;
+    int     get = 0;
     te_bool logger = is_logger_available();
     
     UNUSED(sig);
     if (!ta_children_dead_heap_inited)
         ta_children_dead_heap_init();
 
+    /* 
+     * Some system may loose SIGCHLD, so we should catch all uncatched
+     * children. From other side, if a system does not loose SIGCHLD,
+     * it may be that all children were catched by previous call of this
+     * handler.
+     */
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
         int               dead = ta_children_dead_heap_next;
         ta_children_wait *wake;
 
-        get = TRUE;
+        get++;
+        if (get > 1 && logger)
+            RING("Get %d children from on sugnal handler call", get);
         while (ta_children_dead_heap[dead].valid)
         {
             int next;
@@ -939,27 +936,21 @@ ta_sigchld_handler(int sig)
 
     if (!logger)
         return;
-    if (!get)
+    if (get == 0)
     {
-        if (pid == 0)
+        /* 
+         * Linux behaviour:
+         * - if the process has children, but none of them is zombie, 
+         *   we will get 0.
+         * - if there is no children at all, we will get -1 with ECHILD. 
+         */
+        if (pid == 0 || errno == ECHILD)
         {
-            WARN("No child was available");
+            RING("No child was available");
         }
         else
         {
-            if ((errno != EINTR) 
-#if 1
-                /* 
-                 * Ideally, it is necessary to consider ECHILD as an error,
-                 * but it happens too often in practice. I don't know why.
-                 * The problem should disapear after rework of ta_system.
-                 */
-                && (errno != ECHILD)
-#endif
-                )
-            {
-                ERROR("waitpid() failed with errno %d", errno);
-            }
+            ERROR("waitpid() failed with errno %d", errno);
         }
     }
 }
@@ -1084,22 +1075,6 @@ main(int argc, char **argv)
 }
 
 
-#if 1 /* This is work-around, additional investigation is necessary */
-int 
-ta_system(char *cmd)
-{
-    void   *h;
-    int     rc;
-
-    h = signal(SIGCHLD, ta_sig_handler_dummy);
-    rc = system(cmd);
-    (void)signal(SIGCHLD, h);
-    INFO("CMD='%s' RC=%d", cmd, rc);
-
-    return rc;
-}
-#endif
-
 /* See description in linux_internal.h */
 void
 ta_children_cleanup()
@@ -1160,6 +1135,14 @@ ta_waitpid(pid_t pid, int *status, int options)
     if (pid < -1 || pid == 0)
     {
         ERROR("%s: process groups are not supported.", __FUNCTION__);
+        errno = EINVAL;
+        return -1;
+    }
+    if (options & ~WNOHANG)
+    {
+        ERROR("%s: only WNOHANG option is supported.", __FUNCTION__);
+        errno = EINVAL;
+        return -1;
     }
 
 /**
@@ -1264,6 +1247,93 @@ ta_waitpid(pid_t pid, int *status, int options)
 #undef LOCK
 #undef UNLOCK
 #undef IMPOSSIBLE_LOG_AND_RET
+
+/* See description in linux_internal.h */
+pid_t
+ta_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
+{
+    int   pid;
+    int   in_pipe[2], out_pipe[2];
+
+    if (cmd == NULL)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    if (in_fd != NULL && pipe(in_pipe) != 0)
+        return -1;
+    if (out_fd != NULL && pipe(out_pipe) != 0)
+        return -1;
+
+    pid = fork();
+    if (pid == 0)
+    {
+        if (in_fd != 0)
+        {
+            close(in_pipe[1]);
+            if (in_pipe[0] != STDIN_FILENO)
+            {
+                close(STDIN_FILENO);
+                dup2(in_pipe[0], STDIN_FILENO);
+            }
+        }
+        if (out_fd != 0)
+        {
+            close(out_pipe[0]);
+            if (out_pipe[1] != STDOUT_FILENO)
+            {
+                close(STDOUT_FILENO);
+                dup2(out_pipe[1], STDOUT_FILENO);
+            }
+        }
+        if (uid != (uid_t)-1 && seteuid(uid) != 0)
+        {
+            ERROR("Failed to set user %d before runing command \"%s\"",
+                  uid, cmd);
+        }
+        execl("/bin/sh", "sh", "-c", cmd, (char *) 0);
+        return 0;
+    }
+
+    if (in_fd != NULL)
+        close(in_pipe[0]);
+    if (out_fd != NULL)
+        close(out_pipe[1]);
+    if (pid < 0)
+    {
+        if (in_fd != NULL)
+        {
+            close(in_pipe[1]);
+            *in_fd = -1;
+        }
+        if (out_fd != NULL)
+        {
+            close(out_pipe[0]);
+            *out_fd = -1;
+        }
+    }
+    else
+    {
+        if (in_fd != NULL)
+            *in_fd = in_pipe[1];
+        if (out_fd != NULL)
+            *out_fd = out_pipe[0];
+    }
+    return pid;
+}
+
+/* See description in linux_internal.h */
+int 
+ta_system(const char *cmd)
+{
+    pid_t   pid = ta_shell_cmd(cmd, -1, NULL, NULL);
+    int     status;
+        
+    if (pid < 0)
+        return -1;
+    ta_waitpid(pid, &status, 0);
+    return status;
+}
 
 
 /** Print environment to the console */

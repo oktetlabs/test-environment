@@ -89,9 +89,6 @@ extern const char *ta_execname;
 extern int ftp_open(const char *uri, int flags, int passive,
                     int offset, int *sock);
 
-/** Work-around for system/waitpid problem */
-extern int ta_system(char *cmd);
-
 /**
  * Special signal handler which registers signals.
  * 
@@ -111,6 +108,26 @@ extern void ta_children_cleanup();
  * Process groups are not supported for now.
  */
 extern pid_t ta_waitpid(pid_t pid, int *status, int options);
+
+/**
+ * Function to base system()-like and popen()-like function on it.
+ *
+ * @param cmd    command to run in the shell
+ * @param uid    user id to run the shell; use -1 for default
+ * @param in_fd  location to store file descriptor of pipe to stdin of 
+ *               the shell command; use NULL for standard stdin
+ * @param out_fd location to store file descriptor of pipe to stdout of
+ *               the shell command; use NULL for standard stdout
+ * 
+ * @return pid value, positive on success, negative on failure
+ */
+extern pid_t ta_shell_cmd(const char *cmd, uid_t uid, 
+                          int *in_fd, int *out_fd);
+
+/**
+ * system() analogue, with the same parameters/return value.
+ */
+extern int ta_system(const char *cmd);
 
 /**
  * TCE-related pointers
