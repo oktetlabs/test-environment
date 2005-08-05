@@ -36,7 +36,13 @@ tce_coverage_options="-g -ftest-coverage -fprofile-arcs -D_init=_target_init -D_
 
 coverage_options=
 processed_options=
+forward_next=
 for arg in "$@"; do
+    if test -n "$forward_next" ; then
+        forward_next=""
+        processed_options="$processed_options $arg"
+        continue
+    fi
     case "$arg" in
         --version|-E|-version)
         exec ${TCE_CC} "$@"
@@ -45,6 +51,7 @@ for arg in "$@"; do
         processed_options="$processed_options -c" ;;
         -O[1-9]|-O) processed_options="$processed_options -D__OPTIMIZE__=1" ;;
         -g|-ftest-coverage|-fprofile-arcs|-nostartfiles) ;;
+        -o) processed_options="$processed_options $arg" ; forward_next=yes ;;
         -*) processed_options="$processed_options $arg" ;;
         *)
         if test -n "${TCE_SRC}"; then
@@ -60,13 +67,24 @@ for arg in "$@"; do
             coverage_options="$tce_coverage_options"
         fi
         if test -n "${TCE_SRC_EXCLUDE}"; then
-            mydir=`dirname $arg`
-            myself=`basename $arg`
+            if test -L $arg ; then
+                link=`readlink $arg`
+                mydir=`dirname $arg`/`dirname $link`
+                myself=`basename $link`
+            else
+                mydir=`dirname $arg`
+                myself=`basename $arg`
+            fi
             fullpath=`cd $mydir && echo $PWD`/$myself
             for src in ${TCE_SRC_EXCLUDE} ; do
                 case "$fullpath" in
                     $src*) coverage_options="" ; break ;;
                 esac
+                # The following hack is a quick solution of issues
+                # with symlinks in the path
+                if test `basename $fullpath` == `basename $src` ; then
+                    coverage_options="" ; break
+                fi
             done
         fi
         processed_options="$processed_options $arg"
