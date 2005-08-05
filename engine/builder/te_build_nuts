@@ -68,7 +68,24 @@ for i in $NUTS ; do
             fi
         fi
         export TCE_SRC
-        export TCE_SRC_EXCLUDE="`eval echo '$NUT_'$i'_TCE_SRC_EXCLUDE'`"
+
+        tce_src_exclude="`eval echo '$NUT_'$i'_TCE_SRC_EXCLUDE'`"
+        if test -z "${NUT_SOURCES}" ; then
+            # Can do nothing with TCE_SRC
+            TCE_SRC_EXCLUDE=$tce_src_exclude
+        else
+            # Path to NUT sources is specified
+            # Append path to NUT sources as prefix if necessary
+            TCE_SRC_EXCLUDE=
+            for i in $tce_src_exclude ; do
+                if test "${i:0:1}" != "/" ; then
+                    TCE_SRC_EXCLUDE="${TCE_SRC_EXCLUDE} ${NUT_SOURCES}/$i"
+                else
+                    TCE_SRC_EXCLUDE="${TCE_SRC_EXCLUDE} $i"
+                fi
+            done
+        fi
+        export TCE_SRC_EXCLUDE
     fi
     ${NUT_SCRIPT} "${NUT}" "${NUT_SOURCES}" ${NUT_PARMS} || exit 1
 done
