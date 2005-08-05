@@ -85,10 +85,10 @@ read_all(int s, char *buf, int n)
     int   len = 0;
 
     *buf = 0;
-    
+
     while (TRUE)
     {
-        struct timeval tv = { 0, 100000 };
+        struct timeval tv = { 2, 0 };
         fd_set         set;
         int            l;
         
@@ -99,9 +99,21 @@ read_all(int s, char *buf, int n)
 
         if ((l = read(s, str, n - len)) < 0)
             return -1;
-            
+
         len += l;
         str += l;
+
+        /* if we've got a complete line, make timeout smaller */
+        if (strchr(buf, '\n') != NULL)
+        {
+            tv.tv_sec = 0;
+            tv.tv_usec = 100000;
+        }
+        else
+        {
+            tv.tv_sec = 2;
+            tv.tv_usec = 0;
+        }
     }
 }
 
