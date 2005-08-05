@@ -32,6 +32,8 @@
 # Use 'gcc' by default
 test -z "${TCE_CC}" && TCE_CC="gcc"
 
+tce_coverage_options="-g -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
+
 coverage_options=
 processed_options=
 for arg in "$@"; do
@@ -45,19 +47,27 @@ for arg in "$@"; do
         -g|-ftest-coverage|-fprofile-arcs|-nostartfiles) ;;
         -*) processed_options="$processed_options $arg" ;;
         *)
-        if test -n "$TCE_SRC"; then
+        if test -n "${TCE_SRC}"; then
             mydir=`dirname $arg`
             myself=`basename $arg`
-            fullpath=`cd $mydir; echo $PWD`/$myself
-            for tce in ${TCE_SRC}; do
+            fullpath=`cd $mydir && echo $PWD`/$myself
+            for src in ${TCE_SRC}; do
                 case "$fullpath" in
-                    $tce*)
-                    coverage_options="-g -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
-                    ;;
+                    $src*) coverage_options="$tce_coverage_options" ; break ;;
                 esac
             done
         else
-            coverage_options="-g -ftest-coverage -fprofile-arcs -D_init=_target_init -D_fini=_target_fini"
+            coverage_options="$tce_coverage_options"
+        fi
+        if test -n "${TCE_SRC_EXCLUDE}"; then
+            mydir=`dirname $arg`
+            myself=`basename $arg`
+            fullpath=`cd $mydir && echo $PWD`/$myself
+            for src in ${TCE_SRC_EXCLUDE} ; do
+                case "$fullpath" in
+                    $src*) coverage_options="" ; break ;;
+                esac
+            done
         fi
         processed_options="$processed_options $arg"
            ;;
