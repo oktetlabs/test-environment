@@ -94,3 +94,20 @@ fi
 ]
 NUT_$1_TCE_SRC="$NUT_$1_TCE_SRC $2"
 ])
+
+dnl Specifiy sources to be excluded from TCE gathering for the NUT.
+dnl
+dnl Parameters:
+dnl       NUT image name
+dnl       path to sources for TCE (absolute or relative to NUT sources)
+dnl       
+define([TE_NUT_TCE_SRC_EXCLUDE],
+[
+[
+if test -z "$NUT_$1_SCRIPT" ; then
+    echo "Definition of the NUT $1 has not appeared yet" >&2 ;
+    exit 1 ;
+fi
+]
+NUT_$1_TCE_SRC_EXCLUDE="$NUT_$1_TCE_SRC_EXCLUDE $2"
+])

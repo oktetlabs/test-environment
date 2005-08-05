@@ -68,6 +68,7 @@ for i in $NUTS ; do
             fi
         fi
         export TCE_SRC
+        export TCE_SRC_EXCLUDE="`eval echo '$NUT_'$NUT'_TCE_SRC_EXCLUDE'`"
     fi
     ${NUT_SCRIPT} "${NUT}" "${NUT_SOURCES}" ${NUT_PARMS} || exit 1
 done
