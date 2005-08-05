@@ -46,7 +46,7 @@ for i in $NUTS ; do
         export CC="`which tce_gcc`"
         export CXX="`which tce_gxx`"
     
-        tce_src="`eval echo '$NUT_'$NUT'_TCE_SRC'`"
+        tce_src="`eval echo '$NUT_'$i'_TCE_SRC'`"
         if test -z "${NUT_SOURCES}" ; then
             # Can do nothing with TCE_SRC
             TCE_SRC=$tce_src
@@ -68,7 +68,7 @@ for i in $NUTS ; do
             fi
         fi
         export TCE_SRC
-        export TCE_SRC_EXCLUDE="`eval echo '$NUT_'$NUT'_TCE_SRC_EXCLUDE'`"
+        export TCE_SRC_EXCLUDE="`eval echo '$NUT_'$i'_TCE_SRC_EXCLUDE'`"
     fi
     ${NUT_SCRIPT} "${NUT}" "${NUT_SOURCES}" ${NUT_PARMS} || exit 1
 done
