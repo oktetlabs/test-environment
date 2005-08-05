@@ -302,7 +302,8 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
     }
     
     len = buflen;
-    if (send(rpcs->sock, &len, sizeof(len), 0) != (ssize_t)sizeof(len) ||
+    if (send(rpcs->sock, &len, sizeof(len), MSG_MORE) !=
+            (ssize_t)sizeof(len) ||
         send(rpcs->sock, rpc_buf, len, 0) != (ssize_t)len)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
@@ -464,11 +465,13 @@ connect_getpid(rpcserver *rpcs)
     
     tarpc_getpid_in  in;
     tarpc_getpid_out out;
+
     
     FD_ZERO(&set);
     FD_SET(lsock, &set);
     
     /* Accept the connection */
+    VERB("Selecting on RPC servers listening socket...");
     while ((rc = select(lsock + 1, &set, NULL, NULL, &tv)) <= 0)
     {
         if (rc == 0)
@@ -484,6 +487,23 @@ connect_getpid(rpcserver *rpcs)
             return TE_RC(TE_RCF_PCH, err);
         }
     }
+    
+    /* Close current connection to RPC server, if it exists */
+    if (rpcs->sock != -1)
+    {
+        VERB("Closing connection socket to RPC server '%s'...", rpcs->name);
+        if (close(rpcs->sock) != 0)
+        {
+            rc = errno;
+            ERROR("Close of connection socket to RPC server '%s' failed",
+                  rpcs->name);
+            return TE_RC(TE_RCF_PCH, rc);
+        }
+        VERB("Closed connection socket to RPC server '%s'", rpcs->name);
+        rpcs->sock = -1;
+    }
+
+    VERB("Accepting new RPC server '%s' connection...", rpcs->name);
     if ((rpcs->sock = accept(lsock, &addr, &len)) < 0)
     {
         int err = errno;
@@ -492,6 +512,7 @@ connect_getpid(rpcserver *rpcs)
               rpcs->name, err);
         return TE_RC(TE_RCF_PCH, err);
     }
+    VERB("Accepted new RPC server '%s' connection", rpcs->name);
 
 #if HAVE_FCNTL_H
     /* 
@@ -505,6 +526,7 @@ connect_getpid(rpcserver *rpcs)
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.common.op = RCF_RPC_CALL_WAIT;
+    VERB("Getting RPC server '%s' PID...", rpcs->name);
     if ((rc = call(rpcs, "getpid", &in, &out)) != 0)
         return rc;
         
@@ -516,6 +538,7 @@ connect_getpid(rpcserver *rpcs)
     }
     
     rpcs->pid = out.retval;
+    VERB("Connection with RPC server '%s' established", rpcs->name);
 
     return 0;
 }
@@ -576,7 +599,7 @@ dispatch(void *arg)
                
             if (rpcs->sent > 0 && 
                 ((uint32_t)(now - rpcs->sent) > rpcs->timeout ||
-                 (rpcs->timeout == 0xFFFFFFFF && now - rpcs->sent > 2)))
+                 (rpcs->timeout == 0xFFFFFFFF && now - rpcs->sent > 5)))
             {
                 ERROR("Timeout on server %s", rpcs->name);
                 rpcs->dead = TRUE;
@@ -938,6 +961,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     }
     
     strcpy(rpcs->name, new_name);
+    rpcs->sock = -1;
     rpcs->father = father;
     if (father == NULL)
     {
@@ -975,7 +999,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         {
             rcf_ch_unlock();
             free(rpcs);
-            return TE_RC(TE_RCF_PCH, rc);
+            return rc;
         }
     }
     
@@ -987,7 +1011,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             kill_rpcserver(rpcs);
         rcf_ch_unlock();
         free(rpcs);
-        return TE_RC(TE_RCF_PCH, rc);
+        return rc;
     }
     
     if (rpcs->tid > 0)
@@ -1062,8 +1086,9 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     }
 
     rcf_ch_unlock();
-    
-    close(rpcs->sock);
+
+    if (rpcs->sock != -1)
+        close(rpcs->sock);
     free(rpcs);
     
     return 0;
