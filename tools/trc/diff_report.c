@@ -46,6 +46,7 @@
 
 #include "te_defs.h"
 #include "trc_log.h"
+#include "trc_tag.h"
 #include "trc_db.h"
 
 
@@ -290,6 +291,24 @@ cleanup:
 }
 
 
+void
+trc_diff_tags_to_html(const char *name, const trc_tags *tags)
+{
+    const trc_tag  *tag;
+
+    fprintf(f, "<B>%s: </B>", name);
+    for (tag = tags->tqh_first; tag != NULL; tag = tag->links.tqe_next)
+    {
+        if (tag->links.tqe_next != NULL ||
+            strcmp(tag->name, "result") != 0)
+        {
+            fprintf(f, " %s", tag->name);
+        }
+    }
+    fprintf(f, "<BR/><BR/>");
+}
+
+    
 /** See descriptino in trc_db.h */
 int
 trc_diff_report_to_html(const char *filename, trc_database *db)
@@ -313,6 +332,11 @@ trc_diff_report_to_html(const char *filename, trc_database *db)
     /* HTML header */
     fprintf(f, trc_diff_html_doc_start, db->version);
 
+    /* Compared sets */
+    trc_diff_tags_to_html("Set1", &tags);
+    trc_diff_tags_to_html("Set2", &tags_diff);
+    
+    /* Report */
     if (trc_diff_tests_has_diff(&db->tests) &&
         (rc = trc_diff_tests_to_html(&db->tests, 0)) != 0)
     {
