@@ -98,10 +98,10 @@ process_cmd_line_opts(int argc, char **argv)
           "Name of the file for report in HTML format.",
           "FILENAME" },
 
-        { "tag1", 'T', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG1,
+        { "tag1", '1', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG1,
           "Name of the tag from the first set.", "TAG" },
 
-        { "tag2", 'S', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG2,
+        { "tag2", '2', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG2,
           "Name of the tag from the second set.", "TAG" },
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_DIFF_OPT_VERSION, 
