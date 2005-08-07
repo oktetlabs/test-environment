@@ -74,10 +74,10 @@ static const char * const trc_diff_html_doc_start =
 "<HEAD>\n"
 "  <META HTTP-EQUIV=\"CONTENT-TYPE\" CONTENT=\"text/html; "
 "charset=utf-8\">\n"
-"  <TITLE>Testing Results Comparison Report</TITLE>\n"
+"  <TITLE>Testing Results Expectations Differences Report</TITLE>\n"
 "</HEAD>\n"
 "<BODY LANG=\"en-US\" DIR=\"LTR\">\n"
-"<H1 ALIGN=CENTER>Testing Results Comparison Report</H1>\n"
+"<H1 ALIGN=CENTER>Testing Results Expectations Differences Report</H1>\n"
 "<H2 ALIGN=CENTER>%s</H2>\n";
 
 static const char * const trc_diff_html_doc_end =
@@ -154,6 +154,8 @@ trc_test_result_to_string(trc_test_result result)
             return "skipped";
         case TRC_TEST_UNSPEC:
             return "UNSPEC";
+        case TRC_TEST_MIXED:
+            return "(see iters)";
         default:
             return "OOps";
     }
@@ -177,7 +179,9 @@ trc_test_args_to_string(const test_args *args)
 
 
 static te_bool
-trc_diff_iters_has_diff(test_iters *iters, te_bool *all_out)
+trc_diff_iters_has_diff(test_iters *iters, te_bool *all_out,
+                        trc_test_result *diff_exp1,
+                        trc_test_result *diff_exp2)
 {
     te_bool     has_diff;
     te_bool     has_no_out;
@@ -187,8 +191,19 @@ trc_diff_iters_has_diff(test_iters *iters, te_bool *all_out)
          p != NULL;
          p = p->links.tqe_next)
     {
-        p->diff_out = (p->exp_result != p->got_result) ||
-                      trc_diff_tests_has_diff(&p->tests);
+            if (*diff_exp1 == TRC_TEST_UNSET)
+                *diff_exp1 = p->exp_result;
+            else if (*diff_exp1 != p->exp_result)
+                *diff_exp1 = TRC_TEST_MIXED;
+
+            if (*diff_exp2 == TRC_TEST_UNSET)
+                *diff_exp2 = p->got_result;
+            else if (*diff_exp2 != p->got_result)
+                *diff_exp2 = TRC_TEST_MIXED;
+
+        /* The routine should be called first to be called in any case */
+        p->diff_out = trc_diff_tests_has_diff(&p->tests) ||
+                      (p->exp_result != p->got_result);
 
         if (!p->diff_out)
             has_no_out = TRUE;
@@ -212,7 +227,10 @@ trc_diff_tests_has_diff(test_runs *tests)
          p != NULL;
          p = p->links.tqe_next)
     {
-        p->diff_out = trc_diff_iters_has_diff(&p->iters, &all_iters_out);
+        p->diff_exp1 = TRC_TEST_UNSET;
+        p->diff_exp2 = TRC_TEST_UNSET;
+        p->diff_out = trc_diff_iters_has_diff(&p->iters, &all_iters_out,
+                                              &p->diff_exp1, &p->diff_exp2);
 
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
@@ -231,16 +249,26 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int level)
 {
     int         rc;
     test_iter  *p;
+    te_bool     one_iter = (iters->head.tqh_first != NULL) &&
+                           (&iters->head.tqh_first->links.tqe_next ==
+                            iters->head.tqh_last);
 
     for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
         if (p->diff_out)
         {
-            fprintf(f, trc_diff_iter_exp1_exp2_row,
-                    trc_test_args_to_string(&p->args),
-                    trc_test_result_to_string(p->exp_result),
-                    trc_test_result_to_string(p->got_result),
-                    PRINT_STR(p->notes));
+            /* 
+             * Output iteration parameters expected results do not match
+             * or it is not a single iteration of the test.
+             */
+            if ((p->exp_result != p->got_result) || !one_iter)
+            {
+                fprintf(f, trc_diff_iter_exp1_exp2_row,
+                        trc_test_args_to_string(&p->args),
+                        trc_test_result_to_string(p->exp_result),
+                        trc_test_result_to_string(p->got_result),
+                        PRINT_STR(p->notes));
+            }
 
             rc = trc_diff_tests_to_html(&p->tests, level + 1);
             if (rc != 0)
@@ -272,7 +300,8 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int level)
         {
             fprintf(f, trc_diff_test_exp1_exp2_row,
                     level_str, p->name, PRINT_STR(p->objective),
-                    "Opps", "Opps",
+                    trc_test_result_to_string(p->diff_exp1),
+                    trc_test_result_to_string(p->diff_exp2),
                     PRINT_STR(p->notes));
         }
         if (p->diff_out_iters)

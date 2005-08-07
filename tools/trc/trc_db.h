@@ -48,7 +48,9 @@ typedef enum trc_test_result {
     TRC_TEST_KILLED,
     TRC_TEST_FAKED,
     TRC_TEST_SKIPPED,     /**< Test should be skipped */
-    TRC_TEST_UNSPEC       /**< Expected test result is not specified yet */
+    TRC_TEST_UNSPEC,      /**< Expected test result is not specified yet */
+    TRC_TEST_MIXED,       /**< Different test result for iterations */
+    TRC_TEST_UNSET,       /**< Uninitialized test result */
 } trc_test_result;
 
 typedef enum trc_test_type {
@@ -165,6 +167,8 @@ typedef struct test_run {
     te_bool         diff_out;       /**< Should the test be output */
     te_bool         diff_out_iters; /**< Should the test iterations
                                          be output */
+    trc_test_result diff_exp1;      /**< Expected result for set 1 */
+    trc_test_result diff_exp2;      /**< Expected result for set 2 */
 } test_run;
 
 
