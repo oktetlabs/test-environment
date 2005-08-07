@@ -42,6 +42,7 @@
 #endif
 
 #include "trc_log.h"
+#include "trc_tag.h"
 #include "trc_db.h"
 #include "trc_xml.h"
 
@@ -258,11 +259,27 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
     TAILQ_INIT(&p->tests.head);
     TAILQ_INSERT_TAIL(&iters->head, p, links);
     
+    /* Get expected result */
     for (rc = ENOENT, tag = tags.tqh_first;
          tag != NULL;
          tag = tag->links.tqe_next)
     {
         rc = get_result(node, tag->name, &p->exp_result);
+        if (rc != ENOENT)
+            break;
+    }
+    if (rc != 0)
+    {
+        ERROR("Expected result of the test iteration is missing/invalid");
+        return rc;
+    }
+
+    /* Get expected result in accordance with the second set to diff */
+    for (tag = tags_diff.tqh_first;
+         tag != NULL;
+         tag = tag->links.tqe_next)
+    {
+        rc = get_result(node, tag->name, &p->got_result);
         if (rc != ENOENT)
             break;
     }
@@ -508,6 +525,14 @@ trc_parse_db(const char *filename)
     }
     else
     {
+        trc_db.version = XML2CHAR(xmlGetProp(node,
+                                             CONST_CHAR2XML("version")));
+        if (trc_db.version == NULL)
+        {
+            ERROR("Version of the TRC DB is missing");
+            return EINVAL;
+        }
+
         node = xmlNodeChildren(node);
         rc = get_tests(&node, &trc_db.tests);
         if (rc != 0)
@@ -644,11 +669,11 @@ trc_update_tests(test_runs *tests)
 
 /* See description in trc_db.h */
 int
-trc_dump_db(const char *filename)
+trc_dump_db(const char *filename, te_bool init)
 {
     int rc;
 
-    if (trc_init_db)
+    if (init)
     {
         xmlNodePtr node;
 

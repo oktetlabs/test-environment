@@ -54,6 +54,7 @@
 
 #include "te_defs.h"
 #include "trc_log.h"
+#include "trc_tag.h"
 #include "trc_db.h"
 
 
@@ -89,8 +90,6 @@ typedef struct trc_html_report {
 te_bool trc_update_db = FALSE;
 /** Should database be initialized from scratch */
 te_bool trc_init_db = FALSE;
-/** List of tags to get specific expected result */
-trc_tags tags;
 
 te_bool trc_quiet = FALSE;
 
@@ -107,33 +106,6 @@ static FILE *trc_html_header_f = NULL;
 /** List of HTML reports to generate */
 static TAILQ_HEAD(trc_html_reports, trc_html_report) html_reports;
 
-
-/**
- * Add tag in the end of the TRC tags list.
- *
- * @param name      Name of the tag
- *
- * @return Status code.
- */
-static int
-trc_add_tag(const char *name)
-{
-    trc_tag *p = calloc(1, sizeof(*p));
-
-    if (p == NULL)
-    {
-        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
-        return ENOMEM;
-    }
-    TAILQ_INSERT_TAIL(&tags, p, links);
-    p->name = strdup(name);
-    if (p->name == NULL)
-    {
-        ERROR("strdup(%s) failed", name);
-        return ENOMEM;
-    }
-    return 0;
-}
 
 /**
  * Process command line options and parameters specified in argv.
@@ -239,7 +211,7 @@ process_cmd_line_opts(int argc, char **argv)
                 break;
             
             case TRC_OPT_TAG:
-                if (trc_add_tag(poptGetOptArg(optCon)) != 0)
+                if (trc_add_tag(&tags, poptGetOptArg(optCon)) != 0)
                 {
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
@@ -462,6 +434,7 @@ main(int argc, char *argv[])
     memset(&trc_db, 0, sizeof(trc_db));
     TAILQ_INIT(&trc_db.tests.head);
     TAILQ_INIT(&tags);
+    TAILQ_INIT(&tags_diff);
     TAILQ_INIT(&html_reports);
 
     /* Process and validate command-line options */
@@ -479,7 +452,7 @@ main(int argc, char *argv[])
     }
 
     /* Add tag of the default result */
-    if (trc_add_tag("result") != 0)
+    if (trc_add_tag(&tags, "result") != 0)
     {
         ERROR("Failed to add tag of the default result");
         goto exit;
@@ -541,7 +514,7 @@ main(int argc, char *argv[])
     }
 
     /* Update expected testing results database, if requested */
-    if (trc_update_db && (trc_dump_db(trc_db_fn) != 0))
+    if (trc_update_db && (trc_dump_db(trc_db_fn, trc_init_db) != 0))
     {
         ERROR("Failed to update expected testing results database");
         goto exit;
@@ -551,6 +524,7 @@ main(int argc, char *argv[])
 
 exit:
 
+    trc_free_tags(&tags);
     free(trc_db_fn);
     free(trc_xml_log_fn);
     while ((html_report = html_reports.tqh_first) != NULL)

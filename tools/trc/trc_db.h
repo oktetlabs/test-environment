@@ -40,17 +40,6 @@
 #include "te_defs.h"
 
 
-/** Named tag */
-typedef struct trc_tag {
-    TAILQ_ENTRY(trc_tag)    links;  /**< List links */
-
-    char                   *name;   /**< Tag name */
-} trc_tag;
-
-/** List of named tags */
-typedef TAILQ_HEAD(trc_tags, trc_tag) trc_tags;
-
-
 /** Enumeration of possible test results */
 typedef enum trc_test_result {
     TRC_TEST_PASSED,      /**< Test should pass */
@@ -141,6 +130,9 @@ typedef struct test_iter {
     test_runs       tests;          /**< Children tests of the session */
 
     trc_test_result got_result;     /**< Got test result */
+
+    /* Fields specific for TRC diff */
+    te_bool         diff_out;       /**< Should the iteration be output */
 } test_iter;
 
 /** Head of the list with test iterations */
@@ -168,24 +160,24 @@ typedef struct test_run {
     char           *obj_link;       /**< Test objective link */
 
     test_iters      iters;          /**< Iterations of the test */
+
+    /* Fields specific for TRC diff */
+    te_bool         diff_out;       /**< Should the test be output */
+    te_bool         diff_out_iters; /**< Should the test iterations
+                                         be output */
 } test_run;
 
 
 /** Testing results comparison database */
 typedef struct trc_database {
-    test_runs   tests;
-    trc_stats   stats;
+    char       *version;    /**< Database version */
+    test_runs   tests;      /**< Tree of tests */
+    trc_stats   stats;      /**< Grand total statistics */
 } trc_database;
 
 
 /** Testing results comparison database */
 extern trc_database trc_db;
-/** Should database be update */
-extern te_bool trc_update_db;
-/** Should database be initialized from scratch */
-extern te_bool trc_init_db;
-/** Name of the tag to get specific expected result */
-extern trc_tags tags;
 
 
 /**
@@ -201,10 +193,11 @@ extern int trc_parse_db(const char *filename);
  * Dump database with expected results.
  *
  * @param filename      Name of the file to save to
+ * @param init          Is it DB initialization?
  *
  * @return Status code
  */
-extern int trc_dump_db(const char *filename);
+extern int trc_dump_db(const char *filename, te_bool init);
 
 /**
  * Parse TE log in XML format.
@@ -238,5 +231,15 @@ enum trc_out_flags {
  */
 extern int trc_report_to_html(const char *filename, FILE *header,
                               trc_database *db, unsigned int flags);
+
+/**
+ * Prepare TRC diff report in HTML format.
+ *
+ * @param filename      Name of the file to put report
+ * @param db            DB to be processed
+ *
+ * @return Status code
+ */
+extern int trc_diff_report_to_html(const char *filename, trc_database *db);
 
 #endif /* !__TE_TRC_DB_H__ */
