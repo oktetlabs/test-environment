@@ -158,6 +158,7 @@ trc_test_result_to_string(trc_test_result result)
     }
 }
 
+
 static char trc_args_buf[0x10000];
 
 static const char *
@@ -175,12 +176,13 @@ trc_test_args_to_string(const test_args *args)
 
 
 static te_bool
-trc_diff_iters_has_diff(test_iters *iters, te_bool *all_diff)
+trc_diff_iters_has_diff(test_iters *iters, te_bool *all_out)
 {
     te_bool     has_diff;
+    te_bool     has_no_out;
     test_iter  *p;
 
-    for (has_diff = FALSE, *all_diff = TRUE, p = iters->head.tqh_first;
+    for (has_diff = FALSE, has_no_out = FALSE, p = iters->head.tqh_first;
          p != NULL;
          p = p->links.tqe_next)
     {
@@ -188,10 +190,12 @@ trc_diff_iters_has_diff(test_iters *iters, te_bool *all_diff)
                       trc_diff_tests_has_diff(&p->tests);
 
         if (!p->diff_out)
-            *all_diff = FALSE;
+            has_no_out = TRUE;
 
         has_diff = has_diff || p->diff_out;
     }
+
+    *all_out = has_diff && !has_no_out;
 
     return has_diff;
 }
@@ -201,18 +205,18 @@ trc_diff_tests_has_diff(test_runs *tests)
 {
     test_run   *p;
     te_bool     has_diff;
-    te_bool     all_iters_diff;
+    te_bool     all_iters_out;
 
     for (has_diff = FALSE, p = tests->head.tqh_first;
          p != NULL;
          p = p->links.tqe_next)
     {
-        p->diff_out = trc_diff_iters_has_diff(&p->iters, &all_iters_diff);
+        p->diff_out = trc_diff_iters_has_diff(&p->iters, &all_iters_out);
 
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
-             !all_iters_diff ||
-             p->iters.head.tqh_first->tests.head.tqh_first == NULL);
+             !all_iters_out ||
+             p->iters.head.tqh_first->tests.head.tqh_first != NULL);
 
         has_diff = has_diff || p->diff_out;
     }
@@ -270,7 +274,7 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int level)
                     "Opps", "Opps",
                     PRINT_STR(p->notes));
         }
-        if (TRUE/*p->diff_out_iters*/)
+        if (p->diff_out_iters)
         {
             rc = trc_diff_iters_to_html(&p->iters, level);
             if (rc != 0)
