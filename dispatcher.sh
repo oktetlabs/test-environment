@@ -697,14 +697,14 @@ if test -n "${RGT_LOG_HTML}" ; then
     fi
 fi
 
-if test -n "${DO_NUTS}" ; then
+if test ${START_OK} -eq 0 -a -n "${DO_NUTS}" ; then
     myecho "--->>> TCE processing"
     TCE_REPORT_OPTS="${TCE_REPORT_OPTS}" TCES_OPTS="${TCES_OPTS}" \
         te_tce_process "${CONF_NUT}"
 fi
 
 # Run TRC, if any its option is provided
-if test -n "${TRC_OPTS}" ; then
+if test ${START_OK} -eq 0 -a -n "${TRC_OPTS}" ; then
     te_trc.sh ${TRC_OPTS} ${TE_LOG_RAW}
 fi
 
