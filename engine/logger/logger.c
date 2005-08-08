@@ -89,6 +89,7 @@ static unsigned int         lgr_flags = 0;
 #define LOGGER_FOREGROUND   0x01    /**< Run Logger in foreground */
 #define LOGGER_NO_RCF       0x02    /**< Run Logger without interaction
                                          with RCF */
+#define LOGGER_SHUTDOWN     0x04    /**< Logger is shuting down */
 /*@}*/
 
 static const char          *cfg_file = NULL;
