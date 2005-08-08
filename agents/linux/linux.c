@@ -850,7 +850,7 @@ ta_sigchld_handler(int sig)
 
         get++;
         if (get > 1 && logger)
-            RING("Get %d children from on sugnal handler call", get);
+            WARN("Get %d children from on SIGCHLD handler call", get);
         while (ta_children_dead_heap[dead].valid)
         {
             int next;
@@ -861,11 +861,6 @@ ta_sigchld_handler(int sig)
                 struct timeval tv;
                 int i;
 
-                if (logger)
-                {
-                    WARN("Removing oldest entry from "
-                         "the list of dead children.");
-                }
                 tv = ta_children_dead_heap[dead = 0].timestamp;
                 for (i = 1; i < TA_CHILDREN_DEAD_MAX; i++)
                 {
@@ -889,6 +884,13 @@ ta_sigchld_handler(int sig)
                               "oldest entry is not the last.");
                     }
                 }
+                if (logger)
+                {
+                    WARN("Removing oldest entry with pid = %d, "
+                         "status = 0x%x from the list of dead children.", 
+                         ta_children_dead_heap[dead].pid,
+                         ta_children_dead_heap[dead].status);
+                }
                 break;
             }
             dead = next;
@@ -900,6 +902,8 @@ ta_sigchld_handler(int sig)
         gettimeofday(&ta_children_dead_heap[dead].timestamp, NULL);
         ta_children_dead_heap[dead].valid = TRUE;
         ta_children_dead_heap[dead].prev = -1;
+        if (ta_children_dead_list != -1)
+            ta_children_dead_heap[ta_children_dead_list].prev = dead;
         ta_children_dead_heap[dead].next = ta_children_dead_list;
         ta_children_dead_list = dead;
 
@@ -920,23 +924,25 @@ ta_sigchld_handler(int sig)
         else if (WIFSIGNALED(status))
         {
             if (WTERMSIG(status) == SIGTERM)
-                VERB("Child process with PID %d is deleted", pid);
+                VERB("Child process with PID %d was terminated", pid);
             else
+            {
                 WARN("Child process with PID %d is killed "
                      "by the signal %d", pid, WTERMSIG(status));
+            }
         }
 #ifdef WCOREDUMP
         else if (WCOREDUMP(status))
             ERROR("Child process with PID %d core dumped", pid);
 #endif
         else
-            WARN("Child process with PID %d exited due unknown reason", 
+        {
+            WARN("Child process with PID %d exited due to unknown reason", 
                  pid);
+        }
     }
 
-    if (!logger)
-        return;
-    if (get == 0)
+    if (logger && get == 0)
     {
         /* 
          * Linux behaviour:
