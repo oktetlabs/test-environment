@@ -208,8 +208,9 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         }
         /* Unreachable */
         assert(FALSE);
-    } else if (strncmp(RCF_FILE_TMP_PREFIX, filename,
-                       strlen(RCF_FILE_TMP_PREFIX)) == 0)
+    }
+    else if (strncmp(RCF_FILE_TMP_PREFIX, filename,
+                     strlen(RCF_FILE_TMP_PREFIX)) == 0)
     {
         VERB("temporary file operation");
 #ifdef HAVE_DIRENT_H
@@ -239,8 +240,9 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         rc = ENOENT;
         goto reject;
 #endif
-    } else if (strncmp(RCF_FILE_FTP_PREFIX, filename, 
-                       strlen(RCF_FILE_FTP_PREFIX)) == 0)
+    }
+    else if (strncmp(RCF_FILE_FTP_PREFIX, filename, 
+                     strlen(RCF_FILE_FTP_PREFIX)) == 0)
     {
         
         sprintf(fname, "/var/ftp/%s", 
