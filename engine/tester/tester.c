@@ -38,6 +38,9 @@
 #include <stdlib.h>
 #include <string.h>
 #endif
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 #if HAVE_POPT_H
 #include <popt.h>
 #else
@@ -740,6 +743,10 @@ main(int argc, char *argv[])
     tester_ctx  ctx;
     tester_cfgs cfgs;
     tester_cfg *cfg;
+
+#if HAVE_SIGNAL_H
+    (void)signal(SIGINT, SIG_DFL);
+#endif
 
     TAILQ_INIT(&cfgs);
     if (tester_ctx_init(&ctx) != 0)

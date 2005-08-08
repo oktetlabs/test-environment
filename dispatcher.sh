@@ -613,8 +613,6 @@ if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     te_log_message Engine Dispatcher \
         "Start Tester:${TESTER_OPTS} ${CONF_TESTER}"
     myecho "--->>> Start Tester"
-    # Restore Ctrl-C handler while Tester is running
-    trap - SIGINT
     if test -n "$VG_TESTER" ; then
         VG_TESTS=${VG_TESTS} valgrind ${VG_OPTIONS} te_tester${TESTER_EXT} \
             ${TESTER_OPTS} "${CONF_TESTER}" 2>valgrind.te_tester
@@ -623,8 +621,6 @@ if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
             "${CONF_TESTER}" 
     fi
     START_OK=$?
-    # Ignore Ctrl-C on TE shutdown
-    trap "" SIGINT
 fi
 
 
