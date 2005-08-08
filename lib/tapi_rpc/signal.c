@@ -157,6 +157,7 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
     else
         stat.flag = RPC_WAIT_STATUS_UNKNOWN;
 
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(waitpid, out.pid);
     TAPI_RPC_LOG("RPC (%s,%s)%s: waitpid(%d, %p, 0x%x) -> %d (%s) "
                  "status %s 0x%x",
                  rpcs->ta, rpcs->name, rpcop2str(op),
