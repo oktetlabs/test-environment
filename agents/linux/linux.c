@@ -1199,6 +1199,7 @@ ta_waitpid(pid_t pid, int *status, int options)
         if (wake.next != NULL)
             wake.next->prev = &wake;
     }
+    UNLOCK; LOCK; /* @todo is it really necessary? */
 
     /* Find dead child entry */
     dead = find_dead_child(pid);
