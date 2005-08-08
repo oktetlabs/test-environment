@@ -111,7 +111,7 @@ struct test_run;
 
 /** Head of the list with tests */
 typedef struct test_runs {
-    TAILQ_HEAD(_test_runs, test_run) head;;
+    TAILQ_HEAD(_test_runs, test_run) head;
     xmlNodePtr  node;   /**< XML node with this element */
 } test_runs;
 
@@ -211,6 +211,13 @@ extern int trc_dump_db(const char *filename, te_bool init);
  * @return Status code
  */
 extern int trc_parse_log(const char *filename);
+
+/**
+ * Free TRC resources allocated for TRC database.
+ *
+ * @param db        Database to be freed
+ */
+extern void trc_free_db(trc_database *db);
 
 /** Output flags */
 enum trc_out_flags {

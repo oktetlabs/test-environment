@@ -408,9 +408,11 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
     else
     {
         ERROR("Invalid type '%s' of the test '%s'", tmp, p->name);
+        free(tmp);
         return EINVAL;
     }
     INFO("Parsing test '%s' type=%d", p->name, p->type);
+    free(tmp);
 
     node = xmlNodeChildren(node);
 
@@ -709,4 +711,77 @@ trc_dump_db(const char *filename, te_bool init)
     }
 
     return 0;
+}
+
+
+static void trc_free_test_runs(test_runs *tests);
+
+/**
+ * Free resources allocated for the list of test arguments.
+ *
+ * @param args      List of test arguments to be freed
+ */
+static void
+trc_free_test_args(test_args *args)
+{
+    test_arg   *p;
+
+    while ((p = args->head.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&args->head, p, links);
+        free(p->name);
+        free(p->value);
+        free(p);
+    }
+}
+
+/**
+ * Free resources allocated for the list of test iterations.
+ *
+ * @param iters     List of test iterations to be freed
+ */
+static void
+trc_free_test_iters(test_iters *iters)
+{
+    test_iter  *p;
+
+    while ((p = iters->head.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&iters->head, p, links);
+        trc_free_test_args(&p->args);
+        free(p->notes);
+        trc_free_test_runs(&p->tests);
+        free(p);
+    }
+}
+
+/**
+ * Free resources allocated for the list of tests.
+ *
+ * @param tests     List of tests to be freed
+ */
+static void
+trc_free_test_runs(test_runs *tests)
+{
+    test_run   *p;
+
+    while ((p = tests->head.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&tests->head, p, links);
+        free(p->name);
+        free(p->notes);
+        free(p->objective);
+        free(p->obj_link);
+        trc_free_test_iters(&p->iters);
+        free(p);
+    }
+}
+
+/* See description in trc_db.h */
+void
+trc_free_db(trc_database *db)
+{
+    free(db->version);
+    trc_free_test_runs(&db->tests);
+    xmlFreeDoc(trc_db_doc);
 }

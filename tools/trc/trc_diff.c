@@ -226,6 +226,7 @@ main(int argc, char *argv[])
 
 exit:
 
+    trc_free_db(&trc_db);
     free(trc_diff_db_fn);
     free(trc_diff_html_fn);
     trc_free_tags(&tags);
