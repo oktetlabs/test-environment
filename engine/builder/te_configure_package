@@ -41,8 +41,10 @@ PLATFORM=$4
 PKGSRC=$5
 PREFIX=$6
 
-pushd ${PKGSRC} >/dev/null
-if test ! -e configure ; then
+# Call aclocal/autoheader/autoconf/automake
+autotool()
+{    
+    pushd ${PKGSRC} >/dev/null
     echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
     aclocal -I ${TE_BASE}/auxdir || exit 1 ;
     if cat configure.ac | grep -q AC_CONFIG_HEADER ; then
@@ -50,8 +52,22 @@ if test ! -e configure ; then
     fi ;
     autoconf -Wall || exit 1 ;
     automake || exit 1 ;
-fi
-popd >/dev/null
+    popd >/dev/null
+}
+
+# Call configure and make
+configure_package()
+{
+    echo ${PKGSRC}/configure -q --${option}=$PLATFORM $add_option \
+                             --prefix=$PREFIX ${PARMS}
+    
+    TE_CFLAGS="-ggdb -Wall -W ${ADD_CFLAGS} -I${PREFIX}/include" \
+    TE_LDFLAGS="${ADD_LDFLAGS} -L${PREFIX}/lib" \
+    TE_LDADD="$LDADD" \
+    TE_DEPENDENCIES="$DEPENDENCIES" \
+    eval ${PKGSRC}/configure --${option}=$PLATFORM $add_option \
+                             '-q --prefix=$PREFIX' ${PARMS}
+}
 
 # Create list of linked libraries and dependencies for the package
 process_libs()
@@ -110,6 +126,10 @@ if test -e Makefile ; then
     exit 0
 fi
 
+if test ! -e ${PKGSRC}/configure ; then
+    autotool
+fi    
+
 process_libs
 
 PARMS="--with-name=$PACKAGE `eval echo '$'${PLATFORM_NAME}'_PARMS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_PARMS'`"
@@ -125,18 +145,18 @@ else
     add_option="--build=$default_host"
 fi
 
-echo ${PKGSRC}/configure -q --${option}=$PLATFORM $add_option \
-                         --prefix=$PREFIX ${PARMS}
-
-TE_CFLAGS="-ggdb -Wall -W ${ADD_CFLAGS} -I${PREFIX}/include" \
-TE_LDFLAGS="${ADD_LDFLAGS} -L${PREFIX}/lib" \
-TE_LDADD="$LDADD" \
-TE_DEPENDENCIES="$DEPENDENCIES" \
-eval ${PKGSRC}/configure --${option}=$PLATFORM $add_option \
-                         '-q --prefix=$PREFIX' ${PARMS}
+configure_package
 
 if test $? -ne 0 ; then
-    exit 1 ;
+    if test x${TE_NO_AUTOTOOL} != "xyes" ; then
+        autotool
+        configure_package
+        if test $? -ne 0 ; then
+            exit 1
+        fi
+    else
+        exit 1 ;
+    fi
 fi
 
 make install-data || exit 1

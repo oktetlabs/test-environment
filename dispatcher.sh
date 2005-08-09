@@ -49,6 +49,8 @@ Generic options:
   --no-cs                       Do not run Configurator
   --no-rcf                      Do not run RCF
   --no-run                      Do not run Logger, RCF, Configurator and Tester
+  --no-autotool                 Do not try to perform autoconf/automake after
+                                package configure failure
 
   --opts=<filename>             Get additional command-line options from file
 
@@ -273,6 +275,7 @@ process_opts()
             --no-cs) CS= ;;
             --no-rcf) RCF= ;;
             --no-run) RCF= ; CS= ; TESTER= ; LOGGER= ;;
+            --no-autotool) TE_NO_AUTOTOOL=yes ;;
             
             --conf-dir=*) CONF_DIR="${1#--conf-dir=}" ;;
             
@@ -353,6 +356,8 @@ fi
 # Process command-line options
 CMD_LINE_OPTS="$@"
 process_opts "$@"
+
+export TE_NO_AUTOTOOL
 
 for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
     CONF_FILE=`eval echo '$CONF_'$i` ;
