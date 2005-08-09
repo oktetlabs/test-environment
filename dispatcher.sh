@@ -399,7 +399,7 @@ fi
 
 export TE_LOG_DIR=${TE_LOG_DIR}
 mkdir -p ${TE_LOG_DIR}
-export TE_LOG_RAW=${TE_LOG_DIR}/tmp_raw_log
+export TE_LOG_RAW=${TE_LOG_RAW:-${TE_LOG_DIR}/tmp_raw_log}
 
 # Export TE_INSTALL
 if test -z "$TE_INSTALL" ; then
