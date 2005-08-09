@@ -40,10 +40,14 @@ PKGNAME=$3
 PLATFORM=$4
 PKGSRC=$5
 PREFIX=$6
+AUTOTOOL_DONE=
 
 # Call aclocal/autoheader/autoconf/automake
 autotool()
 {    
+    if test -n "${AUTOTOOL_DONE}" ; then
+        return
+    fi
     pushd ${PKGSRC} >/dev/null
     echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
     aclocal -I ${TE_BASE}/auxdir || exit 1 ;
@@ -53,6 +57,7 @@ autotool()
     autoconf -Wall || exit 1 ;
     automake || exit 1 ;
     popd >/dev/null
+    AUTOTOOL_DONE=yes
 }
 
 # Call configure and make
