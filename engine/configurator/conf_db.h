@@ -56,6 +56,14 @@ extern cfg_object cfg_obj_root;
 extern cfg_object **cfg_all_obj;
 extern int cfg_all_obj_size;
 
+/** Check if object is /agent */
+static inline te_bool
+cfg_object_agent(cfg_object *obj)
+{
+    return (obj->father == &cfg_obj_root) &&
+           (strcmp(obj->subid, "agent") == 0);
+}
+
 #define CFG_OBJ_HANDLE_VALID(_handle) \
     (_handle < (uint32_t)cfg_all_obj_size && cfg_all_obj[_handle] != NULL)
     
@@ -82,6 +90,14 @@ extern cfg_instance cfg_inst_root;
 extern cfg_instance **cfg_all_inst;
 extern int cfg_all_inst_size;
 extern int cfg_inst_seq_num;
+
+/** Check if instance is /agent:* */
+static inline te_bool
+cfg_inst_agent(cfg_instance *inst)
+{
+    return (inst->father == &cfg_inst_root) &&
+           (strcmp(inst->obj->subid, "agent") == 0);
+}
 
 #define CFG_INST_HANDLE_VALID(_handle) \
     (CFG_INST_HANDLE_TO_INDEX(_handle) < (uint32_t)cfg_all_inst_size && \

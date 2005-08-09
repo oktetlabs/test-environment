@@ -129,6 +129,7 @@ cfg_ta_add_agent_instances()
             cfg_all_inst[0]->son = cfg_all_inst[i];
         else
             cfg_all_inst[i - 1]->brother = cfg_all_inst[i];
+        cfg_all_inst[i]->father = &cfg_inst_root;
     }
     return 0;
 }
@@ -245,7 +246,7 @@ remove_excessive(cfg_instance *inst, char *list)
         remove_excessive(tmp, list);
     }
     
-    if (strcmp(inst->obj->subid, "agent") == 0)
+    if (cfg_inst_agent(inst))
         return;
 
     for (s = strstr(list, inst->oid);
@@ -635,10 +636,9 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
 /**
  * Commit changes in local Configurator database to all Test Agents.
  *
- * @param oid   - subtree OID or NULL if whole database should be
- *                synchronized
+ * @param oid   subtree OID or NULL if whole database should be synchronized
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 int
 cfg_tas_commit(const char *oid)
@@ -656,7 +656,7 @@ cfg_tas_commit(const char *oid)
              (inst != NULL) && (rc == 0);
              inst = inst->brother)
         {
-            if (strcmp(inst->obj->subid, "agent") != 0)
+            if (!cfg_inst_agent(inst))
             {
                 VERB("Skip not TA subtree '%s'", inst->oid);
             }
@@ -692,7 +692,7 @@ cfg_tas_commit(const char *oid)
 
         /* Find TA root instance to get name */
         ta_inst = inst;
-        while (strcmp(ta_inst->obj->subid, "agent") != 0)
+        while (ta_inst->father != &cfg_inst_root)
         {
             ta_inst = ta_inst->father;
             assert(ta_inst != NULL);

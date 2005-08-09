@@ -337,7 +337,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         return;
     }
     
-    while (strcmp(inst->obj->subid, "agent") != 0)
+    while (inst->father != &cfg_inst_root)
         inst = inst->father;
         
     ta = inst->name;        
@@ -477,7 +477,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         return;
     }
 
-    while (strcmp(inst->obj->subid, "agent") != 0)
+    while (inst->father != &cfg_inst_root)
         inst = inst->father;
 
     if (obj->type != CVT_NONE)
@@ -559,7 +559,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
 
-    while (strcmp(inst->obj->subid, "agent") != 0)
+    while (inst->father != &cfg_inst_root)
         inst = inst->father;
 
     msg->rc = rcf_ta_cfg_del(inst->name, 0, CFG_GET_INST(handle)->oid);
