@@ -314,6 +314,8 @@ ds_restore_backup()
 
     for (i = 0; i < n_ds; i++)
     {
+        char *backup = ds[i].backup;
+        
         if (ds[i].changed)
         {
             sprintf(buf, "mv %s %s >/dev/null 2>&1", 
@@ -323,9 +325,11 @@ ds_restore_backup()
         {
             sprintf(buf, "rm %s >/dev/null 2>&1", ds_backup(i));
         }
+        ds[i].backup = "";
         if (ta_system(buf) != 0)
             ERROR("Command <%s> failed", buf);
-        free(ds[i].backup);
+            
+        free(backup);
         free(ds[i].config_file);
     }
     
@@ -2907,19 +2911,24 @@ supervise_backups(void *arg)
         
         for (i = 0; i < n_ds; i++)
         {
-            const char *backup = ds_backup(i);
+            char       *backup = strdup(ds_backup(i));
             struct stat st;
             
             if (backup[0] == 0)
+            {
+                free(backup);
                 continue;
+            }
             if (stat(backup, &st) != 0)
             {
                 WARN("Backup %s disappeared", backup);
                 ta_system("ls /tmp/te*backup");
                 usleep(200);
                 ta_system("ps ax");
+                free(backup);
                 return NULL;
             }
+            free(backup);
         }
         sleep(1);
     }

@@ -91,10 +91,10 @@ typedef struct ta_children_dead {
 
 /** Reclaim to get status of child. */
 typedef struct ta_children_wait {
-    pid_t                   pid;    /**< PID to wait for */
-    sem_t                   sem;    /**< semaphore to wake reclaimer */
-    struct ta_children_wait *prev;  /**< pointer to the prev entry */
-    struct ta_children_wait *next;  /**< pointer to the next entry */
+    pid_t                    pid;    /**< PID to wait for */
+    sem_t                    sem;    /**< semaphore to wake reclaimer */
+    struct ta_children_wait *prev;   /**< pointer to the prev entry */
+    struct ta_children_wait *next;   /**< pointer to the next entry */
 } ta_children_wait;
 
 
@@ -1131,10 +1131,10 @@ find_dead_child(pid_t pid)
 pid_t
 ta_waitpid(pid_t pid, int *status, int options)
 {
-    int         dead;
-    ta_children_wait  wake;
-    int         rc;
-    te_bool     locked;
+    int              dead;
+    ta_children_wait wake;
+    int              rc;
+    te_bool          locked;
 
     if (!ta_children_dead_heap_inited)
         ta_children_dead_heap_init();

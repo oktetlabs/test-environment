@@ -291,7 +291,7 @@ rcf_ch_conf_root(void)
 #endif
 #ifdef CFG_LINUX_DAEMONS
     rcf_pch_cfg_object *tail = &node_volatile;
-
+    
     if (!init && tail->brother != NULL)
     {
         ERROR("The last element in configuration tree has brother, "
@@ -1426,7 +1426,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     unsigned int    prefix;
     char           *end;
     uint32_t        mask;
-    uint32_t        broadcast;
+    uint32_t        broadcast = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1838,7 +1838,7 @@ static int
 prefix_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
-    unsigned int    prefix;
+    unsigned int prefix = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1998,7 +1998,7 @@ static int
 broadcast_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
-    uint32_t     bcast;
+    uint32_t bcast = 0;
 
     UNUSED(gid);
     UNUSED(oid);
