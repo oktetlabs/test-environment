@@ -317,7 +317,7 @@ tester_out_done(run_item_type type, const char *name,
             case ETESTSKIP:
                 verdict = "SKIPPED";
 #ifdef HAVE_COLOR
-                color = COLOR_WHITE;
+                color = A_STANDOUT;
 #endif
                 break;
 
