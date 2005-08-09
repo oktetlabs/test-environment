@@ -77,42 +77,62 @@ sigint_handler(int n)
 
 /**
  * Read the answer from the socket. Parameters are the same as in read().
+ * This function fails if there is nothing to read.
  */
 static int
 read_all(int s, char *buf, int n)
 {
     char *str = buf;
     int   len = 0;
+    char *line = buf - 1;
 
     *buf = 0;
 
     while (TRUE)
     {
-        struct timeval tv = { 2, 0 };
+        struct timeval tv;
         fd_set         set;
         int            l;
-        
-        FD_ZERO(&set);
-        FD_SET(s, &set);
-        if (select(s + 1, &set, NULL, NULL, &tv) == 0)
-            return len;
+        char          *new_line = line;
 
-        if ((l = read(s, str, n - len)) < 0)
-            return -1;
-
-        len += l;
-        str += l;
-
-        /* if we've got a complete line, make timeout smaller */
-        if (strchr(buf, '\n') != NULL)
+        if (len > 0)
         {
             tv.tv_sec = 0;
             tv.tv_usec = 100000;
         }
         else
         {
-            tv.tv_sec = 2;
+            tv.tv_sec = 4;
             tv.tv_usec = 0;
+        }
+
+        FD_ZERO(&set);
+        FD_SET(s, &set);
+        if (select(s + 1, &set, NULL, NULL, &tv) == 0)
+        {
+            if (len != 0)
+                return len;
+            errno = ETIMEDOUT;
+            return -1;
+        }
+
+        if ((l = read(s, str, n - len)) <= 0)
+            return -1;
+
+        len += l;
+        str += l;
+
+        while ((line == buf - 1) || (new_line = strchr(line, '\n')) != NULL)
+        {
+            new_line++;
+            if (str - new_line >= 4)
+            {
+                if (new_line[3] == ' ')
+                    return len;
+                line = new_line;
+            }
+            else
+                break;
         }
     }
 }
@@ -250,17 +270,7 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
     return 0;
 }
 
-/**
- * Open the connection for reading/writing the file.
- *
- * @param uri           FTP uri: ftp://user:password@server/directory/file
- * @param flags         O_RDONLY or O_WRONLY
- * @param passive       if 1, passive mode
- * @param offset        file offset
- * @param sock          pointer on socket
- *
- * @return file descriptor, which may be used for reading/writing data
- */
+/* See description in linux_internal.h */
 int
 ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
 {
@@ -302,14 +312,14 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         if (active_listening >= 0)      \
             close(active_listening);    \
         if (control_socket >= 0)        \
-            close(control_socket);      \
+            ftp_close(control_socket);  \
         return -1;                      \
     } while (0)
 
 #define PUT_CMD(_cmd...) \
     do {                                                    \
         sprintf(buf, _cmd);                                 \
-        VERB("%s", buf);                                    \
+        VERB("Request: %s", buf);                           \
         if (write(control_socket, buf, strlen(buf)) < 0)    \
             RET_ERR("write() failed; errno %d", errno);     \
     } while (0)
@@ -319,7 +329,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         memset(buf, 0, sizeof(buf));                        \
         if (read_all(control_socket, buf, sizeof(buf)) < 0) \
             RET_ERR("read_all() failed");                   \
-        VERB("%s", buf);                                    \
+        VERB("Response: %s", buf);                          \
         if (*buf == '4' || *buf == '5')                     \
             RET_ERR("Invalid answer: %s", buf);             \
     } while (0)
@@ -335,10 +345,10 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         VERB("Connecting...");
         control_socket = socket(AF_INET, SOCK_STREAM, 0);
         if (control_socket < 0)
-            RET_ERR("socket() for control connection failed: errno %d",
+            ERROR("socket() for control connection failed: errno %d",
                     errno);
         if (connect(control_socket, SA(&addr), sizeof(addr)) != 0)
-            RET_ERR("connect() failed; errno %d", errno);
+            ERROR("connect() failed; errno %d", errno);
         VERB("Connected");
         new_sock = TRUE;
     }
@@ -346,7 +356,9 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
     {
         control_socket = *sock;
         new_sock = FALSE;
-        read_all(control_socket, buf, sizeof(buf));
+        memset(buf, 0, sizeof(buf));
+        if (read_all(control_socket, buf, sizeof(buf)) > 0)
+            VERB("Response: %s", buf);
     }
 
     /* Determine parameters for PORT command */
@@ -376,15 +388,15 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
     /* Read greeting */
     if (new_sock)
     {
-        read(control_socket, buf, sizeof(buf));
-        CMD("USER %s\n", user);
-        CMD("PASS %s\n", passwd);
+        READ_ANS;
+        CMD("USER %s\r\n", user);
+        CMD("PASS %s\r\n", passwd);
     }
 
     if (passive)
-        CMD("PASV\n");
+        CMD("PASV\r\n");
     else
-        CMD("PORT %d,%d,%d,%d,%d,%d\n",
+        CMD("PORT %d,%d,%d,%d,%d,%d\r\n",
             inaddr[0], inaddr[1], inaddr[2], inaddr[3],
             ntohs(addr1.sin_port) / 0x100, ntohs(addr1.sin_port) % 0x100);
     
@@ -405,14 +417,14 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         *a = atoi(strchr(str, ',') + 1);
     }
 
-    CMD("TYPE I\n");
+    CMD("TYPE I\r\n");
     
-    CMD("REST %d\n", offset);
+    CMD("REST %d\r\n", offset);
     
     if (flags == O_RDONLY)
-        PUT_CMD("RETR %s\n", file);
+        PUT_CMD("RETR %s\r\n", file);
     else
-        PUT_CMD("STOR %s\n", file);
+        PUT_CMD("STOR %s\r\n", file);
     
     if (passive)
     {
@@ -443,14 +455,13 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
 
     if (sock == NULL)
     {
-        if (close(control_socket) != 0)
-            RET_ERR("close() of control connection socket failed: "
-                    "errno %d", errno);
+        ERROR("You MUST provide location for control connection "
+              "when using ftp_open! I'll close control connection, "
+              "but this violate RFC959. Test MUST be rewritten!");
+        close(control_socket);
     }
     else
-    {
         *sock = control_socket;
-    }
 
     return data_socket;
 
@@ -458,6 +469,45 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
 #undef READ_ANS
 #undef PUT_CMD    
 #undef RET_ERR    
+}
+
+/* See description in linux_internal.h */
+int 
+ftp_close(int control_socket)
+{
+    char   *cmd = "QUIT\r\n";
+    char    buf[1024];
+
+    /* Read from control socket all responses that may be here. */
+    memset(buf, 0, sizeof(buf));
+    if (read_all(control_socket, buf, sizeof(buf)) > 0)
+    {
+        VERB("Response: %s", buf);
+        memset(buf, 0, sizeof(buf));
+    }
+
+    VERB("Request: %s", cmd);
+    if (write(control_socket, cmd, strlen(cmd)) < 0)
+    {
+        ERROR("%s: write(QUIT) failed; errno %d", __FUNCTION__, errno);
+        close(control_socket);
+        return -1;
+    }
+    if (read_all(control_socket, buf, sizeof(buf)) < 0)
+    {
+        ERROR("%s: read after QUIT failed; buf = %s, errno %d", 
+              __FUNCTION__, buf, errno);
+        close(control_socket);
+        return -1;
+    }
+    VERB("Response: %s", buf);
+    if (close(control_socket) != 0)
+    {
+        ERROR("close() of control connection socket failed: "
+                "errno %d", errno);
+        return -1;
+    }
+    return 0;
 }
 
 #define FTP_GET_BULK    6144  /**< Size to be read in one read() call */

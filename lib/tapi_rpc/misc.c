@@ -1054,6 +1054,34 @@ rpc_ftp_open(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_ftp_close(rcf_rpc_server *rpcs, int sock)
+{
+    tarpc_ftp_close_in  in;
+    tarpc_ftp_close_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(ftp_close, -1);
+    }
+
+    in.sock = sock;
+
+    rcf_rpc_call(rpcs, "ftp_close", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(ftp_close, out.ret);
+
+    TAPI_RPC_LOG("RPC (%s,%s): ftp_close(%d) -> %d (%s)",
+                 rpcs->ta, rpcs->name, sock,
+                 out.ret, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(ftp_open, out.ret);
+}
+
+int
 rpc_many_send(rcf_rpc_server *rpcs, int sock,
               const int *vector, int nops, uint64_t *sent)
 {

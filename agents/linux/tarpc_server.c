@@ -5847,6 +5847,14 @@ TARPC_FUNC(ftp_open, {},
 }
 )
 
+/*-------------- ftp_close() ------------------------------*/
+
+TARPC_FUNC(ftp_close, {},
+{
+    MAKE_CALL(out->ret = func(in->sock));
+}
+)
+
 /*-------------- many_send() -----------------------------*/
 TARPC_FUNC(many_send,{},
 {

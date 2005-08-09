@@ -2685,6 +2685,19 @@ struct tarpc_ftp_open_out {
     tarpc_int sock;   /**< Value of returning socket */
 };    
 
+/* ftp_close() */
+struct tarpc_ftp_close_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int   sock;   /**< Socket to close */
+};
+
+struct tarpc_ftp_close_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int   ret;    /**< Return value */
+};
+
 /* many_send() */
 struct tarpc_many_send_in {
     struct tarpc_in_arg common;
@@ -2903,6 +2916,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(peek_message)
         
         RPC_DEF(ftp_open)
+        RPC_DEF(ftp_close)
 
         RPC_DEF(many_send)
         RPC_DEF(overfill_buffers)

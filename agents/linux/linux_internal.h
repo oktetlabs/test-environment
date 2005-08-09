@@ -86,8 +86,29 @@ extern const char *ta_name;
 /** Test Agent executable name */ 
 extern const char *ta_execname;
 
+/**
+ * Open FTP connection for reading/writing the file.
+ *
+ * @param uri           FTP uri: ftp://user:password@server/directory/file
+ * @param flags         O_RDONLY or O_WRONLY
+ * @param passive       if 1, passive mode
+ * @param offset        file offset
+ * @param sock          pointer on socket
+ *
+ * @return file descriptor, which may be used for reading/writing data
+ */
 extern int ftp_open(const char *uri, int flags, int passive,
                     int offset, int *sock);
+
+/**
+ * Close FTP control connection.
+ *
+ * @param control_socket socket to close
+ *
+ * @retval 0 success
+ * @retval -1 failure
+ */
+extern int ftp_close(int control_socket);
 
 /**
  * Special signal handler which registers signals.

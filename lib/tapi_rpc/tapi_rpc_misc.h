@@ -314,7 +314,8 @@ extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
                                   long timeout);
 
 /**
- * Open the connection for reading/writing the file.
+ * Open FTP connection for reading/writing the file.
+ * Control connection should be closed via ftp_close.
  *
  * @param handle        RPC server
  * @param uri           FTP uri: ftp://user:password@server/directory/file
@@ -328,6 +329,17 @@ extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
 extern int rpc_ftp_open(rcf_rpc_server *handle,
                         char *uri, te_bool rdonly, te_bool passive,
                         int offset, int *sock);
+
+/**
+ * Close FTP control connection.
+ *
+ * @param handle        RPC server
+ * @param sock          control socket descriptor
+ *
+ * @retval 0 success
+ * @retval -1 failure
+ */
+extern int rpc_ftp_close(rcf_rpc_server *handle, int sock);
 
 /**
  * Execute a number of send() operation each after other with no delay.
