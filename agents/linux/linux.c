@@ -952,7 +952,7 @@ ta_sigchld_handler(int sig)
          */
         if (pid == 0 || errno == ECHILD)
         {
-            RING("No child was available");
+            RING("No child was available in SIGCHILD handler");
         }
         else
         {
@@ -1087,6 +1087,13 @@ ta_children_cleanup()
 {
     ta_children_dead_list = -1;
     ta_children_dead_heap_init();
+    while (ta_children_wait_list != NULL)
+    {
+        ta_children_wait *wake;
+        wake = ta_children_wait_list;
+        ta_children_wait_list = wake->next;
+        free(wake);
+    }
     pthread_mutex_init(&children_lock, NULL);
 }
 
@@ -1131,10 +1138,11 @@ find_dead_child(pid_t pid)
 pid_t
 ta_waitpid(pid_t pid, int *status, int options)
 {
-    int              dead;
-    ta_children_wait wake;
-    int              rc;
-    te_bool          locked;
+    int         dead;
+    int         rc;
+    te_bool     locked;
+
+    ta_children_wait  *wake;
 
     if (!ta_children_dead_heap_inited)
         ta_children_dead_heap_init();
@@ -1150,6 +1158,10 @@ ta_waitpid(pid_t pid, int *status, int options)
         errno = EINVAL;
         return -1;
     }
+    if ((wake = malloc(sizeof(ta_children_wait))) == NULL)
+    {
+        ERROR("%s: Out of memory", __FUNCTION__);
+    }
 
 /**
  * Log that a function returned impossible value.
@@ -1160,6 +1172,7 @@ ta_waitpid(pid_t pid, int *status, int options)
     do {                                                    \
         PRINT("%s: Impossible! " #_func " retured %d: %s",  \
               __FUNCTION__, rc, strerror(errno));           \
+        free(wake);                                         \
         return -1;                                          \
     } while(0)
 #define LOCK \
@@ -1192,18 +1205,18 @@ ta_waitpid(pid_t pid, int *status, int options)
     /* Add an entry to ta_children_wait, so signal handler can wake us. */
     if (!(options & WNOHANG))
     {
-        wake.pid = pid;
-        rc = sem_init(&wake.sem, 0, 0);
+        wake->pid = pid;
+        rc = sem_init(&wake->sem, 0, 0);
         if (rc != 0)
         {
             pthread_mutex_unlock(&children_lock);
             IMPOSSIBLE_LOG_AND_RET(sem_init);
         }
-        wake.prev = NULL;
-        wake.next = ta_children_wait_list;
-        ta_children_wait_list = &wake;
-        if (wake.next != NULL)
-            wake.next->prev = &wake;
+        wake->prev = NULL;
+        wake->next = ta_children_wait_list;
+        ta_children_wait_list = wake;
+        if (wake->next != NULL)
+            wake->next->prev = wake;
     }
     UNLOCK; LOCK; /* @todo is it really necessary? */
 
@@ -1215,7 +1228,7 @@ ta_waitpid(pid_t pid, int *status, int options)
     if (!(options & WNOHANG))
     {
         locked = FALSE;
-        while (dead == -1 && (rc = sem_wait(&wake.sem)) != 0)
+        while (dead == -1 && (rc = sem_wait(&wake->sem)) != 0)
         {
             if (errno != EINTR)
                 IMPOSSIBLE_LOG_AND_RET(sem_wait);
@@ -1233,10 +1246,11 @@ ta_waitpid(pid_t pid, int *status, int options)
             if (rc != 0)
                 IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock);
         }
-        if (wake.prev != NULL)
-            wake.prev->next = wake.next;
+        if (wake->prev != NULL)
+            wake->prev->next = wake->next;
         else
-            ta_children_wait_list = wake.next;
+            ta_children_wait_list = wake->next;
+        free(wake);
         if (dead == -1)
             dead = find_dead_child(pid);
         UNLOCK;
