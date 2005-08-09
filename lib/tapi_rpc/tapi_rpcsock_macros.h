@@ -805,6 +805,22 @@
     } while (0)
 
 /**
+ * Close a FTP control socket in cleanup part of the test
+ *
+ * @param rpcs_   - RPC server handle
+ * @param sockd_  - Socket descriptor to be closed
+ */
+#define CLEANUP_RPC_FTP_CLOSE(rpcs_, sockd_) \
+    do {                                                            \
+        if ((sockd_) >= 0 && (rpcs_) != NULL)                       \
+        {                                                           \
+            RPC_AWAIT_IUT_ERROR(rpcs_);                             \
+            if (rpc_ftp_close((rpcs_), (sockd_)) != 0)              \
+                MACRO_TEST_ERROR;                                   \
+        }                                                           \
+    } while (0)
+
+/**
  * Check current value of errno on a particular RPC server against
  * some expected value
  *
