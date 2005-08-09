@@ -164,6 +164,8 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
                  pid, status, options,
                  out.pid, errno_rpc2str(RPC_ERRNO(rpcs)), 
                  wait_status_flag_rpc2str(stat.flag), stat.value);
+    if (stat.flag != RPC_WAIT_STATUS_EXITED || stat.value != 0)
+        ERROR("waitpid() returned non-zero status");
 
     if (status != NULL)
         *status = stat;
