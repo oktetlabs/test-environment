@@ -367,22 +367,24 @@ if test -z "$TE_BASE" -a -n "$BUILDER" ; then
 fi
 
 
-if test -n "$BUILDER" ; then
-    # Verifying build directory
-    if test -e dispatcher.sh -a -e configure.ac ; then
-        mkdir -p build
-        TE_BUILD=`pwd`/build
+if test -z "$TE_BUILD" ; then
+    if test -n "$BUILDER" ; then
+        # Verifying build directory
+        if test -e dispatcher.sh -a -e configure.ac ; then
+            mkdir -p build
+            TE_BUILD=`pwd`/build
+        else
+            TE_BUILD=`pwd`
+        fi
     else
-        TE_BUILD=`pwd`
-    fi
-else
-    if test -e build/builder.conf.processed ; then
-        TE_BUILD=`pwd`/build
-    fi
-    if test -z "${TE_BUILD}" ; then
-        TE_BUILD=`pwd`
-        if test -z "${QUIET}" ; then
-            echo "Guessing TE_BUILD=${TE_BUILD}"
+        if test -e build/builder.conf.processed ; then
+            TE_BUILD=`pwd`/build
+        fi
+        if test -z "${TE_BUILD}" ; then
+            TE_BUILD=`pwd`
+            if test -z "${QUIET}" ; then
+                echo "Guessing TE_BUILD=${TE_BUILD}"
+            fi
         fi
     fi
 fi
