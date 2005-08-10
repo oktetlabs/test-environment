@@ -84,7 +84,7 @@ static const char * const trc_diff_html_doc_end =
 "</BODY>\n"
 "</HTML>\n";
 
-static const char * const trc_diff_exp1_exp2_start =
+static const char * const trc_diff_table_heading_start =
 "<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>\n"
 "  <THEAD>\n"
 "    <TR>\n"
@@ -93,13 +93,19 @@ static const char * const trc_diff_exp1_exp2_start =
 "      </TD>\n"
 "      <TD>\n"
 "        <B>Objective</B>\n"
-"      </TD>\n"
-"      <TD>\n"
-"        <B>Expected1</B>\n"
-"      </TD>\n"
-"      <TD>\n"
-"        <B>Expected2</B>\n"
-"      </TD>\n"
+"      </TD>\n";
+
+static const char * const trc_diff_table_heading_named_entry =
+"      <TD>"
+"        <B>%s</B>\n"
+"      </TD>\n";
+
+static const char * const trc_diff_table_heading_unnamed_entry =
+"      <TD>"
+"        <B>Set %d</B>\n"
+"      </TD>\n";
+
+static const char * const trc_diff_table_heading_end =
 "      <TD>"
 "        <B>Notes</B>\n"
 "      </TD>\n"
@@ -107,26 +113,25 @@ static const char * const trc_diff_exp1_exp2_start =
 "  </THEAD>\n"
 "  <TBODY>\n";
 
-static const char * const trc_diff_exp1_exp2_end =
+static const char * const trc_diff_table_end =
 "  </TBODY>\n"
 "</TABLE>\n";
 
-static const char * const trc_diff_test_exp1_exp2_row =
+static const char * const trc_diff_table_test_row_start =
 "    <TR>\n"
 "      <TD>%s<B>%s</B></TD>\n"  /* Name */
-"      <TD>%s</TD>\n"           /* Objective */
-"      <TD>%s</TD>\n"           /* Expected1 */
-"      <TD>%s</TD>\n"           /* Expected2 */
+"      <TD>%s</TD>\n";          /* Objective */
+
+static const char * const trc_diff_table_iter_row_start =
+"    <TR>\n"
+"      <TD COLSPAN=2>%s</TD>\n"; /* Parameters */
+
+static const char * const trc_diff_table_row_end =
 "      <TD>%s</TD>\n"           /* Notes */
 "    </TR>\n";
 
-static const char * const trc_diff_iter_exp1_exp2_row =
-"    <TR>\n"
-"      <TD COLSPAN=2>%s</TD>\n" /* Parameters */
-"      <TD>%s</TD>\n"           /* Expected1 */
-"      <TD>%s</TD>\n"           /* Expected2 */
-"      <TD>%s</TD>\n"           /* Notes */
-"    </TR>\n";
+static const char * const trc_diff_table_row_col =
+"      <TD>%s</TD>\n";
 
 
 static te_bool trc_diff_tests_has_diff(test_runs *tests);
@@ -180,30 +185,39 @@ trc_test_args_to_string(const test_args *args)
 
 static te_bool
 trc_diff_iters_has_diff(test_iters *iters, te_bool *all_out,
-                        trc_test_result *diff_exp1,
-                        trc_test_result *diff_exp2)
+                        trc_test_result *diff_exp)
 {
-    te_bool     has_diff;
-    te_bool     has_no_out;
-    test_iter  *p;
+    te_bool         has_diff;
+    te_bool         iter_has_diff;
+    trc_test_result iter_result;
+    te_bool         has_no_out;
+    trc_tags_entry *entry;
+    test_iter      *p;
 
     for (has_diff = FALSE, has_no_out = FALSE, p = iters->head.tqh_first;
          p != NULL;
          p = p->links.tqe_next)
     {
-            if (*diff_exp1 == TRC_TEST_UNSET)
-                *diff_exp1 = p->exp_result;
-            else if (*diff_exp1 != p->exp_result)
-                *diff_exp1 = TRC_TEST_MIXED;
+        iter_has_diff = FALSE;
+        iter_result = TRC_TEST_UNSET;
 
-            if (*diff_exp2 == TRC_TEST_UNSET)
-                *diff_exp2 = p->got_result;
-            else if (*diff_exp2 != p->got_result)
-                *diff_exp2 = TRC_TEST_MIXED;
+        for (entry = tags_diff.tqh_first;
+             entry != NULL;
+             entry = entry->links.tqe_next)
+        {
+            if (diff_exp[entry->id] == TRC_TEST_UNSET)
+                diff_exp[entry->id] = p->diff_exp[entry->id];
+            else if (diff_exp[entry->id] != p->diff_exp[entry->id])
+                diff_exp[entry->id] = TRC_TEST_MIXED;
+
+            if (iter_result == TRC_TEST_UNSET)
+                iter_result = p->diff_exp[entry->id];
+            else if (iter_result != p->diff_exp[entry->id])
+                iter_has_diff = TRUE;
+        }
 
         /* The routine should be called first to be called in any case */
-        p->diff_out = trc_diff_tests_has_diff(&p->tests) ||
-                      (p->exp_result != p->got_result);
+        p->diff_out = trc_diff_tests_has_diff(&p->tests) || iter_has_diff;
 
         if (!p->diff_out)
             has_no_out = TRUE;
@@ -219,18 +233,24 @@ trc_diff_iters_has_diff(test_iters *iters, te_bool *all_out,
 static te_bool
 trc_diff_tests_has_diff(test_runs *tests)
 {
-    test_run   *p;
-    te_bool     has_diff;
-    te_bool     all_iters_out;
+    trc_tags_entry *entry;
+    test_run       *p;
+    te_bool         has_diff;
+    te_bool         all_iters_out;
 
     for (has_diff = FALSE, p = tests->head.tqh_first;
          p != NULL;
          p = p->links.tqe_next)
     {
-        p->diff_exp1 = TRC_TEST_UNSET;
-        p->diff_exp2 = TRC_TEST_UNSET;
+        for (entry = tags_diff.tqh_first;
+             entry != NULL;
+             entry = entry->links.tqe_next)
+        {
+            p->diff_exp[entry->id] = TRC_TEST_UNSET;
+        }
+        
         p->diff_out = trc_diff_iters_has_diff(&p->iters, &all_iters_out,
-                                              &p->diff_exp1, &p->diff_exp2);
+                                              p->diff_exp);
 
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
@@ -247,27 +267,30 @@ trc_diff_tests_has_diff(test_runs *tests)
 static int
 trc_diff_iters_to_html(const test_iters *iters, unsigned int level)
 {
-    int         rc;
-    test_iter  *p;
-    te_bool     one_iter = (iters->head.tqh_first != NULL) &&
-                           (&iters->head.tqh_first->links.tqe_next ==
-                            iters->head.tqh_last);
+    int             rc;
+    trc_tags_entry *entry;
+    test_iter      *p;
+    te_bool         one_iter = (iters->head.tqh_first != NULL) &&
+                               (&iters->head.tqh_first->links.tqe_next ==
+                                iters->head.tqh_last);
 
     for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
         if (p->diff_out)
         {
-            /* 
-             * Output iteration parameters expected results do not match
-             * or it is not a single iteration of the test.
-             */
-            if ((p->exp_result != p->got_result) || !one_iter)
+            if (!one_iter)
             {
-                fprintf(f, trc_diff_iter_exp1_exp2_row,
-                        trc_test_args_to_string(&p->args),
-                        trc_test_result_to_string(p->exp_result),
-                        trc_test_result_to_string(p->got_result),
-                        PRINT_STR(p->notes));
+                fprintf(f, trc_diff_table_iter_row_start,
+                        trc_test_args_to_string(&p->args));
+                for (entry = tags_diff.tqh_first;
+                     entry != NULL;
+                     entry = entry->links.tqe_next)
+                {
+                    fprintf(f, trc_diff_table_row_col,
+                            trc_test_result_to_string(
+                                p->diff_exp[entry->id]));
+                }
+                fprintf(f, trc_diff_table_row_end, PRINT_STR(p->notes));
             }
 
             rc = trc_diff_tests_to_html(&p->tests, level + 1);
@@ -282,14 +305,27 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int level)
 static int
 trc_diff_tests_to_html(const test_runs *tests, unsigned int level)
 {
-    int         rc = 0;
-    test_run   *p;
-    char        level_str[64] = { 0, };
-    char       *s;
-    unsigned int i;
+    int             rc = 0;
+    test_run       *p;
+    trc_tags_entry *entry;
+    char            level_str[64] = { 0, };
+    char           *s;
+    unsigned int    i;
 
     if (level == 0)
-        WRITE_STR(trc_diff_exp1_exp2_start);
+    {
+        WRITE_STR(trc_diff_table_heading_start);
+        for (entry = tags_diff.tqh_first;
+             entry != NULL;
+             entry = entry->links.tqe_next)
+        {
+            if (entry->name != NULL)
+                fprintf(f, trc_diff_table_heading_named_entry, entry->name);
+            else
+                fprintf(f, trc_diff_table_heading_unnamed_entry, entry->id);
+        }
+        WRITE_STR(trc_diff_table_heading_end);
+    }
 
     for (s = level_str, i = 0; i < level; ++i)
         s += sprintf(s, "*-");
@@ -298,11 +334,16 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int level)
     {
         if (p->diff_out)
         {
-            fprintf(f, trc_diff_test_exp1_exp2_row,
-                    level_str, p->name, PRINT_STR(p->objective),
-                    trc_test_result_to_string(p->diff_exp1),
-                    trc_test_result_to_string(p->diff_exp2),
-                    PRINT_STR(p->notes));
+            fprintf(f, trc_diff_table_test_row_start,
+                    level_str, p->name, PRINT_STR(p->objective));
+            for (entry = tags_diff.tqh_first;
+                 entry != NULL;
+                 entry = entry->links.tqe_next)
+            {
+                fprintf(f, trc_diff_table_row_col,
+                        trc_test_result_to_string(p->diff_exp[entry->id]));
+            }
+            fprintf(f, trc_diff_table_row_end, PRINT_STR(p->notes));
         }
         if (p->diff_out_iters)
         {
@@ -313,7 +354,7 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int level)
     }
 
     if (level == 0)
-        WRITE_STR(trc_diff_exp1_exp2_end);
+        WRITE_STR(trc_diff_table_end);
 
 cleanup:
     return rc;
@@ -321,20 +362,30 @@ cleanup:
 
 
 void
-trc_diff_tags_to_html(const char *name, const trc_tags *tags)
+trc_diff_tags_to_html(const trc_tags_list *tags_list)
 {
-    const trc_tag  *tag;
+    const trc_tags_entry   *p;
+    const trc_tag          *tag;
 
-    fprintf(f, "<B>%s: </B>", name);
-    for (tag = tags->tqh_first; tag != NULL; tag = tag->links.tqe_next)
+    for (p = tags_list->tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if (tag->links.tqe_next != NULL ||
-            strcmp(tag->name, "result") != 0)
+        if (p->name != NULL)
+            fprintf(f, "<B>%s: </B>", p->name);
+        else
+            fprintf(f, "<B>Set %d: </B>", p->id);
+
+        for (tag = p->tags.tqh_first;
+             tag != NULL;
+             tag = tag->links.tqe_next)
         {
-            fprintf(f, " %s", tag->name);
+            if (tag->links.tqe_next != NULL ||
+                strcmp(tag->name, "result") != 0)
+            {
+                fprintf(f, " %s", tag->name);
+            }
         }
+        fprintf(f, "<BR/><BR/>");
     }
-    fprintf(f, "<BR/><BR/>");
 }
 
     
@@ -362,8 +413,7 @@ trc_diff_report_to_html(const char *filename, trc_database *db)
     fprintf(f, trc_diff_html_doc_start, db->version);
 
     /* Compared sets */
-    trc_diff_tags_to_html("Set1", &tags);
-    trc_diff_tags_to_html("Set2", &tags_diff);
+    trc_diff_tags_to_html(&tags_diff);
     
     /* Report */
     if (trc_diff_tests_has_diff(&db->tests) &&

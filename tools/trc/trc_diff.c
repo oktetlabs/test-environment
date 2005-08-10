@@ -61,8 +61,26 @@
 /** TRC tool command line options */
 enum {
     TRC_DIFF_OPT_VERSION = 1,
+    TRC_DIFF_OPT_TAG0,
     TRC_DIFF_OPT_TAG1,
     TRC_DIFF_OPT_TAG2,
+    TRC_DIFF_OPT_TAG3,
+    TRC_DIFF_OPT_TAG4,
+    TRC_DIFF_OPT_TAG5,
+    TRC_DIFF_OPT_TAG6,
+    TRC_DIFF_OPT_TAG7,
+    TRC_DIFF_OPT_TAG8,
+    TRC_DIFF_OPT_TAG9,
+    TRC_DIFF_OPT_NAME0,
+    TRC_DIFF_OPT_NAME1,
+    TRC_DIFF_OPT_NAME2,
+    TRC_DIFF_OPT_NAME3,
+    TRC_DIFF_OPT_NAME4,
+    TRC_DIFF_OPT_NAME5,
+    TRC_DIFF_OPT_NAME6,
+    TRC_DIFF_OPT_NAME7,
+    TRC_DIFF_OPT_NAME8,
+    TRC_DIFF_OPT_NAME9,
 };
 
 /** Name of the file with expected testing result database */
@@ -98,11 +116,41 @@ process_cmd_line_opts(int argc, char **argv)
           "Name of the file for report in HTML format.",
           "FILENAME" },
 
-        { "tag1", '1', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG1,
-          "Name of the tag from the first set.", "TAG" },
+#define TRC_DIFF_TAG_OPT(id_) \
+        { "tag" #id_, '0' + id_,                                \
+           POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG##id_,        \
+          "Name of the tag from corresponding set.", "TAG" }
 
-        { "tag2", '2', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG2,
-          "Name of the tag from the second set.", "TAG" },
+        TRC_DIFF_TAG_OPT(0),
+        TRC_DIFF_TAG_OPT(1),
+        TRC_DIFF_TAG_OPT(2),
+        TRC_DIFF_TAG_OPT(3),
+        TRC_DIFF_TAG_OPT(4),
+        TRC_DIFF_TAG_OPT(5),
+        TRC_DIFF_TAG_OPT(6),
+        TRC_DIFF_TAG_OPT(7),
+        TRC_DIFF_TAG_OPT(8),
+        TRC_DIFF_TAG_OPT(9),
+
+#undef TRC_DIFF_TAG_OPT
+
+#define TRC_DIFF_NAME_OPT(id_) \
+        { "name" #id_, '\0',                                    \
+           POPT_ARG_STRING, NULL, TRC_DIFF_OPT_NAME##id_,       \
+          "Name of the corresponding set of tags.", "NAME" }
+
+        TRC_DIFF_NAME_OPT(0),
+        TRC_DIFF_NAME_OPT(1),
+        TRC_DIFF_NAME_OPT(2),
+        TRC_DIFF_NAME_OPT(3),
+        TRC_DIFF_NAME_OPT(4),
+        TRC_DIFF_NAME_OPT(5),
+        TRC_DIFF_NAME_OPT(6),
+        TRC_DIFF_NAME_OPT(7),
+        TRC_DIFF_NAME_OPT(8),
+        TRC_DIFF_NAME_OPT(9),
+
+#undef TRC_DIFF_NAME_OPT
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_DIFF_OPT_VERSION, 
           "Display version information.", NULL },
@@ -119,16 +167,36 @@ process_cmd_line_opts(int argc, char **argv)
     {
         switch (rc)
         {
+            case TRC_DIFF_OPT_TAG0:
             case TRC_DIFF_OPT_TAG1:
-                if (trc_add_tag(&tags, poptGetOptArg(optCon)) != 0)
+            case TRC_DIFF_OPT_TAG2:
+            case TRC_DIFF_OPT_TAG3:
+            case TRC_DIFF_OPT_TAG4:
+            case TRC_DIFF_OPT_TAG5:
+            case TRC_DIFF_OPT_TAG6:
+            case TRC_DIFF_OPT_TAG7:
+            case TRC_DIFF_OPT_TAG8:
+            case TRC_DIFF_OPT_TAG9:
+                if (trc_diff_add_tag(&tags_diff, rc - TRC_DIFF_OPT_TAG0,
+                                     poptGetOptArg(optCon)) != 0)
                 {
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
                 break;
 
-            case TRC_DIFF_OPT_TAG2:
-                if (trc_add_tag(&tags_diff, poptGetOptArg(optCon)) != 0)
+            case TRC_DIFF_OPT_NAME0:
+            case TRC_DIFF_OPT_NAME1:
+            case TRC_DIFF_OPT_NAME2:
+            case TRC_DIFF_OPT_NAME3:
+            case TRC_DIFF_OPT_NAME4:
+            case TRC_DIFF_OPT_NAME5:
+            case TRC_DIFF_OPT_NAME6:
+            case TRC_DIFF_OPT_NAME7:
+            case TRC_DIFF_OPT_NAME8:
+            case TRC_DIFF_OPT_NAME9:
+                if (trc_diff_set_name(&tags_diff, rc - TRC_DIFF_OPT_NAME0,
+                                      poptGetOptArg(optCon)) != 0)
                 {
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
@@ -175,7 +243,8 @@ process_cmd_line_opts(int argc, char **argv)
 int
 main(int argc, char *argv[])
 {
-    int result = EXIT_FAILURE;
+    int             result = EXIT_FAILURE;
+    trc_tags_entry *p;
 
     memset(&trc_db, 0, sizeof(trc_db));
     TAILQ_INIT(&trc_db.tests.head);
@@ -202,10 +271,14 @@ main(int argc, char *argv[])
         ERROR("Failed to add tag of the default result in the set 1");
         goto exit;
     }
-    if (trc_add_tag(&tags_diff, "result") != 0)
+    for (p = tags_diff.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        ERROR("Failed to add tag of the default result in the set 2");
-        goto exit;
+        if (trc_add_tag(&p->tags, "result") != 0)
+        {
+            ERROR("Failed to add tag of the default result in the "
+                  "set with ID=%d", p->id);
+            goto exit;
+        }
     }
 
     /* Parse expected testing results database */
@@ -230,7 +303,7 @@ exit:
     free(trc_diff_db_fn);
     free(trc_diff_html_fn);
     trc_free_tags(&tags);
-    trc_free_tags(&tags_diff);
+    trc_diff_free_tags(&tags_diff);
 
     return result;
 }

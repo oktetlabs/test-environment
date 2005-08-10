@@ -240,10 +240,11 @@ static int
 alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
                         test_iters *iters)
 {
-    int         rc;
-    test_iter  *p;
-    char       *tmp;
-    trc_tag    *tag;
+    int             rc;
+    test_iter       *p;
+    char            *tmp;
+    trc_tag         *tag;
+    trc_tags_entry  *tags_entry;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
@@ -274,19 +275,25 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
         return rc;
     }
 
-    /* Get expected result in accordance with the second set to diff */
-    for (tag = tags_diff.tqh_first;
-         tag != NULL;
-         tag = tag->links.tqe_next)
+    /* Get expected result in accordance with sets to diff */
+    for (tags_entry = tags_diff.tqh_first;
+         tags_entry != NULL;
+         tags_entry = tags_entry->links.tqe_next)
     {
-        rc = get_result(node, tag->name, &p->got_result);
-        if (rc != ENOENT)
-            break;
-    }
-    if (rc != 0)
-    {
-        ERROR("Expected result of the test iteration is missing/invalid");
-        return rc;
+        for (tag = tags_entry->tags.tqh_first;
+             tag != NULL;
+             tag = tag->links.tqe_next)
+        {
+            rc = get_result(node, tag->name, &p->diff_exp[tags_entry->id]);
+            if (rc != ENOENT)
+                break;
+        }
+        if (rc != 0)
+        {
+            ERROR("Expected result of the test iteration is "
+                  "missing/invalid");
+            return rc;
+        }
     }
 
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("n")));

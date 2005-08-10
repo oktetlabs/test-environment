@@ -40,6 +40,10 @@
 #include "te_defs.h"
 
 
+/** Number of IDs supported by TRC-diff */
+#define TRC_DIFF_IDS    10
+
+
 /** Enumeration of possible test results */
 typedef enum trc_test_result {
     TRC_TEST_PASSED,      /**< Test should pass */
@@ -134,6 +138,7 @@ typedef struct test_iter {
     trc_test_result got_result;     /**< Got test result */
 
     /* Fields specific for TRC diff */
+    trc_test_result diff_exp[TRC_DIFF_IDS]; /**< The expected results */
     te_bool         diff_out;       /**< Should the iteration be output */
 } test_iter;
 
@@ -167,8 +172,7 @@ typedef struct test_run {
     te_bool         diff_out;       /**< Should the test be output */
     te_bool         diff_out_iters; /**< Should the test iterations
                                          be output */
-    trc_test_result diff_exp1;      /**< Expected result for set 1 */
-    trc_test_result diff_exp2;      /**< Expected result for set 2 */
+    trc_test_result diff_exp[TRC_DIFF_IDS]; /**< The expected results */
 } test_run;
 
 

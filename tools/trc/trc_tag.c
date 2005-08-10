@@ -58,7 +58,7 @@ trc_tags tags;
  * List of tags to get specific expected result to compare with the
  * first one.
  */
-trc_tags tags_diff;
+trc_tags_list tags_diff;
 
 
 /* See description in trc_tag.h */
@@ -93,5 +93,82 @@ trc_free_tags(trc_tags *tags)
         TAILQ_REMOVE(tags, p, links);
         free(p->name);
         free(p);
+    }
+}
+
+
+/* See description in trc_tag.h */
+int
+trc_diff_set_name(trc_tags_list *tags, unsigned int id, const char *name)
+{
+    trc_tags_entry *p;
+
+    for (p = tags->tqh_first;
+         p != NULL && p->id != id;
+         p = p->links.tqe_next);
+
+    if (p == NULL)
+    {
+        p = calloc(1, sizeof(*p));
+        if (p == NULL)
+        {
+            ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
+            return ENOMEM;
+        }
+        TAILQ_INSERT_TAIL(tags, p, links);
+
+        p->id = id;
+        TAILQ_INIT(&p->tags);
+    }
+
+    free(p->name);
+    p->name = strdup(name);
+    if (p->name == NULL)
+    {
+        ERROR("strdup(%s) failed", name);
+        return ENOMEM;
+    }
+ 
+    return 0;
+}
+
+/* See description in trc_tag.h */
+int
+trc_diff_add_tag(trc_tags_list *tags, unsigned int id, const char *name)
+{
+    trc_tags_entry *p;
+
+    for (p = tags->tqh_first;
+         p != NULL && p->id != id;
+         p = p->links.tqe_next);
+
+    if (p == NULL)
+    {
+        p = calloc(1, sizeof(*p));
+        if (p == NULL)
+        {
+            ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
+            return ENOMEM;
+        }
+        TAILQ_INSERT_TAIL(tags, p, links);
+
+        p->id = id;
+        TAILQ_INIT(&p->tags);
+    }
+
+    return trc_add_tag(&p->tags, name);
+}
+
+/* See description in trc_tag.h */
+void
+trc_diff_free_tags(trc_tags_list *tags)
+{
+    trc_tags_entry *p;
+
+    while ((p = tags->tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(tags, p, links);
+        free(p->name);
+        trc_free_tags(&p->tags);
     }
 }

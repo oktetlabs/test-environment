@@ -46,17 +46,25 @@ typedef struct trc_tag {
 } trc_tag;
 
 /** List of named tags */
-typedef TAILQ_HEAD(trc_tags, trc_tag) trc_tags;
+typedef TAILQ_HEAD(trc_tags, trc_tag)   trc_tags;   /**< List of tags */
+
+/** Entry in the list of list of named tags */
+typedef struct trc_tags_entry {
+    TAILQ_ENTRY(trc_tags_entry) links;  /**< List links */
+    unsigned int                id;     /**< ID of the list */
+    char                       *name;   /**< Name of the set */
+    trc_tags                    tags;   /**< List of tags */
+} trc_tags_entry;
+
+/** List of lists of named tags */
+typedef TAILQ_HEAD(trc_tags_list, trc_tags_entry) trc_tags_list;
 
 
 /** List of tags to get specific expected result */
 extern trc_tags tags;
 
-/**
- * List of tags to get specific expected result to compare with the
- * first one.
- */
-extern trc_tags tags_diff;
+/** Lists of tags to get specific expected result to compare. */
+extern trc_tags_list tags_diff;
 
 
 /**
@@ -75,6 +83,38 @@ extern int trc_add_tag(trc_tags *tags, const char *name);
  * @param tags      List of tags to be freed
  */
 extern void trc_free_tags(trc_tags *tags);
+
+
+/**
+ * Set name of the TRC tags set with specified ID.
+ *
+ * @param tags      List of sets of tags
+ * @param id        Identifier of the list to be used
+ * @param name      Name of the tags set
+ *
+ * @return Status code.
+ */
+extern int trc_diff_set_name(trc_tags_list *tags, unsigned int id,
+                             const char *name);
+
+/**
+ * Add tag in the end of the TRC tags set with specified ID.
+ *
+ * @param tags      List of lists of tags
+ * @param id        Identifier of the list to be used
+ * @param name      Name of the tag
+ *
+ * @return Status code.
+ */
+extern int trc_diff_add_tag(trc_tags_list *tags, unsigned int id,
+                            const char *name);
+
+/**
+ * Free TRC tags lists.
+ *
+ * @param tags      List of list of tags to be freed
+ */
+extern void trc_diff_free_tags(trc_tags_list *tags);
 
 
 #endif /* !__TE_TRC_TAG_H__ */
