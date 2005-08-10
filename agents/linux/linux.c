@@ -1307,7 +1307,7 @@ ta_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
                 dup2(out_pipe[1], STDOUT_FILENO);
             }
         }
-        if (uid != (uid_t)-1 && seteuid(uid) != 0)
+        if (uid != (uid_t)(-1) && setuid(uid) != 0)
         {
             ERROR("Failed to set user %d before runing command \"%s\"",
                   uid, cmd);
