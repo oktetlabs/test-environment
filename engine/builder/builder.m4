@@ -260,7 +260,7 @@ define([TE_SUITE],
 TE_HOST_DEFINED=yes
 ADD=yes
 for i in $TE_BS_SUITES ; do 
-    if $i = $1 ; then
+    if test x"$i" = x"$1" ; then
         ADD=no
         break
     fi
