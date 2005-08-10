@@ -2749,7 +2749,9 @@ flush_smtp_server_queue(void)
     }
     else if (strcmp(smtp_current, "exim") == 0)
     {
-        rc = ta_system("killall -HUP exim");
+        char buf[30];
+        snprintf(buf, sizeof(buf), "killall -HUP %s", exim_name);
+        rc = ta_system(buf);
     }
     else
     {
