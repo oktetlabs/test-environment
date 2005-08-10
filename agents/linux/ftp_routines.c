@@ -77,7 +77,7 @@ sigint_handler(int n)
 
 /**
  * Read the answer from the socket. Parameters are the same as in read().
- * This function fails if there is nothing to read.
+ * This function fails if it can't read full response.
  */
 static int
 read_all(int s, char *buf, int n)
@@ -90,28 +90,15 @@ read_all(int s, char *buf, int n)
 
     while (TRUE)
     {
-        struct timeval tv;
+        struct timeval tv = {4, 0};
         fd_set         set;
         int            l;
         char          *new_line = line;
-
-        if (len > 0)
-        {
-            tv.tv_sec = 0;
-            tv.tv_usec = 100000;
-        }
-        else
-        {
-            tv.tv_sec = 4;
-            tv.tv_usec = 0;
-        }
 
         FD_ZERO(&set);
         FD_SET(s, &set);
         if (select(s + 1, &set, NULL, NULL, &tv) == 0)
         {
-            if (len != 0)
-                return len;
             errno = ETIMEDOUT;
             return -1;
         }
@@ -312,7 +299,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         if (active_listening >= 0)      \
             close(active_listening);    \
         if (control_socket >= 0)        \
-            ftp_close(control_socket);  \
+            close(control_socket);  \
         return -1;                      \
     } while (0)
 
@@ -345,10 +332,10 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         VERB("Connecting...");
         control_socket = socket(AF_INET, SOCK_STREAM, 0);
         if (control_socket < 0)
-            ERROR("socket() for control connection failed: errno %d",
+            RET_ERR("socket() for control connection failed: errno %d",
                     errno);
         if (connect(control_socket, SA(&addr), sizeof(addr)) != 0)
-            ERROR("connect() failed; errno %d", errno);
+            RET_ERR("connect() failed; errno %d", errno);
         VERB("Connected");
         new_sock = TRUE;
     }
