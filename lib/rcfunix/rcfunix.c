@@ -86,7 +86,8 @@
  * second one is a TCP port.
  */
 
-#define RCFUNIX_SSH     "ssh -q -o BatchMode=yes "
+#define RCFUNIX_SSH         "ssh -q -o BatchMode=yes "
+#define RCFUNIX_REDIRECT    ">/dev/null 2>&1 </dev/null"
 
 #define RCFUNIX_KILL_TIMEOUT    15
 #define RCFUNIX_COPY_TIMEOUT    30
@@ -451,13 +452,15 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
         }
         else
         {
-            sprintf(cmd, RCFUNIX_SSH " %s \"%skill %d\" >/dev/null 2>&1",
+            sprintf(cmd,
+                    RCFUNIX_SSH " %s \"%skill %d\" " RCFUNIX_REDIRECT,
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
             rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
             if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
                 return rc;
     
-            sprintf(cmd, RCFUNIX_SSH " %s \"%skill -9 %d\" >/dev/null 2>&1",
+            sprintf(cmd,
+                    RCFUNIX_SSH " %s \"%skill -9 %d\" " RCFUNIX_REDIRECT,
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
             rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
             if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
@@ -466,20 +469,24 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     }
 
     if (ta->is_local)
-        sprintf(cmd, "%skillall %s >/dev/null 2>&1",
+        sprintf(cmd,
+                "%skillall %s " RCFUNIX_REDIRECT,
                 ta->sudo ? "sudo " : "" , ta->exec_name);
     else
-        sprintf(cmd, RCFUNIX_SSH " %s \"%skillall %s\" >/dev/null 2>&1",
+        sprintf(cmd,
+                RCFUNIX_SSH " %s \"%skillall %s\" " RCFUNIX_REDIRECT,
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
     rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
     if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
         return rc;
 
     if (ta->is_local)
-        sprintf(cmd, "%skillall -9 %s >/dev/null 2>&1",
+        sprintf(cmd,
+                "%skillall -9 %s " RCFUNIX_REDIRECT,
                 ta->sudo ? "sudo " : "" , ta->exec_name);
     else
-        sprintf(cmd, RCFUNIX_SSH " %s \"%skillall -9 %s\" >/dev/null 2>&1",
+        sprintf(cmd,
+                RCFUNIX_SSH " %s \"%skillall -9 %s\" " RCFUNIX_REDIRECT,
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
     rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
     if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
