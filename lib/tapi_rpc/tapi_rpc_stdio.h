@@ -90,20 +90,6 @@ extern int rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file);
 extern rpc_wait_status rpc_system(rcf_rpc_server *rpcs, const char *cmd);
 
 /**
- * Popen-like command returning pid of spawned process and file descriptor.
- *
- * @param rpcs          RPC server handle
- * @param cmd           the command to be executed
- * @param mode          "r" or "w"
- * @param pid           location to store pid of child
- *
- * @return file descriptor to read/write from/to process.
- */
-extern int rpc_popen_fd(rcf_rpc_server *rpcs,
-                        const char *cmd, const char *mode, 
-                        tarpc_pid_t *pid);
-
-/**
  * Execute shell command on the IPC server and read the output.
  * The routine allocates memory for the output buffer and places
  * null-terminated string to it.
@@ -117,6 +103,23 @@ extern int rpc_popen_fd(rcf_rpc_server *rpcs,
  */
 extern rpc_wait_status rpc_shell_get_all(rcf_rpc_server *rpcs,
                                          char **pbuf, const char *cmd, ...);
+
+/**
+ * Execute command on the RPC server as a given user and redirect
+ * stdin/stdout to pipe(s) if necessary.
+ *
+ * @param rpcs      RPC server handle
+ * @param cmd       command format to execute
+ * @param uid       user to run as
+ * @param in_fd     location to store pipe to stdin or NULL
+ * @param out_fd    location to stdin pipe to stdout or NULL
+ * @param ...       parameters to command format
+ *
+ * @return pid of spawned process or -1 on failure.
+ */
+extern tarpc_pid_t rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, 
+                                       const char *cmd, tarpc_uid_t uid, 
+                                       int *in_fd, int *out_fd, ...);
 
 /**
  * Execute shell command on the IPC server and return file descriptor

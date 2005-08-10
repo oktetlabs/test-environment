@@ -186,6 +186,7 @@ rpc_ta_shell_cmd(rcf_rpc_server *rpcs, const char *cmd,
     RETVAL_INT(ta_shell_cmd, out.pid);
 }
 
+/* See description in tapi_rpc_stdio.h */
 tarpc_pid_t
 rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, const char *cmd, 
                     tarpc_uid_t uid, int *in_fd, int *out_fd, ...)
@@ -201,18 +202,6 @@ rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, const char *cmd,
 }
 
 #if 1 /* Remove these functions! */
-int
-rpc_popen_fd(rcf_rpc_server *rpcs,
-             const char *cmd, const char *mode, tarpc_pid_t *pid)
-{
-    int fd;
-
-    *pid = rpc_ta_shell_cmd(rpcs, strdup(cmd), -1, 
-                               mode[0] == 'w' ? &fd : NULL,
-                               mode[0] == 'r' ? &fd : NULL);
-    return fd;
-}
-
 tarpc_pid_t
 rpc_fork_and_shell(rcf_rpc_server *rpcs, const char *cmd)
 {
