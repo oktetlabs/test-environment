@@ -122,26 +122,6 @@ extern tarpc_pid_t rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs,
                                        int *in_fd, int *out_fd, ...);
 
 /**
- * Execute shell command on the IPC server and return file descriptor
- * for it's standard input or output.
- *
- * @param rpcs          RPC server handle
- * @param pid           pid of spawned process
- * @param mode          access mode. the following values
- *                      are supported
- *                      - "w" write access
- *                      - "r" read access
-
- * @param cmd           format of the command to be executed
- *
- * @return File descriptor or -1 in the case of failure
- */
-extern int rpc_cmd_spawn(rcf_rpc_server *rpcs, int * pid,
-                         const char *mode,
-                         const char *cmd,...);
-
-
-/**
  * Get environment variable.
  *
  * @param rpcs          RPC server handle
@@ -181,16 +161,5 @@ extern int rpc_setenv(rcf_rpc_server *rpcs,
  */
 extern int rpc_read_all(rcf_rpc_server *rpcs, int fd, 
                         char **pbuf, int *bytes);
-
-/**
- * Fork a process from RPC server and execute a shell command.
- *
- * @param rpcs  RPC server handle
- * @param cmd   command to run in a shell
- *
- * @return pid of child process or -1 on failure
- */
-tarpc_pid_t
-rpc_fork_and_shell(rcf_rpc_server *rpcs, const char *cmd);
 
 #endif /* !__TE_TAPI_RPC_STDIO_H__ */

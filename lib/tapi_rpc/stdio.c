@@ -202,34 +202,6 @@ rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, const char *cmd,
     return rpc_ta_shell_cmd(rpcs, cmdline, uid, in_fd, out_fd);
 }
 
-#if 1 /* Remove these functions! */
-tarpc_pid_t
-rpc_fork_and_shell(rcf_rpc_server *rpcs, const char *cmd)
-{
-    return rpc_ta_shell_cmd(rpcs, cmd, -1, NULL, NULL);
-}
-
-int 
-rpc_cmd_spawn(rcf_rpc_server *rpcs, tarpc_pid_t *pid, 
-              const char *mode, const char *cmd, ...)
-{
-    int     fd;
-    char    cmdline[RPC_SHELL_CMDLINE_MAX];
-
-    va_list ap;
-
-    va_start(ap, cmd);
-    vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
-    va_end(ap);
-
-    *pid = rpc_ta_shell_cmd(rpcs, cmdline, -1, 
-                               mode[0] == 'w' ? &fd : NULL,
-                               mode[0] == 'r' ? &fd : NULL);
-    return fd;
-}
-#endif
-
-
 /** Chunk for memory allocation in rpc_read_all */
 #define RPC_READ_ALL_BUF_CHUNK     1024          
 
