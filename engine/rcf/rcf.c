@@ -803,7 +803,7 @@ set_ta_dead(ta *agent)
         int rc;
 
         ERROR("TA '%s' is dead", agent->name);
-        answer_all_requests(&(agent->sent), ETADEAD);
+        answer_all_requests(&(agent->sent), TE_ETADEAD);
         rc = (agent->close)(agent->handle, &set0);
         if (rc != 0)
             ERROR("Failed to close connection with TA '%s': rc=0x%x",
@@ -823,8 +823,8 @@ set_ta_unrecoverable(ta *agent)
     if (~agent->flags & TA_UNRECOVER)
     {
         ERROR("TA '%s' is unrecoverable dead", agent->name);
-        answer_all_requests(&(agent->sent), ETADEAD);
-        answer_all_requests(&(agent->pending), ETADEAD);
+        answer_all_requests(&(agent->sent), TE_ETADEAD);
+        answer_all_requests(&(agent->pending), TE_ETADEAD);
         if (agent->handle != NULL)
         {
             int rc;
@@ -897,8 +897,8 @@ init_agent(ta *agent)
     }
     else
     {
-        answer_all_requests(&(agent->sent), ETAREBOOTED);
-        answer_all_requests(&(agent->pending), ETAREBOOTED);
+        answer_all_requests(&(agent->sent), TE_ETAREBOOTED);
+        answer_all_requests(&(agent->pending), TE_ETAREBOOTED);
     }
 
     return rc;
@@ -1412,7 +1412,7 @@ process_reply(ta *agent)
                     
                     if (new_msg == NULL)
                     {
-                        msg->error = TE_RC(TE_RCF, EINVAL);
+                        msg->error = TE_RC(TE_RCF, TE_EINVAL);
                         break;
                     }
                     *new_msg = *msg;
@@ -1461,7 +1461,7 @@ bad_protocol:
     ERROR("Bad answer is received from TA '%s'", agent->name);
     if (req != NULL)
     {
-        req->message->error = TE_RC(TE_RCF, ETEIO);
+        req->message->error = TE_RC(TE_RCF, TE_ERCFIO);
         answer_user_request(req);
     }
     set_ta_dead(agent);
@@ -1491,14 +1491,14 @@ transmit_cmd(ta *agent, usrreq *req)
 
         if ((file = open(req->message->file, O_RDONLY)) < 0)
         {
-            req->message->error = TE_RC(TE_RCF, errno);
+            req->message->error = TE_OS_RC(TE_RCF, errno);
             ERROR("Cannot open file '%s'", req->message->file);
             answer_user_request(req);
             return -1;
         }
         if (fstat(file, &st) != 0)
         {
-            req->message->error = TE_RC(TE_RCF, errno);
+            req->message->error = TE_OS_RC(TE_RCF, errno);
             ERROR("RCF", "stat() failed for file %s", req->message->file);
             answer_user_request(req);
             close(file);
@@ -1542,7 +1542,7 @@ transmit_cmd(ta *agent, usrreq *req)
 
         if (len < 0)
         {
-            req->message->error = TE_RC(TE_RCF, errno);
+            req->message->error = TE_OS_RC(TE_RCF, errno);
             ERROR("Read from file '%s' failed errno %d", 
                   req->message->file, errno);
             close(file);
@@ -1704,7 +1704,7 @@ send_cmd(ta *agent, usrreq *req)
         case RCFOP_GET_LOG:
             if (msg->sid != RCF_SID_GET_LOG)
             {
-                msg->error = TE_RC(TE_RCF, EINVAL);
+                msg->error = TE_RC(TE_RCF, TE_EINVAL);
                 answer_user_request(req);
                 return -1;
             }
@@ -1998,7 +1998,7 @@ rcf_ta_check_start(void)
         req = alloc_usrreq();
         if (req == NULL)
         {
-            rc = TE_RC(TE_RCF, ENOMEM);
+            rc = TE_RC(TE_RCF, TE_ENOMEM);
             break;
         }
 
@@ -2046,7 +2046,7 @@ process_user_request(usrreq *req)
             new_msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + names_len);
             if (new_msg == NULL)
             {
-                msg->error = TE_RC(TE_RCF, ENOMEM);
+                msg->error = TE_RC(TE_RCF, TE_ENOMEM);
                 answer_user_request(req);
                 return;
             }
@@ -2067,7 +2067,7 @@ process_user_request(usrreq *req)
             }
             else
             {
-                msg->error = TE_RC(TE_RCF, EINPROGRESS);
+                msg->error = TE_RC(TE_RCF, TE_EINPROGRESS);
                 answer_user_request(req);
             }
             return;
@@ -2081,7 +2081,7 @@ process_user_request(usrreq *req)
     {
         ERROR("Request '%s' to unknown TA '%s'",
               rcf_op_to_string(msg->opcode), msg->ta);
-        msg->error = TE_RC(TE_RCF, EINVAL);
+        msg->error = TE_RC(TE_RCF, TE_EINVAL);
         answer_user_request(req);
         return;
     }
@@ -2090,7 +2090,7 @@ process_user_request(usrreq *req)
     {
         ERROR("Request '%s' to dead TA '%s'",
               rcf_op_to_string(msg->opcode), msg->ta);
-        msg->error = TE_RC(TE_RCF, ETADEAD);
+        msg->error = TE_RC(TE_RCF, TE_ETADEAD);
         answer_user_request(req);
         return;
     }
@@ -2106,7 +2106,7 @@ process_user_request(usrreq *req)
     {
         ERROR("Request '%s' with invalid SID %d for TA '%s'",
               rcf_op_to_string(msg->opcode), req->message->sid, msg->ta);
-        msg->error = TE_RC(TE_RCF, EINVAL);
+        msg->error = TE_RC(TE_RCF, TE_EINVAL);
         answer_user_request(req);
         return;
     }
@@ -2127,19 +2127,19 @@ process_user_request(usrreq *req)
         case RCFOP_REBOOT:
             if ((agent->flags & TA_REBOOTABLE) == 0)
             {
-                msg->error = TE_RC(TE_RCF, EPERM);
+                msg->error = TE_RC(TE_RCF, TE_EPERM);
                 answer_user_request(req);
                 return;
             }
             if (agent->reboot_timestamp > 0)
             {
-                msg->error = TE_RC(TE_RCF, EINPROGRESS);
+                msg->error = TE_RC(TE_RCF, TE_EINPROGRESS);
                 answer_user_request(req);
                 return;
             }
             if ((agent->flags & TA_LOCAL) && !(agent->flags & TA_PROXY))
             {
-                msg->error = TE_RC(TE_RCF, ETALOCAL);
+                msg->error = TE_RC(TE_RCF, TE_ETALOCAL);
                 answer_user_request(req);
                 return;
             }
@@ -2213,8 +2213,8 @@ rcf_shutdown()
 
         sprintf(cmd, "SID %d %s", ++agent->sid, TE_PROTO_SHUTDOWN);
         (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
-        answer_all_requests(&(agent->sent), EIO);
-        answer_all_requests(&(agent->pending), EIO);        
+        answer_all_requests(&(agent->sent), TE_EIO);
+        answer_all_requests(&(agent->pending), TE_EIO);        
     }
 
     while (shutdown_num > 0 && time(NULL) - t < RCF_SHUTDOWN_TIMEOUT)
@@ -2478,7 +2478,7 @@ main(int argc, const char *argv[])
             rc = ipc_receive_message(server, req->message,
                                      &len, &(req->user));
 
-            if (TE_RC_GET_ERROR(rc) == ETESMALLBUF) 
+            if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF) 
             {
                 size_t n = len;
                 
@@ -2562,7 +2562,7 @@ main(int argc, const char *argv[])
                           rcf_op_to_string(req->message->opcode),
                           agent->name, time_buf);
                 }
-                req->message->error = TE_RC(TE_RCF, ETIMEDOUT);
+                req->message->error = TE_RC(TE_RCF, TE_ETIMEDOUT);
                 answer_user_request(req);
                 set_ta_dead(agent);
                 break;
