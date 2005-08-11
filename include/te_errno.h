@@ -341,7 +341,7 @@ typedef enum {
      ((int)(_mod_id) << TE_RC_MODULE_SHIFT) | (_error) : (_error))
 
 /** Create error code from OS errno and module identifier */
-#define TE_OS_RC(_mod_id, _error) TE_RC(_mod_id, te_rc_err2str(_error))
+#define TE_OS_RC(_mod_id, _error) TE_RC(_mod_id, te_rc_os2te(_error))
 
 
 /**
