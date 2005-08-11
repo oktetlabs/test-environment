@@ -624,7 +624,7 @@ output_regular_log_msg(log_msg *msg)
                     err = *((uint32_t *)arg->val) = 
                         ntohl(*(uint32_t *)arg->val);
 
-                    src = te_rc_src2str(err);
+                    src = te_rc_mod2str(err);
                     if (strlen(src) > 0)
                     {
                         fwrite_string(log_obstk, src);

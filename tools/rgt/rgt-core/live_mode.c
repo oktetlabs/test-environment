@@ -363,7 +363,7 @@ rgt_expand_regular_log_msg(log_msg *msg)
                     err = *((uint32_t *)arg->val) = 
                         ntohl(*(uint32_t *)arg->val);
 
-                    src = te_rc_src2str(err);
+                    src = te_rc_mod2str(err);
                     err_str = te_rc_err2str(err);
                     if (strlen(src) > 0)
                     {

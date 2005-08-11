@@ -215,7 +215,7 @@ errno_rpc2str(rpc_errno rpc_errno_val)
         static char buf[64];
 
         strcpy(buf, "Non-RPC ");
-        strcat(buf, te_rc_src2str(rpc_errno_val));
+        strcat(buf, te_rc_mod2str(rpc_errno_val));
         strcat(buf, "-");
         strcat(buf, te_rc_err2str(rpc_errno_val));
         return buf;
