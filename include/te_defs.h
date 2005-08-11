@@ -240,7 +240,8 @@ strcmp_start(const char *pattern, const char *str)
  * @param tmp_name  template of the temporary file name, which must
  *                  comply @a templateparameter of mkstemp() function
  *
- * @return Status of the operation.
+ * @retval 0    Success
+ * @retval -1   Failure
  */
 static inline int
 te_make_tmp_file(char *tmp_name)
@@ -249,7 +250,7 @@ te_make_tmp_file(char *tmp_name)
 
     if ((fd = mkstemp(tmp_name)) < 0)
     {
-        return errno;
+        return -1;
     }
 
     /* We need to close file descriptor. */
