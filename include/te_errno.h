@@ -172,6 +172,7 @@ typedef enum {
     TE_EMEDIUMTYPE,   /**< Wrong medium type */
     
     /* TE-specific error codes */
+    TE_EUNKNOWN,      /**< Unknown OS errno */
     
 /** @name Common errno's */
     TE_EOK = TE_NEW_ERRNO + 500, 
@@ -257,27 +258,29 @@ typedef enum {
  * Errno codes below are strictly ordered and
  * have ETESTRESULTMIN and ETESTRESULTMAX.
  */
-    TE_ESTEMPTY = TE_NEW_ERRNO + 1000, 
-                   /**< Test session/pkg is empty */
-    TE_ESTSKIP,    /**< Test skipped */
-    TE_ESTFAKE,    /**< Test not really run */
-    TE_ESTPASS,    /**< Test passed */
-    TE_ESTCONF,    /**< Test changed configuration */
-    TE_ESTKILL,    /**< Test killed by signal */
-    TE_ESTCORE,    /**< Test dumped core */
-    TE_ESTPROLOG,  /**< Session prologue failed */
-    TE_ESTEPILOG,  /**< Session epilogue failed */
-    TE_ESTALIVE,   /**< Session keep-alive failed */
-    TE_ESTFAIL,    /**< Test failed */
-    TE_ESTUNEXP,   /**< Test unexpected results */
+    TE_ETESTEMPTY = TE_NEW_ERRNO + 1000, 
+                    /**< Test session/pkg is empty */
+    TE_ETESTSKIP,   /**< Test skipped */
+    TE_ETESTFAKE,   /**< Test not really run */
+    TE_ETESTPASS,   /**< Test passed */
+    TE_ETESTCONF,   /**< Test changed configuration */
+    TE_ETESTKILL,   /**< Test killed by signal */
+    TE_ETESTCORE,   /**< Test dumped core */
+    TE_ETESTPROLOG, /**< Session prologue failed */
+    TE_ETESTEPILOG, /**< Session epilogue failed */
+    TE_ETESTALIVE,  /**< Session keep-alive failed */
+    TE_ETESTFAIL,   /**< Test failed */
+    TE_ETESTUNEXP,  /**< Test unexpected results */
 
-    TE_ESTRESULTMIN = ETESTEMPTY  /**< Minimum test result errno */
-    TE_ESTRESULTMAX = ETESTUNEXP  /**< Maximum test result errno */
+    TE_ETESTRESULTMIN = TE_ETESTEMPTY,  /**< Minimum test result errno */
+    TE_ETESTRESULTMAX = TE_ETESTUNEXP,  /**< Maximum test result errno */
 /*@}*/
 
 /** @name TARPC errno's */
     TE_ERPC2H = TE_NEW_ERRNO + 1100,  /**< RPC to host conv failed */
-    TE_EH2RPC,         /**< Host to RPC conv failed */
+    TE_EH2RPC,      /**< Host to RPC conv failed */
+    TE_ERPCNOTSUPP, /**< RPC is not supported
+                         (it does not have host analogue) */
 /*@}*/
 
 /** @name IPC errno's */
@@ -337,6 +340,7 @@ typedef enum {
 
 /** Create error code from OS errno and module identifier */
 #define TE_OS_RC(_mod_id, _error) \
+
 
 /**
  * Update \i main return code, if it's OK, otherwise keep it.
@@ -537,6 +541,9 @@ te_rc_err2str(te_errno err)
         ERR2STR(EDQUOT);       
         ERR2STR(ENOMEDIUM);    
         ERR2STR(EMEDIUMTYPE);  
+
+        ERR2STR(EUNKNOWN);
+
         ERR2STR(EOK); 
         ERR2STR(EFAIL);     
         ERR2STR(ESMALLBUF); 
@@ -545,7 +552,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(ESHCMD);    
         ERR2STR(EWRONGPTR); 
         ERR2STR(ETOOMANY);  
-                  
+
         ERR2STR(EFMT);      
         ERR2STR(EENV);      
         ERR2STR(EWIN);      
@@ -596,19 +603,20 @@ te_rc_err2str(te_errno err)
         ERR2STR(ENOCONF);  
         ERR2STR(EBADTYPE); 
 
-        ERR2STR(ESTEMPTY);
-        ERR2STR(ESTSKIP);    
-        ERR2STR(ESTFAKE);    
-        ERR2STR(ESTPASS);    
-        ERR2STR(ESTCONF);    
-        ERR2STR(ESTKILL);    
-        ERR2STR(ESTCORE);    
-        ERR2STR(ESTPROLOG);  
-        ERR2STR(ESTEPILOG);  
-        ERR2STR(ESTALIVE);   
-        ERR2STR(ESTFAIL);    
-        ERR2STR(ESTUNEXP);   
+        ERR2STR(ETESTEMPTY);
+        ERR2STR(ETESTSKIP);    
+        ERR2STR(ETESTFAKE);    
+        ERR2STR(ETESTPASS);    
+        ERR2STR(ETESTCONF);    
+        ERR2STR(ETESTKILL);    
+        ERR2STR(ETESTCORE);    
+        ERR2STR(ETESTPROLOG);  
+        ERR2STR(ETESTEPILOG);  
+        ERR2STR(ETESTALIVE);   
+        ERR2STR(ETESTFAIL);    
+        ERR2STR(ETESTUNEXP);   
 
+        ERR2STR(ERPCNOTSUPP);
         ERR2STR(ERPC2H);
         ERR2STR(EH2RPC);
 
@@ -631,6 +639,8 @@ te_rc_os2te(int err)
 {
     switch (err)
     {
+        case 0: return 0;
+
 #ifdef EPERM
         case EPERM: return TE_EPERM;
 #endif        
@@ -1127,273 +1137,7 @@ te_rc_os2te(int err)
         case EMEDIUMTYPE: return TE_EMEDIUMTYPE;
 #endif  
         
-#ifdef EOK
-        case EOK: return TE_EOK;
-#endif 
-        
-#ifdef EFAIL
-        case EFAIL: return TE_EFAIL;
-#endif     
-        
-#ifdef ESMALLBUF
-        case ESMALLBUF: return TE_ESMALLBUF;
-#endif 
-        
-#ifdef EPENDING
-        case EPENDING: return TE_EPENDING;
-#endif  
-        
-#ifdef ESHCMD
-        case ESHCMD: return TE_ESHCMD;
-#endif    
-        
-#ifdef EWRONGPTR
-        case EWRONGPTR: return TE_EWRONGPTR;
-#endif 
-        
-#ifdef ETOOMANY
-        case ETOOMANY: return TE_ETOOMANY;
-#endif  
-                  
-        
-#ifdef EFMT
-        case EFMT: return TE_EFMT;
-#endif      
-        
-#ifdef EENV
-        case EENV: return TE_EENV;
-#endif      
-        
-#ifdef EWIN
-        case EWIN: return TE_EWIN;
-#endif      
-        
-#ifdef ERCFIO
-        case ERCFIO: return TE_ERCFIO;
-#endif 
-        
-#ifdef ENORCF
-        case ENORCF: return TE_ENORCF;
-#endif        
-        
-#ifdef ETALOCAL
-        case ETALOCAL: return TE_ETALOCAL;
-#endif     
-        
-#ifdef ETADEAD
-        case ETADEAD: return TE_ETADEAD;
-#endif      
-        
-#ifdef ETAREBOOTED
-        case ETAREBOOTED: return TE_ETAREBOOTED;
-#endif  
-        
-#ifdef ETARTN
-        case ETARTN: return TE_ETARTN;
-#endif       
-        
-#ifdef ESUNRPC
-        case ESUNRPC: return TE_ESUNRPC;
-#endif      
-        
-#ifdef ECORRUPTED
-        case ECORRUPTED: return TE_ECORRUPTED;
-#endif   
-        
-#ifdef ERPCTIMEOUT
-        case ERPCTIMEOUT: return TE_ERPCTIMEOUT;
-#endif  
-        
-#ifdef ERPCDEAD
-        case ERPCDEAD: return TE_ERPCDEAD;
-#endif     
-
-        
-#ifdef EASNGENERAL
-        case EASNGENERAL: return TE_EASNGENERAL;
-#endif
-        
-#ifdef EASNWRONGLABEL
-        case EASNWRONGLABEL: return TE_EASNWRONGLABEL;
-#endif    
-        
-#ifdef EASNTXTPARSE
-        case EASNTXTPARSE: return TE_EASNTXTPARSE;
-#endif      
-        
-#ifdef EASNDERPARSE
-        case EASNDERPARSE: return TE_EASNDERPARSE;
-#endif      
-        
-#ifdef EASNINCOMPLVAL
-        case EASNINCOMPLVAL: return TE_EASNINCOMPLVAL;
-#endif    
-        
-#ifdef EASNOTHERCHOICE
-        case EASNOTHERCHOICE: return TE_EASNOTHERCHOICE;
-#endif   
-        
-#ifdef EASNWRONGTYPE
-        case EASNWRONGTYPE: return TE_EASNWRONGTYPE;
-#endif     
-        
-#ifdef EASNNOTLEAF
-        case EASNNOTLEAF: return TE_EASNNOTLEAF;
-#endif       
-                          
-
-        
-#ifdef EASNTXTNOTINT
-        case EASNTXTNOTINT: return TE_EASNTXTNOTINT;
-#endif     
-        
-#ifdef EASNTXTNOTCHSTR
-        case EASNTXTNOTCHSTR: return TE_EASNTXTNOTCHSTR;
-#endif   
-        
-#ifdef EASNTXTNOTOCTSTR
-        case EASNTXTNOTOCTSTR: return TE_EASNTXTNOTOCTSTR;
-#endif  
-        
-#ifdef EASNTXTVALNAME
-        case EASNTXTVALNAME: return TE_EASNTXTVALNAME;
-#endif    
-                          
-        
-#ifdef EASNTXTSEPAR
-        case EASNTXTSEPAR: return TE_EASNTXTSEPAR;
-#endif      
-                          
-        
-#ifdef ETADCSAPNOTEX
-        case ETADCSAPNOTEX: return TE_ETADCSAPNOTEX;
-#endif  
-        
-#ifdef ETADLOWER
-        case ETADLOWER: return TE_ETADLOWER;
-#endif       
-                        
-                        
-        
-#ifdef ETADCSAPSTATE
-        case ETADCSAPSTATE: return TE_ETADCSAPSTATE;
-#endif   
-        
-#ifdef ETADNOTMATCH
-        case ETADNOTMATCH: return TE_ETADNOTMATCH;
-#endif    
-        
-#ifdef ETADLESSDATA
-        case ETADLESSDATA: return TE_ETADLESSDATA;
-#endif    
-                        
-                        
-        
-#ifdef ETADMISSNDS
-        case ETADMISSNDS: return TE_ETADMISSNDS;
-#endif     
-        
-#ifdef ETADWRONGNDS
-        case ETADWRONGNDS: return TE_ETADWRONGNDS;
-#endif    
-        
-#ifdef ETADCSAPDB
-        case ETADCSAPDB: return TE_ETADCSAPDB;
-#endif      
-        
-#ifdef ETADENDOFDATA
-        case ETADENDOFDATA: return TE_ETADENDOFDATA;
-#endif   
-        
-#ifdef ETADEXPRPARSE
-        case ETADEXPRPARSE: return TE_ETADEXPRPARSE;
-#endif   
-
-        
-#ifdef EBACKUP
-        case EBACKUP: return TE_EBACKUP;
-#endif
-        
-#ifdef EISROOT
-        case EISROOT: return TE_EISROOT;
-#endif  
-        
-#ifdef EHASSON
-        case EHASSON: return TE_EHASSON;
-#endif  
-        
-#ifdef ENOCONF
-        case ENOCONF: return TE_ENOCONF;
-#endif  
-        
-#ifdef EBADTYPE
-        case EBADTYPE: return TE_EBADTYPE;
-#endif 
-
-        
-#ifdef ESTEMPTY
-        case ESTEMPTY: return TE_ESTEMPTY;
-#endif
-        
-#ifdef ESTSKIP
-        case ESTSKIP: return TE_ESTSKIP;
-#endif    
-        
-#ifdef ESTFAKE
-        case ESTFAKE: return TE_ESTFAKE;
-#endif    
-        
-#ifdef ESTPASS
-        case ESTPASS: return TE_ESTPASS;
-#endif    
-        
-#ifdef ESTCONF
-        case ESTCONF: return TE_ESTCONF;
-#endif    
-        
-#ifdef ESTKILL
-        case ESTKILL: return TE_ESTKILL;
-#endif    
-        
-#ifdef ESTCORE
-        case ESTCORE: return TE_ESTCORE;
-#endif    
-        
-#ifdef ESTPROLOG
-        case ESTPROLOG: return TE_ESTPROLOG;
-#endif  
-        
-#ifdef ESTEPILOG
-        case ESTEPILOG: return TE_ESTEPILOG;
-#endif  
-        
-#ifdef ESTALIVE
-        case ESTALIVE: return TE_ESTALIVE;
-#endif   
-        
-#ifdef ESTFAIL
-        case ESTFAIL: return TE_ESTFAIL;
-#endif    
-        
-#ifdef ESTUNEXP
-        case ESTUNEXP: return TE_ESTUNEXP;
-#endif   
-
-        
-#ifdef ERPC2H
-        case ERPC2H: return TE_ERPC2H;
-#endif
-        
-#ifdef EH2RPC
-        case EH2RPC: return TE_EH2RPC;
-#endif
-
-        
-#ifdef ESYNCFAILED
-        case ESYNCFAILED: return TE_ESYNCFAILED;
-#endif
-        
-        default: return TE_EFAIL;
+        default: return TE_EUNKNOWN;
     }
 }
 
