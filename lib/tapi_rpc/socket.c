@@ -1369,7 +1369,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                 opt_timeval;
 
                         snprintf(opt_val_str, sizeof(opt_val_str),
-                                 "{ tv_sec: %ld, tv_usec: %ld }",
+                                 "{ tv_sec: %lld, tv_usec: %lld }",
                                  ((tarpc_timeval *)optval)->tv_sec,
                                  ((tarpc_timeval *)optval)->tv_usec);
                     }
@@ -1592,7 +1592,7 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                     in.optlen = RPC_OPTLEN_AUTO;
 
                 snprintf(opt_val_str, sizeof(opt_val_str),
-                         "{ tv_sec: %ld, tv_usec: %ld }",
+                         "{ tv_sec: %lld, tv_usec: %lld }",
                          ((tarpc_timeval *)optval)->tv_sec,
                          ((tarpc_timeval *)optval)->tv_usec);
                 break;
