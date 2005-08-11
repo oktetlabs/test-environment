@@ -409,7 +409,7 @@ te_rc_err2str(te_errno err)
 {
     static char old_errno[64];
     
-    if ((err & TE_NEW_ERRNO) == 0)
+    if ((err != 0) && ((err & TE_NEW_ERRNO) == 0))
     {
         snprintf(old_errno, sizeof(old_errno), 
                  "Old errno 0x%X", TE_RC_GET_ERROR(err));
