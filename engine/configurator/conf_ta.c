@@ -72,7 +72,7 @@ ta_list_init()
         cfg_ta_list = NULL;
         if (TE_RC_GET_ERROR(rc) != TE_ESMALLBUF)
         {
-            ERROR("rcf_get_ta_list() returned 0x%X", rc);
+            ERROR("rcf_get_ta_list() returned %r", rc);
             return rc;
         }
 
