@@ -33,7 +33,15 @@
 #define __TE_RCF_RPC_DEFS_H__
 
 #include <stdio.h>
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
 #include "te_errno.h"
+
 
 /** RPC errno values */
 typedef enum {
