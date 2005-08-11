@@ -41,7 +41,7 @@
 
 #include "te_stdint.h"
 
-#define TE_NEW_ERRNO    (1 << 30)
+#define TE_NEW_ERRNO    (1 << 22)
 
 /** Type to store TE error numbers */
 typedef enum {
