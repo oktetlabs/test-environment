@@ -1,0 +1,78 @@
+#! /bin/sh
+#
+# Test Environment Builder
+#
+# Script for calling make with specified target for cross packages
+#
+# Copyright (C) 2004 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+#
+# $Id: te_cross_build 15927 2005-07-08 06:25:10Z arybchik $
+#
+
+TARGET=$1
+
+if test -e builder.conf.processed ; then
+    . builder.conf.processed
+else
+    # Possibly we're called after distclean and builder.conf.processed
+    # is removed - assume all libraries and agents as "cross". 
+    for dir in lib agents *include ; do
+        if ! test -e $dir ; then continue ; fi
+        cd $dir
+        for package in * ; do
+            if ! test -d $package ; then continue ; fi
+            cd $package
+            if test -e Makefile ; then make $TARGET || exit 1 ; fi
+            cd ..
+        done
+        cd ..
+    done
+    exit 0
+fi    
+
+for p in ${TE_BS_PLATFORMS} ; do
+    PLATFORM=`eval echo '$'${p}'_PLATFORM'`
+    if test $PLATFORM = $host ; then continue ; fi
+
+    cd ${p}_include; 
+    if test -e Makefile ; then make $TARGET || exit 1 ; fi
+    cd ..
+
+    LIBS=`eval echo '$'${p}'_LIBS'`
+    for package in $LIBS ; do
+        cd lib/${p}_$package
+        if test -e Makefile ; then make $TARGET || exit 1 ; fi
+        cd ../..
+    done
+done
+
+DUMMY=
+
+for package in $DUMMY $TE_BS_TA ; do
+    PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
+    if test "$PLATFORM" = "$host" ; then continue ; fi ;
+    cd agents/$package
+    if test -e Makefile ; then make $TARGET || exit 1 ; fi
+    cd ../..
+done
+
+exit 0
