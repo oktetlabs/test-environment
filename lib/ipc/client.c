@@ -772,7 +772,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
 #if IPC_CLIENT_DEBUG_REASSEMBLING
         printf("Segment not the first segment!!!\n");
 #endif
-        return TE_RC(TE_IPC, ESYNCFAILED);
+        return TE_RC(TE_IPC, TE_ESYNCFAILED);
     }
 
 
@@ -939,7 +939,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
                     printf("On reading datagram size changed: %d/%d\n",
                            l, server->length);
 #endif
-                    return TE_RC(TE_IPC, ESYNCFAILED);
+                    return TE_RC(TE_IPC, TE_ESYNCFAILED);
                 }
                 if (l2 !=
                     ((struct ipc_dgram_header*)server->buffer)->length)
@@ -950,7 +950,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
                                 buffer)->length);
                     printf("author: %s\n", server->sa.sun_path+1);
 #endif
-                    return TE_RC(TE_IPC, ESYNCFAILED);
+                    return TE_RC(TE_IPC, TE_ESYNCFAILED);
                 }
             }
 
@@ -976,7 +976,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
                 perror("Different length 1 of the single message!!");
                 printf("%d != %d\n", full_message_length, iph->length);
 #endif
-                return TE_RC(TE_IPC, ESYNCFAILED);
+                return TE_RC(TE_IPC, TE_ESYNCFAILED);
             }
             if (server->octets_received != iph->length - iph->left)
             {
@@ -986,7 +986,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
                        (int)server->octets_received,
                        (int)iph->left);
 #endif
-                return TE_RC(TE_IPC, ESYNCFAILED);
+                return TE_RC(TE_IPC, TE_ESYNCFAILED);
             }
             server->octets_received += octets_received;
         }
@@ -1107,7 +1107,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
             if (server->length != iph->length)
             {
         perror("Different length 2 of the single message!!");
-        return TE_RC(TE_IPC, ESYNCFAILED);
+        return TE_RC(TE_IPC, TE_ESYNCFAILED);
             }
             if (server->octets_received != iph->length - iph->left)
             {
@@ -1117,7 +1117,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
                (int)server->octets_received,
                (int)iph->left);
 #endif
-        return TE_RC(TE_IPC, ESYNCFAILED);
+        return TE_RC(TE_IPC, TE_ESYNCFAILED);
             }
             server->octets_received += octets_received;
 
@@ -1141,7 +1141,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
             server->length = 0;
             if (server->octets_received != iph->length)
             {
-        return TE_RC(TE_IPC, ESYNCFAILED);
+        return TE_RC(TE_IPC, TE_ESYNCFAILED);
             }
             return 0;
         }
@@ -1374,7 +1374,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
 
     if (server->pending != 0)
     {
-        return TE_RC(TE_IPC, ESYNCFAILED);
+        return TE_RC(TE_IPC, TE_ESYNCFAILED);
     }
 
     /*

@@ -536,7 +536,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                  */
                 fprintf(stderr, "%s(): Invalid IPC datagram\n",
                         __FUNCTION__);
-                return TE_RC(TE_IPC, ESYNCFAILED);
+                return TE_RC(TE_IPC, TE_ESYNCFAILED);
             }
 
             data = (uint8_t *)client->buffer +
@@ -552,7 +552,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                 {
                     fprintf(stderr, "%s(): IPC internal error\n",
                             __FUNCTION__);
-                    return TE_RC(TE_IPC, ESYNCFAILED);
+                    return TE_RC(TE_IPC, TE_ESYNCFAILED);
                 }
                 client->msg_len = client->msg_rest = ipch->length;
             }
@@ -571,7 +571,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                     fprintf(stderr, "%s(): IPC protocol error:\n"
                             "Unexpected total message length in the "
                             "datagram\n", __FUNCTION__);
-                    return TE_RC(TE_IPC, ESYNCFAILED);
+                    return TE_RC(TE_IPC, TE_ESYNCFAILED);
                 }
             }
             if (client->msg_rest != ipch->left)
@@ -579,7 +579,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                 fprintf(stderr, "%s(): IPC protocol error:\n"
                         "Unexpected rest length of the message in the "
                         "datagram\n", __FUNCTION__);
-                return TE_RC(TE_IPC, ESYNCFAILED);
+                return TE_RC(TE_IPC, TE_ESYNCFAILED);
             }
         }
         else
@@ -812,7 +812,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                     fprintf(stderr, "IPC(%d): Unexpected client "
                             "connection state, pending=%u\n",
                             (int)getpid(), (unsigned)client->pending);
-                    return TE_RC(TE_IPC, ESYNCFAILED);
+                    return TE_RC(TE_IPC, TE_ESYNCFAILED);
                 }
 
                 /*
