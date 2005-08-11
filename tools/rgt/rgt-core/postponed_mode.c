@@ -49,6 +49,9 @@
 #include "postponed_mode.h"
 #include "memory.h"
 
+#include "te_errno.h"
+
+
 static int logs_opened = 0;
 static int logs_closed = 1;
 struct obstack *log_obstk = NULL;
@@ -605,7 +608,7 @@ output_regular_log_msg(log_msg *msg)
                     continue;
                 }
 
-#if 0
+#if 1
                 case 'r':
                 {
                     te_errno err;
