@@ -274,7 +274,7 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
      */
     LIST_INSERT_HEAD(&ctx->garbage, p, links);
 
-    INFO("Jump from %s:%u to %s:%u rc=%x",
+    INFO("Jump from %s:%u to %s:%u rc=%r",
          file, lineno, p->file, p->lineno, (unsigned int)val);
     longjmp(p->env, val);
 
