@@ -410,12 +410,12 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
         int  fd;
 
         if ((fd = open("/proc/sys/net/ipv4/ip_forward", O_RDONLY)) < 0)
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
 
         if (read(fd, &c, 1) < 0)
         {
             close(fd);
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
         }
 
         close(fd);
@@ -446,17 +446,17 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(oid);
 
     if ((*value != '0' && *value != '1') || *(value + 1) != 0)
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     fd = open("/proc/sys/net/ipv4/ip_forward",
               O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (fd < 0)
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
 
     if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
     {
         close(fd);
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     close(fd);
@@ -536,7 +536,7 @@ ip_addr_get(int family, struct nlmsg_list **list)
     {
         ERROR("%s: rtnl_open() failed, %s",
               __FUNCTION__, strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     ll_init_map(&rth);
@@ -547,7 +547,7 @@ ip_addr_get(int family, struct nlmsg_list **list)
         ERROR("%s: Cannot send dump request, %s",
               __FUNCTION__, strerror(errno));
         rtnl_close(&rth);
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     if (rtnl_dump_filter(&rth, store_nlmsg, list, NULL, NULL) < 0)
@@ -555,7 +555,7 @@ ip_addr_get(int family, struct nlmsg_list **list)
         ERROR("%s: Dump terminated, %s",
               __FUNCTION__, strerror(errno));
         rtnl_close(&rth);
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     rtnl_close(&rth);
     return 0;
@@ -722,7 +722,7 @@ nl_ip4_addr_add_del(int cmd, const char *ifname, uint32_t addr,
     memset(&rth, 0, sizeof(rth));
     if (rtnl_open(&rth, 0) < 0)
     {
-        rc = TE_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_LINUX, errno);
         ERROR("%s(): Cannot open netlink socket", __FUNCTION__);
         return rc;
     }
@@ -732,7 +732,7 @@ nl_ip4_addr_add_del(int cmd, const char *ifname, uint32_t addr,
 
     if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
     {
-        rc = TE_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_LINUX, errno);
         ERROR("%s(): rtnl_talk() failed", __FUNCTION__);
         rtnl_close(&rth);
         return rc;
@@ -778,14 +778,14 @@ nl_ip4_addr_modify(enum net_addr_ops cmd,
         if (inet_pton(AF_INET, addr, &int_addr) <= 0)
         {
             ERROR("Failed to convert addrss '%s' from string", addr);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
     }
     else if (nl_find_net_addr(addr, ifname,
                               &int_addr, &prefix, &bcast) == NULL)
     {
         ERROR("Address '%s' on interface '%s' not found", addr, ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
 
     if (new_prefix != NULL)
@@ -826,7 +826,7 @@ get_addr(const char *ifname, struct in_addr *addr)
         /* It's not always called for correct arguments */
         VERB("ioctl(SIOCGIFADDR) for '%s' failed: %s",
               ifname, strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     *addr = SIN(&(req.ifr_addr))->sin_addr;
     return 0;
@@ -866,7 +866,7 @@ set_prefix(const char *ifname, unsigned int prefix)
     if (ioctl(cfg_socket, SIOCSIFNETMASK, &req) < 0)
     {
         ERROR("ioctl(SIOCSIFNETMASK) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     return 0;
 }
@@ -888,7 +888,7 @@ interface_exists(const char *ifname)
     {
         ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
               __FUNCTION__, strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     buf[0] = 0;
@@ -927,7 +927,7 @@ interface_exists(const char *ifname)
  *
  * @return error code
  * @retval 0            success
- * @retval ENOMEM       cannot allocate memory
+ * @retval TE_ENOMEM       cannot allocate memory
  */
 static int
 interface_list(unsigned int gid, const char *oid, char **list)
@@ -947,7 +947,7 @@ interface_list(unsigned int gid, const char *oid, char **list)
         {
             ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
                   __FUNCTION__, strerror(errno));
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
         }
 
         while (fgets(trash, sizeof(trash), f) != NULL)
@@ -983,12 +983,12 @@ interface_list(unsigned int gid, const char *oid, char **list)
     }
 #endif
     if (off >= sizeof(buf))
-        return TE_RC(TE_TA_LINUX, ETESMALLBUF);
+        return TE_RC(TE_TA_LINUX, TE_ESMALLBUF);
     else if (off > 0)
         buf[off - 1]  = '\0';
 
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
 
     return 0;
 }
@@ -1011,7 +1011,7 @@ aliases_list()
     if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
     {
         ERROR("ioctl(SIOCGIFCONF) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     for (req = conf.ifc_req; *(req->ifr_name) != 0; req++)
@@ -1037,7 +1037,7 @@ aliases_list()
         {
             ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
                   __FUNCTION__, strerror(errno));
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
         }
 
         while (fgets(trash, sizeof(trash), f) != NULL)
@@ -1100,15 +1100,15 @@ interface_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(value);
 
     if (interface_exists(ifname))
-        return TE_RC(TE_TA_LINUX, EEXIST);
+        return TE_RC(TE_TA_LINUX, TE_EEXIST);
 
     if ((devname = strdup(ifname)) == NULL)
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
 
     if ((vlan = strchr(devname, '.')) == NULL)
     {
         free(devname);
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
     *vlan++ = 0;
 
@@ -1116,13 +1116,13 @@ interface_add(unsigned int gid, const char *oid, const char *value,
     if (tmp == vlan || *tmp != 0 || !interface_exists(devname))
     {
         free(devname);
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
 
     sprintf(buf, "/sbin/vconfig add %s %d", devname, vid);
     free(devname);
 
-    return ta_system(buf) != 0 ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
+    return ta_system(buf) != 0 ? TE_RC(TE_TA_LINUX, TE_ESHCMD) : 0;
 }
 
 /**
@@ -1141,11 +1141,11 @@ interface_del(unsigned int gid, const char *oid, const char *ifname)
     UNUSED(oid);
 
     if (!interface_exists(ifname))
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     sprintf(buf, "/sbin/vconfig rem %s", ifname);
 
-    return (ta_system(buf) != 0) ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
+    return (ta_system(buf) != 0) ? TE_RC(TE_TA_LINUX, TE_ESHCMD) : 0;
 }
 
 
@@ -1169,7 +1169,7 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     if (ifindex == 0)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     sprintf(value, "%u", ifindex);
 
@@ -1216,11 +1216,11 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         new_addr == 0 ||
         (new_addr & 0xe0000000) == 0xe0000000)
     {
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
 
     if ((rc = aliases_list()) != 0)
-        return TE_RC(TE_TA_LINUX, rc);
+        return rc;
 
     cur = buf;
     while (cur != NULL)
@@ -1232,7 +1232,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         rc = get_addr(cur, (struct in_addr *)&tmp_addr);
 
         if (rc == 0 && tmp_addr == new_addr)
-            return TE_RC(TE_TA_LINUX, EEXIST);
+            return TE_RC(TE_TA_LINUX, TE_EEXIST);
 
         if (strcmp(cur, ifname) == 0)
         {
@@ -1266,13 +1266,13 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         for (n = 0; n < sizeof(slots) && slots[n] != 0; n++);
 
         if (n == sizeof(slots))
-            return TE_RC(TE_TA_LINUX, EPERM);
+            return TE_RC(TE_TA_LINUX, TE_EPERM);
 
         sprintf(trash, "/sbin/ifconfig %s:%d %s up", ifname, n, addr);
     }
 
     if (ta_system(trash) != 0)
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
 
     if (*value != 0)
     {
@@ -1307,7 +1307,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         new_addr == 0 ||
         (ntohl(new_addr) & 0xe0000000) == 0xe0000000)
     {
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
 
 #ifdef __linux__
@@ -1318,7 +1318,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         return FALSE;
     }
     if ((rc = aliases_list()) != 0)
-        return TE_RC(TE_TA_LINUX, rc);
+        return rc;
 
     for (cur = buf; strlen(cur) > 0; cur = next)
     {
@@ -1334,7 +1334,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
         rc = get_addr(cur, (struct in_addr *)&tmp_addr);
         if (rc == 0 && tmp_addr == new_addr)
-            return TE_RC(TE_TA_LINUX, EEXIST);
+            return TE_RC(TE_TA_LINUX, TE_EEXIST);
 
         if (strcmp(cur, ifname) == 0)
         {
@@ -1364,7 +1364,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         for (n = 0; n < sizeof(slots) && slots[n] != 0; n++);
 
         if (n == sizeof(slots))
-            return TE_RC(TE_TA_LINUX, EPERM);
+            return TE_RC(TE_TA_LINUX, TE_EPERM);
 
         sprintf(trash, "%s:%d", ifname, n);
         strncpy(req.ifr_name, trash, IFNAMSIZ);
@@ -1377,7 +1377,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     if (ioctl(cfg_socket, SIOCSIFADDR, &req) < 0)
     {
         ERROR("ioctl(SIOCSIFADDR) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 #elif defined(SIOCALIFADDR)
     {
@@ -1390,17 +1390,17 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         if (inet_pton(AF_INET, addr, &SIN(&lreq.addr)->sin_addr) <= 0)
         {
             ERROR("inet_pton() failed");
-            return TE_RC(TE_TA_LINUX, ETEFMT);
+            return TE_RC(TE_TA_LINUX, TE_EFMT);
         }
         if (ioctl(cfg_socket, SIOCALIFADDR, &lreq) < 0)
         {
             ERROR("ioctl(SIOCALIFADDR) failed: %s", strerror(errno));
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
         }
     }
 #else
     ERROR("%s(): %s", __FUNCTION__, strerror(EOPNOTSUPP));
-    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+    return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
 #endif
 
     if (*value != 0)
@@ -1437,7 +1437,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     {
         ERROR("%s(): Address '%s' already exists on interface '%s'",
               __FUNCTION__, addr, name);
-        return TE_RC(TE_TA_LINUX, EEXIST);
+        return TE_RC(TE_TA_LINUX, TE_EEXIST);
     }
 
     /* Validate address to be added */
@@ -1445,7 +1445,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         new_addr == 0 ||
         (ntohl(new_addr) & 0xe0000000) == 0xe0000000)
     {
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
 
     /* Validate specified address prefix */
@@ -1453,12 +1453,12 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     if (value == end)
     {
         ERROR("Invalid value '%s' of prefix length", value);
-        return TE_RC(TE_TA_LINUX, ETEFMT);
+        return TE_RC(TE_TA_LINUX, TE_EFMT);
     }
     if (prefix > 32)
     {
         ERROR("Invalid prefix '%s' to be set", value);
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
     if (prefix == 0)
     {
@@ -1567,14 +1567,14 @@ net_addr_del(unsigned int gid, const char *oid,
     }
 
     if ((name = find_net_addr(ifname, addr)) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     if (strcmp(name, ifname) == 0)
         sprintf(trash, "/sbin/ifconfig %s 0.0.0.0", ifname);
     else
         sprintf(trash, "/sbin/ifconfig %s down", name);
 
-    return ta_system(trash) != 0 ? TE_RC(TE_TA_LINUX, ETESHCMD) : 0;
+    return ta_system(trash) != 0 ? TE_RC(TE_TA_LINUX, TE_ESHCMD) : 0;
 }
 #else
 static int
@@ -1597,7 +1597,7 @@ net_addr_del(unsigned int gid, const char *oid,
     if ((name = find_net_addr(ifname, addr)) == NULL)
     {
         ERROR("Address %s on interface %s not found", addr, ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
     if (strcmp(name, ifname) == 0)
     {
@@ -1611,7 +1611,7 @@ net_addr_del(unsigned int gid, const char *oid,
         if (ioctl(cfg_socket, SIOCSIFADDR, (int)&req) < 0)
         {
             ERROR("ioctl(SIOCSIFADDR) failed: %s", strerror(errno));
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
         }
     }
     else
@@ -1620,7 +1620,7 @@ net_addr_del(unsigned int gid, const char *oid,
         if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
         {
             ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
         }
 
         strncpy(req.ifr_name, name, IFNAMSIZ);
@@ -1628,7 +1628,7 @@ net_addr_del(unsigned int gid, const char *oid,
         if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
         {
             ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
         }
     }
     return 0;
@@ -1659,8 +1659,8 @@ net_addr_del(unsigned int gid, const char *oid,
  *
  * @return error code
  * @retval 0                    success
- * @retval ETENOSUCHNAME        no such instance
- * @retval ENOMEM               cannot allocate memory
+ * @retval TE_ENOENT        no such instance
+ * @retval TE_ENOMEM               cannot allocate memory
  */
 #ifdef USE_NETLINK
 static int
@@ -1686,7 +1686,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     if (*list == NULL)
     {
         ERROR("calloc() failed");
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
     }
     rc = ip_addr_get(AF_INET, &ainfo);
     if (rc != 0)
@@ -1699,7 +1699,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     if (ifindex <= 0)
     {
         ERROR("Device \"%s\" does not exist", ifname);
-        return TE_RC(TE_TA_LINUX, ENODEV);
+        return TE_RC(TE_TA_LINUX, TE_ENODEV);
     }
 
     for (n = ainfo; n; n = n->next)
@@ -1735,7 +1735,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
             {
                 free(*list);
                 ERROR("realloc() failed");
-                return TE_RC(TE_TA_LINUX, ENOMEM);
+                return TE_RC(TE_TA_LINUX, TE_ENOMEM);
             }
             *list = tmp;
         }
@@ -1776,13 +1776,13 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
     {
         ERROR("ioctl(SIOCGIFCONF) failed: %d", errno);
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     *list = (char *)calloc(ADDR_LIST_BULK, 1);
     if (*list == NULL)
     {
         ERROR("calloc() failed");
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
     }
     for (req = conf.ifc_req; strlen(req->ifr_name) != 0; req++)
     {
@@ -1807,7 +1807,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
             {
                 free(*list);
                 ERROR("realloc() failed");
-                return TE_RC(TE_TA_LINUX, ENOMEM);
+                return TE_RC(TE_TA_LINUX, TE_ENOMEM);
             }
             *list = tmp;
         }
@@ -1848,21 +1848,20 @@ prefix_get(unsigned int gid, const char *oid, char *value,
     {
         ERROR("Address '%s' on interface '%s' to get prefix not found",
               addr, ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
 #elif defined(USE_IOCTL)
     strncpy(req.ifr_name, ifname, sizeof(req.ifr_name));
     if (inet_pton(AF_INET, addr, &SIN(&req.ifr_addr)->sin_addr) <= 0)
     {
         ERROR("inet_pton() failed");
-        return TE_RC(TE_TA_LINUX, ETEFMT);
+        return TE_RC(TE_TA_LINUX, TE_EFMT);
     }
     if (ioctl(cfg_socket, SIOCGIFNETMASK, &req) < 0)
     {
         ERROR("ioctl(SIOCGIFNETMASK) failed for if=%s addr=%s: %s",
               ifname, addr, strerror(errno));
-        /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     MASK2PREFIX(ntohl(SIN(&req.ifr_addr)->sin_addr.s_addr), prefix);
 #else
@@ -1899,12 +1898,12 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
     if (value == end)
     {
         ERROR("Invalid value '%s' of prefix length", value);
-        return TE_RC(TE_TA_LINUX, ETEFMT);
+        return TE_RC(TE_TA_LINUX, TE_EFMT);
     }
     if (prefix > 32)
     {
         ERROR("Invalid prefix '%s' to be set", value);
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
 
 #if defined(USE_NETLINK)
@@ -1917,7 +1916,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
         {
             ERROR("Address '%s' on interface '%s' to set prefix not found",
                   addr, ifname);
-            return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+            return TE_RC(TE_TA_LINUX, TE_ENOENT);
         }
         return set_prefix(name, prefix);
     }
@@ -1952,21 +1951,20 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     {
         ERROR("Address '%s' on interface '%s' to get broadcast address "
               "not found", addr, ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
 #elif defined(USE_IOCTL)
     strncpy(req.ifr_name, ifname, sizeof(req.ifr_name));
     if (inet_pton(AF_INET, addr, &SIN(&req.ifr_addr)->sin_addr) <= 0)
     {
         ERROR("inet_pton() failed");
-        return TE_RC(TE_TA_LINUX, ETEFMT);
+        return TE_RC(TE_TA_LINUX, TE_EFMT);
     }
     if (ioctl(cfg_socket, SIOCGIFBRDADDR, &req) < 0)
     {
         ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %s",
               ifname, addr, strerror(errno));
-        /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     bcast = SIN(&req.ifr_addr)->sin_addr.s_addr;
 #else
@@ -1976,7 +1974,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     if (inet_ntop(AF_INET, &bcast, value, RCF_MAX_VAL) == NULL)
     {
         ERROR("inet_ntop() failed");
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     return 0;
@@ -2008,7 +2006,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
         (ntohl(bcast) & 0xe0000000) == 0xe0000000)
     {
         ERROR("%s(): Invalid broadcast %s", __FUNCTION__, value);
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
 
 #if defined(USE_NETLINK)
@@ -2021,7 +2019,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
         {
             ERROR("Address '%s' on interface '%s' to set broadcast "
                   "not found", addr, ifname);
-            return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+            return TE_RC(TE_TA_LINUX, TE_ENOENT);
         }
 
         strcpy(req.ifr_name, name);
@@ -2030,7 +2028,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
         if (ioctl(cfg_socket, SIOCSIFBRDADDR, (int)&req) < 0)
         {
             ERROR("ioctl(SIOCSIFBRDADDR) failed: %s", strerror(errno));
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
         }
         return 0;
     }
@@ -2066,8 +2064,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     if (ioctl(cfg_socket, SIOCGIFHWADDR, (int)&req) < 0)
     {
         ERROR("ioctl(SIOCGIFHWADDR) failed: %s", strerror(errno));
-        /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     ptr = req.ifr_hwaddr.sa_data;
@@ -2084,7 +2081,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     if (ioctl(cfg_socket, SIOCGIFCONF, &ifc) < 0)
     {
         ERROR("ioctl(SIOCGIFCONF) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     for (p = (struct ifreq *)ifc.ifc_buf;
          ifc.ifc_len >= (int)sizeof(*p);
@@ -2110,7 +2107,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     }
 #else
     ERROR("%s(): %s", __FUNCTION__, strerror(EOPNOTSUPP));
-    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+    return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
 #endif
     if (ptr != NULL)
     {
@@ -2120,7 +2117,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     else
     {
         ERROR("Not found link layer address of the interface %s", ifname);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
     return 0;
 }
@@ -2145,11 +2142,8 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFMTU, (int)&req) != 0)
     {
-        int err = errno;
-
-        ERROR("ioctl(SIOCGIFMTU) failed: %s", strerror(err));
-        /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, err);
+        ERROR("ioctl(SIOCGIFMTU) failed: %s", strerror(errno));
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     sprintf(value, "%d", req.ifr_mtu);
     return 0;
@@ -2176,14 +2170,13 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
 
     req.ifr_mtu = strtol(value, &tmp1, 10);
     if (tmp1 == value || *tmp1 != 0)
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) != 0)
     {
         ERROR("ioctl(SIOCSIFMTU) failed: %s", strerror(errno));
-        /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     return 0;
@@ -2211,8 +2204,7 @@ arp_use_get(unsigned int gid, const char *oid, char *value,
     if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
         ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-        /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     sprintf(value, "%d", (req.ifr_flags & IFF_NOARP) != IFF_NOARP);
@@ -2241,8 +2233,7 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
     if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
     {
         ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-        /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     if (strcmp(value, "1") == 0)
@@ -2250,13 +2241,13 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
     else if (strcmp(value, "0") == 0)
         req.ifr_flags |= (IFF_NOARP);
     else
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
         ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     return 0;
 }
@@ -2282,8 +2273,7 @@ status_get(unsigned int gid, const char *oid, char *value,
     if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
         ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-        /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     sprintf(value, "%d", (req.ifr_flags & IFF_UP) != 0);
@@ -2314,20 +2304,20 @@ status_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     if (!interface_exists(ifname))
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     if (strcmp(value, "0") == 0)
         status = 0;
     else if (strcmp(value, "1") == 0)
         status = 1;
     else
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     sprintf(buf, "/sbin/ifconfig %s %s",
             ifname, status == 1 ? "up" : "down");
 
     if (ta_system(buf) != 0)
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
 
     return 0;
 }
@@ -2343,8 +2333,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
     {
         ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-        /* FIXME Mapping to ETENOSUCHNAME */
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     if (strcmp(value, "0") == 0)
@@ -2352,13 +2341,13 @@ status_set(unsigned int gid, const char *oid, const char *value,
     else if (strcmp(value, "1") == 0)
         req.ifr_flags |= (IFF_UP | IFF_RUNNING);
     else
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
         ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     return 0;
@@ -2411,7 +2400,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
     {
         ERROR("Failed to open /proc/net/arp for reading: %s",
               strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     while (fscanf(fp, "%s", buf) != EOF)
@@ -2424,13 +2413,13 @@ arp_get(unsigned int gid, const char *oid, char *value,
             {
                 fclose(fp);
                 ERROR("Failed to parse ARP entry values");
-                return TE_RC(TE_TA_LINUX, EFAULT);
+                return TE_RC(TE_TA_LINUX, TE_EFMT);
             }
             fclose(fp);
 
             if (flags == 0)
             {
-                return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+                return TE_RC(TE_TA_LINUX, TE_ENOENT);
             }
             else
             {
@@ -2439,7 +2428,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
                     ERROR("%s ARP entry %s ATF_PERM flag",
                           volatile_entry ? "Volatile" : "Non-volatile",
                           (flags & ATF_PERM) ? "has" : "does not have");
-                    return TE_RC(TE_TA_LINUX, EFAULT);
+                    return TE_RC(TE_TA_LINUX, TE_EFAULT);
                 }
 
                 return 0;
@@ -2450,7 +2439,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
 
     fclose(fp);
 
-    return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    return TE_RC(TE_TA_LINUX, TE_ENOENT);
 }
 
 /**
@@ -2473,7 +2462,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
     char val[RCF_MAX_VAL];
 
     if (arp_get(gid, oid, val, addr, addr_volatile) != 0)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     return arp_add(gid, oid, value, addr, addr_volatile);
 }
@@ -2514,13 +2503,13 @@ arp_add(unsigned int gid, const char *oid, const char *value,
                  int_addr + 4, int_addr + 5, trash);
 
     if (res != 6)
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     memset (&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
 
     if (inet_pton(AF_INET, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     arp_req.arp_ha.sa_family = AF_LOCAL;
     for (i = 0; i < 6; i++)
@@ -2534,12 +2523,12 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     if (ioctl(cfg_socket, SIOCSARP, &arp_req) < 0)
     {
         ERROR("ioctl(SIOCSARP) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     return 0;
 #else
-    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+    return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
 #endif
 }
 
@@ -2568,7 +2557,7 @@ arp_del(unsigned int gid, const char *oid,
 
     if ((rc = arp_get(gid, oid, val, addr, addr_volatile)) != 0)
     {
-        if (TE_RC_GET_ERROR(rc) == ETENOSUCHNAME)
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
             WARN("Cannot delete ARP entry: it disappeared");
             rc = 0;
@@ -2582,7 +2571,7 @@ arp_del(unsigned int gid, const char *oid,
     memset(&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
     if (inet_pton(AF_INET, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
 #ifdef SIOCDARP
 
@@ -2594,12 +2583,12 @@ arp_del(unsigned int gid, const char *oid,
         if (err == ENXIO || err == ENETDOWN || err == ENETUNREACH)
             return 0;
         else
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     return 0;
 #else
-    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+    return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
 #endif
 }
 
@@ -2631,7 +2620,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
     {
         ERROR("Failed to open /proc/net/arp for reading: %s",
               strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     fgets(trash, sizeof(trash), fp);
@@ -2661,7 +2650,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
     UNUSED(gid);
 
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
 
     return 0;
 }
@@ -2711,7 +2700,7 @@ route_parse_inst_name(const char *inst_name,
     inst_copy[sizeof(inst_copy) - 1] = '\0';
 
     if ((tmp = strchr(inst_copy, '|')) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     *tmp = 0;
     rt->rt_dst.sa_family = AF_INET;
@@ -2720,14 +2709,14 @@ route_parse_inst_name(const char *inst_name,
     {
         ERROR("Incorrect 'destination address' value in route %s",
               inst_name);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
     tmp++;
     if (*tmp == '-' ||
         (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || prefix > 32))
     {
         ERROR("Incorrect 'prefix length' value in route %s", inst_name);
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
     tmp = tmp1;
 
@@ -2758,7 +2747,7 @@ route_parse_inst_name(const char *inst_name,
         {
             ERROR("Incorrect format of 'gateway address' value in route %s",
                   inst_name);
-            return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+            return TE_RC(TE_TA_LINUX, TE_ENOENT);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -2778,7 +2767,7 @@ route_parse_inst_name(const char *inst_name,
         {
             ERROR("Interface name is too long: %s in route %s",
                   ptr, inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         strcpy(ifname, ptr);
 
@@ -2799,7 +2788,7 @@ route_parse_inst_name(const char *inst_name,
         {
             ERROR("Incorrect 'route metric' value in route %s",
                   inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -2817,7 +2806,7 @@ route_parse_inst_name(const char *inst_name,
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
             ERROR("Incorrect 'route mtu' value in route %s", inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -2838,7 +2827,7 @@ route_parse_inst_name(const char *inst_name,
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
             ERROR("Incorrect 'route window' value in route %s", inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -2857,7 +2846,7 @@ route_parse_inst_name(const char *inst_name,
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
             ERROR("Incorrect 'route irtt' value in route %s", inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -2945,7 +2934,7 @@ nl_get_prefix(inet_prefix *dst, const char *arg, int family)
     char       *tmp = strdup(arg);
 
     if (tmp == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     memset(dst, 0, sizeof(*dst));
 
@@ -3020,14 +3009,14 @@ route_change(unsigned int gid, const char *oid, const char *value,
             *c = 0;
 
         if (nl_get_prefix(&dst, route, req.r.rtm_family) != 0)
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
         req.r.rtm_dst_len = dst.bitlen;
         if (dst.bytelen)
         {
             if (addattr_l(&req.n, sizeof(req), RTA_DST, &dst.data,
                           dst.bytelen) != 0)
-                return TE_RC(TE_TA_LINUX, EINVAL);
+                return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         if (c != NULL)
             *c = ',';
@@ -3041,11 +3030,11 @@ route_change(unsigned int gid, const char *oid, const char *value,
             *d = 0;
 
         if (nl_get_addr(&addr, c + strlen("gw="), req.r.rtm_family) != 0)
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
         if (addattr_l(&req.n, sizeof(req), RTA_GATEWAY, &addr.data,
                       addr.bytelen) != 0)
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
         gw_ok = 1;
         if (d != NULL)
@@ -3061,7 +3050,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
 
         strcpy(dev, c + strlen("dev="));
         if (dev == NULL)
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
         if (d != NULL)
             *d = ',';
@@ -3076,7 +3065,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
             *d = 0;
 
         if (nl_get_unsigned(&metric, c + strlen("metric="), 0))
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
         addattr32(&req.n, sizeof(req), RTA_PRIORITY, metric);
 
@@ -3093,7 +3082,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
             *d = 0;
 
         if (nl_get_unsigned(&mtu, c + strlen("mtu="), 0))
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
         rta_addattr32(mxrta, sizeof(mxbuf), RTAX_MTU, mtu);
 
@@ -3110,7 +3099,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
             *d = 0;
 
         if (nl_get_unsigned(&window, c + strlen("window="), 0))
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
         rta_addattr32(mxrta, sizeof(mxbuf), RTAX_WINDOW, window);
 
@@ -3127,7 +3116,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
             *d = 0;
 
         if (nl_get_unsigned(&rtt, c + strlen("irtt="), 0))
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
         rta_addattr32(mxrta, sizeof(mxbuf), RTAX_RTT, rtt);
 
@@ -3141,7 +3130,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
     if (rtnl_open(&rth, 0) < 0)
     {
         ERROR("Failed to open the netlink socket");
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     if (*dev != '\0')
@@ -3155,7 +3144,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
         {
             ERROR("Cannot find device");
             rtnl_close(&rth);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         addattr32(&req.n, sizeof(req), RTA_OIF, idx);
     }
@@ -3188,7 +3177,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
     {
         ERROR("Failed to send the netlink message");
         rtnl_close(&rth);
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     rtnl_close(&rth);
@@ -3291,7 +3280,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
     ENTRY("%s", route);
 
     if (route_get(gid, oid, val, route) != 0)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     return route_add(gid, oid, value, route);
 }
@@ -3344,7 +3333,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     if (ioctl(cfg_socket, SIOCADDRT, &rt) < 0)
     {
         ERROR("ioctl(SIOCADDRT) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     return 0;
@@ -3354,7 +3343,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(value);
     UNUSED(route);
 
-    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+    return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
 #endif
 }
 
@@ -3382,7 +3371,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
     if (route_get(gid, oid, value, route) != 0)
     {
         ERROR("NOT FOUND");
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
 
     if ((rc = route_parse_inst_name(route, &rt)) != 0)
@@ -3400,7 +3389,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
     if (ioctl(cfg_socket, SIOCDELRT, &rt) < 0)
     {
         ERROR("ioctl(SIOCDELRT) failed: %s", strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     return 0;
@@ -3409,7 +3398,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
     UNUSED(oid);
     UNUSED(route);
 
-    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+    return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
 #endif
 }
 #endif /* USE_NETLINK_ROUTE */
@@ -3460,7 +3449,7 @@ route_get(unsigned int gid, const char *oid, char *value,
     {
         ERROR("Failed to open /proc/net/route for reading: %s",
               strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     fgets(trash, sizeof(trash), fp);
@@ -3525,14 +3514,14 @@ route_get(unsigned int gid, const char *oid, char *value,
 
     fclose(fp);
 
-    return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    return TE_RC(TE_TA_LINUX, TE_ENOENT);
 #else
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
     UNUSED(route);
 
-    return TE_RC(TE_TA_LINUX, EOPNOTSUPP);
+    return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
 #endif
 }
 
@@ -3544,8 +3533,8 @@ route_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  * @retval 0                    success
- * @retval ETENOSUCHNAME      no such instance
- * @retval ENOMEM               cannot allocate memory
+ * @retval TE_ENOENT      no such instance
+ * @retval TE_ENOMEM               cannot allocate memory
  */
 static int
 route_list(unsigned int gid, const char *oid, char **list)
@@ -3563,7 +3552,7 @@ route_list(unsigned int gid, const char *oid, char **list)
     {
         ERROR("Failed to open /proc/net/route for reading: %s",
               strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     buf[0] = 0;
@@ -3642,7 +3631,7 @@ route_list(unsigned int gid, const char *oid, char **list)
 
     INFO("%s: Routes: %s", __FUNCTION__, buf);
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
 
     return 0;
 }
@@ -3654,7 +3643,7 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
     FILE *resolver = NULL;
     char  buf[256];
     char *found = NULL, *endaddr = NULL;
-    int   rc = TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+    int   rc = TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     static const char ip_symbols[] = "0123456789.";
 
@@ -3668,7 +3657,7 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
     {
         rc = errno;
         ERROR("Unable to open '/etc/resolv.conf'");
-        return TE_RC(TE_TA_LINUX, rc);
+        return TE_OS_RC(TE_TA_LINUX, rc);
     }
     while ((fgets(buf, sizeof(buf), resolver)) != NULL)
     {
@@ -3680,7 +3669,7 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
                 endaddr = found + strspn(found, ip_symbols);
                 *endaddr = '\0';
                 if(endaddr - found > RCF_MAX_VAL)
-                    rc = TE_RC(TE_TA_LINUX, ENAMETOOLONG);
+                    rc = TE_RC(TE_TA_LINUX, TE_ENAMETOOLONG);
                 else
                 {
                     rc = 0;
@@ -3744,7 +3733,7 @@ env_get(unsigned int gid, const char *oid, char *value,
     }
     else
     {
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
 }
 
@@ -3766,7 +3755,7 @@ env_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     if (env_is_hidden(name, -1))
-        return TE_RC(TE_TA_LINUX, EPERM);
+        return TE_RC(TE_TA_LINUX, TE_EPERM);
 
     if (setenv(name, value, TRUE) == 0)
     {
@@ -3778,7 +3767,7 @@ env_set(unsigned int gid, const char *oid, const char *value,
 
         ERROR("Failed to set Environment variable '%s' to '%s'",
               name, value);
-        return TE_RC(TE_TA_LINUX, rc);
+        return TE_OS_RC(TE_TA_LINUX, rc);
     }
 }
 
@@ -3800,7 +3789,7 @@ env_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     if (env_is_hidden(name, -1))
-        return TE_RC(TE_TA_LINUX, EPERM);
+        return TE_RC(TE_TA_LINUX, TE_EPERM);
 
     if (getenv(name) == NULL)
     {
@@ -3814,12 +3803,12 @@ env_add(unsigned int gid, const char *oid, const char *value,
 
             ERROR("Failed to add Environment variable '%s=%s'",
                   name, value);
-            return TE_RC(TE_TA_LINUX, rc);
+            return TE_OS_RC(TE_TA_LINUX, rc);
         }
     }
     else
     {
-        return TE_RC(TE_TA_LINUX, EEXIST);
+        return TE_RC(TE_TA_LINUX, TE_EEXIST);
     }
 }
 
@@ -3839,7 +3828,7 @@ env_del(unsigned int gid, const char *oid, const char *name)
     UNUSED(oid);
 
     if (env_is_hidden(name, -1))
-        return TE_RC(TE_TA_LINUX, EPERM);
+        return TE_RC(TE_TA_LINUX, TE_EPERM);
 
     if (getenv(name) != NULL)
     {
@@ -3848,7 +3837,7 @@ env_del(unsigned int gid, const char *oid, const char *name)
     }
     else
     {
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     }
 }
 
@@ -3886,7 +3875,7 @@ env_list(unsigned int gid, const char *oid, char **list)
         if (s == NULL)
         {
             ERROR("Invalid Environment entry format: %s", *env);
-            return TE_RC(TE_TA_LINUX, ETEFMT);
+            return TE_RC(TE_TA_LINUX, TE_EFMT);
         }
         name_len = s - *env;
         if (env_is_hidden(*env, name_len))
@@ -3898,7 +3887,7 @@ env_list(unsigned int gid, const char *oid, char **list)
         {
             ERROR("Too small buffer for the list of Environment "
                   "variables");
-            return TE_RC(TE_TA_LINUX, ETESMALLBUF);
+            return TE_RC(TE_TA_LINUX, TE_ESMALLBUF);
         }
         memcpy(ptr, *env, name_len);
         ptr += name_len;
@@ -3906,7 +3895,7 @@ env_list(unsigned int gid, const char *oid, char **list)
     }
 
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
 
     return 0;
 }
@@ -3919,7 +3908,7 @@ env_list(unsigned int gid, const char *oid, char **list)
  *
  * @return error code
  * @retval 0            success
- * @retval ENOMEM       cannot allocate memory
+ * @retval TE_ENOMEM       cannot allocate memory
  */
 static int
 user_list(unsigned int gid, const char *oid, char **list)
@@ -3935,7 +3924,7 @@ user_list(unsigned int gid, const char *oid, char **list)
         int rc = errno;
 
         ERROR("Failed to open file /etc/passwd; errno %d", rc);
-        return TE_RC(TE_TA_LINUX, rc);
+        return TE_OS_RC(TE_TA_LINUX, rc);
     }
 
     buf[0] = 0;
@@ -3959,7 +3948,7 @@ user_list(unsigned int gid, const char *oid, char **list)
     fclose(f);
 
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
 
     return 0;
 }
@@ -4018,15 +4007,15 @@ user_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(value);
 
     if (user_exists(user))
-        return TE_RC(TE_TA_LINUX, EEXIST);
+        return TE_RC(TE_TA_LINUX, TE_EEXIST);
 
     if (strncmp(user, TE_USER_PREFIX, strlen(TE_USER_PREFIX)) != 0)
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     tmp = (char *)user + strlen(TE_USER_PREFIX);
     uid = strtol(tmp, &tmp1, 10);
     if (tmp == tmp1 || *tmp1 != 0)
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     if (ta_system("adduser --help >/dev/null 2>&1") != 0)
     {
@@ -4034,7 +4023,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
         sprintf(buf, "/usr/sbin/adduser -d /tmp/%s -u %u -m %s ",
                 user, uid, user);
         if (ta_system(buf) != 0)
-            return TE_RC(TE_TA_LINUX, ETESHCMD);
+            return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
     else
     {
@@ -4043,13 +4032,13 @@ user_add(unsigned int gid, const char *oid, const char *value,
                      "--disabled-password --gecos \"\" "
                      "--uid %u %s >/dev/null 2>&1", user, uid, user);
         if (ta_system(buf) != 0)
-            return TE_RC(TE_TA_LINUX, ETESHCMD);
+            return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
     sprintf(buf, "echo %s:%s | /usr/sbin/chpasswd", user, user);
     if (ta_system(buf) != 0)
     {
         user_del(gid, oid, user);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
     ta_system("sync");
     sleep(1);
@@ -4061,7 +4050,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
     if (ta_system(buf) != 0)
     {
         user_del(gid, oid, user);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
 
     return 0;
@@ -4083,7 +4072,7 @@ user_del(unsigned int gid, const char *oid, const char *user)
     UNUSED(oid);
 
     if (!user_exists(user))
-        return TE_RC(TE_TA_LINUX, EEXIST);
+        return TE_RC(TE_TA_LINUX, TE_EEXIST);
 
     sprintf(buf, "/usr/sbin/userdel -r %s", user);
     ta_system(buf);

@@ -86,7 +86,7 @@ ds_dns_forwarder_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instN);
     if (*dns_forwarder == '\0')
-        return TE_RC(TE_TA_LINUX, ENOENT);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
     strcpy(value, dns_forwarder);
     return 0;
 }
@@ -98,7 +98,7 @@ ds_dns_forwarder_set(unsigned int gid, const char *oid,
     if (named_conf_was_running)
     {
         WARN("DNS server was running");
-        return TE_RC(TE_TA_LINUX, ENOSYS);
+        return TE_RC(TE_TA_LINUX, TE_ENOSYS);
     }
 
     UNUSED(gid);
@@ -126,7 +126,7 @@ ds_dns_directory_set(unsigned int gid, const char *oid,
     if (named_conf_was_running)
     {
         WARN("DNS server was running");
-        return TE_RC(TE_TA_LINUX, ENOSYS);
+        return TE_RC(TE_TA_LINUX, TE_ENOSYS);
     }
 
     UNUSED(gid);

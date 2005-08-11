@@ -677,7 +677,7 @@ shell(int argc, char * const argv[])
         used += snprintf(cmdbuf + used, cmdlen - used, "%s ", argv[i]);
     }
     if (used >= cmdlen)
-        return TE_RC(TE_TA_LINUX, ETESMALLBUF);
+        return TE_RC(TE_TA_LINUX, TE_ESMALLBUF);
 
     VERB("SHELL: run %s, errno before the run is %d\n", cmdbuf, errno);
     rc = ta_system(cmdbuf);
@@ -687,7 +687,7 @@ shell(int argc, char * const argv[])
         int err = errno;
         
         VERB("The command fails with errno %d\n", err);
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, err);
     }
 
     VERB("Successfully completes");
@@ -699,6 +699,7 @@ shell(int argc, char * const argv[])
     if (!WIFEXITED(rc))
         ERROR("Abnormal termination of command executed in shell");
 
+    /* FIXME */
     return TE_RC(TE_TA_LINUX, WEXITSTATUS(rc));
 }
 
@@ -718,10 +719,10 @@ restart_service(char *service)
 
     sprintf(cmd, "/etc/rc.d/init.d/%s restart", service);
     rc = ta_system(cmd);
-
     if (rc < 0)
-        rc = EPERM;
+        rc = TE_EPERM;
 
+    /* FIXME */
     return TE_RC(TE_TA_LINUX, rc);
 }
 
@@ -737,7 +738,7 @@ create_data_file(char *pathname, char c, int len)
     FILE *f;
     
     if ((f = fopen(pathname, "w")) == NULL)
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     
     memset(buf, c, sizeof(buf));
     
@@ -749,14 +750,14 @@ create_data_file(char *pathname, char c, int len)
         if ((copy_len = fwrite((void *)buf, sizeof(char), copy_len, f)) < 0)
         {
             fclose(f);
-            return TE_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_LINUX, errno);
         }
         len -= copy_len;
     }
     if (fclose(f) < 0)
     {
         ERROR("fclose() failed errno=%d", errno);
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     return 0;

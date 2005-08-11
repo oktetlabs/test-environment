@@ -267,7 +267,7 @@ ds_dhcpserver_save_conf(void)
     {
         ERROR("Failed to open '%s' for writing: %s",
               dhcp_server_conf, strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     fprintf(f, "deny unknown-clients;\n\n");
@@ -321,13 +321,13 @@ ds_dhcpserver_save_conf(void)
 
         ERROR("%s(): fsync() failed: %s", __FUNCTION__, strerror(err));
         (void)fclose(f);
-        return TE_RC(TE_TA_LINUX, err);
+        return TE_OS_RC(TE_TA_LINUX, err);
     }
 
     if (fclose(f) != 0)
     {
         ERROR("%s(): fclose() failed: %s", __FUNCTION__, strerror(errno));
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
 
     return 0;
@@ -361,7 +361,7 @@ ds_dhcpserver_script_stop(void)
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
     return 0;
 }
@@ -375,7 +375,7 @@ ds_dhcpserver_stop(void)
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
     return 0;
 }
@@ -389,7 +389,7 @@ ds_dhcpserver_script_start(void)
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
 
     return 0;
@@ -414,7 +414,7 @@ ds_dhcpserver_start(void)
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
 
     sprintf(buf, "%s -q -T -lf %s",
@@ -422,7 +422,7 @@ ds_dhcpserver_start(void)
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
 
     sprintf(buf, "%s -q -cf %s -lf %s %s",
@@ -431,7 +431,7 @@ ds_dhcpserver_start(void)
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, ETESHCMD);
+        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
 
     return 0;
@@ -450,7 +450,7 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
     ENTRY("%s(): value=%s", __FUNCTION__, value);
 
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
 
     do_run = (*value == '1');
 
@@ -478,7 +478,7 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
 #endif
     }
 
-    return TE_RC(TE_TA_LINUX, rc);
+    return rc;
 }
 
 /** Get DHCP server interfaces */
@@ -508,7 +508,7 @@ ds_dhcpserver_ifs_set(unsigned int gid, const char *oid, const char *value)
     if (copy == NULL)
     {
         ERROR("%s(): strdup(%s) failed", __FUNCTION__, value);
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     }
     free(dhcp_server_ifs);
     dhcp_server_ifs = copy;
@@ -548,7 +548,7 @@ ds_subnet_get(unsigned int gid, const char *oid, char *value,
     UNUSED(dhcpserver);
 
     if ((s = find_subnet(subnet)) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_OS_RC(TE_TA_LINUX, TE_ENOENT);
 
     sprintf(value, "%d", s->prefix_len);
 
@@ -568,11 +568,11 @@ ds_subnet_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(dhcpserver);
 
     if ((s = find_subnet(subnet)) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     prefix_len = strtol(value, &end, 10);
     if (value == end || *end != '\0')
-        return TE_RC(TE_TA_LINUX, ETEFMT);
+        return TE_RC(TE_TA_LINUX, TE_EFMT);
 
     s->prefix_len = prefix_len;
 
@@ -592,19 +592,19 @@ ds_subnet_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(dhcpserver);
 
     if ((s = find_subnet(subnet)) != NULL)
-        return TE_RC(TE_TA_LINUX, EEXIST);
+        return TE_RC(TE_TA_LINUX, TE_EEXIST);
 
     prefix_len = strtol(value, &end, 10);
     if (value == end || *end != '\0')
-        return TE_RC(TE_TA_LINUX, ETEFMT);
+        return TE_RC(TE_TA_LINUX, TE_EFMT);
 
     if ((s = calloc(1, sizeof(*s))) == NULL)
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
 
     if ((s->subnet = strdup(subnet)) == NULL)
     {
         free(s);
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
     }
     s->prefix_len = prefix_len;
 
@@ -624,7 +624,7 @@ ds_subnet_del(unsigned int gid, const char *oid,
     UNUSED(dhcpserver);
 
     if ((s = find_subnet(subnet)) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     TAILQ_REMOVE(&subnets, s, links);
     free_subnet(s);
@@ -648,7 +648,7 @@ ds_subnet_list(unsigned int gid, const char *oid, char **list)
     }
 
     return (*list = strdup(buf)) == NULL ?
-               TE_RC(TE_TA_LINUX, ENOMEM) : 0;
+               TE_RC(TE_TA_LINUX, TE_ENOMEM) : 0;
 }
 
 
@@ -670,7 +670,7 @@ ds_##_gh##_list(unsigned int gid, const char *oid, char **list) \
     }                                                           \
                                                                 \
     return (*list = strdup(buf)) == NULL ?                      \
-               TE_RC(TE_TA_LINUX, ENOMEM) : 0;                  \
+               TE_RC(TE_TA_LINUX, TE_ENOMEM) : 0;               \
 }
 
 LIST_METHOD(host)
@@ -690,15 +690,15 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
     UNUSED(value);                                                      \
                                                                         \
     if ((gh = find_##_gh(name)) != NULL)                                \
-        return TE_RC(TE_TA_LINUX, EEXIST);                              \
+        return TE_RC(TE_TA_LINUX, TE_EEXIST);                           \
                                                                         \
     if ((gh = (_gh *)calloc(1, sizeof(_gh))) == NULL)                   \
-        return TE_RC(TE_TA_LINUX, ENOMEM);                              \
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);                           \
                                                                         \
     if ((gh->name = strdup(name)) == NULL)                              \
     {                                                                   \
         free(gh);                                                       \
-        return TE_RC(TE_TA_LINUX, ENOMEM);                              \
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);                           \
     }                                                                   \
                                                                         \
     gh->next = _gh##s;                                                  \
@@ -728,7 +728,7 @@ ds_##_gh##_del(unsigned int gid, const char *oid,       \
          prev = gh, gh = gh->next);                     \
                                                         \
     if (gh == NULL)                                     \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);       \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);           \
                                                         \
     if (prev)                                           \
         prev->next = gh->next;                          \
@@ -754,7 +754,7 @@ ds_host_group_get(unsigned int gid, const char *oid, char *value,
     UNUSED(dhcpserver);
 
     if ((h = find_host(name)) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     if (h->group == NULL)
         *value = 0;
@@ -777,7 +777,7 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(dhcpserver);
 
     if ((h = find_host(name)) == NULL)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     old = h->group;
     if (*value == 0)
@@ -785,7 +785,7 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
     else if ((h->group = find_group(value)) == NULL)
     {
         h->group = old;
-        return TE_RC(TE_TA_LINUX, EINVAL);
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
 
     return 0;
@@ -808,7 +808,7 @@ ds_##_gh##_##_attr##_get(unsigned int gid, const char *oid,     \
     UNUSED(dhcpserver);                                         \
                                                                 \
     if ((gh = find_##_gh(name)) == NULL)                        \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     if (gh->_attr == NULL)                                      \
         *value = 0;                                             \
@@ -833,7 +833,7 @@ ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
     UNUSED(dhcpserver);                                         \
                                                                 \
     if ((gh = find_##_gh(name)) == NULL)                        \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     old_val = gh->_attr;                                        \
     if (*value == 0)                                            \
@@ -842,7 +842,7 @@ ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
     {                                                           \
         if ((gh->_attr = strdup(value)) == NULL)                \
         {                                                       \
-            return TE_RC(TE_TA_LINUX, ENOMEM);                  \
+            return TE_RC(TE_TA_LINUX, TE_ENOMEM);               \
         }                                                       \
     }                                                           \
                                                                 \
@@ -885,7 +885,7 @@ ds_##_gh##_option_list(unsigned int gid, const char *oid,       \
     UNUSED(dhcpserver);                                         \
                                                                 \
     if ((gh = find_##_gh(name)) == NULL)                        \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     *buf = 0;                                                   \
     for (opt = gh->options; opt != NULL; opt = opt->next)       \
@@ -894,7 +894,7 @@ ds_##_gh##_option_list(unsigned int gid, const char *oid,       \
     }                                                           \
                                                                 \
     return (*list = strdup(buf)) == NULL ?                      \
-              TE_RC(TE_TA_LINUX, ENOMEM) : 0;                   \
+              TE_RC(TE_TA_LINUX, TE_ENOMEM) : 0;                \
 }
 
 GET_OPT_LIST(host)
@@ -916,20 +916,20 @@ ds_##_gh##_option_add(unsigned int gid, const char *oid,        \
     UNUSED(dhcpserver);                                         \
                                                                 \
     if (*value == 0)                                            \
-        return TE_RC(TE_TA_LINUX, EINVAL);                      \
+        return TE_RC(TE_TA_LINUX, TE_EINVAL);                   \
                                                                 \
     if ((gh = find_##_gh(name)) == NULL)                        \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     if (find_option(gh->options, optname) != NULL)              \
-        return TE_RC(TE_TA_LINUX, EEXIST);                      \
+        return TE_RC(TE_TA_LINUX, TE_EEXIST);                   \
                                                                 \
     if ((opt = (te_dhcp_option *)calloc(sizeof(*opt), 1))       \
         == NULL || (opt->name = strdup(optname)) == NULL ||     \
         (opt->value = strdup(value)) == NULL)                   \
     {                                                           \
         FREE_OPTION(opt);                                       \
-        return TE_RC(TE_TA_LINUX, ENOMEM);                      \
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);                   \
     }                                                           \
                                                                 \
     opt->next = gh->options;                                    \
@@ -957,10 +957,10 @@ ds_##_gh##_option_get(unsigned int gid, const char *oid,        \
     UNUSED(dhcpserver);                                         \
                                                                 \
     if ((gh = find_##_gh(name)) == NULL)                        \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     if ((opt = find_option(gh->options, optname)) == NULL)      \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     strcpy(value, opt->value);                                  \
                                                                 \
@@ -988,10 +988,10 @@ ds_##_gh##_option_set(unsigned int gid, const char *oid,        \
     UNUSED(dhcpserver);                                         \
                                                                 \
     if ((gh = find_##_gh(name)) == NULL)                        \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     if ((opt = find_option(gh->options, optname)) == NULL)      \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     old = opt->value;                                           \
     if (*value == 0)                                            \
@@ -1001,7 +1001,7 @@ ds_##_gh##_option_set(unsigned int gid, const char *oid,        \
         if ((opt->value = strdup(value)) == NULL)               \
         {                                                       \
             opt->value = old;                                   \
-            return TE_RC(TE_TA_LINUX, ENOMEM);                  \
+            return TE_RC(TE_TA_LINUX, TE_ENOMEM);               \
         }                                                       \
     }                                                           \
                                                                 \
@@ -1030,14 +1030,14 @@ ds_##_gh##_option_del(unsigned int gid, const char *oid,        \
     UNUSED(dhcpserver);                                         \
                                                                 \
     if ((gh = find_##_gh(name)) == NULL)                        \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     for (opt = gh->options, prev = NULL;                        \
          opt != NULL && strcmp(opt->name, optname) != 0;        \
          prev = opt, opt = opt->next);                          \
                                                                 \
     if (opt == NULL)                                            \
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);               \
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);                   \
                                                                 \
     if (prev)                                                   \
         prev->next = opt->next;                                 \
@@ -1068,12 +1068,12 @@ ds_lease_list(unsigned int gid, const char *oid, char **list)
     UNUSED(oid);
 
     if ((f = fopen("/var/lib/dhcp/dhcpd.leases", "r")) == NULL)
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
 
     if ((*list = (char *)malloc(ADDR_LIST_BULK)) == NULL)
     {
         fclose(f);
-        return TE_RC(TE_TA_LINUX, ENOMEM);
+        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
     }
 
     **list = 0;
@@ -1097,7 +1097,7 @@ ds_lease_list(unsigned int gid, const char *oid, char **list)
             {
                 free(*list);
                 fclose(f);
-                return TE_RC(TE_TA_LINUX, ENOMEM);
+                return TE_OS_RC(TE_TA_LINUX, TE_ENOMEM);
             }
             *list = tmp;
         }
@@ -1118,10 +1118,10 @@ open_lease(const char *name)
     unsigned int addr;
 
     if (conn == NULL)
-        return TE_RC(TE_TA_LINUX, EPERM);
+        return TE_RC(TE_TA_LINUX, TE_EPERM);
 
     if (inet_aton(name, (struct in_addr *)&addr) == 0)
-        return TE_RC(TE_TA_LINUX, ETENOSUCHNAME);
+        return TE_RC(TE_TA_LINUX, TE_ENOENT);
 
     omapi_data_string_new(&ip, sizeof(addr), MDL);
     memcpy(ip->value, &addr, sizeof(addr));
@@ -1160,7 +1160,7 @@ ds_lease_get(unsigned int gid, const char *oid, char *value,
     UNUSED(dhcpserver);                                 \
                                                         \
     if ((rc = open_lease(name)) != 0)                   \
-        return TE_RC(TE_TA_LINUX, rc);                  \
+        return rc;                                      \
                                                         \
     CHECKSTATUS(dhcpctl_get_value(&val, lo, _attr));    \
     memcpy(&res, val->value, val->len);                 \
@@ -1191,7 +1191,7 @@ ds_lease_client_id_get(unsigned int gid, const char *oid, char *value,
     UNUSED(dhcpserver);
 
     if ((rc = open_lease(name)) != 0)
-        return TE_RC(TE_TA_LINUX, rc);
+        return rc;
 
     /*
      * Very bad hack to know the type of the particular
@@ -1239,7 +1239,7 @@ ds_lease_hostname_get(unsigned int gid, const char *oid, char *value,
     UNUSED(dhcpserver);
 
     if ((rc = open_lease(name)) != 0)
-        return TE_RC(TE_TA_LINUX, rc);
+        return rc;
 
     CHECKSTATUS(dhcpctl_get_value(&val, lo, "client-hostname"));
 
@@ -1266,7 +1266,7 @@ ds_lease_host_get(unsigned int gid, const char *oid, char *value,
     UNUSED(dhcpserver);
 
     if ((rc = open_lease(name)) != 0)
-        return TE_RC(TE_TA_LINUX, rc);
+        return rc;
 
     CHECKSTATUS(dhcpctl_get_value(&val, lo, "host"));
 
@@ -1290,7 +1290,7 @@ ds_lease_chaddr_get(unsigned int gid, const char *oid, char *value,
     UNUSED(dhcpserver);
 
     if ((rc = open_lease(name)) != 0)
-        return TE_RC(TE_TA_LINUX, rc);
+        return rc;
 
     CHECKSTATUS(dhcpctl_get_value(&val, lo, "hardware-address"));
 
