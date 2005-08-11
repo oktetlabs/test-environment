@@ -213,7 +213,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
 
     len = sizeof(struct in_addr);
     rc = asn_read_value_field(pdu, &spec_data->src_addr, &len, "src-addr");
-    if (rc == EASNINCOMPLVAL)
+    if (rc == TE_EASNINCOMPLVAL)
     {
         spec_data->src_addr.s_addr = INADDR_ANY;
         if (csap_descr->state & TAD_STATE_RECV && 
@@ -238,7 +238,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
     if (rc == 0)
         rc = asn_read_value_field(pdu, &spec_data->dst_addr, 
                                   &len, "dst-addr");
-    if (rc == EASNINCOMPLVAL)
+    if (rc == TE_EASNINCOMPLVAL)
     {
         spec_data->dst_addr.s_addr = INADDR_ANY;
 
@@ -384,7 +384,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     } while (0);
 
     if (csap_descr == NULL)
-        return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
 
     if (pkt_list == NULL)
         return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
@@ -393,7 +393,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     {
         ERROR("%s(CSAP %d): Cannot generate IP packet without payload",
               __FUNCTION__, csap_descr->id);
-        return TE_RC(TE_TAD_CSAP, ETADLESSDATA);
+        return TE_RC(TE_TAD_CSAP, TE_ETADLESSDATA);
     }
 
     spec_data = (ip4_csap_specific_data_t *)
@@ -700,7 +700,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     } 
     spec_data = (ip4_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
 

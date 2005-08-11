@@ -575,10 +575,10 @@ eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
 
-    if (rc && rc != EASNINCOMPLVAL)
+    if (rc && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 
-    if (rc == EASNINCOMPLVAL)
+    if (rc == TE_EASNINCOMPLVAL)
     {
         asn_value *eth_pdu = asn_init_value(ndn_eth_header); 
         asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 
@@ -591,7 +591,7 @@ eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     } 
     else if (strcmp (choice_label, "eth") != 0)
     {
-        return ETADWRONGNDS;
+        return TE_ETADWRONGNDS;
     }
     return 0;
 }
@@ -630,7 +630,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
     if ((csap_descr = csap_find (csap_id)) == NULL)
-        return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
 
     /* TODO correct with Read-only get_indexed method */
     sprintf (str_index_buf, "%d", layer);
@@ -716,7 +716,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     val_len = sizeof(remote_addr);
     rc = asn_read_value_field(eth_csap_spec, remote_addr, &val_len, "remote-addr");
     
-    if (rc == EASNINCOMPLVAL) 
+    if (rc == TE_EASNINCOMPLVAL) 
     {
         eth_spec_data->remote_addr = NULL;
     }
@@ -744,7 +744,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     val_len = sizeof(local_addr); 
     rc = asn_read_value_field(eth_csap_spec, local_addr, &val_len, "local-addr");
     
-    if (rc == EASNINCOMPLVAL) 
+    if (rc == TE_EASNINCOMPLVAL) 
         eth_spec_data->local_addr = NULL;
     else if (rc)
     {
@@ -769,7 +769,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     
     rc = asn_read_value_field(eth_csap_spec, &eth_type, &val_len, "eth-type");
     
-    if (rc == EASNINCOMPLVAL) 
+    if (rc == TE_EASNINCOMPLVAL) 
     {
         eth_spec_data->eth_type = DEFAULT_ETH_TYPE;
         rc = 0;

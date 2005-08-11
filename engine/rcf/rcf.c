@@ -1947,7 +1947,7 @@ rcf_ta_check_all_done(void)
         }
 
         ta_checker.req->message->error =
-            remain_dead ? ETADEAD : rebooted ? TE_ETAREBOOTED : 0;
+            remain_dead ? TE_ETADEAD : rebooted ? TE_ETAREBOOTED : 0;
 
         answer_user_request(ta_checker.req);
         ta_checker.req = NULL;

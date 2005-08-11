@@ -209,7 +209,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
             }
             else
             { 
-                rc = ETADNOTMATCH;
+                rc = TE_ETADNOTMATCH;
             }
             break;
 
@@ -227,7 +227,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
                 F_VERB("after loop: i %d, u_i %d", 
                         i, user_int);
                 if (i == pattern->val_intervals.length)
-                    rc = ETADNOTMATCH;
+                    rc = TE_ETADNOTMATCH;
                 else if (pkt_pdu)
                     rc = asn_write_value_field(pkt_pdu, &user_int,
                                       sizeof(user_int), labels_buffer);
@@ -245,7 +245,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
             }
             else
             { 
-                rc = ETADNOTMATCH;
+                rc = TE_ETADNOTMATCH;
             }
             break;
 
@@ -260,13 +260,13 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
             }
             else
             { 
-                rc = ETADNOTMATCH;
+                rc = TE_ETADNOTMATCH;
             }
             break;
 
         case TAD_DU_MASK:
             if (d_len != pattern->val_mask.length)
-                rc = ETADNOTMATCH;
+                rc = TE_ETADNOTMATCH;
             else
             {
                 unsigned n;
@@ -278,7 +278,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
                 for (n = 0; n < d_len; n++, d++, p++, m++)
                     if ((*d & *m) != (*p & *m))
                     {
-                        rc = ETADNOTMATCH;
+                        rc = TE_ETADNOTMATCH;
                         break;
                     }
 
@@ -482,7 +482,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
 
 parse_error:
     if (rc == 0)
-        rc = ETADEXPRPARSE;
+        rc = TE_ETADEXPRPARSE;
 
     tad_int_expr_free(*expr);
     *expr = NULL;
@@ -558,14 +558,14 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 {
                     ERROR("%s(): wrong arg ref: %d, num of iter. args: %d",
                           __FUNCTION__, ar_n, num_args); 
-                    return ETADWRONGNDS;
+                    return TE_ETADWRONGNDS;
                 }
 
                 if (args[ar_n].type != TAD_TMPL_ARG_INT)
                 {
                     ERROR("%s(): wrong arg %d type: %d, not integer",
                           __FUNCTION__, ar_n, args[ar_n].type);
-                    return ETADWRONGNDS;
+                    return TE_ETADWRONGNDS;
                 }
                 *result = args[ar_n].arg_int;
             }
@@ -765,7 +765,7 @@ tad_data_unit_convert(const asn_value *pdu_val,
     rc = asn_get_child_value(pdu_val, &ch_du_field, PRIVATE, tag_value);
     if (rc != 0)
     {
-        if (rc == EASNINCOMPLVAL)
+        if (rc == TE_EASNINCOMPLVAL)
         {
             tad_data_unit_clear(location);
             return 0;
@@ -1027,7 +1027,7 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
             if (du_tmpl->val_data.oct_str == NULL)
             {
                 ERROR("Have no binary data to be sent");
-                rc = ETADLESSDATA;
+                rc = TE_ETADLESSDATA;
             }
             else
                 memcpy(data_place, du_tmpl->val_data.oct_str, d_len);
@@ -1043,7 +1043,7 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
         default:
             ERROR("%s(): wrong type %d of DU for send",
                   __FUNCTION__, du_tmpl->du_type);
-            rc = ETADLESSDATA;
+            rc = TE_ETADLESSDATA;
     }
 
     return rc;

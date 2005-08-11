@@ -410,7 +410,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
     VERB("%s: length of id %d", __FUNCTION__, id_len);
 
     if (id_len <= 0)
-        return EASNGENERAL;
+        return TE_EASNGENERAL;
 
     d_len = id_len + 1;
     if ((forw_action->id = malloc(d_len)) == NULL )
@@ -429,7 +429,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
         rc = ndn_forw_delay_to_plain(subval, &(forw_action->delay));
         if (rc) return rc;
     }
-    else if (rc == EASNINCOMPLVAL)
+    else if (rc == TE_EASNINCOMPLVAL)
     {
         forw_action->delay.type = 0; /* uninitalized, default */
         rc = 0;
@@ -447,7 +447,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
         VERB("%s: reorder to plain: %X", __FUNCTION__, rc); 
         if (rc) return rc;
     }
-    else if (rc == EASNINCOMPLVAL)
+    else if (rc == TE_EASNINCOMPLVAL)
     {
         forw_action->reorder.type = 0; /* uninitalized, default */
         rc = 0;
@@ -457,7 +457,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
 
 
     rc = ndn_forw_drop_to_plain(val, &(forw_action->drop));
-    if (rc == EASNINCOMPLVAL)
+    if (rc == TE_EASNINCOMPLVAL)
     {
         forw_action->drop.type = 0; /* uninitalized, default */
         rc = 0;

@@ -235,7 +235,7 @@ icmp4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     UNUSED(csap_nds);
 
     if ((csap_descr = csap_find (csap_id)) == NULL)
-        return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
 
 
     csap_descr->layers[layer].specific_data = NULL;

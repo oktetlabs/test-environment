@@ -481,7 +481,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
         if (var_bind == NULL)
         {
             fprintf(stderr, "SNMP msg to C struct: var_bind = NULL\n");
-            return TE_RC(TE_TAPI, EASNGENERAL);
+            return TE_RC(TE_TAPI, TE_EASNGENERAL);
         }
 
         len = snmp_message->vars[i].name.length =
@@ -503,7 +503,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         rc = asn_get_choice(var_bind, "value.#plain", choice_label, CL_MAX);
 
-        if (rc == EASNINCOMPLVAL)
+        if (rc == TE_EASNINCOMPLVAL)
         {
             /* Some of SNMP errors occure */
             if ((rc = asn_read_value_field(var_bind, 0, 0,
@@ -594,7 +594,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
                 fprintf(stderr, "%s(): SNMP msg to C struct - "
                         "unexpected choice in simple: %s\n",
                         __FUNCTION__, choice_label);
-                rc = EASNGENERAL;
+                rc = TE_EASNGENERAL;
 
                 assert(0);
             }
@@ -627,7 +627,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
                 fprintf(stderr, "SNMP msg to C struct: "
                         "unexpected choice in application-wide: %s\n",
                         choice_label);
-                rc = EASNGENERAL;
+                rc = TE_EASNGENERAL;
                 
                 assert(0);
 

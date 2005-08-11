@@ -1365,7 +1365,7 @@ TARPC_FUNC(select,
 
         if (out->timeout.timeout_len > 0)
             TARPC_CHECK_RC(timeval_h2rpc(&tv, out->timeout.timeout_val));
-        if (out->common._errno == ETEH2RPC)
+        if (out->common._errno == TE_EH2RPC)
             out->retval = -1;
     }
 }

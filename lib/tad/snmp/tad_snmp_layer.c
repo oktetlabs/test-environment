@@ -137,7 +137,7 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         case NDN_SNMP_MSG_TRAP2:   ucd_snmp_op = SNMP_MSG_TRAP2;   break;
         case NDN_SNMP_MSG_INFORM:  ucd_snmp_op = SNMP_MSG_INFORM;  break;
         default: 
-            return ETADWRONGNDS;
+            return TE_ETADWRONGNDS;
     } 
     pdu = snmp_pdu_create(ucd_snmp_op);
     VERB("%s, snmp pdu created 0x%x", __FUNCTION__, pdu);
@@ -216,7 +216,7 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 val_name = asn_get_name(value);
                 if (val_name == NULL)
                 { 
-                    rc = EASNGENERAL;
+                    rc = TE_EASNGENERAL;
                     break;
                 } 
                 snmp_pdu_add_variable(pdu, oid, oid_len, 
@@ -326,7 +326,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         default:
             RING("%s(): UNKNOWN PDU command %d ",
                   __FUNCTION__, pdu->command);
-            return ETADNOTMATCH;
+            return TE_ETADNOTMATCH;
     }
 
 #define CHECK_FIELD(asn_label_, data_, size_) \
@@ -390,7 +390,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
         rc = asn_get_subvalue(pattern_pdu, &pat_vb_list,
                               "variable-bindings");
-        if (rc == EASNINCOMPLVAL)
+        if (rc == TE_EASNINCOMPLVAL)
         {
             rc = 0;
             break;
@@ -423,7 +423,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
             rc = asn_get_field_data(pat_var_bind, &pat_oid,
                                     "name.#plain");
-            if (rc == EASNINCOMPLVAL)
+            if (rc == TE_EASNINCOMPLVAL)
             {
                 /* match OID other then plain patterns not supported yet */
                 VERB("SNMP VB match, no name in varbind");
@@ -447,19 +447,19 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             if (vars == NULL) /* No matching varbind found */
             {
                 VERB("no varbind found for pat num %d", i);
-                rc = ETADNOTMATCH;
+                rc = TE_ETADNOTMATCH;
                 break;
             }
 
             rc = asn_get_subvalue(pat_var_bind, &pat_vb_value, "value.#plain");
 
-            if (rc == EASNINCOMPLVAL)
+            if (rc == TE_EASNINCOMPLVAL)
             {
                 VERB("There is no value in vb pattern, value matches.");
                 rc = 0; /* value matches - no pattern for it */
                 continue;
             }
-            else if (rc == EASNOTHERCHOICE)
+            else if (rc == TE_EASNOTHERCHOICE)
             {
                 rc = TE_EOPNOTSUPP; /* value matches - math is not implemented */
                 WARN("SNMP match: unsupported choice"
@@ -491,14 +491,14 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                         pat_value_syntax != ENUMERATED)
                     {
                         VERB("SNMP VB match, got int syntax, not match");
-                        rc = ETADNOTMATCH;
+                        rc = TE_ETADNOTMATCH;
                         break;
                     }
                     VERB("SNMP VB match, got int val %d, pat %d", 
                          *(vars->val.integer), *((int *)pat_vb_val_data));
                     if (*((int *)pat_vb_val_data) != 
                         *(vars->val.integer))
-                        rc = ETADNOTMATCH;
+                        rc = TE_ETADNOTMATCH;
                     break;
 
                 case ASN_IPADDRESS: 
@@ -507,11 +507,11 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                     if (vars->type == ASN_OBJECT_ID)
                     {
                         if (pat_value_syntax != OID)
-                            rc = ETADNOTMATCH;
+                            rc = TE_ETADNOTMATCH;
                     }
                     else if (pat_value_syntax != OCT_STRING &&
                              pat_value_syntax != CHAR_STRING)
-                        rc = ETADNOTMATCH;
+                        rc = TE_ETADNOTMATCH;
 
                     if (rc != 0)
                     {
@@ -532,7 +532,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                             VERB("SNMP VB match, length not match"
                                  "got len %d, pat len %d", 
                                  vars->val_len, vb_data_len);
-                            rc = ETADNOTMATCH;
+                            rc = TE_ETADNOTMATCH;
                             break;
                         }
 
@@ -543,7 +543,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                             char buf[1000], *pt = buf;
                             int  i;
 
-                            rc = ETADNOTMATCH;
+                            rc = TE_ETADNOTMATCH;
                             pt += sprintf(pt, "got data: ");
                             for (i = 0; i < vb_data_len; i++)
                                 pt += sprintf(pt, "%02x ", vars->val.string[i]);
@@ -552,7 +552,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                 pt += sprintf(pt, "%02x ", pat_vb_val_data[i]);
                             VERB("SNMP VB, fail: %s", buf);
 #endif
-                            rc = ETADNOTMATCH;
+                            rc = TE_ETADNOTMATCH;
                         }
                     }
                     VERB("SNMP VB match, values compare rc %X", rc);
@@ -752,7 +752,7 @@ snmp_inform_response(csap_p csap_descr, const char *usr_param,
     {
         ERROR("%s: failed sending SNMP Response PDU", __FUNCTION__);
         snmp_free_pdu(reply);
-        return TE_RC(TE_TAD_CSAP, ETADLOWER);
+        return TE_RC(TE_TAD_CSAP, TE_ETADLOWER);
     }
     VERB("%s: SNMP Response on InformRequest is sent", __FUNCTION__);
 

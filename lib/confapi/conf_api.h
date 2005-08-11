@@ -685,7 +685,7 @@ extern int cfg_create_backup(char **name);
  *
  * @return status code (see te_errno.h)
  * @retval 0            current configuration is equal to backup
- * @retval ETEBACKUP    current configuration differs from backup
+ * @retval TE_EBACKUP   current configuration differs from backup
  */
 extern int cfg_verify_backup(const char *name);
 

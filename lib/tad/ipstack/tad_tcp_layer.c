@@ -322,7 +322,7 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     /* TODO: TCP options */
 
     if (csap_descr == NULL)
-        return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
 
     if (pkt_list == NULL || tmpl_pdu == NULL)
         return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
@@ -333,7 +333,7 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {
             ERROR("%s(CSAP %d) write to TCP data 'server' is not allowed",
                   __FUNCTION__, csap_descr->id);
-            return ETADLOWER;
+            return TE_ETADLOWER;
         } 
 
         pkt_list->data = up_payload->data;
@@ -399,20 +399,20 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
     CHECK_ERROR(spec_data->du_src_port.du_type == TAD_DU_UNDEF && 
                 spec_data->local_port == 0,
-                ETADLESSDATA, 
+                TE_ETADLESSDATA, 
                 "%s(): CSAP %d, no source port specified",
                 __FUNCTION__, csap_descr->id);
     PUT_BIN_DATA(du_src_port, spec_data->local_port, 2);
 
     CHECK_ERROR(spec_data->du_dst_port.du_type == TAD_DU_UNDEF && 
                 spec_data->remote_port == 0,
-                ETADLESSDATA, 
+                TE_ETADLESSDATA, 
                 "%s(): CSAP %d, no destination port specified",
                 __FUNCTION__, csap_descr->id);
     PUT_BIN_DATA(du_dst_port, spec_data->remote_port, 2);
 
     CHECK_ERROR(spec_data->du_seqn.du_type == TAD_DU_UNDEF,
-                ETADLESSDATA, 
+                TE_ETADLESSDATA, 
                 "%s(): CSAP %d, no sequence number specified",
                 __FUNCTION__, csap_descr->id); 
     rc = tad_data_unit_to_bin(&(spec_data->du_seqn),
@@ -492,7 +492,7 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     } 
 
     if (parsed_packet)

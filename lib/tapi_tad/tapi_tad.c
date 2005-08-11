@@ -342,7 +342,7 @@ tapi_tad_add_iterator_for(asn_value *templ, int begin, int end, int step)
 
     rc = asn_get_child_value(templ, (const asn_value **)&iterators,
                                   PRIVATE, NDN_TMPL_ARGS);
-    if (rc == EASNINCOMPLVAL)
+    if (rc == TE_EASNINCOMPLVAL)
     {
         iterators = asn_init_value(ndn_template_params_seq);
         rc = asn_put_child_value(templ, iterators,

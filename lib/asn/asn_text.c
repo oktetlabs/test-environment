@@ -122,7 +122,7 @@ asn_impl_pt_label(const char*text, char *label, int *syms)
     if (!islower(*pt)) 
     {
         *syms = pt - text;
-        return EASNTXTVALNAME; 
+        return TE_EASNTXTVALNAME; 
     }
     pt++, l++;
 
@@ -171,7 +171,7 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
     if (*pt != '"')
     {
         /* ERROR! there are no char string */
-        return EASNTXTNOTCHSTR;
+        return TE_EASNTXTNOTCHSTR;
     } 
     pt++; 
 
@@ -182,7 +182,7 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
         { 
             /* ERROR! string is too long.. 
                really, allocation of more memory should be here.  */ 
-            return EASNGENERAL; 
+            return TE_EASNGENERAL; 
         }
         memcpy(pb, pt, l); 
         pt+= l, pb += l, total += l;
@@ -241,7 +241,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
     {
         /* ERROR! there are no OCTET string */
         *syms_parsed = pt - text;
-        return EASNTXTNOTOCTSTR;
+        return TE_EASNTXTNOTOCTSTR;
     } 
     pt++; 
 
@@ -255,7 +255,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
             (b_num == PARSE_BUF))
         {
             *syms_parsed = pt - text;
-            return EASNTXTPARSE;
+            return TE_EASNTXTPARSE;
         }
 
         while (isspace(*pt)) 
@@ -271,7 +271,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
         if (*end_ptr) /* There are not two hexadecimal digits. */
         {
             *syms_parsed = pt - text;
-            return EASNTXTNOTOCTSTR;
+            return TE_EASNTXTNOTOCTSTR;
         }
 
         buffer[b_num] = byte; b_num++;
@@ -282,7 +282,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
     {
         /* ERROR! there are no OCTET string */
         *syms_parsed = pt - text;
-        return EASNTXTNOTOCTSTR;
+        return TE_EASNTXTNOTOCTSTR;
     } 
 
     *parsed = asn_init_value(type); 
@@ -325,7 +325,7 @@ asn_impl_pt_integer(const char*text, const asn_type *type,
     if ((*syms_parsed = endptr - text) == 0)
     {
         /* ERROR! there are no integer. */
-        return EASNTXTNOTINT;
+        return TE_EASNTXTNOTINT;
     }
 
     *parsed = asn_init_value(type); 
@@ -367,7 +367,7 @@ asn_impl_pt_bool(const char*text, const asn_type *type,
         *syms_parsed = (*parsed)->txt_len = strlen("FALSE");
     }
     else
-        return EASNTXTPARSE;
+        return TE_EASNTXTPARSE;
 
     return 0;
 }
@@ -396,7 +396,7 @@ asn_impl_pt_null(const char *text, const asn_type *type,
     if (memcmp(text, null_string, 4) != 0)
     {
         /* ERROR! there are no NULL. */
-        return EASNTXTPARSE;
+        return TE_EASNTXTPARSE;
     }
 
     *parsed = asn_init_value(type); 
@@ -456,7 +456,7 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
             }
         }
         if (i == type->len) 
-            return EASNTXTNOTINT;
+            return TE_EASNTXTNOTINT;
     }
 
     *parsed = asn_init_value(type); 
@@ -500,7 +500,7 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
         pt++;
 
     if (*pt != '{')
-        return EASNTXTPARSE; 
+        return TE_EASNTXTPARSE; 
 
     pt++;
 
@@ -536,7 +536,7 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
             /* ERROR! there are no integer. */
             ERROR("The format of Object ID is incorrect");
             free(parsed_ints);
-            return EASNTXTNOTINT;
+            return TE_EASNTXTNOTINT;
         }
         pt += p_s;
         while (isspace(*pt))
@@ -596,7 +596,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
     if (*pt != '{')
     {
         *parsed_syms = pt - text;
-        return EASNTXTPARSE; 
+        return TE_EASNTXTPARSE; 
     }
 
     pt++;
@@ -624,7 +624,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
         if (rc) 
         {
             *parsed_syms = pt - text;
-            return EASNTXTVALNAME;
+            return TE_EASNTXTVALNAME;
         }
 
         while (isspace(*pt))
@@ -650,7 +650,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
         { pt++; break; } 
 
         *parsed_syms = pt - text; 
-        return EASNTXTSEPAR;
+        return TE_EASNTXTSEPAR;
     }
     *parsed_syms = pt - text; 
     return 0;
@@ -688,7 +688,7 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
         pt++, (*parsed_syms)++; 
 
     if (*pt != '{')
-        return EASNTXTPARSE; 
+        return TE_EASNTXTPARSE; 
 
     pt++; 
 
@@ -722,7 +722,7 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
 
         if (*pt != '}') 
         {
-            rc = EASNTXTSEPAR;
+            rc = TE_EASNTXTSEPAR;
             break;
         }
     }
@@ -779,7 +779,7 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
     if (rc)
     {
         *parsed_syms = pt - text;
-        return EASNTXTVALNAME;
+        return TE_EASNTXTVALNAME;
     }
 
     while (isspace(*pt)) pt++;
@@ -788,7 +788,7 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
         asn_free_value(*parsed);
         *parsed = NULL;
         *parsed_syms = pt - text;
-        return EASNTXTSEPAR;
+        return TE_EASNTXTSEPAR;
     }
     pt++;
     while (isspace(*pt)) 

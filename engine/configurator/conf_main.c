@@ -851,7 +851,7 @@ log_msg(cfg_msg *msg, te_bool before)
             uint8_t op = ((cfg_backup_msg *)msg)->op;
 
             if (!before && (op == CFG_BACKUP_VERIFY) &&
-                (TE_RC_GET_ERROR(msg->rc) == ETEBACKUP))
+                (TE_RC_GET_ERROR(msg->rc) == TE_EBACKUP))
             {
                 level = TE_LL_INFO;
             }
@@ -947,7 +947,7 @@ process_backup(cfg_backup_msg *msg)
             sprintf(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
             sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
                              filename, diff_file);
-            msg->rc = ((system(tmp_buf) == 0) ? 0 : ETEBACKUP);
+            msg->rc = ((system(tmp_buf) == 0) ? 0 : TE_EBACKUP);
             if (msg->rc == 0)
                 cfg_dh_release_after(msg->filename);
             else
@@ -1141,7 +1141,7 @@ wait_shutdown()
         }
 
         if (msg->type != CFG_SHUTDOWN)
-            msg->rc = ETENOCONF;
+            msg->rc = TE_ENOCONF;
 
         rc = ipc_send_answer(server, user, (char *)msg, msg->len);
         if (rc != 0)

@@ -234,7 +234,7 @@ ip4_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
 
     ip4_spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
     
@@ -362,7 +362,7 @@ ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
 
     spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
     

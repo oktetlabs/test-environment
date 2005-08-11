@@ -147,7 +147,7 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     }
     
     spec_data = (pcap_csap_specific_data_p)
@@ -247,7 +247,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     }
 
     spec_data = (pcap_csap_specific_data_p)
@@ -288,7 +288,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     VERB("bpf_filter() returns 0x%x (%d)", rc, rc);
     if (rc <= 0)
     {
-        return ETADNOTMATCH;
+        return TE_ETADNOTMATCH;
     }
 
 #if 1

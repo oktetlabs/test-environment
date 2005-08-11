@@ -68,7 +68,7 @@
 
 /** Is return code a test result or TE error? */
 #define TEST_RESULT(_rc) \
-    (((_rc) >= ETESTRESULTMIN) && ((_rc) <= ETESTRESULTMAX))
+    (((_rc) >= TE_ETESTRESULTMIN) && ((_rc) <= TE_ETESTRESULTMAX))
 
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
@@ -691,7 +691,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
 static void
 log_test_result(test_id parent, test_id test, int result)
 {
-    if (result == ETESTPASS)
+    if (result == TE_ETESTPASS)
     {
         LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "PASSED",
                  parent, test);
@@ -700,31 +700,31 @@ log_test_result(test_id parent, test_id test, int result)
     {
         switch (result)
         {
-            case ETESTKILL:
+            case TE_ETESTKILL:
                 LOG_RING(TESTER_CONTROL,
                          TESTER_CONTROL_MSG_PREFIX "KILLED",
                          parent, test);
                 break;
 
-            case ETESTCORE:
+            case TE_ETESTCORE:
                 LOG_RING(TESTER_CONTROL,
                          TESTER_CONTROL_MSG_PREFIX "CORED",
                          parent, test);
                 break;
 
-            case ETESTSKIP:
+            case TE_ETESTSKIP:
                 LOG_RING(TESTER_CONTROL,
                          TESTER_CONTROL_MSG_PREFIX "SKIPPED",
                          parent, test);
                 break;
 
-            case ETESTFAKE:
+            case TE_ETESTFAKE:
                 LOG_RING(TESTER_CONTROL,
                          TESTER_CONTROL_MSG_PREFIX "FAKED",
                          parent, test);
                 break;
 
-            case ETESTEMPTY:
+            case TE_ETESTEMPTY:
                 LOG_RING(TESTER_CONTROL,
                          TESTER_CONTROL_MSG_PREFIX "EMPTY",
                          parent, test);
@@ -736,24 +736,24 @@ log_test_result(test_id parent, test_id test, int result)
 
                 switch (result)
                 {
-                    case ETESTFAIL:
+                    case TE_ETESTFAIL:
                         /* TODO Reason from test */
                         reason = "";
                         break;
 
-                    case ETESTCONF:
+                    case TE_ETESTCONF:
                         reason = "Unexpected configuration changes";
                         break;
 
-                    case ETESTPROLOG:
+                    case TE_ETESTPROLOG:
                         reason = "Session prologue failed";
                         break;
 
-                    case ETESTEPILOG:
+                    case TE_ETESTEPILOG:
                         reason = "Session epilogue failed";
                         break;
 
-                    case ETESTUNEXP:
+                    case TE_ETESTUNEXP:
                         reason = "Unexpected failure type";
                         break;
 
@@ -892,7 +892,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
 
     if (ctx->flags & TESTER_FAKE)
     {
-        result = ETESTFAKE;
+        result = TE_ETESTFAKE;
     }
     else
     {
@@ -909,23 +909,23 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         if (WCOREDUMP(rc))
         {
             ERROR("Command '%s' executed in shell dumped core", cmd);
-            result = ETESTCORE;
+            result = TE_ETESTCORE;
         }
 #endif
         if (WIFSIGNALED(rc))
         {
             /* @todo Signal-to-string */
             ERROR("ID=%d was killed by signal %d", id, WTERMSIG(rc));
-            /* ETESTCORE may be already set */
+            /* TE_ETESTCORE may be already set */
             if (result == 0)
-                result = ETESTKILL;
+                result = TE_ETESTKILL;
         }
         else if (!WIFEXITED(rc))
         {
             ERROR("ID=%d was abnormally terminated", id);
-            /* ETESTCORE may be already set */
+            /* TE_ETESTCORE may be already set */
             if (result == 0)
-                result = ETESTUNEXP;
+                result = TE_ETESTUNEXP;
         }
         else
         {
@@ -935,27 +935,27 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             switch (WEXITSTATUS(rc))
             {
                 case EXIT_FAILURE:
-                    result = ETESTFAIL;
+                    result = TE_ETESTFAIL;
                     break;
 
                 case EXIT_SUCCESS:
-                    result = ETESTPASS;
+                    result = TE_ETESTPASS;
                     break;
 
                 case TE_EXIT_SIGINT:
-                    result = ETESTKILL;
+                    result = TE_ETESTKILL;
                     ctx->flags |= TESTER_SHUTDOWN;
                     ERROR("ID=%d was interrupted by SIGINT, shut down",
                           id);
                     break;
 
                 case TE_EXIT_NOT_FOUND:
-                    result = ETESTUNEXP;
+                    result = TE_ETESTUNEXP;
                     ERROR("ID=%d was not run, executable not found", id);
                     break;
 
                 default:
-                    result = ETESTUNEXP;
+                    result = TE_ETESTUNEXP;
             }
         }
         if (ctx->flags & TESTER_VALGRIND)
@@ -988,7 +988,7 @@ static int
 run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                  test_params *params)
 {
-    int                     result = ETESTEMPTY;
+    int                     result = TE_ETESTEMPTY;
     int                     rc;
     test_param_iteration   *base_i;
     test_param_iterations   iters;
@@ -1035,9 +1035,9 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 ctx->flags |= TESTER_INLOGUE;
                 rc = iterate_test(ctx, session->prologue, &iters);
                 ctx->flags &= ~TESTER_INLOGUE;
-                if ((rc != ETESTPASS) && (rc != ETESTFAKE))
+                if ((rc != TE_ETESTPASS) && (rc != TE_ETESTFAKE))
                 {
-                    result = ETESTPROLOG;
+                    result = TE_ETESTPROLOG;
                     break;
                 }
             }
@@ -1060,22 +1060,22 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
             {
                 VERB("Running test session keep-alive validation...");
                 rc = iterate_test(ctx, session->keepalive, &iters);
-                if ((rc != 0) && (rc != ETESTFAKE))
+                if ((rc != 0) && (rc != TE_ETESTFAKE))
                 {
-                    result = ETESTALIVE;
+                    result = TE_ETESTALIVE;
                     break;
                 }
             }
 
             rc = iterate_test(ctx, test, &iters);
-            if ((rc != ETESTPASS) && (rc != ETESTEMPTY) &&
-                (rc != ETESTFAKE) && (rc != ETESTSKIP))
+            if ((rc != TE_ETESTPASS) && (rc != TE_ETESTEMPTY) &&
+                (rc != TE_ETESTFAKE) && (rc != TE_ETESTSKIP))
             {
                 /* 
                  * Other results except success and skip are mapped 
-                 * to ETESTFAIL. 
+                 * to TE_ETESTFAIL. 
                  */
-                result = ETESTFAIL;
+                result = TE_ETESTFAIL;
             }
             else if (result < rc)
             {
@@ -1106,9 +1106,9 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 if (shutdown)
                     ctx->flags |= TESTER_SHUTDOWN;
 
-                if ((rc != ETESTPASS) && (rc != ETESTFAKE))
+                if ((rc != TE_ETESTPASS) && (rc != TE_ETESTFAKE))
                 {
-                    result = ETESTEPILOG;
+                    result = TE_ETESTEPILOG;
                     break;
                 }
             }
@@ -1407,8 +1407,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
     tester_ctx             *parent_ctx = ctx;
     te_bool                 ctx_cloned = FALSE;
     int                     rc;
-    int                     test_result = ETESTPASS;
-    int                     all_result = ETESTEMPTY;
+    int                     test_result = TE_ETESTPASS;
+    int                     all_result = TE_ETESTEMPTY;
     unsigned int            run_iters = 0;
     te_bool                 test_skipped = FALSE;
     test_param_iterations   iters;
@@ -1602,7 +1602,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             (~test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(iter->params), FALSE))
         {
-            test_result = ETESTSKIP;
+            test_result = TE_ETESTSKIP;
         }
         else
         {
@@ -1629,7 +1629,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             {
                 /* Check configuration backup */
                 rc = cfg_verify_backup(backup_name);
-                if (TE_RC_GET_ERROR(rc) == ETEBACKUP)
+                if (TE_RC_GET_ERROR(rc) == TE_EBACKUP)
                 {
                     if (test->attrs.track_conf == TESTER_TRACK_CONF_YES)
                     {
@@ -1651,8 +1651,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
                         RING("Configuration successfully restored "
                              "using backup");
                         if (TEST_RESULT(test_result) &&
-                            (test_result < ETESTCONF))
-                            test_result = ETESTCONF;
+                            (test_result < TE_ETESTCONF))
+                            test_result = TE_ETESTCONF;
                     }
                 }
                 else if (rc != 0)
@@ -1704,9 +1704,9 @@ iterate_test(tester_ctx *ctx, run_item *test,
         tester_ctx_free(ctx);
     }
 
-    if (test_skipped && ((all_result == ETESTPASS) ||
-                         (all_result == ETESTEMPTY)))
-        all_result = ETESTSKIP;
+    if (test_skipped && ((all_result == TE_ETESTPASS) ||
+                         (all_result == TE_ETESTEMPTY)))
+        all_result = TE_ETESTSKIP;
 
     return all_result;
 }
@@ -1785,7 +1785,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
         if (!TEST_RESULT(rc))
         {
             ERROR("iterate_test() failed: %X", rc);
-            result = ETESTUNEXP;
+            result = TE_ETESTUNEXP;
         }
         else if (result < rc)
         {

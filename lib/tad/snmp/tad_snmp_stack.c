@@ -378,10 +378,10 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
     VERB("%s callback, got choice rc %X", __FUNCTION__, rc); 
 
-    if (rc && rc != EASNINCOMPLVAL)
+    if (rc && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 
-    if (rc == EASNINCOMPLVAL)
+    if (rc == TE_EASNINCOMPLVAL)
     {
         asn_value *snmp_pdu = asn_init_value(ndn_snmp_message); 
         asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 
@@ -396,7 +396,7 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     {
         WARN("%s callback, got unexpected choice %s", 
                 __FUNCTION__, choice_label); 
-        return ETADWRONGNDS;
+        return TE_ETADWRONGNDS;
     }
     return 0;
 }
@@ -465,7 +465,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     v_len = sizeof(timeout); 
     rc = asn_read_value_field(snmp_csap_spec, &timeout,
                               &v_len, "timeout.#plain");
-    if (rc == EASNINCOMPLVAL) 
+    if (rc == TE_EASNINCOMPLVAL) 
         timeout = SNMP_CSAP_DEF_TIMEOUT;
     else if (rc != 0)
     {
@@ -478,7 +478,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     v_len = sizeof(version); 
     rc = asn_read_value_field(snmp_csap_spec, &version,
                               &v_len, "version.#plain");
-    if (rc == EASNINCOMPLVAL) 
+    if (rc == TE_EASNINCOMPLVAL) 
         version = SNMP_CSAP_DEF_VERSION;
     else if (rc != 0)
     {
@@ -491,7 +491,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     v_len = sizeof(csap_session.local_port); 
     rc = asn_read_value_field(snmp_csap_spec, &csap_session.local_port,
                               &v_len, "local-port.#plain");
-    if (rc == EASNINCOMPLVAL) 
+    if (rc == TE_EASNINCOMPLVAL) 
         csap_session.local_port = SNMP_CSAP_DEF_LOCPORT;
     else if (rc != 0)
     {
@@ -505,7 +505,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                               &v_len, "remote-port.#plain");
     if (csap_session.local_port == SNMP_CSAP_DEF_LOCPORT) 
     { 
-        if (rc == EASNINCOMPLVAL) 
+        if (rc == TE_EASNINCOMPLVAL) 
             csap_session.remote_port = SNMP_CSAP_DEF_REMPORT;
         else if (rc != 0)
         {
@@ -527,7 +527,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     v_len = sizeof(snmp_agent);
     rc = asn_read_value_field(snmp_csap_spec, snmp_agent,
                               &v_len, "snmp-agent.#plain");
-    if (rc == EASNINCOMPLVAL) 
+    if (rc == TE_EASNINCOMPLVAL) 
     {
         if (csap_session.local_port == SNMP_CSAP_DEF_LOCPORT)
             strcpy(snmp_agent, SNMP_CSAP_DEF_AGENT);
@@ -545,7 +545,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     v_len = sizeof(security_model_name);
     rc = asn_get_choice(snmp_csap_spec, "security", security_model_name,
                         sizeof(security_model_name));
-    if (rc == EASNINCOMPLVAL)
+    if (rc == TE_EASNINCOMPLVAL)
         security_model = NDN_SNMP_SEC_MODEL_DEFAULT;
     else if (rc != 0)
     {
@@ -569,7 +569,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         v_len = sizeof(community);
         rc = asn_read_value_field(snmp_csap_spec, community,
                                   &v_len, "security.#v2c.community");
-        if (rc == EASNINCOMPLVAL) 
+        if (rc == TE_EASNINCOMPLVAL) 
             strcpy(community, SNMP_CSAP_DEF_COMMUNITY);
         else if (rc != 0)
         {
@@ -589,7 +589,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         security_name_len = sizeof(security_name);
         rc = asn_read_value_field(snmp_csap_spec, security_name,
                                   &security_name_len, "security.#usm.name");
-        if (rc == EASNINCOMPLVAL)
+        if (rc == TE_EASNINCOMPLVAL)
         {
             ERROR("%s: there is no securityName provided",  __FUNCTION__);
             return rc;
@@ -615,7 +615,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         v_len = sizeof(security_level);
         rc = asn_read_value_field(snmp_csap_spec, &security_level,
                                   &v_len, "security.#usm.level");
-        if (rc == EASNINCOMPLVAL)
+        if (rc == TE_EASNINCOMPLVAL)
             security_level = NDN_SNMP_SEC_LEVEL_NOAUTH;
         else if (rc != 0)
         {
@@ -637,7 +637,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             rc = asn_read_value_field(snmp_csap_spec, &auth_proto, 
                                       &v_len,
                                       "security.#usm.auth-protocol");
-            if (rc == EASNINCOMPLVAL)
+            if (rc == TE_EASNINCOMPLVAL)
                 auth_proto = NDN_SNMP_AUTH_PROTO_DEFAULT;
             else if (rc != 0)
             {
@@ -690,7 +690,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                 ERROR("%s: failed to generate a key from authentication "
                       "passphrase: %s", __FUNCTION__, 
                       snmp_api_errstring(snmp_errno));
-                return ETADLOWER;
+                return TE_ETADLOWER;
             }
         }
 
@@ -703,7 +703,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             rc = asn_read_value_field(snmp_csap_spec, &priv_proto,
                                       &v_len, 
                                       "security.#usm.priv-protocol");
-            if (rc == EASNINCOMPLVAL)
+            if (rc == TE_EASNINCOMPLVAL)
                 priv_proto = NDN_SNMP_PRIV_PROTO_DEFAULT;
             else if (rc != 0)
             {
@@ -732,7 +732,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 #else
                     ERROR("%s: there is no AES support in NET-SNMP",
                           __FUNCTION__);
-                    return ETADLOWER;
+                    return TE_ETADLOWER;
 #endif
                     break;
 
@@ -762,7 +762,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                 ERROR("%s: failed to generate a key from privacy "
                       "passphrase: %s", __FUNCTION__,
                       snmp_api_errstring(snmp_errno));
-                return ETADLOWER;
+                return TE_ETADLOWER;
             }
         }
     }
@@ -835,7 +835,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
               __FUNCTION__, snmp_api_errstring(snmp_errno));
 
         free(snmp_spec_data);
-        return ETADLOWER;
+        return TE_ETADLOWER;
     }   
 #if 0
     VERB("in init, session: %x\n", ss);

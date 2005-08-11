@@ -47,7 +47,7 @@ main (int argc, char *argv[])
         level_pdu = asn_read_indexed(pdus, level, ""); 
 
         if (level_pdu == NULL) 
-            return ETADWRONGNDS; 
+            return TE_ETADWRONGNDS; 
 
         rc = asn_write_value_field(level_pdu, &eth_type, sizeof(eth_type), 
                                     "eth-type.#plain");

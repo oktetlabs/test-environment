@@ -289,7 +289,7 @@ tester_out_done(run_item_type type, const char *name,
     }
 
     /* Map result to color and verdict */
-    if (result == ETESTPASS)
+    if (result == TE_ETESTPASS)
     {
         verdict = tester_verdict_passed;
 #ifdef HAVE_COLOR
@@ -300,35 +300,35 @@ tester_out_done(run_item_type type, const char *name,
     {
         switch (result)
         {
-            case ETESTKILL:
+            case TE_ETESTKILL:
                 verdict = "KILLED";
 #ifdef HAVE_COLOR
                 color = COLOR_MAGENTA;
 #endif
                 break;
 
-            case ETESTCORE:
+            case TE_ETESTCORE:
                 verdict = "CORED";
 #ifdef HAVE_COLOR
                 color = COLOR_MAGENTA;
 #endif
                 break;
 
-            case ETESTSKIP:
+            case TE_ETESTSKIP:
                 verdict = "SKIPPED";
 #ifdef HAVE_COLOR
                 color = A_STANDOUT;
 #endif
                 break;
 
-            case ETESTFAKE:
+            case TE_ETESTFAKE:
                 verdict = "FAKED";
 #ifdef HAVE_COLOR
                 color = COLOR_CYAN;
 #endif
                 break;
 
-            case ETESTEMPTY:
+            case TE_ETESTEMPTY:
                 verdict = "EMPTY";
 #ifdef HAVE_COLOR
                 color = COLOR_CYAN;
@@ -341,23 +341,23 @@ tester_out_done(run_item_type type, const char *name,
 #ifdef HAVE_COLOR
                 switch (result)
                 {
-                    case ETESTFAIL:
+                    case TE_ETESTFAIL:
                         color = COLOR_RED;
                         break;
 
-                    case ETESTCONF:
+                    case TE_ETESTCONF:
                         color = COLOR_YELLOW;
                         break;
 
-                    case ETESTPROLOG:
+                    case TE_ETESTPROLOG:
                         color = COLOR_YELLOW;
                         break;
 
-                    case ETESTEPILOG:
+                    case TE_ETESTEPILOG:
                         color = COLOR_YELLOW;
                         break;
 
-                    case ETESTUNEXP:
+                    case TE_ETESTUNEXP:
                         color = COLOR_BLUE;
                         break;
 

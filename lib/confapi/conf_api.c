@@ -1546,7 +1546,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEBADTYPE);
+        return TE_RC(TE_CONF_API, TE_EBADTYPE);
     }
 
     va_start(list, type);
@@ -1664,7 +1664,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return ETEBADTYPE;
+        return TE_EBADTYPE;
     }
 #endif
     va_start(list, type);

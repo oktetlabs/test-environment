@@ -461,7 +461,7 @@ tad_eth_arp_reply(csap_p csap_descr, const char *usr_param,
     {
         ERROR("%s(): too small param <%s>, should be string with MAC",
               __FUNCTION__, usr_param);
-        return ETADLESSDATA;
+        return TE_ETADLESSDATA;
     }
 
     if ((rc = mac_str2addr(usr_param, my_mac)) != 0)

@@ -713,7 +713,7 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
         RET(ENOENT);
         
     if (obj->type != type && type != CVT_NONE)
-        RET(ETEBADTYPE);
+        RET(TE_EBADTYPE);
     
     /* Try to find instance with the same name */
     for (inst = father->son, prev = NULL; 
@@ -839,10 +839,10 @@ cfg_db_del_check(cfg_handle handle)
         return ENOENT;
         
     if (has_read_create_children(inst))
-        return ETEHASSON;
+        return TE_EHASSON;
         
     if (inst->father == NULL)
-        return ETEISROOT;
+        return TE_EISROOT;
         
     return 0;
 }

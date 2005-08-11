@@ -78,7 +78,7 @@ int bridge_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     } 
 
     VERB("bridge confirm called\n");
@@ -103,11 +103,11 @@ int bridge_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
             /* TODO: compare with internal CSAP settings! */    \
                 break;                                          \
                                                                 \
-            case EASNOTHERCHOICE:                               \
+            case TE_EASNOTHERCHOICE:                            \
             /* TODO: process complex tmpl should be here*/      \
                 asn_free_subvalue (tmpl_pdu, label);            \
             /* fall through! */                                 \
-            case EASNINCOMPLVAL:                                \
+            case TE_EASNINCOMPLVAL:                             \
                 rc = asn_write_value_field(tmpl_pdu, val, len,  \
                                            label ".#plain");    \
                 VERB("rc from asn write %x\n", rc);             \
@@ -120,12 +120,12 @@ int bridge_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     rc = asn_get_choice(tmpl_pdu, "content", buffer, sizeof(buffer));
     /* if there are no content, we assume CFG PBDU ??? */
 
-    if (rc && rc != EASNINCOMPLVAL)
+    if (rc && rc != TE_EASNINCOMPLVAL)
     {
         VERB("bridge confirm, get choice failed %x\n", rc);
         return rc;
     }
-    if (rc == EASNINCOMPLVAL || strcmp(buffer, "cfg") == 0)
+    if (rc == TE_EASNINCOMPLVAL || strcmp(buffer, "cfg") == 0)
     {
         rc = 0;
 

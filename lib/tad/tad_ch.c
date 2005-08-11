@@ -239,7 +239,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
 
     if (ba == NULL)
     {
-        SEND_ANSWER("%d missing attached NDS", ETADMISSNDS);
+        SEND_ANSWER("%d missing attached NDS", TE_ETADMISSNDS);
         ERROR("missing attached NDS");
         csap_destroy(new_csap_id);
         return 0;
@@ -274,7 +274,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         if (nds_pdu == NULL)
         {
             ERROR("copy %d layer pdu from NDS ASN value failed", level);
-            rc = EASNGENERAL;
+            rc = TE_EASNGENERAL;
             break;
         }
         new_csap->layers[level].csap_layer_pdu = nds_pdu;
@@ -350,7 +350,8 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
         WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
-        SEND_ANSWER("%d CSAP not exists", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
+        SEND_ANSWER("%d CSAP not exists", 
+                    TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
@@ -360,7 +361,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
         WARN("%s: CSAP %d is busy", __FUNCTION__, csap);
         CSAP_DA_UNLOCK(csap_descr_p);
         SEND_ANSWER("%d Specified CSAP is busy", 
-                    TE_RC(TE_TAD_CH, ETADCSAPSTATE));
+                    TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
         return 0;
     } 
     CSAP_DA_UNLOCK(csap_descr_p);
@@ -447,14 +448,14 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     {
         VERB("missing attached NDS");
         SEND_ANSWER("%d missing attached NDS", 
-                    TE_RC(TE_TAD_CH, ETADMISSNDS));
+                    TE_RC(TE_TAD_CH, TE_ETADMISSNDS));
         return 0;
     }
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
         WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
-        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
+        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
@@ -558,7 +559,7 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
         WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
-        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
+        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
@@ -576,7 +577,7 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *handle,
         CSAP_DA_UNLOCK(csap_descr_p);
         F_VERB("Inappropriate command, CSAP is not sending ");
         SEND_ANSWER("%d Inappropriate command in current state", 
-                    TE_RC(TE_TAD_CH, ETADCSAPSTATE));
+                    TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
     }
 
     return 0;
@@ -633,14 +634,14 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     if (ba == NULL)
     {
         WARN("missing attached NDS");
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, ETADMISSNDS));
+        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_ETADMISSNDS));
         return 0;
     }
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
         WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
+        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
@@ -649,7 +650,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     {
         CSAP_DA_UNLOCK(csap_descr_p);
         WARN("CSAP is busy");
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
+        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
         return 0;
     }
     CSAP_DA_UNLOCK(csap_descr_p);
@@ -720,7 +721,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         if (pattern_unit == NULL)
         {
             WARN("%s: NULL pattern unit #%d", __FUNCTION__, i); 
-            rc = ETADWRONGNDS;
+            rc = TE_ETADWRONGNDS;
             break;
         }
 
@@ -820,7 +821,7 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
         WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
+        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
@@ -852,7 +853,7 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *handle,
              "command %d; state %x ", __FUNCTION__, csap_descr_p->id, 
              (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
+        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
     }
 
     return 0;
@@ -886,7 +887,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
         WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
+        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
@@ -906,7 +907,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
               csap_descr_p->id, 
               (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
+        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
     }
     return 0;
 #endif
@@ -936,7 +937,7 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
         WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
+        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
@@ -955,7 +956,7 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *handle,
               (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);
 
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, ETADCSAPSTATE));
+        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
     }
 
     return 0;
@@ -988,7 +989,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
         WARN("%s: CSAP %d not exists", __FUNCTION__, csap);
-        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
+        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
     }
     else if (strcmp(param, CSAP_PARAM_STATUS) == 0)
     {
@@ -1093,7 +1094,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
-        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, ETADCSAPNOTEX));
+        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
     CSAP_DA_LOCK(csap_descr_p);
@@ -1101,7 +1102,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
     {
         CSAP_DA_UNLOCK(csap_descr_p);
         SEND_ANSWER("%d Specified CSAP is busy", 
-            TE_RC(TE_TAD_CH, ETADCSAPSTATE));
+            TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
         return 0;
     }
     CSAP_DA_UNLOCK(csap_descr_p);

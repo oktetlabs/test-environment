@@ -77,7 +77,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     {
         ERROR("%s: failed to find csap_descr by csap_id %d",
               __FUNCTION__, csap_id);
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     }
     udp_spec_data = (udp_csap_specific_data_t *)
                     csap_descr->layers[layer].specific_data;
@@ -243,7 +243,7 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     if (csap_descr == NULL)
     {
         ERROR("%s(): null csap descr passed", __FUNCTION__);
-        return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
     }
  
     UNUSED(args); 
@@ -372,7 +372,7 @@ int udp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("%s: csap_descr is NULL for csap id %d", __FUNCTION__, csap_id);
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     }
 
     /* Match UDP header fields */

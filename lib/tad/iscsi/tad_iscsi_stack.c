@@ -118,7 +118,7 @@ iscsi_prepare_send_cb(csap_p csap_descr)
     iscsi_csap_specific_data_t *iscsi_spec_data; 
 
     if (csap_descr == NULL)
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
 
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
@@ -143,7 +143,7 @@ iscsi_prepare_recv_cb(csap_p csap_descr)
     int rc = 0;
 
     if (csap_descr == NULL)
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
 
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
@@ -324,7 +324,7 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
 
     RING("%s(CSAP %d, layer %d) called", __FUNCTION__, csap_id, layer); 
 
@@ -403,7 +403,7 @@ iscsi_single_destroy_cb (int csap_id, int layer)
     iscsi_csap_specific_data_t *iscsi_spec_data; 
 
     if (csap_descr == NULL)
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
 
     iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 

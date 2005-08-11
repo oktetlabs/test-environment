@@ -73,7 +73,7 @@ cli_confirm_pdu_cb(int csap_id, int layer, asn_value * tmpl_pdu)
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     }
     
     spec_data = (cli_csap_specific_data_p)

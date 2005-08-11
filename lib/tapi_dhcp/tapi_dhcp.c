@@ -153,7 +153,7 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
                                       &len, #field_ ".#plain");    \
             if (rc == 0)                                           \
                 (*dhcp_msg)->is_ ## field_ ## _set = TRUE;         \
-            else if (rc == EASNINCOMPLVAL)                         \
+            else if (rc == TE_EASNINCOMPLVAL)                      \
             {                                                      \
                 /*                                                 \
                  * Field name is valid but the value               \
@@ -196,7 +196,7 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
     if (rc != 0 ||
         (rc = asn_read_component_value(pkt, &dhcp_opts, "options")) != 0)
     {
-        if (rc == EASNINCOMPLVAL)
+        if (rc == TE_EASNINCOMPLVAL)
         {
             /* No options specified */
             return 0;
@@ -245,7 +245,7 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
     {
         len = asn_get_length(dhcp_opt, "value.#plain");
     }
-    else if (rc == EASNINCOMPLVAL)
+    else if (rc == TE_EASNINCOMPLVAL)
     {
         /* 
          * Option doesn't have length and value fields
@@ -1152,7 +1152,7 @@ tapi_dhcpv4_send_recv(const char *ta_name, csap_handle_t dhcp_csap,
                                  dhcp_pkt_handler, &rcv_pkt,
                                  timeout, NULL)) != 0)
     {
-        if (rc == ETADNOTMATCH && timeout == 1)
+        if (rc == TE_ETADNOTMATCH && timeout == 1)
             *err_msg = "DHCP answer doesn't come";
         else
             *err_msg = "rcf_ta_trsend_recv fails";

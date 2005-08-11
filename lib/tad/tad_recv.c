@@ -223,7 +223,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             *packet = NULL;
         }
     }
-    else if (rc == EASNINCOMPLVAL)
+    else if (rc == TE_EASNINCOMPLVAL)
         rc = 0;
 
     if (rc == 0 && csap_descr->state & TAD_STATE_RESULTS)
@@ -749,7 +749,7 @@ tad_tr_recv_thread(void *arg)
 
             if (rc != 0)
             {
-                if (rc == ETADNOTMATCH)
+                if (rc == TE_ETADNOTMATCH)
                     rc = 0;
                 break;
             }
@@ -913,9 +913,9 @@ tad_tr_recv_thread(void *arg)
                                d_len, csap_descr->total_bytes, pkt_count);
                         break;
 
-                    case ETADLESSDATA: /* @todo fragmentation */
+                    case TE_ETADLESSDATA: /* @todo fragmentation */
                         rc = 0;
-                    case ETADNOTMATCH:
+                    case TE_ETADNOTMATCH:
                         continue;
 
                     default: 
@@ -927,7 +927,7 @@ tad_tr_recv_thread(void *arg)
                     break;
             }
 
-            if (rc == ETADNOTMATCH)
+            if (rc == TE_ETADNOTMATCH)
             {
                 rc = 0;
                 continue;

@@ -85,7 +85,7 @@ file_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     if (fgets (buf, buf_len, spec_data->fstream) == NULL)
     {
         if (feof( spec_data->fstream))
-            csap_descr->last_errno = ETADENDOFDATA;
+            csap_descr->last_errno = TE_ETADENDOFDATA;
         else
             csap_descr->last_errno = errno;
         rc = -1;
@@ -189,7 +189,7 @@ file_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     fn_len = sizeof(mode);
     rc = asn_read_value_field(file_csap_spec, mode, &fn_len, 
                 "mode");
-    if (rc == EASNINCOMPLVAL)
+    if (rc == TE_EASNINCOMPLVAL)
         strcpy(mode, "a+");
     else if (rc != 0)
     {

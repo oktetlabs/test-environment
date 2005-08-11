@@ -919,7 +919,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
 
     cli_csap_spec = asn_read_indexed(csap_nds, layer, "");
 

@@ -436,7 +436,7 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
     if (mask_pat->asn_type != &ndn_data_unit_mask_s)
     {
         ERROR("%s(): wrong asn type of masḵ_pat", __FUNCTION__);
-        return EASNWRONGTYPE;
+        return TE_EASNWRONGTYPE;
     }
 
     rc = asn_child_tag_index(&ndn_data_unit_mask_s,
@@ -452,14 +452,14 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
     {
         ERROR("%s(): get indexes of leafs in mask type fails %X",
               __FUNCTION__, rc);
-        return EASNGENERAL;
+        return TE_EASNGENERAL;
     }
 
     if ((leaf_m = mask_pat->data.array[pat_index]) == NULL ||
         (leaf_v = mask_pat->data.array[val_index]) == NULL)
     {
         ERROR("%s(): no sufficient data to match with mask", __FUNCTION__);
-        return EASNINCOMPLVAL;
+        return TE_EASNINCOMPLVAL;
     }
 
     cmp_len = mask_len = leaf_m->len;
@@ -471,7 +471,7 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
     {
         VERB("%s(): mask_len %d not equal d_len %d",
              __FUNCTION__, mask_len, d_len);
-        return ETADNOTMATCH;
+        return TE_ETADNOTMATCH;
     }
 
     if (d_len < mask_len)
@@ -481,7 +481,7 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
         (data_v = leaf_v->data.other) == NULL)
     {
         ERROR("%s(): no sufficient data to match with mask", __FUNCTION__);
-        return EASNINCOMPLVAL;
+        return TE_EASNINCOMPLVAL;
     }
 
     for (d = data, m = data_m, p = data_v;
@@ -489,7 +489,7 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
          d++, p++, m++, cmp_len--)
         if ((*d & *m) != (*p & *m))
         { 
-            rc = ETADNOTMATCH;
+            rc = TE_ETADNOTMATCH;
             break;
         }
     return rc;
@@ -549,7 +549,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
         (du_sub_type = du_type->sp.named_entries[0].type) == NULL)
     {
         ERROR("%s: Wrong type of subleaf passed", __FUNCTION__);
-        return EASNGENERAL;
+        return TE_EASNGENERAL;
     }
 
     plain_syntax = du_sub_type->syntax;
@@ -590,7 +590,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                 case INTEGER:
                 case ENUMERATED:
                     if ((uint32_t)du_val->data.integer != user_int)
-                        rc = ETADNOTMATCH;
+                        rc = TE_ETADNOTMATCH;
                     break;
 
                 case BIT_STRING:
@@ -604,7 +604,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
 
                     if (pat_d_len != d_len || 
                         memcmp(data, pat_data, d_len) != 0)
-                        rc = ETADNOTMATCH;
+                        rc = TE_ETADNOTMATCH;
                     break;
 
                 default:
@@ -637,17 +637,17 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                 {
                     ERROR("%s(): intervals pattern may be applied "
                           "only with integer plain syntax", __FUNCTION__);
-                    return ETADWRONGNDS;
+                    return TE_ETADWRONGNDS;
                 }
 
                 if (du_val->asn_type != ndn_interval_sequence)
                 {
                     ERROR("%s(): Wrong type of interval choice leaf",
                           __FUNCTION__);
-                    return ETADWRONGNDS;
+                    return TE_ETADWRONGNDS;
                 }
 
-                rc = ETADNOTMATCH;
+                rc = TE_ETADNOTMATCH;
                 for (i = 0; i < du_val->len; i++)
                 {
                     interval = du_val->data.array[i];
@@ -765,7 +765,7 @@ ndn_get_du_field(asn_value *pdu, ndn_du_get_oper_t oper,
                              PRIVATE, tag);
     if (oper == NDN_DU_WR)
     {
-        if (rc == EASNINCOMPLVAL)
+        if (rc == TE_EASNINCOMPLVAL)
         { 
             const asn_type *du_type;
             rc = asn_get_child_type(asn_get_type(pdu), &du_type, 

@@ -114,14 +114,14 @@ ndn_udp4_dgram_to_plain(asn_value_p pkt, udp4_datagram **udp_dgram)
     pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be UDP PDU */
 
     if (pdu == NULL)
-        rc = EASNINCOMPLVAL;
+        rc = TE_EASNINCOMPLVAL;
 
     READ_PACKET_FIELD(src, port);
     READ_PACKET_FIELD(dst, port);
 
     pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be Ip4 PDU */
     if (pdu == NULL)
-        rc = EASNINCOMPLVAL;
+        rc = TE_EASNINCOMPLVAL;
 
     READ_PACKET_FIELD(src, addr);
     READ_PACKET_FIELD(dst, addr);

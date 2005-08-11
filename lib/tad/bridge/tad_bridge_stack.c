@@ -98,10 +98,10 @@ bridge_eth_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
 
-    if (rc && rc != EASNINCOMPLVAL)
+    if (rc && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 
-    if ((rc == EASNINCOMPLVAL) || (strcmp(choice_label, "bridge") != 0))
+    if ((rc == TE_EASNINCOMPLVAL) || (strcmp(choice_label, "bridge") != 0))
     {
         asn_value *bridge_pdu = asn_init_value(ndn_bridge_pdu); 
         asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 
@@ -116,10 +116,10 @@ bridge_eth_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     rc = asn_get_choice(traffic_nds, "pdus.1", choice_label, 
                         sizeof(choice_label));
 
-    if (rc && rc != EASNINCOMPLVAL)
+    if (rc && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 
-    if ((rc == EASNINCOMPLVAL) || (strcmp(choice_label, "eth") != 0))
+    if ((rc == TE_EASNINCOMPLVAL) || (strcmp(choice_label, "eth") != 0))
     {
 
         asn_value *eth_pdu = asn_init_value(ndn_eth_header); 
@@ -159,7 +159,7 @@ bridge_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find (csap_id)) == NULL)
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
 
     csap_descr->check_pdus_cb = bridge_eth_check_pdus;
 

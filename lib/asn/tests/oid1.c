@@ -45,7 +45,7 @@ main (int argc, char *argv[])
         if (var_bind == NULL)
         {
             fprintf(stderr, "SNMP msg to C struct: var_bind = NULL\n");
-            return EASNGENERAL; 
+            return TE_EASNGENERAL; 
         }
 
         len = vb.name.length = asn_get_length(var_bind, "name.#plain");

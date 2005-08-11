@@ -421,10 +421,10 @@ pcap_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
 
-    if (rc && rc != EASNINCOMPLVAL)
+    if (rc && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 
-    if (rc == EASNINCOMPLVAL)
+    if (rc == TE_EASNINCOMPLVAL)
     {
         asn_value *pcap_pdu = asn_init_value(ndn_pcap_filter); 
         asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 
@@ -437,7 +437,7 @@ pcap_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     } 
     else if (strcmp (choice_label, "pcap") != 0)
     {
-        return ETADWRONGNDS;
+        return TE_ETADWRONGNDS;
     }
     return 0;
 }
@@ -475,7 +475,7 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
     if ((csap_descr = csap_find (csap_id)) == NULL)
-        return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
 
     /* TODO correct with Read-only get_indexed method */
     sprintf (str_index_buf, "%d", layer);

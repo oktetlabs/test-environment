@@ -100,7 +100,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     }
     
     spec_data = (eth_csap_specific_data_p)
@@ -365,11 +365,11 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     if (csap_descr == NULL)
     {
         ERROR("%s(): null csap_descr passed %d", __FUNCTION__);
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     }
 
     if (up_payload == NULL)
-        return ETADWRONGNDS;
+        return TE_ETADWRONGNDS;
 
     pld_fragment = up_payload;
     do {
@@ -541,7 +541,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return ETADCSAPNOTEX;
+        return TE_ETADCSAPNOTEX;
     }
 
     spec_data = (eth_csap_specific_data_p)
@@ -613,11 +613,11 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         {
             if (cfi_pattern != cfi)
             {
-                rc = ETADNOTMATCH;
+                rc = TE_ETADNOTMATCH;
                 goto cleanup;
             }
         }
-        else if (rc != EASNINCOMPLVAL)
+        else if (rc != TE_EASNINCOMPLVAL)
         {
             WARN("read cfi from pattern failed %X", rc);
             goto cleanup;
