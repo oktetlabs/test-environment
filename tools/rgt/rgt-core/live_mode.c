@@ -44,6 +44,8 @@
 #include "rgt_common.h"
 #include "live_mode.h"
 
+#include "te_errno.h"
+
 static int live_process_test_start(node_info_t *node);
 static int live_process_test_end(node_info_t *node);
 static int live_process_pkg_start(node_info_t *node);
@@ -343,6 +345,37 @@ rgt_expand_regular_log_msg(log_msg *msg)
                     i++;
                     continue;
                 }
+
+                case 'r':
+                {
+                    te_errno    err;
+                    const char *src;
+                    const char *err_str;
+
+                    if ((arg = get_next_arg(msg)) == NULL)
+                    {
+                        fprintf(stderr,
+                                "Too few arguments in the message:\n");
+                        free_log_msg(msg);
+                        THROW_EXCEPTION;
+                    }
+
+                    err = *((uint32_t *)arg->val) = 
+                        ntohl(*(uint32_t *)arg->val);
+
+                    src = te_rc_src2str(err);
+                    err_str = te_rc_err2str(err);
+                    if (strlen(src) > 0)
+                    {
+                        obstack_grow(msg->obstk, src, strlen(src));
+                        obstack_1grow(msg->obstk, '-');
+                    }
+                    obstack_grow(msg->obstk, err_str, strlen(err_str));
+                    i++;
+
+                    continue;
+                }
+
                 case 't':
                 {
                     int  j;

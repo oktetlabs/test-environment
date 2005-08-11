@@ -608,7 +608,6 @@ output_regular_log_msg(log_msg *msg)
                     continue;
                 }
 
-#if 1
                 case 'r':
                 {
                     te_errno    err;
@@ -636,7 +635,6 @@ output_regular_log_msg(log_msg *msg)
 
                     continue;
                 }
-#endif
 
                 case 't':
                 {
