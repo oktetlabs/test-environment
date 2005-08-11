@@ -37,6 +37,8 @@
 #include <errno.h>
 #endif
 
+#include <stdio.h>
+
 #include "te_stdint.h"
 
 #define TE_NEW_ERRNO    (1 << 30)
@@ -405,11 +407,12 @@ te_rc_src2str(te_error_source src)
 static inline const char * 
 te_rc_err2str(te_errno err)
 {
-    static char old_errno64;
+    static char old_errno[64];
     
     if ((err & TE_NEW_ERRNO) == 0)
     {
-        TE_SPRINTF(old_errno, "Old errno 0x%X", TE_RC_GET_ERROR(err));
+        snprintf(old_errno, sizeof(old_errno), 
+                 "Old errno 0x%X", TE_RC_GET_ERROR(err));
         return old_errno;
     }
     
@@ -801,7 +804,7 @@ te_rc_os2te(int err)
         case ELOOP: return TE_ELOOP;
 #endif        
         
-#ifdef EWOULDBLOCK
+#if (defined(EWOULDBLOCK) && !(defined(EAGAIN) && EWOULDBLOCK == EAGAIN))
         case EWOULDBLOCK: return TE_EWOULDBLOCK;
 #endif  
         
@@ -869,7 +872,7 @@ te_rc_os2te(int err)
         case EBADSLT: return TE_EBADSLT;
 #endif      
         
-#ifdef EDEADLOCK
+#if (defined(EDEADLOCK) && !(defined(EDEADLK) && EDEADLK == EDEADLOCK))
         case EDEADLOCK: return TE_EDEADLOCK;
 #endif    
         
