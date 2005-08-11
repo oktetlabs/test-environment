@@ -206,7 +206,7 @@ errno_h2rpc(int host_errno_val)
 static inline const char *
 errno_rpc2str(rpc_errno rpc_errno_val)
 {
-    if (TE_RC_GET_MODULE(rpc_errno_val) == TE_RPC)
+    if (rpc_errno_val == 0 || TE_RC_GET_MODULE(rpc_errno_val) == TE_RPC)
     {
         return te_rc_err2str(rpc_errno_val);
     }
