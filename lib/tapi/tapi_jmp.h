@@ -159,7 +159,7 @@ extern int tapi_jmp_pop(const char *file, unsigned int lineno);
  * The routine is thread-safe using per thread stacks of jump points.
  *
  * @param val       Positive value to be returned by tapi_jmp_push
- *                  (0 is mapped to ETEOK)
+ *                  (0 is mapped to TE_EOK)
  * @param file      Name of the file where jump is done
  * @param lineno    Number of line in the file
  *

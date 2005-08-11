@@ -87,8 +87,8 @@ extern "C" {
  * @return error code
  *
  * @retval 0            success
- * @retval ETESMALLBUF  the buffer is too small
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_ESMALLBUF the buffer is too small
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval ENOMEM       out of memory
  */
 extern int rcf_get_ta_list(char *buf, size_t *len);
@@ -104,7 +104,7 @@ extern int rcf_get_ta_list(char *buf, size_t *len);
  *
  * @retval 0            success
  * @retval EINVAL       name of non-running Test Agent is provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval ENOMEM       out of memory
  */
 extern int rcf_ta_name2type(const char *ta_name, char *ta_type);
@@ -125,7 +125,7 @@ extern int rcf_ta_name2type(const char *ta_name, char *ta_type);
  *
  * @retval 0            success
  * @retval EINVAL       name of non-running Test Agent is provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval ENOMEM       out of memory
  */
 extern int rcf_ta_create_session(const char *ta_name, int *session);
@@ -153,7 +153,7 @@ extern int rcf_ta_create_session(const char *ta_name, int *session);
  * @retval 0            success
  * @retval EINVAL       name of non-running or located on TN Test Agent 
  *                      is provided or parameter string is too long
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval EINPROGRESS  operation is in progress
  * @retval ENOENT       cannot open NUT image file
  * @retval ENOMEM       out of memory
@@ -177,9 +177,9 @@ extern int rcf_ta_reboot(const char *ta_name, const char *boot_params,
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or OID string is
  *                      too long
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETESMALLBUF  the buffer is too small
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ESMALLBUF the buffer is too small
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
@@ -202,8 +202,8 @@ extern int rcf_ta_cfg_get(const char *ta_name, int session,
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or too OID or value
  *                      strings are too long
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
@@ -226,8 +226,8 @@ extern int rcf_ta_cfg_set(const char *ta_name, int session,
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or too OID or value
  *                      strings are too long
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
@@ -248,8 +248,8 @@ extern int rcf_ta_cfg_add(const char *ta_name, int session,
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or OID string is
  *                      too long
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
@@ -267,7 +267,7 @@ extern int rcf_ta_cfg_del(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval other        error returned by command handler on the TA
  */
 extern int rcf_ta_cfg_group(const char *ta_name, int session,
@@ -287,8 +287,8 @@ extern int rcf_ta_cfg_group(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent or bad file name 
  *                      are provided 
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
@@ -313,9 +313,9 @@ extern int rcf_ta_get_log(const char *ta_name, char *log_file);
  * @retval EINVAL       one of arguments is invalid (NULL, too long or
  *                      has inappropriate value)
  * @retval ENOENT       no such variable
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETESMALLBUF  the buffer is too small
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ESMALLBUF the buffer is too small
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
@@ -341,8 +341,8 @@ extern int rcf_ta_get_var(const char *ta_name, int session,
  * @retval EINVAL       one of arguments is invalid (NULL, too long or
  *                      has inappropriate value)
  * @retval ENOENT       no such variable
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
@@ -364,10 +364,10 @@ extern int rcf_ta_set_var(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent, non-existent
  *                      session identifier or bad file name are provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval ENOENT       no such file
  * @retval EPERM        operation not permitted
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  */
 extern int rcf_ta_get_file(const char *ta_name, int session, 
@@ -387,10 +387,10 @@ extern int rcf_ta_get_file(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent, non-existent
  *                      session identifier or bad file name are provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval ENOENT       no such file
  * @retval EPERM        operation not permitted
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  */
 extern int rcf_ta_put_file(const char *ta_name, int session, 
@@ -408,10 +408,10 @@ extern int rcf_ta_put_file(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent, non-existent
  *                      session identifier or bad file name are provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval ENOENT       no such file
  * @retval EPERM        operation not permitted
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  */
 extern int rcf_ta_del_file(const char *ta_name, int session,
@@ -437,8 +437,8 @@ extern int rcf_ta_del_file(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  *
@@ -460,9 +460,9 @@ extern int rcf_ta_csap_create(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  *
  * @sa rcf_ta_csap_create
@@ -485,10 +485,10 @@ extern int rcf_ta_csap_destroy(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
- * @retval ETAREBOOTED  Test Agent is rebooted
- * @retval ETESMALLBUF  the buffer is too small
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ESMALLBUF the buffer is too small
  */
 extern int rcf_ta_csap_param(const char *ta_name, int session,
                              csap_handle_t csap_id,
@@ -511,11 +511,11 @@ extern int rcf_ta_csap_param(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval EINPROGRESS  operation is already in progress
  * @retval EBUSY        CSAP is used for receiving now
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  *
@@ -542,10 +542,10 @@ extern int rcf_ta_trsend_start(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval EALREADY     traffic sending is not in progress now
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  *
  * @sa rcf_ta_trsend_start
@@ -585,11 +585,11 @@ typedef void (*rcf_pkt_handler)(
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval ETEIO        cannot interact with RCF
+ * @retval TE_EIPC      cannot interact with RCF
  * @retval EBADF        no such CSAP
  * @retval EINPROGRESS  operation is already in progress
  * @retval EBUSY        CSAP is used for sending now
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       not enough memory in the system
  * @retval other        error returned by command handler on the TA
  *
@@ -646,10 +646,10 @@ extern int rcf_ta_trrecv_wait(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval EALREADY     traffic receiving is not in progress now
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  *
  * @sa rcf_ta_trrecv_start
@@ -673,12 +673,12 @@ extern int rcf_ta_trrecv_stop(const char *ta_name, int session,
  * @retval 0            success
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval EALREADY     traffic receiving is not in progress now
  * @retval ENODATA      no data available on TA, because handler was not
  *                      specified in rcf_ta_trrecv_start
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  *
  * @sa rcf_ta_trrecv_start
@@ -713,10 +713,10 @@ extern int rcf_ta_trrecv_get(const char *ta_name, int session,
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or flag blocking
  *                      is used together with num 0
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval EBUSY        CSAP is busy
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
@@ -750,8 +750,8 @@ extern int rcf_ta_trsend_recv(const char *ta_name, int session,
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval ENOENT       no such routine
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  */
 extern int rcf_ta_call(const char *ta_name, int session,
@@ -785,8 +785,8 @@ extern int rcf_ta_call(const char *ta_name, int session,
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval ENOENT       no such routine
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  *
  * @sa rcf_ta_kill_process
@@ -819,8 +819,8 @@ extern int rcf_ta_start_thread(const char *ta_name, int session,
  * @retval EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval ENOENT       no such process
- * @retval ETEIO        cannot interact with RCF 
- * @retval ETAREBOOTED  Test Agent is rebooted
+ * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval ENOMEM       out of memory
  *
  * @sa rcf_ta_start_process
@@ -860,10 +860,10 @@ extern void rcf_api_cleanup(void);
  * @return error code
  *
  * @retval 0            success
- * @retval ETAREBOOTED  if at least one test agent has been normally
+ * @retval TE_ETAREBOOTED  if at least one test agent has been normally
  *                      rebooted
- * @retval ETADEAD      if at least one agent was dead
- * @retval ETEIO        cannot interact with RCF 
+ * @retval TE_ETADEAD   if at least one agent was dead
+ * @retval TE_EIPC      cannot interact with RCF 
  * 
  */
 extern int rcf_check_agents(void);

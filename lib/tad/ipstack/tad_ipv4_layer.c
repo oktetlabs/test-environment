@@ -387,7 +387,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
 
     if (pkt_list == NULL)
-        return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);
+        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
     if (up_payload == NULL)
     {
@@ -400,7 +400,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 csap_descr->layers[layer].specific_data; 
 
     if (csap_descr->type == TAD_CSAP_DATA) /* TODO */
-        return ETENOSUPP;
+        return TE_EOPNOTSUPP;
 
     /* TODO: IPv4 options generating */ 
 
@@ -813,7 +813,7 @@ int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
     UNUSED(layer);
     UNUSED(tmpl_pdu);
 
-    return ETENOSUPP;
+    return TE_EOPNOTSUPP;
 }
 #endif
 

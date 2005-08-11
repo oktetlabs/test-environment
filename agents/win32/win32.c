@@ -300,7 +300,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
         sprintf(check_cmd,
                 "TMP=`which %s 2>/dev/null` ; test -n \"$TMP\" ;", rtn);
         if (system(check_cmd) != 0)
-            SEND_ANSWER("%d", ETENOSUCHNAME);
+            SEND_ANSWER("%d", TE_ENOENT);
 
         if ((pid = fork()) == 0)
         {
@@ -314,7 +314,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
         SEND_ANSWER("%d %d", 0, pid);
     }
 
-    SEND_ANSWER("%d", ETENOSUCHNAME);
+    SEND_ANSWER("%d", TE_ENOENT);
 }
 
 struct rcf_thread_parameter {
@@ -413,10 +413,10 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
             }
         }
         pthread_mutex_unlock(&thread_pool_mutex);
-        SEND_ANSWER("%d", ETOOMANY);
+        SEND_ANSWER("%d", TE_ETOOMANY);
     }
 
-    SEND_ANSWER("%d", ETENOSUCHNAME);
+    SEND_ANSWER("%d", TE_ENOENT);
 }
 
 /* See description in rcf_ch_api.h */
@@ -457,7 +457,7 @@ shell(int argc, char * const argv[])
         used += snprintf(cmdbuf + used, cmdlen - used, "%s ", argv[i]);
     }
     if (used >= cmdlen)
-        return TE_RC(TE_TA_WIN32, ETESMALLBUF);
+        return TE_RC(TE_TA_WIN32, TE_ESMALLBUF);
 
     rc = system(cmdbuf);
     if (rc == -1)

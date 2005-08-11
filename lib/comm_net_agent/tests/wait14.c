@@ -146,10 +146,10 @@ local_station_proc(void *arg)
     len = declared_input_buffer_length;
     ptr = input_buffer;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    if (rc != ETESMALLBUF)
+    if (rc != TE_ESMALLBUF)
     {
        fprintf(stderr, "ERROR: the first call of rcf_comm_agent_wait() "
-              "returned %d instead of ETESMALLBUF(%d)\n", rc, ETESMALLBUF);
+              "returned %d instead of TE_ESMALLBUF(%d)\n", rc, TE_ESMALLBUF);
        exit(3);
     }
     ptr += len;
@@ -157,17 +157,17 @@ local_station_proc(void *arg)
     /* the second call */
     len = declared_input_buffer_length;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    if (rc != ETEPENDING)
+    if (rc != TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the second call of rcf_comm_agent_wait() "
-              "returned %d instead of ETEPENDING(%d)\n", rc, ETEPENDING);
+              "returned %d instead of TE_EPENDING(%d)\n", rc, TE_EPENDING);
        exit(3);
     }
     if (len != MESSAGE_SIZE - (ptr - input_buffer))
     {
        fprintf(stderr, "ERROR: rcf_comm_agent_wait() did not "
               "return the length of the whole message (%d) while "
-              "returning ETEPENDING\n", MESSAGE_SIZE);
+              "returning TE_EPENDING\n", MESSAGE_SIZE);
        exit(3);
     }
     len = declared_input_buffer_length;
@@ -199,7 +199,7 @@ local_station_proc(void *arg)
  * as the input buffer. The message consists of a command and an attachment,
  * the latter must be longer than one input buffer but shorter than two. 
  * The first call of the function @b rcf_comm_agent_wait() must return 
- * ETESMALLBUF, the second call must return ETEPENDING, and the third call
+ * TE_ESMALLBUF, the second call must return TE_EPENDING, and the third call
  * must succeed. The three calls must make up the original message sent
  * by the remote station.
  *

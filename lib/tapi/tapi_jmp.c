@@ -250,7 +250,7 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     }
     else if (val == 0)
     {
-        val = ETEOK;
+        val = TE_EOK;
     }
 
     ctx = tapi_jmp_get_ctx(FALSE);

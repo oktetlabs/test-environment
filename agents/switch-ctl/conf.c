@@ -108,7 +108,7 @@ snprintf_rc(char *s, size_t len, const char *fmt, ...)
     va_start(ap, fmt);
     if ((size_t)vsnprintf(s, len, fmt, ap) >= len)
     {
-        return TE_RC(TE_TA_SWITCH_CTL, ETESMALLBUF);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ESMALLBUF);
     }
     else
     {
@@ -819,7 +819,7 @@ list_ports(unsigned int gid, const char *oid, char **list)
             {
                 free(*list);
                 ERROR("Too small buffer allocated");
-                return TE_RC(TE_TA_SWITCH_CTL, ETESMALLBUF);
+                return TE_RC(TE_TA_SWITCH_CTL, TE_ESMALLBUF);
             }
         }
         VERB("number_of_ports = %d\nPort list = %s",
@@ -3538,7 +3538,7 @@ vlan_list(int gid, char *oid, char **list)
         ERROR("List of all VLANs does not fit in allocated "
                           "string, increase VID_STR_MAX");
         free(*list);
-        return TE_RC(TE_TA_SWITCH_CTL, ETESMALLBUF);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ESMALLBUF);
     }
     VERB("List of VLANs: %s", *list);
 

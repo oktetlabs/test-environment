@@ -182,7 +182,7 @@ write_binary_attachment(rcf_msg *msg,  char *buf, uint32_t buf_len)
  * @param req           user request structure
  *
  * @return              Error returned by the request handler or:
- * @retval ETEIO        no handler is registered for 
+ * @retval TE_EIPC      no handler is registered for 
  *                      the req->message->opcode type of request
  * @retval EINVAL       if wrong opcode is given
  */
@@ -221,7 +221,7 @@ process_user_request(usrreq *req)
         if (rcfrh_is_agent(msg->ta) > 0)
             strcpy(msg->id, rcfrh_agent_get_type(msg->ta));
         else
-            msg->error = ETEIO;
+            msg->error = TE_EIPC;
         goto answer;
     }
     else if (msg->opcode == RCFOP_GET_LOG)
@@ -244,7 +244,7 @@ process_user_request(usrreq *req)
     {
         ERROR("No handler is set for %s type of request", 
               rcf_op_to_string(msg->opcode));
-        msg->error = ETEIO;
+        msg->error = TE_EIPC;
         goto answer;
     }
 

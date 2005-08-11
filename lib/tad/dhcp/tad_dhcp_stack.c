@@ -244,7 +244,7 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                                        sizeof(struct sockaddr), 1); 
 
     if (csap_nds == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find (csap_id)) == NULL)
         return ETADCSAPNOTEX;

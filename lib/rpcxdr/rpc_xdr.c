@@ -86,7 +86,7 @@ rpc_find_info(const char *name)
  *
  * @return Status code
  * @retval ENOENT       No such function
- * @retval ETESUNRPC    Buffer is too small or another encoding error
+ * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
 int 
@@ -115,7 +115,7 @@ rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, void *objp)
 
     /* Encode argument */
     if (!info->in(&xdrs, objp))
-        return TE_RC(TE_RCF_RPC, ETESUNRPC);
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
     
 #ifdef RPC_XML    
     xdrxml_free(&xdrs);
@@ -158,7 +158,7 @@ rpc_xdr_decode_result(const char *name, void *buf, size_t buflen,
     xdrs.x_ops->x_getint32(&xdrs, &rc);
     
     if (rc == 0)
-        return TE_RC(TE_RCF_RPC, ETESUNRPC);
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
 #endif
 
     if ((info = rpc_find_info(name)) == NULL)
@@ -166,12 +166,12 @@ rpc_xdr_decode_result(const char *name, void *buf, size_t buflen,
     
     /* Decode argument */
     if (!info->out(&xdrs, objp))
-        return TE_RC(TE_RCF_RPC, ETESUNRPC);
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
 #ifdef RPC_XML
     rc = xdrxml_return_code(&xdrs);
     xdrxml_free(&xdrs);
     if (rc == FALSE)
-        return TE_RC(TE_RCF_RPC, ETESUNRPC);
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
 #endif    
    
     return 0;
@@ -224,7 +224,7 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
         (tmp = strchr(buf + XML_CALL_PREFIX_LEN, '"')) == NULL ||
         (n = (tmp - buf) - XML_CALL_PREFIX_LEN) >= RCF_RPC_MAX_NAME)
     {
-        return ETESUNRPC;
+        return TE_ESUNRPC;
     }
     memcpy(name, buf + XML_CALL_PREFIX_LEN, n);
     name[n] = 0;
@@ -252,7 +252,7 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
     if (!info->in(&xdrs, objp))
     {
         free(objp);
-        return TE_RC(TE_RCF_RPC, ETESUNRPC);
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
     }
 #ifdef RPC_XML
     xdrxml_free(&xdrs);
@@ -274,7 +274,7 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
  *                      pointer to structure tarpc_bind_out
  *
  * @return Status code
- * @retval ETESUNRPC    Buffer is too small or another encoding error
+ * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
 int 
@@ -305,7 +305,7 @@ rpc_xdr_encode_result(char *name, te_bool rc,
 #endif    
     /* Encode argument */
     if (rc && !info->out(&xdrs, objp))
-        return TE_RC(TE_RCF_RPC, ETESUNRPC);
+        return TE_RC(TE_RCF_RPC, TE_ESUNRPC);
 
 #ifdef RPC_XML    
     *buflen = strlen(buf) + 1;

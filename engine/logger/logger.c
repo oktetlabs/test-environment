@@ -186,7 +186,7 @@ te_handler(void)
             size_t received;
             size_t total;
 
-            if (rc != TE_RC(TE_IPC, ETESMALLBUF))
+            if (rc != TE_RC(TE_IPC, TE_ESMALLBUF))
             {
                 ERROR("Message receiving failure: %X", rc);
                 break;
@@ -458,8 +458,8 @@ ta_handler(void *ta)
                  */
                 continue;
             }
-            else if (rc == TE_RC(TE_RCF, ETAREBOOTED) ||
-                     rc == TE_RC(TE_RCF, ETADEAD))
+            else if (rc == TE_RC(TE_RCF, TE_ETAREBOOTED) ||
+                     rc == TE_RC(TE_RCF, TE_ETADEAD))
             {
                 /* 
                  * Ignore error if TA is rebooted by RCF, but terminate
@@ -828,7 +828,7 @@ main(int argc, const char *argv[])
             memset(ta_names, 0, names_len * sizeof(char));
             res = rcf_get_ta_list(ta_names, &names_len);
 
-        } while (TE_RC_GET_ERROR(res) == ETESMALLBUF);
+        } while (TE_RC_GET_ERROR(res) == TE_ESMALLBUF);
 
         if (res != 0)
         {

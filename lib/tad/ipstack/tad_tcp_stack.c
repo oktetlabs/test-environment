@@ -109,7 +109,7 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     {
         if (buf_len < spec_data->wait_length)
         {
-            csap_descr->last_errno = ETESMALLBUF;
+            csap_descr->last_errno = TE_ESMALLBUF;
             ERROR("%s(CSAP %d) wait buf passed %d, but buf_len %d",
                   __FUNCTION__, csap_descr->id,
                   spec_data->wait_length, buf_len);
@@ -266,7 +266,7 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     fprintf(stderr, "DHCP INIT called\n");
     if (csap_nds == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return ETADCSAPNOTEX;
@@ -475,7 +475,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
          __FUNCTION__, csap_id, layer); 
 
     if (csap_nds == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find (csap_id)) == NULL)
         return ETADCSAPNOTEX;
@@ -571,7 +571,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     {
         F_ERROR("%s(): TCP CSAP %d, non-plain local port not supported",
                 __FUNCTION__, csap_descr->id);
-        return ETENOSUPP;
+        return TE_EOPNOTSUPP;
     }
     else
         return rc;
@@ -597,7 +597,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     {
         F_ERROR("%s(): TCP CSAP %d, non-plain remote port not supported",
                 __FUNCTION__, csap_descr->id);
-        return ETENOSUPP;
+        return TE_EOPNOTSUPP;
     }
     else
         return rc;

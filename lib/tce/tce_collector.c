@@ -534,7 +534,7 @@ tce_stop_collector(void)
         return TE_RC(TE_TA_LINUX, errno);
     tce_collector_pid = 0;
     return WIFEXITED(tce_status) && WEXITSTATUS(tce_status) == 0 ? 0 : 
-        TE_RC(TE_TA_LINUX, ETESHCMD);
+        TE_RC(TE_TA_LINUX, TE_ESHCMD);
 }
 
 int 

@@ -450,9 +450,9 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     rpcs->timeout = 0;
     rpcs->start = 0;
     *(rpcs->lib) = '\0';
-    if (TE_RC_GET_ERROR(rpcs->_errno) == ETERPCTIMEOUT ||
+    if (TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCTIMEOUT ||
         TE_RC_GET_ERROR(rpcs->_errno) == ETIMEDOUT ||
-        TE_RC_GET_ERROR(rpcs->_errno) == ETERPCDEAD)
+        TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCDEAD)
     {
         rpcs->timed_out = TRUE;
     }

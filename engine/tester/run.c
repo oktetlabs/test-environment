@@ -809,7 +809,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             {
                 ERROR("Too short buffer is reserved for GDB init file "
                       "name");
-                return ETESMALLBUF;
+                return TE_ESMALLBUF;
             }
             /* TODO Clean up */
             f = fopen(gdb_init, "w");
@@ -831,7 +831,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             {
                 ERROR("Too short buffer is reserved for shell command "
                       "prefix");
-                return ETESMALLBUF;
+                return TE_ESMALLBUF;
             }
         }
         else
@@ -841,7 +841,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             {
                 ERROR("Too short buffer is reserved for shell command "
                       "prefix");
-                return ETESMALLBUF;
+                return TE_ESMALLBUF;
             }
         }
     }
@@ -853,7 +853,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                 (int)sizeof(shell))
         {
             ERROR("Too short buffer is reserved for shell command prefix");
-            return ETESMALLBUF;
+            return TE_ESMALLBUF;
         }
         if (snprintf(vg_filename, sizeof(vg_filename),
                      TESTER_VG_FILENAME_FMT, id) >=
@@ -861,14 +861,14 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         {
             ERROR("Too short buffer is reserved for Vagrind output "
                   "filename");
-            return ETESMALLBUF;
+            return TE_ESMALLBUF;
         }
         if (snprintf(postfix, sizeof(postfix), " 2>%s", vg_filename) >=
                 (int)sizeof(postfix))
         {
             ERROR("Too short buffer is reserved for test script "
                   "command postfix");
-            return ETESMALLBUF;
+            return TE_ESMALLBUF;
         }
     }
 
@@ -886,7 +886,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         ERROR("Too short buffer is reserved for test script command "
               "line");
         free(cmd);
-        return ETESMALLBUF;
+        return TE_ESMALLBUF;
     }
     free(params_str);
 

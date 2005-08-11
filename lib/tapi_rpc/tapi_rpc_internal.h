@@ -74,14 +74,14 @@
             if (!RPC_IS_CALL_OK(rpcs))                                  \
             {                                                           \
                 rpcs->iut_err_jump = TRUE;                              \
-                TAPI_JMP_DO(ETEFAIL);                                   \
+                TAPI_JMP_DO(TE_EFAIL);                                  \
             }                                                           \
             if (_res)                                                   \
             {                                                           \
                 if (rpcs->iut_err_jump)                                 \
                 {                                                       \
                     rpcs->iut_err_jump = TRUE;                          \
-                    TAPI_JMP_DO(ETEFAIL);                               \
+                    TAPI_JMP_DO(TE_EFAIL);                              \
                 }                                                       \
             }                                                           \
             rpcs->iut_err_jump = TRUE;                                  \
@@ -89,13 +89,13 @@
         else                                                            \
         {                                                               \
             /* Try to jump */                                           \
-            TAPI_JMP_DO(ETEFAIL);                                       \
+            TAPI_JMP_DO(TE_EFAIL);                                      \
         }                                                               \
     } while (0)
 
 /**
  * If RPC call status is OK, check condition and set specified variable
- * to _error_val and RPC server errno to ETECORRUPTED, if it is true.
+ * to _error_val and RPC server errno to TE_ECORRUPTED, if it is true.
  * If RPC call status is not OK, variable is set to -1 and RPC server
  * errno is not updated.
  *
@@ -115,7 +115,7 @@
             {                                                       \
                 ERROR("Function %s() returned incorrect value %d",  \
                       #_func, (_var));                              \
-                rpcs->_errno = TE_RC(TE_TAPI, ETECORRUPTED);        \
+                rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
                 (_var) = (_error_val);                              \
             }                                                       \
             else if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)            \
@@ -136,7 +136,7 @@
 /**
  * If RPC call status is OK, check that variable with function return
  * value is greater or equal to minus one and set specified variable
- * to -1 and RPC server errno to ETECORRUPTED, it is true.
+ * to -1 and RPC server errno to TE_ECORRUPTED, it is true.
  * If RPC call status is not OK, variable is set to -1 and RPC server
  * errno is not updated.
  *
@@ -152,7 +152,7 @@
 /**
  * If RPC call status is OK, check that variable with function return
  * value is zero or minus one and set specified variable to -1 and RPC
- * server errno to ETECORRUPTED, it is true.  If RPC call status is
+ * server errno to TE_ECORRUPTED, it is true.  If RPC call status is
  * not OK, variable is set to -1 and RPC server errno is not updated.
  *
  * The function assumes to have RPC server handle as 'rpcs' variable in

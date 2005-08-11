@@ -109,12 +109,12 @@ extern int ipc_send_message(struct ipc_client *ipcc,
  *                          on entry - length of the buffer;
  *                          on exit - length of the message received
  *                                    (or full length of the message
- *                                     if ETESMALLBUF is returned).
+ *                                     if TE_ESMALLBUF is returned).
  *
  * @return Status code.
  *
  * @retval 0            Success
- * @retval ETESMALLBUF  Receive buffer is too small for the message,
+ * @retval TE_ESMALLBUF  Receive buffer is too small for the message,
  *                      whole buffer is filled up, *p_buf_len
  *                      contains whole answer length,
  *                      ipc_receive_rest_answer() must be used to
@@ -141,12 +141,12 @@ extern int ipc_send_message_with_answer(struct ipc_client *ipcc,
  *                          on entry - length of the buffer;
  *                          on exit - length of the message received
  *                                    (or full length of the message
- *                                     if ETESMALLBUF is returned).
+ *                                     if TE_ESMALLBUF is returned).
  *
  * @return Status code.
  *
  * @retval 0            Success
- * @retval ETESMALLBUF  Receive buffer is too small for the message,
+ * @retval TE_ESMALLBUF  Receive buffer is too small for the message,
  *                      whole buffer is filled up, *p_buf_len
  *                      contains whole answer length,
  *                      ipc_receive_rest_answer() must be used to
@@ -170,12 +170,12 @@ extern int ipc_receive_answer(struct ipc_client *ipcc,
  *                          on entry - length of the buffer;
  *                          on exit - length of the message received
  *                                    (or full length of the message
- *                                     if ETESMALLBUF is returned).
+ *                                     if TE_ESMALLBUF is returned).
  *
  * @return Status code.
  *
  * @retval 0            Success
- * @retval ETESMALLBUF  Receive buffer is too small for the message,
+ * @retval TE_ESMALLBUF  Receive buffer is too small for the message,
  *                      whole buffer is filled up, *p_buf_len
  *                      contains whole answer length,
  *                      ipc_receive_rest_answer() must be used to

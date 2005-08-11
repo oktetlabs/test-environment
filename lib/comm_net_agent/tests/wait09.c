@@ -149,14 +149,14 @@ local_station_proc(void *arg)
     {
        fprintf(stderr, "ERROR: rcf_comm_agent_wait() did not "
               "return the length of the whole message (%d) while "
-              "returning ETEPENDING\n", MESSAGE_SIZE);
+              "returning TE_EPENDING\n", MESSAGE_SIZE);
        exit(3);
     }
     len = declared_input_buffer_length;
-    if (rc != ETEPENDING)
+    if (rc != TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the first call of rcf_comm_agent_wait() "
-              "returned %d instead of ETEPENDING(%d)\n", rc, ETEPENDING);
+              "returned %d instead of TE_EPENDING(%d)\n", rc, TE_EPENDING);
        exit(3);
     }
     ptr += len;
@@ -186,7 +186,7 @@ local_station_proc(void *arg)
  * a big attachment so that the input buffer of @b rcf_comm_agent_wait() 
  * function can room the whole command and only a part of the attachment,
  * but the total message must fit in two input buffers. The first call
- * of the function returns ETEPENDING, the second call succeeds. The two
+ * of the function returns TE_EPENDING, the second call succeeds. The two
  * calls must make up the whole consistent message sent by the remote
  * station.
  *

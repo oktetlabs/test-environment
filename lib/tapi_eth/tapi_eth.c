@@ -536,7 +536,7 @@ tapi_eth_prepare_pattern_unit(uint8_t *src_mac, uint8_t *dst_mac,
     asn_value *pat_unit = NULL;
 
     if (pattern_unit == NULL)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
 
     do {

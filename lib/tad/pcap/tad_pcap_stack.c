@@ -472,7 +472,7 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     VERB("%s() started", __FUNCTION__);
 
     if (csap_nds == NULL)
-        return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);
+        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
     if ((csap_descr = csap_find (csap_id)) == NULL)
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);

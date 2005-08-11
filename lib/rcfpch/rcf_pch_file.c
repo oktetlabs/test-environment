@@ -110,7 +110,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         {
             ERROR("Invalid format - %s separator",
                   op == RCFOP_FGET ? "missing" : "extra");
-            rc = ETEBADFORMAT;
+            rc = TE_EFMT;
             goto reject;
         }
         /* Try to consider address as hexadecimal number */
@@ -121,7 +121,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             {
                 ERROR("Unrecongnized symbols in address "
                                   "'%s'", tmp);
-                rc = ETEBADFORMAT;
+                rc = TE_EFMT;
                 goto reject;
             }
             addr = (void *)addr_int;
@@ -142,7 +142,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             {
                 ERROR("No such name '%s' in symbol table",
                                   (sep != NULL) ? buf : ptr);
-                rc = ETENOSUCHNAME;
+                rc = TE_ENOENT;
                 goto reject;
             }
             addr = *(uint8_t **)addr_ptr;
@@ -156,7 +156,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             {
                 ERROR("Incorrect length field '%s' format",
                                   sep + 1);
-                rc = ETEBADFORMAT;
+                rc = TE_EFMT;
                 goto reject;
             }
             /* Length to read has successfully been recognized */
@@ -290,7 +290,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             rw_len = reply_buflen;
             rc = rcf_comm_agent_wait(conn, cbuf + answer_plen, &rw_len,
                                      NULL);
-            if ((rc != 0) && (rc != ETEPENDING))
+            if ((rc != 0) && (rc != TE_EPENDING))
             {
                 ERROR("Communication error %d", rc);
                 close(fd);
@@ -305,7 +305,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             if (rw_len > reply_buflen)
                 rw_len = reply_buflen;
             rest -= rw_len;
-            if ((rw_len == 0) || ((rc == ETEPENDING) != (rest != 0)))
+            if ((rw_len == 0) || ((rc == TE_EPENDING) != (rest != 0)))
             {
                 ERROR("Communication error - %s",
                       (rw_len == 0) ? "empty read" : "extra/missing data");
@@ -377,7 +377,7 @@ reject:
             rest = reply_buflen;
             error = rcf_comm_agent_wait(conn, cbuf + answer_plen,
                                         &rest, NULL);
-            if (error != 0 && error != ETEPENDING)
+            if (error != 0 && error != TE_EPENDING)
             {
                 return error;
             }

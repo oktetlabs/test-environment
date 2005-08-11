@@ -212,9 +212,9 @@ rcf_comm_agent_init(const char *config_str,
  *                      on return:
  *                      number of bytes really written if 0 returned
  *                      (success);
- *                      unchanged if ETESMALLBUF returned;
+ *                      unchanged if TE_ESMALLBUF returned;
  *                      number of bytes in the message (with attachment)
- *                      if ETEPENDING returned. (Note: If the function
+ *                      if TE_EPENDING returned. (Note: If the function
  *                      called a number of times to receive one big message,
  *                      a full number of bytes will be returned on first
  *                      call.
@@ -231,16 +231,16 @@ rcf_comm_agent_init(const char *config_str,
  * @return Status code.
  * @retval 0            Success (message received and written to the
  *                      buffer).
- * @retval ETESMALLBUF  Buffer is too small for the message. The part of
+ * @retval TE_ESMALLBUF Buffer is too small for the message. The part of
  *                      the message is written to the buffer. Other
  *                      part(s) of the message can be read by the next
  *                      calls to the rcf_comm_agent_wait. The ETSMALLBUF
  *                      will be returned until last part of the message
  *                      will be read.
- * @retval ETEPENDING   Attachment is too big to fit into the buffer. Part
+ * @retval TE_EPENDING  Attachment is too big to fit into the buffer. Part
  *                      of the message with attachment is written to the
  *                      buffer. Other part(s) can be read by the next calls
- *                      to the rcf_comm_engine_receive. The ETEPENDING
+ *                      to the rcf_comm_engine_receive. The TE_EPENDING
  *                      will be returned until last part of the message
  *                      will be read.
  * @retval other value  errno.
@@ -274,7 +274,7 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
                 *pbytes = rcc->bytes_to_read;
                 rcc->bytes_to_read -= tmp;
             }
-            return ETEPENDING;
+            return TE_EPENDING;
         }
     }
 
@@ -361,13 +361,13 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
                         return ret; /* Some error occured */
                     rcc->bytes_to_read = attach_size - to_read;
                     *pbytes = attach_size + l;
-                    return ETEPENDING;
+                    return TE_EPENDING;
                 }
             }
         }
 
         if (l == (*pbytes - 1))
-            return ETESMALLBUF;
+            return TE_ESMALLBUF;
 
         l += r;
     }

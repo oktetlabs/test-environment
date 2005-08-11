@@ -325,7 +325,7 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);
 
     if (pkt_list == NULL || tmpl_pdu == NULL)
-        return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);
+        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
     if (csap_descr->type == TAD_CSAP_DATA) 
     {

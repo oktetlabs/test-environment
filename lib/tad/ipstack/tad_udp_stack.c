@@ -282,7 +282,7 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     int    rc; 
 
     if (csap_nds == NULL)
-        return TE_RC(TE_TAD_CSAP, ETEWRONGPTR);
+        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
     if ((csap_descr = csap_find (csap_id)) == NULL)
         return TE_RC(TE_TAD_CSAP, ETADCSAPNOTEX);

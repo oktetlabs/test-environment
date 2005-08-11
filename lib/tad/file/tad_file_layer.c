@@ -213,7 +213,7 @@ file_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     UNUSED(tmpl_pdu);
     UNUSED(pattern_pdu);
 
-    return ETENOSUPP;
+    return TE_EOPNOTSUPP;
 }
 
 

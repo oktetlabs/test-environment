@@ -51,7 +51,7 @@ main (int argc, char *argv[])
         len = vb.name.length = asn_get_length(var_bind, "name.#plain");
         if (len > sizeof(vb.name.id) / sizeof(vb.name.id[0]))
         {
-            return ETESMALLBUF;
+            return TE_ESMALLBUF;
         }
         rc = asn_read_value_field (var_bind, &vb.name.id,
                                     &len, "name.#plain"); 

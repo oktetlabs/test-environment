@@ -24,7 +24,7 @@
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * 
- * $Id: clitest.c 9984 2005-01-25 14:08:32Z arybchik $
+ * $Id$
  */
 
 #define TE_TEST_NAME    "cli/serial"

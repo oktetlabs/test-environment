@@ -118,7 +118,7 @@ csap_db_clear()
      * There is no RCF command to remove all CSAPs, and there are no
      * any other situation, when such operation may be reasonable.
      */
-    return ETENOSUPP; 
+    return TE_EOPNOTSUPP; 
 }
 
 /**
@@ -226,7 +226,8 @@ csap_create(const char *type)
              i, new_csap->layers[i].proto);
 
         if (new_csap->layers[i].proto_support == NULL)
-            CSAP_CREATE_ERROR(ETENOSUPP, "%s(): no support for proto '%s'", 
+            CSAP_CREATE_ERROR(TE_EOPNOTSUPP, 
+                              "%s(): no support for proto '%s'", 
                               __FUNCTION__, new_csap->layers[i].proto);
     } 
 

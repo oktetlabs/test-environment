@@ -106,7 +106,7 @@ icmp4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     UNUSED(arg_num); 
     UNUSED(csap_descr); 
     UNUSED(layer); 
-    return TE_RC(TE_TAD_CSAP, ETENOSUPP);
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }
 
 
@@ -136,7 +136,7 @@ int icmp4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
     UNUSED(pattern_pdu);
     UNUSED(parsed_packet);
 
-    return ETENOSUPP;
+    return TE_EOPNOTSUPP;
 }
 
 /**
@@ -159,7 +159,7 @@ int icmp4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
     UNUSED(layer);
     UNUSED(tmpl_pdu); 
     UNUSED(pattern_pdu); 
-    return ETENOSUPP;
+    return TE_EOPNOTSUPP;
 }
 
 

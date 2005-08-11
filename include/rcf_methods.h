@@ -150,16 +150,16 @@ typedef te_bool (* rcf_talib_is_ready)(rcf_talib_handle handle);
  * @return error code
  * @retval 0            success
  *
- * @retval ETESMALLBUF  Buffer is too small for the command. The part
+ * @retval TE_ESMALLBUF Buffer is too small for the command. The part
  *                      of the command is written to the buffer. Other
  *                      part(s) of the message can be read by the subsequent
  *                      routine calls. ETSMALLBUF is returned until last
  *                      part of the message is read.
  *
- * @retval ETEPENDING   Attachment is too big to fit into the buffer.
+ * @retval TE_EPENDING  Attachment is too big to fit into the buffer.
  *                      The command and a part of the attachment is written
  *                      to the buffer. Other part(s) can be read by the
- *                      subsequent routine calls. ETEPENDING is returned
+ *                      subsequent routine calls. TE_EPENDING is returned
  *                      until last part of the message is read.
  *
  * @retval other        OS errno

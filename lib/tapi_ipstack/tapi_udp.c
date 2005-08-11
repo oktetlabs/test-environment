@@ -168,7 +168,7 @@ tapi_udp_ip4_eth_pattern_unit(const uint8_t *src_addr,
     asn_value *pattern = NULL;
 
     if (result_value == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     do {
         rc = asn_parse_value_text("{ pdus { udp:{}, ip4:{}, eth:{}}}",
@@ -228,7 +228,7 @@ tapi_udp4_prepare_tmpl_file(const char *fname, const udp4_datagram *dgram)
     int i;
 
     if (fname == NULL || dgram == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     f = fopen(fname, "w");
     if (f == NULL)

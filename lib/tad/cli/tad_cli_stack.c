@@ -916,7 +916,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     VERB("%s() entered", __FUNCTION__);
 
     if (csap_nds == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return ETADCSAPNOTEX;

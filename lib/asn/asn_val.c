@@ -376,7 +376,7 @@ asn_free_subvalue(asn_value_p value, const char* labels)
     if (!value || !labels)
     {
         free(up_labels);
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
     }
 
     len = strlen(labels);
@@ -417,7 +417,7 @@ asn_free_child_value(asn_value_p value,
     int index;
 
     if (value == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     switch (value->syntax)
     {
@@ -488,7 +488,7 @@ asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
     unsigned i; 
 
     if(!type || !index)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if( !(type->syntax & CONSTRAINT) || (type->syntax & 1))
         return EASNGENERAL; 
@@ -517,7 +517,7 @@ asn_impl_named_subvalue_index(const asn_type *type, const char *label,
     unsigned i; 
 
     if(!type || !label || !index)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if( !(type->syntax & CONSTRAINT) || (type->syntax & 1))
         return EASNGENERAL; 
@@ -550,7 +550,7 @@ asn_impl_find_subtype(const asn_type * type, const char *label,
 { 
 
     if(!label || !type || !found_type)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if( !(type->syntax & CONSTRAINT) )
         return EASNGENERAL;
@@ -584,7 +584,7 @@ asn_put_child_value(asn_value *container, asn_value *subvalue,
     int index;
 
     if (container == NULL) 
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     container->txt_len = -1;
 
@@ -606,7 +606,7 @@ asn_put_child_value_by_label(asn_value *container, asn_value *subvalue,
 
 
     if(label == NULL || container == NULL)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     rc = asn_impl_named_subvalue_index(container->asn_type, 
                                        label, &index); 
@@ -734,7 +734,7 @@ asn_impl_write_value_field(asn_value_p container,
     if (!container || 
         (! (container->syntax & CONSTRAINT) &&
         container->syntax != PR_ASN_NULL && !data && d_len))
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     container->txt_len = -1;
 
@@ -931,14 +931,14 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
     size_t           m_len;
     int              rc;
 
-    if (!container) return ETEWRONGPTR; 
+    if (!container) return TE_EWRONGPTR; 
 
     rc = asn_get_subvalue(container, &value, field_labels); 
     if (rc) return rc;
 
     if (value->syntax != PR_ASN_NULL &&
         ((data == NULL) || (d_len == NULL)))
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     m_len = value->len; 
 
@@ -952,7 +952,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
             *d_len = 1;
         }
         else 
-            return ETESMALLBUF;
+            return TE_ESMALLBUF;
         break;
 #endif
     case INTEGER: 
@@ -988,7 +988,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
     case REAL:
         { 
             if (*d_len < value->len)
-                return ETESMALLBUF;
+                return TE_ESMALLBUF;
 
             *d_len = value->len;
             memcpy(data, value->data.other, m_len);
@@ -1055,7 +1055,7 @@ asn_write_string(asn_value *container, const char *value,
     int rc;
 
     if (container == NULL || value == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if ((rc = asn_get_subvalue(container, &leaf_val, labels)) != 0) 
         return rc;
@@ -1076,7 +1076,7 @@ asn_read_string(const asn_value *container, char **value,
     int rc;
 
     if (container == NULL || value == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if ((rc = asn_get_subvalue(container, &leaf_val, labels)) != 0) 
         return rc;
@@ -1148,7 +1148,7 @@ asn_impl_write_component_value(asn_value_p container,
     asn_value_p  subvalue;
     int          rc;
 
-    if (!container || !elem_value || !subval_labels) return ETEWRONGPTR; 
+    if (!container || !elem_value || !subval_labels) return TE_EWRONGPTR; 
 
     if (!(container->syntax & CONSTRAINT))
         return EASNWRONGLABEL;
@@ -1263,7 +1263,7 @@ asn_get_subvalue(const asn_value *container, const asn_value **subval,
     char *rest_labels;
 
     if (!container || !subval)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if (subval_labels == NULL || *subval_labels == '\0')
     {
@@ -1295,7 +1295,7 @@ asn_get_indexed(const asn_value *container, const asn_value **subval,
                 int index)
 {
     if (!container || !subval)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if (container->syntax != SEQUENCE_OF && 
         container->syntax != SET_OF)
@@ -1322,7 +1322,7 @@ asn_get_child_type(const asn_type *type, const asn_type **subtype,
     int index, rc;
 
     if (type == NULL || subtype == NULL)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     rc = asn_child_tag_index(type, tag_class, tag_val, &index);
     if (rc != 0)
@@ -1343,7 +1343,7 @@ asn_get_child_value(const asn_value *container, const asn_value **subval,
     int index, rc;
 
     if (!container || !subval)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if (container->syntax != SEQUENCE && 
         container->syntax != SET)
@@ -1370,7 +1370,7 @@ asn_get_choice_value(const asn_value *container, const asn_value **subval,
 {
     asn_value *sv;
     if (!container || !subval)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if (container->syntax != CHOICE)
         return EINVAL; 
@@ -1406,7 +1406,7 @@ asn_get_field_data(const asn_value *container,
 
     if (data_ptr == NULL || container == NULL)
     {
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
     }
 
     if (container->syntax & CONSTRAINT)
@@ -1808,7 +1808,7 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
                        asn_value const **found_val)
 { 
     if( !container || !found_val)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if( !(container->syntax & CONSTRAINT))
         return EASNGENERAL; 
@@ -1957,7 +1957,7 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
         return EASNINCOMPLVAL; 
 
     if (strlen(sval->name) >= ch_lb_len)
-        return ETESMALLBUF;
+        return TE_ESMALLBUF;
 
     strncpy (choice_label, sval->name, ch_lb_len);
 
@@ -2102,7 +2102,7 @@ asn_label_to_tag(const asn_type *type, const char *label, asn_tag_t *tag)
     int index;
 
     if (tag == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_impl_named_subvalue_index(type, label, &index);
     if (rc != 0)

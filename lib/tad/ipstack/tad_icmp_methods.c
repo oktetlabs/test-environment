@@ -74,7 +74,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
 
     if (csap_descr == NULL || usr_param == NULL ||
         orig_pkt == NULL || pkt_len == 0)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
 
     type = strtol(usr_param, &endptr, 10);

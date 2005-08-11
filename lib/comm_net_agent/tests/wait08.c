@@ -145,10 +145,10 @@ local_station_proc(void *arg)
     len = declared_input_buffer_length;
     ptr = input_buffer;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    if (rc != ETESMALLBUF)
+    if (rc != TE_ESMALLBUF)
     {
        fprintf(stderr, "ERROR: the first call of rcf_comm_agent_wait() "
-              "returned %d instead of ETESMALLBUF(%d)\n", rc, ETESMALLBUF);
+              "returned %d instead of TE_ESMALLBUF(%d)\n", rc, TE_ESMALLBUF);
        exit(3);
     }
     ptr += len;
@@ -176,7 +176,7 @@ local_station_proc(void *arg)
  * @descr The remote station issues a message consisting of a command, which 
  * is larger than the input buffer of @b rcf_comm_agent_wait() function, and 
  * an attachment. Totally, the message must fit in two input buffers. 
- * The first call of the function must return ETESMALLBUF, the second call 
+ * The first call of the function must return TE_ESMALLBUF, the second call 
  * must succeed. The two calls must make up the consistent message that was 
  * sent from the remote station.
  *

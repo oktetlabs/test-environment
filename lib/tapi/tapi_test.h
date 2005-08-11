@@ -83,7 +83,7 @@ extern "C" {
  */
 #define TEST_ON_JMP_DO \
     do {                                                            \
-        result = (jmp_rc == ETEOK) ? EXIT_SUCCESS : EXIT_FAILURE;   \
+        result = (jmp_rc == TE_EOK) ? EXIT_SUCCESS : EXIT_FAILURE;  \
         goto cleanup;                                               \
     } while (0)
 

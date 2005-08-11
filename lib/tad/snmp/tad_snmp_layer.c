@@ -461,7 +461,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             }
             else if (rc == EASNOTHERCHOICE)
             {
-                rc = ETENOSUPP; /* value matches - math is not implemented */
+                rc = TE_EOPNOTSUPP; /* value matches - math is not implemented */
                 WARN("SNMP match: unsupported choice"
                      " in varbind value pattern");
                 break;

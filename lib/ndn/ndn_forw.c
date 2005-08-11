@@ -486,7 +486,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
     asn_value *val = NULL;
 
     if (result == NULL || forw_action == NULL || forw_action->id == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     do { 
         val = asn_init_value(ndn_forw_action);

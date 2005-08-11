@@ -145,10 +145,10 @@ local_station_proc(void *arg)
     len = declared_input_buffer_length;
     ptr = input_buffer;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    if (rc != ETESMALLBUF)
+    if (rc != TE_ESMALLBUF)
     {
        fprintf(stderr, "ERROR: the first call of rcf_comm_agent_wait() "
-              "returned %d instead of ETESMALLBUF(%d)\n", rc, ETESMALLBUF);
+              "returned %d instead of TE_ESMALLBUF(%d)\n", rc, TE_ESMALLBUF);
        exit(3);
     }
     ptr += len;
@@ -156,10 +156,10 @@ local_station_proc(void *arg)
     /* the second call */
     len = declared_input_buffer_length;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    if (rc != ETESMALLBUF)
+    if (rc != TE_ESMALLBUF)
     {
        fprintf(stderr, "ERROR: the second call of rcf_comm_agent_wait() "
-              "returned %d instead of ETESMALLBUF(%d)\n", rc, ETESMALLBUF);
+              "returned %d instead of TE_ESMALLBUF(%d)\n", rc, TE_ESMALLBUF);
        exit(3);
     }
     ptr += len;
@@ -189,7 +189,7 @@ local_station_proc(void *arg)
  * @descr The remote stations issues a message consisting of a command
  * which would only fit in three input buffers. The first call and the
  * second call of the function @b rcf_comm_agent_wait() must return 
- * ETESMALLBUF, the third call must succeed. The three calls must make up 
+ * TE_ESMALLBUF, the third call must succeed. The three calls must make up 
  * the original message sent by the remote station.
  *
  * @post Once successful, the test is repeated sending several messages 

@@ -806,7 +806,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             /* It may be memory allocation failure, but it's unlikely */
             ERROR("Failed to convert OID string '%s' to structured "
                   "representation", oid);
-            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ETEBADFORMAT));
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EFMT));
         }
         if (!p_oid->inst)
         {
@@ -856,7 +856,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
         {
             cfg_free_oid(p_oid);
             VERB("Requested OID not found");
-            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, ETENOSUCHNAME));
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_ENOENT));
         }
     }
 

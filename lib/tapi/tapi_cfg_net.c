@@ -545,7 +545,7 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
     if (ta_node_oid == NULL)
     {
         ERROR("Failed to parse OID %s", ta_node);
-        return ETEFMT;
+        return TE_EFMT;
     }
     assert(ta_node_oid->inst);
     assert(ta_node_oid->len == 3);
@@ -566,7 +566,7 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
     {
         ERROR("Invalid network configuration");
         tapi_cfg_net_free_nodes_values(oids);
-        return ETEENV;
+        return TE_EENV;
     }
     
     /* Parse NUT OID and get port */
@@ -585,7 +585,7 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
     {
         ERROR("Invlaid port number '%s' format", port_name);
         cfg_free_oid(nut_oid);
-        return ETEFMT;
+        return TE_EFMT;
     }
     cfg_free_oid(nut_oid);
     *p_port = port;

@@ -612,7 +612,7 @@ ipc_receive_message(struct ipc_server *ipcs,
         *p_buf_len = client->msg_rest;
         KTRC("IPC: Buffer provided by caller is too small for the "
              "message\n");
-        return TE_RC(TE_IPC, ETESMALLBUF);
+        return TE_RC(TE_IPC, TE_ESMALLBUF);
     }
     else
     {
@@ -698,14 +698,14 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
  *                          on entry - length of the buffer;
  *                          on exit - length of the received message
  *                                    (or full length of the message if
- *                                     ETESMALLBUF returned).
+ *                                     TE_ESMALLBUF returned).
  * @param ipcsc         Pointer to the ipc_server_client structure
  *                      returned by the ipc_receive_message() function
  *
  * @return Status code.
  *
  * @retval 0            Success
- * @retval ETESMALLBUF  Buffer is too small for the rest of the
+ * @retval TE_ESMALLBUF  Buffer is too small for the rest of the
  *                      message, the part of the message is written
  *                      to the buffer, the ipc_receive_message()
  *                      for the client should be called again
@@ -738,7 +738,7 @@ ipc_server_receive(struct ipc_server *ipcs,
     if (ipcsc->pending > 0)
     {
         *p_buf_len = ipcsc->pending;
-        return TE_RC(TE_IPC, ETESMALLBUF);
+        return TE_RC(TE_IPC, TE_ESMALLBUF);
     }
     else
     {

@@ -311,7 +311,7 @@ tapi_file_ta_unlink_fmt(const char *ta, const char *path_fmt, ...)
     {
         ERROR("Path to the file to be deleted too long, increase "
               "RCF_MAX_PATH");
-        return TE_RC(TE_TAPI, ETESMALLBUF);
+        return TE_RC(TE_TAPI, TE_ESMALLBUF);
     }
 
     rc2 = rcf_ta_call(ta, 0, "ta_rtn_unlink", &rc, 1, FALSE,

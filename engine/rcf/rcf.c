@@ -137,7 +137,7 @@ enum {
  *         ta.connect() (if fails, goto shutdown)
  *         synchronize time;
  *     response to user reboot request;
- *     response to all sent and pending requests (ETAREBOOTED).
+ *     response to all sent and pending requests (TE_ETAREBOOTED).
  *
  * reboot_num variable is necessary to avoid TA list scanning every time
  * when select() is returned (list scanning is performed only if
@@ -1038,7 +1038,7 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
         int rc;
 
         rc = (agent->receive)(agent->handle, cmd, &maxlen, NULL);
-        if (rc != 0 && rc != ETEPENDING)
+        if (rc != 0 && rc != TE_EPENDING)
         {
             ERROR("Failed receive rest of binary attachment TA %s - "
                   "cutting\n", agent->name);
@@ -1220,7 +1220,7 @@ process_reply(ta *agent)
 
     rc = (agent->receive)(agent->handle, cmd, &len, &ba);
 
-    if (rc == ETESMALLBUF)
+    if (rc == TE_ESMALLBUF)
     {
         ERROR("Too big answer from TA '%s' - increase memory constants", 
               agent->name);
@@ -1228,7 +1228,7 @@ process_reply(ta *agent)
         return;
     }
 
-    if (rc != 0 && rc != ETEPENDING)
+    if (rc != 0 && rc != TE_EPENDING)
     {
         ERROR("Receiving answer from TA '%s' failed error %d",
               agent->name, rc);
@@ -1947,7 +1947,7 @@ rcf_ta_check_all_done(void)
         }
 
         ta_checker.req->message->error =
-            remain_dead ? ETADEAD : rebooted ? ETAREBOOTED : 0;
+            remain_dead ? ETADEAD : rebooted ? TE_ETAREBOOTED : 0;
 
         answer_user_request(ta_checker.req);
         ta_checker.req = NULL;
@@ -2293,7 +2293,7 @@ wait_shutdown()
             else
             {
                 WARN("Reject request from user - RCF is shutdowning");
-                req->message->error = ETENORCF;
+                req->message->error = TE_ENORCF;
                 answer_user_request(req);
             }
         }

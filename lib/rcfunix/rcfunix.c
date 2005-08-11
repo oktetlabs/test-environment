@@ -352,7 +352,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         ERROR("Failed to copy TA image %s to the %s:/tmp",
               ta->exec_name, ta->host);
         free(dup);
-        return ETESHCMD;
+        return TE_ESHCMD;
     }
 
     /* Clean up command string */
@@ -399,7 +399,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         (system_with_timeout(cmd, RCFUNIX_START_TIMEOUT) != 0))
     {
         ERROR("Failed to start TA %s", ta_name);
-        return ETESHCMD;
+        return TE_ESHCMD;
     }
 
     *handle = (rcf_talib_handle)ta;
@@ -621,16 +621,16 @@ rcfunix_is_ready(rcf_talib_handle handle)
  * @return error code
  * @retval 0            success
  *
- * @retval ETESMALLBUF  Buffer is too small for the command. The part
+ * @retval TE_ESMALLBUF Buffer is too small for the command. The part
  *                      of the command is written to the buffer. Other
  *                      part(s) of the message can be read by the subsequent
  *                      routine calls. ETSMALLBUF is returned until last
  *                      part of the message is read.
  *
- * @retval ETEPENDING   Attachment is too big to fit into the buffer.
+ * @retval TE_EPENDING  Attachment is too big to fit into the buffer.
  *                      The command and a part of the attachment is written
  *                      to the buffer. Other part(s) can be read by the
- *                      subsequent routine calls. ETEPENDING is returned
+ *                      subsequent routine calls. TE_EPENDING is returned
  *                      until last part of the message is read.
  *
  * @retval other        OS errno

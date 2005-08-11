@@ -389,7 +389,7 @@ pcap_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     if (pattern_pdu)
         *pattern_pdu = NULL;
 
-    return ETENOSUPP;
+    return TE_EOPNOTSUPP;
 }
 
 

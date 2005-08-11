@@ -58,10 +58,6 @@ static char cmd[MAX_SH_CMD];
  *                      from ${TE_BASE}.
  *
  * @return error code
- *
- * @retval 0            success
- * @retval EINVAL       bad source directory or suite name
- * @retval ETESHCMD     system call failed
  */
 int 
 builder_build_test_suite(const char *suite, const char *sources)
@@ -77,6 +73,6 @@ builder_build_test_suite(const char *suite, const char *sources)
                  ">builder.log.%s.1 2>builder.log.%s.2",
             suite, sources, suite, suite);
 #endif
-    return system(cmd) == 0 ? 0 : ETESHCMD;
+    return system(cmd) == 0 ? 0 : TE_ESHCMD;
 }
 

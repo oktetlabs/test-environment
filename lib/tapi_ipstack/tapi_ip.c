@@ -346,7 +346,7 @@ tapi_ip4_pdu(in_addr_t  src_ip4_addr, in_addr_t  dst_ip4_addr,
     tapi_ip_frag_spec_t *frag;
 
     if (result_value == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     if ((rc = asn_parse_value_text("ip4:{}", ndn_generic_pdu,
                                    result_value, &syms)) != 0)
@@ -431,7 +431,7 @@ tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
     int num = 0;
 
     if (pattern_unit == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
 
     rc = asn_parse_value_text("{ pdus { ip4:{}, eth:{}}}", 
@@ -517,7 +517,7 @@ tapi_ip4_eth_template(const uint8_t *src_mac_addr,
     } while (0)
 
     if (result_value == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR); 
+        return TE_RC(TE_TAPI, TE_EWRONGPTR); 
 
     rc = asn_parse_value_text("{ pdus { eth:{} } }",
                               ndn_traffic_template, result_value, &syms); 

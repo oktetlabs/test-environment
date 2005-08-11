@@ -117,13 +117,13 @@ main(void)
         res = rcf_get_ta_list(ta_names, &names_len); 
         if (res == 0)
             break;    /* on success list_len - used space real value */
-        if (TE_RC_GET_ERROR(res) != ETESMALLBUF)
+        if (TE_RC_GET_ERROR(res) != TE_ESMALLBUF)
         {
             ERROR("Can not interact with RCF\n");
             free(ta_names);
             return 1;
         }
-    } while (TE_RC_GET_ERROR(res) == ETESMALLBUF);
+    } while (TE_RC_GET_ERROR(res) == TE_ESMALLBUF);
 
     /* Create single linked list of active TA */
     while (names_len != str_len)

@@ -24,7 +24,7 @@
  *
  * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * @(#) $Id: $
+ * @(#) $Id$
  */
 
 #include <string.h>

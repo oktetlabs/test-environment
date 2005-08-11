@@ -55,7 +55,7 @@ walk_cb(const tapi_snmp_varbind_t *vb, void *userdata)
     if (vb == NULL)
     {
         ERROR("%s: zero varbind ptr passed!", __FUNCTION__);
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
     }
     INFO("%s: oid %s received, type %d(%s), len %d", 
          __FUNCTION__, print_oid(&vb->name), 

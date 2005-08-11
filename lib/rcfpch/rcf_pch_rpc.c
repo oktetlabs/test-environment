@@ -238,13 +238,13 @@ recv_result(rpcserver *rpcs, uint32_t *p_len)
     if (rc != sizeof(len))
     {
         ERROR("Failed to receive RPC data from the server %s", rpcs->name);
-        return TE_RC(TE_RCF_PCH, ETESUNRPC);
+        return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
     }
     
     if (len > RCF_RPC_HUGE_BUF_LEN)
     {
         ERROR("Too long RPC data bulk");
-        return TE_RC(TE_RCF_PCH, ETESUNRPC);
+        return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
     }
     
     while (offset < len)
@@ -255,7 +255,7 @@ recv_result(rpcserver *rpcs, uint32_t *p_len)
         if (n <= 0)
         {
             ERROR("Too long RPC data bulk");
-            return TE_RC(TE_RCF_PCH, ETESUNRPC);
+            return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
         }
 
         offset += n;
@@ -307,11 +307,11 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
         send(rpcs->sock, rpc_buf, len, 0) != (ssize_t)len)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
-        return TE_RC(TE_RCF_PCH, ETESUNRPC);
+        return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
     }
     
     if (recv_result(rpcs, &len) != 0)
-        return TE_RC(TE_RCF_PCH, ETESUNRPC);
+        return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
 
     if ((rc = rpc_xdr_decode_result(name, rpc_buf, len, out)) != 0)
     {
@@ -603,7 +603,7 @@ dispatch(void *arg)
             {
                 ERROR("Timeout on server %s", rpcs->name);
                 rpcs->dead = TRUE;
-                rpc_error(rpcs, ETERPCTIMEOUT);
+                rpc_error(rpcs, TE_ERPCTIMEOUT);
                 continue;
             } 
             FD_SET(rpcs->sock, &set1);
@@ -619,7 +619,7 @@ dispatch(void *arg)
                 if (rc != EAGAIN) /* AF_UNIX bug work-around */
                 {
                     rpcs->dead = TRUE;
-                    rpc_error(rpcs, ETERPCDEAD);
+                    rpc_error(rpcs, TE_ERPCDEAD);
                 }
                 continue;
             }
@@ -880,7 +880,7 @@ rpcserver_get(unsigned int gid, const char *oid, char *value,
     if (rpcs == NULL)
     {
         rcf_ch_unlock();
-        return TE_RC(TE_RCF_PCH, ETENOSUCHNAME);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
         
     if (rpcs->father == NULL)
@@ -1168,7 +1168,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     if (rpcs->dead)
     {
         ERROR("Request to dead RPC server %s", server);
-        RETERR(ETERPCDEAD);
+        RETERR(TE_ERPCDEAD);
     }
     
     /* Mark RPC server as busy */
@@ -1187,7 +1187,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         send(rpcs->sock, data, rpc_data_len, 0) != (ssize_t)rpc_data_len)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
-        RETERR(ETESUNRPC);
+        RETERR(TE_ESUNRPC);
     }
     
     /* The answer will be sent by the thread */

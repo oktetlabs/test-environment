@@ -917,7 +917,7 @@ process_backup(cfg_backup_msg *msg)
             /* Check agents */
             int rc = rcf_check_agents();
             
-            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
+            if (TE_RC_GET_ERROR(rc) == TE_ETAREBOOTED)
                 cfg_ta_sync("/:", TRUE);
             
             /* Try to restore using dynamic history */
@@ -939,7 +939,7 @@ process_backup(cfg_backup_msg *msg)
             /* Check agents */
             int rc = rcf_check_agents();
             
-            if (TE_RC_GET_ERROR(rc) == ETAREBOOTED)
+            if (TE_RC_GET_ERROR(rc) == TE_ETAREBOOTED)
                 cfg_ta_sync("/:", TRUE);
             
             if ((msg->rc = cfg_backup_create_file(filename)) != 0)

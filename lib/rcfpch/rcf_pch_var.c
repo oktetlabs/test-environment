@@ -112,7 +112,7 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             }
         }
 #endif
-        SEND_ANSWER("%d", ETENOSUCHNAME);
+        SEND_ANSWER("%d", TE_ENOENT);
     }
 
     switch (type)
@@ -232,7 +232,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
         if (sscanf(va_arg(ap, const char *), "%u:%u", &sec, &usec) != 2)
         {
             va_end(ap);
-            SEND_ANSWER("%d", ETEBADFORMAT);
+            SEND_ANSWER("%d", TE_EFMT);
         }
        
         tv.tv_sec  = sec;
@@ -263,7 +263,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
         }
 #endif
         va_end(ap);
-        SEND_ANSWER("%d", ETENOSUCHNAME);
+        SEND_ANSWER("%d", TE_ENOENT);
     }
 
     switch (type)
@@ -330,7 +330,7 @@ rcf_pch_call(struct rcf_comm_connection *conn,
     if (addr == NULL)
     {
         ERROR("The routine '%s' is not found", rtn);
-        SEND_ANSWER("%d", ETENOSUCHNAME);
+        SEND_ANSWER("%d", TE_ENOENT);
     }
 
     if (is_argv)

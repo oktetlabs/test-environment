@@ -345,7 +345,7 @@ dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     UNUSED(payload); 
 
     if (pattern_pdu == NULL || pkt == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     ENTRY("%s: CSAP %d, layer %d, pkt len: %d", 
           __FUNCTION__, csap_id, layer, pkt->len);

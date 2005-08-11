@@ -396,7 +396,7 @@ mac_str2addr(const char *mac_str, uint8_t *mac)
     int i;
 
     if (mac_str == NULL || mac == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     for (i = 0; i < ETH_ALEN; i++, mac_str = endptr)
     {
@@ -448,7 +448,7 @@ tad_eth_arp_reply(csap_p csap_descr, const char *usr_param,
 
     if (csap_descr == NULL || usr_param == NULL ||
         pkt == NULL || pkt_len == 0)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if (csap_descr->prepare_send_cb != NULL && 
         (rc = csap_descr->prepare_send_cb(csap_descr)) != 0)

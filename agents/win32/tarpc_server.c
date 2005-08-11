@@ -651,7 +651,7 @@ check_args(checked_arg *list)
         if (memcmp(cur->real_arg + cur->len_visible, cur->control,
                    cur->len - cur->len_visible) != 0)
         {
-            rc = TE_RC(TE_TA_WIN32, ETECORRUPTED);
+            rc = TE_RC(TE_TA_WIN32, TE_ECORRUPTED);
         }
         free(cur->control);
         free(cur);

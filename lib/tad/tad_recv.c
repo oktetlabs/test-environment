@@ -309,7 +309,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                     if (method_addr == NULL)
                     {
                         ERROR("No funcion named '%s' found", buffer);
-                        rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
+                        rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
                     }
                     else
                     {

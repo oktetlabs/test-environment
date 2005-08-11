@@ -85,7 +85,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     if (udp_spec_data == NULL)
     {
         ERROR("%s: CSAP-specific data is NULL", __FUNCTION__);
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
     } 
 
     if(asn_get_syntax(tmpl_pdu, "") != CHOICE)
@@ -365,7 +365,7 @@ int udp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if (pkt == NULL || payload == NULL)
     {
         ERROR("%s: pkt or payload is NULL", __FUNCTION__);
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
     }
     data = (uint8_t *)(pkt->data);
 
@@ -445,6 +445,6 @@ int udp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
     UNUSED(layer);
     UNUSED(tmpl_pdu);
 
-    return ETENOSUPP;
+    return TE_EOPNOTSUPP;
 }
 

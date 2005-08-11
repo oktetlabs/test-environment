@@ -446,7 +446,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     VERB("Init callback\n");
 
     if (!csap_nds || (csap_id <=0))
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_get_indexed(csap_nds, &snmp_csap_spec, layer);
     if (rc != 0)
@@ -594,7 +594,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             ERROR("%s: there is no securityName provided",  __FUNCTION__);
             return rc;
         }
-        if (rc == ETESMALLBUF)
+        if (rc == TE_ESMALLBUF)
         {
             ERROR("%s: securityName is too long (max %d is valid)",
                   __FUNCTION__, SNMP_MAX_SEC_NAME_SIZE);

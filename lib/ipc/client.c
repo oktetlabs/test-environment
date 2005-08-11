@@ -839,7 +839,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
 
             *p_buf_len = server->length;
 
-            return TE_RC(TE_IPC, ETESMALLBUF);
+            return TE_RC(TE_IPC, TE_ESMALLBUF);
         }
         /* Unreachable place */
     }
@@ -888,7 +888,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
 
                 *p_buf_len = server->length;
 
-                return TE_RC(TE_IPC, ETESMALLBUF);
+                return TE_RC(TE_IPC, TE_ESMALLBUF);
             }
 
             /* Is it all? */
@@ -915,7 +915,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
                                         sizeof(struct ipc_dgram_header);
 
                 *p_buf_len = server->length;
-                return TE_RC(TE_IPC, ETESMALLBUF);
+                return TE_RC(TE_IPC, TE_ESMALLBUF);
             }
 
 #if IPC_CLIENT_DEBUG_REASSEMBLING
@@ -1063,7 +1063,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
             /* Update position in the current segment */
             server->octets_returned += n;
             *p_buf_len = server->length;
-            return TE_RC(TE_IPC, ETESMALLBUF);
+            return TE_RC(TE_IPC, TE_ESMALLBUF);
         }
 
 
@@ -1163,7 +1163,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
 
             *p_buf_len = server->length;
 
-            return TE_RC(TE_IPC, ETESMALLBUF);
+            return TE_RC(TE_IPC, TE_ESMALLBUF);
 
         }
             }
@@ -1183,7 +1183,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
 
         *p_buf_len = server->length;
 
-        return TE_RC(TE_IPC, ETESMALLBUF);
+        return TE_RC(TE_IPC, TE_ESMALLBUF);
             }
 
 #if IPC_CLIENT_DEBUG_REASSEMBLING
@@ -1339,7 +1339,7 @@ ipc_client_int_receive(struct ipc_client_server *server,
     if (server->pending > 0)
     {
         *p_buf_len = server->pending + octets_to_read;
-        return TE_RC(TE_IPC, ETESMALLBUF);
+        return TE_RC(TE_IPC, TE_ESMALLBUF);
     }
     else
     {

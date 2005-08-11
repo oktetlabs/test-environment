@@ -445,7 +445,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
         sprintf(check_cmd,
                 "TMP=`which %s 2>/dev/null` ; test -n \"$TMP\" ;", rtn);
         if (ta_system(check_cmd) != 0)
-            SEND_ANSWER("%d", ETENOSUCHNAME);
+            SEND_ANSWER("%d", TE_ENOENT);
 
         if ((pid = fork()) == 0)
         {
@@ -483,7 +483,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
         assert(0);
     }
 
-    SEND_ANSWER("%d", ETENOSUCHNAME);
+    SEND_ANSWER("%d", TE_ENOENT);
 }
 
 struct rcf_thread_parameter {
@@ -583,10 +583,10 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
             }
         }
         pthread_mutex_unlock(&thread_pool_mutex);
-        SEND_ANSWER("%d", ETOOMANY);
+        SEND_ANSWER("%d", TE_ETOOMANY);
     }
 
-    SEND_ANSWER("%d", ETENOSUCHNAME);
+    SEND_ANSWER("%d", TE_ENOENT);
 }
 
 /* Kill all the threads started by rcf_ch_start_task_thr */
@@ -1383,7 +1383,7 @@ arithm_progr(uint64_t offset, uint32_t length, uint8_t *buffer)
     unsigned i;
 
     if (buffer == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     for (i = 0; i < length; i++)
         buffer[i] = offset + i;

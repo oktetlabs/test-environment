@@ -98,7 +98,7 @@ tapi_csap_param_get_llint(const char *ta_name, int ta_sid,
     if ((end == buf) || (*end != '\0'))
     {
         ERROR("Conversion of string %s to number failed", buf);
-        RETURN_RC(ETEBADFORMAT);
+        RETURN_RC(TE_EFMT);
     }
 
     RETURN_RC(0);
@@ -138,7 +138,7 @@ tapi_csap_param_get_timestamp(const char *ta_name, int ta_sid,
     if ((start == end) || (*end != SEC_USEC_SEPARATOR))
     {
         ERROR("Conversion of string %s to number failed", start);
-        RETURN_RC(ETEBADFORMAT);
+        RETURN_RC(TE_EFMT);
     }
     p_timestamp->tv_sec = tmp;
     /* Get microseconds */
@@ -147,7 +147,7 @@ tapi_csap_param_get_timestamp(const char *ta_name, int ta_sid,
     if ((start == end) || (*end != '\0'))
     {
         ERROR("Conversion of string %s to number failed", start);
-        RETURN_RC(ETEBADFORMAT);
+        RETURN_RC(TE_EFMT);
     }
     p_timestamp->tv_usec = tmp;
 
@@ -338,7 +338,7 @@ tapi_tad_add_iterator_for(asn_value *templ, int begin, int end, int step)
     int rc, syms;
 
     if (templ == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     rc = asn_get_child_value(templ, (const asn_value **)&iterators,
                                   PRIVATE, NDN_TMPL_ARGS);

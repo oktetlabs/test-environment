@@ -136,7 +136,7 @@ extern const char *
  *                          on entry - length of the buffer,
  *                          on exit - length of the received message
  *                                    (or the rest length of the message
- *                                     if ETESMALLBUF returned).
+ *                                     if TE_ESMALLBUF returned).
  * @param p_ipcsc       Location for the pointer to ipc_server_client()
  *                      structure.  This variable will point to internal
  *                      IPC library data, user MUST NOT free it.
@@ -144,7 +144,7 @@ extern const char *
  * @return Status code.
  *
  * @retval 0            Success
- * @retval ETESMALLBUF  Buffer is too small for the message, the rest
+ * @retval TE_ESMALLBUF Buffer is too small for the message, the rest
  *                      of the message can be received by
  *                      ipc_receive_message() with this client pointer
  *                      in *p_ipcsc

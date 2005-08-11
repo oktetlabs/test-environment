@@ -240,7 +240,7 @@ static MIB_IFROW if_entry;
              tmp == ifname) || *tmp != 0 ||                     \
             GetIfEntry(&if_entry) != 0)                         \
         {                                                       \
-            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);           \
+            return TE_RC(TE_TA_WIN32, TE_ENOENT);               \
         }                                                       \
     } while (0)
 
@@ -270,14 +270,14 @@ static MIB_IFROW if_entry;
         {                                                               \
             ERROR("%s failed, error %d", #_func, rc);                   \
             free(table);                                                \
-            return TE_RC(TE_TA_WIN32, ETEWIN);                          \
+            return TE_RC(TE_TA_WIN32, TE_EWIN);                         \
         }                                                               \
                                                                         \
         if ((rc = _func(table, &size, 0)) != NO_ERROR)                  \
         {                                                               \
             ERROR("%s failed, error %d", #_func, rc);                   \
             free(table);                                                \
-            return TE_RC(TE_TA_WIN32, ETEWIN);                          \
+            return TE_RC(TE_TA_WIN32, TE_EWIN);                         \
         }                                                               \
                                                                         \
         if (table->dwNumEntries == 0)                                   \
@@ -300,7 +300,7 @@ find_ifindex(DWORD addr, DWORD *ifindex)
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -322,7 +322,7 @@ find_ifindex(DWORD addr, DWORD *ifindex)
     free(table);
 
     if (index == 0)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
         
     *ifindex = index;
     
@@ -448,7 +448,7 @@ ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
     GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
 
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -464,7 +464,7 @@ ip_addr_exist(DWORD addr, MIB_IPADDRROW *data)
 
     free(table);
 
-    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+    return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
 
 /** Parse address and fill mask by specified or default value */
@@ -483,7 +483,7 @@ get_addr_mask(const char *addr, const char *value, DWORD *p_a, DWORD *p_m)
     if (value == end || *end != 0)
     {
         ERROR("Invalid value '%s' of prefix length", value);
-        return TE_RC(TE_TA_WIN32, ETEFMT);
+        return TE_RC(TE_TA_WIN32, TE_EFMT);
     }
 
     if (prefix > 32)
@@ -538,7 +538,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
                             &nte_context, &nte_instance)) != NO_ERROR)
     {
         ERROR("AddIpAddress() failed, error %d", rc);
-        return TE_RC(TE_TA_WIN32, ETEWIN);
+        return TE_RC(TE_TA_WIN32, TE_EWIN);
     }
 
     return 0;
@@ -580,7 +580,7 @@ net_addr_del(unsigned int gid, const char *oid,
     {                                                               
         ERROR("GetAdaptersInfo failed, error %d", rc);
         free(table);                                                
-        return TE_RC(TE_TA_WIN32, ETEWIN);                          
+        return TE_RC(TE_TA_WIN32, TE_EWIN);                          
     }                                                               
 
     for (info = table; info != NULL; info = info->Next)
@@ -600,7 +600,7 @@ net_addr_del(unsigned int gid, const char *oid,
                 {
                     ERROR("DeleteIPAddress() failed; error %d\n", rc);
                     free(table);
-                    return TE_RC(TE_TA_WIN32, ETEWIN);;
+                    return TE_RC(TE_TA_WIN32, TE_EWIN);;
                 }
                 free(table);
                 return 0;
@@ -609,7 +609,7 @@ net_addr_del(unsigned int gid, const char *oid,
     }
     free(table);
 
-    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+    return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
 
 /**
@@ -622,7 +622,7 @@ net_addr_del(unsigned int gid, const char *oid,
  *
  * @return error code
  * @retval 0                    success
- * @retval ETENOSUCHNAME        no such instance
+ * @retval TE_ENOENT            no such instance
  * @retval ENOMEM               cannot allocate memory
  */
 static int
@@ -745,7 +745,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
                            &nte_instance)) != NO_ERROR)
     {
         ERROR("AddIpAddr() failed, error %d", rc);
-        return TE_RC(TE_TA_WIN32, ETEWIN);
+        return TE_RC(TE_TA_WIN32, TE_EWIN);
     }
 
     return 0;
@@ -941,7 +941,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_WIN32, EINVAL);
 
     if (SetIfEntry(&if_entry) != 0)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     return 0;
 }
@@ -994,7 +994,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
         
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1005,7 +1005,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
             if (table->table[i].dwPhysAddrLen != 6)
             {
                 free(table);
-                return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+                return TE_RC(TE_TA_WIN32, TE_ENOENT);
             }
             snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
                      ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
@@ -1016,7 +1016,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
 
     free(table);
 
-    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+    return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
 
 
@@ -1102,7 +1102,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = CreateIpNetEntry(&entry)) != NO_ERROR)
     {
         ERROR("CreateIpNetEntry() failed, error %d", rc);
-        return TE_RC(TE_TA_WIN32, ETEWIN);
+        return TE_RC(TE_TA_WIN32, TE_EWIN);
     }
     return 0;
 }
@@ -1144,7 +1144,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
 
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1156,7 +1156,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
                 {
                     ERROR("DeleteIpNetEntry() failed, error %d", rc);
                     free(table);
-                    return TE_RC(TE_TA_WIN32, ETEWIN);
+                    return TE_RC(TE_TA_WIN32, TE_EWIN);
                 }
             }
             found = TRUE;
@@ -1165,7 +1165,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
     }
     free(table);
     return (!found && type == ARP_STATIC) ? 
-           TE_RC(TE_TA_WIN32, ETENOSUCHNAME) : 0;
+           TE_RC(TE_TA_WIN32, TE_ENOENT) : 0;
 }
 
 /**
@@ -1255,14 +1255,14 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
     inst_copy[sizeof(inst_copy) - 1] = '\0';
 
     if ((tmp = strchr(inst_copy, '|')) == NULL)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     *tmp = 0;
 
     if ((rt->dst = inet_addr(inst_copy)) == INADDR_NONE)
     {
         if (strcmp(inst_copy, "255.255.255.255") != 0)
-           return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+           return TE_RC(TE_TA_WIN32, TE_ENOENT);
     }
 
     *tmp++ = '|';
@@ -1270,7 +1270,7 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
         (rt->prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 ||
          rt->prefix > 32))
     {
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
     }
     tmp = tmp1;
     term_byte = (char *)(tmp + strlen(tmp));
@@ -1284,7 +1284,7 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
 
         if ((rt->gw = inet_addr(ptr)) == INADDR_NONE)
         {
-            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+            return TE_RC(TE_TA_WIN32, TE_ENOENT);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -1301,7 +1301,7 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
 
         if (sscanf(ptr, "intf%d", (int *)&rt->if_index) != 1)
         {
-            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+            return TE_RC(TE_TA_WIN32, TE_ENOENT);
         }
 
         if (term_byte != end_ptr)
@@ -1328,7 +1328,7 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
         if (*ptr == '\0' || *ptr == '-' ||
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
-            return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+            return TE_RC(TE_TA_WIN32, TE_ENOENT);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -1376,7 +1376,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1410,7 +1410,7 @@ route_get(unsigned int gid, const char *oid, char *value,
 
     free(table);
 
-    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+    return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
 
 /**
@@ -1522,7 +1522,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = CreateIpForwardEntry(&entry)) != NO_ERROR)
     {
         ERROR("CreateIpForwardEntry() failed, error %d", rc);
-        return TE_RC(TE_TA_WIN32, ETEWIN);
+        return TE_RC(TE_TA_WIN32, TE_EWIN);
     }
     
     return 0;
@@ -1556,7 +1556,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
 
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
         
     if (rt.metric == 0)
         rt.metric = METRIC_DEFAULT;
@@ -1585,13 +1585,13 @@ route_del(unsigned int gid, const char *oid, const char *route)
         {
             ERROR("DeleteIpForwardEntry() failed, error %d", rc);
             free(table);
-            return TE_RC(TE_TA_WIN32, ETEWIN);
+            return TE_RC(TE_TA_WIN32, TE_EWIN);
         }
         free(table);
         return 0;
     }
 
-    return TE_RC(TE_TA_WIN32, ETENOSUCHNAME);
+    return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
 
 /**
@@ -1603,7 +1603,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
  *
  * @return error code
  * @retval 0                    success
- * @retval ETENOSUCHNAME      no such instance
+ * @retval TE_ENOENT            no such instance
  * @retval ENOMEM               cannot allocate memory
  */
 static int

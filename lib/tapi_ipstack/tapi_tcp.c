@@ -235,7 +235,7 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
          inet_ntoa(in_dst_addr), (unsigned int)dst_port);
 
     do {
-        if (result_value == NULL) { rc = ETEWRONGPTR; break; }
+        if (result_value == NULL) { rc = TE_EWRONGPTR; break; }
 
         rc = asn_parse_value_text("{ pdus { tcp:{}, ip4:{}, eth:{}}}", 
                               ndn_traffic_pattern_unit, &pu, &num);
@@ -336,7 +336,7 @@ tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
                   uint8_t *msg)
 {
     if (msg == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR); 
+        return TE_RC(TE_TAPI, TE_EWRONGPTR); 
 
     *((uint16_t *) msg) = src_port;
     msg += 2;
@@ -390,7 +390,7 @@ tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port,
     uint8_t     flags;
 
     if (pdu == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     if ((rc = asn_parse_value_text("tcp:{}", ndn_generic_pdu,
                                    &g_pdu, &syms)) != 0)
@@ -472,7 +472,7 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     asn_value *tcp_pdu = NULL;
 
     if (tmpl == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     *tmpl = NULL; 
 
@@ -1028,14 +1028,14 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     tapi_tcp_conns_db_init();
 
     if (agt == NULL || local_addr == NULL || remote_addr == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     /*
      * TODO: Make automatic investigation of local interface and
      * MAC addresses.
      */
     if (local_iface == NULL || local_mac == NULL || remote_mac == NULL)
-        return TE_RC(TE_TAPI, ETENOSUPP);
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
 #define CHECK_ERROR(msg_...)\
     do {                           \
@@ -1427,7 +1427,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
             break;
 
         case TAPI_TCP_AUTO:
-            return ETENOSUPP; /* this is very hard to support */
+            return TE_EOPNOTSUPP; /* this is very hard to support */
     }
 
     rc = tapi_tcp_template(new_seq, new_ack, FALSE, (new_ack != 0), 
@@ -1778,7 +1778,7 @@ tapi_tcp_client_csap_create(const char *ta_name, int sid,
     UNUSED(loc_port);
     UNUSED(rem_port);
     UNUSED(tcp_csap);
-    return TE_RC(TE_TAPI, ETENOSUPP);
+    return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 }
 
 /* see description in tapi_tcp.h */
@@ -1861,7 +1861,7 @@ tapi_tcp_server_recv(const char *ta_name, int sid,
     int rc = 0, syms, num;
 
     if (ta_name == NULL || socket == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{{pdus { tcp:{}, ip4:{} } }}",
                               ndn_traffic_pattern, &pattern, &syms);
@@ -1969,7 +1969,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
     int rc = 0, syms, num;
 
     if (ta_name == NULL || socket == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{{pdus { tcp:{}, ip4:{} } }}",
                               ndn_traffic_pattern, &pattern, &syms);
@@ -2022,7 +2022,7 @@ tapi_tcp_buffer_send(const char *ta_name, int sid,
     int rc = 0, syms;
 
     if (ta_name == NULL || socket == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{pdus { tcp:{}, ip4:{} } }",
                               ndn_traffic_template, &template, &syms);

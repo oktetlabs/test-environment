@@ -130,7 +130,7 @@ asn_impl_pt_label(const char*text, char *label, int *syms)
         pt++, l++;
 
     if ((l + 1) > *syms) /* '+ 1' for tailing zero. */
-        return ETESMALLBUF;
+        return TE_ESMALLBUF;
 
     memcpy (label, l_begin, l);
     label[l] = 0;
@@ -163,7 +163,7 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
     size_t total = 0;
 
     if (!text || !parsed || !syms_parsed)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     while (isspace(*pt))
         pt++;
@@ -229,7 +229,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
     txt_buf[2] = 0;
 
     if (!text || !parsed || !syms_parsed)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if (type) 
         octstr_len = type->len;
@@ -319,7 +319,7 @@ asn_impl_pt_integer(const char*text, const asn_type *type,
     char *endptr; 
 
     if (!text || !parsed || !syms_parsed)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     p_value = strtol(text, &endptr, 10);
     if ((*syms_parsed = endptr - text) == 0)
@@ -352,7 +352,7 @@ asn_impl_pt_bool(const char*text, const asn_type *type,
                  asn_value_p *parsed, int *syms_parsed)
 {
     if (!text || !parsed || !syms_parsed)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
 
     *parsed = asn_init_value(type); 
@@ -391,7 +391,7 @@ asn_impl_pt_null(const char *text, const asn_type *type,
     static const char *null_string = "NULL";
 
     if (!text || !parsed || !syms_parsed)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     if (memcmp(text, null_string, 4) != 0)
     {
@@ -430,7 +430,7 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
     int   p_s = sizeof(label_buf);
 
     if (!text || !parsed || !syms_parsed)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     p_value = strtol(text, &endptr, 10);
     if ((*syms_parsed = endptr - text) == 0)
@@ -491,7 +491,7 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
     int         p_s;
 
     if (!text || !parsed || !parsed_syms)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     *parsed_syms = 0;
 
@@ -589,7 +589,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
     int  rc;
 
     if (!text || !type || !parsed || !parsed_syms)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     while (isspace(*pt))
         pt++; 
@@ -681,7 +681,7 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
     int rc = 0;
 
     if (!text || !type || !parsed || !parsed_syms)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     *parsed_syms = 0;
     while (isspace(*pt)) 
@@ -764,7 +764,7 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
     label_buf = l_b;
 
     if (!text || !type || !parsed || !parsed_syms)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     *parsed = asn_init_value(type); 
 
@@ -836,7 +836,7 @@ asn_parse_value_text(const char *text, const asn_type *type,
                      asn_value_p *parsed, int *syms_parsed)
 {
     if (!text || !type || !parsed || !syms_parsed)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     switch (type->syntax)
     {
@@ -875,7 +875,7 @@ asn_parse_value_text(const char *text, const asn_type *type,
             return asn_impl_pt_choice(text, type, parsed, syms_parsed);
 
         default:
-            return ETENOSUPP;
+            return TE_EOPNOTSUPP;
     } 
 }
 
@@ -885,7 +885,7 @@ asn_parse_value_assign_text(const char *string, asn_value **value)
 {
     UNUSED(string);
     UNUSED(value);
-    return ETENOSUPP;
+    return TE_EOPNOTSUPP;
 }
 
 /**
@@ -906,7 +906,7 @@ asn_parse_file(const char *filename, char **found_names, int *found_len)
     UNUSED(found_names);
     UNUSED(found_len);
 
-    return ETENOSUPP;
+    return TE_EOPNOTSUPP;
 }
 
 
@@ -1762,7 +1762,7 @@ asn_save_to_file(const asn_value *value, const char *filename)
     int   len;
 
     if (value == NULL || filename == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     len = asn_count_txt_len(value, 0);
     fp = fopen(filename, "w+");
@@ -1812,7 +1812,7 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
 
     if (filename == NULL || type == NULL || 
         parsed_value == NULL || syms_parsed == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if (stat(filename, &fst) != 0)
         return errno; 

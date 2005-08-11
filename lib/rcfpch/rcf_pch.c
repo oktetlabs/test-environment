@@ -435,10 +435,10 @@ rcf_pch_run(const char *confstr, const char *info)
         char    *ba;         /* Binary attachment pointer */
 
         if ((rc = rcf_comm_agent_wait(conn, cmd, &len, &ba)) != 0 &&
-            rc != ETEPENDING)
+            rc != TE_EPENDING)
             goto communication_problem;
 
-        if (rc == ETEPENDING)
+        if (rc == TE_EPENDING)
         {
             size_t tmp;
             
@@ -1042,7 +1042,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
     bad_protocol:
         ERROR("Bad protocol command <%s> is received", cmd);
-        SEND_ANSWER("%d bad command", ETEBADFORMAT);
+        SEND_ANSWER("%d bad command", TE_EFMT);
     }
 
 communication_problem:

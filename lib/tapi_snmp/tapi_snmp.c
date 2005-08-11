@@ -226,7 +226,7 @@ tapi_snmp_mib_entry_oid(struct tree *entry, tapi_snmp_oid_t *res_oid)
 {
     int rc = 0;
     if (entry == NULL || res_oid == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if (entry->parent == NULL || entry->parent == entry)
         res_oid->length = 0;
@@ -249,7 +249,7 @@ tapi_snmp_copy_varbind(tapi_snmp_varbind_t *dst,
     int d_len;
 
     if (dst == NULL || src == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     memcpy(dst, src, sizeof(*dst));
     d_len = src->v_len;
@@ -305,7 +305,7 @@ tapi_snmp_cat_oid(tapi_snmp_oid_t *base, const tapi_snmp_oid_t *suffix)
     unsigned int b_i;
 
     if (base == NULL || suffix == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     for (i = 0, b_i = base->length;
          i < suffix->length && b_i < MAX_OID_LEN;
@@ -441,7 +441,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
         if (len > (int)sizeof(snmp_message->enterprise.id) /
                        sizeof(snmp_message->enterprise.id[0]))
         {
-            return TE_RC(TE_TAPI, ETESMALLBUF);
+            return TE_RC(TE_TAPI, TE_ESMALLBUF);
         }
 
         rc = asn_read_value_field(pkt, &(snmp_message->enterprise.id),
@@ -489,7 +489,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
         if (len > (int)sizeof(snmp_message->vars[i].name.id) /
                        sizeof(snmp_message->vars[i].name.id[0]))
         {
-            return TE_RC(TE_TAPI, ETESMALLBUF);
+            return TE_RC(TE_TAPI, TE_ESMALLBUF);
         }
 
         rc = asn_read_value_field(var_bind,
@@ -973,7 +973,7 @@ tapi_snmp_msg_var_bind(FILE *f, const tapi_snmp_varbind_t *var_bind)
                         var_bind->integer);
                 break;
             default:
-                return ETENOSUPP;
+                return TE_EOPNOTSUPP;
         }
     }
     fprintf(f, "}"); /* close for var-bind */
@@ -1835,7 +1835,7 @@ tapi_snmp_walk(const char *ta, int sid, int csap_id,
     tapi_snmp_oid_t base_oid, next_oid;
 
     if (ta == NULL || oid == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     next_oid = base_oid = *oid;
     VERB("%s for oid %s", __FUNCTION__, print_oid(oid));
@@ -2004,7 +2004,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     tapi_snmp_oid_t entry; /* table Entry OID */
 
     if (ta == NULL || table_oid == NULL || num == NULL || result == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     memcpy(&entry, table_oid, sizeof(entry));
 
@@ -2093,7 +2093,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             if (entry_node->child_list == NULL)
             {
                 WARN("Node in MIB with indexes without children");
-                return TE_RC(TE_TAPI, ETENOSUCHNAME);
+                return TE_RC(TE_TAPI, TE_ENOENT);
             }
 
             rc = tapi_snmp_get(ta, sid, csap_id, &entry, TAPI_SNMP_NEXT,
@@ -2359,7 +2359,7 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
     struct index_list *t_index;
 
     if (table_oid == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     *dimension = 0;
 
@@ -2465,7 +2465,7 @@ tapi_snmp_get_syntax(tapi_snmp_oid_t *oid, tapi_snmp_vartypes_t *type)
     struct tree *entry_node;
 
     if (oid == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     entry_node = get_tree(oid->id, oid->length, get_tree_head());
 
@@ -2494,7 +2494,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid,
     tapi_snmp_var_access *columns_p;
 
     if (table_oid == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     *columns = NULL;
 
@@ -2564,7 +2564,7 @@ tapi_snmp_get_ipaddr(const char *ta, int sid, int csap_id,
 
 
     if (oid == NULL || addr == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     log_buf = tapi_log_buf_alloc();
     tapi_snmp_log_op_start(log_buf, NDN_SNMP_MSG_GET);
@@ -2800,7 +2800,7 @@ tapi_snmp_get_string(const char *ta, int sid, int csap_id,
     int rc;
 
     if (buf_size < 1)
-        return TE_RC(TE_TAPI, ETESMALLBUF);
+        return TE_RC(TE_TAPI, TE_ESMALLBUF);
 
     buf_size--;
     rc = tapi_snmp_get_oct_string(ta, sid, csap_id, oid,
@@ -2861,7 +2861,7 @@ tapi_snmp_get_oct_string(const char *ta, int sid, int csap_id,
 
     if (varbind.v_len > *buf_size)
     {
-        return ETESMALLBUF;
+        return TE_ESMALLBUF;
     }
     if (varbind.v_len > 0)
     {
@@ -3204,7 +3204,7 @@ tapi_snmp_make_instance(const char *oid_str, tapi_snmp_oid_t *bin_oid, ...)
     if (entry_node == NULL)
     {
         ERROR("Bad oid string %s", oid_str);
-       return ETEWRONGPTR;
+       return TE_EWRONGPTR;
     }
 
     /* This node must be scalar or table leaf */

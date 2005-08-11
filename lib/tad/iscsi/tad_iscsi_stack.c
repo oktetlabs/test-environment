@@ -276,7 +276,7 @@ iscsi_write_read_cb (csap_p csap_descr, int timeout,
                    char *r_buf, size_t r_buf_len)
 {
 #if 1
-    csap_descr->last_errno = ETENOSUPP;
+    csap_descr->last_errno = TE_EOPNOTSUPP;
     ERROR("%s() not allowed for iSCSI", __FUNCTION__);
     UNUSED(timeout);
     UNUSED(w_buf);
@@ -321,7 +321,7 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
 
     if (csap_nds == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return ETADCSAPNOTEX;

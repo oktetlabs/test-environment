@@ -1040,7 +1040,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
     {
         VERB("CSAP does not support get_param\n");
         SEND_ANSWER("%d CSAP does not support get_param", 
-                    TE_RC(TE_TAD_CH, ETENOSUPP));
+                    TE_RC(TE_TAD_CH, TE_EOPNOTSUPP));
     }
     else
     {
@@ -1055,7 +1055,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
         {
             VERB("CSAP return error for get_param\n");
             SEND_ANSWER("%d CSAP return error for get_param", 
-                        TE_RC(TE_TAD_CH, ETENOSUPP));
+                        TE_RC(TE_TAD_CH, TE_EOPNOTSUPP));
         }
     }
 

@@ -81,7 +81,7 @@ extern rpc_info *rpc_find_info(const char *name);
  *
  * @return Status code
  * @retval ENOENT       No such function
- * @retval ETESUNRPC    Buffer is too small or another encoding error
+ * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
 extern int rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, 
@@ -98,7 +98,7 @@ extern int rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen,
  *                      pointer to structure tarpc_bind_out
  *
  * @return Status code
- * @retval ETESUNRPC    Buffer is too small or another encoding error
+ * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
 extern int rpc_xdr_encode_result(char *name, te_bool rc, 

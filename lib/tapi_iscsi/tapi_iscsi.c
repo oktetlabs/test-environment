@@ -153,7 +153,7 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
 
     if (ta_name == NULL || socket == NULL ||
         buffer == NULL || length == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
                               ndn_traffic_pattern, &pattern, &syms);
@@ -200,7 +200,7 @@ tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
     int rc = 0, syms;
 
     if (ta_name == NULL || socket == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{pdus { iscsi:{} } }",
                               ndn_traffic_template, &template, &syms);

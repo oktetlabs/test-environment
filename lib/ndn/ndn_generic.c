@@ -515,7 +515,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     uint32_t user_int;
 
     if (pattern == NULL || data == NULL || label == NULL)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     rc = asn_impl_named_subvalue_index(pattern->asn_type, label,
                                        &field_index);
@@ -569,7 +569,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                     user_int = ntohl(*((uint32_t *)data));
                     break;
                 case 8: 
-                    return ETENOSUPP;
+                    return TE_EOPNOTSUPP;
                 default:
                     user_int = *((uint8_t *)data);
             }
@@ -594,7 +594,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                     break;
 
                 case BIT_STRING:
-                    rc = ETENOSUPP; /* TODO */
+                    rc = TE_EOPNOTSUPP; /* TODO */
                     break;
 
                 case OCT_STRING:
@@ -622,7 +622,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
         case NDN_DU_ENUM:
             WARN("%s, DATA-UNIT tag %d unsupported", 
                  __FUNCTION__, (int)t_val);
-            rc = ETENOSUPP;
+            rc = TE_EOPNOTSUPP;
             break;
 
         case NDN_DU_INTERVALS:
@@ -679,7 +679,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
         default:
             WARN("%s, this Data-Unit fields may not present for match",
                  __FUNCTION__);
-            rc = ETENOSUPP;
+            rc = TE_EOPNOTSUPP;
             break;
     }
 
@@ -759,7 +759,7 @@ ndn_get_du_field(asn_value *pdu, ndn_du_get_oper_t oper,
     int rc = 0;
 
     if (du_leaf == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_get_child_value(pdu, (const asn_value **)du_leaf,
                              PRIVATE, tag);

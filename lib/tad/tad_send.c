@@ -410,7 +410,7 @@ tad_convert_payload(const asn_value *ndn_payload,
     int rc = 0;
 
     if (ndn_payload == NULL || pld_spec == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_get_choice_value(ndn_payload, &payload, &t_class, &t_val);
     if (rc != 0)
@@ -453,7 +453,7 @@ tad_convert_payload(const asn_value *ndn_payload,
                 {
                     ERROR("Function %s for pld generation NOT found",
                           func_name);
-                    rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
+                    rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
                 }
             }
             break;
@@ -487,7 +487,7 @@ tad_convert_payload(const asn_value *ndn_payload,
                 {
                     ERROR("Function %s for stream NOT found",
                           func_name);
-                    rc = TE_RC(TE_TAD_CH, ETENOSUCHNAME); 
+                    rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
                 }
 
                 if ((rc = asn_get_child_value(payload, &du_field, PRIVATE,
@@ -799,7 +799,7 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
 
             case TAD_TMPL_ITER_STR_SEQ:
                 /* TODO: implement other choices in template argument */
-                return -ETENOSUPP;
+                return -TE_EOPNOTSUPP;
                 break;
         }
     }
@@ -885,7 +885,7 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
 
             default:
             /* TODO: implement other choices in template argument */
-                rc = ETENOSUPP;
+                rc = TE_EOPNOTSUPP;
                 break;
         }
         if (rc != 0)
@@ -909,7 +909,7 @@ tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs, size_t arg_specs_num,
         return 0;
 
     if (arg_iterated == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     memset(arg_iterated, 0, arg_specs_num * sizeof(tad_tmpl_arg_t));
 

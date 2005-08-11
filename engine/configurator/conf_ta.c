@@ -70,7 +70,7 @@ ta_list_init()
 
         free(cfg_ta_list);
         cfg_ta_list = NULL;
-        if (TE_RC_GET_ERROR(rc) != ETESMALLBUF)
+        if (TE_RC_GET_ERROR(rc) != TE_ESMALLBUF)
         {
             ERROR("rcf_get_ta_list() returned 0x%X", rc);
             return rc;
@@ -183,7 +183,7 @@ sync_ta_instance(char *ta, char *oid)
     while (TRUE)
     {
         rc = rcf_ta_cfg_get(ta, 0, oid, cfg_get_buf, cfg_get_buf_len);
-        if (TE_RC_GET_ERROR(rc) == ETESMALLBUF)
+        if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
         {
             cfg_get_buf_len <<= 1;
 
@@ -195,7 +195,7 @@ sync_ta_instance(char *ta, char *oid)
             }
         }
         else if (TE_RC_GET_ERROR(rc) == ENOENT || rc == 0 ||
-                 (TE_RC_GET_ERROR(rc) == ETENOSUCHNAME &&
+                 (TE_RC_GET_ERROR(rc) == TE_ENOENT &&
                   strstr(oid, "/"CFG_VOLATILE":") != NULL))
         {
             break;
@@ -347,7 +347,7 @@ sync_ta_subtree(char *ta, char *oid)
     {
         rc = rcf_ta_cfg_get(ta, 0, wildcard_oid, cfg_get_buf, 
                             cfg_get_buf_len);
-        if (TE_RC_GET_ERROR(rc) == ETESMALLBUF)
+        if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
         {
             cfg_get_buf_len <<= 1;
 

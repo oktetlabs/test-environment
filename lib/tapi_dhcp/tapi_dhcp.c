@@ -894,7 +894,7 @@ dhcpv4_prepare_traffic_pattern(const dhcp_message *dhcp_msg,
     int         rc;
 
     if (pattern_fname == NULL)
-        return TE_RC(TE_TAPI, ETEWRONGPTR);
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     if ((rc = ndn_dhcpv4_plain_to_packet(dhcp_msg, &asn_dhcp_msg)) != 0)
         return TE_RC(TE_TAPI, rc);

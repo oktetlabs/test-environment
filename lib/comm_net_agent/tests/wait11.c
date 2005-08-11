@@ -146,17 +146,17 @@ local_station_proc(void *arg)
     len = declared_input_buffer_length;
     ptr = input_buffer;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    if (rc != ETEPENDING)
+    if (rc != TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the first call of rcf_comm_agent_wait() "
-              "returned %d instead of ETEPENDING(%d)\n", rc, ETEPENDING);
+              "returned %d instead of TE_EPENDING(%d)\n", rc, TE_EPENDING);
        exit(3);
     }
     if (len != MESSAGE_SIZE - (ptr - input_buffer))
     {
        fprintf(stderr, "ERROR: rcf_comm_agent_wait() did not "
               "return the length of the whole message (%d) while "
-              "returning ETEPENDING\n", MESSAGE_SIZE);
+              "returning TE_EPENDING\n", MESSAGE_SIZE);
        exit(3);
     }
     ptr += declared_input_buffer_length;
@@ -164,17 +164,17 @@ local_station_proc(void *arg)
     /* the second call */
     len = declared_input_buffer_length;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    if (rc != ETEPENDING)
+    if (rc != TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the first call of rcf_comm_agent_wait() "
-              "returned %d instead of ETESMALLBUF(%d)\n", rc, ETEPENDING);
+              "returned %d instead of TE_ESMALLBUF(%d)\n", rc, TE_EPENDING);
        exit(3);
     }
     if (len != MESSAGE_SIZE - (ptr - input_buffer))
     {
        fprintf(stderr, "ERROR: rcf_comm_agent_wait() did not "
               "return the length of the whole message (%d) while "
-              "returning ETEPENDING\n", MESSAGE_SIZE);
+              "returning TE_EPENDING\n", MESSAGE_SIZE);
        exit(3);
     }
     len = declared_input_buffer_length;
@@ -205,7 +205,7 @@ local_station_proc(void *arg)
  * in one input buffer, and a large attachment (which together with the command
  * would not fit into two input buffers), and totally three input buffers
  * are required to room the total message. The first call and the second call
- * of the function @b rcf_comm_agent_wait() must return ETEPENDING, the
+ * of the function @b rcf_comm_agent_wait() must return TE_EPENDING, the
  * third call must succeed. The three calls must make up the original 
  * message sent by the remote station.
  *

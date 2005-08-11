@@ -165,7 +165,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
     strcat(labels_buffer, ".#plain");
 
     if (data == NULL)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     VERB("label '%s', du type %d", label, pattern->du_type);
 
@@ -184,7 +184,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
                     user_int = ntohl(*((uint32_t *)data));
                     break;
                 case 8: 
-                    return ETENOSUPP;
+                    return TE_EOPNOTSUPP;
                 default:
                     user_int = *data;
             }
@@ -300,7 +300,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
             break;
 
         default:
-            rc = ETENOSUPP;
+            rc = TE_EOPNOTSUPP;
     }
     return rc;
 }
@@ -329,7 +329,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
     int rc = 0;
 
     if (string == NULL || expr == NULL || syms == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     VERB("%s <%s> called", __FUNCTION__, string);
 
@@ -536,7 +536,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
     int rc;
 
     if (expr == NULL || result == NULL)
-        return ETEWRONGPTR; 
+        return TE_EWRONGPTR; 
 
     switch (expr->n_type)
     {
@@ -552,7 +552,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 int ar_n = expr->arg_num;
 
                 if (args == NULL)
-                    return ETEWRONGPTR;
+                    return TE_EWRONGPTR;
 
                 if (ar_n < 0 || ((size_t)ar_n) >= num_args)
                 {
@@ -721,7 +721,7 @@ tad_data_unit_convert_by_label(const asn_value *pdu_val,
     const asn_type  *clear_pdu_type;
 
     if (pdu_val == NULL || label == NULL || location == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
     
     if (asn_get_syntax(pdu_val, "") == CHOICE)
     {
@@ -760,7 +760,7 @@ tad_data_unit_convert(const asn_value *pdu_val,
     const asn_value *ch_du_field;
 
     if (pdu_val == NULL || location == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     rc = asn_get_child_value(pdu_val, &ch_du_field, PRIVATE, tag_value);
     if (rc != 0)
@@ -797,7 +797,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
     asn_syntax       plain_syntax;
 
     if (ch_du_field == NULL || location == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if (location->du_type != TAD_DU_UNDEF)
         tad_data_unit_clear(location);
@@ -841,7 +841,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                 case REAL:
                 case OID:
                     ERROR("No yet support for syntax %d", plain_syntax);
-                    return ETENOSUPP;
+                    return TE_EOPNOTSUPP;
 
                 default: 
                     ERROR("%s(field name %s): strange syntax %d",
@@ -915,7 +915,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                 else
                 {
                     ERROR("not supported type of script");
-                    return ETENOSUPP;
+                    return TE_EOPNOTSUPP;
                 }
             }
 
@@ -979,7 +979,7 @@ tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
                        tad_data_unit_t *location)
 {
     if (data == NULL || location == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
 
     if ((location->val_data.oct_str = malloc(d_len)) == NULL)
         return ENOMEM;
@@ -1000,7 +1000,7 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
     int rc = 0;
 
     if (du_tmpl == NULL || data_place == NULL)
-        return ETEWRONGPTR;
+        return TE_EWRONGPTR;
     if (d_len == 0)
         return EINVAL;
 

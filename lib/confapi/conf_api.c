@@ -153,7 +153,7 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_register_msg *)cfgl_msg_buf;
     msg->type = CFG_REGISTER;
@@ -286,7 +286,7 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_get_descr_msg *)cfgl_msg_buf;
 
@@ -344,7 +344,7 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_get_oid_msg *)cfgl_msg_buf;
 
@@ -448,7 +448,7 @@ cfg_get_subid(cfg_handle handle, char **subid)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_get_id_msg *)cfgl_msg_buf;
 
@@ -514,7 +514,7 @@ cfg_get_inst_name(cfg_handle handle, char **name)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_get_id_msg *)cfgl_msg_buf;
 
@@ -581,7 +581,7 @@ cfg_get_ith_inst_name(const char *str_oid, unsigned int i, char **name)
     if (oid == NULL || !oid->inst || oid->len <= i)
     {
         ERROR("Invalid value in network node: %s", str_oid);
-        return ETEFMT;
+        return TE_EFMT;
     }
 
     *name = strdup(CFG_OID_GET_INST_NAME(oid, i));
@@ -624,7 +624,7 @@ cfg_find_str(const char *oid, cfg_handle *handle)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_find_msg *)cfgl_msg_buf;
     len = strlen(oid) + 1;
@@ -774,7 +774,7 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_pattern_msg *)cfgl_msg_buf;
     len = strlen(pattern) + 1;
@@ -787,7 +787,7 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
                                            msg, msg->len, msg, &len);
-    if (ret_val == ETESMALLBUF)
+    if (ret_val == TE_ESMALLBUF)
     {
         size_t  rest_len = len - CFG_MSG_MAX;
 
@@ -858,7 +858,7 @@ cfg_get_family_member(cfg_handle handle, uint8_t who, cfg_handle *member)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return ETEIO;
+        return TE_EIPC;
     }
     msg = (cfg_family_msg *)cfgl_msg_buf;
 
@@ -989,7 +989,7 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_add_msg *)cfgl_msg_buf;
     msg->type = CFG_ADD;
@@ -1098,7 +1098,7 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_add_msg *)cfgl_msg_buf;
     msg->type = CFG_ADD;
@@ -1248,7 +1248,7 @@ kill(cfg_handle handle)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_del_msg *)cfgl_msg_buf;
 
@@ -1351,7 +1351,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_set_msg *)cfgl_msg_buf;
     msg->type = CFG_SET;
@@ -1453,7 +1453,7 @@ cfg_commit(const char *oid)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
 
     msg = (cfg_commit_msg *)cfgl_msg_buf;
@@ -1519,7 +1519,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_get_msg *)cfgl_msg_buf;
     msg->type = CFG_GET;
@@ -1636,7 +1636,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_get_msg *)cfgl_msg_buf;
     msg->type = CFG_GET;
@@ -1742,7 +1742,7 @@ cfg_synchronize(const char *oid, te_bool subtree)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return ETEIO;
+        return TE_EIPC;
     }
     msg = (cfg_sync_msg *)cfgl_msg_buf;
     msg->type = CFG_SYNC;
@@ -1899,7 +1899,7 @@ cfg_reboot_ta(const char *ta_name, te_bool restore)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_reboot_msg *)cfgl_msg_buf;
     msg->type = CFG_REBOOT;
@@ -1951,7 +1951,7 @@ cfg_create_backup(char **name)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_backup_msg *)cfgl_msg_buf;
     msg->type = CFG_BACKUP;
@@ -2009,7 +2009,7 @@ cfg_backup(const char *name, uint8_t op)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
 
     msg = (cfg_backup_msg *)cfgl_msg_buf;
@@ -2118,7 +2118,7 @@ cfg_create_config(const char *name, te_bool history)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ETEIO);
+        return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_config_msg *)cfgl_msg_buf;
     msg->type = CFG_CONFIG;
