@@ -191,7 +191,7 @@ read_device(int s)
 /**
  * Reboot the box.
  *
- * @return 0 (success) or EIO (failure)
+ * @return 0 (success) or TE_EIO (failure)
  */
 static int
 reboot_box()
@@ -209,7 +209,7 @@ reboot_box()
            break;                       \
        if (s >= 0)                      \
            close(s);                    \
-       return EIO;                      \
+       return TE_EIO;                      \
     } while (0)
     
     CHECKERR(s = open(devname, O_RDWR | O_NDELAY, 0));
@@ -249,7 +249,7 @@ reboot_box()
     }
     
     close(s);
-    return EIO;
+    return TE_EIO;
     
 #undef CHECKERR    
 }

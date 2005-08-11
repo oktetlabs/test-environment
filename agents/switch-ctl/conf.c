@@ -609,7 +609,7 @@ update_poe_global(unsigned int gid)
         {
             ERROR("ERROR[%s, %d] %d: %s", __FILE__, __LINE__,
                        rc, error_string);
-            return TE_RC(TE_TA_SWITCH_CTL, EIO);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
         }
         sync_id = gid;
         VERB("Information about PoE switch globals "
@@ -649,7 +649,7 @@ update_poe_ports(unsigned int gid)
         {
             ERROR("ERROR[%s, %d] %d: %s", __FILE__, __LINE__,
                        rc, error_string);
-            return TE_RC(TE_TA_SWITCH_CTL, EIO);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
         }
         sync_id = gid;
         VERB("Information about PoE switch ports updated");
@@ -737,7 +737,7 @@ update_poe_stp(unsigned int gid)
         {
             ERROR("ERROR[%s, %d] %d: %s", __FILE__, __LINE__,
                        rc, error_string);
-            return TE_RC(TE_TA_SWITCH_CTL, EIO);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
         }
         sync_id = gid;
         VERB("Information about PoE switch STP "
@@ -854,7 +854,7 @@ port_commit(unsigned int gid, const cfg_oid *p_oid)
     {
         ERROR("ERROR[%s, %d] %d: %s", __FILE__, __LINE__,
                    rc, error_string);
-        rc = EIO;
+        rc = TE_EIO;
     }
 
     return TE_RC(TE_TA_SWITCH_CTL, rc);
@@ -1528,7 +1528,7 @@ set_a_time(unsigned int gid, const char *oid, const char *value)
             ERROR("Cannot retrieve switch global settings"
                        "after failure: %s", error_string);
         }
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
 
     return 0;
@@ -1552,7 +1552,7 @@ cos_get(unsigned int gid, const char *oid, char *value)
     if (update_poe_global(gid) != 0)
     {
         ERROR("ERROR[%s, %d]", __FILE__, __LINE__);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
 
     sprintf(value, "%lu", poe_global_data.cos_number_of_queues);
@@ -1584,7 +1584,7 @@ cos_set(unsigned int gid, const char *oid, char *value)
     if (update_poe_global(gid) != 0)
     {
         ERROR("ERROR[%s, %d]", __FILE__, __LINE__);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
 
     poe_global_data.cos_number_of_queues = *value - '0';
@@ -1601,7 +1601,7 @@ cos_set(unsigned int gid, const char *oid, char *value)
             ERROR("Cannot retrieve switch global settings"
                        "after failure: %s", error_string);
         }
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
      
     return 0;   
@@ -1640,7 +1640,7 @@ arl_cache_update(unsigned int gid)
                                error_string) != 0)
         {
             ERROR("Cannot read ARL table ERROR %s", error_string);
-            return TE_RC(TE_TA_SWITCH_CTL, EIO);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
         }
         F_VERB("DUT ARL table contains %d entries", arl_table_num);
 
@@ -1912,7 +1912,7 @@ arl_add_entry(unsigned int gid, const char *oid, const char *value,
     if (poe_arl_create(&arl_entry, error_string) != 0)
     {
         ERROR("poe_arl_create FAIL: %s", error_string);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
 
     return 0;
@@ -1950,7 +1950,7 @@ arl_del_entry(unsigned int gid, const char *oid,
     if (poe_arl_delete(&parsed_entry, error_string) != 0)
     {
         ERROR("Cannot delete ARL entry from the NUT");
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
 
     return 0;
@@ -2174,7 +2174,7 @@ stp_cache_update(unsigned int gid)
         {
             ERROR("Cannot read STP Port table ERROR %d, %s",
                        rc, error_string);
-            return TE_RC(TE_TA_SWITCH_CTL, EIO);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
         }
         prev_gid = gid;
         VERB("STP Port Table cache is updated: ptr = %x, "
@@ -2283,7 +2283,7 @@ stp_commit(unsigned int gid, const cfg_oid *p_oid)
     {
         ERROR("poe_stp_write() failed: %d: %s", rc,
                           error_string);
-        rc = EIO;
+        rc = TE_EIO;
     }
 
     return TE_RC(TE_TA_SWITCH_CTL, rc);
@@ -3107,7 +3107,7 @@ stp_add_port(unsigned int gid, const char *oid, const char *value,
     if ((stp_port_entry = local_stp_port_entry_new()) == NULL)
     {
         ERROR("stp_add_port: Cannot create local STP port entry");
-        return TE_RC(TE_TA_SWITCH_CTL, EAGAIN);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EAGAIN);
     }
 
     stp_port_entry->port = (poe_pid)strtol(port_num, &end_ptr, 10);
@@ -3239,7 +3239,7 @@ stp_port_commit(unsigned int gid, const cfg_oid *p_oid)
         {
             ERROR("Updating STP Port information on %s port fails "
                        "ERROR: %s", inst->name, error_string);
-            return TE_RC(TE_TA_SWITCH_CTL, EIO);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
         }
     }
     else
@@ -3252,7 +3252,7 @@ stp_port_commit(unsigned int gid, const cfg_oid *p_oid)
             {
                 ERROR("Fails to enable STP on %s port: %s",
                             inst->name, error_string);
-                return TE_RC(TE_TA_SWITCH_CTL, EIO);
+                return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
             }
             /*
              * The entry is not local any more, so that we can remove
@@ -3306,7 +3306,7 @@ find_vlan(char *vid, poe_vlan *vlan)
     if (poe_vlan_read_table(&table, &num, error_string) < 0)
     {
         ERROR("Cannot read VLAN table: %s", error_string);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
     
     for (i = 0; i < num; i++)
@@ -3395,7 +3395,7 @@ vlan_set(int gid, char *oid, char *value, char *vid)
     if (rc < 0)
     {
         ERROR("Cannot change VLAN status: %s", error_string);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
 
     return 0;
@@ -3451,7 +3451,7 @@ vlan_add(int gid, char *oid, char *value, char *vid)
     {
         ERROR("Cannot create VLAN: %s", 
                    error_string);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
     return 0;
 }
@@ -3485,7 +3485,7 @@ vlan_del(int gid, char *oid, char *vid)
     {
         ERROR("Cannot delete VLAN: %s", 
                    error_string);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
     return 0;
 }
@@ -3516,7 +3516,7 @@ vlan_list(int gid, char *oid, char **list)
     if (poe_vlan_read_table(&table, &num, error_string) < 0)
     {
         ERROR("Cannot read VLAN table: %s", error_string);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
     F_VERB("VLAN table contains %d entries", num);
 
@@ -3606,7 +3606,7 @@ vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
     if (rc < 0)
     {
         ERROR("Cannot add VLAN port: %s", error_string);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
 
     return 0;
@@ -3662,7 +3662,7 @@ vlan_port_del(int gid, char *oid, char *vid, char *p)
     if (rc < 0)
     {
         ERROR("Cannot delete VLAN port: %s", error_string);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
 
     return 0;
@@ -3745,7 +3745,7 @@ vlan_ip_get(int gid, char *oid, char *value, char *vid)
     {
         ERROR("Cannot read IP over VLAN interfaces: %s", 
                    error_string);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
     
     for (i = 0; i < num && strcmp(table[i].vlan, name) != 0; i++);
@@ -3791,7 +3791,7 @@ vlan_ip_set(int gid, char *oid, char *value, char *vid)
         poe_vlan_ip_update(&ipif, NULL) < 0)
     {
         ERROR("Failed to configure IP over VLAN interface");
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
     
     return 0;

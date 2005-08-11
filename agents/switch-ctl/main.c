@@ -153,7 +153,7 @@ rcf_ch_reboot(struct rcf_comm_connection *handle,
         ERROR("Failed %d: %s", ret, errstr);
     }
 
-    SEND_ANSWER("%d", (ret == 0) ? 0 : EIO);
+    SEND_ANSWER("%d", (ret == 0) ? 0 : TE_EIO);
 }
 
 
@@ -356,7 +356,7 @@ main(int argc, char **argv)
  *
  * @return Status code.
  * @retval 0    - success
- * @retval EIO  - failed to read ARL table
+ * @retval TE_EIO  - failed to read ARL table
  */
 int
 arl_table_reset(void)
@@ -369,7 +369,7 @@ arl_table_reset(void)
     if (rc != 0)
     {
         ERROR("main", "poe_arl_read_table() failed %d", rc);
-        return TE_RC(TE_TA_SWITCH_CTL, EIO);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EIO);
     }
 
     for (i = 0; i < num; ++i)
