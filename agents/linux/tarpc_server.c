@@ -974,7 +974,7 @@ TARPC_FUNC(gettimeofday,
             TARPC_CHECK_RC(timeval_h2rpc(&tv, out->tv.tv_val));
         if (out->tz.tz_len != 0)
             TARPC_CHECK_RC(timezone_h2rpc(&tz, out->tz.tz_val));
-        if (out->common._errno == ETEH2RPC)
+        if (out->common._errno == TE_EH2RPC)
             out->retval = -1;
     }
 }
