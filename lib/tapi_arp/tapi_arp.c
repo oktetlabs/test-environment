@@ -205,7 +205,7 @@ tapi_arp_recv_start(const char *ta_name, int sid, csap_handle_t arp_csap,
     i_data = (struct tapi_pkt_handler_data *)malloc(
                  sizeof(struct tapi_pkt_handler_data));
     if (i_data == NULL)
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
     
     i_data->user_callback = cb;
     i_data->user_data = cb_data;
@@ -246,7 +246,7 @@ arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
     {
         info->frames = tmp_ptr;
         info->num--;
-        info->rc = ENOMEM;
+        info->rc = TE_ENOMEM;
         return;
     }
     memcpy(&info->frames[info->num - 1], arp_frame, sizeof(*arp_frame));
@@ -257,7 +257,7 @@ arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
             (uint8_t *)malloc(arp_frame->data_len);
         if (info->frames[info->num - 1].data == NULL)
         {
-            info->rc = ENOMEM;
+            info->rc = TE_ENOMEM;
             return;
         }
         memcpy(info->frames[info->num - 1].data, arp_frame->data,
@@ -276,7 +276,7 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
     int                 num_tmp;
     
     if (frames == NULL || num == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     memset(&info, 0, sizeof(info));
     
@@ -325,26 +325,26 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
     int        rc = 0;
 
     if (frame == NULL || templ == NULL)
-        return EINVAL;
+        return TE_EINVAL;
     
     if ((frame->data == NULL) != (frame->data_len == 0))
     {
         ERROR("'data' and 'data_len' fields should be 'NULL' and zero, "
               "or non 'NULL' and not zero.");
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     if (frame->arp_hdr.hard_size > sizeof(frame->arp_hdr.snd_hw_addr))
     {
         ERROR("The value of 'hard_size' field is more than the length of "
               "'snd_hw_addr' and 'tgt_hw_addr' fields");
-        return EINVAL;
+        return TE_EINVAL;
     }
     if (frame->arp_hdr.proto_size > sizeof(frame->arp_hdr.snd_proto_addr))
     {
         ERROR("The value of 'proto_size' field is more than the length of "
               "'snd_proto_addr' and 'tgt_proto_addr' fields");
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     traffic_templ = asn_init_value(ndn_traffic_template);
@@ -354,7 +354,7 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
     frame_tmpl = ndn_eth_plain_to_packet(&(frame->eth_hdr));
     if (frame_tmpl == NULL)
     {
-        return ENOMEM;
+        return TE_ENOMEM;
     }
 
     rc = asn_write_component_value(asn_pdu, frame_tmpl, "#eth");
@@ -376,7 +376,7 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
                                               frame->data_len,
                                               &arp_pkt_len);
         if (arp_pkt == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
 
         rc = asn_write_value_field(traffic_templ, arp_pkt, arp_pkt_len,
                                    "payload.#bytes");
@@ -447,7 +447,7 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
     if (arp_pkt == NULL)
     {
         ERROR("Cannot create binary ARP header");
-        return ENOMEM;
+        return TE_ENOMEM;
     }
 
     /* Create 'mask' for ethernet payload, which contains ARP header */
@@ -463,7 +463,7 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
     {
         ERROR("Cannot create binary mask for ARP header");
         free(arp_pkt);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     /*
      * Set the first 6 bytes of mask with 0xff - we expect exact matching

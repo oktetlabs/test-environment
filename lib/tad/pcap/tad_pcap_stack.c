@@ -309,7 +309,7 @@ pcap_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
     if (csap_descr == NULL)
     {
-        csap_descr->last_errno = EINVAL;
+        csap_descr->last_errno = TE_EINVAL;
         return -1;
     }
     
@@ -486,7 +486,7 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         ERROR("pcap_single_init_cb called for csap %d, layer %d,"
               "rc %X getting '%s', ndn has len %d\n", 
               csap_id, layer, rc, str_index_buf, val_len);
-        return TE_RC(TE_TAD_CSAP, EINVAL);
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
     rc = asn_get_choice(pcap_csap_spec, "", choice, sizeof(choice));
@@ -505,7 +505,7 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     if (pcap_spec_data == NULL)
     {
         ERROR("Init, not memory for spec_data");
-        return TE_RC(TE_TAD_CSAP,  ENOMEM);
+        return TE_RC(TE_TAD_CSAP,  TE_ENOMEM);
     }
     
     pcap_spec_data->in = -1;

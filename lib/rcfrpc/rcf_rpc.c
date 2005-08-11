@@ -142,7 +142,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         ((existing || !clear) && father != NULL) || 
         (thread && father == NULL))
     {
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
     
     /* Try to find existing RPC server */
@@ -151,7 +151,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
  
 
     if (rc != 0 && existing)
-        return TE_RC(TE_RCF_API, ENOENT);
+        return TE_RC(TE_RCF_API, TE_ENOENT);
     
     if (cfg_get_instance_fmt(NULL, &sid, 
                              "/volatile:/rpcserver_sid:%s:%s",
@@ -178,7 +178,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
                              ta, father) != 0)
     {
         ERROR("Cannot find father %s to create server %s", father, name);
-        return TE_RC(TE_RCF_API, ENOENT);
+        return TE_RC(TE_RCF_API, TE_ENOENT);
     }
     
     if (father == NULL)
@@ -191,7 +191,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     if ((rpcs = (rcf_rpc_server *)
                     calloc(1, sizeof(rcf_rpc_server))) == NULL)
     {
-        return TE_RC(TE_RCF_API, ENOMEM);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
     }
     
     if ((rc1 = rpc_server_sem_init(rpcs)) != 0)
@@ -296,7 +296,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     char lib = 0;
 
     if (rpcs == NULL)
-        return TE_RC(TE_RCF, EINVAL);
+        return TE_RC(TE_RCF, TE_EINVAL);
 
     if (pthread_mutex_lock(&rpcs->lock) != 0)
         ERROR("pthread_mutex_lock() failed");
@@ -337,7 +337,7 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
     int rc;
     
     if (rpcs == NULL)
-        return TE_RC(TE_RCF, EINVAL);
+        return TE_RC(TE_RCF, TE_EINVAL);
     
     VERB("Destroy RPC server %s", rpcs->name);
     
@@ -346,7 +346,7 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
 
     if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s",
                                    rpcs->ta, rpcs->name)) != 0 &&
-        TE_RC_GET_ERROR(rc) != ENOENT)
+        TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
         ERROR("Failed to delete RPC server %s: errno 0x%X", rpcs->name, rc);
         if (pthread_mutex_unlock(&rpcs->lock) != 0)
@@ -393,7 +393,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         
     if (in_arg == NULL || out_arg == NULL || proc == NULL)
     {
-        rpcs->_errno = TE_RC(TE_RCF_API, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF_API, TE_EINVAL);
         return;
     }
     
@@ -429,7 +429,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         {
             ERROR("Try to wait RPC %s instead called RPC %s", 
                   proc, rpcs->proc);
-            rpcs->_errno = TE_RC(TE_RCF_API, EPERM);
+            rpcs->_errno = TE_RC(TE_RCF_API, TE_EPERM);
             pthread_mutex_unlock(&rpcs->lock);
             return;
         }
@@ -492,7 +492,7 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
     tarpc_rpc_is_op_done_out out;
 
     if (rpcs == NULL || done == NULL)
-        return TE_RC(TE_RCF, EINVAL);
+        return TE_RC(TE_RCF, TE_EINVAL);
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));

@@ -236,13 +236,13 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         strlen(ta_type) >= RCF_MAX_NAME ||
         conf_str == NULL || flags == NULL)
     {
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     if ((installdir = getenv("TE_INSTALL")) == NULL)
     {
         VERB("FATAL ERROR: TE_INSTALL is not exported");
-        return ENOENT;
+        return TE_ENOENT;
     }
     sprintf(path, "%s/agents/bin/ta%s", installdir, ta_type);
 
@@ -253,7 +253,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         if (stat(path, &statbuf) != 0 || !(statbuf.st_mode & S_IXOTH))
         {
             ERROR("Permission denied to execute %s", path);
-            return ENOENT;
+            return TE_ENOENT;
         }
     }
 #endif
@@ -263,7 +263,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     {
         ERROR("Memory allocation failure: %u bytes",
                   sizeof(unix_ta));
-        return ENOMEM;
+        return TE_ENOMEM;
     }
 
     strcpy(ta->ta_name, ta_name);
@@ -282,7 +282,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     if ((conf_str = strdup(conf_str)) == NULL)
     {
         ERROR("Failed to duplicate string '%s'", conf_str);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     dup = conf_str;
 
@@ -410,7 +410,7 @@ bad_confstr:
     free(dup);
     VERB("Bad configuration string for TA '%s'",
                          ta_name);
-    return EINVAL;
+    return TE_EINVAL;
 }
 
 /**
@@ -436,7 +436,7 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     (void)parms;
 
     if (ta == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     RING("Finish method is called for TA %s", ta->ta_name);
     
@@ -568,7 +568,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
         (ta->pid = strtol(buf + 4, &tmp, 10), *tmp != 0))
     {
         ta->pid = 0;
-        return TE_RC(TE_RCF, EINVAL);
+        return TE_RC(TE_RCF, TE_EINVAL);
     }
     
     INFO("PID of TA %s is %d", ta->ta_name, ta->pid);

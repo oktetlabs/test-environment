@@ -281,7 +281,7 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     
     if (tcp_spec_data == NULL)
     {
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     
     
@@ -484,7 +484,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     
     if (spec_data == NULL)
     {
-        return ENOMEM;
+        return TE_ENOMEM;
     }
 
     csap_descr->layers[layer].specific_data = spec_data;
@@ -498,7 +498,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     {
         ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
               __FUNCTION__, csap_id, layer, csap_descr->depth);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     ip4_spec_data = (ip4_csap_specific_data_t *)

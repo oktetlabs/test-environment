@@ -141,7 +141,7 @@ extern tapi_jmp_point *tapi_jmp_push(const char *file,
  * @param lineno    Number of line in the file
  *
  * @return Status code
- * @retval ENOENT   Stack of of jump points is empty
+ * @retval TE_ENOENT   Stack of of jump points is empty
  *
  * @sa tapi_jmp_push, tapi_jmp_do
  */
@@ -164,7 +164,7 @@ extern int tapi_jmp_pop(const char *file, unsigned int lineno);
  * @param lineno    Number of line in the file
  *
  * @return Status code
- * @retval ENOENT   Stack of of jump points is empty
+ * @retval TE_ENOENT   Stack of of jump points is empty
  *
  * @sa tapi_jmp_push
  */

@@ -80,7 +80,7 @@ extern rpc_info *rpc_find_info(const char *name);
  *                      pointer to structure tarpc_bind_in
  *
  * @return Status code
- * @retval ENOENT       No such function
+ * @retval TE_ENOENT       No such function
  * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */

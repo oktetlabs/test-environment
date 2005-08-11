@@ -71,7 +71,7 @@ extern int cfg_dh_attach_backup(char *filename);
  * @param filename      name of the backup file
  *
  * @return status code (see te_errno.h)
- * @retval ENOENT       there is not command in dynamic history to which
+ * @retval TE_ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached
  */
 extern int cfg_dh_restore_backup(char *filename);
@@ -81,7 +81,7 @@ extern int cfg_dh_restore_backup(char *filename);
  *
  * @param msg   message with set, add or delete user request.
  *
- * @return 0 (success) or ENOMEM
+ * @return 0 (success) or TE_ENOMEM
  */
 extern int cfg_dh_add_command(cfg_msg *msg);
 

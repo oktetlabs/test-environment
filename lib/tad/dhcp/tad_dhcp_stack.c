@@ -259,7 +259,7 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     
     if (dhcp_spec_data == NULL)
     {
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     
     

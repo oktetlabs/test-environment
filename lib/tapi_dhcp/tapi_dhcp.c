@@ -139,7 +139,7 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
 
     *dhcp_msg = (struct dhcp_message *)malloc(sizeof(**dhcp_msg));
     if (*dhcp_msg == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     memset(*dhcp_msg, 0, sizeof(**dhcp_msg));
 
@@ -261,7 +261,7 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
     {
         free(*opt_p);
         *opt_p = NULL;
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     (*opt_p)->val_len = len;
     (*opt_p)->next = NULL;
@@ -586,7 +586,7 @@ dhcpv4_option_add_subopt(struct dhcp_option *opt, uint8_t type, uint8_t len,
     struct dhcp_option **cur_opt_p;
 
     if ((subopt = dhcpv4_option_create(type, len, len, val)) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     cur_opt_p = &(opt->subopts);
     while (*cur_opt_p != NULL)
@@ -656,7 +656,7 @@ dhcpv4_message_add_option(struct dhcp_message *dhcp_msg, uint8_t type,
         (len > 0 && ((*cur_opt_p)->val = (uint8_t *)malloc(len)) == NULL))
     {
         free(*cur_opt_p);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     (*cur_opt_p)->next = NULL;
     (*cur_opt_p)->subopts = NULL;

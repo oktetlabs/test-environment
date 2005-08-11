@@ -66,7 +66,7 @@ static int pattern_match(char *pattern, char *str);
 /**
  * Initialize the database during startup or re-initialization.
  *
- * @return 0 (success) or ENOMEM
+ * @return 0 (success) or TE_ENOMEM
  */
 int
 cfg_db_init(void)
@@ -76,7 +76,7 @@ cfg_db_init(void)
                                              sizeof(void *))) == NULL)
     {
         ERROR("Out of memory");
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     cfg_all_obj_size = CFG_OBJ_NUM;
     cfg_all_obj[0] = &cfg_obj_root;
@@ -90,7 +90,7 @@ cfg_db_init(void)
         free(cfg_all_obj);
         cfg_all_obj = NULL;
         ERROR("Out of memory");
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     cfg_all_inst_size = CFG_INST_NUM;
     cfg_all_inst[0] = &cfg_inst_root;
@@ -156,14 +156,14 @@ cfg_process_msg_register(cfg_register_msg *msg)
     
     if (oid == NULL)
     {
-        msg->rc = EINVAL;
+        msg->rc = TE_EINVAL;
         return;
     }
     
     if (oid->inst)
     {
         cfg_free_oid(oid);
-        msg->rc = EINVAL;
+        msg->rc = TE_EINVAL;
         return;
     }
     
@@ -185,7 +185,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
     if (father == NULL)
     {
         cfg_free_oid(oid);
-        msg->rc = ENOENT;
+        msg->rc = TE_ENOENT;
         return;
     }
     
@@ -200,7 +200,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
         if (tmp == NULL)
         {
             cfg_free_oid(oid);
-            msg->rc = ENOMEM;
+            msg->rc = TE_ENOMEM;
             return;
         }
         memset(tmp + sizeof(void *) * cfg_all_obj_size, 0, 
@@ -214,14 +214,14 @@ cfg_process_msg_register(cfg_register_msg *msg)
              (cfg_object *)calloc(sizeof(cfg_object), 1)) == NULL)
     {
         cfg_free_oid(oid);
-        msg->rc = ENOMEM;
+        msg->rc = TE_ENOMEM;
         return;
     }
     if ((cfg_all_obj[i]->oid = strdup(msg->oid)) == NULL)
     {
         cfg_all_obj[i] = NULL;
         cfg_free_oid(oid);
-        msg->rc = ENOMEM;
+        msg->rc = TE_ENOMEM;
         return;
     }
     
@@ -231,7 +231,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
         free(cfg_all_obj[i]->oid);
         cfg_all_obj[i] = NULL;
         cfg_free_oid(oid);
-        msg->rc = ENOMEM;
+        msg->rc = TE_ENOMEM;
         return;
     }
     
@@ -263,13 +263,13 @@ cfg_process_msg_get_descr(cfg_get_descr_msg *msg)
     if (CFG_IS_INST(msg->handle) ||
         (obj = CFG_GET_OBJ(msg->handle)) == NULL)
     {
-        msg->rc = EINVAL;
+        msg->rc = TE_EINVAL;
         return;
     }
     
     if ((obj = CFG_GET_OBJ(msg->handle)) == NULL)
     {
-        msg->rc = ENOENT;
+        msg->rc = TE_ENOENT;
         return;
     }
     
@@ -285,7 +285,7 @@ cfg_process_msg_get_oid(cfg_get_oid_msg *msg)
     do {                                                  \
         if (_item == NULL)                                \
         {                                                 \
-            msg->rc = ENOENT;                             \
+            msg->rc = TE_ENOENT;                             \
             return;                                       \
         }                                                 \
         strcpy(msg->oid, _item->oid);                     \
@@ -312,7 +312,7 @@ cfg_process_msg_get_id(cfg_get_id_msg *msg)
     do {                                                     \
         if (_item == NULL)                                   \
         {                                                    \
-            msg->rc = ENOENT;                                \
+            msg->rc = TE_ENOENT;                                \
             return;                                          \
         }                                                    \
         strcpy(msg->id, _item->_what);                       \
@@ -339,7 +339,7 @@ cfg_process_msg_family(cfg_family_msg *msg)
     do {                                                                \
         if (_item == NULL)                                              \
         {                                                               \
-            msg->rc = ENOENT;                                           \
+            msg->rc = TE_ENOENT;                                           \
             return;                                                     \
         }                                                               \
         msg->handle = msg->who == CFG_FATHER ?                          \
@@ -402,7 +402,7 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                     num_max * sizeof(cfg_handle));                  \
                 if (tmp == NULL)                                    \
                 {                                                   \
-                    msg->rc = ENOMEM;                               \
+                    msg->rc = TE_ENOMEM;                               \
                     return msg;                                     \
                 }                                                   \
                 memcpy(tmp, msg, sizeof(*msg) +                     \
@@ -415,7 +415,7 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
                 if (tmp1 == NULL)                                   \
                 {                                                   \
                     free(tmp);                                      \
-                    msg->rc = ENOMEM;                               \
+                    msg->rc = TE_ENOMEM;                               \
                     return msg;                                     \
                 }                                                   \
                 tmp = (cfg_pattern_msg *)tmp1;                      \
@@ -446,7 +446,7 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
     }
     else if ((oid = cfg_convert_oid_str(msg->pattern)) == NULL)
     {
-        msg->rc = EINVAL;
+        msg->rc = TE_EINVAL;
         return msg;
     }
     else
@@ -471,7 +471,7 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
             
             tmp_oid = cfg_convert_oid_str(cfg_all_inst[i]->oid);
             if (tmp_oid == NULL)
-                RETERR(ENOMEM);
+                RETERR(TE_ENOMEM);
                 
             if (tmp_oid->len != oid->len)
             {
@@ -514,7 +514,7 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
             
             tmp_oid = cfg_convert_oid_str(cfg_all_obj[i]->oid);
             if (tmp_oid == NULL)
-                RETERR(ENOMEM);
+                RETERR(TE_ENOMEM);
                 
             if (tmp_oid->len != oid->len)
             {
@@ -576,7 +576,7 @@ cfg_db_add_children(cfg_instance *inst)
         /* make up instance oid string */
         oid_s = malloc(sizeof(char)*(len + strlen(obj1->subid) + 3));
         if (!oid_s)
-            return ENOMEM;
+            return TE_ENOMEM;
         sprintf(oid_s, "%s/%s:", inst->oid, obj1->subid);
         
         /* Adding instance */
@@ -590,7 +590,7 @@ cfg_db_add_children(cfg_instance *inst)
             if (tmp == NULL)
             {
                 free(oid_s);
-                return ENOMEM;
+                return TE_ENOMEM;
             }
             
             memset(tmp + sizeof(void *) * cfg_all_inst_size, 0, 
@@ -604,7 +604,7 @@ cfg_db_add_children(cfg_instance *inst)
         if (cfg_all_inst[i] == NULL)
         {
             free(oid_s);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         
         /* Setting all parameters*/
@@ -670,7 +670,7 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     if (oid == NULL)
     {
         ERROR("%s: OID is expected to be not NULL", __FUNCTION__);
-        return EINVAL;
+        return TE_EINVAL;
     }
     
 #define RET(_rc) \
@@ -680,7 +680,7 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     } while (0)
     
     if (!oid->inst)
-        RET(EINVAL);
+        RET(TE_EINVAL);
     
     s = (cfg_inst_subid *)(oid->ids);
     
@@ -702,7 +702,7 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     }
     
     if (father == NULL)
-        RET(ENOENT);
+        RET(TE_ENOENT);
         
     /* Find an object for the instance */
     for (obj = father->obj->son; 
@@ -710,7 +710,7 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
          obj = obj->brother);
          
     if (obj == NULL)
-        RET(ENOENT);
+        RET(TE_ENOENT);
         
     if (obj->type != type && type != CVT_NONE)
         RET(TE_EBADTYPE);
@@ -732,7 +732,7 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
             sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
 
         if (tmp == NULL)
-            RET(ENOMEM);
+            RET(TE_ENOMEM);
             
         memset(tmp + sizeof(void *) * cfg_all_inst_size, 0, 
                sizeof(void *) * CFG_INST_NUM);
@@ -743,13 +743,13 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
     
     cfg_all_inst[i] = (cfg_instance *)calloc(sizeof(cfg_instance), 1);
     if (cfg_all_inst[i] == NULL)
-        RET(ENOMEM);
+        RET(TE_ENOMEM);
         
     if ((cfg_all_inst[i]->oid = strdup(oid_s)) == NULL)
     {
         free(cfg_all_inst[i]);
         cfg_all_inst[i] = NULL;
-        RET(ENOMEM);
+        RET(TE_ENOMEM);
     }
     
     if (obj->type != CVT_NONE)
@@ -836,7 +836,7 @@ cfg_db_del_check(cfg_handle handle)
     cfg_instance *inst = CFG_GET_INST(handle);
     
     if (inst == NULL)
-        return ENOENT;
+        return TE_ENOENT;
         
     if (has_read_create_children(inst))
         return TE_EHASSON;
@@ -937,7 +937,7 @@ cfg_db_get(cfg_handle handle, cfg_inst_val *val)
     cfg_instance *inst = CFG_GET_INST(handle);
     
     if (inst == NULL)
-        return ENOENT;
+        return TE_ENOENT;
     
     if (inst->obj->type != CVT_NONE)
         return cfg_types[inst->obj->type].copy(inst->val, val);
@@ -960,7 +960,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
     int      i = 0;
     
     if ((oid = cfg_convert_oid_str(oid_s)) == NULL)
-       return EINVAL;
+       return TE_EINVAL;
 
 #define RET(_handle) \
     do {                   \
@@ -995,7 +995,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
             tmp = tmp->son;
         }
         if (tmp == NULL)
-            RETERR(ENOENT);
+            RETERR(TE_ENOENT);
         else
             RET(tmp->handle);
     }
@@ -1016,7 +1016,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
            tmp = tmp->son;
         }
         if (tmp == NULL)
-            RETERR(ENOENT);
+            RETERR(TE_ENOENT);
         else
             RET(tmp->handle);
     }

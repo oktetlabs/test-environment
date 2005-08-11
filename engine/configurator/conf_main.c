@@ -155,7 +155,7 @@ parse_config(const char *file, te_bool restore)
                 "    %s", file);
 #endif
         xmlCleanupParser();
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     VERB("Do XInclude sunstitutions in the document");
@@ -170,7 +170,7 @@ parse_config(const char *file, te_bool restore)
         ERROR("XInclude processing failed");
 #endif
         xmlCleanupParser();
-        return EINVAL; /* FIXME */
+        return TE_EINVAL; /* FIXME */
     }
     VERB("XInclude made %d substitutions", subst);
 
@@ -197,7 +197,7 @@ parse_config(const char *file, te_bool restore)
     {
         ERROR("Incorrect root node '%s' in the configuration file",
               root->name);
-        rc = EINVAL;
+        rc = TE_EINVAL;
     }
 
     xmlFreeDoc(doc);
@@ -418,7 +418,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
     if ((inst = CFG_GET_INST(handle)) == NULL)
     {
         ERROR("Invalid handle in set request");
-        msg->rc = ENOENT;
+        msg->rc = TE_ENOENT;
         return;
     }
     obj = inst->obj;
@@ -525,7 +525,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
 
     if ((inst = CFG_GET_INST(handle)) == NULL)
     {
-        msg->rc = ENOENT;
+        msg->rc = TE_ENOENT;
         return;
     }
     obj = inst->obj;
@@ -589,7 +589,7 @@ process_get(cfg_get_msg *msg)
 
     if ((inst = CFG_GET_INST(handle)) == NULL)
     {
-        msg->rc = ENOENT;
+        msg->rc = TE_ENOENT;
         return;
     }
     obj = inst->obj;
@@ -706,7 +706,7 @@ log_msg(cfg_msg *msg, te_bool before)
         }
 
         case CFG_FIND:
-            if (!before && TE_RC_GET_ERROR(msg->rc) == ENOENT)
+            if (!before && TE_RC_GET_ERROR(msg->rc) == TE_ENOENT)
                 level = TE_LL_INFO;
             LGR_MESSAGE(level, TE_LGR_USER,
                         "Find OID %s%s", ((cfg_find_msg *)msg)->oid, addon);

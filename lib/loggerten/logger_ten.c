@@ -228,7 +228,7 @@ log_flush_ten(const char *ta_name)
     if (ta_name == NULL)
     {
         ERROR("Invalid TA name");
-        return EINVAL;
+        return TE_EINVAL;
     }
     
     snprintf(clnt_name, sizeof(clnt_name), "LOGGER_FLUSH_%s", ta_name);

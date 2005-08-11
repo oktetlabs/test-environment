@@ -246,9 +246,9 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
         { 
             if (spec_data->remote_addr.s_addr == INADDR_ANY)
             {
-                WARN("%s(): cannot send without dst IP address, EINVAL",
+                WARN("%s(): cannot send without dst IP address, TE_EINVAL",
                      __FUNCTION__);
-                rc = EINVAL;
+                rc = TE_EINVAL;
             }
             else
                 rc = 0;

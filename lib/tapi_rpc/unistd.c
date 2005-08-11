@@ -304,7 +304,7 @@ rpc_read_gen(rcf_rpc_server *rpcs,
 
     if (buf != NULL && count > rbuflen)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(read, -1);
     }
 
@@ -399,13 +399,13 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
 
     if (riovcnt > RCF_RPC_MAX_IOVEC)
     {
-        rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+        rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
         RETVAL_INT(readv, -1);
     }
 
     if (iov != NULL && iovcnt > riovcnt)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(readv, -1);
     }
 
@@ -483,7 +483,7 @@ rpc_writev(rcf_rpc_server *rpcs,
 
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
-        rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+        rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
         RETVAL_INT(writev, -1);
     }
 

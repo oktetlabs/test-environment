@@ -100,7 +100,7 @@ extern int tester_reqs_expr_parse(const char *str, reqs_expr **expr);
  *
  * @return Status code.
  * @retval 0        Success.
- * @retval ENOMEM   Memory allocation failure.
+ * @retval TE_ENOMEM   Memory allocation failure.
  */
 extern int tester_new_target_reqs(reqs_expr **targets, const char *req);
 

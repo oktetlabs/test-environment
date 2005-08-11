@@ -103,7 +103,7 @@ tapi_pcap_csap_create(const char *ta_name, int sid,
     FILE   *f;
 
     if ((ta_name == NULL) || (ifname == NULL) || (pcap_csap == NULL))
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
@@ -240,10 +240,10 @@ tapi_pcap_recv_start(const char *ta_name, int sid,
     struct tapi_pkt_handler_data *i_data;
 
     if (ta_name == NULL || pattern == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((i_data = malloc(sizeof(*i_data))) == NULL)
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     i_data->user_callback = cb;
     i_data->user_data = cb_data;
@@ -294,7 +294,7 @@ tapi_pcap_pattern_add(const char *filter,
     if (pattern == NULL)
     {
         ERROR("not NULL pattern pointer required");
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     VERB("Call asn_init_value()");

@@ -250,7 +250,7 @@ rpc_accept_gen(rcf_rpc_server *rpcs,
     op = rpcs->op;
     if (addrlen != NULL && *addrlen > raddrlen)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(accept, -1);
     }
 
@@ -332,7 +332,7 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
     if ((fromlen != NULL && *fromlen > rfrombuflen) ||
         (buf != NULL && len > rbuflen))
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(recvfrom, -1);
     }
 
@@ -420,7 +420,7 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
 
     if (buf != NULL && len > rbuflen)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(recv, -1);
     }
 
@@ -620,7 +620,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
 
         if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
         {
-            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
             ERROR("Length of the I/O vector is too long (%u) - "
                   "increase RCF_RPC_MAX_IOVEC(%u)",
                   msg->msg_riovlen, RCF_RPC_MAX_IOVEC);
@@ -633,7 +633,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
              (msg->msg_namelen > msg->msg_rnamelen)))
         {
             ERROR("Inconsistent real and declared lengths of buffers");
-            rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+            rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
             RETVAL_INT(sendmsg, -1);
         }
 
@@ -692,7 +692,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
                 if ((int)(c->cmsg_len) < (char *)c - data)
                 {
                     ERROR("Incorrect content of cmsg is not supported");
-                    rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+                    rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
                     RETVAL_INT(sendmsg, -1);
                 }
                 
@@ -707,7 +707,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
             
             if (i == RCF_RPC_MAX_CMSGHDR)
             {
-                rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+                rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
                 ERROR("Too many cmsg headers - increase "
                       "RCF_RPC_MAX_CMSGHDR");
                 RETVAL_INT(sendmsg, -1);
@@ -783,7 +783,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
 
         if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
         {
-            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
             ERROR("Length of the I/O vector is too long (%u) - "
                   "increase RCF_RPC_MAX_IOVEC(%u)",
                   msg->msg_riovlen, RCF_RPC_MAX_IOVEC);
@@ -792,14 +792,14 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
 
         if (msg->msg_cmsghdr_num > RCF_RPC_MAX_CMSGHDR)
         {
-            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
             ERROR("Too many cmsg headers - increase RCF_RPC_MAX_CMSGHDR");
             RETVAL_INT(recvmsg, -1);
         }
         
         if (msg->msg_control != NULL && msg->msg_cmsghdr_num == 0)
         {
-            rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+            rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
             ERROR("Number of cmsg headers is incorrect");
             RETVAL_INT(recvmsg, -1);
         }
@@ -807,7 +807,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         if (msg->msg_iovlen > msg->msg_riovlen ||
             msg->msg_namelen > msg->msg_rnamelen)
         {
-            rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+            rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
             RETVAL_INT(recvmsg, -1);
         }
 
@@ -912,7 +912,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
             if (c == NULL && i < rpc_msg.msg_control.msg_control_len)
             {
                 ERROR("Unexpected lack of space in auxiliary buffer");
-                rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+                rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
                 RETVAL_INT(recvmsg, -1);
             }
             
@@ -966,7 +966,7 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
     }
     if (namelen != NULL && *namelen > rnamelen)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(getsockname, -1);
     }
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -1045,7 +1045,7 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
 
     if (namelen != NULL && *namelen > rnamelen)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(getpeername, -1);
     }
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -1128,7 +1128,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
      */
     if (optlen != NULL && optval != NULL && *optlen > roptlen)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(getsockopt, -1);
     }
 

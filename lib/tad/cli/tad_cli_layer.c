@@ -133,7 +133,7 @@ cli_gen_bin_cb(csap_p csap_descr, int layer, const asn_value * tmpl_pdu,
     }
 
     if ((msg = malloc(msg_len)) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
     rc = asn_read_value_field(tmpl_pdu, msg, &msg_len, "message");
 
     pkts->data = msg;

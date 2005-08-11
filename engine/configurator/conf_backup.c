@@ -65,7 +65,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
             (oid = xmlGetProp(cur, (const xmlChar *)"oid")) == NULL)
         {
             ERROR("Incorrect description of the object %s", cur->name);
-            return EINVAL;
+            return TE_EINVAL;
         }
 
         def_val = xmlGetProp(cur, (const xmlChar *)"default");
@@ -77,7 +77,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
         {
             xmlFree(oid);
             xmlFree(def_val);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
 
         msg->type = CFG_REGISTER;
@@ -120,7 +120,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
             else if (strcmp(attr, "string") == 0)
                 msg->val_type = CVT_STRING;
             else if (strcmp(attr, "none") != 0)
-                RETERR(EINVAL, "Unsupported object type %s", attr);
+                RETERR(TE_EINVAL, "Unsupported object type %s", attr);
             xmlFree(attr);
         }
 
@@ -129,7 +129,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
             cfg_inst_val val;
             
             if (cfg_types[msg->val_type].str2val(def_val, &val) != 0)
-                RETERR(EINVAL, "Incorrect default value %s", def_val);
+                RETERR(TE_EINVAL, "Incorrect default value %s", def_val);
             
             cfg_types[msg->val_type].free(val);
         }
@@ -141,7 +141,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
             else if (strcmp(attr, "read_only") == 0)
                 msg->access = CFG_READ_ONLY;
             else if (strcmp(attr, "read_create") != 0)
-                RETERR(EINVAL, 
+                RETERR(TE_EINVAL, 
                        "Wrong value %s of \"access\" attribute", attr);
             xmlFree(attr);
         }
@@ -226,23 +226,24 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
         
         if (xmlStrcmp(cur->name , (const xmlChar *)"instance") != 0)
         {
-            RETERR(EINVAL, "Incorrect node %s", cur->name);
+            RETERR(TE_EINVAL, "Incorrect node %s", cur->name);
         }
             
         if (cur->xmlChildrenNode != NULL || 
             (oid = xmlGetProp(cur, (const xmlChar *)"oid")) == NULL)
         {
-            RETERR(EINVAL, "Incorrect description of the object "
+            RETERR(TE_EINVAL, "Incorrect description of the object "
                            "instance %s", cur->name);
         }
         
         if ((tmp = (cfg_instance *)calloc(sizeof(*tmp), 1)) == NULL)
-            RETERR(ENOMEM, "No enough memory");
+            RETERR(TE_ENOMEM, "No enough memory");
 
         tmp->oid = oid;
 
         if ((tmp->obj = cfg_get_object(oid)) == NULL)
-            RETERR(EINVAL, "Cannot find the object for instance %s", oid);
+            RETERR(TE_EINVAL, "Cannot find the object for instance %s",
+                   oid);
                    
         if (cfg_db_find((char *)oid, &(tmp->handle)) != 0)
             tmp->handle = CFG_HANDLE_INVALID;
@@ -251,7 +252,7 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
         if (tmp->obj->type != CVT_NONE)
         {
             if (val_s == NULL)
-                RETERR(ENOENT, "Value is necessary for %s", oid);
+                RETERR(TE_ENOENT, "Value is necessary for %s", oid);
 
             if ((rc = cfg_types[tmp->obj->type].str2val(val_s, 
                                                         &(tmp->val))) != 0)
@@ -262,7 +263,7 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
             val_s = NULL;
         }
         else if (val_s != NULL)
-            RETERR(EINVAL, "Value is prohibited for %s", oid);
+            RETERR(TE_EINVAL, "Value is prohibited for %s", oid);
 #undef RETERR        
 
         if (prev != NULL)
@@ -309,7 +310,7 @@ delete_with_children(cfg_instance *inst)
     
     cfg_process_msg(&p_msg, TRUE);
     
-    return TE_RC_GET_ERROR(msg.rc) == ENOENT ? 0 : msg.rc;
+    return TE_RC_GET_ERROR(msg.rc) == TE_ENOENT ? 0 : msg.rc;
 }
 
 
@@ -380,7 +381,7 @@ add_or_set(cfg_instance *inst)
         int          rc;
         
         if (CFG_GET_INST(inst->handle) == 0)
-            return EINVAL;
+            return TE_EINVAL;
         
         if ((inst->obj->type != CVT_INTEGER &&
              inst->obj->type != CVT_STRING &&
@@ -396,7 +397,7 @@ add_or_set(cfg_instance *inst)
         p_msg = (cfg_msg *)msg;
         
         if (msg == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
             
         msg->type = CFG_SET;
         msg->len = sizeof(*msg);
@@ -417,7 +418,7 @@ add_or_set(cfg_instance *inst)
         int          rc;
         
         if (msg == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         
         msg->type = CFG_ADD;
         msg->len = sizeof(*msg);
@@ -475,7 +476,7 @@ restore_entries(cfg_instance *list)
                     break;
                 }
                 
-                case ENOENT:
+                case TE_ENOENT:
                     prev = tmp;
                     tmp = tmp->brother;
                     break;
@@ -488,7 +489,7 @@ restore_entries(cfg_instance *list)
         if (list != NULL && !done)
         {
             free_instances(list);
-            return ENOENT;
+            return TE_ENOENT;
         }
     }
     
@@ -573,20 +574,20 @@ cfg_backup_restore_ta(char *ta)
         if ((tmp = (cfg_instance *)calloc(sizeof(*tmp), 1)) == NULL)
         {
             free_instances(list);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         if ((tmp->oid = strdup(inst->oid)) == NULL)
         {
             free_instances(list);
             free(tmp);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         if (cfg_types[inst->obj->type].copy(inst->val, &tmp->val) != 0)
         {
             free_instances(list);
             free(tmp->oid);
             free(tmp);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         tmp->handle = inst->handle;
         tmp->obj = inst->obj;
@@ -652,7 +653,7 @@ put_object(FILE *f, cfg_object *obj)
  * @param f      opened configuration file
  * @param inst   object instance
  *
- * @return 0 (success) or ENOMEM
+ * @return 0 (success) or TE_ENOMEM
  */
 static int
 put_instance(FILE *f, cfg_instance *inst)
@@ -682,7 +683,7 @@ put_instance(FILE *f, cfg_instance *inst)
     }
     for (inst = inst->son; inst != NULL; inst = inst->brother)
         if (put_instance(f, inst) != 0)
-            return ENOMEM;
+            return TE_ENOMEM;
         
     return 0;
 }
@@ -710,7 +711,7 @@ cfg_backup_create_file(char *filename)
     {
         fclose(f);
         unlink(filename);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
                 
     fprintf(f, "\n</backup>\n");

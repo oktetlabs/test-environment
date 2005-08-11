@@ -80,7 +80,7 @@ add_csap_spt(csap_spt_type_p spt_descr)
     csap_spt_entry_p new_spt_entry = malloc(sizeof(*new_spt_entry));
 
     if (new_spt_entry == NULL) 
-        return ENOMEM;
+        return TE_ENOMEM;
 
     new_spt_entry->spt_data = spt_descr;
     INSQUE(new_spt_entry, &csap_spt_root);

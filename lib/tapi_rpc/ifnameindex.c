@@ -143,7 +143,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
         if ((res = calloc(sizeof(*res) * out.ptr.ptr_len +
                           sizeof(unsigned int), 1)) == NULL)
         {
-            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
             RETVAL_PTR(if_nameindex, NULL);
         }
 
@@ -160,7 +160,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
 
                 res = (struct if_nameindex *)((unsigned int *)res - 1);
                 free(res);
-                rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+                rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
                 break;
             }
         }

@@ -237,7 +237,7 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
     int   type = TAPI_CLI_CSAP_TYPE_SERIAL;
 
     if (buf == NULL)
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
                     "{ cli : { conn-type %d,"
@@ -307,7 +307,7 @@ tapi_cli_csap_remote_create(const char *ta_name, int sid,
     int   buf_size = TAPI_CLI_CSAP_STR_MAXLEN;
 
     if (buf == NULL)
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
                     "{ cli : { conn-type %d,"
@@ -378,7 +378,7 @@ tapi_cli_csap_shell_create(const char *ta_name, int sid,
     int   type = TAPI_CLI_CSAP_TYPE_SHELL;
 
     if (buf == NULL)
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
                     "{ cli : { conn-type %d,"
@@ -421,7 +421,7 @@ tapi_cli_csap_create(const char *ta_name, int sid,
     FILE *f;
 
     if ((ta_name == NULL) || (buf == NULL) || (cli_csap == NULL))
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
@@ -457,7 +457,7 @@ tapi_internal_write_cmd_to_file(char *tmp_name, const char *command)
     FILE *f;
 
     if (command == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
@@ -495,7 +495,7 @@ tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
     char tmp_name[] = "/tmp/te_cli_trsend.XXXXXX";
 
     if (ta_name == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((rc = tapi_internal_write_cmd_to_file(tmp_name, command)) != 0)
     {
@@ -636,7 +636,7 @@ tapi_internal_cli_send_recv(const char *ta_name, int sid,
     *msg = NULL;
 
     if (ta_name == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     VERB("%s() started", __FUNCTION__);
 

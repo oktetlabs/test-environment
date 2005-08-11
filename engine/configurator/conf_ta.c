@@ -53,7 +53,7 @@ ta_list_init()
     if ((cfg_get_buf = (char *)malloc(cfg_get_buf_len)) == NULL)
     {
         ERROR("Out of memory");
-        return ENOMEM;
+        return TE_ENOMEM;
     }
         
     while (TRUE)
@@ -61,7 +61,7 @@ ta_list_init()
         if ((cfg_ta_list = (char *)calloc(ta_list_size, 1)) == NULL)
         {
             ERROR("Out of memory");
-            return ENOMEM;
+            return TE_ENOMEM;
         }
 
         rc = rcf_get_ta_list(cfg_ta_list, &ta_list_size);
@@ -84,7 +84,7 @@ ta_list_init()
         if (strlen(ta) >= CFG_INST_NAME_MAX)
         {
             ERROR("Too long Test Agent name");
-            return EINVAL;
+            return TE_EINVAL;
         }
     return 0;
 }
@@ -119,7 +119,7 @@ cfg_ta_add_agent_instances()
                 free(cfg_all_inst[i]);
             }
             ERROR("Out of memory");
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         strcpy(cfg_all_inst[i]->name, ta);
         sprintf(cfg_all_inst[i]->oid, "/agent:%s", ta);
@@ -171,7 +171,7 @@ sync_ta_instance(char *ta, char *oid)
         return 0;
 
     rc = cfg_db_find(oid, &handle);
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != ENOENT)
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
         return rc;
 
     VERB("Add TA '%s' object instance '%s'", ta, oid);
@@ -191,10 +191,10 @@ sync_ta_instance(char *ta, char *oid)
             if (cfg_get_buf == NULL)
             {
                 ERROR("Memory allocation failure");
-                return ENOMEM;
+                return TE_ENOMEM;
             }
         }
-        else if (TE_RC_GET_ERROR(rc) == ENOENT || rc == 0 ||
+        else if (TE_RC_GET_ERROR(rc) == TE_ENOENT || rc == 0 ||
                  (TE_RC_GET_ERROR(rc) == TE_ENOENT &&
                   strstr(oid, "/"CFG_VOLATILE":") != NULL))
         {
@@ -273,7 +273,7 @@ insert_entry(char *oid, olist **list)
     olist *cur, *prev, *tmp;
     
     if ((tmp = malloc(sizeof(olist))) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
         
     strcpy(tmp->oid, oid);
         
@@ -330,7 +330,7 @@ sync_ta_subtree(char *ta, char *oid)
     if ((wildcard_oid = malloc(strlen(oid) + sizeof("/..."))) == NULL)
     {
         ERROR("Out of memory");
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     sprintf(wildcard_oid, "%s/...", oid);
 
@@ -339,7 +339,7 @@ sync_ta_subtree(char *ta, char *oid)
     {
         ERROR("rcf_ta_cfg_group() failed");
         free(wildcard_oid);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
 
     cfg_get_buf[0] = 0;
@@ -357,7 +357,7 @@ sync_ta_subtree(char *ta, char *oid)
                 ERROR("Memory allocation failure");
                 rcf_ta_cfg_group(ta, 0, FALSE);
                 free(wildcard_oid);
-                return ENOMEM;
+                return TE_ENOMEM;
             }
         }
         else if (rc == 0)
@@ -376,7 +376,7 @@ sync_ta_subtree(char *ta, char *oid)
     
     rc = cfg_db_find(oid, &handle);
 
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != ENOENT)
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
         rcf_ta_cfg_group(ta, 0, FALSE);
         return rc;
@@ -433,12 +433,12 @@ cfg_ta_sync(char *oid, te_bool subtree)
     tmp_oid = cfg_convert_oid_str(oid);
 
     if (tmp_oid == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     if (!tmp_oid->inst)
     {
         cfg_free_oid(tmp_oid);
-        return EINVAL;
+        return TE_EINVAL;
     }
     
     /*

@@ -216,14 +216,14 @@ tapi_jmp_pop(const char *file, unsigned int lineno)
     if (ctx == NULL)
     {
         ERROR("%s(): No context", __FUNCTION__);
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
     }
     tapi_jmp_ctx_free_garbage(ctx);
 
     if ((p = ctx->stack.lh_first) == NULL)
     {
         ERROR("%s(): Jumps stack is empty", __FUNCTION__);
-        return TE_RC(TE_TAPI, ENOENT);
+        return TE_RC(TE_TAPI, TE_ENOENT);
     }
     LIST_REMOVE(p, links);
 
@@ -246,7 +246,7 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     {
         ERROR("%s(): Invalid return value %d for jump to do",
               __FUNCTION__, val);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
     else if (val == 0)
     {
@@ -257,14 +257,14 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     if (ctx == NULL)
     {
         ERROR("%s(): No context", __FUNCTION__);
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
     }
     tapi_jmp_ctx_free_garbage(ctx);
 
     if ((p = ctx->stack.lh_first) == NULL)
     {
         ERROR("%s(): Jumps stack is empty", __FUNCTION__);
-        return TE_RC(TE_TAPI, ENOENT);
+        return TE_RC(TE_TAPI, TE_ENOENT);
     }
     LIST_REMOVE(p, links);
 

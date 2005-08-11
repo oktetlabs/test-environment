@@ -1786,7 +1786,7 @@ TARPC_FUNC(sigaction,
 {
     if (in->signum == RPC_SIGINT)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, EPERM);
+        out->common._errno = TE_RC(TE_TA_LINUX, TE_EPERM);
         return TRUE;
     }
     COPY_ARG(oldact);

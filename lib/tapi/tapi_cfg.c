@@ -470,7 +470,7 @@ route_parse_inst_name(const char *inst_name,
         {
             ERROR("Interface name is too long: %s in route %s",
                   ptr, inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         strcpy(ifname, ptr);
 
@@ -491,7 +491,7 @@ route_parse_inst_name(const char *inst_name,
         {
             ERROR("Incorrect 'route metric' value in route %s",
                   inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -509,7 +509,7 @@ route_parse_inst_name(const char *inst_name,
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
             ERROR("Incorrect 'route mtu' value in route %s", inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -530,7 +530,7 @@ route_parse_inst_name(const char *inst_name,
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
             ERROR("Incorrect 'route window' value in route %s", inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -549,7 +549,7 @@ route_parse_inst_name(const char *inst_name,
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
             ERROR("Incorrect 'route irtt' value in route %s", inst_name);
-            return TE_RC(TE_TA_LINUX, EINVAL);
+            return TE_RC(TE_TA_LINUX, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -584,7 +584,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     UNUSED(addr_family);
 
     if (ta == NULL || rt_tbl == NULL || n == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     rc = cfg_find_pattern_fmt(&num, &handles, "/agent:%s/route:*", ta);
     if (rc != 0)
@@ -599,7 +599,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     
     if ((tbl = (tapi_rt_entry_t *)calloc(num, sizeof(*tbl))) == NULL)
     {
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
     }
 
     for (i = 0; i < num; i++)
@@ -707,7 +707,7 @@ tapi_cfg_del_route(cfg_handle *rt_hndl)
     int rc;
 
     if (rt_hndl == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     if (*rt_hndl == CFG_HANDLE_INVALID)
         return 0;
@@ -810,13 +810,13 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     if (netaddr_size < 0)
     {
         ERROR("%s() unknown address family value", __FUNCTION__);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
     
     if (prefix < 0 || prefix > (netaddr_size << 3))
     {
         ERROR("%s() fails: Incorrect prefix value specified %d", prefix);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     if ((dst_addr_copy = (uint8_t *)malloc(netaddr_size)) == NULL)
@@ -825,7 +825,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
               "the network address", __FUNCTION__,
               netaddr_get_size(addr_family));
 
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
     }
 
     if (inet_ntop(addr_family, dst_addr, dst_addr_str_orig, 
@@ -1004,7 +1004,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
             rc = cfg_get_instance_fmt(NULL, &lnk_addr,
                                       "/agent:%s/arp:%s",
                                       ta, net_addr_str);
-            if (rc != 0 && rc != TE_RC(TE_CS, ENOENT))
+            if (rc != 0 && rc != TE_RC(TE_CS, TE_ENOENT))
             {
                 ERROR("%s() fails to get ARP entry on TA '%s'",
                       __FUNCTION__, ta);
@@ -1019,7 +1019,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
                 {
                     ERROR("%s() invalid lovcation for copying", 
                           __FUNCTION__);
-                    rc = TE_RC(TE_CS, EINVAL);
+                    rc = TE_RC(TE_CS, TE_EINVAL);
                 }
                 else
                 {
@@ -1059,7 +1059,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
             
         case OP_DEL:
             if ((rc = cfg_find_fmt(&handle, "/agent:%s/arp:%s",
-                          ta, net_addr_str) == TE_RC(TE_CS, ENOENT)))
+                          ta, net_addr_str) == TE_RC(TE_CS, TE_ENOENT)))
             {
                 RING("There is no ARP entry for %s address on %s Agent",
                      net_addr_str, ta);
@@ -1105,7 +1105,7 @@ tapi_cfg_get_hwaddr(const char *ta,
     {
         ERROR("%s(): It is not allowed to have NULL 'hwaddr' or "
               "'hwaddr_len' parameter", __FUNCTION__);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
     if (*hwaddr_len < IFHWADDRLEN)
     {
@@ -1119,7 +1119,7 @@ tapi_cfg_get_hwaddr(const char *ta,
      */
     if ((ifname_bkp = (char *)malloc(strlen(ifname) + 1)) == NULL)
     {
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
     }
     memcpy(ifname_bkp, ifname, strlen(ifname) + 1);
 
@@ -1149,7 +1149,7 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
     if (entry == NULL)
     {
         ERROR("%s(): Invalid argument", __FUNCTION__);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     *entry = CFG_HANDLE_INVALID;
@@ -1188,11 +1188,11 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
         else
         {
             INFO("No free entries in pool 0x%x", parent);
-            rc = TE_RC(TE_TAPI, ENOENT);
+            rc = TE_RC(TE_TAPI, TE_ENOENT);
         }
     }
 #if 0
-    else if (TE_RC_GET_ERROR(rc) == ENOENT)
+    else if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
     {
         INFO("No free entries in pool 0x%x", parent);
     }
@@ -1232,7 +1232,7 @@ tapi_cfg_free_entry(cfg_handle *entry)
     if (entry == NULL)
     {
         ERROR("%s(): Invalid Cfgr handle pointer", __FUNCTION__);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
     if (*entry == CFG_HANDLE_INVALID)
     {
@@ -1407,7 +1407,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
 
     /* Find or create pool of IPv4 subnet addresses */
     rc = cfg_find_fmt(&pool, "%s/pool:", ip4_net_oid);
-    if (TE_RC_GET_ERROR(rc) == ENOENT)
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
     {
         rc = cfg_add_instance_fmt(&pool, CFG_VAL(NONE, NULL),
                                   "%s/pool:", ip4_net_oid);
@@ -1428,7 +1428,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
     }
     
     rc = tapi_cfg_alloc_entry_by_handle(pool, &entry);
-    if (TE_RC_GET_ERROR(rc) != ENOENT)
+    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
         free(ip4_net_oid);
         if (rc == 0)
@@ -1453,7 +1453,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
 
     /* Get number of entries in the pool */
     rc = cfg_find_fmt(&n_entries_hndl, "%s/n_entries:", ip4_net_oid);
-    if (TE_RC_GET_ERROR(rc) == ENOENT)
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
     {
         rc = cfg_add_instance_fmt(&n_entries_hndl, CFG_VAL(INTEGER, 0),
                                   "%s/n_entries:", ip4_net_oid);
@@ -1507,7 +1507,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
         ERROR("All addresses of the subnet '%s' are used",
               ip4_net_oid);
         free(ip4_net_oid);
-        return TE_RC(TE_TAPI, ENOENT);
+        return TE_RC(TE_TAPI, TE_ENOENT);
     }
 
     /* Get subnet address */
@@ -1551,7 +1551,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
             ERROR("Cannot add address %s to '%s': does not fit",
                   buf, ip4_net_oid);
             free(ip4_net_oid);
-            return EINVAL;
+            return TE_EINVAL;
         }
         
         /* Check if the entry already exists */
@@ -1560,7 +1560,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
                                   "%s/pool:/entry:%s", ip4_net_oid, buf);
     }
 
-    if (TE_RC_GET_ERROR(rc) != ENOENT)
+    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
         ERROR("Failed to get '%s/pool:/entry:%s' instance while "
               "checking for free address: %X", ip4_net_oid, buf, rc);

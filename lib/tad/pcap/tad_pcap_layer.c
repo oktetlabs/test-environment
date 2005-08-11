@@ -165,7 +165,7 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     pcap_str = (char *)malloc(val_len + 1);
     if (pcap_str == NULL)
     {
-        return TE_RC(TE_TAD_CSAP, ENOMEM);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
     
     rc = asn_read_value_field(tmpl_pdu, pcap_str, &val_len, "filter");
@@ -180,7 +180,7 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     bpf_program = (struct bpf_program *)malloc(sizeof(struct bpf_program));
     if (bpf_program == NULL)
     {
-        return TE_RC(TE_TAD_CSAP, ENOMEM);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
 
     rc = pcap_compile_nopcap(TAD_PCAP_SNAPLEN, spec_data->iftype,
@@ -188,7 +188,7 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     if (rc != 0)
     {
         ERROR("%s(): pcap_compile_nopcap() failed, rc=%d", __FUNCTION__, rc);
-        return TE_RC(TE_TAD_CSAP, EINVAL);
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
     VERB("%s: pcap_compile_nopcap() returns %d", __FUNCTION__, rc);
 
@@ -272,14 +272,14 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if ((bpf_id <= 0) || (bpf_id > spec_data->bpf_count))
     {
         ERROR("%s(): Invalid bpf_id value in PDU pattern", __FUNCTION__);
-        return TE_RC(TE_TAD_CSAP, EINVAL);
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
     bpf_program = spec_data->bpfs[bpf_id];
     if (bpf_program == NULL)
     {
         ERROR("%s(): Invalid bpf_id value in PDU pattern", __FUNCTION__);
-        return TE_RC(TE_TAD_CSAP, EINVAL);
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
     
     bpf_code = bpf_program->bf_insns;

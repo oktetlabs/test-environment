@@ -816,7 +816,7 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, int timeout)
     tapi_tcp_pos_t seq;
 
     if (conn_descr == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     seq = conn_descr->seq_got;
 
@@ -1189,7 +1189,7 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
 
     tapi_tcp_conns_db_init();
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     /* Wait for SYN or SYN-ACK */
 
@@ -1279,7 +1279,7 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
     tapi_tcp_conns_db_init();
 
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     /* try to get messages and peer FIN, if they were sent */
     rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
@@ -1350,7 +1350,7 @@ tapi_tcp_destroy_connection(tapi_tcp_handler_t handler)
     tapi_tcp_conns_db_init();
 
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
 
     rc = tapi_tcp_destroy_conn_descr(conn_descr);
@@ -1371,7 +1371,7 @@ tapi_tcp_send_template(tapi_tcp_handler_t handler,
 
     tapi_tcp_conns_db_init();
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     return tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                  conn_descr->snd_csap, 
@@ -1397,10 +1397,10 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
 
     tapi_tcp_conns_db_init();
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if (conn_descr == NULL)
-        return TE_RC(TE_TAPI, EINVAL); 
+        return TE_RC(TE_TAPI, TE_EINVAL); 
 
     switch (seq_mode)
     {
@@ -1413,7 +1413,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
             break;
 
         default:
-            return EINVAL;
+            return TE_EINVAL;
     }
 
     switch (ack_mode)
@@ -1491,7 +1491,7 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
     tapi_tcp_conns_db_init();
 
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((msg = conn_get_oldest_msg(conn_descr)) == NULL)
     {
@@ -1547,7 +1547,7 @@ tapi_tcp_send_ack(tapi_tcp_handler_t handler, tapi_tcp_pos_t ackn)
     int rc;
 
     if (conn_descr == NULL)
-        return TE_RC(TE_TAPI, EINVAL); 
+        return TE_RC(TE_TAPI, TE_EINVAL); 
 
     rc = tapi_tcp_template(conn_next_seq(conn_descr), ackn, FALSE, TRUE, 
                            NULL, 0, &ack_template);

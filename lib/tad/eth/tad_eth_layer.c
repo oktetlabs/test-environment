@@ -154,8 +154,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
             }
             else
             {
-                ERROR("sending csap, no remote address found, ret EINVAL.");
-                return EINVAL; /* NO DESTINATION ADDRESS IS SPECIFIED */
+                ERROR("sending csap, no remote address found, ret TE_EINVAL.");
+                return TE_EINVAL; /* NO DESTINATION ADDRESS IS SPECIFIED */
             }                  
         }
     }
@@ -407,7 +407,7 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
         if ((data = malloc(frame_size)) == NULL)
         {
-            return ENOMEM; /* can't allocate memory for frame data */
+            return TE_ENOMEM; /* can't allocate memory for frame data */
         } 
         memset(data, 0, frame_size); 
         p = data;

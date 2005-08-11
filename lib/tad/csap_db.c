@@ -167,7 +167,7 @@ csap_create(const char *type)
         new_csap->csap_type = csap_type;
 
     if ((csap_type == NULL) || (new_csap == NULL) || (new_dp == NULL))
-        CSAP_CREATE_ERROR(ENOMEM, "%s(): no memory for new CSAP", 
+        CSAP_CREATE_ERROR(TE_ENOMEM, "%s(): no memory for new CSAP", 
                           __FUNCTION__);
 
     VERB("%s(): %s\n", __FUNCTION__, csap_type);
@@ -214,7 +214,7 @@ csap_create(const char *type)
     new_csap->layers = calloc(depth, sizeof(new_csap->layers[0]));
 
     if (new_csap->layers == NULL)
-        CSAP_CREATE_ERROR(ENOMEM, "%s(): no memory for layers", 
+        CSAP_CREATE_ERROR(TE_ENOMEM, "%s(): no memory for layers", 
                           __FUNCTION__);
 
     for (i = 0; i < depth; i++)
@@ -321,7 +321,7 @@ csap_destroy(int csap_id)
     VERB("%s(): csap %d", __FUNCTION__, csap_id);
 
     if (dp == NULL)
-        return ENOENT;
+        return TE_ENOENT;
 
 
     REMQUE(dp);

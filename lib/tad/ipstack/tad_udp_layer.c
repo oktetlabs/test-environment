@@ -202,7 +202,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                 ERROR("%s: sending csap #%d, "
                       "has no dst-port in template and has no remote port",
                       __FUNCTION__, csap_id);
-                return TE_RC(TE_TAD_CSAP, EINVAL);
+                return TE_RC(TE_TAD_CSAP, TE_EINVAL);
             }
         }
     }
@@ -259,7 +259,7 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {
             pkts->data = malloc(up_payload->len);
             if (pkts->data == NULL)
-                return TE_RC(TE_TAD_CSAP, ENOMEM);
+                return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
             pkts->len  = up_payload->len;
             memcpy(pkts->data, up_payload->data, up_payload->len);
@@ -284,7 +284,7 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         pkts->len = header_len + payload_len;
         pkts->data = malloc(pkts->len);
         if (pkts->data == NULL)
-            return TE_RC(TE_TAD_CSAP, ENOMEM);
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
         pkts->next = NULL;
         p = (uint8_t *)pkts->data;
@@ -406,7 +406,7 @@ int udp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     {
         ERROR("%s: failed to allocate memory for payload", __FUNCTION__);
         asn_free_value(udp_header_pdu);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     memcpy(payload->data, data, payload->len);
 

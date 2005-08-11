@@ -200,7 +200,7 @@ file_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
 
     if ((spec_data = malloc(sizeof(file_csap_specific_data_t)) ) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
 
     csap_descr->timeout          = 50000; 

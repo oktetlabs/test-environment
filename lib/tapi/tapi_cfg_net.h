@@ -124,7 +124,7 @@ extern int tapi_cfg_net_find_net_by_node(const char *oid, char *net);
  * @param oids      - location for the list of values (OUT)
  * 
  * @retval Status of the operation
- * @retval ENOENT  The network does not have any node of 
+ * @retval TE_ENOENT  The network does not have any node of 
  *                 specified type attached
  *
  * @sa tapi_cfg_net_free_nodes_values

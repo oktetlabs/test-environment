@@ -173,7 +173,7 @@ get_type(char **ptr)
  *
  * @return error code
  * @retval 0            success
- * @retval EINVAL       invalid command
+ * @retval TE_EINVAL       invalid command
  *
  * @alg It is assumed that all parameters are stored in the routine
  * stack as 32-bit words except int64_t and uint64_t which are stored
@@ -196,7 +196,7 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
         while (*ptr != 0)
         {
             if (transform_str(&ptr, (char **)(param + n)) != 0)
-                return EINVAL;
+                return TE_EINVAL;
             n++;
         }
         *argc = n;
@@ -213,21 +213,21 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
             char    *tmp;
 
             if (n > RCF_MAX_PARAMS)
-                return EINVAL;
+                return TE_EINVAL;
 
             if ((type = get_type(&ptr)) == RCF_TYPE_TOTAL)
-                return EINVAL;
+                return TE_EINVAL;
 
             if (type == RCF_STRING)
             {
                 if (transform_str(&ptr, (char **)(param + n)) != 0)
-                    return EINVAL;
+                    return TE_EINVAL;
                 n++;
                 continue;
             }
             val = strtoll(ptr, &tmp, 10);
             if (tmp == ptr || (*tmp != ' ' && *tmp != 0))
-                return EINVAL;
+                return TE_EINVAL;
 
             ptr = tmp;
             SKIP_SPACES(ptr);
@@ -417,7 +417,7 @@ rcf_pch_run(const char *confstr, const char *info)
     rcf_pch_cfg_init();
 
     if ((cmd = (char *)malloc(RCF_MAX_LEN)) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     if ((rc = rcf_comm_agent_init(confstr, &conn)) != 0 ||
         (info != NULL &&

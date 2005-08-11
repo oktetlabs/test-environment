@@ -370,7 +370,7 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     if (traffic_nds == NULL)
     {
         ERROR("%s: NULL traffic nds!", __FUNCTION__);
-        return TE_RC(TE_TAD_CSAP, EINVAL);
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
@@ -560,7 +560,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     {
         ERROR("%s: unknown security model '%s'", __FUNCTION__,
               security_model_name);
-        return ENOENT;
+        return TE_ENOENT;
     }
    
     /* Community-based security model */
@@ -772,7 +772,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if (snmp_spec_data == NULL)
     {
         ERROR("%s: malloc failed", __FUNCTION__);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     
     if (csap_descr->check_pdus_cb == NULL)

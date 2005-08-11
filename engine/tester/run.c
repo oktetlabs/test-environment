@@ -165,7 +165,7 @@ test_param_new(const char *name, const char *value, te_bool clone,
     if (p == NULL)
     {
         ERROR("calloc(1, %u) failed", sizeof(*p));
-        EXIT("ENOMEM");
+        EXIT("TE_ENOMEM");
         return NULL;
     }
 
@@ -175,7 +175,7 @@ test_param_new(const char *name, const char *value, te_bool clone,
     {
         ERROR("strdup() failed");
         free(p);
-        EXIT("ENOMEM");
+        EXIT("TE_ENOMEM");
         return NULL;
     }
     p->reqs = reqs;
@@ -383,8 +383,8 @@ vars_args_iterations(test_vars_args        *vas,
             if (list == NULL)
             {
                 tq_strings_free(&processed_lists);
-                EXIT("ENOMEM");
-                return ENOMEM;
+                EXIT("TE_ENOMEM");
+                return TE_ENOMEM;
             }
             list->v = va->attrs.list;
             TAILQ_INSERT_HEAD(&processed_lists, list, links);
@@ -410,8 +410,8 @@ vars_args_iterations(test_vars_args        *vas,
                 {
                     tq_strings_free(&processed_lists);
                     ERROR("Cloning of the iteration failed");
-                    EXIT("ENOMEM");
-                    return ENOMEM;
+                    EXIT("TE_ENOMEM");
+                    return TE_ENOMEM;
                 }
                 /* Insert clone after current iteration */
                 TAILQ_INSERT_AFTER(iters, i, i_clone, links);
@@ -421,7 +421,7 @@ vars_args_iterations(test_vars_args        *vas,
                 if (s == NULL)
                 {
                     tq_strings_free(&processed_lists);
-                    return EINVAL;
+                    return TE_EINVAL;
                 }
                 tp = test_param_new(va->name, s, va->handdown,
                                     (value->reqs.tqh_first == NULL) ?
@@ -430,8 +430,8 @@ vars_args_iterations(test_vars_args        *vas,
                 {
                     tq_strings_free(&processed_lists);
                     ERROR("Failed to create new test parameter");
-                    EXIT("ENOMEM");
-                    return ENOMEM;
+                    EXIT("TE_ENOMEM");
+                    return TE_ENOMEM;
                 }
                 i->has_reqs = (i->has_reqs || (tp->reqs != NULL));
                 /* Update current iteration */
@@ -463,8 +463,8 @@ vars_args_iterations(test_vars_args        *vas,
                         {
                             tq_strings_free(&processed_lists);
                             ERROR("Failed to get test parameter value");
-                            EXIT("EINVAL");
-                            return EINVAL;
+                            EXIT("TE_EINVAL");
+                            return TE_EINVAL;
                         }
                         /* Create parameter and add it in iteration */
                         tp = test_param_new(va2->name, s, va->handdown,
@@ -474,8 +474,8 @@ vars_args_iterations(test_vars_args        *vas,
                         {
                             tq_strings_free(&processed_lists);
                             ERROR("Failed to create new test parameter");
-                            EXIT("ENOMEM");
-                            return ENOMEM;
+                            EXIT("TE_ENOMEM");
+                            return TE_ENOMEM;
                         }
                         test_params_add(&i->params, tp);
                     }
@@ -1003,7 +1003,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
     TAILQ_INIT(&iters);
     base_i = test_param_iteration_new();
     if (base_i == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
     base_i->base = params;
     /* FIXME: base_i.reqs */
     TAILQ_INSERT_TAIL(&iters, base_i, links);
@@ -1019,7 +1019,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
     if (iters.tqh_first == NULL)
     {
         ERROR("Empty list of parameters iterations");
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     do {
@@ -1222,7 +1222,7 @@ run_test_thread(void *args)
             break;
 
         default:
-            rc = EINVAL;
+            rc = TE_EINVAL;
     }
 
     thr_params->rc = rc;
@@ -1427,7 +1427,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         if (ctx == NULL)
         {
             ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         ctx_cloned = TRUE;
 
@@ -1436,7 +1436,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             rc = tester_run_path_forward(ctx, run_item_name);
             if (rc != 0)
             {
-                if (rc == ENOENT)
+                if (rc == TE_ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
                     if (~ctx->flags & TESTER_INLOGUE)
@@ -1459,7 +1459,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             rc = tester_run_path_forward(ctx, test_name);
             if (rc != 0)
             {
-                if (rc == ENOENT)
+                if (rc == TE_ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
                     if (~ctx->flags & TESTER_INLOGUE)
@@ -1489,7 +1489,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         {
             if (ctx_cloned)
                 tester_ctx_free(ctx);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         TAILQ_INSERT_TAIL(&iters, iter, links);
     }
@@ -1508,7 +1508,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 ERROR("Cloning of the test parameters iteration failed");
                 if (ctx_cloned)
                     tester_ctx_free(ctx);
-                return ENOMEM;
+                return TE_ENOMEM;
             }
             TAILQ_INSERT_TAIL(&iters, iter, links);
         }
@@ -1529,7 +1529,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         ERROR("Empty list of parameters iterations");
         if (ctx_cloned)
             tester_ctx_free(ctx);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     /* Create backup to be verified after each iteration */
@@ -1564,7 +1564,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             rc = tester_run_path_params_match(test_ctx, &(iter->params));
             if (rc != 0)
             {
-                if (rc == ENOENT)
+                if (rc == TE_ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
                     continue;
@@ -1587,7 +1587,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             if (test_ctx_cloned)
                 tester_ctx_free(test_ctx);
             test_skipped = TRUE;
-            rc = ENOENT;
+            rc = TE_ENOENT;
             continue;
         }
 
@@ -1612,7 +1612,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 if (test_ctx == NULL)
                 {
                     ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-                    all_result = ENOMEM;
+                    all_result = TE_ENOMEM;
                     break;
                 }
                 test_ctx_cloned = TRUE;
@@ -1744,7 +1744,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
     if (ctx == NULL)
     {
         ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     if (cfg->targets != NULL)
     {
@@ -1757,7 +1757,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
             if (ctx->targets == NULL)
             {
                 tester_ctx_free(ctx);
-                return ENOMEM;
+                return TE_ENOMEM;
             }
         }
         else

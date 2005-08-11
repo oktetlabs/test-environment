@@ -104,7 +104,7 @@ tester_ctx_init(tester_ctx *ctx)
     if (ctx->path == NULL)
     {
         ERROR("%s(): Memory allocation failure", __FUNCTION__);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     TAILQ_INIT(&ctx->path->params);
     TAILQ_INIT(&ctx->path->paths);

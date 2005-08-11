@@ -253,11 +253,11 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
 
     buf_entry = calloc(1, sizeof(*buf_entry));
     if (buf_entry == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     msg_len = sizeof(rcf_msg) + message->data_len;
     if ((buf_entry->message = (rcf_msg *)calloc(1, msg_len)) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     memcpy(buf_entry->message, message, msg_len);
 
@@ -352,7 +352,7 @@ rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg,
     
     *p_answer = malloc(*recv_size);
     if (*p_answer == NULL)
-        return TE_RC(TE_RCF_API, ENOMEM);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
     
     memcpy(*p_answer, (char *)recv_msg, buflen);
     len = *recv_size - buflen;
@@ -886,7 +886,7 @@ check_params_len(const char *params, int maxlen, int *necessary)
  * @retval 0            success
  * @retval TE_ESMALLBUF the buffer is too small
  * @retval TE_EIPC      cannot interact with RCF 
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  */
 int 
 rcf_get_ta_list(char *buf, size_t *len)
@@ -946,9 +946,9 @@ rcf_get_ta_list(char *buf, size_t *len)
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running Test Agent is provided
+ * @retval TE_EINVAL       name of non-running Test Agent is provided
  * @retval TE_EIPC      cannot interact with RCF 
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  */
 int 
 rcf_ta_name2type(const char *ta_name, char *ta_type)
@@ -960,7 +960,7 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
     RCF_API_INIT;
     
     if (ta_type == NULL || BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TATYPE;
@@ -990,9 +990,9 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running Test Agent is provided
+ * @retval TE_EINVAL       name of non-running Test Agent is provided
  * @retval TE_EIPC      cannot interact with RCF 
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  */
 int 
 rcf_ta_create_session(const char *ta_name, int *session)
@@ -1004,7 +1004,7 @@ rcf_ta_create_session(const char *ta_name, int *session)
     RCF_API_INIT;
     
     if (session == NULL || BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_SESSION;
@@ -1040,12 +1040,12 @@ rcf_ta_create_session(const char *ta_name, int *session)
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running or located on TN Test Agent 
+ * @retval TE_EINVAL       name of non-running or located on TN Test Agent 
  *                      is provided or parameter string is too long
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval EINPROGRESS  operation is in progress
- * @retval ENOENT       cannot open NUT image file
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOENT       cannot open NUT image file
+ * @retval TE_ENOMEM       out of memory
  */
 int 
 rcf_ta_reboot(const char *ta_name,
@@ -1061,7 +1061,7 @@ rcf_ta_reboot(const char *ta_name,
     RCF_API_INIT;
     
     if (BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
         
     if (boot_params != NULL)
     {
@@ -1073,12 +1073,12 @@ rcf_ta_reboot(const char *ta_name,
         {
             ERROR("Boot parameters are too long for TA '%s' - "
                   "change memory constants", ta_name);
-            return TE_RC(TE_RCF_API, EINVAL);
+            return TE_RC(TE_RCF_API, TE_EINVAL);
         }
     }
     
     if ((msg = (rcf_msg *)(calloc(sizeof(rcf_msg) + len, 1))) == NULL)
-        return TE_RC(TE_RCF_API, ENOMEM);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
         
     if (boot_params != NULL)
     {
@@ -1101,21 +1101,21 @@ rcf_ta_reboot(const char *ta_name,
                 ERROR("Neither TE_INSTALL_NUT nor TE_INSTALL are "
                       "exported - could not obtain NUT image");
                 free(msg);
-                return TE_RC(TE_RCF_API, ENOENT);
+                return TE_RC(TE_RCF_API, TE_ENOENT);
             }
             tmp = (char *)malloc(strlen(install_dir) + 
                                  strlen("/nuts") + 1);
             if (install_dir == NULL)
             {
                 free(msg);
-                return TE_RC(TE_RCF_API, ENOMEM);
+                return TE_RC(TE_RCF_API, TE_ENOMEM);
             }
             sprintf(tmp, "%s/nuts", install_dir);
             if (setenv("TE_INSTALL_NUT", tmp, 1) != 0)
             {
                 ERROR("Cannot set environment variable TE_INSTALL_NUT");
                 free(msg);
-                return TE_RC(TE_RCF_API, ENOENT);
+                return TE_RC(TE_RCF_API, TE_ENOENT);
             }
             free(tmp);
             install_dir = getenv("TE_INSTALL_NUT");
@@ -1127,7 +1127,7 @@ rcf_ta_reboot(const char *ta_name,
             ERROR("Too long full file name: %s/bin/%s\n",
                   install_dir, image);
             free(msg);
-            return TE_RC(TE_RCF_API, ENOENT);
+            return TE_RC(TE_RCF_API, TE_ENOENT);
         }
             
         sprintf(msg->file, "%s/bin/%s", install_dir, image);
@@ -1136,7 +1136,7 @@ rcf_ta_reboot(const char *ta_name,
             ERROR("Cannot open NUT image file %s for reading",
                   msg->file);
             free(msg);
-            return TE_RC(TE_RCF_API, ENOENT);
+            return TE_RC(TE_RCF_API, TE_ENOENT);
         }
         close(fd);
         msg->flags |= BINARY_ATTACHMENT;
@@ -1168,13 +1168,13 @@ rcf_ta_reboot(const char *ta_name,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or OID string is
  *                      too long
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ESMALLBUF the buffer is too small
  * @retval ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 int 
@@ -1190,7 +1190,7 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
     if (oid == NULL || val_buf == NULL || strlen(oid) >= RCF_MAX_ID ||
         BAD_TA)
     {
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
     
     memset((char *)&msg, 0, sizeof(msg));
@@ -1213,7 +1213,7 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
         if ((fd = open(msg.file, O_RDONLY)) < 0)
         {
             ERROR("Cannot open file %s saved by RCF process", msg.file);
-            return TE_RC(TE_RCF_API, ENOENT);
+            return TE_RC(TE_RCF_API, TE_ENOENT);
         }
         if ((n = read(fd, val_buf, len)) < 0)
         {
@@ -1269,7 +1269,7 @@ conf_add_set(const char *ta_name, int session, const char *oid,
     if (oid == NULL || val == NULL || strlen(oid) >= RCF_MAX_ID ||
         strlen(val) >= RCF_MAX_VAL || BAD_TA)
     { 
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
     
     memset((char *)&msg, 0, sizeof(msg));
@@ -1297,12 +1297,12 @@ conf_add_set(const char *ta_name, int session, const char *oid,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or too OID or value
  *                      strings are too long
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 int 
@@ -1325,12 +1325,12 @@ rcf_ta_cfg_set(const char *ta_name, int session, const char *oid,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or too OID or value
  *                      strings are too long
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 int 
@@ -1351,12 +1351,12 @@ rcf_ta_cfg_add(const char *ta_name, int session, const char *oid,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or OID string is
  *                      too long
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 int 
@@ -1369,7 +1369,7 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
     RCF_API_INIT;
     
     if (oid == NULL || strlen(oid) >= RCF_MAX_ID || BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
     strcpy(msg.id, oid);
@@ -1415,13 +1415,13 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
  *
  * @return error code
  *
- * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or bad file name 
- *                      are provided 
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
- * @retval other        error returned by command handler on the TA
+ * @retval 0                success
+ * @retval TE_EINVAL        name of non-running TN Test Agent or bad file
+ *                          name are provided 
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ETAREBOOTED   Test Agent is rebooted
+ * @retval TE_ENOMEM        out of memory
+ * @retval other            error returned by command handler on the TA
  */
 int 
 rcf_ta_get_log(const char *ta_name, char *log_file)
@@ -1433,7 +1433,7 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
     RCF_API_INIT;
     
     if (log_file == NULL || strlen(log_file) >= RCF_MAX_PATH || BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
     strcpy(msg.file, log_file);
@@ -1466,13 +1466,13 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       one of arguments is invalid (NULL, too long or
+ * @retval TE_EINVAL       one of arguments is invalid (NULL, too long or
  *                      has inappropriate value)
- * @retval ENOENT       no such variable
+ * @retval TE_ENOENT       no such variable
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ESMALLBUF the buffer is too small
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 int 
@@ -1491,7 +1491,7 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
         strlen(var_name) >= RCF_MAX_NAME || 
         BAD_TA || validate_type(var_type, var_len) != 0)
     {
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
     memset((char *)&msg, 0, sizeof(msg));
@@ -1572,12 +1572,12 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       one of arguments is invalid (NULL, too long or
+ * @retval TE_EINVAL       one of arguments is invalid (NULL, too long or
  *                      has inappropriate value)
- * @retval ENOENT       no such variable
+ * @retval TE_ENOENT       no such variable
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 int 
@@ -1594,7 +1594,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
         strlen(var_name) >= RCF_MAX_NAME ||
         BAD_TA || var_type < RCF_INT8 || var_type > RCF_STRING)
     {
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
     memset((char *)&msg, 0, sizeof(msg));
@@ -1639,7 +1639,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
             
         case RCF_STRING:
             if (strlen(val) >= RCF_MAX_VAL)
-                return TE_RC(TE_RCF_API, EINVAL);
+                return TE_RC(TE_RCF_API, TE_EINVAL);
             strcpy(msg.value, val);
             break;
     }
@@ -1678,7 +1678,7 @@ get_put_file(const char *ta_name, int session,
         strlen(rfile) == 0 || BAD_TA)
     {
         ERROR("Invalid arguments are provided to rcf put/get");
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
     
     if (opcode == RCFOP_FPUT)
@@ -1688,14 +1688,14 @@ get_put_file(const char *ta_name, int session,
         if ((fd = open(lfile, O_RDONLY)) < 0)
         {
             ERROR("cannot open file %s for reading\n", lfile);
-            return TE_RC(TE_RCF_API, ENOENT);
+            return TE_RC(TE_RCF_API, TE_ENOENT);
         }
         close(fd);
     }
 
     msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + RCF_MAX_PATH);
     if (msg == NULL)
-        return TE_RC(TE_RCF_API, ENOMEM);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
     
     msg->opcode = opcode;
     strcpy(msg->ta, ta_name);
@@ -1730,13 +1730,13 @@ get_put_file(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent, non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent, non-existent
  *                      session identifier or bad file name are provided
  * @retval TE_EIPC      cannot interact with RCF 
- * @retval ENOENT       no such file
- * @retval EPERM        operation not permitted
+ * @retval TE_ENOENT       no such file
+ * @retval TE_EPERM        operation not permitted
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  */
 int 
 rcf_ta_get_file(const char *ta_name, int session,
@@ -1757,13 +1757,13 @@ rcf_ta_get_file(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent, non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent, non-existent
  *                      session identifier or bad file name are provided
  * @retval TE_EIPC      cannot interact with RCF 
- * @retval ENOENT       no such file
- * @retval EPERM        operation not permitted
+ * @retval TE_ENOENT       no such file
+ * @retval TE_EPERM        operation not permitted
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  */
 int 
 rcf_ta_put_file(const char *ta_name, int session,
@@ -1782,13 +1782,13 @@ rcf_ta_put_file(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent, non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent, non-existent
  *                      session identifier or bad file name are provided
  * @retval TE_EIPC      cannot interact with RCF 
- * @retval ENOENT       no such file
- * @retval EPERM        operation not permitted
+ * @retval TE_ENOENT       no such file
+ * @retval TE_EPERM        operation not permitted
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  */
 int 
 rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
@@ -1814,11 +1814,11 @@ rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval TE_EIPC    cannot interact with RCF 
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  *
  * @sa rcf_ta_csap_destroy
@@ -1839,7 +1839,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
     if (stack_id == NULL || csap_id == NULL || BAD_TA)
     {
         ERROR("Invalid parameters");
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
     
     if (params != NULL)
@@ -1853,14 +1853,14 @@ rcf_ta_csap_create(const char *ta_name, int session,
                 check_params_len(params, RCF_MAX_LEN - TE_PROTO_OVERHEAD -
                                          strlen(stack_id) - 2, NULL) != 0)
             {
-                return TE_RC(TE_RCF_API, EINVAL);
+                return TE_RC(TE_RCF_API, TE_EINVAL);
             }
         }
         else if (strlen(params) >= RCF_MAX_PATH)
         {
             close(fd);
             ERROR("Too long file name '%s'", params);
-            return TE_RC(TE_RCF_API, EINVAL);
+            return TE_RC(TE_RCF_API, TE_EINVAL);
         }
         else
         {
@@ -1869,7 +1869,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
         }
     }
     if ((msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + len)) == NULL)
-        return TE_RC(TE_RCF_API, ENOMEM);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
         
     msg->opcode = RCFOP_CSAP_CREATE;
     msg->flags = flags;
@@ -1906,12 +1906,12 @@ rcf_ta_csap_create(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  *
  * @sa rcf_ta_csap_create
  */
@@ -1933,7 +1933,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
     }
 
     if (BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_CSAP_DESTROY;
@@ -1960,7 +1960,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
@@ -1981,7 +1981,7 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
         strlen(var_name) >= RCF_MAX_NAME || BAD_TA)
     {
         ERROR("Invalid parameters");
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
     memset((char *)&msg, 0, sizeof(msg));
@@ -2020,14 +2020,14 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval EINPROGRESS  operation is already in progress
  * @retval EBUSY        CSAP is used for receiving now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  *
  * @se It may block caller according to "blk_mode" parameter value
@@ -2048,7 +2048,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     RCF_API_INIT;
     
     if (templ == NULL || strlen(templ) >= RCF_MAX_PATH || BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
@@ -2086,7 +2086,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     close(fd);
 
     if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
-        return TE_RC(TE_RCF_API, ENOMEM);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
     strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
     tr_op->csap_id = csap_id;
     tr_op->state = CSAP_SEND;
@@ -2120,13 +2120,13 @@ rcf_ta_trsend_start(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval EALREADY     traffic sending is not in progress now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  *
  * @sa rcf_ta_trsend_start
  */
@@ -2142,7 +2142,7 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
     RCF_API_INIT;
     
     if (BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
 #ifdef HAVE_PTHREAD_H
@@ -2164,7 +2164,7 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
 #endif
         ERROR("CSAP %d residing on Agent %s is not sending",
               csap_id, ta_name);
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
     msg.sid = session;
@@ -2207,7 +2207,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     RCF_API_INIT;
 
     if (pattern == NULL || strlen(pattern) >= RCF_MAX_PATH || BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
@@ -2243,7 +2243,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     close(fd);
 
     if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
-        return TE_RC(TE_RCF_API, ENOMEM);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
     strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
     tr_op->csap_id = csap_id;
     tr_op->state = CSAP_RECV;
@@ -2294,7 +2294,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     RCF_API_INIT;
     
     if (BAD_TA || num == NULL)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
 #ifdef HAVE_PTHREAD_H
@@ -2318,7 +2318,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         ERROR("CSAP %d residing on Agent %s is not receiving, but %s",
               csap_id, ta_name, (tr_op->state & CSAP_SEND) ? "sending" :
                                    "waiting for something");
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
     if (tr_op != NULL)
@@ -2419,13 +2419,13 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval EALREADY     traffic receiving is not in progress now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  *
  * @sa rcf_ta_trrecv_start
  */ 
@@ -2459,7 +2459,7 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
@@ -2467,7 +2467,7 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
  * @retval ENODATA      no data available on TA, because handler was not
  *                      specified in rcf_ta_trrecv_start
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  *
  * @sa rcf_ta_trrecv_start
  */
@@ -2512,14 +2512,14 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
  * @retval 0            success
  * @retval ETIMEDOUT    timeout occured before a packet that matches
  *                      the template received
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided or flag blocking
  *                      is used together with num 0
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval EBADF        no such CSAP
  * @retval EBUSY        CSAP is busy
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
 int 
@@ -2536,7 +2536,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     RCF_API_INIT;
     
     if (BAD_TA || templ == NULL)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
 #ifdef HAVE_PTHREAD_H
@@ -2565,12 +2565,12 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     if ((fd = open(templ, O_RDONLY)) < 0)
     {
         ERROR("Cannot open file %s for reading", templ);
-        return TE_RC(TE_RCF_API, ENOENT);
+        return TE_RC(TE_RCF_API, TE_ENOENT);
     }
     close(fd);
 
     if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
-        return TE_RC(TE_RCF_API, ENOMEM);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
     strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
     tr_op->csap_id = csap_id;
     tr_op->state = CSAP_SENDRECV;
@@ -2635,7 +2635,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
     
 #define CHECK_LENS \
     if (len > RCF_MAX_LEN - sizeof(rcf_msg) || maxlen < 0) \
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     /* Determine data length and check command size restrictions */
     if (argv)
@@ -2645,7 +2645,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
             char *s = va_arg(ap, char *);
             
             if (check_params_len(s, maxlen, &n) != 0)
-                return TE_RC(TE_RCF_API, EINVAL);
+                return TE_RC(TE_RCF_API, TE_EINVAL);
                 
             len += strlen(s) + 1;
             maxlen -= n + 1;
@@ -2663,7 +2663,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
         int type = va_arg(ap, int);
         
         if (type < RCF_INT8 || type > RCF_STRING)
-            return TE_RC(TE_RCF_API, EINVAL);
+            return TE_RC(TE_RCF_API, TE_EINVAL);
             
         maxlen -= RCF_MAX_TYPE_NAME + 1;
         len++;
@@ -2676,7 +2676,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
             char *s = va_arg(ap, char *);
             
             if (check_params_len(s, maxlen, &n) != 0)
-                return TE_RC(TE_RCF_API, EINVAL);
+                return TE_RC(TE_RCF_API, TE_EINVAL);
                 
             maxlen -= n + 1;
             len += strlen(s) + 1;
@@ -2767,10 +2767,10 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
     RCF_API_INIT;
     
     if (rtn == NULL || strlen(rtn) >= RCF_MAX_NAME || BAD_TA || res == NULL)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     if ((msg = (rcf_msg *)calloc(RCF_MAX_LEN, 1)) == NULL)
-        return TE_RC(TE_RCF_API, ENOMEM);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
 
     msg->opcode = RCFOP_EXECUTE;
     msg->sid = session;
@@ -2879,12 +2879,12 @@ rcf_ta_start_thread(const char *ta_name, int session, int priority,
  * @return error code
  *
  * @retval 0            success
- * @retval EINVAL       name of non-running TN Test Agent or non-existent
+ * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
  *                      session identifier is provided
- * @retval ENOENT       no such process
+ * @retval TE_ENOENT       no such process
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval ENOMEM       out of memory
+ * @retval TE_ENOMEM       out of memory
  *
  * @sa rcf_ta_start_process
  */
@@ -2898,7 +2898,7 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
     RCF_API_INIT;
     
     if (BAD_TA)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_KILL;
@@ -2981,20 +2981,20 @@ rcf_ta_call_rpc(const char *ta_name, int session,
     if (BAD_TA || rpcserver == NULL || rpc_name == NULL || 
         in == NULL || out == NULL)
     {
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
     
     if (strlen(rpc_name) >= RCF_RPC_MAX_NAME)
     {
         ERROR("Too long RPC name: %s - change RCF_RPC_MAX_NAME constant", 
               rpc_name);
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     }
     
     len = RCF_RPC_BUF_LEN;
     if ((rc = rpc_xdr_encode_call(rpc_name, msg->file, &len, in)) != 0)
     {
-        if (TE_RC_GET_ERROR(rc) == ENOENT)
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
             ERROR("Unknown RPC %s", rpc_name);
             return rc;
@@ -3004,7 +3004,7 @@ rcf_ta_call_rpc(const char *ta_name, int session,
         len = RCF_RPC_HUGE_BUF_LEN;
         anslen = PREFIX_LEN + RCF_RPC_HUGE_BUF_LEN;
         if ((msg = (rcf_msg *)malloc(anslen)) == NULL)
-            return TE_RC(TE_RCF_API, ENOMEM);
+            return TE_RC(TE_RCF_API, TE_ENOMEM);
 
         if ((rc = rpc_xdr_encode_call(rpc_name, msg->file, &len, in)) != 0)
         {

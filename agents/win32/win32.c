@@ -491,7 +491,7 @@ restart_service(char *service)
     rc = system(cmd);
 
     if (rc < 0)
-        rc = EPERM;
+        rc = TE_EPERM;
 
     return TE_RC(TE_TA_WIN32, rc);
 }

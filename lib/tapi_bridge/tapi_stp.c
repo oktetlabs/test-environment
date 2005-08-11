@@ -108,7 +108,7 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
          (own_mac_addr != NULL && peer_mac_addr != NULL))
     {
         /* CSAP cannot be simultaneously RX and TX */
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
@@ -171,7 +171,7 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
  * @param templ         Traffic template;
  *
  * @return  Status of the operation
- * @retval EINVAL  This code is returned if "peer_mac_addr" value wasn't
+ * @retval TE_EINVAL  This code is returned if "peer_mac_addr" value wasn't
  *                 specified on creating the CSAP and "dst_mac_addr"
  *                 parameter is NULL.
  * @retval 0       BPDU is sent
@@ -185,7 +185,7 @@ tapi_stp_bpdu_send(const char *ta_name, int sid,
     int  rc;
 
     if ((ta_name == NULL) || (templ == NULL))
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
@@ -310,10 +310,10 @@ tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
     struct tapi_pkt_handler_data *i_data;
 
     if ((ta_name == NULL) || (pattern == NULL))
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((i_data = malloc(sizeof(*i_data))) == NULL)
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     i_data->user_callback = callback;
     i_data->user_data = callback_data;

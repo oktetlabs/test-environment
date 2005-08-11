@@ -198,7 +198,7 @@ bridge_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
     if ((data = malloc(frame_size)) == NULL)
     {
-        return ENOMEM; /* can't allocate memory for frame data */
+        return TE_ENOMEM; /* can't allocate memory for frame data */
     }
     
     /* filling with zeroes */

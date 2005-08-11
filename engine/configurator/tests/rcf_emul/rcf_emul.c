@@ -144,7 +144,7 @@ get_handler(rcf_op_t opcode)
  * @param buf_len    Length of the buffer to be written.
  *
  * @return           0 - if everything is correct
- * @retval           ENOENT - if failed to open file with name
+ * @retval           TE_ENOENT - if failed to open file with name
  *                   msg->file for writing
  * @retval           ENOSPC - failed to write buffer to the file
  */
@@ -159,7 +159,7 @@ write_binary_attachment(rcf_msg *msg,  char *buf, uint32_t buf_len)
     {
         ERROR("Cannot open file %s for writing - skipping\n",
               msg->file);
-        return ENOENT;
+        return TE_ENOENT;
     }
 
     rc = write(file, buf, buf_len);
@@ -184,7 +184,7 @@ write_binary_attachment(rcf_msg *msg,  char *buf, uint32_t buf_len)
  * @return              Error returned by the request handler or:
  * @retval TE_EIPC      no handler is registered for 
  *                      the req->message->opcode type of request
- * @retval EINVAL       if wrong opcode is given
+ * @retval TE_EINVAL       if wrong opcode is given
  */
 
 static int
@@ -358,7 +358,7 @@ process_user_request(usrreq *req)
             break;
         default:
             ERROR("ERROR, opcode is not supported");
-            msg->error = EINVAL;
+            msg->error = TE_EINVAL;
     }
 answer:
     answer_user_request(req);
@@ -435,7 +435,7 @@ rcfrh_set_default_handler(rcf_op_t opcode, request_handler *conf)
         default:
             VERB("Wrong opcode passed to the "
                  "rcfrh_set_default_handler() function");
-            return EINVAL;
+            return TE_EINVAL;
     }
     return 0;
 }
@@ -449,7 +449,7 @@ rcfrh_set_default_handlers(int conf_id)
 {
     if (conf_id < 0 || conf_id > MAX_CONF_NUMBER || 
         handler_conf[conf_id] == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     rcfrh_set_default_handler(RCFOP_TALIST, handler_conf[conf_id]);
     rcfrh_set_default_handler(RCFOP_TACHECK, handler_conf[conf_id]);
@@ -568,7 +568,7 @@ rcfrh_ta_list_default(char **ta_list)
     char *agents = calloc(MAX_AGENTS_NUMBER * AGENT_NAME_MAX_LENGTH + 1, 1);
 
     if (agents == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
     rcfrh_agents_list(agents, MAX_AGENTS_NUMBER * AGENT_NAME_MAX_LENGTH + 1);
     
     *ta_list = agents;
@@ -588,8 +588,8 @@ rcfrh_ta_check_default(char *ta_name, int *result)
     }
     else
     {
-        *result = EINVAL;
-        return EINVAL;
+        *result = TE_EINVAL;
+        return TE_EINVAL;
     }
 }
 
@@ -608,8 +608,8 @@ rcfrh_reboot_default(char *ta_name, int *result)
     }
     else
     {
-        *result = EINVAL;
-        return EINVAL;
+        *result = TE_EINVAL;
+        return TE_EINVAL;
     }
 }
 
@@ -627,7 +627,7 @@ rcfrh_conf_get_default(char *ta_name, char *oid, char **answer, int *ans_len)
             return rc;
     }
     else
-        return EINVAL;
+        return TE_EINVAL;
 }
 
 /**
@@ -648,7 +648,7 @@ rcfrh_conf_set_default(char *ta_name, char *oid, char *value)
         }
     }
     else
-        return EINVAL;
+        return TE_EINVAL;
 
     return rc;
 }
@@ -687,7 +687,7 @@ rcfrh_conf_add_default(char *ta_name, char *oid, char *value)
     }
 
     ERROR("Wrong TA name %s", ta_name);
-    return -EINVAL;
+    return -TE_EINVAL;
 }
 
 /**
@@ -708,7 +708,7 @@ rcfrh_conf_del_default(char *ta_name, char *oid)
         }
     }
     else 
-        return EINVAL;
+        return TE_EINVAL;
 
     return 0;
 }
@@ -725,7 +725,7 @@ rcfrh_conf_grp_start_default(char *ta_name, char *grp_name)
         return 0;
     }
     else
-        return EINVAL;
+        return TE_EINVAL;
 }
 
 /**
@@ -741,7 +741,7 @@ rcfrh_conf_grp_end_default(char *ta_name, char *grp_name)
         return 0;
     }
     else
-        return EINVAL;
+        return TE_EINVAL;
 }
 
 /**
@@ -756,11 +756,11 @@ rcfrh_configuration_create(void)
         i++;
 
     if (i == MAX_CONF_NUMBER)
-        return -ENOMEM;
+        return -TE_ENOMEM;
 
     handler_conf[i] = (request_handler *)calloc(sizeof(request_handler), 1);
     if (handler_conf[i] == NULL)
-        return -ENOMEM;
+        return -TE_ENOMEM;
 
     return i;
 }
@@ -773,7 +773,7 @@ rcfrh_configuration_delete(int conf_id)
 {
     if (conf_id < 0 || conf_id > MAX_CONF_NUMBER ||
         handler_conf[conf_id] == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     if (current_handler_conf == handler_conf[conf_id])
         current_handler_conf = NULL;
@@ -791,7 +791,7 @@ rcfrh_configuration_set_current(int conf_id)
 {    
     if (conf_id < 0 || conf_id > MAX_CONF_NUMBER ||
         handler_conf[conf_id] == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     current_handler_conf = handler_conf[conf_id];
     return 0;
@@ -831,7 +831,7 @@ rcfrh_agent_add(char *agents_name, agent_type type)
 
     agt = calloc(sizeof(agent_t), 1);
     if (agt == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     strcpy(agt->name, agents_name);
     agt->type = type;
@@ -856,7 +856,7 @@ rcfrh_agent_del(char *agents_name)
         i++;
 
     if (i == MAX_AGENTS_NUMBER)
-        return EINVAL;
+        return TE_EINVAL;
 
     free(agents_list[i]);
     agents_list[i] = NULL;

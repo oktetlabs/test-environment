@@ -87,7 +87,7 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
         if (nets->nets == NULL)
         {
             ERROR("Memory allocation failure");
-            rc = ENOMEM;
+            rc = TE_ENOMEM;
         }
     }
 
@@ -218,7 +218,7 @@ tapi_cfg_net_get_pairs(enum net_node_type first,
         if (pairs == NULL)
         {
             tapi_cfg_net_free_nets(&nets);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         for (i = 0; i < nets.n_nets; ++i)
         {
@@ -385,7 +385,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
     path_len = strlen(path_pattern) - 2 + strlen(net_name) + 1;
 
     if ((path = (char *)malloc(path_len)) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     snprintf(path, path_len, path_pattern, net_name);
     if ((rc = cfg_find_pattern(path, &num, &handles)) != 0)
@@ -453,7 +453,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
                 if ((ret_array = (char **)realloc(ret_array,
                            sizeof(char *) * (ret_array_len + 1))) == NULL)
                 {
-                    rc = ENOMEM;
+                    rc = TE_ENOMEM;
                     free(val);
                     ret_array = tmp_ptr;
                     THROW_EXCEPTION("Not enough memory");
@@ -482,7 +482,7 @@ clean_all:
     }
     else if (ret_array_len == 1)
     {
-        rc = ENOENT;
+        rc = TE_ENOENT;
     }
     else
     {
@@ -538,7 +538,7 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
     if (type != NET_NODE_TYPE_AGENT)
     {
         ERROR("Node of inappropriate type %d provided as argument", type);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     ta_node_oid = cfg_convert_oid_str(ta_node);
@@ -575,7 +575,7 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
     {
         ERROR("Invalid NUT node value '%s'", oids[0]);
         tapi_cfg_net_free_nodes_values(oids);
-        return EINVAL;
+        return TE_EINVAL;
     }
     tapi_cfg_net_free_nodes_values(oids);
 
@@ -683,7 +683,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
     if (net == NULL)
     {
         ERROR("%s: Net pointer is NULL", __FUNCTION__);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     /* Allocate or use passed IPv4 subnet */
@@ -756,7 +756,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
             {
                 ERROR("calloc(%u, %u) failed", net->n_nodes,
                       sizeof(*(assigned->entries)));
-                rc = ENOMEM;
+                rc = TE_ENOMEM;
                 break;
             }
         }
@@ -852,7 +852,7 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
     if (net == NULL)
     {
         ERROR("%s: Net pointer is NULL", __FUNCTION__);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     /* Allocate or use passed IPv4 subnet */
@@ -925,7 +925,7 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
             {
                 ERROR("calloc(%u, %u) failed", net->n_nodes,
                       sizeof(*(assigned->entries)));
-                rc = ENOMEM;
+                rc = TE_ENOMEM;
                 break;
             }
         }

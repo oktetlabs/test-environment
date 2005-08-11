@@ -294,7 +294,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
     
     if ((rc = rpc_xdr_encode_call(name, rpc_buf, &buflen, in)) != 0) 
     {
-        if (TE_RC_GET_ERROR(rc) == ENOENT)
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
             ERROR("Unknown RPC %s is called from TA", name);
         else
             ERROR("Encoding of RPC %s input parameters failed", name);
@@ -928,7 +928,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     else
     {
         ERROR("Incorrect RPC server '%s' father '%s'", new_name, value);
-        return TE_RC(TE_RCF_PCH, EINVAL);
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
     }
     
     rcf_ch_lock();
@@ -957,7 +957,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         rcf_ch_unlock();
         ERROR("%s(): calloc(1, %u) failed", __FUNCTION__,
               (unsigned)sizeof(*rpcs));
-        return TE_RC(TE_RCF_PCH, ENOMEM);
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
     }
     
     strcpy(rpcs->name, new_name);
@@ -1054,14 +1054,14 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     {
         rcf_ch_unlock();
         ERROR("RPC server '%s' to be deleted not found", name);
-        return TE_RC(TE_RCF_PCH, ENOENT);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
     
     if (rpcs->ref > 0)
     {
         rcf_ch_unlock();
         ERROR("Cannot delete RPC server '%s' with threads", name);
-        return TE_RC(TE_RCF_PCH, EPERM);
+        return TE_RC(TE_RCF_PCH, TE_EPERM);
     }
     
     if (prev != NULL)
@@ -1113,7 +1113,7 @@ rpcserver_list(unsigned int gid, const char *oid, char **value)
     {
         rcf_ch_unlock();
         ERROR("%s(): strdup(%s) failed", __FUNCTION__, rpc_buf);
-        return TE_RC(TE_RCF_PCH, ENOMEM);
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
     }
     rcf_ch_unlock();
     
@@ -1162,7 +1162,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     if (rpcs == NULL)
     {
         ERROR("Failed to find RPC server %s", server);
-        RETERR(ENOENT);
+        RETERR(TE_ENOENT);
     }
     
     if (rpcs->dead)

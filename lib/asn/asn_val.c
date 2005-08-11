@@ -1089,7 +1089,7 @@ asn_read_string(const asn_value *container, char **value,
 
     *value = asn_strdup(leaf_val->data.other); 
  
-    return (*value != NULL) ? 0 : ENOMEM;
+    return (*value != NULL) ? 0 : TE_ENOMEM;
 }
 
 
@@ -1299,10 +1299,10 @@ asn_get_indexed(const asn_value *container, const asn_value **subval,
 
     if (container->syntax != SEQUENCE_OF && 
         container->syntax != SET_OF)
-        return EINVAL;
+        return TE_EINVAL;
 
     if (index < 0)
-        return EINVAL; 
+        return TE_EINVAL; 
 
     if ((unsigned int)index >= container->len)
         return TE_EASNINCOMPLVAL; 
@@ -1347,7 +1347,7 @@ asn_get_child_value(const asn_value *container, const asn_value **subval,
 
     if (container->syntax != SEQUENCE && 
         container->syntax != SET)
-        return EINVAL;
+        return TE_EINVAL;
 
     rc = asn_child_tag_index(container->asn_type, tag_class, tag_val,
                              &index);
@@ -1373,7 +1373,7 @@ asn_get_choice_value(const asn_value *container, const asn_value **subval,
         return TE_EWRONGPTR; 
 
     if (container->syntax != CHOICE)
-        return EINVAL; 
+        return TE_EINVAL; 
 
     if (container->len == 0 || container->data.array[0] == NULL)
         return TE_EASNINCOMPLVAL;
@@ -1471,7 +1471,7 @@ asn_read_component_value (const asn_value *container,
 
     *elem_value = asn_copy_value(subvalue);
     if (*elem_value == NULL) 
-        return ENOMEM;
+        return TE_ENOMEM;
 
     /* fall into CHOICE and TAGGED */
     if ( (*elem_value)->syntax == CHOICE ||
@@ -1626,7 +1626,7 @@ asn_insert_indexed(asn_value_p container, const asn_value_p elem_value,
         {
             asn_value_p *arr = malloc(new_len * sizeof(asn_value_p));
             unsigned int i;
-            if (arr == NULL) return ENOMEM;
+            if (arr == NULL) return TE_ENOMEM;
 
             for (i = 0; i < (unsigned)index; i++)
                 arr[i] = value->data.array[i];
@@ -1689,7 +1689,7 @@ asn_remove_indexed(asn_value_p container, int index, const char *subval_labels)
             if (value->len > 1)
             {
                 arr = malloc((value->len - 1) * sizeof(asn_value_p)); 
-                if (arr == NULL) return ENOMEM;
+                if (arr == NULL) return TE_ENOMEM;
             }
 
             value->len --;

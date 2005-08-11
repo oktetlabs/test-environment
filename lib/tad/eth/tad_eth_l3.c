@@ -407,7 +407,7 @@ mac_str2addr(const char *mac_str, uint8_t *mac)
             else
             {
                 ERROR("not colon, <%c>", (int)*mac_str);
-                return EINVAL;
+                return TE_EINVAL;
             }
         }
         mac[i] = strtol(mac_str, &endptr, 16);
@@ -418,7 +418,7 @@ mac_str2addr(const char *mac_str, uint8_t *mac)
     if (i < ETH_ALEN) /* parse error */ 
     {
         ERROR("too small index %d, NULL endptr", i);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     return 0;
@@ -468,7 +468,7 @@ tad_eth_arp_reply(csap_p csap_descr, const char *usr_param,
     {
         ERROR("%s(): MAC parse error, <%s> ,rc 0x%X",
               __FUNCTION__, usr_param, rc);
-        return EINVAL;
+        return TE_EINVAL;
     } 
 
     VERB("%s(): got user param %s; parsed MAC: %x:%x:%x:%x:%x:%x;",
@@ -479,7 +479,7 @@ tad_eth_arp_reply(csap_p csap_descr, const char *usr_param,
     if ((p = arp_reply_frame = calloc(1, pkt_len)) == NULL)
     {
         ERROR("%s(): no memory!", __FUNCTION__);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     /* fill eth header */
     memcpy(p, pkt + 6, 6);

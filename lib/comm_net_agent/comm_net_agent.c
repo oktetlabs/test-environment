@@ -438,7 +438,7 @@ int
 rcf_comm_agent_close(struct rcf_comm_connection **p_rcc)
 {
     if (p_rcc == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     if (*p_rcc == NULL)
         return 0;

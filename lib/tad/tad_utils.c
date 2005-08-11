@@ -334,7 +334,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
     VERB("%s <%s> called", __FUNCTION__, string);
 
     if ((*expr = calloc(1, sizeof(tad_int_expr_t))) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     *syms = 0; 
 
@@ -611,7 +611,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
                 default:
                     ERROR("%s(): unknown type of expr node: %d",
                           __FUNCTION__, expr->n_type);
-                    return EINVAL;
+                    return TE_EINVAL;
             }
         } /* end of 'default' sub-block */
     }
@@ -847,7 +847,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                     ERROR("%s(field name %s): strange syntax %d",
                           __FUNCTION__, asn_get_name(ch_du_field),
                           plain_syntax);
-                    return EINVAL;
+                    return TE_EINVAL;
 
             }
             /* process string values */ 
@@ -859,11 +859,11 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                 if (len <= 0)
                 {
                     ERROR("wrong length");
-                    return EINVAL;
+                    return TE_EINVAL;
                 }
 
                 if ((d_ptr = calloc(len, 1)) == NULL)
-                    return ENOMEM; 
+                    return TE_ENOMEM; 
 
                 rc = asn_read_value_field(du_field, d_ptr, &len, "");
                 if (rc)
@@ -982,7 +982,7 @@ tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
         return TE_EWRONGPTR;
 
     if ((location->val_data.oct_str = malloc(d_len)) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     location->du_type = TAD_DU_OCTS;
     location->val_data.len = d_len; 
@@ -1002,7 +1002,7 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
     if (du_tmpl == NULL || data_place == NULL)
         return TE_EWRONGPTR;
     if (d_len == 0)
-        return EINVAL;
+        return TE_EINVAL;
 
     switch (du_tmpl->du_type)
     {
@@ -1068,7 +1068,7 @@ tad_dump_hex(csap_p csap_descr, const char *usr_param,
     UNUSED(usr_param);
 
     if (pkt == NULL || pkt_len == 0)
-        return EINVAL;
+        return TE_EINVAL;
 
     RING("PACKET: %tm", pkt, pkt_len);
 

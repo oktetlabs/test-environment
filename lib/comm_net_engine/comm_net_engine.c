@@ -249,7 +249,7 @@ rcf_net_engine_transmit(struct rcf_net_connection *rnc,
     ssize_t len = 0;
 
     if (rnc == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     while (length > 0)
     {
@@ -347,7 +347,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
     size_t  l = 0;
 
     if (rnc == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     if (rnc->bytes_to_read > 0)
     {
@@ -481,7 +481,7 @@ rcf_net_engine_close(struct rcf_net_connection **p_rnc,
     int rc = 0;
 
     if (p_rnc == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     if (*p_rnc == NULL)
         return 0;

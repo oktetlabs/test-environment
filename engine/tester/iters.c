@@ -66,7 +66,7 @@ test_param_clone(const test_param *p)
     if (pc == NULL)
     {
         ERROR("calloc(1, %u) failed", sizeof(*pc));
-        EXIT("ENOMEM");
+        EXIT("TE_ENOMEM");
         return NULL;
     }
 
@@ -76,7 +76,7 @@ test_param_clone(const test_param *p)
     {
         ERROR("strdup() failed");
         free(pc);
-        EXIT("ENOMEM");
+        EXIT("TE_ENOMEM");
         return NULL;
     }
     pc->clone = p->clone;
@@ -122,7 +122,7 @@ test_param_iteration_new(void)
     if (p == NULL)
     {
         ERROR("calloc(1, %u) failed", sizeof(*p));
-        EXIT("ENOMEM");
+        EXIT("TE_ENOMEM");
         return NULL;
     }
     
@@ -146,7 +146,7 @@ test_param_iteration_clone(const test_param_iteration *i, te_bool clone_all)
 
     if (ic == NULL)
     {
-        EXIT("ENOMEM");
+        EXIT("TE_ENOMEM");
         return NULL;
     }
     for (p = i->params.tqh_first; p != NULL; p = p->links.tqe_next)
@@ -156,7 +156,7 @@ test_param_iteration_clone(const test_param_iteration *i, te_bool clone_all)
             pc = test_param_clone(p);
             if (pc == NULL)
             {
-                EXIT("ENOMEM");
+                EXIT("TE_ENOMEM");
                 return NULL;
             }
             TAILQ_INSERT_TAIL(&ic->params, pc, links);

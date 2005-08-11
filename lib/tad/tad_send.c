@@ -195,7 +195,7 @@ tad_tr_send_thread(void * arg)
 
         arg_iterated = calloc(arg_num, sizeof(tad_tmpl_arg_t));
         if (arg_iterated == NULL)
-            rc = ENOMEM;
+            rc = TE_ENOMEM;
 
         if (rc)
             break;

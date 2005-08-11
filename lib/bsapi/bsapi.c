@@ -63,7 +63,7 @@ int
 builder_build_test_suite(const char *suite, const char *sources)
 {
     if (suite == NULL || *suite == 0 || sources == NULL || *sources == 0)
-        return EINVAL;
+        return TE_EINVAL;
     
 #if 0
     sprintf(cmd, "te_stdouterr builder.log.%s.1 builder.log.%s.2 "

@@ -127,7 +127,7 @@ open_packet_socket(const char *ifname, int *sock)
     if (sock == NULL)
     {
         ERROR("Location for socket is NULL");
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     /* Create packet socket */
@@ -215,7 +215,7 @@ close_packet_socket(const char* ifname, int sock)
     {
         ERROR("%s(): iface %d not used before for create packet socket", 
               __FUNCTION__, ifname);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     rc = eth_free_interface(&(ir->descr));
@@ -258,7 +258,7 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
 
     if (name == NULL) 
     {
-       return EINVAL;
+       return TE_EINVAL;
     }
 
     VERB("%s('%s') start", __FUNCTION__, name);

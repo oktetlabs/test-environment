@@ -221,14 +221,14 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
     {
         ERROR("Too many conditions are specified for WSAAccept condition"
               "function");
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(wsa_accept, -1);
     }
 
     if ((cond == NULL && cond_num > 0) ||
         (cond != NULL && cond_num == 0))
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(wsa_accept, -1);
     }
 
@@ -716,7 +716,7 @@ rpc_wsa_recv_ex(rcf_rpc_server *rpcs,
 
     if (buf != NULL && len > rbuflen)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(wsa_recv_ex, -1);
     }
 
@@ -955,7 +955,7 @@ rpc_completion_callback(rcf_rpc_server *rpcs,
     if (called == NULL || error == NULL || bytes == NULL ||
         overlapped == NULL)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(completion_callback, -1);
     }
 
@@ -1220,7 +1220,7 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
 
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
-        rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+        rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
         RETVAL_INT(wsa_send, -1);
     }
 
@@ -1296,13 +1296,13 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
 
     if (riovcnt > RCF_RPC_MAX_IOVEC)
     {
-        rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+        rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
         RETVAL_INT(wsa_recv, -1);
     }
 
     if (iov != NULL && iovcnt > riovcnt)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(wsa_recv, -1);
     }
 
@@ -1400,7 +1400,7 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
 
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
-        rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+        rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
         RETVAL_INT(wsa_send_to, -1);
     }
 
@@ -1495,13 +1495,13 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
 
     if (riovcnt > RCF_RPC_MAX_IOVEC)
     {
-        rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+        rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
         RETVAL_INT(wsa_recv_from, -1);
     }
 
     if (iov != NULL && iovcnt > riovcnt)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(wsa_recv_from, -1);
     }
 
@@ -1763,7 +1763,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 
         if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
         {
-            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
             ERROR("Length of the I/O vector is too long (%u) - "
                   "increase RCF_RPC_MAX_IOVEC(%u)",
                   msg->msg_riovlen, RCF_RPC_MAX_IOVEC);
@@ -1772,14 +1772,14 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 
         if (msg->msg_cmsghdr_num > RCF_RPC_MAX_CMSGHDR)
         {
-            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
             ERROR("Too many cmsg headers - increase RCF_RPC_MAX_CMSGHDR");
             RETVAL_INT(wsa_recv_msg, -1);
         }
         
         if (msg->msg_control != NULL && msg->msg_cmsghdr_num == 0)
         {
-            rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+            rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
             ERROR("Number of cmsg headers is incorrect");
             RETVAL_INT(wsa_recv_msg, -1);
         }
@@ -1787,7 +1787,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
         if (msg->msg_iovlen > msg->msg_riovlen ||
             msg->msg_namelen > msg->msg_rnamelen)
         {
-            rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+            rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
             RETVAL_INT(wsa_recv_msg, -1);
         }
 
@@ -1902,7 +1902,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
                 if (c == NULL && i < rpc_msg.msg_control.msg_control_len)
                 {
                     ERROR("Unexpected lack of space in auxiliary buffer");
-                    rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+                    rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
                     RETVAL_INT(wsa_recv_msg, -1);
                 }
                 
@@ -2042,13 +2042,13 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
 
     if ((info == NULL) != (info_len == NULL))
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(duplicate_socket, -1);
     }
 
     if (info_len != NULL && *info_len == 0)
     {
-        rpcs->_errno = TE_RC(TE_RCF, EINVAL);
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(duplicate_socket, -1);
     }
 

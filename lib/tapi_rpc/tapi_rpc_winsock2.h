@@ -749,7 +749,7 @@ rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  *                    the transfert
  * 
  * @return WSAOVERLAPPED structure upon successful completion, otherwise
- *         error code is returned (ENOMEM)
+ *         error code is returned (TE_ENOMEM)
  */
 extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
                                             rpc_wsaevent hevent,

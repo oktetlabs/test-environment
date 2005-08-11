@@ -82,7 +82,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     {
         ERROR("%s(): wrong usr_param, should be <type>:<code>",
               __FUNCTION__);
-        return EINVAL;
+        return TE_EINVAL;
     }
     endptr++;
     code = strtol(endptr, &endptr, 10);
@@ -92,7 +92,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
         if (*endptr != ':')
         {
             ERROR("%s(): wrong usr_param, shouls be colon.", __FUNCTION__);
-            return EINVAL;
+            return TE_EINVAL;
         }
         endptr++;
         unused = strtol(endptr, &endptr, 10);
@@ -102,7 +102,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
             {
                 ERROR("%s(): wrong usr_param, shouls be colon.",
                       __FUNCTION__);
-                return EINVAL;
+                return TE_EINVAL;
             }
             endptr++;
             rate = atoi(endptr);
@@ -110,7 +110,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
             {
                 ERROR("%s(): wrong rate in usr_param, shouls be non-zero",
                       __FUNCTION__);
-                return EINVAL;
+                return TE_EINVAL;
             }
         }
     }

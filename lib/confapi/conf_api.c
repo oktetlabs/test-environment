@@ -132,7 +132,7 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
     cfg_register_msg *msg;
 
     if ((oid == NULL) || (descr == NULL))
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     
     len = strlen(oid) + 1;
     def_val_len = descr->def_val == NULL ? 0 : strlen(descr->def_val) + 1;
@@ -141,7 +141,7 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
         len > RCF_MAX_ID)
     {
         ERROR("Too long OID or default value");
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -214,13 +214,13 @@ cfg_register_object(const cfg_oid *oid, cfg_obj_descr *descr,
 
     if ((oid == NULL) || (descr == NULL))
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
     str = cfg_convert_oid(oid);
     if (str == NULL)
     {
-        return TE_RC(TE_CONF_API, ENOMEM);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
 
     ret_val = cfg_register_object_str(str, descr, &tmp);
@@ -255,7 +255,7 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
     ret_val = cfg_get_oid(handle, &oid);
@@ -316,7 +316,7 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
  * @param oid           OUT: location for the oid pointer (memory for the
  *                      string is allocated by the routine using malloc()
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 int
 cfg_get_oid_str(cfg_handle handle, char **oid)
@@ -332,7 +332,7 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -362,7 +362,7 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
         str = (char *)calloc(1, len);
         if (str == NULL)
         {
-            ret_val = ENOMEM;
+            ret_val = TE_ENOMEM;
         }
         else
         {
@@ -385,7 +385,7 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
  * @param oid           OUT: location for the oid pointer (memory for the
  *                      array is allocated by the routine using malloc()
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 int
 cfg_get_oid(cfg_handle handle, cfg_oid **oid)
@@ -397,7 +397,7 @@ cfg_get_oid(cfg_handle handle, cfg_oid **oid)
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
     if ((ret_val = cfg_get_oid_str(handle, &str)) != 0)
@@ -408,7 +408,7 @@ cfg_get_oid(cfg_handle handle, cfg_oid **oid)
     free(str);
     if (*oid == NULL)
     {
-        return TE_RC(TE_CONF_API, ENOMEM);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
     return 0;
 }
@@ -420,7 +420,7 @@ cfg_get_oid(cfg_handle handle, cfg_oid **oid)
  * @param subid         OUT: location for the sub-identifier (should be
  *                      at least CFG_SUBID_MAX length)
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 int
 cfg_get_subid(cfg_handle handle, char **subid)
@@ -436,7 +436,7 @@ cfg_get_subid(cfg_handle handle, char **subid)
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -466,7 +466,7 @@ cfg_get_subid(cfg_handle handle, char **subid)
         str = (char *)calloc(1, len);
         if (str == NULL)
         {
-            ret_val = ENOMEM;
+            ret_val = TE_ENOMEM;
         }
         else
         {
@@ -486,7 +486,7 @@ cfg_get_subid(cfg_handle handle, char **subid)
  * @param handle        handle of object instance
  * @param name          OUT: location for the name
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 int
 cfg_get_inst_name(cfg_handle handle, char **name)
@@ -502,7 +502,7 @@ cfg_get_inst_name(cfg_handle handle, char **name)
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -532,7 +532,7 @@ cfg_get_inst_name(cfg_handle handle, char **name)
         str = (char *)calloc(1, len);
         if (str == NULL)
         {
-            ret_val = ENOMEM;
+            ret_val = TE_ENOMEM;
         }
         else
         {
@@ -574,7 +574,7 @@ cfg_get_ith_inst_name(const char *str_oid, unsigned int i, char **name)
 
     if ((str_oid == NULL) || (name == NULL))
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
     oid = cfg_convert_oid_str(str_oid);
@@ -612,7 +612,7 @@ cfg_find_str(const char *oid, cfg_handle *handle)
 
     if (oid == NULL)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -664,12 +664,12 @@ cfg_find(const cfg_oid *oid, cfg_handle *handle)
 
     if (oid == NULL)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
     str = cfg_convert_oid(oid);
     if (str == NULL)
-        return TE_RC(TE_CONF_API, ENOMEM);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
 
     ret_val = cfg_find_str(str, &tmp);
     if (ret_val == 0)
@@ -712,7 +712,7 @@ cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
     if (object_oid == NULL)
     {
         fprintf(stderr, "Memory allocation failure\n");
-        return TE_RC(TE_CONF_API, ENOMEM);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
 
     instance_id = (char *)(instance_oid->ids);
@@ -746,7 +746,8 @@ cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
  * @param set           OUT: array of object/object instances handles;
  *                      memory for the array is allocated using malloc()
  *
- * @return 0 or EINVAL if pattern format is incorrect some argument is NULL
+ * @return 0 or TE_EINVAL if pattern format is incorrect some argument is
+ *         NULL
  */
 int
 cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
@@ -762,7 +763,7 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
 
     if (pattern == NULL)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -794,7 +795,7 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
         assert(len > CFG_MSG_MAX);
         alloc_msg = malloc(len);
         if (alloc_msg == NULL)
-            return TE_RC(TE_CONF_API, ENOMEM);
+            return TE_RC(TE_CONF_API, TE_ENOMEM);
         
         ret_val = ipc_receive_rest_answer(cfgl_ipc_client,
                                           CONFIGURATOR_SERVER,
@@ -813,7 +814,7 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
         if (set == NULL)
         {
             *num = 0;
-            ret_val = ENOMEM;
+            ret_val = TE_ENOMEM;
         }
         else
         {
@@ -847,7 +848,7 @@ cfg_get_family_member(cfg_handle handle, uint8_t who, cfg_handle *member)
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return EINVAL;
+        return TE_EINVAL;
     }
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
@@ -977,7 +978,7 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
 
     if (oid == NULL)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -1024,7 +1025,7 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ENOMEM);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
     msg->oid_offset = msg->len;
     msg->len += strlen(oid2str) + 1;
@@ -1086,7 +1087,7 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
     
     if (oid == NULL)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -1176,7 +1177,7 @@ kill_all(cfg_handle handle)
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
     ret_val = cfg_get_son(handle, &son);
@@ -1235,7 +1236,7 @@ kill(cfg_handle handle)
     if (handle == CFG_HANDLE_INVALID || 
         cfg_get_oid_str(handle, &oidstr) != 0)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
     
     
@@ -1294,7 +1295,7 @@ cfg_del_instance(cfg_handle handle, te_bool with_children)
     
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
     if (with_children == TRUE)
@@ -1339,7 +1340,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -1507,7 +1508,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -1624,7 +1625,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -1731,7 +1732,7 @@ cfg_synchronize(const char *oid, te_bool subtree)
     int     ret_val = 0;
     
     if (oid == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
@@ -1801,7 +1802,7 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
 
     if (handle == CFG_HANDLE_INVALID)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
     ret_val = cfg_get_oid(handle, &oid);
@@ -1814,7 +1815,7 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
     pattern = cfg_allocate_oid(length, TRUE);
     if (pattern == NULL)
     {
-        return TE_RC(TE_CONF_API, ENOMEM);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
 
     memset(pattern->ids, '\0', length * sizeof(cfg_inst_subid));
@@ -1843,7 +1844,7 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
     if (pattern_name == NULL)
     {
         cfg_free_oid(pattern);
-        return TE_RC(TE_CONF_API, ENOMEM);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
     cfg_free_oid(pattern);
 
@@ -1888,7 +1889,7 @@ cfg_reboot_ta(const char *ta_name, te_bool restore)
 
     if (ta_name == NULL)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
@@ -1968,7 +1969,7 @@ cfg_create_backup(char **name)
         *name = (char *)calloc(1, len);
         if (*name == NULL)
         {
-            ret_val = ENOMEM;
+            ret_val = TE_ENOMEM;
         }
         else
         {
@@ -1998,7 +1999,7 @@ cfg_backup(const char *name, uint8_t op)
     int     ret_val = 0;
 
     if (name == NULL)
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
@@ -2061,7 +2062,7 @@ cfg_release_backup(char **name)
     int rc;
 
     if (name == NULL)
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
 
     rc = cfg_backup(*name, CFG_BACKUP_RELEASE);
     if (rc == 0)
@@ -2106,7 +2107,7 @@ cfg_create_config(const char *name, te_bool history)
 
     if (name == NULL)
     {
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
 #ifdef HAVE_PTHREAD_H

@@ -241,7 +241,7 @@ ndn_forw_delay_to_plain(const asn_value *val, ndn_forw_delay_t *forw_delay)
     const char *choice_ptr;
 
     if (val == NULL || forw_delay == NULL) 
-        return EINVAL;
+        return TE_EINVAL;
 
     choice_ptr = asn_get_choice_ptr(val);
 
@@ -321,7 +321,7 @@ ndn_forw_reorder_to_plain(const asn_value *val,
     size_t d_len; 
 
     if (val == NULL || forw_reorder == NULL) 
-        return EINVAL;
+        return TE_EINVAL;
 
     d_len = sizeof (forw_reorder->type);
     rc = asn_read_value_field(val, &forw_reorder->type, &d_len, "type");
@@ -404,7 +404,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
     const asn_value *subval;
 
     if (val == NULL || forw_action == NULL) 
-        return EINVAL;
+        return TE_EINVAL;
 
     id_len = asn_get_length(val, "id");
     VERB("%s: length of id %d", __FUNCTION__, id_len);
@@ -414,7 +414,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
 
     d_len = id_len + 1;
     if ((forw_action->id = malloc(d_len)) == NULL )
-        return ENOMEM;
+        return TE_ENOMEM;
 
     rc = asn_read_value_field(val, forw_action->id, &d_len, "id");
     if (rc) return rc;
@@ -606,7 +606,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                 }
                 break;
             default:
-                rc = EINVAL;
+                rc = TE_EINVAL;
                 ERROR("unsupported type of delay: %d", 
                       forw_action->delay.type);
                 break;

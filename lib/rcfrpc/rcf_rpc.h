@@ -49,7 +49,7 @@
 
 /** Return RPC server context errno */
 #define RPC_ERRNO(_rpcs) \
-    (((_rpcs) != NULL) ? ((_rpcs)->_errno) : TE_RC(TE_RCF_API, EINVAL))
+    (((_rpcs) != NULL) ? ((_rpcs)->_errno) : TE_RC(TE_RCF_API, TE_EINVAL))
 
 /** Check, if RPC is called successfully */
 #define RPC_IS_CALL_OK(_rpcs) \
@@ -173,7 +173,7 @@ rcf_rpc_server_thread_create(rcf_rpc_server *rpcs, const char *name,
                              rcf_rpc_server **p_new)
 {
     if (rpcs == NULL)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
 
     return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 
                               TRUE, FALSE, TRUE, p_new);
@@ -193,7 +193,7 @@ rcf_rpc_server_fork(rcf_rpc_server *rpcs, const char *name,
                     rcf_rpc_server **p_new)
 {
     if (rpcs == NULL)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
 
     return rcf_rpc_server_get(rpcs->ta, name, rpcs->name, 
                               FALSE, FALSE, TRUE, p_new);
@@ -233,7 +233,7 @@ rcf_rpc_server_restart(rcf_rpc_server *rpcs)
     int             rc;
     
     if (rpcs == NULL)
-        return TE_RC(TE_RCF_API, EINVAL);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
     
     rc = rcf_rpc_server_get(rpcs->ta, rpcs->name, NULL, FALSE, FALSE,
                             TRUE, &new_rpcs);

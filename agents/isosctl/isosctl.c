@@ -428,13 +428,13 @@ rcf_ch_kill_task(char *cbuf, int buflen,
  *
  * @return error code
  * @retval 0            success
- * @retval ENOMEM       cannot allocate memory
+ * @retval TE_ENOMEM       cannot allocate memory
  */
 static int 
 agent_list(char *oid, char **list)
 {
     UNUSED(oid);
-    return (*list = strdup(rcf_ch_conf_agent())) == NULL ? ENOMEM : 0;
+    return (*list = strdup(rcf_ch_conf_agent())) == NULL ? TE_ENOMEM : 0;
 }
 
 /**

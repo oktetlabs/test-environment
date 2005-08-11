@@ -162,7 +162,7 @@ boolean_to_string(te_bool value)
  *                      other   - unknown
  *
  * @retval 0        - success
- * @retval EINVAL   - conversion failed
+ * @retval TE_EINVAL   - conversion failed
  */
 static int
 boolean_to_number(const char *str, te_bool *p_val)
@@ -188,7 +188,7 @@ boolean_to_number(const char *str, te_bool *p_val)
     {
         ERROR("Failed to convert string '%s' to number",
                           str);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     if ((val != TRUE) && (val != FALSE))
@@ -209,7 +209,7 @@ boolean_to_number(const char *str, te_bool *p_val)
  * @param p_val     - location for value (OUT)
  *
  * @retval 0        - success
- * @retval EINVAL   - conversion failed
+ * @retval TE_EINVAL   - conversion failed
  */
 static int
 ulong_to_number(const char *str, unsigned long int *p_val)
@@ -222,7 +222,7 @@ ulong_to_number(const char *str, unsigned long int *p_val)
     {
         ERROR("Failed to convert string '%s' to number",
                           str);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     assert(val >= 0);
 
@@ -275,7 +275,7 @@ link_status_to_string(poe_link_status status)
  *                      other            - unknown
  *
  * @retval 0        - success
- * @retval EINVAL   - conversion failed
+ * @retval TE_EINVAL   - conversion failed
  */
 static int
 link_status_to_number(const char *str, poe_link_status *p_val)
@@ -301,7 +301,7 @@ link_status_to_number(const char *str, poe_link_status *p_val)
     {
         ERROR("Failed to convert string '%s' to number",
                           str);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     if ((val != POE_LINK_DOWN) && (val != POE_LINK_UP))
@@ -363,7 +363,7 @@ port_speed_to_string(poe_port_speed speed)
  *                      other            - unknown
  *
  * @retval 0        - success
- * @retval EINVAL   - conversion failed
+ * @retval TE_EINVAL   - conversion failed
  */
 static int
 port_speed_to_number(const char *str, poe_port_speed *p_val)
@@ -394,7 +394,7 @@ port_speed_to_number(const char *str, poe_port_speed *p_val)
     {
         ERROR("Failed to convert string '%s' to number",
                           str);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     if ((val != POE_SPEED_10) && (val != POE_SPEED_100) &&
@@ -452,7 +452,7 @@ duplexity_type_to_string(poe_duplexity_type duplexity)
  *                      other            - unknown
  *
  * @retval 0        - success
- * @retval EINVAL   - conversion failed
+ * @retval TE_EINVAL   - conversion failed
  */
 static int
 duplexity_type_to_number(const char *str, poe_port_clocks *p_val)
@@ -478,7 +478,7 @@ duplexity_type_to_number(const char *str, poe_port_clocks *p_val)
     {
         ERROR("Failed to convert string '%s' to number",
                           str);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     if ((val != POE_HALF_DUPLEX) && (val != POE_FULL_DUPLEX))
@@ -540,7 +540,7 @@ port_clocks_to_string(poe_port_clocks clocks)
  *                      other       - unknown
  *
  * @retval 0        - success
- * @retval EINVAL   - conversion failed
+ * @retval TE_EINVAL   - conversion failed
  */
 static int
 port_clocks_to_number(const char *str, poe_port_clocks *p_val)
@@ -571,7 +571,7 @@ port_clocks_to_number(const char *str, poe_port_clocks *p_val)
     {
         ERROR("Failed to convert string '%s' to number",
                           str);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     if ((val != POE_MASTER) && (val != POE_SLAVE) && (val != POE_AUTO))
@@ -641,7 +641,7 @@ update_poe_ports(unsigned int gid)
             n_poe_ports = poe_global_data.number_of_ports;
             poe_ports = (poe_port *)malloc(sizeof(poe_port) * n_poe_ports);
             if (poe_ports == NULL)
-                return TE_RC(TE_TA_SWITCH_CTL, ENOMEM);
+                return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
         }
         
         rc = poe_port_read_table(poe_ports, error_string);
@@ -667,8 +667,8 @@ update_poe_ports(unsigned int gid)
  *
  * @return Status code.
  * @retval 0        - success
- * @retval ENOENT   - no match port found
- * @retval EINVAL   - invalid argument
+ * @retval TE_ENOENT   - no match port found
+ * @retval TE_EINVAL   - invalid argument
  * @retval other    - PoE library call return code
  */
 static int
@@ -681,12 +681,12 @@ find_port(unsigned int gid, const char *pid_str, poe_port **p_port)
     if (p_port == NULL)
     {
         ERROR("Invalid location for port pointer");
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     if (pid_str == NULL)
     {
         ERROR("NULL pointer to port ID string");
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     pid = strtol(pid_str, &end, 10);
@@ -694,7 +694,7 @@ find_port(unsigned int gid, const char *pid_str, poe_port **p_port)
     {
         ERROR("Conversion of port ID from string '%s' "
                           "failed", pid_str);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     CHECK_RC(update_poe_global(gid));
@@ -707,7 +707,7 @@ find_port(unsigned int gid, const char *pid_str, poe_port **p_port)
 
     if (i == poe_global_data.number_of_ports)
     {
-        return TE_RC(TE_TA_SWITCH_CTL, ENOENT);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
     }
     else
     {
@@ -781,7 +781,7 @@ get_number_of_ports(unsigned int gid, const char *oid, char *value)
  *
  * @return Status code
  * @retval 0        - success
- * @retval ENOMEM   - cannot allocate memory
+ * @retval TE_ENOMEM   - cannot allocate memory
  */
 static int
 list_ports(unsigned int gid, const char *oid, char **list)
@@ -802,7 +802,7 @@ list_ports(unsigned int gid, const char *oid, char **list)
     if (*list == NULL)
     {
         ERROR("Failed to allocate %u octets", str_len);
-        return TE_RC(TE_TA_SWITCH_CTL, ENOMEM);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
     }
     else
     {
@@ -1199,12 +1199,12 @@ port_set_mtu(unsigned int gid, const char *oid, const char *value,
     {
         ERROR("Failed to convert string '%s' to number",
                           value);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     if (mtu < 0)
     {
         ERROR("Invalid MTU value %d", mtu);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     CHECK_RC(find_port(gid, pid_str, &port));
@@ -1320,7 +1320,7 @@ port_set_untagged_priority(unsigned int gid, const char *oid,
     if (*value > '7' || *value < '0' || 
         (*(value + 1) != ' ' && *(value + 1) != 0))
     {
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
         
     port->cos.untagged_prio = *value - '0';
@@ -1514,7 +1514,7 @@ set_a_time(unsigned int gid, const char *oid, const char *value)
     if (value == NULL || *value == '\0' ||
         (a_time = strtol(value, &end_ptr, 10), *end_ptr != '\0'))
     {
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     CHECK_RC(update_poe_global(gid));
@@ -1579,7 +1579,7 @@ cos_set(unsigned int gid, const char *oid, char *value)
     UNUSED(oid);
     
     if (*value != '1' && *value != '2' && *value != '4')
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
 
     if (update_poe_global(gid) != 0)
     {
@@ -1657,7 +1657,7 @@ arl_cache_update(unsigned int gid)
  * @param arl_entry  - Location for the parsed fields
  *
  * @return Status of the operation
- * @retval EINVAL - Invalid format of the instance name
+ * @retval TE_EINVAL - Invalid format of the instance name
  * @retval 0      - It's all right.
  */
 static int
@@ -1674,14 +1674,14 @@ arl_parse_inst_name(const char *inst_name, poe_arl *arl_entry)
     if (inst_name == end || *end != '.' ||
         (entry_type != 1 && entry_type != 0))
     {
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     arl_entry->is_static = (te_bool)entry_type;
     inst_name = end + 1;
 
     arl_entry->port = (poe_pid)strtol(inst_name, &end, 10);
     if (inst_name == end || *end != '.') 
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
 
     inst_name = end + 1;
 
@@ -1690,7 +1690,7 @@ arl_parse_inst_name(const char *inst_name, poe_arl *arl_entry)
                addr + 3, addr + 4, addr + 5) != 6)
     {
         ERROR("Instance name - bad format");
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     for (i = 0; i < sizeof(addr) / sizeof(addr[0]); i++)
     {
@@ -1700,14 +1700,14 @@ arl_parse_inst_name(const char *inst_name, poe_arl *arl_entry)
     if ((vlan_name = strchr(inst_name, '.')) == NULL)
     {
         ERROR("Instance name - bad format");
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     vlan_name++;
 
     if (strlen(vlan_name) >= sizeof(arl_entry->vlan))
     {
         ERROR("VLAN name is too long");
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     strcpy(arl_entry->vlan, vlan_name);
 
@@ -1723,7 +1723,7 @@ arl_parse_inst_name(const char *inst_name, poe_arl *arl_entry)
  * @param arl_entry   - Location for the ARL entry (OUT)
  *
  * @return Status of the operation
- * @retval ENOENT  There is no ARL entry with requested instance name
+ * @retval TE_ENOENT  There is no ARL entry with requested instance name
  * @retval 0       An entry successfully found
  */
 static int
@@ -1749,7 +1749,7 @@ arl_entry_find(unsigned int gid, const char *inst_name, poe_arl **arl_entry)
 
     if (i == arl_table_num)
     {
-        return TE_RC(TE_TA_SWITCH_CTL, ENOENT);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
     }
 
     return 0;
@@ -1965,7 +1965,7 @@ arl_del_entry(unsigned int gid, const char *oid,
  *
  * @return Status code
  * @retval 0        - success
- * @retval ENOMEM   - cannot allocate memory
+ * @retval TE_ENOMEM   - cannot allocate memory
  */
 static int
 arl_list(unsigned int gid, const char *oid, char **list)
@@ -1990,7 +1990,7 @@ arl_list(unsigned int gid, const char *oid, char **list)
         str_len += (2 + 4 + 6 * 3 + strlen(arl_table[i].vlan) + 1);
     }
     if ((*list = (char *)malloc(str_len)) == NULL)
-        return TE_RC(TE_TA_SWITCH_CTL, ENOMEM);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
 
     (*list)[0] = '\0';
 
@@ -2193,9 +2193,9 @@ stp_cache_update(unsigned int gid)
  * @param entry    - Location for entry found (OUT)
  *
  * @return Status of the operation
- * @retval ENOENT   There is no STP port entry corresponding specified
+ * @retval TE_ENOENT   There is no STP port entry corresponding specified
  *                  port id
- * @retval EINVAL   Format of port id is incorrect (not a number)
+ * @retval TE_EINVAL   Format of port id is incorrect (not a number)
  * @retval 0        STP port entry successfully found
  */
 static int
@@ -2208,14 +2208,14 @@ stp_port_entry_find(unsigned int gid, const char *port_id,
     int       i;
 
     if (port_id == NULL)
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
 
     tmp_pid = strtol(port_id, &end_ptr, 10);
     if (*port_id == '\0' || *end_ptr != '\0' || tmp_pid < 0 || tmp_pid > 50)
     {
         ERROR("Invalid format of value of the Port ID: %s",
                    port_id);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     pid = (poe_pid)tmp_pid;
 
@@ -2248,7 +2248,7 @@ stp_port_entry_find(unsigned int gid, const char *port_id,
             }
         }
         
-        return TE_RC(TE_TA_SWITCH_CTL, ENOENT);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
     }
 
     return 0;
@@ -2258,7 +2258,7 @@ stp_port_entry_find(unsigned int gid, const char *port_id,
     do {                                                               \
         CHECK_RC(stp_port_entry_find(_gid, _port_num, (_port_entry))); \
         if (!stp_port_entry_committed(*(_port_entry)))                 \
-            return TE_RC(TE_TA_SWITCH_CTL, ENOENT);                    \
+            return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);                    \
     } while (0)
 
 /**
@@ -2992,7 +2992,7 @@ stp_set_port_path_cost(unsigned int gid, const char *oid, const char *value,
     if (new_path_cost < 0 || *end_ptr != '\0')
     {
         ERROR("Invalid format for Path Cost value: %s", value);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     stp_port_entry->path_cost = (unsigned long)new_path_cost;
@@ -3062,7 +3062,7 @@ stp_set_port_prio(unsigned int gid, const char *oid, const char *value,
     if (new_prio < 0 || *end_ptr != '\0')
     {
         ERROR("Invalid format for Port Priority value: %s", value);
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     
     stp_port_entry->prio = (unsigned long)new_prio;
@@ -3101,7 +3101,7 @@ stp_add_port(unsigned int gid, const char *oid, const char *value,
                gid, oid, value, stp_name, port_num);
 
     rc = stp_port_entry_find(gid, port_num, &stp_port_entry);
-    if (TE_RC_GET_ERROR(rc) != ENOENT)
+    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
         return ((rc == 0) ? TE_RC(TE_TA_SWITCH_CTL, EEXIST) : rc);
 
     if ((stp_port_entry = local_stp_port_entry_new()) == NULL)
@@ -3148,7 +3148,7 @@ stp_del_port(unsigned int gid, const char *oid,
         {
             ERROR("Cannot delete STP port entry from the NUT: %s",
                        error_string);
-            return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
         }
     }
     else
@@ -3169,7 +3169,7 @@ stp_del_port(unsigned int gid, const char *oid,
  *
  * @return Status code
  * @retval 0        - success
- * @retval ENOMEM   - cannot allocate memory
+ * @retval TE_ENOMEM   - cannot allocate memory
  */
 static int
 stp_port_list(unsigned int gid, const char *oid, char **list)
@@ -3189,7 +3189,7 @@ stp_port_list(unsigned int gid, const char *oid, char **list)
     
     if ((*list = (char *)malloc(mem_len)) == NULL)
     {
-        return TE_RC(TE_TA_SWITCH_CTL, ENOMEM);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
     }
 
     for (**list = '\0', cur_len = 0, i = 0; i < stp_port_table_num; i++)
@@ -3300,7 +3300,7 @@ find_vlan(char *vid, poe_vlan *vlan)
     {
         tag = strtol(vid, &tmp, 10);
         if (tmp == vid || *tmp != 0 || tag > 0xFFFF)
-            return TE_RC(TE_TA_SWITCH_CTL, ENOENT);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
     }
         
     if (poe_vlan_read_table(&table, &num, error_string) < 0)
@@ -3320,7 +3320,7 @@ find_vlan(char *vid, poe_vlan *vlan)
         }
     }
     free_vlan_table(table, num);
-    return TE_RC(TE_TA_SWITCH_CTL, ENOENT);
+    return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
 }
 
 /**
@@ -3385,7 +3385,7 @@ vlan_set(int gid, char *oid, char *value, char *vid)
             break;
          
         default:
-            return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
     rc = poe_vlan_update(&vlan, error_string);
@@ -3424,7 +3424,7 @@ vlan_add(int gid, char *oid, char *value, char *vid)
     
     tag = strtol(vid, &tmp, 10);
     if (tmp == value || *tmp != 0 || tag > 0xFFFF)
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
         
     sprintf(vlan.name, "%d", tag);
     vlan.id = tag;
@@ -3442,10 +3442,10 @@ vlan_add(int gid, char *oid, char *value, char *vid)
             break;
          
         default:
-            return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
     if (*value != '0' && *value != '1')
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
         
     if (poe_vlan_create(&vlan, error_string) < 0)
     {
@@ -3477,7 +3477,7 @@ vlan_del(int gid, char *oid, char *vid)
     
     tag = strtol(vid, &tmp, 10);
     if (tmp == vid || *tmp != 0 || tag > 0xFFFF)
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
         
     sprintf(name, "%d", tag);
         
@@ -3524,7 +3524,7 @@ vlan_list(int gid, char *oid, char **list)
     if ((*list = (char *)calloc(1, len)) == NULL)
     {
         free_vlan_table(table, num);
-        return TE_RC(TE_TA_SWITCH_CTL, ENOMEM);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
     }
     
     tmp = *list;
@@ -3573,7 +3573,7 @@ vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
     
     port = strtol(p, &tmp, 10);
     if (tmp == p || *tmp != 0 || port > 0xFF)
-        return TE_RC(TE_TA_SWITCH_CTL, ENOENT);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
         
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
@@ -3582,7 +3582,7 @@ vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
                                    sizeof(poe_pid))) == NULL)
     {
         free(vlan.ports);
-        return TE_RC(TE_TA_SWITCH_CTL, ENOMEM);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
     }
     
     for (i = 0; i < vlan.num_ports; i++)
@@ -3637,7 +3637,7 @@ vlan_port_del(int gid, char *oid, char *vid, char *p)
     
     port = strtol(p, &tmp, 10);
     if (tmp == p || *tmp != 0 || port > 0xFF)
-        return TE_RC(TE_TA_SWITCH_CTL, ENOENT);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
         
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
@@ -3651,7 +3651,7 @@ vlan_port_del(int gid, char *oid, char *vid, char *p)
     if (i == k)
     {
         free(vlan.ports);
-        return TE_RC(TE_TA_SWITCH_CTL, ENOENT);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOENT);
     }
     vlan.num_ports--;
 
@@ -3698,7 +3698,7 @@ vlan_port_list(int gid, char *oid, char **list, char *vid)
     if (*list == NULL)
     {
         free(vlan.ports);
-        return TE_RC(TE_TA_SWITCH_CTL, ENOMEM);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
     }
 
     tmp = *list;
@@ -3779,7 +3779,7 @@ vlan_ip_set(int gid, char *oid, char *value, char *vid)
     strcpy(ipif.vlan, vid);
     
     if (inet_aton(value, &(ipif.addr)) == 0)
-        return TE_RC(TE_TA_SWITCH_CTL, EINVAL);
+        return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
      
     if (ipif.addr.s_addr == 0)
     {

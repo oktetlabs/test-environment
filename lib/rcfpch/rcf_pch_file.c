@@ -100,7 +100,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         if (op == RCFOP_FDEL)
         {
             ERROR("File delete operation for memory file");
-            rc = EPERM;
+            rc = TE_EPERM;
             goto reject;
         }
 
@@ -225,7 +225,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             {
                 VERB("cannot create directory '%s'",
                                   RCF_FILE_TMP_DEF_DIR);
-                rc = ENOENT;
+                rc = TE_ENOENT;
                 goto reject;
             }
         }
@@ -237,7 +237,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         sprintf(fname, RCF_FILE_TMP_DEF_DIR "%s", 
                 filename + strlen(RCF_FILE_TMP_PREFIX));
 #else
-        rc = ENOENT;
+        rc = TE_ENOENT;
         goto reject;
 #endif
     }
@@ -267,7 +267,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
     if (fd < 0)
     {
         ERROR("failed to open file '%s'", fname);
-        rc = ENOENT;
+        rc = TE_ENOENT;
         goto reject;
     }
 

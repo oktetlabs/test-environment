@@ -250,7 +250,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
                 else
                 {
                     ERROR("Invalid IPv4 address - unknown class");
-                    return EINVAL;
+                    return TE_EINVAL;
                 }
             }
 

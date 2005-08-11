@@ -238,7 +238,7 @@ iscsi_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
 
     if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
     {
-        csap_descr->last_errno = ENOMEM;
+        csap_descr->last_errno = TE_ENOMEM;
         return -1;
     }
     send_pkt->buffer = malloc(buf_len);
@@ -337,7 +337,7 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     
     if ((iscsi_spec_data = calloc(1, sizeof(iscsi_csap_specific_data_t)))
         == NULL)
-        return ENOMEM; 
+        return TE_ENOMEM; 
 
     csap_descr->layers[layer].specific_data = iscsi_spec_data;
     csap_descr->layers[layer].get_param_cb = iscsi_get_param_cb;
@@ -485,7 +485,7 @@ iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
 
     if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
     {
-        csap_descr->last_errno = ENOMEM;
+        csap_descr->last_errno = TE_ENOMEM;
         return -1;
     }
     send_pkt->buffer = malloc(buf_len);

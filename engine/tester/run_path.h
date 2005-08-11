@@ -65,7 +65,7 @@ typedef struct tester_run_path {
  *
  * @return Status code.
  * @retval 0        Success.
- * @retval ENOMEM   Memory allocation failure.
+ * @retval TE_ENOMEM   Memory allocation failure.
  */
 extern int tester_run_path_new(tester_run_path *root, char *path,
                                unsigned int flags);
@@ -97,7 +97,7 @@ struct tester_ctx;
  *
  * @return Status code.
  * @retval 0        The node is on run path
- * @retval ENOENT   The node is not on run path
+ * @retval TE_ENOENT   The node is not on run path
  */
 extern int tester_run_path_forward(struct tester_ctx *ctx,
                                    const char *name);
@@ -110,7 +110,7 @@ extern int tester_run_path_forward(struct tester_ctx *ctx,
  *
  * @return Status code.
  * @retval 0        The node is on run path with current parameters
- * @retval ENOENT   The node is not on run path
+ * @retval TE_ENOENT   The node is not on run path
  */
 extern int tester_run_path_params_match(struct tester_ctx *ctx,
                                         test_params *params);

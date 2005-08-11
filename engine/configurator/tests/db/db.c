@@ -53,8 +53,8 @@ static int current_inst_number;
  *
  * @return error code
  * @retval 0            success
- * @retval EINVAL       invalid identifier
- * @retval ENOMEM       malloc() failed
+ * @retval TE_EINVAL       invalid identifier
+ * @retval TE_ENOMEM       malloc() failed
  */
 static int
 parse_one_level(char *oid, char **next_level, char **sub_id,
@@ -68,12 +68,12 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
         if (strcmp(oid, "*") == 0)
         {
             if ((*sub_id = strdup("*")) == NULL)
-                return ENOMEM;
+                return TE_ENOMEM;
             *next_level = oid;
             return 0;
         }
         if (*oid++ != '/')
-           return EINVAL;
+           return TE_EINVAL;
 
         if ((*next_level = strchr(oid, '/')) == NULL)
         {
@@ -82,13 +82,13 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
         }
         **next_level = 0;
         if ((*sub_id = strdup(oid)) == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         **next_level = c;
 
         if ((strchr(*sub_id, '*') != NULL && strlen(*sub_id) > 1))
         {
             free(*sub_id);
-            return EINVAL;
+            return TE_EINVAL;
         }
 
         return 0;
@@ -97,18 +97,18 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
     if (strcmp(oid, "*:*") == 0)
     {
         if ((*sub_id = strdup("*")) == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         if ((*inst_name = strdup("*")) == NULL)
         {
             free(sub_id);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         *next_level = oid;
         return 0;
     }
 
     if (*oid != '/')
-        return EINVAL;
+        return TE_EINVAL;
 
     oid++;
 
@@ -124,25 +124,25 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
     {
         *tmp = 0;
         if ((*sub_id = strdup(oid)) == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         if ((*inst_name = strdup(tmp + 1)) == NULL)
         {
             free(sub_id);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         *tmp = ':';
     }
     else
     {
         if (strcmp(oid, "*") != 0)
-            return EINVAL;
+            return TE_EINVAL;
 
         if ((*sub_id = strdup("*")) == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         if ((*inst_name = strdup("*")) == NULL)
         {
             free(sub_id);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
     }
 
@@ -154,7 +154,7 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
     {
         free(*sub_id);
         free(*inst_name);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     return 0;
@@ -184,11 +184,11 @@ match_obj(const char *pattern, const char *oid)
     char *next_patt;
 
     if ((tmp_patt = strdup(pattern)) == NULL)
-        return -ENOMEM;    
+        return -TE_ENOMEM;    
     if ((tmp_oid = strdup(oid)) == NULL)
     {
         free(tmp_patt);
-        return -ENOMEM;
+        return -TE_ENOMEM;
     }
 
     curr_patt = tmp_patt;
@@ -203,7 +203,7 @@ match_obj(const char *pattern, const char *oid)
             if (patt_sub_id != NULL)
                 free(patt_sub_id);
             free(tmp_oid);
-            return -EINVAL;
+            return -TE_EINVAL;
         }
         if (parse_one_level(curr_level, &next_level, &oid_sub_id, NULL) != 0)
         {
@@ -213,7 +213,7 @@ match_obj(const char *pattern, const char *oid)
             if (oid_sub_id != NULL)
                 free(oid_sub_id);
             free(tmp_oid);
-            return -EINVAL;
+            return -TE_EINVAL;
         }
         
         if (*patt_sub_id != '*' && 
@@ -235,7 +235,7 @@ match_obj(const char *pattern, const char *oid)
         patt_sub_id = NULL;
     }
     if (curr_patt == NULL || curr_level == NULL)
-        return -EINVAL;
+        return -TE_EINVAL;
 
     if (strcmp(curr_patt, "") == 0 && strcmp(curr_level, "") == 0)
         return 1;
@@ -269,11 +269,11 @@ match_inst(const char *pattern, const char *oid)
     char *next_patt;
 
     if ((tmp_patt = strdup(pattern)) == NULL)
-        return -ENOMEM;
+        return -TE_ENOMEM;
     if ((tmp_oid = strdup(oid)) == NULL)
     {
         free(tmp_patt);
-        return -ENOMEM;
+        return -TE_ENOMEM;
     }
 
     curr_patt = tmp_patt;
@@ -291,7 +291,7 @@ match_inst(const char *pattern, const char *oid)
                 free(patt_inst);
             free(tmp_patt);
             free(tmp_oid);
-            return -EINVAL;
+            return -TE_EINVAL;
         }
         if (parse_one_level(curr_level, &next_level, 
                             &oid_sub_id, &oid_inst) != 0)
@@ -306,7 +306,7 @@ match_inst(const char *pattern, const char *oid)
                 free(oid_inst);
             free(tmp_patt);
             free(tmp_oid);
-            return -EINVAL;
+            return -TE_EINVAL;
         }
         
         if (*patt_sub_id != '*' && 
@@ -337,7 +337,7 @@ match_inst(const char *pattern, const char *oid)
     {
         free(tmp_oid);
         free(tmp_patt);
-        return -EINVAL;
+        return -TE_EINVAL;
     }
 
     if (strcmp(curr_patt, "") == 0 && strcmp(curr_level, "") == 0)
@@ -367,12 +367,12 @@ db_add_object(char *oid)
     if (i == MAX_OBJECT_NUMBER)
     {
         ERROR("To many objects in the object list");
-        return -ENOMEM;
+        return -TE_ENOMEM;
     }
 
     obj = calloc(sizeof(object), 1);
     if (obj == NULL)
-        return -ENOMEM;
+        return -TE_ENOMEM;
 
     obj->sn = i;
     strcpy(obj->id, oid);
@@ -399,12 +399,12 @@ db_add_instance(char *oid, char *value)
     if (i == MAX_INSTANCE_NUMBER)
     {
         ERROR("To many instances in the instances list");
-        return -ENOMEM;
+        return -TE_ENOMEM;
     }
 
     inst = calloc(sizeof(instance), 1);
     if (inst == NULL)
-        return -ENOMEM;
+        return -TE_ENOMEM;
 
     inst->sn = i;
     strcpy(inst->id, oid);
@@ -433,7 +433,7 @@ db_set_inst(const char *oid, char *value)
         }
     }
 
-    return EINVAL;
+    return TE_EINVAL;
 
 }
 
@@ -459,7 +459,7 @@ db_del_obj(const char *oid)
         }
     }
 
-    return EINVAL;
+    return TE_EINVAL;
 }
 
 /**
@@ -484,7 +484,7 @@ db_del_inst(const char *oid)
         }
     }
 
-    return EINVAL;
+    return TE_EINVAL;
 }
 
 /**
@@ -526,7 +526,7 @@ db_get_obj(const char *oid, char **answer)
     int   ans_buffer_len = BASE_ANSWER_SIZE;
 
     if (ans == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     for (i = 0; i < MAX_OBJECT_NUMBER; i++)
     {
@@ -540,7 +540,7 @@ db_get_obj(const char *oid, char **answer)
                 if (tmp == NULL)
                 {
                     ans_len -= strlen(object_list[i]->id + 1);
-                    return ENOMEM;
+                    return TE_ENOMEM;
                 }
                 ans_buffer_len += BASE_ANSWER_SIZE;
             }
@@ -567,7 +567,7 @@ db_get_inst(const char *oid, char **answer)
     int   ans_buffer_len = BASE_ANSWER_SIZE;
 
     if (ans == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     for (i = 0; i < MAX_INSTANCE_NUMBER; i++)
     {
@@ -583,7 +583,7 @@ db_get_inst(const char *oid, char **answer)
                 {
                     ans_len -= strlen(instance_list[i]->id + 1) +
                                strlen(instance_list[i]->val);
-                    return ENOMEM;
+                    return TE_ENOMEM;
                 }
                 ans_buffer_len += BASE_ANSWER_SIZE;
             }
@@ -617,13 +617,13 @@ db_get(const char *oid, char **answer, int *length)
             int   ans_buffer_len = BASE_ANSWER_SIZE;
             
             if (tmp == NULL)
-                return ENOMEM;
+                return TE_ENOMEM;
 
             ans = calloc(BASE_ANSWER_SIZE, 1);
             if (ans == NULL)
             {
                 free(tmp);
-                return ENOMEM;
+                return TE_ENOMEM;
             }
             
             c = strrchr(tmp, '/');
@@ -631,7 +631,7 @@ db_get(const char *oid, char **answer, int *length)
             {
                 free(tmp);
                 free(ans);
-                return EINVAL;
+                return TE_EINVAL;
             }
             
             *c = 0;
@@ -651,7 +651,7 @@ db_get(const char *oid, char **answer, int *length)
                         {
                             ans_len += strlen(instance_list[i]->id + 1);
                             *c = '/';
-                            return ENOMEM;
+                            return TE_ENOMEM;
                         }
                         ans_buffer_len += BASE_ANSWER_SIZE;
                     }
@@ -680,7 +680,7 @@ db_get(const char *oid, char **answer, int *length)
                 {
                     *answer = strdup(object_list[i]->id);
                     if (*answer == NULL)
-                        return ENOMEM;
+                        return TE_ENOMEM;
                     break;
                 }
             }
@@ -694,7 +694,7 @@ db_get(const char *oid, char **answer, int *length)
                 {
                     *answer = strdup(instance_list[i]->val);
                     if (*answer == NULL)
-                        return ENOMEM;
+                        return TE_ENOMEM;
                     break;
                 }
             }
@@ -740,11 +740,11 @@ db_init(char *db_file_name)
         char *val = calloc(MAX_NAME_LENGTH, 1);
 
         if (buf == NULL || val == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
 
         file_db = fopen(db_file_name, "r");
         if (file_db == NULL)
-            return EINVAL;
+            return TE_EINVAL;
 
         /*
          * reading objects database from the database file

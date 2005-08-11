@@ -59,7 +59,7 @@ tapi_cfg_dhcps_add_subnet(const char            *ta,
     if (ta == NULL || subnet == NULL)
     {
         ERROR("%s(): Invalid argument", __FUNCTION__);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     rc = cfg_types[CVT_ADDRESS].val2str(
@@ -107,7 +107,7 @@ tapi_cfg_dhcps_add_host(const char            *ta,
         (client_id != NULL && client_id_len != -1 && client_id_len <= 0))
     {
         ERROR("%s(): Invalid argument", __FUNCTION__);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     /* Generate unique name */

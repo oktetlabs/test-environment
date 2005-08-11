@@ -137,7 +137,7 @@ TAILQ_HEAD(ipc_datagrams, ipc_datagram);
  *
  * @return Status code.
  * @retval 0        - success
- * @retval ENOMEM   - memory allocation failure
+ * @retval TE_ENOMEM   - memory allocation failure
  */
 extern int ipc_remember_datagram(struct ipc_datagrams *p_pool,
                                  void *data, size_t len,

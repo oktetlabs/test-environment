@@ -164,15 +164,15 @@ cfg_dh_process_add(xmlNodePtr node)
            xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
     {
         if ((oid = xmlGetProp_exp(node, (const xmlChar *)"oid")) == NULL)
-            RETERR(EINVAL, "Incorrect add command format");
+            RETERR(TE_EINVAL, "Incorrect add command format");
 
         if ((obj = cfg_get_object(oid)) == NULL)
-            RETERR(EINVAL, "Cannot find object for instance %s", oid);
+            RETERR(TE_EINVAL, "Cannot find object for instance %s", oid);
         
         len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE + 
               strlen(oid) + 1;
         if ((msg = (cfg_add_msg *)calloc(1, len)) == NULL)
-            RETERR(ENOMEM, "Cannot allocate memory");
+            RETERR(TE_ENOMEM, "Cannot allocate memory");
         
         msg->type = CFG_ADD;
         msg->len = sizeof(cfg_add_msg);
@@ -181,10 +181,10 @@ cfg_dh_process_add(xmlNodePtr node)
         
         val_s = xmlGetProp_exp(node, (const xmlChar *)"value");
         if (val_s != NULL && strlen(val_s) >= CFG_MAX_INST_VALUE)
-            RETERR(ENOMEM, "Too long value");
+            RETERR(TE_ENOMEM, "Too long value");
             
         if (obj->type == CVT_NONE && val_s != NULL)
-            RETERR(EINVAL, "Value is prohibited for %s", oid);
+            RETERR(TE_EINVAL, "Value is prohibited for %s", oid);
             
         if (val_s == NULL)
             msg->val_type = CVT_NONE; /* Default will be assigned */ 
@@ -216,7 +216,7 @@ cfg_dh_process_add(xmlNodePtr node)
         node = xmlNodeNext(node);
     }
     if (node != NULL)
-        RETERR(EINVAL, "Incorrect add command format");
+        RETERR(TE_EINVAL, "Incorrect add command format");
 
     return 0;
 }
@@ -270,11 +270,11 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 continue;
 
             if ((attr = xmlGetProp(cmd, (const xmlChar *)"ta")) == NULL)
-                RETERR(EINVAL, "Incorrect reboot command format");
+                RETERR(TE_EINVAL, "Incorrect reboot command format");
 
             if ((msg = (cfg_reboot_msg *)calloc(1, sizeof(*msg) + 
                                                 strlen(attr) + 1)) == NULL)
-                RETERR(ENOMEM, "Cannot allocate memory");
+                RETERR(TE_ENOMEM, "Cannot allocate memory");
             
             msg->type = CFG_REBOOT;
             msg->len = sizeof(*msg) + strlen(attr) + 1;
@@ -297,7 +297,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             xmlStrcmp(cmd->name , (const xmlChar *)"delete") != 0)
         {
             ERROR("Unknown command %s", cmd->name);
-            return EINVAL;
+            return TE_EINVAL;
         }
         
         if (xmlStrcmp(cmd->name , (const xmlChar *)"register") == 0)
@@ -311,7 +311,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                    xmlStrcmp(tmp->name , (const xmlChar *)"object") == 0)
             {
                 if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
-                    RETERR(EINVAL, "Incorrect %s command format",
+                    RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 
                 val_s = xmlGetProp(tmp, (const xmlChar *)"default");
@@ -320,7 +320,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                       (val_s == NULL ? 0 : strlen(val_s) + 1);
                       
                 if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
-                    RETERR(ENOMEM, "Cannot allocate memory");
+                    RETERR(TE_ENOMEM, "Cannot allocate memory");
                 
                 msg->type = CFG_REGISTER;
                 msg->len = len;
@@ -345,7 +345,8 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     else if (strcmp(attr, "string") == 0)
                         msg->val_type = CVT_STRING;
                     else if (strcmp(attr, "none") != 0)
-                        RETERR(EINVAL, "Unsupported object type %s", attr);
+                        RETERR(TE_EINVAL, "Unsupported object type %s",
+                               attr);
                     xmlFree(attr);
                     attr = NULL;
                 }
@@ -355,7 +356,8 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     cfg_inst_val val;
                     
                     if (cfg_types[msg->val_type].str2val(val_s, &val) != 0)
-                        RETERR(EINVAL, "Incorrect default value %s", val_s);
+                        RETERR(TE_EINVAL, "Incorrect default value %s",
+                               val_s);
                     
                     cfg_types[msg->val_type].free(val);
                 }
@@ -368,7 +370,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     else if (strcmp(attr, "read_only") == 0)
                         msg->access = CFG_READ_ONLY;
                     else if (strcmp(attr, "read_create") != 0)
-                        RETERR(EINVAL, 
+                        RETERR(TE_EINVAL, 
                                "Wrong value %s of 'access' attribute",
                                attr);
                     xmlFree(attr);
@@ -390,7 +392,8 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 tmp = xmlNodeNext(tmp);
             }
             if (tmp != NULL)
-                RETERR(EINVAL, "Unexpected node '%s' in register command",
+                RETERR(TE_EINVAL,
+                       "Unexpected node '%s' in register command",
                        tmp->name);
         }
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"add") == 0)
@@ -419,18 +422,18 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                    xmlStrcmp(tmp->name , (const xmlChar *)"instance") == 0)
             {
                 if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
-                    RETERR(EINVAL, "Incorrect %s command format",
+                    RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 
                 if ((rc = cfg_db_find(oid, &handle)) != 0)
-                    RETERR(ENOENT, "Cannot find instance %s", oid);
+                    RETERR(TE_ENOENT, "Cannot find instance %s", oid);
                 
                 if (!CFG_IS_INST(handle))
-                    RETERR(EINVAL,"OID %s is not instance", oid);
+                    RETERR(TE_EINVAL,"OID %s is not instance", oid);
                 
                 len = sizeof(cfg_set_msg) + CFG_MAX_INST_VALUE;
                 if ((msg = (cfg_set_msg *)calloc(1, len)) == NULL)
-                    RETERR(ENOMEM, "Cannot allocate memory");
+                    RETERR(TE_ENOMEM, "Cannot allocate memory");
                 
                 msg->handle = handle;
                 msg->type = CFG_SET;
@@ -440,11 +443,11 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 msg->val_type = obj->type;
                 
                 if (obj->type == CVT_NONE)
-                    RETERR(EINVAL, "Cannot perform set for %s", oid);
+                    RETERR(TE_EINVAL, "Cannot perform set for %s", oid);
 
                 val_s = xmlGetProp_exp(tmp, (const xmlChar *)"value");
                 if (val_s == NULL)
-                    RETERR(EINVAL, "Value is required for %s", oid);
+                    RETERR(TE_EINVAL, "Value is required for %s", oid);
                 
                 if ((rc = cfg_types[obj->type].str2val(val_s, &val)) != 0)
                     RETERR(rc, "Value conversion error for %s", oid);
@@ -467,7 +470,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 tmp = xmlNodeNext(tmp);
             }
             if (tmp != NULL)
-                RETERR(EINVAL, "Incorrect set command format");
+                RETERR(TE_EINVAL, "Incorrect set command format");
         } 
         else if (xmlStrcmp(cmd->name , (const xmlChar *)"delete") == 0)
         {
@@ -481,17 +484,17 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                    xmlStrcmp(tmp->name , (const xmlChar *)"ta") == 0)
             {
                 if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
-                    RETERR(EINVAL, "Incorrect %s command format",
+                    RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 
                 if ((rc = cfg_db_find(oid, &handle)) != 0)
                     RETERR(rc, "Cannot find instance %s", oid);
                 
                 if (!CFG_IS_INST(handle))
-                    RETERR(EINVAL, "OID %s is not instance", oid);
+                    RETERR(TE_EINVAL, "OID %s is not instance", oid);
                 
                 if ((msg = (cfg_del_msg *)calloc(1, sizeof(*msg))) == NULL)
-                    RETERR(ENOMEM, "Cannot allocate memory");
+                    RETERR(TE_ENOMEM, "Cannot allocate memory");
                 
                 msg->type = CFG_DEL;
                 msg->len = sizeof(*msg);
@@ -511,7 +514,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 tmp = xmlNodeNext(tmp);
             }
             if (tmp != NULL)
-                RETERR(EINVAL, "Incorrect delete command format");
+                RETERR(TE_EINVAL, "Incorrect delete command format");
         } 
         else
         {
@@ -658,12 +661,12 @@ cfg_dh_attach_backup(char *filename)
         return 0;
         
     if ((tmp = (cfg_backup *)malloc(sizeof(*tmp))) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
         
     if ((tmp->filename = strdup(filename)) == NULL)
     {
         free(tmp);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     
     tmp->next = last->backup;
@@ -698,7 +701,7 @@ has_backup(cfg_dh_entry *entry, char *filename)
  * @param filename      name of the backup file
  *
  * @return status code (see te_errno.h)
- * @retval ENOENT       there is not command in dynamic history to which
+ * @retval TE_ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached
  */
 int 
@@ -723,7 +726,7 @@ cfg_dh_restore_backup(char *filename)
         if (limit == NULL)
         {
             ERROR("Position of the backup in dynamic history is not found");
-            return ENOENT;
+            return TE_ENOENT;
         }
     }
     
@@ -749,7 +752,7 @@ cfg_dh_restore_backup(char *filename)
                
                 if (rc != 0)
                 {
-                    if (rc != ENOENT)
+                    if (rc != TE_ENOENT)
                     {
                         ERROR("%s(): cfg_db_find() failed: 0x%X", 
                               __FUNCTION__, rc);
@@ -777,7 +780,7 @@ cfg_dh_restore_backup(char *filename)
                 if (msg == NULL)
                 {
                     ERROR("calloc() failed");
-                    return ENOMEM;
+                    return TE_ENOMEM;
                 }
                     
                 if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0) 
@@ -815,7 +818,7 @@ cfg_dh_restore_backup(char *filename)
                 if (msg == NULL)
                 {
                     ERROR("calloc() failed");
-                    return ENOMEM;
+                    return TE_ENOMEM;
                 }
                     
                 msg->type = CFG_ADD;
@@ -856,9 +859,10 @@ cfg_dh_restore_backup(char *filename)
  * @param msg   message with set, add or delete user request.
  *
  * @return status code
- * @retval 0        success
- * @retval ENOMEM   cannot allocate memory
- * @retval EINVAL   bad message or message, which should not be in history
+ * @retval 0            success
+ * @retval TE_ENOMEM    cannot allocate memory
+ * @retval TE_EINVAL    bad message or message, which should not be in
+ *                      history
  */
 int 
 cfg_dh_add_command(cfg_msg *msg)
@@ -868,14 +872,14 @@ cfg_dh_add_command(cfg_msg *msg)
     if (entry == NULL)
     {
         ERROR("Memory allocation failure");
-        return ENOMEM;
+        return TE_ENOMEM;
     }
         
     if ((entry->cmd = (cfg_msg *)calloc(msg->len, 1)) == NULL)
     {
         ERROR("Memory allocation failure");
         free(entry);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     
     memcpy(entry->cmd, msg, msg->len);
@@ -910,7 +914,7 @@ cfg_dh_add_command(cfg_msg *msg)
             {
                 ERROR("Failed to get instance by handle 0x%08x",
                       ((cfg_del_msg *)msg)->handle);
-                RETERR(ENOENT);
+                RETERR(TE_ENOENT);
             }
 
             entry->type = inst->obj->type;
@@ -918,17 +922,17 @@ cfg_dh_add_command(cfg_msg *msg)
             if (inst->obj->type != CVT_NONE)
                 if (cfg_types[inst->obj->type].copy(inst->val, 
                                                     &(entry->old_val)) != 0)
-                    RETERR(ENOMEM);
+                    RETERR(TE_ENOMEM);
                     
             if ((entry->old_oid = strdup(inst->oid)) == NULL)
-                RETERR(ENOMEM);
+                RETERR(TE_ENOMEM);
                     
             break;
         }
             
         default:
             /* Should not occur */
-            RETERR(EINVAL);
+            RETERR(TE_EINVAL);
     }
     
     if (first == NULL)

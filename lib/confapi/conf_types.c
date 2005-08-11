@@ -137,7 +137,7 @@ str2int(char *val_str, cfg_inst_val *val)
     ret_val = strtol(val_str, &invalid, 0);
     if (*invalid != '\0')
     {
-        return EINVAL;
+        return TE_EINVAL;
     }
     val->val_int = ret_val;
     return 0;
@@ -152,13 +152,13 @@ int2str(cfg_inst_val val, char **val_str)
     ret_val = snprintf(str, CFG_TP_MAX_BUF, "%d", val.val_int);
     if (ret_val < 1)
     {
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     *val_str = (char *)calloc(strlen(str) + 1, 1);
     if (*val_str == NULL)
     {
-        return EINVAL;
+        return TE_EINVAL;
     }
     memcpy((void *)(*val_str), str, strlen(str) + 1);
     return 0;
@@ -222,24 +222,24 @@ static int
 str2char(char *val_str, cfg_inst_val *val)
 {
     if (val_str == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
-    return (*(char **)val = strdup(val_str)) == NULL ? ENOMEM : 0;
+    return (*(char **)val = strdup(val_str)) == NULL ? TE_ENOMEM : 0;
 }
 
 static int 
 char2str(cfg_inst_val val, char **val_str)
 {
     if (val.val_str == NULL)
-        return EINVAL;
+        return TE_EINVAL;
         
-    return (*val_str = strdup(val.val_str)) == NULL ? ENOMEM : 0;
+    return (*val_str = strdup(val.val_str)) == NULL ? TE_ENOMEM : 0;
 }
 
 static int 
 str_def_val(cfg_inst_val *val)
 {
-    return (*(char **)val = strdup("")) == NULL ? ENOMEM : 0;
+    return (*(char **)val = strdup("")) == NULL ? TE_ENOMEM : 0;
 }
 
 static void
@@ -256,9 +256,9 @@ static int
 str_copy(cfg_inst_val src, cfg_inst_val *dst)
 {
     if (src.val_str == NULL)
-        return EINVAL;
+        return TE_EINVAL;
         
-    return (*(char **)dst = strdup(src.val_str)) == NULL ? ENOMEM : 0;
+    return (*(char **)dst = strdup(src.val_str)) == NULL ? TE_ENOMEM : 0;
 }
 
 static int
@@ -267,13 +267,13 @@ str_get(cfg_msg *msg, cfg_inst_val *val)
     char *msg_str;
 
     if (msg == NULL)
-         return EINVAL;
+         return TE_EINVAL;
 
     msg_str = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val_str :
               (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val_str :
               ((cfg_get_msg *)msg)->val_str;
 
-    return ((val->val_str = strdup(msg_str)) == NULL) ? ENOMEM : 0;
+    return ((val->val_str = strdup(msg_str)) == NULL) ? TE_ENOMEM : 0;
 }
 
 static void
@@ -318,7 +318,7 @@ str2addr(char *val_str, cfg_inst_val *val)
 {
     if (val_str == NULL)
     {
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     if (strchr(val_str, '.') != NULL)
@@ -328,12 +328,12 @@ str2addr(char *val_str, cfg_inst_val *val)
         
         addr = (struct sockaddr_in *)calloc(1, sizeof(*addr));
         if (addr == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         
         if (inet_pton(AF_INET, val_str, &(addr->sin_addr)) <= 0)
         {
             free(addr);
-            return EINVAL;
+            return TE_EINVAL;
         }
         addr->sin_family = AF_INET;
         val->val_addr = (struct sockaddr *)addr;
@@ -350,7 +350,7 @@ str2addr(char *val_str, cfg_inst_val *val)
         /* Probably IPv6 address */
         addr6 = (struct sockaddr_in6 *)calloc(1, sizeof(*addr6));
         if (addr6 == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         
         if (inet_pton(AF_INET6, val_str, &(addr6->sin6_addr)) > 0)
         {
@@ -372,7 +372,7 @@ str2addr(char *val_str, cfg_inst_val *val)
                    mac_addr_bytes + 4, mac_addr_bytes + 5, &c)
                 != MAC_ADDR_LEN)
         {
-            return EINVAL;
+            return TE_EINVAL;
         }
         for (i = 0; i < MAC_ADDR_LEN; i++)
         {
@@ -380,7 +380,7 @@ str2addr(char *val_str, cfg_inst_val *val)
         }    
 
         if ((addr = (struct sockaddr *)calloc(1, sizeof(*addr))) == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
             
         memcpy((void *)(addr->sa_data), (void *)(mac_addr), MAC_ADDR_LEN);
 
@@ -388,7 +388,7 @@ str2addr(char *val_str, cfg_inst_val *val)
         val->val_addr = (struct sockaddr *)addr;
     }
     else 
-        return EINVAL;
+        return TE_EINVAL;
 
     return 0;
 }
@@ -411,7 +411,7 @@ addr2str(cfg_inst_val val, char **val_str)
         ret_val = inet_ntop(af, (void *)&(addr->sin##add##_addr), \
                             val_buf, CFG_TP_MAX_BUF);             \
         if (ret_val == NULL) {                                    \
-            return EINVAL;                                        \
+            return TE_EINVAL;                                        \
         }                                                         \
     } while (0)    
         case AF_INET:
@@ -440,20 +440,20 @@ addr2str(cfg_inst_val val, char **val_str)
                             (unsigned int)mac[5]); 
             if (size != MAC_ADDR_STR_LEN)
             {
-                return EINVAL;
+                return TE_EINVAL;
             }               
             break;                           
         }    
         default:
         {
-            return EINVAL;
+            return TE_EINVAL;
         }
     }
     len = strlen(val_buf) + 1;
     *val_str = (char *)calloc(len, 1);
     if (*val_str == NULL)
     {
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     memcpy((void *)(*val_str), val_buf, len);
     return 0;
@@ -494,7 +494,7 @@ addr_copy(cfg_inst_val src, cfg_inst_val *dst)
         dst_addr = (struct sockaddr *)                       \
             calloc(1, sizeof(struct sockaddr##in##version)); \
         if (dst_addr == NULL) {                              \
-            return ENOMEM;                                   \
+            return TE_ENOMEM;                                   \
         }                                                    \
         memcpy((void *)(dst_addr), (void *)src_addr,         \
                sizeof(struct sockaddr##in##version));        \
@@ -517,7 +517,7 @@ addr_copy(cfg_inst_val src, cfg_inst_val *dst)
         }
         default:
         {
-            return EINVAL;
+            return TE_EINVAL;
         }
     }
     dst->val_addr = dst_addr;
@@ -533,7 +533,7 @@ addr_get(cfg_msg *msg, cfg_inst_val *val)
     
     if (msg == NULL)
     {
-        return EINVAL;
+        return TE_EINVAL;
     }
     msg_addr = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val_addr :
                (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val_addr :
@@ -547,7 +547,7 @@ addr_get(cfg_msg *msg, cfg_inst_val *val)
         addr = (struct sockaddr##in##version *)              \
             calloc(1, sizeof(struct sockaddr##in##version)); \
         if (addr == NULL) {                                  \
-            return ENOMEM;                                   \
+            return TE_ENOMEM;                                   \
         }                                                    \
         memcpy((void *)(addr), (void *)msg_addr,             \
                sizeof(struct sockaddr##in##version));        \
@@ -571,7 +571,7 @@ addr_get(cfg_msg *msg, cfg_inst_val *val)
         }
         default:
         {
-            return EINVAL;
+            return TE_EINVAL;
         }
     }
     return 0;
@@ -689,7 +689,7 @@ static int
 none_def_val(cfg_inst_val *val)
 {
     UNUSED(val);
-    return EINVAL;
+    return TE_EINVAL;
 }
 
 static void 

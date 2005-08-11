@@ -523,7 +523,7 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
             if (mem_ptr == NULL)
             {
                 free(parsed_ints);
-                return ENOMEM;
+                return TE_ENOMEM;
             }
             parsed_ints = mem_ptr;
         }
@@ -1774,7 +1774,7 @@ asn_save_to_file(const asn_value *value, const char *filename)
     {
         /* We need to close files - this comment is for "konst" */
         fclose(fp);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     memset(buffer, 0, len + 11);
     

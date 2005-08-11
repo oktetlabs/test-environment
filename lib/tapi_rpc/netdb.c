@@ -157,7 +157,7 @@ rpc_gethostbyname(rcf_rpc_server *rpcs, const char *name)
     if (RPC_IS_CALL_OK(rpcs) && out.res.res_val != NULL)
     {
         if ((res = hostent_rpc2h(out.res.res_val)) == NULL)
-            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
     }
 
     TAPI_RPC_LOG("RPC (%s,%s): gethostbyname(%s) -> %p (%s)",
@@ -198,7 +198,7 @@ rpc_gethostbyaddr(rcf_rpc_server *rpcs,
     if (RPC_IS_CALL_OK(rpcs) && out.res.res_val != NULL)
     {
         if ((res = hostent_rpc2h(out.res.res_val)) == NULL)
-            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
     }
 
     TAPI_RPC_LOG("RPC (%s,%s): gethostbyaddr(%p, %d, %d) -> %p (%s)",
@@ -320,7 +320,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
         if ((list = calloc(1, out.res.res_len * sizeof(*list) +
                            sizeof(int))) == NULL)
         {
-            rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
             RETVAL_INT(getaddrinfo, -1);
         }
         *(int *)list = out.mem_ptr;
@@ -336,7 +336,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
                     free(list[i].ai_canonname);
                 }
                 free((int *)list - 1);
-                rpcs->_errno = TE_RC(TE_RCF, ENOMEM);
+                rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
                 RETVAL_INT(getaddrinfo, -1);
             }
             list[i].ai_next = (i == (int)out.res.res_len - 1) ?

@@ -240,7 +240,7 @@ ip4_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     
     if (ip4_spec_data == NULL)
     {
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     
 
@@ -367,14 +367,14 @@ ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
     
     if (spec_data == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
 
     if (layer + 1 >= csap_descr->depth)
     {
         ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
               __FUNCTION__, csap_id, layer, csap_descr->depth);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     eth_spec_data = (eth_csap_specific_data_t *)

@@ -444,7 +444,7 @@ eth_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
    
     if (csap_descr == NULL)
     {
-        csap_descr->last_errno = EINVAL;
+        csap_descr->last_errno = TE_EINVAL;
         F_ERROR("%s: no csap descr", __FUNCTION__);
         return -1;
     }
@@ -458,7 +458,7 @@ eth_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     if(spec_data->out < 0)
     {
         F_ERROR("%s: no output socket", __FUNCTION__);
-        csap_descr->last_errno = EINVAL;
+        csap_descr->last_errno = TE_EINVAL;
         return -1;
     }
 
@@ -640,7 +640,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         val_len = asn_get_length(csap_nds, "");
         ERROR("%s(CSAP %d), layer %d, rc %X getting '%s', ndn has len %d", 
               __FUNCTION__, csap_id, layer, rc, str_index_buf, val_len);
-        return TE_RC(TE_TAD_CSAP, EINVAL);
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
     
@@ -660,7 +660,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 #ifdef TALOGDEBUG
         printf("Can't allocate memory for interface");
 #endif    
-        return TE_RC(TE_TAD_CSAP, ENOMEM);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
     
     if ((rc = eth_find_interface(device_id, iface_p)) != ETH_IFACE_OK)
@@ -694,7 +694,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     {
         free(iface_p);
         ERROR("Init, not memory for spec_data");
-        return TE_RC(TE_TAD_CSAP,  ENOMEM);
+        return TE_RC(TE_TAD_CSAP,  TE_ENOMEM);
     }
     
     eth_spec_data->in = -1;
@@ -734,7 +734,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         {
             free_eth_csap_data(eth_spec_data, ETH_COMPLETE_FREE);
             ERROR("Init, no mem");
-            return TE_RC(TE_TAD_CSAP, ENOMEM); 
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM); 
         }
         memcpy (eth_spec_data->remote_addr, remote_addr, ETH_ALEN);
     }
@@ -759,7 +759,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         {
             free_eth_csap_data(eth_spec_data,ETH_COMPLETE_FREE);
             ERROR("Init, no mem");
-            return TE_RC(TE_TAD_CSAP, ENOMEM); 
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM); 
         }
         memcpy (eth_spec_data->local_addr, local_addr, ETH_ALEN);
     }
@@ -898,7 +898,7 @@ eth_echo_method (csap_p csap_descr, uint8_t *pkt, size_t len)
     uint8_t tmp_buffer [10000]; 
 
     if (csap_descr == NULL || pkt == NULL || len == 0)
-        return EINVAL;
+        return TE_EINVAL;
 #if 1
     memcpy (tmp_buffer, pkt + ETH_ALEN, ETH_ALEN);
     memcpy (tmp_buffer + ETH_ALEN, pkt, ETH_ALEN);

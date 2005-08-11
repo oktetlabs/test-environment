@@ -969,7 +969,7 @@ extern int tapi_snmp_make_oid(const char *oid_str, tapi_snmp_oid_t *oid);
  *
  * @return Status of the operation
  * @retval 0       VarBind is found
- * @retval ENOENT  There is no required VarBind in the list
+ * @retval TE_ENOENT  There is no required VarBind in the list
  */
 extern int tapi_snmp_find_vb(const tapi_snmp_varbind_t *var_binds,
                              size_t num,

@@ -394,7 +394,7 @@ tad_report_packet( asn_value_p packet, struct rcf_comm_connection *handle,
      * of attach length 
      */
     if ((buffer = calloc(1, ans_len + 20 + attach_len)) == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     memcpy(buffer, answer_buffer, ans_len);
     rc = sprintf(buffer + ans_len, " attach %d", attach_len);
@@ -654,7 +654,7 @@ tad_tr_recv_thread(void *arg)
 
         if ((read_buffer = malloc(RBUF)) == NULL)
         {
-            rc = ENOMEM; 
+            rc = TE_ENOMEM; 
             break;
         }
 

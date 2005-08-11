@@ -235,7 +235,7 @@ parent_wait_sync(cli_csap_specific_data_p spec_data)
  * @param data       Single byte read from Expect side (OUT)
  *
  * @return errno:
- *         ENOENT  - No notification or data byte came in @a tv time
+ *         TE_ENOENT  - No notification or data byte came in @a tv time
  *         errno mapped with MAP_SYN_RES2ERRNO() macro in case of
  *         message arriving.
  *         0       - SYN_RES_OK notification or data byte came
@@ -341,7 +341,7 @@ process_sync_pipe(cli_csap_specific_data_p spec_data)
             /* Try once again */
             continue;
         }
-        else if (rc == ENOENT)
+        else if (rc == TE_ENOENT)
         {
             /* 
              * Expect side still can't provide reply 
@@ -520,7 +520,7 @@ cli_get_asn_string_value(asn_value * csap_spec,
         /* allocate memory for the string */
         *str_value = (char *) malloc(tmp_len + 1);
         if (*str_value == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
 
         rc = asn_read_value_field(csap_spec, *str_value,
                                   &tmp_len, asn_name);
@@ -528,7 +528,7 @@ cli_get_asn_string_value(asn_value * csap_spec,
         {
             free(*str_value);
             *str_value = NULL;
-            rc = EINVAL;
+            rc = TE_EINVAL;
         }
         else
         {
@@ -537,7 +537,7 @@ cli_get_asn_string_value(asn_value * csap_spec,
     }
     else
     {
-        rc = EINVAL;
+        rc = TE_EINVAL;
     }
 
     return rc;
@@ -564,7 +564,7 @@ cli_get_asn_integer_value(asn_value * csap_spec,
     rc = asn_read_value_field(csap_spec, int_value, &tmp_len, asn_name);
     if (rc != 0)
     {
-        rc = EINVAL;
+        rc = TE_EINVAL;
     }
 
     return rc;
@@ -925,7 +925,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     cli_spec_data = calloc(1, sizeof(cli_csap_specific_data_t));
     if (cli_spec_data == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     /* Initialize pipe descriptors to undefined value */
     cli_spec_data->data_sock = cli_spec_data->sync_pipe = -1;
@@ -1022,7 +1022,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         default:
             ERROR("Unknown CLI connection type specified %d",
                   cli_spec_data->conn_type);
-            rc = EINVAL;
+            rc = TE_EINVAL;
             goto error;
     }
 
@@ -1461,7 +1461,7 @@ cli_session_open(cli_csap_specific_data_p spec_data)
     if (spec_data->fp == NULL)
     {
         ERROR("fdopen(%d) failed", spec_data->io);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     spec_data->session_pid = exp_pid;

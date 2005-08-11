@@ -85,7 +85,7 @@ rpc_find_info(const char *name)
  *                      pointer to structure tarpc_bind_in
  *
  * @return Status code
- * @retval ENOENT       No such function
+ * @retval TE_ENOENT       No such function
  * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
@@ -98,7 +98,7 @@ rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, void *objp)
     uint32_t  len;
 
     if ((info = rpc_find_info(name)) == NULL)
-        return TE_RC(TE_RCF_RPC, ENOENT);
+        return TE_RC(TE_RCF_RPC, TE_ENOENT);
     
     len = strlen(name) + 1;
     
@@ -162,7 +162,7 @@ rpc_xdr_decode_result(const char *name, void *buf, size_t buflen,
 #endif
 
     if ((info = rpc_find_info(name)) == NULL)
-        return TE_RC(TE_RCF_RPC, ENOENT);
+        return TE_RC(TE_RCF_RPC, TE_ENOENT);
     
     /* Decode argument */
     if (!info->out(&xdrs, objp))
@@ -239,13 +239,13 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
 
     if ((info = rpc_find_info(name)) == NULL)
     {
-        return TE_RC(TE_RCF_RPC, ENOENT);
+        return TE_RC(TE_RCF_RPC, TE_ENOENT);
     }
     
     /* Allocate memory for the argument */
     if ((objp = calloc(1, info->in_len)) == NULL)
     {
-        return TE_RC(TE_RCF_RPC, ENOMEM);
+        return TE_RC(TE_RCF_RPC, TE_ENOMEM);
     }
    
     /* Encode argument */

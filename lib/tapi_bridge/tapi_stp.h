@@ -80,7 +80,7 @@ extern int tapi_stp_plain_csap_create(const char *ta_name, int sid,
  * @param templ         Traffic template
  *
  * @return Status of the operation
- * @retval EINVAL  This code is returned if "peer_mac_addr" value wasn't
+ * @retval TE_EINVAL  This code is returned if "peer_mac_addr" value wasn't
  *                 specified on creating the CSAP and "dst_mac_addr"
  *                 parameter is NULL.
  * @retval 0       BPDU is sent

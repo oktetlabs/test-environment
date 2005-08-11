@@ -742,7 +742,7 @@ snmp_inform_response(csap_p csap_descr, const char *usr_param,
     {
         ERROR("%s: cannot allocate memory for SNMP Response PDU",
               __FUNCTION__);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     reply->command = SNMP_MSG_RESPONSE;
     reply->errstat = 0;

@@ -291,7 +291,7 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     {
         ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
               __FUNCTION__, csap_id, layer, csap_descr->depth);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     ip4_spec_data = (ip4_csap_specific_data_t *)
@@ -302,7 +302,7 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 
     udp_spec_data = calloc (1, sizeof(udp_csap_specific_data_t));
     if (udp_spec_data == NULL)
-        return TE_RC(TE_TAD_CSAP, ENOMEM);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     /* Init local port */
     sprintf(opt_label, "%d.local-port", layer);

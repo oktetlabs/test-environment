@@ -205,7 +205,7 @@ typedef int (* rcfrh_conf_del)(char *ta_name, char *oid);
  * @param grp_name      Name of the command group to start.
  *
  * @return              0 - if the function ends correctly.
- * @retval              EINVAL - there is already a command group
+ * @retval              TE_EINVAL - there is already a command group
  */
 typedef int (* rcfrh_conf_grp_start)(char *ta_name, char *grp_name);
 
@@ -217,7 +217,7 @@ typedef int (* rcfrh_conf_grp_start)(char *ta_name, char *grp_name);
  * @param grp_name      Name of the command group to end.
  *
  * @return              0 - if the function ends correctly.
- * @retval              EINVAL - no group was started
+ * @retval              TE_EINVAL - no group was started
  */
 typedef int (* rcfrh_conf_grp_end)(char *ta_name, char *grp_name);
 
@@ -258,7 +258,7 @@ extern request_handler *rcf_get_cfg_by_id(int id);
  *                  is only one agent with name Agt_T.
  *
  * @return          0 - if the function ends correctly
- * @retval          ENOMEM - failed to malloc ta_list
+ * @retval          TE_ENOMEM - failed to malloc ta_list
  */
 extern int rcfrh_ta_list_default(char **ta_list);
 
@@ -270,7 +270,7 @@ extern int rcfrh_ta_list_default(char **ta_list);
  * @param result    Check result.
  *
  * @return          0 - if the function ends correctly.
- * @retval          EINVAL - ta_name is not Agt_T
+ * @retval          TE_EINVAL - ta_name is not Agt_T
  */
 extern int rcfrh_ta_check_default(char *ta_name, int *result);
 
@@ -282,7 +282,7 @@ extern int rcfrh_ta_check_default(char *ta_name, int *result);
  * @param result    Reboot result. By default is zero.
  *
  * @return          0 - if the function ends correctly.
- * @retval          EINVAL - ta_name is not Agt_T
+ * @retval          TE_EINVAL - ta_name is not Agt_T
  */
 extern int rcfrh_reboot_default(char *ta_name, int *result);
 
@@ -301,9 +301,9 @@ extern int rcfrh_reboot_default(char *ta_name, int *result);
  * @param ans_len   Length of the answer.
  *
  * @return          0 - if the function ends correctly
- * @retval          EINVAL - ta_name is not Agt_T
- * @retval          ENOMEM - failed to allocate some buffer 
- * @retval          EINVAL - wrong oid format
+ * @retval          TE_EINVAL - ta_name is not Agt_T
+ * @retval          TE_ENOMEM - failed to allocate some buffer 
+ * @retval          TE_EINVAL - wrong oid format
  */
 extern int rcfrh_conf_get_default(char *ta_name, char *oid, 
                                   char **answer, int *ans_len);
@@ -320,8 +320,8 @@ extern int rcfrh_conf_get_default(char *ta_name, char *oid,
  *
  * @return          ID of the newly added entity if the function 
  *                  ends correctly
- * @retval          -EINVAL - ta_name is not Agt_T
- * @retval          -ENOMEM - failed to allocate some buffer or to
+ * @retval          -TE_EINVAL - ta_name is not Agt_T
+ * @retval          -TE_ENOMEM - failed to allocate some buffer or to
  *                            many entities in the database
  */
 extern int rcfrh_conf_add_default(char *ta_name, char *oid, char *value);
@@ -337,8 +337,8 @@ extern int rcfrh_conf_add_default(char *ta_name, char *oid, char *value);
  * @param value     New value of the object instance.
  *
  * @return          0 - if the function ends correctly
- * @retval          EINVAL - ta_name is not Agt_T
- * @retval          EINVAL - no instance with such name
+ * @retval          TE_EINVAL - ta_name is not Agt_T
+ * @retval          TE_EINVAL - no instance with such name
  */
 extern int rcfrh_conf_set_default(char *ta_name, char *oid, char *value);
 
@@ -351,8 +351,8 @@ extern int rcfrh_conf_set_default(char *ta_name, char *oid, char *value);
  * @param oid       ID of the object or object instance to delete.
  *
  * @return          0 - if the object was deleted.
- * @retval          EINVAL - ta_name is not Agt_T
- * @retval          EINVAL - no object or object instance with
+ * @retval          TE_EINVAL - ta_name is not Agt_T
+ * @retval          TE_EINVAL - no object or object instance with
  *                           such name
  */
 extern int rcfrh_conf_del_default(char *ta_name, char *oid);
@@ -366,7 +366,7 @@ extern int rcfrh_conf_del_default(char *ta_name, char *oid);
  * @param grp_name  Name of the group to start.
  *
  * @return          0 - if the functon ends correctly
- * @retval          EINVAL - ta_name is not Agt_T
+ * @retval          TE_EINVAL - ta_name is not Agt_T
  */
 extern int rcfrh_conf_grp_start_default(char *ta_name, char *grp_name);
 
@@ -379,7 +379,7 @@ extern int rcfrh_conf_grp_start_default(char *ta_name, char *grp_name);
  * @param grp_name  Name of the group to end.
  *
  * @return          0 - if the functon ends correctly
- * @retval          EINVAL - ta_name is not Agt_T
+ * @retval          TE_EINVAL - ta_name is not Agt_T
  */
 extern int rcfrh_conf_grp_end_default(char *ta_name, char *grp_name);
 
@@ -388,7 +388,7 @@ extern int rcfrh_conf_grp_end_default(char *ta_name, char *grp_name);
  *
  * @return          Configuration ID if the configuration
  *                  was successfuly created.
- * @retval          -ENOMEM - no more configurations is
+ * @retval          -TE_ENOMEM - no more configurations is
  *                            allowed or failed to allocate
  *                            configuration structure
  */
@@ -404,7 +404,7 @@ extern int rcfrh_configuration_create(void);
  *
  * @return          0 - if the configuration was deleted
  *                      successfuly
- * @retval          EINVAL - if there is no configuration
+ * @retval          TE_EINVAL - if there is no configuration
  *                           with such ID
  */
 extern int rcfrh_configuration_delete(int conf_id);
@@ -417,7 +417,7 @@ extern int rcfrh_configuration_delete(int conf_id);
  *
  * @return          0 - if the current configuration was
  *                      changed correctly
- * @retval          EINVAL - no configuration with such ID
+ * @retval          TE_EINVAL - no configuration with such ID
  */
 extern int rcfrh_configuration_set_current(int conf_id);
 
@@ -501,7 +501,7 @@ extern int rcfrh_configuration_set_current(int conf_id);
  * @param conf_id    ID of the configuration.
  *
  * @return           0 - if the handlers were registered
- * @retval           EINVAL - no configuration with such ID
+ * @retval           TE_EINVAL - no configuration with such ID
  */
 extern int rcfrh_set_default_handlers(int conf_id);
 
@@ -513,7 +513,7 @@ extern int rcfrh_set_default_handlers(int conf_id);
  * @param conf       Configuration to change.
  *
  * @return           0 - handler was registered correctly
- * @retval           EINVAL - no such request type
+ * @retval           TE_EINVAL - no such request type
  */
 extern int rcfrh_set_default_handler(rcf_op_t opcode, request_handler *conf);
 

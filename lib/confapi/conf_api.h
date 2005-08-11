@@ -171,7 +171,7 @@ extern int cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr);
  * @param oid       OUT: location for the oid pointer (memory for the
  *                  string is allocated by the routine using malloc()
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 extern int cfg_get_oid_str(cfg_handle handle, char **oid);
 
@@ -182,7 +182,7 @@ extern int cfg_get_oid_str(cfg_handle handle, char **oid);
  * @param oid       OUT: location for the oid pointer (memory for the
  *                    array is allocated by the routine using malloc()
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 extern int cfg_get_oid(cfg_handle handle, cfg_oid **oid);
 
@@ -193,7 +193,7 @@ extern int cfg_get_oid(cfg_handle handle, cfg_oid **oid);
  * @param subid     OUT: location for the sub-identifier (should be
  *                  at least CFG_SUBID_MAX length)
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 extern int cfg_get_subid(cfg_handle handle, char **subid);
 
@@ -203,7 +203,7 @@ extern int cfg_get_subid(cfg_handle handle, char **subid);
  * @param handle    handle of object instance
  * @param name      OUT: location for the name
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 extern int cfg_get_inst_name(cfg_handle handle, char **name);
 
@@ -215,7 +215,7 @@ extern int cfg_get_inst_name(cfg_handle handle, char **name);
  * @param val       type == CVT_INTEGER -> (int *)
  *                  type == CVT_ADDRESS -> (struct sockaddr **)
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 extern int cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
                                   cfg_inst_val *val);
@@ -227,7 +227,7 @@ extern int cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
  * @param i         index of the instance subid
  * @param name      OUT: location for the name
  *
- * @return 0 or EINVAL if invalid handle is provided
+ * @return 0 or TE_EINVAL if invalid handle is provided
  */
 extern int cfg_get_ith_inst_name(const char *str_oid, unsigned int i,
                                  char **name);
@@ -298,7 +298,8 @@ extern int cfg_find_object_by_instance(cfg_handle instance,
  * @param p_set     OUT: array of object/object instances handles;
  *                    memory for the array is allocated using malloc()
  *
- * @return 0 or EINVAL if pattern format is incorrect some argument is NULL
+ * @return 0 or TE_EINVAL if pattern format is incorrect some argument is
+ *         NULL
  */
 extern int cfg_find_pattern(const char *pattern,
                             unsigned int *p_num, cfg_handle **p_set);
@@ -428,7 +429,7 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
 
 
     if (suboid_fmt == NULL)
-        return TE_RC(TE_CONF_API, EINVAL);
+        return TE_RC(TE_CONF_API, TE_EINVAL);
 
     rc = cfg_get_oid_str(parent, &parent_oid);
     if (rc != 0)
@@ -439,14 +440,14 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
     if (oid_fmt == NULL)
     {
         free(parent_oid);
-        return TE_RC(TE_CONF_API, ENOMEM);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
     oid = malloc(CFG_OID_MAX);
     if (oid == NULL)
     {
         free(oid_fmt);
         free(parent_oid);
-        return TE_RC(TE_CONF_API, ENOMEM);
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
 
     snprintf(oid_fmt, CFG_OID_MAX, "%s%s", parent_oid, suboid_fmt);

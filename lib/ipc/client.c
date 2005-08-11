@@ -526,7 +526,7 @@ ipc_init_client(const char *name, struct ipc_client **p_client)
     {
         if (p_client != NULL)
            *p_client = NULL;
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
     *p_client = NULL;
 
@@ -674,7 +674,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
     if ((ipcc == NULL) || (server_name == NULL) ||
         (msg == NULL) != (msg_len == 0))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
 
     memset(&dst, 0, sizeof(dst));
@@ -747,7 +747,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
     if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
         (p_buf_len == NULL) || (*p_buf_len == 0))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
     if (strlen(server_name) >= UNIX_PATH_MAX)
     {
@@ -1005,7 +1005,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
     if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
         (p_buf_len == NULL) || (*p_buf_len == 0))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
 
     server = get_pool_item_by_name(ipcc, server_name);
@@ -1021,7 +1021,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
     if (server->length == 0)
     {
         perror("Nothing to receive rest");
-        return TE_RC(TE_IPC, ENOENT);
+        return TE_RC(TE_IPC, TE_ENOENT);
     }
 
 #if IPC_CLIENT_DEBUG_REASSEMBLING
@@ -1208,7 +1208,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
     if ((ipcc == NULL) || (server_name == NULL) ||
         (msg == NULL) != (msg_len == 0))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
 
     server = get_pool_item_by_name(ipcc, server_name);
@@ -1359,7 +1359,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
     if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
         (p_buf_len == NULL))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
 
     server = get_pool_item_by_name(ipcc, server_name);
@@ -1369,7 +1369,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
     }
     if (server->socket == -1)
     {
-        return TE_RC(TE_IPC, EINVAL); /* FIXME */
+        return TE_RC(TE_IPC, TE_EINVAL); /* FIXME */
     }
 
     if (server->pending != 0)
@@ -1403,7 +1403,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
     if ((ipcc == NULL) || (server_name == NULL) || (buf == NULL) ||
         (p_buf_len == NULL))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
 
     server = get_pool_item_by_name(ipcc, server_name);
@@ -1413,7 +1413,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
     }
     if (server->socket == -1)
     {
-        return TE_RC(TE_IPC, EINVAL); /* FIXME */
+        return TE_RC(TE_IPC, TE_EINVAL); /* FIXME */
     }
 
     return ipc_client_int_receive(server, buf, p_buf_len);

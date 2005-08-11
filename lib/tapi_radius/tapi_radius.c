@@ -140,7 +140,7 @@ tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
     if (p == NULL)
     {
         ERROR("%s: failed to allocate memory for attribute", __FUNCTION__);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     memcpy(&p[list->len], attr, sizeof(p[list->len]));
     list->attr = p;
@@ -164,7 +164,7 @@ tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
     {
         ERROR("%s: attribute '%s' is not found in dictionary",
               __FUNCTION__, name);
-        return ENOENT;
+        return TE_ENOENT;
     }
     attr.type = info->id;
     attr.datatype = info->type;
@@ -187,7 +187,7 @@ tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
                 {
                     ERROR("%s: failed to allocate memory for attribute '%s'",
                           __FUNCTION__, name);
-                    rc = ENOMEM;
+                    rc = TE_ENOMEM;
                 }
                 else
                     memcpy(attr.string, p, attr.len);
@@ -202,7 +202,7 @@ tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
                 {
                     ERROR("%s: failed to allocate memory for attribute '%s'",
                           __FUNCTION__, name);
-                    rc = ENOMEM;
+                    rc = TE_ENOMEM;
                 }
                 else
                     attr.len = strlen(s);
@@ -211,7 +211,7 @@ tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
         default:
             ERROR("%s: unknown type %u for attribute",
                   __FUNCTION__, info->type);
-            rc = EINVAL;
+            rc = TE_EINVAL;
     }
     va_end(va);
     tapi_radius_attr_list_push(list, &attr);
@@ -278,7 +278,7 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
         {
             ERROR("%s: failed to find attribute %u in RADIUS dictionary",
                   __FUNCTION__, attr->type);
-            return ENOENT;
+            return TE_ENOENT;
         }
         assert(attr->datatype == info->type);
         switch (attr->datatype)
@@ -294,7 +294,7 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
                     ERROR("%s: failed to convert value of attribute '%s' "
                           "to string", __FUNCTION__, info->name);
                     free(result);
-                    return EINVAL;
+                    return TE_EINVAL;
                 }
                 value = buf;
                 break;
@@ -313,7 +313,7 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
         {
             ERROR("%s: failed to allocate memory", __FUNCTION__);
             free(result);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         result = s;
         if (len > 0)
@@ -367,7 +367,7 @@ tapi_radius_attr_init(tapi_radius_attr_t *attr,
     if (attr_info == NULL)
     {
         ERROR("%s: unknown attribute %u", __FUNCTION__, attr_type);
-        return EINVAL;
+        return TE_EINVAL;
     }
     *data_type = attr_info->type;
     switch (attr_info->type)
@@ -379,7 +379,7 @@ tapi_radius_attr_init(tapi_radius_attr_t *attr,
             {
                 ERROR("%s: invalid length of attribute %u",
                       __FUNCTION__, attr_type);
-                return EINVAL;
+                return TE_EINVAL;
             }
             memcpy(&attr->integer, data, sizeof(attr->integer));
             attr->len = sizeof(attr->integer);
@@ -392,7 +392,7 @@ tapi_radius_attr_init(tapi_radius_attr_t *attr,
             {
                 ERROR("%s: failed to allocate memory for attribute %u",
                       __FUNCTION__, attr_type);
-                return ENOMEM;
+                return TE_ENOMEM;
             }
             memcpy(attr->string, data, data_len);
             attr->len = data_len;
@@ -401,7 +401,7 @@ tapi_radius_attr_init(tapi_radius_attr_t *attr,
         default:
             ERROR("%s: unknown type %u for attribute %u", __FUNCTION__,
                   attr_info->type, attr.type);
-            return EINVAL;
+            return TE_EINVAL;
     }
     return 0;
 }
@@ -418,7 +418,7 @@ tapi_radius_attr_copy(tapi_radius_attr_t *dst,
         if (dst->string == NULL)
         {
             ERROR("%s: failed to allocate memory", __FUNCTION__);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         memcpy(dst->string, src->string, src->len);
     }
@@ -437,7 +437,7 @@ tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
     if (dst->attr == NULL)
     {
         ERROR("%s: failed to allocate memory", __FUNCTION__);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     for (i = 0; i < src->len; i++)
     {
@@ -457,13 +457,13 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
     const tapi_radius_attr_info_t *attr_info;
 
     if (data == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     if (data_len < TAPI_RADIUS_PACKET_MIN_LEN)
     {
         ERROR("%s: data length is too small, %u bytes",
               __FUNCTION__, data_len);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     packet->code = *p++;
@@ -476,14 +476,14 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
     {
         ERROR("%s: buffer size (%u) is smaller than RADIUS packet length (%u)",
               __FUNCTION__, data_len, radius_len);
-        return EINVAL;
+        return TE_EINVAL;
     }
     if (radius_len < TAPI_RADIUS_PACKET_MIN_LEN ||
         radius_len > TAPI_RADIUS_PACKET_MAX_LEN)
     {
         ERROR("%s: RADIUS packet with invalid length %d",
               __FUNCTION__, radius_len);
-        return EINVAL;
+        return TE_EINVAL;
     }
     memcpy(packet->authenticator, p, sizeof(packet->authenticator));
     p += sizeof(packet->authenticator);
@@ -500,7 +500,7 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
         {
             ERROR("%s: invalid RADIUS packet - attribute %u value is out "
                   "of packet data", __FUNCTION__, attr.type);
-            return EINVAL;
+            return TE_EINVAL;
         }
 
         attr_info = tapi_radius_dict_lookup(attr.type);
@@ -535,7 +535,7 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
                 {
                     ERROR("%s: failed to allocate memory for attribute %u",
                           __FUNCTION__, attr.type);
-                    return ENOMEM;
+                    return TE_ENOMEM;
                 }
                 memcpy(attr.string, p, attr.len);
                 break;
@@ -543,7 +543,7 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
             default:
                 ERROR("%s: unknown type %u for attribute %u", __FUNCTION__,
                       attr.datatype, attr.type);
-                return EINVAL;
+                return TE_EINVAL;
         }
         p += attr.len;
         tapi_radius_attr_list_push(&packet->attrs, &attr);
@@ -599,7 +599,7 @@ tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
     if (cb_data == NULL)
     {
         ERROR("%s: failed to allocate memory", __FUNCTION__);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     cb_data->callback = user_callback;
     cb_data->userdata = user_data;
@@ -682,7 +682,7 @@ tapi_radius_serv_add_client(const char *ta_name,
     if (cfg->secret == NULL)
     {
         ERROR("Incorrect secret value for RADIUS Client");
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     if (inet_ntop(AF_INET, &(cfg->net_addr),
@@ -690,7 +690,7 @@ tapi_radius_serv_add_client(const char *ta_name,
     {
         ERROR("Cannot convert network address of RADIUS Client into "
               "string representation");
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     rc = cfg_add_instance_fmt(&handle, CVT_NONE, NULL,
@@ -724,7 +724,7 @@ tapi_radius_serv_del_client(const char *ta_name,
     {
         ERROR("Cannot convert network address of RADIUS Client into "
               "string representation");
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     if ((rc = cfg_del_instance_fmt(FALSE,

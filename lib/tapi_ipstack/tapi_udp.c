@@ -107,7 +107,7 @@ ndn_udp4_dgram_to_plain(asn_value_p pkt, udp4_datagram **udp_dgram)
 
     *udp_dgram = (struct udp4_datagram *)malloc(sizeof(**udp_dgram));
     if (*udp_dgram == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     memset(*udp_dgram, 0, sizeof(**udp_dgram));
 
@@ -235,7 +235,7 @@ tapi_udp4_prepare_tmpl_file(const char *fname, const udp4_datagram *dgram)
     {
         ERROR("%s: failed to open file '%s' for UDP pattern writing",
               __FUNCTION__, fname);
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     fprintf(f, "{ pdus { udp: {src-port plain:%d, dst-port plain:%d}\n",
@@ -288,7 +288,7 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
     if ((loc_addr_str != NULL && inet_aton(loc_addr_str, &loc_addr) == 0) ||
         (rem_addr_str != NULL && inet_aton(rem_addr_str, &rem_addr) == 0))
     {
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     csap_spec       = asn_init_value(ndn_csap_spec);

@@ -155,7 +155,7 @@ tapi_eth_csap_create_with_mode(const char *ta_name, int sid,
     FILE   *f;
 
     if ((ta_name == NULL) || (device == NULL) || (eth_csap == NULL))
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
@@ -245,7 +245,7 @@ tapi_eth_tagged_csap_create(const char *ta_name, int sid,
         (remote_addr == NULL) || (local_addr == NULL) ||
         (eth_csap == NULL))
     {
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
@@ -401,10 +401,10 @@ tapi_eth_recv_start(const char *ta_name, int sid,
     struct tapi_pkt_handler_data *i_data;
 
     if (ta_name == NULL || pattern == NULL)
-        return TE_RC(TE_TAPI, EINVAL);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if ((i_data = malloc(sizeof(*i_data))) == NULL)
-        return TE_RC(TE_TAPI, ENOMEM);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     i_data->user_callback = cb;
     i_data->user_data = cb_data;
@@ -452,7 +452,7 @@ tapi_eth_prepare_pattern(const uint8_t *src_mac,
     int                   rc;
 
     if (pattern == NULL)
-        return EINVAL;
+        return TE_EINVAL;
 
     memset(&eth_hdr, 0, sizeof(eth_hdr));
 
@@ -465,7 +465,7 @@ tapi_eth_prepare_pattern(const uint8_t *src_mac,
 
     frame_hdr = ndn_eth_plain_to_packet(&eth_hdr);
     if (frame_hdr == NULL)
-        return ENOMEM;
+        return TE_ENOMEM;
 
     if (src_mac == NULL)
     {

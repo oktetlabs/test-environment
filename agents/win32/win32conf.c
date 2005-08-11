@@ -255,7 +255,7 @@ static MIB_IFROW if_entry;
         DWORD size = 0, rc;                                             \
                                                                         \
         if ((table = (_type *)malloc(sizeof(_type))) == NULL)           \
-            return TE_RC(TE_TA_WIN32, ENOMEM);                          \
+            return TE_RC(TE_TA_WIN32, TE_ENOMEM);                          \
                                                                         \
         if ((rc = _func(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) \
         {                                                               \
@@ -380,7 +380,7 @@ rcf_ch_conf_release()
  *
  * @return error code
  * @retval 0            success
- * @retval ENOMEM       cannot allocate memory
+ * @retval TE_ENOMEM       cannot allocate memory
  */
 static int
 interface_list(unsigned int gid, const char *oid, char **list)
@@ -396,7 +396,7 @@ interface_list(unsigned int gid, const char *oid, char **list)
     if (table == NULL)
     {
         if ((*list = strdup(" ")) == NULL)
-            return TE_RC(TE_TA_WIN32, ENOMEM);
+            return TE_RC(TE_TA_WIN32, TE_ENOMEM);
         else
             return 0;
     }
@@ -409,7 +409,7 @@ interface_list(unsigned int gid, const char *oid, char **list)
     free(table);
 
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
     return 0;
 }
@@ -477,7 +477,7 @@ get_addr_mask(const char *addr, const char *value, DWORD *p_a, DWORD *p_m)
     
     if ((a = inet_addr(addr)) == INADDR_NONE ||
         (a & 0xe0000000) == 0xe0000000)
-        return TE_RC(TE_TA_WIN32, EINVAL);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
         
     prefix = strtol(value, &end, 10);
     if (value == end || *end != 0)
@@ -489,7 +489,7 @@ get_addr_mask(const char *addr, const char *value, DWORD *p_a, DWORD *p_m)
     if (prefix > 32)
     {
         ERROR("Invalid prefix '%s' to be set", value);
-        return TE_RC(TE_TA_WIN32, EINVAL);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
     
     if (prefix != 0)
@@ -569,7 +569,7 @@ net_addr_del(unsigned int gid, const char *oid,
     UNUSED(oid);
 
     if ((a = inet_addr(addr)) == INADDR_NONE)
-        return TE_RC(TE_TA_WIN32, EINVAL);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
 
     GET_IF_ENTRY;
 
@@ -623,7 +623,7 @@ net_addr_del(unsigned int gid, const char *oid,
  * @return error code
  * @retval 0                    success
  * @retval TE_ENOENT            no such instance
- * @retval ENOMEM               cannot allocate memory
+ * @retval TE_ENOMEM               cannot allocate memory
  */
 static int
 net_addr_list(unsigned int gid, const char *oid, char **list,
@@ -641,7 +641,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     if (table == NULL)
     {
         if ((*list = strdup(" ")) == NULL)
-            return TE_RC(TE_TA_WIN32, ENOMEM);
+            return TE_RC(TE_TA_WIN32, TE_ENOMEM);
         else
             return 0;
     }
@@ -660,7 +660,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     free(table);
 
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
     return 0;
 }
@@ -692,7 +692,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
     if ((a = inet_addr(addr)) == INADDR_NONE)
     {
         if (strcmp(addr, "255.255.255.255") != 0)
-            return TE_RC(TE_TA_WIN32, EINVAL);
+            return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
 
     GET_IF_ENTRY;
@@ -735,7 +735,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
         return rc;
     
     if ((a = inet_addr(addr)) == INADDR_NONE)
-        return TE_RC(TE_TA_WIN32, EINVAL);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
 
     if ((rc = net_addr_del(0, NULL, ifname, addr)) != 0)
         return rc;
@@ -778,7 +778,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     if ((a = inet_addr(addr)) == INADDR_NONE)
     {
         if (strcmp(addr, "255.255.255.255") != 0)
-            return TE_RC(TE_TA_WIN32, EINVAL);
+            return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
 
     GET_IF_ENTRY;
@@ -819,7 +819,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
     if ((a = inet_addr(addr)) == INADDR_NONE)
     {
         if (strcmp(addr, "255.255.255.255") != 0)
-            return TE_RC(TE_TA_WIN32, EINVAL);
+            return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
 
     GET_IF_ENTRY;
@@ -938,7 +938,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     else if (strcmp(value, "1") == 0)
         if_entry.dwAdminStatus = MIB_IF_ADMIN_STATUS_UP;
     else
-        return TE_RC(TE_TA_WIN32, EINVAL);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
 
     if (SetIfEntry(&if_entry) != 0)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
@@ -990,7 +990,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
     }
     
     if ((a = inet_addr(addr)) == INADDR_NONE)
-        return TE_RC(TE_TA_WIN32, EINVAL);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
         
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
@@ -1088,7 +1088,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     if (sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
             int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf) != 6)
     {
-        return TE_RC(TE_TA_WIN32, EINVAL);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
 
     for (i = 0; i < 6; i++)
@@ -1140,7 +1140,7 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
     }
 
     if ((a = inet_addr(addr)) == INADDR_NONE)
-        return TE_RC(TE_TA_WIN32, EINVAL);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
 
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
@@ -1195,7 +1195,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
     if (table == NULL)
     {
         if ((*list = strdup(" ")) == NULL)
-            return TE_RC(TE_TA_WIN32, ENOMEM);
+            return TE_RC(TE_TA_WIN32, TE_ENOMEM);
         else
             return 0;
     }
@@ -1214,7 +1214,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
     free(table);
 
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
     return 0;
 }
@@ -1467,7 +1467,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     if (rt.metric == METRIC_DEFAULT)
     {
         ERROR("Failed to explicitly assign default metric to the route");
-        return TE_RC(TE_TA_WIN32, EINVAL);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
         
     if (rt.metric == 0)
@@ -1502,7 +1502,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     /* Check, if exactly the same route except metric exists */
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1604,7 +1604,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
  * @return error code
  * @retval 0                    success
  * @retval TE_ENOENT            no such instance
- * @retval ENOMEM               cannot allocate memory
+ * @retval TE_ENOMEM               cannot allocate memory
  */
 static int
 route_list(unsigned int gid, const char *oid, char **list)
@@ -1621,7 +1621,7 @@ route_list(unsigned int gid, const char *oid, char **list)
     if (table == NULL)
     {
         if ((*list = strdup(" ")) == NULL)
-            return TE_RC(TE_TA_WIN32, ENOMEM);
+            return TE_RC(TE_TA_WIN32, TE_ENOMEM);
         else
             return 0;
     }
@@ -1669,7 +1669,7 @@ route_list(unsigned int gid, const char *oid, char **list)
     free(table);
 
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_WIN32, ENOMEM);
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
     return 0;
 }

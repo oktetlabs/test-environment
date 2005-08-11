@@ -435,7 +435,7 @@ iovec2overlapped(rpc_overlapped *overlapped, int vector_len,
     if ((overlapped->buffers =
             (WSABUF *)calloc(vector_len, sizeof(WSABUF))) == NULL)
     {
-        return ENOMEM;
+        return TE_ENOMEM;
     }
 
     for (; overlapped->bufnum < vector_len; overlapped->bufnum++)
@@ -445,7 +445,7 @@ iovec2overlapped(rpc_overlapped *overlapped, int vector_len,
              calloc(vector[overlapped->bufnum].iov_len, 1)) == NULL)
         {
             rpc_overlapped_free_memory(overlapped);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         overlapped->buffers[overlapped->bufnum].len =
             vector[overlapped->bufnum].iov_len;
@@ -472,7 +472,7 @@ overlapped2iovec(rpc_overlapped *overlapped, int *vector_len,
     if (*vector_val == NULL)
     {
         rpc_overlapped_free_memory(overlapped);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     *vector_len = overlapped->bufnum;
     for (i = 0; i < overlapped->bufnum; i++)
@@ -793,7 +793,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
                                                                         \
         if ((arg = malloc(sizeof(*arg))) == NULL)                       \
         {                                                               \
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);            \
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);            \
             return TRUE;                                                \
         }                                                               \
                                                                         \
@@ -823,7 +823,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     }                                                                   \
     if (arg == NULL)                                                    \
     {                                                                   \
-        out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);                \
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);                \
         return TRUE;                                                    \
     }                                                                   \
     xdr_tarpc_##_func##_out((XDR *)&op, out);                           \
@@ -904,7 +904,7 @@ TARPC_FUNC(signal,
 {
     if (in->signum == RPC_SIGINT)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, EPERM);
+        out->common._errno = TE_RC(TE_TA_LINUX, TE_EPERM);
         return TRUE;
     }
 },
@@ -919,7 +919,7 @@ TARPC_FUNC(signal,
         handler = (sighandler_t)strtol(in->handler.handler_val, &tmp, 16);
 
         if (tmp == in->handler.handler_val || *tmp != 0)
-            out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
     if (out->common._errno == 0)
     {
@@ -934,7 +934,7 @@ TARPC_FUNC(signal,
                 if ((out->handler.handler_val = strdup(name)) == NULL)
                 {
                     signal(signum_rpc2h(in->signum), old_handler);
-                    out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
                 }
                 else
                     out->handler.handler_len = strlen(name) + 1;
@@ -944,7 +944,7 @@ TARPC_FUNC(signal,
                 if ((name = calloc(1, 16)) == NULL)
                 {
                     signal(signum_rpc2h(in->signum), old_handler);
-                    out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
                 }
                 else
                 {
@@ -1007,7 +1007,7 @@ TARPC_FUNC(connect_ex,
         if (buf2overlapped(overlapped, in->buf.buf_len,
                            in->buf.buf_val) != 0)
         {
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         }
         else
         {
@@ -1130,7 +1130,7 @@ TARPC_FUNC(wsa_accept,
         if ((cond = calloc(in->cond.cond_len + 1,
                            sizeof(accept_cond))) == NULL)
         {
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
             goto finish;
         }
         for (i = 0; i < in->cond.cond_len; i++)
@@ -1176,7 +1176,7 @@ TARPC_FUNC(accept_ex,
     {
         if (buf2overlapped(overlapped, buflen, NULL) != 0)
         {
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
             goto finish;
         }
     }
@@ -1244,7 +1244,7 @@ TARPC_FUNC(transmit_file, {},
         rpc_overlapped_free_memory(overlapped);
         if ((overlapped->buffers = calloc(2, sizeof(WSABUF))) == NULL)
         {
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
             goto finish;
         }
         overlapped->buffers[0].buf = in->head.head_val;
@@ -1287,7 +1287,7 @@ TARPC_FUNC(transmitfile_tabufs, {},
         rpc_overlapped_free_memory(overlapped);
         if ((overlapped->buffers = calloc(2, sizeof(WSABUF))) == NULL)
         {
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
             goto finish;
         }
         overlapped->buffers[0].buf = rcf_pch_mem_get(in->head);
@@ -1652,7 +1652,7 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
     errno = 0;
     if ((set = (fd_set *)malloc(sizeof(fd_set))) == NULL)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
     }
     else
     {
@@ -1861,7 +1861,7 @@ TARPC_FUNC(setsockopt, {},
             default:
                 ERROR("incorrect option type %d is received",
                       in->optval.optval_val[0].opttype);
-                out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
                 out->retval = -1;
                 goto finish;
                 break;
@@ -2072,7 +2072,7 @@ TARPC_FUNC(ioctl,
             default:
                 ERROR("incorrect request type %d is received",
                       out->req.req_val[0].type);
-                out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
                 out->retval = -1;
                 goto finish;
                 break;
@@ -2220,7 +2220,7 @@ TARPC_FUNC(gethostbyname, {},
     if (he != NULL)
     {
         if ((out->res.res_val = hostent_h2rpc(he)) == NULL)
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         else
             out->res.res_len = 1;
     }
@@ -2241,7 +2241,7 @@ TARPC_FUNC(gethostbyaddr, {},
     if (he != NULL)
     {
         if ((out->res.res_val = hostent_h2rpc(he)) == NULL)
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         else
             out->res.res_len = 1;
     }
@@ -2276,7 +2276,7 @@ TARPC_FUNC(fileno, {},
             out->passwd._field._field##_val = strdup(pw->pw_##_field);  \
             if (out->passwd._field._field##_val == NULL)                \
             {                                                           \
-                out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);        \
+                out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);        \
                 goto finish;                                            \
             }                                                           \
             out->passwd._field._field##_len =                           \
@@ -3327,7 +3327,7 @@ TARPC_FUNC(create_overlapped, {},
     UNUSED(list);
     if ((tmp = (rpc_overlapped *)calloc(1, sizeof(rpc_overlapped))) == 0)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
     }
     else
     {
@@ -3405,7 +3405,7 @@ TARPC_FUNC(wsa_send,
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
 
@@ -3448,7 +3448,7 @@ TARPC_FUNC(wsa_recv,
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
     if (out->flags.flags_len > 0)
@@ -3535,7 +3535,7 @@ TARPC_FUNC(duplicate_socket,
         in->info.info_len < sizeof(WSAPROTOCOL_INFO))
     {
         ERROR("Too short buffer for protocol info is provided");
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         return TRUE;
     }
     COPY_ARG(info);
@@ -3556,7 +3556,7 @@ TARPC_FUNC(wait_multiple_events,
     if (in->events.events_len > MULTIPLE_EVENTS_MAX)
     {
         ERROR("Too many events are awaited");
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         return TRUE;
     }
 },
@@ -3613,7 +3613,7 @@ TARPC_FUNC(wsa_send_to,
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
 
@@ -3665,7 +3665,7 @@ TARPC_FUNC(wsa_recv_from,
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
     if (out->flags.flags_len > 0)
@@ -3722,7 +3722,7 @@ TARPC_FUNC(wsa_send_disconnect, {},
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
     
@@ -3747,7 +3747,7 @@ TARPC_FUNC(wsa_recv_disconnect, {},
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
 
@@ -3774,7 +3774,7 @@ TARPC_FUNC(wsa_recv_msg,
         in->msg.msg_val[0].msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
     {
         ERROR("Too long iovec is provided");
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         return TRUE;
     }
     COPY_ARG(msg);
@@ -3818,7 +3818,7 @@ TARPC_FUNC(wsa_recv_msg,
             if (iovec2overlapped(overlapped, rpc_msg->msg_iov.msg_iov_len,
                                  rpc_msg->msg_iov.msg_iov_val) != 0)
             {
-                out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
                 goto finish;
             }
             msg.lpBuffers = overlapped->buffers;
@@ -3827,7 +3827,7 @@ TARPC_FUNC(wsa_recv_msg,
         if (rpc_msg->msg_control.msg_control_len > 0)
         {
             ERROR("Non-zero Control is not supported");
-            out->common._errno = TE_RC(TE_TA_WIN32, EINVAL);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
             goto finish;
         }
 
@@ -3901,7 +3901,7 @@ _sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
     errno = 0;
     if ((set = (sigset_t *)malloc(sizeof(sigset_t))) == NULL)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
     }
     else
     {
@@ -4016,7 +4016,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     if (buf == NULL)
     {
         ERROR("%s(): No enough memory", __FUNCTION__);
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         rc = -1;
         goto overfill_buffers_exit;
     }
@@ -4142,7 +4142,7 @@ TARPC_FUNC(malloc, {},
     buf = calloc(1, in->size);
 
     if (buf == NULL)
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
     else
         out->retval = rcf_pch_mem_alloc(buf);
 }
@@ -4192,7 +4192,7 @@ TARPC_FUNC(get_buf, {},
 
         buf = malloc(in->len);
         if (buf == NULL)
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         else
         {
             memcpy(buf, src_buf + (unsigned int)in->offset, in->len);
@@ -4233,7 +4233,7 @@ TARPC_FUNC(alloc_wsabuf, {},
             free(wsabuf);
         if (buf != NULL)
             free(buf);
-        out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         out->wsabuf = 0;
         out->wsabuf_buf = 0;
         out->retval = -1;
@@ -4496,7 +4496,7 @@ TARPC_FUNC(wsa_ioctl, {},
         outbuf = calloc(1, outbuf_len);
         if (outbuf == NULL)
         {
-            out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
             goto finish;
         }
     }
@@ -4511,7 +4511,7 @@ TARPC_FUNC(wsa_ioctl, {},
             overlapped->buffers = malloc(sizeof(WSABUF));
             if (overlapped->buffers == NULL)
             {
-                out->common._errno = TE_RC(TE_TA_WIN32, ENOMEM);
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
                 goto finish;
             }
             overlapped->buffers[0].buf = outbuf;
@@ -4664,7 +4664,7 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
     }
     else
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, EINVAL);
+        out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
     }
 
     return TRUE;

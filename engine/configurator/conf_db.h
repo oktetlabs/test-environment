@@ -212,7 +212,7 @@ extern int cfg_db_find(const char *oid_s, cfg_handle *handle);
 /**
  * Initialize the database during startup or re-initialization.
  *
- * @return 0 (success) or ENOMEM
+ * @return 0 (success) or TE_ENOMEM
  */
 extern int cfg_db_init(void);
 

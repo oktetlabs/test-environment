@@ -107,8 +107,8 @@ free_list(olist *list)
  *
  * @return error code
  * @retval 0            success
- * @retval EINVAL       invalid identifier
- * @retval ENOMEM       malloc() failed
+ * @retval TE_EINVAL       invalid identifier
+ * @retval TE_ENOMEM       malloc() failed
  */
 static int
 parse_one_level(char *oid, char **next_level, char **sub_id,
@@ -122,13 +122,13 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
         if (strcmp(oid, "*") == 0 || strcmp(oid, OID_ETC) == 0)
         {
             if ((*sub_id = strdup(oid)) == NULL)
-                return ENOMEM;
+                return TE_ENOMEM;
                 
             *next_level = oid;
             return 0;
         }
         if (*oid++ != '/')
-           return EINVAL;
+           return TE_EINVAL;
 
         if ((*next_level = strchr(oid, '/')) == NULL)
         {
@@ -137,13 +137,13 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
         }
         **next_level = 0;
         if ((*sub_id = strdup(oid)) == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         **next_level = c;
 
         if ((strchr(*sub_id, '*') != NULL && strlen(*sub_id) > 1))
         {
             free(*sub_id);
-            return EINVAL;
+            return TE_EINVAL;
         }
 
         return 0;
@@ -152,19 +152,19 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
     if (strcmp(oid, "*:*") == 0 || strcmp(oid, OID_ETC) == 0)
     {
         if ((*sub_id = strdup(oid)) == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
             
         if ((*inst_name = strdup(oid)) == NULL)
         {
             free(sub_id);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         *next_level = oid;
         return 0;
     }
 
     if (*oid != '/')
-        return EINVAL;
+        return TE_EINVAL;
 
     oid++;
 
@@ -180,25 +180,25 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
     {
         *tmp = 0;
         if ((*sub_id = strdup(oid)) == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         if ((*inst_name = strdup(tmp + 1)) == NULL)
         {
             free(sub_id);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         *tmp = ':';
     }
     else
     {
         if (strcmp(oid, "*") != 0)
-            return EINVAL;
+            return TE_EINVAL;
 
         if ((*sub_id = strdup("*")) == NULL)
-            return ENOMEM;
+            return TE_ENOMEM;
         if ((*inst_name = strdup("*")) == NULL)
         {
             free(sub_id);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
     }
 
@@ -210,7 +210,7 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
     {
         free(*sub_id);
         free(*inst_name);
-        return EINVAL;
+        return TE_EINVAL;
     }
 
     return 0;
@@ -229,8 +229,8 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
  *
  * @return error code
  * @retval 0            success
- * @retval EINVAL       invalid identifier
- * @retval ENOMEM       malloc() failed
+ * @retval TE_EINVAL       invalid identifier
+ * @retval TE_ENOMEM       malloc() failed
  */
 static int
 create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
@@ -260,7 +260,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         return 0;
         
     if (parse_one_level(oid, &next_level, &sub_id, &inst_name) != 0)
-        RET(EINVAL);
+        RET(TE_EINVAL);
         
     all = strcmp(full_oid, "*:*") == 0 || strcmp(sub_id, OID_ETC) == 0;
     
@@ -276,7 +276,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         if (obj->list == NULL)
         {
             if ((tmp_list = strdup(" ")) == NULL)
-                RET(ENOMEM);
+                RET(TE_ENOMEM);
         }
         else
         {
@@ -344,7 +344,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                 {
                     free(tmp_parsed);
                     free(tmp_list);
-                    RET(ENOMEM);
+                    RET(TE_ENOMEM);
                 }
 
                 strcpy(new_entry->oid, tmp_parsed);
@@ -394,8 +394,8 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
  *
  * @return error code
  * @retval 0            success
- * @retval EINVAL       invalid identifier
- * @retval ENOMEM       malloc() failed
+ * @retval TE_EINVAL       invalid identifier
+ * @retval TE_ENOMEM       malloc() failed
  */
 static int
 create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
@@ -424,7 +424,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         return 0;
 
     if (parse_one_level(oid, &next_level, &sub_id, NULL) != 0)
-        RET(EINVAL);
+        RET(TE_EINVAL);
       
     all = *full_oid =='*' || strcmp(sub_id, OID_ETC) == 0;
 
@@ -450,7 +450,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             if ((new_entry = (olist *)malloc(sizeof(olist))) == NULL)
             {
                 free(tmp_parsed);
-                RET(ENOMEM);
+                RET(TE_ENOMEM);
             }
 
             strcpy(new_entry->oid, tmp_parsed);
@@ -488,7 +488,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
  *
  * @return error code
  * @retval 0        - success
- * @retval ENOMEM   - memory allocation failed
+ * @retval TE_ENOMEM   - memory allocation failed
  */
 static int
 convert_to_answer(olist *list, char **answer)
@@ -501,7 +501,7 @@ convert_to_answer(olist *list, char **answer)
     if (list == NULL)
     {
         *answer = strdup("");
-        return (*answer == NULL) ? ENOMEM : 0;
+        return (*answer == NULL) ? TE_ENOMEM : 0;
     }
 
     for (tmp = list; tmp != NULL; tmp = tmp->next)
@@ -512,7 +512,7 @@ convert_to_answer(olist *list, char **answer)
     if ((*answer = (char *)malloc(len)) == NULL)
     {
         free_list(list);
-        return ENOMEM;
+        return TE_ENOMEM;
     }
     
     ptr = *answer;
@@ -646,7 +646,7 @@ commit(const rcf_pch_cfg_object *commit_obj, cfg_oid **pp_oid)
             p = (rcf_pch_commit_op_t *)calloc(1, sizeof(*p));
             if (p == NULL)
             {
-                return ENOMEM;
+                return TE_ENOMEM;
             }
             
             p->func = commit_obj->commit;
@@ -744,7 +744,7 @@ rcf_pch_agent_list(unsigned int id, const char *oid, char **list)
     UNUSED(id);
     UNUSED(oid);
 
-    return (*list = strdup(rcf_ch_conf_agent())) == NULL ? ENOMEM : 0;
+    return (*list = strdup(rcf_ch_conf_agent())) == NULL ? TE_ENOMEM : 0;
 }
 
 
@@ -787,7 +787,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             if (op != RCF_CH_CFG_GET)
             {
                 ERROR("Wildcards allowed in get requests only");
-                SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, EINVAL));
+                SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EINVAL));
             }
 
             rc = process_wildcard(conn, cbuf, buflen, answer_plen, oid);
@@ -812,13 +812,13 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
         {
             cfg_free_oid(p_oid);
             ERROR("Instance identifier expected");
-            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, EINVAL));
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EINVAL));
         }
         if (p_oid->len == 0)
         {
             cfg_free_oid(p_oid);
             ERROR("Zero length OIID");
-            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, EINVAL));
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EINVAL));
         }
 
         memset(inst_names, 0, sizeof(inst_names));

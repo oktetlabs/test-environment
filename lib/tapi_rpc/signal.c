@@ -531,14 +531,14 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     {
         ERROR("%s(): Invalid 'act->mm_mask' argument",
                 __FUNCTION__);
-        rpcs->_errno = EINVAL;
+        rpcs->_errno = TE_EINVAL;
         RETVAL_INT(sigaction, out.retval);
     }
     if (oldact != NULL && oldact->mm_mask == RPC_NULL)
     {
         ERROR("%s(): Invalid 'oldact->mm_mask' argument",
                 __FUNCTION__);
-        rpcs->_errno = EINVAL;
+        rpcs->_errno = TE_EINVAL;
         RETVAL_INT(sigaction, -1);
     }
 

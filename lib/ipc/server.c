@@ -185,7 +185,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
     {
         if (p_ipcs != NULL)
             *p_ipcs = NULL;
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
     *p_ipcs = NULL;
 
@@ -499,7 +499,7 @@ ipc_receive_message(struct ipc_server *ipcs,
     if ((ipcs == NULL) || (buf == NULL) || (p_ipcsc == NULL) ||
         (p_buf_len == NULL))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
     client = *p_ipcsc;
     buf_len = *p_buf_len;
@@ -648,7 +648,7 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
     if ((ipcs == NULL) || (ipcsc == NULL) ||
         ((msg == NULL) != (msg_len == 0)))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
 
     /* We use ipcs->buffer to construct the datagram */
@@ -762,7 +762,7 @@ ipc_receive_message(struct ipc_server *ipcs,
     if ((ipcs == NULL) || (buf == NULL) || (p_ipcsc == NULL) ||
         (p_buf_len == NULL))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
 
     if (*p_ipcsc != NULL)
@@ -908,7 +908,7 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
     if ((ipcs == NULL) || (ipcsc == NULL) ||
         ((msg == NULL) != (msg_len == 0)))
     {
-        return TE_RC(TE_IPC, EINVAL);
+        return TE_RC(TE_IPC, TE_EINVAL);
     }
 
     if ((msg_len + sizeof(len)) > IPC_TCP_SERVER_BUFFER_SIZE)
@@ -1078,7 +1078,7 @@ ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
                 if (ipcsc == NULL)
                 {
                     fprintf(stderr, "Memory allocation failure\n");
-                    return TE_RC(TE_IPC, ENOMEM);
+                    return TE_RC(TE_IPC, TE_ENOMEM);
                 }
             }
 
@@ -1169,7 +1169,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
             ipcs->buffer = calloc(1, IPC_SEGMENT_SIZE);
             if (ipcs->buffer == NULL)
             {
-                return TE_RC(TE_IPC, ENOMEM);
+                return TE_RC(TE_IPC, TE_ENOMEM);
             }
         }
         else
@@ -1180,7 +1180,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
                 if (ipcsc == NULL)
                 {
                     fprintf(stderr, "Memory allocation failure\n");
-                    return TE_RC(TE_IPC, ENOMEM);
+                    return TE_RC(TE_IPC, TE_ENOMEM);
                 }
                 *p_ipcsc = ipcsc;
             }

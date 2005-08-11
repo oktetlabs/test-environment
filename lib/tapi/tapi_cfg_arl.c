@@ -68,7 +68,7 @@ tapi_cfg_arl_get_table(const char *ta, te_bool sync, arl_table_t *p_table)
 
 
     if ((ta == NULL) || (p_table == NULL))
-        return EINVAL;
+        return TE_EINVAL;
 
     if (sync)
     {
@@ -106,7 +106,7 @@ tapi_cfg_arl_get_table(const char *ta, te_bool sync, arl_table_t *p_table)
             ERROR("Memory allocation failure");
             free(oid);
             tapi_arl_free_table(p_table);
-            return ENOMEM;
+            return TE_ENOMEM;
         }
         rc = tapi_cfg_arl_get_entry(oid, p);
         if (rc != 0)

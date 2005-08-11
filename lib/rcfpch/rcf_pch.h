@@ -152,7 +152,7 @@ extern int rcf_pch_configure(struct rcf_comm_connection *conn,
  *                  separated list (should be allocated using malloc())
  *
  * @retval 0        success
- * @retval ENOMEM   memory allocation failure
+ * @retval TE_ENOMEM   memory allocation failure
  */
 extern int rcf_pch_agent_list(unsigned int gid, const char *oid,
                               char **list);

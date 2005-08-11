@@ -161,7 +161,7 @@ ndn_bpdu_asn_to_plain(const asn_value *pkt, ndn_stp_bpdu_t *bpdu)
      * IEEE 802.1D, item 9.3.2 */
     if (rc == 0 && proto_id != 0) 
     {
-        return EINVAL;
+        return TE_EINVAL;
     }
     rc = 0;
 
