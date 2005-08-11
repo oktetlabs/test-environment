@@ -212,7 +212,7 @@ errno_rpc2str(rpc_errno rpc_errno_val)
     }
     else
     {
-        static const char buf[64];
+        static char buf[64];
 
         strcpy(buf, "Non-RPC ");
         strcat(buf, te_rc_src2str(rpc_errno_val));
