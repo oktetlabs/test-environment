@@ -604,6 +604,32 @@ output_regular_log_msg(log_msg *msg)
                     i++;
                     continue;
                 }
+
+#if 0
+                case 'r':
+                {
+                    te_errno err;
+
+                    if ((arg = get_next_arg(msg)) == NULL)
+                    {
+                        fprintf(stderr,
+                                "Too few arguments in the message:\n");
+                        print_message_info(msg);
+                        THROW_EXCEPTION;
+                    }
+
+                    err = *((uint32_t *)arg->val) = 
+                        ntohl(*(uint32_t *)arg->val);
+
+                    fwrite_string(log_obstk, te_rc_src2str(err));
+                    obstack_1grow(log_obstk, '-');
+                    fwrite_string(log_obstk, te_rc_err2str(err));
+                    i++;
+
+                    continue;
+                }
+#endif
+
                 case 't':
                 {
                     int  j;
@@ -733,7 +759,7 @@ output_regular_log_msg(log_msg *msg)
 
                     continue;
                 }
-            }
+            } /* switch */
         }
         
         switch (msg->fmt_str[i])
@@ -770,7 +796,8 @@ output_regular_log_msg(log_msg *msg)
                 obstack_1grow(log_obstk, msg->fmt_str[i]);
                 break;
         }
-    }
+
+    } /* for */
 
     if (obstack_next_free(log_obstk) != obstk_base)
     {
