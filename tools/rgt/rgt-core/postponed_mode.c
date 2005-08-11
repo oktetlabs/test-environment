@@ -611,7 +611,8 @@ output_regular_log_msg(log_msg *msg)
 #if 1
                 case 'r':
                 {
-                    te_errno err;
+                    te_errno    err;
+                    const char *src;
 
                     if ((arg = get_next_arg(msg)) == NULL)
                     {
@@ -624,8 +625,12 @@ output_regular_log_msg(log_msg *msg)
                     err = *((uint32_t *)arg->val) = 
                         ntohl(*(uint32_t *)arg->val);
 
-                    fwrite_string(log_obstk, te_rc_src2str(err));
-                    obstack_1grow(log_obstk, '-');
+                    src = te_rc_src2str(err);
+                    if (strlen(src) > 0)
+                    {
+                        fwrite_string(log_obstk, src);
+                        obstack_1grow(log_obstk, '-');
+                    }
                     fwrite_string(log_obstk, te_rc_err2str(err));
                     i++;
 
