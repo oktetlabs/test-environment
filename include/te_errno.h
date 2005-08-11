@@ -52,7 +52,7 @@ typedef enum {
     TE_EIO,           /**< I/O error */
     TE_ENXIO,         /**< No such device or address */
     TE_E2BIG,         /**< Arg list too long */
-    TE_ENOEXEC,       /**< Exec format error */
+    TE_ENOEXEC,       /**< Exec  error */
     TE_EBADF,         /**< Bad file number */
     TE_ECHILD,        /**< No child processes */
     TE_EAGAIN,        /**< Try again */
@@ -103,7 +103,7 @@ typedef enum {
     TE_EBADRQC,       /**< Invalid request code */
     TE_EBADSLT,       /**< Invalid slot */
     TE_EDEADLOCK,     /**< Synomym of EDEADLK */
-    TE_EBFONT,        /**< Bad font file format */
+    TE_EBFONT,        /**< Bad font file  */
     TE_ENOSTR,        /**< Device not a stream */
     TE_ENODATA,       /**< No data available */
     TE_ETIME,         /**< Timer expired */
@@ -183,7 +183,7 @@ typedef enum {
     TE_EWRONGPTR, /**< Wrong pointer was passed to function */
     TE_ETOOMANY,  /**< Too many objects have been already allocated, 
                        so that the resource is not available */
-    TE_EFMT,      /**< Invalid format */
+    TE_EFMT,      /**< Invalid  */
     TE_EENV,      /**< Inappropriate environment */
     TE_EWIN,      /**< Windows API function failed, 
                        see log for the description */
@@ -402,7 +402,7 @@ te_rc_src2str(te_error_source src)
 static inline const char * 
 te_rc_err2str(te_errno err)
 {
-    static char old_errno[64];
+    static char old_errno64;
     
     if ((err & TE_NEW_ERRNO) == 0)
     {
@@ -633,210 +633,769 @@ te_rc_os2te(int err)
 {
     switch (err)
     {
-        ERR2ERR(EPERM);        
-                     
-        ERR2ERR(ENOENT);       
-        ERR2ERR(ESRCH);        
-        ERR2ERR(EINTR);        
-        ERR2ERR(EIO);          
-        ERR2ERR(ENXIO);        
-        ERR2ERR(E2BIG);        
-        ERR2ERR(ENOEXEC);      
-        ERR2ERR(EBADF);        
-        ERR2ERR(ECHILD);       
-        ERR2ERR(EAGAIN);       
-        ERR2ERR(ENOMEM);       
-        ERR2ERR(EACCES);       
-        ERR2ERR(EFAULT);       
-        ERR2ERR(ENOTBLK);      
-        ERR2ERR(EBUSY);        
-        ERR2ERR(EEXIST);       
-        ERR2ERR(EXDEV);        
-        ERR2ERR(ENODEV);       
-        ERR2ERR(ENOTDIR);      
-        ERR2ERR(EISDIR);       
-        ERR2ERR(EINVAL);       
-        ERR2ERR(ENFILE);       
-        ERR2ERR(EMFILE);       
-        ERR2ERR(ENOTTY);       
-        ERR2ERR(ETXTBSY);      
-        ERR2ERR(EFBIG);        
-        ERR2ERR(ENOSPC);       
-        ERR2ERR(ESPIPE);       
-        ERR2ERR(EROFS);        
-        ERR2ERR(EMLINK);       
-        ERR2ERR(EPIPE);        
-        ERR2ERR(EDOM);         
-        ERR2ERR(ERANGE);       
-        ERR2ERR(EDEADLK);      
-        ERR2ERR(ENAMETOOLONG); 
-        ERR2ERR(ENOLCK);       
-        ERR2ERR(ENOSYS);       
-        ERR2ERR(ENOTEMPTY);    
-        ERR2ERR(ELOOP);        
-        ERR2ERR(EWOULDBLOCK);  
-        ERR2ERR(ENOMSG);       
-        ERR2ERR(EIDRM);        
-        ERR2ERR(ECHRNG);       
-        ERR2ERR(EL2NSYNC);     
-        ERR2ERR(EL3HLT);       
-        ERR2ERR(EL3RST);       
-        ERR2ERR(ELNRNG);       
-        ERR2ERR(EUNATCH);      
-        ERR2ERR(ENOCSI);       
-        ERR2ERR(EL2HLT);       
-        ERR2ERR(EBADE);        
-        ERR2ERR(EBADR);        
-        ERR2ERR(EXFULL);       
-        ERR2ERR(ENOANO);       
-        ERR2ERR(EBADRQC);      
-        ERR2ERR(EBADSLT);      
-        ERR2ERR(EDEADLOCK);    
-        ERR2ERR(EBFONT);       
-        ERR2ERR(ENOSTR);       
-        ERR2ERR(ENODATA);      
-        ERR2ERR(ETIME);        
-        ERR2ERR(ENOSR);        
-        ERR2ERR(ENONET);       
-        ERR2ERR(ENOPKG);       
-        ERR2ERR(EREMOTE);      
-        ERR2ERR(ENOLINK);      
-        ERR2ERR(EADV);         
-        ERR2ERR(ESRMNT);       
-        ERR2ERR(ECOMM);        
-        ERR2ERR(EPROTO);       
-        ERR2ERR(EMULTIHOP);    
-        ERR2ERR(EDOTDOT);      
-        ERR2ERR(EBADMSG);      
-        ERR2ERR(EOVERFLOW);    
-        ERR2ERR(ENOTUNIQ);     
-        ERR2ERR(EBADFD);       
-        ERR2ERR(EREMCHG);      
-        ERR2ERR(ELIBACC);      
-        ERR2ERR(ELIBBAD);      
-        ERR2ERR(ELIBSCN);      
-        ERR2ERR(ELIBMAX);      
-        ERR2ERR(ELIBEXEC);     
-        ERR2ERR(EILSEQ);       
-        ERR2ERR(ERESTART);     
-        ERR2ERR(ESTRPIPE);     
-        ERR2ERR(EUSERS);       
-        ERR2ERR(ENOTSOCK);     
-        ERR2ERR(EDESTADDRREQ); 
-        ERR2ERR(EMSGSIZE);     
-        ERR2ERR(EPROTOTYPE);   
-        ERR2ERR(ENOPROTOOPT);  
-        ERR2ERR(EPROTONOSUPPORT); 
-        ERR2ERR(ESOCKTNOSUPPORT); 
-        ERR2ERR(EOPNOTSUPP);   
-        ERR2ERR(EPFNOSUPPORT); 
-        ERR2ERR(EAFNOSUPPORT); 
-        ERR2ERR(EADDRINUSE);   
-        ERR2ERR(EADDRNOTAVAIL);
-        ERR2ERR(ENETDOWN);     
-        ERR2ERR(ENETUNREACH);  
-        ERR2ERR(ENETRESET);    
-        ERR2ERR(ECONNABORTED); 
-        ERR2ERR(ECONNRESET);   
-        ERR2ERR(ENOBUFS);      
-        ERR2ERR(EISCONN);      
-        ERR2ERR(ENOTCONN);     
-        ERR2ERR(ESHUTDOWN);    
-        ERR2ERR(ETOOMANYREFS); 
-        ERR2ERR(ETIMEDOUT);    
-        ERR2ERR(ECONNREFUSED); 
-        ERR2ERR(EHOSTDOWN);    
-        ERR2ERR(EHOSTUNREACH); 
-        ERR2ERR(EALREADY);     
-        ERR2ERR(EINPROGRESS);  
-        ERR2ERR(ESTALE);       
-        ERR2ERR(EUCLEAN);      
-        ERR2ERR(ENOTNAM);      
-        ERR2ERR(ENAVAIL);      
-        ERR2ERR(EISNAM);       
-        ERR2ERR(EREMOTEIO);    
-        ERR2ERR(EDQUOT);       
-        ERR2ERR(ENOMEDIUM);    
-        ERR2ERR(EMEDIUMTYPE);  
-        ERR2ERR(EOK); 
-        ERR2ERR(EFAIL);     
-        ERR2ERR(ESMALLBUF); 
-        ERR2ERR(EPENDING);  
-        ERR2ERR(ESHCMD);    
-        ERR2ERR(EWRONGPTR); 
-        ERR2ERR(ETOOMANY);  
-                  
-        ERR2ERR(EFMT);      
-        ERR2ERR(EENV);      
-        ERR2ERR(EWIN);      
-        ERR2ERR(ERCFIO); 
-        ERR2ERR(ENORCF);        
-        ERR2ERR(ETALOCAL);     
-        ERR2ERR(ETADEAD);      
-        ERR2ERR(ETAREBOOTED);  
-        ERR2ERR(ETARTN);       
-        ERR2ERR(ESUNRPC);      
-        ERR2ERR(ECORRUPTED);   
-        ERR2ERR(ERPCTIMEOUT);  
-        ERR2ERR(ERPCDEAD);     
-
-        ERR2ERR(EASNGENERAL);
-        ERR2ERR(EASNWRONGLABEL);    
-        ERR2ERR(EASNTXTPARSE);      
-        ERR2ERR(EASNDERPARSE);      
-        ERR2ERR(EASNINCOMPLVAL);    
-        ERR2ERR(EASNOTHERCHOICE);   
-        ERR2ERR(EASNWRONGTYPE);     
-        ERR2ERR(EASNNOTLEAF);       
-                          
-
-        ERR2ERR(EASNTXTNOTINT);     
-        ERR2ERR(EASNTXTNOTCHSTR);   
-        ERR2ERR(EASNTXTNOTOCTSTR);  
-        ERR2ERR(EASNTXTVALNAME);    
-                          
-        ERR2ERR(EASNTXTSEPAR);      
-                          
-        ERR2ERR(ETADCSAPNOTEX);  
-        ERR2ERR(ETADLOWER);       
-                        
-                        
-        ERR2ERR(ETADCSAPSTATE);   
-        ERR2ERR(ETADNOTMATCH);    
-        ERR2ERR(ETADLESSDATA);    
-                        
-                        
-        ERR2ERR(ETADMISSNDS);     
-        ERR2ERR(ETADWRONGNDS);    
-        ERR2ERR(ETADCSAPDB);      
-        ERR2ERR(ETADENDOFDATA);   
-        ERR2ERR(ETADEXPRPARSE);   
-
-        ERR2ERR(EBACKUP);
-        ERR2ERR(EISROOT);  
-        ERR2ERR(EHASSON);  
-        ERR2ERR(ENOCONF);  
-        ERR2ERR(EBADTYPE); 
-
-        ERR2ERR(ESTEMPTY);
-        ERR2ERR(ESTSKIP);    
-        ERR2ERR(ESTFAKE);    
-        ERR2ERR(ESTPASS);    
-        ERR2ERR(ESTCONF);    
-        ERR2ERR(ESTKILL);    
-        ERR2ERR(ESTCORE);    
-        ERR2ERR(ESTPROLOG);  
-        ERR2ERR(ESTEPILOG);  
-        ERR2ERR(ESTALIVE);   
-        ERR2ERR(ESTFAIL);    
-        ERR2ERR(ESTUNEXP);   
-
-        ERR2ERR(ERPC2H);
-        ERR2ERR(EH2RPC);
-
-        ERR2ERR(ESYNCFAILED);
+#ifdef EPERM
+        case EPERM: return TE_EPERM;
+#endif        
         
-        default: return "Unknown";
+#ifdef ENOENT
+        case ENOENT: return TE_ENOENT;
+#endif       
+        
+#ifdef ESRCH
+        case ESRCH: return TE_ESRCH;
+#endif        
+        
+#ifdef EINTR
+        case EINTR: return TE_EINTR;
+#endif        
+        
+#ifdef EIO
+        case EIO: return TE_EIO;
+#endif          
+        
+#ifdef ENXIO
+        case ENXIO: return TE_ENXIO;
+#endif        
+        
+#ifdef E2BIG
+        case E2BIG: return TE_E2BIG;
+#endif        
+        
+#ifdef ENOEXEC
+        case ENOEXEC: return TE_ENOEXEC;
+#endif      
+        
+#ifdef EBADF
+        case EBADF: return TE_EBADF;
+#endif        
+        
+#ifdef ECHILD
+        case ECHILD: return TE_ECHILD;
+#endif       
+        
+#ifdef EAGAIN
+        case EAGAIN: return TE_EAGAIN;
+#endif       
+        
+#ifdef ENOMEM
+        case ENOMEM: return TE_ENOMEM;
+#endif       
+        
+#ifdef EACCES
+        case EACCES: return TE_EACCES;
+#endif       
+        
+#ifdef EFAULT
+        case EFAULT: return TE_EFAULT;
+#endif       
+        
+#ifdef ENOTBLK
+        case ENOTBLK: return TE_ENOTBLK;
+#endif      
+        
+#ifdef EBUSY
+        case EBUSY: return TE_EBUSY;
+#endif        
+        
+#ifdef EEXIST
+        case EEXIST: return TE_EEXIST;
+#endif       
+        
+#ifdef EXDEV
+        case EXDEV: return TE_EXDEV;
+#endif        
+        
+#ifdef ENODEV
+        case ENODEV: return TE_ENODEV;
+#endif       
+        
+#ifdef ENOTDIR
+        case ENOTDIR: return TE_ENOTDIR;
+#endif      
+        
+#ifdef EISDIR
+        case EISDIR: return TE_EISDIR;
+#endif       
+        
+#ifdef EINVAL
+        case EINVAL: return TE_EINVAL;
+#endif       
+        
+#ifdef ENFILE
+        case ENFILE: return TE_ENFILE;
+#endif       
+        
+#ifdef EMFILE
+        case EMFILE: return TE_EMFILE;
+#endif       
+        
+#ifdef ENOTTY
+        case ENOTTY: return TE_ENOTTY;
+#endif       
+        
+#ifdef ETXTBSY
+        case ETXTBSY: return TE_ETXTBSY;
+#endif      
+        
+#ifdef EFBIG
+        case EFBIG: return TE_EFBIG;
+#endif        
+        
+#ifdef ENOSPC
+        case ENOSPC: return TE_ENOSPC;
+#endif       
+        
+#ifdef ESPIPE
+        case ESPIPE: return TE_ESPIPE;
+#endif       
+        
+#ifdef EROFS
+        case EROFS: return TE_EROFS;
+#endif        
+        
+#ifdef EMLINK
+        case EMLINK: return TE_EMLINK;
+#endif       
+        
+#ifdef EPIPE
+        case EPIPE: return TE_EPIPE;
+#endif        
+        
+#ifdef EDOM
+        case EDOM: return TE_EDOM;
+#endif         
+        
+#ifdef ERANGE
+        case ERANGE: return TE_ERANGE;
+#endif       
+        
+#ifdef EDEADLK
+        case EDEADLK: return TE_EDEADLK;
+#endif      
+        
+#ifdef ENAMETOOLONG
+        case ENAMETOOLONG: return TE_ENAMETOOLONG;
+#endif 
+        
+#ifdef ENOLCK
+        case ENOLCK: return TE_ENOLCK;
+#endif       
+        
+#ifdef ENOSYS
+        case ENOSYS: return TE_ENOSYS;
+#endif       
+        
+#ifdef ENOTEMPTY
+        case ENOTEMPTY: return TE_ENOTEMPTY;
+#endif    
+        
+#ifdef ELOOP
+        case ELOOP: return TE_ELOOP;
+#endif        
+        
+#ifdef EWOULDBLOCK
+        case EWOULDBLOCK: return TE_EWOULDBLOCK;
+#endif  
+        
+#ifdef ENOMSG
+        case ENOMSG: return TE_ENOMSG;
+#endif       
+        
+#ifdef EIDRM
+        case EIDRM: return TE_EIDRM;
+#endif        
+        
+#ifdef ECHRNG
+        case ECHRNG: return TE_ECHRNG;
+#endif       
+        
+#ifdef EL2NSYNC
+        case EL2NSYNC: return TE_EL2NSYNC;
+#endif     
+        
+#ifdef EL3HLT
+        case EL3HLT: return TE_EL3HLT;
+#endif       
+        
+#ifdef EL3RST
+        case EL3RST: return TE_EL3RST;
+#endif       
+        
+#ifdef ELNRNG
+        case ELNRNG: return TE_ELNRNG;
+#endif       
+        
+#ifdef EUNATCH
+        case EUNATCH: return TE_EUNATCH;
+#endif      
+        
+#ifdef ENOCSI
+        case ENOCSI: return TE_ENOCSI;
+#endif       
+        
+#ifdef EL2HLT
+        case EL2HLT: return TE_EL2HLT;
+#endif       
+        
+#ifdef EBADE
+        case EBADE: return TE_EBADE;
+#endif        
+        
+#ifdef EBADR
+        case EBADR: return TE_EBADR;
+#endif        
+        
+#ifdef EXFULL
+        case EXFULL: return TE_EXFULL;
+#endif       
+        
+#ifdef ENOANO
+        case ENOANO: return TE_ENOANO;
+#endif       
+        
+#ifdef EBADRQC
+        case EBADRQC: return TE_EBADRQC;
+#endif      
+        
+#ifdef EBADSLT
+        case EBADSLT: return TE_EBADSLT;
+#endif      
+        
+#ifdef EDEADLOCK
+        case EDEADLOCK: return TE_EDEADLOCK;
+#endif    
+        
+#ifdef EBFONT
+        case EBFONT: return TE_EBFONT;
+#endif       
+        
+#ifdef ENOSTR
+        case ENOSTR: return TE_ENOSTR;
+#endif       
+        
+#ifdef ENODATA
+        case ENODATA: return TE_ENODATA;
+#endif      
+        
+#ifdef ETIME
+        case ETIME: return TE_ETIME;
+#endif        
+        
+#ifdef ENOSR
+        case ENOSR: return TE_ENOSR;
+#endif        
+        
+#ifdef ENONET
+        case ENONET: return TE_ENONET;
+#endif       
+        
+#ifdef ENOPKG
+        case ENOPKG: return TE_ENOPKG;
+#endif       
+        
+#ifdef EREMOTE
+        case EREMOTE: return TE_EREMOTE;
+#endif      
+        
+#ifdef ENOLINK
+        case ENOLINK: return TE_ENOLINK;
+#endif      
+        
+#ifdef EADV
+        case EADV: return TE_EADV;
+#endif         
+        
+#ifdef ESRMNT
+        case ESRMNT: return TE_ESRMNT;
+#endif       
+        
+#ifdef ECOMM
+        case ECOMM: return TE_ECOMM;
+#endif        
+        
+#ifdef EPROTO
+        case EPROTO: return TE_EPROTO;
+#endif       
+        
+#ifdef EMULTIHOP
+        case EMULTIHOP: return TE_EMULTIHOP;
+#endif    
+        
+#ifdef EDOTDOT
+        case EDOTDOT: return TE_EDOTDOT;
+#endif      
+        
+#ifdef EBADMSG
+        case EBADMSG: return TE_EBADMSG;
+#endif      
+        
+#ifdef EOVERFLOW
+        case EOVERFLOW: return TE_EOVERFLOW;
+#endif    
+        
+#ifdef ENOTUNIQ
+        case ENOTUNIQ: return TE_ENOTUNIQ;
+#endif     
+        
+#ifdef EBADFD
+        case EBADFD: return TE_EBADFD;
+#endif       
+        
+#ifdef EREMCHG
+        case EREMCHG: return TE_EREMCHG;
+#endif      
+        
+#ifdef ELIBACC
+        case ELIBACC: return TE_ELIBACC;
+#endif      
+        
+#ifdef ELIBBAD
+        case ELIBBAD: return TE_ELIBBAD;
+#endif      
+        
+#ifdef ELIBSCN
+        case ELIBSCN: return TE_ELIBSCN;
+#endif      
+        
+#ifdef ELIBMAX
+        case ELIBMAX: return TE_ELIBMAX;
+#endif      
+        
+#ifdef ELIBEXEC
+        case ELIBEXEC: return TE_ELIBEXEC;
+#endif     
+        
+#ifdef EILSEQ
+        case EILSEQ: return TE_EILSEQ;
+#endif       
+        
+#ifdef ERESTART
+        case ERESTART: return TE_ERESTART;
+#endif     
+        
+#ifdef ESTRPIPE
+        case ESTRPIPE: return TE_ESTRPIPE;
+#endif     
+        
+#ifdef EUSERS
+        case EUSERS: return TE_EUSERS;
+#endif       
+        
+#ifdef ENOTSOCK
+        case ENOTSOCK: return TE_ENOTSOCK;
+#endif     
+        
+#ifdef EDESTADDRREQ
+        case EDESTADDRREQ: return TE_EDESTADDRREQ;
+#endif 
+        
+#ifdef EMSGSIZE
+        case EMSGSIZE: return TE_EMSGSIZE;
+#endif     
+        
+#ifdef EPROTOTYPE
+        case EPROTOTYPE: return TE_EPROTOTYPE;
+#endif   
+        
+#ifdef ENOPROTOOPT
+        case ENOPROTOOPT: return TE_ENOPROTOOPT;
+#endif  
+        
+#ifdef EPROTONOSUPPORT
+        case EPROTONOSUPPORT: return TE_EPROTONOSUPPORT;
+#endif 
+        
+#ifdef ESOCKTNOSUPPORT
+        case ESOCKTNOSUPPORT: return TE_ESOCKTNOSUPPORT;
+#endif 
+        
+#ifdef EOPNOTSUPP
+        case EOPNOTSUPP: return TE_EOPNOTSUPP;
+#endif   
+        
+#ifdef EPFNOSUPPORT
+        case EPFNOSUPPORT: return TE_EPFNOSUPPORT;
+#endif 
+        
+#ifdef EAFNOSUPPORT
+        case EAFNOSUPPORT: return TE_EAFNOSUPPORT;
+#endif 
+        
+#ifdef EADDRINUSE
+        case EADDRINUSE: return TE_EADDRINUSE;
+#endif   
+        
+#ifdef EADDRNOTAVAIL
+        case EADDRNOTAVAIL: return TE_EADDRNOTAVAIL;
+#endif
+        
+#ifdef ENETDOWN
+        case ENETDOWN: return TE_ENETDOWN;
+#endif     
+        
+#ifdef ENETUNREACH
+        case ENETUNREACH: return TE_ENETUNREACH;
+#endif  
+        
+#ifdef ENETRESET
+        case ENETRESET: return TE_ENETRESET;
+#endif    
+        
+#ifdef ECONNABORTED
+        case ECONNABORTED: return TE_ECONNABORTED;
+#endif 
+        
+#ifdef ECONNRESET
+        case ECONNRESET: return TE_ECONNRESET;
+#endif   
+        
+#ifdef ENOBUFS
+        case ENOBUFS: return TE_ENOBUFS;
+#endif      
+        
+#ifdef EISCONN
+        case EISCONN: return TE_EISCONN;
+#endif      
+        
+#ifdef ENOTCONN
+        case ENOTCONN: return TE_ENOTCONN;
+#endif     
+        
+#ifdef ESHUTDOWN
+        case ESHUTDOWN: return TE_ESHUTDOWN;
+#endif    
+        
+#ifdef ETOOMANYREFS
+        case ETOOMANYREFS: return TE_ETOOMANYREFS;
+#endif 
+        
+#ifdef ETIMEDOUT
+        case ETIMEDOUT: return TE_ETIMEDOUT;
+#endif    
+        
+#ifdef ECONNREFUSED
+        case ECONNREFUSED: return TE_ECONNREFUSED;
+#endif 
+        
+#ifdef EHOSTDOWN
+        case EHOSTDOWN: return TE_EHOSTDOWN;
+#endif    
+        
+#ifdef EHOSTUNREACH
+        case EHOSTUNREACH: return TE_EHOSTUNREACH;
+#endif 
+        
+#ifdef EALREADY
+        case EALREADY: return TE_EALREADY;
+#endif     
+        
+#ifdef EINPROGRESS
+        case EINPROGRESS: return TE_EINPROGRESS;
+#endif  
+        
+#ifdef ESTALE
+        case ESTALE: return TE_ESTALE;
+#endif       
+        
+#ifdef EUCLEAN
+        case EUCLEAN: return TE_EUCLEAN;
+#endif      
+        
+#ifdef ENOTNAM
+        case ENOTNAM: return TE_ENOTNAM;
+#endif      
+        
+#ifdef ENAVAIL
+        case ENAVAIL: return TE_ENAVAIL;
+#endif      
+        
+#ifdef EISNAM
+        case EISNAM: return TE_EISNAM;
+#endif       
+        
+#ifdef EREMOTEIO
+        case EREMOTEIO: return TE_EREMOTEIO;
+#endif    
+        
+#ifdef EDQUOT
+        case EDQUOT: return TE_EDQUOT;
+#endif       
+        
+#ifdef ENOMEDIUM
+        case ENOMEDIUM: return TE_ENOMEDIUM;
+#endif    
+        
+#ifdef EMEDIUMTYPE
+        case EMEDIUMTYPE: return TE_EMEDIUMTYPE;
+#endif  
+        
+#ifdef EOK
+        case EOK: return TE_EOK;
+#endif 
+        
+#ifdef EFAIL
+        case EFAIL: return TE_EFAIL;
+#endif     
+        
+#ifdef ESMALLBUF
+        case ESMALLBUF: return TE_ESMALLBUF;
+#endif 
+        
+#ifdef EPENDING
+        case EPENDING: return TE_EPENDING;
+#endif  
+        
+#ifdef ESHCMD
+        case ESHCMD: return TE_ESHCMD;
+#endif    
+        
+#ifdef EWRONGPTR
+        case EWRONGPTR: return TE_EWRONGPTR;
+#endif 
+        
+#ifdef ETOOMANY
+        case ETOOMANY: return TE_ETOOMANY;
+#endif  
+                  
+        
+#ifdef EFMT
+        case EFMT: return TE_EFMT;
+#endif      
+        
+#ifdef EENV
+        case EENV: return TE_EENV;
+#endif      
+        
+#ifdef EWIN
+        case EWIN: return TE_EWIN;
+#endif      
+        
+#ifdef ERCFIO
+        case ERCFIO: return TE_ERCFIO;
+#endif 
+        
+#ifdef ENORCF
+        case ENORCF: return TE_ENORCF;
+#endif        
+        
+#ifdef ETALOCAL
+        case ETALOCAL: return TE_ETALOCAL;
+#endif     
+        
+#ifdef ETADEAD
+        case ETADEAD: return TE_ETADEAD;
+#endif      
+        
+#ifdef ETAREBOOTED
+        case ETAREBOOTED: return TE_ETAREBOOTED;
+#endif  
+        
+#ifdef ETARTN
+        case ETARTN: return TE_ETARTN;
+#endif       
+        
+#ifdef ESUNRPC
+        case ESUNRPC: return TE_ESUNRPC;
+#endif      
+        
+#ifdef ECORRUPTED
+        case ECORRUPTED: return TE_ECORRUPTED;
+#endif   
+        
+#ifdef ERPCTIMEOUT
+        case ERPCTIMEOUT: return TE_ERPCTIMEOUT;
+#endif  
+        
+#ifdef ERPCDEAD
+        case ERPCDEAD: return TE_ERPCDEAD;
+#endif     
+
+        
+#ifdef EASNGENERAL
+        case EASNGENERAL: return TE_EASNGENERAL;
+#endif
+        
+#ifdef EASNWRONGLABEL
+        case EASNWRONGLABEL: return TE_EASNWRONGLABEL;
+#endif    
+        
+#ifdef EASNTXTPARSE
+        case EASNTXTPARSE: return TE_EASNTXTPARSE;
+#endif      
+        
+#ifdef EASNDERPARSE
+        case EASNDERPARSE: return TE_EASNDERPARSE;
+#endif      
+        
+#ifdef EASNINCOMPLVAL
+        case EASNINCOMPLVAL: return TE_EASNINCOMPLVAL;
+#endif    
+        
+#ifdef EASNOTHERCHOICE
+        case EASNOTHERCHOICE: return TE_EASNOTHERCHOICE;
+#endif   
+        
+#ifdef EASNWRONGTYPE
+        case EASNWRONGTYPE: return TE_EASNWRONGTYPE;
+#endif     
+        
+#ifdef EASNNOTLEAF
+        case EASNNOTLEAF: return TE_EASNNOTLEAF;
+#endif       
+                          
+
+        
+#ifdef EASNTXTNOTINT
+        case EASNTXTNOTINT: return TE_EASNTXTNOTINT;
+#endif     
+        
+#ifdef EASNTXTNOTCHSTR
+        case EASNTXTNOTCHSTR: return TE_EASNTXTNOTCHSTR;
+#endif   
+        
+#ifdef EASNTXTNOTOCTSTR
+        case EASNTXTNOTOCTSTR: return TE_EASNTXTNOTOCTSTR;
+#endif  
+        
+#ifdef EASNTXTVALNAME
+        case EASNTXTVALNAME: return TE_EASNTXTVALNAME;
+#endif    
+                          
+        
+#ifdef EASNTXTSEPAR
+        case EASNTXTSEPAR: return TE_EASNTXTSEPAR;
+#endif      
+                          
+        
+#ifdef ETADCSAPNOTEX
+        case ETADCSAPNOTEX: return TE_ETADCSAPNOTEX;
+#endif  
+        
+#ifdef ETADLOWER
+        case ETADLOWER: return TE_ETADLOWER;
+#endif       
+                        
+                        
+        
+#ifdef ETADCSAPSTATE
+        case ETADCSAPSTATE: return TE_ETADCSAPSTATE;
+#endif   
+        
+#ifdef ETADNOTMATCH
+        case ETADNOTMATCH: return TE_ETADNOTMATCH;
+#endif    
+        
+#ifdef ETADLESSDATA
+        case ETADLESSDATA: return TE_ETADLESSDATA;
+#endif    
+                        
+                        
+        
+#ifdef ETADMISSNDS
+        case ETADMISSNDS: return TE_ETADMISSNDS;
+#endif     
+        
+#ifdef ETADWRONGNDS
+        case ETADWRONGNDS: return TE_ETADWRONGNDS;
+#endif    
+        
+#ifdef ETADCSAPDB
+        case ETADCSAPDB: return TE_ETADCSAPDB;
+#endif      
+        
+#ifdef ETADENDOFDATA
+        case ETADENDOFDATA: return TE_ETADENDOFDATA;
+#endif   
+        
+#ifdef ETADEXPRPARSE
+        case ETADEXPRPARSE: return TE_ETADEXPRPARSE;
+#endif   
+
+        
+#ifdef EBACKUP
+        case EBACKUP: return TE_EBACKUP;
+#endif
+        
+#ifdef EISROOT
+        case EISROOT: return TE_EISROOT;
+#endif  
+        
+#ifdef EHASSON
+        case EHASSON: return TE_EHASSON;
+#endif  
+        
+#ifdef ENOCONF
+        case ENOCONF: return TE_ENOCONF;
+#endif  
+        
+#ifdef EBADTYPE
+        case EBADTYPE: return TE_EBADTYPE;
+#endif 
+
+        
+#ifdef ESTEMPTY
+        case ESTEMPTY: return TE_ESTEMPTY;
+#endif
+        
+#ifdef ESTSKIP
+        case ESTSKIP: return TE_ESTSKIP;
+#endif    
+        
+#ifdef ESTFAKE
+        case ESTFAKE: return TE_ESTFAKE;
+#endif    
+        
+#ifdef ESTPASS
+        case ESTPASS: return TE_ESTPASS;
+#endif    
+        
+#ifdef ESTCONF
+        case ESTCONF: return TE_ESTCONF;
+#endif    
+        
+#ifdef ESTKILL
+        case ESTKILL: return TE_ESTKILL;
+#endif    
+        
+#ifdef ESTCORE
+        case ESTCORE: return TE_ESTCORE;
+#endif    
+        
+#ifdef ESTPROLOG
+        case ESTPROLOG: return TE_ESTPROLOG;
+#endif  
+        
+#ifdef ESTEPILOG
+        case ESTEPILOG: return TE_ESTEPILOG;
+#endif  
+        
+#ifdef ESTALIVE
+        case ESTALIVE: return TE_ESTALIVE;
+#endif   
+        
+#ifdef ESTFAIL
+        case ESTFAIL: return TE_ESTFAIL;
+#endif    
+        
+#ifdef ESTUNEXP
+        case ESTUNEXP: return TE_ESTUNEXP;
+#endif   
+
+        
+#ifdef ERPC2H
+        case ERPC2H: return TE_ERPC2H;
+#endif
+        
+#ifdef EH2RPC
+        case EH2RPC: return TE_EH2RPC;
+#endif
+
+        
+#ifdef ESYNCFAILED
+        case ESYNCFAILED: return TE_ESYNCFAILED;
+#endif
+        
+        default: return TE_EFAIL;
     }
 }
 
