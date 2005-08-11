@@ -31,6 +31,7 @@ dist_mybin_SCRIPTS = \
     te_discover_host \
     te_configure_package \
     te_cross_build \
+    te_cross_make \
     te_generate_symtbl \
     te_generate_rpctbl \
     te_rpc_supported \

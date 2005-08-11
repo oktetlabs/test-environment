@@ -34,7 +34,6 @@ SUBDIRS = include doc lib tools engine agents suites
 mybindir=$(prefix)/$(host)/bin
 dist_mybin_SCRIPTS = dispatcher.sh
 
-
 DISTCLEANFILES = builder.conf builder.conf.processed 
 
 EXTRA_DIST = Doxyfile
@@ -45,22 +44,12 @@ EXTRA_DIST+=@SUITE_SCRIPTS_EXTRA_DIST@
 
 @SUITE_SCRIPTS_EXTRA_DIST@:
 	for i in @SUITE_SCRIPTS@ ; do   \
-		cp $$i . ;                  \
+		cp $$i . ;              \
 	done
 
 endif
 
-
 all: install-data
-
-te: install-data
-	. builder.conf.processed 
-	cd include ; make install
-	cd lib ; make install 
-	cd tools ; make install
-	cd engine ; make install
-	cd agents ; make install
-	te_cross_build $(prefix)
 
 dist-hook:
 	cp -pR @TE_CONF_DIR@ $(distdir)
@@ -70,4 +59,18 @@ dist-hook:
 		rm -f $(distdir)/conf/builder.conf ; \
 	fi ;
 	cp @TE_BUILDER_CONF@ $(distdir)/conf/builder.conf
+
+install-exec-hook:
+	cd $(DESTDIR)/$(prefix) ; ln -sf $(host)/bin/dispatcher.sh dispatcher.sh
+	$(srcdir)/engine/builder/te_cross_build $(prefix)
+
+uninstall-hook:
+	rm -f $(DESTDIR)/$(prefix)/dispatcher.sh
+	$(srcdir)/engine/builder/te_cross_make uninstall
+
+clean-local:
+	$(srcdir)/engine/builder/te_cross_make clean
+
+distclean-local:
+	$(srcdir)/engine/builder/te_cross_make distclean
 

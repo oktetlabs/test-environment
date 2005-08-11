@@ -149,11 +149,15 @@ fi
 cd ${WORK_DIR}
 AC_CONFIG_SUBDIRS(doc)
 
+mkdir -p include
+mkdir -p lib
+mkdir -p engine
+mkdir -p tools
+mkdir -p agents
+
 DUMMY=
 
 # Process libraries
-mkdir -p include
-mkdir -p lib
 LIB_SUBDIRS=
 LIB_DIST_SUBDIRS=
 for p in ${TE_BS_PLATFORMS} ; do
@@ -220,20 +224,40 @@ AC_SUBST([TOOLS_SUBDIRS])
 
 # Configure Test Agents
 TA_SUBDIRS=
+TA_DIST_SUBDIRS=
 for package in $DUMMY $TE_BS_TA ; do
     PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
-    if test "$PLATFORM" != "$host" ; then continue ; fi
     PKGSRC=`eval echo '$TE_BS_TA_'${package}'_SOURCES'` ;
     if test -z "$PKGSRC" ; then 
         PKGSRC=${TE_BASE}/agents/$package ; 
     fi
+    
+    cd agents
+    mkdir -p $package
+    NAME=`basename $PKGSRC`
+    TA_DIST_SUBDIRS="$TA_DIST_SUBDIRS $NAME"
+    if ! test -e $NAME ; then
+        ln -s $package $NAME
+        TA_DIST_SUBDIRS="$TA_DIST_SUBDIRS $NAME"
+    fi
+    cd ..
+
+    if test "$PLATFORM" != "$host" ; then continue ; fi
+    
     if test -z "$no_create" ; then
         ${TE_BASE}/engine/builder/te_configure_package TA $package $package \
             $host $PKGSRC $prefix || exit 1
     fi
     TA_SUBDIRS="$TA_SUBDIRS $package"
 done
+
+# Remove duplicated elements from TA_DIST_SUBDIRS
+TMP=`echo $TA_DIST_SUBDIRS | sed s/\ /\\\\n/g | sort | uniq`
+TA_DIST_SUBDIRS=
+for i in $TMP ; do TA_DIST_SUBDIRS="$TA_DIST_SUBDIRS $i" ; done
+
 AC_SUBST([TA_SUBDIRS])
+AC_SUBST([TA_DIST_SUBDIRS])
 
 AC_SUBST([host])
 

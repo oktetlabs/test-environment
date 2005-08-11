@@ -100,7 +100,6 @@ process_libs()
 PLATFORM_NAME=`echo $PLATFORM | sed s/-/_/g`
 
 if test "$KIND" = TA ; then
-    mkdir -p agents
     cd agents
     PREFIX=$PREFIX/agents
     mkdir -p $TE_INSTALL/agents
@@ -109,17 +108,14 @@ else
 fi
 
 if test "$KIND" = LIB ; then
-    mkdir -p lib
     cd lib
 fi
 
 if test "$KIND" = APP ; then
-    mkdir -p engine
     cd engine
 fi
 
 if test "$KIND" = TOOL ; then
-    mkdir -p tools
     cd tools
 fi
 

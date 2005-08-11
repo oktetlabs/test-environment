@@ -3,6 +3,12 @@
 TE_RUN_DIR=`pwd`
 
 DISPATCHER=`which $0` 
+if test -L $DISPATCHER ; then
+    pushd `dirname $DISPATCHER` >/dev/null
+    DISPATCHER=`readlink ${DISPATCHER}`
+    DISPATCHER=`which $DISPATCHER`
+    popd >/dev/null
+fi    
 
 # which somewhere may give only relative, but not absolute path to the 
 # dispatcher directory, therefore the following more safe and portable way
@@ -426,7 +432,7 @@ if test -z "$TE_INSTALL" ; then
 fi
 
 if test -z "${TE_PATH}" ; then
-    TMP=`find ${TE_INSTALL} -name dispatcher.sh 2>/dev/null`
+    TMP=`find -follow ${TE_INSTALL} -name dispatcher.sh 2>/dev/null`
     if test -n "${TMP}" ; then
         TMP=`dirname ${TMP}`
         TE_PATH=${TE_PATH/%\/bin/}
@@ -511,11 +517,11 @@ if test -n "$BUILDER" ; then
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
             --with-config=${CONF_BUILDER} >"${TE_BUILD_LOG}" || \
             exit_with_log ;
-        make te >>"${TE_BUILD_LOG}" || exit_with_log ;
+        make install >>"${TE_BUILD_LOG}" || exit_with_log ;
     else
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
             --with-config=${CONF_BUILDER} || exit_with_log ;
-        make te || exit_with_log ;
+        make install || exit_with_log ;
     fi
 fi
 
