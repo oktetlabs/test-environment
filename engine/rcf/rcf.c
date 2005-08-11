@@ -1461,7 +1461,7 @@ bad_protocol:
     ERROR("Bad answer is received from TA '%s'", agent->name);
     if (req != NULL)
     {
-        req->message->error = TE_RC(TE_RCF, TE_ERCFIO);
+        req->message->error = TE_RC(TE_RCF, TE_EIPC);
         answer_user_request(req);
     }
     set_ta_dead(agent);
