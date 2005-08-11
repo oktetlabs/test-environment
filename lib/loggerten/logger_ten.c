@@ -45,9 +45,6 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#if HAVE_ERRNO_H
-#include <errno.h>
-#endif
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -60,6 +57,7 @@
 
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_errno.h"
 #include "te_raw_log.h"
 #include "ipc_client.h"
 #include "logger_api.h"
