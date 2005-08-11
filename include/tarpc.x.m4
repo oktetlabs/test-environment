@@ -1460,7 +1460,7 @@ enum option_type {
     OPT_TCP_INFO = 7
 };
 
-struct option_value_linger {
+struct tarpc_linger {
     tarpc_int l_onoff; 
     tarpc_int l_linger;
 };
@@ -1511,7 +1511,7 @@ struct option_value_tcp_info {
 
 union option_value switch (option_type opttype) {
     case OPT_INT:     tarpc_int opt_int;
-    case OPT_LINGER:  struct option_value_linger opt_linger;
+    case OPT_LINGER:  struct tarpc_linger opt_linger;
     case OPT_TIMEVAL: struct tarpc_timeval opt_timeval;
     case OPT_MREQN:   struct option_value_mreqn  opt_mreqn;
     case OPT_IPADDR:  uint32_t opt_ipaddr;

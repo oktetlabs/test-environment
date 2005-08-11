@@ -1161,40 +1161,39 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
             case RPC_SO_LINGER:
                 val.opttype = OPT_LINGER;
-                if (roptlen >= sizeof(struct linger))
+                if (roptlen >= sizeof(tarpc_linger))
                 {
                     val.option_value_u.opt_linger.l_onoff =
-                        ((struct linger *)optval)->l_onoff;
+                        ((tarpc_linger *)optval)->l_onoff;
                     val.option_value_u.opt_linger.l_linger =
-                        ((struct linger *)optval)->l_linger;
+                        ((tarpc_linger *)optval)->l_linger;
                 }
                 else
                 {
                     WARN("Length of socket option %s value is less than "
-                         "sizeof(struct linger)=%u, value is ignored",
-                         sockopt_rpc2str(optname), sizeof(struct linger));
+                         "sizeof(tarpc_linger)=%u, value is ignored",
+                         sockopt_rpc2str(optname),
+                         sizeof(tarpc_linger));
                 }
-                if (optlen_copy == sizeof(struct linger))
+                if (optlen_copy == sizeof(tarpc_linger))
                     optlen_copy = RPC_OPTLEN_AUTO;
                 break;
 
             case RPC_SO_RCVTIMEO:
             case RPC_SO_SNDTIMEO:
                 val.opttype = OPT_TIMEVAL;
-                if (roptlen >= sizeof(struct timeval))
+                if (roptlen >= sizeof(tarpc_timeval))
                 {
-                    val.option_value_u.opt_timeval.tv_sec =
-                        ((struct timeval *)optval)->tv_sec;
-                    val.option_value_u.opt_timeval.tv_usec =
-                        ((struct timeval *)optval)->tv_usec;
+                    val.option_value_u.opt_timeval =
+                        *((tarpc_timeval *)optval);
                 }
                 else
                 {
                     WARN("Length of socket option %s value is less than "
-                         "sizeof(struct timeval)=%u, value is ignored",
-                         sockopt_rpc2str(optname), sizeof(struct timeval));
+                         "sizeof(tarpc_timeval)=%u, value is ignored",
+                         sockopt_rpc2str(optname), sizeof(tarpc_timeval));
                 }
-                if (optlen_copy == sizeof(struct timeval))
+                if (optlen_copy == sizeof(tarpc_timeval))
                     optlen_copy = RPC_OPTLEN_AUTO;
                 break;
 
@@ -1346,36 +1345,33 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 }
 
                 case RPC_SO_LINGER:
-                    if (roptlen >= sizeof(struct linger))
+                    if (roptlen >= sizeof(tarpc_linger))
                     {
-                        ((struct linger *)optval)->l_onoff =
+                        ((tarpc_linger *)optval)->l_onoff =
                             out.optval.optval_val[0].option_value_u.
                                 opt_linger.l_onoff;
-                        ((struct linger *)optval)->l_linger =
+                        ((tarpc_linger *)optval)->l_linger =
                            out.optval.optval_val[0].option_value_u.
                                 opt_linger.l_linger;
                         snprintf(opt_val_str, sizeof(opt_val_str),
                                  "{ l_onoff: %d, l_linger: %d }",
-                                 ((struct linger *)optval)->l_onoff,
-                                 ((struct linger *)optval)->l_linger);
+                                 ((tarpc_linger *)optval)->l_onoff,
+                                 ((tarpc_linger *)optval)->l_linger);
                     }
                     break;
 
                 case RPC_SO_RCVTIMEO:
                 case RPC_SO_SNDTIMEO:
-                    if (roptlen >= sizeof(struct timeval))
+                    if (roptlen >= sizeof(tarpc_timeval))
                     {
-                        ((struct timeval *)optval)->tv_sec =
+                        *((tarpc_timeval *)optval) =
                             out.optval.optval_val[0].option_value_u.
-                                opt_timeval.tv_sec;
-                        ((struct timeval *)optval)->tv_usec =
-                            out.optval.optval_val[0].option_value_u.
-                                opt_timeval.tv_usec;
+                                opt_timeval;
 
                         snprintf(opt_val_str, sizeof(opt_val_str),
                                  "{ tv_sec: %ld, tv_usec: %ld }",
-                                 ((struct timeval *)optval)->tv_sec,
-                                 ((struct timeval *)optval)->tv_usec);
+                                 ((tarpc_timeval *)optval)->tv_sec,
+                                 ((tarpc_timeval *)optval)->tv_usec);
                     }
                     break;
 
@@ -1574,36 +1570,31 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
             }
 
             case RPC_SO_LINGER:
-                val.option_value_u.opt_linger.l_onoff =
-                    ((struct linger *)optval)->l_onoff;
-                val.option_value_u.opt_linger.l_linger =
-                    ((struct linger *)optval)->l_linger;
                 val.opttype = OPT_LINGER;
+                val.option_value_u.opt_linger = *((tarpc_linger *)optval);
                 
-                if (optlen == sizeof(struct linger))
+                if (optlen == sizeof(tarpc_linger))
                     in.optlen = RPC_OPTLEN_AUTO;
 
                 snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ l_onoff: %d, l_linger: %d }",
-                         ((struct linger *)optval)->l_onoff,
-                         ((struct linger *)optval)->l_linger);
+                         ((tarpc_linger *)optval)->l_onoff,
+                         ((tarpc_linger *)optval)->l_linger);
                 break;
 
             case RPC_SO_RCVTIMEO:
             case RPC_SO_SNDTIMEO:
-                val.option_value_u.opt_timeval.tv_sec =
-                    ((struct timeval *)optval)->tv_sec;
-                val.option_value_u.opt_timeval.tv_usec =
-                    ((struct timeval *)optval)->tv_usec;
                 val.opttype = OPT_TIMEVAL;
+                val.option_value_u.opt_timeval =
+                    *((tarpc_timeval *)optval);
 
-                if (optlen == sizeof(struct timeval))
+                if (optlen == sizeof(tarpc_timeval))
                     in.optlen = RPC_OPTLEN_AUTO;
 
                 snprintf(opt_val_str, sizeof(opt_val_str),
                          "{ tv_sec: %ld, tv_usec: %ld }",
-                         ((struct timeval *)optval)->tv_sec,
-                         ((struct timeval *)optval)->tv_usec);
+                         ((tarpc_timeval *)optval)->tv_sec,
+                         ((tarpc_timeval *)optval)->tv_usec);
                 break;
 
             case RPC_IP_ADD_MEMBERSHIP:
