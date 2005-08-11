@@ -179,20 +179,20 @@ typedef enum {
     TE_EFAIL,     /**< Generic failure */
     TE_ESMALLBUF, /**< Too small buffer is provided */
     TE_EPENDING,  /**< Pending data retain on connection */
+    TE_EIPC,         /**< Could not interact with RCF */
     TE_ESHCMD,    /**< Shell command returned non-zero exit status */
     TE_EWRONGPTR, /**< Wrong pointer was passed to function */
     TE_ETOOMANY,  /**< Too many objects have been already allocated, 
                        so that the resource is not available */
-    TE_EFMT,      /**< Invalid  */
+    TE_EFMT,      /**< Invalid format */
     TE_EENV,      /**< Inappropriate environment */
     TE_EWIN,      /**< Windows API function failed, 
                        see log for the description */
 /*@}*/
 
 /** @name Remote Control Facility errno's */
-    TE_ERCFIO = TE_NEW_ERRNO + 600, 
-                     /**< Could not interact with RCF */
-    TE_ENORCF,       /**< RCF initialization failed */
+    TE_ENORCF = TE_NEW_ERRNO + 600,       
+                     /**< RCF initialization failed */
     TE_ETALOCAL,     /**< TA runs on the same station with TEN and
                           cannot be rebooted */
     TE_ETADEAD,      /**< Test Agent is dead */
@@ -542,6 +542,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(EFAIL);     
         ERR2STR(ESMALLBUF); 
         ERR2STR(EPENDING);  
+        ERR2STR(EIPC); 
         ERR2STR(ESHCMD);    
         ERR2STR(EWRONGPTR); 
         ERR2STR(ETOOMANY);  
@@ -549,7 +550,6 @@ te_rc_err2str(te_errno err)
         ERR2STR(EFMT);      
         ERR2STR(EENV);      
         ERR2STR(EWIN);      
-        ERR2STR(ERCFIO); 
         ERR2STR(ENORCF);        
         ERR2STR(ETALOCAL);     
         ERR2STR(ETADEAD);      
