@@ -197,7 +197,6 @@ typedef enum {
                           cannot be rebooted */
     TE_ETADEAD,      /**< Test Agent is dead */
     TE_ETAREBOOTED,  /**< Test Agent is rebooted */
-    TE_ETARTN,       /**< Routine on the TA failed */
     TE_ESUNRPC,      /**< SUN RPC failed */
     TE_ECORRUPTED,   /**< Data are corrupted by the software under test */
     TE_ERPCTIMEOUT,  /**< Timeout ocurred during RPC call */
@@ -554,7 +553,6 @@ te_rc_err2str(te_errno err)
         ERR2STR(ETALOCAL);     
         ERR2STR(ETADEAD);      
         ERR2STR(ETAREBOOTED);  
-        ERR2STR(ETARTN);       
         ERR2STR(ESUNRPC);      
         ERR2STR(ECORRUPTED);   
         ERR2STR(ERPCTIMEOUT);  
