@@ -625,6 +625,7 @@ te_rc_err2str(te_errno err)
 
         ERR2STR(ESYNCFAILED);
         
+        case 0:  return "0";
         default: return "Unknown";
     }
 #undef ERR2STR    
