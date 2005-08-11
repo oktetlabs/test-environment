@@ -71,7 +71,7 @@ typedef struct tapi_jmp_point {
 #define TAPI_ON_JMP(x) \
     do {                                                        \
         tapi_jmp_point *p = tapi_jmp_push(__FILE__, __LINE__);  \
-        int             jmp_rc = EFAULT;                        \
+        int             jmp_rc = TE_EFAULT;                     \
                                                                 \
         if (p == NULL || (jmp_rc = setjmp(p->env)) != 0)        \
         {                                                       \

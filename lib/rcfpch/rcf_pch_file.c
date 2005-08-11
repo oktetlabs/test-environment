@@ -100,7 +100,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         if (op == RCFOP_FDEL)
         {
             ERROR("File delete operation for memory file");
-            rc = TE_EPERM;
+            rc = TE_RC(TE_RCF_PCH, TE_EPERM);
             goto reject;
         }
 
@@ -110,7 +110,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         {
             ERROR("Invalid format - %s separator",
                   op == RCFOP_FGET ? "missing" : "extra");
-            rc = TE_EFMT;
+            rc = TE_RC(TE_RCF_PCH, TE_EFMT);
             goto reject;
         }
         /* Try to consider address as hexadecimal number */
@@ -121,7 +121,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             {
                 ERROR("Unrecongnized symbols in address "
                                   "'%s'", tmp);
-                rc = TE_EFMT;
+                rc = TE_RC(TE_RCF_PCH, TE_EFMT);
                 goto reject;
             }
             addr = (void *)addr_int;
@@ -142,7 +142,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             {
                 ERROR("No such name '%s' in symbol table",
                                   (sep != NULL) ? buf : ptr);
-                rc = TE_ENOENT;
+                rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
                 goto reject;
             }
             addr = *(uint8_t **)addr_ptr;
@@ -156,7 +156,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             {
                 ERROR("Incorrect length field '%s' format",
                                   sep + 1);
-                rc = TE_EFMT;
+                rc = TE_RC(TE_RCF_PCH, TE_EFMT);
                 goto reject;
             }
             /* Length to read has successfully been recognized */
@@ -179,8 +179,8 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                                          &more_len, NULL);
                 if (rc != 0)
                 {
-                    ERROR("rcfpch", "rcf_comm_agent_wait() failed %d", rc);
-                    EXIT("failed %d", rc);
+                    ERROR("rcfpch", "rcf_comm_agent_wait() failed %r", rc);
+                    EXIT("failed %r", rc);
                     return rc;
                 }
             }
@@ -192,18 +192,16 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                                  "0 attach %lu", len) >= reply_buflen)
             {
                 ERROR("Command buffer too small for reply");
-                rc = E2BIG;
+                rc = TE_RC(TE_RCF_PCH, TE_E2BIG);
                 goto reject;
             }
 
             rcf_ch_lock();
             rc = rcf_comm_agent_reply(conn, cbuf, strlen(cbuf) + 1);
             if (rc == 0)
-            {
                 rc = rcf_comm_agent_reply(conn, addr, len);
-            }
             rcf_ch_unlock();
-            EXIT("%d", rc);
+            EXIT("%r", rc);
             return rc;
         }
         /* Unreachable */
@@ -225,7 +223,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             {
                 VERB("cannot create directory '%s'",
                                   RCF_FILE_TMP_DEF_DIR);
-                rc = TE_ENOENT;
+                rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
                 goto reject;
             }
         }
@@ -237,7 +235,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         sprintf(fname, RCF_FILE_TMP_DEF_DIR "%s", 
                 filename + strlen(RCF_FILE_TMP_PREFIX));
 #else
-        rc = TE_ENOENT;
+        rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
         goto reject;
 #endif
     }
@@ -255,7 +253,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
     {
         if (unlink(fname) < 0)
         {
-            rc = errno;
+            rc = TE_OS_RC(TE_RCF_PCH, errno);
             goto reject;
         }
         SEND_ANSWER("0");
@@ -267,7 +265,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
     if (fd < 0)
     {
         ERROR("failed to open file '%s'", fname);
-        rc = TE_ENOENT;
+        rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
         goto reject;
     }
 
@@ -282,7 +280,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         if ((res < 0) || ((size_t)res < rw_len))
         {
             ERROR("failed to write to file '%s'\n", fname);
-            rc = errno;
+            rc = TE_OS_RC(TE_RCF_PCH, errno);
             goto reject;
         }
         while (rest > 0)
@@ -290,11 +288,11 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             rw_len = reply_buflen;
             rc = rcf_comm_agent_wait(conn, cbuf + answer_plen, &rw_len,
                                      NULL);
-            if ((rc != 0) && (rc != TE_EPENDING))
+            if ((rc != 0) && (TE_RC_GET_ERROR(rc) != TE_EPENDING))
             {
-                ERROR("Communication error %d", rc);
+                ERROR("Communication error %r", rc);
                 close(fd);
-                EXIT("%d", rc);
+                EXIT("%r", rc);
                 return rc;
             }
             /*
@@ -305,19 +303,20 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
             if (rw_len > reply_buflen)
                 rw_len = reply_buflen;
             rest -= rw_len;
-            if ((rw_len == 0) || ((rc == TE_EPENDING) != (rest != 0)))
+            if ((rw_len == 0) || 
+                ((TE_RC_GET_ERROR(rc) == TE_EPENDING) != (rest != 0)))
             {
                 ERROR("Communication error - %s",
                       (rw_len == 0) ? "empty read" : "extra/missing data");
                 close(fd);
                 EXIT("EIO");
-                return EIO;
+                return TE_EIO;
             }
 
             res = write(fd, cbuf + answer_plen, rw_len);
             if ((res < 0) || ((size_t)res < rw_len))
             {
-                rc = (res < 0) ? errno : ENOSPC;
+                rc = TE_OS_RC(TE_RCF_PCH, (res < 0) ? errno : ENOSPC);
                 unlink(fname);
                 ERROR("failed to write in file '%s'\n", fname);
                 goto reject;
@@ -333,8 +332,8 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
 
         if (fstat(fd, &stat_buf) != 0)
         {
-            ERROR("rcfpch", "fstat() failed %d", errno);
-            rc = errno;
+            rc = TE_OS_RC(TE_RCF_PCH, errno);
+            ERROR("rcfpch", "fstat() failed %r", rc);
             goto reject;
         }
 
@@ -343,7 +342,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
                 >= reply_buflen)
         {
             ERROR("Command buffer too small for reply");
-            rc = E2BIG;
+            rc = TE_RC(TE_RCF_PCH, TE_E2BIG);
             goto reject;
         }
         rcf_ch_lock();
@@ -359,7 +358,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         {
             ERROR("Failed to read file '%s'", fname);
         }
-        EXIT("%d", rc);
+        EXIT("%r", rc);
         return rc;
     } 
     /* Unreachable */
@@ -377,13 +376,13 @@ reject:
             rest = reply_buflen;
             error = rcf_comm_agent_wait(conn, cbuf + answer_plen,
                                         &rest, NULL);
-            if (error != 0 && error != TE_EPENDING)
+            if (error != 0 && TE_RC_GET_ERROR(error) != TE_EPENDING)
             {
-                return error;
+                return TE_RC(TE_RCF_PCH, error);
             }
         } while (error != 0);
     }
-    EXIT("%d", rc);
+    EXIT("%r", rc);
     SEND_ANSWER("%d", rc);
     /* Unreachable */
 }

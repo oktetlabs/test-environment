@@ -920,7 +920,7 @@ tapi_snmp_msg_var_bind(FILE *f, const tapi_snmp_varbind_t *var_bind)
     {
         ERROR("Too long OID length: %d, max: %d",
               var_bind->name.length, MAX_OID_LEN);
-        return TE_RC(TE_TAPI, ENAMETOOLONG);
+        return TE_RC(TE_TAPI, TE_ENAMETOOLONG);
     }
 
     for (i = 0; i < var_bind->name.length; i ++)
@@ -1215,7 +1215,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
         if ((unsigned int)(num_vars) != msg.num_var_binds)
         {
             ERROR("Wrong number of gor var_binds: %d", msg.num_var_binds);
-            rc = EFAULT;
+            rc = TE_EFAULT;
             goto clean_up;
         }
 
@@ -1463,7 +1463,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                     {
                         ERROR("Object %s has too long OID", oid_name);
                         tapi_log_buf_free(log_buf);
-                        return TE_RC(TE_TAPI, EFAULT);
+                        return TE_RC(TE_TAPI, TE_EFAULT);
                     }
                     tapi_snmp_append_oid(&oid, 1, 0);
 
@@ -1487,7 +1487,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
                     ERROR("It is not allowed to pass objects other than "
                           "table fields and scalars");
                     tapi_log_buf_free(log_buf);
-                    return TE_RC(TE_TAPI, EFAULT);
+                    return TE_RC(TE_TAPI, TE_EFAULT);
             }
             tapi_log_buf_append(log_buf, " (%s) : ",
                                 snmp_obj_type_h2str(obj_type));
@@ -1539,7 +1539,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
             default:
                 ERROR("%s unexpected syntax %d", __FUNCTION__, syntax);
                 tapi_log_buf_free(log_buf);
-                return TE_RC(TE_TAPI, EFAULT);
+                return TE_RC(TE_TAPI, TE_EFAULT);
         }
         tapi_log_buf_append(log_buf, "\n");
 
@@ -2027,7 +2027,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     {
         entry_node = entry_node->child_list;
         if (entry.length == MAX_OID_LEN)
-            return TE_RC(TE_TAPI, ENOBUFS);
+            return TE_RC(TE_TAPI, TE_ENOBUFS);
 
         tapi_snmp_append_oid(&entry, 1, entry_node->subid);
     }
@@ -2254,7 +2254,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
 
             if (vb_num == 0)
             {
-                rc = EFAULT;
+                rc = TE_EFAULT;
                 WARN("GETBULK got zero variables!");
                 break;
             }
@@ -2382,7 +2382,7 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
     {
         entry_node = entry_node->child_list;
         if (entry.length == MAX_OID_LEN)
-            return TE_RC(TE_TAPI, ENOBUFS);
+            return TE_RC(TE_TAPI, TE_ENOBUFS);
 
         tapi_snmp_append_oid(&entry, 1, entry_node->subid);
     }
@@ -2390,7 +2390,7 @@ tapi_snmp_get_table_dimension(tapi_snmp_oid_t *table_oid, int *dimension)
     {
         VERB("Very strange, no indices for table %s\n",
              print_oid(table_oid));
-        return EFAULT;
+        return TE_EFAULT;
     }
 
     for (t_index = entry_node->indexes; t_index; t_index = t_index->next)
@@ -2514,7 +2514,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid,
     {
         entry_node = entry_node->child_list;
         if (entry.length == MAX_OID_LEN)
-            return TE_RC(TE_TAPI, ENOBUFS);
+            return TE_RC(TE_TAPI, TE_ENOBUFS);
         tapi_snmp_append_oid(&entry, 1, entry_node->subid);
     }
     if (entry_node->indexes == NULL)
@@ -3074,7 +3074,7 @@ tapi_snmp_make_oid(const char *oid_str, tapi_snmp_oid_t *bin_oid)
     {
         ERROR("Size of SUBID in NET-SNMP library is more than "
               "in tapi_snmp_oid_t");
-        return TE_RC(TE_TAPI, EFAULT);
+        return TE_RC(TE_TAPI, TE_EFAULT);
     }
 
     return 0;
@@ -3278,7 +3278,7 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
             {
                 ERROR("%s: Object %s has too long OID", __FUNCTION__,
                       oid_str);
-                return TE_RC(TE_TAPI, EFAULT);
+                return TE_RC(TE_TAPI, TE_EFAULT);
             }
             tapi_snmp_append_oid(&bin_oid, 1, 0);
 
@@ -3303,7 +3303,7 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
         default:
             ERROR("%s: It is not allowed to pass objects other than "
                   "table fields and scalars.", __FUNCTION__);
-            return TE_RC(TE_TAPI, EFAULT);
+            return TE_RC(TE_TAPI, TE_EFAULT);
     }
 
     pdu = snmp_pdu_create(SNMP_MSG_SET);
@@ -3321,7 +3321,7 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
         ERROR("Net-SNMP library does not create VarBind for "
               "OID: %s, type: %c, value: %s", oid_str, *type, value);
         snmp_free_pdu(pdu);
-        return TE_RC(TE_TAPI, EFAULT);
+        return TE_RC(TE_TAPI, TE_EFAULT);
     }
     memcpy(&(vb->name), &bin_oid, sizeof(bin_oid));
     vb->type = var->type;
@@ -3354,7 +3354,7 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
                 snmp_free_pdu(pdu);
                 ERROR("%s(): The value %s of type 'OBJECT ID'"
                       " is too long", __FUNCTION__, value);
-                return EFAULT;
+                return TE_EFAULT;
             }
 
             if ((vb->obj_id = 

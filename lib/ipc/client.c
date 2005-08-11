@@ -533,7 +533,7 @@ ipc_init_client(const char *name, struct ipc_client **p_client)
     /* Check length of the name */
     if (strlen(name) >= UNIX_PATH_MAX)
     {
-        return TE_RC(TE_IPC, E2BIG);
+        return TE_RC(TE_IPC, TE_E2BIG);
     }
 
 #ifdef TE_IPC_CONNECTIONLESS
@@ -751,7 +751,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
     }
     if (strlen(server_name) >= UNIX_PATH_MAX)
     {
-        return TE_RC(TE_IPC, E2BIG);
+        return TE_RC(TE_IPC, TE_E2BIG);
     }
 
     server = get_pool_item_by_name(ipcc, server_name);

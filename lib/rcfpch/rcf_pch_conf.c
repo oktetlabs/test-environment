@@ -580,7 +580,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
     {
         free(tmp);
         ERROR("Command buffer too small for reply");
-        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, E2BIG));
+        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_E2BIG));
     }
 
     rcf_ch_lock();
@@ -693,12 +693,12 @@ commit_all_postponed(void)
         {
             ERROR("Commit failed: error=%d", ret);
             if (rc == 0)
-                rc = ret;
+                rc = TE_RC(TE_RCF_PCH, ret);
         }
         cfg_free_oid(p->oid);
         free(p);
     }
-    EXIT("%d", rc);
+    EXIT("%r", rc);
     return rc;
 }
 
@@ -792,7 +792,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
 
             rc = process_wildcard(conn, cbuf, buflen, answer_plen, oid);
 
-            EXIT("%d", rc);
+            EXIT("%r", rc);
 
             return rc;
         }
@@ -911,7 +911,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
         }
 
         case RCF_CH_CFG_SET:
-            rc = (obj->set == NULL) ? EOPNOTSUPP :
+            rc = (obj->set == NULL) ? TE_EOPNOTSUPP :
                      (obj->set)(gid, oid, val, ALL_INST_NAMES);
             if ((rc == 0) && (commit_obj->commit != NULL))
             {
@@ -922,7 +922,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             break;
 
         case RCF_CH_CFG_ADD:
-            rc = (obj->add == NULL) ? EOPNOTSUPP :
+            rc = (obj->add == NULL) ? TE_EOPNOTSUPP :
                      (obj->add)(gid, oid, val, ALL_INST_NAMES);
             if ((rc == 0) && (commit_obj->commit != NULL))
             {
@@ -933,7 +933,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             break;
 
         case RCF_CH_CFG_DEL:
-            rc = (obj->del == NULL) ? EOPNOTSUPP :
+            rc = (obj->del == NULL) ? TE_EOPNOTSUPP :
                      (obj->del)(gid, oid, ALL_INST_NAMES);
             if ((rc == 0) && (commit_obj->commit != NULL))
             {

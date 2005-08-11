@@ -1188,7 +1188,7 @@ kill_all(cfg_handle handle)
     if (son != CFG_HANDLE_INVALID)
     {
         ret_val = kill_all(son);
-        if (ret_val != 0 && ret_val != EACCES)
+        if (ret_val != 0 && ret_val != TE_EACCES)
         {
             return TE_RC(TE_CONF_API, ret_val);
         }
@@ -1201,13 +1201,13 @@ kill_all(cfg_handle handle)
     if (brother != CFG_HANDLE_INVALID)
     {
         ret_val = kill_all(brother);
-        if (ret_val != 0 && ret_val != EACCES)
+        if (ret_val != 0 && ret_val != TE_EACCES)
         {
             return TE_RC(TE_CONF_API, ret_val);
         }
     }
     ret_val = kill(handle);
-    if (ret_val != 0 && ret_val != EACCES)
+    if (ret_val != 0 && ret_val != TE_EACCES)
     {
         return TE_RC(TE_CONF_API, ret_val);
     }

@@ -106,7 +106,6 @@ extern int tapi_cfg_net_get_pairs(enum net_node_type first,
  * @param net       - location for net name (at least CFG_INST_NAME_MAX)
  *
  * @return Status code.
- * @retval ESRCH    - net with requested node value not found
  */
 extern int tapi_cfg_net_find_net_by_node(const char *oid, char *net);
 

@@ -207,7 +207,7 @@ tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
             EXIT("TE_EENV");
             return TE_EENV;
         }
-        rc = EEXIST;
+        rc = TE_EEXIST;
         EXIT("EEXIST");
     }
     else
@@ -299,7 +299,7 @@ tapi_cfg_switch_vlan_add_port(const char *ta_name, uint16_t vid,
     if (rc == 0)
     {
         VERB("Port %u already in VLAN %u on TA %s", port, vid, ta_name);
-        rc = EEXIST;
+        rc = TE_EEXIST;
     }
     else
     {
@@ -958,7 +958,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
         default:
             ERROR("%s(): Operation %d is not supported", __FUNCTION__, op);
-            rc = TE_RC(TE_TAPI, EOPNOTSUPP);
+            rc = TE_RC(TE_TAPI, TE_EOPNOTSUPP);
             break;
     }
 
@@ -1083,7 +1083,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
 
         default:
             ERROR("%s(): Operation %d is not supported", __FUNCTION__, op);
-            rc = TE_RC(TE_TAPI, EOPNOTSUPP);
+            rc = TE_RC(TE_TAPI, TE_EOPNOTSUPP);
             break;
     }
 
@@ -1110,7 +1110,7 @@ tapi_cfg_get_hwaddr(const char *ta,
     if (*hwaddr_len < IFHWADDRLEN)
     {
         ERROR("%s(): 'hwaddr' is too short");
-        return TE_RC(TE_TAPI, EMSGSIZE);
+        return TE_RC(TE_TAPI, TE_EMSGSIZE);
     }
 
     /**
@@ -1330,7 +1330,7 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
                   "with %s", __FUNCTION__, buf, prefix, net_oid);
             free(net_addr);
             free(net_oid);
-            return EEXIST;
+            return TE_EEXIST;
         }
 
         free(net_addr);

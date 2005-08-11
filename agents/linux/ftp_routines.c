@@ -48,6 +48,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include "te_errno.h"
 #include "linux_internal.h"
 
 #include "logger_ta.h"
@@ -672,7 +673,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
         (si = ftp_open(uri_get, O_RDONLY, 1, 0, NULL)) < 0)
     {
         ERROR("Failed to open URI %s to read from", uri_get);
-        return EIO;
+        return TE_EIO;
     }
 
     if (uri_put != NULL && *uri_put != 0 && 
@@ -680,7 +681,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
     {
         ERROR("Failed to open URI %s to write to", uri_put);
         close(si);
-        return EIO;
+        return TE_EIO;
     }
     
     VERB("Open OK\n");

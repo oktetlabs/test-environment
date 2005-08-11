@@ -427,6 +427,6 @@ int pcap_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     UNUSED(up_payload);
     UNUSED(pkts);
     
-    return EOPNOTSUPP;
+    return TE_EOPNOTSUPP;
 }
 

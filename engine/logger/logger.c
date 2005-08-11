@@ -450,7 +450,7 @@ ta_handler(void *ta)
         *log_file = '\0';
         if ((rc = rcf_ta_get_log(inst->agent, log_file)) != 0)
         {
-            if (rc == TE_RC(TE_RCF, ETIMEDOUT))
+            if (rc == TE_RC(TE_RCF, TE_ETIMEDOUT))
             {
                 /* 
                  * Ignore error if request to TA is timed out by RCF,

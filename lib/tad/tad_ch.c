@@ -304,7 +304,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
             ERROR("Protocol stack for low '%s' under '%s' is not supported",
                   (lower_proto == NULL) ? "(nil)" : lower_proto,
                   new_csap->layers[level].proto);
-            rc = EPROTONOSUPPORT;
+            rc = TE_EPROTONOSUPPORT;
             break;
         }
 
@@ -380,7 +380,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
             ERROR("protocol support is not found.");
 
             SEND_ANSWER("%d Generic error: protocol support is not found.",
-                        TE_RC(TE_TAD_CH, EPROTONOSUPPORT));
+                        TE_RC(TE_TAD_CH, TE_EPROTONOSUPPORT));
             return 0;
         }
         VERB("found protocol support for <%s>.", 

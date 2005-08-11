@@ -677,7 +677,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
                 rc = errno; /* TODO: correct rc */ 
                 break;
             case ETH_IFACE_NOT_FOUND:
-                rc = ENODEV;
+                rc = TE_ENODEV;
                 ERROR("Interface <%s> not found", device_id);
                 break;
             default:
@@ -694,7 +694,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     {
         free(iface_p);
         ERROR("Init, not memory for spec_data");
-        return TE_RC(TE_TAD_CSAP,  TE_ENOMEM);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
     
     eth_spec_data->in = -1;

@@ -275,7 +275,7 @@ tapi_cfg_net_find_net_by_node(const char *oid, char *net)
         return rc;
     }
 
-    for (i = 0, rc = ESRCH; i < net_num; ++i, rc = ESRCH)
+    for (i = 0, rc = TE_ESRCH; i < net_num; ++i, rc = TE_ESRCH)
     {
         char       *net_name;
         int         node_num;
@@ -790,7 +790,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
             rc = tapi_cfg_base_add_net_addr(str, SA(ip4_addr),
                                             ip4_net_pfx, TRUE,
                                             &ip4_addr_hndl);
-            if (TE_RC_GET_ERROR(rc) == EEXIST)
+            if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
             {
                 /* Address already assigned - continue */
                 rc = 0;
@@ -959,7 +959,7 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
             rc = tapi_cfg_base_add_net_addr(str, SA(ip4_addr),
                                             ip4_net_pfx, TRUE,
                                             &ip4_addr_hndl);
-            if (TE_RC_GET_ERROR(rc) == EEXIST)
+            if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
             {
                 /* Address already assigned - continue */
                 rc = 0;

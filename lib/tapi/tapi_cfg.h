@@ -359,8 +359,8 @@ extern int tapi_cfg_del_arp_dynamic(const char *ta);
  * @param hwaddr_len  Length of 'hwaddr' buffer (IN/OUT)
  *
  * @return Status of the oprtation
- * @retval 0         on success
- * @retval EMSGSIZE  Buffer is too short to fit the hardware address
+ * @retval 0            on success
+ * @retval TE_EMSGSIZE  Buffer is too short to fit the hardware address
  */
 extern int tapi_cfg_get_hwaddr(const char *ta,
                                const char *ifname,

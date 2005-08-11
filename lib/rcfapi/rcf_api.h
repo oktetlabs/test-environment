@@ -150,11 +150,11 @@ extern int rcf_ta_create_session(const char *ta_name, int *session);
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running or located on TN Test Agent 
- *                      is provided or parameter string is too long
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval EINPROGRESS  operation is in progress
+ *                         is provided or parameter string is too long
+ * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EINPROGRESS  operation is in progress
  * @retval TE_ENOENT       cannot open NUT image file
  * @retval TE_ENOMEM       out of memory
  */
@@ -457,11 +457,11 @@ extern int rcf_ta_csap_create(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval EBADF        no such CSAP
+ *                         session identifier is provided
+ * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EBADF        no such CSAP
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  *
@@ -482,13 +482,13 @@ extern int rcf_ta_csap_destroy(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval EBADF        no such CSAP
+ *                         session identifier is provided
+ * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EBADF        no such CSAP
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ESMALLBUF the buffer is too small
+ * @retval TE_ESMALLBUF    the buffer is too small
  */
 extern int rcf_ta_csap_param(const char *ta_name, int session,
                              csap_handle_t csap_id,
@@ -508,16 +508,16 @@ extern int rcf_ta_csap_param(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval EBADF        no such CSAP
- * @retval EINPROGRESS  operation is already in progress
- * @retval EBUSY        CSAP is used for receiving now
+ *                         session identifier is provided
+ * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EBADF        no such CSAP
+ * @retval TE_EINPROGRESS  operation is already in progress
+ * @retval TE_EBUSY        CSAP is used for receiving now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
- * @retval other        error returned by command handler on the TA
+ * @retval other           error returned by command handler on the TA
  *
  * @se It may block caller according to "blk_mode" parameter value
  *
@@ -539,12 +539,12 @@ extern int rcf_ta_trsend_start(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval EBADF        no such CSAP
- * @retval EALREADY     traffic sending is not in progress now
+ *                         session identifier is provided
+ * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EBADF        no such CSAP
+ * @retval TE_EALREADY     traffic sending is not in progress now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  *
@@ -582,16 +582,16 @@ typedef void (*rcf_pkt_handler)(
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
- * @retval TE_EIPC      cannot interact with RCF
- * @retval EBADF        no such CSAP
- * @retval EINPROGRESS  operation is already in progress
- * @retval EBUSY        CSAP is used for sending now
+ *                         session identifier is provided
+ * @retval TE_EIPC         cannot interact with RCF
+ * @retval TE_EBADF        no such CSAP
+ * @retval TE_EINPROGRESS  operation is already in progress
+ * @retval TE_EBUSY        CSAP is used for sending now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       not enough memory in the system
- * @retval other        error returned by command handler on the TA
+ * @retval other           error returned by command handler on the TA
  *
  * @sa rcf_ta_trrecv_stop rcf_ta_trrecv_wait
  */
@@ -616,8 +616,7 @@ extern int rcf_ta_trrecv_start(const char *ta_name, int session,
  * @return error code
  *
  * @retval 0            success
- * @retval TE_RC(TE_TAD_CSAP, ETIMEDOUT)
- *                      timeout occured before all the requested traffic
+ * @retval TE_ETIMEDOUT timeout occured before all the requested traffic
  *                      received - this means that TAD has captured less
  *                      than the number of packets specified with
  *                      rcf_ta_trrecv_start.
@@ -643,12 +642,12 @@ extern int rcf_ta_trrecv_wait(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval EBADF        no such CSAP
- * @retval EALREADY     traffic receiving is not in progress now
+ *                         session identifier is provided
+ * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EBADF        no such CSAP
+ * @retval TE_EALREADY     traffic receiving is not in progress now
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  *
@@ -670,14 +669,14 @@ extern int rcf_ta_trrecv_stop(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval EBADF        no such CSAP
- * @retval EALREADY     traffic receiving is not in progress now
- * @retval ENODATA      no data available on TA, because handler was not
- *                      specified in rcf_ta_trrecv_start
+ *                         session identifier is provided
+ * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EBADF        no such CSAP
+ * @retval TE_EALREADY     traffic receiving is not in progress now
+ * @retval TE_ENODATA      no data available on TA, because handler was not
+ *                         specified in rcf_ta_trrecv_start
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  *
@@ -707,18 +706,18 @@ extern int rcf_ta_trrecv_get(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
- * @retval ETIMEDOUT    timeout occured before a packet that matches
- *                      the template received
+ * @retval 0               success
+ * @retval TE_ETIMEDOUT    timeout occured before a packet that matches
+ *                         the template received
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided or flag blocking
- *                      is used together with num 0
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval EBADF        no such CSAP
- * @retval EBUSY        CSAP is busy
+ *                         session identifier is provided or flag blocking
+ *                         is used together with num 0
+ * @retval TE_EIPC         cannot interact with RCF 
+ * @retval TE_EBADF        no such CSAP
+ * @retval TE_EBUSY        CSAP is busy
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
- * @retval other        error returned by command handler on the TA
+ * @retval other           error returned by command handler on the TA
  */
 extern int rcf_ta_trsend_recv(const char *ta_name, int session,
                               csap_handle_t csap_id, 
@@ -746,11 +745,11 @@ extern int rcf_ta_trsend_recv(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
+ *                         session identifier is provided
  * @retval TE_ENOENT       no such routine
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF 
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  */
@@ -781,11 +780,11 @@ extern int rcf_ta_call(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
+ *                         session identifier is provided
  * @retval TE_ENOENT       no such routine
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF 
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  *
@@ -815,11 +814,11 @@ extern int rcf_ta_start_thread(const char *ta_name, int session,
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
+ *                         session identifier is provided
  * @retval TE_ENOENT       no such process
- * @retval TE_EIPC      cannot interact with RCF 
+ * @retval TE_EIPC         cannot interact with RCF 
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  *
@@ -859,11 +858,11 @@ extern void rcf_api_cleanup(void);
  *
  * @return error code
  *
- * @retval 0            success
+ * @retval 0               success
  * @retval TE_ETAREBOOTED  if at least one test agent has been normally
- *                      rebooted
- * @retval TE_ETADEAD   if at least one agent was dead
- * @retval TE_EIPC      cannot interact with RCF 
+ *                         rebooted
+ * @retval TE_ETADEAD      if at least one agent was dead
+ * @retval TE_EIPC         cannot interact with RCF 
  * 
  */
 extern int rcf_check_agents(void);

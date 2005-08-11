@@ -476,14 +476,14 @@ tce_run_collector(int argc, char *argv[])
 {
     int rc;
     if (tce_collector_pid != 0)
-        return TE_RC(TE_TA_LINUX, EALREADY);
+        return TE_RC(TE_TA_LINUX, TE_EALREADY);
     tce_obtain_principal_peer_id();
     rc = tce_init_collector(argc, argv);
     if (rc != 0)
         return rc;
     tce_collector_pid = fork();
     if (tce_collector_pid == (pid_t)-1)
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     else if (tce_collector_pid == 0)
     {
         exit(tce_collector());

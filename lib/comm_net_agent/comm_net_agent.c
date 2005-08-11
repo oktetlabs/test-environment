@@ -116,7 +116,7 @@ rcf_comm_agent_init(const char *config_str,
     {
         /* Socket error */
         perror("socket() error");
-        return errno;
+        return TE_OS_RC(TE_COMM, errno);
     }
 
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
@@ -125,7 +125,7 @@ rcf_comm_agent_init(const char *config_str,
         rc = errno;
         perror("setsockopt(SOL_SOCKET, SO_REUSEADDR, enabled)");
         (void)close(s);
-        return rc;
+        return TE_OS_RC(TE_COMM, rc);
     }
 
     if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
@@ -133,7 +133,7 @@ rcf_comm_agent_init(const char *config_str,
         rc = errno;
         perror("bind() error");
         (void)close(s);
-        return rc;
+        return TE_OS_RC(TE_COMM, rc);
     }
 
     if (listen(s, 5) != 0)
@@ -141,7 +141,7 @@ rcf_comm_agent_init(const char *config_str,
         rc = errno;
         perror("listen() error");
         (void)close(s);
-        return rc;
+        return TE_OS_RC(TE_COMM, rc);
     }
 
     s1 = accept(s, NULL, NULL);
@@ -150,7 +150,7 @@ rcf_comm_agent_init(const char *config_str,
         rc = errno;
         perror("accept() error");
         (void)close(s);
-        return rc;
+        return TE_OS_RC(TE_COMM, rc);
     }
     /* Connection established */
 
@@ -159,7 +159,7 @@ rcf_comm_agent_init(const char *config_str,
         rc = errno;
         perror("close(s) error");
         (void)close(s1);
-        return rc;
+        return TE_OS_RC(TE_COMM, rc);
     }
 
 #if HAVE_FCNTL_H
@@ -182,7 +182,7 @@ rcf_comm_agent_init(const char *config_str,
         rc = errno;
         perror("setsockopt(SOL_TCP, TCP_NODELAY, enabled)");
         (void)close(s1);
-        return rc;
+        return TE_OS_RC(TE_COMM, rc);
     }
 #endif
 
@@ -193,7 +193,7 @@ rcf_comm_agent_init(const char *config_str,
         rc = errno;
         perror("memory allocation error");
         (void)close(s1);
-        return rc;
+        return TE_OS_RC(TE_COMM, rc);
     }
 
     /* All field is set to zero. Just set the socket */
@@ -274,7 +274,7 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
                 *pbytes = rcc->bytes_to_read;
                 rcc->bytes_to_read -= tmp;
             }
-            return TE_EPENDING;
+            return TE_RC(TE_COMM, TE_EPENDING);
         }
     }
 
@@ -289,14 +289,14 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
             if (errno == EINTR) /* Valgrind work-around */
                 continue;
             perror("recv");
-            return errno;
+            return TE_OS_RC(TE_COMM, errno);
         }
         if (r == 0)
         {
             fprintf(stdout,
                     "%s(): recv() returned 0, connection is closed",
                     __FUNCTION__);
-            return EPIPE;
+            return TE_OS_RC(TE_COMM, EPIPE);
         }
 
         if (buffer[l] == 0
@@ -361,13 +361,13 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
                         return ret; /* Some error occured */
                     rcc->bytes_to_read = attach_size - to_read;
                     *pbytes = attach_size + l;
-                    return TE_EPENDING;
+                    return TE_RC(TE_COMM, TE_EPENDING);
                 }
             }
         }
 
         if (l == (*pbytes - 1))
-            return TE_ESMALLBUF;
+            return TE_RC(TE_COMM, TE_ESMALLBUF);
 
         l += r;
     }
@@ -412,7 +412,7 @@ rcf_comm_agent_reply(struct rcf_comm_connection *rcc, const void *buffer,
         {
             fprintf(stderr, "%s(): send() failed - errno=%d",
                     __FUNCTION__, errno);
-            return errno;
+            return TE_OS_RC(TE_COMM, errno);
         }
 
         total_sent_len += sent_len;
@@ -438,7 +438,7 @@ int
 rcf_comm_agent_close(struct rcf_comm_connection **p_rcc)
 {
     if (p_rcc == NULL)
-        return TE_EINVAL;
+        return TE_OS_RC(TE_COMM, EINVAL);
 
     if (*p_rcc == NULL)
         return 0;
@@ -446,7 +446,7 @@ rcf_comm_agent_close(struct rcf_comm_connection **p_rcc)
     if (close((*p_rcc)->socket) < 0)
     {
         perror("close");
-        return errno;
+        return TE_OS_RC(TE_COMM, errno);
     }
 
     free(*p_rcc);
@@ -575,14 +575,14 @@ read_socket(int socket, void *buffer, size_t len)
         if (r < 0)
         {
             perror("recv() from socket");
-            return errno;
+            return TE_OS_RC(TE_COMM, errno);
         }
         else if (r == 0)
         {
             fprintf(stdout,
                     "%s(): recv() returned 0, connection is closed",
                     __FUNCTION__);
-            return EPIPE;
+            return TE_OS_RC(TE_COMM, EPIPE);
         }
         assert((size_t)r <= len);
 

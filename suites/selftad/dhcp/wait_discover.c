@@ -148,7 +148,7 @@ main(int argc, char *argv[])
         case 0:
             INFO("Wait for DHCP message successful, num %d", num);
             break;
-        case TE_RC(TE_TAD_CSAP, ETIMEDOUT):
+        case TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT):
             INFO("Wait for DHCP message timedout");
             break;
         default:

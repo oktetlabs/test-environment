@@ -125,7 +125,7 @@ typedef struct unix_ta {
  * @param timeout       timeout in seconds
  *
  * @return Status code.
- * @return ETIMEDOUT    Command timed out
+ * @return TE_ETIMEDOUT    Command timed out
  */   
 static int
 system_with_timeout(char *cmd, int timeout)
@@ -161,7 +161,7 @@ system_with_timeout(char *cmd, int timeout)
             /* Do not call pclose(), since it does waitpid() */
             (void)pclose(f);
 #endif
-            return TE_RC(TE_RCF_UNIX, ETIMEDOUT);
+            return TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT);
         }
         
         if (read(fd, buf, sizeof(buf)) == 0)
@@ -456,14 +456,14 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
                     RCFUNIX_SSH " %s \"%skill %d\" " RCFUNIX_REDIRECT,
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
             rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-            if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+            if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
     
             sprintf(cmd,
                     RCFUNIX_SSH " %s \"%skill -9 %d\" " RCFUNIX_REDIRECT,
                     ta->host, ta->sudo ? "sudo " : "" , ta->pid);
             rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-            if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+            if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
         }
     }
@@ -477,7 +477,7 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
                 RCFUNIX_SSH " %s \"%skillall %s\" " RCFUNIX_REDIRECT,
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
     rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-    if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+    if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;
 
     if (ta->is_local)
@@ -489,7 +489,7 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
                 RCFUNIX_SSH " %s \"%skillall -9 %s\" " RCFUNIX_REDIRECT,
                 ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
     rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-    if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+    if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;
 
     if (ta->is_local)
@@ -498,7 +498,7 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
         sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
                 ta->host, ta->exec_name);
     rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-    if (rc == TE_RC(TE_RCF_UNIX, ETIMEDOUT))
+    if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;
 
     return 0;

@@ -70,6 +70,8 @@ ta_list_init()
 
         free(cfg_ta_list);
         cfg_ta_list = NULL;
+        ERROR("RC %x clear RC %x TE_ESMALLBUF %x", rc, TE_RC_GET_ERROR(rc),
+              TE_ESMALLBUF);
         if (TE_RC_GET_ERROR(rc) != TE_ESMALLBUF)
         {
             ERROR("rcf_get_ta_list() returned %r", rc);

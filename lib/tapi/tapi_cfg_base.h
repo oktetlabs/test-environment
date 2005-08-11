@@ -91,8 +91,8 @@ extern int tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu);
  * @param cfg_hndl  Configurator handle of the new address
  *
  * @return Status code.
- * @retval EAFNOSUPPORT     Address family is not supported
- * @retval EEXIST           Address already exist
+ * @retval TE_EAFNOSUPPORT     Address family is not supported
+ * @retval TE_EEXIST           Address already exist
  */
 extern int tapi_cfg_base_add_net_addr(const char            *oid,
                                       const struct sockaddr *addr,

@@ -2007,7 +2007,7 @@ arl_list(unsigned int gid, const char *oid, char **list)
         if (ptr == NULL)
         {
             free(*list);
-            return TE_RC(TE_TA_SWITCH_CTL, EFAULT);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EFAULT);
         }
         ptr++;
     }
@@ -3102,7 +3102,7 @@ stp_add_port(unsigned int gid, const char *oid, const char *value,
 
     rc = stp_port_entry_find(gid, port_num, &stp_port_entry);
     if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
-        return ((rc == 0) ? TE_RC(TE_TA_SWITCH_CTL, EEXIST) : rc);
+        return ((rc == 0) ? TE_RC(TE_TA_SWITCH_CTL, TE_EEXIST) : rc);
 
     if ((stp_port_entry = local_stp_port_entry_new()) == NULL)
     {
@@ -3591,7 +3591,7 @@ vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
         {
             free(vlan.ports);
             free(ports);
-            return TE_RC(TE_TA_SWITCH_CTL, EEXIST);
+            return TE_RC(TE_TA_SWITCH_CTL, TE_EEXIST);
         }
     }
     ports[i] = port;

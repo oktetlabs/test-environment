@@ -190,7 +190,7 @@ rcf_ch_vread(struct rcf_comm_connection *handle,
     UNUSED(type);
     UNUSED(var);
 
-    SEND_ANSWER("%d", EOPNOTSUPP);
+    SEND_ANSWER("%d", TE_EOPNOTSUPP);
 }
 
 
@@ -203,7 +203,7 @@ rcf_ch_vwrite(struct rcf_comm_connection *handle,
     UNUSED(type);
     UNUSED(var);
 
-    SEND_ANSWER("%d", EOPNOTSUPP);
+    SEND_ANSWER("%d", TE_EOPNOTSUPP);
 }
 
 /* See description in rcf_ch_api.h */
@@ -232,7 +232,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
     UNUSED(op);
     UNUSED(filename);
 
-    SEND_ANSWER("%d", EOPNOTSUPP);
+    SEND_ANSWER("%d", TE_EOPNOTSUPP);
 }
 
 
@@ -269,7 +269,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
     UNUSED(argc);
     UNUSED(params);
 
-    SEND_ANSWER("%d", EOPNOTSUPP);
+    SEND_ANSWER("%d", TE_EOPNOTSUPP);
 }
 
 
@@ -281,7 +281,7 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
 {
     UNUSED(pid);
 
-    SEND_ANSWER("%d", EOPNOTSUPP);
+    SEND_ANSWER("%d", TE_EOPNOTSUPP);
 }
 
 

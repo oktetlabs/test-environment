@@ -163,7 +163,7 @@ xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
         char *result = NULL;
         int rc;
         rc = cfg_expand_env_vars(value, &result);
-        if(rc == 0)
+        if (rc == 0)
         {
             xmlFree(value);
             value = (xmlChar *)result;

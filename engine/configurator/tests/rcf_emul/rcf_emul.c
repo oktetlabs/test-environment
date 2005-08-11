@@ -146,7 +146,7 @@ get_handler(rcf_op_t opcode)
  * @return           0 - if everything is correct
  * @retval           TE_ENOENT - if failed to open file with name
  *                   msg->file for writing
- * @retval           ENOSPC - failed to write buffer to the file
+ * @retval           TE_ENOSPC - failed to write buffer to the file
  */
 static int
 write_binary_attachment(rcf_msg *msg,  char *buf, uint32_t buf_len)
@@ -166,7 +166,7 @@ write_binary_attachment(rcf_msg *msg,  char *buf, uint32_t buf_len)
     if (rc < 0)
     {
         ERROR("Failed to write buffer to the file");
-        return ENOSPC;
+        return TE_ENOSPC;
     }
 
     msg->flags |= BINARY_ATTACHMENT;
@@ -827,7 +827,7 @@ rcfrh_agent_add(char *agents_name, agent_type type)
         i++;
 
     if (i == MAX_AGENTS_NUMBER)
-        return ENOBUFS;
+        return TE_ENOBUFS;
 
     agt = calloc(sizeof(agent_t), 1);
     if (agt == NULL)

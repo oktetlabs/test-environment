@@ -501,7 +501,7 @@ rcf_pch_run(const char *confstr, const char *info)
                                   ba, len, params) < 0)
                 {
                     ERROR("Reboot is NOT supported by CH");
-                    SEND_ANSWER("%d", EOPNOTSUPP);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
                 break;
             }
@@ -717,7 +717,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 {
                     ERROR("CSAP stack %s (%s) is NOT supported", stack, 
                           params);
-                    SEND_ANSWER("%d", EOPNOTSUPP);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
 
                 break;
@@ -742,7 +742,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 {
                     ERROR("CSAP parameter '%s' is NOT supported",
                                       var);
-                    SEND_ANSWER("%d", EOPNOTSUPP);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
 
                 break;
@@ -792,7 +792,7 @@ rcf_pch_run(const char *confstr, const char *info)
                  }
 
                 if (rtn(conn, cmd, cmd_buf_len, answer_plen, handle) < 0)
-                    SEND_ANSWER("%d", EOPNOTSUPP);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
 
                 break;
             }
@@ -821,7 +821,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 {
                     ERROR("rcf_ch_trsend_start() returns - "
                                       "no support");
-                    SEND_ANSWER("%d", EOPNOTSUPP);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
 
                 break;
@@ -858,7 +858,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 {
                     ERROR("rcf_ch_trrecv_start() returns - "
                                       "no support");
-                    SEND_ANSWER("%d", EOPNOTSUPP);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
 
                 break;
@@ -895,7 +895,7 @@ rcf_pch_run(const char *confstr, const char *info)
                                        results, timeout) < 0)
                 {
                     ERROR("rcf_ch_trsend_recv() returns - no support");
-                    SEND_ANSWER("%d", EOPNOTSUPP);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
 
                 break;
@@ -974,11 +974,12 @@ rcf_pch_run(const char *confstr, const char *info)
                                    "rcf_ch_start_task" : 
                                    "rcf_ch_start_task_thr"),
                                   rtn, priority);
-                            SEND_ANSWER("%d", EOPNOTSUPP);
+                            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, 
+                                                    TE_EOPNOTSUPP));
                         }                        
                         break;
                     default:
-                        SEND_ANSWER("%d", EOPNOTSUPP);
+                        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
                 break;
             }
@@ -1030,7 +1031,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 if (rcf_ch_kill_task(conn, cmd, cmd_buf_len,
                                      answer_plen, pid) < 0)
-                    SEND_ANSWER("%d", EOPNOTSUPP);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
 
                 break;
             }
@@ -1042,7 +1043,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
     bad_protocol:
         ERROR("Bad protocol command <%s> is received", cmd);
-        SEND_ANSWER("%d bad command", TE_EFMT);
+        SEND_ANSWER("%d bad command", TE_RC(TE_RCF_PCH, TE_EFMT));
     }
 
 communication_problem:

@@ -207,7 +207,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
     if (addr->sa_family != AF_INET)
     {
         ERROR("AF_INET address family is supported only.");
-        return TE_RC(TE_TAPI, EAFNOSUPPORT);
+        return TE_RC(TE_TAPI, TE_EAFNOSUPPORT);
     }
 
     if (prefix == -1)
@@ -281,7 +281,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
             }
         }
     }
-    else if (TE_RC_GET_ERROR(rc) == EEXIST)
+    else if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
     {
         WARN("%s already has address %s", oid,
              inet_ntop(addr->sa_family, &SIN(addr)->sin_addr,

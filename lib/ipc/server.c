@@ -191,7 +191,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
 
     if (strlen(name) >= (UNIX_PATH_MAX - 1))
     {
-        return TE_RC(TE_IPC, E2BIG);
+        return TE_RC(TE_IPC, TE_E2BIG);
     }
 
     ipcs = calloc(1, sizeof(*ipcs));
@@ -775,7 +775,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                              sizeof(client->pending));
             if (rc != 0)
             {
-                if (rc != TE_RC(TE_IPC, ECONNABORTED))
+                if (rc != TE_RC(TE_IPC, TE_ECONNABORTED))
                 {
                     return rc;
                 }
@@ -823,7 +823,7 @@ ipc_receive_message(struct ipc_server *ipcs,
                                  sizeof(client->pending));
                 if (rc != 0)
                 {
-                    if (rc != TE_RC(TE_IPC, ECONNABORTED))
+                    if (rc != TE_RC(TE_IPC, TE_ECONNABORTED))
                     {
                         return rc;
                     }
@@ -889,7 +889,7 @@ ipc_receive_message(struct ipc_server *ipcs,
         if (rc <= 0) /* Error? */
         {
             perror("select() error");
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
 
         (void)ipc_is_server_ready(ipcs, &my_set, max_fd);
@@ -1051,7 +1051,6 @@ ipc_int_client_by_addr(struct ipc_server *ipcs,
  *                    expected, NULL otherwise
  *
  * @return Status code.
- * @retval ESRCH    - no datagram found
  */
 static int
 ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
@@ -1098,7 +1097,7 @@ ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
         }
     }
 
-    return TE_RC(TE_IPC, ESRCH);
+    return TE_RC(TE_IPC, TE_ESRCH);
 }
 
 
@@ -1124,7 +1123,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
 
     /* At first try to find appropriate datagram from pool */
     rc = ipc_int_get_datagram_from_pool(ipcs, p_ipcsc);
-    if (rc != TE_RC(TE_IPC, ESRCH))
+    if (rc != TE_RC(TE_IPC, TE_ESRCH))
     {
         /* Datagram has been got or processing failed */
         return TE_RC(TE_IPC, rc);
@@ -1196,7 +1195,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
 
     /* Unreachable */
     assert(0);
-    return TE_RC(TE_IPC, EFAULT);
+    return TE_RC(TE_IPC, TE_EFAULT);
 }
 
 #else /* !TE_IPC_CONNECTIONLESS */
@@ -1227,7 +1226,7 @@ read_socket(int socket, void *buffer, size_t len)
         }
         else if (r == 0)
         {
-            return TE_RC(TE_IPC, ECONNABORTED);
+            return TE_RC(TE_IPC, TE_ECONNABORTED);
         }
 
         len -= r;

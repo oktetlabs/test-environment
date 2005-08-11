@@ -317,7 +317,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if (obj->access != CFG_READ_CREATE)
     {
         cfg_db_del(handle);
-        msg->rc = EACCES;
+        msg->rc = TE_EACCES;
         ERROR("Failed to add a new instance %s: "
              "object %s is not read-create", oid, obj->oid);
         return;
@@ -433,7 +433,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         obj->access != CFG_READ_CREATE)
     {
         cfg_types[obj->type].free(val);
-        msg->rc = EACCES;
+        msg->rc = TE_EACCES;
         return;
     }
 
@@ -536,7 +536,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
     {
         ERROR("Only READ-CREATE objects can be removed from "
               "the configuration tree. object: %s", obj->oid);
-        msg->rc = EACCES;
+        msg->rc = TE_EACCES;
         return;
     }
 

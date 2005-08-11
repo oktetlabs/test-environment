@@ -2577,10 +2577,7 @@ arp_del(unsigned int gid, const char *oid,
 
     if (ioctl(cfg_socket, SIOCDARP, &arp_req) < 0)
     {
-        int err = errno;
-
-        ERROR("Here: %d", err);
-        if (err == ENXIO || err == ENETDOWN || err == ENETUNREACH)
+        if (errno == ENXIO || errno == ENETDOWN || errno == ENETUNREACH)
             return 0;
         else
             return TE_OS_RC(TE_TA_LINUX, errno);

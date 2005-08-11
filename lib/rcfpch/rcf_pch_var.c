@@ -107,12 +107,12 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
                 }
                 else
                 {
-                    SEND_ANSWER("%d", E2BIG);
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_E2BIG));
                 }
             }
         }
 #endif
-        SEND_ANSWER("%d", TE_ENOENT);
+        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_ENOENT));
     }
 
     switch (type)
@@ -195,7 +195,7 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             }
             else
             {
-                SEND_ANSWER("%d", E2BIG);
+                SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_E2BIG));
             }
 
         default:
@@ -232,7 +232,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
         if (sscanf(va_arg(ap, const char *), "%u:%u", &sec, &usec) != 2)
         {
             va_end(ap);
-            SEND_ANSWER("%d", TE_EFMT);
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EFMT));
         }
        
         tv.tv_sec  = sec;
@@ -241,7 +241,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
         if (settimeofday(&tv, NULL) != 0)
         {
             va_end(ap);
-            SEND_ANSWER("%d", errno);
+            SEND_ANSWER("%d", TE_OS_RC(TE_RCF_PCH, errno));
         }
 #else
         ERROR("Ignore set of time since Valgrind debugging is enabled "
@@ -263,7 +263,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
         }
 #endif
         va_end(ap);
-        SEND_ANSWER("%d", TE_ENOENT);
+        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_ENOENT));
     }
 
     switch (type)
@@ -330,7 +330,7 @@ rcf_pch_call(struct rcf_comm_connection *conn,
     if (addr == NULL)
     {
         ERROR("The routine '%s' is not found", rtn);
-        SEND_ANSWER("%d", TE_ENOENT);
+        SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_ENOENT));
     }
 
     if (is_argv)

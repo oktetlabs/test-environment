@@ -173,17 +173,17 @@ tcp_nodelay_enable(int sock)
 #endif
                    TCP_NODELAY, &nodelay, sizeof(nodelay)) != 0)
     {
-        int err = errno;
+        int err = TE_OS_RC(TE_RCF_PCH, errno);
 
         ERROR("Failed to enable TCP_NODELAY on RPC server socket; "
-              "errno = %d", err);
+              "errno = %r", err);
         return err;
     }
     return 0;
 #else
 #error Temporary error for debugging
     UNUSED(sock);
-    return EOPNOTSUPP;
+    return TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP);
 #endif
 }
 #endif /* TCP_TRANSPORT */
@@ -233,7 +233,7 @@ recv_result(rpcserver *rpcs, uint32_t *p_len)
     int rc = recv_timeout(rpcs->sock, &len, sizeof(len), 5);
     
     if (rc == -2)      /* AF_UNIX bug work-around */
-        return EAGAIN;
+        return TE_EAGAIN;
     
     if (rc != sizeof(len))
     {
@@ -289,7 +289,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
     if (rpcs->sent > 0)
     {
         ERROR("RPC server %s is busy", rpcs->name);
-        return TE_RC(TE_RCF_PCH, EBUSY);
+        return TE_RC(TE_RCF_PCH, TE_EBUSY);
     }
     
     if ((rc = rpc_xdr_encode_call(name, rpc_buf, &buflen, in)) != 0) 
@@ -477,14 +477,14 @@ connect_getpid(rpcserver *rpcs)
         if (rc == 0)
         {
             ERROR("RPC server %s does not try to connect", rpcs->name);
-            return TE_RC(TE_RCF_PCH, ETIMEDOUT);
+            return TE_RC(TE_RCF_PCH, TE_ETIMEDOUT);
         }
         else if (errno != EINTR)
         {
-            int err = errno;
+            int err = TE_OS_RC(TE_RCF_PCH, errno);
         
-            ERROR("select() failed with unexpected errno=%d", err);
-            return TE_RC(TE_RCF_PCH, err);
+            ERROR("select() failed with unexpected errno=%r", err);
+            return err;
         }
     }
     
@@ -494,10 +494,10 @@ connect_getpid(rpcserver *rpcs)
         VERB("Closing connection socket to RPC server '%s'...", rpcs->name);
         if (close(rpcs->sock) != 0)
         {
-            rc = errno;
+            rc = TE_OS_RC(TE_RCF_PCH, errno);
             ERROR("Close of connection socket to RPC server '%s' failed",
                   rpcs->name);
-            return TE_RC(TE_RCF_PCH, rc);
+            return rc;
         }
         VERB("Closed connection socket to RPC server '%s'", rpcs->name);
         rpcs->sock = -1;
@@ -506,11 +506,11 @@ connect_getpid(rpcserver *rpcs)
     VERB("Accepting new RPC server '%s' connection...", rpcs->name);
     if ((rpcs->sock = accept(lsock, &addr, &len)) < 0)
     {
-        int err = errno;
+        int err = TE_OS_RC(TE_RCF_PCH, errno);
         
-        ERROR("Failed to accept connection from RPC server %s; errno 0x%X",
+        ERROR("Failed to accept connection from RPC server %s; errno %r",
               rpcs->name, err);
-        return TE_RC(TE_RCF_PCH, err);
+        return err;
     }
     VERB("Accepted new RPC server '%s' connection", rpcs->name);
 
@@ -584,9 +584,9 @@ dispatch(void *arg)
 
         if ((rc = select(FD_SETSIZE, &set0, NULL, NULL, &tv)) < 0)
         {
-            int err = errno;
+            int err = TE_OS_RC(TE_RCF_PCH, errno);
             
-            WARN("select() failed; errno %d", err);
+            WARN("select() failed; errno %r", err);
         }
         
         FD_ZERO(&set1);
@@ -616,7 +616,7 @@ dispatch(void *arg)
                 
             if ((rc = recv_result(rpcs, &len)) != 0)
             {
-                if (rc != EAGAIN) /* AF_UNIX bug work-around */
+                if (rc != TE_EAGAIN) /* AF_UNIX bug work-around */
                 {
                     rpcs->dead = TRUE;
                     rpc_error(rpcs, TE_ERPCDEAD);
@@ -727,10 +727,10 @@ rcf_pch_rpc_init()
 
     if (bind(lsock, (struct sockaddr *)&addr, len) < 0)
     {
-        int err = errno;
+        int err = TE_OS_RC(TE_RCF_PCH, errno);
         
         RETERR("Failed to bind listening socket for RPC servers; "
-               "errno %d", err);
+               "errno %r", err);
     }
         
     if (listen(lsock, 1) < 0)
@@ -750,10 +750,10 @@ rcf_pch_rpc_init()
         
     if (setenv("TE_RPC_PORT", port, 1) < 0)
     {
-        int err = errno;
+        int err = TE_OS_RC(TE_RCF_PCH, errno);
         
         RETERR("Failed to set TE_RPC_PORT environment variable;"
-               " errno 0x%X", err);
+               " errno %r", err);
     }
 
     if (pthread_create(&tid, NULL, dispatch, NULL) != 0)
@@ -937,7 +937,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         if (strcmp(rpcs->name, new_name) == 0)
         {
             rcf_ch_unlock();
-            return TE_RC(TE_RCF_PCH, EEXIST);
+            return TE_RC(TE_RCF_PCH, TE_EEXIST);
         }
             
         if (father_name != NULL && strcmp(rpcs->name, father_name) == 0)
@@ -949,7 +949,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         rcf_ch_unlock();
         ERROR("Cannot find father '%s' for RPC server '%s' (%s)",
               father_name, new_name, value);
-        return TE_RC(TE_RCF_PCH, EEXIST);
+        return TE_RC(TE_RCF_PCH, TE_EEXIST);
     }
     
     if ((rpcs = (rpcserver *)calloc(1, sizeof(*rpcs))) == NULL)
@@ -979,13 +979,13 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         
         if (rpcs->pid < 0)
         {
-            int err = errno;
+            int err = TE_RC(TE_RCF_PCH, errno);
             
             rcf_ch_unlock();
             free(rpcs);
-            ERROR("Failed to spawn RPC server process; errno 0x%X", err);
+            ERROR("Failed to spawn RPC server process; errno %r", err);
             fprintf(stderr, "Failed to spawn RPC server process\n");
-            return TE_RC(TE_RCF_PCH, err);
+            return err;
         }
     }
     else 
@@ -1175,7 +1175,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     if (rpcs->sent != 0)
     {
         ERROR("RPC server %s is busy", server);
-        RETERR(EBUSY);
+        RETERR(TE_EBUSY);
     }
     rpcs->sent = time(NULL);
     rpcs->last_sid = sid;
@@ -1286,8 +1286,8 @@ rcf_pch_rpc_server(const char *name)
 
     if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
     {
-        err = errno;
-        STOP("Failed to connect to TA; errno = %d", err);
+        err = TE_OS_RC(TE_RCF_PCH, errno);
+        STOP("Failed to connect to TA; errno = %r", err);
     }
 
     /* Enable linger with positive timeout on the socket  */
@@ -1296,9 +1296,9 @@ rcf_pch_rpc_server(const char *name)
 
         if (setsockopt(s, SOL_SOCKET, SO_LINGER, &l, sizeof(l)) != 0)
         {
-            err = errno;
+            err = TE_OS_RC(TE_RCF_PCH, errno);
             STOP("Failed to enable linger on RPC server socket; "
-                 "errno = %d", err);
+                 "errno = %r", err);
         }
     }
 

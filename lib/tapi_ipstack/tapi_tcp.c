@@ -833,7 +833,7 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, int timeout)
         if (rc != 0)
             return rc;
         if (conn_descr->seq_got == seq)
-            return ETIMEDOUT;
+            return TE_ETIMEDOUT;
     }
     return 0;
 }
@@ -1203,7 +1203,7 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
     {
         ERROR("%s(id %d): wait for SYN of SYN-ACK timed out",
                 __FUNCTION__, conn_descr->id);
-        rc = ETIMEDOUT;
+        rc = TE_ETIMEDOUT;
         goto cleanup;
     }
 
@@ -1247,7 +1247,7 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
     {
         ERROR("%s(id %d): ACK for our SYN dont got",
                 __FUNCTION__, conn_descr->id);
-        rc = ETIMEDOUT;
+        rc = TE_ETIMEDOUT;
         goto cleanup;
     } 
 
@@ -1333,7 +1333,7 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
             {
                 WARN("%s(conn %d): wait ACK for our FIN timed out", 
                      __FUNCTION__, handler);
-                return TE_RC(TE_TAPI, ETIMEDOUT);
+                return TE_RC(TE_TAPI, TE_ETIMEDOUT);
             }
         }
     }
@@ -1532,7 +1532,7 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
     else
     {
         WARN("%s(id %d) no message got", __FUNCTION__, handler);
-        return TE_RC(TE_TAPI, ETIMEDOUT);
+        return TE_RC(TE_TAPI, TE_ETIMEDOUT);
     }
 
     return 0;

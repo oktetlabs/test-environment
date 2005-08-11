@@ -41,12 +41,12 @@
 
 #include "te_stdint.h"
 
-#define TE_NEW_ERRNO    (1 << 22)
+#define TE_MIN_ERRNO    (1 << 22)
 
 /** Type to store TE error numbers */
 typedef enum {
     /* OS error codes */
-    TE_EPERM = TE_NEW_ERRNO + 1,     
+    TE_EPERM = TE_MIN_ERRNO + 1,     
                       /**< Operation not permitted */
     TE_ENOENT,        /**< No such file or directory */
     TE_ESRCH,         /**< No such process */
@@ -177,7 +177,7 @@ typedef enum {
     TE_EUNKNOWN,      /**< Unknown OS errno */
     
 /** @name Common errno's */
-    TE_EOK = TE_NEW_ERRNO + 500, 
+    TE_EOK = TE_MIN_ERRNO + 500, 
                   /**< Success when 0 can't be used */
     TE_EFAIL,     /**< Generic failure */
     TE_ESMALLBUF, /**< Too small buffer is provided */
@@ -194,7 +194,7 @@ typedef enum {
 /*@}*/
 
 /** @name Remote Control Facility errno's */
-    TE_ENORCF = TE_NEW_ERRNO + 600,       
+    TE_ENORCF = TE_MIN_ERRNO + 600,       
                      /**< RCF initialization failed */
     TE_ETALOCAL,     /**< TA runs on the same station with TEN and
                           cannot be rebooted */
@@ -207,7 +207,7 @@ typedef enum {
 /*@}*/
 
 /** @name ASN.1 text parse errors */
-    TE_EASNGENERAL = TE_NEW_ERRNO + 700, 
+    TE_EASNGENERAL = TE_MIN_ERRNO + 700, 
                           /**< Generic error */
     TE_EASNWRONGLABEL,    /**< Wrong ASN label */
     TE_EASNTXTPARSE,      /**< General ASN.1 text parse error */
@@ -228,7 +228,7 @@ typedef enum {
 /*@}*/
 
 /** @name Traffic Application Domain errno's */
-    TE_ETADCSAPNOTEX = TE_NEW_ERRNO + 800,  
+    TE_ETADCSAPNOTEX = TE_MIN_ERRNO + 800,  
                         /**< CSAP not exist. */
     TE_ETADLOWER,       /**< Lower layer error, usually from some
                              external library or OS resources, which
@@ -247,7 +247,7 @@ typedef enum {
 /*@}*/
 
 /** @name Configurator errno's */
-    TE_EBACKUP = TE_NEW_ERRNO + 900,  
+    TE_EBACKUP = TE_MIN_ERRNO + 900,  
                  /**< Backup verification failed */
     TE_EISROOT,  /**< Attempt to delete the root */
     TE_EHASSON,  /**< Attempt to delete the node with children */
@@ -260,7 +260,7 @@ typedef enum {
  * Errno codes below are strictly ordered and
  * have ETESTRESULTMIN and ETESTRESULTMAX.
  */
-    TE_ETESTEMPTY = TE_NEW_ERRNO + 1000, 
+    TE_ETESTEMPTY = TE_MIN_ERRNO + 1000, 
                     /**< Test session/pkg is empty */
     TE_ETESTSKIP,   /**< Test skipped */
     TE_ETESTFAKE,   /**< Test not really run */
@@ -279,14 +279,14 @@ typedef enum {
 /*@}*/
 
 /** @name TARPC errno's */
-    TE_ERPC2H = TE_NEW_ERRNO + 1100,  /**< RPC to host conv failed */
+    TE_ERPC2H = TE_MIN_ERRNO + 1100,  /**< RPC to host conv failed */
     TE_EH2RPC,      /**< Host to RPC conv failed */
     TE_ERPCNOTSUPP, /**< RPC is not supported
                          (it does not have host analogue) */
 /*@}*/
 
 /** @name IPC errno's */
-    TE_ESYNCFAILED = TE_NEW_ERRNO + 1200 
+    TE_ESYNCFAILED = TE_MIN_ERRNO + 1200 
                        /**< IPC synchronisation is broken */
 /*@}*/
 } te_errno;
@@ -299,6 +299,7 @@ typedef enum {
  */
 typedef enum {
     TE_IPC = 1,         /**< TE IPC */
+    TE_COMM,            /**< RCF<->TA communication libraries */
     TE_RCF,             /**< RCF application */
     TE_RCF_UNIX,        /**< UNIX-like agents management */
     TE_RCF_API,         /**< RCF library */
@@ -409,7 +410,7 @@ te_rc_err2str(te_errno err)
 {
     static char old_errno[64];
     
-    if ((err != 0) && ((err & TE_NEW_ERRNO) == 0))
+    if ((err != 0) && ((err & TE_MIN_ERRNO) == 0))
     {
         snprintf(old_errno, sizeof(old_errno), 
                  "Old errno 0x%X", TE_RC_GET_ERROR(err));
@@ -641,6 +642,9 @@ te_rc_err2str(te_errno err)
 static inline te_errno
 te_rc_os2te(int err)
 {
+    if (err >= TE_MIN_ERRNO) /* Somebody called converter twice */
+        return err; 
+    
     switch (err)
     {
         case 0: return 0;

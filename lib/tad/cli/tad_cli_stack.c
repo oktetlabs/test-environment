@@ -235,10 +235,10 @@ parent_wait_sync(cli_csap_specific_data_p spec_data)
  * @param data       Single byte read from Expect side (OUT)
  *
  * @return errno:
- *         TE_ENOENT  - No notification or data byte came in @a tv time
+ *         ENOENT    No notification or data byte came in @a tv time
  *         errno mapped with MAP_SYN_RES2ERRNO() macro in case of
  *         message arriving.
- *         0       - SYN_RES_OK notification or data byte came
+ *         0         SYN_RES_OK notification or data byte came
  *
  * @se If it captures an error from Expect side, it logs error message
  * and return correspnding errno value as its return value.
@@ -341,7 +341,7 @@ process_sync_pipe(cli_csap_specific_data_p spec_data)
             /* Try once again */
             continue;
         }
-        else if (rc == TE_ENOENT)
+        else if (rc == ENOENT)
         {
             /* 
              * Expect side still can't provide reply 
@@ -402,7 +402,7 @@ parent_read_reply(cli_csap_specific_data_p spec_data,
             return 0;
         }
         else if (rc != 0)
-            return -TE_RC(TE_TAD_CSAP, rc);
+            return -TE_OS_RC(TE_TAD_CSAP, rc);
 
         /* Remove echo characters (command + \r + \n) */
         if (echo_count < cmd_buf_len)
@@ -649,7 +649,7 @@ cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     if (!cli_session_alive(spec_data))
     {
         ERROR("CLI session is not running");
-        return -TE_RC(TE_TAD_CSAP, ENOTCONN);
+        return -1;
     }
 
     if ((spec_data->status & CLI_CSAP_STATUS_REPLY_WAITING) == 0)
@@ -679,7 +679,7 @@ cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
                 continue;
             }
             
-            return -TE_RC(TE_TAD_CSAP, rc);
+            return -1;
         }
         else
             break;
@@ -739,7 +739,7 @@ cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     if (!cli_session_alive(spec_data))
     {
         ERROR("CLI session is not running");
-        return -TE_RC(TE_TAD_CSAP, ENOTCONN);
+        return -1;
     }
 
     if ((spec_data->status & CLI_CSAP_STATUS_REPLY_WAITING) != 0)
@@ -749,7 +749,7 @@ cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
          * see if it has finished by now.
          */
         if ((rc = process_sync_pipe(spec_data)) != 0)
-            return -TE_RC(TE_TAD_CSAP, rc);
+            return -1;
     }
 
     timeout = csap_descr->timeout;
@@ -761,7 +761,7 @@ cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
         ERROR("%s(): Cannot write '%s' command to Expect side, "
               "rc = %d, errno = %X",
               __FUNCTION__, buf, bytes_written, errno);
-        return -TE_RC(TE_TAD_CSAP, EFAULT);
+        return -1;
     }
 
     spec_data->last_cmd_len = buf_len;
@@ -826,7 +826,7 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
     if (!cli_session_alive(spec_data))
     {
         ERROR("CLI session is not running");
-        return -TE_RC(TE_TAD_CSAP, ENOTCONN);
+        return -1;
     }
 
     if ((spec_data->status & CLI_CSAP_STATUS_REPLY_WAITING) != 0)
@@ -840,13 +840,14 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
         if ((rc = process_sync_pipe(spec_data)) != 0)
         {
             VERB("Not yet ...");
-            return -TE_RC(TE_TAD_CSAP, rc);
+            return -1;
         }
         VERB("Yes we've just read out reply notification!\n"
              "We are ready to run next command.");
 
         /* Read out pending reply */
-        rc = parent_read_reply(spec_data, spec_data->last_cmd_len, NULL, 0, &tv);
+        rc = parent_read_reply(spec_data, spec_data->last_cmd_len, 
+                               NULL, 0, &tv);
         if (rc < 0)
         {
             csap_descr->last_errno = -rc;
@@ -866,7 +867,7 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
         ERROR("%s(): Cannot write '%s' command to Expect side, "
               "rc = %d, errno = %X",
               __FUNCTION__, w_buf, bytes_written, errno);
-        return -TE_RC(TE_TAD_CSAP, EFAULT);
+        return -1;
     }
 
     spec_data->last_cmd_len = w_buf_len;

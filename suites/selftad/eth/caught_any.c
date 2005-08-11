@@ -164,7 +164,7 @@ main(int argc, char *argv[])
     }
 
 
-    if (rc == TE_RC(TE_TAD_CSAP, ETIMEDOUT))
+    if (rc == TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT))
     {
         RING("Wait for eth frames timedout");
         if (caught_num >= num_pkts || caught_num < 0)

@@ -1150,13 +1150,13 @@ ta_waitpid(pid_t pid, int *status, int options)
     if (pid < -1 || pid == 0)
     {
         ERROR("%s: process groups are not supported.", __FUNCTION__);
-        errno = TE_EINVAL;
+        errno = EINVAL;
         return -1;
     }
     if (options & ~WNOHANG)
     {
         ERROR("%s: only WNOHANG option is supported.", __FUNCTION__);
-        errno = TE_EINVAL;
+        errno = EINVAL;
         return -1;
     }
     if ((wake = malloc(sizeof(ta_children_wait))) == NULL)
@@ -1193,7 +1193,7 @@ ta_waitpid(pid_t pid, int *status, int options)
     rc = pthread_mutex_lock(&children_lock);
     if (rc != 0)
     {
-        if (errno != TE_EINVAL)
+        if (errno != EINVAL)
             IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock);
         ERROR("%s: dead_child_lock mutex is not initialized in %d", 
               __FUNCTION__, getpid());
@@ -1279,7 +1279,7 @@ ta_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
 
     if (cmd == NULL)
     {
-        errno = TE_EINVAL;
+        errno = EINVAL;
         return -1;
     }
     if (in_fd != NULL && pipe(in_pipe) != 0)

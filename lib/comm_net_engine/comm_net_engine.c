@@ -126,12 +126,12 @@ rcf_net_engine_connect(const char *addr, const char *port,
     if (hs == NULL || hs->h_addr_list == NULL ||
         hs->h_addr_list[0] == NULL)
     {
-        return errno;
+        return TE_OS_RC(TE_COMM, errno);
     }
 
     s = socket(AF_INET, SOCK_STREAM, 0);
     if (s < 0)
-        return errno;
+        return TE_OS_RC(TE_COMM, errno);
 
     peer.sin_family = AF_INET;
     peer.sin_port = htons(atoi(port));
@@ -149,7 +149,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
     {
         fprintf(stderr, "%s(): %s %s:%s\n",
                 __FUNCTION__, strerror(errno), addr, port);
-        return errno;
+        return TE_OS_RC(TE_COMM, errno);
     }
 
 #if defined(TCP_NODELAY) || defined(SO_KEEPALIVE)
@@ -165,7 +165,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
             rc = errno;
             perror("setsockopt(SOL_TCP, TCP_NODELAY, enabled)");
             (void)close(s);
-            return rc;
+            return TE_OS_RC(TE_COMM, rc);
         }
 #endif
 #ifdef SO_KEEPALIVE
@@ -177,7 +177,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
             rc = errno;
             perror("setsockopt(SOL_TCP, TCP_KEEPIDLE)");
             (void)close(s);
-            return rc;
+            return TE_OS_RC(TE_COMM, rc);
         }
 #endif
 #ifdef TCP_KEEPINTVL
@@ -188,7 +188,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
             rc = errno;
             perror("setsockopt(SOL_TCP, TCP_KEEPINTVL)");
             (void)close(s);
-            return rc;
+            return TE_OS_RC(TE_COMM, rc);
         }
 #endif
 #ifdef TCP_KEEPCNT
@@ -199,7 +199,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
             rc = errno;
             perror("setsockopt(SOL_TCP, TCP_KEEPCNT)");
             (void)close(s);
-            return rc;
+            return TE_OS_RC(TE_COMM, rc);
         }
 #endif
         optval = 1;
@@ -209,7 +209,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
             rc = errno;
             perror("setsockopt(SOL_SOCKET, SO_KEEPALIVE)");
             (void)close(s);
-            return rc;
+            return TE_OS_RC(TE_COMM, rc);
         }
 #endif /* SO_KEEPALIVE */
     }
@@ -222,7 +222,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
     if ((*p_rnc) == 0)
     {
         perror("rcf_net_engine_connect(): memory allocation");
-        return errno;
+        return TE_OS_RC(TE_COMM, errno);
     }
 
     /* All field is set to zero. Just set the socket */
@@ -249,12 +249,12 @@ rcf_net_engine_transmit(struct rcf_net_connection *rnc,
     ssize_t len = 0;
 
     if (rnc == NULL)
-        return TE_EINVAL;
+        return TE_RC(TE_COMM, TE_EINVAL);
 
     while (length > 0)
     {
         if ((len = send(rnc->socket, data, length, 0)) < 0)
-            return errno;
+            return TE_OS_RC(TE_COMM, errno);
 
         length -= len;
         data += len;
@@ -347,7 +347,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
     size_t  l = 0;
 
     if (rnc == NULL)
-        return TE_EINVAL;
+        return TE_OS_RC(TE_COMM, EINVAL);
 
     if (rnc->bytes_to_read > 0)
     {
@@ -371,7 +371,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
                 *pbytes = rnc->bytes_to_read;
                 rnc->bytes_to_read -= tmp;
             }
-            return TE_EPENDING;
+            return TE_RC(TE_COMM, TE_EPENDING);
         }
     }
 
@@ -381,7 +381,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
 
         if (r <= 0)
         {
-            return r == 0 ? EPIPE : errno;
+            return TE_OS_RC(TE_COMM, r == 0 ? EPIPE : errno);
         }
 
         if (buffer[l] == 0
@@ -449,13 +449,13 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
 
                     rnc->bytes_to_read = attach_size - to_read;
                     *pbytes = attach_size + l;
-                    return TE_EPENDING;
+                    return TE_RC(TE_COMM, TE_EPENDING);
                 }
             }
         }
 
         if (l == (*pbytes - 1))
-            return TE_ESMALLBUF;
+            return TE_RC(TE_COMM, TE_ESMALLBUF);
 
         l += r;
     }
@@ -481,7 +481,7 @@ rcf_net_engine_close(struct rcf_net_connection **p_rnc,
     int rc = 0;
 
     if (p_rnc == NULL)
-        return TE_EINVAL;
+        return TE_RC(TE_COMM, TE_EINVAL);
 
     if (*p_rnc == NULL)
         return 0;
@@ -491,7 +491,7 @@ rcf_net_engine_close(struct rcf_net_connection **p_rnc,
     if (close((*p_rnc)->socket) < 0)
     {
         perror("rcf_net_engine_close(): close() error");
-        rc = errno;
+        rc = TE_OS_RC(TE_COMM, errno);
     }
 
     free(*p_rnc);
@@ -619,7 +619,7 @@ read_socket(int socket, char *buffer, size_t len)
 
         if (r <= 0)
         {
-            return (r == 0) ? EPIPE : errno;
+            return TE_OS_RC(TE_COMM, (r == 0) ? EPIPE : errno);
         }
 
         len -= r;

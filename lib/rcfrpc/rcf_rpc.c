@@ -227,7 +227,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         {
             if (existing)
             {
-                if (TE_RC_GET_ERROR(rc) != EBUSY)
+                if (TE_RC_GET_ERROR(rc) != TE_EBUSY)
                     RETERR(rc, "RPC server %s is dead and cannot be used",
                            name);
             }
@@ -411,7 +411,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     {
         if (rpcs->tid0 != 0)
         {
-            rpcs->_errno = TE_RC(TE_RCF_API, EBUSY);
+            rpcs->_errno = TE_RC(TE_RCF_API, TE_EBUSY);
             pthread_mutex_unlock(&rpcs->lock);
             return;
         }
@@ -421,7 +421,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         if (rpcs->tid0 == 0)
         {
             ERROR("Try to wait not called RPC");
-            rpcs->_errno = TE_RC(TE_RCF_API, EALREADY);
+            rpcs->_errno = TE_RC(TE_RCF_API, TE_EALREADY);
             pthread_mutex_unlock(&rpcs->lock);
             return;
         }
@@ -451,7 +451,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     rpcs->start = 0;
     *(rpcs->lib) = '\0';
     if (TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCTIMEOUT ||
-        TE_RC_GET_ERROR(rpcs->_errno) == ETIMEDOUT ||
+        TE_RC_GET_ERROR(rpcs->_errno) == TE_ETIMEDOUT ||
         TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCDEAD)
     {
         rpcs->timed_out = TRUE;

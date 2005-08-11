@@ -360,7 +360,7 @@ rcf_ch_file(char *cbuf, int buflen, char *ba, int cmdlen,
     UNUSED(answer_plen);
     UNUSED(op);
     UNUSED(filename);
-    SEND_ANSWER("%d", EOPNOTSUPP);
+    SEND_ANSWER("%d", TE_EOPNOTSUPP);
     return 0;
 }
 
@@ -380,7 +380,7 @@ rcf_ch_call(char *cbuf, int buflen,
     UNUSED(argc);
     UNUSED(argv);
     UNUSED(params);
-    SEND_ANSWER("%d", EOPNOTSUPP);
+    SEND_ANSWER("%d", TE_EOPNOTSUPP);
     return 0;
 }
 
@@ -401,7 +401,7 @@ rcf_ch_start_task(char *cbuf, int buflen,
     UNUSED(argc);
     UNUSED(argv);
     UNUSED(params);
-    SEND_ANSWER("%d", EOPNOTSUPP);
+    SEND_ANSWER("%d", TE_EOPNOTSUPP);
     return 0;
 }
 
@@ -416,7 +416,7 @@ rcf_ch_kill_task(char *cbuf, int buflen,
     UNUSED(buflen);
     UNUSED(answer_plen);
     UNUSED(pid);
-    SEND_ANSWER("%d", EOPNOTSUPP);
+    SEND_ANSWER("%d", TE_EOPNOTSUPP);
     return 0;
 }
 

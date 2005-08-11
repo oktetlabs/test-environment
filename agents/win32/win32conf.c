@@ -1073,7 +1073,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     
     if (arp_get(0, oid, val, addr, addr_volatile) == 0)
-        return TE_RC(TE_TA_WIN32, EEXIST);
+        return TE_RC(TE_TA_WIN32, TE_EEXIST);
 
     memset(&entry, 0, sizeof(entry));
     
@@ -1338,7 +1338,7 @@ route_parse_inst_name(const char *inst_name, route_entry_t *rt)
     if (strstr(tmp, "mss=") != NULL || strstr(tmp, "window=") != NULL ||
         strstr(tmp, "irtt=") != NULL || strstr(tmp, "reject") != NULL)
     {
-        return TE_RC(TE_TA_WIN32, EOPNOTSUPP);
+        return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
 
     return 0;
@@ -1514,7 +1514,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
              table->table[i].dwForwardNextHop == entry.dwForwardNextHop))
         {
             free(table);
-            return TE_RC(TE_TA_WIN32, EEXIST);
+            return TE_RC(TE_TA_WIN32, TE_EEXIST);
         }
     }
     free(table);

@@ -308,7 +308,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
 #undef FILL_ARPREQ_ADDR
         default:
             ERROR("Unsupported ioctl code: %d", request);
-            rpcs->_errno = TE_RC(TE_RCF, EOPNOTSUPP);
+            rpcs->_errno = TE_RC(TE_RCF, TE_EOPNOTSUPP);
             RETVAL_INT(ioctl, -1);;
     }
 

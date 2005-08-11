@@ -398,7 +398,7 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         { /* TODO: this check seems to be not correct, compare with interface MTU
                   should be here. */
             ERROR("too greate frame size %d", frame_size);
-            return EMSGSIZE; 
+            return TE_EMSGSIZE; 
         }
 #endif
 
