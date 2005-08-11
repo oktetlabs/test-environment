@@ -62,7 +62,7 @@
     do {                                                                  \
         int err_ = RPC_ERRNO(rpcs_);                                      \
                                                                           \
-        if (RPC_ERRNO_RPC(err_))                                          \
+        if (RPC_IS_ERRNO_RPC(err_))                                       \
         {                                                                 \
             if (!!((#func_args_value_)[0]))                               \
             {                                                             \
