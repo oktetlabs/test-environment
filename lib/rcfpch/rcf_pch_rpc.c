@@ -979,7 +979,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         
         if (rpcs->pid < 0)
         {
-            int err = TE_RC(TE_RCF_PCH, errno);
+            int err = TE_OS_RC(TE_RCF_PCH, errno);
             
             rcf_ch_unlock();
             free(rpcs);

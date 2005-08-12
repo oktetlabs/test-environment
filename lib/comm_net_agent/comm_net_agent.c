@@ -296,7 +296,7 @@ rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
             fprintf(stdout,
                     "%s(): recv() returned 0, connection is closed",
                     __FUNCTION__);
-            return TE_OS_RC(TE_COMM, EPIPE);
+            return TE_RC(TE_COMM, TE_EPIPE);
         }
 
         if (buffer[l] == 0
@@ -438,7 +438,7 @@ int
 rcf_comm_agent_close(struct rcf_comm_connection **p_rcc)
 {
     if (p_rcc == NULL)
-        return TE_OS_RC(TE_COMM, EINVAL);
+        return TE_RC(TE_COMM, TE_EINVAL);
 
     if (*p_rcc == NULL)
         return 0;
@@ -582,7 +582,7 @@ read_socket(int socket, void *buffer, size_t len)
             fprintf(stdout,
                     "%s(): recv() returned 0, connection is closed",
                     __FUNCTION__);
-            return TE_OS_RC(TE_COMM, EPIPE);
+            return TE_RC(TE_COMM, TE_EPIPE);
         }
         assert((size_t)r <= len);
 

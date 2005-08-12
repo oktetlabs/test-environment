@@ -347,7 +347,7 @@ rcf_net_engine_receive(struct rcf_net_connection *rnc, char *buffer,
     size_t  l = 0;
 
     if (rnc == NULL)
-        return TE_OS_RC(TE_COMM, EINVAL);
+        return TE_RC(TE_COMM, TE_EINVAL);
 
     if (rnc->bytes_to_read > 0)
     {
