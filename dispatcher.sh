@@ -499,7 +499,7 @@ fi
 # Build Test Environment
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
-    cd ${TE_BASE}
+    pushd ${TE_BASE} >/dev/null
     if test ! -e configure ; then
         if test -n "${QUIET}" ; then
             echo "Calling aclocal/autoconf/automake in `pwd`" \
@@ -511,7 +511,7 @@ if test -n "$BUILDER" ; then
         autoconf || exit_with_log
         automake || exit_with_log
     fi
-    cd ${TE_BUILD}
+    popd >/dev/null
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
         ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
@@ -531,8 +531,8 @@ else
     te_builder_opts $BUILDER_OPTS || exit_with_log
 fi
 
-# Goto the directory where the script was called
-cd ${TE_RUN_DIR}
+# Goto the directory where the script was called ${TE_RUN_DIR}
+popd >/dev/null
 
 if test -n "${SUITE_SOURCES}" -a -n "${BUILD_TS}" ; then
     te_build_suite `basename ${SUITE_SOURCES}` $SUITE_SOURCES || exit_with_log
