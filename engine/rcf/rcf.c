@@ -640,7 +640,7 @@ synchronize_time(ta *agent)
                   (unsigned)tv.tv_sec, (unsigned)tv.tv_usec);
     if ((rc = (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1)) != 0)
     {
-        ERROR("Failed to transmit command to TA '%s' errno %d", 
+        ERROR("Failed to transmit command to TA '%s' error=%r", 
               agent->name, rc);
         return -1;
     }
@@ -691,7 +691,7 @@ answer_user_request(usrreq *req)
                              sizeof(rcf_msg) + req->message->data_len);
         if (rc != 0)
         {
-            ERROR("Cannot send an answer to user: errno %d", rc);
+            ERROR("Cannot send an answer to user: error=%r", rc);
             RING("Failed msg has: opcode %d; TA %s; SID %d; file %s;", 
                  req->message->opcode, 
                  req->message->ta, 
@@ -871,14 +871,14 @@ init_agent(ta *agent)
                              agent->conf, &(agent->handle),
                              &(agent->flags))) != 0)
     {
-        ERROR("Cannot (re-)initialize TA '%s' error %d", agent->name, rc);
+        ERROR("Cannot (re-)initialize TA '%s' error=%r", agent->name, rc);
         set_ta_unrecoverable(agent);
         return rc;
     }
     INFO("TA '%s' started, trying to connect", agent->name);
     if ((rc = (agent->connect)(agent->handle, &set0, &tv0)) != 0)
     {
-        ERROR("Cannot connect to TA '%s' error %d", agent->name, rc);
+        ERROR("Cannot connect to TA '%s' error=%r", agent->name, rc);
         set_ta_unrecoverable(agent);
         return rc;
     }
@@ -1018,14 +1018,13 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
     if ((file = open(msg->file, O_WRONLY | O_CREAT | O_TRUNC,
                      S_IRWXU | S_IRWXG | S_IRWXO)) < 0)
     {
-        ERROR("cannot open file %s for writing - skipping\n",
-                  msg->file);
+        ERROR("Cannot open file %s for writing - skipping", msg->file);
     }
 
     if (file >= 0 && write(file, ba, write_len) < 0)
     {
-        ERROR("cannot write to file %s errno %d - skipping\n",
-                  msg->file, errno);
+        ERROR("Cannot write to file %s errno %d - skipping",
+              msg->file, errno);
         close(file);
         file = -1;
     }
@@ -1058,8 +1057,8 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
             write(file, cmd, ((size_t)len < sizeof(cmd)) ?
                                  (size_t)len : sizeof(cmd)) < 0)
         {
-            ERROR("cannot write to file %s errno %d - skipping\n",
-                      msg->file, errno);
+            ERROR("Cannot write to file %s errno %d - skipping",
+                  msg->file, errno);
             close(file);
             file = -1;
         }
@@ -1204,18 +1203,17 @@ process_reply(ta *agent)
     char    *ba = NULL;
 
 #define READ_INT(n) \
-    do {                                              \
-        char *tmp;                                    \
-        n = strtol(ptr, &tmp, 10);                    \
-        if (ptr == tmp || (*tmp != ' ' && *tmp != 0)) \
-        {                                             \
-            ERROR("BAD PROTO: %s, %d",     \
-                      __FILE__, __LINE__);            \
-            goto bad_protocol;                        \
-        }                                             \
-        ptr = tmp;                                    \
-        while (*ptr == ' ')                           \
-            ptr++;                                    \
+    do {                                                    \
+        char *tmp;                                          \
+        n = strtol(ptr, &tmp, 10);                          \
+        if (ptr == tmp || (*tmp != ' ' && *tmp != 0))       \
+        {                                                   \
+            ERROR("BAD PROTO: %s, %d", __FILE__, __LINE__); \
+            goto bad_protocol;                              \
+        }                                                   \
+        ptr = tmp;                                          \
+        while (*ptr == ' ')                                 \
+            ptr++;                                          \
     } while (0)
 
     rc = (agent->receive)(agent->handle, cmd, &len, &ba);
@@ -1230,7 +1228,7 @@ process_reply(ta *agent)
 
     if (rc != 0 && rc != TE_EPENDING)
     {
-        ERROR("Receiving answer from TA '%s' failed error %d",
+        ERROR("Receiving answer from TA '%s' failed error=%r",
               agent->name, rc);
         set_ta_dead(agent);
         return;
@@ -1543,8 +1541,8 @@ transmit_cmd(ta *agent, usrreq *req)
         if (len < 0)
         {
             req->message->error = TE_OS_RC(TE_RCF, errno);
-            ERROR("Read from file '%s' failed errno %d", 
-                  req->message->file, errno);
+            ERROR("Read from file '%s' failed error=%r", 
+                  req->message->file, req->message->error);
             close(file);
             answer_user_request(req);
             return -1;
@@ -2280,7 +2278,7 @@ wait_shutdown()
         if ((rc = ipc_receive_message(server, (char *)req->message,
                                       &len, &(req->user))) != 0)
         {
-            ERROR("Failed to receive user request: errno %d", rc);
+            ERROR("Failed to receive user request: error=%r", rc);
         }
         else
         {
