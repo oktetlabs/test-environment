@@ -404,8 +404,8 @@ pushd $TE_BUILD >/dev/null
 
 # Create directory for temporary files
 if test -z "$TE_TMP" ; then
-    mkdir -p tmp
-    export TE_TMP=`pwd`/tmp
+    mkdir -p te_tmp
+    export TE_TMP=`pwd`/te_tmp
 fi
 
 export TE_LOG_DIR=${TE_LOG_DIR}
