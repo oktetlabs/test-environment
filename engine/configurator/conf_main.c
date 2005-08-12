@@ -641,7 +641,7 @@ log_msg(cfg_msg *msg, te_bool before)
     {
         level = TE_LL_ERROR;
         addon = buf;
-        snprintf(buf, sizeof(buf), " failed (errno=0x%X)", msg->rc);
+        snprintf(buf, sizeof(buf), " failed (errno=%r)", msg->rc);
     }
 /**
  * Construct strings to be printed for handle identification.
@@ -1136,7 +1136,7 @@ wait_shutdown()
 
         if ((rc = ipc_receive_message(server, buf, &len, &user)) != 0)
         {
-            ERROR("Failed receive user request: errno=%d", rc);
+            ERROR("Failed receive user request: errno=%r", rc);
             continue;
         }
 
@@ -1146,7 +1146,7 @@ wait_shutdown()
         rc = ipc_send_answer(server, user, (char *)msg, msg->len);
         if (rc != 0)
         {
-            ERROR("Cannot send an answer to user: errno=%d", rc);
+            ERROR("Cannot send an answer to user: errno=%r", rc);
         }
 
         if (msg->type == CFG_SHUTDOWN)
@@ -1337,7 +1337,7 @@ main(int argc, char **argv)
 
         if ((rc = ipc_receive_message(server, buf, &len, &user)) != 0)
         {
-            ERROR("Failed receive user request: errno=0x%X", rc);
+            ERROR("Failed receive user request: errno=%r", rc);
             continue;
         }
 
@@ -1348,7 +1348,7 @@ main(int argc, char **argv)
         rc = ipc_send_answer(server, user, (char *)msg, msg->len);
         if (rc != 0)
         {
-            ERROR("Cannot send an answer to user: errno=0x%X", rc);
+            ERROR("Cannot send an answer to user: errno=%r", rc);
         }
 
         if ((char *)msg != buf)

@@ -91,7 +91,7 @@ answer_user_request(usrreq *req)
                                  sizeof(rcf_msg) + req->message->data_len);
         if (rc != 0)
         {
-            ERROR("Cannot send an answer to user: errno %d", rc);
+            ERROR("Cannot send an answer to user: errno %r", rc);
             RING("Failed msg has: opcode %d; TA %s; SID %d; file %s;",
                  req->message->opcode,
                  req->message->ta,
@@ -526,7 +526,7 @@ rcf_emulate(void* param)
             if ((rc = ipc_receive_message(server, (char *)req->message,
                                           &len, &(req->user))) != 0)
             {
-                ERROR("Failed to receive user request: errno=%d", rc);
+                ERROR("Failed to receive user request: errno=%r", rc);
                 free(req->message);
                 free(req);
                 continue;
