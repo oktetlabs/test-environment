@@ -71,7 +71,7 @@ main(int argc, char *argv[])
     {
         if ((rc = rcf_ta_create_session(ta, &sid)) != 0)
         {
-            TEST_FAIL("Session create error %X", rc);
+            TEST_FAIL("Session create error %r", rc);
         }
         VERB("Session created %d", sid);
     }
@@ -85,21 +85,21 @@ main(int argc, char *argv[])
         rc = tapi_snmp_csap_create(ta, sid, snmp_agt, "public", 
                                    snmp_version, &snmp_csap); 
         if (rc) 
-            TEST_FAIL("Csap create error %X", rc);
+            TEST_FAIL("Csap create error %r", rc);
         VERB("New csap %d", snmp_csap); 
 
         
         if ((rc = tapi_snmp_load_mib_with_path("/usr/share/snmp/mibs", 
                                                 mib_name)) != 0)
-            TEST_FAIL("snmp_load_mib(%s) failed, rc %x\n", mib_name, rc);
+            TEST_FAIL("snmp_load_mib(%s) failed, rc %r", mib_name, rc);
 
         if ((rc = tapi_snmp_make_oid(mib_object, &oid)) != 0)
-            TEST_FAIL("tapi_snmp_make_oid() failed, rc %x\n", rc);
+            TEST_FAIL("tapi_snmp_make_oid() failed, rc %r", rc);
 
         rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_NEXT,
                            &vb, &err);
         if (rc)
-            TEST_FAIL("SNMP GET NEXT failed with rc %X", rc);
+            TEST_FAIL("SNMP GET NEXT failed with rc %r", rc);
 
         INFO("getnext for object %s got oid %s",
              mib_object, print_oid(&oid));
@@ -109,7 +109,7 @@ main(int argc, char *argv[])
         rc = tapi_snmp_get(ta, sid, snmp_csap, &oid, TAPI_SNMP_EXACT,
                            &vb, &err);
         if (rc)
-            TEST_FAIL("SNMP GET failed with rc %X", rc);
+            TEST_FAIL("SNMP GET failed with rc %r", rc);
 
         INFO("get for object %s got oid %s", mib_object, print_oid(&oid));
 
@@ -119,7 +119,7 @@ main(int argc, char *argv[])
         rc = tapi_snmp_get_row(ta, sid, snmp_csap, &errstat, &errindex,
                                &oid, "ifNumber", &value, NULL);
         if (rc)
-            TEST_FAIL("SNMP get_row method failed with rc %X", rc);
+            TEST_FAIL("SNMP get_row method failed with rc %r", rc);
 
         INFO("get row for ifNumber got value %d", value); 
 

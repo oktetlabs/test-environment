@@ -71,7 +71,7 @@ main(int argc, char *argv[])
     {
         if ((rc = rcf_ta_create_session(ta, &sid)) != 0)
         {
-            TEST_FAIL("Session create error %X", rc);
+            TEST_FAIL("Session create error %r", rc);
         }
         VERB("Session created %d", sid);
     }
@@ -83,31 +83,31 @@ main(int argc, char *argv[])
         rc = tapi_snmp_csap_create(ta, sid, snmp_agt, "public", 
                                    snmp_version, &snmp_csap); 
         if (rc) 
-            TEST_FAIL("Csap create error %X", rc);
+            TEST_FAIL("Csap create error %r", rc);
         VERB("New csap %d", snmp_csap); 
 
         
         if ((rc = tapi_snmp_load_mib_with_path("/usr/share/snmp/mibs", 
                                                 mib_name)) != 0)
         {
-            TEST_FAIL("snmp_load_mib(%s) failed, rc %x\n", mib_name, rc);
+            TEST_FAIL("snmp_load_mib(%s) failed, rc %r", mib_name, rc);
             return rc;
         }
 
         if ((rc = tapi_snmp_make_oid("ifTable", &ifTable_oid)) != 0)
         {
-            TEST_FAIL("tapi_snmp_make_oid() failed, rc %x\n", rc);
+            TEST_FAIL("tapi_snmp_make_oid() failed, rc %r", rc);
             return rc;
         }
         if (rc)
-            TEST_FAIL("SNMP GET NEXT failed with rc %X", rc);
+            TEST_FAIL("SNMP GET NEXT failed with rc %r", rc);
 
         iftable_result = NULL;
 
         rc = tapi_snmp_get_table(ta, sid, snmp_csap, &ifTable_oid, &num, 
                                  &iftable_result);
         if (rc)
-            TEST_FAIL("SNMP GET NEXT failed with rc %X", rc);
+            TEST_FAIL("SNMP GET NEXT failed with rc %r", rc);
 
         INFO("snmp get table got num: %d, ptr %x", num, iftable_result); 
 
