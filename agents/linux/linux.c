@@ -656,8 +656,8 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
 /**
  * Routine to be executed remotely to run any program from shell.
  *
- * @param argc      - number of arguments in array
- * @param argv      - array with pointer to string arguments
+ * @param argc      number of arguments in array
+ * @param argv      array with pointer to string arguments
  *
  * @return Status code.
  *
@@ -996,92 +996,6 @@ init_tce_subsystem(void)
 }
 
 
-/**
- * Entry point of the Linux Test Agent.
- *
- * Usage:
- *     talinux <ta_name> <communication library configuration string>
- */
-int
-main(int argc, char **argv)
-{
-    int rc, retval = 0;
-    
-    pthread_t tid;
-    
-    char buf[16];
-    
-    chdir("/tmp");
-    
-    if (argc < 3)
-    {
-        fprintf(stderr, "Invalid number of arguments\n");
-        return -1;
-    }
-
-    ta_execname = argv[0];
-
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    
-
-    (void)signal(SIGINT, ta_sigint_handler);
-    (void)signal(SIGPIPE, ta_sigpipe_handler);
-
-    sigemptyset(&rpcs_received_signals);
-    
-#ifdef RCF_RPC
-    /* After execve */
-    if (strcmp(argv[1], "rpcserver") == 0)
-    {
-        tarpc_init(argc, argv);
-        return 0;
-    }
-#endif
-
-    if ((rc = log_init()) != 0)
-    {
-        fprintf(stderr, "log_init() failed: error=%d\n", rc);
-        return rc;
-    }
-    
-    te_lgr_entity = ta_name = argv[1];
-
-    (void)signal(SIGCHLD, ta_sigchld_handler);
-//    (void)signal(SIGCHLD, ta_sig_handler_dummy);
-
-    VERB("Started");
-
-    sprintf(buf, "PID %u", getpid());
-
-    pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
-
-    init_tce_subsystem();
-    
-    rc = rcf_pch_run(argv[2], buf);
-    if (rc != 0)
-    {
-        fprintf(stderr, "rcf_pch_run() failed: error=%d\n", rc);
-        if (retval == 0)
-            retval = rc;
-    }
-
-    if (tce_stop_function != NULL)
-        tce_stop_function();
-
-    kill_tasks();
-    kill_threads();
-
-    rc = log_shutdown();
-    if (rc != 0)
-    {
-        fprintf(stderr, "log_shutdown() failed: error=%d\n", rc);
-        if (retval == 0)
-            retval = rc;
-    }
-    
-    return retval;
-}
-
-
 /* See description in linux_internal.h */
 void
 ta_children_cleanup()
@@ -1390,3 +1304,89 @@ arithm_progr(uint64_t offset, uint32_t length, uint8_t *buffer)
 
     return 0;
 }
+
+
+/**
+ * Entry point of the Linux Test Agent.
+ *
+ * Usage:
+ *     talinux <ta_name> <communication library configuration string>
+ */
+int
+main(int argc, char **argv)
+{
+    int rc, retval = 0;
+    
+    pthread_t tid;
+    
+    char buf[16];
+    
+    chdir("/tmp");
+    
+    if (argc < 3)
+    {
+        fprintf(stderr, "Invalid number of arguments\n");
+        return -1;
+    }
+
+    ta_execname = argv[0];
+
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    
+
+    (void)signal(SIGINT, ta_sigint_handler);
+    (void)signal(SIGPIPE, ta_sigpipe_handler);
+
+    sigemptyset(&rpcs_received_signals);
+    
+#ifdef RCF_RPC
+    /* After execve */
+    if (strcmp(argv[1], "rpcserver") == 0)
+    {
+        tarpc_init(argc, argv);
+        return 0;
+    }
+#endif
+
+    if ((rc = log_init()) != 0)
+    {
+        fprintf(stderr, "log_init() failed: error=%d\n", rc);
+        return rc;
+    }
+    
+    te_lgr_entity = ta_name = argv[1];
+
+    (void)signal(SIGCHLD, ta_sigchld_handler);
+
+    VERB("Started");
+
+    sprintf(buf, "PID %u", getpid());
+
+    pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
+
+    init_tce_subsystem();
+    
+    rc = rcf_pch_run(argv[2], buf);
+    if (rc != 0)
+    {
+        fprintf(stderr, "rcf_pch_run() failed: error=%d\n", rc);
+        if (retval == 0)
+            retval = rc;
+    }
+
+    if (tce_stop_function != NULL)
+        tce_stop_function();
+
+    kill_tasks();
+    kill_threads();
+
+    rc = log_shutdown();
+    if (rc != 0)
+    {
+        fprintf(stderr, "log_shutdown() failed: error=%d\n", rc);
+        if (retval == 0)
+            retval = rc;
+    }
+    
+    return retval;
+}
+
