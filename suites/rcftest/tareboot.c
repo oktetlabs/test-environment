@@ -70,7 +70,7 @@ main()
         if (TE_EPERM == TE_RC_GET_ERROR(retval))
             ERROR("/*****TA %s is not rebootable.********/", agentA);
         else
-            ERROR("/****rcf_ta_reboot failed. errno=%X ****/",
+            ERROR("/****rcf_ta_reboot failed. errno=%r ****/",
                    TE_RC_GET_ERROR(retval)); 
     }
     else
@@ -83,7 +83,7 @@ main()
         if (TE_EPERM == TE_RC_GET_ERROR(retval))
             ERROR("/*****TA %s is not rebootable.********/", agentB);
         else
-            ERROR("rcf_ta_reboot failed. errno=%X",
+            ERROR("rcf_ta_reboot failed. errno=%r",
                    TE_RC_GET_ERROR(retval)); 
     }
     else
