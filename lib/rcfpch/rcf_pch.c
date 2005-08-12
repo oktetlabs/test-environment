@@ -435,10 +435,10 @@ rcf_pch_run(const char *confstr, const char *info)
         char    *ba;         /* Binary attachment pointer */
 
         if ((rc = rcf_comm_agent_wait(conn, cmd, &len, &ba)) != 0 &&
-            rc != TE_EPENDING)
+            TE_RC_GET_ERROR(rc) != TE_EPENDING)
             goto communication_problem;
 
-        if (rc == TE_EPENDING)
+        if (TE_RC_GET_ERROR(rc) == TE_EPENDING)
         {
             size_t tmp;
             
@@ -696,7 +696,7 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 char *params = NULL;
                 char *stack;
-
+                
                 if (*ptr == 0 || transform_str(&ptr, &stack) != 0)
                     goto bad_protocol;
 
@@ -719,7 +719,6 @@ rcf_pch_run(const char *confstr, const char *info)
                           params);
                     SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
-
                 break;
             }
 
@@ -801,7 +800,7 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 int handle;
                 int postponed = 0;
-
+                
                 if (*ptr == 0 || ba == NULL)
                     goto bad_protocol;
                     
@@ -1045,7 +1044,8 @@ rcf_pch_run(const char *confstr, const char *info)
     }
 
 communication_problem:
-    ERROR("Fatal communication error %d", rc);
+    ERROR("Fatal communication error %r", rc);
+    PRINT("Fatal communication error 0x%X", rc);
     goto exit;
 
 exit:
