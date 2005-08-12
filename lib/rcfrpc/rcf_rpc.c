@@ -317,7 +317,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
         RING("RPC (%s,%s): execve() -> (%s)",
              rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)));
     else
-        ERROR("RPC (%s,%s): execve() -> (%s), rc=0x%x",
+        ERROR("RPC (%s,%s): execve() -> (%s), rc=%r",
               rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)), rc);
 
     return rc;
@@ -348,7 +348,7 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
                                    rpcs->ta, rpcs->name)) != 0 &&
         TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
-        ERROR("Failed to delete RPC server %s: errno 0x%X", rpcs->name, rc);
+        ERROR("Failed to delete RPC server %s: error=%r", rpcs->name, rc);
         if (pthread_mutex_unlock(&rpcs->lock) != 0)
             ERROR("pthread_mutex_unlock() failed");
         
