@@ -233,6 +233,7 @@ for package in $DUMMY $TE_BS_TA ; do
     fi
     
     cd agents
+    test -L $package && rm $package
     mkdir -p $package
     NAME=`basename $PKGSRC`
     TA_DIST_SUBDIRS="$TA_DIST_SUBDIRS $NAME"
