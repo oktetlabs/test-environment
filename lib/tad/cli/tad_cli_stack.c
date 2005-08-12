@@ -1289,8 +1289,6 @@ cli_single_destroy_cb(int csap_id, int layer)
  *
  **************************************************************************/
 
-#include "ta_logfork.h"
-
 static void
 child_send_sync(cli_csap_specific_data_p spec_data, 
                 cli_sync_res_t sync_val)

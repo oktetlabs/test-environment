@@ -57,7 +57,6 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "logger_ta.h"
-#include "logfork.h"
 
 #include "linux_internal.h"
 

@@ -1199,9 +1199,6 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
 #undef RETERR    
 }            
 
-
-#include "ta_logfork.h"
-
 #ifdef HAVE_SIGNAL_H
 
 static void
@@ -1309,7 +1306,7 @@ rcf_pch_rpc_server(const char *name)
 
     RING("RPC server '%s' (re-)started (PID %d, TID %u)",
          name, (int)getpid(), (unsigned int)pthread_self());
-
+         
     while (TRUE)
     {
         char      rpc_name[RCF_RPC_MAX_NAME];        

@@ -3,12 +3,12 @@ AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
 
-include_HEADERS = logger_ta.h logger_ta_internal.h
+include_HEADERS = logger_ta.h logger_ta_internal.h logfork.h
 
 
 lib_LIBRARIES = libloggerta.a
 
-libloggerta_a_SOURCES = logger_ta.c
+libloggerta_a_SOURCES = logger_ta.c logfork.c
 
 
 install-exec-hook:

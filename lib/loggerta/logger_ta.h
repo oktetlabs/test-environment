@@ -46,6 +46,7 @@
 
 #include "logger_ta_internal.h"
 #include "logger_api.h"
+#include "logfork.h"
 
 #define LGRF_MESSAGE(_lvl, _lgruser, _fs, _args...) \
     do {                                                            \

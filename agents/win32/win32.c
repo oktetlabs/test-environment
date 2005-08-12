@@ -55,9 +55,6 @@
 
 #define TE_LGR_USER      "Main"
 #include "logger_ta.h"
-#include "logfork.h"
-
-
 
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \

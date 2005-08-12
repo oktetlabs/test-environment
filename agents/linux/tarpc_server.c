@@ -67,13 +67,12 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
+#include "logger_ta.h"
 #include "tarpc.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "rcf_rpc_defs.h"
 #include "tapi_rpcsock_defs.h"
-
-#include "ta_logfork.h"
 
 #include "linux_internal.h"
 

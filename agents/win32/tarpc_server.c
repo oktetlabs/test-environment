@@ -49,7 +49,6 @@
 #include "rcf_ch_api.h"
 #include "rcf_rpc_defs.h"
 #include "tapi_rpcsock_defs.h"
-#include "ta_logfork.h"
 
 #define PRINT(msg...) \
     do {                                                \

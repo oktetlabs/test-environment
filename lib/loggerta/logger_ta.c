@@ -38,6 +38,10 @@
 #include "logger_ta.h"
 #include "rcf_pch_mem.h"
 
+extern void logfork_log_message(int level, char *lgruser, 
+                                const char *fmt, va_list ap);
+
+
 /** Local log buffer instance */
 struct lgr_rb log_buffer;
 
@@ -57,6 +61,8 @@ pthread_mutex_t ta_lgr_mutex;
 sem_t           ta_lgr_sem;
 #endif
 
+/** PID of the Test Agent */
+static pid_t ta_pid;
 
 /**
  * Register message in the raw log (slow mode).
@@ -90,6 +96,13 @@ log_message(uint16_t level, const char *entity_name,
     
     UNUSED(entity_name);
     
+    va_start(ap, form_str);
+    if (ta_pid != getpid())
+    {
+        logfork_log_message(level, user_name, form_str, ap);
+        return;
+    }
+    
     skip_flags = "#-+ 0";
     skip_width = "*0123456789";
 
@@ -99,7 +112,6 @@ log_message(uint16_t level, const char *entity_name,
     header.user_name = (user_name != NULL) ? user_name : null_str;
     header.level = level;
     header.fs = (form_str != NULL) ? form_str : null_str;
-    va_start(ap, form_str);
     for (p_str = form_str; *p_str; p_str++)
     {
         if (*p_str != '%')
@@ -562,6 +574,8 @@ log_get_message(uint32_t length, uint8_t *buffer)
 int
 log_init()
 {
+    ta_pid = getpid();
+    
     if (ta_lgr_lock_init() != 0)
         return -1;
 
