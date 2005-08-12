@@ -727,7 +727,7 @@ ftp_test(char *uri_get, char *uri_put, int size)
         pthread_join(ti, (void **)&rc1);
         close(si);
         if (rc1 != 0)
-            ERROR("Read test failed %r", rc1);
+            ERROR("Read test failed %X", rc1);
     }
         
     if (so >= 0)
@@ -735,10 +735,10 @@ ftp_test(char *uri_get, char *uri_put, int size)
         pthread_join(to, (void **)&rc2);
         close(so);
         if (rc2 != 0)
-            ERROR("Write test failed %r", rc2);
+            ERROR("Write test failed %X", rc2);
     }
     
-    VERB("Results: %r %r\n", rc1, rc2);
+    VERB("Results: %X %X\n", rc1, rc2);
         
     return (rc1 != 0) ? rc1 : rc2;
 }
