@@ -798,7 +798,7 @@ tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
 {
     int rc;
 
-    if ((rc = cfg_del_instance_fmt(TRUE, "/agent:%s/radiusserver:/user:%s",
+    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/radiusserver:/user:%s",
                                    ta_name, user_name)) != 0)
     {
         ERROR("Failed to remove RADIUS user '%s' from the Configurator DB",
