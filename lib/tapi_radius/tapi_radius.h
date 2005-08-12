@@ -47,14 +47,14 @@ extern "C" {
 
 /** Type of RADIUS packet, see RFC 2865 */
 typedef enum {
-    TAPI_RADIUS_CODE_ACCESS_REQUEST      = 1,
-    TAPI_RADIUS_CODE_ACCESS_ACCEPT       = 2,
-    TAPI_RADIUS_CODE_ACCESS_REJECT       = 3,
-    TAPI_RADIUS_CODE_ACCOUNTING_REQUEST  = 4,
-    TAPI_RADIUS_CODE_ACCOUNTING_RESPONSE = 5,
-    TAPI_RADIUS_CODE_ACCESS_CHALLENGE    = 11,
-    TAPI_RADIUS_CODE_STATUS_SERVER       = 12,
-    TAPI_RADIUS_CODE_STATUS_CLIENT       = 13,
+    TAPI_RADIUS_CODE_ACCESS_REQUEST      = 1,   /**< Access-Request */
+    TAPI_RADIUS_CODE_ACCESS_ACCEPT       = 2,   /**< Access-Accept */
+    TAPI_RADIUS_CODE_ACCESS_REJECT       = 3,   /**< Access-Reject */
+    TAPI_RADIUS_CODE_ACCOUNTING_REQUEST  = 4,   /**< Accounting-Request */
+    TAPI_RADIUS_CODE_ACCOUNTING_RESPONSE = 5,   /**< Accounting-Response */
+    TAPI_RADIUS_CODE_ACCESS_CHALLENGE    = 11,  /**< Access-Challenge */
+    TAPI_RADIUS_CODE_STATUS_SERVER       = 12,  /**< Status-Server */
+    TAPI_RADIUS_CODE_STATUS_CLIENT       = 13,  /**< Status-Client */
 } tapi_radius_code_t;
 
 /** Type of RADIUS attribute data, see RFC 2865 */
@@ -70,6 +70,43 @@ typedef enum {
                                      TAPI RADIUS dictionary */
 } tapi_radius_type_t;
 
+/** Value of Acct-Status-Type attribute, see RFC 2866 */
+typedef enum {
+    TAPI_RADIUS_ACCT_STATUS_START   = 1,    /**< Start */
+    TAPI_RADIUS_ACCT_STATUS_STOP    = 2,    /**< Stop */
+    TAPI_RADIUS_ACCT_STATUS_INTERIM = 3,    /**< Interim-Update */
+    TAPI_RADIUS_ACCT_STATUS_ON      = 7,    /**< Accounting-On */
+    TAPI_RADIUS_ACCT_STATUS_OFF     = 8,    /**< Accounting-Off */
+} tapi_radius_acct_status_t;
+
+/** Value of Acct-Terminate-Cause attribute, see RFC 2866 */
+typedef enum {
+    TAPI_RADIUS_TERM_USER_REQUEST    = 1,    /**< User Request */
+    TAPI_RADIUS_TERM_LOST_CARRIER    = 2,    /**< Lost Carrier */
+    TAPI_RADIUS_TERM_LOST_SERVICE    = 3,    /**< Lost Service */
+    TAPI_RADIUS_TERM_IDLE_TIMEOUT    = 4,    /**< Idle Timeout */
+    TAPI_RADIUS_TERM_SESSION_TIMEOUT = 5,    /**< Session Timeout */
+    TAPI_RADIUS_TERM_ADMIN_RESET     = 6,    /**< Admin Reset */
+    TAPI_RADIUS_TERM_ADMIN_REBOOT    = 7,    /**< Admin Reboot */
+    TAPI_RADIUS_TERM_PORT_ERROR      = 8,    /**< Port Error */
+    TAPI_RADIUS_TERM_NAS_ERROR       = 9,    /**< NAS Error */
+    TAPI_RADIUS_TERM_NAS_REQUEST     = 10,   /**< NAS Request */
+    TAPI_RADIUS_TERM_NAS_REBOOT      = 11,   /**< NAS Reboot */
+    TAPI_RADIUS_TERM_PORT_UNNEEDED   = 12,   /**< Port Unneeded */
+    TAPI_RADIUS_TERM_PORT_PREEMPTED  = 13,   /**< Port Preempted */
+    TAPI_RADIUS_TERM_PORT_SUSPENDED  = 14,   /**< Port Suspended */
+    TAPI_RADIUS_TERM_SERVICE_UNAVAIL = 15,   /**< Service Unavailable */
+    TAPI_RADIUS_TERM_CALLBACK        = 16,   /**< Callback */
+    TAPI_RADIUS_TERM_USER_ERROR      = 17,   /**< User Error */
+    TAPI_RADIUS_TERM_HOST_REQUEST    = 18,   /**< Host Request */
+} tapi_radius_term_cause_t;
+
+/** Value of Termination-Action attribute, see RFC 2865 */
+typedef enum {
+    TAPI_RADIUS_TERM_ACTION_DEFAULT = 0,    /**< Default */
+    TAPI_RADIUS_TERM_ACTION_REQUEST = 1,    /**< RADIUS-Request */
+} tapi_radius_term_action_t;
+
 /** Type of RADIUS attribute */
 typedef uint8_t tapi_radius_attr_type_t;
 
@@ -78,12 +115,18 @@ typedef uint8_t tapi_radius_attr_type_t;
 
 /** RADIUS attribute */
 typedef struct {
-    tapi_radius_attr_type_t type;
-    tapi_radius_type_t      datatype;
-    uint8_t                 len;
+    tapi_radius_attr_type_t type;       /**< Attribute type (identifier
+                                             from the dictionary) */
+    tapi_radius_type_t      datatype;   /**< Datatype of attribute */
+    uint8_t                 len;        /**< Length of value (in bytes)
+                                             (not including trailing null
+                                             for STRING and TEXT,
+                                             4 for INTEGER, ADDRESS, TIME) */
     union {
-        uint32_t    integer;
-        char       *string;
+        uint32_t    integer;            /**< Value for INTEGER, ADDDRESS,
+                                             TIME */
+        char       *string;             /**< Pointer to value for STRING
+                                             and TEXT */
     };
 } tapi_radius_attr_t;
 
@@ -93,8 +136,10 @@ typedef struct {
     tapi_radius_attr_t *attr;
 } tapi_radius_attr_list_t;
 
-/** Length of packet */
+/** Minimal length of packet */
 #define TAPI_RADIUS_PACKET_MIN_LEN  20
+
+/** Maximal length of packet */
 #define TAPI_RADIUS_PACKET_MAX_LEN  4096
 
 /** Length of authenticator */
