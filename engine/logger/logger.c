@@ -188,7 +188,7 @@ te_handler(void)
 
             if (rc != TE_RC(TE_IPC, TE_ESMALLBUF))
             {
-                ERROR("Message receiving failure: %X", rc);
+                ERROR("Message receiving failure: %r", rc);
                 break;
             }
             
@@ -215,7 +215,7 @@ te_handler(void)
             if (rc != 0)
             {
                 ERROR("Failed to receive the rest of the message "
-                      "from client, rest=%u: %X", len, rc);
+                      "from client, rest=%u: %r", len, rc);
                 break;
             }
             if (received + len != total)
@@ -294,14 +294,14 @@ ta_flush_done(struct ipc_server *srv)
     rc = ipc_receive_message(srv, buf, &len, &ipcsc_p);
     if (rc != 0)
     {
-        ERROR("FATAL ERROR: Failed to read flush request: %X", rc);
+        ERROR("FATAL ERROR: Failed to read flush request: %r", rc);
         return rc;
     }
     rc = ipc_send_answer(srv, ipcsc_p, buf, len);
     if (rc != 0)
     {
         ERROR("FATAL ERROR: Failed to send answer to flush "
-              "request: %X", rc);
+              "request: %r", rc);
         return rc;
     }
 
@@ -353,7 +353,7 @@ ta_handler(void *ta)
     rc = ipc_register_server(srv_name, &srv);
     if (rc != 0)
     {
-        ERROR("Failed to register IPC server '%s': %X", srv_name, rc);
+        ERROR("Failed to register IPC server '%s': %r", srv_name, rc);
         return NULL;
     }
     assert(srv != NULL);
@@ -628,9 +628,10 @@ ta_handler(void *ta)
         (void)ta_flush_done(srv);
     }
 
-    if (ipc_close_server(srv) != 0)
+    rc = ipc_close_server(srv);
+    if (rc != 0)
     {
-        ERROR("Failed to close IPC server '%s': %X", srv_name, errno);
+        ERROR("Failed to close IPC server '%s': %r", srv_name, rc);
     }
     else
     {
@@ -782,7 +783,7 @@ main(int argc, const char *argv[])
     res = ipc_register_server(LGR_SRV_NAME, &logger_ten_srv);
     if (res != 0)
     {
-        ERROR("IPC server '%s' registration failed: %X",
+        ERROR("IPC server '%s' registration failed: %r",
               LGR_SRV_NAME, res);
         goto exit;
     }

@@ -202,7 +202,7 @@ sync_ta_instance(char *ta, char *oid)
         }
         else
         {
-            ERROR("Failed(0x%X) to get '%s' from TA '%s'", rc, oid, ta);
+            ERROR("Failed(%r) to get '%s' from TA '%s'", rc, oid, ta);
             return rc;
         }
     }
@@ -364,7 +364,7 @@ sync_ta_subtree(char *ta, char *oid)
             break;
         else
         {
-            ERROR("rcf_ta_cfg_get() failed: TA=%s, error=0x%X", ta, rc);
+            ERROR("rcf_ta_cfg_get() failed: TA=%s, error=%r", ta, rc);
             rcf_ta_cfg_group(ta, 0, FALSE);
             free(wildcard_oid);
             return rc;
@@ -521,7 +521,7 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
     if (rc != 0)
     {
         ERROR("Failed to get object instance '%s' value", inst->oid);
-        EXIT("%d", rc);
+        EXIT("%r", rc);
         return rc;
     }
 
@@ -532,9 +532,9 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
     /* Check conversion return code */
     if (rc != 0)
     {
-        VERB("Failed to convert object instance '%s' value of type "
-                "%d to string", inst->oid, obj->type);
-        EXIT("%d", rc);
+        VERB("Failed to convert object instance '%s' value of type %d "
+             "to string", inst->oid, obj->type);
+        EXIT("%r", rc);
         return rc;
     }
 
@@ -546,7 +546,7 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
     }
     free(val_str);
 
-    EXIT("%d", rc);
+    EXIT("%r", rc);
     return rc;
 }
 
@@ -576,8 +576,8 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     rc = rcf_ta_cfg_group(ta, 0, TRUE);
     if (rc != 0)
     {
-        ERROR("Failed(0x%X) to start group on TA '%s'", rc, ta);
-        EXIT("%d", rc);
+        ERROR("Failed(%r) to start group on TA '%s'", rc, ta);
+        EXIT("%r", rc);
         return rc;
     }
 
@@ -588,7 +588,7 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
             rc = cfg_ta_commit_instance(ta, p);
             if (rc != 0)
             {
-                ERROR("Failed(0x%X) to commit '%s'", rc, p->oid);
+                ERROR("Failed(%r) to commit '%s'", rc, p->oid);
                 ret = rc;
                 break;
             }
@@ -620,15 +620,15 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     rc = rcf_ta_cfg_group(ta, 0, FALSE);
     if (rc != 0)
     {
-        ERROR("Failed(0x%X) to end group on TA '%s'", rc, ta);
+        ERROR("Failed(%r) to end group on TA '%s'", rc, ta);
         if (ret == 0)
             ret = rc;
     }
 
-    VERB("Commit to TA '%s' end %d - %s", ta, ret,
+    VERB("Commit to TA '%s' end %r - %s", ta, ret,
             (ret == 0) ? "success" : "failed");
 
-    EXIT("%d", ret);
+    EXIT("%r", ret);
     return ret;
 }
 
@@ -675,8 +675,8 @@ cfg_tas_commit(const char *oid)
         rc = cfg_db_find(oid, &handle);
         if (rc != 0)
         {
-            ERROR("Failed(0x%X) to find object instance '%s'", rc, oid);
-            EXIT("%d", rc);
+            ERROR("Failed(%r) to find object instance '%s'", rc, oid);
+            EXIT("%r", rc);
             return rc;
         }
 
@@ -702,6 +702,6 @@ cfg_tas_commit(const char *oid)
         rc = cfg_ta_commit(ta_inst->name, inst);
     }
 
-    EXIT("%d", rc);
+    EXIT("%r", rc);
     return rc;
 }

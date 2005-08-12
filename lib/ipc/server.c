@@ -429,7 +429,7 @@ ipc_close_server(struct ipc_server *ipcs)
     if (ipc_pmap_unregister_server(ipcs->name, ipcs->port) != 0)
     {
         perror("Cannot unregister server");
-        return TE_RC(TE_IPC, errno);
+        return TE_OS_RC(TE_IPC, errno);
     }
 #endif
 

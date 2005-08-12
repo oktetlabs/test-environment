@@ -623,7 +623,7 @@ log_msg(cfg_msg *msg, te_bool before)
 {
     uint16_t    level;
     const char *addon;
-    char        buf[32];
+    char        buf[64];
     char       *s1;
     char       *s2;
 
@@ -641,7 +641,8 @@ log_msg(cfg_msg *msg, te_bool before)
     {
         level = TE_LL_ERROR;
         addon = buf;
-        snprintf(buf, sizeof(buf), " failed (errno=%r)", msg->rc);
+        snprintf(buf, sizeof(buf), " failed (errno=%s-%s)",
+                 te_rc_mod2str(msg->rc), te_rc_err2str(msg->rc));
     }
 /**
  * Construct strings to be printed for handle identification.
