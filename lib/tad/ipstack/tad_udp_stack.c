@@ -201,7 +201,7 @@ udp_ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
         {
             perror ("udp csap socket bind");
             csap_descr->last_errno = errno;
-            return TE_RC(TE_TAD_CSAP, errno);
+            return TE_OS_RC(TE_TAD_CSAP, errno);
         }
     }
 
@@ -353,7 +353,7 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         if (udp_spec_data->socket < 0)
         {
             free(udp_spec_data);
-            return TE_RC(TE_TAD_CSAP, errno);
+            return TE_OS_RC(TE_TAD_CSAP, errno);
         } 
 
         local.sin_family = AF_INET;

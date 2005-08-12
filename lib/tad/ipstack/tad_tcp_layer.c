@@ -123,7 +123,7 @@ tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p pdu)
                                    &(spec_data->du_field_));            \
         if (rc != 0)                                                    \
         {                                                               \
-            ERROR("%s(csap %d),line %d, convert %s failed,rc 0x%X",     \
+            ERROR("%s(csap %d),line %d, convert %s failed,rc %r",     \
                   __FUNCTION__, csap_id, __LINE__, #du_field_, rc);     \
             return rc;                                                  \
         }                                                               \
@@ -139,7 +139,7 @@ tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p pdu)
                                        &(spec_data->du_src_port));
             if (rc != 0)
             {          
-                ERROR("%s(csap %d), local_port to src failed, rc 0x%X",
+                ERROR("%s(csap %d), local_port to src failed, rc %r",
                       __FUNCTION__, csap_id, rc);
                 return rc;
             }
@@ -151,7 +151,7 @@ tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p pdu)
                 (rc = asn_write_component_value(tcp_pdu, du_field,
                                                "src-port")) != 0)
             {
-                ERROR("%s(): write src-port to tcp pdu failed 0x%X",
+                ERROR("%s(): write src-port to tcp pdu failed %r",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -168,7 +168,7 @@ tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p pdu)
                                        &(spec_data->du_dst_port));
             if (rc != 0)
             {          
-                ERROR("%s(csap %d), remote port to dst failed, rc 0x%X",
+                ERROR("%s(csap %d), remote port to dst failed, rc %r",
                       __FUNCTION__, csap_id, rc);
                 return rc;
             }
@@ -180,7 +180,7 @@ tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p pdu)
                 (rc = asn_write_component_value(tcp_pdu, du_field,
                                                "dst-port")) != 0)
             {
-                ERROR("%s(): write dst-port to tcp pdu failed 0x%X",
+                ERROR("%s(): write dst-port to tcp pdu failed %r",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -373,7 +373,7 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
             rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
                                       args, arg_num, p, length_);       \
             CHECK_ERROR(rc != 0, rc,                                    \
-                        "%s():%d: " #c_du_field_ " error: 0x%x",        \
+                        "%s():%d: " #c_du_field_ " error: %r",        \
                         __FUNCTION__,  __LINE__, rc);                   \
         }                                                               \
         else                                                            \
@@ -417,7 +417,7 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 __FUNCTION__, csap_descr->id); 
     rc = tad_data_unit_to_bin(&(spec_data->du_seqn),
                               args, arg_num, p, 4);
-    CHECK_ERROR(rc != 0, rc, "%s():%d: seqn error: 0x%x",
+    CHECK_ERROR(rc != 0, rc, "%s():%d: seqn error: %r",
                 __FUNCTION__,  __LINE__, rc);
     p += 4;
 
@@ -525,7 +525,7 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   data, _size, _asn_label);     \
         if (rc)                                                 \
         {                                                       \
-            F_VERB("%s: field %s not match, rc %X",             \
+            F_VERB("%s: field %s not match, rc %r",             \
                     __FUNCTION__, _asn_label, rc);              \
             goto cleanup;                                       \
         }                                                       \
@@ -574,7 +574,7 @@ put_payload:
         rc = asn_write_component_value(parsed_packet, tcp_header_pdu,
                                        "#tcp"); 
         if (rc)
-            ERROR("%s, write TCP header to packet fails %X\n", 
+            ERROR("%s, write TCP header to packet fails %r\n", 
                   __FUNCTION__, rc);
     } 
 

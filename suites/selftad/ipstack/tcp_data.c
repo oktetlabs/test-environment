@@ -106,7 +106,7 @@ main(int argc, char *argv[])
 
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %X", rc);
+        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
@@ -140,7 +140,7 @@ main(int argc, char *argv[])
     if ((socket = rpc_socket(rpc_srv, RPC_AF_INET, RPC_SOCK_STREAM, 
                                   RPC_IPPROTO_TCP)) < 0 ||
         rpc_srv->_errno != 0)
-        TEST_FAIL("Calling of RPC socket() failed %x", rpc_srv->_errno);
+        TEST_FAIL("Calling of RPC socket() failed %r", rpc_srv->_errno);
 
     opt_val = 1;
 
@@ -153,18 +153,18 @@ main(int argc, char *argv[])
     rc = tapi_tcp_server_csap_create(agt_a, 0, csap_ip_addr, 
                                      csap_addr.sin_port, &csap);
     if (rc != 0)
-        TEST_FAIL("server csap create failed: %X", rc); 
+        TEST_FAIL("server csap create failed: %r", rc); 
 #endif
     rc = rpc_connect(rpc_srv, socket,
                      SA(&csap_addr), sizeof(csap_addr));
     if (rc != 0)
-        TEST_FAIL("connect() 'call' failed: %X", rc); 
+        TEST_FAIL("connect() 'call' failed: %r", rc); 
 
 
 #if ENABLE_CSAP
     rc = tapi_tcp_server_recv(agt_a, 0, csap, 1000, &acc_sock);
     if (rc != 0)
-        TEST_FAIL("recv accepted socket failed: %X", rc); 
+        TEST_FAIL("recv accepted socket failed: %r", rc); 
 
 
     RING("acc socket: %d", acc_sock);
@@ -182,7 +182,7 @@ main(int argc, char *argv[])
     rc = tapi_tcp_send_msg(conn_hand, buffer, 50, TAPI_TCP_AUTO, 0, 
                            TAPI_TCP_QUIET, 0, NULL, 0);
     if (rc != 0)
-        TEST_FAIL("tapi_tcp_send_msg() failed: %X", rc); 
+        TEST_FAIL("tapi_tcp_send_msg() failed: %r", rc); 
 
     rc = rpc_recv(rpc_srv, socket, buffer, sizeof(buffer), 0);
 #endif

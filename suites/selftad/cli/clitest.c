@@ -95,7 +95,7 @@ main(int argc, char *argv[])
 
         VERB("let's create csap for listen\n"); 
         rc =   rcf_ta_csap_create(ta, sid, "cli", path, &handle);
-        VERB("csap_create rc: %X, csap id %d\n", rc, handle); 
+        VERB("csap_create rc: %r, csap id %d\n", rc, handle); 
         if (rc) 
             TEST_FAIL("CLI CSAP create failed %X", rc);
 
@@ -103,7 +103,7 @@ main(int argc, char *argv[])
         VERB("send template full path: %s\n", path);
         rc = rcf_ta_trsend_recv(ta, sid, handle, path, cli_msg_handler,
                                 NULL, &timeout, num);
-        VERB("trsend_recv: 0x%x, timeout: %d, num: %d\n", 
+        VERB("trsend_recv: %r, timeout: %d, num: %d\n", 
                     rc, timeout, num);
         if (rc) 
             TEST_FAIL("CLI CSAP send_recv failed %X", rc);

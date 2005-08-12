@@ -119,7 +119,7 @@ open_packet_socket(const char *ifname, int *sock)
     rc = eth_find_interface(ifname,  &ifdescr);
     if (rc != 0)
     {
-        ERROR("%s(): find interface %s failed 0x%X", 
+        ERROR("%s(): find interface %s failed %r", 
               __FUNCTION__, ifname, rc);
         return rc;
     }
@@ -169,7 +169,7 @@ open_packet_socket(const char *ifname, int *sock)
 
     if (shutdown (*sock, shutdown_method) < 0)
     {
-        perror ("ETH packet socket shutdown");
+        perror("ETH packet socket shutdown");
         return errno;
     }
 #endif

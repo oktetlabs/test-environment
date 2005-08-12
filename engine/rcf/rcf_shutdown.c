@@ -66,7 +66,7 @@ main(void)
 
     if ((rc = ipc_init_client(name, &handle)) != 0)
     {
-        fprintf(stderr, "ipc_init_client() for '%s' failed: %X\n",
+        fprintf(stderr, "ipc_init_client() for '%s' failed: %d\n",
                 name, rc);
         return EXIT_FAILURE;
     }

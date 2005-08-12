@@ -59,7 +59,7 @@ main(void)
     rc = ipc_init_client("LOGGER_SHUTDOWN_CLIENT", &log_client);
     if (rc != 0)
     {
-        fprintf(stderr, "ipc_init_client() failed: %X\n", rc);
+        fprintf(stderr, "ipc_init_client() failed: 0x%X\n", rc);
         return EXIT_FAILURE;
     }
     assert(log_client != NULL);

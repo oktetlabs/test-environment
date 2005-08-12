@@ -73,7 +73,7 @@ main(int argc, char *argv[])
     TEST_START; 
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %X", rc);
+        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
@@ -125,13 +125,13 @@ main(int argc, char *argv[])
         if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM, 
                             RPC_IPPROTO_TCP)) < 0 || srv_src->_errno != 0)
         {
-            TEST_FAIL("Calling of RPC socket() failed %x", srv_src->_errno);
+            TEST_FAIL("Calling of RPC socket() failed %r", srv_src->_errno);
         }
 
         if ((sock_dst = rpc_socket(srv_dst, RPC_AF_INET, RPC_SOCK_STREAM, 
                             RPC_IPPROTO_TCP)) < 0 || srv_dst->_errno != 0)
         {
-            TEST_FAIL("Calling of RPC socket() failed %x", srv_dst->_errno);
+            TEST_FAIL("Calling of RPC socket() failed %r", srv_dst->_errno);
         }
 
         rc = asn_parse_value_text("{tcp:{local-port plain:0}, "
@@ -153,7 +153,7 @@ main(int argc, char *argv[])
         INFO("csap_create rc: %d, csap id %d\n", rc, csap); 
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
-            INFO ("rc from module %d is 0x%x\n", 
+            INFO ("rc from module %d is %r\n", 
                         rc_mod, TE_RC_GET_ERROR(rc));
         } 
 
@@ -174,14 +174,14 @@ main(int argc, char *argv[])
         asn_save_to_file(pattern, path);
 #if 1
         rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, NULL, NULL, 0);
-        INFO("trrecv_start: 0x%X \n", rc);
+        INFO("trrecv_start: %r \n", rc);
         if (rc) break;
 
 #if 1
         sleep(5);
         INFO ("try to get\n");
         rc = rcf_ta_trrecv_get(ta, sid, csap, &num);
-        INFO("trrecv_get: 0x%X num: %d\n", rc, num);
+        INFO("trrecv_get: %r num: %d\n", rc, num);
         if (rc) break;
 
 #endif
@@ -191,11 +191,11 @@ main(int argc, char *argv[])
 
         INFO ("try to stop\n");
         rc = rcf_ta_trrecv_stop(ta, sid, csap, &num);
-        INFO("trrecv_stop: 0x%X num: %d\n", rc, num);
+        INFO("trrecv_stop: %r num: %d\n", rc, num);
 
 #endif
         rc = rcf_ta_csap_destroy(ta, sid, csap);
-        INFO("csap %d destroy: 0x%X ", csap, rc); 
+        INFO("csap %d destroy: %r ", csap, rc); 
 
     } while(0);
 

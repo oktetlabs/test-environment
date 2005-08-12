@@ -367,7 +367,7 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         (rc = pthread_attr_setdetachstate(&pthread_attr,
                                           PTHREAD_CREATE_DETACHED)) != 0)
     {
-        ERROR("Cannot initialize pthread attribute variable: 0x%X", rc);
+        ERROR("Cannot initialize pthread attribute variable: %d", rc);
         return rc;
     } 
 

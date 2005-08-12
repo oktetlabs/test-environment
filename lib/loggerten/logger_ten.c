@@ -234,7 +234,7 @@ log_flush_ten(const char *ta_name)
     rc = ipc_init_client(clnt_name, &log_client);
     if (rc != 0)
     {
-        ERROR("Failed to initialize log flush client: %X", rc);
+        ERROR("Failed to initialize log flush client: %r", rc);
         return rc;
     }
     assert(log_client != NULL);
@@ -245,7 +245,7 @@ log_flush_ten(const char *ta_name)
     if (rc != 0)
     {
         ipc_close_client(log_client);
-        ERROR("Failed to flush log on TA '%s': rc=%X", ta_name, rc);
+        ERROR("Failed to flush log on TA '%s': rc=%r", ta_name, rc);
         return rc;
     }
 

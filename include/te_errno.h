@@ -311,6 +311,7 @@ typedef enum {
     TE_TARPC,           /**< RPC support in Test Agent */
     TE_CS,              /**< Configuratorapplication */
     TE_CONF_API,        /**< Configurator API */
+    TE_TESTER,          /**< Tester application */
     TE_TAPI,            /**< Test API libraries */
     TE_TA_LINUX,        /**< Linux Test Agent */
     TE_TA_WIN32,        /**< Windows Test Agent */
@@ -384,6 +385,7 @@ te_rc_mod2str(te_module mod)
         MOD2STR(TARPC);
         MOD2STR(CS);
         MOD2STR(CONF_API);
+        MOD2STR(TESTER);
         MOD2STR(TAPI);   
         MOD2STR(TA_LINUX);   
         MOD2STR(TA_WIN32);

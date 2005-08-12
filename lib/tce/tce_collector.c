@@ -501,7 +501,7 @@ tce_dump_collector(void)
         return 0;
 
     if (kill(tce_collector_pid, SIGHUP) != 0)
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     lock.l_type = F_WRLCK;
     lock.l_whence = SEEK_SET;
     lock.l_start = 0;
@@ -529,9 +529,9 @@ tce_stop_collector(void)
     if (tce_collector_pid == 0)
         return 0;
     if (kill(tce_collector_pid, SIGTERM) != 0)
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     if (waitpid(tce_collector_pid, &tce_status, 0) < 0)
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     tce_collector_pid = 0;
     return WIFEXITED(tce_status) && WEXITSTATUS(tce_status) == 0 ? 0 : 
         TE_RC(TE_TA_LINUX, TE_ESHCMD);
@@ -543,7 +543,7 @@ tce_notify_collector(void)
     if (tce_collector_pid == 0)
         return 0;
     if (kill(tce_collector_pid, SIGUSR1) != 0)
-        return TE_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_LINUX, errno);
     return 0;
 }
 

@@ -701,7 +701,7 @@ cfg_backup_create_file(char *filename)
     FILE *f= fopen(filename, "w");
     
     if (f == NULL)
-        return errno;
+        return TE_OS_RC(TE_CS, errno);;
         
     fprintf(f, "<?xml version=\"1.0\"?>\n");
     fprintf(f, "<backup>\n");

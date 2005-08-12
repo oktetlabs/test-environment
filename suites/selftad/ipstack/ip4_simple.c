@@ -102,7 +102,7 @@ main(int argc, char *argv[])
     TEST_START; 
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %X", rc);
+        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
@@ -160,13 +160,13 @@ main(int argc, char *argv[])
         if ((sock_src = rpc_socket(srv_src, RPC_AF_INET, RPC_SOCK_STREAM, 
                             RPC_IPPROTO_TCP)) < 0 || srv_src->_errno != 0)
         {
-            TEST_FAIL("Calling of RPC socket() failed %x", srv_src->_errno);
+            TEST_FAIL("Calling of RPC socket() failed %r", srv_src->_errno);
         }
 
         if ((sock_dst = rpc_socket(srv_dst, RPC_AF_INET, RPC_SOCK_STREAM, 
                             RPC_IPPROTO_TCP)) < 0 || srv_dst->_errno != 0)
         {
-            TEST_FAIL("Calling of RPC socket() failed %x", srv_dst->_errno);
+            TEST_FAIL("Calling of RPC socket() failed %r", srv_dst->_errno);
         }
 #endif
 
@@ -194,7 +194,7 @@ main(int argc, char *argv[])
 #endif
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
-            TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
+            TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
                         rc_mod, TE_RC_GET_ERROR(rc));
 
         } 
@@ -220,7 +220,7 @@ main(int argc, char *argv[])
 
         asn_save_to_file(pattern, path);
         rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, NULL, NULL, 0);
-        INFO("trrecv_start: 0x%X \n", rc);
+        INFO("trrecv_start: %r \n", rc);
 #endif /* USE_TAPI */
 
         if (rc) break;
@@ -229,7 +229,7 @@ main(int argc, char *argv[])
         sleep(2);
         INFO ("try to get\n");
         rc = rcf_ta_trrecv_get(ta, sid, csap, &num);
-        INFO("trrecv_get: 0x%X num: %d\n", rc, num);
+        INFO("trrecv_get: %r num: %d\n", rc, num);
         if (rc) break;
 
 #endif
@@ -239,7 +239,7 @@ main(int argc, char *argv[])
 
         INFO ("try to wait\n");
         rc = rcf_ta_trrecv_wait(ta, sid, csap, &num);
-        INFO("trrecv_wait: 0x%X num: %d\n", rc, num);
+        INFO("trrecv_wait: %r num: %d\n", rc, num);
         if (rc)
         {
             if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT && 
@@ -249,16 +249,16 @@ main(int argc, char *argv[])
                 rc = 0;
             }
             else 
-                TEST_FAIL("Unexpected error for trrecv_wait: %X", rc);
+                TEST_FAIL("Unexpected error for trrecv_wait: %r", rc);
         }
 
         rc = rcf_ta_csap_destroy(ta, sid, csap);
-        INFO("csap %d destroy: 0x%X ", csap, rc); 
+        INFO("csap %d destroy: %r ", csap, rc); 
 
     } while(0);
 
     if (rc)
-        TEST_FAIL("Failed, rc %X", rc);
+        TEST_FAIL("Failed, rc %r", rc);
 
     TEST_SUCCESS;
 

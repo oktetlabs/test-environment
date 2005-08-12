@@ -113,7 +113,7 @@ tapi_pcap_csap_create(const char *ta_name, int sid,
     if ((f = fopen(tmp_name, "w+")) == NULL)
     {
         ERROR("fopen() of %s failed(%d)", tmp_name, errno);
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
     }
 
     fprintf(f, "{ pcap:{ ifname plain:\"%s\", "
@@ -124,7 +124,7 @@ tapi_pcap_csap_create(const char *ta_name, int sid,
     rc = rcf_ta_csap_create(ta_name, sid, "pcap", tmp_name, pcap_csap);
     if (rc != 0)
     {
-        ERROR("rcf_ta_csap_create() failed(0x%x) on TA %s:%d file %s",
+        ERROR("rcf_ta_csap_create() failed(%r) on TA %s:%d file %s",
               rc, ta_name, sid, tmp_name);
     }
 
@@ -266,7 +266,7 @@ tapi_pcap_recv_start(const char *ta_name, int sid,
                              timeout, num);
     if (rc != 0)
     {
-        ERROR("rcf_ta_trrecv_start() failed(0x%x) on TA %s:%d CSAP %d "
+        ERROR("rcf_ta_trrecv_start() failed(%r) on TA %s:%d CSAP %d "
               "file %s", rc, ta_name, sid, pcap_csap, tmp_name);
     }
 

@@ -102,7 +102,7 @@ main(int argc, char *argv[])
     TEST_GET_BOOL_PARAM(blocked_mode);
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed 0x%X", rc);
+        TEST_FAIL("rcf_get_ta_list failed %r", rc);
 
     VERB(" Using agent: %s\n", ta);
    
@@ -152,7 +152,7 @@ main(int argc, char *argv[])
                              NULL, timeout, num_pkts);
 
     if (rc != 0)
-        TEST_FAIL("tapi_eth_recv_start failed: 0x%X", rc);
+        TEST_FAIL("tapi_eth_recv_start failed: %r", rc);
     VERB("eth recv start num: %d", num_pkts);
 
     if (blocked_mode)
@@ -172,7 +172,7 @@ main(int argc, char *argv[])
                       caught_num);
     }
     else if (rc != 0)
-        TEST_FAIL("trrecv wait on ETH CSAP fails: 0x%X", rc);
+        TEST_FAIL("trrecv wait on ETH CSAP fails: %r", rc);
     else if (caught_num != num_pkts)
         TEST_FAIL("Wrong number of caught pkts: %d, wanted %d",
                   caught_num, num_pkts);
@@ -181,7 +181,7 @@ main(int argc, char *argv[])
         TEST_FAIL("user callback called %d != caught pkts %d", 
                   cb_called, caught_num);
 
-    RING("caught packts %d, wait/stop rc 0x%X", caught_num, rc); 
+    RING("caught packts %d, wait/stop rc %r", caught_num, rc); 
 
     asn_free_value(pattern);
 

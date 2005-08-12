@@ -122,7 +122,7 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
 #if TAPI_STP_DEBUG
         perror("fopen error\n");
 #endif
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
     }
 
     fprintf(f, "{ bridge:{ proto-id plain:0 },\n");

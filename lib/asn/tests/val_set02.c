@@ -66,10 +66,18 @@ main (void)
     {
         asn_value_p cmpl = asn_init_value(&my_complex);
         r = asn_write_value_field(cmpl, &a, sizeof(a), "subseq.number");
-        if (r) { printf ("set number error code returned: %X\n", r); return r; }
+        if (r) 
+        { 
+            printf("set number error code returned: 0x%X\n", r); 
+            return r; 
+        }
 
         r = asn_write_value_field(cmpl, str, sizeof(str), "choice.#string");
-        if (r) { printf ("set string error code returned: %X\n", r); return r; }
+        if (r) 
+        { 
+            printf("set string error code returned: 0x%X\n", r); 
+            return r; 
+        }
 
         r = asn_sprint_value(cmpl, buffer, 1000, 0);
         printf ("cmpl after write values: \n\"%s\"\n", buffer); 

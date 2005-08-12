@@ -532,7 +532,7 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
     }
     if (rc != 0)
     {
-        ERROR("%s: pattern unit creation error: %X", __FUNCTION__, rc);
+        ERROR("%s: pattern unit creation error: %r", __FUNCTION__, rc);
         return rc;
     }
     pattern = asn_init_value(ndn_traffic_pattern);
@@ -540,7 +540,7 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
     {
         asn_free_value(pattern_unit);
         asn_free_value(pattern);
-        ERROR("%s: pattern unit insertion error: %X", __FUNCTION__, rc);
+        ERROR("%s: pattern unit insertion error: %r", __FUNCTION__, rc);
         return rc;
     }
     asn_free_value(pattern_unit);

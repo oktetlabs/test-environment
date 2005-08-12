@@ -429,7 +429,7 @@ tapi_cli_csap_create(const char *ta_name, int sid,
     if ((f = fopen(tmp_name, "w+")) == NULL)
     {
         ERROR("fopen(%s, \"w+\") failed with errno %d", tmp_name, errno);
-        return TE_RC(TE_TAPI, errno);
+        return TE_OS_RC(TE_TAPI, errno);
     }
 
     fprintf(f, "%s", buf);
@@ -438,7 +438,7 @@ tapi_cli_csap_create(const char *ta_name, int sid,
     rc = rcf_ta_csap_create(ta_name, sid, "cli", tmp_name, cli_csap);
     if (rc != 0)
     {
-        ERROR("rcf_ta_csap_create() failed(0x%x) on TA %s:%d file %s",
+        ERROR("rcf_ta_csap_create() failed(%r) on TA %s:%d file %s",
               rc, ta_name, sid, tmp_name);
     }
 
@@ -467,7 +467,7 @@ tapi_internal_write_cmd_to_file(char *tmp_name, const char *command)
     if ((f = fopen(tmp_name, "w+")) == NULL)
     {
         ERROR("fopen(%s, \"w+\" failed with errno %d", tmp_name, errno);
-        return TE_RC(TE_TAPI, errno);
+        return TE_OS_RC(TE_TAPI, errno);
     }
 
     fprintf(f, "{ pdus { cli : { message plain : \"%s\" } } }", command);
@@ -506,7 +506,7 @@ tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
     rc = rcf_ta_trsend_start(ta_name, sid, cli_csap, tmp_name, blk_mode);
     if (rc != 0)
     {
-        ERROR("rcf_ta_trsend_start() failed(0x%x) on TA %s:%d CSAP %d "
+        ERROR("rcf_ta_trsend_start() failed(%r) on TA %s:%d CSAP %d "
               "file %s", rc, ta_name, sid, cli_csap, tmp_name);
     }
 
@@ -548,7 +548,7 @@ tapi_cli_msg_handler(char *msg_fname, void *user_param)
     if (rc != 0)
     {
         ERROR("Failed to parse ASN.1 text file to ASN.1 value: "
-              "rc=0x%x", rc);
+              "rc=%r", rc);
         return;
     }
 
@@ -582,7 +582,7 @@ tapi_cli_msg_handler(char *msg_fname, void *user_param)
                               &msg_len, "message.#plain");
     if (rc != 0)
     {
-        ERROR("Failed to get message body from CLI response rc=0x%x", rc);
+        ERROR("Failed to get message body from CLI response rc=%r", rc);
         return;
     }
 #else
@@ -651,7 +651,7 @@ tapi_internal_cli_send_recv(const char *ta_name, int sid,
                             timeout * 1000, &err);
     if (rc != 0)
     {
-        ERROR("rcf_ta_trsend_start() failed(0x%x) on TA %s:%d CSAP %d "
+        ERROR("rcf_ta_trsend_start() failed(%r) on TA %s:%d CSAP %d "
               "file %s", rc, ta_name, sid, cli_csap, tmp_fname);
     }
 

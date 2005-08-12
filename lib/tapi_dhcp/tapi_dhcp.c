@@ -81,7 +81,7 @@
                                                         \
         if (rc_ != 0)                                   \
         {                                               \
-            ERROR("%s():%u: " #expr_ " FAILED rc=0x%x", \
+            ERROR("%s():%u: " #expr_ " FAILED rc=%r", \
                   __FUNCTION__, __LINE__, rc_);         \
             return rc_;                                 \
         }                                               \
@@ -163,7 +163,7 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
                 rc = 0;                                            \
             }                                                      \
             else                                                   \
-                WARN("%s() at line %d: error 0x%X for fld %s",     \
+                WARN("%s() at line %d: error %r for fld %s",     \
                      __FUNCTION__, __LINE__, rc, #field_);         \
         }                                                          \
     } while (0)
@@ -986,7 +986,7 @@ dhcp_pkt_handler(char *pkt_fname, void *user_param)
     if (rc != 0)
     {
         ERROR("Failed to parse ASN.1 text file to ASN.1 value: "
-              "rc=0x%x", rc);
+              "rc=%r", rc);
         return;
     }
 
@@ -1001,7 +1001,7 @@ dhcp_pkt_handler(char *pkt_fname, void *user_param)
     if (rc != 0)
     {
         ERROR("Failed to convert DHCP packet from ASN.1 value to C "
-              "structure: rc=0x%x", rc);
+              "structure: rc=%r", rc);
         return;
     }
 

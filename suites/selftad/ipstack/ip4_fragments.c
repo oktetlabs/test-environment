@@ -119,7 +119,7 @@ main(int argc, char *argv[])
     
     /******** Find TA names *************/
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %X", rc);
+        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
@@ -197,14 +197,14 @@ main(int argc, char *argv[])
     rc = asn_write_value_field(template, udp_dgm_image,
                                sizeof(udp_dgm_image), "payload.#bytes");
     if (rc != 0)
-        TEST_FAIL("set payload to template failed %X", rc);
+        TEST_FAIL("set payload to template failed %r", rc);
 
     /***************** Create 'ip4.eth' CSAP *****************/
     rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth2", NULL, NULL,
                                   ip_addr_a, ip_addr_b,
                                   &ip4_send_csap);
     if (rc != 0)
-        TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
+        TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
                     TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
 

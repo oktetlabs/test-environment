@@ -806,7 +806,7 @@ set_ta_dead(ta *agent)
         answer_all_requests(&(agent->sent), TE_ETADEAD);
         rc = (agent->close)(agent->handle, &set0);
         if (rc != 0)
-            ERROR("Failed to close connection with TA '%s': rc=0x%x",
+            ERROR("Failed to close connection with TA '%s': rc=%r",
                   agent->name, rc);
         agent->flags |= TA_DEAD;
     }
@@ -834,11 +834,11 @@ set_ta_unrecoverable(ta *agent)
                 rc = (agent->close)(agent->handle, &set0);
                 if (rc != 0)
                     ERROR("Failed to close connection with TA '%s': "
-                          "rc=0x%x", agent->name, rc);
+                          "rc=%r", agent->name, rc);
             }
             rc = (agent->finish)(agent->handle, NULL);
             if (rc != 0)
-                ERROR("Failed to finish TA '%s': rc=0x%x",
+                ERROR("Failed to finish TA '%s': rc=%r",
                       agent->name, rc);
             agent->handle = NULL;
         }
@@ -929,7 +929,7 @@ force_reboot(ta *agent, usrreq *req)
     {
         rc = (agent->close)(agent->handle, &set0);
         if (rc != 0)
-            ERROR("Failed to close connection with TA '%s': rc=0x%x",
+            ERROR("Failed to close connection with TA '%s': rc=%r",
                   agent->name, rc);
         agent->flags |= TA_DEAD;
     }
@@ -1514,8 +1514,8 @@ transmit_cmd(ta *agent, usrreq *req)
         if ((rc = (agent->transmit)(agent->handle, data, len)) != 0)
         {
             req->message->error = TE_RC(TE_RCF, rc);
-            ERROR("Failed to transmit command to TA '%s' errno %d", 
-                  agent->name, rc);
+            ERROR("Failed to transmit command to TA '%s' errno %r", 
+                  agent->name, req->message->error);
 
             answer_user_request(req);
             set_ta_dead(agent);
@@ -2494,7 +2494,7 @@ main(int argc, const char *argv[])
             
             if (rc != 0)
             {
-                ERROR("Failed to receive user request: errno=0x%X", rc);
+                ERROR("Failed to receive user request: errno %r", rc);
                 free(req->message);
                 free(req);
                 continue;

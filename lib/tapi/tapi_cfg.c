@@ -197,8 +197,8 @@ tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
         rc = cfg_get_instance(handle, &type, &state);
         if (rc != 0)
         {
-            VERB("cfg_get_instance() failed(0x%x)", rc);
-            EXIT("0x%x", rc);
+            VERB("cfg_get_instance() failed(%r)", rc);
+            EXIT("%r", rc);
             return rc;
         }
         if (state != 1)
@@ -216,10 +216,10 @@ tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
         rc = cfg_add_instance_str(oid, &handle, CVT_INTEGER, 1);
         if (rc != 0)
         {
-            ERROR("Addition of VLAN %u on TA %s failed(0x%x)",
+            ERROR("Addition of VLAN %u on TA %s failed(%r)",
                 vid, ta_name, rc);
         }
-        EXIT("0x%x", rc);
+        EXIT("%r", rc);
     }
 
     return rc;
@@ -256,13 +256,13 @@ tapi_cfg_switch_del_vlan(const char *ta_name, uint16_t vid)
         rc = cfg_del_instance(handle, FALSE);
         if (rc != 0)
         {
-            ERROR("Delete of VLAN %u on TA %s failed(0x%x)",
+            ERROR("Delete of VLAN %u on TA %s failed(%r)",
                 vid, ta_name, rc);
         }
     }
     else
     {
-        ERROR("VLAN %u on TA %s not found (error 0x%x)",
+        ERROR("VLAN %u on TA %s not found (error %r)",
             vid, ta_name, rc);
     }
 
@@ -306,7 +306,7 @@ tapi_cfg_switch_vlan_add_port(const char *ta_name, uint16_t vid,
         rc = cfg_add_instance_str(oid, &handle, CVT_NONE);
         if (rc != 0)
         {
-            ERROR("Addition of port %u to VLAN %u on TA %s failed(0x%x)",
+            ERROR("Addition of port %u to VLAN %u on TA %s failed(%r)",
                 port, vid, ta_name, rc);
         }
     }
@@ -346,13 +346,13 @@ tapi_cfg_switch_vlan_del_port(const char *ta_name, uint16_t vid,
         rc = cfg_del_instance(handle, FALSE);
         if (rc != 0)
         {
-            ERROR("Delete of port %u from VLAN %u on TA %s failed(0x%x)",
+            ERROR("Delete of port %u from VLAN %u on TA %s failed(%r)",
                 port, vid, ta_name, rc);
         }
     }
     else
     {
-        ERROR("Port %u not in VLAN %u on TA %s (error 0x%x)",
+        ERROR("Port %u not in VLAN %u on TA %s (error %r)",
             port, vid, ta_name, rc);
     }
 
@@ -833,7 +833,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     {
         ERROR("%s() fails converting binary destination address "
               "into a character string", __FUNCTION__);
-        return TE_RC(TE_TAPI, errno);
+        return TE_OS_RC(TE_TAPI, errno);
     }
 
     memcpy(dst_addr_copy, dst_addr, netaddr_size);
@@ -876,7 +876,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         ERROR("%s() fails converting binary destination address "
               "into a character string", __FUNCTION__);
         free(dst_addr_copy);
-        return TE_RC(TE_TAPI, errno);
+        return TE_OS_RC(TE_TAPI, errno);
     }
     free(dst_addr_copy);
     
@@ -893,7 +893,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         {
             ERROR("%s() fails converting binary gateway address "
                   "into a character string", __FUNCTION__);
-            return TE_RC(TE_TAPI, errno);
+            return TE_OS_RC(TE_TAPI, errno);
         }
         PUT_INTO_BUF(route_inst_name, ",gw=%s", gw_addr_str);
     }
@@ -928,7 +928,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                                            ta, route_inst_name)) != 0)
             {
                 ERROR("%s() fails adding a new route %s %s on '%s' Agent "
-                      "errno = %X", __FUNCTION__, route_inst_name,
+                      "errno = %r", __FUNCTION__, route_inst_name,
                       rt_val, ta, rc);
                 break;
             }
@@ -939,7 +939,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                                            ta, route_inst_name)) != 0)
             {
                 ERROR("%s() fails adding a new route %s %s on '%s' Agent "
-                      "errno = %X", __FUNCTION__, route_inst_name,
+                      "errno = %r", __FUNCTION__, route_inst_name,
                       rt_val, ta, rc);
                 break;
             }
@@ -952,7 +952,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                                            ta, route_inst_name)) != 0)
             {
                 ERROR("%s() fails deleting route %s on '%s' Agent "
-                      "errno = %X", __FUNCTION__, route_inst_name, ta, rc);
+                      "errno = %r", __FUNCTION__, route_inst_name, ta, rc);
             }
             break;
 
@@ -993,7 +993,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
     {
         ERROR("%s() fails converting binary IPv4 address  "
               "into a character string", __FUNCTION__);
-        return TE_RC(TE_TAPI, errno);
+        return TE_OS_RC(TE_TAPI, errno);
     }
 
     switch (op)
@@ -1069,7 +1069,7 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
             if (rc != 0)
             {
                 ERROR("%s() fails finding '/agent:%s/arp:%s' instance "
-                      "with errno %X", __FUNCTION__, ta, net_addr_str, rc);
+                      "with errno %r", __FUNCTION__, ta, net_addr_str, rc);
                 break;
             }
 
@@ -1161,7 +1161,7 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
         rc = cfg_get_instance(handle, &type, &value);
         if (rc != 0)
         {
-            ERROR("%s: Failed to get integer value by handle 0x%x: %X",
+            ERROR("%s: Failed to get integer value by handle 0x%x: %r",
                   __FUNCTION__, handle, rc);
             break;
         }
@@ -1170,7 +1170,7 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
             rc = cfg_set_instance(handle, type, 1);
             if (rc != 0)
             {
-                ERROR("%s: Failed to set value of handle 0x%x to 1: %X",
+                ERROR("%s: Failed to set value of handle 0x%x to 1: %r",
                       __FUNCTION__, handle, rc);
             }
             break;
@@ -1199,7 +1199,7 @@ tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
 #endif
     else
     {
-        ERROR("Failed to allocate entry in 0x%x: %X", parent, rc);
+        ERROR("Failed to allocate entry in 0x%x: %r", parent, rc);
     }
 
     return rc;
@@ -1215,7 +1215,7 @@ tapi_cfg_alloc_entry(const char *parent_oid, cfg_handle *entry)
     rc = cfg_find_str(parent_oid, &parent);
     if (rc != 0)
     {
-        ERROR("%s: Failed to convert OID '%s' to handle: %X",
+        ERROR("%s: Failed to convert OID '%s' to handle: %r",
               __FUNCTION__, parent_oid, rc);
         return rc;
     }
@@ -1242,7 +1242,7 @@ tapi_cfg_free_entry(cfg_handle *entry)
     rc = cfg_set_instance(*entry, CVT_INTEGER, 0);
     if (rc != 0)
     {
-    ERROR("Failed to free entry by handle 0x%x: %X", *entry, rc);
+    ERROR("Failed to free entry by handle 0x%x: %r", *entry, rc);
     }
     else
     {
@@ -1269,7 +1269,7 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
     rc = cfg_find_str("/ip4_net_pool:", &pool);
     if (rc != 0)
     {
-        ERROR("%s: Failed to find /ip4_net_pool instance: %X",
+        ERROR("%s: Failed to find /ip4_net_pool instance: %r",
               __FUNCTION__, rc);
         return rc;
     }
@@ -1296,14 +1296,14 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
         if (rc != 0)
         {
             ERROR("%s: Cannot get pool net name by handle 0x%x "
-                  "as address: %X", __FUNCTION__, net, rc);
+                  "as address: %r", __FUNCTION__, net, rc);
             return rc;
         }
         net_addr = SIN(sa);
         rc = cfg_get_oid_str(net, &net_oid);
         if (rc != 0)
         {
-            ERROR("%s: Cannot get pool net OID by handle 0x%x: %X",
+            ERROR("%s: Cannot get pool net OID by handle 0x%x: %r",
                   __FUNCTION__, net, rc);
             free(net_addr);
             return rc;
@@ -1313,7 +1313,7 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
                                   "%s/prefix:", net_oid);
         if (rc != 0)
         {
-            ERROR("%s: Cannot get pool net prefix for %s: %X",
+            ERROR("%s: Cannot get pool net prefix for %s: %r",
                   __FUNCTION__, net_oid, rc);
             free(net_addr);
             free(net_oid);
@@ -1342,7 +1342,7 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
     rc = cfg_add_instance_str(oid, &net, CVT_INTEGER, state);
     if (rc != 0)
     {
-        ERROR("%s: Failed to add %s to the pool: %X",
+        ERROR("%s: Failed to add %s to the pool: %r",
               __FUNCTION__, oid, rc);
         return rc;
     }
@@ -1350,7 +1350,7 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
                               "%s/prefix:", oid);
     if (rc != 0)
     {
-        ERROR("%s: Failed to add %s/prefix to the pool: %X",
+        ERROR("%s: Failed to add %s/prefix to the pool: %r",
               __FUNCTION__, oid, rc);
         return rc;
     }
@@ -1358,7 +1358,7 @@ tapi_cfg_add_ip4_net(struct sockaddr_in *ip4_net_addr, int prefix,
                               "%s/n_entries:", oid);
     if (rc != 0)
     {
-        ERROR("%s: Failed to add %s/n_instance to the pool: %X",
+        ERROR("%s: Failed to add %s/n_instance to the pool: %r",
               __FUNCTION__, oid, rc);
         return rc;
     }
@@ -1401,7 +1401,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
     rc = cfg_get_oid_str(ip4_net, &ip4_net_oid);
     if (rc != 0)
     {
-        ERROR("Failed to get OID by handle 0x%x: %X", ip4_net, rc);
+        ERROR("Failed to get OID by handle 0x%x: %r", ip4_net, rc);
         return rc;
     }
 
@@ -1413,7 +1413,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
                                   "%s/pool:", ip4_net_oid);
         if (rc != 0)
         {
-            ERROR("Failed to add object instance '%s/pool:': %X",
+            ERROR("Failed to add object instance '%s/pool:': %r",
                   ip4_net_oid, rc);
             free(ip4_net_oid);
             return rc;
@@ -1421,7 +1421,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
     }
     else if (rc != 0)
     {
-        ERROR("Failed to find object instance '%s/pool:': %X",
+        ERROR("Failed to find object instance '%s/pool:': %r",
               ip4_net_oid, rc);
         free(ip4_net_oid);
         return rc;
@@ -1439,7 +1439,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
             if (rc != 0)
             {
                 ERROR("Failed to get IPv4 address as instance name of "
-                      "0x%x: %X", entry, rc);
+                      "0x%x: %r", entry, rc);
             }
             else if (p_entry != NULL)
             {
@@ -1459,7 +1459,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
                                   "%s/n_entries:", ip4_net_oid);
         if (rc != 0)
         {
-            ERROR("Failed to add object instance '%s/n_entries:': %X",
+            ERROR("Failed to add object instance '%s/n_entries:': %r",
                   ip4_net_oid, rc);
             free(ip4_net_oid);
             return rc;
@@ -1468,7 +1468,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
     }
     else if (rc != 0)
     {
-        ERROR("Failed to find object instance '%s/n_entries:': %X",
+        ERROR("Failed to find object instance '%s/n_entries:': %r",
               ip4_net_oid, rc);
         free(ip4_net_oid);
         return rc;
@@ -1478,7 +1478,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
         rc = cfg_get_instance(n_entries_hndl, CVT_INTEGER, &n_entries);
         if (rc != 0)
         {
-            ERROR("Failed to get number of entries in the pool: %X",
+            ERROR("Failed to get number of entries in the pool: %r",
                   rc);
             free(ip4_net_oid);
             return rc;
@@ -1494,7 +1494,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
                               "%s/prefix:", ip4_net_oid);
     if (rc != 0)
     {
-        ERROR("Failed to get prefix length of '%s': %X",
+        ERROR("Failed to get prefix length of '%s': %r",
               ip4_net_oid, rc);
         free(ip4_net_oid);
         return rc;
@@ -1515,7 +1515,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
                                 (cfg_inst_val *)addr);
     if (rc != 0)
     {
-        ERROR("Failed to get IPv4 subnet address from '%s': %X",
+        ERROR("Failed to get IPv4 subnet address from '%s': %r",
               ip4_net_oid, rc);
         free(ip4_net_oid);
         return rc;
@@ -1563,7 +1563,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
     if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
         ERROR("Failed to get '%s/pool:/entry:%s' instance while "
-              "checking for free address: %X", ip4_net_oid, buf, rc);
+              "checking for free address: %r", ip4_net_oid, buf, rc);
         free(ip4_net_oid);
         return rc;
     }
@@ -1573,7 +1573,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
                               "%s/pool:/entry:%s", ip4_net_oid, buf);
     if (rc != 0)
     {
-        ERROR("Failed to add entry in IPv4 subnet pool '%s': %X",
+        ERROR("Failed to add entry in IPv4 subnet pool '%s': %r",
               ip4_net_oid, rc);
         free(ip4_net_oid);
         return rc;
@@ -1583,7 +1583,7 @@ tapi_cfg_insert_ip4_addr(cfg_handle ip4_net, struct sockaddr_in *ip4_addr,
     rc = cfg_set_instance(n_entries_hndl, CVT_INTEGER, n_entries);
     if (rc != 0)
     {
-        ERROR("Failed to get number of entries in the pool: %X",
+        ERROR("Failed to get number of entries in the pool: %r",
               rc);
         free(ip4_net_oid);
         return rc;

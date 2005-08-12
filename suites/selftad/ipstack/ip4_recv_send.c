@@ -92,7 +92,7 @@ main(int argc, char *argv[])
     TEST_GET_BOOL_PARAM(enum_iterator);
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %X", rc);
+        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
@@ -191,25 +191,25 @@ main(int argc, char *argv[])
         rc = tapi_ip4_eth_csap_create(agt_a, sid_a, "eth0", mac_a, mac_b,
                                       ip_a, ip_b, &ip4_send_csap);
         if (rc != 0)
-            TEST_FAIL("CSAP create failed, rc from module %d is 0x%x\n", 
+            TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
         rc = tapi_ip4_eth_csap_create(agt_b, sid_b, "eth0", mac_b, mac_a,
                                       ip_b, ip_a, &ip4_listen_csap);
         if (rc != 0)
-            TEST_FAIL("CSAP create failed, rc from mod %d is 0x%x\n", 
+            TEST_FAIL("CSAP create failed, rc from mod %d is %r\n", 
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
         rc = tapi_eth_csap_create(agt_b, sid_b, "eth0", mac_a, mac_b,
                                   NULL, &eth_listen_csap_1);
         if (rc != 0)
-            TEST_FAIL("ETH CSAP create failed, rc from mod %d is 0x%x\n",
+            TEST_FAIL("ETH CSAP create failed, rc from mod %d is %r\n",
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
         rc = tapi_eth_csap_create(agt_b, sid_b, "eth0", mac_a, mac_b,
                                   NULL, &eth_listen_csap_2);
         if (rc != 0)
-            TEST_FAIL("ETH CSAP create failed, rc from mod %d is 0x%x\n",
+            TEST_FAIL("ETH CSAP create failed, rc from mod %d is %r\n",
                         TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
         
         rc = tapi_ip4_eth_recv_start(agt_b, sid_b, ip4_listen_csap,
@@ -233,13 +233,13 @@ main(int argc, char *argv[])
 
         INFO ("try to wait\n");
         rc = rcf_ta_trrecv_wait(agt_b, sid_b, ip4_listen_csap, &num);
-        RING("trrecv_wait: 0x%X num: %d\n", rc, num);
+        RING("trrecv_wait: %r num: %d\n", rc, num);
 
         rc = rcf_ta_trrecv_stop(agt_b, sid_b, eth_listen_csap_2, &num);
-        RING("Eth trrecv_stop: 0x%X num: %d\n", rc, num);
+        RING("Eth trrecv_stop: %r num: %d\n", rc, num);
 
         rc = rcf_ta_trrecv_stop(agt_b, sid_b, eth_listen_csap_1, &num);
-        RING("Eth trrecv_stop: 0x%X num: %d\n", rc, num);
+        RING("Eth trrecv_stop: %r num: %d\n", rc, num);
 
     } while(0);
 

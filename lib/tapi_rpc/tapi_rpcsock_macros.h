@@ -67,7 +67,7 @@
             if (!!((#func_args_value_)[0]))                               \
             {                                                             \
                 ERROR("RPC " #func_  fmt_func_args_                       \
-                      " on %s failed retval=%d, RPC_errno=0x%X",          \
+                      " on %s failed retval=%d, RPC_errno=%r",            \
                       func_args_value_ + 0,                               \
                       RPC_NAME(rpcs_),                                    \
                       (rc_),                                              \
@@ -76,7 +76,7 @@
             else                                                          \
             {                                                             \
                 ERROR("RPC " #func_  fmt_func_args_                       \
-                      " on %s failed retval=%d, RPC_errno=0x%X",          \
+                      " on %s failed retval=%d, RPC_errno=%r",            \
                       RPC_NAME(rpcs_),                                    \
                       (rc_),                                              \
                       TE_RC_GET_ERROR(err_));                             \

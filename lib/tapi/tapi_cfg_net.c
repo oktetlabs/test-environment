@@ -72,7 +72,7 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
     rc = cfg_find_pattern("/net:*", &n_nets, &net_handles);
     if (rc != 0)
     {
-        ERROR("cfg_find_pattern() failed 0x%x", rc);
+        ERROR("cfg_find_pattern() failed %r", rc);
         return rc;
     }
     nets->n_nets = n_nets;
@@ -106,7 +106,7 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
         rc = cfg_get_oid_str(net_handles[i], &net_oid);
         if (rc != 0)
         {
-            ERROR("cfg_get_oid_str() failed 0x%x", rc);
+            ERROR("cfg_get_oid_str() failed %r", rc);
             break;
         }
         /* Find all nodes in this net */
@@ -115,7 +115,7 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
         free(net_oid);
         if (rc != 0)
         {
-            ERROR("cfg_find_pattern() failed 0x%x", rc);
+            ERROR("cfg_find_pattern() failed %r", rc);
             break;
         }
         net->n_nodes = n_nodes;
@@ -148,7 +148,7 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
             rc = cfg_get_oid_str(node_handles[j], &node_oid);
             if (rc != 0)
             {
-                ERROR("cfg_get_oid_str() failed 0x%x", rc);
+                ERROR("cfg_get_oid_str() failed %r", rc);
                 break;
             }
             /* Get node type */
@@ -157,7 +157,7 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
             free(node_oid);
             if (rc != 0)
             {
-                ERROR("cfg_get_instance_fmt() failed 0x%x", rc);
+                ERROR("cfg_get_instance_fmt() failed %r", rc);
                 break;
             }
             net->nodes[j].type = val;
@@ -205,7 +205,7 @@ tapi_cfg_net_get_pairs(enum net_node_type first,
     rc = tapi_cfg_net_get_nets(&nets);
     if (rc != 0)
     {
-        ERROR("tapi_cfg_net_get_nets() failed 0x%x", rc);
+        ERROR("tapi_cfg_net_get_nets() failed %r", rc);
         return rc;
     }
 
@@ -532,7 +532,7 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
     rc = cfg_get_instance_fmt(&val_type,  &type, "%s/type:", ta_node);
     if (rc != 0)
     {
-        ERROR("cfg_get_instance_fmt() failed 0x%x", rc);
+        ERROR("cfg_get_instance_fmt() failed %r", rc);
         return rc;
     }
     if (type != NET_NODE_TYPE_AGENT)
@@ -605,7 +605,7 @@ tapi_cfg_net_all_up(void)
     rc = tapi_cfg_net_get_nets(&nets);
     if (rc != 0)
     {
-        ERROR("Failed to get networks from Configurator: %X", rc);
+        ERROR("Failed to get networks from Configurator: %r", rc);
         return rc;
     }
 
@@ -624,7 +624,7 @@ tapi_cfg_net_all_up(void)
             if (rc != 0)
             {
                 ERROR("Failed to get Configurator instance by handle "
-                      "0x%x: %X", net->nodes[j].handle, rc);
+                      "0x%x: %r", net->nodes[j].handle, rc);
                 break;
             }
 
@@ -632,7 +632,7 @@ tapi_cfg_net_all_up(void)
             rc = cfg_get_instance_fmt(&type, &status, "%s/status:", oid);
             if (rc != 0)
             {
-                ERROR("Failed to get status of %s: %X", oid, rc);
+                ERROR("Failed to get status of %s: %r", oid, rc);
                 free(oid);
                 break;
             }
@@ -642,7 +642,7 @@ tapi_cfg_net_all_up(void)
                                           "%s/status:", oid);
                 if (rc != 0)
                 {
-                    ERROR("Failed to set status of %s to UP: %X",
+                    ERROR("Failed to set status of %s to UP: %r",
                           oid, rc);
                     free(oid);
                     break;
@@ -693,7 +693,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
         rc = tapi_cfg_alloc_ip4_net(&ip4_net_hndl);
         if (rc != 0)
         {
-            ERROR("%s: Failed to allocate IPv4 net to assign: %X",
+            ERROR("%s: Failed to allocate IPv4 net to assign: %r",
                   __FUNCTION__, rc);
             return rc;
         }
@@ -731,7 +731,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
                                   "%s/prefix:", ip4_net_oid);
         if (rc != 0)
         {
-            ERROR("Failed to get IPv4 subnet '%s' prefix: %X",
+            ERROR("Failed to get IPv4 subnet '%s' prefix: %r",
                   ip4_net_oid, rc);
             break;
         }
@@ -743,7 +743,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
         if (rc != 0)
         {
             ERROR("Failed to add '/ip4_subnet:%u' child to "
-                  "instance with handle 0x%x: %X",
+                  "instance with handle 0x%x: %r",
                   ip4_net_hndl, net->handle, rc);
             break;
         }
@@ -770,7 +770,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
                                          &ip4_addr);
             if (rc != 0)
             {
-                ERROR("Failed to allocate address for node #%u: %X",
+                ERROR("Failed to allocate address for node #%u: %r",
                       i, rc);
                 break;
             }
@@ -782,7 +782,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
             if (rc != 0)
             {
                 ERROR("Failed to get Configurator instance by handle "
-                      "0x%x: %X", net->nodes[i].handle, rc);
+                      "0x%x: %r", net->nodes[i].handle, rc);
                 free(ip4_addr);
                 break;
             }
@@ -808,7 +808,7 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
             if (rc != 0)
             {
                 ERROR("Failed to add 'ip4_address:%u' child to "
-                      "instance with handle 0x%x: %X",
+                      "instance with handle 0x%x: %r",
                       ip4_entry_hndl, net->nodes[i].handle, rc);
                 free(ip4_addr);
                 break;
@@ -862,7 +862,7 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
         rc = tapi_cfg_alloc_ip4_net(&ip4_net_hndl);
         if (rc != 0)
         {
-            ERROR("%s: Failed to allocate IPv4 net to assign: %X",
+            ERROR("%s: Failed to allocate IPv4 net to assign: %r",
                   __FUNCTION__, rc);
             return rc;
         }
@@ -900,7 +900,7 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
                                   "%s/prefix:", ip4_net_oid);
         if (rc != 0)
         {
-            ERROR("Failed to get IPv4 subnet '%s' prefix: %X",
+            ERROR("Failed to get IPv4 subnet '%s' prefix: %r",
                   ip4_net_oid, rc);
             break;
         }
@@ -912,7 +912,7 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
         if (rc != 0)
         {
             ERROR("Failed to add '/ip4_subnet:%u' child to "
-                  "instance with handle 0x%x: %X",
+                  "instance with handle 0x%x: %r",
                   ip4_net_hndl, net->handle, rc);
             break;
         }
@@ -939,7 +939,7 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
                                          &ip4_addr);
             if (rc != 0)
             {
-                ERROR("Failed to allocate address for node #%u: %X",
+                ERROR("Failed to allocate address for node #%u: %r",
                       i, rc);
                 break;
             }
@@ -951,7 +951,7 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
             if (rc != 0)
             {
                 ERROR("Failed to get Configurator instance by handle "
-                      "0x%x: %X", net->nodes[i].handle, rc);
+                      "0x%x: %r", net->nodes[i].handle, rc);
                 free(ip4_addr);
                 break;
             }
@@ -977,7 +977,7 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
             if (rc != 0)
             {
                 ERROR("Failed to add 'ip4_address:%u' child to "
-                      "instance with handle 0x%x: %X",
+                      "instance with handle 0x%x: %r",
                       ip4_entry_hndl, net->nodes[i].handle, rc);
                 free(ip4_addr);
                 break;

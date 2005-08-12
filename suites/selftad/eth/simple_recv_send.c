@@ -178,7 +178,7 @@ main(int argc, char *argv[])
         VERB("eth recv start rc: %x", rc);
 
         if (rc)
-            TEST_FAIL("tapi_eth_recv_start failed 0x%x", rc);
+            TEST_FAIL("tapi_eth_recv_start failed %r", rc);
 
         rc = tapi_eth_send(ta_A, sid_a, eth_csap, template);
 
@@ -193,7 +193,7 @@ main(int argc, char *argv[])
         rc = rcf_ta_trrecv_wait(ta_B, sid_b, eth_listen_csap, &num_pkts);
 
         if (rc)
-            TEST_FAIL("tapi_eth_recv_wait failed 0x%x", rc);
+            TEST_FAIL("tapi_eth_recv_wait failed %r", rc);
 
         INFO("trrecv wait rc: %x, num of pkts: %d\n", rc, num_pkts);
 

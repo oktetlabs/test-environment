@@ -66,7 +66,7 @@ tapi_cfg_dhcps_add_subnet(const char            *ta,
              (cfg_inst_val)(struct sockaddr *)subnet, &str);
     if (rc != 0)
     {
-        ERROR("%s(): Failed to convert subnet address to string: %X",
+        ERROR("%s(): Failed to convert subnet address to string: %r",
               __FUNCTION__, rc);
         return rc;
     }
@@ -122,7 +122,7 @@ tapi_cfg_dhcps_add_host(const char            *ta,
                                   ta);
         if (rc != 0)
         {
-            ERROR("%s(): Failed to find by pattern '%s' for TA '%s': %X",
+            ERROR("%s(): Failed to find by pattern '%s' for TA '%s': %r",
                   __FUNCTION__, TE_CFG_TA_DHCP_SERVER_FMT "/host:*",
                   ta, rc);
             return rc;
@@ -137,7 +137,7 @@ tapi_cfg_dhcps_add_host(const char            *ta,
                 if (rc != 0)
                 {
                     ERROR("%s(): Failed to get instance name by handle "
-                          "0x%x: %X", __FUNCTION__, hs[i], rc);
+                          "0x%x: %r", __FUNCTION__, hs[i], rc);
                     free(hs);
                     return rc;
                 }
@@ -183,7 +183,7 @@ tapi_cfg_dhcps_add_host(const char            *ta,
                  (cfg_inst_val)(struct sockaddr *)chaddr, &str);
         if (rc != 0)
         {
-            ERROR("%s(): Failed to convert IP address to string: %X",
+            ERROR("%s(): Failed to convert IP address to string: %r",
                   __FUNCTION__, rc);
             return rc;
         }
@@ -233,7 +233,7 @@ tapi_cfg_dhcps_add_host(const char            *ta,
                  (cfg_inst_val)(struct sockaddr *)fixed_ip, &str);
         if (rc != 0)
         {
-            ERROR("%s(): Failed to convert IP address to string: %X",
+            ERROR("%s(): Failed to convert IP address to string: %r",
                   __FUNCTION__, rc);
             return rc;
         }

@@ -166,7 +166,7 @@ tapi_eth_csap_create_with_mode(const char *ta_name, int sid,
     if (f == NULL)
     {
         ERROR("fopen() of %s failed(%d)", tmp_name, errno);
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
     }
 
     fprintf(f,    "{ eth:{ device-id   plain:\"%s\",\n", device);
@@ -191,7 +191,7 @@ tapi_eth_csap_create_with_mode(const char *ta_name, int sid,
     rc = rcf_ta_csap_create(ta_name, sid, "eth", tmp_name, eth_csap);
     if (rc != 0)
     {
-        ERROR("rcf_ta_csap_create() failed(0x%x) on TA %s:%d file %s",
+        ERROR("rcf_ta_csap_create() failed(%r) on TA %s:%d file %s",
               rc, ta_name, sid, tmp_name);
     }
 
@@ -254,7 +254,7 @@ tapi_eth_tagged_csap_create(const char *ta_name, int sid,
     if ((f = fopen(tmp_name, "w+")) == NULL)
     {
         ERROR("fopen() of %s failed(%d)", tmp_name, errno);
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
     }
 
     fprintf(f,    "{ eth:{ device-id   plain:\"%s\",\n"
@@ -271,7 +271,7 @@ tapi_eth_tagged_csap_create(const char *ta_name, int sid,
     rc = rcf_ta_csap_create(ta_name, sid, "eth", tmp_name, eth_csap);
     if (rc != 0)
     {
-        ERROR("rcf_ta_csap_create() failed(0x%x) on TA %s:%d file %s",
+        ERROR("rcf_ta_csap_create() failed(%r) on TA %s:%d file %s",
               rc, ta_name, sid, tmp_name);
     }
 
@@ -428,7 +428,7 @@ tapi_eth_recv_start(const char *ta_name, int sid,
                              timeout, num);
     if (rc != 0)
     {
-        ERROR("rcf_ta_trrecv_start() failed(0x%x) on TA %s:%d CSAP %d "
+        ERROR("rcf_ta_trrecv_start() failed(%r) on TA %s:%d CSAP %d "
               "file %s", rc, ta_name, sid, eth_csap, tmp_name);
     }
 
@@ -498,7 +498,7 @@ tapi_eth_prepare_pattern(const uint8_t *src_mac,
                                    ndn_traffic_pattern,
                                    pattern, &syms)) != 0)
     {
-        ERROR("Caanot parse ASN data for ETH pattern %X\n", rc);
+        ERROR("Cannot parse ASN data for ETH pattern %r\n", rc);
         return rc;    
     }
     rc = asn_write_component_value(*pattern,
@@ -564,7 +564,7 @@ tapi_eth_prepare_pattern_unit(uint8_t *src_mac, uint8_t *dst_mac,
 
     if (rc)
     {
-        ERROR("%s failed %X", __FUNCTION__, rc);
+        ERROR("%s failed %r", __FUNCTION__, rc);
         asn_free_value(pat_unit);
         *pattern_unit = NULL;
     }

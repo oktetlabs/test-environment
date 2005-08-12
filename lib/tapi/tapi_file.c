@@ -318,12 +318,12 @@ tapi_file_ta_unlink_fmt(const char *ta, const char *path_fmt, ...)
                       RCF_STRING, path);
     if (rc2 != 0)
     {
-        ERROR("%s(): rcf_ta_call() failed: 0x%X", __FUNCTION__, rc2);
+        ERROR("%s(): rcf_ta_call() failed: %r", __FUNCTION__, rc2);
         return rc2;
     }
     if (rc != 0)
     {
-        ERROR("%s(): ta_rtn_unlink(%s, %s) failed: 0x%X", __FUNCTION__,
+        ERROR("%s(): ta_rtn_unlink(%s, %s) failed: %r", __FUNCTION__,
               ta, path, rc);
         return rc;
     }

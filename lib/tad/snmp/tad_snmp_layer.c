@@ -162,7 +162,7 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     rc = asn_get_subvalue(tmpl_pdu, &var_bind_list, "variable-bindings");
     if (rc != 0)
     {
-        ERROR("%s(): get subvalue 'variable-bindings' list failed %X", 
+        ERROR("%s(): get subvalue 'variable-bindings' list failed %r", 
               __FUNCTION__, rc);
         return rc;
     }
@@ -177,7 +177,7 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
         if ((rc = asn_get_indexed(var_bind_list, &var_bind, i)) != 0) 
         {
-            ERROR("Cannot get VarBind %d from PDU, rc %X", i, rc);
+            ERROR("Cannot get VarBind %d from PDU, rc %r", i, rc);
             break;
         }
 
@@ -237,7 +237,7 @@ snmp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         pkts->len  = sizeof(*pdu);
         pkts->free_data_cb = tad_snmp_free_pdu;
     }
-    VERB("%s rc %X", __FUNCTION__, rc);
+    VERB("%s rc %r", __FUNCTION__, rc);
 
     return rc;
 }
@@ -378,7 +378,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     {
         rc = asn_write_component_value(parsed_packet, snmp_msg, "#snmp"); 
         if (rc)
-            ERROR("%s, write SNMP message to packet fails %X\n", 
+            ERROR("%s, write SNMP message to packet fails %r\n", 
                   __FUNCTION__, rc);
         asn_free_value(snmp_msg);
         snmp_msg = NULL;
@@ -397,7 +397,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         }
         else if (rc != 0) /* may not happen in normal situation */
         {
-            ERROR("SNMP match: get var-binds from pattern fails %X", rc);
+            ERROR("SNMP match: get var-binds from pattern fails %r", rc);
             break;
         }
 
@@ -417,7 +417,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             rc = asn_get_indexed(pat_vb_list, &pat_var_bind, i);
             if (rc != 0)
             {
-                WARN("SNMP match: get of var bind pattern fails %X", rc);
+                WARN("SNMP match: get of var bind pattern fails %r", rc);
                 break;
             } 
 
@@ -474,7 +474,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             rc = asn_get_field_data(pat_vb_value, &pat_vb_val_data, "");
             if (rc != 0)
             {
-                ERROR("Unexpected error getting pat vb value data: %X",
+                ERROR("Unexpected error getting pat vb value data: %r",
                       rc);
                 break;
             }
@@ -515,7 +515,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
                     if (rc != 0)
                     {
-                        VERB("SNMP VB match, got octet str syntax, rc %X",
+                        VERB("SNMP VB match, got octet str syntax, rc %r",
                              rc);
                     } 
                     else 
@@ -555,7 +555,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                             rc = TE_ETADNOTMATCH;
                         }
                     }
-                    VERB("SNMP VB match, values compare rc %X", rc);
+                    VERB("SNMP VB match, values compare rc %r", rc);
                     break;
 
                 default:;
@@ -575,7 +575,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         asn_value_p var_bind = NULL;
         char        os_choice[100]; 
 
-        VERB("BEGIN of LOOP rc %X", rc);
+        VERB("BEGIN of LOOP rc %r", rc);
 
         if (parsed_packet != NULL)
         {

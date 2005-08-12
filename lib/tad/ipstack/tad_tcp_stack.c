@@ -527,7 +527,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         }
         else if (rc != 0)
         {
-            ERROR("%s(CSAP %d): unexpected error reading 'data': %X", 
+            ERROR("%s(CSAP %d): unexpected error reading 'data': %r", 
                   __FUNCTION__, csap_descr->id, rc); 
             return rc;
         } 
@@ -536,7 +536,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                                   &t_class, &(spec_data->data_tag));
         if (rc != 0)
         {
-            ERROR("%s(CSAP %d): error reading choice of 'data': %X", 
+            ERROR("%s(CSAP %d): error reading choice of 'data': %r", 
                   __FUNCTION__, csap_descr->id, rc); 
             return rc;
         } 

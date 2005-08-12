@@ -466,7 +466,7 @@ tad_eth_arp_reply(csap_p csap_descr, const char *usr_param,
 
     if ((rc = mac_str2addr(usr_param, my_mac)) != 0)
     {
-        ERROR("%s(): MAC parse error, <%s> ,rc 0x%X",
+        ERROR("%s(): MAC parse error, <%s> ,rc %r",
               __FUNCTION__, usr_param, rc);
         return TE_EINVAL;
     } 

@@ -351,7 +351,7 @@ create_thread_child(rpcserver *rpcs)
         
     if (out.common._errno != 0 || out.retval != 0)
     {
-        ERROR("RPC pthread_create() failed on the server %s with errno 0x%X", 
+        ERROR("RPC pthread_create() failed on the server %s with errno %r", 
               rpcs->father->name, out.common._errno);
         return out.common._errno;
     }
@@ -382,7 +382,7 @@ delete_thread_child(rpcserver *rpcs)
         
     if (out.common._errno != 0 || out.retval != 0)
     {
-        WARN("RPC pthread_cancel() failed on the server %s with errno 0x%X",
+        WARN("RPC pthread_cancel() failed on the server %s with errno %r",
               rpcs->father->name, out.common._errno);
     }
 }
@@ -416,7 +416,7 @@ fork_child(rpcserver *rpcs)
         
     if (out.common._errno != 0 || out.pid < 0)
     {
-        ERROR("RPC fork() failed on the server %s with errno 0x%X", 
+        ERROR("RPC fork() failed on the server %s with errno %r", 
               rpcs->father->name, out.common._errno);
         return out.common._errno;
     }
@@ -532,7 +532,7 @@ connect_getpid(rpcserver *rpcs)
         
     if (out.common._errno != 0)
     {
-        ERROR("RPC getpid() failed on the server %s with errno 0x%X", 
+        ERROR("RPC getpid() failed on the server %s with errno %r", 
               rpcs->name, out.common._errno);
         return out.common._errno;
     }
@@ -1285,7 +1285,7 @@ rcf_pch_rpc_server(const char *name)
     if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
     {
         err = TE_OS_RC(TE_RCF_PCH, errno);
-        STOP("Failed to connect to TA; errno = 0x%X", err);
+        STOP("Failed to connect to TA; errno = %r", err);
     }
 
     /* Enable linger with positive timeout on the socket  */
@@ -1296,7 +1296,7 @@ rcf_pch_rpc_server(const char *name)
         {
             err = TE_OS_RC(TE_RCF_PCH, errno);
             STOP("Failed to enable linger on RPC server socket; "
-                 "errno = 0x%X", err);
+                 "errno = %r", err);
         }
     }
 

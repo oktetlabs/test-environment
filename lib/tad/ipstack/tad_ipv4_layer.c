@@ -109,7 +109,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
         if ((rc = asn_get_choice_value(ip4_csap_pdu, &ip4_csap_pdu,
                                        NULL, NULL)) != 0)
         {
-            ERROR("%s(CSAP %d) get choice value of csap pdu fails %X",
+            ERROR("%s(CSAP %d) get choice value of csap pdu fails %r",
                   __FUNCTION__, csap_descr->id, rc);
             return rc;
         }
@@ -140,7 +140,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
         }                                                               \
         if (rc != 0)                                                    \
         {                                                               \
-            ERROR("%s(CSAP %d): du convert fails %X, tag %d, label %s", \
+            ERROR("%s(CSAP %d): du convert fails %r, tag %d, label %s", \
                   __FUNCTION__, csap_id, rc, tag_, label_);             \
             return TE_RC(TE_TAD_CSAP, rc);                              \
         }                                                               \
@@ -173,7 +173,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
                                     spec_data->protocol);
         if (rc != 0)
         {
-            ERROR("%s(): write protocol to ip4 pdu failed 0x%X",
+            ERROR("%s(): write protocol to ip4 pdu failed %r",
                   __FUNCTION__, rc);
             return TE_RC(TE_TAD_CSAP, rc);
         }
@@ -223,7 +223,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
             rc = asn_write_component_value(ip4_pdu, du_field, "src-addr");
             if (rc != 0)
             {
-                ERROR("%s(): write src-addr to ip4 pdu failed 0x%X",
+                ERROR("%s(): write src-addr to ip4 pdu failed %r",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -259,7 +259,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
             rc = asn_write_component_value(ip4_pdu, du_field, "dst-addr");
             if (rc != 0)
             {
-                ERROR("%s(): write dst-addr to ip4 pdu failed 0x%X",
+                ERROR("%s(): write dst-addr to ip4 pdu failed %r",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -344,7 +344,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {                                                               \
             rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
                                       args, arg_num, place_l, length_); \
-            CHECK(rc != 0, "%s():%d: " #c_du_field_ " error: 0x%x",     \
+            CHECK(rc != 0, "%s():%d: " #c_du_field_ " error: %r",     \
               __FUNCTION__,  __LINE__, rc);                             \
         }                                                               \
         else                                                            \
@@ -778,11 +778,11 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     {
         rc = asn_write_component_value(parsed_packet, ip4_header_pdu, "#ip4"); 
         if (rc)
-            ERROR("%s, write IPv4 header to packet fails %X\n", 
+            ERROR("%s, write IPv4 header to packet fails %r\n", 
                   __FUNCTION__, rc);
     } 
 
-    VERB("%s, return %X", __FUNCTION__, rc);
+    VERB("%s, return %r", __FUNCTION__, rc);
     
 cleanup:
     asn_free_value(ip4_header_pdu); 

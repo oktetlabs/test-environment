@@ -4359,7 +4359,7 @@ timely_round_trip(tarpc_timely_round_trip_in *in,
         
         if (gettimeofday(&temp, NULL))
         {
-            ERROR("%s(): gettimeofday(timeout) failed: %X",
+            ERROR("%s(): gettimeofday(timeout) failed: %d",
                   __FUNCTION__, errno);
             return ROUND_TRIP_ERROR_OTHER;
         }
@@ -4389,7 +4389,7 @@ timely_round_trip(tarpc_timely_round_trip_in *in,
         
         if (gettimeofday(&temp, NULL))
         {
-            ERROR("%s(): gettimeofday(timeout) failed: %X",
+            ERROR("%s(): gettimeofday(timeout) failed: %d",
                   __FUNCTION__, errno);
             return ROUND_TRIP_ERROR_OTHER;
         }
@@ -4740,7 +4740,7 @@ flooder(tarpc_flooder_in *in)
         {
             if ((ioctl_func(rcvrs[i], FIONBIO, &on)) != 0)
             {
-                ERROR("%s(): ioctl(FIONBIO) failed: %X",
+                ERROR("%s(): ioctl(FIONBIO) failed: %d",
                       __FUNCTION__, errno);
                 return -1;
             }
@@ -4788,7 +4788,7 @@ flooder(tarpc_flooder_in *in)
 
     if (gettimeofday(&timeout, NULL))
     {
-        ERROR("%s(): gettimeofday(timeout) failed: %X",
+        ERROR("%s(): gettimeofday(timeout) failed: %d",
               __FUNCTION__, errno);
         return -1;
     }
@@ -4831,7 +4831,7 @@ flooder(tarpc_flooder_in *in)
             }
             if (rc < 0)
             {
-                ERROR("%s(): (p)select() failed: %X", __FUNCTION__, errno);
+                ERROR("%s(): (p)select() failed: %d", __FUNCTION__, errno);
                 return -1;
             }
 
@@ -4854,7 +4854,7 @@ flooder(tarpc_flooder_in *in)
                         if ((sent < 0) &&
                             (errno != EAGAIN) && (errno != EWOULDBLOCK))
                         {
-                            ERROR("%s(): write() failed: %X",
+                            ERROR("%s(): write() failed: %d",
                                   __FUNCTION__, errno);
                             return -1;
                         }
@@ -4881,7 +4881,7 @@ flooder(tarpc_flooder_in *in)
                     if ((received < 0) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
-                        ERROR("%s(): read() failed: %X",
+                        ERROR("%s(): read() failed: %d",
                               __FUNCTION__, errno);
                         return -1;
                     }
@@ -4906,7 +4906,7 @@ flooder(tarpc_flooder_in *in)
 
             if (rc < 0)
             {
-                ERROR("%s(): poll() failed: %X", __FUNCTION__, errno);
+                ERROR("%s(): poll() failed: %d", __FUNCTION__, errno);
                 return -1;
             }
 
@@ -4918,7 +4918,7 @@ flooder(tarpc_flooder_in *in)
                     if ((sent < 0) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
-                        ERROR("%s(): write() failed: %X",
+                        ERROR("%s(): write() failed: %d",
                               __FUNCTION__, errno);
                         return -1;
                     }
@@ -4934,7 +4934,7 @@ flooder(tarpc_flooder_in *in)
                     if ((received < 0) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
-                        ERROR("%s(): read() failed: %X",
+                        ERROR("%s(): read() failed: %d",
                               __FUNCTION__, errno);
                         return -1;
                     }
@@ -4970,7 +4970,7 @@ flooder(tarpc_flooder_in *in)
         {
             if (gettimeofday(&timestamp, NULL))
             {
-                ERROR("%s(): gettimeofday(timestamp) failed): %X",
+                ERROR("%s(): gettimeofday(timestamp) failed): %d",
                       __FUNCTION__, errno);
                 return -1;
             }
@@ -5028,7 +5028,7 @@ flooder(tarpc_flooder_in *in)
         {
             if ((ioctl_func(rcvrs[i], FIONBIO, &off)) != 0)
             {
-                ERROR("%s(): ioctl(FIONBIO) failed: %X",
+                ERROR("%s(): ioctl(FIONBIO) failed: %d",
                       __FUNCTION__, errno);
                 return -1;
             }
@@ -5135,7 +5135,7 @@ echoer(tarpc_echoer_in *in)
 
     if (gettimeofday(&timeout, NULL))
     {
-        ERROR("%s(): gettimeofday(timeout) failed: %X",
+        ERROR("%s(): gettimeofday(timeout) failed: %d",
               __FUNCTION__, errno);
         return -1;
     }
@@ -5173,7 +5173,7 @@ echoer(tarpc_echoer_in *in)
             }
             if (rc < 0)
             {
-                ERROR("%s(): (p)select() failed: %X", __FUNCTION__, errno);
+                ERROR("%s(): (p)select() failed: %d", __FUNCTION__, errno);
                 return -1;
             }
 
@@ -5185,7 +5185,7 @@ echoer(tarpc_echoer_in *in)
                     received = read_func(sockets[i], buf, sizeof(buf));
                     if (received < 0)
                     {
-                        ERROR("%s(): read() failed: %X",
+                        ERROR("%s(): read() failed: %d",
                               __FUNCTION__, errno);
                         return -1;
                     }
@@ -5196,7 +5196,7 @@ echoer(tarpc_echoer_in *in)
                     sent = write_func(sockets[i], buf, received);
                     if (sent < 0)
                     {
-                        ERROR("%s(): write() failed: %X",
+                        ERROR("%s(): write() failed: %d",
                               __FUNCTION__, errno);
                         return -1;
                     }
@@ -5213,7 +5213,7 @@ echoer(tarpc_echoer_in *in)
 
             if (rc < 0)
             {
-                ERROR("%s(): poll() failed: %X", __FUNCTION__, errno);
+                ERROR("%s(): poll() failed: %d", __FUNCTION__, errno);
                 return -1;
             }
 
@@ -5224,7 +5224,7 @@ echoer(tarpc_echoer_in *in)
                     received = read_func(ufds[i].fd, buf, sizeof(buf));
                     if (received < 0)
                     {
-                        ERROR("%s(): read() failed: %X",
+                        ERROR("%s(): read() failed: %d",
                               __FUNCTION__, errno);
                         return -1;
                     }
@@ -5235,7 +5235,7 @@ echoer(tarpc_echoer_in *in)
                     sent = write_func(ufds[i].fd, buf, received);
                     if (sent < 0)
                     {
-                        ERROR("%s(): write() failed: %X",
+                        ERROR("%s(): write() failed: %d",
                               __FUNCTION__, errno);
                         return -1;
                     }
@@ -5255,7 +5255,7 @@ echoer(tarpc_echoer_in *in)
         {
             if (gettimeofday(&timestamp, NULL))
             {
-                ERROR("%s(): gettimeofday(timestamp) failed: %X",
+                ERROR("%s(): gettimeofday(timestamp) failed: %d",
                       __FUNCTION__, errno);
                 return -1;
             }
@@ -5685,7 +5685,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
     if (file_d < 0)
     {
         ERROR("%s(): open(%s, O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO) "
-              "failed: %X", __FUNCTION__, path, errno);
+              "failed: %d", __FUNCTION__, path, errno);
         rc = -1;
         goto local_exit;
     }
@@ -5694,7 +5694,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
 
     if (gettimeofday(&timeout, NULL))
     {
-        ERROR("%s(): gettimeofday(timeout) failed: %X",
+        ERROR("%s(): gettimeofday(timeout) failed: %d",
               __FUNCTION__, errno);
         rc = -1;
         goto local_exit;
@@ -5717,7 +5717,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
         rc = select_func(sock + 1, &rfds, NULL, NULL, &call_timeout);
         if (rc < 0)
         {
-            ERROR("%s(): select() failed: %X", __FUNCTION__, errno);
+            ERROR("%s(): select() failed: %d", __FUNCTION__, errno);
             break;
         }
         VERB("%s(): select finishes for waiting of events", __FUNCTION__);
@@ -5731,7 +5731,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
             VERB("%s(): read() retrieve %d bytes", __FUNCTION__, received);
             if (received < 0)
             {
-                ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                ERROR("%s(): read() failed: %d", __FUNCTION__, errno);
                 rc = -1;
                 break;
             }
@@ -5746,7 +5746,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
                      __FUNCTION__, written);
                 if (written < 0)
                 {
-                    ERROR("%s(): write() failed: %X", __FUNCTION__, errno);
+                    ERROR("%s(): write() failed: %d", __FUNCTION__, errno);
                     rc = -1;
                     break;
                 }
@@ -5754,8 +5754,8 @@ socket_to_file(tarpc_socket_to_file_in *in)
                 {
                     ERROR("%s(): write() cannot write all received in "
                           "the buffer data to the file "
-                          "(received=%d, written=%d): %X",
-                          __FUNCTION__, errno, received, written);
+                          "(received=%d, written=%d): %d",
+                          __FUNCTION__, received, written, errno);
                     rc = -1;
                     break;
                 }
@@ -5766,7 +5766,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
         {
             if (gettimeofday(&timestamp, NULL))
             {
-                ERROR("%s(): gettimeofday(timestamp) failed): %X",
+                ERROR("%s(): gettimeofday(timestamp) failed): %d",
                       __FUNCTION__, errno);
                 rc = -1;
                 break;
@@ -5920,7 +5920,7 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
         rc = send_func(in->sock, buf, in->vector.vector_val[i], 0);
         if (rc != (ssize_t)in->vector.vector_val[i])
         {
-           ERROR("%s(): send(%d, buf, %u, 0) failed: %X", __FUNCTION__,
+           ERROR("%s(): send(%d, buf, %u, 0) failed: %d", __FUNCTION__,
                  in->sock, in->vector.vector_val[i], errno);
             rc = -1;
             goto many_send_exit;

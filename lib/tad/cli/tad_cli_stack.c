@@ -267,7 +267,7 @@ parent_read_byte(cli_csap_specific_data_p spec_data,
         if (rc < 0)
         {
             ERROR("Reading single character from Expect side "
-                  "fails on select(), errno = %X", errno);
+                  "fails on select(), errno = 0x%X", errno);
             return errno;
         }
         
@@ -297,7 +297,7 @@ parent_read_byte(cli_csap_specific_data_p spec_data,
             if ((rc = read(spec_data->data_sock, data, 1)) != 1)
             {
                 ERROR("Reading single character from Expect side "
-                      "fails on read(), rc = %d, errno = %X", rc, errno);
+                      "fails on read(), rc = %d, errno = 0x%X", rc, errno);
                 return (rc == 0) ? ECONNABORTED : errno;
             }
         }
@@ -478,7 +478,7 @@ cli_session_alive(cli_csap_specific_data_p spec_data)
     pid = waitpid(spec_data->expect_pid, &status, WNOHANG);
     if (pid < 0)
     {
-        ERROR("waitpid(%d) failed, errno = %X",
+        ERROR("waitpid(%d) failed, errno = %d",
               spec_data->expect_pid, errno);
         return FALSE;
     }
@@ -759,7 +759,7 @@ cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     if (rc != (int)sizeof(timeout) || bytes_written != buf_len)
     {
         ERROR("%s(): Cannot write '%s' command to Expect side, "
-              "rc = %d, errno = %X",
+              "rc = %d, errno = %d",
               __FUNCTION__, buf, bytes_written, errno);
         return -1;
     }
@@ -865,7 +865,7 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
     if (rc != (int)sizeof(timeout) || bytes_written != w_buf_len)
     {
         ERROR("%s(): Cannot write '%s' command to Expect side, "
-              "rc = %d, errno = %X",
+              "rc = %d, errno = %d",
               __FUNCTION__, w_buf, bytes_written, errno);
         return -1;
     }
@@ -1644,7 +1644,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
         if (rc != (int)sizeof(timeout))
         {
             ERROR("Cannot read timeout value from CSAP Engine, "
-                  "rc = %d, errno = %X", rc, errno);
+                  "rc = %d, errno = %d", rc, errno);
             cli_expect_finalize(spec_data, SYNC_RES_FAILED);
         }
         
@@ -1664,7 +1664,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
             if ((rc = write(spec_data->io, &data, 1)) != 1)
             {
                 ERROR("Cannot send '%c' character to expect, "
-                      "rc = %d, errno = %X", data, rc, errno);
+                      "rc = %d, errno = %d", data, rc, errno);
                 cli_expect_finalize(spec_data, SYNC_RES_FAILED);
             }
         }
@@ -1672,7 +1672,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
         if (rc != 1)
         {
             ERROR("Error occurred during reading command from "
-                  "CSAP Engine side, rc = %d, errno = %X", rc, errno);
+                  "CSAP Engine side, rc = %d, errno = %d", rc, errno);
             cli_expect_finalize(spec_data, SYNC_RES_FAILED);
         }
 

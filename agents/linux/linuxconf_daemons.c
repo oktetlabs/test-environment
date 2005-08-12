@@ -1658,7 +1658,7 @@ ds_sshd_del(unsigned int gid, const char *oid, const char *port)
     {
         int kill_errno = errno;
         ERROR("Failed to send SIGTERM "
-              "to process SSH daemon with PID=%u: %X",
+              "to process SSH daemon with PID=%u: %d",
               pid, kill_errno);
         /* Just to make sure */
         kill(pid, SIGKILL);
@@ -1813,7 +1813,7 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
     {
         int kill_errno = errno;
         ERROR("Failed to send SIGTERM "
-              "to process SSH daemon with PID=%u: %X",
+              "to process SSH daemon with PID=%u: %d",
               pid, kill_errno);
         /* Just to make sure */
         kill(pid, SIGKILL);

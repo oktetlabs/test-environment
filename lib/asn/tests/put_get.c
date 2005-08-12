@@ -38,7 +38,7 @@ main (void)
     if (rc) 
     {
         result = 1;
-        fprintf(stderr, "put int child value failed %X\n", rc);
+        fprintf(stderr, "put int child value failed 0x%X\n", rc);
     }
 
     asn_parse_value_text("\"uajajaja\"", asn_base_charstring,
@@ -48,7 +48,7 @@ main (void)
     if (rc) 
     {
         result = 1;
-        fprintf(stderr, "put string child value failed %X\n", rc);
+        fprintf(stderr, "put string child value failed 0x%X\n", rc);
     }
 
     asn_sprint_value(seq_val, buffer, 1000, 0);
@@ -63,7 +63,7 @@ main (void)
     if (rc) 
     {
         result = 1;
-        fprintf(stderr, "get child value failed %X\n", rc);
+        fprintf(stderr, "get child value failed 0x%X\n", rc);
     }
     asn_sprint_value(child_val, buffer, 1000, 0);
     printf("got child value: \n%s\n", buffer);
@@ -72,7 +72,7 @@ main (void)
     if (rc) 
     {
         result = 1;
-        fprintf(stderr, "free child value failed %X\n", rc);
+        fprintf(stderr, "free child value failed 0x%X\n", rc);
     }
     asn_sprint_value(seq_val, buffer, 1000, 0);
     printf("after free value: \n%s\n", buffer);
@@ -82,7 +82,7 @@ main (void)
     if (rc)
     {
         result = 1;
-        fprintf(stderr, "parse choice failed %X, syms %d\n", rc, syms);
+        fprintf(stderr, "parse choice failed 0x%X, syms %d\n", rc, syms);
     }
     else
     {

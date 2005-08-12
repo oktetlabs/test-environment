@@ -78,7 +78,7 @@ tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
                               "/agent:%s/ip4_fw:", ta);
     if (rc != 0)
     {
-        ERROR("Failed to get IPv4 forwarding state on '%s': %X", ta, rc);
+        ERROR("Failed to get IPv4 forwarding state on '%s': %r", ta, rc);
         return rc;
     }
 
@@ -90,7 +90,7 @@ tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
                                   "/agent:%s/ip4_fw:", ta);
         if (rc != 0)
         {
-            ERROR("Failed to configure IPv4 forwarding on '%s': %X",
+            ERROR("Failed to configure IPv4 forwarding on '%s': %r",
                   ta, rc);
             return rc;
         }
@@ -185,7 +185,7 @@ tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)
     rc = cfg_get_instance(handle, &type, &mtu);
     if (rc != 0)
     {
-        ERROR("Failed to get MTU using OID %s. %X", buf, rc);
+        ERROR("Failed to get MTU using OID %s. %r", buf, rc);
         return rc;
     }
     assert(mtu >= 0);
@@ -267,7 +267,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
             {
                 int rc2;
 
-                ERROR("Failed to set broadcast address: %X", rc);
+                ERROR("Failed to set broadcast address: %r", rc);
                 rc2 = cfg_del_instance_fmt(TRUE, 
                                            "%s/net_addr:%s", oid,
                                            inet_ntop(addr->sa_family,
@@ -275,7 +275,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
                                                      buf, sizeof(buf)));
                 if (rc2 != 0)
                 {
-                    ERROR("Failed to delete address to rollback: %X", rc2);
+                    ERROR("Failed to delete address to rollback: %r", rc2);
                 }
                 return rc;
             }
@@ -289,7 +289,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
     }
     else
     {
-        ERROR("Failed to add address for %s: %X", oid, rc);
+        ERROR("Failed to add address for %s: %r", oid, rc);
     }
 
     return rc;

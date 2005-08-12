@@ -27,15 +27,15 @@ main (void)
     int read_len = BUF_TO_READ;
 
     r = asn_write_value_field(seq_val, &a, sizeof(a), "number");
-    if (r) { printf("write numbver error: 0x%X\n", r); return 1; }
+    if (r) { printf("write numbver error: %r\n", r); return 1; }
 
 
     r = asn_get_child_value(seq_val, &subval, PRIVATE, SEQ_NUMBER_TAG);
-    printf("rc getting subval by tag 'number': 0x%X\n", r); 
+    printf("rc getting subval by tag 'number': %r\n", r); 
 
 
     r = asn_get_child_value(seq_val, &subval, PRIVATE, SEQ_STRING_TAG);
-    printf("rc getting subval by tag 'string': 0x%X\n", r); 
+    printf("rc getting subval by tag 'string': %r\n", r); 
 
     r = asn_write_value_field(seq_val, str, sizeof(str), "string");
     if (r) { printf("error code returned: %d\n", r); return r; }
@@ -44,17 +44,17 @@ main (void)
     printf("seq_val after write values: \n\"%s\"\n", buffer); 
 
     r = asn_get_child_value(seq_val, &subval, PRIVATE, SEQ_NUMBER_TAG);
-    printf("rc getting subval by tag 'number': 0x%X\n", r); 
+    printf("rc getting subval by tag 'number': %r\n", r); 
 
     r = asn_get_child_value(seq_val, &subval, PRIVATE, SEQ_INT_ARRAY_TAG);
-    printf("rc getting subval by tag 'ingeter_array': 0x%X\n", r); 
+    printf("rc getting subval by tag 'ingeter_array': %r\n", r); 
 
     r = asn_write_value_field(ch_val, &a, sizeof(a), "#number");
-    if (r) { printf("write number to choice error: 0x%X\n", r); return 1; } 
+    if (r) { printf("write number to choice error: %r\n", r); return 1; } 
 
     subval = NULL;
     r = asn_get_choice_value(ch_val, &subval, NULL, NULL);
-    printf("rc getting choice subval: 0x%X\n", r); 
+    printf("rc getting choice subval: %r\n", r); 
 
     if (r == 0 && subval != NULL)
         printf("got subval syntax: %d\n", (*subval)->syntax);

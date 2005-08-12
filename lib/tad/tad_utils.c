@@ -104,7 +104,7 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 
         if (rc != 0) 
         {
-            ERROR("asn_get_subvalue rc: 0x%X, confirm level %d, label %s",
+            ERROR("asn_get_subvalue rc: %r, confirm level %d, label %s",
                   rc, level, label);
             break;
         }
@@ -115,7 +115,7 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
         if (rc != 0)
         {
             ERROR("pdus do not confirm to CSAP; "
-                  "rc: 0x%x, csap id: %d, level: %d\n", 
+                  "rc: %r, csap id: %d, level: %d\n", 
                   rc, csap_descr->id, level);
             break;
         }
@@ -368,7 +368,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
         (*expr)->exprs = calloc((*expr)->d_len, sizeof(tad_int_expr_t));
 
         rc = tad_int_expr_parse(p, &sub_expr, &sub_expr_parsed);
-        VERB("first subexpr parsed, rc 0x%X, syms %d", rc, sub_expr_parsed);
+        VERB("first subexpr parsed, rc %r, syms %d", rc, sub_expr_parsed);
         if (rc)
             goto parse_error;
 
@@ -406,7 +406,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
                 p++; 
 
             rc = tad_int_expr_parse(p, &sub_expr, &sub_expr_parsed);
-            VERB("second subexpr parsed, rc 0x%X, syms %d",
+            VERB("second subexpr parsed, rc %r, syms %d",
                  rc, sub_expr_parsed);
             if (rc)
                 goto parse_error;
@@ -772,7 +772,7 @@ tad_data_unit_convert(const asn_value *pdu_val,
         }
         else
         {
-            ERROR("%s(tag %d, pdu name %s): rc from get_child 0x%X",
+            ERROR("%s(tag %d, pdu name %s): rc from get_child %r",
                   __FUNCTION__, tag_value, asn_get_name(pdu_val), rc);
             return rc;
         }
@@ -823,7 +823,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                     location->du_type = TAD_DU_I32; 
                     rc = asn_read_int32(du_field, &(location->val_i32), "");
                     if (rc != 0)
-                        ERROR("%s(): read integer rc %X", __FUNCTION__, rc);
+                        ERROR("%s(): read integer rc %r", __FUNCTION__, rc);
                     break;
 
                 case BIT_STRING:

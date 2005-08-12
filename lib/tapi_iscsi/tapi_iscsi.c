@@ -117,7 +117,7 @@ iscsi_msg_handler(char *pkt_fname, void *user_param)
     if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
                                        &pkt, &s_parsed)) != 0)
     {                                      
-        ERROR("%s(): parse packet fails, rc = 0x%X, sym %d",
+        ERROR("%s(): parse packet fails, rc = %r, sym %d",
               __FUNCTION__, rc, s_parsed);
         return;
     }
@@ -173,13 +173,13 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
                                iscsi_msg_handler, &msg, timeout, 1);
     if (rc != 0)
     {
-        ERROR("%s(): trrecv_start failed 0x%X", __FUNCTION__, rc);
+        ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
         goto cleanup;
     }
 
     rc = rcf_ta_trrecv_wait(ta_name, sid, csap, &num);
     if (rc != 0)
-        WARN("%s() trrecv_wait failed: 0x%X", __FUNCTION__, rc);
+        WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 
     *length = msg.length;
 
@@ -214,7 +214,7 @@ tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
     rc = asn_write_value_field(template, buffer, length, "payload.#bytes");
     if (rc != 0)
     {
-        ERROR("%s(): write payload failed 0x%X", __FUNCTION__, rc);
+        ERROR("%s(): write payload failed %r", __FUNCTION__, rc);
         goto cleanup;
     } 
 
@@ -224,7 +224,7 @@ tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
                                RCF_MODE_BLOCKING);
     if (rc != 0)
     {
-        ERROR("%s(): trsend_start failed 0x%X", __FUNCTION__, rc);
+        ERROR("%s(): trsend_start failed %r", __FUNCTION__, rc);
         goto cleanup;
     } 
 

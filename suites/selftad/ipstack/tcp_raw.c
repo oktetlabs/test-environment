@@ -95,7 +95,7 @@ main(int argc, char *argv[])
     TEST_GET_STRING_PARAM(pattern_file);
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %X", rc);
+        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
 
     INFO("Found first TA: %s; len %d", ta, len);
 
@@ -136,7 +136,7 @@ main(int argc, char *argv[])
         INFO("csap_create rc: %d, csap id %d\n", rc, csap); 
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
-            INFO ("rc from module %d is 0x%x\n", 
+            INFO ("rc from module %d is %r\n", 
                         rc_mod, TE_RC_GET_ERROR(rc));
         } 
         if (rc) break;
@@ -144,14 +144,14 @@ main(int argc, char *argv[])
 #if 1
         rc = rcf_ta_trrecv_start(ta, sid, csap, "", 0,
                                  udp_handler, NULL, 0);
-        INFO("trrecv_start: 0x%X \n", rc);
+        INFO("trrecv_start: %r \n", rc);
         if (rc) break;
 
 #if 1
         sleep(1);
         INFO ("try to get\n");
         rc = rcf_ta_trrecv_get(ta, sid, csap, &num);
-        INFO("trrecv_get: 0x%X num: %d\n", rc, num);
+        INFO("trrecv_get: %r num: %d\n", rc, num);
         if (rc) break;
 
 #endif
@@ -161,11 +161,11 @@ main(int argc, char *argv[])
 
         INFO ("try to stop\n");
         rc = rcf_ta_trrecv_stop(ta, sid, csap, &num);
-        INFO("trrecv_stop: 0x%X num: %d\n", rc, num);
+        INFO("trrecv_stop: %r num: %d\n", rc, num);
 
 #endif
         rc = rcf_ta_csap_destroy(ta, sid, csap);
-        INFO("csap %d destroy: 0x%X ", csap, rc); 
+        INFO("csap %d destroy: %r ", csap, rc); 
 
     } while(0);
 

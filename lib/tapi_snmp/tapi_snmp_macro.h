@@ -57,7 +57,7 @@ extern "C" {
                                     snmp_version_, &csap_id_);          \
         if (rc_ != 0)                                                   \
         {                                                               \
-            TEST_FAIL("snmp csap creation failed %X\n", rc_);           \
+            TEST_FAIL("snmp csap creation failed %r\n", rc_);           \
         }                                                               \
     } while (0)
 
@@ -136,7 +136,7 @@ extern "C" {
         rc_ = tapi_snmp_make_instance(label_, &oid_, indeces_);           \
         if (rc_ != 0)                                                     \
         {                                                                 \
-            TEST_FAIL("Cannot make instance of %s OID: %X", label_, rc_); \
+            TEST_FAIL("Cannot make instance of %s OID: %r", label_, rc_); \
         }                                                                 \
     } while (0)
     
@@ -201,7 +201,7 @@ extern "C" {
                                   num_, (void **)result_);              \
         if (rc_ != 0)                                                   \
         {                                                               \
-            TEST_FAIL("snmp get table for %s failed, result %X\n",      \
+            TEST_FAIL("snmp get table for %s failed, result %r\n",      \
                      label_, rc_);                                      \
         }                                                               \
     } while (0)
@@ -279,7 +279,7 @@ extern "C" {
         if (rc_ != 0)                                              \
         {                                                          \
             TEST_FAIL("snmp get table rows failed for %s failed, " \
-                      "result %X\n", label_, rc_);                 \
+                      "result %r\n", label_, rc_);                 \
         }                                                          \
     } while (0)                   
 
@@ -301,7 +301,7 @@ extern "C" {
         if (rc_ != 0)                                                    \
         {                                                                \
             TEST_FAIL("snmp get table dimension failed for %s failed, "  \
-                      "result %X\n", label_, rc_);                       \
+                      "result %r\n", label_, rc_);                       \
         }                                                                \
     } while (0)
 
@@ -323,7 +323,7 @@ extern "C" {
        if (rc_ != 0)                                            \
        {                                                        \
             TEST_FAIL("snmp get table columns failed for %s "   \
-                      "failed, result %X\n", label_, rc_);      \
+                      "failed, result %r\n", label_, rc_);      \
         }                                                       \
     } while (0)
   
@@ -343,7 +343,7 @@ extern "C" {
                                         mib_file_);                     \
         if (rc_ != 0)                                                   \
         {                                                               \
-            TEST_FAIL("Loading mib with path failed, result %X", rc_);  \
+            TEST_FAIL("Loading mib with path failed, result %r", rc_);  \
         }                                                               \
     } while (0)
 
@@ -361,7 +361,7 @@ extern "C" {
         rc_ = tapi_snmp_load_mib(mib_file_);                    \
         if (rc_ != 0)                                           \
         {                                                       \
-            TEST_FAIL("Loading mib failed, result %X", rc_);    \
+            TEST_FAIL("Loading mib failed, result %r", rc_);    \
         }                                                       \
     } while (0)
 

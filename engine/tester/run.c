@@ -132,7 +132,7 @@ tester_ctx_clone(const tester_ctx *ctx)
     rc = test_requirements_clone(&ctx->reqs, &new_ctx->reqs);
     if (rc != 0)
     {
-        ERROR("%s(): failed to clone requirements: %X", __FUNCTION__, rc);
+        ERROR("%s(): failed to clone requirements: %r", __FUNCTION__, rc);
         free(new_ctx);
         return NULL;
     }
@@ -817,13 +817,13 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             {
                 ERROR("Failed to create GDB init file: %s",
                       strerror(errno));
-                return errno;
+                return TE_OS_RC(TE_TESTER, errno);
             }
             fprintf(f, "set args %s\n", params_str);
             if (fclose(f) != 0)
             {
                 ERROR("fclose() failed");
-                return errno;
+                return TE_OS_RC(TE_TESTER, errno);;
             }
             if (snprintf(shell, sizeof(shell),
                          "gdb -x %s ", gdb_init) >=
@@ -877,7 +877,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     {
         ERROR("%s():%u: malloc(%u) failed",
               __FUNCTION__, __LINE__, TESTER_CMD_BUF_SZ);
-        return errno;
+        return TE_OS_RC(TE_TESTER, errno);;
     }
     if (snprintf(cmd, TESTER_CMD_BUF_SZ, "%s%s%s%s", shell, script->execute,
                  (ctx->flags & TESTER_GDB) ? "" : PRINT_STRING(params_str),
@@ -900,9 +900,9 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         rc = system(cmd);
         if (rc == -1)
         {
-            ERROR("system(%s) failed: %X", cmd, errno);
+            ERROR("system(%s) failed: errno %d", cmd, errno);
             free(cmd);
-            return errno;
+            return TE_OS_RC(TE_TESTER, errno);;
         }
 
 #ifdef WCOREDUMP
@@ -1156,7 +1156,7 @@ run_test_package(tester_ctx *ctx, test_package *pkg, test_id id,
     rc = tester_ctx_get_sticky_reqs(ctx, &pkg->reqs);
     if (rc != 0)
     {
-        ERROR("%s(): tester_ctx_get_sticky_reqs() failed: %X",
+        ERROR("%s(): tester_ctx_get_sticky_reqs() failed: %r",
               __FUNCTION__, rc);
         return rc;
     }
@@ -1182,7 +1182,8 @@ test_thread_joinable(test_thread_params *thr_params)
     rc = write(thr_params->pipe, msg, sizeof(msg));
     if (rc != sizeof(msg))
     {
-        ERROR("Failed to notify that thread becomes joinable: %X", errno);
+        ERROR("Failed to notify that thread becomes joinable: "
+              "errno %d", errno);
     }
 }
 #endif
@@ -1265,8 +1266,8 @@ run_test(tester_ctx *ctx, run_item *test, test_id id, test_params *params)
     /* Create a pipe to be used for join notification */
     if (pipe(pipefds) != 0)
     {
-        ERROR("pipe() failed: %X", errno);
-        return errno;
+        ERROR("pipe() failed: %d", errno);
+        return TE_OS_RC(TE_TESTER, errno);
     }
 #endif
 
@@ -1296,7 +1297,7 @@ run_test(tester_ctx *ctx, run_item *test, test_id id, test_params *params)
         if (rc != 0)
         {
             rc = errno;
-            ERROR("pthread_create() failed: %X", rc);
+            ERROR("pthread_create() failed: %d", rc);
             break;
         }
 
@@ -1327,7 +1328,7 @@ run_test(tester_ctx *ctx, run_item *test, test_id id, test_params *params)
             rc = pthread_join(th, NULL);
             if (rc != 0)
             {
-                ERROR("pthread_join() failed: %X", errno);
+                ERROR("pthread_join() failed: %d", errno);
             }
             rc = thr_params.rc;
         }
@@ -1339,7 +1340,7 @@ run_test(tester_ctx *ctx, run_item *test, test_id id, test_params *params)
             rc = pthread_kill(th, SIGINT);
             if (rc != 0)
             {
-                ERROR("pthread_kill() failed: %X", errno);
+                ERROR("pthread_kill() failed: %d", errno);
             }
         }
 #else
@@ -1351,19 +1352,19 @@ run_test(tester_ctx *ctx, run_item *test, test_id id, test_params *params)
 #ifdef TESTER_TIMEOUT_SUPPORT
     if (close(pipefds[0]) != 0)
     {
-        ERROR("close() of pipefds[0] failed: %X", errno);
+        ERROR("close() of pipefds[0] failed: %d", errno);
         TE_RC_UPDATE(rc, errno);
     }
     if (close(pipefds[1]) != 0)
     {
-        ERROR("close() of pipefds[1] failed: %X", errno);
+        ERROR("close() of pipefds[1] failed: %d", errno);
         TE_RC_UPDATE(rc, errno);
     }
 #endif
 
     EXIT("%d", rc);
 
-    return rc;
+    return TE_OS_RC(TE_TESTER, rc);
 }
 
 
@@ -1543,7 +1544,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         rc = cfg_create_backup(&backup_name);
         if (rc != 0)
         {
-            ERROR("Cannot create configuration backup: %X", rc);
+            ERROR("Cannot create configuration backup: %r", rc);
             test_param_iterations_free(&iters);
             if (ctx_cloned)
                 tester_ctx_free(ctx);
@@ -1626,7 +1627,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             test_result = run_test(test_ctx, test, id, &(iter->params));
             if (!TEST_RESULT(test_result))
             {
-                ERROR("run_test() failed: %X", rc);
+                ERROR("run_test() failed: %r", rc);
             }
 
             if (backup_name != NULL)
@@ -1661,7 +1662,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 }
                 else if (rc != 0)
                 {
-                    ERROR("Cannot verify configuration backup: %X", rc);
+                    ERROR("Cannot verify configuration backup: %r", rc);
                     if (TEST_RESULT(test_result))
                         test_result = rc;
                 }
@@ -1695,7 +1696,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         rc = cfg_release_backup(&backup_name);
         if (rc != 0)
         {
-            ERROR("cfg_release_backup() failed: %X", rc);
+            ERROR("cfg_release_backup() failed: %r", rc);
             if (TEST_RESULT(all_result))
                 all_result = rc;
         }
@@ -1788,7 +1789,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
         rc = iterate_test(ctx, test, NULL);
         if (!TEST_RESULT(rc))
         {
-            ERROR("iterate_test() failed: %X", rc);
+            ERROR("iterate_test() failed: %r", rc);
             result = TE_ETESTUNEXP;
         }
         else if (result < rc)

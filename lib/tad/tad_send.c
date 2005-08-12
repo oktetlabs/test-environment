@@ -169,7 +169,7 @@ tad_tr_send_thread(void * arg)
 
         if (rc != 0)
         {
-            ERROR("%s(): prepare payload failed rc %X", __FUNCTION__, rc);
+            ERROR("%s(): prepare payload failed rc %r", __FUNCTION__, rc);
             break;
         } 
 
@@ -226,7 +226,7 @@ tad_tr_send_thread(void * arg)
 
     if (rc)
     {
-        ERROR("preparing template error: 0x%x", rc);
+        ERROR("preparing template error: %r", rc);
         SEND_ANSWER("%d",  TE_RC(TE_TAD_CSAP, rc)); 
         csap_descr->command = TAD_OP_IDLE;
         csap_descr->state = 0;
@@ -248,7 +248,7 @@ tad_tr_send_thread(void * arg)
             rc = tad_tr_send_prepare_bin(csap_descr, nds, 
                                          arg_iterated, arg_num, 
                                          &pld_spec, &packets_root);
-            F_VERB("send_prepare_bin rc: %X\n", rc);
+            F_VERB("send_prepare_bin rc: 0x%X\n", rc);
 
             if (rc)
                 break;
@@ -308,9 +308,9 @@ tad_tr_send_thread(void * arg)
 
                 if (rc < 0)
                 {
-                    F_ERROR("CSAP #%d internal write error 0x%x", 
+                    F_ERROR("CSAP #%d internal write error %d", 
                                 csap_descr->id, csap_descr->last_errno);
-                    rc = TE_RC(TE_TAD_CSAP, csap_descr->last_errno);
+                    rc = TE_OS_RC(TE_TAD_CSAP, csap_descr->last_errno);
                     break;
                 }
 
@@ -415,7 +415,7 @@ tad_convert_payload(const asn_value *ndn_payload,
     rc = asn_get_choice_value(ndn_payload, &payload, &t_class, &t_val);
     if (rc != 0)
     {
-        ERROR("%s(): get choice of Payload failed %X", __FUNCTION__, rc);
+        ERROR("%s(): get choice of Payload failed %r", __FUNCTION__, rc);
         return rc;
     }
 
@@ -511,7 +511,7 @@ tad_convert_payload(const asn_value *ndn_payload,
     }
 
     if (rc != 0)
-        ERROR("%s failed %X", __FUNCTION__, rc);
+        ERROR("%s failed %r", __FUNCTION__, rc);
 
     return rc;
 }
@@ -714,7 +714,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
         if (rc != 0) 
         {
             ERROR("generate binary data error; "
-                  "rc: 0x%x, csap id: %d, level: %d\n", 
+                  "rc: %r, csap id: %d, level: %d\n", 
                   rc, csap_descr->id, level);
 
             rc = TE_RC(TE_TAD_CSAP, rc);

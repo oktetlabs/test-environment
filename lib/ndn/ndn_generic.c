@@ -450,7 +450,7 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
                                  &exact_len_index);
     if (rc != 0)
     {
-        ERROR("%s(): get indexes of leafs in mask type fails %X",
+        ERROR("%s(): get indexes of leafs in mask type fails %r",
               __FUNCTION__, rc);
         return TE_EASNGENERAL;
     }
@@ -521,7 +521,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                                        &field_index);
     if (rc != 0)
     {
-        ERROR("%s(): find field %s index failed 0x%X",
+        ERROR("%s(): find field %s index failed %r",
               __FUNCTION__, label, rc);
         return rc;
     }

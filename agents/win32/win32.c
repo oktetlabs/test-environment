@@ -458,7 +458,7 @@ shell(int argc, char * const argv[])
 
     rc = system(cmdbuf);
     if (rc == -1)
-        return TE_RC(TE_TA_WIN32, errno);
+        return TE_OS_RC(TE_TA_WIN32, errno);
 
 #ifdef WCOREDUMP
     if (WCOREDUMP(rc))

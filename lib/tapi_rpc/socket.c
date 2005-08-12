@@ -1706,13 +1706,13 @@ tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     rpc_do_fd_zero(rpcs, fds);
     if (RPC_ERRNO(rpcs))                                           
     {                                                               
-        TEST_FAIL("rpc_do_fd_zero() fails with RPC_errno: 0x%X",  
+        TEST_FAIL("rpc_do_fd_zero() fails with RPC_errno: %r",  
                   RPC_ERRNO(rpcs)); 
     }                                                               
     rpc_do_fd_set(rpcs, s, fds);                             
     if (RPC_ERRNO(rpcs))                                           
     {                                                               
-        TEST_FAIL("rpc_do_fd_set() fails with RPC_errno: 0x%X",     
+        TEST_FAIL("rpc_do_fd_set() fails with RPC_errno: %r",     
                   RPC_ERRNO(rpcs));
     }                       
     tv.tv_sec = timeout;                                        
@@ -1728,7 +1728,7 @@ tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     rpc_fd_set_delete(rpcs, fds);
     if (RPC_ERRNO(rpcs))                                           
     {                                                               
-        ERROR("rpc_fd_set_delete() fails with RPC_errno: 0x%X", 
+        ERROR("rpc_fd_set_delete() fails with RPC_errno: %r", 
               RPC_ERRNO(rpcs));
         return -1;
     }                           

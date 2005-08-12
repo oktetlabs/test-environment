@@ -80,7 +80,7 @@ tester_new_target_reqs(reqs_expr **targets, const char *req)
         parent = calloc(1, sizeof(*parent));
         if (parent == NULL)
         {
-            rc = errno;
+            rc = TE_OS_RC(TE_TESTER, errno);;
             tester_reqs_expr_free(parsed);
             ERROR("%s(): calloc(1, %u) failed",
                   __FUNCTION__, sizeof(*parent));

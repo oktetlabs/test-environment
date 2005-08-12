@@ -495,7 +495,7 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
     if ((rc = ipc_send_message(ctx->ipc_handle, RCF_SERVER,
                                send_buf, send_size)) != 0)
     {
-        ERROR("%s() failed with rc %X", __FUNCTION__, rc);
+        ERROR("%s() failed with rc %r", __FUNCTION__, rc);
         return TE_RC(TE_RCF_API, TE_EIPC);
     }
 
@@ -2082,7 +2082,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     if ((fd = open(templ, O_RDONLY)) < 0)
     {
         ERROR("Cannot open file %s for reading\n", templ);
-        return TE_RC(TE_RCF_API, errno);
+        return TE_OS_RC(TE_RCF_API, errno);
     }
     close(fd);
 
@@ -2240,7 +2240,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     if ((fd = open(pattern, O_RDONLY)) < 0)
     {
         ERROR("Cannot open file %s for reading", pattern);
-        return TE_RC(TE_RCF_API, errno);
+        return TE_OS_RC(TE_RCF_API, errno);
     }
     close(fd);
 
@@ -2344,7 +2344,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
                                         &msg, &anslen, NULL)) != 0)
     {
         remove_traffic_op(ta_name, csap_id);
-        ERROR("%s: IPC send with answer fails, rc %X", 
+        ERROR("%s: IPC send with answer fails, rc %r", 
               __FUNCTION__, rc);
         return rc;
     }
@@ -2359,7 +2359,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
                                        opcode, session, &msg, 
                                        &anslen, NULL)) != 0)
         {
-            ERROR("%s: IPC receive answer fails, rc %X", 
+            ERROR("%s: IPC receive answer fails, rc %r", 
                   __FUNCTION__, rc);
             return TE_RC(TE_RCF_API, TE_EIPC);
         }
@@ -2382,7 +2382,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         remove_traffic_op(ta_name, csap_id);
     }
     if (msg.error)
-        WARN("RCF traffic operation fails with status code %X", msg.error);
+        WARN("RCF traffic operation fails with status code %r", msg.error);
     
     return msg.error;
 }
@@ -2400,7 +2400,7 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
          __FUNCTION__, ta_name, csap_id, num);
     rc = csap_tr_recv_get(ta_name, session, csap_id, num,
                           RCFOP_TRRECV_WAIT);
-    VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
+    VERB("%s(ta %s, csap %d, *num  %p) return %r, num %d", 
          __FUNCTION__, ta_name, csap_id, num, rc, 
          (num == NULL ? -1: *num));
          
@@ -2441,7 +2441,7 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
          __FUNCTION__, ta_name, csap_id, num); 
     rc = csap_tr_recv_get(ta_name, session, csap_id, num,
                             RCFOP_TRRECV_STOP); 
-    VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
+    VERB("%s(ta %s, csap %d, *num  %p) return %r, num %d", 
          __FUNCTION__, ta_name, csap_id, num, rc,
          (num == NULL ? -1: *num));
          
@@ -2484,7 +2484,7 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
     rc = csap_tr_recv_get(ta_name, session, csap_id, num,
                           RCFOP_TRRECV_GET);
 
-    VERB("%s(ta %s, csap %d, *num  %p) return %X, num %d", 
+    VERB("%s(ta %s, csap %d, *num  %p) return %r, num %d", 
          ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
 
     return rc;

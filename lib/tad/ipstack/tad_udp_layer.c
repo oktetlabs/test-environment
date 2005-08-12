@@ -98,7 +98,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                               &(udp_spec_data->du_src_port)); 
     if (rc != 0)
     {
-        ERROR("%s: failed to convert src-port from pattern: %X",
+        ERROR("%s: failed to convert src-port from pattern: %r",
               __FUNCTION__, rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
@@ -110,7 +110,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                               &(udp_spec_data->du_dst_port)); 
     if (rc != 0)
     {
-        ERROR("%s: failed to convert dst-port from pattern: %X",
+        ERROR("%s: failed to convert dst-port from pattern: %r",
               __FUNCTION__, rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
@@ -132,7 +132,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                                        "dst-port.#plain");
             if (rc != 0)
             {
-                ERROR("%s: failed to update dst-port in pattern: %X",
+                ERROR("%s: failed to update dst-port in pattern: %r",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -148,7 +148,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                                        "src-port.#plain");
             if (rc != 0)
             {
-                ERROR("%s: failed to update src-port in pattern: %X",
+                ERROR("%s: failed to update src-port in pattern: %r",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -168,7 +168,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                                        "src-port.#plain");
             if (rc != 0)
             {
-                ERROR("%s: failed to update src-port in pattern: %X",
+                ERROR("%s: failed to update src-port in pattern: %r",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -188,7 +188,7 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                                            "dst-port.#plain");
                 if (rc != 0)
                 {
-                    ERROR("%s: failed to update dst-port in pattern: %X",
+                    ERROR("%s: failed to update dst-port in pattern: %r",
                           __FUNCTION__, rc);
                     return TE_RC(TE_TAD_CSAP, rc);
                 }
@@ -297,7 +297,7 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                                       args, arg_num, p, 2);             \
             if (rc != 0)                                                \
             {                                                           \
-                ERROR("%s():%d: " #c_du_field_ " error: 0x%x",          \
+                ERROR("%s():%d: " #c_du_field_ " error: %r",          \
                       __FUNCTION__,  __LINE__, rc);                     \
                 goto cleanup;                                           \
             }                                                           \
@@ -385,7 +385,7 @@ int udp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   data, _size, _asn_label);     \
         if (rc != 0)                                            \
         {                                                       \
-            VERB("%s: field '%s' not match: %X",                \
+            VERB("%s: field '%s' not match: %r",                \
                  __FUNCTION__, _asn_label, rc);                 \
             return rc;                                          \
         }                                                       \
@@ -415,7 +415,7 @@ int udp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     {
         rc = asn_write_component_value(parsed_packet, udp_header_pdu, "#udp");
         if (rc != 0)
-            ERROR("%s: failed to insert UDP header to packet: %X",
+            ERROR("%s: failed to insert UDP header to packet: %r",
                   __FUNCTION__, rc);
     }
     asn_free_value(udp_header_pdu);

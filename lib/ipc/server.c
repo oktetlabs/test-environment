@@ -199,7 +199,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
     {
         rc = errno;
         perror("ipc_register_server(): calloc() error");
-        return TE_RC(TE_IPC, rc);
+        return TE_OS_RC(TE_IPC, rc);
     }
 
     strcpy(ipcs->name, name);
@@ -223,7 +223,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
         rc = errno;
         perror("ipc_register_server(): socket() error");
         free(ipcs);
-        return TE_RC(TE_IPC, rc);
+        return TE_OS_RC(TE_IPC, rc);
     }
 
 #ifdef TE_IPC_AF_UNIX
@@ -243,7 +243,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
                             SUN_NAME(&sa), strerror(rc));
             close(ipcs->socket);
             free(ipcs);
-            return TE_RC(TE_IPC, rc);
+            return TE_OS_RC(TE_IPC, rc);
         }
     }
 #endif /* TE_IPC_AF_UNIX */
@@ -255,7 +255,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
         perror("listen() error");
         close(ipcs->socket);
         free(ipcs);
-        return TE_RC(TE_IPC, rc);
+        return TE_OS_RC(TE_IPC, rc);
     }
 #endif /* !TE_IPC_CONNECTIONLESS */
 
@@ -271,7 +271,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
             perror("getsockname() error");
             close(ipcs->socket);
             free(ipcs);
-            return TE_RC(TE_IPC, rc);
+            return TE_OS_RC(TE_IPC, rc);
         }
         if (ipc_pmap_register_server(name, addr.sin_port) != 0)
         {
@@ -279,7 +279,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
             perror("Cannot register server's port");
             close(ipcs->socket);
             free(ipcs);
-            return TE_RC(TE_IPC, rc);
+            return TE_OS_RC(TE_IPC, rc);
         }
     }
 #endif /* !TE_IPC_AF_UNIX */
@@ -303,7 +303,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
         perror("ipc_register_server(): calloc() error");
         close(ipcs->socket);
         free(ipcs);
-        return TE_RC(TE_IPC, rc);
+        return TE_OS_RC(TE_IPC, rc);
     }
 
 #else /* !TE_IPC_CONNECTIONLESS */
@@ -317,7 +317,7 @@ ipc_register_server(const char *name, struct ipc_server **p_ipcs)
             perror("ipc_register_server(): calloc() error");
             close(ipcs->socket);
             free(ipcs);
-            return TE_RC(TE_IPC, rc);
+            return TE_OS_RC(TE_IPC, rc);
         }
     }
 
@@ -674,7 +674,7 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
             fprintf(stderr, "Send IPC message from server '%s' to "
                             "client '%s' failed: %s\n", ipcs->name,
                             SUN_NAME(&ipcsc->sa), strerror(errno));
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
 
         if (msg_len == 0)
@@ -917,7 +917,7 @@ ipc_send_answer(struct ipc_server *ipcs, struct ipc_server_client *ipcsc,
 
         if (write_socket(ipcsc->socket, &len, sizeof(len)) != 0)
         {
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
 
         return write_socket(ipcsc->socket, msg, msg_len);
@@ -1143,7 +1143,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
         {
             fprintf(stderr, "IPC server '%s' failed to receive "
                             "message: %s\n", ipcs->name, strerror(errno));
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
 
         if ((ipcsc != NULL) &&
@@ -1222,7 +1222,7 @@ read_socket(int socket, void *buffer, size_t len)
         if (r < 0)
         {
             perror("read_socket(): recv() error");
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
         else if (r == 0)
         {
@@ -1259,7 +1259,7 @@ write_socket(int socket, const void *buffer, size_t len)
         if (r < 0)
         {
             perror("write_socket send() error");
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
         else if (r == 0)
         {

@@ -629,12 +629,12 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
     if (kill(p, SIGTERM) != 0)
     {
         kill_errno = errno;
-        ERROR("Failed to send SIGTERM to process with PID=%u: %X",
+        ERROR("Failed to send SIGTERM to process with PID=%u: %d",
               pid, kill_errno);
 
         if (kill(p, SIGKILL) != 0)
         {
-            ERROR("Failed to send SIGKILL to process with PID=%u: %X",
+            ERROR("Failed to send SIGKILL to process with PID=%u: %d",
                   pid, errno);
         }
         else

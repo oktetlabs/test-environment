@@ -418,7 +418,7 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                                       args, arg_num, p, length);            \
             if (rc != 0)                                                    \
             {                                                               \
-                ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
+                ERROR("%s(): generate " #c_du_field ", error: %r",        \
                       __FUNCTION__,  rc);                                   \
                 return rc;                                                  \
             }                                                               \
@@ -443,7 +443,7 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                                       (uint8_t *)&var, sizeof(var));        \
             if (rc != 0)                                                    \
             {                                                               \
-                ERROR("%s(): generate " #c_du_field ", error: 0x%x",        \
+                ERROR("%s(): generate " #c_du_field ", error: %r",        \
                       __FUNCTION__,  rc);                                   \
                 return rc;                                                  \
             }                                                               \
@@ -619,7 +619,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         }
         else if (TE_RC_GET_ERROR(rc) != TE_EASNINCOMPLVAL)
         {
-            WARN("read cfi from pattern failed %X", rc);
+            WARN("read cfi from pattern failed %r", rc);
             goto cleanup;
         }
 
@@ -627,7 +627,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   &prio, 1, "priority");
         if (rc != 0)
         {
-            WARN("match of priority failed %X", rc);
+            WARN("match of priority failed %r", rc);
             goto cleanup;
         }
         
@@ -635,7 +635,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   data, 2, "vlan-id");
         if (rc != 0)
         {
-            WARN("match of vlan-id failed %X", rc);
+            WARN("match of vlan-id failed %r", rc);
             goto cleanup;
         }
 

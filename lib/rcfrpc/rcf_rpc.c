@@ -96,7 +96,7 @@ rpc_server_sem_init(rcf_rpc_server *rpcs)
         pthread_mutex_init(&rpcs->lock, &attr) != 0)
     {
         ERROR("Cannot initialize mutex for RPC server");
-        return TE_RC(TE_RCF_API, errno); 
+        return TE_OS_RC(TE_RCF_API, errno); 
     }
 #endif
     

@@ -350,7 +350,7 @@ tapi_tad_add_iterator_for(asn_value *templ, int begin, int end, int step)
     }
     if (rc != 0)
     {
-        ERROR("%s(): error of init iterators ASN value: %X",
+        ERROR("%s(): error of init iterators ASN value: %r",
               __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     } 

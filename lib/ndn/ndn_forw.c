@@ -423,7 +423,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
     VERB("%s: got id: %s", __FUNCTION__, forw_action->id);
 
     rc = asn_impl_find_subvalue(val, "delay", &subval); 
-    VERB("%s: get delay: %X", __FUNCTION__, rc); 
+    VERB("%s: get delay: %r", __FUNCTION__, rc); 
     if (rc == 0) 
     {
         rc = ndn_forw_delay_to_plain(subval, &(forw_action->delay));
@@ -440,11 +440,11 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
 
 
     rc = asn_get_subvalue(val, &subval, "reorder");
-    VERB("%s: get reorder: %X", __FUNCTION__, rc); 
+    VERB("%s: get reorder: %r", __FUNCTION__, rc); 
     if (rc == 0) 
     {
         rc = ndn_forw_reorder_to_plain(subval, &(forw_action->reorder));
-        VERB("%s: reorder to plain: %X", __FUNCTION__, rc); 
+        VERB("%s: reorder to plain: %r", __FUNCTION__, rc); 
         if (rc) return rc;
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
@@ -562,7 +562,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
 
                     rc = asn_parse_value_text("discr:{}", ndn_forw_delay,
                                               &delay_discr, &ar_len);
-                    VERB("parse delay discr rc %X, syms %d", rc, ar_len);
+                    VERB("parse delay discr rc %r, syms %d", rc, ar_len);
                     if (rc != 0)
                         break;
 
@@ -592,7 +592,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
 
                         rc = asn_insert_indexed(delay_discr, 
                                                 pair_val, i, "#discr");
-                        VERB("%s: insert discr.pair N %d to delay, rc: %X",
+                        VERB("%s: insert discr.pair N %d to delay, rc: %r",
                              __FUNCTION__, i, rc);
                         asn_free_value(pair_val);
                     }
@@ -600,7 +600,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                         break;
                     rc = asn_write_component_value(val, delay_discr,
                                                    "delay"); 
-                    VERB("%s: write delay_discr to ftask action, rc: %X",
+                    VERB("%s: write delay_discr to ftask action, rc: %r",
                          __FUNCTION__, rc);
                     asn_free_value(delay_discr);
                 }
@@ -618,7 +618,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
 
     if (rc!= 0)
     {
-        ERROR("%s failed %X", __FUNCTION__, rc);
+        ERROR("%s failed %r", __FUNCTION__, rc);
         asn_free_value(val);
     }
     else

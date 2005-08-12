@@ -140,7 +140,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 
         sprintf(label + sizeof("pdus") - 1, ".%d", level);
         rc = asn_get_subvalue(pattern_unit, &level_pdu, label); 
-        VERB("get subval with pattern unit for label %s rc 0x%x",
+        VERB("get subval with pattern unit for label %s rc %r",
              label, rc);
 
         csap_spt_descr = csap_descr->layers[level].proto_support;
@@ -149,7 +149,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                                       &data_to_check, &rest_payload,
                                       parsed_pdu); 
 
-        VERB("match cb 0x%x for lev %d returned 0x%x",
+        VERB("match cb 0x%x for lev %d returned %r",
              csap_spt_descr->match_cb, level, rc);
 
         if (data_to_check.free_data_cb) 
@@ -172,7 +172,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             asn_free_value(parsed_pdu);
             if (rc != 0)
             {
-                ERROR("ASN error in add next pdu 0x%x\n", rc);
+                ERROR("ASN error in add next pdu %r\n", rc);
                 asn_free_value(*packet);
                 return rc;
             } 
@@ -205,13 +205,13 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                                   "payload.#mask");
             if (rc != 0)
             {
-                ERROR("%s(): get mask failed %X", __FUNCTION__, rc);
+                ERROR("%s(): get mask failed %r", __FUNCTION__, rc);
                 asn_free_value(*packet);
                 return rc;
             }
             rc = ndn_match_mask(mask_pat,
                                 data_to_check.data, data_to_check.len);
-            VERB("CSAP %d, rc from ndn_match_mask %X",
+            VERB("CSAP %d, rc from ndn_match_mask %r",
                  csap_descr->id, rc);
         }
 
@@ -234,7 +234,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                                        data_to_check.len, "payload.#bytes");
             if (rc)
             {
-                ERROR( "ASN error in add rest payload 0x%x\n", rc);
+                ERROR( "ASN error in add rest payload %r\n", rc);
                 asn_free_value(*packet);
                 *packet = NULL;
                 return rc;
@@ -285,7 +285,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                 rc = asn_read_value_field(action_ch_val, buffer,
                                           &buf_len, "");
                 if (rc != 0)
-                    ERROR("csap #%d, ASN read value error %X", 
+                    ERROR("csap #%d, ASN read value error %r", 
                           csap_descr->id, rc); 
                 else
                 { 
@@ -316,7 +316,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                         rc = method_addr(csap_descr, usr_place,
                                          data, d_len);
                         if (rc != 0)
-                            WARN("rc from user method %X", rc);
+                            WARN("rc from user method %r", rc);
                         rc = 0;
                     }
                 }
@@ -501,7 +501,7 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
                                                  level_tmpl_pdu, 
                                                  &level_pattern);
 
-        VERB("%s, lev %d, generate pattern cb rc %X", 
+        VERB("%s, lev %d, generate pattern cb rc %r", 
                 __FUNCTION__, level, rc);
 
         if (rc == 0) 
@@ -525,7 +525,7 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
         *pattern = asn_init_value(ndn_traffic_pattern);
         rc = asn_insert_indexed(*pattern, pattern_unit, 0, "");
     }
-    VERB("%s, returns %X", __FUNCTION__, rc);
+    VERB("%s, returns %r", __FUNCTION__, rc);
     asn_free_value(pattern_unit);
     return rc;
 }
@@ -712,7 +712,7 @@ tad_tr_recv_thread(void *arg)
                 break;
 
             rc = tad_tr_sr_generate_pattern(csap_descr, nds, &pattern);
-            INFO("generate pattern rc %X", rc);
+            INFO("generate pattern rc %r", rc);
             if (rc != 0)
                 break;
             
@@ -745,7 +745,7 @@ tad_tr_recv_thread(void *arg)
             rc = tad_tr_recv_match_with_unit(read_buffer, d_len, csap_descr,
                                              pattern_unit, &result); 
 
-            VERB("match_with_unit returned 0x%X", rc);
+            VERB("match_with_unit returned %r", rc);
 
             if (rc != 0)
             {
@@ -773,7 +773,7 @@ tad_tr_recv_thread(void *arg)
          * this is in foreground mode. */
         csap_descr->state |= TAD_STATE_COMPLETE;
         csap_descr->last_errno = rc;
-        F_ERROR("generate binary data error: 0x%x", rc); 
+        F_ERROR("generate binary data error: %r", rc); 
         rc = 0;
     }
 
@@ -817,7 +817,7 @@ tad_tr_recv_thread(void *arg)
                                           answer_buffer, ans_len);
             if (rc != 0) 
             {
-                ERROR("send 'trrecv_get' results failed with rc 0x%X\n",
+                ERROR("send 'trrecv_get' results failed with rc %r\n",
                       rc);
                 /**
                  * @todo fix it. 
@@ -881,7 +881,7 @@ tad_tr_recv_thread(void *arg)
             if (d_len < 0)
             {
                 csap_descr->state |= TAD_STATE_COMPLETE;
-                ERROR("CSAP read callback failed; rc: 0x%x\n", rc);
+                ERROR("CSAP read callback failed; rc: %r\n", rc);
                 continue;
             } 
             
@@ -892,7 +892,7 @@ tad_tr_recv_thread(void *arg)
                 rc = asn_get_indexed(nds, &pattern_unit, unit);
                 if (rc != 0)
                 {
-                    WARN("Get pattern unit fails %X", rc);
+                    WARN("Get pattern unit fails %r", rc);
                     break;
                 }
                 rc = tad_tr_recv_match_with_unit(read_buffer, d_len, 
@@ -920,7 +920,7 @@ tad_tr_recv_thread(void *arg)
 
                     default: 
                         ERROR("Match with patter-unit failed "
-                              "with code: 0x%x\n", rc);
+                              "with code: %r\n", rc);
                         break;
                 }
                 if (rc != 0)
@@ -981,7 +981,7 @@ tad_tr_recv_thread(void *arg)
                                   answer_buffer, ans_len);
     if (rc != 0)
     {
-        ERROR("trrecv thread: send results failed with code 0x%x\n", rc);
+        ERROR("trrecv thread: send results failed with code %r\n", rc);
         if (csap_descr->last_errno == 0)
             csap_descr->last_errno = rc;
         rc = 0;
@@ -1002,7 +1002,7 @@ tad_tr_recv_thread(void *arg)
     CSAP_DA_LOCK(csap_descr);
     csap_descr->command = TAD_OP_IDLE;
     csap_descr->state   = 0;
-    SEND_ANSWER("%d %u", TE_RC(TE_TAD_CSAP, csap_descr->last_errno), 
+    SEND_ANSWER("%d %u", TE_OS_RC(TE_TAD_CSAP, csap_descr->last_errno), 
                 pkt_count);
 
     csap_descr->answer_prefix[0] = '\0';

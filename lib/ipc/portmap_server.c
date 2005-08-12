@@ -317,7 +317,7 @@ ipc_init(void)
             if (listen(s, SOMAXCONN) != 0)
             {
                 perror("ipc_init(): listen() failed");
-                return errno;
+                return TE_OS_RC(TE_IPC, errno);
             }
 
             {
@@ -326,7 +326,7 @@ ipc_init(void)
                 if (getsockname(s, (struct sockaddr*)&addr, &l) != 0)
                 {
                     perror("ipc_init(): getsockname() failed");
-                    return errno;
+                    return TE_OS_RC(TE_IPC, errno);
                 }
             }
 
@@ -353,7 +353,7 @@ ipc_init(void)
                 {
                     perror("ipc_init(): can not do pmap_set()");
                     close(s);
-                    return errno;
+                    return TE_OS_RC(TE_IPC, errno);
                 }
             }
             else
@@ -376,7 +376,7 @@ ipc_init(void)
     if (r == -1)
     {
         perror("ipc_init(): fork() failed");
-        return errno;
+        return TE_OS_RC(TE_IPC, errno);
     }
 
     return 0;

@@ -55,14 +55,14 @@ main (int argc, char *argv[])
         if (rc == 0)
         {
             rc = asn_write_indexed(pdus, level_pdu, level, "");
-            printf("TAD_SEND " "asn_write_val_field rc: %x", rc);
+            printf("TAD_SEND " "asn_write_val_field rc: %r", rc);
         }
         asn_free_value(level_pdu);
         if (rc) 
         {
             /* "PDU does not confirm" */ 
             printf("TAD_SEND template does not confirm to CSAP; "
-                       "rc: 0x%x,  level: %d\n", rc, level);
+                       "rc: %r,  level: %d\n", rc, level);
             break;
         }
     }

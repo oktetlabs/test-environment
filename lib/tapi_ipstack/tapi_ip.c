@@ -108,27 +108,27 @@ ip4_pkt_handler(char *pkt_fname, void *user_param)
 
     rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
                                   &pkt, &s_parsed);
-    CHECK_FAIL("%s(): parse packet fails, rc = 0x%X,sym %d",
+    CHECK_FAIL("%s(): parse packet fails, rc = %r,sym %d",
               __FUNCTION__, rc, s_parsed);
 
     rc = asn_get_subvalue(pkt, &ip_pdu, "pdus.0.#ip4");
-    CHECK_FAIL("%s(): get IP4 PDU fails, rc = 0x%X",
+    CHECK_FAIL("%s(): get IP4 PDU fails, rc = %r",
               __FUNCTION__, rc);
 
     len = sizeof(plain_pkt.src_addr);
     rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_SRC_ADDR, 
                                (uint8_t *)&(plain_pkt.src_addr), &len);
-    CHECK_FAIL("%s(): get IP4 src fails, rc = 0x%X",
+    CHECK_FAIL("%s(): get IP4 src fails, rc = %r",
               __FUNCTION__, rc);
 
     len = sizeof(plain_pkt.dst_addr);
     rc = ndn_du_read_plain_oct(ip_pdu, NDN_TAG_IP4_DST_ADDR, 
                                (uint8_t *)&(plain_pkt.dst_addr), &len);
-    CHECK_FAIL("%s(): get IP4 dst fails, rc = 0x%X",
+    CHECK_FAIL("%s(): get IP4 dst fails, rc = %r",
               __FUNCTION__, rc);
 
     rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_PROTOCOL, &hdr_field);
-    CHECK_FAIL("%s(): get IP4 proto fails, rc = 0x%X", __FUNCTION__, rc);
+    CHECK_FAIL("%s(): get IP4 proto fails, rc = %r", __FUNCTION__, rc);
     plain_pkt.ip_proto = hdr_field;
 
     len = plain_pkt.pld_len = asn_get_length(pkt, "payload");
@@ -278,7 +278,7 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
     if (f == NULL)
     {
         ERROR("fopen() of %s failed(%d)", template_fname, errno);
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
     }
 
     fprintf(f, "{{ pdus { ip4:{" );
@@ -357,7 +357,7 @@ tapi_ip4_pdu(in_addr_t  src_ip4_addr, in_addr_t  dst_ip4_addr,
                                    NULL, NULL))
             != 0)
     {
-        ERROR("%s(): get ip4 pdu subvalue failed 0x%X", __FUNCTION__, rc);
+        ERROR("%s(): get ip4 pdu subvalue failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     }
 
@@ -365,7 +365,7 @@ tapi_ip4_pdu(in_addr_t  src_ip4_addr, in_addr_t  dst_ip4_addr,
         (rc = ndn_du_write_plain_oct(ip4_pdu, NDN_TAG_IP4_SRC_ADDR,
                                      (uint8_t *)&src_ip4_addr, 4)) != 0)
     {
-        ERROR("%s(): set IP4 src failed 0x%X", __FUNCTION__, rc);
+        ERROR("%s(): set IP4 src failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     }
 
@@ -373,7 +373,7 @@ tapi_ip4_pdu(in_addr_t  src_ip4_addr, in_addr_t  dst_ip4_addr,
         (rc = ndn_du_write_plain_oct(ip4_pdu, NDN_TAG_IP4_DST_ADDR,
                                      (uint8_t *)&dst_ip4_addr, 4)) != 0)
     {
-        ERROR("%s(): set IP4 dst failed 0x%X", __FUNCTION__, rc);
+        ERROR("%s(): set IP4 dst failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     }
 
@@ -381,7 +381,7 @@ tapi_ip4_pdu(in_addr_t  src_ip4_addr, in_addr_t  dst_ip4_addr,
         (rc = ndn_du_write_plain_int(ip4_pdu, NDN_TAG_IP4_TTL,
                                      ttl)) != 0)
     {
-        ERROR("%s(): set IP4 ttl failed 0x%X", __FUNCTION__, rc);
+        ERROR("%s(): set IP4 ttl failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     }
 
@@ -389,7 +389,7 @@ tapi_ip4_pdu(in_addr_t  src_ip4_addr, in_addr_t  dst_ip4_addr,
         (rc = ndn_du_write_plain_int(ip4_pdu, NDN_TAG_IP4_PROTOCOL,
                                      protocol)) != 0)
     {
-        ERROR("%s(): set IP4 protocol failed 0x%X", __FUNCTION__, rc);
+        ERROR("%s(): set IP4 protocol failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     }
 

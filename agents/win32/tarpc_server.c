@@ -803,7 +803,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
                            (void *)arg) != 0)                           \
         {                                                               \
             free(arg);                                                  \
-            out->common._errno = TE_RC(TE_TA_WIN32, errno);             \
+            out->common._errno = TE_OS_RC(TE_TA_WIN32, errno);          \
         }                                                               \
                                                                         \
         memset(in, 0, sizeof(*in));                                     \
@@ -817,12 +817,12 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     if (pthread_join((pthread_t)rcf_pch_mem_get(in->common.tid),        \
                      (void *)(&arg)) != 0)                              \
     {                                                                   \
-        out->common._errno = TE_RC(TE_TA_WIN32, errno);                 \
+        out->common._errno = TE_OS_RC(TE_TA_WIN32, errno);              \
         return TRUE;                                                    \
     }                                                                   \
     if (arg == NULL)                                                    \
     {                                                                   \
-        out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);                \
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);             \
         return TRUE;                                                    \
     }                                                                   \
     xdr_tarpc_##_func##_out((XDR *)&op, out);                           \
@@ -2587,7 +2587,7 @@ flooder(tarpc_flooder_in *in)
         {
             if ((ioctlsocket(rcvrs[i], FIONBIO, &on)) != 0)
             {
-                ERROR("%s(): ioctl(FIONBIO) failed: %X",
+                ERROR("%s(): ioctl(FIONBIO) failed: %d",
                       __FUNCTION__, errno);
                 return -1;
             }
@@ -2696,7 +2696,7 @@ flooder(tarpc_flooder_in *in)
         {
             if (gettimeofday(&timestamp, NULL))
             {
-                ERROR("%s(): gettimeofday(timestamp) failed): %X",
+                ERROR("%s(): gettimeofday(timestamp) failed): %d",
                       __FUNCTION__, errno);
                 return -1;
             }
@@ -2813,7 +2813,7 @@ echoer(tarpc_echoer_in *in)
 
     if (gettimeofday(&timeout, NULL))
     {
-        ERROR("%s(): gettimeofday(timeout) failed: %X",
+        ERROR("%s(): gettimeofday(timeout) failed: %d",
               __FUNCTION__, errno);
         return -1;
     }
@@ -2835,7 +2835,7 @@ echoer(tarpc_echoer_in *in)
 
         if (select(max_descr + 1, &rfds, NULL, NULL, &call_timeout) < 0)
         {
-            ERROR("%s(): select() failed: %X", __FUNCTION__, errno);
+            ERROR("%s(): select() failed: %d", __FUNCTION__, errno);
             return -1;
         }
 
@@ -2847,7 +2847,7 @@ echoer(tarpc_echoer_in *in)
                 received = recv(sockets[i], buf, sizeof(buf), 0);
                 if (received < 0)
                 {
-                    ERROR("%s(): read() failed: %X", __FUNCTION__, errno);
+                    ERROR("%s(): read() failed: %d", __FUNCTION__, errno);
                     return -1;
                 }
                 if (rx_stat != NULL)
@@ -2857,7 +2857,7 @@ echoer(tarpc_echoer_in *in)
                 sent = send(sockets[i], buf, received, 0);
                 if (sent < 0)
                 {
-                    ERROR("%s(): write() failed: %X",
+                    ERROR("%s(): write() failed: %d",
                           __FUNCTION__, errno);
                     return -1;
                 }
@@ -2870,7 +2870,7 @@ echoer(tarpc_echoer_in *in)
         {
             if (gettimeofday(&timestamp, NULL))
             {
-                ERROR("%s(): gettimeofday(timestamp) failed: %X",
+                ERROR("%s(): gettimeofday(timestamp) failed: %d",
                       __FUNCTION__, errno);
                 return -1;
             }
@@ -2972,7 +2972,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
 
         if ((ioctlsocket(sock, FIONBIO, &on)) != 0)
         {
-            ERROR("%s(): ioctl(FIONBIO) failed: %X", __FUNCTION__, errno);
+            ERROR("%s(): ioctl(FIONBIO) failed: %d", __FUNCTION__, errno);
             rc = -1;
             goto local_exit;
         }
@@ -2982,7 +2982,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
     if (file_d < 0)
     {
         ERROR("%s(): open(%s, O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO) "
-              "failed: %X", __FUNCTION__, path, errno);
+              "failed: %d", __FUNCTION__, path, errno);
         rc = -1;
         goto local_exit;
     }
@@ -2991,7 +2991,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
 
     if (gettimeofday(&timeout, NULL))
     {
-        ERROR("%s(): gettimeofday(timeout) failed: %X",
+        ERROR("%s(): gettimeofday(timeout) failed: %d",
               __FUNCTION__, errno);
         rc = -1;
         goto local_exit;
@@ -3012,7 +3012,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
         rc = select(sock + 1, &rfds, NULL, NULL, &call_timeout);
         if (rc < 0)
         {
-            ERROR("%s(): select() failed: %X", __FUNCTION__, errno);
+            ERROR("%s(): select() failed: %d", __FUNCTION__, errno);
             rc = -1;
             goto local_exit;
         }
@@ -3057,8 +3057,8 @@ socket_to_file(tarpc_socket_to_file_in *in)
                     {
                         ERROR("%s(): write() cannot write all received in "
                               "the buffer data to the file "
-                              "(received=%d, written=%d): %X",
-                              __FUNCTION__, errno, received, written);
+                              "(received=%d, written=%d): %d",
+                              __FUNCTION__, received, written, errno);
                         rc = -1;
                         goto local_exit;
                     }
@@ -3070,7 +3070,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
         {
             if (gettimeofday(&timestamp, NULL))
             {
-                ERROR("%s(): gettimeofday(timestamp) failed): %X",
+                ERROR("%s(): gettimeofday(timestamp) failed): %d",
                       __FUNCTION__, errno);
                 rc = -1;
                 goto local_exit;
@@ -3116,7 +3116,7 @@ local_exit:
 
         if ((ioctlsocket(sock, FIONBIO, &off)) != 0)
         {
-            ERROR("%s(): ioctl(FIONBIO, off) failed: %X",
+            ERROR("%s(): ioctl(FIONBIO, off) failed: %d",
                   __FUNCTION__, errno);
             rc = -1;
         }

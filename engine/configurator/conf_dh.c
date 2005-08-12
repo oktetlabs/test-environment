@@ -553,7 +553,7 @@ cfg_dh_create_file(char *filename)
     } while (0)    
 
     if (f == NULL)
-        return errno;
+        return TE_OS_RC(TE_CS, errno);
         
     fprintf(f, "<?xml version=\"1.0\"?>\n");
     fprintf(f, "<history>\n");

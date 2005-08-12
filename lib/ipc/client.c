@@ -458,7 +458,7 @@ read_socket(int socket, void *buffer, size_t len)
         if (r < 0)
         {
             perror("read_socket(): recv() error");
-            return errno;
+            return TE_OS_RC(TE_IPC, errno);;
         }
 
         len -= r;
@@ -496,7 +496,7 @@ write_socket(int socket, const char *buffer, size_t len)
         if (r < 0)
         {
             perror("write_socket(): send() error");
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
 
         len -= r;
@@ -550,7 +550,7 @@ ipc_init_client(const char *name, struct ipc_client **p_client)
     {
         rc = errno;
         perror("ipc_init_client(): socket() error");
-        return TE_RC(TE_IPC, rc);
+        return TE_OS_RC(TE_IPC, rc);
     }
 
 #ifdef TE_IPC_AF_UNIX
@@ -568,7 +568,7 @@ ipc_init_client(const char *name, struct ipc_client **p_client)
             fprintf(stderr, "IPC client '%s' init failed: bind(): %s",
                     name, strerror(rc));
             close(s);
-            return TE_RC(TE_IPC, rc);
+            return TE_OS_RC(TE_IPC, rc);
         }
     }
 #endif /* TE_IPC_AF_UNIX */
@@ -594,7 +594,7 @@ ipc_init_client(const char *name, struct ipc_client **p_client)
         rc = errno;
         free(ipcc);
         close(s);
-        return TE_RC(TE_IPC, rc);
+        return TE_OS_RC(TE_IPC, rc);
     }
 
     ipcc->socket = s;
@@ -608,7 +608,7 @@ ipc_init_client(const char *name, struct ipc_client **p_client)
         if (ipcc->out_buffer == NULL)
         {
             free(ipcc);
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
     }
     else
@@ -637,7 +637,7 @@ ipc_close_client(struct ipc_client *ipcc)
     {
         fprintf(stderr, "%s(): close() failed: %s",
                 __FUNCTION__, strerror(errno));
-        return TE_RC(TE_IPC, errno);
+        return TE_OS_RC(TE_IPC, errno);
     }
     free(ipcc->tmp_buffer);
 #else
@@ -721,7 +721,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
                             "of the length %u (sent %d) to '%s': %s(%d)\n",
                             ipcc->name, (unsigned)ipc_msg_size, (int)r,
                             server_name, strerror(errno), errno);
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
         if (msg_len == 0)
         {
@@ -757,7 +757,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
     server = get_pool_item_by_name(ipcc, server_name);
     if (server == NULL)
     {
-        return TE_RC(TE_IPC, errno);
+        return TE_OS_RC(TE_IPC, errno);
     }
 
     get_datagram(ipcc, server);
@@ -930,7 +930,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
 
                 if (get_datagram(ipcc, server) == NULL)
                 {
-                    return TE_RC(TE_IPC, errno);
+                    return TE_OS_RC(TE_IPC, errno);
                 }
 
                 if (server->length != l)
@@ -1011,7 +1011,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
     server = get_pool_item_by_name(ipcc, server_name);
     if (server == NULL)
     {
-        return TE_RC(TE_IPC, errno);
+        return TE_OS_RC(TE_IPC, errno);
     }
 
 #if IPC_CLIENT_DEBUG_REASSEMBLING
@@ -1085,7 +1085,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
         {
             if(get_datagram(ipcc, server) == NULL)
             {
-                return TE_RC(TE_IPC, errno);
+                return TE_OS_RC(TE_IPC, errno);
             }
 
             octets_received = server->fragment_size -
@@ -1214,7 +1214,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
     server = get_pool_item_by_name(ipcc, server_name);
     if (server == NULL)
     {
-        return TE_RC(TE_IPC, errno);
+        return TE_OS_RC(TE_IPC, errno);
     }
 
     if (server->socket == -1)
@@ -1241,7 +1241,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
         if (server->socket < 0)
         {
             perror("ipc_send_message(): socket() error");
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
 
         /* Connect */
@@ -1267,7 +1267,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
                 if (++tries == IPC_RETRY)
                 {
                     perror("ipc_send_message(): Can't connect to server");
-                    return TE_RC(TE_IPC, errno);
+                    return TE_OS_RC(TE_IPC, errno);
                 }
                 sleep(IPC_SLEEP);
             }
@@ -1284,7 +1284,7 @@ ipc_send_message(struct ipc_client *ipcc, const char *server_name,
         if (write_socket(server->socket, (char *)&len, sizeof(len)) != 0)
         {
             perror("ipc_send_message(): write_socket()");
-            return TE_RC(TE_IPC, errno);
+            return TE_OS_RC(TE_IPC, errno);
         }
 
         return write_socket(server->socket, msg, msg_len);
@@ -1365,7 +1365,7 @@ ipc_receive_answer(struct ipc_client *ipcc, const char *server_name,
     server = get_pool_item_by_name(ipcc, server_name);
     if (server == NULL)
     {
-        return TE_RC(TE_IPC, errno);
+        return TE_OS_RC(TE_IPC, errno);
     }
     if (server->socket == -1)
     {
@@ -1409,7 +1409,7 @@ ipc_receive_rest_answer(struct ipc_client *ipcc, const char *server_name,
     server = get_pool_item_by_name(ipcc, server_name);
     if (server == NULL)
     {
-        return TE_RC(TE_IPC, errno);
+        return TE_OS_RC(TE_IPC, errno);
     }
     if (server->socket == -1)
     {

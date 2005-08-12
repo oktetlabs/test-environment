@@ -147,7 +147,7 @@ main(int argc, char *argv[])
                              dst_bin_mac, src_bin_mac, 
                              &eth_type, &tx_csap)) != 0)
     {
-        TEST_FAIL("TX CSAP creation failure: %X", rc);
+        TEST_FAIL("TX CSAP creation failure: %r", rc);
     } 
     
     if ((rc = tapi_eth_csap_create_with_mode(agent_b, sid_b, agent_b_if,

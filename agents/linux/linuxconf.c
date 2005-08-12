@@ -331,7 +331,7 @@ rcf_ch_conf_root(void)
         if (fcntl(cfg_socket, F_SETFD, FD_CLOEXEC) != 0)
         {
             ERROR("Failed to set close-on-exec flag on configuration "
-                  "socket: 0x%X", errno);
+                  "socket: %r", errno);
         }
 
 #ifdef CFG_LINUX_DAEMONS

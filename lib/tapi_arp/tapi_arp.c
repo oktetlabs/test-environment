@@ -285,7 +285,7 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
     
     if (rc != 0)
     {
-        ERROR("tapi_arp_recv_start() returns %X", rc);
+        ERROR("tapi_arp_recv_start() returns %r", rc);
         return rc;
     }
     /* Wait until all the packets received or timeout */
@@ -295,7 +295,7 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
     {
         int i;
         
-        ERROR("rcf_ta_trrecv_wait() returns %X, info.rc %X", rc, info.rc);
+        ERROR("rcf_ta_trrecv_wait() returns %X, info.rc %r", rc, info.rc);
         for (i = 0; i < info.num; i++)
         {
             free(info.frames[i].data);
@@ -506,7 +506,7 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
 
     if (rc != 0)
     {
-        ERROR("Cannot create ARP header pattern: %X", rc);
+        ERROR("Cannot create ARP header pattern: %r", rc);
         return rc;
     }
 

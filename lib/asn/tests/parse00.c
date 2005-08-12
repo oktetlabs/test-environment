@@ -31,7 +31,7 @@ main (int argc, char *argv[])
     rc = asn_read_value_field(new_val, oid_vals, &oid_len,
                               "pdus.0.#snmp.variable-bindings.0.name.#plain");
 
-    printf("read name rc %X, oid_len %d\n", rc, oid_len);
+    printf("read name rc 0x%X, oid_len %d\n", rc, oid_len);
 
     if (rc == 0)
     {

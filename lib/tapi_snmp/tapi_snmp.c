@@ -107,7 +107,7 @@ tapi_snmp_log_op_end(tapi_log_buf *log_buf, int rc,
                      int err_status, int err_index)
 {
     tapi_log_buf_append(log_buf,
-            "} TAPI RESULT: %X, SNMP RESULT: %s, ERR INDEX: %d",
+            "} TAPI RESULT: %r, SNMP RESULT: %s, ERR INDEX: %d",
             rc, snmp_error_h2str(err_status), err_index);
 }
 
@@ -522,7 +522,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
                 snmp_message->vars[i].type = TAPI_SNMP_NOSUCHINS;
             }
 
-            VERB("read SNMP error fields return 0x%x\n", rc);
+            VERB("read SNMP error fields return %r\n", rc);
 
             if (rc == 0)
             {
@@ -716,7 +716,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
 #endif
     f = fopen(tmp_name, "w+");
     if (f == NULL)
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
 
     fprintf(f, "{ snmp:{ version plain:%d ",
              tapi_snmp_version_to_netsnmp_version(snmp_version)
@@ -809,7 +809,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     
     rc = rcf_ta_csap_create(ta, sid, "snmp", tmp_name, csap_id);
 
-    INFO("Create SNMP CSAP %tf with status %X", tmp_name, rc);
+    INFO("Create SNMP CSAP %tf with status %r", tmp_name, rc);
 
 #if !(DEBUG)
     unlink(tmp_name);
@@ -1018,7 +1018,7 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
 #endif
     f = fopen(tmp_name, "w+");
     if (f == NULL)
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
 
     var_bind.name = *val_oid;
 
@@ -1052,7 +1052,7 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
         rc = tapi_snmp_msg_tail(f);
 
     if (rc)
-        WARN("%s: prepare NDS file error, rc %X", __FUNCTION__, rc);
+        WARN("%s: prepare NDS file error, rc %r", __FUNCTION__, rc);
 
     fclose(f);
 
@@ -1066,7 +1066,7 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
                                 tapi_snmp_pkt_handler, msg, timeout, &num);
 
         if (rc != 0)
-            ERROR("rcf_ta_trsend_recv rc %X", rc);
+            ERROR("rcf_ta_trsend_recv rc %r", rc);
     }
 #if !(DEBUG)
     unlink(tmp_name);
@@ -1116,7 +1116,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
 #endif
     f = fopen(tmp_name, "w+");
     if (f == NULL)
-        return TE_RC(TE_TAPI, errno); /* return system errno */
+        return TE_OS_RC(TE_TAPI, errno); /* return system errno */
 
 
     rc = tapi_snmp_msg_head(f, NDN_SNMP_MSG_GET, 0);
@@ -1190,7 +1190,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
 
     if (rc)
     {
-        ERROR("%s : prepare in failed, rc %X", __FUNCTION__, rc);
+        ERROR("%s : prepare in failed, rc %r", __FUNCTION__, rc);
         goto clean_up;
     }
 
@@ -1206,7 +1206,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
 
     if (rc)
     {
-        WARN("rcf_ta_trsend_recv rc %X", rc);
+        WARN("rcf_ta_trsend_recv rc %r", rc);
         goto clean_up;
     }
 
@@ -1291,7 +1291,7 @@ tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
     if ((f = fopen(tmp_name, "w+")) == NULL)
     {
         unlink(tmp_name);
-        return TE_RC(TE_TAPI, errno);
+        return TE_OS_RC(TE_TAPI, errno);
     }
 
     rc = tapi_snmp_msg_head(f, NDN_SNMP_MSG_SET, 0);
@@ -2100,7 +2100,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                                &vb, NULL);
             if (rc != 0)
             {
-                ERROR("%s: get next to find first column fails %X", 
+                ERROR("%s: get next to find first column fails %r", 
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAPI, rc);
             } 
@@ -2246,7 +2246,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
             rc = tapi_snmp_getbulk(ta, sid, csap_id, &begin_of_portion,
                                     &vb_num, vb + got_varbinds, NULL);
 
-            VERB("Table getbulk return %X, asked for %d, got %d vbs "
+            VERB("Table getbulk return %r, asked for %d, got %d vbs "
                  "for oid %s", rc, rest_varbinds, vb_num,
                  print_oid(&(begin_of_portion)));
 
@@ -2976,7 +2976,7 @@ tapi_snmp_load_cfg_mibs(const char *dir_path)
         }
         else
         {
-            ERROR("Failed to find by pattern '%s' in Configurator, %X",
+            ERROR("Failed to find by pattern '%s' in Configurator, %r",
                   mibs_ptrn, rc);
             return rc;
         }
@@ -2992,7 +2992,7 @@ tapi_snmp_load_cfg_mibs(const char *dir_path)
     {
         if ((rc = cfg_get_inst_name(set[i], &mib_name)) != 0)
         {
-            ERROR("Failed to get instance name by handle 0x%x, %X",
+            ERROR("Failed to get instance name by handle 0x%x, %r",
                   set[i], rc);
             goto cleanup;
         }
@@ -3114,15 +3114,15 @@ tapi_snmp_trap_handler(char *fn, void *user_param)
 
     if (rc)
     {
-        WARN("error in %s: %X\n", __FUNCTION__, rc);
+        WARN("error in %s: %r", __FUNCTION__, rc);
         return;
     }
 
-    VERB("parse SNMP file OK!\n");
+    VERB("parse SNMP file OK!");
 
     snmp_message = asn_read_indexed(packet, 0, "pdus");
     rc = tapi_snmp_packet_to_plain(snmp_message, &plain_msg);
-    VERB("packet to plain rc %x\n", rc);
+    VERB("packet to plain rc %r", rc);
     asn_free_value(packet);
     asn_free_value(snmp_message);
 
@@ -3174,7 +3174,7 @@ tapi_snmp_trap_recv_start(const char *ta_name, int sid,
                              timeout, num);
     if (rc != 0)
     {
-        ERROR("%s() failed(0x%x) on TA %s:%d CSAP %d file %s",
+        ERROR("%s() failed(%r) on TA %s:%d CSAP %d file %s",
               __FUNCTION__, rc, ta_name, sid, snmp_csap, tmp_name);
     }
 

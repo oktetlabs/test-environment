@@ -139,7 +139,7 @@ system_with_timeout(char *cmd, int timeout)
     {
         rc = errno;
         ERROR("popen() for the command <%s> failed", cmd);
-        return TE_RC(TE_RCF_UNIX, rc);
+        return TE_OS_RC(TE_RCF_UNIX, rc);
     }
     fd = fileno(f);
     
@@ -169,9 +169,9 @@ system_with_timeout(char *cmd, int timeout)
             rc = pclose(f);
             if (rc != 0)
             {
-                rc = errno;
-                INFO("Command <%s> failed with errno %d", cmd, rc);
-                return TE_RC(TE_RCF_UNIX, rc);
+                rc = TE_OS_RC(TE_RCF_UNIX, errno);
+                INFO("Command <%s> failed with errno %r", cmd, rc);
+                return rc;
             }
             return 0;
         }

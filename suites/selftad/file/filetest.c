@@ -121,27 +121,27 @@ main()
 
         rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0, 
                                  trap_handler, NULL, 0);
-        printf("trrecv_start: 0x%x \n", rc);
+        printf("trrecv_start: %r \n", rc);
         if (rc) break;
 
 #if 1
         sleep(5);
         printf ("try to get\n");
         rc = rcf_ta_trrecv_get(ta, sid, handle, &num);
-        printf("trrecv_get: 0x%x num: %d\n", rc, num);
+        printf("trrecv_get: %r num: %d\n", rc, num);
 
 #endif
         sleep(5);
         printf ("try to stop\n");
         rc = rcf_ta_trrecv_stop(ta, sid, handle, &num);
-        printf("trrecv_stop: 0x%x num: %d\n", rc, num);
+        printf("trrecv_stop: %r num: %d\n", rc, num);
 
 #endif
 
         printf ("wait for exactly 2 traps more:\n");
         rc = rcf_ta_trrecv_start(ta, sid, handle, path, 2,
                                  trap_handler, NULL, 1);
-        printf("trrecv_start: 0x%x \n", rc);
+        printf("trrecv_start: %r \n", rc);
 
 #if 0
         printf ("sleep 10 secs before destroy\n");

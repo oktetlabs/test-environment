@@ -376,7 +376,7 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
 
-    VERB("%s callback, got choice rc %X", __FUNCTION__, rc); 
+    VERB("%s callback, got choice rc %r", __FUNCTION__, rc); 
 
     if (rc && TE_RC_GET_ERROR(rc) != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
@@ -451,7 +451,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     rc = asn_get_indexed(csap_nds, &snmp_csap_spec, layer);
     if (rc != 0)
     {
-        ERROR("%s(): get csap spec layer failed %X", __FUNCTION__, rc);
+        ERROR("%s(): get csap spec layer failed %r", __FUNCTION__, rc);
         return rc;
     }
     
@@ -469,7 +469,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         timeout = SNMP_CSAP_DEF_TIMEOUT;
     else if (rc != 0)
     {
-        ERROR("%s: error reading 'timeout': %X", __FUNCTION__, rc);
+        ERROR("%s: error reading 'timeout': %r", __FUNCTION__, rc);
         return rc;
     }
     csap_session.timeout = timeout * 1000000L;
@@ -482,7 +482,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         version = SNMP_CSAP_DEF_VERSION;
     else if (rc != 0)
     {
-        ERROR("%s: error reading 'version': %X", __FUNCTION__, rc);
+        ERROR("%s: error reading 'version': %r", __FUNCTION__, rc);
         return rc;
     }
     csap_session.version = version;
@@ -495,7 +495,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         csap_session.local_port = SNMP_CSAP_DEF_LOCPORT;
     else if (rc != 0)
     {
-        ERROR("%s: error reading 'local-port': %X", __FUNCTION__, rc);
+        ERROR("%s: error reading 'local-port': %r", __FUNCTION__, rc);
         return rc;
     }
 
@@ -509,7 +509,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             csap_session.remote_port = SNMP_CSAP_DEF_REMPORT;
         else if (rc != 0)
         {
-            ERROR("%s: error reading 'remote-port': %X", __FUNCTION__, rc);
+            ERROR("%s: error reading 'remote-port': %r", __FUNCTION__, rc);
             return rc;
         }
     } 
@@ -536,7 +536,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     }
     else if (rc != 0)
     {
-        ERROR("%s: error reading 'snmp-agent': %X", __FUNCTION__, rc);
+        ERROR("%s: error reading 'snmp-agent': %r", __FUNCTION__, rc);
         return rc;
     }
     csap_session.peername = snmp_agent;
@@ -549,7 +549,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         security_model = NDN_SNMP_SEC_MODEL_DEFAULT;
     else if (rc != 0)
     {
-        ERROR("%s: error reading 'security': %X", __FUNCTION__, rc);
+        ERROR("%s: error reading 'security': %r", __FUNCTION__, rc);
         return rc;
     }
     else if (strcmp(security_model_name, "usm") == 0)
@@ -573,7 +573,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             strcpy(community, SNMP_CSAP_DEF_COMMUNITY);
         else if (rc != 0)
         {
-            ERROR("%s: error reading community: %X", __FUNCTION__, rc);
+            ERROR("%s: error reading community: %r", __FUNCTION__, rc);
             return rc;
         }
 
@@ -602,7 +602,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         }
         if (rc != 0)
         {
-            ERROR("%s: error reading securityName, rc=%X",
+            ERROR("%s: error reading securityName, rc=%r",
                   __FUNCTION__, rc);
             return rc;
         }
@@ -619,7 +619,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             security_level = NDN_SNMP_SEC_LEVEL_NOAUTH;
         else if (rc != 0)
         {
-            ERROR("%s: error reading securityLevel: %X", __FUNCTION__, rc);
+            ERROR("%s: error reading securityLevel: %r", __FUNCTION__, rc);
             return rc;
         }
 
@@ -641,7 +641,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                 auth_proto = NDN_SNMP_AUTH_PROTO_DEFAULT;
             else if (rc != 0)
             {
-                ERROR("%s: error reading 'auth-protocol': %X",
+                ERROR("%s: error reading 'auth-protocol': %r",
                       __FUNCTION__, rc);
                 return rc;
             }
@@ -672,7 +672,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                                     "security.#usm.auth-pass");
             if (rc != 0)
             {
-                ERROR("%s: error reading 'auth-pass': %X",
+                ERROR("%s: error reading 'auth-pass': %r",
                       __FUNCTION__, rc);
                 return rc;
             }
@@ -707,7 +707,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                 priv_proto = NDN_SNMP_PRIV_PROTO_DEFAULT;
             else if (rc != 0)
             {
-                ERROR("%s: error reading 'priv-protocol': %X",
+                ERROR("%s: error reading 'priv-protocol': %r",
                       __FUNCTION__, rc);
                 return rc;
             }
@@ -744,7 +744,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                                     "security.#usm.priv-pass");
             if (rc != 0)
             {
-                ERROR("%s: error reading 'priv-pass': %X",
+                ERROR("%s: error reading 'priv-pass': %r",
                       __FUNCTION__, rc);
                 return rc;
             }
