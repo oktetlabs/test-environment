@@ -205,7 +205,7 @@ cfg_dh_process_add(xmlNodePtr node)
         strcpy((char *)msg + msg->oid_offset, oid);
         cfg_process_msg((cfg_msg **)&msg, TRUE);
         if (msg->rc != 0)
-            RETERR(msg->rc, "Failed(%d) to execute the add command "
+            RETERR(msg->rc, "Failed(%r) to execute the add command "
                             "for instance %s", msg->rc, oid);
 
         free(msg);
@@ -256,7 +256,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             rc = cfg_dh_process_file(cmd, postsync);
             if (rc != 0)
             {
-                ERROR("Processing of embedded history failed 0x%X", rc);
+                ERROR("Processing of embedded history failed %r", rc);
                 return rc;
             }
             continue;
@@ -754,7 +754,7 @@ cfg_dh_restore_backup(char *filename)
                 {
                     if (rc != TE_ENOENT)
                     {
-                        ERROR("%s(): cfg_db_find() failed: 0x%X", 
+                        ERROR("%s(): cfg_db_find() failed: %r", 
                               __FUNCTION__, rc);
                         TE_RC_UPDATE(result, msg.rc);
                     }
@@ -765,7 +765,7 @@ cfg_dh_restore_backup(char *filename)
                
                 if (msg.rc != 0)
                 {
-                    ERROR("%s(): add failed: 0x%X", __FUNCTION__, msg.rc);
+                    ERROR("%s(): add failed: %r", __FUNCTION__, msg.rc);
                     TE_RC_UPDATE(result, msg.rc);
                 }
                 break;
@@ -785,7 +785,7 @@ cfg_dh_restore_backup(char *filename)
                     
                 if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0) 
                 {
-                    ERROR("cfg_db_find(%s) failed: 0x%X", tmp->old_oid, rc);
+                    ERROR("cfg_db_find(%s) failed: %r", tmp->old_oid, rc);
                     free(msg);
                     return rc;
                 }
@@ -802,7 +802,7 @@ cfg_dh_restore_backup(char *filename)
                 free(msg);
                 if (rc != 0)
                 {
-                    ERROR("%s(): set failed: 0x%X", __FUNCTION__, rc);
+                    ERROR("%s(): set failed: %r", __FUNCTION__, rc);
                     TE_RC_UPDATE(result, rc);
                 }
                 break;
@@ -836,7 +836,7 @@ cfg_dh_restore_backup(char *filename)
                 free(msg);
                 if (rc != 0)
                 {
-                    ERROR("%s(): delete failed: 0x%X", __FUNCTION__, rc);
+                    ERROR("%s(): delete failed: %r", __FUNCTION__, rc);
                     TE_RC_UPDATE(result, rc);
                 }
                 break;

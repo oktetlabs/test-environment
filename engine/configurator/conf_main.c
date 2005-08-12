@@ -149,10 +149,10 @@ parse_config(const char *file, te_bool restore)
         xmlError *err = xmlGetLastError();
 
         ERROR("Error occured during parsing configuration file:\n"
-                "    %s:%d\n    %s", file, err->line, err->message);
+              "    %s:%d\n    %s", file, err->line, err->message);
 #else
         ERROR("Error occured during parsing configuration file:\n"
-                "    %s", file);
+              "    %s", file);
 #endif
         xmlCleanupParser();
         return TE_EINVAL;
@@ -190,7 +190,7 @@ parse_config(const char *file, te_bool restore)
         if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
             ERROR("Cannot synchronize database with Test Agents");
         if ((rc = cfg_dh_process_file(root, TRUE)) != 0)
-            ERROR("Failed to modify database after synchronization: %x",
+            ERROR("Failed to modify database after synchronization: %r",
                   rc);
     }
     else
@@ -260,7 +260,7 @@ cfg_sync_agt_volatile(const char *inst_name)
             if ((rc = cfg_ta_sync("/agent:*/"CFG_VOLATILE":", FALSE)) != 0)
             {
                 ERROR("Cannot synchronize /agent/"CFG_VOLATILE
-                      " subtree, errno 0x%X", rc);
+                      " subtree, errno %r", rc);
                 cfg_free_oid(oid);
                 return rc;
             }
@@ -292,7 +292,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if ((msg->rc = cfg_sync_agt_volatile(oid)) != 0)
     {
         ERROR("Cannot synchronize /agent/volatile subtree, "
-              "errno 0x%X", msg->rc);
+              "errno %r", msg->rc);
         return;
     }
 
@@ -303,7 +303,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if ((msg->rc = cfg_db_add(oid, &handle, msg->val_type, val)) != 0)
     {
         ERROR("Failed to add a new instance %s into configuration "
-              "database; errno 0x%X", oid, msg->rc);
+              "database; errno %r", oid, msg->rc);
         cfg_types[msg->val_type].free(val); 
         return;
     }
@@ -326,7 +326,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
     {
         cfg_db_del(handle);
-        ERROR("Failed to add a new instance %s in DH: error=0x%X", 
+        ERROR("Failed to add a new instance %s in DH: error=%r", 
               oid, msg->rc);
         return;
     }
@@ -373,7 +373,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
             cfg_dh_delete_last_command();
             
         ERROR("Failed to add a new instance %s with value '%s' into TA "
-              "error=0x%X", oid, val_str, msg->rc);
+              "error=%r", oid, val_str, msg->rc);
         if (obj->type != CVT_NONE)
             free(val_str);
         return;              
@@ -385,7 +385,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if ((msg->rc = cfg_ta_sync(oid, TRUE)) != 0)
     {
         ERROR("Failed to synchronize subtree of a new instance %s "
-              "error=0x%X", oid, msg->rc);
+              "error=%r", oid, msg->rc);
         if ((inst = CFG_GET_INST(handle)) != NULL)
         {
             rcf_ta_cfg_del(ta, 0, inst->oid); 
@@ -439,14 +439,14 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
     if ((msg->rc = cfg_db_get(handle, &old_val)) != 0)
     {
-        ERROR("Failed to get old value from DB: error=%d", msg->rc);
+        ERROR("Failed to get old value from DB: error=%r", msg->rc);
         cfg_types[obj->type].free(val);
         return;
     }
 
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
     {
-        ERROR("Failed to add command in DH: error=%d", msg->rc);
+        ERROR("Failed to add command in DH: error=%r", msg->rc);
         cfg_types[obj->type].free(val);
         cfg_types[obj->type].free(old_val);
         return;
@@ -454,7 +454,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
     if ((msg->rc = cfg_db_set(handle, val)) != 0)
     {
-        ERROR("Failed to set new value in DB: error=%d", msg->rc);
+        ERROR("Failed to set new value in DB: error=%r", msg->rc);
         cfg_types[obj->type].free(val);
         cfg_types[obj->type].free(old_val);
         if (update_dh)
@@ -542,13 +542,13 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
 
     if ((msg->rc = cfg_db_del_check(handle)) != 0)
     {
-        ERROR("%s: cfg_db_del_check fails 0x%X", __FUNCTION__, msg->rc);
+        ERROR("%s: cfg_db_del_check fails %r", __FUNCTION__, msg->rc);
         return;
     }
 
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
     {
-        ERROR("%s: Failed to add into DH errno 0x%X", 
+        ERROR("%s: Failed to add into DH errno %r", 
               __FUNCTION__, msg->rc);
         return;
     }
@@ -566,7 +566,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
 
     if (msg->rc != 0)
     {
-        ERROR("%s: rcf_ta_cfg_del returns 0x%X", __FUNCTION__, msg->rc);
+        ERROR("%s: rcf_ta_cfg_del returns %r", __FUNCTION__, msg->rc);
         if (update_dh)
             cfg_dh_delete_last_command();
         return;
@@ -1023,7 +1023,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
                                   ((cfg_find_msg *)*msg)->oid)) != 0)
             {
                 ERROR("Cannot synchronize /agent/volatile subtree, "
-                      "errno 0x%X", (*msg)->rc);
+                      "errno %r", (*msg)->rc);
                 break;
             }
             cfg_process_msg_find((cfg_find_msg *)*msg);
@@ -1047,7 +1047,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
                                   ((cfg_pattern_msg *)*msg)->pattern)) != 0)
             {
                 ERROR("Cannot synchronize /agent/volatile subtree, "
-                      "errno 0x%X", (*msg)->rc);
+                      "errno %r", (*msg)->rc);
                 break;
             }
 

@@ -175,8 +175,8 @@ tcp_nodelay_enable(int sock)
     {
         int err = TE_OS_RC(TE_RCF_PCH, errno);
 
-        ERROR("Failed to enable TCP_NODELAY on RPC server socket; "
-              "errno = %r", err);
+        ERROR("Failed to enable TCP_NODELAY on RPC server socket: "
+              "error=%r", err);
         return err;
     }
     return 0;
@@ -483,7 +483,7 @@ connect_getpid(rpcserver *rpcs)
         {
             int err = TE_OS_RC(TE_RCF_PCH, errno);
         
-            ERROR("select() failed with unexpected errno=%r", err);
+            ERROR("select() failed with unexpected error=%r", err);
             return err;
         }
     }
@@ -508,7 +508,7 @@ connect_getpid(rpcserver *rpcs)
     {
         int err = TE_OS_RC(TE_RCF_PCH, errno);
         
-        ERROR("Failed to accept connection from RPC server %s; errno %r",
+        ERROR("Failed to accept connection from RPC server %s: error=%r",
               rpcs->name, err);
         return err;
     }
@@ -586,7 +586,7 @@ dispatch(void *arg)
         {
             int err = TE_OS_RC(TE_RCF_PCH, errno);
             
-            WARN("select() failed; errno %r", err);
+            WARN("select() failed: error=%r", err);
         }
         
         FD_ZERO(&set1);
@@ -729,8 +729,8 @@ rcf_pch_rpc_init()
     {
         int err = TE_OS_RC(TE_RCF_PCH, errno);
         
-        RETERR("Failed to bind listening socket for RPC servers; "
-               "errno %r", err);
+        RETERR("Failed to bind listening socket for RPC servers: "
+               "error=%r", err);
     }
         
     if (listen(lsock, 1) < 0)
@@ -752,8 +752,8 @@ rcf_pch_rpc_init()
     {
         int err = TE_OS_RC(TE_RCF_PCH, errno);
         
-        RETERR("Failed to set TE_RPC_PORT environment variable;"
-               " errno %r", err);
+        RETERR("Failed to set TE_RPC_PORT environment variable: "
+               "error=%r", err);
     }
 
     if (pthread_create(&tid, NULL, dispatch, NULL) != 0)
@@ -983,7 +983,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             
             rcf_ch_unlock();
             free(rpcs);
-            ERROR("Failed to spawn RPC server process; errno %r", err);
+            ERROR("Failed to spawn RPC server process: error=%r", err);
             fprintf(stderr, "Failed to spawn RPC server process\n");
             return err;
         }
@@ -1287,7 +1287,7 @@ rcf_pch_rpc_server(const char *name)
     if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
     {
         err = TE_OS_RC(TE_RCF_PCH, errno);
-        STOP("Failed to connect to TA; errno = %r", err);
+        STOP("Failed to connect to TA; errno = 0x%X", err);
     }
 
     /* Enable linger with positive timeout on the socket  */
@@ -1298,7 +1298,7 @@ rcf_pch_rpc_server(const char *name)
         {
             err = TE_OS_RC(TE_RCF_PCH, errno);
             STOP("Failed to enable linger on RPC server socket; "
-                 "errno = %r", err);
+                 "errno = 0x%X", err);
         }
     }
 

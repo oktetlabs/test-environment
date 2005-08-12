@@ -856,8 +856,7 @@ rcf_pch_run(const char *confstr, const char *info)
                                         answer_plen, ba, len, handle,
                                         num, results, timeout) < 0)
                 {
-                    ERROR("rcf_ch_trrecv_start() returns - "
-                                      "no support");
+                    ERROR("rcf_ch_trrecv_start() returns - no support");
                     SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
 
@@ -968,8 +967,7 @@ rcf_pch_run(const char *confstr, const char *info)
                              priority, rtn, is_argv,
                              argc, param) < 0)
                         {
-                            ERROR("%s() returns - no support "
-                                  "for %s(%d)", 
+                            ERROR("%s() returns - no support for %s(%d)", 
                                   (mode == RCF_START_FORK ? 
                                    "rcf_ch_start_task" : 
                                    "rcf_ch_start_task_thr"),

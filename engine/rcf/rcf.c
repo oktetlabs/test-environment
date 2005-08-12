@@ -1037,7 +1037,7 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
         int rc;
 
         rc = (agent->receive)(agent->handle, cmd, &maxlen, NULL);
-        if (rc != 0 && rc != TE_EPENDING)
+        if (rc != 0 && rc != TE_RC(TE_COMM, TE_EPENDING))
         {
             ERROR("Failed receive rest of binary attachment TA %s - "
                   "cutting\n", agent->name);
@@ -1218,7 +1218,7 @@ process_reply(ta *agent)
 
     rc = (agent->receive)(agent->handle, cmd, &len, &ba);
 
-    if (rc == TE_ESMALLBUF)
+    if (rc == TE_RC(TE_COMM, TE_ESMALLBUF))
     {
         ERROR("Too big answer from TA '%s' - increase memory constants", 
               agent->name);
@@ -1226,7 +1226,7 @@ process_reply(ta *agent)
         return;
     }
 
-    if (rc != 0 && rc != TE_EPENDING)
+    if (rc != 0 && rc != TE_RC(TE_COMM, TE_EPENDING))
     {
         ERROR("Receiving answer from TA '%s' failed error=%r",
               agent->name, rc);

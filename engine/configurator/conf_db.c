@@ -721,7 +721,7 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
          prev = inst, inst = inst->brother);
 
     if (inst != NULL && strcmp(inst->oid, oid_s) == 0)
-        RET(EEXIST);
+        RET(TE_EEXIST);
 
     /* Now look for empty slot in the object instances array */
     for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++);
