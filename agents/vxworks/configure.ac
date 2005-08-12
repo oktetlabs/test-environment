@@ -42,13 +42,13 @@ fi
 AC_SUBST([TAD], [$with_tad])
 
 AC_SUBST([TAD_LIBS])
+AC_CONFIG_HEADERS([config.h])
 
 case $host in
 
 #powerpc-wrs-vxworks | i686-pc-linux-gnu)
 arm-wrs-vxworks )
 
-AC_CONFIG_HEADERS([config.h])
 AC_C_INLINE
 just_dist=no ;;
 
