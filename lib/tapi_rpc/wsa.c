@@ -633,6 +633,89 @@ rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
     RETVAL_INT(has_overlapped_io_completed, out.retval);
 }
 
+rpc_handle
+rpc_create_io_completion_port(rcf_rpc_server *rpcs,
+                              rpc_handle file_handle,
+                              rpc_handle existing_completion_port,
+                              int completion_key,
+                              unsigned int number_of_concurrent_threads)
+{
+    rcf_rpc_op                          op;
+    tarpc_create_io_completion_port_in  in;
+    tarpc_create_io_completion_port_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(create_io_completion_port, 0);
+    }
+
+    op = rpcs->op;
+
+    in.file_handle = (tarpc_handle)file_handle;
+    in.existing_completion_port = (tarpc_handle)existing_completion_port;
+    in.completion_key = completion_key;
+    in.number_of_concurrent_threads = number_of_concurrent_threads;
+
+    rcf_rpc_call(rpcs, "create_io_completion_port", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: create_io_completion_port(%x, %x, %d, %u)"
+                 " -> %x (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 file_handle, existing_completion_port,
+                 completion_key, number_of_concurrent_threads,
+                 out.retval, win_error_rpc2str(out.common.win_error));
+
+    RETVAL_RPC_PTR(create_io_completion_port, out.retval);
+}
+
+te_bool
+rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
+                                 rpc_handle completion_port,
+                                 unsigned int *number_of_bytes,
+                                 int *completion_key,
+                                 rpc_overlapped *overlapped,
+                                 unsigned int milliseconds)
+{
+    rcf_rpc_op                             op;
+    tarpc_get_queued_completion_status_in  in;
+    tarpc_get_queued_completion_status_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(get_queued_completion_status, FALSE);
+    }
+
+    op = rpcs->op;
+
+    in.completion_port = (tarpc_handle)completion_port;
+    in.milliseconds = milliseconds;
+
+    rcf_rpc_call(rpcs, "get_queued_completion_status", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: get_queued_completion_status(%x, %u)"
+                 " -> %u, %d, %x, %s (%s)", rpcs->ta, rpcs->name,
+                 rpcop2str(op), completion_port, milliseconds,
+                 out.number_of_bytes, out.completion_key, out.overlapped, 
+                 out.retval ? "true" : "false",
+                 win_error_rpc2str(out.common.win_error));
+
+    if (number_of_bytes != NULL)
+        *number_of_bytes = out.number_of_bytes;
+    if (completion_key != NULL)
+        *completion_key = out.completion_key;
+    if (overlapped != NULL)
+        *overlapped = out.overlapped;
+
+    RETVAL_INT(get_queued_completion_status, out.retval);
+}
+
 int
 rpc_get_current_process_id(rcf_rpc_server *rpcs)
 {
@@ -661,11 +744,11 @@ rpc_get_current_process_id(rcf_rpc_server *rpcs)
 }
 
 void
-rpc_get_ram_size(rcf_rpc_server *rpcs, uint64_t *ram_size)
+rpc_get_sys_info(rcf_rpc_server *rpcs, rpc_sys_info *sys_info)
 {
     rcf_rpc_op             op;
-    tarpc_get_ram_size_in  in;
-    tarpc_get_ram_size_out out;
+    tarpc_get_sys_info_in  in;
+    tarpc_get_sys_info_out out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -673,21 +756,26 @@ rpc_get_ram_size(rcf_rpc_server *rpcs, uint64_t *ram_size)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_VOID(get_ram_size);
+        RETVAL_VOID(get_sys_info);
     }
 
     op = rpcs->op;
 
-    rcf_rpc_call(rpcs, "get_ram_size", &in, &out);
+    rcf_rpc_call(rpcs, "get_sys_info", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: get_ram_size -> %llu (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: get_sys_info -> %llu, %u, %u (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 out.ram_size, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 out.ram_size, out.page_size, out.number_of_processors,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    if (ram_size != NULL)
-        *ram_size = out.ram_size;
+    if (sys_info != NULL)
+    {
+        sys_info->ram_size = out.ram_size;
+        sys_info->page_size = out.page_size;
+        sys_info->number_of_processors = out.number_of_processors;
+    }
 
-    RETVAL_VOID(get_ram_size);
+    RETVAL_VOID(get_sys_info);
 }
 
 ssize_t

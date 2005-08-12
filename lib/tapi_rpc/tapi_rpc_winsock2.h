@@ -83,6 +83,11 @@ typedef struct _rpc_guid {
                             12 hexadecimal digits */
 } rpc_guid;
 
+typedef struct _rpc_sys_info {
+    uint64_t      ram_size;              /** Physical RAM size */
+    unsigned int  page_size;             /** Physycal memory page size */
+    unsigned int  number_of_processors;  /** CPUs number on the host */
+} rpc_sys_info;
 
 /** 
  * See @b WSASocket() 
@@ -333,7 +338,7 @@ extern rpc_handle rpc_create_file(rcf_rpc_server *rpcs, char *name,
 extern int rpc_close_handle(rcf_rpc_server *rpcs, rpc_handle handle);
 
 /**
- * Windows HasOverlappedIoCompleted()
+ * Windows HasOverlappedIoCompleted().
  *
  * @param rpcs        RPC server handle
  * @param overlapped  overlapped structure
@@ -342,6 +347,48 @@ extern int rpc_close_handle(rcf_rpc_server *rpcs, rpc_handle handle);
  */
 extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
                                            rpc_overlapped overlapped);
+
+/**
+ * Windows CreateIoCompletionPort().
+ *
+ * @param rpcs                          RPC server handle
+ * @param file_handle                   Handle of a file/socket
+ *                                      opened for overlapped I/O.
+ * @param existing_completion_port      Handle of the existing
+ *                                      completion port.
+ * @param completion_key                Per-file completion key.
+ * @param number_of_concurrent_threads  Maximum number of thread that the OS
+ *                                      can allow to concurrently process
+ *                                      completion packets for the I/O
+ *                                      completion port.
+ *
+ * @return   Completion port handle on success, @c 0 otherwise.
+ */
+extern rpc_handle rpc_create_io_completion_port(rcf_rpc_server *rpcs,
+                              rpc_handle file_handle,
+                              rpc_handle existing_completion_port,
+                              int completion_key,
+                              unsigned int number_of_concurrent_threads);
+
+/**
+ * Windows GetQueuedCompletionStatus().
+ *
+ * @param rpcs                 RPC server handle.
+ * @param completion_port      Handle of the existing completion port.
+ * @param number_of_bytes      Number of bytes transferred during the
+ *                             I/O operation.
+ * @param completion_key       Completion key value associated with the
+ *                             file handle whose I/O has completed.
+ * @param milliseconds         Timeout to wait for the I/O completion.
+ *
+ * @return   Non-zero on success, zero otherwise.
+ */
+extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
+                                 rpc_handle completion_port,
+                                 unsigned int *number_of_bytes,
+                                 int *completion_key,
+                                 rpc_overlapped *overlapped,
+                                 unsigned int milliseconds);
 
 /**
  * Windows GetCurrentProcessId()
@@ -353,13 +400,13 @@ extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
 extern int rpc_get_current_process_id(rcf_rpc_server *rpcs);
 
 /**
- * Get the total amount of physical memory (RAM size)
- * on the host where the specified RPC server runs.
+ * Get various system information of the host
+ * where the specified RPC server runs.
  *
  * @param rpcs       RPC server handle
- * @param ram_size   where to store the RAM size value
+ * @param sys_info   where to store the obtained system information.
  */
-extern void rpc_get_ram_size(rcf_rpc_server *rpcs, uint64_t *ram_size);
+extern void rpc_get_sys_info(rcf_rpc_server *rpcs, rpc_sys_info *sys_info);
 
 /** 
  * See @b WSARecvEx() 

@@ -754,6 +754,8 @@ _func##_proc(void *arg)                                                 \
                                                                         \
     { _actions }                                                        \
                                                                         \
+    ((_func##_arg *)arg)->done = TRUE;                                  \
+                                                                        \
     pthread_exit(arg);                                                  \
                                                                         \
     return NULL;                                                        \
@@ -1386,10 +1388,11 @@ TARPC_FUNC(get_current_process_id, {},
 }
 )
 
-/* Get the amount of physical memory (RAM) */
-TARPC_FUNC(get_ram_size, {},
+/* Get various system information */
+TARPC_FUNC(get_sys_info, {},
 {
     MEMORYSTATUS ms;
+    SYSTEM_INFO si;
 
     UNUSED(in);
     UNUSED(list);
@@ -1397,6 +1400,11 @@ TARPC_FUNC(get_ram_size, {},
     memset(&ms, 0, sizeof(ms));
     GlobalMemoryStatus(&ms);
     out->ram_size = ms.dwTotalPhys;
+
+    memset(&si, 0, sizeof(si));
+    GetSystemInfo(&si);
+    out->page_size = si.dwPageSize;
+    out->number_of_processors = si.dwNumberOfProcessors;
 }
 )
 
@@ -4668,3 +4676,65 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
 
     return TRUE;
 }
+
+/*------------ CreateIoCompletionPort() -------------------*/
+
+TARPC_FUNC(create_io_completion_port,
+{},
+{
+    HANDLE file_handle = NULL;
+    HANDLE iocp = NULL;
+    HANDLE existing_iocp = NULL;
+
+    UNUSED(list);
+
+    /* ATTENTION! The code below supposes that in->file_handle can
+     * be only a socket descriptor: currently the socket descriptors
+     * are not passed through rcf_pch_mem_alloc() (when returned by
+     * socket() RPC), but other handles are. I.e. other handles would
+     * have to be obtained here by rcf_pch_mem_get(in->file_handle),
+     * not just directly in->file_handle. */
+    file_handle = in->file_handle == (tarpc_handle)-1 ?
+                  INVALID_HANDLE_VALUE : (HANDLE)in->file_handle;
+
+    existing_iocp = (HANDLE)rcf_pch_mem_get(in->existing_completion_port);
+
+    MAKE_CALL(iocp = CreateIoCompletionPort(file_handle,
+                         existing_iocp, (ULONG_PTR)in->completion_key,
+                         (DWORD)in->number_of_concurrent_threads)
+    );
+
+    if (iocp != NULL)
+    {
+        if (iocp == existing_iocp)
+            out->retval = in->existing_completion_port;
+        else
+            out->retval = (tarpc_handle)rcf_pch_mem_alloc(iocp);
+    }
+    else
+        out->retval = (tarpc_handle)0;
+}
+)
+
+/*------------ GetQueuedCompletionStatus() -------------------*/
+
+TARPC_FUNC(get_queued_completion_status,
+{},
+{
+    OVERLAPPED *overlapped = NULL;
+
+    UNUSED(list);
+
+    MAKE_CALL(out->retval = GetQueuedCompletionStatus(
+        (HANDLE)rcf_pch_mem_get(in->completion_port),
+        (DWORD *)&out->number_of_bytes,
+        (ULONG_PTR *)&out->completion_key,
+        &overlapped, (DWORD)in->milliseconds)
+    );
+
+    if (overlapped != NULL)
+        out->overlapped = (tarpc_overlapped)rcf_pch_mem_get_id(overlapped);
+    else
+        out->overlapped = (tarpc_overlapped)0;
+}
+)

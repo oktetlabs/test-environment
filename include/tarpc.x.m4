@@ -783,6 +783,37 @@ struct tarpc_has_overlapped_io_completed_out {
     tarpc_int             retval;
 };    
 
+/* CreateIoCompletionPort() */
+
+struct tarpc_create_io_completion_port_in {
+    struct tarpc_in_arg  common;
+    tarpc_handle         file_handle;
+    tarpc_handle         existing_completion_port;
+    tarpc_int            completion_key;
+    tarpc_uint           number_of_concurrent_threads;
+};    
+
+struct tarpc_create_io_completion_port_out {
+    struct tarpc_out_arg  common;
+    tarpc_handle          retval;
+};    
+
+/* GetQueuedCompletionStatus() */
+
+struct tarpc_get_queued_completion_status_in {
+    struct tarpc_in_arg  common;
+    tarpc_handle         completion_port;
+    tarpc_uint           milliseconds;
+};    
+
+struct tarpc_get_queued_completion_status_out {
+    struct tarpc_out_arg  common;
+    tarpc_uint            number_of_bytes;
+    tarpc_int             completion_key;
+    tarpc_overlapped      overlapped;
+    tarpc_bool            retval;
+};    
+
 /* GetCurrentProcessId() */
 
 struct tarpc_get_current_process_id_in {
@@ -794,14 +825,16 @@ struct tarpc_get_current_process_id_out {
     tarpc_int             retval;
 };
 
-/* rpc_get_ram_size() */
-struct tarpc_get_ram_size_in {
+/* rpc_get_sys_info() */
+struct tarpc_get_sys_info_in {
     struct tarpc_in_arg  common;
 };
 
-struct tarpc_get_ram_size_out {
+struct tarpc_get_sys_info_out {
     struct tarpc_out_arg  common;
     uint64_t              ram_size;
+    tarpc_uint            page_size;
+    tarpc_uint            number_of_processors;
 };
 
 /* rpc_vm_trasher() */
@@ -2876,8 +2909,10 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(create_file)
         RPC_DEF(close_handle)
         RPC_DEF(has_overlapped_io_completed)
+        RPC_DEF(create_io_completion_port)
+        RPC_DEF(get_queued_completion_status)
         RPC_DEF(get_current_process_id)
-        RPC_DEF(get_ram_size)
+        RPC_DEF(get_sys_info)
         RPC_DEF(vm_trasher)
         RPC_DEF(write_at_offset)
         RPC_DEF(completion_callback)

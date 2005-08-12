@@ -2420,6 +2420,7 @@ typedef enum rpc_win_error {
     RPC_WSAEINVALIDPROCTABLE,
     RPC_WSAEINVALIDPROVIDER,
     RPC_WSAEPROVIDERFAILEDINIT,
+    RPC_WAIT_TIMEOUT,
     RPC_WINERROR_UNKNOWN
 } rpc_win_error;
 
@@ -2483,6 +2484,7 @@ win_error_h2rpc(int win_err)
         H2RPC(WSAEINVALIDPROCTABLE);
         H2RPC(WSAEINVALIDPROVIDER);
         H2RPC(WSAEPROVIDERFAILEDINIT);
+        H2RPC(WAIT_TIMEOUT);
         default: return RPC_WINERROR_UNKNOWN;
     } 
 }
@@ -2544,6 +2546,7 @@ win_error_rpc2str(int win_err)
         RPC2STR(WSAEINVALIDPROCTABLE);
         RPC2STR(WSAEINVALIDPROVIDER);
         RPC2STR(WSAEPROVIDERFAILEDINIT);
+        RPC2STR(WAIT_TIMEOUT);
         case 0: return "";
         default: return "WINERROR_UNKNOWN";
     } 
