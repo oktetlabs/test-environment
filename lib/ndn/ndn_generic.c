@@ -765,7 +765,7 @@ ndn_get_du_field(asn_value *pdu, ndn_du_get_oper_t oper,
                              PRIVATE, tag);
     if (oper == NDN_DU_WR)
     {
-        if (rc == TE_EASNINCOMPLVAL)
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         { 
             const asn_type *du_type;
             rc = asn_get_child_type(asn_get_type(pdu), &du_type, 

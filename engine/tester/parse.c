@@ -632,7 +632,7 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
 #if 1
     /* 'exclude' is depricated */
     rc = get_bool_prop(node, "exclude", &p->sticky);
-    if (rc != TE_ENOENT)
+    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
         if (rc == 0)
         {
@@ -646,7 +646,7 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
     /* 'sticky' is optional, default value is false */
     p->sticky = FALSE;
     rc = get_bool_prop(node, "sticky", &p->sticky);
-    if (rc != 0 && rc != TE_ENOENT)
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
         return rc;
     if (rc == 0 && !allow_sticky)
     {
@@ -714,7 +714,7 @@ get_run_item_attrs(xmlNodePtr node, run_item_attrs *attrs)
     /* 'timeout' is optional */
     timeout = TESTER_TIMEOUT_DEF;
     rc = get_int_prop(node, "timeout", FALSE, &timeout);
-    if (rc != 0 && rc != TE_ENOENT)
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
         return rc;
     attrs->timeout.tv_sec = timeout;
     attrs->timeout.tv_usec = 0;
@@ -973,7 +973,7 @@ get_var_arg_attrs(xmlNodePtr node, test_var_arg_values *values,
     rc = get_bool_prop(node, "random", &attrs->random);
     if (rc == 0)
         attrs->flags |= TEST_RANDOM_SPECIFIED;
-    else if (rc != TE_ENOENT)
+    else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
         return rc;
 
     /* 'list' is optional */
@@ -1150,14 +1150,14 @@ get_session(xmlNodePtr node, tester_cfg *cfg, test_session *session,
     /* 'simultaneous' is optional, default value is false */
     session->simultaneous = FALSE;
     rc = get_bool_prop(node, "simultaneous", &session->simultaneous);
-    if (rc != 0 && rc != TE_ENOENT)
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
         return rc;
 
     /* 'random' is optional */
     rc = get_bool_prop(node, "random", &session->random);
     if (rc == 0)
         session->flags |= TEST_RANDOM_SPECIFIED;
-    else if (rc != TE_ENOENT)
+    else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
         return rc;
 
     node = xmlNodeChildren(node);
@@ -1350,32 +1350,32 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
 
         /* 'iterate' is optional */
         rc = get_int_prop(node, "iterate", FALSE, &p->iterate);
-        if (rc != 0 && rc != TE_ENOENT)
+        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
             return rc;
 
         /* 'loglevel' is optional */
         p->loglevel = 0;
         rc = get_int_prop(node, "loglevel", FALSE, &p->loglevel);
-        if (rc != 0 && rc != TE_ENOENT)
+        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
             return rc;
 
         /* 'allow_configure' is optional, default value is true */
         p->allow_configure = TRUE;
         rc = get_bool_prop(node, "allow_configure", &p->allow_configure);
-        if (rc != 0 && rc != TE_ENOENT)
+        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
             return rc;
 
         /* 'allow_keepalive' is optional, default value is true */
         p->allow_keepalive = TRUE;
         rc = get_bool_prop(node, "allow_keepalive", &p->allow_keepalive);
-        if (rc != 0 && rc != TE_ENOENT)
+        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
             return rc;
 
         /* 'forcerandom' is optional */
         rc = get_bool_prop(node, "forcerandom", &p->forcerandom);
         if (rc == 0)
             p->flags |= TESTER_RUN_ITEM_FORCERANDOM;
-        else if (rc != TE_ENOENT)
+        else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
             return rc;
     }
     

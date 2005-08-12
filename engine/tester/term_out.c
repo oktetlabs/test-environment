@@ -289,7 +289,7 @@ tester_out_done(run_item_type type, const char *name,
     }
 
     /* Map result to color and verdict */
-    if (result == TE_ETESTPASS)
+    if (TE_RC_GET_ERROR(result) == TE_ETESTPASS)
     {
         verdict = tester_verdict_passed;
 #ifdef HAVE_COLOR

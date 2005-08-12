@@ -186,7 +186,8 @@ ndn_bpdu_asn_to_plain(const asn_value *pkt, ndn_stp_bpdu_t *bpdu)
     } while (0)
 
     READ_BPDU_CFG_FIELD(flags, "flags" ); 
-    if (rc == TE_EASNINCOMPLVAL || rc == TE_EASNOTHERCHOICE)
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL || 
+        TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
     {
         return 0;
     }

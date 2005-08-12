@@ -429,7 +429,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
         rc = ndn_forw_delay_to_plain(subval, &(forw_action->delay));
         if (rc) return rc;
     }
-    else if (rc == TE_EASNINCOMPLVAL)
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         forw_action->delay.type = 0; /* uninitalized, default */
         rc = 0;
@@ -447,7 +447,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
         VERB("%s: reorder to plain: %X", __FUNCTION__, rc); 
         if (rc) return rc;
     }
-    else if (rc == TE_EASNINCOMPLVAL)
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         forw_action->reorder.type = 0; /* uninitalized, default */
         rc = 0;
@@ -457,7 +457,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
 
 
     rc = ndn_forw_drop_to_plain(val, &(forw_action->drop));
-    if (rc == TE_EASNINCOMPLVAL)
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         forw_action->drop.type = 0; /* uninitalized, default */
         rc = 0;

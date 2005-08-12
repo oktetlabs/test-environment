@@ -788,7 +788,7 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
                                            msg, msg->len, msg, &len);
-    if (ret_val == TE_ESMALLBUF)
+    if (TE_RC_GET_ERROR(ret_val) == TE_ESMALLBUF)
     {
         size_t  rest_len = len - CFG_MSG_MAX;
 
@@ -1188,7 +1188,7 @@ kill_all(cfg_handle handle)
     if (son != CFG_HANDLE_INVALID)
     {
         ret_val = kill_all(son);
-        if (ret_val != 0 && ret_val != TE_EACCES)
+        if (ret_val != 0 && TE_RC_GET_ERROR(ret_val) != TE_EACCES)
         {
             return TE_RC(TE_CONF_API, ret_val);
         }
@@ -1201,13 +1201,13 @@ kill_all(cfg_handle handle)
     if (brother != CFG_HANDLE_INVALID)
     {
         ret_val = kill_all(brother);
-        if (ret_val != 0 && ret_val != TE_EACCES)
+        if (ret_val != 0 && TE_RC_GET_ERROR(ret_val) != TE_EACCES)
         {
             return TE_RC(TE_CONF_API, ret_val);
         }
     }
     ret_val = kill(handle);
-    if (ret_val != 0 && ret_val != TE_EACCES)
+    if (ret_val != 0 && TE_RC_GET_ERROR(ret_val) != TE_EACCES)
     {
         return TE_RC(TE_CONF_API, ret_val);
     }

@@ -189,7 +189,7 @@ file_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     fn_len = sizeof(mode);
     rc = asn_read_value_field(file_csap_spec, mode, &fn_len, 
                 "mode");
-    if (rc == TE_EASNINCOMPLVAL)
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         strcpy(mode, "a+");
     else if (rc != 0)
     {

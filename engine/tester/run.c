@@ -691,7 +691,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
 static void
 log_test_result(test_id parent, test_id test, int result)
 {
-    if (result == TE_ETESTPASS)
+    if (TE_RC_GET_ERROR(result) == TE_ETESTPASS)
     {
         LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX "PASSED",
                  parent, test);
@@ -1035,7 +1035,8 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 ctx->flags |= TESTER_INLOGUE;
                 rc = iterate_test(ctx, session->prologue, &iters);
                 ctx->flags &= ~TESTER_INLOGUE;
-                if ((rc != TE_ETESTPASS) && (rc != TE_ETESTFAKE))
+                if ((TE_RC_GET_ERROR(rc) != TE_ETESTPASS) && 
+                    (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE))
                 {
                     result = TE_ETESTPROLOG;
                     break;
@@ -1060,7 +1061,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
             {
                 VERB("Running test session keep-alive validation...");
                 rc = iterate_test(ctx, session->keepalive, &iters);
-                if ((rc != 0) && (rc != TE_ETESTFAKE))
+                if ((rc != 0) && (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE))
                 {
                     result = TE_ETESTALIVE;
                     break;
@@ -1068,8 +1069,10 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
             }
 
             rc = iterate_test(ctx, test, &iters);
-            if ((rc != TE_ETESTPASS) && (rc != TE_ETESTEMPTY) &&
-                (rc != TE_ETESTFAKE) && (rc != TE_ETESTSKIP))
+            if ((TE_RC_GET_ERROR(rc) != TE_ETESTPASS) && 
+                (TE_RC_GET_ERROR(rc) != TE_ETESTEMPTY) &&
+                (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE) && 
+                (TE_RC_GET_ERROR(rc) != TE_ETESTSKIP))
             {
                 /* 
                  * Other results except success and skip are mapped 
@@ -1106,7 +1109,8 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 if (shutdown)
                     ctx->flags |= TESTER_SHUTDOWN;
 
-                if ((rc != TE_ETESTPASS) && (rc != TE_ETESTFAKE))
+                if ((TE_RC_GET_ERROR(rc) != TE_ETESTPASS) && 
+                    (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE))
                 {
                     result = TE_ETESTEPILOG;
                     break;
@@ -1436,7 +1440,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             rc = tester_run_path_forward(ctx, run_item_name);
             if (rc != 0)
             {
-                if (rc == TE_ENOENT)
+                if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
                     if (~ctx->flags & TESTER_INLOGUE)
@@ -1459,7 +1463,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             rc = tester_run_path_forward(ctx, test_name);
             if (rc != 0)
             {
-                if (rc == TE_ENOENT)
+                if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
                     if (~ctx->flags & TESTER_INLOGUE)
@@ -1564,7 +1568,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             rc = tester_run_path_params_match(test_ctx, &(iter->params));
             if (rc != 0)
             {
-                if (rc == TE_ENOENT)
+                if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
                     continue;
@@ -1704,8 +1708,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
         tester_ctx_free(ctx);
     }
 
-    if (test_skipped && ((all_result == TE_ETESTPASS) ||
-                         (all_result == TE_ETESTEMPTY)))
+    if (test_skipped && ((TE_RC_GET_ERROR(all_result) == TE_ETESTPASS) ||
+                         (TE_RC_GET_ERROR(all_result) == TE_ETESTEMPTY)))
         all_result = TE_ETESTSKIP;
 
     return all_result;

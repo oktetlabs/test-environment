@@ -169,7 +169,7 @@ ndn_eth_packet_to_plain(const asn_value *pkt,
     if (rc == 0) 
         rc = asn_read_value_field(pkt, &val, &len, "cfi"); 
 
-    if (rc == TE_EASNINCOMPLVAL)
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         eth_header->is_tagged = 0;
         return 0;

@@ -223,7 +223,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             *packet = NULL;
         }
     }
-    else if (rc == TE_EASNINCOMPLVAL)
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         rc = 0;
 
     if (rc == 0 && csap_descr->state & TAD_STATE_RESULTS)
@@ -749,7 +749,7 @@ tad_tr_recv_thread(void *arg)
 
             if (rc != 0)
             {
-                if (rc == TE_ETADNOTMATCH)
+                if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH)
                     rc = 0;
                 break;
             }
@@ -927,7 +927,7 @@ tad_tr_recv_thread(void *arg)
                     break;
             }
 
-            if (rc == TE_ETADNOTMATCH)
+            if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH)
             {
                 rc = 0;
                 continue;

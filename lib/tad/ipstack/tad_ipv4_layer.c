@@ -213,7 +213,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
 
     len = sizeof(struct in_addr);
     rc = asn_read_value_field(pdu, &spec_data->src_addr, &len, "src-addr");
-    if (rc == TE_EASNINCOMPLVAL)
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         spec_data->src_addr.s_addr = INADDR_ANY;
         if (csap_descr->state & TAD_STATE_RECV && 
@@ -238,7 +238,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
     if (rc == 0)
         rc = asn_read_value_field(pdu, &spec_data->dst_addr, 
                                   &len, "dst-addr");
-    if (rc == TE_EASNINCOMPLVAL)
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         spec_data->dst_addr.s_addr = INADDR_ANY;
 

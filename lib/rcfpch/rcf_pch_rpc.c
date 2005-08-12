@@ -616,7 +616,8 @@ dispatch(void *arg)
                 
             if ((rc = recv_result(rpcs, &len)) != 0)
             {
-                if (rc != TE_EAGAIN) /* AF_UNIX bug work-around */
+                if (TE_RC_GET_ERROR(rc) != TE_EAGAIN) 
+                /* AF_UNIX bug work-around */
                 {
                     rpcs->dead = TRUE;
                     rpc_error(rpcs, TE_ERPCDEAD);

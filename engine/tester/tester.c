@@ -786,7 +786,7 @@ main(int argc, char *argv[])
     for (cfg = cfgs.tqh_first; cfg != NULL; cfg = cfg->links.tqe_next)
     {
         rc = tester_run_config(&ctx, cfg);
-        if (rc != TE_ETESTPASS)
+        if (TE_RC_GET_ERROR(rc) != TE_ETESTPASS)
         {
             ERROR("Run of configuration from file failed:\n%s",
                   cfg->filename);

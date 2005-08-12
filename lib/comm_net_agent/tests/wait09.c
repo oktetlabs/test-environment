@@ -153,7 +153,7 @@ local_station_proc(void *arg)
        exit(3);
     }
     len = declared_input_buffer_length;
-    if (rc != TE_EPENDING)
+    if (TE_RC_GET_ERROR(rc) != TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the first call of rcf_comm_agent_wait() "
               "returned %d instead of TE_EPENDING(%d)\n", rc, TE_EPENDING);

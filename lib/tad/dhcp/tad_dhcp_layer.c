@@ -86,7 +86,7 @@ dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
     int xid;
     size_t len = sizeof (xid);
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
-    if (rc == TE_EASNINCOMPLVAL)
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         xid = random();
         rc = asn_write_value_field(tmpl_pdu, &xid, sizeof(xid), "xid.#plain");
@@ -250,7 +250,7 @@ dhcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         size_t val_len = sizeof(value);                                \
                                                                        \
         rc = asn_read_value_field(tmpl_pdu, &value, &val_len, _label); \
-        if (rc == TE_EASNINCOMPLVAL)                                   \
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)                  \
         {                                                              \
             value = _conv(_defval);                                    \
         }                                                              \
@@ -282,7 +282,7 @@ dhcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         size_t val_len = (_length);                                 \
                                                                     \
         rc = asn_read_value_field(tmpl_pdu, p, &val_len, _label);   \
-        if (rc == TE_EASNINCOMPLVAL)                                \
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)               \
         {                                                           \
             memset(p, (_defval), (_length));                        \
         }                                                           \

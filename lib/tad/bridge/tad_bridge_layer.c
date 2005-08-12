@@ -120,12 +120,13 @@ int bridge_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     rc = asn_get_choice(tmpl_pdu, "content", buffer, sizeof(buffer));
     /* if there are no content, we assume CFG PBDU ??? */
 
-    if (rc && rc != TE_EASNINCOMPLVAL)
+    if (rc && TE_RC_GET_ERROR(rc) != TE_EASNINCOMPLVAL)
     {
         VERB("bridge confirm, get choice failed %x\n", rc);
         return rc;
     }
-    if (rc == TE_EASNINCOMPLVAL || strcmp(buffer, "cfg") == 0)
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL || 
+        strcmp(buffer, "cfg") == 0)
     {
         rc = 0;
 

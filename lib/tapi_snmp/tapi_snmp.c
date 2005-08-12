@@ -503,7 +503,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
 
         rc = asn_get_choice(var_bind, "value.#plain", choice_label, CL_MAX);
 
-        if (rc == TE_EASNINCOMPLVAL)
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             /* Some of SNMP errors occure */
             if ((rc = asn_read_value_field(var_bind, 0, 0,

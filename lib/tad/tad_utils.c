@@ -765,7 +765,7 @@ tad_data_unit_convert(const asn_value *pdu_val,
     rc = asn_get_child_value(pdu_val, &ch_du_field, PRIVATE, tag_value);
     if (rc != 0)
     {
-        if (rc == TE_EASNINCOMPLVAL)
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             tad_data_unit_clear(location);
             return 0;

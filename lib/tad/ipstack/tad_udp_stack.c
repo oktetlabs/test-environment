@@ -363,7 +363,7 @@ udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         len = sizeof(struct in_addr);
         rc = asn_read_value_field(csap_nds, &local.sin_addr.s_addr, 
                                   &len, opt_label);
-        if (rc == TE_EASNINCOMPLVAL)
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             local.sin_addr.s_addr = INADDR_ANY; 
             rc = 0;

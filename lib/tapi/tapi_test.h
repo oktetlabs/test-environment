@@ -82,9 +82,10 @@ extern "C" {
  * Template action to be done on jump in the test.
  */
 #define TEST_ON_JMP_DO \
-    do {                                                            \
-        result = (jmp_rc == TE_EOK) ? EXIT_SUCCESS : EXIT_FAILURE;  \
-        goto cleanup;                                               \
+    do {                                                             \
+        result = (TE_RC_GET_ERROR(jmp_rc) == TE_EOK) ? EXIT_SUCCESS  \
+                                                     : EXIT_FAILURE; \
+        goto cleanup;                                                \
     } while (0)
 
 /**

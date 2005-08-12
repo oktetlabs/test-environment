@@ -390,7 +390,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
         rc = asn_get_subvalue(pattern_pdu, &pat_vb_list,
                               "variable-bindings");
-        if (rc == TE_EASNINCOMPLVAL)
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             rc = 0;
             break;
@@ -423,7 +423,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
             rc = asn_get_field_data(pat_var_bind, &pat_oid,
                                     "name.#plain");
-            if (rc == TE_EASNINCOMPLVAL)
+            if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
             {
                 /* match OID other then plain patterns not supported yet */
                 VERB("SNMP VB match, no name in varbind");
@@ -453,13 +453,13 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
             rc = asn_get_subvalue(pat_var_bind, &pat_vb_value, "value.#plain");
 
-            if (rc == TE_EASNINCOMPLVAL)
+            if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
             {
                 VERB("There is no value in vb pattern, value matches.");
                 rc = 0; /* value matches - no pattern for it */
                 continue;
             }
-            else if (rc == TE_EASNOTHERCHOICE)
+            else if (TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
             {
                 rc = TE_EOPNOTSUPP; /* value matches - math is not implemented */
                 WARN("SNMP match: unsupported choice"

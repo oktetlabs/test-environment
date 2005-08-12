@@ -323,7 +323,7 @@ dhcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             rc  = errno;
         }
     }
-    else if (rc == TE_EASNINCOMPLVAL) 
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
     {
         rc = 0;
     }

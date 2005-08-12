@@ -421,10 +421,10 @@ pcap_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
 
-    if (rc && rc != TE_EASNINCOMPLVAL)
+    if (rc && TE_RC_GET_ERROR(rc) != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 
-    if (rc == TE_EASNINCOMPLVAL)
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         asn_value *pcap_pdu = asn_init_value(ndn_pcap_filter); 
         asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 

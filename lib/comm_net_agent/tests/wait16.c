@@ -145,7 +145,7 @@ local_station_proc(void *arg)
     len = declared_input_buffer_length;
     ptr = input_buffer;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    if (rc != TE_ESMALLBUF)
+    if (TE_RC_GET_ERROR(rc) != TE_ESMALLBUF)
     {
        fprintf(stderr, "ERROR: the first call of rcf_comm_agent_wait() "
               "returned %d instead of TE_ESMALLBUF(%d)\n", rc, TE_ESMALLBUF);
@@ -156,7 +156,7 @@ local_station_proc(void *arg)
     /* the second call */
     len = declared_input_buffer_length;
     rc = rcf_comm_agent_wait(handle, ptr, &len, NULL);
-    if (rc != TE_EPENDING)
+    if (TE_RC_GET_ERROR(rc) != TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the second call of rcf_comm_agent_wait() "
               "returned %d instead of TE_EPENDING(%d)\n", rc, TE_EPENDING);

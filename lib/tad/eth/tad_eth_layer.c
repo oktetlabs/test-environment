@@ -617,7 +617,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                 goto cleanup;
             }
         }
-        else if (rc != TE_EASNINCOMPLVAL)
+        else if (TE_RC_GET_ERROR(rc) != TE_EASNINCOMPLVAL)
         {
             WARN("read cfi from pattern failed %X", rc);
             goto cleanup;

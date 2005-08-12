@@ -752,7 +752,7 @@ cfg_dh_restore_backup(char *filename)
                
                 if (rc != 0)
                 {
-                    if (rc != TE_ENOENT)
+                    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
                     {
                         ERROR("%s(): cfg_db_find() failed: %r", 
                               __FUNCTION__, rc);

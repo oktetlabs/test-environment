@@ -94,7 +94,8 @@ local_station_proc(void *arg)
     /* now call the rcf_comm_agent_wait() function three times */
     len = sizeof(buffer);
     if ((rc = rcf_comm_agent_wait(my_handle, buffer, &len, NULL)) == 0 ||
-       rc == TE_ESMALLBUF || rc == TE_EPENDING)
+       TE_RC_GET_ERROR(rc) == TE_ESMALLBUF || 
+       TE_RC_GET_ERROR(rc) == TE_EPENDING)
     {
        fprintf(stderr, "ERROR: the call of "
               "rcf_comm_agent_wait(ILLEGAL, buffer, len, valid) "

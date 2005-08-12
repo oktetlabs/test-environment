@@ -312,7 +312,7 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             rc  = errno;
         }
     }
-    else if (rc == TE_EASNINCOMPLVAL) 
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
     {
         rc = 0;
     }
@@ -519,7 +519,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
         rc = asn_get_child_value(tcp_pdu, &data_csap_spec, 
                                  PRIVATE, NDN_TAG_TCP_DATA);
-        if (rc == TE_EASNINCOMPLVAL)
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             ERROR("%s(CSAP %d) data TCP csap should have 'data' spec",
                   __FUNCTION__, csap_descr->id); 
@@ -561,13 +561,13 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                __FUNCTION__, csap_descr->id, value_in_pdu);
         spec_data->local_port = value_in_pdu;
     }
-    else if (rc == TE_EASNINCOMPLVAL)
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         F_VERB("%s(): set TCP CSAP %d default local port to zero", 
                __FUNCTION__, csap_descr->id);
         spec_data->local_port = 0;
     }
-    else if (rc == TE_EASNOTHERCHOICE)
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
     {
         F_ERROR("%s(): TCP CSAP %d, non-plain local port not supported",
                 __FUNCTION__, csap_descr->id);
@@ -587,13 +587,13 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                __FUNCTION__, csap_descr->id, value_in_pdu);
         spec_data->remote_port = value_in_pdu;
     }
-    else if (rc == TE_EASNINCOMPLVAL)
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         F_VERB("%s(): set TCP CSAP %d default remote port to zero", 
                __FUNCTION__, csap_descr->id);
         spec_data->remote_port = 0;
     }
-    else if (rc == TE_EASNOTHERCHOICE)
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
     {
         F_ERROR("%s(): TCP CSAP %d, non-plain remote port not supported",
                 __FUNCTION__, csap_descr->id);

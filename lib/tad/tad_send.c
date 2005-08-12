@@ -161,7 +161,7 @@ tad_tr_send_thread(void * arg)
         {
             rc = tad_convert_payload(nds_payload, &pld_spec);
         }
-        else if (rc == TE_EASNINCOMPLVAL)
+        else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             rc = 0; /* there is no payload */
             pld_spec.type = TAD_PLD_UNKNOWN;
@@ -175,7 +175,7 @@ tad_tr_send_thread(void * arg)
 
         rc = asn_get_subvalue(nds, &arg_sets, "arg-sets");
 
-        if (rc == TE_EASNINCOMPLVAL) 
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
         {
             rc = 0; 
             break;
@@ -209,7 +209,7 @@ tad_tr_send_thread(void * arg)
             rc = asn_read_value_field(nds, &delay, &v_len, "delays");
         }
 
-        if (rc == TE_EASNINCOMPLVAL)
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             delay = 0;
             rc = 0; 
@@ -566,7 +566,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
 
         rc = asn_get_child_value(nds, &ndn_payload, PRIVATE,
                                  NDN_TMPL_PAYLOAD);
-        if (rc == TE_EASNINCOMPLVAL)
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             pld_data->type = TAD_PLD_UNKNOWN;
             rc = 0;
