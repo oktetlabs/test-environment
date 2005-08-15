@@ -38,7 +38,7 @@
 #include "logger_ta.h"
 #include "rcf_pch_mem.h"
 
-extern void logfork_log_message(int level, char *lgruser, 
+extern void logfork_log_message(int level, const char *lgruser, 
                                 const char *fmt, va_list ap);
 
 

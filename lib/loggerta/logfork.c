@@ -505,7 +505,7 @@ convert_msg(char *buf, int buflen, const char *fmt, va_list ap)
  * @param ap      arguments corresponding to the format
  */
 void 
-logfork_log_message(int level, char *lgruser, 
+logfork_log_message(int level, const char *lgruser, 
                     const char *fmt, va_list ap)
 {
     udp_msg msg;
