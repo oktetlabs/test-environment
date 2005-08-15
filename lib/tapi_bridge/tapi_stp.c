@@ -28,6 +28,8 @@
  * $Id$
  */ 
 
+#define TE_LGR_USER     "TAPI STP"
+
 #include "te_config.h"
 
 #include <stdio.h>
@@ -62,11 +64,7 @@
 #include "tapi_stp.h"
 #include "tapi_eth.h"
 
-#define TE_LGR_USER     "TAPI STP"
 #include "logger_api.h"
-
-
-#define TAPI_STP_DEBUG 0
 
 
 /** Bridge Group Address according to IEEE 802.1D, Table 7.9 */
@@ -114,14 +112,8 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
 
-#if TAPI_STP_DEBUG
-    printf("tmp file: %s\n", tmp_name);
-#endif
     if ((f = fopen(tmp_name, "w+")) == NULL)
     {
-#if TAPI_STP_DEBUG
-        perror("fopen error\n");
-#endif
         return TE_OS_RC(TE_TAPI, errno); /* return system errno */
     }
 
@@ -155,9 +147,7 @@ tapi_stp_plain_csap_create(const char *ta_name, int sid, const char *ifname,
 
     VERB("rc from rcf_csap_create: %x", rc);
 
-#if !TAPI_STP_DEBUG
     unlink(tmp_name);
-#endif
 
     return rc;
 }
@@ -190,11 +180,6 @@ tapi_stp_bpdu_send(const char *ta_name, int sid,
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
 
-#if TAPI_STP_DEBUG
-    printf("tmp file: %s\n", tmp_name);
-    VERB("tmp file: %s\n", tmp_name);
-#endif
-
     if ((rc = asn_save_to_file(templ, tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
 
@@ -203,9 +188,7 @@ tapi_stp_bpdu_send(const char *ta_name, int sid,
 
     VERB("rc from rcf_trsend_start: %x\n", rc);
 
-#if !TAPI_STP_DEBUG
     unlink(tmp_name);
-#endif
 
     return rc;
 }
@@ -326,10 +309,6 @@ tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
         return TE_RC(TE_TAPI, rc);
     }
 
-#if TAPI_STP_DEBUG
-    printf("tmp file: %s\n", tmp_name);
-#endif
-
     rc = asn_save_to_file(pattern, tmp_name);
     if (rc)
     {
@@ -344,11 +323,7 @@ tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
                              (callback != NULL) ? (void *)i_data : NULL,
                              timeout, num);
 
-#if TAPI_STP_DEBUG
-    printf ("rc from rcf_trrecv_operation: %08x\n", rc);
-#else
     unlink(tmp_name);
-#endif
 
     return rc;
 }

@@ -811,9 +811,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
 
     INFO("Create SNMP CSAP %tf with status %r", tmp_name, rc);
 
-#if !(DEBUG)
     unlink(tmp_name);
-#endif
 
     return rc;
 }
@@ -1068,9 +1066,7 @@ tapi_snmp_operation(const char *ta, int sid, int csap_id,
         if (rc != 0)
             ERROR("rcf_ta_trsend_recv rc %r", rc);
     }
-#if !(DEBUG)
     unlink(tmp_name);
-#endif
 
     return TE_RC(TE_TAPI, rc);
 }
@@ -1256,9 +1252,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
 
 clean_up:
 
-#if !(DEBUG)
     unlink(tmp_name);
-#endif
 
     while (gp_head)
     {
@@ -1337,9 +1331,7 @@ tapi_snmp_set_vbs(const char *ta, int sid, int csap_id,
                 err_status simply used for passing error code. */
             rc = msg.err_status;
     }
-#if !(DEBUG)
     unlink(tmp_name);
-#endif
 
     return TE_RC(TE_TAPI, rc);
 }
@@ -3178,9 +3170,7 @@ tapi_snmp_trap_recv_start(const char *ta_name, int sid,
               __FUNCTION__, rc, ta_name, sid, snmp_csap, tmp_name);
     }
 
-#if !(TAPI_DEBUG)
     unlink(tmp_name);
-#endif
 
     return rc;
 }

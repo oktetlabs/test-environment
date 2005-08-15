@@ -58,8 +58,6 @@
 #define TE_LGR_USER     "TAPI Ethernet"
 #include "logger_api.h"
 
-#define TAPI_DEBUG 0
-
 
 /**
  * Print ethernet address to the specified file stream
@@ -195,9 +193,7 @@ tapi_eth_csap_create_with_mode(const char *ta_name, int sid,
               rc, ta_name, sid, tmp_name);
     }
 
-#if !(TAPI_DEBUG)
     unlink(tmp_name);
-#endif
 
     return rc;
 }
@@ -275,9 +271,7 @@ tapi_eth_tagged_csap_create(const char *ta_name, int sid,
               rc, ta_name, sid, tmp_name);
     }
 
-#if !(TAPI_DEBUG)
     unlink(tmp_name);
-#endif
 
     return rc;
 }
@@ -432,9 +426,7 @@ tapi_eth_recv_start(const char *ta_name, int sid,
               "file %s", rc, ta_name, sid, eth_csap, tmp_name);
     }
 
-#if !(TAPI_DEBUG)
     unlink(tmp_name);
-#endif
 
     return rc;
 }

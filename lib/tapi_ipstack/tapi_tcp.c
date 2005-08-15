@@ -26,10 +26,9 @@
  * $Id$
  */
 
+#define TE_LGR_USER "TAPI TCP"
 
 #include "te_config.h"
-
-#define TE_LGR_USER "TAPI TCP"
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>

@@ -26,21 +26,23 @@
  * $Id$
  */
 
+#define TE_LGR_USER "TAPI UDP" 
 
 #include "te_config.h"
 
-#ifdef HAVE_STDLIB_H
+#include <stdio.h>
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-
-#include <stdio.h>
+#if HAVE_ASSERT_H
 #include <assert.h>
+#endif
 
 #include <netinet/in.h>
 #include <netinet/ether.h>
@@ -50,8 +52,6 @@
 
 #include "rcf_api.h"
 #include "conf_api.h"
-
-#define TE_LGR_USER "TAPI UDP" 
 #include "logger_api.h"
 
 #include "tapi_udp.h"

@@ -26,9 +26,11 @@
  * $Id$
  */
 
+#define TE_LGR_USER "TAPI IPv4"
 
 #include "te_config.h"
 
+#include <stdio.h>
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -39,7 +41,6 @@
 #include <strings.h>
 #endif
 
-#include <stdio.h>
 #include <assert.h>
 
 #include <netinet/in.h>
@@ -51,7 +52,6 @@
 #include "rcf_api.h"
 #include "conf_api.h"
 
-#define TE_LGR_USER "TAPI IPv4"
 #include "logger_api.h"
 
 #include "tapi_ip.h"

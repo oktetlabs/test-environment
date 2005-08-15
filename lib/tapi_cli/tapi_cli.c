@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAPI CLI"
+
 #include "te_config.h"
 
 #include <sys/types.h>
@@ -52,38 +54,14 @@
 
 #include "rcf_api.h"
 #include "ndn_cli.h"
-
-
-#define TE_LGR_USER     "TAPI CLI"
 #include "logger_api.h"
 
 #include "tapi_cli.h"
 
+
 #define TAPI_CLI_CSAP_STR_MAXLEN            512
 #define TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN  128
 
-#undef TAPI_DEBUG
-#define TAPI_DEBUG  0
-
-#if 0
-#define CLI_DEBUG(args...) \
-    do {                                        \
-        fprintf(stdout, "\nTAPI_CLI " args);    \
-        INFO("TAPI_CLI " args);                 \
-    } while (0)
-
-#undef ERROR
-#define ERROR(args...) CLI_DEBUG("ERROR: " args)
-
-#undef RING
-#define RING(args...) CLI_DEBUG("RING: " args)
-
-#undef WARN
-#define WARN(args...) CLI_DEBUG("WARN: " args)
-
-#undef VERB
-#define VERB(args...) CLI_DEBUG("VERB: " args)
-#endif
 
 /** CLI CSAP type names */
 const char * const tapi_cli_csap_type_name[] =
@@ -442,9 +420,7 @@ tapi_cli_csap_create(const char *ta_name, int sid,
               rc, ta_name, sid, tmp_name);
     }
 
-#if !(TAPI_DEBUG)
     unlink(tmp_name);
-#endif
 
     return rc;
 }
@@ -510,9 +486,7 @@ tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
               "file %s", rc, ta_name, sid, cli_csap, tmp_name);
     }
 
-#if !(TAPI_DEBUG)
     unlink(tmp_name);
-#endif
 
     return rc;
 }
@@ -659,9 +633,7 @@ tapi_internal_cli_send_recv(const char *ta_name, int sid,
     VERB("%s() response is : %s", __FUNCTION__, *msg);
 #endif
 
-#if !(TAPI_DEBUG)
     unlink(tmp_fname);
-#endif
 
     VERB("%s() finished", __FUNCTION__);
 
