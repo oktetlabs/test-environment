@@ -68,7 +68,8 @@
 
 /** Is return code a test result or TE error? */
 #define TEST_RESULT(_rc) \
-    (((_rc) >= TE_ETESTRESULTMIN) && ((_rc) <= TE_ETESTRESULTMAX))
+    (((TE_RC_GET_ERROR(_rc)) >= TE_ETESTRESULTMIN) && \
+     (TE_RC_GET_ERROR(_rc) <= TE_ETESTRESULTMAX))
 
 /** Print string which may be NULL. */
 #define PRINT_STRING(_str)  ((_str) ? : "")
