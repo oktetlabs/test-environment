@@ -3,7 +3,7 @@
 TE_PLATFORM([], [], [], [], \
             [ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tapi \
              comm_net_engine rcfunix loggerta rcfpch comm_net_agent \
-             tapi_pcap asn ndn tad logfork])
+             tapi_pcap asn ndn tad])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
