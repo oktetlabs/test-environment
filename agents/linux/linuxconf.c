@@ -823,10 +823,12 @@ get_addr(const char *ifname, struct in_addr *addr)
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFADDR, (int)&req) < 0)
     {
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+        
         /* It's not always called for correct arguments */
-        VERB("ioctl(SIOCGIFADDR) for '%s' failed: %s",
-              ifname, strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        VERB("ioctl(SIOCGIFADDR) for '%s' failed: %r",
+              ifname, rc);
+        return rc;
     }
     *addr = SIN(&(req.ifr_addr))->sin_addr;
     return 0;
@@ -865,8 +867,10 @@ set_prefix(const char *ifname, unsigned int prefix)
     SIN(&(req.ifr_addr))->sin_addr.s_addr = htonl(mask);
     if (ioctl(cfg_socket, SIOCSIFNETMASK, &req) < 0)
     {
-        ERROR("ioctl(SIOCSIFNETMASK) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+        
+        ERROR("ioctl(SIOCSIFNETMASK) failed: %r", rc);
+        return rc;
     }
     return 0;
 }
@@ -1010,8 +1014,10 @@ aliases_list()
     memset(buf, 0, sizeof(buf));
     if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
     {
-        ERROR("ioctl(SIOCGIFCONF) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+        
+        ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
+        return rc;
     }
 
     for (req = conf.ifc_req; *(req->ifr_name) != 0; req++)
@@ -1376,8 +1382,10 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     memcpy(&req.ifr_addr, &sin, sizeof(struct sockaddr));
     if (ioctl(cfg_socket, SIOCSIFADDR, &req) < 0)
     {
-        ERROR("ioctl(SIOCSIFADDR) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCSIFADDR) failed: %r", rc);
+        return rc;
     }
 #elif defined(SIOCALIFADDR)
     {
@@ -1394,8 +1402,10 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         }
         if (ioctl(cfg_socket, SIOCALIFADDR, &lreq) < 0)
         {
-            ERROR("ioctl(SIOCALIFADDR) failed: %s", strerror(errno));
-            return TE_OS_RC(TE_TA_LINUX, errno);
+            int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+            ERROR("ioctl(SIOCALIFADDR) failed: %r", rc);
+            return rc;
         }
     }
 #else
@@ -1610,8 +1620,10 @@ net_addr_del(unsigned int gid, const char *oid,
 
         if (ioctl(cfg_socket, SIOCSIFADDR, (int)&req) < 0)
         {
-            ERROR("ioctl(SIOCSIFADDR) failed: %s", strerror(errno));
-            return TE_OS_RC(TE_TA_LINUX, errno);
+            int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+            ERROR("ioctl(SIOCSIFADDR) failed: %r", rc);
+            return rc;
         }
     }
     else
@@ -1619,16 +1631,20 @@ net_addr_del(unsigned int gid, const char *oid,
         strncpy(req.ifr_name, name, IFNAMSIZ);
         if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
         {
-            ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-            return TE_OS_RC(TE_TA_LINUX, errno);
+            int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+            ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
+            return rc;
         }
 
         strncpy(req.ifr_name, name, IFNAMSIZ);
         req.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
         if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
         {
-            ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
-            return TE_OS_RC(TE_TA_LINUX, errno);
+            int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+            ERROR("ioctl(SIOCSIFFLAGS) failed: %r", rc);
+            return rc;
         }
     }
     return 0;
@@ -1775,8 +1791,10 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     memset(buf, 0, sizeof(buf));
     if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
     {
-        ERROR("ioctl(SIOCGIFCONF) failed: %d", errno);
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
+        return rc;
     }
     *list = (char *)calloc(ADDR_LIST_BULK, 1);
     if (*list == NULL)
@@ -1859,9 +1877,11 @@ prefix_get(unsigned int gid, const char *oid, char *value,
     }
     if (ioctl(cfg_socket, SIOCGIFNETMASK, &req) < 0)
     {
-        ERROR("ioctl(SIOCGIFNETMASK) failed for if=%s addr=%s: %s",
-              ifname, addr, strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCGIFNETMASK) failed for if=%s addr=%s: %r",
+              ifname, addr, rc);
+        return rc;
     }
     MASK2PREFIX(ntohl(SIN(&req.ifr_addr)->sin_addr.s_addr), prefix);
 #else
@@ -1962,9 +1982,11 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     }
     if (ioctl(cfg_socket, SIOCGIFBRDADDR, &req) < 0)
     {
-        ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %s",
-              ifname, addr, strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %r",
+              ifname, addr, rc);
+        return rc;
     }
     bcast = SIN(&req.ifr_addr)->sin_addr.s_addr;
 #else
@@ -2027,8 +2049,10 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
         SIN(&(req.ifr_addr))->sin_addr.s_addr = bcast;
         if (ioctl(cfg_socket, SIOCSIFBRDADDR, (int)&req) < 0)
         {
-            ERROR("ioctl(SIOCSIFBRDADDR) failed: %s", strerror(errno));
-            return TE_OS_RC(TE_TA_LINUX, errno);
+            int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+            ERROR("ioctl(SIOCSIFBRDADDR) failed: %s", rc);
+            return rc;
         }
         return 0;
     }
@@ -2063,8 +2087,10 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFHWADDR, (int)&req) < 0)
     {
-        ERROR("ioctl(SIOCGIFHWADDR) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+    
+        ERROR("ioctl(SIOCGIFHWADDR) failed: %r", rc);
+        return rc;
     }
 
     ptr = req.ifr_hwaddr.sa_data;
@@ -2080,8 +2106,10 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     memset(buf, 0, sizeof(buf));
     if (ioctl(cfg_socket, SIOCGIFCONF, &ifc) < 0)
     {
-        ERROR("ioctl(SIOCGIFCONF) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
+        return rc;
     }
     for (p = (struct ifreq *)ifc.ifc_buf;
          ifc.ifc_len >= (int)sizeof(*p);
@@ -2142,8 +2170,10 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFMTU, (int)&req) != 0)
     {
-        ERROR("ioctl(SIOCGIFMTU) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+        
+        ERROR("ioctl(SIOCGIFMTU) failed: %r", rc);
+        return rc;
     }
     sprintf(value, "%d", req.ifr_mtu);
     return 0;
@@ -2175,8 +2205,10 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) != 0)
     {
-        ERROR("ioctl(SIOCSIFMTU) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+        
+        ERROR("ioctl(SIOCSIFMTU) failed: %r", rc);
+        return rc;
     }
 
     return 0;
@@ -2203,8 +2235,10 @@ arp_use_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
-        ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
+        return rc;
     }
 
     sprintf(value, "%d", (req.ifr_flags & IFF_NOARP) != IFF_NOARP);
@@ -2232,8 +2266,10 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
     {
-        ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
+        return rc;
     }
 
     if (strcmp(value, "1") == 0)
@@ -2246,8 +2282,10 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
-        ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCSIFFLAGS) failed: %r", rc);
+        return rc;
     }
     return 0;
 }
@@ -2272,8 +2310,10 @@ status_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
-        ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
+        return rc;
     }
 
     sprintf(value, "%d", (req.ifr_flags & IFF_UP) != 0);
@@ -2332,8 +2372,10 @@ status_set(unsigned int gid, const char *oid, const char *value,
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
     {
-        ERROR("ioctl(SIOCGIFFLAGS) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
+        return rc;
     }
 
     if (strcmp(value, "0") == 0)
@@ -2346,8 +2388,10 @@ status_set(unsigned int gid, const char *oid, const char *value,
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
-        ERROR("ioctl(SIOCSIFFLAGS) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCSIFFLAGS) failed: %r", rc);
+        return rc;
     }
 
     return 0;
@@ -2522,8 +2566,10 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 #ifdef SIOCSARP
     if (ioctl(cfg_socket, SIOCSARP, &arp_req) < 0)
     {
-        ERROR("ioctl(SIOCSARP) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCSARP) failed: %r", rc);
+        return rc;
     }
 
     return 0;
@@ -3329,8 +3375,10 @@ route_add(unsigned int gid, const char *oid, const char *value,
 
     if (ioctl(cfg_socket, SIOCADDRT, &rt) < 0)
     {
-        ERROR("ioctl(SIOCADDRT) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCADDRT) failed: %r", rc);
+        return rc;
     }
 
     return 0;
@@ -3385,8 +3433,10 @@ route_del(unsigned int gid, const char *oid, const char *route)
 
     if (ioctl(cfg_socket, SIOCDELRT, &rt) < 0)
     {
-        ERROR("ioctl(SIOCDELRT) failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        int rc = TE_OS_RC(TE_TA_LINUX, errno);
+
+        ERROR("ioctl(SIOCDELRT) failed: %r", rc);
+        return rc;
     }
 
     return 0;
