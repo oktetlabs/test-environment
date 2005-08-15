@@ -396,7 +396,6 @@ logfork_register_user(const char *name)
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lock_sockd);
 #endif
-    
     if (clt_sockd == -1 && open_sock() != 0)
     {
 #ifdef HAVE_PTHREAD_H
@@ -404,22 +403,16 @@ logfork_register_user(const char *name)
 #endif
         return -1;
     }
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&lock_sockd);
+#endif
 
     if (send(clt_sockd, (udp_msg *)&msg, sizeof(msg), 0) != sizeof(msg))
     {
         fprintf(stderr, "logfork_register_user() - cannot send "
                 "notification: %s\n", strerror(errno));
-        close(clt_sockd);
-        clt_sockd = -1;
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&lock_sockd);
-#endif
         return -1;
     }
-    
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lock_sockd);
-#endif
     
     return 0;
 }
@@ -513,13 +506,6 @@ logfork_log_message(int level, const char *lgruser,
 
     memset(&msg, 0, sizeof(msg));
     convert_msg(msg.__log_msg, sizeof(msg.__log_msg), fmt, ap);
-    
-    if (clt_sockd == -1 && open_sock() != 0)
-    {
-        fprintf(stderr, "%s(): %s %s\n", __FUNCTION__, lgruser,
-                msg.__log_msg);
-        return;
-    }
 
     msg.pid = getpid();
 #ifdef HAVE_PTHREAD_H
@@ -532,14 +518,23 @@ logfork_log_message(int level, const char *lgruser,
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&lock_sockd);
 #endif
-    
-    if (send(clt_sockd, (udp_msg *)&msg, sizeof(msg), 0) != sizeof(msg))
+    if (clt_sockd == -1 && open_sock() != 0)
+    {
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&lock_sockd);
+#endif
+        fprintf(stderr, "%s(): %s %s\n", __FUNCTION__, lgruser,
+                msg.__log_msg);
+        return;
+    }
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&lock_sockd);
+#endif
+
+    if (send(clt_sockd, (udp_msg *)&msg, sizeof(msg), 0) !=
+            (ssize_t)sizeof(msg))
     {       
         fprintf(stderr, "%s(): sendto() failed: %s\n",
                 __FUNCTION__, strerror(errno));
     }
-    
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lock_sockd);
-#endif
 }
