@@ -322,7 +322,8 @@ logfork_entry(void)
             {
                 name = "Unnamed";
             }
-            sprintf(name_pid, "%s.%u.%u", name, msg.pid, msg.tid);
+            sprintf(name_pid, "%s.%u.%u",
+                    name, (unsigned)msg.pid, (unsigned)msg.tid);
             log_message(msg.__log_level, TE_LGR_ENTITY, 
                         strdup(msg.__lgr_user), 
                         "%s: %s", name_pid, msg.__log_msg);
