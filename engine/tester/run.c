@@ -735,7 +735,7 @@ log_test_result(test_id parent, test_id test, int result)
             {
                 const char *reason;
 
-                switch (result)
+                switch (TE_RC_GET_ERROR(result))
                 {
                     case TE_ETESTFAIL:
                         /* TODO Reason from test */
