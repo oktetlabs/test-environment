@@ -60,7 +60,7 @@
         if (snprintf(answer_buffer + ans_len,                        \
                      ANS_BUF - ans_len, _fmt) >= ANS_BUF - ans_len)  \
         {                                                            \
-            VERB("answer is truncated\n");                           \
+            VERB("answer is truncated");                             \
         }                                                            \
         rcf_ch_lock();                                               \
         r_c = rcf_comm_agent_reply(handle, answer_buffer,            \
@@ -172,7 +172,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             asn_free_value(parsed_pdu);
             if (rc != 0)
             {
-                ERROR("ASN error in add next pdu %r\n", rc);
+                ERROR("ASN error in add next pdu %r", rc);
                 asn_free_value(*packet);
                 return rc;
             } 
@@ -181,7 +181,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             {
                 char buf[RBUF];
                 asn_sprint_value(*packet, buf, 1000, 0);
-                printf("packet: %s\n", buf);
+                printf("packet: %s", buf);
             }
 #endif
         }
@@ -234,7 +234,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                                        data_to_check.len, "payload.#bytes");
             if (rc)
             {
-                ERROR( "ASN error in add rest payload %r\n", rc);
+                ERROR( "ASN error in add rest payload %r", rc);
                 asn_free_value(*packet);
                 *packet = NULL;
                 return rc;
@@ -402,7 +402,7 @@ tad_report_packet( asn_value_p packet, struct rcf_comm_connection *handle,
     attach = buffer + strlen(buffer) + 1; 
     if (asn_sprint_value(packet, attach, attach_len + 1, 0) > attach_len)
     {
-        ERROR("asn_sprint_value returns greater than expected!\n");
+        ERROR("asn_sprint_value returns greater than expected!");
     } 
 
     VERB("report about packet to test, attach len: %d", attach_len);
@@ -817,7 +817,7 @@ tad_tr_recv_thread(void *arg)
                                           answer_buffer, ans_len);
             if (rc != 0) 
             {
-                ERROR("send 'trrecv_get' results failed with rc %r\n",
+                ERROR("send 'trrecv_get' results failed with rc %r",
                       rc);
                 /**
                  * @todo fix it. 
@@ -881,7 +881,7 @@ tad_tr_recv_thread(void *arg)
             if (d_len < 0)
             {
                 csap_descr->state |= TAD_STATE_COMPLETE;
-                ERROR("CSAP read callback failed; rc: %r\n", rc);
+                ERROR("CSAP read callback failed; rc: %r", rc);
                 continue;
             } 
             
@@ -919,8 +919,8 @@ tad_tr_recv_thread(void *arg)
                         continue;
 
                     default: 
-                        ERROR("Match with patter-unit failed "
-                              "with code: %r\n", rc);
+                        ERROR("Match with pattern-unit failed "
+                              "with code: %r", rc);
                         break;
                 }
                 if (rc != 0)
@@ -939,13 +939,13 @@ tad_tr_recv_thread(void *arg)
             { 
                 if (csap_descr->state & TAD_STATE_FOREGROUND)
                 {
-                    F_VERB("in foreground mode\n");
+                    F_VERB("in foreground mode");
                     rc = tad_report_packet(result, handle, answer_buffer,
                                            ans_len);
                 }
                 else
                 {
-                    F_VERB("Put packet into the queue\n");
+                    F_VERB("Put packet into the queue");
                     received_packets_queue_t *new_qelem = 
                                             malloc(sizeof(*new_qelem));
                     new_qelem->pkt = result;
@@ -981,7 +981,7 @@ tad_tr_recv_thread(void *arg)
                                   answer_buffer, ans_len);
     if (rc != 0)
     {
-        ERROR("trrecv thread: send results failed with code %r\n", rc);
+        ERROR("trrecv thread: send results failed with code %r", rc);
         if (csap_descr->last_errno == 0)
             csap_descr->last_errno = rc;
         rc = 0;
