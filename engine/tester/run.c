@@ -699,7 +699,7 @@ log_test_result(test_id parent, test_id test, int result)
     }
     else
     {
-        switch (result)
+        switch (TE_RC_GET_ERROR(result))
         {
             case TE_ETESTKILL:
                 LOG_RING(TESTER_CONTROL,

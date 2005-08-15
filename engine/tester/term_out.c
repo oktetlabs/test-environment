@@ -298,7 +298,7 @@ tester_out_done(run_item_type type, const char *name,
     }
     else
     {
-        switch (result)
+        switch (TE_RC_GET_ERROR(result))
         {
             case TE_ETESTKILL:
                 verdict = "KILLED";
@@ -339,7 +339,7 @@ tester_out_done(run_item_type type, const char *name,
             {
                 verdict = "FAILED";
 #ifdef HAVE_COLOR
-                switch (result)
+                switch (TE_RC_GET_ERROR(result))
                 {
                     case TE_ETESTFAIL:
                         color = COLOR_RED;
