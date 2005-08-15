@@ -49,7 +49,8 @@
 char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param)
 {
     tcp_csap_specific_data_t *   spec_data; 
-    spec_data = (tcp_csap_specific_data_t *) csap_descr->layers[level].specific_data; 
+    spec_data = (tcp_csap_specific_data_t *) csap_descr->
+                    layers[level].specific_data; 
 
     static char buf[20];
 
@@ -251,7 +252,8 @@ fill_tcp_options(void *buf, asn_value_p options)
     { 
         opt = asn_read_indexed(options, i, "");
         len = 1;
-        if ((rc = asn_read_value_field(opt, &opt_type, &len, "type.#plain")) != 0)
+        if ((rc = asn_read_value_field(opt, &opt_type, &len, 
+                                       "type.#plain")) != 0)
             return rc;
         memcpy(buf, &opt_type, len);
         buf += len;
@@ -260,7 +262,8 @@ fill_tcp_options(void *buf, asn_value_p options)
             continue;
 
         len = 1;
-        if ((rc = asn_read_value_field(opt, buf, &len, "length.#plain")) != 0)
+        if ((rc = asn_read_value_field(opt, buf, &len, 
+                                       "length.#plain")) != 0)
             return rc;
         buf += len;
 
@@ -268,7 +271,8 @@ fill_tcp_options(void *buf, asn_value_p options)
         {
             asn_value_p sub_opts;
 
-            if ((rc = asn_read_component_value(opt, &sub_opts, "options")) != 0)
+            if ((rc = asn_read_component_value(opt, &sub_opts, 
+                                               "options")) != 0)
                 return rc;
             rc = fill_tcp_options(buf, sub_opts);
         }
@@ -333,7 +337,7 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {
             ERROR("%s(CSAP %d) write to TCP data 'server' is not allowed",
                   __FUNCTION__, csap_descr->id);
-            return TE_ETADLOWER;
+            return TE_RC(TE_TAD_CSAP, TE_ETADLOWER);
         } 
 
         pkt_list->data = up_payload->data;
@@ -357,13 +361,13 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     p = pkt_list->data;
 
 #define CHECK_ERROR(fail_cond_, error_, msg_...) \
-    do {                                \
-        if (fail_cond_)                 \
-        {                               \
-            ERROR(msg_);                \
-            rc = (error_);              \
-            goto cleanup;               \
-        }                               \
+    do {                                     \
+        if (fail_cond_)                      \
+        {                                    \
+            ERROR(msg_);                     \
+            rc = TE_RC(TE_TAD_CSAP, error_); \
+            goto cleanup;                    \
+        }                                    \
     } while (0)
 
 #define PUT_BIN_DATA(c_du_field_, def_val_, length_) \
@@ -373,7 +377,7 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
             rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
                                       args, arg_num, p, length_);       \
             CHECK_ERROR(rc != 0, rc,                                    \
-                        "%s():%d: " #c_du_field_ " error: %r",        \
+                        "%s():%d: " #c_du_field_ " error: %r",          \
                         __FUNCTION__,  __LINE__, rc);                   \
         }                                                               \
         else                                                            \
@@ -475,9 +479,10 @@ cleanup:
  *
  * @return zero on success or error code.
  */
-int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
-                     const csap_pkts *pkt, csap_pkts *payload, 
-                     asn_value_p parsed_packet)
+int 
+tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+                 const csap_pkts *pkt, csap_pkts *payload, 
+                 asn_value_p parsed_packet)
 { 
     csap_p                    csap_descr;
     tcp_csap_specific_data_t *spec_data;
@@ -492,13 +497,14 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_ETADCSAPNOTEX;
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
     } 
 
     if (parsed_packet)
         tcp_header_pdu = asn_init_value(ndn_tcp_header);
 
-    spec_data = (tcp_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
+    spec_data = (tcp_csap_specific_data_t*)csap_descr->
+                    layers[layer].specific_data; 
 
     data = pkt->data; 
 
@@ -525,7 +531,7 @@ int tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   data, _size, _asn_label);     \
         if (rc)                                                 \
         {                                                       \
-            F_VERB("%s: field %s not match, rc %r",             \
+            F_VERB("%s: field %s not match, rc 0x%X",           \
                     __FUNCTION__, _asn_label, rc);              \
             goto cleanup;                                       \
         }                                                       \
@@ -574,7 +580,7 @@ put_payload:
         rc = asn_write_component_value(parsed_packet, tcp_header_pdu,
                                        "#tcp"); 
         if (rc)
-            ERROR("%s, write TCP header to packet fails %r\n", 
+            ERROR("%s, write TCP header to packet fails %r", 
                   __FUNCTION__, rc);
     } 
 
