@@ -2234,6 +2234,7 @@ sendmail_smarthost_set(te_bool enable)
 
     /* Commit all changes in config files before restart of the service */
     sync();
+    SLEEP(1); /* @todo it should not be necessary, but it helps. */
     
     ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
     
