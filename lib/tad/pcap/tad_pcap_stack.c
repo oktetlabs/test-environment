@@ -497,7 +497,7 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     rc = asn_read_value_field(pcap_csap_spec, ifname, &val_len, "ifname");
     if (rc) 
     {
-        F_ERROR("device-id for ethernet not found: %x\n", rc);
+        F_ERROR("device-id for ethernet not found: %r", rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
     

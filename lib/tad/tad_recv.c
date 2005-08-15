@@ -217,7 +217,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 
         if (rc != 0)
         {
-            F_VERB("CSAP %d, Error matching pattern, rc %X, COUNT %d",
+            F_VERB("CSAP %d, Error matching pattern, rc %r",
                    csap_descr->id, rc);
             asn_free_value(*packet);
             *packet = NULL;
@@ -733,7 +733,7 @@ tad_tr_recv_thread(void *arg)
             if (d_len < 0)
             {
                 rc = csap_descr->last_errno;
-                F_ERROR("CSAP #%d internal write_read error %x", 
+                F_ERROR("CSAP #%d internal write_read error 0x%X", 
                          csap_descr->id, csap_descr->last_errno);
                 break;
             }
@@ -900,7 +900,7 @@ tad_tr_recv_thread(void *arg)
                                                  pattern_unit, &result); 
                 F_INFO("CSAP %d, Match pkt return %x, unit %d", 
                        csap_descr->id, rc, unit);
-                switch (rc)
+                switch (TE_RC_GET_ERROR(rc))
                 {
                     case 0: /* received data matches to this pattern unit */
                         csap_descr->last_pkt = pkt_caught;

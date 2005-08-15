@@ -216,7 +216,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
         case TAD_DU_INTERVALS:
             {
                 unsigned int i;
-                F_VERB("intervals\n");
+                F_VERB("intervals");
 
                 for (i = 0; i < pattern->val_intervals.length; i++)
                 {
@@ -231,7 +231,7 @@ tad_univ_match_field(const tad_data_unit_t *pattern, asn_value *pkt_pdu,
                 else if (pkt_pdu)
                     rc = asn_write_value_field(pkt_pdu, &user_int,
                                       sizeof(user_int), labels_buffer);
-                F_VERB("intervals rc %x", rc);
+                F_VERB("intervals rc %r", rc);
             }
             break;
 

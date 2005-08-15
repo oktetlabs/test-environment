@@ -477,7 +477,7 @@ eth_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
         if (ret_val == 0)
         {
             csap_descr->last_errno = ETIMEDOUT; /* ??? */
-            F_INFO("ETH write select timedout, retry %d\n", retries);
+            F_INFO("ETH write select timedout, retry %d", retries);
             continue;
         }
 
@@ -648,7 +648,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     rc = asn_read_value_field(eth_csap_spec, device_id, &val_len, "device-id");
     if (rc) 
     {
-        F_ERROR("device-id for ethernet not found: %x\n", rc);
+        F_ERROR("device-id for ethernet not found: %r", rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
     

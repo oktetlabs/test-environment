@@ -361,7 +361,7 @@ dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   data, _size, _asn_label);     \
         if (rc)                                                 \
         {                                                       \
-            F_VERB("%s: field %s not match, rc %X",             \
+            F_VERB("%s: field %s not match, rc %r",             \
                     __FUNCTION__, _asn_label, rc);              \
             return rc;                                          \
         }                                                       \

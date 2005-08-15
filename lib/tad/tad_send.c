@@ -248,7 +248,7 @@ tad_tr_send_thread(void * arg)
             rc = tad_tr_send_prepare_bin(csap_descr, nds, 
                                          arg_iterated, arg_num, 
                                          &pld_spec, &packets_root);
-            F_VERB("send_prepare_bin rc: 0x%X\n", rc);
+            F_VERB("send_prepare_bin rc: %r", rc);
 
             if (rc)
                 break;

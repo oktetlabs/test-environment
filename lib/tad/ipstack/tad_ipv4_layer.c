@@ -715,7 +715,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   data, _size, _asn_label);     \
         if (rc != 0)                                            \
         {                                                       \
-            F_VERB("%s: csap %d field %s not match, rc 0x%X",   \
+            F_VERB("%s: csap %d field %s not match, rc %r",     \
                     csap_id, __FUNCTION__, _asn_label, rc);     \
             goto cleanup;                                       \
         }                                                       \
@@ -728,7 +728,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                               &tmp8, 1, "version");
     if (rc) 
     {
-        F_VERB("%s: field version not match, rc 0x%X", __FUNCTION__, rc); 
+        F_VERB("%s: field version not match, rc %r", __FUNCTION__, rc); 
         goto cleanup;
     }
 
@@ -737,7 +737,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                               &tmp8, 1, "header-len");
     if (rc) 
     {
-        F_VERB("%s: field verxion not match, rc 0x%X", __FUNCTION__, rc); 
+        F_VERB("%s: field verxion not match, rc %r", __FUNCTION__, rc); 
         goto cleanup;
     }
     data++;

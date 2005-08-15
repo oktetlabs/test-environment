@@ -192,7 +192,7 @@ bridge_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     /* At this moment only #plain choices should leave in template */
     rc = ndn_bpdu_asn_to_plain (tmpl_pdu, &bridge_pdu);
 
-    F_VERB("ndn_bpdu_asn_to_plain return %x\n", rc);
+    F_VERB("ndn_bpdu_asn_to_plain return %r", rc);
 
     if (rc) 
         return rc;
@@ -312,7 +312,7 @@ int bridge_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
                                       data, len_, label_);              \
             data += len_;                                               \
             if (rc != 0)                                                \
-                F_VERB("%s: match %s rc %x", __FUNCTION__, label_, rc); \
+                F_VERB("%s: match %s rc %r", __FUNCTION__, label_, rc); \
         }                                                               \
     } while (0)
 

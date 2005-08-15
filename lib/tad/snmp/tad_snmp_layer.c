@@ -336,7 +336,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   asn_label_);                  \
         if (rc != 0)                                            \
         {                                                       \
-            F_VERB("%s: field %s not match, rc %X",             \
+            F_VERB("%s: field %s not match, rc %r",             \
                     __FUNCTION__, asn_label_, rc);              \
             return rc;                                          \
         }                                                       \
