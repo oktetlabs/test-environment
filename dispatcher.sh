@@ -1,6 +1,6 @@
 #! /bin/sh
 
-TE_RUN_DIR=`pwd`
+TE_RUN_DIR="${PWD}"
 
 DISPATCHER=`which $0` 
 if test -L $DISPATCHER ; then
@@ -14,7 +14,7 @@ fi
 # dispatcher directory, therefore the following more safe and portable way
 # is chosen.
 pushd `dirname $DISPATCHER` >/dev/null
-DISPATCHER_DIR=`pwd`
+DISPATCHER_DIR="${PWD}"
 popd >/dev/null
 
 usage()
@@ -194,7 +194,7 @@ BUILD_TS=yes
 CONF_DIR=
 
 # Directory for raw log file
-TE_LOG_DIR=`pwd`
+TE_LOG_DIR="${TE_RUN_DIR}"
 
 # Configuration files
 CONF_BUILDER=builder.conf
@@ -354,7 +354,7 @@ if test -z "$CONF_DIR" ; then
     if test -n "${TE_BASE}" ; then
         CONF_DIR=${TE_BASE}/conf ;
     else
-        CONF_DIR=`pwd` ;
+        CONF_DIR="${PWD}" ;
     fi
 fi
 
@@ -362,6 +362,11 @@ fi
 # Process command-line options
 CMD_LINE_OPTS="$@"
 process_opts "$@"
+
+if test -z "$TE_BASE" -a -n "$BUILDER" ; then
+    echo "Cannot find TE sources for building - exiting." >&2
+    exit 1
+fi
 
 export TE_NO_AUTOTOOL
 
@@ -372,27 +377,27 @@ for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
     fi
 done
 
-if test -z "$TE_BASE" -a -n "$BUILDER" ; then
-    echo "Cannot find TE sources for building - exiting." >&2
-    exit 1
+# Create directory for temporary files
+if test -z "$TE_TMP" ; then
+    export TE_TMP="${TE_RUN_DIR}/te_tmp"
+    mkdir -p "${TE_TMP}" || exit 1
 fi
-
 
 if test -z "$TE_BUILD" ; then
     if test -n "$BUILDER" ; then
         # Verifying build directory
         if test -e dispatcher.sh -a -e configure.ac ; then
             mkdir -p build
-            TE_BUILD=`pwd`/build
+            TE_BUILD="${PWD}"/build
         else
-            TE_BUILD=`pwd`
+            TE_BUILD="${PWD}"
         fi
     else
         if test -e build/builder.conf.processed ; then
-            TE_BUILD=`pwd`/build
+            TE_BUILD="${PWD}"/build
         fi
         if test -z "${TE_BUILD}" ; then
-            TE_BUILD=`pwd`
+            TE_BUILD="${PWD}"
             if test -z "${QUIET}" ; then
                 echo "Guessing TE_BUILD=${TE_BUILD}"
             fi
@@ -401,12 +406,6 @@ if test -z "$TE_BUILD" ; then
 fi
 export TE_BUILD
 pushd $TE_BUILD >/dev/null
-
-# Create directory for temporary files
-if test -z "$TE_TMP" ; then
-    mkdir -p te_tmp
-    export TE_TMP=`pwd`/te_tmp
-fi
 
 export TE_LOG_DIR=${TE_LOG_DIR}
 mkdir -p ${TE_LOG_DIR}
@@ -502,10 +501,10 @@ if test -n "$BUILDER" ; then
     pushd ${TE_BASE} >/dev/null
     if test ! -e configure ; then
         if test -n "${QUIET}" ; then
-            echo "Calling aclocal/autoconf/automake in `pwd`" \
+            echo "Calling aclocal/autoconf/automake in ${PWD}" \
                 >>"${TE_BUILD_LOG}"
         else
-            echo "Calling aclocal/autoconf/automake in `pwd`"
+            echo "Calling aclocal/autoconf/automake in ${PWD}"
         fi
         aclocal -I ${TE_BASE}/auxdir || exit_with_log
         autoconf || exit_with_log
