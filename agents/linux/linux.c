@@ -832,7 +832,7 @@ ta_sigchld_handler(int sig)
     int     pid;
     int     get = 0;
     te_bool logger = is_logger_available();
-    
+
     UNUSED(sig);
     if (!ta_children_dead_heap_inited)
         ta_children_dead_heap_init();
@@ -1054,7 +1054,6 @@ ta_waitpid(pid_t pid, int *status, int options)
 {
     int         dead;
     int         rc;
-    te_bool     locked;
 
     ta_children_wait  *wake;
 
@@ -1141,25 +1140,18 @@ ta_waitpid(pid_t pid, int *status, int options)
     /* Sleep */
     if (!(options & WNOHANG))
     {
-        locked = FALSE;
         while (dead == -1 && (rc = sem_wait(&wake->sem)) != 0)
         {
             if (errno != EINTR)
                 IMPOSSIBLE_LOG_AND_RET(sem_wait);
-            LOCK;
-            locked = TRUE;
-            dead = find_dead_child(pid);
-            if (dead == -1)
-                UNLOCK;
+            /* Really, if it is "our" signal (SIGCHLD), we can try to 
+             * call find_dead_child, but we should not free(wake) before
+             * signal handler will call sem_post(), so let's sleep until
+             * ta_sigchld_handler will wake up us explicitly. */
         }
 
         /* Clean up wait queue and release the lock */
-        if (!locked)
-        {
-            rc = pthread_mutex_lock(&children_lock);
-            if (rc != 0)
-                IMPOSSIBLE_LOG_AND_RET(pthread_mutex_lock);
-        }
+        LOCK;
         if (wake->prev != NULL)
             wake->prev->next = wake->next;
         else
@@ -1270,6 +1262,30 @@ ta_system(const char *cmd)
     return status;
 }
 
+/* See description in linux_internal.h */
+int
+ta_kill_death(pid_t pid)
+{
+    int rc;
+
+    if (ta_waitpid(pid, NULL, WNOHANG) == pid)
+        return 0;
+    rc = kill(pid, SIGTERM);
+    if (rc != 0 && errno != ESRCH)
+        return -1;
+
+    /* Check if the process exited. If kill failed, waitpid can't fail */
+    if (ta_waitpid(pid, NULL, WNOHANG) == pid)
+        return 0;
+    else if (rc != 0)
+        return -1;
+
+    /* Wait for termination. */
+    MSLEEP(500);
+    kill(pid, SIGKILL);
+    ta_waitpid(pid, NULL, 0);
+    return 0;
+}
 
 /** Print environment to the console */
 int

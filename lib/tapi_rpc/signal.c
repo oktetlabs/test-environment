@@ -173,6 +173,37 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
     RETVAL_INT_CHECK_WAIT_STATUS(waitpid, out.pid, stat);
 }
 
+int
+rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid)
+{
+    rcf_rpc_op     op;
+    tarpc_kill_in  in;
+    tarpc_kill_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(ta_kill_death, -1);
+    }
+
+    op = rpcs->op;
+
+    in.pid = pid;
+
+    rcf_rpc_call(rpcs, "ta_kill_death", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(kill, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: ta_kill_death(%d) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 pid, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(ta_kill_death, out.retval);
+}
+
 rpc_sigset_p
 rpc_sigset_new(rcf_rpc_server *rpcs)
 {

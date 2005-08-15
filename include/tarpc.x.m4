@@ -1790,6 +1790,16 @@ struct tarpc_waitpid_out {
     tarpc_wait_status_value  status_value;
 };
 
+/* ta_kill_death() */
+
+struct tarpc_ta_kill_death_in {
+    struct tarpc_in_arg common;
+
+    tarpc_pid_t     pid;
+};
+
+typedef struct tarpc_int_retval_out tarpc_ta_kill_death_out;
+
 
 /*
  * Signal set are allocated/destroyed and manipulated in server context.
@@ -2836,6 +2846,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(signal)
         RPC_DEF(sigaction)
         RPC_DEF(kill)
+        RPC_DEF(ta_kill_death)
 
         RPC_DEF(sigset_new)
         RPC_DEF(sigset_delete)

@@ -1600,6 +1600,14 @@ TARPC_FUNC(waitpid, {},
 }
 )
 
+/*-------------- ta_kill_death() --------------------------------*/
+
+TARPC_FUNC(ta_kill_death, {},
+{
+    MAKE_CALL(out->retval = func(in->pid));
+}
+)
+
 /*-------------- signal() --------------------------------*/
 
 typedef void (*sighandler_t)(int);

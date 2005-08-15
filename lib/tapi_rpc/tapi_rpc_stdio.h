@@ -81,6 +81,9 @@ extern int rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file);
 
 /**
  * Execute shell command on the IPC server.
+ * You SHOULD not use this function unless you are sure that shell command
+ * will exit normally. If this RPC will timeout, you'll have no chance to
+ * kill the child process, because you do not know its PID.
  *
  * @param rpcs          RPC server handle
  * @param cmd           the command to be executed
@@ -98,15 +101,22 @@ extern rpc_wait_status rpc_system(rcf_rpc_server *rpcs, const char *cmd);
  * @param rpcs          RPC server handle
  * @param pbuf          location for the command output buffer 
  * @param cmd           format of the command to be executed
+ * @param uid           user id to execute as
+ * @param ...           parameters for command
  *
  * @return status of the process
  */
 extern rpc_wait_status rpc_shell_get_all(rcf_rpc_server *rpcs,
-                                         char **pbuf, const char *cmd, ...);
+                                         char **pbuf, const char *cmd, 
+                                         tarpc_uid_t uid, ...);
 
 /**
  * Execute command on the RPC server as a given user and redirect
  * stdin/stdout to pipe(s) if necessary.
+ * You MUST use uid parameter instead of "su - user -c", because su makes
+ * one more fork, and you do not know how to kill this grandchild process.
+ * You SHOULD destroy this process by calling rpc_ta_kill_death() instead 
+ * of rpc_kill(RPC_SIGKILL).
  *
  * @param rpcs      RPC server handle
  * @param cmd       command format to execute

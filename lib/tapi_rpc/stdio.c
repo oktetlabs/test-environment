@@ -259,7 +259,8 @@ rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, int *bytes)
 }
 
 rpc_wait_status
-rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
+rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, 
+                  tarpc_uid_t uid, ...)
 {
     int     bytes;
     char    cmdline[RPC_SHELL_CMDLINE_MAX];
@@ -271,7 +272,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
 
     va_list ap;
 
-    va_start(ap, cmd);
+    va_start(ap, uid);
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
 
@@ -283,7 +284,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, ...)
     }
     
     iut_err_jump = rpcs->iut_err_jump;
-    if ((pid = rpc_ta_shell_cmd(rpcs, cmdline, -1, NULL, &fd)) < 0)
+    if ((pid = rpc_ta_shell_cmd(rpcs, cmdline, uid, NULL, &fd)) < 0)
     {
         ERROR("Cannot execute the command: rpc_ta_shell_cmd() failed");
         return rc;

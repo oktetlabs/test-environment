@@ -261,5 +261,15 @@ extern int rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_p set);
  */
 extern int rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_p set);
 
+/**
+ * Kill a child process.
+ *
+ * @param rpcs  RPC server handle
+ * @param pid   PID of the child to be killed
+ *
+ * @retval 0 child was exited or killed successfully
+ * @retval -1 there is no such child.
+ */
+extern int rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid);
 
 #endif /* !__TE_TAPI_RPC_SIGNAL_H__ */
