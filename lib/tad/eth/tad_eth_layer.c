@@ -51,15 +51,15 @@
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-char* eth_get_param_cb (csap_p csap_descr, int level, const char *param)
+char * 
+eth_get_param_cb (csap_p csap_descr, int level, const char *param)
 {
     char   *par_buffer;            
     eth_csap_specific_data_p spec_data;
 
     if (csap_descr == NULL)
     {
-        VERB(
-                   "error in eth_get_param %s: wrong csap descr passed\n", param);
+        VERB("error in eth_get_param %s: wrong csap descr passed\n", param);
         return NULL;
     }
 
@@ -73,8 +73,7 @@ char* eth_get_param_cb (csap_p csap_descr, int level, const char *param)
         return par_buffer;
     }
 
-    VERB(
-            "error in eth_get_param %s: not supported parameter\n", param);
+    VERB("error in eth_get_param %s: not supported parameter\n", param);
 
     return NULL;
 }
@@ -100,7 +99,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_ETADCSAPNOTEX;
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
     }
     
     spec_data = (eth_csap_specific_data_p)
@@ -135,7 +134,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                                                ETH_ALEN, "dst-addr.#plain");
                 if (rc)
                 {
-                    ERROR("construct dst addr rc %x", rc);
+                    ERROR("construct dst addr rc %r", rc);
                     return rc;
                 }
             }
@@ -155,7 +154,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
             else
             {
                 ERROR("sending csap, no remote address found, ret TE_EINVAL.");
-                return TE_EINVAL; /* NO DESTINATION ADDRESS IS SPECIFIED */
+                return TE_RC(TE_TAD_CSAP, TE_EINVAL); 
+                       /* NO DESTINATION ADDRESS IS SPECIFIED */
             }                  
         }
     }
@@ -171,7 +171,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 
     if (rc)
     {
-        ERROR("convert of src addr rc %x", rc);
+        ERROR("convert of src addr rc %r", rc);
         return rc; 
     }
 
@@ -213,7 +213,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         }
         if (rc)
         {
-            ERROR("construct src addr rc %x", rc);
+            ERROR("construct src addr rc %r", rc);
             return rc;
         }
     }
@@ -229,7 +229,7 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
 
     if (rc)
     {
-        ERROR("convert of eth type rc %x", rc);
+        ERROR("convert of eth type rc %r", rc);
         return rc; 
     }
 
@@ -259,14 +259,12 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                                    &spec_data-> c_du_field );   \
         if (rc)                                                 \
         {                                                       \
-            ERROR(\
-                    "convert of VLAN " label " rc %x", rc);     \
+            ERROR("convert of VLAN " label " rc %r", rc);       \
             return rc;                                          \
         }                                                       \
-        F_VERB(\
-                    "success " label " convert; du type: %d",   \
-                    (int) spec_data-> c_du_field .du_type);     \
-        if (spec_data-> c_du_field .du_type != TAD_DU_UNDEF)   \
+        F_VERB("success " label " convert; du type: %d",        \
+               (int) spec_data-> c_du_field .du_type);          \
+        if (spec_data-> c_du_field .du_type != TAD_DU_UNDEF)    \
             flag = 1;                                           \
     } while (0)
 
@@ -341,9 +339,10 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
  *
  * @return zero on success or error code.
  */ 
-int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
-                   const tad_tmpl_arg_t *args, size_t arg_num, 
-                   const csap_pkts_p up_payload, csap_pkts_p pkts)
+int 
+eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
+               const tad_tmpl_arg_t *args, size_t arg_num, 
+               const csap_pkts_p up_payload, csap_pkts_p pkts)
 {
     eth_csap_specific_data_p spec_data; 
     csap_pkts_p pld_fragment;
@@ -365,11 +364,11 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     if (csap_descr == NULL)
     {
         ERROR("%s(): null csap_descr passed %d", __FUNCTION__);
-        return TE_ETADCSAPNOTEX;
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
     }
 
     if (up_payload == NULL)
-        return TE_ETADWRONGNDS;
+        return TE_RC(TE_TAD_CSAP, TE_ETADWRONGNDS);
 
     pld_fragment = up_payload;
     do {
@@ -398,7 +397,7 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         { /* TODO: this check seems to be not correct, compare with interface MTU
                   should be here. */
             ERROR("too greate frame size %d", frame_size);
-            return TE_EMSGSIZE; 
+            return TE_RC(TE_TAD_CSAP, TE_EMSGSIZE); 
         }
 #endif
 
@@ -407,7 +406,8 @@ int eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 
         if ((data = malloc(frame_size)) == NULL)
         {
-            return TE_ENOMEM; /* can't allocate memory for frame data */
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM); 
+                   /* can't allocate memory for frame data */
         } 
         memset(data, 0, frame_size); 
         p = data;
@@ -541,7 +541,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_ETADCSAPNOTEX;
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
     }
 
     spec_data = (eth_csap_specific_data_p)
@@ -613,7 +613,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         {
             if (cfi_pattern != cfi)
             {
-                rc = TE_ETADNOTMATCH;
+                rc = TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
                 goto cleanup;
             }
         }
@@ -696,8 +696,9 @@ cleanup:
  *
  * @return zero on success or error code.
  */
-int eth_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu)
+int 
+eth_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
+                    asn_value_p   *pattern_pdu)
 { 
     UNUSED(csap_id); 
     UNUSED(layer);
@@ -706,7 +707,7 @@ int eth_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
     if (pattern_pdu)
         *pattern_pdu = NULL;
 
-    return TE_EOPNOTSUPP;
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }
 
 
