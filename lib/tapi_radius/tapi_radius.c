@@ -145,10 +145,10 @@ static const tapi_radius_attr_info_t tapi_radius_dict[] =
     { 85, "Acct-Interim-Interval", TAPI_RADIUS_TYPE_INTEGER },
     { 87, "NAS-Port-Id", TAPI_RADIUS_TYPE_TEXT },
     { 88, "Framed-Pool", TAPI_RADIUS_TYPE_TEXT },
-    { 95, "NAS-IPv6-Address", TAPI_RADIUS_TYPE_ },
-    { 96, "Framed-Interface-Id", TAPI_RADIUS_TYPE_ },
+    { 95, "NAS-IPv6-Address", TAPI_RADIUS_TYPE_TEXT }, /* FIXME */
+    { 96, "Framed-Interface-Id", TAPI_RADIUS_TYPE_TEXT }, /* FIXME */
     { 97, "Framed-IPv6-Prefix", TAPI_RADIUS_TYPE_STRING },
-    { 98, "Login-IPv6-Host", TAPI_RADIUS_TYPE_ },
+    { 98, "Login-IPv6-Host", TAPI_RADIUS_TYPE_TEXT }, /* FIXME */
     { 99, "Framed-IPv6-Route", TAPI_RADIUS_TYPE_TEXT },
     { 100, "Framed-IPv6-Pool", TAPI_RADIUS_TYPE_TEXT },
     { 101, "Error-Cause", TAPI_RADIUS_TYPE_INTEGER },
