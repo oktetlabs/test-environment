@@ -476,7 +476,7 @@ connect_getpid(rpcserver *rpcs)
     {
         if (rc == 0)
         {
-            ERROR("RPC server %s does not try to connect", rpcs->name);
+            ERROR("RPC server '%s' does not try to connect", rpcs->name);
             return TE_RC(TE_RCF_PCH, TE_ETIMEDOUT);
         }
         else if (errno != EINTR)
