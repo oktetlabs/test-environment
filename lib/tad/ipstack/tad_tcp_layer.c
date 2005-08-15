@@ -603,10 +603,12 @@ cleanup:
  *
  * @return zero on success or error code.
  */
-int tcp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu)
+int 
+tcp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
+                    asn_value_p   *pattern_pdu)
 {
     int rc = 0;
+    
     UNUSED(csap_id);
     UNUSED(layer);
     UNUSED(tmpl_pdu);

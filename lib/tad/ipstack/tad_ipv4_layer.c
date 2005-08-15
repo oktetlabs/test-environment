@@ -111,7 +111,7 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
         {
             ERROR("%s(CSAP %d) get choice value of csap pdu fails %r",
                   __FUNCTION__, csap_descr->id, rc);
-            return rc;
+            return TE_RC(TE_TAD_CSAP, rc);
         }
     }
 
@@ -344,7 +344,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         {                                                               \
             rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
                                       args, arg_num, place_l, length_); \
-            CHECK(rc != 0, "%s():%d: " #c_du_field_ " error: %r",     \
+            CHECK(rc != 0, "%s():%d: " #c_du_field_ " error: %r",       \
               __FUNCTION__,  __LINE__, rc);                             \
         }                                                               \
         else                                                            \
@@ -400,7 +400,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                 csap_descr->layers[layer].specific_data; 
 
     if (csap_descr->type == TAD_CSAP_DATA) /* TODO */
-        return TE_EOPNOTSUPP;
+        return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 
     /* TODO: IPv4 options generating */ 
 
@@ -700,7 +700,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     if ((csap_descr = csap_find(csap_id)) == NULL)
     {
         ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_ETADCSAPNOTEX;
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
     } 
     spec_data = (ip4_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
 
@@ -715,7 +715,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                                   data, _size, _asn_label);     \
         if (rc != 0)                                            \
         {                                                       \
-            F_VERB("%s: csap %d field %s not match, rc %X",     \
+            F_VERB("%s: csap %d field %s not match, rc 0x%X",   \
                     csap_id, __FUNCTION__, _asn_label, rc);     \
             goto cleanup;                                       \
         }                                                       \
@@ -728,7 +728,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                               &tmp8, 1, "version");
     if (rc) 
     {
-        F_VERB("%s: field version not match, rc %X", __FUNCTION__, rc); 
+        F_VERB("%s: field version not match, rc 0x%X", __FUNCTION__, rc); 
         goto cleanup;
     }
 
@@ -737,7 +737,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                               &tmp8, 1, "header-len");
     if (rc) 
     {
-        F_VERB("%s: field verxion not match, rc %X", __FUNCTION__, rc); 
+        F_VERB("%s: field verxion not match, rc 0x%X", __FUNCTION__, rc); 
         goto cleanup;
     }
     data++;
@@ -778,7 +778,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     {
         rc = asn_write_component_value(parsed_packet, ip4_header_pdu, "#ip4"); 
         if (rc)
-            ERROR("%s, write IPv4 header to packet fails %r\n", 
+            ERROR("%s, write IPv4 header to packet fails %r", 
                   __FUNCTION__, rc);
     } 
 
@@ -787,7 +787,7 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 cleanup:
     asn_free_value(ip4_header_pdu); 
 
-    return rc;
+    return TE_RC(TE_TAD_CSAP, rc);
 }
 
 /* Now we don't support traffic generating for this CSAP */
@@ -813,7 +813,7 @@ int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
     UNUSED(layer);
     UNUSED(tmpl_pdu);
 
-    return TE_EOPNOTSUPP;
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }
 #endif
 
