@@ -176,17 +176,19 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 
         if(loc_port)
         {
-            loc_port = ntohs(loc_port);
+            uint32_t port = ntohs(loc_port);
+            
             rc = asn_write_value_field(csap_spec, 
-                &loc_port, sizeof(loc_port), "0.#tcp.local-port.#plain");
+                     &port, sizeof(port), "0.#tcp.local-port.#plain");
         }
         if (rc) break; 
 
         if(rem_port)
         {
-            rem_port = ntohs(rem_port);
+            uint32_t port = ntohs(rem_port);
+            
             rc = asn_write_value_field(csap_spec, 
-                &rem_port, sizeof(rem_port), "0.#tcp.remote-port.#plain");
+                     &port, sizeof(port), "0.#tcp.remote-port.#plain");
         }
         if (rc) break;
 
@@ -249,12 +251,20 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
                                        "pdus.1.#ip4.dst-addr.#plain");
 
         if (src_port)
-            rc = asn_write_value_field(pu, &src_port, sizeof(src_port),
+        {
+            uint32_t port = src_port;
+            
+            rc = asn_write_value_field(pu, &port, sizeof(port),
                                        "pdus.0.#tcp.src-port.#plain");
+        }
 
         if (dst_port)
-            rc = asn_write_value_field(pu, &dst_port, sizeof(src_port),
+        {
+            uint32_t port = dst_port;
+            
+            rc = asn_write_value_field(pu, &port, sizeof(port),
                                        "pdus.0.#tcp.dst-port.#plain"); 
+        }
 
     } while (0);
 
