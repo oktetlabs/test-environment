@@ -814,6 +814,21 @@ struct tarpc_get_queued_completion_status_out {
     tarpc_bool            retval;
 };    
 
+/* PostQueuedCompletionStatus() */
+
+struct tarpc_post_queued_completion_status_in {
+    struct tarpc_in_arg   common;
+    tarpc_handle          completion_port;
+    tarpc_uint            number_of_bytes;
+    tarpc_int             completion_key;
+    tarpc_overlapped      overlapped;
+};    
+
+struct tarpc_post_queued_completion_status_out {
+    struct tarpc_out_arg  common;
+    tarpc_bool            retval;
+};    
+
 /* GetCurrentProcessId() */
 
 struct tarpc_get_current_process_id_in {
@@ -2922,6 +2937,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(has_overlapped_io_completed)
         RPC_DEF(create_io_completion_port)
         RPC_DEF(get_queued_completion_status)
+        RPC_DEF(post_queued_completion_status)
         RPC_DEF(get_current_process_id)
         RPC_DEF(get_sys_info)
         RPC_DEF(vm_trasher)

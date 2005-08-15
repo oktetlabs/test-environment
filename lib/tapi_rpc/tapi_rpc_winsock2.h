@@ -373,13 +373,16 @@ extern rpc_handle rpc_create_io_completion_port(rcf_rpc_server *rpcs,
 /**
  * Windows GetQueuedCompletionStatus().
  *
- * @param rpcs                 RPC server handle.
- * @param completion_port      Handle of the existing completion port.
- * @param number_of_bytes      Number of bytes transferred during the
- *                             I/O operation.
- * @param completion_key       Completion key value associated with the
- *                             file handle whose I/O has completed.
- * @param milliseconds         Timeout to wait for the I/O completion.
+ * @param rpcs              RPC server handle.
+ * @param completion_port   Handle of the existing completion port.
+ * @param number_of_bytes   Where to store the number of bytes
+ *                          transferred during the I/O operation.
+ * @param completion_key    Where to store the completion key value
+ *                          associated with the file handle whose I/O
+ *                          has completed.
+ * @param overlapped        Where to store the overlapped structure id
+ *                          of the completed operation.
+ * @param milliseconds      Timeout to wait for the I/O completion.
  *
  * @return   Non-zero on success, zero otherwise.
  */
@@ -389,6 +392,23 @@ extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
                                  int *completion_key,
                                  rpc_overlapped *overlapped,
                                  unsigned int milliseconds);
+
+/**
+ * Windows PostQueuedCompletionStatus().
+ *
+ * @param rpcs              RPC server handle.
+ * @param completion_port   Handle of the existing completion port.
+ * @param number_of_bytes   Number of bytes transferred.
+ * @param completion_key    Completion key value.
+ * @param overlapped        Overlapped structure id.
+ *
+ * @return   Non-zero on success, zero otherwise.
+ */
+extern te_bool rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
+                                 rpc_handle completion_port,
+                                 unsigned int number_of_bytes,
+                                 int completion_key,
+                                 rpc_overlapped overlapped);
 
 /**
  * Windows GetCurrentProcessId()

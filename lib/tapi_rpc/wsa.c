@@ -716,6 +716,45 @@ rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
     RETVAL_INT(get_queued_completion_status, out.retval);
 }
 
+te_bool
+rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
+                                 rpc_handle completion_port,
+                                 unsigned int number_of_bytes,
+                                 int completion_key,
+                                 rpc_overlapped overlapped)
+{
+    rcf_rpc_op                              op;
+    tarpc_post_queued_completion_status_in  in;
+    tarpc_post_queued_completion_status_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(post_queued_completion_status, FALSE);
+    }
+
+    op = rpcs->op;
+
+    in.completion_port = (tarpc_handle)completion_port;
+    in.number_of_bytes = number_of_bytes;
+    in.completion_key = completion_key;
+    in.overlapped = overlapped;
+
+    rcf_rpc_call(rpcs, "post_queued_completion_status", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: post_queued_completion_status"
+                 "(%x, %u, %d, %x) -> %s (%s)", rpcs->ta,
+                 rpcs->name, rpcop2str(op), completion_port,
+                 number_of_bytes, completion_key, overlapped, 
+                 out.retval ? "true" : "false",
+                 win_error_rpc2str(out.common.win_error));
+
+    RETVAL_INT(post_queued_completion_status, out.retval);
+}
+
 int
 rpc_get_current_process_id(rcf_rpc_server *rpcs)
 {
