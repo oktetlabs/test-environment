@@ -124,7 +124,7 @@ tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p pdu)
                                    &(spec_data->du_field_));            \
         if (rc != 0)                                                    \
         {                                                               \
-            ERROR("%s(csap %d),line %d, convert %s failed,rc %r",     \
+            ERROR("%s(csap %d),line %d, convert %s failed, rc %r",      \
                   __FUNCTION__, csap_id, __LINE__, #du_field_, rc);     \
             return rc;                                                  \
         }                                                               \

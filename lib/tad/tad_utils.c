@@ -115,7 +115,7 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
         if (rc != 0)
         {
             ERROR("pdus do not confirm to CSAP; "
-                  "rc: %r, csap id: %d, level: %d\n", 
+                  "rc: %r, csap id: %d, level: %d", 
                   rc, csap_descr->id, level);
             break;
         }
@@ -780,7 +780,7 @@ tad_data_unit_convert(const asn_value *pdu_val,
 
     rc = tad_data_unit_convert_simple(ch_du_field, location);
     if (rc != 0)
-        ERROR("%s(tag %d, pdu name %s): rc from get choice label: %x",
+        ERROR("%s(tag %d, pdu name %s): rc from get choice label: %r",
               __FUNCTION__, tag_value, asn_get_name(pdu_val), rc);
     return rc;
 }
@@ -805,7 +805,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
     rc = asn_get_choice_value(ch_du_field, &du_field, &t_class, &t_val); 
     if (rc != 0)
     {
-        ERROR("%s(field name %s): rc from get choice: %x",
+        ERROR("%s(field name %s): rc from get choice: %r",
               __FUNCTION__, asn_get_name(ch_du_field), rc);
         return rc;
     }
@@ -869,7 +869,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                 if (rc)
                 {
                     free(d_ptr);
-                    ERROR("rc from asn_read for some string: %x", rc);
+                    ERROR("rc from asn_read for some string: %r", rc);
                     return rc;
                 } 
 
@@ -890,7 +890,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                 rc = asn_get_field_data(du_field, &script, "");
                 if (rc != 0)
                 {
-                    ERROR("rc from asn_get for 'script': %x", rc);
+                    ERROR("rc from asn_get for 'script': %r", rc);
                     return rc;
                 }
 
@@ -904,7 +904,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                     rc = tad_int_expr_parse(expr_string, &expr, &syms);
                     if (rc != 0)
                     {
-                        ERROR("expr script parse error %x,"
+                        ERROR("expr script parse error %r,"
                               " script '%s', syms %d",
                               rc, expr_string, syms);
                         return rc;

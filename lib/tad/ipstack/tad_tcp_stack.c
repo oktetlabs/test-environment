@@ -291,12 +291,12 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     tcp_spec_data->in = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
     if (tcp_spec_data->in < 0)
     {
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
     if (setsockopt(tcp_spec_data->in, SOL_SOCKET, SO_REUSEADDR, 
                    (void *) &opt, sizeof(opt)) == -1)
     {
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
 
@@ -327,7 +327,7 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                    (void *) &opt, sizeof(opt)) == -1)
     {
         tcp_single_destroy_cb(csap_id, layer);
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     local.sin_family = AF_INET;
@@ -338,7 +338,7 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if (bind(tcp_spec_data->in, &local, sizeof(local)) == -1)
     {
         perror("tcp csap socket bind");
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
 
@@ -346,12 +346,12 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     tcp_spec_data->out = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
     if (tcp_spec_data->out < 0)
     {
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
     if (setsockopt(tcp_spec_data->out, SOL_SOCKET, SO_REUSEADDR, 
                    (void *) &opt, sizeof(opt)) == -1)
     {
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     } 
 
     if (setsockopt(tcp_spec_data->out, SOL_SOCKET, SO_BINDTODEVICE,
@@ -363,8 +363,8 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     if (ioctl(tcp_spec_data->in, SIOCGIFADDR, interface) < 0)
     {
-        perror ("ioctl get ifaddr");
-        return errno;
+        perror("ioctl get ifaddr");
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
     ifa = (struct sockaddr_in *) &interface->ifr_addr;
     strncpy(tcp_spec_data->ipaddr, 
@@ -374,14 +374,14 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if (rc)
     {
         tcp_single_destroy_cb(csap_id, layer);
-        return rc;
+        return TE_OS_RC(TE_TAD_CSAP, rc);
     }
 
     if (setsockopt(tcp_spec_data->out, SOL_SOCKET, SO_BROADCAST, 
                    (void *) &opt, sizeof(opt)) == -1)
     {
         tcp_single_destroy_cb(csap_id, layer);
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     local.sin_addr.s_addr = ifa->sin_addr.s_addr;
@@ -389,7 +389,7 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if (bind(tcp_spec_data->out, &local, sizeof(local)) == -1)
     {
         perror ("tcp csap socket bind");
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     free(interface);
@@ -612,16 +612,16 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
         if ((spec_data->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         {
-            rc = errno;
-            ERROR("%s(CSAP %d) socket create failed, errno %d", 
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            ERROR("%s(CSAP %d) socket create failed, errno %r", 
                   __FUNCTION__, csap_descr->id, rc);
             return rc;
         }
 
         if (bind(spec_data->socket, SA(&local), sizeof(local)) < 0)
         {
-            rc = errno;
-            ERROR("%s(CSAP %d) socket bind failed, errno %d", 
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            ERROR("%s(CSAP %d) socket bind failed, errno %r", 
                   __FUNCTION__, csap_descr->id, rc);
             return rc;
         }
@@ -631,8 +631,8 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             case NDN_TAG_TCP_DATA_SERVER:
                 if (listen(spec_data->socket, 10) < 0)
                 {
-                    rc = errno;
-                    ERROR("%s(CSAP %d) listen failed, errno %d", 
+                    rc = TE_OS_RC(TE_TAD_CSAP, errno);
+                    ERROR("%s(CSAP %d) listen failed, errno %r", 
                           __FUNCTION__, csap_descr->id, rc);
                     return rc;
                 }
@@ -656,8 +656,8 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                     if (connect(spec_data->socket, SA(&remote), 
                                 sizeof(remote)) < 0)
                     {
-                        rc = errno;
-                        ERROR("%s(CSAP %d) connect failed, errno %d", 
+                        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+                        ERROR("%s(CSAP %d) connect failed, errno %r", 
                               __FUNCTION__, csap_descr->id, rc);
                         return rc;
                     }

@@ -267,7 +267,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                 {
                     rc = csap_descr->echo_cb(csap_descr, data, d_len);
                     if (rc)
-                        ERROR("csap #%d, echo_cb returned %x code.", 
+                        ERROR("csap #%d, echo_cb returned %r code.", 
                               csap_descr->id, rc);
                         /* Have no reason to stop receiving. */
                     rc = 0;
@@ -553,7 +553,7 @@ tad_prepare_csap(csap_p csap_descr, const asn_value *pattern)
         rc = csap_descr->prepare_recv_cb(csap_descr);
         if (rc != 0)
         {
-            ERROR("prepare for recv failed %x", rc);
+            ERROR("prepare for recv failed %r", rc);
             return rc;
         }
     } 
@@ -580,7 +580,7 @@ tad_prepare_csap(csap_p csap_descr, const asn_value *pattern)
         rc = csap_descr->prepare_send_cb(csap_descr);
         if (rc != 0)
         {
-            ERROR("prepare for recv failed %x", rc);
+            ERROR("prepare for recv failed %r", rc);
             return rc;
         }
     }
@@ -693,7 +693,7 @@ tad_tr_recv_thread(void *arg)
                 rc = csap_descr->prepare_send_cb(csap_descr);
                 if (rc != 0)
                 {
-                    ERROR("prepare for send failed %x", rc);
+                    ERROR("prepare for send failed %r", rc);
                     break;
                 }
             }

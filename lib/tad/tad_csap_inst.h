@@ -105,7 +105,7 @@
         int rc = pthread_mutex_lock(&((csap_inst_)->data_access_lock)); \
                                                                         \
         if (rc != 0)                                                    \
-            ERROR("%s: mutex_lock fails %x", __FUNCTION__, rc);         \
+            ERROR("%s: mutex_lock fails %d", __FUNCTION__, rc);         \
     } while (0)
 
 /**
@@ -119,7 +119,7 @@
     do {                                                                  \
         (rc_) = pthread_mutex_trylock(&((csap_inst_)->data_access_lock)); \
         if (rc_ != 0 && rc_ != EBUSY)                                     \
-            ERROR("%s: mutex_trylock fails %x", __FUNCTION__, rc_);       \
+            ERROR("%s: mutex_trylock fails %d", __FUNCTION__, rc_);       \
     } while (0)
 
 /**
@@ -132,7 +132,7 @@
         int rc = pthread_mutex_unlock(&((csap_inst_)->data_access_lock)); \
                                                                           \
         if (rc != 0)                                                      \
-            ERROR("%s: mutex_unlock fails %x", __FUNCTION__, rc);         \
+            ERROR("%s: mutex_unlock fails %d", __FUNCTION__, rc);         \
     } while (0)
 
 

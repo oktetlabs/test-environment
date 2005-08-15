@@ -110,11 +110,11 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_ETH_DST,
                                &spec_data->du_dst_addr);
 
-    VERB("rc from DU convert dst-addr %x, du-type: %d", 
-            rc, spec_data->du_dst_addr.du_type);
+    VERB("rc from DU convert dst-addr %r, du-type: %d", 
+          rc, spec_data->du_dst_addr.du_type);
     if (rc)
     {
-        ERROR("convert of dst addr rc %x", rc);
+        ERROR("convert of dst addr rc %r", rc);
         return rc; 
     }
     
@@ -443,7 +443,7 @@ eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                                       (uint8_t *)&var, sizeof(var));        \
             if (rc != 0)                                                    \
             {                                                               \
-                ERROR("%s(): generate " #c_du_field ", error: %r",        \
+                ERROR("%s(): generate " #c_du_field ", error: %r",          \
                       __FUNCTION__,  rc);                                   \
                 return rc;                                                  \
             }                                                               \
@@ -654,7 +654,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     {
         rc = asn_write_component_value(parsed_packet, eth_hdr_pdu, "#eth"); 
         if (rc)
-            ERROR("write eth header to packet rc %x\n", rc);
+            ERROR("write eth header to packet rc %r", rc);
     }
 
     if (rc != 0)

@@ -297,7 +297,7 @@ udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
                                       args, arg_num, p, 2);             \
             if (rc != 0)                                                \
             {                                                           \
-                ERROR("%s():%d: " #c_du_field_ " error: %r",          \
+                ERROR("%s():%d: " #c_du_field_ " error: %r",            \
                       __FUNCTION__,  __LINE__, rc);                     \
                 goto cleanup;                                           \
             }                                                           \

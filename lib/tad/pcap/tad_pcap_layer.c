@@ -156,7 +156,7 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     rc = asn_get_length(tmpl_pdu, "filter");
     if (rc < 0)
     {
-        ERROR("%s(): asn_get_length() failed, rc=%d", __FUNCTION__, rc);
+        ERROR("%s(): asn_get_length() failed, rc=%r", __FUNCTION__, rc);
         return rc;
     }
     
@@ -171,7 +171,7 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     rc = asn_read_value_field(tmpl_pdu, pcap_str, &val_len, "filter");
     if (rc < 0)
     {
-        ERROR("%s(): asn_read_value_field() failed, rc=%d", __FUNCTION__, rc);
+        ERROR("%s(): asn_read_value_field() failed, rc=%r", __FUNCTION__, rc);
         return rc;
     }
 
@@ -199,7 +199,7 @@ int pcap_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
                                val_len, "bpf-id");
     if (rc < 0)
     {
-        ERROR("%s(): asn_write_value_field() failed, rc=%d",
+        ERROR("%s(): asn_write_value_field() failed, rc=%r",
               __FUNCTION__, rc);
         return rc;
     }
@@ -345,7 +345,7 @@ pcap_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     {
         rc = asn_write_component_value(parsed_packet, pattern_pdu, "#pcap"); 
         if (rc)
-            ERROR("write pcap filter to packet rc %x\n", rc);
+            ERROR("write pcap filter to packet rc %r", rc);
     }
 
     VERB("Try to copy payload of %u bytes", (unsigned)(pkt->len));

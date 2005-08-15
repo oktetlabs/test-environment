@@ -453,7 +453,7 @@ tad_eth_arp_reply(csap_p csap_descr, const char *usr_param,
     if (csap_descr->prepare_send_cb != NULL && 
         (rc = csap_descr->prepare_send_cb(csap_descr)) != 0)
     {
-        ERROR("%s(): prepare for recv failed %x", rc);
+        ERROR("%s(): prepare for recv failed %r", rc);
         return rc;
     }
 

@@ -267,9 +267,11 @@ parent_read_byte(cli_csap_specific_data_p spec_data,
 
         if (rc < 0)
         {
+            int err = errno;
+            
             ERROR("Reading single character from Expect side "
-                  "fails on select(), errno = 0x%X", errno);
-            return errno;
+                  "fails on select(), errno = 0x%X", err);
+            return err;
         }
         
         if (rc == 0)
@@ -297,9 +299,11 @@ parent_read_byte(cli_csap_specific_data_p spec_data,
         {
             if ((rc = read(spec_data->data_sock, data, 1)) != 1)
             {
+                int err = errno;
+                
                 ERROR("Reading single character from Expect side "
-                      "fails on read(), rc = %d, errno = 0x%X", rc, errno);
-                return (rc == 0) ? ECONNABORTED : errno;
+                      "fails on read(), rc = %d, errno = 0x%X", rc, err);
+                return (rc == 0) ? ECONNABORTED : err;
             }
         }
         else
@@ -1135,14 +1139,14 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if (socketpair(PF_LOCAL, SOCK_STREAM, 0, sv) != 0)
     {
         rc = errno;
-        ERROR("Cannot create a pair of sockets, errno %X", errno);
+        ERROR("Cannot create a pair of sockets, errno %d", rc);
         goto error;
     }
     
     if (pipe(pipe_descrs) != 0)
     {
         rc = errno;
-        ERROR("Cannot create pipe, errno %X", errno);
+        ERROR("Cannot create pipe, errno %d", rc);
         close(sv[0]);
         close(sv[1]);
         goto error;
@@ -1162,7 +1166,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if ((cli_spec_data->expect_pid = fork()) == -1)
     {
         rc = errno;
-        ERROR("fork failed, errno %X", errno);
+        ERROR("fork failed, errno %d", rc);
         close(sv[0]);
         close(sv[1]);
         close(pipe_descrs[0]);
@@ -1449,7 +1453,7 @@ cli_session_open(cli_csap_specific_data_p spec_data)
 
     if (spec_data->io < 0)
     {
-        ERROR("exp_spawnl failed with errno=%X", errno);
+        ERROR("exp_spawnl failed with errno=%d", errno);
         return EFAULT;
     }
     else

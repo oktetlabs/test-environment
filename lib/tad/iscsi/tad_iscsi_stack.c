@@ -331,7 +331,7 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     rc = asn_get_indexed(csap_nds, &iscsi_nds, 0);
     if (rc != 0)
     {
-        ERROR("%s() get iSCSI csap spec failed %X", __FUNCTION__, rc);
+        ERROR("%s() get iSCSI csap spec failed %r", __FUNCTION__, rc);
         return rc;
     } 
     

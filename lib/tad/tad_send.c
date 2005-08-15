@@ -66,7 +66,7 @@
         if (snprintf(answer_buffer + ans_len,                       \
                      RBUF - ans_len, _fmt) >= RBUF - ans_len)       \
         {                                                           \
-            ERROR("answer is truncated\n");                         \
+            ERROR("answer is truncated");                           \
         }                                                           \
         rcf_ch_lock();                                              \
         VERB("Answer to send (%s:%d): %s",                          \
@@ -142,7 +142,7 @@ tad_tr_send_thread(void * arg)
             rc = csap_descr->prepare_send_cb(csap_descr);
             if (rc)
             {
-                ERROR("prepare for send failed %x", rc);
+                ERROR("prepare for send failed %r", rc);
                 break;
             }
         }
@@ -685,7 +685,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
         rc = asn_get_subvalue(nds, &level_pdu, label); 
         if (rc != 0)
         {
-            ERROR("get subvalue in generate packet fails %x", rc);
+            ERROR("get subvalue in generate packet fails %r", rc);
             rc = TE_RC(TE_TAD_CH, rc);
         }
 
@@ -714,7 +714,7 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
         if (rc != 0) 
         {
             ERROR("generate binary data error; "
-                  "rc: %r, csap id: %d, level: %d\n", 
+                  "rc: %r, csap id: %d, level: %d", 
                   rc, csap_descr->id, level);
 
             rc = TE_RC(TE_TAD_CSAP, rc);

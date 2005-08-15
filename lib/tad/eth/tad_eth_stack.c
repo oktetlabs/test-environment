@@ -135,7 +135,7 @@ eth_release(csap_p csap_descr)
         {
             csap_descr->last_errno = errno;
             perror("close output socket");
-            WARN("%s: CLOSE output socket error %d", 
+            WARN("%s: CLOSE output socket error 0x%X", 
                  __FUNCTION__, csap_descr->last_errno);
         }
         spec_data->out = -1;
@@ -177,7 +177,7 @@ eth_prepare_recv(csap_p csap_descr)
                                  &spec_data->in)) != 0)
     {
         ERROR("open_packet_socket error %d", rc);
-        return TE_RC(TE_TAD_CSAP, rc);
+        return TE_OS_RC(TE_TAD_CSAP, rc);
     }
 
     VERB("csap %d Opened Socket %d", 
@@ -224,7 +224,7 @@ eth_prepare_send(csap_p csap_descr)
                                  &spec_data->out)) != 0)
     { 
         ERROR("open_packet_socket error %d", rc);
-        return TE_RC(TE_TAD_CSAP, rc);
+        return TE_OS_RC(TE_TAD_CSAP, rc);
     }
 
     buf_size = 0x100000; 
@@ -669,23 +669,26 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
         {
             case ETH_IFACE_HWADDR_ERROR:
                 ERROR("Get iface <%s> hwaddr error", device_id);
-                rc = errno; /* TODO: correct rc */
+                rc = TE_RC(TE_TAD_CSAP, TE_EFAIL); /* TODO: correct rc */
                 break;
+                
             case ETH_IFACE_IFINDEX_ERROR:
                 ERROR("Interface index for <%s> could not get", 
                         device_id);
-                rc = errno; /* TODO: correct rc */ 
+                rc = TE_RC(TE_TAD_CSAP, TE_EFAIL); /* TODO: correct rc */ 
                 break;
+                
             case ETH_IFACE_NOT_FOUND:
-                rc = TE_ENODEV;
+                rc = TE_RC(TE_TAD_CSAP, TE_ENODEV); /* TODO: correct rc */ 
                 ERROR("Interface <%s> not found", device_id);
                 break;
+                
             default:
-                ERROR("Interface <%s> config failure %x", 
-                        device_id, rc);
+                rc = TE_RC(TE_TAD_CSAP, TE_EFAIL);
+                ERROR("Interface <%s> config failure %r", device_id, rc);
         }
         free(iface_p);        
-        return TE_RC(TE_TAD_CSAP, rc); 
+        return rc; 
     }
 
     eth_spec_data = calloc (1, sizeof(eth_csap_specific_data_t));
@@ -749,7 +752,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     else if (rc)
     {
         free_eth_csap_data(eth_spec_data, ETH_COMPLETE_FREE);
-        ERROR("ASN processing error %x", rc);
+        ERROR("ASN processing error %r", rc);
         return TE_RC(TE_TAD_CSAP, rc); 
     }
     else
@@ -776,7 +779,7 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     }
     else if (rc != 0)
     {
-        ERROR("ASN processing error %x", rc);
+        ERROR("ASN processing error %r", rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
     else 

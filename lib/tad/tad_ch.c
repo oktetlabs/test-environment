@@ -231,7 +231,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     {
         rc = TE_RC(TE_TAD_CH, errno);
         SEND_ANSWER("%d CSAP creation internal error", rc);
-        ERROR("CSAP '%s' creation internal error 0x%x", stack, rc);
+        ERROR("CSAP '%s' creation internal error %r", stack, rc);
         return 0;
     }
 
@@ -290,7 +290,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
             {
                 rc = nbr_p->init_cb(new_csap_id, csap_nds, level);
                 if (rc != 0) 
-                    ERROR("CSAP init error %X", rc);
+                    ERROR("CSAP init error %r", rc);
                 INFO("init low proto '%s' upper proto '%s' success",
                      (lower_proto == NULL) ? "(nil)" : lower_proto,
                      new_csap->layers[level].proto);
@@ -468,7 +468,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     if (rc)
     {
         /* ERROR! NDS is not parsed correctly */
-        ERROR("parse error in attached NDS, code 0x%x, symbol: %d",
+        ERROR("parse error in attached NDS, code %r, symbol: %d",
               rc, syms);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         return 0;
@@ -493,7 +493,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         rc = csap_descr_p->check_pdus_cb(csap_descr_p, nds);
         if (rc) 
         {
-            ERROR("send nds check_pdus error: %x", rc);
+            ERROR("send nds check_pdus error: %r", rc);
             SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
             csap_descr_p->command = TAD_OP_IDLE;
             csap_descr_p->state = 0;
@@ -510,7 +510,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         (rc = pthread_attr_setdetachstate(&pthread_attr,
                                           PTHREAD_CREATE_DETACHED)) != 0)
     {
-        ERROR("Cannot initialize pthread attribute variable: %X", rc);
+        ERROR("Cannot initialize pthread attribute variable: %d", rc);
         SEND_ANSWER("%d cannot initialize pthread attribute variable",
                     TE_RC(TE_TAD_CH, rc));
         free(send_context);
@@ -666,7 +666,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
     if (rc)
     { 
-        ERROR("parse error in NDS, rc: 0x%x, sym: %d", rc, syms);
+        ERROR("parse error in NDS, rc: %r, sym: %d", rc, syms);
         INFO("sr_flag %d, NDS: <%s>", sr_flag, ba);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         return 0;
@@ -730,7 +730,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
             rc = csap_descr_p->check_pdus_cb(csap_descr_p, pattern_unit);
             if (rc != 0) 
             {
-                WARN("%s(): CSAP %d, check_pdus error: 0x%X",
+                WARN("%s(): CSAP %d, check_pdus error: %r",
                      __FUNCTION__, csap_descr_p->id, rc);
                 break;
             }
@@ -744,7 +744,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
 
     if (rc) 
     {
-        WARN("pattern does not confirm to CSAP; rc 0x%x", rc);
+        WARN("pattern does not confirm to CSAP; rc %r", rc);
         asn_free_value(nds);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         csap_descr_p->command = TAD_OP_IDLE;
@@ -772,7 +772,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         (rc = pthread_attr_setdetachstate(&pthread_attr,
                                           PTHREAD_CREATE_DETACHED)) != 0)
     {
-        ERROR("Cannot initialize pthread attribute variable: %X", rc);
+        ERROR("Cannot initialize pthread attribute variable: %d", rc);
         SEND_ANSWER("%d cannot initialize pthread attribute variable",
                     TE_RC(TE_TAD_CH, rc));
         free(recv_context);
@@ -784,7 +784,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     if ((rc = pthread_create(&recv_thread, &pthread_attr,
                              tad_tr_recv_thread, recv_context)) != 0)
     {
-        ERROR("recv thread create error; rc 0x%x", rc);
+        ERROR("recv thread create error; rc %d", rc);
         asn_free_value(recv_context->nds);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         free(recv_context);
@@ -903,7 +903,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
     else
     {
         ERROR("Inappropriate command, CSAP %d is not receiving; "
-              "command %d; state %x ",
+              "command %d; state %x",
               csap_descr_p->id, 
               (int)csap_descr_p->command, (int)csap_descr_p->state);
         CSAP_DA_UNLOCK(csap_descr_p);

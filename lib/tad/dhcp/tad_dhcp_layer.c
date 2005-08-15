@@ -469,7 +469,7 @@ dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         rc = asn_write_component_value(parsed_packet, dhcp_message_pdu,
                                        "#dhcp"); 
         if (rc)
-            ERROR("%s, write DHCP message to packet fails %X\n", 
+            ERROR("%s, write DHCP message to packet fails %r", 
                   __FUNCTION__, rc);
     } 
 

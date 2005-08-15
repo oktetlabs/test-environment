@@ -378,7 +378,7 @@ int snmp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     {
         rc = asn_write_component_value(parsed_packet, snmp_msg, "#snmp"); 
         if (rc)
-            ERROR("%s, write SNMP message to packet fails %r\n", 
+            ERROR("%s, write SNMP message to packet fails %r", 
                   __FUNCTION__, rc);
         asn_free_value(snmp_msg);
         snmp_msg = NULL;

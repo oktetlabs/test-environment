@@ -119,15 +119,15 @@ open_packet_socket(const char *ifname, int *sock)
     rc = eth_find_interface(ifname,  &ifdescr);
     if (rc != 0)
     {
-        ERROR("%s(): find interface %s failed %r", 
+        ERROR("%s(): find interface %s failed %d", 
               __FUNCTION__, ifname, rc);
-        return rc;
+        return ENOENT;
     }
 
     if (sock == NULL)
     {
         ERROR("Location for socket is NULL");
-        return TE_EINVAL;
+        return EINVAL;
     }
 
     /* Create packet socket */
@@ -141,7 +141,7 @@ open_packet_socket(const char *ifname, int *sock)
     {
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("Socket creation failed, errno %d, \"%s\"\n", 
+        ERROR("Socket creation failed, errno %d, \"%s\"", 
                 rc, err_buf);
         return rc;
     }
@@ -178,7 +178,7 @@ open_packet_socket(const char *ifname, int *sock)
     {
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("Socket bind failed, errno %d, \"%s\"\n", 
+        ERROR("Socket bind failed, errno %d, \"%s\"", 
                 rc, err_buf);
 
         VERB("CLOSE SOCKET (%d): %s:%d", 
@@ -215,7 +215,7 @@ close_packet_socket(const char* ifname, int sock)
     {
         ERROR("%s(): iface %d not used before for create packet socket", 
               __FUNCTION__, ifname);
-        return TE_EINVAL;
+        return EINVAL;
     }
 
     rc = eth_free_interface(&(ir->descr));
@@ -257,14 +257,12 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
     iface_user_rec *ir;
 
     if (name == NULL) 
-    {
-       return TE_EINVAL;
-    }
+       return ETH_IFACE_NOT_FOUND;
 
     VERB("%s('%s') start", __FUNCTION__, name);
 
     if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-        return errno;
+        return ETH_IFACE_NOT_FOUND;
 
     ir = find_iface_user_rec(name);
     if (ir != NULL)
@@ -284,7 +282,7 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
         strerror_r(rc, err_buf, sizeof(err_buf)); 
         ERROR("get if addr error %d \"%s\"", rc, err_buf);
         close(cfg_socket);
-        return rc;
+        return ETH_IFACE_HWADDR_ERROR;
     }
 
     memcpy(ifdescr->local_addr, if_req.ifr_hwaddr.sa_data, ETH_ALEN);
@@ -296,7 +294,7 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
         strerror_r(rc, err_buf, sizeof(err_buf)); 
         ERROR("get if index error %d \"%s\"", rc, err_buf);
         close(cfg_socket);
-        return rc;
+        return ETH_IFACE_IFINDEX_ERROR;
     }
     
     /* saving if index  */
@@ -323,7 +321,7 @@ promisc_mode:
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
         ERROR("get if flags error %d \"%s\"", rc, err_buf);
-        return rc;
+        return ETH_IFACE_NOT_FOUND;
     }
 
     VERB("SIOCGIFFLAGS, promisc mode: %d, flags: %x\n", 
@@ -338,7 +336,7 @@ promisc_mode:
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
         ERROR("set PROMISC mode error %d \"%s\"", rc, err_buf);
-        return rc;
+        return ETH_IFACE_NOT_FOUND;
     }
 #endif
 #endif
@@ -388,7 +386,7 @@ eth_free_interface(eth_interface_p iface)
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &if_request))
     { 
         rc = errno;
-        ERROR("%s(): unset promisc mode failed %x\n", __FUNCTION__, rc);
+        ERROR("%s(): unset promisc mode failed %d", __FUNCTION__, rc);
     }
     close(cfg_socket);
 #endif 

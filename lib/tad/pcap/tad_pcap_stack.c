@@ -484,7 +484,7 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     {
         val_len = asn_get_length(csap_nds, "");
         ERROR("pcap_single_init_cb called for csap %d, layer %d,"
-              "rc %X getting '%s', ndn has len %d\n", 
+              "rc %r getting '%s', ndn has len %d\n", 
               csap_id, layer, rc, str_index_buf, val_len);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
