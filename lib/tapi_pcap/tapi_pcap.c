@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAPI PCAP"
+
 #include "te_config.h"
 
 #include <stdio.h>
@@ -52,33 +54,9 @@
 #include "te_errno.h"
 #include "rcf_api.h"
 #include "ndn_pcap.h"
+#include "logger_api.h"
 #include "tapi_pcap.h"
 
-#define TE_LOG_LEVEL 0xff
-#define TE_LGR_USER     "TAPI PCAP"
-#include "logger_api.h"
-
-#define TAPI_DEBUG 1
-
-#if 1
-#define PCAP_DEBUG(args...) \
-    do {                                        \
-        fprintf(stdout, "\nTAPI PCAP " args);    \
-        INFO("TAPI PCAP " args);                 \
-    } while (0)
-
-#undef ERROR
-#define ERROR(args...) PCAP_DEBUG("ERROR: " args)
-
-#undef RING
-#define RING(args...) PCAP_DEBUG("RING: " args)
-
-#undef WARN
-#define WARN(args...) PCAP_DEBUG("WARN: " args)
-
-#undef VERB
-#define VERB(args...) PCAP_DEBUG("VERB: " args)
-#endif
 
 /**
  * Create common Ethernet-PCAP CSAP.
@@ -128,9 +106,7 @@ tapi_pcap_csap_create(const char *ta_name, int sid,
               rc, ta_name, sid, tmp_name);
     }
 
-#if !(TAPI_DEBUG)
     unlink(tmp_name);
-#endif
 
     return rc;
 }
@@ -270,9 +246,7 @@ tapi_pcap_recv_start(const char *ta_name, int sid,
               "file %s", rc, ta_name, sid, pcap_csap, tmp_name);
     }
 
-#if !(TAPI_DEBUG)
     unlink(tmp_name);
-#endif
 
     return rc;
 }
