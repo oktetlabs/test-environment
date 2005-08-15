@@ -526,6 +526,8 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     }
     ds_config_touch(index);
 
+    ta_system("/etc/init.d/xinetd stop");
+
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
         char *tmp = strstr(buf, "server");
@@ -556,7 +558,11 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     /* I don't know why, but xinetd does not start without this sleep. */
     SLEEP(1);
 
-    ta_system("/etc/init.d/xinetd restart >/dev/null");
+    if ((rc = ta_system("/etc/init.d/xinetd start")) != 0)
+    {
+        ERROR("xinetd failed to start with exit code %d", rc);
+        return -1;
+    }
 
     return 0;
 }
