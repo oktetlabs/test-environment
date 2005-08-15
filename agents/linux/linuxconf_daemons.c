@@ -2234,9 +2234,12 @@ sendmail_smarthost_set(te_bool enable)
 
     /* Commit all changes in config files before restart of the service */
     sync();
-    SLEEP(1); /* @todo it should not be necessary, but it helps. */
-    
-    ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
+
+    if ((rc = ta_system("make -C " SENDMAIL_CONF_DIR)) != 0)
+    {
+        ERROR("make -C " SENDMAIL_CONF_DIR " failed with code %d", rc);
+        return -1;
+    }
     
     return 0;
 }
@@ -2840,7 +2843,9 @@ ds_shutdown_smtp()
     if (sendmail_index >= 0 && ds_config_changed(sendmail_index))
     {
         if (file_exists(SENDMAIL_CONF_DIR))
-            ta_system("cd " SENDMAIL_CONF_DIR "; make >/dev/null 2>&1");
+        {
+            ta_system("make -C " SENDMAIL_CONF_DIR);
+        }
     }
     if (exim_index >= 0 && ds_config_changed(exim_index))
     {
