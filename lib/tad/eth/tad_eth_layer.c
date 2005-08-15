@@ -368,7 +368,10 @@ eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     }
 
     if (up_payload == NULL)
+    {
+        ERROR("NULL payload is passed to eth_gen_bin_cb()");
         return TE_RC(TE_TAD_CSAP, TE_ETADWRONGNDS);
+    }
 
     pld_fragment = up_payload;
     do {
