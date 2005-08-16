@@ -180,6 +180,13 @@ extern int rcf_ta_reboot(const char *ta_name, const char *boot_params,
                          const char *image);
 
 /**
+ * Enable/disable logging of TA configuration changes.
+ *
+ * @param enable        if TRUE, enable loging
+ */
+extern void rcf_log_cfg_changes(te_bool enable);
+
+/**
  * This function is used to obtain value of object instance by its
  * identifier.  The function may be called by Configurator only. 
  *

@@ -110,6 +110,7 @@ typedef struct thread_ctx {
     struct ipc_client *ipc_handle;
     msg_buf_head_t     msg_buf_head;
     uint32_t           seqno;
+    te_bool            log_cfg_changes;
 } thread_ctx_t;
 
 
@@ -1156,6 +1157,20 @@ rcf_ta_reboot(const char *ta_name,
 }
 
 /**
+ * Enable/disable logging of TA configuration changes.
+ *
+ * @param enable        if TRUE, enable loging
+ */
+void 
+rcf_log_cfg_changes(te_bool enable)
+{
+    thread_ctx_t *ctx_handle = get_ctx_handle(TRUE); 
+                                                 
+    if (ctx_handle != NULL)
+        ctx_handle->log_cfg_changes = enable;
+}
+
+/**
  * This function is used to obtain value of object instance by its
  * identifier.  The function may be called by Configurator only. 
  *
@@ -1282,6 +1297,20 @@ conf_add_set(const char *ta_name, int session, const char *oid,
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
                                    
+    if (ctx_handle->log_cfg_changes)
+    {
+        if (opcode == RCFOP_CONFSET)
+            LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR, 
+                    "Set %s to %s: %r", oid, val, rc);
+        else if (strlen(val) == 0)
+            LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR, 
+                    "Add %s: %r", oid, rc);
+        else
+            LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR, 
+                    "Add %s with value %s: %r", oid, val, rc);
+            
+    }
+                                   
     return rc == 0 ? msg.error : rc;
 }
 
@@ -1380,6 +1409,10 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
                                    
+    if (ctx_handle->log_cfg_changes)
+        LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR, 
+                "Delete %s: %r", oid, rc);
+
     return rc == 0 ? msg.error : rc;
 }
 
