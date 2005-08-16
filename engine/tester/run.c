@@ -385,7 +385,7 @@ vars_args_iterations(test_vars_args        *vas,
             {
                 tq_strings_free(&processed_lists);
                 EXIT("TE_ENOMEM");
-                return TE_ENOMEM;
+                return TE_RC(TE_TESTER, TE_ENOMEM);
             }
             list->v = va->attrs.list;
             TAILQ_INSERT_HEAD(&processed_lists, list, links);
@@ -412,7 +412,7 @@ vars_args_iterations(test_vars_args        *vas,
                     tq_strings_free(&processed_lists);
                     ERROR("Cloning of the iteration failed");
                     EXIT("TE_ENOMEM");
-                    return TE_ENOMEM;
+                    return TE_RC(TE_TESTER, TE_ENOMEM);
                 }
                 /* Insert clone after current iteration */
                 TAILQ_INSERT_AFTER(iters, i, i_clone, links);
@@ -422,7 +422,7 @@ vars_args_iterations(test_vars_args        *vas,
                 if (s == NULL)
                 {
                     tq_strings_free(&processed_lists);
-                    return TE_EINVAL;
+                    return TE_RC(TE_TESTER, TE_EINVAL);
                 }
                 tp = test_param_new(va->name, s, va->handdown,
                                     (value->reqs.tqh_first == NULL) ?
@@ -432,7 +432,7 @@ vars_args_iterations(test_vars_args        *vas,
                     tq_strings_free(&processed_lists);
                     ERROR("Failed to create new test parameter");
                     EXIT("TE_ENOMEM");
-                    return TE_ENOMEM;
+                    return TE_RC(TE_TESTER, TE_ENOMEM);
                 }
                 i->has_reqs = (i->has_reqs || (tp->reqs != NULL));
                 /* Update current iteration */
@@ -465,7 +465,7 @@ vars_args_iterations(test_vars_args        *vas,
                             tq_strings_free(&processed_lists);
                             ERROR("Failed to get test parameter value");
                             EXIT("TE_EINVAL");
-                            return TE_EINVAL;
+                            return TE_RC(TE_TESTER, TE_EINVAL);
                         }
                         /* Create parameter and add it in iteration */
                         tp = test_param_new(va2->name, s, va->handdown,
@@ -476,7 +476,7 @@ vars_args_iterations(test_vars_args        *vas,
                             tq_strings_free(&processed_lists);
                             ERROR("Failed to create new test parameter");
                             EXIT("TE_ENOMEM");
-                            return TE_ENOMEM;
+                            return TE_RC(TE_TESTER, TE_ENOMEM);
                         }
                         test_params_add(&i->params, tp);
                     }
@@ -810,7 +810,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             {
                 ERROR("Too short buffer is reserved for GDB init file "
                       "name");
-                return TE_ESMALLBUF;
+                return TE_RC(TE_TESTER, TE_ESMALLBUF);
             }
             /* TODO Clean up */
             f = fopen(gdb_init, "w");
@@ -832,7 +832,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             {
                 ERROR("Too short buffer is reserved for shell command "
                       "prefix");
-                return TE_ESMALLBUF;
+                return TE_RC(TE_TESTER, TE_ESMALLBUF);
             }
         }
         else
@@ -842,7 +842,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             {
                 ERROR("Too short buffer is reserved for shell command "
                       "prefix");
-                return TE_ESMALLBUF;
+                return TE_RC(TE_TESTER, TE_ESMALLBUF);
             }
         }
     }
@@ -854,7 +854,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                 (int)sizeof(shell))
         {
             ERROR("Too short buffer is reserved for shell command prefix");
-            return TE_ESMALLBUF;
+            return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
         if (snprintf(vg_filename, sizeof(vg_filename),
                      TESTER_VG_FILENAME_FMT, id) >=
@@ -862,14 +862,14 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         {
             ERROR("Too short buffer is reserved for Vagrind output "
                   "filename");
-            return TE_ESMALLBUF;
+            return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
         if (snprintf(postfix, sizeof(postfix), " 2>%s", vg_filename) >=
                 (int)sizeof(postfix))
         {
             ERROR("Too short buffer is reserved for test script "
                   "command postfix");
-            return TE_ESMALLBUF;
+            return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
     }
 
@@ -887,13 +887,13 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         ERROR("Too short buffer is reserved for test script command "
               "line");
         free(cmd);
-        return TE_ESMALLBUF;
+        return TE_RC(TE_TESTER, TE_ESMALLBUF);
     }
     free(params_str);
 
     if (ctx->flags & TESTER_FAKE)
     {
-        result = TE_ETESTFAKE;
+        result = TE_RC(TE_TESTER, TE_ETESTFAKE);
     }
     else
     {
@@ -910,7 +910,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         if (WCOREDUMP(rc))
         {
             ERROR("Command '%s' executed in shell dumped core", cmd);
-            result = TE_ETESTCORE;
+            result = TE_RC(TE_TESTER, TE_ETESTCORE);
         }
 #endif
         if (WIFSIGNALED(rc))
@@ -919,14 +919,14 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             ERROR("ID=%d was killed by signal %d", id, WTERMSIG(rc));
             /* TE_ETESTCORE may be already set */
             if (result == 0)
-                result = TE_ETESTKILL;
+                result = TE_RC(TE_TESTER, TE_ETESTKILL);
         }
         else if (!WIFEXITED(rc))
         {
             ERROR("ID=%d was abnormally terminated", id);
             /* TE_ETESTCORE may be already set */
             if (result == 0)
-                result = TE_ETESTUNEXP;
+                result = TE_RC(TE_TESTER, TE_ETESTUNEXP);
         }
         else
         {
@@ -936,27 +936,27 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
             switch (WEXITSTATUS(rc))
             {
                 case EXIT_FAILURE:
-                    result = TE_ETESTFAIL;
+                    result = TE_RC(TE_TESTER, TE_ETESTFAIL);
                     break;
 
                 case EXIT_SUCCESS:
-                    result = TE_ETESTPASS;
+                    result = TE_RC(TE_TESTER, TE_ETESTPASS);
                     break;
 
                 case TE_EXIT_SIGINT:
-                    result = TE_ETESTKILL;
+                    result = TE_RC(TE_TESTER, TE_ETESTKILL);
                     ctx->flags |= TESTER_SHUTDOWN;
                     ERROR("ID=%d was interrupted by SIGINT, shut down",
                           id);
                     break;
 
                 case TE_EXIT_NOT_FOUND:
-                    result = TE_ETESTUNEXP;
+                    result = TE_RC(TE_TESTER, TE_ETESTUNEXP);
                     ERROR("ID=%d was not run, executable not found", id);
                     break;
 
                 default:
-                    result = TE_ETESTUNEXP;
+                    result = TE_RC(TE_TESTER, TE_ETESTUNEXP);
             }
         }
         if (ctx->flags & TESTER_VALGRIND)
@@ -989,7 +989,7 @@ static int
 run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                  test_params *params)
 {
-    int                     result = TE_ETESTEMPTY;
+    int                     result = TE_RC(TE_TESTER, TE_ETESTEMPTY);
     int                     rc;
     test_param_iteration   *base_i;
     test_param_iterations   iters;
@@ -1004,7 +1004,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
     TAILQ_INIT(&iters);
     base_i = test_param_iteration_new();
     if (base_i == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     base_i->base = params;
     /* FIXME: base_i.reqs */
     TAILQ_INSERT_TAIL(&iters, base_i, links);
@@ -1020,7 +1020,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
     if (iters.tqh_first == NULL)
     {
         ERROR("Empty list of parameters iterations");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     do {
@@ -1039,7 +1039,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 if ((TE_RC_GET_ERROR(rc) != TE_ETESTPASS) && 
                     (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE))
                 {
-                    result = TE_ETESTPROLOG;
+                    result = TE_RC(TE_TESTER, TE_ETESTPROLOG);
                     break;
                 }
             }
@@ -1064,7 +1064,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 rc = iterate_test(ctx, session->keepalive, &iters);
                 if ((rc != 0) && (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE))
                 {
-                    result = TE_ETESTALIVE;
+                    result = TE_RC(TE_TESTER, TE_ETESTALIVE);
                     break;
                 }
             }
@@ -1079,7 +1079,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                  * Other results except success and skip are mapped 
                  * to TE_ETESTFAIL. 
                  */
-                result = TE_ETESTFAIL;
+                result = TE_RC(TE_TESTER, TE_ETESTFAIL);
             }
             else if (result < rc)
             {
@@ -1113,7 +1113,7 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 if ((TE_RC_GET_ERROR(rc) != TE_ETESTPASS) && 
                     (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE))
                 {
-                    result = TE_ETESTEPILOG;
+                    result = TE_RC(TE_TESTER, TE_ETESTEPILOG);
                     break;
                 }
             }
@@ -1228,7 +1228,7 @@ run_test_thread(void *args)
             break;
 
         default:
-            rc = TE_EINVAL;
+            rc = TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     thr_params->rc = rc;
@@ -1297,8 +1297,8 @@ run_test(tester_ctx *ctx, run_item *test, test_id id, test_params *params)
         rc = pthread_create(&th, NULL, run_test_thread, &thr_params);
         if (rc != 0)
         {
-            rc = errno;
-            ERROR("pthread_create() failed: %d", rc);
+            rc = TE_OS_RC(TE_TESTER, errno);
+            ERROR("pthread_create() failed: %r", rc);
             break;
         }
 
@@ -1354,18 +1354,18 @@ run_test(tester_ctx *ctx, run_item *test, test_id id, test_params *params)
     if (close(pipefds[0]) != 0)
     {
         ERROR("close() of pipefds[0] failed: %d", errno);
-        TE_RC_UPDATE(rc, errno);
+        TE_RC_UPDATE(rc, TE_OS_RC(TE_TESTER, errno));
     }
     if (close(pipefds[1]) != 0)
     {
         ERROR("close() of pipefds[1] failed: %d", errno);
-        TE_RC_UPDATE(rc, errno);
+        TE_RC_UPDATE(rc, TE_OS_RC(TE_TESTER, errno));
     }
 #endif
 
-    EXIT("%d", rc);
+    EXIT("%r", rc);
 
-    return TE_OS_RC(TE_TESTER, rc);
+    return rc;
 }
 
 
@@ -1413,8 +1413,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
     tester_ctx             *parent_ctx = ctx;
     te_bool                 ctx_cloned = FALSE;
     int                     rc;
-    int                     test_result = TE_ETESTPASS;
-    int                     all_result = TE_ETESTEMPTY;
+    int                     test_result = TE_RC(TE_TESTER, TE_ETESTPASS);
+    int                     all_result = TE_RC(TE_TESTER, TE_ETESTEMPTY);
     unsigned int            run_iters = 0;
     te_bool                 test_skipped = FALSE;
     test_param_iterations   iters;
@@ -1433,7 +1433,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         if (ctx == NULL)
         {
             ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-            return TE_ENOMEM;
+            return TE_RC(TE_TESTER, TE_ENOMEM);
         }
         ctx_cloned = TRUE;
 
@@ -1448,7 +1448,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                     if (~ctx->flags & TESTER_INLOGUE)
                     {
                         tester_ctx_free(ctx);
-                        return all_result;
+                        return TE_RC(TE_TESTER, TE_ETESTEMPTY);
                     }
                 }
                 else
@@ -1471,7 +1471,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                     if (~ctx->flags & TESTER_INLOGUE)
                     {
                         tester_ctx_free(ctx);
-                        return all_result;
+                        return TE_RC(TE_TESTER, TE_ETESTEMPTY);
                     }
                 }
                 else
@@ -1495,7 +1495,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         {
             if (ctx_cloned)
                 tester_ctx_free(ctx);
-            return TE_ENOMEM;
+            return TE_RC(TE_TESTER, TE_ENOMEM);
         }
         TAILQ_INSERT_TAIL(&iters, iter, links);
     }
@@ -1514,7 +1514,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 ERROR("Cloning of the test parameters iteration failed");
                 if (ctx_cloned)
                     tester_ctx_free(ctx);
-                return TE_ENOMEM;
+                return TE_RC(TE_TESTER, TE_ENOMEM);
             }
             TAILQ_INSERT_TAIL(&iters, iter, links);
         }
@@ -1535,7 +1535,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         ERROR("Empty list of parameters iterations");
         if (ctx_cloned)
             tester_ctx_free(ctx);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     /* Create backup to be verified after each iteration */
@@ -1593,7 +1593,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             if (test_ctx_cloned)
                 tester_ctx_free(test_ctx);
             test_skipped = TRUE;
-            rc = TE_ENOENT;
+            rc = TE_RC(TE_TESTER, TE_ENOENT);
             continue;
         }
 
@@ -1608,7 +1608,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             (~test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(iter->params), FALSE))
         {
-            test_result = TE_ETESTSKIP;
+            test_result = TE_RC(TE_TESTER, TE_ETESTSKIP);
         }
         else
         {
@@ -1618,7 +1618,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 if (test_ctx == NULL)
                 {
                     ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-                    all_result = TE_ENOMEM;
+                    all_result = TE_RC(TE_TESTER, TE_ENOMEM);
                     break;
                 }
                 test_ctx_cloned = TRUE;
@@ -1657,8 +1657,10 @@ iterate_test(tester_ctx *ctx, run_item *test,
                         RING("Configuration successfully restored "
                              "using backup");
                         if (TEST_RESULT(test_result) &&
-                            (test_result < TE_ETESTCONF))
-                            test_result = TE_ETESTCONF;
+                            (test_result < TE_RC(TE_TESTER, TE_ETESTCONF)))
+                        {
+                            test_result = TE_RC(TE_TESTER, TE_ETESTCONF);
+                        }
                     }
                 }
                 else if (rc != 0)
@@ -1712,7 +1714,9 @@ iterate_test(tester_ctx *ctx, run_item *test,
 
     if (test_skipped && ((TE_RC_GET_ERROR(all_result) == TE_ETESTPASS) ||
                          (TE_RC_GET_ERROR(all_result) == TE_ETESTEMPTY)))
-        all_result = TE_ETESTSKIP;
+    {
+        all_result = TE_RC(TE_TESTER, TE_ETESTSKIP);
+    }
 
     return all_result;
 }
@@ -1750,7 +1754,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
     if (ctx == NULL)
     {
         ERROR("%s(): tester_ctx_clone() failed", __FUNCTION__);
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     if (cfg->targets != NULL)
     {
@@ -1763,7 +1767,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
             if (ctx->targets == NULL)
             {
                 tester_ctx_free(ctx);
-                return TE_ENOMEM;
+                return TE_RC(TE_TESTER, TE_ENOMEM);
             }
         }
         else
@@ -1791,7 +1795,7 @@ tester_run_config(tester_ctx *ctx, tester_cfg *cfg)
         if (!TEST_RESULT(rc))
         {
             ERROR("iterate_test() failed: %r", rc);
-            result = TE_ETESTUNEXP;
+            result = TE_RC(TE_TESTER, TE_ETESTUNEXP);
         }
         else if (result < rc)
         {

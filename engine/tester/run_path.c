@@ -233,7 +233,7 @@ tester_run_path_new(tester_run_path *root, char *path, unsigned int flags)
         if (p == NULL)
         {
             ERROR("%s(): Memory allocation failure", __FUNCTION__);
-            return TE_ENOMEM;
+            return TE_RC(TE_TESTER, TE_ENOMEM);
         }
 
         TAILQ_INIT(&p->params);
@@ -249,7 +249,7 @@ tester_run_path_new(tester_run_path *root, char *path, unsigned int flags)
             if (param == NULL)
             {
                 ERROR("%s(): Memory allocation failure", __FUNCTION__);
-                return TE_ENOMEM;
+                return TE_RC(TE_TESTER, TE_ENOMEM);
             }
 
             param->name = run_path_param_name(&path);
@@ -257,7 +257,7 @@ tester_run_path_new(tester_run_path *root, char *path, unsigned int flags)
             {
                 ERROR("No value for parameter '%s' on step '%s' specified",
                       param->name, p->name);
-                return TE_EINVAL;
+                return TE_RC(TE_TESTER, TE_EINVAL);
             }
             param->value = run_path_param_value(&path, &params);
 
@@ -352,7 +352,7 @@ tester_run_path_forward(tester_ctx *ctx, const char *name)
         }
     }
 
-    return (run_path) ? TE_ENOENT : 0;
+    return (run_path) ? TE_RC(TE_TESTER, TE_ENOENT) : 0;
 }
 
 /* See description in run_path.h */
@@ -376,5 +376,5 @@ tester_run_path_params_match(struct tester_ctx *ctx, test_params *params)
                 found = TRUE;
         }
     }
-    return found ? 0 : TE_ENOENT;
+    return found ? 0 : TE_RC(TE_TESTER, TE_ENOENT);
 }

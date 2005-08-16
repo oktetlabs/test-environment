@@ -284,14 +284,14 @@ alloc_and_get_tqe_string(xmlNodePtr node, tqh_strings *strs)
     if (node->children != NULL)
     {
         ERROR("'string' cannot have children");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     p->v = XML2CHAR_DUP(node->content);
 
@@ -321,14 +321,14 @@ alloc_and_get_test_suite_info(xmlNodePtr node,
     if (node->children != NULL)
     {
         ERROR("'suite' cannot have children");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     TAILQ_INSERT_TAIL(suites_info, p, links);
 
@@ -337,7 +337,7 @@ alloc_and_get_test_suite_info(xmlNodePtr node,
     if (p->name == NULL)
     {
         ERROR("'name' attribute is missing in suite information");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     /* Path to sources is optional */
     p->src = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("src")));
@@ -347,7 +347,7 @@ alloc_and_get_test_suite_info(xmlNodePtr node,
     if (p->src != NULL && p->bin != NULL)
     {
         ERROR("Two paths are specified for Test Suite '%s'", p->name);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     if (p->src == NULL && p->bin == NULL)
     {
@@ -355,7 +355,7 @@ alloc_and_get_test_suite_info(xmlNodePtr node,
         if (p->src == NULL)
         {
             ERROR("strdup(%s) failed", p->name);
-            return TE_ENOMEM;
+            return TE_RC(TE_TESTER, TE_ENOMEM);
         }
     }
 
@@ -391,7 +391,7 @@ alloc_and_get_person_info(xmlNodePtr node, persons_info *persons)
     if (node->children != NULL)
     {
         ERROR("'person_info' cannot have children");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
 
@@ -399,7 +399,7 @@ alloc_and_get_person_info(xmlNodePtr node, persons_info *persons)
     if (p == NULL)
     {
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     TAILQ_INSERT_TAIL(persons, p, links);
 
@@ -409,7 +409,7 @@ alloc_and_get_person_info(xmlNodePtr node, persons_info *persons)
     if (p->mailto == NULL)
     {
         ERROR("'mailto' attribute is mandatory in person info");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
 
@@ -470,7 +470,7 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
     if (name == NULL)
     {
         ERROR("'name' attribute of the option is missing");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     /* Path is optional */
     value = xmlGetProp(node, CONST_CHAR2XML("value"));
@@ -481,7 +481,7 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
         xmlFree(name);
         xmlFree(value);
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     p->name = XML2CHAR(name);
     p->value = XML2CHAR(name);
@@ -503,7 +503,7 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
     {
         ERROR("'option' cannot have any children except 'context'");
         /* FREE */
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     TAILQ_INSERT_TAIL(opts, p, links);
@@ -520,7 +520,7 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
  * @param value     Location for value
  *
  * @return Status code.
- * @retval TE_ENOENT   Property does not exists. Value is not modified.
+ * @retval TE_ENOENT    Property does not exists. Value is not modified.
  */
 static int
 get_bool_prop(xmlNodePtr node, const char *name, te_bool *value)
@@ -528,7 +528,7 @@ get_bool_prop(xmlNodePtr node, const char *name, te_bool *value)
     xmlChar *s = xmlGetProp(node, CONST_CHAR2XML(name));
 
     if (s == NULL)
-        return TE_ENOENT;
+        return TE_RC(TE_TESTER, TE_ENOENT);
     if (xmlStrcmp(s, CONST_CHAR2XML("true")) == 0)
         *value = TRUE;
     else if (xmlStrcmp(s, CONST_CHAR2XML("false")) == 0)
@@ -538,7 +538,7 @@ get_bool_prop(xmlNodePtr node, const char *name, te_bool *value)
         ERROR("Invalid value '%s' of the boolean property '%s'",
               XML2CHAR(s), name);
         xmlFree(s);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     xmlFree(s);
 
@@ -555,7 +555,7 @@ get_bool_prop(xmlNodePtr node, const char *name, te_bool *value)
  * @param value     Location for value
  *
  * @return Status code.
- * @retval TE_ENOENT   Property does not exists. Value is not modified.
+ * @retval TE_ENOENT    Property does not exists. Value is not modified.
  */
 static int
 get_int_prop(xmlNodePtr node, const char *name, te_bool is_signed,
@@ -566,7 +566,7 @@ get_int_prop(xmlNodePtr node, const char *name, te_bool is_signed,
     char    *end;
 
     if (s == NULL)
-        return TE_ENOENT;
+        return TE_RC(TE_TESTER, TE_ENOENT);
 
     v = strtol(XML2CHAR(s), &end, 10);
     if (XML2CHAR(s) == end)
@@ -574,14 +574,14 @@ get_int_prop(xmlNodePtr node, const char *name, te_bool is_signed,
         ERROR("Invalid value '%s' of the integer property '%s'",
               XML2CHAR(s), name);
         xmlFree(s);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     xmlFree(s);
     if (!is_signed && v < 0)
     {
         ERROR("Attribute '%s' may have unsigned integer value, "
               "but signed is specified (%d)", name, v);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     *value = v;
 
@@ -609,14 +609,14 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
     if (node->children != NULL)
     {
         ERROR("'requirement' cannot have children");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     TAILQ_INSERT_TAIL(reqs, p, links);
 
@@ -626,18 +626,18 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
     {
         ERROR("One and only one of 'id' or 'ref' attributes must "
               "present for requirement");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
 #if 1
     /* 'exclude' is depricated */
     rc = get_bool_prop(node, "exclude", &p->sticky);
-    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    if (rc != TE_RC(TE_TESTER, TE_ENOENT))
     {
         if (rc == 0)
         {
             ERROR("Unexpected 'exclude' property");
-            rc = TE_EINVAL;
+            rc = TE_RC(TE_TESTER, TE_EINVAL);
         }
         return rc;
     }
@@ -646,13 +646,13 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
     /* 'sticky' is optional, default value is false */
     p->sticky = FALSE;
     rc = get_bool_prop(node, "sticky", &p->sticky);
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
         return rc;
     if (rc == 0 && !allow_sticky)
     {
         ERROR("'sticky' requirements are not allowed for "
               "configurations and scripts");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     return 0;
@@ -714,7 +714,7 @@ get_run_item_attrs(xmlNodePtr node, run_item_attrs *attrs)
     /* 'timeout' is optional */
     timeout = TESTER_TIMEOUT_DEF;
     rc = get_int_prop(node, "timeout", FALSE, &timeout);
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
         return rc;
     attrs->timeout.tv_sec = timeout;
     attrs->timeout.tv_usec = 0;
@@ -735,7 +735,7 @@ get_run_item_attrs(xmlNodePtr node, run_item_attrs *attrs)
             ERROR("Invalid value '%s' of 'track_conf' property",
                   XML2CHAR(s));
             xmlFree(s);
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         xmlFree(s);
     }
@@ -765,7 +765,7 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script,
     if (script->name == NULL)
     {
         ERROR("'name' attribute is missing in script call description");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     /* Get run item attributes */
@@ -794,7 +794,7 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script,
             if (script->objective == NULL)
             {
                 ERROR("strdup(%s) failed", ti->objective);
-                return TE_ENOMEM;
+                return TE_RC(TE_TESTER, TE_ENOMEM);
             }
         }
     }
@@ -822,14 +822,14 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script,
     {
         ERROR("Failed to create execution path to the test script '%s'",
               script->name);
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
 
     if (node != NULL)
     {
         ERROR("Unexpected element '%s' in script '%s' call description",
               XML2CHAR(node->name), script->name);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     VERB("Got script '%s'", script->name);
 
@@ -855,7 +855,7 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
     if (p == NULL)
     {
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     TAILQ_INIT(&p->reqs);
     TAILQ_INSERT_TAIL(values, p, links);
@@ -879,7 +879,7 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
         {
             ERROR("Self-reference of the value '%s'", p->id);
             free(tmp);
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         if (p->ref == NULL)
         {
@@ -902,14 +902,14 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
             {
                 ERROR("malloc(%u) failed", sizeof(*req));
                 free(tmp);
-                return TE_ENOMEM;
+                return TE_RC(TE_TESTER, TE_ENOMEM);
             }
             req->id = strndup(s, len);
             if (req->id == NULL)
             {
                 ERROR("strndup() failed");
                 free(tmp);
-                return TE_ENOMEM;
+                return TE_RC(TE_TESTER, TE_ENOMEM);
             }
             TAILQ_INSERT_TAIL(&p->reqs, req, links); 
 
@@ -927,12 +927,12 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
             (node->children->content == NULL))
         {
             ERROR("'value' content is empty or not 'text'");
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         if (node->children != node->last)
         {
             ERROR("Too many children in 'value' element");
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         p->value = XML2CHAR_DUP(node->children->content);
     }
@@ -941,12 +941,12 @@ alloc_and_get_value(xmlNodePtr node, test_var_arg_values *values)
     {
         ERROR("Too many sources of value: ref=%p ext=%s value=%s",
               p->ref, (p->ext) ? : "(empty)", (p->value) ? : "(empty)");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     else if (((!!(p->ref)) + (!!(p->ext) + (!!(p->value)))) == 0)
     {
         ERROR("There is no source of value");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     return 0;
@@ -973,7 +973,7 @@ get_var_arg_attrs(xmlNodePtr node, test_var_arg_values *values,
     rc = get_bool_prop(node, "random", &attrs->random);
     if (rc == 0)
         attrs->flags |= TEST_RANDOM_SPECIFIED;
-    else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    else if (rc != TE_RC(TE_TESTER, TE_ENOENT))
         return rc;
 
     /* 'list' is optional */
@@ -1015,7 +1015,7 @@ get_var_arg_attrs(xmlNodePtr node, test_var_arg_values *values,
         {
             ERROR("Value with 'id'='%s' not found to be preferred", s);
             xmlFree(s);
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         xmlFree(s);
     }
@@ -1046,7 +1046,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
     if (p == NULL)
     {
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     p->handdown = !is_var;
     TAILQ_INIT(&p->values);
@@ -1056,7 +1056,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
     if (p->name == NULL)
     {
         ERROR("Name is required for simple variable");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     /* 'ref' is optional */
@@ -1080,14 +1080,14 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
                "values=%s", (is_var) ? "variable" : "argument", p->name,
                (ref) ? : "(empty)", (value) ? : "(empty)",
                (p->values.tqh_first) ? "(not empty)" : "(empty)");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     if (node != NULL)
     {
         ERROR("Unexpected element '%s' in argument",
               XML2CHAR(node->name));
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     /* It must be done when values have already been processed */
@@ -1103,7 +1103,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
         if (v == NULL)
         {
             ERROR("malloc(%u) failed", sizeof(*v));
-            return TE_ENOMEM;
+            return TE_RC(TE_TESTER, TE_ENOMEM);
         }
         TAILQ_INIT(&v->reqs);
         TAILQ_INSERT_TAIL(&p->values, v, links);
@@ -1118,7 +1118,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var, test_vars_args *list)
             if (v->ext == NULL)
             {
                 ERROR("strdup(%s) failed", p->name);
-                return TE_ENOMEM;
+                return TE_RC(TE_TESTER, TE_ENOMEM);
             }
         }
     }
@@ -1150,14 +1150,14 @@ get_session(xmlNodePtr node, tester_cfg *cfg, test_session *session,
     /* 'simultaneous' is optional, default value is false */
     session->simultaneous = FALSE;
     rc = get_bool_prop(node, "simultaneous", &session->simultaneous);
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
         return rc;
 
     /* 'random' is optional */
     rc = get_bool_prop(node, "random", &session->random);
     if (rc == 0)
         session->flags |= TEST_RANDOM_SPECIFIED;
-    else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    else if (rc != TE_RC(TE_TESTER, TE_ENOENT))
         return rc;
 
     node = xmlNodeChildren(node);
@@ -1241,7 +1241,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, test_session *session,
     {
         ERROR("Unexpected element '%s' in session: line=%u",
               XML2CHAR(node->name), node->line);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     return 0;
@@ -1273,7 +1273,7 @@ get_package(xmlNodePtr node, tester_cfg *cfg, test_package **pkg,
     if (p == NULL)
     {
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     TAILQ_INIT(&p->authors);
     TAILQ_INIT(&p->reqs);
@@ -1287,7 +1287,7 @@ get_package(xmlNodePtr node, tester_cfg *cfg, test_package **pkg,
     if (p->name == NULL)
     {
         ERROR("Name of the Test Package to run is unspecified");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     rc = parse_test_package(cfg, p);
@@ -1326,7 +1326,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     if (p == NULL)
     {
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     TAILQ_INIT(&p->args);
     p->iterate = 1;
@@ -1350,32 +1350,32 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
 
         /* 'iterate' is optional */
         rc = get_int_prop(node, "iterate", FALSE, &p->iterate);
-        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
             return rc;
 
         /* 'loglevel' is optional */
         p->loglevel = 0;
         rc = get_int_prop(node, "loglevel", FALSE, &p->loglevel);
-        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
             return rc;
 
         /* 'allow_configure' is optional, default value is true */
         p->allow_configure = TRUE;
         rc = get_bool_prop(node, "allow_configure", &p->allow_configure);
-        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
             return rc;
 
         /* 'allow_keepalive' is optional, default value is true */
         p->allow_keepalive = TRUE;
         rc = get_bool_prop(node, "allow_keepalive", &p->allow_keepalive);
-        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
             return rc;
 
         /* 'forcerandom' is optional */
         rc = get_bool_prop(node, "forcerandom", &p->forcerandom);
         if (rc == 0)
             p->flags |= TESTER_RUN_ITEM_FORCERANDOM;
-        else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        else if (rc != TE_RC(TE_TESTER, TE_ENOENT))
             return rc;
     }
     
@@ -1383,7 +1383,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     if (node == NULL)
     {
         ERROR("Empty 'run' item");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     
     if (xmlStrcmp(node->name, CONST_CHAR2XML("script")) == 0)
@@ -1415,7 +1415,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     {
         ERROR("The first element '%s' in run item is incorrect",
               XML2CHAR(node->name));
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     node = xmlNodeNext(node);
     
@@ -1433,7 +1433,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     {
         ERROR("Unexpected element '%s' in run item",
               XML2CHAR(node->name));
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     return 0;
@@ -1469,12 +1469,12 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
     {
         ERROR("Incorrect root node '%s' in the Test Package file",
               root->name);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     if (root->next != NULL)
     {
         ERROR("'package' element must be singleton in Test Package file");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
 
@@ -1484,7 +1484,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
     if (s == NULL)
     {
         ERROR("'version' of the Test Package file is not specified");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
     if (xmlStrcmp(s, CONST_CHAR2XML("1.0")) != 0)
@@ -1492,7 +1492,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
         ERROR("Unsupported version %s of the Test Package file",
               XML2CHAR(s));
         xmlFree(s);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     xmlFree(s);
 
@@ -1509,12 +1509,12 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
             (node->children->content == NULL))
         {
             ERROR("'description' content is empty or not 'text'");
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         if (node->children != node->last)
         {
             ERROR("Too many children in 'description' element");
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         pkg->objective = XML2CHAR_DUP(node->children->content);
         node = xmlNodeNext(node);
@@ -1523,7 +1523,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
     if (pkg->objective == NULL)
     {
         ERROR("'description' is mandatory for any Test Package");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
 
@@ -1562,7 +1562,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg, test_package *pkg)
     {
         ERROR("Unexpected element '%s' in Test Package file",
               XML2CHAR(node->name));
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
 
@@ -1596,7 +1596,7 @@ get_target_reqs(xmlNodePtr *node, reqs_expr **targets)
         {
             ERROR("Expression of the target requirement is not "
                   "specified");
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         rc = tester_new_target_reqs(targets, str);
         free(str);
@@ -1635,12 +1635,12 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
     {
         ERROR("Incorrect root node '%s' in the configuration file",
               root->name);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     if (root->next != NULL)
     {
         ERROR("'tester_cfg' element must be singleton");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
 
@@ -1651,7 +1651,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
     {
         ERROR("'version' of the Tester configuration file is not "
               "specified");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
     if (xmlStrcmp(s, CONST_CHAR2XML("1.0")) != 0)
@@ -1659,7 +1659,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
         ERROR("Unsupported version %s of the Tester configuration file",
               XML2CHAR(s));
         xmlFree(s);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     xmlFree(s);
 
@@ -1678,7 +1678,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
         ERROR("The first element of the Tester configuration must be "
               "'maintainer' (not %s)",
               (node != NULL) ? XML2CHAR(node->name) : "(NULL)");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     
     /* Get optional description */
@@ -1689,7 +1689,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
         {
             ERROR("Tester configuration 'description' must not be "
                   "empty, if it is present");
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         /* Simple text content is represented as 'text' elements */
         if ((xmlStrcmp(node->children->name,
@@ -1698,12 +1698,12 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
         {
             ERROR("Tester configuration 'description' content is "
                   "empty or not 'text'");
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         if (node->children != node->last)
         {
             ERROR("Too many children in 'description' element");
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
         }
         cfg->descr = XML2CHAR_DUP(node->children->content);
         node = xmlNodeNext(node);
@@ -1752,7 +1752,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
     {
         ERROR("No 'run' items are specified in the configuration file");
         if (node == NULL)
-            return TE_EINVAL;
+            return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     /* No more */
@@ -1760,7 +1760,7 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg, unsigned int flags)
     {
         ERROR("Unexpected element '%s' in Tester configuration file",
               XML2CHAR(node->name));
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 #endif
 
@@ -1785,7 +1785,7 @@ alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
     if (p == NULL)
     {
         ERROR("malloc(%u) failed", sizeof(*p));
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     TAILQ_INSERT_TAIL(ti, p, links);
 
@@ -1793,7 +1793,7 @@ alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
     if (p->name == NULL)
     {
         ERROR("Missing name of the test in info");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     node = xmlNodeChildren(node);
@@ -1804,18 +1804,18 @@ alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
         (node->children->content == NULL))
     {
         ERROR("Missing objective of the test '%s'", p->name);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     if (node->children != node->last)
     {
         ERROR("Too many children in 'objective' element");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     p->objective = XML2CHAR_DUP(node->children->content);
     if (p->objective == NULL)
     {
         ERROR("Failed to duplicate string");
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
 
     return 0;
@@ -1843,12 +1843,12 @@ get_tests_info(xmlNodePtr node, tests_info *ti)
     {
         ERROR("Incorrect root node '%s' in the configuration file",
               node->name);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     if (node->next != NULL)
     {
         ERROR("'tests-info' element must be singleton");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     node = xmlNodeChildren(node);
@@ -1867,7 +1867,7 @@ get_tests_info(xmlNodePtr node, tests_info *ti)
     {
         ERROR("Unexpected element '%s' in Tests Info file",
               XML2CHAR(node->name));
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     return 0;
@@ -1944,7 +1944,7 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
     {
         ERROR("Failed to make path to Test Package file by name and "
               "context");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     cur_pkg_save = cfg->cur_pkg;
@@ -1955,7 +1955,7 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
     {
         ERROR("Failed to make path to Test Package file by name and "
               "context");
-        rc = TE_EINVAL;
+        rc = TE_RC(TE_TESTER, TE_EINVAL);
         goto cleanup;
     }
 
@@ -1963,7 +1963,7 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
     if (parser == NULL)
     {
         ERROR("xmlNewParserCtxt() failed");
-        rc = TE_ENOMEM;
+        rc = TE_RC(TE_TESTER, TE_ENOMEM);
         goto cleanup;
     }
 
@@ -1981,7 +1981,7 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
         ERROR("Error occured during parsing Test Package file:\n"
               "%s", pkg->path);
 #endif
-        rc = TE_EINVAL;
+        rc = TE_RC(TE_TESTER, TE_EINVAL);
         goto cleanup;
     }
 
@@ -2000,7 +2000,7 @@ parse_test_package(tester_cfg *cfg, test_package *pkg)
             ERROR("Error occured during parsing Tests Info file:\n"
                   "%s", pkg->path);
 #endif
-            rc = TE_EINVAL;
+            rc = TE_RC(TE_TESTER, TE_EINVAL);
             goto cleanup;
         }
 
@@ -2057,13 +2057,13 @@ tester_parse_config(tester_cfg *cfg, const tester_ctx *ctx)
     if (cfg->filename == NULL)
     {
         ERROR("Invalid configuration file name");
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
     parser = xmlNewParserCtxt();
     if (parser == NULL)
     {
         ERROR("xmlNewParserCtxt() failed");
-        return TE_ENOMEM;
+        return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     if ((doc = xmlCtxtReadFile(parser, cfg->filename, NULL,
                                XML_PARSE_NOBLANKS |
@@ -2080,7 +2080,7 @@ tester_parse_config(tester_cfg *cfg, const tester_ctx *ctx)
               "%s", cfg->filename);
 #endif
         xmlFreeParserCtxt(parser);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     rc = get_tester_config(xmlDocGetRootElement(doc), cfg, ctx->flags);

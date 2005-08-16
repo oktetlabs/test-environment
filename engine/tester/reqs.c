@@ -61,7 +61,7 @@ tester_new_target_reqs(reqs_expr **targets, const char *req)
     if (targets == NULL || req == NULL)
     {
         ERROR("%s(): Invalid argument", __FUNCTION__);
-        return TE_EINVAL;
+        return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
     rc = tester_reqs_expr_parse(req, &parsed);
@@ -151,7 +151,7 @@ test_requirements_clone(const test_requirements *reqs,
         if (q == NULL)
         {
             ERROR("%s(): test_requirement_clone() failed", __FUNCTION__);
-            return TE_ENOMEM;
+            return TE_RC(TE_TESTER, TE_ENOMEM);
         }
         TAILQ_INSERT_TAIL(new_reqs, q, links);
     }
@@ -647,7 +647,7 @@ tester_ctx_get_sticky_reqs(struct tester_ctx       *ctx,
         {
             q = test_requirement_clone(p);
             if (q == NULL)
-                return TE_ENOMEM;
+                return TE_RC(TE_TESTER, TE_ENOMEM);
             TAILQ_INSERT_TAIL(&ctx->reqs, q, links);
         }
     }
