@@ -1846,6 +1846,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
     {
         int fd;
 
+        RING("Create CSAP with parameters:\n%tf", params);
         if ((fd = open(params, O_RDONLY)) < 0)
         {
             if ((len = strlen(params) + 1) >
@@ -2049,6 +2050,9 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     
     if (templ == NULL || strlen(templ) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
+        
+    RING("Start send operation on the CSAP %d (TA %s, session %d) "
+         "with template\n%tf", csap_id, ta_name, session, templ);
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
@@ -2209,6 +2213,9 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
 
     if (pattern == NULL || strlen(pattern) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    RING("Start receive operation on the CSAP %d (TA %s, session %d) "
+         "with pattern\n%tf", csap_id, ta_name, session, pattern);
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
