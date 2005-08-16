@@ -239,6 +239,7 @@ te_handler(void)
                     *(te_log_nfl_t *)buf) == 0)
         {
             RING("Logger shutdown ...\n");
+            lgr_flags |= LOGGER_SHUTDOWN;
             (void)kill(pid, SIGUSR1);
             break;
         }
