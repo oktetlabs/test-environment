@@ -3288,7 +3288,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
 static int
 route_del(unsigned int gid, const char *oid, const char *route)
 {
-    char            value[RCF_MAX_VAL];
+    char value[RCF_MAX_VAL] = { 0, };
 
     ENTRY("%s", route);
     UNUSED(oid);
