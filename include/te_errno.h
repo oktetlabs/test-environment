@@ -309,7 +309,8 @@ typedef enum {
     TE_TAD_CH,          /**< TAD Command Handler */
     TE_TAD_CSAP,        /**< TAD CSAP support */
     TE_TARPC,           /**< RPC support in Test Agent */
-    TE_CS,              /**< Configuratorapplication */
+    TE_LOGGER,          /**< Logger application */
+    TE_CS,              /**< Configurator application */
     TE_CONF_API,        /**< Configurator API */
     TE_TESTER,          /**< Tester application */
     TE_TAPI,            /**< Test API libraries */
