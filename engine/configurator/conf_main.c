@@ -1102,7 +1102,9 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
 
         case CFG_SHUTDOWN:
             /* Remove commands initiated by configuration file */
+            rcf_log_cfg_changes(TRUE);
             cfg_dh_restore_backup(NULL);
+            rcf_log_cfg_changes(FALSE);
             cs_flags |= CS_SHUTDOWN;
             break;
 
