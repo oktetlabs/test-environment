@@ -2198,7 +2198,7 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&rcf_lock);
 #endif
-        ERROR("There is no entry in the list of active CSAPs for "
+        WARN("There is no entry in the list of active CSAPs for "
               "CSAP %d residing on Agent %s", csap_id, ta_name);
         return TE_RC(TE_RCF_API, TE_EBADFD);
     }
