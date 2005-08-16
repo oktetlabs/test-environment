@@ -63,6 +63,24 @@ typedef enum rcf_call_mode {
     RCF_MODE_BLOCKING, /**< Used for blocking call */
 } rcf_call_mode_t;
 
+/**
+ * Convert mode of RCF traffic operation to string.
+ *
+ * @param mode      Mode to convert
+ *
+ * @return Mode as string
+ */
+static inline const char *
+rcf_call_mode2str(rcf_call_mode_t mode)
+{
+    switch (mode)
+    {
+        case RCF_MODE_NONBLOCKING:  return "non-blocking";
+        case RCF_MODE_BLOCKING:     return "blocking";
+        default:                    return "UNKNOWN";
+    }
+}
+
 
 #ifdef __cplusplus
 extern "C" {

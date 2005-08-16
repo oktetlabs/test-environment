@@ -1944,7 +1944,12 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
         
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-                                   
+
+    TE_RC_UPDATE(rc, msg.error);
+
+    LOG_MSG((rc == 0) ? TE_LL_RING : TE_LL_ERROR,
+            "Destroy CSAP %u (%s:%d): %r", csap_id, ta_name, session, rc);
+
     return rc == 0 ? msg.error : rc;
 }
 
@@ -2051,8 +2056,9 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     if (templ == NULL || strlen(templ) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
         
-    RING("Start send operation on the CSAP %d (TA %s, session %d) "
-         "with template\n%tf", csap_id, ta_name, session, templ);
+    RING("Start %s send operation on the CSAP %d (%s:%d) with "
+         "template:\n%tf", rcf_call_mode2str(blk_mode), csap_id,
+         ta_name, session, templ);
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
@@ -2060,6 +2066,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     if ((tr_op = find_traffic_op(ta_name, csap_id)) != NULL)
     {
         int state = tr_op->state;
+
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&rcf_lock);
 #endif
