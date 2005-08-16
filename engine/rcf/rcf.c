@@ -232,9 +232,6 @@ static int reboot_num = 0;      /**< Number of TA which should be
 static int shutdown_num = 0;    /**< Number of TA which should be 
                                      for shut down */
 
-static te_bool rcf_wait_shutdown = FALSE;   /**< Should RCF go to wait
-                                                 of shut down state */
-
 static struct ipc_server *server = NULL;    /**< IPC Server handle */
 
 static char cmd[RCF_MAX_LEN];   /**< Test Protocol command location */
@@ -2260,56 +2257,6 @@ rcf_shutdown()
     RING("Test Agents are stopped");
 }
 
-/** Wait for shutdown message in the case of initialization error */
-static void
-wait_shutdown()
-{
-    RING("Wait shutdown command");
-    while (TRUE)
-    {
-        usrreq *req;
-        size_t  len;
-        int     rc;
-
-        if ((req = alloc_usrreq()) == NULL)
-            return;
-
-        len = RCF_MAX_LEN;
-        if ((rc = ipc_receive_message(server, (char *)req->message,
-                                      &len, &(req->user))) != 0)
-        {
-            ERROR("Failed to receive user request: error=%r", rc);
-        }
-        else
-        {
-            VERB("Request from user is received");
-            if (req->message->opcode == RCFOP_SHUTDOWN)
-            {
-                answer_user_request(req);
-                return;
-            }
-            else
-            {
-                WARN("Reject request from user - RCF is shutdowning");
-                req->message->error = TE_ENORCF;
-                answer_user_request(req);
-            }
-        }
-    }
-}
-
-
-/**
- * SIGPIPE handler.
- *
- * @param sig       Signal number
- */
-static void
-sigpipe_handler(int sig)
-{
-    UNUSED(sig);
-    rcf_wait_shutdown = TRUE;
-}
 
 /**
  * Process command line options and parameters specified in argv.
@@ -2391,8 +2338,8 @@ main(int argc, const char *argv[])
         goto exit;
     }
 
-    /* Register SIGPIPE handler, by default SIGPIPE kills the process */
-    signal(SIGPIPE, sigpipe_handler);
+    /* Ignore SIGPIPE, by default SIGPIPE kills the process */
+    signal(SIGPIPE, SIG_IGN);
 
     ipc_init();
     if (ipc_register_server(RCF_SERVER, &server) != 0)
@@ -2471,7 +2418,7 @@ main(int argc, const char *argv[])
             len = sizeof(rcf_msg);
             
             if ((req = alloc_usrreq()) == NULL)
-                goto error;
+                goto exit;
 
             rc = ipc_receive_message(server, req->message,
                                      &len, &(req->user));
@@ -2569,26 +2516,16 @@ main(int argc, const char *argv[])
 
         /* If TA check is in progress, may be all checks are done? */
         rcf_ta_check_all_done();
-
-        if (rcf_wait_shutdown)
-        {
-            rc = 0;
-            goto error;
-        }
     }
 
+    result = EXIT_SUCCESS;
+
+exit:
     rcf_shutdown();
 
     if (req != NULL && req->message->opcode == RCFOP_SHUTDOWN)
         answer_user_request(req);
 
-    result = EXIT_SUCCESS;
-
-error:
-    if (rc != 0)
-        wait_shutdown();
-        
-exit:
     free_ta_list();
     ipc_close_server(server);
 
