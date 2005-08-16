@@ -54,6 +54,8 @@
         }                                                       \
     } while (0)
 
+/** Log message from default user with specified level. */
+#define LOG_MSG(_lvl, _fs...)   LGR_MESSAGE(_lvl, TE_LGR_USER, _fs)
 
 /** @name Logging abnormal/unexpected situations */
 #define LOG_ERROR(_us, _fs...)  LGR_MESSAGE(TE_LL_ERROR, _us, _fs)
