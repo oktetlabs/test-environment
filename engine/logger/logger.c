@@ -39,6 +39,9 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 #if HAVE_POPT_H
 #include <popt.h>
 #else
@@ -83,6 +86,9 @@ const char *te_log_dir = NULL;
 
 /* Raw log file */
 static FILE *raw_file = NULL;
+
+/** Logger PID */
+static pid_t    pid;
 
 static unsigned int         lgr_flags = 0;
 /** @name Logger global context flags */
@@ -233,6 +239,7 @@ te_handler(void)
                     *(te_log_nfl_t *)buf) == 0)
         {
             RING("Logger shutdown ...\n");
+            (void)kill(pid, SIGUSR1);
             break;
         }
         else
@@ -730,6 +737,9 @@ main(int argc, const char *argv[])
 {
     int         result = EXIT_FAILURE;
     char        err_buf[BUFSIZ];
+    const char *pid_fn = getenv("TE_LOGGER_PID_FILE");
+    FILE       *pid_f = NULL;
+    sigset_t    sigs;
     char       *ta_names = NULL;
     size_t      names_len;
     size_t      str_len = 0;
@@ -745,7 +755,7 @@ main(int argc, const char *argv[])
         fprintf(stderr, "Command line options processing failure\n");
         return EXIT_FAILURE;
     }
-    
+
     /* Get environment variable value for logs. */
     te_log_dir = getenv("TE_LOG_DIR");
     if (te_log_dir == NULL)
@@ -790,6 +800,23 @@ main(int argc, const char *argv[])
     assert(logger_ten_srv != NULL);
     INFO("IPC server '%s' registered\n", LGR_SRV_NAME);
 
+    /* Open PID-file for writing */
+    if (pid_fn != NULL && (pid_f = fopen(pid_fn, "w")) == NULL)
+    {
+        res = TE_OS_RC(TE_LOGGER, errno);
+        ERROR("Failed to open PID-file '%s' for writing: error=%r",
+              pid_fn, res);
+        goto exit;
+    }
+    
+    if (pid_f != NULL && (sigemptyset(&sigs) != 0 ||
+                          sigaddset(&sigs, SIGUSR1) != 0 ||
+                          sigprocmask(SIG_BLOCK, &sigs, NULL) != 0))
+    {
+        ERROR("Failed to prepare blocking signals set");
+        goto exit;
+    }
+
     /* 
      * Go to background, if foreground mode is not requested.
      * No threads should be created before become a daemon.
@@ -799,6 +826,9 @@ main(int argc, const char *argv[])
         ERROR("daemon() failed");
         goto exit;
     }
+
+    /* Store my PID in global variable */
+    pid = getpid();
 
     /* ASAP create separate thread for log message server */
     res = pthread_create(&te_thread, NULL, (void *)&te_handler, NULL);
@@ -810,8 +840,32 @@ main(int argc, const char *argv[])
     }
     /* Further we must goto 'join_te_srv' in the case of failure */
 
-    /* to be sure about completed in servers starting */
-    sleep(3);
+    /* Write own PID to the file */
+    if (pid_f != NULL)
+    {
+        (void)fprintf(pid_f, "%d", (int)pid);
+        if (fclose(pid_f) != 0)
+        {
+            strerror_r(errno, err_buf, sizeof(err_buf));
+            ERROR("Failed to close PID-file: %s", err_buf);
+            /* Try to continue */
+        }
+        pid_f = NULL;
+
+        /* Wait for SIGUSR1 to be sent by Dispatcher */
+        if (sigwaitinfo(&sigs, NULL) < 0)
+        {
+            res = TE_OS_RC(TE_LOGGER, errno);
+            ERROR("sigwaitinfo() failed: error=%r", res);
+            goto join_te_srv;
+        }
+
+        if (lgr_flags & LOGGER_SHUTDOWN)
+        {
+            WARN("Logger is shut down without polling of TAs");
+            goto join_te_srv;
+        }
+    }
 
     if (~lgr_flags & LOGGER_NO_RCF)
     {
@@ -940,11 +994,18 @@ exit:
         free(te_el);
     }
 
+    if ((pid_f != NULL) && (fclose(pid_f) != 0))
+    {
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("Failed to close PID-file: %s", err_buf);
+        result = EXIT_FAILURE;
+    }
+
     INFO("Close IPC server '%s'\n", LGR_SRV_NAME);
     if (ipc_close_server(logger_ten_srv) != 0)
     {
         strerror_r(errno, err_buf, sizeof(err_buf));
-        ERROR("IPC server '%s' shutdown failed: %s\n",
+        ERROR("IPC server '%s' shutdown failed: %s",
               LGR_SRV_NAME, err_buf);
         result = EXIT_FAILURE;
     }
@@ -952,11 +1013,11 @@ exit:
     if (ipc_kill() != 0)
     {
         strerror_r(errno, err_buf, sizeof(err_buf));
-        ERROR("IPC termination failed: %s\n", err_buf);
+        ERROR("IPC termination failed: %s", err_buf);
         result = EXIT_FAILURE;
     }
 
-    RING("Shutdown is completed\n");
+    RING("Shutdown is completed");
 
     if (fflush(raw_file) != 0)
     {

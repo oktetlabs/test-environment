@@ -382,6 +382,8 @@ if test -z "$TE_TMP" ; then
     export TE_TMP="${TE_RUN_DIR}/te_tmp"
     mkdir -p "${TE_TMP}" || exit 1
 fi
+# May be it should be passed to TE Logger only...
+export TE_LOGGER_PID_FILE="${TE_TMP}/te_logger.pid"
 
 if test -z "$TE_BUILD" ; then
     if test -n "$BUILDER" ; then
@@ -594,16 +596,17 @@ CS_NAME=Configurator
 CS_EXEC=te_cs
 CS_SHUT=te_cs_shutdown
 
-for i in LOGGER RCF CS ; do
-    if test -n "`eval echo '$'$i`" ; then
-        DAEMON_NAME="`eval echo '${'$i'_NAME}'`"
-        DAEMON_EXEC="`eval echo '${'$i'_EXEC}'`"
-        DAEMON_OPTS="`eval echo '${'$i'_OPTS}'`"
-        DAEMON_CONF="`eval echo '${CONF_'$i'}'`"
+start_daemon() {
+    DAEMON=$1
+    if test ${START_OK} -eq 0 -a -n "`eval echo '$'$DAEMON`" ; then
+        DAEMON_NAME="`eval echo '${'$DAEMON'_NAME}'`"
+        DAEMON_EXEC="`eval echo '${'$DAEMON'_EXEC}'`"
+        DAEMON_OPTS="`eval echo '${'$DAEMON'_OPTS}'`"
+        DAEMON_CONF="`eval echo '${CONF_'$DAEMON'}'`"
         te_log_message Engine Dispatcher \
             "Start ${DAEMON_NAME}: ${DAEMON_OPTS} ${DAEMON_CONF}"
         myecho -n "--->>> Starting ${DAEMON_NAME}... "
-        if test -n "`eval echo '${VG_'$i'}'`" ; then
+        if test -n "`eval echo '${VG_'$DAEMON'}'`" ; then
             # Run in foreground under valgrind
             valgrind ${VG_OPTIONS} ${DAEMON_EXEC} ${DAEMON_OPTS} \
                 "${DAEMON_CONF}" 2>valgrind.${DAEMON_EXEC}
@@ -613,13 +616,29 @@ for i in LOGGER RCF CS ; do
         START_OK=$?
         if test ${START_OK} -eq 0 ; then
             myecho "done"
-            eval `echo $i'_OK'`=yes
+            eval `echo $DAEMON'_OK'`=yes
         else
             myecho "failed"
-            break
         fi
     fi
-done
+}
+
+start_daemon LOGGER
+
+start_daemon RCF
+
+if test ${START_OK} -eq 0 ; then
+    # Wakeup Logger when RCF is ready
+    TE_LOGGER_PID="$(cat "${TE_LOGGER_PID_FILE}" 2>/dev/null)"
+    if test -n "${TE_LOGGER_PID}" ; then
+        kill -USR1 ${TE_LOGGER_PID}
+    else
+        echo "Failed to wake-up TE Logger" >&2
+        START_OK=1
+    fi
+fi
+
+start_daemon CS
 
 if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     te_log_message Engine Dispatcher \
