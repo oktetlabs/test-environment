@@ -536,10 +536,10 @@ rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "setlibname", &in, &out);
 
-    LGR_MESSAGE(out.retval != 0 ? TE_LL_ERROR : TE_LL_RING, TE_LGR_USER,
-                "RPC (%s,%s) setlibname(%s) -> %d (%s)",
-                rpcs->ta, rpcs->name, libname ? : "(NULL)",
-                out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+    LOG_MSG(out.retval != 0 ? TE_LL_ERROR : TE_LL_RING,
+            "RPC (%s,%s) setlibname(%s) -> %d (%s)",
+            rpcs->ta, rpcs->name, libname ? : "(NULL)",
+            out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     if (out.retval == 0)
     {

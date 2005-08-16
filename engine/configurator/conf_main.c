@@ -689,46 +689,43 @@ log_msg(cfg_msg *msg, te_bool before)
         {
             cfg_register_msg *m = (cfg_register_msg *)msg;
 
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Register object %s (%s, %s, %s)%s",
-                        m->oid,
-                        m->val_type == CVT_NONE ? "void" :
-                        m->val_type == CVT_STRING ? "string" :
-                        m->val_type == CVT_INTEGER ? "integer" :
-                        m->val_type == CVT_ADDRESS ? "address" :
-                        "unknown type",
-                        m->access == CFG_READ_WRITE ? "read/write" :
-                        m->access == CFG_READ_ONLY ? "read/only" :
-                        m->access == CFG_READ_CREATE ? "read/create" :
-                        "unknown access", 
-                        m->def_val > 0 ? m->oid + m->def_val : "NULL",
-                        addon);
+            LOG_MSG(level,
+                    "Register object %s (%s, %s, %s)%s",
+                    m->oid,
+                    m->val_type == CVT_NONE ? "void" :
+                    m->val_type == CVT_STRING ? "string" :
+                    m->val_type == CVT_INTEGER ? "integer" :
+                    m->val_type == CVT_ADDRESS ? "address" :
+                    "unknown type",
+                    m->access == CFG_READ_WRITE ? "read/write" :
+                    m->access == CFG_READ_ONLY ? "read/only" :
+                    m->access == CFG_READ_CREATE ? "read/create" :
+                    "unknown access", 
+                    m->def_val > 0 ? m->oid + m->def_val : "NULL",
+                    addon);
             break;
         }
 
         case CFG_FIND:
             if (!before && TE_RC_GET_ERROR(msg->rc) == TE_ENOENT)
                 level = TE_LL_INFO;
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Find OID %s%s", ((cfg_find_msg *)msg)->oid, addon);
+            LOG_MSG(level,
+                    "Find OID %s%s", ((cfg_find_msg *)msg)->oid, addon);
             break;
 
         case CFG_GET_DESCR:
             GET_STRS(cfg_get_descr_msg);
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Get descr for %s%s%s", s1, s2, addon);
+            LOG_MSG(level, "Get descr for %s%s%s", s1, s2, addon);
             break;
 
         case CFG_GET_OID:
             GET_STRS(cfg_get_oid_msg);
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Get OID for %s%s%s", s1, s2, addon);
+            LOG_MSG(level, "Get OID for %s%s%s", s1, s2, addon);
             break;
 
         case CFG_GET_ID:
             GET_STRS(cfg_get_id_msg);
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Get ID for %s%s%s", s1, s2, addon);
+            LOG_MSG(level, "Get ID for %s%s%s", s1, s2, addon);
             break;
 
         case CFG_PATTERN:
@@ -740,23 +737,21 @@ log_msg(cfg_msg *msg, te_bool before)
                  * cfg_process_msg_pattern() function and we cannot get the
                  * value.
                  */
-                LGR_MESSAGE(level, TE_LGR_USER,
-                            "Pattern for OID %s%s",
-                            ((cfg_pattern_msg *)msg)->pattern, addon);
+                LOG_MSG(level, "Pattern for OID %s%s",
+                        ((cfg_pattern_msg *)msg)->pattern, addon);
             }
             break;
 
         case CFG_FAMILY:
             GET_STRS(cfg_family_msg);
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Get family (get %s) for %s%s%s",
-                        ((cfg_family_msg *)msg)->who == CFG_FATHER ?
-                            "father" :
-                        ((cfg_family_msg *)msg)->who == CFG_BROTHER ?
-                            "brother" :
-                        ((cfg_family_msg *)msg)->who == CFG_SON ?
-                            "son" : "unknown member",
-                        s1, s2, addon);
+            LOG_MSG(level, "Get family (get %s) for %s%s%s",
+                    ((cfg_family_msg *)msg)->who == CFG_FATHER ?
+                        "father" :
+                    ((cfg_family_msg *)msg)->who == CFG_BROTHER ?
+                        "brother" :
+                    ((cfg_family_msg *)msg)->who == CFG_SON ?
+                        "son" : "unknown member",
+                    s1, s2, addon);
             break;
 
         case CFG_ADD:
@@ -782,11 +777,10 @@ log_msg(cfg_msg *msg, te_bool before)
                     val_str_free = TRUE;
                 cfg_types[m->val_type].free(val);
             }
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Add instance %s value %s%s",
-                        (char *)m + m->oid_offset,
-                        val_str == NULL ? "(unknown)" :
-                        (before) ? "(not processed yet)" : val_str, addon);
+            LOG_MSG(level, "Add instance %s value %s%s",
+                    (char *)m + m->oid_offset,
+                    val_str == NULL ? "(unknown)" :
+                    (before) ? "(not processed yet)" : val_str, addon);
 
             if (val_str_free)
                 free(val_str);
@@ -795,8 +789,7 @@ log_msg(cfg_msg *msg, te_bool before)
 
         case CFG_DEL:
             GET_STRS(cfg_del_msg);
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Delete %s%s%s", s1, s2, addon);
+            LOG_MSG(level, "Delete %s%s%s", s1, s2, addon);
             break;
 
         case CFG_SET:
@@ -818,9 +811,8 @@ log_msg(cfg_msg *msg, te_bool before)
                     val_str_free = TRUE;
                 cfg_types[m->val_type].free(val);
             }
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Set for %s%s value %s%s", s1, s2,
-                        val_str == NULL ? "(unknown)" : val_str, addon);
+            LOG_MSG(level, "Set for %s%s value %s%s", s1, s2,
+                    val_str == NULL ? "(unknown)" : val_str, addon);
 
             if (val_str_free)
                 free(val_str);
@@ -829,22 +821,19 @@ log_msg(cfg_msg *msg, te_bool before)
 
         case CFG_GET:
             GET_STRS(cfg_get_msg);
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Get %s%s%s", s1, s2, addon);
+            LOG_MSG(level, "Get %s%s%s", s1, s2, addon);
             break;
 
         case CFG_SYNC:
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Synchronize %s%s%s",
-                        ((cfg_sync_msg *)msg)->oid,
-                        ((cfg_sync_msg *)msg)->subtree ? " (subtree)" : "",
-                        addon);
+            LOG_MSG(level, "Synchronize %s%s%s",
+                    ((cfg_sync_msg *)msg)->oid,
+                    ((cfg_sync_msg *)msg)->subtree ? " (subtree)" : "",
+                    addon);
             break;
 
         case CFG_REBOOT:
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Reboot Test Agent %s%s",
-                        ((cfg_reboot_msg *)msg)->ta_name, addon);
+            LOG_MSG(level, "Reboot Test Agent %s%s",
+                    ((cfg_reboot_msg *)msg)->ta_name, addon);
             break;
 
         case CFG_BACKUP:
@@ -856,29 +845,27 @@ log_msg(cfg_msg *msg, te_bool before)
             {
                 level = TE_LL_INFO;
             }
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "%s backup %s%s%s",
-                        op == CFG_BACKUP_CREATE ? "Create" :
-                        op == CFG_BACKUP_RESTORE ? "Restore" :
-                        op == CFG_BACKUP_RELEASE ? "Release" :
-                        op == CFG_BACKUP_VERIFY ? "Verify" : "unknown",
-                        op == CFG_BACKUP_CREATE ? "" :
-                            ((cfg_backup_msg *)msg)->filename,
-                        op == CFG_BACKUP_CREATE ? "" : " ", addon);
+            LOG_MSG(level,
+                    "%s backup %s%s%s",
+                    op == CFG_BACKUP_CREATE ? "Create" :
+                    op == CFG_BACKUP_RESTORE ? "Restore" :
+                    op == CFG_BACKUP_RELEASE ? "Release" :
+                    op == CFG_BACKUP_VERIFY ? "Verify" : "unknown",
+                    op == CFG_BACKUP_CREATE ? "" :
+                        ((cfg_backup_msg *)msg)->filename,
+                    op == CFG_BACKUP_CREATE ? "" : " ", addon);
             break;
         }
 
         case CFG_CONFIG:
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Create configuration file %s (%s)%s",
-                        ((cfg_config_msg *)msg)->filename,
-                        ((cfg_config_msg *)msg)->history ?
-                            "history" : "backup", addon);
+            LOG_MSG(level, "Create configuration file %s (%s)%s",
+                    ((cfg_config_msg *)msg)->filename,
+                    ((cfg_config_msg *)msg)->history ?
+                    "history" : "backup", addon);
             break;
 
         case CFG_SHUTDOWN:
-            LGR_MESSAGE(level, TE_LGR_USER,
-                        "Shutdown command%s", addon);
+            LOG_MSG(level, "Shutdown command%s", addon);
             break;
 
         default:
@@ -955,9 +942,9 @@ process_backup(cfg_backup_msg *msg)
             {
                 if (cs_flags & CS_LOG_DIFF)
                     log_message(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
-                                "Backup diff: %tf", diff_file);
+                                "Backup diff:\n%tf", diff_file);
                 else
-                    INFO("Backup diff: %tf", diff_file);
+                    INFO("Backup diff:\n%tf", diff_file);
             }
             unlink(diff_file);            
             break;

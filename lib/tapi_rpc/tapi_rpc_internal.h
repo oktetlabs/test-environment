@@ -59,7 +59,7 @@
  * If RPC call status is OK, log as ring, else log as error.
  */
 #define TAPI_RPC_LOG(_x...) \
-    LGR_MESSAGE(rpcs->err_log ? TE_LL_ERROR : TE_LL_RING, TE_LGR_USER, _x)
+    LOG_MSG(rpcs->err_log ? TE_LL_ERROR : TE_LL_RING, _x)
 
 /** 
  * Free memory, check RPC error, jump in the case of RPC error or if 
