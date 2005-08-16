@@ -629,7 +629,7 @@ te_rc_err2str(te_errno err)
 
         ERR2STR(ESYNCFAILED);
         
-        case 0:  return "0";
+        case 0:  return "OK";
         default: return "Unknown";
     }
 #undef ERR2STR    
