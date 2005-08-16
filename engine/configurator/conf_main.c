@@ -155,7 +155,7 @@ parse_config(const char *file, te_bool restore)
               "    %s", file);
 #endif
         xmlCleanupParser();
-        return TE_EINVAL;
+        return TE_RC(TE_CS, TE_EINVAL); 
     }
 
     VERB("Do XInclude sunstitutions in the document");
@@ -170,7 +170,7 @@ parse_config(const char *file, te_bool restore)
         ERROR("XInclude processing failed");
 #endif
         xmlCleanupParser();
-        return TE_EINVAL; /* FIXME */
+        return TE_RC(TE_CS, TE_EINVAL); 
     }
     VERB("XInclude made %d substitutions", subst);
 
@@ -182,6 +182,7 @@ parse_config(const char *file, te_bool restore)
         return 0;
     }
 
+    rcf_log_cfg_changes(TRUE);
     if (xmlStrcmp(root->name, (const xmlChar *)"backup") == 0)
         rc = cfg_backup_process_file(root, restore);
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
@@ -197,8 +198,9 @@ parse_config(const char *file, te_bool restore)
     {
         ERROR("Incorrect root node '%s' in the configuration file",
               root->name);
-        rc = TE_EINVAL;
+        rc = TE_RC(TE_CS, TE_EINVAL);
     }
+    rcf_log_cfg_changes(FALSE);
 
     xmlFreeDoc(doc);
     xmlCleanupParser();
@@ -907,14 +909,20 @@ process_backup(cfg_backup_msg *msg)
             
             if (TE_RC_GET_ERROR(rc) == TE_ETAREBOOTED)
                 cfg_ta_sync("/:", TRUE);
+
+            rcf_log_cfg_changes(TRUE);
             
             /* Try to restore using dynamic history */
             if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
+            {
+                rcf_log_cfg_changes(FALSE);
                 return;
+            }
 
             WARN("Restoring backup from history failed; "
                  "restore from the file");
             msg->rc = parse_config(msg->filename, TRUE);
+            rcf_log_cfg_changes(FALSE);
             cfg_dh_release_after(msg->filename);
             
             break;
