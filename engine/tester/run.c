@@ -969,7 +969,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
 
     free(cmd);
 
-    EXIT("%X", result);
+    EXIT("%r", result);
 
     return result;
 }
@@ -1647,7 +1647,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                     if (rc != 0)
                     {
                         ERROR("Cannot restore configuration backup: "
-                              "%X", rc);
+                              "%r", rc);
                         if (TEST_RESULT(test_result))
                             test_result = rc;
                     }
