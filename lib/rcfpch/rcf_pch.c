@@ -445,9 +445,15 @@ rcf_pch_run(const char *confstr, const char *info)
             int received = cmd_buf_len;
             int ba_offset = ba == NULL ? 0 : ba - cmd;
             
+            char *old_cmd = cmd;
+            
             if ((cmd = realloc(cmd, len)) == NULL)
             {
-                PRINT("Out of memory!");
+                old_cmd[128] = 0;
+                
+                PRINT("Failed to allocate enough memory for command <%s>",
+                      old_cmd);
+                free(old_cmd);
                 return -1;
             }
             cmd_buf_len = len;
