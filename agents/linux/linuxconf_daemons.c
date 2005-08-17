@@ -2760,8 +2760,12 @@ flush_smtp_server_queue(void)
     else if (strcmp(smtp_current, "exim") == 0)
     {
         char buf[30];
-        snprintf(buf, sizeof(buf), "killall -HUP %s", exim_name);
-        rc = ta_system(buf);
+        snprintf(buf, sizeof(buf), "%s -qff", exim_name);
+        rc = ta_shell_cmd(buf, -1, NULL, NULL);
+        if (rc > 0)
+            rc = 0;
+        else
+            rc = -1;
     }
     else
     {
