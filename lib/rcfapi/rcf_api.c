@@ -1296,7 +1296,10 @@ conf_add_set(const char *ta_name, int session, const char *oid,
     
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
-                                   
+    
+    if (rc == 0)
+        rc = msg.error;
+                                      
     if (ctx_handle->log_cfg_changes)
     {
         if (opcode == RCFOP_CONFSET)
@@ -1311,7 +1314,7 @@ conf_add_set(const char *ta_name, int session, const char *oid,
             
     }
                                    
-    return rc == 0 ? msg.error : rc;
+    return rc;
 }
 
 /**
@@ -1409,11 +1412,14 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
                                    
+    if (rc == 0)
+        rc = msg.error;
+                                      
     if (ctx_handle->log_cfg_changes)
         LOG_MSG(rc == 0 ? TE_LL_RING : TE_LL_ERROR, 
                 "Delete %s: %r", oid, rc);
 
-    return rc == 0 ? msg.error : rc;
+    return rc;
 }
 
 /* See description in rcf_api.h */
