@@ -365,10 +365,14 @@ typedef enum {
  * @param src   integer source or errno (source / error code composition)
  *
  * @return string literal pointer
+ *
+ * @note non-reenterable in the case of unknown module
  */
 static inline const char * 
 te_rc_mod2str(te_module mod)
 {
+    static char unknown_module[32];
+
 #define MOD2STR(name_) case TE_ ## name_: return #name_
 
     switch (TE_RC_GET_MODULE(mod))
@@ -384,6 +388,7 @@ te_rc_mod2str(te_module mod)
         MOD2STR(TAD_CH);   
         MOD2STR(TAD_CSAP);
         MOD2STR(TARPC);
+        MOD2STR(LOGGER);
         MOD2STR(CS);
         MOD2STR(CONF_API);
         MOD2STR(TESTER);
@@ -395,7 +400,10 @@ te_rc_mod2str(te_module mod)
         MOD2STR(TA_EXT);
         MOD2STR(RPC);
         case 0: return "";
-        default: return "Unknown";
+        default:
+            snprintf(unknown_module, sizeof(unknown_module),
+                     "Unknown(%u)", TE_RC_GET_MODULE(mod));
+            return unknown_module;
     }
 #undef MOD2STR    
 }
@@ -413,7 +421,8 @@ static inline const char *
 te_rc_err2str(te_errno err)
 {
     static char old_errno[64];
-    
+    static char unknown_errno[32];
+
     if ((err != 0) && ((err & TE_MIN_ERRNO) == 0))
     {
         snprintf(old_errno, sizeof(old_errno), 
@@ -631,7 +640,10 @@ te_rc_err2str(te_errno err)
         ERR2STR(ESYNCFAILED);
         
         case 0:  return "OK";
-        default: return "Unknown";
+        default:
+            snprintf(unknown_errno, sizeof(unknown_errno),
+                     "Unknown(%u)", TE_RC_GET_ERROR(err));
+            return unknown_errno;
     }
 #undef ERR2STR    
 }

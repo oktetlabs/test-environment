@@ -828,6 +828,12 @@ log_message_fast(uint16_t level, const char *user_name,
     (void)ta_lgr_unlock(key);
 }
 
+extern void logfork_log_message(uint16_t level,
+                                const char *lgr_entity,
+                                const char *lgr_user,
+                                const char *fmt, ...);
+
+
 #if TALOGDEBUG
 /*
  * Print message in stdout (debug mode).

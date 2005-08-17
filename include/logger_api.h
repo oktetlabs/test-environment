@@ -50,7 +50,7 @@
     do {                                                        \
         if (TE_LOG_LEVEL & (_lvl))                              \
         {                                                       \
-            log_message(_lvl, TE_LGR_ENTITY, _lgruser, _fs);    \
+            te_log_message(_lvl, TE_LGR_ENTITY, _lgruser, _fs); \
         }                                                       \
     } while (0)
 
@@ -91,8 +91,8 @@
 /** @name Logging of entry to and exit from function */
 #define _LOG_ENTRY(_us, _fs, _args...) \
     do {                            \
-        log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,               \
-                    "ENTRY to %s(): " _fs, __FUNCTION__, _args + 0);    \
+        te_log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,            \
+                       "ENTRY to %s(): " _fs, __FUNCTION__, _args + 0); \
     } while (0)
 
 #define LOG_ENTRY(_us, _fs...) \
@@ -105,8 +105,8 @@
             }                                                           \
             else                                                        \
             {                                                           \
-                log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,       \
-                            "ENTRY to %s()", __FUNCTION__);             \
+                te_log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,    \
+                               "ENTRY to %s()", __FUNCTION__);          \
             }                                                           \
         }                                                               \
     } while (0)
@@ -115,9 +115,9 @@
 
 #define _LOG_EXIT(_us, _fs, _args...) \
     do {                                                            \
-        log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,           \
-                    "EXIT in line %d from %s(): " _fs,              \
-                    __LINE__, __FUNCTION__, _args + 0);             \
+        te_log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,        \
+                       "EXIT in line %d from %s(): " _fs,           \
+                       __LINE__, __FUNCTION__, _args + 0);          \
     } while (0)
         
 
@@ -131,9 +131,9 @@
             }                                                       \
             else                                                    \
             {                                                       \
-                log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,   \
-                            "EXIT in line %d from %s()",            \
-                            __LINE__, __FUNCTION__);                \
+                te_log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,\
+                               "EXIT in line %d from %s()",         \
+                                __LINE__, __FUNCTION__);            \
             }                                                       \
         }                                                           \
     } while (0)
@@ -142,26 +142,4 @@
 /*@}*/
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * Create message and register it in the raw log file.
- *
- * @param level         Log level to be passed to the raw log
- * @param entity_name   Entity name whose user generates this message
- * @param user_name     Arbitrary "user name"
- * @param form_str      Log message format string. This string should 
- *                      contain conversion specifiers if some arguments
- *                      follows
- * @param ...           Arguments passed into the function according
- *                      to log message format string
- */
-extern void log_message(uint16_t level, const char *entity_name,
-                        const char *user_name, const char *form_str, ...);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
 #endif /* !__TE_LOGGER_API_H__ */

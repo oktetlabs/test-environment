@@ -38,9 +38,6 @@
 #include "logger_ta.h"
 #include "rcf_pch_mem.h"
 
-extern void logfork_log_message(int level, const char *lgruser, 
-                                const char *fmt, va_list ap);
-
 
 /** Local log buffer instance */
 struct lgr_rb log_buffer;
@@ -61,8 +58,9 @@ pthread_mutex_t ta_lgr_mutex;
 sem_t           ta_lgr_sem;
 #endif
 
-/** PID of the Test Agent */
-static pid_t ta_pid;
+/** Logging backend */
+log_message_f te_log_message = NULL;
+
 
 /**
  * Register message in the raw log (slow mode).
@@ -75,9 +73,9 @@ static pid_t ta_pid;
  * @param ...           Arguments passed into the function according to
  *                      raw log format string description.
  */
-void
-log_message(uint16_t level, const char *entity_name, 
-            const char *user_name, const char *form_str, ...)
+static void
+ta_log_message(uint16_t level, const char *entity_name, 
+               const char *user_name, const char *form_str, ...)
 {
     va_list     ap;
     int         key;
@@ -97,11 +95,6 @@ log_message(uint16_t level, const char *entity_name,
     UNUSED(entity_name);
     
     va_start(ap, form_str);
-    if (ta_pid != getpid())
-    {
-        logfork_log_message(level, user_name, form_str, ap);
-        return;
-    }
     
     skip_flags = "#-+ 0";
     skip_width = "*0123456789";
@@ -561,6 +554,14 @@ log_get_message(uint32_t length, uint8_t *buffer)
     return mess_length;
 }
 
+/**
+ * Function to be called in fork-child.
+ */
+static void
+log_atfork_child(void)
+{
+    te_log_message = logfork_log_message;
+}
 
 /**
  * Initialize Logger resources on the Test Agent side (log buffer,
@@ -572,18 +573,23 @@ log_get_message(uint32_t length, uint8_t *buffer)
  * @retval -1  Failure.
  */
 int
-log_init()
+log_init(void)
 {
-    ta_pid = getpid();
-    
+    if (pthread_atfork(NULL, NULL, log_atfork_child) != 0)
+        return -1;
+
     if (ta_lgr_lock_init() != 0)
         return -1;
 
     log_entries_fast = 0;
     log_entries_slow = 0;
 
-    return lgr_rb_init(&log_buffer);
+    if (lgr_rb_init(&log_buffer) != 0)
+        return -1;
 
+    te_log_message = ta_log_message;
+
+    return 0;
 }
 
 

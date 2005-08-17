@@ -417,7 +417,7 @@ rcf_pch_run(const char *confstr, const char *info)
     rcf_pch_cfg_init();
 
     if ((cmd = (char *)malloc(RCF_MAX_LEN)) == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
 
     if ((rc = rcf_comm_agent_init(confstr, &conn)) != 0 ||
         (info != NULL &&
@@ -1061,6 +1061,7 @@ exit:
     free(cmd);
 
     VERB("Exiting");
+    PRINT("Exiting");
 
     return rc;
 

@@ -126,6 +126,27 @@ extern const char *te_lgr_entity;
 #endif
 
 
+/**
+ * Logging backend function.
+ *
+ * @param level         Log level to be passed to the raw log
+ * @param entity_name   Entity name whose user generates this message
+ * @param user_name     Arbitrary "user name"
+ * @param form_str      Log message format string. This string should 
+ *                      contain conversion specifiers if some arguments
+ *                      follows
+ * @param ...           Arguments passed into the function according
+ *                      to log message format string
+ */
+typedef void (* log_message_f)(uint16_t level,
+                               const char *entity_name,
+                               const char *user_name,
+                               const char *form_str, ...);
+
+/** Logging backend */
+extern log_message_f te_log_message;
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

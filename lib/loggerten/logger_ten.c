@@ -74,18 +74,21 @@
 /** Mutual exclusion execution lock */
 static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
+
 /**
  * Handle of Logger IPC client.
  *
  * @note It should be used under lgr_lock only.
  */
 static struct ipc_client *lgr_client = NULL;
+
 /**
  * Buffer for log message.
  *
  * @note It should be used under lgr_lock only.
  */
 static uint8_t *lgr_msg_buf = NULL;
+
 /**
  * Length of the buffer for log message.
  *
@@ -95,8 +98,16 @@ static size_t lgr_msg_buf_len = 0;
 
 /** Path to the directory with TE logs */
 static const char *te_log_dir = NULL;
+
 /** Transport to log messages */
 static te_log_message_tx_f te_log_message_tx = NULL;
+
+static void ten_log_message(uint16_t level, const char *entity_name,
+                            const char *user_name, const char *form_str,
+                            ...);
+
+/** Logging backend */
+log_message_f te_log_message = ten_log_message;
 
 
 /**
@@ -117,9 +128,9 @@ log_message_ipc(const void *msg, size_t len)
 
 
 /* See description in logger_api.h */
-void
-log_message(uint16_t level, const char *entity_name,
-            const char *user_name, const char *form_str, ...)
+static void
+ten_log_message(uint16_t level, const char *entity_name,
+                const char *user_name, const char *form_str, ...)
 {
     va_list ap;
 

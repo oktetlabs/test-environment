@@ -961,9 +961,9 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         }
         if (ctx->flags & TESTER_VALGRIND)
         {
-            log_message(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
-                        "Standard error output of the script with "
-                        "ID=%d:\n%tf", id, vg_filename);
+            te_log_message(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+                           "Standard error output of the script with "
+                           "ID=%d:\n%tf", id, vg_filename);
         }
     }
 

@@ -39,7 +39,7 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/socket.h>
 #endif
-#ifdef HAVE_UNISTD_H
+#if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #if HAVE_STDLIB_H
@@ -57,10 +57,10 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef HAVE_PTHREAD_H
+#if HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
-#ifdef HAVE_STDARG_H
+#if HAVE_STDARG_H
 #include <stdarg.h>
 #endif
 #if HAVE_FCNTL_H
@@ -97,6 +97,7 @@ typedef struct udp_msg {
 #define __log_msg    msg.log.log_msg 
 #define __name       msg.notify.name
 
+
 /** Structure to store process info */
 typedef struct list {
     struct list *next;
@@ -106,15 +107,18 @@ typedef struct list {
     uint32_t tid;
 } list;
 
-#ifdef HAVE_PTHREAD_H
-static pthread_mutex_t lock_sockd = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 /** Address to which notification listerner is bound */
 static struct sockaddr_in logfork_saddr;
 
 /** Socket used by all client to register */
-static int clt_sockd = -1;
+static int logfork_clnt_sockd = -1;
+
+#if HAVE_PTHREAD_H
+static pthread_mutex_t logfork_clnt_sockd_lock =
+                           PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 
 /** 
  * Get client socket used for logging. 
@@ -124,7 +128,7 @@ static int clt_sockd = -1;
 int 
 logfork_get_sock(void)
 {
-    return clt_sockd;
+    return logfork_clnt_sockd;
 }
 
 /** 
@@ -135,8 +139,9 @@ logfork_get_sock(void)
 void 
 logfork_set_sock(int sock)
 {
-    clt_sockd = sock;
+    logfork_clnt_sockd = sock;
 }
+
 
 /** 
  * Find process name by its pid and tid in the internal list of
@@ -149,7 +154,7 @@ logfork_set_sock(int sock)
  * @retval  0   -  found
  * @retval -1   -  not found
  */
-int 
+static int 
 logfork_find_name_by_pid(list **proc_list, char **name, int pid, 
                          uint32_t tid)
 {
@@ -177,7 +182,7 @@ logfork_find_name_by_pid(list **proc_list, char **name, int pid,
  * @retval  0    success
  * @retval  -1   memory allocation failure
  */
-int
+static int
 logfork_list_add(list **proc_list, char *name, 
                  pid_t pid, uint32_t tid)
 {  
@@ -205,7 +210,6 @@ logfork_list_add(list **proc_list, char *name,
     return 0;
 }
 
-
 /**
  * Destroy the internal list of process info, when some failure
  * happens. When everything is going well this routine is never
@@ -213,7 +217,7 @@ logfork_list_add(list **proc_list, char *name,
  *
  * @param  list   pointer to the list
  */
-void
+static void
 logfork_destroy_list(list **list)
 {
     struct list *tmp;
@@ -233,8 +237,7 @@ logfork_destroy_list(list **list)
  * @param  sockd  socket descriptor
  *
  */
-
-void
+static void
 logfork_cleanup(list **list, int sockd)
 {
     struct list *tmp = *list;
@@ -243,6 +246,7 @@ logfork_cleanup(list **list, int sockd)
     
     close(sockd);
 }
+
 
 /** Thread entry point */
 void 
@@ -324,9 +328,9 @@ logfork_entry(void)
             }
             sprintf(name_pid, "%s.%u.%u",
                     name, (unsigned)msg.pid, (unsigned)msg.tid);
-            log_message(msg.__log_level, TE_LGR_ENTITY, 
-                        strdup(msg.__lgr_user), 
-                        "%s: %s", name_pid, msg.__log_msg);
+            te_log_message(msg.__log_level, TE_LGR_ENTITY, 
+                           strdup(msg.__lgr_user), 
+                           "%s: %s", name_pid, msg.__log_msg);
         }
         else 
         {
@@ -353,29 +357,49 @@ logfork_entry(void)
 /**
  * Open client socket. 
  *
- * @return socket (success) or 0 (failure)
+ * @retval 0    Success
+ * @retval -1   Failure
  *
  * @note should be called under lock
  */
 static inline int
-open_sock()
+open_sock(void)
 {
-    clt_sockd = socket(PF_INET, SOCK_DGRAM, 0);
-    if (clt_sockd < 0)
+    int sock;
+
+    sock = socket(PF_INET, SOCK_DGRAM, 0);
+    if (sock < 0)
     {
         fprintf(stderr, "logfork_register_user() - socket() failed\n");
         return -1;
     }
 
-    if (connect(clt_sockd, (struct sockaddr *)&logfork_saddr, 
+    if (connect(sock, (struct sockaddr *)&logfork_saddr, 
                 sizeof(logfork_saddr)) < 0)
     {
         fprintf(stderr, "logfork_register_user() - connect() failed\n");
-        close(clt_sockd);
-        clt_sockd = -1;
+        close(sock);
         return -1;
     }
-    
+
+#if HAVE_PTHREAD_H
+    pthread_mutex_lock(&logfork_clnt_sockd_lock);
+#endif
+    if (logfork_clnt_sockd < 0)
+    {
+        logfork_clnt_sockd = sock;
+#if HAVE_PTHREAD_H
+        pthread_mutex_unlock(&logfork_clnt_sockd_lock);
+#endif
+    }
+    else
+    {
+#if HAVE_PTHREAD_H
+        pthread_mutex_unlock(&logfork_clnt_sockd_lock);
+#endif
+        close(sock);
+    }
+
     return 0;
 }
 
@@ -388,26 +412,18 @@ logfork_register_user(const char *name)
     memset(&msg, 0, sizeof(msg));
     strncpy(msg.__name, name, sizeof(msg.__name) - 1);
     msg.pid = getpid();
-#ifdef HAVE_PTHREAD_H
+#if HAVE_PTHREAD_H
     msg.tid = (uint32_t)pthread_self();
 #endif    
     msg.is_notif = TRUE;
     
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&lock_sockd);
-#endif
-    if (clt_sockd == -1 && open_sock() != 0)
+    if (logfork_clnt_sockd == -1 && open_sock() != 0)
     {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&lock_sockd);
-#endif
         return -1;
     }
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lock_sockd);
-#endif
 
-    if (send(clt_sockd, (udp_msg *)&msg, sizeof(msg), 0) != sizeof(msg))
+    if (send(logfork_clnt_sockd, (udp_msg *)&msg, sizeof(msg), 0) !=
+            (ssize_t)sizeof(msg))
     {
         fprintf(stderr, "logfork_register_user() - cannot send "
                 "notification: %s\n", strerror(errno));
@@ -491,47 +507,40 @@ convert_msg(char *buf, int buflen, const char *fmt, va_list ap)
 }
 
 /** 
- * Function for logging to be used by forked processes
- *
- * @param level   logging level
- * @param lgruser logging user
- * @param fmt     format string
- * @param ap      arguments corresponding to the format
+ * Function for logging to be used by forked processes.
+ * It complies to log_message_f prototype.
  */
 void 
-logfork_log_message(int level, const char *lgruser, 
-                    const char *fmt, va_list ap)
+logfork_log_message(uint16_t level, const char *entity_name,
+                    const char *user_name, const char *fmt, ...)
 {
+    va_list ap;
     udp_msg msg;
 
+    UNUSED(entity_name);
+
     memset(&msg, 0, sizeof(msg));
+
+    va_start(ap, fmt);
     convert_msg(msg.__log_msg, sizeof(msg.__log_msg), fmt, ap);
+    va_end(ap);
 
     msg.pid = getpid();
-#ifdef HAVE_PTHREAD_H
+#if HAVE_PTHREAD_H
     msg.tid = (uint32_t)pthread_self();
 #endif    
     msg.is_notif = FALSE;
-    strncpy(msg.__lgr_user, lgruser, sizeof(msg.__lgr_user) - 1);
+    strncpy(msg.__lgr_user, user_name, sizeof(msg.__lgr_user) - 1);
     msg.__log_level = level;
 
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&lock_sockd);
-#endif
-    if (clt_sockd == -1 && open_sock() != 0)
+    if (logfork_clnt_sockd == -1 && open_sock() != 0)
     {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&lock_sockd);
-#endif
-        fprintf(stderr, "%s(): %s %s\n", __FUNCTION__, lgruser,
+        fprintf(stderr, "%s(): %s %s\n", __FUNCTION__, user_name,
                 msg.__log_msg);
         return;
     }
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lock_sockd);
-#endif
 
-    if (send(clt_sockd, (udp_msg *)&msg, sizeof(msg), 0) !=
+    if (send(logfork_clnt_sockd, (udp_msg *)&msg, sizeof(msg), 0) !=
             (ssize_t)sizeof(msg))
     {       
         fprintf(stderr, "%s(): sendto() failed: %s\n",

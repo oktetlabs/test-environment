@@ -31,16 +31,16 @@
 #ifndef __TE_LOGFORK_H__
 #define __TE_LOGFORK_H__
 
+/** Maximum length of the logging message */
+#define LOGFORK_MAXLEN   256
+
+/** Maximum length of the Logger user name or logfork user name */
+#define LOGFORK_MAXUSER  32
+
     
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** Maximum length of the logging message */
-#define LOGFORK_MAXLEN   256
-
-/** Maximum length of the lgr user or logfork user */
-#define LOGFORK_MAXUSER  32
 
 /**
  * Register process name and pid, so it would be 
