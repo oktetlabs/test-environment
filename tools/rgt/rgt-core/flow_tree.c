@@ -852,13 +852,22 @@ flow_tree_attach_from_node(node_t *node, log_msg *msg)
                 continue;
             }
 
+            /* 
+             * Start working from the latest entry in the list,
+             * as in most cases messages go in time order.
+             */
             cur_node = node->branches[i].last_el;
 
             while (cur_node != node)
             {
                 if (flow_tree_attach_from_node(cur_node, msg) != 0)
                 {
+                    /*
+                     * Try to find a place for the message in backward
+                     * time order as the most probable case.
+                     */
                     cur_node = cur_node->prev;
+                    continue;
                 }
 
                 break;
