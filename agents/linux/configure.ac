@@ -195,11 +195,13 @@ AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
 dnl
 dnl POSIX threads are provided by:
 dnl - -lpthread in Linux;
-dnl - -lc_r in FreeBSD;
+dnl - -lc_r (-lkse) in FreeBSD;
 dnl - -lpthread in NetBSD ('pth' package).
 dnl
-AC_SEARCH_LIBS([pthread_create], [pthread c_r], [],
+AC_SEARCH_LIBS([pthread_create], [pthread kse c_r], [],
                AC_MSG_ERROR([No POSIX threads]))
+AC_SEARCH_LIBS([pthread_atfork], [pthread kse c_r], [],
+               AC_MSG_ERROR([pthread_atfork is not supported]))
 
 dnl
 dnl POSIX semaphores are provided by:
