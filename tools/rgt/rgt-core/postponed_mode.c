@@ -683,7 +683,7 @@ output_regular_log_msg(log_msg *msg)
                         fclose(fd);
 
                         /* shift to the end of "%tf" */
-                        i += 3;
+                        i += 2;
                         break;
                     }
                    
@@ -751,7 +751,7 @@ output_regular_log_msg(log_msg *msg)
                                  strlen("</mem-dump>"));
 
                     /* shift to the end of "%tm" */
-                    i += 3;
+                    i += 2;
 
                     if (!default_format)
                     {

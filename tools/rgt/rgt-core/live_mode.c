@@ -419,7 +419,7 @@ rgt_expand_regular_log_msg(log_msg *msg)
                         fclose(fd);
 
                         /* shift to the end of "%tf" */
-                        i += 3;
+                        i += 2;
                         break;
                     }
 
@@ -478,7 +478,7 @@ rgt_expand_regular_log_msg(log_msg *msg)
                     obstack_grow(msg->obstk, "\n\n", 2);
 
                     /* shift to the end of "%tm" */
-                    i += 3;
+                    i += 2;
 
                     if (!default_format)
                     {
