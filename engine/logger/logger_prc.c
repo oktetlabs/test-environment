@@ -86,9 +86,9 @@ static te_log_message_tx_f te_log_message_tx = NULL;
  *
  * @bugs Should be processed test result value for %te specifier?
  */
-void
-log_message(uint16_t level, const char *entity_name, 
-            const char *user_name, const char *form_str, ...)
+static void
+lgr_log_message(uint16_t level, const char *entity_name, 
+                const char *user_name, const char *form_str, ...)
 {
     va_list ap;
 
@@ -117,3 +117,6 @@ log_message(uint16_t level, const char *entity_name,
     pthread_mutex_unlock(&lgr_lock);
 #endif
 }
+
+/** Logging backend */
+log_message_f te_log_message = lgr_log_message;
