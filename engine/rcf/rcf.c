@@ -85,7 +85,6 @@
 #include "rcf_methods.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"
-#include "rpc_xdr.h"
 
 #define RCF_NEED_TYPES      1
 #define RCF_NEED_TYPE_LEN   1

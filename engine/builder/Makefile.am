@@ -12,11 +12,9 @@ te_stdouterr_DEPENDENCIES = @TE_DEPENDENCIES@ \
                             $(DESTDIR)/$(prefix)/lib/libipc.a
 
 te_tce_dump_SOURCES = te_tce_dump.c
-te_tce_dump_LDADD = -lrcfapi -lrpcxdr -llogger_ten -lipc @TE_LDADD@ \
-                    -lpthread
+te_tce_dump_LDADD = -lrcfapi -llogger_ten -lipc @TE_LDADD@ -lpthread
 te_tce_dump_DEPENDENCIES = @TE_DEPENDENCIES@ \
                            $(DESTDIR)/$(prefix)/lib/librcfapi.a \
-                           $(DESTDIR)/$(prefix)/lib/librpcxdr.a \
                            $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                            $(DESTDIR)/$(prefix)/lib/libipc.a
 

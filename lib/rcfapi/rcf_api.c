@@ -73,8 +73,6 @@
 #define TE_LGR_USER     "RCF API"
 #include "logger_api.h"
 
-#include "rpc_xdr.h"
-
 /** Busy CSAPs state */
 #define CSAP_SEND       1
 #define CSAP_RECV       2
@@ -2997,118 +2995,11 @@ rcf_check_agents(void)
     return rc == 0 ? msg.error : rc;
 }
 
-#include "tarpc.h"
 /**
- * Call SUN RPC on the TA.
+ * This function is used to shutdown the RCF.
  *
- * @param ta_name       Test Agent name                 
- * @param session       TA session or 0
- * @param rpcserver     Name of the RPC server
- * @param timeout       RPC timeout in milliseconds or 0 (unlimited)
- * @param rpc_name      Name of the RPC (e.g. "bind")
- * @param in            Input parameter C structure
- * @param in            Output parameter C structure
- *
- * @return Status code
+ * @return error code
  */
-int 
-rcf_ta_call_rpc(const char *ta_name, int session, 
-                const char *rpcserver, int timeout,
-                const char *rpc_name, void *in, void *out)
-{
-/** Length of RPC data inside the message */     
-#define INSIDE_LEN \
-    (sizeof(((rcf_msg *)0)->file) + sizeof(((rcf_msg *)0)->value))
-    
-/** Length of message part before RPC data */
-#define PREFIX_LEN  \
-    (sizeof(rcf_msg) - INSIDE_LEN)
-
-    char     msg_buf[PREFIX_LEN + RCF_RPC_BUF_LEN];
-    rcf_msg *msg = (rcf_msg *)msg_buf;
-    rcf_msg *ans = NULL;
-    int      rc;
-    size_t   anslen = sizeof(msg_buf);
-    size_t   len;
-    
-    RCF_API_INIT;
-
-    if (BAD_TA || rpcserver == NULL || rpc_name == NULL || 
-        in == NULL || out == NULL)
-    {
-        return TE_RC(TE_RCF_API, TE_EINVAL);
-    }
-    
-    if (strlen(rpc_name) >= RCF_RPC_MAX_NAME)
-    {
-        ERROR("Too long RPC name: %s - change RCF_RPC_MAX_NAME constant", 
-              rpc_name);
-        return TE_RC(TE_RCF_API, TE_EINVAL);
-    }
-    
-    len = RCF_RPC_BUF_LEN;
-    if ((rc = rpc_xdr_encode_call(rpc_name, msg->file, &len, in)) != 0)
-    {
-        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-        {
-            ERROR("Unknown RPC %s", rpc_name);
-            return rc;
-        }
-        
-        /* Try to allocate more memory */
-        len = RCF_RPC_HUGE_BUF_LEN;
-        anslen = PREFIX_LEN + RCF_RPC_HUGE_BUF_LEN;
-        if ((msg = (rcf_msg *)malloc(anslen)) == NULL)
-            return TE_RC(TE_RCF_API, TE_ENOMEM);
-
-        if ((rc = rpc_xdr_encode_call(rpc_name, msg->file, &len, in)) != 0)
-        {
-            ERROR("Encoding of RPC %s input parameters failed", rpc_name);
-            free(msg);
-            return rc;
-        }
-    }
-    
-    memset(msg, 0, PREFIX_LEN);
-    msg->opcode = RCFOP_RPC;
-    msg->sid = session;
-    strcpy(msg->ta, ta_name);
-    strcpy(msg->id, rpcserver);
-    msg->timeout = timeout;
-    msg->intparm = len;
-    msg->data_len = len - INSIDE_LEN;
-
-    rc = send_recv_rcf_ipc_message(ctx_handle, msg, PREFIX_LEN + len, 
-                                   msg, &anslen, &ans);
-    if (ans != NULL)
-    {
-        if ((char *)msg != msg_buf)
-            free(msg);
-            
-        msg = ans;
-    }
-    
-    if (rc != 0 || (rc = msg->error) != 0)
-    {
-       if ((char *)msg != msg_buf)
-            free(msg);
-        return rc;
-    }
-    
-    rc = rpc_xdr_decode_result(rpc_name, msg->file, msg->intparm, out);
-    
-    if (rc != 0)
-        ERROR("Decoding of RPC %s output parameters failed", rpc_name);
-        
-    if ((char *)msg != msg_buf)
-        free(msg);
-        
-    return rc;        
-    
-#undef INSIDE_LEN    
-#undef PREFIX_LEN    
-}
-
 int
 rcf_shutdown_call(void)
 {
@@ -3126,3 +3017,29 @@ rcf_shutdown_call(void)
 
     return rc == 0 ? msg.error : rc;
 }
+
+/**
+ * Send/receive RCF message (should not be used directly - only for
+ * implementation of RCF API functions outside this C module).
+ *
+ * @param send_msg        pointer to the message to be sent
+ * @param send_size       size of message to be sent
+ * @param recv_msg        pointer to the buffer for answer
+ * @param recv_size       pointer to the variable to store:
+ *                          on entry - length of the available buffer;
+ *                          on exit - length of the message received
+ * @param p_answer        location for address of the memory
+ *                        allocated for the answer or NULL
+ * 
+ * @return zero on success or error code
+ */
+int 
+rcf_send_recv_msg(rcf_msg *send_buf, size_t send_size,
+                  rcf_msg *recv_buf, size_t *recv_size, rcf_msg **p_answer)
+{
+    RCF_API_INIT;
+
+    return send_recv_rcf_ipc_message(ctx_handle, send_buf, send_size,
+                                     recv_buf, recv_size, p_answer);
+}
+

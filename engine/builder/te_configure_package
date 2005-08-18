@@ -66,6 +66,7 @@ configure_package()
     echo ${PKGSRC}/configure -q --${option}=$PLATFORM $add_option \
                              --prefix=$PREFIX ${PARMS}
     
+    TE_BASE="$TE_BASE" \
     TE_CFLAGS="-ggdb -Wall -W ${ADD_CFLAGS} -I${PREFIX}/include" \
     TE_LDFLAGS="${ADD_LDFLAGS} -L${PREFIX}/lib" \
     TE_LDADD="$LDADD" \

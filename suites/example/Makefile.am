@@ -23,12 +23,11 @@ tetest_PROGRAMS = \
 
 example_SOURCES = example.c
 example_LDADD = -llogger_ten -lrcfapi -lipc -ltapi -lconfapi -ltapi_rpc \
-				-lrcfrpc -lrpcxdr \
-                -lconf_types -lconf_oid -lpthread \
-				 -L/home/artem/src/testnut/libtestnut.so
+                -lrcfrpc -lconf_types -lconf_oid -lpthread \
+                -L/home/artem/src/testnut/libtestnut.so
+                
 example_DEPENDENCIES = \
     ${TE_INSTALL}/@host@/lib/librcfapi.a \
-    ${TE_INSTALL}/@host@/lib/librpcxdr.a \
     ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
     ${TE_INSTALL}/@host@/lib/libipc.a \
     ${TE_INSTALL}/@host@/lib/libtapi.a \
