@@ -34,7 +34,7 @@ rpc_unsupported.c: $(srcdir)/../../include/tarpc.x.m4 rpc_supported.h \
 	rm -f tmp
         
 rpc_supported.h: tarpc_server.o
-	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" 
+	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" tarpc_server.o
 
 else
 
