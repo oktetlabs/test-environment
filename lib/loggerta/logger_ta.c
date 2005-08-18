@@ -59,7 +59,7 @@ sem_t           ta_lgr_sem;
 #endif
 
 /** Logging backend */
-log_message_f te_log_message = NULL;
+log_message_f te_log_message = logfork_log_message;
 
 
 /**
