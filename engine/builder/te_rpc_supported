@@ -34,6 +34,7 @@
 #
 
 NM=$1
+shift
 
 cat > rpc_supported.h <<\EOF
 /*
@@ -49,9 +50,11 @@ cat >> rpc_supported.h <<\EOF
 
 EOF
 
-$NM --demangle --format=bsd --extern-only --defined-only tarpc_server.o | \
-awk --posix '
-{                                                                 \
-    if ($3 == "" || $2 != "T" || match($3, "1_svc") == 0) next ;  \
-    printf "#define HAVE%s\n", $3 ;                               \
-} ' >> rpc_supported.h
+for i in $* ; do
+    $NM --demangle --format=bsd --extern-only --defined-only $i | \
+    awk --posix '
+    {                                                                 \
+        if ($3 == "" || $2 != "T" || match($3, "1_svc") == 0) next ;  \
+        printf "#define HAVE%s\n", $3 ;                               \
+    } ' >> rpc_supported.h
+done
