@@ -23,5 +23,5 @@ write_ind1
 noinst_HEADERS=test_types.h
 
 # link flags for tests. 
-LDADD=-lndn -lasn -llogger_ten -lipc -lpthread
+LDADD=-lndn -lasn 
 
