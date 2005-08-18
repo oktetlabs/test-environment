@@ -1002,23 +1002,23 @@ exit:
         result = EXIT_FAILURE;
     }
 
-    RING("Shutdown is completed");
-
     INFO("Close IPC server '%s'\n", LGR_SRV_NAME);
     if (ipc_close_server(logger_ten_srv) != 0)
     {
-        fprintf(stderr, "IPC server '%s' shutdown failed: %s",
-                LGR_SRV_NAME, strerror(errno));
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("IPC server '%s' shutdown failed: %s",
+              LGR_SRV_NAME, err_buf);
         result = EXIT_FAILURE;
     }
-
 
     if (ipc_kill() != 0)
     {
-        fprintf(stderr, "Logger IPC termination failed: %s", 
-                strerror(errno));
+        strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("IPC termination failed: %s", err_buf);
         result = EXIT_FAILURE;
     }
+
+    RING("Shutdown is completed");
 
     if (fflush(raw_file) != 0)
     {
