@@ -73,6 +73,8 @@ LDFLAGS="${TE_LDFLAGS} ${LDFLAGS}"
 
 AC_CONFIG_HEADERS([config.h])
 
+AC_CHECK_HEADERS([dlfcn.h])
+
 dnl
 dnl Try to find IP_MTU socket option definition.
 dnl

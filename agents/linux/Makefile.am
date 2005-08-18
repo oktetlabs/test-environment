@@ -21,7 +21,7 @@ MY_LDADD=symtbl.o -lrcfpch -lrpcxdr -l@TAD@ @TE_LDADD@ \
 MY_SOURCES=linux.c linuxconf.c ftp_routines.c log_serial.c
 MY_SYMTBL_OBJECTS=linux.o ftp_routines.o log_serial.o 
 
-noinst_HEADERS=linux_internal.h linuxconf_daemons.h
+noinst_HEADERS=linux_internal.h linuxconf_daemons.h tarpc_server.h
 
 CLEANFILES=symtbl.c
 BUILT_SOURCES=

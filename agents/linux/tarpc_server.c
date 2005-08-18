@@ -1,7 +1,7 @@
 /** @file
  * @brief Linux Test Agent
  *
- * RPC server implementation for Berkeley Socket API RPCs
+ * RPC routines implementation 
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -27,69 +27,19 @@
  * $Id$
  */
 
-#include "te_config.h"
+#include "tarpc_server.h"
+
 #include "config.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/socket.h>
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
+
 #if HAVE_NETINET_IN_SYSTM_H /* Required for FreeBSD build */
 #include <netinet/in_systm.h>
 #endif
-#if HAVE_SYS_UN_H
-#include <sys/un.h>
-#endif
-#include <sys/uio.h>
-#include <sys/poll.h>
-#include <sys/select.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <net/if.h>
-#include <net/if_arp.h>
-#include <netdb.h>
-#include <dlfcn.h>
-#if HAVE_AIO_H
-#include <aio.h>
-#endif
-#include <pwd.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <sys/stat.h>
-
-#include "te_stdint.h"
-#include "te_defs.h"
-#include "te_errno.h"
-#include "logger_ta.h"
-#include "tarpc.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch.h"
-#include "rcf_rpc_defs.h"
-#include "tapi_rpcsock_defs.h"
 
 #include "linux_internal.h"
-
-/** Obtain RCF RPC errno code */
-#define RPC_ERRNO errno_h2rpc(errno)
-
-#define TARPC_CHECK_RC(expr_) \
-    do {                                            \
-        int rc_ = (expr_);                          \
-                                                    \
-        if (rc_ != 0 && out->common._errno == 0)    \
-            out->common._errno = rc_;               \
-    } while (FALSE)
-        
-
-#define IN_SIGSET       ((sigset_t *)(rcf_pch_mem_get(in->set)))
-#define IN_FDSET        ((fd_set *)(rcf_pch_mem_get(in->set)))
 
 extern char **environ;
 
@@ -98,160 +48,6 @@ void *dummy = aio_read;
 #endif
 
 extern sigset_t rpcs_received_signals;
-
-typedef int (*sock_api_func)(int param,...);
-typedef int (*sock_api_func_ptr)(void *param,...);
-typedef int (*sock_api_func_void)();
-typedef void *(*sock_api_func_ret_ptr)(int param,...);
-typedef void *(*sock_api_func_ptr_ret_ptr)(void *param,...);
-typedef void *(*sock_api_func_void_ret_ptr)();
-
-#define func_ptr                ((sock_api_func_ptr)func)
-#define func_void               ((sock_api_func_void)func)
-#define func_ret_ptr            ((sock_api_func_ret_ptr)func)
-#define func_ptr_ret_ptr        ((sock_api_func_ptr_ret_ptr)func)
-#define func_void_ret_ptr       ((sock_api_func_void_ret_ptr)func)
-
-/**
- * Convert shutdown parameter from RPC to native representation.
- */
-static inline int
-shut_how_rpc2h(rpc_shut_how how)
-{
-    switch (how)
-    {
-        case RPC_SHUT_RD:   return SHUT_RD;
-        case RPC_SHUT_WR:   return SHUT_WR;
-        case RPC_SHUT_RDWR: return SHUT_RDWR;
-        default: return (SHUT_RD + SHUT_WR + SHUT_RDWR + 1);
-    }
-}
-
-/**
- * Convert RPC sockaddr to struct sockaddr.
- *
- * @param rpc_addr      RPC address location
- * @param addr          pointer to struct sockaddr_storage
- *
- * @return struct sockaddr pointer
- */
-static inline struct sockaddr *
-sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr_storage *addr)
-{
-    uint32_t len = SA_DATA_MAX_LEN;
-
-    if (rpc_addr->sa_data.sa_data_len == 0)
-        return NULL;
-
-    memset(addr, 0, sizeof(struct sockaddr_storage));
-
-    addr->ss_family = addr_family_rpc2h(rpc_addr->sa_family);
-
-    if (len < rpc_addr->sa_data.sa_data_len)
-    {
-        WARN("Strange tarpc_sa length %d is received",
-             rpc_addr->sa_data.sa_data_len);
-    }
-    else
-        len = rpc_addr->sa_data.sa_data_len;
-
-    memcpy(((struct sockaddr *)addr)->sa_data,
-           rpc_addr->sa_data.sa_data_val, len);
-
-    return (struct sockaddr *)addr;
-}
-
-/**
- * Convert RPC sockaddr to struct sockaddr. It's assumed that
- * memory allocated for RPC address has maximum possible length (i.e
- * SA_DATA_MAX_LEN).
- *
- * @param addr          pointer to struct sockaddr_storage
- * @param rpc_addr      RPC address location
- *
- * @return struct sockaddr pointer
- */
-static inline void
-sockaddr_h2rpc(struct sockaddr *addr, struct tarpc_sa *rpc_addr)
-{
-    if (addr == NULL || rpc_addr->sa_data.sa_data_val == NULL)
-        return;
-
-    rpc_addr->sa_family = addr_family_h2rpc(addr->sa_family);
-    if (rpc_addr->sa_data.sa_data_val != NULL)
-    {
-        memcpy(rpc_addr->sa_data.sa_data_val, addr->sa_data,
-               rpc_addr->sa_data.sa_data_len);
-    }
-}
-
-/**
- * Convert 'struct timeval' to 'struct tarpc_timeval'.
- * 
- * @param tv_h      Pointer to 'struct timeval'
- * @param tv_rpc    Pointer to 'struct tarpc_timeval'
- */
-static int
-timeval_h2rpc(const struct timeval *tv_h, struct tarpc_timeval *tv_rpc)
-{
-    tv_rpc->tv_sec  = tv_h->tv_sec;
-    tv_rpc->tv_usec = tv_h->tv_usec;
-
-    return (tv_h->tv_sec  != tv_rpc->tv_sec ||
-            tv_h->tv_usec != tv_rpc->tv_usec) ?
-               TE_RC(TE_TA_LINUX, TE_EH2RPC) : 0;
-}
-
-/**
- * Convert 'struct tarpc_timeval' to 'struct timeval'.
- * 
- * @param tv_rpc    Pointer to 'struct tarpc_timeval'
- * @param tv_h      Pointer to 'struct timeval'
- */
-static int
-timeval_rpc2h(const struct tarpc_timeval *tv_rpc, struct timeval *tv_h)
-{
-    tv_h->tv_sec  = tv_rpc->tv_sec;
-    tv_h->tv_usec = tv_rpc->tv_usec;
-
-    return (tv_h->tv_sec  != tv_rpc->tv_sec ||
-            tv_h->tv_usec != tv_rpc->tv_usec) ?
-               TE_RC(TE_TA_LINUX, TE_ERPC2H) : 0;
-}
-
-/**
- * Convert 'struct timezone' to 'struct tarpc_timezone'.
- * 
- * @param tz_h      Pointer to 'struct timezone'
- * @param tz_rpc    Pointer to 'struct tarpc_timezone'
- */
-static int
-timezone_h2rpc(const struct timezone *tz_h, struct tarpc_timezone *tz_rpc)
-{
-    tz_rpc->tz_minuteswest = tz_h->tz_minuteswest;
-    tz_rpc->tz_dsttime     = tz_h->tz_dsttime;
-
-    return (tz_h->tz_minuteswest != tz_rpc->tz_minuteswest ||
-            tz_h->tz_dsttime     != tz_rpc->tz_dsttime) ?
-               TE_RC(TE_TA_LINUX, TE_EH2RPC) : 0;
-}
-
-/**
- * Convert 'struct tarpc_timezone' to 'struct timezone'.
- * 
- * @param tz_rpc    Pointer to 'struct tarpc_timezone'
- * @param tz_h      Pointer to 'struct timezone'
- */
-static int
-timezone_rpc2h(const struct tarpc_timezone *tz_rpc, struct timezone *tz_h)
-{
-    tz_h->tz_minuteswest = tz_rpc->tz_minuteswest;
-    tz_h->tz_dsttime     = tz_rpc->tz_dsttime;
-
-    return (tz_h->tz_minuteswest != tz_rpc->tz_minuteswest ||
-            tz_h->tz_dsttime     != tz_rpc->tz_dsttime) ?
-               TE_RC(TE_TA_LINUX, TE_ERPC2H) : 0;
-}
 
 
 static te_bool dynamic_library_set = FALSE;
@@ -267,8 +63,8 @@ static void *dynamic_library_handle = NULL;
  *
  * @return status code
  */
-static int
-find_func(const char *lib, const char *name, sock_api_func *func)
+int
+tarpc_find_func(const char *lib, const char *name, api_func *func)
 {
     void    *handle;
     te_bool  use_libc = FALSE;
@@ -435,270 +231,6 @@ get_handler2name(void *handler, char *name, int name_len)
     }
     return 0;
 }
-
-/** Structure for checking of variable-length arguments safity */
-typedef struct checked_arg {
-    struct checked_arg *next; /**< Next checked argument in the list */
-
-    char *real_arg;     /**< Pointer to real buffer */
-    char *control;      /**< Pointer to control buffer */
-    int   len;          /**< Whole length of the buffer */
-    int   len_visible;  /**< Length passed to the function under test */
-} checked_arg;
-
-/** Initialise the checked argument and add it into the list */
-static void
-init_checked_arg(checked_arg **list, char *real_arg,
-                 int len, int len_visible)
-{
-    checked_arg *arg;
-
-    if (real_arg == NULL || len <= len_visible)
-        return;
-
-    if ((arg = calloc(1, sizeof(*arg))) == NULL)
-    {
-        ERROR("Out of memory");
-        return;
-    }
-
-    if ((arg->control = malloc(len - len_visible)) == NULL)
-    {
-        ERROR("Out of memory");
-        free(arg);
-        return;
-    }
-    memcpy(arg->control, real_arg + len_visible, len - len_visible);
-    arg->real_arg = real_arg;
-    arg->len = len;
-    arg->len_visible = len_visible;
-    arg->next = *list;
-    *list = arg;
-}
-
-#define INIT_CHECKED_ARG(_real_arg, _len, _len_visible) \
-    init_checked_arg(&list, _real_arg, _len, _len_visible)
-
-/** Verify that arguments are not corrupted */
-static int
-check_args(checked_arg *list)
-{
-    int rc = 0;
-
-    checked_arg *cur, *next;
-
-    for (cur = list; cur != NULL; cur = next)
-    {
-        next = cur->next;
-        if (memcmp(cur->real_arg + cur->len_visible, cur->control,
-                   cur->len - cur->len_visible) != 0)
-        {
-            rc = TE_RC(TE_TA_LINUX, TE_ECORRUPTED);
-        }
-        free(cur->control);
-        free(cur);
-    }
-
-    return rc;
-}
-
-/** Convert address and register it in the list of checked arguments */
-#define PREPARE_ADDR(_address, _vlen)                            \
-    struct sockaddr_storage addr;                                \
-    struct sockaddr        *a;                                   \
-                                                                 \
-    a = sockaddr_rpc2h(&(_address), &addr);                      \
-    INIT_CHECKED_ARG((char *)a, (_address).sa_data.sa_data_len + \
-                     SA_COMMON_LEN, _vlen);
-
-/**
- * Copy in variable argument to out variable argument and zero in argument.
- * out and in are assumed in the context.
- */
-#define COPY_ARG(_a)                        \
-    do {                                    \
-        out->_a._a##_len = in->_a._a##_len; \
-        out->_a._a##_val = in->_a._a##_val; \
-        in->_a._a##_len = 0;                \
-        in->_a._a##_val = NULL;             \
-    } while (0)
-
-#define COPY_ARG_ADDR(_a) \
-    do {                                   \
-        out->_a = in->_a;                  \
-        in->_a.sa_data.sa_data_len = 0;    \
-        in->_a.sa_data.sa_data_val = NULL; \
-    } while (0)
-
-/**
- * Find function by its name with check.
- * out variable is assumed in the context.
- */
-#define FIND_FUNC(_lib, _name, _func) \
-    do {                                           \
-        int rc = find_func(_lib, _name, &(_func)); \
-                                                   \
-        if (rc != 0)                               \
-        {                                          \
-             out->common._errno = rc;              \
-             return TRUE;                          \
-        }                                          \
-    } while (0)
-
-/** Wait time specified in the input argument. */
-#define WAIT_START(msec_start)                                  \
-    do {                                                        \
-        struct timeval t;                                       \
-                                                                \
-        uint64_t msec_now;                                      \
-                                                                \
-        gettimeofday(&t, NULL);                                 \
-        msec_now = (uint64_t)((uint32_t)(t.tv_sec) * 1000 +     \
-                              (uint32_t)(t.tv_usec) / 1000);    \
-                                                                \
-        if (msec_start > msec_now)                              \
-            usleep((msec_start - msec_now) * 1000);             \
-        else if (msec_start != 0)                               \
-            WARN("Start time is gone");                         \
-    } while (0)
-
-/**
- * Declare and initialise time variables; execute the code and store
- * duration and errno in the output argument.
- */
-#define MAKE_CALL(x)                                             \
-    do {                                                         \
-        struct timeval t_start;                                  \
-        struct timeval t_finish;                                 \
-        int           _rc;                                       \
-                                                                 \
-        WAIT_START(in->common.start);                            \
-        VERB("Calling: %s" , #x);                                \
-        gettimeofday(&t_start, NULL);                            \
-        errno = 0;                                               \
-        x;                                                       \
-        out->common._errno = RPC_ERRNO;                          \
-        gettimeofday(&t_finish, NULL);                           \
-        out->common.duration =                                   \
-            (t_finish.tv_sec - t_start.tv_sec) * 1000000 +       \
-            t_finish.tv_usec - t_start.tv_usec;                  \
-        _rc = check_args(list);                                  \
-        if (out->common._errno == 0 && _rc != 0)                 \
-            out->common._errno = _rc;                            \
-    } while (0)
-
-#define TARPC_FUNC(_func, _copy_args, _actions)                     \
-                                                                    \
-typedef struct _func##_arg {                                        \
-    sock_api_func       func;                                       \
-    tarpc_##_func##_in  in;                                         \
-    tarpc_##_func##_out out;                                        \
-    sigset_t            mask;                                       \
-    te_bool             done;                                       \
-} _func##_arg;                                                      \
-                                                                    \
-static void *                                                       \
-_func##_proc(void *arg)                                             \
-{                                                                   \
-    _func##_arg       *data = (_func##_arg *)arg;                   \
-    sock_api_func      func = data->func;                           \
-                                                                    \
-    tarpc_##_func##_in  *in = &(data->in);                          \
-    tarpc_##_func##_out *out = &(data->out);                        \
-    checked_arg         *list = NULL;                               \
-                                                                    \
-    logfork_register_user(#_func);                                  \
-                                                                    \
-    VERB("Entry thread %s", #_func);                                \
-                                                                    \
-    sigprocmask(SIG_SETMASK, &(data->mask), NULL);                  \
-                                                                    \
-    { _actions }                                                    \
-                                                                    \
-    data->done = TRUE;                                              \
-                                                                    \
-    return arg;                                                     \
-}                                                                   \
-                                                                    \
-bool_t                                                              \
-_##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
-                 struct svc_req *rqstp)                             \
-{                                                                   \
-    sock_api_func      func;                                        \
-                                                                    \
-    checked_arg   *list = NULL;                                     \
-    _func##_arg   *arg;                                             \
-    enum xdr_op    op = XDR_FREE;                                   \
-                                                                    \
-    UNUSED(rqstp);                                                  \
-    memset(out, 0, sizeof(*out));                                   \
-    VERB("PID=%d TID=%d: Entry %s",                                 \
-         (int)getpid(), (int)pthread_self(), #_func);               \
-                                                                    \
-    FIND_FUNC(in->common.lib, #_func, func);                        \
-                                                                    \
-    _copy_args                                                      \
-                                                                    \
-    if (in->common.op == RCF_RPC_CALL_WAIT)                         \
-    {                                                               \
-        VERB("%s(): CALL-WAIT", #_func);                            \
-        _actions                                                    \
-        return TRUE;                                                \
-    }                                                               \
-                                                                    \
-    if (in->common.op == RCF_RPC_CALL)                              \
-    {                                                               \
-        pthread_t _tid;                                             \
-                                                                    \
-        VERB("%s(): CALL", #_func);                                 \
-        if ((arg = calloc(1, sizeof(*arg))) == NULL)                \
-        {                                                           \
-            out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);     \
-            return TRUE;                                            \
-        }                                                           \
-                                                                    \
-        arg->in   = *in;                                            \
-        arg->out  = *out;                                           \
-        arg->func = func;                                           \
-        sigprocmask(SIG_SETMASK, NULL, &(arg->mask));               \
-        arg->done = FALSE;                                          \
-                                                                    \
-        if (pthread_create(&_tid, NULL, _func##_proc,               \
-                           (void *)arg) != 0)                       \
-        {                                                           \
-            free(arg);                                              \
-            out->common._errno = TE_OS_RC(TE_TA_LINUX, errno);      \
-        }                                                           \
-                                                                    \
-        memset(in,  0, sizeof(*in));                                \
-        memset(out, 0, sizeof(*out));                               \
-        out->common.tid = rcf_pch_mem_alloc((void *)_tid);          \
-        out->common.done = rcf_pch_mem_alloc(&arg->done);           \
-                                                                    \
-        return TRUE;                                                \
-    }                                                               \
-                                                                    \
-    VERB("%s(): WAIT", #_func);                                     \
-    assert(in->common.op == RCF_RPC_WAIT);                          \
-    if (pthread_join((pthread_t)rcf_pch_mem_get(in->common.tid),    \
-                     (void **)&(arg)) != 0)                         \
-    {                                                               \
-        out->common._errno = TE_OS_RC(TE_TA_LINUX, errno);          \
-        return TRUE;                                                \
-    }                                                               \
-    if (arg == NULL)                                                \
-    {                                                               \
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);         \
-        return TRUE;                                                \
-    }                                                               \
-    xdr_tarpc_##_func##_out((XDR *)&op, out);                       \
-    *out = arg->out;                                                \
-    rcf_pch_mem_free(in->common.done);                              \
-    rcf_pch_mem_free(in->common.tid);                               \
-    free(arg);                                                      \
-    return TRUE;                                                    \
-}
-
 
 /*-------------- setlibname() -----------------------------*/
 
@@ -1591,7 +1123,7 @@ TARPC_FUNC(waitpid, {},
     int             st;
     rpc_wait_status r_st;
 
-    func = (sock_api_func)ta_waitpid;
+    func = (api_func)ta_waitpid;
     MAKE_CALL(out->pid = func(in->pid, &st, 
                               waitpid_opts_rpc2h(in->options)));
     r_st = wait_status_h2rpc(st);
@@ -3635,7 +3167,7 @@ TARPC_FUNC(getaddrinfo, {},
     INIT_CHECKED_ARG(in->service.service_val,
                      in->service.service_len, 0);
     /* I do not understand, which function is found by usual way */
-    func = (sock_api_func)getaddrinfo;
+    func = (api_func)getaddrinfo;
     MAKE_CALL(out->retval = func_ptr(in->node.node_val,
                                      in->service.service_val, info, &res));
     if (out->retval != 0 && res != NULL)
@@ -3688,7 +3220,7 @@ TARPC_FUNC(getaddrinfo, {},
 /*-------------- freeaddrinfo() -----------------------------*/
 TARPC_FUNC(freeaddrinfo, {},
 {
-    func = (sock_api_func)freeaddrinfo;
+    func = (api_func)freeaddrinfo;
     MAKE_CALL(func_ptr(rcf_pch_mem_get(in->mem_ptr)));
     rcf_pch_mem_free(in->mem_ptr);
 }
@@ -3723,7 +3255,7 @@ TARPC_FUNC(socketpair,
 /*-------------- fopen() --------------------------------*/
 TARPC_FUNC(fopen, {},
 {
-    func = (sock_api_func)fopen;
+    func = (api_func)fopen;
     MAKE_CALL(out->mem_ptr = 
                   rcf_pch_mem_alloc(func_ptr_ret_ptr(in->path.path_val, 
                                                      in->mode.mode_val)));
@@ -3746,7 +3278,7 @@ TARPC_FUNC(system, {},
     int             st;
     rpc_wait_status r_st;
 
-    func = (sock_api_func)ta_system;
+    func = (api_func)ta_system;
     MAKE_CALL(st = func_ptr(in->cmd.cmd_val));
     r_st = wait_status_h2rpc(st);
     out->status_flag = r_st.flag;
@@ -3854,7 +3386,7 @@ TARPC_FUNC(simple_sender, {},
 int
 simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 {
-    sock_api_func send_func;
+    api_func send_func;
     char         *buf;
 
     int size = rand_range(in->size_min, in->size_max);
@@ -3878,7 +3410,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         return -1;
     }
     
-    if (find_func(in->common.lib, "send", &send_func) != 0)
+    if (tarpc_find_func(in->common.lib, "send", &send_func) != 0)
         return -1;
 
     if ((buf = malloc(in->size_max)) == NULL)
@@ -3962,8 +3494,8 @@ int
 simple_receiver(tarpc_simple_receiver_in *in,
                 tarpc_simple_receiver_out *out)
 {
-    sock_api_func   select_func;
-    sock_api_func   recv_func;
+    api_func   select_func;
+    api_func   recv_func;
     char           *buf;
     fd_set          set;
     int             rc;
@@ -3977,8 +3509,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     RING("%s() started", __FUNCTION__);
 
-    if (find_func(in->common.lib, "select", &select_func) != 0 ||
-        find_func(in->common.lib, "recv", &recv_func) != 0)
+    if (tarpc_find_func(in->common.lib, "select", &select_func) != 0 ||
+        tarpc_find_func(in->common.lib, "recv", &recv_func) != 0)
     {
         return -1;
     }
@@ -4066,7 +3598,7 @@ TARPC_FUNC(recv_verify, {},
 int
 recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
 {
-    sock_api_func   recv_func;
+    api_func   recv_func;
     char           *rcv_buf;
     char           *pattern_buf;
     int             rc;
@@ -4075,7 +3607,7 @@ recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
 
     RING("%s() started", __FUNCTION__);
 
-    if (find_func(in->common.lib, "recv", &recv_func) != 0)
+    if (tarpc_find_func(in->common.lib, "recv", &recv_func) != 0)
     {
         return -1;
     }
@@ -4144,14 +3676,14 @@ int
 send_traffic(tarpc_send_traffic_in *in,
             tarpc_send_traffic_out *out)
 {
-    sock_api_func sendto_func;
+    api_func sendto_func;
     int           num = in->num;
     int           i;
     checked_arg  *list = NULL;
 
     out->retval= 0;
 
-    if (find_func(in->common.lib, "sendto", &sendto_func) != 0)
+    if (tarpc_find_func(in->common.lib, "sendto", &sendto_func) != 0)
     {
         return -1;
     }
@@ -4294,11 +3826,11 @@ timely_round_trip(tarpc_timely_round_trip_in *in,
 {
     checked_arg  *list = NULL;
     
-    sock_api_func_ret_ptr make_msghdr_func;
-    sock_api_func_ptr     free_msghdr_func;
-    sock_api_func         sendmsg_func;
-    sock_api_func         recvmsg_func;
-    sock_api_func         select_func;
+    api_func_ret_ptr make_msghdr_func;
+    api_func_ptr     free_msghdr_func;
+    api_func         sendmsg_func;
+    api_func         recvmsg_func;
+    api_func         select_func;
 
     struct timeval        timeout; 
     struct timeval        time2wait;
@@ -4316,14 +3848,14 @@ timely_round_trip(tarpc_timely_round_trip_in *in,
 
     out->index = 0;
 
-    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
-        (find_func(in->common.lib, "sendmsg", &sendmsg_func) != 0) ||
-        (find_func(in->common.lib, "recvmsg", &recvmsg_func) != 0) ||
-        (find_func(in->common.lib, "make_msghdr", 
-                   (sock_api_func *)&make_msghdr_func) != 0)
+    if ((tarpc_find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (tarpc_find_func(in->common.lib, "sendmsg", &sendmsg_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "recvmsg", &recvmsg_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "make_msghdr", 
+                   (api_func *)&make_msghdr_func) != 0)
                                                                    ||
-        (find_func(in->common.lib, "free_msghdr", 
-                   (sock_api_func *)&free_msghdr_func) != 0)
+        (tarpc_find_func(in->common.lib, "free_msghdr", 
+                   (api_func *)&free_msghdr_func) != 0)
        )
     {
         ERROR("Failed to resolve functions");
@@ -4439,11 +3971,11 @@ int
 round_trip_echoer(tarpc_round_trip_echoer_in *in,
                   tarpc_round_trip_echoer_out *out)
 {
-    sock_api_func_ret_ptr make_msghdr_func;
-    sock_api_func_ptr     free_msghdr_func;
-    sock_api_func         sendmsg_func;
-    sock_api_func         recvmsg_func;
-    sock_api_func         select_func;
+    api_func_ret_ptr make_msghdr_func;
+    api_func_ptr     free_msghdr_func;
+    api_func         sendmsg_func;
+    api_func         recvmsg_func;
+    api_func         select_func;
 
     struct timeval        timeout; 
 
@@ -4457,14 +3989,14 @@ round_trip_echoer(tarpc_round_trip_echoer_in *in,
 
     out->index = 0;
 
-    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
-        (find_func(in->common.lib, "sendmsg", &sendmsg_func) != 0) ||
-        (find_func(in->common.lib, "recvmsg", &recvmsg_func) != 0) ||
-        (find_func(in->common.lib, "make_msghdr", 
-                   (sock_api_func *)&make_msghdr_func) != 0)
+    if ((tarpc_find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (tarpc_find_func(in->common.lib, "sendmsg", &sendmsg_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "recvmsg", &recvmsg_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "make_msghdr", 
+                   (api_func *)&make_msghdr_func) != 0)
                                                                    ||
-        (find_func(in->common.lib, "free_msghdr", 
-                   (sock_api_func *)&free_msghdr_func) != 0)
+        (tarpc_find_func(in->common.lib, "free_msghdr", 
+                   (api_func *)&free_msghdr_func) != 0)
        )
     {
         ERROR("Failed to resolve functions");
@@ -4559,9 +4091,9 @@ int
 close_and_accept(tarpc_close_and_accept_in *in,
                  tarpc_close_and_accept_out *out)
 {
-    sock_api_func         accept_func;
-    sock_api_func         close_func;
-    sock_api_func         select_func;
+    api_func         accept_func;
+    api_func         close_func;
+    api_func         select_func;
 
     tarpc_int            *fd_array = NULL; 
 
@@ -4572,9 +4104,9 @@ close_and_accept(tarpc_close_and_accept_in *in,
     fd_set          rfds;
     int             res = 0;
 
-    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
-        (find_func(in->common.lib, "accept", &accept_func) != 0) ||
-        (find_func(in->common.lib, "close", &close_func) != 0)
+    if ((tarpc_find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (tarpc_find_func(in->common.lib, "accept", &accept_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "close", &close_func) != 0)
        )
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
@@ -4678,14 +4210,14 @@ typedef int (*flood_api_func)(struct pollfd *ufds,
 int
 flooder(tarpc_flooder_in *in)
 {
-    sock_api_func select_func;
-    sock_api_func pselect_func;
-    sock_api_func p_func;
-    sock_api_func write_func;
-    sock_api_func read_func;
-    sock_api_func send_func;
-    sock_api_func recv_func;
-    sock_api_func ioctl_func;
+    api_func select_func;
+    api_func pselect_func;
+    api_func p_func;
+    api_func write_func;
+    api_func read_func;
+    api_func send_func;
+    api_func recv_func;
+    api_func ioctl_func;
 
     flood_api_func poll_func;
 
@@ -4725,14 +4257,14 @@ flooder(tarpc_flooder_in *in)
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 'X', FLOODER_BUF);
 
-    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
-        (find_func(in->common.lib, "pselect", &pselect_func) != 0) ||
-        (find_func(in->common.lib, "poll", &p_func) != 0)          ||
-        (find_func(in->common.lib, "read", &read_func) != 0)       ||
-        (find_func(in->common.lib, "write", &write_func) != 0)     ||
-        (find_func(in->common.lib, "recv", &recv_func) != 0)       ||
-        (find_func(in->common.lib, "send", &send_func) != 0)       ||
-        (find_func(in->common.lib, "ioctl", &ioctl_func) != 0))
+    if ((tarpc_find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (tarpc_find_func(in->common.lib, "pselect", &pselect_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "poll", &p_func) != 0)          ||
+        (tarpc_find_func(in->common.lib, "read", &read_func) != 0)       ||
+        (tarpc_find_func(in->common.lib, "write", &write_func) != 0)     ||
+        (tarpc_find_func(in->common.lib, "recv", &recv_func) != 0)       ||
+        (tarpc_find_func(in->common.lib, "send", &send_func) != 0)       ||
+        (tarpc_find_func(in->common.lib, "ioctl", &ioctl_func) != 0))
     {
         ERROR("failed to resolve function");
         return -1;
@@ -5077,11 +4609,11 @@ TARPC_FUNC(echoer, {},
 int
 echoer(tarpc_echoer_in *in)
 {
-    sock_api_func select_func;
-    sock_api_func pselect_func;
-    sock_api_func p_func;
-    sock_api_func write_func;
-    sock_api_func read_func;
+    api_func select_func;
+    api_func pselect_func;
+    api_func p_func;
+    api_func write_func;
+    api_func read_func;
 
     flood_api_func poll_func;
 
@@ -5114,11 +4646,11 @@ echoer(tarpc_echoer_in *in)
 
     memset(buf, 0x0, FLOODER_BUF);
 
-    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
-        (find_func(in->common.lib, "pselect", &pselect_func) != 0) ||
-        (find_func(in->common.lib, "poll", &p_func) != 0)          ||
-        (find_func(in->common.lib, "read", &read_func) != 0)       ||
-        (find_func(in->common.lib, "write", &write_func) != 0))
+    if ((tarpc_find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (tarpc_find_func(in->common.lib, "pselect", &pselect_func) != 0) ||
+        (tarpc_find_func(in->common.lib, "poll", &p_func) != 0)          ||
+        (tarpc_find_func(in->common.lib, "read", &read_func) != 0)       ||
+        (tarpc_find_func(in->common.lib, "write", &write_func) != 0))
     {
         return -1;
     }
@@ -5342,16 +4874,16 @@ aio_read_test(tarpc_aio_read_test_in *in, tarpc_aio_read_test_out *out)
     struct timeval t;
     int            rc;
 
-    sock_api_func_ptr aio_read_func;
-    sock_api_func_ptr aio_error_func;
-    sock_api_func_ptr aio_return_func;
+    api_func_ptr aio_read_func;
+    api_func_ptr aio_error_func;
+    api_func_ptr aio_return_func;
 
-    if (find_func(in->common.lib, "aio_read",
-                  (sock_api_func *)&aio_read_func) != 0 ||
-        find_func(in->common.lib, "aio_error",
-                  (sock_api_func *)&aio_error_func) != 0 ||
-        find_func(in->common.lib, "aio_return",
-                  (sock_api_func *)&aio_return_func) != 0)
+    if (tarpc_find_func(in->common.lib, "aio_read",
+                  (api_func *)&aio_read_func) != 0 ||
+        tarpc_find_func(in->common.lib, "aio_error",
+                  (api_func *)&aio_error_func) != 0 ||
+        tarpc_find_func(in->common.lib, "aio_return",
+                  (api_func *)&aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -5410,15 +4942,15 @@ aio_error_test(tarpc_aio_error_test_in *in, tarpc_aio_error_test_out *out)
     
     int rc;
 
-    sock_api_func_ptr aio_write_func;
-    sock_api_func_ptr aio_error_func;
+    api_func_ptr aio_write_func;
+    api_func_ptr aio_error_func;
 
     UNUSED(in);
 
-    if (find_func(in->common.lib, "aio_write",
-                  (sock_api_func *)&aio_write_func) != 0 ||
-        find_func(in->common.lib, "aio_error",
-                  (sock_api_func *)&aio_error_func) != 0)
+    if (tarpc_find_func(in->common.lib, "aio_write",
+                  (api_func *)&aio_write_func) != 0 ||
+        tarpc_find_func(in->common.lib, "aio_error",
+                  (api_func *)&aio_error_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -5462,16 +4994,16 @@ aio_write_test(tarpc_aio_write_test_in *in, tarpc_aio_write_test_out *out)
     
     int rc;
 
-    sock_api_func_ptr aio_write_func;
-    sock_api_func_ptr aio_error_func;
-    sock_api_func_ptr aio_return_func;
+    api_func_ptr aio_write_func;
+    api_func_ptr aio_error_func;
+    api_func_ptr aio_return_func;
 
-    if (find_func(in->common.lib, "aio_write",
-                  (sock_api_func *)&aio_write_func) != 0 ||
-        find_func(in->common.lib, "aio_error",
-                  (sock_api_func *)&aio_error_func) != 0 ||
-        find_func(in->common.lib, "aio_return",
-                  (sock_api_func *) &aio_return_func) != 0)
+    if (tarpc_find_func(in->common.lib, "aio_write",
+                  (api_func *)&aio_write_func) != 0 ||
+        tarpc_find_func(in->common.lib, "aio_error",
+                  (api_func *)&aio_error_func) != 0 ||
+        tarpc_find_func(in->common.lib, "aio_return",
+                  (api_func *) &aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -5524,18 +5056,18 @@ aio_suspend_test(tarpc_aio_suspend_test_in *in,
     struct timespec ts = { 0, 1000000 };
     struct timeval  tv1, tv2;
 
-    sock_api_func_ptr aio_read_func;
-    sock_api_func_ptr aio_return_func;
-    sock_api_func_ptr aio_suspend_func;
+    api_func_ptr aio_read_func;
+    api_func_ptr aio_return_func;
+    api_func_ptr aio_suspend_func;
 
     char aux_buf[8];
 
-    if (find_func(in->common.lib, "aio_read",
-                  (sock_api_func *)&aio_read_func) != 0 ||
-        find_func(in->common.lib, "aio_suspend",
-                  (sock_api_func *)&aio_suspend_func) != 0 ||
-        find_func(in->common.lib, "aio_return",
-                  (sock_api_func *)&aio_return_func) != 0)
+    if (tarpc_find_func(in->common.lib, "aio_read",
+                  (api_func *)&aio_read_func) != 0 ||
+        tarpc_find_func(in->common.lib, "aio_suspend",
+                  (api_func *)&aio_suspend_func) != 0 ||
+        tarpc_find_func(in->common.lib, "aio_return",
+                  (api_func *)&aio_return_func) != 0)
     {
         DIAG("Failed to resolve asynchronous IO function");
         return -1;
@@ -5652,9 +5184,9 @@ TARPC_FUNC(socket_to_file, {},
 int
 socket_to_file(tarpc_socket_to_file_in *in)
 {
-    sock_api_func select_func;
-    sock_api_func write_func;
-    sock_api_func read_func;
+    api_func select_func;
+    api_func write_func;
+    api_func read_func;
 
     int      sock = in->sock;
     char    *path = in->path.path_val;
@@ -5680,9 +5212,9 @@ socket_to_file(tarpc_socket_to_file_in *in)
     INFO("%s() called with: sock=%d, path=%s, timeout=%ld",
          __FUNCTION__, sock, path, time2run);
 
-    if ((find_func(in->common.lib, "select", &select_func) != 0)   ||
-        (find_func(in->common.lib, "read", &read_func) != 0)       ||
-        (find_func(in->common.lib, "write", &write_func) != 0))
+    if ((tarpc_find_func(in->common.lib, "select", &select_func) != 0)   ||
+        (tarpc_find_func(in->common.lib, "read", &read_func) != 0)       ||
+        (tarpc_find_func(in->common.lib, "write", &write_func) != 0))
     {
         ERROR("Failed to resolve functions addresses");
         rc = -1;
@@ -5874,7 +5406,7 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
 {
     ssize_t        rc = 0;
     unsigned int   i;
-    sock_api_func  send_func;
+    api_func  send_func;
     size_t         max_len = 0;
     uint8_t       *buf = NULL;
 
@@ -5914,7 +5446,7 @@ many_send(tarpc_many_send_in *in, tarpc_many_send_out *out)
 
     memset(buf, 0xDEADBEEF, sizeof(max_len));
 
-    if (find_func(in->common.lib, "send", &send_func) != 0)
+    if (tarpc_find_func(in->common.lib, "send", &send_func) != 0)
     {
         ERROR("Failed to resolve send() function");
         rc = -1;
@@ -5956,8 +5488,8 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
                  tarpc_overfill_buffers_out *out)
 {
     ssize_t          rc = 0;
-    sock_api_func    send_func;
-    sock_api_func    select_func;
+    api_func    send_func;
+    api_func    select_func;
     size_t           max_len = 4096;
     uint8_t         *buf = NULL;
     uint64_t         total = 0;
@@ -5978,14 +5510,14 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 
     memset(buf, 0xDEADBEEF, sizeof(max_len));
 
-    if (find_func(in->common.lib, "send", &send_func) != 0)
+    if (tarpc_find_func(in->common.lib, "send", &send_func) != 0)
     {
         ERROR("%s(): Failed to resolve send() function", __FUNCTION__);
         rc = -1;
         goto overfill_buffers_exit;
     }
 
-    if (find_func(in->common.lib, "select", &select_func) != 0)
+    if (tarpc_find_func(in->common.lib, "select", &select_func) != 0)
     {
         ERROR("%s(): Failed to resolve select() function", __FUNCTION__);
         rc = -1;
