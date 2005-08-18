@@ -2,7 +2,7 @@
 MY_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
             -I$(DESTDIR)/$(prefix)/../@host@/include \
             -include te_config.h \
-            -include config.h -fno-strict-aliasing
+            -include config.h -fno-strict-aliasing 
 
 AM_YFLAGS=-d
 
@@ -11,7 +11,7 @@ AM_YFLAGS=-d
 # functions provided by -l@TAD@. @TE_LDADD@ must be after -l@TAD@,
 # since @TE_LDADD@ may contain ASN and NDN libraries.
 #
-MY_LDADD=symtbl.o -lrcfpch -lrpcxdr -l@TAD@ @TE_LDADD@ \
+MY_LDADD=symtbl.o @TE_LDADD@ -lrcfpch -lrpcxdr -l@TAD@ \
          -lconf_oid -lloggerta -lrcfpch
 
 #if HAS_NET_SNMP
@@ -46,7 +46,8 @@ rpc_unsupported.c: $(srcdir)/../../include/tarpc.x.m4 rpc_supported.h \
 	rm -f tmp
         
 rpc_supported.h: tarpc_server.o
-	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" 
+	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" \
+            tarpc_server.o @TE_DEPENDENCIES@
 
 else
 
