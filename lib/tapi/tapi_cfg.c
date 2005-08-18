@@ -404,7 +404,7 @@ route_parse_inst_name(const char *inst_name,
     inst_copy[sizeof(inst_copy) - 1] = '\0';
 
     if ((tmp = strchr(inst_copy, '|')) == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TAPI, TE_ENOENT);
 
     *tmp = 0;
     rt->rt_dst.sa_family = AF_INET;
@@ -413,14 +413,14 @@ route_parse_inst_name(const char *inst_name,
     {
         ERROR("Incorrect 'destination address' value in route %s",
               inst_name);
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TAPI, TE_ENOENT);
     }
     tmp++;
     if (*tmp == '-' ||
         (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || prefix > 32))
     {
         ERROR("Incorrect 'prefix length' value in route %s", inst_name);
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TAPI, TE_ENOENT);
     }
     tmp = tmp1;
 
@@ -451,7 +451,7 @@ route_parse_inst_name(const char *inst_name,
         {
             ERROR("Incorrect format of 'gateway address' value in route %s",
                   inst_name);
-            return TE_RC(TE_TA_LINUX, TE_ENOENT);
+            return TE_RC(TE_TAPI, TE_ENOENT);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -470,7 +470,7 @@ route_parse_inst_name(const char *inst_name,
         {
             ERROR("Interface name is too long: %s in route %s",
                   ptr, inst_name);
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TAPI, TE_EINVAL);
         }
         strcpy(ifname, ptr);
 
@@ -491,7 +491,7 @@ route_parse_inst_name(const char *inst_name,
         {
             ERROR("Incorrect 'route metric' value in route %s",
                   inst_name);
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TAPI, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -509,7 +509,7 @@ route_parse_inst_name(const char *inst_name,
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
             ERROR("Incorrect 'route mtu' value in route %s", inst_name);
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TAPI, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -530,7 +530,7 @@ route_parse_inst_name(const char *inst_name,
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
             ERROR("Incorrect 'route window' value in route %s", inst_name);
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TAPI, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
@@ -549,7 +549,7 @@ route_parse_inst_name(const char *inst_name,
             (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
         {
             ERROR("Incorrect 'route irtt' value in route %s", inst_name);
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TAPI, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
