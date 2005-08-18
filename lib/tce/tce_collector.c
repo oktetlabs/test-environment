@@ -476,14 +476,14 @@ tce_run_collector(int argc, char *argv[])
 {
     int rc;
     if (tce_collector_pid != 0)
-        return TE_RC(TE_TA_LINUX, TE_EALREADY);
+        return TE_RC(TE_TA, TE_EALREADY);
     tce_obtain_principal_peer_id();
     rc = tce_init_collector(argc, argv);
     if (rc != 0)
         return rc;
     tce_collector_pid = fork();
     if (tce_collector_pid == (pid_t)-1)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA, errno);
     else if (tce_collector_pid == 0)
     {
         exit(tce_collector());
@@ -501,7 +501,7 @@ tce_dump_collector(void)
         return 0;
 
     if (kill(tce_collector_pid, SIGHUP) != 0)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA, errno);
     lock.l_type = F_WRLCK;
     lock.l_whence = SEEK_SET;
     lock.l_start = 0;
@@ -529,12 +529,12 @@ tce_stop_collector(void)
     if (tce_collector_pid == 0)
         return 0;
     if (kill(tce_collector_pid, SIGTERM) != 0)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA, errno);
     if (waitpid(tce_collector_pid, &tce_status, 0) < 0)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA, errno);
     tce_collector_pid = 0;
     return WIFEXITED(tce_status) && WEXITSTATUS(tce_status) == 0 ? 0 : 
-        TE_RC(TE_TA_LINUX, TE_ESHCMD);
+        TE_RC(TE_TA, TE_ESHCMD);
 }
 
 int 
@@ -543,7 +543,7 @@ tce_notify_collector(void)
     if (tce_collector_pid == 0)
         return 0;
     if (kill(tce_collector_pid, SIGUSR1) != 0)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA, errno);
     return 0;
 }
 

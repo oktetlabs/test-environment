@@ -314,6 +314,7 @@ typedef enum {
     TE_CONF_API,        /**< Configurator API */
     TE_TESTER,          /**< Tester application */
     TE_TAPI,            /**< Test API libraries */
+    TE_TA,              /**< Test Agent libraries */
     TE_TA_LINUX,        /**< Linux Test Agent */
     TE_TA_WIN32,        /**< Windows Test Agent */
     TE_TA_SWITCH_CTL,   /**< Switch Control Test Agent */
