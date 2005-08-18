@@ -1372,7 +1372,7 @@ main(int argc, char **argv)
 
     (void)signal(SIGCHLD, ta_sigchld_handler);
 
-    VERB("Started");
+    RING("Started");
 
     sprintf(buf, "PID %u", getpid());
 
