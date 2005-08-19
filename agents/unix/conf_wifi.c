@@ -1521,7 +1521,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_wifi, "wifi",
  * @return status code (see te_errno.h)
  */
 int
-ta_unix_ix_conf_wifi_init(rcf_pch_cfg_object **last)
+ta_unix_conf_wifi_init(rcf_pch_cfg_object **last)
 {
     rcf_pch_cfg_object *obj = &node_wifi;
 
