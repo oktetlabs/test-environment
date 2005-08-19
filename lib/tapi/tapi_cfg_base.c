@@ -294,3 +294,67 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
 
     return rc;
 }
+
+/* See description in tapi_cfg_base.h */
+int
+tapi_cfg_del_if_addresses(const char *ta,
+                          const char *if_name,
+                          const struct sockaddr *addr_to_save)
+{
+    cfg_handle   *addrs = NULL;
+    cfg_handle   *ptr; 
+    int           addr_num = 0;
+    int           i;
+    char          buf[INET_ADDRSTRLEN];
+    char         *addr_to_save_str = NULL;
+    char         *addr_str;
+    int           rc;
+    
+    if ((rc = cfg_find_pattern_fmt(&addr_num, &addrs,
+                                   "/agent:%s/interface:%s/net_addr:*",
+                                   ta, if_name)) != 0)
+    {    
+        ERROR("Failed to get net_addr list for /agent:%s/interface:%s/", 
+              ta, if_name);
+        return rc;
+    }
+    if (addr_to_save != NULL)
+    {
+        if ((addr_to_save_str = 
+                (char *)inet_ntop(AF_INET, 
+                        &(SIN(addr_to_save)->sin_addr),
+                        buf, INET_ADDRSTRLEN)) == NULL)
+        {
+            ERROR("Failed to convert address to string, errno %s",
+                  strerror(errno));
+            return -1;
+        }
+    }
+    else
+    {
+        if ((rc = cfg_get_inst_name(*addrs, &addr_to_save_str)) != 0)
+        {
+            ERROR("Failed to get instance name");
+            return rc;
+        }
+    }
+    VERB("addr_to_save_str is %s", addr_to_save_str);
+    
+    for (i = 0, ptr = addrs; i < addr_num; i++, ptr++)
+    {
+        if ((rc = cfg_get_inst_name(*ptr, &addr_str)) != 0)
+        {
+            ERROR("Failed to get instance name");
+            return rc;
+        }
+        if (strncmp(addr_str, addr_to_save_str, 
+                    strlen(addr_to_save_str) + 1) == 0)
+            continue;
+        if ((rc = cfg_del_instance(*ptr, FALSE)) != 0)
+        {
+            ERROR("Failed to delete address %s", addr_str);
+            return rc;
+        }
+    }
+    return 0;
+}

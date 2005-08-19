@@ -315,6 +315,36 @@ extern void mreq_set_mr_interface(int addr_family,
 extern void mreq_set_mr_ifindex(int addr_family, void *mreq, int ifindex);
 
 
+/**
+ * Retrieve unused in system port in host order.
+ *
+ * @param p_port    Location for allocated port
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_allocate_port(uint16_t *p_port);
+
+/**
+ * Retrieve unused in system port in network order.
+ *
+ * @param p_port    Location for allocated port
+ *
+ * @return Status code.
+ */
+static inline te_errno
+tapi_allocate_port_htons(uint16_t *p_port)
+{
+    uint16_t port;
+    int      rc;
+    
+    if ((rc = tapi_allocate_port(&port)) != 0)
+        return rc;
+        
+    *p_port = htons(port);
+    
+    return 0;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

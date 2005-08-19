@@ -126,6 +126,23 @@ tapi_cfg_base_if_add_net_addr(const char *ta, const char *ifname,
                                       cfg_hndl);
 }
 
+/**
+ * Delete all addresses on a given interface, except of addr_to_save.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       interface name
+ * @param addr_to_save  address to save on interface.
+ *                      If this parameter is NULL, then save
+ *                      the first address in address list returned by
+ *                      'ip addr list' output.
+ *
+ * @return Status code
+ */ 
+extern int tapi_cfg_del_if_addresses(const char *ta,
+                                     const char *if_name,
+                                     const struct sockaddr *addr_to_save);
+
+
 static inline
 int tapi_cfg_base_if_up(const char *ta, const char *iface)
 {

@@ -32,7 +32,7 @@
 #include <pthread.h>
 #endif
 
-#include "sockts_env.h"
+#include "tapi_env.h"
 
 #include "logger_api.h"
 #include "conf_api.h"
@@ -53,7 +53,7 @@
  *
  * @return Status code.
  */
-extern int env_cfg_parse(sockts_env *e, const char *cfg);
+extern int env_cfg_parse(tapi_env *e, const char *cfg);
 
 
 /** Entry of the list with network node indexes */
@@ -67,17 +67,17 @@ typedef struct node_index {
 typedef LIST_HEAD(node_indexes, node_index) node_indexes;
 
 
-static int prepare_nets(sockts_env_nets *nets, cfg_nets_t *cfg_nets);
-static int prepare_hosts(sockts_env_hosts *hosts, cfg_nets_t *cfg_nets);
-static int prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets);
-static int prepare_interfaces(sockts_env_ifs *ifs, cfg_nets_t *cfg_nets);
-static int prepare_pcos(sockts_env_hosts *hosts);
+static int prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets);
+static int prepare_hosts(tapi_env_hosts *hosts, cfg_nets_t *cfg_nets);
+static int prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets);
+static int prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets);
+static int prepare_pcos(tapi_env_hosts *hosts);
 
-static int add_address(sockts_env_addr *addr, cfg_nets_t *cfg_nets);
+static int add_address(tapi_env_addr *addr, cfg_nets_t *cfg_nets);
 
-static int bind_env_hosts_to_cfg_nets(sockts_env_hosts *hosts,
+static int bind_env_hosts_to_cfg_nets(tapi_env_hosts *hosts,
                                       cfg_nets_t *cfg_nets);
-static te_bool bind_host(sockts_env_host *host, sockts_env_hosts *hosts,
+static te_bool bind_host(tapi_env_host *host, tapi_env_hosts *hosts,
                          cfg_nets_t *cfg_nets, node_indexes *used_nodes);
 
 static int cmp_agent_names(cfg_handle node1, cfg_handle node2);
@@ -92,65 +92,13 @@ static void node_unmark_used(node_indexes *used_nodes,
 static te_bool node_is_used(node_indexes *used_nodes,
                             unsigned int net, unsigned int node);
 
-static te_bool check_node_type_vs_pcos(sockts_env_host *host,
+static te_bool check_node_type_vs_pcos(tapi_env_host *host,
                                        enum net_node_type node_type);
 
 
-/* See description in sockts_env.h */
-int
-sockts_allocate_port(uint16_t *p_port)
-{
-    static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
-    int             rc;
-    cfg_val_type    val_type;
-    int             port;
-    
-    pthread_mutex_lock(&mutex);
-
-    val_type = CVT_INTEGER;
-    rc = cfg_get_instance_fmt(&val_type, &port,
-                              "/volatile:/sockaddr_port:");
-    if (rc != 0)
-    {
-        pthread_mutex_unlock(&mutex);
-        ERROR("Failed to get /volatile:/sockaddr_port:: %r", rc);
-        return rc;
-    }
-    if (port < 0 || port > 0xffff)
-    {
-        pthread_mutex_unlock(&mutex);
-        ERROR("Wrong value %d is got from /volatile:/sockaddr_port:", port);
-        return TE_EINVAL;
-    }
-    if ((port < 20000) || (port >= 40000))
-    {
-        srand((unsigned int)time(NULL));
-        port = 20000 + rand_range(0, 20000);
-    }
-    else
-    {
-        port++;
-    }
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, port),
-                              "/volatile:/sockaddr_port:");
-    if (rc != 0)
-    {
-        pthread_mutex_unlock(&mutex);
-        ERROR("Failed to set /volatile:/sockaddr_port:: %r", rc);
-        return rc;
-    }
-
-    pthread_mutex_unlock(&mutex);
-
-    *p_port = (uint16_t)port;
-
-    return 0;
-}
-
-/* See description in sockts_env.h */
-int
-sockts_allocate_addr(sockts_env_net *net, int af,
+/* See description in tapi_env.h */
+te_errno
+tapi_env_allocate_addr(tapi_env_net *net, int af,
                      struct sockaddr **addr, socklen_t *addrlen)
 {
     int             rc;
@@ -194,9 +142,9 @@ sockts_allocate_addr(sockts_env_net *net, int af,
 }
 
 
-/* See description in sockts_env.h */
-int
-sockts_get_env(const char *cfg, sockts_env *env)
+/* See description in tapi_env.h */
+te_errno
+tapi_env_get(const char *cfg, tapi_env *env)
 {
     int         rc;
 
@@ -289,20 +237,20 @@ sockts_get_env(const char *cfg, sockts_env *env)
 }
 
 
-/* See description in sockts_env.h */
-int
-sockts_free_env(sockts_env *env)
+/* See description in tapi_env.h */
+te_errno
+tapi_env_free(tapi_env *env)
 {
     int                 result = 0;
     int                 rc;
-    sockts_env_host    *host;
-    sockts_env_process *proc;
-    sockts_env_pco     *pco;
-    sockts_env_addr    *addr;
-    sockts_env_net     *net;
+    tapi_env_host    *host;
+    tapi_env_process *proc;
+    tapi_env_pco     *pco;
+    tapi_env_addr    *addr;
+    tapi_env_net     *net;
     cfg_handle_tqe     *addr_hndl;
-    sockts_env_if      *iface;
-    sockts_env_alias   *alias;
+    tapi_env_if      *iface;
+    tapi_env_alias   *alias;
     cfg_val_type        type;
     int                 n_entries;
     int                 n_deleted;
@@ -448,12 +396,12 @@ sockts_free_env(sockts_env *env)
 }
 
 
-/* See description in sockts_env.h */
-sockts_env_net *
-sockts_get_net(sockts_env *env, const char *name)
+/* See description in tapi_env.h */
+tapi_env_net *
+tapi_env_get_net(tapi_env *env, const char *name)
 {
-    sockts_env_net     *p;
-    sockts_env_alias   *a;
+    tapi_env_net     *p;
+    tapi_env_alias   *a;
 
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
@@ -475,12 +423,12 @@ sockts_get_net(sockts_env *env, const char *name)
     return NULL;
 }
 
-/* See description in sockts_env.h */
-sockts_env_host *
-sockts_get_host(sockts_env *env, const char *name)
+/* See description in tapi_env.h */
+tapi_env_host *
+tapi_env_get_host(tapi_env *env, const char *name)
 {
-    sockts_env_host    *p;
-    sockts_env_alias   *a;
+    tapi_env_host    *p;
+    tapi_env_alias   *a;
 
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
@@ -504,14 +452,14 @@ sockts_get_host(sockts_env *env, const char *name)
     return NULL;
 }
 
-/* See description in sockts_env.h */
+/* See description in tapi_env.h */
 rcf_rpc_server *
-sockts_get_pco(sockts_env *env, const char *name)
+tapi_env_get_pco(tapi_env *env, const char *name)
 {
-    sockts_env_alias   *a;
-    sockts_env_host    *host;
-    sockts_env_process *proc;
-    sockts_env_pco     *pco;
+    tapi_env_alias   *a;
+    tapi_env_host    *host;
+    tapi_env_process *proc;
+    tapi_env_pco     *pco;
 
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
@@ -547,12 +495,12 @@ sockts_get_pco(sockts_env *env, const char *name)
 }
 
 
-/* See description in sockts_env.h */
+/* See description in tapi_env.h */
 const struct sockaddr *
-sockts_get_addr(sockts_env *env, const char *name, socklen_t *addrlen)
+tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
 {
-    sockts_env_addr    *p;
-    sockts_env_alias   *a;
+    tapi_env_addr    *p;
+    tapi_env_alias   *a;
 
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
@@ -580,12 +528,12 @@ sockts_get_addr(sockts_env *env, const char *name, socklen_t *addrlen)
 }
 
 
-/* See description in sockts_env.h */
+/* See description in tapi_env.h */
 const struct if_nameindex *
-sockts_get_if(sockts_env *env, const char *name)
+tapi_env_get_if(tapi_env *env, const char *name)
 {
-    sockts_env_if      *p;
-    sockts_env_alias   *a;
+    tapi_env_if      *p;
+    tapi_env_alias   *a;
 
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
@@ -616,10 +564,10 @@ sockts_get_if(sockts_env *env, const char *name)
  * @return Status code.
  */
 static int
-prepare_nets(sockts_env_nets *nets, cfg_nets_t *cfg_nets)
+prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
 {
     int             rc = 0;
-    sockts_env_net *env_net;
+    tapi_env_net *env_net;
     cfg_val_type    val_type;
     unsigned int    i;
     char           *net_oid;
@@ -727,10 +675,10 @@ prepare_nets(sockts_env_nets *nets, cfg_nets_t *cfg_nets)
  * @return Status code.
  */
 static int
-prepare_hosts(sockts_env_hosts *hosts, cfg_nets_t *cfg_nets)
+prepare_hosts(tapi_env_hosts *hosts, cfg_nets_t *cfg_nets)
 {
     int                 rc = 0;
-    sockts_env_host    *host;
+    tapi_env_host    *host;
     cfg_handle          handle;
     cfg_val_type        type;
 
@@ -853,11 +801,11 @@ prepare_hosts(sockts_env_hosts *hosts, cfg_nets_t *cfg_nets)
  * @return Status code.
  */
 static int
-prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
+prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
 {
     int                 rc;
-    sockts_env_addr    *env_addr;
-    sockts_env_host    *host;
+    tapi_env_addr    *env_addr;
+    tapi_env_host    *host;
     cfg_handle          handle;
     cfg_val_type        val_type;
 
@@ -880,11 +828,11 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
             env_addr->addrlen = sizeof(struct sockaddr_in);
 
             env_addr->addr->sa_family = AF_INET;
-            if (env_addr->type == SOCKTS_ADDR_UNICAST)
+            if (env_addr->type == TAPI_ENV_ADDR_UNICAST)
             {
                 if (env_addr->host->ip4_unicast_used)
                 {
-                    rc = sockts_allocate_addr(env_addr->net, AF_INET,
+                    rc = tapi_env_allocate_addr(env_addr->net, AF_INET,
                                               &env_addr->addr, NULL);
                     if (rc != 0)
                     {
@@ -947,9 +895,9 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
                     env_addr->host->ip4_unicast_used = TRUE;
                 }
             }
-            else if (env_addr->type == SOCKTS_ADDR_FAKE_UNICAST)
+            else if (env_addr->type == TAPI_ENV_ADDR_FAKE_UNICAST)
             {
-                rc = sockts_allocate_addr(env_addr->net, AF_INET,
+                rc = tapi_env_allocate_addr(env_addr->net, AF_INET,
                                           &env_addr->addr, NULL);
                 if (rc != 0)
                 {
@@ -958,15 +906,15 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
                     break;
                 }
             }
-            else if (env_addr->type == SOCKTS_ADDR_LOOPBACK)
+            else if (env_addr->type == TAPI_ENV_ADDR_LOOPBACK)
             {
                 SIN(env_addr->addr)->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
             }
-            else if (env_addr->type == SOCKTS_ADDR_WILDCARD)
+            else if (env_addr->type == TAPI_ENV_ADDR_WILDCARD)
             {
                 SIN(env_addr->addr)->sin_addr.s_addr = htonl(INADDR_ANY);
             }
-            else if (env_addr->type == SOCKTS_ADDR_ALIEN)
+            else if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
             {
                 static uint32_t alien_addr = 0x21212121;
     
@@ -974,12 +922,12 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
                 SIN(env_addr->addr)->sin_addr.s_addr = htonl(alien_addr);
                 alien_addr += 0x01000000;
             }
-            else if (env_addr->type == SOCKTS_ADDR_MULTICAST)
+            else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
             {
                 SIN(env_addr->addr)->sin_addr.s_addr =
                     htonl(rand_range(0xe0000000, 0xefffffff));
             }
-            else if (env_addr->type == SOCKTS_ADDR_BROADCAST)
+            else if (env_addr->type == TAPI_ENV_ADDR_BROADCAST)
             {
                 memcpy(env_addr->addr, &env_addr->net->ip4bcast,
                        sizeof(env_addr->net->ip4bcast));
@@ -991,7 +939,7 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
 
             /* Set allocated port */
-            rc = sockts_allocate_port(&(SIN(env_addr->addr)->sin_port));
+            rc = tapi_allocate_port(&(SIN(env_addr->addr)->sin_port));
             if (rc != 0)
             {
                 ERROR("Failed to allocate a port for address: %r", rc);
@@ -1005,7 +953,7 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
             env_addr->addrlen = sizeof(struct sockaddr);
             /* It's not right family, but it's used in Configurator */
             env_addr->addr->sa_family = AF_LOCAL;
-            if (env_addr->type == SOCKTS_ADDR_ALIEN)
+            if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
             {
                 static uint8_t counter;
 
@@ -1017,7 +965,7 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
                 env_addr->addr->sa_data[4] = 0x47;
                 env_addr->addr->sa_data[5] = 0x56 + counter++;
             }
-            else if (env_addr->type == SOCKTS_ADDR_UNICAST)
+            else if (env_addr->type == TAPI_ENV_ADDR_UNICAST)
             {
                 char *str;
 
@@ -1041,7 +989,7 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
                 }
                 free(str);
             }
-            else if (env_addr->type == SOCKTS_ADDR_MULTICAST)
+            else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
             {
                 env_addr->addr->sa_data[0] = random() | 0x01;
                 env_addr->addr->sa_data[1] = random();
@@ -1050,7 +998,7 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
                 env_addr->addr->sa_data[4] = random();
                 env_addr->addr->sa_data[5] = random();
             }
-            else if (env_addr->type == SOCKTS_ADDR_BROADCAST)
+            else if (env_addr->type == TAPI_ENV_ADDR_BROADCAST)
             {
                 memset(env_addr->addr->sa_data, 0xff, ETHER_ADDR_LEN);
             }
@@ -1066,7 +1014,7 @@ prepare_addresses(sockts_env_addrs *addrs, cfg_nets_t *cfg_nets)
 
 
 static int
-add_address(sockts_env_addr *addr, cfg_nets_t *cfg_nets)
+add_address(tapi_env_addr *addr, cfg_nets_t *cfg_nets)
 {
     int             rc;
     cfg_handle      handle;
@@ -1112,10 +1060,10 @@ add_address(sockts_env_addr *addr, cfg_nets_t *cfg_nets)
  * @return Status code.
  */
 static int
-prepare_interfaces(sockts_env_ifs *ifs, cfg_nets_t *cfg_nets)
+prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 {
     int             rc;
-    sockts_env_if  *p;
+    tapi_env_if  *p;
     cfg_val_type    val_type;
     char           *oid = NULL;
 
@@ -1208,12 +1156,12 @@ prepare_interfaces(sockts_env_ifs *ifs, cfg_nets_t *cfg_nets)
  * @return Status code.
  */
 static int
-prepare_pcos(sockts_env_hosts *hosts)
+prepare_pcos(tapi_env_hosts *hosts)
 {
     int                 rc = 0;
-    sockts_env_host    *host;
-    sockts_env_process *proc;
-    sockts_env_pco     *pco;
+    tapi_env_host    *host;
+    tapi_env_process *proc;
+    tapi_env_pco     *pco;
     te_bool             main_thread;
 
     for (host = hosts->cqh_first;
@@ -1249,7 +1197,7 @@ prepare_pcos(sockts_env_hosts *hosts)
                         pco->created = FALSE;
 
                     main_thread = FALSE;
-                    if (pco->type == SOCKTS_PCO_IUT && host->libname != NULL)
+                    if (pco->type == TAPI_ENV_IUT && host->libname != NULL)
                     {
                         rc = rcf_rpc_setlibname(pco->rpcs, host->libname);
                         if (rc != 0)
@@ -1293,7 +1241,7 @@ prepare_pcos(sockts_env_hosts *hosts)
 
 
 static int
-bind_env_hosts_to_cfg_nets(sockts_env_hosts *hosts,
+bind_env_hosts_to_cfg_nets(tapi_env_hosts *hosts,
                            cfg_nets_t *cfg_nets)
 {
     int             rc = 0;
@@ -1334,11 +1282,11 @@ bind_env_hosts_to_cfg_nets(sockts_env_hosts *hosts,
  * @retval FALSE        failure
  */
 static te_bool
-bind_host(sockts_env_host *host, sockts_env_hosts *hosts,
+bind_host(tapi_env_host *host, tapi_env_hosts *hosts,
           cfg_nets_t *cfg_nets, node_indexes *used_nodes)
 {
     unsigned int        i, j;
-    sockts_env_host    *p;
+    tapi_env_host    *p;
 
     if (host == (void *)hosts)
         return TRUE;
@@ -1559,23 +1507,23 @@ node_is_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
  * @return Whether types match?
  */
 static te_bool
-check_node_type_vs_pcos(sockts_env_host *host, enum net_node_type node_type)
+check_node_type_vs_pcos(tapi_env_host *host, enum net_node_type node_type)
 {
-    sockts_env_process *proc;
-    sockts_env_pco     *pco;
-    sockts_pco_type     matched1;
-    sockts_pco_type     matched2;
+    tapi_env_process *proc;
+    tapi_env_pco     *pco;
+    tapi_env_type     matched1;
+    tapi_env_type     matched2;
 
     switch (node_type)
     {
         case NET_NODE_TYPE_AGENT:
-            matched1 = SOCKTS_PCO_TESTER;
-            matched2 = SOCKTS_PCO_TESTER;
+            matched1 = TAPI_ENV_TESTER;
+            matched2 = TAPI_ENV_TESTER;
             break;
 
         case NET_NODE_TYPE_NUT:
-            matched1 = SOCKTS_PCO_IUT;
-            matched2 = SOCKTS_PCO_TESTER;
+            matched1 = TAPI_ENV_IUT;
+            matched2 = TAPI_ENV_TESTER;
             break;
 
         default:
@@ -1606,12 +1554,12 @@ check_node_type_vs_pcos(sockts_env_host *host, enum net_node_type node_type)
 
 #if 0
 static void
-substitute_host(sockts_env *env, sockts_env_host *old, sockts_env_host *new)
+substitute_host(tapi_env *env, tapi_env_host *old, tapi_env_host *new)
 {
-    sockts_env_addr    *addr;
-    sockts_env_if      *iface;
-    sockts_env_process *proc;
-    sockts_env_net     *net;
+    tapi_env_addr    *addr;
+    tapi_env_if      *iface;
+    tapi_env_process *proc;
+    tapi_env_net     *net;
 
     for (addr = env->addrs.cqh_first;
          addr != (void *)&env->addrs;
@@ -1644,9 +1592,9 @@ substitute_host(sockts_env *env, sockts_env_host *old, sockts_env_host *new)
 }
 
 static void
-canonicalize_hosts(sockts_env *env)
+canonicalize_hosts(tapi_env *env)
 {
-    sockts_env_host *p, *q, *r;
+    tapi_env_host *p, *q, *r;
 
     for (p = env->hosts.cqh_first; p != NULL; p = p->links.cqe_next)
     {
@@ -1668,10 +1616,10 @@ canonicalize_hosts(sockts_env *env)
 #endif
 
 
-/* See description in sockts_env.h */
-int
-sockts_get_net_host_addr(const sockts_env_net   *net,
-                         const sockts_env_host  *host,
+/* See description in tapi_env.h */
+te_errno
+tapi_env_get_net_host_addr(const tapi_env_net   *net,
+                         const tapi_env_host  *host,
                          tapi_cfg_net_assigned  *assigned,
                          struct sockaddr       **addr,
                          socklen_t              *addrlen)
@@ -1721,69 +1669,5 @@ sockts_get_net_host_addr(const sockts_env_net   *net,
     if (addrlen != NULL)
         *addrlen = sockaddr_get_size(*addr);
 
-    return 0;
-}
-
-/* See description in sockts_env.h */
-int
-sockts_del_if_addresses(const char *ta,
-                        const char *if_name,
-                        const struct sockaddr *addr_to_save)
-{
-    cfg_handle   *addrs = NULL;
-    cfg_handle   *ptr; 
-    int           addr_num = 0;
-    int           i;
-    char          buf[INET_ADDRSTRLEN];
-    char         *addr_to_save_str = NULL;
-    char         *addr_str;
-    int           rc;
-    
-    if ((rc = cfg_find_pattern_fmt(&addr_num, &addrs,
-                                   "/agent:%s/interface:%s/net_addr:*",
-                                   ta, if_name)) != 0)
-    {    
-        ERROR("Failed to get net_addr list for /agent:%s/interface:%s/", 
-              ta, if_name);
-        return rc;
-    }
-    if (addr_to_save != NULL)
-    {
-        if ((addr_to_save_str = 
-                (char *)inet_ntop(AF_INET, 
-                        &(SIN(addr_to_save)->sin_addr),
-                        buf, INET_ADDRSTRLEN)) == NULL)
-        {
-            ERROR("Failed to convert address to string, errno %s",
-                  strerror(errno));
-            return -1;
-        }
-    }
-    else
-    {
-        if ((rc = cfg_get_inst_name(*addrs, &addr_to_save_str)) != 0)
-        {
-            ERROR("Failed to get instance name");
-            return rc;
-        }
-    }
-    VERB("addr_to_save_str is %s", addr_to_save_str);
-    
-    for (i = 0, ptr = addrs; i < addr_num; i++, ptr++)
-    {
-        if ((rc = cfg_get_inst_name(*ptr, &addr_str)) != 0)
-        {
-            ERROR("Failed to get instance name");
-            return rc;
-        }
-        if (strncmp(addr_str, addr_to_save_str, 
-                    strlen(addr_to_save_str) + 1) == 0)
-            continue;
-        if ((rc = cfg_del_instance(*ptr, FALSE)) != 0)
-        {
-            ERROR("Failed to delete address %s", addr_str);
-            return rc;
-        }
-    }
     return 0;
 }

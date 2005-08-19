@@ -28,26 +28,29 @@
  * $Id$
  */
 
+#define TE_LGR_USER      "TAPI SockAddr"
+
 #include "te_config.h"
 
 #include <stdio.h>
-
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-
-#ifdef HAVE_NETINET_IN_H
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-
-#ifdef HAVE_ARPA_INET_H
+#if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
+#include "logger_api.h"
+#include "conf_api.h"
 
 #include "tapi_sockaddr.h"
 
-#define TE_LGR_USER      "Configuration TAPI"
-#include "logger_api.h"
 
 /* See the description in tapi_sockaddr.h */
 void
@@ -513,3 +516,54 @@ mreq_set_mr_ifindex(int addr_family, void *mreq, int ifindex)
     }
 }
 
+/* See description in tapi_env.h */
+te_errno
+tapi_allocate_port(uint16_t *p_port)
+{
+    static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+    int             rc;
+    cfg_val_type    val_type;
+    int             port;
+    
+    pthread_mutex_lock(&mutex);
+
+    val_type = CVT_INTEGER;
+    rc = cfg_get_instance_fmt(&val_type, &port,
+                              "/volatile:/sockaddr_port:");
+    if (rc != 0)
+    {
+        pthread_mutex_unlock(&mutex);
+        ERROR("Failed to get /volatile:/sockaddr_port:: %r", rc);
+        return rc;
+    }
+    if (port < 0 || port > 0xffff)
+    {
+        pthread_mutex_unlock(&mutex);
+        ERROR("Wrong value %d is got from /volatile:/sockaddr_port:", port);
+        return TE_EINVAL;
+    }
+    if ((port < 20000) || (port >= 40000))
+    {
+        srand((unsigned int)time(NULL));
+        port = 20000 + rand_range(0, 20000);
+    }
+    else
+    {
+        port++;
+    }
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, port),
+                              "/volatile:/sockaddr_port:");
+    if (rc != 0)
+    {
+        pthread_mutex_unlock(&mutex);
+        ERROR("Failed to set /volatile:/sockaddr_port:: %r", rc);
+        return rc;
+    }
+
+    pthread_mutex_unlock(&mutex);
+
+    *p_port = (uint16_t)port;
+
+    return 0;
+}

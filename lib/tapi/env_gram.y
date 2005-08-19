@@ -1,4 +1,6 @@
 %{
+#define TE_LOG_USER     "Env String Parser"
+    
 #include "te_config.h"
 
 #include <stdio.h>
@@ -7,10 +9,10 @@
 #include <string.h>
 #endif
 
-#define TE_LOG_USER     "Environment Cfg Parser"
 #include "logger_api.h"
 
-#include "sockts_env.h"
+#include "tapi_env.h"
+
 
 #define YYDEBUG 0
 #define YY_SKIP_YYWRAP
@@ -24,10 +26,10 @@ int yydebug = 0;
 const char *mybuf;
 int myindex;
 
-static sockts_env          *env;
-static sockts_env_net      *curr_net;
-static sockts_env_host     *curr_host;
-static sockts_env_process  *curr_proc;
+static tapi_env          *env;
+static tapi_env_net      *curr_net;
+static tapi_env_host     *curr_host;
+static tapi_env_process  *curr_proc;
 
 
 void
@@ -37,7 +39,7 @@ yyerror(const char *str)
 }
 
 int
-env_cfg_parse(sockts_env *e, const char *cfg)
+env_cfg_parse(tapi_env *e, const char *cfg)
 {
     /* Populate passed environment as static variable in the file */
     env = e;
@@ -54,10 +56,10 @@ env_cfg_parse(sockts_env *e, const char *cfg)
     return 0;
 }
 
-static sockts_env_net *
+static tapi_env_net *
 create_net(void)
 {
-    sockts_env_net *p = calloc(1, sizeof(*p));
+    tapi_env_net *p = calloc(1, sizeof(*p));
 
     if (p != 0)
     {
@@ -69,10 +71,10 @@ create_net(void)
     return p;
 }
 
-static sockts_env_host *
+static tapi_env_host *
 create_host(void)
 {
-    sockts_env_host *p = calloc(1, sizeof(*p));
+    tapi_env_host *p = calloc(1, sizeof(*p));
 
     if (p != 0)
     {
@@ -94,10 +96,10 @@ create_host(void)
     return p;
 }
 
-static sockts_env_process *
+static tapi_env_process *
 create_process(void)
 {
-    sockts_env_process *p = calloc(1, sizeof(*p));
+    tapi_env_process *p = calloc(1, sizeof(*p));
 
     if (p != 0)
     {
@@ -125,7 +127,7 @@ create_process(void)
 
 
 %token <string> WORD
-%token <number> PCO_TYPE
+%token <number> ENTITY_TYPE
 %token <number> ADDR_FAMILY
 %token <number> ADDR_TYPE
 
@@ -160,7 +162,7 @@ net:
     {
         const char *name = $1;
 
-        if (strlen(name) < SOCKTS_NAME_MAX)
+        if (strlen(name) < TAPI_ENV_NAME_MAX)
         {
             if (curr_net == NULL)
                 curr_net = create_net();
@@ -190,7 +192,7 @@ host:
     {
         const char *name = $1;
 
-        if (strlen(name) < SOCKTS_NAME_MAX)
+        if (strlen(name) < TAPI_ENV_NAME_MAX)
         {
             if (curr_host == NULL)
                 curr_host = create_host();
@@ -234,16 +236,16 @@ pcos:
     ;
 
 pco:
-    quotedname COLON PCO_TYPE
+    quotedname COLON ENTITY_TYPE
     {
         const char *name = $1;
 
         if (curr_proc == NULL)
             curr_proc = create_process();
 
-        if (strlen(name) < SOCKTS_NAME_MAX)
+        if (strlen(name) < TAPI_ENV_NAME_MAX)
         {
-            sockts_env_pco *p = calloc(1, sizeof(*p));
+            tapi_env_pco *p = calloc(1, sizeof(*p));
 
             if (p != NULL)
             {
@@ -267,9 +269,9 @@ address:
         if (curr_host == NULL)
             curr_host = create_host();
 
-        if (strlen(name) < SOCKTS_NAME_MAX)
+        if (strlen(name) < TAPI_ENV_NAME_MAX)
         {
-            sockts_env_addr   *p = calloc(1, sizeof(*p));
+            tapi_env_addr   *p = calloc(1, sizeof(*p));
 
             if (p != NULL)
             {
@@ -290,9 +292,9 @@ interface:
     {
         const char *name = $3;
 
-        if (strlen(name) < SOCKTS_NAME_MAX)
+        if (strlen(name) < TAPI_ENV_NAME_MAX)
         {
-            sockts_env_if  *p = calloc(1, sizeof(*p));
+            tapi_env_if  *p = calloc(1, sizeof(*p));
 
             if (curr_host == NULL)
                 curr_host = create_host();
@@ -321,10 +323,10 @@ alias:
         const char *alias = $1;
         const char *name = $3;
 
-        if ((strlen(alias) < SOCKTS_NAME_MAX) ||
-            (strlen(name) < SOCKTS_NAME_MAX))
+        if ((strlen(alias) < TAPI_ENV_NAME_MAX) ||
+            (strlen(name) < TAPI_ENV_NAME_MAX))
         {
-            sockts_env_alias   *p = calloc(1, sizeof(*p));
+            tapi_env_alias   *p = calloc(1, sizeof(*p));
 
             if (p != NULL)
             {

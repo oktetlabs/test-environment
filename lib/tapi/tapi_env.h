@@ -10,8 +10,8 @@
  * $Id$
  */
 
-#ifndef __TS_SOCKTS_ENV_H__
-#define __TS_SOCKTS_ENV_H__
+#ifndef __TS_TAPI_ENV_ENV_H__
+#define __TS_TAPI_ENV_ENV_H__
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -36,27 +36,178 @@
 
 
 /** Maximum length name used in configuration string */
-#define SOCKTS_NAME_MAX         32
+#define TAPI_ENV_NAME_MAX       32
 
 
-/** Types of Points of Control and Observation */
+/**
+ * Test suite specific variables with 'env' support.
+ */
+#define TEST_START_ENV_VARS \
+    tapi_env    env;
+
+/**
+ * Test suite specific the first actions of the test with 'env' support.
+ */
+#define TEST_START_ENV \
+    do {                                                                \
+        if (argc < 1)                                                   \
+        {                                                               \
+            TEST_FAIL("Incorrect number of arguments for the test");    \
+            return EXIT_FAILURE;                                        \
+        }                                                               \
+        memset(&env, 0, sizeof(env));                                   \
+        {                                                               \
+            const char *str_;                                           \
+                                                                        \
+            str_ = test_get_param(argc, argv, "env");                   \
+            if (str_ == NULL)                                           \
+            {                                                           \
+                TEST_FAIL("'env' is mandatory parameter");              \
+            }                                                           \
+            rc = tapi_env_get(str_, &env);                              \
+            if (rc != 0)                                                \
+            {                                                           \
+                TEST_FAIL("tapi_env_get() failed: %s : %r", str_, rc);  \
+            }                                                           \
+        }                                                               \
+    } while (0)
+
+/**
+ * Test suite specific part of the last action with 'env' support.
+ */
+#define TEST_END_ENV \
+    do {                                                \
+        rc = tapi_env_free(&env);                       \
+        if (rc != 0)                                    \
+        {                                               \
+            ERROR("tapi_env_free() failed: %r", rc);    \
+            result = EXIT_FAILURE;                      \
+        }                                               \
+    } while (0)
+
+
+/**
+ * Get network. Name of the variable must match name of the network 
+ * in environment configuration string.
+ *
+ * @param net_      Pointer to tapi_env_net (OUT)
+ */
+#define TEST_GET_NET(net_) \
+    do {                                        \
+        (net_) = tapi_env_get_net(&env, #net_); \
+        if ((net_) == NULL)                     \
+        {                                       \
+            TEST_STOP;                          \
+        }                                       \
+    } while (0)
+
+/**
+ * Get named host from environment. Name of the variable must match 
+ * name of the host in environment configuration string.
+ *
+ * @param host_     Pointer to tapi_env_host (OUT)
+ */
+#define TEST_GET_HOST(host_) \
+    do {                                            \
+        (host_) = tapi_env_get_host(&env, #host_);  \
+        if ((host_) == NULL)                        \
+        {                                           \
+            TEST_STOP;                              \
+        }                                           \
+    } while (0)
+
+/**
+ * Get PCO (RPC server) handle. Name of the variable must match
+ * name of the PCO in environment configuration string.
+ *
+ * @param rpcs_     RPC server handle (OUT)
+ */
+#define TEST_GET_PCO(rpcs_) \
+    do {                                                            \
+        (rpcs_) = tapi_env_get_pco(&env, #rpcs_);                   \
+        if ((rpcs_) == NULL)                                        \
+        {                                                           \
+            TEST_STOP;                                              \
+        }                                                           \
+    } while (0)
+
+/**
+ * Get address. Name of the variable must match name of the address
+ * in environment configuration string.
+ *
+ * @param addr_     address (const struct sockaddr *) (OUT)
+ * @param addrlen_  address length (OUT)
+ */
+#define TEST_GET_ADDR(addr_, addrlen_) \
+    do {                                                            \
+        (addr_) = tapi_env_get_addr(&env, #addr_, &(addrlen_));     \
+        if ((addr_) == NULL)                                        \
+        {                                                           \
+            TEST_STOP;                                              \
+        }                                                           \
+    } while (0)
+
+/**
+ * Get the value of link-layer address parameter.
+ * Name of the variable must match name of the address
+ * in environment configuration string.
+ *
+ * @param addr_     address (const unsigned char *) (OUT)
+ */
+#define TEST_GET_LINK_ADDR(addr_) \
+    do {                                                            \
+        const struct sockaddr *sa_addr_;                            \
+        socklen_t              sa_addr_len_;                        \
+                                                                    \
+        sa_addr_ = tapi_env_get_addr(&env, #addr_, &(sa_addr_len_));\
+        if ((sa_addr_) == NULL)                                     \
+        {                                                           \
+            TEST_STOP;                                              \
+        }                                                           \
+        if ((sa_addr_)->sa_family != AF_LOCAL)                      \
+        {                                                           \
+            TEST_FAIL("'" #addr_ "' parameter is not "              \
+                      "a link layer address family: %s",            \
+                      addr_family_rpc2str(addr_family_h2rpc(        \
+                          (sa_addr_)->sa_family)));                 \
+        }                                                           \
+        addr_ = (sa_addr_)->sa_data;                                \
+    } while (0)
+
+/**
+ * Get interface. Name of the variable must match name of the interface
+ * in environment configuration string.
+ *
+ * @param if_     interface (const struct if_nameindex *) (OUT)
+ */
+#define TEST_GET_IF(if_) \
+    do {                                                            \
+        (if_) = tapi_env_get_if(&env, #if_);                        \
+        if ((if_) == NULL)                                          \
+        {                                                           \
+            TEST_STOP;                                              \
+        }                                                           \
+    } while (0)
+
+
+/** Types of entities in the Environment */
 typedef enum {
-    SOCKTS_PCO_IUT,             /**< Implementation under testing */
-    SOCKTS_PCO_TESTER,          /**< Auxiluary tester */
-} sockts_pco_type;
+    TAPI_ENV_IUT,       /**< Implementation Under Testing */
+    TAPI_ENV_TESTER,    /**< Auxiluary tester */
+} tapi_env_type;
 
 /** Types of addresses */
 typedef enum {
-    SOCKTS_ADDR_LOOPBACK,       /**< Loopback */
-    SOCKTS_ADDR_UNICAST,        /**< Unicast */
-    SOCKTS_ADDR_FAKE_UNICAST,   /**< Unicast from the same subnet, but
+    TAPI_ENV_ADDR_LOOPBACK,     /**< Loopback */
+    TAPI_ENV_ADDR_UNICAST,      /**< Unicast */
+    TAPI_ENV_ADDR_FAKE_UNICAST, /**< Unicast from the same subnet, but
                                      does not assigned */
-    SOCKTS_ADDR_MULTICAST,      /**< Multicast */
-    SOCKTS_ADDR_BROADCAST,      /**< Broadcast */
-    SOCKTS_ADDR_WILDCARD,       /**< Wildcard */
-    SOCKTS_ADDR_ALIEN,          /**< Address not assigned to any 
+    TAPI_ENV_ADDR_MULTICAST,    /**< Multicast */
+    TAPI_ENV_ADDR_BROADCAST,    /**< Broadcast */
+    TAPI_ENV_ADDR_WILDCARD,     /**< Wildcard */
+    TAPI_ENV_ADDR_ALIEN,        /**< Address not assigned to any 
                                      interface of the host */
-} sockts_addr_type;
+} tapi_env_addr_type;
 
 
 /** Tail queue of Cfgr handles */
@@ -70,55 +221,58 @@ typedef TAILQ_HEAD(cfg_handle_tqh, cfg_handle_tqe) cfg_handle_tqh;
 
 
 /** Network entry */
-typedef struct sockts_env_net {
-    LIST_ENTRY(sockts_env_net)  links;  /**< Links of the networks list */
-    LIST_ENTRY(sockts_env_net)  inhost; /**< Links of the host networks list */
+typedef struct tapi_env_net {
+    LIST_ENTRY(tapi_env_net)    links;  /**< Links of the networks list */
+    LIST_ENTRY(tapi_env_net)    inhost; /**< Links of the host networks
+                                             list */
     
-    char name[SOCKTS_NAME_MAX];   /**< Name of the net */
+    char name[TAPI_ENV_NAME_MAX];   /**< Name of the net */
 
-    unsigned int        n_hosts;  /**< Number of hosts in network */
+    unsigned int        n_hosts;    /**< Number of hosts in network */
 
-    unsigned int        i_net;    /**< Index of the associated net */
-    cfg_net_t          *cfg_net;  /**< Configuration net */
+    unsigned int        i_net;      /**< Index of the associated net */
+    cfg_net_t          *cfg_net;    /**< Configuration net */
 
-    cfg_handle          ip4net;   /**< Handle of IPv4 addresses pool */
-    struct sockaddr    *ip4addr;  /**< IPv4 address of the net */
-    unsigned int        ip4pfx;   /**< IPV4 address prefix length */
-    struct sockaddr_in  ip4bcast; /**< IPv4 broadcast address of the net */
-    cfg_handle_tqh      ip4addrs; /**< List of additional addresses */
+    cfg_handle          ip4net;     /**< Handle of IPv4 addresses pool */
+    struct sockaddr    *ip4addr;    /**< IPv4 address of the net */
+    unsigned int        ip4pfx;     /**< IPV4 address prefix length */
+    struct sockaddr_in  ip4bcast;   /**< IPv4 broadcast address
+                                         of the net */
+    cfg_handle_tqh      ip4addrs;   /**< List of additional addresses */
 
-} sockts_env_net;
+} tapi_env_net;
 
 /** List of required networks in environment */
-typedef LIST_HEAD(sockts_env_nets, sockts_env_net) sockts_env_nets;
+typedef LIST_HEAD(tapi_env_nets, tapi_env_net) tapi_env_nets;
 
 
 /* Forward */
-struct sockts_env_process;
+struct tapi_env_process;
 /** List of processes on a host */
-typedef LIST_HEAD(sockts_env_processes, sockts_env_process)
-            sockts_env_processes;
+typedef LIST_HEAD(tapi_env_processes, tapi_env_process)
+            tapi_env_processes;
 
 /** Host entry in environment */
-typedef struct sockts_env_host {
-    CIRCLEQ_ENTRY(sockts_env_host)  links;  /**< Links */
+typedef struct tapi_env_host {
+    CIRCLEQ_ENTRY(tapi_env_host)    links;  /**< Links */
 
-    char    name[SOCKTS_NAME_MAX];  /**< Name of the host */
-    char   *ta;                     /**< Name of TA located on the host */
-    char   *libname;                /**< Name of dynamic library to be
-                                         used on the host as IUT */
+    char    name[TAPI_ENV_NAME_MAX];    /**< Name of the host */
 
-    unsigned int arp_sync;          /**< Time to wait ARP changes
-                                         propogation */
-    unsigned int route_sync;        /**< Time to wait routing table
-                                         changes propogation */
+    char   *ta;                 /**< Name of TA located on the host */
+    char   *libname;            /**< Name of dynamic library to be
+                                     used on the host as IUT */
+
+    unsigned int arp_sync;      /**< Time to wait ARP changes
+                                     propogation */
+    unsigned int route_sync;    /**< Time to wait routing table
+                                     changes propogation */
     
     unsigned int n_nets;        /**< Number of nets the host belongs to */
 
     /** List of networks the host belongs to */
-    sockts_env_nets         nets;
+    tapi_env_nets         nets;
     /** List of processes on a host */
-    sockts_env_processes    processes;
+    tapi_env_processes    processes;
     
     unsigned int i_net;         /**< Index of the associated net */
     unsigned int i_node;        /**< Index of the associated node */
@@ -126,50 +280,50 @@ typedef struct sockts_env_host {
     te_bool ip4_unicast_used;   /**< Is IPv4 address assigned to the
                                      host in this net used? */
 
-} sockts_env_host;
+} tapi_env_host;
 
 /** List of hosts required in environment */
-typedef CIRCLEQ_HEAD(sockts_env_hosts, sockts_env_host) sockts_env_hosts;
+typedef CIRCLEQ_HEAD(tapi_env_hosts, tapi_env_host) tapi_env_hosts;
 
 
 /* Forward */
-struct sockts_env_pco;
+struct tapi_env_pco;
 /** List of PCOs */
-typedef TAILQ_HEAD(sockts_env_pcos, sockts_env_pco) sockts_env_pcos;
+typedef TAILQ_HEAD(tapi_env_pcos, tapi_env_pco) tapi_env_pcos;
 
 /** Process entry on a host */
-typedef struct sockts_env_process {
-    LIST_ENTRY(sockts_env_process)  links;  /**< Links */
+typedef struct tapi_env_process {
+    LIST_ENTRY(tapi_env_process)    links;  /**< Links */
 
-    sockts_env_pcos pcos;       /**< Tail queue of PCOs in process */
-} sockts_env_process;
+    tapi_env_pcos pcos; /**< Tail queue of PCOs in process */
+} tapi_env_process;
 
 
 /** Entry of PCO name to RPC server mapping */
-typedef struct sockts_env_pco {
-    TAILQ_ENTRY(sockts_env_pco) links;  /**< Links in the process */
+typedef struct tapi_env_pco {
+    TAILQ_ENTRY(tapi_env_pco) links;    /**< Links in the process */
 
-    char name[SOCKTS_NAME_MAX];         /**< Name of the PCO */
+    char name[TAPI_ENV_NAME_MAX];       /**< Name of the PCO */
 
-    sockts_pco_type     type;           /**< Type of PCO */
-    sockts_env_process *process;        /**< Parent process */
+    tapi_env_type       type;           /**< Type of PCO */
+    tapi_env_process   *process;        /**< Parent process */
 
     rcf_rpc_server     *rpcs;           /**< RPC server handle */
     te_bool             created;        /**< Is created by this test */
-} sockts_env_pco;
+} tapi_env_pco;
 
 
 /** Entry of address name to real address mapping */
-typedef struct sockts_env_addr {
-    CIRCLEQ_ENTRY(sockts_env_addr) links;       /**< Links */
+typedef struct tapi_env_addr {
+    CIRCLEQ_ENTRY(tapi_env_addr)    links;  /**< Links */
 
-    sockts_env_net     *net;    /**< Net the address belongs to */
-    sockts_env_host    *host;   /**< Host the address belongs to */
+    tapi_env_net   *net;    /**< Net the address belongs to */
+    tapi_env_host  *host;   /**< Host the address belongs to */
 
-    char    name[SOCKTS_NAME_MAX];      /**< Name of the address */
+    char name[TAPI_ENV_NAME_MAX];       /**< Name of the address */
 
     rpc_socket_addr_family  family;     /**< Address family */
-    sockts_addr_type        type;       /**< Address type */
+    tapi_env_addr_type      type;       /**< Address type */
     
     socklen_t               addrlen;    /**< Length of assigned address */
     struct sockaddr        *addr;       /**< Assigned address */
@@ -177,55 +331,55 @@ typedef struct sockts_env_addr {
 
     cfg_handle  handle; /**< Handle of the added instance in configurator */
 
-} sockts_env_addr;
+} tapi_env_addr;
 
 /** List of addresses in environment */
-typedef CIRCLEQ_HEAD(sockts_env_addrs, sockts_env_addr) sockts_env_addrs;
+typedef CIRCLEQ_HEAD(tapi_env_addrs, tapi_env_addr) tapi_env_addrs;
 
 
 /** Entry of interface nick name to interface info mapping */
-typedef struct sockts_env_if {
-    LIST_ENTRY(sockts_env_if)   links;  /**< Links */
+typedef struct tapi_env_if {
+    LIST_ENTRY(tapi_env_if) links;  /**< Links */
 
-    char    name[SOCKTS_NAME_MAX];  /**< Name of the interface
+    char name[TAPI_ENV_NAME_MAX];   /**< Name of the interface
                                          in configuration string */
 
-    sockts_env_net     *net;    /**< Net the interface belongs to */
-    sockts_env_host    *host;   /**< Host the interface belongs to */
+    tapi_env_net   *net;    /**< Net the interface belongs to */
+    tapi_env_host  *host;   /**< Host the interface belongs to */
 
     struct if_nameindex info;   /**< Interface info */
 
-} sockts_env_if;
+} tapi_env_if;
 
 /** List of interfaces in environment */
-typedef LIST_HEAD(sockts_env_ifs, sockts_env_if) sockts_env_ifs;
+typedef LIST_HEAD(tapi_env_ifs, tapi_env_if) tapi_env_ifs;
 
 
 /** Alias in Socket API testing environment */
-typedef struct sockts_env_alias {
-    LIST_ENTRY(sockts_env_alias)    links;  /**< Links */
+typedef struct tapi_env_alias {
+    LIST_ENTRY(tapi_env_alias)  links;  /**< Links */
 
-    char    alias[SOCKTS_NAME_MAX]; /**< Alias */
-    char    name[SOCKTS_NAME_MAX];  /**< Real name */
+    char    alias[TAPI_ENV_NAME_MAX];   /**< Alias */
+    char    name[TAPI_ENV_NAME_MAX];    /**< Real name */
 
-} sockts_env_alias;
+} tapi_env_alias;
 
 /** List of aliases in environment */
-typedef LIST_HEAD(sockts_env_aliases, sockts_env_alias) sockts_env_aliases;
+typedef LIST_HEAD(tapi_env_aliases, tapi_env_alias) tapi_env_aliases;
 
 
 /** Environment for the test */
-typedef struct sockts_env {
+typedef struct tapi_env {
     unsigned int        n_nets;     /**< Total number of networks */
 
-    sockts_env_nets     nets;       /**< List of networks */
-    sockts_env_hosts    hosts;      /**< List of hosts */
-    sockts_env_addrs    addrs;      /**< List of addresses */
-    sockts_env_ifs      ifs;        /**< List of interfaces */
-    sockts_env_aliases  aliases;    /**< List of aliases */
+    tapi_env_nets       nets;       /**< List of networks */
+    tapi_env_hosts      hosts;      /**< List of hosts */
+    tapi_env_addrs      addrs;      /**< List of addresses */
+    tapi_env_ifs        ifs;        /**< List of interfaces */
+    tapi_env_aliases    aliases;    /**< List of aliases */
 
     cfg_nets_t          cfg_nets;   /**< Configuration networks */
-} sockts_env;
+} tapi_env;
 
 
 #ifdef __cplusplus
@@ -240,38 +394,8 @@ extern "C" {
  *
  * @return Status code.
  */
-extern int sockts_get_env(const char *cfg, sockts_env *env);
+extern te_errno tapi_env_get(const char *cfg, tapi_env *env);
 
-
-/**
- * Retrieve unused in system port in host order.
- *
- * @param p_port    Location for allocated port
- *
- * @return Status code.
- */
-extern int sockts_allocate_port(uint16_t *p_port);
-
-/**
- * Retrieve unused in system port in network order.
- *
- * @param p_port    Location for allocated port
- *
- * @return Status code.
- */
-static inline int 
-sockts_allocate_port_htons(uint16_t *p_port)
-{
-    uint16_t port;
-    int      rc;
-    
-    if ((rc = sockts_allocate_port(&port)) != 0)
-        return rc;
-        
-    *p_port = htons(port);
-    
-    return 0;
-}
 
 /**
  * Allocate new address from specified net.
@@ -283,9 +407,9 @@ sockts_allocate_port_htons(uint16_t *p_port)
  *
  * @return Status code.
  */
-extern int sockts_allocate_addr(sockts_env_net *net, int af,
-                                struct sockaddr **addr,
-                                socklen_t *addrlen);
+extern te_errno tapi_env_allocate_addr(tapi_env_net *net, int af,
+                                       struct sockaddr **addr,
+                                       socklen_t *addrlen);
 
 
 /**
@@ -295,7 +419,7 @@ extern int sockts_allocate_addr(sockts_env_net *net, int af,
  *
  * @return Status code.
  */
-extern int sockts_free_env(sockts_env *env);
+extern te_errno tapi_env_free(tapi_env *env);
 
 
 /**
@@ -306,7 +430,7 @@ extern int sockts_free_env(sockts_env *env);
  *
  * @return Handle of the net.
  */
-extern sockts_env_net * sockts_get_net(sockts_env *env, const char *name);
+extern tapi_env_net * tapi_env_get_net(tapi_env *env, const char *name);
 
 /**
  * Get handle of the host from environment by name.
@@ -316,7 +440,7 @@ extern sockts_env_net * sockts_get_net(sockts_env *env, const char *name);
  *
  * @return Handle of the host.
  */
-extern sockts_env_host * sockts_get_host(sockts_env *env, const char *name);
+extern tapi_env_host * tapi_env_get_host(tapi_env *env, const char *name);
 
 /**
  * Get handle of PCO (RPC server) from environment by name.
@@ -329,7 +453,7 @@ extern sockts_env_host * sockts_get_host(sockts_env *env, const char *name);
  *
  * @return Handle of the RPC server.
  */
-extern rcf_rpc_server *sockts_get_pco(sockts_env *env, const char *name);
+extern rcf_rpc_server *tapi_env_get_pco(tapi_env *env, const char *name);
 
 /**
  * Get address from environment by name.
@@ -344,9 +468,9 @@ extern rcf_rpc_server *sockts_get_pco(sockts_env *env, const char *name);
  *
  * @return Pointer to address structure.
  */
-extern const struct sockaddr * sockts_get_addr(sockts_env *env,
-                                               const char *name,
-                                               socklen_t *addrlen);
+extern const struct sockaddr * tapi_env_get_addr(tapi_env *env,
+                                                 const char *name,
+                                                 socklen_t *addrlen);
 
 /**
  * Get system name of the interface named in configuration string
@@ -359,8 +483,8 @@ extern const struct sockaddr * sockts_get_addr(sockts_env *env,
  *
  * @return Pointer to the structure with interface name and index.
  */
-extern const struct if_nameindex * sockts_get_if(sockts_env *env,
-                                                 const char *name);
+extern const struct if_nameindex * tapi_env_get_if(tapi_env *env,
+                                                   const char *name);
 
 /**
  * Get address assigned to the host in specified HW net and address
@@ -374,27 +498,11 @@ extern const struct if_nameindex * sockts_get_if(sockts_env *env,
  *
  * @return Status code.
  */
-extern int sockts_get_net_host_addr(const sockts_env_net   *net,
-                                    const sockts_env_host  *host,
-                                    tapi_cfg_net_assigned  *assigned,
-                                    struct sockaddr       **addr,
-                                    socklen_t              *addrlen);
-                                    
-/**
- * Delete all addresses on a given interface, except of addr_to_save.
- *
- * @param ta            Test Agent name
- * @param if_name       interface name
- * @param addr_to_save  address to save on interface.
- *                      If this parameter is NULL, then save
- *                      the first address in address list returned by
- *                      'ip addr list' output.
- *
- * @return Status code
- */ 
-extern int sockts_del_if_addresses(const char *ta,
-                                   const char *if_name,
-                                   const struct sockaddr *addr_to_save);
+extern te_errno tapi_env_get_net_host_addr(const tapi_env_net      *net,
+                                           const tapi_env_host     *host,
+                                           tapi_cfg_net_assigned   *assigned,
+                                           struct sockaddr        **addr,
+                                           socklen_t               *addrlen);
                                     
 #ifdef __cplusplus
 } /* extern "C" */
