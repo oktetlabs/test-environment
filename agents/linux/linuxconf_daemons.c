@@ -426,19 +426,20 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         return 0;
         
     if (strncmp(daemon_name, "exim", strlen("exim")) == 0)
-        sprintf(buf, "/etc/init.d/%s* %s >/dev/null", daemon_name,
+        sprintf(buf, "/etc/init.d/%s %s >/dev/null", daemon_name,
                *value == '0' ? "stop" : "start");
     else if (strcmp(daemon_name, "named") == 0 &&
-             file_exists("/etc/init.d/bind9")) /* a hack for Debian */
+             file_exists("/etc/init.d/bind9 >/dev/null"))
+        /* a hack for Debian */
         sprintf(buf, "/etc/init.d/bind9 %s >/dev/null", 
                *value == '0' ? "stop" : "start");
     else               
         sprintf(buf, "/etc/init.d/%s %s >/dev/null", daemon_name,
                *value == '0' ? "stop" : "start");
 
-    if (ta_system(buf) != 0)
+    if ((rc = ta_system(buf)) != 0)
     {
-        ERROR("Command '%s' failed", buf);
+        ERROR("Command '%s' failed with exit code %d", buf, rc);
         return TE_RC(TE_TA_LINUX, TE_ESHCMD);
     }
     
