@@ -121,25 +121,6 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
                                uint64_t *received);
 
 /**
- * Send traffic. Send UDP datagrams from different sockets
- * toward different addresses.
- *
- * @param handle        RPC server
- * @param num           number of UDP datagrams to being sent
- * @param s             list of sockets (num)
- * @param buf           buffer to being sent
- * @param len           buffer size
- * @param flags         flags passed to sendto()
- * @param to            list of sockaddr-s (num)
- * @param tolen         address size
- * 
- * @return 0 in case of success, -1 in case of failure
- */ 
-extern int rpc_send_traffic(rcf_rpc_server *handle, int num, int *s,
-                            const void *buf, size_t len, int flags,
-                            struct sockaddr *to, socklen_t tolen);
-
-/**
  * Receive and verify all acceptable data on socket.
  * Verification made by function, which name is passed.
  * This function should generate block of data by start sequence
@@ -159,87 +140,6 @@ extern int rpc_send_traffic(rcf_rpc_server *handle, int num, int *s,
 extern int rpc_recv_verify(rcf_rpc_server *handle, int s,
                            const char *gen_data_fname, uint64_t start);
                             
-/**
- * For each address from addresses list routine sends UDP datagram,
- * receives it back and check that it happens within determined
- * period of time. sendmsg() and recvmsg() are used.
- *
- * @param rpcs          RPC server
- * @param sock_num      Number of sockets
- * @param s             DGRAM sockets list to send/receive UDP datagram
- * @param size          Size of UDP datagram
- * @param vector_len    iovec_len in msghdr structure
- * @param timeout       routine waiting for UDP datagram coming back
- *                      within timeout given (passed to select)
- * @param time2wait     UDP datagram must be sent and received within
- *                      time2wait period
- * @param flags         flags passed to sendmsg(recvmsg)
- * @param addr_num      number of addresses
- * @param to            addresses list
- * @param tolen         address length
- *
- * @return 
- *     0 - success
- *     ROUND_TRIP_ERROR_SEND - sendmsg() failed
- *     ROUND_TRIP_ERROR_RECV - recvmsg() failed
- *     ROUND_TRIP_ERROR_TIMEOUT - select() returned because
- *                                timeout expired
- *     ROUND_TRIP_ERROR_TIME_EXPIRED - time2wait expired
- *     ROUND_TRIP_ERROR_OTHER - some other error occured 
- *                             (memory allocation etc.)
- */ 
-extern int rpc_timely_round_trip(rcf_rpc_server *rpcs, int sock_num, int *s,
-                                 size_t size, size_t vector_len,
-                                 uint32_t timeout, uint32_t time2wait,
-                                 int flags, int addr_num, 
-                                 struct sockaddr *to,
-                                 socklen_t tolen);
- 
-/**
- * For each DGRAM socket in socket list routine determines 
- * if the socket is readable, if it so, routine called recvmsg() 
- * to receive UDP datagram, and sends it back using recvmsg().
- *
- * @param rpcs           RPC server
- * @param sock_num       number of sockets in sockets list
- * @param s              DGRAM sockets list
- * @param addr_num       number of addresses passed to rpc_timely_round_trip
- * @param size           Size of UDP datagram
- * @param vector_len     iovec_len in msghdr structure
- * @param timeout        routine waiting for UDP daragram coming
- *                       withing timeout given (passed to select)
- * @param flags          flags passed to recvmsg(sendmsg)
- *
- * @return
- *     0 - success
- *     ROUND_TRIP_ERROR_SEND - sendmsg() failed
- *     ROUND_TRIP_ERROR_RECV - recvmsg() failed
- *     ROUND_TRIP_ERROR_TIMEOUT - select() returned because
- *                                timeout expired
- *     ROUND_TRIP_ERROR_OTHER - some other error occured
- *                              (memory allocation etc.)
- */ 
-extern int rpc_round_trip_echoer(rcf_rpc_server *rpcs, int sock_num, int *s,
-                                 int addr_num, size_t size, 
-                                 size_t vector_len,
-                                 uint32_t timeout, int flags);
-
-/**
- * For given list of accepted sockets close some of them
- * and accept again pending connections.
- *
- * @param rpcs         RPC server
- * @param listening    listening socket
- * @param conns        number of connections
- * @param fd           list of accepted socket
- * @param state        mask to close/open connections
- * 
- * @return 0 on success or -1 in the case of failure
- */ 
-extern int rpc_close_and_accept(rcf_rpc_server *rpcs, 
-                                int listening, int conns,
-                                int *s, uint16_t state);
-
 /**
  * Routine which receives data from specified set of sockets and sends
  * data to specified set of sockets with maximum speed using I/O
@@ -340,22 +240,6 @@ extern int rpc_ftp_open(rcf_rpc_server *handle,
  * @retval -1 failure
  */
 extern int rpc_ftp_close(rcf_rpc_server *handle, int sock);
-
-/**
- * Execute a number of send() operation each after other with no delay.
- *
- *
- * @param handle        RPC server
- * @param sock          socket for sending
- * @param nops          The number of send() operation should be executed
- *                      (the length of len_array)
- * @param vector        array of lenghts for appropriate send() operation
- * @param sent          total bytes are sent on exit
- *
- * @return   -1 in the case of failure or 0 on success
- */
-extern int rpc_many_send(rcf_rpc_server *handle, int sock,
-                         const int *vector, int nops, uint64_t *sent);
 
 /**
  * Overfill the buffers on receive and send sides of TCP connection.

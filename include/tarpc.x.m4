@@ -2258,85 +2258,6 @@ struct tarpc_recv_verify_out {
 };
 
 
-struct tarpc_send_traffic_in {
-    struct tarpc_in_arg common;
-    tarpc_int           num;    /**< Number of packets to be sent */
-    tarpc_int           fd<>;     /**< List of sockets */
-    uint8_t             buf<>;  /**< Buffer */
-    tarpc_size_t        len;    /**< Buffer length */
-    tarpc_int           flags;  /**< Flags */ 
-    struct tarpc_sa     to<>;     /**< List of addresses */
-    tarpc_socklen_t     tolen;  /**< Address length */
-};
-typedef struct tarpc_ssize_t_retval_out tarpc_send_traffic_out;
-
-struct tarpc_timely_round_trip_in {
-    struct tarpc_in_arg common;
-    tarpc_int           sock_num;    /**< Number of sockets */
-    tarpc_int           fd<>;        /**< Socket */
-    tarpc_size_t        size;        /**< Buffer length */
-    tarpc_size_t        vector_len;  /**< Vector length */
-    uint32_t            timeout;     /**< Timeout passed to select */
-    uint32_t            time2wait;   /**< Time during for a roundtrip 
-                                          should be performed */
-    tarpc_int           flags;       /**< Flags */
-    tarpc_int           addr_num;    /**< Number of addresses */
-    struct tarpc_sa     to<>;        /**< Adresses list */
-    tarpc_socklen_t     tolen;       /**< Address length */
-};    
-
-enum round_trip_error {
-    ROUND_TRIP_ERROR_OTHER = 1,
-    ROUND_TRIP_ERROR_SEND = 2,
-    ROUND_TRIP_ERROR_RECV = 3,
-    ROUND_TRIP_ERROR_TIMEOUT = 4,
-    ROUND_TRIP_ERROR_TIME_EXPIRED = 5
-};    
-
-struct tarpc_timely_round_trip_out {
-    struct tarpc_out_arg  common;
-    tarpc_int             retval;
-    tarpc_int             index;  /**< Index in addresses list
-                                       for which address 
-                                       error occured */
-};
-
-struct tarpc_round_trip_echoer_in {
-    struct tarpc_in_arg common;
-    tarpc_int           sock_num;    /**< Number of sockets */
-    tarpc_int           fd<>;        /**< Sockets list */
-    tarpc_int           addr_num;    /**< Number of addresses for which echo
-                                          must be done */
-    tarpc_size_t        size;        /**< Buffer length */
-    tarpc_size_t        vector_len;  /**< Vector length */
-    uint32_t            timeout;     /**< Timeout passed to select */
-    tarpc_int           flags;       /**< Flags */
-};
-
-struct tarpc_round_trip_echoer_out {
-    struct tarpc_out_arg  common;
-    tarpc_int             retval;
-    tarpc_int             index;  /**< How many times echoes 
-                                       were done */
-};
-
-struct tarpc_close_and_accept_in {
-    struct tarpc_in_arg common;
-    tarpc_int           listening;  /**< Listening socket */
-    tarpc_int           conns;      /**< Number of connections */
-    tarpc_int           fd<>;       /**< Accepted sockets list */
-    uint16_t            state;      /**< Mask to close sockets and 
-                                         to call accept again */
-};
-
-struct tarpc_close_and_accept_out {
-   struct tarpc_out_arg  common;
-   tarpc_int             fd<>;      /**< Accepted sockets list */
-   tarpc_ptr             mem_ptr;
-   tarpc_int             retval;    /**< Returned value */
-};   
-
-
 /*
  * IOMUX functions
  */
@@ -2688,21 +2609,6 @@ struct tarpc_ftp_close_out {
     tarpc_int   ret;    /**< Return value */
 };
 
-/* many_send() */
-struct tarpc_many_send_in {
-    struct tarpc_in_arg common;
-
-    tarpc_int       sock;
-    tarpc_size_t    vector<>;
-};
-
-struct tarpc_many_send_out {
-    struct tarpc_out_arg common;
-
-    tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
-
-    uint64_t    bytes;      /**< Number of sent bytes */
-};
 
 /* overfill_buffers() */
 struct tarpc_overfill_buffers_in {
@@ -2718,6 +2624,7 @@ struct tarpc_overfill_buffers_out {
 
     uint64_t    bytes;      /**< Number of sent bytes */
 };
+
 
 program tarpc
 {
@@ -2738,6 +2645,9 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(getpid)
         RPC_DEF(gettimeofday)
         
+        RPC_DEF(malloc)
+        RPC_DEF(free)
+
         RPC_DEF(socket)
         RPC_DEF(duplicate_socket)
         RPC_DEF(dup)
@@ -2832,15 +2742,16 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(simple_sender)
         RPC_DEF(simple_receiver)
         RPC_DEF(recv_verify)
-        RPC_DEF(send_traffic)
-        RPC_DEF(timely_round_trip)
-        RPC_DEF(round_trip_echoer)
         RPC_DEF(flooder)
         RPC_DEF(echoer)
-        RPC_DEF(close_and_accept)
 
         RPC_DEF(sendfile)
         RPC_DEF(socket_to_file)
+
+        RPC_DEF(ftp_open)
+        RPC_DEF(ftp_close)
+
+        RPC_DEF(overfill_buffers)
 
         RPC_DEF(create_event)
         RPC_DEF(close_event)
@@ -2888,8 +2799,6 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_async_get_serv_by_name)
         RPC_DEF(wsa_async_get_serv_by_port)
         RPC_DEF(wsa_cancel_async_request)
-        RPC_DEF(malloc)
-        RPC_DEF(free)
         RPC_DEF(set_buf)
         RPC_DEF(get_buf)
         RPC_DEF(alloc_wsabuf)
@@ -2902,12 +2811,6 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(destroy_window)
         RPC_DEF(wsa_async_select)
         RPC_DEF(peek_message)
-        
-        RPC_DEF(ftp_open)
-        RPC_DEF(ftp_close)
-
-        RPC_DEF(many_send)
-        RPC_DEF(overfill_buffers)
 
     } = 1;
 } = 1;
