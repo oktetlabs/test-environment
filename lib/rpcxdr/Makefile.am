@@ -11,17 +11,27 @@ nodist_librpcxdr_a_SOURCES=tarpc_xdr.c tarpc_dummy.c
 
 CLEANFILES=tarpc.h tarpc_xdr.c tarpc_dummy.c
 
-tarpc.h tarpc_xdr.c tarpc_dummy.c: $(srcdir)/../../include/tarpc.x.m4
+if DIST_RPCDEFS
+
+EXTRA_DIST=@RPCDEFS_DIST_FILES@
+
+@RPCDEFS_DIST_FILES@: @RPCDEFS@
+	cp @RPCDEFS@ .
+
+endif
+
+tarpc.h tarpc_xdr.c tarpc_dummy.c: $(srcdir)/../../include/tarpc.x.m4 @RPCDEFS@
 	rm -f tarpc.h tarpc_xdr.c
-	m4 $< > tarpc.x
+	cat $^ > tmp.x.m4
+	m4 tmp.x.m4 > tarpc.x
 	rpcgen -h -M tarpc.x -o tarpc.h
 	rpcgen -c -M tarpc.x -o tarpc_xdr.c
 	awk '\
             /buf;/ { print $0 ; printf("\t(void)buf;") ; next ; } \
             { print $0 ; next ;}' tarpc_xdr.c > tarpc_xdr.c.new
 	mv tarpc_xdr.c.new tarpc_xdr.c
-	$(srcdir)/../../engine/builder/te_generate_rpctbl $< --generate-dummy
-	rm -f tarpc.x
+	$(srcdir)/../../engine/builder/te_generate_rpctbl tmp.x.m4 --generate-dummy
+	rm -f tarpc.x tmp.x.m4
 
 install-exec-hook:
 	touch -c -r librpcxdr.a $(DESTDIR)/$(prefix)/lib/librpcxdr.a

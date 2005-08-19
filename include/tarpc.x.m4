@@ -2392,74 +2392,6 @@ struct tarpc_echoer_out {
     uint64_t    rx_stat<>;
 };
 
-
-struct tarpc_aio_read_test_in {
-    struct tarpc_in_arg common;
-    
-    tarpc_int       s;      /**< Socket to be used */
-    tarpc_signum    signum; /**< Signal to be used */
-    tarpc_int       t;      /**< Timeout for select() */
-    uint32_t        buflen; /**< Buffer length to be passed to the read */
-    uint8_t         buf<>;  /**< Read data */
-    char            diag<>; /**< Error message */
-};
-
-struct tarpc_aio_read_test_out {
-    struct tarpc_out_arg common;
-    
-    tarpc_int   retval; /**< Status returned by the test routine */
-    uint8_t     buf<>;  /**< Data buffer */
-    char        diag<>; /**< Error message */
-};
-
-struct tarpc_aio_error_test_in {
-    struct tarpc_in_arg common;
-
-    char        diag<>; /**< Error message */
-};
-
-struct tarpc_aio_error_test_out {
-    struct tarpc_out_arg common;
-    
-    tarpc_int   retval; /**< Status returned by the test routine */
-    char        diag<>; /**< Error message */
-};
-
-struct tarpc_aio_write_test_in {
-    struct tarpc_in_arg common;
-    
-    tarpc_int       s;      /**< Socket to be used */
-    tarpc_signum    signum; /**< Signal to be used */
-    uint8_t         buf<>;  /**< Data to be sent*/
-    char            diag<>; /**< Error message */
-};
-
-struct tarpc_aio_write_test_out {
-    struct tarpc_out_arg common;
-    
-    tarpc_int       retval; /**< Status returned by the test routine */
-    char            diag<>; /**< Error message */
-};
-
-struct tarpc_aio_suspend_test_in {
-    struct tarpc_in_arg common;
-    
-    tarpc_int       s;      /**< Socket to be used */
-    tarpc_int       s_aux;  /**< Additional dummy socket */
-    tarpc_signum    signum; /**< Signal to be used */
-    int32_t         t;      /**< Timeout for suspend */
-    uint8_t         buf<>;  /**< Data buffer */
-    char            diag<>; /**< Error message */
-};
-
-struct tarpc_aio_suspend_test_out {
-    struct tarpc_out_arg common;
-    
-    int32_t     retval; /**< Status returned by the test routine */
-    char        buf<>;  /**< Read data */
-    char        diag<>; /**< Error message */
-};
-
 struct tarpc_fork_in {
     struct tarpc_in_arg common;
     
@@ -2907,12 +2839,6 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(echoer)
         RPC_DEF(close_and_accept)
 
-        
-        RPC_DEF(aio_read_test)
-        RPC_DEF(aio_error_test)
-        RPC_DEF(aio_write_test)
-        RPC_DEF(aio_suspend_test)
-        
         RPC_DEF(sendfile)
         RPC_DEF(socket_to_file)
 

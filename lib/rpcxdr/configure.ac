@@ -59,6 +59,20 @@ AC_CHECK_MEMBER(struct XDR.x_ops->x_getint32, [],
 #include <rpc/xdr.h>
 #endif
 ])
+
+AM_CONDITIONAL(DIST_RPCDEFS, test -n "$with_rpcdefs")
+RPCDEFS=
+RPCDEFS_DIST_FILES=
+for i in $with_rpcdefs ; do 
+    TMP=`basename $i`
+    if test ! -e $i -a -e ${srcdir}/$TMP ; then
+        i=${srcdir}/$TMP ;
+    fi
+    RPCDEFS="$RPCDEFS $i"
+    RPCDEFS_DIST_FILES="$RPCDEFS_DIST_FILES $TMP"
+done
+AC_SUBST(RPCDEFS)
+AC_SUBST(RPCDEFS_DIST_FILES)
  
 AH_TEMPLATE([xdr_int8_t], [RPC XDR for signed 8bit width type])
 AC_CHECK_FUNC([xdr_int8_t], [],

@@ -104,6 +104,12 @@ if test -z "$SOURCES" ; then
 elif test "${SOURCES:0:1}" != "/" ; then 
     SOURCES=${TE_BASE}/lib/$SOURCES ; 
 fi
+if ! test -d "$SOURCES" ; then
+    TMP=${TE_BASE}/lib/`basename $SOURCES`
+    if test -d "$TMP" ; then
+        SOURCES=$TMP
+    fi
+fi
 ]
 eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_SOURCES=$SOURCES`
 eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_PARMS=\"$4\"`
@@ -232,6 +238,12 @@ if test -z "$SOURCES" ; then
     SOURCES=${TE_BASE}/agents/$1 ; 
 elif test "${SOURCES:0:1}" != "/" ; then 
     SOURCES=${TE_BASE}/agents/$SOURCES ; 
+fi
+if ! test -d "$SOURCES" ; then
+    TMP=${TE_BASE}/lib/`basename $SOURCES`
+    if test -d "$TMP" ; then
+        SOURCES=$TMP
+    fi
 fi
 TE_BS_TA="$TE_BS_TA $1"
 TE_BS_TA_$1_SOURCES=$SOURCES
