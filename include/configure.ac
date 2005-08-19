@@ -46,6 +46,7 @@ arpa/inet.h \
 assert.h \
 ctype.h \
 dirent.h \
+dlfcn.h \
 errno.h \
 expect.h \
 fcntl.h \
