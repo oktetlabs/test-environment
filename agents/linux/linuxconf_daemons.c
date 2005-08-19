@@ -429,7 +429,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         sprintf(buf, "/etc/init.d/%s %s >/dev/null", daemon_name,
                *value == '0' ? "stop" : "start");
     else if (strcmp(daemon_name, "named") == 0 &&
-             file_exists("/etc/init.d/bind9 >/dev/null"))
+             file_exists("/etc/init.d/bind9"))
         /* a hack for Debian */
         sprintf(buf, "/etc/init.d/bind9 %s >/dev/null", 
                *value == '0' ? "stop" : "start");
