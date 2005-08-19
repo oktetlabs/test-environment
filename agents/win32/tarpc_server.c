@@ -906,7 +906,7 @@ TARPC_FUNC(signal,
 {
     if (in->signum == RPC_SIGINT)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_EPERM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_EPERM);
         return TRUE;
     }
 },
@@ -946,7 +946,7 @@ TARPC_FUNC(signal,
                 if ((name = calloc(1, 16)) == NULL)
                 {
                     signal(signum_rpc2h(in->signum), old_handler);
-                    out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
                 }
                 else
                 {
@@ -2284,7 +2284,7 @@ TARPC_FUNC(fileno, {},
             out->passwd._field._field##_val = strdup(pw->pw_##_field);  \
             if (out->passwd._field._field##_val == NULL)                \
             {                                                           \
-                out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);        \
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);        \
                 goto finish;                                            \
             }                                                           \
             out->passwd._field._field##_len =                           \
@@ -3909,7 +3909,7 @@ _sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
     errno = 0;
     if ((set = (sigset_t *)malloc(sizeof(sigset_t))) == NULL)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
     }
     else
     {
@@ -4672,7 +4672,7 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
     }
     else
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
 
     return TRUE;
