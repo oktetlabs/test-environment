@@ -1,7 +1,7 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
- * Linux daemons configuring implementation
+ * Unix daemons configuring implementation
  *
  *
  * Copyright (C) 2004, 2005 Test Environment authors (see file AUTHORS
@@ -28,14 +28,14 @@
  * $Id$
  */
 
-#include "linuxconf_daemons.h"
+#include "conf_daemons.h"
 
 /* Array of daemons/services names */
 static struct {
     char   *config_file;
     char   *backup;
     te_bool changed;
-} ds[LINUX_SERVICE_MAX];
+} ds[UNIX_SERVICE_MAX];
 
 /* Number of services registered */
 static int n_ds = 0;
@@ -178,7 +178,7 @@ copy_or_rename(const char *config, char *backup)
     {
         rc = errno;
         ERROR("popen(%s) failed with errno %d", buf, rc);
-        return TE_OS_RC(TE_TA_LINUX, rc);
+        return TE_OS_RC(TE_TA_UNIX, rc);
     }
     s = fgets(buf, sizeof(buf), f);
     (void)pclose(f);
@@ -201,16 +201,16 @@ copy_or_rename(const char *config, char *backup)
 
         if (pid == 0)
         {
-            ERROR("Backup '%s' of the old version of Linux TA is found", 
+            ERROR("Backup '%s' of the old version of Unix TA is found", 
                   buf);
-            return TE_RC(TE_TA_LINUX, TE_EEXIST);
+            return TE_RC(TE_TA_UNIX, TE_EEXIST);
         }
         
         if (kill(pid, SIGCONT) == 0)
         {
             WARN("Backup '%s' of running TA with PID=%d is found",
                  buf, pid);
-            return TE_RC(TE_TA_LINUX, TE_EEXIST);
+            return TE_RC(TE_TA_UNIX, TE_EEXIST);
         }
         else
         {
@@ -222,7 +222,7 @@ copy_or_rename(const char *config, char *backup)
     if (ta_system(buf) != 0)
     {
         ERROR("Cannot create backup: command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     sprintf(backup + strlen(backup), ".%d", my_pid);
     return 0;
@@ -248,7 +248,7 @@ ds_create_backup(const char *dir, const char *name, int *index)
     if (name == NULL)
     {
         ERROR("%s(): Invalid parameter", __FUNCTION__);
-        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
     filename = strrchr(name, '/');
@@ -260,19 +260,19 @@ ds_create_backup(const char *dir, const char *name, int *index)
     if (n_ds == sizeof(ds) / sizeof(ds[0]))          
     {                                                              
         WARN("Too many services are registered\n");     
-        return TE_RC(TE_TA_LINUX, TE_EMFILE);                         
+        return TE_RC(TE_TA_UNIX, TE_EMFILE);                         
     }
     
     TE_SPRINTF(buf, "%s%s", dir ? : "", name);
     ds[n_ds].config_file = strdup(buf);
     if (ds[n_ds].config_file == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     if ((f = fopen(ds[n_ds].config_file, "a")) == NULL)
     {
         WARN("Failed to create backup for %s - no such file", 
              ds[n_ds].config_file);
         free(ds[n_ds].config_file);
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     fclose(f);
     
@@ -282,7 +282,7 @@ ds_create_backup(const char *dir, const char *name, int *index)
     if (ds[n_ds].backup == NULL)
     {
         free(ds[n_ds].config_file);
-        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
     strcpy(ds[n_ds].backup, buf);
     
@@ -354,7 +354,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
 
     if (daemon_name == NULL)
     {
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if (strcmp(daemon_name, "sendmail") == 0)
@@ -415,11 +415,11 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         return rc;
     
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (daemon_name == NULL)
     {
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if (value0[0] == value[0])
@@ -440,7 +440,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
     if ((rc = ta_system(buf)) != 0)
     {
         ERROR("Command '%s' failed with exit code %d", buf, rc);
-        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
     return 0;
@@ -458,10 +458,10 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     
     if (index < 0)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
         
     if ((f = fopen(ds_config(index), "r")) == NULL)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_UNIX, errno);
 
     strcpy(value, "1");
     while (fgets(buf, sizeof(buf), f) != NULL)
@@ -507,20 +507,20 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     xinetd_server = NULL;
     
     if (index < 0)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
         
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if ((f = fopen(ds_backup(index), "r")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         return rc;                                            
     }
 
     if ((g = fopen(ds_config(index), "w")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for writing", ds_config(index));
         fclose(f);
         return rc;                                            
@@ -600,20 +600,20 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
         return TE_EINVAL;
 
     if (index < 0)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
         
     if (strlen(value) != 1 || (*value != '0' && *value != '1'))
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if ((f = fopen(ds_backup(index), "r")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         return rc;                                            
     }
 
     if ((g = fopen(ds_config(index), "w")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for writing", ds_config(index));
         fclose(f);
         return rc;                                            
@@ -671,7 +671,7 @@ ds_xinetd_service_addr_get(const char *service, char *value)
     int           index = ds_lookup(XINETD_ETC_DIR, service);
     
     if ((f = fopen(ds_config(index), "r")) == NULL)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_UNIX, errno);
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
@@ -737,7 +737,7 @@ ds_tftpserver_addr_get(unsigned int gid, const char *oid, char *value)
     UNUSED(oid);
 
     if ((f = fopen(ds_config(tftp_server_index), "r")) == NULL)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_UNIX, errno);
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
@@ -798,10 +798,10 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(oid);
 
     if (inet_aton(value, (struct in_addr *)&addr) == 0)
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if ((f = fopen("/tmp/tftp.te_backup", "r")) == NULL)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_UNIX, errno);
 
     if ((g = fopen("/etc/xinetd.d/tftp", "w")) == NULL)
     {
@@ -900,7 +900,7 @@ ds_log_get_timestamp(const char *buf, struct tm *last_tm)
     if (strptime(buf, "%b %e %T", last_tm) == NULL)
     {
         assert(0);
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     /*
@@ -910,15 +910,15 @@ ds_log_get_timestamp(const char *buf, struct tm *last_tm)
 
     /* Get current UTC time */
     if ((cur_time = time(NULL)) == ((time_t)-1))
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_UNIX, errno);
 
     if (gmtime_r(&cur_time, &tm) == NULL)
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     /* Use current year for the messsage */
     last_tm->tm_year = tm.tm_year;
 
-    return TE_RC(TE_TA_LINUX, TE_EINVAL);
+    return TE_RC(TE_TA_UNIX, TE_EINVAL);
 }
 
 /**
@@ -991,7 +991,7 @@ ds_tftpserver_last_access_params_get(char *fname, time_t *time_val)
                     if ((prev_fname = strdup(fname)) == NULL)
                     {
                         fclose(f);
-                        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
                     }
 
                     for (tmp += strlen("filename"); isspace(*tmp); tmp++);
@@ -1416,7 +1416,7 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
         strcmp(value, "xinetd_proftpd") != 0)
     {
         ERROR("Invalid server name: %s", value);
-        return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
     }
 
 
@@ -1427,14 +1427,14 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
 #else
         ERROR("TA compiled without xinetd support")
 #endif
-        return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
     }
 
     ds_ftpserver_get(gid, oid, tmp);
     if (tmp[0] != '0')
     {
         ERROR("Cannot change FTP server type when it's running");
-        return TE_RC(TE_TA_LINUX, TE_EPERM);
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
     }
 
     newkind = (strstr(value, "vsftpd") != NULL ? FTP_VSFTPD : 
@@ -1444,7 +1444,7 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
     if (ftp_indices[newkind] < 0)
     {
         ERROR("This server is not installed");
-        return TE_RC(TE_TA_LINUX, TE_EOPNOTSUPP);
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
     }
 
     ftp_standalone  = standalone;
@@ -1625,17 +1625,17 @@ ds_sshd_add(unsigned int gid, const char *oid, const char *value,
     
     p = strtol(port, &tmp, 10);
     if (tmp == port || *tmp != 0)
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
     if (pid != 0)
-        return TE_RC(TE_TA_LINUX, TE_EEXIST);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
         
     sprintf(buf, "/usr/sbin/sshd -p %s", port);
 
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
     return 0;
@@ -1659,7 +1659,7 @@ ds_sshd_del(unsigned int gid, const char *oid, const char *port)
     UNUSED(oid);
 
     if (pid == 0)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
         
     if (kill(pid, SIGTERM) != 0)
     {
@@ -1707,7 +1707,7 @@ ds_sshd_list(unsigned int gid, const char *oid, char **list)
     pclose(f);
 
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     
     return 0;
 }
@@ -1780,17 +1780,17 @@ ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
     
     n = strtol(number, &tmp, 10);
     if (tmp == number || *tmp != 0)
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
     if (pid != 0)
-        return TE_RC(TE_TA_LINUX, TE_EEXIST);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
         
     sprintf(buf, "Xvfb :%s -ac 2>/dev/null &", number);
 
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
     return 0;
@@ -1814,7 +1814,7 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
     UNUSED(oid);
 
     if (pid == 0)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
         
     if (kill(pid, SIGTERM) != 0)
     {
@@ -1869,7 +1869,7 @@ ds_xvfb_list(unsigned int gid, const char *oid, char **list)
     pclose(f);
     
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     
     return 0;
 }
@@ -1890,7 +1890,7 @@ ds_vncpasswd_get(unsigned int gid, const char *oid, char *value)
     {
         rc = errno;
         ERROR("Failed to open /tmp/.vnc directory");
-        return TE_OS_RC(TE_TA_LINUX, rc);
+        return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
     memset(value, 0, RCF_MAX_VAL);
@@ -1939,17 +1939,17 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
     
     n = strtol(number, &tmp, 10);
     if (tmp == number || *tmp != 0)
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
     if (vncserver_exists((char *)number))
-        return TE_RC(TE_TA_LINUX, TE_EEXIST);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
         
     sprintf(buf, "HOME=/tmp vncserver :%s >/dev/null", number);
 
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
     sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost + >/dev/null", number);
@@ -1960,7 +1960,7 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
         sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", 
                 number);
         ta_system(buf);
-        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
     return 0;
@@ -1982,14 +1982,14 @@ ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
     UNUSED(oid);
 
     if (!vncserver_exists((char *)number))
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
         
     sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", number);
 
     if (ta_system(buf) != 0)
     {
         ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_LINUX, TE_ESHCMD);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
     return 0;
@@ -2028,7 +2028,7 @@ ds_vncserver_list(unsigned int gid, const char *oid, char **list)
     pclose(f);
     
     if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     
     return 0;
 }
@@ -2123,14 +2123,14 @@ update_etc_hosts(char *ip)
 
     if ((f = fopen(ds_backup(hosts_index), "r")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for reading", ds_backup(hosts_index));
         return rc;                                            
     }
 
     if ((g = fopen(ds_config(hosts_index), "w")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for writing", ds_config(hosts_index));
         fclose(f);
         return rc;                                            
@@ -2171,7 +2171,7 @@ sendmail_smarthost_get(te_bool *enable)
 
     if ((f = fopen(ds_config(sendmail_index), "r")) == NULL)
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for reading",
               ds_config(sendmail_index));
         return rc;
@@ -2203,20 +2203,20 @@ sendmail_smarthost_set(te_bool enable)
     if (sendmail_index < 0)
     {
         ERROR("Cannot find sendmail configuration file");
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     
     ds_config_touch(sendmail_index);
     if ((f = fopen(ds_backup(sendmail_index), "r")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for reading", ds_backup(sendmail_index));
         return rc;                                            
     }
 
     if ((g = fopen(ds_config(sendmail_index), "w")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for writing", ds_config(sendmail_index));
         fclose(f);
         return rc;                                            
@@ -2264,7 +2264,7 @@ postfix_smarthost_get(te_bool *enable)
 
     if ((f = fopen(ds_config(postfix_index), "r")) == NULL)
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for reading",
               ds_config(postfix_index));
         return rc;
@@ -2296,20 +2296,20 @@ postfix_smarthost_set(te_bool enable)
     if (postfix_index < 0)
     {
         ERROR("Cannot find postfix configuration file");
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     
     ds_config_touch(postfix_index);
     if ((f = fopen(ds_backup(postfix_index), "r")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for reading", ds_backup(postfix_index));
         return rc;                                            
     }
 
     if ((g = fopen(ds_config(postfix_index), "w")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for writing", ds_config(postfix_index));
         fclose(f);
         return rc;                                            
@@ -2357,7 +2357,7 @@ exim_smarthost_get(te_bool *enable)
 
     if ((f = fopen(ds_config(exim_index), "r")) == NULL)
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for reading", ds_config(exim_index));
         return rc;
     }
@@ -2388,20 +2388,20 @@ exim_smarthost_set(te_bool enable)
     if (exim_index < 0)
     {
         ERROR("Cannot find exim configuration file");
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     
     ds_config_touch(exim_index);
     if ((f = fopen(ds_backup(exim_index), "r")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for reading", ds_backup(exim_index));
         return rc;                                            
     }
 
     if ((g = fopen(ds_config(exim_index), "w")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for writing", ds_config(exim_index));
         fclose(f);
         return rc;                                            
@@ -2473,13 +2473,13 @@ qmail_smarthost_set(te_bool enable, const char *relay)
     if (qmail_index < 0)
     {
         ERROR("Cannot find qmail configuration file");
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     
     ds_config_touch(qmail_index);
     if ((g = fopen(ds_config(qmail_index), "w")) == NULL) 
     {
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("Cannot open file %s for writing", ds_config(postfix_index));
         return rc;                                            
     }
@@ -2571,13 +2571,13 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (inet_pton(AF_INET, value, (void *)&addr) <= 0)
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     
     if (smtp_current == NULL)
-        return TE_RC(TE_TA_LINUX, TE_EPERM);
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
 
     if ((new_host = strdup(value)) == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
         
     if ((rc = update_etc_hosts(new_host)) != 0)
     {
@@ -2663,7 +2663,7 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
         ERROR("Cannot set smtp to %s: %s is running", oid, 
               smtp_current_daemon);
         ta_system("ps -ax");
-        return TE_RC(TE_TA_LINUX, TE_EPERM);
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
     }
         
     if (*value == '\0')
@@ -2701,7 +2701,7 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
         }
     }
     
-    return TE_RC(TE_TA_LINUX, TE_EINVAL);
+    return TE_RC(TE_TA_UNIX, TE_EINVAL);
 }
 
 /** Enable/disable SMTP server */
@@ -2714,9 +2714,9 @@ ds_smtp_set(unsigned int gid, const char *oid, const char *value)
         if (value[0] == '0')
             return 0;
         else if (value[0] == '1')
-            return TE_RC(TE_TA_LINUX, TE_EPERM);
+            return TE_RC(TE_TA_UNIX, TE_EPERM);
         else
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     return daemon_set(gid, smtp_current_daemon, value);
 }
@@ -2955,7 +2955,7 @@ supervise_backups(void *arg)
 
 
 /**
- * Initializes linuxconf_daemons support.
+ * Initializes conf_daemons support.
  *
  * @param last  node in configuration tree (last sun of /agent) to be
  *              updated
@@ -2963,7 +2963,7 @@ supervise_backups(void *arg)
  * @return status code (see te_errno.h)
  */
 int
-linuxconf_daemons_init(rcf_pch_cfg_object **last)
+ta_unix_conf_daemons_init(rcf_pch_cfg_object **last)
 {
     if (ds_create_backup("/etc/", "hosts", &hosts_index) != 0)
         return 0;
@@ -3039,7 +3039,7 @@ linuxconf_daemons_init(rcf_pch_cfg_object **last)
  * Release resources allocated for the configuration support.
  */
 void
-linux_daemons_release()
+ta_unix_conf_daemons_release()
 {
     ds_restore_backup();
 

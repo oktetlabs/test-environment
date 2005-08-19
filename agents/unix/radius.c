@@ -1,5 +1,5 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
  * Support for RADIUS testing
  *
@@ -29,7 +29,7 @@
 
 #ifdef WITH_RADIUS_SERVER
 #include <stddef.h>
-#include "linuxconf_daemons.h"
+#include "conf_daemons.h"
 #include <sys/wait.h>
 
 /** RADIUS configuration parameter types */
@@ -817,13 +817,13 @@ set_user_checks(const char *name, const char *checks)
     char *value;
 
     if (user == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     do
     {
         checks = parse_attr_value_pair(checks, &attr, &value);
         if (attr == NULL)
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
         for (ch = user->checks; ch != NULL && ch->attribute != NULL; ch++)
         {
             if (strcmp(ch->attribute, attr) == 0)
@@ -862,13 +862,13 @@ set_user_replies(const char *name, const char *replies, te_bool in_accept)
     char *value;
 
     if (user == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     do
     {
         replies = parse_attr_value_pair(replies, &attr, &value);
         if (attr == NULL)
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
         for (rep = user->replies; rep != NULL && rep->attribute != NULL; rep++)
         {
             if (strcmp(rep->attribute, attr) == 0)
@@ -1140,7 +1140,7 @@ ds_radius_accept_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     if (user == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     stringify_attribute_values(value, user->replies, sizeof(*user->replies), 
                                       offsetof(radius_user_reply, attribute),
                                       offsetof(radius_user_reply, in_accept));
@@ -1160,7 +1160,7 @@ ds_radius_accept_set(unsigned int gid, const char *oid,
     
 
     if (radius_users_file == NULL)
-        return TE_RC(TE_TA_LINUX, TE_EBADF);
+        return TE_RC(TE_TA_UNIX, TE_EBADF);
     rc = set_user_replies(username, value, TRUE);
     if (rc == 0)
         write_radius_users(radius_users_file, radius_users);
@@ -1180,7 +1180,7 @@ ds_radius_challenge_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     if (user == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     stringify_attribute_values(value, user->replies, sizeof(*user->replies), 
                                       offsetof(radius_user_reply, attribute),
                                       offsetof(radius_user_reply, in_challenge));
@@ -1199,7 +1199,7 @@ ds_radius_challenge_set(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     if (radius_users_file == NULL)
-        return TE_RC(TE_TA_LINUX, TE_EBADF);
+        return TE_RC(TE_TA_UNIX, TE_EBADF);
     rc = set_user_replies(username, value, FALSE);
     if (rc == 0)
         write_radius_users(radius_users_file, radius_users);
@@ -1218,7 +1218,7 @@ ds_radius_check_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     if (user == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     stringify_attribute_values(value, user->checks, sizeof(*user->checks), 
                                       offsetof(radius_user_check, attribute),
                                       offsetof(radius_user_check, value));
@@ -1237,7 +1237,7 @@ ds_radius_check_set(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     if (radius_users_file == NULL)
-        return TE_RC(TE_TA_LINUX, TE_EBADF);
+        return TE_RC(TE_TA_UNIX, TE_EBADF);
     rc = set_user_checks(username, value);
     if (rc == 0)
         write_radius_users(radius_users_file, radius_users);
@@ -1254,16 +1254,16 @@ ds_radius_user_add(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     if (radius_users_file == NULL)
-        return TE_RC(TE_TA_LINUX, TE_EBADF);
+        return TE_RC(TE_TA_UNIX, TE_EBADF);
     else
     {
         radius_user *user = find_radius_user(username);
         
         if (user != NULL)
-            return TE_RC(TE_TA_LINUX, TE_EEXIST);
+            return TE_RC(TE_TA_UNIX, TE_EEXIST);
         user = make_radius_user(username);
         if (user == NULL)
-            return TE_RC(TE_TA_LINUX, TE_EFAULT);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
         user->reject = (*value == '0');
         write_radius_users(radius_users_file, radius_users);
         return 0;
@@ -1282,7 +1282,7 @@ ds_radius_user_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     if (user == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     user->reject = (*value == '0');
     return 0;
 }
@@ -1299,7 +1299,7 @@ ds_radius_user_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     if (user == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     *value = (user->reject ? '0' : '1');
     value[1] = '\0';
     return 0;
@@ -1450,7 +1450,7 @@ ds_radius_secret_get(unsigned int gid, const char *oid,
     if (!retrieve_rp(radius_conf, client_buffer, &val))
     {
         ERROR("Client %s not found", client_name);
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     if (val == NULL)
         *value = '\0';
@@ -1651,7 +1651,7 @@ ds_supplicant_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     if (supp->process == (pid_t)-1)
     {
         *value    = '0';
@@ -1687,7 +1687,7 @@ ds_supplicant_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     if (*value == '0')
     {
         if (supp->process == (pid_t)-1)
@@ -1727,7 +1727,7 @@ ds_supplicant_set(unsigned int gid, const char *oid,
                 int rc = errno;
                 ERROR("Cannot fork a supplicant on interface %s: %s", 
                       supp->interface, strerror(rc));
-                return TE_OS_RC(TE_TA_LINUX, rc);
+                return TE_OS_RC(TE_TA_UNIX, rc);
             }
             else if (supp->process == 0)
             {
@@ -1750,7 +1750,7 @@ ds_supplicant_add(unsigned int gid, const char *oid,
                   const char *value, const char *instance, ...)
 {   
     if (find_supplicant(instance) != NULL)
-        return TE_RC(TE_TA_LINUX, TE_EEXIST);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
     make_supplicant(instance);
     if (*value == '1')
     {
@@ -1836,7 +1836,7 @@ ds_supp_method_username_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     snprintf(supplicant_buffer2, sizeof(supplicant_buffer2),
              "tester.eap_%s.username", method);
@@ -1862,7 +1862,7 @@ ds_supp_method_username_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
              "tester.eap_%s.username", method);
@@ -1895,7 +1895,7 @@ ds_supp_method_passwd_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     snprintf(supplicant_buffer2, sizeof(supplicant_buffer2),
              "tester.eap_%s.password", method);
@@ -1921,7 +1921,7 @@ ds_supp_method_passwd_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
              "tester.eap_%s.password", method);
@@ -1953,7 +1953,7 @@ ds_supplicant_method_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
              "eap_%s", method);
     update_rp(supp->config, RP_SECTION, method, RP_DELETE_VALUE);
@@ -1974,7 +1974,7 @@ ds_supplicant_method_add(unsigned int gid, const char *oid,
     UNUSED(value);
    
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
              "eap_%s", method);
     update_rp(supp->config, RP_SECTION, method, NULL);
@@ -2016,7 +2016,7 @@ ds_supplicant_method_list(unsigned int gid, const char *oid,
     char *c_iter;
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2040,7 +2040,7 @@ ds_supplicant_cur_method_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     retrieve_rp(supp->config, "tester.allow_types", &type);
     
     if (type == NULL)
@@ -2064,7 +2064,7 @@ ds_supplicant_cur_method_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     snprintf(supplicant_buffer, sizeof(supplicant_buffer), "eap_%s", value);
     update_rp(supp->config, RP_ATTRIBUTE, "tester.allow_types", supplicant_buffer);
     write_radius(supp->config);
@@ -2082,7 +2082,7 @@ ds_supplicant_identity_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     retrieve_rp(supp->config, "tester.identity", &identity);
     
     if (identity == NULL)
@@ -2111,7 +2111,7 @@ ds_supplicant_identity_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     if (supp == NULL)
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
              "<BEGIN_ID>%s<END_ID>", value);
     rc = update_rp(supp->config, RP_ATTRIBUTE, "tester.identity", 

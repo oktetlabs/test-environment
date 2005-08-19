@@ -1,7 +1,7 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
- * Linux WiFi configuring support
+ * Unix WiFi configuring support
  *
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
@@ -47,7 +47,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "logger_api.h"
-#include "linux_internal.h"
+#include "unix_internal.h"
 
 /** The list of ioctls supported by the Agent */
 enum ta_priv_ioctl_e {
@@ -143,7 +143,7 @@ wifi_get_skfd()
         if ((skfd = iw_sockets_open()) < 0)
         {
             ERROR("Cannot open socket for wireless extension");
-            return -(TE_OS_RC(TE_TA_LINUX, errno));
+            return -(TE_OS_RC(TE_TA_UNIX, errno));
         }
     }
 
@@ -578,7 +578,7 @@ wifi_ta_priv_find(const char *ifname, const char *ioctl_name,
         /* Could skip this message ? */
         ERROR("There is no private ioctls available for the WiFi "
               "card on %s interface", ifname);
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
 
     for (i = 0; i < num; i++)
@@ -595,7 +595,7 @@ wifi_ta_priv_find(const char *ifname, const char *ioctl_name,
         free(privs);
         ERROR("Cannot find private ioctl '%s' on %s interface",
               ioctl_name, ifname);
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if(priv.cmd < SIOCDEVPRIVATE)
@@ -614,7 +614,7 @@ wifi_ta_priv_find(const char *ifname, const char *ioctl_name,
             free(privs);
             ERROR("Invalid private ioctl definition for %s command",
             ioctl_name);
-            return TE_RC(TE_TA_LINUX, TE_EFAULT);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
 
         /* Save sub-ioctl number */
@@ -684,7 +684,7 @@ wifi_get_config(const char *ifname, wireless_config *cfg)
 
     if (iw_get_basic_config(skfd, ifname, cfg) != 0)
     {
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
     return 0;
 }
@@ -721,7 +721,7 @@ wifi_set_item(const char *ifname, int req, struct iwreq *wrp)
             }
         }
         
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         break;
     }
 
@@ -765,7 +765,7 @@ wifi_get_item(const char *ifname, int req, struct iwreq *wrp)
             }
         }
 
-        rc = TE_OS_RC(TE_TA_LINUX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         break;
     }
 
@@ -841,7 +841,7 @@ wifi_wep_key_get(unsigned int gid, const char *oid, char *value,
     {
         ERROR("Cannot get information about encryption "
               "on %s interface", ifname);
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
 
     value[0] = '\0';
@@ -894,7 +894,7 @@ wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
     if (keylen <= 0)
     {
         ERROR("Cannot set '%s' key on %s interface", value, ifname);
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
     wrq.u.data.length = keylen;
     wrq.u.data.pointer = (caddr_t)key;
@@ -945,7 +945,7 @@ wifi_wep_get(unsigned int gid, const char *oid, char *value,
                         1, &ex_une_buf) != 0)
         {
             ERROR("Cannot set WEP to %s ioctl", value);
-            return TE_RC(TE_TA_LINUX, TE_EFAULT);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
         assert(strcmp(rp_inv_buf, ex_une_buf) == 0);
         
@@ -960,7 +960,7 @@ wifi_wep_get(unsigned int gid, const char *oid, char *value,
     {
         ERROR("Cannot get information about encryption "
               "on %s interface", ifname);
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
     if (cfg.key_flags & IW_ENCODE_DISABLED || cfg.key_size == 0)
         sprintf(value, "0");
@@ -995,7 +995,7 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
         if (sscanf(value, "%d", &int_value) != 1)
         {
             ERROR("Incorrect value for WEP passed %s", value);
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
         assert(int_value == 1 || int_value == 0);
                 
@@ -1007,7 +1007,7 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
                         1, int_value) != 0)
         {
             ERROR("Cannot set WEP to %s ioctl", value);
-            return TE_RC(TE_TA_LINUX, TE_EFAULT);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
 
         return 0;
@@ -1022,7 +1022,7 @@ wifi_wep_set(unsigned int gid, const char *oid, char *value,
     else if (strcmp(value, "1") != 0)
     {
         ERROR("Canot set '%s' instance to '%s'", oid, value);
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     wrq.u.data.flags |= IW_ENCODE_NOKEY;
 
@@ -1049,13 +1049,13 @@ wifi_ta_get_auth_alg(const char *ifname, ta_auth_alg_e *alg)
         {
             ERROR("Cannot get the value of %s ioctl",
                   priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].g_name);
-            return TE_RC(TE_TA_LINUX, TE_EFAULT);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
 
         if (sscanf(buf, "%u", &int_alg) != 1)
         {
             ERROR("Cannot convert algorithm %s", buf);
-            return TE_RC(TE_TA_LINUX, TE_EFAULT);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
         
         for (i = 0; i < (int)TA_AUTH_ALG_MAX; i++)
@@ -1069,7 +1069,7 @@ wifi_ta_get_auth_alg(const char *ifname, ta_auth_alg_e *alg)
 
         ERROR("Cannot find mapping for %d authentication algorithm",
               int_alg);
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     /*
@@ -1084,7 +1084,7 @@ wifi_ta_get_auth_alg(const char *ifname, ta_auth_alg_e *alg)
     {
         ERROR("Cannot get information about encryption "
               "on %s interface", ifname);
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
     if (cfg.key_flags & IW_ENCODE_RESTRICTED)
     {
@@ -1123,7 +1123,7 @@ wifi_ta_set_auth_alg(const char *ifname, ta_auth_alg_e alg)
         {
             ERROR("Cannot set the value of %s ioctl",
                   priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].s_name);
-            return TE_RC(TE_TA_LINUX, TE_EFAULT);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
 
         return 0;
@@ -1147,7 +1147,7 @@ wifi_ta_set_auth_alg(const char *ifname, ta_auth_alg_e alg)
     else
     {
         ERROR("Canot set authentication algorithm to '%u'", alg);
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     wrq.u.data.flags |= IW_ENCODE_NOKEY;
@@ -1191,7 +1191,7 @@ wifi_auth_get(unsigned int gid, const char *oid, char *value,
     else
     {
         ERROR("WiFi card works with unknown authentication algorithm");
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
     return 0;
 }
@@ -1226,7 +1226,7 @@ wifi_auth_set(unsigned int gid, const char *oid, char *value,
     else
     {
         ERROR("Canot set authentication algorithm to '%s'", value);
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     assert(0);
@@ -1260,7 +1260,7 @@ wifi_channel_get(unsigned int gid, const char *oid, char *value,
     WIFI_CHECK_SKFD(skfd);
 
     if (iw_get_range_info(skfd, ifname, &range) < 0)
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
 
     if ((rc = wifi_get_item(ifname, SIOCGIWFREQ, &wrq)) != 0)
         return rc;
@@ -1275,7 +1275,7 @@ wifi_channel_get(unsigned int gid, const char *oid, char *value,
     if (channel < 0)
     {
         ERROR("Cannot get current channel number on %s interface", ifname);
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
 
     sprintf(value, "%d", channel);
@@ -1311,17 +1311,17 @@ wifi_channel_set(unsigned int gid, const char *oid, char *value,
     if (sscanf(value, "%d", &channel) != 1)
     {
         ERROR("Incorrect format of channel value '%s'", value);
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     if (iw_get_range_info(skfd, ifname, &range) < 0)
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
 
     if (iw_channel_to_freq(channel, &freq, &range) < 0)
     {
         ERROR("Cannot convert %d channel to an appropriate "
               "frequency value", channel);
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
     iw_float2freq(freq, &(wrq.u.freq));
 
@@ -1354,7 +1354,7 @@ wifi_channels_get(unsigned int gid, const char *oid, char *value,
     WIFI_CHECK_SKFD(skfd);
 
     if (iw_get_range_info(skfd, ifname, &range) < 0)
-        return TE_RC(TE_TA_LINUX, TE_EFAULT);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
 
     *value = '\0';
     for (i = 0; i < range.num_frequency; i++)
@@ -1472,7 +1472,7 @@ wifi_essid_set(unsigned int gid, const char *oid, char *value,
         {
             ERROR("ESSID string '%s' is too long. "
                   "Maximum allowed length is %d", value, IW_ESSID_MAX_SIZE);
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
         wrq.u.essid.flags = 1;
         strcpy(essid, value);
@@ -1484,7 +1484,7 @@ wifi_essid_set(unsigned int gid, const char *oid, char *value,
 }
 
 
-/* Linux Test Agent WiFi configuration subtree */
+/* Unix Test Agent WiFi configuration subtree */
 RCF_PCH_CFG_NODE_RW(node_wifi_wep_key, "key", NULL, NULL,
                     wifi_wep_key_get, wifi_wep_key_set);
 
@@ -1513,7 +1513,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_wifi, "wifi",
 
 
 /**
- * Initializes linuxconf_wifi support.
+ * Initializes ta_unix_conf_wifi support.
  *
  * @param last  node in configuration tree (last sun of /agent/interface)
  *              to be updated
@@ -1521,12 +1521,12 @@ RCF_PCH_CFG_NODE_COLLECTION(node_wifi, "wifi",
  * @return status code (see te_errno.h)
  */
 int
-linuxconf_wifi_init(rcf_pch_cfg_object **last)
+ta_unix_ix_conf_wifi_init(rcf_pch_cfg_object **last)
 {
     rcf_pch_cfg_object *obj = &node_wifi;
 
     if (last == NULL)
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     (*last)->brother = obj;
 

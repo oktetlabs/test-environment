@@ -1,7 +1,8 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
  * Definitions necessary for RPC implementation
+ *
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -256,7 +257,7 @@ timeval_h2rpc(const struct timeval *tv_h, struct tarpc_timeval *tv_rpc)
 
     return (tv_h->tv_sec  != tv_rpc->tv_sec ||
             tv_h->tv_usec != tv_rpc->tv_usec) ?
-               TE_RC(TE_TA_LINUX, TE_EH2RPC) : 0;
+               TE_RC(TE_TA_UNIX, TE_EH2RPC) : 0;
 }
 
 /**
@@ -273,7 +274,7 @@ timeval_rpc2h(const struct tarpc_timeval *tv_rpc, struct timeval *tv_h)
 
     return (tv_h->tv_sec  != tv_rpc->tv_sec ||
             tv_h->tv_usec != tv_rpc->tv_usec) ?
-               TE_RC(TE_TA_LINUX, TE_ERPC2H) : 0;
+               TE_RC(TE_TA_UNIX, TE_ERPC2H) : 0;
 }
 
 /**
@@ -290,7 +291,7 @@ timezone_h2rpc(const struct timezone *tz_h, struct tarpc_timezone *tz_rpc)
 
     return (tz_h->tz_minuteswest != tz_rpc->tz_minuteswest ||
             tz_h->tz_dsttime     != tz_rpc->tz_dsttime) ?
-               TE_RC(TE_TA_LINUX, TE_EH2RPC) : 0;
+               TE_RC(TE_TA_UNIX, TE_EH2RPC) : 0;
 }
 
 /**
@@ -307,7 +308,7 @@ timezone_rpc2h(const struct tarpc_timezone *tz_rpc, struct timezone *tz_h)
 
     return (tz_h->tz_minuteswest != tz_rpc->tz_minuteswest ||
             tz_h->tz_dsttime     != tz_rpc->tz_dsttime) ?
-               TE_RC(TE_TA_LINUX, TE_ERPC2H) : 0;
+               TE_RC(TE_TA_UNIX, TE_ERPC2H) : 0;
 }
 
 /**
@@ -379,7 +380,7 @@ check_args(checked_arg *list)
         if (memcmp(cur->real_arg + cur->len_visible, cur->control,
                    cur->len - cur->len_visible) != 0)
         {
-            rc = TE_RC(TE_TA_LINUX, TE_ECORRUPTED);
+            rc = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
         }
         free(cur->control);
         free(cur);
@@ -539,7 +540,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
         VERB("%s(): CALL", #_func);                                 \
         if ((arg = calloc(1, sizeof(*arg))) == NULL)                \
         {                                                           \
-            out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);     \
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);      \
             return TRUE;                                            \
         }                                                           \
                                                                     \
@@ -553,7 +554,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
                            (void *)arg) != 0)                       \
         {                                                           \
             free(arg);                                              \
-            out->common._errno = TE_OS_RC(TE_TA_LINUX, errno);      \
+            out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);       \
         }                                                           \
                                                                     \
         memset(in,  0, sizeof(*in));                                \
@@ -569,12 +570,12 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
     if (pthread_join((pthread_t)rcf_pch_mem_get(in->common.tid),    \
                      (void **)&(arg)) != 0)                         \
     {                                                               \
-        out->common._errno = TE_OS_RC(TE_TA_LINUX, errno);          \
+        out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);           \
         return TRUE;                                                \
     }                                                               \
     if (arg == NULL)                                                \
     {                                                               \
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);         \
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);          \
         return TRUE;                                                \
     }                                                               \
     xdr_tarpc_##_func##_out((XDR *)&op, out);                       \

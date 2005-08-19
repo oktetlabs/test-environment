@@ -2,8 +2,8 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([ta-linux],[0.4],[Elena.Vengerova@oktetlabs.ru])
-AC_CONFIG_SRCDIR([linux.c])
+AC_INIT([ta-unix],[0.55555],[Elena.Vengerova@oktetlabs.ru])
+AC_CONFIG_SRCDIR([main.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 
@@ -58,7 +58,7 @@ dnl
     LDADD="$LDADD -liw"
 fi
 
-AM_CONDITIONAL([CFG_LINUX_WIFI], test x"$ac_cv_enable_wifi" != xno)
+AM_CONDITIONAL([CFG_UNIX_WIFI], test x"$ac_cv_enable_wifi" != xno)
 
 if test -z "$with_tad" ; then
     with_tad=tad
@@ -106,9 +106,9 @@ int a = IP_MTU;],
 ])
 
 DS_SOURCES=
-if test -n "$with_cfg_linux_daemons" ; then
-  DAEMONS_CFLAGS=-DCFG_LINUX_DAEMONS
-  for i in $with_cfg_linux_daemons ; do
+if test -n "$with_cfg_unix_daemons" ; then
+  DAEMONS_CFLAGS=-DCFG_UNIX_DAEMONS
+  for i in $with_cfg_unix_daemons ; do
     case $i in 
         tftp)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_TFTP_SERVER"
@@ -167,13 +167,13 @@ AC_SUBST([DAEMONS_CFLAGS])
 AC_SUBST([DAEMONS_LDADD])
 
 
-AM_CONDITIONAL(CFG_LINUX_DAEMONS, test -n "$with_cfg_linux_daemons")
-AM_CONDITIONAL(CFG_LINUX_DAEMONS_NAMED, 
-    [expr "$with_cfg_linux_daemons" : ".*dns" >/dev/null])
-AM_CONDITIONAL(CFG_LINUX_DAEMONS_ISC_DHCP_SERVER,
-    [expr "$with_cfg_linux_daemons" : ".*dhcp" >/dev/null])
-AM_CONDITIONAL(CFG_LINUX_DAEMONS_RADIUS_SERVER,
-    [expr "$with_cfg_linux_daemons" : ".*radius" >/dev/null])
+AM_CONDITIONAL(CFG_UNIX_DAEMONS, test -n "$with_cfg_unix_daemons")
+AM_CONDITIONAL(CFG_UNIX_DAEMONS_NAMED, 
+    [expr "$with_cfg_unix_daemons" : ".*dns" >/dev/null])
+AM_CONDITIONAL(CFG_UNIX_DAEMONS_ISC_DHCP_SERVER,
+    [expr "$with_cfg_unix_daemons" : ".*dhcp" >/dev/null])
+AM_CONDITIONAL(CFG_UNIX_DAEMONS_RADIUS_SERVER,
+    [expr "$with_cfg_unix_daemons" : ".*radius" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$with_netlink")
 
@@ -212,7 +212,7 @@ dnl
 AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore], [],
                AC_MSG_ERROR([No POSIX semaphores]))
 
-if test -n "$with_rcf_rpc" -o -n "$with_cfg_linux_daemons" ; then
+if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
     dnl
     dnl Dynamic linker functions are provided by:
     dnl - -ldl in Linux;

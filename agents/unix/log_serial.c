@@ -1,7 +1,7 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
- * Linux Serial Output Logger
+ * Unix Serial Output Logger
  *
  *
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS
@@ -60,7 +60,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#include "linux_internal.h"
+#include "unix_internal.h"
 
 #define TE_LGR_USER      "Main"
 #include "logger_ta.h"
@@ -341,7 +341,7 @@ log_serial(void *ready, int argc, char *argv[])
     {
         ERROR("Too few parameters to log_serial");
         sem_post(ready);
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     strncpy(user, argv[0], sizeof(user) - 1);
     level = map_name_to_level(argv[1]);
@@ -349,7 +349,7 @@ log_serial(void *ready, int argc, char *argv[])
     {
         ERROR("Error level %s is unknown", argv[1]);
         sem_post(ready);
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     interval = strtol(argv[2], NULL, 10);
@@ -357,7 +357,7 @@ log_serial(void *ready, int argc, char *argv[])
     {
         ERROR("Invalid interval value: %s", argv[2]);
         sem_post(ready);
-        return TE_RC(TE_TA_LINUX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     if ((buffer = malloc(TE_LOG_FIELD_MAX + 1)) == NULL)
@@ -367,7 +367,7 @@ log_serial(void *ready, int argc, char *argv[])
         ERROR("%s(): malloc failed at line %d: %d", __FUNCTION__, 
               __LINE__, rc);
         sem_post(ready);
-        return TE_OS_RC(TE_TA_LINUX, rc);
+        return TE_OS_RC(TE_TA_UNIX, rc);
     }
     if ((other_buffer = malloc(TE_LOG_FIELD_MAX + 1)) == NULL)
     {
@@ -376,7 +376,7 @@ log_serial(void *ready, int argc, char *argv[])
         ERROR("%s(): malloc failed at line %d: %d", __FUNCTION__, 
               __LINE__, rc);
         sem_post(ready);
-        return TE_OS_RC(TE_TA_LINUX, rc);
+        return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
     if (*argv[3] != '/')
@@ -387,7 +387,7 @@ log_serial(void *ready, int argc, char *argv[])
         poller.fd = open_conserver(tmp);
         if (poller.fd < 0)
         {
-            return TE_OS_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_UNIX, errno);
         }
     }
     else
@@ -399,7 +399,7 @@ log_serial(void *ready, int argc, char *argv[])
             {
                 sem_post(ready);
                 ERROR("%s is already is use, won't log", argv[3]);
-                return TE_RC(TE_TA_LINUX, TE_EBUSY);
+                return TE_RC(TE_TA_UNIX, TE_EBUSY);
             }
         }
         else if (strcmp(argv[4], "force") == 0)
@@ -418,7 +418,7 @@ log_serial(void *ready, int argc, char *argv[])
         {
             sem_post(ready);
             ERROR("Invalid sharing mode '%s'", argv[4]);
-            return TE_RC(TE_TA_LINUX, TE_EINVAL);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
         
         poller.fd = open(argv[3], O_RDONLY | O_NOCTTY | O_NONBLOCK);
@@ -428,7 +428,7 @@ log_serial(void *ready, int argc, char *argv[])
             
             sem_post(ready);
             ERROR("Cannot open %s: %d", argv[3], rc);
-            return TE_OS_RC(TE_TA_LINUX, rc);
+            return TE_OS_RC(TE_TA_UNIX, rc);
         }
         sem_post(ready);
     }

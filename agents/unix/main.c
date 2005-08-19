@@ -1,7 +1,7 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
- * Linux Test Agent implementation.
+ * Unix Test Agent implementation.
  *
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
@@ -58,7 +58,7 @@
 #include "rcf_pch.h"
 #include "logger_ta.h"
 
-#include "linux_internal.h"
+#include "unix_internal.h"
 
 
 /** Send answer to the TEN */
@@ -105,12 +105,12 @@ extern void tarpc_init(int argc, char **argv);
 
 
 /** Logger entity name */
-DEFINE_LGR_ENTITY("(linux)");
+DEFINE_LGR_ENTITY("(unix)");
 
 /** Test Agent executable name */
 const char *ta_execname = NULL;
 /** Test Agent name */
-const char *ta_name = "(linux)";
+const char *ta_name = "(unix)";
 
 /** Tasks to be killed during TA shutdown */
 static unsigned int     tasks_len = 0;
@@ -676,7 +676,7 @@ shell(int argc, char * const argv[])
         used += snprintf(cmdbuf + used, cmdlen - used, "%s ", argv[i]);
     }
     if (used >= cmdlen)
-        return TE_RC(TE_TA_LINUX, TE_ESMALLBUF);
+        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
 
     VERB("SHELL: run %s, errno before the run is %d\n", cmdbuf, errno);
     rc = ta_system(cmdbuf);
@@ -686,7 +686,7 @@ shell(int argc, char * const argv[])
         int err = errno;
         
         VERB("The command fails with errno %d\n", err);
-        return TE_OS_RC(TE_TA_LINUX, err);
+        return TE_OS_RC(TE_TA_UNIX, err);
     }
 
     VERB("Successfully completes");
@@ -699,7 +699,7 @@ shell(int argc, char * const argv[])
         ERROR("Abnormal termination of command executed in shell");
 
     /* FIXME */
-    return TE_RC(TE_TA_LINUX, WEXITSTATUS(rc));
+    return TE_RC(TE_TA_UNIX, WEXITSTATUS(rc));
 }
 
 
@@ -722,7 +722,7 @@ restart_service(char *service)
         rc = TE_EPERM;
 
     /* FIXME */
-    return TE_RC(TE_TA_LINUX, rc);
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 /**
@@ -737,7 +737,7 @@ create_data_file(char *pathname, char c, int len)
     FILE *f;
     
     if ((f = fopen(pathname, "w")) == NULL)
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_UNIX, errno);
     
     memset(buf, c, sizeof(buf));
     
@@ -749,14 +749,14 @@ create_data_file(char *pathname, char c, int len)
         if ((copy_len = fwrite((void *)buf, sizeof(char), copy_len, f)) < 0)
         {
             fclose(f);
-            return TE_OS_RC(TE_TA_LINUX, errno);
+            return TE_OS_RC(TE_TA_UNIX, errno);
         }
         len -= copy_len;
     }
     if (fclose(f) < 0)
     {
         ERROR("fclose() failed errno=%d", errno);
-        return TE_OS_RC(TE_TA_LINUX, errno);
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
     return 0;
@@ -964,7 +964,7 @@ ta_sigchld_handler(int sig)
 sigset_t rpcs_received_signals;
 
 
-/* See description in linux_internal.h */
+/* See description in unix_internal.h */
 void
 signal_registrar(int signum)
 {
@@ -995,7 +995,7 @@ init_tce_subsystem(void)
 }
 
 
-/* See description in linux_internal.h */
+/* See description in unix_internal.h */
 void
 ta_children_cleanup()
 {
@@ -1048,7 +1048,7 @@ find_dead_child(pid_t pid)
     return dead;
 }
 
-/* See description in linux_internal.h */
+/* See description in unix_internal.h */
 pid_t
 ta_waitpid(pid_t pid, int *status, int options)
 {
@@ -1175,7 +1175,7 @@ ta_waitpid(pid_t pid, int *status, int options)
 #undef UNLOCK
 #undef IMPOSSIBLE_LOG_AND_RET
 
-/* See description in linux_internal.h */
+/* See description in unix_internal.h */
 pid_t
 ta_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
 {
@@ -1249,7 +1249,7 @@ ta_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
     return pid;
 }
 
-/* See description in linux_internal.h */
+/* See description in unix_internal.h */
 int 
 ta_system(const char *cmd)
 {
@@ -1262,7 +1262,7 @@ ta_system(const char *cmd)
     return status;
 }
 
-/* See description in linux_internal.h */
+/* See description in unix_internal.h */
 int
 ta_kill_death(pid_t pid)
 {
@@ -1322,10 +1322,10 @@ arithm_progr(uint64_t offset, uint32_t length, uint8_t *buffer)
 
 
 /**
- * Entry point of the Linux Test Agent.
+ * Entry point of the Unix Test Agent.
  *
  * Usage:
- *     talinux <ta_name> <communication library configuration string>
+ *     taunix <ta_name> <communication library configuration string>
  */
 int
 main(int argc, char **argv)

@@ -1,7 +1,8 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
- * Linux daemons common internal staff
+ * Unix daemons common internal staff
+ *
  *
  * Copyright (C) 2004, 2005 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -27,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_TA_LINUXCONF_DAEMONS_H__
-#define __TE_TA_LINUXCONF_DAEMONS_H__
+#ifndef __TE_TA_UNIX_CONF_DAEMONS_H__
+#define __TE_TA_UNIX_CONF_DAEMONS_H__
 
 #include "te_config.h"
 #include "config.h"
@@ -60,7 +61,7 @@
 #define TE_LGR_USER      "Daemons"
 #include "logger_ta.h"
 
-#include "linux_internal.h"
+#include "unix_internal.h"
 
 #define MAC_ADDR_LEN        6
 
@@ -113,7 +114,7 @@ file_exists(char *file)
 /*--------------- Backup of configuration files --------------------*/
 
 /** Maximum number of services the implemntation supports */
-#define LINUX_SERVICE_MAX    16
+#define UNIX_SERVICE_MAX    16
 
 /** Directory where all TE temporary files are located */
 #define TE_TMP_PATH         "/tmp/"
@@ -280,4 +281,4 @@ extern void ds_init_dns_server(rcf_pch_cfg_object **last);
 extern void ds_init_radius_server(rcf_pch_cfg_object **last);
 extern void ds_shutdown_radius_server();
 
-#endif /* __TE_TA_LINUXCONF_DAEMONS */
+#endif /* __TE_TA_UNIX_CONF_DAEMONS_H__ */

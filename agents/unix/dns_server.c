@@ -1,5 +1,5 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
  * DNS server configuring 
  *
@@ -29,7 +29,7 @@
 
 #ifdef WITH_DNS_SERVER
 
-#include "linuxconf_daemons.h"
+#include "conf_daemons.h"
 #include <limits.h>
 
 #define NAMED_CONF           "named.conf"
@@ -86,7 +86,7 @@ ds_dns_forwarder_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instN);
     if (*dns_forwarder == '\0')
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     strcpy(value, dns_forwarder);
     return 0;
 }
@@ -98,7 +98,7 @@ ds_dns_forwarder_set(unsigned int gid, const char *oid,
     if (named_conf_was_running)
     {
         WARN("DNS server was running");
-        return TE_RC(TE_TA_LINUX, TE_ENOSYS);
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
     }
 
     UNUSED(gid);
@@ -126,7 +126,7 @@ ds_dns_directory_set(unsigned int gid, const char *oid,
     if (named_conf_was_running)
     {
         WARN("DNS server was running");
-        return TE_RC(TE_TA_LINUX, TE_ENOSYS);
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
     }
 
     UNUSED(gid);

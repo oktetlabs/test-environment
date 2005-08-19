@@ -1,5 +1,5 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
  * RPC routines implementation 
  *
@@ -39,7 +39,7 @@
 #include <netinet/in_systm.h>
 #endif
 
-#include "linux_internal.h"
+#include "unix_internal.h"
 
 extern char **environ;
 
@@ -102,7 +102,7 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
             if ((libc_handle = dlopen(NULL, RTLD_LAZY)) == NULL)
             {
                 ERROR("dlopen() failed for myself: %s", dlerror());
-                return TE_RC(TE_TA_LINUX, TE_ENOENT);
+                return TE_RC(TE_TA_UNIX, TE_ENOENT);
             }
         }
         handle = libc_handle;
@@ -114,7 +114,7 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
         if ((handle = dlopen(lib, RTLD_LAZY)) == NULL)
         {
             ERROR("Cannot load shared library %s: %s", lib, dlerror());
-            return TE_RC(TE_TA_LINUX, TE_ENOENT);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
         VERB("Call from smth special");
     }
@@ -147,7 +147,7 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
         if ((*func = rcf_ch_symbol_addr(name, 1)) == NULL)
         {
             ERROR("Cannot resolve symbol %s", name);
-            return TE_RC(TE_TA_LINUX, TE_ENOENT);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
     }
     return 0;
@@ -258,18 +258,18 @@ setlibname(const tarpc_setlibname_in *in)
         }
         ERROR("Dynamic library has already been set to %s",
               dynamic_library_name);
-        return TE_RC(TE_TA_LINUX, TE_EEXIST);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
     if ((dynamic_library_handle = dlopen(libname, RTLD_LAZY)) == NULL)
     {
         ERROR("Cannot load shared library %s: %s", libname, dlerror());
-        return TE_RC(TE_TA_LINUX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     dynamic_library_name = (libname != NULL) ? strdup(libname) : "(NULL)";
     if (dynamic_library_name == NULL)
     {
         ERROR("strdup(%s) failed", libname ? : "(nil)");
-        return TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
     dynamic_library_set = TRUE;
 
@@ -335,7 +335,7 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
     }
     else
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     return TRUE;
@@ -679,7 +679,7 @@ TARPC_FUNC(readv,
     if (out->vector.vector_len > RCF_RPC_MAX_IOVEC)
     {
         ERROR("Too long iovec is provided");
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         return TRUE;
     }
     COPY_ARG(vector);
@@ -711,7 +711,7 @@ TARPC_FUNC(writev,
     if (in->vector.vector_len > RCF_RPC_MAX_IOVEC)
     {
         ERROR("Too long iovec is provided");
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         return TRUE;
     }
 },
@@ -783,7 +783,7 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
     errno = 0;
     if ((set = (fd_set *)calloc(1, sizeof(fd_set))) == NULL)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
     else
     {
@@ -928,13 +928,13 @@ TARPC_FUNC(if_indextoname,
     if (name != NULL && name != out->ifname.ifname_val)
     {
         ERROR("if_indextoname returned incorrect pointer");
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ECORRUPTED);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
     }
 
     if (name == NULL &&
         memcmp(name, out->ifname.ifname_val, out->ifname.ifname_len) != 0)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ECORRUPTED);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
     }
 }
 )
@@ -960,7 +960,7 @@ TARPC_FUNC(if_nameindex, {},
         arr = (tarpc_if_nameindex *)calloc(sizeof(*arr) * i, 1);
         if (arr == NULL)
         {
-            out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         }
         else
         {
@@ -973,7 +973,7 @@ TARPC_FUNC(if_nameindex, {},
                     for (j--; j >= 0; j--)
                         free(arr[j].ifname.ifname_val);
                     free(arr);
-                    out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                     arr = NULL;
                     i = 0;
                     break;
@@ -1012,7 +1012,7 @@ _sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
     errno = 0;
     if ((set = (sigset_t *)calloc(1, sizeof(sigset_t))) == NULL)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
     else
     {
@@ -1148,7 +1148,7 @@ TARPC_FUNC(signal,
 {
     if (in->signum == RPC_SIGINT)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_EPERM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
         return TRUE;
     }
 },
@@ -1164,7 +1164,7 @@ TARPC_FUNC(signal,
         
         id = strtol(in->handler.handler_val, &tmp, 10);
         if (tmp == in->handler.handler_val || *tmp != 0)
-            out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
         handler = (sighandler_t)rcf_pch_mem_get(id);
     }
     if (out->common._errno == 0)
@@ -1180,7 +1180,7 @@ TARPC_FUNC(signal,
                 if ((out->handler.handler_val = strdup(name)) == NULL)
                 {
                     func(signum, old_handler);
-                    out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                 }
                 else
                     out->handler.handler_len = strlen(name) + 1;
@@ -1190,7 +1190,7 @@ TARPC_FUNC(signal,
                 if ((name = calloc(1, 16)) == NULL)
                 {
                     func(signum, old_handler);
-                    out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                 }
                 else
                 {
@@ -1230,7 +1230,7 @@ TARPC_FUNC(sigaction,
 {
     if (in->signum == RPC_SIGINT)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_EPERM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
         return TRUE;
     }
     COPY_ARG(oldact);
@@ -1260,7 +1260,7 @@ TARPC_FUNC(sigaction,
         tmp_err =
             get_name2handler(in_act->xx_handler.xx_handler_val,
                              &tmp_handler);
-        out->common._errno = TE_RC(TE_TA_LINUX, tmp_err);
+        out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
         out->retval = -(!!tmp_err);
         act.sa_handler = (sa_handler_t)tmp_handler;
 
@@ -1269,7 +1269,7 @@ TARPC_FUNC(sigaction,
             tmp_err =
                 get_name2handler(in_act->xx_restorer.xx_restorer_val,
                                  &tmp_handler);
-            out->common._errno = TE_RC(TE_TA_LINUX, tmp_err);
+            out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
             out->retval = -(!!tmp_err);
             act.sa_restorer = (sa_restorer_t)tmp_handler;
         }
@@ -1312,7 +1312,7 @@ TARPC_FUNC(sigaction,
 
     if (out->retval != 0)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, out->retval);
+        out->common._errno = TE_RC(TE_TA_UNIX, out->retval);
         out->retval = -1;
         func(signum_rpc2h(in->signum), p_oldact, NULL);
     }
@@ -1325,7 +1325,7 @@ TARPC_FUNC(sigaction,
 {
     if (in->signum == RPC_SIGINT)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_EPERM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
         return TRUE;
     }
     COPY_ARG(oldact);
@@ -1355,7 +1355,7 @@ TARPC_FUNC(sigaction,
         tmp_err =
             get_name2handler(in_act->xx_handler.xx_handler_val,
                              &tmp_handler);
-        out->common._errno = TE_RC(TE_TA_LINUX, tmp_err);
+        out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
         out->retval = -(!!tmp_err);
         act.sa_handler = (sa_handler_t)tmp_handler;
 
@@ -1389,7 +1389,7 @@ TARPC_FUNC(sigaction,
 
     if (out->retval != 0)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, out->retval);
+        out->common._errno = TE_RC(TE_TA_UNIX, out->retval);
         out->retval = -1;
         func(signum_rpc2h(in->signum), p_oldact, NULL);
     }
@@ -1493,7 +1493,7 @@ TARPC_FUNC(setsockopt, {},
             default:
                 ERROR("incorrect option type %d is received",
                       in->optval.optval_val[0].opttype);
-                out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
                 out->retval = -1;
                 goto finish;
                 break;
@@ -1584,7 +1584,7 @@ TARPC_FUNC(setsockopt, {},
             default:
                 ERROR("incorrect option type %d is received",
                       in->optval.optval_val[0].opttype);
-                out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
                 out->retval = -1;
                 goto finish;
                 break;
@@ -2090,7 +2090,7 @@ TARPC_FUNC(ioctl,
                 if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
                 {
                     ERROR("Out of memory");
-                    out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                     goto finish;
                 }
                 req_ifconf.ifc_buf = buf;
@@ -2137,7 +2137,7 @@ TARPC_FUNC(ioctl,
             default:
                 ERROR("incorrect request type %d is received",
                       out->req.req_val[0].type);
-                out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
                 goto finish;
                 break;
         }
@@ -2196,7 +2196,7 @@ TARPC_FUNC(ioctl,
                     default:
                         ERROR("Unsupported IOCTL request %d of type IFREQ",
                               in->code);
-                        out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
                         goto finish;
                 }
                 break;
@@ -2221,7 +2221,7 @@ TARPC_FUNC(ioctl,
                 {
                     free(req_ifconf.ifc_buf);
                     ERROR("Out of memory");
-                    out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                     goto finish;
                 }
                 out->req.req_val[0].ioctl_request_u.req_ifconf.
@@ -2238,7 +2238,7 @@ TARPC_FUNC(ioctl,
                     {
                         free(req_ifconf.ifc_buf);
                         ERROR("Out of memory");
-                        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                         goto finish;
                     }
                     memcpy(req_t->rpc_ifr_name.rpc_ifr_name_val,
@@ -2255,7 +2255,7 @@ TARPC_FUNC(ioctl,
                          */
                         free(req_ifconf.ifc_buf);
                         ERROR("Out of memory");
-                        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                         goto finish;
                     }
                     req_t->rpc_ifr_addr.sa_data.sa_data_len =
@@ -2390,7 +2390,7 @@ TARPC_FUNC(ioctl,
                 if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
                 {
                     ERROR("Out of memory");
-                    out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                     goto finish;
                 }
                 req_ifconf.ifc_buf = buf;
@@ -2430,7 +2430,7 @@ TARPC_FUNC(ioctl,
             default:
                 ERROR("incorrect request type %d is received",
                       out->req.req_val[0].type);
-                out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
                 goto finish;
                 break;
         }
@@ -2489,7 +2489,7 @@ TARPC_FUNC(ioctl,
                     default:
                         ERROR("Unsupported IOCTL request %d of type IFREQ",
                               in->code);
-                        out->common._errno = TE_RC(TE_TA_LINUX, TE_EINVAL);
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
                         goto finish;
                 }
                 break;
@@ -2514,7 +2514,7 @@ TARPC_FUNC(ioctl,
                 {
                     free(req_ifconf.ifc_buf);
                     ERROR("Out of memory");
-                    out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                     goto finish;
                 }
                 out->req.req_val[0].ioctl_request_u.req_ifconf.
@@ -2531,7 +2531,7 @@ TARPC_FUNC(ioctl,
                     {
                         free(req_ifconf.ifc_buf);
                         ERROR("Out of memory");
-                        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                         goto finish;
                     }
                     memcpy(req_t->rpc_ifr_name.rpc_ifr_name_val,
@@ -2548,7 +2548,7 @@ TARPC_FUNC(ioctl,
                          */
                         free(req_ifconf.ifc_buf);
                         ERROR("Out of memory");
-                        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                         goto finish;
                     }
                     req_t->rpc_ifr_addr.sa_data.sa_data_len =
@@ -2644,7 +2644,7 @@ TARPC_FUNC(sendmsg,
         in->msg.msg_val[0].msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
     {
         ERROR("Too long iovec is provided");
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         return TRUE;
     }
 },
@@ -2701,7 +2701,7 @@ TARPC_FUNC(sendmsg,
             
             if ((msg.msg_control = calloc(1, len)) == NULL)
             {
-                out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                 goto finish;
             }
             msg.msg_controllen = len;
@@ -2744,7 +2744,7 @@ TARPC_FUNC(recvmsg,
         in->msg.msg_val[0].msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
     {
         ERROR("Too long iovec is provided");
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         return TRUE;
     }
     COPY_ARG(msg);
@@ -2803,7 +2803,7 @@ TARPC_FUNC(recvmsg,
             msg.msg_controllen = len;
             if ((msg.msg_control = calloc(1, rlen)) == NULL)
             {
-                out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                 goto finish;
             }
             CMSG_FIRSTHDR(&msg)->cmsg_len = CMSG_LEN(data_len);
@@ -2861,7 +2861,7 @@ TARPC_FUNC(recvmsg,
                 
             if (rpc_msg->msg_control.msg_control_val == NULL)
             {
-                out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                 goto finish;
             }
             /* Fill the array */
@@ -2884,7 +2884,7 @@ TARPC_FUNC(recvmsg,
                         free(rpc_msg->msg_control.msg_control_val);
                         rpc_msg->msg_control.msg_control_val = NULL;
                         
-                        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                         goto finish;
                     }
                     memcpy(rpc_c->data.data_val, data, 
@@ -2906,7 +2906,7 @@ TARPC_FUNC(poll,
     if (in->ufds.ufds_len > RPC_POLL_NFDS_MAX)
     {
         ERROR("Too big nfds is passed to the poll()");
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         return TRUE;
     }
     COPY_ARG(ufds);
@@ -3057,7 +3057,7 @@ TARPC_FUNC(gethostbyname, {},
     if (he != NULL)
     {
         if ((out->res.res_val = hostent_h2rpc(he)) == NULL)
-            out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         else
             out->res.res_len = 1;
     }
@@ -3079,7 +3079,7 @@ TARPC_FUNC(gethostbyaddr, {},
     if (he != NULL)
     {
         if ((out->res.res_val = hostent_h2rpc(he)) == NULL)
-            out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         else
             out->res.res_len = 1;
     }
@@ -3172,7 +3172,7 @@ TARPC_FUNC(getaddrinfo, {},
                                      in->service.service_val, info, &res));
     if (out->retval != 0 && res != NULL)
     {
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ECORRUPTED);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
         res = NULL;
     }
     if (res != NULL)
@@ -3204,7 +3204,7 @@ TARPC_FUNC(getaddrinfo, {},
         }
         if (arr == NULL)
         {
-            out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
             freeaddrinfo(res);
         }
         else
@@ -3319,7 +3319,7 @@ TARPC_FUNC(fileno, {},
             out->passwd._field._field##_val = strdup(pw->pw_##_field);  \
             if (out->passwd._field._field##_val == NULL)                \
             {                                                           \
-                out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);     \
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);     \
                 goto finish;                                            \
             }                                                           \
             out->passwd._field._field##_len =                           \
@@ -4606,7 +4606,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     if (buf == NULL)
     {
         ERROR("%s(): Out of memory", __FUNCTION__);
-        out->common._errno = TE_RC(TE_TA_LINUX, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         rc = -1;
         goto overfill_buffers_exit;
     }
@@ -4640,7 +4640,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         if (rc < 0)
         {
             ERROR("%s(): select() failed", __FUNCTION__);
-            out->common._errno = TE_OS_RC(TE_TA_LINUX, errno);
+            out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
             goto overfill_buffers_exit;
         }
 
@@ -4649,7 +4649,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
             if (rc == -1 && errno != EAGAIN)
             {
                 ERROR("%s(): send() failed", __FUNCTION__);
-                out->common._errno = TE_OS_RC(TE_TA_LINUX, errno);
+                out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
                 goto overfill_buffers_exit;
             }
             if (rc != -1)

@@ -315,7 +315,7 @@ typedef enum {
     TE_TESTER,          /**< Tester application */
     TE_TAPI,            /**< Test API libraries */
     TE_TA,              /**< Test Agent libraries */
-    TE_TA_LINUX,        /**< Linux Test Agent */
+    TE_TA_UNIX,         /**< Unix Test Agent */
     TE_TA_WIN32,        /**< Windows Test Agent */
     TE_TA_SWITCH_CTL,   /**< Switch Control Test Agent */
     TE_NET_SNMP,        /**< Errors from net-snmp library */
@@ -394,7 +394,7 @@ te_rc_mod2str(te_module mod)
         MOD2STR(CONF_API);
         MOD2STR(TESTER);
         MOD2STR(TAPI);   
-        MOD2STR(TA_LINUX);   
+        MOD2STR(TA_UNIX);   
         MOD2STR(TA_WIN32);
         MOD2STR(TA_SWITCH_CTL);
         MOD2STR(NET_SNMP);     

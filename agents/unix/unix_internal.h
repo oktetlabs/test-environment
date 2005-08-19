@@ -1,7 +1,8 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
- * Linux TA definitions
+ * Unix TA definitions
+ *
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -27,8 +28,8 @@
  * $Id$
  */
  
-#ifndef __TE_TA_LINUX_INTERNAL_H__
-#define __TE_TA_LINUX_INTERNAL_H__
+#ifndef __TE_TA_UNIX_INTERNAL_H__
+#define __TE_TA_UNIX_INTERNAL_H__
 
 
 /** Fast conversion of the network mask to prefix */
@@ -169,4 +170,4 @@ extern int ta_kill_death(pid_t pid);
  * TCE-related pointers
  */
 
-#endif /* __TE_TA_LINUX_INTERNAL_H__ */
+#endif /* __TE_TA_UNIX_INTERNAL_H__ */

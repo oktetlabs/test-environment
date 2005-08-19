@@ -1,5 +1,5 @@
 /** @file
- * @brief Linux Test Agent
+ * @brief Unix Test Agent
  *
  * Routines for FTP testing.
  *
@@ -49,7 +49,7 @@
 #include <netdb.h>
 
 #include "te_errno.h"
-#include "linux_internal.h"
+#include "unix_internal.h"
 
 #include "logger_ta.h"
 #if 1
@@ -258,7 +258,7 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
     return 0;
 }
 
-/* See description in linux_internal.h */
+/* See description in unix_internal.h */
 int
 ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
 {
@@ -459,7 +459,7 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
 #undef RET_ERR    
 }
 
-/* See description in linux_internal.h */
+/* See description in unix_internal.h */
 int 
 ftp_close(int control_socket)
 {

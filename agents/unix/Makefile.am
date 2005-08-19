@@ -18,10 +18,10 @@ MY_LDADD=symtbl.o @TE_LDADD@ -lrcfpch -lrpcxdr -l@TAD@ \
 #MY_LDADD+= @NET_SNMP_LIBS@
 #endif
 
-MY_SOURCES=linux.c linuxconf.c ftp_routines.c log_serial.c
-MY_SYMTBL_OBJECTS=linux.o ftp_routines.o log_serial.o 
+MY_SOURCES=main.c conf.c ftp_routines.c log_serial.c
+MY_SYMTBL_OBJECTS=main.o ftp_routines.o log_serial.o 
 
-noinst_HEADERS=linux_internal.h linuxconf_daemons.h tarpc_server.h
+noinst_HEADERS=unix_internal.h conf_daemons.h tarpc_server.h
 
 CLEANFILES=symtbl.c
 BUILT_SOURCES=
@@ -56,18 +56,18 @@ EXTRA_DIST=tarpc_server.c
 endif
 
 
-if CFG_LINUX_DAEMONS
+if CFG_UNIX_DAEMONS
 
 MY_CPPFLAGS+=@DAEMONS_CFLAGS@
 
 noinst_HEADERS+=dhcp_server.h
 
-MY_SOURCES+=linuxconf_daemons.c dhcp_server.c dns_server.c 
-MY_SYMTBL_OBJECTS+=linuxconf_daemons.o
+MY_SOURCES+=conf_daemons.c dhcp_server.c dns_server.c 
+MY_SYMTBL_OBJECTS+=conf_daemons.o
 
 MY_LDADD+=@DAEMONS_LDADD@
 
-if CFG_LINUX_DAEMONS_NAMED
+if CFG_UNIX_DAEMONS_NAMED
 
 MY_SOURCES+=named.conf.y named.lex.l
 
@@ -77,20 +77,20 @@ MY_LDADD+=-lfl
 
 endif
 
-if CFG_LINUX_DAEMONS_ISC_DHCP_SERVER
+if CFG_UNIX_DAEMONS_ISC_DHCP_SERVER
 #MY_SOURCES+=isc-dhcp-server.conf.y isc-dhcp-server.lex.l
 #BUILT_SOURCES+=isc-dhcp-server.conf.h
 #MY_LDADD+=-lfl
 endif
 
-if CFG_LINUX_DAEMONS_RADIUS_SERVER
+if CFG_UNIX_DAEMONS_RADIUS_SERVER
 MY_SOURCES+=radius.c
 endif
 
 endif
 
-if CFG_LINUX_WIFI
-MY_SOURCES+=linuxconf_wifi.c
+if CFG_UNIX_WIFI
+MY_SOURCES+=conf_wifi.c
 endif
 
 LIBS+=@TAD_LIBS@
@@ -105,14 +105,14 @@ AM_CPPFLAGS=$(MY_CPPFLAGS)
 #
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
-bin_PROGRAMS=talinuxtmpl
+bin_PROGRAMS=taunixtmpl
 
-talinuxtmpl_SOURCES=$(MY_SOURCES)
-nodist_talinuxtmpl_SOURCES=$(MY_NODIST_SOURCES)
+taunixtmpl_SOURCES=$(MY_SOURCES)
+nodist_taunixtmpl_SOURCES=$(MY_NODIST_SOURCES)
 
-talinuxtmpl_LDADD=$(MY_LDADD)
+taunixtmpl_LDADD=$(MY_LDADD)
 
-talinuxtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
+taunixtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
@@ -126,7 +126,7 @@ symtbl.c: $(MY_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
 install-exec-hook:
-	mv $(DESTDIR)/$(bindir)/talinuxtmpl $(DESTDIR)/$(bindir)/ta@with_name@
+	mv $(DESTDIR)/$(bindir)/taunixtmpl $(DESTDIR)/$(bindir)/ta@with_name@
 
 uninstall-hook:
-	mv $(DESTDIR)/$(bindir)/ta@with_name@ $(DESTDIR)/$(bindir)/talinuxtmpl
+	mv $(DESTDIR)/$(bindir)/ta@with_name@ $(DESTDIR)/$(bindir)/taunixtmpl

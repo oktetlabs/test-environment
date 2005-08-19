@@ -1,12 +1,12 @@
 /** @file
- * @brief Linux Test Agent: DHCP server
+ * @brief Unix Test Agent: DHCP server
  *
  * Definition of DHCP server configuration notions.
  *
  */
 
-#ifndef __TE_TA_LINUX_DHCP_SERVER_H__
-#define __TE_TA_LINUX_DHCP_SERVER_H__
+#ifndef __TE_TA_UNIX_DHCP_SERVER_H__
+#define __TE_TA_UNIX_DHCP_SERVER_H__
 
 #include <sys/queue.h>
 
@@ -74,4 +74,4 @@ typedef struct te_dhcp_server_cfg {
 
 extern int isc_dhcp_server_cfg_parse(const char *filename);
 
-#endif /* !__TE_TA_LINUX_DHCP_SERVER_H__ */
+#endif /* !__TE_TA_UNIX_DHCP_SERVER_H__ */
