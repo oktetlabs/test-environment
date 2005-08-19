@@ -22,13 +22,13 @@ TE_LIB_PARMS([tad], [], [],
              [--with-file --with-pcap --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
-TE_TA_TYPE([linux64], [], [linux],
-           [--with-rcf-rpc --with-cfg-linux-daemons='ftp echo'],
+TE_TA_TYPE([linux64], [], [unix],
+           [--with-rcf-rpc --with-cfg-unix-daemons='ftp echo'],
            [], [], [comm_net_agent ndn asn])
 
 TE_LIB_PARMS([tad_dummy], [], [tad], [], [])
 
-TE_TA_TYPE([linux64_lite], [], [linux], [--with-tad=tad_dummy], [], [],
+TE_TA_TYPE([linux64_lite], [], [unix], [--with-tad=tad_dummy], [], [],
            [comm_net_agent])
 
 #
@@ -42,9 +42,9 @@ TE_LIB_PARMS([tad], [i386-linux], [],
              [--with-file --with-pcap --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
-TE_TA_TYPE([linux], [i386-linux], [],
+TE_TA_TYPE([linux], [i386-linux], [unix],
            [--with-rcf-rpc --with-netlink \
-            --with-cfg-linux-daemons='ftp echo'],
+            --with-cfg-unix-daemons='ftp echo'],
            [], [], [comm_net_agent ndn asn])
 
 #
@@ -54,7 +54,7 @@ TE_PLATFORM([i686-pc-freebsd5], [],
             [-I${FREEBSD5_HOME}/sys-include], [-L${FREEBSD5_HOME}/lib],
             [loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
-TE_TA_TYPE([freebsd5], [i686-pc-freebsd5], [linux],
+TE_TA_TYPE([freebsd5], [i686-pc-freebsd5], [unix],
            [--with-rcf-rpc], [], [], [comm_net_agent])
 
 #
@@ -64,7 +64,7 @@ TE_PLATFORM([i686-pc-netbsdelf], [],
             [-I${NETBSD_HOME}/sys-include], [-L${NETBSD_HOME}/lib],
             [loggerta comm_net_agent conf_oid rpcxdr  rcfpch tad])
 
-TE_TA_TYPE([netbsd], [i686-pc-netbsdelf], [linux],
+TE_TA_TYPE([netbsd], [i686-pc-netbsdelf], [unix],
            [--with-rcf-rpc], [], [], [comm_net_agent])
 
 #

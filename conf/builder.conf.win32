@@ -11,7 +11,7 @@ TE_LIB_PARMS([tad], [], [],
              [--with-eth --with-ipstack --with-dhcp --with-cli], [])
 TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
 
-TE_TA_TYPE([linux], [], [], [--with-rcf-rpc --with-netlink], [], [], 
+TE_TA_TYPE([linux], [], [unix], [--with-rcf-rpc --with-netlink], [], [], 
            [forwarder ndn asn comm_net_agent])
 
 TE_PLATFORM([i686-pc-cygwin],[],

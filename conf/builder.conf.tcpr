@@ -14,6 +14,6 @@ TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
 
 TE_LIB_PARMS([tad], [], [], [--with-eth --with-ipstack], [])
               
-TE_TA_TYPE([linux], [], [],
+TE_TA_TYPE([linux], [], [unix],
            [--with-rcf-rpc], [], [],
            [forwarder ndn asn comm_net_agent])
