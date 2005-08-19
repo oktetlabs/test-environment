@@ -4139,17 +4139,19 @@ close_and_accept(tarpc_close_and_accept_in *in,
             goto cleanup;
         }
         
-        timeout.tv_sec = 1;
+        timeout.tv_sec = 50;
         timeout.tv_usec = 0;
        
-        if (select_func(in->listening + 1, &rfds, 
-                        NULL, NULL, &timeout) <= 0)
+        if ((res = select_func(in->listening + 1, &rfds, 
+                        NULL, NULL, &timeout)) <= 0)
         {
             ERROR("Timeout occuring while calling select "
-                  "or any othe error(), %s", __FUNCTION__);
+                  "or any other error(), %s, res %d, %s", 
+                  __FUNCTION__, res, strerror(errno));
             res = -1;
             goto cleanup;
         }
+        res = 0;
 
         fd_array[i] = accept_func(in->listening, NULL, NULL);
         if (fd_array[i] == -1)
