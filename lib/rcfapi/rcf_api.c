@@ -1883,7 +1883,8 @@ rcf_ta_csap_create(const char *ta_name, int session,
     {
         int fd;
 
-        RING("Create CSAP with parameters:\n%tf", params);
+        RING("Create CSAP '%s' (%s:%d) with parameters:\n%tf",
+             stack_id, ta_name, session, params);
         if ((fd = open(params, O_RDONLY)) < 0)
         {
             if ((len = strlen(params) + 1) >
@@ -2258,8 +2259,8 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     if (pattern == NULL || strlen(pattern) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    RING("Start receive operation on the CSAP %d (TA %s, session %d) "
-         "with pattern\n%tf", csap_id, ta_name, session, pattern);
+    RING("Start receive operation on the CSAP %d (%s:%d) with "
+         "pattern\n%tf", csap_id, ta_name, session, pattern);
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
@@ -2587,11 +2588,12 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     int           rc;
     
     RCF_API_INIT;
-    
+
+    /* First, validate parameters */
     if (BAD_TA || templ == NULL)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-    
-    memset((char *)&msg, 0, sizeof(msg));
+
+    /* Second, previously check that CSAP is not busy */
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
 #endif    
@@ -2604,7 +2606,18 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     }
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rcf_lock);
-#endif    
+#endif
+
+    /* Third, check that template file is OK */
+    if ((fd = open(templ, O_RDONLY)) < 0)
+    {
+        ERROR("Cannot open file %s for reading", templ);
+        return TE_RC(TE_RCF_API, TE_ENOENT);
+    }
+    (void)close(fd);
+
+    /* Fourth, compose the message */
+    memset((char *)&msg, 0, sizeof(msg));
     msg.sid = session;
     msg.num = 1; /* receive only one packet */
     msg.timeout = timeout;
@@ -2615,13 +2628,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     msg.handle = csap_id;
     msg.intparm = handler == NULL ? 0 : TR_RESULTS;
     
-    if ((fd = open(templ, O_RDONLY)) < 0)
-    {
-        ERROR("Cannot open file %s for reading", templ);
-        return TE_RC(TE_RCF_API, TE_ENOENT);
-    }
-    close(fd);
-
+    /* Fifth, allocate traffic operation and remember it */
     if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
         return TE_RC(TE_RCF_API, TE_ENOMEM);
     strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
@@ -2632,7 +2639,11 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
         free(tr_op);
         return TE_RC(TE_RCF_API, TE_EBUSY);
     }
-        
+
+    RING("Start send/receive operation on the CSAP %d (%s:%d) "
+         "with timeout %u ?s, handler=%p (param=%p), pattern:\n%tf",
+         csap_id, ta_name, session, timeout, handler, user_param, templ);
+
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
         
