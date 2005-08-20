@@ -158,6 +158,15 @@ net:
             curr_net = NULL;
     }
     |
+    ENTITY_TYPE OBRACE hosts EBRACE
+    { 
+        if (curr_net == NULL)
+            curr_net = create_net();
+        if (curr_net != NULL)
+            curr_net->type = $1;
+        curr_net = NULL;
+    }
+    |
     quotedname OBRACE hosts EBRACE
     {
         const char *name = $1;
@@ -168,6 +177,23 @@ net:
                 curr_net = create_net();
             if (curr_net != NULL)
                 strcpy(curr_net->name, name);
+        }
+        curr_net = NULL;
+    }
+    |
+    quotedname COLON ENTITY_TYPE OBRACE hosts EBRACE
+    {
+        const char *name = $1;
+
+        if (strlen(name) < TAPI_ENV_NAME_MAX)
+        {
+            if (curr_net == NULL)
+                curr_net = create_net();
+            if (curr_net != NULL)
+            {
+                strcpy(curr_net->name, name);
+                curr_net->type = $3;
+            }
         }
         curr_net = NULL;
     }

@@ -12,6 +12,7 @@
 
 /** Logger subsystem user of the library */
 #define TE_LGR_USER "Environment LIB"
+#define TE_LOG_LEVEL 0xff
 
 #include "te_config.h"
 
@@ -92,8 +93,11 @@ static void node_unmark_used(node_indexes *used_nodes,
 static te_bool node_is_used(node_indexes *used_nodes,
                             unsigned int net, unsigned int node);
 
-static te_bool check_node_type_vs_pcos(tapi_env_host *host,
-                                       enum net_node_type node_type);
+static te_bool check_node_type_vs_net(cfg_net_t *net, unsigned int node_i,
+                                      tapi_env_type net_type);
+
+static te_bool check_node_type_vs_pcos(enum net_node_type node_type,
+                                       tapi_env_host *host);
 
 
 /* See description in tapi_env.h */
@@ -1303,9 +1307,21 @@ bind_host(tapi_env_host *host, tapi_env_hosts *hosts,
                 continue;
             }
 
-            if (!check_node_type_vs_pcos(host,
-                                         cfg_nets->nets[i].nodes[j].type))
+            if (!check_node_type_vs_net(cfg_nets->nets + i, j,
+                                        host->nets.lh_first->type))
             {
+                VERB("Node (%u,%u) type=%u is not suitable for the host "
+                     "in the net with type=%u", i, j,
+                     cfg_nets->nets[i].nodes[j].type,
+                     host->nets.lh_first->type);
+                continue;
+            }
+
+            if (!check_node_type_vs_pcos(cfg_nets->nets[i].nodes[j].type,
+                                         host))
+            {
+                VERB("Node (%u,%u) type=%u is not suitable for the host",
+                     i, j, cfg_nets->nets[i].nodes[j].type);
                 continue;
             }
 
@@ -1507,7 +1523,7 @@ node_is_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
  * @return Whether types match?
  */
 static te_bool
-check_node_type_vs_pcos(tapi_env_host *host, enum net_node_type node_type)
+check_node_type_vs_pcos(enum net_node_type node_type, tapi_env_host *host)
 {
     tapi_env_process *proc;
     tapi_env_pco     *pco;
@@ -1549,6 +1565,52 @@ check_node_type_vs_pcos(tapi_env_host *host, enum net_node_type node_type)
     }
 
     return TRUE;
+}
+
+/**
+ * Check that network node type matches type of requested net.
+ *
+ * @param net           Configuration model net
+ * @param node_i        Index of the node in @a net
+ * @param net_type      Requested type of the net
+ *
+ * @return Whether types match?
+ */
+static te_bool
+check_node_type_vs_net(cfg_net_t *net, unsigned int node_i,
+                       tapi_env_type net_type)
+{
+    enum net_node_type node_type = net->nodes[node_i].type;
+
+    switch (net_type)
+    {
+        case TAPI_ENV_UNSPEC:
+            return TRUE;
+
+        case TAPI_ENV_IUT:
+            if (node_type == NET_NODE_TYPE_NUT)
+            {
+                return TRUE;
+            }
+            else
+            {
+                unsigned int i;
+
+                for (i = 0; i < net->n_nodes; ++i)
+                {
+                    if (net->nodes[i].type == NET_NODE_TYPE_NUT)
+                        return TRUE;
+                }
+                return FALSE;
+            }
+
+        case TAPI_ENV_TESTER:
+            return (node_type == NET_NODE_TYPE_AGENT);
+
+        default:
+            assert(0);
+            return FALSE;
+    }
 }
 
 

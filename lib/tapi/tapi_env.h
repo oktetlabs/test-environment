@@ -192,8 +192,9 @@
 
 /** Types of entities in the Environment */
 typedef enum {
-    TAPI_ENV_IUT,       /**< Implementation Under Testing */
-    TAPI_ENV_TESTER,    /**< Auxiluary tester */
+    TAPI_ENV_UNSPEC = 0,    /**< Unspecified */
+    TAPI_ENV_IUT,           /**< Implementation Under Testing */
+    TAPI_ENV_TESTER,        /**< Auxiluary tester */
 } tapi_env_type;
 
 /** Types of addresses */
@@ -227,6 +228,8 @@ typedef struct tapi_env_net {
                                              list */
     
     char name[TAPI_ENV_NAME_MAX];   /**< Name of the net */
+
+    tapi_env_type       type;       /**< Type of the net */
 
     unsigned int        n_hosts;    /**< Number of hosts in network */
 
