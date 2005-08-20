@@ -12,7 +12,6 @@
 
 /** Logger subsystem user of the library */
 #define TE_LGR_USER "Environment LIB"
-#define TE_LOG_LEVEL 0xff
 
 #include "te_config.h"
 
