@@ -365,7 +365,7 @@ trc_test_args_to_string(const test_args *args)
 
     for (p = args->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        s += sprintf(s, "%s=%s\n", p->name, p->value);
+        s += sprintf(s, "%s=%s<BR/>", p->name, p->value);
     }
     return trc_args_buf;
 }
