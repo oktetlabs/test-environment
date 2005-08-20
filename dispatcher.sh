@@ -2,18 +2,11 @@
 
 TE_RUN_DIR="${PWD}"
 
-DISPATCHER=`which $0` 
-if test -L $DISPATCHER ; then
-    pushd `dirname $DISPATCHER` >/dev/null
-    DISPATCHER=`readlink ${DISPATCHER}`
-    DISPATCHER=`which $DISPATCHER`
-    popd >/dev/null
+DISPATCHER="$(which $0)"
+while test -L "$DISPATCHER" ; then
+    DISPATCHER="$(dirname "$DISPATCHER")/$(readlink "${DISPATCHER}")"
 fi    
-
-# which somewhere may give only relative, but not absolute path to the 
-# dispatcher directory, therefore the following more safe and portable way
-# is chosen.
-pushd `dirname $DISPATCHER` >/dev/null
+pushd "$(dirname $DISPATCHER)" >/dev/null
 DISPATCHER_DIR="${PWD}"
 popd >/dev/null
 
