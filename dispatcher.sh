@@ -3,9 +3,9 @@
 TE_RUN_DIR="${PWD}"
 
 DISPATCHER="$(which $0)"
-while test -L "$DISPATCHER" ; then
+while test -L "$DISPATCHER" ; do
     DISPATCHER="$(dirname "$DISPATCHER")/$(readlink "${DISPATCHER}")"
-fi    
+done
 pushd "$(dirname $DISPATCHER)" >/dev/null
 DISPATCHER_DIR="${PWD}"
 popd >/dev/null
