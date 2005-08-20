@@ -12,8 +12,10 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_YACC
-AC_PROG_LEX
+if test -n "$with_env" ; then
+    AC_PROG_YACC
+    AC_PROG_LEX
+fi
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
@@ -27,6 +29,8 @@ AC_SUBST([TE_LDFLAGS])
 AC_ARG_VAR([TE_CPPFLAGS])
 AC_ARG_VAR([TE_CFLAGS])
 AC_ARG_VAR([TE_LDFLAGS])
+
+AM_CONDITIONAL(WITH_ENV, test -n "$with_env")
 
 AC_CONFIG_HEADERS([package.h])
 
