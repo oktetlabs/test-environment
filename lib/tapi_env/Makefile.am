@@ -15,7 +15,7 @@ libtapi_la_SOURCES = \
 	env_lex.l
 
 
-BUILT_SOURCES += env_gram.h
+BUILT_SOURCES = env_gram.h
 
 
 install-exec-hook:
