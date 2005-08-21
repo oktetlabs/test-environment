@@ -18,6 +18,7 @@ TE_PLATFORM([], [], [], [],
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
+TE_LIB_PARMS([tapi], [], [], [--with-env])
 TE_LIB_PARMS([tad], [], [],
              [--with-file --with-pcap --with-eth --with-bridge \
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
