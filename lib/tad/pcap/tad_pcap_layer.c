@@ -28,43 +28,21 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD Ethernet-PCAP"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include <string.h>
 
-#if 0
-#define TE_LOG_LEVEL    0xff
-#endif
-
 #include "te_defs.h"
 #include "te_printf.h"
 
-#define TE_LGR_USER     "TAD Ethernet-PCAP"
 #include "logger_ta.h"
 
 #include "tad_pcap_impl.h"
 
-#if 1
-#define PCAP_DEBUG(args...) \
-    do {                                        \
-        fprintf(stdout, "\nTAD PCAP stack " args);    \
-        INFO("TAD PCAP stack " args);                 \
-    } while (0)
-
-#undef ERROR
-#define ERROR(args...) PCAP_DEBUG("ERROR: " args)
-
-#undef RING
-#define RING(args...) PCAP_DEBUG("RING: " args)
-
-#undef WARN
-#define WARN(args...) PCAP_DEBUG("WARN: " args)
-
-#undef VERB
-#define VERB(args...) PCAP_DEBUG("VERB: " args)
-#endif
 
 /**
  * Callback for read parameter value of Ethernet-PCAP CSAP.
