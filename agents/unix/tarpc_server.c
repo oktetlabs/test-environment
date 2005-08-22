@@ -4751,7 +4751,7 @@ _fill_aiocb_1_svc(tarpc_fill_aiocb_in *in,
 }
 
 
-/*-------------- AIO control block constructor --------------------------*/
+/*-------------- AIO control block destructor --------------------------*/
 bool_t
 _delete_aiocb_1_svc(tarpc_delete_aiocb_in *in,
                      tarpc_delete_aiocb_out *out,
@@ -4768,3 +4768,145 @@ _delete_aiocb_1_svc(tarpc_delete_aiocb_in *in,
 
     return TRUE;
 }
+
+/*---------------------- aio_read() --------------------------*/
+TARPC_FUNC(aio_read, {},
+{
+    MAKE_CALL(out->retval = func_ptr(IN_AIOCB));
+}
+)
+
+/*---------------------- aio_write() --------------------------*/
+TARPC_FUNC(aio_write, {},
+{
+    MAKE_CALL(out->retval = func_ptr(IN_AIOCB));
+}
+)
+
+/*---------------------- aio_return() --------------------------*/
+TARPC_FUNC(aio_return, {},
+{
+    MAKE_CALL(out->retval = func_ptr(IN_AIOCB));
+}
+)
+
+/*---------------------- aio_error() --------------------------*/
+TARPC_FUNC(aio_error, {},
+{
+    MAKE_CALL(out->retval = TE_OS_RC(TE_RPC, func_ptr(IN_AIOCB)));
+}
+)
+
+/*---------------------- aio_cancel() --------------------------*/
+TARPC_FUNC(aio_cancel, {},
+{
+    MAKE_CALL(out->retval = 
+                  aio_cancel_retval_h2rpc(func(in->fd, IN_AIOCB)));
+}
+)
+
+/*---------------------- aio_fsync() --------------------------*/
+TARPC_FUNC(aio_fsync, {},
+{
+    MAKE_CALL(out->retval = func(fcntl_flag_rpc2h(in->op), IN_AIOCB));
+}
+)
+
+/*---------------------- aio_suspend() --------------------------*/
+TARPC_FUNC(aio_suspend, {},
+{
+    struct aiocb  **cb = NULL;
+    struct timespec tv;
+    int             i;
+
+    if (in->timeout.timeout_len > 0)
+    {
+        tv.tv_sec = in->timeout.timeout_val[0].tv_sec;
+        tv.tv_nsec = in->timeout.timeout_val[0].tv_nsec;
+        INIT_CHECKED_ARG((char *)&tv, sizeof(tv), 0);
+    }
+    
+    if (in->cb.cb_len > 0 &&
+        (cb = (struct aiocb **)calloc(in->cb.cb_len, 
+                                      sizeof(void *))) == NULL)
+    {
+        ERROR("Out of memory");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        goto finish;
+    }
+    
+    for (i = 0; i < (int)(in->cb.cb_len); i++)
+        cb[i] = (struct aiocb *)rcf_pch_mem_get(in->cb.cb_val[i]);
+
+    INIT_CHECKED_ARG((void *)cb, sizeof(void *) * in->cb.cb_len, 
+                     sizeof(void *) * in->cb.cb_len);
+    
+    MAKE_CALL(out->retval = func_ptr(cb, in->n, 
+                                     in->timeout.timeout_len == 0 ? NULL 
+                                                                  : &tv));
+    free(cb);
+    
+    finish:
+    ;
+}
+)
+
+/*---------------------- lio_listio() --------------------------*/
+TARPC_FUNC(lio_listio, {},
+{
+    struct aiocb  **cb = NULL;
+    struct sigevent sig;
+    int             i;
+
+    if (in->sig.sig_len > 0)
+    {
+        tarpc_sigevent *ev = in->sig.sig_val;
+        
+        if (ev->value.pointer)
+        {
+            sig.sigev_value.sival_ptr = 
+                rcf_pch_mem_get(ev->value.tarpc_sigval_u.sival_ptr);
+        }
+        else
+        {
+            sig.sigev_value.sival_int = 
+                ev->value.tarpc_sigval_u.sival_int;
+        }
+
+        sig.sigev_signo = signum_rpc2h(ev->signo);
+        sig.sigev_notify = sigev_notify_rpc2h(ev->notify);
+        memset(&(sig._sigev_un), 0, sizeof(sig._sigev_un));
+        if (strlen(ev->function) > 0)
+        {
+            if ((sig._sigev_un._sigev_thread._function = 
+                     rcf_ch_symbol_addr(ev->function, 1)) == NULL)
+            {
+                WARN("Failed to find address of AIO callback %s - "
+                     "use NULL callback", ev->function);
+            }
+        }
+        INIT_CHECKED_ARG((char *)&sig, sizeof(sig), 0);
+    }
+    if (in->cb.cb_len > 0 &&
+        (cb = (struct aiocb **)calloc(in->cb.cb_len, 
+                                      sizeof(void *))) == NULL)
+    {
+        ERROR("Out of memory");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        goto finish;
+    }
+    
+    for (i = 0; i < (int)(in->cb.cb_len); i++)
+        cb[i] = (struct aiocb *)rcf_pch_mem_get(in->cb.cb_val[i]);
+
+    INIT_CHECKED_ARG((void *)cb, sizeof(void *) * in->cb.cb_len, 
+                     sizeof(void *) * in->cb.cb_len);
+    
+    MAKE_CALL(out->retval = func(lio_option_rpc2h(in->mode), cb, in->nent,
+                                 in->sig.sig_len == 0 ? NULL : &sig));
+    free(cb);
+    
+    finish:
+    ;
+}
+)

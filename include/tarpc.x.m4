@@ -2307,6 +2307,7 @@ struct tarpc_aio_suspend_in {
     struct tarpc_in_arg common;
     
     tarpc_aiocb_t          cb<>;
+    tarpc_int              n;
     struct tarpc_timespec  timeout<>;
 };
 
@@ -2317,9 +2318,10 @@ typedef struct tarpc_int_retval_out tarpc_aio_suspend_out;
 struct tarpc_lio_listio_in {
     struct tarpc_in_arg common;
     
-    tarpc_int      mode;   /* Mode: RPC_LIO_*      */
-    tarpc_aiocb_t  cb<>;   /* Control blocks array */
-    tarpc_sigevent sig<>;  /* Notification type    */
+    tarpc_int      mode;   /* Mode: RPC_LIO_*                      */
+    tarpc_aiocb_t  cb<>;   /* Control blocks array                 */
+    tarpc_int      nent;   /* 'netnt' to be passed to the function */
+    tarpc_sigevent sig<>;  /* Notification type                    */
 };
 
 typedef struct tarpc_int_retval_out tarpc_lio_listio_out;
