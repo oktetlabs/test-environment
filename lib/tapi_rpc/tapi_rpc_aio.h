@@ -113,7 +113,7 @@ extern ssize_t rpc_aio_return(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
  *
  * @return OS-independent error code
  */
-extern void rpc_aio_error(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
+extern int rpc_aio_error(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
 
 /**
  * Cancel asynchronous I/O request(s) corresponding to the file descriptor.

@@ -210,6 +210,8 @@ rpc_aio_read(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
 
     rcf_rpc_call(rpcs, "aio_read", &in, &out);
 
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_read, out.retval);
+
     TAPI_RPC_LOG("RPC (%s,%s): aio_read(%u) -> (%s)",
                  rpcs->ta, rpcs->name,
                  cb, errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -246,9 +248,182 @@ rpc_aio_write(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
 
     rcf_rpc_call(rpcs, "aio_write", &in, &out);
 
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_write, out.retval);
+    
     TAPI_RPC_LOG("RPC (%s,%s): aio_write(%u) -> (%s)",
                  rpcs->ta, rpcs->name,
                  cb, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(aio_write, out.retval);
 }
+
+/**
+ * Retrieve final return status for asynchronous I/O request.
+ *
+ * @param rpcs     RPC server handle
+ * @param cb       control block 
+ *
+ * @return Return status of AIO request
+ *
+ * @note The function converting OS errno to OS-independent one is also 
+ * applied to value returned by aio_return() on RPC server. The result of 
+ * the conversion is stored as errno in RPC server structure. This is 
+ * necessary to obtain correct aio_return() result when it is called for 
+ * failre request.
+ */
+ssize_t 
+rpc_aio_return(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
+{
+    tarpc_aio_return_in  in;
+    tarpc_aio_return_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(aio_return, 0);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.cb = (tarpc_aiocb_t)cb;
+
+    rcf_rpc_call(rpcs, "aio_return", &in, &out);
+
+    CHECK_RETVAL_VAR(aio_return, out.retval, out.retval < 0, 0);
+
+    TAPI_RPC_LOG("RPC (%s,%s): aio_return(%u) -> (%s)",
+                 rpcs->ta, rpcs->name,
+                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(aio_return, out.retval);
+}
+
+/**
+ * Get status of the asynchronous I/O request.
+ *
+ * @param rpcs     RPC server handle
+ * @param cb       control block 
+ *
+ * @return OS-independent error code
+ */
+int 
+rpc_aio_error(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
+{
+    tarpc_aio_error_in  in;
+    tarpc_aio_error_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(aio_error, 0);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.cb = (tarpc_aiocb_t)cb;
+
+    rcf_rpc_call(rpcs, "aio_error", &in, &out);
+
+    CHECK_RETVAL_VAR(aio_error, out.retval, out.retval < 0, 0);
+
+    TAPI_RPC_LOG("RPC (%s,%s): aio_error(%u) -> (%s)",
+                 rpcs->ta, rpcs->name,
+                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(aio_error, out.retval);
+}
+
+/**
+ * Cancel asynchronous I/O request(s) corresponding to the file descriptor.
+ *
+ * @param rpcs     RPC server handle
+ * @param fd       file descriptor
+ * @param cb       control block or NULL (in this case all AIO requests
+ *                 are cancelled)
+ *
+ * @return Status code
+ * @retval AIO_CANCELED         all requests are successfully cancelled
+ * @retval AIO_NOTCANCELED      at least one request is not cancelled
+ * @retval AIO_ALLDONE          all requests are completed before this call
+ * @retval -1                   error occured
+ */
+int 
+rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb)
+{
+    tarpc_aio_cancel_in  in;
+    tarpc_aio_cancel_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(aio_cancel, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.cb = (tarpc_aiocb_t)cb;
+    in.fd = fd;
+
+    rcf_rpc_call(rpcs, "aio_cancel", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(aio_cancel, out.retval);
+    
+    TAPI_RPC_LOG("RPC (%s,%s): aio_cancel(%u, %d) -> (%s)",
+                 rpcs->ta, rpcs->name,
+                 cb, fd, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(aio_cancel, out.retval);
+}
+
+/**
+ * Do a sync on all outstanding asynchronous I/O operations associated 
+ * with cb->aio_fildes.
+ *
+ * @param rpcs     RPC server handle
+ * @param op       operation (RPC_O_SYNC or RPC_O_DSYNC)
+ * @param cb       control block with file descriptor and
+ *                 notification mode description
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+int 
+rpc_aio_fsync(rcf_rpc_server *rpcs, 
+              rpc_fcntl_flag op, rpc_aiocb_p cb)
+{
+    tarpc_aio_fsync_in  in;
+    tarpc_aio_fsync_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(aio_fsync, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.cb = (tarpc_aiocb_t)cb;
+    in.op = op;
+
+    rcf_rpc_call(rpcs, "aio_fsync", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_fsync, out.retval);
+    
+    TAPI_RPC_LOG("RPC (%s,%s): aio_fsync(%s, %u) -> (%s)",
+                 rpcs->ta, rpcs->name, fcntl_flag_rpc2str(op),
+                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(aio_fsync, out.retval);
+}
+              
