@@ -86,40 +86,6 @@ lio_opcode_rpc2str(rpc_lio_opcode opcode)
     }
 }
 
-/** TA-independent synchronisation options for lio_listio function */
-typedef enum rpc_lio_option {
-    RPC_LIO_WAIT,
-    RPC_LIO_NOWAIT,
-    RPC_LIO_OPT_UNKNOWN
-} rpc_lio_option; 
-
-#ifdef HAVE_AIO_H
-
-/** Convert RPC lio_listio option to native one */
-static inline int
-lio_option_rpc2h(rpc_lio_option opt)
-{
-    switch (opt)
-    {
-        RPC2H(LIO_WAIT);
-        RPC2H(LIO_NOWAIT);
-        default: return LIO_WAIT + LIO_NOWAIT + 1;
-    }
-}
-
-/** Convert native lio_listio option to RPC one */
-static inline rpc_lio_option
-lio_option_h2rpc(int option)
-{
-    switch (option)
-    {
-        H2RPC(LIO_WAIT); 
-        H2RPC(LIO_NOWAIT);
-        default: return RPC_LIO_OPT_UNKNOWN;
-    }
-}
-#endif
-
 
 /** TA-independent modes for lio_listio function */
 typedef enum rpc_lio_mode {
