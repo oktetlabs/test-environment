@@ -153,6 +153,7 @@ aio_cancel_retval_rpc2h(rpc_aio_cancel_retval ret)
         RPC2H(AIO_CANCELED);
         RPC2H(AIO_NOTCANCELED);
         RPC2H(AIO_ALLDONE);
+        default: return -1; /* FIXME */
     }
 }
 
