@@ -120,6 +120,54 @@ lio_option_h2rpc(int option)
 }
 #endif
 
+
+/** TA-independent modes for lio_listio function */
+typedef enum rpc_lio_mode {
+    RPC_LIO_WAIT,
+    RPC_LIO_NOWAIT,
+    RPC_LIO_MODE_UNKNOWN
+} rpc_lio_mode; 
+
+#ifdef HAVE_AIO_H
+
+/** Convert RPC lio_listio option to native one */
+static inline int
+lio_mode_rpc2h(rpc_lio_mode mode)
+{
+    switch (mode)
+    {
+        RPC2H(LIO_WAIT);
+        RPC2H(LIO_NOWAIT);
+        default: return LIO_WAIT + LIO_NOWAIT + 1;
+    }
+}
+
+/** Convert native lio_listio mode to RPC one */
+static inline rpc_lio_mode
+lio_mode_h2rpc(int mode)
+{
+    switch (mode)
+    {
+        H2RPC(LIO_WAIT); 
+        H2RPC(LIO_NOWAIT);
+        default: return RPC_LIO_MODE_UNKNOWN;
+    }
+}
+#endif
+
+/** Convert RPC lio_listio mode to string */
+static inline const char *
+lio_mode_rpc2str(rpc_lio_mode mode)
+{
+    switch (mode)
+    {
+        RPC2STR(LIO_WAIT); 
+        RPC2STR(LIO_NOWAIT);
+        default: return "LIO_MODE_UNKNOWN";
+    }
+}
+
+
 /** Convert RPC lio_listio option to string */
 static inline const char *
 lio_option_rpc2str(rpc_lio_option option)
