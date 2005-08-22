@@ -143,7 +143,7 @@ extern int rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb);
  * @return 0 (success) or -1 (failure)
  */
 extern int rpc_aio_fsync(rcf_rpc_server *rpcs, 
-                         rpc_fcntl_flag op, rpc_aiocb_p cb);
+                         rpc_fcntl_flags op, rpc_aiocb_p cb);
 
 /**
  * Suspend the calling process until at least one of the asynchronous I/O 
