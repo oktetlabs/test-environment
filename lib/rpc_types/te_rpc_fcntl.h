@@ -176,69 +176,9 @@ typedef enum rpc_fcntl_command {
     RPC_F_UNKNOWN
 } rpc_fcntl_command;
 
-#define RPC_FCNTL_FLAGS_ALL \
-    (RPC_O_ASYNC | RPC_O_APPEND | RPC_O_SYNC | \
-     RPC_O_DSYNC | RPC_O_NONBLOCK | RPC_FASYNC)
-        
-/** Convert RPC fcntl flags to native ones. */
-static inline int
-fcntl_flag_rpc2h(rpc_fcntl_flag flags)
-{
-    if ((flags & ~RPC_FCNTL_FLAGS_ALL) != 0)
-        return O_UNKNOWN;
-    if (flags == 0)
-        return 0;
-    return 0 
-#ifdef O_ASYNC
-        | (!!(flags & RPC_O_ASYNC) * O_ASYNC)
-#endif
-#ifdef O_SYNC
-        | (!!(flags & RPC_O_SYNC) * O_SYNC)
-#endif
-#ifdef O_DSYNC
-        | (!!(flags & RPC_O_DSYNC) * O_DSYNC)
-#endif
-#ifdef O_APPEND
-        | (!!(flags & RPC_O_APPEND) * O_APPEND) 
-#endif
-#ifdef O_NONBLOCK
-        | (!!(flags & RPC_O_NONBLOCK) * O_NONBLOCK) 
-#endif
-#ifdef FASYNC
-        | (!!(flags & RPC_FASYNC) * FASYNC)
-#endif
-        ;
-}
-
-/** Convert RPC fcntl flags to native ones. */
-static inline rpc_fcntl_flag
-fcntl_flag_h2rpc(int flags)
-{
-    UNUSED(flags);
-    return 0
-#ifdef O_ASYNC
-        | (!!(flags & O_ASYNC) * RPC_O_ASYNC) 
-#endif        
-#ifdef O_SYNC
-        | (!!(flags & O_SYNC) * RPC_O_SYNC) 
-#endif        
-#ifdef O_DSYNC
-        | (!!(flags & O_DSYNC) * RPC_O_DSYNC) 
-#endif        
-#ifdef O_APPEND
-        | (!!(flags & O_APPEND) * RPC_O_APPEND) 
-#endif        
-#ifdef O_NONBLOCK
-        | (!!(flags & O_NONBLOCK) * RPC_O_NONBLOCK) 
-#endif        
-#ifdef FASYNC
-        | (!!(flags & FASYNC) * RPC_FASYNC)
-#endif
-    ;        
-}
-
 
 #define F_UNKNOWN        0xFFFFFFFF
+
 
 /** Convert RPC fcntl commands to native ones. */
 static inline int

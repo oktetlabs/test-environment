@@ -82,6 +82,7 @@ typedef enum rpc_mode_flags {
  */
 RPCBITMAP2STR(mode_flags, MODE_FLAGS_MAPPING_LIST)
 
+#ifdef S_ISUID
 /** Convert RPC mode flags to native flags */
 static inline int
 mode_flags_rpc2h(unsigned int flags)
@@ -105,5 +106,6 @@ mode_flags_rpc2h(unsigned int flags)
         (!!(flags & RPC_S_IXOTH) * S_IXOTH) |
         (!!(flags & RPC_S_IRWXO) * S_IRWXO);
 }
+#endif
 
 #endif /* !__TE_RPC_SYS_STAT_H__ */

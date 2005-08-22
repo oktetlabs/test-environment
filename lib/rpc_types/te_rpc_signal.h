@@ -344,7 +344,7 @@ typedef enum rpc_sa_flags {
 
 /** Convert RPC sigaction flags to native flags */
 static inline int
-sigaction_flags_rpc2h(rpc_sa_flags flags)
+sigaction_flags_rpc2h(unsigned int flags)
 {
     if ((flags & ~RPC_SA_FLAGS_ALL) != 0)
         return SA_FLAGS_UNKNOWN;
@@ -380,8 +380,8 @@ sigaction_flags_rpc2h(rpc_sa_flags flags)
 }
 
 /** Convert native sigaction flags to RPC flags */
-static inline rpc_send_recv_flags
-sigaction_flags_h2rpc(int flags)
+static inline unsigned int
+sigaction_flags_h2rpc(unsigned int flags)
 {
     return
 #ifdef SA_NOCLDSTOP
