@@ -4892,7 +4892,7 @@ TARPC_FUNC(lio_listio, {},
 #ifdef HAVE_UNION_SIGVAL_SIVAL_PTR
             sig.sigev_value.sival_ptr = 
 #elif defined(HAVE_UNION_SIGVAL_SIGVAL_PTR)
-            sig.sigev_value.sival_ptr = 
+            sig.sigev_value.sigval_ptr = 
 #else        
 #error "Failed to discover memeber names of the union sigval."
 #endif
@@ -4903,7 +4903,7 @@ TARPC_FUNC(lio_listio, {},
 #ifdef HAVE_UNION_SIGVAL_SIVAL_INT
             sig.sigev_value.sival_int = 
 #elif defined(HAVE_UNION_SIGVAL_SIGVAL_INT)
-            sig.sigev_value.sival_int = 
+            sig.sigev_value.sigval_int = 
 #else        
 #error "Failed to discover memeber names of the union sigval."
 #endif
