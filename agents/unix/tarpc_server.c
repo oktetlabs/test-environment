@@ -41,13 +41,6 @@
 
 #include "unix_internal.h"
 
-#ifndef HAVE_UNION_SIGVAL_SIVAL_INT
-#ifdef HAVE_UNION_SIGVAL_SIGVAL_INT
-#define sival_int sigval_int
-#define sival_ptr sigval_ptr
-#endif
-#endif
-
 extern char **environ;
 
 #if HAVE_AIO_H
@@ -4732,12 +4725,24 @@ _fill_aiocb_1_svc(tarpc_fill_aiocb_in *in,
     cb->aio_nbytes = in->nbytes;
     if (in->sigevent.value.pointer)
     {
+#ifdef HAVE_UNION_SIGVAL_SIVAL_PTR
         cb->aio_sigevent.sigev_value.sival_ptr = 
+#elif defined(HAVE_UNION_SIGVAL_SIGVAL_PTR)
+        cb->aio_sigevent.sigev_value.sigval_ptr = 
+#else        
+#error "Failed to discover memeber names of the union sigval."
+#endif
             rcf_pch_mem_get(in->sigevent.value.tarpc_sigval_u.sival_ptr);
     }
     else
     {
+#ifdef HAVE_UNION_SIGVAL_SIVAL_INT
         cb->aio_sigevent.sigev_value.sival_int = 
+#elif defined(HAVE_UNION_SIGVAL_SIGVAL_INT)
+        cb->aio_sigevent.sigev_value.sigval_int = 
+#else        
+#error "Failed to discover memeber names of the union sigval."
+#endif
             in->sigevent.value.tarpc_sigval_u.sival_int;
     }
     
@@ -4884,12 +4889,24 @@ TARPC_FUNC(lio_listio, {},
         
         if (ev->value.pointer)
         {
+#ifdef HAVE_UNION_SIGVAL_SIVAL_PTR
             sig.sigev_value.sival_ptr = 
+#elif defined(HAVE_UNION_SIGVAL_SIGVAL_PTR)
+            sig.sigev_value.sival_ptr = 
+#else        
+#error "Failed to discover memeber names of the union sigval."
+#endif
                 rcf_pch_mem_get(ev->value.tarpc_sigval_u.sival_ptr);
         }
         else
         {
+#ifdef HAVE_UNION_SIGVAL_SIVAL_INT
             sig.sigev_value.sival_int = 
+#elif defined(HAVE_UNION_SIGVAL_SIGVAL_INT)
+            sig.sigev_value.sival_int = 
+#else        
+#error "Failed to discover memeber names of the union sigval."
+#endif
                 ev->value.tarpc_sigval_u.sival_int;
         }
 

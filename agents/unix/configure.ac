@@ -205,6 +205,18 @@ AC_CHECK_MEMBERS([union sigval.sigval_int], [], [],
                  [#include <signal.h>])
 
 dnl
+dnl Check for 'sival_ptr' member in 'union sigval'.
+dnl
+AC_CHECK_MEMBERS([union sigval.sival_ptr], [], [],
+                 [#include <signal.h>])
+
+dnl
+dnl Check for 'sigval_ptr' member in 'union sigval'.
+dnl
+AC_CHECK_MEMBERS([union sigval.sigval_ptr], [], [],
+                 [#include <signal.h>])
+
+dnl
 dnl POSIX threads are provided by:
 dnl - -lpthread in Linux;
 dnl - -lc_r (-lkse) in FreeBSD;
