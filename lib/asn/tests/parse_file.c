@@ -4,7 +4,7 @@
 
 char te_lgr_entity[] = "test";
 
-int log_message(void)
+int te_log_message(void)
 { ; }
 
 
