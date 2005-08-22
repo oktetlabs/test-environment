@@ -384,6 +384,7 @@ rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb)
     RETVAL_INT(aio_cancel, out.retval);
 }
 
+#if 0
 /**
  * Do a sync on all outstanding asynchronous I/O operations associated 
  * with cb->aio_fildes.
@@ -426,4 +427,5 @@ rpc_aio_fsync(rcf_rpc_server *rpcs,
 
     RETVAL_INT(aio_fsync, out.retval);
 }
+#endif
               
