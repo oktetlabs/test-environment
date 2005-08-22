@@ -12,7 +12,7 @@ AM_YFLAGS=-d
 # since @TE_LDADD@ may contain ASN and NDN libraries.
 #
 MY_LDADD=symtbl.o @TE_LDADD@ -lrcfpch -lrpcxdr -l@TAD@ \
-         -lconf_oid -lloggerta -lrcfpch
+         -lconf_oid -lloggerta -lrcfpch -ltools
 
 #if HAS_NET_SNMP
 #MY_LDADD+= @NET_SNMP_LIBS@

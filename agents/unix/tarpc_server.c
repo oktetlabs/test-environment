@@ -40,6 +40,7 @@
 #endif
 
 #include "unix_internal.h"
+#include "te_tools.h"
 
 extern char **environ;
 
