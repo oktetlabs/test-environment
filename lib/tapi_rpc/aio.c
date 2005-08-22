@@ -180,3 +180,75 @@ rpc_fill_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb,
 
     RETVAL_VOID(fill_aiocb);
 }
+
+/**
+ * Request asynchronous read operation.
+ *
+ * @param rpcs     RPC server handle
+ * @param cb       control block 
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+int 
+rpc_aio_read(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
+{
+    tarpc_aio_read_in  in;
+    tarpc_aio_read_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(aio_read, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.cb = (tarpc_aiocb_t)cb;
+
+    rcf_rpc_call(rpcs, "aio_read", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): aio_read(%u) -> (%s)",
+                 rpcs->ta, rpcs->name,
+                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(aio_read, out.retval);
+}
+
+/**
+ * Request asynchronous write operation.
+ *
+ * @param rpcs     RPC server handle
+ * @param cb       control block 
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+int 
+rpc_aio_write(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
+{
+    tarpc_aio_write_in  in;
+    tarpc_aio_write_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(aio_write, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.cb = (tarpc_aiocb_t)cb;
+
+    rcf_rpc_call(rpcs, "aio_write", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): aio_write(%u) -> (%s)",
+                 rpcs->ta, rpcs->name,
+                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(aio_write, out.retval);
+}
