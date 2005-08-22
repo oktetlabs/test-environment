@@ -78,24 +78,23 @@ typedef struct radius_user_reply
 /** A record for a RADIUS user */
 typedef struct radius_user
 {
-    te_bool reject;
-    char *name;
-    radius_user_check *checks;
-    int n_replies;
-    int n_checks;
-    radius_user_reply *replies;
+    te_bool             reject;
+    char               *name;
+    radius_user_check  *checks;
+    int                 n_replies;
+    int                 n_checks;
+    radius_user_reply  *replies;
     struct radius_user *next;
 } radius_user;
 
 /** A supplicant <-> interface correspondence */
 typedef struct supplicant
 {
-    char *interface;          /** interface name */
-    pid_t process;            /** Xsupplicant process PID
-                                  (pid_t)-1 when not running
-                              */
-    radius_parameter *config; /** Supplicant config tree */
-    struct supplicant *next;  /** chain link */
+    char              *ifname;     /**< interface name */
+    te_bool            started;    /**< Supplicant was started and
+                                        is supposed to be running */
+    radius_parameter  *config;     /**< Supplicant config tree */
+    struct supplicant *next;       /**< chain link */
 } supplicant;
 
 static FILE *radius_users_file;
@@ -200,7 +199,7 @@ read_radius_file (const char *filename, radius_parameter *top)
     newfile = fopen(filename, "r");
     if (newfile == NULL)
     {
-        ERROR ("cannot open %s: %s", filename, strerror(errno));
+        ERROR("cannot open %s: %s", filename, strerror(errno));
         return NULL;
     }
     
@@ -300,7 +299,7 @@ write_radius_parameter (FILE *outfile, radius_parameter *parm, int indent)
     if (!parm->deleted)
     {
         int i;
-        
+
         for (i = indent; i > 0; i--)
             putc(' ', outfile);
         switch (parm->kind)
@@ -819,6 +818,14 @@ set_user_checks(const char *name, const char *checks)
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
+    if (checks == NULL || *checks == '\0')
+    {
+        free(user->checks);
+        user->checks = NULL;
+        user->n_checks = 0;
+        return 0;
+    }
+
     do
     {
         checks = parse_attr_value_pair(checks, &attr, &value);
@@ -1129,6 +1136,25 @@ ds_radiusserver_set(unsigned int gid, const char *oid,
 }
 
 static int
+radiusserver_reload(unsigned int gid)
+{
+    char buf[128];
+
+    if (radius_daemon == NULL)
+    {
+        ds_radiusserver_get(gid, NULL, buf, NULL);
+    }
+    /*
+     * Temporarily make 'restart' instead of 'reload' because configuration
+     * files are invalid at some points and server can be not running 
+     */
+    snprintf(buf, sizeof(buf), "/etc/init.d/%s restart >/dev/null",
+             radius_daemon);
+    RING("Running <%s>", buf);
+    return ta_system(buf);
+}
+
+static int
 ds_radius_accept_get(unsigned int gid, const char *oid,
                      char *value, const char *instance, 
                      const char *username, ...)
@@ -1157,14 +1183,15 @@ ds_radius_accept_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
-    
 
     if (radius_users_file == NULL)
         return TE_RC(TE_TA_UNIX, TE_EBADF);
     rc = set_user_replies(username, value, TRUE);
     if (rc == 0)
+    {
         write_radius_users(radius_users_file, radius_users);
-    return rc;
+        radiusserver_reload(gid);
+    }
     return 0;
 }
 
@@ -1202,7 +1229,10 @@ ds_radius_challenge_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EBADF);
     rc = set_user_replies(username, value, FALSE);
     if (rc == 0)
+    {
         write_radius_users(radius_users_file, radius_users);
+        radiusserver_reload(gid);
+    }
     return rc;
 }
 
@@ -1240,7 +1270,10 @@ ds_radius_check_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EBADF);
     rc = set_user_checks(username, value);
     if (rc == 0)
+    {
         write_radius_users(radius_users_file, radius_users);
+        radiusserver_reload(gid);
+    }
     return rc;
 }
 
@@ -1253,12 +1286,13 @@ ds_radius_user_add(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
+    RING("%s", __FUNCTION__);
     if (radius_users_file == NULL)
         return TE_RC(TE_TA_UNIX, TE_EBADF);
     else
     {
         radius_user *user = find_radius_user(username);
-        
+
         if (user != NULL)
             return TE_RC(TE_TA_UNIX, TE_EEXIST);
         user = make_radius_user(username);
@@ -1266,6 +1300,7 @@ ds_radius_user_add(unsigned int gid, const char *oid,
             return TE_RC(TE_TA_UNIX, TE_EFAULT);
         user->reject = (*value == '0');
         write_radius_users(radius_users_file, radius_users);
+        radiusserver_reload(gid);
         return 0;
     }
 }
@@ -1280,7 +1315,8 @@ ds_radius_user_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
-    
+
+    RING("%s", __FUNCTION__);
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     user->reject = (*value == '0');
@@ -1297,7 +1333,7 @@ ds_radius_user_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
-    
+
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     *value = (user->reject ? '0' : '1');
@@ -1314,6 +1350,7 @@ ds_radius_user_del(unsigned int gid, const char *oid,
     UNUSED(instance);
     delete_radius_user(username);
     write_radius_users(radius_users_file, radius_users);
+    radiusserver_reload(gid);
     return 0;
 }
 
@@ -1325,7 +1362,7 @@ ds_radius_user_list(unsigned int gid, const char *oid,
     radius_user *user;
     int size;
     char *iter;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
@@ -1351,26 +1388,31 @@ ds_radius_client_add(unsigned int gid, const char *oid,
                      const char *client_name)
 {
     int rc;
+
     UNUSED(unused);
     UNUSED(value);
     UNUSED(oid);
     UNUSED(gid);
+
     snprintf(client_buffer, sizeof(client_buffer), "client(%s)", client_name);
     VERB("adding RADIUS client %s for %s", client_buffer, oid);
     rc = update_rp(radius_conf, RP_SECTION, client_buffer, NULL);
-    log_radius_tree(radius_conf);
     if (rc == 0)
     {
-        snprintf(client_buffer, sizeof(client_buffer), "client(%s).secret", client_name);
+        snprintf(client_buffer, sizeof(client_buffer),
+                 "client(%s).secret", client_name);
         rc = update_rp(radius_conf, RP_ATTRIBUTE, client_buffer, NULL);
         if (rc == 0)
         {
-            snprintf(client_buffer, sizeof(client_buffer), "client(%s).shortname", client_name);
-            rc = update_rp(radius_conf, RP_ATTRIBUTE, client_buffer, client_name);
+            snprintf(client_buffer, sizeof(client_buffer),
+                     "client(%s).shortname", client_name);
+            rc = update_rp(radius_conf, RP_ATTRIBUTE, client_buffer,
+                           client_name);
         }
         if (rc == 0)
         {
             write_radius(radius_conf);
+            radiusserver_reload(gid);
             VERB("added client %s", client_buffer);
         }
     }
@@ -1388,6 +1430,7 @@ ds_radius_client_del(unsigned int gid, const char *oid,
     snprintf(client_buffer, sizeof(client_buffer), "client(%s)", client_name);
     update_rp(radius_conf, RP_SECTION, client_buffer, RP_DELETE_VALUE);
     write_radius(radius_conf);
+    radiusserver_reload(gid);
     return 0;
 }
 
@@ -1466,18 +1509,18 @@ ds_radius_secret_set(unsigned int gid, const char *oid,
 {
     int rc;
 
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
     VERB("setting client secret to %s", value);
     snprintf(client_buffer, sizeof(client_buffer), "client(%s).secret", client_name);
-    rc = update_rp(radius_conf, RP_ATTRIBUTE, client_buffer, value);    
+    rc = update_rp(radius_conf, RP_ATTRIBUTE, client_buffer, value);
     if (rc != 0)
     {
         return rc;
     }
     write_radius(radius_conf);
+    radiusserver_reload(gid);
     return 0;
 }
 
@@ -1518,9 +1561,11 @@ ds_radiusserver_netaddr_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
     const char *v;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
     retrieve_rp(radius_conf, "listen.ipaddr", &v);
     strcpy(value, *v == '*' ? "0.0.0.0" : v);
     return 0;
@@ -1533,11 +1578,13 @@ ds_radiusserver_netaddr_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
     if (strcmp(value, "0.0.0.0") == 0)
         value = "*";
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#auth).ipaddr", value);
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#acct).ipaddr", value);
     write_radius(radius_conf);
+    radiusserver_reload(gid);
     return 0;
 }
 
@@ -1546,9 +1593,11 @@ ds_radiusserver_acctport_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
     const char *v;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
     retrieve_rp(radius_conf, "listen(#acct).port", &v);
     strcpy(value, v);
     return 0;
@@ -1561,8 +1610,10 @@ ds_radiusserver_acctport_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#acct).port", value);
     write_radius(radius_conf);
+    radiusserver_reload(gid);
     return 0;
 }
 
@@ -1571,9 +1622,11 @@ ds_radiusserver_authport_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
     const char *v;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
     retrieve_rp(radius_conf, "listen(#auth).port", &v);
     strcpy(value, v);
     return 0;
@@ -1586,8 +1639,10 @@ ds_radiusserver_authport_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
     update_rp(radius_conf, RP_ATTRIBUTE, "listen(#auth).port", value);
     write_radius(radius_conf);
+    radiusserver_reload(gid);
     return 0;
 }
 
@@ -1605,75 +1660,181 @@ RCF_PCH_CFG_NODE_RW(node_ds_radiusserver, "radiusserver",
                     &node_ds_radiusserver_auth_port, NULL,
                     ds_radiusserver_get, ds_radiusserver_set);
 
+#define XSUPPLICANT_SOCK_NAME "/tmp/xsupplicant.sock."
+
 static supplicant *supplicant_list;
 
 static supplicant *
-make_supplicant (const char *ifname)
+make_supplicant(const char *ifname)
 {
-    static char conf_name[64];
-    supplicant *ns = malloc(sizeof(*ns));
+    static char  conf_name[64];
+    supplicant  *ns;
 
-    ns->interface = strdup(ifname);
-    ns->process   = (pid_t)-1;
-    ns->next      = supplicant_list;
+    if ((ns = calloc(1, sizeof(supplicant))) == NULL)
+        return NULL;
+
+    ns->ifname = strdup(ifname);
+    if (ns->ifname == NULL)
+    {
+        free(ns);
+        return NULL;
+    }
+    ns->started = FALSE;
+
     snprintf(conf_name, sizeof(conf_name), 
              "/tmp/te_supp_%s.conf", ifname);
     ns->config    = make_rp(RP_FILE, conf_name, NULL, NULL);
-    update_rp(ns->config, RP_ATTRIBUTE,
-              "network_list", "tester");
-    update_rp(ns->config, RP_ATTRIBUTE, 
-              "allow_interfaces", ifname);
+    update_rp(ns->config, RP_ATTRIBUTE, "network_list", "tester");
+    update_rp(ns->config, RP_ATTRIBUTE, "default_netname", "tester");
+    update_rp(ns->config, RP_ATTRIBUTE, "logfile", "/tmp/te_supp.log");
+    update_rp(ns->config, RP_SECTION, "tester", NULL);
+    update_rp(ns->config, RP_ATTRIBUTE, "tester.allow_types", "all");
     write_radius(ns->config);
+
+    ns->next = supplicant_list;
     supplicant_list = ns;
+
     return ns;
 }
 
 static supplicant *
-find_supplicant (const char *ifname)
+find_supplicant(const char *ifname)
 {
     supplicant *found;
-    
+
     for (found = supplicant_list; found != NULL; found = found->next)
     {
-        if (strcmp(found->interface, ifname) == 0)
+        if (strcmp(found->ifname, ifname) == 0)
             return found;
     }
     return NULL;
+}
+
+/**
+ * XSupplicant service control functions
+ *
+ * We do not use /etc/init.d/ scripts because XSupplicant is not common
+ * package in all of distributions. Instead functions provided below are
+ * used.
+ *
+ * We cannot determine pid of XSupplicant because it forks from the initial
+ * process while daemonize and does not create pid files in /var/run.
+ * The presence of XSupplicant is detected by Unix socket named
+ *    /tmp/xsupplicant.sock.<ifname>
+ * that is used by XSupplicant itself for its own IPC.
+ */
+
+/**
+ * XSupplicant daemon presence check
+ *
+ * @param ifname   Name of interface where XSupplicant should listen
+ *
+ * @return TRUE if XSupplicant is found, FALSE otherwise.
+ */
+static te_bool
+xsupplicant_get(const char *ifname)
+{
+    char buf[128];
+
+    snprintf(buf, sizeof(buf), "fuser -s %s%s >/dev/null 2>&1",
+             XSUPPLICANT_SOCK_NAME, ifname);
+    if (ta_system(buf) == 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+/**
+ * XSupplicant daemon stop
+ *
+ * @param ifname    Name of interface listened
+ *
+ * @return Status code.
+ */
+static te_errno
+xsupplicant_stop(const char *ifname)
+{
+    char buf[128];
+
+    if (!xsupplicant_get(ifname))
+    {
+        WARN("%s: XSupplicant on %s is not running", __FUNCTION__, ifname);
+        return 0;
+    }
+    RING("Stopping xsupplicant on %s", ifname);
+    snprintf(buf, sizeof(buf), "fuser -k %s%s && rm -f %s%s",
+             XSUPPLICANT_SOCK_NAME, ifname,
+             XSUPPLICANT_SOCK_NAME, ifname);
+    RING("Running <%s>", buf);
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command <%s> failed", buf);
+        return TE_ESHCMD;
+    }
+    return 0;
+}
+
+/**
+ * XSupplicant daemon start
+ *
+ * @param ifname      Name of interface to listen
+ * @param conf_fname  Name of configuration file
+ *
+ * @return Status code.
+ */
+static te_errno
+xsupplicant_start(const char *ifname, const char *conf_fname)
+{
+    char  buf[128];
+
+    if (xsupplicant_get(ifname))
+    {
+        WARN("%s: XSupplicant on %s is already running, restarting",
+             __FUNCTION__, ifname);
+        xsupplicant_stop(ifname);
+    }
+    RING("Starting xsupplicant on %s", ifname);
+    snprintf(buf, sizeof(buf), "xsupplicant -i %s -c %s -dA", 
+             ifname, conf_fname);
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command <%s> failed", buf);
+        return TE_ESHCMD;
+    }
+    return 0;
+}
+
+/**
+ * XSupplicant daemon configuration reload
+ */
+static void
+reload_supplicant(supplicant *supp)
+{
+    if (supp != NULL && supp->started)
+    {
+        xsupplicant_stop(supp->ifname);
+        xsupplicant_start(supp->ifname, supp->config->name);
+    }
 }
 
 static int
 ds_supplicant_get(unsigned int gid, const char *oid,
                   char *value, const char *instance, ...)
 {
-    supplicant *supp = find_supplicant(instance);
+    supplicant *supp;
 
     UNUSED(gid);
     UNUSED(oid);
-    
-    if (supp == NULL)
+
+    RING("%s(%s)", __FUNCTION__, instance);
+    if ((supp = find_supplicant(instance)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    if (supp->process == (pid_t)-1)
-    {
-        *value    = '0';
-        value[1] = '\0';
-        return 0;
-    }
-    if (kill(supp->process, 0))
-    {
-        int status = 0;
-        waitpid(supp->process, &status, 0);
-        WARN("Supplicant (pid = %u), on interface %s apparently died "
-             "with status = %8.8x",
-             (unsigned)supp->process, supp->interface, status);
-        supp->process = (pid_t)-1;
-        *value    = '0';
-        value[1] = '\0';
-    }
+
+    if (xsupplicant_get(supp->ifname))
+        strcpy(value, "1");
     else
-    {
-        *value    = '1';
-        value[1] = '\0';
-    }
+        strcpy(value, "0");
+
     return 0;
 }
 
@@ -1682,89 +1843,65 @@ ds_supplicant_set(unsigned int gid, const char *oid,
                   const char *value, const char *instance, ...)
 {
     supplicant *supp = find_supplicant(instance);
+    te_errno    rc;
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
+    RING("%s(%s,%s)", __FUNCTION__, instance, value);
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     if (*value == '0')
     {
-        if (supp->process == (pid_t)-1)
-        {
-            WARN("Supplicant for interface %s was not running", 
-                 supp->interface);
-        }
-        else
-        {
-            if (kill(supp->process, SIGTERM))
-            {
-                WARN("Unable to stop supplicant on interface %s, "
-                     "pid = %u: %s", supp->interface,
-                     (unsigned)supp->process, strerror(errno));
-            }
-            else
-            {
-                int status;
-                waitpid(supp->process, &status, 0);
-                INFO("Xsupplicant terminated with status %8.8x", status);
-            }
-            supp->process = (pid_t)-1;
-        }
+        if ((rc = xsupplicant_stop(supp->ifname)) != 0)
+            return TE_RC(TE_TA_UNIX, rc);
+        supp->started = FALSE;
     }
     else
     {
-        if (supp->process != (pid_t)-1)
-        {
-            WARN("Supplicant for interface %s already running, pid = %u", 
-                 supp->interface, supp->process);
-        }
-        else
-        {
-            supp->process = fork();
-            if (supp->process == (pid_t)-1)
-            {
-                int rc = errno;
-                ERROR("Cannot fork a supplicant on interface %s: %s", 
-                      supp->interface, strerror(rc));
-                return TE_OS_RC(TE_TA_UNIX, rc);
-            }
-            else if (supp->process == 0)
-            {
-                execl("xsupplicant", "xsupplicant", "-i", supp->interface, 
-                      "-c", supp->config->name, NULL);
-                _exit(EXIT_FAILURE);
-            }
-            else
-            {
-                RING("Xsupplicant start on %s with pid = %u",
-                     supp->interface, (unsigned)supp->process);
-            }
-        }
+        if ((rc = xsupplicant_start(supp->ifname, supp->config->name)) != 0)
+            return TE_RC(TE_TA_UNIX, rc);
+        supp->started = TRUE;
     }
+
     return 0;
 }
 
 static int
 ds_supplicant_add(unsigned int gid, const char *oid,
                   const char *value, const char *instance, ...)
-{   
+{
+    RING("%s(%s)", __FUNCTION__, instance);
     if (find_supplicant(instance) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
-    make_supplicant(instance);
+
+    if (make_supplicant(instance) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
     if (*value == '1')
     {
-        RING("adding in started state");
+        RING("Adding supplicant for %s in started state", instance);
         return ds_supplicant_set(gid, oid, value, instance);
     }
     else
         return 0;
 }
 
-static void
-destroy_supplicant (supplicant *supp)
+static int
+ds_supplicant_del(unsigned int gid, const char *oid,
+                  const char *instance, ...)
 {
-    supplicant *prev = NULL, *iter;
+    RING("%s()", __FUNCTION__);
+    UNUSED(gid);
+    UNUSED(oid);
+
+    supplicant *supp = find_supplicant(instance);
+    supplicant *prev = NULL;
+    supplicant *iter;
+
+    if (supp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     for (iter = supplicant_list; iter != NULL; prev = iter, iter = iter->next)
     {
@@ -1773,25 +1910,17 @@ destroy_supplicant (supplicant *supp)
     }
     if (iter != NULL)
     {
-        if (iter->process != (pid_t)-1)
-            ds_supplicant_set(0, NULL, "0", supp->interface);
+        if (iter->started)
+            xsupplicant_stop(iter->ifname);
+
         destroy_rp(iter->config);
-        free(iter->interface);
+        free(iter->ifname);
         if (prev != NULL)
-            prev->next      = iter->next;
+            prev->next = iter->next;
         else
             supplicant_list = iter->next;
         free(iter);
     }
-}
-
-static int
-ds_supplicant_del(unsigned int gid, const char *oid,
-                  const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    destroy_supplicant(find_supplicant(instance));
     return 0;
 }
 
@@ -1801,21 +1930,24 @@ ds_supplicant_list(unsigned int gid, const char *oid,
                    char **value, const char *instance, ...)
 {
     supplicant *iter;
-    int length = 0;
+    int         length = 0;
 
+    RING("%s()", __FUNCTION__);
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
-    
+
     for (iter = supplicant_list; iter != NULL; iter = iter->next)
     {
-        length += strlen(iter->interface) + 1;
+        length += strlen(iter->ifname) + 1;
     }
-    *value = malloc(length + 1);
+    if ((*value = malloc(length + 1)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
     **value = '\0';
     for (iter = supplicant_list; iter != NULL; iter = iter->next)
     {
-        strcat(*value, iter->interface);
+        strcat(*value, iter->ifname);
         strcat(*value, " ");
     }
     return 0;
@@ -1832,22 +1964,49 @@ ds_supp_method_username_set(unsigned int gid, const char *oid,
     supplicant *supp = find_supplicant(instance);
     int rc;
 
+    RING("%s(%s,%s)", __FUNCTION__, method, value);
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     snprintf(supplicant_buffer2, sizeof(supplicant_buffer2),
-             "tester.eap_%s.username", method);
+             "tester.%s.username", method);
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "<BEGIN_UNAME>%s<END_UNAME>", value);
+             "\"%s\"", value);
     rc = update_rp(supp->config, RP_ATTRIBUTE, supplicant_buffer2,
                    supplicant_buffer);
     if (rc != 0)
         return rc;
     write_radius(supp->config);
+    reload_supplicant(supp);
+
     return 0;
+}
+
+/**
+ * Copy null-terminated string with removing enclosing quotes if they exist
+ *
+ * @param src   Source string
+ * @param dst   Destination string
+ */
+static void
+strcpy_dequote(char *dst, const char *src)
+{
+    size_t len = strlen(src);
+
+    if (len > 1 && src[0] == '"' && src[len - 1] == '"')
+    {
+        /* Quoted */
+        strcpy(dst, src + 1);
+        dst[len - 2] = '\0';
+    }
+    else
+    {
+        /* Not quoted */
+        strcpy(dst, src);
+    }
 }
 
 static int
@@ -1858,28 +2017,22 @@ ds_supp_method_username_get(unsigned int gid, const char *oid,
     supplicant *supp = find_supplicant(instance);
     const char *username;
 
+    RING("%s(%s)", __FUNCTION__, method);
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "tester.eap_%s.username", method);
+             "tester.%s.username", method);
     retrieve_rp(supp->config, supplicant_buffer, &username);
-    
+
     if (username == NULL)
         *value = '\0';
     else
-    {
-        const char *subptr = strstr(username, "<BEGIN_UNAME>");
-        if (subptr != NULL)
-            username = subptr + 13;
-        strcpy(value, username);
-        value = strstr(value, "<END_UNAME>");
-        if (value != NULL)
-            *value = '\0';
-    }
+        strcpy_dequote(value, username);
+
     return 0;
 }
 
@@ -1891,21 +2044,23 @@ ds_supp_method_passwd_set(unsigned int gid, const char *oid,
     supplicant *supp = find_supplicant(instance);
     int rc;
 
+    RING("%s(%s,%s)", __FUNCTION__, method, value);
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     snprintf(supplicant_buffer2, sizeof(supplicant_buffer2),
-             "tester.eap_%s.password", method);
+             "tester.%s.password", method);
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "<BEGIN_PASS>%s<END_PASS>", value);
+             "\"%s\"", value);
     rc = update_rp(supp->config, RP_ATTRIBUTE, supplicant_buffer2,
                    supplicant_buffer);
     if (rc != 0)
         return rc;
     write_radius(supp->config);
+    reload_supplicant(supp);
     return 0;
 }
 
@@ -1917,93 +2072,23 @@ ds_supp_method_passwd_get(unsigned int gid, const char *oid,
     supplicant *supp = find_supplicant(instance);
     const char *password;
 
+    RING("%s(%s)", __FUNCTION__, method);
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "tester.eap_%s.password", method);
+             "tester.%s.password", method);
     retrieve_rp(supp->config, supplicant_buffer, &password);
-    
+
     if (password == NULL)
         *value = '\0';
     else
-    {
-        const char *subptr = strstr(password, "<BEGIN_PASS>");
-        if (subptr != NULL)
-            password = subptr + 12;
-        strcpy(value, password);
-        value = strstr(value, "<END_PASS>");
-        if (value != NULL)
-            *value = '\0';
-    }
+        strcpy_dequote(value, password);
+
     return 0;
-}
-
-static int
-ds_supplicant_method_del(unsigned int gid, const char *oid,
-                         const char *instance, 
-                         const char *method, ...)
-{
-    supplicant *supp = find_supplicant(instance);
-
-    UNUSED(gid);
-    UNUSED(oid);
-    
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "eap_%s", method);
-    update_rp(supp->config, RP_SECTION, method, RP_DELETE_VALUE);
-    write_radius(supp->config);
-    return 0;
-}
-
-
-static int
-ds_supplicant_method_add(unsigned int gid, const char *oid,
-                         const char *value, const char *instance, 
-                         const char *method, ...)
-{
-    supplicant *supp = find_supplicant(instance);
- 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-   
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "eap_%s", method);
-    update_rp(supp->config, RP_SECTION, method, NULL);
-    write_radius(supp->config);
-    return 0;
-}
-
-static te_bool 
-method_count(radius_parameter *rp, void *extra)
-{
-    int *count = extra;
-    UNUSED(rp);
-    if (rp->kind == RP_SECTION && rp->value != NULL)
-        (*count) += strlen(rp->value) - 4 + 1;
-    return FALSE;
-}
-
-static te_bool 
-method_list(radius_parameter *rp, void *extra)
-{
-    char **iter = extra;
-    if (rp->kind == RP_SECTION && rp->value != NULL)
-    {
-        int len = strlen(rp->value + 4);
-        memcpy(*iter, rp->value + 4, len);
-        (*iter)[len] = ' ';
-        (*iter) += len + 1;
-    }
-    return FALSE;
 }
 
 static int
@@ -2011,20 +2096,15 @@ ds_supplicant_method_list(unsigned int gid, const char *oid,
                          char **list,
                          const char *instance, ...)
 {
-    supplicant *supp = find_supplicant(instance);
-    int size;
-    char *c_iter;
-    
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
     UNUSED(gid);
     UNUSED(oid);
-    
-    find_rp(supp->config, "tester.eap_*", FALSE, FALSE, method_count, &size);
-    c_iter = *list = malloc(size + 1);
-    find_rp(supp->config, "tester.eap_*", FALSE, FALSE, method_list, &c_iter);
-    *c_iter = '\0';
+    UNUSED(instance);
+
+    RING("%s()", __FUNCTION__);
+    *list = strdup("eap-md5");
+    if (*list == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
     return 0;
 
 }
@@ -2038,19 +2118,17 @@ ds_supplicant_cur_method_get(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
+    RING("%s()", __FUNCTION__);
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     retrieve_rp(supp->config, "tester.allow_types", &type);
-    
+
     if (type == NULL)
         *value = '\0';
     else
-    {
-        if (strncmp(type, "eap_", 4) == 0)
-            type += 4;
         strcpy(value, type);
-    }
+
     return 0;
 }
 
@@ -2060,14 +2138,19 @@ ds_supplicant_cur_method_set(unsigned int gid, const char *oid,
 {
     supplicant *supp = find_supplicant(instance);
 
+    RING("%s(%s)", __FUNCTION__, value);
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    snprintf(supplicant_buffer, sizeof(supplicant_buffer), "eap_%s", value);
-    update_rp(supp->config, RP_ATTRIBUTE, "tester.allow_types", supplicant_buffer);
+
+    if (*value == '\0')
+        update_rp(supp->config, RP_ATTRIBUTE, "tester.allow_types", "all");
+    else
+        update_rp(supp->config, RP_ATTRIBUTE, "tester.allow_types", value);
     write_radius(supp->config);
+    reload_supplicant(supp);
     return 0;
 }
 
@@ -2078,25 +2161,19 @@ ds_supplicant_identity_get(unsigned int gid, const char *oid,
     supplicant *supp = find_supplicant(instance);
     const char *identity;
 
+    RING("%s()", __FUNCTION__);
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     retrieve_rp(supp->config, "tester.identity", &identity);
-    
+
     if (identity == NULL)
         *value = '\0';
     else
-    {
-        const char *subptr = strstr(identity, "<BEGIN_ID>");
-        if (subptr != NULL)
-            identity = subptr + 10;
         strcpy(value, identity);
-        value = strstr(value, "<END_ID>");
-        if (value != NULL)
-            *value = '\0';
-    }
+
     return 0;
 }
 
@@ -2107,18 +2184,19 @@ ds_supplicant_identity_set(unsigned int gid, const char *oid,
     supplicant *supp = find_supplicant(instance);
     int rc;
 
+    RING("%s(%s)", __FUNCTION__, value);
     UNUSED(gid);
     UNUSED(oid);
-    
+
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "<BEGIN_ID>%s<END_ID>", value);
-    rc = update_rp(supp->config, RP_ATTRIBUTE, "tester.identity", 
-                   supplicant_buffer);
+
+    rc = update_rp(supp->config, RP_ATTRIBUTE, "tester.identity", value);
     if (rc != 0)
         return rc;
+
     write_radius(supp->config);
+    reload_supplicant(supp);
     return 0;
 }
 
@@ -2134,11 +2212,11 @@ RCF_PCH_CFG_NODE_RW(node_ds_supp_method_username, "username",
 
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_supplicant_method, "method",
                             &node_ds_supp_method_username, NULL,
-                            ds_supplicant_method_add,
-                            ds_supplicant_method_del,
+                            NULL,
+                            NULL,
                             ds_supplicant_method_list, 
                             NULL);
-                            
+
 RCF_PCH_CFG_NODE_RW(node_ds_supplicant_cur_method, "cur_method",
                     NULL, &node_ds_supplicant_method,
                     ds_supplicant_cur_method_get, 
@@ -2207,13 +2285,16 @@ const char *radius_predefined_params[] = {
     "authenticate.Auth-Type(CHAP).chap", NULL,
     "authenticate.Auth-Type(MS-CHAP).mschap", NULL,
     "authenticate.eap", NULL,
-    "post-auth.files", NULL,
+#if 0
+    "post-auth.files", NULL,    /* Patched FreeRADIUS is required */
+#endif
     NULL, NULL
 };
 
 static te_bool
 rp_delete_all(radius_parameter *rp, void *extra)
 {
+    RING("%s()", __FUNCTION__);
     UNUSED(extra);
     INFO("Wiping out RADIUS parameter %s %s", rp->name, 
          rp->value == NULL ? "" : rp->value);
@@ -2241,6 +2322,9 @@ ds_init_radius_server (rcf_pch_cfg_object **last)
     const char **ignored;
     const char **defaulted;
 
+    /* Supplicant is not dependent on presence of RADIUS server */
+    DS_REGISTER(supplicant);
+
     RING("Initializing RADIUS");
     if (file_exists("/etc/raddb/radiusd.conf"))
         radius_conf = read_radius_file("/etc/raddb/radiusd.conf", NULL);
@@ -2252,7 +2336,6 @@ ds_init_radius_server (rcf_pch_cfg_object **last)
         return;
     }
     DS_REGISTER(radiusserver);
-    DS_REGISTER(supplicant);
     for (ignored = radius_ignored_params; *ignored != NULL; ignored++)
     {
         find_rp(radius_conf, *ignored, FALSE, FALSE, rp_delete_all, NULL);
@@ -2266,13 +2349,15 @@ ds_init_radius_server (rcf_pch_cfg_object **last)
     }
     write_radius(radius_conf);
     {
-        int fd = open(RADIUS_USERS_FILE, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IROTH);
+        int fd = creat(RADIUS_USERS_FILE, S_IRUSR | S_IROTH | S_IWUSR);
+        RING("Open %s, fd=%d", RADIUS_USERS_FILE, fd);
         if (fd < 0)
         {
             ERROR("Unable to create " RADIUS_USERS_FILE ", %s", strerror(errno));
         }
         else
         {
+            RING("Reopen fd %d", fd);
             radius_users_file = fdopen(fd, "w");
             if (radius_users_file == NULL)
             {
