@@ -157,6 +157,72 @@ fcntl_flags_rpc2h(unsigned int flags)
 }
 
 
+/** Convert file control native flags to RPC flags */
+static inline int
+fcntl_flags_h2rpc(unsigned int flags)
+{
+    return 0
+#ifdef O_RDONLY
+        | (!!(flags & O_RDONLY) * RPC_O_RDONLY)
+#endif
+#ifdef O_WRONLY
+        | (!!(flags & O_WRONLY) * RPC_O_WRONLY)
+#endif
+#ifdef O_RDWR
+        | (!!(flags & O_RDWR) * RPC_O_RDWR)
+#endif
+#ifdef O_CREAT
+        | (!!(flags & O_CREAT) * RPC_O_CREAT)
+#endif
+#ifdef O_EXCL
+        | (!!(flags & O_EXCL) * RPC_O_EXCL)
+#endif
+#ifdef O_NOCTTY
+        | (!!(flags & O_NOCTTY) * RPC_O_NOCTTY)
+#endif
+#ifdef O_TRUNC
+        | (!!(flags & O_TRUNC) * RPC_O_TRUNC)
+#endif
+#ifdef O_APPEND
+        | (!!(flags & O_APPEND) * RPC_O_APPEND)
+#endif
+#ifdef O_NONBLOCK
+        | (!!(flags & O_NONBLOCK) * RPC_O_NONBLOCK)
+#endif
+#ifdef O_NDELAY
+        | (!!(flags & O_NDELAY) * RPC_O_NDELAY)
+#endif
+#ifdef O_SYNC
+        | (!!(flags & O_SYNC) * RPC_O_SYNC)
+#endif
+#ifdef O_FSYNC
+        | (!!(flags & O_FSYNC) * RPC_O_FSYNC)
+#endif
+#ifdef O_ASYNC
+        | (!!(flags & O_ASYNC) * RPC_O_ASYNC)
+#endif
+#ifdef O_DIRECY
+        | (!!(flags & O_DIRECY) * RPC_O_DIRECY)
+#endif
+#ifdef O_DIRECTORY
+        | (!!(flags & O_DIRECTORY) * RPC_O_DIRECTORY)
+#endif
+#ifdef O_NOFOLLOW
+        | (!!(flags & O_NOFOLLOW) * RPC_O_NOFOLLOW)
+#endif
+#ifdef O_DSYNC
+        | (!!(flags & O_DSYNC) * RPC_O_DSYNC)
+#endif
+#ifdef O_RSYNC
+        | (!!(flags & O_RSYNC) * RPC_O_RSYNC)
+#endif
+#ifdef O_LARGEFILE
+        | (!!(flags & O_LARGEFILE) * RPC_O_LARGEFILE)
+#endif
+        ;
+}
+
+
 typedef enum rpc_fcntl_command {
     RPC_F_DUPFD,
     RPC_F_GETFD,
