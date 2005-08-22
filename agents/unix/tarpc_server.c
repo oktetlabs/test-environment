@@ -41,6 +41,13 @@
 
 #include "unix_internal.h"
 
+#ifndef HAVE_UNION_SIGVAL_SIVAL_INT
+#ifdef HAVE_UNION_SIGVAL_SIGVAL_INT
+#define sival_int sigval_int
+#define sival_ptr sigval_ptr
+#endif
+#endif
+
 extern char **environ;
 
 #if HAVE_AIO_H
