@@ -8,9 +8,9 @@ TE_TOOLS([rgt rpcgen trc tce millicom])
 # Host platform
 #
 TE_PLATFORM([], [], [], [],
-            [ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tapi \
-             comm_net_engine rcfunix loggerta comm_net_agent rcfpch \
-             tce asn ndn tad tad_dummy rcfrpc tapi_rpc tapi_env \
+            [tools ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi \
+             tapi comm_net_engine rcfunix loggerta comm_net_agent \
+             rcfpch tce asn ndn tad tad_dummy rcfrpc tapi_rpc tapi_env \
              tapi_tad tapi_pcap tapi_eth tapi_bridge tapi_arp \
              tapi_ipstack tapi_dhcp tapi_snmp tapi_cli tapi_radius \
             ])
@@ -35,7 +35,7 @@ TE_TA_TYPE([linux_lite], [], [unix], [--with-tad=tad_dummy], [], [],
 #
 TE_PLATFORM([i686-pc-freebsd5], [],
             [-I${FREEBSD5_HOME}/sys-include], [-L${FREEBSD5_HOME}/lib],
-            [loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
+            [tools loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([freebsd5], [i686-pc-freebsd5], [unix],
            [--with-rcf-rpc], [], [], [comm_net_agent])
@@ -45,7 +45,7 @@ TE_TA_TYPE([freebsd5], [i686-pc-freebsd5], [unix],
 #
 TE_PLATFORM([i686-pc-netbsdelf], [],
             [-I${NETBSD_HOME}/sys-include], [-L${NETBSD_HOME}/lib],
-            [loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
+            [tools loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([netbsd], [i686-pc-netbsdelf], [unix],
            [--with-rcf-rpc], [], [], [comm_net_agent])
@@ -56,7 +56,7 @@ TE_TA_TYPE([netbsd], [i686-pc-netbsdelf], [unix],
 TE_PLATFORM([i686-pc-cygwin], [],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api -D__CYGWIN__],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
-            [loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
+            [tools loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([win32], [i686-pc-cygwin], [],
            [--with-rcf-rpc], [], [], [ws2_32 comm_net_agent])
