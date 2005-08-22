@@ -1175,6 +1175,7 @@ shut_how_rpc2str(int how)
 typedef uint32_t rpc_ptr;
 typedef rpc_ptr rpc_fd_set_p;
 typedef rpc_ptr rpc_sigset_p;
+typedef rpc_ptr rpc_aiocb_p;
 
 #define RPC_NULL    0
 
@@ -1977,7 +1978,9 @@ sigev_notify_rpc2h(rpc_sigev_notify notify)
     {
         RPC2H(SIGEV_SIGNAL);
         RPC2H(SIGEV_NONE);
+#ifdef SIGEV_THREAD        
         RPC2H(SIGEV_THREAD);
+#endif        
         default: return SIGEV_MAX_SIZE;
     }
 }
@@ -1990,7 +1993,9 @@ sigev_notify_h2rpc(int notify)
     {
         H2RPC(SIGEV_SIGNAL);
         H2RPC(SIGEV_NONE);
+#ifdef SIGEV_THREAD        
         H2RPC(SIGEV_THREAD);
+#endif        
         default: return RPC_SIGEV_UNKNOWN;
     }
 }
@@ -2059,20 +2064,20 @@ lio_opcode_rpc2str(rpc_lio_opcode opcode)
     }
 }
 
-/** TA-independent synchronisation options for lio_listio function */
-typedef enum rpc_lio_option {
+/** TA-independent modes for lio_listio function */
+typedef enum rpc_lio_mode {
     RPC_LIO_WAIT,
     RPC_LIO_NOWAIT,
-    RPC_LIO_OPT_UNKNOWN
-} rpc_lio_option; 
+    RPC_LIO_MODE_UNKNOWN
+} rpc_lio_mode; 
 
 #ifdef HAVE_AIO_H
 
 /** Convert RPC lio_listio option to native one */
 static inline int
-lio_option_rpc2h(rpc_lio_option opt)
+lio_mode_rpc2h(rpc_lio_mode mode)
 {
-    switch (opt)
+    switch (mode)
     {
         RPC2H(LIO_WAIT);
         RPC2H(LIO_NOWAIT);
@@ -2080,28 +2085,28 @@ lio_option_rpc2h(rpc_lio_option opt)
     }
 }
 
-/** Convert native lio_listio option to RPC one */
-static inline rpc_lio_option
-lio_option_h2rpc(int option)
+/** Convert native lio_listio mode to RPC one */
+static inline rpc_lio_mode
+lio_mode_h2rpc(int mode)
 {
-    switch (option)
+    switch (mode)
     {
         H2RPC(LIO_WAIT); 
         H2RPC(LIO_NOWAIT);
-        default: return RPC_LIO_OPT_UNKNOWN;
+        default: return RPC_LIO_MODE_UNKNOWN;
     }
 }
 #endif
 
-/** Convert RPC lio_listio option to string */
+/** Convert RPC lio_listio mode to string */
 static inline const char *
-lio_option_rpc2str(rpc_lio_option option)
+lio_mode_rpc2str(rpc_lio_mode mode)
 {
-    switch (option)
+    switch (mode)
     {
         RPC2STR(LIO_WAIT); 
         RPC2STR(LIO_NOWAIT);
-        default: return "LIO_OPT_UNKNOWN";
+        default: return "LIO_MODE_UNKNOWN";
     }
 }
 
@@ -2115,19 +2120,6 @@ typedef enum rpc_aio_cancel_retval {
 } rpc_aio_cancel_retval; 
 
 #ifdef HAVE_AIO_H
-
-/** Convert RPC aio_cancel return value to native one */
-static inline int
-aio_cancel_retval_rpc2h(rpc_aio_cancel_retval ret)
-{
-    switch (ret)
-    {
-        RPC2H(AIO_CANCELED);
-        RPC2H(AIO_NOTCANCELED);
-        RPC2H(AIO_ALLDONE);
-    }
-}
-
 /** Convert native aio_cancel return to RPC one */
 static inline rpc_aio_cancel_retval
 aio_cancel_retval_h2rpc(int ret)
@@ -2775,7 +2767,7 @@ typedef enum rpc_fcntl_command {
 } rpc_fcntl_command;
 
 /** TA-independent fcntl flags */
-typedef enum rpc_fcntl_arg {
+typedef enum rpc_fcntl_flag {
     RPC_O_ASYNC = 0x1,
     RPC_O_APPEND = 0x2,
     RPC_O_NONBLOCK = 0x4,

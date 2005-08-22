@@ -4733,18 +4733,30 @@ _fill_aiocb_1_svc(tarpc_fill_aiocb_in *in,
         cb->aio_sigevent.sigev_value.sival_int = 
             in->sigevent.value.tarpc_sigval_u.sival_int;
     }
+    
     cb->aio_sigevent.sigev_signo = signum_rpc2h(in->sigevent.signo);
     cb->aio_sigevent.sigev_notify = sigev_notify_rpc2h(in->sigevent.notify);
-    memset(&(cb->aio_sigevent._sigev_un), 0, 
-           sizeof(cb->aio_sigevent._sigev_un));
     if (strlen(in->sigevent.function) > 0)
     {
+#ifdef SIGEV_THREAD    
+        memset(&(cb->aio_sigevent._sigev_un), 0, 
+               sizeof(cb->aio_sigevent._sigev_un));
         if ((cb->aio_sigevent._sigev_un._sigev_thread._function = 
              rcf_ch_symbol_addr(in->sigevent.function, 1)) == NULL)
         {
             WARN("Failed to find address of AIO callback %s - "
                  "use NULL callback", in->sigevent.function);
         }
+#else
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif        
+    }
+    else
+    {
+#ifdef SIGEV_THREAD        
+        memset(&(cb->aio_sigevent._sigev_un), 0, 
+               sizeof(cb->aio_sigevent._sigev_un));
+#endif            
     }
 
     return TRUE;
@@ -4787,6 +4799,7 @@ TARPC_FUNC(aio_write, {},
 TARPC_FUNC(aio_return, {},
 {
     MAKE_CALL(out->retval = func_ptr(IN_AIOCB));
+    out->common._errno = TE_OS_RC(TE_RPC, out->retval);
 }
 )
 
@@ -4875,15 +4888,25 @@ TARPC_FUNC(lio_listio, {},
 
         sig.sigev_signo = signum_rpc2h(ev->signo);
         sig.sigev_notify = sigev_notify_rpc2h(ev->notify);
-        memset(&(sig._sigev_un), 0, sizeof(sig._sigev_un));
         if (strlen(ev->function) > 0)
         {
+#ifdef SIGEV_THREAD        
+            memset(&(sig._sigev_un), 0, sizeof(sig._sigev_un));
             if ((sig._sigev_un._sigev_thread._function = 
                      rcf_ch_symbol_addr(ev->function, 1)) == NULL)
             {
                 WARN("Failed to find address of AIO callback %s - "
                      "use NULL callback", ev->function);
             }
+#else
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif        
+        }
+        else
+        {
+#ifdef SIGEV_THREAD        
+            memset(&(sig._sigev_un), 0, sizeof(sig._sigev_un));
+#endif            
         }
         INIT_CHECKED_ARG((char *)&sig, sizeof(sig), 0);
     }
@@ -4902,7 +4925,7 @@ TARPC_FUNC(lio_listio, {},
     INIT_CHECKED_ARG((void *)cb, sizeof(void *) * in->cb.cb_len, 
                      sizeof(void *) * in->cb.cb_len);
     
-    MAKE_CALL(out->retval = func(lio_option_rpc2h(in->mode), cb, in->nent,
+    MAKE_CALL(out->retval = func(lio_mode_rpc2h(in->mode), cb, in->nent,
                                  in->sig.sig_len == 0 ? NULL : &sig));
     free(cb);
     
