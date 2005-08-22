@@ -1955,6 +1955,208 @@ signum_rpc2str(rpc_signum s)
     }
 }
 
+/** TA-independent sigevent notification types */
+typedef enum rpc_sigev_notify {
+    RPC_SIGEV_SIGNAL,
+    RPC_SIGEV_NONE,
+    RPC_SIGEV_THREAD,
+    RPC_SIGEV_UNKNOWN
+} rpc_sigev_notify; 
+
+#ifdef HAVE_SIGNAL_H
+
+#ifndef SIGEV_MAX_SIZE
+#define SIGEV_MAX_SIZE  64
+#endif
+
+/** Convert RPC signevent notification type native one */
+static inline int
+sigev_notify_rpc2h(rpc_sigev_notify notify)
+{
+    switch (notify)
+    {
+        RPC2H(SIGEV_SIGNAL);
+        RPC2H(SIGEV_NONE);
+        RPC2H(SIGEV_THREAD);
+        default: return SIGEV_MAX_SIZE;
+    }
+}
+
+/** Convert native signevent notification type to RPC one */
+static inline rpc_sigev_notify
+sigev_notify_h2rpc(int notify)
+{
+    switch (notify)
+    {
+        H2RPC(SIGEV_SIGNAL);
+        H2RPC(SIGEV_NONE);
+        H2RPC(SIGEV_THREAD);
+        default: return RPC_SIGEV_UNKNOWN;
+    }
+}
+#endif
+
+/** Convert RPC sigevent notification type to string */
+static inline const char *
+sigev_notify_rpc2str(rpc_sigev_notify notify)
+{
+    switch (notify)
+    {
+        RPC2STR(SIGEV_SIGNAL);
+        RPC2STR(SIGEV_NONE);
+        RPC2STR(SIGEV_THREAD);
+        default: return "SIGEV_UNKNOWN";
+    }
+}
+
+/** TA-independent operation code for lio_listio function */
+typedef enum rpc_lio_opcode {
+    RPC_LIO_READ,
+    RPC_LIO_WRITE,
+    RPC_LIO_NOP,
+    RPC_LIO_UNKNOWN
+} rpc_lio_opcode; 
+
+#ifdef HAVE_AIO_H
+
+/** Convert RPC lio_listio opcode to native one */
+static inline int
+lio_opcode_rpc2h(rpc_lio_opcode opcode)
+{
+    switch (opcode)
+    {
+        RPC2H(LIO_READ);
+        RPC2H(LIO_WRITE);
+        RPC2H(LIO_NOP);   
+        default: return LIO_READ + LIO_WRITE + LIO_NOP + 1;
+    }
+}
+
+/** Convert native lio_listio opcode to RPC one */
+static inline rpc_lio_opcode
+lio_opcode_h2rpc(int opcode)
+{
+    switch (opcode)
+    {
+        H2RPC(LIO_READ); 
+        H2RPC(LIO_WRITE);
+        H2RPC(LIO_NOP);  
+        default: return RPC_LIO_UNKNOWN;
+    }
+}
+#endif
+
+/** Convert RPC lio_listio opcode to string */
+static inline const char *
+lio_opcode_rpc2str(rpc_lio_opcode opcode)
+{
+    switch (opcode)
+    {
+        RPC2STR(LIO_READ); 
+        RPC2STR(LIO_WRITE);
+        RPC2STR(LIO_NOP);  
+        default: return "LIO_UNKNOWN";
+    }
+}
+
+/** TA-independent synchronisation options for lio_listio function */
+typedef enum rpc_lio_option {
+    RPC_LIO_WAIT,
+    RPC_LIO_NOWAIT,
+    RPC_LIO_OPT_UNKNOWN
+} rpc_lio_option; 
+
+#ifdef HAVE_AIO_H
+
+/** Convert RPC lio_listio option to native one */
+static inline int
+lio_option_rpc2h(rpc_lio_option opt)
+{
+    switch (opt)
+    {
+        RPC2H(LIO_WAIT);
+        RPC2H(LIO_NOWAIT);
+        default: return LIO_WAIT + LIO_NOWAIT + 1;
+    }
+}
+
+/** Convert native lio_listio option to RPC one */
+static inline rpc_lio_option
+lio_option_h2rpc(int option)
+{
+    switch (option)
+    {
+        H2RPC(LIO_WAIT); 
+        H2RPC(LIO_NOWAIT);
+        default: return RPC_LIO_OPT_UNKNOWN;
+    }
+}
+#endif
+
+/** Convert RPC lio_listio option to string */
+static inline const char *
+lio_option_rpc2str(rpc_lio_option option)
+{
+    switch (option)
+    {
+        RPC2STR(LIO_WAIT); 
+        RPC2STR(LIO_NOWAIT);
+        default: return "LIO_OPT_UNKNOWN";
+    }
+}
+
+
+/** TA-independent return values for aio_cancel function */
+typedef enum rpc_aio_cancel_retval {
+    RPC_AIO_CANCELED,
+    RPC_AIO_NOTCANCELED,
+    RPC_AIO_ALLDONE,
+    RPC_AIO_UNKNOWN
+} rpc_aio_cancel_retval; 
+
+#ifdef HAVE_AIO_H
+
+/** Convert RPC aio_cancel return value to native one */
+static inline int
+aio_cancel_retval_rpc2h(rpc_aio_cancel_retval ret)
+{
+    switch (ret)
+    {
+        RPC2H(AIO_CANCELED);
+        RPC2H(AIO_NOTCANCELED);
+        RPC2H(AIO_ALLDONE);
+    }
+}
+
+/** Convert native aio_cancel return to RPC one */
+static inline rpc_aio_cancel_retval
+aio_cancel_retval_h2rpc(int ret)
+{
+    switch (ret)
+    {
+        H2RPC(AIO_CANCELED);
+        H2RPC(AIO_NOTCANCELED);
+        H2RPC(AIO_ALLDONE);
+        default: return RPC_AIO_UNKNOWN;
+    }
+}
+#endif
+
+/** Convert RPC aio_cancel return to string */
+static inline const char *
+aio_cancel_retval_rpc2str(rpc_aio_cancel_retval ret)
+{
+    switch (ret)
+    {
+        RPC2STR(AIO_CANCELED);
+        RPC2STR(AIO_NOTCANCELED);
+        RPC2STR(AIO_ALLDONE);
+        default: return "AIO_UNKNOWN";
+    }
+}
+
+
+
 typedef enum rpc_sighow {
     RPC_SIG_BLOCK,
     RPC_SIG_UNBLOCK,
@@ -2572,20 +2774,23 @@ typedef enum rpc_fcntl_command {
     RPC_F_UNKNOWN
 } rpc_fcntl_command;
 
-typedef enum rpc_fcntl_arg
-{
+/** TA-independent fcntl flags */
+typedef enum rpc_fcntl_arg {
     RPC_O_ASYNC = 0x1,
     RPC_O_APPEND = 0x2,
     RPC_O_NONBLOCK = 0x4,
+    RPC_O_SYNC = 0x8,
+    RPC_O_DSYNC = 0x10,
     RPC_FASYNC = RPC_O_ASYNC,
-    RPC_O_UNKNOWN = 0x8
-}rpc_fcntl_flag; 
+    RPC_O_UNKNOWN = 0x20
+} rpc_fcntl_flag; 
 
 #define O_UNKNOWN        0xFFFFFFFF
 #define RPC_FCNTL_FLAGS_ALL \
-    (RPC_O_ASYNC | RPC_O_APPEND | RPC_O_NONBLOCK | RPC_FASYNC)
+    (RPC_O_ASYNC | RPC_O_APPEND | RPC_O_SYNC | \
+     RPC_O_DSYNC | RPC_O_NONBLOCK | RPC_FASYNC)
         
-/** Convert RPC fcntl args to native ones. */
+/** Convert RPC fcntl flags to native ones. */
 static inline int
 fcntl_flag_rpc2h(rpc_fcntl_flag flags)
 {
@@ -2596,6 +2801,12 @@ fcntl_flag_rpc2h(rpc_fcntl_flag flags)
     return 0 
 #ifdef O_ASYNC
         | (!!(flags & RPC_O_ASYNC) * O_ASYNC)
+#endif
+#ifdef O_SYNC
+        | (!!(flags & RPC_O_SYNC) * O_SYNC)
+#endif
+#ifdef O_DSYNC
+        | (!!(flags & RPC_O_DSYNC) * O_DSYNC)
 #endif
 #ifdef O_APPEND
         | (!!(flags & RPC_O_APPEND) * O_APPEND) 
@@ -2609,7 +2820,7 @@ fcntl_flag_rpc2h(rpc_fcntl_flag flags)
         ;
 }
 
-/** Convert RPC fcntl args to native ones. */
+/** Convert RPC fcntl flags to native ones. */
 static inline rpc_fcntl_flag
 fcntl_flag_h2rpc(int flags)
 {
@@ -2617,6 +2828,12 @@ fcntl_flag_h2rpc(int flags)
     return 0
 #ifdef O_ASYNC
         | (!!(flags & O_ASYNC) * RPC_O_ASYNC) 
+#endif        
+#ifdef O_SYNC
+        | (!!(flags & O_SYNC) * RPC_O_SYNC) 
+#endif        
+#ifdef O_DSYNC
+        | (!!(flags & O_DSYNC) * RPC_O_DSYNC) 
 #endif        
 #ifdef O_APPEND
         | (!!(flags & O_APPEND) * RPC_O_APPEND) 
@@ -2629,6 +2846,38 @@ fcntl_flag_h2rpc(int flags)
 #endif
     ;        
 }
+
+/** Convert RPC fcntl flags to string */
+static inline const char *
+fcntl_flag_rpc2str(rpc_fcntl_flag flags)
+{
+    static char buf[128];
+    char       *s = buf;
+    
+    buf[0] = 0;
+    
+#define APPEND(_flag)                                   \
+    do {                                                \
+        if (flags & RPC_##_flag)                        \
+        {                                               \
+            if (s == buf)                               \
+                s += sprintf(s, "%s",  #_flag);         \
+            else                                        \
+                s += sprintf(s, " |  %s", #_flag);      \
+        }                                               \
+    } while (0)
+    
+    APPEND(O_ASYNC);
+    APPEND(O_APPEND);
+    APPEND(O_NONBLOCK);
+    APPEND(O_SYNC);
+    APPEND(O_DSYNC);
+
+#undef APPEND
+
+    return buf;
+}
+
 
 #define F_UNKNOWN        0xFFFFFFFF
 

@@ -41,6 +41,9 @@
 #if HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
 #endif
+#ifdef HAVE_AIO_H
+#include <aio.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"

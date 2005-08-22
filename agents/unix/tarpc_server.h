@@ -145,6 +145,9 @@
 /** Extract fdset from in argument */
 #define IN_FDSET        ((fd_set *)(rcf_pch_mem_get(in->set)))
 
+/** Extract AIO control block from in argument */
+#define IN_AIOCB        ((struct aiocb *)(rcf_pch_mem_get(in->cb)))
+
 /** Obtain RCF RPC errno code */
 #define RPC_ERRNO errno_h2rpc(errno)
 

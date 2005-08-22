@@ -787,8 +787,8 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
     }
     else
     {
-        out->common._errno = RPC_ERRNO;
         out->retval = rcf_pch_mem_alloc(set);
+        out->common._errno = RPC_ERRNO;
     }
 
     return TRUE;
@@ -4670,4 +4670,101 @@ overfill_buffers_exit:
 
     free(buf);
     return rc;
+}
+
+
+/*-------------- AIO control block constructor -------------------------*/
+bool_t
+_create_aiocb_1_svc(tarpc_create_aiocb_in *in, tarpc_create_aiocb_out *out,
+                    struct svc_req *rqstp)
+{
+    struct aiocb *cb;
+
+    UNUSED(rqstp);
+    UNUSED(in);
+
+    memset(out, 0, sizeof(*out));
+
+    errno = 0;
+    if ((cb = (struct aiocb *)malloc(sizeof(struct aiocb))) == NULL)
+    {
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    else
+    {
+        out->cb = rcf_pch_mem_alloc(cb);
+        out->common._errno = RPC_ERRNO;
+    }
+
+    return TRUE;
+}
+
+/*-------------- AIO control block constructor --------------------------*/
+bool_t
+_fill_aiocb_1_svc(tarpc_fill_aiocb_in *in, 
+                  tarpc_fill_aiocb_out *out,
+                  struct svc_req *rqstp)
+{
+    struct aiocb *cb = IN_AIOCB;
+    
+    UNUSED(rqstp);
+
+    memset(out, 0, sizeof(*out));
+
+    if (cb == NULL)
+    {
+        ERROR("Try to fill NULL AIO control block");
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TRUE;
+    }
+    
+    cb->aio_fildes = in->fildes;
+    cb->aio_lio_opcode = lio_opcode_rpc2h(in->lio_opcode);
+    cb->aio_reqprio = in->reqprio;
+    cb->aio_buf = rcf_pch_mem_get(in->buf);
+    cb->aio_nbytes = in->nbytes;
+    if (in->sigevent.value.pointer)
+    {
+        cb->aio_sigevent.sigev_value.sival_ptr = 
+            rcf_pch_mem_get(in->sigevent.value.tarpc_sigval_u.sival_ptr);
+    }
+    else
+    {
+        cb->aio_sigevent.sigev_value.sival_int = 
+            in->sigevent.value.tarpc_sigval_u.sival_int;
+    }
+    cb->aio_sigevent.sigev_signo = signum_rpc2h(in->sigevent.signo);
+    cb->aio_sigevent.sigev_notify = sigev_notify_rpc2h(in->sigevent.notify);
+    memset(&(cb->aio_sigevent._sigev_un), 0, 
+           sizeof(cb->aio_sigevent._sigev_un));
+    if (strlen(in->sigevent.function) > 0)
+    {
+        if ((cb->aio_sigevent._sigev_un._sigev_thread._function = 
+             rcf_ch_symbol_addr(in->sigevent.function, 1)) == NULL)
+        {
+            WARN("Failed to find address of AIO callback %s - "
+                 "use NULL callback", in->sigevent.function);
+        }
+    }
+
+    return TRUE;
+}
+
+
+/*-------------- AIO control block constructor --------------------------*/
+bool_t
+_delete_aiocb_1_svc(tarpc_delete_aiocb_in *in,
+                     tarpc_delete_aiocb_out *out,
+                     struct svc_req *rqstp)
+{
+    UNUSED(rqstp);
+
+    memset(out, 0, sizeof(*out));
+
+    errno = 0;
+    free(IN_AIOCB);
+    rcf_pch_mem_free(in->cb);
+    out->common._errno = RPC_ERRNO;
+
+    return TRUE;
 }

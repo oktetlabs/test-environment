@@ -60,6 +60,8 @@ typedef int32_t     tarpc_off_t;
 typedef int64_t     tarpc_time_t;
 /** RPC suseconds_t analogue */
 typedef int64_t     tarpc_suseconds_t;
+/** Pointer to 'struct aiocb' */
+typedef tarpc_ptr   tarpc_aiocb_t;
 
 /** Handle of the 'WSAEvent' or 0 */
 typedef tarpc_ptr   tarpc_wsaevent;
@@ -2192,6 +2194,136 @@ struct tarpc_getpid_in {
 
 typedef struct tarpc_int_retval_out tarpc_getpid_out;
 
+/* sigval_t, union sigval */
+union tarpc_sigval switch (tarpc_bool pointer) {
+    case 1: tarpc_ptr sival_ptr;
+    case 0: tarpc_int sival_int;
+};
+
+/* sigevent */
+struct tarpc_sigevent {
+    tarpc_sigval value;         /* Value to be passed to handler  */
+    tarpc_signum signo;         /* Signal number                  */
+    tarpc_int    notify;        /* Notification type: RPC_SIGEV_* */
+    string       function<>;    /* Callback function name         */
+    /* pthread_attr_t is not supported at the moment */
+};
+
+/* Allocate aio control block filled by garbage */
+struct tarpc_create_aiocb_in {
+    struct tarpc_in_arg common;
+};
+
+struct tarpc_create_aiocb_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_aiocb_t cb;
+};
+
+/* Change user-accessible data in the aio control block */
+struct tarpc_fill_aiocb_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_aiocb_t  cb;
+
+    tarpc_int      fildes;      /* File descriptor   */
+    tarpc_int      lio_opcode;  /* Opcode: RPC_LIO_* */
+    tarpc_int      reqprio;     /* Priority          */
+    tarpc_ptr      buf;         /* Allocated buffer  */
+    tarpc_size_t   nbytes;      /* Buffer length     */
+    tarpc_sigevent sigevent;    /* Notification data */
+};
+
+typedef struct tarpc_void_out tarpc_fill_aiocb_out;
+
+/* Free aio control block */
+struct tarpc_delete_aiocb_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_aiocb_t cb;
+};
+
+typedef struct tarpc_void_out tarpc_delete_aiocb_out;
+
+
+/* aio_read */
+struct tarpc_aio_read_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_aiocb_t cb;
+};
+
+typedef struct tarpc_int_retval_out tarpc_aio_read_out;
+
+/* aio_write */
+struct tarpc_aio_write_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_aiocb_t cb;
+};
+
+typedef struct tarpc_int_retval_out tarpc_aio_write_out;
+
+/* aio_return */
+struct tarpc_aio_return_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_aiocb_t cb;
+};
+
+typedef struct tarpc_ssize_t_retval_out tarpc_aio_return_out;
+
+/* aio_error */
+struct tarpc_aio_error_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_aiocb_t cb;
+};
+
+typedef struct tarpc_int_retval_out tarpc_aio_error_out;
+
+/* aio_cancel */
+struct tarpc_aio_cancel_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int     fd;
+    tarpc_aiocb_t cb;
+};
+
+typedef struct tarpc_int_retval_out tarpc_aio_cancel_out;
+
+/* aio_fsync */
+struct tarpc_aio_fsync_in {
+    struct tarpc_in_arg common;
+    
+    int           op;   /* Operation: RPC_O_* */
+    tarpc_aiocb_t cb;
+};
+
+typedef struct tarpc_ssize_t_retval_out tarpc_aio_fsync_out;
+
+/* aio_suspend */
+struct tarpc_aio_suspend_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_aiocb_t          cb<>;
+    struct tarpc_timespec  timeout<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_aio_suspend_out;
+
+
+/* lio_listio */
+struct tarpc_lio_listio_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int      mode;   /* Mode: RPC_LIO_*      */
+    tarpc_aiocb_t  cb<>;   /* Control blocks array */
+    tarpc_sigevent sig<>;  /* Notification type    */
+};
+
+typedef struct tarpc_int_retval_out tarpc_lio_listio_out;
+
 
 struct tarpc_simple_sender_in {
     struct tarpc_in_arg common;
@@ -2625,7 +2757,6 @@ struct tarpc_overfill_buffers_out {
     uint64_t    bytes;      /**< Number of sent bytes */
 };
 
-
 program tarpc
 {
     version ver0
@@ -2738,6 +2869,17 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(seteuid)
         RPC_DEF(getenv)
         RPC_DEF(setenv)
+        
+        RPC_DEF(create_aiocb)
+        RPC_DEF(fill_aiocb)
+        RPC_DEF(delete_aiocb)
+        RPC_DEF(aio_read)
+        RPC_DEF(aio_write)
+        RPC_DEF(aio_error)
+        RPC_DEF(aio_return)
+        RPC_DEF(aio_suspend)
+        RPC_DEF(aio_cancel)
+        RPC_DEF(lio_listio)
 
         RPC_DEF(simple_sender)
         RPC_DEF(simple_receiver)
