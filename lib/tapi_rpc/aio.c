@@ -41,3 +41,142 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_aio.h"
 
+/**
+ * Allocate a AIO control block.
+ *
+ * @param rpcs   RPC server handle
+ *
+ * @return AIO control block address, otherwise @b NULL is returned on error
+ */
+rpc_aiocb_p 
+rpc_create_aiocb(rcf_rpc_server *rpcs)
+{
+    tarpc_create_aiocb_in  in;
+    tarpc_create_aiocb_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(create_aiocb, RPC_NULL);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    rcf_rpc_call(rpcs, "create_aiocb", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): create_aiocb() -> %u (%s)",
+                 rpcs->ta, rpcs->name,
+                 out.cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_RPC_PTR(create_aiocb, out.cb);
+}
+
+/**
+ * Destroy a specified AIO control block.
+ *
+ * @param rpcs     RPC server handle
+ * @param cb       control block to be deleted
+ */
+void 
+rpc_delete_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
+{
+    tarpc_delete_aiocb_in  in;
+    tarpc_delete_aiocb_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_VOID(delete_aiocb);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.cb = (tarpc_aiocb_t)cb;
+
+    rcf_rpc_call(rpcs, "delete_aiocb", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): delete_aiocb(%u) -> (%s)",
+                 rpcs->ta, rpcs->name,
+                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_VOID(delete_aiocb);
+}
+
+/**
+ * Fill a specified AIO control block.
+ *
+ * @param rpcs     RPC server handle
+ * @param cb       control block to be updated
+ * @param fildes   file descriptor
+ * @param opcode   lio_listio operation code
+ * @param reqprio  request priority
+ * @param buf      pre-allocated memory buffer
+ * @param nbytes   buffer length
+ * @param sigevent notification mode description
+ */
+void 
+rpc_fill_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb, 
+               int fildes, rpc_lio_opcode opcode,
+               int reqprio, rpc_ptr buf, size_t nbytes,
+               const tarpc_sigevent *sigevent)
+{
+    tarpc_fill_aiocb_in  in;
+    tarpc_fill_aiocb_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_VOID(fill_aiocb);
+    }
+    
+    if (sigevent == NULL)
+    {
+        rpcs->_errno = TE_EINVAL;
+        ERROR("NULL pointer to sigevent is passed to rpc_fill_aiocb()");
+        return;
+    }
+    
+    in.sigevent = *sigevent;
+    in.sigevent.function = strdup(in.sigevent.function == NULL ? "" 
+                                  : in.sigevent.function);
+    
+    if (in.sigevent.function == NULL)
+    {
+        rpcs->_errno = TE_ENOMEM;
+        ERROR("Out of memory!");
+        return;
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.cb = (tarpc_aiocb_t)cb;
+    in.fildes = fildes;
+    in.lio_opcode = opcode;
+    in.reqprio = reqprio;
+    in.buf = buf;
+    in.nbytes = nbytes;
+
+    rcf_rpc_call(rpcs, "fill_aiocb", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): fill_aiocb(%u, %d, %s, %d, %u, %u, "
+                 "{notify %s signo %s sigval %u function %s}) -> (%s)",
+                 rpcs->ta, rpcs->name,
+                 cb, fildes, lio_opcode_rpc2str(opcode), 
+                 reqprio, buf, nbytes, 
+                 sigev_notify_rpc2str(in.sigevent.notify),
+                 signum_rpc2str(in.sigevent.signo),
+                 in.sigevent.value.tarpc_sigval_u.sival_int,
+                 in.sigevent.function,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_VOID(fill_aiocb);
+}
