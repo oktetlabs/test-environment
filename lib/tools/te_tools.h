@@ -1,7 +1,9 @@
 /** @file
  * @brief TE tools
  *
- * All TE tools headers
+ * Functions implemented here may use services provided by the system
+ * and definitions done in headers located in root include directory
+ * of the Test Environment.
  *
  *
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS
