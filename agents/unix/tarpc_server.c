@@ -1983,7 +1983,7 @@ TARPC_FUNC(fcntl, {},
     long arg = in->arg;
     
     if (in->cmd == RPC_F_SETFL)
-        arg = fcntl_flag_rpc2h(in->arg);
+        arg = fcntl_flags_rpc2h(in->arg);
 
     if (in->cmd == RPC_F_GETFD || in->cmd == RPC_F_GETFL)
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
@@ -1991,7 +1991,7 @@ TARPC_FUNC(fcntl, {},
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd), arg));
 
     if (in->cmd == RPC_F_GETFL)
-        out->retval = fcntl_flag_h2rpc(out->retval);
+        out->retval = fcntl_flags_h2rpc(out->retval);
 }
 )
 
@@ -4835,7 +4835,7 @@ TARPC_FUNC(aio_cancel, {},
 /*---------------------- aio_fsync() --------------------------*/
 TARPC_FUNC(aio_fsync, {},
 {
-    MAKE_CALL(out->retval = func(fcntl_flag_rpc2h(in->op), IN_AIOCB));
+    MAKE_CALL(out->retval = func(fcntl_flags_rpc2h(in->op), IN_AIOCB));
 }
 )
 
