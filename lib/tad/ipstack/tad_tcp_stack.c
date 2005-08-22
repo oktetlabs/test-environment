@@ -99,6 +99,9 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     
     spec_data = csap_descr->layers[layer].specific_data; 
 
+    RING("%s(CSAP %d), socket %d", __FUNCTION__, 
+         csap_descr->id, spec_data->socket);
+
 
     if(spec_data->socket < 0)
     {
@@ -609,6 +612,9 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
         local.sin_family = AF_INET;
         local.sin_addr = ip4_spec_data->local_addr;
+        local.sin_port = htons(spec_data->local_port);
+        RING("%s(): Port passed %d, network order %d", 
+             __FUNCTION__, (int)spec_data->local_port, (int)local.sin_port);
 
         if ((spec_data->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         {
@@ -636,6 +642,8 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                           __FUNCTION__, csap_descr->id, rc);
                     return rc;
                 }
+                RING("%s(CSAP %d) listen success", __FUNCTION__,
+                     csap_descr->id);
                 break;
 
             case NDN_TAG_TCP_DATA_CLIENT: 
