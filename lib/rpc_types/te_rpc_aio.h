@@ -134,19 +134,6 @@ lio_mode_rpc2str(rpc_lio_mode mode)
 }
 
 
-/** Convert RPC lio_listio option to string */
-static inline const char *
-lio_mode_rpc2str(rpc_lio_mode option)
-{
-    switch (option)
-    {
-        RPC2STR(LIO_WAIT); 
-        RPC2STR(LIO_NOWAIT);
-        default: return "LIO_MODE_UNKNOWN";
-    }
-}
-
-
 /** TA-independent return values for aio_cancel function */
 typedef enum rpc_aio_cancel_retval {
     RPC_AIO_CANCELED,
