@@ -2,7 +2,7 @@
 # Host platform
 #
 TE_PLATFORM([], [], [], [],
-            [tools ipc bsapi loggerten rcfapi conf_oid confapi tapi \
+            [tools rpc_types ipc bsapi loggerten rcfapi conf_oid confapi tapi \
              comm_net_engine rcfunix loggerta comm_net_agent rcfpch \
              rcfrpc tapi_rpc \
              asn ndn tad tapi_eth tapi_ipstack tapi_snmp forwarder \
