@@ -54,10 +54,10 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "te_bufs.h"
 #include "rcf_api.h"
 #include "logger_api.h"
 #include "tapi_file.h"
-#include "tapi_bufs.h"
 
 /**
  * Create file in the TE temporary directory.
@@ -131,7 +131,7 @@ tapi_file_create(size_t len, char *buf, te_bool random)
         return NULL;
         
     if (random)
-        tapi_fill_buf(buf, len);
+        te_fill_buf(buf, len);
     
     if ((f = fopen(pathname, "w")) == NULL)
     {

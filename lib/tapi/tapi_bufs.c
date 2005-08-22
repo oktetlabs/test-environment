@@ -4,7 +4,7 @@
  * Allocation of buffers, fill in by random numbers, etc.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2005 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+ *
  * @author Oleg Kravtosv <Oleg.Kravtosv@oktetlabs.ru>
  *
  * $Id$
@@ -50,10 +50,12 @@
 #include "te_defs.h"
 #include "logger_api.h"
 
+
 /** The number of characters in a sinle log buffer. */
 #define LOG_BUF_LEN (1024 * 10)
 /** The number of buffers in log buffer pool. */
 #define LOG_BUF_NUM 10
+
 
 /** Internal presentation of log buffer. */
 typedef struct tapi_log_buf {
@@ -83,47 +85,6 @@ static pthread_mutex_t tapi_log_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
                    sizeof(tapi_log_bufs[0]) == 0);                 \
     } while (0)
 
-
-/* See description in tapi_bufs.h */
-void
-tapi_fill_buf(void *buf, size_t len)
-{
-    size_t  i;
-
-    for (i = 0; i < len / sizeof(int); ++i)
-    {
-        ((int *)buf)[i] = rand();
-    }
-    for (i = (len / sizeof(int)) * sizeof(int); i < len; ++i)
-    {
-        ((unsigned char *)buf)[i] = rand();
-    }
-}
-
-
-/* See description in tapi_bufs.h */
-void *
-tapi_make_buf(size_t min, size_t max, size_t *p_len)
-{
-    *p_len = rand_range(min, max);
-    if (*p_len > 0)
-    {
-        void   *buf;
-
-        buf = malloc(*p_len);
-        if (buf == NULL)
-        {
-            ERROR("Memory allocation failure - EXIT");
-            return NULL;
-        }
-        tapi_fill_buf(buf, *p_len);
-        return buf;
-    }
-    else
-    {
-        return NULL;
-    }
-}
 
 /* See description in tapi_bufs.h */
 tapi_log_buf *

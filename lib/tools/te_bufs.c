@@ -77,7 +77,7 @@ te_make_buf(size_t min, size_t max, size_t *p_len)
             ERROR("Memory allocation failure - EXIT");
             return NULL;
         }
-        tapi_fill_buf(buf, *p_len);
+        te_fill_buf(buf, *p_len);
         return buf;
     }
     else
