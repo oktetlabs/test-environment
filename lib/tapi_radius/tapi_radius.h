@@ -482,6 +482,18 @@ extern int tapi_supp_set_md5(const char *ta_name,
                              const char *if_name,
                              tapi_supp_auth_md5_info_t *info);
 
+/**
+ * Configure supplicant to use specific EAP identity string.
+ *
+ * @param ta_name  Test Agent name where supplicant reside
+ * @param if_name  Interface name
+ * @param identity EAP identity string
+ *
+ * @return Status of the operation
+ */
+extern int tapi_supp_set_identity(const char *ta_name, const char *if_name,
+                                  const char *identity);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -886,28 +886,37 @@ tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
 
 /* Supplicant related functions @todo Should not be here */
 
+int
+tapi_supp_set_identity(const char *ta_name, const char *if_name,
+                       const char *identity)
+{
+    return cfg_set_instance_fmt(CFG_VAL(STRING, identity),
+                                "/agent:%s/supplicant:%s/identity:",
+                                ta_name, if_name);
+}
+
 /* See the description in tapi_radius.h */
 int
 tapi_supp_set_md5(const char *ta_name, const char *if_name,
                   tapi_supp_auth_md5_info_t *info)
 {
-    int rc;
+    int        rc;
 
     /* Set MD5 related parameters */
-    rc = cfg_set_instance_fmt(CVT_STRING, (void *)info->user,
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, info->user),
                               "/agent:%s/supplicant:%s/method:%s/username:",
-                              ta_name, if_name, "md5");
+                              ta_name, if_name, "eap-md5");
     if (rc != 0)
         return rc;
 
-    rc = cfg_set_instance_fmt(CVT_STRING, (void *)info->passwd,
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, info->passwd),
                               "/agent:%s/supplicant:%s/method:%s/passwd:",
-                              ta_name, if_name, "md5");
+                              ta_name, if_name, "eap-md5");
     if (rc != 0)
         return rc;
-    
+
     /* Now set current authentication method to MD5 */
-    rc = cfg_set_instance_fmt(CVT_STRING, (void *)"md5",
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, "eap-md5"),
                               "/agent:%s/supplicant:%s/cur_method:",
                               ta_name, if_name);
     return rc;
