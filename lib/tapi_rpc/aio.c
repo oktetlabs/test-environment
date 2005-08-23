@@ -319,7 +319,8 @@ rpc_aio_error(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
 
     rcf_rpc_call(rpcs, "aio_error", &in, &out);
 
-    CHECK_RETVAL_VAR(aio_error, out.retval, out.retval < 0, 0);
+    CHECK_RETVAL_VAR(aio_error, out.retval, out.retval < 0, 
+                     TE_RC(TE_RPC, TE_EFAIL));
 
     TAPI_RPC_LOG("RPC (%s,%s): aio_error(%u) -> %s (%s)",
                  rpcs->ta, rpcs->name, cb, 
