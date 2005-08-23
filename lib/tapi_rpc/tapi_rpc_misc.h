@@ -265,4 +265,29 @@ extern int rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock,
  */
 extern void rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start);
 
+/**
+ * Copy the @b src_buf buffer in @b dst_buf located in TA address space
+ *
+ * @param rpcs     RPC server handle
+ * @param src_buf  pointer to the source buffer
+ * @param len      length of data to be copied
+ * @param dst_buf  pointer to the destination buffer
+ * @param offset   displacement in the destination buffer
+ */
+extern void rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
+                        size_t len, rpc_ptr dst_buf, rpc_ptr offset);
+
+/**
+ * Copy the @b src_buf buffer located in TA address space to the 
+ * @b dst_buf buffer
+ *
+ * @param rpcs     RPC server handle
+ * @param src_buf  source buffer
+ * @param offset   displacement in the source buffer
+ * @param len      length of data to be copied
+ * @param dst_buf  destination buffer
+ */
+extern void rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
+                        rpc_ptr offset, size_t len, char *dst_buf);
+
 #endif /* !__TE_TAPI_RPC_MISC_H__ */
