@@ -12,12 +12,18 @@ tetest_PROGRAMS = rpctest
 
 rpctest_SOURCES = rpctest.c 
 
-rpctest_LDADD = -ltapi_rpc -ltapi -lrcfrpc -lconfapi -lconf_oid \
-                -lrcfapi -lrpcxdr -llogger_ten -lipc -lpthread -lexpat
+rpctest_LDADD = -ltapi_rpc -ltapi -lrcfrpc -lconfapi -lconf_oid -lrcfapi \
+                -lrpcxdr -llogger_ten -lipc -ltools -lexpat -lpthread
 
-rpctest_DEPENDENCIES = ${TE_INSTALL}/@host@/lib/librcfapi.a \
-                       ${TE_INSTALL}/@host@/lib/librcfrpc.a \
-                       ${TE_INSTALL}/@host@/lib/libconfapi.a \
-                       ${TE_INSTALL}/@host@/lib/libtapi_rpc.a \
-                       ${TE_INSTALL}/@host@/lib/liblogger_ten.a
+rpctest_DEPENDENCIES = \
+    ${TE_INSTALL}/@host@/lib/libtapi_rpc.a \
+    ${TE_INSTALL}/@host@/lib/libtapi.a \
+    ${TE_INSTALL}/@host@/lib/librcfrpc.a \
+    ${TE_INSTALL}/@host@/lib/libconfapi.a \
+    ${TE_INSTALL}/@host@/lib/libconf_oid.a \
+    ${TE_INSTALL}/@host@/lib/librcfapi.a \
+    ${TE_INSTALL}/@host@/lib/librpcxdr.a \
+    ${TE_INSTALL}/@host@/lib/liblogger_ten.a \
+    ${TE_INSTALL}/@host@/lib/libipc.a \
+    ${TE_INSTALL}/@host@/lib/libtools.a
 
