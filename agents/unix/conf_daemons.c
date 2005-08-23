@@ -443,6 +443,14 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
+    daemon_get(gid, oid, value0);
+    if (*value0 != *value)
+    {
+        ERROR("After set %s to %s daemon is %srunning", 
+              oid, value, *value0 == '0' ? "not " : "");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+    
     return 0;
 }
 
