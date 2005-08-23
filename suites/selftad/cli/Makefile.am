@@ -19,5 +19,5 @@ tetest_PROGRAMS = \
     tapi_cli_shell
 
 LDADD = -ltapi -ltapi_cli -lndn -lasn -lrcfapi -lrpcxdr -lconfapi \
-        -lconf_oid -llogger_ten -lipc -lpthread
+        -lconf_oid -llogger_ten -lipc -ltools -lpthread
  

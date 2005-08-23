@@ -16,5 +16,5 @@ tetest_PROGRAMS = tcp_simple ip4_simple ip4_recv_send ip4_udp_dgm \
 
 LDADD = -ltapi_rpc -ltapi_tad -ltapi_ipstack -ltapi_arp -ltapi_eth -lndn \
 	-lasn -ltapi -lrcfrpc -lrcfapi -lrpcxdr -lconfapi -lconf_oid -lipc \
-	-lpthread -llogger_ten 
+	-lpthread -llogger_ten  -ltools
 

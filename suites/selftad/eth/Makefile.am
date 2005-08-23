@@ -15,7 +15,7 @@ tetest_PROGRAMS = caught_any simple_recv_send vlan_recv_send \
 		    eth_serial1 eth_serial2
 
 LDADD= -ltapi -ltapi_eth -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
-       -lrpcxdr -lconf_oid -llogger_ten -lipc -lpthread
+       -lrpcxdr -lconf_oid -llogger_ten -lipc -ltools -lpthread
 
 MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/@host@/lib/libtapi_eth.a 
 
