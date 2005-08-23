@@ -376,7 +376,6 @@ write_radius(radius_parameter *top)
     {
         top->modified = FALSE;
         ds_config_touch(top->backup_index);
-        RING("Writing RADIUS config %s", top->name);
         outfile = fopen(top->name, "w");
         if (outfile == NULL)
         {
@@ -1007,7 +1006,6 @@ write_radius_users (FILE *conf, radius_user *users)
     radius_user_check *check;
     radius_user_reply *action;
 
-    RING("%s()", __FUNCTION__);
     rewind(conf);
     ftruncate(fileno(conf), 0);
     for (; users != NULL; users = users->next)
@@ -1839,7 +1837,7 @@ xsupplicant_start(const char *ifname, const char *conf_fname)
         xsupplicant_stop(ifname);
     }
     RING("Starting xsupplicant on %s", ifname);
-    snprintf(buf, sizeof(buf), "xsupplicant -i %s -c %s -dA", 
+    snprintf(buf, sizeof(buf), "xsupplicant -i %s -c %s -dA >/dev/null 2>&1", 
              ifname, conf_fname);
     if (ta_system(buf) != 0)
     {
