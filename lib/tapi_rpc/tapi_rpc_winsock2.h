@@ -694,11 +694,14 @@ extern int rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
  *
  *  @return  value returned by  @b WSAAsyncGetHostByAddr 
  */
-extern rpc_handle
-rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
-                               unsigned int wmsg, char *addr,
-                               ssize_t addrlen, rpc_socket_type type,
-                               rpc_ptr buf, ssize_t buflen);
+extern rpc_handle rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, 
+                                                 rpc_hwnd hwnd,
+                                                 unsigned int wmsg,
+                                                 char *addr,
+                                                 ssize_t addrlen, 
+                                                 rpc_socket_type type,
+                                                 rpc_ptr buf, 
+                                                 ssize_t buflen);
 
 /**
  * Asynchronously retrieve host information by given name.
@@ -716,10 +719,12 @@ rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  *
  * @return  value returned by  @b WSAAsyncGetHostByName 
  */
-extern rpc_handle
-rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
-                               unsigned int wmsg, char *name,
-                               rpc_ptr buf, ssize_t buflen);
+extern rpc_handle rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, 
+                                                 rpc_hwnd hwnd,
+                                                 unsigned int wmsg, 
+                                                 char *name,
+                                                 rpc_ptr buf, 
+                                                 ssize_t buflen);
 /** 
  * Asynchronously retrieve protocol information by given name.
  * See @b WSAAsyncGetProtoByName 
@@ -736,10 +741,12 @@ rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  *
  * @return  value returned by  @b WSAAsyncGetProtoByName 
  */
-extern rpc_handle
-rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
-                                unsigned int wmsg, char *name,
-                                rpc_ptr buf, ssize_t buflen);
+extern rpc_handle rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, 
+                                                  rpc_hwnd hwnd,
+                                                  unsigned int wmsg, 
+                                                  char *name,
+                                                  rpc_ptr buf, 
+                                                  ssize_t buflen);
 
 /** 
  * Asynchronously retrieve protocol information by given number.
@@ -757,10 +764,12 @@ rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  *
  * @return  value returned by  @b WSAAsyncGetProtoByNumber 
  */
-extern rpc_handle
-rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
-                                  unsigned int wmsg, int number,
-                                  rpc_ptr buf, ssize_t buflen);
+extern rpc_handle rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, 
+                                                    rpc_hwnd hwnd,
+                                                    unsigned int wmsg, 
+                                                    int number,
+                                                    rpc_ptr buf, 
+                                                    ssize_t buflen);
 
 /** 
  * Asynchronously retrieve service information that corresponds to a 
@@ -779,10 +788,13 @@ rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  *
  * @return  value returned by  @b WSAAsyncGetServByName 
  */
-extern rpc_handle
-rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
-                               unsigned int wmsg, char *name, char *proto,
-                               rpc_ptr buf, ssize_t buflen);
+extern rpc_handle rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, 
+                                                 rpc_hwnd hwnd,
+                                                 unsigned int wmsg, 
+                                                 char *name, 
+                                                 char *proto,
+                                                 rpc_ptr buf, 
+                                                 ssize_t buflen);
 
 /** 
  * Asynchronously retrieve service information that corresponds to a 
@@ -801,10 +813,12 @@ rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
  *
  * @return  value returned by  @b WSAAsyncGetServByName 
  */
-extern rpc_handle
-rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
-                               unsigned int wmsg, int port, char *proto,
-                               rpc_ptr buf, ssize_t buflen);
+extern rpc_handle rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, 
+                                                 rpc_hwnd hwnd,
+                                                 unsigned int wmsg, 
+                                                 int port, char *proto,
+                                                 rpc_ptr buf, 
+                                                 ssize_t buflen);
 
 /** 
  * Create WSAOVERLAPPED structure on TA side 
