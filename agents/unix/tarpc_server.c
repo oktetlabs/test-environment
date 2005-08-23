@@ -4972,3 +4972,82 @@ TARPC_FUNC(lio_listio, {},
 )
 
 #endif
+
+/*--------------------------- malloc ---------------------------------*/
+TARPC_FUNC(malloc, {},
+{
+    void *buf;
+    
+    UNUSED(list);
+    
+    buf = func_ret_ptr(in->size);
+
+    if (buf == NULL)
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    else
+        out->retval = rcf_pch_mem_alloc(buf);
+}
+)
+
+/*--------------------------- free ---------------------------------*/
+TARPC_FUNC(free, {},
+{
+    UNUSED(list);
+    UNUSED(out);
+    func_ptr(rcf_pch_mem_get(in->buf));
+    rcf_pch_mem_free(in->buf);
+}
+)
+
+/*-------------------------- Fill buffer ----------------------------*/
+bool_t
+_set_buf_1_svc(tarpc_set_buf_in *in, tarpc_set_buf_out *out,
+               struct svc_req *rqstp)
+{
+    void *dst_buf;
+    
+    UNUSED(rqstp);
+    UNUSED(out);
+    
+    dst_buf = rcf_pch_mem_get(in->dst_buf);
+    if (dst_buf != NULL && in->src_buf.src_buf_len != 0)
+    {
+        memcpy(dst_buf + (unsigned int)in->offset,
+               in->src_buf.src_buf_val, in->src_buf.src_buf_len);
+    }
+    
+    return TRUE;
+}
+
+/*-------------------------- Read buffer ----------------------------*/
+bool_t
+_get_buf_1_svc(tarpc_get_buf_in *in, tarpc_get_buf_out *out,
+               struct svc_req *rqstp)
+{
+    void *src_buf; 
+    
+    UNUSED(rqstp);
+
+    src_buf = rcf_pch_mem_get(in->src_buf);
+    if (src_buf != NULL && in->len != 0)
+    {
+        char *buf;
+
+        buf = malloc(in->len);
+        if (buf == NULL)
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+        else
+        {
+            memcpy(buf, src_buf + (unsigned int)in->offset, in->len);
+            out->dst_buf.dst_buf_val = buf;
+            out->dst_buf.dst_buf_len = in->len;
+        }
+    }
+    else
+    {
+        out->dst_buf.dst_buf_val = NULL;
+        out->dst_buf.dst_buf_len = 0;
+    }
+    
+    return TRUE;
+}
