@@ -3,6 +3,7 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
 include_HEADERS = \
+	te_rpc_types.h \
 	te_rpc_defs.h \
 	te_rpc_aio.h \
 	te_rpc_fcntl.h \

@@ -35,9 +35,27 @@
 #define __TE_TAPI_RPC_UNISTD_H__
 
 #include "rcf_rpc.h"
+#include "te_rpc_fcntl.h"
+
+#include "te_rpc_types.h"
 
 #include "tarpc.h"
 
+
+/**
+ * Open a file or device.
+ *
+ * @param rpcs      RPC server handle
+ * @param path      File or device name
+ * @param flags     How to open
+ * @param mode      The permissions to use in case a new file is created
+ * 
+ * @return file descriptor on success or -1 on failure
+ */
+extern int rpc_open(rcf_rpc_server         *rpcs,
+                    const char             *path,
+                    rpc_fcntl_flags         flags,
+                    rpc_file_mode_flags     mode);
 
 /**
  *  Close file descriptor on RPC server side
@@ -454,7 +472,7 @@ extern ssize_t rpc_sendfile(rcf_rpc_server *rpcs,
  * @param rpcs     RPC server handle
  * @param fd       opened file descriptor
  * @param request  request code 
- *                 (See tapi_rpcsock_defs.h for availlable request codes)
+ *                 (See te_rpc_sys_socket.h for availlable request codes)
  * @param ...      optional parameter for request specific information
  *
  * @return zero on success. Some ioctls use the returned value as an output
@@ -472,7 +490,7 @@ extern int rpc_ioctl(rcf_rpc_server *rpcs,
  * @param rpcs   RPC server handle
  * @param fd     opened file descriptor
  * @param cmd    command that indicate the requested operation
- *               See @b tapi_rpcsock_defs.h for availlable command.
+ *               See @b te_rpc_fcntl.h for availlable command.
  * @param arg    indicate flag used according to @b cmd
  *
  * @return The returned value depends on the specified operation

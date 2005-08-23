@@ -3253,6 +3253,16 @@ TARPC_FUNC(socketpair,
 }
 )
 
+/*-------------- open() --------------------------------*/
+TARPC_FUNC(open, {},
+{
+    MAKE_CALL(out->fd = func_ptr((in->path.path_len == 0) ? NULL :
+                                     in->path.path_val,
+                                 fcntl_flags_rpc2h(in->flags),
+                                 file_mode_flags_rpc2h(in->mode)));
+}
+)
+
 /*-------------- fopen() --------------------------------*/
 TARPC_FUNC(fopen, {},
 {

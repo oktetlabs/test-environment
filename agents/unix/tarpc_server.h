@@ -136,7 +136,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "rcf_rpc_defs.h"
-#include "tapi_rpcsock_defs.h"
+#include "te_rpc_types.h"
 #include "tarpc.h"
 
 /** Extract sigset from in argument */

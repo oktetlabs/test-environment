@@ -38,7 +38,7 @@
 #endif
 
 #include "rcf_rpc.h"
-#include "tapi_rpcsock_defs.h"
+#include "te_rpc_signal.h"
 
 /**
  * Establish an action to be taken when a given signal @b signum occurs

@@ -32,7 +32,7 @@
 #define __TE_TAPI_RPC_AIO_H__
 
 #include "rcf_rpc.h"
-#include "tapi_rpcsock_defs.h"
+#include "te_rpc_aio.h"
 
 /**
  * Allocate a AIO control block.

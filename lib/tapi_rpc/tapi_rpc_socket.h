@@ -40,7 +40,7 @@
 #endif
 
 #include "rcf_rpc.h"
-#include "tapi_rpcsock_defs.h"
+#include "te_rpc_sys_socket.h"
 
 /**
  * Create an endpoint for communication on the RPC server side. 
@@ -49,9 +49,9 @@
  * @param domain    communication domain.
  *                  Select the protocol family used for communication
  *                  supported protocol families are difined in 
- *                  tapi_rpcsock_defs.h
+ *                  te_rpc_sys_socket.h
  * @param type      defines the semantic of communication. Current defined 
- *                  types can be found in tapi_rpcsock_defs.h
+ *                  types can be found in te_rpc_sys_socket.h
  * @param protocol  specifies the protocol to be used. If @b protocol is 
  *                  set to RPC_PROTO_DEF, the system selects the default 
  *                  protocol number for the socket domain and type 
@@ -118,7 +118,8 @@ extern ssize_t rpc_send(rcf_rpc_server *rpcs,
  * @param flags bitwise OR of zero or more of the following flags:
  *               - RPC_MSG_OOB send out-of-band data if supported.
  *               - RPC_MSG_DONTWAIT enable non-blocking operation.
- *               Other supported flags can be found in tapi_rpcsock_defs.h
+ *               Other supported flags can be found in
+ *               te_rpc_sys_socket.h.
  * @param to     target address
  * @param tolen  size of target address
  *
@@ -143,7 +144,8 @@ extern ssize_t rpc_sendto(rcf_rpc_server *rpcs,
  * @param flags   bitwise OR of zero or more of the following flags:
  *                 - RPC_MSG_OOB send out-of-band data if supported.
  *                 - RPC_MSG_DONTWAIT enable non-blocking operation.
- *                 Other supported flags can be found in tapi_rpcsock_defs.h
+ *                 Other supported flags can be found in
+ *                 te_rpc_sys_socket.h
  * @param rbuflen number of bytes to be received.
  *
  * @return Number of bytes received, otherwise -1 
@@ -165,7 +167,8 @@ extern ssize_t rpc_recv_gen(rcf_rpc_server *rpcs,
  * @param flags bitwise OR of zero or more of the following flags:
  *               - RPC_MSG_OOB send out-of-band data if supported.
  *               - RPC_MSG_DONTWAIT enable non-blocking operation.
- *               Other supported flags can be found in tapi_rpcsock_defs.h
+ *               Other supported flags can be found in
+ *               te_rpc_sys_socket.h
  *
  * @return Number of bytes received, otherwise -1 when error occured
  */
@@ -194,7 +197,7 @@ rpc_recv(rcf_rpc_server *rpcs,
  *                   - RPC_MSG_OOB send out-of-band data if supported.
  *                   - RPC_MSG_DONTWAIT enable non-blocking operation.
  *                   Other supported flags can be found in 
- *                   tapi_rpcsock_defs.h
+ *                   te_rpc_sys_socket.h
  * @param from       pointer to source address of the message or NULL (OUT)
  * @param fromlen    size of source address @b from
  * @param rbuflen    number of bytes to be received.
@@ -220,7 +223,7 @@ extern ssize_t rpc_recvfrom_gen(rcf_rpc_server *rpcs,
  *                   - RPC_MSG_OOB send out-of-band data if supported.
  *                   - RPC_MSG_DONTWAIT enable non-blocking operation.
  *                   Other supported flags can be found in 
- *                   tapi_rpcsock_defs.h
+ *                   te_rpc_sys_socket.h
  * @param from       pointer to source address of the message or NULL (OUT)
  * @param fromlen    size of source address @b from.
  *
@@ -305,7 +308,7 @@ extern ssize_t rpc_sendmsg(rcf_rpc_server *rpcs,
  *                   - RPC_MSG_OOB send out-of-band data if supported.
  *                   - RPC_MSG_DONTWAIT enable non-blocking operation.
  *                   Other supported flags can be found in 
- *                   tapi_rpcsock_defs.h
+ *                   te_rpc_sys_socket.h
  *
  * @return length of received data, otherwise -1 when an error occured.
  */
@@ -424,7 +427,7 @@ rpc_accept(rcf_rpc_server *rpcs,
  * This operation takes place on RPC server side.
  *
  * @note For more information about supported option level, 
- * see tapi_rpcsock_defs.h.
+ * see te_rpc_sys_socket.h.
  *
  * @param rpcs     RPC server handle
  * @param s        socket descriptor
@@ -455,7 +458,7 @@ extern int rpc_getsockopt_gen(rcf_rpc_server *rpcs,
  * This operation takes place on RPC server side.
  *
  * @note For more information about supported option level, 
- * see tapi_rpcsock_defs.h.
+ * see te_rpc_sys_socket.h.
  *
  * @param rpcs     RPC server handle
  * @param s        socket descriptor

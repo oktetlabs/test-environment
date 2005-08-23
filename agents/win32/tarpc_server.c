@@ -48,7 +48,7 @@
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "rcf_rpc_defs.h"
-#include "tapi_rpcsock_defs.h"
+#include "te_rpc_types.h"
 #include "logger_ta.h"
 
 #define PRINT(msg...) \
@@ -2253,6 +2253,16 @@ TARPC_FUNC(gethostbyaddr, {},
         else
             out->res.res_len = 1;
     }
+}
+)
+
+/*-------------- open() --------------------------------*/
+TARPC_FUNC(open, {},
+{
+    MAKE_CALL(out->fd = open((in->path.path_len == 0) ? NULL :
+                                 in->path.path_val,
+                             fcntl_flags_rpc2h(in->flags),
+                             file_mode_flags_rpc2h(in->mode)));
 }
 )
 

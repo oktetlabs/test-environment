@@ -51,7 +51,7 @@
 #include "rcf_rpc.h"
 #include "logger_api.h"
 #include "tapi_sockaddr.h"
-#include "tapi_rpcsock_defs.h"
+#include "te_rpc_types.h"
 #include "tapi_rpc.h"
 
 #include "tarpc.h"

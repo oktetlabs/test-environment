@@ -902,6 +902,44 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_open(rcf_rpc_server *rpcs,
+         const char *path, rpc_fcntl_flags flags, rpc_file_mode_flags mode)
+{
+    tarpc_open_in  in;
+    tarpc_open_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(open, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = (char *)strdup(path); /* FIXME */
+    }
+    in.flags = flags;
+    in.mode  = mode;
+
+    rcf_rpc_call(rpcs, "open", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(open, out.fd);
+
+    TAPI_RPC_LOG("RPC (%s,%s): open(%s, %s, %s) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 path, fcntl_flags_rpc2str(flags),
+                 file_mode_flags_rpc2str(mode),
+                 out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(open, out.fd);
+}
+
+
+int
 rpc_fcntl(rcf_rpc_server *rpcs, int fd,
             int cmd, int arg)
 {

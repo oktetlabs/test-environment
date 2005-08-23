@@ -4,7 +4,7 @@
 AC_PREREQ([2.59])
 AC_INIT([te-rpc_types], [0.1], [Andrew.Rybchenko@oktetlabs.ru])
 
-AC_CONFIG_SRCDIR([te_rpc_defs.h])
+AC_CONFIG_SRCDIR([te_rpc_types.h])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 

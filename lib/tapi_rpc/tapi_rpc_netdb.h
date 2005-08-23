@@ -39,7 +39,7 @@
 #endif
 
 #include "rcf_rpc.h"
-#include "tapi_rpcsock_defs.h"
+#include "te_rpc_netdb.h"
 
 /**
  * Get network host entry by given name

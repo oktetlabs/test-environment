@@ -2033,6 +2033,23 @@ struct tarpc_socketpair_out {
     tarpc_int   sv<>;   /**< Socket pair */
 };
 
+
+/* open() */
+struct tarpc_open_in {
+    struct tarpc_in_arg common;
+    
+    char        path<>;
+    tarpc_int   flags;
+    tarpc_int   mode;
+};
+
+struct tarpc_open_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_int   fd;
+};
+
+
 /* fopen() */
 struct tarpc_fopen_in {
     struct tarpc_in_arg common;
@@ -2858,6 +2875,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         
         RPC_DEF(pipe)
         RPC_DEF(socketpair)
+        RPC_DEF(open)
         RPC_DEF(fopen)
         RPC_DEF(fclose)
         RPC_DEF(ta_shell_cmd)

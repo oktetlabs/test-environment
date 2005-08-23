@@ -38,7 +38,7 @@
 /**
  * All known file mode flags.
  */
-typedef enum rpc_mode_flags {
+typedef enum rpc_file_mode_flags {
     RPC_S_ISUID  = (1 << 1),
     RPC_S_ISGID  = (1 << 2),
     RPC_S_IRUSR  = (1 << 3),
@@ -56,9 +56,9 @@ typedef enum rpc_mode_flags {
     RPC_S_IWOTH  = (1 << 15),
     RPC_S_IXOTH  = (1 << 16),
     RPC_S_IRWXO  = (1 << 17),
-} rpc_mode_flags;
+} rpc_file_mode_flags;
 
-#define MODE_FLAGS_MAPPING_LIST \
+#define FILE_MODE_FLAGS_MAPPING_LIST \
     RPC_BIT_MAP_ENTRY(S_ISUID), \
     RPC_BIT_MAP_ENTRY(S_ISGID), \
     RPC_BIT_MAP_ENTRY(S_IRUSR), \
@@ -78,14 +78,14 @@ typedef enum rpc_mode_flags {
     RPC_BIT_MAP_ENTRY(S_IRWXO)
 
 /**
- * mode_flags_rpc2str()
+ * file_mode_flags_rpc2str()
  */
-RPCBITMAP2STR(mode_flags, MODE_FLAGS_MAPPING_LIST)
+RPCBITMAP2STR(file_mode_flags, FILE_MODE_FLAGS_MAPPING_LIST)
 
 #ifdef S_ISUID
 /** Convert RPC mode flags to native flags */
 static inline int
-mode_flags_rpc2h(unsigned int flags)
+file_mode_flags_rpc2h(unsigned int flags)
 {
     return 
         (!!(flags & RPC_S_ISUID) * S_ISUID) |

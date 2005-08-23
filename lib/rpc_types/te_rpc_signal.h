@@ -33,6 +33,8 @@
 #ifndef __TE_RPC_SIGNAL_H__
 #define __TE_RPC_SIGNAL_H__
 
+#include "logger_api.h"
+
 #include "te_rpc_defs.h"
 #include "tarpc.h"
 
