@@ -154,7 +154,9 @@ sigev_notify_rpc2h(rpc_sigev_notify notify)
     {
         RPC2H(SIGEV_SIGNAL);
         RPC2H(SIGEV_NONE);
+#ifdef SIGEV_THREAD
         RPC2H(SIGEV_THREAD);
+#endif
         default: return SIGEV_MAX_SIZE;
     }
 }
@@ -167,7 +169,9 @@ sigev_notify_h2rpc(int notify)
     {
         H2RPC(SIGEV_SIGNAL);
         H2RPC(SIGEV_NONE);
+#ifdef SIGEV_THREAD
         H2RPC(SIGEV_THREAD);
+#endif
         default: return RPC_SIGEV_UNKNOWN;
     }
 }
