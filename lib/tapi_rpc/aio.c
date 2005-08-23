@@ -39,6 +39,7 @@
 #endif
 
 #include "tapi_rpc_internal.h"
+#include "te_rpc_fcntl.h"
 #include "tapi_rpc_aio.h"
 
 /**
@@ -204,8 +205,6 @@ rpc_aio_read(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
         RETVAL_INT(aio_read, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.cb = (tarpc_aiocb_t)cb;
 
     rcf_rpc_call(rpcs, "aio_read", &in, &out);
@@ -241,8 +240,6 @@ rpc_aio_write(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(aio_write, -1);
     }
-
-    rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.cb = (tarpc_aiocb_t)cb;
 
@@ -286,8 +283,6 @@ rpc_aio_return(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
         RETVAL_INT(aio_return, 0);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.cb = (tarpc_aiocb_t)cb;
 
     rcf_rpc_call(rpcs, "aio_return", &in, &out);
@@ -323,8 +318,6 @@ rpc_aio_error(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(aio_error, 0);
     }
-
-    rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.cb = (tarpc_aiocb_t)cb;
 
@@ -368,8 +361,6 @@ rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb)
         RETVAL_INT(aio_cancel, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.cb = (tarpc_aiocb_t)cb;
     in.fd = fd;
 
@@ -384,7 +375,6 @@ rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb)
     RETVAL_INT(aio_cancel, out.retval);
 }
 
-#if 0
 /**
  * Do a sync on all outstanding asynchronous I/O operations associated 
  * with cb->aio_fildes.
@@ -398,7 +388,7 @@ rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb)
  */
 int 
 rpc_aio_fsync(rcf_rpc_server *rpcs, 
-              rpc_fcntl_flag op, rpc_aiocb_p cb)
+              rpc_fcntl_flags op, rpc_aiocb_p cb)
 {
     tarpc_aio_fsync_in  in;
     tarpc_aio_fsync_out out;
@@ -412,8 +402,6 @@ rpc_aio_fsync(rcf_rpc_server *rpcs,
         RETVAL_INT(aio_fsync, -1);
     }
 
-    rpcs->op = RCF_RPC_CALL_WAIT;
-
     in.cb = (tarpc_aiocb_t)cb;
     in.op = op;
 
@@ -422,10 +410,63 @@ rpc_aio_fsync(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_fsync, out.retval);
     
     TAPI_RPC_LOG("RPC (%s,%s): aio_fsync(%s, %u) -> (%s)",
-                 rpcs->ta, rpcs->name, fcntl_flag_rpc2str(op),
+                 rpcs->ta, rpcs->name, fcntl_flags_rpc2str(op),
                  cb, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(aio_fsync, out.retval);
 }
-#endif
               
+/**
+ * Suspend the calling process until at least one of the asynchronous I/O 
+ * requests in the list cblist  of  length n have  completed, a signal is 
+ * delivered, or timeout is not NULL and the time interval it indicates 
+ * has passed.
+ *
+ * @param rpcs     RPC server handle
+ * @param cblist   list of control blocks corresponding to AIO requests
+ * @param n        number of elements in cblist
+ * @param timeout  timeout of NULL
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+int 
+rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
+                int n, const struct timespec *timeout)
+{
+    tarpc_aio_suspend_in  in;
+    tarpc_aio_suspend_out out;
+    struct tarpc_timespec tv;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(aio_suspend, -1);
+    }
+
+    in.cb.cb_val = (tarpc_aiocb_t *)cblist;
+    in.cb.cb_len = cblist == NULL ? 0 : n;
+    in.n = n;
+
+    if (timeout != NULL && rpcs->op != RCF_RPC_WAIT)
+    {
+        tv.tv_sec = timeout->tv_sec;
+        tv.tv_nsec = timeout->tv_nsec;
+        in.timeout.timeout_len = 1;
+        in.timeout.timeout_val = &tv;
+    }
+
+    rcf_rpc_call(rpcs, "aio_suspend", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_suspend, out.retval);
+    
+    TAPI_RPC_LOG("RPC (%s,%s): aio_suspend(0x%X, %d, %s) -> (%s)",
+                 rpcs->ta, rpcs->name, cblist, n, 
+                 timespec2str(timeout),
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(aio_suspend, out.retval);
+}
+                
