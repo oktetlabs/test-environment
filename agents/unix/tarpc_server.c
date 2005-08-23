@@ -4925,7 +4925,7 @@ TARPC_FUNC(lio_listio, {},
                      "use NULL callback", ev->function);
             }
 #else
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif        
         }
         else
