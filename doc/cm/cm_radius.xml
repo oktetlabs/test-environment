@@ -122,7 +122,7 @@
          Name: EAP method - any value valid for "cur_method" object
          Value: none -->
     <object oid="/agent/supplicant/method" access="read_create"
-            type="string"/>
+            type="none"/>
 
     <!-- MD5-specific object - User name
          Name: empty
