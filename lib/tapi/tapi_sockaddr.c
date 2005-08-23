@@ -543,10 +543,10 @@ tapi_allocate_port(uint16_t *p_port)
         ERROR("Wrong value %d is got from /volatile:/sockaddr_port:", port);
         return TE_EINVAL;
     }
-    if ((port < 20000) || (port >= 40000))
+    if ((port < 20000) || (port >= 30000))
     {
         srand((unsigned int)time(NULL));
-        port = 20000 + rand_range(0, 20000);
+        port = 20000 + rand_range(0, 10000);
     }
     else
     {
