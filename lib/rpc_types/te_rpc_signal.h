@@ -34,7 +34,7 @@
 #define __TE_RPC_SIGNAL_H__
 
 #include "te_rpc_defs.h"
-
+#include "tarpc.h"
 
 /** TA-independent signal constants */
 typedef enum rpc_signum {
