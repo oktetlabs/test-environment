@@ -4673,6 +4673,7 @@ overfill_buffers_exit:
     return rc;
 }
 
+#ifdef HAVE_AIO_H
 
 /*-------------- AIO control block constructor -------------------------*/
 bool_t
@@ -4959,3 +4960,5 @@ TARPC_FUNC(lio_listio, {},
     ;
 }
 )
+
+#endif
