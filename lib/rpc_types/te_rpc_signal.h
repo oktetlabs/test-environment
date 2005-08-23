@@ -420,4 +420,28 @@ sigaction_flags_h2rpc(unsigned int flags)
 
 #endif
 
+/**
+ * Convert RPC sigevent structure to string.
+ *
+ * @param sigevent      RPC sigevent structure
+ *
+ * @return human-readable string
+ */
+static inline const char *
+tarpc_sigevent2str(const tarpc_sigevent *sigevent)
+{
+    static char buf[256];
+    
+    if (sigevent == NULL)
+        return "NULL";
+        
+    TE_SPRINTF(buf, "{ notify %s signo %s sigval %u function %s }",
+               sigev_notify_rpc2str(sigevent->notify),
+               signum_rpc2str(sigevent->signo),
+               sigevent->value.tarpc_sigval_u.sival_int,
+               sigevent->function == NULL ? "NULL" : sigevent->function);
+               
+    return buf;               
+}
+
 #endif /* !__TE_TAPI_RPCSOCK_DEFS_H__ */
