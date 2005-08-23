@@ -46,10 +46,10 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "rcf_pch.h"
+#include "logger_ta.h"
 #include "rcf_ch_api.h"
 #include "rcf_rpc_defs.h"
 #include "te_rpc_types.h"
-#include "logger_ta.h"
 
 #define PRINT(msg...) \
     do {                                                \
@@ -4157,7 +4157,7 @@ TARPC_FUNC(malloc, {},
     
     UNUSED(list);
     
-    buf = calloc(1, in->size);
+    buf = malloc(in->size);
 
     if (buf == NULL)
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
