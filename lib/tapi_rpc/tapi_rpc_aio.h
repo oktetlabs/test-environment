@@ -158,8 +158,8 @@ extern int rpc_aio_fsync(rcf_rpc_server *rpcs,
  *
  * @return 0 (success) or -1 (failure)
  */
-extern void rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
-                            int n, const struct timespec *timeout);
+extern int rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
+                           int n, const struct timespec *timeout);
 
 /**
  * Initiate a list of I/O requests with a single function call.
@@ -174,7 +174,7 @@ extern void rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
  * @return 0 (success) or -1 (failure)
  */
 extern int rpc_lio_listio(rcf_rpc_server *rpcs, 
-                          rpc_lio_mode, const rpc_aiocb_p *cblist,
+                          rpc_lio_mode mode, const rpc_aiocb_p *cblist,
                           int nent, const tarpc_sigevent *sigevent);
 
 #endif /* !__TE_TAPI_RPC_AIO_H__ */

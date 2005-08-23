@@ -168,15 +168,11 @@ rpc_fill_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb,
 
     rcf_rpc_call(rpcs, "fill_aiocb", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): fill_aiocb(%u, %d, %s, %d, %u, %u, "
-                 "{notify %s signo %s sigval %u function %s}) -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): fill_aiocb(%u, %d, %s, %d, %u, %u, %s) "
+                 "-> (%s)",
                  rpcs->ta, rpcs->name,
                  cb, fildes, lio_opcode_rpc2str(opcode), 
-                 reqprio, buf, nbytes, 
-                 sigev_notify_rpc2str(in.sigevent.notify),
-                 signum_rpc2str(in.sigevent.signo),
-                 in.sigevent.value.tarpc_sigval_u.sival_int,
-                 in.sigevent.function,
+                 reqprio, buf, nbytes, tarpc_sigevent2str(sigevent),
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(fill_aiocb);
@@ -211,9 +207,9 @@ rpc_aio_read(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_read, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s): aio_read(%u) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): aio_read(%u) -> %d (%s)",
+                 rpcs->ta, rpcs->name, cb, 
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(aio_read, out.retval);
 }
@@ -247,9 +243,9 @@ rpc_aio_write(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_write, out.retval);
     
-    TAPI_RPC_LOG("RPC (%s,%s): aio_write(%u) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): aio_write(%u) -> %d (%s)",
+                 rpcs->ta, rpcs->name, cb, 
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(aio_write, out.retval);
 }
@@ -289,9 +285,9 @@ rpc_aio_return(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
 
     CHECK_RETVAL_VAR(aio_return, out.retval, out.retval < 0, 0);
 
-    TAPI_RPC_LOG("RPC (%s,%s): aio_return(%u) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): aio_return(%u) -> %u (%s)",
+                 rpcs->ta, rpcs->name, cb, 
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(aio_return, out.retval);
 }
@@ -325,9 +321,10 @@ rpc_aio_error(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
 
     CHECK_RETVAL_VAR(aio_error, out.retval, out.retval < 0, 0);
 
-    TAPI_RPC_LOG("RPC (%s,%s): aio_error(%u) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): aio_error(%u) -> %s (%s)",
+                 rpcs->ta, rpcs->name, cb, 
+                 errno_rpc2str(out.retval), 
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(aio_error, out.retval);
 }
@@ -368,9 +365,10 @@ rpc_aio_cancel(rcf_rpc_server *rpcs, int fd, rpc_aiocb_p cb)
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(aio_cancel, out.retval);
     
-    TAPI_RPC_LOG("RPC (%s,%s): aio_cancel(%u, %d) -> (%s)",
-                 rpcs->ta, rpcs->name,
-                 cb, fd, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): aio_cancel(%u, %d) -> %s (%s)",
+                 rpcs->ta, rpcs->name, cb, fd, 
+                 aio_cancel_retval_rpc2str(out.retval),
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(aio_cancel, out.retval);
 }
@@ -409,9 +407,9 @@ rpc_aio_fsync(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_fsync, out.retval);
     
-    TAPI_RPC_LOG("RPC (%s,%s): aio_fsync(%s, %u) -> (%s)",
-                 rpcs->ta, rpcs->name, fcntl_flags_rpc2str(op),
-                 cb, errno_rpc2str(RPC_ERRNO(rpcs)));
+    TAPI_RPC_LOG("RPC (%s,%s): aio_fsync(%s, %u) -> %d (%s)",
+                 rpcs->ta, rpcs->name, fcntl_flags_rpc2str(op), cb, 
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(aio_fsync, out.retval);
 }
@@ -462,11 +460,74 @@ rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(aio_suspend, out.retval);
     
-    TAPI_RPC_LOG("RPC (%s,%s): aio_suspend(0x%X, %d, %s) -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): aio_suspend(0x%X, %d, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, cblist, n, 
                  timespec2str(timeout),
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(aio_suspend, out.retval);
 }
                 
+/**
+ * Initiate a list of I/O requests with a single function call.
+ *
+ * @param rpcs     RPC server handle
+ * @param mode     if RPC_LIO_WAIT, return after completion of all requests;
+ *                 if RPC_LI_NOWAIT, requrn after requests queueing
+ * @param cblist   list of control blocks corresponding to AIO requests
+ * @param nent     number of elements in cblist
+ * @param sigevent notification mode description
+ *
+ * @return 0 (success) or -1 (failure)
+ */
+int 
+rpc_lio_listio(rcf_rpc_server *rpcs, 
+               rpc_lio_mode mode, const rpc_aiocb_p *cblist,
+               int nent, const tarpc_sigevent *sigevent)
+{
+    tarpc_lio_listio_in  in;
+    tarpc_lio_listio_out out;
+    
+    tarpc_sigevent ev;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(lio_listio, -1);
+    }
+
+    in.cb.cb_val = (tarpc_aiocb_t *)cblist;
+    in.cb.cb_len = cblist == NULL ? 0 : nent;
+    in.nent = nent;
+    in.mode = mode;
+    
+    memset(&ev, 0, sizeof(ev));
+    if (sigevent != NULL)
+    {
+        in.sig.sig_len = 1;
+        in.sig.sig_val = &ev;
+        ev = *sigevent;
+        ev.function = strdup(ev.function == NULL ? "" : ev.function);
+        if (ev.function == NULL)
+        {
+            ERROR("Out of memory!");
+            RETVAL_INT(lio_listio, -1);
+        }
+    }
+
+    rcf_rpc_call(rpcs, "lio_listio", &in, &out);
+    
+    free(ev.function);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(lio_listio, out.retval);
+    
+    TAPI_RPC_LOG("RPC (%s,%s): lio_listio(%s, 0x%X, %d, %s) -> %d (%s)",
+                 rpcs->ta, rpcs->name, lio_mode_rpc2str(mode), 
+                 cblist, nent, tarpc_sigevent2str(sigevent),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(lio_listio, out.retval);
+}
