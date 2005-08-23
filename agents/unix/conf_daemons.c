@@ -2122,9 +2122,10 @@ static char *smtp_servers[] = {
 static int
 update_etc_hosts(char *ip)
 {
-    FILE *f = NULL;
-    FILE *g = NULL;
-    int   rc;
+    FILE    *f = NULL;
+    FILE    *g = NULL;
+    int      rc;
+    te_bool  old_smarthost = FALSE;
     
     if (strcmp(ip, SMTP_EMPTY_SMARTHOST) == 0)
         return 0;
@@ -2149,6 +2150,8 @@ update_etc_hosts(char *ip)
     {
         if (strstr(buf, "te_tester") == NULL)
             fwrite(buf, 1, strlen(buf), g);
+        else 
+            old_smarthost = TRUE;
     }
     fprintf(g, "%s te_tester", ip);
     fclose(f);
@@ -2156,6 +2159,8 @@ update_etc_hosts(char *ip)
     
     /* Commit all changes in config files */
     sync();
+    if (old_smarthost)
+        SLEEP(1); /* Somebody could cache old value */
 
     return 0;
 }
