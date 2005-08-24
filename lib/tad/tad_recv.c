@@ -378,8 +378,8 @@ typedef struct received_packets_queue_t {
  * @return zero on success, otherwise error code.  
  */
 int
-tad_report_packet( asn_value_p packet, struct rcf_comm_connection *handle, 
-                          char *answer_buffer, int ans_len) 
+tad_report_packet(asn_value_p packet, struct rcf_comm_connection *handle, 
+                  char *answer_buffer, int ans_len) 
 
 {
     int   rc;
