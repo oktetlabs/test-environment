@@ -447,7 +447,11 @@ check_args(checked_arg *list)
                               (uint32_t)(t.tv_usec) / 1000);    \
                                                                 \
         if (msec_start > msec_now)                              \
+        {                                                       \
+            RING("Sleep %u microseconds before call",           \
+                 (msec_start - msec_now) * 1000);               \
             usleep((msec_start - msec_now) * 1000);             \
+        }                                                       \
         else if (msec_start != 0)                               \
             WARN("Start time is gone");                         \
     } while (0)
