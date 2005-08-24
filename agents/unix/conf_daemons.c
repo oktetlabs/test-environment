@@ -443,6 +443,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
+    usleep(200);
     daemon_get(gid, oid, value0);
     if (*value0 != *value)
     {
