@@ -277,14 +277,14 @@ rpc_aio_return(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(aio_return, 0);
+        RETVAL_INT(aio_return, -1);
     }
 
     in.cb = (tarpc_aiocb_t)cb;
 
     rcf_rpc_call(rpcs, "aio_return", &in, &out);
 
-    CHECK_RETVAL_VAR(aio_return, out.retval, out.retval < 0, 0);
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(aio_return, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s): aio_return(%u) -> %u (%s)",
                  rpcs->ta, rpcs->name, cb, 
