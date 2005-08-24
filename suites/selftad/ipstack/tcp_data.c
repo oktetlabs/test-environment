@@ -60,7 +60,7 @@
 
 uint8_t buffer[10000];
 
-#define ENABLE_CSAP 0
+#define ENABLE_CSAP 1
 
 int
 main(int argc, char *argv[])
@@ -70,6 +70,7 @@ main(int argc, char *argv[])
     asn_value *tcp_template;
 
     csap_handle_t csap = CSAP_INVALID_HANDLE;
+    csap_handle_t acc_csap = CSAP_INVALID_HANDLE;
 
     rcf_rpc_server *rpc_srv = NULL;
 
@@ -97,12 +98,6 @@ main(int argc, char *argv[])
         gettimeofday(&now, NULL);
         srand(now.tv_usec);
     }
-
-    rc = asn_parse_value_text(
-              "{ pdus { tcp:{}, ip4:{}} }",
-              ndn_traffic_template, &tcp_template, &syms);
-    if (rc != 0)
-        TEST_FAIL("parse template failed %X syms %d", rc, syms); 
 
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
@@ -149,6 +144,12 @@ main(int argc, char *argv[])
         TEST_FAIL("bind failed");
 
 #if ENABLE_CSAP
+    rc = asn_parse_value_text(
+              "{ pdus { tcp:{}, ip4:{}} }",
+              ndn_traffic_template, &tcp_template, &syms);
+    if (rc != 0)
+        TEST_FAIL("parse template failed %X syms %d", rc, syms); 
+
 
     rc = tapi_tcp_server_csap_create(agt_a, 0, csap_ip_addr, 
                                      csap_addr.sin_port, &csap);
@@ -160,7 +161,6 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("connect() 'call' failed: %r", rc); 
 
-
 #if ENABLE_CSAP
     rc = tapi_tcp_server_recv(agt_a, 0, csap, 1000, &acc_sock);
     if (rc != 0)
@@ -170,30 +170,26 @@ main(int argc, char *argv[])
     RING("acc socket: %d", acc_sock);
     opt_val = 1;
 
+    rc = tapi_tcp_socket_csap_create(agt_a, 0, acc_sock, &acc_csap);
+    if (rc != 0)
+        TEST_FAIL("create CSAP over accepted socket failed, %r", rc);
 #endif
+
     /*
      * Send data
      */
 
-    rc = rpc_send(rpc_srv, socket, buffer, 200, 0);
-
-
-#if 0
-    rc = tapi_tcp_send_msg(conn_hand, buffer, 50, TAPI_TCP_AUTO, 0, 
-                           TAPI_TCP_QUIET, 0, NULL, 0);
-    if (rc != 0)
-        TEST_FAIL("tapi_tcp_send_msg() failed: %r", rc); 
-
-    rc = rpc_recv(rpc_srv, socket, buffer, sizeof(buffer), 0);
-#endif
-
+    rc = rpc_send(rpc_srv, socket, buffer, 200, 0); 
 
     TEST_SUCCESS;
 
 cleanup:
 
-    if (csap == CSAP_INVALID_HANDLE)
+    if (csap != CSAP_INVALID_HANDLE)
         rcf_ta_csap_destroy(agt_a, 0, csap);
+
+    if (acc_csap != CSAP_INVALID_HANDLE)
+        rcf_ta_csap_destroy(agt_a, 0, acc_csap);
 
     if (socket > 0)
         rpc_close(rpc_srv, socket);
