@@ -46,7 +46,7 @@
 
         <run>
             <script name="tcp_conn">
-                <req id="TAD_IP4"/>
+                <req id="TAD_TCP"/>
             </script>
             <arg name="is_server">
                 <value>FALSE</value>
