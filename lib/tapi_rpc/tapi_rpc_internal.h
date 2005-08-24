@@ -79,14 +79,8 @@
                 rpcs->iut_err_jump = TRUE;                              \
                 TAPI_JMP_DO(TE_EFAIL);                                  \
             }                                                           \
-            if (_res)                                                   \
-            {                                                           \
-                if (rpcs->iut_err_jump)                                 \
-                {                                                       \
-                    rpcs->iut_err_jump = TRUE;                          \
-                    TAPI_JMP_DO(TE_EFAIL);                              \
-                }                                                       \
-            }                                                           \
+            if ((_res) && rpcs->iut_err_jump)                           \
+                TAPI_JMP_DO(TE_EFAIL);                                  \
             rpcs->iut_err_jump = TRUE;                                  \
         }                                                               \
         else                                                            \
