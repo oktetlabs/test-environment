@@ -121,6 +121,8 @@ asn_impl_pt_label(const char*text, char *label, int *syms)
     /* first letter in 'valuereference' should be lower case character */
     if (!islower(*pt)) 
     {
+        WARN("%s(): letter '%c' is not lower alphabet",
+             __FUNCTION__, (int)(*pt));
         *syms = pt - text;
         return TE_EASNTXTVALNAME; 
     }
@@ -624,6 +626,8 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
         if (rc) 
         {
             *parsed_syms = pt - text;
+            WARN("%s(): subtype for label '%s' not found",
+                 __FUNCTION__, label_buf);
             return TE_EASNTXTVALNAME;
         }
 
@@ -778,6 +782,8 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
     rc = asn_impl_find_subtype(type, label_buf, &subtype);
     if (rc)
     {
+        WARN("%s(): subtype for label '%s' not found",
+             __FUNCTION__, label_buf);
         *parsed_syms = pt - text;
         return TE_EASNTXTVALNAME;
     }
