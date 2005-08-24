@@ -40,7 +40,7 @@
 
 /** TA-independent signal constants */
 typedef enum rpc_signum {
-    RPC_SIGHUP,
+    RPC_SIGHUP = 1,
     RPC_SIGINT, 
     RPC_SIGQUIT, 
     RPC_SIGILL,  
@@ -69,6 +69,7 @@ signum_rpc2h(rpc_signum s)
 {
     switch (s)
     {
+        case 0: return 0;
         RPC2H(SIGHUP);
         RPC2H(SIGINT);
         RPC2H(SIGQUIT);
