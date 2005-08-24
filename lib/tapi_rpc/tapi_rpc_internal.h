@@ -52,7 +52,6 @@
 #include "logger_api.h"
 #include "tapi_sockaddr.h"
 #include "te_rpc_types.h"
-#include "tapi_rpc.h"
 
 #include "tarpc.h"
 #include "tapi_jmp.h"

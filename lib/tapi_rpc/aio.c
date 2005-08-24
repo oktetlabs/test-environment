@@ -41,6 +41,7 @@
 #include "tapi_rpc_internal.h"
 #include "te_rpc_fcntl.h"
 #include "tapi_rpc_aio.h"
+#include "tapi_rpc_misc.h"
 
 /**
  * Allocate a AIO control block.
@@ -211,7 +212,7 @@ rpc_aio_read(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
                  rpcs->ta, rpcs->name, cb, 
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(aio_read, out.retval);
+    RETVAL_ZERO_INT(aio_read, out.retval);
 }
 
 /**
@@ -247,7 +248,7 @@ rpc_aio_write(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
                  rpcs->ta, rpcs->name, cb, 
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(aio_write, out.retval);
+    RETVAL_ZERO_INT(aio_write, out.retval);
 }
 
 /**
@@ -412,7 +413,7 @@ rpc_aio_fsync(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name, fcntl_flags_rpc2str(op), cb, 
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(aio_fsync, out.retval);
+    RETVAL_ZERO_INT(aio_fsync, out.retval);
 }
               
 /**
@@ -466,7 +467,7 @@ rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
                  timespec2str(timeout),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(aio_suspend, out.retval);
+    RETVAL_ZERO_INT(aio_suspend, out.retval);
 }
                 
 /**
@@ -530,5 +531,5 @@ rpc_lio_listio(rcf_rpc_server *rpcs,
                  cblist, nent, tarpc_sigevent2str(sigevent),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(lio_listio, out.retval);
+    RETVAL_ZERO_INT(lio_listio, out.retval);
 }

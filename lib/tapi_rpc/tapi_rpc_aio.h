@@ -51,6 +51,23 @@ extern rpc_aiocb_p rpc_create_aiocb(rcf_rpc_server *rpcs);
  */
 extern void rpc_delete_aiocb(rcf_rpc_server *rpcs, rpc_aiocb_p cb);
 
+/**
+ * Delete AIO control block in cleanup part of the test. 
+ *
+ * @param _rpcs     RPC server handle
+ * @param _cb       AIO control block
+ */
+#define CLEANUP_RPC_DELETE_AIOCB(_rpcs, _cb) \
+    do {                                                \
+        if ((_cb != RPC_NULL) >= 0 && (_rpcs) != NULL)  \
+        {                                               \
+            rpc_delete_aiocb(_rpcs, _cb);               \
+            if (!RPC_IS_CALL_OK(_rpcs))                 \
+                MACRO_TEST_ERROR;                       \
+            _cb = RPC_NULL;                             \
+        }                                               \
+    } while (0)
+
 
 /**
  * Fill a specified AIO control block.

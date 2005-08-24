@@ -52,6 +52,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_stdio.h"
+#include "tapi_rpc_signal.h"
 
 
 rpc_file_p

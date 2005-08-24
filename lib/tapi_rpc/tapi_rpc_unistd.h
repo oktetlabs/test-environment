@@ -628,6 +628,23 @@ extern void rpc_free(rcf_rpc_server *rpcs,
                      rpc_ptr buf);
 
 
+/**
+ * Free memory allocated on RPC server in cleanup part of the test. 
+ *
+ * @param _rpcs     RPC server handle
+ * @param _ptr      memory identifier
+ */
+#define CLEANUP_RPC_FREE(_rpcs, _ptr) \
+    do {                                                \
+        if ((_ptr != RPC_NULL) >= 0 && (_rpcs) != NULL) \
+        {                                               \
+            rpc_free(_rpcs, _ptr);                      \
+            if (!RPC_IS_CALL_OK(_rpcs))                 \
+                MACRO_TEST_ERROR;                       \
+            _ptr = RPC_NULL;                            \
+        }                                               \
+    } while (0)
+
 extern int rpc_gettimeofday(rcf_rpc_server *rpcs,
                             tarpc_timeval *tv, tarpc_timezone *tz);
 
