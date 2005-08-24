@@ -314,8 +314,12 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
         return rc;
 
     /* Get notes */
-    if (node != NULL)
+    if (node != NULL &&
+        xmlStrcmp(node->name, CONST_CHAR2XML("notes")) == 0)
     {
+        /* 'bug' property of the notes is optional */
+        p->bug = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("bug")));
+
         rc = get_node_with_text_content(&node, "notes", &p->notes);
         if ((rc != 0) && (rc != ENOENT))
         {
@@ -431,11 +435,17 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         return rc;
     }
 
-    rc = get_node_with_text_content(&node, "notes", &p->notes);
-    if ((rc != 0) && (rc != ENOENT))
+    if (xmlStrcmp(node->name, CONST_CHAR2XML("notes")) == 0)
     {
-        ERROR("Failed to get objective of the test '%s'", p->name);
-        return rc;
+        /* 'bug' property of the notes is optional */
+        p->bug = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("bug")));
+
+        rc = get_node_with_text_content(&node, "notes", &p->notes);
+        if ((rc != 0) && (rc != ENOENT))
+        {
+            ERROR("Failed to get objective of the test '%s'", p->name);
+            return rc;
+        }
     }
 
     rc = get_test_iters(&node, p->type, &p->iters);
@@ -574,7 +584,8 @@ trc_update_iters(test_iters *iters)
     {
         if (p->node == NULL)
         {
-            test_arg *a;
+            test_arg   *a;
+            xmlNodePtr  node;
 
             INFO("Add node for iteration %p node=%p", iters, iters->node);
             p->tests.node = xmlNewChild(iters->node, NULL,
@@ -600,13 +611,15 @@ trc_update_iters(test_iters *iters)
                 }
                 xmlNewProp(arg, BAD_CAST "name", BAD_CAST a->name);
             }
-            if (xmlNewChild(p->tests.node, NULL,
-                            BAD_CAST "notes",
-                            BAD_CAST p->notes) == NULL)
+            node = xmlNewChild(p->tests.node, NULL,
+                               BAD_CAST "notes",
+                               BAD_CAST "");
+            if (node == NULL)
             {
                 ERROR("xmlNewChild() failed for 'notes'");
                 return ENOMEM;
             }
+            xmlNewProp(node, BAD_CAST "bug", BAD_CAST "");
         }
         rc = trc_update_tests(&p->tests);
         if (rc != 0)
@@ -632,6 +645,7 @@ trc_update_tests(test_runs *tests)
 {
     int         rc;
     test_run   *p;
+    xmlNodePtr  node;
 
     for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
@@ -657,12 +671,14 @@ trc_update_tests(test_runs *tests)
                 ERROR("xmlNewChild() failed for 'objective'");
                 return ENOMEM;
             }
-            if (xmlNewChild(p->iters.node, NULL,
-                            BAD_CAST "notes", NULL) == NULL)
+            node = xmlNewChild(p->iters.node, NULL,
+                               BAD_CAST "notes", BAD_CAST "");
+            if (node == NULL)
             {
                 ERROR("xmlNewChild() failed for 'notes'");
                 return ENOMEM;
             }
+            xmlNewProp(node, BAD_CAST "bug", BAD_CAST "");
         }
         if (p->obj_update)
         {
@@ -757,6 +773,7 @@ trc_free_test_iters(test_iters *iters)
         TAILQ_REMOVE(&iters->head, p, links);
         trc_free_test_args(&p->args);
         free(p->notes);
+        free(p->bug);
         trc_free_test_runs(&p->tests);
         free(p);
     }
@@ -777,6 +794,7 @@ trc_free_test_runs(test_runs *tests)
         TAILQ_REMOVE(&tests->head, p, links);
         free(p->name);
         free(p->notes);
+        free(p->bug);
         free(p->objective);
         free(p->obj_link);
         trc_free_test_iters(&p->iters);

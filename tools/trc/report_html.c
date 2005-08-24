@@ -197,6 +197,9 @@ static const char * const trc_tests_stats_start =
 "        <B>Not Run</B>\n"
 "      </TD>\n"
 "      <TD ROWSPAN=2>\n"
+"        <B>BugID</B>\n"
+"      </TD>\n"
+"      <TD ROWSPAN=2>\n"
 "        <B>Notes</B>\n"
 "      </TD>\n"
 "    </TR>\n"
@@ -272,6 +275,7 @@ static const char * const trc_tests_stats_row =
 "        %u\n"
 "      </TD>\n"
 "      <TD>%s</TD>\n"
+"      <TD>%s</TD>\n"
 "    </TR>\n";
 
 static const char * const trc_test_exp_got_start =
@@ -291,6 +295,9 @@ static const char * const trc_test_exp_got_start =
 "        <B>Got</B>\n"
 "      </TD>\n"
 "      <TD>"
+"        <B>BugID</B>\n"
+"      </TD>\n"
+"      <TD>"
 "        <B>Notes</B>\n"
 "      </TD>\n"
 "    </TR>\n"
@@ -306,6 +313,7 @@ static const char * const trc_test_exp_got_row =
 "      <TD>\n"
 "        %s<B><A %s%s%shref=\"#%s\">%s</A></B>\n"
 "      </TD>\n"
+"      <TD>%s</TD>\n"
 "      <TD>%s</TD>\n"
 "      <TD>%s</TD>\n"
 "      <TD>%s</TD>\n"
@@ -421,6 +429,7 @@ iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
                     trc_test_args_to_string(&p->args),
                     trc_test_result_to_string(p->exp_result),
                     trc_test_result_to_string(p->got_result),
+                    PRINT_STR(p->bug),
                     PRINT_STR(p->notes));
         }
         rc = tests_to_html(stats, flags, test, &p->tests, level);
@@ -518,6 +527,7 @@ tests_to_html(te_bool stats, unsigned int flags,
                     p->stats.aborted + p->stats.new_run,
                     TRC_STATS_NOT_RUN(&p->stats),
                     p->stats.skip_exp, p->stats.skip_une,
+                    PRINT_STR(p->bug),
                     PRINT_STR(p->notes));
         }
         if ((p->type != TRC_TEST_SCRIPT) ||

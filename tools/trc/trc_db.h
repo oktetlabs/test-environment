@@ -133,6 +133,7 @@ typedef struct test_iter {
     test_args       args;           /**< Iteration arguments */
     trc_test_result exp_result;     /**< The expected result */
     char           *notes;          /**< Some notes */
+    char           *bug;            /**< BugID-like information */
     test_runs       tests;          /**< Children tests of the session */
 
     trc_test_result got_result;     /**< Got test result */
@@ -159,6 +160,7 @@ typedef struct test_run {
     trc_test_type   type;           /**< Type of the test */
     char           *name;           /**< Test name */
     char           *notes;          /**< Some notes */
+    char           *bug;            /**< BugID-like information */
 
     char           *objective;      /**< Test objective */
     xmlNodePtr      obj_node;       /**< XML node with objective */
