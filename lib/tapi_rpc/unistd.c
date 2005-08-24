@@ -53,6 +53,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
+#include "te_printf.h"
 
 
 /** @name String buffers for snprintf() operations */
@@ -1234,4 +1235,77 @@ rpc_gettimeofday(rcf_rpc_server *rpcs,
                      (int)tz->tz_dsttime);
 
     RETVAL_INT(gettimeofday, out.retval);
+}
+
+/**
+ * Allocate a buffer of specified size in the TA address space.
+ *
+ * @param rpcs    RPC server handle
+ * @param size    size of the buffer to be allocated
+ *
+ * @return   Allocated buffer identifier or RPC_NULL
+ */
+rpc_ptr
+rpc_malloc(rcf_rpc_server *rpcs, size_t size)
+{
+    rcf_rpc_op          op;
+    tarpc_malloc_in     in;
+    tarpc_malloc_out    out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(malloc, 0);
+    }
+
+    op = rpcs->op;
+
+    in.size = size;
+
+    rcf_rpc_call(rpcs, "malloc", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: malloc(%" TE_PRINTF_SIZE_T "u) -> "
+                 "%u (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 size,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_RPC_PTR(malloc, (rpc_ptr)out.retval);
+}
+
+/**
+ * Free the specified buffer in TA address space.
+ *
+ * @param rpcs   RPC server handle
+ * @param buf    identifier of the buffer to be freed
+ */
+void
+rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf)
+{
+    rcf_rpc_op      op;
+    tarpc_free_in   in;
+    tarpc_free_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_VOID(free);
+    }
+
+    op = rpcs->op;
+
+    in.buf = (tarpc_ptr)buf;
+
+    rcf_rpc_call(rpcs, "free", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: free(%u) -> (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 buf, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_VOID(free);
 }

@@ -608,22 +608,21 @@ extern uid_t rpc_geteuid(rcf_rpc_server *rpcs);
 extern int rpc_seteuid(rcf_rpc_server *rpcs, uid_t uid);
 
 /**
- * Allocate a buffer of specified size in the TA address space
+ * Allocate a buffer of specified size in the TA address space.
  *
  * @param rpcs    RPC server handle
  * @param size    size of the buffer to be allocated
  *
- * @return   pointer to the allocated buffer upon successful completion
- *           otherwise NULL is retruned.
+ * @return   Allocated buffer identifier or RPC_NULL
  */
 extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs,
                           size_t size);
 
 /**
- * Free the specified buffer in TA address space
+ * Free the specified buffer in TA address space.
  *
  * @param rpcs   RPC server handle
- * @param buf    pointer to the buffer to be freed
+ * @param buf    identifier of the buffer to be freed
  */
 extern void rpc_free(rcf_rpc_server *rpcs,
                      rpc_ptr buf);
