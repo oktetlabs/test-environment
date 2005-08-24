@@ -845,7 +845,7 @@
             }                                                           \
             else                                                        \
             {                                                           \
-                ERROR(err_msg_ " sets errno to %s instead of %s",       \
+                ERROR(err_msg_ ": errno is set to %s instead of %s",    \
                       errno_rpc2str(err_),  errno_rpc2str(exp_errno_)); \
             }                                                           \
             MACRO_TEST_ERROR;                                           \
