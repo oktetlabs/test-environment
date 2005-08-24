@@ -111,6 +111,7 @@ signum_rpc2str(rpc_signum s)
 {
     switch (s)
     {
+        case 0: return "0";
         RPC2STR(SIGHUP);
         RPC2STR(SIGINT);
         RPC2STR(SIGQUIT);
