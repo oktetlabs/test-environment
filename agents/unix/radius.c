@@ -1753,7 +1753,7 @@ find_supplicant(const char *ifname)
 #define XSUPPLICANT_SOCK_NAME "/tmp/xsupplicant.sock."
 
 /**
- * XSupplicant daemon presence check
+ * XSupplicant daemon presence check - any instance fits
  *
  * @param ifname   Name of interface where XSupplicant should listen
  *
@@ -1764,14 +1764,30 @@ xsupplicant_get(const char *ifname)
 {
     char buf[128];
 
-#if 0
-    snprintf(buf, sizeof(buf), "fuser -s %s%s >/dev/null 2>&1",
-             XSUPPLICANT_SOCK_NAME, ifname);
-#endif
-    /* Also need to check stale instances of suppplicant */
     snprintf(buf, sizeof(buf),
              "ps ax | grep xsupplicant | grep -v grep | grep -q %s",
              ifname);
+    if (ta_system(buf) == 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+/**
+ * XSupplicant daemon presence check - only active instance (that
+ * owns IPC socket) fits
+ *
+ * @param ifname   Name of interface where XSupplicant should listen
+ *
+ * @return TRUE if XSupplicant is found, FALSE otherwise.
+ */
+static te_bool
+xsupplicant_get_valid(const char *ifname)
+{
+    char buf[128];
+
+    snprintf(buf, sizeof(buf), "fuser -s %s%s >/dev/null 2>&1",
+             XSUPPLICANT_SOCK_NAME, ifname);
     if (ta_system(buf) == 0)
         return TRUE;
 
@@ -1832,9 +1848,19 @@ xsupplicant_start(const char *ifname, const char *conf_fname)
 
     if (xsupplicant_get(ifname))
     {
-        WARN("%s: XSupplicant on %s is already running, restarting",
-             __FUNCTION__, ifname);
-        xsupplicant_stop(ifname);
+        if (xsupplicant_get_valid(ifname))
+        {
+            WARN("%s: XSupplicant on %s is already running, doing nothing",
+                 __FUNCTION__, ifname);
+            return 0;
+        }
+        else
+        {
+            WARN("%s: XSupplicant on %s is already running, but seems "
+                 "not valid, restarting"
+                 __FUNCTION__, ifname);
+            xsupplicant_stop(ifname);
+        }
     }
     RING("Starting xsupplicant on %s", ifname);
     snprintf(buf, sizeof(buf), "xsupplicant -i %s -c %s -dA >/dev/null 2>&1", 
@@ -1843,6 +1869,11 @@ xsupplicant_start(const char *ifname, const char *conf_fname)
     {
         ERROR("Command <%s> failed", buf);
         return TE_ESHCMD;
+    }
+    if (!xsupplicant_get(ifname))
+    {
+        ERROR("Failed to start XSupplicant on %s", ifname);
+        return TE_EFAIL;
     }
     return 0;
 }
