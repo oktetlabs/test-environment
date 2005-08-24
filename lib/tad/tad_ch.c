@@ -290,7 +290,8 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
             {
                 rc = nbr_p->init_cb(new_csap_id, csap_nds, level);
                 if (rc != 0) 
-                    ERROR("CSAP init error %r", rc);
+                    ERROR("CSAP %d init error %r, level %d", 
+                          new_csap_id, rc, level);
                 INFO("init low proto '%s' upper proto '%s' success",
                      (lower_proto == NULL) ? "(nil)" : lower_proto,
                      new_csap->layers[level].proto);
