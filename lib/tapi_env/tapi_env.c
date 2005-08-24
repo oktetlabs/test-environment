@@ -1556,7 +1556,8 @@ check_node_type_vs_pcos(enum net_node_type node_type, tapi_env_host *host)
         {
             if ((pco->type != matched1) && (pco->type != matched2))
             {
-                VERB("Type of PCO '%s' is %u, it does not match to %u or u",
+                VERB("Type of PCO '%s' is %u, "
+                     "it does not match to %u or %u",
                      pco->name, pco->type, matched1, matched2);
                 return FALSE;
             }
