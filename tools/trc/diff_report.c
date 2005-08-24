@@ -107,6 +107,9 @@ static const char * const trc_diff_table_heading_unnamed_entry =
 
 static const char * const trc_diff_table_heading_end =
 "      <TD>"
+"        <B>BugID</B>\n"
+"      </TD>\n"
+"      <TD>"
 "        <B>Notes</B>\n"
 "      </TD>\n"
 "    </TR>\n"
@@ -127,6 +130,7 @@ static const char * const trc_diff_table_iter_row_start =
 "      <TD COLSPAN=2>%s</TD>\n"; /* Parameters */
 
 static const char * const trc_diff_table_row_end =
+"      <TD>%s</TD>\n"           /* BugID */
 "      <TD>%s</TD>\n"           /* Notes */
 "    </TR>\n";
 
@@ -290,7 +294,8 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int level)
                             trc_test_result_to_string(
                                 p->diff_exp[entry->id]));
                 }
-                fprintf(f, trc_diff_table_row_end, PRINT_STR(p->notes));
+                fprintf(f, trc_diff_table_row_end,
+                        PRINT_STR(p->bug), PRINT_STR(p->notes));
             }
 
             rc = trc_diff_tests_to_html(&p->tests, level + 1);
@@ -343,7 +348,8 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int level)
                 fprintf(f, trc_diff_table_row_col,
                         trc_test_result_to_string(p->diff_exp[entry->id]));
             }
-            fprintf(f, trc_diff_table_row_end, PRINT_STR(p->notes));
+            fprintf(f, trc_diff_table_row_end,
+                    PRINT_STR(p->bug), PRINT_STR(p->notes));
         }
         if (p->diff_out_iters)
         {
