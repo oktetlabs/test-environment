@@ -1767,6 +1767,8 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
                               csap_spec, tcp_csap); 
     if (rc != 0)
         ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
+    else
+        RING("'data.tcp.ip4' CSAP created succesfully");
 
 cleanup:
     asn_free_value(csap_spec);
@@ -1847,12 +1849,13 @@ tcp_server_handler(char *pkt_fname, void *user_param)
                                        &pkt, &s_parsed)) != 0)
     {                                      
         ERROR("%s(): parse packet fails, rc = %r, sym %d",
-              __FUNCTION__, rc, s_parsed);
+              __FUNCTION__, rc, s_parsed); 
+
         return;
     }
-    rc = asn_read_int32(pkt, socket, "pdus.0.#tcp.ѕocket");
+    rc = asn_read_int32(pkt, socket, "pdus.0.socket");
     if (rc != 0)
-        ERROR("%s(): read socket failed, rc %X", __FUNCTION__, rc);
+        ERROR("%s(): read socket failed, rc %r", __FUNCTION__, rc);
 
     RING("%s(): received socket: %d", __FUNCTION__, *socket);
 
