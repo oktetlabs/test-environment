@@ -252,10 +252,10 @@
 /**
  * Bind a socket that resides on specified RPC server
  *
- * @param rpcs_     - RPC server handle
- * @param sockd_    - socket descriptor
- * @param addr_     - address the socket to be bound to
- * @param addrlen_  - address length value
+ * @param rpcs_       RPC server handle
+ * @param sockd_      socket descriptor
+ * @param addr_       address the socket to be bound to
+ * @param addrlen_    address length value
  *
  * @se In case of failure it jumps to "cleanup" label
  */
@@ -265,10 +265,10 @@
 /**
  * Connect a socket that resides on specified RPC server
  *
- * @param rpcs_     - RPC server handle
- * @param sockd_    - Socket descriptor
- * @param addr_     - Address the socket to be connected to
- * @param addrlen_  - Address length value
+ * @param rpcs_       RPC server handle
+ * @param sockd_      Socket descriptor
+ * @param addr_       Address the socket to be connected to
+ * @param addrlen_    Address length value
  *
  * @se In case of failure it jumps to "cleanup" label
  */
@@ -278,9 +278,9 @@
 /**
  * Make the socket as a server
  *
- * @param rpcs_     - RPC server handle
- * @param sockd_    - Socket descriptor
- * @param backlog_  - Backlog value
+ * @param rpcs_       RPC server handle
+ * @param sockd_      Socket descriptor
+ * @param backlog_    Backlog value
  *
  * @se In case of failure it jumps to "cleanup" label
  */
@@ -290,12 +290,12 @@
 /**
  * Accept a new socket from the list of pending sockets
  *
- * @param new_sockd_ - Variable that is updated with
+ * @param new_sockd_   Variable that is updated with
  *                     the descriptor of a new socket (OUT)
- * @param rpcs_      - RPC server handle
- * @param sockd_     - Socket descriptor
- * @param addr_      - Location for the peer address
- * @param addrlen_   - Location for the peer address length (IN/OUT)
+ * @param rpcs_        RPC server handle
+ * @param sockd_       Socket descriptor
+ * @param addr_        Location for the peer address
+ * @param addrlen_     Location for the peer address length (IN/OUT)
  *
  * @se In case of failure it jumps to "cleanup" label
  */
@@ -515,10 +515,10 @@
 /**
  * Get local address of the socket
  *
- * @param rpcs_      - RPC server handle
- * @param sockd_     - Socket descriptor
- * @param addr_      - Location for the local address
- * @param addrlen_   - Location for the local address length (IN/OUT)
+ * @param rpcs_        RPC server handle
+ * @param sockd_       Socket descriptor
+ * @param addr_        Location for the local address
+ * @param addrlen_     Location for the local address length (IN/OUT)
  *
  * @se In case of failure it jumps to "cleanup" label
  */
@@ -539,10 +539,10 @@
 /**
  * Get peer address of the socket
  *
- * @param rpcs_      - RPC server handle
- * @param sockd_     - Socket descriptor
- * @param addr_      - Location for the peer address
- * @param addrlen_   - Location for the peer address length (IN/OUT)
+ * @param rpcs_        RPC server handle
+ * @param sockd_       Socket descriptor
+ * @param addr_        Location for the peer address
+ * @param addrlen_     Location for the peer address length (IN/OUT)
  *
  * @se In case of failure it jumps to "cleanup" label
  */
@@ -563,10 +563,10 @@
 /**
  * Call ioctl request on specified RPC server with specified socket
  *
- * @param rpcs_      - RPC server handle
- * @param sockd_     - Socket descriptor
- * @param req_name_  - IOCTL request name
- * @param req_val_   - Request value
+ * @param rpcs_        RPC server handle
+ * @param sockd_       Socket descriptor
+ * @param req_name_    IOCTL request name
+ * @param req_val_     Request value
  *
  * @todo const char *ioctl_val2str(req_name_, req_val_);
  */
@@ -589,9 +589,9 @@
 /**
  * Shutdown socket with specified mode
  *
- * @param rpcs_      - RPC server handle
- * @param sockd_     - Socket descriptor
- * @param shut_mode_ - Shutdown mode: SHUT_RD, SHUT_WR, or SHUT_RDWR
+ * @param rpcs_        RPC server handle
+ * @param sockd_       Socket descriptor
+ * @param shut_mode_   Shutdown mode: SHUT_RD, SHUT_WR, or SHUT_RDWR
  */
 #define RPC_SHUTDOWN(rpcs_, sockd_, shut_mode_) \
     RPC_FUNC_ZERO_RETVAL(rpcs_, shutdown, sockd_, shut_mode_)
@@ -666,8 +666,8 @@
  * Make the pair of file descriptors connected with a pipe on
  * specified RPC server
  *
- * @param rpcs_     - RPC server handle
- * @param filedes_  - Array of size 2 for file descriptors
+ * @param rpcs_       RPC server handle
+ * @param filedes_    Array of size 2 for file descriptors
  *
  * @se In case of failure it jumps to "cleanup" label
  */
@@ -791,8 +791,8 @@
 /**
  * Close a socket in cleanup part of the test
  *
- * @param rpcs_   - RPC server handle
- * @param sockd_  - Socket descriptor to be closed
+ * @param rpcs_     RPC server handle
+ * @param sockd_    Socket descriptor to be closed
  */
 #define CLEANUP_RPC_CLOSE(rpcs_, sockd_) \
     do {                                                            \
@@ -807,8 +807,8 @@
 /**
  * Close a FTP control socket in cleanup part of the test
  *
- * @param rpcs_   - RPC server handle
- * @param sockd_  - Socket descriptor to be closed
+ * @param rpcs_     RPC server handle
+ * @param sockd_    Socket descriptor to be closed
  */
 #define CLEANUP_RPC_FTP_CLOSE(rpcs_, sockd_) \
     do {                                                            \
@@ -824,10 +824,10 @@
  * Check current value of errno on a particular RPC server against
  * some expected value
  *
- * @param rpcs_      - RPC server handle
- * @param exp_errno_ - Expected value of errno on the server
- * @param err_msg_   - Error message that should be used in case of failure
- * @param args_      - Arguments of err_msg_
+ * @param rpcs_        RPC server handle
+ * @param exp_errno_   Expected value of errno on the server
+ * @param err_msg_     Error message that should be used in case of failure
+ * @param args_        Arguments of err_msg_
  *
  * @se In case of failure it jumps to "cleanup" label
  */
