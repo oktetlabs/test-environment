@@ -89,7 +89,7 @@ tapi_csap_param_get_llint(const char *ta_name, int ta_sid,
                            sizeof(buf), buf);
     if (rc != 0)
     {
-        ERROR("Failed(%d) to get CSAP #%d parameter '%s' from "
+        ERROR("Failed(%r) to get CSAP #%d parameter '%s' from "
             "TA %s:%d", rc, csap_id, param_name, ta_name, ta_sid);
         RETURN_RC(rc);
     }
@@ -278,7 +278,7 @@ tapi_tad_csap_create(const char *ta_name, int session,
 
     unlink(tmp_name);
     if (rc != 0)
-        WARN("Csap create failed with rc %X", rc);
+        ERROR("Csap create failed with rc %r", rc);
     return rc;
 }
 
@@ -299,7 +299,7 @@ tapi_tad_trsend_start(const char *ta_name, int session,
     rc = rcf_ta_trsend_start(ta_name, session, csap, tmp_name, blk_mode);
     unlink(tmp_name);
     if (rc != 0)
-        WARN("trsend_start failed with rc %X", rc);
+        WARN("trsend_start failed with rc %r", rc);
     return rc;
 }
 
@@ -322,7 +322,7 @@ tapi_tad_trrecv_start(const char *ta_name, int session, int handle,
                              timeout, num);
     unlink(tmp_name);
     if (rc != 0)
-        WARN("trrecv_start failed with rc %X", rc);
+        WARN("trrecv_start failed with rc %r", rc);
     return rc;
 }
 
@@ -361,7 +361,7 @@ tapi_tad_add_iterator_for(asn_value *templ, int begin, int end, int step)
                               &simple_for, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse simple-for failed %X on sym %d", 
+        ERROR("%s(): parse simple-for failed %r on sym %d", 
               __FUNCTION__, rc, syms);
         return TE_RC(TE_TAPI, rc); 
     }
@@ -369,7 +369,7 @@ tapi_tad_add_iterator_for(asn_value *templ, int begin, int end, int step)
     rc = asn_insert_indexed(iterators, simple_for, -1, "");
     if (rc != 0)
     {
-        ERROR("%s(): insert iterator failed %X", __FUNCTION__, rc);
+        ERROR("%s(): insert iterator failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc); 
     }
 
