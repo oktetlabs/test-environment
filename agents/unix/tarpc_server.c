@@ -4704,7 +4704,7 @@ _create_aiocb_1_svc(tarpc_create_aiocb_in *in, tarpc_create_aiocb_out *out,
     }
     else
     {
-        te_fill_buf((void *)cb, sizeof(*cb));
+        memset((void *)cb, 0, sizeof(*cb));
         out->cb = rcf_pch_mem_alloc(cb);
         out->common._errno = RPC_ERRNO;
     }
