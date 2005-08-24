@@ -472,7 +472,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     const asn_value          *tcp_pdu;
 
     int32_t value_in_pdu;
-    int     rc;
+    int     rc = 0;
 
     VERB("%s called for csap %d, layer %d",
          __FUNCTION__, csap_id, layer); 
@@ -544,6 +544,8 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             return rc;
         } 
 
+        RING("tag of TCP data csap: %d, socket tag is %d", 
+             spec_data->data_tag, NDN_TAG_TCP_DATA_SOCKET);
         if (spec_data->data_tag == NDN_TAG_TCP_DATA_SOCKET)
         {
             asn_read_int32(subval, &(spec_data->socket), "");

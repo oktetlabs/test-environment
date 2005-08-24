@@ -249,9 +249,10 @@ ip4_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     rc = asn_read_value_field(csap_nds, 
                               &ip4_spec_data->sa_op.sin_addr.s_addr, &len, 
                               opt_label);
-    if (rc)
-        return TE_RC(TE_TAD_CSAP, rc); /* If this field is not set, then CSAP cannot process */ 
+    if (rc != 0 && rc != TE_EASNINCOMPLVAL)
+        return TE_RC(TE_TAD_CSAP, rc); 
 
+    rc = 0;
 
  
     ip4_spec_data->sa_op.sin_family = AF_INET;

@@ -399,8 +399,19 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     spec_data = (ip4_csap_specific_data_t *)
                 csap_descr->layers[layer].specific_data; 
 
-    if (csap_descr->type == TAD_CSAP_DATA) /* TODO */
-        return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+    if (csap_descr->type == TAD_CSAP_DATA) 
+    {
+        if (layer > 0)
+        {
+            pkt_list->data = up_payload->data;
+            pkt_list->len = up_payload->len;
+            up_payload->data = NULL;
+            up_payload->len = 0;
+            return 0;
+        }
+        else 
+            return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);/* TODO */
+    }
 
     /* TODO: IPv4 options generating */ 
 
@@ -702,10 +713,34 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         ERROR("null csap_descr for csap id %d", csap_id);
         return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
     } 
-    spec_data = (ip4_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
 
     if (parsed_packet != NULL)
         ip4_header_pdu = asn_init_value(ndn_ip4_header); 
+
+    if (csap_descr->type == TAD_CSAP_DATA) 
+    {
+        if (layer > 0)
+        {
+        /* do nothing for match, it is not 'data' csap processing layer */
+            payload->data = malloc(payload->len = pkt->len);
+            memcpy(payload->data, pkt->data, pkt->len);
+            if (parsed_packet != NULL)
+            {
+                rc = asn_put_child_value(parsed_packet, ip4_header_pdu, 
+                                         PRIVATE, NDN_TAD_IP4);
+                RING("%s(): rc from put IP4 empty header: %r", rc);
+            }
+            return TE_RC(TE_TAD_CSAP, rc); 
+        }
+        else
+        {
+            WARN("DATA CSAP with upper layer IPv4 is not supported");
+            return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+        }
+    }
+
+    spec_data = (ip4_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
+
 
     data = pkt->data; 
 
