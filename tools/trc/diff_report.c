@@ -138,9 +138,11 @@ static const char * const trc_diff_table_row_col =
 "      <TD>%s</TD>\n";
 
 
-static te_bool trc_diff_tests_has_diff(test_runs *tests);
+static te_bool trc_diff_tests_has_diff(test_runs *tests,
+                                       unsigned int flags);
 
 static int trc_diff_tests_to_html(const test_runs *tests,
+                                  unsigned int flags,
                                   unsigned int level);
 
 
@@ -188,8 +190,8 @@ trc_test_args_to_string(const test_args *args)
 
 
 static te_bool
-trc_diff_iters_has_diff(test_iters *iters, te_bool *all_out,
-                        trc_test_result *diff_exp)
+trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
+                        te_bool *all_out, trc_test_result *diff_exp)
 {
     te_bool         has_diff;
     te_bool         iter_has_diff;
@@ -221,7 +223,10 @@ trc_diff_iters_has_diff(test_iters *iters, te_bool *all_out,
         }
 
         /* The routine should be called first to be called in any case */
-        p->diff_out = trc_diff_tests_has_diff(&p->tests) || iter_has_diff;
+        p->diff_out = trc_diff_tests_has_diff(&p->tests, flags) ||
+                      (iter_has_diff &&
+                       (p->bug == NULL || strlen(p->bug) == 0 ||
+                        (~flags & TRC_DIFF_NO_BUGID)));
 
         if (!p->diff_out)
             has_no_out = TRUE;
@@ -235,7 +240,7 @@ trc_diff_iters_has_diff(test_iters *iters, te_bool *all_out,
 }
 
 static te_bool
-trc_diff_tests_has_diff(test_runs *tests)
+trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
 {
     trc_tags_entry *entry;
     test_run       *p;
@@ -253,8 +258,11 @@ trc_diff_tests_has_diff(test_runs *tests)
             p->diff_exp[entry->id] = TRC_TEST_UNSET;
         }
         
-        p->diff_out = trc_diff_iters_has_diff(&p->iters, &all_iters_out,
-                                              p->diff_exp);
+        p->diff_out = trc_diff_iters_has_diff(&p->iters, flags,
+                                              &all_iters_out,
+                                              p->diff_exp) &&
+                      (p->bug == NULL || strlen(p->bug) == 0 ||
+                       (~flags & TRC_DIFF_NO_BUGID));
 
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
@@ -269,7 +277,8 @@ trc_diff_tests_has_diff(test_runs *tests)
 
 
 static int
-trc_diff_iters_to_html(const test_iters *iters, unsigned int level)
+trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
+                       unsigned int level)
 {
     int             rc;
     trc_tags_entry *entry;
@@ -282,6 +291,10 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int level)
     {
         if (p->diff_out)
         {
+            /*
+             * Don't want to see iteration parameters, if iteration is
+             * only one.
+             */
             if (!one_iter)
             {
                 fprintf(f, trc_diff_table_iter_row_start,
@@ -298,7 +311,7 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int level)
                         PRINT_STR(p->bug), PRINT_STR(p->notes));
             }
 
-            rc = trc_diff_tests_to_html(&p->tests, level + 1);
+            rc = trc_diff_tests_to_html(&p->tests, flags, level + 1);
             if (rc != 0)
                 return rc;
         }
@@ -308,7 +321,8 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int level)
 }
 
 static int
-trc_diff_tests_to_html(const test_runs *tests, unsigned int level)
+trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
+                       unsigned int level)
 {
     int             rc = 0;
     test_run       *p;
@@ -353,7 +367,7 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int level)
         }
         if (p->diff_out_iters)
         {
-            rc = trc_diff_iters_to_html(&p->iters, level);
+            rc = trc_diff_iters_to_html(&p->iters, flags, level);
             if (rc != 0)
                 return rc;
         }
@@ -397,7 +411,8 @@ trc_diff_tags_to_html(const trc_tags_list *tags_list)
     
 /** See descriptino in trc_db.h */
 int
-trc_diff_report_to_html(const char *filename, trc_database *db)
+trc_diff_report_to_html(trc_database *db, unsigned int flags,
+                        const char *filename)
 {
     int rc;
 
@@ -422,8 +437,8 @@ trc_diff_report_to_html(const char *filename, trc_database *db)
     trc_diff_tags_to_html(&tags_diff);
     
     /* Report */
-    if (trc_diff_tests_has_diff(&db->tests) &&
-        (rc = trc_diff_tests_to_html(&db->tests, 0)) != 0)
+    if (trc_diff_tests_has_diff(&db->tests, flags) &&
+        (rc = trc_diff_tests_to_html(&db->tests, flags, 0)) != 0)
     {
         goto cleanup;
     }

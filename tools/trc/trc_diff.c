@@ -88,6 +88,9 @@ static char *trc_diff_db_fn = NULL;
 /** Name of the file with report in HTML format */
 static char *trc_diff_html_fn = NULL;
 
+/** Report options */
+static unsigned int trc_diff_flags = 0;
+
 
 /**
  * Process command line options and parameters specified in argv.
@@ -115,6 +118,10 @@ process_cmd_line_opts(int argc, char **argv)
         { "html", 'h', POPT_ARG_STRING, &trc_diff_html_fn, 0,
           "Name of the file for report in HTML format.",
           "FILENAME" },
+
+        { "no-bugid", 'B', POPT_ARG_NONE | POPT_BIT_SET, &trc_diff_flags,
+          TRC_DIFF_NO_BUGID,
+          "Exclude from report entries with specified BugID.", NULL },
 
 #define TRC_DIFF_TAG_OPT(id_) \
         { "tag" #id_, '0' + id_,                                \
@@ -289,7 +296,8 @@ main(int argc, char *argv[])
     }
 
     /* Generate reports in HTML format */
-    if (trc_diff_report_to_html(trc_diff_html_fn, &trc_db) != 0)
+    if (trc_diff_report_to_html(&trc_db, trc_diff_flags,
+                                trc_diff_html_fn) != 0)
     {
         ERROR("Failed to generate report in HTML format");
         goto exit;

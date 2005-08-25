@@ -43,6 +43,9 @@
 /** Number of IDs supported by TRC-diff */
 #define TRC_DIFF_IDS    10
 
+/** Do not include entries with specified BugID */
+#define TRC_DIFF_NO_BUGID   0x01
+
 
 /** Enumeration of possible test results */
 typedef enum trc_test_result {
@@ -252,11 +255,13 @@ extern int trc_report_to_html(const char *filename, FILE *header,
 /**
  * Prepare TRC diff report in HTML format.
  *
- * @param filename      Name of the file to put report
  * @param db            DB to be processed
+ * @param flags         Report options
+ * @param filename      Name of the file to put report
  *
  * @return Status code
  */
-extern int trc_diff_report_to_html(const char *filename, trc_database *db);
+extern int trc_diff_report_to_html(trc_database *db, unsigned int flags,
+                                   const char *filename);
 
 #endif /* !__TE_TRC_DB_H__ */
