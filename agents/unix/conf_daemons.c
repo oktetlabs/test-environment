@@ -443,12 +443,13 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
-    usleep(200);
+    usleep(500);
     daemon_get(gid, oid, value0);
     if (*value0 != *value)
     {
         ERROR("After set %s to %s daemon is %srunning", 
               oid, value, *value0 == '0' ? "not " : "");
+        ta_system("ps ax");
         return TE_RC(TE_TA_UNIX, TE_EFAIL);
     }
     
