@@ -121,8 +121,6 @@ asn_impl_pt_label(const char*text, char *label, int *syms)
     /* first letter in 'valuereference' should be lower case character */
     if (!islower(*pt)) 
     {
-        WARN("%s(): letter '%c' is not lower alphabet",
-             __FUNCTION__, (int)(*pt));
         *syms = pt - text;
         return TE_EASNTXTVALNAME; 
     }
