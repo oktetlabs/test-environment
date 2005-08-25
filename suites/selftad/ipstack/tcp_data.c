@@ -60,7 +60,6 @@
 
 uint8_t buffer[10000];
 
-#define ENABLE_CSAP 1
 
 int
 main(int argc, char *argv[])
@@ -143,7 +142,6 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("bind failed");
 
-#if ENABLE_CSAP
     rc = asn_parse_value_text(
               "{ pdus { tcp:{}, ip4:{}} }",
               ndn_traffic_template, &tcp_template, &syms);
@@ -155,13 +153,11 @@ main(int argc, char *argv[])
                                      csap_addr.sin_port, &csap);
     if (rc != 0)
         TEST_FAIL("server csap create failed: %r", rc); 
-#endif
     rc = rpc_connect(rpc_srv, socket,
                      SA(&csap_addr), sizeof(csap_addr));
     if (rc != 0)
         TEST_FAIL("connect() 'call' failed: %r", rc); 
 
-#if ENABLE_CSAP
     rc = tapi_tcp_server_recv(agt_a, 0, csap, 1000, &acc_sock);
     if (rc != 0)
         TEST_FAIL("recv accepted socket failed: %r", rc); 
@@ -173,7 +169,6 @@ main(int argc, char *argv[])
     rc = tapi_tcp_socket_csap_create(agt_a, 0, acc_sock, &acc_csap);
     if (rc != 0)
         TEST_FAIL("create CSAP over accepted socket failed, %r", rc);
-#endif
 
     /*
      * Send data
@@ -197,9 +192,7 @@ cleanup:
     if (rpc_srv && (rcf_rpc_server_destroy(rpc_srv) != 0))
     {
         WARN("Cannot delete dst RPC server\n");
-    }
-    
-
+    } 
 
     TEST_END;
 }
