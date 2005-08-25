@@ -45,6 +45,8 @@
 
 /** Do not include entries with specified BugID */
 #define TRC_DIFF_NO_BUGID   0x01
+/** Generate brief version of the diff report */
+#define TRC_DIFF_BRIEF      0x02
 
 
 /** Enumeration of possible test results */
