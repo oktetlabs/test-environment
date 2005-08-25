@@ -140,13 +140,13 @@ extern ssize_t rpc_sendto(rcf_rpc_server *rpcs,
  * @param rpcs    RPC server handle
  * @param s       socket descriptor
  * @param buf     pointer to buffer which store received messages
- * @param len     size of the buffer @b buf
+ * @param len     buffer length passed to recv()
  * @param flags   bitwise OR of zero or more of the following flags:
  *                 - RPC_MSG_OOB send out-of-band data if supported.
  *                 - RPC_MSG_DONTWAIT enable non-blocking operation.
  *                 Other supported flags can be found in
  *                 te_rpc_sys_socket.h
- * @param rbuflen number of bytes to be received.
+ * @param rbuflen size of the buffer @b buf
  *
  * @return Number of bytes received, otherwise -1 
  */
