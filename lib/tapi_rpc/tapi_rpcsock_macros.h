@@ -702,7 +702,7 @@
  */
 #define CLEANUP_RPC_SIGNAL(rpcs_, signum_, handler_, old_handler_) \
     do {                                                                \
-        if ((handler_) != NULL)                                         \
+        if ((rpcs_ != NULL) && (handler_) != NULL)                      \
         {                                                               \
             char *ret_handler_;                                         \
                                                                         \
