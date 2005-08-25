@@ -1911,11 +1911,6 @@ cleanup:
 
 
 
-
-
-
-
-
 struct data_message {
     uint8_t *data;
     size_t   length;
@@ -1972,15 +1967,15 @@ int
 tapi_tcp_buffer_recv(const char *ta_name, int sid, 
                      csap_handle_t tcp_csap, 
                      unsigned int timeout, 
-                     csap_handle_t forward, 
-                     uint8_t *buf, size_t length)
+                     csap_handle_t forward, te_bool exact,
+                     uint8_t *buf, size_t *length)
 {
     asn_value *pattern = NULL;
     struct data_message msg;
 
     int rc = 0, syms, num;
 
-    if (ta_name == NULL || socket == NULL)
+    if (ta_name == NULL || socket == NULL || length == NULL)
         return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{{pdus { tcp:{}, ip4:{} } }}",
@@ -2004,7 +1999,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
     }
 
     msg.data = buf;
-    msg.length = length;
+    msg.length = *length;
 
     rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, 
                                tcp_data_csap_handler, &msg, timeout, 1);
@@ -2018,6 +2013,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 
+    UNUSED(exact);
 cleanup:
     asn_free_value(pattern);
     return rc;

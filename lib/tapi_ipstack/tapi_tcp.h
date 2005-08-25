@@ -44,15 +44,10 @@
 #define TCP_ACK_FLAG    0x10
 #define TCP_URG_FLAG    0x20
 
-/** 
- * Callback function for the receiving TCP datagrams.
- *
- * @param pkt           Received IP packet.
- * @param userdata      Parameter, provided by the caller.
+
+/*
+ * ===================== DATA-TCP methods ======================
  */
-typedef void (*tcp_row_callback)(const asn_value *pkt, void *userdata);
-
-
 
 /**
  * Creates 'data.tcp.ip4' CSAP, 'server' mode: listening for incoming
@@ -120,8 +115,9 @@ extern int tapi_tcp_server_recv(const char *ta_name, int sid,
                                 unsigned int timeout, int *socket);
 
 /**
- * Wait exactly specified amount of data on connected (non-server) 
- * TCP data CSAP.
+ * Wait some data on connected (i.e. non-server) TCP data CSAP.
+ * CSAP may wait for any non-zero amount of bytes or for 
+ * exactly specified number. 
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
@@ -129,16 +125,19 @@ extern int tapi_tcp_server_recv(const char *ta_name, int sid,
  * @param timeout       timeout in milliseconds
  * @param forward       id of CSAP to which forward recєived messages, 
  *                      may be CSAP_INVALID_HANDLE for disabled forward
- * @param buf           location for received data (OUT)
- * @param length        size of buffer and length of data to wait
+ * @param exact         boolean flag: whether CSAP have to wait 
+ *                      all specified number of bytes or not
+ * @param buf           location for received data, may be NULL 
+ *                      if received data is not wanted on test (OUT)
+ * @param length        location with/for buffer/data length (IN/OUT)
  *
  * @return  Status of the operation
  */
 extern int tapi_tcp_buffer_recv(const char *ta_name, int sid, 
                                 csap_handle_t tcp_csap, 
                                 unsigned int timeout, 
-                                csap_handle_t forward, 
-                                uint8_t *buf, size_t length);
+                                csap_handle_t forward, te_bool exact,
+                                uint8_t *buf, size_t *length);
 
 /**
  * Send data via connected (non-server) TCP data CSAP.
@@ -154,6 +153,21 @@ extern int tapi_tcp_buffer_recv(const char *ta_name, int sid,
 extern int tapi_tcp_buffer_send(const char *ta_name, int sid, 
                                 csap_handle_t tcp_csap, 
                                 uint8_t *buf, size_t length);
+
+
+
+
+/*
+ * ===================== ROW-TCP methods ======================
+ */
+
+/** 
+ * Callback function for the receiving TCP datagrams.
+ *
+ * @param pkt           Received IP packet.
+ * @param userdata      Parameter, provided by the caller.
+ */
+typedef void (*tcp_row_callback)(const asn_value *pkt, void *userdata);
 
 
 /**
