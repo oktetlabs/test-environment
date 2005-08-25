@@ -30,6 +30,12 @@
 
 #include "conf_daemons.h"
 
+/** Maximum number of attempts to wait a daemon in expected state */
+#define TA_UNIX_DAEMON_WAIT_ATTEMPTS    1000
+/** Time to wait between checks of the daemon state */
+#define TA_UNIX_DAEMON_WAIT_USEC        500
+
+
 /* Array of daemons/services names */
 static struct {
     char   *config_file;
@@ -406,8 +412,9 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
 {
     const char *daemon_name = get_ds_name(oid);
     
-    char value0[2];
-    int  rc;
+    char            value0[2];
+    int             rc;
+    unsigned int    attempt;
 
     UNUSED(gid);
 
@@ -443,8 +450,13 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     
-    usleep(500);
-    daemon_get(gid, oid, value0);
+    for (attempt = 0;
+         daemon_get(gid, oid, value0),
+         (*value0 != *value) && (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
+         ++attempt)
+    {
+        usleep(TA_UNIX_DAEMON_WAIT_USEC);
+    }
     if (*value0 != *value)
     {
         ERROR("After set %s to %s daemon is %srunning", 
