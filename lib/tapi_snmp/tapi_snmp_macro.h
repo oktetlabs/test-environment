@@ -224,7 +224,7 @@ extern "C" {
 #define TAPI_SNMP_GET_SUBTABLE(tbl_, tbl_size_, index_prefix_, \
                                sub_tbl_, sub_tbl_size_)             \
     do {                                                            \
-          int i_;                                                   \
+          unsigned int i_;                                          \
                                                                     \
           *(sub_tbl_size_) = 0;                                     \
           *(sub_tbl_) = NULL;                                       \
