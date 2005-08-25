@@ -631,7 +631,7 @@ TARPC_FUNC(sendto, {},
 {
     PREPARE_ADDR(in->to, 0);
 
-    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->len);
+    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
 
     MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len,
                                  send_recv_flags_rpc2h(in->flags),
@@ -643,7 +643,7 @@ TARPC_FUNC(sendto, {},
 
 TARPC_FUNC(send, {},
 {
-    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->len);
+    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
 
     MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len,
                                  send_recv_flags_rpc2h(in->flags)));
@@ -667,7 +667,7 @@ TARPC_FUNC(read,
 
 TARPC_FUNC(write, {},
 {
-    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, in->len);
+    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
 
     MAKE_CALL(out->retval = func(in->fd, in->buf.buf_val, in->len));
 }
@@ -1142,8 +1142,6 @@ TARPC_FUNC(ta_kill_death, {},
 )
 
 /*-------------- signal() --------------------------------*/
-
-typedef void (*sighandler_t)(int);
 
 TARPC_FUNC(signal,
 {

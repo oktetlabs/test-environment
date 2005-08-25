@@ -593,4 +593,6 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
     return TRUE;                                                    \
 }
 
+typedef void (*sighandler_t)(int);
+
 #endif /* __TARPC_SERVER_H__ */
