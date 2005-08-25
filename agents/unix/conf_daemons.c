@@ -31,9 +31,9 @@
 #include "conf_daemons.h"
 
 /** Maximum number of attempts to wait a daemon in expected state */
-#define TA_UNIX_DAEMON_WAIT_ATTEMPTS    1000
+#define TA_UNIX_DAEMON_WAIT_ATTEMPTS    100
 /** Time to wait between checks of the daemon state */
-#define TA_UNIX_DAEMON_WAIT_USEC        500
+#define TA_UNIX_DAEMON_WAIT_USEC        100000
 
 
 /* Array of daemons/services names */
