@@ -455,7 +455,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
          (*value0 != *value) && (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
          ++attempt)
     {
-        usleep(TA_UNIX_DAEMON_WAIT_USEC);
+        USLEEP(TA_UNIX_DAEMON_WAIT_USEC);
     }
     if (*value0 != *value)
     {
@@ -2969,14 +2969,14 @@ supervise_backups(void *arg)
             {
                 WARN("Backup %s disappeared", backup);
                 ta_system("ls /tmp/te*backup");
-                usleep(200);
+                USLEEP(200);
                 ta_system("ps ax");
                 free(backup);
                 return NULL;
             }
             free(backup);
         }
-        sleep(1);
+        SLEEP(1);
     }
 }
 
