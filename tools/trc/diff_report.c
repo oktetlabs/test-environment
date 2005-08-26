@@ -84,7 +84,7 @@ static const char * const trc_diff_html_doc_end =
 "</BODY>\n"
 "</HTML>\n";
 
-static const char * const trc_diff_table_heading_start =
+static const char * const trc_diff_full_table_heading_start =
 "<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>\n"
 "  <THEAD>\n"
 "    <TR>\n"
@@ -93,6 +93,14 @@ static const char * const trc_diff_table_heading_start =
 "      </TD>\n"
 "      <TD>\n"
 "        <B>Objective</B>\n"
+"      </TD>\n";
+
+static const char * const trc_diff_brief_table_heading_start =
+"<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>\n"
+"  <THEAD>\n"
+"    <TR>\n"
+"      <TD>\n"
+"        <B>Name</B>\n"
 "      </TD>\n";
 
 static const char * const trc_diff_table_heading_named_entry =
@@ -120,14 +128,18 @@ static const char * const trc_diff_table_end =
 "  </TBODY>\n"
 "</TABLE>\n";
 
-static const char * const trc_diff_table_test_row_start =
+static const char * const trc_diff_full_table_test_row_start =
 "    <TR>\n"
-"      <TD>%s<B>%s</B></TD>\n"  /* Name */
+"      <TD><A name=\"%s=0\"/>%s<B>%s</B></TD>\n"  /* Name */
 "      <TD>%s</TD>\n";          /* Objective */
+
+static const char * const trc_diff_brief_table_test_row_start =
+"    <TR>\n"
+"      <TD><A href=\"#%s=%u\">%s</A></TD>\n";  /* Name */
 
 static const char * const trc_diff_table_iter_row_start =
 "    <TR>\n"
-"      <TD COLSPAN=2>%s</TD>\n"; /* Parameters */
+"      <TD COLSPAN=2><A name=\"%s=%u\"/>%s</TD>\n"; /* Parameters */
 
 static const char * const trc_diff_table_row_end =
 "      <TD>%s</TD>\n"           /* BugID */
@@ -136,6 +148,9 @@ static const char * const trc_diff_table_row_end =
 
 static const char * const trc_diff_table_row_col =
 "      <TD>%s</TD>\n";
+
+
+static char test_name[1024];
 
 
 static te_bool trc_diff_tests_has_diff(test_runs *tests,
@@ -281,13 +296,16 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                        unsigned int level)
 {
     int             rc;
+    unsigned int    i;
     trc_tags_entry *entry;
     test_iter      *p;
     te_bool         one_iter = (iters->head.tqh_first != NULL) &&
                                (&iters->head.tqh_first->links.tqe_next ==
                                 iters->head.tqh_last);
 
-    for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    for (p = iters->head.tqh_first, i = 1;
+         p != NULL;
+         p = p->links.tqe_next, ++i)
     {
         if (p->diff_out)
         {
@@ -295,10 +313,21 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
              * Don't want to see iteration parameters, if iteration is
              * only one.
              */
-            if (!one_iter)
+            if (!one_iter &&
+                ((~flags & TRC_DIFF_BRIEF) ||
+                 (p->tests.head.tqh_first == NULL)))
             {
-                fprintf(f, trc_diff_table_iter_row_start,
-                        trc_test_args_to_string(&p->args));
+                if (flags & TRC_DIFF_BRIEF)
+                {
+                    fprintf(f, trc_diff_brief_table_test_row_start,
+                            test_name, i, test_name);
+                }
+                else
+                {
+                    fprintf(f, trc_diff_table_iter_row_start,
+                            test_name, i,
+                            trc_test_args_to_string(&p->args));
+                }
                 for (entry = tags_diff.tqh_first;
                      entry != NULL;
                      entry = entry->links.tqe_next)
@@ -330,10 +359,17 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
     char            level_str[64] = { 0, };
     char           *s;
     unsigned int    i;
+    size_t          parent_len;
+
 
     if (level == 0)
     {
-        WRITE_STR(trc_diff_table_heading_start);
+        test_name[0] = '\0';
+
+        if (flags & TRC_DIFF_BRIEF)
+            WRITE_STR(trc_diff_brief_table_heading_start);
+        else
+            WRITE_STR(trc_diff_full_table_heading_start);
         for (entry = tags_diff.tqh_first;
              entry != NULL;
              entry = entry->links.tqe_next)
@@ -345,16 +381,37 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
         }
         WRITE_STR(trc_diff_table_heading_end);
     }
+    else
+    {
+        strcat(test_name, "/");
+    }
 
-    for (s = level_str, i = 0; i < level; ++i)
-        s += sprintf(s, "*-");
+    parent_len = strlen(test_name);
+
+    if (~flags & TRC_DIFF_BRIEF)
+        for (s = level_str, i = 0; i < level; ++i)
+            s += sprintf(s, "*-");
 
     for (p = tests->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if (p->diff_out)
+        test_name[parent_len] = '\0';
+        strcat(test_name, p->name);
+
+        if (p->diff_out &&
+            ((~flags & TRC_DIFF_BRIEF) ||
+             ((p->type == TRC_TEST_SCRIPT) && (!p->diff_out_iters))))
         {
-            fprintf(f, trc_diff_table_test_row_start,
-                    level_str, p->name, PRINT_STR(p->objective));
+            if (flags & TRC_DIFF_BRIEF)
+            {
+                fprintf(f, trc_diff_brief_table_test_row_start,
+                        test_name, 0, test_name);
+            }
+            else
+            {
+                fprintf(f, trc_diff_full_table_test_row_start,
+                        test_name, level_str, p->name,
+                        PRINT_STR(p->objective));
+            }
             for (entry = tags_diff.tqh_first;
                  entry != NULL;
                  entry = entry->links.tqe_next)
@@ -374,7 +431,15 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
     }
 
     if (level == 0)
+    {
         WRITE_STR(trc_diff_table_end);
+
+        test_name[parent_len] = '\0';
+    }
+    else
+    {
+        test_name[parent_len - 1] = '\0';
+    }
 
 cleanup:
     return rc;
@@ -435,10 +500,15 @@ trc_diff_report_to_html(trc_database *db, unsigned int flags,
 
     /* Compared sets */
     trc_diff_tags_to_html(&tags_diff);
+
+    /* Initial test name is empty */
+    test_name[0] = '\0';
     
     /* Report */
     if (trc_diff_tests_has_diff(&db->tests, flags) &&
-        (rc = trc_diff_tests_to_html(&db->tests, flags, 0)) != 0)
+        ((rc = trc_diff_tests_to_html(&db->tests,
+                                      flags | TRC_DIFF_BRIEF, 0)) != 0 ||
+         (rc = trc_diff_tests_to_html(&db->tests, flags, 0)) != 0))
     {
         goto cleanup;
     }
