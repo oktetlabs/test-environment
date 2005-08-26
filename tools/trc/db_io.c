@@ -796,7 +796,7 @@ trc_free_test_runs(test_runs *tests)
         free(p->notes);
         free(p->bug);
         free(p->objective);
-        free(p->obj_link);
+        free(p->test_path);
         trc_free_test_iters(&p->iters);
         free(p);
     }

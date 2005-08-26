@@ -311,7 +311,7 @@ static const char * const trc_test_exp_got_end =
 static const char * const trc_test_exp_got_row =
 "    <TR>\n"
 "      <TD>\n"
-"        %s<B><A %s%s%shref=\"#%s\">%s</A></B>\n"
+"        %s<B><A %s%s%shref=\"#OBJECTIVE%s\">%s</A></B>\n"
 "      </TD>\n"
 "      <TD>%s</TD>\n"
 "      <TD>%s</TD>\n"
@@ -383,11 +383,12 @@ static int
 iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
               const test_iters *iters, unsigned int level)
 {
-    int         rc;
-    test_iter  *p;
-    char        level_str[64] = { 0, };
-    char       *s;
-    unsigned int i;
+    int             rc;
+    test_iter      *p;
+    char            level_str[64] = { 0, };
+    char           *s;
+    unsigned int    i;
+    te_bool         name_anchor = TRUE;
 
     for (s = level_str, i = 0; i < level; ++i)
         s += sprintf(s, "*-");
@@ -417,20 +418,20 @@ iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
              (p->exp_result != p->got_result))
            )
         {
-            te_bool name_anchor = (p == iters->head.tqh_first);
-
             fprintf(f, trc_test_exp_got_row,
                     level_str,
                     name_anchor ? "name=\"" : "",
-                    name_anchor ? test->name : "",
+                    name_anchor ? test->test_path : "",
                     name_anchor ? "\" " : "",
-                    test->obj_link ? : "ERROR",
+                    test->test_path ? : "ERROR",
                     test->name,
                     trc_test_args_to_string(&p->args),
                     trc_test_result_to_string(p->exp_result),
                     trc_test_result_to_string(p->got_result),
                     PRINT_STR(p->bug),
                     PRINT_STR(p->notes));
+
+            name_anchor = FALSE;
         }
         rc = tests_to_html(stats, flags, test, &p->tests, level);
         if (rc != 0)
@@ -486,41 +487,41 @@ tests_to_html(te_bool stats, unsigned int flags,
               (flags & TRC_OUT_NO_SCRIPTS)) || output))
         {
             te_bool name_link;
-            char *obj_link = NULL;
+            char *test_path = NULL;
 
             name_link = ((flags & TRC_OUT_NO_SCRIPTS) ||
                          ((~flags & TRC_OUT_NO_SCRIPTS) &&
                          (p->type == TRC_TEST_SCRIPT)));
 
-            if (p->obj_link == NULL)
+            if (p->test_path == NULL)
             {
                 size_t len;
 
                 len = strlen(p->name) + 2 +
                       ((parent == NULL) ? strlen("OBJ") :
-                                          strlen(parent->obj_link));
-                obj_link = malloc(len);
-                if (obj_link == NULL)
+                                          strlen(parent->test_path));
+                test_path = malloc(len);
+                if (test_path == NULL)
                 {
                     ERROR("malloc(%u) failed", (unsigned)len);
                     return ENOMEM;
                 }
-                sprintf(obj_link, "%s-%s",
-                        (parent) ? parent->obj_link : "OBJ", p->name);
-                p->obj_link = obj_link;
+                sprintf(test_path, "%s-%s",
+                        (parent) ? parent->test_path : "", p->name);
+                p->test_path = test_path;
             }
 
             fprintf(f, trc_tests_stats_row,
                     level_str,
                     name_link ? "href" : "name",
                     name_link ? "#" : "",
+                    p->test_path,
                     p->name,
-                    p->name,
-                    obj_link != NULL ? "<A name=\"" : "",
-                    PRINT_STR(obj_link),
-                    obj_link != NULL ? "\">": "",
+                    test_path != NULL ? "<A name=\"OBJECTIVE" : "",
+                    PRINT_STR(test_path),
+                    test_path != NULL ? "\">": "",
                     PRINT_STR(p->objective),
-                    obj_link != NULL ? "</A>": "",
+                    test_path != NULL ? "</A>": "",
                     TRC_STATS_RUN(&p->stats),
                     p->stats.pass_exp, p->stats.fail_exp,
                     p->stats.pass_une, p->stats.fail_une,
