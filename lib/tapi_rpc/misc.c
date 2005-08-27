@@ -51,7 +51,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
-
+#include "tapi_rpc_winsock2.h"
 
 /**
  * Convert I/O vector to array.
@@ -812,3 +812,29 @@ rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start)
 
     RETVAL_VOID(vm_trasher);
 }
+
+void 
+rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s, 
+                                rpc_socket_domain domain,
+                                rpc_socket_type sock_type,
+                                rcf_rpc_server *pco_child, int *child_s)
+{
+    pid_t                   process_id;
+    static char             info[512];
+    int                     info_len = sizeof(info);
+
+    if (rpc_is_winsock2(pco_father))
+    {
+        rcf_rpc_server_create(pco_father->ta, "pco_child", &pco_child);
+        process_id = rpc_getpid(pco_child);
+        rpc_wsa_duplicate_socket(pco_father, father_s, process_id, 
+                                 info, &info_len);
+        child_s = rpc_wsa_socket(pco_child, domain, sock_type, 
+                                    RPC_PROTO_DEF, info, info_len, 0);
+    } 
+    else
+    {    
+        rcf_rpc_server_fork(pco_father, "pco_child", &pco_child);
+        child_s = father_s;
+    }
+}    

@@ -290,4 +290,22 @@ extern void rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
 extern void rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
                         rpc_ptr offset, size_t len, char *dst_buf);
 
+
+/**
+ * Creates a child process (with a duplicated socket in case of winsock2)
+ *
+ * @param pco_father     RPC server handle
+ * @param father_s       socket on @b pco_father
+ * @param domain         domain, used in test
+ * @param sock_type      type of socket, used in test
+ * @param pco_child      new process
+ * @param child_s        duplicated socket on @b pco_child
+ */
+extern void rpc_create_child_process_socket(rcf_rpc_server *pco_father, 
+                                            int father_s, 
+                                            rpc_socket_domain domain,
+                                            rpc_socket_type sock_type,
+                                            rcf_rpc_server *pco_child, 
+                                            int *child_s);
+
 #endif /* !__TE_TAPI_RPC_MISC_H__ */
