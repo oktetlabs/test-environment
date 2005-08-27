@@ -829,12 +829,12 @@ rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s,
         process_id = rpc_getpid(pco_child);
         rpc_wsa_duplicate_socket(pco_father, father_s, process_id, 
                                  info, &info_len);
-        child_s = rpc_wsa_socket(pco_child, domain, sock_type, 
-                                    RPC_PROTO_DEF, info, info_len, 0);
+        *child_s = rpc_wsa_socket(pco_child, domain, sock_type, 
+                                  RPC_PROTO_DEF, info, info_len, 0);
     } 
     else
     {    
         rcf_rpc_server_fork(pco_father, "pco_child", &pco_child);
-        child_s = father_s;
+        *child_s = father_s;
     }
 }    
