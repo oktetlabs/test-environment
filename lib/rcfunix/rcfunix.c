@@ -58,10 +58,14 @@
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_shell_cmd.h"
 #include "rcf_api.h"
 #include "rcf_methods.h"
 
@@ -95,6 +99,9 @@
 
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
+#define RCFUNIX_WAITPID_N_MAX       100
+#define RCFUNIX_WAITPID_SLEEP_US    10000
+
 
 /*
  * This library is appropriate for usual and proxy UNIX agents.
@@ -114,6 +121,8 @@ typedef struct unix_ta {
     te_bool  is_local;                /**< TA is started on the local PC */
     uint32_t pid;                     /**< TA pid */
     int      flags;                   /**< Flags */
+    pid_t    start_pid;               /**< PID of the SSH process which
+                                           started the agent */
     
     struct rcf_net_connection *conn;  /**< Connection handle */
 } unix_ta;
@@ -128,20 +137,22 @@ typedef struct unix_ta {
  * @return TE_ETIMEDOUT    Command timed out
  */   
 static int
-system_with_timeout(char *cmd, int timeout)
+system_with_timeout(const char *cmd, int timeout)
 {
-    FILE *f = popen(cmd, "r");
-    int   fd;
-    char  buf[64] = { 0, };
-    int   rc;
-    
-    if (f == NULL)
+    pid_t           pid;
+    int             fd;
+    char            buf[64] = { 0, };
+    int             rc;
+    int             status;
+    unsigned int    waitpid_tries = 0;
+
+    pid = te_shell_cmd(cmd, -1, NULL, &fd);
+    if (pid < 0)
     {
         rc = errno;
-        ERROR("popen() for the command <%s> failed", cmd);
+        ERROR("te_shell_cmd() for the command <%s> failed", cmd);
         return TE_OS_RC(TE_RCF_UNIX, rc);
     }
-    fd = fileno(f);
     
     while (1)
     {
@@ -157,22 +168,46 @@ system_with_timeout(char *cmd, int timeout)
         if (select(fd + 1, &set, 0, 0, &tv) == 0)
         {
             ERROR("Command <%s> timed out", cmd);
-#if 0
-            /* Do not call pclose(), since it does waitpid() */
-            (void)pclose(f);
-#endif
+            if (close(fd) != 0)
+                ERROR("Failed to close() pipe from stdout of the shell "
+                      "command: %r", TE_OS_RC(TE_RCF_UNIX, errno));
+            if (kill(pid, SIGTERM) != 0)
+                ERROR("Failed to kill() process of the shell command: %r",
+                      TE_OS_RC(TE_RCF_UNIX, errno));
+            MSLEEP(100);
+            if (kill(pid, SIGKILL) == 0)
+                RING("Process of the shell command killed by SIGKILL");
             return TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT);
         }
         
         if (read(fd, buf, sizeof(buf)) == 0)
         {
-            rc = pclose(f);
-            if (rc != 0)
+            if (close(fd) != 0)
+                ERROR("Failed to close() pipe from stdout of the shell "
+                      "command: %r", TE_OS_RC(TE_RCF_UNIX, errno));
+
+            while (((rc = waitpid(pid, &status, WNOHANG)) == 0) &&
+                   (waitpid_tries++ < RCFUNIX_WAITPID_N_MAX))
+            {
+                usleep(RCFUNIX_WAITPID_SLEEP_US);
+            }
+            if (rc < 0)
             {
                 rc = TE_OS_RC(TE_RCF_UNIX, errno);
-                INFO("Command <%s> failed with errno %r", cmd, rc);
+                ERROR("Waiting of the shell command <%s> pid %d "
+                      "error: %r", cmd, (int)pid, rc);
                 return rc;
             }
+            else if (rc == 0)
+            {
+                ERROR("Shell command <%s> seems to be finished, "
+                      "but no child was available", cmd);
+            }
+            else if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+            {
+                return TE_RC(TE_RCF_UNIX, TE_ESHCMD);
+            }
+
             return 0;
         }
     }
@@ -201,6 +236,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
 {
     static unsigned int seqno = 0;
 
+    int      rc;
     unix_ta *ta;
     char    *token;
     char     path[RCF_MAX_PATH];
@@ -347,12 +383,12 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
 
     VERB("Copy image '%s' to the %s:/tmp", ta->exec_name, ta->host);
     if (!(*flags & TA_FAKE) &&
-        system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT) != 0)
+        ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0))
     {
-        ERROR("Failed to copy TA image %s to the %s:/tmp",
-              ta->exec_name, ta->host);
+        ERROR("Failed to copy TA image %s to the %s:/tmp: %r",
+              ta->exec_name, ta->host, rc);
         free(dup);
-        return TE_ESHCMD;
+        return rc;
     }
 
     /* Clean up command string */
@@ -366,7 +402,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     {
         strcat(cmd, "sudo ");
     }
-    if (shell != NULL)
+    if ((shell != NULL) && (strlen(shell) > 0))
     {
         VERB("Using '%s' as shell for TA '%s'", shell, ta->ta_name);
         strcat(cmd, shell);
@@ -389,17 +425,20 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     sprintf(cmd + strlen(cmd), " 2>&1 | te_tee %s %s 10 >ta.%s ", 
             TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
+#if 0
     /* Always run in background */
     strcat(cmd, " &");
+#endif
 
     free(dup);
 
     VERB("Command to start TA: %s", cmd);
     if (!(*flags & TA_FAKE) &&
-        (system_with_timeout(cmd, RCFUNIX_START_TIMEOUT) != 0))
+        ((ta->start_pid = te_shell_cmd(cmd, -1, NULL, NULL)) <= 0))
     {
-        ERROR("Failed to start TA %s", ta_name);
-        return TE_ESHCMD;
+        rc = TE_OS_RC(TE_RCF_UNIX, errno);
+        ERROR("Failed to start TA %s: %r", ta_name, rc);
+        return rc;
     }
 
     *handle = (rcf_talib_handle)ta;
@@ -408,9 +447,8 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
 
 bad_confstr:
     free(dup);
-    VERB("Bad configuration string for TA '%s'",
-                         ta_name);
-    return TE_EINVAL;
+    VERB("Bad configuration string for TA '%s'", ta_name);
+    return TE_RC(TE_RCF_UNIX, TE_EINVAL);
 }
 
 /**
@@ -500,6 +538,12 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;
+
+    if (ta->start_pid > 0)
+    {
+        kill(ta->start_pid, SIGTERM);
+        kill(ta->start_pid, SIGKILL);
+    }
 
     return 0;
 }
