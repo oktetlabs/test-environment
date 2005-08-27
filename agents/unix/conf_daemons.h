@@ -31,6 +31,8 @@
 #ifndef __TE_TA_UNIX_CONF_DAEMONS_H__
 #define __TE_TA_UNIX_CONF_DAEMONS_H__
 
+#define TE_LGR_USER      "Daemons"
+
 #include "te_config.h"
 #include "config.h"
 
@@ -58,7 +60,6 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#define TE_LGR_USER      "Daemons"
 #include "logger_ta.h"
 
 #include "unix_internal.h"
