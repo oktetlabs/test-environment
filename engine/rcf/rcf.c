@@ -428,7 +428,7 @@ parse_config(const char *filename)
 
         agent->next = agents;
         agents = agent;
-        agent->flags = 0;
+        agent->flags = TA_DEAD;
 
         if ((attr = xmlGetProp_exp(cur, (const xmlChar *)"name")) != NULL)
         {
