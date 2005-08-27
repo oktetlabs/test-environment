@@ -42,9 +42,8 @@
 #include <errno.h>
 #endif
 
-
 //#include "te_defs.h"
-//#include "logger_api.h"
+#include "logger_api.h"
 
 
 /* See description in te_shell_cmd.h */
@@ -127,4 +126,3 @@ te_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
     }
     return pid;
 }
-

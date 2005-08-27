@@ -39,8 +39,10 @@
 #include <netinet/in_systm.h>
 #endif
 
-#include "unix_internal.h"
 #include "te_tools.h"
+
+#include "unix_internal.h"
+
 
 extern char **environ;
 
@@ -3271,8 +3273,8 @@ TARPC_FUNC(fopen, {},
 }
 )
 
-/*-------------- ta_shell_cmd() --------------------------------*/
-TARPC_FUNC(ta_shell_cmd, {},
+/*-------------- te_shell_cmd() --------------------------------*/
+TARPC_FUNC(te_shell_cmd, {},
 {
     MAKE_CALL(out->pid = 
               func_ptr(in->cmd.cmd_val, in->uid, 

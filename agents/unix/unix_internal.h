@@ -132,25 +132,6 @@ extern void ta_children_cleanup();
 extern pid_t ta_waitpid(pid_t pid, int *status, int options);
 
 /**
- * Function to base system()-like and popen()-like functions on it.
- * You MUST use uid parameter instead of "su - user -c", because su makes
- * one more fork, and you do not know how to kill this grandchild process.
- * Process spawned by this function SHOULD be catched by ta_waitpid() or
- * killed by ta_kill_death().
- *
- * @param cmd    command to run in the shell
- * @param uid    user id to run the shell; use -1 for default
- * @param in_fd  location to store file descriptor of pipe to stdin of 
- *               the shell command; use NULL for standard stdin
- * @param out_fd location to store file descriptor of pipe to stdout of
- *               the shell command; use NULL for standard stdout
- * 
- * @return pid value, positive on success, negative on failure
- */
-extern pid_t ta_shell_cmd(const char *cmd, uid_t uid, 
-                          int *in_fd, int *out_fd);
-
-/**
  * system() analogue, with the same parameters/return value.
  */
 extern int ta_system(const char *cmd);

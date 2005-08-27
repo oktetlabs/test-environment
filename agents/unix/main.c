@@ -53,6 +53,7 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_shell_cmd.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
@@ -1176,84 +1177,10 @@ ta_waitpid(pid_t pid, int *status, int options)
 #undef IMPOSSIBLE_LOG_AND_RET
 
 /* See description in unix_internal.h */
-pid_t
-ta_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
-{
-    int   pid;
-    int   in_pipe[2], out_pipe[2];
-
-    if (cmd == NULL)
-    {
-        errno = EINVAL;
-        return -1;
-    }
-    if (in_fd != NULL && pipe(in_pipe) != 0)
-        return -1;
-    if (out_fd != NULL && pipe(out_pipe) != 0)
-        return -1;
-
-    pid = fork();
-    if (pid == 0)
-    {
-        if (in_fd != 0)
-        {
-            close(in_pipe[1]);
-            if (in_pipe[0] != STDIN_FILENO)
-            {
-                close(STDIN_FILENO);
-                dup2(in_pipe[0], STDIN_FILENO);
-            }
-        }
-        if (out_fd != 0)
-        {
-            close(out_pipe[0]);
-            if (out_pipe[1] != STDOUT_FILENO)
-            {
-                close(STDOUT_FILENO);
-                dup2(out_pipe[1], STDOUT_FILENO);
-            }
-        }
-        if (uid != (uid_t)(-1) && setuid(uid) != 0)
-        {
-            ERROR("Failed to set user %d before runing command \"%s\"",
-                  uid, cmd);
-        }
-        execl("/bin/sh", "sh", "-c", cmd, (char *) 0);
-        return 0;
-    }
-
-    if (in_fd != NULL)
-        close(in_pipe[0]);
-    if (out_fd != NULL)
-        close(out_pipe[1]);
-    if (pid < 0)
-    {
-        if (in_fd != NULL)
-        {
-            close(in_pipe[1]);
-            *in_fd = -1;
-        }
-        if (out_fd != NULL)
-        {
-            close(out_pipe[0]);
-            *out_fd = -1;
-        }
-    }
-    else
-    {
-        if (in_fd != NULL)
-            *in_fd = in_pipe[1];
-        if (out_fd != NULL)
-            *out_fd = out_pipe[0];
-    }
-    return pid;
-}
-
-/* See description in unix_internal.h */
 int 
 ta_system(const char *cmd)
 {
-    pid_t   pid = ta_shell_cmd(cmd, -1, NULL, NULL);
+    pid_t   pid = te_shell_cmd(cmd, -1, NULL, NULL);
     int     status;
         
     if (pid < 0)

@@ -4,12 +4,14 @@ AM_LDFLAGS = @TE_LDFLAGS@
 
 include_HEADERS = \
 	te_tools.h \
-	te_bufs.h
+	te_bufs.h \
+	te_shell_cmd.h
 
 lib_LIBRARIES = libtools.a
 
 libtools_a_SOURCES = \
-	te_bufs.c
+	te_bufs.c \
+	te_shell_cmd.c
 
 
 install-exec-hook:

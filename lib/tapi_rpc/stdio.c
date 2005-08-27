@@ -145,15 +145,15 @@ rpc_fileno(rcf_rpc_server *rpcs,
 }
 
 /** 
- * See ta_shell_cmd function.
+ * See te_shell_cmd function.
  * cmd parameter should not be changed after call.
  */
 static tarpc_pid_t
-rpc_ta_shell_cmd(rcf_rpc_server *rpcs, const char *cmd, 
+rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd, 
                  tarpc_uid_t uid, int *in_fd, int *out_fd)
 {
-    tarpc_ta_shell_cmd_in  in;
-    tarpc_ta_shell_cmd_out out;
+    tarpc_te_shell_cmd_in  in;
+    tarpc_te_shell_cmd_out out;
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -161,7 +161,7 @@ rpc_ta_shell_cmd(rcf_rpc_server *rpcs, const char *cmd,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
-        RETVAL_INT(ta_shell_cmd, -1);
+        RETVAL_INT(te_shell_cmd, -1);
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -171,21 +171,21 @@ rpc_ta_shell_cmd(rcf_rpc_server *rpcs, const char *cmd,
     in.in_fd = (in_fd != NULL);
     in.out_fd = (out_fd != NULL);
 
-    rcf_rpc_call(rpcs, "ta_shell_cmd", &in, &out);
+    rcf_rpc_call(rpcs, "te_shell_cmd", &in, &out);
                  
     if (in_fd != NULL)
         *in_fd = out.in_fd;
     if (out_fd != NULL)
         *out_fd = out.out_fd;
 
-    TAPI_RPC_LOG("RPC (%s,%s): ta_shell_cmd(%s, %d, %p(%d), %p(%d)) "
+    TAPI_RPC_LOG("RPC (%s,%s): te_shell_cmd(%s, %d, %p(%d), %p(%d)) "
                  "-> %d (%s)",
                  rpcs->ta, rpcs->name, cmd, uid, 
                  in_fd, (in_fd == NULL) ? 0 : *in_fd,
                  out_fd, (out_fd == NULL) ? 0 : *out_fd,
                  out.pid, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(ta_shell_cmd, out.pid);
+    RETVAL_INT(te_shell_cmd, out.pid);
 }
 
 /* See description in tapi_rpc_stdio.h */
@@ -200,7 +200,7 @@ rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, const char *cmd,
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
 
-    return rpc_ta_shell_cmd(rpcs, cmdline, uid, in_fd, out_fd);
+    return rpc_te_shell_cmd(rpcs, cmdline, uid, in_fd, out_fd);
 }
 
 /** Chunk for memory allocation in rpc_read_all */
@@ -285,9 +285,9 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
     }
     
     iut_err_jump = rpcs->iut_err_jump;
-    if ((pid = rpc_ta_shell_cmd(rpcs, cmdline, uid, NULL, &fd)) < 0)
+    if ((pid = rpc_te_shell_cmd(rpcs, cmdline, uid, NULL, &fd)) < 0)
     {
-        ERROR("Cannot execute the command: rpc_ta_shell_cmd() failed");
+        ERROR("Cannot execute the command: rpc_te_shell_cmd() failed");
         return rc;
     }
 

@@ -2075,8 +2075,8 @@ struct tarpc_fclose_out {
     tarpc_int             retval;
 };
 
-/* ta_shell_cmd() */
-struct tarpc_ta_shell_cmd_in {
+/* te_shell_cmd() */
+struct tarpc_te_shell_cmd_in {
     struct tarpc_in_arg common;
     
     char        cmd<>;
@@ -2085,7 +2085,7 @@ struct tarpc_ta_shell_cmd_in {
     tarpc_bool  out_fd;
 };
 
-struct tarpc_ta_shell_cmd_out {
+struct tarpc_te_shell_cmd_out {
     struct tarpc_out_arg common;
     
     tarpc_pid_t pid;
@@ -2878,7 +2878,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(open)
         RPC_DEF(fopen)
         RPC_DEF(fclose)
-        RPC_DEF(ta_shell_cmd)
+        RPC_DEF(te_shell_cmd)
         RPC_DEF(system)
         RPC_DEF(waitpid)
         RPC_DEF(fileno)

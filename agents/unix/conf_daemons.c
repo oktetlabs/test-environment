@@ -28,7 +28,10 @@
  * $Id$
  */
 
+#include "te_shell_cmd.h"
+
 #include "conf_daemons.h"
+
 
 /** Maximum number of attempts to wait a daemon in expected state */
 #define TA_UNIX_DAEMON_WAIT_ATTEMPTS    100
@@ -2789,7 +2792,7 @@ flush_smtp_server_queue(void)
     {
         char buf[30];
         snprintf(buf, sizeof(buf), "%s -qff", exim_name);
-        rc = ta_shell_cmd(buf, -1, NULL, NULL);
+        rc = te_shell_cmd(buf, -1, NULL, NULL);
         if (rc > 0)
             rc = 0;
         else
