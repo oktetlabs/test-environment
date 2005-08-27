@@ -2976,7 +2976,7 @@ supervise_backups(void *arg)
             }
             free(backup);
         }
-        SLEEP(1);
+        sleep(1);
     }
 }
 
