@@ -728,7 +728,9 @@ ip4_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             {
                 rc = asn_put_child_value(parsed_packet, ip4_header_pdu, 
                                          PRIVATE, NDN_TAD_IP4);
-                RING("%s(): rc from put IP4 empty header: %r", rc);
+                if (rc != 0)
+                    ERROR("%s(): rc from put IP4 empty header: %r",
+                          __FUNCTION__, rc);
             }
             return TE_RC(TE_TAD_CSAP, rc); 
         }
