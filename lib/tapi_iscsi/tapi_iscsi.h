@@ -60,6 +60,9 @@ extern int tapi_iscsi_csap_create(const char *ta_name, int sid,
  * @param sid           RCF SID
  * @param csap          identifier of CSAP
  * @param timeout       timeout of operation in milliseconds
+ * @param csap          identifier of CSAP, to which received
+ *                      data should be forwarded, may be
+ *                      CSAP_INVALID_HANDLE
  * @param params        location for iSCSI current params (OUT)
  * @param buffer        location for received data (OUT)
  * @param length        length of buffer / received data (IN/OUT)
@@ -69,6 +72,7 @@ extern int tapi_iscsi_csap_create(const char *ta_name, int sid,
 extern int tapi_iscsi_recv_pkt(const char *ta_name, int sid, 
                                csap_handle_t csap,
                                int timeout,
+                               csap_handle_t forward,
                                iscsi_target_params_t *params,
                                uint8_t *buffer,
                                size_t  *length);

@@ -128,12 +128,13 @@ iscsi_msg_handler(char *pkt_fname, void *user_param)
         WARN("%s(): length of message greater then buffer", __FUNCTION__);
 
     len = msg->length;
-    rc = asn_read_value_field(pkt, msg->data, &len, "paylaod.#bytes");
+    rc = asn_read_value_field(pkt, msg->data, &len, "payload.#bytes");
     if (rc != 0)
-        ERROR("%s(): read payload failed %X", __FUNCTION__, rc);
+        ERROR("%s(): read payload failed %r", __FUNCTION__, rc);
     msg->length = len;
 
-    asn_read_int32(pkt, &(msg->params->param), "pdus.0.#iscsi.param");
+    if (msg->params != NULL)
+        asn_read_int32(pkt, &(msg->params->param), "pdus.0.#iscsi.param");
 
     asn_free_value(pkt);
 }
@@ -143,7 +144,8 @@ iscsi_msg_handler(char *pkt_fname, void *user_param)
 
 int
 tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
-                    int timeout, iscsi_target_params_t *params,
+                    int timeout, csap_handle_t forward,
+                    iscsi_target_params_t *params,
                     uint8_t *buffer, size_t  *length)
 {
     asn_value *pattern = NULL;
@@ -167,6 +169,17 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
     msg.params = params;
     msg.data   = buffer;
     msg.length = *length;
+
+    if (forward != CSAP_INVALID_HANDLE)
+    {
+        rc = asn_write_int32(pattern, forward, "0.action.#forward");
+        if (rc != 0)
+        {
+            ERROR("%s():  write forward csap failed: %r",
+                  __FUNCTION__, rc);
+            goto cleanup;
+        }
+    }
 
 
     rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern, 
@@ -218,7 +231,8 @@ tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
         goto cleanup;
     } 
 
-    asn_write_int32(template, params->param, "pdus.0.#iscsi.param");
+    if (params != NULL)
+        asn_write_int32(template, params->param, "pdus.0.#iscsi.param");
 
     rc = tapi_tad_trsend_start(ta_name, sid, csap, template,
                                RCF_MODE_BLOCKING);
