@@ -19,9 +19,9 @@ LDADD= -ltapi -ltapi_eth -ltapi_tad -lndn -lasn -lconfapi -lrcfapi \
 
 MYDEPS = @SELFTAD_TE_DEPS@ @TE_INSTALL@/@host@/lib/libtapi_eth.a 
 
-get_any_DEPENDENCIES = $(MYDEPS)
+caught_any_DEPENDENCIES = $(MYDEPS)
 
-eth1_DEPENDENCIES = $(MYDEPS)
+eth_serial1_DEPENDENCIES = $(MYDEPS)
 
-eth2_DEPENDENCIES = $(MYDEPS)
+eth_serial2_DEPENDENCIES = $(MYDEPS)
 

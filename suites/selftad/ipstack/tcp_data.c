@@ -65,12 +65,8 @@ uint8_t rx_buffer[10000];
 
 
 int
-main(int argc, char *argv[])
-
+main(int argc, char *argv[]) 
 { 
-    int syms = 0;
-    asn_value *tcp_template;
-
     csap_handle_t csap = CSAP_INVALID_HANDLE;
     csap_handle_t acc_csap = CSAP_INVALID_HANDLE;
 
@@ -145,12 +141,6 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("bind failed");
 
-    rc = asn_parse_value_text(
-              "{ pdus { tcp:{}, ip4:{}} }",
-              ndn_traffic_template, &tcp_template, &syms);
-    if (rc != 0)
-        TEST_FAIL("parse template failed %X syms %d", rc, syms); 
-
 
     rc = tapi_tcp_server_csap_create(agt_a, 0, csap_ip_addr, 
                                      csap_addr.sin_port, &csap);
@@ -210,7 +200,7 @@ main(int argc, char *argv[])
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
     rc = rpc_recv(rpc_srv, socket, rx_buffer, sizeof(rx_buffer), 0); 
-    if (rc != len)
+    if (rc != (int)len)
         TEST_FAIL("CSAP->RPC: len received %d, expected %d", rc, len);
 
     rc = memcmp(tx_buffer, rx_buffer, len);

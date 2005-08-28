@@ -106,6 +106,7 @@ ipstack/Makefile \
 dhcp/Makefile \
 snmp/Makefile \
 cli/Makefile \
+iscsi/Makefile \
 ])
 
 AC_OUTPUT

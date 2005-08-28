@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    
+    <description>Tests on TAD iSCSI csap functionality.</description>
+
+    <author mailto="Konstantin.Abramenko@oktetlabs.ru"/>
+    <req id="TAD_ISCSI" sticky="true"/>
+
+    <session>
+        <var name="ta" handdown="true">
+            <value>Agt_A</value>
+        </var>
+
+        <run>
+            <script name="simple">
+            </script>
+        </run> 
+    </session>
+
+</package>
