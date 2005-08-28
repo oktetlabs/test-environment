@@ -64,6 +64,7 @@
 
 #include "rcf_api.h"
 #include "conf_api.h"
+
 #include "logger_api.h"
 
 #include "tapi_tcp.h"
@@ -1947,14 +1948,17 @@ tcp_data_csap_handler(char *pkt_fname, void *user_param)
     }
 
     len = asn_get_length(pkt, "payload.#bytes");
+    RING("%s(): %d bytes received", __FUNCTION__, (int)len);
 
     if (len > msg->length)
         WARN("%s(): length of message greater then buffer", __FUNCTION__);
 
     len = msg->length;
-    rc = asn_read_value_field(pkt, msg->data, &len, "paylaod.#bytes");
+    rc = asn_read_value_field(pkt, msg->data, &len, "payload.#bytes");
     if (rc != 0)
-        ERROR("%s(): read payload failed %X", __FUNCTION__, rc);
+        ERROR("%s(): read payload failed %r", __FUNCTION__, rc);
+    else
+        INFO("%s(): received payload %tm", __FUNCTION__, msg->data, len);
 
     asn_free_value(pkt);
 }
@@ -1975,7 +1979,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
 
     int rc = 0, syms, num;
 
-    if (ta_name == NULL || socket == NULL || length == NULL)
+    if (ta_name == NULL || socket == NULL)
         return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{{pdus { tcp:{}, ip4:{} } }}",
@@ -1999,7 +2003,15 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
     }
 
     msg.data = buf;
-    msg.length = *length;
+    msg.length = ((length == NULL) ? 0 : *length);
+
+    if (exact)
+    {
+        if (length == NULL)
+            return TE_EWRONGPTR;
+        else
+            asn_write_int32(pattern, *length, "0.pdus.0.length");
+    }
 
     rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, 
                                tcp_data_csap_handler, &msg, timeout, 1);
@@ -2013,7 +2025,6 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 
-    UNUSED(exact);
 cleanup:
     asn_free_value(pattern);
     return rc;
