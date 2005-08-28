@@ -110,6 +110,10 @@ extern int csap_support_cli_register(void);
 extern int csap_support_pcap_register(void);
 #endif
 
+#ifdef WITH_ISCSI
+extern int csap_support_iscsi_register(void);
+#endif
+
 
 static void
 check_init(void)
@@ -142,6 +146,9 @@ check_init(void)
 #endif
 #ifdef WITH_PCAP
     csap_support_pcap_register();
+#endif
+#ifdef WITH_ISCSI
+    csap_support_iscsi_register();
 #endif
 #endif /* DUMMY_TAD */
 

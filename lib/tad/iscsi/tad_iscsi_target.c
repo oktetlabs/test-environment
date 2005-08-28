@@ -40,6 +40,8 @@
 void *
 iscsi_server_rx_thread(void *arg)
 {
+    int rc;
+    uint8_t buffer[200];
     iscsi_target_thread_params_t *params = arg;
 
     if (arg == NULL)
@@ -50,6 +52,15 @@ iscsi_server_rx_thread(void *arg)
 
     RING("%s(): called with send_recv handle %d", __FUNCTION__, 
          params->send_recv_csap);
+
+    rc = iscsi_tad_recv(params->send_recv_csap, buffer, 200);
+    RING("tad recv return %d", rc);
+
+    if (rc > 0)
+    {
+        rc = iscsi_tad_send(params->send_recv_csap, buffer, 200);
+        RING("tad send return %d", rc);
+    }
 
     return NULL;
 }
