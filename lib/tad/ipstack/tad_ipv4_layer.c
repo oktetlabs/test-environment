@@ -314,7 +314,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     csap_pkts_p         pkt_curr,
                         pkt_prev;
 
-    ip4_csap_specific_data_t *spec_data;
+    ip4_csap_specific_data_t *spec_data = NULL;
 
     uint8_t src_ip_addr[4];
     uint8_t dst_ip_addr[4];

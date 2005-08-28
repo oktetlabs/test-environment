@@ -334,9 +334,12 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     if (pkt_list == NULL || tmpl_pdu == NULL)
         return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
+    spec_data = (tcp_csap_specific_data_t *)
+                csap_descr->layers[layer].specific_data; 
+
     if (csap_descr->type == TAD_CSAP_DATA) 
     {
-        if (spec_data->data_tag != NDN_TAG_TCP_DATA_SERVER)
+        if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
         {
             ERROR("%s(CSAP %d) write to TCP data 'server' is not allowed",
                   __FUNCTION__, csap_descr->id);
@@ -352,10 +355,7 @@ tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
         up_payload->next = NULL;
 
         return 0;
-    }
-
-    spec_data = (tcp_csap_specific_data_t *)
-                csap_descr->layers[layer].specific_data; 
+    } 
 
 
     pkt_list->len = hdr_len + pld_len; 
