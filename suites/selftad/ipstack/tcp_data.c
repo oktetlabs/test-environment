@@ -55,10 +55,13 @@
 #include "tapi_ip.h"
 #include "tapi_tcp.h"
 
+#include "te_bufs.h"
+
 #include "ndn_eth.h"
 #include "ndn_ipstack.h"
 
-uint8_t buffer[10000];
+uint8_t tx_buffer[10000];
+uint8_t rx_buffer[10000];
 
 
 int
@@ -174,7 +177,25 @@ main(int argc, char *argv[])
      * Send data
      */
 
-    rc = rpc_send(rpc_srv, socket, buffer, 200, 0); 
+    memset(tx_buffer, 0, sizeof(tx_buffer));
+    len = 20;
+    te_fill_buf(tx_buffer, len);
+    RING("+++++++++++ Prepared data: %tm", tx_buffer, len);
+    rc = rpc_send(rpc_srv, socket, tx_buffer, len, 0); 
+    RING("%d bytes sent from RPC socket", rc);
+
+    memset(rx_buffer, 0, sizeof(rx_buffer));
+    rc = tapi_tcp_buffer_recv(agt_a, 0, acc_csap, 2000, 
+                              CSAP_INVALID_HANDLE, TRUE, 
+                              rx_buffer, &len);
+    if (rc != 0)
+        TEST_FAIL("recv on CSAP failed: %r", rc); 
+
+    RING("+++++++++++ Received data: %tm", rx_buffer, len);
+
+    rc = memcmp(tx_buffer, rx_buffer, len);
+    if (rc != 0)
+        TEST_FAIL("sent and received data differ, rc = %d", rc);
 
     TEST_SUCCESS;
 
