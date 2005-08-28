@@ -28,9 +28,9 @@
  * $Id$
  */
 
-#include "te_shell_cmd.h"
-
 #include "conf_daemons.h"
+
+#include "te_shell_cmd.h"
 
 
 /** Maximum number of attempts to wait a daemon in expected state */

@@ -28,12 +28,6 @@
  * $Id$
  */
 
-/*
- * The function is moved to the header in order to avoid issues with
- * rcfunix dynamic linkage.
- */
-#if 0
-
 #define TE_LGR_USER     "TE Shell Cmd"
 
 #include "te_config.h"
@@ -50,4 +44,15 @@
 
 #include "logger_api.h"
 
-#endif
+#include "te_shell_cmd.h"
+
+
+/*
+ * The function implementation is moved to the header in order to
+ * avoid issues with rcfunix dynamic linkage.
+ */
+pid_t
+te_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
+{
+    return te_shell_cmd_inline(cmd, uid, in_fd, out_fd);
+}

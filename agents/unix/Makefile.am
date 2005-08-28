@@ -113,6 +113,7 @@ nodist_taunixtmpl_SOURCES=$(MY_NODIST_SOURCES)
 taunixtmpl_LDADD=$(MY_LDADD)
 
 taunixtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
@@ -120,7 +121,9 @@ taunixtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
 
 
-SYMTBL_LIBS= $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a
+SYMTBL_LIBS= \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a
 
 symtbl.c: $(MY_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 

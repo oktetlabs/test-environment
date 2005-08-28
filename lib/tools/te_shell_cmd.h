@@ -64,7 +64,7 @@ extern "C" {
  * @return pid value, positive on success, negative on failure
  */
 static inline pid_t
-te_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
+te_shell_cmd_inline(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
 {
     int   pid;
     int   in_pipe[2], out_pipe[2];
@@ -142,6 +142,9 @@ te_shell_cmd(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
     }
     return pid;
 }
+
+extern pid_t te_shell_cmd(const char *cmd, uid_t uid,
+                          int *in_fd, int *out_fd);
 
 #ifdef __cplusplus
 } /* extern "C" */
