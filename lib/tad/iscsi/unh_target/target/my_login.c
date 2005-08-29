@@ -255,7 +255,6 @@ err_conn_out:
 static struct iscsi_conn *
 build_conn_sess(int sock, struct portal_group *ptr)
 {
-
     struct iscsi_conn *conn;
     struct iscsi_session *session;
     int addr_len;
@@ -285,6 +284,7 @@ build_conn_sess(int sock, struct portal_group *ptr)
     sem_init(&conn->kill_tx_sem, 0, 0);
     sem_init(&conn->text_in_progress_sem, 0, 1);
 
+#if 0
     if ((conn->ip_address = malloc(sizeof(struct sockaddr))) == NULL) {
         goto out2;
     }
@@ -303,7 +303,7 @@ build_conn_sess(int sock, struct portal_group *ptr)
     if (getsockname(sock, conn->local_ip_address, &addr_len) < 0) {
         goto out4;
     }
-
+#endif
     session = (struct iscsi_session *)malloc(sizeof(struct iscsi_session));
     if (!session) {
 
