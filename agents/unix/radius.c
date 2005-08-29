@@ -1857,7 +1857,7 @@ xsupplicant_start(const char *ifname, const char *conf_fname)
         else
         {
             WARN("%s: XSupplicant on %s is already running, but seems "
-                 "not valid, restarting"
+                 "not valid, restarting",
                  __FUNCTION__, ifname);
             xsupplicant_stop(ifname);
         }
