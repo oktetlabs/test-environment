@@ -150,10 +150,11 @@ typedef union object_coverage
 } object_coverage;
 
 static void process_gcov_syms(FILE *symfile, int core_file,
-                              void (*functor)(int, object_coverage *, void *), 
+                              void (*functor)(void *, unsigned long, unsigned long, object_coverage *, void *), 
                               void *extra);
-static void do_gcov_sum(int core_file, object_coverage *object, void *extra);
-static void get_kernel_gcov_data(int core_file, 
+static void do_gcov_sum(void *data, unsigned long start, unsigned long size, 
+                        object_coverage *object, void *extra);
+static void get_kernel_gcov_data(void *data, unsigned long start, unsigned long size,
                                  object_coverage *object, void *extra);
 
 static char *ksymtable;
@@ -168,6 +169,81 @@ static unsigned kernel_gcov_version_magic = 0;
 static size_t sizeof_object_coverage = sizeof(struct bb);
 static size_t kernel_merge_functions[TCE_MERGE_MAX];
 
+typedef struct module_info
+{
+    char               *name;
+    unsigned long       start;
+    unsigned long       size;
+    void               *kernel_data;
+    struct module_info *next;
+} module_info;
+
+static module_info *module_list;
+
+static te_bool
+read_modules(void)
+{
+    FILE *modules = fopen("/proc/modules", "r");
+    char buffer[256];
+    char name[64];
+    unsigned long size, start;
+    module_info *the_module;
+    
+    if (modules == NULL)
+    {
+        tce_report_error("cannot open /proc/modules: %s", strerror(errno));
+        return FALSE;
+    }
+    while (fgets(buffer, sizeof(buffer) - 1, modules) != NULL)
+    {
+        if (sscanf(buffer, "%63s %lu %*d %*s %*s 0x%lx", 
+                   name, &size, &start) != 3)
+        {
+            tce_report_notice("malformed string in /proc/modules: %s", buffer);
+            continue;
+        }
+        the_module = malloc(sizeof(*the_module));
+        the_module->name        = strdup(name);
+        the_module->start       = start;
+        the_module->size        = size;
+        the_module->kernel_data = NULL;
+        the_module->next        = module_list;
+        module_list             = the_module;
+    }
+    return TRUE;
+}
+
+static void *
+read_module_data (const char *name, int core_file, unsigned long *start, unsigned long *size)
+{
+    module_info *mod;
+    for (mod = module_list; mod != NULL; mod = mod->next)
+    {
+        if (strcmp(mod->name, name) == 0)
+        {
+            if (mod->kernel_data == NULL)
+            {
+                tce_print_debug("reading %lu bytes from %lx", mod->size, mod->start);
+                mod->kernel_data = malloc(mod->size);
+                lseek(core_file, mod->start, SEEK_SET);
+                errno = 0;
+                if (read(core_file, mod->kernel_data, mod->size) < (ssize_t)mod->size)
+                {
+                    tce_report_error("error reading module %s data: %s", name, strerror(errno));
+                    free(mod->kernel_data);
+                    mod->kernel_data = NULL;
+                    return NULL;
+                }
+            }
+            *start = mod->start;
+            *size  = mod->size;
+            return mod->kernel_data;
+        }
+    }
+    tce_report_error("module %s not found", name);
+    return NULL;
+}
+
 static ssize_t
 read_safe(int fildes, void *buffer, size_t size)
 {
@@ -179,35 +255,6 @@ read_safe(int fildes, void *buffer, size_t size)
     else if (nsize < (ssize_t)size)
         tce_report_error("read %ld < %ld", (long)nsize, (long)size);
     return nsize;
-}
-
-static ssize_t
-read_at(int fildes, off_t offset, void *buffer, size_t size)
-{
-    tce_print_debug("reading %lu at %lx", (unsigned long)size, (unsigned long)offset);
-    if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
-    {
-        tce_report_error("seek error: %s", strerror(errno));
-        return (ssize_t)-1;
-    }
-    return read_safe(fildes, buffer, size);
-}
-
-static int
-read_str(int fildes, off_t offset, char *buffer, size_t maxlen)
-{
-    if(lseek(fildes, offset, SEEK_SET) == (off_t)-1)
-        return -1;
-    while(--maxlen)
-    {
-        if(read_safe(fildes, buffer, 1) <= 0)
-            return -1;
-        if(*buffer++ == '\0')
-            return 0;
-    }
-    *buffer = '\0';
-    errno = ENAMETOOLONG;
-    return -1;
 }
 
 static void
@@ -259,89 +306,62 @@ detect_kernel_gcov_version(FILE *symfile)
 void
 tce_obtain_kernel_coverage(void)
 {
+    tce_print_debug("starting kernel TCE");
     if (ksymtable != NULL)
     {
-        FILE *symfile = fopen(ksymtable, "r");
-        int core_file;
-        summary_data summary = {0, 0, 0, {{0, 0, 0}}};
-        
-        if (symfile == NULL)
+        if (read_modules())
         {
-            tce_report_error("Cannot open kernel symtable file %s: %s", 
-                             ksymtable, strerror(errno));
-            return;
-        }
-        core_file = open("/dev/tce_kmem", O_RDONLY);
-        if (core_file < 0)
-        {
-            core_file = open("/dev/kmem", O_RDONLY);
-            if (core_file < 0)
+            FILE *symfile = fopen(ksymtable, "r");
+            int core_file;
+            summary_data summary = {0, 0, 0, {{0, 0, 0}}};
+            
+            if (symfile == NULL)
             {
-                tce_report_error("Cannot open kernel memory file: %s", strerror(errno));
-                fclose(symfile);
+                tce_report_error("Cannot open kernel symtable file %s: %s", 
+                                 ksymtable, strerror(errno));
                 return;
             }
+            core_file = open("/dev/tce_kmem", O_RDONLY);
+            if (core_file < 0)
+            {
+                core_file = open("/dev/kmem", O_RDONLY);
+                if (core_file < 0)
+                {
+                    tce_report_error("Cannot open kernel memory file: %s", strerror(errno));
+                    fclose(symfile);
+                    return;
+                }
+            }
+            
+            detect_kernel_gcov_version(symfile);
+            process_gcov_syms(symfile, core_file, do_gcov_sum, &summary);
+            process_gcov_syms(symfile, core_file, get_kernel_gcov_data, &summary);
+            close(core_file);
+            fclose(symfile);
         }
-        
-        detect_kernel_gcov_version(symfile);
-        process_gcov_syms(symfile, core_file, do_gcov_sum, &summary);
-        process_gcov_syms(symfile, core_file, get_kernel_gcov_data, &summary);
-        close(core_file);
-        fclose(symfile);
     }
 }
 
-static te_bool 
-check_module_offset(const char *module, unsigned long offset)
-{
-    FILE *modules = fopen("/proc/modules", "r");
-    char buffer[256];
-    char *token;
-    unsigned long size, start;
-    
-    if (modules == NULL)
-    {
-        tce_report_error("cannot open /proc/modules: %s", strerror(errno));
-        return FALSE;
-    }
-    while (fgets(buffer, sizeof(buffer) - 1, modules) != NULL)
-    {
-        token = strtok(buffer, " \t\n");
-        if (token != NULL && strcmp(token, module) == 0)
-        {
-            token = strtok(NULL, " \t\n");
-            size = strtoul(token, NULL, 10);
-            strtok(NULL, " \t\n"); /* skip refcnt */
-            strtok(NULL, " \t\n");
-            strtok(NULL, " \t\n"); /* skip alive status */
-            token = strtok(NULL, " \t\n");
-            if (token != NULL)
-            {
-                start = strtoul(token, NULL, 0);
-                tce_print_debug("module code is at %lx..%lx", start, start + size);
-                return offset >= start && offset < start + size;
-            }
-        }
-    }
-    tce_report_error("module %s not found", module);
-    return FALSE;
-}
 
 static void
 process_gcov_syms(FILE *symfile, int core_file,
-                  void (*functor)(int, object_coverage *, void *), void *extra)
+                  void (*functor)(void *, unsigned long, unsigned long, object_coverage *, void *), void *extra)
 {
-    size_t offset;
+    unsigned long offset;
+    unsigned long mod_start, mod_size;
+    char *mod_data;
     static char symbuf[256];
-    char *token;
+    char symname[128];
+    char modname[64];
     
     rewind(symfile);
     while (fgets(symbuf, sizeof(symbuf) - 1, symfile) != NULL)
     {
-        offset = strtoul(symbuf, &token, 16);
-        strtok(token, " \t\n");
-        token = strtok(NULL, " \t\n");
-        if (strstr(token, "GCOV") != NULL)
+        if (sscanf(symbuf, "%lx %*s %s [%[^]]]", &offset, symname, modname) != 3)
+        {
+            continue;
+        }
+        if (strstr(symname, "GCOV") != NULL)
         {
             /* This is a very crude hack relying on internals of GCC */
             /* It is necessary because GCOV symbols are pointing to
@@ -350,46 +370,41 @@ process_gcov_syms(FILE *symfile, int core_file,
                4 bytes later (an immediate argument to mov).
                Most probably, this won't work on x86-64 :(
             */
-            unsigned long tmp;
-            object_coverage bb_buf;
+            unsigned long actual_offset = 0;
+            object_coverage *bb_ptr;
             static int address_offset = -1;
-            
-            token = strtok(NULL, " \t\n"); 
-            if (token == NULL) /* not a module symbol */
+
+            tce_print_debug("processing %s in module %s", symname, modname);
+            mod_data = read_module_data(modname, core_file, &mod_start, &mod_size);
+            if (mod_data == NULL)
             {
-                tce_report_notice("GCOV symbol not in a module, ignoring");
-                continue; 
+                continue;
             }
-            token[strlen(token) - 1] = '\0'; /* eliminate brackets */
-            token++;
+            if (offset < mod_start || offset >= mod_start + mod_size)
+            {
+                tce_report_error("invalid symbol offset %lx "
+                                 "(must be in range %lx..%lx)", 
+                                 offset, mod_start, mod_start + mod_size - 1);
+                continue;
+            }
+            offset -= mod_start;
 
             tce_print_debug("offset is %lx for %d", 
                             (unsigned long)offset,
                             core_file);
             if (address_offset < 0)
             {
-                for (address_offset = 0; address_offset < 16; 
+                for (address_offset = 0; address_offset < 16 && address_offset < (int)mod_size; 
                      address_offset++)
                 {
                     tce_print_debug("trying offset %lx", offset + address_offset);
-                    if(read_at(core_file, offset + address_offset, &tmp, sizeof(tmp)) < 
-                       (ssize_t)sizeof(tmp))
-                    {
-                        tce_report_error("read error on /dev/kmem");
-                        tmp = 0;
-                        break;
-                    }
-                    if (check_module_offset(token, tmp))
+                    actual_offset = *(unsigned long *)(mod_data + offset + address_offset);
+                    if (actual_offset >= mod_start && actual_offset < mod_start + mod_size)
                         break;
                 }
-                if (address_offset >= 16)
+                if (address_offset >= 16 || address_offset >= (int)mod_size)
                 {
                     tce_report_error("data pointer not found");
-                    address_offset = -1;
-                    continue;
-                }
-                if (tmp == 0) 
-                {
                     address_offset = -1;
                     continue;
                 }
@@ -398,94 +413,96 @@ process_gcov_syms(FILE *symfile, int core_file,
             }
             else
             {
-                if(read_at(core_file, offset + address_offset, &tmp, sizeof(tmp)) < 
-                   (ssize_t)sizeof(tmp))
+                actual_offset = *(unsigned long *)(mod_data + offset + address_offset);
+                if (actual_offset < mod_start || actual_offset >= mod_start + mod_size)
                 {
-                    tce_report_error("read error on /dev/kmem");
-                    continue;
+                    tce_report_error("invalid data pointer %lx", actual_offset);
                 }
             }
-            tce_print_debug("new offset is %lu", tmp);
-            if(read_at(core_file, tmp, &bb_buf, sizeof_object_coverage) < 
-               (ssize_t)sizeof_object_coverage)
-            {
-                tce_report_error("read error on /dev/kmem");
-                continue;
-            }
-            
-            functor(core_file, &bb_buf, extra);
+            actual_offset -= mod_start;
+            tce_print_debug("new offset is %lu", actual_offset);
+            bb_ptr = (object_coverage *)(mod_data + actual_offset);
+            functor(mod_data, mod_start, mod_size, bb_ptr, extra);
         }
     }
 
 }
 
 static void
-summarize_counters(int core_file, unsigned ncounts, off_t values, summary_data *summary)
+summarize_counters(long long *values, unsigned ncounts, summary_data *summary)
 {
     unsigned i;
 
-    for (i = 0; i < ncounts; i++, values += sizeof(long long))
+    for (i = 0; i < ncounts; i++, values++)
     {
-        long long counter;
-
-        if(read_at(core_file, values, &counter, sizeof(counter)) < 
-           (ssize_t)sizeof(counter))
-        {
-            tce_report_error("read error on /dev/kmem");
-            return;
-        }
-        summary->sum += counter;
+        summary->sum += *values;
         
-        if (counter > summary->max)
-            summary->max = counter;
+        if (*values > summary->max)
+            summary->max = *values;
     }
     summary->arcs += ncounts;
 }
 
+#define NORMALIZE_OFFSET(offset, start, size)                         \
+do {                                                                  \
+    if ((offset) < (start) || (offset) >= (start) + (size))           \
+    {                                                                 \
+        tce_report_error("offset %lx out of range %lx..%lx (%s:%d)",  \
+                         (offset), (start), (start) + (size) - 1,     \
+                         __FUNCTION__, __LINE__);                     \
+        return;                                                       \
+    }                                                                 \
+    offset -= start;                                                  \
+} while(0)
+
 static void
-do_gcov_sum(int core_file, object_coverage *object, void *extra)
+do_gcov_sum(void *data, unsigned long start, unsigned long size, object_coverage *object, void *extra)
 {
     summary_data *summary = extra;
 
     if (kernel_gcov_version_magic != 0)
     {
         unsigned i;
+        unsigned grp;
+        unsigned long offset;
         
         if (object->new.ctr_mask & 1)
         {
-            read_safe(core_file, &summary->groups, sizeof(*summary->groups));
-            summarize_counters(core_file, summary->groups->num, 
-                               (size_t)summary->groups->values, summary);
+            memcpy(summary->groups, object->new.counts, sizeof(*summary->groups));
+            offset = (unsigned long)summary->groups->values;
+            NORMALIZE_OFFSET(offset, start, size);
+            summarize_counters((void *)((char *)data + offset), summary->groups->num, summary);
         }
-        for (i = 1; i < GCOV_COUNTER_GROUPS; i++)
+        for (i = 1, grp = 1; i < GCOV_COUNTER_GROUPS; i++)
         {
             if ((1 << i) & object->new.ctr_mask)
             {
-                read_safe(core_file, summary->groups + i, sizeof(*summary->groups));             
+                memcpy(summary->groups + i, object->new.counts + grp, sizeof(*summary->groups));
+                grp++;
             }
         }
     }
     else
     {
-        summarize_counters(core_file, object->old.ncounts, 
-                           (size_t)object->old.counts, summary);
+        unsigned long values = (unsigned long)object->old.counts;
+        NORMALIZE_OFFSET(values, start, size);
+        summarize_counters((void *)((char *)data + values), object->old.ncounts, summary);
     }
 }
 
 
 static void
-get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
+get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object_coverage *object, void *extra)
 {
+    unsigned long offset;
     summary_data *summary = extra;
     summary_data object_summary = {0, 0, 0, {{0, 0, 0}}};
     long object_functions = 0;
-    struct bb_function_info fn_info;
     tce_function_info *fi;
     tce_object_info *oi;
     long long *target_counters;
-    long long counter;
     int i;
-    static char name_buffer[1024];
+    char *name_ptr;
     char *real_start;
         
 
@@ -495,42 +512,26 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
     }
     else
     {
-        if (lseek(core_file, (size_t)object->old.function_infos, SEEK_SET) == 
-            (off_t)-1)
+        struct bb_function_info *fn_info;
+
+        offset = (unsigned long)object->old.function_infos;
+        NORMALIZE_OFFSET(offset, start, size);
+        for (fn_info = (void *)((char *)data + offset); fn_info->arc_count >= 0; fn_info++)
         {
-            tce_report_error("seeking error on /dev/kmem: %s", strerror(errno));
-            return;
-        }
-        
-        for (;;)
-        {
-            if(read_safe(core_file, &fn_info, sizeof(fn_info)) < 
-               (ssize_t)sizeof(fn_info))
-            {
-                tce_report_error("error reading from /dev/kmem: %s", 
-                                 strerror(errno));
-                return;
-            }
-            if (fn_info.arc_count < 0)
-                break;
-            
             object_functions++;
         }
     }
 
-    do_gcov_sum(core_file, object, &object_summary);
-    if (read_str(core_file, kernel_gcov_version_magic == 0 ? 
-                 (size_t)object->old.filename :
-                 (size_t)object->new.filename, 
-                 name_buffer, sizeof(name_buffer)) != 0)
-    {
-        tce_report_error("error reading from /dev/kmem: %s", strerror(errno));
-        return;
-    }
-    real_start = strstr(name_buffer, "//");
+    do_gcov_sum(data, start, size, object, &object_summary);
+    offset = kernel_gcov_version_magic == 0 ? 
+        (unsigned long)object->old.filename :
+        (unsigned long)object->new.filename;
+    NORMALIZE_OFFSET(offset, start, size);
+    name_ptr = (char *)data + offset;
+    real_start = strstr(name_ptr, "//");
     oi = tce_get_object_info(tce_obtain_principal_peer_id(), 
-                             real_start ? real_start + 1 : name_buffer);
-    tce_print_debug("accessing %s", name_buffer);
+                             real_start ? real_start + 1 : name_ptr);
+    tce_print_debug("accessing %s", name_ptr);
     oi->gcov_version = kernel_gcov_version_magic;
     oi->object_functions = object_functions;
     oi->object_sum += object_summary.sum;
@@ -548,10 +549,12 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
     if (kernel_gcov_version_magic != 0)
     {
         unsigned fn;
-        struct gcov_fn_info new_fn_info;
+        struct gcov_fn_info *new_fn_info;
         unsigned n_counts = 0;
         unsigned n_sub_counts[GCOV_COUNTER_GROUPS];
         unsigned fi_stride;
+        char name_buffer[32];
+        int grp;
 
         oi->ncounts = object_summary.arcs;
         oi->program_ncounts = summary->arcs;
@@ -571,28 +574,25 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
             fi_stride &= ~(__alignof__ (struct gcov_fn_info) - 1);
         }
         
+        offset = (unsigned long)object->new.functions;
+        NORMALIZE_OFFSET(offset, start, size);
+        new_fn_info = (void *)((char *)data + offset);
+
         for (fn = object_functions; fn != 0; fn--)
         {
-            if(read_at(core_file, (size_t)object->new.functions, 
-                       &new_fn_info, sizeof(struct gcov_fn_info)) < 
-               (ssize_t)sizeof(struct gcov_fn_info))
-            {
-                tce_report_error("error reading from /dev/kmem");
-                return;
-            }            
             snprintf(name_buffer, sizeof(name_buffer), "%u",
-                     new_fn_info.ident);
-            for (n_counts = 0, i = 0; i < GCOV_COUNTER_GROUPS; i++)
+                     new_fn_info->ident);
+            for (n_counts = 0, i = 0, grp = 0; i < GCOV_COUNTER_GROUPS; i++)
             {
                 if ((1 << i) & object->new.ctr_mask)
                 {
-                    read_safe(core_file, n_sub_counts + i, sizeof(n_sub_counts[0]));
-                    n_counts += n_sub_counts[i];
+                    n_sub_counts[i] = new_fn_info->n_ctrs[grp];
+                    grp++;
                 }           
             }
 
             fi = tce_get_function_info(oi, name_buffer, 
-                                       n_counts, new_fn_info.checksum);
+                                       n_counts, new_fn_info->checksum);
             for (i = 0; i < GCOV_COUNTER_GROUPS; i++)
             {
                 if ((1 << i) & object->new.ctr_mask)
@@ -602,6 +602,7 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
             }
             if (fi != NULL)
             {
+                long long *source_counters;
 
                 target_counters = fi->counts;              
                 for (i = 0; i < GCOV_COUNTER_GROUPS; i++)
@@ -609,18 +610,19 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                     if ((1 << i) & object->new.ctr_mask)
                     {
                         unsigned j;
-                        long long ctr_value[4];                       
         
-                        lseek(core_file, (size_t)summary->groups[i].values, SEEK_SET);
+                        offset = (unsigned long)summary->groups[i].values;
+                        NORMALIZE_OFFSET(offset, start, size);
+                        source_counters = (void *)((char *)data + offset);
+
                         if ((size_t)summary->groups[i].merge == 
                             kernel_merge_functions[TCE_MERGE_ADD])
                         {                          
                             fi->groups[i].mode = TCE_MERGE_ADD;
                             for (j = 0; j < fi->groups[i].number; j++)
                             {
-                                read_safe(core_file, ctr_value, sizeof(*ctr_value));
-                                tce_print_debug("counter is %Ld", ctr_value[0]);
-                                (*target_counters++) += ctr_value[0];                              
+                                tce_print_debug("counter is %Ld", *source_counters);
+                                *target_counters++ += *source_counters++;                              
                             }
                         }
                         else if ((size_t)summary->groups[i].merge == 
@@ -629,19 +631,19 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                             fi->groups[i].mode = TCE_MERGE_SINGLE;
                             for (j = 0; j < fi->groups[i].number; j += 3)
                             {
-                                read_safe(core_file, ctr_value, 3 * sizeof(ctr_value));
-                                if (target_counters[0] == ctr_value[0])
-                                    target_counters[1] += ctr_value[1];
-                                else if (ctr_value[1] > target_counters[1])
+                                if (target_counters[0] == source_counters[0])
+                                    target_counters[1] += source_counters[1];
+                                else if (source_counters[1] > target_counters[1])
                                 {
-                                    target_counters[0] = ctr_value[0];
-                                    target_counters[1] = ctr_value[1] - target_counters[1];
+                                    target_counters[0] = source_counters[0];
+                                    target_counters[1] = source_counters[1] - target_counters[1];
                                 }
                                 else
-                                    target_counters[1] -= ctr_value[1];
-                                target_counters[2] += ctr_value[2];
+                                    target_counters[1] -= source_counters[1];
+                                target_counters[2] += source_counters[2];
 
-                                target_counters += 3;                               
+                                target_counters += 3;
+                                source_counters += 3;
                             }
                         }
                         else if ((size_t)summary->groups[i].merge == 
@@ -650,19 +652,19 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                             fi->groups[i].mode = TCE_MERGE_DELTA;
                             for (j = 0; j < fi->groups[i].number; j += 4)
                             {
-                                read_safe(core_file, ctr_value, 4 * sizeof(ctr_value));
-                                if (target_counters[1] == ctr_value[1])
-                                    target_counters[2] += ctr_value[2];
-                                else if (ctr_value[2] > target_counters[2])
+                                if (target_counters[1] == source_counters[1])
+                                    target_counters[2] += source_counters[2];
+                                else if (source_counters[2] > target_counters[2])
                                 {
-                                    target_counters[1] = ctr_value[1];
-                                    target_counters[2] = ctr_value[2] - target_counters[2];
+                                    target_counters[1] = source_counters[1];
+                                    target_counters[2] = source_counters[2] - target_counters[2];
                                 }
                                 else
-                                    target_counters[2] -= ctr_value[2];
-                                target_counters[3] += ctr_value[3];
+                                    target_counters[2] -= source_counters[2];
+                                target_counters[3] += source_counters[3];
 
                                 target_counters += 4;
+                                source_counters += 4;
                             }
                         }
                         else
@@ -675,41 +677,37 @@ get_kernel_gcov_data(int core_file, object_coverage *object, void *extra)
                 }             
             }
             
-            object->new.functions = (struct gcov_fn_info *) 
-                ((char *)object->new.functions + fi_stride);
+            new_fn_info = (struct gcov_fn_info *) 
+                ((char *)new_fn_info + fi_stride);
         }
     }
     else
     {
+        struct bb_function_info *fn_info;
         oi->ncounts = object->old.ncounts;
-        for (;;)
+
+        offset = (unsigned long)object->old.function_infos;
+        NORMALIZE_OFFSET(offset, start, size);
+
+        for (fn_info = (void *)((char *)data + offset); fn_info->arc_count >= 0; fn_info++)
         {          
-            if(read_at(core_file, (size_t)object->old.function_infos++, 
-                       &fn_info, sizeof(fn_info)) < (ssize_t)sizeof(fn_info))
-            {
-                tce_report_error("error reading from /dev/kmem");
-                return;
-            }
-            if (fn_info.arc_count < 0)
-                break;
-            if (read_str(core_file, (size_t)fn_info.name, 
-                         name_buffer, sizeof(name_buffer)) != 0)
-            {
-                tce_report_error("error reading from /dev/kmem: %s", 
-                                 strerror(errno));
-                return;
-            }
-            fi = tce_get_function_info(oi, name_buffer, 
-                                       fn_info.arc_count, fn_info.checksum);
+            offset = (unsigned long)fn_info->name;
+            NORMALIZE_OFFSET(offset, start, size);
+            name_ptr = (char *)data + offset;
+            fi = tce_get_function_info(oi, name_ptr, 
+                                       fn_info->arc_count, fn_info->checksum);
             if (fi != NULL)
             {
-                for (i = fn_info.arc_count, target_counters = fi->counts;
+                long long *source_counters;
+                
+                offset = (unsigned long)object->old.counts;
+                NORMALIZE_OFFSET(offset, start, size);
+                source_counters = (void *)((char *)data + offset);
+                for (i = fn_info->arc_count, target_counters = fi->counts;
                      i > 0; 
-                     i--, object->old.counts++, target_counters++)
+                     i--)
                 {
-                    read_at(core_file, (size_t)object->old.counts, 
-                            &counter, sizeof(counter));
-                    *target_counters += counter;
+                    *target_counters++ += *source_counters++;
                 }
             }
         }
