@@ -52,7 +52,7 @@
 /* Store the information about the configurable parameters in this array.
  * The values in this table are ALWAYS updated to the latest draft (20).
  */
-static struct parameter_type config_params[MAX_CONFIG_PARAMS] = {
+struct parameter_type config_params[MAX_CONFIG_PARAMS] = {
 	{
 	 parameter_name:HEADERDIGEST,
 	 type:

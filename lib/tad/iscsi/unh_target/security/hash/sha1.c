@@ -71,7 +71,7 @@ SHA1_ProcessMessage(unsigned char *message,
 		digest[4 * i + 2] = context->HBuffer[i] >> 8;
 		digest[4 * i + 3] = context->HBuffer[i];
 	}
-	my_free((void **) &context);
+	my_free((void *) &context);
 }
 
 struct
@@ -248,7 +248,7 @@ SHA1_Interleave(unsigned char *message, unsigned long long length,
 		if ((buffer2 =
 		     (unsigned char *) malloc(length / 2)) == NULL)
 			return;
-		for (i = 0; i < length / 2; i++) {
+		for (i = 0; (unsigned)i < length / 2; i++) {
 			buffer1[i] = message[2 * i];
 			buffer2[i] = message[2 * i + 1];
 		}
@@ -260,8 +260,8 @@ SHA1_Interleave(unsigned char *message, unsigned long long length,
 			digest[2 * i] = digest1[i];
 			digest[2 * i + 1] = digest2[i];
 		}
-		my_free((void **) &buffer1);
-		my_free((void **) &buffer2);
+		my_free((void *) &buffer1);
+		my_free((void *) &buffer2);
 	}
 }
 

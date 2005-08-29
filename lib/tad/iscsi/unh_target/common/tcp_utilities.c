@@ -274,7 +274,7 @@ out2:
 	i = -EINVAL;
 out1:
 	TRACE(TRACE_NET, "Free ip_address %p\n", ip);
-	my_free((void **) &ip);
+	my_free((void *) &ip);
 	goto out;
 }
 

@@ -47,9 +47,21 @@
 #include "../security/chap/chap.h"
 #include "../security/srp/srp.h"
 
-
 #include "text_param.h"
-#include "default_param.c"
+
+
+/* 
+ * Declaration of send/recv methods from iSCSI TAD, see 
+ * tad_iscsi_{impl.h|stack.c}
+ */
+extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
+extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
+
+
+
+#define UNUSED(p_) ((void)p_)
+
+struct iscsi_thread_param *iscsi_param;
 
 static struct key_values upper_case_values = {
 	none:NONE,
@@ -537,8 +549,9 @@ check_type_correctness(struct parameter_type *p,
 				    && *(value + 8) == '-'
 				    && strspn(value + 9, "0123456789") == 2
 				    && *(value + 11) == '.'
-				    && strspn(value + 12,
-					     "0123456789abcdefghijklmnopqrstuvwxyz-.:") == len - 12) {
+				    && (int)strspn(value + 12,
+					     "0123456789abcdefghijklmnopqrstuvwxyz-.:") 
+                                       == len - 12) {
 					/* ok, have iqn.yyyy-mm.xxx with xxx 
 					 * all digits, lower-case letters, 
 					 * * '-', '.', ':' 
@@ -797,15 +810,15 @@ check_correctness(char *keytext,
 			else if ((uptr->keyname =
 				  malloc(strlen(keytext) + 1))
 				 == NULL) {
-				my_free((void **) &uptr);
+				my_free((void *) &uptr);
 				goto out;
 			}
 
 			else if ((uptr->keyvalue =
 				  malloc(strlen(value) + 1))
 				 == NULL) {
-				my_free((void **) &uptr->keyname);
-				my_free((void **) &uptr);
+				my_free((void *) &uptr->keyname);
+				my_free((void *) &uptr);
 				goto out;
 			} else {
 				strcpy(uptr->keyname, keytext);
@@ -1184,78 +1197,31 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 int
 iscsi_recv_msg(int sock, int length, char *buffer, int flags)
 {
-	struct msghdr msg;
-	size_t size;
-	int received, retval;
-	struct iovec iov;
+    int retval;
 
-	/* the following code will receive PDU's from the other side */
-	size = length;
-	for (received = 0; received < length;) {
-		/* most fields remain 0/NULL */
-		memset(&msg, 0, sizeof (struct msghdr));
-		msg.msg_iovlen = 1;
-		msg.msg_iov = &iov;
+    /* the following code will receive PDU's from the other side */
 
-		iov.iov_len = size;
-		iov.iov_base = buffer + received;
+    UNUSED(flags);
 
-                
-		retval = recvmsg(sock, &msg, MSG_WAITALL);
+    retval = iscsi_tad_recv(sock, buffer, length);
 
-		if (retval <= 0) {
-			if (retval == 0) {
-				TRACE_ERROR("remote peer disconnected\n");
-			} else {
-				TRACE_ERROR("recvmsg error %d\n", retval);
-			}
-			retval = -1;
-			goto out;
-		}
-        /**
-         * Now the newly received buffer should be written to the 
-         * test 
-         */
-        {
-            iscsi_communication_event event = EMPTY_REQUEST;
-            int                       rc;
-            struct timeval            timeout;
-
-            timeout.tv_sec = 5;
-            timeout.tv_usec = 0;
-            rc = recv_request(iscsi_param->TARGET_SIDE, &event, &timeout);
-            if (rc != 0 || event != TEST_READY)
-            {
-                TRACE(TRACE_DEBUG, "Communication error");
-                return -1;
-            }
-            memcpy(iscsi_param->pdu, buffer, length);
-            iscsi_param->pdu_number++;
-
-            event = TARGET_READY;
-            rc = send_request_with_answer(iscsi_param->TARGET_SIDE, &event, &timeout);
-            if (rc != 0 || event != TEST_PROCESS_FINISHED)
-            {
-                TRACE(TRACE_DEBUG, "Communication error");
-                return -1;
-            }
+    if (retval <= 0) {
+        if (retval == 0) {
+            TRACE_ERROR("remote peer disconnected\n");
+        } else {
+            TRACE_ERROR("recvmsg error %d\n", retval);
         }
-        /********************************************************/
-        received += retval;
-        size = length - received;
-
-        TRACE(TRACE_DEBUG, "Received: %d, total_rx: %d, data: %d\n",
-              retval, received, length);
+        retval = -1;
+        goto out;
     }
+    TRACE(TRACE_DEBUG, "Received: %d\n", retval);
 
-	TRACE_BUFFER(TRACE_BUF, buffer, length,
-		     "Got buffer, length: %d\n", length);
-	retval = 0;
+    retval = 0;
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_recv_msg, retval %d\n", retval);
+    TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_recv_msg, retval %d\n", retval);
 
-	return retval;
+    return retval;
 }
 
 /*
@@ -1288,16 +1254,16 @@ check_out_length(int out_length, int resp_len)
 int
 iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
 {
-	struct msghdr msg;
-	struct iovec *iov, actual_iov[3];
-	struct iscsi_targ_login_rsp *targ_login_rsp;
+    int tx_loop;
+    int data_length;
 
-	int total_tx, tx_loop;
-	int data_length, count, hdr_length, send_length;
+    struct iscsi_targ_login_rsp *targ_login_rsp;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter iscsi_send_msg\n");
+    UNUSED(flags);
 
-	switch (outputpdu->opcode & (ISCSI_OPCODE)) {
+    TRACE(TRACE_ENTER_LEAVE, "Enter iscsi_send_msg\n");
+
+    switch (outputpdu->opcode & (ISCSI_OPCODE)) {
 
 	case ISCSI_INIT_LOGIN_CMND:
 
@@ -1326,124 +1292,116 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
 			    outputpdu->opcode & ISCSI_OPCODE);
 		return -1;
 
-	}			/* switch */
+    }			/* switch */
         
-        /**
-         * Now the newly received buffer should be written to the 
-         * test 
-         */
-        {
-            iscsi_communication_event event = EMPTY_REQUEST;
-            int                       rc;
-            struct timeval            timeout;
+    /********************************************************/
 
-            timeout.tv_sec = 5;
-            timeout.tv_usec = 0;
+    /* all pdus store the DSL in the same place */
+    outputpdu->length = htonl(outputpdu->text_length);
 
-            rc = recv_request(iscsi_param->TARGET_SIDE, &event, &timeout);
-            if (rc != 0 || event != TEST_READY)
-            {
-                TRACE(TRACE_DEBUG, "Communication error");
-                return -1;
-            }
-            memcpy(iscsi_param->pdu, outputpdu, sizeof(struct generic_pdu));
-            memcpy(iscsi_param->pdu + sizeof(struct generic_pdu), 
-                   outputpdu->text, outputpdu->text_length);
-            iscsi_param->pdu_number++;
-
-            event = TARGET_READY;
-            rc = send_request_with_answer(iscsi_param->TARGET_SIDE, &event, &timeout);
-            if (rc != 0 || event != TEST_PROCESS_FINISHED)
-            {
-                TRACE(TRACE_DEBUG, "Communication error");
-                return -1;
-            }
-            memcpy(outputpdu, iscsi_param->pdu, sizeof(struct generic_pdu));
 #if 0
-            memcpy(outputpdu->text, 
-                   iscsi_param->pdu + 48,
-                   outputpdu->text_length);
-#endif
+    /* set up the i/o message and vectors */
+    memset(&msg, 0, sizeof (struct msghdr));
+    msg.msg_iov = iov = actual_iov;
+    msg.msg_flags = MSG_NOSIGNAL;
+
+    count = 1;
+    hdr_length = ISCSI_HDR_LEN;
+
+    /* NO packets sent or received during login will have 
+       digests of any kind */
+    iov->iov_base = (char *) outputpdu;
+    iov->iov_len = send_length = hdr_length;
+
+    if ((data_length = outputpdu->text_length) > 0) {
+        /* there is data attached to this pdu */
+
+        /* Add padding to end of any attached data */
+        data_length += (-data_length) & 3;
+
+        if (data_length > outputpdu->text_length) {
+            TRACE(TRACE_DEBUG,
+                  "Length with padding = %d, without = %d\n",
+                  data_length, outputpdu->text_length);
+            memset(outputpdu->text + outputpdu->text_length, 0,
+                   data_length - outputpdu->text_length);
         }
-        /********************************************************/
-        
-	/* all pdus store the DSL in the same place */
-	outputpdu->length = htonl(outputpdu->text_length);
 
-	/* set up the i/o message and vectors */
-	memset(&msg, 0, sizeof (struct msghdr));
-	msg.msg_iov = iov = actual_iov;
-	msg.msg_flags = MSG_NOSIGNAL;
+        count++;
+        iov++;
+        iov->iov_base = outputpdu->text;
+        iov->iov_len = data_length;
+        send_length += data_length;
+    }
 
-	count = 1;
-	hdr_length = ISCSI_HDR_LEN;
+    /* i/o message and vector now set up */
+    msg.msg_iovlen = count;
 
-	/* NO packets sent or received during login will have 
-		digests of any kind */
-	iov->iov_base = (char *) outputpdu;
-	iov->iov_len = send_length = hdr_length;
+    TRACE(TRACE_DEBUG, "Sending %d bytes total, %d actual_iovs\n",
+          send_length, count);
 
-	if ((data_length = outputpdu->text_length) > 0) {
-		/* there is data attached to this pdu */
+    total_tx = 0;
+    do {
+        TRACE(TRACE_NET,
+              "Sending %d bytes, %d actual_iovs on sock %p\n",
+              send_length, count, sock);
+        tx_loop = sendmsg(sock, &msg, 0);
 
-		/* Add padding to end of any attached data */
-		data_length += (-data_length) & 3;
+        if (tx_loop <= 0) {
+            TRACE_ERROR("sock_sendmsg error %d, total_tx %d\n",
+                        tx_loop, total_tx);
+            return tx_loop;
+        }
+        total_tx += tx_loop;
 
-		if (data_length > outputpdu->text_length) {
-			TRACE(TRACE_DEBUG,
-			      "Length with padding = %d, without = %d\n",
-			      data_length, outputpdu->text_length);
-			memset(outputpdu->text + outputpdu->text_length, 0,
-			       data_length - outputpdu->text_length);
-		}
+        TRACE(TRACE_NET, "tx_loop=%d, total_tx=%d, send_length=%d\n",
+              tx_loop, total_tx, send_length);
+        if (total_tx != send_length) {
+            TRACE_ERROR("sock_sendmsg total_tx %d, expected %d\n",
+                        total_tx, send_length);
+        }
+    }
+    while (total_tx < send_length);
 
-		count++;
-		iov++;
-		iov->iov_base = outputpdu->text;
-		iov->iov_len = data_length;
-		send_length += data_length;
-	}
+    TRACE_BUFFER(TRACE_BUF, (char *) outputpdu, hdr_length,
+                 "Sent header, length: %d\n", hdr_length);
 
-	/* i/o message and vector now set up */
-	msg.msg_iovlen = count;
+    if (count > 1) {
+        TRACE_BUFFER(TRACE_BUF, (char *) outputpdu->text, data_length,
+                     "Sent data, length: %d\n", data_length);
+    }
+#endif
 
-	TRACE(TRACE_DEBUG, "Sending %d bytes total, %d actual_iovs\n",
-	      send_length, count);
+    {
+        uint8_t *buffer;
+        size_t   length = ISCSI_HDR_LEN;
 
-	total_tx = 0;
-	do {
-		TRACE(TRACE_NET,
-		      "Sending %d bytes, %d actual_iovs on sock %p\n",
-		      send_length, count, sock);
-		tx_loop = sendmsg(sock, &msg, 0);
+        if ((data_length = outputpdu->text_length) > 0) {
+            /* there is data attached to this pdu */
 
-		if (tx_loop <= 0) {
-			TRACE_ERROR("sock_sendmsg error %d, total_tx %d\n",
-				    tx_loop, total_tx);
-			return tx_loop;
-		}
-		total_tx += tx_loop;
+            /* Add padding to end of any attached data */
+            data_length += (-data_length) & 3;
 
-		TRACE(TRACE_NET, "tx_loop=%d, total_tx=%d, send_length=%d\n",
-		      tx_loop, total_tx, send_length);
-		if (total_tx != send_length) {
-			TRACE_ERROR("sock_sendmsg total_tx %d, expected %d\n",
-				    total_tx, send_length);
-		}
-	}
-	while (total_tx < send_length);
+            length += data_length;
+        }
 
-	TRACE_BUFFER(TRACE_BUF, (char *) outputpdu, hdr_length,
-		     "Sent header, length: %d\n", hdr_length);
+        buffer = calloc(1, length);
 
-	if (count > 1) {
-		TRACE_BUFFER(TRACE_BUF, (char *) outputpdu->text, data_length,
-			     "Sent data, length: %d\n", data_length);
-	}
+        memcpy(buffer, outputpdu, ISCSI_HDR_LEN);
+        if (length > ISCSI_HDR_LEN) {
+            memcpy(buffer + ISCSI_HDR_LEN, outputpdu->text,
+                   outputpdu->text_length);
+        } 
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_send_msg\n");
+        tx_loop = iscsi_tad_send(sock, buffer, length); 
+        TRACE(TRACE_NET, "sent %d bytes", tx_loop);
 
-	return 0;
+        free(buffer);
+    }
+
+    TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_send_msg\n");
+
+    return 0;
 }
 
 /*
@@ -1605,7 +1563,7 @@ static void __attribute__ ((no_instrument_function))
 update_key_value(struct parameter_type *p, int int_value, char *value)
 {
 	if (IS_NUMBER(p->type) || IS_NUMBER_RANGE(p->type)) {
-		if (p->int_value != int_value) {
+		if ((int)p->int_value != int_value) {
 			/* have a new numeric value for this key */
 			p->int_value = int_value;
 			TRACE(TRACE_ISCSI, "Update key %s, new value %d\n",
@@ -1679,6 +1637,8 @@ scan_input_and_process(int sock,
 	char *last_input;
 	int FBLength = -1, MBLength = -1;
 	struct parameter_type *FBp = NULL, *MBp = NULL;
+
+        UNUSED(sock);
 
 	TRACE(TRACE_ENTER_LEAVE, "Enter scan_input_and_process\n");
 
@@ -1983,7 +1943,7 @@ scan_input_and_process(int sock,
 		if ((MBp =
 		     find_flag_parameter(MAXBURSTLENGTH_FLAG,
 					 p_param_tbl)) != NULL) {
-			if (FBLength > MBp->int_value) {
+			if (FBLength > (int)MBp->int_value) {
 				/* The received FirstBurstLength is 
 					bigger than our current
 				   MaxBurstLength */
@@ -2027,7 +1987,7 @@ scan_input_and_process(int sock,
 		if ((FBp = find_flag_parameter(FIRSTBURSTLENGTH_FLAG,
 					       p_param_tbl)) != NULL) {
 			/* must have MaxBurstLength > FirstBurstLength */
-			if (MBLength < FBp->int_value) {
+			if (MBLength < (int)FBp->int_value) {
 				/* MaxBurstLength is smaller than 
 					FirstBurstLength */
 				if (IS_KEY_SENT_TO_OTHER_SIDE(FBp->neg_info)) {
@@ -2336,9 +2296,9 @@ handle_params_noexch(struct parameter_type *p,
 			 * selection function 
 			 */
 			if ((IS_MIN_NUMBER(p->type)
-			     && p->int_value <= int_value)
+			     && (int)p->int_value <= int_value)
 			    || (IS_MAX_NUMBER(p->type)
-				&& p->int_value >= int_value)) {
+				&& (int)p->int_value >= int_value)) {
 				/* correct min or max already in place */
 			} else {
 				/* the offered value is the one we keep */
@@ -2426,7 +2386,7 @@ handle_params_resp(struct parameter_type *p,
 				      "Leave handle_params_resp with error\n");
 					return -1;
 				}
-				if (p->int_value != int_value) {
+				if ((int)p->int_value != int_value) {
 					/* assign the negotiated value */
 					update_key_value(p, int_value, value);
 				}
@@ -2445,8 +2405,8 @@ handle_params_resp(struct parameter_type *p,
 		/* received reply parameter is a number */
 
 		/* Numeric param, select min or max as appropriate */
-		if ((p->int_value < int_value && IS_MIN_NUMBER(p->type))
-		    || (p->int_value > int_value && IS_MAX_NUMBER(p->type))) {
+		if (((int)p->int_value < int_value && IS_MIN_NUMBER(p->type))
+		    || ((int)p->int_value > int_value && IS_MAX_NUMBER(p->type))) {
 			/* Error, reply did not do min/max correctly */
 			TRACE_ERROR
 			    ("got reply %d to offer of %d for %s"
@@ -2527,6 +2487,11 @@ scan_table_and_process(int sock,
 	int out_length = 0;
 	char *output_string;
 	int i;
+
+        UNUSED(sock);
+        UNUSED(role);
+        UNUSED(inputpdu);
+        UNUSED(flags);
 
 	TRACE(TRACE_ENTER_LEAVE, "Enter scan_table_and_process\n");
 
@@ -2721,6 +2686,9 @@ set_connection_parameters(struct connection_operational_parameters
 			  struct parameter_type
 					login_params[MAX_CONFIG_PARAMS])
 {
+
+        UNUSED(oper_param_entry);
+        UNUSED(login_params);
 
 	TRACE(TRACE_ENTER_LEAVE, "Enter set_connection_parameters\n");
 

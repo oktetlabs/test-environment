@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/time.h>
+#include <stdio.h>
 
 #include "thread_communication.h"
 

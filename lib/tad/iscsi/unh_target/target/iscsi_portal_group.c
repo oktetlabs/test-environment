@@ -57,11 +57,12 @@
 struct portal_group iscsi_portal_groups[MAX_PORTAL] =
 {
 	/* Default IANA portal */	
-	{INADDR_ANY_STRING, ISCSI_WKP_STRING, DEFAULT_TARGET_PORTAL_GROUP_TAG},
+	{INADDR_ANY_STRING, ISCSI_WKP_STRING, 
+            DEFAULT_TARGET_PORTAL_GROUP_TAG, 0, 0, NULL, 0},
 
 	/* Default IANA system portal */
 	{INADDR_ANY_STRING, ISCSI_SYSTEM_PORT_STRING,
-	 DEFAULT_TARGET_PORTAL_GROUP_TAG},
+	 DEFAULT_TARGET_PORTAL_GROUP_TAG, 0, 0, NULL, 0},
 
 	/* example portals */
 
@@ -75,5 +76,5 @@ struct portal_group iscsi_portal_groups[MAX_PORTAL] =
 	/* {"[2001:468:603:c001:0:7ff:fee3:c72c]", ISCSI_WKP_STRING, 3}, */
 
 	/* end of table with NULL string pointers and tag of 0 */
-	{NULL, NULL, 0}
+	{NULL, NULL, 0, 0, 0, NULL, 0}
 };

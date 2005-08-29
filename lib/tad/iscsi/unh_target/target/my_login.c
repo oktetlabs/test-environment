@@ -27,7 +27,8 @@
 #include "../common/target_negotiate.h"
 #include "scsi_target.h"
 #include "iscsi_portal_group.h"
-#include "../common/default_param.c"
+
+#include "../userland_lib/my_memory.h"
 
 #include "my_login.h"
 
@@ -40,17 +41,13 @@
 /** Pointer to the device specific data */
 static struct iscsi_global *devdata;
 
-static pthread_mutex_t *lock;
-
-    static int                                                                        
+static int                                                                        
 iscsi_release_connection(struct iscsi_conn *conn)                                 
 {
-    if (conn == NULL) {
-
+    if (conn == NULL) { 
         return -1;                                                                
     }                                                                             
     /* Release socket */                                                          
-    close(conn->conn_socket);                                                     
     conn->conn_socket = -1;                                                       
     TRACE(TRACE_ISCSI_FULL, "Dequeue connection conn->cid %u\n", conn->conn_id);  
 #if 0                                                                             
@@ -58,11 +55,11 @@ iscsi_release_connection(struct iscsi_conn *conn)
     /* __ prefix should be used */                                                
     list_del(&conn->conn_link);                                                   
     conn->session->nconn--;                                                       
-#endif                                                                            
     /* Free connection */                                                         
     my_free((void **)&conn->local_ip_address);                                    
     my_free((void **)&conn->ip_address);                                          
-    my_free((void **)&conn);                                                      
+#endif                                                                            
+    my_free(((void *)&conn));
     return 0;                                                                     
 }
 
@@ -81,10 +78,7 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
 {
     struct iscsi_init_login_cmnd *pdu = (struct iscsi_init_login_cmnd *) buffer;
     struct iscsi_session         *session;
-    struct iscsi_session         *temp;
-    struct iscsi_conn            *temp_conn;
-    uint32_t                      when_called;
-    int                           found;
+    uint32_t                      when_called = 0;
     int                           retval = -1;
     struct auth_parameter_type    auth_param;
 
@@ -92,7 +86,6 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
     struct parameter_type *p;
     struct parameter_type (*this_param_tbl)[MAX_CONFIG_PARAMS];
     struct parameter_type (*temp_params)[MAX_CONFIG_PARAMS];
-    struct list_head      *list_ptr;
     struct iscsi_global   *host;
 
     if (TRACE_TEST(TRACE_ISCSI_FULL))
@@ -178,8 +171,9 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
         for (k = 0; k < MAX_CONFIG_PARAMS ; k++) {
             if ((*this_param_tbl)[k].parameter_name != NULL &&
                 (*this_param_tbl)[k].str_value != NULL)
-                tprintf("PARAM: %s = %s\n", (*this_param_tbl)[k].parameter_name,
-                        (*this_param_tbl)[k].str_value);
+                printf("PARAM: %s = %s\n", 
+                       (*this_param_tbl)[k].parameter_name,
+                       (*this_param_tbl)[k].str_value);
         }
     }
     /* Bjorn Thordarson, 10-May-2004 -- end -- */
@@ -191,9 +185,6 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
     
     conn->stat_sn++;
 
-    if (conn->stat_sn < 0) {
-        goto out;
-    }
 
     /* set the operational parameters to the negotiated value */
     if (pdu->tsih == 0) {
@@ -214,15 +205,14 @@ out:
      */
     if (temp_params) {
         param_tbl_uncpy(*temp_params);
-        free((void**)&temp_params);
+        free((void*)&temp_params);
     }
 
     return retval;
 
 err_conn_out:
     /* here on a fatal error detected before session is linked into devdata */
-    close(conn->conn_socket);
-    conn->conn_socket = 1;
+    conn->conn_socket = -1;
 
     /* put this session onto end of "bad-session" list for cleanup later */
     session = conn->session;
@@ -257,7 +247,6 @@ build_conn_sess(int sock, struct portal_group *ptr)
 {
     struct iscsi_conn *conn;
     struct iscsi_session *session;
-    int addr_len;
 
     conn = (struct iscsi_conn *)malloc(sizeof(struct iscsi_conn));
     if (!conn) {
@@ -356,22 +345,18 @@ out7:
 out6:
     TRACE(TRACE_DEBUG, "Releasing R2T timer %p for session %p\n",
           session->r2t_timer, session);
-    free((void**)&session->r2t_timer);
+    free((void*)&session->r2t_timer);
 
-out5:
-    free((void**)&session);
+    free((void*)&session);
 
 out4:
-    free((void**)&conn->local_ip_address);
+    free((void*)&conn->local_ip_address);
 
-out3:
-    free((void**)&conn->ip_address);
+    free((void*)&conn->ip_address);
 
-out2:
-    free((void**)&conn);
+    free((void*)&conn);
 
 out1:
-    close(sock);
 out:
     return conn;
 }
@@ -408,26 +393,10 @@ create_socket_pair(int *pipe)
 }
 
 #define ISCSI_DEFAULT_PORT 3260
+
 int
-iscsi_server_rx_thread(void *arg)
+iscsi_server_init(void)
 {
-    int                server_s = -1;
-    struct sockaddr_in server_addr;
-    int                rc;
-    int                newsock = -1;
-
-    struct iscsi_conn *conn;
-
-    /**
-     * Filling iscsi_parameters structure.
-     */
-    iscsi_param = (struct iscsi_thread_param *)arg;
-    rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, iscsi_param->pipe);
-    if (rc < 0)
-    {
-        printf("Failed to create socket pair");
-    }
-
     /* devdata init */
     devdata = malloc(sizeof(struct iscsi_global));
 
@@ -455,59 +424,27 @@ iscsi_server_rx_thread(void *arg)
     devdata->auth_parameter.chap_peer_ctx = CHAP_InitializeContext();
     devdata->auth_parameter.srp_ctx = SRP_InitializeContext();
 
-    /****************/
+    return 0;
+}
 
-    server_s = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_s < 0)
-    {
-        tprintf("Failed to create server socket");
-        goto cleanup;
-    }
+void *
+iscsi_server_rx_thread(void *arg)
+{ 
+    struct iscsi_conn *conn;
 
-    memset(&server_addr, 0, sizeof(struct sockaddr_in));
+    char  buf[100];
 
-    server_addr.sin_port = htons(ISCSI_DEFAULT_PORT);
-    server_addr.sin_addr.s_addr = inet_addr("192.168.37.38");
-    server_addr.sin_family = AF_INET;
+    iscsi_param = (struct iscsi_thread_param *)arg;
 
-    rc = bind(server_s, (struct sockaddr *)&server_addr, 
-             sizeof(server_addr));
+    /****************/ 
+
+    conn = build_conn_sess(iscsi_param->send_recv_csap, iscsi_portal_groups);
     
-    if (rc < 0)
-    {
-        perror("bind ");
-        goto cleanup;
-    }
+    /***/
+    iscsi_recv_msg(iscsi_param->send_recv_csap, 48, buf, 0);
+    /***/
 
-    rc = listen(server_s, 5);
-    if (rc < 0)
-    {
-        tprintf("Failed to call listen() on the socket");
-        goto cleanup;
-    }
-    
-    {
-        struct iscsi_conn *conn = NULL;
-        char               buf[100];
-        int                i;
-        
-        newsock = accept(server_s, NULL, NULL);
-        if (newsock < 0)
-        {
-            tprintf("Failed to accept the new connection");
-        }
-        conn = build_conn_sess(newsock, iscsi_portal_groups);
-        
-        /***/
-        iscsi_recv_msg(newsock, 48, buf, 0);
-        /***/
-
-        handle_login(conn, buf);
-    }
-
-cleanup:
-    if (server_s != -1)
-        close(server_s);
+    handle_login(conn, buf);
 
     iscsi_release_connection(conn);
 

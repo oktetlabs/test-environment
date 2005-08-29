@@ -210,6 +210,8 @@
  */
 #define MAX_CONFIG_PARAMS		28
 
+extern struct parameter_type config_params[];
+
 
 /*	These defines are to be used in the special_key_flag field of the
  *	struct parameter_type to identify only those keys that need "special"
@@ -307,16 +309,9 @@ while(0)
  * This structure holds the parameters for the iscsi_server_rx_thread.
  */
 struct iscsi_thread_param {
-    uint8_t         pdu[1024]; /**< Buffer to store the message */
-    sem_t           sem_test;  
-    sem_t           sem_target;
-    int             pipe[2];   /**< 0 - target's side */
-    int             reject;    /**< Reject: 1 - the connection will be rejected */
-    int             pdu_number;/**< Number of the pdu */
+    int   send_recv_csap;  /**< iSCSI CSAP id */
+    int   reject;          /**< Reject: 1 - the connection will be rejected */
 };
-
-#define TEST_SIDE pipe[0]
-#define TARGET_SIDE pipe[1]
 
 /* This structure holds the parameters required for login-text
  * negotiation

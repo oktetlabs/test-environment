@@ -42,7 +42,6 @@
 #include "iscsi_common.h"
 #include "debug.h"
 
-struct iscsi_thread_param *iscsi_param;
 
 #ifdef __KERNEL__
 

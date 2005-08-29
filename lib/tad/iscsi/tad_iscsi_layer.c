@@ -39,6 +39,7 @@
 #include "logger_api.h"
 #include "logger_ta.h"
 
+iscsi_target_params_t target_params = { 0 };
 
 /**
  * Callback for read parameter value of ethernet CSAP.

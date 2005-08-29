@@ -150,11 +150,11 @@ int
 CHAP_FinalizeContext(struct CHAP_Context * context)
 {
 	if (context != NULL) {
-		my_free((void **) &context->challenge.data);
-		my_free((void **) &context->response.data);
-		my_free((void **) &context->name);
-		my_free((void **) &context->secret);
-		my_free((void **) &context);
+		my_free((void *) &context->challenge.data);
+		my_free((void *) &context->response.data);
+		my_free((void *) &context->name);
+		my_free((void *) &context->secret);
+		my_free((void *) &context);
 	}
 	return 1;
 }
@@ -213,7 +213,7 @@ CHAP_SetName(char *name,struct CHAP_Context * context)
 		return 0;
 	if (name == NULL)
 		return 0;
-	my_free((void **) &context->name);
+	my_free((void *) &context->name);
 	length = strlen(name);
 	context->name = (char *) malloc(length + 1);
 	if (context->name == NULL)
@@ -246,7 +246,7 @@ CHAP_SetSecret(char *secret,struct CHAP_Context * context)
 		return 0;
 	if (secret == NULL)
 		return 0;
-	my_free((void **) &context->secret);
+	my_free((void *) &context->secret);
 	length = strlen(secret);
 	context->secret = (char *) malloc(length + 1);
 	if (context->secret == NULL)
@@ -348,7 +348,7 @@ CHAP_GetResponse(unsigned char identifier,
 		hashlen = 16;
 		response_data = (char *) malloc(hashlen);
 		if (response_data == NULL) {
-			my_free((void **) &temp);
+			my_free((void *) &temp);
 			return NULL;
 		}
 		MD5_ProcessMessage(temp, 0, length * 8, response_data);
@@ -356,22 +356,22 @@ CHAP_GetResponse(unsigned char identifier,
 		hashlen = 20;
 		response_data = (char *) malloc(hashlen);
 		if (response_data == NULL) {
-			my_free((void **) &temp);
+			my_free((void *) &temp);
 			return NULL;
 		}
 		SHA1_ProcessMessage(temp, 0, length * 8, response_data);
 	} else {
-		my_free((void **) &temp);
+		my_free((void *) &temp);
 		return NULL;
 	}
-	my_free((void **) &temp);
+	my_free((void *) &temp);
 	length = IntegerToStringLength(hashlen, context->number_format);
 	temp = (char *) malloc(length);
 	if (temp != NULL) {
 		IntegerToString(response_data, hashlen, temp,
 				context->number_format);
 	}
-	my_free((void **) &response_data);
+	my_free((void *) &response_data);
 	return temp;
 }
 
@@ -419,7 +419,7 @@ CHAP_CheckResponse(char *response, int max_response_length,
 		hashlen = 16;
 		response_data = (char *) malloc(hashlen);
 		if (response_data == NULL) {
-			my_free((void **) &temp);
+			my_free((void *) &temp);
 			return 0;
 		}
 		/* RDR start **
@@ -430,7 +430,7 @@ CHAP_CheckResponse(char *response, int max_response_length,
 		hashlen = 20;
 		response_data = (char *) malloc(hashlen);
 		if (response_data == NULL) {
-			my_free((void **) &temp);
+			my_free((void *) &temp);
 			return 0;
 		}
 		/* RDR start **
@@ -438,27 +438,27 @@ CHAP_CheckResponse(char *response, int max_response_length,
 		   ** RDR end */
 		SHA1_ProcessMessage(temp, 0, length * 8, response_data);
 	} else {
-		my_free((void **) &temp);
+		my_free((void *) &temp);
 		return 0;
 	}
-	my_free((void **) &temp);
+	my_free((void *) &temp);
 
 	length = StringToIntegerLength(response);
 	if (length > max_response_length) {
 		TRACE_ERROR("CHAP_R binary length is %d, limit is %d\n", length,
 			    max_response_length);
-		my_free((void **) &response_data);
+		my_free((void *) &response_data);
 		return 0;
 	}
 	temp = (char *) malloc(length);
 	if (temp == NULL) {
-		my_free((void **) &response_data);
+		my_free((void *) &response_data);
 		return 0;
 	}
 	StringToInteger(response, temp);
 	retval = IntegerCompare(response_data, hashlen, temp, length);
-	my_free((void **) &response_data);
-	my_free((void **) &temp);
+	my_free((void *) &response_data);
+	my_free((void *) &temp);
 	return retval;
 }
 
@@ -493,7 +493,7 @@ CHAP_CheckChallenge(char *challenge,struct CHAP_Context * context)
 	retval =
 	    !IntegerCompare(context->challenge.data, context->challenge.length,
 			    temp, length);
-	my_free((void **) &temp);
+	my_free((void *) &temp);
 	return retval;
 }
 

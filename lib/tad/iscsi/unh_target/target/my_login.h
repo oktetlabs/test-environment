@@ -5,6 +5,7 @@
 
 #define VERSION_MAX 0
 
+#if 0
 #define WAIT_FOR_TARGET_READY \
     sleep(1)
 
@@ -44,7 +45,8 @@
         }                                                                     \
     } while(0)
 
-extern int iscsi_server_rx_thread(void *arg);
-extern int create_socket_pair(int *pipe);
+#endif
+
+extern void* iscsi_server_rx_thread(void *arg);
 
 #endif

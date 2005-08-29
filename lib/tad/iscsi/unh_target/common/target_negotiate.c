@@ -67,6 +67,8 @@
 #include "text_param.h"
 #include "target_negotiate.h"
 
+#define UNUSED(p) ((void)p)
+
 /*************************************************************************
  *This function sends a login response with proper status code when error
  * occurs in target during login phase
@@ -139,6 +141,8 @@ check_other_login(struct iscsi_conn *conn, int correct_CSG,
 	}
 
 	TRACE(TRACE_ENTER_LEAVE, "Leave check_other_login, retval %d\n", retval);
+
+        UNUSED(correct_CSG);
 
 	return retval;
 }
@@ -780,9 +784,9 @@ target_security_negotiate(struct iscsi_conn *conn,
 						goto out;
 					}
 					/* now delete this key from the list */
-					my_free((void **) &key->keyvalue);
-					my_free((void **) &key->keyname);
-					my_free((void **) &key);
+					my_free((void *) &key->keyvalue);
+					my_free((void *) &key->keyname);
+					my_free((void *) &key);
 					*key_prev = key_next;
 				}
 			}
@@ -802,7 +806,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 				attach_key_string(outputpdu, CHAP_C, chap_c);
 
 				/*  done with printable string version of our challenge */
-				my_free((void **) &chap_c);
+				my_free((void *) &chap_c);
 			}
 			break;
 
@@ -863,9 +867,9 @@ target_security_negotiate(struct iscsi_conn *conn,
 						goto out;
 					}
 					/* now delete this key from the list */
-					my_free((void **) &key->keyvalue);
-					my_free((void **) &key->keyname);
-					my_free((void **) &key);
+					my_free((void *) &key->keyvalue);
+					my_free((void *) &key->keyname);
+					my_free((void *) &key);
 					*key_prev = key_next;
 				}
 			}
@@ -881,7 +885,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 					goto out;
 				}
 				/*  finished with his response to our challenge */
-				my_free((void **) &chap_r);
+				my_free((void *) &chap_r);
 			}
 			if (neg_flags == (GOT_CHAP_A | GOT_CHAP_N | 
 				GOT_CHAP_R | GOT_CHAP_I | GOT_CHAP_C)) {	
@@ -914,7 +918,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 				attach_key_string(outputpdu, CHAP_N, chap_n);
 
 				/*  finished with our name to him */
-				my_free((void **) &chap_n);
+				my_free((void *) &chap_n);
 
 				attach_key_string(outputpdu, CHAP_R, chap_r);
 
@@ -984,9 +988,9 @@ target_security_negotiate(struct iscsi_conn *conn,
 					}
 
 					/* now delete this key from the list */
-					my_free((void **) &key->keyvalue);
-					my_free((void **) &key->keyname);
-					my_free((void **) &key);
+					my_free((void *) &key->keyvalue);
+					my_free((void *) &key->keyname);
+					my_free((void *) &key);
 					*key_prev = key_next;
 				}
 			}
@@ -1058,9 +1062,9 @@ target_security_negotiate(struct iscsi_conn *conn,
 					}
 
 					/* now delete this key from the list */
-					my_free((void **) &key->keyvalue);
-					my_free((void **) &key->keyname);
-					my_free((void **) &key);
+					my_free((void *) &key->keyvalue);
+					my_free((void *) &key->keyname);
+					my_free((void *) &key);
 					*key_prev = key_next;
 				}
 			}
@@ -1108,9 +1112,9 @@ target_security_negotiate(struct iscsi_conn *conn,
 					}
 
 					/* now delete this key from the list */
-					my_free((void **) &key->keyvalue);
-					my_free((void **) &key->keyname);
-					my_free((void **) &key);
+					my_free((void *) &key->keyvalue);
+					my_free((void *) &key->keyname);
+					my_free((void *) &key);
 					*key_prev = key_next;
 				}
 			}
@@ -1125,7 +1129,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 						goto out;
 					}
 					attach_key_string(outputpdu, SRP_HM, srp_hm);
-					my_free((void **) &srp_hm);
+					my_free((void *) &srp_hm);
 				}
 				if (outputpdu->flags & T_BIT)
 					security_step = ss_leave;
@@ -1165,12 +1169,12 @@ target_security_negotiate(struct iscsi_conn *conn,
 	/* end up security phase */
 
   out:
-	my_free((void **) &chap_r);
-	my_free((void **) &chap_c);
-	my_free((void **) &srp_grouplist);
-	my_free((void **) &srp_s);
-	my_free((void **) &srp_b);
-	my_free((void **) &srp_u);
+	my_free((void *) &chap_r);
+	my_free((void *) &chap_c);
+	my_free((void *) &srp_grouplist);
+	my_free((void *) &srp_s);
+	my_free((void *) &srp_b);
+	my_free((void *) &srp_u);
 
 	FREE_STRING(dummy_string);
 	TRACE(TRACE_DEBUG, "Leaving target security negotiate\n");
@@ -1361,23 +1365,23 @@ parameter_negotiate(struct iscsi_conn *conn,
 
 	if ((outputpdu =
 		malloc(sizeof (struct generic_pdu))) == NULL) {
-		my_free((void **) &inputpdu);
+		my_free((void *) &inputpdu);
 		retval = -1;
 		goto out;
 	}
 
 	/* Get memory for text portion of inputpdu and outputpdu */
 	if ((inputpdu->text = malloc(MAX_TEXT_LEN)) == NULL) {
-		my_free((void **) &outputpdu);
-		my_free((void **) &inputpdu);
+		my_free((void *) &outputpdu);
+		my_free((void *) &inputpdu);
 		retval = -1;
 		goto out;
 	}
 
 	if ((outputpdu->text = malloc(MAX_TEXT_LEN)) == NULL) {
-		my_free((void **) &inputpdu->text);
-		my_free((void **) &outputpdu);
-		my_free((void **) &inputpdu);
+		my_free((void *) &inputpdu->text);
+		my_free((void *) &outputpdu);
+		my_free((void *) &inputpdu);
 		retval = -1;
 		goto out;
 	}
@@ -1432,17 +1436,17 @@ parameter_negotiate(struct iscsi_conn *conn,
 	/* free up memory allocated for any unknown keys we received */
 	while (unknown_key_list != NULL) {
 		uptr = unknown_key_list->next;
-		my_free((void **) &unknown_key_list->keyvalue);
-		my_free((void **) &unknown_key_list->keyname);
-		my_free((void **) &unknown_key_list);
+		my_free((void *) &unknown_key_list->keyvalue);
+		my_free((void *) &unknown_key_list->keyname);
+		my_free((void *) &unknown_key_list);
 		unknown_key_list = uptr;
 	}
 
 	/* Free all allocated memory */
-	my_free((void **) &outputpdu->text);
-	my_free((void **) &inputpdu->text);
-	my_free((void **) &outputpdu);
-	my_free((void **) &inputpdu);
+	my_free((void *) &outputpdu->text);
+	my_free((void *) &inputpdu->text);
+	my_free((void *) &outputpdu);
+	my_free((void *) &inputpdu);
 
 out:
 	TRACE(TRACE_ENTER_LEAVE, "Leave parameter_negotiate, retval %d\n", retval);
