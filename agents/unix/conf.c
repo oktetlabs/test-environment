@@ -185,15 +185,29 @@ static int arp_del(unsigned int, const char *,
                    const char *, const char *);
 static int arp_list(unsigned int, const char *, char **);
 
-static int route_get(unsigned int, const char *, char *,
-                     const char *);
-static int route_set(unsigned int, const char *, const char *,
-                     const char *);
+static int route_metric_get(unsigned int, const char *, char *,
+                            const char *);
+static int route_metric_set(unsigned int, const char *, const char *,
+                            const char *);
+static int route_mtu_get(unsigned int, const char *, char *,
+                         const char *);
+static int route_mtu_set(unsigned int, const char *, const char *,
+                         const char *);
+static int route_win_get(unsigned int, const char *, char *,
+                         const char *);
+static int route_win_set(unsigned int, const char *, const char *,
+                         const char *);
+static int route_irtt_get(unsigned int, const char *, char *,
+                          const char *);
+static int route_irtt_set(unsigned int, const char *, const char *,
+                          const char *);
 static int route_add(unsigned int, const char *, const char *,
                      const char *);
 static int route_del(unsigned int, const char *,
                      const char *);
 static int route_list(unsigned int, const char *, char **);
+
+static int route_commit(unsigned int gid, const cfg_oid *p_oid);
 
 static int nameserver_get(unsigned int, const char *, char *,
                           const char *, ...);
@@ -214,11 +228,24 @@ static rcf_pch_cfg_object node_volatile_arp =
 RCF_PCH_CFG_NODE_NA(node_volatile, "volatile", &node_volatile_arp, NULL);
 
 /* Non-volatile subtree */
-static rcf_pch_cfg_object node_route =
-    { "route", 0, NULL, &node_volatile,
-      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
-      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
-      (rcf_ch_cfg_list)route_list, NULL, NULL};
+
+static rcf_pch_cfg_object node_route;
+
+RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, NULL,
+                     route_irtt_get, route_irtt_set, &node_route);
+
+RCF_PCH_CFG_NODE_RWC(node_route_win, "win", NULL, &node_route_irtt,
+                     route_win_get, route_win_set, &node_route);
+
+RCF_PCH_CFG_NODE_RWC(node_route_mtu, "mtu", NULL, &node_route_win,
+                     route_mtu_get, route_mtu_set, &node_route);
+
+RCF_PCH_CFG_NODE_RWC(node_route_metric, "metric", NULL, &node_route_mtu,
+                     route_metric_get, route_metric_set, &node_route);
+                     
+RCF_PCH_CFG_NODE_COLLECTION(node_route, "route", &node_route_metric,
+                            &node_volatile,
+                            route_add, route_del, route_list, route_commit);
 
 static rcf_pch_cfg_object node_arp =
     { "arp", 0, NULL, &node_route,
@@ -2698,82 +2725,359 @@ arp_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
+/** Object attribute data structure */
+typedef struct ta_cfg_obj_attr {
+    struct ta_cfg_obj_attr *next; /**< Pointer to the next attribute */
+
+    char name[RCF_MAX_ID]; /**< Attribute name */
+    char value[128]; /**< Attribute value */
+} ta_cfg_obj_attr_t;
+
 /**
- * Parses instance name and converts its value into routing table entry
- * data structure.
+ * Action that should be performed with the object.
+ */
+typedef enum ta_cfg_obj_action {
+    TA_CFG_OBJ_CREATE, /**< Create a new entry in the system */
+    TA_CFG_OBJ_DELETE, /**< Delete an existing entry */
+    TA_CFG_OBJ_SET, /**< Change some attribute of an existing entry */
+} ta_cfg_obj_action_e;
+
+/** Object data structure, which is inserted into collection */
+typedef struct ta_cfg_obj {
+    te_bool  in_use; /**< Whether this entry is in use */
+    char    *type; /**< Object type in string representation */
+    char    *name; /**< Object name - actually, instance name */
+    char    *value; /**< Object value - actually, instance value */
+    void    *user_data; /**< Pointer to user-provided data */
+
+    ta_cfg_obj_action_e  action; /**< Object action */
+    ta_cfg_obj_attr_t   *attrs; /**< List of object's attributes */
+} ta_cfg_obj_t;
+
+#define TA_OBJS_NUM 10
+static ta_cfg_obj_t ta_objs[TA_OBJS_NUM];
+
+#define TA_OBJ_TYPE_ROUTE "route"
+
+/**
+ * Set (or add if there is no such attribute) specified value to
+ * the particular attribute.
  *
- * @param inst_name  Instance name that keeps route information
- * @param rt         Routing entry location to be filled in (OUT)
+ * @param obj    Object where to update attibute list
+ * @param name   Attribute name to update (or to add)
+ * @param value  Attribute value
  *
- * @note The function is not thread safe - it uses static memory for
- * 'rt_dev' field in 'rt' structure.
- *
- * ATENTION - read the text below!
- * @todo This function is used in both places agent/unix/conf.c
- * and lib/tapi/tapi_cfg.c, which is very ugly!
- * We couldn't find the right place to put it in so that it
- * is accessible from both places. If you modify it you should modify
- * the same function in the second place!
+ * @return Error code or 0
  */
 static int
-route_parse_inst_name(const char *inst_name,
-#ifdef __linux__
-                      struct rtentry  *rt
-#else
-                      struct ortentry *rt
-#endif
-)
+ta_obj_attr_set(ta_cfg_obj_t *obj, const char *name, const char *value)
+{
+    ta_cfg_obj_attr_t *attr;
+
+    for (attr = obj->attrs; attr != NULL; attr = attr->next)
+    {
+        if (strcmp(attr->name, name) == 0)
+            break;
+    }
+
+    if (attr == NULL)
+    {
+        /* Add a new attribute */
+        attr = (ta_cfg_obj_attr_t *)malloc(sizeof(ta_cfg_obj_attr_t));
+        if (attr == NULL)
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+        snprintf(attr->name, sizeof(attr->name), "%s", name);
+        attr->next = obj->attrs;
+        obj->attrs = attr;
+    }
+
+    /* Set a new value */
+    snprintf(attr->value, sizeof(attr->value), "%s", value);
+
+    return 0;
+}
+
+/**
+ * Find specified attribute in object.
+ *
+ * @param obj   Object where we want to find an attribute
+ * @param name  Attribute name
+ *
+ * @return Pointer to the attribute if found, and NULL otherwise
+ */
+static ta_cfg_obj_attr_t *
+ta_obj_attr_find(ta_cfg_obj_t *obj, const char *name)
+{
+    ta_cfg_obj_attr_t *attr;
+
+    for (attr = obj->attrs; attr != NULL; attr = attr->next)
+    {
+        if (strcmp(attr->name, name) == 0)
+            return attr;
+    }
+
+    return NULL;
+}
+
+/**
+ * Free object.
+ *
+ * @param obj  Object to be freed
+ */
+static void 
+ta_obj_free(ta_cfg_obj_t *obj)
+{
+    free(obj->type);
+    free(obj->name);
+    free(obj->value);
+    obj->in_use = FALSE;
+}
+
+/**
+ * Finds an object of specified type whose name is the same as @p name
+ * parameter.
+ *
+ * @param type  Object type - user-defined constant
+ * @param name  Object name - actually, instance name
+ *
+ * @return Error code or 0
+ */
+static ta_cfg_obj_t *
+ta_obj_find(const char *type, const char *name)
+{
+    int i;
+
+    assert(type != NULL && name != NULL);
+
+    for (i = 0; i < TA_OBJS_NUM; i++)
+    {
+        if (ta_objs[i].in_use &&
+            strcmp(ta_objs[i].type, type) == 0 &&
+            strcmp(ta_objs[i].name, name) == 0)
+        {
+            return &ta_objs[i];
+        }
+    }
+
+    return NULL;
+}
+
+/**
+ * Create an object of specified type with particular value.
+ *
+ * @param type        Object type - user-defined constant
+ * @param name        Object name - actually, instance name
+ * @param value       Object value
+ * @param user_data   Some user-data value associated with this object
+ * @param new_obj     Object entry (OUT)
+ *
+ * @return Error code or 0
+ */
+static int
+ta_obj_add(const char *type, const char *name, const char *value,
+           void *user_data, ta_cfg_obj_t **new_obj)
+{
+    int           i;
+    ta_cfg_obj_t *obj = ta_obj_find(type, name);
+    
+    if (obj != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    
+    /* Find a free slot */
+    for (i = 0; i < TA_OBJS_NUM; i++)
+    {
+        if (!ta_objs[i].in_use)
+            break;
+    }
+
+    if (i == TA_OBJS_NUM)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    ta_objs[i].in_use = TRUE;
+    ta_objs[i].type = strdup(type);
+    ta_objs[i].name = strdup(name);
+    ta_objs[i].value = ((value != NULL) ? strdup(value) : NULL);
+    ta_objs[i].user_data = user_data;
+    ta_objs[i].action = TA_CFG_OBJ_CREATE;
+    ta_objs[i].attrs = NULL;
+
+    if (ta_objs[i].type == NULL || ta_objs[i].name == NULL ||
+        (value != NULL && ta_objs[i].value == NULL))
+    {
+        ta_obj_free(&ta_objs[i]);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    if (new_obj != NULL)
+        *new_obj = &ta_objs[i];
+
+    return 0;
+}
+
+/** Prototype for callback function used in ta_obj_set() */
+typedef int (* ta_obj_set_cb)(ta_cfg_obj_t *obj);
+
+/**
+ * Create or update object of specified type.
+ * In case object with specified name has been already added it
+ * just updates (adds) the value of specified attribute.
+ * In case there is no object with specified name and type, it creates it
+ * with SET action and calls callback function func.
+ *
+ * Callback function should be used to fill in all the attributes with
+ * their current values if necessary.
+ *
+ * @param type        Object type - user-defined constant
+ * @param name        Object name - actually, instance name
+ * @param attr_name   Attribute name to update in object
+ * @param attr_value  Attribute value
+ * @param cb_func     Callback function to be called if SET operation
+ *                    leads to creating a new object in collection
+ *
+ * @return Error code or 0
+ */
+static int
+ta_obj_set(const char *type, const char *name,
+           const char *attr_name, const char *attr_value,
+           ta_obj_set_cb cb_func)
+{
+    ta_cfg_obj_t *obj = ta_obj_find(type, name);
+    te_bool       locally_created = FALSE;
+    int           rc;
+
+    if (obj == NULL)
+    {
+        /* Add object first, but reset add flag */
+        if ((rc = ta_obj_add(type, name, NULL, NULL, &obj)) != 0)
+            return rc;
+
+        obj->action = TA_CFG_OBJ_SET;
+        locally_created = TRUE;
+        
+        if (cb_func != NULL && (rc = cb_func(obj)) != 0)
+        {
+            ta_obj_free(obj);
+            return rc;
+        }
+    }
+
+    /* Now set specified attribute */
+    if ((rc = ta_obj_attr_set(obj, attr_name, attr_value)) != 0 &&
+        locally_created)
+    {
+        /* Delete obj from the container */
+        ta_obj_free(obj);
+    }
+
+    return rc;
+}
+
+/**
+ * Create an object of specified type and mark it as deleted.
+ *
+ * @param type        Object type - user-defined constant
+ * @param name        Object name - actually, instance name
+ * @param user_data   Some user-data value associated with this object
+ *
+ * @return Error code or 0
+ */
+static int
+ta_obj_del(const char *type, const char *name, void *user_data)
+{
+    ta_cfg_obj_t *obj = ta_obj_find(type, name);
+    int           rc;
+
+    if (obj != NULL)
+    {
+        ERROR("Delete operation on locally added route instance");
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
+    }
+
+    /* Add object, but reset add flag */
+    if ((rc = ta_obj_add(type, name, NULL, user_data, &obj)) != 0)
+        return rc;
+
+    obj->action = TA_CFG_OBJ_DELETE;
+
+    return rc;
+}
+
+
+/** Structure that keeps system independent representation of the route */
+typedef struct ta_rt_info {
+    struct sockaddr_storage dst; /**< Route destination address */
+    uint32_t                prefix; /**< Route destination address prefix */
+    /** Gateway address - for indirect routes */
+    struct sockaddr_storage gw;
+    /** Interface name - for direct routes */
+    char                    ifname[IF_NAMESIZE];
+    uint16_t                flags; /**< Route flags */
+    uint32_t                metric; /**< Route metric */
+    uint32_t                mtu; /**< Route metric */
+    uint32_t                win; /**< Route metric */
+    uint32_t                irtt; /**< Route metric */
+} ta_rt_info_t;
+
+/** Gateway address is specified for the route */
+#define TA_RT_INFO_FLG_GW     0x0001
+/** Interface name is specified for the route */
+#define TA_RT_INFO_FLG_IF     0x0002
+/** Metric is specified for the route */
+#define TA_RT_INFO_FLG_METRIC 0x0004
+/** MTU is specified for the route */
+#define TA_RT_INFO_FLG_MTU    0x0008
+/** Window size is specified for the route */
+#define TA_RT_INFO_FLG_WIN    0x0010
+/** IRTT is specified for the route */
+#define TA_RT_INFO_FLG_IRTT   0x0020
+
+/**
+ * Parses route instance name and fills in a part of rt_info 
+ * data structure.
+ *
+ * @param name     Route instance name
+ * @param rt_info  Routing information data structure (OUT)
+ */
+int
+ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
 {
     char        *tmp, *tmp1;
     int          prefix;
-#ifdef __linux__
-    static char  ifname[IF_NAMESIZE];
-#endif
     char        *ptr;
     char        *end_ptr;
     char        *term_byte; /* Pointer to the trailing zero byte
-                               in 'inst_name' */
+                               in instance name */
     static char  inst_copy[RCF_MAX_VAL];
-#ifdef __linux__
-    int          int_val;
-#endif
 
-    memset(rt, 0, sizeof(*rt));
-    strncpy(inst_copy, inst_name, sizeof(inst_copy));
+    memset(rt_info, 0, sizeof(*rt_info));
+    strncpy(inst_copy, name, sizeof(inst_copy));
     inst_copy[sizeof(inst_copy) - 1] = '\0';
 
     if ((tmp = strchr(inst_copy, '|')) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    *tmp = 0;
-    rt->rt_dst.sa_family = AF_INET;
+    *tmp = '\0';
+    ((struct sockaddr *)&(rt_info->dst))->sa_family = AF_INET;
     if (inet_pton(AF_INET, inst_copy,
-                  &(((struct sockaddr_in *)&(rt->rt_dst))->sin_addr)) <= 0)
+                  &(((struct sockaddr_in *)
+                         &(rt_info->dst))->sin_addr)) <= 0)
     {
-        ERROR("Incorrect 'destination address' value in route %s",
-              inst_name);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        ERROR("Incorrect 'destination address' value in route %s", name);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     tmp++;
     if (*tmp == '-' ||
         (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || prefix > 32))
     {
-        ERROR("Incorrect 'prefix length' value in route %s", inst_name);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        ERROR("Incorrect 'prefix length' value in route %s", name);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     tmp = tmp1;
-
-#ifdef __linux__
-    rt->rt_genmask.sa_family = AF_INET;
-    ((struct sockaddr_in *)&(rt->rt_genmask))->sin_addr.s_addr =
-        htonl(PREFIX2MASK(prefix));
-#endif
-    if (prefix == 32)
-        rt->rt_flags |= RTF_HOST;
+    rt_info->prefix = prefix;
 
     term_byte = (char *)(tmp + strlen(tmp));
 
-    /* @todo Make a macro to wrap around similar code below */
     if ((ptr = strstr(tmp, "gw=")) != NULL)
     {
         int rc;
@@ -2783,22 +3087,21 @@ route_parse_inst_name(const char *inst_name,
             end_ptr++;
         *end_ptr = '\0';
 
+        ((struct sockaddr *)&(rt_info->gw))->sa_family = AF_INET;
         rc = inet_pton(AF_INET, ptr,
-                       &(((struct sockaddr_in *)
-                               &(rt->rt_gateway))->sin_addr));
+                       &(((struct sockaddr_in *)&(rt_info->gw))->sin_addr));
         if (rc <= 0)
         {
             ERROR("Incorrect format of 'gateway address' value in route %s",
-                  inst_name);
-            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+                  name);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
-        rt->rt_gateway.sa_family = AF_INET;
-        rt->rt_flags |= RTF_GATEWAY;
+
+        rt_info->flags |= TA_RT_INFO_FLG_GW;
     }
 
-#ifdef __linux__
     if ((ptr = strstr(tmp, "dev=")) != NULL)
     {
         end_ptr = ptr += strlen("dev=");
@@ -2806,228 +3109,218 @@ route_parse_inst_name(const char *inst_name,
             end_ptr++;
         *end_ptr = '\0';
 
-        if (strlen(ptr) >= sizeof(ifname))
+        if (strlen(ptr) >= sizeof(rt_info->ifname))
         {
             ERROR("Interface name is too long: %s in route %s",
-                  ptr, inst_name);
+                  ptr, name);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
-        strcpy(ifname, ptr);
+        strcpy(rt_info->ifname, ptr);
 
         if (term_byte != end_ptr)
             *end_ptr = ',';
-        rt->rt_dev = ifname;
+
+        rt_info->flags |= TA_RT_INFO_FLG_IF;
     }
-
-    if ((ptr = strstr(tmp, "metric=")) != NULL)
-    {
-        end_ptr = ptr += strlen("metric=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' || *ptr == '-' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect 'route metric' value in route %s",
-                  inst_name);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-        rt->rt_metric = int_val;
-    }
-
-    if ((ptr = strstr(tmp, "mtu=")) != NULL)
-    {
-        end_ptr = ptr += strlen("mtu=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' || *ptr == '-' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect 'route mtu' value in route %s", inst_name);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-
-        /* Don't be confused the structure does not have mtu field */
-        rt->rt_mtu = int_val;
-        rt->rt_flags |= RTF_MSS;
-    }
-
-    if ((ptr = strstr(tmp, "window=")) != NULL)
-    {
-        end_ptr = ptr += strlen("window=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' ||  *ptr == '-' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect 'route window' value in route %s", inst_name);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-        rt->rt_window = int_val;
-        rt->rt_flags |= RTF_WINDOW;
-    }
-
-    if ((ptr = strstr(tmp, "irtt=")) != NULL)
-    {
-        end_ptr = ptr += strlen("irtt=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' || *ptr == '-' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect 'route irtt' value in route %s", inst_name);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-        rt->rt_irtt = int_val;
-        rt->rt_flags |= RTF_IRTT;
-    }
-#endif /* !__linux__ */
-
-    if (strstr(tmp, "reject") != NULL)
-        rt->rt_flags |= RTF_REJECT;
 
     return 0;
 }
 
+/**
+ * Parses route object attributes and fills in a part of rt_info 
+ * data structure.
+ *
+ * @param attrs    Route attributes
+ * @param rt_info  Routing information data structure (OUT)
+ */
+int
+ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
+{
+    ta_cfg_obj_attr_t *attr;
+    char              *end_ptr;
+    int                int_val;
+
+    for (attr = attrs; attr != NULL; attr = attr->next)
+    {
+        if (strcmp(attr->name, "metric") == 0)
+        {
+            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
+                (int_val = strtol(attr->value, &end_ptr, 10),
+                 *end_ptr != '\0'))
+            {
+                ERROR("Incorrect 'route metric' value in route");
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+            rt_info->metric = int_val;
+            rt_info->flags |= TA_RT_INFO_FLG_METRIC;
+        }
+        else if (strcmp(attr->name, "mtu") == 0)
+        {
+            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
+                (int_val = strtol(attr->value, &end_ptr, 10),
+                 *end_ptr != '\0'))
+            {
+                ERROR("Incorrect 'route mtu' value in route");
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+    
+            /* Don't be confused the structure does not have mtu field */
+            rt_info->mtu = int_val;
+            rt_info->flags |= TA_RT_INFO_FLG_MTU;
+        }
+        else if (strcmp(attr->name, "win") == 0)
+        {
+            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
+                (int_val = strtol(attr->value, &end_ptr, 10),
+                 *end_ptr != '\0'))
+            {
+                ERROR("Incorrect 'route window' value in route");
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+            rt_info->win = int_val;
+            rt_info->flags |= TA_RT_INFO_FLG_WIN;
+        }
+        else if (strcmp(attr->name, "irtt") == 0)
+        {
+            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
+                (int_val = strtol(attr->value, &end_ptr, 10),
+                 *end_ptr != '\0'))
+            {
+                ERROR("Incorrect 'route irtt' value in route");
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+            rt_info->irtt = int_val;
+            rt_info->flags |= TA_RT_INFO_FLG_IRTT;
+        }
+        else
+        {
+            ERROR("Unknown attribute '%s' found in route object",
+                  attr->name);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Parses route object info to rt_info data structure.
+ *
+ * @param obj      Route object
+ * @param rt_info  Routing information data structure (OUT)
+ */
+static int
+ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info)
+{
+    int rc;
+
+    if ((rc = ta_rt_parse_inst_name(obj->name, rt_info)) != 0)
+        return rc;
+
+    return ta_rt_parse_attrs(obj->attrs, rt_info);
+}
+
 #ifdef USE_NETLINK_ROUTE
+
+/*
+ * The following code is based on iproute2-050816 package.
+ * There is no clear specification of netlink interface.
+ */
+
 struct nl_request {
     struct nlmsghdr n;
     struct rtmsg    r;
     char            buf[1024];
 };
 
+/** 
+ * Convert system-independent route info data structure to
+ * netlink-specific data structure.
+ *
+ * @param rt_info TA portable route info
+ * @Param req     netlink-specific data structure (OUT)
+ */
 static int
-nl_get_unsigned(unsigned *val, const char *arg, int base)
+rt_info2nl_req(const ta_rt_info_t *rt_info,
+               struct nl_request *req)
 {
-    unsigned long res;
-    char *ptr;
-
-    if (!arg || !*arg)
-        return -1;
-    res = strtoul(arg, &ptr, base);
-    if (!ptr || ptr == arg || *ptr || res > UINT_MAX)
-        return -1;
-    *val = res;
-    return 0;
-}
-
-static int
-nl_get_addr(inet_prefix *addr, const char *name, int family)
-{
-    const char *cp;
-    unsigned char *ap = (unsigned char*)addr->data;
-    int i;
-
-    UNUSED(family);
-
-    memset(addr, 0, sizeof(*addr));
-
-    addr->bytelen = 4;
-    addr->bitlen = -1;
-
-    addr->family = AF_INET;
-    for (cp=name, i=0; *cp; cp++) {
-        if (*cp <= '9' && *cp >= '0') {
-            ap[i] = 10*ap[i] + (*cp-'0');
-            continue;
-        }
-        if (*cp == '.' && ++i <= 3)
-            continue;
-        return -1;
-    }
-    return 0;
-}
-
-static int
-nl_get_integer(int *val, const char *arg, int base)
-{
-    long res;
-    char *ptr;
-
-    if (!arg || !*arg)
-        return -1;
-    res = strtol(arg, &ptr, base);
-    if (!ptr || ptr == arg || *ptr || res > INT_MAX || res < INT_MIN)
-        return -1;
-    *val = res;
-    return 0;
-}
-
-static int
-nl_get_prefix(inet_prefix *dst, const char *arg, int family)
-{
-    int         err;
-    unsigned    plen;
-    char       *slash;
-    char       *tmp = strdup(arg);
-
-    if (tmp == NULL)
-        return TE_ENOMEM;
-
-    memset(dst, 0, sizeof(*dst));
-
-    slash = strchr(tmp, '|');
-    if (slash)
-        *slash = 0;
-
-    err = nl_get_addr(dst, tmp, family);
-    if (err == 0) {
-        dst->bitlen = 32;
-        if (slash) {
-            if (nl_get_integer(&plen, slash + 1, 0) ||
-                plen > (unsigned)dst->bitlen) {
-                err = -1;
-                goto done;
-            }
-            dst->bitlen = plen;
-        }
-    }
-done:
-    if (slash)
-        *slash = '|';
-
-    free(tmp);
-    return err;
-}
-
-static int
-route_change(unsigned int gid, const char *oid, const char *value,
-             const char *route, int action, unsigned flags)
-{
-    struct nl_request    req;
-    inet_prefix          dst;
-    struct rtnl_handle   rth;
     char                 mxbuf[256];
     struct rtattr       *mxrta = (void*)mxbuf;
-    inet_prefix          addr;
 
-    char                *c;
-    char                 dev[10];
-    int                  gw_ok = 0;
+    assert(rt_info != NULL && req != NULL);
 
-    UNUSED(gid);
-    UNUSED(oid);
+    mxrta->rta_type = RTA_METRICS;
+    mxrta->rta_len = RTA_LENGTH(0);
 
-    ENTRY("%s", route);
+    req->r.rtm_dst_len = rt_info->prefix;
+    if (addattr_l(&req->n, sizeof(*req), RTA_DST,
+                  &(SIN(&(rt_info->dst))->sin_addr),
+                  sizeof(SIN(&(rt_info->dst))->sin_addr)) != 0)
+    {
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
 
+    if ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0)
+    {
+        if (addattr_l(&req->n, sizeof(*req), RTA_GATEWAY,
+                      &(SIN(&(rt_info->gw))->sin_addr),
+                      sizeof(SIN(&(rt_info->gw))->sin_addr)) != 0)
+        {
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+    }
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
+    {
+        int idx;
+
+        if ((idx = ll_name_to_index(rt_info->ifname)) == 0)
+        {
+            ERROR("Cannot find interface %s", rt_info->ifname);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+        addattr32(&req->n, sizeof(*req), RTA_OIF, idx);
+    }
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_METRIC) != 0)
+        addattr32(&req->n, sizeof(*req), RTA_PRIORITY, rt_info->metric);
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_MTU) != 0)
+        rta_addattr32(mxrta, sizeof(mxbuf), RTAX_MTU, rt_info->mtu);
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_WIN) != 0)
+        rta_addattr32(mxrta, sizeof(mxbuf), RTAX_WINDOW, rt_info->win);
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_IRTT) != 0)
+        rta_addattr32(mxrta, sizeof(mxbuf), RTAX_RTT, rt_info->irtt);
+
+    if (mxrta->rta_len > RTA_LENGTH(0))
+    {
+        addattr_l(&req->n, sizeof(*req), RTA_METRICS, RTA_DATA(mxrta),
+                  RTA_PAYLOAD(mxrta));
+    }
+
+    return 0;
+}
+
+/** 
+ * The code of this function is based on iproute2 GPL package.
+ *
+ * @param rt_info  Route-related information
+ * @param action   What to do with this route
+ * @param flags    netlink-specific flags
+ */
+static int
+route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
+{
+    struct nl_request  req;
+    struct rtnl_handle rth;
+    int                rc;
+
+    if (rt_info == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     memset(&req, 0, sizeof(req));
-    memset(&dev, 0, sizeof(dev));
 
     req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
     req.n.nlmsg_flags = NLM_F_REQUEST | flags;
@@ -3035,6 +3328,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
 
     req.r.rtm_family = AF_INET;
     req.r.rtm_table = RT_TABLE_MAIN;
+    req.r.rtm_scope = RT_SCOPE_NOWHERE;
 
     if (action != RTM_DELROUTE)
     {
@@ -3043,132 +3337,6 @@ route_change(unsigned int gid, const char *oid, const char *value,
         req.r.rtm_type = RTN_UNICAST;
     }
 
-    mxrta->rta_type = RTA_METRICS;
-    mxrta->rta_len = RTA_LENGTH(0);
-
-    {
-        c = strchr(route, ',');
-        if (c != NULL)
-            *c = 0;
-
-        if (nl_get_prefix(&dst, route, req.r.rtm_family) != 0)
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        req.r.rtm_dst_len = dst.bitlen;
-        if (dst.bytelen)
-        {
-            if (addattr_l(&req.n, sizeof(req), RTA_DST, &dst.data,
-                          dst.bytelen) != 0)
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        if (c != NULL)
-            *c = ',';
-    }
-
-    if ((c = strstr(route, "gw=")) != NULL)
-    {
-        char *d = strchr(c, ',');
-
-        if (d != NULL)
-            *d = 0;
-
-        if (nl_get_addr(&addr, c + strlen("gw="), req.r.rtm_family) != 0)
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        if (addattr_l(&req.n, sizeof(req), RTA_GATEWAY, &addr.data,
-                      addr.bytelen) != 0)
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        gw_ok = 1;
-        if (d != NULL)
-            *d = ',';
-    }
-
-    if ((c = strstr(route, "dev=")) != NULL)
-    {
-        char     *d = strchr(c, ',');
-
-        if (d != NULL)
-            *d = 0;
-
-        strcpy(dev, c + strlen("dev="));
-        if (dev == NULL)
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        if (d != NULL)
-            *d = ',';
-    }
-
-    if ((c = strstr(route, "metric=")) != NULL)
-    {
-        unsigned  metric= 1500;
-        char     *d = strchr(c, ',');
-
-        if (d != NULL)
-            *d = 0;
-
-        if (nl_get_unsigned(&metric, c + strlen("metric="), 0))
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        addattr32(&req.n, sizeof(req), RTA_PRIORITY, metric);
-
-        if (d != NULL)
-            *d = ',';
-    }
-
-    if ((c = strstr(value, "mtu=")) != NULL)
-    {
-        unsigned  mtu = 1500;
-        char     *d = strchr(c, ',');
-
-        if (d != NULL)
-            *d = 0;
-
-        if (nl_get_unsigned(&mtu, c + strlen("mtu="), 0))
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        rta_addattr32(mxrta, sizeof(mxbuf), RTAX_MTU, mtu);
-
-        if (d != NULL)
-            *d = ',';
-    }
-
-    if ((c = strstr(value, "window=")) != NULL)
-    {
-        unsigned  window = 1500;
-        char     *d = strchr(c, ',');
-
-        if (d != NULL)
-            *d = 0;
-
-        if (nl_get_unsigned(&window, c + strlen("window="), 0))
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        rta_addattr32(mxrta, sizeof(mxbuf), RTAX_WINDOW, window);
-
-        if (d != NULL)
-            *d = ',';
-    }
-
-    if ((c = strstr(value, "irtt=")) != NULL)
-    {
-        unsigned  rtt = 1500;
-        char     *d = strchr(c, ',');
-
-        if (d != NULL)
-            *d = 0;
-
-        if (nl_get_unsigned(&rtt, c + strlen("irtt="), 0))
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-        rta_addattr32(mxrta, sizeof(mxbuf), RTAX_RTT, rtt);
-
-        if (d != NULL)
-            *d = ',';
-    }
-
-
-
     /* Sending the netlink message */
     if (rtnl_open(&rth, 0) < 0)
     {
@@ -3176,26 +3344,19 @@ route_change(unsigned int gid, const char *oid, const char *value,
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    if (*dev != '\0')
+    if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
     {
-        int idx;
-
+        /*
+         * We need to call this function as rt_info2nl_req() 
+         * will need to convert interface name to index.
+         */
         ll_init_map(&rth);
-
-
-        if ((idx = ll_name_to_index(dev)) == 0)
-        {
-            ERROR("Cannot find device");
-            rtnl_close(&rth);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        addattr32(&req.n, sizeof(req), RTA_OIF, idx);
     }
 
-    if (mxrta->rta_len > RTA_LENGTH(0))
+    if ((rc = rt_info2nl_req(rt_info, &req)) != 0)
     {
-        addattr_l(&req.n, sizeof(req), RTA_METRICS, RTA_DATA(mxrta),
-                  RTA_PAYLOAD(mxrta));
+        rtnl_close(&rth);
+        return rc;
     }
 
     {
@@ -3211,7 +3372,7 @@ route_change(unsigned int gid, const char *oid, const char *value,
         {
             if (action == RTM_DELROUTE)
                 req.r.rtm_scope = RT_SCOPE_NOWHERE;
-            else if (gw_ok == 0)
+            else if ((rt_info->flags & TA_RT_INFO_FLG_GW) == 0)
                 req.r.rtm_scope = RT_SCOPE_LINK;
         }
     }
@@ -3227,270 +3388,259 @@ route_change(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-/********************************************************************/
 
-/**
- * Add a new route.
+#else /* !USE_NETLINK_ROUTE */
+
+/** 
+ * Convert system-independent route info data structure to
+ * ioctl-specific rtentry data structure.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         value string (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml
- *                      for the format
- *
- * @return error code
+ * @param rt_info TA portable route info
+ * @Param rt      ioctl-specific data structure (OUT)
  */
-static int
-route_add(unsigned int gid, const char *oid, const char *value,
-          const char *route)
-{
-    ENTRY("%s", route);
-    fprintf(stderr, "\nadding route: %s = %s\n", route, value);
-
-    return route_change(gid, oid, value, route,
-                        RTM_NEWROUTE, NLM_F_CREATE|NLM_F_EXCL);
-}
-
-/**
- * Change already existing route.
- *
- * @param gid           group identifier
- * @param oid           full object instence identifier (unused)
- * @param value         value string (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml
- *                      for the format
- *
- * @return error code
- */
-static int
-route_set(unsigned int gid, const char *oid, const char *value,
-          const char *route)
-{
-    ENTRY("%s", route);
-    UNUSED(oid);
-    UNUSED(gid);
-    fprintf(stderr, "\nchanging route: %s = %s\n", route, value);
-
-    return route_change(gid, oid, value, route, RTM_NEWROUTE,
-                        NLM_F_REPLACE);
-}
-
-/**
- * Delete a route.
- *
- * @param gid           group identifier
- * @param oid           full object instence identifier (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml
- *                      for the format
- *
- * @return error code
- */
-static int
-route_del(unsigned int gid, const char *oid, const char *route)
-{
-    char value[RCF_MAX_VAL] = { 0, };
-
-    ENTRY("%s", route);
-    UNUSED(oid);
-    UNUSED(gid);
-
-    fprintf(stderr, "deleting route: %s\n", route);
-
-    return route_change(gid, oid, value, route,
-                        RTM_DELROUTE, 0);
-
-}
-
-#else
-
-/**
- * Change already existing route.
- *
- * @param gid           group identifier
- * @param oid           full object instence identifier (unused)
- * @param value         value string (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml
- *                      for the format
- *
- * @return error code
- */
-static int
-route_set(unsigned int gid, const char *oid, const char *value,
-          const char *route)
-{
-    char val[RCF_MAX_VAL];
-
-    ENTRY("%s", route);
-
-    if (route_get(gid, oid, val, route) != 0)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    return route_add(gid, oid, value, route);
-}
-
-/**
- * Add a new route.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         value string (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml
- *                      for the format
- *
- * @return error code
- */
-static int
-route_add(unsigned int gid, const char *oid, const char *value,
-          const char *route)
-{
+static void
+rt_info2rtentry(const ta_rt_info_t *rt_info,
 #ifdef __linux__
-    int             rc;
-    struct rtentry  rt;
+                struct rtentry  *rt
+#else
+                struct ortentry *rt
+#endif
+)
+{
+    assert(rt_info != NULL && rt != NULL);
 
-    UNUSED(gid);
-    UNUSED(oid);
+    memset(rt, 0, sizeof(*rt));
+    memcpy(&(rt->rt_dst), &(rt_info->dst), sizeof(rt->rt_dst));
 
-    ENTRY("%s", route);
+#ifdef __linux__
+    rt->rt_genmask.sa_family = AF_INET;
+    ((struct sockaddr_in *)&(rt->rt_genmask))->sin_addr.s_addr =
+        htonl(PREFIX2MASK(rt_info->prefix));
+#endif
+    if (rt_info->prefix == 32)
+        rt->rt_flags |= RTF_HOST;
 
-    if ((rc = route_parse_inst_name(route, &rt)) != 0)
+    if ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0)
+    {
+        memcpy(&(rt->rt_gateway), &(rt_info->gw), sizeof(rt->rt_gateway));
+        rt->rt_flags |= RTF_GATEWAY;
+    }
+
+#ifdef __linux__
+    if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
+    {
+        rt->rt_dev = strdup(rt_info->ifname);
+    }
+#endif /* !__linux__ */
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_METRIC) != 0)
+        rt->rt_metric = rt_info->metric;
+
+#ifdef __linux__
+    if ((rt_info->flags & TA_RT_INFO_FLG_MTU) != 0)
+    {
+        rt->rt_mtu = rt_info->mtu;
+        rt->rt_flags |= RTF_MSS;
+    }
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_WIN) != 0)
+    {
+        rt->rt_window = rt_info->win;
+        rt->rt_flags |= RTF_WINDOW;
+    }
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_IRTT) != 0)
+    {
+        rt->rt_irtt = rt_info->irtt;
+        rt->rt_flags |= RTF_IRTT;
+    }
+#endif /* !__linux__ */
+}
+#endif /* !USE_NETLINK_ROUTE */
+
+#ifdef USE_NETLINK_ROUTE
+
+/** Structure used for RTNL user callback */
+typedef struct rtnl_cb_user_data {
+    ta_rt_info_t *rt_info; /**< Routing entry information (IN/OUT)
+                                On input it keeps route key,
+                                On output it is augmented with route
+                                attributes: mtu, win etc. */
+    int if_index;          /**< Interface index in case of direct route.
+                                This field has sense  only if 
+                                TA_RT_INFO_FLG_IF flag is set */
+    int rc;                /**< Return code */
+    te_bool filled;        /**< Whether this structure is filled or not */
+} rtnl_cb_user_data_t;
+
+/**
+ * Callback for rtnl_dump_filter() function.
+ */
+static int
+rtnl_get_route_cb(const struct sockaddr_nl *who,
+                  const struct nlmsghdr *n, void *arg)
+{
+    struct rtmsg        *r = NLMSG_DATA(n);
+    int                  len = n->nlmsg_len;
+    rtnl_cb_user_data_t *user_data = (rtnl_cb_user_data_t *)arg;
+    struct rtattr       *tb[RTA_MAX + 1] = {};
+
+    UNUSED(who);
+
+    if (user_data->filled)
         return 0;
 
-    if (strstr(value, "mod") != NULL)
-        rt.rt_flags |= RTF_MODIFIED;
-    if (strstr(value, "dyn") != NULL)
-        rt.rt_flags |= RTF_DYNAMIC;
-    if (strstr(value, "reinstate") != NULL)
-        rt.rt_flags |= RTF_REINSTATE;
-
-    if (rt.rt_metric != 0)
-    {
-        /*
-         * Increment metric because ioctl substracts one from the value,
-         * 'route' command does the same thing.
-         */
-        rt.rt_metric++;
-    }
-
-    rt.rt_flags |= (RTF_UP | RTF_STATIC);
-
-    if (ioctl(cfg_socket, SIOCADDRT, &rt) < 0)
-    {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCADDRT) failed: %r", rc);
-        return rc;
-    }
-
-    return 0;
-#else
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(route);
-
-    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-#endif
-}
-
-
-/**
- * Delete a route.
- *
- * @param gid           group identifier
- * @param oid           full object instence identifier (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml
- *                      for the format
- *
- * @return error code
- */
-static int
-route_del(unsigned int gid, const char *oid, const char *route)
-{
-#ifdef __linux__
-    int             rc;
-    char            value[RCF_MAX_VAL];
-    struct rtentry  rt;
-
-    ENTRY("%s", route);
-
-    if (route_get(gid, oid, value, route) != 0)
-    {
-        ERROR("NOT FOUND");
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-
-    if ((rc = route_parse_inst_name(route, &rt)) != 0)
+    if (n->nlmsg_type != RTM_NEWROUTE && n->nlmsg_type != RTM_DELROUTE)
+        return 0;
+    
+    if (r->rtm_family != AF_INET)
         return 0;
 
-    if (rt.rt_metric != 0)
+    len -= NLMSG_LENGTH(sizeof(*r));
+
+    parse_rtattr(tb, RTA_MAX, RTM_RTA(r), len);
+
+    if (((tb[RTA_DST] == NULL &&
+          SIN(&(user_data->rt_info->dst))->sin_addr.s_addr == INADDR_ANY) ||
+         (tb[RTA_DST] != NULL &&
+          memcmp(RTA_DATA(tb[RTA_DST]),
+                 &(SIN(&(user_data->rt_info->dst))->sin_addr),
+                 sizeof(SIN(&(user_data->rt_info->dst))->sin_addr)) 
+                     == 0)) &&
+        user_data->rt_info->prefix == r->rtm_dst_len &&
+        (((user_data->rt_info->flags & TA_RT_INFO_FLG_GW) != 0 &&
+          tb[RTA_GATEWAY] != NULL &&
+          memcmp(RTA_DATA(tb[RTA_GATEWAY]),
+                 &(SIN(&(user_data->rt_info->gw))->sin_addr),
+                 sizeof(SIN(&(user_data->rt_info->gw))->sin_addr)) == 0) ||
+         ((user_data->rt_info->flags & TA_RT_INFO_FLG_IF) != 0 &&
+          tb[RTA_OIF] != NULL &&
+          user_data->if_index == *(int*)RTA_DATA(tb[RTA_OIF]))))
     {
-        /*
-         * Increment metric because ioctl substracts one from the value,
-         * 'route' command does the same thing.
-         */
-        rt.rt_metric++;
+        if (tb[RTA_PRIORITY] != NULL)
+        {
+            user_data->rt_info->flags |= TA_RT_INFO_FLG_METRIC;
+            user_data->rt_info->metric = 
+                *(uint32_t *)RTA_DATA(tb[RTA_PRIORITY]);
+        }
+        
+        if (tb[RTA_METRICS] != NULL)
+        {
+            struct rtattr *mxrta[RTAX_MAX + 1] = {};
+
+            parse_rtattr(mxrta, RTAX_MAX, RTA_DATA(tb[RTA_METRICS]),
+                         RTA_PAYLOAD(tb[RTA_METRICS]));
+            
+            if (mxrta[RTAX_MTU] != NULL)
+            {
+                user_data->rt_info->flags |= TA_RT_INFO_FLG_MTU;
+                user_data->rt_info->mtu = 
+                    *(unsigned *)RTA_DATA(mxrta[RTAX_MTU]);
+            }
+            if (mxrta[RTAX_WINDOW] != NULL)
+            {
+                user_data->rt_info->flags |= TA_RT_INFO_FLG_WIN;
+                user_data->rt_info->win = 
+                    *(unsigned *)RTA_DATA(mxrta[RTAX_WINDOW]);
+            }
+            if (mxrta[RTAX_RTT] != NULL)
+            {
+                user_data->rt_info->flags |= TA_RT_INFO_FLG_IRTT;
+                user_data->rt_info->irtt = 
+                    *(unsigned *)RTA_DATA(mxrta[RTAX_RTT]);
+            }
+        }
+
+        user_data->filled = TRUE;
+        return 0;
     }
-
-    if (ioctl(cfg_socket, SIOCDELRT, &rt) < 0)
-    {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCDELRT) failed: %r", rc);
-        return rc;
-    }
-
     return 0;
-#else
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(route);
-
-    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-#endif
 }
 #endif /* USE_NETLINK_ROUTE */
 
-
-
 /**
- * Get route value (gateway IP address).
+ * Get route attributes.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         value location (IPv4 address is returned in
- *                      dotted notation)
- * @param route         route instance name: see doc/cm_cm_base.xml
- *                      for the format
+ * @param route    route instance name: see doc/cm_cm_base.xml
+ *                 for the format
+ * @param rt_info  route related information (OUT)
  *
  * @return error code
  */
 static int
-route_get(unsigned int gid, const char *oid, char *value,
-          const char *route)
+route_get(const char *route, ta_rt_info_t *rt_info)
 {
 #ifdef __linux__
     int       rc;
+#ifndef USE_NETLINK_ROUTE
     FILE     *fp;
     char      ifname[IF_NAMESIZE];
     uint32_t  route_addr;
     uint32_t  route_mask;
     uint32_t  route_gw;
-
-    struct rtentry  rt;
-
-    UNUSED(gid);
-    UNUSED(oid);
+#endif /* !USE_NETLINK_ROUTE */
 
     ENTRY("%s", route);
 
-    if ((rc = route_parse_inst_name(route, &rt)) != 0)
-        return 0;
+    if ((rc = ta_rt_parse_inst_name(route, rt_info)) != 0)
+        return rc;
 
-    memcpy(&route_addr, &(((struct sockaddr_in *)&(rt.rt_dst))->sin_addr),
-           sizeof(route_addr));
+#ifdef USE_NETLINK_ROUTE
 
-    route_mask = ((struct sockaddr_in *)&(rt.rt_genmask))->sin_addr.s_addr;
-    route_gw = ((struct sockaddr_in *)&(rt.rt_gateway))->sin_addr.s_addr;
+    struct rtnl_handle  rth;
+    rtnl_cb_user_data_t user_data;
+
+    memset(&user_data, 0, sizeof(user_data));
+
+    memset(&rth, 0, sizeof(rth));
+    if (rtnl_open(&rth, 0) < 0)
+    {
+        ERROR("Failed to open a netlink socket");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    ll_init_map(&rth);
+    
+    if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
+    {
+        if ((user_data.if_index = ll_name_to_index(rt_info->ifname)) == 0)
+        {
+            rtnl_close(&rth);
+            ERROR("Cannot find device %s", rt_info->ifname);
+            return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+    }
+    if (rtnl_wilddump_request(&rth, AF_INET, RTM_GETROUTE) < 0)
+    {
+        rtnl_close(&rth);
+        ERROR("Cannot send dump request to netlink");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    /* Fill in user_data, which will be passed to callback function */
+    user_data.rt_info = rt_info;
+    user_data.filled = FALSE;
+
+    if (rtnl_dump_filter(&rth, rtnl_get_route_cb,
+                         &user_data, NULL, NULL) < 0)
+    {
+        rtnl_close(&rth);
+        ERROR("Dump terminated");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    rtnl_close(&rth);
+
+    if (!user_data.filled)
+    {
+        return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    return 0;
+
+#else
+
+    route_addr = ((struct sockaddr_in *)&(rt_info->dst))->sin_addr.s_addr;
+    route_mask = htonl(PREFIX2MASK(rt_info->prefix));
+    route_gw = ((struct sockaddr_in *)&(rt_info->gw))->sin_addr.s_addr;
 
     if ((fp = fopen("/proc/net/route", "r")) == NULL)
     {
@@ -3518,15 +3668,10 @@ route_get(unsigned int gid, const char *oid, char *value,
              ifname, addr, gateway, flags, 0, 0, metric, mask,
              mtu, win, irtt);
 
-        if ((rt.rt_dev != NULL && strcmp(rt.rt_dev, ifname) != 0) ||
+        if (((rt_info->flags & TA_RT_INFO_FLG_IF) != 0 &&
+             strcmp(rt_info->ifname, ifname) != 0) ||
             addr != route_addr ||
-            gateway != route_gw ||
-            (unsigned int)rt.rt_metric != metric ||
-            mask != route_mask ||
-            rt.rt_mtu != (unsigned long int)mtu ||
-            rt.rt_window != (unsigned long int)win ||
-            rt.rt_irtt != irtt ||
-            ((rt.rt_flags & RTF_REJECT) ^ (flags & RTF_REJECT)))
+            gateway != route_gw || mask != route_mask)
         {
             fgets(trash, sizeof(trash), fp);
             VERB("Continue processing ...");
@@ -3538,38 +3683,146 @@ route_get(unsigned int gid, const char *oid, char *value,
 
         fclose(fp);
 
-        value[0] = '\0';
+        rt_info->metric = metric;
+        if (metric != 0)
+            rt_info->flags |= TA_RT_INFO_FLG_METRIC;
 
-#define TE_LC_RTF_SET_FLAG(flg_, name_) \
-        do {                                           \
-            if (flags & flg_)                          \
-            {                                          \
-                snprintf(value + strlen(value),        \
-                         RCF_MAX_VAL - strlen(value),  \
-                         " " name_);                   \
-            }                                          \
-        } while (0)
+        rt_info->mtu = mtu;
+        if (mtu != 0)
+            rt_info->flags |= TA_RT_INFO_FLG_MTU;
 
-        TE_LC_RTF_SET_FLAG(RTF_MODIFIED, "mod");
-        TE_LC_RTF_SET_FLAG(RTF_DYNAMIC, "dyn");
-        TE_LC_RTF_SET_FLAG(RTF_REINSTATE, "reinstate");
+        rt_info->win = win;
+        if (win != 0)
+            rt_info->flags |= TA_RT_INFO_FLG_WIN;
 
-#undef TE_LC_RTF_SET_FLAG
-
+        rt_info->irtt = irtt;
+        if (irtt != 0)
+            rt_info->flags |= TA_RT_INFO_FLG_IRTT;
+        
         return 0;
     }
 
     fclose(fp);
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif /* !USE_NETLINK_ROUTE */
+
 #else
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+
     UNUSED(route);
+    UNUSED(rt_info);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-#endif
+#endif /* !__linux__ */
+}
+
+/**
+ * Load all route-specific attributes into route object.
+ *
+ * @param obj  Object to be uploaded
+ *
+ * @return 0 in case of success, or error code on failure.
+ */
+static int
+route_load_attrs(ta_cfg_obj_t *obj)
+{
+    ta_rt_info_t rt_info;
+    int          rc;
+    char         val[128];
+
+    if ((rc = route_get(obj->name, &rt_info)) != 0)
+        return rc;
+
+#define ROUTE_LOAD_ATTR(field_flg_, field_) \
+    do {                                                      \
+        snprintf(val, sizeof(val), "%d", rt_info.field_);     \
+        if (rt_info.flags & TA_RT_INFO_FLG_ ## field_flg_ &&  \
+            (rc = ta_obj_set(TA_OBJ_TYPE_ROUTE,               \
+                             obj->name, #field_,              \
+                             val, NULL)) != 0)                \
+        {                                                     \
+            return rc;                                        \
+        }                                                     \
+    } while (0)
+
+    ROUTE_LOAD_ATTR(METRIC, metric);
+    ROUTE_LOAD_ATTR(MTU, mtu);
+    ROUTE_LOAD_ATTR(WIN, win);
+    ROUTE_LOAD_ATTR(IRTT, irtt);
+
+    return 0;
+}
+
+#define DEF_ROUTE_GET_FUNC(field_) \
+static int                                                  \
+route_ ## field_ ## _get(unsigned int gid, const char *oid, \
+                         char *value, const char *route)    \
+{                                                           \
+    int          rc;                                        \
+    ta_rt_info_t rt_info;                                   \
+                                                            \
+    UNUSED(gid);                                            \
+    UNUSED(oid);                                            \
+                                                            \
+    if ((rc = route_get(route, &rt_info)) != 0)             \
+        return rc;                                          \
+                                                            \
+    sprintf(value, "%d", rt_info.field_);                   \
+    return 0;                                               \
+}
+
+#define DEF_ROUTE_SET_FUNC(field_) \
+static int                                                     \
+route_ ## field_ ## _set(unsigned int gid, const char *oid,    \
+                         const char *value, const char *route) \
+{                                                              \
+    UNUSED(gid);                                               \
+    UNUSED(oid);                                               \
+                                                               \
+    return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, #field_,       \
+                      value, route_load_attrs);                \
+}
+
+DEF_ROUTE_GET_FUNC(metric);
+DEF_ROUTE_SET_FUNC(metric);
+DEF_ROUTE_GET_FUNC(mtu);
+DEF_ROUTE_SET_FUNC(mtu);
+DEF_ROUTE_GET_FUNC(win);
+DEF_ROUTE_SET_FUNC(win);
+DEF_ROUTE_GET_FUNC(irtt);
+DEF_ROUTE_SET_FUNC(irtt);
+
+#undef DEF_ROUTE_GET_FUNC
+#undef DEF_ROUTE_SET_FUNC
+
+/**
+ * Add a new route.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param route         route instance name: see doc/cm_cm_base.xml
+ *                      for the format
+ *
+ * @return error code
+ */
+static int
+route_add(unsigned int gid, const char *oid, const char *value,
+          const char *route)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, NULL, NULL, NULL);
+}
+
+static int
+route_del(unsigned int gid, const char *oid, const char *route)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL);
 }
 
 /**
@@ -3595,6 +3848,7 @@ route_list(unsigned int gid, const char *oid, char **list)
     UNUSED(oid);
 
     ENTRY();
+
     if ((fp = fopen("/proc/net/route", "r")) == NULL)
     {
         ERROR("Failed to open /proc/net/route for reading: %s",
@@ -3602,7 +3856,7 @@ route_list(unsigned int gid, const char *oid, char **list)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    buf[0] = 0;
+    buf[0] = '\0';
 
     fgets(trash, sizeof(trash), fp);
     while (fscanf(fp, "%s", ifname) != EOF)
@@ -3642,33 +3896,6 @@ route_list(unsigned int gid, const char *oid, char **list)
             }
             ptr += strlen(ptr);
 
-            if (metric != 0)
-            {
-                snprintf(ptr, end_ptr - ptr, ",metric=%d", metric);
-                ptr += strlen(ptr);
-            }
-#ifndef USE_NETLINK_ROUTE
-            if (mtu != 0)
-            {
-                snprintf(ptr, end_ptr - ptr, ",mtu=%d", mtu);
-                ptr += strlen(ptr);
-            }
-            if (win != 0)
-            {
-                snprintf(ptr, end_ptr - ptr, ",window=%d", win);
-                ptr += strlen(ptr);
-            }
-            if (irtt != 0)
-            {
-                snprintf(ptr, end_ptr - ptr, ",irtt=%d", irtt);
-                ptr += strlen(ptr);
-            }
-#endif
-            if (flags & RTF_REJECT)
-            {
-                snprintf(ptr, end_ptr - ptr, "rejected");
-                ptr += strlen(ptr);
-            }
             snprintf(ptr, end_ptr - ptr, " ");
             ptr += strlen(ptr);
         }
@@ -3682,6 +3909,149 @@ route_list(unsigned int gid, const char *oid, char **list)
 
     return 0;
 }
+
+static int
+route_commit(unsigned int gid, const cfg_oid *p_oid)
+{
+    const char   *route;
+    ta_cfg_obj_t *obj;
+    ta_rt_info_t  rt_info_name_only;
+    ta_rt_info_t  rt_info;
+    int           rc = 0;
+    
+    ta_cfg_obj_action_e obj_action;
+
+    UNUSED(gid);
+    ENTRY("%s", route);
+
+    route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
+    
+    if ((obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route)) == NULL)
+    {
+        WARN("Commit for %s route which has not been updated", route);
+        return 0;
+    }
+    if ((rc = ta_rt_parse_obj(obj, &rt_info)) != 0)
+    {
+        ta_obj_free(obj);
+        return rc;
+    }
+    obj_action = obj->action;
+    ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
+
+    ta_obj_free(obj);
+
+#ifdef USE_NETLINK_ROUTE
+    {
+        int nlm_flags;
+        int nlm_action;
+
+        switch (obj_action)
+        {
+#define TA_CFG_OBJ_ACTION_CASE(case_label_, action_, flg_) \
+            case TA_CFG_OBJ_ ## case_label_:               \
+                nlm_action = (action_);                    \
+                nlm_flags = (flg_);                        \
+                break
+            
+            TA_CFG_OBJ_ACTION_CASE(CREATE, RTM_NEWROUTE,
+                                   NLM_F_CREATE | NLM_F_EXCL);
+            TA_CFG_OBJ_ACTION_CASE(DELETE, RTM_DELROUTE, 0);
+            TA_CFG_OBJ_ACTION_CASE(SET, RTM_NEWROUTE,
+                                   NLM_F_REPLACE);
+
+#undef TA_CFG_OBJ_ACTION_CASE
+
+            default:
+                ERROR("Unknown object action specified %d", obj_action);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        rc = route_change(&rt_info, nlm_action, nlm_flags);
+    }
+#else
+    /* Use ioctl interface */
+#ifdef __linux__
+    {
+        struct rtentry rt;
+
+        rt_info2rtentry(&rt_info, &rt);
+
+        switch (obj_action)
+        {
+            case TA_CFG_OBJ_DELETE:
+            {
+                if (ioctl(cfg_socket, SIOCDELRT, &rt) < 0)
+                {
+                    rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+                    ERROR("ioctl(SIOCDELRT) failed: %r", rc);
+                    return rc;
+                }
+                return 0;
+            }
+            
+            case TA_CFG_OBJ_SET:
+            {
+                struct rtentry rt_cur;
+
+                /*
+                 * In case of SET we first should delete an existing 
+                 * route and then add a new one.
+                 */
+                rt_info2rtentry(&rt_info_name_only, &rt_cur);
+
+                if (ioctl(cfg_socket, SIOCDELRT, &rt_cur) < 0)
+                {
+                    rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+                    ERROR("ioctl(SIOCDELRT) failed: %r", rc);
+                    return rc;
+                }
+                 
+                /* FALLTHROUGH */
+            }
+
+            case TA_CFG_OBJ_CREATE:
+            {
+                /* Add or set operation */
+                if (rt.rt_metric != 0)
+                {
+                    /*
+                     * Increment metric because ioctl substracts 
+                     * one from the value ('route' command does 
+                     * the same thing).
+                     */
+                    rt.rt_metric++;
+                }
+
+                rt.rt_flags |= (RTF_UP | RTF_STATIC);
+
+                if (ioctl(cfg_socket, SIOCADDRT, &rt) < 0)
+                {
+                    rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+                    ERROR("ioctl(SIOCADDRT) failed: %r", rc);
+                    return rc;
+                }
+                break;
+            }
+            
+            default:
+                ERROR("Unknown object action specified %d", obj_action);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+    }
+#else
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+
+#endif /* !USE_NETLINK_ROUTE */
+    
+    return rc;
+}
+
+
 
 static int
 nameserver_get(unsigned int gid, const char *oid, char *result,

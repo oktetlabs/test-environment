@@ -39,6 +39,11 @@ static size_t ta_list_size = TA_LIST_SIZE;
 char *cfg_get_buf = NULL;
 static int cfg_get_buf_len = TA_BUF_SIZE;
 
+
+te_bool local_cmd_seq = FALSE;
+char max_commit_subtree[CFG_INST_NAME_MAX] = {};
+char local_cmd_bkp[1024];
+
 /**
  * Initialize list of Test Agemts.
  *
@@ -47,8 +52,8 @@ static int cfg_get_buf_len = TA_BUF_SIZE;
 static int
 ta_list_init()
 {
-    char *ta;
-    int   rc;
+    const char *ta;
+    int         rc;
     
     if ((cfg_get_buf = (char *)malloc(cfg_get_buf_len)) == NULL)
     {
@@ -97,9 +102,9 @@ ta_list_init()
 int
 cfg_ta_add_agent_instances()
 {
-    char *ta;
-    int   rc;
-    int   i = 1;
+    const char *ta;
+    int         rc;
+    int         i = 1;
     
     if (cfg_ta_list == NULL && (rc = ta_list_init()) != 0)
         return rc;
@@ -141,7 +146,7 @@ cfg_ta_add_agent_instances()
 void
 cfg_ta_reboot_all(void)
 {
-    char *ta;
+    const char *ta;
 
     for (ta = cfg_ta_list;
          ta < cfg_ta_list + ta_list_size;
@@ -160,7 +165,7 @@ cfg_ta_reboot_all(void)
  * @return status code (see te_errno.h)
  */
 static int
-sync_ta_instance(char *ta, char *oid)
+sync_ta_instance(const char *ta, const char *oid)
 {
     cfg_object   *obj = cfg_get_object(oid);
     cfg_handle    handle = CFG_HANDLE_INVALID;
@@ -172,13 +177,30 @@ sync_ta_instance(char *ta, char *oid)
 
     rc = cfg_db_find(oid, &handle);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    {
         return rc;
+    }
 
     VERB("Add TA '%s' object instance '%s'", ta, oid);
 
     if (obj->type == CVT_NONE)
-        return rc == 0 ? rc :  cfg_db_add(oid, &handle, CVT_NONE,
-                                          (cfg_inst_val)0);
+    {
+        if (rc != 0)
+        {
+            /*
+             * There is new instance on Test Agent, which we should 
+             * put into our local DB.
+             */
+            rc = cfg_db_add(oid, &handle, CVT_NONE,
+                            (cfg_inst_val)0);
+            if (rc == 0)
+            {
+                /* Mark it as synchronized */
+                CFG_GET_INST(handle)->added = TRUE;
+            }
+        }
+        return rc;
+    }
 
     while (TRUE)
     {
@@ -222,9 +244,22 @@ sync_ta_instance(char *ta, char *oid)
     }
     
     if (handle == CFG_HANDLE_INVALID)
+    {
         rc = cfg_db_add(oid, &handle, obj->type, val);
+        VERB("%s() cfg_db_add(%s) returns %r, handle %x",
+             __FUNCTION__, oid, rc, handle);
+    }
     else
+    {
         rc = cfg_db_set(handle, val);
+        VERB("%s() cfg_db_set() returns %r", __FUNCTION__, rc);
+    }
+
+    if (rc == 0)
+    {
+        /* Mark it as synchronized */
+        CFG_GET_INST(handle)->added = TRUE;
+    }
 
     cfg_types[obj->type].free(val);
 
@@ -312,7 +347,7 @@ free_list(olist *list)
  * @return status code (see te_errno.h)
  */
 static int
-sync_ta_subtree(char *ta, char *oid)
+sync_ta_subtree(const char *ta, const char *oid)
 {
     char  *tmp;
     char  *next;
@@ -459,7 +494,7 @@ cfg_ta_sync(char *oid, te_bool subtree)
 
     if (tmp_oid->len == 1 || agt_volatile_sync)
     {
-        char *ta;
+        const char *ta;
 
         for (ta = cfg_ta_list;
              ta < cfg_ta_list + ta_list_size;
@@ -475,7 +510,7 @@ cfg_ta_sync(char *oid, te_bool subtree)
     }
     else
     {
-        char *ta = ((cfg_inst_subid *)(tmp_oid->ids))[1].name;
+        const char *ta = ((cfg_inst_subid *)(tmp_oid->ids))[1].name;
 
         if (strcmp(((cfg_inst_subid *)(tmp_oid->ids))[1].subid,
                    "agent") == 0)
@@ -501,13 +536,13 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
     int             rc;
     cfg_object     *obj = inst->obj;
     cfg_inst_val    val;
-    char           *val_str;
+    char           *val_str = "";
 
     
     ENTRY("ta=%s inst=0x%X", ta, inst);
     VERB("Commit to '%s' instance '%s'", ta, inst->oid);
-    if ((obj->type == CVT_NONE) || (obj->access != CFG_READ_WRITE &&
-                                    obj->access != CFG_READ_CREATE))
+    if ((inst->added && obj->type == CVT_NONE) ||
+        (obj->access != CFG_READ_WRITE && obj->access != CFG_READ_CREATE))
     {
         VERB("Skip object with type %d(%d) and access %d(%d,%d)",
                 obj->type, CVT_NONE,
@@ -516,35 +551,60 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
         return 0;
     }
 
-    /* Get value from Configurator DB */
-    rc = cfg_db_get(inst->handle, &val);
-    if (rc != 0)
+    if (obj->type != CVT_NONE)
     {
-        ERROR("Failed to get object instance '%s' value", inst->oid);
-        EXIT("%r", rc);
-        return rc;
+        /* Get value from Configurator DB */
+        rc = cfg_db_get(inst->handle, &val);
+        if (rc != 0)
+        {
+            ERROR("Failed to get object instance '%s' value", inst->oid);
+            EXIT("%r", rc);
+            return rc;
+        }
+
+        /* Convert got value to string */
+        rc = cfg_types[obj->type].val2str(val, &val_str);
+        /* Free memory allocated for value in any case */
+        cfg_types[obj->type].free(val);
+        /* Check conversion return code */
+        if (rc != 0)
+        {
+            VERB("Failed to convert object instance '%s' value of type %d "
+                 "to string", inst->oid, obj->type);
+            EXIT("%r", rc);
+            return rc;
+        }
     }
 
-    /* Convert got value to string */
-    rc = cfg_types[obj->type].val2str(val, &val_str);
-    /* Free memory allocated for value in any case */
-    cfg_types[obj->type].free(val);
-    /* Check conversion return code */
-    if (rc != 0)
+    if (!inst->added && obj->access == CFG_READ_CREATE)
     {
-        VERB("Failed to convert object instance '%s' value of type %d "
-             "to string", inst->oid, obj->type);
-        EXIT("%r", rc);
-        return rc;
+        /*
+         * We need to add a new instance to the Test Agent - 
+         * postponed add operation.
+         */
+        if ((rc = rcf_ta_cfg_add(ta, 0, inst->oid, val_str)) != 0)
+        {
+            ERROR("Cannot add '%s' with value '%s' via RCF, rc = %r",
+                  inst->oid, val_str, rc);
+        }
+    }
+    else
+    {
+        assert(obj->type != CVT_NONE);
+
+        if ((rc = rcf_ta_cfg_set(ta, 0, inst->oid, val_str)) != 0)
+        {
+            ERROR("Failed to set '%s' to value '%s' via RCF, rc = %r",
+                  inst->oid, val_str, rc);
+        }
     }
 
-    rc = rcf_ta_cfg_set(ta, 0, inst->oid, val_str);
-    if (rc != 0)
-    {
-        ERROR("Failed to set '%s' to value '%s' via RCF",
-                inst->oid, val_str);
-    }
     free(val_str);
+
+    if (rc == 0)
+    {
+        inst->added = TRUE;
+    }
 
     EXIT("%r", rc);
     return rc;
@@ -565,7 +625,7 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     cfg_instance *commit_root;
     cfg_instance *p;
     te_bool       forward;
-
+    te_bool       need_sync = FALSE;
 
     assert(ta != NULL);
     assert(inst != NULL);
@@ -585,6 +645,13 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     {
         if (forward)
         {
+            /*
+             * We need to sync subtree in case local add operation
+             * is performed.
+             */
+            if (!p->added && p->obj->access == CFG_READ_CREATE)
+                need_sync = TRUE;
+
             rc = cfg_ta_commit_instance(ta, p);
             if (rc != 0)
             {
@@ -599,7 +666,7 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
             /* At first go to all children */
             p = p->son;
         }
-        else if (p->brother != NULL)
+        else if (p->brother != NULL && p != commit_root)
         {
             /* There are no children - go to brother */
             p = p->brother;
@@ -625,8 +692,27 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
             ret = rc;
     }
 
+    if (ret == 0 && need_sync)
+    {
+        if ((rc = sync_ta_subtree(ta, inst->oid)) != 0)
+        {
+            ERROR("Failed(%r) to synchronize %s instance", rc, inst->oid);
+            if (ret == 0)
+                ret = rc;
+        }
+    }
+
     VERB("Commit to TA '%s' end %r - %s", ta, ret,
-            (ret == 0) ? "success" : "failed");
+         (ret == 0) ? "success" : "failed");
+    
+    if (ret != 0 && local_cmd_seq)
+    {
+        /* Restore configuration before the first local SET/ADD */
+        local_cmd_seq = FALSE;
+        rc = cfg_dh_restore_backup(local_cmd_bkp, FALSE);
+        WARN("Restore backup to configuration which was before "
+             "the first local ADD/SET commands restored with code %r", rc);
+    }
 
     EXIT("%r", ret);
     return ret;
@@ -690,6 +776,17 @@ cfg_tas_commit(const char *oid)
             return 0;
         }
 
+        if (local_cmd_seq && 
+            (strlen(max_commit_subtree) < strlen(oid) ||
+             strncmp(max_commit_subtree, oid, strlen(oid)) != 0))
+        {
+            rc = TE_EPERM;
+            ERROR("Failed(%r) to commit %s instance - "
+                  "configurator allows committing not deeper than %s",
+                  rc, oid, max_commit_subtree);
+            return rc;
+        }
+
         /* Find TA root instance to get name */
         ta_inst = inst;
         while (ta_inst->father != &cfg_inst_root)
@@ -700,6 +797,13 @@ cfg_tas_commit(const char *oid)
         VERB("Found name of TA to commit to: %s", ta_inst->name);
 
         rc = cfg_ta_commit(ta_inst->name, inst);
+    }
+    
+    if (rc == 0 && local_cmd_seq)
+    {
+        /* Save configuration changes */
+        local_cmd_seq = FALSE;
+        cfg_dh_release_backup(local_cmd_bkp);
     }
 
     EXIT("%r", rc);

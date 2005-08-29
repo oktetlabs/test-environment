@@ -404,6 +404,63 @@ cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
 }
 
 /**
+ * Create an object instance locally. Commit should be called to
+ * propagate this creation as a bulk to the Test Agent later.
+ *
+ * @param  oid      object identifier of the new instance
+ * @param  handle   location for handle of the new instance
+ * @param  type     value type (necessary for fast processing)
+ * @param  ...      value to be assigned to the new instance or NULL;
+ *                    for integer values: int
+ *                    for strings: char *
+ *                    for addreses: struct sockaddr *
+ *
+ * @return status code (see te_errno.h)
+ */
+extern int cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
+                                  cfg_val_type type, ...);
+
+/**
+ * The same function as cfg_add_instance_local, but OID is in string format.
+ *
+ * @param  oid      object identifier of the new instance
+ *                  (string representation)
+ * @param  p_handle location for handle of the new instance (OUT)
+ * @param  type     value type (necessary for fast processing)
+ * @param  ...      value to be assigned to the new instance or NULL;
+ *                    for integer values: int
+ *                    for strings: char *
+ *                    for addreses: struct sockaddr *
+ *
+ * @return status code (see te_errno.h)
+ */
+extern int cfg_add_instance_local_str(const char *oid,
+                                      cfg_handle *p_handle,
+                                      cfg_val_type type, ...);
+
+/**
+ * The same function as cfg_add_instance_local_str,
+ * but OID may be format string.
+ *
+ * Use macro CFG_VAL() to make the second and the third arguments pair.
+ * E.g. rc = cfg_add_instance_local_fmt(NULL, CFG_VAL(INTEGER, 1),
+ *                                      "/hello:tom");
+ */
+static inline int
+cfg_add_instance_local_fmt(cfg_handle *p_handle, cfg_val_type type,
+                           const void *val, const char *oid_fmt, ...)
+{
+    va_list ap;
+    char    oid[CFG_OID_MAX];
+
+    va_start(ap, oid_fmt);
+    vsnprintf(oid, sizeof(oid), oid_fmt, ap);
+    va_end(ap);
+
+    return cfg_add_instance_local_str(oid, p_handle, type, val);
+}
+
+/**
  * Add instance with the first part of OID specified by handle and
  * the second part specified by format string and its parameters.
  *

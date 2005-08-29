@@ -62,6 +62,118 @@ static const char *cs_cfg_file = NULL;  /**< Configuration file name */
 /** Configurator global flags */
 static unsigned int cs_flags = 0;
 
+static void process_backup(cfg_backup_msg *msg);
+
+/**
+ * This function should be called before processing ADD and SET requestes.
+ * It tries to avoid two problems described in conf_ta.h file.
+ *
+ * @param cmd        Command name ("add" or "set")
+ * @param oid        OID used in operation
+ * @param msg        Message that should be processed
+ * @param update_dh  Wheter t update dynamic history?
+ *                   (@todo How it should be used?)
+ *
+ * @return Zero on success, and errno on failure
+ */
+static int
+cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
+                            cfg_msg *msg, te_bool update_dh)
+{
+    te_bool msg_local;
+    
+    UNUSED(update_dh);
+
+    assert(msg->type == CFG_ADD || msg->type == CFG_SET);
+
+    msg_local = (msg->type == CFG_ADD) ?
+        ((cfg_add_msg *)msg)->local :
+        ((cfg_set_msg *)msg)->local;
+
+    if (local_cmd_seq)
+    {
+        if (!msg_local)
+        {
+            msg->rc = TE_EACCES;
+            ERROR("Non local %s command while local command "
+                  "sequence is active %r", cmd, msg->rc);
+            return msg->rc;
+        }
+        else
+        {
+            /* Update maximum allowed commit subtree value */
+            if (strlen(max_commit_subtree) > strlen(oid) &&
+                strncmp(max_commit_subtree, oid, strlen(oid)) == 0)
+            {
+                snprintf(max_commit_subtree,
+                         sizeof(max_commit_subtree), "%s", oid);
+            }
+            else if (strlen(max_commit_subtree) <= strlen(oid) &&
+                     strncmp(max_commit_subtree, oid,
+                     strlen(max_commit_subtree)) == 0)
+            {
+                /* do nothing */
+            }
+            else
+            {
+                int i = 0;
+
+                /* Find common part */
+                while (max_commit_subtree[i] != '\0' && oid[i] != '\0' &&
+                       max_commit_subtree[i] == oid[i])
+                {
+                    i++;
+                }
+                /* At least starting '/' should be the same */
+                assert(i > 0);
+
+                if (i > 1 && max_commit_subtree[i - 1] == '/')
+                    max_commit_subtree[i - 1] = '\0';
+                else
+                    max_commit_subtree[i] = '\0';
+            }
+
+            VERB("Local %s operation on %s inst - max commit inst %s",
+                 cmd, oid, max_commit_subtree);
+        }
+    }
+
+    if (!local_cmd_seq && msg_local)
+    {
+        cfg_backup_msg *bkp_msg = 
+            (cfg_backup_msg *)calloc(sizeof(cfg_backup_msg) +
+                                     sizeof(max_commit_subtree), 1);
+
+        if (bkp_msg == NULL)
+        {
+            msg->rc = TE_ENOMEM;
+            return msg->rc;
+        }
+
+        bkp_msg->type = CFG_BACKUP;
+        bkp_msg->op = CFG_BACKUP_CREATE;
+        bkp_msg->len = sizeof(cfg_backup_msg);
+
+        /* Create backup and save current instance name */
+        process_backup(bkp_msg);
+        if ((msg->rc = bkp_msg->rc) != 0)
+        {
+            ERROR("%s() Failed to create backup %r", __FUNCTION__, msg->rc);
+            free(bkp_msg);
+            return msg->rc;
+        }
+        local_cmd_seq = TRUE;
+
+        strcpy(local_cmd_bkp, bkp_msg->filename);
+        free(bkp_msg);
+        
+        snprintf(max_commit_subtree, sizeof(max_commit_subtree), "%s", oid);
+        
+        VERB("Local %s operation - Start local commands sequence", cmd);
+    }
+
+    return 0;
+}
 
 static void
 print_tree(cfg_instance *inst, int indent)
@@ -290,6 +402,10 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     char         *val_str = "";
     char         *ta;
 
+    if (cfg_avoid_local_cmd_problem("add", oid, (cfg_msg *)msg,
+                                    update_dh) != 0)
+        return;
+
     /* Synchronize /agent/volatile subtree if necessary */
     if ((msg->rc = cfg_sync_agt_volatile(oid)) != 0)
     {
@@ -297,6 +413,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
               "errno %r", msg->rc);
         return;
     }
+
 
     if ((msg->rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg, 
                                                          &val)) != 0)
@@ -335,10 +452,24 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
 
     if (strcmp_start("/agent:", oid) != 0) /* Success */
     {
+        /*
+         * Instance is not from agent subtree, but we set 'added'
+         * to TRUE to avoid possible problems with this instance.
+         */
+        inst->added = TRUE;
+
         msg->handle = handle;
         return;
     }
     
+    if (msg->local)
+    {
+        /* Local add operation */
+        VERB("Local add operation for %s OID", oid);
+        msg->handle = handle;
+        return;
+    }
+
     while (inst->father != &cfg_inst_root)
         inst = inst->father;
         
@@ -397,6 +528,13 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
             cfg_dh_delete_last_command();
         return;
     }
+
+    /*
+     * We've just added a new instance to the Agent, so mark that 
+     * in instance data structure.
+     */
+    inst = CFG_GET_INST(handle);
+    inst->added = TRUE;
     
     msg->handle = handle;
 }
@@ -423,6 +561,11 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         msg->rc = TE_ENOENT;
         return;
     }
+
+    if (cfg_avoid_local_cmd_problem("set", inst->oid,
+                                    (cfg_msg *)msg, update_dh) != 0)
+        return;
+
     obj = inst->obj;
     if (cfg_instance_volatile(inst))
         update_dh = FALSE;
@@ -561,17 +704,25 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
 
-    while (inst->father != &cfg_inst_root)
-        inst = inst->father;
-
-    msg->rc = rcf_ta_cfg_del(inst->name, 0, CFG_GET_INST(handle)->oid);
-
-    if (msg->rc != 0)
+    /*
+     * We should not try to delete locally added instances from
+     * Test Agent, as it leads to ESRCH error.
+     */
+    if (inst->added)
     {
-        ERROR("%s: rcf_ta_cfg_del returns %r", __FUNCTION__, msg->rc);
-        if (update_dh)
-            cfg_dh_delete_last_command();
-        return;
+        while (inst->father != &cfg_inst_root)
+            inst = inst->father;
+
+        msg->rc = rcf_ta_cfg_del(inst->name, 0, CFG_GET_INST(handle)->oid);
+
+        if (msg->rc != 0)
+        {
+            ERROR("%s: rcf_ta_cfg_del returns %r", __FUNCTION__, msg->rc);
+            if (update_dh)
+                cfg_dh_delete_last_command();
+            return;
+        }
+        VERB("Instance %s successfully deleted from the Agent", inst->name);
     }
 
     cfg_db_del(handle);
@@ -821,6 +972,10 @@ log_msg(cfg_msg *msg, te_bool before)
             break;
         }
 
+        case CFG_COMMIT:
+            LOG_MSG(level, "Commit for %s", ((cfg_commit_msg *)msg)->oid);
+            break;
+
         case CFG_GET:
             GET_STRS(cfg_get_msg);
             LOG_MSG(level, "Get %s%s%s", s1, s2, addon);
@@ -871,7 +1026,7 @@ log_msg(cfg_msg *msg, te_bool before)
             break;
 
         default:
-            ERROR("Unknown command");
+            ERROR("Unknown command %x", msg->type);
     }
 #undef GET_STRS
 }
@@ -913,7 +1068,7 @@ process_backup(cfg_backup_msg *msg)
             rcf_log_cfg_changes(TRUE);
             
             /* Try to restore using dynamic history */
-            if ((msg->rc = cfg_dh_restore_backup(msg->filename)) == 0)
+            if ((msg->rc = cfg_dh_restore_backup(msg->filename, TRUE)) == 0)
             {
                 rcf_log_cfg_changes(FALSE);
                 return;
@@ -1103,7 +1258,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
         case CFG_SHUTDOWN:
             /* Remove commands initiated by configuration file */
             rcf_log_cfg_changes(TRUE);
-            cfg_dh_restore_backup(NULL);
+            cfg_dh_restore_backup(NULL, TRUE);
             rcf_log_cfg_changes(FALSE);
             cs_flags |= CS_SHUTDOWN;
             break;

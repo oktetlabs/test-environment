@@ -950,137 +950,26 @@ cfg_get_father(cfg_handle handle, cfg_handle *father)
 }
 
 /**
- * Create an object instance.
+ * Create object instance locally or on the agent.
  *
- * @param  oid        object identifier of the new instance
- * @param  handle     location for handle of the new instance
- * @param  type       value type (necessary for fast processing)
- * @param  ...        value to be assigned to the new instance or NULL;
+ * @param oid       object identifier of the new instance
+ * @param handle    location for handle of the new instance
+ * @param local     is local add?
+ * @param type      value type (necessary for fast processing)
+ * @param list      value to be assigned to the instance or NULL;
  *                    for integer values: int
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
  *
  * @return status code (see te_errno.h)
  */
-int
-cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
-                 cfg_val_type type, ...)
+static int
+cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
+                     cfg_val_type type, va_list list)
 {
-    cfg_add_msg *msg;
-
-    va_list      list;
-    cfg_inst_val value;
-    char        *oid2str = NULL;
-    char        *valstr = NULL; 
-
-    size_t  len;
-    int     ret_val = 0;
-
-    if (oid == NULL)
-    {
-        return TE_RC(TE_CONF_API, TE_EINVAL);
-    }
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&cfgl_lock);
-#endif
-    INIT_IPC;
-    if (cfgl_ipc_client == NULL)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
-#endif
-        return TE_RC(TE_CONF_API, TE_EIPC);
-    }
-    msg = (cfg_add_msg *)cfgl_msg_buf;
-    msg->type = CFG_ADD;
-    msg->val_type = type;
-
-    va_start(list, type);
-    switch (type)
-    {
-        case CVT_INTEGER:
-            value.val_int = va_arg(list, int);
-            break;
-
-        case CVT_STRING:
-            value.val_str = va_arg(list, char *);
-            break;
-
-        case CVT_ADDRESS:
-            value.val_addr = va_arg(list, struct sockaddr *);
-            break;
-
-        case CVT_NONE:
-            break;
-
-        case CVT_UNSPECIFIED:
-             assert(0);
-    }
-    va_end(list);
-    cfg_types[type].put_to_msg(value, (cfg_msg *)msg); 
-    oid2str = cfg_convert_oid(oid);
-    if (oid2str == NULL)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
-#endif
-        return TE_RC(TE_CONF_API, TE_ENOMEM);
-    }
-    msg->oid_offset = msg->len;
-    msg->len += strlen(oid2str) + 1;
-    strcpy((char *)msg + msg->oid_offset, oid2str);
-   
-
-    len = CFG_MSG_MAX;
-
-    ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
-                                           CONFIGURATOR_SERVER,
-                                           msg, msg->len, msg, &len);
-    
-    if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
-    {
-        *handle = msg->handle;
-        cfg_types[type].val2str(value, &valstr);
-        if (strncmp(oid2str, AGENT_BOID, BOID_LEN) == 0)
-        {
-            RING("Added %s = %s", oid,
-                 (valstr != NULL) ? valstr : "(none)");
-        }
-        free(valstr);
-    }
-    free(oid2str);
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&cfgl_lock);
-#endif
-    return TE_RC(TE_CONF_API, ret_val);
-}
-
-/**
- * Create an object instance.
- *
- * @param  oid        object identifier of the new instance
- *                    (string representation)
- * @param  handle     location for handle of the new instance
- * @param  type       value type (necessary for fast processing)
- * @param  ...        value to be assigned to the new instance or NULL;
- *                    for integer values: int
- *                    for strings: char *
- *                    for addreses: struct sockaddr *
- *
- * @return status code (see te_errno.h)
- */
-int
-cfg_add_instance_str(const char *oid, cfg_handle *handle,
-                     cfg_val_type type, ...)
-{
-    cfg_add_msg *msg;
-
-    va_list      list;
-    cfg_inst_val value;
-
-    char        *valstr = NULL; 
+    cfg_add_msg  *msg;
+    cfg_inst_val  value;
+    char         *valstr = NULL; 
 
     size_t  len;
     int     ret_val = 0;
@@ -1103,9 +992,9 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
     }
     msg = (cfg_add_msg *)cfgl_msg_buf;
     msg->type = CFG_ADD;
+    msg->local = local;
     msg->val_type = type;
 
-    va_start(list, type);
     switch (type)
     {
         case CVT_INTEGER:
@@ -1126,7 +1015,6 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
         case CVT_UNSPECIFIED:
             assert(FALSE);
     }
-    va_end(list);
 
     cfg_types[type].put_to_msg(value, (cfg_msg *)msg);
 
@@ -1156,6 +1044,107 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
 #endif
+
+    return TE_RC(TE_CONF_API, ret_val);
+}
+
+/**
+ * Create an object instance.
+ *
+ * @param  oid        object identifier of the new instance
+ * @param  handle     location for handle of the new instance
+ * @param  type       value type (necessary for fast processing)
+ * @param  ...        value to be assigned to the new instance or NULL;
+ *                    for integer values: int
+ *                    for strings: char *
+ *                    for addreses: struct sockaddr *
+ *
+ * @return status code (see te_errno.h)
+ */
+int
+cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
+                 cfg_val_type type, ...)
+{
+    char    *oid2str = NULL;
+    int      ret_val = 0;
+    va_list  list;
+
+    if (oid == NULL)
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+
+    if ((oid2str = cfg_convert_oid(oid)) == NULL)
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
+
+    va_start(list, type);
+    ret_val = cfg_add_instance_gen(oid2str, handle, FALSE, type, list);
+    va_end(list);
+
+    free(oid2str);
+
+    return TE_RC(TE_CONF_API, ret_val);
+}
+
+/**
+ * Create an object instance.
+ *
+ * @param  oid        object identifier of the new instance
+ *                    (string representation)
+ * @param  handle     location for handle of the new instance
+ * @param  type       value type (necessary for fast processing)
+ * @param  ...        value to be assigned to the new instance or NULL;
+ *                    for integer values: int
+ *                    for strings: char *
+ *                    for addreses: struct sockaddr *
+ *
+ * @return status code (see te_errno.h)
+ */
+int
+cfg_add_instance_str(const char *oid, cfg_handle *handle,
+                     cfg_val_type type, ...)
+{
+    int     ret_val = 0;
+    va_list list;
+
+    va_start(list, type);
+    ret_val = cfg_add_instance_gen(oid, handle, FALSE, type, list);
+    va_end(list);
+
+    return TE_RC(TE_CONF_API, ret_val);
+}
+
+int
+cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
+                       cfg_val_type type, ...)
+{
+    char    *oid2str = NULL;
+    int      ret_val = 0;
+    va_list  list;
+
+    if (oid == NULL)
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+
+    if ((oid2str = cfg_convert_oid(oid)) == NULL)
+        return TE_RC(TE_CONF_API, TE_ENOMEM);
+
+    va_start(list, type);
+    ret_val = cfg_add_instance_gen(oid2str, handle, TRUE, type, list);
+    va_end(list);
+
+    free(oid2str);
+
+    return TE_RC(TE_CONF_API, ret_val);
+}
+
+int
+cfg_add_instance_local_str(const char *oid, cfg_handle *handle,
+                           cfg_val_type type, ...)
+{
+    int     ret_val = 0;
+    va_list list;
+
+    va_start(list, type);
+    ret_val = cfg_add_instance_gen(oid, handle, TRUE, type, list);
+    va_end(list);
 
     return TE_RC(TE_CONF_API, ret_val);
 }

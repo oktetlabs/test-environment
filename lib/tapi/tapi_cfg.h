@@ -104,6 +104,7 @@ extern int tapi_cfg_switch_vlan_add_port(const char *ta_name,
  */
 extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
                                          uint16_t vid, unsigned int port);
+
 /** Routing entry data structure */
 typedef struct tapi_rt_entry {
     struct sockaddr_storage dst; /**< Route for this destination address */
@@ -111,7 +112,7 @@ typedef struct tapi_rt_entry {
     struct sockaddr_storage gw; /**< Gateway address
                                      (in case RTF_GATEWAY flag is set) */
 
-    uint32_t flags; /**< Route flags - see net/route.h */
+    uint16_t flags; /**< Route flags */
     uint32_t metric; /**< Route metric */
     char     dev[IF_NAMESIZE]; /**< Output interface name */
     uint32_t mtu; /**< Route MTU value (for TCP) */
@@ -120,6 +121,13 @@ typedef struct tapi_rt_entry {
 
     cfg_handle hndl; /**< Handle of the entry in configurator */
 } tapi_rt_entry_t;
+
+/** @name TAPI Route flags */
+/** Route is indirect and has gateway address */
+#define TAPI_RT_GW 0x0001
+/** Route is direct, so interface name is specified */
+#define TAPI_RT_IF 0x0002
+/*@}*/
 
 /**
  * Gets routing table on the specified Test Agent

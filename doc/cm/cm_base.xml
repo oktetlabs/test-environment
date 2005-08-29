@@ -89,15 +89,34 @@
          Name:  IPv4 address in dotted notation -->
     <object oid="/agent/arp" access="read_create" type="address"/>
 
-    <!-- Routine table entry.
+    <!-- Routing table entry.
          Name: (network address in human notation)'|'(prefix)
                for example: 1.2.3.0|24[,gw:Gw][,dev:If]
-                            [,metric:N][,mss:M][,window:W][,irtt:I][,reject]
-         Value: [mod] [dyn] [reinstate]
 
-         See "man route" for the meaning of these attributes
-         -->
-    <object oid="/agent/route" access="read_create" type="string"/>
+         Each route has a set of attributes, which are represented 
+         as children of route instance. -->
+    <object oid="/agent/route" access="read_create" type="none"/>
+    
+    <!-- Route metric value.
+         Name:  empty
+         Value: Metric value -->
+    <object oid="/agent/route/metric" access="read_write" type="integer"/>
+
+    <!-- Route MTU value.
+         Name:  empty
+         Value: MTU value for the route -->
+    <object oid="/agent/route/mtu" access="read_write" type="integer"/>
+
+    <!-- Route Window Size value (TCP window size).
+         Name:  empty
+         Value: TCP window value for the route -->
+    <object oid="/agent/route/win" access="read_write" type="integer"/>
+
+    <!-- Route IRTT value (Initial Round Trip Time).
+         Name:  empty
+         Value: irtt value for the route -->
+    <object oid="/agent/route/irtt" access="read_write" type="integer"/>
+
 
     <!-- RPC server.
          Name: RPC server name

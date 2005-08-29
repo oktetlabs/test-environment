@@ -40,7 +40,7 @@
          Name: empty 
          Value: An address equal to 00:00:00:00:00:00 means that the card
                 failed to associate with an Access Point -->
-    <object oid="/agent/interface/wifi/ap" access="read_write" type="address"/>
+    <object oid="/agent/interface/wifi/ap" access="read_only" type="address"/>
 
     <!-- The list of available channels 
          Name: empty

@@ -49,7 +49,7 @@ int cfg_all_obj_size;
 
 /** Root of configuration instances */
 cfg_instance cfg_inst_root = 
-    { 0x10000, "/:", { 0 }, &cfg_obj_root, NULL, NULL, NULL, { 0 } };
+    { 0x10000, "/:", { 0 }, &cfg_obj_root, TRUE, NULL, NULL, NULL, { 0 } };
 /** Pool with configuration instances */
 cfg_instance **cfg_all_inst = NULL;
 /** Size of instances pool */
@@ -656,7 +656,7 @@ cfg_db_add_children(cfg_instance *inst)
  * @return status code (see te_errno.h)
  */
 int 
-cfg_db_add(char *oid_s, cfg_handle *handle,
+cfg_db_add(const char *oid_s, cfg_handle *handle,
            cfg_val_type type, cfg_inst_val val)
 {
     cfg_oid        *oid = cfg_convert_oid_str(oid_s);
@@ -773,6 +773,14 @@ cfg_db_add(char *oid_s, cfg_handle *handle,
         }
     }
     
+    /*
+     * It is a new instance in local DB, so that mark it as not 
+     * synchronized with Test Agent (not added to Test Agent).
+     * It is the deal of uper layer to update this field to 'TRUE',
+     * when this object is added to the Test Agent.
+     */
+    cfg_all_inst[i]->added = FALSE;
+
     cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
     strcpy(cfg_all_inst[i]->name, s->name);
     cfg_all_inst[i]->obj = obj;
@@ -978,24 +986,77 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
     if (oid->inst)
     {
         cfg_instance *tmp = &cfg_inst_root;
+        cfg_instance *last_subinst = NULL;
 
         while (TRUE)
         {
-           for (; 
-                tmp != NULL && 
-                !(strcmp(tmp->obj->subid, 
-                         ((cfg_inst_subid *)(oid->ids))[i].subid) == 0 &&
-                  strcmp(tmp->name, 
-                         ((cfg_inst_subid *)(oid->ids))[i].name) == 0);
-                tmp = tmp->brother);
+            for (; 
+                 tmp != NULL && 
+                 !(strcmp(tmp->obj->subid, 
+                          ((cfg_inst_subid *)(oid->ids))[i].subid) == 0 &&
+                   strcmp(tmp->name, 
+                          ((cfg_inst_subid *)(oid->ids))[i].name) == 0);
+                 tmp = tmp->brother);
 
             if (++i == oid->len || tmp == NULL)
+            {
                 break;
-                
+            }
+
+            last_subinst = tmp;
+
             tmp = tmp->son;
         }
         if (tmp == NULL)
+        {
+            /*
+             * In case of local add operation we should take care of
+             * its children.
+             * Here caller might want to find one of its children to
+             * perform local set on this leaf.
+             */
+
+            if (last_subinst->obj->access == CFG_READ_CREATE &&
+                !last_subinst->added &&
+                i == oid->len)
+            {
+                int         rc;
+                const char *subobj_name = 
+                    ((cfg_inst_subid *)(oid->ids))[oid->len - 1].subid;
+                cfg_object *subobj_tmp = last_subinst->obj->son;
+
+                /* Check that configuration DB accepts such object name */
+                while (subobj_tmp != NULL)
+                {
+                    if (strcmp(subobj_tmp->subid, subobj_name) == 0)
+                        break;
+
+                    subobj_tmp = subobj_tmp->brother;
+                }
+                
+                if (subobj_tmp == NULL)
+                {
+                    ERROR("Instance %s cannot be added into configurator "
+                          "tree as child name '%s' has not been registered",
+                          oid_s, subobj_name);
+                    RETERR(TE_EINVAL);
+                }
+
+                /* 
+                 * Add a new dummy instance to the local 
+                 * configuration tree, and mark it as empty.
+                 */
+                rc = cfg_db_add(oid_s, handle, CVT_NONE,
+                                (cfg_inst_val)0);
+
+                if (rc != 0)
+                    RETERR(rc);
+                else
+                    RET(*handle);
+            }
+            
             RETERR(TE_ENOENT);
+        }
         else
             RET(tmp->handle);
     }

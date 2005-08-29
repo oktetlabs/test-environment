@@ -69,12 +69,16 @@ extern int cfg_dh_attach_backup(char *filename);
  * from the history.
  * 
  * @param filename      name of the backup file
+ * @param hard_check    whether hard check should be applied
+ *                      on restore backup. For instance if on deleting
+ *                      some instance we got ESRCH or ENOENT, we should
+ *                      kepp processing without any error.
  *
  * @return status code (see te_errno.h)
  * @retval TE_ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached
  */
-extern int cfg_dh_restore_backup(char *filename);
+extern int cfg_dh_restore_backup(char *filename, te_bool hard_check);
 
 /**
  * Add a command to the history.

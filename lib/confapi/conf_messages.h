@@ -156,6 +156,7 @@ typedef struct cfg_family_msg {
 typedef struct cfg_add_msg {
     CFG_MSG_FIELDS
     cfg_handle      handle;         /**< OUT: object instance handle */
+    te_bool         local;          /**< Local add */
     cfg_val_type    val_type;       /**< Object value type */
     uint8_t         oid_offset;     /**< Offset to OID from the 
                                          message start */

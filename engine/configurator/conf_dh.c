@@ -699,13 +699,17 @@ has_backup(cfg_dh_entry *entry, char *filename)
  * from the history.
  * 
  * @param filename      name of the backup file
+ * @param hard_check    whether hard check should be applied
+ *                      on restore backup. For instance if on deleting
+ *                      some instance we got ESRCH or ENOENT, we should
+ *                      kepp processing without any error.
  *
  * @return status code (see te_errno.h)
  * @retval TE_ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached
  */
 int 
-cfg_dh_restore_backup(char *filename)
+cfg_dh_restore_backup(char *filename, te_bool hard_check)
 {
     cfg_dh_entry *limit = NULL;
     cfg_dh_entry *tmp;
@@ -763,11 +767,22 @@ cfg_dh_restore_backup(char *filename)
                
                 cfg_process_msg(&p_msg, FALSE);
                
-                if (msg.rc != 0)
+                if (msg.rc != 0 && (hard_check ||
+                    (msg.rc != TE_RC(TE_TA_UNIX, TE_ESRCH) && 
+                     msg.rc != TE_RC(TE_TA_UNIX, TE_ENOENT))))
                 {
                     ERROR("%s(): add failed: %r", __FUNCTION__, msg.rc);
                     TE_RC_UPDATE(result, msg.rc);
                 }
+                
+                if (!hard_check &&
+                    (msg.rc == TE_RC(TE_TA_UNIX, TE_ESRCH) ||
+                     msg.rc == TE_RC(TE_TA_UNIX, TE_ENOENT)))
+                {
+                    /* We should manually delete instance from CFG DB */
+                    cfg_db_del(msg.handle);
+                }
+
                 break;
             }
                 

@@ -369,47 +369,27 @@ tapi_cfg_switch_vlan_del_port(const char *ta_name, uint16_t vid,
  *
  * @param inst_name  Instance name that keeps route information
  * @param rt         Routing entry location to be filled in (OUT)
- *
- * @note The function is not thread safe - it uses static memory for 
- * 'rt_dev' field in 'rt' structure.
- *
- * ATENTION - read the text below!
- * @todo This function is used in both places agent/linux/linuxconf.c
- * and lib/tapi/tapi_cfg.c, which is very ugly!
- * We couldn't find the right place to put it in so that it 
- * is accessible from both places. If you modify it you should modify
- * the same function in the second place!
  */
 static int
-route_parse_inst_name(const char *inst_name,
-#ifdef __linux__
-                      struct rtentry  *rt
-#else
-                      struct ortentry *rt
-#endif
-)
+route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
 {
     char        *tmp, *tmp1;
     int          prefix;
-    static char  ifname[IF_NAMESIZE];
     char        *ptr;
     char        *end_ptr;
     char        *term_byte; /* Pointer to the trailing zero byte 
                                in 'inst_name' */
     static char  inst_copy[RCF_MAX_VAL];
-    int          int_val;
 
-    memset(rt, 0, sizeof(*rt));
     strncpy(inst_copy, inst_name, sizeof(inst_copy));
     inst_copy[sizeof(inst_copy) - 1] = '\0';
 
     if ((tmp = strchr(inst_copy, '|')) == NULL)
-        return TE_RC(TE_TAPI, TE_ENOENT);
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
-    *tmp = 0;
-    rt->rt_dst.sa_family = AF_INET;
-    if (inet_pton(AF_INET, inst_copy,
-                  &(((struct sockaddr_in *)&(rt->rt_dst))->sin_addr)) <= 0)
+    *tmp ='\0';
+    rt->dst.ss_family = AF_INET;
+    if (inet_pton(AF_INET, inst_copy, &(SIN(&(rt->dst))->sin_addr)) <= 0)
     {
         ERROR("Incorrect 'destination address' value in route %s",
               inst_name);
@@ -424,17 +404,10 @@ route_parse_inst_name(const char *inst_name,
     }
     tmp = tmp1;
 
-#ifdef __linux__
-    rt->rt_genmask.sa_family = AF_INET;
-    ((struct sockaddr_in *)&(rt->rt_genmask))->sin_addr.s_addr =
-        htonl(PREFIX2MASK(prefix));
-#endif
-    if (prefix == 32)
-        rt->rt_flags |= RTF_HOST;
+    rt->prefix = prefix;
 
     term_byte = (char *)(tmp + strlen(tmp));
 
-    /* @todo Make a macro to wrap around similar code below */
     if ((ptr = strstr(tmp, "gw=")) != NULL)
     {
         int rc;
@@ -444,9 +417,8 @@ route_parse_inst_name(const char *inst_name,
             end_ptr++;
         *end_ptr = '\0';
 
-        rc = inet_pton(AF_INET, ptr,
-                       &(((struct sockaddr_in *)
-                               &(rt->rt_gateway))->sin_addr));
+        rt->gw.ss_family = AF_INET;
+        rc = inet_pton(AF_INET, ptr, &(SIN(&(rt->gw))->sin_addr));
         if (rc <= 0)
         {
             ERROR("Incorrect format of 'gateway address' value in route %s",
@@ -455,8 +427,8 @@ route_parse_inst_name(const char *inst_name,
         }
         if (term_byte != end_ptr)
             *end_ptr = ',';
-        rt->rt_gateway.sa_family = AF_INET;
-        rt->rt_flags |= RTF_GATEWAY;
+
+        rt->flags |= TAPI_RT_GW;
     }
 
     if ((ptr = strstr(tmp, "dev=")) != NULL)
@@ -466,99 +438,19 @@ route_parse_inst_name(const char *inst_name,
             end_ptr++;
         *end_ptr = '\0';
 
-        if (strlen(ptr) >= sizeof(ifname))
+        if (strlen(ptr) >= sizeof(rt->dev))
         {
             ERROR("Interface name is too long: %s in route %s",
                   ptr, inst_name);
             return TE_RC(TE_TAPI, TE_EINVAL);
         }
-        strcpy(ifname, ptr);
+        strcpy(rt->dev, ptr);
 
         if (term_byte != end_ptr)
             *end_ptr = ',';
-        rt->rt_dev = ifname;
+
+        rt->flags |= TAPI_RT_IF;
     }
-
-    if ((ptr = strstr(tmp, "metric=")) != NULL)
-    {
-        end_ptr = ptr += strlen("metric=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-        
-        if (*ptr == '\0' || *ptr == '-' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect 'route metric' value in route %s",
-                  inst_name);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-        rt->rt_metric = int_val;
-    }
-    
-    if ((ptr = strstr(tmp, "mtu=")) != NULL)
-    {
-        end_ptr = ptr += strlen("mtu=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' || *ptr == '-' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect 'route mtu' value in route %s", inst_name);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-
-        /* Don't be confused the structure does not have mtu field */
-        rt->rt_mtu = int_val;
-        rt->rt_flags |= RTF_MSS;
-    }
-
-    if ((ptr = strstr(tmp, "window=")) != NULL)
-    {
-        end_ptr = ptr += strlen("window=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' ||  *ptr == '-' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect 'route window' value in route %s", inst_name);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-        rt->rt_window = int_val;
-        rt->rt_flags |= RTF_WINDOW;
-    }
-
-    if ((ptr = strstr(tmp, "irtt=")) != NULL)
-    {
-        end_ptr = ptr += strlen("irtt=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (*ptr == '\0' || *ptr == '-' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            ERROR("Incorrect 'route irtt' value in route %s", inst_name);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-        rt->rt_irtt = int_val;
-        rt->rt_flags |= RTF_IRTT;
-    }
-
-    if (strstr(tmp, "reject") != NULL)
-        rt->rt_flags |= RTF_REJECT;
 
     return 0;
 }
@@ -568,16 +460,12 @@ int
 tapi_cfg_get_route_table(const char *ta, int addr_family,
                          tapi_rt_entry_t **rt_tbl, int *n)
 {
-#ifdef __linux__
-    struct rtentry   rt;
-#else
-    struct ortentry  rt;
-#endif
     int              rc;
+    cfg_handle       handle1;
+    cfg_handle       handle2;
     cfg_handle      *handles;
     tapi_rt_entry_t *tbl;
     char            *rt_name = NULL;
-    char            *rt_val = NULL;
     int              num;
     int              i;
     
@@ -596,63 +484,102 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
         *n = 0;
         return 0;
     }
-    
+
     if ((tbl = (tapi_rt_entry_t *)calloc(num, sizeof(*tbl))) == NULL)
     {
+        free(handles);
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
 
     for (i = 0; i < num; i++)
     {
-        uint32_t     mask;
-        cfg_val_type type = CVT_STRING;
-
         if ((rc = cfg_get_inst_name(handles[i], &rt_name)) != 0)
         {
             ERROR("%s: Route handle cannot be processed", __FUNCTION__);
-            free(tbl);
-            return rc;
+            break;
         }
-        if ((rc = cfg_get_instance(handles[i], &type, &rt_val)) != 0)
-        {
-            ERROR("%s: Cannot get the value of the route", __FUNCTION__);
-            free(rt_name);
-            free(tbl);
-            return rc;
-        }
-        memset(&rt, 0, sizeof(rt));
 
-        rt.rt_dev = tbl[i].dev;
-
-        rc = route_parse_inst_name(rt_name, &rt);
-        assert(rc == 0);
-
-        memcpy(&tbl[i].dst, &rt.rt_dst, sizeof(rt.rt_dst));
-
-        mask = ntohl(((struct sockaddr_in *)
-                         &(rt.rt_genmask))->sin_addr.s_addr);
-        MASK2PREFIX(mask, tbl[i].prefix);
-        memcpy(&tbl[i].gw, &rt.rt_gateway, sizeof(rt.rt_gateway));
-
-        tbl[i].flags = rt.rt_flags;
-        tbl[i].metric = rt.rt_metric;
-        tbl[i].mtu = rt.rt_mtu;
-        tbl[i].win = rt.rt_window;
-        tbl[i].irtt = rt.rt_irtt;
-
-        if (strstr(rt_val, "mod") != NULL)
-            tbl[i].flags |= RTF_MODIFIED;
-        if (strstr(rt_val, "dyn") != NULL)
-            tbl[i].flags |= RTF_DYNAMIC;
-        if (strstr(rt_val, "reinstate") != NULL)
-            tbl[i].flags |= RTF_REINSTATE;
-
-        tbl[i].hndl = handles[i];
+        rc = route_parse_inst_name(rt_name, &tbl[i]);
 
         free(rt_name);
-        free(rt_val);
+        assert(rc == 0);
+        
+        /* Get route attributes */
+        if ((rc = cfg_get_son(handles[i], &handle2)) != 0 ||
+            handle2 == CFG_HANDLE_INVALID)
+        {
+            ERROR("%s: Cannot find any attribute of the route %r",
+                  __FUNCTION__, rc);
+            break;
+        }
+        
+        do {
+            cfg_val_type  type;
+            char         *name;
+            cfg_oid      *oid;
+            int          *val_p;
+
+            handle1 = handle2;
+            
+            if ((rc = cfg_get_oid(handle1, &oid)) != 0)
+            {
+                ERROR("%s: Cannot get route attribute name %r",
+                      __FUNCTION__, rc);
+                break;
+            }
+            name = ((cfg_inst_subid *)
+                            (oid->ids))[oid->len - 1].subid;
+
+            if (strcmp(name, "metric") == 0)
+                val_p = &tbl[i].metric;
+            else if (strcmp(name, "mtu") == 0)
+                val_p = &tbl[i].mtu;
+            else if (strcmp(name, "win") == 0)
+                val_p = &tbl[i].win;
+            else if (strcmp(name, "irtt") == 0)
+                val_p = &tbl[i].irtt;
+            else
+            {
+                ERROR("%s(): Unknown route attribute found %s",
+                      __FUNCTION__, name);
+                free(oid);
+                rc = TE_RC(TE_TAPI, TE_EINVAL);
+                break;
+            }
+
+            type = CVT_INTEGER;
+            if ((rc = cfg_get_instance(handle1, &type, val_p)) != 0)
+            {
+                ERROR("%s(): Cannot get value of %s route attribute %r",
+                      __FUNCTION__, name, rc);
+                free(oid);
+                break;
+            }
+            free(oid);
+
+            rc = cfg_get_brother(handle1, &handle2);
+            if (rc != 0)
+            {
+                ERROR("%s(): Cannot get brother of route attribute %r",
+                      __FUNCTION__, rc);
+                break;
+            }
+        } while (handle2 != CFG_HANDLE_INVALID);
+
+        if (rc != 0)
+            break;
+            
+        assert(handle2 == CFG_HANDLE_INVALID);
+
+        tbl[i].hndl = handles[i];
     }
     free(handles);
+    
+    if (rc != 0)
+    {
+        free(tbl);
+        return rc;
+    }
 
     *rt_tbl = tbl;
     *n = num;
@@ -799,13 +726,14 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     char        dst_addr_str_orig[INET6_ADDRSTRLEN];
     char        gw_addr_str[INET6_ADDRSTRLEN];
     char        route_inst_name[1024];
-    char        rt_val[128];
     int         rc;
     int         netaddr_size = netaddr_get_size(addr_family);
     uint8_t    *dst_addr_copy;
     int         i;
     int         diff;
     uint8_t     mask;
+
+    UNUSED(flags);
 
     if (netaddr_size < 0)
     {
@@ -897,53 +825,104 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
         }
         PUT_INTO_BUF(route_inst_name, ",gw=%s", gw_addr_str);
     }
-    rt_val[0] = '\0';
 
     if (dev != NULL)
         PUT_INTO_BUF(route_inst_name, ",dev=%s", dev);
-    if (metric != 0)
-        PUT_INTO_BUF(route_inst_name, ",metric=%d", metric);
-    if (mtu != 0)
-        PUT_INTO_BUF(rt_val, "mtu=%d", mtu);
-    if (win != 0)
-        PUT_INTO_BUF(rt_val, ",window=%d", win);
-    if (irtt != 0)
-        PUT_INTO_BUF(rt_val, ",irtt=%d", irtt);
-    if (flags & RTF_REJECT)
-        PUT_INTO_BUF(route_inst_name, ",reject");
 
-
-    if (flags & RTF_MODIFIED)
-        PUT_INTO_BUF(rt_val, ",mod");
-    if (flags & RTF_DYNAMIC)
-        PUT_INTO_BUF(rt_val, ",dyn");
-    if (flags & RTF_REINSTATE)
-        PUT_INTO_BUF(rt_val, ",reinstate");
 
     switch (op)
     {
         case OP_MODIFY:
-            if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, rt_val),
-                                           "/agent:%s/route:%s",
-                                           ta, route_inst_name)) != 0)
-            {
-                ERROR("%s() fails adding a new route %s %s on '%s' Agent "
-                      "errno = %r", __FUNCTION__, route_inst_name,
-                      rt_val, ta, rc);
-                break;
+
+/*
+ * Macro makes local set for route attribute whose name specified
+ * with 'field_' parameter.
+ * Macro uses 'break' statement and is intended to be called inside
+ * 'do {} while (FALSE)' brace.
+ *
+ * You may use this macro with trailing ';', which will just 
+ * add empty statement, but do not worry about that.
+ */
+#define CFG_RT_SET_LOCAL(field_) \
+            if ((rc = cfg_set_instance_local_fmt(               \
+                          CFG_VAL(INTEGER, field_),             \
+                          "/agent:%s/route:%s/" #field_ ":",    \
+                          ta, route_inst_name)) != 0)           \
+            {                                                   \
+                ERROR("%s() fails to set " #field_ " to %d "    \
+                      "on route %s on '%s' Agent errno = %r",   \
+                      __FUNCTION__,                             \
+                      field_, route_inst_name, ta, rc);         \
+                break;                                          \
             }
+            
+            do {
+                CFG_RT_SET_LOCAL(metric);
+                CFG_RT_SET_LOCAL(win);
+                CFG_RT_SET_LOCAL(mtu);
+                CFG_RT_SET_LOCAL(irtt);
+            } while (FALSE);
+
+#undef CFG_RT_SET_LOCAL
+
+            if (rc == 0)
+            {
+                rc = cfg_commit_fmt("/agent:%s/route:%s",
+                                    ta, route_inst_name);
+            }
+
             break;
+
         case OP_ADD:
-            if ((rc = cfg_add_instance_fmt(&handle, CFG_VAL(STRING, rt_val),
-                                           "/agent:%s/route:%s",
-                                           ta, route_inst_name)) != 0)
+            if ((rc = cfg_add_instance_local_fmt(&handle,
+                                                 CFG_VAL(NONE, ""),
+                                                 "/agent:%s/route:%s",
+                                                 ta, route_inst_name)) != 0)
             {
-                ERROR("%s() fails adding a new route %s %s on '%s' Agent "
-                      "errno = %r", __FUNCTION__, route_inst_name,
-                      rt_val, ta, rc);
+                ERROR("%s() fails adding a new route %s on '%s' Agent "
+                      "errno = %r", __FUNCTION__,
+                      route_inst_name, ta, rc);
                 break;
             }
-            if (cfg_hndl != NULL)
+
+#define CFG_RT_SET_LOCAL(field_) \
+            if (field_ != 0 &&                                  \
+                (rc = cfg_set_instance_local_fmt(               \
+                          CFG_VAL(INTEGER, field_),             \
+                          "/agent:%s/route:%s/" #field_ ":",    \
+                          ta, route_inst_name)) != 0)           \
+            {                                                   \
+                ERROR("%s() fails to set " #field_ " to %d "    \
+                      "on a new route %s on '%s' "              \
+                      "Agent errno = %r", __FUNCTION__,         \
+                      field_, route_inst_name, ta, rc);         \
+                break;                                          \
+            }
+
+            do {
+                CFG_RT_SET_LOCAL(metric);
+                CFG_RT_SET_LOCAL(win);
+                CFG_RT_SET_LOCAL(mtu);
+                CFG_RT_SET_LOCAL(irtt);
+            } while (FALSE);
+
+#undef CFG_RT_SET_LOCAL
+
+            if (rc != 0)
+            {
+                cfg_del_instance(handle, TRUE);
+                break;
+            }
+
+            if ((rc = cfg_commit_fmt("/agent:%s/route:%s",
+                                     ta, route_inst_name)) != 0)
+            {
+                ERROR("%s() fails to commit a new route %s "
+                      "on '%s' Agent errno = %r",
+                      __FUNCTION__, route_inst_name, ta, rc);
+            }
+
+            if (rc == 0 && cfg_hndl != NULL)
                 *cfg_hndl = handle;
             break;
 

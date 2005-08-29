@@ -40,6 +40,35 @@ extern char *cfg_ta_list;
 /** Buffer for GET requests */
 extern char *cfg_get_buf;
 
+/*
+ * NOTES:
+ *
+ * 1. It is not allowed to perform any command after local SET/ADD command
+ * until COMMIT is performed. All non-local commands shall fail with
+ * EACCESS error code notifying that there is open local-commnd sequence.
+ *
+ * 2. It is not allowed to COMMIT only a part of local changes
+ * in Configuration DB, instead user shall COMMIT all their changes in 
+ * one COMMIT. Incorrect COMMIT commands shall fail with EPERM error code.
+ */
+
+/**
+ * Whether local commands sequence is terminated or not.
+ * This variable is indended to solve the problem mentioned in note 1 above.
+ */
+extern te_bool local_cmd_seq;
+
+/**
+ * Maximum allowed subtree value for commit operation.
+ * This variable is indended to solve the problem mentioned in note 2 above.
+ */
+extern char max_commit_subtree[CFG_INST_NAME_MAX];
+
+/**
+ * Backup file name which reflects situation before local SET/ADD command 
+ */
+extern char local_cmd_bkp[1024];
+
 
 /**
  * Reboot all Test Agents (before re-initializing of the Configurator).

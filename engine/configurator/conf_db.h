@@ -76,6 +76,10 @@ typedef struct cfg_instance {
     char       *oid;                /**< OID of the instance */
     char        name[CFG_INST_NAME_MAX];    /**< Own name of the instance */
     cfg_object *obj;                /**< Object of the instance */
+    te_bool     added;              /**< Wheter this instance was added
+                                         to the Test Agent or not
+                                         (has sense only for read-create
+                                         instances) */
 
     /** @name Family */
     struct cfg_instance *father;    /**< Link to father */
@@ -160,7 +164,7 @@ extern cfg_object *cfg_get_object(const char *oid_s);
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_db_add(char *oid_s, cfg_handle *handle, 
+extern int cfg_db_add(const char *oid_s, cfg_handle *handle, 
                       cfg_val_type type, cfg_inst_val val);
 
 /**
