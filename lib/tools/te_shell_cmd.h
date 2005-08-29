@@ -51,8 +51,9 @@ extern "C" {
  * Function to base system()-like and popen()-like functions on it.
  * You MUST use uid parameter instead of "su - user -c", because su makes
  * one more fork, and you do not know how to kill this grandchild process.
- * Process spawned by this function SHOULD be catched by ta_waitpid() or
- * killed by ta_kill_death().
+ *
+ * If you use this fuction from agent, this process SHOULD be catched by 
+ * ta_waitpid() or killed by ta_kill_death().
  *
  * @param cmd    command to run in the shell
  * @param uid    user id to run the shell; use -1 for default
