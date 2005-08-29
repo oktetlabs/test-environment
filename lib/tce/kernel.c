@@ -174,8 +174,10 @@ read_safe(int fildes, void *buffer, size_t size)
     ssize_t nsize;
     nsize = read(fildes, buffer, size);
     tce_print_debug("read %d bytes", (int)nsize);
-    if (nsize < (ssize_t)size)
+    if (nsize == (ssize_t)-1)
         tce_report_error("reading error: %s", strerror(errno));
+    else if (nsize < (ssize_t)size)
+        tce_report_error("read %ld < %ld", (long)nsize, (long)size);
     return nsize;
 }
 
