@@ -1138,14 +1138,14 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     if (socketpair(PF_LOCAL, SOCK_STREAM, 0, sv) != 0)
     {
-        rc = errno;
+        rc = te_rc_os2te(errno);
         ERROR("Cannot create a pair of sockets, errno %d", rc);
         goto error;
     }
     
     if (pipe(pipe_descrs) != 0)
     {
-        rc = errno;
+        rc = te_rc_os2te(errno);
         ERROR("Cannot create pipe, errno %d", rc);
         close(sv[0]);
         close(sv[1]);
@@ -1165,7 +1165,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     if ((cli_spec_data->expect_pid = fork()) == -1)
     {
-        rc = errno;
+        rc = te_rc_os2te(errno);
         ERROR("fork failed, errno %d", rc);
         close(sv[0]);
         close(sv[1]);
@@ -1206,7 +1206,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         if ((sync_res = parent_wait_sync(cli_spec_data)) != SYNC_RES_OK)
         {
             cli_single_destroy_cb(csap_descr->id, layer);
-            return TE_RC(TE_TAD_CSAP, MAP_SYN_RES2ERRNO(sync_res));
+            return TE_OS_RC(TE_TAD_CSAP, MAP_SYN_RES2ERRNO(sync_res));
         }
 
         VERB("Child has just been initialised");
