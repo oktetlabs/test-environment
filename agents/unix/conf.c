@@ -3812,6 +3812,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(value);
 
     return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, NULL, NULL, NULL);
 }
