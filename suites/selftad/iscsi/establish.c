@@ -155,6 +155,7 @@ main(int argc, char *argv[])
      */
 
     do {
+        /* I->T */
         len = sizeof(rx_buffer);
         memset(rx_buffer, 0, len);
         rc = tapi_tcp_buffer_recv(agt_a, 0, acc_csap, 2000, 
@@ -169,6 +170,7 @@ main(int argc, char *argv[])
         if (rc != 0)
             TEST_FAIL("send to TARGET failed: %r", rc); 
 
+        /* T->I */
         len = sizeof(tx_buffer);
         memset(tx_buffer, 0, len);
         rc = tapi_iscsi_recv_pkt(agt_a, 0, iscsi_csap, 2000, 
