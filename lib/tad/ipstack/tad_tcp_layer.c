@@ -112,7 +112,7 @@ tcp_confirm_pdu_cb(int csap_id, int layer, asn_value_p pdu)
             uint32_t len;
             rc = asn_read_int32(tcp_pdu, &len, "length");
 
-            RING("TCP data CSAP confirm, length read rc %r, value %d",
+            INFO("TCP data CSAP confirm, length read rc %r, value %d",
                  rc, len);
 
             if (rc == 0)
@@ -511,17 +511,17 @@ tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     data = pkt->data; 
 
-    RING("%s(CSAP %d) type %d", __FUNCTION__, csap_descr->id, 
+    INFO("%s(CSAP %d) type %d", __FUNCTION__, csap_descr->id, 
          csap_descr->type);
     if (csap_descr->type == TAD_CSAP_DATA) 
     {
-        RING("%s(CSAP %d) data tag %d", __FUNCTION__, csap_descr->id, 
+        INFO("%s(CSAP %d) data tag %d", __FUNCTION__, csap_descr->id, 
              spec_data->data_tag);
         if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
         {
             int acc_sock = *((int *)pkt->data);
 
-            RING("match data server CSAP, socket %d", acc_sock);
+            INFO("match data server CSAP, socket %d", acc_sock);
 
             if (parsed_packet != NULL)
                 rc = asn_write_int32(tcp_header_pdu, acc_sock, "socket");
