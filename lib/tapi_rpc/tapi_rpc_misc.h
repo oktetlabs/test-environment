@@ -305,7 +305,7 @@ extern void rpc_create_child_process_socket(rcf_rpc_server *pco_father,
                                             int father_s, 
                                             rpc_socket_domain domain,
                                             rpc_socket_type sock_type,
-                                            rcf_rpc_server *pco_child, 
+                                            rcf_rpc_server **pco_child, 
                                             int *child_s);
 
 #endif /* !__TE_TAPI_RPC_MISC_H__ */

@@ -817,7 +817,7 @@ void
 rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s, 
                                 rpc_socket_domain domain,
                                 rpc_socket_type sock_type,
-                                rcf_rpc_server *pco_child, int *child_s)
+                                rcf_rpc_server **pco_child, int *child_s)
 {
     pid_t                   process_id;
     static char             info[512];
@@ -825,16 +825,16 @@ rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s,
 
     if (rpc_is_winsock2(pco_father))
     {
-        rcf_rpc_server_create(pco_father->ta, "pco_child", &pco_child);
-        process_id = rpc_getpid(pco_child);
+        rcf_rpc_server_create(pco_father->ta, "pco_child", pco_child);
+        process_id = rpc_getpid(*pco_child);
         rpc_wsa_duplicate_socket(pco_father, father_s, process_id, 
                                  info, &info_len);
-        *child_s = rpc_wsa_socket(pco_child, domain, sock_type, 
+        *child_s = rpc_wsa_socket(*pco_child, domain, sock_type, 
                                   RPC_PROTO_DEF, info, info_len, 0);
     } 
     else
     {    
-        rcf_rpc_server_fork(pco_father, "pco_child", &pco_child);
+        rcf_rpc_server_fork(pco_father, "pco_child", pco_child);
         *child_s = father_s;
     }
 }    
