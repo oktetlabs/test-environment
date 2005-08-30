@@ -56,6 +56,8 @@ csap_spt_type_t iscsi_csap_spt =
     &iscsi_nbr_list
 };
 
+extern int iscsi_server_init(void);
+
 /**
  * Register iSCSI CSAP callbacks and support structures in
  * TAD Command Handler.
@@ -65,6 +67,8 @@ csap_spt_type_t iscsi_csap_spt =
 int
 csap_support_iscsi_register(void)
 { 
+    iscsi_server_init();
+
     return add_csap_spt(&iscsi_csap_spt);
 }
 

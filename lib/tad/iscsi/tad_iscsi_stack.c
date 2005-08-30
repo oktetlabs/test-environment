@@ -241,7 +241,7 @@ iscsi_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
         csap_descr->last_errno = TE_ENOMEM;
         return -1;
     }
-    send_pkt->buffer = malloc(buf_len);
+    send_pkt->allocated_buffer = send_pkt->buffer = malloc(buf_len);
     send_pkt->length = buf_len;
     memcpy(send_pkt->buffer, buf, buf_len);
     
@@ -417,16 +417,20 @@ iscsi_single_destroy_cb (int csap_id, int layer)
 int
 iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
 {
-    csap_p csap_descr = csap_find(csap);
     iscsi_csap_specific_data_t *iscsi_spec_data;
-    packet_t *recv_pkt = NULL;
-    char b;
-    size_t len = 0;
+
+    csap_p      csap_descr = csap_find(csap); 
+    packet_t   *recv_pkt = NULL; 
+    uint8_t    *received_buffer = NULL;
+    char        b;
+    size_t      len = 0;
 
     if (csap_descr == NULL)
         return -1;
 
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
+
+    RING("%s(CSAP %d): want %d bytes", __FUNCTION__, csap, buf_len);
 
     read(iscsi_spec_data->conn_fd[0], &b, 1); 
 
@@ -435,30 +439,42 @@ iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
         (void *)(&iscsi_spec_data->packets_to_tgt))
     {
         recv_pkt = iscsi_spec_data->packets_to_tgt.cqh_first;
-        CIRCLEQ_REMOVE(&iscsi_spec_data->packets_to_tgt, 
-                       recv_pkt, link);
+
+        len = recv_pkt->length;
+        received_buffer = recv_pkt->buffer;
+
+        if (buf_len < len)
+        {
+            RING("%s(CSAP %d): received %d, asked %d, cut it",
+                 __FUNCTION__, csap, recv_pkt->length, buf_len);
+            len = buf_len;
+            recv_pkt->length -= buf_len;
+            recv_pkt->buffer += buf_len;
+            write(iscsi_spec_data->conn_fd[1], "a", 1); 
+        }
+        else 
+            CIRCLEQ_REMOVE(&iscsi_spec_data->packets_to_tgt, 
+                           recv_pkt, link);
     }
     UNLOCK_QUEUE(iscsi_spec_data); 
 
     if (recv_pkt != NULL)
-    {
-        len = recv_pkt->length;
-        if (buf_len < recv_pkt->length)
-        {
-            WARN("%s(): packet received is too long: %d > buffer %d",
-                 __FUNCTION__, recv_pkt->length, buf_len);
-            len = buf_len;
-        }
-        if (buf_len > recv_pkt->length)
-        {
-            WARN("%s(): packet received is too shot: %d < wanted %d",
-                 __FUNCTION__, recv_pkt->length, buf_len);
-        }
+    { 
+        RING("%s(CSAP %d): copy to user %d bytes from 0x%x addr", 
+             __FUNCTION__, csap, len, received_buffer);
+        memcpy(buffer, received_buffer, len); 
 
-        memcpy(buffer, recv_pkt->buffer, len); 
-
-        free(recv_pkt->buffer);
-        free(recv_pkt);
+        /* If all data from pkt was read, free memory */
+        if (received_buffer == recv_pkt->buffer) 
+        { 
+            if (buf_len > recv_pkt->length)
+            {
+                WARN("%s(): packet received is too shot: %d < wanted %d",
+                     __FUNCTION__, recv_pkt->length, buf_len);
+            }
+            free(recv_pkt->allocated_buffer);
+            free(recv_pkt);
+        }
     }
     else
         ERROR("%s(): very strange, conn_fd read, but queue empty",
@@ -475,9 +491,12 @@ iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
     csap_p csap_descr = csap_find(csap);
     iscsi_csap_specific_data_t *iscsi_spec_data;
     packet_t *send_pkt;
+
+    RING("%s(CSAP %d): send %d bytes", __FUNCTION__, csap, buf_len); 
     
     if (csap_descr == NULL)
     {
+        ERROR("Csap not found");
         return -1;
     }
 
@@ -491,6 +510,8 @@ iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
     send_pkt->buffer = malloc(buf_len);
     send_pkt->length = buf_len;
     memcpy(send_pkt->buffer, buffer, buf_len);
+    RING("%s(CSAP %d): insert to out queue %d bytes from 0x%x addr", 
+         __FUNCTION__, csap, buf_len, buffer);
     
 
     LOCK_QUEUE(iscsi_spec_data);

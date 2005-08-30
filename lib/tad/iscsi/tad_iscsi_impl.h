@@ -59,8 +59,9 @@ extern "C" {
 typedef struct packet_t {
     CIRCLEQ_ENTRY(packet_t) link;
 
-    uint8_t *buffer;
     size_t   length;
+    uint8_t *buffer;
+    uint8_t *allocated_buffer;
 } packet_t;
 
     
