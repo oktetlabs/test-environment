@@ -1,0 +1,183 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!--
+        Copyright (C) 2003 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+        
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+        
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+        
+        Author: Konstantin Ushakov E-mail: <Konstantin.Ushakov@oktetlabs.ru>
+    -->
+    
+    <!-- iSCSI parameters. See RFC3720 for more information.
+         -->
+    
+    <!-- iSCSI Initiator configuring
+         Name: iSCSI Target name
+         Value: 0, if set to 1 the Login attempt is performed
+         -->
+    <object oid="/agent/iscsi" access="read_create" type="integer"/>
+
+    <!-- iSCSI Initiator MaxConnections parameter
+         Name: empty
+         Value: Maximum connections between the Initiator and the Target in
+         one session (1..65535). (Default : 1)
+         -->
+    <object oid="/agent/iscsi/max_connections" access="read_write"
+        type="integet"/>
+    
+    <!-- iSCSI Initiator InitialR2T parameter (per target)
+         Name: empty
+         Value: <boolean-value> (Default : Yes)
+         -->
+    <object oid="/agent/iscsi/initial_r2t" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator HeaderDigest parameter (per target)
+         Name: empty
+         Value: <list-of-values> (Default : None)
+         -->
+    <object oid="/agent/iscsi/header_digest" access="read_write"
+        type="string"/>
+
+    <!-- iSCSI Initiator DataDigest parameter (per target)
+         Name: empty
+         Value: <list-of-values> (Default : None)
+         -->
+    <object oid="/agent/iscsi/data_digest" access="read_write"
+        type="string"/>
+    
+    <!-- iSCSI Initiator ImmediateData parameter (per target)
+         Name: empty
+         Value: <boolean-value> (Default : Yes)
+         -->
+    <object oid="/agent/iscsi/immediate_data" access="read_write"
+        type="string"/>
+    
+    <!-- iSCSI Initiator MaxRecvDataSegmentLength parameter (per target)
+         Name: empty
+         Value: <numerical-value-512-to-(2**24-1)> (Default : 8192)
+         -->
+    <object oid="/agent/iscsi/max_recv_data_segment_length" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator FirstBurstLength parameter (per target)
+         Name: empty
+         Value: <numerical-value-512-to-(2**24-1)> (Default : 64K)
+         -->
+    <object oid="/agent/iscsi/first_burst_length" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator MaxBurstLength parameter (per target)
+         Name: empty
+         Value: <numerical-value-512-to-(2**24-1)> (Default : 256K)
+         -->
+    <object oid="/agent/iscsi/max_burst_length" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator DefaultTime2Wait parameter (per target)
+         Name: empty
+         Value: <numerical-value-0-to-3600> (Default : 2)
+         -->
+    <object oid="/agent/iscsi/default_time2wait" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator DefaultTime2Retain parameter (per target)
+         Name: empty
+         Value: <numerical-value-0-to-3600> (Default : 20)
+         -->
+    <object oid="/agent/iscsi/default_time2retain" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator MaxOutstandingR2T parameter (per target)
+         Name: empty
+         Value: <numerical-value-from-1-to-65535> (Default : 1)
+         -->
+    <object oid="/agent/iscsi/max_outstanding_r2t" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator DataPDUInOrder parameter (per target)
+         Name: empty
+         Value: <boolean-value> (Default : Yes)
+         -->
+    <object oid="/agent/iscsi/data_pdu_in_order" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator DataSequenceInOrder parameter (per target)
+         Name: empty
+         Value: <boolean-value> (Default : Yes)
+         -->
+    <object oid="/agent/iscsi/data_sequence_in_order" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator Error Recovery Level parameter (per target)
+         Name: empty
+         Value: <numerical-value-0-to-2> (Default : 0)
+         -->
+    <object oid="/agent/iscsi/error_recovery_level" access="read_write"
+        type="integer"/>
+    
+    <!-- iSCSI Initiator Session type parameter (per target)
+         Name: empty
+         Value: Normal or Discovery (Default : Normal)
+         -->
+    <object oid="/agent/iscsi/session_type" access="read_write"
+        type="string"/>
+    
+    <!-- iSCSI Initiator Authentication method (per target)
+         Name: empty
+         Value: CHAP or None or "CHAP,None"
+         -->
+    <object oid="/agent/iscsi/auth_method" access="read_write"
+        type="string"/>
+
+    <!-- iSCSI Initiator target name (is sent in the Login Request PDU)
+         Name: empty
+         Value: iqn.2004-01.com:0 - default (iSCSI-name-value)
+         -->
+    <object oid="/agent/iscsi/target_name" access="read_write"
+        type="string"/>
+
+    <!-- iSCSI Initiator name which is sent in the Login Request PDU
+         Name: empty
+         Value: iSCSI-name-value
+         -->
+    <object oid="/agent/iscsi/initiator_name" access="read_write"
+        type="string"/>
+
+    <!-- iSCSI Initiator Alias
+         Name: empty
+         Value: iSCSI-local-name-value
+         -->
+    <object oid="/agent/iscsi/initiator_alias" access="read_write"
+        type="string"/>
+
+    <!-- iSCSI Target address 
+         Name: empty
+         Value: ip address of the target to connect to
+         -->
+    <object oid="/agent/iscsi/target_address" access="read_write"
+        type="address"/>
+
+    <!-- iSCSI Target port
+         Name: empty
+         Value: port of the target to connect to (Default : 3260)
+         -->
+    <object oid="/agent/iscsi/target_port" access="read_write"
+        type="integer"/>
+</backup>
