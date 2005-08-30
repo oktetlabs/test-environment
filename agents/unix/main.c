@@ -919,13 +919,13 @@ ta_sigchld_handler(int sig)
             continue;
         if (WIFEXITED(status))
         {
-            VERB("Child process with PID %d exited with value %d", 
+            RING("Child process with PID %d exited with value %d", 
                  pid, WEXITSTATUS(status));
         }
         else if (WIFSIGNALED(status))
         {
             if (WTERMSIG(status) == SIGTERM)
-                VERB("Child process with PID %d was terminated", pid);
+                RING("Child process with PID %d was terminated", pid);
             else
             {
                 WARN("Child process with PID %d is killed "
