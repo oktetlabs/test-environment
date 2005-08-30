@@ -1960,6 +1960,8 @@ tcp_data_csap_handler(char *pkt_fname, void *user_param)
     else
         INFO("%s(): received payload %tm", __FUNCTION__, msg->data, len);
 
+    msg->length = len;
+
     asn_free_value(pkt);
 }
 
@@ -2024,6 +2026,11 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
     rc = rcf_ta_trrecv_wait(ta_name, sid, tcp_csap, &num);
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
+
+    if (length != NULL)
+    {
+        *length = msg.length;
+    }
 
 cleanup:
     asn_free_value(pattern);
