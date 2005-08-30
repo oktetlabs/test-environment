@@ -80,7 +80,6 @@ main(int argc, char *argv[])
 
     int socket = -1;
     int acc_sock;
-    int opt_val = 1;
 
     struct sockaddr_in sock_addr;
     struct sockaddr_in csap_addr;
@@ -135,7 +134,6 @@ main(int argc, char *argv[])
         rpc_srv->_errno != 0)
         TEST_FAIL("Calling of RPC socket() failed %r", rpc_srv->_errno);
 
-    opt_val = 1;
 
     rc = rpc_bind(rpc_srv, socket, SA(&sock_addr), sizeof(sock_addr));
     if (rc != 0)
@@ -157,7 +155,6 @@ main(int argc, char *argv[])
 
 
     RING("acc socket: %d", acc_sock);
-    opt_val = 1;
 
     rc = tapi_tcp_socket_csap_create(agt_a, 0, acc_sock, &acc_csap);
     if (rc != 0)
