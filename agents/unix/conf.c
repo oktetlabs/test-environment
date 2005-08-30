@@ -81,6 +81,12 @@
 #endif
 
 
+#if !defined(__linux__) && \
+    (defined(USE_NETLINK) || defined(USE_NETLINK_ROUTE))
+#error netlink can be used on Linux only
+#endif
+
+
 #ifdef CFG_UNIX_DAEMONS
 extern int ta_unix_conf_daemons_init(rcf_pch_cfg_object **last);
 extern void ta_unix_conf_daemons_release(void);
