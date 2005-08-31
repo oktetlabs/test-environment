@@ -4,7 +4,7 @@
  * Macros to be used for all RPC types definitions.
  * 
  * 
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2005 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or

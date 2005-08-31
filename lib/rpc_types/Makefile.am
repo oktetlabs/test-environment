@@ -12,6 +12,7 @@ include_HEADERS = \
 	te_rpc_net_if.h \
 	te_rpc_signal.h \
 	te_rpc_sys_poll.h \
+	te_rpc_sys_time.h \
 	te_rpc_sys_socket.h \
 	te_rpc_sys_stat.h \
 	te_rpc_sys_wait.h \

@@ -42,6 +42,13 @@
 #include <fcntl.h>
 #include <pwd.h>
 
+#ifdef _WINSOCK_H
+struct timezone {
+  int tz_minuteswest;
+  int tz_dsttime;
+};
+#endif
+
 #undef ERROR
 #include "te_defs.h"
 #include "te_errno.h"
@@ -59,43 +66,57 @@
 /** Obtain RCF RPC errno code */
 #define RPC_ERRNO errno_h2rpc(errno)
 
+/** Check return code and update the errno */
+#define TARPC_CHECK_RC(expr_) \
+    do {                                            \
+        int rc_ = (expr_);                          \
+                                                    \
+        if (rc_ != 0 && out->common._errno == 0)    \
+            out->common._errno = rc_;               \
+    } while (FALSE)
+
 #ifdef WSP_PRIVATE_PROTO
 
 #define WSP_IPPROTO_TCP 200
 #define WSP_IPPROTO_UDP 201
-static int wsp_proto_rpc2h(int socktype, int proto)
+static int 
+wsp_proto_rpc2h(int socktype, int proto)
 {
-  int proto_h = proto_rpc2h(proto);
+    int proto_h = proto_rpc2h(proto);
 
-  switch (proto_h)
-  {
-    case IPPROTO_TCP:
-      proto_h = WSP_IPPROTO_TCP;
-      break;
-    case IPPROTO_UDP:
-      proto_h = WSP_IPPROTO_UDP;
-      break;
-    case 0:
-      switch (socktype_rpc2h(socktype))
-      {
-        case SOCK_STREAM:
-          proto_h = WSP_IPPROTO_TCP;
+    switch (proto_h)
+    {
+        case IPPROTO_TCP:
+        proto_h = WSP_IPPROTO_TCP;
+        break;
+        
+      case IPPROTO_UDP:
+        proto_h = WSP_IPPROTO_UDP;
+        break;
+        
+      case 0:
+          switch (socktype_rpc2h(socktype))
+          {
+            case SOCK_STREAM:
+              proto_h = WSP_IPPROTO_TCP;
+              break;
+            case SOCK_DGRAM:
+              proto_h = WSP_IPPROTO_UDP;
+              break;
+          }
           break;
-        case SOCK_DGRAM:
-          proto_h = WSP_IPPROTO_UDP;
-          break;
-      }
-      break;
-  }
+    }
 
-  return proto_h;
+    return proto_h;
 }
 
 #else
 
-static int wsp_proto_rpc2h(int socktype, int proto)
+static int 
+wsp_proto_rpc2h(int socktype, int proto)
 {
-  return proto_rpc2h(proto);
+    UNUSED(socktype);
+    return proto_rpc2h(proto);
 }
 
 #endif
@@ -4806,5 +4827,34 @@ TARPC_FUNC(post_queued_completion_status,
         in->overlapped == 0 ? NULL :
             (HANDLE)rcf_pch_mem_get(in->overlapped))
     );
+}
+)
+
+/*-------------- gettimeofday() --------------------------------*/
+TARPC_FUNC(gettimeofday,
+{
+    COPY_ARG(tv);
+},
+{
+    struct timeval  tv;
+    struct timezone tz;
+
+    if (out->tv.tv_len != 0)
+        TARPC_CHECK_RC(timeval_rpc2h(out->tv.tv_val, &tv));
+
+    if (out->common._errno != 0)
+    {
+        out->retval = -1;
+    }
+    else
+    {
+        MAKE_CALL(out->retval = 
+                      gettimeofday(out->tv.tv_len == 0 ? NULL : &tv,
+                                   NULL));
+        if (out->tv.tv_len != 0)
+            TARPC_CHECK_RC(timeval_h2rpc(&tv, out->tv.tv_val));
+        if (TE_RC_GET_ERROR(out->common._errno) == TE_EH2RPC)
+            out->retval = -1;
+    }
 }
 )

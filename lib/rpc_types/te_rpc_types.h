@@ -4,7 +4,7 @@
  * Definition data types used in Socket API RPC.
  * 
  * 
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2005 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -53,6 +53,7 @@ typedef rpc_ptr rpc_aiocb_p;
 #include "te_rpc_net_if.h"
 #include "te_rpc_signal.h"
 #include "te_rpc_sys_poll.h"
+#include "te_rpc_sys_time.h"
 #include "te_rpc_sys_socket.h"
 #include "te_rpc_sys_stat.h"
 #include "te_rpc_sys_wait.h"
