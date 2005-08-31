@@ -130,11 +130,17 @@ main(int argc, char *argv[])
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %tm", tx_buffer, len);
 #endif
-    rc = tapi_iscsi_send_pkt(agt_a, 0, iscsi_csap, NULL,
-                             iscsi_login_request, 
-                             sizeof(iscsi_login_request));
-    if (rc != 0)
-        TEST_FAIL("send on CSAP failed: %r", rc); 
+    {
+        int i;
+        size_t portion = 2;
+        for (i = 0; i < sizeof (iscsi_login_request); i+= portion)
+        {
+            rc = tapi_iscsi_send_pkt(agt_a, 0, iscsi_csap, NULL,
+                                     iscsi_login_request + i, portion);
+            if (rc != 0)
+                TEST_FAIL("send on CSAP failed: %r", rc); 
+        }
+    }
 
     len = sizeof(rx_buffer);
     memset(rx_buffer, 0, len);
