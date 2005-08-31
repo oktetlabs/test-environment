@@ -407,30 +407,41 @@ iscsi_single_destroy_cb (int csap_id, int layer)
 
     iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 
-    UNUSED(iscsi_spec_data);
+    /* hack for recv return 0 in Target - send byte in pipe without 
+     * packet in queue. */
+    write(iscsi_spec_data->conn_fd[1], "a", 1); 
      
     return rc;
 }
 
 
-/* see description in tad-iscsi_impl.h */
-int
-iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
+/**
+ * Internal method for get some data from msg queue CSAP->Target. 
+ * This method read no more then asked buf_len, if first pkt in queue 
+ * is less then buf_len, it copies to the user buffer all data from pkt. 
+ *
+ * If first pkt in queue is greater then buf_len, it copies to the buffer
+ * aѕked number of bytes, and rest in queue tail of packet. 
+ *
+ * @param csap_descr    pointer to CSAP descriptor
+ * @param buffer        location for read data
+ * @param buf_len       length of buffer
+ *
+ * @return number of read bytes, zero if CSAP destroyed or -1 on error.
+ */
+static inline int
+iscsi_tad_recv_internal(csap_p csap_descr, uint8_t *buffer, size_t buf_len)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data;
 
-    csap_p      csap_descr = csap_find(csap); 
-    packet_t   *recv_pkt = NULL; 
-    uint8_t    *received_buffer = NULL;
     char        b;
     size_t      len = 0;
+    packet_t   *recv_pkt = NULL; 
+    uint8_t    *received_buffer = NULL;
 
-    if (csap_descr == NULL)
-        return -1;
+    RING("%s(CSAP %d): want %d bytes", __FUNCTION__, csap_descr->id, buf_len);
 
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
-
-    RING("%s(CSAP %d): want %d bytes", __FUNCTION__, csap, buf_len);
 
     read(iscsi_spec_data->conn_fd[0], &b, 1); 
 
@@ -446,7 +457,7 @@ iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
         if (buf_len < len)
         {
             RING("%s(CSAP %d): received %d, asked %d, cut it",
-                 __FUNCTION__, csap, recv_pkt->length, buf_len);
+                 __FUNCTION__, csap_descr->id, recv_pkt->length, buf_len);
             len = buf_len;
             recv_pkt->length -= buf_len;
             recv_pkt->buffer += buf_len;
@@ -461,26 +472,54 @@ iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
     if (recv_pkt != NULL)
     { 
         RING("%s(CSAP %d): copy to user %d bytes from 0x%x addr", 
-             __FUNCTION__, csap, len, received_buffer);
+             __FUNCTION__, csap_descr->id, len, received_buffer);
         memcpy(buffer, received_buffer, len); 
 
         /* If all data from pkt was read, free memory */
         if (received_buffer == recv_pkt->buffer) 
         { 
-            if (buf_len > recv_pkt->length)
-            {
-                WARN("%s(): packet received is too shot: %d < wanted %d",
-                     __FUNCTION__, recv_pkt->length, buf_len);
-            }
             free(recv_pkt->allocated_buffer);
             free(recv_pkt);
         }
-    }
-    else
-        ERROR("%s(): very strange, conn_fd read, but queue empty",
-              __FUNCTION__);
+    } 
 
     return len;
+}
+
+/* see description in tad-iscsi_impl.h */
+int
+iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
+{
+    csap_p  csap_descr = csap_find(csap); 
+    int     rx_loop = 0;
+    size_t  rx_total = 0;
+
+    if (csap_descr == NULL)
+        return -1; 
+
+    RING("%s(CSAP %d): want %d bytes", __FUNCTION__, csap, buf_len);
+
+    do {
+        rx_loop = iscsi_tad_recv_internal(csap_descr, buffer, buf_len);
+        if (rx_loop <= 0)
+        {
+            WARN("%s() internal recv return %d ", __FUNCTION__, rx_loop);
+            break;
+        }
+        if ((unsigned)rx_loop > buf_len)
+        {
+            WARN("%s() internal recv return %d, greater then buf_len",
+                 __FUNCTION__, rx_loop);
+            return -1;
+        }
+
+        buffer += rx_loop;
+        buf_len -= rx_loop;
+        rx_total += rx_loop;
+    } while (buf_len > 0);
+
+
+    return rx_total;
 
 }
 
