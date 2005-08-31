@@ -59,6 +59,47 @@
 /** Obtain RCF RPC errno code */
 #define RPC_ERRNO errno_h2rpc(errno)
 
+#ifdef WSP_PRIVATE_PROTO
+
+#define WSP_IPPROTO_TCP 200
+#define WSP_IPPROTO_UDP 201
+static int wsp_proto_rpc2h(int socktype, int proto)
+{
+  int proto_h = proto_rpc2h(proto);
+
+  switch (proto_h)
+  {
+    case IPPROTO_TCP:
+      proto_h = WSP_IPPROTO_TCP;
+      break;
+    case IPPROTO_UDP:
+      proto_h = WSP_IPPROTO_UDP;
+      break;
+    case 0:
+      switch (socktype_rpc2h(socktype))
+      {
+        case SOCK_STREAM:
+          proto_h = WSP_IPPROTO_TCP;
+          break;
+        case SOCK_DGRAM:
+          proto_h = WSP_IPPROTO_UDP;
+          break;
+      }
+      break;
+  }
+
+  return proto_h;
+}
+
+#else
+
+static int wsp_proto_rpc2h(int socktype, int proto)
+{
+  return proto_rpc2h(proto);
+}
+
+#endif
+
 /* Microsoft extended defines */
 #define WSAID_ACCEPTEX \
     {0xb5367df1,0xcbac,0x11cf,{0x95,0xca,0x00,0x80,0x5f,0x48,0xa1,0x92}}
@@ -966,7 +1007,7 @@ TARPC_FUNC(socket, {},
 {
     MAKE_CALL(out->fd = WSASocket(domain_rpc2h(in->domain),
                                   socktype_rpc2h(in->type),
-                                  proto_rpc2h(in->proto),
+                                  wsp_proto_rpc2h(in->type, in->proto),
                                   (LPWSAPROTOCOL_INFO)(in->info.info_val),
                                   0, in->flags ? WSA_FLAG_OVERLAPPED : 0));
 }
