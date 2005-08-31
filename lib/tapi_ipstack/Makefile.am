@@ -6,7 +6,7 @@ include_HEADERS=tapi_ip.h tapi_tcp.h tapi_udp.h
 
 lib_LTLIBRARIES=libtapi_ipstack.la
 
-libtapi_ipstack_la_SOURCES=tapi_ip.c tapi_tcp.c tapi_udp.c
+libtapi_ipstack_la_SOURCES=tapi_ip.c tapi_tcp.c tapi_udp.c tapi_tcp_conn.c
 
 
 install-exec-hook:
