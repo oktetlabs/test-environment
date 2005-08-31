@@ -140,7 +140,6 @@ typedef struct summary_data
     long long sum;
     long long max;
     long arcs;
-    struct gcov_ctr_info groups[GCOV_COUNTER_GROUPS];
 } summary_data;
 
 typedef union object_coverage
@@ -313,7 +312,7 @@ tce_obtain_kernel_coverage(void)
         {
             FILE *symfile = fopen(ksymtable, "r");
             int core_file;
-            summary_data summary = {0, 0, 0, {{0, 0, 0}}};
+            summary_data summary = {0, 0, 0};
             
             if (symfile == NULL)
             {
@@ -443,14 +442,14 @@ summarize_counters(long long *values, unsigned ncounts, summary_data *summary)
     summary->arcs += ncounts;
 }
 
-#define NORMALIZE_OFFSET(offset, start, size, action)                 \
+#define NORMALIZE_OFFSET(offset, start, size) \
 do {                                                                  \
     if ((offset) < (start) || (offset) >= (start) + (size))           \
     {                                                                 \
         tce_report_error("offset %lx out of range %lx..%lx (%s:%d)",  \
                          (offset), (start), (start) + (size) - 1,     \
                          __FUNCTION__, __LINE__);                     \
-        action;                                                       \
+        return;                                                       \
     }                                                                 \
     offset -= start;                                                  \
 } while(0)
@@ -462,30 +461,19 @@ do_gcov_sum(void *data, unsigned long start, unsigned long size, object_coverage
 
     if (kernel_gcov_version_magic != 0)
     {
-        unsigned i;
-        unsigned grp;
         unsigned long offset;
         
         if (object->new.ctr_mask & 1)
         {
-            summary->groups[0] = object->new.counts[0];
-            offset = (unsigned long)summary->groups[0].values;
-            NORMALIZE_OFFSET(offset, start, size, return);
-            summarize_counters((void *)((char *)data + offset), summary->groups->num, summary);
-        }
-        for (i = 1, grp = 1; i < GCOV_COUNTER_GROUPS; i++)
-        {
-            if ((1 << i) & object->new.ctr_mask)
-            {
-                summary->groups[i] = object->new.counts[grp];
-                grp++;
-            }
+            offset = (unsigned long)object->new.counts[0].values;
+            NORMALIZE_OFFSET(offset, start, size);
+            summarize_counters((void *)((char *)data + offset), object->new.counts[0].num, summary);
         }
     }
     else
     {
         unsigned long values = (unsigned long)object->old.counts;
-        NORMALIZE_OFFSET(values, start, size, return);
+        NORMALIZE_OFFSET(values, start, size);
         summarize_counters((void *)((char *)data + values), object->old.ncounts, summary);
     }
 }
@@ -496,7 +484,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
 {
     unsigned long offset;
     summary_data *summary = extra;
-    summary_data object_summary = {0, 0, 0, {{0, 0, 0}}};
+    summary_data object_summary = {0, 0, 0};
     long object_functions = 0;
     tce_function_info *fi;
     tce_object_info *oi;
@@ -515,7 +503,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
         struct bb_function_info *fn_info;
 
         offset = (unsigned long)object->old.function_infos;
-        NORMALIZE_OFFSET(offset, start, size, return);
+        NORMALIZE_OFFSET(offset, start, size);
         for (fn_info = (void *)((char *)data + offset); fn_info->arc_count >= 0; fn_info++)
         {
             object_functions++;
@@ -526,7 +514,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
     offset = kernel_gcov_version_magic == 0 ? 
         (unsigned long)object->old.filename :
         (unsigned long)object->new.filename;
-    NORMALIZE_OFFSET(offset, start, size, return);
+    NORMALIZE_OFFSET(offset, start, size);
     name_ptr = (char *)data + offset;
     real_start = strstr(name_ptr, "//");
     oi = tce_get_object_info(tce_obtain_principal_peer_id(), 
@@ -575,7 +563,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
         }
         
         offset = (unsigned long)object->new.functions;
-        NORMALIZE_OFFSET(offset, start, size, return);
+        NORMALIZE_OFFSET(offset, start, size);
         new_fn_info = (void *)((char *)data + offset);
 
         for (fn = object_functions; fn != 0; fn--)
@@ -587,6 +575,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
                 if ((1 << i) & object->new.ctr_mask)
                 {
                     n_sub_counts[i] = new_fn_info->n_ctrs[grp];
+                    n_counts += n_sub_counts[i];
                     grp++;
                 }           
             }
@@ -610,12 +599,12 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
                     if ((1 << i) & object->new.ctr_mask)
                     {
                         unsigned j;
-        
-                        offset = (unsigned long)summary->groups[i].values;
-                        NORMALIZE_OFFSET(offset, start, size, continue);
+
+                        offset = (unsigned long)object->new.counts[i].values;
+                        NORMALIZE_OFFSET(offset, start, size);
                         source_counters = (void *)((char *)data + offset);
 
-                        if ((size_t)summary->groups[i].merge == 
+                        if ((size_t)object->new.counts[i].merge == 
                             kernel_merge_functions[TCE_MERGE_ADD])
                         {                          
                             fi->groups[i].mode = TCE_MERGE_ADD;
@@ -625,7 +614,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
                                 *target_counters++ += *source_counters++;                              
                             }
                         }
-                        else if ((size_t)summary->groups[i].merge == 
+                        else if ((size_t)object->new.counts[i].merge == 
                                  kernel_merge_functions[TCE_MERGE_SINGLE])
                         {
                             fi->groups[i].mode = TCE_MERGE_SINGLE;
@@ -646,7 +635,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
                                 source_counters += 3;
                             }
                         }
-                        else if ((size_t)summary->groups[i].merge == 
+                        else if ((size_t)object->new.counts[i].merge == 
                                  kernel_merge_functions[TCE_MERGE_DELTA])
                         {
                             fi->groups[i].mode = TCE_MERGE_DELTA;
@@ -672,7 +661,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
                             tce_report_error("unknown merge function");
                         }
                        
-                        summary->groups[i].values += fi->groups[i].number;                      
+                        object->new.counts[i].values += fi->groups[i].number;                      
                     }                 
                 }             
             }
@@ -687,12 +676,12 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
         oi->ncounts = object->old.ncounts;
 
         offset = (unsigned long)object->old.function_infos;
-        NORMALIZE_OFFSET(offset, start, size, return);
+        NORMALIZE_OFFSET(offset, start, size);
 
         for (fn_info = (void *)((char *)data + offset); fn_info->arc_count >= 0; fn_info++)
         {          
             offset = (unsigned long)fn_info->name;
-            NORMALIZE_OFFSET(offset, start, size, continue);
+            NORMALIZE_OFFSET(offset, start, size);
             name_ptr = (char *)data + offset;
             fi = tce_get_function_info(oi, name_ptr, 
                                        fn_info->arc_count, fn_info->checksum);
@@ -701,7 +690,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
                 long long *source_counters;
                 
                 offset = (unsigned long)object->old.counts;
-                NORMALIZE_OFFSET(offset, start, size, continue);
+                NORMALIZE_OFFSET(offset, start, size);
                 source_counters = (void *)((char *)data + offset);
                 for (i = fn_info->arc_count, target_counters = fi->counts;
                      i > 0; 
