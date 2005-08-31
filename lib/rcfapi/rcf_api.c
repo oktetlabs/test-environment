@@ -1367,6 +1367,14 @@ int
 rcf_ta_cfg_add(const char *ta_name, int session, const char *oid,
                const char *val)
 {
+    /*
+     * This function should accept @p val parameter with NULL value,
+     * which might be used in adding an instance without value
+     * (instance of NONE value type).
+     */
+    if (val == NULL)
+        val = "";
+
     return conf_add_set(ta_name, session, oid, val, RCFOP_CONFADD);
 }
 

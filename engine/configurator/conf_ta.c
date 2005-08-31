@@ -536,8 +536,7 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
     int             rc;
     cfg_object     *obj = inst->obj;
     cfg_inst_val    val;
-    char           *val_str = "";
-
+    char           *val_str = NULL;
     
     ENTRY("ta=%s inst=0x%X", ta, inst);
     VERB("Commit to '%s' instance '%s'", ta, inst->oid);
