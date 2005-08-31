@@ -3437,12 +3437,10 @@ rt_info2rtentry(const ta_rt_info_t *rt_info,
     {
         rt->rt_dev = strdup(rt_info->ifname);
     }
-#endif /* !__linux__ */
 
     if ((rt_info->flags & TA_RT_INFO_FLG_METRIC) != 0)
         rt->rt_metric = rt_info->metric;
 
-#ifdef __linux__
     if ((rt_info->flags & TA_RT_INFO_FLG_MTU) != 0)
     {
         rt->rt_mtu = rt_info->mtu;
@@ -3856,14 +3854,15 @@ route_list(unsigned int gid, const char *oid, char **list)
 
     ENTRY();
 
+    buf[0] = '\0';
+
+#ifdef __linux__
     if ((fp = fopen("/proc/net/route", "r")) == NULL)
     {
         ERROR("Failed to open /proc/net/route for reading: %s",
               strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
-
-    buf[0] = '\0';
 
     fgets(trash, sizeof(trash), fp);
     while (fscanf(fp, "%s", ifname) != EOF)
@@ -3909,6 +3908,12 @@ route_list(unsigned int gid, const char *oid, char **list)
         fgets(trash, sizeof(trash), fp);
     }
     fclose(fp);
+#else
+    UNUSED(ptr);
+    UNUSED(end_ptr);
+    UNUSED(ifname);
+    UNUSED(fp);
+#endif
 
     INFO("%s: Routes: %s", __FUNCTION__, buf);
     if ((*list = strdup(buf)) == NULL)
