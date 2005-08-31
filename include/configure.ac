@@ -76,6 +76,7 @@ semaphore.h \
 setjmp.h \
 signal.h \
 stdarg.h \
+stddef.h \
 stdint.h \
 stdio.h \
 stdlib.h \
