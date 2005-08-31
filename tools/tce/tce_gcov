@@ -27,19 +27,9 @@
 # $Id$
 #
 
-cd `dirname "$1"`
+cd `dirname $1`
 case "$1" in
-    *.da)   objname=`basename "$1" .da`.o ;;
-    *.gcda) objname=`basename "$1" .gcda`.o ;;
+    *.gcda)   ${NEWGCOV:-gcov-3.4} -c -b  `basename $1` >/dev/null ;;
+    *.da)     ${OLDGCOV:-gcov}     -c -b `basename $1` >/dev/null ;;
 esac
-objname=${objname#.tmp_}
-for file in `objdump -l -d "$objname" | sed -e '/^.*\.c:[0-9][0-9]*$/s/:[0-9][0-9]*$//
-t
-d' | sort | uniq`; do
-  cd `dirname $file`;
-  case "$1" in
-      *.gcda) ${NEWGCOV:-gcov-3.4} -c -b -o "$1" `basename $file` >/dev/null ;;
-      *.da)   ${OLDGCOV:-gcov}     -c -b -o "$1" `basename $file` >/dev/null ;;
-      *)      echo "Strange GCOV data file $1" >&2; exit 1 ;;
-  esac
-done
+
