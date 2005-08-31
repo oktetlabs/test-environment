@@ -66,7 +66,7 @@
 
 #if USE_TAPI
 static void 
-user_pkt_handler(tapi_ip4_packet_t *pkt, void *userdata)
+user_pkt_handler(const tapi_ip4_packet_t *pkt, void *userdata)
 {
     struct in_addr src;
     struct in_addr dst;
@@ -76,6 +76,7 @@ user_pkt_handler(tapi_ip4_packet_t *pkt, void *userdata)
     RING("%s(): pkt from %s to %s with pld %d bytes caugth",
          __FUNCTION__, inet_ntoa(src), inet_ntoa(dst),
          pkt->pld_len);
+    UNUSED(userdata);
 }
 
 #endif

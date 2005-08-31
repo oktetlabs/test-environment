@@ -173,7 +173,8 @@ main(int argc, char *argv[])
 
         asn_save_to_file(pattern, path);
 #if 1
-        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, NULL, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, NULL,
+                                 TAD_TIMEOUT_INF, 0);
         INFO("trrecv_start: %r \n", rc);
         if (rc) break;
 

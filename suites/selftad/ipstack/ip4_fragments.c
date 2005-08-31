@@ -89,9 +89,6 @@ main(int argc, char *argv[])
 
     rcf_rpc_server *srv_listen = NULL;
 
-    const char *eth_iface_a = "eth2";
-    const char *eth_iface_b = "eth2";
-
     asn_value *template; /* template for traffic generation */ 
     asn_value *ip4_pdu; 
 
@@ -107,16 +104,13 @@ main(int argc, char *argv[])
 
     struct sockaddr_in listen_sa;
     struct sockaddr_in from_sa;
-    size_t from_len = sizeof(from_sa);
+    size_t from_len;
 
     uint8_t rcv_buffer[2000];
 
 
     TEST_START; 
 
-    // TEST_GET_STRING_PARAM(eth_iface_a);
-    // TEST_GET_STRING_PARAM(eth_iface_b);
-    
     /******** Find TA names *************/
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
@@ -165,7 +159,8 @@ main(int argc, char *argv[])
         TEST_FAIL("create socket failed");
     }
 
-    rc = rpc_bind(srv_listen, udp_socket, &listen_sa, sizeof(listen_sa));
+    rc = rpc_bind(srv_listen, udp_socket, SA(&listen_sa),
+                  sizeof(listen_sa));
     if (rc != 0)
         TEST_FAIL("bind failed");
 
@@ -215,9 +210,10 @@ main(int argc, char *argv[])
         TEST_FAIL("send start failed %X", rc); 
     RPC_AWAIT_IUT_ERROR(srv_listen);
     sleep(1);
+    from_len = sizeof(from_sa);
     rc = rpc_recvfrom(srv_listen, udp_socket,
                       rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT, 
-                      &from_sa, &from_len);
+                      SA(&from_sa), &from_len);
     if (rc <= 0)
         TEST_FAIL("wanted UDP datagram not received!");
     RING("receive %d bytes on UDP socket", rc); 
