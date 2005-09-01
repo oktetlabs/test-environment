@@ -1814,7 +1814,7 @@ xsupplicant_stop(const char *ifname)
     RING("Stopping xsupplicant on %s", ifname);
 
     /* Kill acting instance */
-    snprintf(buf, sizeof(buf), "fuser -k %s%s && rm -f %s%s",
+    snprintf(buf, sizeof(buf), "fuser -k -TERM %s%s && rm -f %s%s",
              XSUPPLICANT_SOCK_NAME, ifname,
              XSUPPLICANT_SOCK_NAME, ifname);
     RING("Running '%s'", buf);
