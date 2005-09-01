@@ -1051,20 +1051,21 @@ int
 asn_write_string(asn_value *container, const char *value,
                  const char *labels)
 {
-    const asn_value *leaf_val;
+    const asn_type *leaf_type;
     int rc;
 
     if (container == NULL || value == NULL)
         return TE_EWRONGPTR;
 
-    if ((rc = asn_get_subvalue(container, &leaf_val, labels)) != 0) 
+    if ((rc = asn_get_subtype(container->asn_type, &leaf_type,  labels))
+         != 0)
         return rc;
 
-    if (leaf_val->syntax != CHAR_STRING)
+    if (leaf_type->syntax != CHAR_STRING)
         return TE_EASNWRONGTYPE;
 
-    return asn_write_value_field((asn_value *)leaf_val,
-                                 value, strlen(value)+1, NULL);
+    return asn_write_value_field(container,
+                                 value, strlen(value)+1, labels);
 }
 
 /* see description in asn_usr.h */
