@@ -48,6 +48,22 @@ typedef enum {
     NDN_TAG_ISCSI_PARAM,
 } ndn_iscsi_tags_t;
 
+/**
+ * ASN.1 tags for ISCSI Segment Data fields access
+ */
+typedef enum {
+    NDN_TAG_ISCSI_SD_INT_VALUE,
+    NDN_TAG_ISCSI_SD_HEX_VALUE,
+    NDN_TAG_ISCSI_SD_STR_VALUE,
+    NDN_TAG_ISCSI_SD_KEY_VALUE,
+    NDN_TAG_ISCSI_SD_KEY_VALUES,
+    NDN_TAG_ISCSI_SD_KEY,
+    NDN_TAG_ISCSI_SD_VALUES,
+    NDN_TAG_ISCSI_SD_KEY_PAIR,
+    NDN_TAG_ISCSI_SD_SEGMENT_DATA,
+    NDN_TAG_ISCSI_SD,
+} ndn_iscsi_sd_tags_t;
+
 
 extern const asn_type *ndn_iscsi_message;
 extern const asn_type *ndn_iscsi_csap;
@@ -56,8 +72,25 @@ typedef struct iscsi_target_params_t {
     int param;
 } iscsi_target_params_t;
 
+typedef int iscsi_key;
+typedef int iscsi_key_value;
+typedef asn_value *iscsi_segment_data;
+typedef asn_value *iscsi_key_values;
 
+typedef enum {
+    iscsi_key_value_type_int,
+    iscsi_key_value_type_hex,
+    iscsi_key_value_type_string,
+} iscsi_key_value_type;    
 
+extern int
+asn2bin_data(asn_value *segment_data, 
+             uint8_t *data, uint32_t *data_len);
+             
+extern int
+bin_data2asn(uint8_t *data, uint32_t data_len, 
+            asn_value_p *value);
+             
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
