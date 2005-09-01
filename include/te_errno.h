@@ -33,15 +33,20 @@
 
 #include "te_config.h"
 
+#include <stdio.h>
 #if HAVE_ERRNO_H
 #include <errno.h>
 #endif
 
-#include <stdio.h>
-
 #include "te_stdint.h"
 
+
 #define TE_MIN_ERRNO    (1 << 22)
+
+
+/** Type for TE error numbers */
+typedef int32_t te_errno;
+
 
 /** Type to store TE error numbers */
 typedef enum {
@@ -289,7 +294,7 @@ typedef enum {
     TE_ESYNCFAILED = TE_MIN_ERRNO + 1200 
                        /**< IPC synchronisation is broken */
 /*@}*/
-} te_errno;
+} te_errno_codes;
 
 
 /**
