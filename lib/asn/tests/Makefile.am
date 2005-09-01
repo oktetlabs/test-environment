@@ -4,7 +4,7 @@ AM_CFLAGS=$(SNMP_F)
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
 
-TESTS=parse_simple put_get parse_file
+TESTS=parse_simple put_get parse_file val_set03
 check_PROGRAMS=$(TESTS)
 
 extra_DIST= \

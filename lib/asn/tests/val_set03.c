@@ -2,20 +2,27 @@
 
 #include "asn_impl.h"
 
+void te_log_message(void) {return;}
+
+
+
+
+
+const char te_lgr_entity[] = "u";
 
 
 asn_named_entry_t my_entry_array [] = {
-    { "number", &asn_base_integer },
-    { "string", &asn_base_charstring }
+    { "number", &asn_base_integer_s },
+    { "string", &asn_base_charstring_s}
 };
 
 
 asn_named_entry_t str_ea [] = {
-    { "string", &asn_base_charstring }
+    { "string", &asn_base_charstring_s }
 };
 
 asn_named_entry_t num_ea [] = {
-    { "number", &asn_base_integer }
+    { "number", &asn_base_integer_s }
 };
 
 asn_type my_sequence = {
@@ -83,7 +90,8 @@ main (void)
     int read_len = BUF_TO_READ;
 
     r = asn_write_value_field(seq_val, &a, sizeof(a), "number");
-    if (r) { printf ("error code returned: %d\n", r); return r; }
+    if (r) 
+    { printf ("error code returned: %d\n", r); return r; }
 
     printf ("str: '%s', strlen: %d, sizeof: %d\n", 
             str, strlen(str), sizeof(str));
@@ -95,6 +103,14 @@ main (void)
     printf ("seq_val after write values: \n\"%s\"\n", buffer); 
 
 
+    asn_write_int32(seq_val, 234, "number");
+    asn_write_string(seq_val, "asdfbsad", "string");
+
+    r = asn_sprint_value(seq_val, buffer, 1000, 0);
+    printf ("seq_val after write values: \n\"%s\"\n", buffer); 
+
+
+#if 0
     r = asn_write_value_field(compl_seq, str2, sizeof(str2), "nested.string");
     if (r) { printf ("error code returned: %6x\n", r); return r; }
     r = asn_write_value_field(compl_seq, &b, sizeof(b), "nested.number");
@@ -115,5 +131,6 @@ main (void)
 
     r = asn_sprint_value(compl_seq, buffer, 1000, 0);
     printf ("\n\ncompl_seq after set component: \n\"%s\"\n", buffer); 
+#endif
     return 0;
 }

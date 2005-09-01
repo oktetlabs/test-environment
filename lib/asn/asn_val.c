@@ -730,6 +730,8 @@ asn_impl_write_value_field(asn_value_p container,
                            char *field_labels)
 {
     unsigned int m_len = d_len; /* length of memory used */
+    asn_value      *subvalue;
+    const asn_type *subtype;
 
     if (!container || 
         (! (container->syntax & CONSTRAINT) &&
@@ -825,7 +827,6 @@ asn_impl_write_value_field(asn_value_p container,
         {
             char       * rest_field_labels = field_labels;
             char       * cur_label = "";
-            asn_value_p  subvalue;
             int          rc;
 
 
@@ -852,7 +853,6 @@ asn_impl_write_value_field(asn_value_p container,
 
                 case TE_EASNINCOMPLVAL:
                 { 
-                    const asn_type *subtype;
 
                     rc = asn_impl_find_subtype(container->asn_type, 
                                                cur_label, &subtype);
@@ -2119,30 +2119,30 @@ asn_label_to_tag(const asn_type *type, const char *label, asn_tag_t *tag)
 /**
  * Definitions of ASN.1 base types.
  */ 
-asn_type asn_base_boolean_s = 
+const asn_type asn_base_boolean_s = 
 { "BOOLEAN",           {UNIVERSAL, 1}, BOOL,        0, {NULL} };
-asn_type asn_base_integer_s = 
+const asn_type asn_base_integer_s = 
 { "INTEGER",           {UNIVERSAL, 2}, INTEGER,     0, {NULL} }; 
-asn_type asn_base_bitstring_s = 
+const asn_type asn_base_bitstring_s = 
 { "BIT STRING",        {UNIVERSAL, 3}, BIT_STRING,  0, {NULL} };
-asn_type asn_base_octstring_s = 
+const asn_type asn_base_octstring_s = 
 { "OCTET STRING",      {UNIVERSAL, 4}, OCT_STRING,  0, {NULL} };
-asn_type asn_base_null_s = 
+const asn_type asn_base_null_s = 
 { "NULL",              {UNIVERSAL, 5}, PR_ASN_NULL, 0, {NULL} };
-asn_type asn_base_objid_s = 
+const asn_type asn_base_objid_s = 
 { "OBJECT IDENTIFIER", {UNIVERSAL, 6}, OID,         0, {NULL} };
-asn_type asn_base_real_s = 
+const asn_type asn_base_real_s = 
 { "REAL",              {UNIVERSAL, 9}, REAL,        0, {NULL} };
-asn_type asn_base_enum_s = 
+const asn_type asn_base_enum_s = 
 { "ENUMERATED",        {UNIVERSAL,10}, ENUMERATED,  0, {NULL} };
-asn_type asn_base_charstring_s = 
+const asn_type asn_base_charstring_s = 
 { "UniversalString",   {UNIVERSAL,28}, CHAR_STRING, 0, {NULL} }; 
 
-asn_type asn_base_int4_s = 
+const asn_type asn_base_int4_s = 
 { "INTEGER (0..15)",   {UNIVERSAL, 2}, INTEGER, 4, {0}}; 
-asn_type asn_base_int8_s = 
+const asn_type asn_base_int8_s = 
 { "INTEGER (0..255)",  {UNIVERSAL, 2}, INTEGER, 8, {0}}; 
-asn_type asn_base_int16_s = 
+const asn_type asn_base_int16_s = 
 { "INTEGER (0..65535)",{UNIVERSAL, 2}, INTEGER, 16, {0}};
 
 

@@ -843,6 +843,20 @@ extern const asn_type * const asn_base_int4;
 extern const asn_type * const asn_base_int8;
 extern const asn_type * const asn_base_int16;
 
+extern const asn_type  asn_base_boolean_s;
+extern const asn_type  asn_base_integer_s;
+extern const asn_type  asn_base_enum_s;
+extern const asn_type  asn_base_charstring_s;
+extern const asn_type  asn_base_octstring_s;
+extern const asn_type  asn_base_bitstring_s;
+extern const asn_type  asn_base_real_s;
+extern const asn_type  asn_base_null_s;
+extern const asn_type  asn_base_objid_s;
+
+extern const asn_type  asn_base_int4_s;
+extern const asn_type  asn_base_int8_s;
+extern const asn_type  asn_base_int16_s;
+
 
 #ifdef __cplusplus
 } /* for 'extern "C" {' */

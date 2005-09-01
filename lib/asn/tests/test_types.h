@@ -50,8 +50,8 @@ PlainSeq1 ::= [APPLICATION 1] SEQUENCE {
 }
 */
 
-extern asn_type asn_base_integer_s;
-extern asn_type asn_base_charstring_s;
+extern const asn_type asn_base_integer_s;
+extern const asn_type asn_base_charstring_s;
 
 asn_named_entry_t _plain_seq1_ne_array [] = {
     { "number", &asn_base_integer_s, {PRIVATE, SEQ_NUMBER_TAG} },
