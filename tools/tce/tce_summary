@@ -54,7 +54,7 @@ outputfile="/dev/stdout"
 sortmode='sort -k3,3g -k4,4nr'
 for arg; do
     case "$arg" in
-        --datadir=*) datadir=${arg#--datadir=}/; mkdir $datadir
+        --datadir=*) datadir="${arg#--datadir=}/"; mkdir -p "$datadir"
             ;;
         --sort-by=branches) sortmode='sort -k3,3g -k4,4nr' ;;
         --sort-by=lines) sortmode='sort -k1,1g -k2,2nr' ;;
