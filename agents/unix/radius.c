@@ -1825,8 +1825,8 @@ xsupplicant_stop(const char *ifname)
     if (xsupplicant_get(ifname))
     {
         snprintf(buf, sizeof(buf),
-                 "ps ax | grep xsupplicant | grep %s | grep -v grep"
-                 "| cut -d ' ' -f1 | xargs kill >/dev/null 2>&1", ifname);
+                 "kill `ps ax | grep xsupplicant | grep %s | grep -v grep"
+                 "| awk ' { print $1 }'`", ifname);
         if (ta_system(buf) != 0)
             WARN("Command '%s' failed", buf);
     }
@@ -2336,6 +2336,17 @@ const char *radius_predefined_params[] = {
     "modules.eap.gtc.auth_type", "PAP",
     "modules.eap.mschapv2", RP_DEFAULT_EMPTY_SECTION,
     "modules.mschap.authtype", "MS-CHAP",
+    "modules.realm(suffix).format", "suffix",
+    "modules.realm(suffix).delimiter", "\"@\"",
+    "modules.realm(suffix).ignore_default", "no",
+    "modules.realm(suffix).ignore_null", "no",
+    "modules.detail.detailfile", "${radacctdir}/%{Client-IP-Address}/detail-%Y%m%d",
+    "modules.detail.detailperm", "0600",
+    "modules.acct_unique.key", "\"User-Name, Acct-Session-Id, NAS-IP-Address, Client-IP-Address, NAS-Port\"",
+
+    "preacct.acct_unique", NULL,
+    "accounting.detail", NULL,
+        
     "authorize.chap", NULL,
     "authorize.mschap", NULL,
     "authorize.eap", NULL,
