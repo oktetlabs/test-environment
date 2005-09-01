@@ -60,6 +60,7 @@
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_ta_cfg.h"
 #include "logger_api.h"
 #include "unix_internal.h"
 
@@ -2731,500 +2732,9 @@ arp_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
-/** Object attribute data structure */
-typedef struct ta_cfg_obj_attr {
-    struct ta_cfg_obj_attr *next; /**< Pointer to the next attribute */
-
-    char name[RCF_MAX_ID]; /**< Attribute name */
-    char value[128]; /**< Attribute value */
-} ta_cfg_obj_attr_t;
-
-/**
- * Action that should be performed with the object.
- */
-typedef enum ta_cfg_obj_action {
-    TA_CFG_OBJ_CREATE, /**< Create a new entry in the system */
-    TA_CFG_OBJ_DELETE, /**< Delete an existing entry */
-    TA_CFG_OBJ_SET, /**< Change some attribute of an existing entry */
-} ta_cfg_obj_action_e;
-
-/** Object data structure, which is inserted into collection */
-typedef struct ta_cfg_obj {
-    te_bool  in_use; /**< Whether this entry is in use */
-    char    *type; /**< Object type in string representation */
-    char    *name; /**< Object name - actually, instance name */
-    char    *value; /**< Object value - actually, instance value */
-    void    *user_data; /**< Pointer to user-provided data */
-
-    ta_cfg_obj_action_e  action; /**< Object action */
-    ta_cfg_obj_attr_t   *attrs; /**< List of object's attributes */
-} ta_cfg_obj_t;
-
-#define TA_OBJS_NUM 10
-static ta_cfg_obj_t ta_objs[TA_OBJS_NUM];
-
-#define TA_OBJ_TYPE_ROUTE "route"
-
-/**
- * Set (or add if there is no such attribute) specified value to
- * the particular attribute.
- *
- * @param obj    Object where to update attibute list
- * @param name   Attribute name to update (or to add)
- * @param value  Attribute value
- *
- * @return Error code or 0
- */
-static int
-ta_obj_attr_set(ta_cfg_obj_t *obj, const char *name, const char *value)
-{
-    ta_cfg_obj_attr_t *attr;
-
-    for (attr = obj->attrs; attr != NULL; attr = attr->next)
-    {
-        if (strcmp(attr->name, name) == 0)
-            break;
-    }
-
-    if (attr == NULL)
-    {
-        /* Add a new attribute */
-        attr = (ta_cfg_obj_attr_t *)malloc(sizeof(ta_cfg_obj_attr_t));
-        if (attr == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-        snprintf(attr->name, sizeof(attr->name), "%s", name);
-        attr->next = obj->attrs;
-        obj->attrs = attr;
-    }
-
-    /* Set a new value */
-    snprintf(attr->value, sizeof(attr->value), "%s", value);
-
-    return 0;
-}
-
-/**
- * Find specified attribute in object.
- *
- * @param obj   Object where we want to find an attribute
- * @param name  Attribute name
- *
- * @return Pointer to the attribute if found, and NULL otherwise
- */
-static ta_cfg_obj_attr_t *
-ta_obj_attr_find(ta_cfg_obj_t *obj, const char *name)
-{
-    ta_cfg_obj_attr_t *attr;
-
-    for (attr = obj->attrs; attr != NULL; attr = attr->next)
-    {
-        if (strcmp(attr->name, name) == 0)
-            return attr;
-    }
-
-    return NULL;
-}
-
-/**
- * Free object.
- *
- * @param obj  Object to be freed
- */
-static void 
-ta_obj_free(ta_cfg_obj_t *obj)
-{
-    free(obj->type);
-    free(obj->name);
-    free(obj->value);
-    obj->in_use = FALSE;
-}
-
-/**
- * Finds an object of specified type whose name is the same as @p name
- * parameter.
- *
- * @param type  Object type - user-defined constant
- * @param name  Object name - actually, instance name
- *
- * @return Error code or 0
- */
-static ta_cfg_obj_t *
-ta_obj_find(const char *type, const char *name)
-{
-    int i;
-
-    assert(type != NULL && name != NULL);
-
-    for (i = 0; i < TA_OBJS_NUM; i++)
-    {
-        if (ta_objs[i].in_use &&
-            strcmp(ta_objs[i].type, type) == 0 &&
-            strcmp(ta_objs[i].name, name) == 0)
-        {
-            return &ta_objs[i];
-        }
-    }
-
-    return NULL;
-}
-
-/**
- * Create an object of specified type with particular value.
- *
- * @param type        Object type - user-defined constant
- * @param name        Object name - actually, instance name
- * @param value       Object value
- * @param user_data   Some user-data value associated with this object
- * @param new_obj     Object entry (OUT)
- *
- * @return Error code or 0
- */
-static int
-ta_obj_add(const char *type, const char *name, const char *value,
-           void *user_data, ta_cfg_obj_t **new_obj)
-{
-    int           i;
-    ta_cfg_obj_t *obj = ta_obj_find(type, name);
-    
-    if (obj != NULL)
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-    
-    /* Find a free slot */
-    for (i = 0; i < TA_OBJS_NUM; i++)
-    {
-        if (!ta_objs[i].in_use)
-            break;
-    }
-
-    if (i == TA_OBJS_NUM)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    ta_objs[i].in_use = TRUE;
-    ta_objs[i].type = strdup(type);
-    ta_objs[i].name = strdup(name);
-    ta_objs[i].value = ((value != NULL) ? strdup(value) : NULL);
-    ta_objs[i].user_data = user_data;
-    ta_objs[i].action = TA_CFG_OBJ_CREATE;
-    ta_objs[i].attrs = NULL;
-
-    if (ta_objs[i].type == NULL || ta_objs[i].name == NULL ||
-        (value != NULL && ta_objs[i].value == NULL))
-    {
-        ta_obj_free(&ta_objs[i]);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
-    if (new_obj != NULL)
-        *new_obj = &ta_objs[i];
-
-    return 0;
-}
-
-/** Prototype for callback function used in ta_obj_set() */
-typedef int (* ta_obj_set_cb)(ta_cfg_obj_t *obj);
-
-/**
- * Create or update object of specified type.
- * In case object with specified name has been already added it
- * just updates (adds) the value of specified attribute.
- * In case there is no object with specified name and type, it creates it
- * with SET action and calls callback function func.
- *
- * Callback function should be used to fill in all the attributes with
- * their current values if necessary.
- *
- * @param type        Object type - user-defined constant
- * @param name        Object name - actually, instance name
- * @param attr_name   Attribute name to update in object
- * @param attr_value  Attribute value
- * @param cb_func     Callback function to be called if SET operation
- *                    leads to creating a new object in collection
- *
- * @return Error code or 0
- */
-static int
-ta_obj_set(const char *type, const char *name,
-           const char *attr_name, const char *attr_value,
-           ta_obj_set_cb cb_func)
-{
-    ta_cfg_obj_t *obj = ta_obj_find(type, name);
-    te_bool       locally_created = FALSE;
-    int           rc;
-
-    if (obj == NULL)
-    {
-        /* Add object first, but reset add flag */
-        if ((rc = ta_obj_add(type, name, NULL, NULL, &obj)) != 0)
-            return rc;
-
-        obj->action = TA_CFG_OBJ_SET;
-        locally_created = TRUE;
-        
-        if (cb_func != NULL && (rc = cb_func(obj)) != 0)
-        {
-            ta_obj_free(obj);
-            return rc;
-        }
-    }
-
-    /* Now set specified attribute */
-    if ((rc = ta_obj_attr_set(obj, attr_name, attr_value)) != 0 &&
-        locally_created)
-    {
-        /* Delete obj from the container */
-        ta_obj_free(obj);
-    }
-
-    return rc;
-}
-
-/**
- * Create an object of specified type and mark it as deleted.
- *
- * @param type        Object type - user-defined constant
- * @param name        Object name - actually, instance name
- * @param user_data   Some user-data value associated with this object
- *
- * @return Error code or 0
- */
-static int
-ta_obj_del(const char *type, const char *name, void *user_data)
-{
-    ta_cfg_obj_t *obj = ta_obj_find(type, name);
-    int           rc;
-
-    if (obj != NULL)
-    {
-        ERROR("Delete operation on locally added route instance");
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
-    }
-
-    /* Add object, but reset add flag */
-    if ((rc = ta_obj_add(type, name, NULL, user_data, &obj)) != 0)
-        return rc;
-
-    obj->action = TA_CFG_OBJ_DELETE;
-
-    return rc;
-}
-
-
-/** Structure that keeps system independent representation of the route */
-typedef struct ta_rt_info {
-    struct sockaddr_storage dst; /**< Route destination address */
-    uint32_t                prefix; /**< Route destination address prefix */
-    /** Gateway address - for indirect routes */
-    struct sockaddr_storage gw;
-    /** Interface name - for direct routes */
-    char                    ifname[IF_NAMESIZE];
-    uint16_t                flags; /**< Route flags */
-    uint32_t                metric; /**< Route metric */
-    uint32_t                mtu; /**< Route metric */
-    uint32_t                win; /**< Route metric */
-    uint32_t                irtt; /**< Route metric */
-} ta_rt_info_t;
-
-/** Gateway address is specified for the route */
-#define TA_RT_INFO_FLG_GW     0x0001
-/** Interface name is specified for the route */
-#define TA_RT_INFO_FLG_IF     0x0002
-/** Metric is specified for the route */
-#define TA_RT_INFO_FLG_METRIC 0x0004
-/** MTU is specified for the route */
-#define TA_RT_INFO_FLG_MTU    0x0008
-/** Window size is specified for the route */
-#define TA_RT_INFO_FLG_WIN    0x0010
-/** IRTT is specified for the route */
-#define TA_RT_INFO_FLG_IRTT   0x0020
-
-/**
- * Parses route instance name and fills in a part of rt_info 
- * data structure.
- *
- * @param name     Route instance name
- * @param rt_info  Routing information data structure (OUT)
- */
-int
-ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
-{
-    char        *tmp, *tmp1;
-    int          prefix;
-    char        *ptr;
-    char        *end_ptr;
-    char        *term_byte; /* Pointer to the trailing zero byte
-                               in instance name */
-    static char  inst_copy[RCF_MAX_VAL];
-
-    memset(rt_info, 0, sizeof(*rt_info));
-    strncpy(inst_copy, name, sizeof(inst_copy));
-    inst_copy[sizeof(inst_copy) - 1] = '\0';
-
-    if ((tmp = strchr(inst_copy, '|')) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    *tmp = '\0';
-    ((struct sockaddr *)&(rt_info->dst))->sa_family = AF_INET;
-    if (inet_pton(AF_INET, inst_copy,
-                  &(((struct sockaddr_in *)
-                         &(rt_info->dst))->sin_addr)) <= 0)
-    {
-        ERROR("Incorrect 'destination address' value in route %s", name);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    tmp++;
-    if (*tmp == '-' ||
-        (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || prefix > 32))
-    {
-        ERROR("Incorrect 'prefix length' value in route %s", name);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    tmp = tmp1;
-    rt_info->prefix = prefix;
-
-    term_byte = (char *)(tmp + strlen(tmp));
-
-    if ((ptr = strstr(tmp, "gw=")) != NULL)
-    {
-        int rc;
-
-        end_ptr = ptr += strlen("gw=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        ((struct sockaddr *)&(rt_info->gw))->sa_family = AF_INET;
-        rc = inet_pton(AF_INET, ptr,
-                       &(((struct sockaddr_in *)&(rt_info->gw))->sin_addr));
-        if (rc <= 0)
-        {
-            ERROR("Incorrect format of 'gateway address' value in route %s",
-                  name);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-
-        rt_info->flags |= TA_RT_INFO_FLG_GW;
-    }
-
-    if ((ptr = strstr(tmp, "dev=")) != NULL)
-    {
-        end_ptr = ptr += strlen("dev=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (strlen(ptr) >= sizeof(rt_info->ifname))
-        {
-            ERROR("Interface name is too long: %s in route %s",
-                  ptr, name);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        strcpy(rt_info->ifname, ptr);
-
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-
-        rt_info->flags |= TA_RT_INFO_FLG_IF;
-    }
-
-    return 0;
-}
-
-/**
- * Parses route object attributes and fills in a part of rt_info 
- * data structure.
- *
- * @param attrs    Route attributes
- * @param rt_info  Routing information data structure (OUT)
- */
-int
-ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
-{
-    ta_cfg_obj_attr_t *attr;
-    char              *end_ptr;
-    int                int_val;
-
-    for (attr = attrs; attr != NULL; attr = attr->next)
-    {
-        if (strcmp(attr->name, "metric") == 0)
-        {
-            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
-                (int_val = strtol(attr->value, &end_ptr, 10),
-                 *end_ptr != '\0'))
-            {
-                ERROR("Incorrect 'route metric' value in route");
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-            rt_info->metric = int_val;
-            rt_info->flags |= TA_RT_INFO_FLG_METRIC;
-        }
-        else if (strcmp(attr->name, "mtu") == 0)
-        {
-            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
-                (int_val = strtol(attr->value, &end_ptr, 10),
-                 *end_ptr != '\0'))
-            {
-                ERROR("Incorrect 'route mtu' value in route");
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-    
-            /* Don't be confused the structure does not have mtu field */
-            rt_info->mtu = int_val;
-            rt_info->flags |= TA_RT_INFO_FLG_MTU;
-        }
-        else if (strcmp(attr->name, "win") == 0)
-        {
-            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
-                (int_val = strtol(attr->value, &end_ptr, 10),
-                 *end_ptr != '\0'))
-            {
-                ERROR("Incorrect 'route window' value in route");
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-            rt_info->win = int_val;
-            rt_info->flags |= TA_RT_INFO_FLG_WIN;
-        }
-        else if (strcmp(attr->name, "irtt") == 0)
-        {
-            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
-                (int_val = strtol(attr->value, &end_ptr, 10),
-                 *end_ptr != '\0'))
-            {
-                ERROR("Incorrect 'route irtt' value in route");
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-            }
-            rt_info->irtt = int_val;
-            rt_info->flags |= TA_RT_INFO_FLG_IRTT;
-        }
-        else
-        {
-            ERROR("Unknown attribute '%s' found in route object",
-                  attr->name);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-    }
-
-    return 0;
-}
-
-/**
- * Parses route object info to rt_info data structure.
- *
- * @param obj      Route object
- * @param rt_info  Routing information data structure (OUT)
- */
-static int
-ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info)
-{
-    int rc;
-
-    if ((rc = ta_rt_parse_inst_name(obj->name, rt_info)) != 0)
-        return rc;
-
-    return ta_rt_parse_attrs(obj->attrs, rt_info);
-}
+/******************************************************************/
+/* Implementation of /agent/route subtree                         */
+/******************************************************************/
 
 #ifdef USE_NETLINK_ROUTE
 
@@ -3754,6 +3264,8 @@ route_load_attrs(ta_cfg_obj_t *obj)
     ROUTE_LOAD_ATTR(WIN, win);
     ROUTE_LOAD_ATTR(IRTT, irtt);
 
+#undef ROUTE_LOAD_ATTR
+
     return 0;
 }
 
@@ -3821,6 +3333,16 @@ route_add(unsigned int gid, const char *oid, const char *value,
     return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, NULL, NULL, NULL);
 }
 
+/**
+ * Delete a route.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param route         route instance name: see doc/cm_cm_base.xml
+ *                      for the format
+ *
+ * @return error code
+ */
 static int
 route_del(unsigned int gid, const char *oid, const char *route)
 {
@@ -3922,6 +3444,14 @@ route_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
+/**
+ * Commit changes made for the route.
+ *
+ * @param gid           group identifier (unused)
+ * @param p_oid         object instence data structure
+ *
+ * @return error code
+ */
 static int
 route_commit(unsigned int gid, const cfg_oid *p_oid)
 {

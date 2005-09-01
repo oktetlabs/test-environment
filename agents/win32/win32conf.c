@@ -165,15 +165,17 @@ static int arp_del(unsigned int, const char *,
                    const char *, const char *);
 static int arp_list(unsigned int, const char *, char **);
 
-static int route_get(unsigned int, const char *, char *,
-                     const char *);
-static int route_set(unsigned int, const char *, const char *,
-                     const char *);
+static int route_metric_get(unsigned int, const char *, char *,
+                            const char *);
+static int route_metric_set(unsigned int, const char *, const char *,
+                            const char *);
 static int route_add(unsigned int, const char *, const char *,
                      const char *);
 static int route_del(unsigned int, const char *,
                      const char *);
 static int route_list(unsigned int, const char *, char **);
+
+static int route_commit(unsigned int, const cfg_oid *);
 
 /* Volatile subtree */
 static rcf_pch_cfg_object node_volatile_arp =
@@ -185,11 +187,15 @@ static rcf_pch_cfg_object node_volatile_arp =
 RCF_PCH_CFG_NODE_NA(node_volatile, "volatile", &node_volatile_arp, NULL);
 
 /* win32 Test Agent configuration tree */
-static rcf_pch_cfg_object node_route =
-    { "route", 0, NULL, &node_volatile,
-      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
-      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
-      (rcf_ch_cfg_list)route_list, NULL, NULL};
+
+static rcf_pch_cfg_object node_route;
+
+RCF_PCH_CFG_NODE_RWC(node_route_metric, "metric", NULL, NULL,
+                     route_metric_get, route_metric_set, &node_route);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_route, "route", &node_route_metric,
+                            &node_volatile,
+                            route_add, route_del, route_list, route_commit);
 
 static rcf_pch_cfg_object node_arp =
     { "arp", 0, NULL, &node_route,
@@ -1219,164 +1225,116 @@ arp_list(unsigned int gid, const char *oid, char **list)
     return 0;
 }
 
+/******************************************************************/
+/* Implementation of /agent/route subtree                         */
+/******************************************************************/
 
-/** Route entry data structure */
-typedef struct route_entry {
-    DWORD dst; /**< Destination address */
-    int   prefix; /**< Destination address prefix */
-    DWORD gw; /**< Gwateway address, in case 'forw_type' is 
-                   FORW_TYPE_REMOTE */
-    DWORD if_index; /**< Interface index, in case 'forw_type' is 
-                         FORW_TYPE_LOCAL */
-    DWORD forw_type; /**< Forward type value () */
-    DWORD metric; /**< Primary route metric */
-} route_entry_t;
-
-/** 
- * Parse route instance name and returns data structure of 
- * type 'route_entry_t'
+/**
+ * If route has interface name specified, then it returns 
+ * interface index corresponding to the interface name.
  *
- * @param inst_name  route instance name
- * @param rt         routing entry (OUT)
+ * @param rt_info   Route info data structure
+ * @param if_index  Location for interface index value (OUT)
+ *
+ * @return 0 on success, or errno on failure
  */
 static int
-route_parse_inst_name(const char *inst_name, route_entry_t *rt)
+route_get_if_index(const ta_rt_info_t *rt_info, DWORD *if_index)
 {
-    static char  inst_copy[RCF_MAX_VAL];
-    int          int_val;
-    char        *tmp;
-    char        *tmp1;
-    char        *term_byte;
-    char        *ptr;
-    char        *end_ptr;
+    if ((rt_info->flags & TA_RT_INFO_FLG_IF) == 0)
+        return 0;
 
-    memset(rt, 0, sizeof(*rt));
-    strncpy(inst_copy, inst_name, sizeof(inst_copy));
-    inst_copy[sizeof(inst_copy) - 1] = '\0';
+    assert(strlen(rt_info->dev) > 0);
 
-    if ((tmp = strchr(inst_copy, '|')) == NULL)
-        return TE_RC(TE_TA_WIN32, TE_ENOENT);
-
-    *tmp = 0;
-
-    if ((rt->dst = inet_addr(inst_copy)) == INADDR_NONE)
-    {
-        if (strcmp(inst_copy, "255.255.255.255") != 0)
-           return TE_RC(TE_TA_WIN32, TE_ENOENT);
-    }
-
-    *tmp++ = '|';
-    if (*tmp == '-' ||
-        (rt->prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 ||
-         rt->prefix > 32))
+    if (sscanf(rt_info->dev, "intf%d", (DWORD *)if_index) != 1)
     {
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
-    }
-    tmp = tmp1;
-    term_byte = (char *)(tmp + strlen(tmp));
-
-    if ((ptr = strstr(tmp, "gw=")) != NULL)
-    {
-        end_ptr = ptr += strlen("gw=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if ((rt->gw = inet_addr(ptr)) == INADDR_NONE)
-        {
-            return TE_RC(TE_TA_WIN32, TE_ENOENT);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-        rt->forw_type = FORW_TYPE_REMOTE;
-
-        assert(strstr(tmp, "dev=") == NULL);
-    }
-    else if ((ptr = strstr(tmp, "dev=")) != NULL)
-    {
-        end_ptr = ptr += strlen("dev=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (sscanf(ptr, "intf%d", (int *)&rt->if_index) != 1)
-        {
-            return TE_RC(TE_TA_WIN32, TE_ENOENT);
-        }
-
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-            
-        rt->forw_type = FORW_TYPE_LOCAL;
-    }
-    else
-    {
-        /* 
-         * Route can be direct (via interface),
-         * or indirect (via gateway) 
-         */
-        assert(0);
-    }
-
-    if ((ptr = strstr(tmp, "metric=")) != NULL)
-    {
-        end_ptr = ptr += strlen("metric=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-        
-        if (*ptr == '\0' || *ptr == '-' ||
-            (int_val = strtol(ptr, &end_ptr, 10), *end_ptr != '\0'))
-        {
-            return TE_RC(TE_TA_WIN32, TE_ENOENT);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-        rt->metric = int_val;
-    }
-
-    if (strstr(tmp, "mss=") != NULL || strstr(tmp, "window=") != NULL ||
-        strstr(tmp, "irtt=") != NULL || strstr(tmp, "reject") != NULL)
-    {
-        return TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
     }
 
     return 0;
 }
 
-/**
- * Get route value (gateway IP address).
+/** 
+ * Convert system-independent route info data structure to
+ * Win32-specific MIB_IPFORWARDROW data structure.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         value location (IPv4 address is returned in
- *                      dotted notation)
- * @param route         route instance name:
- *                      <IPv4 address in dotted notation>'|'<prefix length>
+ * @param rt_info TA portable route info
+ * @Param rt      Win32-specific data structure (OUT)
+ */
+static void
+rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
+{
+    int rc;
+
+    assert((rt_info->flags & TA_RT_INFO_FLG_GW) != 0 ||
+           (rt_info->flags & TA_RT_INFO_FLG_IF) != 0);
+
+    memset(rt, 0, sizeof(*rt));
+    rt->dwForwardDest = SIN(&(rt_info->dst))->sin_addr.s_addr;
+    rt->dwForwardNextHop = SIN(&(rt_info->gw))->sin_addr.s_addr;
+    rt->dwForwardMask = PREFIX2MASK(rt_info->prefix);
+    rt->dwForwardType =
+        ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0) ?
+        FORW_TYPE_REMOTE : FORW_TYPE_LOCAL;
+
+    rt->dwForwardMetric1 =
+        ((rt_info->flags & TA_RT_INFO_FLG_METRIC) != 0) ?
+        rt_info->metric : METRIC_DEFAULT;
+
+    if (rt->dwForwardNextHop == 0)
+        rt->dwForwardNextHop = rt->dwForwardDest;
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
+    {
+        
+        rt.dwForwardIfIndex = rt.if_index;
+    }
+    else
+    {
+        /* Use NExt Hop address to define outgoing interface */
+        if ((rc = find_ifindex(rt->dwForwardNextHop,
+                               &rt->dwForwardIfIndex)) != 0)
+        {
+            return rc;
+        }
+    }
+
+    rt->dwForwardProto = 3;
+
+    return 0;
+}
+
+/**
+ * Get route attributes.
+ *
+ * @param route    route instance name: see doc/cm_cm_base.xml
+ *                 for the format
+ * @param rt_info  route related information (OUT)
  *
  * @return error code
  */
 static int
-route_get(unsigned int gid, const char *oid, char *value,
-          const char *route)
+route_get(const char *route, ta_rt_info_t *rt_info)
 {
     MIB_IPFORWARDTABLE *table;
-    route_entry_t       rt;
+    DWORD               route_addr;
+    DWORD               route_gw;
+    DWORD               route_if_index;
     int                 rc;
     int                 i;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if ((rc = route_parse_inst_name(route, &rt)) != 0)
-        return rc;
-
-    if (rt.metric == 0)
-        rt.metric = METRIC_DEFAULT;
+    if ((rc = ta_rt_parse_inst_name(route, rt_info)) != 0)
+        return TE_RC(TE_TA_WIN32, rc);
 
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
+
+    route_addr = SIN(&(rt_info->dst))->sin_addr.s_addr;
+    route_gw = SIN(&(rt_info->gw))->sin_addr.s_addr;
+
+    if ((rc = route_get_if_index(rt_info, &route_if_index)) != 0)
+        return rc;
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1389,21 +1347,29 @@ route_get(unsigned int gid, const char *oid, char *value,
         }
 
         MASK2PREFIX(table->table[i].dwForwardMask, p);
-        if (table->table[i].dwForwardDest != rt.dst || p != rt.prefix ||
-            table->table[i].dwForwardMetric1 != rt.metric || 
+        if (table->table[i].dwForwardDest != route_addr ||
+            p != rt_info->prefix ||
+            
+            ((table->table[i].dwForwardType == FORW_TYPE_LOCAL) ^
+             ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)) ||
             (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
-             table->table[i].dwForwardIfIndex != rt.if_index) ||
+             table->table[i].dwForwardIfIndex != route_if_index) ||
+
+            ((table->table[i].dwForwardType == FORW_TYPE_REMOTE) ^
+             ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0)) ||
             (table->table[i].dwForwardType == FORW_TYPE_REMOTE &&
-             table->table[i].dwForwardNextHop != rt.gw))
+             table->table[i].dwForwardNextHop != route_gw))
         {
             continue;
         }
 
+        rt_info->metric = table->table[i].dwForwardMetric1;
+        if (rt_info->metric != METRIC_DEFAULT)
+            rt_info->flags |= TA_RT_INFO_FLG_METRIC;
+
         /*
-         * win32 agent does not support values defined for routes
-         * in configuration model.
+         * win32 agent supports only a limited set of route attributes.
          */
-        value[0] = 0;
         free(table);
         return 0;
     }
@@ -1414,25 +1380,56 @@ route_get(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Change already existing route.
+ * Load all route-specific attributes into route object.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         value string (unused)
- * @param route         route instance name:
- *                      <IPv4 address in dotted notation>'|'<prefix length>
+ * @param obj  Object to be uploaded
  *
- * @return error code
+ * @return 0 in case of success, or error code on failure.
  */
 static int
-route_set(unsigned int gid, const char *oid, const char *value,
-          const char *route)
+route_load_attrs(ta_cfg_obj_t *obj)
 {
+    ta_rt_info_t rt_info;
+    int          rc;
+    char         val[128];
+
+    if ((rc = route_get(obj->name, &rt_info)) != 0)
+        return rc;
+
+    snprintf(val, sizeof(val), "%d", rt_info.metric);
+    if ((rt_info.flags & TA_RT_INFO_FLG_METRIC) != 0 &&
+        (rc = ta_obj_set(TA_OBJ_TYPE_ROUTE, obj->name,
+                         "metric", val, NULL)) != 0)
+    {
+        return rc;
+    }
+
+    return 0;
+}
+
+static int
+route_metric_get(unsigned int gid, const char *oid,
+                 char *value, const char *route)
+{
+    int          rc;
+    ta_rt_info_t rt_info;
+
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
-    UNUSED(route);
-    return TE_RC(TE_TA_WIN32, ENOTSUP);
+
+    if ((rc = route_get(route, &rt_info)) != 0)
+        return rc;
+
+    sprintf(value, "%d", rt_info.metric);
+    return 0;
+}
+
+static int
+route_metric_set(unsigned int gid, const char *oid,
+                 const char *value, const char *route)
+{
+    return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, "metric",
+                      value, route_load_attrs);
 }
 
 /**
@@ -1441,8 +1438,8 @@ route_set(unsigned int gid, const char *oid, const char *value,
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
  * @param value         value string (unused)
- * @param route         route instance name:
- *                      <IPv4 address in dotted notation>'|'<prefix length>
+ * @param route         route instance name: see doc/cm_cm_base.xml
+ *                      for the format
  *
  * @return error code
  */
@@ -1450,148 +1447,30 @@ static int
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
-    MIB_IPFORWARDROW  entry;
-    route_entry_t     rt;
-    int               rc;
-    int               i;
-    
-    MIB_IPFORWARDTABLE *table;
-    
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
 
-    if ((rc = route_parse_inst_name(route, &rt)) != 0)
-        return rc;
-        
-    if (rt.metric == METRIC_DEFAULT)
-    {
-        ERROR("Failed to explicitly assign default metric to the route");
-        return TE_RC(TE_TA_WIN32, TE_EINVAL);
-    }
-        
-    if (rt.metric == 0)
-    {
-        WARN("Default metric for the route to %s is assigned", route);
-        rt.metric = METRIC_DEFAULT;
-    }
-        
-    memset(&entry, 0, sizeof(entry));
-    entry.dwForwardDest = rt.dst;
-    entry.dwForwardNextHop = rt.gw;
-    entry.dwForwardMask = PREFIX2MASK(rt.prefix);
-    entry.dwForwardType = rt.forw_type;
-    entry.dwForwardNextHop = rt.gw;
-    entry.dwForwardIfIndex = rt.if_index;
-    entry.dwForwardMetric1 = rt.metric;
-    
-    if (entry.dwForwardNextHop == 0)
-        entry.dwForwardNextHop = rt.dst;
-        
-    if (entry.dwForwardIfIndex == 0)
-    {
-        if ((rc = find_ifindex(entry.dwForwardNextHop,
-                               &entry.dwForwardIfIndex)) != 0)
-        {
-            return rc;
-        }
-    }
-    
-    entry.dwForwardProto = 3;
-    
-    /* Check, if exactly the same route except metric exists */
-    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
-    if (table == NULL)
-        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-
-    for (i = 0; i < (int)table->dwNumEntries; i++)
-    {
-        if (table->table[i].dwForwardDest == entry.dwForwardDest &&
-            table->table[i].dwForwardMask == entry.dwForwardMask &&
-            table->table[i].dwForwardType == entry.dwForwardType &&
-            table->table[i].dwForwardIfIndex == entry.dwForwardIfIndex &&
-            (table->table[i].dwForwardType != FORW_TYPE_REMOTE ||
-             table->table[i].dwForwardNextHop == entry.dwForwardNextHop))
-        {
-            free(table);
-            return TE_RC(TE_TA_WIN32, TE_EEXIST);
-        }
-    }
-    free(table);
-    
-    if ((rc = CreateIpForwardEntry(&entry)) != NO_ERROR)
-    {
-        ERROR("CreateIpForwardEntry() failed, error %d", rc);
-        return TE_RC(TE_TA_WIN32, TE_EWIN);
-    }
-    
-    return 0;
+    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, NULL, NULL, NULL);
 }
-
 
 /**
  * Delete a route.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
- * @param route         route instance name:
- *                      <IPv4 address in dotted notation>'|'<prefix length>
+ * @param route         route instance name: see doc/cm_cm_base.xml
+ *                      for the format
  *
  * @return error code
  */
 static int
 route_del(unsigned int gid, const char *oid, const char *route)
 {
-    MIB_IPFORWARDTABLE *table;
-
-    int            i;
-    int            rc;
-    route_entry_t  rt;
-    
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = route_parse_inst_name(route, &rt)) != 0)
-        return rc;
-
-    GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
-    if (table == NULL)
-        return TE_RC(TE_TA_WIN32, TE_ENOENT);
-        
-    if (rt.metric == 0)
-        rt.metric = METRIC_DEFAULT;
-
-    for (i = 0; i < (int)table->dwNumEntries; i++)
-    {
-        int p;
-
-        if (table->table[i].dwForwardType != FORW_TYPE_LOCAL &&
-            table->table[i].dwForwardType != FORW_TYPE_REMOTE)
-        {
-            continue;
-        }
-        MASK2PREFIX(table->table[i].dwForwardMask, p);
-        if (table->table[i].dwForwardDest != rt.dst || p != rt.prefix ||
-            table->table[i].dwForwardMetric1 != rt.metric ||
-            (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
-             table->table[i].dwForwardIfIndex != rt.if_index) ||
-            (table->table[i].dwForwardType == FORW_TYPE_REMOTE &&
-             table->table[i].dwForwardNextHop != rt.gw))
-        {
-            continue;
-        }
-        
-        if ((rc = DeleteIpForwardEntry(table->table + i)) != 0)
-        {
-            ERROR("DeleteIpForwardEntry() failed, error %d", rc);
-            free(table);
-            return TE_RC(TE_TA_WIN32, TE_EWIN);
-        }
-        free(table);
-        return 0;
-    }
-
-    return TE_RC(TE_TA_WIN32, TE_ENOENT);
+    return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL);
 }
 
 /**
@@ -1626,7 +1505,7 @@ route_list(unsigned int gid, const char *oid, char **list)
             return 0;
     }
 
-    buf[0] = 0;
+    buf[0] = '\0';
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
@@ -1656,12 +1535,6 @@ route_list(unsigned int gid, const char *oid, char **list)
                      (int)(table->table[i].dwForwardIfIndex));
         }
         ptr += strlen(ptr);
-        if (table->table[i].dwForwardMetric1 != METRIC_DEFAULT)
-        {
-            snprintf(ptr, end_ptr - ptr, ",metric=%d",
-                     (int)(table->table[i].dwForwardMetric1));
-            ptr += strlen(ptr);
-        }
         snprintf(ptr, end_ptr - ptr, " ");
         ptr += strlen(ptr);
     }
@@ -1671,5 +1544,107 @@ route_list(unsigned int gid, const char *oid, char **list)
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
+    return 0;
+}
+
+/**
+ * Commit changes made for the route.
+ *
+ * @param gid           group identifier (unused)
+ * @param p_oid         object instence data structure
+ *
+ * @return error code
+ */
+static int
+route_commit(unsigned int gid, const cfg_oid *p_oid)
+{
+    const char       *route;
+    ta_cfg_obj_t     *obj;
+    ta_rt_info_t      rt_info_name_only;
+    ta_rt_info_t      rt_info;
+    int               rc;
+    MIB_IPFORWARDROW  rt;
+    MIB_IPFORWARDROW  rt_cur;
+    
+    ta_cfg_obj_action_e obj_action;
+
+    UNUSED(gid);
+    ENTRY("%s", route);
+
+    route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
+    
+    if ((obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route)) == NULL)
+    {
+        WARN("Commit for %s route which has not been updated", route);
+        return 0;
+    }
+    if ((rc = ta_rt_parse_obj(obj, &rt_info)) != 0)
+    {
+        ta_obj_free(obj);
+        return rc;
+    }
+    obj_action = obj->action;
+    ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
+
+    ta_obj_free(obj);
+
+    if ((rc = rt_info2ipforw(&rt_info, &rt)) != 0)
+    {
+        ERROR("Failed to convert %s route to "
+              "MIB_IPFORWARDROW data structure", obj->name);
+        return rc;
+    }
+
+    switch (obj_action)
+    {
+        case TA_CFG_OBJ_DELETE:
+        {
+            if ((rc = DeleteIpForwardEntry(&rt)) != 0)
+            {
+                ERROR("DeleteIpForwardEntry() failed, error %d", rc);
+                return TE_RC(TE_TA_WIN32, TE_EWIN);
+            }
+            break;
+        }
+            
+        case TA_CFG_OBJ_SET:
+        {
+            struct rtentry rt_cur;
+
+            /*
+             * In case of SET we first should delete an existing 
+             * route and then add a new one.
+             */
+            if ((rc = rt_info2ipforw(&rt_info_name_only, &rt_cur)) != 0)
+            {
+                ERROR("Failed to convert %s route to "
+                      "MIB_IPFORWARDROW data structure", obj->name);
+                return rc;
+            }
+            if ((rc = DeleteIpForwardEntry(&rt_cur)) != 0)
+            {
+                ERROR("DeleteIpForwardEntry() failed, error %d", rc);
+                return TE_RC(TE_TA_WIN32, TE_EWIN);
+            }
+                 
+            /* FALLTHROUGH */
+        }
+
+        case TA_CFG_OBJ_CREATE:
+        {
+            /* Add or set operation */
+            if ((rc = CreateIpForwardEntry(&entry)) != NO_ERROR)
+            {
+                ERROR("CreateIpForwardEntry() failed, error %d", rc);
+                return TE_RC(TE_TA_WIN32, TE_EWIN);
+            }
+            break;
+        }
+
+        default:
+            ERROR("Unknown object action specified %d", obj_action);
+            return TE_RC(TE_TA_WIN32, TE_EINVAL);
+    }
+    
     return 0;
 }
