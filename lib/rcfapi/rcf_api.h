@@ -589,21 +589,21 @@ typedef void (*rcf_pkt_handler)(
  * This function is used to force receiving of traffic via already created
  * CSAP. 
  *
- * @param ta_name      - Test Agent name.
- * @param session      - TA session or 0.
- * @param csap_id      - CSAP handle.
- * @param pattern      - Full name of the file with traffic pattern.
- * @param handler      - Address of function to be used to process
- *                       received packets or NULL.
- * @param user_param   - User parameter to be passed to the handler.
- * @param timeout      - Timeout for traffic receive operation. After this
- *                       time interval CSAP stops capturing any traffic on
- *                       the agent and will be waiting until
- *                       rcf_ta_trrecv_stop or rcf_ta_trrecv_wait are
- *                       called.
- * @param num          - Number of packets that needs to be captured;
- *                       if it is zero, the number of received packets
- *                       is not limited.
+ * @param ta_name       Test Agent name.
+ * @param session       TA session or 0.
+ * @param csap_id       CSAP handle.
+ * @param pattern       Full name of the file with traffic pattern.
+ * @param handler       Address of function to be used to process
+ *                      received packets or NULL.
+ * @param user_param    User parameter to be passed to the handler.
+ * @param timeout       Timeout (in milliseconds) for traffic receive
+ *                      operation. After this time interval CSAP stops
+ *                      capturing any traffic on the agent and will be
+ *                      waiting until rcf_ta_trrecv_stop() or
+ *                      rcf_ta_trrecv_wait() are called.
+ * @param num           Number of packets that needs to be captured;
+ *                      if it is zero, the number of received packets
+ *                      is not limited.
  *
  * @return error code
  *
@@ -628,10 +628,10 @@ extern int rcf_ta_trrecv_start(const char *ta_name, int session,
 /**
  * Blocks the caller until all the traffic, which is being captured,
  * is received by the CSAP or timeout occurres (timeout specified 
- * with rcf_ta_trrecv_start).
- * If handler was specified in rcf_ta_trrecv_start function,
+ * with rcf_ta_trrecv_start()).
+ * If handler was specified in rcf_ta_trrecv_start() function,
  * it is called for all received packets.
- * This function can only be called after rcf_ta_trrecv_start.
+ * This function can only be called after rcf_ta_trrecv_start().
  *
  * @param ta_name   Test Agent name.
  * @param session   session identifier.
@@ -723,7 +723,7 @@ extern int rcf_ta_trrecv_get(const char *ta_name, int session,
  * @param handler       Callback function used in processing of
  *                      received packet or NULL
  * @param user_param    User parameter to be passed to the handler
- * @param timeout       Timeout for answer waiting
+ * @param timeout       Timeout for answer waiting (in milliseconds)
  * @param error         Location for protocol-specific error extracted
  *                      from the answer or NULL (if error is 0, then answer
  *                      is positive; if error is -1, then it's not possible
