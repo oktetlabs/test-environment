@@ -459,6 +459,12 @@ log_serial(void *ready, int argc, char *argv[])
                 ERROR("Error reading from terminal: %d", errno);
                 break;
             }
+            else if (len == 0)
+            {
+                MAYBE_DO_LOG;
+                ERROR("Terminal is closed");
+                break;
+            }
             VERB("%d bytes actually read", len);
             current += len;
             if (current == fence)
