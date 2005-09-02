@@ -1303,7 +1303,7 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
     else
         /* Use Next Hop address to define outgoing interface */
         rc = find_ifindex(rt->dwForwardNextHop, &rt->dwForwardIfIndex);
-
+        
     return rc;
 }
 
@@ -1313,11 +1313,12 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
  * @param route    route instance name: see doc/cm_cm_base.xml
  *                 for the format
  * @param rt_info  route related information (OUT)
+ * @param rt       route related information in win32 format (OUT)
  *
  * @return error code
  */
 static int
-route_get(const char *route, ta_rt_info_t *rt_info)
+route_get(const char *route, ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
 {
     MIB_IPFORWARDTABLE *table;
     DWORD               route_addr;
@@ -1368,6 +1369,9 @@ route_get(const char *route, ta_rt_info_t *rt_info)
         rt_info->metric = table->table[i].dwForwardMetric1;
         if (rt_info->metric != METRIC_DEFAULT)
             rt_info->flags |= TA_RT_INFO_FLG_METRIC;
+         
+        if (rt != NULL)   
+            *rt = table->table[i];
 
         /*
          * win32 agent supports only a limited set of route attributes.
@@ -1395,7 +1399,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
     int          rc;
     char         val[128];
 
-    if ((rc = route_get(obj->name, &rt_info)) != 0)
+    if ((rc = route_get(obj->name, &rt_info, NULL)) != 0)
         return rc;
 
     snprintf(val, sizeof(val), "%lu", rt_info.metric);
@@ -1419,7 +1423,7 @@ route_metric_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = route_get(route, &rt_info)) != 0)
+    if ((rc = route_get(route, &rt_info, NULL)) != 0)
         return rc;
 
     sprintf(value, "%lu", rt_info.metric);
@@ -1587,17 +1591,20 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         ta_obj_free(obj);
         return rc;
     }
-    obj_action = obj->action;
-    ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
-
-    ta_obj_free(obj);
-
-    if ((rc = rt_info2ipforw(&rt_info, &rt)) != 0)
+    if ((obj_action = obj->action) == TA_CFG_OBJ_DELETE)
     {
-        ERROR("Failed to convert %s route to "
-              "MIB_IPFORWARDROW data structure", obj->name);
-        return rc;
+        rc = route_get(obj->name, &rt_info, &rt);
     }
+    else
+    {
+        ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
+        if ((rc = rt_info2ipforw(&rt_info, &rt)) != 0)
+            ERROR("Failed to convert %s route to "
+                  "MIB_IPFORWARDROW data structure", obj->name);
+    }
+    ta_obj_free(obj);
+    if (rc != 0)
+        return rc;
 
     switch (obj_action)
     {
