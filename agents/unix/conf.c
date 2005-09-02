@@ -1245,11 +1245,9 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
-    /* FIXME */
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    if (strlen(ifname) >= IF_NAMESIZE)
     {
-        /* Alias does not exist from Configurator point of view */
-        return FALSE;
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
     }
 
     if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
@@ -1343,6 +1341,11 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
+    if (strlen(ifname) >= IF_NAMESIZE)
+    {
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
     if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
         new_addr == 0 ||
         (ntohl(new_addr) & 0xe0000000) == 0xe0000000)
@@ -1351,12 +1354,6 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     }
 
 #ifdef __linux__
-    /* FIXME */
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
-    {
-        /* Alias does not exist from Configurator point of view */
-        return FALSE;
-    }
     if ((rc = aliases_list()) != 0)
         return rc;
 
