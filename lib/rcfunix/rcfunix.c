@@ -76,12 +76,14 @@
 /*
  * Configuration string for UNIX TA should have format:
  *
- * [<IPv4/6 address or hostname>]:<port>[:sudo][:<shell>[:parameters]]
+ * [<IP address or hostname>]:<port>[:notcopy][:sudo][:<shell>[:parameters]]
  *
  * If host is not specified, the Test Agent is started on the local
  * host.  It is assumed that user starting Dispatcher may use ssh/scp
  * with specified host using ssh without password.  If sudo is specified
  * it is assumed that user is sudoer without password.
+ *
+ * notcopy may be used to create symbolic link instead copying of the image.
  *
  * Note that shell part of configuration string CANNOT contain collons.
  * Implementation should be extended to allow collons inside parameter.
