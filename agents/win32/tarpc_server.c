@@ -1036,7 +1036,12 @@ TARPC_FUNC(socket, {},
 
 /*-------------- close() ------------------------------*/
 
-TARPC_FUNC(close, {}, { MAKE_CALL(out->retval = closesocket(in->fd)); })
+TARPC_FUNC(close, {}, 
+{ 
+    MAKE_CALL(out->retval = closesocket(in->fd)); 
+    if (out->retval == -1 && out->common._errno == RPC_ENOTSOCK)
+        out->retval = close(in->fd); /* For files */
+})
 
 /*-------------- bind() ------------------------------*/
 
