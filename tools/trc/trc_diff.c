@@ -61,6 +61,7 @@
 /** TRC tool command line options */
 enum {
     TRC_DIFF_OPT_VERSION = 1,
+    TRC_DIFF_OPT_NO_BUGID,
     TRC_DIFF_OPT_TAG0,
     TRC_DIFF_OPT_TAG1,
     TRC_DIFF_OPT_TAG2,
@@ -82,6 +83,11 @@ enum {
     TRC_DIFF_OPT_NAME8,
     TRC_DIFF_OPT_NAME9,
 };
+
+/** Title of the report in HTML format */
+char *trc_diff_title = NULL;
+/** Template of BugIDs to be excluded */
+char *trc_diff_no_bugid = NULL;
 
 /** Name of the file with expected testing result database */
 static char *trc_diff_db_fn = NULL;
@@ -115,13 +121,16 @@ process_cmd_line_opts(int argc, char **argv)
           "database.",
           "FILENAME" },
 
+        { "title", 't', POPT_ARG_STRING, &trc_diff_title, 0,
+          "Title of the HTML report to be generate.", "TITLE" },
+
         { "html", 'h', POPT_ARG_STRING, &trc_diff_html_fn, 0,
           "Name of the file for report in HTML format.",
           "FILENAME" },
 
-        { "no-bugid", 'B', POPT_ARG_NONE | POPT_BIT_SET, &trc_diff_flags,
-          TRC_DIFF_NO_BUGID,
-          "Exclude from report entries with specified BugID.", NULL },
+        { "no-bugid", 'B', POPT_ARG_STRING, &trc_diff_no_bugid, 0,
+          "Exclude from report entries with BugID by template or all "
+          "(if template is empty).", NULL },
 
 #define TRC_DIFF_TAG_OPT(id_) \
         { "tag" #id_, '0' + id_,                                \

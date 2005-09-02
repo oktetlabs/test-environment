@@ -63,10 +63,16 @@
 
 #define PRINT_STR(str_)  (((str_) != NULL) ? (str_) : "")
 
+/** Title of the report in HTML format */
+extern char *trc_diff_title;
+/** Template of BugIDs to be excluded */
+extern char *trc_diff_no_bugid;
 
 static FILE   *f;
 static int     fd;
 
+static const char * const trc_diff_html_title_def =
+    "Testing Results Expectations Differences Report";
 
 static const char * const trc_diff_html_doc_start =
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n"
@@ -74,10 +80,10 @@ static const char * const trc_diff_html_doc_start =
 "<HEAD>\n"
 "  <META HTTP-EQUIV=\"CONTENT-TYPE\" CONTENT=\"text/html; "
 "charset=utf-8\">\n"
-"  <TITLE>Testing Results Expectations Differences Report</TITLE>\n"
+"  <TITLE>%s</TITLE>\n"
 "</HEAD>\n"
 "<BODY LANG=\"en-US\" DIR=\"LTR\">\n"
-"<H1 ALIGN=CENTER>Testing Results Expectations Differences Report</H1>\n"
+"<H1 ALIGN=CENTER>%s</H1>\n"
 "<H2 ALIGN=CENTER>%s</H2>\n";
 
 static const char * const trc_diff_html_doc_end =
@@ -241,7 +247,9 @@ trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
         p->diff_out = trc_diff_tests_has_diff(&p->tests, flags) ||
                       (iter_has_diff &&
                        (p->bug == NULL || strlen(p->bug) == 0 ||
-                        (~flags & TRC_DIFF_NO_BUGID)));
+                        trc_diff_no_bugid == NULL ||
+                        strncmp(p->bug, trc_diff_no_bugid,
+                                strlen(trc_diff_no_bugid)) != 0));
 
         if (!p->diff_out)
             has_no_out = TRUE;
@@ -277,7 +285,9 @@ trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
                                               &all_iters_out,
                                               p->diff_exp) &&
                       (p->bug == NULL || strlen(p->bug) == 0 ||
-                       (~flags & TRC_DIFF_NO_BUGID));
+                       trc_diff_no_bugid == NULL ||
+                       strncmp(p->bug, trc_diff_no_bugid,
+                               strlen(trc_diff_no_bugid)) != 0);
 
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
@@ -496,7 +506,12 @@ trc_diff_report_to_html(trc_database *db, unsigned int flags,
     }
 
     /* HTML header */
-    fprintf(f, trc_diff_html_doc_start, db->version);
+    fprintf(f, trc_diff_html_doc_start,
+            (trc_diff_title != NULL) ? trc_diff_title :
+                                       trc_diff_html_title_def,
+            (trc_diff_title != NULL) ? trc_diff_title :
+                                       trc_diff_html_title_def,
+            db->version);
 
     /* Compared sets */
     trc_diff_tags_to_html(&tags_diff);
