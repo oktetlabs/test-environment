@@ -44,6 +44,7 @@
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_ta_cfg.h"
 
 /* TA name pointer */
 extern char *ta_name;
@@ -417,6 +418,17 @@ interface_list(unsigned int gid, const char *oid, char **list)
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
+    return 0;
+}
+
+/** Convert interface name to interface index */
+static int
+name2index(const char *ifname, DWORD *ifindex)
+{
+    GET_IF_ENTRY;
+    
+    *ifindex = if_entry.dwIndex;
+    
     return 0;
 }
 
@@ -1244,9 +1256,9 @@ route_get_if_index(const ta_rt_info_t *rt_info, DWORD *if_index)
     if ((rt_info->flags & TA_RT_INFO_FLG_IF) == 0)
         return 0;
 
-    assert(strlen(rt_info->dev) > 0);
+    assert(strlen(rt_info->ifname) > 0);
 
-    if (sscanf(rt_info->dev, "intf%d", (DWORD *)if_index) != 1)
+    if (sscanf(rt_info->ifname, "intf%lu", if_index) != 1)
     {
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
     }
@@ -1261,7 +1273,7 @@ route_get_if_index(const ta_rt_info_t *rt_info, DWORD *if_index)
  * @param rt_info TA portable route info
  * @Param rt      Win32-specific data structure (OUT)
  */
-static void
+static int
 rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
 {
     int rc;
@@ -1284,24 +1296,15 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
     if (rt->dwForwardNextHop == 0)
         rt->dwForwardNextHop = rt->dwForwardDest;
 
-    if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
-    {
-        
-        rt.dwForwardIfIndex = rt.if_index;
-    }
-    else
-    {
-        /* Use NExt Hop address to define outgoing interface */
-        if ((rc = find_ifindex(rt->dwForwardNextHop,
-                               &rt->dwForwardIfIndex)) != 0)
-        {
-            return rc;
-        }
-    }
-
     rt->dwForwardProto = 3;
+    
+    if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
+        rc = name2index(rt_info->ifname, &(rt->dwForwardIfIndex));
+    else
+        /* Use Next Hop address to define outgoing interface */
+        rc = find_ifindex(rt->dwForwardNextHop, &rt->dwForwardIfIndex);
 
-    return 0;
+    return rc;
 }
 
 /**
@@ -1338,7 +1341,7 @@ route_get(const char *route, ta_rt_info_t *rt_info)
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
-        int p;
+        uint32_t p;
 
         if (table->table[i].dwForwardType != FORW_TYPE_LOCAL &&
             table->table[i].dwForwardType != FORW_TYPE_REMOTE)
@@ -1349,7 +1352,6 @@ route_get(const char *route, ta_rt_info_t *rt_info)
         MASK2PREFIX(table->table[i].dwForwardMask, p);
         if (table->table[i].dwForwardDest != route_addr ||
             p != rt_info->prefix ||
-            
             ((table->table[i].dwForwardType == FORW_TYPE_LOCAL) ^
              ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)) ||
             (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
@@ -1396,7 +1398,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
     if ((rc = route_get(obj->name, &rt_info)) != 0)
         return rc;
 
-    snprintf(val, sizeof(val), "%d", rt_info.metric);
+    snprintf(val, sizeof(val), "%lu", rt_info.metric);
     if ((rt_info.flags & TA_RT_INFO_FLG_METRIC) != 0 &&
         (rc = ta_obj_set(TA_OBJ_TYPE_ROUTE, obj->name,
                          "metric", val, NULL)) != 0)
@@ -1420,7 +1422,7 @@ route_metric_get(unsigned int gid, const char *oid,
     if ((rc = route_get(route, &rt_info)) != 0)
         return rc;
 
-    sprintf(value, "%d", rt_info.metric);
+    sprintf(value, "%lu", rt_info.metric);
     return 0;
 }
 
@@ -1428,6 +1430,8 @@ static int
 route_metric_set(unsigned int gid, const char *oid,
                  const char *value, const char *route)
 {
+    UNUSED(gid);
+    UNUSED(oid);
     return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, "metric",
                       value, route_load_attrs);
 }
@@ -1609,8 +1613,6 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
             
         case TA_CFG_OBJ_SET:
         {
-            struct rtentry rt_cur;
-
             /*
              * In case of SET we first should delete an existing 
              * route and then add a new one.
@@ -1633,7 +1635,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         case TA_CFG_OBJ_CREATE:
         {
             /* Add or set operation */
-            if ((rc = CreateIpForwardEntry(&entry)) != NO_ERROR)
+            if ((rc = CreateIpForwardEntry(&rt)) != NO_ERROR)
             {
                 ERROR("CreateIpForwardEntry() failed, error %d", rc);
                 return TE_RC(TE_TA_WIN32, TE_EWIN);
