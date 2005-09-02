@@ -1331,6 +1331,7 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
+    unlink(argv[0]);
     
     return retval;
 }
