@@ -476,16 +476,15 @@ bad_confstr:
 }
 
 /**
- * Reboot Test Agent station or NUT served by it. The method is called
- * after sending of "reboot" command to the TA. After that rcf_talib_start
- * and rcf_talib_connect are called.
- * For the case of local Test Agents this routine should kill the Test
- * Agent, but return an error.
+ * Kill all processes related to TA on the station where it is run.
+ * Reboot station which TA is runing on (if it's allowed).
+ * Handle should not be freed.
  *
- * @param handle        TA handle
+ * @param handle        TA handle locaton, may already contain memory
+ *                      pointer in the case of TA restart
  * @param parms         library-specific parameters
  *
- * @return error code
+ * @return error code 
  */
 int
 rcfunix_finish(rcf_talib_handle handle, char *parms)
