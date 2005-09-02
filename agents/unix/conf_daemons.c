@@ -217,8 +217,8 @@ copy_or_rename(const char *config, char *backup)
         
         if (kill(pid, SIGCONT) == 0)
         {
-            WARN("Backup '%s' of running TA with PID=%d is found",
-                 buf, pid);
+            ERROR("Backup '%s' of running TA with PID=%d is found",
+                  buf, pid);
             return TE_RC(TE_TA_UNIX, TE_EEXIST);
         }
         else
