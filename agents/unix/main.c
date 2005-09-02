@@ -1318,6 +1318,8 @@ main(int argc, char **argv)
             retval = rc;
     }
 
+    unlink(argv[0]);
+
     if (tce_stop_function != NULL)
         tce_stop_function();
 
@@ -1331,7 +1333,6 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
-    unlink(argv[0]);
     
     return retval;
 }
