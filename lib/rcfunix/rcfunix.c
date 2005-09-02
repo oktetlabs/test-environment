@@ -554,7 +554,7 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;
 
-    if ((*(ta->flags) & TA_DEAD) || strcmp(ta->type, "win32") == 0)
+    if ((*(ta->flags) & TA_DEAD) || strcmp(ta->ta_type, "win32") == 0)
     {
         if (ta->is_local)
             sprintf(cmd, "rm -f /tmp/%s", ta->exec_name);
