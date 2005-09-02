@@ -995,9 +995,11 @@ init_tce_subsystem(void)
         rcf_ch_symbol_addr("tce_obtain_principal_connect", TRUE);
 }
 
-
-/* See description in unix_internal.h */
-void
+/**
+ * Cleans up dead children list.  May be called at startup/after fork only,
+ * because it does not lock the list.
+ */
+static void
 ta_children_cleanup()
 {
     ta_children_dead_list = -1;
@@ -1298,6 +1300,7 @@ main(int argc, char **argv)
     te_lgr_entity = ta_name = argv[1];
 
     (void)signal(SIGCHLD, ta_sigchld_handler);
+    pthread_atfork(NULL, NULL, ta_children_cleanup);
 
     RING("Starting");
 

@@ -119,12 +119,6 @@ extern int ftp_close(int control_socket);
 extern void signal_registrar(int signum);
 
 /**
- * Cleans up dead children list.  May be called at startup/after fork only,
- * because it does not lock the list.
- */
-extern void ta_children_cleanup();
-
-/**
  * waitpid() analogue, with the same parameters/return value.
  * Only WNOHANG option is supported for now.
  * Process groups are not supported for now.
