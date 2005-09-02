@@ -71,7 +71,8 @@ typedef void *rcf_talib_handle;
  *                      to ta_type and is located in TE_INSTALL/agents/bin)
  * @param conf_str      TA-specific configuration string
  * @param handle        location for TA handle
- * @param flags         IN/OUT location of TA flags
+ * @param flags         IN/OUT location of TA flags;
+ *                      these location is shared between RCF and library
  *
  * @return error code 
  */
