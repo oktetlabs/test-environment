@@ -35,8 +35,6 @@
 #include "ndn_dhcp.h"
 
 
-extern asn_type asn_base_charstring_s;
-
 static asn_type ndn_dhcpv4_options_s;
 
 
