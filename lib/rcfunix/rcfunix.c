@@ -413,8 +413,6 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         return rc;
     }
     
-    start:
-
     /* Clean up command string */
     cmd[0] = '\0';
 
