@@ -1281,7 +1281,6 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
     assert((rt_info->flags & TA_RT_INFO_FLG_GW) != 0 ||
            (rt_info->flags & TA_RT_INFO_FLG_IF) != 0);
 
-    memset(rt, 0, sizeof(*rt));
     rt->dwForwardDest = SIN(&(rt_info->dst))->sin_addr.s_addr;
     rt->dwForwardNextHop = SIN(&(rt_info->gw))->sin_addr.s_addr;
     rt->dwForwardMask = PREFIX2MASK(rt_info->prefix);
@@ -1572,12 +1571,13 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     ta_rt_info_t      rt_info;
     int               rc;
     MIB_IPFORWARDROW  rt;
-    MIB_IPFORWARDROW  rt_cur;
     
     ta_cfg_obj_action_e obj_action;
 
     UNUSED(gid);
     ENTRY("%s", route);
+    
+    memset(&rt, 0, sizeof(rt));
 
     route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
     
@@ -1591,7 +1591,8 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         ta_obj_free(obj);
         return rc;
     }
-    if ((obj_action = obj->action) == TA_CFG_OBJ_DELETE)
+    if ((obj_action = obj->action) == TA_CFG_OBJ_DELETE ||
+        obj_action == TA_CFG_OBJ_SET)
     {
         rc = route_get(obj->name, &rt_info, &rt);
     }
@@ -1609,38 +1610,24 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     switch (obj_action)
     {
         case TA_CFG_OBJ_DELETE:
+        case TA_CFG_OBJ_SET:
         {
             if ((rc = DeleteIpForwardEntry(&rt)) != 0)
             {
                 ERROR("DeleteIpForwardEntry() failed, error %d", rc);
                 return TE_RC(TE_TA_WIN32, TE_EWIN);
             }
-            break;
-        }
-            
-        case TA_CFG_OBJ_SET:
-        {
-            /*
-             * In case of SET we first should delete an existing 
-             * route and then add a new one.
-             */
-            if ((rc = rt_info2ipforw(&rt_info_name_only, &rt_cur)) != 0)
-            {
-                ERROR("Failed to convert %s route to "
-                      "MIB_IPFORWARDROW data structure", obj->name);
-                return rc;
-            }
-            if ((rc = DeleteIpForwardEntry(&rt_cur)) != 0)
-            {
-                ERROR("DeleteIpForwardEntry() failed, error %d", rc);
-                return TE_RC(TE_TA_WIN32, TE_EWIN);
-            }
-                 
+            if (obj_action == TA_CFG_OBJ_DELETE)
+                break;
             /* FALLTHROUGH */
         }
 
         case TA_CFG_OBJ_CREATE:
         {
+            if ((rc = rt_info2ipforw(&rt_info, &rt)) != 0)
+                ERROR("Failed to convert route to "
+                      "MIB_IPFORWARDROW data structure");
+                      
             /* Add or set operation */
             if ((rc = CreateIpForwardEntry(&rt)) != NO_ERROR)
             {
