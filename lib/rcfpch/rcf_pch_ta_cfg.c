@@ -38,11 +38,22 @@
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
+
+#ifdef __CYGWIN__
+#include <winsock2.h>
+#else
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
 #endif
 
 #include "te_errno.h"

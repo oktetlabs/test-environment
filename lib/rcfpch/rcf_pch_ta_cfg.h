@@ -30,13 +30,6 @@
 #ifndef __TE_RCF_PCH_TA_CFG_H__
 #define __TE_RCF_PCH_TA_CFG_H__
 
-#if HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#if HAVE_NET_IF_H
-#include <net/if.h>
-#endif
-
 #include "te_defs.h"
 #include "rcf_common.h"
 
@@ -90,6 +83,10 @@
  */
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifndef IF_NAMESIZE
+#define IF_NAMESIZE     16
 #endif
 
 /** Object attribute data structure */
@@ -214,7 +211,6 @@ extern int ta_obj_set(const char *type, const char *name,
  * @return Error code or 0
  */
 extern int ta_obj_del(const char *type, const char *name, void *user_data);
-
 
 /* Route-specific definitions */
 
