@@ -30,19 +30,19 @@
 #define __TE_NDN_INTERNAL_H__ 
 
 
-extern asn_type asn_base_boolean_s;
-extern asn_type asn_base_integer_s;
-extern asn_type asn_base_bitstring_s;
-extern asn_type asn_base_octstring_s;
-extern asn_type asn_base_null_s;
-extern asn_type asn_base_objid_s;
-extern asn_type asn_base_real_s;
-extern asn_type asn_base_enum_s;
-extern asn_type asn_base_charstring_s;
+extern const asn_type asn_base_boolean_s;
+extern const asn_type asn_base_integer_s;
+extern const asn_type asn_base_bitstring_s;
+extern const asn_type asn_base_octstring_s;
+extern const asn_type asn_base_null_s;
+extern const asn_type asn_base_objid_s;
+extern const asn_type asn_base_real_s;
+extern const asn_type asn_base_enum_s;
+extern const asn_type asn_base_charstring_s;
 
-extern asn_type asn_base_int4_s;
-extern asn_type asn_base_int8_s;
-extern asn_type asn_base_int16_s;
+extern const asn_type asn_base_int4_s;
+extern const asn_type asn_base_int8_s;
+extern const asn_type asn_base_int16_s;
 
 extern asn_type ndn_data_unit_ints_s;
 extern asn_type ndn_data_unit_enum_s;
