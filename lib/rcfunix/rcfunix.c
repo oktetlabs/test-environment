@@ -118,6 +118,8 @@ typedef struct unix_ta {
     char     port[RCF_MAX_NAME];      /**< TCP port */
     char     exec_name[RCF_MAX_PATH]; /**< Name of the started file */
     te_bool  sudo;                    /**< Manipulate process using sudo */
+    te_bool  notcopy;                 /**< Do not copy TA image to remote
+                                           host */
     te_bool  is_local;                /**< TA is started on the local PC */
     uint32_t pid;                     /**< TA pid */
     int      flags;                   /**< Flags */
@@ -346,6 +348,13 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     strncpy(ta->port, token, RCF_MAX_NAME);
 
     GET_TOKEN;
+    if (token != NULL && strcmp(token, "notcopy") == 0)
+    {
+        ta->notcopy = TRUE;
+        GET_TOKEN;
+    }
+    else
+        ta->sudo = FALSE;
     if (token != NULL && strcmp(token, "sudo") == 0)
     {
         ta->sudo = TRUE;
@@ -367,18 +376,29 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
          * DO NOT suppress command output in order to have a chance
          * to see possible problems.
          */
-        sprintf(cmd, "cp -a %s /tmp/%s", path, ta->exec_name);
+        if (ta->notcopy)
+            sprintf(cmd, "ln -s %s /tmp/%s", path, ta->exec_name);
+        else
+            sprintf(cmd, "cp -a %s /tmp/%s", path, ta->exec_name);
     }
     else
     {
-        /* 
-         * Preserves modification times, access times, and modes.
-         * Disables the progress meter.
-         * Be quite, but DO NOT suppress command output in order
-         * to have to see possible problems.
-         */
-        sprintf(cmd, "scp -Bpq %s %s:/tmp/%s",
-                path, ta->host, ta->exec_name);
+        if (ta->notcopy)
+        {
+            sprintf(cmd, "ssh %s ln -s %s /tmp/%s",
+                    ta->host, path, ta->exec_name);
+        }
+        else
+        {
+            /* 
+             * Preserves modification times, access times, and modes.
+             * Disables the progress meter.
+             * Be quite, but DO NOT suppress command output in order
+             * to have to see possible problems.
+             */
+            sprintf(cmd, "scp -Bpq %s %s:/tmp/%s",
+                    path, ta->host, ta->exec_name);
+        }
     }
 
     VERB("Copy image '%s' to the %s:/tmp", ta->exec_name, ta->host);
@@ -390,6 +410,8 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         free(dup);
         return rc;
     }
+    
+    start:
 
     /* Clean up command string */
     cmd[0] = '\0';
