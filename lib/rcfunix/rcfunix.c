@@ -124,7 +124,7 @@ typedef struct unix_ta {
                                            host */
     te_bool  is_local;                /**< TA is started on the local PC */
     uint32_t pid;                     /**< TA pid */
-    int      flags;                   /**< Flags */
+    int     *flags;                   /**< Flags */
     pid_t    start_pid;               /**< PID of the SSH process which
                                            started the agent */
     
@@ -312,7 +312,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     if (strcmp(ta_type + strlen(ta_type) - strlen("ctl"), "ctl") == 0)
         *flags |= TA_PROXY;
 
-    ta->flags = *flags;
+    ta->flags = flags;
     tmp = getenv("LOGNAME");
     sprintf(ta->exec_name, "ta%s_%s_%u_%u", ta_type,
             (tmp == NULL) ? "" : tmp, (unsigned int)time(NULL), seqno++);
@@ -501,11 +501,12 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
 
     RING("Finish method is called for TA %s", ta->ta_name);
     
-    if (ta->flags & TA_FAKE)
+    if (*(ta->flags) & TA_FAKE)
         return 0;
     
-    if (ta->pid > 0)
+    if (ta->pid > 0 && !(*(ta->flags) & TA_DEAD))
     {
+        /* Kill TA itself */
         if (ta->is_local)
         {
             kill(ta->pid, SIGTERM);
@@ -527,19 +528,19 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
         }
-    }
 
-    if (ta->is_local)
-        sprintf(cmd,
-                "%skillall %s " RCFUNIX_REDIRECT,
-                ta->sudo ? "sudo " : "" , ta->exec_name);
-    else
-        sprintf(cmd,
-                RCFUNIX_SSH " %s \"%skillall %s\" " RCFUNIX_REDIRECT,
-                ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
-    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-    if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-        return rc;
+        if (ta->is_local)
+            sprintf(cmd,
+                    "%skillall %s " RCFUNIX_REDIRECT,
+                    ta->sudo ? "sudo " : "" , ta->exec_name);
+        else
+            sprintf(cmd,
+                    RCFUNIX_SSH " %s \"%skillall %s\" " RCFUNIX_REDIRECT,
+                    ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
+        rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+        if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
+            return rc;
+    }
 
     if (ta->is_local)
         sprintf(cmd,
@@ -553,14 +554,17 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;
 
-    if (ta->is_local)
-        sprintf(cmd, "rm -f /tmp/%s", ta->exec_name);
-    else
-        sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
-                ta->host, ta->exec_name);
-    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-    if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-        return rc;
+    if ((*(ta->flags) & TA_DEAD) || strcmp(ta->type, "win32") == 0)
+    {
+        if (ta->is_local)
+            sprintf(cmd, "rm -f /tmp/%s", ta->exec_name);
+        else
+            sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
+                    ta->host, ta->exec_name);
+        rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+        if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
+            return rc;
+    }
 
     if (ta->start_pid > 0)
     {
