@@ -26,6 +26,8 @@
  * $Id$
  */
 
+
+#define TE_LGR_USER "NDN iSCSI"
 #include <ctype.h>
 #include "te_config.h" 
 
