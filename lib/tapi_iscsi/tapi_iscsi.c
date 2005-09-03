@@ -248,3 +248,534 @@ cleanup:
 }
 
 
+int 
+tapi_iscsi_get_key_num(iscsi_segment_data data)
+{
+    int segment_data_len;
+
+    if ((segment_data_len = asn_get_length((asn_value *)data, "")) == -1)
+    {
+        ERROR("%s, %d: cannot get length",
+              __FUNCTION__, __LINE__);
+        return -1;
+    }
+    return segment_data_len;
+}
+    
+char *
+tapi_iscsi_get_key_name(iscsi_segment_data segment_data, int key_index)
+{
+    int rc;
+    const asn_value *key_pair;
+    char            *name;
+
+    if ((rc = asn_get_indexed(segment_data, 
+                              &key_pair,
+                              key_index)) != 0)
+    {
+        ERROR("%s, %d: cannot get key pair",
+              __FUNCTION__, __LINE__);
+        return NULL;
+    }
+
+    if ((rc = asn_read_string((asn_value *)key_pair,
+                              &name, "key")) != 0)
+    {    
+        ERROR("%s, %d: cannot get key name, %r",
+              __FUNCTION__, __LINE__, rc);
+        return NULL;
+    }
+    return name;
+}
+
+int
+tapi_iscsi_get_key_index_by_name(iscsi_segment_data data, char *name)
+{
+    int rc;
+
+    int key_num;
+    int key_index; 
+
+    char *key;
+
+    const asn_value *key_pair;
+
+    if ((key_num = asn_get_length(data, "")) == -1)
+    {
+        ERROR("%s, %d: cannot get length",
+              __FUNCTION__, __LINE__);
+        return TAPI_ISCSI_KEY_INVALID;
+    }
+    for (key_index = 0; key_index < key_num; key_index++)
+    {
+       if ((rc = asn_get_indexed(data, &key_pair, key_index)) != 0)
+       {
+           ERROR("%s, %d: cannot get key from segment data, %r",
+                 __FUNCTION__, __LINE__, rc);
+           return TAPI_ISCSI_KEY_INVALID;
+       }
+       if ((rc = asn_read_string(key_pair,
+                                 &key, "key")) != 0)
+       {    
+            ERROR("%s, %d: cannot get key name, %r",
+                  __FUNCTION__, __LINE__, rc);
+            return TAPI_ISCSI_KEY_INVALID;
+       }
+       if ((strlen(key) == strlen(name)) && 
+           (strcmp(key, name) == 0))
+           break;
+    }
+    if (key_index == key_num)
+    {
+        RING("There is no key %s in Segment Data", name);
+        return TAPI_ISCSI_KEY_INVALID;
+    }
+    return key_index;
+}
+
+iscsi_key_values
+tapi_iscsi_get_key_values(iscsi_segment_data data,
+                          int key_index)
+{
+    int rc;
+
+    const asn_value *key_pair;
+    const asn_value *key_values;
+
+    if ((rc = asn_get_indexed(data, 
+                              &key_pair,
+                              key_index)) != 0)
+    {
+        ERROR("%s, %d: cannot get key pair",
+              __FUNCTION__, __LINE__);
+        return NULL;
+    }
+
+    if ((rc = asn_get_child_value(key_pair,
+                                  &key_values,
+                                  PRIVATE,
+                                  NDN_TAG_ISCSI_SD_VALUES)) != 0)
+    {
+        ERROR("%s, %d: cannot get child value",
+              __FUNCTION__, __LINE__);
+        return NULL;
+    }
+    return (iscsi_key_values)key_values;
+}
+
+int
+tapi_iscsi_get_key_values_num(iscsi_key_values values)
+{
+    int key_values_len;
+
+    if ((key_values_len = asn_get_length((asn_value *)values, "")) == -1)
+    {
+        ERROR("%s, %d: cannot get length",
+              __FUNCTION__, __LINE__);
+        return -1;
+    }
+    return key_values_len;
+}
+
+iscsi_key_value_type
+tapi_iscsi_get_key_value_type(iscsi_key_values values, int key_value_index)
+{
+    int rc;
+    
+    iscsi_key_value_type type;
+    const asn_value     *elem;
+    const asn_value     *value;
+    asn_tag_class        tag_class;
+    uint16_t             tag_val;
+        
+
+    if ((rc = asn_get_indexed(values, &elem, key_value_index)) != 0)
+    {
+        ERROR("%s, %d: cannot get value, %r",
+              __FUNCTION__, __LINE__, rc);
+        return iscsi_key_value_type_invalid;
+    }
+    if ((rc = asn_get_choice_value(elem, &value, 
+                                   &tag_class, &tag_val)) != 0)
+    {
+        ERROR("%s, %d: cannot get choice value, %r",
+              __FUNCTION__, __LINE__, rc);
+        return iscsi_key_value_type_invalid;
+    }
+    switch (tag_val)
+    {
+        case NDN_TAG_ISCSI_SD_INT_VALUE:
+        {
+            type = iscsi_key_value_type_int;
+            break;
+        }
+        case NDN_TAG_ISCSI_SD_HEX_VALUE:
+        {
+            type = iscsi_key_value_type_hex;
+            break;
+        }
+        case NDN_TAG_ISCSI_SD_STR_VALUE:
+        {
+            type = iscsi_key_value_type_string;
+            break;
+        }
+        default:
+        {
+            ERROR("%s, %d: strange tag value in asn value",
+                  __FUNCTION__, __LINE__);
+            type = iscsi_key_value_type_invalid;
+        }
+    }
+    return type;
+}
+
+int
+tapi_iscsi_get_string_key_value(iscsi_key_values values, 
+                                int key_value_index, char **str)
+{
+    int rc;
+    
+    const asn_value     *elem;
+    const asn_value     *value;
+    asn_tag_class        tag_class;
+    uint16_t             tag_val;
+        
+
+    if ((rc = asn_get_indexed(values, &elem, key_value_index)) != 0)
+    {
+        ERROR("%s, %d: cannot get value, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    if ((rc = asn_get_choice_value(elem, &value, 
+                                   &tag_class, &tag_val)) != 0)
+    {
+        ERROR("%s, %d: cannot get choice value, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    if (tag_val != iscsi_key_value_type_string)
+    {
+        ERROR("%s, %d: bad type provided, %r",
+              __FUNCTION__, __LINE__, rc);
+        return TE_EASNWRONGTYPE;
+    }
+    if ((rc = asn_read_string(value, str, "#str")) != 0)
+    {
+        ERROR("%s, %d: cannot read string, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    return 0;
+}
+
+int
+tapi_iscsi_get_int_key_value(iscsi_key_values values, 
+                             int key_value_index, int *int_val)
+{
+    int rc;
+    
+    const asn_value     *elem;
+    const asn_value     *value;
+    asn_tag_class        tag_class;
+    uint16_t             tag_val;
+    const char          *label = NULL;
+        
+
+    if ((rc = asn_get_indexed(values, &elem, 
+                              key_value_index)) != 0)
+    {
+        ERROR("%s, %d: cannot get value, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    if ((rc = asn_get_choice_value(elem, &value, 
+                                   &tag_class, &tag_val)) != 0)
+    {
+        ERROR("%s, %d: cannot get choice value, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    if ((tag_val != iscsi_key_value_type_int) && 
+        (tag_val != iscsi_key_value_type_hex))
+    {
+        ERROR("%s, %d: bad type provided, %r",
+              __FUNCTION__, __LINE__, rc);
+        return TE_EASNWRONGTYPE;
+    }
+    switch (tag_val)
+    {
+        case NDN_TAG_ISCSI_SD_INT_VALUE:
+            label = "#int";
+            break;
+        case NDN_TAG_ISCSI_SD_HEX_VALUE:
+            label = "#hex";
+            break;
+    }        
+    if ((rc = asn_read_int32(value, int_val, label)) != 0)
+    {
+        ERROR("%s, %d: cannot read inetger_value, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    return 0;
+}
+
+int
+tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
+{
+    int rc;
+
+    int key_num;
+
+    asn_value *key_pair;
+
+    if ((key_num = asn_get_length((asn_value *)data, "")) == -1)
+    {
+        ERROR("%s, %d: cannot get length",
+              __FUNCTION__, __LINE__);
+        return TAPI_ISCSI_KEY_INVALID;
+    }
+
+    if (key_index < TAPI_ISCSI_KEY_INVALID || key_index > key_num - 1)
+    {
+        ERROR("%s, %d: invalid key index parameter provided",
+              __FUNCTION__, __LINE__);
+        return TAPI_ISCSI_KEY_INVALID;
+    }
+
+    if ((key_pair = asn_init_value(ndn_iscsi_key_pair)) == NULL)
+    {
+        ERROR("%s, %d: cannot init asn_value",
+              __FUNCTION__, __LINE__);
+        return TAPI_ISCSI_KEY_INVALID;
+    }
+
+    if ((rc = asn_write_string(key_pair, name, "key")) != 0)
+    {
+        ERROR("%s, %d: cannot write string, %r",
+              __FUNCTION__, __LINE__, rc);
+        return TAPI_ISCSI_KEY_INVALID;
+    }
+    if ((rc = asn_insert_indexed(data, key_pair, key_index, "")) != 0)
+    {
+        ERROR("%s, %d: cannot insert element, %r",
+              __FUNCTION__, __LINE__);
+        return TAPI_ISCSI_KEY_INVALID;
+    }
+
+    asn_free_value(key_pair);
+    return (key_index == TAPI_ISCSI_KEY_INVALID) ? key_num : key_index;
+}
+
+
+iscsi_key_values 
+tapi_iscsi_key_values_create(int num, ...)
+{
+    int rc = 0;
+    
+    va_list list;
+
+    asn_value *key_values = NULL;
+    asn_value *key_value = NULL;
+
+    iscsi_key_value_type type;
+
+    int i;
+
+    int   int_val;
+    char *str_val;
+
+    va_start(list, num);
+    
+    if ((key_values = asn_init_value(ndn_iscsi_key_values)) == NULL)
+    {
+        ERROR("%s, %d: cannot init asn_value",
+              __FUNCTION__, __LINE__);
+        goto cleanup;
+    }
+
+    if ((key_value = asn_init_value(ndn_iscsi_key_value)) == NULL)
+    {
+        ERROR("%s, %d: cannot init asn_value",
+              __FUNCTION__, __LINE__);
+        goto cleanup;
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        type = va_arg(list, iscsi_key_value_type);
+        switch (type)
+        {
+            case iscsi_key_value_type_int:
+            {
+                int_val = va_arg(list, int);
+                if ((rc = asn_write_int32(key_value, int_val, "#int")) != 0)
+                {
+                    ERROR("%s, %d: cannot write int value, %r",
+                          __FUNCTION__, __LINE__, rc);
+                    goto cleanup;
+                }
+                break;
+            }
+            case iscsi_key_value_type_hex:
+            {
+                int_val = va_arg(list, int);
+                if ((rc = asn_write_int32(key_value, int_val, "#hex")) != 0)
+                {
+                    ERROR("%s, %d: cannot write int value, %r",
+                          __FUNCTION__, __LINE__, rc);
+                    goto cleanup;
+                }
+                break;
+            }
+            case iscsi_key_value_type_string:
+            {
+                str_val = va_arg(list, char *);
+                if ((rc = asn_write_string(key_value, 
+                                           str_val, "#str")) != 0)
+                {
+                    ERROR("%s, %d: cannot write string value, %r",
+                          __FUNCTION__, __LINE__, rc);
+                    goto cleanup;
+                }
+                break;
+            }
+            default:
+            {
+                ERROR("%s, %d: bad type provided",
+                      __FUNCTION__, __LINE__);
+                goto cleanup;
+            }
+        }
+        if ((rc = asn_insert_indexed(key_values, key_value, i, "")) != 0)
+        {
+            ERROR("%s, %d: cannot insert element, %r",
+                  __FUNCTION__, __LINE__, rc);
+            goto cleanup;
+        }
+    }
+cleanup:
+    if (key_value == NULL || key_values == NULL || rc != 0)
+    {
+        asn_free_value(key_values);
+        key_values = NULL;
+    }
+    asn_free_value(key_value);
+    return key_values;
+}
+
+int
+tapi_iscsi_set_key_values(iscsi_segment_data data,
+                          int key_index,
+                          iscsi_key_values values)
+{
+    int rc;
+
+    asn_value *key_pair;
+
+    if ((rc = asn_get_indexed(data, 
+                              (const asn_value **)&key_pair, 
+                              key_index)) != 0)
+    {
+        ERROR("%s, %d: cannot get element, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    if ((rc = asn_put_child_value_by_label(key_pair,
+                                           values, 
+                                           "values")) != 0)
+    {
+        ERROR("%s, %d: cannot put child, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    return 0;
+}    
+
+void
+tapi_iscsi_free_key_values(iscsi_key_values values)
+{
+    asn_free_value(values);
+    return;
+}
+
+int
+tapi_iscsi_delete_key(iscsi_segment_data data, int key_index)
+{
+    int rc;
+
+    if ((rc = asn_remove_indexed(data, key_index, "")) != 0)
+    {
+        ERROR("%s, %d: cannot remove element, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    return 0;
+}
+
+iscsi_segment_data
+tapi_iscsi_keys_create(int num, ...)
+{
+    int rc = 0;
+    
+    va_list list;
+
+    char *key;
+
+    asn_value *key_pair = NULL;
+    asn_value *segment_data = NULL;
+
+    int i;
+
+    va_start(list, num);
+    
+    
+    if ((segment_data = asn_init_value(ndn_iscsi_segment_data)) == NULL)
+    {
+        ERROR("%s, %d: cannot init asn_value",
+              __FUNCTION__, __LINE__);
+        goto cleanup;
+    }
+
+    if ((key_pair = asn_init_value(ndn_iscsi_key_pair)) == NULL)
+    {
+        ERROR("%s, %d: cannot init asn_value",
+              __FUNCTION__, __LINE__);
+        goto cleanup;
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        key = va_arg(list, char *);
+        if ((rc = asn_write_string(key_pair, key, "key")) != 0)
+        {
+            ERROR("%s, %d: cannot write string, %r",
+                  __FUNCTION__, __LINE__, rc);
+            goto cleanup;
+        }
+        if ((rc = asn_insert_indexed(segment_data, 
+                                     key_pair, i, "")) != 0)
+        {
+            ERROR("%s, %d: cannot insert element, %r",
+                  __FUNCTION__, __LINE__);
+            goto cleanup;
+        }
+    }    
+cleanup:
+    if (key_pair == NULL || segment_data == NULL || rc != 0)
+    {
+        asn_free_value(segment_data);
+        segment_data = NULL;
+    }
+    asn_free_value(key_pair);
+    return segment_data;
+}
+           
+void
+tapi_iscsi_keys_data_free(iscsi_segment_data segment_data)
+{
+    asn_free_value(segment_data);
+    return;
+}
+

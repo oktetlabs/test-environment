@@ -95,4 +95,162 @@ extern int tapi_iscsi_send_pkt(const char *ta_name, int sid,
                                uint8_t *buffer,
                                size_t  length);
 
+#define TAPI_ISCSI_KEY_INVALID     -1
+
+/* To read iSCSI PDU Segment Data */
+
+/**
+ * Get number of keys in iSCSI PDU Segment Data.
+ *
+ * @param segment_data iSCSI PDU Segment Data in asn format
+ * 
+ * @return number of keys ot -1 if error occured.
+ */ 
+extern int tapi_iscsi_get_key_num(iscsi_segment_data segment_data);
+
+/**
+ * Get key name from iSCSI PDU Segment Data.
+ *
+ * @param segment_data iSCSI PDU Segment Data in asn format
+ * @param key_index    key index in iSCSI PDU Segment Data
+ *
+ * @return key name or NULL if error occured.
+ */ 
+extern char * tapi_iscsi_get_key_name(iscsi_segment_data segment_data, 
+                                      int key_index);
+
+/**
+ * Get key index in iSCSI PDU Segment Data by key name.
+ *
+ * @param segment_data iSCSI PDU Segment Data in asn format
+ * @param name         key name
+ *
+ * @return key index or TAPI_ISCSI_KEY_INVALID if error occured.
+ */ 
+extern int tapi_iscsi_get_key_index_by_name(
+               iscsi_segment_data segment_data, 
+               char *name);
+
+/**
+ * Get values of key from iSCSI PDU Segment Data.
+ *
+ * @param segment_data  iSCSI PDU Segment Data in asn format 
+ * @param key_index     key index
+ *
+ * @return key values in asn format or NULL if error occured.
+ */ 
+extern iscsi_key_values tapi_iscsi_get_key_values(
+                            iscsi_segment_data segment_data,
+                            int key_index);
+
+/**
+ * Get number of key values.
+ *
+ * @param values key values in asn format
+ *
+ * @return number of values or -1 if error occured.
+ */ 
+extern int tapi_iscsi_get_key_values_num(iscsi_key_values values);
+
+/**
+ * Get type of key value.
+ *
+ * @param values           key values in asn format
+ * @param key_value_index  index of key value
+ *
+ * @return type of key value or type_invalid if error occured.
+ */ 
+extern iscsi_key_value_type tapi_iscsi_get_key_value_type(
+                                iscsi_key_values values, 
+                                int key_value_index);
+
+/**
+ * Get string key value from list of values.
+ *
+ * @param values            key values list in asn format
+ * @param key_value_index   value index in the list
+ * @param str_value         location for string value (OUT)
+ *
+ * @return 0 or error code
+ */ 
+extern int tapi_iscsi_get_string_key_value(iscsi_key_values values, 
+                                           int key_value_index, 
+                                           char **str_value);
+
+/**
+ * Get integer key value from list of values.
+ *
+ * @param values            key values list in asn format
+ * @param key_value_index   value index in the list
+ * @param int_value         location for integer value (OUT)
+ *
+ * @return 0 or error code
+ */ 
+extern int tapi_iscsi_get_int_key_value(iscsi_key_values values, 
+                                        int key_value_index, 
+                                        int *int_value);
+
+/* To modify iSCSI PDU Segment Data */
+
+/**
+ * Add a new key into an iSCSI PDU Segment Data.
+ *
+ * @param segment_data    iSCSI PDU Segment Data in asn format
+ * @param name            key name
+ * @param key_index       index of key in iSCSI PDU Segment Data
+ *
+ * @return key index or -1 if error occured.
+ */ 
+extern int tapi_iscsi_add_new_key(iscsi_segment_data segment_data, 
+                                  char *name, int key_index);
+
+/**
+ * Create list of key values in asn format
+ *
+ * @param num      number of values
+ * @param ...      list of pairs (type, value), where type
+ *                 is iscsi_key_value_type_xxx, and value is
+ *                 an appropriate type value
+ *
+ * @return list of values or NULL if error occured.                
+ */ 
+extern iscsi_key_values tapi_iscsi_key_values_create(int num, ...);
+
+/**
+ * Assign a list of values to a key in iSCSI PDU Segment Data
+ *
+ * @param segment_data  iSCSI PDU Segment Data in asn format
+ * @param key_index     key index
+ * @param values        list of key values in asn format
+ *
+ * @return 0 or error code.
+ */ 
+extern int tapi_iscsi_set_key_values(iscsi_segment_data segment_data,
+                                     int key_index, 
+                                     iscsi_key_values values);
+
+/**
+ * Free list of key values
+ *
+ * @param values list of key values.
+ */ 
+extern void tapi_iscsi_free_key_values(iscsi_key_values values);
+
+/**
+ * Delete a key from iSCSI PDU Segment Data in asn format
+ *
+ * @param segment_data    iSCSI PDU Segment Data in asn format
+ * @param key_index       key index
+ *
+ * @return 0 or error code.
+ */ 
+extern int tapi_iscsi_delete_key(iscsi_segment_data segment_data, 
+                                 int key_index);
+
+/**
+ * 
+ */ 
+extern iscsi_segment_data tapi_iscsi_keys_create(int num, ...);
+
+extern void tapi_iscsi_keys_data_free(iscsi_segment_data);
 #endif /* !__TE_TAPI_ISCSI_H__ */
