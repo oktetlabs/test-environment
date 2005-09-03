@@ -183,7 +183,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
     {
         if ((rc = asn_get_indexed(segment_data, 
                                   (const asn_value **)&key_pair, 
-                                  segment_data_index)) != 0)
+                                  segment_data_index++)) != 0)
         {
             ERROR("%s, %d: cannot get segment data length", 
                   __FUNCTION__, __LINE__);
@@ -238,7 +238,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
         {
             if ((rc = asn_get_indexed(key_values, 
                                       (const asn_value **)&key_value, 
-                                      key_values_index)) != 0)
+                                      key_values_index++)) != 0)
             {
                 ERROR("%s, %d: cannot get key_value",
                       __FUNCTION__, __LINE__);
@@ -258,7 +258,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                 {
                     if ((rc = asn_read_int32(value, 
                                              &int_value, 
-                                             "#int")) != 0)
+                                             "")) != 0)
                     {
                         ERROR("%s, %d: cannot read int value",
                               __FUNCTION__, __LINE__);
@@ -279,7 +279,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                 {
                     if ((rc = asn_read_int32(value, 
                                              &int_value, 
-                                             "#hex")) != 0)
+                                             "")) != 0)
                     {
                         ERROR("%s, %d: cannot read int value",
                               __FUNCTION__, __LINE__);
@@ -294,13 +294,20 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                 {
                     if ((rc = asn_read_string(value, 
                                               &str_value, 
-                                              "#str")) != 0)
+                                              "")) != 0)
                     {
                         ERROR("%s, %d: cannot read string value, %r",
                               __FUNCTION__, __LINE__, rc);
                         return rc;
                     }
+
+                    ERROR("Here we are %s", str_value);
+                    ERROR("key_value_index %d, key_values_len %d",
+                          key_values_index, key_values_len);
+                    snprintf(current, "%s", str_value);
+#if 0                    
                     strncpy(current, str_value, strlen(str_value));
+#endif                    
                     write_data_len += strlen(str_value);
                     current += strlen(str_value);
                     break;
