@@ -13,6 +13,7 @@ SEC_P = unh_target/security
 noinst_HEADERS=tad_iscsi_impl.h \
 	       unh_target/target/my_login.h \
 	       unh_target/target/scsi_target.h \
+	       unh_target/target/iscsi_target.h \
 	       unh_target/target/iscsi_portal_group.h \
 	       unh_target/userland_lib/my_memory.h \
 	       unh_target/userland_lib/thread_communication.h \
