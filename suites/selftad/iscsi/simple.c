@@ -203,7 +203,7 @@ main(int argc, char *argv[])
 
         if ((rc = bin_data2asn(rx_buffer + 48,
                                sizeof(iscsi_login_request) - 48,
-                               &segment_data)) != 0:147
+                               &segment_data)) != 0
             )
         {
             TEST_FAIL("bin_data2asn failed:  %r", rc);
