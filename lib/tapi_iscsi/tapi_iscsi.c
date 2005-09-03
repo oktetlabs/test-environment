@@ -460,7 +460,7 @@ tapi_iscsi_get_string_key_value(iscsi_key_values values,
               __FUNCTION__, __LINE__, rc);
         return TE_EASNWRONGTYPE;
     }
-    if ((rc = asn_read_string(value, str, "#str")) != 0)
+    if ((rc = asn_read_string(value, str, "")) != 0)
     {
         ERROR("%s, %d: cannot read string, %r",
               __FUNCTION__, __LINE__, rc);
@@ -479,7 +479,6 @@ tapi_iscsi_get_int_key_value(iscsi_key_values values,
     const asn_value     *value;
     asn_tag_class        tag_class;
     uint16_t             tag_val;
-    const char          *label = NULL;
         
 
     if ((rc = asn_get_indexed(values, &elem, 
@@ -503,16 +502,7 @@ tapi_iscsi_get_int_key_value(iscsi_key_values values,
               __FUNCTION__, __LINE__, rc);
         return TE_EASNWRONGTYPE;
     }
-    switch (tag_val)
-    {
-        case NDN_TAG_ISCSI_SD_INT_VALUE:
-            label = "#int";
-            break;
-        case NDN_TAG_ISCSI_SD_HEX_VALUE:
-            label = "#hex";
-            break;
-    }        
-    if ((rc = asn_read_int32(value, int_val, label)) != 0)
+    if ((rc = asn_read_int32(value, int_val, "")) != 0)
     {
         ERROR("%s, %d: cannot read inetger_value, %r",
               __FUNCTION__, __LINE__, rc);
