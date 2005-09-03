@@ -15,11 +15,12 @@
             <script name="simple">
             </script>
         </run> 
-
+<!--
         <run>
             <script name="establish">
             </script>
         </run> 
+-->
     </session>
 
 </package>
