@@ -6,7 +6,27 @@ AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir) \
 
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
-noinst_HEADERS=tad_iscsi_impl.h
+COM_P = unh_target/common
+
+SEC_P = unh_target/security
+
+noinst_HEADERS=tad_iscsi_impl.h \
+	       unh_target/target/my_login.h \
+	       unh_target/target/scsi_target.h \
+	       unh_target/target/iscsi_portal_group.h \
+	       unh_target/userland_lib/my_memory.h \
+	       unh_target/userland_lib/thread_communication.h \
+	       $(COM_P)/list.h \
+	       $(COM_P)/iscsi_common.h \
+	       $(COM_P)/debug.h \
+	       $(COM_P)/range.h \
+	       $(COM_P)/crc.h \
+	       $(COM_P)/text_param.h \
+	       $(COM_P)/target_negotiate.h \
+	       $(COM_P)/tcp_utilities.h \
+	       $(SEC_P)/misc/misc_func.h \
+	       $(SEC_P)/chap/chap.h \
+	       $(SEC_P)/srp/srp.h
 
 noinst_LIBRARIES=libtad_iscsi.a
 
@@ -14,7 +34,6 @@ UNH_TGT = unh_target/target/my_login.c \
 	  unh_target/target/iscsi_portal_group.c
 
 
-COM_P = unh_target/common
 
 UNH_COMMON = $(COM_P)/range.c  \
 	     $(COM_P)/debug.c\
@@ -27,7 +46,6 @@ UNH_COMMON = $(COM_P)/range.c  \
 UNH_UL = unh_target/userland_lib/my_memory.c \
 	 unh_target/userland_lib/thread_communication.c
 
-SEC_P = unh_target/security
 
 UNH_SEC =   $(SEC_P)/chap/chap.c 	\
 	    $(SEC_P)/srp/srp.c  	\
