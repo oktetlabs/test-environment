@@ -78,10 +78,16 @@ typedef asn_value *iscsi_segment_data;
 typedef asn_value *iscsi_key_values;
 
 typedef enum {
-    iscsi_key_value_type_int,
-    iscsi_key_value_type_hex,
-    iscsi_key_value_type_string,
+    iscsi_key_value_type_invalid = -1,
+    iscsi_key_value_type_int = 0,
+    iscsi_key_value_type_hex = 1,
+    iscsi_key_value_type_string = 2,
 } iscsi_key_value_type;    
+
+extern const asn_type * const ndn_iscsi_segment_data;
+extern const asn_type * const ndn_iscsi_key_pair;
+extern const asn_type * const ndn_iscsi_key_values;
+extern const asn_type * const ndn_iscsi_key_value;
 
 extern int
 asn2bin_data(asn_value *segment_data, 

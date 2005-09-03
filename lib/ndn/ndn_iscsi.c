@@ -294,8 +294,8 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                                               &str_value, 
                                               "#str")) != 0)
                     {
-                        ERROR("%s, %d: cannot read string value",
-                              __FUNCTION__, __LINE__);
+                        ERROR("%s, %d: cannot read string value, %r",
+                              __FUNCTION__, __LINE__, rc);
                         return rc;
                     }
                     strncpy(current, str_value, strlen(str_value));
@@ -331,10 +331,13 @@ parse_key_value(char *str, asn_value *value)
     int rc;
 
     uint32_t int_value;
+
+    ERROR("Parsing key value");
     
     /* String value */
     if (!isdigit(*str))
     {    
+        ERROR("Key value is string %s", str);
         if ((rc = asn_write_string(value, 
                                    str, 
                                    "#str")) != 0)
@@ -347,6 +350,7 @@ parse_key_value(char *str, asn_value *value)
             
     else
     {
+        ERROR("Key value is digit %s", str);
         if ((strlen(str)) > 3 && (strcmp(str, "0x") == 0))
         {    
             int_value = strtol(str, NULL, 16);
@@ -447,9 +451,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
         eq_delimiter = strchr(current, '=');        
         if (eq_delimiter == NULL)
         {
-            ERROR("%s, %d: cannot find delimiter '='",
-                  __FUNCTION__, __LINE__);
-            return TE_EFMT;
+            goto padding;
         }
         *eq_delimiter = '\0';
         
@@ -463,6 +465,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
         {
             ERROR("%s, %d: cannot write string",
                   __FUNCTION__, __LINE__);
+            ERROR("key is %s", current);
             return rc;
         }
         
@@ -526,6 +529,23 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
         asn_free_value(key_pair);
     }
     
+padding:
+    while (parsed_len < data_len)
+    {
+       if (*current != '\0')
+       {
+           ERROR("%s, %d: padding is not zeroed");
+           return TE_EFMT;
+       }
+       current++;
+       parsed_len++;
+    }
+    if (parsed_len > data_len)
+    {
+        ERROR("%s, %d: Parse error: parsed length is bigger than given",
+              __FUNCTION__, __LINE__);
+        return TE_EFMT;
+    }
     if (parsed_len > data_len)
     {
         ERROR("%s, %d: Parse error: parsed length is bigger than given",
