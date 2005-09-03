@@ -86,7 +86,9 @@ uint8_t iscsi_login_request[] = {
 0x68, 0x6f, 0x64, 0x3d, 0x4e, 0x6f, 0x6e, 0x65,
 0x00, 0x00, 0x00, 0x00
 };
-
+#if 0
+uint8_t iscsi_login_request[sizeof(iscsi_login_request_copy)] = {0x0,};
+#endif
 int
 main(int argc, char *argv[]) 
 { 
@@ -119,7 +121,37 @@ main(int argc, char *argv[])
     agt_b = ta + strlen(ta) + 1;
 
     INFO("Found second TA: %s", agt_b, len);
+    
+#if 0    
+    {
+        asn_value_p segment_data;
+        int key_num; 
+        char *key_name;
+        int key_index;
+        iscsi_key_values values;
 
+        uint32_t  len;
+
+        if ((rc = bin_data2asn(iscsi_login_request_copy + 48,
+                               sizeof(iscsi_login_request_copy) - 48,
+                               &segment_data)) != 0)
+        {
+            TEST_FAIL("bin_data2asn failed:  %r", rc);
+        }
+
+        memcpy(iscsi_login_request, iscsi_login_request_copy, 
+               sizeof(iscsi_login_request_copy));
+        printf("sizeof iscsi pdu %d, %d", 
+               sizeof(iscsi_login_request_copy), 
+               sizeof(iscsi_login_request));
+        
+        len = sizeof(iscsi_login_request) - 48;
+
+        if ((rc = asn2bin_data(segment_data, 
+                               iscsi_login_request + 48, &len)) != 0)
+            TEST_FAIL("asn2bin_data failed");
+    }
+#endif    
 
     rc = tapi_iscsi_csap_create(agt_a, 0, &iscsi_csap);
     if (rc != 0)
@@ -151,6 +183,86 @@ main(int argc, char *argv[])
         TEST_FAIL("recv on CSAP failed: %r", rc); 
 
     INFO("+++++++++++ Received data: %tm", rx_buffer, len);
+
+#if 1
+    {
+        asn_value_p segment_data;
+        int key_num; 
+        char *key_name;
+        int key_index;
+        
+        iscsi_key_values values;
+        int key_values_num;
+        int key_values_index;
+
+        iscsi_key_value_type type;
+
+        char *str_value;
+        int   int_value;
+        
+
+        if ((rc = bin_data2asn(rx_buffer + 48,
+                               sizeof(iscsi_login_request) - 48,
+                               &segment_data)) != 0:147
+            )
+        {
+            TEST_FAIL("bin_data2asn failed:  %r", rc);
+        }
+
+        if ((key_num = tapi_iscsi_get_key_num(segment_data)) == -1)
+            TEST_FAIL("Cannot get key number");
+
+        printf("\nkey number is %d\n", key_num);
+
+        for (key_index = 0; key_index < key_num; key_index++)
+        {
+            if ((key_name = tapi_iscsi_get_key_name(segment_data, 
+                                                    key_index)) == NULL)
+                TEST_FAIL("Cannot get key name");
+            printf("\nkey_name is %s\n", key_name);
+            if ((values = tapi_iscsi_get_key_values(segment_data, 
+                                                    key_index)) == NULL)
+                TEST_FAIL("Cannot get key values");
+
+            if ((key_values_num = tapi_iscsi_get_key_values_num(values
+                                                                )) == -1)
+            {
+                TEST_FAIL("Cannot get values num");
+            }
+            printf("\nvalues num is %d\n", key_values_num);
+
+            for (key_values_index = 0; 
+                 key_values_index < key_values_num; 
+                 key_values_index++)
+            {
+                if ((type = tapi_iscsi_get_key_value_type(values, 
+                                key_values_index)) 
+                    == iscsi_key_value_type_invalid)
+                    TEST_FAIL("Cannot get type");         
+                switch (type)
+                {
+                    case iscsi_key_value_type_int:
+                    case iscsi_key_value_type_hex:    
+                    {    
+                        if ((rc = tapi_iscsi_get_int_key_value(values, 
+                                      key_values_index, &int_value)) != 0)
+                            TEST_FAIL("cannot get int value");
+                        printf("\nget int value %d\n", int_value);
+                        break;
+                    }    
+                    case iscsi_key_value_type_string:
+                    {
+                        if ((rc = tapi_iscsi_get_string_key_value(values, 
+                                      key_values_index, &str_value)) != 0)
+                            TEST_FAIL("cannot get string value");
+                        printf("\nget string value %s\n", str_value);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+#endif    
 
 #if 0
     /* temporary check, while there is dummy 'target' on TA */
