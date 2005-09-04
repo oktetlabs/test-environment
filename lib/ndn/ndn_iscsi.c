@@ -304,7 +304,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                     ERROR("Here we are %s", str_value);
                     ERROR("key_value_index %d, key_values_len %d",
                           key_values_index, key_values_len);
-                    snprintf(current, "%s", str_value);
+                    sprintf(current, "%s", str_value);
 #if 0                    
                     strncpy(current, str_value, strlen(str_value));
 #endif                    
