@@ -248,9 +248,19 @@ extern int tapi_iscsi_delete_key(iscsi_segment_data segment_data,
                                  int key_index);
 
 /**
- * 
- */ 
+ * Create an iSCSI PDU Segment Data in asn format.
+ *
+ * @param num           number of keys in iSCSI PDU Segment Data
+ * @param ...           list of keys names
+ *
+ * @return              iSCSI PDU Segment Data in  asn format
+ *                      or NULL if error occured
+ */                      
 extern iscsi_segment_data tapi_iscsi_keys_create(int num, ...);
 
+/**
+ * Free an iSCSI PDU Segment Data.
+ */ 
 extern void tapi_iscsi_keys_data_free(iscsi_segment_data);
+
 #endif /* !__TE_TAPI_ISCSI_H__ */
