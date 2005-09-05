@@ -27,6 +27,8 @@ noinst_HEADERS=tad_iscsi_impl.h \
 	       $(COM_P)/tcp_utilities.h \
 	       $(SEC_P)/misc/misc_func.h \
 	       $(SEC_P)/chap/chap.h \
+	       $(SEC_P)/hash/sha1.h \
+	       $(SEC_P)/hash/md5.h \
 	       $(SEC_P)/srp/srp.h
 
 noinst_LIBRARIES=libtad_iscsi.a
