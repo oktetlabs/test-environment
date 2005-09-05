@@ -74,7 +74,7 @@ get_redline()
 {
     if test -z "${GET_REDLINE}" ; then
         svn co https://svn.oktetlabs.ru/svnroot/oktetlabs/qms/trunk/redline/ \
-               /tmp/redline || echo exit 1
+               /tmp/redline || (rm -f tcs.tmp; exit 1)
         GET_REDLINE=yes
     fi        
 }
@@ -151,9 +151,10 @@ START_DIR=`pwd`
 MAIN_SUITE_NAME=`basename $START_DIR`
 AUTHOR_NAME=`finger $USER | awk '{ print $4 ; nextfile ; }'`
 AUTHOR_FNAME=`finger $USER | awk '{ print $5 ; nextfile ; }'`
+cat $1 | grep -v '#' > tsc.tmp
 
 # Extract user-specific part of Makefile.am from the TS description
-cat $1 | awk '/^dir/ { nextfile; } { print $0 ; }' > Makefile.am.inc
+cat tsc.tmp | awk '/^dir/ { nextfile; } { print $0 ; }' > Makefile.am.inc
 
 
 # Create root files, if necessary
@@ -480,9 +481,10 @@ process_line()
 # Go via directories creating necessary files
 
 DIR=
-cat $1 | while read msg ; do process_line $msg ; done
+cat tsc.tmp | while read msg ; do process_line $msg ; done
 
 rm -f Makefile.am.inc
+rm -f tsc.tmp
 
 #aclocal
 #autoheader
