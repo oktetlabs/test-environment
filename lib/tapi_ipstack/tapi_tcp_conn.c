@@ -423,6 +423,7 @@ conn_send_syn(tapi_tcp_connection_t *conn_descr)
     } while (0)
 
     conn_descr->seq_sent = conn_descr->our_isn;
+    conn_descr->last_len_sent = 0;
 
     rc = tapi_tcp_template(conn_descr->our_isn, 0, TRUE, FALSE, 
                            NULL, 0, &syn_template);
@@ -790,13 +791,13 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
 
     if (rc == TE_ETIMEDOUT && !is_server)
     {
-        RING("%s(): re-send SYN");
+        RING("%s(): re-send SYN", __FUNCTION__);
         conn_send_syn(conn_descr);
         rc = conn_wait_msg(conn_descr, timeout);
 
         if (rc == TE_ETIMEDOUT)
         {
-            RING("%s(): re-send SYN again");
+            RING("%s(): re-send SYN again", __FUNCTION__);
             conn_send_syn(conn_descr);
             rc = conn_wait_msg(conn_descr, timeout);
         }
