@@ -60,9 +60,9 @@
 #include "ndn_ipstack.h"
 
 uint8_t tx_buffer[10000];
-uint8_t rx_buffer[10000];
+uint8_t rx_buffer[1000000];
 
-
+#if 0
 uint8_t iscsi_login_request[] = {
 0x43, 0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x71,
 0x40, 0x00, 0x01, 0x37, 0x00, 0x00, 0x00, 0x00,
@@ -86,6 +86,58 @@ uint8_t iscsi_login_request[] = {
 0x68, 0x6f, 0x64, 0x3d, 0x4e, 0x6f, 0x6e, 0x65,
 0x00, 0x00, 0x00, 0x00
 };
+#else
+
+uint8_t iscsi_login_request[] = {
+#if 0
+0x00, 0x11, 0x2f, 0x6b, 0x22, 0xca, 0x00, 0x0e, 
+0x0c, 0x4d, 0x47, 0x02, 0x08, 0x00, 0x45, 0x00,  
+0x01, 0x4c, 0xe5, 0x4e, 0x40, 0x00, 0x40, 0x06, 
+0x88, 0xde, 0xc0, 0xa8, 0x25, 0x22, 0xc0, 0xa8, 
+0x25, 0x0c, 0x80, 0x3a, 0x0c, 0xbc, 0x5b, 0x24, 
+0x88, 0xbc, 0xf7, 0xeb, 0xb9, 0x22, 0x80, 0x18,
+0x00, 0xb7, 0x73, 0xc0, 0x00, 0x00, 0x01, 0x01, 
+0x08, 0x0a, 0x00, 0xda, 0x64, 0x5e, 0x23, 0x21,
+0x3e, 0xd7, 
+#endif
+0x43, 0x87, 0x00, 0x00, 0x00, 0x00, 
+0x00, 0xe5, 0x80, 0x12, 0x34, 0x56, 0x78, 0x9a, 
+0x00, 0x00, 0x00, 0x01, 0x5b, 0x38, 0x00, 0x02, 
+0x00, 0x00, 0x00, 0x00, 0x56, 0xce, 0x00, 0x00,
+0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+0x00, 0x00, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 
+0x44, 0x69, 0x67, 0x65, 0x73, 0x74, 0x3d, 0x43,
+0x52, 0x43, 0x33, 0x32, 0x43, 0x2c, 0x4e, 0x6f, 
+0x6e, 0x65, 0x00, 0x44, 0x61, 0x74, 0x61, 0x44,
+0x69, 0x67, 0x65, 0x73, 0x74, 0x3d, 0x43, 0x52, 
+0x43, 0x33, 0x32, 0x43, 0x2c, 0x4e, 0x6f, 0x6e,
+0x65, 0x00, 0x49, 0x6e, 0x69, 0x74, 0x69, 0x61, 
+0x6c, 0x52, 0x32, 0x54, 0x3d, 0x4e, 0x6f, 0x00,
+0x4d, 0x61, 0x78, 0x42, 0x75, 0x72, 0x73, 0x74, 
+0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x3d, 0x33,
+0x32, 0x37, 0x36, 0x38, 0x00, 0x46, 0x69, 0x72, 
+0x73, 0x74, 0x42, 0x75, 0x72, 0x73, 0x74, 0x4c,
+0x65, 0x6e, 0x67, 0x74, 0x68, 0x3d, 0x31, 0x36, 
+0x33, 0x38, 0x34, 0x00, 0x44, 0x65, 0x66, 0x61,
+0x75, 0x6c, 0x74, 0x54, 0x69, 0x6d, 0x65, 0x32, 
+0x57, 0x61, 0x69, 0x74, 0x3d, 0x31, 0x30, 0x00,
+0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x54, 
+0x69, 0x6d, 0x65, 0x32, 0x52, 0x65, 0x74, 0x61,
+0x69, 0x6e, 0x3d, 0x36, 0x00, 0x4d, 0x61, 0x78, 
+0x4f, 0x75, 0x74, 0x73, 0x74, 0x61, 0x6e, 0x64,
+0x69, 0x6e, 0x67, 0x52, 0x32, 0x54, 0x3d, 0x34, 
+0x00, 0x44, 0x61, 0x74, 0x61, 0x50, 0x44, 0x55,
+0x49, 0x6e, 0x4f, 0x72, 0x64, 0x65, 0x72, 0x3d, 
+0x4e, 0x6f, 0x00, 0x44, 0x61, 0x74, 0x61, 0x53,
+0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x49, 
+0x6e, 0x4f, 0x72, 0x64, 0x65, 0x72, 0x3d, 0x4e,
+0x6f, 0x00, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 
+0x65, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x4c,
+0x65, 0x76, 0x65, 0x6c, 0x3d, 0x30, 0x00, 0x00, 
+0x00, 0x00
+};
+#endif
 #if 0
 uint8_t iscsi_login_request[sizeof(iscsi_login_request_copy)] = {0x0,};
 #endif
@@ -101,89 +153,7 @@ main(int argc, char *argv[])
     size_t  len = sizeof(ta);
 
     TEST_START; 
-
-    {
-        struct timeval now;
-        gettimeofday(&now, NULL);
-        srand(now.tv_usec);
-    }
-
     
-    if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
-
-    INFO("Found first TA: %s; len %d", ta, len);
-
-    agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
-        TEST_FAIL("There is no second Test Agent");
-
-    agt_b = ta + strlen(ta) + 1;
-
-    INFO("Found second TA: %s", agt_b, len);
-    
-#if 0    
-    {
-        asn_value_p segment_data;
-        int key_num; 
-        char *key_name;
-        int key_index;
-        iscsi_key_values values;
-
-        uint32_t  len;
-
-        if ((rc = bin_data2asn(iscsi_login_request_copy + 48,
-                               sizeof(iscsi_login_request_copy) - 48,
-                               &segment_data)) != 0)
-        {
-            TEST_FAIL("bin_data2asn failed:  %r", rc);
-        }
-
-        memcpy(iscsi_login_request, iscsi_login_request_copy, 
-               sizeof(iscsi_login_request_copy));
-        printf("sizeof iscsi pdu %d, %d", 
-               sizeof(iscsi_login_request_copy), 
-               sizeof(iscsi_login_request));
-        
-        len = sizeof(iscsi_login_request) - 48;
-
-        if ((rc = asn2bin_data(segment_data, 
-                               iscsi_login_request + 48, &len)) != 0)
-            TEST_FAIL("asn2bin_data failed");
-    }
-#endif    
-
-    rc = tapi_iscsi_csap_create(agt_a, 0, &iscsi_csap);
-    if (rc != 0)
-        TEST_FAIL("iSCSI csap create failed: %r", rc); 
-
-#if 0
-    len = 200;
-    te_fill_buf(tx_buffer, len);
-    INFO("+++++++++++ Prepared data: %tm", tx_buffer, len);
-#endif
-    {
-        int i;
-        size_t portion = 2;
-        for (i = 0; i < sizeof (iscsi_login_request); i+= portion)
-        {
-            rc = tapi_iscsi_send_pkt(agt_a, 0, iscsi_csap, NULL,
-                                     iscsi_login_request + i, portion);
-            if (rc != 0)
-                TEST_FAIL("send on CSAP failed: %r", rc); 
-        }
-    }
-
-    len = sizeof(rx_buffer);
-    memset(rx_buffer, 0, len);
-    rc = tapi_iscsi_recv_pkt(agt_a, 0, iscsi_csap, 2000, 
-                              CSAP_INVALID_HANDLE, NULL, 
-                              rx_buffer, &len);
-    if (rc != 0)
-        TEST_FAIL("recv on CSAP failed: %r", rc); 
-
-    INFO("+++++++++++ Received data: %tm", rx_buffer, len);
-
 #if 1
     {
         asn_value_p segment_data;
@@ -201,7 +171,7 @@ main(int argc, char *argv[])
         int   int_value;
         
 
-        if ((rc = bin_data2asn(rx_buffer + 48,
+        if ((rc = bin_data2asn(iscsi_login_request + 48,
                                sizeof(iscsi_login_request) - 48,
                                &segment_data)) != 0
             )
@@ -261,23 +231,94 @@ main(int argc, char *argv[])
                 }
             }
         }
+
+        printf("\n----------------------------------\n");
+        {
+            iscsi_key_values values;
+            rc = tapi_iscsi_add_new_key(segment_data, "NewKey", 
+                                        key_num - 1);
+            if (rc < 0)
+            {
+                ERROR("tapi_iscsi_add_new_key() failed, rc = %d", rc);
+            }
+            values = tapi_iscsi_key_values_create(2, 
+                                                  iscsi_key_value_type_int,
+                                                  239,
+                                iscsi_key_value_type_string,
+                                                  "renata's API is "
+                                                  "not working");
+            if (values == NULL)
+            {
+                ERROR("tapi_iscsi_key_values_create() failed, rc = %d", rc);
+            }
+            tapi_iscsi_set_key_values(segment_data, key_num - 1,
+                                      values);
+            if (rc < 0)
+            {
+                ERROR("tapi_iscsi_set_key_values() failed, rc = %d", rc);
+            }
+        }
+
+        /***********************************/
+        if ((key_num = tapi_iscsi_get_key_num(segment_data)) == -1)
+            TEST_FAIL("Cannot get key number");
+
+        printf("\nkey number is %d\n", key_num);
+
+        for (key_index = 0; key_index < key_num; key_index++)
+        {
+            if ((key_name = tapi_iscsi_get_key_name(segment_data, 
+                                                    key_index)) == NULL)
+                TEST_FAIL("Cannot get key name");
+            printf("\nkey_name is %s\n", key_name);
+            if ((values = tapi_iscsi_get_key_values(segment_data, 
+                                                    key_index)) == NULL)
+                TEST_FAIL("Cannot get key values");
+
+            if ((key_values_num = tapi_iscsi_get_key_values_num(values
+                                                                )) == -1)
+            {
+                TEST_FAIL("Cannot get values num");
+            }
+            printf("\nvalues num is %d\n", key_values_num);
+
+            for (key_values_index = 0; 
+                 key_values_index < key_values_num; 
+                 key_values_index++)
+            {
+                if ((type = tapi_iscsi_get_key_value_type(values, 
+                                key_values_index)) 
+                    == iscsi_key_value_type_invalid)
+                    TEST_FAIL("Cannot get type");         
+                switch (type)
+                {
+                    case iscsi_key_value_type_int:
+                    case iscsi_key_value_type_hex:    
+                    {    
+                        if ((rc = tapi_iscsi_get_int_key_value(values, 
+                                      key_values_index, &int_value)) != 0)
+                            TEST_FAIL("cannot get int value");
+                        printf("\nget int value %d\n", int_value);
+                        break;
+                    }    
+                    case iscsi_key_value_type_string:
+                    {
+                        if ((rc = tapi_iscsi_get_string_key_value(values, 
+                                      key_values_index, &str_value)) != 0)
+                            TEST_FAIL("cannot get string value");
+                        printf("\nget string value %s\n", str_value);
+                        break;
+                    }
+                }
+            }
+        }
+        /****************************************/
+        
     }
 #endif    
-
-#if 0
-    /* temporary check, while there is dummy 'target' on TA */
-    rc = memcmp(tx_buffer, rx_buffer, len);
-    if (rc != 0)
-        TEST_FAIL("iSCSI: sent and received data differ, rc = %d", rc);
-#endif
-
-
     TEST_SUCCESS;
 
 cleanup:
-
-    if (iscsi_csap != CSAP_INVALID_HANDLE)
-        rcf_ta_csap_destroy(agt_a, 0, iscsi_csap);
 
     TEST_END;
 }
