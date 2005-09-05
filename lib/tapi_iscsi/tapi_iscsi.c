@@ -139,9 +139,6 @@ iscsi_msg_handler(char *pkt_fname, void *user_param)
     asn_free_value(pkt);
 }
 
-
-
-
 int
 tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
                     int timeout, csap_handle_t forward,
@@ -576,6 +573,8 @@ tapi_iscsi_key_values_create(int num, ...)
     int   int_val;
     char *str_val;
 
+    const char *label;
+
     va_start(list, num);
     
     if ((key_values = asn_init_value(ndn_iscsi_key_values)) == NULL)
@@ -585,21 +584,23 @@ tapi_iscsi_key_values_create(int num, ...)
         goto cleanup;
     }
 
-    if ((key_value = asn_init_value(ndn_iscsi_key_value)) == NULL)
-    {
-        ERROR("%s, %d: cannot init asn_value",
-              __FUNCTION__, __LINE__);
-        goto cleanup;
-    }
-
     for (i = 0; i < num; i++)
     {
         type = va_arg(list, iscsi_key_value_type);
+        if ((key_value = asn_init_value(ndn_iscsi_key_value)) == NULL)
+        {
+            ERROR("%s, %d: cannot init asn_value",
+                  __FUNCTION__, __LINE__);
+            rc = -1;
+            goto cleanup;
+        }
+
         switch (type)
         {
             case iscsi_key_value_type_int:
             {
                 int_val = va_arg(list, int);
+                label = "#int";
                 if ((rc = asn_write_int32(key_value, int_val, "#int")) != 0)
                 {
                     ERROR("%s, %d: cannot write int value, %r",
@@ -611,6 +612,7 @@ tapi_iscsi_key_values_create(int num, ...)
             case iscsi_key_value_type_hex:
             {
                 int_val = va_arg(list, int);
+                label = "#hex";
                 if ((rc = asn_write_int32(key_value, int_val, "#hex")) != 0)
                 {
                     ERROR("%s, %d: cannot write int value, %r",
@@ -622,6 +624,7 @@ tapi_iscsi_key_values_create(int num, ...)
             case iscsi_key_value_type_string:
             {
                 str_val = va_arg(list, char *);
+                label = "#str";
                 if ((rc = asn_write_string(key_value, 
                                            str_val, "#str")) != 0)
                 {
@@ -644,14 +647,14 @@ tapi_iscsi_key_values_create(int num, ...)
                   __FUNCTION__, __LINE__, rc);
             goto cleanup;
         }
+        asn_free_value(key_value);
     }
 cleanup:
-    if (key_value == NULL || key_values == NULL || rc != 0)
+    if (key_values == NULL || rc != 0)
     {
         asn_free_value(key_values);
         key_values = NULL;
     }
-    asn_free_value(key_value);
     return key_values;
 }
 
