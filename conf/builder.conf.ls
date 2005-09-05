@@ -7,11 +7,11 @@
 # Host platform
 #
 TE_PLATFORM([], [], [], [], \
-            [tools rpc_types ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi \
-             tapi comm_net_engine rcfunix loggerta comm_net_agent rcfpch \
-             rcfrpc tce tapi_rpc tapi_tad tapi_eth tapi_bridge tapi_arp \
-             tapi_ipstack tapi_dhcp tapi_snmp tapi_cli tapi_iscsi\
-             asn ndn tad ])
+            [tools rpc_types ipc bsapi loggerten rpcxdr rcfapi conf_oid \
+             confapi tapi comm_net_engine rcfunix loggerta comm_net_agent \
+             rcfpch  rcfrpc tce asn ndn tapi_rpc tapi_tad tapi_eth \
+             tapi_bridge  tapi_arp tapi_ipstack tapi_dhcp tapi_snmp \
+             tapi_cli tapi_iscsi tad ])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
