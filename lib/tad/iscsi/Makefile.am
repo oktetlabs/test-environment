@@ -29,6 +29,7 @@ noinst_HEADERS=tad_iscsi_impl.h \
 	       $(SEC_P)/chap/chap.h \
 	       $(SEC_P)/hash/sha1.h \
 	       $(SEC_P)/hash/md5.h \
+	       $(SEC_P)/math/bigint.h \
 	       $(SEC_P)/srp/srp.h
 
 noinst_LIBRARIES=libtad_iscsi.a
