@@ -270,8 +270,8 @@ tapi_iscsi_get_key_name(iscsi_segment_data segment_data, int key_index)
                               &key_pair,
                               key_index)) != 0)
     {
-        ERROR("%s, %d: cannot get key pair",
-              __FUNCTION__, __LINE__);
+        ERROR("%s, %d: cannot get key pair, %r",
+              __FUNCTION__, __LINE__, rc);
         return NULL;
     }
 
@@ -343,8 +343,8 @@ tapi_iscsi_get_key_values(iscsi_segment_data data,
                               &key_pair,
                               key_index)) != 0)
     {
-        ERROR("%s, %d: cannot get key pair",
-              __FUNCTION__, __LINE__);
+        ERROR("%s, %d: cannot get key pair, %r",
+              __FUNCTION__, __LINE__, rc);
         return NULL;
     }
 
@@ -353,8 +353,8 @@ tapi_iscsi_get_key_values(iscsi_segment_data data,
                                   PRIVATE,
                                   NDN_TAG_ISCSI_SD_VALUES)) != 0)
     {
-        ERROR("%s, %d: cannot get child value",
-              __FUNCTION__, __LINE__);
+        ERROR("%s, %d: cannot get child value, %r",
+              __FUNCTION__, __LINE__, rc);
         return NULL;
     }
     return (iscsi_key_values)key_values;
