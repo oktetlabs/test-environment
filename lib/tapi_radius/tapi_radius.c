@@ -659,6 +659,7 @@ tapi_radius_callback(const udp4_datagram *pkt, void *userdata)
               __FUNCTION__, inet_ntoa(pkt->dst_addr), pkt->dst_port);
         return;
     }
+    packet.ts = pkt->ts;
     cb_data->callback(&packet, cb_data->userdata);
     tapi_radius_attr_list_free(&packet.attrs);
 }

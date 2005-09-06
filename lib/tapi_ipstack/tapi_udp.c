@@ -111,6 +111,14 @@ ndn_udp4_dgram_to_plain(asn_value_p pkt, udp4_datagram **udp_dgram)
 
     memset(*udp_dgram, 0, sizeof(**udp_dgram));
 
+    asn_save_to_file(pkt, "/tmp/asn_file.asn");
+
+    if ((rc = ndn_get_timestamp(pkt, &((*udp_dgram)->ts))) != 0)
+    {
+        free(*udp_dgram);
+        return TE_RC(TE_TAPI, rc);
+    }
+
     pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be UDP PDU */
 
     if (pdu == NULL)

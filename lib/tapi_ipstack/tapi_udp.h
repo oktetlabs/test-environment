@@ -41,11 +41,12 @@
 
 /** Structure of UDP/IPv4 datagram */
 typedef struct udp4_datagram {
+    struct timeval      ts;          /**< packet timestamp */
     struct in_addr      src_addr;    /**< source address */
     struct in_addr      dst_addr;    /**< destination address */
     uint16_t            src_port;    /**< source port */
     uint16_t            dst_port;    /**< destination port */
-    uint16_t            payload_len; /**< payload length*/
+    uint16_t            payload_len; /**< payload length */
     uint8_t            *payload;     /**< UDP payload */
 } udp4_datagram;
 

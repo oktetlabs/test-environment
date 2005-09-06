@@ -147,6 +147,7 @@ typedef struct {
 
 /** RADIUS packet */
 typedef struct {
+    struct timeval           ts;
     tapi_radius_code_t       code;
     uint8_t                  identifier;
     char                     authenticator[TAPI_RADIUS_AUTH_LEN];
