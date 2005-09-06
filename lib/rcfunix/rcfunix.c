@@ -175,11 +175,11 @@ system_with_timeout(const char *cmd, int timeout)
             if (close(fd) != 0)
                 ERROR("Failed to close() pipe from stdout of the shell "
                       "command: %r", TE_OS_RC(TE_RCF_UNIX, errno));
-            if (kill(pid, SIGTERM) != 0)
+            if (killpg(getpgid(pid), SIGTERM) != 0)
                 ERROR("Failed to kill() process of the shell command: %r",
                       TE_OS_RC(TE_RCF_UNIX, errno));
             MSLEEP(100);
-            if (kill(pid, SIGKILL) == 0)
+            if (killpg(getpgid(pid), SIGKILL) == 0)
                 RING("Process of the shell command killed by SIGKILL");
             return TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT);
         }
@@ -502,7 +502,7 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     if (*(ta->flags) & TA_FAKE)
         return 0;
     
-    if (ta->pid > 0 && !(*(ta->flags) & TA_DEAD))
+    if (ta->pid > 0 && (*(ta->flags) & TA_DEAD))
     {
         /* Kill TA itself */
         if (ta->is_local)
@@ -538,19 +538,19 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
         rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
-    }
 
-    if (ta->is_local)
-        sprintf(cmd,
-                "%skillall -9 %s " RCFUNIX_REDIRECT,
-                ta->sudo ? "sudo " : "" , ta->exec_name);
-    else
-        sprintf(cmd,
-                RCFUNIX_SSH " %s \"%skillall -9 %s\" " RCFUNIX_REDIRECT,
-                ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
-    rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
-    if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-        return rc;
+        if (ta->is_local)
+            sprintf(cmd,
+                    "%skillall -9 %s " RCFUNIX_REDIRECT,
+                    ta->sudo ? "sudo " : "" , ta->exec_name);
+        else
+            sprintf(cmd,
+                    RCFUNIX_SSH " %s \"%skillall -9 %s\" " RCFUNIX_REDIRECT,
+                    ta->host, ta->sudo ? "sudo " : "" , ta->exec_name);
+        rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
+        if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
+            return rc;
+    }
 
     if ((*(ta->flags) & TA_DEAD) || strcmp(ta->ta_type, "win32") == 0)
     {
@@ -563,11 +563,11 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
     }
-
+    
     if (ta->start_pid > 0)
     {
-        kill(ta->start_pid, SIGTERM);
-        kill(ta->start_pid, SIGKILL);
+        killpg(getpgid(ta->start_pid), SIGTERM);
+        killpg(getpgid(ta->start_pid), SIGKILL);
     }
 
     return 0;
