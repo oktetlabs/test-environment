@@ -101,6 +101,57 @@ typedef enum {
     TAPI_RADIUS_TERM_HOST_REQUEST    = 18,   /**< Host Request */
 } tapi_radius_term_cause_t;
 
+/**
+ * Convert the value of Acct-Terminate-Cause RADIUS attribute 
+ * from integer to readable string.
+ *
+ * @param cause  the value of Acct-Terminate-Cause attribute
+ *
+ * @return string literal pointer
+ *
+ * @note non-reenterable in the case of unknown value
+ */
+static inline const char *
+tapi_radius_term_cause2str(tapi_radius_term_cause_t cause)
+{
+#define CAUSE2STR(name_) case TAPI_RADIUS_TERM_ ## name_: return #name_
+
+    switch (cause)
+    {
+        CAUSE2STR(USER_REQUEST);
+        CAUSE2STR(LOST_CARRIER);
+        CAUSE2STR(LOST_SERVICE);
+        CAUSE2STR(IDLE_TIMEOUT);
+        CAUSE2STR(SESSION_TIMEOUT);
+        CAUSE2STR(ADMIN_RESET);
+        CAUSE2STR(ADMIN_REBOOT);
+        CAUSE2STR(PORT_ERROR);
+        CAUSE2STR(NAS_ERROR);
+        CAUSE2STR(NAS_REQUEST);
+        CAUSE2STR(NAS_REBOOT);
+        CAUSE2STR(PORT_UNNEEDED);
+        CAUSE2STR(PORT_PREEMPTED);
+        CAUSE2STR(PORT_SUSPENDED);
+        CAUSE2STR(SERVICE_UNAVAIL);
+        CAUSE2STR(CALLBACK);
+        CAUSE2STR(USER_ERROR);
+        CAUSE2STR(HOST_REQUEST);
+        
+        default:
+        {
+            static char unknown_cause[32];
+        
+            snprintf(unknown_cause, sizeof(unknown_cause),
+                     "Unknown(%u)", cause);
+            return unknown_cause;
+        }
+    }
+#undef CAUSE2STR
+
+    /* We will never reach this code */
+    return "";
+}
+
 /** Value of Termination-Action attribute, see RFC 2865 */
 typedef enum {
     TAPI_RADIUS_TERM_ACTION_DEFAULT = 0,    /**< Default */
