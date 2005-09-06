@@ -89,6 +89,7 @@ typedef struct tce_function_info {
 typedef struct tce_object_info {
     int                       peer_id;    /**< the data are for that peer */
     const char               *filename;   /**< data filename */
+    const char               *module;     /**< kernel module name or NULL */
     struct tce_object_info   *next;
     struct tce_function_info *function_infos;
 /* The following fields directly map to gcc/gcov internal data.
@@ -143,7 +144,8 @@ extern void tce_print_debug(const char *fmt, ...);
  *   If there is no such record, it is created 
  */
 extern tce_object_info   *tce_get_object_info(int peer_id, 
-                                              const char *filename);
+                                              const char *filename, 
+                                              const char *module);
 
 /** Find a record for a function 'name' in a object file denoted by 'oi'.
  *  If there is no such record, it is created and 'arc_count' and

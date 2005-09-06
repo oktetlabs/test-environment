@@ -31,7 +31,12 @@ outfile=$1
 nopattern="$2"
 yespattern="$3"
 
+if test -n "$4"; then
+    doskip="/$4/, /$5/ { next }"
+fi
+
 awk " BEGIN { yescount = nocount = 0 }
+$doskip
 /$nopattern/ { nocount++ } 
 /$yespattern/ { yescount++ }
 END { sum = yescount + nocount

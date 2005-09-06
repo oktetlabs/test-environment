@@ -36,7 +36,7 @@ for nut in $NUTS ; do
     tas="`eval echo '$NUT_'${nut}'_TCE_TA'`"
     if test -z "$tas" ; then continue; fi
     for ta in $tas ; do
-        te_tce_dump "${nut}" "${ta}" "${TE_LOG_DIR}/tce_${nut}_${ta}.tar"
+        te_tce_dump "${nut}" "${ta}" "${TE_LOG_DIR}/tce_${nut}_${ta}.tar" "${TE_LOG_DIR}/tce_${nut}_${ta}.map"
     done                                      
 done
 

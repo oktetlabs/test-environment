@@ -40,11 +40,16 @@ Options:
 --datadir=<directory>  If given, <output-file> will only contain
                         an index of files, actual annotated sources
                         being placed into <directory>, one file per source
+--map-file=<mapfile>   The name of a file containing name-to-module map
+--modules=<modulename> The comma-separated list of modules 
+                       to measure coverage of
+                       ("-" denotes user-land code)
 --sort-by=<MODE>       The mode of sorting the index of files:
                             branches  by covered branches percentage
                                       (the default)
                             lines     by covered lines percentage
                             sources   by filename
+                            modules   by module
 
 EOF
 exit 0
@@ -58,7 +63,10 @@ for arg; do
             ;;
         --sort-by=branches) sortmode='sort -k3,3g -k4,4nr' ;;
         --sort-by=lines) sortmode='sort -k1,1g -k2,2nr' ;;
-        --sort-by=sources) sortmode='sort -k5,5' ;;
+        --sort-by=sources) sortmode='sort -k6,6' ;;
+        --sort-by=modules) sortmode='sort -k5,5 -k6,6' ;;
+        --map-file=*) mapfile=${arg#--map-file=} ;;
+        --modules=*)  modules=${arg#--modules=} ;;
         --help) usage ;;
         --*) echo "Unrecognized option $arg" >&2; usage; exit 1 ;;
         *)
@@ -77,6 +85,10 @@ if test -z "$sourcefile"; then
     exit 1
 fi
 
+if test -z "$modules" -a -n "$mapfile"; then
+    modules=`awk '{ print $2; }' $mapfile | sort | uniq`
+fi
+
 cat >$outputfile <<EOF
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <HTML>
@@ -86,27 +98,68 @@ cat >$outputfile <<EOF
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <H1 ALIGN=CENTER>TCE Summary</H1>
-`grep "Grand Total" $sourcefile | sed 's/\*//g
-s/^/<H2>/
-s/$/<\/H2>/
-'`
+`tce_count $sourcefile '^branch[[:space:]]*[0-9]+ (never executed|taken 0)' \
+    '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' |
+(
+    read ratio sum
+    echo "<H2>Grand Total: $ratio% of $sum branches covered</H2>" 
+)
+tce_count $sourcefile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' |
+(
+    read ratio sum
+    echo "<H2>Grand Total: $ratio% of $sum lines covered</H2>" 
+)
+`
+<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>
+<TH>Module</TH>
+<TH> % of taken branches</TH>
+<TH> % of executed lines</TH>
+`for m in $modules; do
+echo "<TR><TD>$m</TD>"
+awk "/^=== .* $m\$/, /^=====/ { print }" $sourcefile |
+tce_count - '^branch[[:space:]]*[0-9]+ (never executed|taken 0)' \
+    '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' | 
+(
+    read ratio sum
+    echo "<TD>$ratio% of $sum</TD>" 
+)
+awk "/^=== .* $m\$/, /^=====/ { print }" $sourcefile |
+tce_count - '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' |
+(
+    read ratio sum
+    echo "<TD>$ratio% of $sum</TD>" 
+)
+done
+`
+</TABLE>
 <TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>
 <TH>% of taken branches</TH>
 <TH>Total branches</TH>
 <TH>% of executed lines</TH>
 <TH>Total lines</TH>
+<TH>Module</TH>
 <TH>Source file</TH>
 
 EOF
 
+if test -z "$modules"; then
+    modulefilter="{ print }"
+else
+    m=`echo $modules | sed 's/^[[:space:]]*//
+                            s/[[:space:]]*$//
+                            s/[[:space:]][[:space:]]*/|/g'`
+    modulefilter="\$7 ~ /($m)\$/ { print }"
+fi
+
 awk '/^[0-9]+\.[0-9]+% of[[:space:]]*[0-9]+ lines of code executed/ { printf "%s %s ", $1, $3}
     /^[0-9]+\.[0-9]+% of[[:space:]]*[0-9]+ branches of code taken/ { printf "%s %s %s ", $1, $3, $NF }
-    /^=== / { print $2; }' $sourcefile |
+    /^=== / { print $2, $4; }' $sourcefile |
+    awk "$modulefilter" |
     $sortmode |
     awk -vSUBDIR=$datadir \
         '$2 != 0 { fname=$5; gsub(/\//, "-", fname);
-                   printf "<tr><td>%s<td>%s<td>%s<td>%s<td><a href=\"%s\">%s</a></tr>\n",
-                   $3, $4, $1, $2, (SUBDIR ? SUBDIR fname ".html" : "#" $6) , $5 }' >>$outputfile
+                   printf "<tr><td>%s<td>%s<td>%s<td>%s<td>%s<td><a href=\"%s\">%s</a></tr>\n",
+                   $3, $4, $1, $2, $7, (SUBDIR ? SUBDIR fname ".html" : "#" $6) , $5 }' >>$outputfile
 
 echo "</TABLE>" >>$outputfile
 

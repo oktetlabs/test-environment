@@ -48,6 +48,7 @@ main(int argc, char *argv[])
     const char *nut = argv[1];
     const char *ta = argv[2];
     const char *filename = argv[3];
+    const char *map_filename = argv[4];
 
     int rc;
     int result;
@@ -56,7 +57,7 @@ main(int argc, char *argv[])
     char buffer[RCF_MAX_PATH + 1];
 
 
-    if (argc != 4)
+    if (argc != 4 && argc != 5)
     {
         ERROR("Invalid number of arguments");
         return EXIT_FAILURE;
@@ -94,6 +95,20 @@ main(int argc, char *argv[])
                   "error code = %d", buffer, filename, rc);
             return EXIT_FAILURE;
         }
+
+        if (map_filename != NULL)
+        {
+            VERB("Get TCE module map for peer ID %d from TA %s, put in %s",
+                 peer_id, ta, filename);
+            sprintf(buffer, "/tmp/tcedump%d.map", peer_id);
+            if ((rc = rcf_ta_get_file(ta, 0, buffer, map_filename)) != 0)
+            {
+                ERROR("Unable to obtain TCE data file (%s -> %s), "
+                      "error code = %d", buffer, filename, rc);
+                return EXIT_FAILURE;
+            }
+        }
+
 
         VERB("Stop TCE collector for peer ID %d on TA %s", peer_id, ta);
         rc = rcf_ta_call(ta, 0, "tce_stop_collector", &result,

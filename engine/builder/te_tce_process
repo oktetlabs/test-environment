@@ -44,6 +44,7 @@ for nut in $NUTS ; do
                    "${NUT_SOURCES}" || exit 1
     done                                      
     tce_summary ${TCES_OPTS} "${TE_LOG_DIR}/tce_${nut}.log" \
+                --map-file="${TE_LOG_DIR}/tce_${nut}_${ta}.smap" \
                 >"${TE_LOG_DIR}/tce_${nut}.html" || exit 1
 done
 

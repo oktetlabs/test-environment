@@ -123,7 +123,20 @@ tce_init_collector(int argc, char **argv)
 const char *
 tce_obtain_principal_connect(void)
 {
-    return collector_args ? collector_args[0] : NULL;
+    if (collector_args == NULL)
+        return NULL;
+    else
+    {
+        char **ptr;
+
+        for (ptr = collector_args; *ptr != NULL; ptr++)
+        {
+            if (strncmp(*ptr, "kallsyms:", 9) != 0 &&
+                strcmp(*ptr, "--debug") != 0)
+                break;
+        }
+        return *ptr;
+    }
 }
 
 int
@@ -475,9 +488,13 @@ int
 tce_run_collector(int argc, char *argv[])
 {
     int rc;
+    int peerid;
+    static char buffer[64];
+    const char *connect;
+
     if (tce_collector_pid != 0)
         return TE_RC(TE_TA, TE_EALREADY);
-    tce_obtain_principal_peer_id();
+    peerid = tce_obtain_principal_peer_id();
     rc = tce_init_collector(argc, argv);
     if (rc != 0)
         return rc;
@@ -487,6 +504,21 @@ tce_run_collector(int argc, char *argv[])
     else if (tce_collector_pid == 0)
     {
         exit(tce_collector());
+    }
+    connect = tce_obtain_principal_connect();
+    if (connect == NULL)
+        tce_report_notice("no principal connection");
+    else
+    {
+        snprintf(buffer, sizeof(buffer), "%s %d",
+                 connect,
+                 peerid);
+        if (setenv("TCE_CONNECTION", buffer, 1) != 0)
+        {
+            tce_report_error("cannot set TCE_CONNECTION: %s",
+                             strerror(errno));
+        }
+        tce_print_debug("TCE_CONNECTION == %s", getenv("TCE_CONNECTION"));
     }
     return 0;
 }
@@ -841,7 +873,7 @@ object_header_state(tce_channel_data *ch)
         tce_object_info *oi;
 
         *space++ = '\0';
-        oi = tce_get_object_info(ch->peer_id, ch->buffer);
+        oi = tce_get_object_info(ch->peer_id, ch->buffer, NULL);
         
         if (strncmp(space, "new ", 4) == 0)
         {
@@ -1065,7 +1097,7 @@ hash(int peer_id, const char *str)
 
 
 tce_object_info *
-tce_get_object_info(int peer_id, const char *filename)
+tce_get_object_info(int peer_id, const char *filename, const char *module)
 {
     unsigned key = hash(peer_id, filename);
     tce_object_info *found;
@@ -1075,12 +1107,20 @@ tce_get_object_info(int peer_id, const char *filename)
         if (found->peer_id == peer_id && 
             strcmp(found->filename, filename) == 0)
         {
+            if ((found->module != NULL && 
+                 (module == NULL || strcmp(module, found->module) != 0)) ||
+                (found->module == NULL && module != NULL))
+            {
+                tce_report_notice("%s is used in different components, "
+                                  "summary may be inaccurate", filename);
+            }
             return found;
         }
     }
     found = malloc(sizeof(*found));
     found->peer_id = peer_id;
     found->filename = strdup(filename);
+    found->module = (module != NULL ? strdup(module) : NULL);
     found->ncounts = 0;
     found->function_infos = NULL;
     found->gcov_version = 0;
@@ -1187,6 +1227,17 @@ dump_object(tce_object_info *oi)
     long pos, len;
     unsigned long checksum;
     unsigned idx;
+
+    sprintf(tar_name, "%s%d.map", tar_file_prefix, oi->peer_id);
+    tar_file = fopen(tar_name, "a");
+    if (tar_file == NULL)
+    {
+        tce_report_error("cannot write to a map file %s: %s", 
+                        tar_name, strerror(errno));
+    }
+    fprintf(tar_file, "%s %s\n", oi->filename, 
+            oi->module == NULL ? "-" : oi->module);
+    fclose(tar_file);
 
     sprintf(tar_name, "%s%d.tar", tar_file_prefix, oi->peer_id);
     tce_print_debug("dumping to %s", tar_name);
@@ -1412,6 +1463,8 @@ clear_data(void)
         for (iter = tce_hash_table[idx]; iter != NULL; iter = iter->next)
         {
             sprintf(buffer, "%s%d.tar", tar_file_prefix, iter->peer_id);
+            remove(buffer);
+            sprintf(buffer, "%s%d.map", tar_file_prefix, iter->peer_id);
             remove(buffer);
         }
     }

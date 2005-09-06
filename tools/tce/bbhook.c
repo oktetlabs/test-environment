@@ -311,7 +311,10 @@ EXIT_GCOV()
         char *space_at;
         int peer_id;
         if (env == NULL)
+        {
+            fputs("no TCE_CONNECTION\n", stderr);
             return;
+        }
         strncpy(name, env, sizeof(name) - 1);
         space_at = strchr(name, ' ');
         if (space_at == NULL ||

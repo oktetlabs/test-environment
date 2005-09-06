@@ -29,7 +29,9 @@
 
 cd `dirname $1`
 case "$1" in
-    *.gcda)   ${NEWGCOV:-gcov-3.4} -c -b  `basename $1` >/dev/null ;;
-    *.da)     ${OLDGCOV:-gcov}     -c -b `basename $1` >/dev/null ;;
+    *.gcda)   gcov=${NEWGCOV:-gcov-3.4} ;;
+    *.da)     gcov=${OLDGCOV:-gcov} ;;
+    *) echo "Strange data file $1" >&2; exit 1 ;;
 esac
-
+$gcov -c -b `basename $1` | 
+awk '$1 ~ /[Cc]reating/ { sub(/['\''\.]$/, "", $2); sub(/^`/, "", $2); print ENVIRON["PWD"] "/" $2, "'$2'" }'

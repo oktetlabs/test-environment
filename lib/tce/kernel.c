@@ -149,11 +149,13 @@ typedef union object_coverage
 } object_coverage;
 
 static void process_gcov_syms(FILE *symfile, int core_file,
-                              void (*functor)(void *, unsigned long, unsigned long, object_coverage *, void *), 
+                              void (*functor)(void *, const char *, unsigned long, unsigned long, object_coverage *, void *), 
                               void *extra);
-static void do_gcov_sum(void *data, unsigned long start, unsigned long size, 
+static void do_gcov_sum(void *data, const char *modname, 
+                        unsigned long start, unsigned long size, 
                         object_coverage *object, void *extra);
-static void get_kernel_gcov_data(void *data, unsigned long start, unsigned long size,
+static void get_kernel_gcov_data(void *data, const char *modname,
+                                 unsigned long start, unsigned long size,
                                  object_coverage *object, void *extra);
 
 static char *ksymtable;
@@ -344,7 +346,7 @@ tce_obtain_kernel_coverage(void)
 
 static void
 process_gcov_syms(FILE *symfile, int core_file,
-                  void (*functor)(void *, unsigned long, unsigned long, object_coverage *, void *), void *extra)
+                  void (*functor)(void *, const char *, unsigned long, unsigned long, object_coverage *, void *), void *extra)
 {
     unsigned long offset;
     unsigned long mod_start, mod_size;
@@ -421,7 +423,7 @@ process_gcov_syms(FILE *symfile, int core_file,
             actual_offset -= mod_start;
             tce_print_debug("new offset is %lu", actual_offset);
             bb_ptr = (object_coverage *)(mod_data + actual_offset);
-            functor(mod_data, mod_start, mod_size, bb_ptr, extra);
+            functor(mod_data, modname, mod_start, mod_size, bb_ptr, extra);
         }
     }
 
@@ -455,10 +457,12 @@ do {                                                                  \
 } while(0)
 
 static void
-do_gcov_sum(void *data, unsigned long start, unsigned long size, object_coverage *object, void *extra)
+do_gcov_sum(void *data, const char *modname,
+            unsigned long start, unsigned long size, object_coverage *object, void *extra)
 {
     summary_data *summary = extra;
 
+    UNUSED(modname);
     if (kernel_gcov_version_magic != 0)
     {
         unsigned long offset;
@@ -480,7 +484,8 @@ do_gcov_sum(void *data, unsigned long start, unsigned long size, object_coverage
 
 
 static void
-get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object_coverage *object, void *extra)
+get_kernel_gcov_data(void *data, const char *modname,
+                     unsigned long start, unsigned long size, object_coverage *object, void *extra)
 {
     unsigned long offset;
     summary_data *summary = extra;
@@ -510,7 +515,7 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
         }
     }
 
-    do_gcov_sum(data, start, size, object, &object_summary);
+    do_gcov_sum(data, modname, start, size, object, &object_summary);
     offset = kernel_gcov_version_magic == 0 ? 
         (unsigned long)object->old.filename :
         (unsigned long)object->new.filename;
@@ -518,7 +523,8 @@ get_kernel_gcov_data(void *data, unsigned long start, unsigned long size, object
     name_ptr = (char *)data + offset;
     real_start = strstr(name_ptr, "//");
     oi = tce_get_object_info(tce_obtain_principal_peer_id(), 
-                             real_start ? real_start + 1 : name_ptr);
+                             real_start ? real_start + 1 : name_ptr,
+                             modname);
     tce_print_debug("accessing %s", name_ptr);
     oi->gcov_version = kernel_gcov_version_magic;
     oi->object_functions = object_functions;

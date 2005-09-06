@@ -30,12 +30,20 @@
 #
 
 mergefile=$1
-gcovfile=$2
-ignoredir=$3
+ignoredir=$2
+exclude=$3
+gcovfile=$4
+modulename=$5
 oldfile=${gcovfile}.old
 resultfile=${gcovfile}.new
 
 source=`head -n1 $gcovfile | awk -F: '{ print $NF }'`
+if test -n "$exclude"; then
+    if expr $source : "$exclude" >/dev/null; then
+        exit 0
+    fi
+fi
+
 if test -n "$ignoredir"; then
     stamp=`basename $source | md5sum`
 else
@@ -95,18 +103,21 @@ else
 fi
 
 tce_count $resultfile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' |
-(
-    read ratio sum
-    echo "$ratio% of $sum lines of code executed in file $source"
-)
+{
+    read linesratio sum
+    echo "$linesratio% of $sum lines of code executed in file $source"
+}
 
 tce_count $resultfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' |
 (
     read ratio sum
+    if test "$ratio" == "0" -a "$linesratio" == "100"; then
+        ratio=100
+    fi
     echo "$ratio% of $sum branches of code executed in file $source"
 )
 
-tce_count $resultfile '^branch[[:space:]]*[0-9]+ (never executed|taken 0$)' \
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ (never executed|taken 0)' \
     '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' |
 (
     read ratio sum
@@ -119,7 +130,7 @@ tce_count $resultfile '^call[[:space:]]*[0-9]+ never executed' '^call[[:space:]]
     echo "$ratio% of $sum calls executed in file $source"
 )
 
-echo "=== $stamp"
+echo "=== $stamp $modulename"
 cat $resultfile
 echo "======"
 

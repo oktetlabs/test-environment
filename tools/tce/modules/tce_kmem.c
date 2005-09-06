@@ -160,6 +160,7 @@ static ssize_t read_kmem(struct file *file, char __user *buf,
 
 			if (len > PAGE_SIZE)
 				len = PAGE_SIZE;
+
 			len = vread_pointer(kbuf, (char *)p, len);
 			if (!len)
 				break;

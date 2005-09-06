@@ -33,7 +33,8 @@ usage() {
     fi
     cat >&2 <<EOF
 
-USAGE: tce_report [--ignore-dirs] <input-file> <output-file> <source-dir>
+USAGE: tce_report [--ignore-dirs] <input-file> <output-file> <source-dir> 
+                  [--exclude=regexp]
 
 Processes GCOV data contained in the file <input-file> which should
 correspond to sources in <source-dir>. Coverage results are put into
@@ -43,26 +44,44 @@ If <output-file> exists and it matches the current sources, the results
 are merged (the older <output-file> is saved as <output-file>.prev)
 
 --ignore-dirs causes treating files with the same base name as the same file.
+--exclude=REGEXP specifies a pattern for files to be excluded from the report.
+REGEXP must be a basic regexp (sed-like), with "^" prepended implicitly.
 
 EOF
     exit 1
 }
 
-if test "$1" = "--help"; then
-    usage
-elif test "$1" = "--ignore-dirs"; then
-    ignoredir=yes
-    shift
+nfile=1
+for i; do
+    case "$i" in
+        --help) 
+        usage
+        ;;
+        --ignore-dirs)
+        ignoredir=yes
+        ;;
+        --exclude=*)
+        exclude=${i#--exclude=}
+        ;;
+        --*) usage "Unknown option $i";;
+        *) case $nfile in
+            1) infile=$i ;;
+            2) mergefile=$i ;;
+            3) srcdir=$i ;;
+            *) usage "Extra files on command line";;
+        esac
+        nfile=$((nfile + 1))
+        ;;
+    esac
+done
+
+if test $nfile -ne 4 ; then
+    usage "Invalid number of arguments: $nfile"
 fi
 
-if test $# -ne 3 ; then
-    usage "Invalid number of arguments"
-fi
-
-infile=$1
-mergefile=$2
 outfile=$mergefile.new
-srcdir=$3
+mapfile=${infile%.tar}.map
+smapfile=${infile%.tar}.smap
 
 if test -z "$infile" -o -z "$mergefile" -o -z "$srcdir" ; then
     usage "Invalid arguments"
@@ -84,31 +103,22 @@ echo "*** Sources are at $srcdir:" >>$outfile
 for pattern in '*.gcov' '*.da' '*.gcda' '.[a-z]*.da' '.[a-z]*.gcda'; do
     find $srcdir -follow -name "$pattern" -exec rm -f '{}' ';'
 done
-    tar -x -P -f $infile
-    find $srcdir -follow \( -name '*.da' -o -name '.[a-z]*.da' \) -exec tce_gcov '{}' ';' && 
-        find $srcdir -follow \( -name '*.gcda' -o -name '.[a-z]*.gcda' \) -exec tce_gcov '{}' ';' && 
-        (
-            if test -n "$ignoredir" -a ! -f "$mergefile"; then
-                auxfile=$mergefile.aux
-                find $srcdir -follow -name '*.gcov' -exec tce_merge "" '{}' true ';' >$auxfile
-                find $srcdir -follow -name '*.gcov' -exec tce_merge $auxfile '{}' true ';' >>$outfile
-                rm -f $auxfile
-            else
-                find $srcdir -follow -name '*.gcov' -exec tce_merge $mergefile '{}' $ignoredir ';' >>$outfile
-            fi
-        ) 
-    echo >>$outfile
-    tce_count $outfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' | 
-    (
-        read ratio sum
-        echo "*** Grand Total: $ratio% of $sum branches covered" >>$outfile
-    )
-    tce_count $outfile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' |
-    (
-        read ratio sum
-        echo "*** Grand Total: $ratio% of $sum lines covered" >>$outfile
-    )
-    if test -f $mergefile ; then
-        mv -f $mergefile $mergefile.prev
-    fi
-    mv -f $outfile $mergefile
+tar -x -P -f $infile
+cat $mapfile | xargs -n2 tce_gcov >$smapfile
+if test -n "$ignoredir" -a ! -f "$mergefile"; then
+    auxfile=$mergefile.aux
+    cat $smapfile | xargs -n2 tce_merge "" true "$exclude"  >$auxfile
+    cat $smapfile | xargs -n2 tce_merge $auxfile true "$exclude" >>$outfile
+    rm -f $auxfile
+else
+    cat $smapfile | xargs -n2 tce_merge $mergefile "$ignoredir" "$exclude" >>$outfile
+fi
+
+echo >>$outfile
+
+
+if test -f $mergefile ; then
+    mv -f $mergefile $mergefile.prev
+fi
+mv -f $outfile $mergefile
+
