@@ -28,7 +28,10 @@
 
 
 #define TE_LGR_USER "NDN iSCSI"
+#ifdef HAVE_CTYPE_H
 #include <ctype.h>
+#endif
+
 #include "te_config.h" 
 
 #include "asn_impl.h"
@@ -144,10 +147,6 @@ asn_type ndn_iscsi_message_s =
 
 const asn_type *ndn_iscsi_message = &ndn_iscsi_message_s;
 
-#if 1
-
-#define MAX_INT_VALUE_LEN   10
-
 int
 asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
 {
@@ -179,20 +178,21 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
     segment_data_len = asn_get_length(segment_data, "");
     segment_data_index = 0;
 #define tail_len (*data_len - write_data_len)    
+#define MAX_INT_VALUE_LEN           10    
     while (segment_data_index < segment_data_len)
     {
         if ((rc = asn_get_indexed(segment_data, 
                                   (const asn_value **)&key_pair, 
                                   segment_data_index++)) != 0)
         {
-            ERROR("%s, %d: cannot get segment data length", 
-                  __FUNCTION__, __LINE__);
+            ERROR("%s, %d: cannot get segment data length, %r", 
+                  __FUNCTION__, __LINE__, rc);
             return rc;
         }
         if ((rc =asn_read_string(key_pair, &key, "key")) != 0)
         {
-            ERROR("%s, %d: cannot read string", 
-                  __FUNCTION__, __LINE__);
+            ERROR("%s, %d: cannot read string, %r", 
+                  __FUNCTION__, __LINE__, rc);
             return rc;
         }
         
@@ -221,8 +221,8 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                                       PRIVATE, 
                                       NDN_TAG_ISCSI_SD_VALUES)) != 0)
         {
-            ERROR("%s, %d: cannot get child value",
-                  __FUNCTION__, __LINE__);
+            ERROR("%s, %d: cannot get child value, %r",
+                  __FUNCTION__, __LINE__, rc);
             return rc;
         }
         if ((key_values_len = asn_get_length(key_values, "")) == -1)
@@ -240,16 +240,16 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                                       (const asn_value **)&key_value, 
                                       key_values_index++)) != 0)
             {
-                ERROR("%s, %d: cannot get key_value",
-                      __FUNCTION__, __LINE__);
+                ERROR("%s, %d: cannot get key_value, %r",
+                      __FUNCTION__, __LINE__, rc);
                 return rc;
             }
             if ((rc = asn_get_choice_value(key_value, 
                                            (const asn_value **)&value, 
                                            &tag_class, &tag)) != 0)
             {
-                ERROR("%s, %d: cannot get choice value",
-                      __FUNCTION__, __LINE__);
+                ERROR("%s, %d: cannot get choice value, %r",
+                      __FUNCTION__, __LINE__, rc);
                 return rc;
             }
             switch (tag)
@@ -260,8 +260,8 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                                              &int_value, 
                                              "")) != 0)
                     {
-                        ERROR("%s, %d: cannot read int value",
-                              __FUNCTION__, __LINE__);
+                        ERROR("%s, %d: cannot read int value, %r",
+                              __FUNCTION__, __LINE__, rc);
                         return rc;
                     }
                     if (tail_len < MAX_INT_VALUE_LEN)
@@ -281,9 +281,15 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                                              &int_value, 
                                              "")) != 0)
                     {
-                        ERROR("%s, %d: cannot read int value",
-                              __FUNCTION__, __LINE__);
+                        ERROR("%s, %d: cannot read int value, %r",
+                              __FUNCTION__, __LINE__, rc);
                         return rc;
+                    }
+                    if (tail_len < MAX_INT_VALUE_LEN)
+                    {
+                        ERROR("%s, %d: unsufficient buffer length",
+                              __FUNCTION__, __LINE__);
+                        return TE_ENOBUFS;
                     }
                     sprintf(current, "%x", int_value);
                     write_data_len += strlen(current);
@@ -301,13 +307,14 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                         return rc;
                     }
 
-                    ERROR("Here we are %s", str_value);
-                    ERROR("key_value_index %d, key_values_len %d",
-                          key_values_index, key_values_len);
+                    if (tail_len < strlen(str_value))
+                    {
+                        ERROR("%s, %d: unsufficient "
+                              "buffer length",
+                              __FUNCTION__, __LINE__);
+                        return TE_ENOBUFS;
+                    }
                     sprintf(current, "%s", str_value);
-#if 0                    
-                    strncpy(current, str_value, strlen(str_value));
-#endif                    
                     write_data_len += strlen(str_value);
                     current += strlen(str_value);
                     break;
@@ -327,6 +334,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
         *current = '\0';
         current += 1;
     }
+#undef MAX_INT_VALUE_LEN    
 #undef tail_len    
     *data_len = write_data_len; 
     return 0;
@@ -340,68 +348,59 @@ parse_key_value(char *str, asn_value *value)
     int rc;
 
     uint32_t int_value;
+    char     *end = NULL;
 
-    ERROR("Parsing key value");
-    
     /* String value */
     if (!isdigit(*str))
     {    
-        ERROR("Key value is string %s", str);
         if ((rc = asn_write_string(value, 
                                    str, 
                                    "#str")) != 0)
         {
-            ERROR("#s, %d: cannot write string",
-                  __FUNCTION__, __LINE__);
+            ERROR("%s, %d: cannot write string, %r",
+                  __FUNCTION__, __LINE__, rc);
             return rc;
         }
     }    
             
     else
     {
-        ERROR("Key value is digit %s", str);
         if ((strlen(str)) > 3 && (strcmp(str, "0x") == 0))
         {    
-            int_value = strtol(str, NULL, 16);
-#if 0            
-            if (int_value == LONG_MIN || int_value == LONG_MAX)
+            int_value = strtol(str, &end, 16);
+            if (*end != '\0')
             {
-                ERROR("%s, %d: strange integer in segment data",
-                      __FUNCTION, __LINE__);
+                ERROR("%s, %d: strange integer in segment data %s", 
+                      __FUNCTION__, __LINE__, str);
                 return TE_EFMT;
             }
-#endif            
             if ((rc = asn_write_int32(value, 
                                       int_value, "#hex")) != 0)
             {
-                ERROR("%s, %d: cannot write integer",
-                      __FUNCTION__, __LINE__);
+                ERROR("%s, %d: cannot write integer, %r",
+                      __FUNCTION__, __LINE__, rc);
                 return rc;
             }
         }    
         else
         {    
-            int_value = strtol(str, NULL, 0);
-#if 0            
-            if (int_value == LONG_MIN || int_value == LONG_MAX)
+            int_value = strtol(str, &end, 0);
+            if (*end != '\0')
             {
-                ERROR("%s, %d: strange integer in segment data",
-                      __FUNCTION, __LINE__);
+                ERROR("%s, %d: strange integer in segment data %s",
+                      __FUNCTION__, __LINE__, str);
                 return TE_EFMT;
             }
-#endif            
             if ((rc = asn_write_int32(value, int_value, "#int")) != 0)
             {
-                ERROR("%s, %d: cannot write integer",
-                      __FUNCTION__, __LINE__);
+                ERROR("%s, %d: cannot write integer, %r",
+                      __FUNCTION__, __LINE__, rc);
                 return rc;
             }
         }    
     }
     return 0;    
 }
-
-#define SEGMENT_DATA_MAX_LEN 2048
 
 int
 bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
@@ -420,13 +419,14 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
     int segment_data_index;
     int key_values_index;
 
-    char packet[SEGMENT_DATA_MAX_LEN];
+    char *packet = NULL;
 
     uint32_t   parsed_len = 0;
 
     asn_value_p     key_pair;
 
-    if (data_len > SEGMENT_DATA_MAX_LEN)
+    packet = calloc(1, data_len);
+    if (packet == NULL)
     {
         ERROR("%s, %d: unsufficient memory",
               __FUNCTION__, __LINE__);
@@ -472,9 +472,8 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
         }
         if ((rc = asn_write_string(key_pair, current, "key")) != 0)
         {
-            ERROR("%s, %d: cannot write string",
-                  __FUNCTION__, __LINE__);
-            ERROR("key is %s", current);
+            ERROR("%s, %d: cannot write string, %r",
+                  __FUNCTION__, __LINE__, rc);
             return rc;
         }
         
@@ -504,16 +503,16 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
 
             if ((rc = parse_key_value(current, key_value)) != 0)
             {
-                ERROR("%s, %d: cannot parse key value",
-                      __FUNCTION__, __LINE__);
+                ERROR("%s, %d: cannot parse key value, %r",
+                      __FUNCTION__, __LINE__, rc);
                 return rc;
             }
             if ((rc = asn_insert_indexed(key_values, 
                                          key_value, 
                                          key_values_index++, "")) != 0)
             {
-                ERROR("%s, %d: cannot insert indexed",
-                      __FUNCTION__, __LINE__);
+                ERROR("%s, %d: cannot insert indexed, %r",
+                      __FUNCTION__, __LINE__, rc);
                 return rc;
             }
             current = comma_delimiter + 1;
@@ -523,18 +522,20 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
                                                key_values, 
                                                "values")) != 0)
         {
-            ERROR("%s, %d: cannot put child value",
-                  __FUNCTION__, __LINE__);
+            ERROR("%s, %d: cannot put child value, %r",
+                  __FUNCTION__, __LINE__, rc);
             return rc;
         }
         if ((rc = asn_insert_indexed(segment_data, 
                                      key_pair, 
                                      segment_data_index++, "")) != 0)
         {
-            ERROR("%s, %d: cannot insert indexed",
-                  __FUNCTION__, __LINE__);
+            ERROR("%s, %d: cannot insert indexed, %r",
+                  __FUNCTION__, __LINE__, rc);
             return rc;
         }
+        asn_free_value(key_value);
+        asn_free_value(key_values);
         asn_free_value(key_pair);
     }
     
@@ -562,7 +563,7 @@ padding:
         return TE_EFMT;
     }
     *value = segment_data;    
+    free(packet);
     return 0;
 }
-#endif
 
