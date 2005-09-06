@@ -90,6 +90,7 @@ te_shell_cmd_inline(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
     pid = fork();
     if (pid == 0)
     {
+        setpgid(getpid(), getpid());
         if (in_fd != 0)
         {
             close(in_pipe[1]);
