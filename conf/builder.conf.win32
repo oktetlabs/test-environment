@@ -21,4 +21,4 @@ TE_PLATFORM([i686-pc-cygwin],[],
             [tools rpc_types comm_net_agent loggerta conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([win32], [i686-pc-cygwin], [],
-           [--with-rcf-rpc], [-DWSP_PRIVATE_PROTO], [], [comm_net_agent])
+           [--with-rcf-rpc], [], [], [comm_net_agent])
