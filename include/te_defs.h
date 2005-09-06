@@ -171,7 +171,7 @@ typedef unsigned char te_bool;
  * Macro to log RING before sleep specified number of milliseconds and
  * sleep.
  *
- * @param x     Microseconds to sleep
+ * @param x     Milliseconds to sleep
  */
 #define MSLEEP(x) \
     do {                                                \
