@@ -187,24 +187,27 @@ kill_tasks(void)
 {
     unsigned int i;
     int          rc;
+    
+    if (tasks_index == 0)
+        return;
 
     for (i = 0; i < tasks_index; i++)
     {
         if (tasks[i] != 0)
         {
             rc = kill(-tasks[i], SIGTERM);
-            RING("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
-                 -tasks[i], rc, (rc == 0) ? 0 : errno);
+            PRINT("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
+                  -tasks[i], rc, (rc == 0) ? 0 : errno);
         }
     }
-    sleep(1);
+    usleep(100000);
     for (i = 0; i < tasks_index; i++)
     {
         if (tasks[i] != 0)
         {
             rc = kill(-tasks[i], SIGKILL);
-            RING("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
-                 -tasks[i], rc, (rc == 0) ? 0 : errno);
+            PRINT("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
+                  -tasks[i], rc, (rc == 0) ? 0 : errno);
         }
     }
     free(tasks);
@@ -1317,7 +1320,7 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
-
+    
     unlink(argv[0]);
 
     if (tce_stop_function != NULL)
@@ -1325,7 +1328,6 @@ main(int argc, char **argv)
 
     kill_tasks();
     kill_threads();
-
     rc = log_shutdown();
     if (rc != 0)
     {
