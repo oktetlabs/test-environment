@@ -28,11 +28,12 @@
 
 
 #define TE_LGR_USER "NDN iSCSI"
+
+#include "te_config.h"
+
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
-
-#include "te_config.h" 
 
 #include "asn_impl.h"
 #include "ndn_internal.h"
