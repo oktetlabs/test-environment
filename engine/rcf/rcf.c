@@ -2242,7 +2242,6 @@ rcf_shutdown()
             }
         }
     }
-    sleep(1);
     for (agent = agents; agent != NULL; agent = agent->next)
     {
         if ((agent->flags & TA_DOWN) == 0)
