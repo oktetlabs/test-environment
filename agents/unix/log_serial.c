@@ -254,8 +254,30 @@ open_conserver(const char *conserver)
     SKIP_LINE;
     fcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL));
     return sock;
+#undef SKIP_LINE
 }
 
+
+/* Note: if there are several log_serial threads and
+ * one is using conserver, others will be treated in 
+ * the same way. However, such situation is unrealistic,
+ * and even then, sending a few bytes to a serial device
+ * should not hurt much
+ */
+static te_bool use_conserver = FALSE;
+static void
+close_conserver_cleanup(long fd)
+{
+    char buf[1];
+    
+    write(fd, "\05c.", 3); /* sending disconnect message */
+    for(*buf = '\0'; *buf != '\n'; ) 
+    { 
+        if (read(fd, buf, 1) < 1)
+            break;
+    }
+    close(fd);
+}
 
 /**
  * Log host serial output via Logger component
@@ -389,6 +411,7 @@ log_serial(void *ready, int argc, char *argv[])
         {
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
+        use_conserver = TRUE;
     }
     else
     {
@@ -438,7 +461,8 @@ log_serial(void *ready, int argc, char *argv[])
     fence   = buffer + TE_LOG_FIELD_MAX;
     *fence  = '\0';
     
-    pthread_cleanup_push((void (*)(void *))close, (void *)(long)poller.fd);
+    pthread_cleanup_push((void (*)(void *))close_conserver_cleanup, 
+                         (void *)(long)poller.fd);
     pthread_cleanup_push(free, buffer);
     pthread_cleanup_push(free, other_buffer);
     for (;;)
