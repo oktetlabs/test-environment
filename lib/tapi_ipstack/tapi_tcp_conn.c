@@ -898,8 +898,7 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
                       NULL, 0, &fin_template);
 
     flags = TCP_FIN_FLAG | TCP_ACK_FLAG;
-    rc = asn_write_value_field(fin_template, &flags, sizeof(flags), 
-                               "pdus.0.#tcp.flags.#plain");
+    rc = asn_write_int32(fin_template, flags, "pdus.0.#tcp.flags.#plain");
     if (rc != 0)
     {
         ERROR("%s(): set fin flag failed %r", 

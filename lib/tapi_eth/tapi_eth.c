@@ -548,9 +548,8 @@ tapi_eth_prepare_pattern_unit(uint8_t *src_mac, uint8_t *dst_mac,
         if (rc) break;
 
         if (eth_type)
-            rc = asn_write_value_field(pat_unit, 
-                                       &eth_type, sizeof(eth_type),
-                                       "pdus.0.#eth.eth-type.#plain");
+            rc = asn_write_int32(pat_unit, eth_type, 
+                                 "pdus.0.#eth.eth-type.#plain");
         if (rc) break;
     } while(0);
 

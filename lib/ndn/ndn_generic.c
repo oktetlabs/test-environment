@@ -512,7 +512,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     size_t pat_d_len;
 
     int      rc = 0;
-    uint32_t user_int;
+    uint32_t user_int = 0;
 
     if (pattern == NULL || data == NULL || label == NULL)
         return TE_EWRONGPTR; 
@@ -694,14 +694,15 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
         {
             case INTEGER:
             case ENUMERATED:
-                rc = asn_write_value_field(pkt_pdu, &user_int,
-                                           sizeof(user_int), labels_buffer);
+                rc = asn_write_int32(pkt_pdu, user_int, labels_buffer);
                 break;
+
             case OCT_STRING:
             case CHAR_STRING:
                 rc = asn_write_value_field(pkt_pdu, data, d_len, 
                                            labels_buffer);
                 break;
+
             default:
                 WARN("unsupported yet");
         }

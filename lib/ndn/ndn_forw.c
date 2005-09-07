@@ -492,7 +492,7 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
         val = asn_init_value(ndn_forw_action);
 
         rc = asn_write_value_field(val, 
-                        forw_action->id, strlen (forw_action->id), "id"); 
+                        forw_action->id, strlen(forw_action->id), "id"); 
         if (rc != 0)
             break;
                             
@@ -501,9 +501,8 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
             case FORW_DROP_DISABLED:
                 break; /* do nothing */
             case FORW_DROP_RANDOM:
-                rc = asn_write_value_field(val, &forw_action->drop.rate,
-                                           sizeof(forw_action->drop.rate),
-                                           "drop.#random-rate");
+                rc = asn_write_int32(val, forw_action->drop.rate,
+                                     "drop.#random-rate");
                 break;
             case FORW_DROP_PATTERN:
                 rc = asn_write_value_field(val, 
@@ -517,19 +516,16 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
 
         if (forw_action->reorder.type != FORW_REORDER_DISABLED)
         {
-            rc = asn_write_value_field(val, &forw_action->reorder.type,
-                                       sizeof(forw_action->reorder.type),
-                                       "reorder.type");
+            rc = asn_write_int32(val, forw_action->reorder.type,
+                                 "reorder.type");
             if (rc != 0)
                 break;
-            rc = asn_write_value_field(val, &forw_action->reorder.timeout,
-                                       sizeof(forw_action->reorder.timeout),
-                                       "reorder.timeout.#plain");
+            rc = asn_write_int32(val, forw_action->reorder.timeout,
+                                 "reorder.timeout.#plain");
             if (rc != 0)
                 break;
-            rc = asn_write_value_field(val, &forw_action->reorder.r_size,
-                                       sizeof(forw_action->reorder.r_size),
-                                       "reorder.reorder-size.#plain");
+            rc = asn_write_int32(val, forw_action->reorder.r_size,
+                                 "reorder.reorder-size.#plain");
             if (rc != 0)
                 break;
         }
@@ -545,13 +541,11 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                     forw_action->delay.min;
                 /* fall through */
             case FORW_DELAY_RAND_CONT:
-                rc = asn_write_value_field(val, &forw_action->delay.min,
-                                           sizeof(forw_action->delay.min),
+                rc = asn_write_int32(val, forw_action->delay.min,
                                            "delay.#cont.delay-min");
                 if (rc != 0) 
                     break;
-                rc = asn_write_value_field(val, &forw_action->delay.max,
-                                           sizeof(forw_action->delay.max),
+                rc = asn_write_int32(val, forw_action->delay.max,
                                            "delay.#cont.delay-max");
                 break;
             case FORW_DELAY_RAND_DISCR:
@@ -574,18 +568,14 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                         asn_value *pair_val = 
                             asn_init_value(ndn_forw_discr_pair);
 
-                        rc = asn_write_value_field
-                                (pair_val,  
-                                 &forw_action->delay.discr[i].prob,
-                                 sizeof(forw_action->delay.discr[i].prob),
+                        rc = asn_write_int32(pair_val,  
+                                 forw_action->delay.discr[i].prob,
                                  "prob");
                         if (rc != 0)
                             break;
 
-                        rc = asn_write_value_field
-                                (pair_val,
-                                 &forw_action->delay.discr[i].delay,
-                                 sizeof(forw_action->delay.discr[i].delay),
+                        rc = asn_write_int32(pair_val,
+                                 forw_action->delay.discr[i].delay,
                                  "delay");
                         if (rc != 0)
                             break;

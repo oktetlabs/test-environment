@@ -195,9 +195,8 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
                                 eth_dev, strlen(eth_dev),
                                     "device-id.#plain"); 
         if (rc != 0) break;
-        rc = asn_write_value_field(csap_eth_level, 
-                                &ip_eth, sizeof(ip_eth),
-                                    "eth-type.#plain");
+        rc = asn_write_int32(csap_eth_level, ip_eth,
+                             "eth-type.#plain");
         if (loc_mac_addr) 
             rc = asn_write_value_field(csap_eth_level,
                                        loc_mac_addr, 6,

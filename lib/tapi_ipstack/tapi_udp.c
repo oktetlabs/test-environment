@@ -197,14 +197,14 @@ tapi_udp_ip4_eth_pattern_unit(const uint8_t *src_addr,
         }
         if (src_port != 0)
         {
-            rc = asn_write_value_field(pattern, &src_port, sizeof(src_port),
-                                       "pdus.0.#udp.src-port.#plain");
+            rc = asn_write_int32(pattern, src_port,
+                                 "pdus.0.#udp.src-port.#plain");
             if (rc != 0) break;
         }
         if (dst_port != 0)
         {
-            rc = asn_write_value_field(pattern, &dst_port, sizeof(dst_port),
-                                       "pdus.0.#udp.dst-port.#plain");
+            rc = asn_write_int32(pattern, dst_port,
+                                 "pdus.0.#udp.dst-port.#plain");
             if (rc != 0) break;
         }
     } while(0);
@@ -303,10 +303,8 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
     csap_level_spec = asn_init_value(ndn_generic_csap_level);
     csap_udp_level  = asn_init_value(ndn_udp_csap);
 
-    asn_write_value_field(csap_udp_level, &loc_port, sizeof(loc_port),
-                          "local-port.#plain");
-    asn_write_value_field(csap_udp_level, &rem_port, sizeof(rem_port),
-                          "remote-port.#plain");
+    asn_write_int32(csap_udp_level, loc_port, "local-port.#plain");
+    asn_write_int32(csap_udp_level, rem_port, "remote-port.#plain");
 
     asn_write_component_value(csap_level_spec, csap_udp_level, "#udp");
 
@@ -407,16 +405,14 @@ tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
         }
         if (loc_port != 0)
         {
-            rc = asn_write_value_field(csap_spec, &loc_port,
-                                       sizeof(loc_port),
-                                       "0.#udp.local-port.#plain");
+            rc = asn_write_int32(csap_spec, loc_port,
+                                 "0.#udp.local-port.#plain");
             if (rc != 0) break;
         }
         if (rem_port != 0)
         {
-            rc = asn_write_value_field(csap_spec, &rem_port,
-                                       sizeof(rem_port),
-                                       "0.#udp.remote-port.#plain");
+            rc = asn_write_int32(csap_spec, rem_port,
+                                 "0.#udp.remote-port.#plain");
             if (rc != 0) break;
         }
 

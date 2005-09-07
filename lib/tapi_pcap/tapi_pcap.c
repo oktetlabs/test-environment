@@ -283,10 +283,8 @@ tapi_pcap_pattern_add(const char *filter,
         return rc;
     }
 
-    tmp_len = sizeof(filter_id);
-    VERB("Call asn_write_value_field(\"filter-id\")");
-    if ((rc = asn_write_value_field(pcap_pdu, &filter_id, tmp_len,
-                                    "filter-id")) != 0)
+    VERB("Call asn_write_int32(\"filter-id\")");
+    if ((rc = asn_write_int32(pcap_pdu, filter_id, "filter-id")) != 0)
     {
         ERROR("Cannot write ASN value \"filter-id\"");
         return rc;

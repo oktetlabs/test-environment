@@ -345,21 +345,25 @@ ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
  * Sets the value of 'field_' in ASN.1 DHCPv4 structure
  * It sets the value only if is_'field'_set flag is set
  */
-#define PKT_SET_VALUE(ptr_, field_) \
+
+#define PKT_SET_SIMPLE_VALUE(field_) \
+    do {                                                          \
+        if (rc == 0 && (dhcp_msg)->is_ ## field_ ## _set == TRUE) \
+        {                                                         \
+            rc = asn_write_int32(*pkt, (dhcp_msg)->field_,        \
+                                 #field_ ".#plain");              \
+        }                                                         \
+    } while (0)
+
+#define PKT_SET_ARRAY_VALUE(field_) \
     do {                                                          \
         len = sizeof((dhcp_msg)->field_);                         \
         if (rc == 0 && (dhcp_msg)->is_ ## field_ ## _set == TRUE) \
         {                                                         \
-            rc = asn_write_value_field(*pkt, (ptr_),              \
+            rc = asn_write_value_field(*pkt, ((dhcp_msg)->field_),\
                                        len, #field_ ".#plain");   \
         }                                                         \
     } while (0)
-
-#define PKT_SET_SIMPLE_VALUE(field_) \
-    PKT_SET_VALUE((&((dhcp_msg)->field_)), field_)
-
-#define PKT_SET_ARRAY_VALUE(field_) \
-    PKT_SET_VALUE(((dhcp_msg)->field_), field_)
 
     *pkt = asn_init_value(ndn_dhcpv4_message);
 
@@ -380,7 +384,6 @@ ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
 
 #undef PKT_SET_ARRAY_VALUE
 #undef PKT_SET_SIMPLE_VALUE
-#undef PKT_SET_VALUE
 
     if (rc == 0)
         rc = ndn_dhcpv4_add_opts(*pkt, dhcp_msg->opts);
@@ -400,12 +403,8 @@ ndn_dhcpv4_add_opts(asn_value_p container, struct dhcp_option *opt)
 
     for (; opt != NULL; opt = opt->next)
     {
-        CHECK_RC(asn_write_value_field(dhcp_opt,
-                                       &(opt->type), sizeof(opt->type),
-                                       "type.#plain"));
-        CHECK_RC(asn_write_value_field(dhcp_opt,
-                                       &(opt->len), sizeof(opt->len),
-                                       "length.#plain"));
+        CHECK_RC(asn_write_int32(dhcp_opt, opt->type, "type.#plain"));
+        CHECK_RC(asn_write_int32(dhcp_opt, opt->len, "length.#plain"));
         CHECK_RC(asn_write_value_field(dhcp_opt,
                                        opt->val, opt->val_len,
                                        "value.#plain"));
@@ -807,7 +806,7 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
     csap_level_spec = asn_init_value(ndn_generic_csap_level);
     asn_dhcp_csap   = asn_init_value(ndn_dhcpv4_csap);
 
-    asn_write_value_field(asn_dhcp_csap, &mode, sizeof(mode), "mode");
+    asn_write_int32(asn_dhcp_csap, mode, "mode");
     asn_write_value_field(asn_dhcp_csap, iface, strlen(iface) + 1, "iface");
 
     rc = asn_write_component_value(csap_level_spec, asn_dhcp_csap, "#dhcp");
@@ -979,7 +978,7 @@ dhcp_pkt_handler(char *pkt_fname, void *user_param)
     asn_value_p               pkt;
     asn_value_p               dhcp_pkt;
 
-    VERB("%s called", __FUNCTION__);
+    RING("%s called", __FUNCTION__);
 
     rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet, &pkt,
                                   &s_parsed);
@@ -1006,7 +1005,7 @@ dhcp_pkt_handler(char *pkt_fname, void *user_param)
     }
 
     rcv_pkt->dhcp_msg = dhcp_msg;
-    VERB("%s msg op %d", __FUNCTION__, dhcp_msg->op);
+    RING("%s msg op %d", __FUNCTION__, dhcp_msg->op);
 }
 
 

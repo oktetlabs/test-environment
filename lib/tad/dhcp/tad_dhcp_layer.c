@@ -85,11 +85,12 @@ dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
     int rc;
     int xid;
     size_t len = sizeof (xid);
+
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         xid = random();
-        rc = asn_write_value_field(tmpl_pdu, &xid, sizeof(xid), "xid.#plain");
+        rc = asn_write_int32(tmpl_pdu, xid, "xid.#plain");
         if (rc) 
             return rc;
     }
@@ -507,8 +508,7 @@ dhcp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
     if (rc == 0)
     {
-        rc = asn_write_value_field(*pattern_pdu, &xid, sizeof(xid),
-                                   "xid.#plain");
+        rc = asn_write_int32(*pattern_pdu, xid, "xid.#plain");
     }
     /* TODO: DHCP options to be inserted into pattern */
     UNUSED(csap_id);

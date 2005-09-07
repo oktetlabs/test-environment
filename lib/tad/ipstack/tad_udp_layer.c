@@ -127,9 +127,8 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         {
             VERB("%s: set dst-port to %u",
                   __FUNCTION__, udp_spec_data->local_port);
-            rc = asn_write_value_field(tmpl_pdu, &udp_spec_data->local_port,
-                                       sizeof(udp_spec_data->local_port),
-                                       "dst-port.#plain");
+            rc = asn_write_int32(tmpl_pdu, udp_spec_data->local_port,
+                                 "dst-port.#plain");
             if (rc != 0)
             {
                 ERROR("%s: failed to update dst-port in pattern: %r",
@@ -143,9 +142,8 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         {
             VERB("%s: set src-port to %u",
                   __FUNCTION__, udp_spec_data->remote_port);
-            rc = asn_write_value_field(tmpl_pdu, &udp_spec_data->remote_port,
-                                       sizeof(udp_spec_data->remote_port),
-                                       "src-port.#plain");
+            rc = asn_write_int32(tmpl_pdu, udp_spec_data->remote_port,
+                                 "src-port.#plain");
             if (rc != 0)
             {
                 ERROR("%s: failed to update src-port in pattern: %r",
@@ -163,9 +161,8 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
         {
             VERB("%s: set src-port to %u",
                   __FUNCTION__, udp_spec_data->local_port);
-            rc = asn_write_value_field(tmpl_pdu, &udp_spec_data->local_port,
-                                       sizeof(udp_spec_data->local_port),
-                                       "src-port.#plain");
+            rc = asn_write_int32(tmpl_pdu, udp_spec_data->local_port,
+                                 "src-port.#plain");
             if (rc != 0)
             {
                 ERROR("%s: failed to update src-port in pattern: %r",
@@ -182,10 +179,8 @@ udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
             {
                 VERB("%s: set dst-port to %u",
                       __FUNCTION__, udp_spec_data->remote_port);
-                rc = asn_write_value_field(tmpl_pdu,
-                                           &udp_spec_data->remote_port,
-                                           sizeof(udp_spec_data->remote_port),
-                                           "dst-port.#plain");
+                rc = asn_write_int32(tmpl_pdu, udp_spec_data->remote_port,
+                                     "dst-port.#plain");
                 if (rc != 0)
                 {
                     ERROR("%s: failed to update dst-port in pattern: %r",

@@ -224,23 +224,18 @@ ndn_eth_plain_to_packet(const ndn_eth_header_plain *eth_header)
                                    "src-addr.#plain");
 
     if (rc == 0) 
-        rc = asn_write_value_field(asn_eth_hdr, &eth_header->eth_type_len,
-                                   sizeof(eth_header->eth_type_len), 
-                                   "eth-type.#plain"); 
+        rc = asn_write_int32(asn_eth_hdr, eth_header->eth_type_len,
+                             "eth-type.#plain"); 
     if (rc == 0 && eth_header->is_tagged)
     {
-        rc = asn_write_value_field(asn_eth_hdr, &eth_header->cfi, 
-                                   sizeof(eth_header->cfi), 
-                                   "cfi.#plain"); 
+        rc = asn_write_int32(asn_eth_hdr, eth_header->cfi, "cfi.#plain");
 
         if (rc == 0)
-            rc = asn_write_value_field(asn_eth_hdr, &eth_header->priority,
-                                       sizeof(eth_header->priority), 
-                                       "priority.#plain"); 
+            rc = asn_write_int32(asn_eth_hdr, eth_header->priority,
+                                 "priority.#plain"); 
         if (rc == 0)
-            rc = asn_write_value_field(asn_eth_hdr, &eth_header->vlan_id, 
-                                       sizeof(eth_header->vlan_id), 
-                                       "vlan-id.#plain"); 
+            rc = asn_write_int32(asn_eth_hdr, eth_header->vlan_id, 
+                                 "vlan-id.#plain"); 
     }
 
     if (rc)

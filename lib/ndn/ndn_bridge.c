@@ -238,11 +238,11 @@ ndn_bpdu_plain_to_asn(const ndn_stp_bpdu_t *bpdu)
     if (new_value == NULL)
         return NULL;
 
+    /* Marco only for integer fields! */
 #define WRITE_BPDU_FIELD(fld_, label_) \
     do if (rc == 0)                                                     \
     {                                                                   \
-        rc = asn_write_value_field(new_value, &bpdu-> fld_ ,            \
-                                   sizeof(bpdu->fld_),label_ ".#plain");\
+        rc = asn_write_int32(new_value, bpdu-> fld_ , label_ ".#plain");\
     } while (0)
 
     WRITE_BPDU_FIELD(version, "version-id" ); 
@@ -267,13 +267,13 @@ ndn_bpdu_plain_to_asn(const ndn_stp_bpdu_t *bpdu)
 
 
 
+    /* Marco only for integer fields! */
 #define WRITE_BPDU_CFG_FIELD(fld_, label_) \
-    do                                                                    \
-    {                                                                     \
-        if (rc == 0)                                                      \
-            rc = asn_write_value_field(new_value, &bpdu->cfg.             \
-                                       fld_, sizeof(bpdu->cfg.fld_),      \
-                                       "content.#cfg." label_ ".#plain"); \
+    do                                                                  \
+    {                                                                   \
+        if (rc == 0)                                                    \
+            rc = asn_write_int32(new_value, bpdu->cfg.  fld_,           \
+                                 "content.#cfg." label_ ".#plain");     \
     } while (0)
 
     WRITE_BPDU_CFG_FIELD(flags, "flags" ); 

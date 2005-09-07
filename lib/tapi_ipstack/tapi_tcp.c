@@ -173,21 +173,13 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
         if (rc) break; 
 
         if(loc_port)
-        {
-            uint32_t port = ntohs(loc_port);
-            
-            rc = asn_write_value_field(csap_spec, 
-                     &port, sizeof(port), "0.#tcp.local-port.#plain");
-        }
+            rc = asn_write_int32(csap_spec, ntohs(loc_port),
+                                 "0.#tcp.local-port.#plain");
         if (rc) break; 
 
         if(rem_port)
-        {
-            uint32_t port = ntohs(rem_port);
-            
-            rc = asn_write_value_field(csap_spec, 
-                     &port, sizeof(port), "0.#tcp.remote-port.#plain");
-        }
+            rc = asn_write_int32(csap_spec, ntohs(rem_port), 
+                                 "0.#tcp.remote-port.#plain");
         if (rc) break;
 
         rc = asn_save_to_file(csap_spec, csap_fname);
@@ -209,8 +201,8 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 /* see description in tapi_tcp.h */
 int 
 tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
-                        uint16_t src_port, uint16_t dst_port,
-                        asn_value **result_value)
+                          uint16_t src_port, uint16_t dst_port,
+                          asn_value **result_value)
 {
     int rc;
     int num;
@@ -244,25 +236,21 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
             rc = asn_write_value_field(pu, &src_addr, 4, 
                                        "pdus.1.#ip4.src-addr.#plain");
 
+        if (rc) break;
         if (dst_addr)
             rc = asn_write_value_field(pu, &dst_addr, 4, 
                                        "pdus.1.#ip4.dst-addr.#plain");
 
-        if (src_port)
-        {
-            uint32_t port = src_port;
-            
-            rc = asn_write_value_field(pu, &port, sizeof(port),
-                                       "pdus.0.#tcp.src-port.#plain");
-        }
+        if (rc) break;
+        if (src_port) /* SRC port passed here in HOST byte order */
+            rc = asn_write_int32(pu, src_port,
+                                 "pdus.0.#tcp.src-port.#plain");
 
-        if (dst_port)
-        {
-            uint32_t port = dst_port;
-            
-            rc = asn_write_value_field(pu, &port, sizeof(port),
-                                       "pdus.0.#tcp.dst-port.#plain"); 
-        }
+        if (rc) break;
+        if (dst_port) /* DST port passed here in HOST byte order */
+            rc = asn_write_int32(pu, dst_port,
+                                 "pdus.0.#tcp.dst-port.#plain");
+        if (rc) break;
 
     } while (0);
 
@@ -577,10 +565,8 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     }
     RING("addr written");
 
-    loc_port = ntohs(loc_port);
-    rc = asn_write_value_field(csap_spec, (uint8_t *)&loc_port,
-                               sizeof(loc_port),
-                               "0.#tcp.local-port.#plain");
+    rc = asn_write_int32(csap_spec, ntohs(loc_port),
+                         "0.#tcp.local-port.#plain");
     if (rc != 0)
     {
         ERROR("%s(): write port failed, rc %X", __FUNCTION__, rc);

@@ -111,12 +111,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         asn_value_p pdus = asn_init_value(ndn_generic_pdu_sequence);
 
         *packet = asn_init_value(ndn_raw_packet);
-        asn_write_value_field(*packet, &current.tv_sec,
-                              sizeof(current.tv_sec),
-                              "received.seconds");
-        asn_write_value_field(*packet, &current.tv_usec,
-                              sizeof(current.tv_sec),
-                              "received.micro-seconds");
+        asn_write_int32(*packet, current.tv_sec, "received.seconds");
+        asn_write_int32(*packet, current.tv_usec, "received.micro-seconds");
 
         asn_write_component_value(*packet, pdus, "pdus");
         asn_free_value(pdus);

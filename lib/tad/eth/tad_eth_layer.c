@@ -238,9 +238,8 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     {
         spec_data->du_eth_type.du_type = TAD_DU_I32;     
         spec_data->du_eth_type.val_i32 = spec_data->eth_type;         
-        asn_write_value_field(tmpl_pdu, &(spec_data->eth_type), 
-                              sizeof(spec_data->eth_type), 
-                              "eth-type.#plain");
+        asn_write_int32(tmpl_pdu, spec_data->eth_type, 
+                        "eth-type.#plain");
         VERB("%s(CSAP %d): chosen eth-type %d", 
              __FUNCTION__, csap_id, spec_data->eth_type); 
     }
