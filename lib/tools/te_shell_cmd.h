@@ -91,22 +91,43 @@ te_shell_cmd_inline(const char *cmd, uid_t uid, int *in_fd, int *out_fd)
     if (pid == 0)
     {
         setpgid(getpid(), getpid());
-        if (in_fd != 0)
+        if (in_fd != NULL)
         {
             close(in_pipe[1]);
-            if (in_pipe[0] != STDIN_FILENO)
+            if (in_pipe[0] != STDIN_FILENO && 
+                (out_fd == NULL || out_pipe[1] != STDIN_FILENO))
             {
                 close(STDIN_FILENO);
                 dup2(in_pipe[0], STDIN_FILENO);
             }
         }
-        if (out_fd != 0)
+        if (out_fd != NULL)
         {
             close(out_pipe[0]);
-            if (out_pipe[1] != STDOUT_FILENO)
+            if (out_pipe[1] != STDOUT_FILENO &&
+                (in_fd == NULL || out_pipe[1] != STDIN_FILENO))
             {
                 close(STDOUT_FILENO);
                 dup2(out_pipe[1], STDOUT_FILENO);
+            }
+        }
+        if (in_fd != NULL && out_fd != NULL && out_pipe[1] == STDIN_FILENO)
+        {
+            if (in_pipe[0] != STDOUT_FILENO)
+            {
+                close(STDOUT_FILENO);
+                dup2(out_pipe[1], STDOUT_FILENO);
+                close(STDIN_FILENO);
+                dup2(in_pipe[0], STDIN_FILENO);
+            }
+            else
+            {
+                int fd = dup(out_pipe[1]);
+
+                close(out_pipe[1]);
+                dup2(in_pipe[0], out_pipe[1]);
+                close(in_pipe[0]);
+                dup2(fd, in_pipe[0]);
             }
         }
         if (uid != (uid_t)(-1) && setuid(uid) != 0)
