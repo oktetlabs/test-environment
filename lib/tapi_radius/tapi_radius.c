@@ -826,7 +826,6 @@ tapi_radius_serv_add_user(const char *ta_name,
                           const tapi_radius_attr_list_t *chlg_attrs)
 {
     int        rc;
-    char      *attr_str;
     cfg_handle handle;
 
     assert(ta_name != NULL && user_name != NULL);
@@ -840,32 +839,105 @@ tapi_radius_serv_add_user(const char *ta_name,
               user_name, ta_name);
         return TE_RC(TE_TAPI, rc);
     }
-#define ADD_ATTR_LIST(_attrs, _name, _cfg_name) \
-    if (_attrs != NULL)                                                     \
-    {                                                                       \
-        if ((rc = tapi_radius_attr_list_to_string(_attrs, &attr_str)) != 0) \
-        {                                                                   \
-            ERROR("Failed to convert " _name " RADIUS attributes list "     \
-                  "for user '%s' to string", user_name);                    \
-            return TE_RC(TE_TAPI, rc);                                      \
-        }                                                                   \
-        if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, attr_str),           \
-                    "/agent:%s/radiusserver:/user:%s/" _cfg_name ":",       \
-                    ta_name, user_name)) != 0)                              \
-        {                                                                   \
-            ERROR("Failed to add " _name " RADIUS attributes list '%s'"     \
-                  "for user '%s'", attr_str, user_name);                    \
-            free(attr_str);                                                 \
-            return TE_RC(TE_TAPI, rc);                                      \
-        }                                                                   \
-        free(attr_str);                                                     \
+
+    rc = tapi_radius_serv_set_user_attr(ta_name, user_name,
+                                        TAPI_RADIUS_USR_CHECK_LST,
+                                        check_attrs);
+
+    if (rc == 0 && acpt_attrs != NULL)
+        tapi_radius_serv_set_user_attr(ta_name, user_name,
+                                       TAPI_RADIUS_USR_ACPT_LST,
+                                       acpt_attrs);
+
+    if (rc == 0 && chlg_attrs != NULL)
+        tapi_radius_serv_set_user_attr(ta_name, user_name,
+                                       TAPI_RADIUS_USR_CHLG_LST,
+                                       chlg_attrs);
+
+    return rc;
+}
+
+/**
+ * Converts user list type to string value.
+ *
+ * @param list_type  User list type to convert
+ *
+ * @return String constant representing list type
+ */
+static const char *
+tapi_radius_usr_list_type2str(tapi_radius_usr_list_t list_type)
+{
+    switch (list_type)
+    {
+        case TAPI_RADIUS_USR_CHECK_LST:
+            return "check";
+    
+        case TAPI_RADIUS_USR_ACPT_LST:
+            return "Access-Accept";
+        
+        case TAPI_RADIUS_USR_CHLG_LST:
+            return "Access-Challenge";
+        
+        default:
+            return "Unknown";
     }
 
-    ADD_ATTR_LIST(check_attrs, "check", "check");
-    ADD_ATTR_LIST(acpt_attrs, "Access-Accept", "accept-attrs");
-    ADD_ATTR_LIST(chlg_attrs, "Access-Challenge", "challenge-attrs");
+    return "";
+}
 
-#undef ADD_ATTR_LIST
+/* See the description in tapi_radius.h */
+int
+tapi_radius_serv_set_user_attr(const char *ta_name,
+                               const char *user_name,
+                               tapi_radius_usr_list_t list_type,
+                               const tapi_radius_attr_list_t *attrs)
+{
+    const char *cfg_name;
+    char       *attr_str = NULL;
+    int         rc;
+
+    if (attrs != NULL)
+    {
+        if ((rc = tapi_radius_attr_list_to_string(attrs, &attr_str)) != 0)
+        {
+            ERROR("Failed to convert %s RADIUS attributes list "
+                  "for user '%s' to string",
+                  tapi_radius_usr_list_type2str(list_type), user_name);
+            return TE_RC(TE_TAPI, rc);
+        }
+    }
+
+    switch (list_type)
+    {
+        case TAPI_RADIUS_USR_CHECK_LST:
+            cfg_name = "check";
+            break;
+    
+        case TAPI_RADIUS_USR_ACPT_LST:
+            cfg_name = "accept-attrs";
+            break;
+        
+        case TAPI_RADIUS_USR_CHLG_LST:
+            cfg_name = "challenge-attrs";
+            break;
+        
+        default:
+            ERROR("%s:%d Unknown attribute list type specified",
+                  __FILE__, __LINE__);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if ((rc = cfg_set_instance_fmt(
+                CFG_VAL(STRING, (attr_str != NULL) ? attr_str : NULL),
+                "/agent:%s/radiusserver:/user:%s/%s:",
+                ta_name, user_name, cfg_name)) != 0)
+    {
+        ERROR("Failed to add %s RADIUS attributes list '%s'"
+              "for user '%s'", cfg_name, attr_str, user_name);
+        free(attr_str);
+        return TE_RC(TE_TAPI, rc);
+    }
+    free(attr_str);
 
     return 0;
 }

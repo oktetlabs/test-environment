@@ -37,7 +37,8 @@
 #include "tad_common.h"
 
 #include <stdlib.h>
-#ifdef HAVE_NETINET_IN_H
+#include <stdio.h>
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
@@ -465,6 +466,14 @@ extern int tapi_radius_serv_add_client(const char *ta_name,
 extern int tapi_radius_serv_del_client(const char *ta_name,
                                        const struct in_addr *net_addr);
 
+
+/** Enumeration for user attribute list */
+typedef enum {
+    TAPI_RADIUS_USR_CHECK_LST, /**< Check attributes list */
+    TAPI_RADIUS_USR_ACPT_LST, /**< Accept attributes list */
+    TAPI_RADIUS_USR_CHLG_LST, /**< Challenge attributes list */
+} tapi_radius_usr_list_t;
+
 /**
  * Add user configuration on RADIUS Server.
  *
@@ -490,6 +499,23 @@ extern int tapi_radius_serv_add_user(
                             const tapi_radius_attr_list_t *check_attrs,
                             const tapi_radius_attr_list_t *acpt_attrs,
                             const tapi_radius_attr_list_t *chlg_attrs);
+
+/**
+ * Updates the particular user list on RADIUS Server
+ *
+ * @param ta_name    Test Agent name
+ * @param user_name  User name
+ * @param list_type  Which list to modify
+ * @param attrs      A list of RADIUS attributes that should be used
+ *                   for specified user (new list)
+ *
+ * @return Zero on success or error code.
+ */
+extern int tapi_radius_serv_set_user_attr(
+                            const char *ta_name,
+                            const char *user_name,
+                            tapi_radius_usr_list_t list_type,
+                            const tapi_radius_attr_list_t *attrs);
 
 /**
  * Delete user configuration from RADIUS Server.
