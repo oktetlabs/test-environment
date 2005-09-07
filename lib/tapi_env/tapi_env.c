@@ -73,7 +73,8 @@ static int prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets);
 static int prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets);
 static int prepare_pcos(tapi_env_hosts *hosts);
 
-static int add_address(tapi_env_addr *addr, cfg_nets_t *cfg_nets);
+static int add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
+                       const struct sockaddr *addr);
 
 static int bind_env_hosts_to_cfg_nets(tapi_env_hosts *hosts,
                                       cfg_nets_t *cfg_nets);
@@ -793,6 +794,84 @@ prepare_hosts(tapi_env_hosts *hosts, cfg_nets_t *cfg_nets)
 }
 
 
+te_errno
+prepare_ip4_unicast(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
+                    struct sockaddr **addr)
+{
+    int rc;
+
+    assert(addr != NULL);
+
+    if (env_addr->host->ip4_unicast_used)
+    {
+        rc = tapi_env_allocate_addr(env_addr->net, AF_INET, addr, NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to allocate additional IPv4 "
+                  "address: %r", rc);
+            return rc;
+        }
+
+        rc = add_address(env_addr, cfg_nets, *addr);
+        if (rc != 0)
+        {
+            ERROR("Failed to add address");
+            return rc;
+        }
+    }
+    else
+    {
+        cfg_handle      handle;
+        char           *node_oid;
+        int             ip4_addrs_num;
+        cfg_handle     *ip4_addrs;
+        cfg_val_type    val_type;
+
+        /* Handle of the assosiated network node */
+        handle = cfg_nets->nets[env_addr->host->i_net].
+                     nodes[env_addr->host->i_node].handle;
+
+        /* Get IPv4 address assigned to the node */
+        rc = cfg_get_oid_str(handle, &node_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to string OID by handle: %r", rc);
+            return rc;
+        }
+
+        /* Get IPv4 addresses of the node */
+        rc = cfg_find_pattern_fmt(&ip4_addrs_num, &ip4_addrs,
+                                  "%s/ip4_address:*", node_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to find IPv4 addresses assigned "
+                  "to node '%s': %r", node_oid, rc);
+            free(node_oid);
+            return rc;
+        }
+        if (ip4_addrs_num <= 0)
+        {
+            ERROR("No IPv4 addresses are assigned to node '%s'",
+                  node_oid);
+            free(node_oid);
+            return TE_EENV;
+        }
+
+        /* Get IPv4 address */
+        val_type = CVT_ADDRESS;
+        rc = cfg_get_instance(ip4_addrs[0], &val_type, addr);
+        free(node_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get node IPv4 address: %r", rc);
+            return rc;
+        }
+
+        env_addr->host->ip4_unicast_used = TRUE;
+    }
+
+    return 0;
+}
 
 /**
  * Prepare required addresses in accordance with bound network
@@ -806,11 +885,11 @@ prepare_hosts(tapi_env_hosts *hosts, cfg_nets_t *cfg_nets)
 static int
 prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
 {
-    int                 rc;
-    tapi_env_addr    *env_addr;
-    tapi_env_host    *host;
-    cfg_handle          handle;
-    cfg_val_type        val_type;
+    int             rc;
+    tapi_env_addr  *env_addr;
+    tapi_env_host  *host;
+    cfg_handle      handle;
+    cfg_val_type    val_type;
 
     for (env_addr = addrs->cqh_first;
          env_addr != (void *)addrs;
@@ -825,133 +904,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
         handle = cfg_nets->nets[host->i_net].
                      nodes[host->i_node].handle;
 
-        if (env_addr->family == RPC_AF_INET)
-        {
-            /* Set address length */
-            env_addr->addrlen = sizeof(struct sockaddr_in);
-
-            env_addr->addr->sa_family = AF_INET;
-            if (env_addr->type == TAPI_ENV_ADDR_UNICAST)
-            {
-                if (env_addr->host->ip4_unicast_used)
-                {
-                    rc = tapi_env_allocate_addr(env_addr->net, AF_INET,
-                                              &env_addr->addr, NULL);
-                    if (rc != 0)
-                    {
-                        ERROR("Failed to allocate additional IPv4 "
-                              "address: %r", rc);
-                        break;
-                    }
-
-                    rc = add_address(env_addr, cfg_nets);
-                    if (rc != 0)
-                    {
-                        ERROR("Failed to add address");
-                        break;
-                    }
-                }
-                else
-                {
-                    char           *node_oid;
-                    int             ip4_addrs_num;
-                    cfg_handle     *ip4_addrs;
-
-                    /* Get IPv4 address assigned to the node */
-                    rc = cfg_get_oid_str(handle, &node_oid);
-                    if (rc != 0)
-                    {
-                        ERROR("Failed to string OID by handle: %r", rc);
-                        break;
-                    }
-
-                    /* Get IPv4 addresses of the node */
-                    rc = cfg_find_pattern_fmt(&ip4_addrs_num, &ip4_addrs,
-                                              "%s/ip4_address:*", node_oid);
-                    if (rc != 0)
-                    {
-                        ERROR("Failed to find IPv4 addresses assigned "
-                              "to node '%s': %r", node_oid, rc);
-                        free(node_oid);
-                        break;
-                    }
-                    if (ip4_addrs_num <= 0)
-                    {
-                        ERROR("No IPv4 addresses are assigned to node '%s'",
-                              node_oid);
-                        free(node_oid);
-                        rc = TE_EENV;
-                        break;
-                    }
-
-                    /* Get IPv4 address */
-                    val_type = CVT_ADDRESS;
-                    rc = cfg_get_instance(ip4_addrs[0], &val_type,
-                                          &env_addr->addr);
-                    free(node_oid);
-                    if (rc != 0)
-                    {
-                        ERROR("Failed to get node IPv4 address: %r", rc);
-                        break;
-                    }
-
-                    env_addr->host->ip4_unicast_used = TRUE;
-                }
-            }
-            else if (env_addr->type == TAPI_ENV_ADDR_FAKE_UNICAST)
-            {
-                rc = tapi_env_allocate_addr(env_addr->net, AF_INET,
-                                          &env_addr->addr, NULL);
-                if (rc != 0)
-                {
-                    ERROR("Failed to allocate additional IPv4 "
-                          "address: %r", rc);
-                    break;
-                }
-            }
-            else if (env_addr->type == TAPI_ENV_ADDR_LOOPBACK)
-            {
-                SIN(env_addr->addr)->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-            }
-            else if (env_addr->type == TAPI_ENV_ADDR_WILDCARD)
-            {
-                SIN(env_addr->addr)->sin_addr.s_addr = htonl(INADDR_ANY);
-            }
-            else if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
-            {
-                static uint32_t alien_addr = 0x21212121;
-    
-                /* TODO - get it from Configurator */
-                SIN(env_addr->addr)->sin_addr.s_addr = htonl(alien_addr);
-                alien_addr += 0x01000000;
-            }
-            else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
-            {
-                SIN(env_addr->addr)->sin_addr.s_addr =
-                    htonl(rand_range(0xe0000000, 0xefffffff));
-            }
-            else if (env_addr->type == TAPI_ENV_ADDR_BROADCAST)
-            {
-                memcpy(env_addr->addr, &env_addr->net->ip4bcast,
-                       sizeof(env_addr->net->ip4bcast));
-            }
-            else
-            {
-                ERROR("Unsupported IPv4 address type");
-                return TE_EINVAL;
-            }
-
-            /* Set allocated port */
-            rc = tapi_allocate_port(&(SIN(env_addr->addr)->sin_port));
-            if (rc != 0)
-            {
-                ERROR("Failed to allocate a port for address: %r", rc);
-                return rc;
-            }
-            SIN(env_addr->addr)->sin_port =
-                htons(SIN(env_addr->addr)->sin_port);
-        }
-        else if (env_addr->family == RPC_AF_ETHER)
+        if (env_addr->family == RPC_AF_ETHER)
         {
             env_addr->addrlen = sizeof(struct sockaddr);
             /* It's not right family, but it's used in Configurator */
@@ -1011,13 +964,123 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
                 return TE_EINVAL;
             }
         }
+        else if (env_addr->family == RPC_AF_INET)
+        {
+            /* Set address length */
+            env_addr->addrlen = sizeof(struct sockaddr_in);
+
+            env_addr->addr->sa_family = AF_INET;
+            if (env_addr->type == TAPI_ENV_ADDR_UNICAST)
+            {
+                rc = prepare_ip4_unicast(env_addr, cfg_nets,
+                                         &env_addr->addr);
+                if (rc != 0)
+                    break;
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_FAKE_UNICAST)
+            {
+                rc = tapi_env_allocate_addr(env_addr->net, AF_INET,
+                                          &env_addr->addr, NULL);
+                if (rc != 0)
+                {
+                    ERROR("Failed to allocate additional IPv4 "
+                          "address: %r", rc);
+                    break;
+                }
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_LOOPBACK)
+            {
+                SIN(env_addr->addr)->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_WILDCARD)
+            {
+                SIN(env_addr->addr)->sin_addr.s_addr = htonl(INADDR_ANY);
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
+            {
+                static uint32_t alien_addr = 0x21212121;
+    
+                /* TODO - get it from Configurator */
+                SIN(env_addr->addr)->sin_addr.s_addr = htonl(alien_addr);
+                alien_addr += 0x01000000;
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
+            {
+                SIN(env_addr->addr)->sin_addr.s_addr =
+                    htonl(rand_range(0xe0000000, 0xefffffff));
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_BROADCAST)
+            {
+                memcpy(env_addr->addr, &env_addr->net->ip4bcast,
+                       sizeof(env_addr->net->ip4bcast));
+            }
+            else
+            {
+                ERROR("Unsupported IPv4 address type");
+                return TE_EINVAL;
+            }
+
+            /* Set allocated port */
+            rc = tapi_allocate_port_htons(
+                     &(SIN(env_addr->addr)->sin_port));
+            if (rc != 0)
+            {
+                ERROR("Failed to allocate a port for address: %r", rc);
+                return rc;
+            }
+        }
+        else if (env_addr->family == RPC_AF_INET6)
+        {
+            /* Set address length */
+            env_addr->addrlen = sizeof(struct sockaddr_in6);
+
+            env_addr->addr->sa_family = AF_INET6;
+            if (env_addr->type == TAPI_ENV_ADDR_IP4MAPPED_UC)
+            {
+                struct sockaddr *ip4;
+
+                rc = prepare_ip4_unicast(env_addr, cfg_nets, &ip4);
+                if (rc != 0)
+                    break;
+
+                SIN6(env_addr->addr)->sin6_addr.s6_addr16[5] = 0xffff;
+                SIN6(env_addr->addr)->sin6_addr.s6_addr32[3] =
+                    SIN(ip4)->sin_addr.s_addr;
+
+                free(ip4);
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_WILDCARD)
+            {
+                SIN6(env_addr->addr)->sin6_addr = in6addr_any;
+            }
+            else
+            {
+                ERROR("Unsupported IPv6 address type");
+                return TE_EINVAL;
+            }
+
+            /* Set allocated port */
+            rc = tapi_allocate_port_htons(
+                     &(SIN6(env_addr->addr)->sin6_port));
+            if (rc != 0)
+            {
+                ERROR("Failed to allocate a port for address: %r", rc);
+                return rc;
+            }
+        }
+        else
+        {
+            ERROR("Unsupported address family");
+            return TE_EINVAL;
+        }
     }
     return 0;
 }
 
 
 static int
-add_address(tapi_env_addr *addr, cfg_nets_t *cfg_nets)
+add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
+            const struct sockaddr *addr)
 {
     int             rc;
     cfg_handle      handle;
@@ -1025,8 +1088,8 @@ add_address(tapi_env_addr *addr, cfg_nets_t *cfg_nets)
     cfg_val_type    val_type = CVT_STRING;
 
 
-    handle = cfg_nets->nets[addr->host->i_net].
-                       nodes[addr->host->i_node].handle;
+    handle = cfg_nets->nets[env_addr->host->i_net].
+                       nodes[env_addr->host->i_node].handle;
     rc = cfg_get_instance(handle, &val_type, &str);
     if (rc != 0)
     {
@@ -1037,10 +1100,10 @@ add_address(tapi_env_addr *addr, cfg_nets_t *cfg_nets)
 
     /* All is logged inside the function */
     rc = tapi_cfg_base_add_net_addr(str,
-                                    addr->addr,
-                                    addr->net->ip4pfx,
+                                    addr,
+                                    env_addr->net->ip4pfx,
                                     TRUE,
-                                    &addr->handle);
+                                    &env_addr->handle);
     if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
     {
         /* Address already assigned - continue */
