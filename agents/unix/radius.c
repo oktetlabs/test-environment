@@ -2355,7 +2355,7 @@ const char *radius_predefined_params[] = {
     "authenticate.Auth-Type(CHAP).chap", NULL,
     "authenticate.Auth-Type(MS-CHAP).mschap", NULL,
     "authenticate.eap", NULL,
-#if 0
+#if 1
     "post-auth.files", NULL,    /* Patched FreeRADIUS is required */
 #endif
     NULL, NULL
