@@ -34,7 +34,7 @@ usage() {
     cat >&2 <<EOF
 
 USAGE: tce_report [--ignore-dirs] <input-file> <output-file> <source-dir> 
-                  [--exclude=regexp]
+                  [--exclude=regexp] [--conditionals=list]
 
 Processes GCOV data contained in the file <input-file> which should
 correspond to sources in <source-dir>. Coverage results are put into
@@ -63,6 +63,9 @@ for i; do
         --exclude=*)
         exclude=${i#--exclude=}
         ;;
+        --conditionals=*)
+        conditionals=${i#--conditionals=}
+        ;;
         --*) usage "Unknown option $i";;
         *) case $nfile in
             1) infile=$i ;;
@@ -79,9 +82,16 @@ if test $nfile -ne 4 ; then
     usage "Invalid number of arguments: $nfile"
 fi
 
-outfile=$mergefile.new
 mapfile=${infile%.tar}.map
 smapfile=${infile%.tar}.smap
+
+if test -n "$conditionals"; then
+    cb=`echo $conditionals | sed 's/^[[:space:]]*//
+                                  s/[[:space:]]*$//
+                                  s/[[:space:]][[:space:]]*/|/g'`
+    begincond="^#if(def)?[[:space:]]*($cb)[[:space:]]*\$"
+    endcond="^#endif[[:space:]]*/\\*[[:space:]]*($cb)[[:space:]]*\\*/"
+fi
 
 if test -z "$infile" -o -z "$mergefile" -o -z "$srcdir" ; then
     usage "Invalid arguments"
@@ -98,27 +108,20 @@ if test -z "`which tce_merge`" ; then
 fi
 
 
-echo "*** Test coverage report for $infile:" >$outfile
-echo "*** Sources are at $srcdir:" >>$outfile
+# cleanup files that might remain from previous sessions
 for pattern in '*.gcov' '*.da' '*.gcda' '.[a-z]*.da' '.[a-z]*.gcda'; do
     find $srcdir -follow -name "$pattern" -exec rm -f '{}' ';'
 done
+
+# convert gcov raw data to annotated sources
 tar -x -P -f $infile
 cat $mapfile | xargs -n2 tce_gcov >$smapfile
-if test -n "$ignoredir" -a ! -f "$mergefile"; then
-    auxfile=$mergefile.aux
-    cat $smapfile | xargs -n2 tce_merge "" true "$exclude"  >$auxfile
-    cat $smapfile | xargs -n2 tce_merge $auxfile true "$exclude" >>$outfile
-    rm -f $auxfile
-else
-    cat $smapfile | xargs -n2 tce_merge $mergefile "$ignoredir" "$exclude" >>$outfile
+
+# merge the results
+if test -f "$mergefile"; then
+    cp "$mergefile" "$mergefile".prev
 fi
+cat $smapfile | xargs -n2 tce_merge $mergefile "$ignoredir" "$exclude" 
 
-echo >>$outfile
 
-
-if test -f $mergefile ; then
-    mv -f $mergefile $mergefile.prev
-fi
-mv -f $outfile $mergefile
 

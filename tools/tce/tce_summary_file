@@ -1,0 +1,67 @@
+#! /bin/sh
+#
+# Test Coverage Estimation
+#
+# Script to summarize coverage data for a file
+#
+#
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# Author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
+#
+# $Id: tce_summary 18119 2005-09-06 10:27:06Z artem $
+#
+
+mergefile="$1"
+begincond="$2"
+endcond="$3"
+resultfile="$4"
+
+ar x $mergefile $resultfile
+tce_count $resultfile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' "$begincond" "$endcond" |
+{
+    read linesratio sum
+    echo -n "$linesratio% $sum "
+}
+
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' "$begincond" "$endcond" |
+(
+    read ratio sum
+    echo -n "$ratio% $sum "
+)
+
+tce_count $resultfile '^branch[[:space:]]*[0-9]+ (never executed|taken 0)' \
+    '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' "$begincond" "$endcond" |
+(
+    read ratio sum
+    if test "$ratio" == "0.00" -a "$linesratio" == "100.00"; then
+        ratio=100.00
+    fi
+
+    echo -n "$ratio% $sum "
+)
+
+tce_count $resultfile '^call[[:space:]]*[0-9]+ never executed' '^call[[:space:]]*[0-9]+ return' "$begincond" "$endcond" |
+(
+    read ratio sum
+    echo -n "$ratio% $sum "
+)
+echo "`awk -vFS=: '{ print $NF; exit 0 }' $resultfile` $resultfile"
+rm -f $resultfile

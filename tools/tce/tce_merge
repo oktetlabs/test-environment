@@ -34,7 +34,6 @@ ignoredir=$2
 exclude=$3
 gcovfile=$4
 modulename=$5
-oldfile=${gcovfile}.old
 resultfile=${gcovfile}.new
 
 source=`head -n1 $gcovfile | awk -F: '{ print $NF }'`
@@ -45,15 +44,14 @@ if test -n "$exclude"; then
 fi
 
 if test -n "$ignoredir"; then
-    stamp=`basename $source | md5sum`
+    stamp=`basename $source | md5sum | awk '{print $1}'`
 else
-    stamp=`head -n2 $gcovfile | md5sum`
+    stamp=`head -n2 $gcovfile | md5sum | awk '{ print $1}'`
 fi
-if test -f "$mergefile"; then
-    (awk "/$stamp/ { do_print = 1; next }
-         /^===/ { do_print = 0; next }
-         do_print { print }" $mergefile >$oldfile
-        if test "`cat $oldfile | wc -l`" -ne "`cat $gcovfile | wc -l`"; then
+stamp=${stamp}.${modulename}
+oldfile=${stamp}
+if ar x "$mergefile" "$stamp" 2>/dev/null && test -f "$stamp"; then
+    (   if test "`cat $oldfile | wc -l`" -ne "`cat $gcovfile | wc -l`"; then
             exit 1
         fi
         awk "{ print; getline < \"$gcovfile\"; print }" $oldfile  |
@@ -97,42 +95,13 @@ if test -f "$mergefile"; then
              }
              { print }'> $resultfile
 ) || (  echo "$gcovfile: files mismatch, not merging" >2
-        cat $gcovfile >$resultfile )
+        cp $gcovfile $resultfile )
 else
-    cat $gcovfile >$resultfile
+    cp $gcovfile $resultfile
 fi
 
-tce_count $resultfile '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' |
-{
-    read linesratio sum
-    echo "$linesratio% of $sum lines of code executed in file $source"
-}
-
-tce_count $resultfile '^branch[[:space:]]*[0-9]+ never executed' '^branch[[:space:]]*[0-9]+ taken' |
-(
-    read ratio sum
-    if test "$ratio" == "0" -a "$linesratio" == "100"; then
-        ratio=100
-    fi
-    echo "$ratio% of $sum branches of code executed in file $source"
-)
-
-tce_count $resultfile '^branch[[:space:]]*[0-9]+ (never executed|taken 0)' \
-    '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' |
-(
-    read ratio sum
-    echo "$ratio% of $sum branches of code taken at least once in file $source"
-)
-
-tce_count $resultfile '^call[[:space:]]*[0-9]+ never executed' '^call[[:space:]]*[0-9]+ return' |
-(
-    read ratio sum
-    echo "$ratio% of $sum calls executed in file $source"
-)
-
-echo "=== $stamp $modulename"
-cat $resultfile
-echo "======"
-
-rm -f $resultfile
 rm -f $oldfile
+mv $resultfile $oldfile
+ar cr $mergefile $stamp
+rm -f $oldfile
+
