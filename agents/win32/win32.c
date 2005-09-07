@@ -108,20 +108,6 @@ rcf_ch_unlock()
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_shutdown(struct rcf_comm_connection *handle,
-                char *cbuf, size_t buflen, size_t answer_plen)
-{
-    UNUSED(handle);
-    UNUSED(cbuf);
-    UNUSED(buflen);
-    UNUSED(answer_plen);
-    /* Standard handler is OK */
-    return -1;
-}
-
-
-/* See description in rcf_ch_api.h */
-int
 rcf_ch_reboot(struct rcf_comm_connection *handle,
               char *cbuf, size_t buflen, size_t answer_plen,
               const uint8_t *ba, size_t cmdlen, const char *params)
@@ -593,6 +579,27 @@ signal_registrar(int signum)
     sigaddset(&rpcs_received_signals, signum);
 }
 
+int
+rcf_ch_shutdown(struct rcf_comm_connection *handle,
+                char *cbuf, size_t buflen, size_t answer_plen)
+{
+    int rc;
+    
+    UNUSED(handle);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+
+    (void)signal(SIGINT, SIG_DFL);
+    (void)signal(SIGPIPE, SIG_DFL);
+
+    rc = log_shutdown();
+    if (rc != 0)
+        fprintf(stderr, "log_shutdown() failed: error=0x%X\n", rc);
+
+    return -1; /* Call default callback as well */
+}
+
 HINSTANCE ta_hinstance;
 
 /**
@@ -650,19 +657,11 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     rc = rcf_pch_run(tmp, buf);
     if (rc != 0)
     {
-        fprintf(stderr, "rcf_pch_run() failed: error=%d\n", rc);
+        fprintf(stderr, "rcf_pch_run() failed: error=0x%X\n", rc);
         if (retval == 0)
             retval = rc;
     }
 
-    rc = log_shutdown();
-    if (rc != 0)
-    {
-        fprintf(stderr, "log_shutdown() failed: error=%d\n", rc);
-        if (retval == 0)
-            retval = rc;
-    }
-    
     return retval;
 }
 
