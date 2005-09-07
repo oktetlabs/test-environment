@@ -42,6 +42,46 @@
 #include "rcf_rpc.h"
 #include "te_rpc_sys_socket.h"
 
+
+/**
+ * Get socket domain native for the address family.
+ *
+ * @param af        An address family
+ */
+static inline int
+socket_domain_by_af(int af)
+{
+    switch (af)
+    {
+        case AF_INET:   return PF_INET;
+        case AF_INET6:  return PF_INET6;
+        default:        return PF_MAX;
+    }
+}
+
+/**
+ * Get RPC socket domain native for the address family.
+ *
+ * @param af        An address family
+ */
+static inline rpc_socket_domain
+rpc_socket_domain_by_af(int af)
+{
+    return domain_h2rpc(socket_domain_by_af(af));
+}
+
+/**
+ * Get RPC socket domain native for the address.
+ *
+ * @param addr      An address
+ */
+static inline rpc_socket_domain
+rpc_socket_domain_by_addr(const struct sockaddr *addr)
+{
+    return rpc_socket_domain_by_af(addr->sa_family);
+}
+ 
+
 /**
  * Create an endpoint for communication on the RPC server side. 
  *
