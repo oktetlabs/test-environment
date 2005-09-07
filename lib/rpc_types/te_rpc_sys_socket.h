@@ -96,9 +96,7 @@ domain_rpc2str(rpc_socket_domain domain)
     {
         RPC2STR(PF_INET);
         RPC2STR(PF_INET6);
-#ifdef PF_PACKET
         RPC2STR(PF_PACKET);
-#endif
         RPC2STR(PF_LOCAL);
         RPC2STR(PF_UNIX);
         RPC2STR(PF_UNSPEC);
