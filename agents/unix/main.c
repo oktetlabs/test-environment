@@ -802,8 +802,15 @@ ta_sigint_handler(int sig)
 static void
 ta_sigpipe_handler(int sig)
 {
-    fprintf(stderr, "SIGPIPE is received\n");
+    static te_bool here = FALSE;
+
     UNUSED(sig);
+    if (!here)
+    {
+        here = TRUE;
+        fprintf(stderr, "SIGPIPE is received\n");
+        here = FALSE;
+    }
 }
 
 /** TRUE if first timeval is less than second */
