@@ -63,7 +63,7 @@ extern "C" {
 
 /** RCF operation codes */
 typedef enum {
-    RCFOP_SHUTDOWN,         /**< Shutdown RCF */
+    RCFOP_SHUTDOWN = 1,     /**< Shutdown RCF */
     RCFOP_TALIST,           /**< Get list of Test Agents */
     RCFOP_TACHECK,          /**< Check running TA */
     RCFOP_TATYPE,           /**< Get TA type */

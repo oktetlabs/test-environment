@@ -368,6 +368,9 @@ rcf_pch_run(const char *confstr, const char *info)
     int   sid = 0;
     int   cmd_buf_len = RCF_MAX_LEN;
     
+    size_t   answer_plen = 0;
+    rcf_op_t opcode = 0;
+    
 /**
  * Read any integer parameter from the command.
  *
@@ -429,10 +432,10 @@ rcf_pch_run(const char *confstr, const char *info)
     while (1)
     {
         size_t   len = cmd_buf_len;
-        size_t   answer_plen = 0; /* Len of data to be copied to answer */
-        rcf_op_t opcode;
         char    *ptr;
         char    *ba;         /* Binary attachment pointer */
+
+        answer_plen = 0;
 
         if ((rc = rcf_comm_agent_wait(conn, cmd, &len, &ba)) != 0 &&
             TE_RC_GET_ERROR(rc) != TE_EPENDING)
@@ -488,11 +491,6 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0 || ba != NULL)
                     goto bad_protocol;
 
-                if (rcf_ch_shutdown(conn, cmd, cmd_buf_len,
-                                    answer_plen) < 0)
-                {
-                    SEND_ANSWER("0");
-                }
                 goto exit;
                 break;
 
@@ -1057,6 +1055,11 @@ communication_problem:
 exit:
     rcf_ch_conf_release();
     rcf_pch_rpc_shutdown();
+    if (opcode == RCFOP_SHUTDOWN &&
+        rcf_ch_shutdown(conn, cmd, cmd_buf_len, answer_plen) < 0)
+    {
+        SEND_ANSWER("0");
+    }
     rcf_comm_agent_close(&conn);
     free(cmd);
 
