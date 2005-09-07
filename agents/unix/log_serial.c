@@ -65,7 +65,12 @@
 #define TE_LGR_USER      "Main"
 #include "logger_ta.h"
 
-
+/** Conserver escape sequences */
+#define CONSERVER_ESCAPE    "\05c"
+#define CONSERVER_CMDLEN    3
+#define CONSERVER_START     CONSERVER_ESCAPE ";"
+#define CONSERVER_SPY       CONSERVER_ESCAPE "s"
+#define CONSERVER_STOP      CONSERVER_ESCAPE "."
 
 static te_log_level_t
 map_name_to_level(const char *name)
@@ -248,9 +253,9 @@ open_conserver(const char *conserver)
     } while(0)
     
     SKIP_LINE;
-    write(sock, "\xFF\05c;", 4); /* this magic string causes conserver 
-                                   * to actually send us data
-                                   */
+    write(sock, CONSERVER_START, CONSERVER_CMDLEN);
+    SKIP_LINE;
+    write(sock, CONSERVER_SPY, CONSERVER_CMDLEN);
     SKIP_LINE;
     fcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL));
     return sock;
@@ -270,7 +275,7 @@ close_conserver_cleanup(long fd)
 {
     char buf[1];
     
-    write(fd, "\05c.", 3); /* sending disconnect message */
+    write(fd, CONSERVER_STOP, CONSERVER_CMDLEN);
     for(*buf = '\0'; *buf != '\n'; ) 
     { 
         if (read(fd, buf, 1) < 1)
