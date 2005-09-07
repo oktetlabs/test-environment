@@ -109,13 +109,7 @@ Generic options:
                                 (without by default)
   --vg-tester                   Run Tester under valgrind (without by default)
 
-  --tces-datadir=<dir>          Directory for TCE summary results splitted
-                                into many files
-  --tces-sort-by=<mode>         Sort TCE summary table by covered branch
-                                percentage (mode=branches, the default),
-                                covered line percentage (mode=lines),
-                                or source file names (mode=sources)
-  --tce-ignore-directories      Respect only base file names when doing TCE
+  --tcer-ignore-dirs            Respect only base file names when doing TCE
                                 report (useful when a given file is used in
                                 different contexts, e. g. in a user-space
                                 library and a kernel module, and you want total
@@ -123,6 +117,14 @@ Generic options:
                                 to unexpected results if there are actually
                                 files with equal base names in different
                                 directories.
+  --tcer-exclude=<pattern>      FIXME
+  --tces-modules                FIXME
+  --tces-datadir=<dir>          Directory for TCE summary results splitted
+                                into many files
+  --tces-sort-by=<mode>         Sort TCE summary table by covered branch
+                                percentage (mode=branches, the default),
+                                covered line percentage (mode=lines),
+                                or source file names (mode=sources)
 
 EOF
 #    echo -e '  '--log-dir='<directory>'\\t\\t'local directory for raw log (. by default)'
@@ -154,6 +156,8 @@ QUIET=
 TESTER_OPTS=
 # No additional TRC options by default
 TRC_OPTS=
+# No additional TCE report options by default
+TCER_OPTS=
 # No additional TCE summary options by default
 TCES_OPTS=
 # Configurator options
@@ -266,8 +270,9 @@ process_opts()
                          VG_LOGGER=yes ;
                          VG_TESTER=yes ;;
         
+            --tcer-*) TCER_OPTS="${TCER_OPTS} --${1#--tcer-}" ;;
             --tces-*) TCES_OPTS="${TCES_OPTS} --${1#--tces-}" ;;
-            --tce-ignore-directories) TCE_REPORT_OPTS=--ignore-directories ;;
+
             --no-builder) BUILDER= ;;
             --no-nuts-build) BUILD_NUTS= ;;
             --no-tester) TESTER= ;;
@@ -719,7 +724,7 @@ fi
 
 if test ${START_OK} -eq 0 -a -n "${DO_NUTS}" ; then
     myecho "--->>> TCE processing"
-    TCE_REPORT_OPTS="${TCE_REPORT_OPTS}" TCES_OPTS="${TCES_OPTS}" \
+    TCER_OPTS="${TCER_OPTS}" TCES_OPTS="${TCES_OPTS}" \
         te_tce_process "${CONF_NUT}"
 fi
 

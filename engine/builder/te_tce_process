@@ -38,7 +38,7 @@ for nut in $NUTS ; do
     tas="`eval echo '$NUT_'$nut'_TCE_TA'`"
     if test -z "$tas" ; then continue; fi
     for ta in $tas ; do
-        tce_report ${TCE_REPORT_OPTS} \
+        tce_report ${TCER_OPTS} \
                    "${TE_LOG_DIR}/tce_${nut}_${ta}.tar" \
                    "${TE_LOG_DIR}/tce_${nut}.log" \
                    "${NUT_SOURCES}" || exit 1
