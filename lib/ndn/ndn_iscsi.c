@@ -536,7 +536,6 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
             return rc;
         }
         asn_free_value(key_value);
-        asn_free_value(key_values);
         asn_free_value(key_pair);
     }
     
