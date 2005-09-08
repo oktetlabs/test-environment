@@ -1,0 +1,66 @@
+#! /bin/sh
+#
+# Test Coverage Estimation
+#
+# Log merging utility
+#
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# Author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
+#
+# $Id: tce_count 18119 2005-09-06 10:27:06Z artem $
+#
+
+usage() {
+    if test -n "$1" ; then
+        echo -e "$1" >&2
+    fi
+    cat >&2 <<EOF
+
+USAGE: tce_merge_logs BASE-LOG-FILE NEW-LOG-FILE
+
+Merges the data from NEW-LOG-FILE produced by tce_report
+into BASE-LOG-FILE.
+
+EOF
+    exit 1
+}
+
+mergefile="$1"
+newlog="$2"
+
+if test -z "$mergefile" -o -z "$newlog"; then
+    usage "Missing arguments"
+fi
+
+if test -z "`which tce_merge`" ; then
+    mydir=`dirname $0`
+    if test -x "${mydir}/tce_merge" ; then
+        export PATH="${mydir}:${PATH}"
+    else
+        echo "Supporting scripts not found!!!" >&2
+        exit 1
+    fi
+fi
+
+
+ar x "$newlog"
+ar t "$newlog" | awk -vFS=. '{ print $0, $2 }' | xargs -n2 tce_merge $mergefile "" ""
+ar t "$newlog" | xargs -n1 rm -f 
