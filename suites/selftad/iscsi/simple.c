@@ -182,14 +182,11 @@ main(int argc, char *argv[])
         if ((key_num = tapi_iscsi_get_key_num(segment_data)) == -1)
             TEST_FAIL("Cannot get key number");
 
-        printf("\nkey number is %d\n", key_num);
-
         for (key_index = 0; key_index < key_num; key_index++)
         {
             if ((key_name = tapi_iscsi_get_key_name(segment_data, 
                                                     key_index)) == NULL)
                 TEST_FAIL("Cannot get key name");
-            printf("\nkey_name is %s\n", key_name);
             if ((values = tapi_iscsi_get_key_values(segment_data, 
                                                     key_index)) == NULL)
                 TEST_FAIL("Cannot get key values");
@@ -199,7 +196,6 @@ main(int argc, char *argv[])
             {
                 TEST_FAIL("Cannot get values num");
             }
-            printf("\nvalues num is %d\n", key_values_num);
 
             for (key_values_index = 0; 
                  key_values_index < key_values_num; 
@@ -217,7 +213,6 @@ main(int argc, char *argv[])
                         if ((rc = tapi_iscsi_get_int_key_value(values, 
                                       key_values_index, &int_value)) != 0)
                             TEST_FAIL("cannot get int value");
-                        printf("\nget int value %d\n", int_value);
                         break;
                     }    
                     case iscsi_key_value_type_string:
@@ -225,14 +220,12 @@ main(int argc, char *argv[])
                         if ((rc = tapi_iscsi_get_string_key_value(values, 
                                       key_values_index, &str_value)) != 0)
                             TEST_FAIL("cannot get string value");
-                        printf("\nget string value %s\n", str_value);
                         break;
                     }
                 }
             }
         }
 
-        printf("\n----------------------------------\n");
         {
             iscsi_key_values values;
             rc = tapi_iscsi_add_new_key(segment_data, "NewKey", 
@@ -263,14 +256,12 @@ main(int argc, char *argv[])
         if ((key_num = tapi_iscsi_get_key_num(segment_data)) == -1)
             TEST_FAIL("Cannot get key number");
 
-        printf("\nkey number is %d\n", key_num);
 
         for (key_index = 0; key_index < key_num; key_index++)
         {
             if ((key_name = tapi_iscsi_get_key_name(segment_data, 
                                                     key_index)) == NULL)
                 TEST_FAIL("Cannot get key name");
-            printf("\nkey_name is %s\n", key_name);
             if ((values = tapi_iscsi_get_key_values(segment_data, 
                                                     key_index)) == NULL)
                 TEST_FAIL("Cannot get key values");
@@ -280,7 +271,6 @@ main(int argc, char *argv[])
             {
                 TEST_FAIL("Cannot get values num");
             }
-            printf("\nvalues num is %d\n", key_values_num);
 
             for (key_values_index = 0; 
                  key_values_index < key_values_num; 
@@ -298,7 +288,6 @@ main(int argc, char *argv[])
                         if ((rc = tapi_iscsi_get_int_key_value(values, 
                                       key_values_index, &int_value)) != 0)
                             TEST_FAIL("cannot get int value");
-                        printf("\nget int value %d\n", int_value);
                         break;
                     }    
                     case iscsi_key_value_type_string:
@@ -306,7 +295,6 @@ main(int argc, char *argv[])
                         if ((rc = tapi_iscsi_get_string_key_value(values, 
                                       key_values_index, &str_value)) != 0)
                             TEST_FAIL("cannot get string value");
-                        printf("\nget string value %s\n", str_value);
                         break;
                     }
                 }
