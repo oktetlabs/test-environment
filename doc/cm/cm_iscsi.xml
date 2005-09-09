@@ -181,4 +181,12 @@
          -->
     <object oid="/agent/iscsi/target_port" access="read_write"
         type="integer"/>
+
+    <!-- iSCSI Initiator support of target authentication.
+         Value: 0 (support disabled) or
+                1 (support enabled).
+         Limit:1 -->
+    <object oid="/agent/iscsi/tgt_auth" access="read_write"
+        type="integer"/>     
+        
 </backup>
