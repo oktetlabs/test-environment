@@ -29,9 +29,10 @@
     
     <!-- iSCSI Initiator configuring
          Name: iSCSI Target name
-         Value: 0, if set to 1 the Login attempt is performed
+         Value: up 5 - up the connection with CID 5
+                down 5 - down the connection with CID 5
          -->
-    <object oid="/agent/iscsi" access="read_create" type="integer"/>
+    <object oid="/agent/iscsi" access="read_create" type="string"/>
 
     <!-- iSCSI Initiator MaxConnections parameter
          Name: empty
@@ -116,14 +117,14 @@
          Value: <boolean-value> (Default : Yes)
          -->
     <object oid="/agent/iscsi/data_pdu_in_order" access="read_write"
-        type="integer"/>
+        type="string"/>
     
     <!-- iSCSI Initiator DataSequenceInOrder parameter (per target)
          Name: empty
          Value: <boolean-value> (Default : Yes)
          -->
     <object oid="/agent/iscsi/data_sequence_in_order" access="read_write"
-        type="integer"/>
+        type="string"/>
     
     <!-- iSCSI Initiator Error Recovery Level parameter (per target)
          Name: empty
