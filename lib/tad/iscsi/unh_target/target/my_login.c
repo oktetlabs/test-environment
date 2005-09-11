@@ -447,11 +447,11 @@ iscsi_server_rx_thread(void *arg)
     handle_login(conn, buf);
 
     iscsi_release_connection(conn);
-
+/*
     my_free((void **)&devdata->param_tbl);
     my_free((void **)&devdata->auth_parameter.chap_local_ctx);
     my_free((void **)&devdata->auth_parameter.chap_peer_ctx);
     my_free((void **)&devdata->auth_parameter.srp_ctx);
-    
+  */  
     return 0;
 }
