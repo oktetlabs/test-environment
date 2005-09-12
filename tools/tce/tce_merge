@@ -102,10 +102,15 @@ if ar x "$mergefile" "$stamp" 2>/dev/null && test -f "$stamp"; then
                  getline
                  sub(/%$/, "", $6);
                  sub(/%$/, "", $9);
-                 printf "function %s called %d returned %s%% blocks executed %s%%\n", $2, \
-                     oldcount + $4, \
-                     ((oldretp * oldcount / 100) + ($6 * $4 / 100)) / (oldcount + $4) * 100, \
-                     oldblock < $9 ? $9 : oldblock;
+                 if (oldcount + $4 == 0)
+                     printf "function %s called 0 returned 0% blocks executed 0%\n", $2;
+                 else
+                 {
+                     printf "function %s called %d returned %s%% blocks executed %s%%\n", $2, \
+                         oldcount + $4, \
+                         ((oldretp * oldcount / 100) + ($6 * $4 / 100)) / (oldcount + $4) * 100, \
+                         oldblock < $9 ? $9 : oldblock;
+                 }
                  next
              }
              { print }'> $resultfile
