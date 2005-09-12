@@ -92,8 +92,8 @@
  * second one is a TCP port.
  */
 
-#define RCFUNIX_SSH         "ssh -q -o BatchMode=yes "
-#define RCFUNIX_REDIRECT    ">/dev/null 2>&1 </dev/null"
+#define RCFUNIX_SSH         "ssh -qn -o BatchMode=yes "
+#define RCFUNIX_REDIRECT    ">/dev/null 2>&1"
 
 #define RCFUNIX_KILL_TIMEOUT    15
 #define RCFUNIX_COPY_TIMEOUT    30
