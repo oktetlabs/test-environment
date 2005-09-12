@@ -32,18 +32,30 @@ nopattern="$2"
 yespattern="$3"
 
 if test -n "$4"; then
-    doskip="/$4/, /$5/ { next }"
+    begincond="$4"
+    endcond="$5"
+else
+    begincond="^canthappen$"
+    endcond="."
 fi
 
-awk " BEGIN { yescount = nocount = 0 }
-$doskip
-/$nopattern/ { nocount++ } 
-/$yespattern/ { yescount++ }
+export yespattern nopattern begincond endcond
+awk 'BEGIN { yescount = nocount = 0;
+             yespattern = ENVIRON["yespattern"]
+             nopattern  = ENVIRON["nopattern"]
+             begincond  = ENVIRON["begincond"]
+             endcond    = ENVIRON["endcond"]
+}
+skip { if ($0 ~ endcond) skip = 0; next }
+$0 ~ begincond { skip = FNR; next }
+$0 ~ nopattern { nocount++ } 
+$0 ~ yespattern { yescount++ }
 END { sum = yescount + nocount
       if (sum == 0)
-          print \"0.00 0\"
+          print "0.00 0"
       else
-          printf \"%.2f %d\\n\", (yescount * 100) / sum, sum; 
+          printf "%.2f %d\n", (yescount * 100) / sum, sum; 
+      if (skip) print "Unclosed conditional at " FILENAME ":" FNR > "/dev/stderr";
 }
-" $outfile
+' $outfile
 

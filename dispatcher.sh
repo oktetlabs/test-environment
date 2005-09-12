@@ -117,8 +117,12 @@ Generic options:
                                 to unexpected results if there are actually
                                 files with equal base names in different
                                 directories.
-  --tcer-exclude=<pattern>      FIXME
-  --tces-modules                FIXME
+  --tcer-exclude=<pattern>      Ignore files with names matching <pattern>
+                                when doing TCE report generation.
+                                <pattern> is an expr(1)-style pattern
+  --tces-modules                List of modules to include into TCE summary
+  --tces-conditionals           List of conditionals to exclude from 
+                                TCE summary
   --tces-datadir=<dir>          Directory for TCE summary results splitted
                                 into many files
   --tces-sort-by=<mode>         Sort TCE summary table by covered branch

@@ -44,6 +44,8 @@ Options:
 --modules=<modulename> The space-separated list of modules 
                        to measure coverage of
                        ("-" denotes user-land code)
+--totals-to=<filename> If this option is present, <filename> will be
+                       generated containing totals in text format
 --conditionals=<list>  The space-separated list of preprocessor conditionals 
                        which are taken into account 
 --sort-by=<MODE>       The mode of sorting the index of files:
@@ -73,6 +75,7 @@ for arg; do
                         esac
                      done ;;
         --map-file=*) mapfile=${arg#--map-file=} ;;
+        --totals-to=*) totalfile=${arg#--totals-to=} ;;
         --modules=*)  modules=${arg#--modules=} ;;
         --conditionals=*) conditionals=${arg#--conditionals=} ;;
         --help) usage ;;
@@ -98,6 +101,13 @@ if test -z "$sourcefile"; then
     exit 1
 fi
 
+if test "$outputfile" == "/dev/stdout" -a -n "$totalfile"; then
+    echo "An explicit output filename must be given " \
+        "when --totals-to is present" >&2
+    usage
+    exit 1
+fi
+
 if test -z "$modules" -a -n "$mapfile"; then
     modules=`awk '{ print $2; }' $mapfile | sort | uniq`
 fi
@@ -106,8 +116,8 @@ if test -n "$conditionals"; then
     cb=`echo $conditionals | sed 's/^[[:space:]]*//
                                   s/[[:space:]]*$//
                                   s/[[:space:]][[:space:]]*/|/g'`
-    begincond="^#if(def)?[[:space:]]*($cb)[[:space:]]*\$"
-    endcond="^#endif[[:space:]]*/\\*[[:space:]]*($cb)[[:space:]]*\\*/"
+    begincond="[0-9]+:#if(def)?[[:space:]]*($cb)[[:space:]]*\$"
+    endcond="[0-9]+:#endif.*($cb)"
 fi
 
 cat >$outputfile <<EOF
@@ -119,6 +129,7 @@ cat >$outputfile <<EOF
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <H1 ALIGN=CENTER>TCE Summary</H1>
+<!-- totals -->
 `ar p "$sourcefile" | tce_count - '^branch[[:space:]]*[0-9]+ (never executed|taken 0)' \
     '^branch[[:space:]]*[0-9]+ taken[[:space:]]*[1-9][0-9]*' "$begincond" "$endcond" |
 (
@@ -152,6 +163,7 @@ tce_count - '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' "$begincond" "$endcond" |
 )
 done
 `
+<!-- end totals -->
 </TABLE>
 <TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>
 <TH>% of taken branches</TH>
@@ -162,6 +174,17 @@ done
 <TH>Source file</TH>
 
 EOF
+
+if test -n "$totalfile"; then
+    awk '/^<!-- totals -->/, /^<!-- end totals -->/ {
+                                      sub(/^<\/TABLE.*>$/, "\n\n");
+                                      sub(/<H2>/, "*** ");
+                                      sub(/<(\/H2|TR)>/, "\n");
+                                      gsub(/<(TD|TH)>/, "\t");
+                                      gsub(/<[^>]*>/, "");
+                                      printf "%s", $0
+                                      }' $outputfile > $totalfile
+fi
 
 if test -z "$modules"; then
     modulefilter="{ print }"
@@ -188,7 +211,7 @@ if test -n "$datadir"; then
     echo "</HTML>" >>$outputfile
 fi
 
-awk -vSUBDIR=$datadir -vSOURCEFILE=$sourcefile '$2 != 0 {
+awk -vSUBDIR=$datadir -vSOURCEFILE=$sourcefile -vBC="$begincond" -vEC="$endcond" '$2 != 0 {
           if (!SUBDIR) 
               myfile="/dev/stdout";
           else
@@ -212,15 +235,36 @@ awk -vSUBDIR=$datadir -vSOURCEFILE=$sourcefile '$2 != 0 {
                  "<tr><td>%s of %d calls executed\n" \
                  "</table>\n<pre>",
                  $1, $2, $3, $4, $5, $6, $7, $8 >> myfile;
-         while ((("ar p " SOURCEFILE " " $10) | getline srcline) > 0)
+         excluded = 0
+         thefile = $10
+         while ((("ar p " SOURCEFILE " " thefile) | getline srcline) > 0)
          {
+             if (BC && srcline ~ BC)
+             {
+                 print "</pre>\n<table>\n<tr><td bgcolor='#AAAAAA'><pre>" >>myfile;
+                 startline = FNR
+                 excluded = 1;
+             }
+             else if (excluded && srcline ~ EC)
+             {
+                 excluded = 0;
+                 print "</pre>\n</table>\n<pre>" >>myfile
+             }
              gsub(/&/, "\\&amp;", srcline); 
              gsub(/</, "\\&lt;", srcline); 
              gsub(/>/, "\\&gt;", srcline); 
              gsub(/"/, "\\&quot;", srcline); 
+             if (srcline ~ /^[[:space:]]*#+:/)
+                 srcline = "<strong>" srcline "</strong>"
+             else if (srcline ~ /^[[:space:]]*(call|branch|function)/)
+                 srcline = "<small>" srcline "</small>"
              print srcline >>myfile
-         }    
-         close("ar p " SOURCEFILE " " $10);
+         }
+         if (excluded)
+         {
+             print "Unclosed conditional detected at " thefile ":" startline >"/dev/stderr"
+         }
+         close("ar p " SOURCEFILE " " thefile);
          print "</pre>" >>myfile
          if (SUBDIR)
              print"</body></html>" >>myfile
