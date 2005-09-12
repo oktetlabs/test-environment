@@ -2520,6 +2520,8 @@ TARPC_FUNC(simple_sender, {},
 
 /*-------------- simple_receiver() --------------------------*/
 
+#define MAX_PKT (1024 * 1024)
+
 /**
  * Simple receiver.
  *
@@ -2531,13 +2533,19 @@ int
 simple_receiver(tarpc_simple_receiver_in *in,
                 tarpc_simple_receiver_out *out)
 {
-    char buf[1024];
+    char *buf;
 
     uint64_t received = 0;
 #ifdef TA_DEBUG
     uint64_t control = 0;
     int start = time(NULL);
 #endif
+
+    if ((buf = malloc(MAX_PKT)) == NULL)
+    {
+        ERROR("Out of memory");
+        return -1;
+    }
 
     while (TRUE)
     {
@@ -2553,6 +2561,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
             
             err = WSAGetLastError();
             ERROR("select() failed in simple_receiver(): errno %d", err);
+            free(buf);
             return -1;
         }
         if (!FD_ISSET(in->s, &set))
@@ -2563,7 +2572,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
                 continue;
         }
 
-        len = recv(in->s, buf, sizeof(buf), 0);
+        len = recv(in->s, buf, MAX_PKT, 0);
 
         if (len < 0)
         {
@@ -2571,12 +2580,14 @@ simple_receiver(tarpc_simple_receiver_in *in,
             
             err = WSAGetLastError();
             ERROR("recv() failed in simple_receiver(): errno %d", err);
+            free(buf);
             return -1;
         }
 
         if (len == 0)
         {
             ERROR("recv() returned 0 in simple_receiver()");
+            free(buf);
             return -1;
         }
 
@@ -2600,6 +2611,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         sprintf(buf, "Received %llu", received);
         ERROR(buf);
     }
+    free(buf);
 
     out->bytes = received;
 
