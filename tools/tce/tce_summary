@@ -144,8 +144,8 @@ ar p "$sourcefile" | tce_count - '^[[:space:]]*#+:' '^[[:space:]]*[0-9]+:' "$beg
 `
 <TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>
 <TH>Module</TH>
-<TH> % of taken branches</TH>
-<TH> % of executed lines</TH>
+<TH>% of taken branches</TH>
+<TH>% of executed lines</TH>
 `for m in $modules; do
 echo "<TR><TD>$m</TD>"
 ar t "$sourcefile" | awk "/\\.$m\$/ { print }"  | xargs -n1 ar p $sourcefile |
@@ -177,12 +177,14 @@ EOF
 
 if test -n "$totalfile"; then
     awk '/^<!-- totals -->/, /^<!-- end totals -->/ {
-                                      sub(/^<\/TABLE.*>$/, "\n\n");
-                                      sub(/<H2>/, "*** ");
-                                      sub(/<(\/H2|TR)>/, "\n");
-                                      gsub(/<(TD|TH)>/, "\t");
-                                      gsub(/<[^>]*>/, "");
-                                      printf "%s", $0
+                                      line = $0
+                                      if ($0 ~ /<(TR)/) print "";
+                                      gsub(/<[^>]*>/, "", line);
+                                      if (line)
+                                      {
+                                          printf "%-20.20s", line
+                                      }
+                                      if ($0 ~ /<(TABLE|H2)/) print "";
                                       }' $outputfile > $totalfile
 fi
 
