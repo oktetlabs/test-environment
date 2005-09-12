@@ -254,7 +254,7 @@ awk -vSUBDIR=$datadir -vSOURCEFILE=$sourcefile -vBC="$begincond" -vEC="$endcond"
              gsub(/</, "\\&lt;", srcline); 
              gsub(/>/, "\\&gt;", srcline); 
              gsub(/"/, "\\&quot;", srcline); 
-             if (srcline ~ /^[[:space:]]*#+:/)
+             if (!excluded && (srcline ~ /^[[:space:]]*#+:/))
                  srcline = "<strong>" srcline "</strong>"
              else if (srcline ~ /^[[:space:]]*(call|branch|function)/)
                  srcline = "<small>" srcline "</small>"
