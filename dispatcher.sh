@@ -120,6 +120,8 @@ Generic options:
   --tcer-exclude=<pattern>      Ignore files with names matching <pattern>
                                 when doing TCE report generation.
                                 <pattern> is an expr(1)-style pattern
+  --tces-totals-to=<filename>   If this option is present, <filename> will be
+                                generated containing totals in text format
   --tces-modules                List of modules to include into TCE summary
   --tces-conditionals           List of conditionals to exclude from 
                                 TCE summary
