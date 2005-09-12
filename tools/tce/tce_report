@@ -34,7 +34,7 @@ usage() {
     cat >&2 <<EOF
 
 USAGE: tce_report [--ignore-dirs] <input-file> <output-file> <source-dir> 
-                  [--exclude=regexp] [--conditionals=list]
+                  [--exclude=regexp] 
 
 Processes GCOV data contained in the file <input-file> which should
 correspond to sources in <source-dir>. Coverage results are put into
@@ -63,9 +63,6 @@ for i; do
         --exclude=*)
         exclude=${i#--exclude=}
         ;;
-        --conditionals=*)
-        conditionals=${i#--conditionals=}
-        ;;
         --*) usage "Unknown option $i";;
         *) case $nfile in
             1) infile=$i ;;
@@ -84,14 +81,6 @@ fi
 
 mapfile=${infile%.tar}.map
 smapfile=${infile%.tar}.smap
-
-if test -n "$conditionals"; then
-    cb=`echo $conditionals | sed 's/^[[:space:]]*//
-                                  s/[[:space:]]*$//
-                                  s/[[:space:]][[:space:]]*/|/g'`
-    begincond="^#if(def)?[[:space:]]*($cb)[[:space:]]*\$"
-    endcond="^#endif[[:space:]]*/\\*[[:space:]]*($cb)[[:space:]]*\\*/"
-fi
 
 if test -z "$infile" -o -z "$mergefile" -o -z "$srcdir" ; then
     usage "Invalid arguments"
