@@ -1379,21 +1379,24 @@ TARPC_FUNC(transmitfile_tabufs, {},
 
 /*------------------------- CreateFile() -------------------------
  *------ Attention: not all flags currently are supported. ------*/
-static inline DWORD cf_access_right_rpc2h(unsigned int ar)
+static inline DWORD 
+cf_access_right_rpc2h(unsigned int ar)
 {
     return (!!(ar & RPC_CF_GENERIC_EXECUTE) * GENERIC_EXECUTE) |
            (!!(ar & RPC_CF_GENERIC_READ) * GENERIC_READ) |
            (!!(ar & RPC_CF_GENERIC_WRITE) * GENERIC_WRITE);
 }
 
-static inline DWORD cf_share_mode_rpc2h(unsigned int sm)
+static inline DWORD 
+cf_share_mode_rpc2h(unsigned int sm)
 {
     return (!!(sm & RPC_CF_FILE_SHARE_DELETE) * FILE_SHARE_DELETE) |
            (!!(sm & RPC_CF_FILE_SHARE_READ) * FILE_SHARE_READ) |
            (!!(sm & RPC_CF_FILE_SHARE_WRITE) * FILE_SHARE_WRITE);
 }
 
-static inline DWORD cf_creation_disposition_rpc2h(unsigned int cd)
+static inline DWORD 
+cf_creation_disposition_rpc2h(unsigned int cd)
 {
     return (!!(cd & RPC_CF_CREATE_ALWAYS) * CREATE_ALWAYS) |
            (!!(cd & RPC_CF_CREATE_NEW) * CREATE_NEW) |
@@ -1402,7 +1405,8 @@ static inline DWORD cf_creation_disposition_rpc2h(unsigned int cd)
            (!!(cd & RPC_CF_TRUNCATE_EXISTING) * TRUNCATE_EXISTING);
 }
 
-static inline DWORD cf_flags_attributes_rpc2h(unsigned int fa)
+static inline DWORD 
+cf_flags_attributes_rpc2h(unsigned int fa)
 {
     return (!!(fa & RPC_CF_FILE_ATTRIBUTE_NORMAL) * FILE_ATTRIBUTE_NORMAL);
 }
