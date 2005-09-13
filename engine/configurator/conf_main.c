@@ -330,59 +330,16 @@ parse_config(const char *file, te_bool restore)
 static int
 cfg_sync_agt_volatile(const char *inst_name)
 {
-    cfg_oid *oid = NULL;
+    char *ta;
+    char  oid[CFG_OID_MAX];
+    
+    if (!cfg_oid_match_volatile(inst_name, &ta))
+        return 0;
+        
+    TE_SPRINTF(oid, "/agent:%s", ta);
+    free(ta);
 
-    /* 
-     * Synchronize "/agent/volatile" subtree in case user wants 
-     * to get all instances or if pattern includes "/agent/volatile"
-     * subtree.
-     */
-    if (strcmp(inst_name, "*:*") == 0 ||
-        ((oid = cfg_convert_oid_str(inst_name)) != NULL && oid->inst))
-    {
-        int         rc;
-        uint32_t    i;
-        te_bool     sync_volatile = TRUE;
-        const char *subids[] = {
-            "agent",
-            CFG_VOLATILE,
-        };
-
-        /* Check that the pattern is /[agent|*]/[volatile|*] */
-        for (i = sizeof(subids) / sizeof(subids[0]);
-             oid != NULL && sync_volatile && i >= 1;
-             i--)
-        {
-            if (oid->len >= (i + 1))
-            {
-#define CFG_GET_SUBID(i_) ((((cfg_inst_subid *)(oid->ids))[i_]).subid)
-
-                    sync_volatile = 
-                        (CFG_GET_SUBID(i)[0] == '*') ||
-                        (strcmp(subids[i - 1], CFG_GET_SUBID(i)) == 0);
-
-#undef CFG_GET_SUBID
-            }
-        }
-
-        /*
-         * Currently, we synchronize the whole "/agent/volatile" 
-         * subtree, do not get the particular subtree of it.
-         */
-        if (sync_volatile)
-        {
-            if ((rc = cfg_ta_sync("/agent:*/"CFG_VOLATILE":", FALSE)) != 0)
-            {
-                ERROR("Cannot synchronize /agent/"CFG_VOLATILE
-                      " subtree, errno %r", rc);
-                cfg_free_oid(oid);
-                return rc;
-            }
-        }
-    }
-    cfg_free_oid(oid);
-
-    return 0;
+    return cfg_ta_sync(oid, FALSE);
 }
 
 /**
@@ -413,7 +370,6 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
               "errno %r", msg->rc);
         return;
     }
-
 
     if ((msg->rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg, 
                                                          &val)) != 0)

@@ -36,11 +36,11 @@
 /** "/agent" object */
 static cfg_object cfg_obj_agent = 
     { 1, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
-      CVT_NONE, CFG_READ_ONLY, NULL, &cfg_obj_root, NULL, NULL };
+      CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root, NULL, NULL };
 
 /** Root of configuration objects */
 cfg_object cfg_obj_root = 
-    { 0, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, NULL,
+    { 0, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, FALSE, NULL,
       &cfg_obj_agent, NULL };
 /** Pool with configuration objects */
 cfg_object **cfg_all_obj = NULL;
@@ -234,12 +234,20 @@ cfg_process_msg_register(cfg_register_msg *msg)
         msg->rc = TE_ENOMEM;
         return;
     }
+
+    if (father->vol && !msg->vol)
+    {
+        WARN("Volatile attribute of %s it inherited from the father",
+             msg->oid);
+        msg->vol = TRUE;
+    }
     
     cfg_all_obj[i]->handle = i;
     strcpy(cfg_all_obj[i]->subid, 
            ((cfg_object_subid *)(oid->ids))[oid->len - 1].subid);
     cfg_all_obj[i]->type = msg->val_type;
     cfg_all_obj[i]->access = msg->access;
+    cfg_all_obj[i]->vol = msg->vol;
     cfg_all_obj[i]->father = father;
     cfg_all_obj[i]->son = NULL;
     cfg_all_obj[i]->brother = father->son;
@@ -1167,3 +1175,72 @@ pattern_match(char *pattern, char *str)
     
     return 0;
 }
+
+/** Check if the object or its sons matching oid are volatile */
+static te_bool
+oid_match_volatile(cfg_object *obj, const cfg_inst_subid *subids, 
+                   int subids_num)
+{
+    cfg_object *tmp;
+    
+    if (obj->vol)
+        return TRUE;
+        
+    if (subids_num == 0)
+        return FALSE;
+        
+    for (tmp = obj->son; tmp != NULL; tmp = tmp->brother)
+    {
+        if ((strcmp(subids[0].subid, "*") == 0 ||
+             strcmp(subids[0].subid, tmp->subid) == 0) &&
+            oid_match_volatile(tmp, subids + 1, subids_num - 1))
+        {
+            return TRUE;
+        }
+    }
+        
+    return FALSE;
+}
+
+/**
+ * Check if the object identifier (possibly wildcard) matches some
+ * volatile object on the Test Agent.
+ *
+ * @param oid_s         object identifier in string representation
+ * @param ta            location for TA name pointer
+ *
+ * @return TRUE (match) or FALSE (does not match)
+ */
+te_bool 
+cfg_oid_match_volatile(const char *oid_s, char **ta)
+{
+    cfg_oid *oid = cfg_convert_oid_str(oid_s);
+    
+    cfg_inst_subid *subids = (cfg_inst_subid *)(oid->ids);
+    
+    te_bool match = FALSE;
+    
+    if (strcmp(oid_s, "*:*") == 0)
+    {
+        if (ta != NULL && (*ta = strdup("*")) == NULL)
+            return FALSE;
+            
+        return TRUE;
+    }
+    
+    if (oid == NULL)
+        return FALSE;
+        
+    if (!oid->inst)
+        return FALSE;
+        
+    match = (oid->len > 1) && (strcmp(subids[1].subid, "agent") == 0) &&
+            oid_match_volatile(&cfg_obj_root, subids + 1, oid->len - 1) &&
+            ((ta != NULL && (*ta = strdup(subids[1].name)) != NULL) || 
+              ta == NULL);
+
+    cfg_free_oid(oid);
+    
+    return match;
+}
+

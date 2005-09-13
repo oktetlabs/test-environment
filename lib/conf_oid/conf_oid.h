@@ -66,8 +66,8 @@ typedef struct cfg_oid {
 /**
  * Get instance name of the i-th sub-identifier.
  *
- * @param _p    - pointer to cfg_oid
- * @param _i    - index
+ * @param _p      pointer to cfg_oid
+ * @param _i      index
  *
  * @return Pointer to string (char *).
  */
@@ -77,8 +77,8 @@ typedef struct cfg_oid {
 /**
  * Allocate memory for object identifier or object instance identifier.
  *
- * @param length    - number of identifier elements
- * @param inst      - if TRUE - object instance identifier should be
+ * @param length      number of identifier elements
+ * @param inst        if TRUE - object instance identifier should be
  *                    allocated
  *
  * @return newly allocated structure pointer or NULL
@@ -89,7 +89,7 @@ extern cfg_oid *cfg_allocate_oid(int length, te_bool inst);
  * Convert object identifier or object instance identifier in
  * string representation to cfg_oid structure.
  *
- * @param oid       - OID in string representation
+ * @param oid         OID in string representation
  *
  * @return newly allocated structure pointer or NULL
  */
@@ -100,7 +100,7 @@ extern cfg_oid *cfg_convert_oid_str(const char *oid);
  * structure representation to string (memory is allocated by the
  * routine using malloc()).
  *
- * @param oid       - OID in structure representation
+ * @param oid         OID in structure representation
  *
  * @return newly allocated string or NULL
  */
@@ -109,18 +109,18 @@ extern char *cfg_convert_oid(const cfg_oid *oid);
 /**
  * Free memory allocated for OID stucture.
  *
- * @param oid       - oid structure
+ * @param oid         oid structure
  */
 extern void cfg_free_oid(cfg_oid *oid);
 
 /**
  * Compare object identifiers.
  *
- * @param o1    - the first OID
- * @param o2    - the second OID
+ * @param o1      the first OID
+ * @param o2      the second OID
  *
- * @retval 0    - equal
- * @retval 1    - not equal
+ * @retval 0      equal
+ * @retval 1      not equal
  */
 extern int cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2);
 

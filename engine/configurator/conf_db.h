@@ -44,6 +44,7 @@ typedef struct cfg_object {
     cfg_val_type       type;    /**< Type of the object instance value */
     uint8_t            access;  /**< Access rights */
     char              *def_val; /**< Default value */
+    te_bool            vol;     /**< The object is volatile */
     
     /** @name Family */
     struct cfg_object *father;  /**< Link to father */
@@ -224,6 +225,17 @@ extern int cfg_db_init(void);
  * Destroy the database before shutdown.
  */
 extern void cfg_db_destroy(void);
+
+/**
+ * Check if the object identifier (possibly wildcard) matches some
+ * volatile object on the Test Agent.
+ *
+ * @param oid_s         object identifier in string representation
+ * @param ta            location for TA name pointer
+ *
+ * @return TRUE (match) or FALSE (does not match)
+ */
+extern te_bool cfg_oid_match_volatile(const char *oid_s, char **ta);
 
 #ifdef __cplusplus
 }

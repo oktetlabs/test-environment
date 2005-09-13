@@ -156,7 +156,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         return TE_RC(TE_RCF_API, TE_ENOENT);
     
     if (cfg_get_instance_fmt(NULL, &sid, 
-                             "/volatile:/rpcserver_sid:%s:%s",
+                             "/rpcserver_sid:%s:%s",
                              ta, name) != 0)
     {
          /* Server is created in the configurator.conf */
@@ -167,7 +167,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         }
             
         if ((rc1 = cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, sid),
-                                        "/volatile:/rpcserver_sid:%s:%s", 
+                                        "/rpcserver_sid:%s:%s", 
                                         ta, name)) != 0)
         {
             ERROR("Failed to specify SID for the RPC server %s", name);

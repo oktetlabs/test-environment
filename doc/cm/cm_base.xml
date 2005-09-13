@@ -160,13 +160,14 @@
          point of view (for example it might be dynamic ARP entries). 
          Name:  empty
          Limit: 1 -->
-    <object oid="/agent/volatile" access="read_create" type="none"/>
+    <object oid="/agent/volatile" access="read_create" volatile="true" 
+            type="none"/>
 
     <!-- SID for interacting with RPC server.
          Name: <ta>:<rpcserver>
          Value: SID -->
-    <object oid="/volatile/rpcserver_sid" 
-            access="read_create" type="integer"/>
+    <object oid="/rpcserver_sid" 
+            access="read_create" type="integer" volatile="true"/>
 
     <!-- Dynamic ARP entries.
          Name:  IPv4 address in dotted notation -->
@@ -550,11 +551,12 @@
     <!-- Volatile engine data root. 
          Name: empty
          -->
-    <object oid="/volatile"               access="read_create" type="none"/>
+    <object oid="/volatile" access="read_create" type="none" volatile="true"/>
     
     <!-- Socket library ("berkeley", "winsock2").
          Name: TA name
          Value: readable library name -->
-    <object oid="/volatile/ta_sockets" access="read_create" type="string"/>
+    <object oid="/volatile/ta_sockets" access="read_create" type="string"
+            volatile="true"/>
 
 </backup>

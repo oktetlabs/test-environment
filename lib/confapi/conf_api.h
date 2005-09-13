@@ -52,10 +52,6 @@
 extern "C" {
 #endif
 
-/** Root name for volatile objects */
-#define CFG_VOLATILE    "volatile"
-
-
 /** Cast to Configurator Instance Value Pointer */
 #define CFG_IVP(x)     ((cfg_inst_val *)(x))
 

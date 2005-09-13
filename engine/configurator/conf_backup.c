@@ -124,6 +124,16 @@ register_objects(xmlNodePtr *node, te_bool reg)
             xmlFree(attr);
         }
 
+        if ((attr = xmlGetProp(cur, (const xmlChar *)"volatile")) != NULL)
+        {
+            if (strcmp(attr, "true") == 0)
+                msg->vol = TRUE;
+            else if (strcmp(attr, "false") != 0)
+                RETERR(TE_EINVAL, "Volatile should be specified using "
+                       "\"true\" or \"false\"");
+            xmlFree(attr);
+        }
+
         if (def_val != NULL)
         {
             cfg_inst_val val;

@@ -217,8 +217,7 @@ sync_ta_instance(const char *ta, const char *oid)
             }
         }
         else if (TE_RC_GET_ERROR(rc) == TE_ENOENT || rc == 0 ||
-                 (TE_RC_GET_ERROR(rc) == TE_ENOENT &&
-                  strstr(oid, "/"CFG_VOLATILE":") != NULL))
+                 (TE_RC_GET_ERROR(rc) == TE_ENOENT && obj->vol))
         {
             break;
         }
@@ -461,61 +460,39 @@ sync_ta_subtree(const char *ta, const char *oid)
 int
 cfg_ta_sync(char *oid, te_bool subtree)
 {
-    te_bool  agt_volatile_sync = FALSE;
     cfg_oid *tmp_oid;
+    char    *ta;
     int      rc = 0;
-    
-    tmp_oid = cfg_convert_oid_str(oid);
 
-    if (tmp_oid == NULL)
-        return TE_EINVAL;
-
-    if (!tmp_oid->inst)
+    if ((tmp_oid = cfg_convert_oid_str(oid)) == NULL ||
+        !tmp_oid->inst || 
+        (tmp_oid->len > 1 && strcmp_start("/agent", oid) != 0))
     {
         cfg_free_oid(tmp_oid);
         return TE_EINVAL;
     }
     
-    /*
-     * Note Author: Oleg.Kravtsov@oktetlabs.ru
-     *
-     * It's too dirty way of synchronizing "/agent/volatile" subtree, but
-     * so far it works, and it didn't take me too long for that -
-     * the time is money, so when it is required to extend this feature
-     * we'll do it.
-     * What to extend?
-     * Synchronizing volatile tree on the particular agent;
-     * Synchronizing a particular part of volatile subtree;
-     */
-    if (strcmp(oid, "/agent:*/"CFG_VOLATILE":") == 0)
+    if (tmp_oid->len == 1 || strcmp_start("/agent:*", oid) == 0)
     {
-        agt_volatile_sync = TRUE;
-    }
-
-    if (tmp_oid->len == 1 || agt_volatile_sync)
-    {
-        const char *ta;
-
         for (ta = cfg_ta_list;
              ta < cfg_ta_list + ta_list_size;
              ta += strlen(ta) + 1)
         {
-            char agent_oid[CFG_SUBID_MAX + CFG_INST_NAME_MAX + 3];
+            char agent_oid[CFG_OID_MAX];
 
-            sprintf(agent_oid, "/agent:%s%s", ta,
-                    agt_volatile_sync ? "/"CFG_VOLATILE":" : "");
+            TE_SPRINTF(agent_oid, "/agent:%s%s", ta, 
+                       tmp_oid->len == 1 ? "" : 
+                       oid + strlen("/agent:*"));
             if ((rc = sync_ta_subtree(ta, agent_oid)) != 0)
                 break;
         }
     }
     else
     {
-        const char *ta = ((cfg_inst_subid *)(tmp_oid->ids))[1].name;
+        ta = ((cfg_inst_subid *)(tmp_oid->ids))[1].name;
 
-        if (strcmp(((cfg_inst_subid *)(tmp_oid->ids))[1].subid,
-                   "agent") == 0)
-            rc = subtree ? sync_ta_subtree(ta, oid) :
-                           sync_ta_instance(ta, oid);
+        rc = subtree ? sync_ta_subtree(ta, oid) :
+                       sync_ta_instance(ta, oid);
     }
     cfg_free_oid(tmp_oid);
 

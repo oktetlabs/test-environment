@@ -96,6 +96,7 @@ typedef struct cfg_msg {
 typedef struct cfg_register_msg {
     CFG_MSG_FIELDS
     cfg_val_type  val_type; /**< Type of the object instance value */
+    te_bool       vol;      /**< Object is volatile */
     uint8_t       access;   /**< Access rights */
     uint16_t      def_val;  /**< Default value offset from start of OID 
                                  or 0 if no default value is provided */ 

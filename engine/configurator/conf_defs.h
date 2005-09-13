@@ -85,10 +85,7 @@
 static inline te_bool
 cfg_instance_volatile(cfg_instance *inst)
 {
-    return strncmp(inst->oid, "/"CFG_VOLATILE":", 
-                   strlen("/"CFG_VOLATILE":")) == 0  ||
-           strncmp(inst->obj->oid, "/agent/"CFG_VOLATILE, 
-                   strlen("/agent/"CFG_VOLATILE)) == 0;
+    return inst->obj->vol;
 }
 
 #endif /* !__TE_CONF_DEFS_H__ */

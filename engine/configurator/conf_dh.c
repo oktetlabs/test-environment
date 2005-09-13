@@ -350,6 +350,18 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     xmlFree(attr);
                     attr = NULL;
                 }
+
+                attr = xmlGetProp(tmp, (const xmlChar *)"volatile");
+                if (attr != NULL)
+                {
+                    if (strcmp(attr, "true") == 0)
+                        msg->vol = TRUE;
+                    else if (strcmp(attr, "false") != 0)
+                        RETERR(TE_EINVAL, "Volatile should be specified "
+                                          "using \"true\" or \"false\"");
+                    xmlFree(attr);
+                    attr = NULL;
+                }
                 
                 if (val_s != NULL)
                 {
