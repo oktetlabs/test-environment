@@ -4102,24 +4102,12 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 {
     ssize_t    rc = 0;
     int        err = 0;
-    size_t     max_len = 1;
-    uint8_t   *buf = NULL;
     uint64_t   total = 0;
     int        unchanged = 0;
     u_long     val = 1;
+    uint8_t    c = 0xAB;
 
     out->bytes = 0;
-    
-    buf = calloc(1, max_len);
-    if (buf == NULL)
-    {
-        ERROR("%s(): No enough memory", __FUNCTION__);
-        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-        rc = -1;
-        goto overfill_buffers_exit;
-    }
-
-    memset(buf, 0xAB, sizeof(max_len));
     
     /* ATTENTION! socket is assumed in blocking state */
     
@@ -4134,7 +4122,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 
     do {
         do {
-            rc = send(in->sock, buf, max_len, 0);
+            rc = send(in->sock, &c, 1, 0);
             err = WSAGetLastError();
             
             if (rc == -1 && err != WSAEWOULDBLOCK)
@@ -4143,7 +4131,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
                 goto overfill_buffers_exit;
             }
             if (rc != -1)
-                out->bytes += rc;
+                out->bytes++;
             else
                 Sleep(100);
         } while (err != WSAEWOULDBLOCK);
@@ -4159,7 +4147,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         }
         rc = 0;
         err = 0;
-    } while (unchanged != 3);
+    } while (unchanged != 30);
     
 overfill_buffers_exit:
     val = 0;
@@ -4173,7 +4161,6 @@ overfill_buffers_exit:
     out->common.win_error = win_error_h2rpc(err);
     out->common._errno = wsaerr2errno(out->common.win_error); 
 
-    free(buf);
     return rc;
 }
 
