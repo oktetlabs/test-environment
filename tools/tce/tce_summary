@@ -185,7 +185,8 @@ if test -n "$totalfile"; then
                                           printf "%-20.20s", line
                                       }
                                       if ($0 ~ /<(TABLE|H2)/) print "";
-                                      }' $outputfile > $totalfile
+                                      }
+                                  END { print ""; }' $outputfile > $totalfile
 fi
 
 if test -z "$modules"; then
