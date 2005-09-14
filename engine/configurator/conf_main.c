@@ -339,7 +339,7 @@ cfg_sync_agt_volatile(const char *inst_name)
     TE_SPRINTF(oid, "/agent:%s", ta);
     free(ta);
 
-    return cfg_ta_sync(oid, FALSE);
+    return cfg_ta_sync(oid, TRUE);
 }
 
 /**
