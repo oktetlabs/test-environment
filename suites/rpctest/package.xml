@@ -3,8 +3,29 @@
     <description>Tests on RCF RPC functionality.</description>
     <author mailto="Elena.Vengerova@oktetlabs.ru"/>
     <session>
+        <arg name="env.peer2peer">
+            <value>{
+                {
+                  {'pco_iut':IUT},
+                   addr:'iut_addr':inet:unicast,
+                   if:'iut_if'
+                },
+                {
+                  {'pco_tst':tester},
+                  addr:'tst_addr':inet:unicast,
+                  if:'tst_if'
+                }
+            }</value>
+        </arg>
+
         <run>
             <script name="rpctest"/>
+            <arg name="env" ref="env.peer2peer"/>
+        </run>
+
+        <run>
+            <script name="rs_threads_sr"/>
+            <arg name="env" ref="env.peer2peer"/>
         </run>
     </session>
 </package>

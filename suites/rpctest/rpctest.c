@@ -26,31 +26,9 @@
  * $Id$
  */
 
-#include <sys/socket.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
-#include <signal.h>
-#include <sys/ioctl.h>
-#include <sys/poll.h>
-#include <assert.h>
-#include <netdb.h>
-
-#include "te_config.h"
-#include "te_defs.h"
-#include "te_stdint.h"
-#include "te_errno.h"
-#include "rcf_api.h"
-#include "rcf_rpc.h"
-#include "conf_api.h"
-#include "tapi_rpc.h"
-#include "tapi_test.h"
-#include "conf_api.h"
-#include "tarpc.h"
-#include "tapi_rpc.h"
-
 #define TE_TEST_NAME    "rpctest"
+
+#include "rpc_suite.h"
 
 int
 main(int argc, char **argv)

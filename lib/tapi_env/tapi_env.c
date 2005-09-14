@@ -245,21 +245,21 @@ tapi_env_get(const char *cfg, tapi_env *env)
 te_errno
 tapi_env_free(tapi_env *env)
 {
-    int                 result = 0;
-    int                 rc;
+    int               result = 0;
+    int               rc;
     tapi_env_host    *host;
     tapi_env_process *proc;
     tapi_env_pco     *pco;
     tapi_env_addr    *addr;
     tapi_env_net     *net;
-    cfg_handle_tqe     *addr_hndl;
+    cfg_handle_tqe   *addr_hndl;
     tapi_env_if      *iface;
     tapi_env_alias   *alias;
-    cfg_val_type        type;
-    int                 n_entries;
-    int                 n_deleted;
-    cfg_handle          ip4_net_hndl;
-    char               *ip4_net_oid;
+    cfg_val_type      type;
+    int               n_entries;
+    int               n_deleted;
+    cfg_handle        ip4_net_hndl;
+    char             *ip4_net_oid;
 
 
     /* Destroy list of hosts */
