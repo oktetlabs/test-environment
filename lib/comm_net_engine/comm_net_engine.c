@@ -246,7 +246,7 @@ int
 rcf_net_engine_transmit(struct rcf_net_connection *rnc,
                         const char *data, size_t length)
 {
-#define MAX_TRIES       10
+#define MAX_TRIES       1000
     ssize_t len = 0;
     int     tries = MAX_TRIES;
     int     err = 0;
