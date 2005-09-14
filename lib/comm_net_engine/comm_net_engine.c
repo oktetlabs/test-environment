@@ -253,7 +253,7 @@ rcf_net_engine_transmit(struct rcf_net_connection *rnc,
 
     while (length > 0)
     {
-        if ((len = send(rnc->socket, data, length, MSG_DONTWAIT)) < 0)
+        if ((len = send(rnc->socket, data, length, 0)) < 0)
             return TE_OS_RC(TE_COMM, errno);
 
         length -= len;
