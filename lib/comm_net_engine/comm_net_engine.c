@@ -246,21 +246,39 @@ int
 rcf_net_engine_transmit(struct rcf_net_connection *rnc,
                         const char *data, size_t length)
 {
+#define MAX_TRIES       10
     ssize_t len = 0;
+    int     tries = MAX_TRIES;
+    int     err = 0;
 
     if (rnc == NULL)
         return TE_RC(TE_COMM, TE_EINVAL);
 
-    while (length > 0)
+    while (length > 0 && tries > 0)
     {
-        if ((len = send(rnc->socket, data, length, 0)) < 0)
-            return TE_OS_RC(TE_COMM, errno);
+        if ((len = send(rnc->socket, data, length, MSG_DONTWAIT)) < 0)
+        {
+            int err = errno;
+            
+            if (err == EWOULDBLOCK || err == EAGAIN)
+            {
+                usleep(10000);
+                tries--;
+                continue;
+            }
+            else
+                return TE_OS_RC(TE_COMM, err);
+        }
 
         length -= len;
         data += len;
+        tries = MAX_TRIES;
     }
+    if (length > 0)
+        return TE_OS_RC(TE_COMM, err);
 
     return 0;
+#undef MAX_TRIES
 }
 
 
