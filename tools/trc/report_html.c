@@ -83,8 +83,7 @@ static const char * const trc_html_doc_start =
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "  </style>\n"
 "</HEAD>\n"
-"<BODY LANG=\"en-US\" DIR=\"LTR\">\n"
-"<H1 ALIGN=CENTER>Testing Results Comparison Report</H1>\n";
+"<BODY LANG=\"en-US\" DIR=\"LTR\">\n";
 
 static const char * const trc_html_doc_end =
 "</BODY>\n"
@@ -621,10 +620,13 @@ trc_report_to_html(const char *filename, FILE *header, trc_database *db,
     }
 
     /* Report for packages */
-    rc = tests_to_html(TRUE, flags | TRC_OUT_NO_SCRIPTS,
-                       NULL, &db->tests, 0);
-    if (rc != 0)
-        goto cleanup;
+    if (~flags & TRC_OUT_NO_PACKAGES_ONLY)
+    {
+        rc = tests_to_html(TRUE, flags | TRC_OUT_NO_SCRIPTS,
+                           NULL, &db->tests, 0);
+        if (rc != 0)
+            goto cleanup;
+    }
 
     if (~flags & TRC_OUT_NO_SCRIPTS)
     {

@@ -70,6 +70,7 @@ enum {
     TRC_OPT_HTML,
     TRC_OPT_HTML_HEADER,
     TRC_OPT_NO_TOTAL_STATS,
+    TRC_OPT_NO_PACKAGES_ONLY,
     TRC_OPT_STATS_ONLY,
     TRC_OPT_NO_SCRIPTS,
     TRC_OPT_NO_UNSPEC,
@@ -84,6 +85,7 @@ typedef struct trc_html_report {
 
     char           *filename;   /**< Name of the file for report */
     unsigned int    flags;      /**< Report options */
+    FILE           *header;     /**< File with header */
 } trc_html_report;
 
 /** Should database be update */
@@ -99,9 +101,6 @@ static char *trc_xml_log_fn = NULL;
 static char *trc_db_fn = NULL;
 /** Name of the file with report in TXT format */
 static char *trc_txt_fn = NULL;
-
-/** File with header for all reports in HTML format */
-static FILE *trc_html_header_f = NULL;
 
 /** List of HTML reports to generate */
 static TAILQ_HEAD(trc_html_reports, trc_html_report) html_reports;
@@ -152,10 +151,14 @@ process_cmd_line_opts(int argc, char **argv)
           "Name of the file for report in HTML format.",
           "FILENAME" },
         { "html-header", '\0', POPT_ARG_STRING, NULL, TRC_OPT_HTML_HEADER,
-          "Name of the file with header for all HTML reports.",
+          "Name of the file with header for a HTML report.",
           "FILENAME" },
         { "no-total", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_TOTAL_STATS,
           "Do not include grand total statistics.",
+          NULL },
+        { "no-packages-only", '\0', POPT_ARG_NONE, NULL,
+          TRC_OPT_NO_PACKAGES_ONLY,
+          "Do not include packages only statistics.",
           NULL },
         { "stats-only", '\0', POPT_ARG_NONE, NULL, TRC_OPT_STATS_ONLY,
           "Do not include details about iterations, statistics only.",
@@ -223,26 +226,6 @@ process_cmd_line_opts(int argc, char **argv)
                 trc_txt_fn = strdup(poptGetOptArg(optCon));
                 break;
 
-            case TRC_OPT_HTML_HEADER:
-            {
-                const char *trc_html_header_fn = poptGetOptArg(optCon);
-
-                if (trc_html_header_f != NULL)
-                {
-                    ERROR("File with HTML header is already specified");
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
-                }
-                trc_html_header_f = fopen(trc_html_header_fn, "r");
-                if (trc_html_header_f == NULL)
-                {
-                    ERROR("Failed to open file '%s'", trc_html_header_fn);
-                    poptFreeContext(optCon);
-                    return EXIT_FAILURE;
-                }
-                break;
-            }
-
             case TRC_OPT_HTML:
             {
                 html_report = calloc(1, sizeof(*html_report));
@@ -255,6 +238,33 @@ process_cmd_line_opts(int argc, char **argv)
                 TAILQ_INSERT_TAIL(&html_reports, html_report, links);
                 html_report->filename = strdup(poptGetOptArg(optCon));
                 html_report->flags = 0;
+                break;
+            }
+
+            case TRC_OPT_HTML_HEADER:
+            {
+                const char *trc_html_header_fn = poptGetOptArg(optCon);
+
+                if (html_report == NULL)
+                {
+                    ERROR("HTML report header should be specified after "
+                          "the file name for report");
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                if (html_report->header != NULL)
+                {
+                    ERROR("File with HTML header is already specified");
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                html_report->header = fopen(trc_html_header_fn, "r");
+                if (html_report->header == NULL)
+                {
+                    ERROR("Failed to open file '%s'", trc_html_header_fn);
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
                 break;
             }
 
@@ -271,6 +281,7 @@ process_cmd_line_opts(int argc, char **argv)
                 break;
 
             TRC_OPT_FLAG(NO_TOTAL_STATS);
+            TRC_OPT_FLAG(NO_PACKAGES_ONLY);
             TRC_OPT_FLAG(STATS_ONLY);
             TRC_OPT_FLAG(NO_SCRIPTS);
             TRC_OPT_FLAG(NO_UNSPEC);
@@ -505,7 +516,7 @@ main(int argc, char *argv[])
          html_report != NULL;
          html_report = html_report->links.tqe_next)
     {
-        if (trc_report_to_html(html_report->filename, trc_html_header_f,
+        if (trc_report_to_html(html_report->filename, html_report->header,
                                &trc_db, html_report->flags) != 0)
         {
             ERROR("Failed to generate report in HTML format");
@@ -531,9 +542,9 @@ exit:
     {
         TAILQ_REMOVE(&html_reports, html_report, links);
         free(html_report->filename);
+        if (html_report->header != NULL)
+            (void)fclose(html_report->header);
     }
-    if (trc_html_header_f != NULL)
-        (void)fclose(trc_html_header_f);
 
     return result;
 }

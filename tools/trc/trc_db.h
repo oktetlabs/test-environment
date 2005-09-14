@@ -233,7 +233,8 @@ extern void trc_free_db(trc_database *db);
 /** Output flags */
 enum trc_out_flags {
     TRC_OUT_NO_TOTAL_STATS      = 0x01,
-    TRC_OUT_NO_SCRIPTS          = 0x02,
+    TRC_OUT_NO_PACKAGES_ONLY    = 0x02,
+    TRC_OUT_NO_SCRIPTS          = 0x04,
     TRC_OUT_STATS_ONLY          = 0x08,
     TRC_OUT_NO_UNSPEC           = 0x10,
     TRC_OUT_NO_SKIPPED          = 0x20,
