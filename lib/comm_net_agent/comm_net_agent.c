@@ -580,7 +580,7 @@ read_socket(int socket, void *buffer, size_t len)
         else if (r == 0)
         {
             fprintf(stdout,
-                    "%s(): recv() returned 0, connection is closed",
+                    "%s(): recv() returned 0, connection is closed\n",
                     __FUNCTION__);
             return TE_RC(TE_COMM, TE_EPIPE);
         }
