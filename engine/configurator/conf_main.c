@@ -1026,8 +1026,18 @@ process_backup(cfg_backup_msg *msg)
             /* Try to restore using dynamic history */
             if ((msg->rc = cfg_dh_restore_backup(msg->filename, TRUE)) == 0)
             {
-                rcf_log_cfg_changes(FALSE);
-                return;
+                /* Check that it is really restored */
+                if ((msg->rc = cfg_backup_create_file(filename)) != 0)
+                    return;
+                    
+                sprintf(tmp_buf, "diff -u %s %s >/dev/null 2>&1", 
+                        msg->filename, filename);
+                        
+                if (system(tmp_buf) == 0)
+                {
+                    rcf_log_cfg_changes(FALSE);
+                    return;
+                }
             }
 
             WARN("Restoring backup from history failed; "
