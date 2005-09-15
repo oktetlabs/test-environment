@@ -674,6 +674,9 @@ synchronize_time(ta *agent)
 static void
 answer_user_request(usrreq *req)
 {
+    if (req->message->error != 0)
+        req->message->data_len = 0;
+        
     if (req->user != NULL)
     {
         int rc;
