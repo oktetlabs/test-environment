@@ -187,6 +187,13 @@ extern int tapi_cfg_net_assign_ip4(cfg_net_t *net,
                                    tapi_cfg_net_assigned *assigned);
 
 /**
+ * Assign IPv4 subnets for all configuration network.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_all_assign_ip4(void);
+
+/**
  * Dirty hack, must be removed after sockts_get_host_addr() 
  * will be repaired.
  */

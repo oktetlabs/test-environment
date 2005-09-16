@@ -832,6 +832,39 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
     return rc;
 }
 
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_all_assign_ip4(void)
+{
+    te_errno        rc;
+    cfg_nets_t      nets;
+    unsigned int    i;
+
+    /* Get available networks configuration */
+    rc = tapi_cfg_net_get_nets(&nets);
+    if (rc != 0)
+    {
+        ERROR("Failed to get networks from Configurator: %r", rc);
+        return rc;
+    }
+
+    for (i = 0; i < nets.n_nets; ++i)
+    {
+        rc = tapi_cfg_net_assign_ip4(nets.nets + i, NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to assign IPv4 subnet to net #%u: %r", i, rc);
+            break;
+        }
+    }
+
+    tapi_cfg_net_free_nets(&nets);
+
+    return rc;
+}
+
+
 /* See description in tapi_cfg_net.h */
 int
 tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net, 
