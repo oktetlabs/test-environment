@@ -319,9 +319,9 @@ static int
 rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg, 
                        size_t *recv_size, rcf_msg **p_answer)
 {
-    int     rc;
-    size_t  buflen = *recv_size;
-    size_t  len;
+    te_errno    rc;
+    size_t      buflen = *recv_size;
+    size_t      len;
     
     if ((rc = ipc_receive_answer(ipcc, RCF_SERVER,
                                  recv_msg, recv_size)) == 0)
@@ -389,8 +389,8 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
                      rcf_msg *recv_msg, size_t *recv_size, 
                      rcf_msg **p_answer)
 {
-    rcf_msg *message;
-    int      rc;
+    rcf_msg    *message;
+    te_errno    rc;
 
     if (ipcc == NULL || recv_msg == NULL || recv_size == NULL)
         return TE_EWRONGPTR;
@@ -468,16 +468,16 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
  * 
  * @return zero on success or error code
  */
-static int
+static te_errno
 send_recv_rcf_ipc_message(thread_ctx_t *ctx,
                           rcf_msg *send_buf, size_t send_size,
                           rcf_msg *recv_buf, size_t *recv_size,
                           rcf_msg **p_answer)
 { 
-    int      rc;
-    int      sid;
-    rcf_op_t opcode;
-    rcf_msg *message;
+    te_errno    rc;
+    int         sid;
+    rcf_op_t    opcode;
+    rcf_msg    *message;
 
     if (ctx == NULL || ctx->ipc_handle == NULL ||
         send_buf == NULL || recv_buf == NULL || recv_size == NULL)
@@ -584,8 +584,8 @@ get_ctx_handle(te_bool create)
 #endif
     if (handle == NULL && create)
     {
-        int  rc;
-        char name[RCF_MAX_NAME];
+        te_errno    rc;
+        char        name[RCF_MAX_NAME];
 
         handle = calloc(1, sizeof(*handle));
         if (handle == NULL)
@@ -648,7 +648,7 @@ get_ctx_handle(te_bool create)
 {
     pthread_t   mine = pthread_self();
     int         i;
-    int         rc;
+    te_errno    rc;
     
     pthread_mutex_lock(&rcf_lock);
     for (i = 0; i < RCF_MAX_THREADS; i++)
@@ -784,10 +784,10 @@ find_traffic_op(const char *ta_name, csap_handle_t csap_id)
  * 
  * @return 0 (success) or 1 (CSAP is already in the list)
  */
-static int
+static te_errno
 insert_traffic_op(traffic_op_t *cs)
 {
-    int rc;
+    te_errno rc;
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
@@ -887,13 +887,13 @@ check_params_len(const char *params, int maxlen, int *necessary)
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ENOMEM       out of memory
  */
-int 
+te_errno
 rcf_get_ta_list(char *buf, size_t *len)
 {
-    rcf_msg  msg;
-    rcf_msg *ans;
-    size_t   anslen = sizeof(msg);
-    int      rc;
+    rcf_msg     msg;
+    rcf_msg    *ans;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
 
     RCF_API_INIT;
     
@@ -949,12 +949,12 @@ rcf_get_ta_list(char *buf, size_t *len)
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ENOMEM       out of memory
  */
-int 
+te_errno
 rcf_ta_name2type(const char *ta_name, char *ta_type)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -993,12 +993,12 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ENOMEM       out of memory
  */
-int 
+te_errno
 rcf_ta_create_session(const char *ta_name, int *session)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -1046,16 +1046,16 @@ rcf_ta_create_session(const char *ta_name, int *session)
  * @retval TE_ENOENT       cannot open NUT image file
  * @retval TE_ENOMEM       out of memory
  */
-int 
+te_errno
 rcf_ta_reboot(const char *ta_name,
               const char *boot_params, const char *image)
 {
-    rcf_msg *msg;
+    rcf_msg    *msg;
     
-    size_t  anslen = sizeof(*msg);
-    size_t  len = 0;
-    int     fd;
-    int     rc;
+    size_t      anslen = sizeof(*msg);
+    size_t      len = 0;
+    int         fd;
+    te_errno    rc;
 
     RCF_API_INIT;
     
@@ -1190,13 +1190,13 @@ rcf_log_cfg_changes(te_bool enable)
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-int 
+te_errno
 rcf_ta_cfg_get(const char *ta_name, int session, const char *oid, 
                char *val_buf, size_t len)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
 
@@ -1269,13 +1269,13 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
  *
  * @return error code
  */
-static int
+static te_errno
 conf_add_set(const char *ta_name, int session, const char *oid,
              const char *val, int opcode)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -1335,7 +1335,7 @@ conf_add_set(const char *ta_name, int session, const char *oid,
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-int 
+te_errno
 rcf_ta_cfg_set(const char *ta_name, int session, const char *oid,
                const char *val)
 {
@@ -1363,7 +1363,7 @@ rcf_ta_cfg_set(const char *ta_name, int session, const char *oid,
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-int 
+te_errno
 rcf_ta_cfg_add(const char *ta_name, int session, const char *oid,
                const char *val)
 {
@@ -1397,12 +1397,12 @@ rcf_ta_cfg_add(const char *ta_name, int session, const char *oid,
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-int 
+te_errno
 rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -1429,12 +1429,12 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
 }
 
 /* See description in rcf_api.h */
-int
+te_errno
 rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -1468,12 +1468,12 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
  * @retval TE_ENOMEM        out of memory
  * @retval other            error returned by command handler on the TA
  */
-int 
+te_errno
 rcf_ta_get_log(const char *ta_name, char *log_file)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -1520,15 +1520,15 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-int 
+te_errno
 rcf_ta_get_var(const char *ta_name, int session, const char *var_name, 
                int var_type, size_t var_len, void *val)
 {
-    rcf_msg  msg;
-    size_t   anslen = sizeof(msg);
-    uint64_t value;
-    char    *tmp;
-    int      rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    uint64_t    value;
+    char       *tmp;
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -1625,13 +1625,13 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-int 
+te_errno
 rcf_ta_set_var(const char *ta_name, int session, const char *var_name, 
                int var_type, const char *val)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -1707,13 +1707,13 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
  *
  * @return error code
  */
-static int
+static te_errno
 get_put_file(const char *ta_name, int session,
              const char *rfile, const char *lfile, int opcode)
 {
-    rcf_msg *msg;
-    size_t   anslen = sizeof(*msg);
-    int      rc;
+    rcf_msg    *msg;
+    size_t      anslen = sizeof(*msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -1783,7 +1783,7 @@ get_put_file(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  */
-int 
+te_errno
 rcf_ta_get_file(const char *ta_name, int session,
                 const char *rfile, const char *lfile)
 {
@@ -1810,7 +1810,7 @@ rcf_ta_get_file(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  */
-int 
+te_errno
 rcf_ta_put_file(const char *ta_name, int session,
                 const char *lfile, const char *rfile)
 {
@@ -1835,7 +1835,7 @@ rcf_ta_put_file(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  */
-int 
+te_errno
 rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
 {
     return get_put_file(ta_name, session, rfile, "", RCFOP_FDEL);
@@ -1868,16 +1868,16 @@ rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
  *
  * @sa rcf_ta_csap_destroy
  */
-int 
+te_errno
 rcf_ta_csap_create(const char *ta_name, int session,
                    const char *stack_id, const char *params,
                    csap_handle_t *csap_id)
 {
-    rcf_msg *msg;
-    size_t   len = 0;
-    int      flags = 0;
-    size_t   anslen = sizeof(*msg);
-    int      rc;
+    rcf_msg    *msg;
+    size_t      len = 0;
+    int         flags = 0;
+    size_t      anslen = sizeof(*msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -1962,13 +1962,13 @@ rcf_ta_csap_create(const char *ta_name, int session,
  *
  * @sa rcf_ta_csap_create
  */
-int 
+te_errno 
 rcf_ta_csap_destroy(const char *ta_name, int session,
                     csap_handle_t csap_id)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -2019,13 +2019,13 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ESMALLBUF the buffer is too small
  */
-int 
+te_errno
 rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
                   const char *var_name, size_t var_len, char *val)
 {
-    rcf_msg  msg;
-    size_t   anslen = sizeof(msg);
-    int      rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -2086,7 +2086,7 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
  *
  * @sa rcf_ta_trsend_stop
  */
-int 
+te_errno
 rcf_ta_trsend_start(const char *ta_name, int session, 
                     csap_handle_t csap_id, const char *templ,
                     rcf_call_mode_t blk_mode)
@@ -2095,7 +2095,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     size_t        anslen = sizeof(msg);
     int           fd;
     traffic_op_t *tr_op;
-    int           rc;
+    te_errno      rc;
 
     RCF_API_INIT;
     
@@ -2188,14 +2188,14 @@ rcf_ta_trsend_start(const char *ta_name, int session,
  *
  * @sa rcf_ta_trsend_start
  */
-int 
+te_errno
 rcf_ta_trsend_stop(const char *ta_name, int session,
                    csap_handle_t csap_id, int *num)
 {
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
     traffic_op_t *tr_op;
-    int           rc;
+    te_errno      rc;
     
     RCF_API_INIT;
     
@@ -2250,7 +2250,7 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
 /**
  * See the description in rcf_api.h
  */
-int
+te_errno
 rcf_ta_trrecv_start(const char *ta_name, int session,
                     csap_handle_t csap_id, const char *pattern,
                     rcf_pkt_handler handler, void *user_param, 
@@ -2259,7 +2259,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
     int           fd;
-    int           rc;
+    te_errno      rc;
     traffic_op_t *tr_op;
 
     RCF_API_INIT;
@@ -2342,11 +2342,11 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
  *
  * @return error code
  */
-static int
+static te_errno
 csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
                  int *num, int opcode)
 {
-    int           rc;
+    te_errno      rc;
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
     traffic_op_t *tr_op;
@@ -2411,6 +2411,11 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
 
     while ((msg.flags & INTERMEDIATE_ANSWER))
     {
+        assert(handler != NULL);
+        assert(msg.file != NULL);
+
+        RING("Traffic receive operation on the CSAP %d (%s:%d) got "
+             "packet\n%tf", csap_id, ta_name, session, msg.file);
         handler(msg.file, user_param);
 
         anslen = sizeof(msg);
@@ -2450,20 +2455,22 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
 /**
  * See the description in rcf_api.h
  */
-int
+te_errno
 rcf_ta_trrecv_wait(const char *ta_name, int session,
                    csap_handle_t csap_id, int *num)
 {
-    int rc;
-    
-    VERB("%s(ta %s, csap %d, *num  %p) called", 
-         __FUNCTION__, ta_name, csap_id, num);
+    te_errno rc;
+
+    RING("Waiting for receive operation on the CSAP %d (%s:%d) ...",
+         csap_id, ta_name, session);
+
     rc = csap_tr_recv_get(ta_name, session, csap_id, num,
                           RCFOP_TRRECV_WAIT);
-    VERB("%s(ta %s, csap %d, *num  %p) return %r, num %d", 
-         __FUNCTION__, ta_name, csap_id, num, rc, 
-         (num == NULL ? -1: *num));
-         
+
+    RING("Finished receive operation on the CSAP %d (%s:%d) got %d "
+         "packets : %r", csap_id, ta_name, session,
+         (num == NULL) ? -1: *num, rc);
+
     return rc;
 }
                       
@@ -2491,20 +2498,22 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
  *
  * @sa rcf_ta_trrecv_start
  */ 
-int 
+te_errno
 rcf_ta_trrecv_stop(const char *ta_name, int session,
-                        csap_handle_t csap_id, int *num)
+                   csap_handle_t csap_id, int *num)
 {
-    int rc;
+    te_errno rc;
 
-    VERB("%s(ta %s, csap %d, *num  %p) called", 
-         __FUNCTION__, ta_name, csap_id, num); 
+    RING("Stopping receive operation on the CSAP %d (%s:%d) ...",
+         csap_id, ta_name, session);
+
     rc = csap_tr_recv_get(ta_name, session, csap_id, num,
                             RCFOP_TRRECV_STOP); 
-    VERB("%s(ta %s, csap %d, *num  %p) return %r, num %d", 
-         __FUNCTION__, ta_name, csap_id, num, rc,
-         (num == NULL ? -1: *num));
-         
+
+    RING("Stopped receive operation on the CSAP %d (%s:%d) got %d "
+         "packets : %r", csap_id, ta_name, session,
+         (num == NULL) ? -1: *num, rc);
+
     return rc;
 }
 
@@ -2533,19 +2542,21 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
  *
  * @sa rcf_ta_trrecv_start
  */
-int 
+te_errno
 rcf_ta_trrecv_get(const char *ta_name, int session,
                   csap_handle_t csap_id, int *num)
 {
-    int rc;
+    te_errno rc;
 
     VERB("%s(ta %s, csap %d, *num  %p) called", 
          ta_name, csap_id, num);
+
     rc = csap_tr_recv_get(ta_name, session, csap_id, num,
                           RCFOP_TRRECV_GET);
 
-    VERB("%s(ta %s, csap %d, *num  %p) return %r, num %d", 
-         ta_name, csap_id, num, rc, (num == NULL ? -1: *num)); 
+    RING("Traffic receive operation on the CSAP %d (%s:%d) got %d "
+         "packets : %r", csap_id, ta_name, session,
+         (num == NULL) ? -1: *num, rc);
 
     return rc;
 }
@@ -2584,7 +2595,7 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
  * @retval TE_ENOMEM       out of memory
  * @retval other           error returned by command handler on the TA
  */
-int 
+te_errno
 rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
                    const char *templ, rcf_pkt_handler handler, 
                    void *user_param, unsigned int timeout, int *error)
@@ -2593,7 +2604,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     traffic_op_t *tr_op;
     size_t        anslen = sizeof(msg);
     int           fd;
-    int           rc;
+    te_errno      rc;
     
     RCF_API_INIT;
 
@@ -2827,14 +2838,14 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
  *
  * @return error code
  */
-static int
+static te_errno
 call_start(const char *ta_name, int session, int priority, const char *rtn, 
            int *res, int argc, int argv, va_list ap, 
            enum rcf_start_modes mode)
 {
-    rcf_msg *msg;
-    size_t   anslen = sizeof(*msg);
-    int      rc;
+    rcf_msg    *msg;
+    size_t      anslen = sizeof(*msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -2885,58 +2896,58 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
 
 
 /* See description in rcf_api.h */
-int 
-rcf_ta_call(const char *ta_name, int session, const char *rtn, int *rc, 
-            int argc, te_bool argv, ...)
+te_errno
+rcf_ta_call(const char *ta_name, int session, const char *rtn,
+            te_errno *error, int argc, te_bool argv, ...)
 {
-    int     error;
-    va_list ap;
+    te_errno    rc;
+    va_list     ap;
     
     va_start(ap, argv);
     
-    error = call_start(ta_name, session, 0, rtn, rc, argc, argv, ap, 
-                       RCF_START_FUNC);
+    rc = call_start(ta_name, session, 0, rtn, error, argc, argv, ap, 
+                    RCF_START_FUNC);
     
     va_end(ap);
     
-    return error;
+    return rc;
 }
                        
 
 /* See description in rcf_api.h */
-int 
+te_errno
 rcf_ta_start_task(const char *ta_name, int session, int priority,
                   const char *rtn, pid_t *pid, int argc, te_bool argv, ...)
 {
-    int     error;
-    va_list ap;
+    te_errno    rc;
+    va_list     ap;
     
     va_start(ap, argv);
     
-    error = call_start(ta_name, session, priority, rtn, pid, argc, argv, ap,
-                       RCF_START_FORK);
+    rc = call_start(ta_name, session, priority, rtn, pid, argc, argv, ap,
+                    RCF_START_FORK);
     
     va_end(ap);
     
-    return error;
+    return rc;
 }
 
 /* See description in rcf_api.h */
-int 
+te_errno
 rcf_ta_start_thread(const char *ta_name, int session, int priority,
                   const char *rtn, int *tid, int argc, te_bool argv, ...)
 {
-    int     error;
-    va_list ap;
+    te_errno    rc;
+    va_list     ap;
     
     va_start(ap, argv);
     
-    error = call_start(ta_name, session, priority, rtn, tid, argc, argv, ap,
-                       RCF_START_THREAD);
+    rc = call_start(ta_name, session, priority, rtn, tid, argc, argv, ap,
+                    RCF_START_THREAD);
     
     va_end(ap);
     
-    return error;
+    return rc;
 }
 
                                 
@@ -2960,12 +2971,12 @@ rcf_ta_start_thread(const char *ta_name, int session, int priority,
  *
  * @sa rcf_ta_start_process
  */
-int 
+te_errno
 rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -2997,12 +3008,12 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
  * @retval TE_EIPC      cannot interact with RCF 
  * 
  */
-int
+te_errno
 rcf_check_agents(void)
 { 
-    rcf_msg  msg;
-    size_t   anslen = sizeof(msg);
-    int      rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     
@@ -3019,12 +3030,12 @@ rcf_check_agents(void)
  *
  * @return error code
  */
-int
+te_errno
 rcf_shutdown_call(void)
 {
-    rcf_msg msg;
-    size_t  anslen = sizeof(msg);
-    int     rc;
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
     
     RCF_API_INIT;
     

@@ -109,7 +109,7 @@ extern "C" {
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ENOMEM       out of memory
  */
-extern int rcf_get_ta_list(char *buf, size_t *len);
+extern te_errno rcf_get_ta_list(char *buf, size_t *len);
 
 /**
  * This function maps name of the Test Agent to its type.
@@ -125,7 +125,7 @@ extern int rcf_get_ta_list(char *buf, size_t *len);
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ENOMEM       out of memory
  */
-extern int rcf_ta_name2type(const char *ta_name, char *ta_type);
+extern te_errno rcf_ta_name2type(const char *ta_name, char *ta_type);
 
 /**
  * This function returns unique session identifier for the Test Agent.
@@ -146,7 +146,7 @@ extern int rcf_ta_name2type(const char *ta_name, char *ta_type);
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval TE_ENOMEM       out of memory
  */
-extern int rcf_ta_create_session(const char *ta_name, int *session);
+extern te_errno rcf_ta_create_session(const char *ta_name, int *session);
 
 /**
  * This function reboots the Test Agent or NUT served by it. It sends 
@@ -176,8 +176,9 @@ extern int rcf_ta_create_session(const char *ta_name, int *session);
  * @retval TE_ENOENT       cannot open NUT image file
  * @retval TE_ENOMEM       out of memory
  */
-extern int rcf_ta_reboot(const char *ta_name, const char *boot_params,
-                         const char *image);
+extern te_errno rcf_ta_reboot(const char *ta_name,
+                              const char *boot_params,
+                              const char *image);
 
 /**
  * Enable/disable logging of TA configuration changes.
@@ -208,9 +209,9 @@ extern void rcf_log_cfg_changes(te_bool enable);
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-extern int rcf_ta_cfg_get(const char *ta_name, int session,
-                          const char *oid, 
-                          char *val_buf, size_t len);
+extern te_errno rcf_ta_cfg_get(const char *ta_name, int session,
+                               const char *oid, 
+                               char *val_buf, size_t len);
 
 /**
  * This function is used to change value of object instance.
@@ -232,8 +233,8 @@ extern int rcf_ta_cfg_get(const char *ta_name, int session,
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-extern int rcf_ta_cfg_set(const char *ta_name, int session,
-                          const char *oid, const char *val);
+extern te_errno rcf_ta_cfg_set(const char *ta_name, int session,
+                               const char *oid, const char *val);
 
 /**
  * This function is used to create new object instance and assign the 
@@ -256,8 +257,8 @@ extern int rcf_ta_cfg_set(const char *ta_name, int session,
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-extern int rcf_ta_cfg_add(const char *ta_name, int session,
-                          const char *oid, const char *val);
+extern te_errno rcf_ta_cfg_add(const char *ta_name, int session,
+                               const char *oid, const char *val);
 
 /**
  * This function is used to remove the object instance.
@@ -278,8 +279,8 @@ extern int rcf_ta_cfg_add(const char *ta_name, int session,
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-extern int rcf_ta_cfg_del(const char *ta_name, int session,
-                          const char *oid);
+extern te_errno rcf_ta_cfg_del(const char *ta_name, int session,
+                               const char *oid);
 
 /**
  * This function is used to begin/finish group of configuration commands.
@@ -295,8 +296,8 @@ extern int rcf_ta_cfg_del(const char *ta_name, int session,
  * @retval TE_EIPC      cannot interact with RCF 
  * @retval other        error returned by command handler on the TA
  */
-extern int rcf_ta_cfg_group(const char *ta_name, int session,
-                            te_bool is_start);
+extern te_errno rcf_ta_cfg_group(const char *ta_name, int session,
+                                 te_bool is_start);
 
 /**
  * This function is used to get bulk of log from the Test Agent.
@@ -317,7 +318,7 @@ extern int rcf_ta_cfg_group(const char *ta_name, int session,
  * @retval TE_ENOMEM        out of memory
  * @retval other            error returned by command handler on the TA
  */
-extern int rcf_ta_get_log(const char *ta_name, char *log_file);
+extern te_errno rcf_ta_get_log(const char *ta_name, char *log_file);
 
 /**
  * This function is used to obtain value of the variable from the Test Agent
@@ -344,9 +345,9 @@ extern int rcf_ta_get_log(const char *ta_name, char *log_file);
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-extern int rcf_ta_get_var(const char *ta_name, int session,
-                          const char *var_name, int var_type,
-                          size_t var_len, void *val);
+extern te_errno rcf_ta_get_var(const char *ta_name, int session,
+                               const char *var_name, int var_type,
+                               size_t var_len, void *val);
 
 /**
  * This function is used to change value of the variable from the Test Agent
@@ -371,9 +372,9 @@ extern int rcf_ta_get_var(const char *ta_name, int session,
  * @retval TE_ENOMEM       out of memory
  * @retval other        error returned by command handler on the TA
  */
-extern int rcf_ta_set_var(const char *ta_name, int session,
-                          const char *var_name, 
-                          int var_type, const char *val);
+extern te_errno rcf_ta_set_var(const char *ta_name, int session,
+                               const char *var_name, 
+                               int var_type, const char *val);
 
 /**
  * This function loads file from Test Agent or NUT served by it to the 
@@ -395,8 +396,8 @@ extern int rcf_ta_set_var(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  */
-extern int rcf_ta_get_file(const char *ta_name, int session, 
-                           const char *rfile, const char *lfile);
+extern te_errno rcf_ta_get_file(const char *ta_name, int session, 
+                                const char *rfile, const char *lfile);
 
 /**
  * This function loads file from the testing node to Test Agent or NUT 
@@ -418,8 +419,8 @@ extern int rcf_ta_get_file(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  */
-extern int rcf_ta_put_file(const char *ta_name, int session, 
-                           const char *lfile, const char *rfile);
+extern te_errno rcf_ta_put_file(const char *ta_name, int session, 
+                                const char *lfile, const char *rfile);
 
 /**
  * This function deletes file from the Test Agent or NUT served by it.
@@ -439,8 +440,8 @@ extern int rcf_ta_put_file(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  */
-extern int rcf_ta_del_file(const char *ta_name, int session,
-                           const char *rfile);
+extern te_errno rcf_ta_del_file(const char *ta_name, int session,
+                                const char *rfile);
 
 /**
  * This function creates CSAP (communication service access point) on the 
@@ -469,9 +470,10 @@ extern int rcf_ta_del_file(const char *ta_name, int session,
  *
  * @sa rcf_ta_csap_destroy
  */
-extern int rcf_ta_csap_create(const char *ta_name, int session,
-                              const char *stack_id, const char *params,
-                              csap_handle_t *csap_id);
+extern te_errno rcf_ta_csap_create(const char *ta_name, int session,
+                                   const char *stack_id,
+                                   const char *params,
+                                   csap_handle_t *csap_id);
 
 /**
  * This function destroys CSAP.
@@ -492,8 +494,8 @@ extern int rcf_ta_csap_create(const char *ta_name, int session,
  *
  * @sa rcf_ta_csap_create
  */
-extern int rcf_ta_csap_destroy(const char *ta_name, int session,
-                               csap_handle_t csap_id);
+extern te_errno rcf_ta_csap_destroy(const char *ta_name, int session,
+                                    csap_handle_t csap_id);
 
 /**
  * This function is used to obtain CSAP parameter value.
@@ -515,9 +517,10 @@ extern int rcf_ta_csap_destroy(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ESMALLBUF    the buffer is too small
  */
-extern int rcf_ta_csap_param(const char *ta_name, int session,
-                             csap_handle_t csap_id,
-                             const char *var, size_t var_len, char *val);
+extern te_errno rcf_ta_csap_param(const char *ta_name, int session,
+                                  csap_handle_t csap_id,
+                                  const char *var, size_t var_len,
+                                  char *val);
 
 /**
  * This function is used to force sending of traffic via already created
@@ -548,9 +551,10 @@ extern int rcf_ta_csap_param(const char *ta_name, int session,
  *
  * @sa rcf_ta_trsend_stop
  */
-extern int rcf_ta_trsend_start(const char *ta_name, int session, 
-                               csap_handle_t csap_id, const char *templ,
-                               rcf_call_mode_t blk_mode);
+extern te_errno rcf_ta_trsend_start(const char *ta_name, int session, 
+                                    csap_handle_t csap_id,
+                                    const char *templ,
+                                    rcf_call_mode_t blk_mode);
 
 /**
  * This function is used to stop sending of traffic started by
@@ -575,14 +579,15 @@ extern int rcf_ta_trsend_start(const char *ta_name, int session,
  *
  * @sa rcf_ta_trsend_start
  */
-extern int rcf_ta_trsend_stop(const char *ta_name, int session,
-                              csap_handle_t csap_id, int *num);
+extern te_errno rcf_ta_trsend_stop(const char *ta_name, int session,
+                                   csap_handle_t csap_id, int *num);
 
 /** Function - handler of received packets */
 typedef void (*rcf_pkt_handler)(
-    char *pkt,         /**< File name where received packet was saved */
-    void *user_param   /**< Parameter provided by caller of 
-                            rcf_ta_trrecv_start */
+    const char *pkt,        /**< File name where received packet
+                                 was saved */
+    void       *user_param  /**< Parameter provided by caller of 
+                                 rcf_ta_trrecv_start */
 );
 
 /**
@@ -620,10 +625,12 @@ typedef void (*rcf_pkt_handler)(
  *
  * @sa rcf_ta_trrecv_stop rcf_ta_trrecv_wait
  */
-extern int rcf_ta_trrecv_start(const char *ta_name, int session,
-                               csap_handle_t csap_id, const char *pattern,
-                               rcf_pkt_handler handler, void *user_param, 
-                               unsigned int timeout, int num);
+extern te_errno rcf_ta_trrecv_start(const char *ta_name, int session,
+                                    csap_handle_t csap_id,
+                                    const char *pattern,
+                                    rcf_pkt_handler handler,
+                                    void *user_param, 
+                                    unsigned int timeout, int num);
 
 /**
  * Blocks the caller until all the traffic, which is being captured,
@@ -650,8 +657,8 @@ extern int rcf_ta_trrecv_start(const char *ta_name, int session,
  *
  * @sa rcf_ta_trrecv_start
  */
-extern int rcf_ta_trrecv_wait(const char *ta_name, int session,
-                              csap_handle_t csap_id, int *num);
+extern te_errno rcf_ta_trrecv_wait(const char *ta_name, int session,
+                                   csap_handle_t csap_id, int *num);
 
 /**
  * This function is used to stop receiving of traffic started by
@@ -678,8 +685,8 @@ extern int rcf_ta_trrecv_wait(const char *ta_name, int session,
  *
  * @sa rcf_ta_trrecv_start
  */
-extern int rcf_ta_trrecv_stop(const char *ta_name, int session,
-                              csap_handle_t csap_id, int *num);
+extern te_errno rcf_ta_trrecv_stop(const char *ta_name, int session,
+                                   csap_handle_t csap_id, int *num);
 
 /**
  * This function is used to force processing of received packets 
@@ -707,8 +714,8 @@ extern int rcf_ta_trrecv_stop(const char *ta_name, int session,
  *
  * @sa rcf_ta_trrecv_start
  */
-extern int rcf_ta_trrecv_get(const char *ta_name, int session,
-                             csap_handle_t csap_id, int *num);
+extern te_errno rcf_ta_trrecv_get(const char *ta_name, int session,
+                                  csap_handle_t csap_id, int *num);
 
 /**
  * This function is used to send exactly one packet via CSAP and receive
@@ -744,11 +751,14 @@ extern int rcf_ta_trrecv_get(const char *ta_name, int session,
  * @retval TE_ENOMEM       out of memory
  * @retval other           error returned by command handler on the TA
  */
-extern int rcf_ta_trsend_recv(const char *ta_name, int session,
-                              csap_handle_t csap_id, 
-                              const char *templ, rcf_pkt_handler handler, 
-                              void *user_param, unsigned int timeout,
-                              int *error);
+extern te_errno rcf_ta_trsend_recv(const char      *ta_name,
+                                   int              session,
+                                   csap_handle_t    csap_id, 
+                                   const char      *templ,
+                                   rcf_pkt_handler  handler, 
+                                   void            *user_param,
+                                   unsigned int     timeout,
+                                   int             *error);
 
 /**
  * This function is used to call remotely a routine on the Test Agent or
@@ -757,7 +767,7 @@ extern int rcf_ta_trsend_recv(const char *ta_name, int session,
  * @param ta_name       Test Agent name                 
  * @param session       TA session or 0   
  * @param rtn           routine name
- * @param rc            location for the code returned by the routine
+ * @param error         location for the code returned by the routine
  * @param argc          number of parameters
  * @param argv          if TRUE, rest of parameters are char *;
  *                      otherwise pairs: type, value.
@@ -778,9 +788,9 @@ extern int rcf_ta_trsend_recv(const char *ta_name, int session,
  * @retval TE_ETAREBOOTED  Test Agent is rebooted
  * @retval TE_ENOMEM       out of memory
  */
-extern int rcf_ta_call(const char *ta_name, int session,
-                       const char *rtn, int *rc,
-                       int argc, te_bool argv, ...);
+extern te_errno rcf_ta_call(const char *ta_name, int session,
+                            const char *rtn, int *error,
+                            int argc, te_bool argv, ...);
                        
 /**
  * This function is used to start a process on the Test Agent or 
@@ -815,9 +825,9 @@ extern int rcf_ta_call(const char *ta_name, int session,
  *
  * @sa rcf_ta_kill_process
  */
-extern int rcf_ta_start_task(const char *ta_name, int session,
-                             int priority,  const char *rtn,
-                             pid_t *pid, int argc, te_bool argv, ...);
+extern te_errno rcf_ta_start_task(const char *ta_name, int session,
+                                  int priority,  const char *rtn,
+                                  pid_t *pid, int argc, te_bool argv, ...);
 
 /**
  * This function is similar to rcf_ta_start_task, but
@@ -825,9 +835,9 @@ extern int rcf_ta_start_task(const char *ta_name, int session,
  *
  * @sa rcf_ta_start_task
  */
-extern int rcf_ta_start_thread(const char *ta_name, int session,
-                               int priority,  const char *rtn,
-                               int *tid, int argc, te_bool argv, ...);
+extern te_errno rcf_ta_start_thread(const char *ta_name, int session,
+                                    int priority,  const char *rtn,
+                                    int *tid, int argc, te_bool argv, ...);
                                 
 /**
  * This function is used to kill a process on the Test Agent or 
@@ -849,7 +859,8 @@ extern int rcf_ta_start_thread(const char *ta_name, int session,
  *
  * @sa rcf_ta_start_process
  */
-extern int rcf_ta_kill_task(const char *ta_name, int session, pid_t pid);
+extern te_errno rcf_ta_kill_task(const char *ta_name, int session,
+                                 pid_t pid);
 
 /**
  * Call SUN RPC on the TA.
@@ -864,9 +875,9 @@ extern int rcf_ta_kill_task(const char *ta_name, int session, pid_t pid);
  *
  * @return Status code
  */
-extern int rcf_ta_call_rpc(const char *ta_name, int session, 
-                           const char *rpcserver, int timeout,
-                           const char *rpc_name, void *in, void *out);
+extern te_errno rcf_ta_call_rpc(const char *ta_name, int session, 
+                                const char *rpcserver, int timeout,
+                                const char *rpc_name, void *in, void *out);
 
 /**
  * Clean up resources allocated by RCF API.
@@ -890,14 +901,14 @@ extern void rcf_api_cleanup(void);
  * @retval TE_EIPC         cannot interact with RCF 
  * 
  */
-extern int rcf_check_agents(void);
+extern te_errno rcf_check_agents(void);
 
 /**
  * This function is used to shutdown the RCF.
  *
  * @return error code
  */
-extern int rcf_shutdown_call(void);
+extern te_errno rcf_shutdown_call(void);
 
 #ifdef __cplusplus
 } /* extern "C" */
