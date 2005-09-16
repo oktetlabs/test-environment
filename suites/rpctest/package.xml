@@ -3,7 +3,7 @@
     <description>Tests on RCF RPC functionality.</description>
     <author mailto="Elena.Vengerova@oktetlabs.ru"/>
     <session>
-        <arg name="env.peer2peer">
+        <var name="env.peer2peer">
             <value>{
                 {
                   {'pco_iut':IUT},
@@ -16,7 +16,7 @@
                   if:'tst_if'
                 }
             }</value>
-        </arg>
+        </var>
 
         <run>
             <script name="rpctest"/>
