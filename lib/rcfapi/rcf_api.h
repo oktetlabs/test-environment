@@ -36,6 +36,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_errno.h"
 #include "rcf_common.h"
 #include "tad_common.h"
 
