@@ -429,7 +429,7 @@ rcf_pch_run(const char *confstr, const char *info)
         goto communication_problem;
     }
 
-    while (1)
+    while (TRUE)
     {
         size_t   len = cmd_buf_len;
         char    *ptr;
@@ -453,9 +453,10 @@ rcf_pch_run(const char *confstr, const char *info)
             if ((cmd = realloc(cmd, len)) == NULL)
             {
                 old_cmd[128] = 0;
-                
+
                 PRINT("Failed to allocate enough memory for command <%s>",
                       old_cmd);
+                
                 free(old_cmd);
                 return -1;
             }
@@ -466,7 +467,11 @@ rcf_pch_run(const char *confstr, const char *info)
             
             if ((rc = rcf_comm_agent_wait(conn, cmd + received, 
                                           &tmp, NULL)) != 0)
+            {
+                PRINT("Failed to read binary attachment for command <%s>",
+                      cmd);
                 goto communication_problem;
+            }
         }
         VERB("Command <%s> is received", cmd);
 
