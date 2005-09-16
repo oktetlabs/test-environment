@@ -104,7 +104,7 @@ typedef struct rcf_msg {
     uint32_t seqno;              /**< Sequence number */
     int      flags;              /**< Auxiliary flag */
     int      sid;                /**< Session identifier */
-    int      error;              /**< Error code (in the answer) */
+    te_errno error;              /**< Error code (in the answer) */
     char     ta[RCF_MAX_NAME];   /**< Test Agent name */
     int      handle;             /**< CSAP handle or PID */
     int      num;                /**< Number of sent/received packets */
