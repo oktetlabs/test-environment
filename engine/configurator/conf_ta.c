@@ -614,7 +614,8 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     {
         ERROR("Failed(%r) to start group on TA '%s'", rc, ta);
         EXIT("%r", rc);
-        return rc;
+        ret = rc;
+        goto handle_result;
     }
 
     for (commit_root = inst, p = inst, forward = TRUE; p != NULL; )
@@ -680,7 +681,9 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
 
     VERB("Commit to TA '%s' end %r - %s", ta, ret,
          (ret == 0) ? "success" : "failed");
-    
+
+handle_result:
+
     if (ret != 0 && local_cmd_seq)
     {
         /* Restore configuration before the first local SET/ADD */
