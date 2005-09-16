@@ -42,6 +42,9 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
 
 #include "te_errno.h"
 #include "conf_types.h"
