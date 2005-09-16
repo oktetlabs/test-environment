@@ -23,8 +23,7 @@
 int
 main(void)
 {
-    int             result = EXIT_FAILURE;
-    te_errno        rc;
+    int result = EXIT_FAILURE;
 
     signal(SIGINT, sigint_handler);
     te_lgr_entity = TE_TEST_NAME;
