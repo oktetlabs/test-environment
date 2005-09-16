@@ -819,7 +819,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
 
 
 void
-tapi_snmp_pkt_handler(char *fn, void *p)
+tapi_snmp_pkt_handler(const char *fn, void *p)
 {
     int         rc;
     int         s_parsed;
