@@ -1026,22 +1026,30 @@ process_backup(cfg_backup_msg *msg)
             /* Try to restore using dynamic history */
             if ((msg->rc = cfg_dh_restore_backup(msg->filename, TRUE)) == 0)
             {
+                char diff_file[RCF_MAX_PATH];
+                
+                cfg_ta_sync("/:", TRUE);
+
+                TE_SPRINTF(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
+                
                 /* Check that it is really restored */
                 if ((msg->rc = cfg_backup_create_file(filename)) != 0)
                     return;
+
+                sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
+                        filename, diff_file);
                     
-                sprintf(tmp_buf, "diff -u %s %s >/dev/null 2>&1", 
-                        msg->filename, filename);
-                        
                 if (system(tmp_buf) == 0)
                 {
                     rcf_log_cfg_changes(FALSE);
                     return;
                 }
+                WARN("Restoring backup from history failed:\n%tf", 
+                     diff_file);
             }
-
-            WARN("Restoring backup from history failed; "
-                 "restore from the file");
+            else
+                WARN("Restoring backup from history failed; "
+                     "restore from the file");
             msg->rc = parse_config(msg->filename, TRUE);
             rcf_log_cfg_changes(FALSE);
             cfg_dh_release_after(msg->filename);
@@ -1061,9 +1069,9 @@ process_backup(cfg_backup_msg *msg)
             
             if ((msg->rc = cfg_backup_create_file(filename)) != 0)
                 return;
-            sprintf(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
+            TE_SPRINTF(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
             sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
-                             filename, diff_file);
+                    filename, diff_file);
             msg->rc = ((system(tmp_buf) == 0) ? 0 : TE_EBACKUP);
             if (msg->rc == 0)
                 cfg_dh_release_after(msg->filename);
