@@ -31,6 +31,9 @@
 
 #ifndef __TE_RCF_INTERNAL_H__
 #define __TE_RCF_INTERNAL_H__
+
+#include "te_errno.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
