@@ -18,6 +18,10 @@
             }</value>
         </var>
 
+        <prologue>
+            <script name="prologue"/>
+        </prologue>
+
         <run>
             <script name="rpctest"/>
             <arg name="env" ref="env.peer2peer"/>
