@@ -261,6 +261,8 @@ tapi_env_free(tapi_env *env)
     cfg_handle        ip4_net_hndl;
     char             *ip4_net_oid;
 
+    if (env == NULL)
+        return 0;
 
     /* Destroy list of hosts */
     while ((host = env->hosts.cqh_first) != (void *)&env->hosts)
