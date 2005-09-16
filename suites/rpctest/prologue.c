@@ -14,6 +14,7 @@
 #define TE_TEST_NAME    "prologue"
 
 #include <stdlib.h>
+#include <signal.h>
 
 #include "tapi_test.h"
 #include "tapi_cfg_net.h"

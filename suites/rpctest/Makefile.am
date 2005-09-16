@@ -9,7 +9,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib
 MY_LDADD=-ltapi_rpc -ltapi_env -ltapi -lrcfrpc -lconfapi -lconf_oid \
          -lrcfapi -lrpcxdr -llogger_ten -lipc -ltools -lexpat -lpthread -lfl
 
-MY_DEPENDENCIES = \
+MY_DEPENDENCIES= \
     ${TE_INSTALL}/@host@/lib/libtapi_rpc.a \
     ${TE_INSTALL}/@host@/lib/libtapi.a \
     ${TE_INSTALL}/@host@/lib/libtapi_env.a \
