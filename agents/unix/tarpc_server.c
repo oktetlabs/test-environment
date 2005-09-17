@@ -3266,7 +3266,6 @@ TARPC_FUNC(open, {},
 /*-------------- fopen() --------------------------------*/
 TARPC_FUNC(fopen, {},
 {
-    func = (api_func)fopen;
     MAKE_CALL(out->mem_ptr = 
                   rcf_pch_mem_alloc(func_ptr_ret_ptr(in->path.path_val, 
                                                      in->mode.mode_val)));
@@ -3319,8 +3318,6 @@ TARPC_FUNC(setenv, {},
 TARPC_FUNC(fileno, {}, 
 { 
     MAKE_CALL(out->fd = func_ptr(rcf_pch_mem_get(in->mem_ptr)));
-    /* Free the memory, it should not be necessary any more */
-    rcf_pch_mem_free(in->mem_ptr); 
 }
 )
 
