@@ -249,6 +249,7 @@ tester_run_path_new(tester_run_path *root, char *path, unsigned int flags)
             if (param == NULL)
             {
                 ERROR("%s(): Memory allocation failure", __FUNCTION__);
+                tester_run_path_free(p);
                 return TE_RC(TE_TESTER, TE_ENOMEM);
             }
 
@@ -257,6 +258,8 @@ tester_run_path_new(tester_run_path *root, char *path, unsigned int flags)
             {
                 ERROR("No value for parameter '%s' on step '%s' specified",
                       param->name, p->name);
+                free(param);
+                tester_run_path_free(p);
                 return TE_RC(TE_TESTER, TE_EINVAL);
             }
             param->value = run_path_param_value(&path, &params);
