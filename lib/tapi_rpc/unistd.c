@@ -816,6 +816,18 @@ pollreq2str(struct rpc_pollfd *ufds, unsigned int nfds,
 {
     unsigned int    i;
     int             rc;
+    
+    if (buflen == 0)
+    {
+        ERROR("Too small buffer for poll request conversion");
+        return;
+    }
+
+    if (ufds == NULL)
+    {
+        buf[0] = '\0';
+        return;
+    }
 
     do {
         rc = snprintf(buf, buflen, "{");
