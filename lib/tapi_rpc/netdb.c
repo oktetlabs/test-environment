@@ -94,6 +94,7 @@ hostent_rpc2h(tarpc_hostent *rpc_he)
     {
         free(he->h_aliases);
         free(he);
+        return NULL;
     }
 
     he->h_name = rpc_he->h_name.h_name_val;
