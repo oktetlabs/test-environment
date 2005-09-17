@@ -135,6 +135,7 @@ tapi_env_allocate_addr(tapi_env_net *net, int af,
     {
         ERROR("Failed to allocate IPv4 address in subnet 0x%x: %r",
               net->ip4net, rc);
+        free(handle);
         return rc;
     }
     if (addrlen != NULL)
