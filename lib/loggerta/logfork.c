@@ -228,23 +228,20 @@ logfork_destroy_list(list **list)
         free(*list);
         *list = tmp;
     }
-    list = NULL;
 }
 
 /**
  * Close opened socket and clear the list of process info.
  *
  * @param  sockd  socket descriptor
- *
  */
 static void
 logfork_cleanup(list **list, int sockd)
 {
-    struct list *tmp = *list;
     if (list != NULL)
-        logfork_destroy_list(&tmp);
+        logfork_destroy_list(list);
     
-    close(sockd);
+    (void)close(sockd);
 }
 
 
