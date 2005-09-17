@@ -156,7 +156,7 @@ extern int rpc_setenv(rcf_rpc_server *rpcs,
                       const char *name, const char *value, int overwrite);
 
 /**
- * Read all data from file descriptor in the RPC and close the @fd.
+ * Read all data from file descriptor in the RPC.
  * The routine allocates memory for the output buffer and places
  * null-terminated string to it.
  * @b pbuf pointer is initialized by NULL if no buffer is allocated.
@@ -170,6 +170,6 @@ extern int rpc_setenv(rcf_rpc_server *rpcs,
  * @retval -1 failure
  */
 extern int rpc_read_all(rcf_rpc_server *rpcs, int fd, 
-                        char **pbuf, int *bytes);
+                        char **pbuf, size_t *bytes);
 
 #endif /* !__TE_TAPI_RPC_STDIO_H__ */

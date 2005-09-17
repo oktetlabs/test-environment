@@ -207,20 +207,19 @@ rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, const char *cmd,
 #define RPC_READ_ALL_BUF_CHUNK     1024          
 
 int
-rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, int *bytes)
+rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, size_t *bytes)
 {
     char   *buf = NULL;
     int     buflen = RPC_READ_ALL_BUF_CHUNK;
     int     offset = 0;
     int     rc = 0;
 
-    *bytes = 0;
-    if (rpcs == NULL || pbuf == NULL)
+    if (rpcs == NULL)
     {
         ERROR("%s(): Invalid parameters", __FUNCTION__);
         rc = -1;
     }
-    else if ((buf = calloc(1, RPC_READ_ALL_BUF_CHUNK)) == NULL)
+    else if ((buf = calloc(1, buflen)) == NULL)
     {
         ERROR("Out of memory");
         rc = -1;
@@ -253,9 +252,14 @@ rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, int *bytes)
         }
     }
     
-    *pbuf = buf;
-    *bytes = offset;
-    rpc_close(rpcs, fd);
+    if (pbuf != NULL)
+        *pbuf = buf;
+    else
+        free(buf);
+
+    if (bytes != NULL)
+        *bytes = offset;
+
     return rc;
 }
 
@@ -263,7 +267,7 @@ rpc_wait_status
 rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd, 
                   tarpc_uid_t uid, ...)
 {
-    int     bytes;
+    size_t  bytes;
     char    cmdline[RPC_SHELL_CMDLINE_MAX];
     int     fd;
 
@@ -293,6 +297,8 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
 
     if (rpc_read_all(rpcs, fd, pbuf, &bytes) != 0)
         rpc_kill(rpcs, pid, RPC_SIGKILL);
+
+    rpc_close(rpcs, fd);
 
     /* Restore jump setting to avoid jump after command crash. */
     rpcs->iut_err_jump = iut_err_jump;
