@@ -178,10 +178,6 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
     {
         if (handle != NULL)
             *handle = msg->handle;
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
-#endif
-        return 0;
     }
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
@@ -1201,24 +1197,22 @@ kill_all(cfg_handle handle)
  * @return
  *     status code
  */
-static int
+static te_errno
 kill(cfg_handle handle)
 {
     cfg_del_msg *msg;
 
-    int     ret_val = 0;
-    size_t  len;
+    te_errno    ret_val = 0;
+    size_t      len;
     
     char  *oidstr = NULL;
     
 
-    if (handle == CFG_HANDLE_INVALID || 
-        cfg_get_oid_str(handle, &oidstr) != 0)
+    if ((ret_val = cfg_get_oid_str(handle, &oidstr)) != 0)
     {
-        return TE_RC(TE_CONF_API, TE_EINVAL);
+        return ret_val;
     }
-    
-    
+
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&cfgl_lock);
 #endif
@@ -1228,6 +1222,7 @@ kill(cfg_handle handle)
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
+        free(oidstr);
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_del_msg *)cfgl_msg_buf;
