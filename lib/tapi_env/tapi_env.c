@@ -1210,6 +1210,7 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
             return rc;
         }
         free(oid);
+        oid = NULL;
     }
     return 0;
 }
