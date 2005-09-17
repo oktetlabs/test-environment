@@ -77,6 +77,9 @@ hostent_rpc2h(tarpc_hostent *rpc_he)
 {
     struct hostent *he;
 
+    if (rpc_he == NULL)
+        return NULL;
+
     if ((he = calloc(1, sizeof(*he))) == NULL)
         return NULL;
 
