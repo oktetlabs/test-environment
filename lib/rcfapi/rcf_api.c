@@ -604,6 +604,7 @@ get_ctx_handle(te_bool create)
         rc = ipc_init_client(name, &(handle->ipc_handle));
         if (rc != 0)
         {
+            free(handle);
             ERROR("ipc_init_client() failed\n");
             fprintf(stderr, "ipc_init_client() failed\n");
             return NULL;
