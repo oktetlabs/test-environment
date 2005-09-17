@@ -30,35 +30,42 @@
 
 #include "te_config.h"
 
+/*
+ * To get getpgid() prototype from unistd.h.
+ * 'man' recommends to define _XOPEN_SOURCE  and _XOPEN_SOURCE_EXTENDED,
+ * but prototype of snprintf() is lost in such case.
+ */
+#define _GNU_SOURCE
+
 #include <stdio.h>
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_UNISTD_H
+#if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
+#if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#ifdef HAVE_TIME_H
+#if HAVE_TIME_H
 #include <time.h>
 #endif
-#ifdef HAVE_STRING_H
+#if HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_STRINGS_H
+#if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#ifdef HAVE_SIGNAL_H
+#if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
-#ifdef HAVE_SYS_STAT_H
+#if HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
-#ifdef HAVE_SYS_WAIT_H
+#if HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
 
@@ -286,7 +293,7 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     }
     sprintf(path, "%s/agents/bin/ta%s", installdir, ta_type);
 
-#ifdef HAVE_SYS_STAT_H
+#if HAVE_SYS_STAT_H
     {
         struct stat statbuf;
 
