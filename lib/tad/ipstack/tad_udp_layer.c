@@ -346,12 +346,12 @@ cleanup:
  *
  * @return zero on success or error code.
  */
-int udp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
-                     const csap_pkts *pkt, csap_pkts *payload,
-                     asn_value_p parsed_packet)
+int
+udp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+                 const csap_pkts *pkt, csap_pkts *payload,
+                 asn_value_p parsed_packet)
 {
     asn_value  *udp_header_pdu = NULL;
-    csap_p      csap_descr;
     uint8_t    *data;
     int         rc = 0;
 
@@ -364,7 +364,7 @@ int udp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     }
     data = (uint8_t *)(pkt->data);
 
-    if ((csap_descr = csap_find(csap_id)) == NULL)
+    if (csap_find(csap_id) == NULL)
     {
         ERROR("%s: csap_descr is NULL for csap id %d", __FUNCTION__, csap_id);
         return TE_ETADCSAPNOTEX;
