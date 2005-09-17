@@ -963,7 +963,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         {
             te_log_message(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
                            "Standard error output of the script with "
-                           "ID=%d:\n%tf", id, vg_filename);
+                           "ID=%d:\n%Tf", id, vg_filename);
         }
     }
 

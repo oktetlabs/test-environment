@@ -60,8 +60,8 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
     UNUSED(userdata);
 
     INFO("++++ Ethernet frame received\n");
-    INFO("dst: %tm", header->dst_addr, ETH_ALEN);
-    INFO("src: %tm", header->src_addr, ETH_ALEN); 
+    INFO("dst: %Tm", header->dst_addr, ETH_ALEN);
+    INFO("src: %Tm", header->src_addr, ETH_ALEN); 
     INFO("eth_len_type: 0x%x = %d",
            header->eth_type_len,  header->eth_type_len); 
     INFO("payload len: %d", plen);

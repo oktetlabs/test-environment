@@ -809,7 +809,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
     
     rc = rcf_ta_csap_create(ta, sid, "snmp", tmp_name, csap_id);
 
-    INFO("Create SNMP CSAP %tf with status %r", tmp_name, rc);
+    INFO("Create SNMP CSAP %Tf with status %r", tmp_name, rc);
 
     unlink(tmp_name);
 

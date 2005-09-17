@@ -574,7 +574,7 @@ eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
         eth_hdr_pdu = asn_init_value(ndn_eth_header);
 
 #if 0
-    VERB("come data: %tm6.1\n", data,  ETH_ALEN);
+    VERB("come data: %Tm6.1\n", data,  ETH_ALEN);
 #endif
 
     rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 

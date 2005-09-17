@@ -187,7 +187,7 @@ main(int argc, char *argv[])
 #endif
 
 #if 1
-    VERB("come data from addr: %tm", rem_addr,  ETH_ALEN);
+    VERB("come data from addr: %Tm", rem_addr,  ETH_ALEN);
 #endif
 
         if (rc)

@@ -1044,7 +1044,7 @@ process_backup(cfg_backup_msg *msg)
                     rcf_log_cfg_changes(FALSE);
                     return;
                 }
-                WARN("Restoring backup from history failed:\n%tf", 
+                WARN("Restoring backup from history failed:\n%Tf", 
                      diff_file);
             }
             else
@@ -1079,9 +1079,9 @@ process_backup(cfg_backup_msg *msg)
             {
                 if (cs_flags & CS_LOG_DIFF)
                     te_log_message(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
-                                   "Backup diff:\n%tf", diff_file);
+                                   "Backup diff:\n%Tf", diff_file);
                 else
-                    INFO("Backup diff:\n%tf", diff_file);
+                    INFO("Backup diff:\n%Tf", diff_file);
             }
             unlink(diff_file);            
             break;

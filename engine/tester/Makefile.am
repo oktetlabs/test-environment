@@ -26,13 +26,13 @@ reqs_expr_lex.h: reqs_expr_lex.c
 
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid -llogger_ten \
-                  -lipc @XML2_LIBS@ -lpopt -lfl -lpthread
+                  -lipc -ltools @XML2_LIBS@ -lpopt -lfl -lpthread 
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
                          $(DESTDIR)/$(prefix)/lib/libbsapi.a \
                          $(DESTDIR)/$(prefix)/lib/libconfapi.a \
                          $(DESTDIR)/$(prefix)/lib/libconf_oid.a \
                          $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
-                         $(DESTDIR)/$(prefix)/lib/libipc.a
-
+                         $(DESTDIR)/$(prefix)/lib/libipc.a \
+                         $(DESTDIR)/$(prefix)/lib/libtools.a
 
 dist_bin_SCRIPTS = te_tester.sh

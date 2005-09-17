@@ -1070,7 +1070,7 @@ tad_dump_hex(csap_p csap_descr, const char *usr_param,
     if (pkt == NULL || pkt_len == 0)
         return TE_EINVAL;
 
-    RING("PACKET: %tm", pkt, pkt_len);
+    RING("PACKET: %Tm", pkt, pkt_len);
 
     return 0;
 }

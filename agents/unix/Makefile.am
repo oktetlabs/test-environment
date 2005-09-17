@@ -118,8 +118,8 @@ taunixtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
-
+    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a
 
 SYMTBL_LIBS= \
     $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \

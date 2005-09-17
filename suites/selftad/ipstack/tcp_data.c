@@ -168,7 +168,7 @@ main(int argc, char *argv[])
     len = 200;
 
     te_fill_buf(tx_buffer, len);
-    INFO("+++++++++++ Prepared data: %tm", tx_buffer, len);
+    INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
     rc = rpc_send(rpc_srv, socket, tx_buffer, len, 0); 
     RING("%d bytes sent from RPC socket", rc);
 
@@ -179,7 +179,7 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("recv on CSAP failed: %r", rc); 
 
-    INFO("+++++++++++ Received data: %tm", rx_buffer, len);
+    INFO("+++++++++++ Received data: %Tm", rx_buffer, len);
 
     rc = memcmp(tx_buffer, rx_buffer, len);
     if (rc != 0)
@@ -188,7 +188,7 @@ main(int argc, char *argv[])
     len = 250;
 
     te_fill_buf(tx_buffer, len);
-    INFO("+++++++++++ Prepared data: %tm", tx_buffer, len);
+    INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
     rc = tapi_tcp_buffer_send(agt_a, 0, acc_csap, 
                               tx_buffer, len);
     if (rc != 0)

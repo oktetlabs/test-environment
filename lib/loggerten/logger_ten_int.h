@@ -70,6 +70,7 @@
 #include "te_printf.h"
 #include "te_raw_log.h"
 #include "logger_int.h"
+#include "te_tools.h"
 
 /*   Raw log file format. Max length of the raw log message
  *   is a sum of:
@@ -120,7 +121,7 @@ extern te_log_message_tx_f te_log_message_tx;
 
 
 /* See description below */
-static inline void log_message_va(uint8_t **msg_buf, size_t *msg_buf_len,
+static inline void log_message_va(struct te_log_out_params *out,
                                   uint16_t level, const char *entity_name,
                                   const char *user_name,
                                   const char *form_str, va_list ap);
@@ -161,23 +162,21 @@ write_file_to_fd(int out, const char *filename)
  *            from log_message_va() just before exit.
  */
 static inline void
-log_message_int(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
+log_message_int(struct te_log_out_params *out, uint16_t level,
                 const char *entity_name, const char *user_name,
                 const char *form_str, ...)
 {
     va_list ap;
 
     va_start(ap, form_str);
-    log_message_va(msg_buf, msg_buf_len, level, entity_name, user_name,
-                   form_str, ap);
+    log_message_va(out, level, entity_name, user_name, form_str, ap);
     va_end(ap);
 }
 
 /**
  * Create log message and send to Logger server.
  *
- * @param msg_buf       Location of the pointer to buffer for the message
- * @param msg_buf_len   Length of the buffer for the message
+ * @param out           Output interface parameters
  * @param level         Log level valued to be passed to raw log file
  * @param entity_name   Entity name whose user generates this message
  * @param user_name     Arbitrary "user name"
@@ -187,27 +186,19 @@ log_message_int(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
  *                      raw log format string description.
  */
 static inline void
-log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
+log_message_va(struct te_log_out_params *out, uint16_t level,
                const char *entity_name, const char *user_name,
                const char *form_str, va_list ap)
 {
-    static const char * const skip_flags = "#-+ 0";
-    static const char * const skip_width = "*0123456789";
-
-    uint8_t            *msg_ptr = *msg_buf;
-    uint8_t            *msg_end = msg_ptr + *msg_buf_len;
+    uint8_t            *msg_ptr = out->buf;
+    uint8_t            *msg_end = msg_ptr + out->buflen;
     size_t              msg_prefix_len = LGR_UNACCOUNTED_LEN;
-    uint8_t            *msg_len_ptr = NULL;
+    size_t              msg_len_offset = 0;
+    size_t              data_len_offset = 0;
     te_log_msg_len_t    msg_len;
     te_bool             msg_trunc = FALSE;
     size_t              tmp_length;
     struct timeval      tv;
-    const char         *p_fs;
-    unsigned int        narg = 0;
-
-
-    assert(msg_buf != NULL);
-    assert(*msg_buf != NULL);
 
     if (te_log_dir == NULL)
     {
@@ -219,26 +210,22 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
              return;
          }
     }
-
 #define LGR_CHECK_BUF_LEN(_len) \
     do {                                                            \
         if (msg_ptr + (_len) > msg_end)                             \
         {                                                           \
-            size_t   data_len = msg_ptr - *msg_buf;                 \
-            size_t   msg_len_off = msg_len_ptr - *msg_buf;          \
+            size_t   data_len = msg_ptr - (uint8_t *)out->buf;      \
                                                                     \
-            (*msg_buf_len) <<= 1;                                   \
-            (*msg_buf) = realloc(*msg_buf, *msg_buf_len);           \
-            if ((*msg_buf) == NULL)                                 \
+            out->buflen <<= 1;                                      \
+            out->buf = realloc(out->buf, out->buflen);              \
+            if (out->buf == NULL)                                   \
             {                                                       \
                 fprintf(stderr, "%s(): realloc(%" TE_PRINTF_SIZE_T  \
-                        "u) failed", __FUNCTION__, *msg_buf_len);   \
+                        "u) failed", __FUNCTION__, out->buflen);    \
                 return;                                             \
             }                                                       \
-            if (msg_len_ptr != NULL)                                \
-                msg_len_ptr = *msg_buf + msg_len_off;               \
-            msg_ptr = *msg_buf + data_len;                          \
-            msg_end = *msg_buf + *msg_buf_len;                      \
+            msg_ptr = out->buf + data_len;                          \
+            msg_end = out->buf + out->buflen;                       \
         }                                                           \
     } while (0)
 
@@ -255,23 +242,23 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
  *       is written in the raw log file.
  */
 #define LGR_PUT_STR(_log_str, _len) \
-    do {                                            \
-        const char *tmp_str = "(NULL)";             \
-                                                    \
-        if ((_log_str) != NULL)                     \
-            tmp_str = (_log_str);                   \
-        (_len) = strlen(tmp_str);                   \
-        if ((_len) > TE_LOG_FIELD_MAX)              \
-        {                                           \
-            msg_trunc = TRUE;                       \
-            (_len) = TE_LOG_FIELD_MAX;              \
-        }                                           \
-                                                    \
-        LGR_CHECK_BUF_LEN(TE_LOG_NFL_SZ + (_len));  \
-        LGR_NFL_PUT((_len), msg_ptr);               \
-        memcpy(msg_ptr, tmp_str, (_len));           \
-        msg_ptr += (_len);                          \
+    do {                                                        \
+        const char *tmp_str;                                    \
+                                                                \
+        tmp_str = ((_log_str) != NULL) ? (_log_str) : "(NULL)"; \
+        (_len) = strlen(tmp_str);                               \
+        if ((_len) > TE_LOG_FIELD_MAX)                          \
+        {                                                       \
+            msg_trunc = TRUE;                                   \
+            (_len) = TE_LOG_FIELD_MAX;                          \
+        }                                                       \
+                                                                \
+        LGR_CHECK_BUF_LEN(TE_LOG_NFL_SZ + (_len));              \
+        LGR_NFL_PUT((_len), msg_ptr);                           \
+        memcpy(msg_ptr, tmp_str, (_len));                       \
+        msg_ptr += (_len);                                      \
      } while (0);
+
 
     /* Fill in Entity_name field and corresponding Next_filed_length one */
     LGR_PUT_STR(entity_name, tmp_length);
@@ -282,7 +269,7 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
 
     /* Fill in Log_ver and timestamp fields */
     *msg_ptr = TE_LOG_VERSION;
-    ++msg_ptr;
+    msg_ptr++;
 
     gettimeofday(&tv, NULL);
     LGR_TIMESTAMP_PUT(&tv, msg_ptr);
@@ -291,7 +278,7 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
     LGR_LEVEL_PUT(level, msg_ptr);
 
     /* Fix Log_message_length field */
-    msg_len_ptr = msg_ptr;
+    msg_len_offset = msg_ptr - (uint8_t *)out->buf;
     msg_ptr += TE_LOG_MSG_LEN_SZ;
 
 
@@ -302,195 +289,29 @@ log_message_va(uint8_t **msg_buf, size_t *msg_buf_len, uint16_t level,
      * Fill in Log_data_format_string field and corresponding
      * Next_filed_length one
      */
-    LGR_PUT_STR(form_str, tmp_length);
+    
+    /* Fix Log_message_data/format_string field */
+    data_len_offset = msg_ptr - (uint8_t *)out->buf;
+    msg_ptr += TE_LOG_NFL_SZ;
+   
+    out->offset = msg_ptr - (uint8_t *)out->buf;
+    te_log_vprintf(out, form_str, ap);
+    
+#undef LGR_PUT_STR    
+#undef LGR_CHECK_BUF_LEN
 
-    for (p_fs = form_str; *p_fs; p_fs++)
-    {
-        if (*p_fs != '%')
-            continue;
+    msg_ptr = out->buf + data_len_offset;
+    LGR_NFL_PUT(out->offset - data_len_offset - TE_LOG_NFL_SZ, msg_ptr);
 
-        if (*++p_fs == '%')
-            continue;
-
-        /* skip the flags field  */
-        for (; index(skip_flags, *p_fs); ++p_fs);
-
-        /* skip to possible '.', get following precision */
-        for (; index(skip_width, *p_fs); ++p_fs);
-        if (*p_fs == '.')
-            ++p_fs;
-
-        /* skip to conversion char */
-        for (; index(skip_width, *p_fs); ++p_fs);
-
-
-        if ((++narg) > LGR_MAX_ARGS)
-        {
-            log_message_int(msg_buf, msg_buf_len,
-                            TE_LL_ERROR, te_lgr_entity, TE_LGR_USER,
-                            "Too many arguments");
-            return;
-        }
-
-        switch (*p_fs)
-        {
-            case 'c':
-            case 'd':
-            case 'i':
-            case 'o':
-            case 'x':
-            case 'X':
-            case 'u':
-            case 'r':   /* TE-specific specifier for error codes */
-            {
-                int32_t val;
-
-                LGR_CHECK_BUF_LEN(TE_LOG_NFL_SZ + sizeof(val));
-                LGR_NFL_PUT(sizeof(val), msg_ptr);
-                val = va_arg(ap, int);
-                LGR_32_TO_NET(val, msg_ptr);
-                msg_ptr += sizeof(val);
-                break;
-            }
-
-            case 'p':
-            {
-                void       *val;
-                uint32_t    tmp;
-                
-                assert(sizeof(val) == SIZEOF_VOID_P);
-                LGR_CHECK_BUF_LEN(TE_LOG_NFL_SZ + sizeof(val));
-                LGR_NFL_PUT(sizeof(val), msg_ptr);
-                val = va_arg(ap, void *);
-
-#if (SIZEOF_VOID_P == 4)
-                tmp = (uint32_t)val;
-                LGR_32_TO_NET(tmp, msg_ptr);
-                msg_ptr += sizeof(uint32_t);
-#elif (SIZEOF_VOID_P == 8)
-                tmp = (uint32_t)((uint64_t)val >> 32);
-                LGR_32_TO_NET(tmp, msg_ptr);
-                msg_ptr += sizeof(uint32_t);
-
-                /*
-                 * At first, cast to the integer of appropriate size,
-                 * then get 32 least significant bits using the second
-                 * type cast.
-                 */
-                tmp = (uint32_t)(uint64_t)val;
-                LGR_32_TO_NET(tmp, msg_ptr);
-                msg_ptr += sizeof(uint32_t);
-#else
-#error Such sizeof(void *) is not supported by Logger TEN library.
-#endif
-                break;
-            }
-
-            case 's':
-            {
-                char *tmp = va_arg(ap, char *);
-
-                LGR_PUT_STR(tmp, tmp_length);
-                break;
-            }
-
-            case 't': /* %tm, %tf */
-                if (*++p_fs != 0 )
-                {
-                    if (*p_fs == 'm')
-                    {
-                        /*
-                         * Args order should be:
-                         *  - start address of dumped memory;
-                         *  - size of memory piece;
-                         */
-                        char *dump = (char *)va_arg(ap, char *);
-
-                        tmp_length = (uint16_t)va_arg(ap, int);
-                        if (tmp_length > TE_LOG_FIELD_MAX)
-                        {
-                            msg_trunc = TRUE;
-                            tmp_length = TE_LOG_FIELD_MAX;
-                        }
-
-                        LGR_CHECK_BUF_LEN(TE_LOG_NFL_SZ + tmp_length);
-                        LGR_NFL_PUT(tmp_length, msg_ptr);
-                        memcpy(msg_ptr, dump, tmp_length);
-                        msg_ptr += tmp_length;
-                        break;
-                    }
-                    else if (*p_fs == 'f')
-                    {
-                        /* TE_LOG_DIR / LGR_TMP_FILE_TMPL */
-                        char        new_path[strlen(te_log_dir) + 1 +
-                                             sizeof(LGR_TMP_FILE_TMPL)];
-                        const char *filename = va_arg(ap, const char *);
-                        int         fd;
-                        
-                        new_path[0] = '\0';
-                        strcat(new_path, te_log_dir);
-                        strcat(new_path, "/");
-                        strcat(new_path, LGR_TMP_FILE_TMPL);
-
-                        fd =  mkstemp(new_path);
-                        if (fd < 0)
-                        {
-                            log_message_int(msg_buf, msg_buf_len,
-                                            TE_LL_ERROR,
-                                            te_lgr_entity, TE_LGR_USER,
-                                            "mkstemp() failure");
-                            return;
-                        }
-
-                        if (write_file_to_fd(fd, filename) != 0)
-                        {
-                            log_message_int(msg_buf, msg_buf_len,
-                                            TE_LL_ERROR,
-                                            te_lgr_entity, TE_LGR_USER,
-                                            "Failed to copy file '%s' to "
-                                            "'%s': %s", filename, new_path,
-                                            strerror(errno));
-                            return;
-                        }
-
-                        if (close(fd) != 0)
-                        {
-                            log_message_int(msg_buf, msg_buf_len,
-                                            TE_LL_ERROR,
-                                            te_lgr_entity, TE_LGR_USER,
-                                            "close() failure");
-                            return;
-                        }
-
-                        LGR_PUT_STR(new_path, tmp_length);
-                        break;
-                    }
-                }
-
-                log_message_int(msg_buf, msg_buf_len,
-                                TE_LL_ERROR, te_lgr_entity, TE_LGR_USER,
-                                "Illegal specifier - t%c", *p_fs);
-                return;
-
-            default:
-                log_message_int(msg_buf, msg_buf_len,
-                                TE_LL_ERROR, te_lgr_entity, TE_LGR_USER,
-                               "Illegal specifier - %c", *p_fs);
-                return;
-        }
-    }
-#undef LGR_PUT_STR
-
-    msg_len = (msg_ptr - *msg_buf) - msg_prefix_len;
-    LGR_MSG_LEN_PUT(msg_len, msg_len_ptr);
+    msg_len = out->offset - msg_prefix_len;
+    LGR_MSG_LEN_PUT(msg_len, out->buf + msg_len_offset);
 
     assert(te_log_message_tx != NULL);
-    te_log_message_tx(*msg_buf, msg_prefix_len + msg_len);
+    te_log_message_tx(out->buf, out->offset);
 
     if (msg_trunc)
     {
-        log_message_int(msg_buf, msg_buf_len,
-                        TE_LL_WARN, te_lgr_entity, TE_LGR_USER,
+        log_message_int(out, TE_LL_WARN, te_lgr_entity, TE_LGR_USER,
                         "Previous message from %s:%s was truncated",
                         entity_name, user_name);
     }

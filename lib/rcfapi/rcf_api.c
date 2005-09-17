@@ -1895,7 +1895,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
     {
         int fd;
 
-        RING("Create CSAP '%s' (%s:%d) with parameters:\n%tf",
+        RING("Create CSAP '%s' (%s:%d) with parameters:\n%Tf",
              stack_id, ta_name, session, params);
         if ((fd = open(params, O_RDONLY)) < 0)
         {
@@ -2107,7 +2107,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
         return TE_RC(TE_RCF_API, TE_EINVAL);
         
     RING("Start %s send operation on the CSAP %d (%s:%d) with "
-         "template:\n%tf", rcf_call_mode2str(blk_mode), csap_id,
+         "template:\n%Tf", rcf_call_mode2str(blk_mode), csap_id,
          ta_name, session, templ);
     
 #ifdef HAVE_PTHREAD_H
@@ -2272,7 +2272,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
     RING("Start receive operation on the CSAP %d (%s:%d) with "
-         "pattern\n%tf", csap_id, ta_name, session, pattern);
+         "pattern\n%Tf", csap_id, ta_name, session, pattern);
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&rcf_lock);
@@ -2419,7 +2419,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         assert(msg.file != NULL);
 
         RING("Traffic receive operation on the CSAP %d (%s:%d) got "
-             "packet\n%tf", csap_id, ta_name, session, msg.file);
+             "packet\n%Tf", csap_id, ta_name, session, msg.file);
         handler(msg.file, user_param);
 
         anslen = sizeof(msg);
@@ -2664,7 +2664,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     }
 
     RING("Start send/receive operation on the CSAP %d (%s:%d) "
-         "with timeout %u ms, handler=%p (param=%p), pattern:\n%tf",
+         "with timeout %u ms, handler=%p (param=%p), pattern:\n%Tf",
          csap_id, ta_name, session, timeout, handler, user_param, templ);
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
@@ -2682,7 +2682,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
         assert(msg.file != NULL);
 
         RING("Traffic send/receive operation on the CSAP %d (%s:%d) got "
-             "packet\n%tf", csap_id, ta_name, session, msg.file);
+             "packet\n%Tf", csap_id, ta_name, session, msg.file);
 
         handler(msg.file, user_param);
         anslen = sizeof(msg);

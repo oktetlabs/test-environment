@@ -56,7 +56,8 @@ tawin32_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a
+    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a
 
 #
 # Static linkage may be required, since agent may be copied to another

@@ -355,7 +355,7 @@ dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
           __FUNCTION__, csap_id, layer, pkt->len);
 
     data = pkt->data;
-    VERB("DHCP match callback called: %tm", data, pkt->len);
+    VERB("DHCP match callback called: %Tm", data, pkt->len);
 
     if (parsed_packet != NULL)
         dhcp_message_pdu = asn_init_value(ndn_dhcpv4_message);

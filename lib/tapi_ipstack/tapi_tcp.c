@@ -775,7 +775,7 @@ tcp_data_csap_handler(const char *pkt_fname, void *user_param)
     if (rc != 0)
         ERROR("%s(): read payload failed %r", __FUNCTION__, rc);
     else
-        INFO("%s(): received payload %tm", __FUNCTION__, msg->data, len);
+        INFO("%s(): received payload %Tm", __FUNCTION__, msg->data, len);
 
     msg->length = len;
 

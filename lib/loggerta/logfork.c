@@ -72,6 +72,7 @@
 #include "te_errno.h"
 #include "logger_ta.h"
 #include "logfork.h"
+#include "te_tools.h"
 
 
 /** Common information in the message */
@@ -442,65 +443,9 @@ logfork_register_user(const char *name)
 static void
 convert_msg(char *buf, int buflen, const char *fmt, va_list ap)
 {
-    char *s0;
-    char *s;
-    char *fmt_dup = strdup(fmt);
-    int   offset = 0;
-    int   num = 0;
-    
-    te_errno rc;
-    
-    if (fmt_dup == NULL)
-    {
-        *buf = 0;
-        return;
-    }
-    
-#define FLUSH(func, arg...) \
-    offset += func(buf + offset, buflen - offset, arg)
-    
-    for (s = s0 = fmt_dup; *s != 0; s++)
-    {
-        if (*s != '%')
-            continue;
-        
-        s++;    
-        if (*s == '%')
-            continue;
-        
-        if (strcmp_start("tm", s) == 0 ||
-            strcmp_start("tf", s) == 0 ||
-            strcmp_start("ll", s) == 0)
-        {
-            *(s - 1) = 0;
-            FLUSH(vsnprintf, s0, ap);
-            FLUSH(snprintf, " unsupported specifier");
-            free(fmt_dup);
-            return;
-        }
-        
-        if (*s != 'r')
-        {
-            num++;
-            continue;
-        }
-        
-        *(s - 1) = 0;
-        FLUSH(vsnprintf, s0, ap);
-        s0 = s + 1;
-        for (; num > 0; num--)
-            va_arg(ap, int);
-            
-        rc = va_arg(ap, te_errno);
-        if (strcmp(te_rc_mod2str(rc), "") == 0)
-            FLUSH(snprintf, "%s", te_rc_err2str(rc));
-        else
-            FLUSH(snprintf, "%s-%s", te_rc_mod2str(rc), te_rc_err2str(rc));
-    }
-    FLUSH(vsnprintf, s0, ap);
+    struct te_log_out_params cm = {NULL, buf, buflen, 0};
 
-#undef FLUSH    
-    free(fmt_dup);
+    return te_log_vprintf(&cm, fmt, ap);
 }
 
 /** 

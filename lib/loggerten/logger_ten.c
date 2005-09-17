@@ -83,18 +83,12 @@ static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct ipc_client *lgr_client = NULL;
 
 /**
- * Buffer for log message.
+ * Logging output interface.
  *
  * @note It should be used under lgr_lock only.
  */
-static uint8_t *lgr_msg_buf = NULL;
+static struct te_log_out_params lgr_out;
 
-/**
- * Length of the buffer for log message.
- *
- * @note It should be used under lgr_lock only.
- */
-static size_t lgr_msg_buf_len = 0;
 
 /** Path to the directory with TE logs */
 static const char *te_log_dir = NULL;
@@ -160,20 +154,19 @@ ten_log_message(uint16_t level, const char *entity_name,
         te_log_message_tx = log_message_ipc;
         atexit(log_client_close);
     }
-    if (lgr_msg_buf == NULL)
+    if (lgr_out.buf == NULL)
     {
-        lgr_msg_buf = malloc(LGR_TEN_MSG_BUF_INIT);
-        if (lgr_msg_buf == NULL)
+        lgr_out.buf = malloc(LGR_TEN_MSG_BUF_INIT);
+        if (lgr_out.buf == NULL)
         {
             perror("malloc() failed");
             return;
         }
-        lgr_msg_buf_len = LGR_TEN_MSG_BUF_INIT;
+        lgr_out.buflen = LGR_TEN_MSG_BUF_INIT;
     }
 
     va_start(ap, form_str);
-    log_message_va(&lgr_msg_buf, &lgr_msg_buf_len,
-                   level, entity_name, user_name, form_str, ap);
+    log_message_va(&lgr_out, level, entity_name, user_name, form_str, ap);
     va_end(ap);
 
 #ifdef HAVE_PTHREAD_H
@@ -206,9 +199,9 @@ log_client_close(void)
     {
         lgr_client = NULL;
     }
-    free(lgr_msg_buf);
-    lgr_msg_buf = NULL;
-    lgr_msg_buf_len = 0;
+    free(lgr_out.buf);
+    lgr_out.buf = NULL;
+    lgr_out.buflen = 0;
 #ifdef HAVE_PTHREAD_H
     if (pthread_mutex_unlock(&lgr_lock) != 0)
     {

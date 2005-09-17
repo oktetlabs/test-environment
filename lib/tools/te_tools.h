@@ -35,6 +35,7 @@
 
 #include "te_bufs.h"
 #include "te_shell_cmd.h"
+#include "te_format.h"
 
 #ifdef __cplusplus
 extern "C" {

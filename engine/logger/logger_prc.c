@@ -57,17 +57,11 @@
 static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 /**
- * Buffer for log message.
+ * Logging output interface.
  *
  * @note It should be used under lgr_lock only.
  */
-static uint8_t *lgr_msg_buf = NULL;
-/**
- * Length of the buffer for log message.
- *
- * @note It should be used under lgr_lock only.
- */
-static size_t lgr_msg_buf_len = 0;
+static struct te_log_out_params lgr_out;
 
 /** Transport to log messages */
 static te_log_message_tx_f te_log_message_tx = NULL;
@@ -96,21 +90,20 @@ lgr_log_message(uint16_t level, const char *entity_name,
     pthread_mutex_lock(&lgr_lock);
 #endif
     
-    if (lgr_msg_buf == NULL)
+    if (lgr_out.buf == NULL)
     {
-        lgr_msg_buf = malloc(LGR_PRC_MSG_BUF_INIT);
-        if (lgr_msg_buf == NULL)
+        lgr_out.buf = malloc(LGR_PRC_MSG_BUF_INIT);
+        if (lgr_out.buf == NULL)
         {
             perror("malloc() failed");
             return;
         }
-        lgr_msg_buf_len = LGR_PRC_MSG_BUF_INIT;
+        lgr_out.buflen = LGR_PRC_MSG_BUF_INIT;
         te_log_message_tx = lgr_register_message;
     }
 
     va_start(ap, form_str);
-    log_message_va(&lgr_msg_buf, &lgr_msg_buf_len,
-                   level, entity_name, user_name, form_str, ap);
+    log_message_va(&lgr_out, level, entity_name, user_name, form_str, ap);
     va_end(ap);
 
 #ifdef HAVE_PTHREAD_H

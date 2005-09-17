@@ -179,7 +179,7 @@ main(int argc, char *argv[])
         if (rc != 0)
             TEST_FAIL("recv on CSAP failed: %r", rc); 
 
-        INFO("+++++++++++ data from TARGET to NET: %tm", tx_buffer, len);
+        INFO("+++++++++++ data from TARGET to NET: %Tm", tx_buffer, len);
 
         rc = tapi_tcp_buffer_send(agt_a, 0, acc_csap, 
                                   tx_buffer, len);

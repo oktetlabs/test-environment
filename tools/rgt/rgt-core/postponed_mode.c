@@ -647,7 +647,7 @@ output_regular_log_msg(log_msg *msg)
                     int  k;
                    
                     /* @todo think of better way to implement this! */
-                    if (strstr(msg->fmt_str + i, "%tf") ==
+                    if (strstr(msg->fmt_str + i, "%Tf") ==
                             (msg->fmt_str + i))
                     {
                         FILE *fd;
@@ -682,18 +682,18 @@ output_regular_log_msg(log_msg *msg)
                         fputs("</file>", rgt_ctx.out_fd);
                         fclose(fd);
 
-                        /* shift to the end of "%tf" */
+                        /* shift to the end of "%Tf" */
                         i += 2;
                         break;
                     }
                    
 
                    /*
-                    * %tm[[n].[w]] - memory dump, n - the number of
+                    * %Tm[[n].[w]] - memory dump, n - the number of
                     * elements after which "\n" is to be inserted,
                     * w - width (in bytes) of the element.
                     */
-                    if (strstr(msg->fmt_str + i, "%tm") !=
+                    if (strstr(msg->fmt_str + i, "%Tm") !=
                             (msg->fmt_str + i))
                     {
                         /* Invalid format just output as it is */
@@ -713,7 +713,7 @@ output_regular_log_msg(log_msg *msg)
 
                     obstack_grow(log_obstk,
                                  "<mem-dump>", strlen("<mem-dump>"));
-                    if (sscanf(msg->fmt_str + i, "%%tm[[%d].[%d]]", 
+                    if (sscanf(msg->fmt_str + i, "%%Tm[[%d].[%d]]", 
                                &n_tuples, &tuple_width) != 2)
                     {
                         default_format = TRUE;
@@ -750,7 +750,7 @@ output_regular_log_msg(log_msg *msg)
                     obstack_grow(log_obstk, "</mem-dump>",
                                  strlen("</mem-dump>"));
 
-                    /* shift to the end of "%tm" */
+                    /* shift to the end of "%Tm" */
                     i += 2;
 
                     if (!default_format)

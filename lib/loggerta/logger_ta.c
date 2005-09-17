@@ -487,7 +487,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 break;
             }
 
-            case 't': /* %tm - args order: dumped memory address, length */
+            case 'T': /* %Tm - args order: dumped memory address, length */
                 if ((*++fs != 0) && (*fs == 'm'))
                 {
                     uint8_t *mem_addr;
@@ -729,9 +729,9 @@ log_message_print(const char *us, const char *fs, ...)
                 LGR_DEBUG_PRT(beg_str, p_str, char*);
                 break;
 
-            case 't':
+            case 'T':
                 /*
-                 * Format: %tmX.Y
+                 * Format: %TmX.Y
                  * Args order: dumped memory address, length
                  */
                 if ((*++p_str != 0) && (*p_str == 'm'))
