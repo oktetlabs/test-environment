@@ -1049,6 +1049,7 @@ find_dead_child(pid_t pid)
 }
 
 /* See description in unix_internal.h */
+/* FIXME: Possible use after free in the function */
 pid_t
 ta_waitpid(pid_t pid, int *status, int options)
 {
