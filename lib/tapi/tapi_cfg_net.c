@@ -338,17 +338,13 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
                               enum net_node_type node_type,
                               const char *ta_name, char ***oids)
 {
-    const char         *path_pattern;
-    char               *path = NULL;
-    char               *inst_name = NULL;
-    int                 path_len;
+    te_errno            rc = 0;
+    cfg_handle         *handles = NULL;
+    unsigned int        num;
+    unsigned int        i;
+    cfg_oid            *oid = NULL;
     cfg_val_type        val_type;
     enum net_node_type  cfg_node_type;
-    cfg_handle         *handles = NULL;
-    cfg_oid            *oid = NULL;
-    int                 num;
-    int                 i;
-    int                 rc = 0;
 
     char  *val;
     int    ret_array_len = 1; /* The last entry always equals to NULL */
@@ -371,25 +367,21 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
     } while (0)
 
     VERB("In get_node_inst_value:\n"
-        "\tnet name   : %s\n"
-        "\tnode type  : %d\n"
-        "\tagent name : %s\n",
-        ((net_name == NULL) ? "NULL" : net_name), node_type,
-        ((ta_name == NULL) ? "NULL" : ta_name));
+         "\tnet name   : %s\n"
+         "\tnode type  : %d\n"
+         "\tagent name : %s\n",
+         ((net_name == NULL) ? "NULL" : net_name), node_type,
+         ((ta_name == NULL) ? "NULL" : ta_name));
 
     if (net_name == NULL)
         net_name = "*";
 
     /* Get the first Agent on the specified net */
-    path_pattern = "/net:%s/node:*";
-    path_len = strlen(path_pattern) - 2 + strlen(net_name) + 1;
 
-    if ((path = (char *)malloc(path_len)) == NULL)
-        return TE_ENOMEM;
-
-    snprintf(path, path_len, path_pattern, net_name);
-    if ((rc = cfg_find_pattern(path, &num, &handles)) != 0)
-        THROW_EXCEPTION("Error while obtaining %s instances", path);
+    if ((rc = cfg_find_pattern_fmt(&num, &handles,
+                                   "/net:%s/node:*", net_name)) != 0)
+        THROW_EXCEPTION("Error while obtaining /net:%s/node:* instances",
+                        net_name);
 
     for (i = 0; i < num; i++)
     {
@@ -399,20 +391,14 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
         if (rc != 0)
             THROW_EXCEPTION("Error while getting OID by handle");
         assert(oid->inst);
-        assert(oid->len == 3);
 
-        net_name = CFG_OID_GET_INST_NAME(oid, 1);
-        inst_name = CFG_OID_GET_INST_NAME(oid, 2);
-
-        VERB("Net: %s, Node: %s", net_name, inst_name);
+        VERB("Net/Node: %s", oid);
 
         val_type = CVT_INTEGER;
         rc = cfg_get_instance_fmt(&val_type, &cfg_node_type, 
-                                  "/net:%s/node:%s/type:",
-                                  net_name, inst_name);
+                                  "%s/type:", oid);
         if (rc != 0)
-            THROW_EXCEPTION("Error while getting type of node %s/%s",
-                            net_name, inst_name);
+            THROW_EXCEPTION("Error while getting type of node %s", oid);
 
         VERB("Node type: %d (expected %d)", cfg_node_type, node_type);
 
@@ -423,7 +409,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
         }
 
 
-        VERB("Node %s has expected type", inst_name);
+        VERB("Node %s has expected type", oid);
 
         /* 
          * Processing of the node of specified type:
@@ -432,9 +418,8 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
          */
 
         val_type = CVT_STRING;
-        if ((rc = cfg_get_instance_fmt(&val_type, &val, "/net:%s/node:%s",
-                                       net_name, inst_name)) != 0)
-            THROW_EXCEPTION("Error while getting value of %s", path);
+        if ((rc = cfg_get_instance(handles[i], &val_type, &val)) != 0)
+            THROW_EXCEPTION("Error while getting value of %s", oid);
 
         VERB("Node value: %s", val);
 
@@ -488,7 +473,6 @@ clean_all:
     {
         *oids = ret_array;
     }
-    free(path);
     free(handles);
     cfg_free_oid(oid);
 
