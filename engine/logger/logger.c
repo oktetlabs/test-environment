@@ -280,6 +280,8 @@ te_handler(void)
         }
     } /* end of forever loop */
 
+    free(buf);
+
     return NULL;
 }
 
