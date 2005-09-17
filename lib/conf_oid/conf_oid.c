@@ -208,7 +208,7 @@ char *
 cfg_convert_oid(const cfg_oid *oid)
 {
     char *str;
-    char *tmp = str;
+    char *tmp;
     int   i;
 
     if (oid == NULL)
@@ -224,7 +224,7 @@ cfg_convert_oid(const cfg_oid *oid)
         return str;
     }
 
-    for (i = 1; i < oid->len; tmp += strlen(tmp), i++)
+    for (i = 1, tmp = str; i < oid->len; tmp += strlen(tmp), i++)
     {
         if (oid->inst)
         {
