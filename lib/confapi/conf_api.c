@@ -568,7 +568,7 @@ cfg_get_ith_inst_name(const char *str_oid, unsigned int i, char **name)
     {
         cfg_free_oid(oid);
         ERROR("Invalid value in network node: %s", str_oid);
-        return TE_EFMT;
+        return TE_RC(TE_CONF_API, TE_EFMT);
     }
 
     *name = strdup(CFG_OID_GET_INST_NAME(oid, i));
