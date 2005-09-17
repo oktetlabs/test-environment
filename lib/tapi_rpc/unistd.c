@@ -92,10 +92,11 @@ rpc_pipe(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pipe, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s): pipe() -> %d (%s) (%d,%d)",
-                 rpcs->ta, rpcs->name,
+    TAPI_RPC_LOG("RPC (%s,%s): pipe(%p) -> %d (%s) (%d,%d)",
+                 rpcs->ta, rpcs->name, filedes,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 filedes[0], filedes[1]);
+                 filedes != NULL ? filedes[0] : -1,
+                 filedes != NULL ? filedes[1] : -1);
 
     RETVAL_INT(pipe, out.retval);
 }
