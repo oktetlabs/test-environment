@@ -161,7 +161,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
                 res = (struct if_nameindex *)((unsigned int *)res - 1);
                 free(res);
                 rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
-                break;
+                RETVAL_PTR(if_nameindex, NULL);
             }
         }
     }
