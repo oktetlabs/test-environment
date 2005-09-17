@@ -1759,7 +1759,7 @@ te_errno
 cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
               void *user_data)
 {
-    int ret_val = 0;
+    te_errno    ret_val = 0;
 
     cfg_oid    *oid;
     char       *oid_subid;
@@ -1773,7 +1773,7 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
 
     char       *pattern_name;
 
-    int num;
+    int         num;
     cfg_handle *instances;
 
     if (handle == CFG_HANDLE_INVALID)
@@ -1791,6 +1791,7 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
     pattern = cfg_allocate_oid(length, TRUE);
     if (pattern == NULL)
     {
+        cfg_free_oid(oid);
         return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
 
