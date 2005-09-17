@@ -122,7 +122,7 @@ static int kill(cfg_handle handle);
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
                         cfg_handle *handle)
 {
@@ -170,24 +170,19 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
     msg->len = sizeof(cfg_register_msg) + len + def_val_len;
 
     len = CFG_MSG_MAX;
-    if ((ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
-                                                CONFIGURATOR_SERVER,
-                                                msg, msg->len,
-                                                msg, &len)) != 0)
+    if (((ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
+                                                 CONFIGURATOR_SERVER,
+                                                 msg, msg->len,
+                                                 msg, &len)) == 0) &&
+        ((ret_val = msg->rc) == 0))
     {
+        if (handle != NULL)
+            *handle = msg->handle;
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
 #endif
-        return TE_RC(TE_CONF_API, ret_val);
+        return 0;
     }
-    if ((ret_val = msg->rc) != 0)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
-#endif
-        return TE_RC(TE_CONF_API, ret_val);
-    }
-    *handle = msg->handle;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
 #endif
@@ -203,14 +198,12 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_register_object(const cfg_oid *oid, cfg_obj_descr *descr,
                     cfg_handle *handle)
 {
-    const char *str;
-    cfg_handle tmp;
-
-    int ret_val;
+    te_errno    ret_val;
+    char       *str;
 
     if ((oid == NULL) || (descr == NULL))
     {
@@ -223,14 +216,11 @@ cfg_register_object(const cfg_oid *oid, cfg_obj_descr *descr,
         return TE_RC(TE_CONF_API, TE_ENOMEM);
     }
 
-    ret_val = cfg_register_object_str(str, descr, &tmp);
-    if (ret_val != 0)
-    {
-        *handle = CFG_HANDLE_INVALID;
-        return TE_RC(TE_CONF_API, ret_val);
-    }
-    *handle = tmp;
-    return 0;
+    ret_val = cfg_register_object_str(str, descr, handle);
+
+    free(str);
+
+    return ret_val;
 }
 
 /**
@@ -241,7 +231,7 @@ cfg_register_object(const cfg_oid *oid, cfg_obj_descr *descr,
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
 {
     cfg_get_descr_msg *msg;
@@ -318,7 +308,7 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-int
+te_errno
 cfg_get_oid_str(cfg_handle handle, char **oid)
 {
     cfg_get_oid_msg *msg;
@@ -387,7 +377,7 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-int
+te_errno
 cfg_get_oid(cfg_handle handle, cfg_oid **oid)
 {
     char   *str;
@@ -422,7 +412,7 @@ cfg_get_oid(cfg_handle handle, cfg_oid **oid)
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-int
+te_errno
 cfg_get_subid(cfg_handle handle, char **subid)
 {
     cfg_get_id_msg *msg;
@@ -488,7 +478,7 @@ cfg_get_subid(cfg_handle handle, char **subid)
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-int
+te_errno
 cfg_get_inst_name(cfg_handle handle, char **name)
 {
     cfg_get_id_msg *msg;
@@ -547,7 +537,7 @@ cfg_get_inst_name(cfg_handle handle, char **name)
 }
 
 /* See description in conf_api.h */
-int
+te_errno
 cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
                        cfg_inst_val *val)
 {
@@ -567,7 +557,7 @@ cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
 
 
 /* See description in conf_api.h */
-int
+te_errno
 cfg_get_ith_inst_name(const char *str_oid, unsigned int i, char **name)
 {
     cfg_oid *oid;
@@ -602,7 +592,7 @@ cfg_get_ith_inst_name(const char *str_oid, unsigned int i, char **name)
  *
  * @return      status code
  */
-int
+te_errno
 cfg_find_str(const char *oid, cfg_handle *handle)
 {
     cfg_find_msg *msg;
@@ -655,7 +645,7 @@ cfg_find_str(const char *oid, cfg_handle *handle)
  *
  * @return      status code
  */
-int
+te_errno
 cfg_find(const cfg_oid *oid, cfg_handle *handle)
 {
     const char *str;
@@ -686,7 +676,7 @@ cfg_find(const cfg_oid *oid, cfg_handle *handle)
  *
  * @return    status code.
  */
-int
+te_errno
 cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
 {
     int      ret_val;
@@ -749,7 +739,7 @@ cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
  * @return 0 or TE_EINVAL if pattern format is incorrect some argument is
  *         NULL
  */
-int
+te_errno
 cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
 {
     cfg_pattern_msg *msg;
@@ -891,7 +881,7 @@ cfg_get_family_member(cfg_handle handle, uint8_t who, cfg_handle *member)
  *
  * @returns sun's handle or CFG_HANDLE_INVALID
  */
-int
+te_errno
 cfg_get_son(cfg_handle handle, cfg_handle *son)
 {
     int ret_val;
@@ -913,7 +903,7 @@ cfg_get_son(cfg_handle handle, cfg_handle *son)
  *
  * @returns brother's handle or CFG_HANDLE_INVALID
  */
-int
+te_errno
 cfg_get_brother(cfg_handle handle, cfg_handle *brother)
 {
     int ret_val;
@@ -935,7 +925,7 @@ cfg_get_brother(cfg_handle handle, cfg_handle *brother)
  *
  * @returns father's handle or CFG_HANDLE_INVALID
  */
-int
+te_errno
 cfg_get_father(cfg_handle handle, cfg_handle *father)
 {
     int ret_val;
@@ -1061,7 +1051,7 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
                  cfg_val_type type, ...)
 {
@@ -1098,7 +1088,7 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_add_instance_str(const char *oid, cfg_handle *handle,
                      cfg_val_type type, ...)
 {
@@ -1112,7 +1102,7 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-int
+te_errno
 cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
                        cfg_val_type type, ...)
 {
@@ -1135,7 +1125,7 @@ cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-int
+te_errno
 cfg_add_instance_local_str(const char *oid, cfg_handle *handle,
                            cfg_val_type type, ...)
 {
@@ -1276,7 +1266,7 @@ kill(cfg_handle handle)
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_del_instance(cfg_handle handle, te_bool with_children)
 {
     cfg_handle son;
@@ -1399,7 +1389,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 }
 
 /* See description in conf_api.h */
-int
+te_errno
 cfg_set_instance(cfg_handle handle, cfg_val_type type, ...)
 {
     int     ret_val;
@@ -1413,7 +1403,7 @@ cfg_set_instance(cfg_handle handle, cfg_val_type type, ...)
 }
 
 /* See description in conf_api.h */
-int
+te_errno
 cfg_set_instance_local(cfg_handle handle, cfg_val_type type, ...)
 {
     int     ret_val;
@@ -1427,7 +1417,7 @@ cfg_set_instance_local(cfg_handle handle, cfg_val_type type, ...)
 }
 
 /* See description in conf_api.h */
-int
+te_errno
 cfg_commit(const char *oid)
 {
     cfg_commit_msg *msg;
@@ -1484,7 +1474,7 @@ cfg_commit(const char *oid)
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 {
     cfg_get_msg    *msg;
@@ -1604,7 +1594,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 {
     cfg_get_msg *msg;
@@ -1715,7 +1705,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_synchronize(const char *oid, te_bool subtree)
 {
     cfg_sync_msg *msg;
@@ -1771,7 +1761,7 @@ cfg_synchronize(const char *oid, te_bool subtree)
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
               void *user_data)
 {
@@ -1871,7 +1861,7 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_reboot_ta(const char *ta_name, te_bool restore)
 {
     cfg_reboot_msg *msg;
@@ -1925,7 +1915,7 @@ cfg_reboot_ta(const char *ta_name, te_bool restore)
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_create_backup(char **name)
 {
     cfg_backup_msg *msg;
@@ -2035,7 +2025,7 @@ cfg_backup(const char *name, uint8_t op)
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_verify_backup(const char *name)
 {
     return cfg_backup(name, CFG_BACKUP_VERIFY);
@@ -2048,7 +2038,7 @@ cfg_verify_backup(const char *name)
  *
  * @return status code (see te_errno.h)
  */
-int 
+te_errno
 cfg_release_backup(char **name)
 {
     int rc;
@@ -2073,7 +2063,7 @@ cfg_release_backup(char **name)
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_restore_backup(const char *name)
 {
     return cfg_backup(name, CFG_BACKUP_RESTORE);
@@ -2089,7 +2079,7 @@ cfg_restore_backup(const char *name)
  *
  * @return status code (see te_errno.h)
  */
-int
+te_errno
 cfg_create_config(const char *name, te_bool history)
 {
     cfg_config_msg *msg;

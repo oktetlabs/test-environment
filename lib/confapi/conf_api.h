@@ -138,8 +138,9 @@ typedef struct cfg_obj_descr {
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
-                                   cfg_handle *handle);
+extern te_errno cfg_register_object_str(const char    *oid,
+                                        cfg_obj_descr *descr,
+                                        cfg_handle    *handle);
 
 /**
  * Register new object using array object identifiers.
@@ -150,8 +151,9 @@ extern int cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_register_object(const cfg_oid *oid, cfg_obj_descr *descr,
-                               cfg_handle *handle);
+extern te_errno cfg_register_object(const cfg_oid *oid,
+                                    cfg_obj_descr *descr,
+                                    cfg_handle    *handle);
 
 /**
  * Obtain parameters configured for the object.
@@ -161,7 +163,8 @@ extern int cfg_register_object(const cfg_oid *oid, cfg_obj_descr *descr,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr);
+extern te_errno cfg_get_object_descr(cfg_handle     handle,
+                                     cfg_obj_descr *descr);
 
 /**
  * Obtain identifier of object or object instance by its handle.
@@ -172,7 +175,7 @@ extern int cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr);
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-extern int cfg_get_oid_str(cfg_handle handle, char **oid);
+extern te_errno cfg_get_oid_str(cfg_handle handle, char **oid);
 
 /**
  * Obtain identifier of object or object instance by its handle.
@@ -183,7 +186,7 @@ extern int cfg_get_oid_str(cfg_handle handle, char **oid);
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-extern int cfg_get_oid(cfg_handle handle, cfg_oid **oid);
+extern te_errno cfg_get_oid(cfg_handle handle, cfg_oid **oid);
 
 /**
  * Obtain sub-identifier of object by its handle.
@@ -194,7 +197,7 @@ extern int cfg_get_oid(cfg_handle handle, cfg_oid **oid);
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-extern int cfg_get_subid(cfg_handle handle, char **subid);
+extern te_errno cfg_get_subid(cfg_handle handle, char **subid);
 
 /**
  * Obtain name of object instance by its handle.
@@ -204,7 +207,7 @@ extern int cfg_get_subid(cfg_handle handle, char **subid);
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-extern int cfg_get_inst_name(cfg_handle handle, char **name);
+extern te_errno cfg_get_inst_name(cfg_handle handle, char **name);
 
 /**
  * Obtain integer name of object instance by its handle.
@@ -216,8 +219,9 @@ extern int cfg_get_inst_name(cfg_handle handle, char **name);
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-extern int cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
-                                  cfg_inst_val *val);
+extern te_errno cfg_get_inst_name_type(cfg_handle    handle,
+                                       cfg_val_type  type,
+                                       cfg_inst_val *val);
 
 /**
  * Obtain name of object instance by its handle.
@@ -228,8 +232,9 @@ extern int cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
-extern int cfg_get_ith_inst_name(const char *str_oid, unsigned int i,
-                                 char **name);
+extern te_errno cfg_get_ith_inst_name(const char    *str_oid,
+                                      unsigned int   i,
+                                      char         **name);
 
 /**
  * Find the object or object instance by its object identifier.
@@ -240,10 +245,10 @@ extern int cfg_get_ith_inst_name(const char *str_oid, unsigned int i,
  *
  * @return      status code
  */
-extern int cfg_find_str(const char *oid, cfg_handle *p_handle);
+extern te_errno cfg_find_str(const char *oid, cfg_handle *p_handle);
 
 /** The same function as cfg_find_str, but OID may be format string */
-static inline int
+static inline te_errno
 cfg_find_vfmt(cfg_handle *p_handle, const char *oid_fmt, va_list ap)
 {
     char oid[CFG_OID_MAX];
@@ -254,7 +259,7 @@ cfg_find_vfmt(cfg_handle *p_handle, const char *oid_fmt, va_list ap)
 }
 
 /** The same function as cfg_find_str, but OID may be format string */
-static inline int
+static inline te_errno
 cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
 {
     int     rc;
@@ -275,7 +280,7 @@ cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
  *
  * @return status code
  */
-extern int cfg_find(const cfg_oid *oid, cfg_handle *handle);
+extern te_errno cfg_find(const cfg_oid *oid, cfg_handle *handle);
 
 /**
  * Find object of the given instance.
@@ -285,8 +290,8 @@ extern int cfg_find(const cfg_oid *oid, cfg_handle *handle);
  *
  * @return status code.
  */
-extern int cfg_find_object_by_instance(cfg_handle instance, 
-                                       cfg_handle *object);
+extern te_errno cfg_find_object_by_instance(cfg_handle  instance, 
+                                            cfg_handle *object);
 
 /**
  * Find all objects or object instances matching to pattern.
@@ -300,11 +305,12 @@ extern int cfg_find_object_by_instance(cfg_handle instance,
  * @return 0 or TE_EINVAL if pattern format is incorrect some argument is
  *         NULL
  */
-extern int cfg_find_pattern(const char *pattern,
-                            unsigned int *p_num, cfg_handle **p_set);
+extern te_errno cfg_find_pattern(const char    *pattern,
+                                 unsigned int  *p_num,
+                                 cfg_handle    **p_set);
 
 /** The same function as cfg_find_pattern, but OID may be format string */
-static inline int
+static inline te_errno
 cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
                      const char *ptrn_fmt, ...)
 {
@@ -326,7 +332,7 @@ cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
  *
  * @returns Status code.
  */
-extern int cfg_get_son(cfg_handle handle, cfg_handle *son);
+extern te_errno cfg_get_son(cfg_handle handle, cfg_handle *son);
 
 /**
  * Get handle of the brother of the object or object instance.
@@ -336,7 +342,7 @@ extern int cfg_get_son(cfg_handle handle, cfg_handle *son);
  *
  * @returns Status code.
  */
-extern int cfg_get_brother(cfg_handle handle, cfg_handle *brother);
+extern te_errno cfg_get_brother(cfg_handle handle, cfg_handle *brother);
 
 /**
  * Get handle of the father of the object or object instance.
@@ -346,7 +352,7 @@ extern int cfg_get_brother(cfg_handle handle, cfg_handle *brother);
  *
  * @returns Status code.
  */
-extern int cfg_get_father(cfg_handle handle, cfg_handle *father);
+extern te_errno cfg_get_father(cfg_handle handle, cfg_handle *father);
 
 /**
  * Create an object instance.
@@ -361,8 +367,8 @@ extern int cfg_get_father(cfg_handle handle, cfg_handle *father);
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
-                            cfg_val_type type, ...);
+extern te_errno cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
+                                 cfg_val_type type, ...);
 
 /**
  * Create an object instance.
@@ -378,8 +384,8 @@ extern int cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_add_instance_str(const char *oid, cfg_handle *p_handle,
-                                cfg_val_type type, ...);
+extern te_errno cfg_add_instance_str(const char *oid, cfg_handle *p_handle,
+                                     cfg_val_type type, ...);
 
 /**
  * The same function as cfg_add_instance_str,
@@ -388,7 +394,7 @@ extern int cfg_add_instance_str(const char *oid, cfg_handle *p_handle,
  * Use macro CFG_VAL() to make the second and the third arguments pair.
  * E.g. rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 1), "/hello:tom");
  */
-static inline int
+static inline te_errno
 cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
                      const void *val, const char *oid_fmt, ...)
 {
@@ -416,8 +422,9 @@ cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
-                                  cfg_val_type type, ...);
+extern te_errno cfg_add_instance_local(const cfg_oid *oid,
+                                       cfg_handle    *handle,
+                                       cfg_val_type   type, ...);
 
 /**
  * The same function as cfg_add_instance_local, but OID is in string format.
@@ -433,9 +440,9 @@ extern int cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_add_instance_local_str(const char *oid,
-                                      cfg_handle *p_handle,
-                                      cfg_val_type type, ...);
+extern te_errno cfg_add_instance_local_str(const char   *oid,
+                                           cfg_handle   *p_handle,
+                                           cfg_val_type  type, ...);
 
 /**
  * The same function as cfg_add_instance_local_str,
@@ -445,7 +452,7 @@ extern int cfg_add_instance_local_str(const char *oid,
  * E.g. rc = cfg_add_instance_local_fmt(NULL, CFG_VAL(INTEGER, 1),
  *                                      "/hello:tom");
  */
-static inline int
+static inline te_errno
 cfg_add_instance_local_fmt(cfg_handle *p_handle, cfg_val_type type,
                            const void *val, const char *oid_fmt, ...)
 {
@@ -472,7 +479,7 @@ cfg_add_instance_local_fmt(cfg_handle *p_handle, cfg_val_type type,
  *
  * @return Status code.
  */
-static inline int
+static inline te_errno
 cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
                            const void *val, cfg_handle parent,
                            const char *suboid_fmt, ...)
@@ -530,10 +537,10 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_del_instance(cfg_handle handle, te_bool with_children);
+extern te_errno cfg_del_instance(cfg_handle handle, te_bool with_children);
 
 /** Set instance by the OID. OID may be format string */
-static inline int
+static inline te_errno
 cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
 {
     _CFG_HANDLE_BY_FMT;
@@ -552,7 +559,7 @@ cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
+extern te_errno cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
 
 /**
  * Set instance by the OID. OID may be format string.
@@ -560,7 +567,7 @@ extern int cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
  * Use macro CFG_VAL() to make the second and the third arguments pair.
  * E.g. rc = cfg_set_instance_fmt(NULL, CFG_VAL(INTEGER, 1), "/hello:");
  */
-static inline int
+static inline te_errno
 cfg_set_instance_fmt(cfg_val_type type, const void *val,
                      const char *oid_fmt, ...)
 {
@@ -581,11 +588,11 @@ cfg_set_instance_fmt(cfg_val_type type, const void *val,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_set_instance_local(cfg_handle handle,
-                                  cfg_val_type type, ...);
+extern te_errno cfg_set_instance_local(cfg_handle handle,
+                                       cfg_val_type type, ...);
 
 /** Set instance by the OID. OID may be format string */
-static inline int
+static inline te_errno
 cfg_set_instance_local_fmt(cfg_val_type type, const void *val,
                            const char *oid_fmt, ...)
 {
@@ -601,10 +608,10 @@ cfg_set_instance_local_fmt(cfg_val_type type, const void *val,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_commit(const char *oid);
+extern te_errno cfg_commit(const char *oid);
 
 /** The same function as cfg_commit, but OID may be format string */
-static inline int
+static inline te_errno
 cfg_commit_fmt(const char *oid_fmt, ...)
 {
     va_list ap;
@@ -631,10 +638,11 @@ cfg_commit_fmt(const char *oid_fmt, ...)
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...);
+extern te_errno cfg_get_instance(cfg_handle handle,
+                                 cfg_val_type *type, ...);
 
 /** Get instance by the OID. OID may be format string */
-static inline int
+static inline te_errno
 cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
                      const char *oid_fmt, ...)
 {
@@ -656,11 +664,11 @@ cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_get_instance_sync(cfg_handle handle,
-                                 cfg_val_type *type, ...);
+extern te_errno cfg_get_instance_sync(cfg_handle handle,
+                                      cfg_val_type *type, ...);
 
 /** Get instance by the OID. OID may be format string */
-static inline int
+static inline te_errno
 cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
                           const char *oid_fmt, ...)
 {
@@ -678,10 +686,10 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_synchronize(const char *oid, te_bool subtree);
+extern te_errno cfg_synchronize(const char *oid, te_bool subtree);
 
 /** The same function as cfg_synchronize, but OID may be format string */
-static inline int
+static inline te_errno
 cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
 {
     va_list ap;
@@ -711,8 +719,8 @@ typedef int (* cfg_inst_handler)(
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
-                         void *user_data);
+extern te_errno cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
+                              void *user_data);
 
 
 /**
@@ -723,7 +731,7 @@ extern int cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_reboot_ta(const char *ta_name, te_bool restore);
+extern te_errno cfg_reboot_ta(const char *ta_name, te_bool restore);
 
 
 /**
@@ -733,7 +741,7 @@ extern int cfg_reboot_ta(const char *ta_name, te_bool restore);
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_create_backup(char **name);
+extern te_errno cfg_create_backup(char **name);
 
 /**
  * Verify the backup.
@@ -744,7 +752,7 @@ extern int cfg_create_backup(char **name);
  * @retval 0            current configuration is equal to backup
  * @retval TE_EBACKUP   current configuration differs from backup
  */
-extern int cfg_verify_backup(const char *name);
+extern te_errno cfg_verify_backup(const char *name);
 
 /**
  * Restore the backup.
@@ -753,7 +761,7 @@ extern int cfg_verify_backup(const char *name);
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_restore_backup(const char *name);
+extern te_errno cfg_restore_backup(const char *name);
 
 /**
  * Ask Configurator to forget about the backup, if known.
@@ -763,7 +771,7 @@ extern int cfg_restore_backup(const char *name);
  *
  * @return status code
  */
-extern int cfg_release_backup(char **name);
+extern te_errno cfg_release_backup(char **name);
 
 
 /**
@@ -775,7 +783,7 @@ extern int cfg_release_backup(char **name);
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_create_config(const char *name, te_bool history);
+extern te_errno cfg_create_config(const char *name, te_bool history);
 
 /**
  * Clean up resources allocated by Configurator API.
