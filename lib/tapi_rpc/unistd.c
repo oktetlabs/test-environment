@@ -135,11 +135,13 @@ rpc_socketpair(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(socketpair, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s): socketpair(%s, %s, %s) -> %d (%s) (%d,%d)",
+    TAPI_RPC_LOG("RPC (%s,%s): socketpair(%s, %s, %s, %p) -> "
+                 "%d (%s) (%d,%d)",
                  rpcs->ta, rpcs->name,
                  domain_rpc2str(domain), socktype_rpc2str(type),
-                 proto_rpc2str(protocol),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)), sv[0], sv[1]);
+                 proto_rpc2str(protocol), sv,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 sv != NULL ? sv[0] : -1, sv != NULL ? sv[1] : -1);
 
     RETVAL_INT(socketpair, out.retval);
 }
