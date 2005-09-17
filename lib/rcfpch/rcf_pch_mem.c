@@ -116,6 +116,7 @@ rcf_pch_mem_free(rcf_pch_mem_id id)
     pthread_mutex_lock(&lock);
 #endif
 
+    /* FIXME: What is this? */
     if (id > 0 && (id--, id < ids_len) && ids[id] != NULL)
     {
         ids[id] = NULL;
