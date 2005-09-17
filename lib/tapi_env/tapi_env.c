@@ -621,6 +621,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         {
             ERROR("Failed to get IPv4 subnet for net '%s': %r",
                   net_oid, rc);
+            free(ip4_nets);
             free(net_oid);
             break;
         }
@@ -632,6 +633,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         if (rc != 0)
         {
             ERROR("Failed to get IPv4 subnet handle: %r", rc);
+            free(ip4_nets);
             break;
         }
         /* Get IPv4 subnet OID */
@@ -639,8 +641,10 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
         if (rc != 0)
         {
             ERROR("cfg_get_oid_str() failed: %r", rc);
+            free(ip4_nets);
             break;
         }
+        free(ip4_nets);
 
         /* Get IPv4 subnet for the network */
         val_type = CVT_INTEGER;
