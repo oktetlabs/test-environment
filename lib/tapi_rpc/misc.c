@@ -677,30 +677,30 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
     tarpc_overfill_buffers_in  in;
     tarpc_overfill_buffers_out out;
 
-    op = rpcs->op;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(overfill_buffers, -1);
     }
+    op = rpcs->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     in.sock = sock;
 
     rcf_rpc_call(rpcs, "overfill_buffers", &in, &out);
 
-    if (out.retval == 0)
+    if ((out.retval == 0) && (sent != NULL))
         *sent = out.bytes;
     
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_buffers, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_buffers(%d) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_buffers(%d) -> %d (%s) sent=%d",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  sock,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 (sent != NULL) ? (int)(*sent) : -1);
 
     RETVAL_INT(overfill_buffers, out.retval);
 }
