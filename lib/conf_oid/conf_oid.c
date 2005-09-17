@@ -207,10 +207,14 @@ cfg_convert_oid_str(const char *str)
 char *
 cfg_convert_oid(const cfg_oid *oid)
 {
-    char *str = (char *)malloc(CFG_OID_MAX);
+    char *str;
     char *tmp = str;
     int   i;
 
+    if (oid == NULL)
+        return NULL;
+
+    str = (char *)malloc(CFG_OID_MAX);
     if (str == NULL)
         return NULL;
 
@@ -221,13 +225,17 @@ cfg_convert_oid(const cfg_oid *oid)
     }
 
     for (i = 1; i < oid->len; tmp += strlen(tmp), i++)
+    {
         if (oid->inst)
         {
             sprintf(tmp, "/%s:%s", ((cfg_inst_subid *)(oid->ids))[i].subid,
                     ((cfg_inst_subid *)(oid->ids))[i].name);
         }
         else
+        {
             sprintf(tmp, "/%s", ((cfg_object_subid *)(oid->ids))[i].subid);
+        }
+    }
 
     return str;
 }
