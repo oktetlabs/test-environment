@@ -69,7 +69,7 @@ typedef struct tapi_ip4_cb_data_t {
  * Pkt handler for IP packets 
  */
 static void
-ip4_pkt_handler(char *pkt_fname, void *user_param)
+ip4_pkt_handler(const char *pkt_fname, void *user_param)
 {
     tapi_ip4_cb_data_t *cb_data = (tapi_ip4_cb_data_t *)user_param;
     asn_value          *pkt = NULL;

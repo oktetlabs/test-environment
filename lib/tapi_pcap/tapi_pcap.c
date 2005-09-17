@@ -118,7 +118,7 @@ struct tapi_pkt_handler_data {
 };
 
 static void
-tapi_pcap_pkt_handler(char *fn, void *user_param)
+tapi_pcap_pkt_handler(const char *fn, void *user_param)
 {
     struct tapi_pkt_handler_data *i_data =
         (struct tapi_pkt_handler_data *)user_param;

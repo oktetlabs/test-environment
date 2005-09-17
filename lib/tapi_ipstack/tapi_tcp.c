@@ -87,7 +87,7 @@ typedef struct tapi_ip4_cb_data_t {
  * Pkt handler for TCP packets 
  */
 static void
-tcp_pkt_handler(char *pkt_fname, void *user_param)
+tcp_pkt_handler(const char *pkt_fname, void *user_param)
 {
     tapi_tcp_cb_data_t *cb_data = (tapi_tcp_cb_data_t *)user_param;
     asn_value          *pkt = NULL;
@@ -651,7 +651,7 @@ cleanup:
  * Pkt handler for TCP packets 
  */
 static void
-tcp_server_handler(char *pkt_fname, void *user_param)
+tcp_server_handler(const char *pkt_fname, void *user_param)
 {
     asn_value  *pkt = NULL;
     int        *socket = user_param;
@@ -740,7 +740,7 @@ struct data_message {
  * Pkt handler for TCP packets 
  */
 static void
-tcp_data_csap_handler(char *pkt_fname, void *user_param)
+tcp_data_csap_handler(const char *pkt_fname, void *user_param)
 {
     asn_value  *pkt = NULL;
     struct data_message *msg;

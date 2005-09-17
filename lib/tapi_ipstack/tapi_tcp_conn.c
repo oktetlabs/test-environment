@@ -447,7 +447,7 @@ cleanup:
 
 /* handler for data, see description of 'rcf_pkt_handler' type */
 static void 
-tcp_conn_pkt_handler(char *pkt_file, void *user_param)
+tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
 {
     tapi_tcp_connection_t *conn_descr = (tapi_tcp_connection_t *)user_param;
     asn_value             *tcp_message = NULL;

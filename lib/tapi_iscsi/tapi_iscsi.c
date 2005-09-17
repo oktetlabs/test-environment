@@ -98,7 +98,7 @@ struct iscsi_data_message {
  * Pkt handler for TCP packets 
  */
 static void
-iscsi_msg_handler(char *pkt_fname, void *user_param)
+iscsi_msg_handler(const char *pkt_fname, void *user_param)
 {
     asn_value  *pkt = NULL;
     struct iscsi_data_message *msg;

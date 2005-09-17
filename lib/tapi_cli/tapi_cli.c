@@ -503,7 +503,7 @@ tapi_internal_cli_send(const char *ta_name, int sid, csap_handle_t cli_csap,
  * @se It allocates a memory for CLI message
  */
 void
-tapi_cli_msg_handler(char *msg_fname, void *user_param)
+tapi_cli_msg_handler(const char *msg_fname, void *user_param)
 {
     int                       rc;
     int                       s_parsed;

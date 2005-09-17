@@ -448,7 +448,7 @@ tapi_udp4_dgram_send(const char *ta_name, int sid,
 
 /* see description in tapi_udp.h */
 static void
-udp4_pkt_handler(char *pkt_fname, void *user_param)
+udp4_pkt_handler(const char *pkt_fname, void *user_param)
 {
     udp4_cb_data_t *cb_data = (udp4_cb_data_t *)user_param;
     asn_value      *pkt = NULL;
@@ -574,7 +574,7 @@ tapi_udp4_dgram_send_recv(const char *ta_name, int sid, csap_handle_t csap,
     tapi_udp4_prepare_tmpl_file(template_fname, dgram_sent);
 
     rc = rcf_ta_trsend_recv(ta_name, sid, csap, template_fname,
-                                udp4_pkt_handler, cb_data, timeout, NULL);
+                            udp4_pkt_handler, cb_data, timeout, NULL);
 
     unlink(template_fname);
 

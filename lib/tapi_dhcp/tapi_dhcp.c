@@ -968,7 +968,7 @@ tapi_dhcpv4_message_send(const char *ta_name, csap_handle_t dhcp_csap,
  * @se It allocates a DHCP message
  */
 static void
-dhcp_pkt_handler(char *pkt_fname, void *user_param)
+dhcp_pkt_handler(const char *pkt_fname, void *user_param)
 {
     struct dhcp_rcv_pkt_info *rcv_pkt =
         (struct dhcp_rcv_pkt_info *)user_param;
