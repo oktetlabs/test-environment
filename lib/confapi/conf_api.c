@@ -566,6 +566,7 @@ cfg_get_ith_inst_name(const char *str_oid, unsigned int i, char **name)
     oid = cfg_convert_oid_str(str_oid);
     if (oid == NULL || !oid->inst || oid->len <= i)
     {
+        cfg_free_oid(oid);
         ERROR("Invalid value in network node: %s", str_oid);
         return TE_EFMT;
     }
