@@ -327,6 +327,7 @@ tapi_cfg_del_if_addresses(const char *ta,
         {
             ERROR("Failed to convert address to string, errno %s",
                   strerror(errno));
+            free(addrs);
             return -1;
         }
     }
@@ -335,6 +336,7 @@ tapi_cfg_del_if_addresses(const char *ta,
         if ((rc = cfg_get_inst_name(*addrs, &addr_to_save_str)) != 0)
         {
             ERROR("Failed to get instance name");
+            free(addrs);
             return rc;
         }
     }
@@ -345,16 +347,28 @@ tapi_cfg_del_if_addresses(const char *ta,
         if ((rc = cfg_get_inst_name(*ptr, &addr_str)) != 0)
         {
             ERROR("Failed to get instance name");
-            return rc;
+            break;
         }
+
         if (strncmp(addr_str, addr_to_save_str, 
                     strlen(addr_to_save_str) + 1) == 0)
+        {
+            free(addr_str);
             continue;
+        }
+
         if ((rc = cfg_del_instance(*ptr, FALSE)) != 0)
         {
             ERROR("Failed to delete address %s", addr_str);
-            return rc;
+            free(addr_str);
+            break;
         }
+        free(addr_str);
     }
-    return 0;
+
+    if (addr_to_save_str != buf)
+        free(addr_to_save_str);
+    free(addrs);
+
+    return rc;
 }
