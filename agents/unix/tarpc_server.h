@@ -416,7 +416,7 @@ check_args(checked_arg *list)
 #define TARPC_FUNC(_func, _copy_args, _actions)                     \
                                                                     \
 typedef struct _func##_arg {                                        \
-    api_func       func;                                       \
+    api_func            func;                                       \
     tarpc_##_func##_in  in;                                         \
     tarpc_##_func##_out out;                                        \
     sigset_t            mask;                                       \
@@ -426,12 +426,14 @@ typedef struct _func##_arg {                                        \
 static void *                                                       \
 _func##_proc(void *arg)                                             \
 {                                                                   \
-    _func##_arg       *data = (_func##_arg *)arg;                   \
-    api_func      func = data->func;                           \
+    _func##_arg            *data = (_func##_arg *)arg;              \
+    api_func                func = data->func;                      \
                                                                     \
-    tarpc_##_func##_in  *in = &(data->in);                          \
-    tarpc_##_func##_out *out = &(data->out);                        \
-    checked_arg         *list = NULL;                               \
+    tarpc_##_func##_in     *in = &(data->in);                       \
+    tarpc_##_func##_out    *out = &(data->out);                     \
+                                                                    \
+    checked_arg            *list = NULL;                            \
+                                                                    \
                                                                     \
     logfork_register_user(#_func);                                  \
                                                                     \
@@ -450,78 +452,128 @@ bool_t                                                              \
 _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
                  struct svc_req *rqstp)                             \
 {                                                                   \
-    api_func      func;                                        \
-                                                                    \
-    checked_arg   *list = NULL;                                     \
-    _func##_arg   *arg;                                             \
-    enum xdr_op    op = XDR_FREE;                                   \
+    api_func        func;                                           \
+    _func##_arg    *arg;                                            \
                                                                     \
     UNUSED(rqstp);                                                  \
+                                                                    \
     memset(out, 0, sizeof(*out));                                   \
+                                                                    \
     VERB("PID=%d TID=%d: Entry %s",                                 \
          (int)getpid(), (int)pthread_self(), #_func);               \
                                                                     \
     FIND_FUNC(in->common.lib, #_func, func);                        \
                                                                     \
-    _copy_args                                                      \
+    { _copy_args }                                                  \
                                                                     \
-    if (in->common.op == RCF_RPC_CALL_WAIT)                         \
+    switch (in->common.op)                                          \
     {                                                               \
-        VERB("%s(): CALL-WAIT", #_func);                            \
-        _actions                                                    \
-        return TRUE;                                                \
-    }                                                               \
-                                                                    \
-    if (in->common.op == RCF_RPC_CALL)                              \
-    {                                                               \
-        pthread_t _tid;                                             \
-                                                                    \
-        VERB("%s(): CALL", #_func);                                 \
-        if ((arg = calloc(1, sizeof(*arg))) == NULL)                \
+        case RCF_RPC_CALL_WAIT:                                     \
         {                                                           \
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);      \
-            return TRUE;                                            \
+            checked_arg    *list = NULL;                            \
+                                                                    \
+            VERB("%s(): CALL-WAIT", #_func);                        \
+                                                                    \
+            { _actions  }                                           \
+                                                                    \
+            break;                                                  \
         }                                                           \
                                                                     \
-        arg->in   = *in;                                            \
-        arg->out  = *out;                                           \
-        arg->func = func;                                           \
-        sigprocmask(SIG_SETMASK, NULL, &(arg->mask));               \
-        arg->done = FALSE;                                          \
-                                                                    \
-        if (pthread_create(&_tid, NULL, _func##_proc,               \
-                           (void *)arg) != 0)                       \
+        case RCF_RPC_CALL:                                          \
         {                                                           \
+            pthread_t _tid;                                         \
+                                                                    \
+            VERB("%s(): CALL", #_func);                             \
+                                                                    \
+            if ((arg = calloc(1, sizeof(*arg))) == NULL)            \
+            {                                                       \
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);  \
+                break;                                              \
+            }                                                       \
+                                                                    \
+            arg->in   = *in;                                        \
+            arg->out  = *out;                                       \
+            arg->func = func;                                       \
+            sigprocmask(SIG_SETMASK, NULL, &(arg->mask));           \
+            arg->done = FALSE;                                      \
+                                                                    \
+            if (pthread_create(&_tid, NULL, _func##_proc,           \
+                               (void *)arg) != 0)                   \
+            {                                                       \
+                free(arg);                                          \
+                out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);   \
+                break;                                              \
+            }                                                       \
+                                                                    \
+            /*                                                      \
+             * Preset 'in' and 'out' with zeros to avoid any        \
+             * resource deallocations by the caller.                \
+             * 'out' is preset with zeros above, but may be         \
+             * modified in '_copy_args'.                            \
+             */                                                     \
+            memset(in,  0, sizeof(*in));                            \
+            memset(out, 0, sizeof(*out));                           \
+                                                                    \
+            out->common.tid = rcf_pch_mem_alloc((void *)_tid);      \
+            out->common.done = rcf_pch_mem_alloc(&arg->done);       \
+                                                                    \
+            break;                                                  \
+        }                                                           \
+                                                                    \
+        case RCF_RPC_WAIT:                                          \
+        {                                                           \
+            enum xdr_op op;                                         \
+            pthread_t   _tid =                                      \
+                (pthread_t)rcf_pch_mem_get(in->common.tid);         \
+                                                                    \
+            VERB("%s(): WAIT", #_func);                             \
+                                                                    \
+            /*                                                      \
+             * If WAIT is called, all resources are deallocated     \
+             * in any case.                                         \
+             */                                                     \
+            rcf_pch_mem_free(in->common.done);                      \
+            rcf_pch_mem_free(in->common.tid);                       \
+                                                                    \
+            if (_tid == (pthread_t)NULL)                            \
+            {                                                       \
+                ERROR("No thread with ID %u to wait",               \
+                      (unsigned)in->common.tid);                    \
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOENT);  \
+                break;                                              \
+            }                                                       \
+            if (pthread_join(_tid, (void **)&(arg)) != 0)           \
+            {                                                       \
+                ERROR("pthread_join() failed");                     \
+                out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);   \
+                break;                                              \
+            }                                                       \
+            if (arg == NULL)                                        \
+            {                                                       \
+                ERROR("pthread_join() returned invalid thread "     \
+                      "return value");                              \
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);  \
+                break;                                              \
+            }                                                       \
+                                                                    \
+            /* Free locations copied in 'out' by _copy_args' */     \
+            op = XDR_FREE;                                          \
+            if (!xdr_tarpc_##_func##_out((XDR *)&op, out))          \
+                ERROR("xdr_tarpc_" #_func "_out() failed");         \
+                                                                    \
+            /* Copy output prepared in the thread */                \
+            *out = arg->out;                                        \
             free(arg);                                              \
-            out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);       \
+                                                                    \
+            break;                                                  \
         }                                                           \
                                                                     \
-        memset(in,  0, sizeof(*in));                                \
-        memset(out, 0, sizeof(*out));                               \
-        out->common.tid = rcf_pch_mem_alloc((void *)_tid);          \
-        out->common.done = rcf_pch_mem_alloc(&arg->done);           \
-                                                                    \
-        return TRUE;                                                \
+        default:                                                    \
+            ERROR("Unknown RPC operation");                         \
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);      \
+            break;                                                  \
     }                                                               \
                                                                     \
-    VERB("%s(): WAIT", #_func);                                     \
-    assert(in->common.op == RCF_RPC_WAIT);                          \
-    if (pthread_join((pthread_t)rcf_pch_mem_get(in->common.tid),    \
-                     (void **)&(arg)) != 0)                         \
-    {                                                               \
-        out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);           \
-        return TRUE;                                                \
-    }                                                               \
-    if (arg == NULL)                                                \
-    {                                                               \
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);          \
-        return TRUE;                                                \
-    }                                                               \
-    xdr_tarpc_##_func##_out((XDR *)&op, out);                       \
-    *out = arg->out;                                                \
-    rcf_pch_mem_free(in->common.done);                              \
-    rcf_pch_mem_free(in->common.tid);                               \
-    free(arg);                                                      \
     return TRUE;                                                    \
 }
 
