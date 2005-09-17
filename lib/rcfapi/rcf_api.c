@@ -256,7 +256,10 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
 
     msg_len = sizeof(rcf_msg) + message->data_len;
     if ((buf_entry->message = (rcf_msg *)calloc(1, msg_len)) == NULL)
+    {
+        free(buf_entry);
         return TE_ENOMEM;
+    }
 
     memcpy(buf_entry->message, message, msg_len);
 
