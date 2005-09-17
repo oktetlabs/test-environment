@@ -562,10 +562,10 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
 
             case TESTER_OPT_SUITE_PATH:
             {
-                const char *opt = poptGetOptArg(optCon);
-                const char *s = index(opt, ':');
-                int name_len;
-                test_suite_info *p = calloc(1, sizeof(*p));
+                const char         *opt = poptGetOptArg(optCon);
+                const char         *s = index(opt, ':');
+                int                 name_len;
+                test_suite_info    *p;
 
                 if ((s == NULL) || ((name_len = (s - opt)) <= 0))
                 {
@@ -573,13 +573,18 @@ process_cmd_line_opts(tester_ctx *ctx, tester_cfgs *cfgs,
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
-                if ((p == NULL) ||
+
+                if (((p = calloc(1, sizeof(*p))) == NULL) ||
                     ((p->name = malloc(name_len + 1)) == NULL) ||
                     ((p->src = strdup(s + 1)) == NULL))
                 {
                     if (p != NULL)
+                    {
                         free(p->name);
-                    ERROR("Memory allocation failed", sizeof(*p));
+                        free(p);
+                    }
+
+                    ERROR("Memory allocation failed");
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
