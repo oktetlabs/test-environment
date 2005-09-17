@@ -32,7 +32,13 @@
 #ifndef __TE_RCF_INTERNAL_H__
 #define __TE_RCF_INTERNAL_H__
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#include "te_stdint.h"
 #include "te_errno.h"
+
 
 #ifdef __cplusplus
 extern "C" {
