@@ -195,7 +195,10 @@ print_octet_string(const uint8_t *oct_string, size_t len)
     unsigned int    i;
 
     if (oct_string == NULL || len == 0)
-        strncpy (buf, "<null octet string>", sizeof(buf));
+    {
+        strncpy(buf, "<null octet string>", sizeof(buf));
+        return buf;
+    }
 
     memset(buf, 0, sizeof(buf));
 
