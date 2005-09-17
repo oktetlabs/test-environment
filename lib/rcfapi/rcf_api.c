@@ -2660,7 +2660,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     }
 
     RING("Start send/receive operation on the CSAP %d (%s:%d) "
-         "with timeout %u ?s, handler=%p (param=%p), pattern:\n%tf",
+         "with timeout %u ms, handler=%p (param=%p), pattern:\n%tf",
          csap_id, ta_name, session, timeout, handler, user_param, templ);
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
@@ -2674,6 +2674,12 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     
     while (msg.flags & INTERMEDIATE_ANSWER)
     {
+        assert(handler != NULL);
+        assert(msg.file != NULL);
+
+        RING("Traffic send/receive operation on the CSAP %d (%s:%d) got "
+             "packet\n%tf", csap_id, ta_name, session, msg.file);
+
         handler(msg.file, user_param);
         anslen = sizeof(msg);
         if ((rc = wait_rcf_ipc_message(ipc_handle, 
