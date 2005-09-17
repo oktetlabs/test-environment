@@ -593,8 +593,8 @@ cfg_find_str(const char *oid, cfg_handle *handle)
 {
     cfg_find_msg *msg;
 
-    size_t  len;
-    int     ret_val = 0;
+    size_t      len;
+    te_errno    ret_val = 0;
 
     if (oid == NULL)
     {
@@ -644,9 +644,8 @@ cfg_find_str(const char *oid, cfg_handle *handle)
 te_errno
 cfg_find(const cfg_oid *oid, cfg_handle *handle)
 {
-    const char *str;
-    cfg_handle tmp;
-    int ret_val;
+    te_errno    ret_val;
+    char       *str;
 
     if (oid == NULL)
     {
@@ -657,10 +656,10 @@ cfg_find(const cfg_oid *oid, cfg_handle *handle)
     if (str == NULL)
         return TE_RC(TE_CONF_API, TE_ENOMEM);
 
-    ret_val = cfg_find_str(str, &tmp);
-    if (ret_val == 0)
-        *handle = tmp;
-    
+    ret_val = cfg_find_str(str, handle);
+
+    free(str);
+
     return TE_RC(TE_CONF_API, ret_val);
 }
 
