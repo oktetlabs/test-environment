@@ -332,13 +332,16 @@ dhcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
  *                      parsed and matched packet
  *
  * @return zero on success or error code.
+ *
+ * FIXME: Why are return values of the most of the functions used below
+ *        not checked? Why are RCs ignored?
  */
 int 
 dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                   const csap_pkts *pkt, csap_pkts *payload, 
-                  asn_value *parsed_packet )
+                  asn_value *parsed_packet)
 { 
-    uint8_t    *data = pkt->data; 
+    uint8_t    *data; 
     asn_value  *opt_list;
     asn_value  *dhcp_message_pdu = NULL;
     int         rc;
@@ -351,16 +354,17 @@ dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     ENTRY("%s: CSAP %d, layer %d, pkt len: %d", 
           __FUNCTION__, csap_id, layer, pkt->len);
 
+    data = pkt->data;
     VERB("DHCP match callback called: %tm", data, pkt->len);
 
-    if (parsed_packet)
+    if (parsed_packet != NULL)
         dhcp_message_pdu = asn_init_value(ndn_dhcpv4_message);
 
 #define FILL_DHCP_HEADER_FIELD(_asn_label, _size) \
     do {                                                        \
         rc = ndn_match_data_units(pattern_pdu, dhcp_message_pdu,\
                                   data, _size, _asn_label);     \
-        if (rc)                                                 \
+        if (rc != 0)                                            \
         {                                                       \
             F_VERB("%s: field %s not match, rc %r",             \
                     __FUNCTION__, _asn_label, rc);              \
@@ -461,17 +465,24 @@ dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
             rc = asn_insert_indexed(opt_list, opt, -1, "");
             asn_free_value(opt);
         }
-        asn_write_component_value(parsed_packet, opt_list, "#dhcp.options");
+        if (parsed_packet != NULL)
+        {
+            asn_write_component_value(parsed_packet, opt_list,
+                                      "#dhcp.options");
+        }
         asn_free_value(opt_list);
     }
 
-    if (parsed_packet)
+    if (parsed_packet != NULL)
     {
         rc = asn_write_component_value(parsed_packet, dhcp_message_pdu,
                                        "#dhcp"); 
-        if (rc)
+        if (rc != 0)
+        {
             ERROR("%s, write DHCP message to packet fails %r", 
                   __FUNCTION__, rc);
+            /* FIXME: Is it OK, that an error is ignored? */
+        }
     } 
 
     asn_free_value(dhcp_message_pdu); 
