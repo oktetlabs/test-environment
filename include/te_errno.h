@@ -39,6 +39,7 @@
 #endif
 
 #include "te_stdint.h"
+#include "te_printf.h"
 
 
 #define TE_MIN_ERRNO    (1 << 22)
@@ -432,7 +433,7 @@ te_rc_err2str(te_errno err)
     if ((err != 0) && ((err & TE_MIN_ERRNO) == 0))
     {
         snprintf(old_errno, sizeof(old_errno), 
-                 "Old errno 0x%X", TE_RC_GET_ERROR(err));
+                 "Old errno 0x%" TE_PRINTF_32 "X", TE_RC_GET_ERROR(err));
         return old_errno;
     }
     
@@ -648,7 +649,7 @@ te_rc_err2str(te_errno err)
         case 0:  return "OK";
         default:
             snprintf(unknown_errno, sizeof(unknown_errno),
-                     "Unknown(%u)", TE_RC_GET_ERROR(err));
+                     "Unknown(%" TE_PRINTF_32 "u)", TE_RC_GET_ERROR(err));
             return unknown_errno;
     }
 #undef ERR2STR    
