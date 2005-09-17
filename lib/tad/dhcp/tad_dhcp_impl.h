@@ -109,7 +109,8 @@ extern int dhcp_read_cb(csap_p csap_descr, int timeout, char *buf,
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int dhcp_write_cb(csap_p csap_descr, char *buf, size_t buf_len);
+extern int dhcp_write_cb(csap_p csap_descr,
+                         const char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of DHCP CSAP and read
@@ -126,7 +127,7 @@ extern int dhcp_write_cb(csap_p csap_descr, char *buf, size_t buf_len);
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 extern int dhcp_write_read_cb(csap_p csap_descr, int timeout,
-                              char *w_buf, size_t w_buf_len,
+                              const char *w_buf, size_t w_buf_len,
                               char *r_buf, size_t r_buf_len);
 
 

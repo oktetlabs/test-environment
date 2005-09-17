@@ -178,7 +178,7 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-tcp_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
+tcp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     tcp_csap_specific_data_t * spec_data;
     int layer;    
@@ -228,7 +228,7 @@ tcp_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
  */ 
 int 
 tcp_write_read_cb(csap_p csap_descr, int timeout,
-                  char *w_buf, size_t w_buf_len,
+                  const char *w_buf, size_t w_buf_len,
                   char *r_buf, size_t r_buf_len)
 {
     int rc; 

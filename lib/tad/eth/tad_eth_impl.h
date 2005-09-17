@@ -166,7 +166,7 @@ typedef struct eth_csap_specific_data
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-extern char* eth_get_param_cb (csap_p csap_descr, int level, const char *param);
+extern char* eth_get_param_cb(csap_p csap_descr, int level, const char *param);
 
 /**
  * Callback for read data from media of ethernet CSAP. 
@@ -179,7 +179,7 @@ extern char* eth_get_param_cb (csap_p csap_descr, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int eth_read_cb (csap_p csap_id, int timeout, char *buf, size_t buf_len);
+extern int eth_read_cb(csap_p csap_id, int timeout, char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of ethernet CSAP. 
@@ -191,7 +191,7 @@ extern int eth_read_cb (csap_p csap_id, int timeout, char *buf, size_t buf_len);
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int eth_write_cb (csap_p csap_id, char *buf, size_t buf_len);
+extern int eth_write_cb(csap_p csap_id, const char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of ethernet CSAP and read
@@ -207,9 +207,9 @@ extern int eth_write_cb (csap_p csap_id, char *buf, size_t buf_len);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int eth_write_read_cb (csap_p csap_id, int timeout,
-                              char *w_buf, size_t w_buf_len,
-                              char *r_buf, size_t r_buf_len);
+extern int eth_write_read_cb(csap_p csap_id, int timeout,
+                             const char *w_buf, size_t w_buf_len,
+                             char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -222,7 +222,8 @@ extern int eth_write_read_cb (csap_p csap_id, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer);
+extern int eth_single_init_cb(int csap_id, const asn_value *csap_nds,
+                              int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -236,7 +237,7 @@ extern int eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer
  *
  * @return zero on success or error code.
  */ 
-extern int eth_single_destroy_cb (int csap_id, int layer);
+extern int eth_single_destroy_cb(int csap_id, int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
@@ -247,7 +248,7 @@ extern int eth_single_destroy_cb (int csap_id, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu); 
+extern int eth_confirm_pdu_cb(int csap_id, int layer, asn_value_p tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -271,10 +272,10 @@ extern int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int eth_gen_bin_cb (csap_p csap_descr, int layer,
-                           const asn_value *tmpl_pdu,
-                           const tad_tmpl_arg_t *args, size_t  arg_num, 
-                           csap_pkts_p up_payload, csap_pkts_p pkts);
+extern int eth_gen_bin_cb(csap_p csap_descr, int layer,
+                          const asn_value *tmpl_pdu,
+                          const tad_tmpl_arg_t *args, size_t  arg_num, 
+                          csap_pkts_p up_payload, csap_pkts_p pkts);
 
 
 /**
@@ -292,10 +293,10 @@ extern int eth_gen_bin_cb (csap_p csap_descr, int layer,
  *
  * @return zero on success or error code.
  */
-extern int eth_match_bin_cb (int csap_id, int layer,
-                             const asn_value *pattern_pdu,
-                             const csap_pkts *pkt, csap_pkts *payload, 
-                             asn_value_p parsed_packet);
+extern int eth_match_bin_cb(int csap_id, int layer,
+                            const asn_value *pattern_pdu,
+                            const csap_pkts *pkt, csap_pkts *payload, 
+                            asn_value_p parsed_packet);
 
 /**
  * Callback for generating pattern to filter 
@@ -325,17 +326,19 @@ extern int eth_gen_pattern_cb(int csap_id, int layer,
  *
  * @param 0 on succees, -1 on fail
  */
-extern int open_raw_socket(int eth_type, int pkt_type, int if_index, int *sock);
+extern int open_raw_socket(int eth_type, int pkt_type, int if_index,
+                           int *sock);
 
 
 /**
  * Free all memory allocated by eth csap specific data
  *
- * @param eth_csap_specific_data_p poiner to structure
- * @param is_complete if not 0 the final free() will be called on passed pointer
- *
+ * @param eth_csap_specific_data_p  poiner to structure
+ * @param is_complete               if not 0 the final free() will be 
+ *                                  called on passed pointer
  */ 
-extern void free_eth_csap_data(eth_csap_specific_data_p spec_data, char is_colmplete);
+extern void free_eth_csap_data(eth_csap_specific_data_p spec_data,
+                               char is_colmplete);
 
 /**
  * Find number of ethernet layer in CSAP stack.
@@ -369,7 +372,7 @@ extern int eth_prepare_recv(csap_p csap_descr);
  *
  * @return zero on success or error code.
  */
-extern int eth_echo_method (csap_p csap_descr, uint8_t *pkt, size_t len);
+extern int eth_echo_method(csap_p csap_descr, uint8_t *pkt, size_t len);
 
 #ifdef __cplusplus
 } /* extern "C" */

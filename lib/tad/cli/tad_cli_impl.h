@@ -191,7 +191,7 @@ extern int cli_read_cb(csap_p csap_descr, int timeout, char *buf,
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int cli_write_cb(csap_p csap_descr, char *buf, 
+extern int cli_write_cb(csap_p csap_descr, const char *buf, 
                         size_t buf_len);
 
 /**

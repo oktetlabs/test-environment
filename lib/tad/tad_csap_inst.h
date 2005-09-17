@@ -201,7 +201,7 @@ typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout,
  *
  * @return quantity of written octets, or -1 if error occured. 
  */ 
-typedef int (*csap_write_cb_t)(csap_p csap_descr, char *buf,
+typedef int (*csap_write_cb_t)(csap_p csap_descr, const char *buf,
                                size_t buf_len);
 
 /**
@@ -219,7 +219,7 @@ typedef int (*csap_write_cb_t)(csap_p csap_descr, char *buf,
  *         0 if timeout expired. 
  */ 
 typedef int (*csap_write_read_cb_t)(csap_p csap_descr, int timeout,
-                                    char *w_buf, size_t w_buf_len,
+                                    const char *w_buf, size_t w_buf_len,
                                     char *r_buf, size_t r_buf_len);
 
 /**

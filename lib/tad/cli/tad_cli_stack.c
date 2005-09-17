@@ -716,7 +716,7 @@ cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
+cli_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     cli_csap_specific_data_p spec_data;
 
@@ -725,9 +725,7 @@ cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     size_t bytes_written;
     int    rc;
 
-    struct timeval tv = {
-        csap_descr->timeout / 100000, csap_descr->timeout % 100000
-    };
+    struct timeval tv;
 
     if (csap_descr == NULL)
         return -1;
@@ -772,6 +770,8 @@ cli_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
     spec_data->last_cmd_len = buf_len;
 
     /* Wait for CLI response */
+    tv.tv_sec =  csap_descr->timeout / 1000000;
+    tv.tv_usec = csap_descr->timeout % 1000000;
     if ((rc = parent_read_reply(spec_data, buf_len, NULL, 0, &tv)) <= 0)
     {
         if (rc < 0)

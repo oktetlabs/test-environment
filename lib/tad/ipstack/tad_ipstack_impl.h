@@ -190,7 +190,7 @@ extern int ip4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_le
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
+extern int ip4_write_cb(csap_p csap_descr, const char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of IPv4 CSAP and read
@@ -206,9 +206,9 @@ extern int ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int ip4_write_read_cb (csap_p csap_descr, int timeout,
-                              char *w_buf, size_t w_buf_len,
-                              char *r_buf, size_t r_buf_len);
+extern int ip4_write_read_cb(csap_p csap_descr, int timeout,
+                             const char *w_buf, size_t w_buf_len,
+                             char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -221,7 +221,7 @@ extern int ip4_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer);
+extern int ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer);
 
 
 
@@ -235,7 +235,7 @@ extern int ip4_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer);
+extern int ip4_single_init_cb(int csap_id, const asn_value *csap_nds, int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -249,7 +249,7 @@ extern int ip4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer
  *
  * @return zero on success or error code.
  */ 
-extern int ip4_single_destroy_cb (int csap_id, int layer);
+extern int ip4_single_destroy_cb(int csap_id, int layer);
 
 
 /**
@@ -319,9 +319,10 @@ extern int ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pd
  *
  * @return zero on success or error code.
  */
-extern int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                             const csap_pkts *  pkt, csap_pkts * payload, 
-                             asn_value_p  parsed_packet );
+extern int ip4_match_bin_cb(int csap_id, int layer,
+                            const asn_value *pattern_pdu,
+                            const csap_pkts *  pkt, csap_pkts * payload, 
+                            asn_value_p  parsed_packet );
 
 /**
  * Callback for generating pattern to filter 
@@ -336,8 +337,9 @@ extern int ip4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pd
  *
  * @return zero on success or error code.
  */
-extern int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
-                               asn_value_p   *pattern_pdu);
+extern int ip4_gen_pattern_cb (int csap_id, int layer,
+                               const asn_value *tmpl_pdu, 
+                               asn_value_p *pattern_pdu);
 
 
 
@@ -357,7 +359,8 @@ extern int ip4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-extern char* icmp4_get_param_cb (csap_p csap_descr, int level, const char *param);
+extern char* icmp4_get_param_cb(csap_p csap_descr, int level,
+                                const char *param);
 
 /**
  * Callback for read data from media of ICMP CSAP. 
@@ -370,7 +373,8 @@ extern char* icmp4_get_param_cb (csap_p csap_descr, int level, const char *param
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
+extern int icmp4_read_cb(csap_p csap_descr, int timeout,
+                         char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of ICMP CSAP. 
@@ -382,7 +386,8 @@ extern int icmp4_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int icmp4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
+extern int icmp4_write_cb(csap_p csap_descr,
+                          const char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of ICMP CSAP and read
@@ -398,9 +403,9 @@ extern int icmp4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int icmp4_write_read_cb (csap_p csap_descr, int timeout,
-                              char *w_buf, size_t w_buf_len,
-                              char *r_buf, size_t r_buf_len);
+extern int icmp4_write_read_cb(csap_p csap_descr, int timeout,
+                               const char *w_buf, size_t w_buf_len,
+                               char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -413,7 +418,8 @@ extern int icmp4_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int icmp4_single_init_cb (int csap_id, const asn_value *csap_nds, int layer);
+extern int icmp4_single_init_cb(int csap_id, const asn_value *csap_nds,
+                                int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -427,7 +433,7 @@ extern int icmp4_single_init_cb (int csap_id, const asn_value *csap_nds, int lay
  *
  * @return zero on success or error code.
  */ 
-extern int icmp4_single_destroy_cb (int csap_id, int layer);
+extern int icmp4_single_destroy_cb(int csap_id, int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
@@ -438,7 +444,7 @@ extern int icmp4_single_destroy_cb (int csap_id, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int icmp4_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu); 
+extern int icmp4_confirm_pdu_cb(int csap_id, int layer, asn_value_p tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -483,9 +489,11 @@ extern int icmp4_gen_bin_cb(csap_p csap_descr, int layer,
  *
  * @return zero on success or error code.
  */
-extern int icmp4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                             const csap_pkts *  pkt, csap_pkts * payload, 
-                             asn_value_p  parsed_packet );
+extern int icmp4_match_bin_cb(int csap_id, int layer,
+                              const asn_value  *pattern_pdu,
+                              const csap_pkts  *pkt,
+                              csap_pkts        *payload, 
+                              asn_value_p       parsed_packet);
 
 /**
  * Callback for generating pattern to filter 
@@ -500,8 +508,9 @@ extern int icmp4_match_bin_cb (int csap_id, int layer, const asn_value *pattern_
  *
  * @return zero on success or error code.
  */
-extern int icmp4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
-                               asn_value_p   *pattern_pdu);
+extern int icmp4_gen_pattern_cb(int csap_id, int layer,
+                                const asn_value *tmpl_pdu, 
+                                asn_value_p *pattern_pdu);
 
 
 
@@ -521,7 +530,8 @@ extern int icmp4_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_p
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-extern char* udp_get_param_cb (csap_p csap_descr, int level, const char *param);
+extern char* udp_get_param_cb(csap_p csap_descr, int level,
+                              const char *param);
 
 /**
  * Callback for read data from media of UDP CSAP. 
@@ -534,7 +544,8 @@ extern char* udp_get_param_cb (csap_p csap_descr, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int udp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
+extern int udp_read_cb(csap_p csap_descr, int timeout,
+                       char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of UDP CSAP. 
@@ -546,7 +557,8 @@ extern int udp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_le
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int udp_ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
+extern int udp_ip4_write_cb(csap_p csap_descr,
+                            const char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of UDP CSAP and read
@@ -562,9 +574,9 @@ extern int udp_ip4_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int udp_ip4_write_read_cb (csap_p csap_descr, int timeout,
-                              char *w_buf, size_t w_buf_len,
-                              char *r_buf, size_t r_buf_len);
+extern int udp_ip4_write_read_cb(csap_p csap_descr, int timeout,
+                                 const char *w_buf, size_t w_buf_len,
+                                 char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -577,7 +589,8 @@ extern int udp_ip4_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer);
+extern int udp_ip4_init_cb(int csap_id, const asn_value *csap_nds,
+                           int layer);
 
 /**
  * Callback for destroy 'udp' CSAP layer if over 'ip4' in stack.
@@ -591,7 +604,7 @@ extern int udp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int udp_ip4_destroy_cb (int csap_id, int layer);
+extern int udp_ip4_destroy_cb(int csap_id, int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
@@ -602,7 +615,7 @@ extern int udp_ip4_destroy_cb (int csap_id, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu); 
+extern int udp_confirm_pdu_cb(int csap_id, int layer, asn_value_p tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -626,9 +639,13 @@ extern int udp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
-                          const tad_tmpl_arg_t *args, size_t arg_num, 
-                          csap_pkts_p up_payload, csap_pkts_p pkts);
+extern int udp_gen_bin_cb(csap_p                csap_descr,
+                          int                   layer,
+                          const asn_value      *tmpl_pdu,
+                          const tad_tmpl_arg_t *args,
+                          size_t                arg_num, 
+                          csap_pkts_p           up_payload,
+                          csap_pkts_p           pkts);
 
 
 /**
@@ -646,9 +663,11 @@ extern int udp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pd
  *
  * @return zero on success or error code.
  */
-extern int udp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                             const csap_pkts *  pkt, csap_pkts * payload, 
-                             asn_value_p  parsed_packet );
+extern int udp_match_bin_cb(int csap_id, int layer,
+                            const asn_value *pattern_pdu,
+                            const csap_pkts *pkt,
+                            csap_pkts       *payload, 
+                            asn_value_p      parsed_packet);
 
 /**
  * Callback for generating pattern to filter 
@@ -663,8 +682,9 @@ extern int udp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pd
  *
  * @return zero on success or error code.
  */
-extern int udp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
-                               asn_value_p   *pattern_pdu);
+extern int udp_gen_pattern_cb(int csap_id, int layer,
+                              const asn_value *tmpl_pdu, 
+                              asn_value_p *pattern_pdu);
 
 
 
@@ -684,7 +704,8 @@ extern int udp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-extern char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param);
+extern char* tcp_get_param_cb(csap_p csap_descr, int level,
+                              const char *param);
 
 /**
  * Callback for read data from media of TCP CSAP. 
@@ -697,7 +718,8 @@ extern char* tcp_get_param_cb (csap_p csap_descr, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len);
+extern int tcp_read_cb(csap_p csap_descr, int timeout,
+                       char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of TCP CSAP. 
@@ -709,7 +731,8 @@ extern int tcp_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_le
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int tcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
+extern int tcp_write_cb(csap_p csap_descr,
+                        const char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of TCP CSAP and read
@@ -725,9 +748,9 @@ extern int tcp_write_cb (csap_p csap_descr, char *buf, size_t buf_len);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int tcp_write_read_cb (csap_p csap_descr, int timeout,
-                              char *w_buf, size_t w_buf_len,
-                              char *r_buf, size_t r_buf_len);
+extern int tcp_write_read_cb(csap_p csap_descr, int timeout,
+                             const char *w_buf, size_t w_buf_len,
+                             char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -740,7 +763,8 @@ extern int tcp_write_read_cb (csap_p csap_descr, int timeout,
  *
  * @return zero on success or error code.
  */ 
-extern int tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer);
+extern int tcp_single_init_cb(int csap_id, const asn_value *csap_nds,
+                              int layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
@@ -754,7 +778,7 @@ extern int tcp_single_init_cb (int csap_id, const asn_value *csap_nds, int layer
  *
  * @return zero on success or error code.
  */ 
-extern int tcp_single_destroy_cb (int csap_id, int layer);
+extern int tcp_single_destroy_cb(int csap_id, int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
@@ -765,7 +789,8 @@ extern int tcp_single_destroy_cb (int csap_id, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu); 
+extern int tcp_confirm_pdu_cb(int csap_id, int layer,
+                              asn_value_p tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -789,9 +814,13 @@ extern int tcp_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu);
  *
  * @return zero on success or error code.
  */ 
-extern int tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
-                          const tad_tmpl_arg_t *args, size_t arg_num, 
-                          csap_pkts_p up_payload, csap_pkts_p pkts);
+extern int tcp_gen_bin_cb(csap_p                csap_descr,
+                          int                   layer,
+                          const asn_value      *tmpl_pdu,
+                          const tad_tmpl_arg_t *args,
+                          size_t                arg_num, 
+                          csap_pkts_p           up_payload,
+                          csap_pkts_p           pkts);
 
 
 /**
@@ -809,9 +838,11 @@ extern int tcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pd
  *
  * @return zero on success or error code.
  */
-extern int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pdu,
-                             const csap_pkts *  pkt, csap_pkts * payload, 
-                             asn_value_p  parsed_packet );
+extern int tcp_match_bin_cb(int csap_id, int layer,
+                            const asn_value *pattern_pdu,
+                            const csap_pkts *pkt,
+                            csap_pkts       *payload, 
+                            asn_value_p      parsed_packet);
 
 /**
  * Callback for generating pattern to filter 
@@ -826,10 +857,9 @@ extern int tcp_match_bin_cb (int csap_id, int layer, const asn_value *pattern_pd
  *
  * @return zero on success or error code.
  */
-extern int tcp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
-                               asn_value_p   *pattern_pdu);
-
-
+extern int tcp_gen_pattern_cb(int csap_id, int layer,
+                              const asn_value *tmpl_pdu, 
+                              asn_value_p *pattern_pdu);
 
 /**
  * Callback for init 'tcp' CSAP layer if over 'ip4' in stack.
@@ -841,7 +871,8 @@ extern int tcp_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu
  *
  * @return zero on success or error code.
  */ 
-extern int tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer);
+extern int tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds,
+                           int layer);
 
 /**
  * Callback for destroy 'tcp' CSAP layer if over 'ip4' in stack.
@@ -855,7 +886,7 @@ extern int tcp_ip4_init_cb (int csap_id, const asn_value *csap_nds, int layer);
  *
  * @return zero on success or error code.
  */ 
-extern int tcp_ip4_destroy_cb (int csap_id, int layer);
+extern int tcp_ip4_destroy_cb(int csap_id, int layer);
 
 
 #ifdef __cplusplus
