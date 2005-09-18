@@ -675,11 +675,11 @@ tapi_cfg_del_arp_entry(const char *ta, const void *net_addr)
 int
 tapi_cfg_del_arp_dynamic(const char *ta)
 {
-    cfg_handle *hndls = NULL;
-    int         num;
-    int         i;
-    int         rc;
-    int         result = 0;
+    cfg_handle     *hndls = NULL;
+    unsigned int    num;
+    unsigned int    i;
+    te_errno        rc;
+    te_errno        result = 0;
 
     if ((rc = cfg_find_pattern_fmt(&num, &hndls,
                                    "/agent:%s/volatile:/arp:*", ta)) != 0)
