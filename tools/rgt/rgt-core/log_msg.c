@@ -357,7 +357,7 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         SKIP_SPACES;
 
         if (args != NULL)
-            i = args - fmt_str;
+            i = args - fmt_str - 1;
         else
             i = strlen(fmt_str);
 
