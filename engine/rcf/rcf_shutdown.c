@@ -46,9 +46,13 @@
 
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "logger_ten.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"
 #include "ipc_client.h"
+
+
+DEFINE_LGR_ENTITY("RCF ShutDown");
 
 
 int
