@@ -334,10 +334,10 @@ case mod_:\
                 VFLUSH(s0, ap0);
                 if (*(s + 1) == 'm')
                 {
-                    int      len;
-                    uint8_t *base;
+                    int             len;
+                    const uint8_t  *base;
                     
-                    base = va_arg(ap, char *);
+                    base = va_arg(ap, const uint8_t *);
                     len = va_arg(ap, int);
                     /* Our own argument is not for printf(), skip it */
                     va_copy(ap0, ap);
@@ -358,11 +358,11 @@ case mod_:\
                 }
                 else if (*(s + 1) == 'f')
                 {
-                    char *filename;
-                    char  buf[1024];
-                    FILE *fp;
+                    const char *filename;
+                    char        buf[1024];
+                    FILE       *fp;
                     
-                    filename = va_arg(ap, char *);
+                    filename = va_arg(ap, const char *);
                     /* Our own argument is not for printf(), skip it */
                     va_copy(ap0, ap);
                     if ((fp = fopen(filename, "r")) == NULL)
