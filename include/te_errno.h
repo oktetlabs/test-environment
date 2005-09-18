@@ -369,20 +369,20 @@ typedef enum {
 /**
  * Convert error source from integer to readable string.
  *
- * @param src   integer source or errno (source / error code composition)
+ * @param err   integer source or errno (source / error code composition)
  *
  * @return string literal pointer
  *
  * @note non-reenterable in the case of unknown module
  */
 static inline const char * 
-te_rc_mod2str(te_module mod)
+te_rc_mod2str(te_errno err)
 {
     static char unknown_module[32];
 
 #define MOD2STR(name_) case TE_ ## name_: return #name_
 
-    switch (TE_RC_GET_MODULE(mod))
+    switch (TE_RC_GET_MODULE(err))
     {
         MOD2STR(IPC);        
         MOD2STR(COMM);        
@@ -409,7 +409,7 @@ te_rc_mod2str(te_module mod)
         case 0: return "";
         default:
             snprintf(unknown_module, sizeof(unknown_module),
-                     "Unknown(%u)", TE_RC_GET_MODULE(mod));
+                     "Unknown(%u)", TE_RC_GET_MODULE(err));
             return unknown_module;
     }
 #undef MOD2STR    
