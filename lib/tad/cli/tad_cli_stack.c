@@ -805,7 +805,7 @@ cli_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
  */ 
 int 
 cli_write_read_cb(csap_p csap_descr, int timeout,
-                  char *w_buf, size_t w_buf_len,
+                  const char *w_buf, size_t w_buf_len,
                   char *r_buf, size_t r_buf_len)
 {
     cli_csap_specific_data_p spec_data;
