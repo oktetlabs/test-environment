@@ -165,6 +165,10 @@ msg_end_process(struct te_log_out_params *param)
   * @param ap           Arguments for the format string
   *
   * @return             Error code
+  *
+  * FIXME: Read 'man va_copy'. Add missing 'va_end' calls.
+  * FIXME: Resourse leak here: fmt_dup.
+  * FIXME: Many switches below do not have 'default'. It is not good.
   */
 te_errno
 te_log_vprintf(struct te_log_out_params *param,
@@ -195,6 +199,7 @@ te_log_vprintf(struct te_log_out_params *param,
     fmt_dup = strdup(fmt);
     if (fmt_dup == NULL)
     {
+        /* FIXME: I think it is better to nothing with param */
         param->buf = NULL;
         param->buflen = 0;
         return TE_ENOMEM;
@@ -202,21 +207,26 @@ te_log_vprintf(struct te_log_out_params *param,
     
     va_copy(ap0, ap);
 
+/* FIXME: Incorrect macro definition */
 #define FLUSH(arg...) \
     if ((rc = msg_output(param, arg)) != 0)\
         return rc;
     
+/* FIXME: Incorrect macro definition */
 #define VFLUSH(arg...) \
     if ((rc = msg_va_output(param, arg)) != 0)\
         return rc;
     
-    for (s = s0 = fmt_dup; *s != 0; s++)
+    for (s = s0 = fmt_dup; *s != '\0'; s++)
     {
         if (*s != '%')
             continue;
         
         modifier = '\0'; 
         spec_start = s++;
+
+/* FIXME: Incorrect macro definition
+ * See strcmp_start() in te_defs.h */
 #define strcmp_start(s1, s2) strncmp(s1, s2, strlen(s1))
 
         /* Skip flags, field width, and precision */
@@ -242,8 +252,9 @@ te_log_vprintf(struct te_log_out_params *param,
                 s0 = spec_start;
                 *spec_start = '%';
                 modifier = *(s + 1);
-                switch(modifier)
+                switch (modifier)
                 {
+/* FIXME: Incorrect macro definition */
 #define SPEC_CPY(mod_, spec_)\
 case mod_:\
 {\
@@ -259,7 +270,8 @@ case mod_:\
 #undef SPEC_CPY                  
                     default:
                     {
-                        FLUSH(" unsupported length modifier: =%c ", s + 1);
+                        FLUSH(" unsupported length modifier: =%c ",
+                              modifier);
                         free(fmt_dup);
                         return TE_EFMT;
                     }
@@ -359,7 +371,7 @@ case mod_:\
                     }
                     while (fgets(buf, sizeof(buf), fp) != NULL)
                     {
-                        FLUSH(buf);
+                        FLUSH("%s", buf);
                     }
                     fclose(fp);                    
                 }
@@ -391,6 +403,8 @@ case mod_:\
             case 's':
             {
                 char *arg_str;
+/* FIXME: What are you doing here? */
+#if 0
                 char *fake_str;
                 int   percent_count = 0;
                 int   i;
@@ -400,7 +414,9 @@ case mod_:\
 
                 *spec_start = '\0';
                 VFLUSH(s0, ap0);
+#endif
                 arg_str = va_arg(ap, char *);
+#if 0
                 va_copy(ap0, ap);
                 
                 for (tmp = arg_str; *tmp != '\0'; tmp++)
@@ -433,6 +449,7 @@ case mod_:\
                 FLUSH("%s", fake_str);
                 free(fake_str);
                 s0 = s + 1;
+#endif
                 break;
             }
                
@@ -472,8 +489,10 @@ case mod_:\
     }
     VFLUSH(s0, ap0);
     msg_end_process(param);
+
 #undef FLUSH
 #undef VFLUSH
+
     free(fmt_dup);
 
     return 0;
