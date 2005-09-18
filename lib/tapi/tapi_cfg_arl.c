@@ -62,8 +62,8 @@ tapi_cfg_arl_get_table(const char *ta, te_bool sync, arl_table_t *p_table)
 {
     int             rc;
     cfg_handle     *handles = NULL;
-    int             num = 0;
-    int             i;
+    unsigned int    num = 0;
+    unsigned int    i;
     arl_entry_t    *p;
 
 
@@ -86,7 +86,7 @@ tapi_cfg_arl_get_table(const char *ta, te_bool sync, arl_table_t *p_table)
         ERROR("Failed(%x) to find ARL table entries", rc);
         return rc;
     }
-    VERB("ARL table contains %d entries", num);
+    VERB("ARL table contains %u entries", num);
 
     TAILQ_INIT(p_table);
     for (i = 0; i < num; ++i)
