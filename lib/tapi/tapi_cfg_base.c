@@ -302,9 +302,8 @@ tapi_cfg_del_if_addresses(const char *ta,
                           const struct sockaddr *addr_to_save)
 {
     cfg_handle   *addrs = NULL;
-    cfg_handle   *ptr; 
-    int           addr_num = 0;
-    int           i;
+    unsigned int  addr_num = 0;
+    unsigned int  i;
     char          buf[INET_ADDRSTRLEN];
     char         *addr_to_save_str = NULL;
     char         *addr_str;
@@ -342,9 +341,9 @@ tapi_cfg_del_if_addresses(const char *ta,
     }
     VERB("addr_to_save_str is %s", addr_to_save_str);
     
-    for (i = 0, ptr = addrs; i < addr_num; i++, ptr++)
+    for (i = 0; i < addr_num; i++)
     {
-        if ((rc = cfg_get_inst_name(*ptr, &addr_str)) != 0)
+        if ((rc = cfg_get_inst_name(addrs[i], &addr_str)) != 0)
         {
             ERROR("Failed to get instance name");
             break;
@@ -357,7 +356,7 @@ tapi_cfg_del_if_addresses(const char *ta,
             continue;
         }
 
-        if ((rc = cfg_del_instance(*ptr, FALSE)) != 0)
+        if ((rc = cfg_del_instance(addrs[i], FALSE)) != 0)
         {
             ERROR("Failed to delete address %s", addr_str);
             free(addr_str);
