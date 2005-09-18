@@ -63,6 +63,8 @@
 #include "logger_api.h"
 #include "logger_int.h"
 #include "logger_ten.h"
+
+#define TE_LOGGER_TEN_INTERNALS
 #include "logger_ten_int.h"
 
 
@@ -89,12 +91,6 @@ static struct ipc_client *lgr_client = NULL;
  */
 static struct te_log_out_params lgr_out;
 
-
-/** Path to the directory with TE logs */
-static const char *te_log_dir = NULL;
-
-/** Transport to log messages */
-static te_log_message_tx_f te_log_message_tx = NULL;
 
 static void ten_log_message(uint16_t level, const char *entity_name,
                             const char *user_name, const char *form_str,

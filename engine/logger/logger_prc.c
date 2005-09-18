@@ -45,7 +45,10 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "logger_api.h"
+
+#define TE_LOGGER_TEN_INTERNALS
 #include "logger_ten_int.h"
+
 #include "logger_internal.h"
 
 
@@ -56,15 +59,13 @@
 /** Mutual exclusion execution lock */
 static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
+
 /**
  * Logging output interface.
  *
  * @note It should be used under lgr_lock only.
  */
 static struct te_log_out_params lgr_out;
-
-/** Transport to log messages */
-static te_log_message_tx_f te_log_message_tx = NULL;
 
 
 /** 

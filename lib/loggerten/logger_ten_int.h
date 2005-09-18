@@ -29,6 +29,10 @@
  * $Id$
  */ 
 
+#ifndef TE_LOGGER_TEN_INTERNALS
+#error This file may be included from Logger TEN internals only
+#endif
+
 #ifndef __TE_LOGGER_TEN_INT_H__
 #define __TE_LOGGER_TEN_INT_H__
 
@@ -108,51 +112,19 @@ extern "C" {
 /** Log message transport */
 typedef void (* te_log_message_tx_f)(const void *msg, size_t len);
 
-/**
- * Buffer for log message.
- *
- * @note It should be used under lgr_lock only.
- */
 
-/** Directory with TE logs */
-extern const char *te_log_dir;
-/** Current log message transport */
-extern te_log_message_tx_f te_log_message_tx;
+/** Transport to log messages */
+static te_log_message_tx_f te_log_message_tx = NULL;
+
+/** Path to the directory with TE logs */
+static const char *te_log_dir = NULL;
 
 
 /* See description below */
-static inline void log_message_va(struct te_log_out_params *out,
-                                  uint16_t level, const char *entity_name,
-                                  const char *user_name,
-                                  const char *form_str, va_list ap);
-
-/**
- * Write contents of the file to another file descriptor.
- *
- * @param out       Destination file descriptor
- * @param filename  Name of the source file
- *
- * @retval 0        Success
- * @retval -1       Failure
- */
-static inline int
-write_file_to_fd(int out, const char *filename)
-{
-    uint8_t buf[1024];
-    int     in = open(filename, O_RDONLY);
-    ssize_t r;
-
-    while ((r = read(in, buf, sizeof(buf))) > 0)
-    {
-        if (write(out, buf, r) != r)
-        {
-            errno = EIO;
-            return -1;
-        }
-    }
-    
-    return r;
-}
+static void log_message_va(struct te_log_out_params *out,
+                           uint16_t level, const char *entity_name,
+                           const char *user_name,
+                           const char *form_str, va_list ap);
 
 /**
  * Internal function for logging. It has the same prototype as
@@ -161,7 +133,7 @@ write_file_to_fd(int out, const char *filename)
  * @attention It calls log_message_va(), therefore it may be called
  *            from log_message_va() just before exit.
  */
-static inline void
+static void
 log_message_int(struct te_log_out_params *out, uint16_t level,
                 const char *entity_name, const char *user_name,
                 const char *form_str, ...)
@@ -185,7 +157,7 @@ log_message_int(struct te_log_out_params *out, uint16_t level,
  * @param  ap           Arguments passed into the function according to
  *                      raw log format string description.
  */
-static inline void
+static void
 log_message_va(struct te_log_out_params *out, uint16_t level,
                const char *entity_name, const char *user_name,
                const char *form_str, va_list ap)
