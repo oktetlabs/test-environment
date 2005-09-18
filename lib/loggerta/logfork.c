@@ -445,7 +445,7 @@ convert_msg(char *buf, int buflen, const char *fmt, va_list ap)
 {
     struct te_log_out_params cm = {NULL, buf, buflen, 0};
 
-    return te_log_vprintf(&cm, fmt, ap);
+    (void)te_log_vprintf(&cm, fmt, ap);
 }
 
 /** 
