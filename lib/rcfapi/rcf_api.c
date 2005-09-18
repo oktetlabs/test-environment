@@ -2340,7 +2340,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
  *                      specified CSAP and TA. 
  * @param csap_id       CSAP handle
  * @param num           location where number of received packets 
- *                      should be placed
+ *                      should be placed or NULL
  * @param opcode        RCFOP_TRRECV_STOP, RCFOP_TRRECV_WAIT or 
  *                      RCFOP_TRRECV_GET
  *
@@ -2359,7 +2359,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     void           *user_param;
     RCF_API_INIT;
     
-    if (BAD_TA || num == NULL)
+    if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
@@ -2434,7 +2434,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         }
     }
     
-    if (msg.error == 0 || opcode != RCFOP_TRRECV_GET)
+    if ((num != NULL) && (msg.error == 0 || opcode != RCFOP_TRRECV_GET))
         *num = msg.num;
 
     if (tr_op != NULL)
@@ -2450,7 +2450,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
          */
         remove_traffic_op(ta_name, csap_id);
     }
-    if (msg.error)
+    if (msg.error != 0)
         WARN("RCF traffic operation fails with status code %r", msg.error);
     
     return msg.error;
@@ -2473,7 +2473,7 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
 
     RING("Finished receive operation on the CSAP %d (%s:%d) got %d "
          "packets : %r", csap_id, ta_name, session,
-         (num == NULL) ? -1: *num, rc);
+         (num == NULL) ? -1 : *num, rc);
 
     return rc;
 }
