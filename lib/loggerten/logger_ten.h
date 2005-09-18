@@ -33,12 +33,14 @@
 
 #ifndef __TE_LOGGER_TEN_H__
 #define __TE_LOGGER_TEN_H__
-    
+
+#include "te_defs.h"
+#include "logger_api.h"
+
+
 #ifdef _cplusplus
 extern "C" {
 #endif
-
-#include "logger_api.h"
 
 /** Discover name of the Logger IPC server */
 static inline const char *
