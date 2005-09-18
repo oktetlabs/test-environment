@@ -1774,8 +1774,8 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
 
     char       *pattern_name;
 
-    int         num;
-    cfg_handle *instances;
+    unsigned int    num;
+    cfg_handle     *instances;
 
     if (handle == CFG_HANDLE_INVALID)
     {
