@@ -64,8 +64,8 @@
 int
 tapi_cfg_net_get_nets(cfg_nets_t *nets)
 {
-    int             rc;
-    int             n_nets;
+    te_errno        rc;
+    unsigned int    n_nets;
     cfg_handle     *net_handles;
     unsigned int    i;
 
@@ -95,7 +95,7 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
     {
         cfg_net_t      *net = nets->nets + i;
         char           *net_oid;
-        int             n_nodes;
+        unsigned int    n_nodes;
         cfg_handle     *node_handles;
         unsigned int    j;
 
@@ -261,10 +261,10 @@ tapi_cfg_net_get_pairs(enum net_node_type first,
 int
 tapi_cfg_net_find_net_by_node(const char *oid, char *net)
 {
-    int         rc;
-    int         net_num;
-    cfg_handle *net_handles = NULL;
-    int         i;
+    te_errno        rc;
+    unsigned int    net_num;
+    cfg_handle     *net_handles = NULL;
+    unsigned int    i;
 
 
     /* Get handles of all nodes in all networks */
@@ -277,10 +277,10 @@ tapi_cfg_net_find_net_by_node(const char *oid, char *net)
 
     for (i = 0, rc = TE_ESRCH; i < net_num; ++i, rc = TE_ESRCH)
     {
-        char       *net_name;
-        int         node_num;
-        cfg_handle *node_handles = NULL;
-        int         j;
+        char           *net_name;
+        unsigned int    node_num;
+        cfg_handle     *node_handles = NULL;
+        unsigned int    j;
 
         rc = cfg_get_inst_name(net_handles[i], &net_name);
         if (rc != 0)
