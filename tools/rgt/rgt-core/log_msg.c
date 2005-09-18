@@ -290,6 +290,8 @@ create_node_by_msg(log_msg *msg, node_type_t type,
     param       **p_prm;
     const char   *node_type_str;
     char         *fmt_str;
+    char         *args;
+    char         *authors;
     int           i;
 
     if ((node = alloc_node_info()) == NULL)
@@ -311,17 +313,30 @@ create_node_by_msg(log_msg *msg, node_type_t type,
     }
     fmt_str += strlen(node_type_str);
     
-    /* Skip all the spaces */
-    while (isspace(*fmt_str))
-        fmt_str++;
-    for (i = 0; !isspace(fmt_str[i]); i++);
-    
-    node->descr.name = (char *)node_info_obstack_copy0(fmt_str, i);
-    fmt_str += i;
+#define SKIP_SPACES \
+    do {                            \
+        /* Skip all the spaces */   \
+        while (isspace(*fmt_str))   \
+            fmt_str++;              \
+    } while (0)
 
-    /* Skip all the spaces */
-    while (isspace(*fmt_str))
-        fmt_str++;
+    SKIP_SPACES;
+    authors = strstr(fmt_str, "AUTHORS");
+    args    = strstr(fmt_str, "ARGs");
+
+    /* 
+     * If it is not an authors list, not an arguments list and it is
+     * not started with double quote, it MUST be a name.
+     */
+    if (fmt_str != authors && fmt_str != args && *fmt_str != '\"')
+    {
+        for (i = 0; !isspace(fmt_str[i]); i++);
+    
+        node->descr.name = (char *)node_info_obstack_copy0(fmt_str, i);
+        fmt_str += i;
+
+        SKIP_SPACES;
+    }
 
     if (*fmt_str == '\"')
     {
@@ -330,53 +345,41 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         node->descr.objective = 
                 (char *)node_info_obstack_copy0(fmt_str, i + 1);
         fmt_str += i + 1;
-    }
-    
-    /* Skip all the spaces */
-    while (isspace(*fmt_str))
-        fmt_str++;
 
-    if (strncmp(fmt_str, "AUTHORS", strlen("AUTHORS")) == 0)
+        SKIP_SPACES;
+    }
+
+    if (fmt_str == authors)
     {
         /* Process "authors" clause */
         fmt_str += strlen("AUTHORS");
 
-        /* Skip all the spaces */
-        while (isspace(*fmt_str))
-            fmt_str++;
+        SKIP_SPACES;
 
-        for (i = 0; fmt_str != '\0' &&
-             strncmp(fmt_str + i, "ARGs", strlen("ARGs")) != 0; i++);
+        if (args != NULL)
+            i = args - fmt_str;
+        else
+            i = strlen(fmt_str);
 
         node->descr.authors = (char *)node_info_obstack_copy0(fmt_str, i);
-        
-        while (isspace(*node->descr.authors))
-            node->descr.authors++;
-
         fmt_str += i;
+
+        SKIP_SPACES;
     }
-    
-    /* Skip all the spaces */
-    while (isspace(*fmt_str))
-        fmt_str++;
 
     p_prm = &(node->params);
-    if (strncmp(fmt_str, "ARGs", strlen("ARGs")) == 0)
+    if (fmt_str == args)
     {
         /* Process "args" clause */
         fmt_str += strlen("ARGs");
 
-        /* Skip all the spaces */
-        while (isspace(*fmt_str))
-            fmt_str++;
+        SKIP_SPACES;
 
         fmt_str = (char *)node_info_obstack_copy0(fmt_str, strlen(fmt_str));
 
         while (*fmt_str != '\0')
         {
-            /* Skip spaces */
-            while (isspace(*fmt_str))
-                fmt_str++;
+            SKIP_SPACES;
             
             *p_prm = (param *)node_info_obstack_alloc(sizeof(param));
             (*p_prm)->name = fmt_str;
@@ -417,6 +420,8 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         }
     }
     *p_prm = NULL;
+
+#undef SKIP_SPACES
 
     return node;
 }
