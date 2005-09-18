@@ -143,7 +143,8 @@ typedef struct tapi_rt_entry {
  * with free() by the caller.
  */
 extern int tapi_cfg_get_route_table(const char *ta, int addr_family,
-                                    tapi_rt_entry_t **rt_tbl, int *n);
+                                    tapi_rt_entry_t **rt_tbl,
+                                    unsigned int *n);
 
 /**
  * Add a new route to some destination address with a lot of additional 

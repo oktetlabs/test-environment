@@ -458,7 +458,7 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
 /* See the description in tapi_cfg.h */
 int
 tapi_cfg_get_route_table(const char *ta, int addr_family,
-                         tapi_rt_entry_t **rt_tbl, int *n)
+                         tapi_rt_entry_t **rt_tbl, unsigned int *n)
 {
     int              rc;
     cfg_handle       handle1;
@@ -466,7 +466,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     cfg_handle      *handles;
     tapi_rt_entry_t *tbl;
     char            *rt_name = NULL;
-    int              num;
+    unsigned int     num;
     int              i;
     
     UNUSED(addr_family);
