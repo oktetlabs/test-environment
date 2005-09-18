@@ -37,15 +37,16 @@
 #include <sys/types.h>
 #endif
 
+#include "te_stdint.h"
 #include "te_errno.h"
 
 
 /** Parameters for te_log_vprintf() function */
 struct te_log_out_params {
-    FILE   *fp;     /**< Output file; if NULL, no file output */
-    char   *buf;    /**< Output buffer; if NULL, no buffer output */
-    size_t  buflen; /**< Buffer length; for NULL buffer must be 0 */
-    size_t  offset; /**< Offset where output should begin */
+    FILE       *fp;     /**< Output file; if NULL, no file output */
+    uint8_t    *buf;    /**< Output buffer; if NULL, no buffer output */
+    size_t      buflen; /**< Buffer length; for NULL buffer must be 0 */
+    size_t      offset; /**< Offset where output should begin */
 };
 
 /**
