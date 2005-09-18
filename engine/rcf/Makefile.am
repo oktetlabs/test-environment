@@ -22,10 +22,9 @@ te_rcf_DEPENDENCIES = @TE_DEPENDENCIES@ \
 
 te_rcf_shutdown_SOURCES = rcf_shutdown.c
 
-te_rcf_shutdown_LDADD = -lrcfapi -llogger_ten -lipc -ltools -lpthread
+te_rcf_shutdown_LDADD = -llogger_ten -lipc -ltools -lpthread
 
-te_rcf_shutdown_DEPENDENCIES = $(DESTDIR)/$(prefix)/lib/librcfapi.a \
-                               $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
+te_rcf_shutdown_DEPENDENCIES = $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                                $(DESTDIR)/$(prefix)/lib/libipc.a \
                                $(DESTDIR)/$(prefix)/lib/libtools.a
 
@@ -35,10 +34,9 @@ te_rcf_tadead_SOURCES = rcf_tadead.c
 # Use static linkage for tool to be used by human
 te_rcf_tadead_LDFLAGS = -static
 
-te_rcf_tadead_LDADD = -lrcfapi -llogger_ten -lipc -ltools -lpthread
+te_rcf_tadead_LDADD = -llogger_ten -lipc -ltools -lpthread
 
-te_rcf_tadead_DEPENDENCIES = $(DESTDIR)/$(prefix)/lib/librcfapi.a \
-                             $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
+te_rcf_tadead_DEPENDENCIES = $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                              $(DESTDIR)/$(prefix)/lib/libipc.a \
                              $(DESTDIR)/$(prefix)/lib/libtools.a
 
