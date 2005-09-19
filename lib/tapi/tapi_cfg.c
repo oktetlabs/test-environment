@@ -467,7 +467,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     tapi_rt_entry_t *tbl;
     char            *rt_name = NULL;
     unsigned int     num;
-    int              i;
+    unsigned int     i;
     
     UNUSED(addr_family);
 
