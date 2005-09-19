@@ -14,5 +14,5 @@ tetest_PROGRAMS = simple establish
 
 LDADD = -ltapi_rpc -ltapi_iscsi -ltapi_ipstack -ltapi_arp -ltapi_eth \
 	-ltapi_tad -lndn -lasn -ltapi -lrcfrpc -lrcfapi -lrpcxdr \
-	-lconfapi -lconf_oid -lipc -lpthread -llogger_ten  -ltools
+	-lconfapi -lconf_oid -llogger_ten -lipc -ltools -lpthread
 
