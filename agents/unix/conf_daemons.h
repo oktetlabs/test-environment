@@ -104,7 +104,7 @@ file_exists(char *file)
     return stat(file, &st) == 0;
 }
 
-/** Register daemon/servic in the configuration tree */
+/** Register daemon/service in the configuration tree */
 #define DS_REGISTER(_ds) \
     do {                                   \
         (*last)->brother = &node_ds_##_ds; \
