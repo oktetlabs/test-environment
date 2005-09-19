@@ -2498,7 +2498,7 @@ arp_get(unsigned int gid, const char *oid, char *value,
             }
             else
             {
-                if (!(volatile_entry ^ (flags & ATF_PERM)))
+                if (volatile_entry == !!(flags & ATF_PERM))
                 {
                     ERROR("%s ARP entry %s ATF_PERM flag",
                           volatile_entry ? "Volatile" : "Non-volatile",
@@ -2704,7 +2704,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
 
         fscanf(fp, "%s %x", trash, &flags);
         if ((flags & ATF_COM) &&
-            (volatile_entry ^ (flags & ATF_PERM)))
+            (volatile_entry != !!(flags & ATF_PERM)))
         {
             sprintf(ptr + strlen(ptr), " ");
             ptr += strlen(ptr);
