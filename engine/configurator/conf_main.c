@@ -676,6 +676,12 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
             ERROR("%s: rcf_ta_cfg_del returns %r", __FUNCTION__, msg->rc);
             if (update_dh)
                 cfg_dh_delete_last_command();
+            else if (TE_RC_GET_ERROR(msg->rc) == ENOENT)
+            {
+                msg->rc = 0;
+                cfg_db_del(handle); /* During restoring backup the entry
+                                       disappears */
+            }
             return;
         }
         VERB("Instance %s successfully deleted from the Agent", inst->name);
