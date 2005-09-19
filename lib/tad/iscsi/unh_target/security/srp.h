@@ -30,7 +30,7 @@
 #ifndef SRP_H
 #define SRP_H
 
-#include "../misc/misc_func.h"
+#include "misc_func.h"
 
 /*	number of SRP groups supported */
 #define	SRP_N_GROUPS					5

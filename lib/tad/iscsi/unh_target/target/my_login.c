@@ -1,12 +1,46 @@
-/**
- * This program is my software !!!!!!!!!!!
+/** @file
+ * @brief Test Environment: 
  *
- * Don't even read it, or you'll die in a week.
+ * iSCSI target emulator (based on the UNH kernel iSCSI target)
+ * 
+ * Copyright (C) 2001-2004 InterOperability Lab (IOL)
+ *                         University of New Hampshier (UNH)
+ *                         Durham, NH 03824
+ *
+ * Copyright (C) 2005 Test Environment authors (see file AUTHORS in the
+ * root directory of the distribution).
+ *
+ * Test Environment is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * Test Environment is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ * The name IOL and/or UNH may not be used to endorse or promote products
+ * derived from this software without specific prior written permission.
+ *
+ * Author: Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
+ * Author: Artem Andreev      <Artem.Andreev@oktetlabs.ru>
+ *
+ * $Id$
  */
 
+#include <te_config.h>
+#include <te_defs.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <signal.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -14,29 +48,24 @@
 #include <pthread.h>
 
 #include "../common/list.h"
-#include "../common/iscsi_common.h"
+#include <iscsi_common.h>
 #include "../common/debug.h"
-#include "../common/range.h"
-#include "../common/crc.h"
-#include "../common/tcp_utilities.h"
-#include "../security/misc/misc_func.h"
-#include "../security/chap/chap.h"
-#include "../security/srp/srp.h"
+#include <range.h>
+#include <crc.h>
+#include <tcp_utilities.h>
+#include <misc_func.h>
+#include <chap.h>
+#include <srp.h>
 
-#include "../common/text_param.h"
-#include "../common/target_negotiate.h"
+#include <text_param.h>
+#include <target_negotiate.h>
 #include "scsi_target.h"
+#include "iscsi_target.h"
 #include "iscsi_portal_group.h"
 
-#include "../userland_lib/my_memory.h"
+#include <my_memory.h>
 
 #include "my_login.h"
-
-#define tprintf(args,...) \
-    do {                        \
-        printf(args);           \
-        printf("\n");           \
-    } while(0)
 
 /** Pointer to the device specific data */
 static struct iscsi_global *devdata;
@@ -62,6 +91,401 @@ iscsi_release_connection(struct iscsi_conn *conn)
     my_free(((void *)&conn));
     return 0;                                                                     
 }
+
+static void
+free_data_list(struct iscsi_cmnd *cmnd)
+{
+    struct data_list *data;
+
+    while ((data = cmnd->unsolicited_data_head)) {
+        cmnd->unsolicited_data_head = data->next;
+        my_free((void **)&data->buffer);
+        my_free((void **)&data);
+    }
+}
+
+
+/*
+ * iscsi_release_session: This function is responsible for closing out
+ * a session and removing it from whatever list it is on.
+ * host->session_sem MUST be locked before this routine is called.
+ * INPUT: session to be released
+ * OUTPUT: 0 if success, < 0 if there is trouble
+ */
+int
+iscsi_release_session(struct iscsi_session *session)
+{
+    struct iscsi_cmnd *cmnd;
+    struct iscsi_conn *conn;
+    struct list_head *list_ptr, *list_temp;
+
+    if (!session) {
+        TRACE_ERROR("Cannot release a NULL session\n");
+        return -1;
+    }
+
+    if (TRACE_TEST(TRACE_ISCSI)) {
+        print_isid_tsih_message(session, "Release session with ");
+    }
+
+    TRACE(TRACE_DEBUG, "Releasing R2T timer %p for session %p\n",
+          session->r2t_timer, session);
+
+    /* Delete r2t timer - SAI */
+    if (session->r2t_timer) {
+#if 0
+        TRACE(TRACE_DEBUG, "Deleting r2t timer %p\n", session->r2t_timer);
+        del_timer_sync(session->r2t_timer);
+        TRACE(TRACE_DEBUG, "Deleted r2t timer\n");
+        my_free((void**)&session->r2t_timer);
+#endif
+    }
+
+    /* free commands */
+    while ((cmnd = session->cmnd_list)) {
+        session->cmnd_list = cmnd->next;
+
+        if (cmnd->cmnd != NULL) {
+            if (scsi_release(cmnd->cmnd) < 0) {
+                TRACE_ERROR("Trouble releasing command, opcode 0x%02x, "
+                            "ITT %u, state 0x%x\n", 
+                            cmnd->opcode_byte, cmnd->init_task_tag,
+                            cmnd->state);
+            }
+        }
+        /* free data_list if any, cdeng */
+        free_data_list(cmnd);
+        my_free((void**)&cmnd->ping_data);
+        my_free((void**)&cmnd);
+    }
+
+    /* free connections */
+    list_for_each_safe(list_ptr, list_temp, &session->conn_list) {
+        conn = list_entry(list_ptr, struct iscsi_conn, conn_link);
+        TRACE(TRACE_ISCSI, "iscsi%d: releasing connection %d\n", (int)
+              session->devdata->device->id, conn->conn_id);
+
+        if (iscsi_release_connection(conn) < 0) {
+            TRACE_ERROR("Trouble releasing connection\n");
+        }
+    }
+
+    /* dequeue session if it is linked into some list */
+    if (!list_empty(&session->sess_link)) {
+        list_del(&session->sess_link);
+
+        /* error recovery ver new 18_04 - SAI */
+        if (session->retran_thread) {
+#if 0
+            /*  Mike Christie mikenc@us.ibm.com */
+            send_sig(ISCSI_SHUTDOWN_SIGNAL, session->retran_thread, 1);
+            sem_wait(&session->thr_kill_sem);
+#endif
+        }
+    }
+
+    /* free session structures */
+    my_free((void**)&session->session_params);
+
+    my_free((void**)&session->oper_param);
+
+    my_free((void**)&session);
+
+    return 0;
+}
+
+/*
+ * executed only by the tx thread.
+ * iscsi_tx_data: will transmit a fixed-size PDU of any type.
+ * INPUT: struct iscsi_conn (what connection), struct iovec, number of iovecs,
+ * total amount of data in bytes,
+ * iovec[0] must be the 48-byte PDU header.
+ * iovec[1] (if header digests are in use, calculate it in this function)
+ * iovec[...] the data
+ * iovec[niov-1] (if data digests are in use, calculate it in this function)
+ * OUTPUT: int total bytes written if everything is okay
+ *         < 0 if trouble
+ */
+int
+iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
+{
+
+# ifdef DEBUG_DATA
+    int i, j;
+    struct iovec *debug_iov;
+    uint8_t *to_print;
+# endif
+
+    struct msghdr msg;
+    int msg_iovlen;
+    int total_tx, tx_loop;
+    uint32_t hdr_crc, data_crc;
+    int data_len, k;
+    struct iovec *iov_copy, *iov_ptr;
+    struct generic_pdu *pdu;
+
+    if (!conn->conn_socket) {
+        TRACE_ERROR("NULL conn_socket\n");
+        return -1;
+    }
+# ifdef DEBUG_DATA
+    TRACE(TRACE_DEBUG, "iscsi_tx_data: iovlen %d\n", niov);
+
+    debug_iov = iov;
+
+    for (i = 0; i < niov; i++) {
+        to_print = (uint8_t *) debug_iov->iov_base;
+
+        for (j = 0; ((j < debug_iov->iov_len) && (j < 64)); j++) {
+            TRACE(TRACE_DEBUG, "%.2x ", to_print[j]);
+
+            if (((j + 1) % 16) == 0)
+                TRACE(TRACE_DEBUG, "\n");
+            else if (((j + 1) % 4) == 0)
+                TRACE(TRACE_DEBUG, "    ");
+        }
+
+        TRACE(TRACE_DEBUG, "\n");
+
+        debug_iov++;
+    }
+# endif
+
+    /* compute optional header digest */
+    if (conn->hdr_crc) {
+        hdr_crc = 0;
+        do_crc(iov[0].iov_base, ISCSI_HDR_LEN, &hdr_crc);
+
+        iov[1].iov_base = &hdr_crc;
+        iov[1].iov_len = CRC_LEN;
+        TRACE(TRACE_ISCSI_FULL, "Send header crc 0x%08x\n", ntohl(hdr_crc));
+    }
+
+    /* compute optional data digest */
+    if (conn->data_crc && niov > conn->hdr_crc + 2) {
+        data_len = 0;
+        data_crc = 0;
+        for (k = conn->hdr_crc + 1; k < niov - 1; k++) {
+            do_crc(iov[k].iov_base, iov[k].iov_len, &data_crc);
+            data_len += iov[k].iov_len;
+        }
+
+        iov[niov - 1].iov_base = &data_crc;
+        iov[niov - 1].iov_len = CRC_LEN;
+        TRACE(TRACE_ISCSI_FULL, "Send data len %d, data crc 0x%08x\n",
+              data_len, ntohl(data_crc));
+    }
+
+    iov_copy =
+        (struct iovec *)malloc(niov * sizeof(struct iovec));
+    if (iov_copy == NULL)
+        return -1;
+
+    total_tx = 0;
+    while (total_tx < data) {
+        /* get a clean copy of the original io vector to work with */
+        memcpy(iov_copy, iov, niov * sizeof(struct iovec));
+        msg_iovlen = niov;
+        iov_ptr = iov_copy;
+
+        if ((tx_loop = total_tx)) {
+            TRACE(TRACE_ISCSI,
+                  "iscsi_tx_data: data %d not completed, recompute iov\n",data);
+            do {
+                if (iov_ptr->iov_len <= tx_loop) {
+                    tx_loop -= iov_ptr->iov_len;
+                    iov_ptr++;
+                    msg_iovlen--;
+                } else {
+                    iov_ptr->iov_base += tx_loop;
+                    iov_ptr->iov_len -= tx_loop;
+                    tx_loop = 0;
+                }
+            } while (tx_loop);
+            TRACE(TRACE_ISCSI, "sock_sendmsg total_tx %d, data %d, niov %d, "
+                               "msg_iovlen %d\n",
+                               total_tx, data, niov, msg_iovlen);
+        }
+
+        memset(&msg, 0, sizeof(struct msghdr));
+        msg.msg_iov = iov_ptr;
+        msg.msg_iovlen = msg_iovlen;
+        msg.msg_flags = MSG_NOSIGNAL;
+
+        TRACE(TRACE_DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d\n",
+              niov, data, total_tx);
+
+        tx_loop = sendmsg(conn->conn_socket, &msg, (data - total_tx));
+
+        if (tx_loop <= 0) {
+            pdu = (struct generic_pdu *)iov[0].iov_base;
+            TRACE_ERROR("sock_sendmsg error %d, total_tx %d, data %d, niov "
+                        "%d, msg_iovlen %d, op 0x%02x, flags 0x%02x, ITT %u\n",
+                        tx_loop, total_tx, data, niov,
+                        msg_iovlen, pdu->opcode, pdu->flags,
+                        ntohl(pdu->init_task_tag));
+            my_free((void**)&iov_copy);
+            return tx_loop;
+        }
+
+        total_tx += tx_loop;
+        TRACE(TRACE_DEBUG, "iscsi_tx_data: tx_loop %d total_tx %d\n", tx_loop,
+              total_tx);
+    }
+
+    my_free((void**)&iov_copy);
+    return total_tx;
+}
+
+/*
+ * executed only by the tx thread.
+ * RDR
+ */
+static int
+send_hdr_plus_1_data(struct iscsi_conn *conn, void *iscsi_hdr,
+                     void *data_buf, int data_len)
+{
+    struct iovec iov[5];
+    int niov, total_size, padding, retval;
+    int pad_bytes = 0;
+    
+    /* set up the header in the first iov slot */
+    iov[0].iov_base = iscsi_hdr;
+    iov[0].iov_len = ISCSI_HDR_LEN;
+    total_size = ISCSI_HDR_LEN;
+    niov = 1;                   /* one for the header */
+
+    if (conn->hdr_crc) {
+        /* set up the header digest in the second iov slot */
+        iov[niov].iov_len = CRC_LEN;
+        total_size += CRC_LEN;
+        niov++;                 /* one for header digest */
+    }
+
+    if (data_len) {
+        /* set up the data in the next iov slot */
+        iov[niov].iov_base = data_buf;
+        iov[niov].iov_len = data_len;
+        total_size += data_len;
+        niov++;                     /* one for data */
+
+        padding = (-data_len) & 3;
+        if (padding) {
+            /* set up the data padding in the next iov slot */
+            iov[niov].iov_base = &pad_bytes;
+            iov[niov].iov_len = padding;
+            total_size += padding;
+            niov++;                 /* one for padding */
+            TRACE(TRACE_DEBUG, "padding attached: %d bytes\n", padding);
+        }
+
+        if (conn->data_crc) {
+            /* set up the data digest in the next iov slot */
+            iov[niov].iov_len = CRC_LEN;
+            total_size += CRC_LEN;
+            niov++;                 /* one for data digest */
+        }
+    }
+
+    retval = iscsi_tx_data(conn, iov, niov, total_size);
+
+    if (retval != total_size) {
+        TRACE_ERROR("Trouble in iscsi_tx_data, expected %d bytes, got %d\n",
+                    total_size, retval);
+        retval = -1;
+    }
+
+    return retval;
+}
+
+/*
+ * executed only by the tx thread.
+ * RDR
+ */
+static inline int
+send_hdr_only(struct iscsi_conn *conn, void *iscsi_hdr)
+{
+    return send_hdr_plus_1_data(conn, iscsi_hdr, NULL, 0);
+}
+
+
+/*
+ * This is executed only by the rx thread, NOT the tx thread as name implies!!!
+ * During a login, this is called by the rx thread to send a login reject pdu.
+ * The status_class parameter MUST not be zero.
+ * Therefore, conn->session will not be valid when called by rx thread.
+ * relevant parts of the standard are:
+ *
+ * Draft 20 section 5.3.1 Login Phase Start
+ *  "-Login Response with Login reject. This is an immediate rejection from
+ *  the target that causes the connection to terminate and the session to
+ *  terminate if this is the first (or only) connection of a new session.
+ *  The T bit and the CSG and NSG fields are reserved."
+ *
+ * Draft 20 section 10.13.1 Version-max
+ *  "All Login responses within the Login Phase MUST carry the same
+ *  Version-max."
+ *
+ * Draft 20 section 10.13.2 Version-active
+ *  "All Login responses within the Login Phase MUST carry the same
+ *  Version-active."
+ *
+ * Draft 20 section 10.13.3 TSIH
+ *  "With the exception of the Login Final-Response in a new session,
+ *  this field should be set to the TSIH provided by the initiator in
+ *  the Login Request."
+ *
+ * Draft 20 section 10.13.4 StatSN
+ *  "This field is only valid if the Status-Class is 0."
+ *
+ * Draft 20 section 10.13.5 Status-Class and Status-Detail
+ *  "0 - Success - indicates that the iSCSI target successfully received,
+ *  "understood, and accepted the request. The numbering fields (StatSN,
+ *  ExpCmdSN, MaxCmdSN) are only valid if Status-Class is 0."
+ */
+static int
+iscsi_tx_login_reject(struct iscsi_conn *conn,
+                   struct iscsi_init_login_cmnd *pdu,
+                   uint8_t status_class, uint8_t status_detail)
+{
+    uint8_t iscsi_hdr[ISCSI_HDR_LEN];
+    struct iscsi_targ_login_rsp *hdr;
+
+    /* most fields in the Login reject header are zero (reserved) */
+    memset(iscsi_hdr, 0x0, ISCSI_HDR_LEN);
+    hdr = (struct iscsi_targ_login_rsp *) iscsi_hdr;
+
+    hdr->opcode = ISCSI_TARG_LOGIN_RSP;
+
+    /* the T bit and CSG and NSG fields are reserved on a Login reject */
+
+    hdr->version_max = ISCSI_MAX_VERSION;
+    hdr->version_active = ISCSI_MIN_VERSION;
+
+    /* there is no data attached to this login reject */
+
+    memcpy(hdr->isid, pdu->isid, 6);
+    hdr->tsih = htons(pdu->tsih);
+    hdr->init_task_tag = htonl(pdu->init_task_tag);
+
+    /* The numbering fields (StatSN, ExpCmdSn, MaxCmdSN) are only valid if
+     * Status-Class is 0, which it is not on a Login reject */
+
+    hdr->status_class = status_class;
+    hdr->status_detail = status_detail;
+
+    if (send_hdr_only(conn, iscsi_hdr) < 0) {
+        return -1;
+    }
+
+    TRACE(TRACE_ISCSI, "%s login response sent\n", current->comm);
+
+    if (TRACE_TEST(TRACE_ISCSI_FULL))
+        print_targ_login_rsp(hdr);
+
+    return 0;
+}
+
 
 /**
  * Handles the Login Request from the Initiator. Security parameters 
@@ -138,6 +562,94 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
 
         /* set flags to allow keys for new session (leading) login */
         when_called = LEADING_ONLY | INITIAL_ONLY | ALL;
+    }
+    else
+    {
+        te_bool               found = FALSE;
+        struct list_head     *list_ptr;
+        struct iscsi_session *temp;
+        struct iscsi_conn    *temp_conn;
+
+        /* existing session, check through the session list to find it */
+        list_for_each(list_ptr, &conn->dev->session_list) {
+            session = list_entry(list_ptr, struct iscsi_session, sess_link);
+            if (session->tsih == pdu->tsih) {
+                found = TRUE;
+                break;
+            }
+        }
+
+        if (!found) {
+            TRACE_ERROR("No existing session with TSIH %u, "
+                        "terminate this connection\n",
+                        pdu->tsih);
+            goto err_conn_out;
+        }
+
+        if (conn->portal_group_tag != session->portal_group_tag) {
+            TRACE_ERROR("Portal group tag %u for new connection does "
+                        "not match portal group tag %u of session\n",
+                        conn->portal_group_tag,
+                        session->portal_group_tag);
+
+            iscsi_tx_login_reject(conn, pdu, STAT_CLASS_INITIATOR,
+                                  STAT_DETAIL_NOT_INCLUDED);
+            goto err_conn_out;
+        }
+
+        /* check isid */
+        if (memcmp(pdu->isid, session->isid, 6) != 0) {
+            TRACE_ERROR("The session has a different ISID, "
+                        "terminate the connection\n");
+
+            iscsi_tx_login_reject(conn, pdu, STAT_CLASS_INITIATOR,
+                                  STAT_DETAIL_ERR);
+            goto err_conn_out;
+        }
+
+        conn->cid = pdu->cid;
+        conn->stat_sn = pdu->exp_stat_sn;
+
+        /* check cid, and if it already exists then release old connection */
+        list_for_each(list_ptr, &session->conn_list) {
+            temp_conn = list_entry(list_ptr, struct iscsi_conn, conn_link);
+            if (temp_conn->cid == conn->cid) {
+                TRACE(TRACE_ISCSI, "connection reinstatement with cid %u\n",
+                      conn->cid);
+
+                if (iscsi_release_connection(temp_conn) < 0) {
+                    TRACE_ERROR("Error releasing connection\n");
+                }
+                break;
+            }
+        }
+
+        TRACE(TRACE_ISCSI, "new connection cid %u attached to "
+                "existing session tsih %u, IP 0x%08x\n",
+              conn->cid, pdu->tsih,
+              ((struct sockaddr_in *)conn->ip_address)->sin_addr.s_addr);
+
+        /* add new connection to end of connection list for existing session */
+        temp = conn->session;
+        conn->session = session;
+        list_del(&conn->conn_link);
+        temp->nconn = 0;
+        list_add_tail(&conn->conn_link, &session->conn_list);
+        session->nconn++;
+
+        /* use clean parameter table for negotiations, free it later */
+        temp_params = this_param_tbl;
+        temp->session_params = NULL;
+
+        /* free up the no-longer-needed session structure */
+        iscsi_release_session(temp);
+
+        /* set back the leading-only keys if these keys were set to
+         * " KEY_TO_BE_NEGOTIATED" in the leading connection negotation.*/
+        reset_parameter_table(*this_param_tbl);
+
+        /* set flags to allow keys for new connection (only) login */
+        when_called = INITIAL_ONLY | ALL;
     }
 
     sem_post(&host->session_sem);
@@ -385,7 +897,7 @@ create_socket_pair(int *pipe)
     rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, pipe);
     if (rc != 0)
     {
-        tprintf("Failed to create sync pipe");
+        fputs("Failed to create sync pipe\n", stderr);
         return 1;
     }
 

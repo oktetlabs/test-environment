@@ -35,7 +35,7 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 
-#include "../userland_lib/my_memory.h"
+#include "my_memory.h"
 #include "iscsi_common.h"
 #include "debug.h"
 #include "range.h"

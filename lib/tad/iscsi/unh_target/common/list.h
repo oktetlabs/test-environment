@@ -290,7 +290,6 @@ static inline void list_splice_init(struct list_head *list,
 	for (pos = (head)->next, n = pos->next; pos != (head); \
 		pos = n, n = pos->next)
 
-#if 0
 /**
  * list_for_each_entry	-	iterate over list of given type
  * @pos:	the type * to use as a loop counter.
@@ -298,11 +297,9 @@ static inline void list_splice_init(struct list_head *list,
  * @member:	the name of the list_struct within the struct.
  */
 #define list_for_each_entry(pos, head, member)				\
-	for (pos = list_entry((head)->next, typeof(*pos), member),	\
-		     prefetch(pos->member.next);			\
+	for (pos = list_entry((head)->next, typeof(*pos), member); \
 	     &pos->member != (head); 					\
-	     pos = list_entry(pos->member.next, typeof(*pos), member),	\
-		     prefetch(pos->member.next))
+             pos = list_entry(pos->member.next, typeof(*pos), member))
 
 /**
  * list_for_each_entry_reverse - iterate backwards over list of given type.
@@ -393,7 +390,6 @@ static inline void list_splice_init(struct list_head *list,
 	for ((pos) = (pos)->next, prefetch((pos)->next); (pos) != (head); \
         	(pos) = (pos)->next, ({ smp_read_barrier_depends(); 0;}), prefetch((pos)->next))
 
-#endif
 /* 
  * Double linked lists with a single pointer list head. 
  * Mostly useful for hash tables where the two pointer list head is 

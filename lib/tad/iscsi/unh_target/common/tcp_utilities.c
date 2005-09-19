@@ -39,7 +39,7 @@
 #include <sys/socket.h>
 #include <string.h>
 
-#include "../userland_lib/my_memory.h"
+#include "my_memory.h"
 #include "debug.h"
 #include "tcp_utilities.h"
 

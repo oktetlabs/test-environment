@@ -27,17 +27,18 @@
 	derived from this software without specific prior written permission.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <linux/slab.h>
 #include <linux/stddef.h>
 
-#include "../../userland_lib/my_memory.h"
-#include "../../common/iscsi_common.h"
-#include "../../common/debug.h"
+#include <my_memory.h>
+#include <iscsi_common.h>
+#include "../common/debug.h"
 
-#include "../hash/sha1.h"
-#include "../hash/md5.h"
+#include "sha1.h"
+#include "md5.h"
 #include "chap.h"
 
 static int hash_algorithms[] = { MD5_ALGORITHM, SHA1_ALGORITHM };

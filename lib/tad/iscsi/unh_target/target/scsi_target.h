@@ -29,15 +29,16 @@
 #define _SCSI_TARGET_H
 
 
+#include <pthread.h>
 #include <semaphore.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <linux/spinlock.h>
 
 #include <scsi/scsi.h>
+#include "../common/scsi_request.h"
+#include "../common/list.h"
 
 /****/
-#define MAX_COMMAND_SIZE 16
 
 typedef struct scsi_host_template Scsi_Host_Template;
 typedef struct scsi_device Scsi_Device;
@@ -388,7 +389,7 @@ typedef struct GTE
 	 * received CDBs can get queued up in the context of an
 	 * interrupt handler so we have to a spinlock, not a semaphore.
 	 */
-	spinlock_t		cmd_queue_lock;
+	pthread_mutex_t		cmd_queue_lock;
 	/*
 	 * cmd_queue: doubly linked circular queue of commands
 	 */
@@ -404,7 +405,7 @@ typedef struct GTE
 	/*
 	 * msg_lock: spinlock for the message
 	 */
-	spinlock_t		msg_lock;
+	pthread_mutex_t		msg_lock;
 } Target_Emulator;
 
 /* number of devices target currently has access to */
@@ -426,24 +427,5 @@ Target_Scsi_Cmnd*	rx_cmnd		(Scsi_Target_Device*, uint64_t,
 					uint64_t, unsigned char*, int, int, int,
 					Target_Scsi_Cmnd**);
 Target_Scsi_Message*	rx_task_mgmt_fn	(Scsi_Target_Device*,int,void*);
-
-#if !defined(list_for_each_entry)
-
-/* include/linux/list.h is out of date */
-
-/**
- * list_for_each_entry	-	iterate over list of given type
- * @pos:	the type * to use as a loop counter.
- * @head:	the head for your list.
- * @member:	the name of the list_struct within the struct.
- */
-#define list_for_each_entry(pos, head, member)				\
-	for (pos = list_entry((head)->next, typeof(*pos), member),	\
-		     prefetch(pos->member.next);			\
-	     &pos->member != (head); 					\
-	     pos = list_entry(pos->member.next, typeof(*pos), member),	\
-		     prefetch(pos->member.next))
-
-#endif
 
 #endif

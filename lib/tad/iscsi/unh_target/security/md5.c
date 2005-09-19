@@ -27,9 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../userland_lib/my_memory.h"
-#include "linux/slab.h"
-#include "linux/stddef.h"
+#include <my_memory.h>
+#include <stdlib.h>
+#include <stddef.h>
 
 #include "md5.h"
 

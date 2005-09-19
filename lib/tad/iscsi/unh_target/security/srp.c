@@ -33,15 +33,15 @@
 #include <linux/slab.h>
 #include <linux/stddef.h>
 
-#include "../../userland_lib/my_memory.h"
-#include "../../common/iscsi_common.h"
-#include "../../common/debug.h"
+#include <my_memory.h>
+#include <iscsi_common.h>
+#include "../common/debug.h"
 
 #include "srp.h"
 
-#include "../misc/misc_func.h"
-#include "../hash/sha1.h"
-#include "../math/bigint.h"
+#include "misc_func.h"
+#include "sha1.h"
+#include "bigint.h"
 
 #define UNUSED(p_) ((void)p_)
 

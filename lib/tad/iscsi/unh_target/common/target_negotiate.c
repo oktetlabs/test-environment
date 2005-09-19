@@ -53,15 +53,15 @@
 #include <string.h>
 #include "list.h"
 
-#include "../userland_lib/my_memory.h"
+#include "my_memory.h"
 #include "iscsi_common.h"
 #include "debug.h"
 #include "crc.h"
 
 /* chap and srp support - CHONG */
-#include "../security/chap/chap.h"
-#include "../security/srp/srp.h"
-#include "../security/misc/misc_func.h"
+#include "../security/chap.h"
+#include "../security/srp.h"
+#include "../security/misc_func.h"
 
 
 #include "text_param.h"

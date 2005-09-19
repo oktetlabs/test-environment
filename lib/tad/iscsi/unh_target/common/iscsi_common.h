@@ -64,8 +64,12 @@
 #define TARGET				2
 #define MANAGEMENT			4
 
-#define TRUE				1
-#define NOT_TRUE			2
+/** WHAT THE ... IS GOING ON HERE? ***/
+/** (happily, this definitions seems to be actually unused */
+/*
+  #define TRUE				1
+  #define NOT_TRUE			2
+*/
 
 /* iSCSI Drafts -- from now on we do only the latest draft (the standard) */
 #define DRAFT20				2000

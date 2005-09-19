@@ -30,10 +30,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stddef.h>
 
-#include "../../userland_lib/my_memory.h"
-#include "linux/slab.h"
-#include "linux/stddef.h"
+#include <my_memory.h>
 
 #include "bigint.h"
 

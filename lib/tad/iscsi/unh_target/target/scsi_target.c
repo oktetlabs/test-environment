@@ -29,20 +29,17 @@
 	derived from this software without specific prior written permission.
 */
 
-/* df revised begin */
-#ifndef LINUX_VERSION_CODE
-#include <linux/version.h>
-#endif
+#include <te_config.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
-#ifndef KERNEL_VERSION			/* pre-2.1.90 didn't have it */
-#define KERNEL_VERSION(vers,rel,seq) ( ((vers)<<16) | ((rel)<<8) | (seq) )
-#endif
-/* df revised end */
-
-#include <linux/proc_fs.h>
-
+#include <semaphore.h>
 #include "scsi_target.h"
+#include "../common/list.h"
 #include "../common/lun_packing.h"
+#include "../common/debug.h"
+
 
 /*
 # define DEBUG_REGISTER
@@ -134,7 +131,7 @@ struct target_map_item	{
 #endif
 
 /* mutex to control access to target_map array */
-DECLARE_MUTEX(target_map_sem);
+sem_t target_map_sem;
 
 /*
  * Scsi_Target_Device: Maximum number of "active" targets at any time
@@ -173,6 +170,7 @@ char device[BYTE];
 char device[BYTE * 8];
 # endif
 
+#if 0
 /*
  * scsi_target_init_module: Initializes the SCSI target module
  * FUNCTION: carry out all the initialization stuff that is needed
@@ -183,25 +181,7 @@ char device[BYTE * 8];
 int
 scsi_target_init_module(void)
 {
-	struct proc_dir_entry *generic;
 
-	debugInit("unh_scsi_target module Starting\n");
-#ifdef MEMORYIO
-	debugInit("unh_scsi_target using MEMORYIO\n");
-#endif
-#ifdef DISKIO
-#ifdef TRUST_CDB
-	debugInit("unh_scsi_target using DISKIO and TRUST_CDB\n");
-#else
-	debugInit("unh_scsi_target using DISKIO but not TRUST_CDB\n");
-#endif
-#endif
-#ifdef FILEIO
-	debugInit("unh_scsi_target using FILEIO\n");
-#endif
-#ifdef GENERICIO
-	debugInit("unh_scsi_target using GENERICIO\n");
-#endif
 	/* initialize the global target_data struct */
 	/*
 	 * initialize the target semaphore as locked because you want
@@ -239,7 +219,7 @@ scsi_target_init_module(void)
 #endif
 
 	if (fill_scsi_device() == -1) {
-		printk("scsi_target_init_module: fill_scsi_device returned an error\n");
+		TRACE_ERROR("scsi_target_init_module: fill_scsi_device returned an error\n");
 		return -1;
 	}
 #endif
@@ -252,37 +232,11 @@ scsi_target_init_module(void)
 	 */
 # if defined(FILEIO) || defined(GENERICIO)
 	if (build_filp_table() < 0) {
-		printk("scsi_target_init_module: build_filp_table returned an error\n");
+		TRACE_ERROR("scsi_target_init_module: build_filp_table returned an error\n");
 		return -1;
 	}
 # endif
 
-#ifdef CONFIG_PROC_FS
-	proc_scsi_target = proc_mkdir("scsi_target", 0);
-	if (!proc_scsi_target) {
-		printk(KERN_ERR "cannot init /proc/scsi_target\n");
-		return -ENOMEM;
-	}
-	generic = create_proc_info_entry("scsi_target/scsi_target", 0, 0,
-									 scsi_target_proc_info);
-	if (!generic) {
-		printk(KERN_ERR "cannot init /proc/scsi_target/scsi_target\n");
-		remove_proc_entry("scsi_target", 0);
-		return -ENOMEM;
-	}
-	generic->write_proc = proc_scsi_target_gen_write;
-#endif
-
-	/* spawn a thread */
-	/* Bjorn Thordarson, 9-May-2004 -- start -- */
-	/*****
-	kernel_thread((int (*)(void *)) scsi_target_process_thread, NULL, 0);
-	*****/
-	if (target_count > 0) {
-		kernel_thread((int (*)(void *)) scsi_target_process_thread, NULL, 0);
-	}
-	/* Bjorn Thordarson, 9-May-2004 -- end -- */
-	return 0;
 }
 
 /*
@@ -333,9 +287,7 @@ scsi_target_cleanup_module(void)
 	}
 	printk("scsi_target module Exiting\n");
 }
-
-module_init(scsi_target_init_module);
-module_exit(scsi_target_cleanup_module);
+#endif
 
 /*
  * register_target_template: to register a template with the midlevel
@@ -351,7 +303,7 @@ register_target_template(Scsi_Target_Template * the_template)
 	Scsi_Target_Template *st_current;
 
 	if (!the_template) {		/* huh */
-		printk
+		TRACE_ERROR
 			("register_target_template: Refusal to register a NULL template\n");
 		return -1;
 	}
@@ -370,7 +322,7 @@ register_target_template(Scsi_Target_Template * the_template)
 	}
 
 	if (st_current != NULL) {	/* template is old */
-		printk("register_target_template: Template already present\n");
+		TRACE_ERROR("register_target_template: Template already present\n");
 		return -1;
 	}
 
@@ -381,24 +333,19 @@ register_target_template(Scsi_Target_Template * the_template)
 	printk("module count increased\n");
 # endif
 
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifndef K26
-	MOD_INC_USE_COUNT;
-#endif
-
 	/* check if the device has a detect function */
 	if (st_current->detect) {
 		/* detect the device */
 		check = st_current->detect(the_template);
 		if (check < 0) {		/* error */
-			printk("Hosts detected: %d .. removing template\n", check);
+			TRACE_ERROR("Hosts detected: %d .. removing template\n", check);
 			deregister_target_template(the_template);
 			return check;
 		} else {
-			printk("Hosts detected: %d ... incrementing device usage\n", check);
+			TRACE(TRACE_VERBOSE, "Hosts detected: %d ... incrementing device usage\n", check);
 		}
 	} else {
-		printk
+        TRACE_ERROR
 			("register_target_template: template does not have a detect function\n");
 		deregister_target_template(the_template);
 		return -1;
@@ -423,7 +370,7 @@ deregister_target_template(Scsi_Target_Template * the_template)
 	st_dev_curr = target_data.st_device_list;
 
 	if (!the_template) {		/* huh */
-		printk("deregister_target_template: Cannot remove a NULL template\n");
+		TRACE_ERROR("deregister_target_template: Cannot remove a NULL template\n");
 		return -1;
 	}
 
@@ -443,7 +390,7 @@ deregister_target_template(Scsi_Target_Template * the_template)
 			} else {
 				st_dev_curr = st_dev_curr->next;
 				if (st_dev_curr) {
-					printk
+					TRACE_ERROR
 						("dereg..tmpt: Error ... no device found with the required template %s\n",
 						 the_template->name);
 					return -1;
@@ -473,7 +420,7 @@ deregister_target_template(Scsi_Target_Template * the_template)
 					st_prev->next = st_current->next;
 				break;
 			} else {			/* A device still uses the template */
-				printk("scsi_target: Non-zero device usage ouch !!\n");
+				TRACE_ERROR("scsi_target: Non-zero device usage ouch !!\n");
 				return -1;	/* should never get here */
 			}
 		} else
@@ -483,11 +430,6 @@ deregister_target_template(Scsi_Target_Template * the_template)
 # ifdef DEBUG_DEREGISTER
 	printk("Decreasing module count\n");
 # endif
-
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifndef K26
-	MOD_DEC_USE_COUNT;
-#endif
 
 	return 0;
 }
@@ -507,15 +449,15 @@ register_target_front_end(Scsi_Target_Template * tmpt)
 	Scsi_Target_Device *the_device;
 
 	the_device =
-		(Scsi_Target_Device *)kmalloc(sizeof(Scsi_Target_Device), GFP_KERNEL);
+		(Scsi_Target_Device *)malloc(sizeof(Scsi_Target_Device));
 	if (!the_device) {
-		printk
+        TRACE_ERROR
 			("register_target_front_end: Could not allocate space for the device\n");
 		return NULL;
 	}
 
 	if (!tmpt) {
-		printk
+        TRACE_ERROR
 			("register_target_front_end: Cannot register NULL device template !!!\n");
 		return NULL;
 	}
@@ -567,13 +509,13 @@ deregister_target_front_end(Scsi_Target_Device * the_device)
 	unsigned long flags;
 
 	if (!the_device) {
-		printk
+        TRACE_ERROR
 			("dereg...end: cannot remove NULL devices corresponding to a NULL template\n");
 		return -1;
 	}
 
 	if (!the_device->template->device_usage) {
-		printk
+        TRACE_ERROR
 			("dereg...end: 0 device usage and a device to deregister ... a contradiction me thinks\n");
 	}
 
@@ -592,7 +534,7 @@ deregister_target_front_end(Scsi_Target_Device * the_device)
 	}
 
 	if (!curr) {				/* No match found */
-		printk("dereg..end: No match found\n");
+		TRACE_ERROR("dereg..end: No match found\n");
 		return -1;
 	}
 
@@ -606,31 +548,39 @@ deregister_target_front_end(Scsi_Target_Device * the_device)
 	/* release the device */
 	if (curr->template->release) {
 		if (curr->template->release(curr)) {
-			printk("dereg...end: release of device failed\n");
+			TRACE_ERROR("dereg...end: release of device failed\n");
 			return -1;
 		}
 	}
 
+#if 0
 	/* mark all commands corresponding to this device for dequeuing */
 	spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
+#endif
 
 	list_for_each_entry(cmnd, &target_data.cmd_queue, link) {
 		if (cmnd->dev_id == curr->id)
 			cmnd->state = ST_DEQUEUE;
 	}
 
+#if 0
 	spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
+#endif
 
 	/* wake up scsi_target_process_thread so it can dequeue stuff */
+    sem_post(&target_data.target_sem);
+    
+#if 0
 	if (atomic_read(&target_data.target_sem.count) <= 0) {
 		up(&target_data.target_sem);
 	}
+#endif
 
 	/* reduce device usage */
 	curr->template->device_usage--;
 
 	/* freeing things */
-	kfree(curr);
+	free(curr);
 	curr = NULL;
 
 	return 0;
@@ -788,6 +738,7 @@ signal_process_thread(void *param)
 }
 # endif
 
+#if 0
 /*
  * scsi_target_process_thread: this is the mid-level target thread that
  * is responsible for processing commands.
@@ -810,8 +761,6 @@ scsi_target_process_thread(void *param)
 	struct target_map_item *this_item;
 # endif
 	struct list_head *lptr, *next;
-
-	lock_kernel();
 
 /* Ming Zhang, mingz@ele.uri.edu */
 #ifdef K26
@@ -1209,6 +1158,7 @@ scsi_thread_out:
 	printk("%s Exiting pid %d\n", current->comm, current->pid);
 	return;
 }
+#endif /* 0 */
 
 /*
  * rx_cmnd: this function is the basic function called by any front end
@@ -1230,20 +1180,20 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 
 	*result_command = NULL;
 	if (!target_data.thread_id) {
-		printk("rx_cmnd: No Mid-level running !!!!\n");
+		TRACE_ERROR("rx_cmnd: No Mid-level running !!!!\n");
 		return NULL;
 	}
 
 	if (!device) {
-		printk("rx_cmnd: No device given !!!!\n");
+		TRACE_ERROR("rx_cmnd: No device given !!!!\n");
 		return NULL;
 	}
 
 	*result_command = command =
-		(Target_Scsi_Cmnd *)kmalloc(sizeof(Target_Scsi_Cmnd),
-						GFP_KERNEL | GFP_ATOMIC);
+		(Target_Scsi_Cmnd *)malloc(sizeof(Target_Scsi_Cmnd));
+    
 	if (command == NULL) {
-		printk("rx_cmnd: No space for command\n");
+		TRACE_ERROR("rx_cmnd: No space for command\n");
 		/* sendsig (SIGKILL, target_data.thread_id, 0); */
 		return NULL;
 	}
@@ -1312,7 +1262,9 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 	}
 # endif
 
+#if 0
 	spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
+#endif
 # ifdef DEBUG_RX_CMND
 	printk("rx_cmnd: locked cmd_queue_lock for %p\n", command);
 # endif
@@ -1331,12 +1283,18 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 # ifdef DEBUG_RX_CMND
 	printk("rx_cmnd: unlock cmd_queue_lock for %p with id %d\n",command,command->id);
 # endif
+#if 0
 	spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
+#endif
 
 	/* wake up scsi_target_process_thread */
+#if 0
 	if (atomic_read(&target_data.target_sem.count) <= 0) {
 		up(&target_data.target_sem);
 	}
+#endif
+    sem_post(&target_data.target_sem);
+
 	return command;
 }
 
@@ -1355,10 +1313,12 @@ scsi_rx_data(Target_Scsi_Cmnd * the_command)
 {
 	the_command->state = ST_TO_PROCESS;
 
+#if 0
 	/* wake up the mid-level scsi_target_process_thread */
 	if (atomic_read(&target_data.target_sem.count) <= 0) {
 		up(&target_data.target_sem);
 	}
+#endif
 
 	return 0;
 }
@@ -1382,9 +1342,12 @@ scsi_target_done(Target_Scsi_Cmnd * the_command)
 	the_command->state = ST_DEQUEUE;
 
 	/* awaken scsi_target_process_thread to dequeue stuff */
+#if 0
 	if (atomic_read(&target_data.target_sem.count) <= 0) {
 		up(&target_data.target_sem);
 	}
+#endif
+    sem_post(&target_data.target_sem);
 
 	return 0;
 }
@@ -1418,9 +1381,12 @@ scsi_release(Target_Scsi_Cmnd * cmnd)
 		cmnd->state = ST_DEQUEUE;
 
 	/* wake up scsi_process_target_thread so it can dequeue stuff */
+#if 0
 	if (atomic_read(&target_data.target_sem.count) <= 0) {
 		up(&target_data.target_sem);
 	}
+#endif
+    sem_post(&target_data.target_sem);
 
 	return 0;
 }
@@ -1465,19 +1431,18 @@ rx_task_mgmt_fn(struct STD *dev, int fn, void *value)
 	}
 	if ((fn == TMF_ABORT_TASK_SET) || (fn == TMF_CLEAR_ACA)
 		|| (fn == TMF_CLEAR_TASK_SET)) {
-		printk("rx_task_mgmt_fn: task mgmt function %d not implemented\n",
+		TRACE_ERROR("rx_task_mgmt_fn: task mgmt function %d not implemented\n",
 			   fn);
 		return NULL;
 	}
 	if ((fn == TMF_ABORT_TASK) && (value == NULL)) {
-		printk("rx_task_mgmt_fn: Cannot abort a NULL command\n");
+		TRACE_ERROR("rx_task_mgmt_fn: Cannot abort a NULL command\n");
 		return NULL;
 	}
 
-	msg = (Target_Scsi_Message *)kmalloc(sizeof(Target_Scsi_Message),
-										 GFP_KERNEL | GFP_ATOMIC);
+	msg = malloc(sizeof(Target_Scsi_Message));
 	if (!msg) {
-		printk("rx_task_mgmt_fn: no space for scsi message\n");
+		TRACE_ERROR("rx_task_mgmt_fn: no space for scsi message\n");
 		return NULL;
 	}
 
@@ -1487,7 +1452,9 @@ rx_task_mgmt_fn(struct STD *dev, int fn, void *value)
 	msg->value = value;
 	msg->message = fn;
 
+#if 0
 	spin_lock_irqsave(&target_data.msg_lock, flags);
+#endif
 
 	if (!target_data.msgq_start) {
 		target_data.msgq_start = target_data.msgq_end = msg;
@@ -1496,12 +1463,18 @@ rx_task_mgmt_fn(struct STD *dev, int fn, void *value)
 		target_data.msgq_end = msg;
 	}
 
+#if 0
 	spin_unlock_irqrestore(&target_data.msg_lock, flags);
+#endif
 
 	/* wake up scsi_target_process_thread */
+#if 0
 	if (atomic_read(&target_data.target_sem.count) <= 0) {
 		up(&target_data.target_sem);
 	}
+#endif
+    sem_post(&target_data.target_sem);
+
 	return msg;
 }
 
@@ -1631,28 +1604,28 @@ close_filp_table(void)
 static int
 get_space(Scsi_Request * req, int space /* in bytes */ )
 {
+#if 0
 	/* We assume that scatter gather is used universally */
 	struct scatterlist *st_buffer;
 	int buff_needed, i;
 	int count;
+    long pagesize = sysconf(_SC_PAGESIZE);
 
 	/* we assume that all buffers are split by page size */
 
 	/* get enough scatter gather entries */
-	buff_needed = space / PAGE_SIZE;
-	if (space > (buff_needed * PAGE_SIZE))
+	buff_needed = space / pagesize;
+	if (space > (buff_needed * pagesize))
 		buff_needed++;
 
 	/*ramesh - added check for allocating memory */
 	if (buff_needed == 0)
 		buff_needed = 1;
 
-	st_buffer =
-		(struct scatterlist *)kmalloc(buff_needed *
-									   sizeof(struct scatterlist),
-									   GFP_KERNEL | GFP_ATOMIC);
+	st_buffer = malloc(buff_needed * sizeof(struct scatterlist));
+
 	if (!st_buffer) {
-		printk("get_space: no space for st_buffer\n");
+		TRACE_ERROR("get_space: no space for st_buffer\n");
 		return -1;
 	}
 	memset(st_buffer, 0, buff_needed * sizeof(struct scatterlist));
@@ -1717,6 +1690,7 @@ get_space(Scsi_Request * req, int space /* in bytes */ )
 	req->sr_buffer = st_buffer;
 	req->sr_sglist_len = buff_needed * sizeof(struct scatterlist);
 	req->sr_use_sg = buff_needed;
+#endif
 
 	return 0;
 }
@@ -1737,42 +1711,43 @@ allocate_report_lun_space(Target_Scsi_Cmnd * cmnd)
 
 	/* perform checks on Report LUNS - LATER */
 	if (cmnd->req->sr_cmnd[2] != 0) {
-		printk("%s Select_Report in report_luns not zero\n", current->comm);
+		TRACE_ERROR("Select_Report in report_luns not zero\n");
 	}
 
+#if 0
 	/* set data direction */
 	cmnd->req->sr_data_direction = SCSI_DATA_READ;
+#endif
 
 	/* get length */
 	if (cmnd->target_id >= MAX_TARGETS) {
-		printk("%s target id %u >= MAX_TARGETS %u\n",
-			   current->comm, cmnd->target_id, MAX_TARGETS);
+		TRACE_ERROR("target id %u >= MAX_TARGETS %u\n",
+			    cmnd->target_id, MAX_TARGETS);
 		return -1;
 	}
 
 	luns = 0;
-	if (!down_interruptible(&target_map_sem)) {
+	if (!sem_wait(&target_map_sem)) {
 		for (i = 0; i < MAX_LUNS; i++) {
 			if (target_map[cmnd->target_id][i].in_use)
 				luns++;
 		}
-		up(&target_map_sem);
+		sem_post(&target_map_sem);
 	}
 
 	if (luns == 0) {
-		printk("%s No luns in use for target id %u\n",
-			   current->comm, cmnd->target_id);
+		TRACE_ERROR("No luns in use for target id %u\n",
+			   cmnd->target_id);
 		return -1;
 		}
 
-	printk("%s REPORT_LUNS: target id %u reporting %d luns\n",
-			current->comm, cmnd->target_id, luns);
+	TRACE_ERROR("REPORT_LUNS: target id %u reporting %d luns\n",
+                cmnd->target_id, luns);
 
 	/* allocate space */
 	size = luns * 8;
 	if (get_space(cmnd->req, size + 8)) {
-		printk("%s get_space returned an error for %d\n",
-			   current->comm, cmnd->id);
+		TRACE_ERROR("get_space returned an error for %d\n", cmnd->id);
 		return -1;
 		}
 
@@ -1791,6 +1766,7 @@ get_allocation_length(uint8_t *cmd)
 {
 	uint32_t err = 0;
 
+#if 0
 	switch (cmd[0]) {
 	case INQUIRY:
 	case MODE_SENSE:
@@ -1865,6 +1841,7 @@ get_allocation_length(uint8_t *cmd)
 			break;
 		}
 	}
+#endif
 
 	return err;
 }
@@ -2118,6 +2095,7 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 	int i;
 	uint8_t *limit, *next_slot;
 
+#if 0
 /* Ming Zhang, mingz@ele.uri.edu */
 #ifdef K26
 	/* Bjorn Thordarson, 9-May-2004 */
@@ -2170,6 +2148,7 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 	/* change status */
 	cmnd->state = ST_DONE;
 	cmnd->req->sr_result = DID_OK << 16;
+#endif
 	return 0;
 }
 #endif
@@ -2205,8 +2184,8 @@ hand_to_front_end(Target_Scsi_Cmnd * the_command)
 		 * that the device is no longer there. For now, the
 		 * former is more probable
 		 */
-		printk("%s hand_to_front_end: no device with id %llu\n",
-			   current->comm, the_command->dev_id);
+		TRACE_ERROR("hand_to_front_end: no device with id %llu\n",
+			   the_command->dev_id);
 		return -1;
 	}
 
@@ -2250,13 +2229,12 @@ hand_to_front_end(Target_Scsi_Cmnd * the_command)
 
 			the_command->state = ST_HANDED;
 			if (curr_device->template->xmit_response(the_command)) {
-				printk("%s hand_to_front_end: error in xmit_response for %p "
-					   "id %d\n", current->comm, the_command, the_command->id);
+				TRACE_ERROR("hand_to_front_end: error in xmit_response for %p "
+					   "id %d\n", the_command, the_command->id);
 				return -1;
 			}
 		} else {
-			printk("%s hand_to_front_end: no xmit_response function\n",
-				   current->comm);
+			TRACE_ERROR("hand_to_front_end: no xmit_response function\n");
 			return -1;
 		}
 	} else if (the_command->state == ST_PENDING) {
@@ -2267,18 +2245,17 @@ hand_to_front_end(Target_Scsi_Cmnd * the_command)
 		if ((curr_device->template) && (curr_device->template->rdy_to_xfer)) {
 			the_command->state = ST_XFERRED;
 			if (curr_device->template->rdy_to_xfer(the_command)) {
-				printk("%s hand_to_front_end: error in rdy_to_xfer for %p "
-					   "id %d\n", current->comm, the_command, the_command->id);
+				TRACE_ERROR("hand_to_front_end: error in rdy_to_xfer for %p "
+					   "id %d\n", the_command, the_command->id);
 				return -1;
 			}
 		} else {
-			printk("%s hand_to_front_end: no rdy_to_xfer function\n",
-				   current->comm);
+			TRACE_ERROR("hand_to_front_end: no rdy_to_xfer function\n");
 			return -1;
 		}
 	} else {
-		printk("%s hand_to_front_end: command %p id: %d bad state %d\n",
-			   current->comm, the_command, the_command->id, the_command->state);
+		TRACE_ERROR("hand_to_front_end: command %p id: %d bad state %d\n",
+                    the_command, the_command->id, the_command->state);
 		return -1;
 	}
 
@@ -2300,7 +2277,7 @@ abort_notify(Target_Scsi_Message * msg)
 	if (msg && msg->value)
 		cmnd = (Target_Scsi_Cmnd *) msg->value;
 	else {
-		printk("abort_notify: null cmnd in the msg\n");
+		TRACE_ERROR("abort_notify: null cmnd in the msg\n");
 		return -1;
 	}
 
@@ -2312,14 +2289,14 @@ abort_notify(Target_Scsi_Message * msg)
 	}
 
 	if (curr_device == NULL) {
-		printk("abort_notify: Could not find the device\n");
+		TRACE_ERROR("abort_notify: Could not find the device\n");
 		return -1;
 	}
 
 	if ((curr_device->template) && (curr_device->template->task_mgmt_fn_done))
 		curr_device->template->task_mgmt_fn_done(msg);
 	else {
-		printk
+        TRACE_ERROR
 			("abort_notify: Unable to notify front end about abort notification\n");
 		return -1;
 	}
@@ -2346,7 +2323,7 @@ aen_notify(int fn, uint64_t lun)
 		if (dev && dev->template && dev->template->report_aen)
 			dev->template->report_aen(fn, lun);
 		else
-			printk("aen_notify: Unable to notify device %d\n", (int) dev->id);
+			TRACE_ERROR("aen_notify: Unable to notify device %d\n", (int) dev->id);
 	}
 }
 
@@ -2371,14 +2348,14 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 	int to_read;
 
 # ifdef DEBUG_HANDLE_CMD
-	printk("Entering MEMORYIO handle_cmd\n");
+	TRACE(TRACE_VERBOSE, "Entering MEMORYIO handle_cmd\n");
 # endif
 	switch (cmnd->req->sr_cmnd[0]) {
 
 	case READ_CAPACITY:
 		{
 # ifdef DEBUG_HANDLE_CMD
-			printk("READ_CAPACITY received\n");
+			TRACE(TRACE_VERBOSE, "READ_CAPACITY received\n");
 # endif
 			/* perform checks on READ_CAPACITY - LATER */
 
@@ -2387,7 +2364,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
 			/* allocate sg_list and get_free_pages */
 			if (get_space(cmnd->req, READ_CAP_LEN)) {
-				printk("handle_command: get_space returned an error for %d\n",
+				TRACE_ERROR("handle_command: get_space returned an error for %d\n",
 					   cmnd->id);
 				err = -1;
 				break;
@@ -2399,7 +2376,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			if (get_read_capacity_response(cmnd->req)) {
 			*****/
 			if (get_read_capacity_response(cmnd)) {
-				printk
+                TRACE_ERROR
 					("handle_command: get_read_capacity_response returned an error for %d\n",
 					 cmnd->id);
 				err = -1;
@@ -2417,7 +2394,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 	case INQUIRY:
 		{
 # ifdef DEBUG_HANDLE_CMD
-			printk("INQUIRY received\n");
+			TRACE(TRACE_VERBOSE, "INQUIRY received\n");
 # endif
 			/* perform checks on INQUIRY - LATER */
 
@@ -2428,7 +2405,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			to_read = get_allocation_length(cmnd->req->sr_cmnd);
 
 			if (to_read < 0) {
-				printk
+                TRACE_ERROR
 					("handle_command: get_allocation length returned an error for %d\n",
 					 cmnd->id);
 				err = -1;
@@ -2437,7 +2414,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
 			/* allocate space */
 			if (get_space(cmnd->req, to_read)) {
-				printk("handle_command: get_space returned an error for %d\n",
+				TRACE_ERROR("handle_command: get_space returned an error for %d\n",
 					   cmnd->id);
 				err = -1;
 				break;
@@ -2449,7 +2426,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			if (get_inquiry_response(cmnd->req, to_read)) {
 			*****/
 			if (get_inquiry_response(cmnd->req, to_read, TYPE_DISK)) {
-				printk
+                TRACE_ERROR
 					("handle_command: get_inquiry_response returned an error for %d\n",
 					 cmnd->id);
 				err = -1;
@@ -2467,7 +2444,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 	case TEST_UNIT_READY:
 		{
 # ifdef DEBUG_HANDLE_CMD
-			printk("TEST UNIT READY received\n");
+			TRACE(TRACE_VERBOSE, "TEST UNIT READY received\n");
 # endif
 			/* perform checks on TEST UNIT READY */
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
@@ -2488,7 +2465,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
 			/* get response */
 			if ((err = get_report_luns_response(cmnd, to_read))) {
-				printk
+                TRACE_ERROR
 					("handle_command: get_report_luns_response returned an error for %d\n",
 					 cmnd->id);
 			}
@@ -2498,7 +2475,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 	case MODE_SENSE:
 		{
 # ifdef DEBUG_HANDLE_CMD
-			printk("MODE_SENSE received\n");
+			TRACE(TRACE_VERBOSE, "MODE_SENSE received\n");
 # endif
 			/* perform checks on MODE_SENSE - LATER */
 
@@ -2509,7 +2486,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			to_read = get_allocation_length(cmnd->req->sr_cmnd);
 
 			if (to_read < 0) {
-				printk
+                TRACE_ERROR
 					("handle_command: get_allocation length returned an error for %d\n",
 					 cmnd->id);
 				err = -1;
@@ -2518,7 +2495,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
 			/* allocate space */
 			if (get_space(cmnd->req, to_read)) {
-				printk("handle_command: get_space returned an error for %d\n",
+				TRACE_ERROR("handle_command: get_space returned an error for %d\n",
 					   cmnd->id);
 				err = -1;
 				break;
@@ -2526,7 +2503,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
 			/* get response */
 			if (get_mode_sense_response(cmnd->req, to_read)) {
-				printk
+                TRACE_ERROR
 					("handle_command: get_mode_sense_response returned an error for %d\n",
 					 cmnd->id);
 				err = -1;
@@ -2543,7 +2520,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 	case VERIFY:
 		{
 # ifdef DEBUG_HANDLE_CMD
-			printk("VERIFY received\n");
+			TRACE(TRACE_VERBOSE, "VERIFY received\n");
 # endif
 			/* perform checks on TEST UNIT READY */
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
@@ -2560,9 +2537,9 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 		{
 # ifdef DEBUG_HANDLE_CMD
 			if (cmnd->req->sr_cmnd[0] == READ_6)
-				printk("READ_6 received\n");
+				TRACE(TRACE_VERBOSE, "READ_6 received\n");
 			else
-				printk("READ_10 received\n");
+				TRACE(TRACE_VERBOSE, "READ_10 received\n");
 # endif
 			/* perform checks for READ_10 */
 
@@ -4179,6 +4156,7 @@ proc_scsi_target_read(char *buffer, char **start, off_t offset, int length,
 									   * use some slack for overruns
 									 */
 
+#if 0
 static int
 proc_scsi_target_write(struct file *file, const char *buf,
 					   unsigned long count, void *data)
@@ -4202,6 +4180,7 @@ proc_scsi_target_write(struct file *file, const char *buf,
 	free_page((ulong) page);
 	return ret;
 }
+#endif
 
 
 /* Define the functions that handle the proc interface */

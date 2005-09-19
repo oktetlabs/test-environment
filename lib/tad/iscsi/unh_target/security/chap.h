@@ -34,7 +34,7 @@
 #define MD5_ALGORITHM				0x05
 #define SHA1_ALGORITHM				0x07
 
-#include "../misc/misc_func.h"
+#include "misc_func.h"
 
 struct CHAP_Context {
 	int number_format;

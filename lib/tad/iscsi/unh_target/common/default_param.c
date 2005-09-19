@@ -38,13 +38,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "../userland_lib/my_memory.h"
+#include "my_memory.h"
 #include "iscsi_common.h"
 #include "debug.h"
 
 /* chap and srp support -CHONG */
-#include "../security/chap/chap.h"
-#include "../security/srp/srp.h"
+#include "../security/chap.h"
+#include "../security/srp.h"
 
 
 #include "text_param.h"
