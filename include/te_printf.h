@@ -49,7 +49,12 @@
 
 /** printf()-like length modified for 32-bit integers */
 #if (SIZEOF_INT == 4)
+#if defined(__CYGWIN__) && (SIZEOF_LONG == 4)
+/* Under CYGWIN 'int32_t' is defined as 'long int' */
+#define TE_PRINTF_32        "l"
+#else
 #define TE_PRINTF_32        ""
+#endif
 #elif (SIZEOF_LONG == 4)
 #define TE_PRINTF_32        "l"
 #else
