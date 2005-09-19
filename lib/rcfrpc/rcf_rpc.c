@@ -449,7 +449,8 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     rpcs->_errno = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 
                                    rpcs->timeout, proc, in, out);
 
-    rpcs->timeout = 0;
+    if (rpcs->op == RCF_RPC_CALL)
+        rpcs->timeout = 0;
     rpcs->start = 0;
     *(rpcs->lib) = '\0';
     if (TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCTIMEOUT ||
