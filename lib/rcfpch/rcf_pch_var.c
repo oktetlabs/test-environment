@@ -241,7 +241,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
         if (settimeofday(&tv, NULL) != 0)
         {
             va_end(ap);
-            SEND_ANSWER("%d", TE_OS_RC(TE_RCF_PCH, errno));
+            SEND_ANSWER("%" TE_PRINTF_32 "u", TE_OS_RC(TE_RCF_PCH, errno));
         }
 #else
         ERROR("Ignore set of time since Valgrind debugging is enabled "
