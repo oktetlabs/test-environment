@@ -307,11 +307,11 @@ main()
         printf ("send template full path: %s\n", path);
 
         rc = rcf_ta_trsend_start(ta, sid, handle, path, 1);
-        printf("trsend_start: %r\n", rc);
+        printf("trsend_start: 0x%X\n", rc);
         if (rc) break;
 
         rc = rcf_ta_trsend_stop(ta, sid, handle, &num);
-        printf("trsend_stop: %r, num: %d\n", rc, num);
+        printf("trsend_stop: 0x%X\n", num: %d\n", rc, num);
         if (rc) break;
 
         printf("csap_destroy: %d\n", 
