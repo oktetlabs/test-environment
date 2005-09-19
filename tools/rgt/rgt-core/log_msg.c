@@ -340,13 +340,23 @@ create_node_by_msg(log_msg *msg, node_type_t type,
 
     if (*fmt_str == '\"')
     {
-        for (i = 1; fmt_str[i] != '\"'; i++);
+        /* Objective processing */
+        char *next;
+        char *end;
+
+        /* Skip starting double quote */
+        fmt_str++;
+
+        next = (authors != NULL) ? authors :
+               (args != NULL)    ? args : 
+               fmt_str + strlen(fmt_str);
+
+        for (end = next - 1; isspace(*end); --end);
 
         node->descr.objective = 
-                (char *)node_info_obstack_copy0(fmt_str, i + 1);
-        fmt_str += i + 1;
+            (char *)node_info_obstack_copy0(fmt_str, end - fmt_str);
 
-        SKIP_SPACES;
+        fmt_str = next;
     }
 
     if (fmt_str == authors)
