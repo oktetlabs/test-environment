@@ -1833,24 +1833,39 @@ ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
 static int
 ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
 {
-    uint32_t pid = xvfb_exists((char *)number);
+    int             pid;
+    unsigned int    attempt = TA_UNIX_DAEMON_WAIT_ATTEMPTS;
+    te_errno        err = TE_ETIMEDOUT;
 
     UNUSED(gid);
     UNUSED(oid);
 
+    pid = xvfb_exists((char *)number);
     if (pid == 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
         
-    if (kill(pid, SIGTERM) != 0)
+    if (kill(pid, SIGTERM) == 0)
     {
-        int kill_errno = errno;
-        ERROR("Failed to send SIGTERM "
-              "to process SSH daemon with PID=%u: %d",
-              pid, kill_errno);
-        /* Just to make sure */
-        kill(pid, SIGKILL);
+        for (attempt = 0;
+             xvfb_exists((char *)number) &&
+             (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
+             ++attempt)
+        {
+            USLEEP(TA_UNIX_DAEMON_WAIT_USEC);
+        }
     }
-    
+    else
+    {
+        err = te_rc_os2te(errno);
+    }
+
+    if (attempt == TA_UNIX_DAEMON_WAIT_ATTEMPTS)
+    {
+        ERROR("Failed to stop Xvfb '%s' with PID=%d: %r",
+              number, pid, err);
+        return TE_RC(TE_TA_UNIX, err);
+    }
+
     return 0;
 }
 
