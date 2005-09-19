@@ -521,6 +521,21 @@ output_regular_log_msg(log_msg *msg)
     {
         if (msg->fmt_str[i] == '%' && msg->fmt_str[i + 1] != '\0')
         {
+            if (msg->fmt_str[i + 1] == '%')
+            {
+                obstack_1grow(log_obstk, '%');
+                i++;
+                continue;
+            }
+
+            if ((arg = get_next_arg(msg)) == NULL)
+            {
+                /* Too few arguments in the message */
+                /* Simply write the rest of format string to the log */
+                fwrite_string(log_obstk, msg->fmt_str + i);
+                break;
+            }
+
             /* Parse output format */
             switch (msg->fmt_str[i + 1])
             {
@@ -532,14 +547,6 @@ output_regular_log_msg(log_msg *msg)
                 case 'X':
                 {
                     char  format[3] = {'%', msg->fmt_str[i + 1], '\0'};
-
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message:\n");
-                        print_message_info(msg);
-                        THROW_EXCEPTION;
-                    }
 
                     *((uint32_t *)arg->val) = 
                         ntohl(*(uint32_t *)arg->val);
@@ -555,14 +562,6 @@ output_regular_log_msg(log_msg *msg)
                 {
                     uint32_t val;
                     int      j;
-
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message:\n");
-                        print_message_info(msg);
-                        THROW_EXCEPTION;
-                    }
 
                     /* Address should be 4 bytes aligned */
                     assert(arg->len % 4 == 0);
@@ -589,23 +588,9 @@ output_regular_log_msg(log_msg *msg)
 
                 case 's':
                 {
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message\n");
-                        print_message_info(msg);
-                        THROW_EXCEPTION;
-                    }
-
                     fwrite_string(log_obstk, arg->val);
                     i++;
 
-                    continue;
-                }
-                case '%':
-                {
-                    obstack_1grow(log_obstk, msg->fmt_str[i + 1]);
-                    i++;
                     continue;
                 }
 
@@ -613,14 +598,6 @@ output_regular_log_msg(log_msg *msg)
                 {
                     te_errno    err;
                     const char *src;
-
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message:\n");
-                        print_message_info(msg);
-                        THROW_EXCEPTION;
-                    }
 
                     err = *((uint32_t *)arg->val) = 
                         ntohl(*(uint32_t *)arg->val);
@@ -657,13 +634,6 @@ output_regular_log_msg(log_msg *msg)
                         if (obstack_next_free(log_obstk) != obstk_base)
                             OBSTACK_FLUSH();
 
-                        if ((arg = get_next_arg(msg)) == NULL)
-                        {
-                            fprintf(stderr,
-                                    "Too few arguments in the message\n");
-                            print_message_info(msg);
-                            THROW_EXCEPTION;
-                        }
                         if ((fd = fopen(arg->val, "r")) == NULL)
                         {
                             perror("Error during the processing of the log "
@@ -702,14 +672,6 @@ output_regular_log_msg(log_msg *msg)
                                 "%%t specificator\n");
                         print_message_info(msg);
                         break;
-                    }
-
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message\n");
-                        print_message_info(msg);
-                        THROW_EXCEPTION;
                     }
 
                     obstack_grow(log_obstk,

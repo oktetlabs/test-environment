@@ -258,6 +258,22 @@ rgt_expand_regular_log_msg(log_msg *msg)
     {
         if (msg->fmt_str[i] == '%' && i < str_len - 1)
         {
+            if (msg->fmt_str[i + 1] == '%')
+            {
+                obstack_1grow(msg->obstk, msg->fmt_str[i]);
+                i++;
+                continue;
+            }
+
+            if ((arg = get_next_arg(msg)) == NULL)
+            {
+                /* Too few arguments in the message */
+                /* Simply write the rest of format string to the log */
+                obstack_grow(msg->obstk, msg->fmt_str + i,
+                             strlen(msg->fmt_str + i));
+                break;
+            }
+
             switch (msg->fmt_str[i + 1])
             {
                 case 'c':
@@ -268,14 +284,6 @@ rgt_expand_regular_log_msg(log_msg *msg)
                 case 'X':
                 {
                     char format[3] = {'%', msg->fmt_str[i + 1], '\0'};
-
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message");
-                        free_log_msg(msg);
-                        THROW_EXCEPTION;
-                    }
 
                     *((uint32_t *)arg->val) = 
                         ntohl(*(uint32_t *)arg->val);
@@ -291,14 +299,6 @@ rgt_expand_regular_log_msg(log_msg *msg)
                 {
                     uint32_t val;
                     int      j;
-
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message");
-                        free_log_msg(msg);
-                        THROW_EXCEPTION;
-                    }
 
                     /* Address should be 4 bytes aligned */
                     assert(arg->len % 4 == 0);
@@ -326,23 +326,9 @@ rgt_expand_regular_log_msg(log_msg *msg)
 
                 case 's':
                 {
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message");
-                        free_log_msg(msg);
-                        THROW_EXCEPTION;
-                    }
-
                     obstack_grow(msg->obstk, arg->val, arg->len);
                     i++;
 
-                    continue;
-                }
-                case '%':
-                {
-                    obstack_1grow(msg->obstk, msg->fmt_str[i]);
-                    i++;
                     continue;
                 }
 
@@ -351,14 +337,6 @@ rgt_expand_regular_log_msg(log_msg *msg)
                     te_errno    err;
                     const char *src;
                     const char *err_str;
-
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr,
-                                "Too few arguments in the message:\n");
-                        free_log_msg(msg);
-                        THROW_EXCEPTION;
-                    }
 
                     err = *((uint32_t *)arg->val) = 
                         ntohl(*(uint32_t *)arg->val);
@@ -394,13 +372,6 @@ rgt_expand_regular_log_msg(log_msg *msg)
                         FILE *fd;
                         char  str[500];
 
-                        if ((arg = get_next_arg(msg)) == NULL)
-                        {
-                            fprintf(stderr,
-                                    "Too few arguments in the message\n");
-                            free_log_msg(msg);
-                            THROW_EXCEPTION;
-                        }
                         if ((fd = fopen(arg->val, "r")) == NULL)
                         {
                             perror("Error during the processing of the log "
@@ -436,13 +407,6 @@ rgt_expand_regular_log_msg(log_msg *msg)
                         fprintf(stderr, "WARNING: Invalid format for "
                                 "%%t specificator\n");
                         break;
-                    }
-
-                    if ((arg = get_next_arg(msg)) == NULL)
-                    {
-                        fprintf(stderr, "Too few arguments in the message");
-                        free_log_msg(msg);
-                        THROW_EXCEPTION;
                     }
 
                     if (/* i > str_len - 10 || */
