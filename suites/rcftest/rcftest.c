@@ -311,7 +311,7 @@ main()
         if (rc) break;
 
         rc = rcf_ta_trsend_stop(ta, sid, handle, &num);
-        printf("trsend_stop: 0x%X\n", num: %d\n", rc, num);
+        printf("trsend_stop: 0x%X, num: %d\n", rc, num);
         if (rc) break;
 
         printf("csap_destroy: %d\n", 
