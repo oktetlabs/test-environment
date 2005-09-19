@@ -213,7 +213,10 @@ AC_ARG_WITH([iscsi],,
 [if test "${withval}" = yes; then
     w_iscsi=true;
     proto_specific iscsi;
-    AC_CONFIG_FILES([iscsi/Makefile])
+    AC_CONFIG_FILES([iscsi/Makefile iscsi/unh_target/Makefile
+                     iscsi/unh_target/common/Makefile
+                     iscsi/unh_target/security/Makefile
+                     iscsi/unh_target/target/Makefile])
  fi
 ], [w_iscsi=false])
 
