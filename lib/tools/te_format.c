@@ -26,7 +26,7 @@
  *
  * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -383,18 +383,20 @@ case mod_:\
 
             case 'r':
             {
+                te_errno err;
+
                 *spec_start = '\0';
                 VFLUSH(s0, ap0);
-                rc = va_arg(ap, te_errno);
+                err = va_arg(ap, te_errno);
                 va_copy(ap0, ap);
-                if (strcmp(te_rc_mod2str(rc), "") == 0)
+                if (TE_RC_GET_MODULE(err) == 0)
                 {
-                     FLUSH("%s", te_rc_err2str(rc));
+                     FLUSH("%s", te_rc_err2str(err));
                 }
                 else
                 {
-                     FLUSH("%s-", te_rc_mod2str(rc));
-                     FLUSH("%s", te_rc_err2str(rc));
+                     FLUSH("%s-", te_rc_mod2str(err));
+                     FLUSH("%s", te_rc_err2str(err));
                 }
                 s0 = s + 1;
                 break;
