@@ -217,7 +217,8 @@ copy_or_rename(const char *config, char *backup)
         
         if (kill(pid, SIGCONT) == 0)
         {
-            ERROR("Backup '%s' of running TA with PID=%d is found",
+            ERROR("Backup '%s' of running TA with PID=%d is found - "
+                  "corresponding service(s) are not usable",
                   buf, pid);
             return TE_RC(TE_TA_UNIX, TE_EEXIST);
         }
@@ -3010,9 +3011,6 @@ supervise_backups(void *arg)
 int
 ta_unix_conf_daemons_init(rcf_pch_cfg_object **last)
 {
-    if (ds_create_backup("/etc/", "hosts", &hosts_index) != 0)
-        return 0;
-
 #ifdef WITH_ECHO_SERVER
     if (ds_create_backup(XINETD_ETC_DIR, "echo", NULL) == 0)
         DS_REGISTER(echoserver);
@@ -3032,10 +3030,6 @@ ta_unix_conf_daemons_init(rcf_pch_cfg_object **last)
     if (ds_create_backup(XINETD_ETC_DIR, "rsh", NULL) == 0)
         DS_REGISTER(rsh);
 #endif /* WITH_RSH */
-
-#ifdef WITH_SMTP
-    ds_init_smtp(last);
-#endif /* WITH_SMTP */
 
 #ifdef WITH_TFTP_SERVER
     ds_init_tftp_server(last);
@@ -3060,6 +3054,13 @@ ta_unix_conf_daemons_init(rcf_pch_cfg_object **last)
 #ifdef WITH_DNS_SERVER
     ds_init_dns_server(last);
 #endif /* WITH_DMS_SERVER */
+
+#ifdef WITH_SMTP
+    if (ds_create_backup("/etc/", "hosts", &hosts_index) == 0)
+        ds_init_smtp(last);
+    else
+        ERROR("SMTP server updates /etc/hosts and cannot be initialized");
+#endif /* WITH_SMTP */
 
     DS_REGISTER(sshd);
 
