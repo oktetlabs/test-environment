@@ -1,5 +1,5 @@
 /** @file
- * @brief Format string parsing
+ * @brief TE log format string processing
  *
  * Some TE-specific features, such as memory dump, file content logging,
  * and additional length modifiers are supported.
@@ -24,41 +24,11 @@
  * MA  02111-1307  USA
  *
  *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Ivan Soloducha <Ivan.Soloducha@oktetlabs.ru>
  *
  * $Id$
  */
 
-#ifndef  __TE_TOOLS_FORMAT_H__
-#define  __TE_TOOLS_FORMAT_H__
-
-#include <stdio.h>
-#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#include "te_stdint.h"
-#include "te_errno.h"
 
 
-/** Parameters for te_log_vprintf() function */
-struct te_log_out_params {
-    FILE       *fp;     /**< Output file; if NULL, no file output */
-    uint8_t    *buf;    /**< Output buffer; if NULL, no buffer output */
-    size_t      buflen; /**< Buffer length; for NULL buffer must be 0 */
-    size_t      offset; /**< Offset where output should begin */
-};
-
-/**
-  * Preprocess and output message to log with special features parsing
-  *
-  * @param param        Output parameters
-  * @param fmt          Format string
-  * @param ap           Arguments for the format string
-  *
-  * @return             N/A
-  */
-extern te_errno te_log_vprintf(struct te_log_out_params *param,
-                              const char *fmt, va_list ap);
-
-#endif /* !__TE_TOOLS_FORMAT_H__ */
