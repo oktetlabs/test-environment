@@ -772,3 +772,92 @@ tapi_iscsi_keys_data_free(iscsi_segment_data segment_data)
     return;
 }
 
+/* Target configuration */
+
+int
+tapi_iscsi_set_local_secret(const char *ta,
+                            const char *secret)
+{
+    assert(ta != NULL && secret != NULL && strlen(secret) == 16);
+
+    return cfg_set_instance_fmt(CVT_STRING, (void *)secret,
+                                "/agent:%s/iscsi_target:/chap:/lx:",
+                                ta);
+}                                
+
+int
+tapi_iscsi_set_local_name(const char *ta,
+                          const char *name)
+{
+    assert(ta != NULL && name != NULL);
+
+    return cfg_set_instance_fmt(CVT_STRING, (void *)name,
+                                "/agent:%s/iscsi_target:/chap:/ln:",
+                                ta);
+}                                
+
+int
+tapi_iscsi_set_peer_secret(const char *ta,
+                          const char *secret)
+{
+    assert(ta != NULL && secret != NULL && strlen(secret) == 16);
+
+    return cfg_set_instance_fmt(CVT_STRING, (void *)secret,
+                                "/agent:%s/iscsi_target:/chap:/t:/lx:",
+                                ta);
+}                                
+
+int
+tapi_iscsi_set_peer_name(const char *ta,
+                         const char *name)
+{
+    assert(ta != NULL && name != NULL);
+
+    return cfg_set_instance_fmt(CVT_STRING, (void *)name,
+                                "/agent:%s/iscsi_target:/chap:/t:/ln:",
+                                ta);
+}                                
+
+int
+tapi_iscsi_set_challenge_length(const char *ta,
+                                int len)
+{
+    assert(ta != NULL && len > 255 && len < 1025);
+
+    return cfg_set_instance_fmt(CVT_INTEGER, (void *)len,
+                                "/agent:%s/iscsi_target:/chap:/cl:",
+                                ta);
+}
+
+int
+tapi_iscsi_set_encoding_format(const char *ta,
+                               int fmt)
+{
+    assert(ta != NULL && (fmt == 0 || fmt == 1));
+
+    return cfg_set_instance_fmt(CVT_INTEGER, (void *)fmt,
+                                "/agent:%s/iscsi_target:/chap:/b:",
+                                ta);
+}
+
+int
+tapi_iscsi_set_tgt_auth_req(const char *ta,
+                            int tgt_auth)
+{
+    assert(ta != NULL && (tgt_auth == 0 || tgt_auth == 1));
+
+    return cfg_set_instance_fmt(CVT_INTEGER, (void *)tgt_auth,
+                                "/agent:%s/iscsi_target:/chap:/t:",
+                                ta);
+}
+
+int
+tapi_iscsi_set_security_negotiations_phase(const char *ta,
+                                           int use)
+{
+    assert(ta != NULL && (use == 0 || use == 1));
+
+    return cfg_set_instance_fmt(CVT_INTEGER, (void *)use,
+                                "/agent:%s/iscsi_target:/chap:",
+                                ta);
+}

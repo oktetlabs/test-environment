@@ -263,4 +263,22 @@ extern iscsi_segment_data tapi_iscsi_keys_create(int num, ...);
  */ 
 extern void tapi_iscsi_keys_data_free(iscsi_segment_data);
 
+/* Target configuration */
+int tapi_iscsi_set_local_secret(const char *ta, const char *secret);
+
+int tapi_iscsi_set_local_name(const char *ta, const char *name);
+
+int tapi_iscsi_set_peer_secret(const char *ta, const char *secret);
+
+int tapi_iscsi_set_peer_name(const char *ta, const char *name);
+
+int tapi_iscsi_set_challenge_length(const char *ta, int len);
+
+int tapi_iscsi_set_encoding_format(const char *ta, int fmt);
+
+int tapi_iscsi_set_tgt_auth_req(const char *ta, int tgt_auth);
+
+int tapi_iscsi_set_security_negotiations_phase(const char *ta,
+                                               int use);
+
 #endif /* !__TE_TAPI_ISCSI_H__ */
