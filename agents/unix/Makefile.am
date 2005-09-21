@@ -30,6 +30,11 @@ if CFG_NETLINK_USE
 MY_LDADD+=-lnetlink
 endif
 
+if ISCSI_TARGET_USE
+MY_SOURCES+=conf_iscsi_target.c
+endif
+
+
 if CFG_RCF_RPC
 
 MY_CPPFLAGS+=-DRCF_RPC -I.

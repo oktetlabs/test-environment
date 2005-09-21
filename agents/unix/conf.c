@@ -97,6 +97,11 @@ extern void ta_unix_conf_daemons_release(void);
 extern int ta_unix_conf_wifi_init(rcf_pch_cfg_object **last);
 #endif
 
+#ifdef WITH_ISCSI
+extern int ta_unix_iscsi_target_init(rcf_pch_cfg_object **last);
+#endif
+
+
 #ifdef USE_NETLINK
 struct nlmsg_list
 {
@@ -323,7 +328,7 @@ rcf_ch_conf_root(void)
 #ifdef USE_NETLINK
     struct rtnl_handle rth;
 #endif
-#ifdef CFG_UNIX_DAEMONS
+#if defined(CFG_UNIX_DAEMONS) || defined(WITH_ISCSI)
     rcf_pch_cfg_object *tail = &node_volatile;
     
     if (!init && tail->brother != NULL)
@@ -374,8 +379,16 @@ rcf_ch_conf_root(void)
             close(cfg_socket);
             return NULL;
         }
-        assert(tail->brother == NULL);
+        assert(tail->brother == NULL); 
 #endif
+#ifdef WITH_ISCSI
+        if (ta_unix_iscsi_target_init(&tail) != 0)
+        {
+            close(cfg_socket);
+            return NULL;
+        }
+        assert(tail->brother == NULL); 
+#endif        
 #ifdef USE_NETLINK
         memset(&rth, 0, sizeof(rth));
         if (rtnl_open(&rth, 0) < 0)

@@ -177,6 +177,8 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_RADIUS_SERVER,
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$with_netlink")
 
+AM_CONDITIONAL(ISCSI_TARGET_USE, test -n "$with_iscsi")
+
 
 dnl #######################################################################
 dnl Newer BSD systems don't have a compatible rtentry - use ortentry
@@ -313,6 +315,10 @@ else
     fi    
     CPPFLAGS="$CPPFLAGS -DUSE_IOCTL"
 fi
+
+if test -n "$with_iscsi"; then
+    CPPFLAGS="$CPPFLAGS -DWITH_ISCSI"
+fi    
 
 export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
 
