@@ -68,7 +68,7 @@
 #include "my_login.h"
 
 /** Pointer to the device specific data */
-static struct iscsi_global *devdata;
+struct iscsi_global *devdata;
 
 static int                                                                        
 iscsi_release_connection(struct iscsi_conn *conn)                                 
@@ -935,6 +935,8 @@ iscsi_server_init(void)
     devdata->auth_parameter.chap_local_ctx = CHAP_InitializeContext();
     devdata->auth_parameter.chap_peer_ctx = CHAP_InitializeContext();
     devdata->auth_parameter.srp_ctx = SRP_InitializeContext();
+
+    setup_security_hash_table();
 
     return 0;
 }

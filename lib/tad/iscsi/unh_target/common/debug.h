@@ -32,7 +32,12 @@
 #define _DEBUG_H
 
 #include <stdio.h>
-#define PRINT printf
+#include "te_defs.h"
+#include "logger_api.h"
+#include "logger_defs.h"
+#include "te_errno.h"
+
+#define PRINT INFO
 
 #if !defined(CONFIG_ISCSI_DEBUG)
 
@@ -101,13 +106,13 @@ extern uint32_t iscsi_trace_mask;
 
 #define TRACE_ERROR(args...)						   \
 	do  {								   \
-		PRINT("%s:%d:", __FUNCTION__, __LINE__);		   \
-		PRINT(__FILE__ ": ***ERROR*** " args);			   \
+		ERROR("%s:%d:", __FUNCTION__, __LINE__);		   \
+		ERROR(__FILE__ ": ***ERROR*** " args);			   \
 	} while(0)
 
 #define TRACE_WARNING(args...)						   \
 	do  {								   \
-		PRINT("***Warning*** " args);				   \
+		WARN("***Warning*** " args);				   \
 	} while(0)
 
 #endif
