@@ -216,12 +216,11 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
     uint8_t *to_print;
 # endif
 
-    struct msghdr msg;
-    int msg_iovlen;
     int total_tx, tx_loop;
     uint32_t hdr_crc, data_crc;
-    int data_len, k;
-    struct iovec *iov_copy, *iov_ptr;
+    int data_len, k, i;
+    struct iovec *ioptr;
+    uint8_t *buffer;
     struct generic_pdu *pdu;
 
     if (!conn->conn_socket) {
@@ -276,55 +275,26 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
               data_len, ntohl(data_crc));
     }
 
-    iov_copy =
-        (struct iovec *)malloc(niov * sizeof(struct iovec));
-    if (iov_copy == NULL)
+
+    buffer = malloc(data);
+    if (buffer == NULL)
         return -1;
 
     total_tx = 0;
     while (total_tx < data) {
-        /* get a clean copy of the original io vector to work with */
-        memcpy(iov_copy, iov, niov * sizeof(struct iovec));
-        msg_iovlen = niov;
-        iov_ptr = iov_copy;
-
-        if ((tx_loop = total_tx)) {
-            TRACE(TRACE_ISCSI,
-                  "iscsi_tx_data: data %d not completed, recompute iov\n",data);
-            do {
-                if (iov_ptr->iov_len <= tx_loop) {
-                    tx_loop -= iov_ptr->iov_len;
-                    iov_ptr++;
-                    msg_iovlen--;
-                } else {
-                    iov_ptr->iov_base += tx_loop;
-                    iov_ptr->iov_len -= tx_loop;
-                    tx_loop = 0;
-                }
-            } while (tx_loop);
-            TRACE(TRACE_ISCSI, "sock_sendmsg total_tx %d, data %d, niov %d, "
-                               "msg_iovlen %d\n",
-                               total_tx, data, niov, msg_iovlen);
-        }
-
-        memset(&msg, 0, sizeof(struct msghdr));
-        msg.msg_iov = iov_ptr;
-        msg.msg_iovlen = msg_iovlen;
-        msg.msg_flags = MSG_NOSIGNAL;
-
         TRACE(TRACE_DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d\n",
               niov, data, total_tx);
 
-        tx_loop = sendmsg(conn->conn_socket, &msg, (data - total_tx));
+        tx_loop = iscsi_tad_send(conn->conn_socket, buffer, (data - total_tx));
 
         if (tx_loop <= 0) {
             pdu = (struct generic_pdu *)iov[0].iov_base;
             TRACE_ERROR("sock_sendmsg error %d, total_tx %d, data %d, niov "
-                        "%d, msg_iovlen %d, op 0x%02x, flags 0x%02x, ITT %u\n",
+                        "%d, op 0x%02x, flags 0x%02x, ITT %u\n",
                         tx_loop, total_tx, data, niov,
-                        msg_iovlen, pdu->opcode, pdu->flags,
+                        pdu->opcode, pdu->flags,
                         ntohl(pdu->init_task_tag));
-            my_free((void**)&iov_copy);
+            free(buffer);
             return tx_loop;
         }
 
@@ -333,7 +303,6 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
               total_tx);
     }
 
-    my_free((void**)&iov_copy);
     return total_tx;
 }
 
@@ -761,8 +730,9 @@ build_conn_sess(int sock, struct portal_group *ptr)
     struct iscsi_session *session;
 
     conn = (struct iscsi_conn *)malloc(sizeof(struct iscsi_conn));
-    if (!conn) {
-        goto out1;
+    if (!conn) 
+    {
+        return NULL;
     }
 
     TRACE(TRACE_DEBUG, "new conn %p for sock %p\n", conn, sock);
@@ -805,8 +775,9 @@ build_conn_sess(int sock, struct portal_group *ptr)
         goto out4;
     }
 #endif
-    session = (struct iscsi_session *)malloc(sizeof(struct iscsi_session));
-    if (!session) {
+    session = malloc(sizeof(struct iscsi_session));
+    if (!session) 
+    {
 
         goto out4;
     }
@@ -848,7 +819,7 @@ build_conn_sess(int sock, struct portal_group *ptr)
     sem_init(&session->retran_sem, 0,0);
     sem_init(&session->thr_kill_sem,0 ,0);
 
-    goto out;
+    return NULL;
 
 out7:
     free((void**)&session->session_params);
@@ -868,8 +839,6 @@ out4:
 
     free((void*)&conn);
 
-out1:
-out:
     return conn;
 }
 
@@ -906,6 +875,7 @@ create_socket_pair(int *pipe)
 
 #define ISCSI_DEFAULT_PORT 3260
 
+
 int
 iscsi_server_init(void)
 {
@@ -930,13 +900,29 @@ iscsi_server_init(void)
 
     /* Copy the default parameters */
     param_tbl_init(*devdata->param_tbl);
-    devdata->param_tbl[2]->int_value = 2;
     /* chap and srp support - CHONG */
     devdata->auth_parameter.chap_local_ctx = CHAP_InitializeContext();
     devdata->auth_parameter.chap_peer_ctx = CHAP_InitializeContext();
     devdata->auth_parameter.srp_ctx = SRP_InitializeContext();
 
-    setup_security_hash_table();
+	/* setup the security key hash table */
+	setup_security_hash_table();
+
+	TRACE(TRACE_DEBUG, "iSCSI initialization completed\n");
+
+#if 0
+	devdata->device = register_target_front_end(tmpt);
+
+	if (!devdata->device) {
+		TRACE_ERROR("%s Device registration failed\n", current->comm);
+        bring_down_portals();
+        return -2;
+	}
+
+	devdata->device->dev_specific = (void *) devdata;
+
+	TRACE(TRACE_DEBUG, "Registration complete\n");
+#endif
 
     return 0;
 }

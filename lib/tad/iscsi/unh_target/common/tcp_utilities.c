@@ -57,7 +57,10 @@ tcp_nagle_off(int sock)
 void
 tcp_reuse_port(int sock)
 {
-    (void)sock;
+    int optval = 1;
+    int rc;
+
+    rc = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(int));
 }
 
 /* convert binary sockaddr structure

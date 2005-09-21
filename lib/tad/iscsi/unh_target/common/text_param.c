@@ -1251,6 +1251,8 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
 {
     int tx_loop;
     int data_length;
+    uint8_t *buffer;
+    size_t   length = ISCSI_HDR_LEN;
 
     struct iscsi_targ_login_rsp *targ_login_rsp;
 
@@ -1258,141 +1260,59 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
 
     TRACE(TRACE_ENTER_LEAVE, "Enter iscsi_send_msg\n");
 
-    switch (outputpdu->opcode & (ISCSI_OPCODE)) {
+    switch (outputpdu->opcode & (ISCSI_OPCODE)) 
+    {
+        case ISCSI_INIT_LOGIN_CMND:
+            /* Send the login Command */
+            if (TRACE_TEST(TRACE_ISCSI_FULL))
+                print_init_login_cmnd((struct iscsi_init_login_cmnd *)
+                                      outputpdu);
+            break;
+        case ISCSI_TARG_LOGIN_RSP:
+            /* Send the Login Response */
+            targ_login_rsp = (struct iscsi_targ_login_rsp *) outputpdu;
+            
+            TRACE(TRACE_ISCSI,
+                  "Send Login Response, CSG %d, NSG %d, T %d\n",
+                  (outputpdu->flags & CSG) >> CSG_SHIFT,
+                  outputpdu->flags & NSG, (outputpdu->flags & T_BIT) >> 7);
 
-	case ISCSI_INIT_LOGIN_CMND:
-
-		/* Send the login Command */
-		if (TRACE_TEST(TRACE_ISCSI_FULL))
-			print_init_login_cmnd((struct iscsi_init_login_cmnd *)
-					      outputpdu);
-		break;
-
-	case ISCSI_TARG_LOGIN_RSP:
-
-		/* Send the Login Response */
-		targ_login_rsp = (struct iscsi_targ_login_rsp *) outputpdu;
-
-		TRACE(TRACE_ISCSI,
-		      "Send Login Response, CSG %d, NSG %d, T %d\n",
-		      (outputpdu->flags & CSG) >> CSG_SHIFT,
-		      outputpdu->flags & NSG, (outputpdu->flags & T_BIT) >> 7);
-
-		if (TRACE_TEST(TRACE_ISCSI_FULL))
-			print_targ_login_rsp(targ_login_rsp);
-		break;
-
-	default:
-		TRACE_ERROR("sending bad opcode 0x%02X during Login phase\n",
-			    outputpdu->opcode & ISCSI_OPCODE);
-		return -1;
-
+            if (TRACE_TEST(TRACE_ISCSI_FULL))
+                print_targ_login_rsp(targ_login_rsp);
+            break;
+        default:
+            TRACE_ERROR("sending bad opcode 0x%02X during Login phase\n",
+                        outputpdu->opcode & ISCSI_OPCODE);
+            return -1;
     }			/* switch */
         
     /********************************************************/
-
+    
     /* all pdus store the DSL in the same place */
     outputpdu->length = htonl(outputpdu->text_length);
 
-#if 0
-    /* set up the i/o message and vectors */
-    memset(&msg, 0, sizeof (struct msghdr));
-    msg.msg_iov = iov = actual_iov;
-    msg.msg_flags = MSG_NOSIGNAL;
-
-    count = 1;
-    hdr_length = ISCSI_HDR_LEN;
-
-    /* NO packets sent or received during login will have 
-       digests of any kind */
-    iov->iov_base = (char *) outputpdu;
-    iov->iov_len = send_length = hdr_length;
-
     if ((data_length = outputpdu->text_length) > 0) {
         /* there is data attached to this pdu */
-
+        
         /* Add padding to end of any attached data */
         data_length += (-data_length) & 3;
-
-        if (data_length > outputpdu->text_length) {
-            TRACE(TRACE_DEBUG,
-                  "Length with padding = %d, without = %d\n",
-                  data_length, outputpdu->text_length);
-            memset(outputpdu->text + outputpdu->text_length, 0,
-                   data_length - outputpdu->text_length);
-        }
-
-        count++;
-        iov++;
-        iov->iov_base = outputpdu->text;
-        iov->iov_len = data_length;
-        send_length += data_length;
+        
+        length += data_length;
     }
-
-    /* i/o message and vector now set up */
-    msg.msg_iovlen = count;
-
-    TRACE(TRACE_DEBUG, "Sending %d bytes total, %d actual_iovs\n",
-          send_length, count);
-
-    total_tx = 0;
-    do {
-        TRACE(TRACE_NET,
-              "Sending %d bytes, %d actual_iovs on sock %p\n",
-              send_length, count, sock);
-        tx_loop = sendmsg(sock, &msg, 0);
-
-        if (tx_loop <= 0) {
-            TRACE_ERROR("sock_sendmsg error %d, total_tx %d\n",
-                        tx_loop, total_tx);
-            return tx_loop;
-        }
-        total_tx += tx_loop;
-
-        TRACE(TRACE_NET, "tx_loop=%d, total_tx=%d, send_length=%d\n",
-              tx_loop, total_tx, send_length);
-        if (total_tx != send_length) {
-            TRACE_ERROR("sock_sendmsg total_tx %d, expected %d\n",
-                        total_tx, send_length);
-        }
-    }
-    while (total_tx < send_length);
-
-    TRACE_BUFFER(TRACE_BUF, (char *) outputpdu, hdr_length,
-                 "Sent header, length: %d\n", hdr_length);
-
-    if (count > 1) {
-        TRACE_BUFFER(TRACE_BUF, (char *) outputpdu->text, data_length,
-                     "Sent data, length: %d\n", data_length);
-    }
-#endif
-
+    
+    buffer = calloc(sizeof(*buffer), length);
+    
+    memcpy(buffer, outputpdu, ISCSI_HDR_LEN);
+    if (length > ISCSI_HDR_LEN) 
     {
-        uint8_t *buffer;
-        size_t   length = ISCSI_HDR_LEN;
-
-        if ((data_length = outputpdu->text_length) > 0) {
-            /* there is data attached to this pdu */
-
-            /* Add padding to end of any attached data */
-            data_length += (-data_length) & 3;
-
-            length += data_length;
-        }
-
-        buffer = calloc(1, length);
-
-        memcpy(buffer, outputpdu, ISCSI_HDR_LEN);
-        if (length > ISCSI_HDR_LEN) {
-            memcpy(buffer + ISCSI_HDR_LEN, outputpdu->text,
-                   outputpdu->text_length);
-        } 
-
-        tx_loop = iscsi_tad_send(sock, buffer, length); 
-        TRACE(TRACE_NET, "sent %d bytes", tx_loop);
-
-        free(buffer);
-    }
+        memcpy(buffer + ISCSI_HDR_LEN, outputpdu->text,
+               outputpdu->text_length);
+    } 
+    
+    tx_loop = iscsi_tad_send(sock, buffer, length); 
+    TRACE(TRACE_NET, "sent %d bytes", tx_loop);
+    
+    free(buffer);
 
     TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_send_msg\n");
 
