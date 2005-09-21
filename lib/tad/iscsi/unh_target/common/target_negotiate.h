@@ -39,7 +39,9 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 
+#include "iscsi_common.h"
 #include "list.h"
+#include "text_param.h"
 
 /* names of bit numbers in the iscsi_conn control byte */
 #define SILENCE_BIT		0

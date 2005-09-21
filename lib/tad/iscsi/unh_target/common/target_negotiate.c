@@ -67,8 +67,6 @@
 #include "text_param.h"
 #include "target_negotiate.h"
 
-#define UNUSED(p) ((void)p)
-
 /*************************************************************************
  *This function sends a login response with proper status code when error
  * occurs in target during login phase
