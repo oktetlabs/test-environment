@@ -182,11 +182,70 @@
     <object oid="/agent/iscsi/target_port" access="read_write"
         type="integer"/>
 
-    <!-- iSCSI Initiator support of target authentication.
-         Value: 0 (support disabled) or
-                1 (support enabled).
-         Limit:1 -->
-    <object oid="/agent/iscsi/tgt_auth" access="read_write"
-        type="integer"/>     
-        
+    <!-- iSCSI Target 
+         Name: empty
+         Value: none 
+         -->
+    <object oid="/agent/iscsi_target" access="read_only"
+        type="none"/> 
+
+    <!-- iSCSI Target CHAP stuff 
+         Name: empty
+         Value: 0 (disable)
+                1 (enable)
+         -->
+    <object oid="/agent/iscsi_target/chap" access="read_write"
+        type="integer"/>
+
+    <!-- iSCSI target local secret
+         Name: none
+         Value: string 
+         -->    
+    <object oid="/agent/iscsi_target/chap/lx" access="read_write"
+        type="string"/>
+
+    <!-- iSCSI Target local name
+         Name: none
+         Value: string
+         -->    
+    <object oid="/agent/iscsi_target/chap/ln" access="read_write"
+        type="string"/>
+
+    <!-- iSCSI Target length of bytes in the CHAP challenge
+         Name: none
+         Value: <numerical-value-256-to-1024> (Default: none)
+         -->
+    <object oid="/agent/iscsi_target/chap/cl" access="read_write"
+         type="integer"/>
+
+    <!-- iSCSI Target format encoding
+         Name: none
+         Value: 0 (hex encoding - default)
+                1 (64-base encoding)
+         -->
+    <object oid="/agent/iscsi_target/chap/b" access="read_write"
+         type="integer"/>     
+
+    <!-- iSCSI Target authentication forced
+         Name: none
+         Value: 0 (disabled)
+                1 (enabled)
+         -->     
+    <object oid="/agent/iscsi_target/chap/t" access="read_write"
+         type="integer"/>
+    
+    <!-- iSCSI Target peer secret
+         Name: none
+         Value: string
+         -->
+    <object oid="/agent/iscsi_target/chap/t/px" access="read_write"
+         type="string"/>
+
+    <!-- iSCSI Target peer name
+         Name: none
+         Value: string
+         -->
+    <object oid="/agent/iscsi_target/chap/t/pn" access="read_write"
+         type="string"/>     
+         
 </backup>
