@@ -86,7 +86,7 @@
         rc_ = pthread_mutex_trylock(&_spec_data->pkt_queue_lock);       \
         if (rc_ == EBUSY)                                               \
         {                                                               \
-            RING("mutex is locked, wait...");                           \
+            INFO("mutex is locked, wait...");                           \
             rc_ = pthread_mutex_lock(&_spec_data->pkt_queue_lock);      \
         }                                                               \
                                                                         \
@@ -326,7 +326,7 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return TE_ETADCSAPNOTEX;
 
-    RING("%s(CSAP %d, layer %d) called", __FUNCTION__, csap_id, layer); 
+    INFO("%s(CSAP %d, layer %d) called", __FUNCTION__, csap_id, layer); 
 
     rc = asn_get_indexed(csap_nds, &iscsi_nds, 0);
     if (rc != 0)
@@ -439,7 +439,7 @@ iscsi_tad_recv_internal(csap_p csap_descr, uint8_t *buffer, size_t buf_len)
     packet_t   *recv_pkt = NULL; 
     uint8_t    *received_buffer = NULL;
 
-    RING("%s(CSAP %d): want %d bytes", __FUNCTION__, csap_descr->id, buf_len);
+    INFO("%s(CSAP %d): want %d bytes", __FUNCTION__, csap_descr->id, buf_len);
 
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
@@ -456,7 +456,7 @@ iscsi_tad_recv_internal(csap_p csap_descr, uint8_t *buffer, size_t buf_len)
 
         if (buf_len < len)
         {
-            RING("%s(CSAP %d): received %d, asked %d, cut it",
+            INFO("%s(CSAP %d): received %d, asked %d, cut it",
                  __FUNCTION__, csap_descr->id, recv_pkt->length, buf_len);
             len = buf_len;
             recv_pkt->length -= buf_len;
@@ -471,7 +471,7 @@ iscsi_tad_recv_internal(csap_p csap_descr, uint8_t *buffer, size_t buf_len)
 
     if (recv_pkt != NULL)
     { 
-        RING("%s(CSAP %d): copy to user %d bytes from 0x%x addr", 
+        INFO("%s(CSAP %d): copy to user %d bytes from 0x%x addr", 
              __FUNCTION__, csap_descr->id, len, received_buffer);
         memcpy(buffer, received_buffer, len); 
 
@@ -497,7 +497,7 @@ iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
     if (csap_descr == NULL)
         return -1; 
 
-    RING("%s(CSAP %d): want %d bytes", __FUNCTION__, csap, buf_len);
+    INFO("%s(CSAP %d): want %d bytes", __FUNCTION__, csap, buf_len);
 
     do {
         rx_loop = iscsi_tad_recv_internal(csap_descr, buffer, buf_len);
@@ -531,7 +531,7 @@ iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
     iscsi_csap_specific_data_t *iscsi_spec_data;
     packet_t *send_pkt;
 
-    RING("%s(CSAP %d): send %d bytes", __FUNCTION__, csap, buf_len); 
+    INFO("%s(CSAP %d): send %d bytes", __FUNCTION__, csap, buf_len); 
     
     if (csap_descr == NULL)
     {
@@ -549,7 +549,7 @@ iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
     send_pkt->buffer = malloc(buf_len);
     send_pkt->length = buf_len;
     memcpy(send_pkt->buffer, buffer, buf_len);
-    RING("%s(CSAP %d): insert to out queue %d bytes from 0x%x addr", 
+    INFO("%s(CSAP %d): insert to out queue %d bytes from 0x%x addr", 
          __FUNCTION__, csap, buf_len, buffer);
     
 
