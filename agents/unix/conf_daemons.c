@@ -2131,9 +2131,19 @@ ds_init_vncserver(rcf_pch_cfg_object **last)
 
 #define SMTP_EMPTY_SMARTHOST    "0.0.0.0"
 
+/** Index of smarthost name: te_tester<index> */
+static unsigned int smarthost_name_index = 0; 
+
+/** Initial SMTP server */
 static char *smtp_initial;
+
+/** Current SMTP server */
 static char *smtp_current;
+
+/** Name of daemon corresponding to current SMTP server */
 static char *smtp_current_daemon;
+
+/** Current smarthost IP address */
 static char *smtp_current_smarthost;
 
 /** "exim" or "exim4" */
@@ -2155,10 +2165,9 @@ static char *smtp_servers[] = {
 static int
 update_etc_hosts(char *ip)
 {
-    FILE    *f = NULL;
-    FILE    *g = NULL;
-    int      rc;
-    te_bool  old_smarthost = FALSE;
+    FILE *f = NULL;
+    FILE *g = NULL;
+    int   rc;
     
     if (strcmp(ip, SMTP_EMPTY_SMARTHOST) == 0)
         return 0;
@@ -2183,17 +2192,13 @@ update_etc_hosts(char *ip)
     {
         if (strstr(buf, "te_tester") == NULL)
             fwrite(buf, 1, strlen(buf), g);
-        else 
-            old_smarthost = TRUE;
     }
-    fprintf(g, "%s te_tester", ip);
+    fprintf(g, "%s te_tester%u", ip, smarthost_name_index);
     fclose(f);
     fclose(g);
     
     /* Commit all changes in config files */
     sync();
-    if (old_smarthost)
-        SLEEP(1); /* Somebody could cache old value */
 
     return 0;
 }
@@ -2203,8 +2208,9 @@ update_etc_hosts(char *ip)
 /** sendmail configuration location */
 #define SENDMAIL_CONF_DIR   "/etc/mail/"
 
-/** Smarthost option */
-#define SENDMAIL_SMARTHOST_OPT  "define(`SMART_HOST',`te_tester')\n"
+/** Smarthost option format */
+#define SENDMAIL_SMARTHOST_OPT_S  "define(`SMART_HOST',`te_tester"
+#define SENDMAIL_SMARTHOST_OPT_F  "%u')\n"
 
 static int sendmail_index = -1;
 
@@ -2225,8 +2231,7 @@ sendmail_smarthost_get(te_bool *enable)
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strncmp(buf, SENDMAIL_SMARTHOST_OPT, 
-                    strlen(SENDMAIL_SMARTHOST_OPT)) == 0)
+        if (strcmp_start(SENDMAIL_SMARTHOST_OPT_S, buf) == 0)
         {
             fclose(f);
             *enable = 1;
@@ -2274,7 +2279,8 @@ sendmail_smarthost_set(te_bool enable)
             fwrite(buf, 1, strlen(buf), g);
     }
     if (enable != 0)
-        fprintf(g, SENDMAIL_SMARTHOST_OPT);
+        fprintf(g, SENDMAIL_SMARTHOST_OPT_S SENDMAIL_SMARTHOST_OPT_F, 
+                smarthost_name_index);
 
     fclose(f);
     fclose(g);
@@ -2297,7 +2303,8 @@ sendmail_smarthost_set(te_bool enable)
 #define POSTFIX_CONF_DIR   "/etc/postfix/"
 
 /** Smarthost option */
-#define POSTFIX_SMARTHOST_OPT  "relayhost = te_tester\n"
+#define POSTFIX_SMARTHOST_OPT_S  "relayhost = te_tester"
+#define POSTFIX_SMARTHOST_OPT_F  "%u\n"
 
 static int postfix_index = -1;
 
@@ -2318,8 +2325,7 @@ postfix_smarthost_get(te_bool *enable)
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strncmp(buf, POSTFIX_SMARTHOST_OPT, 
-                    strlen(POSTFIX_SMARTHOST_OPT)) == 0)
+        if (strcmp_start(POSTFIX_SMARTHOST_OPT_S, buf) == 0) 
         {
             fclose(f);
             *enable = 1;
@@ -2371,7 +2377,8 @@ postfix_smarthost_set(te_bool enable)
     }
     if (enable != 0)
     {
-        fprintf(g, POSTFIX_SMARTHOST_OPT);
+        fprintf(g, POSTFIX_SMARTHOST_OPT_S POSTFIX_SMARTHOST_OPT_F,
+                smarthost_name_index);
         fprintf(g, "relaydomains = $mydomain");
     }
     fclose(f);
@@ -2390,7 +2397,8 @@ postfix_smarthost_set(te_bool enable)
 #define EXIM4_CONF_DIR   "/etc/exim4/"
 
 /** Smarthost option */
-#define EXIM_SMARTHOST_OPT  "dc_smarthost='te_tester'\n"
+#define EXIM_SMARTHOST_OPT_S  "dc_smarthost='te_tester"
+#define EXIM_SMARTHOST_OPT_F  "%u'\n"
 
 static int exim_index = -1;
 
@@ -2410,8 +2418,7 @@ exim_smarthost_get(te_bool *enable)
 
     while (fgets(buf, sizeof(buf), f) != NULL)
     {
-        if (strncmp(buf, EXIM_SMARTHOST_OPT, 
-                    strlen(EXIM_SMARTHOST_OPT)) == 0)
+        if (strcmp_start(EXIM_SMARTHOST_OPT_S, buf) == 0)
         {
             fclose(f);
             *enable = 1;
@@ -2460,7 +2467,8 @@ exim_smarthost_set(te_bool enable)
     }
     if (enable != 0)
     {
-        fprintf(g, EXIM_SMARTHOST_OPT);
+        fprintf(g, EXIM_SMARTHOST_OPT_S EXIM_SMARTHOST_OPT_F,
+                smarthost_name_index);
     }
     fclose(f);
     fclose(g);
@@ -2625,6 +2633,8 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
     if ((new_host = strdup(value)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
         
+    smarthost_name_index++;
+        
     if ((rc = update_etc_hosts(new_host)) != 0)
     {
          free(new_host);
@@ -2656,6 +2666,12 @@ ds_smtp_smarthost_set(unsigned int gid, const char *oid,
         
     free(smtp_current_smarthost);
     smtp_current_smarthost = new_host;
+    
+    if (daemon_running(smtp_current_daemon))
+    {
+        daemon_set(gid, smtp_current_daemon, "0");
+        daemon_set(gid, smtp_current_daemon, "1");
+    }
 
     return 0;
     
@@ -2701,6 +2717,11 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
 {
     unsigned int i;
     
+    int rc;
+    
+    char *smtp_prev = smtp_current;
+    char *smtp_prev_daemon = smtp_current_daemon;
+    
     UNUSED(gid);
     UNUSED(oid);
     
@@ -2722,27 +2743,19 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
     {
         if (strcmp(smtp_servers[i], value) == 0)
         {
-            if (smtp_current == NULL)
-            {
-                int rc = 0;
-                
-                if (strcmp(smtp_servers[i], "sendmail") == 0)
-                    rc = sendmail_smarthost_set(FALSE);
-                else if (strcmp(smtp_servers[i], "postfix") == 0)
-                    rc = postfix_smarthost_set(FALSE);
-                else if (strcmp(smtp_servers[i], "exim") == 0)
-                    rc = exim_smarthost_set(FALSE);
-                else if (strcmp(smtp_servers[i], "qmail") == 0)
-                    rc = qmail_smarthost_set(FALSE, "");
-                
-                if (rc != 0)
-                    return rc;
-            }
             smtp_current = smtp_servers[i];
             if (strcmp(smtp_current, "exim") == 0)
                 smtp_current_daemon = exim_name;
             else
                 smtp_current_daemon = smtp_current;
+            if ((rc  = ds_smtp_smarthost_set(0, NULL, 
+                                             smtp_current_smarthost)) != 0)
+            {
+                ERROR("Failed to update smarthost for %s", smtp_current);
+                smtp_current = smtp_prev;
+                smtp_current_daemon = smtp_prev_daemon;
+                return rc;
+            }
             return 0;
         }
     }
