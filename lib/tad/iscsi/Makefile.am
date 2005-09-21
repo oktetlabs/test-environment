@@ -7,7 +7,7 @@ AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir) \
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
 include_HEADERS=unh_target/common/target_negotiate.h \
-                unh_target/security/chap/chap.h \
+                unh_target/security/chap.h \
 		unh_target/security/misc_func.h \
 		unh_target/common/list.h \
 		unh_target/common/iscsi_common.h \

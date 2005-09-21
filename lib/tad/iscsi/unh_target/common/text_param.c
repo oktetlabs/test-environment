@@ -49,17 +49,12 @@
 
 #include "text_param.h"
 
-
 /* 
  * Declaration of send/recv methods from iSCSI TAD, see 
  * tad_iscsi_{impl.h|stack.c}
  */
 extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
 extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
-
-
-
-#define UNUSED(p_) ((void)p_)
 
 struct iscsi_thread_param *iscsi_param;
 

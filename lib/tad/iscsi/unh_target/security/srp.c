@@ -43,7 +43,6 @@
 #include "sha1.h"
 #include "bigint.h"
 
-#define UNUSED(p_) ((void)p_)
 
 // inner functions
 
