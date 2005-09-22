@@ -54,6 +54,7 @@ iscsi_target_pn_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
+    sprintf(value, "Peer name");
     return 0;
 }
 
@@ -83,6 +84,7 @@ iscsi_target_px_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
+    sprintf(value, "Peer secret");
     return 0;
 }
 
@@ -113,6 +115,7 @@ iscsi_target_t_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
+    sprintf(value, "0");
     return 0;
 }
 
@@ -149,6 +152,7 @@ iscsi_target_b_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
+    sprintf(value, "0");
     return 0;
 }
 
@@ -203,6 +207,7 @@ iscsi_target_cl_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
+    sprintf(value, "256");
     return 0;
 }
 
@@ -236,6 +241,7 @@ iscsi_target_ln_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
+    sprintf(value, "Local name");
     return 0;
 }
 
@@ -266,6 +272,7 @@ iscsi_target_lx_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
+    sprintf(value, "Local secret");
     return 0;
 }
 
@@ -337,6 +344,7 @@ iscsi_target_chap_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
+    sprintf(value, "0");
     return 0;
 }
 
