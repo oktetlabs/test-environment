@@ -392,7 +392,7 @@ ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                               "remote-addr.#plain");
     if (rc != 0)
     {
-        RING("%s(): read remote addr fails %X", __FUNCTION__, rc);
+        INFO("%s(): read remote addr fails %X", __FUNCTION__, rc);
         spec_data->remote_addr.s_addr = 0;
     }
 
@@ -402,7 +402,7 @@ ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                               "local-addr.#plain");
     if (rc != 0)
     {
-        RING("%s(): read local addr fails %X", __FUNCTION__, rc);
+        INFO("%s(): read local addr fails %X", __FUNCTION__, rc);
         spec_data->local_addr.s_addr = 0;
     }
 
@@ -447,7 +447,7 @@ ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     UNUSED(csap_descr);
     UNUSED(traffic_nds);
 
-    RING("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
+    INFO("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
 
     return 0;
 }

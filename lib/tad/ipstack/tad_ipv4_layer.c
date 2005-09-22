@@ -377,7 +377,7 @@ ip4_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
     do {                                                                \
         if ( (((uint32_t)-1) << n_bits_) & var_)                        \
         {                                                               \
-            RING("%s():%d: var " #var_ " is : 0x%x, but should %d bits",\
+            INFO("%s():%d: var " #var_ " is : 0x%x, but should %d bits",\
                  __FUNCTION__, __LINE__, var_, n_bits_);                \
             var_ &= ~(((uint32_t)-1) << n_bits_);                       \
         }                                                               \
