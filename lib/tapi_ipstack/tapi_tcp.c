@@ -222,8 +222,8 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
         in_dst_addr.s_addr = 0;
 
     VERB("%s, create pattern unit %s:%u -> %s:%u", __FUNCTION__,
-         inet_ntoa(in_src_addr), (unsigned int)src_port, 
-         inet_ntoa(in_dst_addr), (unsigned int)dst_port);
+         inet_ntoa(in_src_addr), (unsigned int)ntohs(src_port), 
+         inet_ntoa(in_dst_addr), (unsigned int)ntohs(dst_port));
 
     do {
         if (result_value == NULL) { rc = TE_EWRONGPTR; break; }
@@ -243,12 +243,12 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
 
         if (rc) break;
         if (src_port) /* SRC port passed here in HOST byte order */
-            rc = asn_write_int32(pu, src_port,
+            rc = asn_write_int32(pu, ntohs(src_port),
                                  "pdus.0.#tcp.src-port.#plain");
 
         if (rc) break;
         if (dst_port) /* DST port passed here in HOST byte order */
-            rc = asn_write_int32(pu, dst_port,
+            rc = asn_write_int32(pu, ntohs(dst_port),
                                  "pdus.0.#tcp.dst-port.#plain");
         if (rc) break;
 

@@ -218,8 +218,8 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
  * @param csap          Identifier of CSAP
  * @param src_addr      Source IP address in network order (or NULL)
  * @param dst_addr      Destination IP address in network order (or NULL)
- * @param loc_port      Local TCP port in HOST byte order 
- * @param rem_port      Remote TCP port in HOST byte order 
+ * @param loc_port      Local TCP port in network byte order 
+ * @param rem_port      Remote TCP port in network byte order 
  * @param timeout       Timeout of operation (in milliseconds, 
  *                      zero for infinitive)
  * @param num           nubmer of packets to be caugth
@@ -243,8 +243,8 @@ extern int tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
  * 
  * @param src_addr      Source IP address in network order (or NULL)
  * @param dst_addr      Destination IP address in network order (or NULL)
- * @param src_port      Source TCP port in HOST byte order 
- * @param dst_port      Destination TCP port in HOST byte order 
+ * @param src_port      Source TCP port in network byte order 
+ * @param dst_port      Destination TCP port in network byte order 
  * @param result_value  Location for pointer to new ASN value
  * 
  * @return Zero on success or error code.
