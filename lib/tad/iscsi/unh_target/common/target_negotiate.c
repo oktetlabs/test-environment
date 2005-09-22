@@ -823,6 +823,13 @@ target_security_negotiate(struct iscsi_conn *conn,
 							|| strcmp(key->keyvalue,
 									  auth_param.chap_local_ctx->name)) {
 							TRACE_ERROR("security authentication failed\n");
+                                                        TRACE_ERROR("key is %s->%s", key->keyname, key->keyvalue);
+                                                        if (auth_param.chap_local_ctx->name == NULL)
+                                                            TRACE_ERROR("name is null");
+                                                        if (strcmp(key->keyvalue, auth_param.chap_local_ctx->name))
+                                                            TRACE_ERROR("strcmp failed, %s, %s",
+                                                                        key->keyvalue, auth_param.chap_local_ctx->name);
+                                                        
 							retval = -1;
 							login_reject(conn, STAT_CLASS_INITIATOR,
 										 STAT_DETAIL_NOT_AUTH, outputpdu);
