@@ -242,12 +242,12 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
                                        "pdus.1.#ip4.dst-addr.#plain");
 
         if (rc) break;
-        if (src_port) /* SRC port passed here in HOST byte order */
+        if (src_port) /* SRC port passed here in network byte order */
             rc = asn_write_int32(pu, ntohs(src_port),
                                  "pdus.0.#tcp.src-port.#plain");
 
         if (rc) break;
-        if (dst_port) /* DST port passed here in HOST byte order */
+        if (dst_port) /* DST port passed here in network byte order */
             rc = asn_write_int32(pu, ntohs(dst_port),
                                  "pdus.0.#tcp.dst-port.#plain");
         if (rc) break;
