@@ -819,7 +819,7 @@ build_conn_sess(int sock, struct portal_group *ptr)
     sem_init(&session->retran_sem, 0,0);
     sem_init(&session->thr_kill_sem,0 ,0);
 
-    return NULL;
+    return conn;
 
 out7:
     free((void**)&session->session_params);
@@ -839,7 +839,7 @@ out4:
 
     free((void*)&conn);
 
-    return conn;
+    return NULL;
 }
 
 void

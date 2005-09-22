@@ -36,19 +36,6 @@
 
 #define ETHER_ADDR_LEN 6
 #define TE_TEST_NAME "example"
-#define TEST_START_VARS unsigned mtu; \
-            char ta[32]; \
-            char eth0_oid[128]; \
-            int num_interfaces; \
-            cfg_handle *interfaces; \
-            struct sockaddr *addr; \
-            char *dirname; \
-            cfg_val_type type = CVT_INTEGER; \
-            int flag; \
-            int len; \
-            int shell_tid; \
-            struct sockaddr_in host_addr; \
-            uint8_t mac[ETHER_ADDR_LEN + 1];
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -58,53 +45,120 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include "tapi_test.h"
-#include "tapi_cfg_base.h"
-#include "tapi_sockaddr.h"
-#include "rcf_api.h"
-#include "rcf_rpc.h"
-#include "tapi_rpc.h"
-#include "tapi_rpc_stdio.h"
-#include "tapi_rpcsock_macros.h"
+#include "tapi_tcp.h"
+#include "tapi_iscsi.h"
+
+
+#define NET_DUMP INFO
+
+#define INCOMMING_PACKET_TIMEOUT 2000
+#define OUTGOING_PACKET_TIMEOUT 2000
+
+#define GET_INCOMMING_PACKET_FROM_NET(agent_, conn_, \
+                                      buffer_, len_) \
+    do {                                                        \
+        memset((buffer_), 0, (len_));                           \
+        rc = tapi_tcp_buffer_recv((agent_), 0, (conn_),         \
+                                  INCOMMING_PACKET_TIMEOUT,     \
+                                  CSAP_INVALID_HANDLE, FALSE,   \
+                                  (buffer_), &(len_));          \
+        if (rc != 0)                                            \
+            TEST_FAIL("recv from NET failed: %r", rc);          \
+        NET_DUMP("received %d bytes from NET", len);            \
+    } while(0)
+
+#define SEND_INCOMMING_PACKET_TO_TARGET(agent_, target_csap_, \
+                                        buffer_, len_)         \
+    do {                                                            \
+        rc = tapi_iscsi_send_pkt((agent_), 0, (target_csap_), NULL, \
+                                 (buffer_), (len_));                \
+        if (rc != 0)                                                \
+            TEST_FAIL("send to TARGET failed: %r", rc);             \
+    } while(0)
+
+#define GET_OUTGOING_PACKET_FROM_TARGET(agent_, target_csap_, \
+                                        buffer_, len_) \
+    do {                                                      \
+        memset((buffer_), 0, (len_));                         \
+        rc = tapi_iscsi_recv_pkt((agent_), 0, (target_csap_), \
+                                 OUTGOING_PACKET_TIMEOUT,     \
+                                 CSAP_INVALID_HANDLE, NULL,   \
+                                 (buffer_), &(len_));         \
+        if (rc != 0)                                          \
+            TEST_FAIL("recv from TARGET failed: %r", rc);     \
+        NET_DUMP("+++ data from TARGET to NET: %tm",          \
+                 (buffer_), (len_));                          \
+    }while(0)
+
+#define SEND_OUTGOING_PACKET_TO_NET(agent_, target_csap_, \
+                                    buffer_, len_)         \
+    do {                                                         \
+        rc = tapi_tcp_buffer_send((agent_), 0, (target_csap_),   \
+                                 (buffer_), (len_));             \
+        if (rc != 0)                                             \
+            TEST_FAIL("send to NET failed: %r", rc);             \
+    } while(0)
+
 
 int
 main(int argc, char *argv[])
 {
-    rcf_rpc_server *srv = NULL;
-    int rc1;
-    FILE *f;
-    cfg_handle new_client;
+    char ta[256];
+    uint8_t rx_buffer[10000];
+    uint8_t tx_buffer[10000];
+    int len;
+    
+    int acc_sock;
+    csap_handle_t iscsi_csap = CSAP_INVALID_HANDLE;
+    csap_handle_t listen_csap = CSAP_INVALID_HANDLE;
+    csap_handle_t acc_csap   = CSAP_INVALID_HANDLE;
+
     TEST_START;
 
     len = sizeof(ta);
     CHECK_RC(rcf_get_ta_list(ta, &len));
     RING("Agent is %s", ta);
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, 0, "/agent:%s/radiusserver:", ta));
-    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/radiusserver:", ta));
-    CHECK_RC(cfg_add_instance_fmt(&new_client, CVT_NONE, NULL, "/agent:%s/radiusserver:/client:%s", 
-                                  ta, "127.0.0.1"));
-    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "secret", "/agent:%s/radiusserver:/client:%s/secret:", 
-                                  ta, "127.0.0.1"));
-    CHECK_RC(cfg_add_instance_fmt(&new_client, CVT_INTEGER, 1, "/agent:%s/radiusserver:/user:%s", 
-                                  ta, "artem"));
-    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "User-Password=\"kuku\"", 
-                                  "/agent:%s/radiusserver:/user:%s/check:", 
-                                  ta, "artem"));
-    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "Session-Timeout=100,Framed-IP-Address=192.168.1.1", 
-                                  "/agent:%s/radiusserver:/user:%s/challenge-attrs:", 
-                                  ta, "artem"));
-    CHECK_RC(cfg_set_instance_fmt(CVT_STRING, "Framed-IP-Address=192.168.1.1", 
-                                  "/agent:%s/radiusserver:/user:%s/accept-attrs:", 
-                                  ta, "artem"));
-    sleep(60);
-    CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1, "/agent:%s/radiusserver:", ta));
-    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/radiusserver:", ta));
-    CHECK_RC(cfg_set_instance_fmt(type, 0, "/agent:%s/radiusserver:", ta));
-    CHECK_RC(cfg_get_instance_fmt(&type, &flag, "/agent:%s/radiusserver:", ta));
 
-    RING("RADIUS server is %s", flag ? "on" : "off");
+    CHECK_RC(tapi_tcp_server_csap_create(ta, 0, 
+                                         0,
+                                         htons(3260),
+                                         &listen_csap));
+
+    CHECK_RC(tapi_tcp_server_recv(ta, 0, listen_csap, 100000, &acc_sock));
+
+    RING("acc socket: %d", acc_sock);
+
+    CHECK_RC(tapi_tcp_socket_csap_create(ta, 0, acc_sock, &acc_csap));
+
+    CHECK_RC(tapi_iscsi_csap_create(ta, 0, &iscsi_csap));
+
+    RING("Starting the Login Phase");
+    do {
+        /* I->T */
+        len = sizeof(rx_buffer);
+        GET_INCOMMING_PACKET_FROM_NET(ta, acc_csap, rx_buffer, len);
+
+        SEND_INCOMMING_PACKET_TO_TARGET(ta, iscsi_csap, rx_buffer, len);
+        /* T->I */
+        len = sizeof(tx_buffer);
+        GET_OUTGOING_PACKET_FROM_TARGET(ta, iscsi_csap, tx_buffer, len);
+
+        SEND_OUTGOING_PACKET_TO_NET(ta, acc_csap, tx_buffer, len);
+        break; // CHECK_LOGIN_PHASE_END(tx_buffer);
+    } while (1);
+
 
     TEST_SUCCESS;
 
 cleanup:
+    if (iscsi_csap != CSAP_INVALID_HANDLE)
+        rcf_ta_csap_destroy(ta, 0, iscsi_csap);
+
+    if (acc_csap != CSAP_INVALID_HANDLE)
+        rcf_ta_csap_destroy(ta, 0, acc_csap);
+    
+    if (listen_csap != CSAP_INVALID_HANDLE)
+        rcf_ta_csap_destroy(ta, 0, listen_csap);
+
     TEST_END;
 }

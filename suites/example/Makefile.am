@@ -22,9 +22,11 @@ tetest_PROGRAMS = \
 
 
 example_SOURCES = example.c
-example_LDADD = -llogger_ten -lrcfapi -lipc -ltapi -lconfapi -ltapi_rpc \
-                -lrcfrpc -lconf_types -lconf_oid -lpthread \
-                -L/home/artem/src/testnut/libtestnut.so
+example_LDADD = -llogger_ten -ltapi_rpc -lrcfapi -lipc -ltapi \
+                -ltapi_eth -ltapi_arp \
+				-lndn -lasn -ltapi_tad -ltapi_iscsi -ltapi_ipstack \
+				-lconfapi \
+                -lrcfrpc -lrpcxdr -lconf_types -lconf_oid -lpthread -ltools
                 
 example_DEPENDENCIES = \
     ${TE_INSTALL}/@host@/lib/librcfapi.a \
