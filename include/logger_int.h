@@ -40,14 +40,6 @@
 extern "C" {
 #endif
 
-/*
- * Number of bytes is not added to the Log_message_length (except entity
- * name length with its NFL): Log_ver, Timestamp, Level, Log_message_length.
- */
-#define LGR_UNACCOUNTED_LEN   (sizeof(te_log_version) + \
-                               TE_LOG_TIMESTAMP_SZ + \
-                               TE_LOG_LEVEL_SZ)
-
 
 /** Convert value to the network order */
 #define LGR_16_TO_NET(_val, _res) \
@@ -69,19 +61,19 @@ extern "C" {
         (buf_) += 2;                \
     } while (0)
 
-#if (TE_LOG_NFL_SZ == 2)
+#if (SIZEOF_TE_LOG_NFL == 2)
 #define LGR_NFL_PUT(val_, buf_)     LGR_16_PUT(val_, buf_)
 #else
 #error LGR_NFL_PUT is not defined
 #endif
 
-#if (TE_LOG_LEVEL_SZ == 2)
+#if (SIZEOF_TE_LOG_LEVEL == 2)
 #define LGR_LEVEL_PUT(val_, buf_)   LGR_16_PUT(val_, buf_)
 #else
 #error LGR_LEVEL_PUT is not defined
 #endif
 
-#if (TE_LOG_TIMESTAMP_SZ == 8)
+#if (SIZEOF_TE_LOG_TS_SEC + SIZEOF_TE_LOG_TS_USEC == 8)
 #define LGR_TIMESTAMP_PUT(ts_, buf_) \
     do {                                        \
         C_ASSERT(sizeof((ts_)->tv_sec) == 4);   \

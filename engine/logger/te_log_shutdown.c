@@ -47,14 +47,14 @@ main(void)
 {
     int                 result = EXIT_SUCCESS;
     te_log_nfl          nfl = strlen(LGR_SHUTDOWN);
-    uint8_t             mess[TE_LOG_NFL_SZ + nfl];
+    uint8_t             mess[sizeof(nfl) + nfl];
     struct ipc_client  *log_client = NULL;
     int                 rc;
 
 
     /* Prepare message with entity name LGR_SHUTDOWN */
     *(te_log_nfl *)mess = nfl;
-    memcpy(mess + TE_LOG_NFL_SZ, LGR_SHUTDOWN, nfl);
+    memcpy(mess + sizeof(nfl), LGR_SHUTDOWN, nfl);
 
     rc = ipc_init_client("LOGGER_SHUTDOWN_CLIENT", &log_client);
     if (rc != 0)

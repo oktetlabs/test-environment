@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#include "te_config.h"
+
 #include <stdio.h>
 #include <obstack.h>
 
@@ -134,21 +136,21 @@ static struct debug_msg {
  * Macro to convert "next field length" field from network to
  * host byte order.
  */
-#if TE_LOG_NFL_SZ == 4
+#if SIZEOF_TE_LOG_NFL == 4
 #define RGT_NFL_NTOH(val_) \
     do {                    \
         val_ = ntohl(val_); \
     } while (0)
-#elif TE_LOG_NFL_SZ == 2
+#elif SIZEOF_TE_LOG_NFL == 2
 #define RGT_NFL_NTOH(val_) \
     do {                    \
         val_ = ntohs(val_); \
     } while (0)
-#elif TE_LOG_NFL_SZ == 1
+#elif SIZEOF_TE_LOG_NFL == 1
 /* Do nothing in case of 1 byte */
 #define NFL_NTOH(val_)
 #else
-#error TE_LOG_NFL_SZ is expected to be 1, 2 or 4
+#error SIZEOF_TE_LOG_NFL is expected to be 1, 2 or 4
 #endif
 
 /**
@@ -174,8 +176,9 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 {
     te_log_nfl        nflen; /* Next field length */
     te_log_version    log_ver;
-    uint32_t          timestamp[2];
-    te_log_level_t    log_level;
+    te_log_ts_sec     ts_sec;
+    te_log_ts_usec    ts_usec;
+    te_log_level      log_level;
     FILE             *fd = ctx->rawlog_fd;
 
     char     *entity_name;
@@ -190,10 +193,8 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
      */
     cur_msg_offset = ftell(fd);
 
-    assert(sizeof(nflen) == TE_LOG_NFL_SZ);
-
     /* Read length of entity name */
-    if (universal_read(fd, &nflen, TE_LOG_NFL_SZ, ctx->io_mode) == 0)
+    if (universal_read(fd, &nflen, sizeof(nflen), ctx->io_mode) == 0)
     {
         /*
          * There are no messages left (rgt operation mode is postponed)
@@ -207,8 +208,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
     obstk = (*msg)->obstk;
 
     arg = &((*msg)->args);
-
-    /* START PROCESSING OF A NEW MESSAGE */
+/* START PROCESSING OF A NEW MESSAGE */
     
     /* Process Entity Name: Note that it doesn't end with '\0' */
     entity_name = (char *)obstack_alloc(obstk, nflen + 1);
@@ -225,21 +225,20 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 
     /* Read timestamp */
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_TIMESTAMP);
-    assert(sizeof(timestamp) == TE_LOG_TIMESTAMP_SZ);
-    READ(fd, timestamp, TE_LOG_TIMESTAMP_SZ);
+    READ(fd, &ts_sec,  sizeof(ts_sec));
+    READ(fd, &ts_usec, sizeof(ts_usec));
 
     /* Read log level */
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_LOGLEVEL);
-    assert(sizeof(log_level) == TE_LOG_LEVEL_SZ);
     READ(fd, &log_level, sizeof(log_level));
-#if TE_LOG_LEVEL_SZ == 2
+#if SIZEOF_TE_LOG_LEVEL == 2
     log_level = ntohs(log_level);
-#elif TE_LOG_LEVEL_SZ == 4
+#elif SIZEOF_TE_LOG_LEVEL == 4
     log_level = ntohl(log_level);
-#elif TE_LOG_LEVEL_SZ == 1
+#elif SIZEOF_TE_LOG_LEVEL == 1
     /* Do nothing */
 #else
-#error TE_LOG_LEVEL_SZ is expected to be 1, 2, or 4
+#error SIZEOF_TE_LOG_LEVEL is expected to be 1, 2, or 4
 #endif
 
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_WHOLE);
@@ -291,8 +290,8 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 
     (*msg)->entity = entity_name;
     (*msg)->user   = user_name;
-    (*msg)->timestamp[0] = ntohl(timestamp[0]);
-    (*msg)->timestamp[1] = ntohl(timestamp[1]);
+    (*msg)->timestamp[0] = ntohl(ts_sec);
+    (*msg)->timestamp[1] = ntohl(ts_usec);
     (*msg)->fmt_str = fmt_str;
     (*msg)->cur_arg = (*msg)->args;
     (*msg)->txt_msg = NULL;

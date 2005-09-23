@@ -72,12 +72,12 @@
 #define CONSERVER_SPY       CONSERVER_ESCAPE "s"
 #define CONSERVER_STOP      CONSERVER_ESCAPE "."
 
-static te_log_level_t
+static te_log_level
 map_name_to_level(const char *name)
 {
     static const struct {
-        char            *name;
-        te_log_level_t   level;
+        char           *name;
+        te_log_level    level;
     } levels[] = {{"ERROR", TE_LL_ERROR},
                   {"WARN",  TE_LL_WARN},
                   {"RING",  TE_LL_RING},
@@ -323,7 +323,7 @@ log_serial(void *ready, int argc, char *argv[])
     char * volatile fence;
     volatile int    current_timeout = -1;
 
-    te_log_level_t  level;
+    te_log_level    level;
     char           *newline;
     int             interval;
     int             len;

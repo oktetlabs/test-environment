@@ -38,14 +38,23 @@
 extern "C" {
 #endif
 
+/** Current TE log version */
+#define TE_LOG_VERSION  1
 
-/** Current log version */
-#define TE_LOG_VERSION          1
 
-/* Appropriate fields length in the raw log file format */
-#define TE_LOG_NFL_SZ           2   /**< Next-Field-Length size */
-#define TE_LOG_TIMESTAMP_SZ     8   /**< Size of timestamp */
-#define TE_LOG_LEVEL_SZ         2   /**< Size of log level */
+/** Type to store TE log version in raw log */
+typedef uint8_t  te_log_version;
+/** Type to store TE log sequence numbers in raw log */
+typedef uint32_t te_log_seqno;
+/** Type to store timestamp seconds in raw log */
+typedef uint32_t te_log_ts_sec;
+/** Type to store timestamp microseconds in raw log */
+typedef uint32_t te_log_ts_usec;
+/** Type to store log level in raw log */
+typedef uint16_t te_log_level;
+/** Type to store Next-Field-Length in raw log */
+typedef uint16_t te_log_nfl;
+
 
 /** Length of the End-Of-Record is equal to maximum supported by NFL */
 #define TE_LOG_RAW_EOR_LEN  ((1 << (sizeof(te_log_nfl) << 3)) - 1)
@@ -53,28 +62,16 @@ extern "C" {
 #define TE_LOG_FIELD_MAX    (TE_LOG_RAW_EOR_LEN - 1)
 
 
-/** TE log version field */
-typedef uint8_t  te_log_version;
-
-#if (TE_LOG_NFL_SZ == 1)
-typedef uint8_t te_log_nfl;
-#elif (TE_LOG_NFL_SZ == 2)
-typedef uint16_t te_log_nfl;
-#elif (TE_LOG_NFL_SZ == 4)
-typedef uint32_t te_log_nfl;
-#else
-#error Such TE_LOG_NFL_SZ is not supported.
-#endif
-
-#if (TE_LOG_LEVEL_SZ == 1)
-typedef uint8_t te_log_level_t;
-#elif (TE_LOG_LEVEL_SZ == 2)
-typedef uint16_t te_log_level_t;
-#elif (TE_LOG_LEVEL_SZ == 4)
-typedef uint32_t te_log_level_t;
-#else
-#error Such TE_LOG_LEVEL_SZ is not supported.
-#endif
+/**
+ * Size of TE raw log message fields which do not use NFL.
+ *
+ * @attention In the case of TA it is necessary to add
+ *            sizeof(te_log_seqno).
+ */
+#define TE_LOG_MSG_HDR_SZ   (sizeof(te_log_version) + \
+                             sizeof(te_log_ts_sec) + \
+                             sizeof(te_log_ts_usec) + \
+                             sizeof(te_log_level))
 
 
 #ifdef __cplusplus

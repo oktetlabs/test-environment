@@ -441,7 +441,7 @@ typedef struct lgr_mess_header {
     uint32_t        mark;           /**< Flag: message is marked as
                                          processed at this time */
     struct timeval  timestamp;
-    te_log_level_t  level;          /**< Log level mask to be passed 
+    te_log_level    level;          /**< Log level mask to be passed 
                                          in raw log*/
     const char     *user_name;      /**< User_name string location */
     const char     *fs;             /**< Format string location */

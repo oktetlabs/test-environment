@@ -243,14 +243,14 @@ resume:
 static inline te_log_nfl
 log_nfl_hton(te_log_nfl val)
 {
-#if (TE_LOG_NFL_SZ == 1)
+#if (SIZEOF_TE_LOG_NFL == 1)
     return val;
-#elif (TE_LOG_LEVEL_SZ == 2)
+#elif (SIZEOF_TE_LOG_LEVEL == 2)
     return htons(val);
-#elif (TE_LOG_LEVEL_SZ == 4)
+#elif (SIZEOF_TE_LOG_LEVEL == 4)
     return htonl(val);
 #else
-#error Such TE_LOG_NFL_SZ is not supported
+#error Such SIZEOF_TE_LOG_NFL is not supported
 #endif
 }
 
@@ -313,38 +313,38 @@ log_get_message(uint32_t length, uint8_t *buffer)
         }                                                           \
         mess_length += (_field_length);                             \
     } while (0)
+    
+    LGR_CHECK_LENGTH(sizeof(te_log_seqno) + TE_LOG_MSG_HDR_SZ);
         
     /* Write message sequence number */
-    LGR_CHECK_LENGTH(sizeof(uint32_t));
     *((uint32_t *)tmp_buf) = htonl(header.sequence);
     tmp_buf += sizeof(uint32_t);
 
     /* Write current log version */
-    LGR_CHECK_LENGTH(sizeof(te_log_version));
-    assert(sizeof(te_log_version) == 1);
+#if (SIZEOF_TE_LOG_VERSION != 1)
+#error Such SIZEOF_TE_LOG_VERSION is not supported
+#endif
     *tmp_buf = TE_LOG_VERSION;
     tmp_buf++;
 
     /* Write timestamp */
-    LGR_CHECK_LENGTH(TE_LOG_TIMESTAMP_SZ);
     *((uint32_t *)tmp_buf) = htonl(header.timestamp.tv_sec);
     tmp_buf += sizeof(uint32_t);
     *((uint32_t *)tmp_buf) = htonl(header.timestamp.tv_usec);
     tmp_buf += sizeof(uint32_t);
 
     /* Write log level */
-    LGR_CHECK_LENGTH(TE_LOG_LEVEL_SZ);
-    *((te_log_level_t *)tmp_buf) = 
-#if (TE_LOG_LEVEL_SZ == 1)
+    *((te_log_level *)tmp_buf) = 
+#if (SIZEOF_TE_LOG_LEVEL == 1)
         header.level;
-#elif (TE_LOG_LEVEL_SZ == 2)
+#elif (SIZEOF_TE_LOG_LEVEL == 2)
         htons(header.level);
-#elif (TE_LOG_LEVEL_SZ == 4)
+#elif (SIZEOF_TE_LOG_LEVEL == 4)
         htonl(header.level);
 #else
-#error Such TE_LOG_LEVEL_SZ is not supported
+#error Such SIZEOF_TE_LOG_LEVEL is not supported
 #endif
-    tmp_buf += sizeof(te_log_level_t);
+    tmp_buf += sizeof(te_log_level);
 
     /* Write user name and corresponding (NFL) next field length */
     fs = header.user_name;

@@ -222,7 +222,7 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
             (_len) = TE_LOG_FIELD_MAX;                          \
         }                                                       \
                                                                 \
-        LGR_CHECK_BUF_LEN(TE_LOG_NFL_SZ + (_len));              \
+        LGR_CHECK_BUF_LEN(sizeof(te_log_nfl) + (_len));         \
         LGR_NFL_PUT((_len), msg_ptr);                           \
         memcpy(msg_ptr, tmp_str, (_len));                       \
         msg_ptr += (_len);                                      \
@@ -232,7 +232,7 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
     /* Fill in Entity_name field and corresponding Next_filed_length one */
     LGR_PUT_STR(entity_name, tmp_length);
     
-    LGR_CHECK_BUF_LEN(LGR_UNACCOUNTED_LEN);
+    LGR_CHECK_BUF_LEN(TE_LOG_MSG_HDR_SZ);
 
     /* Fill in Log_ver and timestamp fields */
     *msg_ptr = TE_LOG_VERSION;
@@ -255,7 +255,7 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
     
     /* Fix Log_message_data/format_string field */
     data_len_offset = msg_ptr - (uint8_t *)out->buf;
-    msg_ptr += TE_LOG_NFL_SZ;
+    msg_ptr += sizeof(te_log_nfl);
    
     out->offset = msg_ptr - (uint8_t *)out->buf;
     te_log_vprintf(out, form_str, ap);
@@ -264,7 +264,8 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
 #undef LGR_CHECK_BUF_LEN
 
     msg_ptr = out->buf + data_len_offset;
-    LGR_NFL_PUT(out->offset - data_len_offset - TE_LOG_NFL_SZ, msg_ptr);
+    LGR_NFL_PUT(out->offset - data_len_offset - sizeof(te_log_nfl),
+                msg_ptr);
 
     msg_ptr = out->buf + out->offset;
     LGR_NFL_PUT(TE_LOG_RAW_EOR_LEN, msg_ptr);

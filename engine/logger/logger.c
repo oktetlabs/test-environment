@@ -262,8 +262,7 @@ te_handler(void)
                     char *tmp_pnt;
 
                     /* BUG here */
-                    len = TE_LOG_NFL_SZ + buf[0] +
-                          LGR_UNACCOUNTED_LEN;
+                    len = sizeof(te_log_nfl) + buf[0] + TE_LOG_MSG_HDR_SZ;
                     tmp_pnt = buf + len + 1;
                     len = buf[len];
                     memcpy(tmp_name, tmp_pnt, len);
@@ -565,7 +564,7 @@ ta_handler(void *ta)
             inst->sequence = sequence;
 
             /* Read control fields value */
-            len = LGR_UNACCOUNTED_LEN;
+            len = TE_LOG_MSG_HDR_SZ;
             if (FREAD(ta_file, p_buf, len) != len)
             {
                 break;
@@ -577,14 +576,14 @@ ta_handler(void *ta)
                 /* Message is started */
                 flush_msg_max--;
 
-                assert(TE_LOG_TIMESTAMP_SZ == sizeof(uint32_t) * 2);
                 memcpy(&msg_ts.tv_sec,
                        p_buf + sizeof(te_log_version),
-                       sizeof(uint32_t));
+                       sizeof(te_log_ts_sec));
                 msg_ts.tv_sec = ntohl(msg_ts.tv_sec);
                 memcpy(&msg_ts.tv_usec,
-                       p_buf + sizeof(te_log_version) + sizeof(uint32_t),
-                       sizeof(uint32_t));
+                       p_buf + sizeof(te_log_version) +
+                       sizeof(te_log_ts_sec),
+                       sizeof(te_log_ts_usec));
                 msg_ts.tv_usec = ntohl(msg_ts.tv_usec);
 
                 /* Check timestamp value */
