@@ -67,6 +67,13 @@
 
 #include "my_login.h"
 
+/* 
+ * Declaration of send/recv methods from iSCSI TAD, see 
+ * tad_iscsi_{impl.h|stack.c}
+ */
+extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
+extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
+
 /** Pointer to the device specific data */
 struct iscsi_global *devdata;
 
@@ -85,8 +92,8 @@ iscsi_release_connection(struct iscsi_conn *conn)
     list_del(&conn->conn_link);                                                   
     conn->session->nconn--;                                                       
     /* Free connection */                                                         
-    my_free((void **)&conn->local_ip_address);                                    
-    my_free((void **)&conn->ip_address);                                          
+    my_free((void *)&conn->local_ip_address);                                    
+    my_free((void *)&conn->ip_address);                                          
 #endif                                                                            
     my_free(((void *)&conn));
     return 0;                                                                     
@@ -99,8 +106,8 @@ free_data_list(struct iscsi_cmnd *cmnd)
 
     while ((data = cmnd->unsolicited_data_head)) {
         cmnd->unsolicited_data_head = data->next;
-        my_free((void **)&data->buffer);
-        my_free((void **)&data);
+        my_free((void *)&data->buffer);
+        my_free((void *)&data);
     }
 }
 
@@ -137,7 +144,7 @@ iscsi_release_session(struct iscsi_session *session)
         TRACE(TRACE_DEBUG, "Deleting r2t timer %p\n", session->r2t_timer);
         del_timer_sync(session->r2t_timer);
         TRACE(TRACE_DEBUG, "Deleted r2t timer\n");
-        my_free((void**)&session->r2t_timer);
+        my_free((void*)&session->r2t_timer);
 #endif
     }
 
@@ -155,8 +162,8 @@ iscsi_release_session(struct iscsi_session *session)
         }
         /* free data_list if any, cdeng */
         free_data_list(cmnd);
-        my_free((void**)&cmnd->ping_data);
-        my_free((void**)&cmnd);
+        my_free((void*)&cmnd->ping_data);
+        my_free((void*)&cmnd);
     }
 
     /* free connections */
@@ -185,11 +192,11 @@ iscsi_release_session(struct iscsi_session *session)
     }
 
     /* free session structures */
-    my_free((void**)&session->session_params);
+    my_free((void*)&session->session_params);
 
-    my_free((void**)&session->oper_param);
+    my_free((void*)&session->oper_param);
 
-    my_free((void**)&session);
+    my_free((void*)&session);
 
     return 0;
 }
@@ -218,8 +225,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 
     int total_tx, tx_loop;
     uint32_t hdr_crc, data_crc;
-    int data_len, k, i;
-    struct iovec *ioptr;
+    int data_len, k;
     uint8_t *buffer;
     struct generic_pdu *pdu;
 
@@ -939,6 +945,12 @@ iscsi_server_rx_thread(void *arg)
     /****************/ 
 
     conn = build_conn_sess(iscsi_param->send_recv_csap, iscsi_portal_groups);
+
+    if (conn == NULL)
+    {
+        TRACE_ERROR("Error init connection\n");
+        return NULL;
+    }
     
     /***/
     iscsi_recv_msg(iscsi_param->send_recv_csap, 48, buf, 0);
@@ -948,10 +960,10 @@ iscsi_server_rx_thread(void *arg)
 
     iscsi_release_connection(conn);
 /*
-    my_free((void **)&devdata->param_tbl);
-    my_free((void **)&devdata->auth_parameter.chap_local_ctx);
-    my_free((void **)&devdata->auth_parameter.chap_peer_ctx);
-    my_free((void **)&devdata->auth_parameter.srp_ctx);
+    my_free((void *)&devdata->param_tbl);
+    my_free((void *)&devdata->auth_parameter.chap_local_ctx);
+    my_free((void *)&devdata->auth_parameter.chap_peer_ctx);
+    my_free((void *)&devdata->auth_parameter.srp_ctx);
   */  
-    return 0;
+    return NULL;
 }
