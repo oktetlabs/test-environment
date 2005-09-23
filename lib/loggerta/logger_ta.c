@@ -320,10 +320,8 @@ log_get_message(uint32_t length, uint8_t *buffer)
     tmp_buf += sizeof(uint32_t);
 
     /* Write current log version */
-    LGR_CHECK_LENGTH(TE_LOG_VERSION_SZ);
-#if (TE_LOG_VERSION_SZ != 1)
-#error Such TE_LOG_VERSION_SZ is not supported here.
-#endif
+    LGR_CHECK_LENGTH(sizeof(te_log_version));
+    assert(sizeof(te_log_version) == 1);
     *tmp_buf = TE_LOG_VERSION;
     tmp_buf++;
 

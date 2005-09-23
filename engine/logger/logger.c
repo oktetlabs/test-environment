@@ -565,8 +565,7 @@ ta_handler(void *ta)
             inst->sequence = sequence;
 
             /* Read control fields value */
-            len = TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ + \
-                  TE_LOG_LEVEL_SZ;
+            len = LGR_UNACCOUNTED_LEN;
             if (FREAD(ta_file, p_buf, len) != len)
             {
                 break;
@@ -580,11 +579,11 @@ ta_handler(void *ta)
 
                 assert(TE_LOG_TIMESTAMP_SZ == sizeof(uint32_t) * 2);
                 memcpy(&msg_ts.tv_sec,
-                       p_buf + TE_LOG_VERSION_SZ,
+                       p_buf + sizeof(te_log_version),
                        sizeof(uint32_t));
                 msg_ts.tv_sec = ntohl(msg_ts.tv_sec);
                 memcpy(&msg_ts.tv_usec,
-                       p_buf + TE_LOG_VERSION_SZ + sizeof(uint32_t),
+                       p_buf + sizeof(te_log_version) + sizeof(uint32_t),
                        sizeof(uint32_t));
                 msg_ts.tv_usec = ntohl(msg_ts.tv_usec);
 

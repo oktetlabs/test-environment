@@ -44,7 +44,6 @@ extern "C" {
 
 /* Appropriate fields length in the raw log file format */
 #define TE_LOG_NFL_SZ           2   /**< Next-Field-Length size */
-#define TE_LOG_VERSION_SZ       1   /**< Version size */
 #define TE_LOG_TIMESTAMP_SZ     8   /**< Size of timestamp */
 #define TE_LOG_LEVEL_SZ         2   /**< Size of log level */
 
@@ -53,6 +52,9 @@ extern "C" {
 /** Actual maximum field length */
 #define TE_LOG_FIELD_MAX    (TE_LOG_RAW_EOR_LEN - 1)
 
+
+/** TE log version field */
+typedef uint8_t  te_log_version;
 
 #if (TE_LOG_NFL_SZ == 1)
 typedef uint8_t te_log_nfl;

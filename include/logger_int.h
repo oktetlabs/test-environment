@@ -44,7 +44,8 @@ extern "C" {
  * Number of bytes is not added to the Log_message_length (except entity
  * name length with its NFL): Log_ver, Timestamp, Level, Log_message_length.
  */
-#define LGR_UNACCOUNTED_LEN   (TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ + \
+#define LGR_UNACCOUNTED_LEN   (sizeof(te_log_version) + \
+                               TE_LOG_TIMESTAMP_SZ + \
                                TE_LOG_LEVEL_SZ)
 
 

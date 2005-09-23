@@ -173,7 +173,7 @@ int
 fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 {
     te_log_nfl        nflen; /* Next field length */
-    uint8_t           log_ver[TE_LOG_VERSION_SZ];
+    te_log_version    log_ver;
     uint32_t          timestamp[2];
     te_log_level_t    log_level;
     FILE             *fd = ctx->rawlog_fd;
