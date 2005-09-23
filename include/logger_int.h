@@ -32,6 +32,10 @@
 #ifndef __TE_LOGGER_INT_H__
 #define __TE_LOGGER_INT_H__
 
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,7 +45,7 @@ extern "C" {
  * name length with its NFL): Log_ver, Timestamp, Level, Log_message_length.
  */
 #define LGR_UNACCOUNTED_LEN   (TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ + \
-                               TE_LOG_LEVEL_SZ + TE_LOG_MSG_LEN_SZ)
+                               TE_LOG_LEVEL_SZ)
 
 
 /** Convert value to the network order */
@@ -74,12 +78,6 @@ extern "C" {
 #define LGR_LEVEL_PUT(val_, buf_)   LGR_16_PUT(val_, buf_)
 #else
 #error LGR_LEVEL_PUT is not defined
-#endif
-
-#if (TE_LOG_MSG_LEN_SZ == 4)
-#define LGR_MSG_LEN_PUT(val_, buf_) LGR_32_TO_NET(val_, buf_)
-#else
-#error LGR_MSG_LEN_PUT is not defined
 #endif
 
 #if (TE_LOG_TIMESTAMP_SZ == 8)

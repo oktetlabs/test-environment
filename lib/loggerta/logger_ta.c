@@ -240,8 +240,8 @@ resume:
 /**
  * Convert NFL from host to net order.
  */
-static inline te_log_nfl_t
-log_nfl_hton(te_log_nfl_t val)
+static inline te_log_nfl
+log_nfl_hton(te_log_nfl val)
 {
 #if (TE_LOG_NFL_SZ == 1)
     return val;
@@ -269,7 +269,6 @@ log_get_message(uint32_t length, uint8_t *buffer)
     uint32_t            tmp_length;
     ta_lgr_lock_key     key;
     uint8_t            *tmp_buf;
-    uint8_t            *mess_length_location;
     static char        *skip_flags, *skip_width;
     static int          n_calls = 0;
     lgr_mess_header     header;
@@ -349,26 +348,21 @@ log_get_message(uint32_t length, uint8_t *buffer)
 #endif
     tmp_buf += sizeof(te_log_level_t);
 
-    /* Keep in mind log message length field location */
-    mess_length_location = tmp_buf;
-    LGR_CHECK_LENGTH(sizeof(te_log_msg_len_t));
-    tmp_buf += sizeof(te_log_msg_len_t);
-
     /* Write user name and corresponding (NFL) next field length */
     fs = header.user_name;
     tmp_length = strlen(fs);
-    LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + tmp_length);
-    *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
-    tmp_buf += sizeof(te_log_nfl_t);
+    LGR_CHECK_LENGTH(sizeof(te_log_nfl) + tmp_length);
+    *((te_log_nfl *)tmp_buf) = log_nfl_hton(tmp_length);
+    tmp_buf += sizeof(te_log_nfl);
     strncpy(tmp_buf, fs, tmp_length);
     tmp_buf += tmp_length;
 
     /* Write format string and corresponding NFL */
     fs = header.fs;
     tmp_length = strlen(fs);
-    LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + tmp_length);
-    *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
-    tmp_buf += sizeof(te_log_nfl_t);
+    LGR_CHECK_LENGTH(sizeof(te_log_nfl) + tmp_length);
+    *((te_log_nfl *)tmp_buf) = log_nfl_hton(tmp_length);
+    tmp_buf += sizeof(te_log_nfl);
     strncpy(tmp_buf, fs, tmp_length);
     tmp_buf += tmp_length;
     
@@ -404,9 +398,9 @@ log_get_message(uint32_t length, uint8_t *buffer)
             {
                 int32_t val;
 
-                LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(uint32_t));
-                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(sizeof(uint32_t));
-                tmp_buf += sizeof(te_log_nfl_t);
+                LGR_CHECK_LENGTH(sizeof(te_log_nfl) + sizeof(uint32_t));
+                *((te_log_nfl *)tmp_buf) = log_nfl_hton(sizeof(uint32_t));
+                tmp_buf += sizeof(te_log_nfl);
                 val = LGR_GET_ARG(header, argn++);
                 LGR_32_TO_NET(val, tmp_buf);
                 tmp_buf += sizeof(uint32_t);
@@ -420,9 +414,9 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 uint32_t    tmp;
                 
                 assert(sizeof(val) == SIZEOF_VOID_P);
-                LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(void *));
-                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(sizeof(void *));
-                tmp_buf += sizeof(te_log_nfl_t);
+                LGR_CHECK_LENGTH(sizeof(te_log_nfl) + sizeof(void *));
+                *((te_log_nfl *)tmp_buf) = log_nfl_hton(sizeof(void *));
+                tmp_buf += sizeof(te_log_nfl);
                 id = LGR_GET_ARG(header, argn++);
                 val = rcf_pch_mem_get(id);
                 rcf_pch_mem_free(id);
@@ -450,24 +444,24 @@ log_get_message(uint32_t length, uint8_t *buffer)
             }
 
             case 'c':
-                LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + sizeof(char));
-                *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(sizeof(char));
-                tmp_buf += sizeof(te_log_nfl_t);
+                LGR_CHECK_LENGTH(sizeof(te_log_nfl) + sizeof(char));
+                *((te_log_nfl *)tmp_buf) = log_nfl_hton(sizeof(char));
+                tmp_buf += sizeof(te_log_nfl);
                 *tmp_buf = (char)LGR_GET_ARG(header, argn++);
                 tmp_buf++;
                 break;
 
             case 's':
             {
-                te_log_nfl_t *arglen_location;
+                te_log_nfl *arglen_location;
                 int           id = LGR_GET_ARG(header, argn++);
                 char         *arg_str = (char *)rcf_pch_mem_get(id);
                 
                 rcf_pch_mem_free(id);
 
-                LGR_CHECK_LENGTH(sizeof(te_log_nfl_t));
-                arglen_location = (te_log_nfl_t *)tmp_buf;
-                tmp_buf += sizeof(te_log_nfl_t);
+                LGR_CHECK_LENGTH(sizeof(te_log_nfl));
+                arglen_location = (te_log_nfl *)tmp_buf;
+                tmp_buf += sizeof(te_log_nfl);
                 *arglen_location = 0;
 
                 if (arg_str == NULL)
@@ -496,10 +490,10 @@ log_get_message(uint32_t length, uint8_t *buffer)
                     mem_addr = (uint8_t *)rcf_pch_mem_get(id);
                     tmp_length = LGR_GET_ARG(header, argn++);
 
-                    LGR_CHECK_LENGTH(sizeof(te_log_nfl_t) + tmp_length);
+                    LGR_CHECK_LENGTH(sizeof(te_log_nfl) + tmp_length);
 
-                    *((te_log_nfl_t *)tmp_buf) = log_nfl_hton(tmp_length);
-                    tmp_buf += sizeof(te_log_nfl_t);
+                    *((te_log_nfl *)tmp_buf) = log_nfl_hton(tmp_length);
+                    tmp_buf += sizeof(te_log_nfl);
 
                     if (tmp_length == 0)
                         break;
@@ -528,18 +522,6 @@ log_get_message(uint32_t length, uint8_t *buffer)
         }
     }
 #undef LGR_CHECK_LENGTH
-
-    /** Fill in message length field without message sequence */
-    *((te_log_msg_len_t *)mess_length_location) =
-#if (TE_LOG_MSG_LEN_SZ == 1)
-        mess_length - (LGR_UNACCOUNTED_LEN + sizeof(uint32_t));
-#elif (TE_LOG_MSG_LEN_SZ == 2)
-        htons(mess_length - (LGR_UNACCOUNTED_LEN + sizeof(uint32_t)));
-#elif (TE_LOG_MSG_LEN_SZ == 4)
-        htonl(mess_length - (LGR_UNACCOUNTED_LEN + sizeof(uint32_t)));
-#else
-#error Such TE_LOG_MSG_LEN_SZ is not supported
-#endif
 
     if (ta_lgr_lock(key) != 0)
     {

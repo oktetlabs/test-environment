@@ -164,10 +164,7 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
 {
     uint8_t            *msg_ptr = out->buf;
     uint8_t            *msg_end = msg_ptr + out->buflen;
-    size_t              msg_prefix_len = LGR_UNACCOUNTED_LEN;
-    size_t              msg_len_offset = 0;
     size_t              data_len_offset = 0;
-    te_log_msg_len_t    msg_len;
     te_bool             msg_trunc = FALSE;
     size_t              tmp_length;
     struct timeval      tv;
@@ -234,8 +231,6 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
 
     /* Fill in Entity_name field and corresponding Next_filed_length one */
     LGR_PUT_STR(entity_name, tmp_length);
-    msg_prefix_len += TE_LOG_NFL_SZ + tmp_length;
-
     
     LGR_CHECK_BUF_LEN(LGR_UNACCOUNTED_LEN);
 
@@ -248,10 +243,6 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
 
     /* Fill in Log level to be passed in raw log */
     LGR_LEVEL_PUT(level, msg_ptr);
-
-    /* Fix Log_message_length field */
-    msg_len_offset = msg_ptr - (uint8_t *)out->buf;
-    msg_ptr += TE_LOG_MSG_LEN_SZ;
 
 
     /* Fill in User_name field and corresponding Next_filed_length one */
@@ -275,11 +266,11 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
     msg_ptr = out->buf + data_len_offset;
     LGR_NFL_PUT(out->offset - data_len_offset - TE_LOG_NFL_SZ, msg_ptr);
 
-    msg_len = out->offset - msg_prefix_len;
-    LGR_MSG_LEN_PUT(msg_len, out->buf + msg_len_offset);
+    msg_ptr = out->buf + out->offset;
+    LGR_NFL_PUT(TE_LOG_RAW_EOR_LEN, msg_ptr);
 
     assert(te_log_message_tx != NULL);
-    te_log_message_tx(out->buf, out->offset);
+    te_log_message_tx(out->buf, out->offset + sizeof(te_log_nfl));
 
     if (msg_trunc)
     {

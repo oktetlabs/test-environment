@@ -47,21 +47,19 @@ extern "C" {
 #define TE_LOG_VERSION_SZ       1   /**< Version size */
 #define TE_LOG_TIMESTAMP_SZ     8   /**< Size of timestamp */
 #define TE_LOG_LEVEL_SZ         2   /**< Size of log level */
-#define TE_LOG_MSG_LEN_SZ       4   /**< Size of message length field */
 
-/** Maximum length of the field in accordance with size of length field */
-#define TE_LOG_FIELD_MAX        ((1 << (TE_LOG_NFL_SZ * 8)) - 1)
-
-/**< TODO: WHAT IS THIS? */
-#define LGR_FILE_MAX            32
+/** Length of the End-Of-Record is equal to maximum supported by NFL */
+#define TE_LOG_RAW_EOR_LEN  ((1 << (sizeof(te_log_nfl) << 3)) - 1)
+/** Actual maximum field length */
+#define TE_LOG_FIELD_MAX    (TE_LOG_RAW_EOR_LEN - 1)
 
 
 #if (TE_LOG_NFL_SZ == 1)
-typedef uint8_t te_log_nfl_t;
+typedef uint8_t te_log_nfl;
 #elif (TE_LOG_NFL_SZ == 2)
-typedef uint16_t te_log_nfl_t;
+typedef uint16_t te_log_nfl;
 #elif (TE_LOG_NFL_SZ == 4)
-typedef uint32_t te_log_nfl_t;
+typedef uint32_t te_log_nfl;
 #else
 #error Such TE_LOG_NFL_SZ is not supported.
 #endif
@@ -76,15 +74,6 @@ typedef uint32_t te_log_level_t;
 #error Such TE_LOG_LEVEL_SZ is not supported.
 #endif
 
-#if (TE_LOG_MSG_LEN_SZ == 1)
-typedef uint8_t te_log_msg_len_t;
-#elif (TE_LOG_MSG_LEN_SZ == 2)
-typedef uint16_t te_log_msg_len_t;
-#elif (TE_LOG_MSG_LEN_SZ == 4)
-typedef uint32_t te_log_msg_len_t;
-#else
-#error Such TE_LOG_MSG_LEN_SZ is not supported.
-#endif
 
 #ifdef __cplusplus
 } /* extern "C" */

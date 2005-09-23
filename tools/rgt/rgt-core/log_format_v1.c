@@ -172,12 +172,10 @@ static struct debug_msg {
 int
 fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 {
-    te_log_nfl_t      nflen; /* Next field length */
+    te_log_nfl        nflen; /* Next field length */
     uint8_t           log_ver[TE_LOG_VERSION_SZ];
     uint32_t          timestamp[2];
     te_log_level_t    log_level;
-    te_log_msg_len_t  msg_len;
-    uint8_t          *msg_content;
     FILE             *fd = ctx->rawlog_fd;
 
     char     *entity_name;
@@ -243,134 +241,34 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 #else
 #error TE_LOG_LEVEL_SZ is expected to be 1, 2, or 4
 #endif
-    
-    /* Read log msg len: It is placed in Network byte order */
-    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_REST_LEN);
-    assert(sizeof(msg_len) == TE_LOG_MSG_LEN_SZ);
-    READ(fd, &msg_len, sizeof(msg_len));
-#if TE_LOG_MSG_LEN_SZ == 2
-    msg_len = ntohs(msg_len);
-#elif TE_LOG_MSG_LEN_SZ == 4
-    msg_len = ntohl(msg_len);
-#elif TE_LOG_MSG_LEN_SZ == 1
-    /* Do nothing */
-#else
-#error TE_LOG_MSG_LEN_SZ is expected to be 1, 2, or 4
-#endif
 
-    /* 
-     * sizeof(nflen) bytes for "User name" field length and 
-     * sizeof(nflen) bytes for "Format string" field length.
-     */
-    if (msg_len < (2 * sizeof(nflen)))
-    {
-        /* Log message should be at least two bytes */
-        LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_REST_LEN_VALUE);
-        PRINT_ERROR;
-        THROW_EXCEPTION;
-    }
-
-    /* 
-     * Allocate memory for the whole message 
-     * TODO: Allocate memory through malloc or get from some pool.
-     *       Because we will allocate this memory twise.
-     */
-    msg_content = (uint8_t *)obstack_alloc(obstk, msg_len);
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_WHOLE);
-    READ(fd, msg_content, msg_len);
 
-    /* Read the length of "User name" field */
-    memcpy(&nflen, msg_content, sizeof(nflen));
+    /* Read user name length */
+    READ(fd, &nflen, sizeof(nflen));
     RGT_NFL_NTOH(nflen);
-    msg_content += sizeof(nflen);
+    /* Allocate memory for user name and read it */
+    user_name = (char *)obstack_alloc(obstk, nflen + 1);
+    READ(fd, user_name, nflen);
+    user_name[nflen] = '\0';
 
-    /*
-     * [          NFL        |  User Name  |         ...         ]
-     * 
-     * | <- sizeof(nflen) -> | <- nflen -> | rest of the message |
-     * | <--------------------- msg_len -----------------------> |
-     *                       ^
-     *                       |
-     *                  msg_content
-     */
-    if (msg_len < (sizeof(nflen) + nflen))
-    {
-        /* "User name" length is out of the log message */
-        LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_USER_NAME_LEN);
-        PRINT_ERROR;
-        THROW_EXCEPTION;
-    }
-
-    user_name = (char *)obstack_copy0(obstk, msg_content, nflen);
-    msg_content += nflen;
-    /*
-     * Strip the length of NFL for "User Name" and "User Name" itself from
-     * unprocessed message length.
-     */
-    msg_len -= (sizeof(nflen) + nflen);
-
-    /* Check that there is a room for "format string length" field */
-    if (msg_len < sizeof(nflen))
-    {
-        /* "Format string" length is out of the log message */
-        LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_FORMAT_STRING_LEN);
-        PRINT_ERROR;
-        THROW_EXCEPTION;
-    }
-
-    /* Read the length of "format string" field */
-    memcpy(&nflen, msg_content, sizeof(nflen));
+    /* Read format string length */
+    READ(fd, &nflen, sizeof(nflen));
     RGT_NFL_NTOH(nflen);
-    msg_content += sizeof(nflen);
-
-    /*
-     * [          NFL        |  Format String  |         ...         ]
-     * 
-     * | <- sizeof(nflen) -> | <--- nflen ---> | rest of the message |
-     * | <--------------------- msg_len ---------------------------> |
-     *                       ^
-     *                       |
-     *                  msg_content
-     */
-    if (msg_len < (sizeof(nflen) + nflen))
-    {
-        /* "Format string" length is out of the log message */
-        LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_FORMAT_STRING_LEN);
-        PRINT_ERROR;
-        THROW_EXCEPTION;
-    }
-
-    fmt_str = (char *)obstack_copy0(obstk, msg_content, nflen);
-    msg_content += nflen;
-    msg_len -= (sizeof(nflen) + nflen);
+    /* Allocate memory for format string and read it */
+    fmt_str = (char *)obstack_alloc(obstk, nflen + 1);
+    READ(fd, fmt_str, nflen);
+    fmt_str[nflen] = '\0';
 
     /* Process format string arguments */
     (*msg)->args_count = 0;
-
     
-    while (msg_len > 0)
+    /* Read the next argument length */
+    READ(fd, &nflen, sizeof(nflen));
+    RGT_NFL_NTOH(nflen);
+
+    while (nflen != TE_LOG_RAW_EOR_LEN)
     {
-        /* Get the length of "Argument value" field */
-        if (msg_len < sizeof(nflen))
-        {
-            /* "Argument value" length is out of the log message */
-            LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_ARG_LEN);
-            PRINT_ERROR;
-            THROW_EXCEPTION;
-        }
-        /* Read the length of "Argument value" field */
-        memcpy(&nflen, msg_content, sizeof(nflen));
-        RGT_NFL_NTOH(nflen);
-        msg_content += sizeof(nflen);
-
-        if (msg_len < (sizeof(nflen) + nflen))
-        {
-            /* Argument length field is out of the log message length */
-            LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_ARG_LEN);
-            PRINT_ERROR;
-            THROW_EXCEPTION;
-        }
-
         /* Get parameter */
         *arg = (msg_arg *)obstack_alloc(obstk, sizeof(msg_arg));
         (*arg)->len = nflen;
@@ -381,15 +279,13 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
          * it is interger the '\0' character won't be taken into 
          * account (according to the len field).
          */
-        (*arg)->val = (uint8_t *)obstack_copy0(obstk, msg_content, nflen);
-        msg_content += nflen;
-        msg_len -= (sizeof(nflen) + nflen);
+        (*arg)->val = (uint8_t *)obstack_alloc(obstk, nflen + 1);
+        READ(fd, fmt_str, nflen);
+        (*arg)->val[nflen] = '\0';
 
         arg = &((*arg)->next);
         (*msg)->args_count++;
     }
-
-    assert(msg_len == 0);
 
     *arg = NULL;
 

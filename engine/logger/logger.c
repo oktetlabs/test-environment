@@ -235,8 +235,8 @@ te_handler(void)
             len = total;
         }
 
-        if (strncmp((buf + sizeof(te_log_nfl_t)), LGR_SHUTDOWN,
-                    *(te_log_nfl_t *)buf) == 0)
+        if (strncmp((buf + sizeof(te_log_nfl)), LGR_SHUTDOWN,
+                    *(te_log_nfl *)buf) == 0)
         {
             RING("Logger shutdown ...\n");
             lgr_flags |= LOGGER_SHUTDOWN;
@@ -319,6 +319,26 @@ ta_flush_done(struct ipc_server *srv)
 }
 
 /**
+ * Get NFL from buffer in TE raw log format.
+ *
+ * @param buf   Pointer to the buffer
+ *
+ * @return NFL value in host byte order
+ */
+static inline te_log_nfl
+te_log_raw_get_nfl(const uint8_t *buf)
+{
+    te_log_nfl  nfl;
+    
+    memcpy(&nfl, buf, sizeof(nfl));
+#if HAVE_ASSERT_H
+    assert(sizeof(nfl) == 2);
+#endif
+    return ntohs(nfl);
+}
+
+
+/**
  * This is an entry point of TA log message gatherer.
  * This routine periodically polls appropriate TA to get
  * TA local log. Besides, log is solicited if flush is requested.
@@ -354,6 +374,7 @@ ta_handler(void *ta)
     /* Log file processing variables */
     char                log_file[RCF_MAX_PATH];
     struct stat         log_file_stat;
+    size_t              ta_name_len = strlen(inst->agent);
     FILE               *ta_file;
     uint8_t             buf[LGR_TA_MAX_BUF];
 
@@ -521,22 +542,19 @@ ta_handler(void *ta)
 
         do { /* messages reading loop */
 
-            uint8_t            *p_buf = buf;
-            te_log_nfl_t        nfl;
-            te_log_msg_len_t    len;
-            uint32_t            sequence;
-            int32_t             lost;
-            size_t              read;
+            uint8_t    *p_buf = buf;
+            uint32_t    sequence;
+            int         lost;
+            size_t      len;
 
             /* Add TA name and corresponding NFL to the message */
-            nfl = strlen(inst->agent);
-            LGR_NFL_PUT(nfl, p_buf);
-            memcpy(p_buf, inst->agent, nfl);
-            p_buf += nfl;
+            LGR_NFL_PUT(ta_name_len, p_buf);
+            memcpy(p_buf, inst->agent, ta_name_len);
+            p_buf += ta_name_len;
 
             /* Get message sequence number */
-            read = FREAD(ta_file, (uint8_t *)&sequence, sizeof(uint32_t));
-            if (read != sizeof(uint32_t))
+            if (FREAD(ta_file, (uint8_t *)&sequence, sizeof(uint32_t)) !=
+                    sizeof(uint32_t))
             {
                 break;
             }
@@ -548,7 +566,7 @@ ta_handler(void *ta)
 
             /* Read control fields value */
             len = TE_LOG_VERSION_SZ + TE_LOG_TIMESTAMP_SZ + \
-                  TE_LOG_LEVEL_SZ + TE_LOG_MSG_LEN_SZ;
+                  TE_LOG_LEVEL_SZ;
             if (FREAD(ta_file, p_buf, len) != len)
             {
                 break;
@@ -586,26 +604,35 @@ ta_handler(void *ta)
                 }
             }
 
-            /* Get message length */
-            p_buf += (len - TE_LOG_MSG_LEN_SZ);
-            memcpy(&len, p_buf, TE_LOG_MSG_LEN_SZ);
-#if (TE_LOG_MSG_LEN_SZ == 1)
-            /* Do nothing */
-#elif (TE_LOG_MSG_LEN_SZ == 2)
-            len = ntohs(len);
-#elif (TE_LOG_MSG_LEN_SZ == 4)
-            len = ntohl(len);
-#else
-#error Such TE_LOG_MSG_LEN_SZ is not supported here.
-#endif
-            p_buf += TE_LOG_MSG_LEN_SZ;
-
-            /* Copy the rest of the message to the buffer */
-            if (FREAD(ta_file, p_buf, len) != len)
+            /* Read the first NFL after header */
+            if (FREAD(ta_file, p_buf, sizeof(te_log_nfl)) !=
+                    sizeof(te_log_nfl))
             {
                 break;
             }
-            p_buf += len;
+            len = te_log_raw_get_nfl(p_buf);
+            p_buf += sizeof(te_log_nfl);
+
+            while (len != TE_LOG_RAW_EOR_LEN)
+            {
+                /* Read the field in accordance with NFL */
+                if (len > 0 && FREAD(ta_file, p_buf, len) != len)
+                {
+                    break;
+                }
+                p_buf += len;
+
+                /* Read the next NFL */
+                if (FREAD(ta_file, p_buf, sizeof(te_log_nfl)) !=
+                        sizeof(te_log_nfl))
+                {
+                    break;
+                }
+                len = te_log_raw_get_nfl(p_buf);
+                p_buf += sizeof(te_log_nfl);
+            };
+            if (len != TE_LOG_RAW_EOR_LEN)
+                break;
 
             lgr_register_message(buf, p_buf - buf);
 

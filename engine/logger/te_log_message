@@ -97,10 +97,6 @@ my $log_level = 4; # RING log level (see include/logger_defs.h)
 print OUTFILE pack("n", $log_level);
 
 
-# Write log message length (16-bit integer in "network" (big-endian) order)
-my $total_length = 2 + $lens[1] + 2 + $lens[2] + $fname_field_len;
-print OUTFILE pack("N", $total_length);
-
 # Write length of User name field and itself one
 print OUTFILE pack("nA*", $lens[1], $ARGV[1]);
 
@@ -112,6 +108,9 @@ if (@ARGV == 4)
 {
     print OUTFILE pack("nA*", $fname_field_len - 2, $fname);
 }
+
+# Write EOR marker
+print OUTFILE pack("n", 0xffff);
 
 close OUTFILE;
 
