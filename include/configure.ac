@@ -150,6 +150,8 @@ AC_CHECK_SIZEOF([socklen_t], [], [
 #endif
 ])
 
+CPPFLAGS="-I${srcdir} ${CPPFLAGS}"
+
 AC_CHECK_SIZEOF([te_log_version], [], [#include "te_raw_log.h"])
 AC_CHECK_SIZEOF([te_log_ts_sec],  [], [#include "te_raw_log.h"])
 AC_CHECK_SIZEOF([te_log_ts_usec], [], [#include "te_raw_log.h"])
