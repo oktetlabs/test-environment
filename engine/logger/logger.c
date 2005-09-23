@@ -368,7 +368,8 @@ ta_handler(void *ta)
     unsigned int        flush_msg_max = 0;
     struct timeval      flush_ts;   /**< Time stamp when flush has been
                                          started */
-    struct timeval      msg_ts;     /**< Time stamp in the message */
+    te_log_ts_sec       msg_ts_sec;
+    te_log_ts_usec      msg_ts_usec;
 
     /* Log file processing variables */
     char                log_file[RCF_MAX_PATH];
@@ -576,20 +577,19 @@ ta_handler(void *ta)
                 /* Message is started */
                 flush_msg_max--;
 
-                memcpy(&msg_ts.tv_sec,
+                memcpy(&msg_ts_sec,
                        p_buf + sizeof(te_log_version),
                        sizeof(te_log_ts_sec));
-                msg_ts.tv_sec = ntohl(msg_ts.tv_sec);
-                memcpy(&msg_ts.tv_usec,
+                msg_ts_sec = ntohl(msg_ts_sec);
+                memcpy(&msg_ts_usec,
                        p_buf + sizeof(te_log_version) +
-                       sizeof(te_log_ts_sec),
-                       sizeof(te_log_ts_usec));
-                msg_ts.tv_usec = ntohl(msg_ts.tv_usec);
+                       sizeof(te_log_ts_sec), sizeof(te_log_ts_usec));
+                msg_ts_usec = ntohl(msg_ts_usec);
 
                 /* Check timestamp value */
-                if ((msg_ts.tv_sec > flush_ts.tv_sec) ||
-                    ((msg_ts.tv_sec == flush_ts.tv_sec) &&
-                     (msg_ts.tv_usec > flush_ts.tv_usec)) ||
+                if ((msg_ts_sec > (te_log_ts_sec)flush_ts.tv_sec) ||
+                    ((msg_ts_sec == (te_log_ts_sec)flush_ts.tv_sec) &&
+                     (msg_ts_usec > (te_log_ts_usec)flush_ts.tv_usec)) ||
                     (flush_msg_max == 0))
                 {
                     do_flush = FALSE;
