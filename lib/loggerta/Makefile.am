@@ -3,7 +3,8 @@ AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
 
-include_HEADERS = logger_ta.h logger_ta_internal.h logfork.h
+include_HEADERS = logger_ta.h logger_ta_internal.h logger_ta_lock.h \
+                  logfork.h
 
 
 lib_LIBRARIES = libloggerta.a
