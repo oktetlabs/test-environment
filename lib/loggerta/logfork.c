@@ -450,16 +450,17 @@ convert_msg(char *buf, int buflen, const char *fmt, va_list ap)
 
 /** 
  * Function for logging to be used by forked processes.
- * It complies to log_message_f prototype.
+ *
+ * This function complies with te_log_message_f prototype.
  */
 void 
-logfork_log_message(uint16_t level, const char *entity_name,
-                    const char *user_name, const char *fmt, ...)
+logfork_log_message(unsigned int level, const char *entity,
+                    const char *user, const char *fmt, ...)
 {
     va_list ap;
     udp_msg msg;
 
-    UNUSED(entity_name);
+    UNUSED(entity);
 
     memset(&msg, 0, sizeof(msg));
 
@@ -472,12 +473,12 @@ logfork_log_message(uint16_t level, const char *entity_name,
     msg.tid = (uint32_t)pthread_self();
 #endif    
     msg.is_notif = FALSE;
-    strncpy(msg.__lgr_user, user_name, sizeof(msg.__lgr_user) - 1);
+    strncpy(msg.__lgr_user, user, sizeof(msg.__lgr_user) - 1);
     msg.__log_level = level;
 
     if (logfork_clnt_sockd == -1 && open_sock() != 0)
     {
-        fprintf(stderr, "%s(): %s %s\n", __FUNCTION__, user_name,
+        fprintf(stderr, "%s(): %s %s\n", __FUNCTION__, user,
                 msg.__log_msg);
         return;
     }

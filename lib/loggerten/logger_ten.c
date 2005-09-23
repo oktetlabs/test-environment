@@ -92,12 +92,11 @@ static struct ipc_client *lgr_client = NULL;
 static struct te_log_out_params lgr_out;
 
 
-static void ten_log_message(uint16_t level, const char *entity_name,
-                            const char *user_name, const char *form_str,
-                            ...);
+static void ten_log_message(unsigned int level, const char *entity,
+                            const char *user, const char *fmt, ...);
 
 /** Logging backend */
-log_message_f te_log_message = ten_log_message;
+te_log_message_f te_log_message = ten_log_message;
 
 
 /**
@@ -117,10 +116,14 @@ log_message_ipc(const void *msg, size_t len)
 }
 
 
-/* See description in logger_api.h */
+/**
+ * Compose log message and send it to TE Logger.
+ *
+ * This function complies with te_log_message_f prototype.
+ */
 static void
-ten_log_message(uint16_t level, const char *entity_name,
-                const char *user_name, const char *form_str, ...)
+ten_log_message(unsigned int level, const char *entity,
+                const char *user, const char *fmt, ...)
 {
     va_list ap;
 
@@ -161,8 +164,8 @@ ten_log_message(uint16_t level, const char *entity_name,
         lgr_out.buflen = LGR_TEN_MSG_BUF_INIT;
     }
 
-    va_start(ap, form_str);
-    log_message_va(&lgr_out, level, entity_name, user_name, form_str, ap);
+    va_start(ap, fmt);
+    log_message_va(&lgr_out, level, entity, user, fmt, ap);
     va_end(ap);
 
 #ifdef HAVE_PTHREAD_H

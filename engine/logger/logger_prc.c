@@ -71,19 +71,11 @@ static struct te_log_out_params lgr_out;
 /** 
  * Create message and register it in the raw log file.
  *
- * @param level         log level of the message
- * @param entity_name   Entity name whose user generates this message;
- * @param user_name     Arbitrary "user name";
- * @param form_str      Raw log format string. This string should contain
- *                      conversion specifiers if some arguments following;
- * @param ...           Arguments passed into the function according to 
- *                      raw log format string description.
- *
- * @bugs Should be processed test result value for %te specifier?
+ * This function complies with te_log_message_f prototype.
  */
 static void
-lgr_log_message(uint16_t level, const char *entity_name, 
-                const char *user_name, const char *form_str, ...)
+lgr_log_message(unsigned int level, const char *entity, 
+                const char *user, const char *fmt, ...)
 {
     va_list ap;
 
@@ -103,8 +95,8 @@ lgr_log_message(uint16_t level, const char *entity_name,
         te_log_message_tx = lgr_register_message;
     }
 
-    va_start(ap, form_str);
-    log_message_va(&lgr_out, level, entity_name, user_name, form_str, ap);
+    va_start(ap, fmt);
+    log_message_va(&lgr_out, level, entity, user, fmt, ap);
     va_end(ap);
 
 #ifdef HAVE_PTHREAD_H
@@ -113,4 +105,4 @@ lgr_log_message(uint16_t level, const char *entity_name,
 }
 
 /** Logging backend */
-log_message_f te_log_message = lgr_log_message;
+te_log_message_f te_log_message = lgr_log_message;

@@ -59,23 +59,17 @@ sem_t           ta_lgr_sem;
 #endif
 
 /** Logging backend */
-log_message_f te_log_message = logfork_log_message;
+te_log_message_f te_log_message = logfork_log_message;
 
 
 /**
  * Register message in the raw log (slow mode).
- * 
- * @param level         Log level to be passed to the raw log
- * @param entity_name   Log entity name (unused)
- * @param user_name     Arbitrary "user name";
- * @param form_str      Raw log format string. This string should contain
- *                      conversion specifiers if some arguments following;
- * @param ...           Arguments passed into the function according to
- *                      raw log format string description.
+ *
+ * This function complies with te_log_message_f prototype.
  */
 static void
-ta_log_message(uint16_t level, const char *entity_name, 
-               const char *user_name, const char *form_str, ...)
+ta_log_message(unsigned int level, const char *entity, 
+               const char *user, const char *fmt, ...)
 {
     va_list     ap;
     int         key;
@@ -92,9 +86,9 @@ ta_log_message(uint16_t level, const char *entity_name,
     static char *null_str = "(NULL)";
     static char *skip_flags, *skip_width;
     
-    UNUSED(entity_name);
+    UNUSED(entity);
     
-    va_start(ap, form_str);
+    va_start(ap, fmt);
     
     skip_flags = "#-+ 0";
     skip_width = "*0123456789";
@@ -102,10 +96,10 @@ ta_log_message(uint16_t level, const char *entity_name,
     log_entries_slow++;
     
     memset(&header, 0, sizeof(struct lgr_mess_header));
-    header.user_name = (user_name != NULL) ? user_name : null_str;
+    header.user_name = (user != NULL) ? user : null_str;
     header.level = level;
-    header.fs = (form_str != NULL) ? form_str : null_str;
-    for (p_str = form_str; *p_str; p_str++)
+    header.fs = (fmt != NULL) ? fmt : null_str;
+    for (p_str = fmt; *p_str; p_str++)
     {
         if (*p_str != '%')
             continue;
