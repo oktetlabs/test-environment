@@ -96,6 +96,8 @@ asn2bin_data(asn_value *segment_data,
 extern int
 bin_data2asn(uint8_t *data, uint32_t data_len, 
             asn_value_p *value);
+
+extern int parse_key_value(char *str, asn_value *value);
              
 #ifdef __cplusplus
 } /* extern "C" */

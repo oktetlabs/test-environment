@@ -258,27 +258,43 @@ extern int tapi_iscsi_delete_key(iscsi_segment_data segment_data,
  */                      
 extern iscsi_segment_data tapi_iscsi_keys_create(int num, ...);
 
+extern int tapi_iscsi_find_key_and_value(
+    iscsi_segment_data segment_data,
+    char *key_name, int num, ...);
+
+typedef enum {
+    tapi_iscsi_insert_key_values,
+    tapi_iscsi_replace_key_values,
+    tapi_iscsi_remove_key_values,
+} tapi_iscsi_change_key_val_type;    
+
+extern int tapi_iscsi_change_key_values(
+    iscsi_segment_data segment_data,
+    char *key_name, 
+    tapi_iscsi_change_key_val_type change,
+    int num, ...);
+
 /**
  * Free an iSCSI PDU Segment Data.
  */ 
 extern void tapi_iscsi_keys_data_free(iscsi_segment_data);
 
 /* Target configuration */
-int tapi_iscsi_set_local_secret(const char *ta, const char *secret);
+extern int tapi_iscsi_set_local_secret(const char *ta, const char *secret);
 
-int tapi_iscsi_set_local_name(const char *ta, const char *name);
+extern int tapi_iscsi_set_local_name(const char *ta, const char *name);
 
-int tapi_iscsi_set_peer_secret(const char *ta, const char *secret);
+extern int tapi_iscsi_set_peer_secret(const char *ta, const char *secret);
 
-int tapi_iscsi_set_peer_name(const char *ta, const char *name);
+extern int tapi_iscsi_set_peer_name(const char *ta, const char *name);
 
-int tapi_iscsi_set_challenge_length(const char *ta, int len);
+extern int tapi_iscsi_set_challenge_length(const char *ta, int len);
 
-int tapi_iscsi_set_encoding_format(const char *ta, int fmt);
+extern int tapi_iscsi_set_encoding_format(const char *ta, int fmt);
 
-int tapi_iscsi_set_tgt_auth_req(const char *ta, int tgt_auth);
+extern int tapi_iscsi_set_tgt_auth_req(const char *ta, int tgt_auth);
 
-int tapi_iscsi_set_security_negotiations_phase(const char *ta,
-                                               int use);
+extern int tapi_iscsi_set_security_negotiations_phase(const char *ta,
+                                                      int use);
 
 #endif /* !__TE_TAPI_ISCSI_H__ */

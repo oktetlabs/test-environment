@@ -772,6 +772,231 @@ tapi_iscsi_keys_data_free(iscsi_segment_data segment_data)
     return;
 }
 
+int
+tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
+                             char *key_name, 
+                             tapi_iscsi_change_key_val_type change,
+                             int num, ...)
+{
+    int                rc;
+    
+    int                key_index;
+    iscsi_key_values   key_values;
+    asn_value         *key_value;
+    int                key_values_num;
+    int                key_values_index;
+    te_bool            found;
+    int                i = 0;
+
+    iscsi_key_value_type type;
+
+    va_list list;
+
+    if ((key_index = 
+         tapi_iscsi_get_key_index_by_name(segment_data, key_name)) ==
+            TAPI_ISCSI_KEY_INVALID)
+    {
+        ERROR("%s, %d: No key with %s name",
+              __FUNCTION__, __LINE__, key_name);
+        return -1;
+    }
+
+    if ((key_values = tapi_iscsi_get_key_values(segment_data,
+                                                key_index)) == NULL)
+    {
+        ERROR("%s, %d: cannot get key values",
+              __FUNCTION__, __LINE__);
+        return -1;
+    }
+    if ((key_values_num = 
+         tapi_iscsi_get_key_values_num(key_values)) == -1)
+    {
+        ERROR("%s, %d: cannot get key values number",
+              __FUNCTION__, __LINE__);
+        return -1;
+    }
+
+    if (change == tapi_iscsi_replace_key_values)
+    {
+        for (i = key_values_num; i > 0; i--)
+        {
+            if ((rc = asn_remove_indexed(key_values, i - 1, "")) != 0)
+            {
+                ERROR("%s, %d: cannot remove key values",
+                      __FUNCTION__, __LINE__);
+                return rc;
+            }
+        }
+    }
+
+    va_start(list, num);
+
+    while (i++ < num)
+    {
+        char *str = va_arg(list, char *);
+
+        if ((key_value = asn_init_value(ndn_iscsi_key_value)) == NULL)
+        {
+            ERROR("%s, %d: cannot init key value",
+                  __FUNCTION__, __LINE__);
+            return -1;
+        }
+        if ((rc = parse_key_value(str, key_value)) != 0)
+        {
+            ERROR("%s, %d: cannot parse key value",
+                  __FUNCTION__, __LINE__);
+            return rc;
+        }
+        if (change == tapi_iscsi_replace_key_values ||
+            change == tapi_iscsi_insert_key_values)
+        {    
+            if ((rc = asn_insert_indexed(key_values,
+                                         key_value,
+                                         -1, "")) != 0)
+            {
+                ERROR("%s, %d: cannot insert key value",
+                      __FUNCTION__, __LINE__);
+                return rc;
+            }
+        }
+        if (change == tapi_iscsi_remove_key_values)
+        {
+            ERROR("%s, %d: sorry, remove is not supported yet",
+                  __FUNCTION__, __LINE__);
+            return -1;
+        }
+        asn_free_value(key_value);
+    }
+    va_end(list);
+    return 0;
+}
+
+
+int
+tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
+                              char *key_name, int num, ...)
+{
+    int                rc;
+    
+    int                key_index;
+    iscsi_key_values   key_values;
+    int                key_values_num;
+    int                key_values_index;
+    te_bool            found;
+    int                i = 0;
+
+    iscsi_key_value_type type;
+
+    va_list list;
+
+    if ((key_index = 
+         tapi_iscsi_get_key_index_by_name(segment_data, key_name)) ==
+            TAPI_ISCSI_KEY_INVALID)
+    {
+        ERROR("%s, %d: No key with %s name",
+              __FUNCTION__, __LINE__, key_name);
+        return -1;
+    }
+
+    if ((key_values = tapi_iscsi_get_key_values(segment_data,
+                                                key_index)) == NULL)
+    {
+        ERROR("%s, %d: cannot get key values",
+              __FUNCTION__, __LINE__);
+        return -1;
+    }
+    if ((key_values_num = 
+         tapi_iscsi_get_key_values_num(key_values)) == -1)
+    {
+        ERROR("%s, %d: cannot get key values number",
+              __FUNCTION__, __LINE__);
+        return -1;
+    }
+
+    va_start(list, num);
+
+    while (i++ < num)
+    {
+        type = va_arg(list, iscsi_key_value_type);
+        found = FALSE;
+        for (key_values_index = 0;
+             (key_values_index < key_values_num) && (found == FALSE);
+             key_values_index++)
+        {
+            if (type != 
+                tapi_iscsi_get_key_value_type(key_values,
+                                              key_values_index))
+                continue;
+            switch (type)
+            {
+                case iscsi_key_value_type_int:
+                case iscsi_key_value_type_hex:
+                {
+                    int search_value = va_arg(list, int);
+                    int key_value;
+
+                    if ((rc = 
+                        tapi_iscsi_get_int_key_value(
+                            key_values,
+                            key_values_index,
+                            &key_value)) != 0)
+                    {
+                        ERROR("%s, %d: cannot get integer value",
+                              __FUNCTION__, __LINE__);
+                        return rc;
+                    }
+                    if (search_value == key_value)
+                    {
+                        found = TRUE;
+                        continue;
+                    }
+                    break;
+                }
+                case iscsi_key_value_type_string:    
+                {
+                    char *search_value = va_arg(list, char *);
+                    char *key_value;
+
+                    if ((rc = 
+                        tapi_iscsi_get_string_key_value(
+                            key_values,
+                            key_values_index,
+                            &key_value)) != 0)
+                    {
+                        ERROR("%s, %d: cannot get string value",
+                              __FUNCTION__, __LINE__);
+                        return rc;
+                    }
+                    if (strcmp(search_value, key_value) == 0)
+                    {
+                        found = TRUE;
+                        continue;
+                    }
+                    break;
+                }
+                default:
+                {
+                    /* Should never happen */
+                    {
+                        ERROR("%s, %d: strange value type",
+                              __FUNCTION__, __LINE__);
+                        return -1;
+                    }
+                }
+            }
+            if (found == FALSE)
+            {
+                va_end(list);
+                ERROR("%s, %d: cannot find value for key %s",
+                      __FUNCTION__, __LINE__, key_name);
+                return -1;
+            }
+        }
+    }
+    va_end(list);
+    return 0;
+}
+
 /* Target configuration */
 
 int

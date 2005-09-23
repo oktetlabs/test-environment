@@ -335,15 +335,33 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
         *current = '\0';
         current += 1;
     }
+    if ((write_data_len % 4) != 0)
+    {
+        int  i;
+        
+        for (i = 0; i < write_data_len % 4; i++)
+        {
+            if (tail_len < 1)
+            {
+                ERROR("%s, %d: unsufficient buffer length",
+                      __FUNCTION__, __LINE__);
+                return TE_ENOBUFS;
+            }
+            *current = '\0';
+            write_data_len += 1;
+            current += 1;
+        }
+    }
+    *data_len = write_data_len; 
 #undef MAX_INT_VALUE_LEN    
 #undef tail_len    
-    *data_len = write_data_len; 
+    
     return 0;
 }
 
 
 
-static int
+int
 parse_key_value(char *str, asn_value *value)
 {
     int rc;
@@ -353,15 +371,8 @@ parse_key_value(char *str, asn_value *value)
 
     /* String value */
     if (!isdigit(*str))
-    {    
-        if ((rc = asn_write_string(value, 
-                                   str, 
-                                   "#str")) != 0)
-        {
-            ERROR("%s, %d: cannot write string, %r",
-                  __FUNCTION__, __LINE__, rc);
-            return rc;
-        }
+    {   
+        goto string;
     }    
             
     else
@@ -371,9 +382,9 @@ parse_key_value(char *str, asn_value *value)
             int_value = strtol(str, &end, 16);
             if (*end != '\0')
             {
-                ERROR("%s, %d: strange integer in segment data %s", 
-                      __FUNCTION__, __LINE__, str);
-                return TE_EFMT;
+                WARN("%s, %d: strange integer in segment data %s", 
+                     __FUNCTION__, __LINE__, str);
+                goto string;
             }
             if ((rc = asn_write_int32(value, 
                                       int_value, "#hex")) != 0)
@@ -382,15 +393,16 @@ parse_key_value(char *str, asn_value *value)
                       __FUNCTION__, __LINE__, rc);
                 return rc;
             }
+            return 0;
         }    
         else
         {    
             int_value = strtol(str, &end, 0);
             if (*end != '\0')
             {
-                ERROR("%s, %d: strange integer in segment data %s",
-                      __FUNCTION__, __LINE__, str);
-                return TE_EFMT;
+                WARN("%s, %d: strange integer in segment data %s",
+                     __FUNCTION__, __LINE__, str);
+                goto string;
             }
             if ((rc = asn_write_int32(value, int_value, "#int")) != 0)
             {
@@ -398,7 +410,17 @@ parse_key_value(char *str, asn_value *value)
                       __FUNCTION__, __LINE__, rc);
                 return rc;
             }
+            return 0;
         }    
+    }
+string:
+    if ((rc = asn_write_string(value, 
+                               str, 
+                               "#str")) != 0)
+    {
+        ERROR("%s, %d: cannot write string, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
     }
     return 0;    
 }
