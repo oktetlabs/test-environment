@@ -34,6 +34,24 @@
 #include "te_stdint.h"
 
 
+/* 
+ * Raw log message format:
+ *      NFL(Entity name)
+ *      Entity name
+ *      Log version
+ *      Timestamp seconds
+ *      Timestamp microseconds
+ *      Log level
+ *      NFL(User name)
+ *      User name
+ *      NFL(Format string)
+ *      Format string
+ *      NFL(arg1)
+ *      arg1
+ *      ...
+ *      NFL(argN+1) = EOR
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -75,27 +75,6 @@
 #include "te_raw_log.h"
 #include "logger_int.h"
 #include "te_tools.h"
-
-/*   Raw log file format. Max length of the raw log message
- *   is a sum of:
- *      NFL(Entity_name) - 1 byte
- *      Entity_name - 255 bytes max
- *      Log_ver - 1 byte
- *      Timestamp - 8 byte
- *      Level - 2 bytes
- *      Log_message_length - 2 bytes
- *      NFL(User_name) - 1 byte
- *      User_name - 255 bytes max
- *      NFL(of form_str) - 1 byte
- *      Log_data_format_str - 255 bytes max
- *      NFL(arg1) - 1 byte
- *      arg1 - 255 bytes max
- *         ...
- *      NFL(arg12) - 1 byte
- *      arg12 - 255 bytes max
- *
- *      TOTAL = 3853 bytes
- */
     
 
 #ifdef _cplusplus
@@ -122,9 +101,10 @@ static const char *te_log_dir = NULL;
 
 /* See description below */
 static void log_message_va(struct te_log_out_params *out,
-                           uint16_t level, const char *entity_name,
-                           const char *user_name,
-                           const char *form_str, va_list ap);
+                           const char *file, unsigned int line,
+                           unsigned int level,
+                           const char *entity, const char *user,
+                           const char *fmt, va_list ap);
 
 /**
  * Internal function for logging. It has the same prototype as
@@ -134,33 +114,34 @@ static void log_message_va(struct te_log_out_params *out,
  *            from log_message_va() just before exit.
  */
 static void
-log_message_int(struct te_log_out_params *out, uint16_t level,
-                const char *entity_name, const char *user_name,
-                const char *form_str, ...)
+log_message_int(struct te_log_out_params *out,
+                const char *file, unsigned int line,
+                unsigned int level,
+                const char *entity, const char *user,
+                const char *fmt, ...)
 {
     va_list ap;
 
-    va_start(ap, form_str);
-    log_message_va(out, level, entity_name, user_name, form_str, ap);
+    va_start(ap, fmt);
+    log_message_va(out, file, line, level, entity, user, fmt, ap);
     va_end(ap);
 }
 
 /**
  * Create log message and send to Logger server.
  *
- * @param out           Output interface parameters
- * @param level         Log level valued to be passed to raw log file
- * @param entity_name   Entity name whose user generates this message
- * @param user_name     Arbitrary "user name"
- * @param form_str      Raw log format string. This string should contain
- *                      conversion specifiers if some arguments following
- * @param  ap           Arguments passed into the function according to
- *                      raw log format string description.
+ * @param out       Output interface parameters
+ * @param ap        Arguments passed into the function according to
+ *                  raw log format string description
+ *
+ * The rest of parameters complies with te_log_message_f prototype.
  */
 static void
-log_message_va(struct te_log_out_params *out, uint16_t level,
-               const char *entity_name, const char *user_name,
-               const char *form_str, va_list ap)
+log_message_va(struct te_log_out_params *out, 
+               const char *file, unsigned int line,
+               unsigned int level,
+               const char *entity, const char *user,
+               const char *fmt, va_list ap)
 {
     uint8_t            *msg_ptr = out->buf;
     uint8_t            *msg_end = msg_ptr + out->buflen;
@@ -168,6 +149,7 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
     te_bool             msg_trunc = FALSE;
     size_t              tmp_length;
     struct timeval      tv;
+
 
     if (te_log_dir == NULL)
     {
@@ -230,7 +212,7 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
 
 
     /* Fill in Entity_name field and corresponding Next_filed_length one */
-    LGR_PUT_STR(entity_name, tmp_length);
+    LGR_PUT_STR(entity, tmp_length);
     
     LGR_CHECK_BUF_LEN(TE_LOG_MSG_HDR_SZ);
 
@@ -246,7 +228,7 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
 
 
     /* Fill in User_name field and corresponding Next_filed_length one */
-    LGR_PUT_STR(user_name, tmp_length);
+    LGR_PUT_STR(user, tmp_length);
 
     /*
      * Fill in Log_data_format_string field and corresponding
@@ -258,7 +240,7 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
     msg_ptr += sizeof(te_log_nfl);
    
     out->offset = msg_ptr - (uint8_t *)out->buf;
-    te_log_vprintf(out, form_str, ap);
+    te_log_vprintf(out, fmt, ap);
     
 #undef LGR_PUT_STR    
 #undef LGR_CHECK_BUF_LEN
@@ -275,9 +257,10 @@ log_message_va(struct te_log_out_params *out, uint16_t level,
 
     if (msg_trunc)
     {
-        log_message_int(out, TE_LL_WARN, te_lgr_entity, TE_LGR_USER,
-                        "Previous message from %s:%s was truncated",
-                        entity_name, user_name);
+        log_message_int(out, __FILE__, __LINE__,
+                        TE_LL_WARN, te_lgr_entity, TE_LGR_USER,
+                        "Previous message from %s:%s logged at %s:%u "
+                        "was truncated", entity, user, file, line);
     }
 }
 

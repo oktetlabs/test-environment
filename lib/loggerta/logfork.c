@@ -326,7 +326,9 @@ logfork_entry(void)
             }
             sprintf(name_pid, "%s.%u.%u",
                     name, (unsigned)msg.pid, (unsigned)msg.tid);
-            te_log_message(msg.__log_level, TE_LGR_ENTITY, 
+            /* FIXME */
+            te_log_message(__FILE__, __LINE__,
+                           msg.__log_level, TE_LGR_ENTITY, 
                            strdup(msg.__lgr_user), 
                            "%s: %s", name_pid, msg.__log_msg);
         }
@@ -431,41 +433,32 @@ logfork_register_user(const char *name)
     return 0;
 }
 
-
-/**
- * Print log message to the buffer with correct processing %r specifiers.
- *
- * @param buf     buffer
- * @param buflen  length of the buffer
- * @param fmt     format string
- * @param ap      arguments corresponding to the format
- */
-static void
-convert_msg(char *buf, int buflen, const char *fmt, va_list ap)
-{
-    struct te_log_out_params cm = {NULL, buf, buflen, 0};
-
-    (void)te_log_vprintf(&cm, fmt, ap);
-}
-
 /** 
  * Function for logging to be used by forked processes.
  *
  * This function complies with te_log_message_f prototype.
  */
 void 
-logfork_log_message(unsigned int level, const char *entity,
+logfork_log_message(const char *file, unsigned int line,
+                    unsigned int level, const char *entity,
                     const char *user, const char *fmt, ...)
 {
     va_list ap;
     udp_msg msg;
 
+    struct te_log_out_params cm =
+        { NULL, msg.__log_msg, sizeof(msg.__log_msg), 0 };
+
+    UNUSED(file);
+    UNUSED(line);
     UNUSED(entity);
 
     memset(&msg, 0, sizeof(msg));
+    cm.buf = msg.__log_msg;
+    cm.buflen = sizeof(msg.__log_msg);
 
     va_start(ap, fmt);
-    convert_msg(msg.__log_msg, sizeof(msg.__log_msg), fmt, ap);
+    (void)te_log_vprintf(&cm, fmt, ap);
     va_end(ap);
 
     msg.pid = getpid();

@@ -1084,7 +1084,8 @@ process_backup(cfg_backup_msg *msg)
             else
             {
                 if (cs_flags & CS_LOG_DIFF)
-                    te_log_message(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+                    te_log_message(__FILE__, __LINE__,
+                                   TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
                                    "Backup diff:\n%Tf", diff_file);
                 else
                     INFO("Backup diff:\n%Tf", diff_file);

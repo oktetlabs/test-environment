@@ -652,7 +652,8 @@ log_message_fast(uint16_t level, const char *user_name,
     (void)ta_log_unlock(key);
 }
 
-extern void logfork_log_message(unsigned int level,
+extern void logfork_log_message(const char *file, unsigned int line,
+                                unsigned int level,
                                 const char *entity,
                                 const char *user,
                                 const char *fmt, ...);

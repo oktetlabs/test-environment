@@ -69,7 +69,8 @@ te_log_message_f te_log_message = logfork_log_message;
  * This function complies with te_log_message_f prototype.
  */
 static void
-ta_log_message(unsigned int level, const char *entity, 
+ta_log_message(const char *file, unsigned int line,
+               unsigned int level, const char *entity, 
                const char *user, const char *fmt, ...)
 {
     va_list     ap;
@@ -87,6 +88,8 @@ ta_log_message(unsigned int level, const char *entity,
     static char *null_str = "(NULL)";
     static char *skip_flags, *skip_width;
     
+    UNUSED(file);
+    UNUSED(line);
     UNUSED(entity);
     
     va_start(ap, fmt);

@@ -74,7 +74,8 @@ static struct te_log_out_params lgr_out;
  * This function complies with te_log_message_f prototype.
  */
 static void
-lgr_log_message(unsigned int level, const char *entity, 
+lgr_log_message(const char *file, unsigned int line,
+                unsigned int level, const char *entity, 
                 const char *user, const char *fmt, ...)
 {
     va_list ap;
@@ -96,7 +97,7 @@ lgr_log_message(unsigned int level, const char *entity,
     }
 
     va_start(ap, fmt);
-    log_message_va(&lgr_out, level, entity, user, fmt, ap);
+    log_message_va(&lgr_out, file, line, level, entity, user, fmt, ap);
     va_end(ap);
 
 #ifdef HAVE_PTHREAD_H

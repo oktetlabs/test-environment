@@ -32,7 +32,6 @@
 #ifndef __TE_LOGGER_API_H__
 #define __TE_LOGGER_API_H__
 
-#include "te_stdint.h"
 #include "logger_defs.h"
 
 
@@ -50,7 +49,8 @@
     do {                                                        \
         if (TE_LOG_LEVEL & (_lvl))                              \
         {                                                       \
-            te_log_message(_lvl, TE_LGR_ENTITY, _lgruser, _fs); \
+            te_log_message(__FILE__, __LINE__,                  \
+                           _lvl, TE_LGR_ENTITY, _lgruser, _fs); \
         }                                                       \
     } while (0)
 
@@ -91,7 +91,8 @@
 /** @name Logging of entry to and exit from function */
 #define _LOG_ENTRY(_us, _fs, _args...) \
     do {                            \
-        te_log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,            \
+        te_log_message(__FILE__, __LINE__,                              \
+                       TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,            \
                        "ENTRY to %s(): " _fs, __FUNCTION__, _args + 0); \
     } while (0)
 
@@ -105,7 +106,8 @@
             }                                                           \
             else                                                        \
             {                                                           \
-                te_log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,    \
+                te_log_message(__FILE__, __LINE__,                      \
+                               TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,    \
                                "ENTRY to %s()", __FUNCTION__);          \
             }                                                           \
         }                                                               \
@@ -115,7 +117,8 @@
 
 #define _LOG_EXIT(_us, _fs, _args...) \
     do {                                                            \
-        te_log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,        \
+        te_log_message(__FILE__, __LINE__,                          \
+                       TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,        \
                        "EXIT in line %d from %s(): " _fs,           \
                        __LINE__, __FUNCTION__, _args + 0);          \
     } while (0)
@@ -131,7 +134,8 @@
             }                                                       \
             else                                                    \
             {                                                       \
-                te_log_message(TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,\
+                te_log_message(__FILE__, __LINE__,                  \
+                               TE_LL_ENTRY_EXIT, TE_LGR_ENTITY, _us,\
                                "EXIT in line %d from %s()",         \
                                 __LINE__, __FUNCTION__);            \
             }                                                       \

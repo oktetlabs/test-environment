@@ -129,6 +129,8 @@ extern const char *te_lgr_entity;
 /**
  * Logging backend function.
  *
+ * @param file      Name of the file with the log message
+ * @param line      Line in the @a file with the log message
  * @param level     Log level
  * @param entity    Entity name whose user generates this message
  * @param user      Arbitrary "user name"
@@ -137,7 +139,9 @@ extern const char *te_lgr_entity;
  * @param ...       Arguments passed into the function according
  *                  to log message format string
  */
-typedef void (* te_log_message_f)(unsigned int  level,
+typedef void (* te_log_message_f)(const char   *file,
+                                  unsigned int  line,
+                                  unsigned int  level,
                                   const char   *entity,
                                   const char   *user,
                                   const char   *fmt, ...);

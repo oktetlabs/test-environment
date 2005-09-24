@@ -92,7 +92,8 @@ static struct ipc_client *lgr_client = NULL;
 static struct te_log_out_params lgr_out;
 
 
-static void ten_log_message(unsigned int level, const char *entity,
+static void ten_log_message(const char *file, unsigned int line,
+                            unsigned int level, const char *entity,
                             const char *user, const char *fmt, ...);
 
 /** Logging backend */
@@ -122,7 +123,8 @@ log_message_ipc(const void *msg, size_t len)
  * This function complies with te_log_message_f prototype.
  */
 static void
-ten_log_message(unsigned int level, const char *entity,
+ten_log_message(const char *file, unsigned int line,
+                unsigned int level, const char *entity,
                 const char *user, const char *fmt, ...)
 {
     va_list ap;
@@ -165,7 +167,7 @@ ten_log_message(unsigned int level, const char *entity,
     }
 
     va_start(ap, fmt);
-    log_message_va(&lgr_out, level, entity, user, fmt, ap);
+    log_message_va(&lgr_out, file, line, level, entity, user, fmt, ap);
     va_end(ap);
 
 #ifdef HAVE_PTHREAD_H
