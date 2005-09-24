@@ -62,7 +62,6 @@
 #include "te_stdint.h"
 #include "te_raw_log.h"
 #include "logger_defs.h"
-#include "logger_int.h"
 #include "logger_ta_lock.h"
 
 

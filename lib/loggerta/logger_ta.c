@@ -36,6 +36,7 @@
 
 #include "te_printf.h"
 #include "logger_ta.h"
+#include "logger_int.h"
 #include "rcf_pch_mem.h"
 
 
