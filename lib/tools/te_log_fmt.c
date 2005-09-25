@@ -30,17 +30,39 @@
  * $Id$
  */
 
+#include "te_config.h"
+
 #include <stdio.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdarg.h>
-#include <assert.h>
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#if HAVE_STDDEF_H
+#include <stddef.h>
+#endif
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#if HAVE_CTYPE_H
+#include <ctype.h>
+#endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
+#if HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
+#if HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_defs.h"
