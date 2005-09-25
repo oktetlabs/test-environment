@@ -601,6 +601,7 @@ ta_handler(void *ta)
                     }
                 }
             }
+            p_buf += TE_LOG_MSG_HDR_SZ;
 
             /* Read the first NFL after header */
             if (FREAD(ta_file, p_buf, sizeof(te_log_nfl)) !=
