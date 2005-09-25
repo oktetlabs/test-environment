@@ -65,7 +65,7 @@ static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
  *
  * @note It should be used under lgr_lock only.
  */
-static struct te_log_out_params lgr_out;
+static te_log_msg_raw_data lgr_out;
 
 
 /** 
@@ -84,16 +84,16 @@ lgr_log_message(const char *file, unsigned int line,
     pthread_mutex_lock(&lgr_lock);
 #endif
     
-    if (lgr_out.buf == NULL)
+
+    if (te_log_message_tx == NULL)
     {
-        lgr_out.buf = malloc(LGR_PRC_MSG_BUF_INIT);
-        if (lgr_out.buf == NULL)
-        {
-            perror("malloc() failed");
-            return;
-        }
-        lgr_out.buflen = LGR_PRC_MSG_BUF_INIT;
         te_log_message_tx = lgr_register_message;
+
+        /* Initialize backend */
+        lgr_out.common = te_log_msg_out_raw;
+        lgr_out.buf = lgr_out.end = NULL;
+        lgr_out.args_max = 0;
+        lgr_out.args = NULL;
     }
 
     va_start(ap, fmt);

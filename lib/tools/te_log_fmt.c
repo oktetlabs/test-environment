@@ -31,7 +31,8 @@
  */
 
 #include <stdio.h>
-#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdarg.h>
@@ -39,6 +40,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "te_stdint.h"
 #include "te_defs.h"
@@ -48,58 +50,8 @@
 #include "logger_defs.h"
 #include "logger_int.h"
 
+#include "te_log_fmt.h"
 
-/** Does TE have a support of formatted message logging */
-#define TE_HAVE_LOG_MSG_FMT     1
-/** Does TE have a support of raw message logging */
-#define TE_HAVE_LOG_MSG_RAW     1
-
-
-#define TE_LOG_MSG_OUT_AS_FILE(_out) \
-    (((te_log_msg_fmt_to_file *)(_out))->file)
-
-
-/** Types of TE log message arguments */
-typedef enum te_log_msg_arg_type {
-    TE_LOG_MSG_FMT_ARG_EOR,     /**< End-of-record */
-    TE_LOG_MSG_FMT_ARG_INT,     /**< Integer in network bytes order */
-    TE_LOG_MSG_FMT_ARG_MEM,     /**< Memory dump or string */
-    TE_LOG_MSG_FMT_ARG_FILE,    /**< File content */
-} te_log_msg_arg_type;
-
-struct te_log_msg_out;
-typedef struct te_log_msg_out te_log_msg_out;
-
-typedef te_errno (*te_log_msg_fmt_f)(te_log_msg_out *out,
-                                     const char     *fmt,
-                                     va_list         ap);
-
-typedef te_errno (*te_log_msg_raw_arg_f)(te_log_msg_out      *out,
-                                         te_log_msg_arg_type  type,
-                                         const void          *addr,
-                                         size_t               len,
-                                         te_bool              no_nfl);
-
-struct te_log_msg_out {
-    te_log_msg_fmt_f        fmt;        /**< FIXME */
-    te_log_msg_raw_arg_f    raw_arg;    /**< Format string argument */
-};
-
-#if 0
-void
-dump(const uint8_t *p, const uint8_t *q)
-{
-    unsigned int len = q - p;
-    unsigned int i;
-
-    for (i = 0; i < len; ++i)
-        fprintf(stderr, "%#02x ", p[i]);
-    fprintf(stderr, "\n\n");
-    fflush(stderr);
-}
-
-#define DUMP_RAW    dump(raw->buf, raw->ptr);
-#endif
 
 /**
  * Map TE log level to string.
@@ -108,7 +60,7 @@ dump(const uint8_t *p, const uint8_t *q)
  *
  * @return TE log level as string
  */
-const char *
+static inline const char *
 te_log_level2str(te_log_level level)
 {
     switch (level)
@@ -129,10 +81,77 @@ te_log_level2str(te_log_level level)
     }
 }
 
+#if 0
+void
+dump(const uint8_t *p, const uint8_t *q)
+{
+    unsigned int len = q - p;
+    unsigned int i;
+
+    for (i = 0; i < len; ++i)
+    {
+        fprintf(stderr, "%02x ", p[i]);
+        if ((i & 0xf) == 0xf)
+            fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n\n");
+    fflush(stderr);
+}
+
+#define DUMP_RAW    dump(data->buf, data->ptr);
+#endif
+
+
+/** Initial length of raw message buffer */
+#define TE_LOG_MSG_RAW_BUF_INIT     1
+/** 
+ * Additional length to allocate for raw message buffer, if current
+ * length is not sufficient.
+ */
+#define TE_LOG_MSG_RAW_BUF_GROW     1
+
+/** Initial number of raw arguments the space allocate for */
+#define TE_LOG_MSG_RAW_ARGS_INIT    1
+/** 
+ * Number of additional arguments the space allocate for, if current
+ * space is not sufficient.
+ */
+#define TE_LOG_MSG_RAW_ARGS_GROW    1
+
+
+
+
+/**
+ * Helper to call out->fmt when arguments should be specified by caller.
+ *
+ * @param out       Backend parameters
+ * @param fmt       Part of format string, terminated by NUL, which 
+ *                  corresponds to arguments
+ * @param ...       Arguments for format string
+ */
+static te_errno
+te_log_msg_fmt(te_log_msg_out *out, const char *fmt, ...)
+{
+    te_errno    rc;
+    va_list     ap;
+
+    va_start(ap, fmt);
+    rc = out->fmt(out, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+
+#if 0
 typedef struct te_log_msg_fmt_to_file {
     struct te_log_msg_out   common;
     FILE                   *file;
 } te_log_msg_fmt_to_file;
+
+
+#define TE_LOG_MSG_OUT_AS_FILE(_out) \
+    (((te_log_msg_fmt_to_file *)(_out))->file)
 
 
 static te_errno
@@ -144,6 +163,57 @@ te_log_msg_fmt_file(te_log_msg_out *out, const char *fmt, va_list ap)
 
     return 0;
 }
+#if 0
+                    if (out->fmt != NULL)
+                    {
+                        TE_LOG_VPRINTF_FMT_FLUSH("\n");
+                        for (i = 0; i < len; i++)
+                        {
+                            TE_LOG_VPRINTF_FMT_FLUSH("%02hhX", base[i]);
+                            if ((i & 0xf) == 0xf)
+                            {
+                                TE_LOG_VPRINTF_FMT_FLUSH("\n");
+                            }
+                            else 
+                            {
+                                TE_LOG_VPRINTF_FMT_FLUSH(" ");
+                            }
+                        }
+                        TE_LOG_VPRINTF_FMT_FLUSH("\n");
+                    }
+                    fmt_start = s + 1;
+#endif
+                    {
+                        FILE   *fp;
+                        char    buf[1024];
+
+                        if ((fp = fopen(filename, "r")) == NULL)
+                        {
+                            TE_LOG_VPRINTF_FMT_FLUSH(
+                                " CANNOT OPEN FILE %s ", filename);
+                        }
+                        else
+                        {
+                            while (fgets(buf, sizeof(buf), fp) != NULL)
+                            {
+                                TE_LOG_VPRINTF_FMT_FLUSH("%s", buf);
+                            }
+                            (void)fclose(fp);
+                        }
+                    }
+                    fmt_start = s + 1;
+                if (TE_RC_GET_MODULE(arg) == 0)
+                {
+                     TE_LOG_VPRINTF_FMT_FLUSH("%s", te_rc_err2str(arg));
+                }
+                else
+                {
+                     TE_LOG_VPRINTF_FMT_FLUSH("%s-%s",
+                                              te_rc_mod2str(arg),
+                                              te_rc_err2str(arg));
+                }
+                fmt_start = s + 1;
+
 
 static const struct te_log_msg_out te_log_msg_out_file = {
     te_log_msg_fmt_file,
@@ -151,170 +221,397 @@ static const struct te_log_msg_out te_log_msg_out_file = {
 };
 
 
-#if 0
 static struct te_log_msg_to_file te_log_msg_to_stderr =
     { te_log_msg_out_file, stderr };
 #endif
 
 
 
-typedef struct te_log_msg_raw_data {
-    struct te_log_msg_out   common;
-    uint8_t                *buf;
-    size_t                  len;
-    uint8_t                *ptr;
-} te_log_msg_raw_data;
-
-
-/** Log argument descriptor */
-typedef struct te_log_arg_descr {
-    te_log_msg_arg_type     type;   /**< Type of the argument */
-    size_t                  len;    /**< Data length */
-    union {
-        const void         *a;      /**< Pointer argument */
-        uint64_t            i;      /**< Integer argument */
-    } u;
-} te_log_arg_descr;
-
-
-/** Maximum number of arguments supported by arguments descriptor */
-#define TE_LOG_ARGS_DESCR_MAX   32
-
-/** Arguments descriptor structure */
-typedef struct te_log_args_descr {
-    unsigned int        n;      /**< Number of arguments */
-    size_t              len;    /**< Total length required in raw log */
-    te_log_arg_descr    args[TE_LOG_ARGS_DESCR_MAX];    /**< Arguments */
-} te_log_args_descr;
-
-typedef struct te_log_msg_args_data {
-    struct te_log_msg_out   common;
-    te_log_args_descr       descr;
-} te_log_msg_args_data;
-
-    
+/**
+ * Check that raw log buffer has enough space for specified amount
+ * of bytes. If no enough space, reallocate to have sufficient.
+ *
+ * @param data      Current buffer parameters
+ * @param len       Required number of bytes
+ *
+ * @return Status code (see te_errno.h)
+ * @retval 0            Enough space
+ * @retval TE_EAGAIN    Enough space after reallocation
+ * @retval TE_ENOMEM    Reallocation failed
+ */
 static te_errno
-te_log_msg_args_arg(te_log_msg_out      *out,
-                    te_log_msg_arg_type  type,
-                    const void          *addr,
-                    size_t               len,
-                    te_bool              no_nfl)
+ta_log_msg_raw_buf_check_len(te_log_msg_raw_data *data, size_t len)
 {
-    te_log_msg_args_data   *data = (te_log_msg_args_data *)out;
-    unsigned int            n;
+    size_t  buflen;
+    size_t  off;
+
+    assert(data != NULL);
+    assert((data->end == NULL) == (data->buf == NULL));
+    assert((data->ptr == NULL) == (data->buf == NULL));
+
+#if 0
+fprintf(stderr, "CHECK: BUF=%p END=%p PTR=%p diff=%u len=%u\n",
+        data->buf, data->end, data->ptr, data->end - data->ptr, len);
+#endif
+
+    if (data->end - data->ptr >= (ptrdiff_t)len)
+        return 0;
+
+    buflen = data->end - data->buf;
+    off = data->ptr - data->buf;
+
+    if (buflen == 0)
+    {
+        buflen = TE_LOG_MSG_RAW_BUF_INIT;
+        if (len >= buflen)
+            buflen += ((len - buflen) / TE_LOG_MSG_RAW_BUF_GROW + 1) *
+                      TE_LOG_MSG_RAW_BUF_GROW;
+    }
+    else
+    {
+        buflen += ((len - (data->end - data->ptr)) /
+                   TE_LOG_MSG_RAW_BUF_GROW + 1) *
+                  TE_LOG_MSG_RAW_BUF_GROW;
+    }
+
+    data->buf = realloc(data->buf, buflen);
+    if (data->buf == NULL)
+    {
+        data->end = data->ptr = NULL;
+        return TE_ENOMEM;
+    }
+
+    data->end = data->buf + buflen;
+    data->ptr = data->buf + off;
+
+    return TE_EAGAIN;
+}
+
+
+/**
+ * Process format string with its arguments in vprintf()-like mode.
+ *
+ * This functions complies with te_log_msg_fmt_args_f prototype.
+ */
+static te_errno
+te_log_msg_fmt_args(te_log_msg_out *out, const char *fmt, va_list ap)
+{
+    te_log_msg_raw_data   *data = (te_log_msg_raw_data *)out;
+    
+    te_errno rc;
+    int     ret, ret2;
+
+
+    assert(data != NULL);
+    assert(fmt != NULL);
+    assert(data->ptr <= data->end);
+
+    ret = vsnprintf(data->ptr, data->end - data->ptr, fmt, ap);
+
+    /* 
+     * If buffer is too small, expand it and write rest of 
+     * the message.
+     */
+    rc = ta_log_msg_raw_buf_check_len(data, ret);
+    if (rc == TE_EAGAIN)
+    {
+        ret2 = vsnprintf(data->ptr, data->end - data->ptr, fmt, ap);
+        assert(ret == ret2);
+    }
+    else if (rc != 0)
+        return rc;
+
+    data->ptr += ret;
+
+    assert(data->ptr <= data->end);
+
+    return 0;
+}
+
+/**
+ * Process an argument and format string which corresponds to it
+ * in raw mode.
+ *
+ * This functions complies with te_log_msg_raw_arg_f prototype.
+ */
+static te_errno
+te_log_msg_raw_arg(te_log_msg_out      *out,
+                   const char          *fmt,
+                   size_t               fmt_len,
+                   te_log_msg_arg_type  arg_type,
+                   const void          *arg_addr,
+                   size_t               arg_len)
+{
+    te_log_msg_raw_data   *data = (te_log_msg_raw_data *)out;
+    te_errno                rc;
+    unsigned int            arg_i;
     int                     fd = -1;
     struct stat             stat_buf;
 
-    assert(data != NULL);
 
-    n = data->descr.n;
-    if (n == TE_LOG_ARGS_DESCR_MAX)
-        return TE_E2BIG;
+    assert((fmt != NULL) || (fmt_len == 0));
+    if (fmt_len > 0)
+    {
+        /* We have not enough space in format string storage */
+        rc = ta_log_msg_raw_buf_check_len(data, fmt_len);
+        if ((rc != 0) && (rc != TE_EAGAIN))
+            return rc;
+
+        memcpy(data->ptr, fmt, fmt_len);
+        data->ptr += fmt_len;
+        assert(data->ptr <= data->end);
+    }
+
+    assert(data != NULL);
+    assert((data->args == NULL) == (data->args_max == 0));
+
+    /* Get the argument index and check that we have enough space */
+    arg_i = data->args_n;
+    if (arg_i == data->args_max)
+    {
+        if (data->args_max == 0)
+            data->args_max = TE_LOG_MSG_RAW_ARGS_INIT;
+        else
+            data->args_max += TE_LOG_MSG_RAW_ARGS_GROW;
+        data->args = realloc(data->args,
+                             data->args_max * sizeof(*data->args));
+        if (data->args == NULL)
+        {
+            data->args_len = data->args_n = data->args_max = 0;
+            return TE_ENOMEM;
+        }
+    }
+    /* Now we have to have enough space */
+    assert(arg_i < data->args_max);
 
     /* Validate requested length */
-    switch (type)
+    switch (arg_type)
     {
+        case TE_LOG_MSG_FMT_ARG_EOR:
+            break;
+
         case TE_LOG_MSG_FMT_ARG_INT:
-            /* Store in network byte order */
-            switch (len)
+#if 0
+fprintf(stderr, "%s(): INT len=%d\n", __FUNCTION__, arg_len);
+#endif
+            /* Store in host byte order */
+            switch (arg_len)
             {
-                case 1:
-                    *((int8_t *)&(data->descr.args[n].u.i)) =
-                        *(const int8_t *)addr;
-                    break;
-                case 2:
-                    LGR_16_TO_NET(*(const int16_t *)addr,
-                                  &(data->descr.args[n].u.i));
-                    break;
-                case 4:
-                    LGR_32_TO_NET(*(const int32_t *)addr,
-                                  &(data->descr.args[n].u.i));
-                    break;
-                case 8:
-                    LGR_32_TO_NET(((const int32_t *)addr)[1],
-                                  &(data->descr.args[n].u.i));
-                    LGR_32_TO_NET(((const int32_t *)addr)[0],
-                        ((uint32_t *)&(data->descr.args[n].u.i)) + 1);
+                case sizeof(int8_t):
+                    *((int8_t *)&(data->args[arg_i].u.i)) =
+                        *(const int8_t *)arg_addr;
                     break;
 
-                defautl:
+                case sizeof(int16_t):
+                    *((int16_t *)&(data->args[arg_i].u.i)) =
+                        *(const int16_t *)arg_addr;
+                    break;
+
+                case sizeof(int32_t):
+                    *((int32_t *)&(data->args[arg_i].u.i)) =
+                        *(const int32_t *)arg_addr;
+                    break;
+                
+                case sizeof(int64_t):
+                    data->args[arg_i].u.i =
+                        *(const int64_t *)arg_addr;
+                    break;
+
+                default:
                     return TE_EINVAL;
             }
             break;
 
         case TE_LOG_MSG_FMT_ARG_FILE:
-            if (addr == NULL)
+            if (arg_addr == NULL)
             {
                 /* Log the following string */
-                type = TE_LOG_MSG_FMT_ARG_MEM;
-                addr = "(NULL file name)";
-                len = strlen(addr);
+                arg_type = TE_LOG_MSG_FMT_ARG_MEM;
+                arg_addr = "(NULL file name)";
+                arg_len = strlen(arg_addr);
             }
-            else if (((fd = open(addr, O_RDONLY)) < 0) ||
+            else if (((fd = open(arg_addr, O_RDONLY)) < 0) ||
                      (fstat(fd, &stat_buf) != 0))
             {
                 /* Log name of the file instead of its contents */
-                type = TE_LOG_MSG_FMT_ARG_MEM;
-                len = strlen(addr);
+                arg_type = TE_LOG_MSG_FMT_ARG_MEM;
+                arg_len = strlen(arg_addr);
             }
             else
             {
-                /* Get length of the file and validate it below */
-                len = stat_buf.st_size;
+                /* Store file descriptor */
+                data->args[arg_i].u.i = fd;
+                /* Get length of the file */
+                arg_len = stat_buf.st_size;
+                if (arg_len > TE_LOG_FIELD_MAX)
+                {
+                    arg_len = TE_LOG_FIELD_MAX;
+                    data->trunc = TRUE;
+                }
+#if 0
+fprintf(stderr, "%s(): FILE len=%d\n", __FUNCTION__, arg_len);
+#endif
+                break;
             }
-            if (fd >= 0)
-                (void)close(fd);
-            /*FALLTHROGH*/
+            /*FALLTHROUGH*/
 
         case TE_LOG_MSG_FMT_ARG_MEM:
-            data->descr.args[n].u.a = addr;
+#if 0
+fprintf(stderr, "%s(): MEM len=%d\n", __FUNCTION__, arg_len);
+#endif
+            data->args[arg_i].u.a = arg_addr;
+            if (arg_len > TE_LOG_FIELD_MAX)
+            {
+                arg_len = TE_LOG_FIELD_MAX;
+                data->trunc = TRUE;
+            }
             break;
 
         default:
             return TE_EINVAL;
     }
 
-    data->descr.args[n].type = type;
-    data->descr.args[n].len  = len;
+    data->args[arg_i].type = arg_type;
+    data->args[arg_i].len  = arg_len;
 
-    data->descr.len += len + (no_nfl) ? 0 : TE_LOG_NFL_SZ;
+    data->args_len += sizeof(te_log_nfl) + arg_len;
 
-    data->descr.n++;
+    data->args_n++;
 
     return 0;
 }
 
+/** Raw log version of backend common parameters */
+const struct te_log_msg_out te_log_msg_out_raw = {
+    te_log_msg_fmt_args,
+    te_log_msg_raw_arg
+};
+
+
+/**
+ * Put specified argument in raw log format without any checks:
+ * i.e. too long or inappropriate length.
+ *
+ * @param data      Raw log message data
+ * @param type      Type of argument
+ * @param addr      Address with the data
+ * @param len       Data length
+ * @param use_nfl   Put NFL or not
+ */
+static void
+te_log_msg_raw_put_no_check(te_log_msg_raw_data *data,
+                            te_log_msg_arg_type  type,
+                            const void          *addr,
+                            size_t               len,
+                            te_bool              use_nfl)
+{
+    if (use_nfl)
+    {
+        if (type == TE_LOG_MSG_FMT_ARG_EOR)
+            len = TE_LOG_RAW_EOR_LEN;
+        LGR_NFL_PUT(len, data->ptr);
+    }
+
+    switch (type)
+    {
+        case TE_LOG_MSG_FMT_ARG_EOR:
+            break;
+
+        case TE_LOG_MSG_FMT_ARG_INT:
+            /* Put in network byte order */
+            switch (len)
+            {
+                case sizeof(int8_t):
+                    *(data->ptr) = *(const uint8_t *)addr;
+                    break;
+
+                case sizeof(int16_t):
+                    LGR_16_TO_NET(*(const uint16_t *)addr, data->ptr);
+                    break;
+
+                case sizeof(int32_t):
+                    LGR_32_TO_NET(*(const uint32_t *)addr, data->ptr);
+                    break;
+
+                case sizeof(int64_t):
+                    LGR_32_TO_NET(
+                        (int32_t)((*(const int64_t *)addr) >>
+                                  (sizeof(int32_t) * 8)),
+                        data->ptr);
+                    LGR_32_TO_NET(
+                        (int32_t)((*(const int64_t *)addr) &
+                                  ((1ull << (sizeof(int32_t) * 8)) - 1)),
+                        data->ptr + sizeof(int32_t));
+                    break;
+
+                default:
+                    assert(0);
+            }
+            data->ptr += len;
+            break;
+
+        case TE_LOG_MSG_FMT_ARG_MEM:
+            memcpy(data->ptr, addr, len);
+            data->ptr += len;
+            break;
+
+        case TE_LOG_MSG_FMT_ARG_FILE:
+        {
+            int         fd = *(int *)addr;
+            char        buf[1];
+            ssize_t     r;
+            uint8_t    *start = data->ptr;
+
+            while ((len > 0) &&
+                   (r = read(fd, buf, MIN(len, sizeof(buf)))) > 0)
+            {
+                memcpy(data->ptr, buf, r);
+                data->ptr += r;
+            }
+            (void)close(fd);
+            len -= (data->ptr - start);
+            if (len > 0)
+            {
+                /* Unexpected EOF */
+                memset(data->ptr, 0, len);
+                data->ptr += len;
+            }
+            break;
+        }
+
+        default:
+            assert(0);
+    }
+}
 
 static te_errno
-te_log_msg_raw_arg(te_log_msg_out      *out,
+te_log_msg_raw_put(te_log_msg_raw_data *data,
                    te_log_msg_arg_type  type,
                    const void          *addr,
                    size_t               len,
-                   te_bool              no_nfl)
+                   te_bool              use_nfl)
 {
-    te_log_msg_raw_data    *raw = (te_log_msg_raw_data *)out;
-    te_errno                rc = 0;
-    int                     fd;
-    struct stat             stat_buf;
+    te_errno    rc = 0;
+    int         fd;
+    struct stat stat_buf;
 
 
     /* Validate requested length */
     switch (type)
     {
         case TE_LOG_MSG_FMT_ARG_EOR:
-            len = TE_LOG_RAW_EOR_LEN;
             break;
 
         case TE_LOG_MSG_FMT_ARG_INT:
             switch (len)
             {
-                case 1:
-                case 2:
-                case 4:
-                case 8:
+                case sizeof(int8_t):
+                case sizeof(int16_t):
+                case sizeof(int32_t):
+                case sizeof(int64_t):
                     break;
 
-                defautl:
+                default:
                     return TE_EINVAL;
             }
             break;
@@ -337,12 +634,13 @@ te_log_msg_raw_arg(te_log_msg_out      *out,
             else
             {
                 /* Get length of the file and validate it below */
+                addr = &fd;
                 len = stat_buf.st_size;
             }
-            /*FALLTHROGH*/
+            /*FALLTHROUGH*/
 
         case TE_LOG_MSG_FMT_ARG_MEM:
-            if (no_nfl)
+            if (!use_nfl)
                 return TE_EINVAL;
             if (len > TE_LOG_FIELD_MAX)
             {
@@ -356,109 +654,28 @@ te_log_msg_raw_arg(te_log_msg_out      *out,
             return TE_EINVAL;
     }
 
-    /* Add next field length */
-    if (!no_nfl)
-        LGR_NFL_PUT(len, raw->ptr);
+    rc = ta_log_msg_raw_buf_check_len(data,
+                                      len + ((use_nfl) ?
+                                                 sizeof(te_log_nfl) : 0));
+    if ((rc != 0) && (rc != TE_EAGAIN))
+        return rc;
 
-    switch (type)
-    {
-        case TE_LOG_MSG_FMT_ARG_EOR:
-            break;
+    te_log_msg_raw_put_no_check(data, type, addr, len, use_nfl);
 
-        case TE_LOG_MSG_FMT_ARG_INT:
-            /* Put in network byte order */
-            switch (len)
-            {
-                case 1:
-                    *(raw->ptr) = *(const uint8_t *)addr;
-                    break;
-
-                case 2:
-                    LGR_16_TO_NET(*(const uint16_t *)addr, raw->ptr);
-                    break;
-
-                case 4:
-                    LGR_32_TO_NET(*(const uint32_t *)addr, raw->ptr);
-                    break;
-
-                case 8:
-                    LGR_32_TO_NET(((const uint32_t *)addr)[1],
-                                  raw->ptr);
-                    LGR_32_TO_NET(((const uint32_t *)addr)[0],
-                                  raw->ptr + 4);
-                    break;
-
-                default:
-                    assert(0);
-            }
-            raw->ptr += len;
-            break;
-
-        case TE_LOG_MSG_FMT_ARG_MEM:
-            /* Just copy */
-            memcpy(raw->ptr, addr, len);
-            raw->ptr += len;
-            break;
-
-        case TE_LOG_MSG_FMT_ARG_FILE:
-        {
-            /* Just copy from file */
-            uint8_t buf[1024];
-            ssize_t r;
-
-            /* Control length to be sure that we'll not copy more */
-            while ((len > 0) && (r = read(fd, buf, sizeof(buf))) > 0)
-            {
-                r = MIN(len, r);
-                memcpy(raw->ptr, buf, r);
-                raw->ptr += r;
-                len -= r;
-            }
-            /* If actual file size is less than expected, add zeros */
-            if (len > 0)
-            {
-                memset(raw->ptr, 0, len);
-                raw->ptr += len;
-            }
-            break;
-        }
-
-        default:
-            assert(0);
-    }
-
-    return rc;
+    return 0;
 }
 
 static te_errno
-te_log_msg_raw_string(te_log_msg_out *out, const char *str)
+te_log_msg_raw_put_string(te_log_msg_raw_data *data, const char *str)
 {
     if (str == NULL)
         str = "(null)";
 
-    return te_log_msg_raw_arg(out, TE_LOG_MSG_FMT_ARG_MEM,
-                              str, strlen(str), FALSE); 
+    return te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_MEM,
+                              str, strlen(str), TRUE); 
 }
 
 
-static struct te_log_msg_out te_log_msg_out_raw = {
-    NULL,
-    te_log_msg_raw_arg
-};
-
-
-static te_errno
-te_log_msg_fmt(te_log_msg_out *out, const char *fmt, ...)
-{
-    te_errno    rc;
-    va_list     ap;
-
-    va_start(ap, fmt);
-    rc = out->fmt(out, fmt, ap);
-    va_end(ap);
-
-    return rc;
-}
 
 /**
   * Preprocess and output message to log with special features parsing
@@ -476,30 +693,24 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
 
     te_errno    rc = 0;
     char        modifier;
+#if 0
     int         spec_size;
-    char        tmp;
-#if !TE_HAVE_LOG_MSG_FMT
-    const char *s;
-#else
+#endif
     char       *s;
     char       *fmt_dup;
     char       *fmt_start;
-    char       *fmt_end;
-    te_bool     flushed = FALSE;
+    char       *spec_start;
+    te_bool     fmt_needed = FALSE;
     va_list     ap_start;
-#endif
     
 
     if (fmt == NULL)
     {
-#if TE_HAVE_LOG_MSG_FMT
         if (out->fmt != NULL)
             rc = te_log_msg_fmt(out, "(null)");
-#endif
         return rc;
     }
 
-#if TE_HAVE_LOG_MSG_FMT
     if (out->fmt != NULL)
     {
         fmt_dup = strdup(fmt);
@@ -513,68 +724,37 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
     {
         fmt_dup = NULL;
     }
-#endif
-
-#if TE_HAVE_LOG_MSG_RAW
+    
 #define TE_LOG_VPRINTF_RAW_ARG(_type, _addr, _len) \
-    do { \
-        if (out->raw_arg != NULL) \
-        { \
-            out->raw_arg(out, _type, _addr, _len, FALSE);  \
-        } \
-    } while (0)
-#else
-#define TE_LOG_VPRINTF_RAW_ARG(_type, _addr, _len)
-#endif
-    
-
-#if TE_HAVE_LOG_MSG_FMT
-/*
- * We don't need to restore symbol at 'fmt_end', since:
- *  - it must be '%' or '\0';
- *  - the function is called when TE-specific is encountered.
- */
-#define TE_LOG_VPRINTF_FMT_VFLUSH \
     do {                                                    \
-        if (out->fmt != NULL)                               \
+        if (fmt_needed && out->fmt != NULL)                 \
         {                                                   \
-            *fmt_end = '\0';                                \
+            char _tmp = *spec_start;                        \
+                                                            \
+            *spec_start = '\0';                             \
             out->fmt(out, fmt_start, ap_start);             \
-            va_end(ap_start);                               \
-            flushed = TRUE;                                 \
-            fmt_start = fmt_end;                            \
+            *spec_start = _tmp;                             \
+            fmt_start = spec_start;                         \
+            fmt_needed = FALSE;                             \
         }                                                   \
-    } while (0)
-
-#define TE_LOG_VPRINTF_FMT_FLUSH(_args...) \
-    do {                                                    \
-        if (out->fmt != NULL)                               \
+        if (out->raw != NULL)                               \
         {                                                   \
-            te_log_msg_fmt(out, _args);                     \
+            out->raw(out, fmt_start, s - fmt_start + 1,     \
+                     _type, _addr, _len);                   \
         }                                                   \
+        fmt_start = s + 1;                                  \
+        va_end(ap_start);                                   \
+        va_copy(ap_start, ap);                              \
     } while (0)
     
-#else
-#define TE_LOG_VPRINTF_FMT_VFLUSH
-#define TE_LOG_VPRINTF_FMT_FLUSH(_args...)
-#endif
-            
-    for (s = 
-#if TE_HAVE_LOG_MSG_FMT
-            fmt_start = fmt_dup != NULL ? fmt_dup : (char *)fmt;
-#else
-            fmt;
-#endif
+           
+    for (s = fmt_start = fmt_dup != NULL ? fmt_dup : (char *)fmt;
          *s != '\0'; s++)
     {
         if (*s != '%')
             continue;
 
-#if TE_HAVE_LOG_MSG_FMT
-        flushed = FALSE;
-        fmt_end = s;
-#endif
-        ++s;
+        spec_start = s++;
 
         /* Skip flags */
         while (index(flags, *s) != NULL)
@@ -598,7 +778,6 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
 #if 0
             case '=':
                 modifier = *(s + 1);
-                TE_LOG_VPRINTF_FMT_VFLUSH;
                 va_copy(ap_start, ap);
                 *fmt_end = '%';
                 switch (modifier)
@@ -630,7 +809,6 @@ case mod_:\
                 tmp = s[3];
                 /* Truncate the string before the specifier */
                 s[spec_size + 1] = '\0';
-                TE_LOG_VPRINTF_FMT_VFLUSH;
                 s[3] = tmp;
 
                 va_copy(ap_start, ap);
@@ -648,6 +826,12 @@ case mod_:\
                 modifier = (*++s == 'h') ? (++s, 'H') : 'h';
                 break;
 
+            case 'L':
+            case 'j':
+            case 't':
+                modifier = *s++;
+                break;
+
             default:
                 modifier = '\0';
         }
@@ -656,37 +840,15 @@ case mod_:\
         {
             case 'T':
                 ++s;
-                TE_LOG_VPRINTF_FMT_VFLUSH;
                 if (*s == 'm')
                 {
                     const uint8_t  *base;
                     unsigned int    len;
-                    unsigned int    i;
                     
                     base = va_arg(ap, const uint8_t *);
                     len = va_arg(ap, unsigned int);
                     TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_MEM,
                                            base, len);
-#if TE_HAVE_LOG_MSG_FMT
-                    if (out->fmt != NULL)
-                    {
-                        TE_LOG_VPRINTF_FMT_FLUSH("\n");
-                        for (i = 0; i < len; i++)
-                        {
-                            TE_LOG_VPRINTF_FMT_FLUSH("%02hhX", base[i]);
-                            if ((i & 0xf) == 0xf)
-                            {
-                                TE_LOG_VPRINTF_FMT_FLUSH("\n");
-                            }
-                            else 
-                            {
-                                TE_LOG_VPRINTF_FMT_FLUSH(" ");
-                            }
-                        }
-                        TE_LOG_VPRINTF_FMT_FLUSH("\n");
-                    }
-                    fmt_start = s + 1;
-#endif
                 }
                 else if (*s == 'f')
                 {
@@ -694,57 +856,20 @@ case mod_:\
                     
                     TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_FILE,
                                            filename, 0);
-#if TE_HAVE_LOG_MSG_FMT
-                    {
-                        FILE   *fp;
-                        char    buf[1024];
-
-                        if ((fp = fopen(filename, "r")) == NULL)
-                        {
-                            TE_LOG_VPRINTF_FMT_FLUSH(
-                                " CANNOT OPEN FILE %s ", filename);
-                        }
-                        else
-                        {
-                            while (fgets(buf, sizeof(buf), fp) != NULL)
-                            {
-                                TE_LOG_VPRINTF_FMT_FLUSH("%s", buf);
-                            }
-                            (void)fclose(fp);
-                        }
-                    }
-                    fmt_start = s + 1;
-#endif
                 }
-#if TE_HAVE_LOG_MSG_FMT
                 else
                 {
-                    *fmt_start = '%';
+                    /*FIXME*/
                 }
-#endif
                 break;
 
             case 'r':
             {
                 te_errno arg;
 
-                TE_LOG_VPRINTF_FMT_VFLUSH;
                 arg = va_arg(ap, te_errno);
                 TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_INT,
                                        &arg, sizeof(arg));
-#if TE_HAVE_LOG_MSG_FMT
-                if (TE_RC_GET_MODULE(arg) == 0)
-                {
-                     TE_LOG_VPRINTF_FMT_FLUSH("%s", te_rc_err2str(arg));
-                }
-                else
-                {
-                     TE_LOG_VPRINTF_FMT_FLUSH("%s-%s",
-                                              te_rc_mod2str(arg),
-                                              te_rc_err2str(arg));
-                }
-                fmt_start = s + 1;
-#endif
                 break;
             }
 
@@ -769,6 +894,25 @@ case mod_:\
                 break;
             }
 
+            case 'c':
+            {
+                /* 
+                 * String MUST be passed through TE raw log arguments
+                 * to avoid any issues with conversion specifiers and
+                 * any special symbols which may be created using %c.
+                 */
+                int arg;
+
+                if (modifier != '\0')
+                {
+                    /* TODO */
+                }
+                arg = va_arg(ap, int);
+                TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_INT,
+                                       &arg, sizeof(arg));
+                break;
+            }
+
             case 'p':
                 /* See note below for integer specifiers */
                 if (modifier != '\0')
@@ -776,9 +920,9 @@ case mod_:\
                     /* TODO */
                 }
                 va_arg(ap, void *);
+                fmt_needed = TRUE;
                 break;
 
-            case 'c':
             case 'd':
             case 'i':
             case 'o':
@@ -823,7 +967,9 @@ case mod_:\
                         break;
                     default:
                         /* TODO */
+                        break;
                 }
+                fmt_needed = TRUE;
                 break;
 
             case 'e':
@@ -849,40 +995,36 @@ case mod_:\
                         break;
                     default:
                         /* TODO */
+                        break;
                 }
+                fmt_needed = TRUE;
                 break;
 
             default:
                 /* TODO */
+                break;
         }
-
-#if TE_HAVE_LOG_MSG_FMT
-        if (flushed)
-            va_copy(ap_start, ap);
-#endif
+        /* Skip conversion specifier in for loop step */
     }
 
-#if TE_HAVE_LOG_MSG_FMT
-    fmt_end = s;
-#endif
-    TE_LOG_VPRINTF_FMT_VFLUSH;
+    /* Move 's' 1 symbol back to have correct calculations in macro */
+    spec_start = s--;
+    TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_EOR, NULL, 0);
 
-#if TE_HAVE_LOG_MSG_FMT
     free(fmt_dup);
-#endif
 
-#undef TE_LOG_VPRINTF_FMT_FLUSH
-#undef TE_LOG_VPRINTF_FMT_VFLUSH
+#undef TE_LOG_VPRINTF_RAW_ARG
 
     return 0;
 }
 
-static const uint8_t te_log_version = TE_LOG_VERSION;
+
+static const te_log_version log_version = TE_LOG_VERSION;
 
 /**
   * Preprocess and output message to log with special features parsing
   *
-  * @param out      Output parameters
+  * @param data     Output parameters
   * @param level    Log levelt
   * @param ts_sec   Timestamp seconds
   * @param ts_usec  Timestamp microseconds
@@ -894,32 +1036,71 @@ static const uint8_t te_log_version = TE_LOG_VERSION;
   * @return Error code (see te_errno.h)
   */
 te_errno
-te_log_message_raw_va(te_log_msg_out *out, te_log_level level,
+te_log_message_raw_va(te_log_msg_raw_data *data, te_log_level level,
                       te_log_ts_sec ts_sec, te_log_ts_usec ts_usec,
                       const char *entity, const char *user,
                       const char *fmt, va_list ap)
 {
-    te_log_msg_raw_arg(out, TE_LOG_MSG_FMT_ARG_INT,
-                       &te_log_version, sizeof(te_log_version), TRUE);
-    te_log_msg_raw_arg(out, TE_LOG_MSG_FMT_ARG_INT,
-                       &level, sizeof(level), TRUE);
-    te_log_msg_raw_arg(out, TE_LOG_MSG_FMT_ARG_INT,
-                       &ts_sec, sizeof(ts_sec), TRUE);
-    te_log_msg_raw_arg(out, TE_LOG_MSG_FMT_ARG_INT,
-                       &ts_usec, sizeof(ts_usec), TRUE);
-    te_log_msg_raw_arg(out, TE_LOG_MSG_FMT_ARG_INT,
-                       &ts_usec, sizeof(ts_usec), TRUE);
+    te_errno    rc;
+    size_t      fmt_nfl_off;    /**< Offset of format string NFL */
+    uint8_t    *fmt_nfl_ptr;    /**< Format string NFL pointer */
+    size_t      fmt_start_off;  /**< Offset of the format string start */
+    size_t      fmt_nfl;        /**< Format string NFL value */
 
-    te_log_msg_raw_string(out, entity);
-    te_log_msg_raw_string(out, user);
-    te_log_msg_raw_string(out, fmt);
+    unsigned int    i;
 
-    te_log_vprintf(out, fmt, ap);
 
-    te_log_msg_raw_arg(out, TE_LOG_MSG_FMT_ARG_EOR, NULL,
-                       TE_LOG_RAW_EOR_LEN, FALSE);
+    data->ptr = data->buf;
+    data->args_n = data->args_len = 0;
+    data->trunc = FALSE;
+
+
+    te_log_msg_raw_put_string(data, entity);
+
+    te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
+                       &log_version, sizeof(log_version), FALSE);
+    te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
+                       &ts_sec, sizeof(ts_sec), FALSE);
+    te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
+                       &ts_usec, sizeof(ts_usec), FALSE);
+    te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
+                       &level, sizeof(level), FALSE);
+
+    te_log_msg_raw_put_string(data, user);
+
+    /* Put fake empty string to allocate space for 'format string' NFL */
+    fmt_nfl_off = data->ptr - data->buf;
+    te_log_msg_raw_put_string(data, "");
+    fmt_start_off = data->ptr - data->buf;
+
+    te_log_vprintf((te_log_msg_out *)data, fmt, ap);
+
+    /* Calculate format string length */
+    fmt_nfl = (data->ptr - data->buf) - fmt_start_off;
+
+    /* Calculate current pointer to format string NFL and put value */
+    fmt_nfl_ptr = data->buf + fmt_nfl_off;
+    LGR_NFL_PUT(fmt_nfl, fmt_nfl_ptr);
+
+    /* We have not enough space for all arguments */
+    rc = ta_log_msg_raw_buf_check_len(data, data->args_len);
+    if ((rc != 0) && (rc != TE_EAGAIN))
+        return rc;
+
+    /* Now we have enough space to put all arguments */
+    for (i = 0; i < data->args_n; ++i)
+    {
+        te_log_msg_raw_put_no_check(data, data->args[i].type,
+            (data->args[i].type == TE_LOG_MSG_FMT_ARG_MEM) ?
+                data->args[i].u.a : &data->args[i].u.i,
+            data->args[i].len, TRUE);
+    }
+    assert(data->ptr <= data->end);
+
+    return 0;
 }
 
+#if 0
 /**
   * Preprocess and output message to log with special features parsing
   *
@@ -961,9 +1142,11 @@ te_log_message_file_va(te_log_msg_out *out, te_log_level level,
 
     fputc('\n', f);
 }
+#endif
 
+#if 0
 te_errno
-te_log_message_int(te_log_msg_out *out, te_log_level level,
+te_log_message_int(te_log_level level,
                    te_log_ts_sec ts_sec, te_log_ts_usec ts_usec,
                    const char *entity, const char *user,
                    const char *fmt, ...)
@@ -972,12 +1155,14 @@ te_log_message_int(te_log_msg_out *out, te_log_level level,
     va_list     ap;
 
     va_start(ap, fmt);
-    rc = te_log_message_raw_va(out, level, ts_sec, ts_usec, entity, user,
+    rc = te_log_message_raw_va(level, ts_sec, ts_usec, entity, user,
                            fmt, ap);
     va_end(ap);
 
     return rc;
 }
+#endif
+#if 0
 te_errno
 te_log_message_int2(te_log_msg_out *out, te_log_level level,
                    te_log_ts_sec ts_sec, te_log_ts_usec ts_usec,
@@ -994,26 +1179,17 @@ te_log_message_int2(te_log_msg_out *out, te_log_level level,
 
     return rc;
 }
+#endif
 
+#if 0
 int
 main(void)
 {
-    uint8_t buf[1000];
-    te_log_msg_raw_data out = { te_log_msg_out_raw, NULL, 0, NULL };
-    struct te_log_msg_fmt_to_file te_log_msg_to_stderr;
     uint8_t mem[] = { 1, 2, 4, 5 };
 
-    te_log_msg_to_stderr.common = te_log_msg_out_file;
-    te_log_msg_to_stderr.file   = stderr;
-
-    out.buf = buf;
-    out.len = 1000;
-    out.ptr = buf;
-
-    te_log_message_int(&out, 2, 1, 1, "Entity", "User",
+    te_log_message_int(2, 1, 1, "Entity", "User",
                        "Log %d %Tm %10s %Tf",
                        10, mem, sizeof(mem), "kuku", "/etc/resolv.conf");
-    te_log_message_int2(&te_log_msg_to_stderr, 1, 1, 1, "ENTITY", "USER",
-                        "LOG=%Tm\n", out.buf, out.ptr - out.buf);
     return 0;
 }
+#endif

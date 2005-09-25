@@ -67,26 +67,6 @@ extern "C" {
 #error LGR_NFL_PUT is not defined
 #endif
 
-#if (SIZEOF_TE_LOG_LEVEL == 2)
-#define LGR_LEVEL_PUT(val_, buf_)   LGR_16_PUT(val_, buf_)
-#else
-#error LGR_LEVEL_PUT is not defined
-#endif
-
-#if (SIZEOF_TE_LOG_TS_SEC + SIZEOF_TE_LOG_TS_USEC == 8)
-#define LGR_TIMESTAMP_PUT(ts_, buf_) \
-    do {                                        \
-        C_ASSERT(sizeof((ts_)->tv_sec) == 4);   \
-        LGR_32_TO_NET((ts_)->tv_sec, buf_);     \
-        (buf_) += 4;                            \
-        C_ASSERT(sizeof((ts_)->tv_usec) == 4);  \
-        LGR_32_TO_NET((ts_)->tv_usec, buf_);    \
-        (buf_) += 4;                            \
-    } while (0)
-#else
-#error LGR_TIMESTAMP_PUT is not defined
-#endif
-
 
 /* ==== Test Agent Logger lib definitions */
 

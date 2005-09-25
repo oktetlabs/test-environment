@@ -39,17 +39,8 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#if HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-#if HAVE_STRINGS_H
-#include <strings.h>
-#endif
-#if HAVE_UNISTD_H
-#include <unistd.h>
+#if HAVE_STDARG_H
+#include <stdarg.h>
 #endif
 #if HAVE_ASSERT_H
 #include <assert.h>
@@ -60,47 +51,26 @@
 #if HAVE_TIME_H
 #include <time.h>
 #endif
-#if HAVE_ERRNO_H
-#include <errno.h>
-#endif
-#if HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-#if HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
 
-#include "te_stdint.h"
-#include "te_printf.h"
-#include "te_raw_log.h"
-#include "logger_int.h"
-#include "te_tools.h"
+#include "te_defs.h"
+#include "logger_defs.h"
+#include "te_log_fmt.h"
     
 
 #ifdef _cplusplus
 extern "C" {
 #endif
 
-/** Maximum logger message arguments */
-#define LGR_MAX_ARGS        16
-
-/** Template for temporary file name */
-#define LGR_TMP_FILE_TMPL   "tmp_raw_log.XXXXXX"
-
 
 /** Log message transport */
 typedef void (* te_log_message_tx_f)(const void *msg, size_t len);
 
-
 /** Transport to log messages */
 static te_log_message_tx_f te_log_message_tx = NULL;
 
-/** Path to the directory with TE logs */
-static const char *te_log_dir = NULL;
-
 
 /* See description below */
-static void log_message_va(struct te_log_out_params *out,
+static void log_message_va(te_log_msg_raw_data *out,
                            const char *file, unsigned int line,
                            unsigned int level,
                            const char *entity, const char *user,
@@ -114,7 +84,7 @@ static void log_message_va(struct te_log_out_params *out,
  *            from log_message_va() just before exit.
  */
 static void
-log_message_int(struct te_log_out_params *out,
+log_message_int(te_log_msg_raw_data *out,
                 const char *file, unsigned int line,
                 unsigned int level,
                 const char *entity, const char *user,
@@ -137,123 +107,22 @@ log_message_int(struct te_log_out_params *out,
  * The rest of parameters complies with te_log_message_f prototype.
  */
 static void
-log_message_va(struct te_log_out_params *out, 
+log_message_va(te_log_msg_raw_data *out, 
                const char *file, unsigned int line,
                unsigned int level,
                const char *entity, const char *user,
                const char *fmt, va_list ap)
 {
-    uint8_t            *msg_ptr = out->buf;
-    uint8_t            *msg_end = msg_ptr + out->buflen;
-    size_t              data_len_offset = 0;
-    te_bool             msg_trunc = FALSE;
-    size_t              tmp_length;
-    struct timeval      tv;
-
-
-    if (te_log_dir == NULL)
-    {
-         /* Get environment variable value for temporary TE location. */
-         te_log_dir = getenv("TE_LOG_DIR");
-         if (te_log_dir == NULL)
-         {
-             fprintf(stderr, "TE_LOG_DIR is not defined\n");
-             return;
-         }
-    }
-#define LGR_CHECK_BUF_LEN(_len) \
-    do {                                                            \
-        if (msg_ptr + (_len) > msg_end)                             \
-        {                                                           \
-            size_t   data_len = msg_ptr - (uint8_t *)out->buf;      \
-                                                                    \
-            out->buflen <<= 1;                                      \
-            out->buf = realloc(out->buf, out->buflen);              \
-            if (out->buf == NULL)                                   \
-            {                                                       \
-                fprintf(stderr, "%s(): realloc(%" TE_PRINTF_SIZE_T  \
-                        "u) failed", __FUNCTION__, out->buflen);    \
-                return;                                             \
-            }                                                       \
-            msg_ptr = out->buf + data_len;                          \
-            msg_end = out->buf + out->buflen;                       \
-        }                                                           \
-    } while (0)
-
-/**
- * This macro fills in NFL(Next_Field_Length) field and corresponding
- * string field as following:
- *     NFL - actual next string length without trailing null;
- *     Argument field (1 .. 255 bytes) - logged string.
- *
- * @param _log_str      logged string location
- * @param _len          string length (OUT)
- *
- * @note If logged string pointer equal NULL, the "(NULL)" string
- *       is written in the raw log file.
- */
-#define LGR_PUT_STR(_log_str, _len) \
-    do {                                                        \
-        const char *tmp_str;                                    \
-                                                                \
-        tmp_str = ((_log_str) != NULL) ? (_log_str) : "(NULL)"; \
-        (_len) = strlen(tmp_str);                               \
-        if ((_len) > TE_LOG_FIELD_MAX)                          \
-        {                                                       \
-            msg_trunc = TRUE;                                   \
-            (_len) = TE_LOG_FIELD_MAX;                          \
-        }                                                       \
-                                                                \
-        LGR_CHECK_BUF_LEN(sizeof(te_log_nfl) + (_len));         \
-        LGR_NFL_PUT((_len), msg_ptr);                           \
-        memcpy(msg_ptr, tmp_str, (_len));                       \
-        msg_ptr += (_len);                                      \
-     } while (0);
-
-
-    /* Fill in Entity_name field and corresponding Next_filed_length one */
-    LGR_PUT_STR(entity, tmp_length);
-    
-    LGR_CHECK_BUF_LEN(TE_LOG_MSG_HDR_SZ);
-
-    /* Fill in Log_ver and timestamp fields */
-    *msg_ptr = TE_LOG_VERSION;
-    msg_ptr++;
+    te_bool         msg_trunc = FALSE;
+    struct timeval  tv;
 
     gettimeofday(&tv, NULL);
-    LGR_TIMESTAMP_PUT(&tv, msg_ptr);
 
-    /* Fill in Log level to be passed in raw log */
-    LGR_LEVEL_PUT(level, msg_ptr);
-
-
-    /* Fill in User_name field and corresponding Next_filed_length one */
-    LGR_PUT_STR(user, tmp_length);
-
-    /*
-     * Fill in Log_data_format_string field and corresponding
-     * Next_filed_length one
-     */
-    
-    /* Fix Log_message_data/format_string field */
-    data_len_offset = msg_ptr - (uint8_t *)out->buf;
-    msg_ptr += sizeof(te_log_nfl);
-   
-    out->offset = msg_ptr - (uint8_t *)out->buf;
-    te_log_vprintf(out, fmt, ap);
-    
-#undef LGR_PUT_STR    
-#undef LGR_CHECK_BUF_LEN
-
-    msg_ptr = out->buf + data_len_offset;
-    LGR_NFL_PUT(out->offset - data_len_offset - sizeof(te_log_nfl),
-                msg_ptr);
-
-    msg_ptr = out->buf + out->offset;
-    LGR_NFL_PUT(TE_LOG_RAW_EOR_LEN, msg_ptr);
+    te_log_message_raw_va(out, level, tv.tv_sec, tv.tv_usec,
+                          entity, user, fmt, ap);
 
     assert(te_log_message_tx != NULL);
-    te_log_message_tx(out->buf, out->offset + sizeof(te_log_nfl));
+    te_log_message_tx(out->buf, out->ptr - out->buf);
 
     if (msg_trunc)
     {

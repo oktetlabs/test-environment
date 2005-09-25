@@ -89,7 +89,7 @@ static struct ipc_client *lgr_client = NULL;
  *
  * @note It should be used under lgr_lock only.
  */
-static struct te_log_out_params lgr_out;
+static te_log_msg_raw_data lgr_out;
 
 
 static void ten_log_message(const char *file, unsigned int line,
@@ -154,16 +154,12 @@ ten_log_message(const char *file, unsigned int line,
         assert(lgr_client != NULL);
         te_log_message_tx = log_message_ipc;
         atexit(log_client_close);
-    }
-    if (lgr_out.buf == NULL)
-    {
-        lgr_out.buf = malloc(LGR_TEN_MSG_BUF_INIT);
-        if (lgr_out.buf == NULL)
-        {
-            perror("malloc() failed");
-            return;
-        }
-        lgr_out.buflen = LGR_TEN_MSG_BUF_INIT;
+
+        /* Initialize backend */
+        lgr_out.common = te_log_msg_out_raw;
+        lgr_out.buf = lgr_out.end = NULL;
+        lgr_out.args_max = 0;
+        lgr_out.args = NULL;
     }
 
     va_start(ap, fmt);
@@ -201,8 +197,10 @@ log_client_close(void)
         lgr_client = NULL;
     }
     free(lgr_out.buf);
-    lgr_out.buf = NULL;
-    lgr_out.buflen = 0;
+    lgr_out.buf = lgr_out.end = NULL;
+    free(lgr_out.args);
+    lgr_out.args = NULL;
+    lgr_out.args_max = 0;
 #ifdef HAVE_PTHREAD_H
     if (pthread_mutex_unlock(&lgr_lock) != 0)
     {
