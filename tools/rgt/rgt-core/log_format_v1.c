@@ -284,6 +284,10 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 
         arg = &((*arg)->next);
         (*msg)->args_count++;
+
+        /* Read the next argument length */
+        READ(fd, &nflen, sizeof(nflen));
+        RGT_NFL_NTOH(nflen);
     }
 
     *arg = NULL;
