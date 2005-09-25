@@ -27,7 +27,7 @@ rgt-conv -m postponed -c $RGT_FILTER -f $RAW_LOG_FILE \
          -o $XML_LOG_FILE
 if test $? -eq 0 ; then
     te_trc ${OPTS} $XML_LOG_FILE
+    rm $XML_LOG_FILE
 fi
 
-rm $XML_LOG_FILE
 rm $RGT_FILTER
