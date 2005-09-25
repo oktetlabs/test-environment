@@ -58,6 +58,7 @@ rgt_process_control_message(log_msg *msg)
 {
     int          node_id;
     int          parent_id;
+    msg_arg     *arg;
     node_info_t *node;
     node_type_t  node_type;
     int          err_code = ESUCCESS;
@@ -66,28 +67,26 @@ rgt_process_control_message(log_msg *msg)
     enum ctrl_event_type evt_type;
     enum result_status   res;
     size_t               len;
-    
+
+
+    /* Get Parent ID and Node ID */
+    if (sscanf(fmt_str, "%u %u", &parent_id, &node_id) < 2)
+    {
+        /* Unrecognized format */
+        FMT_TRACE("Unrecognized message format (%s)", msg->fmt_str);
+        THROW_EXCEPTION;
+    }
+    while (isdigit(*fmt_str) || isspace(*fmt_str))
+    {
+        fmt_str++;
+    }
+
     /*
      * Determine type of message:
      * All control messages start from "%d %d " character sequence,
      * then message type is followed.
      * For more information see OKT-HLD-0000095-TE_TS.
      */
-
-    /* Get Parent ID and Node ID */
-    if (sscanf(fmt_str, "%u %u", &parent_id, &node_id) < 2)
-    {
-        FMT_TRACE("Unrecognized message format (%s)", msg->fmt_str);
-        THROW_EXCEPTION;
-    }
-    parent_id = ntohl(parent_id);
-    node_id = ntohl(node_id);
-
-    while (isdigit(*fmt_str) || isspace(*fmt_str))
-    {
-        fmt_str++;
-    }
-
     if ((node_type = NT_TEST,
          strncmp(fmt_str, CNTR_MSG_TEST,
                  strlen(CNTR_MSG_TEST)) == 0) ||
@@ -103,7 +102,7 @@ rgt_process_control_message(log_msg *msg)
         {
             THROW_EXCEPTION;
         }
-        
+
         if (flow_tree_add_node(parent_id, node_id, node_type,
                                node->descr.name, node->start_ts,
                                node, &err_code) == NULL)
@@ -127,13 +126,7 @@ rgt_process_control_message(log_msg *msg)
              (fmt_str[len] == '\0' || isspace(fmt_str[len])))
 #undef RGT_CMP_RESULT
     {
-        fmt_str += len;
-
-        /** Process trailing "%s" */
-        while (isspace(*fmt_str))
-        {
-            fmt_str++;
-        }
+        /** @todo Process trailing "%s" */
 
         if ((node = flow_tree_close_node(parent_id, node_id, 
                                          msg->timestamp,
@@ -148,8 +141,9 @@ rgt_process_control_message(log_msg *msg)
 
         memcpy(node->end_ts, msg->timestamp, sizeof(node->end_ts));
         node->result.status = res;
-        node->result.err = node_info_obstack_copy0(fmt_str,
-                                                   strlen(fmt_str) + 1);
+        if ((arg = get_next_arg(msg)) != NULL)
+            node->result.err = node_info_obstack_copy0(arg->val,
+                                                       arg->len);
 
         evt_type = CTRL_EVT_END;
     }
@@ -286,13 +280,11 @@ static node_info_t *
 create_node_by_msg(log_msg *msg, node_type_t type,
                    int node_id, int parent_id)
 {
-    node_info_t  *node;
-    param       **p_prm;
-    const char   *node_type_str;
-    char         *fmt_str;
-    char         *args;
-    char         *authors;
-    int           i;
+    node_info_t *node;
+    msg_arg     *arg;
+    param      **p_prm;
+    const char  *node_type_str;
+    const char  *fmt_str;
 
     if ((node = alloc_node_info()) == NULL)
     {
@@ -312,97 +304,128 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         return NULL;
     }
     fmt_str += strlen(node_type_str);
-    
-#define SKIP_SPACES \
+
+#define SKIP_SPACES(_str) \
     do {                            \
         /* Skip all the spaces */   \
-        while (isspace(*fmt_str))   \
-            fmt_str++;              \
+        while (isspace(*(_str)))    \
+            (_str)++;               \
     } while (0)
 
-    SKIP_SPACES;
-    authors = strstr(fmt_str, "AUTHORS");
-    args    = strstr(fmt_str, "ARGs");
+    SKIP_SPACES(fmt_str);
 
-    /* 
-     * If it is not an authors list, not an arguments list and it is
-     * not started with double quote, it MUST be a name.
-     */
-    if (fmt_str != authors && fmt_str != args && *fmt_str != '\"')
+    if (strncmp(fmt_str, "%s", strlen("%s")) == 0)
     {
-        for (i = 0; !isspace(fmt_str[i]); i++);
-    
-        node->descr.name = (char *)node_info_obstack_copy0(fmt_str, i);
-        fmt_str += i;
+        /* Process "name" clause */
+        if ((arg = get_next_arg(msg)) == NULL)
+        {
+            FMT_TRACE("Missing \"name\" argument in control message "
+                      "%s (%d %d)", msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+        node->descr.name = (char *)node_info_obstack_copy0(arg->val,
+                                                           arg->len);
 
-        SKIP_SPACES;
+        fmt_str += strlen("%s");
+
+        SKIP_SPACES(fmt_str);
     }
 
-    if (*fmt_str == '\"')
+
+    if (strncmp(fmt_str, "\"%s\"", strlen("\"%s\"")) == 0)
     {
-        /* Objective processing */
-        char *next;
-        char *end;
+        /* Process "objective" clause */
+        if ((arg = get_next_arg(msg)) == NULL)
+        {
+            FMT_TRACE("Missing \"objective\" argument in control message "
+                      "%s (%d %d)", msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+        if (arg->len > 0)
+        {
+            node->descr.objective = 
+                (char *)node_info_obstack_copy0(arg->val, arg->len);
+        }
 
-        /* Skip starting double quote */
-        fmt_str++;
+        fmt_str += strlen("\"%s\"");
 
-        next = (authors != NULL) ? authors :
-               (args != NULL)    ? args : 
-               fmt_str + strlen(fmt_str);
-
-        for (end = next - 1; isspace(*end); --end);
-
-        node->descr.objective = 
-            (char *)node_info_obstack_copy0(fmt_str, end - fmt_str);
-
-        fmt_str = next;
+        SKIP_SPACES(fmt_str);
     }
 
-    if (fmt_str == authors)
+    if (strncmp(fmt_str, "AUTHORS", strlen("AUTHORS")) == 0)
     {
         /* Process "authors" clause */
         fmt_str += strlen("AUTHORS");
 
-        SKIP_SPACES;
+        SKIP_SPACES(fmt_str);
 
-        if (args != NULL)
-            i = args - fmt_str - 1;
-        else
-            i = strlen(fmt_str);
+        if (strncmp(fmt_str, "%s", strlen("%s")) != 0)
+        {
+            FMT_TRACE("Missing \"%%s\" after AUTHORS clause in "
+                      "control message %s (%d %d)",
+                      msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
 
-        node->descr.authors = (char *)node_info_obstack_copy0(fmt_str, i);
-        fmt_str += i;
+        if ((arg = get_next_arg(msg)) == NULL)
+        {
+            FMT_TRACE("Missing \"authors\" argument in control message "
+                      "%s (%d %d)", msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+        node->descr.authors =
+            (char *)node_info_obstack_copy0(arg->val, arg->len);
 
-        SKIP_SPACES;
+        SKIP_SPACES(node->descr.authors);
+
+        fmt_str += strlen("%s");
+
+        SKIP_SPACES(fmt_str);
     }
 
     p_prm = &(node->params);
-    if (fmt_str == args)
+    if (strncmp(fmt_str, "ARGs", strlen("ARGs")) == 0)
     {
+        char *param_lst;
+
         /* Process "args" clause */
         fmt_str += strlen("ARGs");
 
-        SKIP_SPACES;
+        SKIP_SPACES(fmt_str);
 
-        fmt_str = (char *)node_info_obstack_copy0(fmt_str, strlen(fmt_str));
-
-        while (*fmt_str != '\0')
+        if (strncmp(fmt_str, "%s", strlen("%s")) != 0)
         {
-            SKIP_SPACES;
+            FMT_TRACE("Missing \"%%s\" after ARGs clause in "
+                      "control message %s (%d %d)",
+                      msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+
+        if ((arg = get_next_arg(msg)) == NULL)
+        {
+            FMT_TRACE("Missing \"args\" argument in control message "
+                      "%s (%d %d)", msg->fmt_str, node_id, parent_id);
+            return NULL;
+        }
+
+        param_lst = (char *)node_info_obstack_copy0(arg->val, arg->len);
+
+        while (*param_lst != '\0')
+        {
+            SKIP_SPACES(param_lst);
             
             *p_prm = (param *)node_info_obstack_alloc(sizeof(param));
-            (*p_prm)->name = fmt_str;
-            if ((fmt_str = strchr(fmt_str, '=')) == NULL)
+            (*p_prm)->name = param_lst;
+            if ((param_lst = strchr(param_lst, '=')) == NULL)
             {
                 FMT_TRACE("The value of %s parameters is incorrect "
                           "in control message %s (%d %d)",
                           node_type_str, msg->fmt_str, node_id, parent_id);
                 return NULL;
             }
-            *(fmt_str++) = '\0';
+            *(param_lst++) = '\0';
             /* Parameter value should start with quote mark */
-            if (*fmt_str++ != '"')
+            if (*(param_lst++) != '"')
             {
                 FMT_TRACE("Missing quote mark at the beginning of "
                           "%s parameter value in control message %s "
@@ -411,21 +434,20 @@ create_node_by_msg(log_msg *msg, node_type_t type,
                           parent_id);
                 return NULL;
             }
-            (*p_prm)->val = fmt_str;
+            (*p_prm)->val = param_lst;
             /*
              * Go to the end of the parameter value - trailing quote mark.
              * @todo Currently, it is not allowed to have quote mark in the
              * parameter value, so be carefull with the parameter value.
              */
-            if ((fmt_str = strchr(fmt_str, '"')) == NULL)
+            if ((param_lst = strchr(param_lst, '"')) == NULL)
             {
                 FMT_TRACE("The value of %s parameters is incorrect "
                           "in control message %s (%d %d)",
                           node_type_str, msg->fmt_str, node_id, parent_id);
                 return NULL;
             }
-            *(fmt_str++) = '\0';
-            
+            *(param_lst++) = '\0';
             p_prm = &((*p_prm)->next);
         }
     }
