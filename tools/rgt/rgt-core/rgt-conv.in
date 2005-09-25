@@ -266,5 +266,10 @@ if [ -z "$out_file" ]; then
 fi
 
 # Process raw log file with filter
-eval "$bindir/rgt-core -m $op_mode $extra_flags $rlf_file >$out_file" || 
-    rm -f $out_file
+eval "$bindir/rgt-core -m $op_mode $extra_flags $rlf_file >$out_file"
+result=$?
+
+test $result -eq 0 || rm -f $out_file
+
+exit $result
+
