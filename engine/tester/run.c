@@ -1586,7 +1586,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
         }
 
-        if ((i == 0) && (test_ctx->flags & TESTER_QUIET_SKIP) &&
+        if ((i == 0) && (~test_ctx->flags & TESTER_INLOGUE) &&
+            (test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(iter->params), TRUE))
         {
             /* Silently skip without any logs */
@@ -1604,7 +1605,8 @@ iterate_test(tester_ctx *ctx, run_item *test,
                          ctx->id, id, ctx->flags);
         log_test_start(test, ctx->id, id, &(iter->params));
 
-        if ((i == 0) && (~test_ctx->flags & TESTER_QUIET_SKIP) &&
+        if ((i == 0) && (~test_ctx->flags & TESTER_INLOGUE) &&
+            (~test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(iter->params), FALSE))
         {
             test_result = TE_RC(TE_TESTER, TE_ETESTSKIP);
