@@ -517,6 +517,10 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 break;
         }
     }
+    
+    LGR_CHECK_LENGTH(sizeof(te_log_nfl));
+    *((te_log_nfl *)tmp_buf) = log_nfl_hton(TE_LOG_RAW_EOR_LEN);
+
 #undef LGR_CHECK_LENGTH
 
     if (ta_log_lock(key) != 0)
