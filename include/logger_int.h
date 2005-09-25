@@ -32,10 +32,6 @@
 #ifndef __TE_LOGGER_INT_H__
 #define __TE_LOGGER_INT_H__
 
-#if HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
