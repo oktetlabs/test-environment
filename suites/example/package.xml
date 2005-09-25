@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package version="1.0">
-    <description>Example test</description>
-    <author mailto="Artem.Andreev@oktetlabs.ru"/>
+    <description>Logger test</description>
+    <author mailto="Ivan.Soloducha@oktetlabs.ru"/>
     <session>
         <run>
-            <script name="example"/>
+            <script name="loggertest"/>
         </run>
     </session>
 </package>
