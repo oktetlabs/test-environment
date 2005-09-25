@@ -279,7 +279,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
          * account (according to the len field).
          */
         (*arg)->val = (uint8_t *)obstack_alloc(obstk, nflen + 1);
-        READ(fd, fmt_str, nflen);
+        READ(fd, (*arg)->val, nflen);
         (*arg)->val[nflen] = '\0';
 
         arg = &((*arg)->next);
