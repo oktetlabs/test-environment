@@ -614,7 +614,7 @@ output_regular_log_msg(log_msg *msg)
                     continue;
                 }
 
-                case 't':
+                case 'T':
                 {
                     int  j;
                     int  n_tuples;
