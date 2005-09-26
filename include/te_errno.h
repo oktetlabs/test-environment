@@ -178,6 +178,7 @@ typedef enum {
     TE_EDQUOT,        /**< Quota exceeded */
     TE_ENOMEDIUM,     /**< No medium found */
     TE_EMEDIUMTYPE,   /**< Wrong medium type */
+    TE_ECANCELED,     /**< Operation is cancelled */
     
     /* TE-specific error codes */
     TE_EUNKNOWN,      /**< Unknown OS errno */
