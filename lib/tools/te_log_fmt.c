@@ -321,7 +321,7 @@ te_log_msg_fmt_args(te_log_msg_out *out, const char *fmt, va_list ap)
     te_log_msg_raw_data   *data = (te_log_msg_raw_data *)out;
     
     te_errno rc;
-    int     ret, ret2;
+    int      ret;
 
 
     assert(data != NULL);
@@ -334,13 +334,18 @@ te_log_msg_fmt_args(te_log_msg_out *out, const char *fmt, va_list ap)
      * If buffer is too small, expand it and write rest of 
      * the message.
      */
-    rc = ta_log_msg_raw_buf_check_len(data, ret + 1 /* for '\0' */);
-    if (rc == TE_EAGAIN)
+    while ((rc = ta_log_msg_raw_buf_check_len(data, ret + 1))
+               == TE_EAGAIN)
     {
-        ret2 = vsnprintf(data->ptr, data->end - data->ptr, fmt, ap);
-        assert(ret == ret2);
+        rc = 0;
+        ret = vsnprintf(data->ptr, data->end - data->ptr, fmt, ap);
+        /*
+         * Sometimes this return value does not equal to returned
+         * by the previous call with the same format string and its
+         * arguments. It seems it contradicts with C99, but...
+         */
     }
-    else if (rc != 0)
+    if (rc != 0)
         return rc;
 
     data->ptr += ret;
