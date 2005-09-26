@@ -1157,10 +1157,10 @@ ta_waitpid(pid_t pid, int *status, int options)
             wake->prev->next = wake->next;
         else
             ta_children_wait_list = wake->next;
-        free(wake);
         if (dead == -1)
             dead = find_dead_child(pid);
         UNLOCK;
+        free(wake);
     }
 
     /* Get the results. */
