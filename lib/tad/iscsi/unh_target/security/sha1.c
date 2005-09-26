@@ -28,8 +28,7 @@
 #include <string.h>
 
 #include <my_memory.h>
-#include "linux/slab.h"
-#include "linux/stddef.h"
+#include <stddef.h>
 
 #include "sha1.h"
 
@@ -71,7 +70,7 @@ SHA1_ProcessMessage(unsigned char *message,
 		digest[4 * i + 2] = context->HBuffer[i] >> 8;
 		digest[4 * i + 3] = context->HBuffer[i];
 	}
-	my_free((void *) &context);
+	free(context);
 }
 
 struct
@@ -260,8 +259,8 @@ SHA1_Interleave(unsigned char *message, unsigned long long length,
 			digest[2 * i] = digest1[i];
 			digest[2 * i + 1] = digest2[i];
 		}
-		my_free((void *) &buffer1);
-		my_free((void *) &buffer2);
+		free(buffer1);
+		free(buffer2);
 	}
 }
 

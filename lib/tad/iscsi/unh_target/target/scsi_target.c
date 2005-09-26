@@ -71,12 +71,14 @@ static int get_inquiry_response(Scsi_Request *, int, int);
 static int get_read_capacity_response(Target_Scsi_Cmnd *);
 # endif
 
+#if 0
 static int abort_notify(struct SM *);
 static void aen_notify(int, uint64_t);
 
 static int get_space(Scsi_Request *, int);
 static int hand_to_front_end(Target_Scsi_Cmnd *);
 static int handle_cmd(struct SC *);
+#endif
 
 # ifdef GENERICIO
 static int fill_sg_hdr(Target_Scsi_Cmnd *, int);
@@ -120,12 +122,12 @@ struct target_map_item	{
 		int			in_use;			/* 1 if this item is defined, else 0 */
 	};
 
-#if defined(DISKIO) && defined(TRUST_CDB)
+#if 0
 	/* doubly-linked circular list, one entry for every iscsi target
 	 * known to the scsi subsystem on this platform
 	 */
 	struct list_head target_map_list;
-#else
+
 	/* matrix with one entry for every possible target and lun */
 	static struct target_map_item target_map[MAX_TARGETS][MAX_LUNS];
 #endif
@@ -506,7 +508,9 @@ deregister_target_front_end(Scsi_Target_Device * the_device)
 {
 	Scsi_Target_Device *curr, *previous = NULL;
 	Target_Scsi_Cmnd *cmnd;
+#if 0
 	unsigned long flags;
+#endif
 
 	if (!the_device) {
         TRACE_ERROR
@@ -1176,7 +1180,9 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 	Target_Scsi_Cmnd **result_command)
 {
 	Target_Scsi_Cmnd *command;
+#if 0
 	unsigned long flags;
+#endif
 
 	*result_command = NULL;
 	if (!target_data.thread_id) {
@@ -1421,11 +1427,13 @@ scsi_release(Target_Scsi_Cmnd * cmnd)
 struct SM *
 rx_task_mgmt_fn(struct STD *dev, int fn, void *value)
 {
+#if 0
 	unsigned long flags;
+#endif
 	Target_Scsi_Message *msg;
 
 	if ((fn < TMF_ABORT_TASK) && (fn > TMF_TASK_REASSIGN)) {
-		printk("rx_task_mgmt_fn: Invalid value %d for Task Mgmt function\n",
+		TRACE_ERROR("rx_task_mgmt_fn: Invalid value %d for Task Mgmt function\n",
 			   fn);
 		return NULL;
 	}
@@ -1594,6 +1602,7 @@ close_filp_table(void)
 
 # endif
 
+#if 0
 /*
  * : allocates scatter-gather buffers for the received command
  * The assumption is that all front-ends use scatter-gather and so do
@@ -1604,6 +1613,8 @@ close_filp_table(void)
 static int
 get_space(Scsi_Request * req, int space /* in bytes */ )
 {
+    UNUSED(req);
+    UNUSED(space);
 #if 0
 	/* We assume that scatter gather is used universally */
 	struct scatterlist *st_buffer;
@@ -1695,11 +1706,11 @@ get_space(Scsi_Request * req, int space /* in bytes */ )
 	return 0;
 }
 
-#if !defined(DISKIO) || !defined(TRUST_CDB)
 /*
  * Returns size of space allocated for LUN list > 0 if all ok,
  * -1 on error after giving message
  */
+
 static int
 allocate_report_lun_space(Target_Scsi_Cmnd * cmnd)
 {
@@ -1766,6 +1777,8 @@ get_allocation_length(uint8_t *cmd)
 {
 	uint32_t err = 0;
 
+    UNUSED(cmd);
+    
 #if 0
 	switch (cmd[0]) {
 	case INQUIRY:
@@ -2081,7 +2094,7 @@ get_mode_sense_response(Scsi_Request * req, uint32_t len)
 }
 #endif /* defined (FILEIO) || defined (MEMORYIO) */
 
-#ifndef DISKIO
+#if 0
 /* cdeng August 24 2002
  * get_report_luns_response: This function fills up the buffer to
  * respond to a received REPORT_LUNS. This function is relevant when
@@ -2092,10 +2105,13 @@ get_mode_sense_response(Scsi_Request * req, uint32_t len)
 static int
 get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 {
+    UNUSED(cmnd);
+    UNUSED(len);
+    
+#if 0
 	int i;
 	uint8_t *limit, *next_slot;
 
-#if 0
 /* Ming Zhang, mingz@ele.uri.edu */
 #ifdef K26
 	/* Bjorn Thordarson, 9-May-2004 */
@@ -2153,6 +2169,7 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 }
 #endif
 
+#if 0
 /*
  * hand_to_front_end: the scsi command has been tackled by the mid-level
  * and is now ready to be handed off to the front-end either because it
@@ -2326,6 +2343,8 @@ aen_notify(int fn, uint64_t lun)
 			TRACE_ERROR("aen_notify: Unable to notify device %d\n", (int) dev->id);
 	}
 }
+
+#endif
 
 /********************************************************************
  * THESE ARE FUNCTIONS WHICH ARE SPECIFIC TO MEMORY IO - I lump them*
@@ -4127,6 +4146,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
 #endif
 
+#if 0
 /* dispatch_scsi_info is the central dispatcher
  * It is the interface between the proc-fs and the SCSI subsystem code
  */
@@ -4151,6 +4171,7 @@ proc_scsi_target_read(char *buffer, char **start, off_t offset, int length,
 	*eof = (n < length);
 	return n;
 }
+#endif
 
 #define PROC_BLOCK_SIZE (3*1024)	/* 4K page size, but our output routines
 									   * use some slack for overruns

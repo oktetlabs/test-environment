@@ -32,18 +32,14 @@
 */
 
 #include <stdlib.h>
+#include <inttypes.h>
+#include <netinet/in.h>
 
-#include <linux/socket.h>
-#include <linux/types.h>
-#include <linux/net.h>
-#include <linux/inet.h>
 #include <scsi/scsi.h>
 
 #include "iscsi_common.h"
 #include "debug.h"
 
-
-#ifdef __KERNEL__
 
 /*	routine to convert a 64-bit value in network byte order
 	into a printable string
@@ -150,14 +146,14 @@ print_isid_tsih(uint8_t isid[6], uint16_t tsih)
 {
 	printf("    ISID: 0x%.2x %.2x %.2x %.2x %.2x %.2x\n",
 	       isid[0], isid[1], isid[2], isid[3], isid[4], isid[5]);
-	printf("    TSIH: %u\n", be16_to_cpu(tsih));
+	printf("    TSIH: %u\n", ntohs(tsih));
 }
 
 static void
 print_dsl(uint32_t length)
 {
 	if (length != 0)
-		printf("    DSL: %u\n", be32_to_cpu(length));
+		printf("    DSL: %u\n", ntohl(length));
 }
 
 static void
@@ -166,7 +162,7 @@ print_itt(uint32_t init_task_tag)
 	if (init_task_tag == ALL_ONES)
 		printf("    ITT: 0x%08x\n", init_task_tag);
 	else
-		printf("    ITT: %u\n", be32_to_cpu(init_task_tag));
+		printf("    ITT: %u\n", ntohl(init_task_tag));
 }
 
 static void
@@ -175,26 +171,26 @@ print_ttt(uint32_t target_xfer_tag)
 	if (target_xfer_tag == ALL_ONES)
 		printf("    TTT: 0x%08x\n", target_xfer_tag);
 	else
-		printf("    TTT: %u\n", be32_to_cpu(target_xfer_tag));
+		printf("    TTT: %u\n", ntohl(target_xfer_tag));
 }
 
 static void
 print_cid(uint16_t cid)
 {
-	printf("    CID: %u\n", be16_to_cpu(cid));
+	printf("    CID: %u\n", ntohs(cid));
 }
 
 static void
 print_expstatsn(uint32_t exp_stat_sn)
 {
 	if (exp_stat_sn != 0)
-		printf("    ExpStatSN: %u\n", be32_to_cpu(exp_stat_sn));
+		printf("    ExpStatSN: %u\n", ntohl(exp_stat_sn));
 }
 
 static void
 print_cmdsn_expstatsn(uint32_t cmd_sn, uint32_t exp_stat_sn)
 {
-	printf("    CmdSN: %u\n", be32_to_cpu(cmd_sn));
+	printf("    CmdSN: %u\n", ntohl(cmd_sn));
 	print_expstatsn(exp_stat_sn);
 }
 
@@ -202,56 +198,56 @@ static void
 print_statsn_exp_max(uint32_t stat_sn, uint32_t exp_cmd_sn, uint32_t max_cmd_sn)
 {
 	if (stat_sn != 0)
-		printf("    StatSN: %u\n", be32_to_cpu(stat_sn));
-	printf("    ExpCmdSN: %u\n", be32_to_cpu(exp_cmd_sn));
-	printf("    MaxCmdSN: %u\n", be32_to_cpu(max_cmd_sn));
+		printf("    StatSN: %u\n", ntohl(stat_sn));
+	printf("    ExpCmdSN: %u\n", ntohl(exp_cmd_sn));
+	printf("    MaxCmdSN: %u\n", ntohl(max_cmd_sn));
 }
 
 static void
 print_residual(uint32_t resid)
 {
 	if (resid != 0)
-		printf("    ResidualCount: %u\n", be32_to_cpu(resid));
+		printf("    ResidualCount: %u\n", ntohl(resid));
 }
 
 static void
 print_datasn(uint32_t data_sn)
 {
 	if (data_sn != 0)
-		printf("    DataSN: %u\n", be32_to_cpu(data_sn));
+		printf("    DataSN: %u\n", ntohl(data_sn));
 }
 
 static void
 print_offset(uint32_t offset)
 {
 	if (offset != 0)
-		printf("    BufferOffset: %u\n", be32_to_cpu(offset));
+		printf("    BufferOffset: %u\n", ntohl(offset));
 }
 
 static void
 print_rtt(uint32_t ref_task_tag)
 {
 	if (ref_task_tag != 0)
-		printf("    RTT: %u\n", be32_to_cpu(ref_task_tag));
+		printf("    RTT: %u\n", ntohl(ref_task_tag));
 }
 
 static void
 print_exp_data_sn(uint32_t exp_data_sn)
 {
 	if (exp_data_sn != 0)
-		printf("    ExpDataSN: %u\n", be32_to_cpu(exp_data_sn));
+		printf("    ExpDataSN: %u\n", ntohl(exp_data_sn));
 }
 
 static void
 print_begrun(uint32_t begrun)
 {
-	printf("    BegRun: %u\n", be32_to_cpu(begrun));
+	printf("    BegRun: %u\n", ntohl(begrun));
 }
 
 static void
 print_runlen(uint32_t runlen)
 {
-	printf("    RunLength: %u\n", be32_to_cpu(runlen));
+	printf("    RunLength: %u\n", ntohl(runlen));
 }
 
 void
@@ -263,9 +259,9 @@ print_init_scsi_cmnd(struct iscsi_init_scsi_cmnd *cmd)
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
 	print_itt(cmd->init_task_tag);
-	printf("    EDTL: %u\n", be32_to_cpu(cmd->xfer_len));
+	printf("    EDTL: %u\n", ntohl(cmd->xfer_len));
 	print_cmdsn_expstatsn(cmd->cmd_sn, cmd->exp_stat_sn);
-	prinft
+	printf
 	    ("    CDB: 0x%.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x "
 	     "%.2x %.2x %.2x %.2x %.2x\n", cmd->cdb[0], cmd->cdb[1],
 	     cmd->cdb[2], cmd->cdb[3], cmd->cdb[4], cmd->cdb[5], cmd->cdb[6],
@@ -288,7 +284,7 @@ print_targ_scsi_rsp(struct iscsi_targ_scsi_rsp *cmd)
 	print_exp_data_sn(cmd->exp_data_sn);
 	if (cmd->bidi_resid != 0)
 		printf("    BidiResidualCount: %u\n",
-		       be32_to_cpu(cmd->bidi_resid));
+		       ntohl(cmd->bidi_resid));
 	print_residual(cmd->resid);
 }
 
@@ -388,8 +384,8 @@ print_targ_logout_rsp(struct iscsi_targ_logout_rsp *cmd)
 	print_rsvd_u32(3, cmd->rsvd3);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
 	print_rsvd_u32(4, cmd->rsvd4);
-	printf("    Time2Wait: 0x%.8x\n", be16_to_cpu(cmd->time2wait));
-	printf("    Tm2Retain: 0x%.8x\n", be16_to_cpu(cmd->time2retain));
+	printf("    Time2Wait: 0x%.8x\n", ntohs(cmd->time2wait));
+	printf("    Tm2Retain: 0x%.8x\n", ntohs(cmd->time2retain));
 	print_rsvd_u32(5, cmd->rsvd5);
 }
 
@@ -487,9 +483,9 @@ print_targ_r2t(struct iscsi_targ_r2t *cmd)
 	print_itt(cmd->init_task_tag);
 	print_ttt(cmd->target_xfer_tag);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
-	printf("    R2TSN: %u\n", be32_to_cpu(cmd->r2t_sn));
+	printf("    R2TSN: %u\n", ntohl(cmd->r2t_sn));
 	print_offset(cmd->offset);
-	printf("    DDTL: %u\n", be32_to_cpu(cmd->xfer_len));
+	printf("    DDTL: %u\n", ntohl(cmd->xfer_len));
 }
 
 void
@@ -506,11 +502,11 @@ print_targ_async_msg(struct iscsi_targ_async_msg *cmd)
 	printf("AsyncEvnt: %u\n", cmd->async_event);
 	printf("AsyncVCod: %u\n", cmd->async_vcode);
 	if (cmd->parameter1 != 0)
-		printf("   Param1: %u\n", be16_to_cpu(cmd->parameter1));
+		printf("   Param1: %u\n", ntohs(cmd->parameter1));
 	if (cmd->parameter2 != 0)
-		printf("   Param2: %u\n", be16_to_cpu(cmd->parameter2));
+		printf("   Param2: %u\n", ntohs(cmd->parameter2));
 	if (cmd->parameter3 != 0)
-		printf("   Param3: %u\n", be16_to_cpu(cmd->parameter3));
+		printf("   Param3: %u\n", ntohs(cmd->parameter3));
 	print_rsvd_u32(5, cmd->rsvd5);
 }
 
@@ -526,7 +522,7 @@ print_init_task_mgt_command(struct iscsi_init_task_mgt_command *cmd)
 	print_rtt(cmd->ref_task_tag);
 	print_cmdsn_expstatsn(cmd->cmd_sn, cmd->exp_stat_sn);
 	if (cmd->ref_cmd_sn != 0)
-		printf("    RefCmdSN: %u\n", be32_to_cpu(cmd->ref_cmd_sn));
+		printf("    RefCmdSN: %u\n", ntohl(cmd->ref_cmd_sn));
 	print_exp_data_sn(cmd->exp_data_sn);
 	print_rsvd_u64(4, cmd->rsvd4);
 }
@@ -776,4 +772,3 @@ int target_in_use(uint32_t target_id)
 
     return 0;
 }
-#endif

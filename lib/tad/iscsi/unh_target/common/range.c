@@ -50,7 +50,7 @@ free_range_list(struct order_range *head)
 		next = ptr->next;
 		TRACE(TRACE_ISCSI_FULL, "free range [%u..%u]\n", ptr->offset,
 		      ptr->limit);
-		my_free((void *) &ptr);
+		free(ptr);
 	}
 	head->next = NULL;
 }
@@ -87,7 +87,7 @@ collapse(struct order_range *here, struct order_range *next)
 			here->limit = next->limit;
 		}
 		here->next = next->next;
-		my_free((void *) &next);
+		free(next);
 		/* note recurse */
 		collapse(here, here->next);
 	}

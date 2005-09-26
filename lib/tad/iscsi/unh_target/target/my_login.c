@@ -92,10 +92,10 @@ iscsi_release_connection(struct iscsi_conn *conn)
     list_del(&conn->conn_link);                                                   
     conn->session->nconn--;                                                       
     /* Free connection */                                                         
-    my_free((void *)&conn->local_ip_address);                                    
-    my_free((void *)&conn->ip_address);                                          
+    free(conn->local_ip_address);                                    
+    free(conn->ip_address);                                          
 #endif                                                                            
-    my_free(((void *)&conn));
+    free(conn);
     return 0;                                                                     
 }
 
@@ -106,8 +106,8 @@ free_data_list(struct iscsi_cmnd *cmnd)
 
     while ((data = cmnd->unsolicited_data_head)) {
         cmnd->unsolicited_data_head = data->next;
-        my_free((void *)&data->buffer);
-        my_free((void *)&data);
+        free(data->buffer);
+        free(data);
     }
 }
 
@@ -144,7 +144,7 @@ iscsi_release_session(struct iscsi_session *session)
         TRACE(TRACE_DEBUG, "Deleting r2t timer %p\n", session->r2t_timer);
         del_timer_sync(session->r2t_timer);
         TRACE(TRACE_DEBUG, "Deleted r2t timer\n");
-        my_free((void*)&session->r2t_timer);
+        free(session->r2t_timer);
 #endif
     }
 
@@ -162,8 +162,8 @@ iscsi_release_session(struct iscsi_session *session)
         }
         /* free data_list if any, cdeng */
         free_data_list(cmnd);
-        my_free((void*)&cmnd->ping_data);
-        my_free((void*)&cmnd);
+        free(cmnd->ping_data);
+        free(cmnd);
     }
 
     /* free connections */
@@ -192,11 +192,11 @@ iscsi_release_session(struct iscsi_session *session)
     }
 
     /* free session structures */
-    my_free((void*)&session->session_params);
+    free(session->session_params);
 
-    my_free((void*)&session->oper_param);
+    free(session->oper_param);
 
-    my_free((void*)&session);
+    free(session);
 
     return 0;
 }
@@ -453,7 +453,7 @@ iscsi_tx_login_reject(struct iscsi_conn *conn,
         return -1;
     }
 
-    TRACE(TRACE_ISCSI, "%s login response sent\n", current->comm);
+    TRACE(TRACE_ISCSI, "login response sent\n");
 
     if (TRACE_TEST(TRACE_ISCSI_FULL))
         print_targ_login_rsp(hdr);

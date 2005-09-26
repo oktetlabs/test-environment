@@ -33,8 +33,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <linux/string.h>
-#include <linux/ip.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 

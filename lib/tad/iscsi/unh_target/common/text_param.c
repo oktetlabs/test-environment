@@ -33,8 +33,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <linux/string.h>
-#include <linux/ip.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -805,15 +803,15 @@ check_correctness(char *keytext,
 			else if ((uptr->keyname =
 				  malloc(strlen(keytext) + 1))
 				 == NULL) {
-				my_free((void *) &uptr);
+				free(uptr);
 				goto out;
 			}
 
 			else if ((uptr->keyvalue =
 				  malloc(strlen(value) + 1))
 				 == NULL) {
-				my_free((void *) &uptr->keyname);
-				my_free((void *) &uptr);
+				free(uptr->keyname);
+				free(uptr);
 				goto out;
 			} else {
 				strcpy(uptr->keyname, keytext);

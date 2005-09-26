@@ -1,5 +1,12 @@
 #ifndef MY_MEMORY_H
 #define MY_MEMORY_H
 
-extern void my_free(void **ptr);
+#include <stddef.h>
+
+#define ZFREE(obj)                              \
+do {                                            \
+    free(obj);                                  \
+    obj = NULL;                                 \
+} while(1)
+
 #endif

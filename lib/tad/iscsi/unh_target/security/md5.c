@@ -94,7 +94,7 @@ MD5_ProcessMessage(unsigned char *message,
 		digest[4 * i + 2] = context->RBuffer[i] >> 16;
 		digest[4 * i + 3] = context->RBuffer[i] >> 24;
 	}
-	my_free((void *) &context);
+	free(context);
 }
 
 struct MD5_Context *

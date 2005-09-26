@@ -210,8 +210,6 @@
  */
 #define MAX_CONFIG_PARAMS		28
 
-extern struct parameter_type config_params[];
-
 
 /*	These defines are to be used in the special_key_flag field of the
  *	struct parameter_type to identify only those keys that need "special"
@@ -661,5 +659,7 @@ int __attribute__ ((no_instrument_function))
 print_session_params(struct session_operational_parameters *sop,
 		     struct parameter_type param_tbl[MAX_CONFIG_PARAMS],
 		     char *buffer);
+
+extern struct parameter_type config_params[];
 
 #endif

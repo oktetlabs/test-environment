@@ -29,15 +29,11 @@
  * 	written permission.
  */
 
-#include <linux/kernel.h>
-#include <linux/types.h>
-
+#include <inttypes.h>
 #include "debug.h"
 
-#ifdef CONFIG_ISCSI_DEBUG
-
-__u32 iscsi_trace_mask = 
-	/*** TRACE_DEBUG | ***/
+uint32_t iscsi_trace_mask = 
+        /*** TRACE_DEBUG | ***/
 	/*** TRACE_ISCSI_FULL | ***/
 	/*** TRACE_ISCSI | ***/
 	/*** TRACE_NET | ***/
@@ -49,4 +45,3 @@ __u32 iscsi_trace_mask =
 	/*** TRACE_ERROR_RECOVERY | ***/
 	TRACE_ENDING;
 
-#endif

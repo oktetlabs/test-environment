@@ -30,8 +30,7 @@
 #include <stdlib.h>
 
 #include <string.h>
-#include <linux/slab.h>
-#include <linux/stddef.h>
+#include <stddef.h>
 
 #include <my_memory.h>
 #include <iscsi_common.h>
@@ -192,7 +191,7 @@ int __attribute__ ((no_instrument_function))
 CloneDataUnit(struct dataunit * dst, struct dataunit * src)
 {
 	if ((src->length > 0) && (src->data)) {
-		my_free((void *) &dst->data);
+		ZFREE(dst->data);
 		if ((dst->data = (char *)malloc(src->length)) == NULL)
 			return 0;
 		memcpy(dst->data, src->data, src->length);
@@ -234,7 +233,7 @@ CalculateVerifier(struct SRP_Context * p_context)
 
 	p_context->verifier.length = bigint_binlen(&verifier);
 
-	my_free((void *) &p_context->verifier.data);
+	ZFREE(p_context->verifier.data);
 
 	if ((p_context->verifier.data =
 	     (char *) malloc(p_context->verifier.length)) == NULL)
@@ -277,19 +276,19 @@ CalculateX(struct SRP_Context * p_context)
 	memcpy(temp + namelen + 1, p_context->secret, secretlen);
 	SHA1_ProcessMessage(temp, (len * 8) >> 32, (int) (len * 8), digest);
 	len = p_context->salt.length + 20;
-	my_free((void *) &temp);
+	ZFREE(temp);
 	if ((temp = (char *) malloc(len)) == NULL)
 		return 0;
 	p_context->X.length = 20;
 	if ((p_context->X.data = (char *) malloc(20)) == NULL) {
-		my_free((void *) &temp);
+		ZFREE(temp);
 		return 0;
 	}
 	memcpy(temp, p_context->salt.data, p_context->salt.length);
 	memcpy(temp + p_context->salt.length, digest, 20);
 	SHA1_ProcessMessage(temp, (len * 8) >> 32, (int) (len * 8),
 			    p_context->X.data);
-	my_free((void *) &temp);
+	ZFREE(temp);
 	return 1;
 }
 
@@ -331,7 +330,7 @@ CalculateA(struct SRP_Context * p_context)
 
 	p_context->A.length = bigint_binlen(&A);
 
-	my_free((void *) &p_context->A.data);
+	ZFREE(p_context->A.data);
 
 	if ((p_context->A.data = (char *) malloc(p_context->A.length)) == NULL)
 		goto out;
@@ -427,7 +426,7 @@ CalculateInitiatorS(struct SRP_Context * p_context)
 
 	p_context->S.length = bigint_binlen(&temp3);
 
-	my_free((void *) &p_context->S.data);
+	ZFREE(p_context->S.data);
 
 	if ((p_context->S.data = (char *) malloc(p_context->S.length)) == NULL)
 		goto out;
@@ -503,7 +502,7 @@ CalculateM(struct SRP_Context * p_context)
 			    (int) lentemp, p_context->M.data);
 	ret = 1;
       out:
-	my_free((void *) &total);
+	ZFREE(total);
 	return ret;
 }
 
@@ -565,7 +564,7 @@ CalculateB(struct SRP_Context * p_context)
 
 	p_context->B.length = bigint_binlen(&B);
 
-	my_free((void *) &p_context->B.data);
+	ZFREE(p_context->B.data);
 
 	if ((p_context->B.data = (char *) malloc(p_context->B.length)) == NULL)
 		goto out;
@@ -661,7 +660,7 @@ CalculateTargetS(struct SRP_Context * p_context)
 
 	p_context->S.length = bigint_binlen(&temp3);
 
-	my_free((void *) &p_context->S.data);
+	ZFREE(p_context->S.data);
 
 	if ((p_context->S.data = (char *) malloc(p_context->S.length)) == NULL)
 		goto out;
@@ -706,7 +705,7 @@ CalculateHM(struct SRP_Context * p_context)
 	memcpy(temp + p_context->A.length
 	       + p_context->M.length, p_context->K.data, p_context->K.length);
 	if ((p_context->HM.data = (char *) malloc(20)) == NULL) {
-		my_free((void *) &temp);
+		ZFREE(temp);
 		return 0;
 	}
 
@@ -714,7 +713,7 @@ CalculateHM(struct SRP_Context * p_context)
 	lentemp = len * 8;
 	SHA1_ProcessMessage(temp, (int) (lentemp >> 32),
 			    (int) lentemp, p_context->HM.data);
-	my_free((void *) &temp);
+	ZFREE(temp);
 	return 1;
 }
 
@@ -738,39 +737,39 @@ SRP_FinalizeContext(struct SRP_Context * p_context)
 	if (!p_context)
 		return;
 
-	my_free((void *) &p_context->name);
+	ZFREE(p_context->name);
 
-	my_free((void *) &p_context->secret);
+	ZFREE(p_context->secret);
 
-	my_free((void *) &p_context->salt.data);
+	ZFREE(p_context->salt.data);
 
-	my_free((void *) &p_context->verifier.data);
+	ZFREE(p_context->verifier.data);
 
-	my_free((void *) &p_context->S.data);
+	ZFREE(p_context->S.data);
 
-	my_free((void *) &p_context->a.data);
+	ZFREE(p_context->a.data);
 
-	my_free((void *) &p_context->A.data);
+	ZFREE(p_context->A.data);
 
-	my_free((void *) &p_context->b.data);
+	ZFREE(p_context->b.data);
 
-	my_free((void *) &p_context->B.data);
+	ZFREE(p_context->B.data);
 
-	my_free((void *) &p_context->X.data);
+	ZFREE(p_context->X.data);
 
-	my_free((void *) &p_context->u.data);
+	ZFREE(p_context->u.data);
 
-	my_free((void *) &p_context->K.data);
+	ZFREE(p_context->K.data);
 
-	my_free((void *) &p_context->M.data);
+	ZFREE(p_context->M.data);
 
-	my_free((void *) &p_context->HM.data);
+	ZFREE(p_context->HM.data);
 
-	my_free((void *) &p_context->N.data);
+	ZFREE(p_context->N.data);
 
-	my_free((void *) &p_context->generator.data);
+	ZFREE(p_context->generator.data);
 
-	my_free((void *) &p_context);
+	ZFREE(p_context);
 }
 
 struct SRP_Context *
@@ -901,7 +900,7 @@ SRP_SetName(char *p_username, struct SRP_Context * p_context)
 	if ((p_username == NULL) || (p_context == NULL))
 		return 0;
 
-	my_free((void *) &p_context->name);
+	ZFREE(p_context->name);
 	len = strlen(p_username);
 	if ((p_context->name =
 	     (char *) malloc(len + 1)) == NULL)
@@ -919,7 +918,7 @@ SRP_SetSecret(char *p_secret, struct SRP_Context * p_context)
 	if ((p_secret == NULL) || (p_context == NULL))
 		return 0;
 
-	my_free((void *) &p_context->secret);
+	ZFREE(p_context->secret);
 
 	len = strlen(p_secret);
 	if ((p_context->secret =
@@ -998,14 +997,14 @@ SRP_SetSRPGroup(char *p_group, struct SRP_Context * p_context)
 		return 0;
 	}
 
-	my_free((void *) &p_context->N.data);
+	ZFREE(p_context->N.data);
 	if ((p_context->N.data = (char *)
 	     malloc(N_len)) == NULL)
 		return 0;
 	memcpy(p_context->N.data, N, N_len);
 	p_context->N.length = N_len;
 
-	my_free((void *) &p_context->generator.data);
+	ZFREE(p_context->generator.data);
 	if ((p_context->generator.data = (char *)
 	     malloc(G_len)) == NULL)
 		return 0;
@@ -1070,7 +1069,7 @@ SRP_Target_SetM(char *p_M, int max_length, struct SRP_Context * p_context)
 
 	StringToInteger(p_M, temp);
 	ret = IntegerCompare(p_context->M.data, p_context->M.length, temp, len);
-	my_free((void *) &temp);
+	ZFREE(temp);
 	return ret;
 }
 
@@ -1248,7 +1247,7 @@ SRP_Initiator_SetHM(char *p_HM, int max_length, struct SRP_Context * p_context)
 	StringToInteger(p_HM, temp);
 	ret = IntegerCompare(p_context->HM.data,
 			     p_context->HM.length, temp, len);
-	my_free((void *) &temp);
+	ZFREE(temp);
 	return ret;
 }
 

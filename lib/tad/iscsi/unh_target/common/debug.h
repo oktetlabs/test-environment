@@ -37,18 +37,6 @@
 #include "logger_defs.h"
 #include "te_errno.h"
 
-#define PRINT INFO
-
-#if !defined(CONFIG_ISCSI_DEBUG)
-
-	#define TRACE_SET(mask) do { } while(0)
-	#define TRACE_GET(mask) do { } while(0)
-	#define TRACE_TEST(mask) (0)
-	#define TRACE(mask, args...) do { } while(0)
-	#define TRACE_BUFFER(mask, buffer, len, args...) do { } while(0)
-
-#else
-
 #define TRACE_ENDING		0x0000
 #define TRACE_DEBUG		0x0001
 #define TRACE_ISCSI_FULL	0x0002
@@ -75,9 +63,9 @@ extern uint32_t iscsi_trace_mask;
 	do {								   \
 		if (iscsi_trace_mask & mask) { 				   \
 			if (iscsi_trace_mask & TRACE_VERBOSE) { 	   \
-				PRINT("%s:%d:", __FUNCTION__, __LINE__);   \
+				INFO("%s:%d:", __FUNCTION__, __LINE__);   \
 			}						   \
-			PRINT(args);		   			   \
+			INFO(args);		   			   \
 		}							   \
 	} while(0)
 
@@ -85,34 +73,32 @@ extern uint32_t iscsi_trace_mask;
 	do {								   \
 		if (iscsi_trace_mask & mask) { 				   \
 			int ndx;					   \
-			PRINT(args);					   \
+			INFO(args);					   \
 			for (ndx = 0; ndx < len; ndx++)	{		   \
 				if ((ndx & 0xf) == 0) {			   \
-					PRINT("%3d:", ndx);		   \
+					INFO("%3d:", ndx);		   \
 				}					   \
-				PRINT(" %02x",				   \
+				INFO(" %02x",				   \
 					*((uint8_t *)(buffer)+ndx)); \
 				if ((ndx & 0xf) == 0xf) {		   \
-					PRINT("\n");			   \
+					INFO("\n");			   \
 				}					   \
 			}						   \
 			if ((ndx & 0xf) != 0) {				   \
-				PRINT("\n");				   \
+				INFO("\n");				   \
 			}						   \
 		}							   \
 	} while(0)
 
-#endif
-
 #define TRACE_ERROR(args...)						   \
 	do  {								   \
-		ERROR("%s:%d:", __FUNCTION__, __LINE__);		   \
-		ERROR(__FILE__ ": ***ERROR*** " args);			   \
+		ERROR("%s:%d: (%s)", __FILE__, __LINE__, __FUNCTION__);  \
+		ERROR(args);			   \
 	} while(0)
 
 #define TRACE_WARNING(args...)						   \
 	do  {								   \
-		WARN("***Warning*** " args);				   \
+		WARN(args);				   \
 	} while(0)
 
 #endif

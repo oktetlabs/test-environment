@@ -277,7 +277,7 @@ out2:
 	i = -EINVAL;
 out1:
 	TRACE(TRACE_NET, "Free ip_address %p\n", ip);
-	my_free((void *) &ip);
+	free(ip);
 	goto out;
 }
 
@@ -310,7 +310,7 @@ dup_inet_struct(struct sockaddr *old_ip_address,
 			*new_ip_length = sizeof(struct sockaddr_in);
 		else {
 			TRACE_ERROR("Unknown protocol family %d\n", i);
-			my_free((void *)new_ip_address);
+			ZFREE(new_ip_address);
 			i = -EPFNOSUPPORT;
 		}
 	}

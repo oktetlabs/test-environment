@@ -81,7 +81,7 @@ bigint_clean(struct bigint_t *n)
 		return 0;
 #endif
 	if (IS_VALID(n) && (n->data))
-		my_free((void *) &n->data);
+		ZFREE(n->data);
 #ifdef BIGITN_DEBUG
 	memory_used -= n->size * sizeof (unsigned int);
 #endif
@@ -103,7 +103,7 @@ bigint_new(unsigned int size)
 		size++;
 	if ((r->data =
 	     (unsigned int *) malloc(size * sizeof (unsigned int))) == NULL) {
-		my_free((void *) &r);
+		ZFREE(r);
 		return NULL;
 	}
 	r->size = size;
@@ -120,11 +120,11 @@ bigint_free(struct bigint_t *n)
 {
 	if (n != NULL) {
 		if (n->data != NULL) {
-			my_free((void *) &n->data);
+			free(n->data);
 #ifdef BIGINT_DEBUG
 			memory_used -= n->size * (sizeof (unsigned int));
 #endif
-			my_free((void *) &n);
+			free(n);
 		}
 #ifdef BIGINT_DEBUG
 		memory_used -= sizeof (struct bigint_t);
@@ -204,7 +204,7 @@ bigint_extend(struct bigint_t *n, unsigned int size)
 	memset(temp, 0, sizeof (unsigned int) * size);
 	if (n->data) {
 		memcpy(temp, n->data, sizeof (unsigned int) * n->offset);
-		my_free((void *) &n->data);
+		ZFREE(n->data);
 	}
 	n->data = temp;
 	n->size = size;
