@@ -379,7 +379,6 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     rcf_rpc_op        op;
     tarpc_flooder_in  in;
     tarpc_flooder_out out;
-
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     
@@ -390,7 +389,6 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     }
 
     op = rpcs->op;
-
 
     if (sndrs != NULL)
     {
@@ -417,7 +415,6 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
         in.rx_stat.rx_stat_val = rx_stat;
         in.rx_stat.rx_stat_len = rcvnum;
     }
-
     rcf_rpc_call(rpcs, "flooder", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
@@ -429,7 +426,6 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
             memcpy(rx_stat, out.rx_stat.rx_stat_val,
                    out.rx_stat.rx_stat_len * sizeof(rx_stat[0]));
     }
-
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(flooder, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
@@ -440,7 +436,6 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
                  iomux,
                  tx_stat, rx_stat, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
-
     RETVAL_INT(flooder, out.retval);
 }
 
@@ -820,12 +815,16 @@ rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s,
                                 rcf_rpc_server **pco_child, int *child_s)
 {
     pid_t                   process_id;
-    static char             info[512];
+    char                    info[512];
     int                     info_len = sizeof(info);
-
+    char                    process_name[12];
+    static int              counter = 1;
+    
+    sprintf(process_name, "pco_child%d\n", counter);
+    
     if (rpc_is_winsock2(pco_father))
     {
-        rcf_rpc_server_create(pco_father->ta, "pco_child", pco_child);
+        rcf_rpc_server_create(pco_father->ta, process_name, pco_child);
         process_id = rpc_getpid(*pco_child);
         rpc_wsa_duplicate_socket(pco_father, father_s, process_id, 
                                  info, &info_len);
@@ -834,7 +833,8 @@ rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s,
     } 
     else
     {    
-        rcf_rpc_server_fork(pco_father, "pco_child", pco_child);
+        rcf_rpc_server_fork(pco_father, process_name, pco_child);
         *child_s = father_s;
     }
+    counter++;
 }    
