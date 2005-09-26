@@ -369,25 +369,7 @@ rgt_expand_regular_log_msg(log_msg *msg)
                     if (strstr(msg->fmt_str + i, "%Tf") ==
                             (msg->fmt_str + i))
                     {
-                        FILE *fd;
-                        char  str[500];
-
-                        if ((fd = fopen(arg->val, "r")) == NULL)
-                        {
-                            perror("Error during the processing of the log "
-                                   "message");
-                            free_log_msg(msg);
-                            THROW_EXCEPTION;
-                        }
-
-                        obstack_printf(msg->obstk, "File '%s':\n",
-                                       arg->val);
-
-                        while (fgets(str, sizeof(str), fd) != NULL)
-                        {
-                            obstack_grow(msg->obstk, str, strlen(str));
-                        }
-                        fclose(fd);
+                        obstack_grow(msg->obstk, arg->val, arg->len);
 
                         /* shift to the end of "%Tf" */
                         i += 2;

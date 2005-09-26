@@ -628,30 +628,12 @@ output_regular_log_msg(log_msg *msg)
                     if (strstr(msg->fmt_str + i, "%Tf") ==
                             (msg->fmt_str + i))
                     {
-                        FILE *fd;
-                        char  str[500];
-
-                        if (obstack_next_free(log_obstk) != obstk_base)
-                            OBSTACK_FLUSH();
-
-                        if ((fd = fopen(arg->val, "r")) == NULL)
-                        {
-                            perror("Error during the processing of the log "
-                                   "message");
-                            print_message_info(msg);
-                            THROW_EXCEPTION;
-                        }
-
                         /* Strart file tag */
                         fprintf(rgt_ctx.out_fd, "<file name=\"%s\">",
-                                arg->val);
-                        while (fgets(str, sizeof(str), fd) != NULL)
-                        {
-                            fwrite_string(NULL, str);
-                        }
+                                "TODO");
+                        fwrite_string(log_obstk, arg->val);
                         /* End file tag */
                         fputs("</file>", rgt_ctx.out_fd);
-                        fclose(fd);
 
                         /* shift to the end of "%Tf" */
                         i += 2;
@@ -669,7 +651,7 @@ output_regular_log_msg(log_msg *msg)
                     {
                         /* Invalid format just output as it is */
                         fprintf(stderr, "WARNING: Invalid format for "
-                                "%%t specificator\n");
+                                "%%T specificator\n");
                         print_message_info(msg);
                         break;
                     }
