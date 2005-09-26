@@ -204,6 +204,20 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("CSAP->RPC: sent and received data differ, rc = %d", rc);
 
+    rpc_close(rpc_srv, socket);
+    socket = -1;
+
+    memset(rx_buffer, 0, sizeof(rx_buffer));
+    rc = tapi_tcp_buffer_recv(agt_a, 0, acc_csap, 2000, 
+                              CSAP_INVALID_HANDLE, TRUE, 
+                              rx_buffer, &len);
+    if (rc != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) == TE_ETADENDOFDATA)
+            RING("CSAP detected that connection was closed");
+        else 
+            TEST_FAIL("recv on CSAP failed: %r", rc); 
+    }
 
     TEST_SUCCESS;
 
