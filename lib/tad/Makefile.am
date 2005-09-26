@@ -47,7 +47,7 @@ te-@with_name@.pc:
 	Description: Traffic Application Domain for TE\n\
 	Version: $(PACKAGE_VERSION)\n\
 	Requires:\n\
-	Libs: $(TA_TAD_LIBS)\n\
+	Libs: @TA_TAD_LIBS@\n\
 	Cflags: \n" > $@
 
 install-exec-hook:
