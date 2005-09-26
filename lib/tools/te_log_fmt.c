@@ -334,7 +334,7 @@ te_log_msg_fmt_args(te_log_msg_out *out, const char *fmt, va_list ap)
      * If buffer is too small, expand it and write rest of 
      * the message.
      */
-    rc = ta_log_msg_raw_buf_check_len(data, ret);
+    rc = ta_log_msg_raw_buf_check_len(data, ret + 1 /* for '\0' */);
     if (rc == TE_EAGAIN)
     {
         ret2 = vsnprintf(data->ptr, data->end - data->ptr, fmt, ap);
