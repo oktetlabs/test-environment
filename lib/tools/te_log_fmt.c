@@ -328,7 +328,7 @@ te_log_msg_fmt_args(te_log_msg_out *out, const char *fmt, va_list ap)
     assert(fmt != NULL);
     assert(data->ptr <= data->end);
 
-    ret = vsnprintf(data->ptr, data->end - data->ptr, fmt, ap);
+    ret = vsnprintf((char *)data->ptr, data->end - data->ptr, fmt, ap);
 
     /* 
      * If buffer is too small, expand it and write rest of 
@@ -338,7 +338,7 @@ te_log_msg_fmt_args(te_log_msg_out *out, const char *fmt, va_list ap)
                == TE_EAGAIN)
     {
         rc = 0;
-        ret = vsnprintf(data->ptr, data->end - data->ptr, fmt, ap);
+        ret = vsnprintf((char *)data->ptr, data->end - data->ptr, fmt, ap);
         /*
          * Sometimes this return value does not equal to returned
          * by the previous call with the same format string and its
