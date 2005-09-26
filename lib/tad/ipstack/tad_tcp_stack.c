@@ -31,6 +31,8 @@
 #include "config.h"
 #endif
 
+#define TE_LGR_USER "TAD tcp" 
+
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -137,9 +139,13 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         timeout_val.tv_sec = timeout / 1000000L; 
         timeout_val.tv_usec = timeout % 1000000L;
     }
+    VERB("%s(): timeout set to %u.%u", __FUNCTION__, 
+         timeout_val.tv_sec, timeout_val.tv_usec);
     
     rc = select(spec_data->socket + 1, &read_set, NULL, NULL,
                 &timeout_val); 
+
+    VERB("%s(): select return %d", __FUNCTION__,  rc);
     
     if (rc == 0)
         return 0;
@@ -163,8 +169,18 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         return sizeof(int);
     } 
     else 
+    {
         /* Note: possibly MSG_TRUNC and other flags are required */
-        return recv(spec_data->socket, buf, buf_len, recv_flags); 
+        rc = recv(spec_data->socket, buf, buf_len, recv_flags); 
+        if (rc == 0)
+        {
+            INFO("%s(CSAP %d): Peer closed connection", 
+                 __FUNCTION__, csap_descr->id);
+            csap_descr->last_errno = TE_ETADENDOFDATA;
+            return -1;
+        }
+        return rc;
+    }
 }
 
 /**
