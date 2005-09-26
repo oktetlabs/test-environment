@@ -306,7 +306,7 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
     if (csap_descr == NULL)
     {
-        F_ERROR("%s called with NULL csap_descr", __FUNCTION__);
+        ERROR("%s called with NULL csap_descr", __FUNCTION__);
         return -1;
     }
     
@@ -445,7 +445,7 @@ eth_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     if (csap_descr == NULL)
     {
         csap_descr->last_errno = TE_EINVAL;
-        F_ERROR("%s: no csap descr", __FUNCTION__);
+        ERROR("%s: no csap descr", __FUNCTION__);
         return -1;
     }
     
@@ -457,7 +457,7 @@ eth_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
     if(spec_data->out < 0)
     {
-        F_ERROR("%s: no output socket", __FUNCTION__);
+        ERROR("%s: no output socket", __FUNCTION__);
         csap_descr->last_errno = TE_EINVAL;
         return -1;
     }
@@ -487,7 +487,7 @@ eth_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
         if (ret_val < 0)
         {
             csap_descr->last_errno = errno;
-            F_VERB("CSAP #%d, errno %d, retry %d",
+            VERB("CSAP #%d, errno %d, retry %d",
                    csap_descr->id, errno, retries);
             switch (errno)
             {
@@ -505,15 +505,16 @@ eth_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
                     continue;
 
                 default:
-                    F_ERROR("%s: internal socket error %d", __FUNCTION__, 
-                            csap_descr->last_errno);
+                    ERROR("%s(CSAP %d): internal error %d, socket %d", 
+                          __FUNCTION__, csap_descr->id,
+                          csap_descr->last_errno, spec_data->out);
                     return -1;
             }
         } 
     }
     if (retries == TAD_WRITE_RETRIES)
     {
-        F_ERROR("csap #%d, too many retries made, failed");
+        ERROR("csap #%d, too many retries made, failed");
         csap_descr->last_errno = ENOBUFS;
         return -1;
     }
