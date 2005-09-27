@@ -54,7 +54,11 @@ stderr_logging(const char   *file,
 {
     va_list args;
     va_start(args, fmt);
-    fprintf(stderr, "%s:%d %d %s:%s ", file, line, level, entity, user);
+    UNUSED(file);
+    UNUSED(line);
+    UNUSED(entity);
+    UNUSED(user);
+    fprintf(stderr, "[%d] ", level);
     vfprintf(stderr, fmt, args);
     va_end(args);
 }
@@ -82,7 +86,8 @@ int main()
     int data_socket;
     struct sockaddr_in listen_to;
 
-    TRACE_SET(TRACE_ALL);
+    TRACE_SET(TRACE_ALL); 
+    TRACE(TRACE_VERBOSE, "Initializing");
     iscsi_server_init();
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     listen_to.sin_family = AF_INET;
@@ -96,15 +101,19 @@ int main()
     }
     listen(server_socket, 5);
     fputs("Listen for incoming connection\n", stderr);
-    data_socket = accept(server_socket, NULL, NULL);
-    if (data_socket < 0)
+    for(;;)
     {
-        perror("accept");
-        return EXIT_FAILURE;
+        data_socket = accept(server_socket, NULL, NULL);
+        if (data_socket < 0)
+        {
+            perror("accept");
+            return EXIT_FAILURE;
+        }
+        config.send_recv_csap = data_socket;
+        config.reject = 0;
+        fputs("Accepted\n", stderr);
+        iscsi_server_rx_thread(&config);
+        fputs("done\n", stderr);
     }
-    config.send_recv_csap = data_socket;
-    config.reject = 0;
-    fputs("Accepted\n", stderr);
-    iscsi_server_rx_thread(&config);
     return 0;
 }
