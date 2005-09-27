@@ -7,6 +7,6 @@
 do {                                            \
     free(obj);                                  \
     obj = NULL;                                 \
-} while(1)
+} while(0)
 
 #endif
