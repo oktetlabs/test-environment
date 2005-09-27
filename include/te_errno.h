@@ -566,6 +566,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(EDQUOT);       
         ERR2STR(ENOMEDIUM);    
         ERR2STR(EMEDIUMTYPE);  
+        ERR2STR(ECANCELED);
 
         ERR2STR(EUNKNOWN);
 
@@ -1167,8 +1168,12 @@ te_rc_os2te(int err)
         
 #ifdef EMEDIUMTYPE
         case EMEDIUMTYPE: return TE_EMEDIUMTYPE;
+#endif
+                          
+#ifdef ECANCELED
+        case ECANCELED: return TE_ECANCELED;
 #endif  
-        
+ 
         default: return TE_EUNKNOWN;
     }
 }
