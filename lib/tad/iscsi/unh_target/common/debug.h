@@ -62,9 +62,6 @@ extern uint32_t iscsi_trace_mask;
 #define TRACE(mask, args...)						   \
 	do {								   \
 		if (iscsi_trace_mask & mask) { 				   \
-			if (iscsi_trace_mask & TRACE_VERBOSE) { 	   \
-				INFO("%s:%d:", __FUNCTION__, __LINE__);   \
-			}						   \
 			INFO(args);		   			   \
 		}							   \
 	} while(0)
@@ -92,7 +89,6 @@ extern uint32_t iscsi_trace_mask;
 
 #define TRACE_ERROR(args...)						   \
 	do  {								   \
-		ERROR("%s:%d: (%s)", __FILE__, __LINE__, __FUNCTION__);  \
 		ERROR(args);			   \
 	} while(0)
 
