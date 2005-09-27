@@ -79,17 +79,32 @@ int main()
 {
     static struct iscsi_thread_param config;
     int server_socket;
+    int data_socket;
     struct sockaddr_in listen_to;
 
+    TRACE_SET(TRACE_ALL);
     iscsi_server_init();
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     listen_to.sin_family = AF_INET;
     listen_to.sin_port   = htons(3260);
     listen_to.sin_addr.s_addr = INADDR_ANY;
-    bind(server_socket, (struct sockaddr *)&listen_to, sizeof(listen_to));
+    if (bind(server_socket, (struct sockaddr *)&listen_to, 
+             sizeof(listen_to)) != 0)
+    {
+        perror("bind");
+        return EXIT_FAILURE;
+    }
     listen(server_socket, 5);
-    config.send_recv_csap = 0;
+    fputs("Listen for incoming connection\n", stderr);
+    data_socket = accept(server_socket, NULL, NULL);
+    if (data_socket < 0)
+    {
+        perror("accept");
+        return EXIT_FAILURE;
+    }
+    config.send_recv_csap = data_socket;
     config.reject = 0;
+    fputs("Accepted\n", stderr);
     iscsi_server_rx_thread(&config);
     return 0;
 }
