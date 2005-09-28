@@ -797,8 +797,8 @@ extern te_errno cfg_create_config(const char *name, te_bool history);
  *
  * Required delays are configured using /conf_delay subtree.
  * Time to sleep is calculated as the maximum of required delays for
- * configuration changes done by the test after the previous wait
- * (regardless how long time ago the changes are done).
+ * configuration changes done after the previous wait (regardless how
+ * long time ago the changes are done).
  *
  * @return status code (see te_errno.h)
  */
