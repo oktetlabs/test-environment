@@ -49,6 +49,17 @@
 #define TRC_DIFF_BRIEF      0x02
 
 
+/** Entry of the list of strings */
+typedef struct le_string {
+    LIST_ENTRY(le_string)   links;  /**< List links */
+
+    char                   *str;    /**< String */
+} le_string;
+
+/** List of strings */
+typedef LIST_HEAD(lh_string, le_string) lh_string;
+
+
 /** Enumeration of possible test results */
 typedef enum trc_test_result {
     TRC_TEST_PASSED,      /**< Test should pass */

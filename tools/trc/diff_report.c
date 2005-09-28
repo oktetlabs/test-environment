@@ -66,7 +66,7 @@
 /** Title of the report in HTML format */
 extern char *trc_diff_title;
 /** Template of BugIDs to be excluded */
-extern char *trc_diff_no_bugid;
+extern lh_string trc_diff_no_bugids;
 
 static FILE   *f;
 static int     fd;
@@ -167,6 +167,24 @@ static int trc_diff_tests_to_html(const test_runs *tests,
                                   unsigned int level);
 
 
+static te_bool
+trc_diff_exclude_by_bug(const char *bug)
+{
+    le_string  *p;
+
+    for (p = trc_diff_no_bugids.lh_first;
+         p != NULL;
+         p = p->links.le_next)
+    {
+        if (strncmp(bug, p->str, strlen(p->str)) == 0)
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+
 const char *
 trc_test_result_to_string(trc_test_result result)
 {
@@ -247,9 +265,7 @@ trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
         p->diff_out = trc_diff_tests_has_diff(&p->tests, flags) ||
                       (iter_has_diff &&
                        (p->bug == NULL || strlen(p->bug) == 0 ||
-                        trc_diff_no_bugid == NULL ||
-                        strncmp(p->bug, trc_diff_no_bugid,
-                                strlen(trc_diff_no_bugid)) != 0));
+                        !trc_diff_exclude_by_bug(p->bug)));
 
         if (!p->diff_out)
             has_no_out = TRUE;
@@ -285,9 +301,7 @@ trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
                                               &all_iters_out,
                                               p->diff_exp) &&
                       (p->bug == NULL || strlen(p->bug) == 0 ||
-                       trc_diff_no_bugid == NULL ||
-                       strncmp(p->bug, trc_diff_no_bugid,
-                               strlen(trc_diff_no_bugid)) != 0);
+                       !trc_diff_exclude_by_bug(p->bug));
 
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||

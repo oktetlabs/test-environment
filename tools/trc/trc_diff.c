@@ -84,10 +84,11 @@ enum {
     TRC_DIFF_OPT_NAME9,
 };
 
+
 /** Title of the report in HTML format */
 char *trc_diff_title = NULL;
-/** Template of BugIDs to be excluded */
-char *trc_diff_no_bugid = NULL;
+/** Templates of BugIDs to be excluded */
+lh_string trc_diff_no_bugids;
 
 /** Name of the file with expected testing result database */
 static char *trc_diff_db_fn = NULL;
@@ -128,7 +129,7 @@ process_cmd_line_opts(int argc, char **argv)
           "Name of the file for report in HTML format.",
           "FILENAME" },
 
-        { "no-bugid", 'B', POPT_ARG_STRING, &trc_diff_no_bugid, 0,
+        { "no-bugid", 'B', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_NO_BUGID,
           "Exclude from report entries with BugID by template or all "
           "(if template is empty).", NULL },
 
@@ -183,6 +184,21 @@ process_cmd_line_opts(int argc, char **argv)
     {
         switch (rc)
         {
+            case TRC_DIFF_OPT_NO_BUGID:
+            {
+                le_string  *no_bugid = calloc(1, sizeof(*no_bugid));
+
+                if (no_bugid == NULL)
+                {
+                    ERROR("calloc() failed");
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                LIST_INSERT_HEAD(&trc_diff_no_bugids, no_bugid, links);
+                no_bugid->str = strdup(poptGetOptArg(optCon));
+                break;
+            }
+
             case TRC_DIFF_OPT_TAG0:
             case TRC_DIFF_OPT_TAG1:
             case TRC_DIFF_OPT_TAG2:
@@ -266,6 +282,7 @@ main(int argc, char *argv[])
     TAILQ_INIT(&trc_db.tests.head);
     TAILQ_INIT(&tags);
     TAILQ_INIT(&tags_diff);
+    LIST_INIT(&trc_diff_no_bugids);
 
     /* Process and validate command-line options */
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
