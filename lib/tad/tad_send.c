@@ -389,8 +389,6 @@ tad_tr_send_thread(void * arg)
         }
     }
 
-    csap_descr->command = TAD_OP_IDLE;
-    csap_descr->state = 0;
     free(context); 
     tad_payload_spec_clear(&pld_spec);
     return NULL;

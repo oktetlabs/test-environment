@@ -115,7 +115,7 @@ eth_release(csap_p csap_descr)
 
     if (spec_data->in >= 0)
     {
-        VERB("%s: CSAP %d, close input socket %d", 
+        RING("%s: CSAP %d, close input socket %d", 
              __FUNCTION__, csap_descr->id, spec_data->in);
         if (close_packet_socket(spec_data->interface->name, spec_data->in) < 0)
         {
@@ -129,7 +129,7 @@ eth_release(csap_p csap_descr)
 
     if (spec_data->out >= 0)
     {
-        VERB("%s: CSAP %d, close output socket %d", 
+        RING("%s: CSAP %d, close output socket %d", 
              __FUNCTION__, csap_descr->id, spec_data->out);
         if (close_packet_socket(spec_data->interface->name, spec_data->out) < 0)
         {
@@ -180,8 +180,8 @@ eth_prepare_recv(csap_p csap_descr)
         return TE_OS_RC(TE_TAD_CSAP, rc);
     }
 
-    VERB("csap %d Opened Socket %d", 
-                 csap_descr->id, spec_data->in);
+    RING("%s(CSAP %d) open in socket %d", 
+         __FUNCTION__, csap_descr->id, spec_data->in);
 
     buf_size = 0x100000; 
     /* TODO: reasonable size of receive buffer to be investigated */
@@ -226,6 +226,8 @@ eth_prepare_send(csap_p csap_descr)
         ERROR("open_packet_socket error %d", rc);
         return TE_OS_RC(TE_TAD_CSAP, rc);
     }
+    RING("%s(CSAP %d) open out socket %d", 
+         __FUNCTION__, csap_descr->id, spec_data->out);
 
     buf_size = 0x100000; 
     /* TODO: reasonable size of send buffer to be investigated */
@@ -866,16 +868,21 @@ eth_single_destroy_cb (int csap_id, int layer)
 
     if(spec_data->in >= 0)
     {
-        VERB("csap # %d, CLOSE SOCKET (%d): %s:%d",
-                   csap_descr->id, spec_data->in, __FILE__, __LINE__);
+        RING("%s(CSAP %d), close in socket %d",
+             __FUNCTION__, csap_descr->id, spec_data->in);
         if (close_packet_socket(spec_data->interface->name, spec_data->in) < 0)
             assert(0);
         spec_data->in = -1;
     }
     
     if (spec_data->out >= 0)
+    {
+        RING("%s(CSAP %d), close out socket %d",
+             __FUNCTION__, csap_descr->id, spec_data->out);
         if (close_packet_socket(spec_data->interface->name, spec_data->out) < 0)
             assert(0);
+        spec_data->out = -1;
+    }
 
     free_eth_csap_data(spec_data, ETH_COMPLETE_FREE);
 
