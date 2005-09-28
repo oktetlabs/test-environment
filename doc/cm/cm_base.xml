@@ -27,6 +27,26 @@
         Author: Elena Vengerova E-mail: Elena.Vengerova@oktetlabs.ru
     -->
     
+    <!-- Object registered by Configurator itself -->
+    
+    <!-- Test Agent
+         Name: TA name -->
+    <object oid="/agent" access="read_create" type="none"/>
+    
+    <!-- Configuration changes accomodation delay.
+         The object is used to specify the time necessary for
+         accepting by OS changes done via Configurator on the Test Agent
+         (for example, when added route is really used).
+         
+         Name: arbitrary
+         Value: OID of the object, i.g. "/agent/route" -->
+    <object oid="/conf_delay" access="read_create" type="string"/>
+    
+    <!-- Delay for particular object and particular Test Agent.
+    
+         Name:  TA name
+         Value: delay in milliseconds -->
+    <object oid="/conf_delay/ta" access="read_create" type="integer"/>
 
     <!-- ************** Network configuration ************** -->
 
