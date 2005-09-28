@@ -44,7 +44,7 @@
     
     <!-- Delay for particular object and particular Test Agent.
     
-         Name:  TA name
+         Name:  TA name or empty for wildcard TA
          Value: delay in milliseconds -->
     <object oid="/conf_delay/ta" access="read_create" type="integer"/>
 
