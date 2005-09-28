@@ -33,15 +33,36 @@
 #define CFG_OBJ_NUM     64      /**< Number of objects */
 #define CFG_INST_NUM    128     /**< Number of object instances */
 
-/** "/agent" object */
-static cfg_object cfg_obj_agent = 
-    { 1, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
-      CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root, NULL, NULL };
+/* Forwards */
+static cfg_object cfg_obj_agent;
+static cfg_object cfg_obj_conf_delay;
+static cfg_object cfg_obj_conf_delay_ta;
 
 /** Root of configuration objects */
 cfg_object cfg_obj_root = 
     { 0, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, FALSE, NULL,
       &cfg_obj_agent, NULL };
+      
+/** "/agent" object */
+static cfg_object cfg_obj_agent = 
+    { 1, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
+      CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root, NULL, 
+      &cfg_obj_conf_delay };
+
+/** "/conf_delay" object */
+static cfg_object cfg_obj_conf_delay = 
+    { 2, "/conf_delay", 
+      { 'c', 'o', 'n', 'f', '_', 'd', 'e', 'l', 'a', 'y', 0 },
+      CVT_STRING, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_root, 
+      &cfg_obj_conf_delay_ta, NULL };
+
+/** "/conf_delay/ta" object */
+static cfg_object cfg_obj_conf_delay_ta = 
+    { 3, "/conf_delay/ta", { 't', 'a', 0 },
+      CVT_INTEGER, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay, 
+      NULL, NULL };
+
+      
 /** Pool with configuration objects */
 cfg_object **cfg_all_obj = NULL;
 /** Size of objects pool */
@@ -49,15 +70,31 @@ int cfg_all_obj_size;
 
 /** Root of configuration instances */
 cfg_instance cfg_inst_root = 
-    { 0x10000, "/:", { 0 }, &cfg_obj_root, TRUE, NULL, NULL, NULL, { 0 } };
+    { 0x10000, "/:", { 0 }, &cfg_obj_root, TRUE, 0, NULL, NULL, NULL, 
+      { 0 } };
 /** Pool with configuration instances */
 cfg_instance **cfg_all_inst = NULL;
 /** Size of instances pool */
 int cfg_all_inst_size;
+/** Maximum index ever used in the cfg_all_inst */
+static int cfg_all_inst_max = 1;
 
 /** Unique sequence number of the next instance */
 int cfg_inst_seq_num = 2;
 
+/** Delay for configuration changes accomodation */
+uint32_t cfg_conf_delay;
+
+/** 
+ * Update the current configuration delay after adding/deleting/changing
+ * an instance.
+ */
+static inline void
+update_conf_delay(cfg_instance *inst)
+{
+    if (inst->conf_delay > cfg_conf_delay)
+        cfg_conf_delay = inst->conf_delay;
+}
 
 /* Locals */
 static int pattern_match(char *pattern, char *str);
@@ -81,8 +118,11 @@ cfg_db_init(void)
     cfg_all_obj_size = CFG_OBJ_NUM;
     cfg_all_obj[0] = &cfg_obj_root;
     cfg_all_obj[1] = &cfg_obj_agent;
+    cfg_all_obj[2] = &cfg_obj_conf_delay;
+    cfg_all_obj[3] = &cfg_obj_conf_delay_ta;
     cfg_obj_root.son = &cfg_obj_agent;
-    cfg_obj_agent.son = cfg_obj_agent.brother = NULL;
+    cfg_obj_agent.son = NULL;
+    cfg_obj_conf_delay.brother = NULL;
 
     if ((cfg_all_inst = (cfg_instance **)calloc(CFG_INST_NUM, 
                                                 sizeof(void *))) == NULL)
@@ -347,7 +387,7 @@ cfg_process_msg_family(cfg_family_msg *msg)
     do {                                                                \
         if (_item == NULL)                                              \
         {                                                               \
-            msg->rc = TE_ENOENT;                                           \
+            msg->rc = TE_ENOENT;                                        \
             return;                                                     \
         }                                                               \
         msg->handle = msg->who == CFG_FATHER ?                          \
@@ -653,6 +693,42 @@ cfg_db_add_children(cfg_instance *inst)
     return 0;
 }
 
+/** Calculate configuration changes delay for new instance */
+static void
+calculate_delay(cfg_instance *inst)
+{
+    int i;
+    
+    for (i = 0; i < cfg_all_inst_max; i++)
+    {
+        cfg_instance *tmp = cfg_all_inst[i];
+        
+        if (tmp != NULL && strcmp(tmp->obj->oid, "/conf_delay") == 0 &&
+            strcmp(tmp->val.val_str, inst->obj->oid) == 0)
+        {
+            char  ta[RCF_MAX_NAME] = { 0, };
+            char *s = inst->oid + strlen("/agent:");
+            int   n = strchr(s, '/') - s;
+            
+            memcpy(ta, s, n < 0 ? 0 : n);
+            
+            for (tmp = tmp->son; tmp != NULL; tmp = tmp->brother)
+            {
+                if (strcmp(tmp->name, ta) == 0)
+                {
+                    inst->conf_delay = tmp->val.val_int;
+                    return;
+                }
+            }
+                
+            break;
+        }
+    }
+    
+    inst->conf_delay = inst->father->conf_delay;
+}
+ 
+
 /**
  * Add instance to the database.
  *
@@ -794,6 +870,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     cfg_all_inst[i]->obj = obj;
     cfg_all_inst[i]->father = father;
     cfg_all_inst[i]->son = NULL;
+        
     if (prev)
     {
         cfg_all_inst[i]->brother = prev->brother;
@@ -806,10 +883,19 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     }
     
     *handle = cfg_all_inst[i]->handle;
+    if (cfg_all_inst_max < i)
+        cfg_all_inst_max = i;
     
     cfg_free_oid(oid);
     if (strcmp_start("/agent", cfg_all_inst[i]->oid) != 0)
+    {
         return cfg_db_add_children(cfg_all_inst[i]);
+    }
+    else
+    {
+        calculate_delay(cfg_all_inst[i]);
+        update_conf_delay(cfg_all_inst[i]);
+    }
     return 0;
 
 #undef RET
@@ -869,7 +955,7 @@ delete_son(cfg_instance *father, cfg_instance *son)
     cfg_instance *tmp;
     cfg_instance *next;
     cfg_instance *brother;
-    
+
     for (tmp = son->son; tmp != NULL; tmp = next)
     {
         next = tmp->brother;
@@ -896,6 +982,8 @@ delete_son(cfg_instance *father, cfg_instance *son)
     /* Free memory allocated for the instance */
     if (son->obj->type != CVT_NONE)
         cfg_types[son->obj->type].free(son->val);
+        
+    update_conf_delay(son);
     free(son->oid);
     free(son);
 }
@@ -936,6 +1024,8 @@ cfg_db_set(cfg_handle handle, cfg_inst_val val)
         cfg_types[inst->obj->type].free(inst->val);
         inst->val = val0;
     }
+    update_conf_delay(inst);
+    
     return 0;
 }
 

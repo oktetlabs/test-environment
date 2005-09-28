@@ -81,6 +81,7 @@ typedef struct cfg_instance {
                                          to the Test Agent or not
                                          (has sense only for read-create
                                          instances) */
+    uint32_t    conf_delay;         /**< Configuration changes delay */
 
     /** @name Family */
     struct cfg_instance *father;    /**< Link to father */
@@ -236,6 +237,22 @@ extern void cfg_db_destroy(void);
  * @return TRUE (match) or FALSE (does not match)
  */
 extern te_bool cfg_oid_match_volatile(const char *oid_s, char **ta);
+
+/** Delay for configuration changes accomodation */
+uint32_t cfg_conf_delay;
+
+/** Sleep the delay and reset it */
+static inline void
+cfg_conf_delay_reset(void)
+{
+    if (cfg_conf_delay > 0)
+    {
+        RING("Sleep %u milliseconds to propagate configuration changes",
+             cfg_conf_delay);
+        usleep(cfg_conf_delay * 1000);
+        cfg_conf_delay = 0;
+    }
+}
 
 #ifdef __cplusplus
 }

@@ -67,6 +67,8 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "logger_api.h"
+#include "logger_ten.h"
 #include "conf_api.h"
 #include "conf_messages.h"
 #include "conf_types.h"
@@ -77,9 +79,6 @@
 
 #include "ipc_server.h"
 #include "rcf_api.h"
-
-#include "logger_api.h"
-#include "logger_ten.h"
 
 /** Check if the instance is volatile */
 static inline te_bool

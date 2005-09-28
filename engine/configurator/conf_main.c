@@ -983,6 +983,10 @@ log_msg(cfg_msg *msg, te_bool before)
                     "history" : "backup", addon);
             break;
 
+        case CFG_CONF_DELAY:
+            LOG_MSG(level, "Wait configuration changes");
+            break;
+
         case CFG_SHUTDOWN:
             LOG_MSG(level, "Shutdown command%s", addon);
             break;
@@ -1040,7 +1044,10 @@ process_backup(cfg_backup_msg *msg)
                 
                 /* Check that it is really restored */
                 if ((msg->rc = cfg_backup_create_file(filename)) != 0)
+                {
+                    cfg_conf_delay_reset();
                     return;
+                }
 
                 sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
                         filename, diff_file);
@@ -1048,6 +1055,7 @@ process_backup(cfg_backup_msg *msg)
                 if (system(tmp_buf) == 0)
                 {
                     rcf_log_cfg_changes(FALSE);
+                    cfg_conf_delay_reset();
                     return;
                 }
                 WARN("Restoring backup from history failed:\n%Tf", 
@@ -1059,6 +1067,7 @@ process_backup(cfg_backup_msg *msg)
             msg->rc = parse_config(msg->filename, TRUE);
             rcf_log_cfg_changes(FALSE);
             cfg_dh_release_after(msg->filename);
+            cfg_conf_delay_reset();
             
             break;
         }
@@ -1072,6 +1081,8 @@ process_backup(cfg_backup_msg *msg)
             
             if (TE_RC_GET_ERROR(rc) == TE_ETAREBOOTED)
                 cfg_ta_sync("/:", TRUE);
+                
+            cfg_conf_delay_reset();
             
             if ((msg->rc = cfg_backup_create_file(filename)) != 0)
                 return;
@@ -1090,7 +1101,7 @@ process_backup(cfg_backup_msg *msg)
                 else
                     INFO("Backup diff:\n%Tf", diff_file);
             }
-            unlink(diff_file);            
+            unlink(diff_file); 
             break;
         }
 
@@ -1234,6 +1245,10 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
                 (*msg)->rc = cfg_backup_create_file(
                                  ((cfg_config_msg *)(*msg))->filename);
             }
+            break;
+
+        case CFG_CONF_DELAY:
+            cfg_conf_delay_reset();
             break;
 
         case CFG_SHUTDOWN:
