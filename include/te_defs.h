@@ -204,8 +204,8 @@ extern "C" {
 /**
  * Generate random number from the range.
  *
- * @param min   - range lower limit
- * @param max   - range upper limit
+ * @param min     range lower limit
+ * @param max     range upper limit
  *
  * @return Random number from the range [min, max]
  */
