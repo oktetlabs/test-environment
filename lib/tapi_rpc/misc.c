@@ -277,8 +277,8 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
  * Simple receiver.
  *
  * @param rpcs            RPC server
- * @param s                 a socket to be user for receiving
- * @param received          location for number of received bytes
+ * @param s               a socket to be user for receiving
+ * @param received        location for number of received bytes
  *
  * @return number of received bytes or -1 in the case of failure
  */
