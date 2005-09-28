@@ -710,11 +710,12 @@ calculate_delay(cfg_instance *inst)
             char *s = inst->oid + strlen("/agent:");
             int   n = strchr(s, '/') - s;
             
-            memcpy(ta, s, n < 0 ? 0 : n);
+            if (n == 0)
+                break;
             
             for (tmp = tmp->son; tmp != NULL; tmp = tmp->brother)
             {
-                if (strcmp(tmp->name, ta) == 0)
+                if (*tmp->name == 0 || strcmp(tmp->name, ta) == 0)
                 {
                     inst->conf_delay = tmp->val.val_int;
                     return;
