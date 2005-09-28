@@ -916,7 +916,7 @@ ta_sigchld_handler(int sig)
             continue;
         if (WIFEXITED(status))
         {
-            RING("Child process with PID %d exited with value %d", 
+            INFO("Child process with PID %d exited with value %d", 
                  pid, WEXITSTATUS(status));
         }
         else if (WIFSIGNALED(status))
