@@ -1009,6 +1009,8 @@ process_backup(cfg_backup_msg *msg)
     {
         case CFG_BACKUP_CREATE:
         {
+            cfg_conf_delay_reset();
+
             sprintf(msg->filename, CONF_BACKUP_NAME,
                     tmp_dir, getpid(), get_time_ms());
 
@@ -1269,41 +1271,6 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
     log_msg(*msg, FALSE);
 }
 
-
-#if 0
-/* Wait for shutdown message after initialization failure */
-static void
-wait_shutdown()
-{
-    while (TRUE)
-    {
-        struct ipc_server_client *user = NULL;
-
-        cfg_msg *msg = (cfg_msg *)buf;
-        size_t   len = CFG_BUF_LEN;
-        int      rc;
-
-        if ((rc = ipc_receive_message(server, buf, &len, &user)) != 0)
-        {
-            ERROR("Failed receive user request: errno=%r", rc);
-            continue;
-        }
-
-        if (msg->type != CFG_SHUTDOWN)
-            msg->rc = TE_ENOCONF;
-
-        rc = ipc_send_answer(server, user, (char *)msg, msg->len);
-        if (rc != 0)
-        {
-            ERROR("Cannot send an answer to user: errno=%r", rc);
-        }
-
-        if (msg->type == CFG_SHUTDOWN)
-            return;
-    }
-}
-#endif
-
 /**
  * Free globally allocated resources.
  */
@@ -1476,6 +1443,7 @@ main(int argc, char **argv)
     }
 
     INFO("Initialization is finished");
+    cfg_conf_delay = 0;
 
     while (TRUE)
     {
