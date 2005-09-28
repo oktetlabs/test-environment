@@ -4821,7 +4821,6 @@ TARPC_FUNC(aio_write, {},
 TARPC_FUNC(aio_return, {},
 {
     MAKE_CALL(out->retval = func_ptr(IN_AIOCB));
-    out->common._errno = TE_OS_RC(TE_RPC, out->retval);
 }
 )
 
