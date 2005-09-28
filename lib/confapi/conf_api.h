@@ -790,7 +790,7 @@ extern te_errno cfg_create_config(const char *name, te_bool history);
  * Macro to call cfg_wait_changes() from the test without check of
  * return value.
  */
-#define CFG_WAIT_CHANGES    CHECK_RC(cfg_wait_changes())
+#define CFG_WAIT_CHANGES    ((void)cfg_wait_changes())
 
 /**
  * Wait for Configuration changes propagation.
