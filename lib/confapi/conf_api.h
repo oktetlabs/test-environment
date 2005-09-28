@@ -785,6 +785,26 @@ extern te_errno cfg_release_backup(char **name);
  */
 extern te_errno cfg_create_config(const char *name, te_bool history);
 
+
+/** 
+ * Macro to call cfg_wait_changes() from the test without check of
+ * return value.
+ */
+#define CFG_WAIT_CHANGES    CHECK_RC(cfg_wait_changes())
+
+/**
+ * Wait for Configuration changes propagation.
+ *
+ * Required delays are configured using /conf_delay subtree.
+ * Time to sleep is calculated as the maximum of required delays for
+ * configuration changes done by the test after the previous wait
+ * (regardless how long time ago the changes are done).
+ *
+ * @return status code (see te_errno.h)
+ */
+extern te_errno cfg_wait_changes(void);
+
+
 /**
  * Clean up resources allocated by Configurator API.
  *
@@ -792,6 +812,7 @@ extern te_errno cfg_create_config(const char *name, te_bool history);
  * it is called automatically using atexit() mechanism.
  */
 extern void cfg_api_cleanup(void);
+
 
 #ifdef __cplusplus
 }
