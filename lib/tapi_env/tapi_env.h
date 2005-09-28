@@ -266,11 +266,6 @@ typedef struct tapi_env_host {
     char   *libname;            /**< Name of dynamic library to be
                                      used on the host as IUT */
 
-    unsigned int arp_sync;      /**< Time to wait ARP changes
-                                     propogation */
-    unsigned int route_sync;    /**< Time to wait routing table
-                                     changes propogation */
-    
     unsigned int n_nets;        /**< Number of nets the host belongs to */
 
     /** List of networks the host belongs to */
