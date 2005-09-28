@@ -704,7 +704,7 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
  * Copy the data from src_buf to the dst_buf buffer located at TA.
  */
 void
-rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
+rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
             size_t len, rpc_ptr dst_buf, rpc_ptr offset)
 {
     rcf_rpc_op        op;
@@ -722,7 +722,7 @@ rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
 
     op = rpcs->op;
 
-    in.src_buf.src_buf_val = src_buf;
+    in.src_buf.src_buf_val = (char *)src_buf;
     if (len != 0)
         in.src_buf.src_buf_len = len;
     else
@@ -746,7 +746,7 @@ rpc_set_buf(rcf_rpc_server *rpcs, char *src_buf,
  */
 void
 rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
-            rpc_ptr offset, size_t len, char *dst_buf)
+            rpc_ptr offset, size_t len, uint8_t *dst_buf)
 {
     rcf_rpc_op        op;
     tarpc_get_buf_in  in;
