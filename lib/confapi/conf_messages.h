@@ -78,6 +78,7 @@ enum {
                         OUT: file name (for create) */
     CFG_CONFIG,    /**< Create configuration file:
                         IN: file name, history flag */
+    CFG_CONF_DELAY,/**< Sleep conf_delay */                        
     CFG_SHUTDOWN   /**< Shutdown the Configurator */
 };
 

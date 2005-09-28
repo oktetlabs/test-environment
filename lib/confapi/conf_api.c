@@ -2135,3 +2135,50 @@ cfg_api_cleanup(void)
               __FUNCTION__, rc);
     }
 }
+
+/**
+ * Wait for Configuration changes propagation.
+ *
+ * Required delays are configured using /conf_delay subtree.
+ * Time to sleep is calculated as the maximum of required delays for
+ * configuration changes done after the previous wait (regardless how
+ * long time ago the changes are done).
+ *
+ * @return Status code (see te_errno.h)
+ */
+te_errno 
+cfg_wait_changes(void)
+{
+    cfg_config_msg *msg;
+
+    size_t  len = CFG_MSG_MAX;
+    int     ret_val = 0;
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_lock(&cfgl_lock);
+#endif
+    INIT_IPC;
+    if (cfgl_ipc_client == NULL)
+    {
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&cfgl_lock);
+#endif
+        return TE_RC(TE_CONF_API, TE_EIPC);
+    }
+    msg = (cfg_config_msg *)cfgl_msg_buf;
+    msg->type = CFG_CONF_DELAY;
+
+    ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
+                                           CONFIGURATOR_SERVER,
+                                           msg, msg->len, msg, &len);
+    if (ret_val == 0)
+    {
+        ret_val = msg->rc;
+    }
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&cfgl_lock);
+#endif
+    return TE_RC(TE_CONF_API, ret_val);
+}
+

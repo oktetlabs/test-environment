@@ -800,7 +800,7 @@ extern te_errno cfg_create_config(const char *name, te_bool history);
  * configuration changes done after the previous wait (regardless how
  * long time ago the changes are done).
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_wait_changes(void);
 
