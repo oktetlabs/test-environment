@@ -92,7 +92,7 @@ typedef enum cli_conn_type {
 
 /* Define timeout used for waiting for prompt in CSAP creation procedure */
 #ifndef CLI_CSAP_DEFAULT_TIMEOUT
-#define CLI_CSAP_DEFAULT_TIMEOUT    15 /**< Seconds to wait for prompt */
+#define CLI_CSAP_DEFAULT_TIMEOUT    25 /**< Seconds to wait for prompt */
 #endif
 
 #define CLI_PROMPT_STATUS_COMMAND   0x1 /**< command-prompt present */
