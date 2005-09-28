@@ -505,7 +505,7 @@ rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
  *
  * @param rpcs     RPC server handle
  * @param mode     if RPC_LIO_WAIT, return after completion of all requests;
- *                 if RPC_LI_NOWAIT, requrn after requests queueing
+ *                 if RPC_LIO_NOWAIT, requrn after requests queueing
  * @param cblist   list of control blocks corresponding to AIO requests
  * @param nent     number of elements in cblist
  * @param sigevent notification mode description
