@@ -85,17 +85,6 @@ int cfg_inst_seq_num = 2;
 /** Delay for configuration changes accomodation */
 uint32_t cfg_conf_delay;
 
-/** 
- * Update the current configuration delay after adding/deleting/changing
- * an instance.
- */
-static inline void
-update_conf_delay(cfg_instance *inst)
-{
-    if (inst->conf_delay > cfg_conf_delay)
-        cfg_conf_delay = inst->conf_delay;
-}
-
 /* Locals */
 static int pattern_match(char *pattern, char *str);
 
@@ -895,7 +884,6 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     else
     {
         calculate_delay(cfg_all_inst[i]);
-        update_conf_delay(cfg_all_inst[i]);
     }
     return 0;
 
@@ -984,7 +972,6 @@ delete_son(cfg_instance *father, cfg_instance *son)
     if (son->obj->type != CVT_NONE)
         cfg_types[son->obj->type].free(son->val);
         
-    update_conf_delay(son);
     free(son->oid);
     free(son);
 }
@@ -1025,7 +1012,6 @@ cfg_db_set(cfg_handle handle, cfg_inst_val val)
         cfg_types[inst->obj->type].free(inst->val);
         inst->val = val0;
     }
-    update_conf_delay(inst);
     
     return 0;
 }

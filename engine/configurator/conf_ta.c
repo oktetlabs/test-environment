@@ -783,6 +783,7 @@ cfg_tas_commit(const char *oid)
         /* Save configuration changes */
         local_cmd_seq = FALSE;
         cfg_dh_release_backup(local_cmd_bkp);
+        cfg_conf_delay_update(inst);
     }
 
     EXIT("%r", rc);

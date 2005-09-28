@@ -241,6 +241,17 @@ extern te_bool cfg_oid_match_volatile(const char *oid_s, char **ta);
 /** Delay for configuration changes accomodation */
 uint32_t cfg_conf_delay;
 
+/** 
+ * Update the current configuration delay after adding/deleting/changing
+ * an instance.
+ */
+static inline void
+cfg_conf_delay_update(cfg_instance *inst)
+{
+    if (inst->conf_delay > cfg_conf_delay)
+        cfg_conf_delay = inst->conf_delay;
+}
+
 /** Sleep the delay and reset it */
 static inline void
 cfg_conf_delay_reset(void)

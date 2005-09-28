@@ -417,7 +417,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         msg->handle = handle;
         return;
     }
-    
+
     if (msg->local)
     {
         /* Local add operation */
@@ -491,6 +491,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
      */
     inst = CFG_GET_INST(handle);
     inst->added = TRUE;
+    cfg_conf_delay_update(inst);
     
     msg->handle = handle;
 }
@@ -605,6 +606,8 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         cfg_db_set(handle, old_val);
     }
 
+    cfg_conf_delay_update(inst);
+
     cfg_types[obj->type].free(old_val);
     cfg_types[obj->type].free(val);
     if (obj->type != CVT_NONE)
@@ -654,11 +657,13 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (strncmp(inst->oid, "/agent:", strlen("/agent:")) != 0)
+    if (strcmp_start("/agent", inst->oid) != 0)
     {
         cfg_db_del(handle);
         return;
     }
+
+    cfg_conf_delay_update(inst);
 
     /*
      * We should not try to delete locally added instances from
@@ -1009,8 +1014,6 @@ process_backup(cfg_backup_msg *msg)
     {
         case CFG_BACKUP_CREATE:
         {
-            cfg_conf_delay_reset();
-
             sprintf(msg->filename, CONF_BACKUP_NAME,
                     tmp_dir, getpid(), get_time_ms());
 
@@ -1046,10 +1049,7 @@ process_backup(cfg_backup_msg *msg)
                 
                 /* Check that it is really restored */
                 if ((msg->rc = cfg_backup_create_file(filename)) != 0)
-                {
-                    cfg_conf_delay_reset();
                     return;
-                }
 
                 sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
                         filename, diff_file);
@@ -1057,7 +1057,6 @@ process_backup(cfg_backup_msg *msg)
                 if (system(tmp_buf) == 0)
                 {
                     rcf_log_cfg_changes(FALSE);
-                    cfg_conf_delay_reset();
                     return;
                 }
                 WARN("Restoring backup from history failed:\n%Tf", 
@@ -1069,7 +1068,6 @@ process_backup(cfg_backup_msg *msg)
             msg->rc = parse_config(msg->filename, TRUE);
             rcf_log_cfg_changes(FALSE);
             cfg_dh_release_after(msg->filename);
-            cfg_conf_delay_reset();
             
             break;
         }
@@ -1084,8 +1082,6 @@ process_backup(cfg_backup_msg *msg)
             if (TE_RC_GET_ERROR(rc) == TE_ETAREBOOTED)
                 cfg_ta_sync("/:", TRUE);
                 
-            cfg_conf_delay_reset();
-            
             if ((msg->rc = cfg_backup_create_file(filename)) != 0)
                 return;
             TE_SPRINTF(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
@@ -1234,6 +1230,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
 
         case CFG_BACKUP:
             process_backup((cfg_backup_msg *)(*msg));
+            cfg_conf_delay_reset();
             break;
 
         case CFG_CONFIG:
