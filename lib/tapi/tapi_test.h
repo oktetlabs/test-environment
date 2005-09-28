@@ -116,6 +116,7 @@ extern "C" {
     (void)signal(SIGINT, sigint_handler);                           \
                                                                     \
     TAPI_ON_JMP(TEST_ON_JMP_DO);                                    \
+    TEST_GET_INT_PARAM(te_test_id);                                 \
                                                                     \
     TEST_START_SPECIFIC
 
@@ -250,8 +251,7 @@ extern "C" {
             (var_name_) = mapped_val_;                                 \
             break;                                                     \
         }                                                              \
-        result = EXIT_FAILURE;                                         \
-        goto cleanup;                                                  \
+        TEST_STOP;                                                     \
     } while (0)
 
 
@@ -267,8 +267,7 @@ extern "C" {
         if (((var_name_) = test_get_param(argc, argv,            \
                                           #var_name_)) == NULL)  \
         {                                                        \
-            result = EXIT_FAILURE;                               \
-            goto cleanup;                                        \
+            TEST_STOP;                                           \
         }                                                        \
     } while (0)
 
@@ -280,23 +279,22 @@ extern "C" {
  *                   parameter we get the value
  */
 #define TEST_GET_INT_PARAM(var_name_) \
-    do {                                                         \
-        const char *str_val_;                                    \
-        char       *end_ptr;                                     \
-                                                                 \
-        if (((str_val_) = test_get_param(argc, argv,             \
-                                         #var_name_)) == NULL)   \
-        {                                                        \
-            result = EXIT_FAILURE;                               \
-            goto cleanup;                                        \
-        }                                                        \
-        (var_name_) = (int)strtol(str_val_, &end_ptr, 10);       \
-        if (end_ptr == str_val_ || *end_ptr != '\0')             \
-        {                                                        \
-            TEST_FAIL("The value of '%s' parameter should be "   \
-                      "an integer, but it is %s", #var_name_,    \
-                      str_val_);                                 \
-        }                                                        \
+    do {                                                        \
+        const char *str_val_;                                   \
+        char       *end_ptr;                                    \
+                                                                \
+        str_val_ = test_get_param(argc, argv, #var_name_);      \
+        if (str_val_ == NULL)                                   \
+        {                                                       \
+            TEST_STOP;                                          \
+        }                                                       \
+        (var_name_) = (int)strtol(str_val_, &end_ptr, 10);      \
+        if (end_ptr == str_val_ || *end_ptr != '\0')            \
+        {                                                       \
+            TEST_FAIL("The value of '%s' parameter should be "  \
+                      "an integer, but it is %s", #var_name_,   \
+                      str_val_);                                \
+        }                                                       \
     } while (0)
 
 
@@ -315,8 +313,7 @@ extern "C" {
         if (((str_val_) = test_get_param(argc, argv,                    \
                                          #var_name_)) == NULL)          \
         {                                                               \
-            result = EXIT_FAILURE;                                      \
-            goto cleanup;                                               \
+            TEST_STOP;                                                  \
         }                                                               \
         oct_string_ = test_get_octet_string_param(str_val_, var_len_);  \
         if (oct_string_ == NULL)                                        \
@@ -368,6 +365,9 @@ typedef enum sapi_buf_size {
 #define TEST_GET_BUFF_SIZE(var_name_) \
     TEST_GET_ENUM_PARAM(var_name_, BUF_SIZE_MAPPING_LIST)
 
+
+/** ID assigned by the Tester to the test instance */
+extern unsigned int te_test_id;
 
 /**
  * Finds a particulat parameter in the list of parameters

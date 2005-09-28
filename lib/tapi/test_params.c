@@ -50,7 +50,11 @@
 DEFINE_LGR_ENTITY("(unknown)");
 
 
-/* See description in sockapi-ts.h */
+/** ID assigned by the Tester to the test instance */
+unsigned int te_test_id = 0;
+
+
+/* See description in tapi_test.h */
 void
 sigint_handler(int signum)
 {

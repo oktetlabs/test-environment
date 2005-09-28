@@ -32,6 +32,7 @@
 #include "config.h"
 #endif
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #ifdef STDC_HEADERS
 #include <stdlib.h>
@@ -579,17 +580,18 @@ test_param_space(const test_param *param)
  * Convert test parameters to string representation.
  * The first symbol is a space, if the result is not NULL.
  *
+ * @param str       Initial string to append parameters or NULL
  * @param params    Test parameters to convert
  *
  * @return Allocated string or NULL.
  */
 static char *
-test_params_to_string(const test_params *params)
+test_params_to_string(char *str, const test_params *params)
 {
     test_param *p;
-    char       *v = NULL;
-    size_t      len = 0;
-    size_t      rest = len;
+    char       *v = str;
+    size_t      len = (str == NULL) ? 0 : (strlen(str) + 1);
+    size_t      rest = (len == 0) ? 0 : 1;
 
 
     if (params == NULL)
@@ -637,7 +639,7 @@ log_test_start(const run_item *ri, test_id parent, test_id test,
     char   *params_str;
     char   *authors;
 
-    params_str = test_params_to_string(params);
+    params_str = test_params_to_string(NULL, params);
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
@@ -787,7 +789,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
 {
     int         result = 0;
     int         rc;
-    char       *params_str;
+    char       *params_str = NULL;
     char       *cmd = NULL;
     char        shell[256] = "";
     char        gdb_init[32] = "";
@@ -796,54 +798,50 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
 
     ENTRY();
 
-    params_str = test_params_to_string(params);
+    if (asprintf(&params_str, " te_test_id=%u", id) < 0)
+    {
+        ERROR("%s(): asprintf() failed", __FUNCTION__);
+        return TE_RC(TE_TESTER, TE_ENOMEM);
+    }
+    params_str = test_params_to_string(params_str, params);
 
     if (ctx->flags & TESTER_GDB)
     {
-        if (params_str != NULL)
-        {
-            FILE *f;
+        FILE *f;
 
-            if (snprintf(gdb_init, sizeof(gdb_init),
-                         TESTER_GDB_FILENAME_FMT, id) >=
-                    (int)sizeof(gdb_init))
-            {
-                ERROR("Too short buffer is reserved for GDB init file "
-                      "name");
-                return TE_RC(TE_TESTER, TE_ESMALLBUF);
-            }
-            /* TODO Clean up */
-            f = fopen(gdb_init, "w");
-            if (f == NULL)
-            {
-                ERROR("Failed to create GDB init file: %s",
-                      strerror(errno));
-                return TE_OS_RC(TE_TESTER, errno);
-            }
-            fprintf(f, "set args %s\n", params_str);
-            if (fclose(f) != 0)
-            {
-                ERROR("fclose() failed");
-                return TE_OS_RC(TE_TESTER, errno);;
-            }
-            if (snprintf(shell, sizeof(shell),
-                         "gdb -x %s ", gdb_init) >=
-                    (int)sizeof(shell))
-            {
-                ERROR("Too short buffer is reserved for shell command "
-                      "prefix");
-                return TE_RC(TE_TESTER, TE_ESMALLBUF);
-            }
-        }
-        else
+        if (snprintf(gdb_init, sizeof(gdb_init),
+                     TESTER_GDB_FILENAME_FMT, id) >=
+                (int)sizeof(gdb_init))
         {
-            if (snprintf(shell, sizeof(shell), "gdb ") >=
-                    (int)sizeof(shell))
-            {
-                ERROR("Too short buffer is reserved for shell command "
-                      "prefix");
-                return TE_RC(TE_TESTER, TE_ESMALLBUF);
-            }
+            ERROR("Too short buffer is reserved for GDB init file "
+                  "name");
+            free(params_str);
+            return TE_RC(TE_TESTER, TE_ESMALLBUF);
+        }
+        /* TODO Clean up */
+        f = fopen(gdb_init, "w");
+        if (f == NULL)
+        {
+            ERROR("Failed to create GDB init file: %s",
+                  strerror(errno));
+            free(params_str);
+            return TE_OS_RC(TE_TESTER, errno);
+        }
+        fprintf(f, "set args %s\n", params_str);
+        free(params_str);
+        params_str = NULL;
+        if (fclose(f) != 0)
+        {
+            ERROR("fclose() failed");
+            return TE_OS_RC(TE_TESTER, errno);;
+        }
+        if (snprintf(shell, sizeof(shell),
+                     "gdb -x %s ", gdb_init) >=
+                (int)sizeof(shell))
+        {
+            ERROR("Too short buffer is reserved for shell command "
+                  "prefix");
+            return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
     }
     else if (ctx->flags & TESTER_VALGRIND)
@@ -854,6 +852,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
                 (int)sizeof(shell))
         {
             ERROR("Too short buffer is reserved for shell command prefix");
+            free(params_str);
             return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
         if (snprintf(vg_filename, sizeof(vg_filename),
@@ -862,6 +861,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         {
             ERROR("Too short buffer is reserved for Vagrind output "
                   "filename");
+            free(params_str);
             return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
         if (snprintf(postfix, sizeof(postfix), " 2>%s", vg_filename) >=
@@ -869,6 +869,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         {
             ERROR("Too short buffer is reserved for test script "
                   "command postfix");
+            free(params_str);
             return TE_RC(TE_TESTER, TE_ESMALLBUF);
         }
     }
@@ -878,6 +879,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
     {
         ERROR("%s():%u: malloc(%u) failed",
               __FUNCTION__, __LINE__, TESTER_CMD_BUF_SZ);
+        free(params_str);
         return TE_OS_RC(TE_TESTER, errno);;
     }
     if (snprintf(cmd, TESTER_CMD_BUF_SZ, "%s%s%s%s", shell, script->execute,
@@ -887,6 +889,7 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         ERROR("Too short buffer is reserved for test script command "
               "line");
         free(cmd);
+        free(params_str);
         return TE_RC(TE_TESTER, TE_ESMALLBUF);
     }
     free(params_str);
