@@ -35,6 +35,10 @@
 #include <ctype.h>
 #endif
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
 #include "asn_impl.h"
 #include "ndn_internal.h"
 #include "ndn_iscsi.h"
@@ -366,7 +370,7 @@ parse_key_value(char *str, asn_value *value)
 {
     int rc;
 
-    uint32_t int_value;
+    long int int_value;
     char     *end = NULL;
 
     /* String value */
@@ -379,10 +383,16 @@ parse_key_value(char *str, asn_value *value)
     {
         if ((strlen(str)) > 3 && (strcmp(str, "0x") == 0))
         {    
-            int_value = strtol(str, &end, 16);
+            int_value = strtoll(str, &end, 16);
             if (*end != '\0')
             {
                 WARN("%s, %d: strange integer in segment data %s", 
+                     __FUNCTION__, __LINE__, str);
+                goto string;
+            }
+            if (errno == ERANGE)
+            {
+                WARN("%s, %d: strange integer in segment data %s",
                      __FUNCTION__, __LINE__, str);
                 goto string;
             }
@@ -397,8 +407,14 @@ parse_key_value(char *str, asn_value *value)
         }    
         else
         {    
-            int_value = strtol(str, &end, 0);
+            int_value = strtoll(str, &end, 0);
             if (*end != '\0')
+            {
+                WARN("%s, %d: strange integer in segment data %s",
+                     __FUNCTION__, __LINE__, str);
+                goto string;
+            }
+            if (errno == ERANGE)
             {
                 WARN("%s, %d: strange integer in segment data %s",
                      __FUNCTION__, __LINE__, str);

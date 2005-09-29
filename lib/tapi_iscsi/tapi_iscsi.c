@@ -1028,7 +1028,7 @@ tapi_iscsi_set_peer_secret(const char *ta,
     assert(ta != NULL && secret != NULL && strlen(secret) == 16);
 
     return cfg_set_instance_fmt(CVT_STRING, (void *)secret,
-                                "/agent:%s/iscsi_target:/chap:/t:/lx:",
+                                "/agent:%s/iscsi_target:/chap:/t:/px:",
                                 ta);
 }                                
 
@@ -1039,7 +1039,7 @@ tapi_iscsi_set_peer_name(const char *ta,
     assert(ta != NULL && name != NULL);
 
     return cfg_set_instance_fmt(CVT_STRING, (void *)name,
-                                "/agent:%s/iscsi_target:/chap:/t:/ln:",
+                                "/agent:%s/iscsi_target:/chap:/t:/pn:",
                                 ta);
 }                                
 
