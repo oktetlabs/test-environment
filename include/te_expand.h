@@ -38,6 +38,7 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#include <te_defs.h>
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
@@ -65,49 +66,63 @@ static inline int
 cfg_expand_env_vars(const char *src, char **retval)
 {
     const char *next = NULL;
-    char *result = NULL;
-    int result_len = 0;
-    int len;
-    char env_var_name[128];
-    char *default_value;
-    char *env_var;
+    char       *result = NULL;
+    int         result_len = 0;
+    int         len;
+    char        env_var_name[128];
+    char       *default_value;
+    char       *env_var;
+    int         brace_level = 0;
+    te_bool     need_free_env = FALSE;
 
     for (;;)
     {
         next = strstr(src, "${");
-        if(!next)
+        if (next == NULL)
         {
             len = strlen(src) + 1;
             result = realloc(result, result_len + len);
-            if(!result)
+            if (result == NULL)
                 return errno;
             memcpy(result + result_len, src, len);
             break;
         }
-        if(next != src)
+        if (next != src)
         {
             result = realloc(result, result_len + (next - src));
-            if(!result)
+            if (result == NULL)
                 return errno;
             memcpy(result + result_len, src, next - src);
             result_len += next - src;
         }
         next += 2;
-        src = strchr(next, '}');
-        if (!src)
+
+        for (src = next, brace_level = 1; brace_level != 0; src++)
         {
-            *retval = NULL;
-            return EINVAL; 
+            switch (*src)
+            {
+                case '\0':
+                    free(result);
+                    *retval = NULL;
+                    return EINVAL; 
+                case '{':
+                    brace_level++;
+                    break;
+                case '}':
+                    brace_level--;
+            }
         }
-        if ((unsigned)(src - next) > sizeof(env_var_name))
+
+        if ((unsigned)(src - next - 1) > sizeof(env_var_name))
         {
+            free(result);
             *retval = NULL;
             return ENOBUFS; 
         }
-        memcpy(env_var_name, next, src - next);
-        env_var_name[src - next] = '\0';
+        memcpy(env_var_name, next, src - next - 1);
+        env_var_name[src - next - 1] = '\0';
         default_value = strchr(env_var_name, ':');
-        if(default_value)
+        if (default_value != NULL)
         {
             if(default_value[1] == '+' || default_value[1] == '-')
             {
@@ -119,23 +134,36 @@ cfg_expand_env_vars(const char *src, char **retval)
             }
         }
         env_var = getenv(env_var_name);
-        if(default_value)
+        if (default_value != NULL)
         {
-            if(*default_value == '+' && env_var)
-                env_var = default_value + 1;
-            else if(*default_value == '-' && !env_var)
-                env_var = default_value + 1;
+            if ((*default_value == '+' && env_var != NULL) ||
+                (*default_value == '-' && env_var == NULL))
+            {
+                int rc = cfg_expand_env_vars(default_value + 1, &env_var);
+
+                if (rc != 0)
+                {
+                    free(result);
+                    *retval = NULL;
+                    return rc;
+                }
+                need_free_env = TRUE;
+            }
         }
-        if(env_var != NULL)
+        if (env_var != NULL)
         {
             len = strlen(env_var);
             result = realloc(result, result_len + len);
-            if(!result)
+            if(result == NULL)
                 return errno;
             memcpy(result + result_len, env_var, len);
             result_len += len;
+            if (need_free_env)
+            {
+                free(env_var);
+                need_free_env = FALSE;
+            }
         }
-        src++;
     }
     *retval = result;
     return 0;
