@@ -337,7 +337,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
     }
     if ((write_data_len % 4) != 0)
     {
-        int  i;
+        unsigned int i;
         
         for (i = 0; i < write_data_len % 4; i++)
         {
