@@ -104,6 +104,38 @@
             ERROR("mutex operation failed %d", rc_);                    \
     } while (0)
  
+
+/* 
+ * Mutex to make safe send/recv operations betwєen our internal 
+ * iSCSI Target emulation and CSAP. It should ensure that CSAP 
+ * will not be destroyed while such operation. 
+ */
+static pthread_mutex_t tad_iscsi_lock = PTHREAD_MUTEX_INITIALIZER;
+#define LOCK_ISCSI \
+    do {                                                                \
+        int rc_;                                                        \
+                                                                        \
+        rc_ = pthread_mutex_trylock(&tad_iscsi_lock);                   \
+        if (rc_ == EBUSY)                                               \
+        {                                                               \
+            INFO("tad_iscsi_lock mutex is locked, wait...");            \
+            rc_ = pthread_mutex_lock(&tad_iscsi_lock);                  \
+        }                                                               \
+                                                                        \
+        if (rc_ != 0)                                                   \
+            ERROR("tad_iscsi_lock mutex operation failed %d", rc_);     \
+    } while (0)
+#define UNLOCK_ISCSI \
+    do {                                                                \
+        int rc_;                                                        \
+                                                                        \
+        rc_ = pthread_mutex_unlock(&tad_iscsi_lock);                    \
+                                                                        \
+        if (rc_ != 0)                                                   \
+            ERROR("tad_iscsi_lock mutex operation failed %d", rc_);     \
+    } while (0)
+
+
 /**
  * Prepare send callback
  *
@@ -224,7 +256,7 @@ iscsi_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-iscsi_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
+iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data;
     packet_t *send_pkt;
@@ -271,9 +303,9 @@ iscsi_write_cb (csap_p csap_descr, char *buf, size_t buf_len)
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-iscsi_write_read_cb (csap_p csap_descr, int timeout,
-                   char *w_buf, size_t w_buf_len,
-                   char *r_buf, size_t r_buf_len)
+iscsi_write_read_cb(csap_p csap_descr, int timeout,
+                    const char *w_buf, size_t w_buf_len,
+                    char *r_buf, size_t r_buf_len)
 {
 #if 1
     csap_descr->last_errno = TE_EOPNOTSUPP;
@@ -397,20 +429,63 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 int 
 iscsi_single_destroy_cb (int csap_id, int layer)
 {
-    int rc = 0;
-    csap_p csap_descr = csap_find(csap_id);
-
+    int                         rc = 0;
+    csap_p                      csap_descr; 
+    packet_t                   *recv_pkt = NULL; 
     iscsi_csap_specific_data_t *iscsi_spec_data; 
+
+    LOCK_ISCSI;
+
+    csap_descr = csap_find(csap_id);
 
     if (csap_descr == NULL)
         return TE_ETADCSAPNOTEX;
 
     iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 
+#if 0
     /* hack for recv return 0 in Target - send byte in pipe without 
      * packet in queue. */
     write(iscsi_spec_data->conn_fd[1], "a", 1); 
+#else 
+
+    /* clear queue to target */
+    while (iscsi_spec_data->packets_to_tgt.cqh_first !=
+           (void *)(&iscsi_spec_data->packets_to_tgt))
+    { 
+        recv_pkt = iscsi_spec_data->packets_to_tgt.cqh_first;
+
+        free(recv_pkt->buffer);
+
+        CIRCLEQ_REMOVE(&iscsi_spec_data->packets_to_tgt, 
+                       recv_pkt, link);
+        free(recv_pkt);
+    }
+
+    /* clear queue frœm target */
+    while (iscsi_spec_data->packets_from_tgt.cqh_first !=
+           (void *)(&iscsi_spec_data->packets_from_tgt))
+    { 
+        recv_pkt = iscsi_spec_data->packets_from_tgt.cqh_first;
+
+        free(recv_pkt->buffer);
+
+        CIRCLEQ_REMOVE(&iscsi_spec_data->packets_from_tgt, 
+                       recv_pkt, link);
+        free(recv_pkt);
+    }
+
+    close(iscsi_spec_data->conn_fd[0]);
+    close(iscsi_spec_data->conn_fd[1]);
+
+    csap_descr->layers[layer].specific_data = NULL; 
+
+    free(iscsi_spec_data);
+
+#endif
      
+    UNLOCK_ISCSI;
+
     return rc;
 }
 
@@ -490,12 +565,20 @@ iscsi_tad_recv_internal(csap_p csap_descr, uint8_t *buffer, size_t buf_len)
 int
 iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
 {
-    csap_p  csap_descr = csap_find(csap); 
+    csap_p  csap_descr;
     int     rx_loop = 0;
     size_t  rx_total = 0;
 
-    if (csap_descr == NULL)
-        return -1; 
+    LOCK_ISCSI;
+
+    csap_descr = csap_find(csap); 
+
+    if (csap_descr == NULL || 
+        csap_descr->layers[0].specific_data == NULL) 
+    {
+        UNLOCK_ISCSI;
+        return 0; 
+    } 
 
     INFO("%s(CSAP %d): want %d bytes", __FUNCTION__, csap, buf_len);
 
@@ -519,6 +602,8 @@ iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
     } while (buf_len > 0);
 
 
+    UNLOCK_ISCSI;
+
     return rx_total;
 
 }
@@ -527,15 +612,20 @@ iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
 int
 iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
 {
-    csap_p csap_descr = csap_find(csap);
-    iscsi_csap_specific_data_t *iscsi_spec_data;
+    csap_p    csap_descr;
     packet_t *send_pkt;
+
+    iscsi_csap_specific_data_t *iscsi_spec_data;
 
     INFO("%s(CSAP %d): send %d bytes", __FUNCTION__, csap, buf_len); 
     
+    LOCK_ISCSI;
+
+    csap_descr = csap_find(csap);
+
     if (csap_descr == NULL)
     {
-        ERROR("Csap not found");
+        ERROR("%s() CSAP %d not found", __FUNCTION__, csap);
         return -1;
     }
 
@@ -557,6 +647,7 @@ iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
     CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_from_tgt,
                         send_pkt, link);
     UNLOCK_QUEUE(iscsi_spec_data);
+    UNLOCK_ISCSI;
 
     return buf_len;
 }
