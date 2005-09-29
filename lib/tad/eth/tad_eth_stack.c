@@ -232,7 +232,7 @@ eth_prepare_send(csap_p csap_descr)
     buf_size = 0x100000; 
     /* TODO: reasonable size of send buffer to be investigated */
     if (setsockopt(spec_data->out, SOL_SOCKET, SO_SNDBUF,
-                &buf_size, sizeof(buf_size)) < 0)
+                   &buf_size, sizeof(buf_size)) < 0)
     {
         perror ("set RCV_BUF failed");
         fflush (stderr);
