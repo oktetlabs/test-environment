@@ -38,9 +38,12 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#include <te_defs.h>
+
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
+
+#include "te_defs.h"
+
 
 /* Attention: this file must be included AFTER logging related headers */
 
@@ -110,6 +113,7 @@ cfg_expand_env_vars(const char *src, char **retval)
                     break;
                 case '}':
                     brace_level--;
+                    break;
             }
         }
 
@@ -124,7 +128,7 @@ cfg_expand_env_vars(const char *src, char **retval)
         default_value = strchr(env_var_name, ':');
         if (default_value != NULL)
         {
-            if(default_value[1] == '+' || default_value[1] == '-')
+            if (default_value[1] == '+' || default_value[1] == '-')
             {
                 *default_value++ = '\0';
             }
@@ -154,7 +158,7 @@ cfg_expand_env_vars(const char *src, char **retval)
         {
             len = strlen(env_var);
             result = realloc(result, result_len + len);
-            if(result == NULL)
+            if (result == NULL)
                 return errno;
             memcpy(result + result_len, env_var, len);
             result_len += len;
@@ -186,10 +190,12 @@ static inline char *
 xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
 {
     xmlChar *value = xmlGetProp(node, name);
-    if(value)
+
+    if (value)
     {
         char *result = NULL;
-        int rc;
+        int   rc;
+
         rc = cfg_expand_env_vars(value, &result);
         if (rc == 0)
         {
@@ -206,6 +212,5 @@ xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
     }
     return value;
 }
-
 
 #endif /* !__TE_EXPAND_H__ */
