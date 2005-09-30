@@ -167,7 +167,7 @@ process_cmd_line_opts(int argc, char **argv)
           "Do not include information about scripts in the report.",
           NULL },
         { "no-unspec", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_UNSPEC,
-          "Do not include scripts with got unspecified result.",
+          "Do not include scripts with got unspecified result (not run).",
           NULL },
         { "no-skipped", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_SKIPPED,
           "Do not include skipped scripts.",
