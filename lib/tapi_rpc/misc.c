@@ -707,7 +707,6 @@ void
 rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
             size_t len, rpc_ptr dst_buf, rpc_ptr offset)
 {
-    rcf_rpc_op        op;
     tarpc_set_buf_in  in;
     tarpc_set_buf_out out;
 
@@ -720,10 +719,10 @@ rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
         RETVAL_VOID(set_buf);
     }
 
-    op = rpcs->op;
+    rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.src_buf.src_buf_val = (char *)src_buf;
-    if (len != 0)
+    if (src_buf != NULL)
         in.src_buf.src_buf_len = len;
     else
         in.src_buf.src_buf_len = 0;
@@ -733,10 +732,9 @@ rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
 
     rcf_rpc_call(rpcs, "set_buf", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: set_buf() -> (%s %s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 errno_rpc2str(RPC_ERRNO(rpcs)),
-                 win_error_rpc2str(out.common.win_error));
+    TAPI_RPC_LOG("RPC (%s,%s): set_buf() -> (%s)",
+                 rpcs->ta, rpcs->name, 
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(set_buf);
 }
@@ -748,7 +746,6 @@ void
 rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
             rpc_ptr offset, size_t len, uint8_t *dst_buf)
 {
-    rcf_rpc_op        op;
     tarpc_get_buf_in  in;
     tarpc_get_buf_out out;
 
@@ -761,7 +758,7 @@ rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
         RETVAL_VOID(get_buf);
     }
 
-    op = rpcs->op;
+    rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.src_buf = (tarpc_ptr)src_buf;
     in.offset = (tarpc_ptr)offset;
@@ -769,16 +766,50 @@ rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
 
     rcf_rpc_call(rpcs, "get_buf", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: get_buf() -> (%s %s)",
-                 rpcs->ta, rpcs->name, rpcop2str(op),
-                 errno_rpc2str(RPC_ERRNO(rpcs)),
-                 win_error_rpc2str(out.common.win_error));
+    TAPI_RPC_LOG("RPC (%s,%s): get_buf() -> (%s)",
+                 rpcs->ta, rpcs->name, 
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     if ((out.dst_buf.dst_buf_len != 0) && (out.dst_buf.dst_buf_val != NULL))
         memcpy(dst_buf, out.dst_buf.dst_buf_val, out.dst_buf.dst_buf_len);
 
     RETVAL_VOID(get_buf);
 }
+
+/** 
+ * Fill buffer by the pattern
+ */
+void 
+rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
+                    size_t len, rpc_ptr dst_buf, rpc_ptr offset)
+{
+    tarpc_set_buf_pattern_in  in;
+    tarpc_set_buf_pattern_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_VOID(set_buf_pattern);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.dst_buf = (tarpc_ptr)dst_buf;
+    in.offset = (tarpc_ptr)offset;
+    in.pattern = pattern;
+
+    rcf_rpc_call(rpcs, "set_buf_pattern", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): set_buf_pattern() -> (%s)",
+                 rpcs->ta, rpcs->name, 
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_VOID(set_buf_pattern);
+}                    
+
 
 void
 rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start)

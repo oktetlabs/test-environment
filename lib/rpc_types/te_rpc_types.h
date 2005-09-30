@@ -30,8 +30,8 @@
  * $Id$
  */
  
-#ifndef __TE_TAPI_RPCSOCK_DEFS_H__
-#define __TE_TAPI_RPCSOCK_DEFS_H__
+#ifndef __TE_RPC_TYPES_H__
+#define __TE_RPC_TYPES_H__
 
 
 #define RPC_NULL    0
@@ -59,4 +59,10 @@ typedef rpc_ptr rpc_aiocb_p;
 #include "te_rpc_sys_wait.h"
 #include "te_rpc_wsa.h"
 
-#endif /* !__TE_TAPI_RPCSOCK_DEFS_H__ */
+/** 
+ * Pattern passed to set_buf_pattern to indicate that the buffer should
+ * be filled by random bytes.
+ */
+#define TAPI_RPC_BUF_RAND       256
+
+#endif /* !__TE_RPC_TYPES_H__ */

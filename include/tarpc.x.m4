@@ -1030,8 +1030,8 @@ struct tarpc_free_out {
 struct tarpc_set_buf_in {
     struct tarpc_in_arg  common;
     char                 src_buf<>;
-    tarpc_ptr            dst_buf; /**< A pointer in the TA address space */
-    tarpc_ptr            offset;  /**< A displacement in dest. buffer */
+    tarpc_ptr            dst_buf;
+    tarpc_ptr            offset; 
 };
 
 struct tarpc_set_buf_out {
@@ -1049,6 +1049,19 @@ struct tarpc_get_buf_in {
 struct tarpc_get_buf_out {
     struct tarpc_out_arg common;
     char                 dst_buf<>;
+};
+
+/* set_buf_pattern */
+struct tarpc_set_buf_pattern_in {
+    struct tarpc_in_arg  common;
+    tarpc_ptr            dst_buf;
+    tarpc_ptr            offset; 
+    tarpc_int            pattern;
+    tarpc_size_t         len;      
+};
+
+struct tarpc_set_buf_pattern_out {
+    struct tarpc_out_arg common;
 };
 
 /* alloc_wsabuf */
@@ -2963,6 +2976,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_cancel_async_request)
         RPC_DEF(set_buf)
         RPC_DEF(get_buf)
+        RPC_DEF(set_buf_pattern)
         RPC_DEF(alloc_wsabuf)
         RPC_DEF(free_wsabuf)
         RPC_DEF(wsa_connect)

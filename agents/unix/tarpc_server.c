@@ -5000,7 +5000,7 @@ bool_t
 _set_buf_1_svc(tarpc_set_buf_in *in, tarpc_set_buf_out *out,
                struct svc_req *rqstp)
 {
-    void *dst_buf;
+    uint8_t *dst_buf;
     
     UNUSED(rqstp);
     UNUSED(out);
@@ -5043,6 +5043,36 @@ _get_buf_1_svc(tarpc_get_buf_in *in, tarpc_get_buf_out *out,
     {
         out->dst_buf.dst_buf_val = NULL;
         out->dst_buf.dst_buf_len = 0;
+    }
+    
+    return TRUE;
+}
+
+/*---------------------- Fill buffer by the pattern ----------------------*/
+bool_t
+_set_buf_pattern_1_svc(tarpc_set_buf_pattern_in *in, 
+                       tarpc_set_buf_pattern_out *out,
+                       struct svc_req *rqstp)
+{
+    uint8_t *dst_buf;
+    
+    UNUSED(rqstp);
+    UNUSED(out);
+    
+    dst_buf = rcf_pch_mem_get(in->dst_buf) + (unsigned int)in->offset;
+    if (dst_buf != NULL)
+    {
+        if (in->pattern < TAPI_RPC_BUF_RAND)
+        {
+            memset(dst_buf, in->pattern, in->len);
+        }
+        else
+        {
+            int i;
+            
+            for (i = 0; i < in->len; i++)
+                dst_buf[i] = rand() % TAPI_RPC_BUF_RAND;
+        }
     }
     
     return TRUE;

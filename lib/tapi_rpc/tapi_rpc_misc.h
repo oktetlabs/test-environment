@@ -278,6 +278,21 @@ extern void rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
                         size_t len, rpc_ptr dst_buf, rpc_ptr offset);
 
 /**
+ * Fill @b dst_buf located in TA address space by specified pattern
+ *
+ * @param rpcs     RPC server handle
+ * @param pattern  pattern to be used for buffer filling 
+ *                 (TAPI_RPC_BUF_RAND if the buffer
+ *                 should be filled by random data)
+ * @param len      length of data to be copied
+ * @param dst_buf  pointer to the destination buffer
+ * @param offset   displacement in the destination buffer
+ */
+extern void rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
+                                size_t len, rpc_ptr dst_buf, 
+                                rpc_ptr offset);
+
+/**
  * Copy the @b src_buf buffer located in TA address space to the 
  * @b dst_buf buffer
  *
