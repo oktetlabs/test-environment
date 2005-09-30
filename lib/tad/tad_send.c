@@ -227,9 +227,9 @@ tad_tr_send_thread(void * arg)
     if (rc)
     {
         ERROR("preparing template error: %r", rc);
-        SEND_ANSWER("%d",  TE_RC(TE_TAD_CSAP, rc)); 
         csap_descr->command = TAD_OP_IDLE;
         csap_descr->state = 0;
+        SEND_ANSWER("%d",  TE_RC(TE_TAD_CSAP, rc)); 
         rc = 0;
     } 
     else
@@ -387,6 +387,11 @@ tad_tr_send_thread(void * arg)
                 break;
             }
         }
+    }
+    else
+    {
+        csap_descr->command = TAD_OP_IDLE;
+        csap_descr->state = 0;
     }
 
     free(context); 
