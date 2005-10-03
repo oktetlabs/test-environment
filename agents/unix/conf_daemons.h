@@ -281,5 +281,7 @@ extern void ds_init_tftp_server(rcf_pch_cfg_object **last);
 extern void ds_init_dns_server(rcf_pch_cfg_object **last);
 extern void ds_init_radius_server(rcf_pch_cfg_object **last);
 extern void ds_shutdown_radius_server();
+extern void ds_init_vtund(rcf_pch_cfg_object **last);
+extern void ds_shutdown_vtund(void);
 
 #endif /* __TE_TA_UNIX_CONF_DAEMONS_H__ */

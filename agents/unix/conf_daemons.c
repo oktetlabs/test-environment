@@ -3068,6 +3068,10 @@ ta_unix_conf_daemons_init(rcf_pch_cfg_object **last)
     ds_init_dns_server(last);
 #endif /* WITH_DMS_SERVER */
 
+#ifdef WITH_VTUND
+    ds_init_vtund(last);
+#endif
+
 #ifdef WITH_SMTP
     if (ds_create_backup("/etc/", "hosts", &hosts_index) == 0)
         ds_init_smtp(last);
@@ -3116,6 +3120,10 @@ ta_unix_conf_daemons_release()
 
 #ifdef WITH_RADIUS_SERVER
     ds_shutdown_radius_server();
+#endif
+
+#ifdef WITH_VTUND
+    ds_shutdown_vtund();
 #endif
 
     ta_system("/etc/init.d/xinetd restart >/dev/null");

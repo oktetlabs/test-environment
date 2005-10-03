@@ -98,6 +98,10 @@ if CFG_UNIX_WIFI
 MY_SOURCES+=conf_wifi.c
 endif
 
+if CFG_UNIX_DAEMONS_VTUND
+MY_SOURCES+=conf_vtund.c
+endif
+
 LIBS+=@TAD_LIBS@
 
 AM_CPPFLAGS=$(MY_CPPFLAGS)

@@ -157,8 +157,12 @@ if test -n "$with_cfg_unix_daemons" ; then
         
         Xvfb) ;;
         
-        vncserver) DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_VNCSERVER" ;;
+        vncserver)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_VNCSERVER" ;;
         
+        vtund)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_VTUND" ;;
+            
         *)  ;; 
     esac
   done
@@ -174,6 +178,8 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_ISC_DHCP_SERVER,
     [expr "$with_cfg_unix_daemons" : ".*dhcp" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_RADIUS_SERVER,
     [expr "$with_cfg_unix_daemons" : ".*radius" >/dev/null])
+AM_CONDITIONAL(CFG_UNIX_DAEMONS_VTUND, 
+    [expr "$with_cfg_unix_daemons" : ".*vtund" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
 AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$with_netlink")
 

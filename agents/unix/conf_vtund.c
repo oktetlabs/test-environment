@@ -42,25 +42,25 @@
 /** Default 'stat' session attribute value */
 #define VTUND_STAT_DEF              "no"
 /** Default 'tty' session attribute value */
-#define VTUN_SESSION_TYPE_DEF       "tty"
+#define VTUND_SESSION_TYPE_DEF      "tty"
 /** Default 'device' session attribute value */
-#define VTUN_DEVICE_DEF             "tunXX"
+#define VTUND_DEVICE_DEF            "tunXX"
 /** Default 'proto' session attribute value */
-#define VTUN_PROTO_DEF              "tcp"
+#define VTUND_PROTO_DEF             "tcp"
 /** Default compression method */
-#define VTUN_COMPRESS_METHOD_DEF    "no"
+#define VTUND_COMPRESS_METHOD_DEF   "no"
 /** Default compression level */
-#define VTUN_COMPRESS_LEVEL_DEF     "9"
+#define VTUND_COMPRESS_LEVEL_DEF    "9"
 /** Default 'encrypt' session attribute value */
-#define VTUN_ENCRYPT_DEF            "no"
+#define VTUND_ENCRYPT_DEF           "no"
 /** Default 'keepalive' session attribute value */
-#define VTUN_KEEPALIVE_DEF          "no"
+#define VTUND_KEEPALIVE_DEF         "no"
 /** Default speed to client (0 - unlimited) */
-#define VTUN_SPEED_TO_CLIENT_DEF    "0"
+#define VTUND_SPEED_TO_CLIENT_DEF   "0"
 /** Default speed from client (0 - unlimited) */
-#define VTUN_SPEED_FROM_CLIENT_DEF  "0"
+#define VTUND_SPEED_FROM_CLIENT_DEF "0"
 /** Default 'multi' session attribute value */
-#define VTUN_MULTI_DEF              "no"
+#define VTUND_MULTI_DEF             "no"
 
 
 /** VTun daemon executable name */
@@ -97,7 +97,9 @@ typedef struct vtund_server {
 
     vtund_server_sessions       sessions;
 
-    char   *port;
+    char       *port;
+
+    te_bool     running;
 
 } vtund_server;
 
@@ -122,6 +124,10 @@ typedef struct vtund_client {
 } vtund_client;
 
 static LIST_HEAD(vtund_clients, vtund_client) clients;
+
+
+/** Auxiliary buffer */
+static char buf[2048];
 
 
 static vtund_server *vtund_server_find(unsigned int gid, const char *oid,
@@ -298,6 +304,8 @@ vtund_server_session_add(unsigned int gid, const char *oid, const char *value,
     vtund_server           *server;
     vtund_server_session   *p;
 
+    UNUSED(value);
+
     if (vtund_server_session_find(gid, oid, vtund, server_port, session,
                                   &server) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -316,17 +324,17 @@ vtund_server_session_add(unsigned int gid, const char *oid, const char *value,
     TAILQ_INSERT_TAIL(&server->sessions, p, links);
 
     p->name              = strdup(session);
-    p->type              = strdup(VTUN_SESSION_TYPE_DEF);
-    p->device            = strdup(VTUN_DEVICE_DEF);
-    p->proto             = strdup(VTUN_PROTO_DEF);
-    p->compress_method   = strdup(VTUN_COMPRESS_METHOD_DEF);
-    p->compress_level    = strdup(VTUN_COMPRESS_LEVEL_DEF);
-    p->encrypt           = strdup(VTUN_ENCRYPT_DEF);
-    p->keepalive         = strdup(VTUN_KEEPALIVE_DEF);
-    p->stat              = strdup(VTUN_STAT_DEF);
-    p->speed_to_client   = strdup(VTUN_SPEED_TO_CLIENT_DEF);
-    p->speed_from_client = strdup(VTUN_SPEED_FROM_CLIENT_DEF);
-    p->multi             = strdup(VTUN_MULTI_DEF);
+    p->type              = strdup(VTUND_SESSION_TYPE_DEF);
+    p->device            = strdup(VTUND_DEVICE_DEF);
+    p->proto             = strdup(VTUND_PROTO_DEF);
+    p->compress_method   = strdup(VTUND_COMPRESS_METHOD_DEF);
+    p->compress_level    = strdup(VTUND_COMPRESS_LEVEL_DEF);
+    p->encrypt           = strdup(VTUND_ENCRYPT_DEF);
+    p->keepalive         = strdup(VTUND_KEEPALIVE_DEF);
+    p->stat              = strdup(VTUND_STAT_DEF);
+    p->speed_to_client   = strdup(VTUND_SPEED_TO_CLIENT_DEF);
+    p->speed_from_client = strdup(VTUND_SPEED_FROM_CLIENT_DEF);
+    p->multi             = strdup(VTUND_MULTI_DEF);
     if (p->name == NULL || p->type == NULL || p->device == NULL || 
         p->proto == NULL || p->compress_method == NULL ||
         p->compress_level == NULL || p->encrypt == NULL || 
@@ -367,7 +375,7 @@ vtund_server_session_del(unsigned int gid, const char *oid,
 
 static te_errno
 vtund_server_session_list(unsigned int gid, const char *oid, char **list,
-                          const char *unused, const char *server_port)
+                          const char *vtund, const char *server_port)
 {
     vtund_server           *srv;
     vtund_server_session   *p;
@@ -426,6 +434,19 @@ vtund_server_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+static te_errno
+vtund_server_start(vtund_server *server)
+{
+    server->running = TRUE;
+    return 0;
+}
+
+static te_errno
+vtund_server_stop(vtund_server *server)
+{
+    server->running = FALSE;
+    return 0;
+}
 
 static te_errno
 vtund_server_set(unsigned int gid, const char *oid, const char *value,
@@ -453,7 +474,8 @@ vtund_server_free(vtund_server *server)
 
     if (server->running)
     {
-        rc = vtund_server_stop(server);
+        te_errno rc = vtund_server_stop(server);
+
         if (rc != 0)
             return rc;
     }
@@ -524,7 +546,7 @@ vtund_server_list(unsigned int gid, const char *oid, char **list)
     *buf = '\0';
     for (p = servers.lh_first; p != NULL; p = p->links.le_next)
     {
-        sprintf(buf + strlen(buf), "%u ",  (int)p->port);
+        sprintf(buf + strlen(buf), "%s ",  p->port);
     }
 
     return (*list = strdup(buf)) == NULL ?
@@ -670,16 +692,15 @@ vtund_client_start(vtund_client *client)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    snprintf(buf, sizeof(buf), "%s -f %s -P %s %s %s",
-             vtund_exec, client->port, client->name, client->server);
-
     client->running = TRUE;
+    return 0;
 }
 
 static te_errno
 vtund_client_stop(vtund_client *client)
 {
     client->running = FALSE;
+    return 0;
 }
 
 static te_errno
@@ -720,7 +741,8 @@ vtund_client_free(vtund_client *client)
 {
     if (client->running)
     {
-        rc = vtund_client_stop(client);
+        te_errno rc = vtund_client_stop(client);
+
         if (rc != 0)
             return rc;
     }
@@ -777,7 +799,6 @@ vtund_client_del(unsigned int gid, const char *oid,
                  const char *vtund, const char *client)
 {
     vtund_client   *p;
-    te_errno        rc;
 
     p = vtund_client_find(gid, oid, vtund, client);
     if (p == NULL)
@@ -809,7 +830,7 @@ vtund_client_list(unsigned int gid, const char *oid, char **list)
  * VTund server sessions configuration
  */
 
-RCF_PCH_CFG_NODE_RW(node_vtund_server_session_stats, "stat", NULL, NULL,
+RCF_PCH_CFG_NODE_RW(node_vtund_server_session_stat, "stat", NULL, NULL,
                     vtund_server_session_attr_get,
                     vtund_server_session_attr_set);
 
@@ -826,6 +847,7 @@ VTUND_SERVER_SESSION_ATTR(keepalive, speed_to_client);
 VTUND_SERVER_SESSION_ATTR(encrypt, keepalive);
 VTUND_SERVER_SESSION_ATTR(compress_level, encrypt);
 VTUND_SERVER_SESSION_ATTR(compress_method, compress_level);
+VTUND_SERVER_SESSION_ATTR(timeout, compress_method);
 VTUND_SERVER_SESSION_ATTR(proto, timeout);
 VTUND_SERVER_SESSION_ATTR(device, proto);
 VTUND_SERVER_SESSION_ATTR(type, device);
@@ -852,7 +874,7 @@ static rcf_pch_cfg_object node_vtund_server =
  * VTund clients configuration
  */
 
-RCF_PCH_CFG_NODE_RW(node_vtund_client_stats, "stat", NULL, NULL,
+RCF_PCH_CFG_NODE_RW(node_vtund_client_stat, "stat", NULL, NULL,
                     vtund_client_attr_get, vtund_client_attr_set);
 
 #define VTUND_CLIENT_ATTR(_name, _next) \
@@ -881,7 +903,7 @@ static rcf_pch_cfg_object node_vtund_client =
 /* 
  * VTund root
  */
-RCF_PCH_CFG_NODE_NA(node_vtund, "vtund",
+RCF_PCH_CFG_NODE_NA(node_ds_vtund, "vtund",
                     &node_vtund_client, NULL);
 
 
