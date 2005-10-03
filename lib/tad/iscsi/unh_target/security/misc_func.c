@@ -249,19 +249,18 @@ HexStringToInteger(char *string, char *intnum)
 	}
 }
 
-    void
+/** FIXME: this function must be rewritten to
+    something more adequate
+**/
+void
 get_random_bytes(char *buf, size_t len)
 {
 
     size_t  i;
 
-    for (i = 0; i < len / sizeof(int); ++i)
+    for (i = 0; i < len; ++i)
     {
-        buf[i] = rand();
-    }
-    for (i = (len / sizeof(int)) * sizeof(int); i < len; ++i)
-    {
-        buf[i] = rand();
+        buf[i] = (rand() >> 4) & 0xFF;
     }
 }
 
