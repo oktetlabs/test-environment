@@ -205,7 +205,7 @@ print_tree(cfg_instance *inst, int indent)
     {
         fclose(f);
         f = NULL;
-        RING("Configuration model instances tree:%Tf", "instances");
+        RING("Configuration model instances tree:\n%Tf", "instances");
     }
 }
 
@@ -232,7 +232,7 @@ print_otree(cfg_object *obj, int indent)
     {
         fclose(f);
         f = NULL;
-        RING("Configuration model objects tree:%Tf", "objects");
+        RING("Configuration model objects tree:\n%Tf", "objects");
     }
 }
 
