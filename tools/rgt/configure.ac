@@ -70,7 +70,7 @@ then
     export PKG_CONFIG_PATH
 fi
 
-GLIB_REQUIRED_VERSION=2.0.0
+GLIB_REQUIRED_VERSION=2.4.8
 AM_PATH_GLIB_2_0($GLIB_REQUIRED_VERSION, [],
   AC_MSG_WARN("GLIB $GLIB_REQUIRED_VERSION or better is required. 
  The latest version of GLIB is always available from ftp://ftp.gtk.org/
@@ -80,7 +80,7 @@ AM_PATH_GLIB_2_0($GLIB_REQUIRED_VERSION, [],
 
 if test "x$ac_cv_with_glib" != "x"
 then
-    # Reset pkg-config APTH to its original value
+    # Reset pkg-config PATH to its original value
     PKG_CONFIG_PATH=$OLD_PKG_CONFIG_PATH
     export PKG_CONFIG_PATH
 fi
