@@ -5068,7 +5068,7 @@ _set_buf_pattern_1_svc(tarpc_set_buf_pattern_in *in,
         }
         else
         {
-            int i;
+            unsigned int i;
             
             for (i = 0; i < in->len; i++)
                 dst_buf[i] = rand() % TAPI_RPC_BUF_RAND;
