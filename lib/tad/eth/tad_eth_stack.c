@@ -129,7 +129,24 @@ eth_release(csap_p csap_descr)
 
     if (spec_data->out >= 0)
     {
-        RING("%s: CSAP %d, close output socket %d", 
+        fd_set          write_set;
+        int             ret_val;
+        struct timeval  wr_timeout = TAD_WRITE_TIMEOUT_DEFAULT; 
+
+        /* check that all data in socket is sent */
+        FD_ZERO(&write_set);
+        FD_SET(spec_data->out, &write_set);
+
+        ret_val = select(spec_data->out + 1, NULL, &write_set, NULL,
+                         &wr_timeout);
+        if (ret_val == 0)
+            RING("%s(CSAP %d): output socket %d is not ready for write", 
+                 __FUNCTION__, csap_descr->id, spec_data->out);
+        else if (ret_val < 0)
+            WARN("%s(CSAP %d): system errno on select, %d", 
+                 __FUNCTION__, csap_descr->id, errno);
+
+        RING("%s(CSAP %d): close output socket %d", 
              __FUNCTION__, csap_descr->id, spec_data->out);
         if (close_packet_socket(spec_data->interface->name, spec_data->out) < 0)
         {
