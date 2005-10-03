@@ -177,7 +177,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             {
                 char buf[RBUF];
                 asn_sprint_value(*packet, buf, 1000, 0);
-                printf("packet: %s", buf);
+                printf("packet: %s\n", buf);
             }
 #endif
         }
@@ -222,6 +222,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         rc = 0;
 
+
     if (rc == 0 && csap_descr->state & TAD_STATE_RESULTS)
     {
         if (data_to_check.len)
@@ -238,6 +239,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         } 
     }
 
+
     /* process action, if it present. */
     if (rc == 0) do
     { 
@@ -248,14 +250,18 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 
         rc = asn_get_child_value(pattern_unit, &action_val,
                                  PRIVATE, NDN_PU_ACTION);
+
         if (rc != 0)
         {
-            INFO("asn read action rc %x", rc);
+            VERB("%s() asn read action rc %r", __FUNCTION__, rc);
             rc = 0;
             break;
         }
-        asn_get_choice_value(action_val, &action_ch_val,
+        rc = asn_get_choice_value(action_val, &action_ch_val,
                              &t_class, &t_val);
+        VERB("%s(): get action choice rc %r, class %d, tag %d", 
+             __FUNCTION__, rc, (int)t_class, (int)t_val);
+
         switch (t_val)
         {
             case NDN_ACT_ECHO:
@@ -329,7 +335,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                 {
                     int b = target_csap_descr->write_cb(target_csap_descr,
                                                         data, d_len);
-                    RING("action forward processed, %d sent", b);
+                    VERB("action forward processed, %d sent", b);
                 } 
             }
             break; 
@@ -1006,8 +1012,8 @@ tad_tr_recv_thread(void *arg)
     csap_descr->last_errno       = 0;
     CSAP_DA_UNLOCK(csap_descr);
 
-    F_RING("CSAP %d recv process finished, %d pkts got",
-           csap_descr->id, pkt_count);
+    RING("CSAP %d recv process finished, %d pkts got",
+         csap_descr->id, pkt_count);
 
     free(context);
     return NULL;

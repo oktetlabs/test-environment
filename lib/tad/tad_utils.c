@@ -104,8 +104,9 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 
         if (rc != 0) 
         {
-            ERROR("asn_get_subvalue rc: %r, confirm level %d, label %s",
-                  rc, level, label);
+            ERROR("%s(CSAP %d): asn_get_subvalue rc %r, "
+                  "confirm level %d, label %s",
+                  __FUNCTION__, csap_descr->id, rc, level, label);
             break;
         }
 

@@ -601,7 +601,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                     unsigned int num, te_bool results, unsigned int timeout)
 {
 #ifndef DUMMY_TAD 
-    pthread_t   recv_thread;
+    pthread_t   recv_thread = 0;
     int         syms;
     int         rc;
     asn_value_p nds = NULL; 
@@ -706,7 +706,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         csap_descr_p->state |= TAD_STATE_RESULTS;
     CSAP_DA_UNLOCK(csap_descr_p);
 
-    recv_context = malloc(sizeof(tad_task_context));
+    recv_context = calloc(1, sizeof(tad_task_context));
     recv_context->csap          = csap_descr_p;
     recv_context->nds           = nds;
     recv_context->rcf_handle    = handle; 
@@ -781,11 +781,11 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                                           PTHREAD_CREATE_DETACHED)) != 0)
     {
         ERROR("Cannot initialize pthread attribute variable: %d", rc);
-        SEND_ANSWER("%d cannot initialize pthread attribute variable",
-                    TE_RC(TE_TAD_CH, rc));
         free(recv_context);
         csap_descr_p->command = TAD_OP_IDLE;
         csap_descr_p->state = 0;
+        SEND_ANSWER("%d cannot initialize pthread attribute variable",
+                    TE_RC(TE_TAD_CH, rc));
         return 0;
     }
 
@@ -794,10 +794,10 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     {
         ERROR("recv thread create error; rc %d", rc);
         asn_free_value(recv_context->nds);
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         free(recv_context);
         csap_descr_p->command = TAD_OP_IDLE;
         csap_descr_p->state = 0;
+        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
     }
 
     return 0;
