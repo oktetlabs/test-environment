@@ -186,7 +186,15 @@ iscsi_target_b_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
+#if 1
+    if (devdata == NULL)
+    {
+        ERROR("%s() devdata is NULL", __FUNCTION__);
+        return EFAULT;
+    }
+#else
     assert(devdata != NULL);
+#endif
     
     if (!(fmt == 0 || fmt == 1))
     {
@@ -238,7 +246,15 @@ iscsi_target_cl_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
+#if 1
+    if (devdata == NULL)
+    {
+        ERROR("%s() devdata is NULL", __FUNCTION__);
+        return EFAULT;
+    }
+#else
     assert(devdata);
+#endif
     
     if (!CHAP_SET_CHALLENGE_LENGHT(strtol(value, NULL, 0), 
                                    devdata->auth_parameter.
@@ -271,6 +287,7 @@ iscsi_target_ln_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
     if (devdata == NULL)
     {
         ERROR("%s() devdata is NULL", __FUNCTION__);
