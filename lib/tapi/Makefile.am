@@ -12,6 +12,7 @@ include_HEADERS = \
 	tapi_cfg_net.h \
 	tapi_cfg_arl.h \
 	tapi_cfg_dhcp.h \
+	tapi_cfg_vtund.h \
 	tapi_file.h
 
 lib_LTLIBRARIES = libtapi.la
@@ -26,6 +27,7 @@ libtapi_la_SOURCES = \
 	tapi_cfg_net.c \
 	tapi_cfg_arl.c \
 	tapi_cfg_dhcp.c \
+	tapi_cfg_vtund.c \
 	tapi_file.c
 
 
