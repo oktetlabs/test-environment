@@ -65,6 +65,13 @@ iscsi_target_pn_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
+    if (devdata == NULL)
+    {
+        ERROR("%s() devdata is NULL", __FUNCTION__);
+        return EFAULT;
+    }
+
     if (!CHAP_SET_NAME(value, 
                         devdata->auth_parameter.chap_peer_ctx))
     {    
@@ -95,6 +102,12 @@ iscsi_target_px_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
+    if (devdata == NULL)
+    {
+        ERROR("%s() devdata is NULL", __FUNCTION__);
+        return EFAULT;
+    }
  
     if (!CHAP_SET_SECRET(value, 
                          devdata->auth_parameter.chap_peer_ctx))
@@ -128,6 +141,12 @@ iscsi_target_t_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
+    if (devdata == NULL)
+    {
+        ERROR("%s() devdata is NULL", __FUNCTION__);
+        return EFAULT;
+    }
  
     if (!(tgt_cfmt == 0 || tgt_cfmt == 1))
     {
@@ -252,6 +271,11 @@ iscsi_target_ln_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+    if (devdata == NULL)
+    {
+        ERROR("%s() devdata is NULL", __FUNCTION__);
+        return EFAULT;
+    }
 
     if (!CHAP_SET_NAME((char *)value, 
                         devdata->auth_parameter.chap_local_ctx))
@@ -284,6 +308,11 @@ iscsi_target_lx_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+    if (devdata == NULL)
+    {
+        ERROR("%s() devdata is NULL", __FUNCTION__);
+        return EFAULT;
+    }
 
     if (!CHAP_SET_SECRET(value, 
                          devdata->auth_parameter.chap_local_ctx))
@@ -306,6 +335,12 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
+
+    if (devdata == NULL)
+    {
+        ERROR("%s() devdata is NULL", __FUNCTION__);
+        return EFAULT;
+    }
 
     if (!(chap_use == 0 || chap_use == 1))
     {
