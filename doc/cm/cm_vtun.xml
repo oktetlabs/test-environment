@@ -29,116 +29,123 @@
     -->
     
 
+    <!-- ************** Configuration root ********************* -->
+
+    <!-- VTund configuration root
+         Name: empty -->
+    <object oid="/agent/vtund"
+            access="read_only" type="none"/>
+
+
     <!-- ************** Server side configuration ************** -->
 
     <!-- VTund server
          Name: listening port
          Value: 0 - disable server, 1 - enable server -->
-    <object oid="/agent/vtund_server"
+    <object oid="/agent/vtund/server"
             access="read_create" type="integer"/>
     
     <!-- VTund server type
          Name: empty
          Value: stand - standalone,
                 inetd - using (x)inetd -->
-    <object oid="/agent/vtund_server/type"
+    <object oid="/agent/vtund/server/type"
             access="read_write" type="string"/>
 
     <!-- General timeout
          Name: empty
          Value: timeout in seconds -->
-    <object oid="/agent/vtund_server/timeout"
+    <object oid="/agent/vtund/server/timeout"
             access="read_write" type="integer"/>
 
     <!-- VTund syslog specification
          Name: empty -->
-    <object oid="/agent/vtund_server/syslog"
-            access="read_create" type="string"/>
+    <object oid="/agent/vtund/server/syslog"
+            access="read_write" type="string"/>
 
     <!-- Path to ppp program
          Name: empty -->
-    <object oid="/agent/vtund_server/ppp"
-            access="read_create" type="string"/>
+    <object oid="/agent/vtund/server/ppp"
+            access="read_write" type="string"/>
 
     <!-- Path to ifconfig program
          Name: empty -->
-    <object oid="/agent/vtund_server/ifconfig"
-            access="read_create" type="string"/>
+    <object oid="/agent/vtund/server/ifconfig"
+            access="read_write" type="string"/>
 
     <!-- Path to route program
          Name: empty -->
-    <object oid="/agent/vtund_server/route"
-            access="read_create" type="string"/>
+    <object oid="/agent/vtund/server/route"
+            access="read_write" type="string"/>
 
     <!-- Path to ip program
          Name: empty -->
-    <object oid="/agent/vtund_server/ip"
-            access="read_create" type="string"/>
+    <object oid="/agent/vtund/server/ip"
+            access="read_write" type="string"/>
 
     <!-- Path to firewall program
          Name: empty -->
-    <object oid="/agent/vtund_server/firewall"
-            access="read_create" type="string"/>
+    <object oid="/agent/vtund/server/firewall"
+            access="read_write" type="string"/>
 
 
     <!-- VTund connection
-         Name: session name (arbitrary string)
-         Value: 0 - disable, 1 - enable -->
-    <object oid="/agent/vtund_server/session"
-            access="read_write" type="integer"/>
+         Name: session name (arbitrary string) -->
+    <object oid="/agent/vtund/server/session"
+            access="read_create" type="none"/>
 
     <!-- Password for VTund connection
          Name: empty
          Value: arbitrary string -->
-    <object oid="/agent/vtund_server/session/password"
+    <object oid="/agent/vtund/server/session/password"
             access="read_write" type="string"/>
 
     <!-- Type of VTund connection
          Name: empty
          Value: tun, ether, tty or pipe -->
-    <object oid="/agent/vtund_server/session/type"
+    <object oid="/agent/vtund/server/session/type"
             access="read_write" type="string"/>
 
     <!-- VTund device name
          Name: empty
          Value: "tun1"-like -->
-    <object oid="/agent/vtund_server/session/device"
+    <object oid="/agent/vtund/server/session/device"
             access="read_write" type="string"/>
 
     <!-- Protocol used for VTund connection
          Name: empty
          Value: tcp, udp -->
-    <object oid="/agent/vtund_server/session/proto"
+    <object oid="/agent/vtund/server/session/proto"
             access="read_write" type="string"/>
 
     <!-- Compression method to use for VTund connection (server only)
          Name: empty
          Value: no, yes, zlib, lzo -->
-    <object oid="/agent/vtund_server/session/compress_method"
+    <object oid="/agent/vtund/server/session/compress_method"
             access="read_write" type="string"/>
 
     <!-- Compression level to use for VTund connection (server only)
          Name: empty
          Value: 1 (the best speed) - 9 (the best compression ratio) -->
-    <object oid="/agent/vtund_server/session/compress_level"
+    <object oid="/agent/vtund/server/session/compress_level"
             access="read_write" type="integer"/>
 
     <!-- Encryption method to use for VTund connection
          Name: empty
          Value: 0 - disable, 1 - enable -->
-    <object oid="/agent/vtund_server/session/encrypt"
+    <object oid="/agent/vtund/server/session/encrypt"
             access="read_write" type="integer"/>
 
     <!-- Enable/disable connection keep-alive for VTund connection
          Name: empty
          Value: 0 - disable, 1 - enable -->
-    <object oid="/agent/vtund_server/session/keepalive"
+    <object oid="/agent/vtund/server/session/keepalive"
             access="read_write" type="integer"/>
 
     <!-- Enable/disable connection statistics for VTund connection
          Name: empty
          Value: 0 - disable, 1 - enable -->
-    <object oid="/agent/vtund_server/session/stats"
+    <object oid="/agent/vtund/server/session/stats"
             access="read_write" type="integer"/>
 
     <!-- VTund connection speed to client
@@ -146,7 +153,7 @@
          Value: speed of the connection in kilobits/second (8,16,32,64,
                 128,256,etc), 0 (the  default) means maximum possible 
                 speed without shaping -->
-    <object oid="/agent/vtund_server/session/speed_to_client"
+    <object oid="/agent/vtund/server/session/speed_to_client"
             access="read_write" type="integer"/>
 
     <!-- VTund connection speed from client
@@ -154,13 +161,13 @@
          Value: speed of the connection in kilobits/second (8,16,32,64,
                 128,256,etc), 0 (the  default) means maximum possible 
                 speed without shaping -->
-    <object oid="/agent/vtund_server/session/speed_from_client"
+    <object oid="/agent/vtund/server/session/speed_from_client"
             access="read_write" type="integer"/>
 
     <!-- Wheter to allow multiple connections
          Name: empty
          Value: allow, deny, killold -->
-    <object oid="/agent/vtund_server/session/multi"
+    <object oid="/agent/vtund/server/session/multi"
             access="read_write" type="string"/>
 
 
@@ -169,38 +176,38 @@
     <!-- VTund connection client side
          Name: session name (arbitrary string)
          Value: 0 - disable/disconnect, 1 - enable/connect -->
-    <object oid="/agent/vtund_client"
-            access="read_write" type="integer"/>
+    <object oid="/agent/vtund/client"
+            access="read_create" type="integer"/>
 
     <!-- VTund connection server
          Name: empty
          Value: Empty on server side or
                 DNS name or IP address on client side -->
-    <object oid="/agent/vtund_client/server"
+    <object oid="/agent/vtund/client/server"
             access="read_write" type="string"/>
 
     <!-- VTund connection server port
          Name: empty
          Value: server port number to connect to -->
-    <object oid="/agent/vtund_client/port"
+    <object oid="/agent/vtund/client/port"
             access="read_write" type="integer"/>
 
     <!-- Password for VTund connection
          Name: empty
          Value: arbitrary string -->
-    <object oid="/agent/vtund_client/password"
+    <object oid="/agent/vtund/client/password"
             access="read_write" type="string"/>
 
     <!-- VTund device name
          Name: empty
          Value: "tun1"-like -->
-    <object oid="/agent/vtund_client/device"
+    <object oid="/agent/vtund/client/device"
             access="read_write" type="string"/>
 
     <!-- Connect timeout
          Name: empty
          Value: timeout in seconds -->
-    <object oid="/agent/vtund_client/timeout"
+    <object oid="/agent/vtund/client/timeout"
             access="read_write" type="integer"/>
     
     <!-- VTund Persist mode (try to recoonnect after connection)
@@ -211,13 +218,13 @@
                 after connection termination. If keep, the  client will
                 not  remove and re-add the tunXX or tapXX device when
                 reconnectng.  If no, the client will exit (default). -->
-    <object oid="/agent/vtund_client/persist"
+    <object oid="/agent/vtund/client/persist"
             access="read_write" type="string"/>
 
     <!-- Enable/disable connection statistics for VTund connection
          Name: empty
          Value: 0 - disable, 1 - enable -->
-    <object oid="/agent/vtund_client/stats"
+    <object oid="/agent/vtund/client/stats"
             access="read_write" type="integer"/>
 
 </backup>
