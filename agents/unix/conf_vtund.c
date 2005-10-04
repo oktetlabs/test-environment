@@ -34,13 +34,19 @@
 
 #include "conf_daemons.h"
 
+/** Template for VTund configuration file name */
+#define VTUND_TMP_FILE_TEMPLATE     "/tmp/vtund.XXXXXX"
 
+/** Default VTund server address */
+#define VTUND_SERVER_ADDR_DEF       "0.0.0.0"
 /** Default port for VTund to communicate between each other */
 #define VTUND_PORT_DEF              "5000"
+/** Default 'timeout' session attribute value */
+#define VTUND_TIMEOUT_DEF           "60"
 /** Default 'persist' session attribute value */
 #define VTUND_PERSIST_DEF           "no"
 /** Default 'stat' session attribute value */
-#define VTUND_STAT_DEF              "no"
+#define VTUND_STAT_DEF              "0"
 /** Default 'tty' session attribute value */
 #define VTUND_SESSION_TYPE_DEF      "tty"
 /** Default 'device' session attribute value */
@@ -52,9 +58,9 @@
 /** Default compression level */
 #define VTUND_COMPRESS_LEVEL_DEF    "9"
 /** Default 'encrypt' session attribute value */
-#define VTUND_ENCRYPT_DEF           "no"
+#define VTUND_ENCRYPT_DEF           "0"
 /** Default 'keepalive' session attribute value */
-#define VTUND_KEEPALIVE_DEF         "no"
+#define VTUND_KEEPALIVE_DEF         "1"
 /** Default speed to client (0 - unlimited) */
 #define VTUND_SPEED_TO_CLIENT_DEF   "0"
 /** Default speed from client (0 - unlimited) */
@@ -97,6 +103,7 @@ typedef struct vtund_server {
 
     vtund_server_sessions       sessions;
 
+    char       *cfg_file;
     char       *port;
 
     te_bool     running;
@@ -110,6 +117,7 @@ typedef struct vtund_client {
 
     LIST_ENTRY(vtund_client)    links;
 
+    char   *cfg_file;
     char   *name;
     char   *server;
     char   *port;
@@ -437,14 +445,100 @@ vtund_server_get(unsigned int gid, const char *oid, char *value,
 static te_errno
 vtund_server_start(vtund_server *server)
 {
+    FILE                   *f;
+    vtund_server_session   *p;
+
+    f = fopen(server->cfg_file, "w");
+    if (f == NULL)
+    {
+        int err = errno;
+
+        ERROR("Failed to open VTund server configuration file '%s'",
+              server->cfg_file);
+        return TE_OS_RC(TE_TA_UNIX, err);
+    }
+
+    for (p = server->sessions.tqh_first;
+         p != NULL;
+         p = p->links.tqe_next)
+    {
+        const char * const vtund_server_session_fmt =
+            "\n"
+            "%s {\n"
+            "  passwd %s;\n"
+            "  type %s;\n"
+            "  device %s;\n"
+            "  proto %s;\n"
+            "  compress %s%s%s;\n"
+            "  encrypt %s;\n"
+            "  keepalive %s;\n"
+            "  stat %s;\n"
+            "  speed %s:%s;\n"
+            "  multi %s;\n"
+            "  up {\n"
+            "    ppp \"10.0.0.1:10.0.0.2 proxyarp noauth mtu 10000 mru 10000\";\n"
+            "  };\n"
+            "  down {\n"
+            "  };\n"
+            "}\n";
+
+        fprintf(f, vtund_server_session_fmt,
+                p->name, (p->password != NULL) ? p->password : p->name,
+                p->type, p->device, p->proto,
+                p->compress_method,
+                (strcmp(p->compress_method, "no") == 0) ? "" : ":",
+                (strcmp(p->compress_method, "no") == 0) ? "" : 
+                    p->compress_level,
+                (strcmp(p->encrypt, "0") == 0) ? "no" : "yes",
+                (strcmp(p->keepalive, "0") == 0) ? "no" : "yes",
+                (strcmp(p->stat, "0") == 0) ? "no" : "yes",
+                p->speed_to_client, p->speed_from_client, p->multi);
+    }
+
+    fclose(f);
+
+    snprintf(buf, sizeof(buf), "%s -s -P %s -f %s",
+             vtund_exec, server->port, server->cfg_file);
+
+    ta_system(buf);
+
     server->running = TRUE;
+
     return 0;
 }
 
 static te_errno
 vtund_server_stop(vtund_server *server)
 {
+    FILE   *f;
+    char    line[128];
+    pid_t   pid;
+
+    snprintf(buf, sizeof(buf),
+             "ps axw | grep 'vtund\\[s\\]' | grep '%s' | grep -v grep",
+             server->port);
+
+    f = popen(buf, "r");
+    if (fgets(line, sizeof(line), f) == NULL)
+    {
+        pclose(f);
+        ERROR("Failed to find VTund server '%s' PID", server->port);
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
+    }
+    pclose(f);
+
+    pid = atoi(line);
+    if (kill(pid, SIGTERM) != 0)
+    {
+        te_errno err = TE_OS_RC(TE_TA_UNIX, errno);
+
+        ERROR("Failed to send SIGTERM to the process with PID %u: %r",
+              (unsigned int)pid, err);
+        return err;
+    }
+
     server->running = FALSE;
+
     return 0;
 }
 
@@ -481,6 +575,11 @@ vtund_server_free(vtund_server *server)
     }
 
     LIST_REMOVE(server, links);
+
+    if (server->cfg_file != NULL)
+        unlink(server->cfg_file);
+
+    free(server->cfg_file);
     free(server->port);
 
     while ((session = server->sessions.tqh_first) != NULL)
@@ -497,6 +596,7 @@ vtund_server_add(unsigned int gid, const char *oid, const char *value,
 {
     vtund_server   *p;
     te_errno        rc;
+    int             fd;
 
     if (vtund_server_find(gid, oid, vtund, port) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -508,12 +608,23 @@ vtund_server_add(unsigned int gid, const char *oid, const char *value,
 
     LIST_INSERT_HEAD(&servers, p, links);
 
+    p->cfg_file = strdup(VTUND_TMP_FILE_TEMPLATE);
     p->port = strdup(port);
-    if (p->port == NULL)
+    if (p->cfg_file == NULL || p->port == NULL)
     {
         (void)vtund_server_free(p);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
+
+    fd = mkstemp(p->cfg_file);
+    if (fd < 0)
+    {
+        int err = errno;
+
+        (void)vtund_server_free(p);
+        return TE_OS_RC(TE_TA_UNIX, err);
+    }
+    (void)close(fd);
 
     rc = vtund_server_set(gid, oid, value, vtund, port);
     if (rc != 0)
@@ -629,6 +740,7 @@ vtund_client_attr_set(unsigned int gid, const char *oid, const char *value,
     const char     *attr;
     char           *dup;
 
+
     p = vtund_client_find(gid, oid, vtund, client);
     if (p == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -685,21 +797,94 @@ vtund_client_attr_set(unsigned int gid, const char *oid, const char *value,
 static te_errno
 vtund_client_start(vtund_client *client)
 {
-    if (client->server == NULL)
+    const char * const vtund_client_fmt =
+        "%s {\n"
+        "  passwd %s;\n"
+        "  device %s;\n"
+        "  timeout %s;\n"
+        "  persist %s;\n"
+        "  stat %s;\n"
+        "  up {\n"
+        "    ppp \"noipdefault noauth mtu 10000 mru 10000\";\n"
+        "  };\n"
+        "  down {\n"
+        "  };\n"
+        "}\n";
+
+    FILE *f;
+
+
+    if (strcmp(client->server, VTUND_SERVER_ADDR_DEF) == 0)
     {
         ERROR("Failed to start VTund client '%s' with unspecified "
               "server", client->name);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
+    f = fopen(client->cfg_file, "w");
+    if (f == NULL)
+    {
+        int err = errno;
+
+        ERROR("Failed to open VTund client configuration file '%s'",
+              client->cfg_file);
+        return TE_OS_RC(TE_TA_UNIX, err);
+    }
+
+    fprintf(f, vtund_client_fmt,
+            client->name,
+            (client->password != NULL) ? client->password : client->name,
+            client->device, client->timeout, client->persist,
+            (strcmp(client->stat, "0") == 0) ? "no" : "yes");
+
+    (void)fclose(f);
+
+    snprintf(buf, sizeof(buf), "%s -P %s -f %s %s %s",
+             vtund_exec, client->port, client->cfg_file, client->name,
+             client->server);
+    ta_system(buf);
+
     client->running = TRUE;
+
     return 0;
 }
 
 static te_errno
 vtund_client_stop(vtund_client *client)
 {
+    FILE   *f;
+    char    line[128];
+    char   *found;
+    pid_t   pid;
+
+    snprintf(buf, sizeof(buf),
+             "ps axw | grep 'vtund\\[c\\]' | grep '%s' | grep -v grep",
+             client->name);
+
+    f = popen(buf, "r");
+    found = fgets(line, sizeof(line), f);
+    pclose(f);
+
+    if (found == NULL)
+    {
+        WARN("Failed to find VTund client '%s' PID, assuming that "
+             "client has stopped", client->name);
+    }
+    else
+    {
+        pid = atoi(line);
+        if (kill(pid, SIGTERM) != 0)
+        {
+            te_errno err = TE_OS_RC(TE_TA_UNIX, errno);
+
+            ERROR("Failed to send SIGTERM to the process with PID %u: %r",
+                  (unsigned int)pid, err);
+            return err;
+        }
+    }
+
     client->running = FALSE;
+
     return 0;
 }
 
@@ -748,6 +933,11 @@ vtund_client_free(vtund_client *client)
     }
 
     LIST_REMOVE(client, links);
+
+    if (client->cfg_file != NULL)
+        unlink(client->cfg_file);
+
+    free(client->cfg_file);
     free(client->name);
     free(client->server);
     free(client->port);
@@ -765,6 +955,7 @@ static te_errno
 vtund_client_add(unsigned int gid, const char *oid, const char *value,
                  const char *vtund, const char *client)
 {
+    int             fd;
     vtund_client   *p;
     te_errno        rc;
 
@@ -776,16 +967,31 @@ vtund_client_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     LIST_INSERT_HEAD(&clients, p, links);
 
-    p->name = strdup(client);
-    p->port = strdup(VTUND_PORT_DEF);
-    p->persist = strdup(VTUND_PERSIST_DEF);
-    p->stat = strdup(VTUND_STAT_DEF);
-    if (p->name == NULL || p->port == NULL || p->persist == NULL ||
+    p->cfg_file = strdup(VTUND_TMP_FILE_TEMPLATE);
+    p->name     = strdup(client);
+    p->server   = strdup(VTUND_SERVER_ADDR_DEF);
+    p->port     = strdup(VTUND_PORT_DEF);
+    p->device   = strdup(VTUND_DEVICE_DEF);
+    p->timeout  = strdup(VTUND_TIMEOUT_DEF);
+    p->persist  = strdup(VTUND_PERSIST_DEF);
+    p->stat     = strdup(VTUND_STAT_DEF);
+    if (p->cfg_file == NULL || p->name == NULL || p->port == NULL ||
+        p->device == NULL || p->timeout == NULL || p->persist == NULL ||
         p->stat == NULL)
     {
         (void)vtund_client_free(p);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
+
+    fd = mkstemp(p->cfg_file);
+    if (fd < 0)
+    {
+        int err = errno;
+
+        (void)vtund_client_free(p);
+        return TE_OS_RC(TE_TA_UNIX, err);
+    }
+    (void)close(fd);
 
     rc = vtund_client_set(gid, oid, value, vtund, client);
     if (rc != 0)
