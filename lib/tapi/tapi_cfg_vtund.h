@@ -38,6 +38,7 @@
 #include <sys/socket.h>
 #endif
 
+#include "te_errno.h"
 #include "conf_api.h"
 
 
@@ -47,25 +48,26 @@ extern "C" {
 
 
 /**
- * Create a tunnel between two hosts using specified IP addresses.
+ * Create a tunnel between two hosts.
  *
- * @param ta1       The first Test Agent
- * @param addr1     An address on the first Test Agent
- * @param ta2       The second Test Agent
- * @param addr2     An address on the second Test Agent
- * @param if1       Configuration handle of the created interface on the
- *                  first Test Agent
- * @param if2       Configuration handle of the created interface on the
- *                  second Test Agent
+ * @param ta_srv        Test Agent with VTund server
+ * @param ta_clnt       Test Agent with VTund client
+ * @param srv_addr      Address and port for VTund server to listen to
+ *                      and for VTund client to connect to (if port is 0,
+ *                      default VTund port is used)
+ * @param ta_srv_if     Configurator handle of the created interface 
+ *                      on the Test Agent with VTund server
+ * @param ta_clnt_if    Configurator handle of the created interface 
+ *                      on the Test Agent with VTund client
  * 
  * @return Status code
  */
-extern int tapi_cfg_vtund_create_tunnel(const char            *ta1,
-                                        const struct sockaddr *addr1,
-                                        const char            *ta2,
-                                        const struct sockaddr *addr2,
-                                        cfg_handle            *if1,
-                                        cfg_handle            *if2);
+extern te_errno tapi_cfg_vtund_create_tunnel(
+                    const char            *ta_srv,
+                    const char            *ta_clnt,
+                    const struct sockaddr *srv_addr,
+                    cfg_handle            *ta_srv_if,
+                    cfg_handle            *ta_clnt_if);
 
 #ifdef __cplusplus
 } /* extern "C" */
