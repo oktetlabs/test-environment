@@ -2912,6 +2912,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(aio_return)
         RPC_DEF(aio_suspend)
         RPC_DEF(aio_cancel)
+        RPC_DEF(aio_fsync)
         RPC_DEF(lio_listio)
 
         RPC_DEF(simple_sender)
