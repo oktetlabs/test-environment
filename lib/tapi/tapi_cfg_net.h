@@ -67,18 +67,36 @@ typedef struct cfg_nets_t {
 
 
 /**
+ * Get configuration of the net.
+ *
+ * @param net_handle    Configurator handle of the net to get
+ * @param net           Location for net data (OUT)
+ *
+ * @@retval Status code.
+ */
+extern te_errno tapi_cfg_net_get_net(cfg_handle  net_handle,
+                                     cfg_net_t  *net);
+
+/**
  * Get nets configuration.
  *
- * @param nets      - pointer to nets description structure (OUT)
+ * @param nets          Pointer to nets description structure (OUT)
  *
  * @retval Status code.
  */
-extern int tapi_cfg_net_get_nets(cfg_nets_t *nets);
+extern te_errno tapi_cfg_net_get_nets(cfg_nets_t *nets);
+
+/**
+ * Free network dump structure.
+ *
+ * @param net           Pointer to net description structure
+ */
+extern void tapi_cfg_net_free_net(cfg_net_t *net);
 
 /**
  * Free networks dump structure.
  *
- * @param nets      - pointer to nets description structure
+ * @param nets          Pointer to nets description structure
  */
 extern void tapi_cfg_net_free_nets(cfg_nets_t *nets);
 
@@ -199,6 +217,13 @@ extern te_errno tapi_cfg_net_all_assign_ip4(void);
  */
 extern int tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net, 
                                            tapi_cfg_net_assigned *assigned);
+
+/**
+ * Delete all nets from network configuration.
+ *
+ * @return Status code (see te_errno.h)
+ */
+extern te_errno tapi_cfg_net_delete_all(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

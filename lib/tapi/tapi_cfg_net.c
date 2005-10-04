@@ -61,7 +61,95 @@
 
 
 /* See description in tapi_cfg_net.h */
-int
+te_errno
+tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
+{
+    te_errno        rc;
+    char           *net_oid;
+    cfg_handle     *node_handles;
+    unsigned int    n_nodes;
+    unsigned int    i;
+
+
+    if (net_handle == CFG_HANDLE_INVALID || net == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    memset(net, 0, sizeof(*net));
+
+    /* Save cfg handle of the net */
+    net->handle = net_handle;
+
+    /* Get net OID as string */
+    rc = cfg_get_oid_str(net_handle, &net_oid);
+    if (rc != 0)
+    {
+        ERROR("cfg_get_oid_str() failed %r", rc);
+        return rc;
+    }
+
+    /* Find all nodes in this net */
+    rc = cfg_find_pattern_fmt(&n_nodes, &node_handles,
+                              "%s/node:*", net_oid);
+    free(net_oid);
+    if (rc != 0)
+    {
+        ERROR("cfg_find_pattern() failed %r", rc);
+        return rc;
+    }
+    
+    net->n_nodes = n_nodes;
+    if (n_nodes == 0)
+    {
+        net->nodes = NULL;
+    }
+    else
+    {
+        net->nodes = (cfg_net_node_t *)calloc(net->n_nodes,
+                                              sizeof(*(net->nodes)));
+        if (net->nodes == NULL)
+        {
+            ERROR("Memory allocation failure");
+            return rc;
+        }
+    }
+    
+    for (i = 0; i < net->n_nodes; ++i)
+    {
+        char           *node_oid;
+        cfg_val_type    val_type = CVT_INTEGER;
+        int             val;
+
+        /* Save cfg handle of the net node */
+        net->nodes[i].handle = node_handles[i];
+
+        /* Get net node OID as string */
+        rc = cfg_get_oid_str(node_handles[i], &node_oid);
+        if (rc != 0)
+        {
+            ERROR("cfg_get_oid_str() failed %r", rc);
+            break;
+        }
+        /* Get node type */
+        rc = cfg_get_instance_fmt(&val_type, &val,
+                                  "%s/type:", node_oid);
+        free(node_oid);
+        if (rc != 0)
+        {
+            ERROR("cfg_get_instance_fmt() failed %r", rc);
+            break;
+        }
+        net->nodes[i].type = val;
+    }
+    free(node_handles);
+
+    if (rc != 0)
+        tapi_cfg_net_free_net(net);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
 tapi_cfg_net_get_nets(cfg_nets_t *nets)
 {
     te_errno        rc;
@@ -93,76 +181,12 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
 
     for (i = 0; rc == 0 && i < nets->n_nets; ++i)
     {
-        cfg_net_t      *net = nets->nets + i;
-        char           *net_oid;
-        unsigned int    n_nodes;
-        cfg_handle     *node_handles;
-        unsigned int    j;
-
-        /* Save cfg handle of the net */
-        net->handle = net_handles[i];
-
-        /* Get net OID as string */
-        rc = cfg_get_oid_str(net_handles[i], &net_oid);
+        rc = tapi_cfg_net_get_net(net_handles[i], nets->nets + i);
         if (rc != 0)
         {
-            ERROR("cfg_get_oid_str() failed %r", rc);
+            ERROR("tapi_cfg_net_get_net() failed %r", rc);
             break;
         }
-        /* Find all nodes in this net */
-        rc = cfg_find_pattern_fmt(&n_nodes, &node_handles,
-                                  "%s/node:*", net_oid);
-        free(net_oid);
-        if (rc != 0)
-        {
-            ERROR("cfg_find_pattern() failed %r", rc);
-            break;
-        }
-        net->n_nodes = n_nodes;
-        if (n_nodes == 0)
-        {
-            net->nodes = NULL;
-        }
-        else
-        {
-            net->nodes =
-                (cfg_net_node_t *)calloc(net->n_nodes,
-                                         sizeof(*(net->nodes)));
-            if (net->nodes == NULL)
-            {
-                ERROR("Memory allocation failure");
-                break;
-            }
-        }
-        
-        for (j = 0; j < net->n_nodes; ++j)
-        {
-            char           *node_oid;
-            cfg_val_type    val_type = CVT_INTEGER;
-            int             val;
-
-            /* Save cfg handle of the net node */
-            net->nodes[j].handle = node_handles[j];
-
-            /* Get net node OID as string */
-            rc = cfg_get_oid_str(node_handles[j], &node_oid);
-            if (rc != 0)
-            {
-                ERROR("cfg_get_oid_str() failed %r", rc);
-                break;
-            }
-            /* Get node type */
-            rc = cfg_get_instance_fmt(&val_type, &val,
-                                      "%s/type:", node_oid);
-            free(node_oid);
-            if (rc != 0)
-            {
-                ERROR("cfg_get_instance_fmt() failed %r", rc);
-                break;
-            }
-            net->nodes[j].type = val;
-        }
-        free(node_handles);
     }
     free(net_handles);
 
@@ -170,6 +194,16 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
         tapi_cfg_net_free_nets(nets);
 
     return rc;
+}
+
+/* See description in tapi_cfg_net.h */
+void
+tapi_cfg_net_free_net(cfg_net_t *net)
+{
+    if (net != NULL)
+    {
+        free(net->nodes);
+    }
 }
 
 /* See description in tapi_cfg_net.h */
@@ -182,7 +216,7 @@ tapi_cfg_net_free_nets(cfg_nets_t *nets)
 
         for (i = 0; i < nets->n_nets; ++i)
         {
-            free(nets->nets[i].nodes);
+            tapi_cfg_net_free_net(nets->nets + i);
         }
         free(nets->nets);
     }
@@ -1014,6 +1048,38 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
     }
 
     free(ip4_net_oid);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_delete_all(void)
+{
+    te_errno        rc;
+    unsigned int    n_nets;
+    cfg_handle     *net_handles = NULL;
+    unsigned int    i;
+
+    rc = cfg_find_pattern("/net:*", &n_nets, &net_handles);
+    if (rc != 0)
+    {
+        ERROR("cfg_find_pattern() failed %r", rc);
+        return rc;
+    }
+
+    for (i = 0; i < n_nets; ++i)
+    {
+        rc = cfg_del_instance(net_handles[i], TRUE);
+        if (rc != 0)
+        {
+            ERROR("Failed to delete net with handle %#08x: %r",
+                  net_handles[i], rc);
+            break;
+        }
+    }
+
+    free(net_handles);
 
     return rc;
 }
