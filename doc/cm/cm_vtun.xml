@@ -184,7 +184,7 @@
          Value: Empty on server side or
                 DNS name or IP address on client side -->
     <object oid="/agent/vtund/client/server"
-            access="read_write" type="string"/>
+            access="read_write" type="address"/>
 
     <!-- VTund connection server port
          Name: empty
