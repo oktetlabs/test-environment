@@ -50,7 +50,7 @@
 /** Default 'tty' session attribute value */
 #define VTUND_SESSION_TYPE_DEF      "tty"
 /** Default 'device' session attribute value */
-#define VTUND_DEVICE_DEF            "tunXX"
+#define VTUND_DEVICE_DEF            ""
 /** Default 'proto' session attribute value */
 #define VTUND_PROTO_DEF             "tcp"
 /** Default compression method */
@@ -166,6 +166,29 @@ vtund_server_session_find(unsigned int gid, const char *oid,
          p = p->links.tqe_next);
         
     return p;
+}
+
+static te_errno
+vtund_server_session_interface_get(unsigned int gid, const char *oid,
+                                   char *value, const char *vtund,
+                                   const char *server_port,
+                                   const char *session)
+{
+    vtund_server           *server;
+    vtund_server_session   *p;
+
+    p = vtund_server_session_find(gid, oid, vtund, server_port, session,
+                                  &server);
+    if (p == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    /* Ugly hard code */
+    if (server->running)
+        snprintf(value, RCF_MAX_VAL, "ppp0");
+    else
+        *value = '\0';
+
+    return 0;
 }
 
 static te_errno
@@ -445,8 +468,12 @@ vtund_server_get(unsigned int gid, const char *oid, char *value,
 static te_errno
 vtund_server_start(vtund_server *server)
 {
+    static uint8_t  id = 0;
+
     FILE                   *f;
     vtund_server_session   *p;
+    uint8_t                 id1;
+    uint8_t                 id2;
 
     f = fopen(server->cfg_file, "w");
     if (f == NULL)
@@ -467,8 +494,8 @@ vtund_server_start(vtund_server *server)
             "%s {\n"
             "  passwd %s;\n"
             "  type %s;\n"
-            "  device %s;\n"
             "  proto %s;\n"
+            "%s%s%s"
             "  compress %s%s%s;\n"
             "  encrypt %s;\n"
             "  keepalive %s;\n"
@@ -476,15 +503,19 @@ vtund_server_start(vtund_server *server)
             "  speed %s:%s;\n"
             "  multi %s;\n"
             "  up {\n"
-            "    ppp \"10.0.0.1:10.0.0.2 proxyarp noauth mtu 10000 mru 10000\";\n"
+            "    ppp \"10.0.0.%d:10.0.0.%d proxyarp noauth mtu 10000 mru 10000\";\n"
             "  };\n"
             "  down {\n"
             "  };\n"
             "}\n";
 
+        id1 = ++id; id2 = ++id;
         fprintf(f, vtund_server_session_fmt,
                 p->name, (p->password != NULL) ? p->password : p->name,
-                p->type, p->device, p->proto,
+                p->type, p->proto,
+                strlen(p->device) != 0 ? "  device " : "",
+                strlen(p->device) != 0 ? p->device : "",
+                strlen(p->device) != 0 ? ";\n" : "",
                 p->compress_method,
                 (strcmp(p->compress_method, "no") == 0) ? "" : ":",
                 (strcmp(p->compress_method, "no") == 0) ? "" : 
@@ -492,7 +523,8 @@ vtund_server_start(vtund_server *server)
                 (strcmp(p->encrypt, "0") == 0) ? "no" : "yes",
                 (strcmp(p->keepalive, "0") == 0) ? "no" : "yes",
                 (strcmp(p->stat, "0") == 0) ? "no" : "yes",
-                p->speed_to_client, p->speed_from_client, p->multi);
+                p->speed_to_client, p->speed_from_client, p->multi,
+                id1, id2);
     }
 
     fclose(f);
@@ -577,7 +609,7 @@ vtund_server_free(vtund_server *server)
     LIST_REMOVE(server, links);
 
     if (server->cfg_file != NULL)
-        unlink(server->cfg_file);
+        //unlink(server->cfg_file);
 
     free(server->cfg_file);
     free(server->port);
@@ -684,6 +716,25 @@ vtund_client_find(unsigned int gid, const char *oid,
          p = p->links.le_next);
         
     return p;
+}
+
+static te_errno
+vtund_client_interface_get(unsigned int gid, const char *oid, char *value,
+                           const char *vtund, const char *client)
+{
+    vtund_client   *p;
+
+    p = vtund_client_find(gid, oid, vtund, client);
+    if (p == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    /* Ugly hard code */
+    if (p->running)
+        snprintf(value, RCF_MAX_VAL, "ppp0");
+    else
+        *value = '\0';
+
+    return 0;
 }
 
 static te_errno
@@ -800,7 +851,7 @@ vtund_client_start(vtund_client *client)
     const char * const vtund_client_fmt =
         "%s {\n"
         "  passwd %s;\n"
-        "  device %s;\n"
+        "%s%s%s"
         "  timeout %s;\n"
         "  persist %s;\n"
         "  stat %s;\n"
@@ -834,7 +885,10 @@ vtund_client_start(vtund_client *client)
     fprintf(f, vtund_client_fmt,
             client->name,
             (client->password != NULL) ? client->password : client->name,
-            client->device, client->timeout, client->persist,
+            strlen(client->device) != 0 ? "  device " : "",
+            strlen(client->device) != 0 ? client->device : "",
+            strlen(client->device) != 0 ? ";\n" : "",
+            client->timeout, client->persist,
             (strcmp(client->stat, "0") == 0) ? "no" : "yes");
 
     (void)fclose(f);
@@ -935,7 +989,7 @@ vtund_client_free(vtund_client *client)
     LIST_REMOVE(client, links);
 
     if (client->cfg_file != NULL)
-        unlink(client->cfg_file);
+        //unlink(client->cfg_file);
 
     free(client->cfg_file);
     free(client->name);
@@ -1036,9 +1090,9 @@ vtund_client_list(unsigned int gid, const char *oid, char **list)
  * VTund server sessions configuration
  */
 
-RCF_PCH_CFG_NODE_RW(node_vtund_server_session_stat, "stat", NULL, NULL,
-                    vtund_server_session_attr_get,
-                    vtund_server_session_attr_set);
+RCF_PCH_CFG_NODE_RO(node_vtund_server_session_interface, "interface",
+                    NULL, NULL, vtund_server_session_interface_get);
+
 
 #define VTUND_SERVER_SESSION_ATTR(_name, _next) \
     RCF_PCH_CFG_NODE_RW(node_vtund_server_session_##_name, #_name,   \
@@ -1046,6 +1100,7 @@ RCF_PCH_CFG_NODE_RW(node_vtund_server_session_stat, "stat", NULL, NULL,
                         vtund_server_session_attr_get,               \
                         vtund_server_session_attr_set);
 
+VTUND_SERVER_SESSION_ATTR(stat, interface);
 VTUND_SERVER_SESSION_ATTR(multi, stat);
 VTUND_SERVER_SESSION_ATTR(speed_from_client, multi);
 VTUND_SERVER_SESSION_ATTR(speed_to_client, speed_from_client);
@@ -1080,8 +1135,8 @@ static rcf_pch_cfg_object node_vtund_server =
  * VTund clients configuration
  */
 
-RCF_PCH_CFG_NODE_RW(node_vtund_client_stat, "stat", NULL, NULL,
-                    vtund_client_attr_get, vtund_client_attr_set);
+RCF_PCH_CFG_NODE_RO(node_vtund_client_interface, "interface",
+                    NULL, NULL, vtund_client_interface_get);
 
 #define VTUND_CLIENT_ATTR(_name, _next) \
     RCF_PCH_CFG_NODE_RW(node_vtund_client_##_name, #_name,   \
@@ -1089,6 +1144,7 @@ RCF_PCH_CFG_NODE_RW(node_vtund_client_stat, "stat", NULL, NULL,
                         vtund_client_attr_get,               \
                         vtund_client_attr_set);
 
+VTUND_CLIENT_ATTR(stat, interface);
 VTUND_CLIENT_ATTR(persist, stat);
 VTUND_CLIENT_ATTR(timeout, persist);
 VTUND_CLIENT_ATTR(device, timeout);
