@@ -60,6 +60,7 @@ typedef enum rpc_signum {
     RPC_SIGTTIN, 
     RPC_SIGTTOU,
     RPC_SIGIO,
+    RPC_SIGUNKNOWN,
 } rpc_signum;
     
 #if HAVE_SIGNAL_H
@@ -103,6 +104,40 @@ signum_rpc2h(rpc_signum s)
 #endif
     }
 }
+
+/** Convert native signal number to the RPC one */
+static inline rpc_signum
+signum_h2rpc(int s)
+{
+    switch (s)
+    {
+        case 0: return 0;
+        H2RPC(SIGHUP);
+        H2RPC(SIGINT);
+        H2RPC(SIGQUIT);
+        H2RPC(SIGILL);
+        H2RPC(SIGABRT);
+        H2RPC(SIGFPE);
+        H2RPC(SIGKILL);
+        H2RPC(SIGSEGV);
+        H2RPC(SIGPIPE);
+        H2RPC(SIGALRM);
+        H2RPC(SIGTERM);
+        H2RPC(SIGUSR1);
+        H2RPC(SIGUSR2);
+        H2RPC(SIGCHLD);
+        H2RPC(SIGCONT);
+        H2RPC(SIGSTOP);
+        H2RPC(SIGTSTP);
+        H2RPC(SIGTTIN);
+        H2RPC(SIGTTOU);
+        H2RPC(SIGIO);
+        default: return RPC_SIGUNKNOWN;
+    }
+}
+
+
+
 #endif
 
 /** Convert RPC signal number to string */
