@@ -1140,15 +1140,14 @@ cfg_add_instance_local_str(const char *oid, cfg_handle *handle,
  *
  * @param    handle    object instance handle
  *
- * @return
- *     status code
+ * @return Status code
  */
-static int
+static te_errno
 kill_all(cfg_handle handle)
 {
-    int ret_val;
-    cfg_handle son;
-    cfg_handle brother;
+    te_errno    ret_val;
+    cfg_handle  son;
+    cfg_handle  brother;
 
     if (handle == CFG_HANDLE_INVALID)
     {
@@ -1168,6 +1167,7 @@ kill_all(cfg_handle handle)
             return TE_RC(TE_CONF_API, ret_val);
         }
     }
+
     ret_val = cfg_get_brother(handle, &brother);
     if (ret_val != 0)
     {
@@ -1181,21 +1181,22 @@ kill_all(cfg_handle handle)
             return TE_RC(TE_CONF_API, ret_val);
         }
     }
+
     ret_val = kill(handle);
     if (ret_val != 0 && TE_RC_GET_ERROR(ret_val) != TE_EACCES)
     {
         return TE_RC(TE_CONF_API, ret_val);
     }
+
     return 0;
 }
 
 /*
  * Delete an object instance
  *
- * @param    handle    object instance handle
+ * @param handle    Object instance handle
  *
- * @return
- *     status code
+ * @return Status code
  */
 static te_errno
 kill(cfg_handle handle)
@@ -1235,19 +1236,17 @@ kill(cfg_handle handle)
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
                                            msg, msg->len, msg, &len);
+    if (ret_val == 0) 
+        ret_val = msg->rc;
                                            
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
 #endif
 
-    if (ret_val == 0) 
+    if (ret_val == 0 &&  oidstr != NULL && 
+        strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0)
     {
-        ret_val = msg->rc;
-        if (ret_val == 0 &&  oidstr != NULL && 
-            strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0)
-        {
-            RING("Deleted %s", oidstr);
-        }
+        RING("Deleted %s", oidstr);
     }
     free(oidstr);
     return TE_RC(TE_CONF_API, ret_val);
@@ -1264,8 +1263,8 @@ kill(cfg_handle handle)
 te_errno
 cfg_del_instance(cfg_handle handle, te_bool with_children)
 {
-    cfg_handle son;
-    int ret_val;
+    cfg_handle  son;
+    te_errno    ret_val;
     
     if (handle == CFG_HANDLE_INVALID)
     {
@@ -1275,12 +1274,12 @@ cfg_del_instance(cfg_handle handle, te_bool with_children)
     if (with_children == TRUE)
     {
         ret_val = cfg_get_son(handle, &son);
-        if (son != CFG_HANDLE_INVALID)
+        if (ret_val == 0 && son != CFG_HANDLE_INVALID)
         {
             ret_val = kill_all(son);
-            if (ret_val != 0)
-                return TE_RC(TE_CONF_API, ret_val);
         }
+        if (ret_val != 0)
+            return TE_RC(TE_CONF_API, ret_val);
     }
     ret_val = kill(handle);
     return TE_RC(TE_CONF_API, ret_val);
