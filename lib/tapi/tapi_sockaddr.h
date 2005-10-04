@@ -43,6 +43,7 @@
 
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_errno.h"
 
 #ifdef __cplusplus
 extern "C" {
