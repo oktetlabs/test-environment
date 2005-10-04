@@ -170,6 +170,12 @@
     <object oid="/agent/vtund/server/session/multi"
             access="read_write" type="string"/>
 
+    <!-- Name of the created network interface
+         Name: empty
+         Value: Interface name -->
+    <object oid="/agent/vtund/server/session/interface"
+            access="read_only" type="string"/>
+
 
     <!-- ************** Client side configuration ************** -->
 
@@ -226,5 +232,11 @@
          Value: 0 - disable, 1 - enable -->
     <object oid="/agent/vtund/client/stats"
             access="read_write" type="integer"/>
+
+    <!-- Name of the created network interface
+         Name: empty
+         Value: Interface name -->
+    <object oid="/agent/vtund/client/interface"
+            access="read_only" type="string"/>
 
 </backup>
