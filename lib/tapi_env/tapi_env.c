@@ -1530,6 +1530,7 @@ node_is_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
 static te_bool
 check_node_type_vs_pcos(enum net_node_type node_type, tapi_env_host *host)
 {
+#if 0
     tapi_env_process *proc;
     tapi_env_pco     *pco;
     tapi_env_type     matched1;
@@ -1569,7 +1570,7 @@ check_node_type_vs_pcos(enum net_node_type node_type, tapi_env_host *host)
             }
         }
     }
-
+#endif
     return TRUE;
 }
 
