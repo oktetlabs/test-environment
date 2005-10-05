@@ -34,7 +34,7 @@
 #define _ISCSI_COMMON_H
 
 #include <stdint.h>
-#include <tad_iscsi_impl.h>
+
 
 #define ISCSI_WKP			3260	/* IANA's iSCSI WKP */
 #define ISCSI_WKP_STRING		"3260"	/* IANA's iSCSI WKP as string */
@@ -324,6 +324,14 @@
 
 /* SNACK for Error Recovery - SAI */
 #define SNACK					0x00000030
+
+/**
+ * Parameters for iSCSI target emulator thread
+ */
+typedef struct {
+    int send_recv_csap;
+    int reject;
+} iscsi_target_thread_params_t;
 
 extern iscsi_target_thread_params_t *iscsi_param;
 

@@ -8,10 +8,10 @@ AM_LDFLAGS=@TE_LDFLAGS@
 
 include_HEADERS=unh_target/common/target_negotiate.h \
                 unh_target/security/chap.h \
-		unh_target/security/misc_func.h \
-		unh_target/common/list.h \
-		unh_target/common/iscsi_common.h \
-		unh_target/common/text_param.h
+				unh_target/security/misc_func.h \
+				unh_target/common/list.h \
+				unh_target/common/iscsi_common.h \
+				unh_target/common/text_param.h
 
 noinst_HEADERS=tad_iscsi_impl.h 
 

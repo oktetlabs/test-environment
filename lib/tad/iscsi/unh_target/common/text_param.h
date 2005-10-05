@@ -35,7 +35,6 @@
 
 #include <semaphore.h>
 #include <stdint.h>
-#include <tad_iscsi_impl.h>
 
 /*
  * Define the Login/Text Parameters

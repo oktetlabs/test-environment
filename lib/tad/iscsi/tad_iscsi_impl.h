@@ -52,6 +52,8 @@
 
 #include <sys/queue.h>
 
+#include "iscsi_common.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -282,15 +284,6 @@ extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
  * @return amount of passed bytes or -1 on error
  */
 extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
-
-/**
- * Parameters for iSCSI target emulator thread
- */
-typedef struct {
-    int send_recv_csap;
-    int reject;
-} iscsi_target_thread_params_t;
-
 
 /**
  * Target thread function.
