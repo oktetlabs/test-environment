@@ -27,9 +27,10 @@
             <arg name="env" ref="env.peer2peer"/>
         </run>
 
-        <run>
+<!--        <run>
             <script name="rs_threads_sr"/>
             <arg name="env" ref="env.peer2peer"/>
         </run>
+-->
     </session>
 </package>
