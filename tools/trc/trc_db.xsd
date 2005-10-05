@@ -2,7 +2,7 @@
 
 <xsd:schema xml:lang="en" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="http://www.oktetlabs.ru/te/trc"
-            xmlns:trc="http://www.oktetlabs.ru/te/trc"
+            xmlns:te-trc="http://www.oktetlabs.ru/te/trc"
             version="$Id$">
 
     <xsd:annotation>
@@ -101,7 +101,7 @@
                             </xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="value" type="trc:result"
+                    <xsd:attribute name="value" type="te-trc:result"
                                    use="required">
                         <xsd:annotation>
                             <xsd:documentation>
@@ -127,8 +127,8 @@
                     </xsd:attribute>
                 </xsd:complexType>
             </xsd:element>
-            <xsd:element name="test" type="trc:test" minOccurs="0"
-                                                     maxOccurs="unbounded">
+            <xsd:element name="test" type="te-trc:test"
+                         minOccurs="0" maxOccurs="unbounded">
                 <xsd:annotation>
                     <xsd:documentation>
                         List of subtests of this iteration of the test
@@ -137,7 +137,7 @@
                 </xsd:annotation>
             </xsd:element>
         </xsd:sequence>
-        <xsd:attribute name="result" type="trc:result" use="required">
+        <xsd:attribute name="result" type="te-trc:result" use="required">
             <xsd:annotation>
                 <xsd:documentation>
                     Default expected result of the test iteration.
@@ -167,8 +167,8 @@
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
-            <xsd:element name="iter" type="trc:iter" minOccurs="1"
-                                             maxOccurs="unbounded">
+            <xsd:element name="iter" type="te-trc:iter"
+                         minOccurs="1" maxOccurs="unbounded">
                 <xsd:annotation>
                     <xsd:documentation>
                         Set of iterations of the test.
@@ -183,7 +183,7 @@
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="type" type="trc:testType" default="script">
+        <xsd:attribute name="type" type="te-trc:testType" default="script">
             <xsd:annotation>
                 <xsd:documentation>
                     Type of the test: package or script.
@@ -200,8 +200,8 @@
         </xsd:annotation>
         <xsd:complexType>
             <xsd:sequence>
-                <xsd:element name="test" type="trc:test" minOccurs="1"
-                                                 maxOccurs="unbounded">
+                <xsd:element name="test" type="te-trc:test"
+                             minOccurs="1" maxOccurs="unbounded">
                     <xsd:annotation>
                         <xsd:documentation>
                             Set of tests suites registered in the
