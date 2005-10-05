@@ -258,8 +258,7 @@ rcf_ch_call(struct rcf_comm_connection *handle,
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_start_task(struct rcf_comm_connection *handle,
-                  char *cbuf, size_t buflen, size_t answer_plen,
+rcf_ch_start_task(pid_t *pid,
                   int priority, const char *rtn, te_bool is_argv,
                   int argc, uint32_t *params)
 {
@@ -269,7 +268,22 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
     UNUSED(argc);
     UNUSED(params);
 
-    SEND_ANSWER("%d", TE_EOPNOTSUPP);
+    return TE_EOPNOTSUPP;
+}
+
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_start_task_thr(int *tid,
+                  int priority, const char *rtn, te_bool is_argv,
+                  int argc, uint32_t *params)
+{
+    UNUSED(priority);
+    UNUSED(rtn);
+    UNUSED(is_argv);
+    UNUSED(argc);
+    UNUSED(params);
+
+    return TE_EOPNOTSUPP;
 }
 
 
