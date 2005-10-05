@@ -264,7 +264,8 @@ ip4_confirm_pdu_cb(int csap_id, int layer, asn_value *pdu)
                 return TE_RC(TE_TAD_CSAP, rc);
             }
         }
-        rc = 0;
+        else
+            rc = 0;
     } 
 
     return TE_RC(TE_TAD_CSAP, rc);

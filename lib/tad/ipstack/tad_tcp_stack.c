@@ -59,6 +59,7 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
 #include "tad_ipstack_impl.h"
@@ -155,7 +156,9 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
     if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
     {
-        int acc_sock = accept(spec_data->socket, NULL, NULL);
+        int                       acc_sock;
+
+        acc_sock = accept(spec_data->socket, NULL, NULL);
 
         if (acc_sock < 0)
         {
@@ -164,7 +167,7 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         }
         INFO("%s(CSAP %d) TCP 'server', accepted socket %d", 
              __FUNCTION__, csap_descr->id, acc_sock);
-        *((int *)buf) = acc_sock;
+        *((int *)buf) = acc_sock; 
 
         return sizeof(int);
     } 
@@ -270,6 +273,7 @@ tcp_write_read_cb(csap_p csap_descr, int timeout,
 int 
 tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
+    RING("%s(CSAP %d) called");
 #if 0
     csap_p   csap_descr;          /**< csap description        */
 
@@ -564,7 +568,26 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
              spec_data->data_tag, NDN_TAG_TCP_DATA_SOCKET);
         if (spec_data->data_tag == NDN_TAG_TCP_DATA_SOCKET)
         {
+            struct sockaddr_storage   remote_sa;
+            socklen_t                 remote_len = sizeof(remote_sa);
+
             asn_read_int32(subval, &(spec_data->socket), "");
+
+            if (getpeername(spec_data->socket, SA(&remote_sa), &remote_len)
+                < 0)
+                WARN("%s(CSAP %d) getpeername(sock %d) failed, errno %d", 
+                     __FUNCTION__, csap_descr->id, 
+                     spec_data->socket, errno);
+            else
+            {
+                spec_data->remote_port = SIN(&remote_sa)->sin_port;
+                ip4_spec_data->remote_addr = SIN(&remote_sa)->sin_addr;
+
+                RING("init CSAP on accepted connection from %s:%d", 
+                     inet_ntoa(ip4_spec_data->remote_addr), 
+                     ntohs(spec_data->remote_port));
+            }
+
             /* nothing more to do */
             return 0;
         }
