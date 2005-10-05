@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<schema targetNamespace="http://www.oktetlabs.ru/proteos"
-        xmlns:proteos="http://www.oktetlabs.ru/proteos"
-        version="$Id: $"
-        xml:lang="en"
-        xmlns="http://www.w3.org/2001/XMLSchema">
+<xsd:schema xml:lang="en" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="http://www.oktetlabs.ru/te/trc"
+            xmlns:trc="http://www.oktetlabs.ru/te/trc"
+            version="$Id$">
 
-    <annotation>
-        <documentation>
+    <xsd:annotation>
+        <xsd:documentation>
             Test Environment
             XML schema for expected testing results data base
 
@@ -31,35 +30,194 @@
             Boston, MA  02111-1307  USA
 
             Author: Andrew Rybchenko &lt;Andrew.Rybchenko@oktetlabs.ru&gt;
-        </documentation>
-    </annotation>
+        </xsd:documentation>
+    </xsd:annotation>
 
-    <element name="test" type="Test"/>
+    <xsd:simpleType name="result">
+        <xsd:annotation>
+            <xsd:documentation>
+                Enumeration of test results which may be expected.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:token">
+            <xsd:enumeration value="PASSED"/>
+            <xsd:enumeration value="FAILED"/>
+            <xsd:enumeration value="SKIPPED"/>
+        </xsd:restriction>
+    </xsd:simpleType>
 
-    <complexType name="Test">
-        <sequence>
-            <element name="objective" type="string"/>
-            <element name="arg" minOccurs="0" maxOccurs="unbounded">
-                <simpleContent>
-                    <extension base="string">
-                        <attribute name="name" type="token"/>
-                    </extension>
-                </simpleContent>
-            </element>
-            <element name="notes" type="string"/>
-            <element name="test" type="Test" minOccurs="0"
-                                             maxOccurs="unbounded"/>
-        </sequence>
-        <attribute name="name" type="token" use="required"/>
-        <attribute name="package" type="token" default="false"/>
-        <attribute name="result" use="required">
-            <simpleType>
-                <restriction base="token">
-                    <enumeration value="pass"/>
-                    <enumeration value="fail"/>
-                </restriction>
-            </simpleType>
-        </attribute>
-    </complexType>
+    <xsd:simpleType name="testType">
+        <xsd:annotation>
+            <xsd:documentation>
+                Enumeration of test types.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:token">
+            <xsd:enumeration value="package"/>
+            <xsd:enumeration value="script"/>
+        </xsd:restriction>
+    </xsd:simpleType>
 
-</schema> 
+    <xsd:complexType name="iter">
+        <xsd:annotation>
+            <xsd:documentation>
+                Iteration of the test with specified arguments.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="arg" minOccurs="0" maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Unique set of arguments: name-value pairs.
+                    </xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                    <xsd:simpleContent>
+                        <xsd:extension base="xsd:string">
+                            <xsd:attribute name="name" type="xsd:token"/>
+                        </xsd:extension>
+                    </xsd:simpleContent>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="notes" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Notes specific for this iteration of the test.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="result" minOccurs="0" maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Set of tagged expected results of the iteration.
+                    </xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                    <xsd:attribute name="tag" type="xsd:token"
+                                   use="required">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Name of the tag.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="value" type="trc:result"
+                                   use="required">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Expected result for this tag.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="key" type="xsd:string" default="">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Key to the status of this iteration for
+                                this tag. E.g. BugZilla reference.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="notes" type="xsd:string"
+                                   default="">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Notes specific for this tag.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="test" type="trc:test" minOccurs="0"
+                                                     maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        List of subtests of this iteration of the test
+                        package.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="result" type="trc:result" use="required">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Default expected result of the test iteration.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="test">
+        <xsd:annotation>
+            <xsd:documentation>
+                Description of the test (package, script).
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="objective" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Objective of the test.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="notes" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Notes common for all iterations of the test.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="iter" type="trc:iter" minOccurs="1"
+                                             maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Set of iterations of the test.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:token" use="required">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Name of the test.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="type" type="trc:testType" default="script">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Type of the test: package or script.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:element name="trc_db">
+        <xsd:annotation>
+            <xsd:documentation>
+                Root element of the TRC database.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element name="test" type="trc:test" minOccurs="1"
+                                                 maxOccurs="unbounded">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Set of tests suites registered in the
+                            database.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+            </xsd:sequence>
+            <xsd:attribute name="version" type="xsd:string" use="required">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Version of the database.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:attribute>
+        </xsd:complexType>
+    </xsd:element>
+
+</xsd:schema> 
