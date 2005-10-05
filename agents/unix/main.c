@@ -443,9 +443,9 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
             /* Set the process group to allow killing all children */
             setpgid(getpid(), getpid());
             logfork_register_user(rtn);
-            execlp(rtn, rtn, params[0], params[1], params[2], params[3],
-                             params[4], params[5], params[6], params[7],
-                             params[8], params[9]);
+            execlp(rtn, rtn, 
+                   params[0], params[1], params[2], params[3], params[4], 
+                   params[5], params[6], params[7], params[8], params[9]);
             exit(0);
         }
         else if (pid < 0)
@@ -1306,14 +1306,18 @@ main(int argc, char **argv)
 
     sigemptyset(&rpcs_received_signals);
     
-#ifdef RCF_RPC
-    /* After execve */
-    if (strcmp(argv[1], "rpcserver") == 0)
+    if (strcmp(argv[1], "exec") == 0)
     {
-        tarpc_init(argc, argv);
+        void (* func)(int, char **) = rcf_ch_symbol_addr(argv[2], 1);
+        
+        if (func == NULL)
+        {
+            PRINT("Cannot resolve address of the function %s", argv[2]);
+            return 1;
+        }
+        func(argc - 3, argv + 3);
         return 0;
     }
-#endif
 
     if ((rc = log_init()) != 0)
     {

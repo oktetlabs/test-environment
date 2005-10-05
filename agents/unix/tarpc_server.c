@@ -383,9 +383,9 @@ TARPC_FUNC(pthread_cancel, {},
 void
 tarpc_init(int argc, char **argv)
 {
-    const char *name = argv[2];
-    const char *log_sock = argv[3];
-    const char *libname = argv[4];
+    const char *name = argv[0];
+    const char *log_sock = argv[1];
+    const char *libname = argv[2];
     
     int sock;
 
@@ -456,17 +456,18 @@ TARPC_FUNC(execve, {},
     sprintf(logsock, "%d", logfork_get_sock());
 
     args[0] = ta_execname;
-    args[1] = "rpcserver";
-    args[2] = strdup(in->name);
-    args[3] = logsock;
-    args[4] = dynamic_library_name;
-    args[5] = NULL;
+    args[1] = "exec";
+    args[2] = "tarpc_init";
+    args[3] = strdup(in->name);
+    args[4] = logsock;
+    args[5] = dynamic_library_name;
+    args[6] = NULL;
 
     /* Wait until main thread sends answer to non-blocking RPC call */
     sleep(1);
 
-    VERB("execve() args: %s, %s, %s, %s, %s",
-         args[0], args[1], args[2], args[3], args[4]);
+    VERB("execve() args: %s, %s, %s, %s, %s, %s",
+         args[0], args[1], args[2], args[3], args[4], args[5]);
     /* Call execve() */
     MAKE_CALL(rc = func_ptr((void *)ta_execname, args, environ));
     if (rc != 0)
