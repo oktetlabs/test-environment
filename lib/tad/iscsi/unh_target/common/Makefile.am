@@ -5,14 +5,15 @@
 srcdir=@srcdir@
 VPATH=@srcdir@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir) 
+AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir) \
+			-I$(srcdir)/../..
 
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
 noinst_HEADERS=list.h iscsi_common.h debug.h range.h \
                crc.h text_param.h target_negotiate.h \
                tcp_utilities.h lun_packing.h scsi_request.h \
-               my_memory.h
+			   linux-scsi.h my_memory.h
 
 noinst_LIBRARIES=libiscsi_common.a
 

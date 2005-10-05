@@ -1,15 +1,15 @@
 #ifndef _SCSI_SCSI_REQUEST_H
 #define _SCSI_SCSI_REQUEST_H
 
+#include <linux-scsi.h>
+
 struct request;
 struct scsi_cmnd;
 struct scsi_device;
 struct Scsi_Host;
 
-/** off-the-wall thunk value!!! */
-#define SCSI_SENSE_BUFFERSIZE 4096
-
 #define MAX_COMMAND_SIZE 16
+
 
 /*
  * This is essentially a slimmed down version of Scsi_Cmnd.  The point of
@@ -34,6 +34,7 @@ struct scsi_request {
 	unsigned sr_bufflen;	/* Size of data buffer */
 	void *sr_buffer;		/* Data buffer */
 	int sr_allowed;
+	enum scsi_data_direction sr_data_direction;
 	unsigned char sr_cmd_len;
 	unsigned char sr_cmnd[MAX_COMMAND_SIZE];
 	void (*sr_done) (struct scsi_cmnd *);	/* Mid-level done function */

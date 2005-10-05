@@ -285,5 +285,9 @@ extern int iscsi_rx_data (struct iscsi_conn *conn, struct iovec *iov, int niov, 
  * 	       < 0 if trouble
  */
 extern int iscsi_tx_data (struct iscsi_conn *conn, struct iovec *iov, int niov, int data);
+
+extern int iscsi_xmit_response(Target_Scsi_Cmnd * cmnd);
+extern int iscsi_rdy_to_xfer(Target_Scsi_Cmnd * cmnd);
+extern void iscsi_task_mgt_fn_done(Target_Scsi_Message * msg);
 				
 #endif

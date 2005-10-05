@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <scsi/scsi.h>
+#include "../common/linux-scsi.h"
 #include "../common/scsi_request.h"
 #include "../common/list.h"
 
@@ -46,6 +46,8 @@ typedef struct scsi_cmnd Scsi_Cmnd;
 typedef struct scsi_request Scsi_Request;
 typedef struct scsi_pointer Scsi_Pointer;
 /****/
+
+#define	SCSI_BLOCKSIZE	512
 
 #define	TWOBYTE		16
 #define	BYTE		8
@@ -124,7 +126,7 @@ typedef struct SM {
 	/* message: Task Management function received */
 	int		message;
 	/* device: device that received the Task Management function */
-	struct STD	*device;
+	struct Scsi_Target_Device	*device;
 	/* value: value relevant to the function, if any */
 	void		*value;
 } Target_Scsi_Message;
@@ -143,7 +145,7 @@ typedef struct SC {
 	/* dev_id: device id - front end id that received the command */
 	uint64_t		dev_id;
 	/* device: struct corresponding to device - may not be needed */
-	struct STD	*device;
+	struct Scsi_Target_Device	*device;
 	/* target_id: scsi id that received this command */
 	uint32_t		target_id;
 	 /* lun: which lun was supposed to get this command */
@@ -305,10 +307,10 @@ typedef struct STT
  * actually care about is the device id. This is defined by SAM as a 64 bit
  * entity. I should change this one pretty soon.
  */
-typedef struct STD
+typedef struct Scsi_Target_Device
 {
 	uint64_t		id;		/* device id */
-	struct STD	*next; 		/* next one in the list */
+	struct Scsi_Target_Device	*next; 		/* next one in the list */
 
 	/* dev_specific: my idea behind keeping this field was that this
 	 * should help the front end target driver store a pointer to a
@@ -322,7 +324,6 @@ typedef struct STD
 	 */
 	void		*dev_specific;
 
-	Scsi_Target_Template *template;	/* ptr to available functions */
 } Scsi_Target_Device;
 
 
@@ -343,34 +344,14 @@ typedef struct GTE
 	 */
 	int			command_id;
 	/*
-	 * thread_sem: semaphore to control the synchronization of
-	 * killing the thread
-	 */
-	sem_t	thread_sem;
-	/*
-	 * signal_sem: semaphore to control the killing of the signal
-	 * processing thread
-	 */
-	sem_t	signal_sem;
-	/*
-	 * sig_thr_sem: the signal thread sleeps on this semaphore
-	 */
-	sem_t	sig_thr_sem;
-	/*
 	 * signal_id: pointer to the signal_process_thread. Will be used
 	 * to kill the thread when necessary
 	 */
 	struct task_struct	*signal_id;
 	/*
-	 * target_sem: semaphore to control the mid-level thread synchronizn
-	 * i.e., when it sleeps and when it awakens
-	 */
-	sem_t	target_sem;
-	/*
 	 * thread_id: this task struct will store the pointer to the SCSI
 	 * Mid-level thread - useful to kill the thread when necessary
 	 */
-	struct task_struct	*thread_id;
 	/*
 	 * st_device_list: pointer to the list of devices. I have not added
 	 * any semaphores around this list simply because I do not expect
@@ -422,10 +403,13 @@ int	scsi_rx_data			(Target_Scsi_Cmnd*);
 int	scsi_release			(Target_Scsi_Cmnd*);
 
 
-Scsi_Target_Device* register_target_front_end 	(Scsi_Target_Template*);
+Scsi_Target_Device *make_target_front_end(void);
+
 Target_Scsi_Cmnd*	rx_cmnd		(Scsi_Target_Device*, uint64_t,
 					uint64_t, unsigned char*, int, int, int,
 					Target_Scsi_Cmnd**);
 Target_Scsi_Message*	rx_task_mgmt_fn	(Scsi_Target_Device*,int,void*);
+
+extern int scsi_target_init(void);
 
 #endif

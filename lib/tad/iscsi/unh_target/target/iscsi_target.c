@@ -565,7 +565,7 @@ iscsi_server_thread(void *param)
 		 */
 
 		/* start the tx thread */
-		if (kernel_thread(iscsi_tx_thread, (void *)new_conn, 0) < 0) {
+		if (kernel_thread(iscsi_tx_thr1ead, (void *)new_conn, 0) < 0) {
 			TRACE_ERROR("%s unable to create tx_thread\n", current->comm);
 			goto out1;
 		}

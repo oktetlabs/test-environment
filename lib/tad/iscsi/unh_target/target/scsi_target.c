@@ -39,18 +39,10 @@
 #include "../common/list.h"
 #include "../common/lun_packing.h"
 #include "../common/debug.h"
+#include <iscsi_common.h>
+#include <iscsi_target.h>
 
-
-/*
-# define DEBUG_REGISTER
-# define DEBUG_DEREGISTER
-# define DEBUG_RX_CMND
-# define DEBUG_SCSI_DONE
-# define DEBUG_ALLOCN_LEN
-# define DEBUG_RX_DATA
-# define DEBUG_HANDLE_CMD
-# define DEBUG_SCSI_THREAD
-*/
+#define FAKED_PAGE_SIZE 4096
 
 /* FUNCTION DECLARATIONS */
 
@@ -61,7 +53,6 @@ static int build_filp_table(void);
 static void close_filp_table(void);
 # endif
 
-# if defined (FILEIO) || defined (MEMORYIO)
 /* Bjorn Thordarson, 9-May-2004 */
 /*****
 static int get_inquiry_response(Scsi_Request *, int);
@@ -69,16 +60,13 @@ static int get_read_capacity_response(Scsi_Request *);
 *****/
 static int get_inquiry_response(Scsi_Request *, int, int);
 static int get_read_capacity_response(Target_Scsi_Cmnd *);
-# endif
 
-#if 0
+
 static int abort_notify(struct SM *);
 static void aen_notify(int, uint64_t);
-
 static int get_space(Scsi_Request *, int);
 static int hand_to_front_end(Target_Scsi_Cmnd *);
 static int handle_cmd(struct SC *);
-#endif
 
 # ifdef GENERICIO
 static int fill_sg_hdr(Target_Scsi_Cmnd *, int);
@@ -106,23 +94,16 @@ struct proc_dir_entry *proc_scsi_target;
 #define MAX_FILE_LUNS		4		/* number of default file luns per target */
 
 struct target_map_item	{
-#if defined(DISKIO)
-#if defined(TRUST_CDB)
 		struct list_head link;		/* for doubly linked target_map_list */
 		int			target_id;		/* ordinal number of this target in list */
-#endif
 		Scsi_Device	*the_device;	/* a "real" scsi device */
-#endif
-#if defined(FILEIO) || defined(GENERICIO)
 		struct file	*the_file;		/* simulating scsi device with this file */
 		uint32_t		max_blocks;		/* maximum number of blocks in this file */
 		uint32_t		bytes_per_block;/* number of bytes in each block in file */
 		char		file_name[MAX_FILE_NAME];
-#endif
 		int			in_use;			/* 1 if this item is defined, else 0 */
 	};
 
-#if 0
 	/* doubly-linked circular list, one entry for every iscsi target
 	 * known to the scsi subsystem on this platform
 	 */
@@ -130,10 +111,9 @@ struct target_map_item	{
 
 	/* matrix with one entry for every possible target and lun */
 	static struct target_map_item target_map[MAX_TARGETS][MAX_LUNS];
-#endif
 
 /* mutex to control access to target_map array */
-sem_t target_map_sem;
+pthread_mutex_t target_map_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * Scsi_Target_Device: Maximum number of "active" targets at any time
@@ -172,7 +152,6 @@ char device[BYTE];
 char device[BYTE * 8];
 # endif
 
-#if 0
 /*
  * scsi_target_init_module: Initializes the SCSI target module
  * FUNCTION: carry out all the initialization stuff that is needed
@@ -181,7 +160,7 @@ char device[BYTE * 8];
  * 	      else trouble
  */
 int
-scsi_target_init_module(void)
+scsi_target_init(void)
 {
 
 	/* initialize the global target_data struct */
@@ -189,56 +168,32 @@ scsi_target_init_module(void)
 	 * initialize the target semaphore as locked because you want
 	 * the thread to block after entering the first loop
 	 */
-	init_MUTEX_LOCKED(&target_data.target_sem);
-	init_MUTEX_LOCKED(&target_data.thread_sem);
-
-	target_data.msg_lock = SPIN_LOCK_UNLOCKED;
+	pthread_mutex_init(&target_data.msg_lock, NULL);
 	target_data.st_device_list = NULL;
 	target_data.st_target_template = NULL;
-	target_data.cmd_queue_lock = SPIN_LOCK_UNLOCKED;
+	pthread_mutex_init(&target_data.cmd_queue_lock, NULL);
 	INIT_LIST_HEAD(&target_data.cmd_queue);
 	target_data.msgq_start = NULL;
 	target_data.msgq_end = NULL;
 	target_data.command_id = 0;
-	target_data.thread_id = NULL;
 
-# ifdef MEMORYIO
-		{/* in memory mode, all luns in all targets are always in use */
-			uint32_t targ, lun;
-
-			for (targ = 0; targ < MAX_TARGETS; targ++) {
-				for (lun = 0; lun < MAX_LUNS; lun++) {
-					target_map[targ][lun].in_use = 1;
-				}
-			}
-			target_count = MAX_TARGETS * MAX_LUNS;
-		}
-# endif
-
-#if defined(DISKIO)
-#if defined(TRUST_CDB)
 	INIT_LIST_HEAD(&target_map_list);
-#endif
 
-	if (fill_scsi_device() == -1) {
-		TRACE_ERROR("scsi_target_init_module: fill_scsi_device returned an error\n");
-		return -1;
-	}
-#endif
 
-	/*
+#if 0
+    /*
 	 * create a list of devices that are available. This is a very
 	 * simplistic mapping of these devices. Each new device will
 	 * represent a new LUN. A new mapping function will have to
 	 * solve this problem - LATER - Ashish
 	 */
-# if defined(FILEIO) || defined(GENERICIO)
 	if (build_filp_table() < 0) {
 		TRACE_ERROR("scsi_target_init_module: build_filp_table returned an error\n");
 		return -1;
 	}
-# endif
+#endif
 
+    return 0;
 }
 
 /*
@@ -248,196 +203,22 @@ scsi_target_init_module(void)
  * OUTPUT: None allowed
  */
 void
-scsi_target_cleanup_module(void)
+scsi_target_cleanup(void)
 {
 
-#ifdef GENERICIO
-	/* close all the devices that you have opened */
-	close_filp_table();
-
-	if (target_data.signal_id != NULL) {
-		send_sig(SIGKILL, target_data.signal_id, 1);
-		down_interruptible(&target_data.signal_sem);
-	}
-#endif
-
-#ifdef FILEIO
-	close_filp_table();
-#endif
-
-#if defined(DISKIO) && defined(TRUST_CDB)
 	struct list_head *lptr, *next;
 	struct target_map_item *this_item;
-
+    
 	list_for_each_safe(lptr, next, &target_map_list) {
 		list_del(lptr);
 		this_item = list_entry(lptr, struct target_map_item, link);
-		kfree(this_item);
-	}
-#endif
-
-#ifdef CONFIG_PROC_FS
-	/* Don't show the /proc/scsi_target files */
-	remove_proc_entry("scsi_target/scsi_target", 0);
-	remove_proc_entry("scsi_target", 0);
-#endif
-
-	/* kill the thread */
-	if (target_data.thread_id != NULL) {
-		send_sig(SIGKILL, target_data.thread_id, 1);
-		down_interruptible(&target_data.thread_sem);
-	}
-	printk("scsi_target module Exiting\n");
-}
-#endif
-
-/*
- * register_target_template: to register a template with the midlevel
- * FUNCTION: to add the midlevel template to the linked list
- * INPUT: pointer to the template
- * OUTPUT: 0 for successful registration
- * 	   < 0 for trouble
- */
-int
-register_target_template(Scsi_Target_Template * the_template)
-{
-	int check;
-	Scsi_Target_Template *st_current;
-
-	if (!the_template) {		/* huh */
-		TRACE_ERROR
-			("register_target_template: Refusal to register a NULL template\n");
-		return -1;
+		free(this_item);
 	}
 
-	the_template->device_usage = 0;
-
-	/* check if the template is already in the list */
-	for (st_current = target_data.st_target_template; st_current != NULL;
-		 st_current = st_current->next) {
-		/* loop */
-# ifdef DEBUG_REGISTER
-		printk("Looping template\n");
-# endif
-		if (!strcmp(target_data.st_target_template->name, the_template->name))
-			break;
-	}
-
-	if (st_current != NULL) {	/* template is old */
-		TRACE_ERROR("register_target_template: Template already present\n");
-		return -1;
-	}
-
-	the_template->next = target_data.st_target_template;
-	target_data.st_target_template = st_current = the_template;
-
-# ifdef DEBUG_REGISTER
-	printk("module count increased\n");
-# endif
-
-	/* check if the device has a detect function */
-	if (st_current->detect) {
-		/* detect the device */
-		check = st_current->detect(the_template);
-		if (check < 0) {		/* error */
-			TRACE_ERROR("Hosts detected: %d .. removing template\n", check);
-			deregister_target_template(the_template);
-			return check;
-		} else {
-			TRACE(TRACE_VERBOSE, "Hosts detected: %d ... incrementing device usage\n", check);
-		}
-	} else {
-        TRACE_ERROR
-			("register_target_template: template does not have a detect function\n");
-		deregister_target_template(the_template);
-		return -1;
-	}
-
-	return 0;
 }
 
 /*
- * deregister_target_template:
- * FUNCTION: removal of the target template from the list
- * INPUT: pointer to STT
- * OUTPUT: 0 for successful deregistration
- * 	   else < 0 for trouble
- */
-int
-deregister_target_template(Scsi_Target_Template * the_template)
-{
-	Scsi_Target_Template *st_current, *st_prev = NULL;
-	Scsi_Target_Device *st_dev_curr;
-
-	st_dev_curr = target_data.st_device_list;
-
-	if (!the_template) {		/* huh */
-		TRACE_ERROR("deregister_target_template: Cannot remove a NULL template\n");
-		return -1;
-	}
-
-	/* remove devices that are using this template */
-	while (st_dev_curr && st_dev_curr->template
-		   && (st_dev_curr->template->device_usage > 0)) {
-		st_dev_curr = target_data.st_device_list;
-		while (st_dev_curr) {
-			if (!strcmp(st_dev_curr->template->name, the_template->name)) {
-# ifdef DEBUG_DEREGISTER
-				printk("dereg...tmpt: Match found for %s%d\n",
-					   st_dev_curr->template->name, (int) st_dev_curr->id);
-# endif
-				deregister_target_front_end(st_dev_curr);
-				st_dev_curr = target_data.st_device_list;	// Edward
-				break;
-			} else {
-				st_dev_curr = st_dev_curr->next;
-				if (st_dev_curr) {
-					TRACE_ERROR
-						("dereg..tmpt: Error ... no device found with the required template %s\n",
-						 the_template->name);
-					return -1;
-				}
-			}
-		}
-	}
-
-	/* remove template from device list */
-	for (st_current = target_data.st_target_template; st_current != NULL;
-		 st_current = st_current->next) {
-# ifdef DEBUG_DEREGISTER
-		printk("Looping dereg template\n");
-# endif
-		if (!strcmp(st_current->name, the_template->name)) {
-# ifdef DEBUG_DEREGISTER
-			/* match found */
-			printk("deregister_template: template match found\n");
-# endif
-			/* check if there are any devices using this template */
-			if (!st_current->device_usage) {
-				/* this template can be removed */
-				if (!st_prev)	/* First element */
-					target_data.st_target_template =
-						target_data.st_target_template->next;
-				else			/* middle of the road */
-					st_prev->next = st_current->next;
-				break;
-			} else {			/* A device still uses the template */
-				TRACE_ERROR("scsi_target: Non-zero device usage ouch !!\n");
-				return -1;	/* should never get here */
-			}
-		} else
-			st_prev = st_current;
-	}
-
-# ifdef DEBUG_DEREGISTER
-	printk("Decreasing module count\n");
-# endif
-
-	return 0;
-}
-
-/*
- * register_target_front_end:
+ * make_target_front_end:
  * FUNCTION: 	to register the individual device with the mid-level
  * 		to allocate the device an device id etc
  * 		start a thread that will be responsible for the target
@@ -446,26 +227,16 @@ deregister_target_template(Scsi_Target_Template * the_template)
  * 		else NULL if there is trouble
  */
 Scsi_Target_Device *
-register_target_front_end(Scsi_Target_Template * tmpt)
+make_target_front_end(void)
 {
 	Scsi_Target_Device *the_device;
 
-	the_device =
-		(Scsi_Target_Device *)malloc(sizeof(Scsi_Target_Device));
+	the_device = malloc(sizeof(Scsi_Target_Device));
 	if (!the_device) {
         TRACE_ERROR
 			("register_target_front_end: Could not allocate space for the device\n");
 		return NULL;
 	}
-
-	if (!tmpt) {
-        TRACE_ERROR
-			("register_target_front_end: Cannot register NULL device template !!!\n");
-		return NULL;
-	}
-
-	/* fill up the struct */
-	the_device->template = tmpt;
 
 	the_device->next = target_data.st_device_list;
 
@@ -476,21 +247,11 @@ register_target_front_end(Scsi_Target_Template * tmpt)
 
 	target_data.st_device_list = the_device;
 
-# ifdef DEBUG_DEREGISTER
-	printk("reg..end: device %s%d added\n", tmpt->name, (int) the_device->id);
-# endif
-
-	/* Added by naren for proc support */
-#ifdef CONFIG_PROC_FS
-	build_proc_target_dir_entries(the_device);
-#endif
-
-	tmpt->device_usage++;
 	return the_device;
 }
 
 /*
- * deregister_target_front_end:
+ * destroy_target_front_end:
  * FUNCTION:	to allow removal of the individual device from the
  * 		midlevel
  * 		free up the device id number for future use
@@ -504,7 +265,7 @@ register_target_front_end(Scsi_Target_Template * tmpt)
  * 		else < 0 if there is trouble
  */
 int
-deregister_target_front_end(Scsi_Target_Device * the_device)
+destroy_target_front_end(Scsi_Target_Device * the_device)
 {
 	Scsi_Target_Device *curr, *previous = NULL;
 	Target_Scsi_Cmnd *cmnd;
@@ -518,10 +279,6 @@ deregister_target_front_end(Scsi_Target_Device * the_device)
 		return -1;
 	}
 
-	if (!the_device->template->device_usage) {
-        TRACE_ERROR
-			("dereg...end: 0 device usage and a device to deregister ... a contradiction me thinks\n");
-	}
 
 	/*
 	 * go through the device list till we get to this device and
@@ -529,9 +286,6 @@ deregister_target_front_end(Scsi_Target_Device * the_device)
 	 */
 	for (curr = target_data.st_device_list; curr != NULL; curr = curr->next) {
 		if (curr == the_device) {
-# ifdef DEBUG_DEREGISTER
-			printk("dereg..end: We have a match\n");
-# endif
 			break;
 		} else
 			previous = curr;
@@ -550,12 +304,9 @@ deregister_target_front_end(Scsi_Target_Device * the_device)
 		target_data.st_device_list = curr->next;
 
 	/* release the device */
-	if (curr->template->release) {
-		if (curr->template->release(curr)) {
-			TRACE_ERROR("dereg...end: release of device failed\n");
-			return -1;
-		}
-	}
+#if 0
+    iscsi_release(curr);
+#endif
 
 #if 0
 	/* mark all commands corresponding to this device for dequeuing */
@@ -572,7 +323,6 @@ deregister_target_front_end(Scsi_Target_Device * the_device)
 #endif
 
 	/* wake up scsi_target_process_thread so it can dequeue stuff */
-    sem_post(&target_data.target_sem);
     
 #if 0
 	if (atomic_read(&target_data.target_sem.count) <= 0) {
@@ -580,12 +330,8 @@ deregister_target_front_end(Scsi_Target_Device * the_device)
 	}
 #endif
 
-	/* reduce device usage */
-	curr->template->device_usage--;
-
 	/* freeing things */
 	free(curr);
-	curr = NULL;
 
 	return 0;
 }
@@ -742,13 +488,12 @@ signal_process_thread(void *param)
 }
 # endif
 
-#if 0
 /*
  * scsi_target_process_thread: this is the mid-level target thread that
  * is responsible for processing commands.
  */
 void
-scsi_target_process_thread(void *param)
+scsi_target_process(void)
 {
 	int i, found;
 # ifdef GENERICIO
@@ -758,7 +503,6 @@ scsi_target_process_thread(void *param)
 	struct scatterlist *st_list;
 	Target_Scsi_Cmnd *cmd_curr;
 	Target_Scsi_Message *msg;
-	unsigned long flags;
 	uint32_t lun;
 # ifdef DISKIO
 	Scsi_Device *this_device = NULL;
@@ -766,403 +510,252 @@ scsi_target_process_thread(void *param)
 # endif
 	struct list_head *lptr, *next;
 
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-	daemonize(
-#else
-	daemonize();
-	strcpy(current->comm,
-#endif
-		   "target_thread");
-
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 4, 18)
-	/*
-	 * Arne Redlich, agr1@users.sourceforge.net:
-	 * This prevents the target thread from becoming a zombie after it exits.
-	 */
-	reparent_to_init();
-#endif
-
-	siginitsetinv(&current->blocked, SHUTDOWN_SIGS);
-
-	/* mark that this target thread is alive */
-	target_data.thread_id = current;
-
-	unlock_kernel();
-
-	printk("%s Starting pid %d\n", current->comm, current->pid);
-
-	while (1) {
-		if (down_interruptible(&target_data.target_sem))
-			goto scsi_thread_out;
-
-# ifdef DEBUG_SCSI_THREAD
-		printk("%s awake (%p)\n", current->comm, current);
-# endif
-
-		/* is message received */
-		while (target_data.msgq_start) {
-			/* house keeping */
-			spin_lock_irqsave(&target_data.msg_lock, flags);
-			msg = target_data.msgq_start;
-			target_data.msgq_start = msg->next;
-			if (!target_data.msgq_start)
-				target_data.msgq_end = NULL;
-			spin_unlock_irqrestore(&target_data.msg_lock, flags);
+    /* is message received */
+    while (target_data.msgq_start) {
+        /* house keeping */
+        pthread_mutex_lock(&target_data.msg_lock);
+        msg = target_data.msgq_start;
+        target_data.msgq_start = msg->next;
+        if (!target_data.msgq_start)
+            target_data.msgq_end = NULL;
+        pthread_mutex_unlock(&target_data.msg_lock);
 
 			/* execute function */
-			switch (msg->message) {
+        switch (msg->message) 
+        {
 			case TMF_ABORT_TASK:
-				{
-					Target_Scsi_Cmnd *cmnd;
-					cmnd = (Target_Scsi_Cmnd *)msg->value;
-					found = 0;
-					spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
-					list_for_each_entry(cmd_curr,&target_data.cmd_queue,link) {
-						if ((cmd_curr->id == cmnd->id)
-							&& (cmd_curr->lun == cmnd->lun)) {
-							found = 1;
-							break;
-						}
-					}
-					spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
+            {
+                Target_Scsi_Cmnd *cmnd;
+                cmnd = (Target_Scsi_Cmnd *)msg->value;
+                found = 0;
+                pthread_mutex_lock(&target_data.cmd_queue_lock);
+                list_for_each_entry(cmd_curr,&target_data.cmd_queue,link) {
+                    if ((cmd_curr->id == cmnd->id)
+                        && (cmd_curr->lun == cmnd->lun)) {
+                        found = 1;
+                        break;
+                    }
+                }
+                pthread_mutex_unlock(&target_data.cmd_queue_lock);
 
-					if (found) {
-						cmd_curr->abort_code = CMND_ABORTED;
-						//if (cmd_curr->state != ST_PROCESSING)
-						//	cmd_curr->state = ST_DEQUEUE;
-						if (abort_notify(msg)) {
-							printk("%s err aborting command with id %d lun %d\n",
-								   current->comm, cmd_curr->id, cmd_curr->lun);
-							goto scsi_thread_out;
-						}
-					} else
-						printk("%s no command with id %d lun %d in list\n",
-								current->comm, cmnd->id, cmnd->lun);
-					break;
-				}
-
+                if (found) {
+                    cmd_curr->abort_code = CMND_ABORTED;
+                    //if (cmd_curr->state != ST_PROCESSING)
+                    //	cmd_curr->state = ST_DEQUEUE;
+                    if (abort_notify(msg)) {
+                        TRACE_ERROR("err aborting command with id %d lun %d\n",
+                                    cmd_curr->id, cmd_curr->lun);
+                        goto scsi_thread_out;
+                    }
+                } else
+                    TRACE_ERROR("no command with id %d lun %d in list\n",
+                                cmnd->id, cmnd->lun);
+                break;
+            }
+            
 			case TMF_LUN_RESET:
-				{
-					/* BAD BAD REALLY BAD */
-					uint64_t lun = *((uint64_t *)msg->value);
-
-					spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
-					list_for_each_entry(cmd_curr,&target_data.cmd_queue,link) {
-						if (cmd_curr->lun == lun)
-							scsi_release(cmd_curr);
-					}
-					spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
-
-					aen_notify(msg->message, lun);
-					break;
-				}
-
+            {
+                /* BAD BAD REALLY BAD */
+                uint64_t lun = *((uint64_t *)msg->value);
+                
+                pthread_mutex_lock(&target_data.cmd_queue_lock);
+                list_for_each_entry(cmd_curr,&target_data.cmd_queue,link) {
+                    if (cmd_curr->lun == lun)
+                        scsi_release(cmd_curr);
+                }
+                pthread_mutex_unlock(&target_data.cmd_queue_lock);
+                
+                aen_notify(msg->message, lun);
+                break;
+            }
+            
 			case TMF_TARGET_WARM_RESET:
 			case TMF_TARGET_COLD_RESET:
-				{
-					spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
-					list_for_each_entry(cmd_curr,&target_data.cmd_queue,link) {
-						scsi_release(cmd_curr);
-					}
-					spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
-
-					aen_notify(msg->message, 0);
+            {
+                pthread_mutex_lock(&target_data.cmd_queue_lock);
+                list_for_each_entry(cmd_curr,&target_data.cmd_queue,link) {
+                    scsi_release(cmd_curr);
+                }
+                pthread_mutex_unlock(&target_data.cmd_queue_lock);
+                
+                aen_notify(msg->message, 0);
 					break;
-				}
-
+            }
+            
 			default:
-				{
-					printk("%s Bad message code %d\n", current->comm,
-							msg->message);
-					break;
-				}
-			}	/* switch */
+            {
+                TRACE_ERROR("Bad message code %d\n",
+                            msg->message);
+                break;
+            }
+        }	/* switch */
 
-			kfree(msg);
-			msg = NULL;
-		}
+        free(msg);
+        msg = NULL;
+    }
 
-# ifdef DEBUG_SCSI_THREAD
-		printk("%s Searching command queue\n", current->comm);
-# endif
-		/* There is a harmless race here.
-		 * This loop is the ONLY place a command can be removed from the queue.
-		 * So once we get lptr, it cannot be made invalid elsewhere.
-		 * However, if a new element is added to the end of the queue
-		 * (the ONLY place new elements are ever added) as lptr is being
-		 * picked up or as next is being picked up or after next has been
-		 * picked up, then we might not see this new element on the
-		 * next iteration of this loop.
-		 * That should not cause a problem, because the ONLY place a new
-		 * command can be added to the queue is in rx_cmnd(), and after
-		 * adding the new command to the queue, rx_cmnd() also does an "up"
-		 * on target_sem, which will restart the outer loop of this thread
-		 * and we will be back into this loop again in no time.
-		 * Why do we say this race is harmless?
-		 * The loop initialization generated by list_for_each_safe:
-		 *		lptr = (&target_data.cmd_queue)->next
-		 * and the code:
-		 *		next = lptr->next;
-		 * will always work properly, because list_add_tail() always sets
-		 * the referenced "next" field last when adding a new element to
-		 * the queue (i.e., AFTER all other pointer fields are set up
-		 * correctly).   Therefore, there is a race with list_add_tail(),
-		 * but we always get a pointer to a valid structure (either the head
-		 * of the list, in which case we don't process the new element, or
-		 * the new element which is completely filled in, in which case we
-		 * do process the new element).
-		 */
-		list_for_each_safe(lptr, next, &target_data.cmd_queue) {
-# ifdef DEBUG_SCSI_THREAD
-			printk("%s lptr %p next %p\n", current->comm, lptr, next);
-# endif
-			cmd_curr = list_entry(lptr, Target_Scsi_Cmnd, link);
-# ifdef DEBUG_SCSI_THREAD
-			printk("%s cmd_curr %p\n", current->comm, cmd_curr);
-# endif
-# ifdef DEBUG_SCSI_THREAD
-			printk("%s command %p id %d status %d\n", current->comm, cmd_curr,
-				   cmd_curr->id, cmd_curr->state);
-# endif
-			/* is command received */
-			if (cmd_curr->state == ST_NEW_CMND) {
-# ifdef DEBUG_SCSI_THREAD
-				printk("%s New command %p id: %d\n", current->comm, cmd_curr,
-					   cmd_curr->id);
-# endif
-
-				lun = cmd_curr->lun;
-
-#if defined(DISKIO)
-				if (!down_interruptible(&target_map_sem)) {
-#if defined(TRUST_CDB)
-					list_for_each_entry(this_item, &target_map_list, link) {
-						if (this_item->target_id == cmd_curr->target_id
-							&& this_item->in_use) {
-							this_device = this_item->the_device;
-							break;
-						}
-					}
-#else
-					if (cmd_curr->target_id < MAX_TARGETS) {
-						if (lun < MAX_LUNS) {
-							this_item = &target_map[cmd_curr->target_id][lun];
-							if (this_item->in_use) {
-								this_device = this_item->the_device;
-							}
-						}
-
-						if (!this_device) {
-							this_item = &target_map[cmd_curr->target_id][0];
-							if (this_item->in_use) {
-								printk("%s No lun %u for target id %u, "
-									   "using lun 0 instead\n",
-									   current->comm, lun, cmd_curr->target_id);
-								this_device = this_item->the_device;
-								lun = 0;
-							}
-						}
-					}
-#endif
-					up(&target_map_sem);
-				}
-
-				if (this_device) {
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-					cmd_curr->req = scsi_allocate_request(this_device, GFP_ATOMIC);
-#else
-					cmd_curr->req = scsi_allocate_request(this_device);
-#endif
-				} else {
-					printk("%s No device for lun %u target id %u\n",
-							current->comm, lun, cmd_curr->target_id);
-					goto scsi_thread_out;
-				}
-#else
-				cmd_curr->req = (Scsi_Request *)kmalloc(sizeof(Scsi_Request),
-													GFP_KERNEL | GFP_ATOMIC);
-
-				if (cmd_curr->req) {
-					memset(cmd_curr->req, 0, sizeof(Scsi_Request));
-
-					if (lun >= MAX_LUNS)
-						cmd_curr->req->sr_allowed = 1;
-				}
-#endif
-
-				if (!cmd_curr->req) {
-					printk("%s no space for Scsi_Request\n", current->comm);
-					goto scsi_thread_out;
-				}
-
-				memcpy(cmd_curr->req->sr_cmnd, cmd_curr->cmd, cmd_curr->len);
-
-				if (handle_cmd(cmd_curr)) {
-					printk("%s error in handle_cmd for command %d\n",
-						   current->comm, cmd_curr->id);
-					/* is bailing out a good idea? */
-					goto scsi_thread_out;
-				}
-			}
-
-			/* is a command pending */
-			if (cmd_curr->state == ST_PENDING) {
-# ifdef DEBUG_SCSI_THREAD
-				printk("%s command %p id %d pending\n", current->comm,
-						cmd_curr, cmd_curr->id);
-# endif
-				/* call the rdy_to_xfer function */
-				if (hand_to_front_end(cmd_curr)) {
-					printk("%s error in hand_to_front_end for command %d\n",
-						   current->comm, cmd_curr->id);
-					goto scsi_thread_out;
-				}
-			}
-
-			/* is data received */
-			if (cmd_curr->state == ST_TO_PROCESS) {
-				/*
-				 * we have received the data - does this
-				 * go off to handle_cmd again ?
-				 */
-# ifdef DEBUG_SCSI_THREAD
-				printk("%s command %p id %d with data received\n",
-					   current->comm, cmd_curr, cmd_curr->id);
-# endif
-				if (handle_cmd(cmd_curr)) {
-					printk("%s error in handle_cmd for command %d\n",
-						   current->comm, cmd_curr->id);
-					/* is bailing out a good idea? */
-					goto scsi_thread_out;
-				}
-			}
+    /* There is a harmless race here.
+     * This loop is the ONLY place a command can be removed from the queue.
+     * So once we get lptr, it cannot be made invalid elsewhere.
+     * However, if a new element is added to the end of the queue
+     * (the ONLY place new elements are ever added) as lptr is being
+     * picked up or as next is being picked up or after next has been
+     * picked up, then we might not see this new element on the
+     * next iteration of this loop.
+     * That should not cause a problem, because the ONLY place a new
+     * command can be added to the queue is in rx_cmnd(), and after
+     * adding the new command to the queue, rx_cmnd() also does an "up"
+     * on target_sem, which will restart the outer loop of this thread
+     * and we will be back into this loop again in no time.
+     * Why do we say this race is harmless?
+     * The loop initialization generated by list_for_each_safe:
+     *		lptr = (&target_data.cmd_queue)->next
+     * and the code:
+     *		next = lptr->next;
+     * will always work properly, because list_add_tail() always sets
+     * the referenced "next" field last when adding a new element to
+     * the queue (i.e., AFTER all other pointer fields are set up
+     * correctly).   Therefore, there is a race with list_add_tail(),
+     * but we always get a pointer to a valid structure (either the head
+     * of the list, in which case we don't process the new element, or
+     * the new element which is completely filled in, in which case we
+     * do process the new element).
+     */
+    list_for_each_safe(lptr, next, &target_data.cmd_queue) {
+        cmd_curr = list_entry(lptr, Target_Scsi_Cmnd, link);
+        /* is command received */
+        if (cmd_curr->state == ST_NEW_CMND) 
+        {
+            lun = cmd_curr->lun;
+            
+            cmd_curr->req = (Scsi_Request *)malloc(sizeof(Scsi_Request));
+            
+            if (cmd_curr->req) 
+            {
+                memset(cmd_curr->req, 0, sizeof(Scsi_Request));
+                
+                if (lun >= MAX_LUNS)
+                    cmd_curr->req->sr_allowed = 1;
+            }
+            
+            if (!cmd_curr->req) 
+            {
+                TRACE_ERROR("no space for Scsi_Request\n");
+                goto scsi_thread_out;
+            }
+            
+            memcpy(cmd_curr->req->sr_cmnd, cmd_curr->cmd, cmd_curr->len);
+            
+            if (handle_cmd(cmd_curr)) 
+            {
+                TRACE_ERROR("error in handle_cmd for command %d\n",
+                            cmd_curr->id);
+                /* is bailing out a good idea? */
+                goto scsi_thread_out;
+            }
+        }
+        /* is a command pending */
+        if (cmd_curr->state == ST_PENDING) {
+            /* call the rdy_to_xfer function */
+            if (hand_to_front_end(cmd_curr)) {
+                TRACE_ERROR("error in hand_to_front_end for command %d\n",
+                       cmd_curr->id);
+                goto scsi_thread_out;
+            }
+        }
+        /* is data received */
+        if (cmd_curr->state == ST_TO_PROCESS) {
+            /*
+             * we have received the data - does this
+             * go off to handle_cmd again ?
+             */
+            if (handle_cmd(cmd_curr)) {
+                TRACE_ERROR("error in handle_cmd for command %d\n",
+                       cmd_curr->id);
+                /* is bailing out a good idea? */
+                goto scsi_thread_out;
+            }
+        }
 # ifdef GENERICIO
-			/* is command processed */
-			if (cmd_curr->state == ST_PROCESSED) {
+    /* is command processed */
+        if (cmd_curr->state == ST_PROCESSED) {
 # ifdef DEBUG_SCSI_THREAD
-				printk("%s command %p id %d processed\n",
-						current->comm, cmd_curr, cmd_curr->id);
+            printk("%s command %p id %d processed\n",
+                   current->comm, cmd_curr, cmd_curr->id);
 # endif
-				/* we have some reading to do */
-				dev_file = cmd_curr->fd;
-				if ((dev_file) && (dev_file->f_op) && (dev_file->f_op->read)) {
-					old_fs = get_fs();
-					set_fs(get_ds());
-					i = dev_file->f_op->read(dev_file,
-											 (uint8_t *) cmd_curr->sg,
-											 sizeof(sg_io_hdr_t),
-											 &dev_file->f_pos);
-					set_fs(old_fs);
-					if ((i < 0) && (i != -EAGAIN)) {
-						printk("%s read error %d\n", current->comm, i);
-						goto scsi_thread_out;
-					}
-					cmd_curr->state = ST_DONE;
-				}
-			}
+            /* we have some reading to do */
+            dev_file = cmd_curr->fd;
+            if ((dev_file) && (dev_file->f_op) && (dev_file->f_op->read)) {
+                old_fs = get_fs();
+                set_fs(get_ds());
+            i = dev_file->f_op->read(dev_file,
+                                     (uint8_t *) cmd_curr->sg,
+                                     sizeof(sg_io_hdr_t),
+                                     &dev_file->f_pos);
+            set_fs(old_fs);
+            if ((i < 0) && (i != -EAGAIN)) {
+                printk("%s read error %d\n", current->comm, i);
+                goto scsi_thread_out;
+            }
+            cmd_curr->state = ST_DONE;
+            }
+        }
 # endif
-			/* is command done */
-			if (cmd_curr->state == ST_DONE) {
-				/*
-				 * hand it off to the front end driver
-				 * to transmit
-				 */
-
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-#ifdef DISKIO
-				/*
-				 * for DISKIO under K26, should reassign sg_dma_address here
-				 */
-				for (i = 0; i < cmd_curr->req->sr_use_sg; i++) {
-					sg_dma_address(((struct scatterlist *)cmd_curr->req->sr_buffer) + i) =
-						(dma_addr_t)page_address(((struct scatterlist *)cmd_curr->req->sr_buffer)[i].page);
-					((struct scatterlist *)cmd_curr->req->sr_buffer)[i].offset = (unsigned long)
-						sg_dma_address(((struct scatterlist *)cmd_curr->req->sr_buffer) + i) & ~PAGE_MASK;
-				}
-#endif
-#endif
-
-# ifdef DEBUG_SCSI_THREAD
-				printk("%s command %p id %d done\n", current->comm, cmd_curr,
-					   cmd_curr->id);
-# endif
-				if (hand_to_front_end(cmd_curr)) {
-					printk("%s error in hand_to_front_end for command %d\n",
-						   current->comm, cmd_curr->id);
-					goto scsi_thread_out;
-				}
-			}
-
-			/* can command be dequeued */
-			if (cmd_curr->state == ST_DEQUEUE) {
-				/*
-				 * dequeue the command and free it
-				 */
-# ifdef DEBUG_SCSI_THREAD
-				printk("%s command %p id %d - to dequeue req %p\n",
-						current->comm, cmd_curr, cmd_curr->id, cmd_curr->req);
-# endif
+        /* is command done */
+        if (cmd_curr->state == ST_DONE) {
+        /*
+         * hand it off to the front end driver
+         * to transmit
+         */
+        
+            if (hand_to_front_end(cmd_curr)) {
+                TRACE_ERROR("error in hand_to_front_end for command %d\n",
+                            cmd_curr->id);
+                goto scsi_thread_out;
+            }
+        }
+    
+        /* can command be dequeued */
+        if (cmd_curr->state == ST_DEQUEUE) {
+            /*
+             * dequeue the command and free it
+             */
 # ifdef GENERICIO
-				/* free up the SCSI generic stuff */
-				if (cmd_curr->sg->dxferp)
-					kfree(cmd_curr->sg->dxferp);
-				kfree(cmd_curr->sg->sbp);
-				kfree(cmd_curr->sg);
+            /* free up the SCSI generic stuff */
+            if (cmd_curr->sg->dxferp)
+                kfree(cmd_curr->sg->dxferp);
+            kfree(cmd_curr->sg->sbp);
+            kfree(cmd_curr->sg);
 # endif
-				if (cmd_curr->req) {
-					/* free up pages */
-					st_list = (struct scatterlist *) cmd_curr->req->sr_buffer;
-					for (i = 0; i < cmd_curr->req->sr_use_sg; i++) {
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-						kunmap(st_list[i].page);
-						__free_page(st_list[i].page);
-#else
-						free_page((long int) st_list[i].address);
-#endif
-					}
-
-# ifdef DEBUG_SCSI_THREAD
-					printk("%s command %p id %d - freed %d pages\n",
-							current->comm, cmd_curr, cmd_curr->id, i);
-# endif
-
-					/* free up scatterlist */
-					if (cmd_curr->req->sr_use_sg)
-						kfree(st_list);
-
-					/* free up Scsi_Request */
-# ifdef DISKIO
-					scsi_release_request(cmd_curr->req);
-# else
-					kfree(cmd_curr->req);
-# endif
-				}
-
-				/* dequeue and free up Target_Scsi_Cmnd */
-				spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
-				list_del(lptr);
-				spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
-				kfree(cmd_curr);
-# ifdef DEBUG_SCSI_THREAD
-				printk("%s command %p - all free\n", current->comm, cmd_curr);
-# endif
-			}
-		}
+            if (cmd_curr->req) {
+                /* free up pages */
+                st_list = (struct scatterlist *) cmd_curr->req->sr_buffer;
+                for (i = 0; i < cmd_curr->req->sr_use_sg; i++) {
+                    free(st_list[i].address);
+            }
+                
+                /* free up scatterlist */
+                if (cmd_curr->req->sr_use_sg)
+                    free(st_list);
+                
+                /* free up Scsi_Request */
+                free(cmd_curr->req);
+            }
+            
+            /* dequeue and free up Target_Scsi_Cmnd */
+            pthread_mutex_lock(&target_data.cmd_queue_lock);
+            list_del(lptr);
+            pthread_mutex_unlock(&target_data.cmd_queue_lock);
+            free(cmd_curr);
+        }
 
 # ifdef DEBUG_SCSI_THREAD
 		printk("%s going back to sleep again\n", current->comm);
 # endif
 	}
 scsi_thread_out:
-	up(&target_data.thread_sem);
-	printk("%s Exiting pid %d\n", current->comm, current->pid);
 	return;
 }
-#endif /* 0 */
 
 /*
  * rx_cmnd: this function is the basic function called by any front end
@@ -1185,10 +778,6 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 #endif
 
 	*result_command = NULL;
-	if (!target_data.thread_id) {
-		TRACE_ERROR("rx_cmnd: No Mid-level running !!!!\n");
-		return NULL;
-	}
 
 	if (!device) {
 		TRACE_ERROR("rx_cmnd: No device given !!!!\n");
@@ -1226,11 +815,10 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 	if ((len <= MAX_COMMAND_SIZE) && (len > 0))
 		command->len = len;
 	else {
-//          printk ("setting cmd len to %d instead of %d\n", MAX_COMMAND_SIZE, len);
 		command->len = MAX_COMMAND_SIZE;
 	}
 	memcpy(command->cmd, scsi_cdb, command->len);
-
+    
 # if defined (FILEIO) || defined (GENERICIO)
 	/* fill in the file pointer */
 	command->fd = NULL;
@@ -1268,12 +856,7 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 	}
 # endif
 
-#if 0
-	spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
-#endif
-# ifdef DEBUG_RX_CMND
-	printk("rx_cmnd: locked cmd_queue_lock for %p\n", command);
-# endif
+    pthread_mutex_lock(&target_data.cmd_queue_lock);
 
 	command->id = ++target_data.command_id;
 	/* check this to make sure you dont have a command with this id ?????
@@ -1286,20 +869,10 @@ rx_cmnd(Scsi_Target_Device * device, uint64_t target_id,
 
 	list_add_tail(&command->link, &target_data.cmd_queue);
 
-# ifdef DEBUG_RX_CMND
-	printk("rx_cmnd: unlock cmd_queue_lock for %p with id %d\n",command,command->id);
-# endif
-#if 0
-	spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
-#endif
+    pthread_mutex_unlock(&target_data.cmd_queue_lock);
 
 	/* wake up scsi_target_process_thread */
-#if 0
-	if (atomic_read(&target_data.target_sem.count) <= 0) {
-		up(&target_data.target_sem);
-	}
-#endif
-    sem_post(&target_data.target_sem);
+    scsi_target_process();
 
 	return command;
 }
@@ -1353,7 +926,6 @@ scsi_target_done(Target_Scsi_Cmnd * the_command)
 		up(&target_data.target_sem);
 	}
 #endif
-    sem_post(&target_data.target_sem);
 
 	return 0;
 }
@@ -1392,7 +964,6 @@ scsi_release(Target_Scsi_Cmnd * cmnd)
 		up(&target_data.target_sem);
 	}
 #endif
-    sem_post(&target_data.target_sem);
 
 	return 0;
 }
@@ -1425,7 +996,7 @@ scsi_release(Target_Scsi_Cmnd * cmnd)
  * 	set value = NULL
  */
 struct SM *
-rx_task_mgmt_fn(struct STD *dev, int fn, void *value)
+rx_task_mgmt_fn(struct Scsi_Target_Device *dev, int fn, void *value)
 {
 #if 0
 	unsigned long flags;
@@ -1460,20 +1031,14 @@ rx_task_mgmt_fn(struct STD *dev, int fn, void *value)
 	msg->value = value;
 	msg->message = fn;
 
-#if 0
-	spin_lock_irqsave(&target_data.msg_lock, flags);
-#endif
-
+    pthread_mutex_lock(&target_data.cmd_queue_lock);
 	if (!target_data.msgq_start) {
 		target_data.msgq_start = target_data.msgq_end = msg;
 	} else {
 		target_data.msgq_end->next = msg;
 		target_data.msgq_end = msg;
 	}
-
-#if 0
-	spin_unlock_irqrestore(&target_data.msg_lock, flags);
-#endif
+    pthread_mutex_unlock(&target_data.cmd_queue_lock);
 
 	/* wake up scsi_target_process_thread */
 #if 0
@@ -1481,12 +1046,11 @@ rx_task_mgmt_fn(struct STD *dev, int fn, void *value)
 		up(&target_data.target_sem);
 	}
 #endif
-    sem_post(&target_data.target_sem);
 
 	return msg;
 }
 
-# if defined (FILEIO) || defined (GENERICIO)
+#if 0
 /*
  * build_filp_table: builds up a table of open file descriptors.
  * INPUT: nothing
@@ -1565,12 +1129,6 @@ build_filp_table(void)
 
 out_of_loop:
 
-# ifdef GENERICIO
-	/* also we spawn a second thread to receive signals */
-	init_MUTEX_LOCKED(&target_data.signal_sem);
-	init_MUTEX_LOCKED(&target_data.sig_thr_sem);
-	kernel_thread((int (*)(void *)) signal_process_thread, NULL, 0);
-# endif
 	return 0;
 }
 
@@ -1600,9 +1158,8 @@ close_filp_table(void)
 	}
 }
 
-# endif
+#endif
 
-#if 0
 /*
  * : allocates scatter-gather buffers for the received command
  * The assumption is that all front-ends use scatter-gather and so do
@@ -1613,9 +1170,6 @@ close_filp_table(void)
 static int
 get_space(Scsi_Request * req, int space /* in bytes */ )
 {
-    UNUSED(req);
-    UNUSED(space);
-#if 0
 	/* We assume that scatter gather is used universally */
 	struct scatterlist *st_buffer;
 	int buff_needed, i;
@@ -1642,66 +1196,26 @@ get_space(Scsi_Request * req, int space /* in bytes */ )
 	memset(st_buffer, 0, buff_needed * sizeof(struct scatterlist));
 
 	/* get necessary buffer space */
-	for (i = 0, count = space; i < buff_needed; i++, count -= PAGE_SIZE) {
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-		st_buffer[i].page = alloc_pages(GFP_DMA | GFP_KERNEL, 0);
-
-		if (!st_buffer[i].page) {
-			printk("get_space: no space for st_buffer[%d].page\n", i);
-			return -1;
-		}
-		sg_dma_address(st_buffer + i) = (dma_addr_t)kmap(st_buffer[i].page);
-		/* this should always be 0 */
-		st_buffer[i].offset = (unsigned long)
-			sg_dma_address(st_buffer + i) & ~PAGE_MASK;
-		if (count > PAGE_SIZE)
-			sg_dma_len(st_buffer + i) = PAGE_SIZE;
-		else
-			sg_dma_len(st_buffer + i) = count;
-#else
-		st_buffer[i].address =
-			(uint8_t *) __get_free_pages(GFP_DMA | GFP_KERNEL, 0);
+	for (i = 0, count = space; i < buff_needed; i++, count -= FAKED_PAGE_SIZE) {
+		st_buffer[i].address = malloc(FAKED_PAGE_SIZE);
 
 		if (!st_buffer[i].address) {
-			printk("get_space: no space for st_buffer[%d].address\n", i);
+			TRACE_ERROR("get_space: no space for st_buffer[%d].address\n", i);
 			return -1;
 		}
-		if (count > PAGE_SIZE)
-			st_buffer[i].length = PAGE_SIZE;
+		if (count > FAKED_PAGE_SIZE)
+			st_buffer[i].length = FAKED_PAGE_SIZE;
 		else
 			st_buffer[i].length = count;
-#endif
 
 
-/* df revised begin */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,13)
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifndef K26
-		/* From 2.4.13, the structure scatterlist add a field "page", which is checked
-		 *   in pci_map_sg(pci.h), which is also changed from 2.4.13. So should set a NULL as
-		 *   initial value
-		 */
-		st_buffer[i].page = NULL;
-#endif
-#endif
-/* df revised end */
-
-# ifdef DEBUG_HANDLE_CMD
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-		printk("get_space: st_buffer[%d] = %d\n", i, sg_dma_len(st_buffer + i));
-#else
-		printk("get_space: st_buffer[%d] = %d\n", i, st_buffer[i].length);
-#endif
-# endif
+		TRACE(TRACE_VERBOSE, "get_space: st_buffer[%d] = %d\n", i, st_buffer[i].length);
 	}
 
 	req->sr_bufflen = space;
 	req->sr_buffer = st_buffer;
 	req->sr_sglist_len = buff_needed * sizeof(struct scatterlist);
 	req->sr_use_sg = buff_needed;
-#endif
 
 	return 0;
 }
@@ -1716,19 +1230,13 @@ allocate_report_lun_space(Target_Scsi_Cmnd * cmnd)
 {
 	int i, luns, size;
 
-# ifdef DEBUG_HANDLE_CMD
-	printk("REPORT_LUNS received\n");
-# endif
-
 	/* perform checks on Report LUNS - LATER */
 	if (cmnd->req->sr_cmnd[2] != 0) {
 		TRACE_ERROR("Select_Report in report_luns not zero\n");
 	}
 
-#if 0
 	/* set data direction */
 	cmnd->req->sr_data_direction = SCSI_DATA_READ;
-#endif
 
 	/* get length */
 	if (cmnd->target_id >= MAX_TARGETS) {
@@ -1738,13 +1246,12 @@ allocate_report_lun_space(Target_Scsi_Cmnd * cmnd)
 	}
 
 	luns = 0;
-	if (!sem_wait(&target_map_sem)) {
-		for (i = 0; i < MAX_LUNS; i++) {
-			if (target_map[cmnd->target_id][i].in_use)
-				luns++;
-		}
-		sem_post(&target_map_sem);
-	}
+    pthread_mutex_lock(&target_map_mutex);
+    for (i = 0; i < MAX_LUNS; i++) {
+        if (target_map[cmnd->target_id][i].in_use)
+            luns++;
+    }
+    pthread_mutex_unlock(&target_map_mutex);
 
 	if (luns == 0) {
 		TRACE_ERROR("No luns in use for target id %u\n",
@@ -1777,20 +1284,16 @@ get_allocation_length(uint8_t *cmd)
 {
 	uint32_t err = 0;
 
-    UNUSED(cmd);
-    
-#if 0
+
 	switch (cmd[0]) {
 	case INQUIRY:
 	case MODE_SENSE:
 	case MODE_SELECT:
 		{
 			err = cmd[ALLOC_LEN_6];
-# ifdef DEBUG_ALLOCN_LEN
-			printk
-				("get_allocation_length: INQUIRY/MODE SENSE/MODE SELECT length %d\n",
-				 err);
-# endif
+			TRACE(TRACE_VERBOSE,
+                  "get_allocation_length: INQUIRY/MODE SENSE/MODE SELECT length %d\n",
+                  err);
 			break;
 		}
 
@@ -1799,10 +1302,9 @@ get_allocation_length(uint8_t *cmd)
 	case VERIFY:
 		{
 			err = (cmd[ALLOC_LEN_10] << BYTE) + cmd[ALLOC_LEN_10 + 1];
-			err *= BLOCKSIZE;
-# ifdef DEBUG_ALLOCN_LEN
-			printk("get_allocation_length: READ_10/WRITE_10 length %d\n", err);
-# endif
+			err *= SCSI_BLOCKSIZE;
+			TRACE(TRACE_VERBOSE, 
+                  "get_allocation_length: READ_10/WRITE_10 length %d\n", err);
 			break;
 		}
 
@@ -1815,52 +1317,31 @@ get_allocation_length(uint8_t *cmd)
 			*****/
 			err = 0;
 
-# ifdef DEBUG_ALLOCN_LEN
-			printk("get_allocation_length: REPORT_LUNS length %d - FIXME\n", err);
-# endif
+			TRACE(TRACE_VERBOSE,
+                  "get_allocation_length: REPORT_LUNS length %d - FIXME\n", err);
 			break;
 		}
 
-# ifdef TAPE_DEVICE
 	case READ_6:
 	case WRITE_6:
 		{
-			err = (cmd[2] << 16) + (cmd[3] << 8) + cmd[4];
-			if (1 == cmd[1]) {
-				err *= BLOCKSIZE;	/*ramesh - need to check the block size, right now it is fixed */
-			}
-# ifdef DEBUG_ALLOCN_LEN
-			printk("get_allocation_length: READ_6/WRITE_6 length %d\n", err);
-# endif
-			break;
-		}
-#else
-	case READ_6:
-	case WRITE_6:
-		{
-			err = cmd[4] * BLOCKSIZE;
+			err = cmd[4] * SCSI_BLOCKSIZE;
 			if (err == 0)
-				err = 256 * BLOCKSIZE;
-# ifdef DEBUG_ALLOCN_LEN
-			printk("get_allocation_length: READ_6/WRITE_6 length %d\n", err);
-# endif
+				err = 256 * SCSI_BLOCKSIZE;
+			TRACE(TRACE_VERBOSE,
+                  "get_allocation_length: READ_6/WRITE_6 length %d\n", err);
 			break;
 		}
-# endif
-
 	default:
 		{
-			printk("get_allocation_length: unknown command 0x%02x\n", cmd[0]);
+			TRACE_ERROR("get_allocation_length: unknown command 0x%02x\n", cmd[0]);
 			break;
 		}
 	}
-#endif
 
 	return err;
 }
-#endif			     /* if !defined(DISKIO) || !defined(TRUST_CDB) */
 
-# if defined (FILEIO) || defined (MEMORYIO)
 /*
  * get_inquiry_response: This function fills in the buffer to respond to
  * a received SCSI INQUIRY. This function is relevant when the emulator
@@ -1879,12 +1360,7 @@ get_inquiry_response(Scsi_Request * req, int len, int type)
 	uint8_t *inq;
 	uint8_t *ptr, local_buffer[36];
 
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-	uint8_t *buffer = (void *)sg_dma_address((struct scatterlist *) req->sr_buffer);
-#else
 	uint8_t *buffer = ((struct scatterlist *) req->sr_buffer)->address;
-#endif
 
 	/* SPC-2 says in section 7.3.2 on page 82:
 	 *  "The standard INQUIRY data shall contain at least 36 bytes."
@@ -1919,11 +1395,7 @@ get_inquiry_response(Scsi_Request * req, int len, int type)
 	memcpy(&ptr[8], "UNH-IOL ", 8);
 
 	/* 16 byte ASCII Product Identification of the target - left aligned */
-# if defined (FILEIO)
-	memcpy(&ptr[16], "file-mode target", 16);
-# else
 	memcpy(&ptr[16], "in-memory target", 16);
-#endif
 
 	/* 4 byte ASCII Product Revision Level of the target - left aligned */
 	memcpy(&ptr[32], "1.2 ", 4);
@@ -1936,13 +1408,7 @@ get_inquiry_response(Scsi_Request * req, int len, int type)
 	req->sr_result = DID_OK << 16;
 
 	if (req->sr_allowed == 1) {
-
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-		inq = (void *)sg_dma_address((struct scatterlist *) req->sr_buffer);
-#else
 		inq = ((struct scatterlist *) req->sr_buffer)->address;
-#endif
 		inq[0] = 0x7f;
 	}
 
@@ -1963,38 +1429,14 @@ get_read_capacity_response(Scsi_Request * req)
 *****/
 get_read_capacity_response(Target_Scsi_Cmnd *cmnd)
 {
-	uint32_t blocksize = BLOCKSIZE, nblocks;
+	uint32_t blocksize = SCSI_BLOCKSIZE, nblocks;
 	uint8_t *buffer;
 
 /* RDR */
 	nblocks = FILESIZE;
-#ifdef FILEIO
-	if (!down_interruptible(&target_map_sem)) {
-		if (cmnd->target_id >= MAX_TARGETS || cmnd->lun >= MAX_LUNS
-			|| !target_map[cmnd->target_id][cmnd->lun].in_use) {
-			printk("%s target id %u lun %u not in use\n",
-					current->comm, cmnd->target_id, cmnd->lun);
-			up(&target_map_sem);
-			return -1;
-		}
 
-		nblocks = target_map[cmnd->target_id][cmnd->lun].max_blocks;
-		up(&target_map_sem);
-	}
-#endif
-
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-	/*****
-	buffer = (void *)sg_dma_address((struct scatterlist *)req->sr_buffer);
-	*****/
-	buffer = (void *)sg_dma_address((struct scatterlist *)cmnd->req->sr_buffer);
-#else
-	/*****
-	buffer = ((struct scatterlist *)req->sr_buffer)->address;
-	*****/
 	buffer = ((struct scatterlist *)cmnd->req->sr_buffer)->address;
-#endif
+
 	/* Bjorn Thordarson, 9-May-2004 -- end -- */
 
 	memset(buffer, 0x00, READ_CAP_LEN);
@@ -2019,50 +1461,6 @@ get_read_capacity_response(Target_Scsi_Cmnd *cmnd)
 }
 
 /* RDR */
-#ifdef FILEIO
-
-/* Bjorn Thordarson, 8-May-2004 -- start -- */
-/* get_mode_sense_response2: This function fills up the buffer to
- * respond to a received MODE_SENSE. This function is relevant when
- * the emulator is responding to the commands.
- * INPUT: Scsi_Request pointer to the MODE_SENSE
- * OUTPUT: 0 if everything is okay, < 0 if there is trouble
- */
-
-struct iscsi_sense_data {
-        u16 length;
-        u8  data[0];
-} __packed;
-
-static int
-get_mode_sense_response2(Scsi_Request * req, u8 sense_key, u8 asc, u8 ascq)
-{
-	struct iscsi_sense_data *sense;
-
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-        uint8_t *buffer = (void *)sg_dma_address((struct scatterlist *) req->sr_buffer);
-#else
-        uint8_t *buffer = ((struct scatterlist *) req->sr_buffer)->address;
-#endif
-
-	sense = (struct iscsi_sense_data *) buffer;
-
-	sense->length = cpu_to_be16(14);
-	memset(sense->data, 0, 14);
-	sense->data[0] = 0xf0;
-	sense->data[2] = sense_key;
-	sense->data[7] = 6;     // Additional sense length
-	sense->data[12] = asc;
-	sense->data[13] = ascq;
-
-	req->sr_result = DID_OK << 16;
-	return 0;
-}
-
-/* Bjorn Thordarson, 9-May-2004 -- end -- */
-
-#endif
 
 /* cdeng August 24 2002
  * get_mode_sense_response: This function fills up the buffer to
@@ -2074,12 +1472,7 @@ get_mode_sense_response2(Scsi_Request * req, u8 sense_key, u8 asc, u8 ascq)
 static int
 get_mode_sense_response(Scsi_Request * req, uint32_t len)
 {
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-	uint8_t *buffer = (void *)sg_dma_address((struct scatterlist *) req->sr_buffer);
-#else
 	uint8_t *buffer = ((struct scatterlist *) req->sr_buffer)->address;
-#endif
 
 	memset(buffer, 0x00, len);
 
@@ -2092,9 +1485,7 @@ get_mode_sense_response(Scsi_Request * req, uint32_t len)
 	req->sr_result = DID_OK << 16;
 	return 0;
 }
-#endif /* defined (FILEIO) || defined (MEMORYIO) */
 
-#if 0
 /* cdeng August 24 2002
  * get_report_luns_response: This function fills up the buffer to
  * respond to a received REPORT_LUNS. This function is relevant when
@@ -2105,27 +1496,14 @@ get_mode_sense_response(Scsi_Request * req, uint32_t len)
 static int
 get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 {
-    UNUSED(cmnd);
-    UNUSED(len);
-    
-#if 0
 	int i;
 	uint8_t *limit, *next_slot;
 
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-	/* Bjorn Thordarson, 9-May-2004 */
-	/*****
-	uint8_t *buffer = (void *)sg_dma_address((struct scatterlist *) req->sr_buffer);
-	*****/
-	uint8_t *buffer = (void *)sg_dma_address((struct scatterlist *) cmnd->req->sr_buffer);
-#else
 	/* Bjorn Thordarson, 9-May-2004 */
 	/*****
 	uint8_t *buffer = ((struct scatterlist *) req->sr_buffer)->address;
 	*****/
 	uint8_t *buffer = ((struct scatterlist *) cmnd->req->sr_buffer)->address;
-#endif
 
 	next_slot = buffer + 8;				/* first lun goes here */
 	limit = next_slot + len;			/* address after end of entire list */
@@ -2141,20 +1519,21 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 	 * we don't need to do anything else here for lun 0.
 	 */
 
-	if (cmnd->target_id < MAX_TARGETS) {
-		if (!down_interruptible(&target_map_sem)) {
-			for (i = 0; i < MAX_LUNS && next_slot < limit; i++) {
-				if (target_map[cmnd->target_id][i].in_use) {
-					pack_lun(i, 0, next_slot);
-					next_slot += 8;;
-				}
-			}
-			up(&target_map_sem);
-		}
-	}
+	if (cmnd->target_id < MAX_TARGETS) 
+    {
+        pthread_mutex_lock(&target_map_mutex);
+        for (i = 0; i < MAX_LUNS && next_slot < limit; i++) 
+        {
+            if (target_map[cmnd->target_id][i].in_use) {
+                pack_lun(i, 0, next_slot);
+                next_slot += 8;;
+            }
+        }
+        pthread_mutex_lock(&target_map_mutex);
+    }
 
 	/* lun list length */
-	((uint32_t *)buffer)[0] = cpu_to_be32(len);
+	((uint32_t *)buffer)[0] = htonl(len);
 
 # ifdef DEBUG_HANDLE_CMD
 	/* dump out the complete REPORT LUNS response buffer */
@@ -2164,12 +1543,9 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 	/* change status */
 	cmnd->state = ST_DONE;
 	cmnd->req->sr_result = DID_OK << 16;
-#endif
 	return 0;
 }
-#endif
 
-#if 0
 /*
  * hand_to_front_end: the scsi command has been tackled by the mid-level
  * and is now ready to be handed off to the front-end either because it
@@ -2216,60 +1592,22 @@ hand_to_front_end(Target_Scsi_Cmnd * the_command)
 		return 0;
 	}
 
-	if (the_command->state == ST_DONE) {
-# ifdef DEBUG_SCSI_THREAD
-		printk("%s hand_to_front_end: calling xmit_response for %p id %d\n",
-			   current->comm, the_command, the_command->id);
-# endif
-		if ((curr_device->template) && (curr_device->template->xmit_response)) {
-			/*
-			 * if it is generic then we need to get the
-			 * blocksize information from the response to
-			 * the READ_CAPACITY
-			 */
-# ifdef GENERICIO
-			if (the_command->cmd[0] == READ_CAPACITY) {
-				temp =
-					(uint8_t *) ((struct scatterlist *) the_command->
-									   req->sr_buffer)->address;
-				if (the_command->target_id < MAX_TARGETS
-					&& the_command->lun < MAX_LUNS
-					&& !down_interruptible(&target_map_sem)) {
-					target_map[the_command->target_id][the_command->lun]
-						.bytes_per_block =
-					(temp[4] << (BYTE * 3)) + (temp[5] << (BYTE * 2)) +
-					(temp[6] << (BYTE)) + temp[7];
-				}
-				up(&target_map_sem);
-			}
-# endif
-
-			the_command->state = ST_HANDED;
-			if (curr_device->template->xmit_response(the_command)) {
-				TRACE_ERROR("hand_to_front_end: error in xmit_response for %p "
-					   "id %d\n", the_command, the_command->id);
-				return -1;
-			}
-		} else {
-			TRACE_ERROR("hand_to_front_end: no xmit_response function\n");
-			return -1;
-		}
-	} else if (the_command->state == ST_PENDING) {
-# ifdef DEBUG_SCSI_THREAD
-		printk("%s hand_to_front_end: call to rdy_to_xfer for %p id: %d\n",
-			   current->comm, the_command, the_command->id);
-# endif
-		if ((curr_device->template) && (curr_device->template->rdy_to_xfer)) {
-			the_command->state = ST_XFERRED;
-			if (curr_device->template->rdy_to_xfer(the_command)) {
-				TRACE_ERROR("hand_to_front_end: error in rdy_to_xfer for %p "
-					   "id %d\n", the_command, the_command->id);
-				return -1;
-			}
-		} else {
-			TRACE_ERROR("hand_to_front_end: no rdy_to_xfer function\n");
-			return -1;
-		}
+	if (the_command->state == ST_DONE) 
+    {
+        the_command->state = ST_HANDED;
+        if (iscsi_xmit_response(the_command)) 
+        {
+            TRACE_ERROR("hand_to_front_end: error in xmit_response for %p "
+                        "id %d\n", the_command, the_command->id);
+            return -1;
+        }
+    } else if (the_command->state == ST_PENDING) {
+        the_command->state = ST_XFERRED;
+        if (iscsi_rdy_to_xfer(the_command)) {
+            TRACE_ERROR("hand_to_front_end: error in rdy_to_xfer for %p "
+                        "id %d\n", the_command, the_command->id);
+            return -1;
+        }
 	} else {
 		TRACE_ERROR("hand_to_front_end: command %p id: %d bad state %d\n",
                     the_command, the_command->id, the_command->state);
@@ -2310,13 +1648,7 @@ abort_notify(Target_Scsi_Message * msg)
 		return -1;
 	}
 
-	if ((curr_device->template) && (curr_device->template->task_mgmt_fn_done))
-		curr_device->template->task_mgmt_fn_done(msg);
-	else {
-        TRACE_ERROR
-			("abort_notify: Unable to notify front end about abort notification\n");
-		return -1;
-	}
+    iscsi_task_mgt_fn_done(msg);
 
 	return 0;
 }
@@ -2334,24 +1666,22 @@ abort_notify(Target_Scsi_Message * msg)
 static void
 aen_notify(int fn, uint64_t lun)
 {
+    UNUSED(fn);
+    UNUSED(lun);
+#if 0
 	Scsi_Target_Device *dev;
 
 	for (dev = target_data.st_device_list; dev != NULL; dev = dev->next) {
-		if (dev && dev->template && dev->template->report_aen)
-			dev->template->report_aen(fn, lun);
-		else
-			TRACE_ERROR("aen_notify: Unable to notify device %d\n", (int) dev->id);
+        iscsi_report_aen(fn, lun);
 	}
-}
-
 #endif
+}
 
 /********************************************************************
  * THESE ARE FUNCTIONS WHICH ARE SPECIFIC TO MEMORY IO - I lump them*
  * 	together just to help me keep track of what is where	    *
  *******************************************************************/
 
-# ifdef MEMORYIO
 /*
  * handle_cmd: This command is responsible for dealing with the received
  * command. I am slightly unclear about everything this function needs
@@ -2366,25 +1696,22 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 	int err = 0;
 	int to_read;
 
-# ifdef DEBUG_HANDLE_CMD
 	TRACE(TRACE_VERBOSE, "Entering MEMORYIO handle_cmd\n");
-# endif
-	switch (cmnd->req->sr_cmnd[0]) {
 
-	case READ_CAPACITY:
+	switch (cmnd->req->sr_cmnd[0]) {
+        case READ_CAPACITY:
 		{
-# ifdef DEBUG_HANDLE_CMD
 			TRACE(TRACE_VERBOSE, "READ_CAPACITY received\n");
-# endif
 			/* perform checks on READ_CAPACITY - LATER */
 
 			/* set data direction */
 			cmnd->req->sr_data_direction = SCSI_DATA_READ;
 
 			/* allocate sg_list and get_free_pages */
-			if (get_space(cmnd->req, READ_CAP_LEN)) {
+			if (get_space(cmnd->req, READ_CAP_LEN)) 
+            {
 				TRACE_ERROR("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
+                            cmnd->id);
 				err = -1;
 				break;
 			}
@@ -2401,7 +1728,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 				err = -1;
 				break;
 			}
-
+            
 			/* change status */
 			cmnd->state = ST_DONE;
 			cmnd->req->sr_result = DID_OK << 16;
@@ -2409,20 +1736,18 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			err = 0;
 			break;
 		}
-
-	case INQUIRY:
-		{
-# ifdef DEBUG_HANDLE_CMD
+        
+        case INQUIRY:
+        {
 			TRACE(TRACE_VERBOSE, "INQUIRY received\n");
-# endif
 			/* perform checks on INQUIRY - LATER */
 
 			/* set data direction */
 			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
+            
 			/* get length */
 			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
+            
 			if (to_read < 0) {
                 TRACE_ERROR
 					("handle_command: get_allocation length returned an error for %d\n",
@@ -2438,11 +1763,11 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 				err = -1;
 				break;
 			}
-
+            
 			/* get response */
 			/* Bjorn Thordarson, 9-May-2004 */
 			/*****
-			if (get_inquiry_response(cmnd->req, to_read)) {
+                  if (get_inquiry_response(cmnd->req, to_read)) {
 			*****/
 			if (get_inquiry_response(cmnd->req, to_read, TYPE_DISK)) {
                 TRACE_ERROR
@@ -2451,20 +1776,19 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 				err = -1;
 				break;
 			}
-
+            
 			/* change status */
 			cmnd->state = ST_DONE;
 			cmnd->req->sr_result = DID_OK << 16;
-
+            
 			err = 0;
 			break;
 		}
 
-	case TEST_UNIT_READY:
+        case TEST_UNIT_READY:
 		{
-# ifdef DEBUG_HANDLE_CMD
 			TRACE(TRACE_VERBOSE, "TEST UNIT READY received\n");
-# endif
+
 			/* perform checks on TEST UNIT READY */
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
 			cmnd->req->sr_use_sg = 0;
@@ -2474,14 +1798,14 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			err = 0;
 			break;
 		}
-
-	case REPORT_LUNS:
+        
+        case REPORT_LUNS:
 		{
 			if ((to_read = allocate_report_lun_space(cmnd)) < 0) {
 				err = -1;
 				break;
 			}
-
+            
 			/* get response */
 			if ((err = get_report_luns_response(cmnd, to_read))) {
                 TRACE_ERROR
@@ -2490,20 +1814,18 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			}
 			break;
 		}
-
-	case MODE_SENSE:
+        
+        case MODE_SENSE:
 		{
-# ifdef DEBUG_HANDLE_CMD
 			TRACE(TRACE_VERBOSE, "MODE_SENSE received\n");
-# endif
 			/* perform checks on MODE_SENSE - LATER */
 
 			/* set data direction */
 			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
+            
 			/* get length */
 			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
+            
 			if (to_read < 0) {
                 TRACE_ERROR
 					("handle_command: get_allocation length returned an error for %d\n",
@@ -2511,15 +1833,15 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 				err = -1;
 				break;
 			}
-
+            
 			/* allocate space */
 			if (get_space(cmnd->req, to_read)) {
 				TRACE_ERROR("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
+                            cmnd->id);
 				err = -1;
 				break;
 			}
-
+            
 			/* get response */
 			if (get_mode_sense_response(cmnd->req, to_read)) {
                 TRACE_ERROR
@@ -2528,19 +1850,17 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 				err = -1;
 				break;
 			}
-
+            
 			/* change status */
 			cmnd->state = ST_DONE;
 			cmnd->req->sr_result = DID_OK << 16;
 			err = 0;
 			break;
 		}
-
-	case VERIFY:
+        
+        case VERIFY:
 		{
-# ifdef DEBUG_HANDLE_CMD
 			TRACE(TRACE_VERBOSE, "VERIFY received\n");
-# endif
 			/* perform checks on TEST UNIT READY */
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
 			cmnd->req->sr_use_sg = 0;
@@ -2551,37 +1871,35 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			break;
 		}
 
-	case READ_6:
-	case READ_10:
+        case READ_6:
+        case READ_10:
 		{
-# ifdef DEBUG_HANDLE_CMD
 			if (cmnd->req->sr_cmnd[0] == READ_6)
 				TRACE(TRACE_VERBOSE, "READ_6 received\n");
 			else
 				TRACE(TRACE_VERBOSE, "READ_10 received\n");
-# endif
 			/* perform checks for READ_10 */
 
 			/* set data direction */
 			cmnd->req->sr_data_direction = SCSI_DATA_READ;
 			/* get length */
 			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
+            
 			if (to_read < 0) {
-				printk
+                TRACE_ERROR
 					("MEMORYIO handle_cmd: get_allocation_length returned (%d) an error for %d\n",
 					 to_read, cmnd->id);
 				err = -1;
 				break;
 			}
-
+            
 			if (get_space(cmnd->req, to_read)) {
-				printk("MEMORYIO handle_cmd: get_space returned an error for %d\n",
+				TRACE_ERROR("MEMORYIO handle_cmd: get_space returned an error for %d\n",
 					   cmnd->id);
 				err = -1;
 				break;
 			}
-
+            
 			/* this data can just be returned from memory */
 			/* change_status */
 			cmnd->req->sr_result = DID_OK << 16;
@@ -2589,16 +1907,15 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			err = 0;
 			break;
 		}
-
-	case WRITE_6:
-	case WRITE_10:
+        
+        case WRITE_6:
+        case WRITE_10:
 		{
-# ifdef DEBUG_HANDLE_CMD
 			if (cmnd->req->sr_cmnd[0] == WRITE_6)
-				printk("WRITE_6 received\n");
+				TRACE(TRACE_VERBOSE, "WRITE_6 received\n");
 			else
-				printk("WRITE_10 received\n");
-# endif
+				TRACE(TRACE_VERBOSE, "WRITE_10 received\n");
+
 			if (cmnd->state == ST_NEW_CMND) {
 				/* perform checks on the received WRITE_10 */
 
@@ -2608,7 +1925,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 				to_read = get_allocation_length(cmnd->req->sr_cmnd);
 
 				if (to_read < 0) {
-					printk
+					TRACE_ERROR
 						("MEMORYIO handle_cmd: get_allocation_length returned (%d) an error for %d\n",
 						 to_read, cmnd->id);
 					err = -1;
@@ -2617,8 +1934,8 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
 				/* get space */
 				if (get_space(cmnd->req, to_read)) {
-					printk("MEMORYIO handle_cmd: get_space returned error for %d\n",
-						   cmnd->id);
+					TRACE_ERROR("MEMORYIO handle_cmd: get_space returned error for %d\n",
+                                cmnd->id);
 					err = -1;
 					break;
 				}
@@ -2635,1516 +1952,17 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			break;
 		}
 
-	default:
+        default:
 		{
-			printk("MEMORYIO handle_cmd: unknown command 0x%02x\n",
-					cmnd->req->sr_cmnd[0]);
+			TRACE_ERROR("MEMORYIO handle_cmd: unknown command 0x%02x\n",
+                   cmnd->req->sr_cmnd[0]);
 			break;
 		}
 	}
 	return err;
 }
 
-#endif
 
-/********************************************************************
- * THESE ARE FUNCTIONS WHICH ARE SPECIFIC TO DISK IO - I lump them  *
- * 	together just to help me keep track of what is where	    *
- *******************************************************************/
-
-# ifdef DISKIO
-
-static const char * __attribute__ ((no_instrument_function))
-printable_dev_type( uint32_t dev_type )
-{
-	const char *mess;
-
-	if (dev_type < MAX_SCSI_DEVICE_CODE) {
-		mess = scsi_device_types[dev_type];
-	} else {
-		mess = "reserved";
-		switch (dev_type) {
-		case 0x0e:
-			mess = "simple-direct-access";
-			break;
-		case 0x0f:
-			mess = "optical card reader/writer";
-			break;
-		case 0x11:
-			mess = "object-based-storage";
-			break;
-		case 0x1f:
-			mess = "unknown";
-			break;
-		}	/* switch */
-	}
-	return mess;
-}
-
-static int
-add_one_scsi_device(Scsi_Device *the_device)
-{
-	struct target_map_item *this_item;
-
-	printk("iscsi target %d: scsi device type %s, host %d, channel %d, "
-		   "targetid %d, lun %d\n", target_count,
-		   printable_dev_type(the_device->type),
-		   the_device->host->host_no, the_device->channel,
-		   the_device->id, the_device->lun);
-
-	if (!down_interruptible(&target_map_sem)) {
-
-#if defined(TRUST_CDB)
-		/* always add this device to end of list of known target devices */
-		this_item = (struct target_map_item *)
-							kmalloc(sizeof(struct target_map_item), GFP_KERNEL);
-		if (!this_item) {
-			printk("add_one_scsi_device: kmalloc failed after %d targets\n",
-				   target_count);
-			return -1;
-		}
-		this_item->the_device = the_device;
-		this_item->in_use = 1;
-		this_item->target_id = target_count++;
-		list_add_tail(&this_item->link, &target_map_list);
-#else
-		if (target_count >= MAX_TARGETS) {
-			printk("More than MAX_TARGETS %d target devices, ignoring this\n",
-					MAX_TARGETS);
-		} else if (the_device->lun >= MAX_LUNS) {
-			printk("LUN %d >= MAX_LUNS %d, ignoring this\n",
-					the_device->lun, MAX_LUNS);
-		} else {
-			/* set up this element of the target_map array for this device */
-			this_item = &target_map[target_count][the_device->lun];
-			if (this_item->in_use) {
-				printk("targetid %d lun %d already in use, ignoring this\n",
-						target_count, the_device->lun);
-			} else {
-				this_item->the_device = the_device;
-				this_item->in_use = 1;
-				target_count++;
-			}
-		}
-#endif
-
-		up(&target_map_sem);
-	}
-	return 0;
-}
-
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-
-/* Need to add EXPORT_SYMBOL(scsi_bus_type) */
-extern struct bus_type scsi_bus_type;
-
-static int
-fill_one_scsi_device(struct device *dev, void *data)
-{
-	return add_one_scsi_device(to_scsi_device(dev));
-}
-#endif
-
-/*
- * fill_scsi_device: This function is responsible for filling in the
- * details of the device that will be used by the Target Emulator to
- * deal with the SCSI commands. If no SCSI devices are found attached
- * to the system then an error is returned
- * INPUT: NONE
- * OUTPUT: 0 if okay, -1 if there is trouble
- */
-static int
-fill_scsi_device(void)
-{
-	/* check out each device on each SCSI HBA */
-	target_count = 0;
-
-#ifdef K26
-	bus_for_each_dev(&scsi_bus_type, NULL, NULL, fill_one_scsi_device);
-#else
-	{
-		struct Scsi_Host *the_host;
-		Scsi_Device *the_device;
-
-		for (the_host = scsi_hostlist; the_host; the_host = the_host->next) {
-			for (the_device = the_host->host_queue; the_device;
-				 the_device = the_device->next) {
-				add_one_scsi_device(the_device);
-			}
-		}
-	}
-#endif /* K26 */
-
-	if (target_count == 0) {
-		printk("fill_scsi_device: no SCSI devices on system, bailing out\n");
-		return -1;
-	} else
-		printk("fill_scsi_device: %d scsi devices detected\n", target_count);
-
-	return 0;
-}
-
-
-/* if we trust the information of iSCSI from initiator, then
- * set the req and malloc space using that information, else
- * we parse the cdb to get correct information ourselves */
-#ifdef TRUST_CDB
-
-/*
- * handle_cmd: This command is responsible for dealing with the received
- * command when a real is used by the scsi target emulator. It receives
- * new commands, and gets them to the state where they are processing or
- * pending.
- * INPUT: Target_Scsi_Cmnd to be handled
- * OUTPUT: 0 if everything is okay, < 0 if there is trouble
- * REMARKS - ramesh@global.com : changed the code to not to parse the
- *                               input cdb. this makes the code to be
- *                               independent of devices.
- */
-static int
-handle_cmd(Target_Scsi_Cmnd * cmnd)
-{
-	int err = -1;
-	int allocate_buff = 1;
-
-# ifdef DEBUG_HANDLE_CMD
-	printk("Entering TRUST_CDB handle_cmd\n");
-# endif
-
-	/* set data direction */
-	cmnd->req->sr_data_direction = SCSI_DATA_NONE;
-	if (cmnd->flags & R_BIT) {
-		cmnd->req->sr_data_direction = SCSI_DATA_READ;
-	} else if (cmnd->flags & W_BIT) {
-		cmnd->req->sr_data_direction = SCSI_DATA_WRITE;
-	}
-# ifdef DEBUG_HANDLE_CMD
-	printk("TRUST_CDB handle_cmd: data direction %d data len %d\n",
-		   cmnd->req->sr_data_direction, cmnd->datalen);
-# endif
-
-	/*check the data length need to be allocated */
-	if (cmnd->datalen) {
-		if (cmnd->req->sr_data_direction == SCSI_DATA_WRITE &&
-			cmnd->state == ST_TO_PROCESS) {
-			allocate_buff = 0;
-		}
-
-		if (allocate_buff) {
-			/* allocate sg_list and get_free_pages */
-			if (get_space(cmnd->req, cmnd->datalen)) {
-				printk("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
-				return err;
-			}
-		}
-	} else {
-		cmnd->req->sr_use_sg = 0;
-		cmnd->req->sr_bufflen = 0;
-	}
-# ifdef DEBUG_HANDLE_CMD
-	printk("TRUST_CDB handle_cmd: buffer length %d\n", cmnd->req->sr_bufflen);
-# endif
-
-	/* change status */
-	/* for write needs more data to arive... */
-	if (cmnd->req->sr_data_direction == SCSI_DATA_WRITE &&
-		cmnd->state == ST_NEW_CMND) {
-		cmnd->state = ST_PENDING;
-	} else {
-		cmnd->state = ST_PROCESSING;
-		/* Quick fix timeout, for tape is 60 * disk */
-		/* hand it off to the mid-level to deal with */
-		scsi_do_req(cmnd->req, cmnd->cmd, cmnd->req->sr_buffer,
-					cmnd->req->sr_bufflen, te_cmnd_processed,
-					cmnd->req->sr_device->type == TYPE_TAPE
-					? TE_TIMEOUT * 60 : TE_TIMEOUT, TE_TRY);
-# ifdef DEBUG_HANDLE_CMD
-		printk("TRUST_CDB handle_cmd: handing it off to mid_level\n");
-# endif
-	}
-
-	return 0;
-}
-
-#else							/* ifdef TRUST_CDB */
-
-static int
-handle_cmd(Target_Scsi_Cmnd * cmnd)
-{
-	int err = 0;
-	int to_read;
-
-# ifdef DEBUG_HANDLE_CMD
-	printk("Entering not TRUST_CDB handle_cmd with id %d\n", cmnd->id);
-# endif
-
-	switch (cmnd->req->sr_cmnd[0]) {
-	case READ_CAPACITY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("READ_CAPACITY received\n");
-# endif
-			/* perform checks on READ_CAPACITY - LATER */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-			/* allocate sg_list and get_free_pages */
-			if (get_space(cmnd->req, READ_CAP_LEN)) {
-				printk("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* change status */
-			cmnd->state = ST_PROCESSING;
-
-			/* hand it off to the mid-level to deal with */
-			scsi_do_req(cmnd->req, cmnd->cmd, cmnd->req->sr_buffer,
-						cmnd->req->sr_bufflen, te_cmnd_processed, TE_TIMEOUT,
-						TE_TRY);
-
-			err = 0;
-			break;
-		}
-
-	case INQUIRY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("INQUIRY received\n");
-# endif
-			/* perform checks on INQUIRY - LATER */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-			/* get length */
-			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-			if (to_read < 0) {
-				printk
-					("handle_command: get_allocation length returned an error for %d\n",
-					 cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* allocate space */
-			if (get_space(cmnd->req, to_read)) {
-				printk("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* change status */
-			cmnd->state = ST_PROCESSING;
-
-			/* hand it off to the mid-level to deal with */
-			scsi_do_req(cmnd->req, cmnd->cmd, cmnd->req->sr_buffer,
-						cmnd->req->sr_bufflen, te_cmnd_processed, TE_TIMEOUT,
-						TE_TRY);
-
-			err = 0;
-			break;
-		}
-
-	case REPORT_LUNS:
-		{
-			if ((to_read = allocate_report_lun_space(cmnd)) < 0) {
-				err = -1;
-				break;
-			}
-
-			/* change status */
-			cmnd->state = ST_PROCESSING;
-
-			/* hand it off to the mid-level to deal with */
-			scsi_do_req(cmnd->req, cmnd->cmd, cmnd->req->sr_buffer,
-						cmnd->req->sr_bufflen, te_cmnd_processed, TE_TIMEOUT,
-						TE_TRY);
-
-			err = 0;
-			break;
-		}
-
-	case MODE_SENSE:			// cdeng    May 28, 2002
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("MODE_SENSE received\n");
-# endif
-			/* perform checks on MODE_SENSE - LATER */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-			/* get length */
-			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-			if (to_read < 0) {
-				printk
-					("handle_command: get_allocation length returned an error for %d\n",
-					 cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* allocate space */
-			if (get_space(cmnd->req, to_read)) {
-				printk("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* change status */
-			cmnd->state = ST_PROCESSING;
-
-			/* hand it off to the mid-level to deal with */
-			scsi_do_req(cmnd->req, cmnd->cmd, cmnd->req->sr_buffer,
-						cmnd->req->sr_bufflen, te_cmnd_processed, TE_TIMEOUT,
-						TE_TRY);
-
-			err = 0;
-			break;
-		}
-
-	case TEST_UNIT_READY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("TEST UNIT READY received\n");
-# endif
-			/* perform checks on TEST UNIT READY */
-			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
-			cmnd->req->sr_use_sg = 0;
-			cmnd->req->sr_bufflen = 0;
-			cmnd->state = ST_PROCESSING;
-
-			/* hand it off to the mid-level to deal with */
-			scsi_do_req(cmnd->req, cmnd->cmd, cmnd->req->sr_buffer,
-						cmnd->req->sr_bufflen, te_cmnd_processed, TE_TIMEOUT,
-						TE_TRY);
-
-			err = 0;
-			break;
-		}
-
-	case VERIFY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("VERIFY received\n");
-# endif
-			/* perform checks on TEST UNIT READY */
-			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
-			cmnd->req->sr_use_sg = 0;
-			cmnd->req->sr_bufflen = 0;
-			cmnd->state = ST_PROCESSING;
-
-			/* hand it off to the mid-level to deal with */
-			scsi_do_req(cmnd->req, cmnd->cmd, cmnd->req->sr_buffer,
-						cmnd->req->sr_bufflen, te_cmnd_processed, TE_TIMEOUT,
-						TE_TRY);
-
-			err = 0;
-			break;
-		}
-
-	case READ_10:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("READ_10 received\n");
-# endif
-			/* perform checks for READ_10 */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-			/* get length */
-			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-			if (to_read < 0) {
-				printk
-					("not TRUST_CDB handle_cmd: get_allocation_length returned (%d) an error for %d\n",
-					 to_read, cmnd->id);
-				err = -1;
-				break;
-			}
-
-			if (get_space(cmnd->req, to_read)) {
-				printk("not TRUST_CDB handle_cmd: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* change_status */
-			cmnd->state = ST_PROCESSING;
-
-			/* hand it off to the mid-level to deal with */
-			scsi_do_req(cmnd->req, cmnd->cmd, cmnd->req->sr_buffer,
-						cmnd->req->sr_bufflen, te_cmnd_processed, TE_TIMEOUT,
-						TE_TRY);
-
-			err = 0;
-			break;
-		}
-
-	case WRITE_10:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("WRITE_10 received\n");
-# endif
-			if (cmnd->state == ST_NEW_CMND) {
-				/* perform checks on the received WRITE_10 */
-
-				/* set data direction for the WRITE_10 */
-				cmnd->req->sr_data_direction = SCSI_DATA_WRITE;
-				/* get length */
-				to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-				if (to_read < 0) {
-					printk
-						("not TRUST_CDB handle_cmd: get_allocation_length returned (%d) an error for %d\n",
-						 to_read, cmnd->id);
-					err = -1;
-					break;
-				}
-
-				/* get space */
-				if (get_space(cmnd->req, to_read)) {
-					printk("not TRUST_CDB handle_cmd: get_space returned error for %d\n",
-						   cmnd->id);
-					err = -1;
-					break;
-				}
-				cmnd->state = ST_PENDING;
-			} else if (cmnd->state == ST_TO_PROCESS) {
-				cmnd->state = ST_PROCESSING;
-
-				/* hand it off to the mid-level to deal with */
-				scsi_do_req(cmnd->req, cmnd->cmd, cmnd->req->sr_buffer,
-							cmnd->req->sr_bufflen, te_cmnd_processed,
-							TE_TIMEOUT, TE_TRY);
-			}
-			err = 0;
-			break;
-		}
-
-	default:
-		{
-			printk("not TRUST_CDB handle_cmd: unknown command 0x%02x\n",
-					cmnd->req->sr_cmnd[0]);
-			err = -1;
-			break;
-		}
-	}
-# ifdef DEBUG_HANDLE_CMD
-	printk("not TRUST_CDB handle_cmd: cmd id %d, state %d, err %d\n",
-			cmnd->id, cmnd->state, err);
-# endif
-	return err;
-}
-#endif							/* end of else of ifdef TRUST_CDB */
-
-/*
- * te_cmnd_processed: This is the done function called by the mid-level
- * upon detecting that a particular command has been executed. This
- * function can be called from an interrupt context - it is responsible
- * for changing the state of the command and waking up the target
- * mid-level.
- */
-static void
-te_cmnd_processed(Scsi_Cmnd * sc_cmd)
-{
-	Scsi_Request *req;
-	Target_Scsi_Cmnd *te_cmd;
-	int found;
-	unsigned long flags;
-
-	/* find the scsi_request */
-	req = sc_cmd->sc_request;
-
-	/* find the Target_Scsi_Cmnd containing the scsi_request */
-	found = 0;
-	spin_lock_irqsave(&target_data.cmd_queue_lock, flags);
-	list_for_each_entry(te_cmd, &target_data.cmd_queue, link) {
-		if (te_cmd->req == req) {
-			found = 1;
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&target_data.cmd_queue_lock, flags);
-
-	if (!found) {
-		/* we can just throw away the response */
-		/* may be the command was aborted */
-		printk("te_cmnd_processed: Could not find request in command queue "
-			 	"for cmd %p, id %d, state %d\n",
-			 	te_cmd, te_cmd->id, te_cmd->state);
-		scsi_release_request(req);
-		sc_cmd->sc_request = NULL;
-	} else {
-		/* change its state */
-# ifdef DEBUG_HANDLE_CMD
-		printk("Got response for cmd %p, id %d, state %d\n",
-				te_cmd, te_cmd->id, te_cmd->state);
-# endif
-
-		/* if the lun of device is not the lun of request */
-		if (te_cmd->lun != req->sr_device->lun && req->sr_cmnd[0] == INQUIRY) {
-			uint8_t *inq;
-
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-			inq = page_address(((struct scatterlist *) req->sr_buffer)->page);
-#else
-			inq = ((struct scatterlist *) req->sr_buffer)->address;
-#endif
-			if (inq) {
-				inq[0] = 0x7f;	// 011 + 1FH
-			}
-		}
-
-		te_cmd->state = ST_DONE;
-		/* wake up scsi_process_target_thread so it can dequeue stuff */
-		if (atomic_read(&target_data.target_sem.count) <= 0) {
-			up(&target_data.target_sem);
-		}
-	}
-
-	return;
-}
-
-# endif
-
-/***********************************************************************
- * THESE ARE FUNCTIONS WHICH ARE SPECIFIC TO GENERIC IO - I lump them  *
- *      together just to help me keep track of what is where           *
- ***********************************************************************/
-
-# ifdef GENERICIO
-/*
- * handle_cmd: This command is responsible for dealing with the received
- * command. I am slightly unclear about everything this function needs
- * to do. Right now, it receives new commands, and gets them to the
- * state where they are processing or pending.
- * INPUT: Target_Scsi_Cmnd to be handled
- * OUTPUT: 0 if everything is okay, < 0 if there is trouble
- */
-static int
-handle_cmd(Target_Scsi_Cmnd * cmnd)
-{
-	int err = 0;
-	mm_segment_t old_fs;
-	struct file *dev_file;
-	int to_read;
-
-# ifdef DEBUG_HANDLE_CMD
-	printk("Entering GENERICIO handle_cmd\n");
-# endif
-
-	if (cmnd->fd)
-		dev_file = cmnd->fd;
-	else {
-		printk("GENERICIO handle_cmd: No file descriptor available\n");
-		return -1;
-	}
-
-	switch (cmnd->req->sr_cmnd[0]) {
-	case READ_CAPACITY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("READ_CAPACITY received\n");
-# endif
-			/* perform checks on READ_CAPACITY - LATER */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-			/* allocate sg_list and get_free_pages */
-			if (get_space(cmnd->req, READ_CAP_LEN)) {
-				printk("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			if (fill_sg_hdr(cmnd, SG_DXFER_FROM_DEV)) {
-				printk("GENERICIO handle_cmd: fill_sg_hdr returned an error\n");
-				return -1;
-			}
-
-			/* get response */
-			if ((dev_file) && (dev_file->f_op) && (dev_file->f_op->write)) {
-				old_fs = get_fs();
-				set_fs(get_ds());
-				err =
-					dev_file->f_op->write(dev_file, (uint8_t *) cmnd->sg,
-										  sizeof(sg_io_hdr_t),
-										  &dev_file->f_pos);
-				set_fs(old_fs);
-				if (err < 0) {
-					printk("GENERICIO handle_cmd: READ_CAPACITY: write returned %d\n",
-						   err);
-					break;
-				}
-			}
-
-			/* change status */
-			cmnd->state = ST_PROCESSING;
-
-			err = 0;
-			break;
-		}
-
-	case INQUIRY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("INQUIRY received\n");
-# endif
-			/* perform checks on INQUIRY - LATER */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-			/* get length */
-			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-			if (to_read < 0) {
-				printk
-					("handle_command: get_allocation length returned an error for %d\n",
-					 cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* allocate space */
-			if (get_space(cmnd->req, to_read)) {
-				printk("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			if (fill_sg_hdr(cmnd, SG_DXFER_FROM_DEV)) {
-				printk("GENERICIO handle_cmd: fill_sg_hdr returned an error\n");
-				return -1;
-			}
-
-			/* get response */
-			if ((dev_file) && (dev_file->f_op) && (dev_file->f_op->write)) {
-				old_fs = get_fs();
-				set_fs(get_ds());
-				err =
-					dev_file->f_op->write(dev_file, (uint8_t *) cmnd->sg,
-										  sizeof(sg_io_hdr_t),
-										  &dev_file->f_pos);
-				set_fs(old_fs);
-				if (err < 0) {
-					printk("ioctl returned %d\n", err);
-					break;
-				}
-			}
-
-			/* change status */
-			cmnd->state = ST_PROCESSING;
-
-			err = 0;
-			break;
-		}
-
-	case REPORT_LUNS:
-		{
-			if ((to_read = allocate_report_lun_space(cmnd)) < 0) {
-				err = -1;
-				break;
-			}
-
-			/* get response */
-			if ((err = get_report_luns_response(cmnd, to_read))) {
-				printk
-					("handle_command: get_report_luns_response returned an error for %d\n",
-					 cmnd->id);
-			}
-			break;
-		}
-
-	case TEST_UNIT_READY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("TEST UNIT READY received\n");
-# endif
-			/* perform checks on TEST UNIT READY */
-			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
-			cmnd->req->sr_use_sg = 0;
-			cmnd->req->sr_bufflen = 0;
-
-			if (fill_sg_hdr(cmnd, SG_DXFER_NONE)) {
-				printk("GENERICIO handle_cmd: fill_sg_hdr returned an error\n");
-				return -1;
-			}
-
-			/* get response */
-			if ((dev_file) && (dev_file->f_op) && (dev_file->f_op->write)) {
-				old_fs = get_fs();
-				set_fs(get_ds());
-				err =
-					dev_file->f_op->write(dev_file, (uint8_t *) cmnd->sg,
-										  sizeof(sg_io_hdr_t),
-										  &dev_file->f_pos);
-				set_fs(old_fs);
-				if (err < 0) {
-					printk("GENERICIO handle_cmd: TEST UNIT READY: write returned %d\n",
-						   err);
-					break;
-				}
-			}
-
-			cmnd->state = ST_PROCESSING;
-			err = 0;
-			break;
-		}
-
-	case READ_10:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("READ_10 received\n");
-# endif
-			/* perform checks for READ_10 */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-			/* get length */
-			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-			if (to_read < 0) {
-				printk
-					("GENERICIO handle_cmd: get_allocation_length returned (%d) an error for %d\n",
-					 to_read, cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* my stupidity */
-			to_read = to_read / BLOCKSIZE * cmnd->blk_size;
-			if (get_space(cmnd->req, to_read)) {
-				printk("GENERICIO handle_cmd: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			if (fill_sg_hdr(cmnd, SG_DXFER_FROM_DEV)) {
-				printk("GENERICIO handle_cmd: fill_sg_hdr returned an error\n");
-				return -1;
-			}
-
-			/* get response */
-			if ((dev_file) && (dev_file->f_op) && (dev_file->f_op->write)) {
-				old_fs = get_fs();
-				set_fs(get_ds());
-				err =
-					dev_file->f_op->write(dev_file, (uint8_t *) cmnd->sg,
-										  sizeof(sg_io_hdr_t),
-										  &dev_file->f_pos);
-				set_fs(old_fs);
-				if (err < 0) {
-					printk("GENERICIO handle_cmd: READ_CAPACITY: write returned %d\n",
-						   err);
-					break;
-				}
-			}
-
-			/* change_status */
-			cmnd->state = ST_PROCESSING;
-			err = 0;
-			break;
-		}
-
-	case WRITE_10:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("WRITE_10 received\n");
-# endif
-			if (cmnd->state == ST_NEW_CMND) {
-				/* perform checks on the received WRITE_10 */
-
-				/* set data direction for the WRITE_10 */
-				cmnd->req->sr_data_direction = SCSI_DATA_WRITE;
-				/* get length */
-				to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-				if (to_read < 0) {
-					printk
-						("GENERICIO handle_cmd: get_allocation_length returned (%d) an error for %d\n",
-						 to_read, cmnd->id);
-					err = -1;
-					break;
-				}
-
-				/* my stupidity */
-				to_read = to_read / BLOCKSIZE * cmnd->blk_size;
-				/* get space */
-				if (get_space(cmnd->req, to_read)) {
-					printk("GENERICIO handle_cmd: get_space returned error for %d\n",
-						   cmnd->id);
-					err = -1;
-					break;
-				}
-
-				cmnd->state = ST_PENDING;
-			} else if (cmnd->state == ST_TO_PROCESS) {
-				if (fill_sg_hdr(cmnd, SG_DXFER_TO_DEV)) {
-					printk("GENERICIO handle_cmd: fill_sg_hdr returned an error\n");
-					return -1;
-				}
-
-				/* get response */
-				if ((dev_file) && (dev_file->f_op)
-					&& (dev_file->f_op-> /*ioctl */ write)) {
-					old_fs = get_fs();
-					set_fs(get_ds());
-//                  err = dev_file->f_op->ioctl (dev_file->f_dentry->d_inode, dev_file, SG_IO, (unsigned long) cmnd->sg);
-					err =
-						dev_file->f_op->write(dev_file,
-											  (uint8_t *) cmnd->sg,
-											  sizeof(sg_io_hdr_t),
-											  &dev_file->f_pos);
-					set_fs(old_fs);
-					if (err < 0) {
-						printk("GENERICIO handle_cmd: WRITE_10: write returned %d\n",
-							   err);
-						break;
-					}
-				}
-
-				cmnd->state = ST_PROCESSING;
-//              cmnd->state = ST_DONE;
-			}
-			err = 0;
-			break;
-		}
-
-	default:
-		{
-			printk("GENERICIO handle_cmd: unknown command 0x%02x\n",
-					cmnd->req->sr_cmnd[0]);
-			break;
-		}
-	}
-
-	return err;
-}
-
-/*
- * fill_sg_hdr: This function fills in the values required by the sg
- * struct. The sg_hdr is kmalloced, filled and returned to the calling
- * function.
- * INPUT: Target_Scsi_Cmnd to process, direction of transfer (use the
- * values specified by SCSI generic
- * OUTPUT: 0 if everything is okay, < 0 if there is trouble
- */
-static int
-fill_sg_hdr(Target_Scsi_Cmnd * cmnd, int direction)
-{
-	int i;
-	sg_iovec_t *sg_iov;
-	struct scatterlist *st_list;
-
-	cmnd->sg =
-		(sg_io_hdr_t *)kmalloc(sizeof(sg_io_hdr_t), GFP_KERNEL | GFP_ATOMIC);
-	if (!cmnd->sg) {
-		printk("fill_sg_hdr: cmnd->sg: kmalloc failed\n");
-		return -1;
-	}
-
-	cmnd->sg->interface_id = 'S';	// for SCSI generic
-	cmnd->sg->dxfer_direction = direction;
-	cmnd->sg->cmd_len = cmnd->len;
-	cmnd->sg->mx_sb_len = MAX_SENSE_DATA;
-	cmnd->sg->iovec_count = cmnd->req->sr_use_sg;
-	cmnd->sg->dxfer_len = cmnd->req->sr_bufflen;
-//  cmnd->sg->dxferp handled later
-	cmnd->sg->cmdp = cmnd->req->sr_cmnd;
-	cmnd->sg->sbp = (uint8_t *)kmalloc(MAX_SENSE_DATA, GFP_KERNEL | GFP_ATOMIC);
-	cmnd->sg->timeout = TE_TIMEOUT;
-	cmnd->sg->flags = 0;
-
-	/* we need the data buffers to get pointed correctly */
-	if (cmnd->req->sr_bufflen) {	// there is data
-
-		sg_iov =
-			(sg_iovec_t *)kmalloc(cmnd->sg->iovec_count * sizeof(sg_iovec_t),
-								   GFP_KERNEL | GFP_ATOMIC);
-		if (!sg_iov) {
-			printk("fill_sg_hdr: sg_iov: kmalloc failed\n");
-			return -1;
-		}
-
-		st_list = (struct scatterlist *) cmnd->req->sr_buffer;
-
-		for (i = 0; i < cmnd->sg->iovec_count; i++) {
-
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-			sg_iov[i].iov_base = (void *)sg_dma_address(st_list + i);
-			sg_iov[i].iov_len = sg_dma_len(st_list + i);
-#else
-			sg_iov[i].iov_base = st_list[i].address;
-			sg_iov[i].iov_len = st_list[i].length;
-#endif
-
-# ifdef DEBUG_HANDLE_CMD
-//          printk ("sg_iov[%d]: %d\n", i, sg_iov[i].iov_len);
-# endif
-		}
-		cmnd->sg->dxferp = sg_iov;
-	} else
-		cmnd->sg->dxferp = NULL;
-
-	return 0;
-}
-# endif
-
-/********************************************************************
- * THESE ARE FUNCTIONS WHICH ARE SPECIFIC TO FILE IO - I lump them  *
- *      together just to help me keep track of what is where        *
- *******************************************************************/
-
-# ifdef FILEIO
-/*
- * handle_cmd: This command is responsible for dealing with the received
- * command. I am slightly unclear about everything this function needs
- * to do. Right now, it receives new commands, and gets them to the
- * state where they are processing or pending.
- * INPUT: Target_Scsi_Cmnd to be handled
- * OUTPUT: 0 if everything is okay, < 0 if there is trouble
- */
-static int
-handle_cmd(Target_Scsi_Cmnd * cmnd)
-{
-	uint64_t lba_start;
-	struct file *dev_file;
-	int i;
-	mm_segment_t old_fs;
-	int to_read;
-	loff_t err = 0;
-	struct scatterlist *st_list;
-
-# ifdef DEBUG_HANDLE_CMD
-	printk("Entering FILEIO handle_cmd\n");
-# endif
-
-	/* Bjorn Thordarson, 9-May-2004 -- start --*/
-	if (cmnd->fd == NULL) {
-		if (cmnd->req->sr_cmnd[0] == INQUIRY) {
-			printk("INQUIRY received (invalid lun/target), responding with TYPE_NO_LUN\n");
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-			/* get length */
-			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-			if (to_read < 0) {
-				printk("handle_command: get_allocation length returned error "
-						"for %d\n", cmnd->id);
-				return -1;
-			}
-
-			/* allocate space */
-			if (get_space(cmnd->req, to_read)) {
-				printk("handle_command: get_space returned error for %d\n",
-						cmnd->id);
-				return -1;
-			}
-
-			/* get response */
-			if (get_inquiry_response(cmnd->req, to_read, TYPE_NO_LUN)) {
-				printk("handle_command: get_inquiry_response returned error "
-						"for %d\n", cmnd->id);
-				return -1;
-			}
-
-			/* change status */
-			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
-			return 0;
-		} else if (cmnd->req->sr_cmnd[0] == REPORT_LUNS)
-			printk("REPORTS_LUNS received (invalid lun/target)\n");
-		else printk("LUN or TARGET_ID IS INVALID -> Responding with "
-					"ILLEGAL_REQUEST\n");
-		/* set data direction */
-		cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-		/* get length */
-		to_read = sizeof(struct iscsi_sense_data) + 14;
-
-		/* allocate space */
-		if (get_space(cmnd->req, to_read)) {
-			printk("handle_command: get_space returned error "
-					"for %d\n", cmnd->id);
-			return -1;
-		}
-
-		/* get response */
-		if (get_mode_sense_response2(cmnd->req, ILLEGAL_REQUEST, 0x25, 0x0)) {
-			printk("handle_command: get_mode_sense_response returned error "
-					"for %d\n", cmnd->id);
-			return -1;
-		}
-
-		/* change status */
-		cmnd->state = ST_DONE;
-		cmnd->req->sr_result = DID_OK << 16;
-		return 0;
-	}
-	/* Bjorn Thordarson, 9-May-2004 -- end -- */
-
-	switch (cmnd->req->sr_cmnd[0]) {
-	case READ_CAPACITY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("READ_CAPACITY received\n");
-# endif
-			/* perform checks on READ_CAPACITY - LATER */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-			/* allocate sg_list and get_free_pages */
-			if (get_space(cmnd->req, READ_CAP_LEN)) {
-				printk("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* get response */
-			/* Bjorn Thordarson, 9-May-2004 */
-			/*****
-			if (get_read_capacity_response(cmnd->req)) {
-			*****/
-			if (get_read_capacity_response(cmnd)) {
-				printk
-					("handle_command: get_read_capacity_response returned an error for %d\n",
-					 cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* change status */
-			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
-
-			err = 0;
-			break;
-		}
-
-	case INQUIRY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("INQUIRY received\n");
-# endif
-			/* perform checks on INQUIRY - LATER */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-			/* get length */
-			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-			if (to_read < 0) {
-				printk
-					("handle_command: get_allocation length returned an error for %d\n",
-					 cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* allocate space */
-			if (get_space(cmnd->req, to_read)) {
-				printk("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* get response */
-			/* Bjorn Thordarson, 9-May-2004 */
-			/*****
-			if (get_inquiry_response(cmnd->req, to_read)) {
-			*****/
-			if (get_inquiry_response(cmnd->req, to_read, TYPE_DISK)) {
-				printk
-					("handle_command: get_inquiry_response returned an error for %d\n",
-					 cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* change status */
-			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
-			err = 0;
-			break;
-		}
-
-	case REPORT_LUNS:
-		{
-			if ((to_read = allocate_report_lun_space(cmnd)) < 0) {
-				err = -1;
-				break;
-			}
-
-			/* get response */
-			if ((err = get_report_luns_response(cmnd, to_read))) {
-				printk
-					("handle_command: get_report_luns_response returned an error for %d\n",
-					 cmnd->id);
-			}
-			break;
-		}
-
-		/* cdeng, August 24 2002 */
-	case MODE_SENSE:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("MODE_SENSE received\n");
-# endif
-			/* perform checks on MODE_SENSE - LATER */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-
-			/* get length */
-			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-			if (to_read < 0) {
-				printk
-					("handle_command: get_allocation length returned an error for %d\n",
-					 cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* allocate space */
-			if (get_space(cmnd->req, to_read)) {
-				printk("handle_command: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* get response */
-			if (get_mode_sense_response(cmnd->req, to_read)) {
-				printk
-					("handle_command: get_mode_sense_response returned an error for %d\n",
-					 cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* change status */
-			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
-			err = 0;
-			break;
-		}
-
-		/* cdeng, August 24 2002 */
-	case VERIFY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("VERIFY received\n");
-# endif
-			/* perform checks on TEST UNIT READY */
-			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
-			cmnd->req->sr_use_sg = 0;
-			cmnd->req->sr_bufflen = 0;
-			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
-			err = 0;
-			break;
-		}
-
-	case START_STOP:
-	case TEST_UNIT_READY:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("TEST UNIT READY received\n");
-# endif
-			/* perform checks on TEST UNIT READY */
-			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
-			cmnd->req->sr_use_sg = 0;
-			cmnd->req->sr_bufflen = 0;
-			cmnd->req->sr_result = DID_OK << 16;
-			cmnd->state = ST_DONE;
-			err = 0;
-			break;
-		}
-
-	case READ_10:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("READ_10 received\n");
-# endif
-			/* perform checks for READ_10 */
-
-			/* set data direction */
-			cmnd->req->sr_data_direction = SCSI_DATA_READ;
-			/* get length */
-			to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-			if (to_read < 0) {
-				printk
-					("FILEIO handle_cmd: get_allocation_length returned (%d) an error for %d\n",
-					 to_read, cmnd->id);
-				err = -1;
-				break;
-			}
-
-			if (get_space(cmnd->req, to_read)) {
-				printk("FILEIO handle_cmd: get_space returned an error for %d\n",
-					   cmnd->id);
-				err = -1;
-				break;
-			}
-
-			/* data needs to be returned from the file */
-			lba_start =
-				(cmnd->req->sr_cmnd[LBA_POSN_10] << (BYTE * 3)) +
-				(cmnd->req->sr_cmnd[LBA_POSN_10 + 1] << (BYTE * 2)) +
-				(cmnd->req->sr_cmnd[LBA_POSN_10 + 2] << (BYTE)) +
-				cmnd->req->sr_cmnd[LBA_POSN_10 + 3];
-
-			st_list = (struct scatterlist *) cmnd->req->sr_buffer;
-
-			dev_file = cmnd->fd;
-			for (i = 0; i < cmnd->req->sr_use_sg; i++) {
-				if (dev_file) {
-					if (dev_file->f_op->llseek) {
-						lock_kernel();
-						old_fs = get_fs();
-						set_fs(get_ds());
-						err =
-							dev_file->f_op->llseek(dev_file,
-												   lba_start * BLOCKSIZE,
-												   0 /*SEEK_SET */ );
-						set_fs(old_fs);
-						unlock_kernel();
-					} else {
-						lock_kernel();
-						old_fs = get_fs();
-						set_fs(get_ds());
-						err =
-							default_llseek(dev_file, lba_start * BLOCKSIZE,
-										   0 /*SEEK_SET */ );
-						set_fs(old_fs);
-						unlock_kernel();
-					}
-
-					if (err != lba_start * BLOCKSIZE) {
-						printk("FILEIO handle_cmd: lseek trouble\n");
-						break;
-					}
-
-					if ((dev_file->f_op)
-						&& (dev_file->f_op->read)) {
-						old_fs = get_fs();
-						set_fs(get_ds());
-						err = dev_file->f_op->read(
-							dev_file,
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-							(void *)sg_dma_address(st_list + i),
-							sg_dma_len(st_list + i),
-#else
-							st_list[i].address,
-							st_list[i].length,
-#endif
-							&dev_file->f_pos);
-
-						set_fs(old_fs);
-
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-						if (err < sg_dma_len(st_list + i)) {
-#else
-						if (err < st_list[i].length) {
-#endif
-							if (err < 0) {
-								if (err != -EAGAIN) {
-									printk("handle_cmnd: read returned %lld\n",
-										   err);
-									break;
-								}
-								err = 0;
-							}
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-							memset(
-								(void *)sg_dma_address(st_list + i) + err,
-								0,
-								sg_dma_len(st_list + i) - err);
-#else
-							memset(
-								st_list[i].address + err,
-								0,
-								st_list[i].length - err);
-#endif
-						}
-//                      if (err > 0)
-//                          inode_dir_notify (dev_file->f_dentry->d_parent->d_inode, DN_ACCESS);
-					}
-				}
-
-				/*
-				 * Assumption is that everything will be
-				 * written in blocksize chunks. Also the
-				 * blocksize is less than pagesize and
-				 * the latter is a multiple of the first
-				 */
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-				lba_start += sg_dma_len(st_list + i) / BLOCKSIZE;
-#else
-				lba_start += st_list[i].length / BLOCKSIZE;
-#endif
-			}
-			/* change_status */
-			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
-			err = 0;
-			break;
-		}
-
-	case WRITE_10:
-		{
-# ifdef DEBUG_HANDLE_CMD
-			printk("WRITE_10 received\n");
-# endif
-			if (cmnd->state == ST_NEW_CMND) {
-				/* perform checks on the received WRITE_10 */
-
-				/* set data direction for the WRITE_10 */
-				cmnd->req->sr_data_direction = SCSI_DATA_WRITE;
-				/* get length */
-				to_read = get_allocation_length(cmnd->req->sr_cmnd);
-
-				if (to_read < 0) {
-					printk
-						("FILEIO handle_cmd: get_allocation_length returned (%d) an error for %d\n",
-						 to_read, cmnd->id);
-					err = -1;
-					break;
-				}
-
-				/* get space */
-				if (get_space(cmnd->req, to_read)) {
-					printk("FILEIO handle_cmd: get_space returned error for %d\n",
-						   cmnd->id);
-					err = -1;
-					break;
-				}
-				cmnd->state = ST_PENDING;
-			} else if (cmnd->state == ST_TO_PROCESS) {
-				/* data needs to be written to the file */
-				lba_start =
-					(cmnd->req->sr_cmnd[LBA_POSN_10] << (BYTE * 3)) +
-					(cmnd->req->sr_cmnd[LBA_POSN_10 + 1] << (BYTE * 2)) +
-					(cmnd->req->sr_cmnd[LBA_POSN_10 + 2] << (BYTE)) +
-					cmnd->req->sr_cmnd[LBA_POSN_10 + 3];
-
-				st_list = (struct scatterlist *) cmnd->req->sr_buffer;
-
-				dev_file = cmnd->fd;
-				for (i = 0; i < cmnd->req->sr_use_sg; i++) {
-					if (dev_file) {
-						if (dev_file->f_op->llseek) {
-							lock_kernel();
-							old_fs = get_fs();
-							set_fs(get_ds());
-							err =
-								dev_file->f_op->llseek(dev_file,
-													   lba_start * BLOCKSIZE,
-													   0 /*SEEK_SET */ );
-							set_fs(old_fs);
-							unlock_kernel();
-						} else {
-							lock_kernel();
-							old_fs = get_fs();
-							set_fs(get_ds());
-							err =
-								default_llseek(dev_file, lba_start * BLOCKSIZE,
-											   0 /*SEEK_SET */ );
-							set_fs(old_fs);
-							unlock_kernel();
-						}
-
-						if (err != lba_start * BLOCKSIZE) {
-							printk("FILEIO handle_cmd: lseek trouble\n");
-							break;
-						}
-
-						if ((dev_file->f_op)
-							&& (dev_file->f_op->read)) {
-							old_fs = get_fs();
-							set_fs(get_ds());
-							err =
-							dev_file->f_op->write(
-							  dev_file,
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-							  (void *)sg_dma_address(st_list + i),
-							  sg_dma_len(st_list + i),
-#else
-							  st_list[i].address,
-							  st_list[i].length,
-#endif
-							  &dev_file->f_pos);
-							set_fs(old_fs);
-							if ((err < 0) && (err != -EAGAIN)) {
-								printk("handle_cmnd: read returned %lld\n", err);
-								break;
-							}
-//                          if (err > 0)
-//                              inode_dir_notify (dev_file->f_dentry->d_parent->d_inode, DN_MODIFY);
-						}
-					}
-
-					/*
-					 * Assumption is that everything will be
-					 * written in blocksize chunks. Also the
-					 * blocksize is less than pagesize and
-					 * the latter is a multiple of the first
-					 */
-/* Ming Zhang, mingz@ele.uri.edu */
-#ifdef K26
-					lba_start += sg_dma_len(st_list + i) / BLOCKSIZE;
-#else
-					lba_start += st_list[i].length / BLOCKSIZE;
-#endif
-				}
-				cmnd->state = ST_DONE;
-				cmnd->req->sr_result = DID_OK << 16;
-			}
-			err = 0;
-			break;
-		}
-
-	default:
-		{
-			printk("FILEIO handle_cmd: unknown command 0x%02x\n",
-					cmnd->req->sr_cmnd[0]);
-			break;
-		}
-	}
-	return err;
-}
-
-#endif
 
 #if 0
 /* dispatch_scsi_info is the central dispatcher

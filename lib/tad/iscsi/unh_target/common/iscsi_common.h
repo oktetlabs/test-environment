@@ -34,6 +34,7 @@
 #define _ISCSI_COMMON_H
 
 #include <stdint.h>
+#include <tad_iscsi_impl.h>
 
 #define ISCSI_WKP			3260	/* IANA's iSCSI WKP */
 #define ISCSI_WKP_STRING		"3260"	/* IANA's iSCSI WKP as string */
@@ -324,7 +325,7 @@
 /* SNACK for Error Recovery - SAI */
 #define SNACK					0x00000030
 
-extern struct iscsi_thread_param *iscsi_param;
+extern iscsi_target_thread_params_t *iscsi_param;
 
 /* iSCSI PDU formats */
 struct iscsi_init_scsi_cmnd {
@@ -790,5 +791,11 @@ extern char *printable_iscsi_op(void *cmd, char *op_buf);
  * Returns 0 otherwise.
  */
 extern int target_in_use(uint32_t target_id);
+
+struct scatterlist 
+{
+    uint32_t length;
+    uint8_t *address;
+};
 
 #endif

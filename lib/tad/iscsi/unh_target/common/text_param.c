@@ -54,7 +54,7 @@
 extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
 extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
 
-struct iscsi_thread_param *iscsi_param;
+iscsi_target_thread_params_t *iscsi_param;
 
 static struct key_values upper_case_values = {
 	none:NONE,
@@ -1208,8 +1208,6 @@ iscsi_recv_msg(int sock, int length, char *buffer, int flags)
         goto out;
     }
     TRACE(TRACE_DEBUG, "Received: %d\n", retval);
-
-    retval = 0;
 
 out:
     TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_recv_msg, retval %d\n", retval);

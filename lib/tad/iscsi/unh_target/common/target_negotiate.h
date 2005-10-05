@@ -86,12 +86,12 @@ struct iscsi_global
   /* session_sem: semaphore to add and remove sessions from both session lists
    *	this semaphore also controls access to session->conn_list
    */
-  sem_t	session_sem;
+  pthread_mutex_t session_mutex;
 
   /* session_read_mutex: semaphore to read (no changes) both session lists
    *	as well as the session->conn_list
    */
-  sem_t	session_read_mutex;
+  pthread_mutex_t session_read_mutex;
 
   /* session_readers: counts number of current readers of the session lists */
   uint32_t			session_readers;
@@ -106,7 +106,7 @@ struct iscsi_global
   sem_t	server_sem;
 
   /* device: device returned by the STML */
-  struct STD		*device;
+  struct Scsi_Target_Device *device;
 
   /* force: manageable bits to initialize connection flags */
   uint32_t			force;
@@ -188,7 +188,7 @@ struct iscsi_conn {
 	void *text_in_progress;
 
 	/* text_in_progress_sem: semaphore to add/remove text_in_progress */
-	sem_t text_in_progress_sem;
+	pthread_mutex_t text_in_progress_mutex;
 
 	/* 
 	 * Connection WIDE COUNTERS: stat_sn
@@ -226,7 +226,7 @@ struct iscsi_session {
 	struct iscsi_cmnd *cmnd_list;
 
 	/* conn_sem: semaphore to add/remove commands and reject items */
-	sem_t cmnd_sem;
+	pthread_mutex_t cmnd_mutex;
 
 	/* nconn: no of active connections */
 	int nconn;

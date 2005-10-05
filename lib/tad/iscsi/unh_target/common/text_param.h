@@ -35,6 +35,8 @@
 
 #include <semaphore.h>
 #include <stdint.h>
+#include <tad_iscsi_impl.h>
+
 /*
  * Define the Login/Text Parameters
  */
@@ -303,13 +305,6 @@ while(0)
 #define INITIAL_FIRSTBURSTLENGTH	65536
 #define INITIAL_MAXBURSTLENGTH		262144
 
-/**
- * This structure holds the parameters for the iscsi_server_rx_thread.
- */
-struct iscsi_thread_param {
-    int   send_recv_csap;  /**< iSCSI CSAP id */
-    int   reject;          /**< Reject: 1 - the connection will be rejected */
-};
 
 /* This structure holds the parameters required for login-text
  * negotiation

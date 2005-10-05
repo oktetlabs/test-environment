@@ -1,9 +1,9 @@
 #ifndef _SCSI_SCSI_CMND_H
 #define _SCSI_SCSI_CMND_H
 
-#include <linux/dma-mapping.h>
-#include <linux/list.h>
-#include <linux/types.h>
+#include <inttypes.h>
+#include <list.h>
+#include <linux-scsi.h>
 
 struct request;
 struct scatterlist;
@@ -18,7 +18,9 @@ struct scsi_pointer {
 	struct scatterlist *buffer;	/* which buffer */
 	int buffers_residual;	/* how many buffers left */
 
-        dma_addr_t dma_handle;
+#if 0
+    dma_addr_t dma_handle;
+#endif
 
 	volatile int Status;
 	volatile int Message;
@@ -72,15 +74,17 @@ struct scsi_cmnd {
 
 	unsigned char cmd_len;
 	unsigned char old_cmd_len;
-	enum dma_data_direction sc_data_direction;
-	enum dma_data_direction sc_old_data_direction;
+	enum scsi_data_direction sc_data_direction;
+	enum scsi_data_direction sc_old_data_direction;
 
 	/* These elements define the operation we are about to perform */
 #define MAX_COMMAND_SIZE	16
 	unsigned char cmnd[MAX_COMMAND_SIZE];
 	unsigned request_bufflen;	/* Actual request size */
 
+#if 0
 	struct timer_list eh_timeout;	/* Used to time out the command. */
+#endif
 	void *request_buffer;		/* Actual requested buffer */
 
 	/* These elements define the operation we ultimately want to perform */
@@ -112,7 +116,7 @@ struct scsi_cmnd {
 	struct request *request;	/* The command we are
 				   	   working on */
 
-#define SCSI_SENSE_BUFFERSIZE 	96
+
 	unsigned char sense_buffer[SCSI_SENSE_BUFFERSIZE];		/* obtained by REQUEST SENSE
 						 * when CHECK CONDITION is
 						 * received on original command 

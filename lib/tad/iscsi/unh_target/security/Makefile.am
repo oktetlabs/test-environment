@@ -6,7 +6,7 @@ srcdir=@srcdir@
 VPATH=@srcdir@
 
 AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir) \
-	         -I$(srcdir)/../common
+	         -I$(srcdir)/../common -I$(srcdir)/../..
 
 AM_LDFLAGS=@TE_LDFLAGS@ 
 

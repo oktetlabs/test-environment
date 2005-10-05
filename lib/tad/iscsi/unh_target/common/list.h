@@ -28,7 +28,7 @@ struct list_head {
 
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 
-#define LIST_HEAD(name) \
+#define DEF_LIST_HEAD(name) \
 	struct list_head name = LIST_HEAD_INIT(name)
 
 #define INIT_LIST_HEAD(ptr) do { \
@@ -406,7 +406,7 @@ struct hlist_node {
 }; 
 
 #define HLIST_HEAD_INIT { .first = NULL } 
-#define HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
+#define DEF_HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
 #define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL) 
 #define INIT_HLIST_NODE(ptr) ((ptr)->next = NULL, (ptr)->pprev = NULL)
 

@@ -28,6 +28,7 @@
  * $Id$
  */
 
+#define TE_LOG_LEVEL 0xFFFF
 #include <te_config.h>
 
 #include <stdarg.h>
@@ -39,6 +40,7 @@
 #include <logger_defs.h>
 #include <logger_api.h>
 
+#include <tad_iscsi_impl.h>
 #include <iscsi_target.h>
 #include <my_login.h>
 
@@ -81,7 +83,7 @@ extern int iscsi_server_init();
 
 int main()
 {
-    static struct iscsi_thread_param config;
+    static iscsi_target_thread_params_t config;
     int server_socket;
     int data_socket;
     struct sockaddr_in listen_to;

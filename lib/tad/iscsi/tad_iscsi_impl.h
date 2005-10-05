@@ -288,6 +288,7 @@ extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
  */
 typedef struct {
     int send_recv_csap;
+    int reject;
 } iscsi_target_thread_params_t;
 
 

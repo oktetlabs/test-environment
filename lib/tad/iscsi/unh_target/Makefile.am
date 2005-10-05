@@ -8,7 +8,7 @@ VPATH=@srcdir@
 SUBDIRS=common security target
 
 AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir) \
-	    -I$(srcdir)/common -I$(srcdir)/target
+	    -I$(srcdir)/common -I$(srcdir)/target -I$(srcdir)/..
 
 AM_CFLAGS=@TE_CFLAGS@ -pthread
 
