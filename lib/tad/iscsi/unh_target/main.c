@@ -81,12 +81,14 @@ te_log_message_f te_log_message = stderr_logging;
 
 extern int iscsi_server_init();
 
-int main()
+int main(int argc, char *argv[])
 {
     static iscsi_target_thread_params_t config;
-    int server_socket;
-    int data_socket;
+
+    int                server_socket;
+    int                data_socket;
     struct sockaddr_in listen_to;
+    char             **iter;
 
     TRACE_SET(TRACE_ALL); 
     TRACE(TRACE_VERBOSE, "Initializing");
@@ -102,7 +104,15 @@ int main()
         return EXIT_FAILURE;
     }
     listen(server_socket, 5);
-    fputs("Listen for incoming connection\n", stderr);
+    fputs("\nListen for incoming connection\n", stderr);
+
+    for (iter = argv + 1; *iter != NULL; iter++)
+    {
+        configure_parameter(KEY_TO_BE_NEGOTIATED,
+                            *iter,
+                            devdata->param_tbl);
+    }
+
     for(;;)
     {
         data_socket = accept(server_socket, NULL, NULL);

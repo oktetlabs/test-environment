@@ -10,8 +10,11 @@ AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir) \
 
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
-noinst_HEADERS=list.h iscsi_common.h debug.h range.h \
-               crc.h text_param.h target_negotiate.h \
+include_HEADERS=target_negotiate.h list.h \
+				iscsi_common.h text_param.h
+
+noinst_HEADERS=debug.h range.h \
+               crc.h \
                tcp_utilities.h lun_packing.h scsi_request.h \
 			   linux-scsi.h my_memory.h
 
