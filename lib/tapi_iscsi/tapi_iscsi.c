@@ -516,6 +516,7 @@ tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
     int key_num;
 
     asn_value *key_pair;
+    asn_value *key_values;
 
     if ((key_num = asn_get_length((asn_value *)data, "")) == -1)
     {
@@ -529,6 +530,12 @@ tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
         ERROR("%s, %d: invalid key index parameter provided",
               __FUNCTION__, __LINE__);
         return TAPI_ISCSI_KEY_INVALID;
+    }
+    if ((key_values = asn_init_value(ndn_iscsi_key_values)) == NULL)
+    {
+        ERROR("%s, %d: cannot init asn_value",
+              __FUNCTION__, __LINE__);
+        return TE_ENOMEM;
     }
 
     if ((key_pair = asn_init_value(ndn_iscsi_key_pair)) == NULL)
@@ -544,6 +551,16 @@ tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
               __FUNCTION__, __LINE__, rc);
         return TAPI_ISCSI_KEY_INVALID;
     }
+
+    if ((rc = asn_put_child_value_by_label(key_pair,
+                                           key_values,
+                                           "values")) != 0)
+    {
+        ERROR("%s, %d: cannot put child value, %r",
+              __FUNCTION__, __LINE__, rc);
+        return rc;
+    }
+    
     if ((rc = asn_insert_indexed(data, key_pair, key_index, "")) != 0)
     {
         ERROR("%s, %d: cannot insert element, %r",
