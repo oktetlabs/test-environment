@@ -37,12 +37,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include <logger_defs.h>
-#include <logger_api.h>
-
 #include <tad_iscsi_impl.h>
 #include <iscsi_target.h>
 #include <my_login.h>
+
+#include <logger_defs.h>
+#include <logger_api.h>
 
 const char *te_lgr_entity = "iSCSI standalone target";
 
