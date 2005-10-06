@@ -108,10 +108,6 @@ typedef struct list {
     uint32_t tid;
 } list;
 
-
-/** Address to which notification listerner is bound */
-static struct sockaddr_in logfork_saddr;
-
 /** Socket used by all client to register */
 static int logfork_clnt_sockd = -1;
 
@@ -119,30 +115,6 @@ static int logfork_clnt_sockd = -1;
 static pthread_mutex_t logfork_clnt_sockd_lock =
                            PTHREAD_MUTEX_INITIALIZER;
 #endif
-
-
-/** 
- * Get client socket used for logging. 
- *
- * @return socket file descriptor
- */
-int 
-logfork_get_sock(void)
-{
-    return logfork_clnt_sockd;
-}
-
-/** 
- * Set client socket used for logging. 
- *
- * @param sock  socket file descriptor
- */
-void 
-logfork_set_sock(int sock)
-{
-    logfork_clnt_sockd = sock;
-}
-
 
 /** 
  * Find process name by its pid and tid in the internal list of
@@ -152,8 +124,8 @@ logfork_set_sock(int sock)
  * @param tid   thread identifier      
  * @param name  pointer to process or thread name
  *
- * @retval  0   -  found
- * @retval -1   -  not found
+ * @retval  0      found
+ * @retval -1      not found
  */
 static int 
 logfork_find_name_by_pid(list **proc_list, char **name, int pid, 
@@ -256,6 +228,7 @@ logfork_entry(void)
     char *name;
     char  name_pid[LOGFORK_MAXLEN];
     list *proc_list = NULL;
+    char  port[16];
         
     socklen_t   addrlen = sizeof(struct sockaddr_in);
     
@@ -289,13 +262,20 @@ logfork_entry(void)
         return;
     }
     
-    memset(&logfork_saddr, 0, sizeof(logfork_saddr));
-    
-    if (getsockname(sockd, (struct sockaddr *)&logfork_saddr, &addrlen) < 0)
+    if (getsockname(sockd, (struct sockaddr *)&servaddr, &addrlen) < 0)
     {
         ERROR("logfork_entry(): getsockname() failed ; errno %d", errno);
         logfork_cleanup(&proc_list, sockd);
         return;
+    }
+    
+    sprintf(port, "%d", ntohs(servaddr.sin_port));
+    if (setenv("TE_LOG_PORT", port, 1) < 0)
+    {
+        int err = TE_OS_RC(TE_RCF_PCH, errno);
+        
+        ERROR("Failed to set TE_LOG_PORT environment variable: "
+              "error=%r", err);
     }
 
     while (1)
@@ -326,7 +306,7 @@ logfork_entry(void)
             }
             sprintf(name_pid, "%s.%u.%u",
                     name, (unsigned)msg.pid, (unsigned)msg.tid);
-            /* FIXME */
+
             te_log_message(__FILE__, __LINE__,
                            msg.__log_level, TE_LGR_ENTITY, 
                            strdup(msg.__lgr_user), 
@@ -337,6 +317,7 @@ logfork_entry(void)
             if (logfork_find_name_by_pid(&proc_list, &name, 
                                          msg.pid, msg.tid) == 0)
             {
+                snprintf(name, LOGFORK_MAXUSER, "%s", msg.__name);
                 continue;
             }
 
@@ -365,19 +346,35 @@ logfork_entry(void)
 static inline int
 open_sock(void)
 {
-    int sock;
+    char *port;
+    int   sock;
+    
+    struct sockaddr_in addr;
+
+    if ((port = getenv("TE_LOG_PORT")) == NULL)
+    {
+        fprintf(stderr, "Failed to register logfork user: "
+                        "TE_LOG_PORT is not exported\n");
+        return -1;
+    }
 
     sock = socket(PF_INET, SOCK_DGRAM, 0);
     if (sock < 0)
     {
-        fprintf(stderr, "logfork_register_user() - socket() failed\n");
+        fprintf(stderr, 
+                "Failed to register logfork user: socket() failed\n");
         return -1;
     }
-
-    if (connect(sock, (struct sockaddr *)&logfork_saddr, 
-                sizeof(logfork_saddr)) < 0)
+    
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = htons(atoi(port));
+    
+    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
-        fprintf(stderr, "logfork_register_user() - connect() failed\n");
+        fprintf(stderr, 
+                "Failed to register logfork user: - connect() failed\n");
         close(sock);
         return -1;
     }

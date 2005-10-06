@@ -59,20 +59,6 @@ extern int logfork_register_user(const char *name);
  */
 extern void logfork_entry(void);
 
-/** 
- * Get client socket used for logging. 
- *
- * @return socket file descriptor
- */
-extern int logfork_get_sock(void);
-
-/** 
- * Set client socket used for logging. 
- *
- * @param sock  socket file descriptor
- */
-extern void logfork_set_sock(int sock);
-
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif  
