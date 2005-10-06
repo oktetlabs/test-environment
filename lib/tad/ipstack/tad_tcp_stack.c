@@ -650,6 +650,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     {
         /* TODO: support of TCP over IPv6 */
         struct sockaddr_in local;
+        int                opt = 1;
 
         local.sin_family = AF_INET;
         local.sin_addr = ip4_spec_data->local_addr;
@@ -676,6 +677,15 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         switch (spec_data->data_tag)
         {
             case NDN_TAG_TCP_DATA_SERVER:
+                if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
+                               (void *) &opt, sizeof(opt)) == -1)
+                {
+                    rc = TE_OS_RC(TE_TAD_CSAP, errno);
+                    ERROR("%s(CSAP %d) set SO_REUSEADDR failed, errno %r", 
+                          __FUNCTION__, csap_descr->id, rc);
+                    return rc;
+                }
+
                 if (listen(spec_data->socket, 10) < 0)
                 {
                     rc = TE_OS_RC(TE_TAD_CSAP, errno);
