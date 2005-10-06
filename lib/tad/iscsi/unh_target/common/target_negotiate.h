@@ -197,9 +197,6 @@ struct iscsi_conn {
 	uint32_t max_send_length;	/*initiator's MaxRecvPDULength */
 	uint32_t max_recv_length;	/*target's MaxRecvPDULength */
 
-	/* fields to keep track of ip addresses */
-	struct sockaddr *ip_address;	/* initiator's ipv4/ipv6 address */
-	struct sockaddr *local_ip_address;/* target's ipv4/ipv6 address */
 };
 
 /* stores everything related to an iscsi session on the target */

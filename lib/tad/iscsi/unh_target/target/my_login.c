@@ -1128,9 +1128,8 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
         }
 
         TRACE(TRACE_ISCSI, "new connection cid %u attached to "
-                "existing session tsih %u, IP 0x%08x\n",
-              conn->cid, pdu->tsih,
-              ((struct sockaddr_in *)conn->ip_address)->sin_addr.s_addr);
+                "existing session tsih %u\n",
+              conn->cid, pdu->tsih);
 
         /* add new connection to end of connection list for existing session */
         temp = conn->session;
@@ -1221,7 +1220,7 @@ out:
      */
     if (temp_params) {
         param_tbl_uncpy(*temp_params);
-        free((void*)&temp_params);
+        free(temp_params);
     }
 
     return retval;
@@ -1390,26 +1389,6 @@ build_conn_sess(int sock, struct portal_group *ptr)
     sem_init(&conn->kill_tx_sem, 0, 0);
     pthread_mutex_init(&conn->text_in_progress_mutex, NULL);
 
-#if 0
-    if ((conn->ip_address = malloc(sizeof(struct sockaddr))) == NULL) {
-        goto out2;
-    }
-    addr_len = ptr->ip_length;        
-    if (getsockname(sock, conn->ip_address, &addr_len) < 0) {
-        goto out3;
-    }
-
-    if ((conn->local_ip_address = malloc(sizeof(struct sockaddr))) == NULL) {
-
-        goto out3;
-    }
-
-    addr_len = ptr->ip_length;
-    /* value-result parameter */
-    if (getsockname(sock, conn->local_ip_address, &addr_len) < 0) {
-        goto out4;
-    }
-#endif
     session = malloc(sizeof(struct iscsi_session));
     if (!session) 
     {
@@ -1457,22 +1436,18 @@ build_conn_sess(int sock, struct portal_group *ptr)
     return conn;
 
 out7:
-    free((void**)&session->session_params);
+    free(session->session_params);
 
     printf("\n 1 \n");
 out6:
     TRACE(TRACE_DEBUG, "Releasing R2T timer %p for session %p\n",
           session->r2t_timer, session);
-    free((void*)&session->r2t_timer);
+    free(session->r2t_timer);
 
-    free((void*)&session);
+    free(session);
 
 out4:
-    free((void*)&conn->local_ip_address);
-
-    free((void*)&conn->ip_address);
-
-    free((void*)&conn);
+    free(conn);
 
     return NULL;
 }

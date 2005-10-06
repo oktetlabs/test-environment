@@ -62,7 +62,7 @@ extern uint32_t iscsi_trace_mask;
 #define TRACE(mask, args...)						   \
 	do {								   \
 		if (iscsi_trace_mask & mask) { 				   \
-			INFO(args);		   			   \
+			RING(args);		   			   \
 		}							   \
 	} while(0)
 

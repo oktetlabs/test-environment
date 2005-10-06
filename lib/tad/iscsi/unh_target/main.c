@@ -28,12 +28,12 @@
  * $Id$
  */
 
-#define TE_LOG_LEVEL 0xFFFF
 #include <te_config.h>
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -68,13 +68,15 @@ stderr_logging(const char   *file,
 int 
 iscsi_tad_send(int sock, uint8_t *buffer, size_t len)
 {
-    return write(sock, buffer, len);
+    int result = write(sock, buffer, len);
+    return result >= 0 ? result : -errno;
 }
 
 int 
 iscsi_tad_recv(int sock, uint8_t *buffer, size_t len)
 {
-    return read(sock, buffer, len);
+    int result = read(sock, buffer, len);
+    return result >= 0 ? result : -errno;
 }
 
 te_log_message_f te_log_message = stderr_logging;
@@ -89,11 +91,15 @@ int main(int argc, char *argv[])
     int                data_socket;
     struct sockaddr_in listen_to;
     char             **iter;
+    pthread_t          thread;
+
+    UNUSED(argc);
 
     TRACE_SET(TRACE_ALL); 
     TRACE(TRACE_VERBOSE, "Initializing");
     iscsi_server_init();
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, NULL, 0);
     listen_to.sin_family = AF_INET;
     listen_to.sin_port   = htons(3260);
     listen_to.sin_addr.s_addr = INADDR_ANY;
@@ -110,7 +116,7 @@ int main(int argc, char *argv[])
     {
         configure_parameter(KEY_TO_BE_NEGOTIATED,
                             *iter,
-                            devdata->param_tbl);
+                            *devdata->param_tbl);
     }
 
     for(;;)
@@ -124,8 +130,8 @@ int main(int argc, char *argv[])
         config.send_recv_csap = data_socket;
         config.reject = 0;
         fputs("Accepted\n", stderr);
-        iscsi_server_rx_thread(&config);
-        fputs("done\n", stderr);
+        if (pthread_create(&thread, NULL, iscsi_server_rx_thread, &config) == 0)
+            fputs("thread created\n", stderr);
     }
     return 0;
 }
