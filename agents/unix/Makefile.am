@@ -132,6 +132,7 @@ taunixtmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
 
 SYMTBL_LIBS= \
     $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a
 
 symtbl.c: $(MY_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@

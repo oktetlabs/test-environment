@@ -43,9 +43,6 @@
 
 #include "unix_internal.h"
 
-
-extern char **environ;
-
 #if HAVE_AIO_H
 void *dummy = aio_read;
 #endif
@@ -54,7 +51,6 @@ extern sigset_t rpcs_received_signals;
 
 
 static te_bool dynamic_library_set = FALSE;
-static char *dynamic_library_name = NULL;
 static void *dynamic_library_handle = NULL;
 
 /**
@@ -96,7 +92,7 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
         if (!dynamic_library_set)
         {
             dynamic_library_set = TRUE;
-            dynamic_library_name = "(NULL)";
+            setenv("TARPC_DL_NAME", "NULL", 1);
             RING("Dynamic library is set to NULL implicitly");
         }
 
@@ -244,6 +240,7 @@ int
 setlibname(const tarpc_setlibname_in *in)
 {
     const char *libname;
+    
     void (*tce_initializer)(const char *, int) = NULL;
     extern int (*tce_notify_function)(void);
     extern int (*tce_get_peer_function)(void);
@@ -254,13 +251,14 @@ setlibname(const tarpc_setlibname_in *in)
                   
     if (dynamic_library_set)
     {
-        if (libname != NULL && dynamic_library_name != NULL &&
-            strcmp(libname, dynamic_library_name) == 0)
+        char *old = "NULL";
+        
+        if (libname != NULL && (old = getenv("TARPC_DL_NAME")) != NULL &&
+            strcmp(libname, old) == 0)
         {
             return 0;
         }
-        ERROR("Dynamic library has already been set to %s",
-              dynamic_library_name);
+        ERROR("Dynamic library has already been set to %s", old);
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
     if ((dynamic_library_handle = dlopen(libname, RTLD_LAZY)) == NULL)
@@ -268,12 +266,7 @@ setlibname(const tarpc_setlibname_in *in)
         ERROR("Cannot load shared library %s: %s", libname, dlerror());
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
-    dynamic_library_name = (libname != NULL) ? strdup(libname) : "(NULL)";
-    if (dynamic_library_name == NULL)
-    {
-        ERROR("strdup(%s) failed", libname ? : "(nil)");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
+    setenv("TARPC_DL_NAME", libname != NULL ? libname : "NULL", 1);
     dynamic_library_set = TRUE;
 
     if (tce_get_peer_function != NULL)
@@ -292,7 +285,7 @@ setlibname(const tarpc_setlibname_in *in)
                     tce_notify_function();
                 tce_initializer(ptc, tce_get_peer_function());
                 RING("TCE initialized for dynamic library '%s'", 
-                     dynamic_library_name);
+                     getenv("TARPC_DL_NAME"));
             }
         }
     }
@@ -379,51 +372,6 @@ TARPC_FUNC(pthread_cancel, {},
 }
 )
 
-/** Function to start RPC server */
-void
-tarpc_init(int argc, char **argv)
-{
-    const char *name = argv[0];
-    const char *log_sock = argv[1];
-    const char *libname = argv[2];
-    
-    int sock;
-
-    tarpc_setlibname_in  in_local;
-    tarpc_setlibname_in *in = &in_local;
-    
-    if (name == NULL || log_sock == NULL)
-    {
-        PRINT("%s(): Invalid argument: name=%s log_sock=%s",
-              __FUNCTION__,
-              (name == NULL) ? "(nil)" : name,
-              (log_sock == NULL) ? "(nil)" : log_sock);
-        return;
-    }
-    
-    if ((sock = atoi(log_sock)) > 0)
-        logfork_set_sock(sock);
-
-    memset(&in_local, 0, sizeof(in_local));
-
-    UNUSED(argc);
-
-    /* Emulate setlibname() call */
-    if (libname == NULL || strcmp(libname, "(NULL)") == 0)
-    {
-        in->libname.libname_len = 0;
-        in->libname.libname_val = NULL;
-    }
-    else
-    {
-        in->libname.libname_len = strlen(libname) + 1;
-        in->libname.libname_val = (char *)libname;
-    }
-    setlibname(in);
-    
-    rcf_pch_rpc_server(name);
-}
-
 /**
  * Check, if some signals were received by the RPC server (as a process)
  * and return the mask of received signals.
@@ -446,46 +394,24 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
     return TRUE;
 }
 
-/**
- * Update argument list and number of arguments for tarpc_init routine.
- *
- * @param argc  number of arguments location
- * @param argv  argument list array, assumed to be long enough
- */
-void
-rcf_ch_get_tarpc_init_args(int *argc, char **argv)
-{
-    static char logsock[16];
-    
-    assert(argv != NULL);
-    assert(argc != NULL);
-
-    sprintf(logsock, "%d", logfork_get_sock());
-
-    argv[(*argc)++] = logsock;
-    argv[(*argc)++] = dynamic_library_name;
-}
-
 /*-------------- execve() ---------------------------------*/
 TARPC_FUNC(execve, {},
 {
-    const char *argv[7];
+    const char *argv[5];
     
     int rc;
-    int argc = 4;
     
     memset(argv, 0, sizeof(argv));
     argv[0] = ta_execname;
     argv[1] = "exec";
-    argv[2] = "tarpc_init";
-    argv[3] = strdup(in->name);
-    rcf_ch_get_tarpc_init_args(&argc, (char **)argv);
+    argv[2] = "rcf_pch_rpc_server_argv";
+    argv[3] = in->name;
 
     /* Wait until main thread sends answer to non-blocking RPC call */
     sleep(1);
 
-    VERB("execve() args: %s, %s, %s, %s, %s, %s",
-         argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
+    VERB("execve() args: %s, %s, %s, %s", 
+         argv[0], argv[1], argv[2], argv[3]);
     /* Call execve() */
     MAKE_CALL(rc = func_ptr((void *)ta_execname, argv, environ));
     if (rc != 0)

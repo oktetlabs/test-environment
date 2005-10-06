@@ -397,7 +397,29 @@ rcf_ch_start_task(int *pid,
             setpgid(getpid(), getpid());
             logfork_register_user(rtn);
             if (is_argv)
-                ((rcf_argv_rtn)(addr))(argc, (char **)params);
+            {
+                const char *argv[16];
+
+                /* work around for fork/pthread problem: do exec */
+    
+                if (argc > 12)
+                {
+                    ERROR("Too many arguments for %s, "
+                          "increase constant in %s %d", 
+                          __FILE__, __LINE__);
+                    return 1;
+                }
+                memset(argv, 0, sizeof(argv));
+                argv[0] = ta_execname;
+                argv[1] = "exec";
+                argv[2] = rtn;
+                memcpy(argv + 3, params, argc * sizeof(void *));
+
+                execve(ta_execname, (char * const *)argv, 
+                       (char * const *)environ);
+                
+                return 1;
+            }
             else
                 ((rcf_rtn)(addr))(params[0], params[1], params[2],
                                   params[3], params[4], params[5],
@@ -1262,14 +1284,6 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
 
     return -1; /* Call default callback as well */
 }
-
-#ifndef RCF_RPC
-/* Dummy */
-void
-rcf_ch_get_tarpc_init_args(int *argc void **argv)
-{
-}
-#endif
 
 /**
  * Entry point of the Unix Test Agent.

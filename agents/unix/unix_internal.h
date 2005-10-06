@@ -140,9 +140,7 @@ extern int ta_system(const char *cmd);
  */
 extern int ta_kill_death(pid_t pid);
 
-
-/**
- * TCE-related pointers
- */
+/** Environment */
+extern char const * const *environ;
 
 #endif /* __TE_TA_UNIX_INTERNAL_H__ */

@@ -137,7 +137,9 @@ static const char * const env_hidden[] = {
     "SSH_CLIENT",
     "SSH_CONNECTION",
     "SUDO_COMMAND",
-    "TE_RPC_PORT"
+    "TE_RPC_PORT",
+    "TE_LOG_PORT",
+    "TARPC_DL_NAME"
 };
 
 
@@ -3822,8 +3824,6 @@ env_del(unsigned int gid, const char *oid, const char *name)
 static int
 env_list(unsigned int gid, const char *oid, char **list)
 {
-    extern char const * const *environ;
-
     char const * const *env;
 
     char   *ptr = buf;
