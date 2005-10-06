@@ -128,7 +128,7 @@ iter_stats_update_by_result(test_iter *iter)
     }
     iter->stats.not_run--;
 
-    switch (iter->exp_result)
+    switch (iter->exp_result.value)
     {
         case TRC_TEST_UNSPEC:
             switch (iter->got_result)
@@ -193,7 +193,8 @@ iter_stats_update_by_result(test_iter *iter)
             break;
 
         default:
-            ERROR("Invalid expected testing result %u", iter->exp_result);
+            ERROR("Invalid expected testing result %u",
+                  iter->exp_result.value);
     }
 }
 
@@ -389,6 +390,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
             test = calloc(1, sizeof(*test));
             if (test == NULL)
             {
+                free(name);
                 ERROR("calloc() failed");
                 return errno;
             }
@@ -396,6 +398,11 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
             test->name = name;
             TAILQ_INIT(&test->iters.head);
             TAILQ_INSERT_TAIL(&tests->head, test, links);
+        }
+        else
+        {
+            free(name);
+            name = NULL;
         }
 
         node = xmlNodeChildren(root);
@@ -441,7 +448,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
                 return errno;
             }
             iter->args = args;
-            iter->exp_result = TRC_TEST_UNSPEC;
+            iter->exp_result.value = TRC_TEST_UNSPEC;
             if (type == TRC_TEST_SCRIPT)
                 iter->stats.not_run = 1;
             TAILQ_INIT(&iter->tests.head);
@@ -449,7 +456,15 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
         }
         else
         {
-            /* free args */
+            test_arg   *arg;
+
+            while ((arg = args.head.tqh_first) != NULL)
+            {
+                TAILQ_REMOVE(&args.head, arg, links);
+                free(arg->name);
+                free(arg->value);
+                free(arg);
+            }
         }
         iter->used = TRUE;
 

@@ -410,11 +410,11 @@ iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
               * got result is not PASSED as expected
               */
              (~flags & TRC_OUT_NO_EXP_PASSED) ||
-             (p->exp_result != TRC_TEST_PASSED) ||
+             (p->exp_result.value != TRC_TEST_PASSED) ||
              (p->got_result != TRC_TEST_PASSED)) &&
             (/* NO_EXPECTED is clear or got result is equal to expected */
              (~flags & TRC_OUT_NO_EXPECTED) ||
-             (p->exp_result != p->got_result))
+             (p->exp_result.value != p->got_result))
            )
         {
             fprintf(f, trc_test_exp_got_row,
@@ -425,9 +425,9 @@ iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
                     test->test_path ? : "ERROR",
                     test->name,
                     trc_test_args_to_string(&p->args),
-                    trc_test_result_to_string(p->exp_result),
+                    trc_test_result_to_string(p->exp_result.value),
                     trc_test_result_to_string(p->got_result),
-                    PRINT_STR(p->bug),
+                    PRINT_STR(p->exp_result.key), /* FIXME */
                     PRINT_STR(p->notes));
 
             name_anchor = FALSE;
@@ -527,7 +527,7 @@ tests_to_html(te_bool stats, unsigned int flags,
                     p->stats.aborted + p->stats.new_run,
                     TRC_STATS_NOT_RUN(&p->stats),
                     p->stats.skip_exp, p->stats.skip_une,
-                    PRINT_STR(p->bug),
+                    "" /* FIXME */,
                     PRINT_STR(p->notes));
         }
         if ((p->type != TRC_TEST_SCRIPT) ||

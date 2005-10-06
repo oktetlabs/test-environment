@@ -251,21 +251,23 @@ trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
              entry = entry->links.tqe_next)
         {
             if (diff_exp[entry->id] == TRC_TEST_UNSET)
-                diff_exp[entry->id] = p->diff_exp[entry->id];
-            else if (diff_exp[entry->id] != p->diff_exp[entry->id])
+                diff_exp[entry->id] = p->diff_exp[entry->id].value;
+            else if (diff_exp[entry->id] != p->diff_exp[entry->id].value)
                 diff_exp[entry->id] = TRC_TEST_MIXED;
 
             if (iter_result == TRC_TEST_UNSET)
-                iter_result = p->diff_exp[entry->id];
-            else if (iter_result != p->diff_exp[entry->id])
+                iter_result = p->diff_exp[entry->id].value;
+            else if (iter_result != p->diff_exp[entry->id].value)
                 iter_has_diff = TRUE;
         }
 
         /* The routine should be called first to be called in any case */
         p->diff_out = trc_diff_tests_has_diff(&p->tests, flags) ||
                       (iter_has_diff &&
-                       (p->bug == NULL || strlen(p->bug) == 0 ||
-                        !trc_diff_exclude_by_bug(p->bug)));
+                       TRUE
+                       /* FIXME
+                        (p->bug == NULL || strlen(p->bug) == 0 ||
+                        !trc_diff_exclude_by_bug(p->bug))*/);
 
         if (!p->diff_out)
             has_no_out = TRUE;
@@ -300,8 +302,9 @@ trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
         p->diff_out = trc_diff_iters_has_diff(&p->iters, flags,
                                               &all_iters_out,
                                               p->diff_exp) &&
-                      (p->bug == NULL || strlen(p->bug) == 0 ||
-                       !trc_diff_exclude_by_bug(p->bug));
+                      TRUE
+                      /* FIXME (p->bug == NULL || strlen(p->bug) == 0 ||
+                       !trc_diff_exclude_by_bug(p->bug))*/;
 
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
@@ -358,10 +361,11 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                 {
                     fprintf(f, trc_diff_table_row_col,
                             trc_test_result_to_string(
-                                p->diff_exp[entry->id]));
+                                p->diff_exp[entry->id].value));
                 }
                 fprintf(f, trc_diff_table_row_end,
-                        PRINT_STR(p->bug), PRINT_STR(p->notes));
+                        "" /* FIXME PRINT_STR(p->bug)*/,
+                        PRINT_STR(p->notes));
             }
 
             rc = trc_diff_tests_to_html(&p->tests, flags, level + 1);
@@ -444,7 +448,7 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
                         trc_test_result_to_string(p->diff_exp[entry->id]));
             }
             fprintf(f, trc_diff_table_row_end,
-                    PRINT_STR(p->bug), PRINT_STR(p->notes));
+                    "" /* FIXME PRINT_STR(p->bug)*/, PRINT_STR(p->notes));
         }
         if (p->diff_out_iters)
         {

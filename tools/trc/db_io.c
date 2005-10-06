@@ -229,6 +229,131 @@ get_result(xmlNodePtr node, const char *name, trc_test_result *result)
 }
 
 /**
+ * Get expected result in accordance with list of tags.
+ *
+ * @param iter_node XML node of the parent iteration
+ * @param node      Location of the first non-arg node of the test 
+ *                  iteration (IN), of the first non-result node of the
+ *                  test iteration (OUT)
+ * @param tags      List of tags
+ * @param result    Location for the expected result data
+ *
+ * @return Status code.
+ */
+static int
+get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
+                    trc_tags *tags, trc_exp_result *result)
+{
+    int         rc = 0;
+    trc_tag    *tag = NULL;
+    xmlNodePtr  result_node;
+
+    struct trc_tagged_result {
+        LIST_ENTRY(trc_tagged_result)   links;
+        
+        xmlNodePtr          node;
+        char               *tag;
+        trc_test_result     value;
+    } *tagged_result;
+
+    LIST_HEAD(trc_tagged_results, trc_tagged_result)    tagged_results;
+
+
+    assert(node != NULL);
+    assert(tags != NULL);
+    assert(result != NULL);
+
+    /* Get all tagged results and remember corresponding XML node */
+    LIST_INIT(&tagged_results);
+    while (*node != NULL &&
+           xmlStrcmp((*node)->name, CONST_CHAR2XML("result")) == 0)
+    {
+        if (tags->tqh_first != NULL)
+        {
+            tagged_result = calloc(1, sizeof(*tagged_result));
+            if (tagged_result == NULL)
+            {
+                rc = ENOMEM;
+                goto exit;
+            }
+            LIST_INSERT_HEAD(&tagged_results, tagged_result, links);
+            tagged_result->node = *node;
+            tagged_result->tag =
+                XML2CHAR(xmlGetProp(*node, CONST_CHAR2XML("tag")));
+            rc = get_result(*node, "value", &tagged_result->value);
+            if (rc != 0)
+                goto exit;
+        }
+        *node = xmlNodeNext(*node); 
+    }
+
+    /* Do we have a tag with expected SKIPPED result? */
+    for (tagged_result = tagged_results.lh_first;
+         tagged_result != NULL;
+         tagged_result = tagged_result->links.le_next)
+    {
+        if (tagged_result->value == TRC_TEST_SKIPPED)
+        {
+            for (tag = tags->tqh_first;
+                 tag != NULL && strcmp(tagged_result->tag, tag->name) != 0;
+                 tag = tag->links.tqe_next);
+            if (tag != NULL)
+                break;
+        }
+    }
+    if (tagged_result == NULL)
+    {
+        /* We have no tag with expected SKIPPED result */
+        for (tagged_result = tagged_results.lh_first;
+             tagged_result != NULL;
+             tagged_result = tagged_result->links.le_next)
+        {
+            if (tagged_result->value != TRC_TEST_SKIPPED)
+            {
+                for (tag = tags->tqh_first;
+                     tag != NULL && strcmp(tagged_result->tag,
+                                           tag->name) != 0;
+                     tag = tag->links.tqe_next);
+                if (tag != NULL)
+                    break;
+            }
+        }
+    }
+
+    /* We have found matching tagged result */
+    if (tagged_result != NULL)
+    {
+        result->value = tagged_result->value;
+        result_node = tagged_result->node;
+    }
+    else
+    {
+        rc = get_result(iter_node, "result", &result->value);
+        if (rc != 0)
+        {
+            ERROR("Failed to get default result of the test iteration");
+            goto exit;
+        }
+        result_node = iter_node;
+    }
+    result->key = XML2CHAR(xmlGetProp(result_node,
+                                      CONST_CHAR2XML("key")));
+    result->notes = XML2CHAR(xmlGetProp(result_node,
+                                        CONST_CHAR2XML("notes")));
+
+exit:
+    /* Free allocated resources in any case */
+    while ((tagged_result = tagged_results.lh_first) != NULL)
+    {
+        LIST_REMOVE(tagged_result, links);
+        free(tagged_result->tag);
+        free(tagged_result);
+    }
+
+    return rc;
+}
+
+/**
  * Allocate and get test iteration.
  *
  * @param node      XML node
@@ -241,10 +366,10 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
                         test_iters *iters)
 {
     int             rc;
-    test_iter       *p;
-    char            *tmp;
-    trc_tag         *tag;
-    trc_tags_entry  *tags_entry;
+    test_iter      *p;
+    char           *tmp;
+    xmlNodePtr      results;
+    trc_tags_entry *tags_entry;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
@@ -260,42 +385,6 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
     TAILQ_INIT(&p->tests.head);
     TAILQ_INSERT_TAIL(&iters->head, p, links);
     
-    /* Get expected result */
-    for (rc = ENOENT, tag = tags.tqh_first;
-         tag != NULL;
-         tag = tag->links.tqe_next)
-    {
-        rc = get_result(node, tag->name, &p->exp_result);
-        if (rc != ENOENT)
-            break;
-    }
-    if (rc != 0)
-    {
-        ERROR("Expected result of the test iteration is missing/invalid");
-        return rc;
-    }
-
-    /* Get expected result in accordance with sets to diff */
-    for (tags_entry = tags_diff.tqh_first;
-         tags_entry != NULL;
-         tags_entry = tags_entry->links.tqe_next)
-    {
-        for (tag = tags_entry->tags.tqh_first;
-             tag != NULL;
-             tag = tag->links.tqe_next)
-        {
-            rc = get_result(node, tag->name, &p->diff_exp[tags_entry->id]);
-            if (rc != ENOENT)
-                break;
-        }
-        if (rc != 0)
-        {
-            ERROR("Expected result of the test iteration is "
-                  "missing/invalid");
-            return rc;
-        }
-    }
-
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("n")));
     if (tmp != NULL)
     {
@@ -317,13 +406,37 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
     if (node != NULL &&
         xmlStrcmp(node->name, CONST_CHAR2XML("notes")) == 0)
     {
-        /* 'bug' property of the notes is optional */
-        p->bug = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("bug")));
-
         rc = get_node_with_text_content(&node, "notes", &p->notes);
         if ((rc != 0) && (rc != ENOENT))
         {
             ERROR("Failed to get notes for the test iteration");
+            return rc;
+        }
+    }
+
+    /* Remember estimated position of nodes with tagged results */
+    results = node;
+
+    /* Get expected result */
+    rc = get_expected_result(p->args.node, &node, &tags, &p->exp_result);
+    if (rc != 0)
+    {
+        ERROR("Expected result of the test iteration is missing/invalid");
+        return rc;
+    }
+
+    /* Get expected result in accordance with sets to diff */
+    for (tags_entry = tags_diff.tqh_first;
+         tags_entry != NULL;
+         tags_entry = tags_entry->links.tqe_next)
+    {
+        node = results;
+        rc = get_expected_result(p->args.node, &node, &tags_entry->tags,
+                                 &p->diff_exp[tags_entry->id]);
+        if (rc != 0)
+        {
+            ERROR("Expected result of the test iteration is "
+                  "missing/invalid");
             return rc;
         }
     }
@@ -437,9 +550,6 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
 
     if (xmlStrcmp(node->name, CONST_CHAR2XML("notes")) == 0)
     {
-        /* 'bug' property of the notes is optional */
-        p->bug = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("bug")));
-
         rc = get_node_with_text_content(&node, "notes", &p->notes);
         if ((rc != 0) && (rc != ENOENT))
         {
@@ -619,7 +729,6 @@ trc_update_iters(test_iters *iters)
                 ERROR("xmlNewChild() failed for 'notes'");
                 return ENOMEM;
             }
-            xmlNewProp(node, BAD_CAST "bug", BAD_CAST "");
         }
         rc = trc_update_tests(&p->tests);
         if (rc != 0)
@@ -678,7 +787,6 @@ trc_update_tests(test_runs *tests)
                 ERROR("xmlNewChild() failed for 'notes'");
                 return ENOMEM;
             }
-            xmlNewProp(node, BAD_CAST "bug", BAD_CAST "");
         }
         if (p->obj_update)
         {
@@ -767,13 +875,20 @@ static void
 trc_free_test_iters(test_iters *iters)
 {
     test_iter  *p;
+    unsigned    i;
 
     while ((p = iters->head.tqh_first) != NULL)
     {
         TAILQ_REMOVE(&iters->head, p, links);
         trc_free_test_args(&p->args);
         free(p->notes);
-        free(p->bug);
+        free(p->exp_result.key);
+        free(p->exp_result.notes);
+        for (i = 0; i < TRC_DIFF_IDS; ++i)
+        {
+            free(p->diff_exp[i].key);
+            free(p->diff_exp[i].notes);
+        }
         trc_free_test_runs(&p->tests);
         free(p);
     }
@@ -794,7 +909,6 @@ trc_free_test_runs(test_runs *tests)
         TAILQ_REMOVE(&tests->head, p, links);
         free(p->name);
         free(p->notes);
-        free(p->bug);
         free(p->objective);
         free(p->test_path);
         trc_free_test_iters(&p->iters);

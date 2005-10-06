@@ -73,6 +73,13 @@ typedef enum trc_test_result {
     TRC_TEST_UNSET,       /**< Uninitialized test result */
 } trc_test_result;
 
+/** Expected result with key information and notes */
+typedef struct trc_exp_result {
+    trc_test_result     value;  /**< The result itself */
+    char               *key;    /**< BugID-like information */
+    char               *notes;  /**< Some usefull notes */
+} trc_exp_result;
+
 typedef enum trc_test_type {
     TRC_TEST_SCRIPT,
     TRC_TEST_SESSION,
@@ -147,15 +154,14 @@ typedef struct test_iter {
                                          the same arguments) */
 
     test_args       args;           /**< Iteration arguments */
-    trc_test_result exp_result;     /**< The expected result */
-    char           *notes;          /**< Some notes */
-    char           *bug;            /**< BugID-like information */
+    char           *notes;          /**< Common notes */
+    trc_exp_result  exp_result;     /**< The expected result */
     test_runs       tests;          /**< Children tests of the session */
 
     trc_test_result got_result;     /**< Got test result */
 
     /* Fields specific for TRC diff */
-    trc_test_result diff_exp[TRC_DIFF_IDS]; /**< The expected results */
+    trc_exp_result  diff_exp[TRC_DIFF_IDS]; /**< The expected results */
     te_bool         diff_out;       /**< Should the iteration be output */
 } test_iter;
 
@@ -176,7 +182,6 @@ typedef struct test_run {
     trc_test_type   type;           /**< Type of the test */
     char           *name;           /**< Test name */
     char           *notes;          /**< Some notes */
-    char           *bug;            /**< BugID-like information */
 
     char           *objective;      /**< Test objective */
     xmlNodePtr      obj_node;       /**< XML node with objective */
