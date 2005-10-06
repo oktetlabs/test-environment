@@ -104,6 +104,10 @@
             ERROR("mutex operation failed %d", rc_);                    \
     } while (0)
  
+#ifndef CIRCLEQ_EMPTY
+#define CIRCLEQ_EMPTY(head_) \
+    ((void *)((head_)->cqh_first) == (void *)(head_))
+#endif
 
 /* 
  * Mutex to make safe send/recv operations betwєen our internal 
@@ -212,6 +216,8 @@ iscsi_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     }
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
+    RING("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
+
     for (i = 0; i < 2; i++)
     {
         LOCK_QUEUE(iscsi_spec_data);
@@ -225,6 +231,8 @@ iscsi_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         UNLOCK_QUEUE(iscsi_spec_data); 
         if (recv_pkt == NULL && i == 0)
             usleep(timeout); /* wait a bit */
+        RING("%s(CSAP %d), recv_pkt 0x%X", __FUNCTION__, csap_descr->id,
+             recv_pkt);
     }
 
     if (recv_pkt != NULL)
@@ -241,6 +249,7 @@ iscsi_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         free(recv_pkt->buffer);
         free(recv_pkt);
     }
+    RING("%s(CSAP %d), return %d", __FUNCTION__, csap_descr->id, len);
 
     return len;
 }
@@ -341,7 +350,7 @@ iscsi_write_read_cb(csap_p csap_descr, int timeout,
 int 
 iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
-    pthread_t                     send_thread; 
+    pthread_t                     send_thread = 0; 
     pthread_attr_t                pthread_attr; 
     iscsi_target_thread_params_t *thread_params;
 
@@ -434,7 +443,6 @@ iscsi_single_destroy_cb (int csap_id, int layer)
     packet_t                   *recv_pkt = NULL; 
     iscsi_csap_specific_data_t *iscsi_spec_data; 
 
-    LOCK_ISCSI;
 
     csap_descr = csap_find(csap_id);
 
@@ -443,15 +451,14 @@ iscsi_single_destroy_cb (int csap_id, int layer)
 
     iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 
-#if 0
     /* hack for recv return 0 in Target - send byte in pipe without 
      * packet in queue. */
     write(iscsi_spec_data->conn_fd[1], "a", 1); 
-#else 
+
+    LOCK_ISCSI;
 
     /* clear queue to target */
-    while (iscsi_spec_data->packets_to_tgt.cqh_first !=
-           (void *)(&iscsi_spec_data->packets_to_tgt))
+    while (!CIRCLEQ_EMPTY(&iscsi_spec_data->packets_to_tgt))
     { 
         recv_pkt = iscsi_spec_data->packets_to_tgt.cqh_first;
 
@@ -463,8 +470,7 @@ iscsi_single_destroy_cb (int csap_id, int layer)
     }
 
     /* clear queue frœm target */
-    while (iscsi_spec_data->packets_from_tgt.cqh_first !=
-           (void *)(&iscsi_spec_data->packets_from_tgt))
+    while (!CIRCLEQ_EMPTY(&iscsi_spec_data->packets_from_tgt))
     { 
         recv_pkt = iscsi_spec_data->packets_from_tgt.cqh_first;
 
@@ -482,8 +488,6 @@ iscsi_single_destroy_cb (int csap_id, int layer)
 
     free(iscsi_spec_data);
 
-#endif
-     
     UNLOCK_ISCSI;
 
     return rc;
@@ -593,6 +597,7 @@ iscsi_tad_recv(int csap, uint8_t *buffer, size_t buf_len)
         {
             WARN("%s() internal recv return %d, greater then buf_len",
                  __FUNCTION__, rx_loop);
+            UNLOCK_ISCSI;
             return -1;
         }
 
@@ -619,13 +624,13 @@ iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
 
     INFO("%s(CSAP %d): send %d bytes", __FUNCTION__, csap, buf_len); 
     
-    LOCK_ISCSI;
-
+    LOCK_ISCSI; 
     csap_descr = csap_find(csap);
 
     if (csap_descr == NULL)
     {
         ERROR("%s() CSAP %d not found", __FUNCTION__, csap);
+        UNLOCK_ISCSI;
         return -1;
     }
 
@@ -634,6 +639,7 @@ iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
     if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
     {
         csap_descr->last_errno = TE_ENOMEM;
+        UNLOCK_ISCSI;
         return -1;
     }
     send_pkt->buffer = malloc(buf_len);
@@ -647,7 +653,8 @@ iscsi_tad_send(int csap, uint8_t *buffer, size_t buf_len)
     CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_from_tgt,
                         send_pkt, link);
     UNLOCK_QUEUE(iscsi_spec_data);
-    UNLOCK_ISCSI;
+
+    UNLOCK_ISCSI; 
 
     return buf_len;
 }
