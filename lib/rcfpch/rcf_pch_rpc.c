@@ -149,14 +149,6 @@ static rcf_pch_cfg_object node_rpcserver =
 
 static struct rcf_comm_connection *conn_saved;
 
-/**
- * Update argument list and number of arguments for tarpc_init routine.
- *
- * @param argc  number of arguments location
- * @param argv  argument list
- */
-extern void rcf_ch_get_tarpc_init_args(int *argc, char **argv);
-
 #ifdef TCP_TRANSPORT
 /**
  * Enable TCP_NODEALY on the socket. If TCP_NODELAY is not supported,
@@ -949,15 +941,13 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     rpcs->father = father;
     if (father == NULL)
     {
-        char *argv[16];
-        int   argc = 1;
+        char *argv[1];
         
-        memset(argv, 0, sizeof(argv));
         argv[0] = rpcs->name;
-        rcf_ch_get_tarpc_init_args(&argc, argv);
         
-        if ((rc = rcf_ch_start_task(&rpcs->pid, 0, "tarpc_init",
-                                    TRUE, argc, (void **)argv)) != 0)
+        if ((rc = rcf_ch_start_task(&rpcs->pid, 0, 
+                                    "rcf_pch_rpc_server_argv",
+                                    TRUE, 1, (void **)argv)) != 0)
         {
             rcf_ch_unlock();
             free(rpcs);
@@ -1380,4 +1370,17 @@ cleanup:
 #undef STOP    
 
     return NULL;
+}
+
+/**
+ * Wrapper to call rcf_pch_rpc_server via "ta exec func" mechanism. 
+ *
+ * @param argc    should be 1
+ * @param argv    should contain pointer to RPC server name
+ */
+void
+rcf_pch_rpc_server_argv(int argc, char **argv)
+{
+    UNUSED(argc);
+    rcf_pch_rpc_server(argv[0]);
 }

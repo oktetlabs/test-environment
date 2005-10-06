@@ -246,11 +246,19 @@ extern void rcf_pch_rpc_shutdown(void);
 /**
  * Entry function for RPC server. 
  *
- * @param name   RPC server name
+ * @param name    RPC server name
  *
  * @return NULL
  */
 extern void *rcf_pch_rpc_server(const char *name);
+
+/**
+ * Wrapper to call rcf_pch_rpc_server via "ta exec func" mechanism. 
+ *
+ * @param argc    should be 1
+ * @param argv    should contain pointer to RPC server name
+ */
+extern void rcf_pch_rpc_server_argv(int argc, char **argv);
 
 /*@}*/
 
