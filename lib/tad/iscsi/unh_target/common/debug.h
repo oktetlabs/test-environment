@@ -31,6 +31,7 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
+#define TE_LGR_USER "UNH Target"
 #include <stdio.h>
 #include "te_defs.h"
 #include "logger_api.h"
