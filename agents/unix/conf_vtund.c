@@ -609,7 +609,7 @@ vtund_server_free(vtund_server *server)
     LIST_REMOVE(server, links);
 
     if (server->cfg_file != NULL)
-        //unlink(server->cfg_file);
+        unlink(server->cfg_file);
 
     free(server->cfg_file);
     free(server->port);
@@ -989,7 +989,7 @@ vtund_client_free(vtund_client *client)
     LIST_REMOVE(client, links);
 
     if (client->cfg_file != NULL)
-        //unlink(client->cfg_file);
+        unlink(client->cfg_file);
 
     free(client->cfg_file);
     free(client->name);
