@@ -666,6 +666,15 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
             return rc;
         }
 
+        if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
+                       (void *) &opt, sizeof(opt)) == -1)
+        {
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            ERROR("%s(CSAP %d) set SO_REUSEADDR failed, errno %r", 
+                  __FUNCTION__, csap_descr->id, rc);
+            return rc;
+        }
+
         if (bind(spec_data->socket, SA(&local), sizeof(local)) < 0)
         {
             rc = TE_OS_RC(TE_TAD_CSAP, errno);
@@ -677,14 +686,6 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         switch (spec_data->data_tag)
         {
             case NDN_TAG_TCP_DATA_SERVER:
-                if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
-                               (void *) &opt, sizeof(opt)) == -1)
-                {
-                    rc = TE_OS_RC(TE_TAD_CSAP, errno);
-                    ERROR("%s(CSAP %d) set SO_REUSEADDR failed, errno %r", 
-                          __FUNCTION__, csap_descr->id, rc);
-                    return rc;
-                }
 
                 if (listen(spec_data->socket, 10) < 0)
                 {
