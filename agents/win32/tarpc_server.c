@@ -4897,9 +4897,3 @@ TARPC_FUNC(gettimeofday,
 }
 )
 
-/** Function to start RPC server */
-void
-tarpc_init(int argc, char **argv)
-{
-    rcf_pch_rpc_server(argv[0]);
-}

@@ -617,14 +617,6 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
     return -1; /* Call default callback as well */
 }
 
-/* Dummy */
-void
-rcf_ch_get_tarpc_init_args(int *argc, char **argv)
-{
-    UNUSED(argc);
-    UNUSED(argv);
-}
-
 HINSTANCE ta_hinstance;
 
 /**
