@@ -701,7 +701,9 @@ calculate_delay(cfg_instance *inst)
             
             if (n == 0)
                 break;
-            
+                
+            memcpy(ta, s, n);
+                
             for (tmp = tmp->son; tmp != NULL; tmp = tmp->brother)
             {
                 if (*tmp->name == 0 || strcmp(tmp->name, ta) == 0)
