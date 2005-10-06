@@ -155,7 +155,7 @@ get_type(char **ptr)
          return RCF_TYPE_TOTAL;
 
      for (i = 1; i < RCF_TYPE_TOTAL; ++i)
-         if (strcmp(rcf_types[i], tmp) == 0)
+         if (strcmp(rcf_types[i - 1], tmp) == 0)
              break;
 
      return i;
