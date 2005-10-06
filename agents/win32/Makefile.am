@@ -16,6 +16,10 @@ MY_LDAFLAGS=-rdynamic -export-dynamic
 MY_SOURCES=win32.c win32conf.c 
 MY_SYMTBL_OBJECTS=win32.o 
 
+SYMTBL_LIBS= \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a 
+
 CLEANFILES=symtbl.c
 
 if CFG_RCF_RPC
@@ -69,7 +73,7 @@ AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 bin_PROGRAMS=tawin32
 
-symtbl.c: $(MY_SYMTBL_OBJECTS) @TE_DEPENDENCIES@
+symtbl.c: $(MY_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
 install-exec-hook:
