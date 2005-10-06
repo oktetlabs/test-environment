@@ -149,6 +149,13 @@ static rcf_pch_cfg_object node_rpcserver =
 
 static struct rcf_comm_connection *conn_saved;
 
+/**
+ * Update argument list and number of arguments for tarpc_init routine.
+ *
+ * @param argc  number of arguments location
+ * @param argv  argument list
+ */
+extern void rcf_ch_get_tarpc_init_args(int *argc, char **argv);
 
 #ifdef TCP_TRANSPORT
 /**
@@ -424,26 +431,6 @@ fork_child(rpcserver *rpcs)
     rpcs->pid = out.pid;
     
     return 0;
-}
-
-
-/**
- * Kill RPC server.
- *
- * @param rpcs    RPC server handle
- */
-static void
-kill_rpcserver(rpcserver *rpcs)
-{
-    int rc;
-
-    rc = kill(rpcs->pid, SIGTERM);
-    RING("Sent SIGTERM signal to RPC server %s:%d - rc=%d, errno=%d",
-         rpcs->name, rpcs->pid, rc, (rc == 0) ? 0 : errno);
-    sleep(1);
-    rc = kill(rpcs->pid, SIGKILL);
-    RING("Sent SIGKILL signal to RPC server %s:%d - rc=%d, errno=%d",
-         rpcs->name, rpcs->pid, rc, (rc == 0) ? 0 : errno);
 }
 
 /**
@@ -785,7 +772,6 @@ rcf_pch_rpc_close_sockets(void)
         lsock = -1;
     }
         
-    rcf_ch_lock();
     for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
     {
         if (close(rpcs->sock) != 0)
@@ -795,7 +781,6 @@ rcf_pch_rpc_close_sockets(void)
         }
         rpcs->sock = -1;
     }
-    rcf_ch_unlock();
 }
 
 /* See description in rcf_pch.h */
@@ -806,14 +791,12 @@ rcf_pch_rpc_atfork(void)
     
     rcf_pch_rpc_close_sockets();
         
-    rcf_ch_lock();
     for (rpcs = list; rpcs != NULL; rpcs = next)
     {
         next = rpcs->next;
         free(rpcs);
     }
     list = NULL;
-    rcf_ch_unlock();
 
     free(rpc_buf);
     rpc_buf = NULL;
@@ -842,7 +825,7 @@ rcf_pch_rpc_shutdown(void)
     for (rpcs = list; rpcs != NULL; rpcs = next)
     {
         next = rpcs->next;
-        kill_rpcserver(rpcs);
+        rcf_ch_kill_task(rpcs->pid);
         free(rpcs);
     }
     list = NULL;
@@ -966,27 +949,20 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     rpcs->father = father;
     if (father == NULL)
     {
-        if ((rpcs->pid = fork()) == 0)
-        {
-            rcf_ch_unlock();
-            rcf_pch_detach();
-            rcf_pch_rpc_server(rpcs->name);
-#ifdef __CYGWIN__
-            _exit(0);
-#else
-            exit(0);
-#endif
-        }
+        char *argv[16];
+        int   argc = 1;
         
-        if (rpcs->pid < 0)
+        memset(argv, 0, sizeof(argv));
+        argv[0] = rpcs->name;
+        rcf_ch_get_tarpc_init_args(&argc, argv);
+        
+        if ((rc = rcf_ch_start_task(&rpcs->pid, 0, "tarpc_init",
+                                    TRUE, argc, (void **)argv)) != 0)
         {
-            int err = TE_OS_RC(TE_RCF_PCH, errno);
-            
             rcf_ch_unlock();
             free(rpcs);
-            ERROR("Failed to spawn RPC server process: error=%r", err);
-            fprintf(stderr, "Failed to spawn RPC server process\n");
-            return err;
+            ERROR("Failed to spawn RPC server process: error=%r", rc);
+            return rc;
         }
     }
     else 
@@ -1009,7 +985,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         if (rpcs->tid > 0)
             delete_thread_child(rpcs);
         else
-            kill_rpcserver(rpcs);
+            rcf_ch_kill_task(rpcs->pid);
         rcf_ch_unlock();
         free(rpcs);
         return rc;
@@ -1083,7 +1059,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
         if (rpcs->tid > 0)
             delete_thread_child(rpcs);
         else
-            kill_rpcserver(rpcs);
+            rcf_ch_kill_task(rpcs->pid);
     }
 
     rcf_ch_unlock();

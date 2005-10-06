@@ -588,18 +588,8 @@ extern int rcf_ch_call(struct rcf_comm_connection *handle,
 
 /**
  * Start process on the Test Agent or NUT served by it.
- * Parameters of the function are not parsed.
- * The recommended processing is create wrapper routine to be used as
- * an entry point for the new process, which in advice calls
- * rcf_ch_call_routine(). This allows to use parameter parser provided
- * by Portable Commands Handler.
  *
- * @param handle        connection handle
- * @param cbuf          command buffer
- * @param buflen        length of the command buffer
- * @param answer_plen   number of bytes in the command buffer to be
- *                        copied to the answer
- *
+ * @param pid           location of pid of the new task
  * @param priority      priority of the new process or -1 if the
  *                        priority is not specified in the command
  * @param rtn           routine entry point name
@@ -607,31 +597,30 @@ extern int rcf_ch_call(struct rcf_comm_connection *handle,
  *                        (int argc, char **argv)
  * @param argc          number of arguments
  * @param params        pointer to array of RCF_MAX_PARAMS length
- *                        with routine arguments
+ *                      with routine arguments
  *
- *
- * @return Indication of command support or error code
- *
- * @retval  0       command is supported
- * @retval -1       command is not supported
- * @retval other    error returned by communication library
+ * @return Status code
  */
-extern int rcf_ch_start_task(struct rcf_comm_connection *handle,
-                             char *cbuf, size_t buflen,
-                             size_t answer_plen, int priority,
+extern int rcf_ch_start_task(pid_t *pid, int priority,
                              const char *rtn, te_bool is_argv,
                              int argc, void **params);
 
 /**
- * This function is similar to rcf_ch_start_task_thr, but
- * it is assumed that a new task will be run as a thread, 
- * not as a forked process
+ * Start thread on the Test Agent or NUT served by it.
  *
- * @sa rcf_ch_start_task
+ * @param tid           location of tid of the new task
+ * @param priority      priority of the new process or -1 if the
+ *                        priority is not specified in the command
+ * @param rtn           routine entry point name
+ * @param is_argv       if TRUE, then routine prototype is
+ *                        (int argc, char **argv)
+ * @param argc          number of arguments
+ * @param params        pointer to array of RCF_MAX_PARAMS length
+ *                      with routine arguments
+ *
+ * @return Status code
  */
-extern int rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
-                                 char *cbuf, size_t buflen,
-                                 size_t answer_plen, int priority,
+extern int rcf_ch_start_task_thr(int *tid, int priority,
                                  const char *rtn, te_bool is_argv,
                                  int argc, void **params);
 
@@ -639,24 +628,12 @@ extern int rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
 /**
  * Kill the process on the Test Agent or NUT served by it.
  *
- * @param handle        connection handle
- * @param cbuf          command buffer
- * @param buflen        length of the command buffer
- * @param answer_plen   number of bytes in the command buffer to be
- *                        copied to the answer
- *
  * @param pid           process identifier
  *
  *
- * @return Indication of command support or error code
- *
- * @retval  0       command is supported
- * @retval -1       command is not supported
- * @retval other    error returned by communication library
+ * @return Status code
  */
-extern int rcf_ch_kill_task(struct rcf_comm_connection *handle,
-                            char *cbuf, size_t buflen,
-                            size_t answer_plen, unsigned int pid);
+extern int rcf_ch_kill_task(unsigned int pid);
 
 
 /** @name Standard configuration support */

@@ -955,6 +955,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 switch(mode)
                 {
                     case RCF_START_FUNC:
+                    {
                         rc = rcf_ch_call(conn, cmd, cmd_buf_len, 
                                          answer_plen,
                                          rtn, is_argv, argc, param);
@@ -967,23 +968,44 @@ rcf_pch_run(const char *confstr, const char *info)
                             goto communication_problem;
                         
                         break;
-                    case RCF_START_THREAD:
+                    }
+                        
                     case RCF_START_FORK:
-                        if ((mode == RCF_START_FORK ? rcf_ch_start_task :
-                             rcf_ch_start_task_thr)
-                            (conn, cmd, cmd_buf_len, answer_plen,
-                             priority, rtn, is_argv,
-                             argc, param) < 0)
+                    {
+                        pid_t pid;
+                        
+                        if ((rc = rcf_ch_start_task(&pid, priority, 
+                                                    rtn, is_argv, 
+                                                    argc, param)) != 0)
                         {
-                            ERROR("%s() returns - no support for %s(%d)", 
-                                  (mode == RCF_START_FORK ? 
-                                   "rcf_ch_start_task" : 
-                                   "rcf_ch_start_task_thr"),
-                                  rtn, priority);
-                            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, 
-                                                    TE_EOPNOTSUPP));
-                        }                        
+                            SEND_ANSWER("%d", rc);
+                        }
+                        else
+                        {
+                            SEND_ANSWER("0 %d", pid);
+                        }
+                        
                         break;
+                    }
+                    
+                    case RCF_START_THREAD:
+                    {
+                        int tid;
+                        
+                        if ((rc = rcf_ch_start_task_thr(&tid, priority, 
+                                                        rtn, is_argv, 
+                                                        argc, param)) != 0)
+                        {
+                            SEND_ANSWER("%d", rc);
+                        }
+                        else
+                        {
+                            SEND_ANSWER("0 %d", tid);
+                        }
+                        
+                        break;
+                    }
+                        
                     default:
                         SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
                 }
@@ -1035,9 +1057,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 if (*ptr != 0)
                     goto bad_protocol;
 
-                if (rcf_ch_kill_task(conn, cmd, cmd_buf_len,
-                                     answer_plen, pid) < 0)
-                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
+                SEND_ANSWER("%d", rcf_ch_kill_task(pid));
 
                 break;
             }
