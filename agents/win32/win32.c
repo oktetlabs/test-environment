@@ -240,16 +240,13 @@ rcf_ch_call(struct rcf_comm_connection *handle,
     return -1;
 }
 
-
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_start_task(struct rcf_comm_connection *handle,
-                  char *cbuf, size_t buflen, size_t answer_plen,
+rcf_ch_start_task(int *pid, 
                   int priority, const char *rtn, te_bool is_argv,
                   int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
-    int   pid;
     
     UNUSED(priority);
 
@@ -259,8 +256,11 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
     {
         VERB("fork process with entry point '%s'", rtn);
 
-        if ((pid = fork()) == 0)
+        if ((*pid = fork()) == 0)
         {
+            rcf_pch_detach();
+            /* Set the process group to allow killing all children */
+            setpgid(getpid(), getpid());
             logfork_register_user(rtn);
             if (is_argv)
                 ((rcf_argv_rtn)(addr))(argc, (char **)params);
@@ -271,8 +271,16 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
                                   params[9]);
             exit(0);
         }
+        else if (*pid < 0)
+        {
+            int rc = TE_OS_RC(TE_TA_WIN32, errno);
 
-        SEND_ANSWER("%d %d", 0, pid);
+            ERROR("%s(): fork() failed", __FUNCTION__);
+            
+            return rc;
+        }
+        
+        return 0;
     }
 
     /* Try shell process */
@@ -283,22 +291,34 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
         sprintf(check_cmd,
                 "TMP=`which %s 2>/dev/null` ; test -n \"$TMP\" ;", rtn);
         if (system(check_cmd) != 0)
-            SEND_ANSWER("%d", TE_ENOENT);
+            return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
-        if ((pid = fork()) == 0)
+        if ((*pid = fork()) == 0)
         {
+            rcf_pch_detach();
+            /* Set the process group to allow killing all children */
+            setpgid(getpid(), getpid());
             logfork_register_user(rtn);
-            execlp(rtn, rtn, params[0], params[1], params[2], params[3],
-                             params[4], params[5], params[6], params[7],
-                             params[8], params[9]);
+            execlp(rtn, rtn, 
+                   params[0], params[1], params[2], params[3], params[4], 
+                   params[5], params[6], params[7], params[8], params[9]);
             exit(0);
         }
+        else if (*pid < 0)
+        {
+            int rc = TE_OS_RC(TE_TA_WIN32, errno);
 
-        SEND_ANSWER("%d %d", 0, pid);
+            ERROR("%s(): fork() failed", __FUNCTION__);
+            
+            return rc;
+        }
+        
+        return 0;
     }
-
-    SEND_ANSWER("%d", TE_ENOENT);
+    
+    return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
+
 
 struct rcf_thread_parameter {
     te_bool   active;
@@ -348,17 +368,15 @@ rcf_ch_thread_wrapper(void *arg)
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
-                  char *cbuf, size_t buflen, size_t answer_plen,
-                  int priority, const char *rtn, te_bool is_argv,
-                  int argc, void **params)
+rcf_ch_start_task_thr(int *tid,
+                      int priority, const char *rtn, te_bool is_argv,
+                      int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
     
     struct rcf_thread_parameter *iter;
-    
-    UNUSED(priority);
 
+    UNUSED(priority);
     if (addr != NULL)
     {
         VERB("start thread with entry point '%s'", rtn);
@@ -377,6 +395,7 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
                 iter->is_argv = is_argv;
                 iter->params = params;
                 iter->rc = 0;
+                iter->id = 0;
                 if (!iter->sem_created)
                 {
                     sem_init(&iter->params_processed, FALSE, 0);
@@ -386,33 +405,31 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
                                          rcf_ch_thread_wrapper, iter)) != 0)
                 {
                     pthread_mutex_unlock(&thread_pool_mutex);
-                    SEND_ANSWER("%d", rc);                    
+                    return TE_OS_RC(TE_TA_WIN32, rc);
                 }
                 VERB("started thread %d", iter - thread_pool);
                 iter->active = TRUE;
                 sem_wait(&iter->params_processed);
                 pthread_mutex_unlock(&thread_pool_mutex);
-                SEND_ANSWER("0 %d", iter - thread_pool);
+                *tid = (int)(iter - thread_pool);
+                return 0;
             }
         }
         pthread_mutex_unlock(&thread_pool_mutex);
-        SEND_ANSWER("%d", TE_ETOOMANY);
+        return TE_RC(TE_TA_WIN32, TE_ETOOMANY);
     }
 
-    SEND_ANSWER("%d", TE_ENOENT);
+    return TE_RC(TE_TA_WIN32, TE_ENOENT);
 }
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_kill_task(struct rcf_comm_connection *handle,
-                 char *cbuf, size_t buflen, size_t answer_plen,
-                 unsigned int pid)
+rcf_ch_kill_task(unsigned int pid)
 {
     kill(pid, SIGTERM); 
     kill(pid, SIGKILL); 
-    SEND_ANSWER("0");
+    return 0;
 }
-
 
 
 /**
@@ -598,6 +615,14 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
         fprintf(stderr, "log_shutdown() failed: error=0x%X\n", rc);
 
     return -1; /* Call default callback as well */
+}
+
+/* Dummy */
+void
+rcf_ch_get_tarpc_init_args(int *argc, char **argv)
+{
+    UNUSED(argc);
+    UNUSED(argv);
 }
 
 HINSTANCE ta_hinstance;

@@ -379,7 +379,7 @@ TARPC_FUNC(pthread_cancel, {},
 }
 )
 
-/** Function to start RPC server after execve */
+/** Function to start RPC server */
 void
 tarpc_init(int argc, char **argv)
 {
@@ -392,7 +392,7 @@ tarpc_init(int argc, char **argv)
     tarpc_setlibname_in  in_local;
     tarpc_setlibname_in *in = &in_local;
     
-    if (name == NULL || log_sock == NULL || (sock = atoi(log_sock)) <= 0)
+    if (name == NULL || log_sock == NULL)
     {
         PRINT("%s(): Invalid argument: name=%s log_sock=%s",
               __FUNCTION__,
@@ -401,7 +401,8 @@ tarpc_init(int argc, char **argv)
         return;
     }
     
-    logfork_set_sock(sock);
+    if ((sock = atoi(log_sock)) > 0)
+        logfork_set_sock(sock);
 
     memset(&in_local, 0, sizeof(in_local));
 
@@ -445,35 +446,52 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
     return TRUE;
 }
 
+/**
+ * Update argument list and number of arguments for tarpc_init routine.
+ *
+ * @param argc  number of arguments location
+ * @param argv  argument list array, assumed to be long enough
+ */
+void
+rcf_ch_get_tarpc_init_args(int *argc, char **argv)
+{
+    static char logsock[16];
+    
+    assert(argv != NULL);
+    assert(argc != NULL);
+
+    sprintf(logsock, "%d", logfork_get_sock());
+
+    argv[(*argc)++] = logsock;
+    argv[(*argc)++] = dynamic_library_name;
+}
 
 /*-------------- execve() ---------------------------------*/
 TARPC_FUNC(execve, {},
 {
-    const char *args[7];
-    static char logsock[16];
-    int rc;
+    const char *argv[7];
     
-    sprintf(logsock, "%d", logfork_get_sock());
-
-    args[0] = ta_execname;
-    args[1] = "exec";
-    args[2] = "tarpc_init";
-    args[3] = strdup(in->name);
-    args[4] = logsock;
-    args[5] = dynamic_library_name;
-    args[6] = NULL;
+    int rc;
+    int argc = 4;
+    
+    memset(argv, 0, sizeof(argv));
+    argv[0] = ta_execname;
+    argv[1] = "exec";
+    argv[2] = "tarpc_init";
+    argv[3] = strdup(in->name);
+    rcf_ch_get_tarpc_init_args(&argc, (char **)argv);
 
     /* Wait until main thread sends answer to non-blocking RPC call */
     sleep(1);
 
     VERB("execve() args: %s, %s, %s, %s, %s, %s",
-         args[0], args[1], args[2], args[3], args[4], args[5]);
+         argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
     /* Call execve() */
-    MAKE_CALL(rc = func_ptr((void *)ta_execname, args, environ));
+    MAKE_CALL(rc = func_ptr((void *)ta_execname, argv, environ));
     if (rc != 0)
     {
         rc = errno;
-        ERROR("execve() failed: errno=%d", rc);
+        PRINT("execve() failed: errno=%d", rc);
     }
 }
 )

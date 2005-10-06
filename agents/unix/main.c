@@ -101,10 +101,6 @@ typedef struct ta_children_wait {
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
-/** Function to start RPC server after execve */
-extern void tarpc_init(int argc, char **argv);
-
-
 /** Logger entity name */
 DEFINE_LGR_ENTITY("(unix)");
 
@@ -382,13 +378,11 @@ rcf_ch_call(struct rcf_comm_connection *handle,
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_start_task(struct rcf_comm_connection *handle,
-                  char *cbuf, size_t buflen, size_t answer_plen,
+rcf_ch_start_task(int *pid, 
                   int priority, const char *rtn, te_bool is_argv,
                   int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
-    int   pid;
 
     VERB("Start task handler is executed");
 
@@ -396,7 +390,7 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
     {
         VERB("fork process with entry point '%s'", rtn);
 
-        if ((pid = fork()) == 0)
+        if ((*pid = fork()) == 0)
         {
             rcf_pch_detach();
             /* Set the process group to allow killing all children */
@@ -411,20 +405,19 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
                                   params[9]);
             exit(0);
         }
-        else if (pid > 0)
+        else if (*pid > 0)
         {
-            store_pid(pid);
-            SEND_ANSWER("%d %d", 0, pid);
+            store_pid(*pid);
+            return 0;
         }
         else
         {
-            int save_errno = errno;
+            int rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("%s(): fork() failed", __FUNCTION__);
-            SEND_ANSWER("%d", save_errno);
+            
+            return rc;
         }
-        /* Unreachable */
-        assert(0);
     }
 
     /* Try shell process */
@@ -435,9 +428,9 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
         sprintf(check_cmd,
                 "TMP=`which %s 2>/dev/null` ; test -n \"$TMP\" ;", rtn);
         if (ta_system(check_cmd) != 0)
-            SEND_ANSWER("%d", TE_ENOENT);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-        if ((pid = fork()) == 0)
+        if ((*pid = fork()) == 0)
         {
             rcf_pch_detach();
             /* Set the process group to allow killing all children */
@@ -448,32 +441,30 @@ rcf_ch_start_task(struct rcf_comm_connection *handle,
                    params[5], params[6], params[7], params[8], params[9]);
             exit(0);
         }
-        else if (pid < 0)
+        else if (*pid < 0)
         {
-            int save_errno = errno;
+            int rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("%s(): fork() failed", __FUNCTION__);
-            SEND_ANSWER("%d", save_errno);
-            /* Unreachable */
-            assert(0);
+            
+            return rc;
         }
 #ifdef HAVE_SYS_RESOURCE_H
-        if (setpriority(PRIO_PROCESS, pid, priority) != 0)
+        if (setpriority(PRIO_PROCESS, *pid, priority) != 0)
         {
             ERROR("setpriority() failed - continue", errno);
             /* Continue with default priority */
         }
 #else
         UNUSED(priority);
-        ERROR("Unable to set task priority, ignore it.");
+        WARN("Unable to set task priority, ignore it.");
 #endif
-        store_pid(pid);
-        SEND_ANSWER("%d %d", 0, pid);
-        /* Unreachable */
-        assert(0);
+        store_pid(*pid);
+        
+        return 0;
     }
-
-    SEND_ANSWER("%d", TE_ENOENT);
+    
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
 struct rcf_thread_parameter {
@@ -524,15 +515,13 @@ rcf_ch_thread_wrapper(void *arg)
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
-                      char *cbuf, size_t buflen, size_t answer_plen,
+rcf_ch_start_task_thr(int *tid,
                       int priority, const char *rtn, te_bool is_argv,
                       int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
     
     struct rcf_thread_parameter *iter;
-
 
     UNUSED(priority);
     if (addr != NULL)
@@ -563,20 +552,21 @@ rcf_ch_start_task_thr(struct rcf_comm_connection *handle,
                                          rcf_ch_thread_wrapper, iter)) != 0)
                 {
                     pthread_mutex_unlock(&thread_pool_mutex);
-                    SEND_ANSWER("%d", rc);                    
+                    return TE_OS_RC(TE_TA_UNIX, rc);
                 }
                 VERB("started thread %d", iter - thread_pool);
                 iter->active = TRUE;
                 sem_wait(&iter->params_processed);
                 pthread_mutex_unlock(&thread_pool_mutex);
-                SEND_ANSWER("0 %d", (int)(iter - thread_pool));
+                *tid = (int)(iter - thread_pool);
+                return 0;
             }
         }
         pthread_mutex_unlock(&thread_pool_mutex);
-        SEND_ANSWER("%d", TE_ETOOMANY);
+        return TE_RC(TE_TA_UNIX, TE_ETOOMANY);
     }
 
-    SEND_ANSWER("%d", TE_ENOENT);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
 /* Kill all the threads started by rcf_ch_start_task_thr */
@@ -599,13 +589,11 @@ kill_threads(void)
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_kill_task(struct rcf_comm_connection *handle,
-                 char *cbuf, size_t buflen, size_t answer_plen,
-                 unsigned int pid)
+rcf_ch_kill_task(unsigned int pid)
 {
-    int             kill_errno = 0;
-    unsigned int    i;
-    int             p = pid;
+    int            rc = 0;
+    unsigned int   i;
+    int            p = pid;
 
     for (i = 0; i < tasks_index; i++)
     {
@@ -619,9 +607,10 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
 
     if (kill(p, SIGTERM) != 0)
     {
-        kill_errno = errno;
-        ERROR("Failed to send SIGTERM to process with PID=%u: %d",
-              pid, kill_errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        
+        ERROR("Failed to send SIGTERM to process with PID=%u: %r",
+              pid, rc);
 
         if (kill(p, SIGKILL) != 0)
         {
@@ -638,7 +627,7 @@ rcf_ch_kill_task(struct rcf_comm_connection *handle,
         RING("Sent SIGTERM to PID=%u", pid);
     }
 
-    SEND_ANSWER("%d", kill_errno);
+    return rc;
 }
 
 
@@ -1273,6 +1262,14 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
 
     return -1; /* Call default callback as well */
 }
+
+#ifndef RCF_RPC
+/* Dummy */
+void
+rcf_ch_get_tarpc_init_args(int *argc void **argv)
+{
+}
+#endif
 
 /**
  * Entry point of the Unix Test Agent.
