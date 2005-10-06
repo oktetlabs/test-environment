@@ -192,8 +192,13 @@ kill_tasks(void)
         if (tasks[i] != 0)
         {
             rc = kill(-tasks[i], SIGTERM);
-            PRINT("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
-                  -tasks[i], rc, (rc == 0) ? 0 : errno);
+            if (!(rc == -1 && errno == ESRCH))
+            {
+                PRINT("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
+                      -tasks[i], rc, (rc == 0) ? 0 : errno);
+            }
+            else 
+                tasks[i] = 0;
         }
     }
     usleep(100000);
@@ -202,7 +207,7 @@ kill_tasks(void)
         if (tasks[i] != 0)
         {
             rc = kill(-tasks[i], SIGKILL);
-            PRINT("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
+            PRINT("Sent SIGKILL to PID=%d - rc=%d, errno=%d",
                   -tasks[i], rc, (rc == 0) ? 0 : errno);
         }
     }
