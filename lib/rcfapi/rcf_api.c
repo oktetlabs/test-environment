@@ -1526,7 +1526,7 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
  */
 te_errno
 rcf_ta_get_var(const char *ta_name, int session, const char *var_name, 
-               int var_type, size_t var_len, void *val)
+               rcf_var_type_t var_type, size_t var_len, void *val)
 {
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
@@ -1601,6 +1601,9 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
         case RCF_UINT64:
             *(int64_t *)val = value;
             break;
+
+        default:
+            assert(0);
     }
     
     return 0;
@@ -1631,7 +1634,7 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
  */
 te_errno
 rcf_ta_set_var(const char *ta_name, int session, const char *var_name, 
-               int var_type, const char *val)
+               rcf_var_type_t var_type, const char *val)
 {
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
@@ -1691,6 +1694,9 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
                 return TE_RC(TE_RCF_API, TE_EINVAL);
             strcpy(msg.value, val);
             break;
+
+        default:
+            assert(0);
     }
     
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),

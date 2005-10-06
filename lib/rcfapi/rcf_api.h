@@ -336,18 +336,19 @@ extern te_errno rcf_ta_get_log(const char *ta_name, char *log_file);
  *
  * @return error code
  *
- * @retval 0            success
- * @retval TE_EINVAL       one of arguments is invalid (NULL, too long or
- *                      has inappropriate value)
- * @retval TE_ENOENT       no such variable
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ESMALLBUF the buffer is too small
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
- * @retval other        error returned by command handler on the TA
+ * @retval 0                success
+ * @retval TE_EINVAL        one of arguments is invalid (NULL, too long or
+ *                          has inappropriate value)
+ * @retval TE_ENOENT        no such variable
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ESMALLBUF     the buffer is too small
+ * @retval TE_ETAREBOOTED   Test Agent is rebooted
+ * @retval TE_ENOMEM        out of memory
+ * @retval other            error returned by command handler on the TA
  */
 extern te_errno rcf_ta_get_var(const char *ta_name, int session,
-                               const char *var_name, int var_type,
+                               const char *var_name,
+                               rcf_var_type_t var_type,
                                size_t var_len, void *val);
 
 /**
@@ -359,23 +360,22 @@ extern te_errno rcf_ta_get_var(const char *ta_name, int session,
  * @param var_name      name of the variable to be changed
  * @param var_type      type according to which variable value should
  *                      appear in the protocol command
- *
  * @param val           new value of the variable
  *
  * @return error code
  *
- * @retval 0            success
- * @retval TE_EINVAL       one of arguments is invalid (NULL, too long or
- *                      has inappropriate value)
- * @retval TE_ENOENT       no such variable
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
- * @retval other        error returned by command handler on the TA
+ * @retval 0                success
+ * @retval TE_EINVAL        one of arguments is invalid (NULL, too long or
+ *                          has inappropriate value)
+ * @retval TE_ENOENT        no such variable
+ * @retval TE_EIPC          cannot interact with RCF 
+ * @retval TE_ETAREBOOTED   Test Agent is rebooted
+ * @retval TE_ENOMEM        out of memory
+ * @retval other            error returned by command handler on the TA
  */
 extern te_errno rcf_ta_set_var(const char *ta_name, int session,
                                const char *var_name, 
-                               int var_type, const char *val);
+                               rcf_var_type_t var_type, const char *val);
 
 /**
  * This function loads file from Test Agent or NUT served by it to the 

@@ -61,7 +61,7 @@
 
 /** Parameter and variable types */
 typedef enum {
-    RCF_INT8,       /**< int8_t */
+    RCF_INT8 = 1,   /**< int8_t */
     RCF_UINT8,      /**< uint8_t */
     RCF_INT16,      /**< int16_t */    
     RCF_UINT16,     /**< uint16_t */
