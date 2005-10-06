@@ -1171,7 +1171,6 @@ typedef void (*sa_handler_t)(int);
 typedef void (*sa_restorer_t)(void);
 
 #if HAVE_STRUCT_SIGACTION_SA_RESTORER
-
 TARPC_FUNC(sigaction,
 {
     if (in->signum == RPC_SIGINT)
@@ -1256,7 +1255,7 @@ TARPC_FUNC(sigaction,
         }
     }
 
-    if (out->retval != 0)
+    if (out->retval > 0)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, out->retval);
         out->retval = -1;
@@ -1333,7 +1332,7 @@ TARPC_FUNC(sigaction,
         }
     }
 
-    if (out->retval != 0)
+    if (out->retval > 0)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, out->retval);
         out->retval = -1;
