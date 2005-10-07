@@ -262,17 +262,17 @@ trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
         }
 
         /* The routine should be called first to be called in any case */
-        p->diff_out = trc_diff_tests_has_diff(&p->tests, flags) ||
-                      (iter_has_diff &&
-                       TRUE
-                       /* FIXME
-                        (p->bug == NULL || strlen(p->bug) == 0 ||
-                        !trc_diff_exclude_by_bug(p->bug))*/);
+        p->output = trc_diff_tests_has_diff(&p->tests, flags) ||
+                    (iter_has_diff &&
+                     TRUE
+                     /* FIXME
+                      (p->bug == NULL || strlen(p->bug) == 0 ||
+                      !trc_diff_exclude_by_bug(p->bug))*/);
 
-        if (!p->diff_out)
+        if (!p->output)
             has_no_out = TRUE;
 
-        has_diff = has_diff || p->diff_out;
+        has_diff = has_diff || p->output;
     }
 
     *all_out = has_diff && !has_no_out;
@@ -334,7 +334,7 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
          p != NULL;
          p = p->links.tqe_next, ++i)
     {
-        if (p->diff_out)
+        if (p->output)
         {
             /*
              * Don't want to see iteration parameters, if iteration is

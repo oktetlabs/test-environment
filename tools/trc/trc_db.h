@@ -162,7 +162,11 @@ typedef struct test_iter {
 
     /* Fields specific for TRC diff */
     trc_exp_result  diff_exp[TRC_DIFF_IDS]; /**< The expected results */
-    te_bool         diff_out;       /**< Should the iteration be output */
+
+    /* Processing helpers */
+    te_bool         processed;      /**< Is iteration checked for output */
+    te_bool         output;         /**< Should the iteration be output */
+
 } test_iter;
 
 /** Head of the list with test iterations */

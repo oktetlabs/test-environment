@@ -316,10 +316,22 @@ static const char * const trc_test_exp_got_row =
 "      <TD>%s</TD>\n"
 "      <TD>%s</TD>\n"
 "      <TD>%s</TD>\n"
-"      <TD>%s</TD>\n"
+"      <TD>%s %s</TD>\n"
 "    </TR>\n";
 
 
+static int tests_to_html(te_bool stats, unsigned int flags,
+                         const test_run *parent, test_runs *tests,
+                         unsigned int level);
+
+
+/**
+ * Output grand total statistics to HTML.
+ *
+ * @param stats     Statistics to output
+ *
+ * @return Status code.
+ */
 static int
 stats_to_html(const trc_stats *stats)
 {
@@ -328,16 +340,19 @@ stats_to_html(const trc_stats *stats)
             stats->pass_exp, stats->fail_exp,
             stats->pass_une, stats->fail_une,
             stats->aborted, stats->new_run,
-            TRC_STATS_NOT_RUN(stats), stats->skip_exp, stats->skip_une);
+            TRC_STATS_NOT_RUN(stats),
+            stats->skip_exp, stats->skip_une);
 
     return 0;
 }
 
-
-static int tests_to_html(te_bool stats, unsigned int flags,
-                         const test_run *parent, const test_runs *tests,
-                         unsigned int level);
-
+/**
+ * Map test result to string.
+ *
+ * @param result    Result to be mapped
+ *
+ * @return Test result as string.
+ */
 const char *
 trc_test_result_to_string(trc_test_result result)
 {
@@ -362,11 +377,18 @@ trc_test_result_to_string(trc_test_result result)
     }
 }
 
-static char trc_args_buf[0x10000];
-
+/**
+ * Generate a string with test arguments separated by new line.
+ *
+ * @param args      List of arguments
+ *
+ * @return Pointer to the generated string (static buffer).
+ */
 static const char *
 trc_test_args_to_string(const test_args *args)
 {
+    static char trc_args_buf[0x10000];
+
     test_arg *p;
     char     *s = trc_args_buf;
 
@@ -377,10 +399,57 @@ trc_test_args_to_string(const test_args *args)
     return trc_args_buf;
 }
 
+/**
+ * Should test iteration be output in accordance with expected/got
+ * result and current output flags.
+ *
+ * @param test      Test
+ * @param iter      Test iteration
+ * @param flag      Output flags
+ */
+static te_bool
+test_iter_output(const test_run *test, test_iter *iter, unsigned int flags)
+{
+    if (!iter->processed)
+    {
+        iter->processed = TRUE;
+        iter->output = 
+           (/* NO_SCRIPTS is clear or it is NOT a script */
+            (~flags & TRC_OUT_NO_SCRIPTS) ||
+             (test->type != TRC_TEST_SCRIPT)) &&
+            (/* NO_UNSPEC is clear or got result is not UNSPEC */
+             (~flags & TRC_OUT_NO_UNSPEC) ||
+             (iter->got_result != TRC_TEST_UNSPEC)) &&
+            (/* NO_SKIPPED is clear or got result is not SKIPPED */
+             (~flags & TRC_OUT_NO_SKIPPED) ||
+             (iter->got_result != TRC_TEST_SKIPPED)) &&
+            (/*
+              * NO_EXP_PASSED is clear or
+              * got result is not PASSED as expected
+              */
+             (~flags & TRC_OUT_NO_EXP_PASSED) ||
+             (iter->exp_result.value != TRC_TEST_PASSED) ||
+             (iter->got_result != TRC_TEST_PASSED)) &&
+            (/* NO_EXPECTED is clear or got result is equal to expected */
+             (~flags & TRC_OUT_NO_EXPECTED) ||
+             (iter->exp_result.value != iter->got_result));
+    }
+    return iter->output;
+}
 
+/**
+ * Output test iterations to HTML report.
+ *
+ * @param stats     Is it statistics or details mode?
+ * @param flags     Output flags
+ * @param test      Test
+ * @param level     Level of the test in the suite
+ *
+ * @return Status code.
+ */
 static int
-iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
-              const test_iters *iters, unsigned int level)
+test_iters_to_html(te_bool stats, unsigned int flags,
+                   test_run *test, unsigned int level)
 {
     int             rc;
     test_iter      *p;
@@ -392,30 +461,10 @@ iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
     for (s = level_str, i = 0; i < level; ++i)
         s += sprintf(s, "*-");
 
-    for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
+    for (p = test->iters.head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
         if ((!stats) && /* It is NOT a statistics report */
-            /* Do output, if ... */
-            (/* NO_SCRIPTS is clear or it is NOT a script */
-             (~flags & TRC_OUT_NO_SCRIPTS) ||
-             (test->type != TRC_TEST_SCRIPT)) &&
-            (/* NO_UNSPEC is clear or got result is not UNSPEC */
-             (~flags & TRC_OUT_NO_UNSPEC) ||
-             (p->got_result != TRC_TEST_UNSPEC)) &&
-            (/* NO_SKIPPED is clear or got result is not SKIPPED */
-             (~flags & TRC_OUT_NO_SKIPPED) ||
-             (p->got_result != TRC_TEST_SKIPPED)) &&
-            (/*
-              * NO_EXP_PASSED is clear or
-              * got result is not PASSED as expected
-              */
-             (~flags & TRC_OUT_NO_EXP_PASSED) ||
-             (p->exp_result.value != TRC_TEST_PASSED) ||
-             (p->got_result != TRC_TEST_PASSED)) &&
-            (/* NO_EXPECTED is clear or got result is equal to expected */
-             (~flags & TRC_OUT_NO_EXPECTED) ||
-             (p->exp_result.value != p->got_result))
-           )
+            test_iter_output(test, p, flags))
         {
             fprintf(f, trc_test_exp_got_row,
                     level_str,
@@ -427,7 +476,8 @@ iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
                     trc_test_args_to_string(&p->args),
                     trc_test_result_to_string(p->exp_result.value),
                     trc_test_result_to_string(p->got_result),
-                    PRINT_STR(p->exp_result.key), /* FIXME */
+                    PRINT_STR(p->exp_result.key),
+                    PRINT_STR(p->exp_result.notes),
                     PRINT_STR(p->notes));
 
             name_anchor = FALSE;
@@ -439,9 +489,61 @@ iters_to_html(te_bool stats, unsigned int flags, const test_run *test,
     return 0;
 }
 
+/**
+ * Generate a list (in a string separated by HTML new line) of unique
+ * (as strings) keys for iterations to be output.
+ *
+ * @param test      Test
+ * @param flags     Output flags
+ *
+ * @se Update 'output' field of each iteration to be used further.
+ *
+ * @return Pointer a generated string (static buffer).
+ */
+static const char *
+test_iters_check_output_and_get_keys(test_run *test, unsigned int flags)
+{
+    static char buf[0x10000];
+
+    test_iter  *p;
+    test_iter  *q;
+    char       *s = buf;
+
+
+    buf[0] = '\0';
+    for (p = test->iters.head.tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        if (test_iter_output(test, p, flags) &&
+            (p->exp_result.key != NULL))
+        {
+            for (q = test->iters.head.tqh_first;
+                 (q != p) &&
+                 ((q->exp_result.key == NULL) || (!q->output) ||
+                  (strcmp(p->exp_result.key, q->exp_result.key) != 0));
+                 q = q->links.tqe_next);
+
+            if (p == q)
+                s += sprintf(s, "%s<BR/>", p->exp_result.key);
+        }
+    }
+
+    return buf;
+}
+
+/**
+ * Output tests to HTML report.
+ *
+ * @param stats     Is it statistics or details mode?
+ * @param flags     Output flags
+ * @param parent    Parent test
+ * @param tests     List of tests to output
+ * @param level     Level of the test in the suite
+ *
+ * @return Status code.
+ */
 static int
 tests_to_html(te_bool stats, unsigned int flags,
-              const test_run *parent, const test_runs *tests,
+              const test_run *parent, test_runs *tests,
               unsigned int level)
 {
     int         rc;
@@ -485,8 +587,10 @@ tests_to_html(te_bool stats, unsigned int flags,
             (((p->type == TRC_TEST_PACKAGE) &&
               (flags & TRC_OUT_NO_SCRIPTS)) || output))
         {
-            te_bool name_link;
-            char *test_path = NULL;
+            te_bool     name_link;
+            char       *test_path = NULL;
+            const char *keys =
+                test_iters_check_output_and_get_keys(p, flags);
 
             name_link = ((flags & TRC_OUT_NO_SCRIPTS) ||
                          ((~flags & TRC_OUT_NO_SCRIPTS) &&
@@ -527,13 +631,12 @@ tests_to_html(te_bool stats, unsigned int flags,
                     p->stats.aborted + p->stats.new_run,
                     TRC_STATS_NOT_RUN(&p->stats),
                     p->stats.skip_exp, p->stats.skip_une,
-                    "" /* FIXME */,
-                    PRINT_STR(p->notes));
+                    keys, PRINT_STR(p->notes));
         }
         if ((p->type != TRC_TEST_SCRIPT) ||
             (~flags & TRC_OUT_NO_SCRIPTS))
         {
-            rc = iters_to_html(stats, flags, p, &p->iters, level + 1);
+            rc = test_iters_to_html(stats, flags, p, level + 1);
             if (rc != 0)
                 goto cleanup;
         }
