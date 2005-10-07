@@ -66,7 +66,7 @@
 /** Title of the report in HTML format */
 extern char *trc_diff_title;
 /** Template of BugIDs to be excluded */
-extern lh_string trc_diff_no_bugids;
+extern lh_string trc_diff_exclude_keys;
 
 static FILE   *f;
 static int     fd;
@@ -168,18 +168,32 @@ static int trc_diff_tests_to_html(const test_runs *tests,
 
 
 static te_bool
-trc_diff_exclude_by_bug(const char *bug)
+trc_diff_exclude_by_key(const test_iter *iter)
 {
-    le_string  *p;
+    le_string      *p;
+    trc_tags_entry *tags;
+    te_bool         exclude;
 
-    for (p = trc_diff_no_bugids.lh_first;
+    for (p = trc_diff_exclude_keys.lh_first;
          p != NULL;
          p = p->links.le_next)
     {
-        if (strncmp(bug, p->str, strlen(p->str)) == 0)
+        exclude = FALSE;
+        for (tags = tags_diff.tqh_first;
+             tags != NULL;
+             tags = tags->links.tqe_next)
         {
-            return TRUE;
+            if (iter->diff_exp[tags->id].key != NULL &&
+                strlen(iter->diff_exp[tags->id].key) != 0)
+            {
+                exclude = strncmp(iter->diff_exp[tags->id].key,
+                                  p->str, strlen(p->str));
+                if (!exclude)
+                    break;
+            }
         }
+        if (exclude)
+            return TRUE;
     }
     return FALSE;
 }
@@ -263,11 +277,7 @@ trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
 
         /* The routine should be called first to be called in any case */
         p->output = trc_diff_tests_has_diff(&p->tests, flags) ||
-                    (iter_has_diff &&
-                     TRUE
-                     /* FIXME
-                      (p->bug == NULL || strlen(p->bug) == 0 ||
-                      !trc_diff_exclude_by_bug(p->bug))*/);
+                    (iter_has_diff && !trc_diff_exclude_by_key(p));
 
         if (!p->output)
             has_no_out = TRUE;
@@ -301,10 +311,8 @@ trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
         
         p->diff_out = trc_diff_iters_has_diff(&p->iters, flags,
                                               &all_iters_out,
-                                              p->diff_exp) &&
-                      TRUE
-                      /* FIXME (p->bug == NULL || strlen(p->bug) == 0 ||
-                       !trc_diff_exclude_by_bug(p->bug))*/;
+                                              p->diff_exp) /*&&
+                      !trc_diff_exclude_by_key(p)*/;
 
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
@@ -318,6 +326,30 @@ trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
 }
 
 
+static const char *
+trc_diff_test_iter_keys(const test_iter *iter)
+{
+    static char buf[0x1000];
+
+    char           *s = buf;
+    trc_tags_entry *tags;
+
+    buf[0] = '\0';
+    for (tags = tags_diff.tqh_first;
+         tags != NULL;
+         tags = tags->links.tqe_next)
+    {
+        if (iter->diff_exp[tags->id].key != NULL &&
+            strlen(iter->diff_exp[tags->id].key) > 0)
+        {
+            s += sprintf(s, "<EM>%s</EM> - %s<BR/>",
+                         tags->name, iter->diff_exp[tags->id].key);
+        }
+    }
+
+    return buf;
+}
+
 static int
 trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                        unsigned int level)
@@ -326,6 +358,7 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
     unsigned int    i;
     trc_tags_entry *entry;
     test_iter      *p;
+    test_iter      *q;
     te_bool         one_iter = (iters->head.tqh_first != NULL) &&
                                (&iters->head.tqh_first->links.tqe_next ==
                                 iters->head.tqh_last);
@@ -344,8 +377,29 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                 ((~flags & TRC_DIFF_BRIEF) ||
                  (p->tests.head.tqh_first == NULL)))
             {
+                p->diff_keys = strdup(trc_diff_test_iter_keys(p));
+                assert(p->diff_keys != NULL);
+
                 if (flags & TRC_DIFF_BRIEF)
                 {
+                    /* 
+                     * We are in the brief mode, therefore, it is
+                     * a test script (not session or package) iteration.
+                     * We don't want to see iterations with equal keys.
+                     */
+                    for (q = iters->head.tqh_first;
+                         (q != p) &&
+                         (!q->output ||
+                          strcmp(p->diff_keys, q->diff_keys) != 0);
+                         q = q->links.tqe_next);
+
+                    if (p != q)
+                    {
+                        fprintf(stderr, "here %s\n", test_name);
+                        fflush(stderr);
+                        continue;
+                    }
+
                     fprintf(f, trc_diff_brief_table_test_row_start,
                             test_name, i, test_name);
                 }
@@ -364,8 +418,7 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                                 p->diff_exp[entry->id].value));
                 }
                 fprintf(f, trc_diff_table_row_end,
-                        "" /* FIXME PRINT_STR(p->bug)*/,
-                        PRINT_STR(p->notes));
+                        p->diff_keys, PRINT_STR(p->notes));
             }
 
             rc = trc_diff_tests_to_html(&p->tests, flags, level + 1);

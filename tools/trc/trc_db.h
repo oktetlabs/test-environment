@@ -164,8 +164,9 @@ typedef struct test_iter {
     trc_exp_result  diff_exp[TRC_DIFF_IDS]; /**< The expected results */
 
     /* Processing helpers */
-    te_bool         processed;      /**< Is iteration checked for output */
-    te_bool         output;         /**< Should the iteration be output */
+    te_bool         processed;  /**< Is iteration checked for output */
+    te_bool         output;     /**< Should the iteration be output */
+    char           *diff_keys;  /**< String with keys for all tag sets */
 
 } test_iter;
 

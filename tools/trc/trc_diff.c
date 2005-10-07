@@ -87,8 +87,8 @@ enum {
 
 /** Title of the report in HTML format */
 char *trc_diff_title = NULL;
-/** Templates of BugIDs to be excluded */
-lh_string trc_diff_no_bugids;
+/** Templates of keys to be excluded */
+lh_string trc_diff_exclude_keys;
 
 /** Name of the file with expected testing result database */
 static char *trc_diff_db_fn = NULL;
@@ -194,7 +194,7 @@ process_cmd_line_opts(int argc, char **argv)
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
                 }
-                LIST_INSERT_HEAD(&trc_diff_no_bugids, no_bugid, links);
+                LIST_INSERT_HEAD(&trc_diff_exclude_keys, no_bugid, links);
                 no_bugid->str = strdup(poptGetOptArg(optCon));
                 break;
             }
@@ -282,7 +282,7 @@ main(int argc, char *argv[])
     TAILQ_INIT(&trc_db.tests.head);
     TAILQ_INIT(&tags);
     TAILQ_INIT(&tags_diff);
-    LIST_INIT(&trc_diff_no_bugids);
+    LIST_INIT(&trc_diff_exclude_keys);
 
     /* Process and validate command-line options */
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
