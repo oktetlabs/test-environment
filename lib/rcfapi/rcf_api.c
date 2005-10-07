@@ -1644,7 +1644,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
     
     if (var_name == NULL || val == NULL ||
         strlen(var_name) >= RCF_MAX_NAME ||
-        BAD_TA || var_type < RCF_INT8 || var_type > RCF_STRING)
+        BAD_TA || var_type >= RCF_TYPE_TOTAL)
     {
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
@@ -2759,9 +2759,9 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
     
     for (i = 0; i < argc; i++)
     {
-        int type = va_arg(ap, int);
+        rcf_var_type_t  type = va_arg(ap, rcf_var_type_t);
         
-        if (type < RCF_INT8 || type > RCF_STRING)
+        if (type >= RCF_TYPE_TOTAL)
             return TE_RC(TE_RCF_API, TE_EINVAL);
             
         maxlen -= RCF_MAX_TYPE_NAME + 1;
