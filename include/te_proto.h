@@ -60,13 +60,24 @@
 #define TE_PROTO_KILL           "kill"
 
 #ifdef RCF_NEED_TYPES
-/* Types recoding table */
+/**
+ * Types recoding table.
+ *
+ * Members of rcf_var_type_t enumeration are used as indexes for this
+ * array.
+ */
 static char *rcf_types[] = 
     { "int8", "uint8", "int16", "uint16", "int32", "uint32", 
       "int64", "uint64", "string" };
 #endif
 
 #ifdef RCF_NEED_TYPE_LEN
+/**
+ * Lengthes of simple types supported in TE protocol.
+ *
+ * Members of rcf_var_type_t enumeration are used as indexes for this
+ * array.
+ */
 static int rcf_type_len[] = 
     { sizeof(int8_t), sizeof(uint8_t),
       sizeof(int16_t), sizeof(uint16_t),
@@ -77,7 +88,7 @@ static int rcf_type_len[] =
 
 #define RCF_MAX_TYPE_NAME       6
 
-/* 
+/**
  * Maximum number of symbols necessary for Test Protocol overhead:
  * session identifier, command and attachment information.
  */

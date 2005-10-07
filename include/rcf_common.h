@@ -59,9 +59,15 @@
 /** Prefix for files, which should be created on in FTP public directory */
 #define RCF_FILE_FTP_PREFIX     "ftp/"
 
-/** Parameter and variable types */
+/** 
+ * Parameter and variable types.
+ *
+ * Corresponding integer values must start from 0 and be continuos,
+ * since they are used as indexes for rcf_types[] and rcf_type_len[]
+ * arrays from te_proto.h.
+ */
 typedef enum {
-    RCF_INT8 = 1,   /**< int8_t */
+    RCF_INT8 = 0,   /**< int8_t */
     RCF_UINT8,      /**< uint8_t */
     RCF_INT16,      /**< int16_t */    
     RCF_UINT16,     /**< uint16_t */
