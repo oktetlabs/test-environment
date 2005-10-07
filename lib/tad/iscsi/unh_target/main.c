@@ -46,6 +46,9 @@
 
 const char *te_lgr_entity = "iSCSI standalone target";
 
+
+static FILE *logfile;
+
 static void
 stderr_logging(const char   *file,
                unsigned int  line,
@@ -62,6 +65,10 @@ stderr_logging(const char   *file,
     UNUSED(user);
     fprintf(stderr, "[%d] ", level);
     vfprintf(stderr, fmt, args);
+    va_end(args);
+    va_start(args, fmt);
+    fprintf(logfile, "[%d] ", level);
+    vfprintf(logfile, fmt, args);
     va_end(args);
 }
 
@@ -92,9 +99,16 @@ int main(int argc, char *argv[])
     struct sockaddr_in listen_to;
     char             **iter;
     pthread_t          thread;
+    int                int_val;
 
     UNUSED(argc);
 
+    logfile = fopen("target.log", "a");
+    if (logfile == NULL)
+    {
+        perror("can't open log file");
+        return EXIT_FAILURE;
+    }
     TRACE_SET(TRACE_ALL); 
     TRACE(TRACE_VERBOSE, "Initializing");
     iscsi_server_init();
@@ -114,9 +128,118 @@ int main(int argc, char *argv[])
 
     for (iter = argv + 1; *iter != NULL; iter++)
     {
-        configure_parameter(KEY_TO_BE_NEGOTIATED,
-                            *iter,
-                            *devdata->param_tbl);
+        if (strcmp(*iter, "force") == 0)
+        {
+            iter++;
+            if (strcmp(*iter, "s") == 0)
+                devdata->force |= USE_SECURITY_PHASE;
+            else if (strcmp(*iter, "o") == 0)
+                devdata->force |= USE_OPERATIONAL_PHASE;
+            else if (strcmp(*iter, "r") == 0)
+                devdata->force |= USE_FULL_REPLIES;
+            else if (strcmp(*iter, "xok") == 0)
+                devdata->force |= USE_REFLECT_XKEYS;
+            else if (strcmp(*iter, "tk1") == 0)
+                devdata->force |= USE_ONE_KEY_PER_TEXT;
+            else if (strncmp(*iter, "n=", 2) == 0)
+                devdata->nop_period =
+                    strtoul(*iter + 2, NULL, 0) * 100;
+            else if (strncmp(*iter, "v=", 2) == 0) {	
+                /* formerly set draft number to enforce */
+                int_val = strtoul(*iter + 2, NULL, 0);
+                if (int_val != DRAFT20) {
+                    TRACE(TRACE_ISCSI, "Draft number %u ignored\n",
+                          int_val / DRAFT_MULTIPLIER);
+                }
+            }
+            else if (strncmp(*iter, "V=", 2) == 0) {
+                char  *ptr;
+                int trace_info;
+                TRACE(TRACE_ISCSI, "Debug Verbose set to \"%s\"\n",
+                      *iter + 2);
+                trace_info = strtoul(*iter + 2,
+                                            &ptr, 0);
+                TRACE_SET(trace_info);
+            }
+            
+            /* set phase-collapse choice */
+            else if (strncmp(*iter, "p=", 2) == 0) {
+                int_val = strtoul(*iter + 2, NULL, 0);
+                if (int_val > 2 || int_val < 0) {
+                    TRACE_ERROR("Bad value for phase-collapse "
+                                "setting: %d", int_val);
+                } else
+                    devdata->phase_collapse = int_val;
+            }
+            /* set the r2t period - SAI */
+            else if (strncmp(*iter, "r2tp=", 5) == 0) {
+                devdata->r2t_period =
+                    strtoul(*iter + 5, NULL, 0) * 100;
+            }
+            /* chap and srp support - CHONG */
+            else if (strcmp(*iter, "t") == 0) {
+                TRACE(TRACE_ISCSI, "target confirmation enabled\n");
+                devdata->auth_parameter.auth_flags |=
+                    USE_TARGET_CONFIRMATION;
+            } else if (strcmp(*iter, "b") == 0) {
+                TRACE(TRACE_ISCSI, "base64 number enabled\n");
+                devdata->auth_parameter.auth_flags |= USE_BASE64;
+                devdata->auth_parameter.chap_local_ctx->number_format =
+                    BASE64_FORMAT;
+                devdata->auth_parameter.chap_peer_ctx->number_format =
+                    BASE64_FORMAT;
+            } else if (strncmp(*iter, "px=", 3) == 0) {
+                TRACE(TRACE_ISCSI, "CHAP peer secret set to %s\n",
+                      *iter + 3);
+                CHAP_SetSecret(*iter + 3,
+                               devdata->auth_parameter.chap_peer_ctx);
+            } else if (strncmp(*iter, "pn=", 3) == 0) {
+                TRACE(TRACE_ISCSI, "CHAP peer name set to %s\n",
+                      *iter + 3);
+                CHAP_SetName(*iter + 3,
+                             devdata->auth_parameter.chap_peer_ctx);
+            } else if (strncmp(*iter, "lx=", 3) == 0) {
+                TRACE(TRACE_ISCSI, "CHAP local secret set to %s\n",
+                      *iter + 3);
+                CHAP_SetSecret(*iter + 3,
+                               devdata->auth_parameter.chap_local_ctx);
+            } else if (strncmp(*iter, "ln=", 3) == 0) {
+                TRACE(TRACE_ISCSI, "CHAP local name set to %s\n",
+                      *iter + 3);
+                CHAP_SetName(*iter + 3,
+                             devdata->auth_parameter.chap_local_ctx);
+            } else if (strncmp(*iter, "cl=", 3) == 0) {
+                int_val = strtoul(*iter + 3, NULL, 0);
+                if (int_val <= 0 || int_val > MAX_CHAP_BINARY_LENGTH) {
+                    TRACE_ERROR("invalid CHAP challenge length %d\n",
+                                int_val);
+                }
+                TRACE(TRACE_ISCSI, "challenge length set to %d\n",
+                      int_val);
+                CHAP_SetChallengeLength(int_val,
+                                        devdata->auth_parameter.
+                                        chap_local_ctx);
+            } else if (strncmp(*iter, "sx=", 3) == 0) {
+                TRACE(TRACE_ISCSI, "SRP secret set to \"%s\"\n",
+                      *iter + 3);
+                SRP_SetSecret(*iter + 3,
+                              devdata->auth_parameter.srp_ctx);
+            } else if (strncmp(*iter, "sn=", 3) == 0) {
+                TRACE(TRACE_ISCSI, "SRP name set to \"%s\"\n",
+                      *iter + 3);
+                SRP_SetName(*iter + 3,
+                            devdata->auth_parameter.srp_ctx);
+            } else {
+                TRACE_ERROR("unknown force \"%s\"\n", 
+                            *iter);
+            }
+        }
+        else
+        {
+            configure_parameter(KEY_TO_BE_NEGOTIATED,
+                                *iter,
+                                *devdata->param_tbl);
+        }
     }
 
     for(;;)
