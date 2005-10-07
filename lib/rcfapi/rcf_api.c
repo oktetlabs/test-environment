@@ -2805,6 +2805,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
                 case RCF_UINT16:
                 {
                     uint16_t val = va_arg(ap, int);
+
                     memcpy(data, (char *)&val, rcf_type_len[type]);
                     data += rcf_type_len[type];
                     break;
@@ -2814,6 +2815,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
                 case RCF_UINT32:
                 {
                     uint32_t val = va_arg(ap, int32_t);
+
                     memcpy(data, (char *)&val, rcf_type_len[type]);
                     data += rcf_type_len[type];
                     break;
@@ -2823,10 +2825,14 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
                 case RCF_UINT64:
                 {
                     uint64_t val = va_arg(ap, int64_t);
+
                     memcpy(data, (char *)&val, rcf_type_len[type]);
                     data += rcf_type_len[type];
                     break;
                 }
+
+                default:
+                    assert(0);
             }
         }
     }
