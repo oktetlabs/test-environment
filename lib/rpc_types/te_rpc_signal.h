@@ -278,7 +278,6 @@ typedef enum rpc_sa_flags {
     RPC_SA_NODEFER    = 0x10,  /**< Do not prevent the signal from being
                                     received from within its own signal
                                     handler */
-    /* sa_sigaction() is not supported for now */
     RPC_SA_SIGINFO    = 0x20,  /**< In this case, sa_sigaction() should be
                                     set instead of sa_handler */
     RPC_SA_RESTORER   = 0x40,   /** < element is obsolete and
