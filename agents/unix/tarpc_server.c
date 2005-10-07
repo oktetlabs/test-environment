@@ -1181,22 +1181,24 @@ TARPC_FUNC(sigaction,
     COPY_ARG(oldact);
 },
 {
-    tarpc_sigaction *in_act;
-    tarpc_sigaction *out_oldact;
+    tarpc_sigaction  *in_act;
+    tarpc_sigaction  *out_oldact;
 
-    struct sigaction act;
+    struct sigaction  act;
     struct sigaction *p_act = NULL;
-    struct sigaction oldact;
+    struct sigaction  oldact;
     struct sigaction *p_oldact = NULL;
+    int               tmp_err = 0;
 
     memset(&act, 0, sizeof(act));
     memset(&oldact, 0, sizeof(oldact));
     in_act = in->act.act_val;
     out_oldact = out->oldact.oldact_val;
+    out->retval = 0;
+    out->common._errno = 0;
 
     if (in->act.act_len != 0)
     {
-        int tmp_err = 0;
         void *tmp_handler = NULL;
 
         act.sa_flags = sigaction_flags_rpc2h(in_act->xx_flags);
@@ -1205,48 +1207,44 @@ TARPC_FUNC(sigaction,
         tmp_err =
             get_name2handler(in_act->xx_handler.xx_handler_val,
                              &tmp_handler);
-        out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
-        out->retval = -(!!tmp_err);
         act.sa_handler = (sa_handler_t)tmp_handler;
 
-        if (out->retval == 0)
+        if (tmp_err == 0)
         {
             tmp_err =
                 get_name2handler(in_act->xx_restorer.xx_restorer_val,
                                  &tmp_handler);
-            out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
-            out->retval = -(!!tmp_err);
             act.sa_restorer = (sa_restorer_t)tmp_handler;
         }
-        if (out->retval == 0)
+        if (tmp_err == 0)
             p_act = &act;
     }
 
-    if (out->common._errno == 0)
+    if (tmp_err == 0)
     {
         if (out->oldact.oldact_len != 0)
             p_oldact = &oldact;
 
-        MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
-                                     p_act, p_oldact));
+        MAKE_CALL(tmp_err = func(signum_rpc2h(in->signum),
+                                 p_act, p_oldact));
 
-        if (out->retval == 0 && p_oldact != NULL)
+        if (tmp_err == 0 && p_oldact != NULL)
         {
-            out->retval =
+            tmp_err =
                 get_handler2name(oldact.sa_handler,
                                  out_oldact->xx_handler.xx_handler_val,
                                  out_oldact->xx_handler.xx_handler_len);
 
-            if (out->retval == 0)
+            if (tmp_err == 0)
             {
-                out->retval =
+                tmp_err =
                   get_handler2name(oldact.sa_restorer,
                                    out_oldact->xx_restorer.xx_restorer_val,
                                    out_oldact->xx_restorer.
                                                          xx_restorer_len);
             }
 
-            if (out->retval == 0)
+            if (tmp_err == 0)
             {
                out_oldact->xx_flags = sigaction_flags_h2rpc(oldact.
                                                                  sa_flags);
@@ -1255,10 +1253,10 @@ TARPC_FUNC(sigaction,
         }
     }
 
-    if (out->retval > 0)
+    if (tmp_err != 0)
     {
-        out->common._errno = TE_RC(TE_TA_UNIX, out->retval);
-        out->retval = -1;
+        out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
+        out->retval = -(!!tmp_err);
         func(signum_rpc2h(in->signum), p_oldact, NULL);
     }
 }
@@ -1279,19 +1277,21 @@ TARPC_FUNC(sigaction,
     tarpc_sigaction *in_act;
     tarpc_sigaction *out_oldact;
 
-    struct sigaction act;
+    struct sigaction  act;
     struct sigaction *p_act = NULL;
-    struct sigaction oldact;
+    struct sigaction  oldact;
     struct sigaction *p_oldact = NULL;
+    int               tmp_err = 0;
 
     memset(&act, 0, sizeof(act));
     memset(&oldact, 0, sizeof(oldact));
     in_act = in->act.act_val;
     out_oldact = out->oldact.oldact_val;
+    out->retval = 0;
+    out->common._errno = 0;
 
     if (in->act.act_len != 0)
     {
-        int tmp_err = 0;
         void *tmp_handler = NULL;
 
         act.sa_flags = sigaction_flags_rpc2h(in_act->xx_flags);
@@ -1300,30 +1300,28 @@ TARPC_FUNC(sigaction,
         tmp_err =
             get_name2handler(in_act->xx_handler.xx_handler_val,
                              &tmp_handler);
-        out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
-        out->retval = -(!!tmp_err);
         act.sa_handler = (sa_handler_t)tmp_handler;
 
         if (out->retval == 0)
             p_act = &act;
     }
 
-    if (out->common._errno == 0)
+    if (tmp_err == 0)
     {
         if (out->oldact.oldact_len != 0)
             p_oldact = &oldact;
 
-        MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
-                                      p_act, p_oldact));
+        MAKE_CALL(tmp_err = func(signum_rpc2h(in->signum),
+                                 p_act, p_oldact));
 
-        if (out->retval == 0 && p_oldact != NULL)
+        if (tmp_err == 0 && p_oldact != NULL)
         {
-            out->retval =
+            tmp_err =
                 get_handler2name(oldact.sa_handler,
                                  out_oldact->xx_handler.xx_handler_val,
                                  out_oldact->xx_handler.xx_handler_len);
 
-            if (out->retval == 0)
+            if (tmp_err == 0)
             {
                out_oldact->xx_flags = sigaction_flags_h2rpc(oldact.
                                                                  sa_flags);
@@ -1332,10 +1330,10 @@ TARPC_FUNC(sigaction,
         }
     }
 
-    if (out->retval > 0)
+    if (tmp_err != 0)
     {
-        out->common._errno = TE_RC(TE_TA_UNIX, out->retval);
-        out->retval = -1;
+        out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
+        out->retval = -(!!tmp_err);
         func(signum_rpc2h(in->signum), p_oldact, NULL);
     }
 }
