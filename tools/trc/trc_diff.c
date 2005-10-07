@@ -61,7 +61,7 @@
 /** TRC tool command line options */
 enum {
     TRC_DIFF_OPT_VERSION = 1,
-    TRC_DIFF_OPT_NO_BUGID,
+    TRC_DIFF_OPT_EXCLUDE,
     TRC_DIFF_OPT_TAG0,
     TRC_DIFF_OPT_TAG1,
     TRC_DIFF_OPT_TAG2,
@@ -129,8 +129,8 @@ process_cmd_line_opts(int argc, char **argv)
           "Name of the file for report in HTML format.",
           "FILENAME" },
 
-        { "no-bugid", 'B', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_NO_BUGID,
-          "Exclude from report entries with BugID by template or all "
+        { "exclude", 'e', POPT_ARG_STRING, NULL, TRC_DIFF_OPT_EXCLUDE,
+          "Exclude from report entries with key by template or all "
           "(if template is empty).", NULL },
 
 #define TRC_DIFF_TAG_OPT(id_) \
@@ -184,7 +184,7 @@ process_cmd_line_opts(int argc, char **argv)
     {
         switch (rc)
         {
-            case TRC_DIFF_OPT_NO_BUGID:
+            case TRC_DIFF_OPT_EXCLUDE:
             {
                 le_string  *no_bugid = calloc(1, sizeof(*no_bugid));
 

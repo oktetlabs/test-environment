@@ -43,10 +43,8 @@
 /** Number of IDs supported by TRC-diff */
 #define TRC_DIFF_IDS    10
 
-/** Do not include entries with specified BugID */
-#define TRC_DIFF_NO_BUGID   0x01
 /** Generate brief version of the diff report */
-#define TRC_DIFF_BRIEF      0x02
+#define TRC_DIFF_BRIEF      0x01
 
 
 /** Entry of the list of strings */

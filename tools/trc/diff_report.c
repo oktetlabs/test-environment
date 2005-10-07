@@ -65,7 +65,7 @@
 
 /** Title of the report in HTML format */
 extern char *trc_diff_title;
-/** Template of BugIDs to be excluded */
+/** Template of keys to be excluded */
 extern lh_string trc_diff_exclude_keys;
 
 static FILE   *f;
@@ -121,7 +121,7 @@ static const char * const trc_diff_table_heading_unnamed_entry =
 
 static const char * const trc_diff_table_heading_end =
 "      <TD>"
-"        <B>BugID</B>\n"
+"        <B>Key</B>\n"
 "      </TD>\n"
 "      <TD>"
 "        <B>Notes</B>\n"
@@ -148,7 +148,7 @@ static const char * const trc_diff_table_iter_row_start =
 "      <TD COLSPAN=2><A name=\"%s=%u\"/>%s</TD>\n"; /* Parameters */
 
 static const char * const trc_diff_table_row_end =
-"      <TD>%s</TD>\n"           /* BugID */
+"      <TD>%s</TD>\n"           /* Key */
 "      <TD>%s</TD>\n"           /* Notes */
 "    </TR>\n";
 
@@ -172,30 +172,27 @@ trc_diff_exclude_by_key(const test_iter *iter)
 {
     le_string      *p;
     trc_tags_entry *tags;
-    te_bool         exclude;
+    te_bool         exclude = FALSE;
 
     for (p = trc_diff_exclude_keys.lh_first;
-         p != NULL;
+         p != NULL && !exclude;
          p = p->links.le_next)
     {
-        exclude = FALSE;
         for (tags = tags_diff.tqh_first;
              tags != NULL;
              tags = tags->links.tqe_next)
         {
             if (iter->diff_exp[tags->id].key != NULL &&
-                strlen(iter->diff_exp[tags->id].key) != 0)
+                strlen(iter->diff_exp[tags->id].key) > 0)
             {
-                exclude = strncmp(iter->diff_exp[tags->id].key,
-                                  p->str, strlen(p->str));
+                exclude = (strncmp(iter->diff_exp[tags->id].key,
+                                   p->str, strlen(p->str)) == 0);
                 if (!exclude)
                     break;
             }
         }
-        if (exclude)
-            return TRUE;
     }
-    return FALSE;
+    return exclude;
 }
 
 
@@ -350,6 +347,34 @@ trc_diff_test_iter_keys(const test_iter *iter)
     return buf;
 }
 
+static const char *
+trc_diff_test_iter_notes(const test_iter *iter)
+{
+    static char buf[0x1000];
+
+    char           *s = buf;
+    trc_tags_entry *tags;
+
+    buf[0] = '\0';
+    if (iter->notes != NULL && strlen(iter->notes) > 0)
+    {
+        s += sprintf(s, "%s<BR/>", iter->notes);
+    }
+    for (tags = tags_diff.tqh_first;
+         tags != NULL;
+         tags = tags->links.tqe_next)
+    {
+        if (iter->diff_exp[tags->id].notes != NULL &&
+            strlen(iter->diff_exp[tags->id].notes) > 0)
+        {
+            s += sprintf(s, "<EM>%s</EM> - %s<BR/>",
+                         tags->name, iter->diff_exp[tags->id].notes);
+        }
+    }
+
+    return buf;
+}
+
 static int
 trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                        unsigned int level)
@@ -414,7 +439,8 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                                 p->diff_exp[entry->id].value));
                 }
                 fprintf(f, trc_diff_table_row_end,
-                        p->diff_keys, PRINT_STR(p->notes));
+                        p->diff_keys,
+                        trc_diff_test_iter_notes(p));
             }
 
             rc = trc_diff_tests_to_html(&p->tests, flags, level + 1);
