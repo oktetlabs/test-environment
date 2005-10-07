@@ -160,22 +160,30 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
  * @param name  function name (or pointer value converted to string)
  * @param handler returned pointer to function or NULL if error
  *
- * @return errno if error or 0;
+ * @return errno if error or 0
  */
 static int
-get_name2handler(const char *name, void **handler)
+name2handler(const char *name, void **handler)
 {
-    char *tmp;
-    int   err = 0;
+    if (name == NULL || *name == 0)
+    {
+        *handler = NULL;
+        return 0;
+    } 
 
     *handler = rcf_ch_symbol_addr(name, 1);
-    if (*handler == NULL && name != NULL)
+    if (*handler == NULL)
     {
-        *handler = (void *)strtol(name, &tmp, 16);
-
-        err = (tmp == name || *tmp != 0) ? TE_EINVAL : 0;
+        char *tmp;
+        int   id;
+        
+        id = strtol(name, &tmp, 10);
+        if (tmp == name || *tmp != 0)
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+            
+        *handler = rcf_pch_mem_get(id);
     }
-    return err;
+    return 0;
 }
 
 /**
@@ -184,51 +192,35 @@ get_name2handler(const char *name, void **handler)
  * is implemented as a static one.
  *
  * @param handler  pointer to function
- * @param name     function name (or pointer value converted as a string)
- * @param name_len location length
  *
- * @return errno if error or 0
+ * @return Allocated name or NULL in the case of memory allocation failure
  */
-static int
-get_handler2name(void *handler, char *name, int name_len)
+static char *
+handler2name(void *handler)
 {
     char *tmp;
-    int   tmp_len;
-
-    tmp = rcf_ch_symbol_name(handler);
-
-    if (tmp != NULL)
+    
+    if (handler == NULL)
+        tmp = strdup("0");
+    else if ((tmp = rcf_ch_symbol_name(handler)) != NULL)
+        tmp = strdup(tmp);
+    else if ((tmp = calloc(1, 16)) != NULL)
     {
-         tmp_len = strlen(tmp) + 1;
-         if (name_len >= tmp_len)
-             memcpy(name, tmp, tmp_len);
-         else
-         {
-             return  TE_ENOMEM;
-         }
-    }
-    else
-    {
-        if ((tmp = calloc(1, 16)) == NULL)
-        {
-            return  TE_ENOMEM;
-        }
-        else
-        {
-            int id = 0;
-                    
-            if (handler != NULL &&
-                (id = rcf_pch_mem_get_id(handler)) == 0)
-            {
-                id = rcf_pch_mem_alloc(handler);
-            }
+        int id = rcf_pch_mem_get_id(handler);
+        
+        if (id == 0)
+            id = rcf_pch_mem_alloc(handler);
 
-            sprintf(tmp, "%d", id);
-            memcpy(name, tmp, strlen(tmp) + 1);
-            free(tmp);
-        }
+        sprintf(tmp, "%d", id);
     }
-    return 0;
+    
+    if (tmp == NULL)
+    {
+        ERROR("Out of memory");
+        return strdup("");
+    }
+
+    return tmp;
 }
 
 /*-------------- setlibname() -----------------------------*/
@@ -1099,170 +1091,36 @@ TARPC_FUNC(signal,
     }
 },
 {
+    sighandler_t handler;
     int          signum = signum_rpc2h(in->signum);
-    sighandler_t handler = rcf_ch_symbol_addr(in->handler.handler_val, 1);
-    sighandler_t old_handler;
     
-    if (handler == NULL && in->handler.handler_val != NULL)
+    if ((out->common._errno = name2handler(in->handler, 
+                                           (void **)&handler)) == 0)
     {
-        char *tmp;
-        int   id;
+        void *old_handler;
         
-        id = strtol(in->handler.handler_val, &tmp, 10);
-        if (tmp == in->handler.handler_val || *tmp != 0)
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        handler = (sighandler_t)rcf_pch_mem_get(id);
-    }
-    if (out->common._errno == 0)
-    {
-        MAKE_CALL(old_handler = (sighandler_t)func_ret_ptr(signum,
-                                                           handler));
+        MAKE_CALL(old_handler = func_ret_ptr(signum, handler));
+        
         if (old_handler != SIG_ERR)
-        {
-            char *name = rcf_ch_symbol_name(old_handler);
-
-            if (name != NULL)
-            {
-                if ((out->handler.handler_val = strdup(name)) == NULL)
-                {
-                    func(signum, old_handler);
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                }
-                else
-                    out->handler.handler_len = strlen(name) + 1;
-            }
-            else
-            {
-                if ((name = calloc(1, 16)) == NULL)
-                {
-                    func(signum, old_handler);
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                }
-                else
-                {
-                    int id = 0;
-                    
-                    if (old_handler != NULL &&
-                        (id = rcf_pch_mem_get_id(old_handler)) == 0)
-                    {
-                        id = rcf_pch_mem_alloc(old_handler);
-                    }
-                    sprintf(name, "%d", id);
-                    out->handler.handler_val = name;
-                    out->handler.handler_len = strlen(name) + 1;
-                }
-            }
-            /* 
-             * Delete signal from set of received signals when
-             * signal registrar is set for the signal.
-             */
-            if (out->common._errno == 0 && handler == signal_registrar)
-            {
-                sigdelset(&rpcs_received_signals, signum);
-            }
-        }
+            out->handler = handler2name(old_handler);
     }
 }
 )
 
 /*-------------- sigaction() --------------------------------*/
 
-typedef void (*sa_handler_t)(int);
-typedef void (*sa_restorer_t)(void);
-
+/** Return pointer to sa_restorer field of the structure or dummy address */
+static void **
+get_sa_restorer(struct sigaction *sa)
+{
 #if HAVE_STRUCT_SIGACTION_SA_RESTORER
-TARPC_FUNC(sigaction,
-{
-    if (in->signum == RPC_SIGINT)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
-        return TRUE;
-    }
-    COPY_ARG(oldact);
-},
-{
-    tarpc_sigaction  *in_act;
-    tarpc_sigaction  *out_oldact;
-
-    struct sigaction  act;
-    struct sigaction *p_act = NULL;
-    struct sigaction  oldact;
-    struct sigaction *p_oldact = NULL;
-    int               tmp_err = 0;
-
-    memset(&act, 0, sizeof(act));
-    memset(&oldact, 0, sizeof(oldact));
-    in_act = in->act.act_val;
-    out_oldact = out->oldact.oldact_val;
-    out->retval = 0;
-    out->common._errno = 0;
-
-    if (in->act.act_len != 0)
-    {
-        void *tmp_handler = NULL;
-
-        act.sa_flags = sigaction_flags_rpc2h(in_act->xx_flags);
-        act.sa_mask = *((sigset_t *)rcf_pch_mem_get(in_act->xx_mask));
-
-        tmp_err =
-            get_name2handler(in_act->xx_handler.xx_handler_val,
-                             &tmp_handler);
-        act.sa_handler = (sa_handler_t)tmp_handler;
-
-        if (tmp_err == 0)
-        {
-            tmp_err =
-                get_name2handler(in_act->xx_restorer.xx_restorer_val,
-                                 &tmp_handler);
-            act.sa_restorer = (sa_restorer_t)tmp_handler;
-        }
-        if (tmp_err == 0)
-            p_act = &act;
-    }
-
-    if (tmp_err == 0)
-    {
-        if (out->oldact.oldact_len != 0)
-            p_oldact = &oldact;
-
-        MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
-                                     p_act, p_oldact));
-
-        if (out->retval == 0 && p_oldact != NULL)
-        {
-            tmp_err =
-                get_handler2name(oldact.sa_handler,
-                                 out_oldact->xx_handler.xx_handler_val,
-                                 out_oldact->xx_handler.xx_handler_len);
-
-            if (tmp_err == 0)
-            {
-                tmp_err =
-                  get_handler2name(oldact.sa_restorer,
-                                   out_oldact->xx_restorer.xx_restorer_val,
-                                   out_oldact->xx_restorer.
-                                                         xx_restorer_len);
-            }
-
-            if (tmp_err == 0)
-            {
-               out_oldact->xx_flags = sigaction_flags_h2rpc(oldact.
-                                                                 sa_flags);
-               out_oldact->xx_mask = rcf_pch_mem_alloc(&oldact.sa_mask);
-            }
-        }
-    }
-
-    if (tmp_err != 0)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
-        out->retval = -(!!tmp_err);
-        func(signum_rpc2h(in->signum), p_oldact, NULL);
-    }
+    return (void **)&(sa->sa_restorer);
+#else    
+    static void *dummy = NULL;
+    
+    return &dummy;
+#endif
 }
-)
-
-#else
 
 TARPC_FUNC(sigaction,
 {
@@ -1281,65 +1139,58 @@ TARPC_FUNC(sigaction,
     struct sigaction *p_act = NULL;
     struct sigaction  oldact;
     struct sigaction *p_oldact = NULL;
-    int               tmp_err = 0;
 
     memset(&act, 0, sizeof(act));
     memset(&oldact, 0, sizeof(oldact));
     in_act = in->act.act_val;
     out_oldact = out->oldact.oldact_val;
-    out->retval = 0;
-    out->common._errno = 0;
-
+    
     if (in->act.act_len != 0)
     {
-        void *tmp_handler = NULL;
+        p_act = &act;
+        
+        act.sa_flags = sigaction_flags_rpc2h(in_act->flags);
+        act.sa_mask = *((sigset_t *)rcf_pch_mem_get(in_act->mask));
 
-        act.sa_flags = sigaction_flags_rpc2h(in_act->xx_flags);
-        act.sa_mask = *((sigset_t *)rcf_pch_mem_get(in_act->xx_mask));
-
-        tmp_err =
-            get_name2handler(in_act->xx_handler.xx_handler_val,
-                             &tmp_handler);
-        act.sa_handler = (sa_handler_t)tmp_handler;
-
-        if (out->retval == 0)
-            p_act = &act;
-    }
-
-    if (tmp_err == 0)
-    {
-        if (out->oldact.oldact_len != 0)
-            p_oldact = &oldact;
-
-        MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
-                                    p_act, p_oldact));
-
-        if (out->retval == 0 && p_oldact != NULL)
+        out->common._errno = 
+            name2handler(in_act->handler, 
+                         (act.sa_flags & SA_SIGINFO) ?
+                         (void **)&(act.sa_sigaction) :
+                         (void **)&(act.sa_handler));
+                             
+        if (out->common._errno != 0)
         {
-            tmp_err =
-                get_handler2name(oldact.sa_handler,
-                                 out_oldact->xx_handler.xx_handler_val,
-                                 out_oldact->xx_handler.xx_handler_len);
-
-            if (tmp_err == 0)
-            {
-               out_oldact->xx_flags = sigaction_flags_h2rpc(oldact.
-                                                                 sa_flags);
-               out_oldact->xx_mask = rcf_pch_mem_alloc(&oldact.sa_mask);
-            }
+            out->retval = -1;
+            goto finish;     
+        }
+        
+        out->common._errno = name2handler(in_act->restorer,
+                                          get_sa_restorer(&act));
+        if (out->common._errno != 0)
+        {
+            out->retval = -1;
+            goto finish;     
         }
     }
 
-    if (tmp_err != 0)
+    if (out->oldact.oldact_len != 0)
+        p_oldact = &oldact;
+
+    MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
+                                 p_act, p_oldact));
+
+    if (out->retval == 0 && p_oldact != NULL)
     {
-        out->common._errno = TE_RC(TE_TA_UNIX, tmp_err);
-        out->retval = -(!!tmp_err);
-        func(signum_rpc2h(in->signum), p_oldact, NULL);
+        out_oldact->flags = sigaction_flags_h2rpc(oldact.sa_flags);
+        out_oldact->mask = rcf_pch_mem_alloc(&oldact.sa_mask);
+        out_oldact->handler = handler2name(oldact.sa_handler);
+        out_oldact->restorer = handler2name(*(get_sa_restorer(&oldact)));
     }
+    
+    finish:
+    ;
 }
 )
-
-#endif
 
 /*-------------- setsockopt() ------------------------------*/
 

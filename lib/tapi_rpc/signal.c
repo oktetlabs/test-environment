@@ -57,6 +57,8 @@ rpc_signal(rcf_rpc_server *rpcs,
 {
     tarpc_signal_in  in;
     tarpc_signal_out out;
+    
+    char *copy = NULL;
 
     char *res = NULL;
 
@@ -68,26 +70,35 @@ rpc_signal(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_PTR(signal, NULL);
     }
+    
+    if ((copy = strdup(handler != NULL ? handler : "")) == NULL)
+    {
+        ERROR("Out of memory");
+        rpcs->_errno = TE_ENOMEM;
+        RETVAL_PTR(signal, NULL);
+    }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.signum = signum;
-    in.handler.handler_val = (char *)handler;
-    in.handler.handler_len = (handler == NULL) ? 0 : (strlen(handler) + 1);
+    in.handler = copy;
 
     rcf_rpc_call(rpcs, "signal", &in, &out);
                  
+    /* Yes, I know that it's memory leak, but what do you propose?! */
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        res = out.handler;
+        out.handler = NULL;
+    }
+    free(copy);
+    
     TAPI_RPC_LOG("RPC (%s,%s): signal(%s, %s) -> %s (%s)",
                  rpcs->ta, rpcs->name,
                  signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
-                 out.handler.handler_val != NULL ?
-                     out.handler.handler_val : "(null)",
+                 res != NULL ? res : "(null)",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
-
-    /* Yes, I know that it's memory leak, but what do you propose?! */
-    if (RPC_IS_CALL_OK(rpcs) && out.handler.handler_val != NULL)
-        res = strdup(out.handler.handler_val);
         
     RETVAL_PTR(signal, res);
 }
@@ -549,6 +560,9 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
 
     struct tarpc_sigaction in_act;
     struct tarpc_sigaction in_oldact;
+    
+    char *copy_h = NULL;
+    char *copy_r = NULL;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -556,15 +570,17 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(sigaction, out.retval);
+        RETVAL_INT(sigaction, -1);
     }
+    
     if (act != NULL && act->mm_mask == RPC_NULL)
     {
         ERROR("%s(): Invalid 'act->mm_mask' argument",
                 __FUNCTION__);
         rpcs->_errno = TE_EINVAL;
-        RETVAL_INT(sigaction, out.retval);
+        RETVAL_INT(sigaction, -1);
     }
+    
     if (oldact != NULL && oldact->mm_mask == RPC_NULL)
     {
         ERROR("%s(): Invalid 'oldact->mm_mask' argument",
@@ -582,14 +598,20 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         in.act.act_val = &in_act;
         in.act.act_len = 1;
 
-        in_act.xx_handler.xx_handler_val = (char *)act->mm_handler;
-        in_act.xx_handler.xx_handler_len = sizeof(act->mm_handler);
+        if ((copy_h = strdup(act->mm_handler != NULL ? act->mm_handler
+                                                     : "")) == NULL ||
+            (copy_r = strdup(act->mm_restorer != NULL ? act->mm_restorer
+                                                      : "")) == NULL)
+        {
+            ERROR("Out of memory");
+            rpcs->_errno = TE_ENOMEM;
+            RETVAL_INT(sigaction, out.retval);
+        }
 
-        in_act.xx_restorer.xx_restorer_val = (char *)act->mm_restorer;
-        in_act.xx_restorer.xx_restorer_len = sizeof(act->mm_restorer);
-
-        in_act.xx_mask = (tarpc_sigset_t)act->mm_mask;
-        in_act.xx_flags = act->mm_flags;
+        in_act.handler = copy_h;
+        in_act.restorer = copy_r;
+        in_act.mask = (tarpc_sigset_t)act->mm_mask;
+        in_act.flags = act->mm_flags;
     }
 
     if (oldact != NULL)
@@ -597,14 +619,8 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         memset(&in_oldact, 0, sizeof(in_oldact));
         in.oldact.oldact_val = &in_oldact;
         in.oldact.oldact_len = 1;
-
-        in_oldact.xx_handler.xx_handler_val = oldact->mm_handler;
-        in_oldact.xx_handler.xx_handler_len = sizeof(oldact->mm_handler);
-        in_oldact.xx_restorer.xx_restorer_val = oldact->mm_restorer;
-        in_oldact.xx_restorer.xx_restorer_len =
-                                              sizeof(oldact->mm_restorer);
-        in_oldact.xx_mask = (tarpc_sigset_t)oldact->mm_mask;
-        in_oldact.xx_flags = oldact->mm_flags;
+        in.oldact.oldact_val->handler = strdup("");
+        in.oldact.oldact_val->restorer = strdup("");
     }
 
     rcf_rpc_call(rpcs, "sigaction", &in, &out);
@@ -613,22 +629,13 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     {
         struct tarpc_sigaction *out_oldact = out.oldact.oldact_val;
 
-        assert(out_oldact->xx_handler.xx_handler_val != NULL);
-        assert(out_oldact->xx_handler.xx_handler_len <=
-                   sizeof(oldact->mm_handler));
-        memcpy(oldact->mm_handler, out_oldact->xx_handler.xx_handler_val,
-               out_oldact->xx_handler.xx_handler_len);
-
-        assert(out_oldact->xx_restorer.xx_restorer_val != NULL);
-        assert(out_oldact->xx_restorer.xx_restorer_len <=
-                   sizeof(oldact->mm_restorer));
-        memcpy(oldact->mm_restorer,
-               out_oldact->xx_restorer.xx_restorer_val,
-               out_oldact->xx_restorer.xx_restorer_len);
-
-        oldact->mm_mask = (rpc_sigset_p)out_oldact->xx_mask;
-        oldact->mm_flags = out_oldact->xx_flags;
+        TE_SPRINTF(oldact->mm_handler, out_oldact->handler);
+        TE_SPRINTF(oldact->mm_restorer, out_oldact->restorer);
+        oldact->mm_mask = (rpc_sigset_p)out_oldact->mask;
+        oldact->mm_flags = out_oldact->flags;
     }
+    free(copy_h);
+    free(copy_r);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaction, out.retval);
 

@@ -473,12 +473,11 @@ struct tarpc_recvfrom_out {
 
 /* sigaction() */
 struct tarpc_sigaction {
-    char                xx_handler<>;   /**< Name of the signal handler
-                                             function */
-    tarpc_sigset_t      xx_mask;        /**< Handle (pointer in server
-                                             context) of the allocated set */
-    tarpc_int           xx_flags;
-    char                xx_restorer<>;  /**< Name of the restorer function */
+    string          handler<>;   /**< sa_handler name */
+    string          restorer<>;  /**< sa_restorer name */              
+    tarpc_sigset_t  mask;        /**< Handle (pointer in server
+                                      context) of the allocated set */
+    tarpc_int       flags;       /**< Flags to be passed to sigaction */
 };
 
 /* sendmsg() / recvmsg() */
@@ -1753,15 +1752,14 @@ typedef struct tarpc_void_out tarpc_if_freenameindex_out;
 struct tarpc_signal_in {
     struct tarpc_in_arg common;
 
-    tarpc_signum    signum;
-    char            handler<>;  /**< Name of the signal handler function */
+    tarpc_signum    signum;     /**< Signal */
+    string          handler<>;  /**< Name of the signal handler function */
 };
 
 struct tarpc_signal_out {
     struct tarpc_out_arg    common;
 
-    char            handler<>;  /**< Name of the old signal
-                                     handler function */
+    string handler<>;  /**< Name of the old signal handler function */
 };
 
 /* sigaction() */

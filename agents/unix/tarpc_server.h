@@ -573,7 +573,6 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
             out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);      \
             break;                                                  \
     }                                                               \
-                                                                    \
     return TRUE;                                                    \
 }
 

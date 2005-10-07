@@ -91,12 +91,11 @@ extern tarpc_pid_t rpc_waitpid(rcf_rpc_server *rpcs,
  * when a specific signal is receipt
  */
 typedef struct rpc_struct_sigaction {
-    char          mm_handler[RCF_RPC_MAX_FUNC_NAME]; /**< Action handler*/
-    rpc_sigset_p  mm_mask;   /**< bitmask of signal numbers*/
-    rpc_sa_flags  mm_flags;/**< flags that modify the signal handling 
-                                process */
-    char     mm_restorer[RCF_RPC_MAX_FUNC_NAME];/**< should not be 
-                                                     used. --obsolete */
+    char          mm_handler[RCF_RPC_MAX_FUNC_NAME];  /**< Action handler*/
+    char          mm_restorer[RCF_RPC_MAX_FUNC_NAME]; /**< Restorer */
+    rpc_sigset_p  mm_mask;   /**< Bitmask of signal numbers*/
+    rpc_sa_flags  mm_flags;  /**< Flags that modify the signal handling 
+                                  process */
 } rpc_struct_sigaction;
 
 

@@ -962,62 +962,103 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
 
 /*-------------- signal() --------------------------------*/
 
+/**
+ * Find the pointer to function by its name in table.
+ * Try to convert string to long int and cast it to the pointer
+ * in the case if function is implemented as a static one.
+ *
+ * @param name  function name (or pointer value converted to string)
+ * @param handler returned pointer to function or NULL if error
+ *
+ * @return errno if error or 0
+ */
+static int
+name2handler(const char *name, void **handler)
+{
+    if (name == NULL || *name == 0)
+    {
+        *handler = NULL;
+        return 0;
+    } 
+
+    *handler = rcf_ch_symbol_addr(name, 1);
+    if (*handler == NULL)
+    {
+        char *tmp;
+        int   id;
+        
+        id = strtol(name, &tmp, 10);
+        if (tmp == name || *tmp != 0)
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+            
+        *handler = rcf_pch_mem_get(id);
+    }
+    return 0;
+}
+
+/**
+ * Find the function name in table according to pointer to one.
+ * Try to convert pointer value to string in the case if function
+ * is implemented as a static one.
+ *
+ * @param handler  pointer to function
+ *
+ * @return Allocated name or NULL in the case of memory allocation failure
+ */
+static char *
+handler2name(void *handler)
+{
+    char *tmp;
+
+    if (handler == NULL)
+        tmp = strdup("0");
+    else if ((tmp = rcf_ch_symbol_name(handler)) != NULL)
+        tmp = strdup(tmp);
+    else if ((tmp = calloc(1, 16)) != NULL)
+    {
+        int id = rcf_pch_mem_get_id(handler);
+        
+        if (id == 0)
+            id = rcf_pch_mem_alloc(handler);
+
+        sprintf(tmp, "%d", id);
+    }
+    
+    if (tmp == NULL)
+    {
+        ERROR("Out of memory");
+        return strdup("");
+    }
+
+    return tmp;
+}
+
+
 typedef void (*sighandler_t)(int);
+
+/*-------------- signal() --------------------------------*/
 
 TARPC_FUNC(signal,
 {
     if (in->signum == RPC_SIGINT)
     {
-        out->common._errno = TE_RC(TE_TA_WIN32, TE_EPERM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
         return TRUE;
     }
 },
 {
-    sighandler_t handler = rcf_ch_symbol_addr(in->handler.handler_val, 1);
-    sighandler_t old_handler;
-
-    if (handler == NULL && in->handler.handler_val != NULL)
+    sighandler_t handler;
+    int          signum = signum_rpc2h(in->signum);
+    
+    if ((out->common._errno = name2handler(in->handler, 
+                                           (void **)&handler)) == 0)
     {
-        char *tmp;
-
-        handler = (sighandler_t)strtol(in->handler.handler_val, &tmp, 16);
-
-        if (tmp == in->handler.handler_val || *tmp != 0)
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
-    }
-    if (out->common._errno == 0)
-    {
-        MAKE_CALL(old_handler = (sighandler_t)signal(
-                      signum_rpc2h(in->signum), handler));
+        void *old_handler;
+        
+        MAKE_CALL(old_handler = (void *)signal(signum, handler));
+        
         if (old_handler != SIG_ERR)
-        {
-            char *name = rcf_ch_symbol_name(old_handler);
-
-            if (name != NULL)
-            {
-                if ((out->handler.handler_val = strdup(name)) == NULL)
-                {
-                    signal(signum_rpc2h(in->signum), old_handler);
-                    out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-                }
-                else
-                    out->handler.handler_len = strlen(name) + 1;
-            }
-            else
-            {
-                if ((name = calloc(1, 16)) == NULL)
-                {
-                    signal(signum_rpc2h(in->signum), old_handler);
-                    out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-                }
-                else
-                {
-                    sprintf(name, "0x%x", (unsigned int)old_handler);
-                    out->handler.handler_val = name;
-                    out->handler.handler_len = strlen(name) + 1;
-                }
-            }
-        }
+            out->handler = handler2name(old_handler);
     }
 }
 )
