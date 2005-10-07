@@ -1225,10 +1225,10 @@ TARPC_FUNC(sigaction,
         if (out->oldact.oldact_len != 0)
             p_oldact = &oldact;
 
-        MAKE_CALL(tmp_err = func(signum_rpc2h(in->signum),
-                                 p_act, p_oldact));
+        MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
+                                     p_act, p_oldact));
 
-        if (tmp_err == 0 && p_oldact != NULL)
+        if (out->retval == 0 && p_oldact != NULL)
         {
             tmp_err =
                 get_handler2name(oldact.sa_handler,
@@ -1311,10 +1311,10 @@ TARPC_FUNC(sigaction,
         if (out->oldact.oldact_len != 0)
             p_oldact = &oldact;
 
-        MAKE_CALL(tmp_err = func(signum_rpc2h(in->signum),
-                                 p_act, p_oldact));
+        MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
+                                    p_act, p_oldact));
 
-        if (tmp_err == 0 && p_oldact != NULL)
+        if (out->retval == 0 && p_oldact != NULL)
         {
             tmp_err =
                 get_handler2name(oldact.sa_handler,
