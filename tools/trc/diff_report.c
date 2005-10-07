@@ -394,11 +394,7 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                          q = q->links.tqe_next);
 
                     if (p != q)
-                    {
-                        fprintf(stderr, "here %s\n", test_name);
-                        fflush(stderr);
                         continue;
-                    }
 
                     fprintf(f, trc_diff_brief_table_test_row_start,
                             test_name, i, test_name);
