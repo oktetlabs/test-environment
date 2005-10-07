@@ -304,19 +304,18 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
     if (tagged_result == NULL)
     {
         /* We have no tag with expected SKIPPED result */
-        for (tagged_result = tagged_results.lh_first;
-             tagged_result != NULL;
-             tagged_result = tagged_result->links.le_next)
+        for (tag = tags->tqh_first;
+             tag != NULL;
+             tag = tag->links.tqe_next)
         {
-            if (tagged_result->value != TRC_TEST_SKIPPED)
-            {
-                for (tag = tags->tqh_first;
-                     tag != NULL && strcmp(tagged_result->tag,
-                                           tag->name) != 0;
-                     tag = tag->links.tqe_next);
-                if (tag != NULL)
-                    break;
-            }
+            for (tagged_result = tagged_results.lh_first;
+                 tagged_result != NULL &&
+                 (tagged_result->value == TRC_TEST_SKIPPED ||
+                  strcmp(tagged_result->tag, tag->name) != 0);
+                 tagged_result = tagged_result->links.le_next);
+
+            if (tagged_result != NULL)
+                break;
         }
     }
 
