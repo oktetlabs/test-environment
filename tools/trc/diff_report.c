@@ -238,7 +238,6 @@ trc_test_args_to_string(const test_args *args)
     return trc_args_buf;
 }
 
-
 static te_bool
 trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
                         te_bool *all_out, trc_test_result *diff_exp)
@@ -308,8 +307,7 @@ trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
         
         p->diff_out = trc_diff_iters_has_diff(&p->iters, flags,
                                               &all_iters_out,
-                                              p->diff_exp) /*&&
-                      !trc_diff_exclude_by_key(p)*/;
+                                              p->diff_exp);
 
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
@@ -452,10 +450,43 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
     return 0;
 }
 
+static const char *
+trc_diff_test_iters_get_keys(test_run *test, unsigned int id)
+{
+    static char buf[0x10000];
+
+    test_iter  *p;
+    test_iter  *q;
+    char       *s = buf;
+
+
+    buf[0] = '\0';
+    for (p = test->iters.head.tqh_first; p != NULL; p = p->links.tqe_next)
+    {
+        if (p->output && (p->diff_exp[id].key != NULL) &&
+            (strlen(p->diff_exp[id].key) > 0))
+        {
+            for (q = test->iters.head.tqh_first;
+                 (q != p) &&
+                 ((q->diff_exp[id].key == NULL) || (!q->output) ||
+                  (strcmp(p->diff_exp[id].key, q->diff_exp[id].key) != 0));
+                 q = q->links.tqe_next);
+
+            if (p == q)
+                s += sprintf(s, "%s%s", (s == buf) ? "" : ", ",
+                             p->diff_exp[id].key);
+        }
+    }
+
+    return buf;
+}
+
 static int
 trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
                        unsigned int level)
 {
+    static char buf[0x10000];
+
     int             rc = 0;
     test_run       *p;
     trc_tags_entry *entry;
@@ -463,6 +494,7 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
     char           *s;
     unsigned int    i;
     size_t          parent_len;
+    const char     *keys;
 
 
     if (level == 0)
@@ -470,9 +502,14 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
         test_name[0] = '\0';
 
         if (flags & TRC_DIFF_BRIEF)
+        {
             WRITE_STR(trc_diff_brief_table_heading_start);
+        }
         else
+        {
             WRITE_STR(trc_diff_full_table_heading_start);
+        }
+
         for (entry = tags_diff.tqh_first;
              entry != NULL;
              entry = entry->links.tqe_next)
@@ -515,15 +552,24 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
                         test_name, level_str, p->name,
                         PRINT_STR(p->objective));
             }
+
+            buf[0] = '\0';
+            s = buf;
             for (entry = tags_diff.tqh_first;
                  entry != NULL;
                  entry = entry->links.tqe_next)
             {
                 fprintf(f, trc_diff_table_row_col,
                         trc_test_result_to_string(p->diff_exp[entry->id]));
+
+                keys = trc_diff_test_iters_get_keys(p, entry->id);
+                if (strlen(keys) > 0)
+                {
+                    s += sprintf(s, "<EM>%s</EM> - %s<BR/>",
+                                 entry->name, keys);
+                }
             }
-            fprintf(f, trc_diff_table_row_end,
-                    "" /* FIXME PRINT_STR(p->bug)*/, PRINT_STR(p->notes));
+            fprintf(f, trc_diff_table_row_end, buf, PRINT_STR(p->notes));
         }
         if (p->diff_out_iters)
         {
