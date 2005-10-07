@@ -612,7 +612,8 @@ tester_is_run_required(const tester_ctx *ctx, const run_item *test,
         result = is_reqs_expr_match(ctx->targets, &ctx->reqs, reqs,
                                     params, &force);
         if (!force)
-            result = result || (test->type != RUN_ITEM_SCRIPT);
+            result = result || (test->type != RUN_ITEM_SCRIPT) ||
+                     !!(ctx->flags & TESTER_INLOGUE);
         if (!result && !quiet)
         {
             RING("Skipped because of expression: %s\n"

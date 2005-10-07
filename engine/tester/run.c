@@ -1043,7 +1043,10 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 if ((TE_RC_GET_ERROR(rc) != TE_ETESTPASS) && 
                     (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE))
                 {
-                    result = TE_RC(TE_TESTER, TE_ETESTPROLOG);
+                    if (TE_RC_GET_ERROR(rc) == TE_ETESTSKIP)
+                        result = rc;
+                    else
+                        result = TE_RC(TE_TESTER, TE_ETESTPROLOG);
                     break;
                 }
             }
@@ -1589,7 +1592,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
             }
         }
 
-        if ((i == 0) && (~test_ctx->flags & TESTER_INLOGUE) &&
+        if ((i == 0) &&
             (test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(iter->params), TRUE))
         {
@@ -1608,7 +1611,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                          ctx->id, id, ctx->flags);
         log_test_start(test, ctx->id, id, &(iter->params));
 
-        if ((i == 0) && (~test_ctx->flags & TESTER_INLOGUE) &&
+        if ((i == 0) &&
             (~test_ctx->flags & TESTER_QUIET_SKIP) &&
             !tester_is_run_required(test_ctx, test, &(iter->params), FALSE))
         {
