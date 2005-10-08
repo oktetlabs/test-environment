@@ -1305,6 +1305,7 @@ main(int argc, char **argv)
     
     char buf[16];
     
+    /* FIXME */
     chdir("/tmp");
     
     if (argc < 3)
@@ -1315,11 +1316,17 @@ main(int argc, char **argv)
 
     ta_execname = argv[0];
 
+    /* FIXME */
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    
 
     (void)signal(SIGINT, ta_sigint_handler);
     (void)signal(SIGPIPE, ta_sigpipe_handler);
 
+    /* FIXME */
+    (void)signal(SIGCHLD, ta_sigchld_handler);
+    pthread_atfork(NULL, NULL, ta_children_cleanup);
+
+    /* FIXME */
     sigemptyset(&rpcs_received_signals);
     
     if (strcmp(argv[1], "exec") == 0)
@@ -1341,17 +1348,17 @@ main(int argc, char **argv)
         return rc;
     }
     
+    /* FIXME Is it required for logfork to used by exec'ed */
     te_lgr_entity = ta_name = argv[1];
-
-    (void)signal(SIGCHLD, ta_sigchld_handler);
-    pthread_atfork(NULL, NULL, ta_children_cleanup);
 
     RING("Starting");
 
+    /* FIXME */
     sprintf(buf, "PID %u", getpid());
 
     pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
 
+    /* FIXME Is it OK position? */
     init_tce_subsystem();
     
     rc = rcf_pch_run(argv[2], buf);
@@ -1362,8 +1369,10 @@ main(int argc, char **argv)
             retval = rc;
     }
     
+    /* FIXME */
     unlink(argv[0]);
 
+    /* FIXME Correct retval to return */
     return retval;
 }
 
