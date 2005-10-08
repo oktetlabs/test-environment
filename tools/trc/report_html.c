@@ -410,9 +410,10 @@ trc_test_args_to_string(const test_args *args)
 static te_bool
 test_iter_output(const test_run *test, test_iter *iter, unsigned int flags)
 {
-    if (!iter->processed)
+    if (!iter->processed || flags != iter->proc_flags)
     {
         iter->processed = TRUE;
+        iter->proc_flags = flags;
         iter->output = 
            (/* NO_SCRIPTS is clear or it is NOT a script */
             (~flags & TRC_OUT_NO_SCRIPTS) ||

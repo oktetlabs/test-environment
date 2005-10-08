@@ -163,6 +163,7 @@ typedef struct test_iter {
 
     /* Processing helpers */
     te_bool         processed;  /**< Is iteration checked for output */
+    unsigned int    proc_flags; /**< Flags for this processing results */
     te_bool         output;     /**< Should the iteration be output */
     char           *diff_keys;  /**< String with keys for all tag sets */
 
