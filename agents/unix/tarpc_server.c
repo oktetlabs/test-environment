@@ -206,17 +206,20 @@ handler2name(void *handler)
         tmp = strdup(tmp);
     else if ((tmp = calloc(1, 16)) != NULL)
     {
+        /* FIXME */
         int id = rcf_pch_mem_get_id(handler);
         
         if (id == 0)
             id = rcf_pch_mem_alloc(handler);
 
+        /* FIXME */
         sprintf(tmp, "%d", id);
     }
     
     if (tmp == NULL)
     {
         ERROR("Out of memory");
+        /* FIXME */
         return strdup("");
     }
 
@@ -1092,17 +1095,29 @@ TARPC_FUNC(signal,
 },
 {
     sighandler_t handler;
-    int          signum = signum_rpc2h(in->signum);
     
     if ((out->common._errno = name2handler(in->handler, 
                                            (void **)&handler)) == 0)
     {
-        void *old_handler;
+        int     signum = signum_rpc2h(in->signum);
+        void   *old_handler;
         
         MAKE_CALL(old_handler = func_ret_ptr(signum, handler));
         
         if (old_handler != SIG_ERR)
+        {
+            /* FIXME */
             out->handler = handler2name(old_handler);
+
+            /*
+             * Delete signal from set of received signals when
+             * signal registrar is set for the signal.
+             */
+            if (out->common._errno == 0 && handler == signal_registrar)
+            {
+                sigdelset(&rpcs_received_signals, signum);
+            }
+        }
     }
 }
 )
