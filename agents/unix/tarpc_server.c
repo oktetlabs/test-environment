@@ -71,6 +71,9 @@ tarpc_setlibname(const char *libname)
 
     void (*tce_initializer)(const char *, int) = NULL;
 
+    if (libname == NULL)
+        libname = "";
+
     if (dynamic_library_set)
     {
         char *old = getenv("TARPC_DL_NAME");
@@ -81,7 +84,7 @@ tarpc_setlibname(const char *libname)
                   "Environment");
             return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
-        if (strcmp(libname == NULL ? "NULL" : libname, old) == 0)
+        if (strcmp(libname, old) == 0)
         {
             /* It is OK, if we try to set the same library once more */
             return 0;
@@ -89,12 +92,14 @@ tarpc_setlibname(const char *libname)
         ERROR("Dynamic library has already been set to %s", old);
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
-    if ((dynamic_library_handle = dlopen(libname, RTLD_LAZY)) == NULL)
+    dynamic_library_handle = dlopen(libname == '\0' ? NULL : libname,
+                                    RTLD_LAZY);
+    if (dynamic_library_handle == NULL)
     {
-        ERROR("Cannot load shared library %s: %s", libname, dlerror());
+        ERROR("Cannot load shared library '%s': %s", libname, dlerror());
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
-    if (setenv("TARPC_DL_NAME", libname != NULL ? libname : "NULL", 1) != 0)
+    if (setenv("TARPC_DL_NAME", libname, 1) != 0)
     {
         ERROR("No enough space in environment to save dynamic library "
               "'%s' name", libname);
@@ -103,7 +108,7 @@ tarpc_setlibname(const char *libname)
         return TE_RC(TE_TA_UNIX, TE_ENOSPC);
     }
     dynamic_library_set = TRUE;
-    RING("Dynamic library is set to '%s'", getenv("TARPC_DL_NAME"));
+    RING("Dynamic library is set to '%s'", libname);
 
     if (tce_get_peer_function != NULL)
     {
