@@ -53,6 +53,82 @@ extern sigset_t rpcs_received_signals;
 static te_bool dynamic_library_set = FALSE;
 static void *dynamic_library_handle = NULL;
 
+
+/**
+ * Set name of the dynamic library to be used to resolve function
+ * called via RPC.
+ *
+ * @param libname       Full name of the dynamic library or NULL
+ *
+ * @return Status code.
+ */
+te_errno
+tarpc_setlibname(const char *libname)
+{
+    extern int (*tce_notify_function)(void);
+    extern int (*tce_get_peer_function)(void);
+    extern const char *(*tce_get_conn_function)(void);
+
+    void (*tce_initializer)(const char *, int) = NULL;
+
+    if (dynamic_library_set)
+    {
+        char *old = getenv("TARPC_DL_NAME");
+ 
+        if (old == NULL)
+        {
+            ERROR("Inconsistent state of dynamic library flag and "
+                  "Environment");
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+        if (strcmp(libname == NULL ? "NULL" : libname, old) == 0)
+        {
+            /* It is OK, if we try to set the same library once more */
+            return 0;
+        }
+        ERROR("Dynamic library has already been set to %s", old);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+    if ((dynamic_library_handle = dlopen(libname, RTLD_LAZY)) == NULL)
+    {
+        ERROR("Cannot load shared library %s: %s", libname, dlerror());
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+    if (setenv("TARPC_DL_NAME", libname != NULL ? libname : "NULL", 1) != 0)
+    {
+        ERROR("No enough space in environment to save dynamic library "
+              "'%s' name", libname);
+        (void)dlclose(dynamic_library_handle);
+        dynamic_library_handle = NULL;
+        return TE_RC(TE_TA_UNIX, TE_ENOSPC);
+    }
+    dynamic_library_set = TRUE;
+    RING("Dynamic library is set to '%s'", getenv("TARPC_DL_NAME"));
+
+    if (tce_get_peer_function != NULL)
+    {
+        tce_initializer = dlsym(dynamic_library_handle, 
+                                "__bb_init_connection");
+        if (tce_initializer != NULL)
+        {
+            const char *ptc = tce_get_conn_function();
+
+            if (ptc == NULL)
+                WARN("tce_init_connect() has not been called");
+            else
+            {
+                if (tce_notify_function != NULL)
+                    tce_notify_function();
+                tce_initializer(ptc, tce_get_peer_function());
+                RING("TCE initialized for dynamic library '%s'", 
+                     getenv("TARPC_DL_NAME"));
+            }
+        }
+    }
+
+    return 0;
+}
+
 /**
  * Find the function by its name.
  *
@@ -65,19 +141,28 @@ static void *dynamic_library_handle = NULL;
 int
 tarpc_find_func(const char *lib, const char *name, api_func *func)
 {
-    void    *handle;
-    te_bool  use_libc = FALSE;
+    te_errno    rc;
+    void       *handle;
+    te_bool     use_libc = FALSE;
 
+    /* FIXME */
     if (strcmp(name, "getpid") == 0)
     {
         *func = (void *)getpid;
         return 0;
     }
-    
+
+    if (!dynamic_library_set &&
+        (rc = tarpc_setlibname(getenv("TARPC_DL_NAME"))) != 0)
+    {
+        /* Error is always logged from tarpc_setlibname() */
+        return rc;
+    }
+
     /*
      * Use libc when user intensionally wants it, or if we were not
      * informed about something special to use before
-     * (with setlibname() function).
+     * (with tarpc_setlibname() function).
      */
     if (strcmp(lib, "libc") == 0 ||
         (*lib == '\0' && dynamic_library_handle == NULL))
@@ -88,13 +173,6 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
     if (use_libc)
     {
         static void *libc_handle = NULL;
-
-        if (!dynamic_library_set)
-        {
-            dynamic_library_set = TRUE;
-            setenv("TARPC_DL_NAME", "NULL", 1);
-            RING("Dynamic library is set to NULL implicitly");
-        }
 
         if (libc_handle == NULL)
         {
@@ -121,7 +199,7 @@ tarpc_find_func(const char *lib, const char *name, api_func *func)
     {
         /*
          * We get this branch of the code only if user set some 
-         * library to be used with setlibname() function earlier,
+         * library to be used with tarpc_setlibname() function earlier,
          * and so we should use it to find symbol.
          */
         assert(dynamic_library_set == TRUE);
@@ -228,67 +306,6 @@ handler2name(void *handler)
 
 /*-------------- setlibname() -----------------------------*/
 
-/**
- * The routine called via RCF to set the name of socket library.
- */
-int
-setlibname(const tarpc_setlibname_in *in)
-{
-    const char *libname;
-    
-    void (*tce_initializer)(const char *, int) = NULL;
-    extern int (*tce_notify_function)(void);
-    extern int (*tce_get_peer_function)(void);
-    extern const char *(*tce_get_conn_function)(void);
-
-    libname = (in->libname.libname_len == 0) ?
-                  NULL : in->libname.libname_val;
-                  
-    if (dynamic_library_set)
-    {
-        char *old = "NULL";
-        
-        if (libname != NULL && (old = getenv("TARPC_DL_NAME")) != NULL &&
-            strcmp(libname, old) == 0)
-        {
-            return 0;
-        }
-        ERROR("Dynamic library has already been set to %s", old);
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-    }
-    if ((dynamic_library_handle = dlopen(libname, RTLD_LAZY)) == NULL)
-    {
-        ERROR("Cannot load shared library %s: %s", libname, dlerror());
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-    setenv("TARPC_DL_NAME", libname != NULL ? libname : "NULL", 1);
-    dynamic_library_set = TRUE;
-
-    if (tce_get_peer_function != NULL)
-    {
-        tce_initializer = dlsym(dynamic_library_handle, 
-                                "__bb_init_connection");
-        if (tce_initializer != NULL)
-        {
-            const char *ptc = tce_get_conn_function();
-
-            if (ptc == NULL)
-                WARN("tce_init_connect() has not been called");
-            else
-            {
-                if (tce_notify_function != NULL)
-                    tce_notify_function();
-                tce_initializer(ptc, tce_get_peer_function());
-                RING("TCE initialized for dynamic library '%s'", 
-                     getenv("TARPC_DL_NAME"));
-            }
-        }
-    }
-
-    return 0;
-}
-
-
 bool_t
 _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
                  struct svc_req *rqstp)
@@ -298,7 +315,8 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
     VERB("PID=%d TID=%d: Entry %s",
          (int)getpid(), (int)pthread_self(), "setlibname");
 
-    out->common._errno = setlibname(in);
+    out->common._errno = tarpc_setlibname((in->libname.libname_len == 0) ?
+                                          NULL : in->libname.libname_val);
     out->retval = (out->common._errno == 0) ? 0 : -1;
     out->common.duration = 0;
 
