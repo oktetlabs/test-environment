@@ -184,6 +184,15 @@ CHAP_SetChallengeLength(int clength,struct CHAP_Context * context)
 		return 0;
 }
 
+int
+CHAP_GetChallengeLength(struct CHAP_Context * context)
+{
+	if (context == NULL)
+		return 0;
+	return context->challenge.length;
+}
+
+
 /*	Searches built-in "hash_algorithms[]" table to find "algorithm".
  *	If found, sets value in "hash_algorithm" field of 
  * 	"context" and returns 1.
@@ -255,6 +264,22 @@ CHAP_SetSecret(char *secret,struct CHAP_Context * context)
 	strcpy(context->secret, secret);
 	return 1;
 }
+
+char *
+CHAP_GetSecret(struct CHAP_Context * context)
+{
+	char *name;
+	int len;
+
+	if (context == NULL || context->secret == NULL)
+		return NULL;
+	len = strlen(context->secret);
+	if ((name = (char *) malloc(len + 1)) == NULL)
+		return NULL;
+	strcpy(name, context->secret);
+	return name;
+}
+
 
 int
 CHAP_SetIdentifier(unsigned char identifier,struct CHAP_Context * context)

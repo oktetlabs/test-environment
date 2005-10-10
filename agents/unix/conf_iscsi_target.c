@@ -40,21 +40,40 @@ extern struct iscsi_global *devdata;
     (CHAP_SetName(value, n) == 1)
 #define CHAP_GET_NAME(n) \
     CHAP_GetName(n)
-#define CHAP_SET_CHALLENGE_LENGHT(len, lx) \
+#define CHAP_GET_SECRET(n) \
+    CHAP_GetSecret(n)
+#define CHAP_SET_CHALLENGE_LENGTH(len, lx) \
     (CHAP_SetChallengeLength(len, lx) == 1)
+#define CHAP_GET_CHANLLENGE_LENGTH(n) \
+    CHAP_GET_CHALLENGE_LENGTH(n)
 #define CHAP_SET_ENCODING_FMT(fmt, lx, px) \
     ((CHAP_SetNumberFormat(fmt, lx) == 1) && (CHAP_SetNumberFormat(fmt, px) == 1))
+
+
+#define DEVDATA_CHECK                                   \
+    if (devdata == NULL)                                \
+    {                                                   \
+        ERROR("%s() devdata is NULL", __FUNCTION__);    \
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);            \
+    }
 
 
 static int
 iscsi_target_pn_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
+    char *tmp;
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
     UNUSED(instance);
-    sprintf(value, "Peer name");
+
+    DEVDATA_CHECK;
+
+    tmp = CHAP_GET_NAME(devdata->auth_parameter.chap_peer_ctx);
+    if (tmp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENODATA);
+    strcpy(value, tmp);
+    free(tmp);
     return 0;
 }
 
@@ -66,11 +85,7 @@ iscsi_target_pn_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    if (devdata == NULL)
-    {
-        ERROR("%s() devdata is NULL", __FUNCTION__);
-        return EFAULT;
-    }
+    DEVDATA_CHECK;
 
     if (!CHAP_SET_NAME(value, 
                         devdata->auth_parameter.chap_peer_ctx))
@@ -78,7 +93,7 @@ iscsi_target_pn_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Cannot set name",
               __FUNCTION__,
               __LINE__);
-        return ENOMEM;
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }   
     return 0;
 }
@@ -87,11 +102,19 @@ static int
 iscsi_target_px_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
+    char *tmp;
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
     UNUSED(instance);
-    sprintf(value, "Peer secret");
+
+    DEVDATA_CHECK;
+
+    tmp = CHAP_GET_SECRET(devdata->auth_parameter.chap_peer_ctx);
+    if (tmp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENODATA);
+    strcpy(value, tmp);
+    free(tmp);
+
     return 0;
 }
 
@@ -103,11 +126,7 @@ iscsi_target_px_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    if (devdata == NULL)
-    {
-        ERROR("%s() devdata is NULL", __FUNCTION__);
-        return EFAULT;
-    }
+    DEVDATA_CHECK;
  
     if (!CHAP_SET_SECRET(value, 
                          devdata->auth_parameter.chap_peer_ctx))
@@ -115,7 +134,7 @@ iscsi_target_px_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Cannot set secret",
               __FUNCTION__,
               __LINE__);
-        return ENOMEM;
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }    
     return 0;
 }
@@ -128,7 +147,11 @@ iscsi_target_t_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
-    sprintf(value, "0");
+
+    DEVDATA_CHECK;
+
+    *value = (devdata->auth_parameter.auth_flags & USE_TARGET_CONFIRMATION ? '1' : '0');
+    value[1] = '\0';
     return 0;
 }
 
@@ -142,18 +165,14 @@ iscsi_target_t_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    if (devdata == NULL)
-    {
-        ERROR("%s() devdata is NULL", __FUNCTION__);
-        return EFAULT;
-    }
+    DEVDATA_CHECK;
  
     if (!(tgt_cfmt == 0 || tgt_cfmt == 1))
     {
         ERROR("%s, %d: Bad cfmt parameter provideded",
               __FUNCTION__,
               __LINE__);
-        return EBADF;
+        return TE_RC(TE_TA_UNIX, TE_EBADF);
     }
     
     if (tgt_cfmt == 1)
@@ -169,9 +188,13 @@ iscsi_target_b_get(unsigned int gid, const char *oid,
 {   
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
     UNUSED(instance);
-    sprintf(value, "0");
+
+    DEVDATA_CHECK;
+
+    *value = (devdata->auth_parameter.auth_flags & USE_BASE64 ? '1' : '0');
+    value[1] = '\0';
+
     return 0;
 }
 
@@ -186,22 +209,14 @@ iscsi_target_b_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-#if 1
-    if (devdata == NULL)
-    {
-        ERROR("%s() devdata is NULL", __FUNCTION__);
-        return EFAULT;
-    }
-#else
-    assert(devdata != NULL);
-#endif
+    DEVDATA_CHECK;
     
     if (!(fmt == 0 || fmt == 1))
     {
         ERROR("%s, %d: Bad format parameter provided",
               __FUNCTION__,
               __LINE__);
-        return EBADF;
+        return TE_RC(TE_TA_UNIX, TE_EBADF);
     }
     if (fmt == 1)
     {    
@@ -220,7 +235,7 @@ iscsi_target_b_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Cannot set encoding format",
               __FUNCTION__,
               __LINE__);
-        return EPERM;
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
         
     }
     return 0;
@@ -230,11 +245,17 @@ static int
 iscsi_target_cl_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
+    int length;
+
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
     UNUSED(instance);
-    sprintf(value, "256");
+    
+    DEVDATA_CHECK;
+
+    length = CHAP_GET_CHALLENGE_LENGTH(devdata->auth_parameter.chap_local_ctx);
+    sprintf(value, "%d", length);
+
     return 0;
 }
 
@@ -246,24 +267,16 @@ iscsi_target_cl_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-#if 1
-    if (devdata == NULL)
-    {
-        ERROR("%s() devdata is NULL", __FUNCTION__);
-        return EFAULT;
-    }
-#else
-    assert(devdata);
-#endif
+    DEVDATA_CHECK;
     
-    if (!CHAP_SET_CHALLENGE_LENGHT(strtol(value, NULL, 0), 
+    if (!CHAP_SET_CHALLENGE_LENGTH(strtol(value, NULL, 0), 
                                    devdata->auth_parameter.
                                        chap_local_ctx))
     {
         ERROR("%s, %d: Cannot set challenge length",
               __FUNCTION__,
               __LINE__);
-        return EPERM;
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
     }    
     return 0;
 }
@@ -272,11 +285,19 @@ static int
 iscsi_target_ln_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
+    char *tmp;
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
-    sprintf(value, "Local name");
+
+    DEVDATA_CHECK;
+
+    tmp = CHAP_GET_NAME(devdata->auth_parameter.chap_local_ctx);
+    if (tmp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENODATA);
+    strcpy(value, tmp);
+    free(tmp);
     return 0;
 }
 
@@ -288,11 +309,7 @@ iscsi_target_ln_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    if (devdata == NULL)
-    {
-        ERROR("%s() devdata is NULL", __FUNCTION__);
-        return EFAULT;
-    }
+    DEVDATA_CHECK;
 
     if (!CHAP_SET_NAME((char *)value, 
                         devdata->auth_parameter.chap_local_ctx))
@@ -300,7 +317,7 @@ iscsi_target_ln_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Cannot set name",
               __FUNCTION__,
               __LINE__);
-        return ENOMEM;
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }   
     return 0;
 }
@@ -309,12 +326,21 @@ static int
 iscsi_target_lx_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
+    char *tmp;
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
-    sprintf(value, "Local secret");
+
+    DEVDATA_CHECK;
+
+    tmp = CHAP_GET_SECRET(devdata->auth_parameter.chap_local_ctx);
+    if (tmp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENODATA);
+    strcpy(value, tmp);
+    free(tmp);
     return 0;
+
 }
 
 
@@ -325,11 +351,8 @@ iscsi_target_lx_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
-    if (devdata == NULL)
-    {
-        ERROR("%s() devdata is NULL", __FUNCTION__);
-        return EFAULT;
-    }
+
+    DEVDATA_CHECK;
 
     if (!CHAP_SET_SECRET(value, 
                          devdata->auth_parameter.chap_local_ctx))
@@ -337,7 +360,7 @@ iscsi_target_lx_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Cannot set secret",
               __FUNCTION__,
               __LINE__);
-        return ENOMEM;
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }    
     return 0;
 }
@@ -349,22 +372,14 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
     int chap_use = strtol(value, NULL, 0);
     struct parameter_type *auth_p;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    if (devdata == NULL)
-    {
-        ERROR("%s() devdata is NULL", __FUNCTION__);
-        return EFAULT;
-    }
+    DEVDATA_CHECK;
 
     if (!(chap_use == 0 || chap_use == 1))
     {
         ERROR("%s, %d: Bad chap_use parameter provideded %d",
               __FUNCTION__,
               __LINE__, chap_use);
-        return EBADF;
+        return TE_RC(TE_TA_UNIX, TE_EBADF);
     }
     
     if ((auth_p = find_flag_parameter(AUTHMETHOD_FLAG, 
@@ -373,7 +388,7 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Cannot find AuthMethod Parameter in param_table",
               __FUNCTION__,
               __LINE__);
-        return EFAULT;
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
     if (chap_use == 1)
     {    

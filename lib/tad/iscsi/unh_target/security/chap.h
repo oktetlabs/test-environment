@@ -56,6 +56,7 @@ int CHAP_FinalizeContext(struct CHAP_Context *context);
 void CHAP_PrintContext(struct CHAP_Context *context);
 
 int CHAP_SetChallengeLength(int clength,struct CHAP_Context *context);
+int CHAP_GetChallengeLength(struct CHAP_Context * context);
 
 int CHAP_SetNumberFormat(int format,struct CHAP_Context *context);
 
@@ -70,6 +71,8 @@ int CHAP_SetName(char *name,struct  CHAP_Context * context);
 char *CHAP_GetName(struct CHAP_Context * context);
 
 int CHAP_SetSecret(char *secret,struct CHAP_Context * context);
+
+char *CHAP_GetSecret(struct CHAP_Context * context);
 
 int CHAP_SetIdentifier(unsigned char identifier,struct CHAP_Context * context);
 
