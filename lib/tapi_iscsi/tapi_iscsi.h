@@ -302,6 +302,7 @@ typedef enum {
     ISCSI_PARAM_ERROR_RECOVERY_LEVEL,
     ISCSI_PARAM_SESSION_TYPE,
     ISCSI_PARAM_LAST_OPERATIONAL, /* just a delimiter */
+    ISCSI_PARAM_LOCAL_SECRET,
     ISCSI_PARAM_LOCAL_NAME,
     ISCSI_PARAM_PEER_SECRET,
     ISCSI_PARAM_PEER_NAME,
@@ -316,5 +317,79 @@ typedef enum {
 extern int tapi_iscsi_target_set_parameter(const char *ta, 
                                            tapi_iscsi_parameter param, 
                                            const char *value);
+
+/** The following functions are DEPRECATED!!! 
+    They will be removed as soon as all the tests use the new API
+*/
+
+static inline int 
+tapi_iscsi_set_local_secret(const char *ta, const char *secret)
+{
+    return tapi_iscsi_target_set_parameter(ta, ISCSI_PARAM_LOCAL_SECRET,
+                                           secret);
+}
+
+
+static inline int 
+tapi_iscsi_set_local_name(const char *ta, const char *name)
+{
+    return tapi_iscsi_target_set_parameter(ta, ISCSI_PARAM_LOCAL_NAME,
+                                           name);
+}
+
+
+static inline int 
+tapi_iscsi_set_peer_secret(const char *ta, const char *secret)
+{
+    return tapi_iscsi_target_set_parameter(ta, ISCSI_PARAM_PEER_SECRET,
+                                           secret);
+}
+
+
+static inline int 
+tapi_iscsi_set_peer_name(const char *ta, const char *name)
+{
+    return tapi_iscsi_target_set_parameter(ta, ISCSI_PARAM_PEER_NAME,
+                                           name);
+}
+
+
+static inline int 
+tapi_iscsi_set_challenge_length(const char *ta, int len)
+{
+    char buf[8];
+    sprintf(buf, "%d", len);
+    return tapi_iscsi_target_set_parameter(ta, 
+                                           ISCSI_PARAM_CHANLLENGE_LENGTH,
+                                           buf);    
+}
+
+
+static inline int
+tapi_iscsi_set_encoding_format(const char *ta, int fmt)
+{
+    return tapi_iscsi_target_set_parameter(ta,
+                                           ISCSI_PARAM_ENCODING_FORMAT,
+                                           fmt ? "1" : "0");
+}
+
+static inline int
+tapi_iscsi_set_tgt_auth_req(const char *ta, int tgt_auth)
+{
+    return tapi_iscsi_target_set_parameter(ta,
+                                           ISCSI_PARAM_TGT_AUTH_REQ,
+                                           tgt_auth ? "1" : "0");
+}
+
+
+static inline int 
+tapi_iscsi_set_security_negotiations_phase(const char *ta,
+                                               int use)
+{
+    return tapi_iscsi_target_set_parameter \
+        (ta, ISCSI_PARAM_SECURITY_NEGOTIATION_PHASE, use ? "1" : "0");
+}
+
+
 
 #endif /* !__TE_TAPI_ISCSI_H__ */
