@@ -801,11 +801,7 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
     iscsi_key_values   key_values;
     asn_value         *key_value;
     int                key_values_num;
-    int                key_values_index;
-    te_bool            found;
     int                i = 0;
-
-    iscsi_key_value_type type;
 
     va_list list;
 
@@ -1017,89 +1013,48 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
 /* Target configuration */
 
 int
-tapi_iscsi_set_local_secret(const char *ta,
-                            const char *secret)
+tapi_iscsi_target_set_parameter(const char *ta,
+                                tapi_iscsi_parameter param, 
+                                const char *value)
 {
-    assert(ta != NULL && secret != NULL && strlen(secret) == 16);
+    static char *mapping[] = {
+        "oper:/header_digest:",
+        "oper:/data_digest:",
+        "oper:/max_connections:",
+        "oper:/send_targets:",  
+        "oper:/target_name:",
+        "oper:/initiator_name:",
+        "oper:/target_alias:",
+        "oper:/initiator_alias:",
+        "oper:/target_address:",
+        "oper:/initial_r2t:",
+        "oper:/immediate_data:",
+        "oper:/max_recv_data_segment_length:",
+        "oper:/max_burst_length:",
+        "oper:/first_burst_length:",
+        "oper:/default_time2wait:",
+        "oper:/default_time2retain:",
+        "oper:/max_outstanding_r2t:",
+        "oper:/data_pdu_in_order:",
+        "oper:/data_sequence_in_order:",
+        "oper:/error_recovery_level:",
+        "oper:/session_type:",
+        NULL,
+        "chap:/ln:",
+        "chap:/t:/px:",
+        "chap:/t:/pn:",
+        "chap:/cl:",
+        "chap:/b:",
+        "chap:/t:",
+        "chap:"
+    };
 
-    return cfg_set_instance_fmt(CVT_STRING, (void *)secret,
-                                "/agent:%s/iscsi_target:/chap:/lx:",
-                                ta);
+    assert(ta != NULL);
+    assert(param < sizeof(mapping) / sizeof(*mapping));
+    assert(mapping[param] != NULL);
+    return cfg_set_instance_fmt(CVT_STRING, value,
+                                "/agent:%s/iscsi_target:/%s",
+                                ta, mapping[param]);
 }                                
 
-int
-tapi_iscsi_set_local_name(const char *ta,
-                          const char *name)
-{
-    assert(ta != NULL && name != NULL);
 
-    return cfg_set_instance_fmt(CVT_STRING, (void *)name,
-                                "/agent:%s/iscsi_target:/chap:/ln:",
-                                ta);
-}                                
-
-int
-tapi_iscsi_set_peer_secret(const char *ta,
-                          const char *secret)
-{
-    assert(ta != NULL && secret != NULL && strlen(secret) == 16);
-
-    return cfg_set_instance_fmt(CVT_STRING, (void *)secret,
-                                "/agent:%s/iscsi_target:/chap:/t:/px:",
-                                ta);
-}                                
-
-int
-tapi_iscsi_set_peer_name(const char *ta,
-                         const char *name)
-{
-    assert(ta != NULL && name != NULL);
-
-    return cfg_set_instance_fmt(CVT_STRING, (void *)name,
-                                "/agent:%s/iscsi_target:/chap:/t:/pn:",
-                                ta);
-}                                
-
-int
-tapi_iscsi_set_challenge_length(const char *ta,
-                                int len)
-{
-    assert(ta != NULL && len > 255 && len < 1025);
-
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)len,
-                                "/agent:%s/iscsi_target:/chap:/cl:",
-                                ta);
-}
-
-int
-tapi_iscsi_set_encoding_format(const char *ta,
-                               int fmt)
-{
-    assert(ta != NULL && (fmt == 0 || fmt == 1));
-
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)fmt,
-                                "/agent:%s/iscsi_target:/chap:/b:",
-                                ta);
-}
-
-int
-tapi_iscsi_set_tgt_auth_req(const char *ta,
-                            int tgt_auth)
-{
-    assert(ta != NULL && (tgt_auth == 0 || tgt_auth == 1));
-
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)tgt_auth,
-                                "/agent:%s/iscsi_target:/chap:/t:",
-                                ta);
-}
-
-int
-tapi_iscsi_set_security_negotiations_phase(const char *ta,
-                                           int use)
-{
-    assert(ta != NULL && (use == 0 || use == 1));
-
-    return cfg_set_instance_fmt(CVT_INTEGER, (void *)use,
-                                "/agent:%s/iscsi_target:/chap:",
-                                ta);
-}

@@ -279,22 +279,42 @@ extern int tapi_iscsi_change_key_values(
  */ 
 extern void tapi_iscsi_keys_data_free(iscsi_segment_data);
 
+typedef enum {
+    ISCSI_PARAM_HEADER_DIGEST,
+    ISCSI_PARAM_DATA_DIGEST,
+    ISCSI_PARAM_MAX_CONNECTIONS,
+    ISCSI_PARAM_SEND_TARGETS,
+    ISCSI_PARAM_TARGET_NAME,
+    ISCSI_PARAM_INITIATOR_NAME,
+    ISCSI_PARAM_TARGET_ALIAS,
+    ISCSI_PARAM_INITIATOR_ALIAS,
+    ISCSI_PARAM_TARGET_ADDRESS,
+    ISCSI_PARAM_INITIAL_R2T,
+    ISCSI_PARAM_IMMEDIATE_DATA,
+    ISCSI_PARAM_MAX_RECV_DATA_SEGMENT_LENGHT,
+    ISCSI_PARAM_MAX_BURST_LENGTH,
+    ISCSI_PARAM_FIRST_BURST_LENGTH,
+    ISCSI_PARAM_DEFAULT_TIME2WAIT,
+    ISCSI_PARAM_DEFAULT_TIME2RETAIN,
+    ISCSI_PARAM_MAX_OUTSTANDING_R2T,
+    ISCSI_PARAM_DATA_PDU_IN_ORDER,
+    ISCSI_PARAM_DATA_SEQUENCE_IN_ORDER,
+    ISCSI_PARAM_ERROR_RECOVERY_LEVEL,
+    ISCSI_PARAM_SESSION_TYPE,
+    ISCSI_PARAM_LAST_OPERATIONAL, /* just a delimiter */
+    ISCSI_PARAM_LOCAL_NAME,
+    ISCSI_PARAM_PEER_SECRET,
+    ISCSI_PARAM_PEER_NAME,
+    ISCSI_PARAM_CHANLLENGE_LENGTH,
+    ISCSI_PARAM_ENCODING_FORMAT,
+    ISCSI_PARAM_TGT_AUTH_REQ,
+    ISCSI_PARAM_SECURITY_NEGOTIATION_PHASE
+} tapi_iscsi_parameter;
+
+
 /* Target configuration */
-extern int tapi_iscsi_set_local_secret(const char *ta, const char *secret);
-
-extern int tapi_iscsi_set_local_name(const char *ta, const char *name);
-
-extern int tapi_iscsi_set_peer_secret(const char *ta, const char *secret);
-
-extern int tapi_iscsi_set_peer_name(const char *ta, const char *name);
-
-extern int tapi_iscsi_set_challenge_length(const char *ta, int len);
-
-extern int tapi_iscsi_set_encoding_format(const char *ta, int fmt);
-
-extern int tapi_iscsi_set_tgt_auth_req(const char *ta, int tgt_auth);
-
-extern int tapi_iscsi_set_security_negotiations_phase(const char *ta,
-                                                      int use);
+extern int tapi_iscsi_target_set_parameter(const char *ta, 
+                                           tapi_iscsi_parameter param, 
+                                           const char *value);
 
 #endif /* !__TE_TAPI_ISCSI_H__ */

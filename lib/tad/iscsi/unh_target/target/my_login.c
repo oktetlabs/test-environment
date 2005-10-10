@@ -3573,6 +3573,7 @@ create_socket_pair(int *pipe)
 int
 iscsi_server_init(void)
 {
+    TRACE_SET(TRACE_ALL);
     if (scsi_target_init() != 0)
     {
         TRACE_ERROR("Can't initialize SCSI target");

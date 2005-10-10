@@ -401,8 +401,8 @@ iscsi_target_chap_get(unsigned int gid, const char *oid,
 }
 
 static int
-iscsi_target_get(unsigned int gid, const char *oid,
-                 char *value, const char *instance, ...)
+iscsi_target_oper_get(unsigned int gid, const char *oid,
+                      char *value, const char *instance, ...)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -411,6 +411,158 @@ iscsi_target_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+static const char *
+map_oid_to_param(const char *oid)
+{
+    static char param_name[32];
+    te_bool upper_case = TRUE;
+    char *p = param_name;
+    
+    for (; *oid != '\0'; oid++)
+    {
+        if (upper_case)
+        {
+            *p++ = toupper(*oid);
+            upper_case = FALSE;
+        }
+        else if (*oid != '_')
+        {
+            *p++ = *oid;
+        }
+        if (*oid == '_' || isdigit(*oid))
+            upper_case = TRUE;
+    }
+    *p = '\0';
+    return param_name;
+}
+
+static int
+iscsi_target_oper_set(unsigned int gid, const char *oid,
+                      const char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+     UNUSED(instance);
+    iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
+                                map_oid_to_param(oid),
+                                value,
+                                *devdata->param_tbl);
+    return 0;
+}
+
+
+static int
+iscsi_target_get(unsigned int gid, const char *oid,
+                 char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    iscsi_convert_param_to_str(value,
+                               map_oid_to_param(oid),
+                               *devdata->param_tbl);
+    return 0;
+}
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_session_type, "session_type",
+                    NULL, NULL,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_error_recovery_level, "error_recovery_level",
+                    NULL, &node_iscsi_target_oper_session_type,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_data_sequence_in_order, "data_sequence_in_order",
+                    NULL, &node_iscsi_target_oper_error_recovery_level,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_data_pdu_in_order, "data_pdu_in_order",
+                    NULL, &node_iscsi_target_oper_data_sequence_in_order,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_outstanding_r2t, "max_outstanding_r2t",
+                    NULL, &node_iscsi_target_oper_data_pdu_in_order,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_default_time2retain, "default_time2retain",
+                    NULL, node_iscsi_target_oper_max_outstanding_r2t,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_default_time2wait, "default_time2wait",
+                    NULL, node_iscsi_target_oper_default_time2retain,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_first_burst_length, "first_burst_length",
+                    NULL, node_iscsi_target_oper_default_time2wait,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_burst_length, 
+                    "max_burst_length",
+                    NULL, node_iscsi_target_oper_first_burst_length,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_recv_data_segment_length, 
+                    "max_recv_data_segment_length",
+                    NULL, node_iscsi_target_oper_max_burst_length,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_immediate_data, 
+                    "immediate_data",
+                    NULL, node_iscsi_target_oper_max_recv_data_segment_length,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_initial_r2t, 
+                    "initial_r2t",
+                    NULL, node_iscsi_target_oper_immediate_data,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_target_address, 
+                    "target_address",
+                    NULL, node_iscsi_target_oper_initial_r2t,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_initiator_alias, 
+                    "initiator_alias",
+                    NULL, node_iscsi_target_oper_target_address,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_target_alias, 
+                    "target_alias",
+                    NULL, node_iscsi_target_oper_initiator_alias,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_initiator_name, 
+                    "initiator_name",
+                    NULL, node_iscsi_target_oper_target_alias,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_target_name, 
+                    "target_name",
+                    NULL, node_iscsi_target_oper_initiator_name,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_send_targets, 
+                    "send_targets",
+                    NULL, node_iscsi_target_oper_target_name,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_connections, 
+                    "max_connections",
+                    NULL, node_iscsi_target_oper_send_targets,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_data_digest, 
+                    "data_digest",
+                    NULL, node_iscsi_target_oper_max_connections,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_header_digest, 
+                    "header_digest",
+                    NULL, node_iscsi_target_oper_data_digest,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RO(node_iscsi_target_oper, "oper", 
+                    &node_iscsi_target_oper_header_digest, 
+                    NULL, 
+                    NULL, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_pn, "pn",
                     NULL, NULL,
@@ -448,7 +600,7 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_lx, "lx",
                     iscsi_target_lx_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_chap, "chap", 
-                    &node_iscsi_target_lx, NULL, 
+                    &node_iscsi_target_lx, &node_iscsi_target_oper, 
                     iscsi_target_chap_get,
                     iscsi_target_chap_set);
 

@@ -458,8 +458,8 @@ void setup_security_hash_table(void);
  *	Returns pointer to entry if found, NULL if not found.
  */
 struct parameter_type * __attribute__ ((no_instrument_function))
-find_parameter(char *keytext,
-		struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS]);
+find_parameter(const char *keytext,
+               struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS]);
 
 /* Called to get pointer to table entry for key identified by its special flag*/
 struct parameter_type * __attribute__ ((no_instrument_function))
@@ -487,10 +487,13 @@ check_bounds(struct parameter_type *p, int int_value, int who_called);
  *	Returns first number in range if ok, -1 if error
  */
 int __attribute__ ((no_instrument_function))
-check_range(char *value_list, int value);
+check_range(const char *value_list, int value);
 
 void __attribute__ ((no_instrument_function))
-strreplace(char **str, char *new_str);
+strreplace(char **str, const char *new_str);
+
+void __attribute__ ((no_instrument_function))
+strreplace_upto(char **str, const char *new_str, int delim);
 
 /* Copy src parameter table to dst, duplicating any strings */
 void
@@ -504,6 +507,18 @@ param_tbl_init(struct parameter_type dst[MAX_CONFIG_PARAMS]);
 /* Free any strings referenced in dst parameter table */
 void
 param_tbl_uncpy(struct parameter_type dst[MAX_CONFIG_PARAMS]);
+
+/** The main function for target configuraton
+ *
+ *  @param param_neg_info  Negotiation mode
+ *  @param key             Parameter name to be set
+ *  @param value           Value to be set
+ *  @param p_param_tbl     Parameter table to operate on
+ */
+void iscsi_configure_param_value(int param_neg_info,
+                                 const char *key,
+                                 const char *value,
+                                 struct parameter_type *p_param_tbl);
 
 void
 configure_parameter(int param_neg_info,
@@ -644,6 +659,18 @@ check_step_key_number(struct unknown_key *key, uint32_t * got_keys,
 int __attribute__ ((no_instrument_function))
 print_config_info(struct parameter_type param_tbl[MAX_CONFIG_PARAMS],
 		  char *buffer);
+
+/** 
+ * Puts a textual presentation of a `param' into a `buffer'
+ *
+ * @param buffer    Output buffer
+ * @param param     Parameter name
+ * @apram param_tbl Parameter table to operate
+ */
+void iscsi_convert_param_to_str(char *buffer,
+                                const char *param,
+                                struct parameter_type *param_tbl);
+
 
 /*	
  * Prints the session-wide parameter values as negotiated during a

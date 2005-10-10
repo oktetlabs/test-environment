@@ -178,8 +178,8 @@ setup_security_hash_table(void)
  *	Returns pointer to entry if found, NULL if not found.
  */
 struct parameter_type * __attribute__ ((no_instrument_function))
-find_parameter(char *keytext,
-	       struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
+find_parameter(const char *keytext,
+               struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
 {
 	struct parameter_type *p, *result = NULL;
 	int i;
@@ -316,7 +316,7 @@ check_bounds(struct parameter_type *p, int int_value, int who_called)
  *	Returns first number in range if ok, -1 if error
  */
 int __attribute__ ((no_instrument_function))
-check_range(char *value_list, int value)
+check_range(const char *value_list, int value)
 {
 	char *endptr;
 	int lower, upper;
@@ -889,12 +889,30 @@ check_correctness(char *keytext,
 }
 
 void __attribute__ ((no_instrument_function))
-strreplace(char **str, char *new_str)
+strreplace(char **str, const char *new_str)
 {
 	if (*str != NULL)
 		free(*str);
 	*str = strdup(new_str);
 }
+
+void __attribute__ ((no_instrument_function))
+strreplace_upto(char **str, const char *new_str, int delim)
+{
+    const char *endptr;
+	if (*str != NULL)
+		free(*str);
+    endptr = strchr(new_str, delim);
+    if (endptr == NULL)
+        *str = strdup(new_str);
+    else
+    {
+        *str = malloc(endptr - new_str);
+        memcpy(*str, new_str, endptr - new_str - 1);
+        (*str)[endptr - new_str] = '\0';
+    }
+}
+
 
 /* Copy src parameter table to dst, duplicating any strings */
 void
@@ -961,24 +979,19 @@ param_tbl_uncpy(struct parameter_type dst[MAX_CONFIG_PARAMS])
 }
 
 void
-configure_parameter(int param_neg_info,
-		    char *ptr_to_keytext,
-		    struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
+iscsi_configure_param_value(int param_neg_info,
+                            const char *key,
+                            const char *value,
+                            struct parameter_type *p_param_tbl)
 {
 	struct parameter_type *param = NULL;
-	char *value_list = NULL;
 	char *endptr;
 	int int_value;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter configure_parameter\n");
-
-	/* Get the value string */
-	value_list = strchr(ptr_to_keytext, '=');
-	if (value_list)
-		*value_list++ = '\0';	/* terminate the key text string */
-
-	if ((param = find_parameter(ptr_to_keytext, p_param_tbl)) != NULL) {
-		if (value_list) {
+	if ((param = find_parameter(key, p_param_tbl)) != NULL) 
+    {
+		if (value) 
+        {
 			if (IS_NUMBER(param->type)) {
 				/* parameter is a number, set only the 
 				 * int_value field, don't set value_list 
@@ -986,12 +999,12 @@ configure_parameter(int param_neg_info,
 				 */
 
 				int_value =
-				    strtoul(value_list, &endptr, 0);
+				    strtoul(value, &endptr, 0);
 				if (strspn(endptr, WHITE_SPACE) !=
 				    strlen(endptr)) {
 					TRACE_ERROR("illegal number \"%s\"\n",
-						    value_list);
-					goto out;
+						    value);
+                    return;
 				} else {
 					param->int_value = int_value;
 				}
@@ -1005,26 +1018,12 @@ configure_parameter(int param_neg_info,
 				if (IS_NUMBER_RANGE(param->type)) {
 					/* this is a range, check both 
 						numbers and their order */
-					if (check_range(value_list, -1) < 0)
-						goto out;
+					if (check_range(value, -1) < 0)
+                        return;
 				}
 
-				strreplace(&param->value_list, value_list);
-				endptr = strchr(value_list, ',');
-				if (endptr) {	/* value_list really a list,i
-				                 * use 1st on list as 
-						 * current value 
-						 */
-					*endptr = '\0';
-					strreplace(&param->str_value,
-						   value_list);
-					*endptr = ',';	/* repair the damage */
-				} else {
-					/* value_list only single value, make 
-						it current val too */
-					strreplace(&param->str_value,
-						   value_list);
-				}
+				strreplace(&param->value_list, value);
+                strreplace_upto(&param->str_value, value, ',');
 			}
 		}
 
@@ -1032,8 +1031,24 @@ configure_parameter(int param_neg_info,
 		param->neg_info = param_neg_info;
 	}
 
-      out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave configure_parameter\n");
+}
+
+void
+configure_parameter(int param_neg_info,
+		    char *ptr_to_keytext,
+		    struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
+{
+	char *value_list = NULL;
+
+	TRACE(TRACE_ENTER_LEAVE, "Enter configure_parameter\n");
+
+	/* Get the value string */
+	value_list = strchr(ptr_to_keytext, '=');
+	if (value_list)
+		*value_list++ = '\0';	/* terminate the key text string */
+    iscsi_configure_param_value(param_neg_info,
+                                ptr_to_keytext, value_list,
+                                p_param_tbl);
 }
 
 /*	Draft 20, Section 5.2 Text Mode Negotiation
@@ -2700,6 +2715,28 @@ print_config_info(struct parameter_type param_tbl[MAX_CONFIG_PARAMS],
 	pos += sprintf(buffer + pos, "\n");
 
 	return pos;
+}
+
+void
+iscsi_convert_param_to_str(char *buffer,
+                           const char *param,
+                           struct parameter_type *param_tbl)
+{
+    struct parameter_type *found = find_parameter(param, param_tbl);
+    
+    if (found == NULL)
+        *buffer = '\0';
+    else
+    {
+		if (found->type & NUMBER) 
+        {
+            sprintf(buffer, "%d", found->int_value);
+		} 
+        else 
+        {
+            strcpy(buffer, found->value_list);
+		}
+    }
 }
 
 /*	
