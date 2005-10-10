@@ -41,6 +41,7 @@
 #endif
 
 #include "te_stdint.h"
+#include "te_defs.h"
 #include "conf_api.h"
 
 #ifdef __cplusplus
@@ -295,13 +296,14 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
 /**
  * Get ARP entry on specified agent
  *
- * @param ta           Test agent name
- * @param net_addr     IPv4 network address
- * @param ret_addr    returned IEEE 802.3 Link layer address
+ * @param ta            Test agent name
+ * @param net_addr      IPv4 network address
+ * @param ret_addr      Returned IEEE 802.3 Link layer address
+ * @param is_static     NULL or location for a flag: is found entry static?
  *
  * @return Status code
  *
- * @retval 0  - on success
+ * @retval 0    on success
  *
  * @note Currently the function supports only (IPv4 -> IEEE 802.3 ethernet) 
  * entries. In the future it might be extended with an additional parameter
@@ -309,14 +311,16 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
  */
 extern int tapi_cfg_get_arp_entry(const char *ta,
                                   const void *net_addr,
-                                  void *ret_addr);
+                                  void       *ret_addr,
+                                  te_bool    *is_static);
 
 /**
  * Add a new static ARP entry on specified agent
  *
- * @param ta           Test agent name
- * @param net_addr     IPv4 network address
- * @param link_addr    IEEE 802.3 Link layer address
+ * @param ta            Test agent name
+ * @param net_addr      IPv4 network address
+ * @param link_addr     IEEE 802.3 Link layer address
+ * @param is_static     Is static (or dynamic) entry should be added
  *
  * @return Status code
  *
@@ -328,7 +332,8 @@ extern int tapi_cfg_get_arp_entry(const char *ta,
  */
 extern int tapi_cfg_add_arp_entry(const char *ta,
                                   const void *net_addr,
-                                  const void *link_addr);
+                                  const void *link_addr,
+                                  te_bool     is_static);
 
 /**
  * Delete a particular ARP entry from ARP table on specified agent
@@ -374,19 +379,6 @@ extern int tapi_cfg_del_arp_dynamic(const char *ta);
 extern int tapi_cfg_get_hwaddr(const char *ta,
                                const char *ifname,
                                void *hwaddr, unsigned int *hwaddr_len);
-
-/**
- * Add network address on Agent's interface.
- *
- * @param ta      Test agent name
- * @param ifname  Interface name on the Agent
- * @param addr    Address to add
- * @param mask    Address mask or NULL for default
- * @param bcast   Corresponding broadcast address or NULL for default
- *
- * @return 0 on success, and te errno on failure
- */
-
 
 /**
  * Get Configurator handle of free child. The function assumes that

@@ -92,7 +92,7 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
 
 static int tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
                            const void *net_addr, const void *link_addr,
-                           void *ret_addr);
+                           void *ret_addr, te_bool *is_static);
 
 
 /* See description in tapi_cfg.h */
@@ -650,25 +650,27 @@ tapi_cfg_del_route(cfg_handle *rt_hndl)
 
 /* See the description in tapi_cfg.h */
 int
-tapi_cfg_get_arp_entry(const char *ta,
-                       const void *net_addr, void *ret_addr)
+tapi_cfg_get_arp_entry(const char *ta, const void *net_addr,
+                       void *ret_addr, te_bool *is_static)
 {
-    return tapi_cfg_arp_op(OP_GET, ta, net_addr, NULL, ret_addr);
+    return tapi_cfg_arp_op(OP_GET, ta, net_addr, NULL, ret_addr,
+                           is_static);
 }
 
 /* See the description in tapi_cfg.h */
 int
-tapi_cfg_add_arp_entry(const char *ta,
-                       const void *net_addr, const void *link_addr)
+tapi_cfg_add_arp_entry(const char *ta, const void *net_addr,
+                       const void *link_addr, te_bool is_static)
 {
-    return tapi_cfg_arp_op(OP_ADD, ta, net_addr, link_addr, NULL);
+    return tapi_cfg_arp_op(OP_ADD, ta, net_addr, link_addr, NULL,
+                           &is_static);
 }
 
 /* See the description in tapi_cfg.h */
 int
 tapi_cfg_del_arp_entry(const char *ta, const void *net_addr)
 {
-    return tapi_cfg_arp_op(OP_DEL, ta, net_addr, NULL, NULL);
+    return tapi_cfg_arp_op(OP_DEL, ta, net_addr, NULL, NULL, NULL);
 }
 
 /* See the description in tapi_cfg.h */
@@ -961,11 +963,14 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
  */                   
 static int
 tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
-                const void *link_addr, void *ret_addr)
+                const void *link_addr, void *ret_addr, te_bool *is_static)
 {
     cfg_handle      handle;
     char            net_addr_str[INET_ADDRSTRLEN];
     int             rc;
+
+    if (ta == NULL || net_addr == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
     
     if (inet_ntop(AF_INET, net_addr, net_addr_str, 
                   sizeof(net_addr_str)) == NULL)
@@ -980,32 +985,36 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
         case OP_GET:
         {
             struct sockaddr *lnk_addr = NULL;
+
             rc = cfg_get_instance_fmt(NULL, &lnk_addr,
                                       "/agent:%s/arp:%s",
                                       ta, net_addr_str);
-            if (rc != 0 && rc != TE_RC(TE_CS, TE_ENOENT))
+            if (rc == TE_RC(TE_CS, TE_ENOENT))
+            {
+                rc = cfg_get_instance_fmt(NULL, &lnk_addr,
+                                          "/agent:%s/volatile:/arp:%s",
+                                          ta, net_addr_str);
+                if ((rc == 0) && (is_static != NULL))
+                    *is_static = FALSE;
+            }
+            else if ((rc == 0) && (is_static != NULL))
+            {
+                *is_static = TRUE;
+            }
+
+            if (rc == 0)
+            {
+                if (ret_addr != NULL)
+                {
+                    memcpy(ret_addr, &(lnk_addr->sa_data), IFHWADDRLEN);
+                }
+                free(lnk_addr);
+            }
+            else if (rc != TE_RC(TE_CS, TE_ENOENT))
             {
                 ERROR("%s() fails to get ARP entry on TA '%s'",
                       __FUNCTION__, ta);
             }
-            else if (rc != 0)
-            {
-                return rc;
-            }
-            else
-            {
-                if (ret_addr == NULL)
-                {
-                    ERROR("%s() invalid lovcation for copying", 
-                          __FUNCTION__);
-                    rc = TE_RC(TE_CS, TE_EINVAL);
-                }
-                else
-                {
-                    memcpy(ret_addr, &(lnk_addr->sa_data), IFHWADDRLEN);
-                }
-            }
-            free(lnk_addr);
             break;
         }
 
@@ -1013,14 +1022,20 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
         {
             struct sockaddr lnk_addr;
 
+            if (link_addr == NULL || is_static == NULL)
+                return TE_RC(TE_TAPI, TE_EINVAL);
+
             memset(&lnk_addr, 0, sizeof(lnk_addr));
             lnk_addr.sa_family = AF_LOCAL;
             memcpy(&(lnk_addr.sa_data), link_addr, IFHWADDRLEN);
 
             if ((rc = cfg_add_instance_fmt(&handle,
                                            CFG_VAL(ADDRESS, &lnk_addr),
-                                           "/agent:%s/arp:%s",
-                                           ta, net_addr_str)) != 0)
+                                           "/agent:%s%s/arp:%s",
+                                           ta,
+                                           (*is_static) ? "" :
+                                                          "/volatile:",
+                                           net_addr_str)) != 0)
             {
                 /* TODO Correct formating */
                 ERROR("%s() fails adding a new ARP entry "
@@ -1038,6 +1053,8 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
             
         case OP_DEL:
             if ((rc = cfg_find_fmt(&handle, "/agent:%s/arp:%s",
+                          ta, net_addr_str) == TE_RC(TE_CS, TE_ENOENT)) &&
+                (rc = cfg_find_fmt(&handle, "/agent:%s/volatile:/arp:%s",
                           ta, net_addr_str) == TE_RC(TE_CS, TE_ENOENT)))
             {
                 RING("There is no ARP entry for %s address on %s Agent",
@@ -1049,11 +1066,8 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
             {
                 ERROR("%s() fails finding '/agent:%s/arp:%s' instance "
                       "with errno %r", __FUNCTION__, ta, net_addr_str, rc);
-                break;
             }
-
-            if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/arp:%s",
-                                           ta, net_addr_str)) != 0)
+            else if ((rc = cfg_del_instance(handle, FALSE)) != 0)
             {
                 ERROR("%s() fails deleting ARP entry for %s host "
                       "on TA '%s'", __FUNCTION__, net_addr_str, ta);
