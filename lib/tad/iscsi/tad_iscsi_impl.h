@@ -77,6 +77,7 @@ typedef struct iscsi_csap_specific_data
 
     int             conn_fd[2]; /* pipe for signalling */
     pthread_mutex_t pkt_queue_lock;
+    pthread_t       iscsi_target_thread;
 } iscsi_csap_specific_data_t;
 
 extern iscsi_target_params_t target_params;

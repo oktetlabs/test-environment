@@ -384,7 +384,8 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return rc;
     } 
 
-    rc = pthread_create(&send_thread, &pthread_attr,
+    rc = pthread_create(&iscsi_spec_data->iscsi_target_thread, 
+                        &pthread_attr,
                         iscsi_server_rx_thread, thread_params);
     if (rc != 0)
     {
@@ -414,7 +415,7 @@ iscsi_single_destroy_cb(int csap_id, int layer)
     csap_p                      csap_descr; 
     packet_t                   *recv_pkt = NULL; 
     iscsi_csap_specific_data_t *iscsi_spec_data; 
-
+    void                       *iscsi_retval;
 
     csap_descr = csap_find(csap_id);
 
@@ -423,10 +424,9 @@ iscsi_single_destroy_cb(int csap_id, int layer)
 
     iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 
-    /* hack for recv return 0 in Target - send byte in pipe without 
-     * packet in queue. 
-     * Letter 'z' denote that this is last byte.*/
-    write(iscsi_spec_data->conn_fd[1], "z", 1); 
+    pthread_cancel(iscsi_spec_data->iscsi_target_thread);
+    pthread_join(iscsi_spec_data->iscsi_target_thread, &iscsi_retval);
+
     LOCK_QUEUE(iscsi_spec_data);
 
     /* clear queue to target */

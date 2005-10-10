@@ -54,6 +54,7 @@ iscsi_server_rx_thread(void *arg)
          params->send_recv_csap);
 
     rc = iscsi_tad_recv(params->send_recv_csap, buffer, 200);
+    pthread_testcancel();
     INFO("tad recv return %d", rc);
 
     if (rc > 0)

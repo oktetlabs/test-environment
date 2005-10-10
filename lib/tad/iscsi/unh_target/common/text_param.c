@@ -1212,6 +1212,7 @@ iscsi_recv_msg(int sock, int length, char *buffer, int flags)
     UNUSED(flags);
 
     retval = iscsi_tad_recv(sock, buffer, length);
+    pthread_testcancel();
 
     if (retval <= 0) {
         if (retval == 0) {

@@ -120,17 +120,23 @@ iscsi_release_connection(struct iscsi_conn *conn)
     /* Release socket */                                                          
     conn->conn_socket = -1;                                                       
     TRACE(TRACE_ISCSI_FULL, "Dequeue connection conn->cid %u\n", conn->conn_id);  
+    list_del(&conn->conn_link);                                                   
+    conn->session->nconn--;
 #if 0                                                                             
     /* Dequeue connection */                                                      
     /* __ prefix should be used */                                                
-    list_del(&conn->conn_link);                                                   
-    conn->session->nconn--;                                                       
     /* Free connection */                                                         
     free(conn->local_ip_address);                                    
     free(conn->ip_address);                                          
 #endif                                                                            
     free(conn);
     return 0;                                                                     
+}
+
+static void
+iscsi_thread_cleanup(void *arg)
+{
+    iscsi_release_connection(arg);
 }
 
 static void
@@ -156,6 +162,7 @@ iscsi_recv_iov (int csap, struct iovec *iov, int niov)
          niov--, iov++, total += received)
     {
         received = iscsi_tad_recv(csap, iov->iov_base, iov->iov_len);
+        pthread_testcancel();
         if (received < 0)
             return received;
     }
@@ -3656,6 +3663,7 @@ iscsi_server_rx_thread(void *param)
         return NULL;
     }
 
+    pthread_cleanup_push(iscsi_thread_cleanup, conn);
 	/* receive loop */
 	while (!terminate) 
     {
@@ -3902,7 +3910,6 @@ iscsi_server_rx_thread(void *param)
 
 	} /* while(!terminate) */
 
-
-    iscsi_release_connection(conn);
+    pthread_cleanup_pop(1);
 	return NULL;
 }
