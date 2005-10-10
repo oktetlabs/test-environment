@@ -322,7 +322,6 @@ iscsi_write_read_cb(csap_p csap_descr, int timeout,
 int 
 iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 {
-    pthread_t                     send_thread = 0; 
     pthread_attr_t                pthread_attr; 
     iscsi_target_thread_params_t *thread_params;
 
@@ -415,7 +414,6 @@ iscsi_single_destroy_cb(int csap_id, int layer)
     csap_p                      csap_descr; 
     packet_t                   *recv_pkt = NULL; 
     iscsi_csap_specific_data_t *iscsi_spec_data; 
-    void                       *iscsi_retval;
 
     csap_descr = csap_find(csap_id);
 
@@ -425,7 +423,6 @@ iscsi_single_destroy_cb(int csap_id, int layer)
     iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 
     pthread_cancel(iscsi_spec_data->iscsi_target_thread);
-    pthread_join(iscsi_spec_data->iscsi_target_thread, &iscsi_retval);
 
     LOCK_QUEUE(iscsi_spec_data);
 
