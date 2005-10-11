@@ -45,7 +45,7 @@
     do {                                                           \
         int rc_;                                                   \
                                                                    \
-        rc_ = tapi_allocate_port(&(SIN(addr_)->sin_port));         \
+        rc_ = tapi_allocate_port_htons(&(SIN(addr_)->sin_port));   \
         if (rc_ != 0)                                              \
             TEST_FAIL("tapi_allocate_port() returned %d", rc_);    \
     } while (0)
