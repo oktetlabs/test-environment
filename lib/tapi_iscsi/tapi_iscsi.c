@@ -1027,6 +1027,7 @@ tapi_iscsi_target_set_parameter(const char *ta,
         "oper:/target_alias:",
         "oper:/initiator_alias:",
         "oper:/target_address:",
+        "oper:/target_port:",
         "oper:/initial_r2t:",
         "oper:/immediate_data:",
         "oper:/max_recv_data_segment_length:",
@@ -1056,6 +1057,153 @@ tapi_iscsi_target_set_parameter(const char *ta,
     return cfg_set_instance_fmt(CVT_STRING, value,
                                 "/agent:%s/iscsi_target:/%s",
                                 ta, mapping[param]);
-}                                
+} 
 
+int 
+tapi_iscsi_initiator_set_global_parameter(const char *ta,
+                                          tapi_iscsi_parameter param, 
+                                          const char *value)
+{
+#if 0
+    static char *mapping[] = {
+        "oper:/header_digest:",                    /* t */
+        "oper:/data_digest:",                      /* t */
+        "oper:/max_connections:",                  /* t */
+        "oper:/send_targets:",  
+        "oper:/target_name:",                      /* t */
+        "initiator_name:",
+        "oper:/target_alias:",                     /* t */
+        "initiator_alias:",
+        "oper:/target_address:",                   /* t */
+        "oper:/target_port:",                      /* t */
+        "oper:/initial_r2t:",                      /* t */
+        "oper:/immediate_data:",                   /* t */
+        "oper:/max_recv_data_segment_length:",     /* t */
+        "oper:/max_burst_length:",                 /* t */
+        "oper:/first_burst_length:",               /* t */
+        "oper:/default_time2wait:",                /* t */
+        "oper:/default_time2retain:",              /* t */
+        "oper:/max_outstanding_r2t:",              /* t */
+        "oper:/data_pdu_in_order:",                /* t */
+        "oper:/data_sequence_in_order:",           /* t */
+        "oper:/error_recovery_level:",             /* t */
+        "oper:/session_type:",                     /* t */
+        NULL,
+        "chap:/local_secret:",
+        "chap:/ln:",                               /* t */
+        "chap:/t:/px:",                            /* t */
+        "chap:/t:/peer_name:",
+        "chap:/challenge_length:",
+        "chap:/enc_fmt:",
+        "chap:/t:",                                /* t */
+        "chap:"
+    };
 
+    assert(ta != NULL);
+    assert(param < sizeof(mapping) / sizeof(*mapping));
+    assert(mapping[param] != NULL);
+    return cfg_set_instance_fmt(CVT_STRING, value,
+                                "/agent:%s/iscsi_initiator:/%s",
+                                ta, mapping[param]);
+#endif
+    return 0;
+}
+
+int 
+tapi_iscsi_initiator_set_local_parameter(const char *ta,
+                                         iscsi_target_id target_id,
+                                         tapi_iscsi_parameter param,
+                                         const char *value)
+{
+#if 0
+    static char *mapping[] = {
+        "header_digest:",                         /* - */
+        "data_digest:",                           /* - */
+        "max_connections:",                       /* - */
+        "oper:/send_targets:",  
+        "target_name:",                           /* - */
+        "/initiator_name:",
+        "target_alias:",                          /* - */
+        "initiator_alias:",
+        "target_address:",                        /* - */
+        "target_port:",                           /* - */
+        "initial_r2t:",                           /* - */
+        "immediate_data:",                        /* - */
+        "max_recv_data_segment_length:",          /* - */
+        "max_burst_length:",                      /* - */
+        "first_burst_length:",                    /* - */
+        "default_time2wait:",                     /* - */
+        "default_time2retain:",                   /* - */
+        "max_outstanding_r2t:",                   /* - */
+        "data_pdu_in_order:",                     /* - */
+        "data_sequence_in_order:",                /* - */
+        "error_recovery_level:",                  /* - */
+        "session_type:",                          /* - */
+        NULL,
+        "chap:/local_secret:",
+        "chap:/local_name:",                      /* - */
+        "chap:/peer_secret:",                     /* - */
+        "chap:/t:/peer_name:",
+        "chap:/challenge_length:",
+        "chap:/enc_fmt:",
+        "chap:",                                 /* - */
+        "chap:"
+    };
+
+    assert(ta != NULL);
+    assert(param < sizeof(mapping) / sizeof(*mapping));
+    assert(mapping[param] != NULL);
+    return cfg_set_instance_fmt(CVT_STRING, value,
+                          "/agent:%s/iscsi_initiator:/target_data:%s/%s",
+                          ta, target_id, mapping[param]);
+#endif
+    return 0;
+}
+
+#define MAX_INI_CMD_SIZE 10
+iscsi_cid 
+tapi_iscsi_initiator_conn_add(const char *ta,
+                              iscsi_target_id tgt_id)
+{
+#if 0
+    char cmd[MAX_INI_CMD_SIZE];
+
+    cmd[0] = 0;
+    sprintf(cmd, "up %d %s", cid, tgt_id + strlen("taget_"));
+
+    return cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
+                                "/agent:%s/iscsi_initiator:",
+                                ta);
+#endif
+}
+
+int 
+tapi_iscsi_initiator_conn_del(const char *ta,
+                              iscsi_target_id tgt_id,
+                              iscsi_cid cid)
+{
+#if 0
+    char cmd[MAX_INI_CMD_SIZE];
+
+    cmd[0] = 0;
+    sprintf(cmd, "down %d %s", cid, tgt_id + strlen("target_"));
+
+    return cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
+                                "/agent:%s/iscsi_initiator:",
+                                ta);
+#endif
+}
+
+iscsi_target_id 
+tapi_iscsi_add_target(const char *target_addr, 
+                      const int target_port)
+{
+    return 5;
+}
+
+int 
+tapi_iscsi_del_target(iscsi_target_id tgt_id)
+{
+    return 0;
+}
+#undef MAX_INI_CMD_SIZE

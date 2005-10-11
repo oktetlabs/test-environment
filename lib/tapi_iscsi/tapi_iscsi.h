@@ -280,43 +280,139 @@ extern int tapi_iscsi_change_key_values(
 extern void tapi_iscsi_keys_data_free(iscsi_segment_data);
 
 typedef enum {
-    ISCSI_PARAM_HEADER_DIGEST,
-    ISCSI_PARAM_DATA_DIGEST,
-    ISCSI_PARAM_MAX_CONNECTIONS,
-    ISCSI_PARAM_SEND_TARGETS,
-    ISCSI_PARAM_TARGET_NAME,
-    ISCSI_PARAM_INITIATOR_NAME,
-    ISCSI_PARAM_TARGET_ALIAS,
-    ISCSI_PARAM_INITIATOR_ALIAS,
-    ISCSI_PARAM_TARGET_ADDRESS,
-    ISCSI_PARAM_INITIAL_R2T,
-    ISCSI_PARAM_IMMEDIATE_DATA,
-    ISCSI_PARAM_MAX_RECV_DATA_SEGMENT_LENGHT,
-    ISCSI_PARAM_MAX_BURST_LENGTH,
-    ISCSI_PARAM_FIRST_BURST_LENGTH,
-    ISCSI_PARAM_DEFAULT_TIME2WAIT,
-    ISCSI_PARAM_DEFAULT_TIME2RETAIN,
-    ISCSI_PARAM_MAX_OUTSTANDING_R2T,
-    ISCSI_PARAM_DATA_PDU_IN_ORDER,
-    ISCSI_PARAM_DATA_SEQUENCE_IN_ORDER,
-    ISCSI_PARAM_ERROR_RECOVERY_LEVEL,
-    ISCSI_PARAM_SESSION_TYPE,
-    ISCSI_PARAM_LAST_OPERATIONAL, /* just a delimiter */
-    ISCSI_PARAM_LOCAL_SECRET,
-    ISCSI_PARAM_LOCAL_NAME,
-    ISCSI_PARAM_PEER_SECRET,
-    ISCSI_PARAM_PEER_NAME,
-    ISCSI_PARAM_CHANLLENGE_LENGTH,
-    ISCSI_PARAM_ENCODING_FORMAT,
-    ISCSI_PARAM_TGT_AUTH_REQ,
-    ISCSI_PARAM_SECURITY_NEGOTIATION_PHASE
+    ISCSI_PARAM_HEADER_DIGEST,                          /**< Local */
+    ISCSI_PARAM_DATA_DIGEST,                            /**< Local */
+    ISCSI_PARAM_MAX_CONNECTIONS,                        /**< Local */
+    ISCSI_PARAM_SEND_TARGETS,                           /**< Global */
+    ISCSI_PARAM_TARGET_NAME,                            /**< Local */
+    ISCSI_PARAM_INITIATOR_NAME,                         /**< Global */
+    ISCSI_PARAM_TARGET_ALIAS,                           /**< Local */
+    ISCSI_PARAM_INITIATOR_ALIAS,                        /**< Global */
+    ISCSI_PARAM_TARGET_ADDRESS,                         /**< Local */
+    ISCSI_PARAM_TARGET_PORT,                            /**< Local */
+    ISCSI_PARAM_INITIAL_R2T,                            /**< Local */
+    ISCSI_PARAM_IMMEDIATE_DATA,                         /**< Local */
+    ISCSI_PARAM_MAX_RECV_DATA_SEGMENT_LENGHT            /**< Local */,
+    ISCSI_PARAM_MAX_BURST_LENGTH,                       /**< Local */
+    ISCSI_PARAM_FIRST_BURST_LENGTH,                     /**< Local */
+    ISCSI_PARAM_DEFAULT_TIME2WAIT,                      /**< Local */
+    ISCSI_PARAM_DEFAULT_TIME2RETAIN,                    /**< Local */
+    ISCSI_PARAM_MAX_OUTSTANDING_R2T,                    /**< Local */
+    ISCSI_PARAM_DATA_PDU_IN_ORDER,                      /**< Local */
+    ISCSI_PARAM_DATA_SEQUENCE_IN_ORDER,                 /**< Local */
+    ISCSI_PARAM_ERROR_RECOVERY_LEVEL,                   /**< Local */
+    ISCSI_PARAM_SESSION_TYPE,                           /**< Local */
+    ISCSI_PARAM_LAST_OPERATIONAL,        /* just a delimiter */
+/* TODO: Global and Local parameters */
+    ISCSI_PARAM_LOCAL_SECRET,                           /**< Global */
+    ISCSI_PARAM_LOCAL_NAME,                             /**< Local */
+    ISCSI_PARAM_PEER_SECRET,                            /**< Local */
+    ISCSI_PARAM_PEER_NAME,                              /**< Global */
+    ISCSI_PARAM_CHANLLENGE_LENGTH,                      /**< Global */
+    ISCSI_PARAM_ENCODING_FORMAT,                        /**< Global */
+    ISCSI_PARAM_TGT_AUTH_REQ,                           /**< Global */
+    ISCSI_PARAM_SECURITY_NEGOTIATION_PHASE              /**< Global */
 } tapi_iscsi_parameter;
 
+typedef enum {
+    INT,
+    STRING
+} tapi_iscsi_parameter_type;
 
 /* Target configuration */
 extern int tapi_iscsi_target_set_parameter(const char *ta, 
                                            tapi_iscsi_parameter param, 
                                            const char *value);
+
+typedef int iscsi_target_id;
+typedef int iscsi_cid;
+
+/**
+ * Function configures global parameters of the Initiator.
+ *
+ * @param ta      Name of the TA on which the Initiator is configured
+ * @param param   Parameter to configure
+ * @param value   New value added
+ *
+ * @return return of the cfg_set_instance_fmt
+ */
+extern int tapi_iscsi_initiator_set_global_parameter(const char *ta,
+                                            tapi_iscsi_parameter param, 
+                                            const char *value);
+/**
+ * Function configures local (per target) parameters of the Initiator.
+ *
+ * @param ta         Name of the TA on which the Initiator is configured
+ * @param target_id  ID of the target: notation: "target_x"
+ * @param param      Parameter to configure
+ * @param value      New value added
+ *
+ * @return return of the cfg_set_instance_fmt
+ */
+extern int tapi_iscsi_initiator_set_local_parameter(const char *ta,
+                                            iscsi_target_id target_id,
+                                            tapi_iscsi_parameter param,
+                                            const char *value);
+
+#ifdef ISCSI_INITIATOR_GET_SUPPORT
+/**
+ * Function configures global parameters of the Initiator.
+ *
+ * @param ta      Name of the TA on which the Initiator is configured
+ * @param param   Parameter to configure
+ * @param value   New value added
+ *
+ * @return return of the cfg_set_instance_fmt
+ */
+extern int tapi_iscsi_initiator_get_global_parameter(const char *ta,
+                                            tapi_iscsi_parameter param, 
+                                            const char *value);
+/**
+ * Function configures local (per target) parameters of the Initiator.
+ *
+ * @param ta         Name of the TA on which the Initiator is configured
+ * @param target_id  ID of the target: notation: "target_x"
+ * @param param      Parameter to configure
+ * @param value      New value added
+ *
+ * @return return of the cfg_set_instance_fmt
+ */
+extern int tapi_iscsi_initiator_get_local_parameter(const char *ta,
+                                            iscsi_target_id target_id,
+                                            tapi_iscsi_parameter param,
+                                            const char *value);
+#endif
+
+extern iscsi_target_id tapi_iscsi_add_target(const char *target_addr, 
+                                             const int target_port);
+
+extern int tapi_iscsi_del_target(iscsi_target_id tgt_id);
+
+/**
+ * Function tries to establish connection with the Target.
+ *
+ * @param ta         Name of the TA on which the Initiator is placed
+ * @param tgt_id     Id of the Target to establish connection with
+ * @param cid        ID of the connection to establish
+ *
+ * @return CID of the newly created connection
+ */
+extern iscsi_cid tapi_iscsi_initiator_conn_add(const char *ta,
+                                               iscsi_target_id tgt_id);
+
+/**
+ * Function tries to delete connection from the Initiator.
+ *
+ * @param ta         Name of the TA on which the Initiator is placed
+ * @param tgt_id     Id of the Target the connection with which should be
+ *                   deleted
+ * @param cid        ID of the connection to delete
+ *
+ * @return           errno
+ */
+extern int tapi_iscsi_initiator_conn_del(const char *ta,
+                                         iscsi_target_id tgt_id,
+                                         iscsi_cid cid);
 
 /** The following functions are DEPRECATED!!! 
     They will be removed as soon as all the tests use the new API
