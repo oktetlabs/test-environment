@@ -991,6 +991,10 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
                                       ta, net_addr_str);
             if (rc == TE_RC(TE_CS, TE_ENOENT))
             {
+                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/volatile:", ta);
+                if (rc != 0)
+                    break;
+
                 rc = cfg_get_instance_fmt(NULL, &lnk_addr,
                                           "/agent:%s/volatile:/arp:%s",
                                           ta, net_addr_str);
