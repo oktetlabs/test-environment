@@ -33,6 +33,7 @@
 #include "target_negotiate.h"
 
 extern struct iscsi_global *devdata;
+extern int iscsi_server_init();
 
 #define CHAP_SET_SECRET(value, x) \
     (CHAP_SetSecret(value, x) == 1)
@@ -68,12 +69,15 @@ iscsi_target_pn_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     DEVDATA_CHECK;
-
+#if 0
     tmp = CHAP_GET_NAME(devdata->auth_parameter.chap_peer_ctx);
     if (tmp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENODATA);
-    strcpy(value, tmp);
+        strcpy(value, "Peer name");
+    else
+        strcpy(value, tmp);
     free(tmp);
+#endif
+    strcpy(value, "Peer name");
     return 0;
 }
 
@@ -108,12 +112,15 @@ iscsi_target_px_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     DEVDATA_CHECK;
-
+#if 0
     tmp = CHAP_GET_SECRET(devdata->auth_parameter.chap_peer_ctx);
     if (tmp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENODATA);
-    strcpy(value, tmp);
+        strcpy(value, "Peer secret");
+    else
+        strcpy(value, tmp);
     free(tmp);
+#endif
+    strcpy(value, "Peer secret");
 
     return 0;
 }
@@ -292,12 +299,16 @@ iscsi_target_ln_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     DEVDATA_CHECK;
-
+#if 0    
     tmp = CHAP_GET_NAME(devdata->auth_parameter.chap_local_ctx);
     if (tmp == NULL)
+        strcpy(value, "Local name");
+    else
         return TE_RC(TE_TA_UNIX, TE_ENODATA);
     strcpy(value, tmp);
     free(tmp);
+#endif
+    strcpy(value, "Local name");
     return 0;
 }
 
@@ -333,12 +344,15 @@ iscsi_target_lx_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     DEVDATA_CHECK;
-
+#if 0
     tmp = CHAP_GET_SECRET(devdata->auth_parameter.chap_local_ctx);
     if (tmp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENODATA);
-    strcpy(value, tmp);
+        strcpy(value, "Local secret");
+    else
+        strcpy(value, tmp);
     free(tmp);
+#endif
+    strcpy(value, "Local secret");
     return 0;
 
 }
@@ -628,6 +642,13 @@ RCF_PCH_CFG_NODE_RO(node_ds_iscsi_target, "iscsi_target",
 int
 ta_unix_iscsi_target_init(rcf_pch_cfg_object **last)
 {
+    int rc;
+        
+    if ((rc = iscsi_server_init()) != 0)
+    {
+        ERROR("%s, %d: Cannot init iscsi server");
+        return rc;
+    }
     DS_REGISTER(iscsi_target);
     
     return 0;
