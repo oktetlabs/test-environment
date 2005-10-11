@@ -270,6 +270,7 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
     char        *term_byte; /* Pointer to the trailing zero byte
                                in instance name */
     static char  inst_copy[RCF_MAX_VAL];
+    int          family;    
 
     memset(rt_info, 0, sizeof(*rt_info));
     strncpy(inst_copy, name, sizeof(inst_copy));
@@ -279,15 +280,26 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
         return TE_EINVAL;
 
     *tmp = '\0';
-    ((struct sockaddr *)&(rt_info->dst))->sa_family = AF_INET;
-    if (inet_aton(inst_copy, &(SIN(&(rt_info->dst))->sin_addr)) == 0)
+
+    family = (strchr(inst_copy, ':') == NULL) ? AF_INET : AF_INET6;
+
+    ((struct sockaddr *)&(rt_info->dst))->sa_family = family;
+    
+    if ((family == AF_INET &&
+         inet_pton(family, inst_copy, &(SIN(&(rt_info->dst))->sin_addr))
+         == 0) ||
+        (family == AF_INET6 &&
+         inet_pton(family, inst_copy, &(SIN6(&(rt_info->dst))->sin6_addr))
+         == 0))
     {
         ERROR("Incorrect 'destination address' value in route %s", name);
         return TE_EINVAL;
     }
     tmp++;
     if (*tmp == '-' ||
-        (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || prefix > 32))
+        (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 ||
+         (family == AF_INET && prefix > 32) ||
+         (family == AF_INET6 && prefix > 128)))
     {
         ERROR("Incorrect 'prefix length' value in route %s", name);
         return TE_EINVAL;
@@ -304,8 +316,13 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
             end_ptr++;
         *end_ptr = '\0';
 
-        ((struct sockaddr *)&(rt_info->gw))->sa_family = AF_INET;
-        if (inet_aton(ptr, &(SIN(&(rt_info->gw))->sin_addr)) == 0)
+        ((struct sockaddr *)&(rt_info->gw))->sa_family = family;
+        if ((family == AF_INET &&
+             inet_pton(family, ptr, &(SIN(&(rt_info->gw))->sin_addr))
+             == 0) ||
+            (family == AF_INET6 &&
+             inet_pton(family, ptr, &(SIN6(&(rt_info->gw))->sin6_addr))
+             == 0))
         {
             ERROR("Incorrect format of 'gateway address' value in route %s",
                   name);
@@ -338,6 +355,13 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
         rt_info->flags |= TA_RT_INFO_FLG_IF;
     }
 
+    if ((ptr = strstr(tmp, "metric=")) != NULL)
+    {
+        end_ptr = ptr += strlen("metric=");
+        rt_info->metric = atoi(ptr);
+        rt_info->flags |= TA_RT_INFO_FLG_METRIC;
+    }
+
     return 0;
 }
 
@@ -351,7 +375,26 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
 
     for (attr = attrs; attr != NULL; attr = attr->next)
     {
-        if (strcmp(attr->name, "metric") == 0)
+        if (strcmp(attr->name, "gw") == 0)
+        {
+            if (inet_pton(SIN(&rt_info->dst)->sin_family, attr->value,
+                          &rt_info->gw) == 0)
+            {
+                ERROR("Incorrect gateway address specified");
+                return TE_EINVAL;
+            }
+            rt_info->flags |= TA_RT_INFO_FLG_GW;            
+        }
+        else if (strcmp(attr->name, "dev") == 0)
+        {
+            if (strlen(attr->value) > IFNAMSIZ)
+            {
+                ERROR("Interface name is too long");
+                return TE_EINVAL;
+            }
+            strcpy(rt_info->ifname, attr->value);
+        }
+        else if (strcmp(attr->name, "metric") == 0)
         {
             if (*(attr->value) == '\0' || *(attr->value) == '-' ||
                 (int_val = strtol(attr->value, &end_ptr, 10),

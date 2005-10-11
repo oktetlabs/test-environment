@@ -698,6 +698,47 @@ typedef enum rpc_sockopt {
     RPC_IP_MTU_DISCOVER,    /**< Enable/disable Path MTU discover
                                  on the socket */
 
+    RPC_IPV6_UNICAST_HOPS,  /**< Hop limit for unicast packets */
+
+    RPC_IPV6_MULTICAST_HOPS,
+                            /**< Hop limit for multicast packets */
+
+    RPC_IPV6_MULTICAST_IF,  /**< Interface for outgoing multicast packets */
+    
+    RPC_IPV6_ADDRFORM,      /**< Turn AF_INET6 socket to AF_INET family */
+
+    RPC_IPV6_PKTINFO,       /**< Whether to receive control messages
+                                 on incoming datagrams */
+#if 0
+    RPC_IPV6_RTHDR,
+    RPC_IPV6_AUTHHDR,
+    RPC_IPV6_DSTOPS,
+    RPC_IPV6_HOPOPTS,
+    RPC_IPV6_FLOWINFO,
+    RPC_IPV6_HOPLIMIT,
+#endif               
+    
+    RPC_IPV6_MULTICAST_LOOP,
+                            /**< Whether to loopback outgoing
+                                 multicast datagrams */
+    
+    RPC_IPV6_ADD_MEMBERSHIP,
+                            /**< Join a multicast group */
+    
+    RPC_IPV6_DROP_MEMBERSHIP,
+                            /**< Leave a multicast group */
+    
+    RPC_IPV6_MTU,           /**< MTU of current connected socket */
+    
+    RPC_IPV6_MTU_DISCOVER,  /**< enable/disable Path MTU discover */
+
+    RPC_IPV6_RECVERR,       /**< Whether to receive asyncronous
+                                 error messages */
+
+#if 0    
+    RPC_IPV6_ROUTER_ALERT,
+#endif        
+
     RPC_TCP_MAXSEG,         /**< Set/get the maximum segment size for
                                  outgoing TCP packets */
     RPC_TCP_NODELAY,        /**< Enable/disable the Nagle algorithm */
@@ -945,6 +986,40 @@ sockopt_h2rpc(int opt_type, int opt)
             break;
 #endif
 
+#ifdef SOL_IPV6
+        case SOL_IPV6:
+            switch (opt)
+            {
+                H2RPC(IPV6_UNICAST_HOPS);
+                H2RPC(IPV6_MULTICAST_HOPS);
+                H2RPC(IPV6_MULTICAST_IF);
+                H2RPC(IPV6_ADDRFORM);
+                H2RPC(IPV6_PKTINFO);
+#if 0                
+                H2RPC(IPV6_RTHDR);
+                H2RPC(IPV6_AUTHHDR);
+                H2RPC(IPV6_DSTOPS);
+                H2RPC(IPV6_HOPOPTS);
+                H2RPC(IPV6_FLOWINFO);
+                H2RPC(IPV6_HOPLIMIT);
+#endif                
+                H2RPC(IPV6_MULTICAST_LOOP);
+                H2RPC(IPV6_ADD_MEMBERSHIP);
+                H2RPC(IPV6_DROP_MEMBERSHIP);
+#ifdef IPV6_MTU                
+                H2RPC(IPV6_MTU);
+#endif
+#ifdef IPV6_MTU_DISCOVER                
+                H2RPC(IPV6_MTU_DISCOVER);
+#endif
+                H2RPC(IPV6_RECVERR);
+#if 0                
+                H2RPC(IPV6_ROUTER_ALERT);
+#endif                
+
+                default: return RPC_SOCKOPT_MAX;
+            }
+#endif                
         default: return RPC_SOCKOPT_MAX;
     }
 }
@@ -990,6 +1065,30 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IP_TTL);
         RPC2STR(IP_MTU);
         RPC2STR(IP_MTU_DISCOVER);
+
+        RPC2STR(IPV6_UNICAST_HOPS);
+        RPC2STR(IPV6_MULTICAST_HOPS);
+        RPC2STR(IPV6_MULTICAST_IF);
+        RPC2STR(IPV6_ADDRFORM);
+        RPC2STR(IPV6_PKTINFO);
+#if 0                
+        RPC2STR(IPV6_RTHDR);
+        RPC2STR(IPV6_AUTHHDR);
+        RPC2STR(IPV6_DSTOPS);
+        RPC2STR(IPV6_HOPOPTS);
+        RPC2STR(IPV6_FLOWINFO);
+        RPC2STR(IPV6_HOPLIMIT);
+#endif                
+        RPC2STR(IPV6_MULTICAST_LOOP);
+        RPC2STR(IPV6_ADD_MEMBERSHIP);
+        RPC2STR(IPV6_DROP_MEMBERSHIP);
+        RPC2STR(IPV6_MTU);
+        RPC2STR(IPV6_MTU_DISCOVER);
+        RPC2STR(IPV6_RECVERR);
+#if 0                
+        RPC2STR(IPV6_ROUTER_ALERT);
+#endif
+
         RPC2STR(TCP_MAXSEG);
         RPC2STR(TCP_NODELAY);
         RPC2STR(TCP_CORK);
@@ -1014,6 +1113,7 @@ sockopt_rpc2str(rpc_sockopt opt)
 typedef enum rpc_socklevel {
     RPC_SOL_SOCKET,
     RPC_SOL_IP,
+    RPC_SOL_IPV6,
     RPC_SOL_TCP,
     RPC_SOL_UNKNOWN
 } rpc_socklevel;
@@ -1027,9 +1127,14 @@ socklevel_rpc2h(rpc_socklevel level)
         RPC2H(SOL_SOCKET);
 #ifndef SOL_IP
         case RPC_SOL_IP:  return IPPROTO_IP;
-#else
+#else                          
         RPC2H(SOL_IP);
 #endif
+#ifndef SOL_IPV6
+        case RPC_SOL_IPV6: return IPPROTO_IPV6;
+#else
+        RPC2H(SOL_IPV6);
+#endif        
 #ifndef SOL_TCP
         case RPC_SOL_TCP: return IPPROTO_TCP;
 #else
@@ -1051,6 +1156,11 @@ socklevel_h2rpc(int level)
 #else
         H2RPC(SOL_IP);
 #endif
+#ifndef SOL_IPV6
+        case IPPROTO_IPV6: return RPC_SOL_IPV6;
+#else
+        H2RPC(SOL_IPV6);
+#endif
 #ifndef SOL_TCP
         case IPPROTO_TCP: return RPC_SOL_TCP;
 #else
@@ -1068,6 +1178,7 @@ socklevel_rpc2str(rpc_socklevel level)
     {
         RPC2STR(SOL_SOCKET);
         RPC2STR(SOL_IP);
+        RPC2STR(SOL_IPV6);
         RPC2STR(SOL_TCP);
         RPC2STR(SOL_UNKNOWN);
         default: return "<SOL_FATAL_ERROR>";

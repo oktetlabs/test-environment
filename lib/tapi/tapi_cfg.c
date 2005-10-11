@@ -87,7 +87,7 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              int addr_family,
                              const void *dst_addr, int prefix,
                              const void *gw_addr, const char *dev,
-                             uint32_t flags, int metric, int mtu, 
+                             uint32_t flags, int metric, int tos, int mtu,
                              int win, int irtt, cfg_handle *cfg_hndl);
 
 static int tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
@@ -381,6 +381,9 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
                                in 'inst_name' */
     static char  inst_copy[RCF_MAX_VAL];
 
+    int          family = (strchr(inst_name, ':') == NULL) ?
+                          AF_INET : AF_INET6;
+
     strncpy(inst_copy, inst_name, sizeof(inst_copy));
     inst_copy[sizeof(inst_copy) - 1] = '\0';
 
@@ -388,16 +391,21 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     *tmp ='\0';
-    rt->dst.ss_family = AF_INET;
-    if (inet_pton(AF_INET, inst_copy, &(SIN(&(rt->dst))->sin_addr)) <= 0)
+    rt->dst.ss_family = family;
+
+    if ((family == AF_INET &&
+         inet_pton(family, inst_copy, &(SIN(&(rt->dst))->sin_addr)) <= 0) ||
+        (family == AF_INET6 &&
+         inet_pton(family, inst_copy, &(SIN6(&(rt->dst))->sin6_addr)) <= 0))
     {
         ERROR("Incorrect 'destination address' value in route %s",
               inst_name);
         return TE_RC(TE_TAPI, TE_ENOENT);
     }
     tmp++;
-    if (*tmp == '-' ||
-        (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1 || prefix > 32))
+    if (*tmp == '-' || (prefix = strtol(tmp, &tmp1, 10), tmp == tmp1) ||
+         ((rt->dst.ss_family == AF_INET && prefix > 32) ||
+          (rt->dst.ss_family == AF_INET6 && prefix > 128)))
     {
         ERROR("Incorrect 'prefix length' value in route %s", inst_name);
         return TE_RC(TE_TAPI, TE_ENOENT);
@@ -417,8 +425,15 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
             end_ptr++;
         *end_ptr = '\0';
 
-        rt->gw.ss_family = AF_INET;
-        rc = inet_pton(AF_INET, ptr, &(SIN(&(rt->gw))->sin_addr));
+        rt->gw.ss_family = family;
+        if (family == AF_INET)
+        {
+            rc = inet_pton(family, ptr, &(SIN(&(rt->gw))->sin_addr));
+        }
+        else if (family == AF_INET6)
+        {
+            rc = inet_pton(family, ptr, &(SIN6(&(rt->gw))->sin6_addr));
+        }
         if (rc <= 0)
         {
             ERROR("Incorrect format of 'gateway address' value in route %s",
@@ -451,6 +466,13 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
 
         rt->flags |= TAPI_RT_IF;
     }
+
+    if ((ptr = strstr(tmp, "metric=")) != NULL)
+    {
+        end_ptr = ptr += strlen("metric=");
+        rt->metric = atoi(end_ptr);
+        rt->flags |= TAPI_RT_METRIC;
+    }           
 
     return 0;
 }
@@ -592,12 +614,12 @@ int
 tapi_cfg_add_route(const char *ta, int addr_family,
                    const void *dst_addr, int prefix,
                    const void *gw_addr, const char *dev,
-                   uint32_t flags, int metric, int mtu, int win, int irtt,
-                   cfg_handle *cfg_hndl)
+                   uint32_t flags, int metric, int tos, int mtu,
+                   int win, int irtt, cfg_handle *cfg_hndl)
 {
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev,
-                             flags, metric, mtu, win, irtt, cfg_hndl);
+                             flags, metric, tos, mtu, win, irtt, cfg_hndl);
 }
 
 /* See the description in tapi_cfg.h */
@@ -605,12 +627,12 @@ int
 tapi_cfg_modify_route(const char *ta, int addr_family,
                    const void *dst_addr, int prefix,
                    const void *gw_addr, const char *dev,
-                   uint32_t flags, int metric, int mtu, int win, int irtt,
-                   cfg_handle *cfg_hndl)
+                   uint32_t flags, int metric, int tos, int mtu,
+                   int win, int irtt, cfg_handle *cfg_hndl)
 {
     return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev,
-                             flags, metric, mtu, win, irtt, cfg_hndl);
+                             flags, metric, tos, mtu, win, irtt, cfg_hndl);
 }
 
 
@@ -619,12 +641,12 @@ int
 tapi_cfg_del_route_tmp(const char *ta, int addr_family,
                        const void *dst_addr, int prefix, 
                        const void *gw_addr, const char *dev,
-                       uint32_t flags, int metric,
+                       uint32_t flags, int metric, int tos,
                        int mtu, int win, int irtt)
 {
     return tapi_cfg_route_op(OP_DEL, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev,
-                             flags, metric, mtu, win, irtt, NULL);
+                             flags, metric, tos, mtu, win, irtt, NULL);
 }
 
 /* See the description in tapi_cfg.h */
@@ -720,7 +742,7 @@ static int
 tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                   const void *dst_addr, int prefix, const void *gw_addr,
                   const char *dev, uint32_t flags,
-                  int metric, int mtu, int win, int irtt,
+                  int metric, int tos, int mtu, int win, int irtt,
                   cfg_handle *cfg_hndl)
 {
     cfg_handle  handle;
@@ -815,7 +837,8 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
     route_inst_name[0] = '\0';
     PUT_INTO_BUF(route_inst_name, "%s|%d", dst_addr_str, prefix);
-
+    
+#if 1
     if (gw_addr != NULL)
     {
         if (inet_ntop(addr_family, gw_addr, gw_addr_str,
@@ -830,8 +853,13 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
     if (dev != NULL)
         PUT_INTO_BUF(route_inst_name, ",dev=%s", dev);
+#else
+    if (metric > 0)
+        PUT_INTO_BUF(route_inst_name, ",metric=%d", metric);
 
-
+    if (tos > 0)
+        PUT_INTO_BUF(route_inst_name, "tos=%d", tos);
+#endif
     switch (op)
     {
         case OP_MODIFY:

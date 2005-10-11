@@ -475,6 +475,7 @@ rpc_accept(rcf_rpc_server *rpcs,
  *                 Following values can be specified:
  *                  - @b RPC_SOL_SOCKET  socket level
  *                  - @b RPC_SOL_IP      IPPROTO_IP level
+ *                  - @b RPC_SOL_IPV6    IPPROTO_IPV6 level
  *                  - @b RPC_SOL_TCP     IPPROTO_TCP level
  * @param optname  option name
  * @param optval   pointer to a buffer containing the value associated 
@@ -506,6 +507,7 @@ extern int rpc_getsockopt_gen(rcf_rpc_server *rpcs,
  *                 Following values can be specified:
  *                  - @b RPC_SOL_SOCKET  socket level
  *                  - @b RPC_SOL_IP      IPPROTO_IP level
+ *                  - @b RPC_SOL_IPV6    IPPROTO_IPV6 level
  *                  - @b RPC_SOL_TCP     IPPROTO_TCP level
  * @param optname  Option name
  * @param optval   pointer to a buffer containing the value associated 
@@ -537,6 +539,7 @@ rpc_getsockopt(rcf_rpc_server *rpcs,
  *                 Following values can be specified:
  *                  - @b RPC_SOL_SOCKET  socket level
  *                  - @b RPC_SOL_IP      IPPROTO_IP level
+ *                  - @b RPC_SOL_IPV6    IPPROTO_IPV6 level
  *                  - @b RPC_SOL_TCP     IPPROTO_TCP level
  * @param optname  Option name
  * @param optval   pointer to a buffer containing the value associated 

@@ -789,7 +789,13 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
         RET(TE_ENOENT);
         
     if (obj->type != type && type != CVT_NONE)
+    {
+        ERROR("cfg_db_add: type (%d) expected - bad type (%d)"
+              "of object (%s)", type, obj->type, obj->oid);
+        ERROR("types: Integer (%d), string (%d), address (%d)", CVT_INTEGER,
+              CVT_STRING, CVT_ADDRESS);
         RET(TE_EBADTYPE);
+    }
     
     /* Try to find instance with the same name */
     for (inst = father->son, prev = NULL; 

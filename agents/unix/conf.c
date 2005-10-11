@@ -103,12 +103,19 @@ extern int ta_unix_iscsi_target_init(rcf_pch_cfg_object **last);
 
 
 #ifdef USE_NETLINK
-struct nlmsg_list
-{
+struct nlmsg_list {
     struct nlmsg_list *next;
     struct nlmsghdr      h;
 };
 #endif
+
+/**
+ * Type for both IPv4 and IPv6 address
+ */
+typedef union gen_ip_address {
+    uint32_t        ip4_addr;  /** IPv4 address */
+    struct in6_addr ip6_addr;  /** IPv6 address */
+} gen_ip_address;
 
 /* Auxiliary variables used for during configuration request processing */
 static struct ifreq req;
@@ -568,7 +575,7 @@ free_nlmsg(struct nlmsg_list *linfo)
 /**
  * Get link/protocol addresses information
  *
- * @param family   AF_INET or AF_LOCAL
+ * @param family   AF_INET, AF_INET6 or AF_LOCAL
  * @param list     location for nlmsg list
  *                 containing address information
  *
@@ -589,7 +596,8 @@ ip_addr_get(int family, struct nlmsg_list **list)
     }
 
     ll_init_map(&rth);
-    type = (family == AF_INET) ? RTM_GETADDR : RTM_GETLINK;
+    type = (family == AF_INET) || (family == AF_INET6) ?
+            RTM_GETADDR : RTM_GETLINK;
 
     if (rtnl_wilddump_request(&rth, family, type) < 0)
     {
@@ -623,31 +631,36 @@ ip_addr_get(int family, struct nlmsg_list **list)
  */
 static const char *
 nl_find_net_addr(const char *str_addr, const char *ifname,
-                 uint32_t *addr, unsigned int *prefix, uint32_t *bcast)
+                 gen_ip_address *addr, unsigned int *prefix,
+                 uint32_t *bcast)
 {
-    uint32_t           int_addr;
+    gen_ip_address     ip_addr;
+    
     struct nlmsg_list *ainfo = NULL;
     struct nlmsg_list *a = NULL;
     struct nlmsghdr   *n = NULL;
     struct ifaddrmsg  *ifa = NULL;
     struct rtattr     *rta_tb[IFA_MAX + 1];
     int                ifindex = 0;
+    int                family;
 
-
+    /* If address contains a colon, it is IPv6 address */
+    family = (strchr(str_addr, ':') == NULL) ? AF_INET : AF_INET6;
+    
     if (ifname != NULL && (strlen(ifname) >= IF_NAMESIZE))
     {
         ERROR("Interface name '%s' too long", ifname);
         return NULL;
     }
 
-    if (inet_pton(AF_INET, str_addr, (void *)&int_addr) <= 0)
+    if (inet_pton(family, str_addr, &ip_addr) <= 0)
     {
         ERROR("%s(): inet_pton() failed for address '%s'",
               __FUNCTION__, str_addr);
         return NULL;
     }
-
-    if (ip_addr_get(AF_INET, &ainfo) != 0)
+       
+    if (ip_addr_get(family, &ainfo) != 0)
     {
         ERROR("%s(): Cannot get addresses list", __FUNCTION__);
         return NULL;
@@ -673,9 +686,13 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
         if (!rta_tb[IFA_ADDRESS])
              rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
         if (rta_tb[IFA_LOCAL])
-        {
-            if (*(unsigned int *)(RTA_DATA(rta_tb[IFA_LOCAL])) ==
-                int_addr)
+        {            
+            if (((family == AF_INET) &&
+                 (*(uint32_t *)(RTA_DATA(rta_tb[IFA_LOCAL])) ==
+                 ip_addr.ip4_addr)) || 
+                 ((family == AF_INET6) &&
+                  (memcmp(RTA_DATA(rta_tb[IFA_LOCAL]),
+                         &ip_addr.ip6_addr, sizeof(struct in6_addr)) == 0)))
             {
                 if (ifname == NULL ||
                     (ll_name_to_index(ifname) == ifa->ifa_index))
@@ -686,18 +703,31 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
             }
         }
     }
-
+    /* If address was obtained, write it to the given locations */
     if (a != NULL)
-    {
+    {    
         ifindex = ifa->ifa_index;
-        if (addr != NULL)
-            *addr   = int_addr;
-        if (prefix != NULL)
-            *prefix = ifa->ifa_prefixlen;
-        if (bcast != NULL)
-            *bcast = (rta_tb[IFA_BROADCAST]) ?
-                     *(uint32_t *)RTA_DATA(rta_tb[IFA_BROADCAST]) :
-                     htonl(INADDR_BROADCAST);
+        if (family == AF_INET)
+        {
+            if (addr != NULL)
+                addr->ip4_addr = ip_addr.ip4_addr;
+            if (prefix != NULL)
+                *prefix = ifa->ifa_prefixlen;
+            if (bcast != NULL)
+            {
+                *bcast = (rta_tb[IFA_BROADCAST]) ?
+                         *(uint32_t *)RTA_DATA(rta_tb[IFA_BROADCAST]) :
+                         htonl(INADDR_BROADCAST);
+            }
+        }
+        else
+        {
+            if (addr != NULL)
+                memcpy(&addr->ip6_addr, &ip_addr.ip6_addr,
+                       sizeof(struct in6_addr));
+            if (bcast != NULL)
+                *bcast = 0;
+        }
     }
 
     free_nlmsg(ainfo);
@@ -709,10 +739,11 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
 
 
 /**
- * Add/delete AF_INET address.
+ * Add/delete AF_INET/AF_INET6 address.
  *
  * @param cmd           Command (see enum net_addr_ops)
- * @param ifname        Interface name
+ * @param ifname        Interface name 
+ * @param family        Address family (AF_INET or AF_INET6)
  * @param addr          Address
  * @param prefix        Prefix to set or 0
  * @param bcast         Broadcast to set or 0
@@ -720,8 +751,9 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
  * @return error code
  */
 static int
-nl_ip4_addr_add_del(int cmd, const char *ifname, uint32_t addr,
-                    unsigned int prefix, uint32_t bcast)
+nl_ip_addr_add_del(int cmd, const char *ifname,
+                   int family, gen_ip_address *addr,
+                   unsigned int prefix, uint32_t bcast)
 {
     int                 rc;
     struct rtnl_handle  rth;
@@ -736,6 +768,14 @@ nl_ip4_addr_add_del(int cmd, const char *ifname, uint32_t addr,
 
 #define AF_INET_DEFAULT_BITLEN   32
 #define AF_INET_DEFAULT_BYTELEN  4
+#define AF_INET6_DEFAULT_BITLEN 128
+#define AF_INET6_DEFAULT_BYTELEN 16
+
+    if (family == AF_INET6)
+    {
+        bcast = 0;
+        prefix = 0;
+    }
 
     ENTRY("cmd=%d ifname=%s addr=0x%x prefix=%u bcast=0x%x",
           cmd, ifname, addr, prefix, bcast);
@@ -745,23 +785,31 @@ nl_ip4_addr_add_del(int cmd, const char *ifname, uint32_t addr,
     memset(&brd, 0, sizeof(brd));
     memset(&rth, 0, sizeof(rth));
 
-    lcl.family = AF_INET;
-    lcl.bytelen = AF_INET_DEFAULT_BYTELEN;
-    lcl.bitlen = (prefix != 0) ? prefix : AF_INET_DEFAULT_BITLEN;
-    lcl.data[0] = addr;
+    lcl.family = family;
+    if (family == AF_INET)
+    {
+        lcl.bytelen = AF_INET_DEFAULT_BYTELEN;
+        lcl.bitlen = (prefix != 0) ? prefix : AF_INET_DEFAULT_BITLEN;
+    }
+    else
+    {
+        lcl.bytelen = AF_INET6_DEFAULT_BYTELEN;
+        lcl.bitlen = (prefix != 0) ? prefix : AF_INET6_DEFAULT_BITLEN;
+    }
+    memcpy(lcl.data, addr, lcl.bytelen);
 
     req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifaddrmsg));
     req.n.nlmsg_flags = NLM_F_REQUEST;
     req.n.nlmsg_type = cmd;
-    req.ifa.ifa_family = AF_INET;
+    req.ifa.ifa_family = family;
     req.ifa.ifa_prefixlen = lcl.bitlen;
 
     addattr_l(&req.n, sizeof(req), IFA_LOCAL, &lcl.data, lcl.bytelen);
 
     if (bcast != 0)
     {
-        brd.family = AF_INET;
-        brd.bytelen = AF_INET_DEFAULT_BYTELEN;
+        brd.family = family;
+        brd.bytelen = lcl.bytelen;
         brd.bitlen = lcl.bitlen;
         brd.data[0] = bcast;
         addattr_l(&req.n, sizeof(req), IFA_BROADCAST,
@@ -802,7 +850,7 @@ enum net_addr_ops {
 };
 
 /**
- * Modify AF_INET address.
+ * Modify AF_INET or AF_INET6 address.
  *
  * @param cmd           Command (see enum net_addr_ops)
  * @param ifname        Interface name
@@ -813,41 +861,61 @@ enum net_addr_ops {
  * @return error code
  */
 static int
-nl_ip4_addr_modify(enum net_addr_ops cmd,
+nl_ip_addr_modify(enum net_addr_ops cmd,
                    const char *ifname, const char *addr,
                    unsigned int *new_prefix, uint32_t *new_bcast)
 {
-    uint32_t        int_addr = 0;
     unsigned int    prefix = 0;
     uint32_t        bcast = 0;
     int             rc = 0;
+    int             family;
+    gen_ip_address  ip_addr;
+
+    /* If address contains ';', it is IPv6 address */
+    family = (strchr(addr, ':') == NULL) ? AF_INET : AF_INET6;
 
     if (cmd == NET_ADDR_ADD)
     {
-        if (inet_pton(AF_INET, addr, &int_addr) <= 0)
+        if (((family == AF_INET) &&
+             (inet_pton(family, addr, &ip_addr.ip4_addr) <= 0))
+          || ((family == AF_INET6) &&
+              (inet_pton(family, addr, &ip_addr.ip6_addr) <= 0)))
         {
-            ERROR("Failed to convert addrss '%s' from string", addr);
+            ERROR("Failed to convert address '%s' from string", addr);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
     }
-    else if (nl_find_net_addr(addr, ifname,
-                              &int_addr, &prefix, &bcast) == NULL)
+    else
+    {
+        if (((family == AF_INET) && 
+              (nl_find_net_addr(addr, ifname, &ip_addr,
+                                &prefix, &bcast) == NULL)) ||
+             ((family == AF_INET6) &&
+              (nl_find_net_addr(addr, ifname, &ip_addr,
+                                NULL, NULL) == NULL)))
     {
         ERROR("Address '%s' on interface '%s' not found", addr, ifname);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
+    }
 
     if (new_prefix != NULL)
         prefix = *new_prefix;
-    if (new_bcast != NULL)
+    /* Broadcast is supported in IPv4 only */    
+    if ((family == AF_INET) && (new_bcast != NULL))
         bcast = *new_bcast;
 
     if (cmd != NET_ADDR_ADD)
-        rc = nl_ip4_addr_add_del(RTM_DELADDR, ifname, int_addr, 0, 0);
+    {
+        rc = nl_ip_addr_add_del(RTM_DELADDR, ifname, family,
+                                &ip_addr, 0, 0);
+    }
 
     if (rc == 0 && cmd != NET_ADDR_DELETE)
-        rc = nl_ip4_addr_add_del(RTM_NEWADDR, ifname, int_addr,
-                                 prefix, bcast);
+    {
+        rc = nl_ip_addr_add_del(RTM_NEWADDR, ifname, family,
+                                &ip_addr, prefix, bcast);
+    }
 
     return rc;
 }
@@ -1478,17 +1546,19 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
     const char     *name;
-    uint32_t        new_addr;
     unsigned int    prefix;
     char           *end;
     uint32_t        mask;
     uint32_t        broadcast = 0;
 
+    int             family;
+    gen_ip_address  ip_addr;
+
     UNUSED(gid);
     UNUSED(oid);
 
-    /* Check that address has not already been assigned to any interface */
-    name = nl_find_net_addr(addr, NULL, &new_addr, NULL, NULL);
+    /* Check that address has not been assigned to any interface yet*/
+    name = nl_find_net_addr(addr, NULL, &ip_addr, NULL, NULL);
     if (name != NULL)
     {
         ERROR("%s(): Address '%s' already exists on interface '%s'",
@@ -1496,10 +1566,15 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
 
-    /* Validate address to be added */
-    if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
-        new_addr == 0 ||
-        (ntohl(new_addr) & 0xe0000000) == 0xe0000000)
+    family = (strchr(addr, ':') == NULL) ? AF_INET : AF_INET6;
+
+    /* Validate address to be added */    
+    if ((family == AF_INET &&
+        (inet_pton(family, addr, &ip_addr.ip4_addr) <= 0 ||
+         ip_addr.ip4_addr == 0 ||
+         ntohl(ip_addr.ip4_addr) & 0xe0000000) == 0xe0000000) ||
+        (family == AF_INET6 &&
+         inet_pton(family, addr, &ip_addr.ip6_addr) <= 0))
     {
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
@@ -1511,32 +1586,36 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         ERROR("Invalid value '%s' of prefix length", value);
         return TE_RC(TE_TA_UNIX, TE_EFMT);
     }
-    if (prefix > 32)
+    if (((family == AF_INET) && (prefix > 32)) ||
+       ((family == AF_INET6) && (prefix > 128)))
     {
         ERROR("Invalid prefix '%s' to be set", value);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    if (prefix == 0)
+    if (family == AF_INET)
     {
-        /* Use default prefix in the cast of 0 */
-        mask = ((new_addr) & htonl(0x80000000)) == 0 ? htonl(0xFF000000) :
-               ((new_addr) & htonl(0xC0000000)) == htonl(0x80000000) ?
-               htonl(0xFFFF0000) : htonl(0xFFFFFF00);
-        MASK2PREFIX(ntohl(mask), prefix);
+        if (prefix == 0)
+        {
+            /* Use default prefix in the cast of 0 */
+            mask = ((ip_addr.ip4_addr) & htonl(0x80000000)) == 0 ?
+                   htonl(0xFF000000) :
+                   ((ip_addr.ip4_addr) & htonl(0xC0000000)) ==
+                   htonl(0x80000000) ?
+                   htonl(0xFFFF0000) : htonl(0xFFFFFF00);
+            MASK2PREFIX(ntohl(mask), prefix);
+        }
+        else
+        {
+            mask = htonl(PREFIX2MASK(prefix));
+        }
+        /* Prepare broadcast address to be set */
+        broadcast = (~mask) | ip_addr.ip4_addr;
     }
-    else
-    {
-        mask = htonl(PREFIX2MASK(prefix));
-    }
-    /* Prepare broadcast address to be set */
-    broadcast = (~mask) | new_addr;
 
-    return nl_ip4_addr_modify(NET_ADDR_ADD, ifname, addr,
+    return nl_ip_addr_modify(NET_ADDR_ADD, ifname, addr,
                               &prefix, &broadcast);
 }
 #endif
-
-
 
 #ifdef USE_IOCTL
 /**
@@ -1705,12 +1784,12 @@ net_addr_del(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
 
-    return nl_ip4_addr_modify(NET_ADDR_DELETE, ifname, addr, NULL, NULL);
+    return nl_ip_addr_modify(NET_ADDR_DELETE, ifname, addr, NULL, NULL);
 }
 #endif
 
 
-#define ADDR_LIST_BULK      (INET_ADDRSTRLEN * 4)
+#define ADDR_LIST_BULK      (INET6_ADDRSTRLEN * 4)
 
 /**
  * Get instance list for object "agent/interface/net_addr".
@@ -1720,20 +1799,24 @@ net_addr_del(unsigned int gid, const char *oid,
  * @param ifname        interface name
  *
  * @return error code
- * @retval 0                    success
+ * @retval 0                success
  * @retval TE_ENOENT        no such instance
- * @retval TE_ENOMEM               cannot allocate memory
+ * @retval TE_ENOMEM        cannot allocate memory
  */
+
+
 #ifdef USE_NETLINK
 static int
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
-    int           len = ADDR_LIST_BULK;
+    int                len = ADDR_LIST_BULK;
     int                rc;
     struct nlmsg_list *ainfo = NULL;
+    struct nlmsg_list *a6info = NULL;
     struct nlmsg_list *n = NULL;
     int                ifindex;
+    int                inet6_addresses = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1750,13 +1833,30 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         ERROR("calloc() failed");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    rc = ip_addr_get(AF_INET, &ainfo);
-    if (rc != 0)
+    if ((rc = ip_addr_get(AF_INET, &ainfo)) != 0)
     {
-        ERROR("%s: ip_addr_get() failed", __FUNCTION__);
+        ERROR("%s: ip_addr_get() for IPv4 failed", __FUNCTION__);
         return rc;
     }
 
+    if ((rc = ip_addr_get(AF_INET6, &a6info)) != 0)
+    {
+        ERROR("%s: ip_addr_get() for IPv6 failed", __FUNCTION__);
+        return rc;
+    }
+
+    /* Join lists of IPv4 and IPv6 addresses */
+    if (ainfo == NULL)
+    {
+        ainfo = a6info;
+    }
+    else
+    {
+        for (n = ainfo; n->next != NULL; n = n->next);
+
+        n->next = a6info;
+    }
+    
     ifindex = ll_name_to_index(ifname);
     if (ifindex <= 0)
     {
@@ -1769,6 +1869,12 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         struct nlmsghdr *hdr = &n->h;
         struct ifaddrmsg *ifa = NLMSG_DATA(hdr);
         struct rtattr * rta_tb[IFA_MAX+1];
+
+        /* IPv4 addresses are all printed, start printing IPv6 addresses */
+        if (n == a6info)
+        {
+            inet6_addresses = 1;
+        }            
 
         if (hdr->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
         {
@@ -1787,7 +1893,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         if (!rta_tb[IFA_ADDRESS])
             rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
 
-        if (len - strlen(*list) <= INET_ADDRSTRLEN)
+        if (len - strlen(*list) <= INET6_ADDRSTRLEN)
         {
             char *tmp;
 
@@ -1801,11 +1907,63 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
             }
             *list = tmp;
         }
-        sprintf(*list + strlen(*list), "%d.%d.%d.%d ",
-                ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[0],
-                ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[1],
-                ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[2],
-                ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[3]);
+
+        if (!inet6_addresses)
+        {
+             sprintf(*list + strlen(*list), "%d.%d.%d.%d ",
+                     ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[0],
+                     ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[1],
+                     ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[2],
+                     ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[3]);
+        }
+        else
+        {
+            int i;
+            int zeroes_printed = 0;
+
+           /* Print IPv6 address */
+            for (i = 0; i < 8; i++)
+            {
+                /*
+                 * zeroes_printed is equal to 1 while zeroes are skipped
+                 * and replaced with '::'
+                 */
+                if (((uint16_t *)RTA_DATA(rta_tb[IFA_LOCAL]))[i] == 0)
+                {
+                    if (zeroes_printed != 2)
+                    {
+                        zeroes_printed = 1;
+                        /*
+                         * If zero sequence starts from the beginning,
+                         * print a colon 
+                         */
+                        if (i == 0)
+                        {
+                            sprintf(*list + strlen(*list), ":");
+                        }                            
+                        continue;
+                    }
+                }
+                else if (zeroes_printed == 1)
+                {
+                    zeroes_printed = 2;
+                    sprintf(*list + strlen(*list), ":");
+                }       
+
+                sprintf(*list + strlen(*list), "%x",
+                        ntohs(((uint16_t *)
+                        RTA_DATA(rta_tb[IFA_LOCAL]))[i]));
+                /* 
+                 * Print a colon after each 4 hexadecimal digits
+                 * except the last ones 
+                 */
+                if (i < 7)
+                {
+                    sprintf(*list + strlen(*list), ":");
+                }
+            }
+            sprintf(*list + strlen(*list), " ");
+        }
     }
     free_nlmsg(ainfo);
     return 0;
@@ -1966,14 +2124,14 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
         ERROR("Invalid value '%s' of prefix length", value);
         return TE_RC(TE_TA_UNIX, TE_EFMT);
     }
-    if (prefix > 32)
+    if ((strchr(addr, ':') == NULL && prefix > 32) || prefix > 128)
     {
         ERROR("Invalid prefix '%s' to be set", value);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
 #if defined(USE_NETLINK)
-    return nl_ip4_addr_modify(NET_ADDR_MODIFY, ifname, addr, &prefix, NULL);
+    return nl_ip_addr_modify(NET_ADDR_MODIFY, ifname, addr, &prefix, NULL);
 #elif defined(USE_IOCTL)
     {
         const char *name;
@@ -2007,7 +2165,7 @@ static int
 broadcast_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
-    uint32_t    bcast;
+    uint32_t    bcast = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2078,7 +2236,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
     }
 
 #if defined(USE_NETLINK)
-    return nl_ip4_addr_modify(NET_ADDR_MODIFY, ifname, addr, NULL, &bcast);
+    return nl_ip_addr_modify(NET_ADDR_MODIFY, ifname, addr, NULL, &bcast);
 #elif defined(USE_IOCTL)
     {
         const char *name;
@@ -2854,7 +3012,7 @@ route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
     req.n.nlmsg_flags = NLM_F_REQUEST | flags;
     req.n.nlmsg_type = action;
 
-    req.r.rtm_family = AF_INET;
+    req.r.rtm_family = SIN(&rt_info->dst)->sin_family;
     req.r.rtm_table = RT_TABLE_MAIN;
     req.r.rtm_scope = RT_SCOPE_NOWHERE;
 
@@ -2941,7 +3099,7 @@ rt_info2rtentry(const ta_rt_info_t *rt_info,
     memcpy(&(rt->rt_dst), &(rt_info->dst), sizeof(rt->rt_dst));
 
 #ifdef __linux__
-    rt->rt_genmask.sa_family = AF_INET;
+    rt->rt_genmask.sa_family = SIN(rt_info)->sin_family;
     ((struct sockaddr_in *)&(rt->rt_genmask))->sin_addr.s_addr =
         htonl(PREFIX2MASK(rt_info->prefix));
 #endif
@@ -3010,6 +3168,10 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
     int                  len = n->nlmsg_len;
     rtnl_cb_user_data_t *user_data = (rtnl_cb_user_data_t *)arg;
     struct rtattr       *tb[RTA_MAX + 1] = {};
+    int                  family;
+    struct in6_addr      addr_any = IN6ADDR_ANY_INIT;
+
+    char                 sss[46];
 
     UNUSED(who);
 
@@ -3019,30 +3181,52 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
     if (n->nlmsg_type != RTM_NEWROUTE && n->nlmsg_type != RTM_DELROUTE)
         return 0;
     
-    if (r->rtm_family != AF_INET)
+    if (r->rtm_family != AF_INET && r->rtm_family != AF_INET6)
+    {
         return 0;
+    }
 
     len -= NLMSG_LENGTH(sizeof(*r));
 
     parse_rtattr(tb, RTA_MAX, RTM_RTA(r), len);
 
-    if (((tb[RTA_DST] == NULL &&
-          SIN(&(user_data->rt_info->dst))->sin_addr.s_addr == INADDR_ANY) ||
-         (tb[RTA_DST] != NULL &&
+    family = r->rtm_family;
+    /* Check the case of INADDR_ANY address */
+    if ((tb[RTA_DST] == NULL &&
+         ((family == AF_INET &&
+           SIN(&(user_data->rt_info->dst))->sin_addr.s_addr == INADDR_ANY)
+       || (family == AF_INET6 &&
+           memcmp(&SIN6(&(user_data->rt_info->dst))->sin6_addr.in6_u,
+                  &addr_any, sizeof(struct in6_addr)) == 0))) ||
+    /* Check that destination address is equal to requested one */
+        (tb[RTA_DST] != NULL &&
+         ((family == AF_INET &&
+           memcmp(RTA_DATA(tb[RTA_DST]),
+                  &(SIN(&(user_data->rt_info->dst))->sin_addr),
+                  sizeof(struct in_addr)) == 0) ||
+          (family == AF_INET6 &&
           memcmp(RTA_DATA(tb[RTA_DST]),
-                 &(SIN(&(user_data->rt_info->dst))->sin_addr),
-                 sizeof(SIN(&(user_data->rt_info->dst))->sin_addr)) 
-                     == 0)) &&
-        user_data->rt_info->prefix == r->rtm_dst_len &&
-        (((user_data->rt_info->flags & TA_RT_INFO_FLG_GW) != 0 &&
-          tb[RTA_GATEWAY] != NULL &&
-          memcmp(RTA_DATA(tb[RTA_GATEWAY]),
-                 &(SIN(&(user_data->rt_info->gw))->sin_addr),
-                 sizeof(SIN(&(user_data->rt_info->gw))->sin_addr)) == 0) ||
-         ((user_data->rt_info->flags & TA_RT_INFO_FLG_IF) != 0 &&
-          tb[RTA_OIF] != NULL &&
-          user_data->if_index == *(int*)RTA_DATA(tb[RTA_OIF]))))
-    {
+                  &(SIN6(&(user_data->rt_info->dst))->sin6_addr),
+                  sizeof(struct in6_addr)) == 0)) &&
+         /* If so, get interface index (if specified) */      
+         ((((user_data->rt_info->flags & TA_RT_INFO_FLG_IF) != 0) &&
+            tb[RTA_OIF] != NULL &&
+            user_data->if_index == *(int*)RTA_DATA(tb[RTA_OIF])) ||
+         /* If not specified, get gateway address */
+           ((user_data->rt_info->flags & TA_RT_INFO_FLG_GW) != 0 &&
+            tb[RTA_GATEWAY] != NULL &&
+
+            (((family == AF_INET &&
+              memcmp(RTA_DATA(tb[RTA_GATEWAY]),
+                     &SIN(&(user_data->rt_info->gw))->sin_addr,
+                     sizeof(struct in_addr)) == 0) ||
+             (family == AF_INET6 &&
+              memcmp(RTA_DATA(tb[RTA_GATEWAY]),
+                     &SIN6(&(user_data->rt_info->gw))->sin6_addr,
+                     sizeof(struct in6_addr)) == 0))))) &&
+            /* Check that prefix is correct */
+             user_data->rt_info->prefix == r->rtm_dst_len))
+   {
         if (tb[RTA_PRIORITY] != NULL)
         {
             user_data->rt_info->flags |= TA_RT_INFO_FLG_METRIC;
@@ -3109,7 +3293,10 @@ route_get(const char *route, ta_rt_info_t *rt_info)
     ENTRY("%s", route);
 
     if ((rc = ta_rt_parse_inst_name(route, rt_info)) != 0)
+    {
+        ERROR("Error parsing instance name: %s", route);
         return rc;
+    }
 
 #ifdef USE_NETLINK_ROUTE
 
@@ -3135,7 +3322,8 @@ route_get(const char *route, ta_rt_info_t *rt_info)
             return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
         }
     }
-    if (rtnl_wilddump_request(&rth, AF_INET, RTM_GETROUTE) < 0)
+    if (rtnl_wilddump_request(&rth, SIN(&rt_info->dst)->sin_family,
+                              RTM_GETROUTE) < 0)
     {
         rtnl_close(&rth);
         ERROR("Cannot send dump request to netlink");
@@ -3157,6 +3345,7 @@ route_get(const char *route, ta_rt_info_t *rt_info)
 
     if (!user_data.filled)
     {
+        ERROR("Canno find %s", route);
         return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
@@ -3164,14 +3353,25 @@ route_get(const char *route, ta_rt_info_t *rt_info)
 
 #else
 
+    PRINT("DANGEROUS CODE!!!");
+
     route_addr = ((struct sockaddr_in *)&(rt_info->dst))->sin_addr.s_addr;
     route_mask = htonl(PREFIX2MASK(rt_info->prefix));
     route_gw = ((struct sockaddr_in *)&(rt_info->gw))->sin_addr.s_addr;
 
-    if ((fp = fopen("/proc/net/route", "r")) == NULL)
+    if (SIN(&rt_info->dst)->sin_family == AF_INET)
     {
-        ERROR("Failed to open /proc/net/route for reading: %s",
-              strerror(errno));
+        route_table = ip4_route_table;
+    }
+    else if (SIN(&rt_info->dst)->sin_family == AF_INET6)
+    {
+        route_table = ip6_route_table;
+    }
+
+    if ((fp = fopen(route_table, "r")) == NULL)
+    {
+        ERROR("Failed to open %s for reading: %s", route_table,
+               strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
@@ -3187,9 +3387,8 @@ route_get(const char *route, ta_rt_info_t *rt_info)
         int          win;
         int          irtt;
 
-        fscanf(fp, "%x %x %x %d %d %d %x %d %d %d", &addr, &gateway,
-               &flags, (int *)trash, (int *)trash, &metric, &mask,
-               &mtu, &win, &irtt);
+        fscanf(fp, "%x %x %x %*d %*d %d %x %d %d %d", &addr, &gateway,
+               &flags, &metric, &mask, &mtu, &win, &irtt);
         VERB("%s: Route %s %x %x %x %d %d %d %x %d %d %d", __FUNCTION__,
              ifname, addr, gateway, flags, 0, 0, metric, mask,
              mtu, win, irtt);
@@ -3371,8 +3570,8 @@ route_del(unsigned int gid, const char *oid, const char *route)
  * @param list          location for the list pointer
  *
  * @return error code
- * @retval 0                    success
- * @retval TE_ENOENT      no such instance
+ * @retval 0                       success
+ * @retval TE_ENOENT               no such instance
  * @retval TE_ENOMEM               cannot allocate memory
  */
 static int
@@ -3411,9 +3610,8 @@ route_list(unsigned int gid, const char *oid, char **list)
         int          win;
         int          irtt;
 
-        fscanf(fp, "%x %x %x %d %d %d %x %d %d %d", &addr, &gateway,
-               &flags, (int *)trash, (int *)trash, &metric, &mask,
-               &mtu, &win, &irtt);
+        fscanf(fp, "%x %x %x %*d %*d %d %x %d %d %d", &addr, &gateway,
+               &flags, &metric, &mask, &mtu, &win, &irtt);
 
         if (flags & RTF_UP)
         {
@@ -3435,13 +3633,99 @@ route_list(unsigned int gid, const char *oid, char **list)
                 snprintf(ptr, end_ptr - ptr, ",dev=%s", ifname);
             }
             ptr += strlen(ptr);
-
+#if 1 
+            if (metric > 0)
+            {
+                snprintf(ptr, end_ptr - ptr, ",metric=%d", metric);
+                ptr += strlen(ptr);
+            }
+#endif
             snprintf(ptr, end_ptr - ptr, " ");
             ptr += strlen(ptr);
         }
         fgets(trash, sizeof(trash), fp);
     }
     fclose(fp);
+
+    if ((fp = fopen("/proc/net/ipv6_route", "r")) == NULL)
+    {
+        ERROR("Failed to open /proc/net/ipv6_route for reading: %s",
+              strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    
+#define IPV6_RAW_STR_LEN  33
+#define IPV6_RAW_PRINT(addr, _ptr)                                    \
+do {                                                                  \
+    char *p;                                                          \
+    char *p0;                                                         \
+    for (p = addr; *p != '\0' && strncmp (p, "0000", 4) != 0; p += 4) \
+    {                                                                 \
+        if (p != addr)                                                \
+            snprintf(_ptr++, MIN(2, end_ptr-_ptr), ":");              \
+        for (p0 = p; *p0 == '0'; p0++);                               \
+                                                                      \
+        snprintf(_ptr, MIN(5 - (p0 - p), end_ptr - _ptr), p0);        \
+        _ptr += strlen(_ptr);                                         \
+    }                                                                 \
+    for (; *p != '\0' && strncmp (p, "0000", 4) == 0; p += 4);        \
+                                                                      \
+    snprintf(_ptr++, MIN(2, end_ptr-_ptr), ":");                      \
+    if (*p == '\0')                                                   \
+        snprintf(_ptr++, MIN(2, end_ptr-_ptr), ":");                  \
+                                                                      \
+    for (; *p != '\0'; p += 4)                                        \
+    {                                                                 \
+        for (p0 = p; *p0 == '0'; p0++);                               \
+                                                                      \
+        snprintf(_ptr++, MIN(2, end_ptr-_ptr), ":");                  \
+        snprintf(_ptr, MIN(5 - (p0 - p), end_ptr-_ptr), p0);          \
+        _ptr += strlen(_ptr);                                         \
+    }                                                                 \
+} while (0)
+    
+    {        
+        char         mask[IPV6_RAW_STR_LEN];
+        char         dst[IPV6_RAW_STR_LEN];
+        char         gate[IPV6_RAW_STR_LEN];
+        uint32_t     prefix = 0;
+        uint32_t     flags = 0;
+        int          metric;
+        
+        while (fscanf(fp, "%s %x %s %*x %s %x %*x %*x %x %s", dst, &prefix,
+                      mask, gate, &metric, &flags, ifname) >0 )
+        {
+            if (flags & RTF_UP)
+            {
+                IPV6_RAW_PRINT(dst, ptr);
+                snprintf(ptr, end_ptr - ptr, "|%d,", prefix);
+                ptr += strlen(ptr);
+                if (flags & RTF_GATEWAY)
+                {
+                    snprintf(ptr, end_ptr - ptr, "gw=");
+                    ptr += strlen(ptr);
+                    IPV6_RAW_PRINT(gate, ptr);
+                }
+                else
+                {
+                    snprintf(ptr, end_ptr - ptr, "dev=%s", ifname);
+                }
+                ptr += strlen(ptr);
+#if 1
+                if (metric > 0)
+                {
+                    snprintf(ptr, end_ptr - ptr, ",metric=%d", metric);
+                    ptr += strlen(ptr);
+                }
+#endif 
+                snprintf(ptr, end_ptr - ptr, " ");
+                ptr += strlen(ptr);
+            }
+        }
+        fgets(trash, sizeof(trash), fp);
+        fclose(fp);
+    }
+
 #else
     UNUSED(ptr);
     UNUSED(end_ptr);

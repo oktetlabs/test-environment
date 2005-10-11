@@ -128,6 +128,8 @@ typedef struct tapi_rt_entry {
 #define TAPI_RT_GW 0x0001
 /** Route is direct, so interface name is specified */
 #define TAPI_RT_IF 0x0002
+/** Metric is specified for the route */
+#define TAPI_RT_METRIC 0x0004
 /*@}*/
 
 /**
@@ -160,6 +162,7 @@ extern int tapi_cfg_get_route_table(const char *ta, int addr_family,
  * @param flags        Flags to be added for the route
  *                     (see route flags in net/route.h system header)
  * @param metric       Route metric
+ * @param tos          Type of service
  * @param mtu          TCP Maximum Segment Size (MSS) on the route
  * @param win          TCP window size for connections over this route
  * @param irtt         initial round trip time (irtt) for TCP connections
@@ -177,7 +180,8 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
                               const void *dst_addr, int prefix,
                               const void *gw_addr, const char *dev,
                               uint32_t flags,
-                              int metric, int mtu, int win, int irtt,
+                              int metric, int tos, int mtu, int win,
+                              int irtt,
                               cfg_handle *rt_hndl);
 
 /**
@@ -192,6 +196,7 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
  * @param flags        Flags to be added for the route
  *                     (see route flags in net/route.h system header)
  * @param metric       Route metric
+ * @param tos          Route type of service
  * @param mtu          TCP Maximum Segment Size (MSS) on the route
  * @param win          TCP window size for connections over this route
  * @param irtt         initial round trip time (irtt) for TCP connections
@@ -209,7 +214,8 @@ extern int tapi_cfg_modify_route(const char *ta, int addr_family,
                                  const void *dst_addr, int prefix,
                                  const void *gw_addr, const char *dev,
                                  uint32_t flags,
-                                 int metric, int mtu, int win, int irtt,
+                                 int metric, int tos, int mtu, int win,
+                                 int irtt,
                                  cfg_handle *rt_hndl);
 
 /**
@@ -224,6 +230,7 @@ extern int tapi_cfg_modify_route(const char *ta, int addr_family,
  * @param flags        Flags to be added for the route
  *                     (see route flags in net/route.h system header)
  * @param metric       Route metric
+ * @param tos          Route type of service
  * @param mtu          TCP Maximum Segment Size (MSS) on the route
  * @param win          TCP window size for connections over this route
  * @param irtt         initial round trip time (irtt) for TCP connections
@@ -240,7 +247,8 @@ extern int tapi_cfg_del_route_tmp(const char *ta, int addr_family,
                                   const void *dst_addr, int prefix,
                                   const void *gw_addr, const char *dev,
                                   uint32_t flags,
-                                  int metric, int mtu, int win, int irtt);
+                                  int metric, int tos, int mtu,
+                                  int win, int irtt);
 
 /**
  * Delete route by handle got with tapi_cfg_add_route() function
@@ -270,7 +278,7 @@ tapi_cfg_add_route_via_gw(const char *ta, int addr_family,
     cfg_handle cfg_hndl;
 
     return tapi_cfg_add_route(ta, addr_family, dst_addr, prefix,
-                              gw_addr, NULL, 0, 0, 0, 0, 0, &cfg_hndl);
+                              gw_addr, NULL, 0, 0, 0, 0, 0, 0, &cfg_hndl);
 }
 
 /**
@@ -290,7 +298,7 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
                           const void *gw_addr)
 {
     return tapi_cfg_del_route_tmp(ta, addr_family, dst_addr, prefix,
-                                  gw_addr, NULL, 0, 0, 0, 0, 0);
+                                  gw_addr, NULL, 0, 0, 0, 0, 0, 0);
 }
 
 /**
