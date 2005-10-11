@@ -269,7 +269,7 @@ rcf_ch_start_task(int *pid,
                                   params[3], params[4], params[5],
                                   params[6], params[7], params[8],
                                   params[9]);
-            exit(0);
+            _exit(0);
         }
         else if (*pid < 0)
         {
@@ -302,7 +302,7 @@ rcf_ch_start_task(int *pid,
             execlp(rtn, rtn, 
                    params[0], params[1], params[2], params[3], params[4], 
                    params[5], params[6], params[7], params[8], params[9]);
-            exit(0);
+            _exit(0);
         }
         else if (*pid < 0)
         {
@@ -568,7 +568,7 @@ ta_sigint_handler(int sig)
      * to make a mark, that TA was killed.
      */
     fprintf(stderr, "Test Agent killed by %d signal\n", sig);
-    exit(EXIT_FAILURE);
+    _exit(EXIT_FAILURE);
 }
 
 /**
