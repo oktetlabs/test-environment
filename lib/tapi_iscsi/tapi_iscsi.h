@@ -383,10 +383,11 @@ extern int tapi_iscsi_initiator_get_local_parameter(const char *ta,
                                             const char *value);
 #endif
 
-extern iscsi_target_id tapi_iscsi_add_target(const char *target_addr, 
-                                             const int target_port);
+extern iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
+                                      const struct sockaddr *target_addr);
 
-extern int tapi_iscsi_del_target(iscsi_target_id tgt_id);
+extern int tapi_iscsi_initiator_del_target(const char *ta,
+                                      iscsi_target_id tgt_id);
 
 /**
  * Function tries to establish connection with the Target.
