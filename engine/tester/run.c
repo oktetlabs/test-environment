@@ -402,7 +402,7 @@ vars_args_iterations(test_vars_args        *vas,
                  v != NULL || (list != NULL && more_in_list);
                  ++value_i)
             {
-                value = (v) ? : var_arg_preferred_value(va);
+                value = (v != NULL) ? v : var_arg_preferred_value(va);
                 /* All the times except to first, move to the clone */
                 if (i_clone != NULL)
                     i = i_clone;
