@@ -239,7 +239,7 @@ process_opts()
                     OPTS="${CONF_DIR}/${OPTS}" ;
                 fi ;
                 if test -f ${OPTS} ; then
-                    process_opts `cat ${OPTS}` ;
+                    process_opts $(cat ${OPTS}) ;
                 else
                     echo "File with options ${OPTS} not found" >&2 ;
                     exit 1 ;
@@ -375,7 +375,7 @@ fi
 export TE_NO_AUTOTOOL
 
 for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
-    CONF_FILE=`eval echo '$CONF_'$i` ;
+    CONF_FILE=$(eval echo '$CONF_'$i) ;
     if test -n "${CONF_FILE}" -a "${CONF_FILE:0:1}" != "/" ; then
         eval CONF_$i="${CONF_DIR}/${CONF_FILE}" ;
     fi
@@ -426,8 +426,8 @@ if test -z "$TE_INSTALL" ; then
             TE_INSTALL=$DISPATCHER_DIR/build/inst
         fi
     else
-        TE_PATH=`dirname ${DISPATCHER_DIR}`
-        TE_INSTALL=`dirname ${TE_PATH}`
+        TE_PATH="$(dirname "${DISPATCHER_DIR}")"
+        TE_INSTALL="$(dirname "${TE_PATH}")"
     fi
     if test -z "${QUIET}" ; then
         echo "Exporting TE installation directory as TE_INSTALL:"
@@ -449,19 +449,19 @@ if test -z "${TE_PATH}" ; then
 fi    
 
 if test -z "${TE_PATH}" ; then
-    if test -e ${CONF_BUILDER} ; then
-        TMP=`cat ${CONF_BUILDER} | grep TE_HOST`
-        TMP=`echo 'changequote([,]) define([TE_HOST], [host=$1])' "${TMP}" | m4 | grep 'host=' | tail -n 1`
-        eval $TMP
+    if test -e "${CONF_BUILDER}" ; then
+        tmp=`cat "${CONF_BUILDER}" | grep TE_HOST`
+        tmp=`echo 'changequote([,]) define([TE_HOST], [host=$1])' "${tmp}" | m4 | grep 'host=' | tail -n 1`
+        eval $tmp
     fi
     if test -z "${host}" ; then
-        host=`${TE_BASE}/engine/builder/te_discover_host` 
+        host=$(${TE_BASE}/engine/builder/te_discover_host)
     fi        
     if test -z "$host" ; then
         echo 'Cannot determine host platform.' >&2
         exit_with_log
     fi
-    TE_PATH=${TE_INSTALL}/${host}
+    TE_PATH="${TE_INSTALL}/${host}"
 fi
 
 # Export PATH
@@ -470,26 +470,25 @@ if test -z "${QUIET}" ; then
     echo "    ${TE_PATH}/bin"
 fi
 export TE_PATH
-export PATH=${TE_PATH}/bin:$PATH ;
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${TE_PATH}/lib
+export PATH="${TE_PATH}/bin:$PATH"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${TE_PATH}/lib"
 
 
 if test -z "$TE_INSTALL_NUT" ; then
-    export TE_INSTALL_NUT=${TE_INSTALL}/nuts
+    export TE_INSTALL_NUT="${TE_INSTALL}/nuts"
 fi
 
 if test -z "$TE_INSTALL_SUITE" ; then
-    export TE_INSTALL_SUITE=${TE_INSTALL}/suites
+    export TE_INSTALL_SUITE="${TE_INSTALL}/suites"
 fi
 
-TMP=`which te_log_init 2>/dev/null` ;
-if test -z "$TMP" ; then
+if test -z "$(which te_log_init 2>/dev/null)" ; then
     if test -z "$BUILDER" ; then
         echo "TE core executables are not installed - exiting." >&2
         exit_with_log
     fi
     #Export path to logging and building scripts, which are not installed yet
-    export PATH=$PATH:${TE_BASE}/engine/logger:${TE_BASE}/engine/builder
+    export PATH="$PATH:${TE_BASE}/engine/logger:${TE_BASE}/engine/builder"
 fi
 
 # Intitialize log
@@ -504,7 +503,7 @@ fi
 # Build Test Environment
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 if test -n "$BUILDER" ; then
-    pushd ${TE_BASE} >/dev/null
+    pushd "${TE_BASE}" >/dev/null
     if test ! -e configure ; then
         if test -n "${QUIET}" ; then
             echo "Calling aclocal/autoconf/automake in ${PWD}" \
@@ -512,20 +511,20 @@ if test -n "$BUILDER" ; then
         else
             echo "Calling aclocal/autoconf/automake in ${PWD}"
         fi
-        aclocal -I ${TE_BASE}/auxdir || exit_with_log
+        aclocal -I "${TE_BASE}/auxdir" || exit_with_log
         autoconf || exit_with_log
         automake || exit_with_log
     fi
     popd >/dev/null
     # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
     if test -n "${QUIET}" ; then
-        ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
-            --with-config=${CONF_BUILDER} >"${TE_BUILD_LOG}" || \
+        ${TE_BASE}/configure -q --prefix="${TE_INSTALL}" \
+            --with-config="${CONF_BUILDER}" >"${TE_BUILD_LOG}" || \
             exit_with_log ;
         make install >>"${TE_BUILD_LOG}" || exit_with_log ;
     else
-        ${TE_BASE}/configure -q --prefix=${TE_INSTALL} \
-            --with-config=${CONF_BUILDER} || exit_with_log ;
+        ${TE_BASE}/configure -q --prefix="${TE_INSTALL}" \
+            --with-config="${CONF_BUILDER}" || exit_with_log ;
         make install || exit_with_log ;
     fi
 fi
@@ -583,7 +582,7 @@ export TE_CS="TE_CS_"$$
 
 # Run RGT in live mode in background
 if test -n "${LIVE_LOG}" ; then
-    rgt-conv -m live -f ${TE_LOG_RAW} &
+    rgt-conv -m live -f "${TE_LOG_RAW}" &
     LIVE_LOG_PID=$!
 fi
 
@@ -602,15 +601,15 @@ CS_SHUT=te_cs_shutdown
 
 start_daemon() {
     DAEMON=$1
-    if test ${START_OK} -eq 0 -a -n "`eval echo '$'$DAEMON`" ; then
-        DAEMON_NAME="`eval echo '${'$DAEMON'_NAME}'`"
-        DAEMON_EXEC="`eval echo '${'$DAEMON'_EXEC}'`"
-        DAEMON_OPTS="`eval echo '${'$DAEMON'_OPTS}'`"
-        DAEMON_CONF="`eval echo '${CONF_'$DAEMON'}'`"
+    if test ${START_OK} -eq 0 -a -n "$(eval echo '$'$DAEMON)" ; then
+        DAEMON_NAME="$(eval echo '${'$DAEMON'_NAME}')"
+        DAEMON_EXEC="$(eval echo '${'$DAEMON'_EXEC}')"
+        DAEMON_OPTS="$(eval echo '${'$DAEMON'_OPTS}')"
+        DAEMON_CONF="$(eval echo '${CONF_'$DAEMON'}')"
         te_log_message Engine Dispatcher \
             "Start ${DAEMON_NAME}: ${DAEMON_OPTS} ${DAEMON_CONF}"
         myecho -n "--->>> Starting ${DAEMON_NAME}... "
-        if test -n "`eval echo '${VG_'$DAEMON'}'`" ; then
+        if test -n "$(eval echo '${VG_'$DAEMON'}')" ; then
             # Run in foreground under valgrind
             valgrind ${VG_OPTIONS} ${DAEMON_EXEC} ${DAEMON_OPTS} \
                 "${DAEMON_CONF}" 2>valgrind.${DAEMON_EXEC}
@@ -620,7 +619,7 @@ start_daemon() {
         START_OK=$?
         if test ${START_OK} -eq 0 ; then
             myecho "done"
-            eval `echo $DAEMON'_OK'`=yes
+            eval $(echo $DAEMON'_OK')=yes
         else
             myecho "failed"
         fi
@@ -661,9 +660,9 @@ fi
 
 shutdown_daemon() {
     DAEMON=$1
-    if test -n "`eval echo '${'$DAEMON'_OK}'`" ; then
-        DAEMON_NAME=`eval echo '${'$DAEMON'_NAME}'`
-        DAEMON_SHUT=`eval echo '${'$DAEMON'_SHUT}'`
+    if test -n "$(eval echo '${'$DAEMON'_OK}')" ; then
+        DAEMON_NAME="$(eval echo '${'$DAEMON'_NAME}')"
+        DAEMON_SHUT="$(eval echo '${'$DAEMON'_SHUT}')"
         te_log_message Engine Dispatcher "Shutdown ${DAEMON_NAME}"
         myecho -n "--->>> Shutdown ${DAEMON_NAME}... "
         ${DAEMON_SHUT}
@@ -708,13 +707,13 @@ if test -n "${RGT_LOG_TXT}" -o -n "${RGT_LOG_HTML_PLAIN}" ; then
     # Generate XML log do not taking into account control messages
     LOG_XML_PLAIN="log_plain.xml"
     rgt-conv --no-cntrl-msg  -m postponed ${CONF_RGT} \
-        -f ${TE_LOG_RAW} -o ${LOG_XML_PLAIN}
-    if test $? -eq 0 -a -e ${LOG_XML_PLAIN} ; then
+        -f "${TE_LOG_RAW}" -o "${LOG_XML_PLAIN}"
+    if test $? -eq 0 -a -e "${LOG_XML_PLAIN}" ; then
         if test -n "${RGT_LOG_TXT}" ; then
-            rgt-xml2text -f ${LOG_XML_PLAIN} -o ${RGT_LOG_TXT}
+            rgt-xml2text -f "${LOG_XML_PLAIN}" -o "${RGT_LOG_TXT}"
         fi
         if test -n "${RGT_LOG_HTML_PLAIN}" ; then
-            rgt-xml2html -f ${LOG_XML_PLAIN} -o ${RGT_LOG_HTML_PLAIN}
+            rgt-xml2html -f "${LOG_XML_PLAIN}" -o "${RGT_LOG_HTML_PLAIN}"
         fi
     fi
 fi
@@ -722,9 +721,9 @@ if test -n "${RGT_LOG_HTML}" ; then
     # Generate XML log taking into account control messages
     LOG_XML_STRUCT="log_struct.xml"
     rgt-conv -m postponed ${CONF_RGT} \
-        -f ${TE_LOG_RAW} -o ${LOG_XML_STRUCT}
-    if test $? -eq 0 -a -e ${LOG_XML_STRUCT} ; then
-        rgt-xml2html-multi ${LOG_XML_STRUCT} ${RGT_LOG_HTML}
+        -f "${TE_LOG_RAW}" -o "${LOG_XML_STRUCT}"
+    if test $? -eq 0 -a -e "${LOG_XML_STRUCT}" ; then
+        rgt-xml2html-multi "${LOG_XML_STRUCT}" "${RGT_LOG_HTML}"
     fi
 fi
 
@@ -736,9 +735,9 @@ fi
 
 # Run TRC, if any its option is provided
 if test ${START_OK} -eq 0 -a -n "${TRC_OPTS}" ; then
-    te_trc.sh ${TRC_OPTS} ${TE_LOG_RAW}
+    te_trc.sh ${TRC_OPTS} "${TE_LOG_RAW}"
 fi
 
-rm -rf ${TE_TMP}
+rm -rf "${TE_TMP}"
 
 exit ${START_OK}
