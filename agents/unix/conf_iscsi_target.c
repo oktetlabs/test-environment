@@ -54,6 +54,7 @@ extern int iscsi_server_init();
 
 
 #define DEVDATA_GET_CHECK                               \
+    return 0;                                           \
     if (devdata == NULL)                                \
     {                                                   \
         RING("devdata is NULL in %s", __FUNCTION__);    \
