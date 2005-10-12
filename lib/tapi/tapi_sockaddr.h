@@ -165,11 +165,29 @@ extern const void *sockaddr_get_netaddr(const struct sockaddr *addr);
 static inline const char *
 sockaddr_get_ipstr(const struct sockaddr *addr)
 {
-    static char addr_buf[INET6_ADDRSTRLEN];
+/* Number of buffers used in the function */
+#define N_BUFS 10
+
+    static char addr_buf[N_BUFS][INET6_ADDRSTRLEN];
+    static char (*cur_buf)[INET6_ADDRSTRLEN] = 
+                                (char (*)[INET6_ADDRSTRLEN])addr_buf[0];
+
+    char       *ptr;
+
+    /*
+     * Firt time the function is called we start from the second buffer,
+     * but then after a turn we'll use all N_BUFS buffer.
+     */
+    if (cur_buf == (char (*)[INET6_ADDRSTRLEN])addr_buf[N_BUFS - 1])
+        cur_buf = (char (*)[INET6_ADDRSTRLEN])addr_buf[0];
+    else
+        cur_buf++;
+
+    ptr = *cur_buf;
     
     return inet_ntop(addr->sa_family, 
-                     sockaddr_get_netaddr(addr), addr_buf, 
-                     sizeof(addr_buf));
+                     sockaddr_get_netaddr(addr), ptr, 
+                     INET6_ADDRSTRLEN);
 }
 
 /**
