@@ -218,6 +218,8 @@ main(int argc, char *argv[])
         else 
             TEST_FAIL("recv on CSAP failed: %r", rc); 
     }
+    else
+        TEST_FAIL("recv on TCP CSAP have detect that connection closed");
 
     TEST_SUCCESS;
 

@@ -152,7 +152,7 @@ main(int argc, char *argv[])
 
     /******** Create Traffic Template *************/
     rc = asn_parse_value_text("{ pdus { ip4:{ protocol plain:17 }, eth:{ "
-                              "    dst-addr plain:'00 0D 88 4F 55 AF'H}} }",
+                              "    dst-addr plain:'00 0D 88 65 D4 9F'H}} }",
                               ndn_traffic_template,
                               &template, &syms);
     if (rc != 0)
@@ -176,13 +176,23 @@ main(int argc, char *argv[])
         TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
                     TE_RC_GET_MODULE(rc), TE_RC_GET_ERROR(rc)); 
 
+    srv_listen->op = RCF_RPC_CALL;
+    rpc_recvfrom(srv_listen, udp_socket,
+                      rcv_buffer, sizeof(rcv_buffer), 0, 
+                      SA(&from_sa), &from_len);
+
     rc = tapi_tad_trsend_start(agt_a, sid_a, ip4_send_csap,
                                template, RCF_MODE_BLOCKING);
     if (rc != 0) 
         TEST_FAIL("send start failed %X", rc); 
+
+#if 0
     RPC_AWAIT_IUT_ERROR(srv_listen);
+#else
+    srv_listen->op = RCF_RPC_WAIT;
+#endif
     rc = rpc_recvfrom(srv_listen, udp_socket,
-                      rcv_buffer, sizeof(rcv_buffer), RPC_MSG_DONTWAIT, 
+                      rcv_buffer, sizeof(rcv_buffer), 0, 
                       SA(&from_sa), &from_len);
     if (rc <= 0)
         TEST_FAIL("wanted UDP datagram not received!");
