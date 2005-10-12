@@ -31,7 +31,7 @@ MY_LDADD+=-lnetlink
 endif
 
 if ISCSI_TARGET_USE
-MY_SOURCES+=conf_iscsi_target.c
+MY_SOURCES+=conf_iscsi_target.c conf_iscsi_initiator.c
 endif
 
 
