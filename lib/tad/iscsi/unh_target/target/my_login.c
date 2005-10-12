@@ -756,18 +756,19 @@ search_tags(struct iscsi_conn *conn, uint32_t init_task_tag,
 int
 iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 {
-
+    int i;
 # ifdef DEBUG_DATA
-    int i, j;
     struct iovec *debug_iov;
     uint8_t *to_print;
 # endif
 
-    int total_tx, tx_loop;
+    unsigned total_tx = 0;
+    int tx_loop;
+    unsigned current_tx;
     uint32_t hdr_crc, data_crc;
     int data_len, k;
-    uint8_t *buffer;
     struct generic_pdu *pdu;
+    uint8_t *buffer;
 
     if (!conn->conn_socket) {
         TRACE_ERROR("NULL conn_socket\n");
@@ -821,32 +822,33 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
               data_len, ntohl(data_crc));
     }
 
+    for (i = 0; i < niov; i++, iov++)
+    {
+        current_tx = 0;
+        buffer = iov->iov_base;
+        while (current_tx < iov->iov_len) 
+        {
+            TRACE(TRACE_DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d\n",
+                  i, iov->iov_len, current_tx);
+            
+            tx_loop = iscsi_tad_send(conn->conn_socket, buffer, (iov->iov_len - current_tx));
 
-    buffer = malloc(data);
-    if (buffer == NULL)
-        return -1;
+            if (tx_loop <= 0) {
+                pdu = (struct generic_pdu *)iov[0].iov_base;
+                TRACE_ERROR("sock_sendmsg error %d, total_tx %d, data %d, niov "
+                            "%d, op 0x%02x, flags 0x%02x, ITT %u\n",
+                            tx_loop, total_tx, data, niov,
+                            pdu->opcode, pdu->flags,
+                            ntohl(pdu->init_task_tag));
+                return tx_loop;
+            }
 
-    total_tx = 0;
-    while (total_tx < data) {
-        TRACE(TRACE_DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d\n",
-              niov, data, total_tx);
-
-        tx_loop = iscsi_tad_send(conn->conn_socket, buffer, (data - total_tx));
-
-        if (tx_loop <= 0) {
-            pdu = (struct generic_pdu *)iov[0].iov_base;
-            TRACE_ERROR("sock_sendmsg error %d, total_tx %d, data %d, niov "
-                        "%d, op 0x%02x, flags 0x%02x, ITT %u\n",
-                        tx_loop, total_tx, data, niov,
-                        pdu->opcode, pdu->flags,
-                        ntohl(pdu->init_task_tag));
-            free(buffer);
-            return tx_loop;
+            current_tx += tx_loop;
+            total_tx   += tx_loop;
+            buffer     += tx_loop;
+            TRACE(TRACE_DEBUG, "iscsi_tx_data: tx_loop %d total_tx %d\n", tx_loop,
+                  total_tx);
         }
-
-        total_tx += tx_loop;
-        TRACE(TRACE_DEBUG, "iscsi_tx_data: tx_loop %d total_tx %d\n", tx_loop,
-              total_tx);
     }
 
     return total_tx;
