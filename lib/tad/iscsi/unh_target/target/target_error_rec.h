@@ -138,7 +138,7 @@ int send_recovery_r2t (struct iscsi_cmnd *cmnd, int data_offset,
 * the r2t request.
 ***********************************************************************/
 
-int iscsi_retran_thread (void *param);
+void *iscsi_retran_thread (void *param);
 
 void add_data_to_queue(struct iscsi_cmnd *cmd, struct iscsi_cookie *dataq);
 

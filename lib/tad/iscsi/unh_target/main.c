@@ -76,7 +76,7 @@ int
 iscsi_tad_send(int sock, uint8_t *buffer, size_t len)
 {
     int result = write(sock, buffer, len);
-    int i;
+    unsigned i;
 #if 1
     for (i = 0; i < len; i++)
         fprintf(stderr, "%2.2x %s", buffer[i], i % 8 == 7 ? "\n" : "");

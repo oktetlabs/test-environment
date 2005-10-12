@@ -236,66 +236,6 @@ targ_drop_pdu_data(struct iscsi_conn *curr_conn, int size)
     return retval;
 }
 
-void deal_with_r2t_timer(unsigned long data);
-
-/*********************************************************************
- * (re)start R2T Timer is used for tracking the R2T sent. This timer
- * helps re-transmit the most recent R2T sent to the initiator.
- ********************************************************************/
-/* (re)start the R2T retransmit timer */
-void
-restart_r2t_timer(struct iscsi_session *session)
-{
-    UNUSED(session);
-#if 0
-	uint32_t period = session->r2t_period;
-
-	TRACE(TRACE_TIMERS, "Enter restart_r2t_timer period %u\n", period);
-
-	if (period && session->r2t_timer && !timer_pending(session->r2t_timer)){
-		TRACE(TRACE_TIMERS, "Start r2t timer for %u ticks\n", period);
-		      session->r2t_timer->expires = jiffies + period;
-		      session->r2t_timer->data = (unsigned long) session;
-		      session->r2t_timer->function = deal_with_r2t_timer;
-		      add_timer(session->r2t_timer);
-	} else {
-		TRACE_ERROR("R2T timer not started for %u ticks\n", 
-					period);
-	}
-
-	TRACE(TRACE_TIMERS, "Leave restart_r2t_timer\n");
-#endif
-}
-
-/*********************************************************************
-* Called by kernel when R2T periodic session timer expires.
-*********************************************************************/
-void
-deal_with_r2t_timer(unsigned long data)
-{
-    UNUSED(data);
-#if 0
-	struct iscsi_session *session;
-	struct iscsi_cmnd *cmnd = NULL;
-
-	TRACE(TRACE_TIMERS, "Enter deal_with_r2t_timer\n");
-
-	session = (struct iscsi_session *) data;
-
-	for (cmnd = session->cmnd_list; cmnd != NULL; cmnd = cmnd->next) {
-		if (cmnd->outstanding_r2t > 0 &&
-			(jiffies > (cmnd->timestamp + session->r2t_period))) {
-			up(&session->retran_sem);
-			break;
-		}
-	}
-
-	restart_r2t_timer(session);
-
-	TRACE(TRACE_TIMERS, "Leave deal_with_r2t_timer\n");
-#endif
-}
-
 /***************************************************************************
 * create an R2T cookie and store the R2T details in the cookie. This cookie
 * is esssential for R2T re-transmssions in error conditions.
@@ -434,26 +374,24 @@ out:
 * any r2t requests that have not generated any activity in a long time.
 ***********************************************************************/
 
-int
+void *
 iscsi_retran_thread(void *param)
 {
     UNUSED(param);
-#if 0
 	struct iscsi_session *session = (struct iscsi_session *) param;
 	struct iscsi_cmnd *cmnd;
 
-	while (1) {
-		/* wait for periodic r2t timer to interrupt us */
-		if (down_interruptible(&session->retran_sem))
-			break;
+    for (;;)
+    {
+        
+        sleep(session->r2t_period);
+        pthread_testcancel();
 
 		/* lock the session-wide list of commands */
-		if (down_interruptible(&session->cmnd_sem))
-			continue;
-
+        pthread_mutex_lock(&session->cmnd_mutex);
 		for (cmnd = session->cmnd_list; cmnd; cmnd = cmnd->next) {
 			if (cmnd->outstanding_r2t > 0
-			   && jiffies > (cmnd->timestamp+session->r2t_period)
+			   && time(NULL) > (cmnd->timestamp + session->r2t_period)
 			   && cmnd->state == ISCSI_BUFFER_RDY
 			   && !cmnd->retransmit_flg) {
 				/* this is a WRITE command with outstanding
@@ -474,16 +412,11 @@ iscsi_retran_thread(void *param)
 							= cmnd->r2t_sn - 1;
 				}
 				/* signal the tx thread to do the rexmit */
-				if (atomic_read(&cmnd->conn->tx_sem.count) <= 0) {
-					up(&cmnd->conn->tx_sem);
-				}
+                iscsi_tx();
 			}
 		}
-		up(&session->cmnd_sem);
+        pthread_mutex_unlock(&session->cmnd_mutex);
 	}
-
-	session->retran_thread = NULL;
-#endif 
 	return 0;
 }
 

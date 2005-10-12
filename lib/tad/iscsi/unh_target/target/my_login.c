@@ -88,6 +88,9 @@ static int check_cmd_sn(struct iscsi_cmnd *cmnd, void *ptr, struct iscsi_session
 static int ack_sent_cmnds(struct iscsi_conn *conn, struct iscsi_cmnd *cmnd,
                           uint32_t exp_stat_sn, te_bool add_cmnd_to_queue);
 static uint32_t skip_thru_sg_list(struct scatterlist *st_list, uint32_t *i, uint32_t offset);
+static int send_unsolicited_data(struct iscsi_cmnd *cmd,
+                                 struct iscsi_conn *conn,
+                                 struct iscsi_session *session);
 
 int fill_iovec(struct iovec *iov, int p, int niov,
                struct scatterlist *st_list, int *offset, uint32_t data);
@@ -507,18 +510,6 @@ iscsi_release_session(struct iscsi_session *session)
         print_isid_tsih_message(session, "Release session with ");
     }
 
-    TRACE(TRACE_DEBUG, "Releasing R2T timer %p for session %p\n",
-          session->r2t_timer, session);
-
-    /* Delete r2t timer - SAI */
-    if (session->r2t_timer) {
-#if 0
-        TRACE(TRACE_DEBUG, "Deleting r2t timer %p\n", session->r2t_timer);
-        del_timer_sync(session->r2t_timer);
-        TRACE(TRACE_DEBUG, "Deleted r2t timer\n");
-        free(session->r2t_timer);
-#endif
-    }
 
     /* free commands */
     while ((cmnd = session->cmnd_list)) {
@@ -554,12 +545,11 @@ iscsi_release_session(struct iscsi_session *session)
         list_del(&session->sess_link);
 
         /* error recovery ver new 18_04 - SAI */
-        if (session->retran_thread) {
-#if 0
-            /*  Mike Christie mikenc@us.ibm.com */
-            send_sig(ISCSI_SHUTDOWN_SIGNAL, session->retran_thread, 1);
-            sem_wait(&session->thr_kill_sem);
-#endif
+        if (session->has_retran_thread) 
+        {
+            void *data;
+            pthread_cancel(session->retran_thread);
+            pthread_join(session->retran_thread, &data);
         }
     }
 
@@ -1218,6 +1208,25 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
     if (pdu->tsih == 0) {
         /* this is a new connection in a new session */
         set_session_parameters(session->oper_param, *session->session_params);
+
+		if (session->oper_param->ErrorRecoveryLevel > 0
+			&& session->r2t_period > 0) {
+			/* error recovery ver ref18_04 */
+
+			/* create a retransmit_thread for handling error recovery */
+			if (pthread_create(&session->retran_thread, NULL, 
+                               iscsi_retran_thread, (void *)session))
+            {
+				TRACE_ERROR("Unable to create retran_thread\n");
+				session->r2t_period = 0;
+			} 
+            else 
+            {
+                session->has_retran_thread = TRUE;
+			}
+		}
+
+
     }
 
     /* we are now in Full Feature Phase */
@@ -2088,7 +2097,6 @@ build_conn_sess(int sock, struct portal_group *ptr)
     session->targ_snack_flg = devdata->targ_snack_flg;
 
     pthread_mutex_init(&session->cmnd_mutex, NULL);
-    sem_init(&session->retran_sem, 0,0);
     sem_init(&session->thr_kill_sem,0 ,0);
 
     return conn;
@@ -2098,9 +2106,6 @@ out7:
 
     printf("\n 1 \n");
 out6:
-    TRACE(TRACE_DEBUG, "Releasing R2T timer %p for session %p\n",
-          session->r2t_timer, session);
-    free(session->r2t_timer);
 
     free(session);
 
@@ -2683,7 +2688,7 @@ handle_data(struct iscsi_conn *conn,
 	ack_sent_cmnds(conn, cmd, hdr->exp_stat_sn, 0);
 
 	/* update last time this command got some data back from initiator */
-    gettimeofday(&cmd->timestamp, NULL);
+    time(&cmd->timestamp);
 	if (session->oper_param->DataPDUInOrder
 		&& session->oper_param->DataSequenceInOrder) {
 		/* error recovery ver ref18_04 - SAI */
@@ -2901,7 +2906,7 @@ end_handle_data:
 
 	/* update last time this command got some data back from initiator */
 	if (cmd)
-        gettimeofday(&cmd->timestamp, NULL);
+        time(&cmd->timestamp);
 
 	TRACE(TRACE_ENTER_LEAVE, "Leave handle_data, err = %d\n", err);
 	return err;
@@ -3464,7 +3469,7 @@ iscsi_tx_r2t(struct iscsi_cmnd *cmnd,
 
 		/* store the r2t time stamp - SAI */
 		/* error recovery ver ref18_04 */
-        gettimeofday(&cmnd->timestamp, NULL);
+        time(&cmnd->timestamp);
 	} while (data_length_left > 0);
 
 r2t_out:
@@ -4719,6 +4724,8 @@ send_unsolicited_data(struct iscsi_cmnd *cmd,
 	int err;
 	uint32_t expected_data_offset, offset, length, sglen, i, n;
 	uint8_t *buffer, *sgbuf;
+
+    UNUSED(session);
 
 	if (cmd->unsolicited_data_present | cmd->immediate_data_present) {
 		/* more unsolicited data has to be read, just stay in this state */

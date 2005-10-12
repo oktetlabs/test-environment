@@ -240,11 +240,10 @@ struct iscsi_session {
 
 	/* Added the r2t retransmit timer - SAI */
 	uint32_t r2t_period;
-	struct timer_list *r2t_timer;
 
 	/* error recovery ver ref18_04 */
-	struct task_struct *retran_thread;
-	sem_t retran_sem;
+	pthread_t retran_thread;
+    te_bool   has_retran_thread;
 	sem_t thr_kill_sem;
 
 	/* For parameters */
