@@ -29,8 +29,6 @@
  */
 
 #define TE_LGR_USER     "Unix Conf"
-#define TE_LOG_LEVEL 0xff
-#define LOG_LEVEL 0xff
 
 #include "te_config.h"
 #include "config.h"
