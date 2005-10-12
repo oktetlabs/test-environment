@@ -312,9 +312,9 @@ log_get_message(uint32_t length, uint8_t *buffer)
         mess_length += (_field_length);                             \
     } while (0)
     
-    LGR_CHECK_LENGTH(sizeof(te_log_seqno) + TE_LOG_MSG_HDR_SZ);
+    LGR_CHECK_LENGTH(sizeof(te_log_seqno) + TE_LOG_MSG_COMMON_HDR_SZ);
         
-    /* Write message sequence number */
+    /* Write message sequence number FIXME */
     *((uint32_t *)tmp_buf) = htonl(header.sequence);
     tmp_buf += sizeof(uint32_t);
 

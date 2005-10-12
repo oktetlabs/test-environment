@@ -84,18 +84,17 @@ if (@ARGV == 4)
     $fname_field_len = length($fname) + 2;
 }
 
+my $log_level = 4; # RING log level (see include/logger_defs.h)
+
+# Write log message:
+# - version (1 byte);
+# - timestamp (two 32-bit integer in "network" (big-endian) order)
+# - log level (16-bit integer in "network" (big-endian) order)
+# - test ID equal to 0 (32-bit integer in "network" (big-endian) order)
+print OUTFILE pack("CNNnN", 1, $sec, $usec, $log_level, 0);
 
 # Write length of Entity name filed and itself one
 print OUTFILE pack("nA*", $lens[0], $ARGV[0]);
-
-# Write log message version (1 byte) and 
-# timestamp (two 32--bit integer in "network" (big-endian) order)
-print OUTFILE pack("CNN", 1, $sec, $usec);
-
-# Write log level value (16-bit integer in "network" (big-endian) order)
-my $log_level = 4; # RING log level (see include/logger_defs.h)
-print OUTFILE pack("n", $log_level);
-
 
 # Write length of User name field and itself one
 print OUTFILE pack("nA*", $lens[1], $ARGV[1]);

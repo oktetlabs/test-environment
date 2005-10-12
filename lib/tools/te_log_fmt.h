@@ -142,23 +142,25 @@ typedef struct te_log_msg_raw_data {
 
 
 /**
-  * Preprocess and output message to log with special features parsing
-  *
-  * @param data     Output parameters
-  * @param level    Log levelt
-  * @param ts_sec   Timestamp seconds
-  * @param ts_usec  Timestamp microseconds
-  * @param entity   Entity name
-  * @param user     User name
-  * @param fmt      Format string
-  * @param ap       Arguments for the format string
-  *
-  * @return Error code (see te_errno.h)
-  */
+ *
+ *
+ * @param data     Output parameters
+ * @param ts_sec   Timestamp seconds
+ * @param ts_usec  Timestamp microseconds
+ * @param level    Log levelt
+ * @param test_id  Test ID or TE_TEST_ID_INVALID
+ * @param entity   Entity name
+ * @param user     User name
+ * @param fmt      Format string
+ * @param ap       Arguments for the format string
+ *
+ * @return Error code (see te_errno.h)
+ */
 extern te_errno te_log_message_raw_va(te_log_msg_raw_data *data,
-                                      te_log_level         level,
                                       te_log_ts_sec        ts_sec,
                                       te_log_ts_usec       ts_usec,
+                                      te_log_level         level,
+                                      te_log_test_id       test_id,
                                       const char          *entity,
                                       const char          *user,
                                       const char          *fmt,

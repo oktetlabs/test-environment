@@ -262,7 +262,8 @@ te_handler(void)
                     char *tmp_pnt;
 
                     /* BUG here */
-                    len = sizeof(te_log_nfl) + buf[0] + TE_LOG_MSG_HDR_SZ;
+                    len = sizeof(te_log_nfl) + buf[0] + 
+                          TE_LOG_MSG_COMMON_HDR_SZ;
                     tmp_pnt = buf + len + 1;
                     len = buf[len];
                     memcpy(tmp_name, tmp_pnt, len);
@@ -547,11 +548,6 @@ ta_handler(void *ta)
             int         lost;
             size_t      len;
 
-            /* Add TA name and corresponding NFL to the message */
-            LGR_NFL_PUT(ta_name_len, p_buf);
-            memcpy(p_buf, inst->agent, ta_name_len);
-            p_buf += ta_name_len;
-
             /* Get message sequence number */
             if (FREAD(ta_file, (uint8_t *)&sequence, sizeof(uint32_t)) !=
                     sizeof(uint32_t))
@@ -565,7 +561,7 @@ ta_handler(void *ta)
             inst->sequence = sequence;
 
             /* Read control fields value */
-            len = TE_LOG_MSG_HDR_SZ;
+            len = TE_LOG_MSG_COMMON_HDR_SZ;
             if (FREAD(ta_file, p_buf, len) != len)
             {
                 break;
@@ -601,7 +597,20 @@ ta_handler(void *ta)
                     }
                 }
             }
-            p_buf += TE_LOG_MSG_HDR_SZ;
+            p_buf += TE_LOG_MSG_COMMON_HDR_SZ;
+
+            /* Add test ID equal to TE_TEST_ID_INVALID */
+#if SIZEOF_TE_LOG_TEST_ID == 4
+            LGR_32_TO_NET(TE_TEST_ID_INVALID, p_buf);
+#else
+#error Unsupported sizeof(te_log_test_id)
+#endif
+            p_buf += sizeof(te_log_test_id);
+
+            /* Add TA name and corresponding NFL to the message */
+            LGR_NFL_PUT(ta_name_len, p_buf);
+            memcpy(p_buf, inst->agent, ta_name_len);
+            p_buf += ta_name_len;
 
             /* Read the first NFL after header */
             if (FREAD(ta_file, p_buf, sizeof(te_log_nfl)) !=

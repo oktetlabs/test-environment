@@ -39,20 +39,16 @@
 
 /** Indeces of the error events */
 enum e_error_msg_index {
-    RLF_V1_RLM_ENTITY_NAME       = 0,  /**< Entity name is too short */
-    RLF_V1_RLM_VERSION           = 1,  /**< There is no log version field */
-    RLF_V1_RLM_TIMESTAMP         = 2,  /**< Timestamp field is too short */
-    RLF_V1_RLM_LOGLEVEL          = 3,  /**< Log Level field is too short */
-    RLF_V1_RLM_REST_LEN          = 4,  /**< Message length field is too
-                                            short */
-    RLF_V1_RLM_REST_LEN_VALUE    = 5,  /**< Message length field is
-                                            incorrect */
-    RLF_V1_RLM_WHOLE             = 6,  /**< Message is truncated */
-    RLF_V1_RLM_USER_NAME_LEN     = 7,  /**< User name is out of message */
-    RLF_V1_RLM_FORMAT_STRING_LEN = 8,  /**< Format string is out
+    RLF_V1_RLM_VERSION           = 0,  /**< There is no log version field */
+    RLF_V1_RLM_TIMESTAMP         = 1,  /**< Timestamp field is too short */
+    RLF_V1_RLM_LOGLEVEL          = 2,  /**< Log Level field is too short */
+    RLF_V1_RLM_TEST_ID           = 3,  /**< Test ID field is too short */
+    RLF_V1_RLM_ENTITY_NAME       = 4,  /**< Entity name is too short */
+    RLF_V1_RLM_USER_NAME         = 5,  /**< Entity name is too short */
+    RLF_V1_RLM_FORMAT_STRING     = 6,  /**< Format string is out
                                             of message */
-    RLF_V1_RLM_ARG_LEN           = 9,  /**< Agrument is out of message */
-    RLF_V1_RLM_UNKNOWN_LOGLEVEL  = 10, /**< Unknown log level value */
+    RLF_V1_RLM_ARG_LEN           = 7,  /**< Agrument is out of message */
+    RLF_V1_RLM_UNKNOWN_LOGLEVEL  = 8,  /**< Unknown log level value */
 };
 
 /**
@@ -75,24 +71,14 @@ static enum e_error_msg_index cur_error_index;
 static struct debug_msg {
     char *content;
 } dbg_msgs[] = {
-    {"*** Entity name is truncated."},
     {"*** Log message version is truncated."},
     {"*** Log message timestamp is truncated."},
     {"*** Log message log level is truncated."},
-    {"*** Log message length field is truncated."},
-    {"*** Value of the log message length is incorrect. "
-     "It should be more than two."},
-    {"*** Log message payload is too short according to log message "
-     "length field."},
-    {"*** Value of the log message length or user name "
-     "length is incorrect: \n"
-     "*** User name length is out of the log message."},
-    {"*** Value of the log message length or format string "
-     "length is incorrect: \n"
-     "*** Format string length is out of the log message."},
-    {"*** Value of the log message length or argument length is "
-     "incorrect: \n"
-     "*** Argument length is out of the log message."},
+    {"*** Log message test ID is truncated."},
+    {"*** Entity name is truncated."},
+    {"*** User name is truncated."},
+    {"*** Log message format string is truncated."},
+    {"*** Log message argument is truncated."},
     {"*** Value of log level is unkown."},
 };
 
@@ -179,6 +165,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
     te_log_ts_sec     ts_sec;
     te_log_ts_usec    ts_usec;
     te_log_level      log_level;
+    te_log_test_id    test_id;
     FILE             *fd = ctx->rawlog_fd;
 
     char     *entity_name;
@@ -193,8 +180,11 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
      */
     cur_msg_offset = ftell(fd);
 
-    /* Read length of entity name */
-    if (universal_read(fd, &nflen, sizeof(nflen), ctx->io_mode) == 0)
+    /* 
+     * Read version of log message.
+     * Just ignore (TODO: more useful processing below)
+     */
+    if (universal_read(fd, &log_ver, sizeof(log_ver), ctx->io_mode) == 0)
     {
         /*
          * There are no messages left (rgt operation mode is postponed)
@@ -202,27 +192,12 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
          */
         return 0;
     }
-    RGT_NFL_NTOH(nflen);
-
+    
+    /* START PROCESSING OF A NEW MESSAGE */
     *msg = alloc_log_msg();
     obstk = (*msg)->obstk;
-
     arg = &((*msg)->args);
-/* START PROCESSING OF A NEW MESSAGE */
     
-    /* Process Entity Name: Note that it doesn't end with '\0' */
-    entity_name = (char *)obstack_alloc(obstk, nflen + 1);
-    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_ENTITY_NAME);
-    READ(fd, entity_name, nflen);
-    entity_name[nflen] = '\0';
-
-    /* 
-     * Read version of log message.
-     * Just ignore (TODO: more useful processing)
-     */
-    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_VERSION);
-    READ(fd, &log_ver, sizeof(log_ver));
-
     /* Read timestamp */
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_TIMESTAMP);
     READ(fd, &ts_sec,  sizeof(ts_sec));
@@ -241,8 +216,29 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 #error SIZEOF_TE_LOG_LEVEL is expected to be 1, 2, or 4
 #endif
 
-    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_WHOLE);
+    /* Read test ID */
+    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_TEST_ID);
+    READ(fd, &test_id, sizeof(test_id));
+#if SIZEOF_TE_LOG_TEST_ID == 4
+    test_id = ntohl(test_id);
+#elif SIZEOF_TE_LOG_TEST_ID == 2
+    test_id = ntohs(test_id);
+#elif SIZEOF_TE_LOG_TEST_ID == 1
+    /* Do nothing */
+#else
+#error SIZEOF_TE_LOG_TEST_ID is expected to be 1, 2, or 4
+#endif
 
+    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_ENTITY_NAME);
+    /* Read entity name length */
+    READ(fd, &nflen, sizeof(nflen));
+    RGT_NFL_NTOH(nflen);
+    /* Allocate memory for entity name and read it */
+    entity_name = (char *)obstack_alloc(obstk, nflen + 1);
+    READ(fd, entity_name, nflen);
+    entity_name[nflen] = '\0';
+
+    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_USER_NAME);
     /* Read user name length */
     READ(fd, &nflen, sizeof(nflen));
     RGT_NFL_NTOH(nflen);
@@ -251,6 +247,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
     READ(fd, user_name, nflen);
     user_name[nflen] = '\0';
 
+    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_FORMAT_STRING);
     /* Read format string length */
     READ(fd, &nflen, sizeof(nflen));
     RGT_NFL_NTOH(nflen);
@@ -258,6 +255,8 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
     fmt_str = (char *)obstack_alloc(obstk, nflen + 1);
     READ(fd, fmt_str, nflen);
     fmt_str[nflen] = '\0';
+
+    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_ARG_LEN);
 
     /* Process format string arguments */
     (*msg)->args_count = 0;
@@ -292,6 +291,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 
     *arg = NULL;
 
+    (*msg)->test_id = test_id;
     (*msg)->entity = entity_name;
     (*msg)->user   = user_name;
     (*msg)->timestamp[0] = ntohl(ts_sec);

@@ -1048,23 +1048,11 @@ case mod_:\
 
 static const te_log_version log_version = TE_LOG_VERSION;
 
-/**
-  * Preprocess and output message to log with special features parsing
-  *
-  * @param data     Output parameters
-  * @param level    Log levelt
-  * @param ts_sec   Timestamp seconds
-  * @param ts_usec  Timestamp microseconds
-  * @param entity   Entity name
-  * @param user     User name
-  * @param fmt      Format string
-  * @param ap       Arguments for the format string
-  *
-  * @return Error code (see te_errno.h)
-  */
+/* See description in te_log_fmt.h */
 te_errno
-te_log_message_raw_va(te_log_msg_raw_data *data, te_log_level level,
+te_log_message_raw_va(te_log_msg_raw_data *data,
                       te_log_ts_sec ts_sec, te_log_ts_usec ts_usec,
+                      te_log_level level, te_log_test_id test_id,
                       const char *entity, const char *user,
                       const char *fmt, va_list ap)
 {
@@ -1081,9 +1069,6 @@ te_log_message_raw_va(te_log_msg_raw_data *data, te_log_level level,
     data->args_n = data->args_len = 0;
     data->trunc = FALSE;
 
-
-    te_log_msg_raw_put_string(data, entity);
-
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
                        &log_version, sizeof(log_version), FALSE);
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
@@ -1092,7 +1077,10 @@ te_log_message_raw_va(te_log_msg_raw_data *data, te_log_level level,
                        &ts_usec, sizeof(ts_usec), FALSE);
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
                        &level, sizeof(level), FALSE);
+    te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
+                       &test_id, sizeof(test_id), FALSE);
 
+    te_log_msg_raw_put_string(data, entity);
     te_log_msg_raw_put_string(data, user);
 
     /* Put fake empty string to allocate space for 'format string' NFL */

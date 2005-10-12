@@ -59,19 +59,24 @@ extern "C" {
 /** Current TE log version */
 #define TE_LOG_VERSION  1
 
+/** Invalid value test ID - unknown test ID */
+#define TE_TEST_ID_INVALID  0
 
+
+/** Type to store Next-Field-Length in raw log */
+typedef uint16_t te_log_nfl;
 /** Type to store TE log version in raw log */
 typedef uint8_t  te_log_version;
-/** Type to store TE log sequence numbers in raw log */
-typedef uint32_t te_log_seqno;
 /** Type to store timestamp seconds in raw log */
 typedef uint32_t te_log_ts_sec;
 /** Type to store timestamp microseconds in raw log */
 typedef uint32_t te_log_ts_usec;
 /** Type to store log level in raw log */
 typedef uint16_t te_log_level;
-/** Type to store Next-Field-Length in raw log */
-typedef uint16_t te_log_nfl;
+/** Type to store test ID in raw log */
+typedef uint32_t te_log_test_id;
+/** Type to store TE log sequence numbers in raw log */
+typedef uint32_t te_log_seqno;
 
 
 /** Length of the End-Of-Record is equal to maximum supported by NFL */
@@ -86,10 +91,10 @@ typedef uint16_t te_log_nfl;
  * @attention In the case of TA it is necessary to add
  *            sizeof(te_log_seqno).
  */
-#define TE_LOG_MSG_HDR_SZ   (sizeof(te_log_version) + \
-                             sizeof(te_log_ts_sec) + \
-                             sizeof(te_log_ts_usec) + \
-                             sizeof(te_log_level))
+#define TE_LOG_MSG_COMMON_HDR_SZ    (sizeof(te_log_version) + \
+                                     sizeof(te_log_ts_sec) + \
+                                     sizeof(te_log_ts_usec) + \
+                                     sizeof(te_log_level))
 
 
 #ifdef __cplusplus

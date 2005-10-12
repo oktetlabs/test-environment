@@ -264,6 +264,7 @@ typedef struct log_msg {
     struct obstack *obstk;    /**< Internal field: 
                                    Obstack for the message */
 
+    unsigned    test_id;      /**< ID of the test logged the message */
     char       *entity;       /**< Entity name of the message */
     char       *user;         /**< User name of the message */
     uint32_t    timestamp[2]; /**< Timestamp value */

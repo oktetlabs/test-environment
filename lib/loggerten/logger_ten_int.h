@@ -61,6 +61,9 @@
 extern "C" {
 #endif
 
+/** See description in tapi_test.h */
+unsigned int te_test_id = TE_TEST_ID_INVALID;
+
 
 /** Log message transport */
 typedef void (* te_log_message_tx_f)(const void *msg, size_t len);
@@ -118,8 +121,8 @@ log_message_va(te_log_msg_raw_data *out,
 
     gettimeofday(&tv, NULL);
 
-    te_log_message_raw_va(out, level, tv.tv_sec, tv.tv_usec,
-                          entity, user, fmt, ap);
+    te_log_message_raw_va(out, tv.tv_sec, tv.tv_usec, level,
+                          te_test_id, entity, user, fmt, ap);
 
     assert(te_log_message_tx != NULL);
     te_log_message_tx(out->buf, out->ptr - out->buf);
