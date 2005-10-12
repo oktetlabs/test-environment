@@ -220,7 +220,7 @@ struct iscsi_cmnd
     struct iscsi_cookie	*last_data_q;
     
     /* Added timestamp for r2t retransmissions - SAI */
-    int		timestamp;
+    struct timeval		timestamp;
 
     /* Store the previously sent data_sn, used when retransmit_flg set */
     uint32_t		prev_data_sn;

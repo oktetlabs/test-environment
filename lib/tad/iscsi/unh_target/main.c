@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
     char             **iter;
     pthread_t          thread;
     int                int_val;
+    int                neg_mode = KEY_TO_BE_NEGOTIATED;
 
     UNUSED(argc);
 
@@ -234,9 +235,21 @@ int main(int argc, char *argv[])
                             *iter);
             }
         }
+        else if (strcmp(*iter, "permanent") == 0)
+        {
+            neg_mode = 0;
+        }
+        else if (strcmp(*iter, "fixed") == 0)
+        {
+            neg_mode = KEY_TO_BE_NEGOTIATED | KEY_BREAK_CONN_OR_RJT;
+        }
+        else if (strcmp(*iter, "negotiate") == 0)
+        {
+            neg_mode = KEY_TO_BE_NEGOTIATED;
+        }
         else
         {
-            configure_parameter(KEY_TO_BE_NEGOTIATED,
+            configure_parameter(neg_mode,
                                 *iter,
                                 *devdata->param_tbl);
         }

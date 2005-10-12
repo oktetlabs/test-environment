@@ -38,7 +38,6 @@
 #include <pthread.h>
 
 #include "my_memory.h"
-#include "thread_communication.h"
 #include "iscsi_common.h"
 #include "debug.h"
 

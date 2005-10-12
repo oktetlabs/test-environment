@@ -45,6 +45,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/select.h>
+#include <sys/time.h>
 #include <pthread.h>
 
 #include "../common/list.h"
@@ -86,10 +87,13 @@ static int check_cmd_sn(struct iscsi_cmnd *cmnd, void *ptr, struct iscsi_session
                         uint32_t increment);
 static int ack_sent_cmnds(struct iscsi_conn *conn, struct iscsi_cmnd *cmnd,
                           uint32_t exp_stat_sn, te_bool add_cmnd_to_queue);
+static uint32_t skip_thru_sg_list(struct scatterlist *st_list, uint32_t *i, uint32_t offset);
 
 int fill_iovec(struct iovec *iov, int p, int niov,
                struct scatterlist *st_list, int *offset, uint32_t data);
 int find_iovec_needed(uint32_t data_len, struct scatterlist *st_list, uint32_t offset);
+
+int iscsi_tx (struct iscsi_conn *conn);
 
 /*
  * RDR
@@ -1247,6 +1251,651 @@ err_conn_out:
 }
 
 
+/* helper routine for print_expanded_address_any() */
+static int
+convert_and_print_ip_stuff(char *ptr, struct sockaddr *real_ip_address,
+							struct portal_group *pg_ptr)
+{
+	char ip_string[INET6_ADDRSTRLEN+2], port_string[8];
+	int k = 0;
+
+	if (cnv_inet_to_string(real_ip_address, ip_string, port_string) >= 0 ) {
+		k = 1 + sprintf(ptr, "TargetAddress=%s:%s,%u", ip_string, port_string,
+						pg_ptr->tag);
+		TRACE(TRACE_DEBUG, "Expand %s to %s\n", pg_ptr->ip_string, ptr);
+	}
+	return k;
+}
+
+/* called only from do_text_request()
+ * when we find a portal_group entry with IP address INADDR_ANY
+ * in order to expand it to all IP addresses on this host and print them
+ * as values of TargetAddress== keys.
+ *
+ * this code is modelled on the functions inet_select_addr() and
+ * inet_dump_ifaddr() in the file net/ipv4/devinet.c for IPV4; and on
+ * the function ipv6_get_saddr() in the file net/ipv6/addrconf.c for IPV6.
+ */
+static int
+print_expanded_address_any(char *ptr, struct portal_group *pg_ptr)
+{
+    /* FIXME: add actual interface list */
+    return convert_and_print_ip_stuff(ptr, pg_ptr->ip_address, pg_ptr);
+}
+
+enum text_types {TEXT_EMPTY, TEXT_ST_ALL, TEXT_ST_TN, TEXT_ST_NULL, TEXT_OTHER};
+/*
+ *	parses data segment sent in a Text Request
+ *	Returns 0 if ok, else reason code for reject
+ *  If ok, sets result to
+ *			TEXT_EMPTY		if no data segment
+ *			TEXT_ST_ALL		if only "SendTargets=ALL" key
+ *			TEXT_ST_TN		if only "SendTargets=<target-name>" key
+ *			TEXT_ST_NULL	if only "SendTargets=" key
+ *			TEXT_OTHER		if only other keys
+ */
+static int __attribute__ ((no_instrument_function))
+parse_text_buffer(struct iscsi_cmnd *cmnd, uint8_t discovery_session,
+				  enum text_types *result)
+{
+	char *ptr, *ptr2, *equal, *which;
+	int size, reason = 0;
+	enum text_types text_type = TEXT_EMPTY;
+
+	if (cmnd->ping_data) {
+		/* size bytes of text data were read into data_buf */
+		if ((size = cmnd->data_length) > 0 ) {
+			for (ptr = cmnd->ping_data; size > 0; ptr = ptr2) {
+				equal = NULL;
+				for (ptr2 = ptr;
+					*ptr2 != '\0' && size > 0;
+					ptr2++, size--) {
+					/* skip over key itself */
+					if (*ptr2 == '=' && equal == NULL)
+						equal = ptr2;
+				}
+
+				if (*ptr2 != '\0') {
+					*ptr2 = '\0';
+					TRACE_ERROR("Unterminated key \"%s\"\n", ptr);
+					reason = REASON_PROTOCOL_ERR;
+					break;
+				}
+
+				if (equal == NULL) {
+					TRACE_ERROR("Missing '=' in key \"%s\"\n", ptr);
+					reason = REASON_PROTOCOL_ERR;
+					break;
+				}
+
+				if (discovery_session) {
+					which = "discovery";
+				} else {
+					which = "text request";
+				}
+				TRACE(TRACE_VERBOSE, "iscsi %s ITT %u %s\n", which, cmnd->init_task_tag, ptr);
+
+				equal++;
+				if (strncmp(ptr, "SendTargets=", 12) == 0) {
+					if (text_type != TEXT_EMPTY) {
+						TRACE_ERROR("SendTargets key not only key in text\n");
+						reason = REASON_NEGOTIATION_RESET;
+						break;
+					}
+					if (strcmp(equal, "All") == 0) {
+						if (!discovery_session) {
+							TRACE_ERROR("%s not allowed in Normal Session\n",
+										ptr);
+							reason = REASON_NEGOTIATION_RESET;
+							break;
+						}
+						text_type = TEXT_ST_ALL;
+					} else if (*equal != '\0')
+						text_type = TEXT_ST_TN;
+					else
+						text_type = TEXT_ST_NULL;
+				} else {
+					if (discovery_session) {
+						TRACE_ERROR("%s not allowed in Discovery Session\n",
+									ptr);
+						reason = REASON_NEGOTIATION_RESET;
+						break;
+					}
+					text_type = TEXT_OTHER;
+				}
+
+				for (; *ptr2 == '\0' && size > 0; ptr2++, size--) {	
+					/* skip over nulls between keys */
+				}
+			}
+		}
+	}
+	*result = text_type;
+	return reason;
+}
+
+/*
+ * executed only by the rx thread.
+ * connection's text_in_progress_sem MUST be locked by caller.
+ * returns 0 if ok, != 0 is reason for reject
+ */
+static int
+accumulate_text_input(struct iscsi_cmnd *cmnd, struct iscsi_cmnd *in_progress)
+{
+	uint32_t size;
+
+	if ((size = cmnd->first_burst_len)) {
+		/* command has some data attached, must accumulate it */
+		if (in_progress->in_progress_buffer == NULL) {
+			in_progress->in_progress_buffer = malloc(MAX_TEXT_LEN);
+			if (in_progress->in_progress_buffer == NULL) {
+				return REASON_OUT_OF_RESOURCES;
+			}
+		}
+
+		size += in_progress->data_length;
+		if (size > MAX_TEXT_LEN) {
+			TRACE_ERROR("too many total bytes %u in text request, max %u\n",
+						size, MAX_TEXT_LEN);
+			return REASON_OUT_OF_RESOURCES;
+		}
+
+		memcpy(in_progress->in_progress_buffer + in_progress->data_length,
+			   cmnd->ping_data, cmnd->first_burst_len);
+		in_progress->data_length = size;
+		ZFREE(cmnd->ping_data);
+	}
+	return 0;
+}
+
+/*
+ * executed only by the rx thread.
+ * called when the Response to a Text Request should be generated.
+ * connection's text_in_progress_sem MUST be locked by caller.
+ */
+static void
+generate_text_response(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
+					   struct iscsi_session *session)
+{
+	enum text_types text_type;
+	char *buffer = NULL, *ptr, *ip_ptr, *equal;
+	int reason, size = 0, i, j, n, maxt;
+	struct portal_group *pg_ptr;
+
+	reason = parse_text_buffer(cmnd, session->oper_param->SessionType,
+							   &text_type);
+	if (reason != 0) {
+		goto outbad;
+	}
+
+	if (text_type == TEXT_EMPTY)
+		goto outok;
+
+	if (text_type == TEXT_OTHER) {
+		TRACE_ERROR("Text Negotiation in Normal Session not implemented\n");
+		reason = REASON_NEGOTIATION_RESET;
+		goto outbad;
+	}
+
+	/* now generate the SendTargets response in a new, "big" buffer */
+	if ((buffer = malloc(MAX_TEXT_LEN)) == NULL) {
+		reason = REASON_OUT_OF_RESOURCES;
+		goto outbad;
+	}
+
+	/* send the '\0' at the end of each key=value string too */
+	ptr = buffer;
+	maxt = MAX_TARGETS;
+	if (maxt < target_count)
+		maxt = target_count;
+	for (i = 0; i < maxt; i++) {
+		if (!target_in_use(i) || (text_type == TEXT_ST_NULL
+									&& i != session->oper_param->TargetName))
+			continue;
+		n = 1 + sprintf(ptr, "TargetName=%s%d", TARGETNAME_HEADER, i);
+		if (text_type == TEXT_ST_TN) {
+			/* need to match the name in SendTargets=<target-name> */
+			if ((equal = strchr(cmnd->ping_data, '=')) == NULL
+								|| strcmp(equal, strchr(ptr, '=')) != 0) {
+			continue;
+			}
+		}
+		ptr += n;
+		size += n;
+		
+		for (j = 0; j < MAX_PORTAL; j++) {
+			
+			pg_ptr = &iscsi_portal_groups[j];
+			if (!pg_ptr->in_use)
+				continue;
+			
+			if (size > (MAX_TEXT_LEN - TEXT_FUDGE_LEN)) {
+				TRACE_ERROR("Text Response to SendTargets is %d bytes, "
+							"max %d\n", size,
+							MAX_TEXT_LEN - TEXT_FUDGE_LEN);
+				ZFREE(buffer);
+				reason = REASON_OUT_OF_RESOURCES;
+				goto outbad;
+			}
+			/* expand the address "any" to all IP address on this host */
+			ip_ptr = pg_ptr->ip_string;
+			if (strcmp(ip_ptr, INADDR_ANY_STRING) == 0
+								|| strcmp(ip_ptr, IN6ADDR_ANY_STRING) == 0) {
+				n = print_expanded_address_any(ptr, pg_ptr);
+			} else {
+				n = 1 + sprintf(ptr, "TargetAddress=%s:%s,%u", ip_ptr,
+								pg_ptr->port_string, pg_ptr->tag);
+			}
+			ptr += n;
+			size += n;
+		}
+	}
+
+outok:
+	ZFREE(cmnd->ping_data);
+	cmnd->ping_data = buffer;
+	cmnd->data_length = size;
+	cmnd->data_done = 0;
+	cmnd->state = ISCSI_SEND_TEXT_RESPONSE;
+	return;
+
+outbad:
+	cmnd->state = ISCSI_DEQUEUE;
+	enqueue_reject(conn, reason);
+	return;
+}
+
+static inline void __attribute__ ((no_instrument_function))
+copy_in_progress_stuff(struct iscsi_cmnd *cmnd, struct iscsi_cmnd *in_progress)
+{
+	cmnd->state = ISCSI_DEQUEUE;
+	in_progress->command_flags = cmnd->command_flags;
+	in_progress->cmd_sn = cmnd->cmd_sn;
+	in_progress->stat_sn = cmnd->stat_sn;
+}
+
+/*
+ * executed only by the rx thread.
+ * called when a Text Request is the next command to be processed.
+ */
+static void
+do_text_request(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
+				struct iscsi_session *session)
+{
+	int reason;
+	struct iscsi_cmnd *in_progress;
+	char *which;
+
+	pthread_mutex_lock(&conn->text_in_progress_mutex);
+
+	if (cmnd->init_task_tag == ALL_ONES) {
+		TRACE_ERROR("Text Request with reserved ITT=0x%08x\n", ALL_ONES);
+		goto outbadprotocol;
+	}
+
+	/*	RFC 3720 Section 10.10.2 C (Continue) Bit
+	 *	"A Text Request with the C bit set to 1 MUST have the F bit set to 0."
+	 */
+	if ((cmnd->command_flags & (C_BIT | F_BIT)) == (C_BIT | F_BIT)) {
+		TRACE_ERROR("Text Request with ITT %u has C=1 and F=1\n",
+					cmnd->init_task_tag);
+		goto outbadprotocol;
+	}
+
+	in_progress = (struct iscsi_cmnd *)conn->text_in_progress;
+	if (in_progress) {
+		/* Text negotiation already in progress, must be same task:
+		 *
+		 * RFC 3720 Section 10.10.3 Initiator Task Tag
+		 * "If the command is sent as part of a sequence of text requests
+		 * and responses, the Initiator Task Tag MUST be the same for all the
+		 * requests within the sequence (similar to linked SCSI commands).
+		 * The I bit for all requests in a sequence also MUST be the same.
+		 */
+		if (cmnd->init_task_tag != in_progress->init_task_tag) {
+			TRACE_ERROR("Text Request has ITT=%u, expected %u\n",
+					cmnd->init_task_tag,
+					in_progress->init_task_tag);
+			goto outbadprotocol;
+		}
+
+		if (cmnd->opcode_byte != in_progress->opcode_byte) {
+			TRACE_ERROR("Text Request with ITT %u has I=%u, expected %u\n",
+					cmnd->init_task_tag,
+					(cmnd->opcode_byte & I_BIT) == I_BIT,
+					(in_progress->opcode_byte & I_BIT) == I_BIT);
+			goto outbadprotocol;
+		}
+
+		/*
+		 * RFC 3720 Section 10.10.4 Target Transfer Tag
+		 * "When the Target Transfer Tag is set to the reserved value
+		 * 0xffffffff, it tells the target that this is a new request and
+		 * the target resets any internal state associated with the
+		 * Initiator Task Tag (resets the current negotiation state)
+		 *
+		 * The target sets the Target Transfer Tag in a text response to
+		 * a value other than the reserved value 0xffffffff whenever it
+		 * indicates that it has more data to send or more operations to
+		 * perform that are associated with the specified Initiator Task
+		 * Tag.  It MUST do so whenever it sets the F bit to 0 in the
+		 * response.  By copying the Target Transfer Tag from the response
+		 * to the next Text Request, the initiator tells the target to
+		 * continue the operation for the specific Initiator Task Tag.
+		 */
+		if (cmnd->target_xfer_tag == ALL_ONES) {
+			/* initiator is resetting an in-progress text exchange
+			 * just forget everything that happened up to this point
+			 */
+			if (session->oper_param->SessionType)
+				which = "discovery";
+			else
+				which = "text request";
+			TRACE(TRACE_VERBOSE, "iscsi %s ITT %u reset\n", which,in_progress->init_task_tag);
+			in_progress->state = ISCSI_DEQUEUE;
+			in_progress->init_task_tag = ALL_ONES;
+			conn->text_in_progress = in_progress = NULL;
+			/* now fall thru to start again as if a new command */
+		} else {
+			/* initiator is continuing an in-progress text exchange
+			 * the Target Transfer Tag must match the one we sent earlier
+			 */
+			if (cmnd->target_xfer_tag != in_progress->target_xfer_tag) {
+				TRACE_ERROR("Text Request with ITT %u has TTT=%u, "
+							"expected %u\n",
+							cmnd->init_task_tag, cmnd->target_xfer_tag,
+							in_progress->target_xfer_tag);
+				goto outbadprotocol;
+			}
+			
+			if (in_progress->state == ISCSI_BLOCKED_SENDING_TEXT) {
+				/* The last Text Response we sent had C = 1 or this connection
+				 * has USE_ONE_KEY_PER_TEXT set.  We expect this Text Request
+				 * should not contain any data and should have its C = 0
+				 */
+				if (cmnd->first_burst_len) {
+					TRACE_ERROR("Text Request with ITT %u TTT %u has DSL=%u,"
+								" expected 0\n", 
+								cmnd->init_task_tag, cmnd->target_xfer_tag,
+								cmnd->first_burst_len);
+					goto outbadprotocol;
+				}
+				if (cmnd->command_flags & C_BIT) {
+					TRACE_ERROR("Text Request with TTT %u has C=1, "
+								"expected 0\n", 
+								cmnd->target_xfer_tag);
+					goto outbadprotocol;
+				}
+				/* ok to send our next text response pdu (done with this pdu) */
+				in_progress->state = ISCSI_SEND_TEXT_RESPONSE;
+				copy_in_progress_stuff(cmnd, in_progress);
+				goto out;
+			}
+			/* Our last Text Response must have had C = 0 (empty or complete) */
+			if (in_progress->state != ISCSI_AWAIT_MORE_TEXT) {
+				/* this should never happen */
+				TRACE_ERROR("Text in_progress with ITT %u has state=%u, "
+							"expected %u\n", 
+							in_progress->init_task_tag,
+							in_progress->state, ISCSI_AWAIT_MORE_TEXT);
+				reason = REASON_OUT_OF_RESOURCES;
+				goto outbad;
+			}
+		}
+	} else if (cmnd->target_xfer_tag != ALL_ONES) {
+		TRACE_ERROR("Text Request with ITT %u has TTT=%u, "
+					"expected 0xffffffff\n", 
+					cmnd->init_task_tag, cmnd->target_xfer_tag);
+		goto outbadprotocol;
+	}
+
+	if (!in_progress) {
+		in_progress = cmnd;
+	}
+	if ((reason = accumulate_text_input(cmnd, in_progress)))
+		goto outbad;
+
+	if (in_progress == cmnd) {
+		conn->text_in_progress = in_progress;
+	} else {
+		copy_in_progress_stuff(cmnd, in_progress);
+	}
+	if (cmnd->command_flags & C_BIT) {
+		in_progress->state = ISCSI_ASK_FOR_MORE_TEXT;
+	} else {
+		/* have accumulated a complete Text Request, generate response to it */
+		in_progress->ping_data = in_progress->in_progress_buffer;
+		in_progress->in_progress_buffer = NULL;
+		generate_text_response(in_progress, conn, session);
+	}
+
+out:
+    pthread_mutex_unlock(&conn->text_in_progress_mutex);
+	return;
+
+outbadprotocol:
+	reason = REASON_PROTOCOL_ERR;
+outbad:
+	cmnd->state = ISCSI_DEQUEUE;
+	cmnd->init_task_tag = ALL_ONES;
+	enqueue_reject(conn, reason);
+	goto out;
+}
+
+
+/*
+ * executed only by the rx thread.
+ * Called when a Text Request pdu has just been received.
+ * Currently it only supports the SendTarget command.
+ * INPUT: connection, session and the buffer containing the text pdu.
+ * OUTPUT: 0 if everything is okay, < 0 if there is trouble.
+ */
+static int
+handle_text_request(struct iscsi_conn *conn,
+                    struct iscsi_session *session,
+                    uint8_t *buffer)
+{
+	struct iscsi_init_text_cmnd *pdu = (struct iscsi_init_text_cmnd *)buffer;
+	struct iscsi_cmnd *cmnd;
+	int err;
+
+	if (TRACE_TEST(TRACE_ISCSI_FULL))
+		print_init_text_cmnd(pdu);
+
+	pdu->length = ntohl(pdu->length);
+	pdu->init_task_tag = ntohl(pdu->init_task_tag);
+	pdu->target_xfer_tag = ntohl(pdu->target_xfer_tag);
+	pdu->cmd_sn = ntohl(pdu->cmd_sn);
+	pdu->exp_stat_sn = ntohl(pdu->exp_stat_sn);
+
+	if( (cmnd = get_new_cmnd()) == NULL) {
+		return -1;
+	}
+
+	cmnd->conn = conn;
+	cmnd->session = session;
+	cmnd->opcode_byte = pdu->opcode;
+	cmnd->command_flags = pdu->flags;
+	cmnd->first_burst_len = pdu->length;
+	cmnd->init_task_tag = pdu->init_task_tag;
+	cmnd->target_xfer_tag = pdu->target_xfer_tag;
+	cmnd->cmd_sn = pdu->cmd_sn;
+	cmnd->stat_sn = pdu->exp_stat_sn;
+
+	if (pdu->length > 0) {
+		/* read length bytes of text data into a newly-allocated buffer */
+		err = read_single_data_seg(buffer, cmnd, pdu->length, &cmnd->ping_data);
+		if (err <= 0) {
+			free(cmnd);
+			return err;
+		}
+	} else if (conn->text_in_progress == NULL ||
+						 ((struct iscsi_cmnd *)conn->text_in_progress)->state
+												!= ISCSI_BLOCKED_SENDING_TEXT) {
+		/* this should probably be removed after testing */
+		TRACE_WARNING("Empty Text Request, CmdSN %u, ExpCmdSN "
+					  "%u, ITT %u, opcode 0x%02x\n",
+					  cmnd->cmd_sn, session->exp_cmd_sn,
+					  cmnd->init_task_tag, cmnd->opcode_byte);
+	}
+
+    pthread_mutex_lock(&session->cmnd_mutex);
+    
+    err = check_cmd_sn(cmnd, pdu, session, 1);
+
+	pthread_mutex_unlock(&session->cmnd_mutex);
+
+	if (err < 0) {
+		/* out of range, silently ignore it */
+		TRACE_ERROR("ignoring out of range CmdSN %u, ExpCmdSN %u, ITT %u, "
+					"opcode 0x%02x\n",
+					cmnd->cmd_sn, session->exp_cmd_sn,
+					cmnd->init_task_tag, cmnd->opcode_byte);
+		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 0);
+		free(cmnd->ping_data);
+		free(cmnd);
+	} else {
+		if (err == 0) {
+			/* do immediate command or expected non-immediate command now */
+			do_text_request(cmnd, conn, session);
+		} else {
+			/* within range but out of order, queue it for later */
+			cmnd->state = ISCSI_QUEUE_OTHER;
+		}
+
+		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 1);
+	}
+	return 0;
+}
+
+/* 
+ * executed only by the rx thread.
+ * called when a NopIn has just been received.
+ * INPUT: connection, session and the buffer containing the nopin pdu
+ * OUTPUT: 0 if everything is okay, < 0 if there is trouble
+ */
+static int
+handle_nopout(struct iscsi_conn *conn,
+			  struct iscsi_session *session,
+			  uint8_t *buffer)
+{
+	struct iscsi_init_nopout *pdu = (struct iscsi_init_nopout *) buffer;
+	struct iscsi_cmnd *cmnd;
+	int err;
+
+	if (TRACE_TEST(TRACE_ISCSI_FULL))
+		print_init_nopout(pdu);
+
+	pdu->length = ntohl(pdu->length);
+	pdu->init_task_tag = ntohl(pdu->init_task_tag);
+	pdu->target_xfer_tag = ntohl(pdu->target_xfer_tag);
+	pdu->cmd_sn = ntohl(pdu->cmd_sn);
+	pdu->exp_stat_sn = ntohl(pdu->exp_stat_sn);
+
+	if (pdu->init_task_tag == ALL_ONES) {
+		/* Draft 20, Section 10.18.1 Initiator Task Tag
+		 * "If the Initiator Task Tag contains 0xffffffff, the I bit MUST be
+		 * set to 1 and the CmdSN is not advanced after this PDU is sent."
+		 */
+		if (!(pdu->opcode & I_BIT)) {
+			TRACE_ERROR("NopIn with ITT 0x%08x but I bit not set\n", ALL_ONES);
+			pdu->opcode |= I_BIT;	/* so CmdSN is not advanced below */
+		}
+		if (pdu->length) {
+			/* should not have ping data if not expecting a response */
+			TRACE_ERROR("NopIn with ITT 0x%08x but DSL %u\n",
+						ALL_ONES, pdu->length);
+		}
+	}
+
+	if (pdu->target_xfer_tag != ALL_ONES) {
+		/* this is a reply to earlier NopIn sent from target */
+		/* should now find that existing command in our queue */
+		cmnd = search_tags(conn, pdu->init_task_tag, pdu->target_xfer_tag, 0);
+		if (!cmnd) {
+			TRACE_ERROR("No command found for NopIn with TTT 0x%08x\n",
+						pdu->target_xfer_tag);
+		} else {
+			/* this is the reply we expected.  Check the LUN and then free
+			 * the cmnd (which should not have any ping data attached to it).
+			 */
+			 cmnd->state = ISCSI_DEQUEUE;
+#if 0
+			 atomic_dec(&conn->outstanding_nopins);
+#endif
+		}
+#if 0
+		TRACE(TRACE_ISCSI, "Got NopIn ping reply, TTT %u, %u nopins left\n",
+			  pdu->target_xfer_tag, atomic_read(&conn->outstanding_nopins));
+#endif
+	}
+
+	if ((cmnd = get_new_cmnd()) == NULL) {
+		return -1;
+	}
+
+	cmnd->state = ISCSI_PING;
+	cmnd->conn = conn;
+	cmnd->session = session;
+	cmnd->opcode_byte = pdu->opcode;
+	cmnd->data_length = pdu->length;
+	cmnd->init_task_tag = pdu->init_task_tag;
+	cmnd->target_xfer_tag = ALL_ONES;
+	cmnd->cmd_sn = pdu->cmd_sn;
+	cmnd->stat_sn = pdu->exp_stat_sn;
+
+	if (pdu->length > 0 ) {
+		/* read length bytes of nopout data into a newly-allocated buffer */
+		err = read_single_data_seg(buffer, cmnd, pdu->length, &cmnd->ping_data);
+		if (err <= 0) {
+			free(cmnd);
+			return err;
+		}
+	}
+
+    pthread_mutex_lock(&session->cmnd_mutex);
+
+	err = check_cmd_sn(cmnd, pdu, session, 1);
+	
+    pthread_mutex_unlock(&session->cmnd_mutex);
+
+	if (err < 0 || (err == 0 && pdu->init_task_tag == ALL_ONES)) {
+		/* nopout is out of range, or is in order but is not used as a
+		 * ping request (so no reply NopIn expected), silently ignore it
+		 */
+		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 0);
+		if (err < 0) {
+			/* out of range, silently ignore it */
+			TRACE_ERROR("ignoring out of range CmdSN %u, ExpCmdSN %u, "
+						"ITT %u, opcode 0x%02x\n", 
+						cmnd->cmd_sn, session->exp_cmd_sn,
+						cmnd->init_task_tag, cmnd->opcode_byte);
+		} else if (!(cmnd->opcode_byte & I_BIT)) {
+			/* the NopOut pdu was not immediate, CmdSN was advanced */
+			session->max_cmd_sn++;
+		}
+		TRACE(TRACE_DEBUG, "tossing CmdSN %u, ExpCmdSN %u, ITT %u "
+							"opcode 0x%02x\n",
+							cmnd->cmd_sn, session->exp_cmd_sn,
+							cmnd->init_task_tag, cmnd->opcode_byte);
+		free(cmnd->ping_data);
+		free(cmnd);
+	} else {
+		if (err > 0) {
+			/* within range but out of order, queue it for later */
+			cmnd->state = ISCSI_QUEUE_OTHER;
+		}
+		TRACE(TRACE_DEBUG, "queueing CmdSN %u, ExpCmdSN %u, ITT %u "
+							"opcode 0x%02x, state %u, data_length %u\n",
+							cmnd->cmd_sn, session->exp_cmd_sn,
+							cmnd->init_task_tag, cmnd->opcode_byte, cmnd->state,
+							cmnd->data_length);
+		ack_sent_cmnds(conn, cmnd, pdu->exp_stat_sn, 1);
+	}
+	return 0;
+}
+
+
 /*
  * executed only by the rx thread.
  * called when a Logout Request has just been received.
@@ -1631,6 +2280,7 @@ handle_discovery_rsp(struct iscsi_cmnd *cmnd,
 		next_state = ISCSI_AWAIT_MORE_TEXT;
 		next_in_progress = cmnd;
 	}
+    TRACE(TRACE_VERBOSE, "size of packet being sent: %u", size);
 	hdr->length = htonl(size);
 	hdr->init_task_tag = htonl(cmnd->init_task_tag);
 	hdr->stat_sn = htonl(conn->stat_sn++);
@@ -1856,6 +2506,647 @@ handle_nopin(struct iscsi_cmnd *cmnd,
 
 /*
  * executed only by the tx thread.
+ * when state is ISCSI_MGT_FN_DONE:
+ * handle_iscsi_mgt_fn_done: This is responsible for building the task mgt
+ * response header and transmitting it to the correct initiator.
+ * The command state is set to DEQUEUE to reflect that it is finished.
+ * INPUT: command that is done.
+ * OUTPUT: 0 if everything is okay, < 0 if there is trouble
+ */
+static int
+handle_iscsi_mgt_fn_done(struct iscsi_cmnd *cmnd,
+						 struct iscsi_conn *conn,
+						 struct iscsi_session *session)
+{
+	struct iscsi_targ_task_mgt_response rsp;
+	struct iscsi_cmnd *aborted_command = NULL;
+
+	/* most fields in task management function response pdu go back as 0 */
+	memset(&rsp, 0x0, ISCSI_HDR_LEN);
+
+	rsp.opcode = ISCSI_TARG_TASK_MGMT_RSP;
+	rsp.flags |= F_BIT;
+	rsp.response = cmnd->response;
+	rsp.init_task_tag = htonl(cmnd->init_task_tag);
+	rsp.stat_sn = htonl(conn->stat_sn++);
+
+    pthread_mutex_lock(&session->cmnd_mutex);
+
+	rsp.exp_cmd_sn = htonl(session->exp_cmd_sn);
+	rsp.max_cmd_sn = htonl(session->max_cmd_sn);
+	if (!(cmnd->opcode_byte & I_BIT)) {
+		/* the task management function request pdu was not immediate,
+		 * CmdSN advances
+		 */
+		session->max_cmd_sn++;
+	}
+    pthread_mutex_unlock(&session->cmnd_mutex);
+
+	cmnd->state = ISCSI_DEQUEUE;
+
+	if (send_hdr_only(conn, &rsp) < 0) {
+		return -1;
+	}
+
+	TRACE(TRACE_ISCSI, "task mgt response sent\n");
+
+	if (TRACE_TEST(TRACE_ISCSI_FULL))
+		print_targ_task_mgt_response(&rsp);
+
+	aborted_command = search_tags(conn, cmnd->ref_task_tag, ALL_ONES, 0);
+
+    pthread_mutex_lock(&session->cmnd_mutex);
+
+	if (cmnd->ref_cmd_sn == session->exp_cmd_sn) {
+		session->exp_cmd_sn++;
+		if (aborted_command != NULL)
+			aborted_command->cmd_sn_increment = 0;
+	}
+
+	/* clear the aborted command struct entry by dequeue routine */
+	if (aborted_command != NULL)
+		aborted_command->state = ISCSI_DEQUEUE;
+
+    pthread_mutex_unlock(&session->cmnd_mutex);
+
+    iscsi_tx(conn);
+	return 0;
+}
+
+
+/* until the last data_out received, it's ready for recovery r2t */
+void
+check_r2t_done(struct iscsi_cmnd *cmd, struct iscsi_init_scsi_data_out *hdr)
+{
+	struct iscsi_cookie *next;
+
+	/* in case we lost the last data_out of unsolicited data */
+	if (hdr->offset > cmd->session->oper_param->FirstBurstLength)
+		cmd->unsolicited_data_present = 0;
+
+	if (cmd->unsolicited_data_present) {
+		if (hdr->flags & F_BIT) {
+			cmd->data_sn = 0;
+			cmd->unsolicited_data_present = 0;
+		}
+	} else {
+		if (hdr->flags & F_BIT) {
+			cmd->next_burst_len = 0;
+			cmd->data_sn = 0;
+			/* unhook data_q now */
+			while (cmd->first_data_q) {
+				next = cmd->first_data_q->next;
+				free(cmd->first_data_q);
+				cmd->first_data_q = next;
+			}
+			cmd->last_data_q = NULL;
+			if (!cmd->recovery_r2t)
+				cmd->outstanding_r2t--;
+            iscsi_tx(cmd->conn);
+		}
+	}
+}
+
+static void __attribute__ ((no_instrument_function))
+merge_out_of_order( struct iscsi_init_scsi_data_out *hdr,
+					struct iscsi_cmnd *cmd)
+{
+	uint32_t limit;
+
+	if (cmd->pdu_range_list.offset > hdr->offset)
+		cmd->pdu_range_list.offset = hdr->offset;
+	limit = cmd->pdu_range_list.offset + hdr->length;
+	if (cmd->pdu_range_list.limit < limit)
+		cmd->pdu_range_list.limit = limit;
+	merge_offset_length(&cmd->pdu_range_list, hdr->offset, hdr->length);
+}
+
+/*
+ * executed only by the rx thread.
+ * handle_data: This function is responsible for receiving DataOut pdus that
+ * correspond to a WRITE command. It receives the data in the buffers that
+ * are allocated by the STML. It then has to change the state of the
+ * command and inform the STML about the data received
+ * INPUT: connection and buffer containing the ISCSI_DATA (write) PDU
+ * OUTPUT: 0, if everything is okay, < 0 otherwise
+ */
+static int
+handle_data(struct iscsi_conn *conn,
+			struct iscsi_session *session,
+			uint8_t *buffer)
+{
+	struct iscsi_init_scsi_data_out *hdr =
+		(struct iscsi_init_scsi_data_out *) buffer;
+	struct iscsi_cmnd *cmd;
+	struct targ_error_rec err_rec;
+	struct scatterlist *st_list;
+	int offset, err = 0, giveback = 0;
+	int i;
+	uint32_t data_sn;
+
+	TRACE(TRACE_ENTER_LEAVE, "Entered handle_data\n");
+
+	if (TRACE_TEST(TRACE_ISCSI_FULL))
+		print_init_scsi_data_out(hdr);
+
+	hdr->length = ntohl(hdr->length);
+	hdr->init_task_tag = ntohl(hdr->init_task_tag);
+	hdr->target_xfer_tag = ntohl(hdr->target_xfer_tag);
+	hdr->exp_stat_sn = ntohl(hdr->exp_stat_sn);
+	hdr->offset = ntohl(hdr->offset);
+	data_sn = ntohl(hdr->data_sn);
+
+	/* check data length, should not be bigger than MaxRecvDataSegmentLength */
+	if (hdr->length > conn->max_recv_length) {
+		TRACE_WARNING("DataOut ITT %u, DataSN %u, DSL %u exceeds "
+					  "MaxRecvDataSegmentLength %u\n",
+					  hdr->init_task_tag, data_sn, hdr->length,
+					  conn->max_recv_length);
+		/* now ignore this, since we can deal with it */
+	}
+
+	/* search command queue to match command */
+	cmd = search_tags(conn, hdr->init_task_tag, hdr->target_xfer_tag, 0);
+
+	if (!cmd) {
+		TRACE_ERROR("DataOut ITT %u, DataSN %u, TTT %u, No matching "
+					"command\n", hdr->init_task_tag, data_sn,
+					hdr->target_xfer_tag);
+		TRACE(TRACE_ISCSI, "Probably SCSI cmnd PDU lost - drop it\n");
+		targ_drop_pdu_data(conn, hdr->length);
+		goto end_handle_data;
+	}
+
+	/* make sure we use the status information, but don't queue this cmd */
+	ack_sent_cmnds(conn, cmd, hdr->exp_stat_sn, 0);
+
+	/* update last time this command got some data back from initiator */
+    gettimeofday(&cmd->timestamp, NULL);
+	if (session->oper_param->DataPDUInOrder
+		&& session->oper_param->DataSequenceInOrder) {
+		/* error recovery ver ref18_04 - SAI */
+		if (cmd->data_done > hdr->offset) {
+			TRACE_WARNING("Dropping duplicate DataOut ITT %u, DataSN %u, "
+						  "Offset %u\n",
+						  hdr->init_task_tag, data_sn, hdr->offset);
+			targ_drop_pdu_data(conn, hdr->length);
+			goto update_handle_data;
+		} else if (cmd->data_done < hdr->offset) {
+			/* offset error - expected packets might have been dropped */
+			TRACE_ERROR("DataOut ITT %u, DataSN %u, Offset %u bigger than "
+						"expected %u\n", hdr->init_task_tag,
+						data_sn, hdr->offset, cmd->data_done);
+
+			TRACE(TRACE_ERROR_RECOVERY, "Start sequence error recovery\n");
+			err_rec.curr_conn = conn;
+			err_rec.pdu_hdr = (struct generic_pdu *) hdr;
+			err_rec.cmd = cmd;
+			err_rec.err_type = SEQUENCE_ERR;
+			if ((err = targ_do_error_recovery(&err_rec)) < 0)
+				goto end_handle_data;
+
+			if (session->oper_param->ErrorRecoveryLevel != SESSION_RECOVERY) {
+				check_r2t_done(cmd, hdr);
+			}
+			goto end_handle_data;
+		} else if (data_sn != cmd->data_sn) {
+			TRACE_WARNING("DataOut ITT %u, Got DataSN %u, expected %u\n",
+						  hdr->init_task_tag, data_sn,
+						  cmd->data_sn);
+			/* now ignore this, since we can deal with it */
+		}
+	}
+
+	cmd->recovery_r2t = 0;
+	cmd->data_sn = data_sn + 1;
+
+	/* check FirstBurstLength and MaxBurstLength */
+	if (cmd->unsolicited_data_present) {
+		/* this DataOut PDU is part of the unsolicited first burst */
+		cmd->seq_range_list.offset = 0;
+
+		if (cmd->first_burst_len == 0
+			&& !session->oper_param->DataPDUInOrder) {
+			cmd->pdu_range_list.offset = ALL_ONES;
+			cmd->pdu_range_list.limit = 0;
+		}
+
+		if (!session->oper_param->DataPDUInOrder) {
+			/* DataPDUInOrder==No, so PDU can be out-of-order */
+			merge_out_of_order(hdr, cmd);
+		}
+
+		/* number of bytes read so far in this unsolicited first burst */
+		cmd->first_burst_len += hdr->length;
+
+		if (cmd->first_burst_len > session->oper_param->FirstBurstLength) {
+			TRACE_WARNING("DataOut ITT %u, DataSN %u, data length %u "
+						  "exceeds FirstBurstLength %u\n",
+						  hdr->init_task_tag, data_sn, cmd->first_burst_len,
+						  session->oper_param->FirstBurstLength);
+			/* now ignore this, since we can deal with it */
+		}
+
+		if (hdr->flags & F_BIT) {
+			/* end of the unsolicited first burst */
+			if (!session->oper_param->DataPDUInOrder) {	
+				/* DataPDUInOrder==No, PDUs can be out-of-order */
+				check_range_list_complete(&cmd->pdu_range_list);
+				free_range_list(&cmd->pdu_range_list);
+			}
+
+			/* unsolicited data should always be the first sequence */
+			if (!session->oper_param->DataSequenceInOrder) {	
+				/* DataSequenceInOrder==No, sequence can be out-of-order */
+				merge_offset_length(&cmd->seq_range_list, 0,
+									cmd->first_burst_len);
+			}
+		}
+	} else {
+		/* this DataOut PDU is part of a solicited burst */
+		if (cmd->next_burst_len == 0) {
+			/* this is the first PDU in a solicited burst */
+			cmd->seq_range_list.offset = hdr->offset;
+			if (!session->oper_param->DataPDUInOrder) {
+				cmd->pdu_range_list.offset = ALL_ONES;
+				cmd->pdu_range_list.limit = 0;
+			}
+		}
+
+		if (!session->oper_param->DataPDUInOrder) {
+			/* DataPDUInOrder==No, so PDU can be out-of-order */
+			merge_out_of_order(hdr, cmd);
+		}
+
+		/* number of bytes read so far in this solicited burst */
+		cmd->next_burst_len += hdr->length;
+
+		if (cmd->next_burst_len > session->oper_param->MaxBurstLength) {
+			TRACE_WARNING("DataOut ITT %u, DataSN %u, data length %u "
+						  "exceeds MaxBurstLength %u\n",
+						  hdr->init_task_tag, data_sn, cmd->next_burst_len,
+						  session->oper_param->MaxBurstLength);
+			/* now ignore this, since we can deal with it */
+		}
+
+		if (hdr->flags & F_BIT) {
+			/* this is the end of the current solicited burst */
+			if (!session->oper_param->DataPDUInOrder) {
+				/* DataPDUInOrder==No, PDUs can be out-of-order */
+				check_range_list_complete(&cmd->pdu_range_list);
+				cmd->seq_range_list.offset = cmd->pdu_range_list.offset;
+				free_range_list(&cmd->pdu_range_list);
+			}
+
+			if (!session->oper_param->DataSequenceInOrder) {
+				/* DataSequenceInOrder==No, sequence can be out-of-order */
+				merge_offset_length(&cmd->seq_range_list,
+									cmd->seq_range_list.offset,
+									cmd->next_burst_len);
+			}
+
+			/* reset counters for start of next solicited burst (if any) */
+			cmd->next_burst_len = 0;
+			cmd->data_sn = 0;
+
+			/* this is the end of a solicited burst,
+			 * so current R2T is no longer outstanding
+			 * we can now generate another R2T
+			 * to ask for remaining solicited data.
+			 * (but not until after this data has actually been read)
+			 */
+			giveback = 1;
+		}
+	}
+
+	if ((cmd->state == ISCSI_QUEUE_CMND)
+		|| (cmd->state == ISCSI_QUEUE_CMND_RDY)) {
+		/* cdeng, store unsolicited data for queued command */
+		err = save_unsolicited_data(cmd,hdr->offset,(struct generic_pdu *)hdr);
+		goto end_handle_data;
+	} else if ((cmd->state != ISCSI_BUFFER_RDY)
+			   && (cmd->state != ISCSI_ALL_R2TS_SENT)) {
+		TRACE(TRACE_SEM, "handle_data: Blocked on unsolicited_data_sem\n");
+        sem_wait(&cmd->unsolicited_data_sem);
+		TRACE(TRACE_SEM, "handle_data: Unblocked on unsolicited_data_sem\n");
+	}
+
+	/* receive this data */
+	st_list = (struct scatterlist *) cmd->cmnd->req->sr_buffer;
+
+	if (session->oper_param->DataPDUInOrder
+		&& session->oper_param->DataSequenceInOrder) {
+		/* everything is in order, pick up where we left off after reading data
+		 * from DataOut pdu (or from data segment of a WRITE containing
+		 * immediate data)
+		 */
+		offset = cmd->scatter_list_offset;
+		st_list += cmd->scatter_list_count;
+		TRACE(TRACE_DEBUG, "scatter list offset %d, count %d\n",
+			  cmd->scatter_list_offset, cmd->scatter_list_count);
+	} else {
+		offset = skip_thru_sg_list(st_list, &i, hdr->offset);
+		st_list += i;
+		TRACE(TRACE_DEBUG, "scatter list offset %d, index %d\n", offset, i);
+	}
+
+	TRACE(TRACE_DEBUG, "handle_data: receiving data for cmd_sn %.8x "
+		  "init_task_tag %.8x target_xfer_tag %.8x\n",
+		  cmd->cmd_sn, cmd->init_task_tag, cmd->target_xfer_tag);
+
+	/* read data directly into midlevel buffers */
+	if ((err = read_list_data_seg((struct generic_pdu *) hdr, cmd, st_list,
+																offset)) <= 0)
+		goto end_handle_data;
+
+	/* error recovery ver ref18_04 - SAI */
+	if (cmd->first_data_q)
+		search_data_q(cmd);
+
+	if (cmd->data_done >= cmd->data_length) {
+		/* we have just finished reading everything the command expected */
+		if (!(hdr->flags & F_BIT)) {
+			TRACE_ERROR("DataOut ITT %u, DataSN %u, F bit = 0 but data done "
+						"%u >= data length %u\n",
+						hdr->init_task_tag, data_sn, cmd->data_done,
+						cmd->data_length);
+			hdr->flags |= F_BIT;	/* so we wakeup tx thread below */
+		}
+		if (!session->oper_param->DataSequenceInOrder) {
+			cmd->seq_range_list.offset = 0;
+			cmd->seq_range_list.limit = cmd->data_done;
+			check_range_list_complete(&cmd->seq_range_list);
+			free_range_list(&cmd->seq_range_list);
+		}
+
+		/* tell the scsi midlevel that all the expected data has arrived */
+        pthread_mutex_lock(&session->cmnd_mutex);
+        cmd->state = ISCSI_DATA_IN;
+        err = scsi_rx_data(cmd->cmnd);
+        pthread_mutex_unlock(&session->cmnd_mutex);
+            
+	}
+
+update_handle_data:
+	if (hdr->flags & F_BIT) {
+		/* end of DataOut pdu sequence, tx thread may need to do something */
+		cmd->outstanding_r2t -= giveback;
+        iscsi_tx(conn);
+	}
+
+/* Added for Error Recovery - SAI */
+end_handle_data:
+
+	/* update last time this command got some data back from initiator */
+	if (cmd)
+        gettimeofday(&cmd->timestamp, NULL);
+
+	TRACE(TRACE_ENTER_LEAVE, "Leave handle_data, err = %d\n", err);
+	return err;
+}
+
+/*
+ * executed only by the rx thread.
+ * Added by SAI for Handling SNACK requests from Initiator as 
+ * part of Error Recovery 
+ * For details, see Draft 20, Section 10.16 SNACK Request
+ */
+
+static int
+handle_snack(struct iscsi_conn *conn,
+			 struct iscsi_session *session,
+			 uint8_t *buffer)
+{
+	uint32_t runlen, begrun, reason = REASON_DATA_SNACK;
+	int delta1, delta2;
+	struct iscsi_init_snack *pdu = (struct iscsi_init_snack *) buffer;
+	struct iscsi_cmnd *cmd = NULL;
+
+	TRACE(TRACE_ENTER_LEAVE, "Enter handle_snack\n");
+
+	if (TRACE_TEST(TRACE_ERROR_RECOVERY))
+		print_init_snack(pdu);
+
+	pdu->length = ntohl(pdu->length);
+	pdu->init_task_tag = ntohl(pdu->init_task_tag);
+	pdu->target_xfer_tag = ntohl(pdu->target_xfer_tag);
+	pdu->exp_stat_sn = ntohl(pdu->exp_stat_sn);
+	pdu->begrun = ntohl(pdu->begrun);
+	pdu->runlen = ntohl(pdu->runlen);
+
+	runlen = pdu->runlen;
+	begrun = pdu->begrun;
+
+	/* SNACK has no CmdSN but does have an ExpStatSN so use that now */
+	ack_sent_cmnds(conn, NULL, pdu->exp_stat_sn, 0);
+
+	if (!session->oper_param->ErrorRecoveryLevel) {
+		TRACE_ERROR("Got SNACK type %u when ErrorRecoveryLevel=0, reject "
+					"SNACK\n", pdu->flags & SNACK_TYPE);
+		goto out_reject;
+	}
+
+	switch (pdu->flags & SNACK_TYPE) {
+
+	case DATA_R2T_SNACK:
+		{
+			if (pdu->init_task_tag == ALL_ONES) {
+				TRACE_ERROR("Data/R2T SNACK with ITT = 0x%08x, reject "
+							"SNACK\n", pdu->init_task_tag);
+				goto out_reject;
+			} else if (pdu->target_xfer_tag != ALL_ONES) {
+				TRACE_ERROR("Data/R2T SNACK with TTT = %u, reject SNACK\n",
+							pdu->target_xfer_tag);
+				goto out_reject;
+			} else if (!(session->targ_snack_flg & DATA_SNACK_ENABLE)) {
+				TRACE_ERROR("Data/R2T SNACK not enabled, reject SNACK\n");
+				goto out_reject;
+			} else if (session->targ_snack_flg & DATA_SNACK_REJECT) {
+				TRACE(TRACE_ERROR_RECOVERY,
+					  "handle_snack: Send Data-SNACK Reject for SNACK\n");
+				goto out_reject;
+			} else {
+				TRACE_WARNING("Got Data/R2T-SNACK for ITT %u\n",
+							  pdu->init_task_tag);
+			}
+		}
+		break;
+
+	case STATUS_SNACK:
+		{
+			if (pdu->init_task_tag != ALL_ONES) {
+				TRACE_ERROR("Status SNACK with ITT = %u, reject SNACK\n",
+							pdu->init_task_tag);
+				goto out_reject;
+			} else if (pdu->target_xfer_tag != ALL_ONES) {
+				TRACE_ERROR("Status SNACK with TTT = %u, reject SNACK\n",
+							pdu->target_xfer_tag);
+				goto out_reject;
+			} else if (!(session->targ_snack_flg & STATUS_SNACK_ENABLE)) {
+				TRACE_ERROR("Status SNACK not enabled, reject SNACK\n");
+				goto out_reject;
+			} else {
+				TRACE_WARNING("Got Status-SNACK\n");
+			}
+		}
+		break;
+
+	case DATACK_SNACK:
+		{
+			if (pdu->init_task_tag != ALL_ONES) {
+				TRACE_ERROR("Status SNACK with ITT = %u, reject SNACK\n",
+							pdu->init_task_tag);
+				goto out_reject;
+			} else if (pdu->target_xfer_tag == ALL_ONES) {
+				TRACE_ERROR("DataACK SNACK with TTT = 0x%08x, reject "
+							"SNACK\n", pdu->target_xfer_tag);
+				goto out_reject;
+			} else if (runlen != 0) {
+				TRACE_ERROR("DataACK SNACK with RunLength=%u, reject "
+							"SNACK\n", runlen);
+				goto out_reject;
+			} else if (!(session->targ_snack_flg & DATACK_SNACK_ENABLE)) {
+				TRACE_ERROR("DataACK SNACK not enabled, reject SNACK\n");
+				goto out_reject;
+			} else {
+				TRACE(TRACE_ERROR_RECOVERY, "Got DataACK SNACK, TTT = %u\n",
+						pdu->target_xfer_tag);
+			}
+			/* we have nothing more to do with this type of snack */
+			goto out;
+		}
+
+	case R_DATA_SNACK:
+		{
+			if (pdu->init_task_tag == ALL_ONES) {
+				TRACE_ERROR("R-Data SNACK with ITT = 0x%08x, reject "
+							"SNACK\n", pdu->init_task_tag);
+				goto out_reject;
+			} else if (pdu->target_xfer_tag == 0
+						|| pdu->target_xfer_tag == ALL_ONES) {
+				TRACE_ERROR("R-Data SNACK with TTT = 0x%08x, reject "
+							"SNACK\n", pdu->target_xfer_tag);
+				goto out_reject;
+			} else if (begrun != 0) {
+				TRACE_ERROR("R-Data SNACK with BegRun=%u, reject SNACK\n",
+							begrun);
+				goto out_reject;
+			} else if (runlen != 0) {
+				TRACE_ERROR("R-Data SNACK with RunLength=%u, reject "
+							"SNACK\n", runlen);
+				goto out_reject;
+			}
+			TRACE_ERROR("R-Data SNACK, type %u, ITT = %u, not implemented, "
+						"reject SNACK\n", 
+						pdu->flags & SNACK_TYPE, pdu->init_task_tag);
+			goto out_reject;
+		}
+
+	default:
+		{
+			TRACE_ERROR("Invalid SNACK type %u, ITT = %u, reject SNACK\n",
+						pdu->flags & SNACK_TYPE,
+						pdu->init_task_tag);
+			goto out_reject;
+		}
+	}	/* switch */
+
+
+	/* here only if SNACK type is DATA_R2T_SNACK or STATUS_SNACK */
+
+    pthread_mutex_lock(&session->cmnd_mutex);
+	for (cmd = session->cmnd_list; cmd != NULL; cmd = cmd->next) {
+		if (cmd->init_task_tag == pdu->init_task_tag
+			&& (pdu->flags & SNACK_TYPE) == DATA_R2T_SNACK
+			&& !cmd->retransmit_flg) {
+			if (cmd->state == ISCSI_SENT) {
+				/* Command was a READ, SNACK must be to retransmit DataIn pdus*/
+				if (cmd->data_sn >= pdu->begrun) {
+					/* have at least 1 DataIn pdu to retransmit for this READ */
+					TRACE(TRACE_ERROR_RECOVERY,
+						  "handle_snack: Re-Transmit Data on SNACK Request\n");
+					cmd->retransmit_flg = 1;
+					cmd->scatter_list_count = 0;
+					cmd->scatter_list_offset = 0;
+					/* set limits for which DataIn pdus should be resent */
+					cmd->startsn = pdu->begrun;
+					if (!pdu->runlen)
+						cmd->endsn = cmd->data_sn;
+					else
+						cmd->endsn = pdu->begrun + pdu->runlen - 1;
+					/* signal the tx thread to do the retransmission */
+					cmd->state = ISCSI_DONE;
+                    iscsi_tx(conn);
+				}
+			} else if (cmd->state == ISCSI_BUFFER_RDY) {
+				/* Command was a WRITE, SNACK must be to retransmit R2T pdus */
+				if (cmd->r2t_sn >= pdu->begrun) {
+					/* Found the corresponding R2T PDU - re-transmit it */
+					TRACE(TRACE_ERROR_RECOVERY,
+						  "handle_snack: Re-Transmit R2T on SNACK Request\n");
+
+					cmd->retransmit_flg = 1;
+					cmd->startsn = begrun;
+					if (!pdu->runlen) {
+						cmd->endsn = cmd->r2t_sn;
+					} else
+						cmd->endsn = pdu->begrun + pdu->runlen - 1;
+					/* signal the tx thread to do the retransmission */
+                    iscsi_tx(conn);
+				}
+			} else {
+				/* RFC 3720 Section 10.16. SNACK Request
+				 * "Any SNACK that requests a numbered-resonse, Data, or R2T
+				 * that was not sent by the target or was already acknowledged
+				 * by the initiator, MUST be rejected with a reason code of
+				 * 'Protocol error'."
+				 */
+				reason = REASON_PROTOCOL_ERR;
+                pthread_mutex_unlock(&session->cmnd_mutex);
+				goto out_reject;
+			}
+		} else if ((pdu->flags & SNACK_TYPE) == STATUS_SNACK) {
+			if (cmd->state == ISCSI_SENT) {
+				delta1 = cmd->stat_sn - begrun;
+				delta2 = delta1 - runlen + 1;
+				if (delta1 >= 0 && (runlen == 0 || delta2 <= 0)) {
+					/* Found the corresponding Status PDU - re-transmit it*/
+					TRACE(TRACE_ERROR_RECOVERY,
+						  "handle_snack: Re-Transmit iscsi Response "
+						  "on SNACK Request\n");
+
+					cmd->retransmit_flg = 1;
+					cmd->state = ISCSI_RESEND_STATUS;
+                    iscsi_tx(conn);
+				}
+			}
+		} else {
+				/* RFC 3720 Section 10.16. SNACK Request
+				 * "Any SNACK that requests a numbered-resonse, Data, or R2T
+				 * that was not sent by the target or was already acknowledged
+				 * by the initiator, MUST be rejected with a reason code of
+				 * 'Protocol error'."
+				 */
+				reason = REASON_PROTOCOL_ERR;
+                pthread_mutex_unlock(&session->cmnd_mutex);
+				goto out_reject;
+		}
+	}
+    pthread_mutex_unlock(&session->cmnd_mutex);
+
+out:
+	TRACE(TRACE_ENTER_LEAVE, "Leave handle_snack \n");
+
+	return 0;
+
+out_reject:
+	enqueue_reject(conn, reason);
+	goto out;
+}
+
+
+/*
+ * executed only by the tx thread.
  * iscsi_dequeue: this function frees up a command's allocated memory
  * after it has been removed from the session list (before the call)
  * INPUT: command which has to be freed
@@ -1953,6 +3244,235 @@ find_iovec_needed(uint32_t data_len, struct scatterlist *st_list, uint32_t offse
 
 	return (i);
 }
+
+/*
+ * executed only by the tx thread when state is ISCSI_BUFFER_RDY.
+ * iscsi_tx_r2t: this function transmits a ready-to-transfer to the
+ * Initiator so that it can transmit the data necessary for a WRITE
+ * INPUT: command for which R2T needs to be transferred
+ * OUTPUT: 0 if everything is okay, < 0 if there is trouble
+ *
+ * during a WRITE, the following fields in struct iscsi_cmnd maintain state:
+ *
+ *	data_length		The total number of bytes to be received in this WRITE
+ *					(includes bytes in immediate and unsolicited pdus)
+ *					Set from EDTL in iSCSI command and never changed
+ *
+ *	data_done		Number of bytes correctly received so far in this WRITE
+ *					(includes bytes in immediate and unsolicited pdus)
+ *					When sequences and PDUs are being sent in order,
+ *					this value will be the expected offset of the next
+ *					DataOut PDU we should receive from the initiator.
+ *					WRITE should be finished when this equals data_length
+ *
+ *	first_burst_len	Number of unsolicited bytes received so far in this WRITE
+ *					(counts only bytes in immediate and unsolicited pdus)
+ *
+ *	immediate_data_present		1 until all immediate data have been read
+ *
+ *	unsolicited_data_present	1 until all unsolicited pdus have been read
+ *
+ *	next_burst_len	Number of solicited bytes received so far in this sequence
+ *					reset to 0 on receiving last DataOut PDU in a sequence
+ *					which is used to detect first DataOut PDU in next sequence
+ *
+ *	r2t_data_total	The total number of bytes to be solicited by R2Ts
+ *					Set during iSCSI command processing and never changed
+ *					Used only to initialize r2t_data on midlevel call back
+ *					(can be negative)
+ *
+ *	r2t_data		The remaining number of bytes left to be solicited by R2Ts
+ *					set to 0 until midlevel calls back iscsi_rdy_to_xfer()
+ *					to indicate target's receive buffers have been set up
+ *					updated as R2Ts are sent
+ *					(can be negative)
+ *
+ *	retransmit_flg	1 when retransmitting a previously sent R2T in response to
+ *					a timeout on target or an explicit SNACK from initiator
+ *					Not set on a timeout when recovery_r2t is also non-zero.
+ *
+ *	recovery_r2t	non-zero when recovering from target-detected error in a
+ *					DataOut received from initiator
+ *					1	waiting to get DataOut with F=1 in current burst
+ *					2	got DataOut with F=1 or got timeout, need to send
+ *						the recovery R2T to initiator
+ *					0	after recovery R2T has been sent
+ *
+ *	startsn			used only when retransmit_flg or recovery_r2t are non-zero
+ *					holds R2TSN of next cookie to be used to send next R2T
+ *
+ *	endsn			used only when retransmit_flg or recovery_r2t are non-zero
+ *					holds R2TSN of last cookie to be used to send R2Ts
+ *
+ *	prev_data_sn	used only during READ commands
+ *
+ *	timestamp		set to jiffies upon receipt of iSCSI command and DataOut
+ *					pdus, also on sending of an R2T.  Used to check for
+ *					initiator inactivity which provokes a timeout R2T retransmit
+ *
+ *	outstanding_r2t	keeps track of number of R2Ts sent to initiator but for
+ *					which the end of the corresponding solicited sequence has
+ *					not been detected (i.e., by receiving a DataOut pdu with
+ *					the F bit set).  Initialized to 0, incremented for every
+ *					new or recovery (i.e., not retransmitted) R2T sent,
+ *					decremented for every DataOut pdu received with F bit set.
+ *
+ *	r2t_sn			counts number of new and recovery (i.e., not retransmitted)
+ *					R2Ts sent so far to initiator for this command.  This value
+ *					becomes the R2TSN in the next new or recovery R2T sent.
+ *					Initialized to 0, incremented for every new or recovery R2T
+ *					sent.
+ *
+ *	data_sn			number expected in DataSN field of next DataOut pdu received
+ *					in current sequence.  Initialized to 0 and reset to 0 at the
+ *					end of every sequence (i.e., upon receiving a DataOut with
+ *					F bit set).  Incremented by one for every DataOut pdu
+ *					received.
+ */
+static int
+iscsi_tx_r2t(struct iscsi_cmnd *cmnd,
+			 struct iscsi_conn *conn,
+			 struct iscsi_session *session)
+{
+	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
+	int err = 0;
+	struct iscsi_targ_r2t *hdr;
+	int data_length_left;
+	int max_burst_len = 0;
+	struct iscsi_cookie *cookie = NULL;
+
+	TRACE(TRACE_ENTER_LEAVE, "Enter iscsi_tx_r2t, r2t_data %d, "
+		  "retransmit_flg %u, outstanding_r2t %d, recovery_r2t %u\n",
+		  cmnd->r2t_data, cmnd->retransmit_flg, cmnd->outstanding_r2t,
+		  cmnd->recovery_r2t);
+
+	if ((data_length_left = cmnd->r2t_data) <= 0 && !cmnd->retransmit_flg
+		&& cmnd->recovery_r2t != 2) {
+		/* no need to send any (more) R2Ts (yet) */
+		goto r2t_out;
+	}
+
+	/* try to send all the R2T's at once, but limited by MaxOutstandingR2T */
+	do {
+		if (session->oper_param->MaxOutstandingR2T <= cmnd->outstanding_r2t
+			&& !cmnd->retransmit_flg && cmnd->recovery_r2t != 2) {
+			/* we have hit the limit on number of outstanding R2Ts allowed */
+			goto r2t_out;
+		}
+
+		memset(iscsi_hdr, 0x0, ISCSI_HDR_LEN);
+		hdr = (struct iscsi_targ_r2t *) iscsi_hdr;
+
+		hdr->opcode = ISCSI_TARG_R2T;
+		hdr->flags |= F_BIT;
+		hdr->init_task_tag = htonl(cmnd->init_task_tag);
+		hdr->target_xfer_tag = htonl(cmnd->target_xfer_tag);
+		hdr->stat_sn = htonl(conn->stat_sn);
+		hdr->exp_cmd_sn = htonl(session->exp_cmd_sn);
+		hdr->max_cmd_sn = htonl(session->max_cmd_sn);
+		if ((cmnd->retransmit_flg || cmnd->recovery_r2t == 2)) {
+			/* sending a recovery R2T or retransmitting R2Ts in response to
+			 * an R2T SNACK from initiator
+			 */
+			for (cookie=cmnd->first_r2t_cookie; cookie; cookie=cookie->next) {
+				if (cookie->seq == cmnd->startsn) {
+					/* this cookie lets us regenerate the missing r2t */
+					if (cmnd->retransmit_flg) {
+						TRACE_WARNING("Retransmit R2T, ITT %u R2TSN %u "
+									  "Buffer Offset %u\n",
+									  cmnd->init_task_tag,
+									  cookie->seq, cookie->offset);
+					}
+					hdr->r2t_sn = htonl(cookie->seq);
+					hdr->offset = htonl(cookie->offset);
+					hdr->xfer_len = htonl(cookie->xfer_len);
+					if (cmnd->recovery_r2t == 2) {
+						cmnd->r2t_data = data_length_left = cmnd->data_length
+										- (cookie->offset + cookie->xfer_len);
+					} else if (++cmnd->startsn <= cmnd->endsn && cookie->next) {
+						/* more R2Ts to retransmit */
+						data_length_left = cookie->next->xfer_len;
+					} else {
+						/* last R2T to retransmit, go back to normal r2ts */
+						data_length_left = cmnd->r2t_data;
+						cmnd->retransmit_flg = 0;
+					}
+					break;
+				}
+			}
+			if (cmnd->recovery_r2t == 2) {
+				/* done with recovery if get here */
+				cmnd->recovery_r2t = 0;
+			}
+			if (!cookie) {
+				/* no cookies to retransmit, go back to normal r2t processing */
+				data_length_left = cmnd->r2t_data;
+				cmnd->retransmit_flg = 0;
+				continue;
+			}
+		} else {
+
+			hdr->r2t_sn = htonl(cmnd->r2t_sn++);
+			hdr->offset = htonl(cmnd->data_length - data_length_left);
+
+			max_burst_len = session->oper_param->MaxBurstLength;
+
+			/* form an R2T cookie to be used for re-transmissions - SAI */
+			if (session->oper_param->ErrorRecoveryLevel > 0) {
+				cookie = create_r2t_cookie(cmnd);
+
+				if (cookie) {
+					cookie->seq = cmnd->r2t_sn - 1;
+					cookie->offset = cmnd->data_length - data_length_left;
+					cookie->xfer_len = (data_length_left <= max_burst_len)
+											? data_length_left : max_burst_len;
+				}
+			}
+
+			if (data_length_left <= max_burst_len) {
+				/* this is the last R2T we need to send for this command */
+				hdr->xfer_len = htonl(data_length_left);
+				data_length_left = 0;
+			} else {
+				hdr->xfer_len = htonl(max_burst_len);
+				data_length_left -= max_burst_len;
+			}
+			cmnd->r2t_data = data_length_left;
+
+			/* if DataSequenceInOrder is no, send r2t offset in reverse order */
+			if (!session->oper_param->DataSequenceInOrder)
+				hdr->offset = htonl(data_length_left
+								+ cmnd->first_burst_len);
+
+			/* Increment the outstanding R2T for every R2T sent - SAI */
+			cmnd->outstanding_r2t++;
+		}
+
+		if (send_hdr_only(conn, iscsi_hdr) < 0) {
+			err = -1;
+			goto r2t_out;
+		}
+
+		TRACE(TRACE_ISCSI, "r2t sent, ITT %u, offset %d\n",
+			  cmnd->init_task_tag,
+			  ntohl(hdr->offset));
+
+		if (TRACE_TEST(TRACE_ISCSI_FULL))
+			print_targ_r2t(hdr);
+
+		/* store the r2t time stamp - SAI */
+		/* error recovery ver ref18_04 */
+        gettimeofday(&cmnd->timestamp, NULL);
+	} while (data_length_left > 0);
+
+r2t_out:
+	TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_tx_r2t, r2t_data %d, "
+		  "retransmit_flg %u, outstanding_r2t %d, recovery_r2t %u, err %d\n",
+		  cmnd->r2t_data, cmnd->retransmit_flg, cmnd->outstanding_r2t,
+		  cmnd->recovery_r2t, err);
+	return err;
+}
+
 
 /*
  * fill_iovec: This function fills in a given iovec structure so as to
@@ -2639,9 +4159,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
                     case ISCSI_MGT_FN_DONE:
 					{
                         pthread_mutex_unlock(&session->cmnd_mutex);
-#if 0
 						if (handle_iscsi_mgt_fn_done(cmnd, conn, session) < 0)
-#endif
                         {
 							TRACE_ERROR("Trouble in iscsi_mgt_fn_done\n");
 							goto iscsi_tx_thread_out;
@@ -2653,9 +4171,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
                     case ISCSI_BUFFER_RDY:
 					{
                         pthread_mutex_unlock(&session->cmnd_mutex);
-#if 0
 						if (iscsi_tx_r2t(cmnd, conn, session) < 0) 
-#endif
                         {
 							TRACE_ERROR("Trouble in iscsi_tx_r2t\n");
 							goto iscsi_tx_thread_out;
@@ -2682,9 +4198,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
 
                     case ISCSI_QUEUE_CMND_RDY:
 					{
-#if 0
 						if (send_unsolicited_data(cmnd, conn, session) < 0) 
-#endif
                         {
 							TRACE_ERROR("Trouble in send_unsolicited_data\n");
                             pthread_mutex_unlock(&session->cmnd_mutex);
@@ -2981,9 +4495,7 @@ deliver_queue_other(struct iscsi_cmnd *cmnd, struct iscsi_session *session)
 		}
 	} else if (opcode == ISCSI_INIT_TEXT_CMND) {
 		/* this was an out-of-order Text Request */
-#if 0
 		do_text_request(cmnd, cmnd->conn, session);
-#endif
 	} else if (opcode == ISCSI_INIT_LOGOUT_CMND) {
 		/* this was an out-of-order Logout Request */
 		cmnd->state = ISCSI_LOGOUT;
@@ -3186,6 +4698,96 @@ ack_sent_cmnds(struct iscsi_conn *conn,
 	return 0;
 }
 
+
+/* 
+ * executed only by the tx thread when state is ISCSI_QUEUE_CMND_RDY.
+ * copy the data in data_list in iSCSI layer to st_list in SCSI middle level.
+ * if all the data has been read at this time,
+ * then change state to ISCSI_DATA_IN and call scsi_rx_data()
+ * else change state to ISCSI_BUFFER_RDY
+ * this thread is called with session->cmnd_sem lock held by caller (tx thread)
+ */
+static int
+send_unsolicited_data(struct iscsi_cmnd *cmd,
+					  struct iscsi_conn *conn,
+					  struct iscsi_session *session)
+{
+	struct scatterlist *st_list;
+	struct data_list *data;
+	int err;
+	uint32_t expected_data_offset, offset, length, sglen, i, n;
+	uint8_t *buffer, *sgbuf;
+
+	if (cmd->unsolicited_data_present | cmd->immediate_data_present) {
+		/* more unsolicited data has to be read, just stay in this state */
+		return 0;
+	}
+
+	/* all unsolicited data has been read */
+	TRACE(TRACE_ISCSI, "Send_unsolicited_data: cmd_sn %d\n", cmd->cmd_sn);
+
+	if (!cmd->cmnd) {
+		TRACE_ERROR("no cmnd found\n");
+		return -1;
+	}
+
+	st_list = (struct scatterlist *)cmd->cmnd->req->sr_buffer;
+
+	/* copy each buffer in data list to appropriate place in sg list */
+	expected_data_offset = offset = i = 0;
+	data = cmd->unsolicited_data_head;
+	while (data) {
+		/* if items in data list are in correct order by offset,
+		 * then "offset" and "i" are already positioned correctly in the sg list
+		 */
+		if (data->offset != expected_data_offset) {
+			offset = skip_thru_sg_list(st_list, &i, data->offset);
+		}
+
+		/* copy all "length" bytes of data from data list "buffer" to sg list,
+		 * starting at "offset" bytes in ith sg list item */
+		buffer = data->buffer;
+		length = data->length;
+		expected_data_offset = data->offset + length;
+		while (length > 0) {
+			sglen = get_sglen(st_list + i);
+			sgbuf = get_sgbuf(st_list + i);
+			n = sglen - offset;		/* no of bytes left in sg list item's buf */
+			if (n > length)
+				n = length;			/* only this many data bytes left to copy */
+			memcpy(sgbuf + offset, buffer, n);
+			length -= n;
+			buffer += n;
+			offset += n;
+			if (offset >= sglen) {
+				/* copied all bytes in this sg list item's buf, move to next */
+				offset = 0;
+				i++;
+			}
+		}
+
+		/* "i" and "offset" positioned to fill next sg list slot in order */
+		cmd->scatter_list_count = i;
+		cmd->scatter_list_offset = offset;
+		data = data->next;
+	}
+
+	if (cmd->data_done >= cmd->data_length) {
+		/* already read all the data, which was all unsolicited */
+		cmd->state = ISCSI_DATA_IN;
+		if ((err = scsi_rx_data(cmd->cmnd)) < 0) {
+			TRACE_ERROR("scsi_rx_data returned an error\n");
+		}
+	} else {
+		/* more data left to read, which is all solicited */
+		cmd->state = ISCSI_BUFFER_RDY;
+		err = 0;
+	}
+
+	iscsi_tx(conn);
+
+	return err;
+}
 
 /*
  * executed only by the rx thread.
@@ -3750,7 +5352,6 @@ iscsi_server_rx_thread(void *param)
                 terminate = TRUE;
                 continue;
 			}
-#if 0
             case ISCSI_INIT_TEXT_CMND:
 			{
 				TRACE(TRACE_ISCSI, "Got text request, ITT %u\n",
@@ -3765,7 +5366,6 @@ iscsi_server_rx_thread(void *param)
 
 				break;
 			}
-#endif
 
             case ISCSI_INIT_SCSI_CMND:
 			{
@@ -3783,7 +5383,6 @@ iscsi_server_rx_thread(void *param)
 				break;
 			}
 
-#if 0
             case ISCSI_INIT_SCSI_DATA_OUT:
             {
 				TRACE(TRACE_ISCSI, "Got data-out, ITT %u, offset %u\n",
@@ -3799,7 +5398,6 @@ iscsi_server_rx_thread(void *param)
                 
 				break;
 			}
-#endif
 
             case ISCSI_INIT_TASK_MGMT_CMND:
 			{
@@ -3832,7 +5430,6 @@ iscsi_server_rx_thread(void *param)
 				break;
 			}
 
-#if 0
             case ISCSI_INIT_NOP_OUT:
 			{
 				TRACE(TRACE_ISCSI, "Got NOP_OUT, ITT %u\n",
@@ -3861,7 +5458,6 @@ iscsi_server_rx_thread(void *param)
 
 				break;
 			}
-#endif
 
             case ISCSI_TARG_NOP_IN:
             case ISCSI_TARG_SCSI_RSP:
