@@ -71,7 +71,7 @@ static enum e_error_msg_index cur_error_index;
 static struct debug_msg {
     char *content;
 } dbg_msgs[] = {
-    {"*** Log message version is truncated."},
+    {"*** Invalid log message version."},
     {"*** Log message timestamp is truncated."},
     {"*** Log message log level is truncated."},
     {"*** Log message test ID is truncated."},
@@ -191,6 +191,12 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
          * Notify about that fact.
          */
         return 0;
+    }
+    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_VERSION);
+    if (log_ver != TE_LOG_VERSION)
+    {
+        PRINT_ERROR;
+        THROW_EXCEPTION;
     }
     
     /* START PROCESSING OF A NEW MESSAGE */
