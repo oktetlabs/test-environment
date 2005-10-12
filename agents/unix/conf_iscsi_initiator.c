@@ -99,6 +99,7 @@
 #define DEFAULT_CHAP                         "None"
 #define DEFAULT_CHALLENGE_LENGTH             256
 
+#define DEFAULT_HOST_BUS_ADAPTER            0
 #define DEFAULT_INITIATOR_NAME              "iqn.1999-11.edu.unh.iol.iscsi-initiator"
 #define DEFAULT_INITIATOR_ALIAS             "UNH"
 
@@ -165,7 +166,8 @@ typedef struct iscsi_initiator_data {
     iscsi_initiator_type  init_type;
 
     char                  last_cmd[MAX_CMD_SIZE];
-    
+
+    int                   host_bus_adapter;    
     char                  initiator_name[MAX_NAME_LENGTH];
     char                  initiator_alias[MAX_NAME_LENGTH];
     
@@ -237,6 +239,7 @@ iscsi_init_default_ini_parameters(int i)
     /* init_id */
     /* init_type */
     /* initiator name */
+    init_data->host_bus_adapter = DEFAULT_HOST_BUS_ADAPTER;
     strcpy(init_data->initiator_name, DEFAULT_INITIATOR_NAME);
     strcpy(init_data->initiator_alias, DEFAULT_INITIATOR_ALIAS);
     
@@ -315,7 +318,7 @@ ta_system_ex(const char *cmd, ...)
 
     if ((cmdline = (char *)malloc(MAX_CMD_SIZE)) == NULL)
     {
-        ERROR(stderr, "Not enough memory: %s\n", cmdline);
+        ERROR(stderr, "Not enough memory\n");
         return -1;
     }
 
@@ -348,22 +351,22 @@ ta_system_ex(const char *cmd, ...)
     } while (0)
 
 static const char *conf_iscsi_unh_set_fmt =
-    "iscsi_manage init set %s=%s target=%d";
+    "iscsi_manage init set %s=%s target=%d host=%d";
 
 static const char *conf_iscsi_unh_set_int_fmt =
-    "iscsi_manage init set %s=%d target=%d";
+    "iscsi_manage init set %s=%d target=%d host=%d";
 
 static const char *conf_iscsi_unh_force_fmt =
-    "iscsi_manage init force %s=%s target=%d";
+    "iscsi_manage init force %s=%s target=%d host=%d";
 
 static const char *conf_iscsi_unh_force_int_fmt =
-    "iscsi_manage init force %s=%d target=%d";
+    "iscsi_manage init force %s=%d target=%d host=%d";
 
 static const char *conf_iscsi_unh_force_flag_fmt =
-    "iscsi_manage init force %s target=%d";
+    "iscsi_manage init force %s target=%d host=%d";
 
 static const char *conf_iscsi_unh_unset_flag_fmt =
-    "iscsi_manage init unset %s target=%d";
+    "iscsi_manage init unset %s target=%d host=%d";
 
 #define ISCSI_UNH_SET(param_, value_, target_id_) \
     do {                                                                    \
@@ -371,7 +374,8 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_set_fmt, (param_),                  \
-                         (value_), (target_id_)),                           \
+                         (value_), (target_id_),                            \
+                         init_data->host_bus_adapter),                      \
             (param_));                                                      \
     } while (0)
 
@@ -381,7 +385,8 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_set_int_fmt, (param_),              \
-                         (value_), (target_id_)),                           \
+                         (value_), (target_id_),                            \
+                         init_data->host_bus_adapter),                      \
             (param_));                                                      \
     } while (0)
 
@@ -391,7 +396,8 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_force_fmt, (param_),                \
-                         (value_), (target_id_)),                           \
+                         (value_), (target_id_),                            \
+                         init_data->host_bus_adapter),                      \
             (info_));                                                       \
     } while (0)
 
@@ -401,7 +407,8 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_force_int_fmt, (param_),            \
-                         (value_), (target_id_)),                           \
+                         (value_), (target_id_),                            \
+                         init_data->host_bus_adapter),                      \
             (info_));                                                       \
     } while (0)
 
@@ -411,7 +418,8 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                 flag_, target_id_);                                         \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_force_flag_fmt, (flag_),            \
-                         (target_id_)),                                     \
+                         (target_id_),                                      \
+                         init_data->host_bus_adapter),                      \
             (info_));                                                       \
     } while (0)
 
@@ -421,7 +429,8 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                 flag_, target_id_);                                         \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_unset_flag_fmt, (flag_),            \
-                         (target_id_)),                                     \
+                         (target_id_),                                      \
+                         init_data->host_bus_adapter),                      \
             (info_));                                                       \
     } while (0)
 
@@ -455,8 +464,9 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
         switch (init_data->init_type)
         {
             case UNH:
-                rc = ta_system_ex("iscsi_config down cid=%d target=%d",
-                                   cid, target_id);
+                rc = ta_system_ex("iscsi_config down cid=%d target=%d host=%d",
+                                   cid, target_id, 
+                                  init_data->host_bus_adapter);
                 if (rc != 0)
                 {
                     ERROR("Failed to close the connection "
@@ -486,8 +496,8 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
 
 
             CHECK_SHELL_CONFIG_RC(
-                ta_system_ex("iscsi_manage init restore target=%d",
-                             target_id),
+                ta_system_ex("iscsi_manage init restore target=%d host=%d",
+                             target_id, init_data->host_bus_adapter),
                 "Restoring");
 
             ISCSI_UNH_SET("TargetName", target->target_name, target_id);
@@ -591,10 +601,10 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
 
             /* Now the connection should be opened */
             rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
-                                 "cid=%d target=%d",
+                                 "cid=%d target=%d host=%d",
                                  target->target_addr,
                                  target->target_port,
-                                 cid, target_id);
+                                 cid, target_id, init_data->host_bus_adapter);
             if (rc != 0)
             {
                 ERROR("Failed to establish connection with cid=%d", cid);
@@ -1441,6 +1451,33 @@ iscsi_target_port_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/* Host Bus Adapter */
+static int
+iscsi_host_bus_adapter_set(unsigned int gid, const char *oid,
+                           char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+
+    init_data->host_bus_adapter = atoi(value);
+
+    return 0;
+}
+
+static int
+iscsi_host_bus_adapter_get(unsigned int gid, const char *oid,
+                           char *value, const char *instance, ...)
+{
+
+    UNUSED(gid);
+    UNUSED(instance);
+
+    *value = '\0';
+    sprintf(value, "%d", init_data->host_bus_adapter);
+
+    return 0;
+}
+
 /* Local Name */
 static int
 iscsi_initiator_local_name_set(unsigned int gid, const char *oid,
@@ -1486,8 +1523,12 @@ iscsi_initiator_local_name_get(unsigned int gid, const char *oid,
  * iscsi_initiator/chap
  * iscsi_initiator/chap/...
  */
+RCF_PCH_CFG_NODE_RW(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL, 
+                    NULL, iscsi_host_bus_adapter_get,
+                    iscsi_host_bus_adapter_set);
+
 RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_alias, "initiator_alias", NULL, 
-                    NULL, iscsi_initiator_alias_get,
+                    &node_iscsi_host_bus_adapter, iscsi_initiator_alias_get,
                     iscsi_initiator_alias_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_name, "initiator_name", NULL, 
