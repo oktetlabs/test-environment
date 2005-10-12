@@ -53,13 +53,20 @@ extern int iscsi_server_init();
     ((CHAP_SetNumberFormat(fmt, lx) == 1) && (CHAP_SetNumberFormat(fmt, px) == 1))
 
 
-#define DEVDATA_CHECK                                   \
+#define DEVDATA_GET_CHECK                               \
     if (devdata == NULL)                                \
     {                                                   \
-        ERROR("%s() devdata is NULL", __FUNCTION__);    \
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);            \
+        RING("devdata is NULL in %s", __FUNCTION__);    \
+        *value = '\0';                                  \
+        return 0;                                       \
     }
 
+#define DEVDATA_SET_CHECK                               \
+    if (devdata == NULL)                                \
+    {                                                   \
+        RING("devdata is NULL in %s", __FUNCTION__);    \
+        return 0;                                       \
+    }
 
 static int
 iscsi_target_pn_get(unsigned int gid, const char *oid,
@@ -70,15 +77,13 @@ iscsi_target_pn_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
-#if 0
+    DEVDATA_GET_CHECK;
     tmp = CHAP_GET_NAME(devdata->auth_parameter.chap_peer_ctx);
     if (tmp == NULL)
         strcpy(value, "Peer name");
     else
         strcpy(value, tmp);
     free(tmp);
-#endif
     strcpy(value, "Peer name");
     return 0;
 }
@@ -91,7 +96,7 @@ iscsi_target_pn_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
+    DEVDATA_SET_CHECK;
 
     if (!CHAP_SET_NAME(value, 
                         devdata->auth_parameter.chap_peer_ctx))
@@ -113,15 +118,13 @@ iscsi_target_px_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
-#if 0
+    DEVDATA_GET_CHECK;
     tmp = CHAP_GET_SECRET(devdata->auth_parameter.chap_peer_ctx);
     if (tmp == NULL)
         strcpy(value, "Peer secret");
     else
         strcpy(value, tmp);
     free(tmp);
-#endif
     strcpy(value, "Peer secret");
 
     return 0;
@@ -135,7 +138,7 @@ iscsi_target_px_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
+    DEVDATA_SET_CHECK;
  
     if (!CHAP_SET_SECRET(value, 
                          devdata->auth_parameter.chap_peer_ctx))
@@ -157,7 +160,7 @@ iscsi_target_t_get(unsigned int gid, const char *oid,
     UNUSED(value);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
+    DEVDATA_GET_CHECK;
 
     *value = (devdata->auth_parameter.auth_flags & USE_TARGET_CONFIRMATION ? '1' : '0');
     value[1] = '\0';
@@ -174,7 +177,7 @@ iscsi_target_t_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
+    DEVDATA_SET_CHECK;
  
     if (!(tgt_cfmt == 0 || tgt_cfmt == 1))
     {
@@ -199,7 +202,7 @@ iscsi_target_b_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
+    DEVDATA_GET_CHECK;
 
     *value = (devdata->auth_parameter.auth_flags & USE_BASE64 ? '1' : '0');
     value[1] = '\0';
@@ -218,7 +221,7 @@ iscsi_target_b_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
+    DEVDATA_SET_CHECK;
     
     if (!(fmt == 0 || fmt == 1))
     {
@@ -260,7 +263,7 @@ iscsi_target_cl_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
     
-    DEVDATA_CHECK;
+    DEVDATA_GET_CHECK;
 
     length = CHAP_GET_CHALLENGE_LENGTH(devdata->auth_parameter.chap_local_ctx);
     sprintf(value, "%d", length);
@@ -276,7 +279,7 @@ iscsi_target_cl_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
+    DEVDATA_SET_CHECK;
     
     if (!CHAP_SET_CHALLENGE_LENGTH(strtol(value, NULL, 0), 
                                    devdata->auth_parameter.
@@ -300,8 +303,7 @@ iscsi_target_ln_get(unsigned int gid, const char *oid,
     UNUSED(value);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
-#if 0    
+    DEVDATA_GET_CHECK;
     tmp = CHAP_GET_NAME(devdata->auth_parameter.chap_local_ctx);
     if (tmp == NULL)
         strcpy(value, "Local name");
@@ -309,7 +311,6 @@ iscsi_target_ln_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENODATA);
     strcpy(value, tmp);
     free(tmp);
-#endif
     strcpy(value, "Local name");
     return 0;
 }
@@ -322,7 +323,7 @@ iscsi_target_ln_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
+    DEVDATA_SET_CHECK;
 
     if (!CHAP_SET_NAME((char *)value, 
                         devdata->auth_parameter.chap_local_ctx))
@@ -345,15 +346,13 @@ iscsi_target_lx_get(unsigned int gid, const char *oid,
     UNUSED(value);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
-#if 0
+    DEVDATA_GET_CHECK;
     tmp = CHAP_GET_SECRET(devdata->auth_parameter.chap_local_ctx);
     if (tmp == NULL)
         strcpy(value, "Local secret");
     else
         strcpy(value, tmp);
     free(tmp);
-#endif
     strcpy(value, "Local secret");
     return 0;
 
@@ -368,7 +367,7 @@ iscsi_target_lx_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    DEVDATA_CHECK;
+    DEVDATA_SET_CHECK;
 
     if (!CHAP_SET_SECRET(value, 
                          devdata->auth_parameter.chap_local_ctx))
@@ -391,7 +390,8 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
-    DEVDATA_CHECK;
+
+    DEVDATA_SET_CHECK;
 
     if (!(chap_use == 0 || chap_use == 1))
     {
@@ -400,25 +400,10 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
               __LINE__, chap_use);
         return TE_RC(TE_TA_UNIX, TE_EBADF);
     }
-    
-    if ((auth_p = find_flag_parameter(AUTHMETHOD_FLAG, 
-                                      *devdata->param_tbl)) == NULL)
-    {
-        ERROR("%s, %d: Cannot find AuthMethod Parameter in param_table",
-              __FUNCTION__,
-              __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
-    }
-    if (chap_use == 1)
-    {    
-        auth_p->value_list = "CHAP,None";
-        auth_p->str_value = "CHAP";
-    } 
-    else
-    {    
-        auth_p->value_list = "NONE";
-        auth_p->str_value = "None";
-    }    
+    iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
+                                "AuthMethod",
+                                chap_use ? "CHAP,None" : "None",
+                                *devdata->param_tbl);
     return 0;
 }   
 

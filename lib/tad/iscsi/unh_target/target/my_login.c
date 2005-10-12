@@ -3649,7 +3649,7 @@ iscsi_server_rx_thread(void *param)
 	uint32_t opcode;					/* extract 6-bit PDU opcode into here */
 	uint32_t local_itt;				/* convert 4-byte PDU ITT into here */
 	int err;
-    te_bool terminate = FALSE;
+    volatile te_bool terminate = FALSE;
 
     iscsi_param = (iscsi_target_thread_params_t *)param;
 

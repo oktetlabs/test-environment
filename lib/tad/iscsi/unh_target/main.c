@@ -111,9 +111,7 @@ int main(int argc, char *argv[])
     }
     TRACE_SET(TRACE_ALL); 
     TRACE(TRACE_VERBOSE, "Initializing");
-#if 0
     iscsi_server_init();
-#endif    
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, NULL, 0);
     listen_to.sin_family = AF_INET;

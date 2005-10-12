@@ -35,6 +35,7 @@
 #include <ctype.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
 
 #include "my_memory.h"
 #include "thread_communication.h"
