@@ -1064,38 +1064,37 @@ tapi_iscsi_initiator_set_global_parameter(const char *ta,
                                           tapi_iscsi_parameter param, 
                                           const char *value)
 {
-#if 0
     static char *mapping[] = {
-        "oper:/header_digest:",                    /* t */
-        "oper:/data_digest:",                      /* t */
-        "oper:/max_connections:",                  /* t */
-        "oper:/send_targets:",  
-        "oper:/target_name:",                      /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",  
+        "",                                /* t */
         "initiator_name:",
-        "oper:/target_alias:",                     /* t */
+        "",                                /* t */
         "initiator_alias:",
-        "oper:/target_address:",                   /* t */
-        "oper:/target_port:",                      /* t */
-        "oper:/initial_r2t:",                      /* t */
-        "oper:/immediate_data:",                   /* t */
-        "oper:/max_recv_data_segment_length:",     /* t */
-        "oper:/max_burst_length:",                 /* t */
-        "oper:/first_burst_length:",               /* t */
-        "oper:/default_time2wait:",                /* t */
-        "oper:/default_time2retain:",              /* t */
-        "oper:/max_outstanding_r2t:",              /* t */
-        "oper:/data_pdu_in_order:",                /* t */
-        "oper:/data_sequence_in_order:",           /* t */
-        "oper:/error_recovery_level:",             /* t */
-        "oper:/session_type:",                     /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
+        "",                                /* t */
         NULL,
         "chap:/local_secret:",
-        "chap:/ln:",                               /* t */
-        "chap:/t:/px:",                            /* t */
-        "chap:/t:/peer_name:",
+        "",                                /* t */
+        "",                                /* t */
+        "chap:/peer_name:",
         "chap:/challenge_length:",
         "chap:/enc_fmt:",
-        "chap:/t:",                                /* t */
+        "",                                /* t */
         "chap:"
     };
 
@@ -1105,8 +1104,6 @@ tapi_iscsi_initiator_set_global_parameter(const char *ta,
     return cfg_set_instance_fmt(CVT_STRING, value,
                                 "/agent:%s/iscsi_initiator:/%s",
                                 ta, mapping[param]);
-#endif
-    return 0;
 }
 
 int 
@@ -1115,17 +1112,16 @@ tapi_iscsi_initiator_set_local_parameter(const char *ta,
                                          tapi_iscsi_parameter param,
                                          const char *value)
 {
-#if 0
     static char *mapping[] = {
         "header_digest:",                         /* - */
         "data_digest:",                           /* - */
         "max_connections:",                       /* - */
-        "oper:/send_targets:",  
+        "",  
         "target_name:",                           /* - */
-        "/initiator_name:",
+        "",
         "target_alias:",                          /* - */
-        "initiator_alias:",
-        "target_address:",                        /* - */
+        "",
+        "target_addr:",                           /* - */
         "target_port:",                           /* - */
         "initial_r2t:",                           /* - */
         "immediate_data:",                        /* - */
@@ -1140,41 +1136,50 @@ tapi_iscsi_initiator_set_local_parameter(const char *ta,
         "error_recovery_level:",                  /* - */
         "session_type:",                          /* - */
         NULL,
-        "chap:/local_secret:",
+        "",
         "chap:/local_name:",                      /* - */
         "chap:/peer_secret:",                     /* - */
-        "chap:/t:/peer_name:",
-        "chap:/challenge_length:",
-        "chap:/enc_fmt:",
-        "chap:",                                 /* - */
+        "",
+        "",
+        "",
+        "chap:/target_auth",                      /* - */
         "chap:"
     };
 
     assert(ta != NULL);
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
-    return cfg_set_instance_fmt(CVT_STRING, value,
-                          "/agent:%s/iscsi_initiator:/target_data:%s/%s",
-                          ta, target_id, mapping[param]);
+#if 1
+    fprintf(stderr, "/agent:%s/iscsi_initiator:/target_data:"
+            "target_%d/%s = %s", ta, target_id, mapping[param], value);
 #endif
-    return 0;
+    return cfg_set_instance_fmt(CVT_STRING, value,
+                          "/agent:%s/iscsi_initiator:/target_data:"
+                          "target_%d/%s",
+                          ta, target_id, mapping[param]);
 }
 
 #define MAX_INI_CMD_SIZE 10
+#define MAX_TARGETS_NUMBER 10
+#define MAX_CONNECTION_NUMBER 100
+
+static int iscsi_current_cid[MAX_CONNECTION_NUMBER];
+static int iscsi_current_target = 0;
+
 iscsi_cid 
 tapi_iscsi_initiator_conn_add(const char *ta,
                               iscsi_target_id tgt_id)
 {
-#if 0
+    int  rc;
     char cmd[MAX_INI_CMD_SIZE];
 
     cmd[0] = 0;
-    sprintf(cmd, "up %d %s", cid, tgt_id + strlen("taget_"));
+    
+    sprintf(cmd, "up %d %d", iscsi_current_cid[tgt_id], tgt_id);
 
-    return cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
-                                "/agent:%s/iscsi_initiator:",
-                                ta);
-#endif
+    rc = cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
+                              "/agent:%s/iscsi_initiator:", ta);
+    return (rc == 0) ? (iscsi_current_cid[tgt_id]++) : (-rc);
 }
 
 int 
@@ -1182,28 +1187,95 @@ tapi_iscsi_initiator_conn_del(const char *ta,
                               iscsi_target_id tgt_id,
                               iscsi_cid cid)
 {
-#if 0
     char cmd[MAX_INI_CMD_SIZE];
 
     cmd[0] = 0;
-    sprintf(cmd, "down %d %s", cid, tgt_id + strlen("target_"));
+    sprintf(cmd, "down %d %d", cid, tgt_id);
 
     return cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
                                 "/agent:%s/iscsi_initiator:",
                                 ta);
-#endif
 }
 
-iscsi_target_id 
-tapi_iscsi_add_target(const char *target_addr, 
-                      const int target_port)
+/* TODO: fix this */
+iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
+                                const struct sockaddr *target_addr)
 {
-    return 5;
+    int        rc;
+    cfg_handle handle;
+
+    char *target_addr_param = NULL;
+    int   target_port = 0;
+
+    char port[100];
+
+    switch (target_addr->sa_family)
+    {
+        case PF_INET:
+            target_addr_param = inet_ntoa(SIN(target_addr)->sin_addr);
+            target_port = ntohs(SIN(target_addr)->sin_port);
+            break;
+        default:
+            ERROR("%s(): Unsupported address family", __FUNCTION__);
+            return -EINVAL;
+    }
+
+    RING("Initiator add Target: addr=%s, port=%d",
+         target_addr_param, target_port);
+    
+#if 0
+    rc = cfg_add_instance_fmt(&handle, CVT_STRING,
+                        "",
+                        "/agent:%s/iscsi_initiator:/target_data:target_%d",
+                        ta, iscsi_current_target);
+    if (rc != 0)
+    {
+        ERROR("Failed to add target_data instance to the initiator");
+        return -rc;
+    }
+#endif
+    rc = tapi_iscsi_initiator_set_local_parameter(ta,
+                                             iscsi_current_target,
+                                             ISCSI_PARAM_TARGET_ADDRESS,
+                                             (void *)target_addr_param);
+    if (rc != 0)
+    {
+        ERROR("Failed to set local parameter of the target rc = %d", rc);
+        return -rc;
+    }
+    
+    sprintf(port, "%d", target_port);
+    rc = tapi_iscsi_initiator_set_local_parameter(ta,
+                                             iscsi_current_target,
+                                             ISCSI_PARAM_TARGET_PORT,
+                                             (void *)port);
+    if (rc != 0)
+    {
+        ERROR("Failed to add target_data instance to the initiator");
+        return -rc;
+    }
+    
+    iscsi_current_cid[(int)iscsi_current_target] = 0;
+    
+    VERB("Target with ID=%d added", iscsi_current_target);
+    return (iscsi_current_target++);
 }
 
 int 
-tapi_iscsi_del_target(iscsi_target_id tgt_id)
+tapi_iscsi_initiator_del_target(const char *ta,
+                                iscsi_target_id tgt_id)
 {
-    return 0;
+    int        rc;
+    cfg_handle handle;
+
+    rc = cfg_find_fmt(&handle, "/agent:%s/iscsi_initiator:/target_data:"
+                      "target_%d", ta, tgt_id);
+    if (rc != 0)
+    {
+        ERROR("No connection with such ID");
+        return rc;
+    }
+
+    return cfg_del_instance(handle, FALSE);
 }
 #undef MAX_INI_CMD_SIZE
