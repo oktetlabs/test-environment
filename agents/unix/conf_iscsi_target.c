@@ -26,6 +26,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER "iSCSI Target Conf"
+
 #ifdef WITH_ISCSI
 #include <stddef.h>
 #include "conf_daemons.h"
