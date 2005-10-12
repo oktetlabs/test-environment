@@ -82,9 +82,10 @@ iscsi_target_pn_get(unsigned int gid, const char *oid,
     if (tmp == NULL)
         strcpy(value, "Peer name");
     else
+    {
         strcpy(value, tmp);
-    free(tmp);
-    strcpy(value, "Peer name");
+        free(tmp);
+    }
     return 0;
 }
 
@@ -123,9 +124,10 @@ iscsi_target_px_get(unsigned int gid, const char *oid,
     if (tmp == NULL)
         strcpy(value, "Peer secret");
     else
+    {
         strcpy(value, tmp);
-    free(tmp);
-    strcpy(value, "Peer secret");
+        free(tmp);
+    }
 
     return 0;
 }
@@ -308,10 +310,10 @@ iscsi_target_ln_get(unsigned int gid, const char *oid,
     if (tmp == NULL)
         strcpy(value, "Local name");
     else
-        return TE_RC(TE_TA_UNIX, TE_ENODATA);
-    strcpy(value, tmp);
-    free(tmp);
-    strcpy(value, "Local name");
+    {
+        strcpy(value, tmp);
+        free(tmp);
+    }
     return 0;
 }
 
@@ -351,9 +353,10 @@ iscsi_target_lx_get(unsigned int gid, const char *oid,
     if (tmp == NULL)
         strcpy(value, "Local secret");
     else
+    {
         strcpy(value, tmp);
-    free(tmp);
-    strcpy(value, "Local secret");
+        free(tmp);
+    }
     return 0;
 
 }
