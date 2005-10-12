@@ -277,13 +277,20 @@ static int
 iscsi_target_cl_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
+    int len = strtol(value, NULL, 0);
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
 
     DEVDATA_SET_CHECK;
     
-    if (!CHAP_SET_CHALLENGE_LENGTH(strtol(value, NULL, 0), 
+    if (len == 0)
+    {
+        RING("Attempted to set challenge length to 0, ignored");
+        return 0;
+    }
+
+    if (!CHAP_SET_CHALLENGE_LENGTH(len, 
                                    devdata->auth_parameter.
                                        chap_local_ctx))
     {
