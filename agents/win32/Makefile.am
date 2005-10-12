@@ -13,7 +13,7 @@ MY_LDADD=symtbl.o -lrcfpch -lrpcxdr \
          
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 
-MY_SOURCES=win32.c win32conf.c 
+MY_SOURCES=win32.c win32conf.c inet_pton.c
 MY_SYMTBL_OBJECTS=win32.o 
 
 SYMTBL_LIBS= \
