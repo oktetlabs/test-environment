@@ -54,7 +54,6 @@ extern int iscsi_server_init();
 
 
 #define DEVDATA_GET_CHECK                               \
-    return 0;                                           \
     if (devdata == NULL)                                \
     {                                                   \
         RING("devdata is NULL in %s", __FUNCTION__);    \
@@ -386,7 +385,6 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
     int chap_use = strtol(value, NULL, 0);
-    struct parameter_type *auth_p;
 
     UNUSED(gid);
     UNUSED(oid);
