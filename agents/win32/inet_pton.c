@@ -39,6 +39,8 @@ static const char rcsid[] = "$BINDId: inet_pton.c,v 1.7 1999/10/13 16:39:28 vixi
 #define internal_function
 #define libc_hidden_def(x)
 
+#define AF_INET6        23              /* IP version 6 */
+
 static inline void
 __set_errno(int e)
 {
