@@ -1511,6 +1511,7 @@ iscsi_initiator_local_name_get(unsigned int gid, const char *oid,
 
 /* HINT:
  * iscsi_initiator
+ * iscsi_initiator/host_bus_adapter
  * iscsi_initiator/initiator_alias
  * iscsi_initiator/initiator_name
  * iscsi_initiator/target_data
