@@ -22,7 +22,8 @@ TE_LIB_PARMS([tad], [], [],
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
 TE_TA_TYPE([linux64], [], [unix],
-           [--with-rcf-rpc --with-cfg-unix-daemons='ftp echo'],
+           [--with-rcf-rpc --with-netlink --with-netlink-route \
+            --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
            [], [], [comm_net_agent ndn asn])
 
 TE_LIB_PARMS([tad_dummy], [], [tad], [], [])
@@ -42,8 +43,8 @@ TE_LIB_PARMS([tad], [i386-linux], [],
               --with-ipstack --with-dhcp --with-snmp --with-cli], [])
 
 TE_TA_TYPE([linux], [i386-linux], [unix],
-           [--with-rcf-rpc --with-netlink \
-            --with-cfg-unix-daemons='ftp echo'],
+           [--with-rcf-rpc --with-netlink --with-netlink-route \
+            --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
            [], [], [comm_net_agent ndn asn])
 
 #
