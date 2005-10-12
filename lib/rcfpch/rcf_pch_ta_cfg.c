@@ -40,8 +40,18 @@
 #endif
 
 #ifdef __CYGWIN__
+
 #include <winsock2.h>
+#include <w32api/ws2tcpip.h>
+
+extern int inet_pton(int af, const char *src, void *dst);
+
+#define IFNAMSIZ        16
+
+#undef ERROR
+
 #else
+
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -54,6 +64,7 @@
 #if HAVE_NET_IF_H
 #include <net/if.h>
 #endif
+
 #endif
 
 #include "te_errno.h"
