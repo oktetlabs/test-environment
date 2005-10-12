@@ -29,6 +29,8 @@
  */
 
 #define TE_LGR_USER     "Unix Conf"
+#define TE_LOG_LEVEL 0xff
+#define LOG_LEVEL 0xff
 
 #include "te_config.h"
 #include "config.h"
@@ -99,6 +101,7 @@ extern int ta_unix_conf_wifi_init(rcf_pch_cfg_object **last);
 
 #ifdef WITH_ISCSI
 extern int ta_unix_iscsi_target_init(rcf_pch_cfg_object **last);
+extern int ta_unix_iscsi_initiator_init(rcf_pch_cfg_object **last);
 #endif
 
 
@@ -392,6 +395,13 @@ rcf_ch_conf_root(void)
 #endif
 #ifdef WITH_ISCSI
         if (ta_unix_iscsi_target_init(&tail) != 0)
+        {
+            close(cfg_socket);
+            return NULL;
+        }
+        assert(tail->brother == NULL); 
+
+        if (ta_unix_iscsi_initiator_init(&tail) != 0)
         {
             close(cfg_socket);
             return NULL;
