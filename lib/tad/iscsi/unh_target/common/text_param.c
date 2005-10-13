@@ -54,7 +54,6 @@
 extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
 extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
 
-iscsi_target_thread_params_t *iscsi_param;
 
 static struct key_values upper_case_values = {
 	none:NONE,

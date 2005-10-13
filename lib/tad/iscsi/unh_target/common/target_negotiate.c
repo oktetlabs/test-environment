@@ -852,7 +852,9 @@ target_security_negotiate(struct iscsi_conn *conn,
 										 STAT_DETAIL_ERR, outputpdu);
 							goto out;
 						}
-						chap_i = value;
+                        chap_i = iscsi_get_custom_value(conn->custom, "fake_chap_id");
+                        if (chap_i == 0)
+                            chap_i = value;
 					} else if (got_bitmask == GOT_CHAP_C) {
 						if (check_step_key(key, &neg_flags, GOT_CHAP_C)
 							|| (chap_c = malloc(strlen(key->keyvalue) + 1)) == NULL)
@@ -1229,8 +1231,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 	/* target always starts in the same state as initiator */
 	correct_CSG = (inputpdu->flags & CSG) >> CSG_SHIFT;
 
-	if ((nsecurity > 0 && (inputpdu->flags & CSG) != 0 ) || 
-        iscsi_param->reject == 1) {
+	if ((nsecurity > 0 && (inputpdu->flags & CSG) != 0 )) {
 		login_reject(conn, STAT_CLASS_INITIATOR, STAT_DETAIL_ERR, outputpdu);
 		return -1;
 	}

@@ -135,7 +135,8 @@ iscsi_release_connection(struct iscsi_conn *conn)
     /* Free connection */                                                         
     free(conn->local_ip_address);                                    
     free(conn->ip_address);                                          
-#endif                                                                            
+#endif
+    iscsi_deregister_custom(conn->custom);
     free(conn);
     return 0;                                                                     
 }
@@ -2098,6 +2099,8 @@ build_conn_sess(int sock, struct portal_group *ptr)
 
     pthread_mutex_init(&session->cmnd_mutex, NULL);
     sem_init(&session->thr_kill_sem,0 ,0);
+
+    conn->custom = iscsi_register_custom(sock);
 
     return conn;
 
@@ -5261,12 +5264,13 @@ iscsi_server_rx_thread(void *param)
 	uint32_t local_itt;				/* convert 4-byte PDU ITT into here */
 	int err;
     volatile te_bool terminate = FALSE;
-
-    iscsi_param = (iscsi_target_thread_params_t *)param;
+    iscsi_target_thread_params_t local_params;
 
     /****************/ 
 
-    conn = build_conn_sess(iscsi_param->send_recv_csap, iscsi_portal_groups);
+    local_params = *(iscsi_target_thread_params_t *)param;
+    free(param);
+    conn = build_conn_sess(local_params.send_recv_csap, iscsi_portal_groups);
 
     if (conn == NULL)
     {

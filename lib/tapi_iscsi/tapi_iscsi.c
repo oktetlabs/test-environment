@@ -1060,6 +1060,21 @@ tapi_iscsi_target_set_parameter(const char *ta,
 } 
 
 int 
+tapi_iscsi_target_customize(const char *ta, int id, 
+                            const char *key, int value)
+{
+    te_errno remote_rc;
+    te_errno local_rc;
+    local_rc = rcf_ta_call(ta, 0, "iscsi_set_custom_value", &remote_rc,
+                           3, FALSE, 
+                           CVT_INTEGER, id,
+                           CVT_STRING, key, CVT_INTEGER, value);
+    return local_rc ? local_rc : 
+        (remote_rc ? TE_RC(TE_TAPI, TE_ESRCH) : 0);
+}
+
+
+int 
 tapi_iscsi_initiator_set_global_parameter(const char *ta,
                                           tapi_iscsi_parameter param, 
                                           const char *value)

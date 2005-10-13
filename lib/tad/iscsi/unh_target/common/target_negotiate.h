@@ -42,6 +42,7 @@
 #include "iscsi_common.h"
 #include "list.h"
 #include "text_param.h"
+#include <iscsi_custom.h>
 
 /* names of bit numbers in the iscsi_conn control byte */
 #define SILENCE_BIT		0
@@ -197,6 +198,7 @@ struct iscsi_conn {
 	uint32_t max_send_length;	/*initiator's MaxRecvPDULength */
 	uint32_t max_recv_length;	/*target's MaxRecvPDULength */
 
+    iscsi_custom_data *custom;
 };
 
 /* stores everything related to an iscsi session on the target */

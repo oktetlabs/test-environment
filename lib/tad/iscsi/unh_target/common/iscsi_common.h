@@ -333,8 +333,6 @@ typedef struct {
     int reject;
 } iscsi_target_thread_params_t;
 
-extern iscsi_target_thread_params_t *iscsi_param;
-
 /* iSCSI PDU formats */
 struct iscsi_init_scsi_cmnd {
         uint8_t opcode;
