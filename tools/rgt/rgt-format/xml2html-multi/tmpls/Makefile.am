@@ -54,6 +54,10 @@ dist_pkgdata_DATA = \
     meta_authors_start.tmpl\
     meta_authors_end.tmpl\
     meta_author_start.tmpl\
+    meta_verdicts_start.tmpl\
+    meta_verdicts_end.tmpl\
+    meta_verdict_start.tmpl\
+    meta_verdict_end.tmpl\
     meta_params_start.tmpl\
     meta_params_end.tmpl\
     mem_dump_start.tmpl\

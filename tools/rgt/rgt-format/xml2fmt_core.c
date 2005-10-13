@@ -277,6 +277,19 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
             ctx->state = RGT_XML2HTML_STATE_AUTHORS;
             break;
 
+        case RGT_XML2HTML_STATE_VERDICTS:
+            assert(strcmp(tag, "verdicts") == 0);
+            assert(ctx->depth >= 1);
+            proc_meta_verdicts_end(ctx, depth_ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
+        case RGT_XML2HTML_STATE_VERDICT:
+            assert(strcmp(tag, "verdict") == 0);
+            proc_meta_verdict_end(ctx, depth_ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_VERDICTS;
+            break;
+
         case RGT_XML2HTML_STATE_PARAMS:
             assert(ctx->depth >= 1);
 
@@ -384,6 +397,11 @@ rgt_log_start_element(void *user_data,
                 proc_meta_authors_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_AUTHORS;
             }
+            else if (strcmp(tag, "verdicts") == 0)
+            {
+                proc_meta_verdicts_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                ctx->state = RGT_XML2HTML_STATE_VERDICTS;
+            }
             else if (strcmp(tag, "params") == 0)
             {
                 proc_meta_params_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
@@ -401,6 +419,12 @@ rgt_log_start_element(void *user_data,
             assert(strcmp(tag, "author") == 0);
             proc_meta_author_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
             ctx->state = RGT_XML2HTML_STATE_AUTHOR;
+            break;
+
+        case RGT_XML2HTML_STATE_VERDICTS:
+            assert(strcmp(tag, "verdict") == 0);
+            proc_meta_verdict_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+            ctx->state = RGT_XML2HTML_STATE_VERDICT;
             break;
 
         case RGT_XML2HTML_STATE_PARAMS:
@@ -484,6 +508,7 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
         case RGT_XML2HTML_STATE_END_TS:
         case RGT_XML2HTML_STATE_DURATION:
         case RGT_XML2HTML_STATE_OBJECTIVE:
+        case RGT_XML2HTML_STATE_VERDICT:
         case RGT_XML2HTML_STATE_LOG_MSG:
         case RGT_XML2HTML_STATE_MEM_DUMP_ELEM:
         case RGT_XML2HTML_STATE_FILE:
