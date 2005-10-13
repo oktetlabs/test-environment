@@ -3296,6 +3296,9 @@ route_get(const char *route, ta_rt_info_t *rt_info)
     uint32_t  route_addr;
     uint32_t  route_mask;
     uint32_t  route_gw;
+    char     *route_table;
+    char      ip4_route_table[] = "/proc/net/route";
+    char      ip6_route_table[] = "/proc/net/ipv6_route";
 #endif /* !USE_NETLINK_ROUTE */
 
     ENTRY("%s", route);
@@ -3353,15 +3356,13 @@ route_get(const char *route, ta_rt_info_t *rt_info)
 
     if (!user_data.filled)
     {
-        ERROR("Canno find %s", route);
+        ERROR("Cannot find %s", route);
         return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     return 0;
 
 #else
-
-    PRINT("DANGEROUS CODE!!!");
 
     route_addr = ((struct sockaddr_in *)&(rt_info->dst))->sin_addr.s_addr;
     route_mask = htonl(PREFIX2MASK(rt_info->prefix));
@@ -3373,7 +3374,11 @@ route_get(const char *route, ta_rt_info_t *rt_info)
     }
     else if (SIN(&rt_info->dst)->sin_family == AF_INET6)
     {
+        ERROR("Retrieving IPv6 routing table is not yet supported");
+        return TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+#if 0        
         route_table = ip6_route_table;
+#endif        
     }
 
     if ((fp = fopen(route_table, "r")) == NULL)
