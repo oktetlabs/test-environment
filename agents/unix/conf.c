@@ -3655,6 +3655,7 @@ route_list(unsigned int gid, const char *oid, char **list)
     }
     fclose(fp);
 
+#if 0
     if ((fp = fopen("/proc/net/ipv6_route", "r")) == NULL)
     {
         ERROR("Failed to open /proc/net/ipv6_route for reading: %s",
@@ -3733,6 +3734,7 @@ do {                                                                  \
         fgets(trash, sizeof(trash), fp);
         fclose(fp);
     }
+#endif
 
 #else
     UNUSED(ptr);
