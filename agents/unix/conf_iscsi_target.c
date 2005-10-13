@@ -446,7 +446,13 @@ map_oid_to_param(const char *oid)
     te_bool upper_case = TRUE;
     char *p = param_name;
     
-    for (; *oid != '\0'; oid++)
+    oid = strrchr(oid, '/');
+    if (oid == NULL)
+    {
+        ERROR("OID is malformed");
+        return "";
+    }
+    for (oid++; *oid != ':' && *oid != '\0'; oid++)
     {
         if (upper_case)
         {
