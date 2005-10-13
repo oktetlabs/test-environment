@@ -583,12 +583,12 @@ log_message_fast(uint16_t level, const char *user_name,
     if (log_buffer.rb == NULL)
         return;
 
-    if (ta_log_lock(key) != 0)
+    if (ta_log_lock(&key) != 0)
         return;
     res = lgr_rb_allocate_head(&log_buffer, LGR_RB_FORCE, &position);
     if (res == 0)
     {
-        (void)ta_log_unlock(key);
+        (void)ta_log_unlock(&key);
         return;
     }
 
@@ -649,7 +649,7 @@ log_message_fast(uint16_t level, const char *user_name,
 #if 0
     lgr_rb_view_head(&log_buffer, position);
 #endif
-    (void)ta_log_unlock(key);
+    (void)ta_log_unlock(&key);
 }
 
 extern void logfork_log_message(const char *file, unsigned int line,

@@ -827,12 +827,12 @@ is_logger_available(void)
 {
     ta_log_lock_key key;
 
-    if (ta_log_trylock(key) != 0)
+    if (ta_log_trylock(&key) != 0)
     {
         fprintf(stderr, "Logger is locked, drop the message\n");
         return FALSE;
     }
-    (void)ta_log_unlock(key);
+    (void)ta_log_unlock(&key);
     return TRUE;
 }
 

@@ -73,14 +73,14 @@ ta_log_message(const char *file, unsigned int line,
                unsigned int level, const char *entity, 
                const char *user, const char *fmt, ...)
 {
-    va_list     ap;
-    int         key;
-    uint32_t    position;
-    int         res;
-    const char *p_str;
-    md_list     cp_list = {&cp_list, &cp_list, 0, NULL, 0};
-    md_list    *tmp_list = NULL;
-    uint32_t    narg = 0;
+    va_list             ap;
+    ta_log_lock_key     key;
+    uint32_t            position;
+    int                 res;
+    const char         *p_str;
+    md_list             cp_list = {&cp_list, &cp_list, 0, NULL, 0};
+    md_list            *tmp_list = NULL;
+    uint32_t            narg = 0;
 
     lgr_mess_header header;
     lgr_mess_header *hdr_addr = NULL;
@@ -186,13 +186,13 @@ ta_log_message(const char *file, unsigned int line,
             goto resume;
     }
 
-    if (ta_log_lock(key) != 0)
+    if (ta_log_lock(&key) != 0)
         return;
 
     res = lgr_rb_allocate_head(&log_buffer, LGR_RB_FORCE, &position);
     if (res == 0)
     {
-        (void)ta_log_unlock(key);
+        (void)ta_log_unlock(&key);
         goto resume;
     }
     hdr_addr = (struct lgr_mess_header *)(log_buffer.rb) + position;
@@ -217,7 +217,7 @@ ta_log_message(const char *file, unsigned int line,
                                        tmp_list->length, &arg_addr);
         if (res == 0)
         {
-            (void)ta_log_unlock(key);
+            (void)ta_log_unlock(&key);
             goto resume;
         }
 
@@ -227,7 +227,7 @@ ta_log_message(const char *file, unsigned int line,
         LGR_SET_ELEMENTS_FIELD(&log_buffer, position, val);
         tmp_list = tmp_list->next;
     };
-    (void)ta_log_unlock(key);
+    (void)ta_log_unlock(&key);
 
 resume:
     LGR_FREE_MD_LIST(cp_list);
@@ -280,17 +280,17 @@ log_get_message(uint32_t length, uint8_t *buffer)
     if (length < LGR_RB_ELEMENT_LEN)
         return 0;
 
-    if (ta_log_lock(key) != 0)
+    if (ta_log_lock(&key) != 0)
         return 0;
 
     if (LGR_RB_UNUSED(&log_buffer) == LGR_TOTAL_RB_EL)
     {
-        (void)ta_log_unlock(key);
+        (void)ta_log_unlock(&key);
         return 0;
     }
 
     LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 1);
-    if (ta_log_unlock(key) != 0)
+    if (ta_log_unlock(&key) != 0)
     {
         LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
         return 0;
@@ -523,7 +523,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
 
 #undef LGR_CHECK_LENGTH
 
-    if (ta_log_lock(key) != 0)
+    if (ta_log_lock(&key) != 0)
     {
         /* TODO: Is it safe to do it without lock? */
         LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
@@ -531,7 +531,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
     }
     LGR_SET_MARK_FIELD(&log_buffer, log_buffer.head, 0);
     lgr_rb_remove_oldest(&log_buffer);
-    (void)ta_log_unlock(key);
+    (void)ta_log_unlock(&key);
 
     return mess_length;
 }

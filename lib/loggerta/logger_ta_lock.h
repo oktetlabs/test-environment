@@ -75,7 +75,7 @@ ta_log_lock_destroy(void)
 }
 
 static inline int
-ta_log_lock(ta_log_lock_key key)
+ta_log_lock(ta_log_lock_key *key)
 {
     int rc;
 
@@ -91,7 +91,7 @@ ta_log_lock(ta_log_lock_key key)
 }
 
 static inline int
-ta_log_unlock(ta_log_lock_key key)
+ta_log_unlock(ta_log_lock_key *key)
 {
     int rc;
 
@@ -107,7 +107,7 @@ ta_log_unlock(ta_log_lock_key key)
 }
 
 static inline int
-ta_log_trylock(ta_log_lock_key key)
+ta_log_trylock(ta_log_lock_key *key)
 {
     int rc;
 
@@ -157,7 +157,7 @@ ta_log_lock_destroy(void)
 
 
 static inline int
-ta_log_lock(ta_log_lock_key key)
+ta_log_lock(ta_log_lock_key *key)
 {
     int rc;
 
@@ -173,7 +173,7 @@ ta_log_lock(ta_log_lock_key key)
 }
 
 static inline int
-ta_log_unlock(ta_log_lock_key key)
+ta_log_unlock(ta_log_lock_key *key)
 {
     int rc;
 
@@ -189,7 +189,7 @@ ta_log_unlock(ta_log_lock_key key)
 }
 
 static inline int
-ta_log_trylock(ta_log_lock_key key)
+ta_log_trylock(ta_log_lock_key *key)
 {
     int rc;
 
