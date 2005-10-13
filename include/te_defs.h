@@ -87,6 +87,10 @@ typedef unsigned char te_bool;
  */
 #define UNUSED(_x)      (void)(_x)
 
+/* Entity name used to logging Control messages from Tester */
+#define TE_LOG_CMSG_ENTITY_TESTER "Tester"
+/* User name for all control messages (from Tester and tests) */
+#define TE_LOG_CMSG_USER          "Control"
 
 /**
  * Determines minimum from two arguments. If arguments are equal,

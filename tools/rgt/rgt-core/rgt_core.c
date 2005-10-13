@@ -412,14 +412,13 @@ rgt_core_process_log_msg(log_msg *msg)
 {
     /* 
      * Check if it is a control message.
-     * Control messages come from Tester and have well-known pair of 
-     * Entity and User names.
+     * Control messages have well-known User name.
      */
-    if (strcmp(msg->entity, CMSG_ENTITY_NAME) == 0 &&
-        strcmp(msg->user, CMSG_USER_NAME) == 0 &&
-        rgt_ctx.proc_cntrl_msg)
+    if (rgt_ctx.proc_cntrl_msg &&
+        strcmp(msg->user, TE_LOG_CMSG_USER) == 0 &&
+        strcmp(msg->entity, TE_LOG_CMSG_ENTITY_TESTER) == 0)
     {
-        rgt_process_control_message(msg);
+            rgt_process_tester_control_message(msg);
     }
     else
     {

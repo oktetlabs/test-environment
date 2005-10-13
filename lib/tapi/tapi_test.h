@@ -47,7 +47,6 @@
 #include "logger_ten.h"
 #include "tapi_jmp.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -151,6 +150,14 @@ extern "C" {
         ERROR(fmt);                                                 \
         TEST_STOP;                                                  \
     } while (0)
+
+/**
+ * Macro should be used to output verdict from tests.
+ *
+ * @param fmt  the content of the verdict as format string with arguments
+ */
+#define TEST_VERDICT(fmt...) \
+    LOG_RING(TE_LOG_CMSG_USER, fmt)
 
 /**
  * Check an expression passed as the argument against zero.

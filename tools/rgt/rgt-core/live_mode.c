@@ -46,14 +46,14 @@
 
 #include "te_errno.h"
 
-static int live_process_test_start(node_info_t *node);
-static int live_process_test_end(node_info_t *node);
-static int live_process_pkg_start(node_info_t *node);
-static int live_process_pkg_end(node_info_t *node);
-static int live_process_sess_start(node_info_t *node);
-static int live_process_sess_end(node_info_t *node);
-static int live_process_branch_start(node_info_t *node);
-static int live_process_branch_end(node_info_t *node);
+static int live_process_test_start(node_info_t *node, GQueue *verdicts);
+static int live_process_test_end(node_info_t *node, GQueue *verdicts);
+static int live_process_pkg_start(node_info_t *node, GQueue *verdicts);
+static int live_process_pkg_end(node_info_t *node, GQueue *verdicts);
+static int live_process_sess_start(node_info_t *node, GQueue *verdicts);
+static int live_process_sess_end(node_info_t *node, GQueue *verdicts);
+static int live_process_branch_start(node_info_t *node, GQueue *verdicts);
+static int live_process_branch_end(node_info_t *node, GQueue *verdicts);
 static int live_process_regular_msg(log_msg *msg);
 
 static void rgt_expand_regular_log_msg(log_msg *msg);
@@ -123,8 +123,11 @@ print_params(param *prms)
 }
 
 static inline int
-live_process_start_event(node_info_t *node, const char *node_name)
+live_process_start_event(node_info_t *node, const char *node_name,
+                         GQueue *verdicts)
 {
+    UNUSED(verdicts);
+
     fprintf(rgt_ctx.out_fd, "| Starting %s: %s\n",
             node_name, node->descr.name);
     fprintf(rgt_ctx.out_fd, "|- Date: ");
@@ -145,9 +148,12 @@ live_process_start_event(node_info_t *node, const char *node_name)
 }
 
 static inline int
-live_process_end_event(node_info_t *node, const char *node_name)
+live_process_end_event(node_info_t *node, const char *node_name,
+                       GQueue *verdicts)
 {
     const char *result;
+    
+    UNUSED(verdicts);
 
     switch (node->result.status)
     {
@@ -179,52 +185,54 @@ live_process_end_event(node_info_t *node, const char *node_name)
 }
 
 static int
-live_process_test_start(node_info_t *node)
+live_process_test_start(node_info_t *node, GQueue *verdicts)
 {
-    return live_process_start_event(node, "test");
+    return live_process_start_event(node, "test", verdicts);
 }
 
 static int
-live_process_test_end(node_info_t *node)
+live_process_test_end(node_info_t *node, GQueue *verdicts)
 {
-    return live_process_end_event(node, "Test");
+    return live_process_end_event(node, "Test", verdicts);
 }
 
 static int
-live_process_pkg_start(node_info_t *node)
+live_process_pkg_start(node_info_t *node, GQueue *verdicts)
 {
-    return live_process_start_event(node, "package");
+    return live_process_start_event(node, "package", verdicts);
 }
 
 static int
-live_process_pkg_end(node_info_t *node)
+live_process_pkg_end(node_info_t *node, GQueue *verdicts)
 {
-    return live_process_end_event(node, "Package");
+    return live_process_end_event(node, "Package", verdicts);
 }
 
 static int
-live_process_sess_start(node_info_t *node)
+live_process_sess_start(node_info_t *node, GQueue *verdicts)
 {
-    return live_process_start_event(node, "session");
+    return live_process_start_event(node, "session", verdicts);
 }
 
 static int
-live_process_sess_end(node_info_t *node)
+live_process_sess_end(node_info_t *node, GQueue *verdicts)
 {
-    return live_process_end_event(node, "Session");
+    return live_process_end_event(node, "Session", verdicts);
 }
 
 static int
-live_process_branch_end(node_info_t *node)
+live_process_branch_end(node_info_t *node, GQueue *verdicts)
 {
     UNUSED(node);
+    UNUSED(verdicts);
     return 1;
 }
 
 static int
-live_process_branch_start(node_info_t *node)
+live_process_branch_start(node_info_t *node, GQueue *verdicts)
 {
     UNUSED(node);
+    UNUSED(verdicts);
     return 1;
 }
 

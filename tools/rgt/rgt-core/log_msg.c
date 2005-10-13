@@ -54,7 +54,7 @@ static node_info_t *create_node_by_msg(log_msg *msg, node_type_t type,
 
 /* See the description in log_msg.h */
 int
-rgt_process_control_message(log_msg *msg)
+rgt_process_tester_control_message(log_msg *msg)
 {
     int          node_id;
     int          parent_id;
@@ -157,7 +157,7 @@ rgt_process_control_message(log_msg *msg)
     free_log_msg(msg);
 
     if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE)
-        ctrl_msg_proc[evt_type][node->type](node);
+        ctrl_msg_proc[evt_type][node->type](node, NULL);
 
     return ESUCCESS;
 }

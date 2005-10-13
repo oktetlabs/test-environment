@@ -35,6 +35,7 @@
 #endif
 
 #include <obstack.h>
+#include <glib.h>
 
 /* Check if we have definitions from Test Envirounment */
 #ifdef HAVE_TE_RAW_LOG_H
@@ -65,13 +66,6 @@
  * The following declarations are about Control Log Messages that 
  * outline test execution flow.
  */
-
-/* 
- * Entity and user names of control messages.
- * These constants were got from OKT-HLD-0000095-TE_TS document.
- */
-#define CMSG_ENTITY_NAME "Tester"
-#define CMSG_USER_NAME   "Control"
 
 #define CNTR_MSG_TEST    "TEST"
 #define CNTR_MSG_PACKAGE "PACKAGE"
@@ -148,7 +142,16 @@ typedef struct node_info {
     result_info_t   result;      /**< Node result info */
 } node_info_t;
 
-typedef int (* f_process_ctrl_log_msg)(node_info_t *);
+/**
+ * Type of callback function used for processing control messages 
+ *
+ * @param node      Control node information
+ * @param verdicts  The queue of verdicts for this node;
+ *                  queue keeps pointers to "log_msg" structures.
+ */
+typedef int (* f_process_ctrl_log_msg)(node_info_t *node, GQueue *verdicts);
+
+/* Type of callback function used for processing regular messages */
 typedef int (* f_process_reg_log_msg)(log_msg *);
 
 /** The set of generic control event types */
@@ -172,8 +175,9 @@ enum event_type {
 };
 
 /**
- * Process control message: Insert a new node into the flow tree if it's 
- * a start event; Close node if it's an end event.
+ * Process control message from Tester: 
+ * Insert a new node into the flow tree if it is a start event;
+ * Close node if it's an end event.
  *
  * @param msg  Pointer to the log message to be processed.
  *
@@ -182,7 +186,7 @@ enum event_type {
  * @se
  *    In the case of errors it frees log message and calls longjmp.
  */
-extern int rgt_process_control_message(log_msg *msg);
+extern int rgt_process_tester_control_message(log_msg *msg);
 
 /**
  * Process regular log message:

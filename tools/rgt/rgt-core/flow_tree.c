@@ -132,6 +132,9 @@ typedef struct node_t {
                                      which the next message could be added
                                      with high probability */
 
+    GQueue *verdicts;      /**< The queue of verdict messages generated
+                                for this node */
+
     int n_branches;        /**< Number of branches under the node */
     int n_active_branches; /**< Number of active branches */
     int more_branches;     /**< Flag that indicates if the node can append
@@ -202,6 +205,7 @@ flow_tree_init()
     root->msg_after_att = g_queue_new();
     root->msg_att_cache = NULL;
     root->msg_after_att_cache = NULL;
+    root->verdicts = NULL;
     root->user_data = NULL;
     
     assert(root->msg_att != NULL && root->msg_after_att != NULL);
@@ -904,6 +908,7 @@ void
 flow_tree_attach_message(log_msg *msg)
 {
     node_t **p_cur_node;
+    node_t  *cur_node;
 
     if (msg->id == TE_LOG_ID_UNDEFINED)
     {
@@ -930,8 +935,22 @@ flow_tree_attach_message(log_msg *msg)
         fprintf(stderr, "Cannot find test with ID equals to %d\n", msg->id);
         THROW_EXCEPTION;
     }
+    cur_node = *p_cur_node;
 
-    flow_tree_attach_from_node(*p_cur_node, msg);
+    flow_tree_attach_from_node(cur_node, msg);
+
+    /* Check if we are processing Test Control message */
+    if (strcmp(msg->user, TE_LOG_CMSG_USER) == 0)
+    {
+        /* Currently Control messages can be generated only for tests */
+        assert(cur_node->type == NT_TEST);
+
+        /* Append message to the list of test verdicts */
+        if (cur_node->verdicts == NULL)
+            cur_node->verdicts = g_queue_new();
+
+        g_queue_push_tail(cur_node->verdicts, msg);
+    }
 }
 
 static void
@@ -956,7 +975,8 @@ flow_tree_wander(node_t *cur_node)
 
     if (cur_node->fmode == NFMODE_INCLUDE && cur_node->user_data != NULL)
     {
-        ctrl_msg_proc[CTRL_EVT_START][cur_node->type](cur_node->user_data);
+        ctrl_msg_proc[CTRL_EVT_START][cur_node->type](
+            cur_node->user_data, cur_node->verdicts);
         
         /* Output messages that belongs to the node */
         if (cur_node->msg_att != NULL)
@@ -975,7 +995,8 @@ flow_tree_wander(node_t *cur_node)
             if (cur_node->fmode == NFMODE_INCLUDE &&
                 cur_node->user_data != NULL)
             {
-                ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH](NULL);
+                ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH](
+                    cur_node->user_data, cur_node->verdicts);
             }
             
             flow_tree_wander(cur_node->branches[i].first_el);
@@ -984,14 +1005,16 @@ flow_tree_wander(node_t *cur_node)
             if (cur_node->fmode == NFMODE_INCLUDE &&
                 cur_node->user_data != NULL)
             {
-                ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH](NULL);
+                ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH](
+                    cur_node->user_data, cur_node->verdicts);
             }
         }
     }
 
     if (cur_node->fmode == NFMODE_INCLUDE && cur_node->user_data != NULL)
     {
-        ctrl_msg_proc[CTRL_EVT_END][cur_node->type](cur_node->user_data);
+        ctrl_msg_proc[CTRL_EVT_END][cur_node->type](
+            cur_node->user_data, cur_node->verdicts);
     }
 
     /* Output messages that were after the node */

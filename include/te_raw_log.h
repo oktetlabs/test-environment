@@ -67,7 +67,6 @@ extern "C" {
  */
 #define TE_LOG_ID_UNDEFINED  0
 
-
 /** Type to store Next-Field-Length in raw log */
 typedef uint16_t te_log_nfl;
 /** Type to store TE log version in raw log */
