@@ -298,7 +298,7 @@ rpc_aio_return(rcf_rpc_server *rpcs, rpc_aiocb_p cb)
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(aio_return, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: aio_return(%u) -> %u (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: aio_return(%u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), cb, 
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
