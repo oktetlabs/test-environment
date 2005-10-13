@@ -59,8 +59,13 @@ extern "C" {
 /** Current TE log version */
 #define TE_LOG_VERSION  1
 
-/** Invalid value test ID - unknown test ID */
-#define TE_TEST_ID_INVALID  0
+/**
+ * Log ID value that should be used when logging is being done from
+ * Engine Applications and Test Agents.
+ * In case of tests Tester passes "test ID" value as a command line
+ * argument, which should be used as "Log ID" in all log messages.
+ */
+#define TE_LOG_ID_UNDEFINED  0
 
 
 /** Type to store Next-Field-Length in raw log */
@@ -73,8 +78,12 @@ typedef uint32_t te_log_ts_sec;
 typedef uint32_t te_log_ts_usec;
 /** Type to store log level in raw log */
 typedef uint16_t te_log_level;
-/** Type to store test ID in raw log */
-typedef uint32_t te_log_test_id;
+/**
+ * Type to store log ID in raw log.
+ * Currently this field is used for detecting the test-owner of the log
+ * message.
+ */
+typedef uint32_t te_log_id;
 /** Type to store TE log sequence numbers in raw log */
 typedef uint32_t te_log_seqno;
 

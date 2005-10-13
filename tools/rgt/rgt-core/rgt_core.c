@@ -370,6 +370,12 @@ main(int argc, char **argv)
 
             if (rgt_ctx.fetch_log_msg(&msg, &rgt_ctx) == 0)
                 break;
+            
+            if (!rgt_ctx.proc_cntrl_msg)
+            {
+                /* We do not need to care about Log ID */
+                msg->id = TE_LOG_ID_UNDEFINED;
+            }
 
             rgt_core_process_log_msg(msg);
         }

@@ -903,7 +903,35 @@ flow_tree_attach_from_node(node_t *node, log_msg *msg)
 void
 flow_tree_attach_message(log_msg *msg)
 {
-    flow_tree_attach_from_node(root, msg);
+    node_t **p_cur_node;
+
+    if (msg->id == TE_LOG_ID_UNDEFINED)
+    {
+        flow_tree_attach_from_node(root, msg);
+        return;
+    }
+
+    /*
+     * Each message keeps "Log ID" value, which is used to differentiate 
+     * log messages came from tests. That feature is essential for
+     * the case when we run many tests together (parallel execution).
+     *
+     * NOTE:
+     * Currently this field has sense only for messages came from tests,
+     * and keeps TE_LOG_ID_UNDEFINED value for messages came from 
+     * Engine processes and Test Agents.
+     *
+     * Here we expect that log messages from the particular test can't be 
+     * mixed in time, as we use a set of "expected to close" nodes.
+     */
+    if ((p_cur_node = (node_t **)
+                g_hash_table_lookup(close_set, &(msg->id))) == NULL)
+    {
+        fprintf(stderr, "Cannot find test with ID equals to %d\n", msg->id);
+        THROW_EXCEPTION;
+    }
+
+    flow_tree_attach_from_node(*p_cur_node, msg);
 }
 
 static void

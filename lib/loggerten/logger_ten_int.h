@@ -62,7 +62,7 @@ extern "C" {
 #endif
 
 /** See description in tapi_test.h */
-unsigned int te_test_id = TE_TEST_ID_INVALID;
+unsigned int te_test_id = TE_LOG_ID_UNDEFINED;
 
 
 /** Log message transport */

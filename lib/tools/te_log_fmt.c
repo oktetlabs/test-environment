@@ -1052,7 +1052,7 @@ static const te_log_version log_version = TE_LOG_VERSION;
 te_errno
 te_log_message_raw_va(te_log_msg_raw_data *data,
                       te_log_ts_sec ts_sec, te_log_ts_usec ts_usec,
-                      te_log_level level, te_log_test_id test_id,
+                      te_log_level level, te_log_id log_id,
                       const char *entity, const char *user,
                       const char *fmt, va_list ap)
 {
@@ -1078,7 +1078,7 @@ te_log_message_raw_va(te_log_msg_raw_data *data,
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
                        &level, sizeof(level), FALSE);
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
-                       &test_id, sizeof(test_id), FALSE);
+                       &log_id, sizeof(log_id), FALSE);
 
     te_log_msg_raw_put_string(data, entity);
     te_log_msg_raw_put_string(data, user);

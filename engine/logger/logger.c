@@ -599,13 +599,16 @@ ta_handler(void *ta)
             }
             p_buf += TE_LOG_MSG_COMMON_HDR_SZ;
 
-            /* Add test ID equal to TE_TEST_ID_INVALID */
-#if SIZEOF_TE_LOG_TEST_ID == 4
-            LGR_32_TO_NET(TE_TEST_ID_INVALID, p_buf);
+            /*
+             * Add log ID equal to TE_LOG_ID_UNDEFINED,
+             * as we log from Engine application - "Logger" itself.
+             */
+#if SIZEOF_TE_LOG_ID == 4
+            LGR_32_TO_NET(TE_LOG_ID_UNDEFINED, p_buf);
 #else
-#error Unsupported sizeof(te_log_test_id)
+#error Unsupported sizeof(te_log_id)
 #endif
-            p_buf += sizeof(te_log_test_id);
+            p_buf += sizeof(te_log_id);
 
             /* Add TA name and corresponding NFL to the message */
             LGR_NFL_PUT(ta_name_len, p_buf);

@@ -42,7 +42,7 @@ enum e_error_msg_index {
     RLF_V1_RLM_VERSION           = 0,  /**< There is no log version field */
     RLF_V1_RLM_TIMESTAMP         = 1,  /**< Timestamp field is too short */
     RLF_V1_RLM_LOGLEVEL          = 2,  /**< Log Level field is too short */
-    RLF_V1_RLM_TEST_ID           = 3,  /**< Test ID field is too short */
+    RLF_V1_RLM_LOG_ID            = 3,  /**< Log ID field is too short */
     RLF_V1_RLM_ENTITY_NAME       = 4,  /**< Entity name is too short */
     RLF_V1_RLM_USER_NAME         = 5,  /**< Entity name is too short */
     RLF_V1_RLM_FORMAT_STRING     = 6,  /**< Format string is out
@@ -165,7 +165,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
     te_log_ts_sec     ts_sec;
     te_log_ts_usec    ts_usec;
     te_log_level      log_level;
-    te_log_test_id    test_id;
+    te_log_id         log_id;
     FILE             *fd = ctx->rawlog_fd;
 
     char     *entity_name;
@@ -222,17 +222,17 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 #error SIZEOF_TE_LOG_LEVEL is expected to be 1, 2, or 4
 #endif
 
-    /* Read test ID */
-    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_TEST_ID);
-    READ(fd, &test_id, sizeof(test_id));
-#if SIZEOF_TE_LOG_TEST_ID == 4
-    test_id = ntohl(test_id);
-#elif SIZEOF_TE_LOG_TEST_ID == 2
-    test_id = ntohs(test_id);
-#elif SIZEOF_TE_LOG_TEST_ID == 1
+    /* Read log ID */
+    LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_LOG_ID);
+    READ(fd, &log_id, sizeof(log_id));
+#if SIZEOF_TE_LOG_ID == 4
+    log_id = ntohl(log_id);
+#elif SIZEOF_TE_LOG_ID == 2
+    log_id = ntohs(log_id);
+#elif SIZEOF_TE_LOG_ID == 1
     /* Do nothing */
 #else
-#error SIZEOF_TE_LOG_TEST_ID is expected to be 1, 2, or 4
+#error SIZEOF_TE_LOG_ID is expected to be 1, 2, or 4
 #endif
 
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_ENTITY_NAME);
@@ -297,7 +297,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 
     *arg = NULL;
 
-    (*msg)->test_id = test_id;
+    (*msg)->id = log_id;
     (*msg)->entity = entity_name;
     (*msg)->user   = user_name;
     (*msg)->timestamp[0] = ntohl(ts_sec);
