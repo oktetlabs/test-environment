@@ -122,6 +122,27 @@ typedef enum node_type {
     NT_LAST     /**< Last marker - the biggest value of the all evements */
 } node_type_t;
 
+static inline const char *
+node_type2str(node_type_t node_type)
+{
+    switch (node_type)
+    {
+#define NODE_TYPE_CASE(val_) \
+        case NT_ ## val_: return #val_
+        
+        NODE_TYPE_CASE(SESSION);
+        NODE_TYPE_CASE(PACKAGE);
+        NODE_TYPE_CASE(TEST);
+        
+        default:
+            assert(0);
+            return "Unknown";
+    }
+
+    assert(0);
+    return "";
+}
+
 /**
  * Structure that represents information about a particular entry.
  * It is used for passing information about start/end events. 

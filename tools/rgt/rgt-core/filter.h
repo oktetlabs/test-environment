@@ -99,6 +99,23 @@ extern enum node_fltr_mode rgt_filter_check_message(const char *level,
  */
 extern enum node_fltr_mode rgt_filter_check_branch(const char *path);
 
+/**
+ * Validates if the particular node (TEST, SESSION or PACKAGE) passes 
+ * through duration filter.
+ *
+ * @param node_type  Typo of the node ("TEST", "SESSION" or "PACKAGE")
+ * @param start_ts   Start timestamp
+ * @param end_ts     End timestamp
+ *
+ * @return Returns filtering mode for the node.
+ *
+ * @retval NFMODE_INCLUDE   the node is passed through the filter.
+ * @retval NFMODE_EXCLUDE   the node is rejected by the filter.
+ */
+extern enum node_fltr_mode rgt_filter_check_duration(const char *node_type,
+                                                     uint32_t *start_ts,
+                                                     uint32_t *end_ts);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

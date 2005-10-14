@@ -970,19 +970,29 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
  */
 static void
 flow_tree_wander(node_t *cur_node)
-{    
+{
+    enum node_fltr_mode duration_filter_res = NFMODE_EXCLUDE;
+
     if (cur_node == NULL)
         return;
 
     if (cur_node->fmode == NFMODE_INCLUDE && cur_node->user_data != NULL)
     {
-        ctrl_msg_proc[CTRL_EVT_START][cur_node->type](
-            cur_node->user_data, cur_node->verdicts);
+        duration_filter_res = rgt_filter_check_duration(
+                                  node_type2str(cur_node->type),
+                                  cur_node->start_ts,
+                                  cur_node->end_ts);
+
+        if (duration_filter_res == NFMODE_INCLUDE)
+        {
+            ctrl_msg_proc[CTRL_EVT_START][cur_node->type](
+                cur_node->user_data, cur_node->verdicts);
         
-        /* Output messages that belongs to the node */
-        if (cur_node->msg_att != NULL)
-            g_queue_foreach(cur_node->msg_att,
-                            wrapper_process_regular_msg, NULL);
+            /* Output messages that belongs to the node */
+            if (cur_node->msg_att != NULL)
+                g_queue_foreach(cur_node->msg_att,
+                                wrapper_process_regular_msg, NULL);
+        }
     }
 
     if (cur_node->type != NT_TEST)
@@ -1012,7 +1022,8 @@ flow_tree_wander(node_t *cur_node)
         }
     }
 
-    if (cur_node->fmode == NFMODE_INCLUDE && cur_node->user_data != NULL)
+    if (cur_node->fmode == NFMODE_INCLUDE && cur_node->user_data != NULL &&
+        duration_filter_res == NFMODE_INCLUDE)
     {
         ctrl_msg_proc[CTRL_EVT_END][cur_node->type](
             cur_node->user_data, cur_node->verdicts);

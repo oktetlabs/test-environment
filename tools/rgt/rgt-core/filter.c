@@ -39,6 +39,9 @@
 static Tcl_Interp *tcl_interp = NULL;
 static te_bool     initialized = FALSE;
 
+/** Maximum length of TCL command */
+#define MAX_CMD_LEN 256
+
 /* See the description in filter.h */
 int
 rgt_filter_init(const char *fltr_fname)
@@ -96,6 +99,61 @@ rgt_filter_destroy()
 }
 
 /**
+ * Runs specified Tcl command and returns filtering result
+ *
+ * @param cmd        TCL command to run
+ * @param func_name  Function name (for debugging purpose)
+ *
+ * @return Filtering result
+ */
+static enum node_fltr_mode
+run_tcl_cmd(const char *cmd, const char *func_name)
+{
+    if (initialized && tcl_interp == NULL)
+        return NFMODE_INCLUDE;
+
+    if (Tcl_Eval(tcl_interp, cmd) == TCL_OK)
+    {
+        /* There is such procedure in the Tcl environment */
+        if (strcmp(Tcl_GetStringResult(tcl_interp), "pass") == 0)
+        {
+            return NFMODE_INCLUDE;
+        }
+        else if (strcmp(Tcl_GetStringResult(tcl_interp), "fail") == 0)
+        {
+            return NFMODE_EXCLUDE;
+        }
+        else if (strcmp(Tcl_GetStringResult(tcl_interp), "default") == 0)
+        {
+            return NFMODE_DEFAULT;
+        }
+        else
+        {
+            FMT_TRACE("Tcl filter file: "
+                      "function %s has returned \"%s\", "
+                      "but it is allowed to return only strings "
+                      "\"pass\", \"fail\" or \"default\".",
+                      func_name,
+                      Tcl_GetStringResult(tcl_interp));
+            THROW_EXCEPTION;
+        }
+    }
+    else
+    {
+        /* 
+         * Something awful is occured: Tcl filter file doesn't contain
+         * standard routine "rgt_branch_filter" that is used for filtering.
+         */
+        FMT_TRACE("Tcl filter file: %s.", Tcl_GetStringResult(tcl_interp));
+        THROW_EXCEPTION;
+    }
+
+    assert(0);
+
+    return NFMODE_EXCLUDE;
+}
+
+/**
  * Validates if log message with a particular tuple (level, entity name, 
  * user name and timestamp) passes through user defined filter.
  *
@@ -115,61 +173,12 @@ rgt_filter_check_message(const char *level,
                          const char *entity, const char *user,
                          const uint32_t *timestamp)
 {
-    enum node_fltr_mode  fmode = NFMODE_DEFAULT;
-    char                *cmd;
+    char cmd[MAX_CMD_LEN];
 
-    if (initialized && tcl_interp == NULL)
-        return NFMODE_INCLUDE;
+    snprintf(cmd, sizeof(cmd), "rgt_msg_filter {%s} {%s} {%s} %d",
+             level, entity, user, *timestamp);
 
-#define RGT_MSG_FILTER_FUNC "rgt_msg_filter {%s} {%s} {%s} %d"
-
-    if ((cmd = malloc(strlen(RGT_MSG_FILTER_FUNC) + strlen(level) + 
-                      strlen(entity) + strlen(user) + 20)) == NULL)
-    {
-        TRACE("No memory available");
-        THROW_EXCEPTION;
-    }
-
-    sprintf(cmd, RGT_MSG_FILTER_FUNC,
-            level, entity, user, *timestamp);
-
-#undef RGT_MSG_FILTER_FUNC
-
-    if (Tcl_Eval(tcl_interp, cmd) == TCL_OK)
-    {
-        free(cmd);
-
-        /* There is such procedure in the Tcl environment */
-        if (strcmp(Tcl_GetStringResult(tcl_interp), "pass") == 0)
-        {
-            fmode = NFMODE_INCLUDE;
-        }
-        else if (strcmp(Tcl_GetStringResult(tcl_interp), "fail") == 0)
-        {
-            fmode = NFMODE_EXCLUDE;
-        }
-        else
-        {
-            FMT_TRACE("Tcl filter file: "
-                      "function rgt_msg_filter has returned \"%s\", "
-                      "but it is allowed to return only strings "
-                      "\"pass\" or \"fail\".",
-                      Tcl_GetStringResult(tcl_interp));
-            THROW_EXCEPTION;
-        }
-    }
-    else
-    {
-        /* 
-         * Something awful is occured: Tcl filter file doesn't contain
-         * standard routine "rgt_msg_filter" that is used for filtering.
-         */
-        FMT_TRACE("Tcl filter file: %s.", Tcl_GetStringResult(tcl_interp));
-        free(cmd);
-        THROW_EXCEPTION;
-    }
-
-    return fmode;
+    return run_tcl_cmd(cmd, "rgt_msg_filter");
 }
 
 /**
@@ -187,60 +196,41 @@ rgt_filter_check_message(const char *level,
 enum node_fltr_mode
 rgt_filter_check_branch(const char *path)
 {
-    enum node_fltr_mode fmode = NFMODE_DEFAULT;
+    char cmd[MAX_CMD_LEN];
         
-    char *cmd_name = "rgt_branch_filter ";
-    char *cmd;
+    snprintf(cmd, sizeof(cmd), "rgt_branch_filter %s", path);
 
-    if (initialized && tcl_interp == NULL)
-        return NFMODE_INCLUDE;
-        
-    if ((cmd = malloc(strlen(cmd_name) + strlen(path) + 1)) == NULL)
-    {
-        TRACE("No memory available");
-        THROW_EXCEPTION;
-    }
+    return run_tcl_cmd(cmd, "rgt_branch_filter");
+}
 
-    memcpy(cmd, cmd_name, strlen(cmd_name));
-    memcpy(cmd + strlen(cmd_name), path, strlen(path) + 1);
+/**
+ * Validates if the particular node (TEST, SESSION or PACKAGE) passes 
+ * through duration filter.
+ *
+ * @param node_type  Typo of the node ("TEST", "SESSION" or "PACKAGE")
+ * @param start_ts   Start timestamp
+ * @param end_ts     End timestamp
+ *
+ * @return Returns filtering mode for the node.
+ *
+ * @retval NFMODE_INCLUDE   the node is passed through the filter.
+ * @retval NFMODE_EXCLUDE   the node is rejected by the filter.
+ */
+enum node_fltr_mode
+rgt_filter_check_duration(const char *node_type,
+                          uint32_t *start_ts, uint32_t *end_ts)
+{
+    enum node_fltr_mode fmode;
+    uint32_t            duration[2];
+    char                cmd[MAX_CMD_LEN];
 
-    if (Tcl_Eval(tcl_interp, cmd) == TCL_OK)
-    {
-        free(cmd);
 
-        /* There is such procedure in the Tcl environment */
-        if (strcmp(Tcl_GetStringResult(tcl_interp), "pass") == 0)
-        {
-            fmode = NFMODE_INCLUDE;
-        }
-        else if (strcmp(Tcl_GetStringResult(tcl_interp), "fail") == 0)
-        {
-            fmode = NFMODE_EXCLUDE;
-        }
-        else if (strcmp(Tcl_GetStringResult(tcl_interp), "default") == 0)
-        {
-            fmode = NFMODE_DEFAULT;
-        }
-        else
-        {
-            FMT_TRACE("Tcl filter file: "
-                      "function rgt_branch_filter has returned \"%s\", "
-                      "but it is allowed to return only strings "
-                      "\"pass\", \"fail\" or \"default\".",
-                      Tcl_GetStringResult(tcl_interp));
-            THROW_EXCEPTION;
-        }
-    }
-    else
-    {
-        /* 
-         * Something awful is occured: Tcl filter file doesn't contain
-         * standard routine "rgt_branch_filter" that is used for filtering.
-         */
-        FMT_TRACE("Tcl filter file: %s.", Tcl_GetStringResult(tcl_interp));
-        free(cmd);
-        THROW_EXCEPTION;
-    }
+    TIMESTAMP_SUB(duration, end_ts, start_ts);
 
-    return fmode;
+    snprintf(cmd, sizeof(cmd), "rgt_duration_filter %s %d",
+             node_type, duration[0]);
+
+    fmode = run_tcl_cmd(cmd, "rgt_duration_filter");
+    
+    return (fmode == NFMODE_DEFAULT) ? NFMODE_INCLUDE : fmode;
 }
