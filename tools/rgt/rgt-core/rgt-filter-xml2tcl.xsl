@@ -523,13 +523,14 @@ proc rgt_time_filter { timestamp } {
 #    Procedure that checks if duration value conforms user specified filter.
 # 
 # PARAMETERS:
-#    duration   - Duration value to be checked.
+#    node_type  - Type of the node ("TEST", "SESSION" or "PACKAGE")
+#    duration   - Duration value in seconds to be checked
 #
 # RETURNS:
 #    In the case when the timestamp passes through user filter 
 #    it returns "pass" string, otherwise "fail".
 #
-proc rgt_duration_filter { duration } {
+proc rgt_duration_filter { node_type duration } {
     return "</xsl:text><xsl:value-of select="$def-mode"/><xsl:text>"
 }
 # end of rgt_duration_filter procedure
