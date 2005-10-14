@@ -335,6 +335,7 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
     assert(cur_node->msg_att != NULL && cur_node->msg_after_att != NULL);
     cur_node->msg_att_cache = NULL;
     cur_node->msg_after_att_cache = NULL;
+    cur_node->verdicts = NULL;
 
     memcpy(cur_node->start_ts, timestamp, sizeof(cur_node->start_ts));
     memcpy(cur_node->end_ts, max_timestamp, sizeof(cur_node->end_ts));
