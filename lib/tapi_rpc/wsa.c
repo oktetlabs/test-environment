@@ -53,7 +53,7 @@ int
 rpc_wsa_socket(rcf_rpc_server *rpcs,
                rpc_socket_domain domain, rpc_socket_type type,
                rpc_socket_proto protocol, uint8_t *info, int info_len,
-               te_bool overlapped)
+               rpc_open_sock_flags flags)
 {
     tarpc_socket_in  in;
     tarpc_socket_out out;
@@ -72,7 +72,7 @@ rpc_wsa_socket(rcf_rpc_server *rpcs,
     in.proto = protocol;
     in.info.info_val = info;
     in.info.info_len = info_len;
-    in.flags = overlapped;
+    in.flags = flags;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "socket", &in, &out);
@@ -3290,3 +3290,83 @@ rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, rpc_hwnd hwnd,
 
     RETVAL_RPC_PTR(wsa_async_get_serv_by_port, out.retval);
 }
+
+/**
+ * Joins a leaf node into a multipoint session.
+ *
+ * @param caller_wsabuf          A pointer to the WSABUF structure in the TA
+ *                               virtual address space (can be obtained by
+ *                               a call to rpc_alloc_wsabuf()).
+ * @param callee_wsabuf          A pointer to the WSABUF structure in the
+ *                               TA virtual address space.
+ */
+int rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, struct sockaddr *addr, 
+                      socklen_t addrlen, rpc_ptr caller_wsabuf, 
+                      rpc_ptr callee_wsabuf, rpc_qos *sqos, 
+                      rpc_join_leaf_flags flags)
+{
+    rcf_rpc_op            op;
+    tarpc_wsa_join_leaf_in  in;
+    tarpc_wsa_join_leaf_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(wsa_connect, -1);
+    }
+
+    op = rpcs->op;
+    
+    in.s = s;
+    in.flags = flags;
+    
+    if (addr != NULL)
+    {
+        if (addrlen >= SA_COMMON_LEN)
+        {
+            in.addr.sa_family = addr_family_h2rpc(addr->sa_family);
+            in.addr.sa_data.sa_data_len = addrlen - SA_COMMON_LEN;
+            in.addr.sa_data.sa_data_val = (uint8_t *)(addr->sa_data);
+        }
+        else
+        {
+            in.addr.sa_family = RPC_AF_UNSPEC;
+            in.addr.sa_data.sa_data_len = 0;
+            /* Any not-NULL pointer is suitable here */
+            in.addr.sa_data.sa_data_val = (uint8_t *)addr;
+        }
+    }
+    in.addrlen = addrlen;
+
+    in.caller_wsabuf = caller_wsabuf;
+    in.callee_wsabuf = callee_wsabuf;
+
+    if (sqos == NULL)
+        in.sqos_is_null = TRUE;
+    else
+    {
+        in.sqos_is_null = FALSE;
+        in.sqos.sending = *(tarpc_flowspec*)&sqos->sending;
+        in.sqos.receiving = *(tarpc_flowspec*)&sqos->receiving;
+        in.sqos.provider_specific_buf.provider_specific_buf_val =
+            sqos->provider_specific_buf;
+        in.sqos.provider_specific_buf.provider_specific_buf_len =
+            sqos->provider_specific_buf_len;
+    }
+
+    rcf_rpc_call(rpcs, "wsa_join_leaf", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(wsa_join_leaf, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: wsa_join_leaf() -> %d (%s %s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 win_error_rpc2str(out.common.win_error));
+
+    RETVAL_INT(wsa_join_leaf, out.retval);
+}
+
+

@@ -107,7 +107,8 @@ typedef struct _rpc_sys_info {
 extern int rpc_wsa_socket(rcf_rpc_server *rpcs,
                           rpc_socket_domain domain, rpc_socket_type type,
                           rpc_socket_proto protocol,
-                          uint8_t *info, int info_len, te_bool overlapped);
+                          uint8_t *info, int info_len, 
+                          rpc_open_sock_flags flags);
 
 /**
  * WSADuplicateSocket(). Protocol info is copied to the Test Engine
@@ -1160,5 +1161,38 @@ extern int rpc_peek_message(rcf_rpc_server *rpcs,
  *         otherwise
  */
 extern te_bool rpc_is_winsock2(rcf_rpc_server *rpcs);
+
+
+
+/**
+ * Joins a leaf node into a multipoint session.
+ *
+ * @param rpcs           RPC server handle
+ * @param s              Descriptor identifying an unconnected socket
+ * @param addr           pointer to a @b sockaddr structure containing the 
+ *                       address to connect to
+ * @param addrlen        length of @b addr structure
+ * @param caller_wsabuf  TA virtual address space valid pointer to a WSABUF
+ *                       structure describing the user data that is to be
+ *                       transferred to the other socket during connection
+ *                       establishment
+ * @param callee_wsabuf  TA virtual address space valid pointer to a WSABUF
+ *                       structure describing the user data that is to be
+ *                       transferred back from the other socket during
+ *                       connection establishment.
+ * @param sqos           TA virtual address space valid pointer to a QOS
+ *                       structure for socket @b s.
+ * @param flag           Flag to indicate that the socket is acting as a 
+ *                       sender (JL_SENDER_ONLY), receiver 
+ *                       (JL_RECEIVER_ONLY), or both (JL_BOTH).
+ *
+ * @return               a value of type SOCKET that is a descriptor for 
+ *                       the newly created multipoint socket in case of 
+ *                       success, a value of INVALID_SOCKET otherwise.
+ */
+extern int rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s,
+                            struct sockaddr *addr, socklen_t addrlen,
+                            rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
+                            rpc_qos *sqos, rpc_join_leaf_flags flags);
 
 #endif /* !__TE_TAPI_RPC_WINSOCK2_H__ */

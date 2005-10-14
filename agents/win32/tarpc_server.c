@@ -1067,11 +1067,15 @@ TARPC_FUNC(signal,
 
 TARPC_FUNC(socket, {},
 {
+   
+
     MAKE_CALL(out->fd = WSASocket(domain_rpc2h(in->domain),
                                   socktype_rpc2h(in->type),
                                   wsp_proto_rpc2h(in->type, in->proto),
                                   (LPWSAPROTOCOL_INFO)(in->info.info_val),
-                                  0, in->flags ? WSA_FLAG_OVERLAPPED : 0));
+                                  0, 
+                                  open_sock_flags_rpc2h(in->flags)));
+
 }
 )
 
@@ -2722,7 +2726,6 @@ flooder(tarpc_flooder_in *in)
 
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 0xA, FLOODER_BUF);
-
     if (rx_nb)
     {
         u_long on = 1;
@@ -2863,7 +2866,6 @@ flooder(tarpc_flooder_in *in)
             call_timeout.tv_sec = FLOODER_ECHOER_WAIT_FOR_RX_EMPTY;
             call_timeout.tv_usec = 0;
         }
-
     } while (time2run_not_expired || session_rx);
 
     if (rx_nb)
@@ -4803,7 +4805,36 @@ TARPC_FUNC(wsa_async_get_serv_by_port, {},
                                 rcf_pch_mem_get(in->buf), in->buflen)));
 }
 )
+/*-------------- WSAJoinLeaf -----------------------------*/
+TARPC_FUNC(wsa_join_leaf, {},
+{
+    QOS sqos;
+    QOS *psqos;
+    PREPARE_ADDR(in->addr, 0);
 
+    if (in->sqos_is_null == TRUE)
+        psqos = NULL;
+    else
+    {
+        psqos = &sqos;
+        memset(&sqos, 0, sizeof(sqos));
+        flowspec_rpc2h(&sqos.SendingFlowspec, &in->sqos.sending);
+        flowspec_rpc2h(&sqos.ReceivingFlowspec, &in->sqos.receiving);
+        sqos.ProviderSpecific.buf =
+            (char*)in->sqos.provider_specific_buf.provider_specific_buf_val;
+        sqos.ProviderSpecific.len =
+            in->sqos.provider_specific_buf.provider_specific_buf_len;
+    }
+
+    MAKE_CALL(out->retval = WSAJoinLeaf(in->s, a, in->addrlen,
+                                       (LPWSABUF)
+                                       rcf_pch_mem_get(in->caller_wsabuf),
+                                       (LPWSABUF)
+                                       rcf_pch_mem_get(in->callee_wsabuf),
+                                       psqos, NULL, 
+                                       join_leaf_flags_rpc2h(in->flags)));
+}
+)
 /*-------------- rpc_is_op_done() -----------------------------*/
 
 bool_t

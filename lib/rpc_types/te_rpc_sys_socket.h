@@ -1384,4 +1384,128 @@ ioctl_rpc2str(rpc_ioctl_code code)
 #define SA_DATA_MAX_LEN  (sizeof(struct sockaddr_storage) - SA_COMMON_LEN)
 
 
+
+/**
+ * TA-independent flags for WSASocket()
+ */ 
+typedef enum rpc_open_sock_flags {
+    RPC_WSA_FLAG_OVERLAPPED,           /**< Causes an overlapped socket to 
+                                            be created */
+    RPC_WSA_FLAG_MULTIPOINT_C_ROOT,    /**< Indicates that the socket 
+                                            created will be a c_root in a 
+                                            multipoint session */
+    RPC_WSA_FLAG_MULTIPOINT_C_LEAF,    /**< Indicates that the socket 
+                                            created will be a c_leaf in a 
+                                            multipoint session */
+    RPC_WSA_FLAG_MULTIPOINT_D_ROOT,    /**< Indicates that the socket 
+                                            created will be a d_root in a 
+                                            multipoint session */
+    RPC_WSA_FLAG_MULTIPOINT_D_LEAF     /**< Indicates that the socket 
+                                            created will be a d_leaf in a 
+                                            multipoint session */
+} rpc_open_sock_flags;
+
+
+#define OPEN_SOCK_FLAGS_MAPPING_LIST \
+            RPC_BIT_MAP_ENTRY(WSA_FLAG_OVERLAPPED),               \
+            RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_C_ROOT),        \
+            RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_C_LEAF),        \
+            RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_D_ROOT),        \
+            RPC_BIT_MAP_ENTRY(WSA_FLAG_MULTIPOINT_D_LEAF)         
+          
+/**
+ * open_sock_flags_rpc2str()
+ */
+RPCBITMAP2STR(open_sock_flags, OPEN_SOCK_FLAGS_MAPPING_LIST)
+
+
+/** Convert rpc_open_sock_flags to string */
+static inline const char *
+open_sock_rpc2str(rpc_open_sock_flags open_code)
+{
+    switch (open_code)
+    {
+        RPC2STR(WSA_FLAG_OVERLAPPED);
+        RPC2STR(WSA_FLAG_MULTIPOINT_C_ROOT);
+        RPC2STR(WSA_FLAG_MULTIPOINT_C_LEAF);
+        RPC2STR(WSA_FLAG_MULTIPOINT_D_ROOT);
+        RPC2STR(WSA_FLAG_MULTIPOINT_D_LEAF);
+        default: return "<OPEN_SOCKET_FATAL_ERROR>";
+    }
+}
+
+
+#ifdef WSA_FLAG_OVERLAPPED
+/** Convert rpc_open_sock_flags to the native ones */
+static inline unsigned int
+open_sock_flags_rpc2h(unsigned int flags)
+{
+    return 
+           (!!(flags & RPC_WSA_FLAG_OVERLAPPED) * WSA_FLAG_OVERLAPPED) |
+           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_C_ROOT) * 
+            WSA_FLAG_MULTIPOINT_C_ROOT) |
+           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_C_LEAF) * 
+            WSA_FLAG_MULTIPOINT_C_LEAF) |
+           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_D_ROOT) * 
+            WSA_FLAG_MULTIPOINT_D_ROOT) |
+           (!!(flags & RPC_WSA_FLAG_MULTIPOINT_D_LEAF) * 
+            WSA_FLAG_MULTIPOINT_D_LEAF) ;
+
+}
+#endif
+
+
+/**
+ * TA-independent flags for WSAJoinLeaf()
+ */
+typedef enum rpc_join_leaf_flags {
+    RPC_JL_SENDER_ONLY,   /**< Indicates that the socket is acting as a 
+                               sender */
+    RPC_JL_RECEIVER_ONLY, /**< Indicates that the socket is acting as a 
+                               receiver */
+    RPC_JL_BOTH,          /**< Indicates that the socket is acting both 
+                               as a sender and as a receiver */
+} rpc_join_leaf_flags;
+
+
+#define JOIN_LEAF_FLAGS_MAPPING_LIST \
+            RPC_BIT_MAP_ENTRY(JL_SENDER_ONLY),          \
+            RPC_BIT_MAP_ENTRY(JL_RECEIVER_ONLY),        \
+            RPC_BIT_MAP_ENTRY(JL_BOTH)         
+          
+/**
+ * join_leaf_flags_rpc2str()
+ */
+RPCBITMAP2STR(join_leaf_flags, JOIN_LEAF_FLAGS_MAPPING_LIST)
+
+
+
+/** Convert rpc_join_leaf_flags to string */
+static inline const char *
+join_leaf_rpc2str(rpc_join_leaf_flags open_code)
+{
+    switch (open_code)
+    {
+        RPC2STR(JL_SENDER_ONLY);
+        RPC2STR(JL_RECEIVER_ONLY);
+        RPC2STR(JL_BOTH);
+        default: return "<JOIN_LEAF_FATAL_ERROR>";
+    }
+}
+
+
+#ifdef JL_SENDER_ONLY
+/** Convert rpc_join_leaf_flags to the native ones */
+static inline unsigned int
+join_leaf_flags_rpc2h(unsigned int flags)
+{
+    return 
+           (!!(flags & RPC_JL_SENDER_ONLY) * JL_SENDER_ONLY) |
+           (!!(flags & RPC_JL_RECEIVER_ONLY) * JL_RECEIVER_ONLY) |
+           (!!(flags & RPC_JL_BOTH) * JL_BOTH);
+}
+
+#endif
+      
+
 #endif /* !__TE_RPC_SYS_SOCKET_H__ */

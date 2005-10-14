@@ -246,8 +246,7 @@ struct tarpc_socket_in {
     tarpc_int   proto;  /**< TA-independent socket protocol */
 
     char        info<>; /**< Protocol Info (for winsock2 only) */
-    tarpc_int   flags;  /**< If 1, the socket is overlapped 
-                             (for winsock2 only) */
+    tarpc_int   flags;  /**< flags (for winsock2 only) */
 };
 
 struct tarpc_socket_out {
@@ -1389,6 +1388,33 @@ struct tarpc_wsa_async_select_in {
 };
 
 typedef struct tarpc_int_retval_out tarpc_wsa_async_select_out;
+
+/* WSAJoinLeaf */
+struct tarpc_wsa_join_leaf_in {
+    struct tarpc_in_arg    common;
+    tarpc_int              s;
+    struct tarpc_sa        addr;
+    tarpc_size_t           addrlen;
+    tarpc_ptr              caller_wsabuf; /**< A pointer to WSABUF structure
+                                               in TA address space */
+    tarpc_ptr              callee_wsabuf; /**< A pointer to WSABUF structure
+                                               in TA address space */
+    struct tarpc_qos       sqos;
+    tarpc_bool             sqos_is_null;
+    tarpc_int              flags;  
+
+};
+
+struct tarpc_wsa_join_leaf_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+
+    struct tarpc_sa      addr;   /**< Location for peer name */
+    tarpc_socklen_t      len<>;  /**< Length of the peer name location */
+
+};
+
 
 /* PeekMessage */
 struct tarpc_peek_message_in {
@@ -2986,6 +3012,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(destroy_window)
         RPC_DEF(wsa_async_select)
         RPC_DEF(peek_message)
-
+        RPC_DEF(wsa_join_leaf)
+        
     } = 1;
 } = 1;
