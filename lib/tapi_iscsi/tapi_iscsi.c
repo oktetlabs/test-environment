@@ -887,7 +887,7 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
 
 int
 tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
-                              char *key_name, int num, ...)
+                              const char *key_name, int num, ...)
 {
     int                rc;
     
@@ -1008,6 +1008,43 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
     }
     va_end(list);
     return 0;
+}
+
+
+int
+tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
+                            const char *key_name,
+                            const char *buf,
+                            int buf_len)
+{
+    int                rc;
+
+    int                key_index;
+    iscsi_key_values   key_values;
+    int                key_values_num;
+    int                key_values_index;
+    int                i = 0;
+
+
+    if ((key_index =
+         tapi_iscsi_get_key_index_by_name(segment_data, key_name)) ==
+            TAPI_ISCSI_KEY_INVALID)
+    {
+        ERROR("%s, %d: No key with %s name",
+              __FUNCTION__, __LINE__, key_name);
+        return -1;
+    }
+
+    if ((key_values = tapi_iscsi_get_key_values(segment_data,
+                                                key_index)) == NULL)
+    {
+        ERROR("%s, %d: cannot get key values",
+              __FUNCTION__, __LINE__);
+        return -1;
+    }
+
+    rc = asn_sprint_value(key_values, buf, buf_len, 0);
+    return rc;
 }
 
 /* Target configuration */

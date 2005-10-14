@@ -328,7 +328,22 @@ extern iscsi_segment_data tapi_iscsi_keys_create(int num, ...);
 
 extern int tapi_iscsi_find_key_and_value(
     iscsi_segment_data segment_data,
-    char *key_name, int num, ...);
+    const char *key_name, int num, ...);
+
+/**
+ * Find the key and return its value
+ *
+ * @param segment_data    iSCSI PDU Segment Data in asn format
+ * @param key_name        the name of key (according to RFC3720
+ * @param buf             Location to return values of the key
+ * @param buf_len         The lenght of the buf
+ *
+ * @return 0 or error code.
+ */
+extern int
+tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
+                            const char *key_name,
+                            const char *buf, int buf_len);
 
 typedef enum {
     tapi_iscsi_insert_key_values,
