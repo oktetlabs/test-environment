@@ -35,7 +35,7 @@ typedef struct iscsi_custom_data iscsi_custom_data;
 iscsi_custom_data *iscsi_register_custom(int id);
 void iscsi_deregister_custom(iscsi_custom_data *block);
 
-int iscsi_set_custom_value(int id, const char *param, int value);
+int iscsi_set_custom_value(int id, const char *param, const char *value);
 
 int iscsi_get_custom_value(iscsi_custom_data *block, const char *param);
 te_bool iscsi_is_changed_custom_value(iscsi_custom_data *block, const char *param);

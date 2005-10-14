@@ -410,7 +410,7 @@ extern int tapi_iscsi_target_set_parameter(const char *ta,
 extern int tapi_iscsi_target_customize(const char *ta,
                                        int id,
                                        const char *key,
-                                       int value);
+                                       const char *value);
 
 typedef int iscsi_target_id;
 typedef int iscsi_cid;

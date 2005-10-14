@@ -97,12 +97,12 @@ find_custom_param (const char *name)
     static char *name_list[ISCSI_CUSTOM_MAX_PARAM + 1] = 
         {
             "reject",
-            "fake_chap_id",
+            "CHAP_I",
             NULL
         };
     char **iter;
 
-    for (iter = name_list; *iter; iter++)
+    for (iter = name_list; *iter != NULL; iter++)
     {
         if (strcmp(*iter, name) == 0)
             return iter - name_list;
@@ -112,10 +112,11 @@ find_custom_param (const char *name)
 }
 
 int
-iscsi_set_custom_value(int id, const char *param, int value)
+iscsi_set_custom_value(int id, const char *param, const char *value)
 {
     iscsi_custom_data *block;
     int param_no = find_custom_param(param);
+    int intvalue = strtol(value, NULL, 10);
 
     if (param_no < 0)
     {
@@ -127,7 +128,7 @@ iscsi_set_custom_value(int id, const char *param, int value)
     {
         if (id < 0 || block->id == id)
         {
-            block->params[param_no] = value;
+            block->params[param_no] = intvalue;
             block->changed[param_no] = TRUE;
             if (id >= 0)
                 break;

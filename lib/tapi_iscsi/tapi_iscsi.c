@@ -49,6 +49,7 @@
 #include <unistd.h>
 
 #include "rcf_api.h"
+#include "rcf_common.h"
 #include "conf_api.h"
 
 #define TE_LGR_USER "TAPI iSCSI"
@@ -1098,14 +1099,15 @@ tapi_iscsi_target_set_parameter(const char *ta,
 
 int 
 tapi_iscsi_target_customize(const char *ta, int id, 
-                            const char *key, int value)
+                            const char *key, 
+                            const char *value)
 {
     te_errno remote_rc;
     te_errno local_rc;
     local_rc = rcf_ta_call(ta, 0, "iscsi_set_custom_value", &remote_rc,
                            3, FALSE, 
-                           CVT_INTEGER, id,
-                           CVT_STRING, key, CVT_INTEGER, value);
+                           RCF_INT32, id,
+                           RCF_STRING, key, RCF_STRING, value);
     return local_rc ? local_rc : 
         (remote_rc ? TE_RC(TE_TAPI, TE_ESRCH) : 0);
 }
