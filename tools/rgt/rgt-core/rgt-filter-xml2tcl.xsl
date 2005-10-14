@@ -309,7 +309,9 @@ proc rgt_entity_filter { entity user } {
             </xsl:when>
 
             <xsl:otherwise>
-                <xsl:value-of select="$entity"/>
+                <xsl:text>"</xsl:text>
+                    <xsl:value-of select="$entity"/>
+                <xsl:text>"</xsl:text>
             </xsl:otherwise>
         </xsl:choose>
     
@@ -330,7 +332,9 @@ proc rgt_entity_filter { entity user } {
                 <xsl:for-each select="user">
 
                     <xsl:text>                </xsl:text>
-                    <xsl:value-of select="@name"/>
+                    <xsl:text>"</xsl:text>
+                        <xsl:value-of select="@name"/>
+                    <xsl:text>"</xsl:text>
                     <xsl:text> { return "</xsl:text>
 
                     <xsl:choose>
@@ -356,7 +360,9 @@ proc rgt_entity_filter { entity user } {
                 <xsl:for-each select="user">
 
                     <xsl:text>                </xsl:text>
-                    <xsl:value-of select="@name"/>
+                    <xsl:text>"</xsl:text>
+                        <xsl:value-of select="@name"/>
+                    <xsl:text>"</xsl:text>
                     <xsl:text> { return "</xsl:text>
 
                     <xsl:choose>
