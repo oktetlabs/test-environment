@@ -658,15 +658,16 @@ output_regular_log_msg(log_msg *msg)
                             (msg->fmt_str + i))
                     {
                         /* Strart file tag */
-                        fprintf(rgt_ctx.out_fd, "<file name=\"%s\">",
-                                "TODO");
+                        obstack_printf(log_obstk,
+                                       "<file name=\"%s\">", "TODO");
                         fwrite_string(log_obstk, arg->val);
                         /* End file tag */
-                        fputs("</file>", rgt_ctx.out_fd);
+                        obstack_grow(log_obstk, "</file>",
+                                     strlen("</file>"));
 
                         /* shift to the end of "%Tf" */
                         i += 2;
-                        break;
+                        continue;
                     }
                    
 

@@ -382,7 +382,7 @@ rgt_expand_regular_log_msg(log_msg *msg)
 
                         /* shift to the end of "%Tf" */
                         i += 2;
-                        break;
+                        continue;
                     }
 
 /*
