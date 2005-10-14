@@ -307,6 +307,7 @@ rgt_log_end_element(void *user_data, const xmlChar *tag)
         case RGT_XML2HTML_STATE_FILE:
             if (strcmp(tag, "file") == 0)
             {
+                proc_log_msg_file_end(ctx, depth_ctx, NULL);
                 ctx->state = RGT_XML2HTML_STATE_LOG_MSG;
             }
             else
@@ -454,6 +455,7 @@ rgt_log_start_element(void *user_data,
             }
             else if (strcmp(tag, "file") == 0)
             {
+                proc_log_msg_file_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_FILE;
             }
             else

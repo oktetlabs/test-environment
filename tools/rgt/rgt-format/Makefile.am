@@ -69,7 +69,7 @@ dist-hook:
 	    rm -f $(distdir)/$${util}.h; \
 	done
 
-$(RGT_SUBDIRS:%=%.h) $(srcdir)/$(RGT_SUBDIRS:%=%/tmpls/Makefile.am):
+$(RGT_SUBDIRS:%=%.h): $(RGT_SUBDIRS:%=%/tmpls/Makefile)
 	for util in $(RGT_SUBDIRS); do \
 	    echo -E "enum {" > $${util}.h; \
 	    for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \

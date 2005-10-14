@@ -66,4 +66,6 @@ dist_pkgdata_DATA = \
     mem_row_end.tmpl\
     mem_elem_start.tmpl\
     mem_elem_end.tmpl\
+    log_msg_file_end.tmpl\
+    log_msg_file_start.tmpl\
     log_br.tmpl

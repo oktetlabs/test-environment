@@ -190,6 +190,22 @@ DEF_FUNC_WITHOUT_ATTRS(proc_mem_elem_start, MEM_DUMP_ELEM_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_elem_end, MEM_DUMP_ELEM_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_br, BR)
 
+#define DEF_FUNC_WITH_ATTRS(name_, enum_const_) \
+RGT_DEF_FUNC(name_)                                           \
+{                                                             \
+    FILE *fd = ((gen_ctx_user_t *)ctx->user_data)->fd;        \
+    rgt_attrs_t *attrs;                                       \
+                                                              \
+    RGT_FUNC_UNUSED_PRMS();                                   \
+                                                              \
+    attrs = rgt_tmpls_attrs_new(xml_attrs);                   \
+    rgt_tmpls_output(fd, &xml2fmt_tmpls[enum_const_], attrs); \
+    rgt_tmpls_attrs_free(attrs);                              \
+}
+
+DEF_FUNC_WITH_ATTRS(proc_log_msg_file_start, LOG_MSG_FILE_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_file_end, LOG_MSG_FILE_END)
+
 void
 proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
            const xmlChar *ch, size_t len)

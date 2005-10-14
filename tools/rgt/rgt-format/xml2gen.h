@@ -208,6 +208,8 @@ RGT_EXTERN_FUNC(proc_mem_row_end);
 RGT_EXTERN_FUNC(proc_mem_elem_start);
 RGT_EXTERN_FUNC(proc_mem_elem_end);
 RGT_EXTERN_FUNC(proc_log_msg_br);
+RGT_EXTERN_FUNC(proc_log_msg_file_start);
+RGT_EXTERN_FUNC(proc_log_msg_file_end);
 
 /**
  * Callback function for processing a group of characters.

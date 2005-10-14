@@ -40,4 +40,6 @@ dist_pkgdata_DATA = \
                     mem_dump_row_end.tmpl       \
                     mem_dump_row_start.tmpl     \
                     mem_dump_start.tmpl         \
+                    log_msg_file_end.tmpl       \
+                    log_msg_file_start.tmpl     \
                     br.tmpl
