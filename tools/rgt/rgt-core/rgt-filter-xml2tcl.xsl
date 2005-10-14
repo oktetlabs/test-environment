@@ -57,6 +57,9 @@
     <xsl:if test="count(/filters/time-filter)=0">
         <xsl:call-template name="time-filter"/>
     </xsl:if>
+    <xsl:if test="count(/filters/duration-filter)=0">
+        <xsl:call-template name="duration-filter"/>
+    </xsl:if>
     <xsl:if test="count(/filters/branch-filter)=0">
         <xsl:call-template name="branch-filter"/>
     </xsl:if>
@@ -505,6 +508,32 @@ proc rgt_time_filter { timestamp } {
         </xsl:choose>
         
     </xsl:for-each>
+
+</xsl:template>
+
+
+<!--
+     This templates responsible for generation duration filter routine.
+  -->
+<xsl:template match="duration-filter" name="duration-filter">
+    <!-- Create rgt_duration_filter procedure -->
+
+<xsl:text>
+# rgt_duration_filter --
+#    Procedure that checks if duration value conforms user specified filter.
+# 
+# PARAMETERS:
+#    duration   - Duration value to be checked.
+#
+# RETURNS:
+#    In the case when the timestamp passes through user filter 
+#    it returns "pass" string, otherwise "fail".
+#
+proc rgt_duration_filter { duration } {
+    return "</xsl:text><xsl:value-of select="$def-mode"/><xsl:text>"
+}
+# end of rgt_duration_filter procedure
+</xsl:text>
 
 </xsl:template>
 
