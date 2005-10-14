@@ -1293,4 +1293,57 @@ tapi_iscsi_initiator_del_target(const char *ta,
 
     return cfg_del_instance(handle, FALSE);
 }
+
+tapi_iscsi_parameter
+tapi_iscsi_get_param_map(const char *param)
+{
+    static char *param_map[] = {
+        "HeaderDigest",
+        "DataDigest",
+        "MaxConnections",
+        "SendTargets",
+        "TargetName",
+        "InitiatorName",
+        "TargetAlias",
+        "InitiatorAlias",
+        "TargetAddress",
+        "TargetPort",
+        "InitialR2T",
+        "ImmediateData",
+        "MaxRecvDataSegmentLength",
+        "MaxBurstLength",
+        "FirstBurstLength",
+        "DefaultTime2Wait",
+        "DefaultTime2Retain",
+        "MaxOutstandingR2T",
+        "DataPDUInOrder",
+        "DataSequenceInOrder",
+        "ErrorRecoveryLevel",
+        "SessionType",
+        "",
+        "LocalSecret",
+        "LocalName",
+        "PeerSecret",
+        "PeerName",
+        "ChallengeLength",
+        "EncodingFormat",
+        "TargetAuthenticationRequired",
+        "SecurityNegotiationPhase",
+    };
+    static int param_map_size = sizeof(param_map) / sizeof(char *);
+    
+    int param_id = -1;
+    
+    for (param_id = 0; param_id < param_map_size; param_id++)
+    {
+        if (strcmp(param, param_map[param_id]) == 0)
+            break;
+    }
+
+    if (param_id >= param_map_size)
+        param_id = -1;
+
+    return param_id;
+}
+
 #undef MAX_INI_CMD_SIZE

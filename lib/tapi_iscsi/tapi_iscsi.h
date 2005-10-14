@@ -488,7 +488,15 @@ extern int tapi_iscsi_initiator_conn_del(const char *ta,
                                          iscsi_target_id tgt_id,
                                          iscsi_cid cid);
 
-extern int
+/**
+ * Function converts string representation of iSCSI parameter to 
+ * corresponding enum value of tapi_iscsi_parameter type.
+ *
+ * @param param      Name of the TA on which the Initiator is placed
+ *
+ * @return           iSCSI parameter index or -1, if fails
+ */
+extern tapi_iscsi_parameter
 tapi_iscsi_get_param_map(const char *param);
 
 /** The following functions are DEPRECATED!!! 
