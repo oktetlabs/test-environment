@@ -322,8 +322,33 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
     /* We have found matching tagged result */
     if (tagged_result != NULL)
     {
+        xmlNodePtr  p;
+        char       *s;
+        tqe_string *v;
+
         result->value = tagged_result->value;
         result_node = tagged_result->node;
+        p = xmlNodeChildren(result_node);
+        while (p != NULL)
+        {
+            rc = get_node_with_text_content(&p, "verdict", &s);
+            if (rc == ENOENT)
+            {
+                ERROR("Unexpected node '%s' in the tagged result", p->name);
+                rc = EINVAL;
+                goto exit;
+            }
+            v = calloc(1, sizeof(*v));
+            if (v == NULL)
+            {
+                ERROR("Memory allocation failure");
+                free(s);
+                rc = ENOMEM;
+                goto exit;
+            }
+            v->str = s;
+            TAILQ_INSERT_TAIL(&result->verdicts, v, links);
+        }
     }
     else
     {
@@ -369,6 +394,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
     char           *tmp;
     xmlNodePtr      results;
     trc_tags_entry *tags_entry;
+    unsigned int    i;
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)
@@ -379,9 +405,13 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
     p->node = p->tests.node = node;
     if (type == TRC_TEST_SCRIPT)
         p->stats.not_run = 1;
-    p->got_result = TRC_TEST_UNSPEC;
     TAILQ_INIT(&p->args.head);
     TAILQ_INIT(&p->tests.head);
+    TAILQ_INIT(&p->exp_result.verdicts);
+    for (i = 0; i < TRC_DIFF_IDS; ++i)
+        TAILQ_INIT(&p->diff_exp[i].verdicts);
+    p->got_result = TRC_TEST_UNSPEC;
+    TAILQ_INIT(&p->got_verdicts);
     TAILQ_INSERT_TAIL(&iters->head, p, links);
     
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("n")));
@@ -866,6 +896,24 @@ trc_free_test_args(test_args *args)
 }
 
 /**
+ * Fre tail queue of strings.
+ *
+ * @param strings   Tail queue head
+ */
+static void
+trc_free_tq_strings(tqh_string *strings)
+{
+    tqe_string *p;
+
+    while ((p = strings->tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(strings, p, links);
+        free(p->str);
+        free(p);
+    }
+}
+
+/**
  * Free resources allocated for the list of test iterations.
  *
  * @param iters     List of test iterations to be freed
@@ -883,12 +931,15 @@ trc_free_test_iters(test_iters *iters)
         free(p->notes);
         free(p->exp_result.key);
         free(p->exp_result.notes);
+        trc_free_tq_strings(&p->exp_result.verdicts);
         for (i = 0; i < TRC_DIFF_IDS; ++i)
         {
             free(p->diff_exp[i].key);
             free(p->diff_exp[i].notes);
+            trc_free_tq_strings(&p->diff_exp[i].verdicts);
         }
         trc_free_test_runs(&p->tests);
+        trc_free_tq_strings(&p->got_verdicts);
         free(p);
     }
 }

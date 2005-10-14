@@ -93,6 +93,16 @@
                     </xsd:documentation>
                 </xsd:annotation>
                 <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="verdict" type="xsd:string"
+                                     minOccurs="0" maxOccurs="unbounded">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Set of expected verdicts.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:element>
+                    </xsd:sequence>
                     <xsd:attribute name="tag" type="xsd:token"
                                    use="required">
                         <xsd:annotation>

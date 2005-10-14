@@ -145,7 +145,11 @@ iter_stats_update_by_result(test_iter *iter)
             switch (iter->got_result)
             {
                 case TRC_TEST_PASSED:
-                    iter->stats.pass_exp++;
+                    if (tq_strings_equal(&iter->got_verdicts,
+                                         &iter->exp_result.verdicts))
+                        iter->stats.pass_exp++;
+                    else
+                        iter->stats.pass_une++;
                     break;
                 case TRC_TEST_FAILED:
                     iter->stats.fail_une++;
@@ -165,7 +169,11 @@ iter_stats_update_by_result(test_iter *iter)
                     iter->stats.pass_une++;
                     break;
                 case TRC_TEST_FAILED:
-                    iter->stats.fail_exp++;
+                    if (tq_strings_equal(&iter->got_verdicts,
+                                         &iter->exp_result.verdicts))
+                        iter->stats.fail_exp++;
+                    else
+                        iter->stats.fail_une++;
                     break;
                 case TRC_TEST_SKIPPED:
                     iter->stats.skip_une++;
@@ -311,8 +319,46 @@ get_test_params(xmlNodePtr node, test_args *args)
     return rc;
 }
 
+/**
+ * Get test iteration verdicts.
+ *
+ * @param node      XML node
+ * @param verdicts  List of verdicts to be filled in
+ *
+ * @return Status code
+ */
 static int
-get_meta(xmlNodePtr node, char **objective, test_args *args)
+get_verdicts(xmlNodePtr node, tqh_string *verdicts)
+{
+    int         rc = 0;
+    tqe_string *p;
+
+    assert(node != NULL);
+    assert(verdicts != NULL);
+
+    while (node != NULL)
+    {
+        if (xmlStrcmp(node->name, CONST_CHAR2XML("verdict")) != 0)
+        {
+            ERROR("Unexpected element '%s' in 'params'", node->name);
+            return EINVAL;
+        }
+        p = calloc(1, sizeof(*p));
+        if (p == NULL)
+            return EINVAL;
+        TAILQ_INSERT_TAIL(verdicts, p, links);
+        rc = get_text_content(node, "verdict", &p->str);
+        if (rc != 0)
+            break;
+        node = xmlNodeNext(node);
+    }
+
+    return rc;
+}
+
+static int
+get_meta(xmlNodePtr node, char **objective, test_args *args,
+         tqh_string *verdicts)
 {
     int rc;
 
@@ -327,6 +373,7 @@ get_meta(xmlNodePtr node, char **objective, test_args *args)
 
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("objective")) != 0 &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("verdicts")) != 0 &&
            xmlStrcmp(node->name, CONST_CHAR2XML("params")) != 0)
     {
         node = xmlNodeNext(node);
@@ -336,11 +383,36 @@ get_meta(xmlNodePtr node, char **objective, test_args *args)
         return 0;
     }
 
-    if (xmlStrcmp(node->name, CONST_CHAR2XML("objective")) == 0 &&
-        (rc = get_text_content(node, "objective", objective)) != 0)
+    if (xmlStrcmp(node->name, CONST_CHAR2XML("objective")) == 0)
     {
-        ERROR("'objective' content is not value");
-        return rc;
+        if ((rc = get_text_content(node, "objective", objective)) != 0)
+        {
+            ERROR("'objective' content is not value");
+            return rc;
+        }
+        node = xmlNodeNext(node);
+    }
+
+    while (node != NULL &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("verdicts")) != 0 &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("params")) != 0)
+    {
+        node = xmlNodeNext(node);
+    }
+    if (node == NULL)
+    {
+        return 0;
+    }
+
+    if (xmlStrcmp(node->name, CONST_CHAR2XML("verdicts")) == 0)
+    {
+        rc = get_verdicts(xmlNodeChildren(node), verdicts);
+        if (rc != 0)
+        {
+            ERROR("Failed to parse parameters");
+            return rc;
+        }
+        node = xmlNodeNext(node);
     }
 
     while (node != NULL &&
@@ -356,6 +428,7 @@ get_meta(xmlNodePtr node, char **objective, test_args *args)
             ERROR("Failed to parse parameters");
             return rc;
         }
+        node = xmlNodeNext(node);
     }
 
     return 0;
@@ -373,6 +446,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
     te_bool             new_test = FALSE;
     char               *objective = NULL;
     test_args           args;
+    tqh_string          verdicts;
 
 
     name = xmlGetProp(root, CONST_CHAR2XML("name"));
@@ -409,8 +483,9 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
 
         memset(&args, 0, sizeof(args));
         TAILQ_INIT(&args.head);
+        TAILQ_INIT(&verdicts);
 
-        rc = get_meta(node, &objective, &args);
+        rc = get_meta(node, &objective, &args, &verdicts);
         if (rc != 0)
         {
             ERROR("Failed to get meta data");
@@ -468,6 +543,7 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
         }
         iter->used = TRUE;
 
+        iter->got_verdicts = verdicts;
         rc = get_result(root, &iter->got_result);
         if (rc != 0)
         {
@@ -500,7 +576,9 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
         node = xmlNodeNext(node);
     }
 
-    if (node != NULL)
+    if (node != NULL &&
+        xmlStrcmp(node->name, CONST_CHAR2XML("logs")) == 0 &&
+        (node = xmlNodeNext(node)) != NULL)
     {
         ERROR("Unexpected node '%s'", node->name);
         return EINVAL;

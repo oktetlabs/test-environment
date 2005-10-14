@@ -307,14 +307,19 @@ static const char * const trc_test_exp_got_end =
 "  </TBODY>\n"
 "</TABLE>\n";
 
-static const char * const trc_test_exp_got_row =
+static const char * const trc_test_exp_got_row_start =
 "    <TR>\n"
 "      <TD>\n"
 "        %s<B><A %s%s%shref=\"#OBJECTIVE%s\">%s</A></B>\n"
 "      </TD>\n"
 "      <TD>%s</TD>\n"
-"      <TD>%s</TD>\n"
-"      <TD>%s</TD>\n"
+"      <TD>";
+
+static const char * const trc_test_exp_got_row_mid =
+" </TD>\n<TD>";
+
+static const char * const trc_test_exp_got_row_end =
+"</TD>\n"
 "      <TD>%s</TD>\n"
 "      <TD>%s %s</TD>\n"
 "    </TR>\n";
@@ -458,6 +463,7 @@ test_iters_to_html(te_bool stats, unsigned int flags,
     char           *s;
     unsigned int    i;
     te_bool         name_anchor = TRUE;
+    tqe_string     *v;
 
     for (s = level_str, i = 0; i < level; ++i)
         s += sprintf(s, "*-");
@@ -467,16 +473,40 @@ test_iters_to_html(te_bool stats, unsigned int flags,
         if ((!stats) && /* It is NOT a statistics report */
             test_iter_output(test, p, flags))
         {
-            fprintf(f, trc_test_exp_got_row,
+            fprintf(f, trc_test_exp_got_row_start,
                     level_str,
                     name_anchor ? "name=\"" : "",
                     name_anchor ? test->test_path : "",
                     name_anchor ? "\" " : "",
                     test->test_path ? : "ERROR",
                     test->name,
-                    trc_test_args_to_string(&p->args),
-                    trc_test_result_to_string(p->exp_result.value),
-                    trc_test_result_to_string(p->got_result),
+                    trc_test_args_to_string(&p->args));
+            
+            fputs(trc_test_result_to_string(p->exp_result.value), f);
+            if (p->exp_result.verdicts.tqh_first != NULL)
+                fputs("<BR/><BR/>", f);
+            for (v = p->exp_result.verdicts.tqh_first;
+                 v != NULL;
+                 v = v->links.tqe_next)
+            {
+                fputc(' ', f);
+                fputs(v->str, f);
+            }
+            
+            fputs(trc_test_exp_got_row_mid, f);
+            
+            fputs(trc_test_result_to_string(p->got_result), f);
+            if (p->got_verdicts.tqh_first != NULL)
+                fputs("<BR/><BR/>", f);
+            for (v = p->got_verdicts.tqh_first;
+                 v != NULL;
+                 v = v->links.tqe_next)
+            {
+                fputc(' ', f);
+                fputs(v->str, f);
+            }
+            
+            fprintf(f, trc_test_exp_got_row_end,
                     PRINT_STR(p->exp_result.key),
                     PRINT_STR(p->exp_result.notes),
                     PRINT_STR(p->notes));

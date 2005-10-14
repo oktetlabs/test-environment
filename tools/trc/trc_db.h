@@ -58,6 +58,47 @@ typedef struct le_string {
 typedef LIST_HEAD(lh_string, le_string) lh_string;
 
 
+/** Entry of the queue of strings */
+typedef struct tqe_string {
+    TAILQ_ENTRY(tqe_string)     links;  /**< List links */
+
+    char                       *str;    /**< String */
+} tqe_string;
+
+/** Queue of strings */
+typedef TAILQ_HEAD(tqh_string, tqe_string) tqh_string;
+
+
+/**
+ * Compare two tail queue of strings. Queues are equal, if each element
+ * of the first queue is equal to the corresponding element of the
+ * second queue.
+ *
+ * @param s1        The first tail queue
+ * @param s1        The second tail queue
+ *
+ * @retval TRUE     Equal
+ * @retval FALSE    Not equal
+ */
+static inline te_bool
+tq_strings_equal(tqh_string *s1, tqh_string *s2)
+{
+    tqe_string *p1;
+    tqe_string *p2;
+
+    if (s1 == s2)
+        return TRUE;
+    if (s1 == NULL || s2 == NULL)
+        return FALSE;
+
+    for (p1 = s1->tqh_first, p2 = s2->tqh_first;
+         p1 != NULL && p2 != NULL && strcmp(p1->str, p2->str) == 0;
+         p1 = p1->links.tqe_next, p2 = p2->links.tqe_next);
+    
+    return (p1 == NULL) && (p2 == NULL);
+}
+
+
 /** Enumeration of possible test results */
 typedef enum trc_test_result {
     TRC_TEST_PASSED,      /**< Test should pass */
@@ -73,9 +114,10 @@ typedef enum trc_test_result {
 
 /** Expected result with key information and notes */
 typedef struct trc_exp_result {
-    trc_test_result     value;  /**< The result itself */
-    char               *key;    /**< BugID-like information */
-    char               *notes;  /**< Some usefull notes */
+    trc_test_result     value;      /**< The result itself */
+    char               *key;        /**< BugID-like information */
+    char               *notes;      /**< Some usefull notes */
+    tqh_string          verdicts;   /**< List of verdicts */
 } trc_exp_result;
 
 typedef enum trc_test_type {
@@ -157,6 +199,7 @@ typedef struct test_iter {
     test_runs       tests;          /**< Children tests of the session */
 
     trc_test_result got_result;     /**< Got test result */
+    tqh_string      got_verdicts;   /**< Got list of verdicts */
 
     /* Fields specific for TRC diff */
     trc_exp_result  diff_exp[TRC_DIFF_IDS]; /**< The expected results */

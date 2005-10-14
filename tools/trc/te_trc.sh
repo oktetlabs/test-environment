@@ -15,11 +15,17 @@ fi
 RAW_LOG_FILE=$1
 
 RGT_FILTER=`mktemp /tmp/tmp.XXXXXX`
-echo -e \
-"<?xml version=\"1.0\"?>\\n"\
-"<filters>\\n"\
-"<entity-filter><exclude entity=\"\"/></entity-filter>\\n"\
-"</filters>\\n" > $RGT_FILTER
+cat <<EOF >${RGT_FILTER}
+<?xml version="1.0"?>
+<filters>
+  <entity-filter>
+    <exclude entity=""/>
+    <include entity="">
+        <user name="Control"/>
+    </include>
+  </entity-filter>
+</filters>
+EOF
 
 XML_LOG_FILE=`mktemp /tmp/tmp.XXXXXX`
 
