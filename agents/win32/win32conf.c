@@ -3,9 +3,9 @@
  *
  * Windows TA configuring support
  *
- *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
+ * Copyright (c) 2005 Level5 Networks Corp.
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
