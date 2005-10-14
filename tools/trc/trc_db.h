@@ -201,6 +201,9 @@ typedef struct test_iter {
     trc_test_result got_result;     /**< Got test result */
     tqh_string      got_verdicts;   /**< Got list of verdicts */
 
+    te_bool         got_as_expect;  /**< Got result/verdicts is equal 
+                                         to expected */
+
     /* Fields specific for TRC diff */
     trc_exp_result  diff_exp[TRC_DIFF_IDS]; /**< The expected results */
 

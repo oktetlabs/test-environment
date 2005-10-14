@@ -147,7 +147,10 @@ iter_stats_update_by_result(test_iter *iter)
                 case TRC_TEST_PASSED:
                     if (tq_strings_equal(&iter->got_verdicts,
                                          &iter->exp_result.verdicts))
+                    {
                         iter->stats.pass_exp++;
+                        iter->got_as_expect = TRUE;
+                    }
                     else
                         iter->stats.pass_une++;
                     break;
@@ -171,7 +174,10 @@ iter_stats_update_by_result(test_iter *iter)
                 case TRC_TEST_FAILED:
                     if (tq_strings_equal(&iter->got_verdicts,
                                          &iter->exp_result.verdicts))
+                    {
                         iter->stats.fail_exp++;
+                        iter->got_as_expect = TRUE;
+                    }
                     else
                         iter->stats.fail_une++;
                     break;
@@ -194,6 +200,7 @@ iter_stats_update_by_result(test_iter *iter)
                     break;
                 case TRC_TEST_SKIPPED:
                     iter->stats.skip_exp++;
+                    iter->got_as_expect = TRUE;
                     break;
                 default:
                     iter->stats.aborted++;
@@ -553,6 +560,8 @@ get_test_result(xmlNodePtr root, trc_test_type type, test_runs *tests)
 
         if (test->type == TRC_TEST_SCRIPT)
             iter_stats_update_by_result(iter);
+        else if (iter->got_result == iter->exp_result.value)
+            iter->got_as_expect = TRUE;
 
         tests = &iter->tests;
     }

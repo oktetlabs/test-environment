@@ -434,11 +434,11 @@ test_iter_output(const test_run *test, test_iter *iter, unsigned int flags)
               * got result is not PASSED as expected
               */
              (~flags & TRC_OUT_NO_EXP_PASSED) ||
-             (iter->exp_result.value != TRC_TEST_PASSED) ||
-             (iter->got_result != TRC_TEST_PASSED)) &&
+             (iter->got_result != TRC_TEST_PASSED) ||
+             (!iter->got_as_expect)) &&
             (/* NO_EXPECTED is clear or got result is equal to expected */
              (~flags & TRC_OUT_NO_EXPECTED) ||
-             (iter->exp_result.value != iter->got_result));
+             (!iter->got_as_expect));
     }
     return iter->output;
 }
