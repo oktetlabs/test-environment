@@ -38,7 +38,75 @@
 #include "asn_usr.h"
 #include "ndn_iscsi.h"
 
+#define ISCSI_TARGET_SET_PARAM(ta_, param_id_, value_) \
+    do {                                                            \
+        if (param_id < 0)                                           \
+            TEST_FAIL("Invalid parameter name used");               \
+                                                                    \
+        CHECK_RC(tapi_iscsi_target_set_parameter((ta_), (param_id_),\
+                 (value_)));                                        \
+    } while (0)
 
+#define ISCSI_TARGET_SET_PARAM_BY_NAME(ta_, param_name_, value_) \
+    do {                                                            \
+        int param_id = tapi_iscsi_get_param_map(param_name_);       \
+                                                                    \
+        if (param_id < 0)                                           \
+            TEST_FAIL("Invalid parameter name used");               \
+                                                                    \
+        CHECK_RC(tapi_iscsi_target_set_parameter((ta_), param_id,   \
+                 (value_)));                                        \
+    } while (0)
+
+#define ISCSI_INITIATOR_SET_GLOBAL_PARAM_BY_NAME(ta_, param_name_,  \
+                                                 value_)            \
+    do {                                                            \
+        int param_id = tapi_iscsi_get_param_map(param_name_);       \
+                                                                    \
+        if (param_id < 0)                                           \
+            TEST_FAIL("Invalid parameter name used");               \
+                                                                    \
+        CHECK_RC(tapi_iscsi_initiator_set_global_parameter((ta_),   \
+                                                           param_id,\
+                                                          (value_)) \
+                );                                                  \
+    } while (0)
+
+#define ISCSI_INITIATOR_SET_LOCAL_PARAM_BY_NAME(ta_, target_id_,     \
+                                                param_name_, value_) \
+    do {                                                                \
+        int param_id = tapi_iscsi_get_param_map(param_name_);           \
+                                                                        \
+        if (param_id < 0)                                               \
+            TEST_FAIL("Invalid parameter name used");                   \
+                                                                        \
+        CHECK_RC(tapi_iscsi_initiator_set_local_parameter((ta_),        \
+                                                          (target_id_), \
+                                                          param_id,     \
+                                                          (value_)));   \
+    } while (0)
+
+
+#define PDU_CONTAINS_KEY_VALUE_PAIR_STRING(segment_data_, \
+                                           key_name_,     \
+                                           key_value_)    \
+    (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1, \
+                                    iscsi_key_value_type_string,         \
+                                    key_value_))
+
+#define PDU_CONTAINS_KEY_VALUE_PAIR_INT(segment_data_, \
+                                        key_name_, key_value_) \
+    (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1,  \
+                                    iscsi_key_value_type_int, key_value_))
+
+#define PDU_CONTAINS_KEY_VALUE_PAIR_HEX(segment_data_, \
+                                        key_name_, key_value_) \
+    (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1,  \
+                                    iscsi_key_value_type_hex, key_value_))
+
+#define PDU_CONTAINS_KEY(segment_data_, key_name_) \
+    (tapi_iscsi_get_key_index_by_name(segment_data_, key_name_) !=  \
+     TAPI_ISCSI_KEY_INVALID)
 
 /**
  * Creates 'iscsi' server CSAP
@@ -419,6 +487,9 @@ extern iscsi_cid tapi_iscsi_initiator_conn_add(const char *ta,
 extern int tapi_iscsi_initiator_conn_del(const char *ta,
                                          iscsi_target_id tgt_id,
                                          iscsi_cid cid);
+
+extern int
+tapi_iscsi_get_param_map(const char *param);
 
 /** The following functions are DEPRECATED!!! 
     They will be removed as soon as all the tests use the new API
