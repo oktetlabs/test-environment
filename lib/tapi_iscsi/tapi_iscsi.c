@@ -1112,57 +1112,10 @@ tapi_iscsi_target_customize(const char *ta, int id,
 
 
 int 
-tapi_iscsi_initiator_set_global_parameter(const char *ta,
-                                          tapi_iscsi_parameter param, 
-                                          const char *value)
-{
-    static char *mapping[] = {
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",  
-        "",                                /* t */
-        "initiator_name:",
-        "",                                /* t */
-        "initiator_alias:",
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        "",                                /* t */
-        NULL,
-        "chap:/local_secret:",
-        "",                                /* t */
-        "",                                /* t */
-        "chap:/peer_name:",
-        "chap:/challenge_length:",
-        "chap:/enc_fmt:",
-        "",                                /* t */
-        "chap:"
-    };
-
-    assert(ta != NULL);
-    assert(param < sizeof(mapping) / sizeof(*mapping));
-    assert(mapping[param] != NULL);
-    return cfg_set_instance_fmt(CVT_STRING, value,
-                                "/agent:%s/iscsi_initiator:/%s",
-                                ta, mapping[param]);
-}
-
-int 
-tapi_iscsi_initiator_set_local_parameter(const char *ta,
-                                         iscsi_target_id target_id,
-                                         tapi_iscsi_parameter param,
-                                         const char *value)
+tapi_iscsi_initiator_set_parameter(const char *ta,
+                                   iscsi_target_id target_id,
+                                   tapi_iscsi_parameter param,
+                                   const char *value)
 {
     static char *mapping[] = {
         "header_digest:",                         /* - */
@@ -1170,9 +1123,9 @@ tapi_iscsi_initiator_set_local_parameter(const char *ta,
         "max_connections:",                       /* - */
         "",  
         "target_name:",                           /* - */
-        "",
+        "initiator_name:",
         "target_alias:",                          /* - */
-        "",
+        "initiator_alias:",
         "target_addr:",                           /* - */
         "target_port:",                           /* - */
         "initial_r2t:",                           /* - */
@@ -1188,13 +1141,13 @@ tapi_iscsi_initiator_set_local_parameter(const char *ta,
         "error_recovery_level:",                  /* - */
         "session_type:",                          /* - */
         NULL,
-        "",
+        "chap:/local_secret:",
         "chap:/local_name:",                      /* - */
         "chap:/peer_secret:",                     /* - */
-        "",
-        "",
-        "",
-        "chap:/target_auth",                      /* - */
+        "chap:/peer_name:",
+        "chap:/challenge_length:",
+        "chap:/enc_fmt:",
+        "chap:/target_auth:",                      /* - */
         "chap:"
     };
 
@@ -1202,8 +1155,8 @@ tapi_iscsi_initiator_set_local_parameter(const char *ta,
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
 #if 1
-    fprintf(stderr, "/agent:%s/iscsi_initiator:/target_data:"
-            "target_%d/%s = %s", ta, target_id, mapping[param], value);
+    WARN("/agent:%s/iscsi_initiator:/target_data:"
+        "target_%d/%s = %s", ta, target_id, mapping[param], value);
 #endif
     return cfg_set_instance_fmt(CVT_STRING, value,
                           "/agent:%s/iscsi_initiator:/target_data:"
@@ -1275,7 +1228,6 @@ iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
     RING("Initiator add Target: addr=%s, port=%d",
          target_addr_param, target_port);
     
-#if 0
     rc = cfg_add_instance_fmt(&handle, CVT_STRING,
                         "",
                         "/agent:%s/iscsi_initiator:/target_data:target_%d",
@@ -1285,22 +1237,22 @@ iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
         ERROR("Failed to add target_data instance to the initiator");
         return -rc;
     }
-#endif
-    rc = tapi_iscsi_initiator_set_local_parameter(ta,
-                                             iscsi_current_target,
-                                             ISCSI_PARAM_TARGET_ADDRESS,
-                                             (void *)target_addr_param);
+
+    rc = tapi_iscsi_initiator_set_parameter(ta,
+                                            iscsi_current_target,
+                                            ISCSI_PARAM_TARGET_ADDRESS,
+                                            (void *)target_addr_param);
     if (rc != 0)
     {
         ERROR("Failed to set local parameter of the target rc = %d", rc);
         return -rc;
     }
-    
+
     sprintf(port, "%d", target_port);
-    rc = tapi_iscsi_initiator_set_local_parameter(ta,
-                                             iscsi_current_target,
-                                             ISCSI_PARAM_TARGET_PORT,
-                                             (void *)port);
+    rc = tapi_iscsi_initiator_set_parameter(ta,
+                                            iscsi_current_target,
+                                            ISCSI_PARAM_TARGET_PORT,
+                                            (void *)port);
     if (rc != 0)
     {
         ERROR("Failed to add target_data instance to the initiator");

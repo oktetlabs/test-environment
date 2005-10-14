@@ -80,7 +80,7 @@
         if (param_id < 0)                                               \
             TEST_FAIL("Invalid parameter name used");                   \
                                                                         \
-        CHECK_RC(tapi_iscsi_initiator_set_local_parameter((ta_),        \
+        CHECK_RC(tapi_iscsi_initiator_set_parameter((ta_),              \
                                                           (target_id_), \
                                                           param_id,     \
                                                           (value_)));   \
@@ -416,64 +416,56 @@ typedef int iscsi_target_id;
 typedef int iscsi_cid;
 
 /**
- * Function configures global parameters of the Initiator.
- *
- * @param ta      Name of the TA on which the Initiator is configured
- * @param param   Parameter to configure
- * @param value   New value added
- *
- * @return return of the cfg_set_instance_fmt
- */
-extern int tapi_iscsi_initiator_set_global_parameter(const char *ta,
-                                            tapi_iscsi_parameter param, 
-                                            const char *value);
-/**
- * Function configures local (per target) parameters of the Initiator.
+ * Function configures parameters of the Initiator.
  *
  * @param ta         Name of the TA on which the Initiator is configured
- * @param target_id  ID of the target: notation: "target_x"
+ * @param target_id  ID of the target
  * @param param      Parameter to configure
  * @param value      New value added
  *
  * @return return of the cfg_set_instance_fmt
  */
-extern int tapi_iscsi_initiator_set_local_parameter(const char *ta,
-                                            iscsi_target_id target_id,
-                                            tapi_iscsi_parameter param,
-                                            const char *value);
+extern int tapi_iscsi_initiator_set_parameter(const char *ta,
+                                          iscsi_target_id target_id,
+                                          tapi_iscsi_parameter param,
+                                          const char *value);
 
 #ifdef ISCSI_INITIATOR_GET_SUPPORT
 /**
- * Function configures global parameters of the Initiator.
- *
- * @param ta      Name of the TA on which the Initiator is configured
- * @param param   Parameter to configure
- * @param value   New value added
- *
- * @return return of the cfg_set_instance_fmt
- */
-extern int tapi_iscsi_initiator_get_global_parameter(const char *ta,
-                                            tapi_iscsi_parameter param, 
-                                            const char *value);
-/**
- * Function configures local (per target) parameters of the Initiator.
+ * Function configures  parameters of the Initiator.
  *
  * @param ta         Name of the TA on which the Initiator is configured
- * @param target_id  ID of the target: notation: "target_x"
+ * @param target_id  ID of the target
  * @param param      Parameter to configure
  * @param value      New value added
  *
  * @return return of the cfg_set_instance_fmt
  */
-extern int tapi_iscsi_initiator_get_local_parameter(const char *ta,
-                                            iscsi_target_id target_id,
-                                            tapi_iscsi_parameter param,
-                                            const char *value);
+extern int tapi_iscsi_initiator_get_parameter(const char *ta,
+                                         iscsi_target_id target_id,
+                                         tapi_iscsi_parameter param,
+                                         const char *value);
 #endif
 
+/**
+ * Function adds target to the Initiator targets list.
+ *
+ * @param ta           Name of the TA on which the Initiator is configured
+ * @param target_addr  Address of the target
+ *
+ * @return id of the target or -errno
+ */
 extern iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
                                       const struct sockaddr *target_addr);
 
+/**
+ * Function adds target to the Initiator targets list.
+ *
+ * @param ta           Name of the TA on which the Initiator is configured
+ * @param tgt_id       ID of the target to destroy
+ *
+ * @return id of the target or -errno
+ */
 extern int tapi_iscsi_initiator_del_target(const char *ta,
                                       iscsi_target_id tgt_id);
 

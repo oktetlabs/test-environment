@@ -52,6 +52,13 @@
 #include "conf_daemons.h"
 #include "te_shell_cmd.h"
 
+/* Debug logs */
+#ifdef ISCSI_DEBUG_LOG
+#define IVERB(args...) fprintf(stderr, args); fprintf(stderr, "\n")
+#else
+#define IVERB WARN
+#endif
+
 #define MAX_NAME_LENGTH 256
 
 /* Yes or No */
@@ -103,6 +110,21 @@
 #define DEFAULT_INITIATOR_NAME              "iqn.1999-11.edu.unh.iol.iscsi-initiator"
 #define DEFAULT_INITIATOR_ALIAS             "UNH"
 
+#define OFFER_MAX_CONNECTIONS                   (1 << 0)
+#define OFFER_INITIAL_R2T                       (1 << 1)
+#define OFFER_HEADER_DIGEST                     (1 << 2)
+#define OFFER_DATA_DIGEST                       (1 << 3)
+#define OFFER_IMMEDIATE_DATA                    (1 << 4)
+#define OFFER_MAX_RECV_DATA_SEGMENT_LENGTH      (1 << 5)
+#define OFFER_FIRST_BURST_LENGTH                (1 << 6)
+#define OFFER_MAX_BURST_LENGTH                  (1 << 7)
+#define OFFER_DEFAULT_TIME2WAIT                 (1 << 8)
+#define OFFER_DEFAULT_TIME2RETAIN               (1 << 9)
+#define OFFER_MAX_OUTSTANDING_R2T               (1 << 10)
+#define OFFER_DATA_PDU_IN_ORDER                 (1 << 11)
+#define OFFER_DATA_SEQUENCE_IN_ORDER            (1 << 12)
+#define OFFER_ERROR_RECOVERY_LEVEL              (1 << 13)
+
 typedef enum {
     UNH,
     L5,
@@ -115,24 +137,26 @@ typedef enum {
 } enc_fmt_e;
 
 typedef struct iscsi_tgt_chap_data {
+    char        chap[AUTH_METHOD_LENGTH];
+
+    enc_fmt_e   enc_fmt;
+    int         challenge_length;
+    char        peer_name[SECURITY_COMMON_LENGTH];
+    char        local_secret[SECURITY_COMMON_LENGTH];
+
     te_bool target_auth;
     char peer_secret[SECURITY_COMMON_LENGTH];
     char local_name[SECURITY_COMMON_LENGTH];
 } iscsi_tgt_chap_data_t;
 
-typedef struct iscsi_ini_chap_data {
-    /* (CHAP|None|CHAP,None) */
-    char        chap[AUTH_METHOD_LENGTH];
-    
-    enc_fmt_e   enc_fmt;
-    int         challenge_length;
-    char        peer_name[SECURITY_COMMON_LENGTH];
-    char        local_secret[SECURITY_COMMON_LENGTH];
-} iscsi_ini_chap_data_t;
-
 typedef struct iscsi_target_data {
-    /* Target parameters */
     int               target_id;
+    
+    int               conf_params;
+
+    char              initiator_name[MAX_NAME_LENGTH];
+    char              initiator_alias[MAX_NAME_LENGTH];
+    /* Target parameters */
     char              target_name[MAX_NAME_LENGTH];
     /* TODO: here the struct sockaddr should be used */
     char              target_addr[MAX_NAME_LENGTH];
@@ -162,17 +186,13 @@ typedef struct iscsi_target_data {
 /* Auxiliary variables used for during configuration request processing */
 typedef struct iscsi_initiator_data {
     /* Auxiliary data of the initiator */
-    char                  init_id[MAX_NAME_LENGTH];
     iscsi_initiator_type  init_type;
 
     char                  last_cmd[MAX_CMD_SIZE];
 
     int                   host_bus_adapter;    
-    char                  initiator_name[MAX_NAME_LENGTH];
-    char                  initiator_alias[MAX_NAME_LENGTH];
     
     iscsi_target_data_t   targets[MAX_TARGETS_NUMBER];
-    iscsi_ini_chap_data_t chap;
 } iscsi_initiator_data_t;
 
 
@@ -188,13 +208,16 @@ iscsi_get_target_id(const char *oid)
     c = strstr(c + 1, "target_");
     c += strlen("target_");
 
-    return *(uint8_t *)c - '0';
+    return atoi(c);
 }
 
 void
 iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
 {
     memset(tgt_data, 0, sizeof(tgt_data));
+    
+    strcpy(tgt_data->initiator_name, DEFAULT_INITIATOR_NAME);
+    strcpy(tgt_data->initiator_alias, DEFAULT_INITIATOR_ALIAS);
     
     strcpy(tgt_data->target_name, DEFAULT_TARGET_NAME);
     
@@ -220,6 +243,12 @@ iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
     tgt_data->chap.target_auth = FALSE;
     *(tgt_data->chap.peer_secret) = '\0';
     *(tgt_data->chap.local_name) = '\0';
+
+    strcpy(tgt_data->chap.chap, "None");
+    tgt_data->chap.enc_fmt = BASE_16;
+    tgt_data->chap.challenge_length = DEFAULT_CHALLENGE_LENGTH;
+    *(tgt_data->chap.peer_name) = '\0';
+    *(tgt_data->chap.local_secret) = '\0';
 }
 
 /**
@@ -240,8 +269,6 @@ iscsi_init_default_ini_parameters(int i)
     /* init_type */
     /* initiator name */
     init_data->host_bus_adapter = DEFAULT_HOST_BUS_ADAPTER;
-    strcpy(init_data->initiator_name, DEFAULT_INITIATOR_NAME);
-    strcpy(init_data->initiator_alias, DEFAULT_INITIATOR_ALIAS);
     
     if (i == CONF_NO_TARGETS)
     {
@@ -269,13 +296,6 @@ iscsi_init_default_ini_parameters(int i)
          iscsi_init_default_tgt_parameters(&init_data->targets[i]);
          init_data->targets[i].target_id = i;
     }
-    
-    
-    strcpy(init_data->chap.chap, "None");
-    init_data->chap.enc_fmt = BASE_16;
-    init_data->chap.challenge_length = DEFAULT_CHALLENGE_LENGTH;
-    *(init_data->chap.peer_name) = '\0';
-    *(init_data->chap.local_secret) = '\0';
 }
 
 /**
@@ -305,7 +325,7 @@ te_shell_cmd_ex(const char *cmd, ...)
     vsnprintf(cmdline, sizeof(cmdline), cmd, ap);
     va_end(ap);
 
-    fprintf(stderr, "iSCSI Initiator: %s\n", cmdline);
+    IVERB("iSCSI Initiator: %s\n", cmdline);
     return te_shell_cmd(cmdline, -1, NULL, NULL) > 0 ? 0 : -1;
 }
 
@@ -318,21 +338,20 @@ ta_system_ex(const char *cmd, ...)
 
     if ((cmdline = (char *)malloc(MAX_CMD_SIZE)) == NULL)
     {
-        ERROR(stderr, "Not enough memory\n");
+        ERROR("Not enough memory\n");
         return -1;
     }
 
-    fprintf(stderr, "fmt=\"%s\"\n", cmd);
+    IVERB("fmt=\"%s\"\n", cmd);
 
     va_start(ap, cmd);
     vsnprintf(cmdline, MAX_CMD_SIZE, cmd, ap);
     va_end(ap);
 
-    fprintf(stderr, "iSCSI Initiator: %s\n", cmdline);
-    fflush(stderr);
+    IVERB("iSCSI Initiator: %s\n", cmdline);
 
     status = ta_system(cmdline);
-    fprintf(stderr, "%s(): ta_system() call returns 0x%x\n", __FUNCTION__, status);
+    IVERB("%s(): ta_system() call returns 0x%x\n", __FUNCTION__, status);
     fflush(stderr);
 
     free(cmdline);
@@ -359,6 +378,9 @@ static const char *conf_iscsi_unh_set_int_fmt =
 static const char *conf_iscsi_unh_force_fmt =
     "iscsi_manage init force %s=%s target=%d host=%d";
 
+static const char *conf_iscsi_unh_force_string_fmt =
+    "iscsi_manage init force %s=\"%s\" target=%d host=%d";
+    
 static const char *conf_iscsi_unh_force_int_fmt =
     "iscsi_manage init force %s=%d target=%d host=%d";
 
@@ -370,7 +392,7 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
 
 #define ISCSI_UNH_SET(param_, value_, target_id_) \
     do {                                                                    \
-        fprintf(stderr, "ISCSI_UNH_SET(%s,0x%x,%d)\n",                      \
+        IVERB("ISCSI_UNH_SET(%s,0x%x,%d)\n",                                \
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_set_fmt, (param_),                  \
@@ -381,7 +403,7 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
 
 #define ISCSI_UNH_SET_INT(param_, value_, target_id_) \
     do {                                                                    \
-        fprintf(stderr, "ISCSI_UNH_SET_INT(%s,0x%x,%d)\n",                  \
+        IVERB("ISCSI_UNH_SET_INT(%s,0x%x,%d)\n",                            \
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_set_int_fmt, (param_),              \
@@ -392,7 +414,7 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
 
 #define ISCSI_UNH_FORCE(param_, value_, target_id_, info_) \
     do {                                                                    \
-        fprintf(stderr, "ISCSI_UNH_FORCE(%s,0x%x,%d)\n",                    \
+        IVERB("ISCSI_UNH_FORCE(%s,0x%x,%d)\n",                              \
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_force_fmt, (param_),                \
@@ -400,10 +422,21 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                          init_data->host_bus_adapter),                      \
             (info_));                                                       \
     } while (0)
+    
+#define ISCSI_UNH_FORCE_STRING(param_, value_, target_id_, info_) \
+    do {                                                                    \
+        IVERB("ISCSI_UNH_FORCE(%s,0x%x,%d)\n",                              \
+                param_, value_, target_id_);                                \
+        CHECK_SHELL_CONFIG_RC(                                              \
+            ta_system_ex(conf_iscsi_unh_force_string_fmt, (param_),         \
+                         (value_), (target_id_),                            \
+                         init_data->host_bus_adapter),                      \
+            (info_));                                                       \
+    } while (0)
 
 #define ISCSI_UNH_FORCE_INT(param_, value_, target_id_, info_) \
     do {                                                                    \
-        fprintf(stderr, "ISCSI_UNH_FORCE_INT(%s,0x%x,%d)\n",                \
+        IVERB("ISCSI_UNH_FORCE_INT(%s,0x%x,%d)\n",                          \
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_force_int_fmt, (param_),            \
@@ -414,7 +447,7 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
 
 #define ISCSI_UNH_FORCE_FLAG(flag_, target_id_, info_) \
     do {                                                                    \
-        fprintf(stderr, "ISCSI_UNH_FORCE_FLAG(%s,%d)\n",                    \
+        IVERB("ISCSI_UNH_FORCE_FLAG(%s,%d)\n",                              \
                 flag_, target_id_);                                         \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_force_flag_fmt, (flag_),            \
@@ -425,7 +458,7 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
 
 #define ISCSI_UNH_UNSET_FLAG(flag_, target_id_, info_) \
     do {                                                                    \
-        fprintf(stderr, "ISCSI_UNH_UNSET_FLAG(%s,%d)\n",                    \
+        IVERB("ISCSI_UNH_UNSET_FLAG(%s,%d)\n",                              \
                 flag_, target_id_);                                         \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_unset_flag_fmt, (flag_),            \
@@ -433,6 +466,39 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                          init_data->host_bus_adapter),                      \
             (info_));                                                       \
     } while (0)
+
+
+
+static int
+iscsi_get_cid_and_target(const char *cmdline, int *cid, int *target)
+{
+    char *tmp = strdup(cmdline);
+    char *c;
+
+    if (tmp == NULL)
+        return ENOMEM;
+    
+    IVERB("COMMAND: %s", cmdline);
+
+    c = strrchr(tmp, ' ');
+    if (c == NULL)
+        return EINVAL;
+    *c = '\0';
+
+    if (*cmdline == 'd')
+    {
+        *cid = atoi(tmp + strlen("down") + 1);
+        *target = atoi(c + 1);
+    }
+    else if (*cmdline == 'u')
+    {
+        *cid = atoi(tmp + strlen("up") + 1);
+        *target = atoi(c + 1);
+    }
+
+    free(tmp);
+    return 0;
+}
 
 /**
  * Format of the value:
@@ -447,8 +513,9 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
     int                     rc = -1;
     int                     cid = 0;
     int                     target_id = 0;
-    int                     i;
     iscsi_target_data_t    *target;
+
+    int                     offer;
  
     UNUSED(gid);
     UNUSED(instance);
@@ -456,10 +523,9 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
     /* TODO: init_type = UNH */
     init_data->init_type = UNH;
 
+    iscsi_get_cid_and_target(value, &cid, &target_id);
     if (strncmp(value, "down", strlen("down")) == 0)
     {
-        cid = *(value + strlen("up") + 1) - '0';
-        target_id = *(value + strlen("up") + 3) - '0';
         /* We should down the connection */
         switch (init_data->init_type)
         {
@@ -483,8 +549,6 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
         INFO("Connections with ID %d is closed", cid);
         return 0;
     }
-    cid = *(value + strlen("up") + 1) - '0';
-    target_id = *(value + strlen("up") + 3) - '0';
     /* We should open new connection */
     /* 1: configurating the Initiator */
 
@@ -493,7 +557,9 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
     switch (init_data->init_type)
     {
         case UNH:
-
+            offer = target->conf_params;
+            
+            IVERB("Offer: %d", (int)offer);
 
             CHECK_SHELL_CONFIG_RC(
                 ta_system_ex("iscsi_manage init restore target=%d host=%d",
@@ -502,59 +568,62 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
 
             ISCSI_UNH_SET("TargetName", target->target_name, target_id);
 
-#if 0
-            /*
-             * TargetAddr and TargetPort are configured
-             * while Target initialisation
-             */
+            if ((offer & OFFER_MAX_CONNECTIONS) == OFFER_MAX_CONNECTIONS)
+                ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
+                                  target_id);
+            if ((offer & OFFER_INITIAL_R2T) == OFFER_INITIAL_R2T)
+                ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id);
 
-            /* TODO: target_addr */
-            ISCSI_UNH_SET_INT("TargetPort", target->target_port,
-                              target_id);
-#endif
-            ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
-                              target_id);
+            if ((offer & OFFER_HEADER_DIGEST) == OFFER_INITIAL_R2T)
+                ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id);
 
-            ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id);
+            if ((offer & OFFER_DATA_DIGEST) == OFFER_DATA_DIGEST)
+                ISCSI_UNH_SET("DataDigest", target->data_digest, target_id);
 
-            ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id);
+            if ((offer & OFFER_IMMEDIATE_DATA) == OFFER_IMMEDIATE_DATA)
+                ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id);
 
-            ISCSI_UNH_SET("DataDigest", target->data_digest, target_id);
+            if ((offer & OFFER_MAX_RECV_DATA_SEGMENT_LENGTH) ==
+                OFFER_MAX_RECV_DATA_SEGMENT_LENGTH)
+                ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
+                                  target->max_recv_data_segment_length,
+                                  target_id);
 
-            ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id);
+            if ((offer & OFFER_FIRST_BURST_LENGTH) == OFFER_FIRST_BURST_LENGTH)
+                ISCSI_UNH_SET_INT("MaxBurstLength", 
+                                  target->max_burst_length, target_id);
 
-            ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
-                              target->max_recv_data_segment_length,
-                              target_id);
+            if ((offer & OFFER_MAX_BURST_LENGTH) == OFFER_MAX_BURST_LENGTH)
+                ISCSI_UNH_SET_INT("FirstBurstLength", 
+                                  target->first_burst_length, target_id);
 
-            ISCSI_UNH_SET_INT("MaxBurstLength", 
-                              target->max_burst_length, target_id);
+            if ((offer & OFFER_DEFAULT_TIME2WAIT) == OFFER_DEFAULT_TIME2WAIT)
+                ISCSI_UNH_SET_INT("DefaultTime2Wait", 
+                                  target->default_time2wait, target_id);
 
-            ISCSI_UNH_SET_INT("FirstBurstLength", 
-                              target->first_burst_length, target_id);
+            if ((offer & OFFER_DEFAULT_TIME2RETAIN) == OFFER_DEFAULT_TIME2RETAIN)
+                ISCSI_UNH_SET_INT("DefaultTime2Retain", 
+                                  target->default_time2retain, target_id);
 
+            if ((offer & OFFER_MAX_OUTSTANDING_R2T) == OFFER_MAX_OUTSTANDING_R2T)
+                ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
+                                  target->max_outstanding_r2t, target_id);
 
-            ISCSI_UNH_SET_INT("DefaultTime2Wait", 
-                              target->default_time2wait, target_id);
+            if ((offer & OFFER_DATA_PDU_IN_ORDER) == OFFER_DATA_PDU_IN_ORDER)
+                ISCSI_UNH_SET("DataPDUInOrder", 
+                              target->data_pdu_in_order, target_id);
 
-            ISCSI_UNH_SET_INT("DefaultTime2Retain", 
-                              target->default_time2retain, target_id);
+            if ((offer & OFFER_DATA_SEQUENCE_IN_ORDER) == 
+                OFFER_DATA_SEQUENCE_IN_ORDER)
+                ISCSI_UNH_SET("DataSequenceInOrder", 
+                              target->data_sequence_in_order, target_id);
 
-            ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
-                              target->max_outstanding_r2t, target_id);
-
-            ISCSI_UNH_SET("DataPDUInOrder", 
-                          target->data_pdu_in_order, target_id);
-
-            ISCSI_UNH_SET("DataSequenceInOrder", 
-                          target->data_sequence_in_order, target_id);
-
-            ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
-                              target->error_recovery_level, target_id);
+            if ((offer & OFFER_ERROR_RECOVERY_LEVEL) == 
+                OFFER_ERROR_RECOVERY_LEVEL)
+                ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
+                                  target->error_recovery_level, target_id);
 
             ISCSI_UNH_SET("SessionType", target->session_type, target_id);
-
-
     
             /* Target' CHAP */
             if (init_data->targets[target_id].chap.target_auth)
@@ -568,35 +637,38 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
                                      "Target Authentication");
             }
 
-            ISCSI_UNH_FORCE("px", target->chap.peer_secret, target_id,
-                             "Peer Secret");
+            ISCSI_UNH_FORCE_STRING("px", target->chap.peer_secret, target_id,
+                                   "Peer Secret");
 
             ISCSI_UNH_FORCE("ln", target->chap.local_name, target_id,
                             "Local Name");
 
             /* Initiator itself */
-            ISCSI_UNH_SET("InitiatorName", init_data->initiator_name,
+            ISCSI_UNH_SET("InitiatorName", 
+                          target->initiator_name,
                           target_id);
 
-            ISCSI_UNH_SET("InitiatorAlias", init_data->initiator_alias, target_id);
+            ISCSI_UNH_SET("InitiatorAlias", 
+                          target->initiator_alias, 
+                          target_id);
 
-            ISCSI_UNH_SET("AuthMethod", init_data->chap.chap, target_id);
+            ISCSI_UNH_SET("AuthMethod", target->chap.chap, target_id);
 
-            if (init_data->chap.enc_fmt == BASE_64)
+            if (target->chap.enc_fmt == BASE_64)
                 ISCSI_UNH_FORCE_FLAG("b", target_id,
                                      "Encoding Format");
             else
                 ISCSI_UNH_UNSET_FLAG("b", target_id,
                                      "Encoding Format");
 
-            ISCSI_UNH_FORCE_INT("cl", init_data->chap.challenge_length, target_id,
+            ISCSI_UNH_FORCE_INT("cl", target->chap.challenge_length, target_id,
                                 "Challenge Length");
 
-            ISCSI_UNH_FORCE("pn", init_data->chap.peer_name, target_id,
+            ISCSI_UNH_FORCE("pn", target->chap.peer_name, target_id,
                             "Peer Name");
 
-            ISCSI_UNH_FORCE("lx", init_data->chap.local_secret, target_id,
-                            "Local Secret");
+            ISCSI_UNH_FORCE_STRING("lx", target->chap.local_secret, target_id,
+                                   "Local Secret");
 
 
             /* Now the connection should be opened */
@@ -628,10 +700,10 @@ iscsi_initiator_chap_set(unsigned int gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(instance);
-    UNUSED(oid);
     
-    *(init_data->chap.chap) = '\0';
-    strcpy(init_data->chap.chap, value);
+    *(init_data->targets[iscsi_get_target_id(oid)].chap.chap) = '\0';
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].chap.chap, 
+           value);
 
     return 0;
 }
@@ -642,10 +714,10 @@ iscsi_initiator_chap_get(unsigned int gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(instance);
-    UNUSED(oid);
     
     *value = '\0';
-    sprintf(value, "%s", init_data->chap.chap);
+    sprintf(value, "%s", 
+            init_data->targets[iscsi_get_target_id(oid)].chap.chap);
 
     return 0;
 }
@@ -657,10 +729,10 @@ iscsi_initiator_peer_name_set(unsigned int gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(instance);
-    UNUSED(oid);
     
-    *(init_data->chap.peer_name) = '\0';
-    strcpy(init_data->chap.peer_name, value);
+    *(init_data->targets[iscsi_get_target_id(oid)].chap.peer_name) = '\0';
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].chap.peer_name, 
+           value);
 
     return 0;
 }
@@ -671,10 +743,10 @@ iscsi_initiator_peer_name_get(unsigned int gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(instance);
-    UNUSED(oid);
     
     *value = '\0';
-    sprintf(value, "%s", init_data->chap.peer_name);
+    sprintf(value, "%s", 
+            init_data->targets[iscsi_get_target_id(oid)].chap.peer_name);
 
     return 0;
 }
@@ -688,7 +760,8 @@ iscsi_initiator_challenge_length_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
     
-    init_data->chap.challenge_length = atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].chap.challenge_length = 
+        atoi(value);
 
     return 0;
 }
@@ -702,7 +775,8 @@ iscsi_initiator_challenge_length_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     *value = '\0';
-    sprintf(value, "%d", init_data->chap.challenge_length);
+    sprintf(value, "%d", 
+            init_data->targets[iscsi_get_target_id(oid)].chap.challenge_length);
 
     return 0;
 }
@@ -716,7 +790,7 @@ iscsi_initiator_enc_fmt_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
-    init_data->chap.enc_fmt = atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].chap.enc_fmt = atoi(value);
 
     return 0;
 }
@@ -730,7 +804,8 @@ iscsi_initiator_enc_fmt_get(unsigned int gid, const char *oid,
     UNUSED(oid);
 
     *value = '\0';
-    sprintf(value, "%d", init_data->chap.enc_fmt);
+    sprintf(value, "%d", 
+            init_data->targets[iscsi_get_target_id(oid)].chap.enc_fmt);
 
     return 0;
 }
@@ -743,11 +818,12 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
     int tgt_id = iscsi_get_target_id(oid);
     
     UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(instance);
     UNUSED(value);
  
     iscsi_init_default_tgt_parameters(&init_data->targets[tgt_id]);
     init_data->targets[tgt_id].target_id = tgt_id;
+    init_data->targets[tgt_id].conf_params = 0;
 
     fprintf(stderr, "Adding %s with value %s, id=%d\n", oid, value, tgt_id);
 
@@ -871,8 +947,8 @@ iscsi_initiator_local_secret_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
     
-    *init_data->chap.local_secret = '\0';
-    strcpy(init_data->chap.local_secret, 
+    *init_data->targets[iscsi_get_target_id(oid)].chap.local_secret = '\0';
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].chap.local_secret, 
            value);
 
     return 0;
@@ -888,7 +964,7 @@ iscsi_initiator_local_secret_get(unsigned int gid, const char *oid,
     
     *value = '\0';
     sprintf(value, "%s", 
-            init_data->chap.local_secret);
+            init_data->targets[iscsi_get_target_id(oid)].chap.local_secret);
 
     return 0;
 }
@@ -901,6 +977,10 @@ iscsi_max_connections_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_MAX_CONNECTIONS;
+
+    IVERB("Offer E: %d", init_data->targets[iscsi_get_target_id(oid)].conf_params);
     init_data->targets[iscsi_get_target_id(oid)].
         max_connections = atoi(value);
 
@@ -928,7 +1008,9 @@ iscsi_initial_r2t_set(unsigned int gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(instance);
-
+    
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_INITIAL_R2T;
     *(init_data->targets[iscsi_get_target_id(oid)].initial_r2t) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].initial_r2t, value);
 
@@ -956,6 +1038,8 @@ iscsi_header_digest_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_HEADER_DIGEST;
     *(init_data->targets[iscsi_get_target_id(oid)].header_digest) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].header_digest, value);
 
@@ -984,6 +1068,8 @@ iscsi_data_digest_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_DATA_DIGEST;
     *(init_data->targets[iscsi_get_target_id(oid)].data_digest) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].data_digest, value);
 
@@ -1011,6 +1097,8 @@ iscsi_immediate_data_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_IMMEDIATE_DATA;
     *(init_data->targets[iscsi_get_target_id(oid)].immediate_data) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].immediate_data, value);
 
@@ -1039,6 +1127,8 @@ iscsi_max_recv_data_segment_length_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_MAX_RECV_DATA_SEGMENT_LENGTH;
     init_data->targets[iscsi_get_target_id(oid)].
         max_recv_data_segment_length = atoi(value);
 
@@ -1068,6 +1158,8 @@ iscsi_first_burst_length_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_FIRST_BURST_LENGTH;
     init_data->targets[iscsi_get_target_id(oid)].first_burst_length = 
         atoi(value);
 
@@ -1096,6 +1188,8 @@ iscsi_max_burst_length_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_MAX_BURST_LENGTH;
     init_data->targets[iscsi_get_target_id(oid)].max_burst_length = 
         atoi(value);
 
@@ -1124,6 +1218,8 @@ iscsi_default_time2wait_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_DEFAULT_TIME2WAIT;
     init_data->targets[iscsi_get_target_id(oid)].default_time2wait = atoi(value);
 
     return 0;
@@ -1151,6 +1247,8 @@ iscsi_default_time2retain_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_DEFAULT_TIME2RETAIN;
     init_data->targets[iscsi_get_target_id(oid)].default_time2retain = atoi(value);
 
     return 0;
@@ -1178,6 +1276,8 @@ iscsi_max_outstanding_r2t_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_MAX_OUTSTANDING_R2T;
     init_data->targets[iscsi_get_target_id(oid)].max_outstanding_r2t = atoi(value);
 
     return 0;
@@ -1204,6 +1304,8 @@ iscsi_data_pdu_in_order_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_DATA_PDU_IN_ORDER;
     *(init_data->targets[iscsi_get_target_id(oid)].data_pdu_in_order) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].data_pdu_in_order, value);
 
@@ -1232,6 +1334,8 @@ iscsi_data_sequence_in_order_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_DATA_SEQUENCE_IN_ORDER;
     *(init_data->targets[iscsi_get_target_id(oid)].data_sequence_in_order) =
         '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].data_sequence_in_order, 
@@ -1262,6 +1366,9 @@ iscsi_error_recovery_level_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
+        OFFER_ERROR_RECOVERY_LEVEL;
+
     init_data->targets[iscsi_get_target_id(oid)].error_recovery_level = atoi(value);
 
     return 0;
@@ -1342,10 +1449,10 @@ iscsi_initiator_name_set(unsigned int gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(instance);
-    UNUSED(oid);
     
-    *(init_data->initiator_name) = '\0';
-    strcpy(init_data->initiator_name, value);
+    *(init_data->targets[iscsi_get_target_id(oid)].initiator_name) = '\0';
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].initiator_name, 
+           value);
 
     return 0;
 }
@@ -1359,7 +1466,8 @@ iscsi_initiator_name_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     *value = '\0';
-    sprintf(value, "%s", init_data->initiator_name);
+    sprintf(value, "%s", 
+            init_data->targets[iscsi_get_target_id(oid)].initiator_name);
 
     return 0;
 }
@@ -1371,10 +1479,10 @@ iscsi_initiator_alias_set(unsigned int gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(instance);
-    UNUSED(oid);
     
-    *(init_data->initiator_alias) = '\0';
-    strcpy(init_data->initiator_alias, value);
+    *(init_data->targets[iscsi_get_target_id(oid)].initiator_alias) = '\0';
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].initiator_alias, 
+           value);
 
     return 0;
 }
@@ -1388,7 +1496,8 @@ iscsi_initiator_alias_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     *value = '\0';
-    sprintf(value, "%s", init_data->initiator_alias);
+    sprintf(value, "%s", 
+            init_data->targets[iscsi_get_target_id(oid)].initiator_alias);
 
     return 0;
 }
@@ -1458,6 +1567,7 @@ iscsi_host_bus_adapter_set(unsigned int gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(instance);
+    UNUSED(oid);
 
     init_data->host_bus_adapter = atoi(value);
 
@@ -1471,6 +1581,7 @@ iscsi_host_bus_adapter_get(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(instance);
+    UNUSED(oid);
 
     *value = '\0';
     sprintf(value, "%d", init_data->host_bus_adapter);
@@ -1509,27 +1620,12 @@ iscsi_initiator_local_name_get(unsigned int gid, const char *oid,
 
 /* Configuration tree */
 
-/* HINT:
- * iscsi_initiator
- * iscsi_initiator/host_bus_adapter
- * iscsi_initiator/initiator_alias
- * iscsi_initiator/initiator_name
- * iscsi_initiator/target_data
- * iscsi_initiator/target_data/target_port
- * ..
- * iscsi_initiator/target_data/max_connections
- * iscsi_initiator/target_data/target_auth
- * iscsi_initiator/target_data/target_auth/peer_secret
- * iscsi_initiator/target_data/target_auth/local_name
- * iscsi_initiator/chap
- * iscsi_initiator/chap/...
- */
 RCF_PCH_CFG_NODE_RW(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL, 
                     NULL, iscsi_host_bus_adapter_get,
                     iscsi_host_bus_adapter_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_alias, "initiator_alias", NULL, 
-                    &node_iscsi_host_bus_adapter, iscsi_initiator_alias_get,
+                    NULL, iscsi_initiator_alias_get,
                     iscsi_initiator_alias_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_name, "initiator_name", NULL, 
@@ -1537,7 +1633,7 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_name, "initiator_name", NULL,
                     iscsi_initiator_name_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_port, "target_port", NULL, 
-                    NULL,
+                    &node_iscsi_initiator_name,
                     iscsi_target_port_get, iscsi_target_port_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_addr, "target_addr", NULL, 
@@ -1626,7 +1722,7 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_max_connections, "max_connections",
 
 /* CHAP related stuff */
 RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_local_name, "local_name",
-                   NULL, &node_iscsi_max_connections,
+                   NULL, NULL,
                    iscsi_initiator_local_name_get,
                    iscsi_initiator_local_name_set);
 
@@ -1641,13 +1737,8 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_auth, "target_auth",
                     iscsi_initiator_target_auth_get,
                     iscsi_initiator_target_auth_set);                   
 
-RCF_PCH_CFG_NODE_COLLECTION(node_iscsi_target_data, "target_data",
-                            &node_iscsi_target_auth, &node_iscsi_initiator_name, 
-                            iscsi_target_data_add, iscsi_target_data_del,
-                            iscsi_target_data_list, NULL);
-
 RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_enc_fmt, "enc_fmt",
-                    NULL, NULL,
+                    NULL, &node_iscsi_target_auth,
                     iscsi_initiator_enc_fmt_get,
                     iscsi_initiator_enc_fmt_set);
 
@@ -1668,12 +1759,17 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_local_secret, "local_secret",
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_chap, "chap", 
                     &node_iscsi_initiator_local_secret,
-                    &node_iscsi_target_data, iscsi_initiator_chap_get,
+                    &node_iscsi_max_connections, iscsi_initiator_chap_get,
                     iscsi_initiator_chap_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_iscsi_target_data, "target_data",
+                            &node_iscsi_chap, &node_iscsi_host_bus_adapter, 
+                            iscsi_target_data_add, iscsi_target_data_del,
+                            iscsi_target_data_list, NULL);
 
 /* Main object */
 RCF_PCH_CFG_NODE_RW(node_ds_iscsi_initiator, "iscsi_initiator", 
-                    &node_iscsi_chap,
+                    &node_iscsi_target_data,
                     NULL, iscsi_initiator_get,
                     iscsi_initiator_set);
 
