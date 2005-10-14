@@ -11,7 +11,8 @@ AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir) \
 AM_LDFLAGS=@TE_LDFLAGS@ 
 
 include_HEADERS=target_negotiate.h list.h \
-				iscsi_common.h text_param.h
+				iscsi_common.h text_param.h \
+	            iscsi_custom.h
 
 noinst_HEADERS=debug.h range.h \
                crc.h \
