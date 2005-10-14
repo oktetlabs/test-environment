@@ -56,7 +56,7 @@
 #ifdef ISCSI_DEBUG_LOG
 #define IVERB(args...) fprintf(stderr, args); fprintf(stderr, "\n")
 #else
-#define IVERB WARN
+#define IVERB VERB
 #endif
 
 #define MAX_NAME_LENGTH 256
