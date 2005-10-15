@@ -490,13 +490,17 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
              iscsi_data->script_path : ".");
     destination = fopen(filename, "w");
     if (destination == NULL)
-        return TE_RC(TE_TA_UNIX, errno);
+    {
+        ERROR("Cannot open '%s' for writing: %s",
+              filename, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
              
     target = iscsi_data->targets;
     if (target->target_id < 0)
     {
         ERROR("No targets configured");
-        return TE_RC(TE_TA_UNIX, ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     /** NOTE: L5 Initator seems to be unable 
      *  to have different Initator names for
@@ -509,11 +513,13 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
             target->initiator_name);
     for (; target < iscsi_data->targets + MAX_TARGETS_NUMBER; target++)
     {
-        if (target->target_id >= 0)
+        if (target->target_id >= 0 && target->is_active)
         {
-            fprintf(destination, " target_%d", target->target_id);
+            fprintf(destination, " target%d", target->target_id);
         }
     }
+
+    target = iscsi_data->targets;
     /** NOTE: Currently L5 initiator supports only a single
      *  _local_ secret per initiator 
      */
@@ -523,7 +529,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
     }
     for (; target < iscsi_data->targets + MAX_TARGETS_NUMBER; target++)
     {
-        if (target->target_id >= 0)
+        if (target->target_id >= 0 && target->is_active)
         {
             fprintf(destination, "\n\n[target%d]\n"
                                  "TargetName: %s\n"
