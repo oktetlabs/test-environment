@@ -391,8 +391,8 @@ iscsi_retran_thread(void *param)
         pthread_mutex_lock(&session->cmnd_mutex);
 		for (cmnd = session->cmnd_list; cmnd; cmnd = cmnd->next) {
 			if (cmnd->outstanding_r2t > 0
-			   && time(NULL) > (cmnd->timestamp + session->r2t_period)
-			   && cmnd->state == ISCSI_BUFFER_RDY
+			   && time(NULL) > (time_t)(cmnd->timestamp + session->r2t_period)
+			   && cmnd->state == (uint8_t)ISCSI_BUFFER_RDY
 			   && !cmnd->retransmit_flg) {
 				/* this is a WRITE command with outstanding
 				 * R2Ts and no activity for a while.  Try
@@ -412,7 +412,7 @@ iscsi_retran_thread(void *param)
 							= cmnd->r2t_sn - 1;
 				}
 				/* signal the tx thread to do the rexmit */
-                iscsi_tx();
+                iscsi_tx(cmnd->conn);
 			}
 		}
         pthread_mutex_unlock(&session->cmnd_mutex);

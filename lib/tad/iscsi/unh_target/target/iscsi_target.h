@@ -243,7 +243,7 @@ extern void 	iscsi_task_mgt_fn_done 	(Target_Scsi_Message *msg);
 
 extern int	iscsi_server_thread (void*);
 extern int	iscsi_rx_thread	(void*);
-extern int	iscsi_tx_thread (void*);
+extern int	iscsi_tx (struct iscsi_conn *conn);
 
     
 #define PDU_SENSE_LENGTH_SIZE 2

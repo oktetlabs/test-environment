@@ -22,11 +22,10 @@
  * MA  02111-1307  USA
  *
  * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
+ * @author Artem Andreev <Artem.Andreev@oktetlabs.ru>
  *
  * $Id$
  */
-
-#define TE_LGR_USER "iSCSI Target Conf"
 
 #ifdef WITH_ISCSI
 #include <stddef.h>
