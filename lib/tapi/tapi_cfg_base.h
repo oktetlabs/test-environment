@@ -127,7 +127,8 @@ tapi_cfg_base_if_add_net_addr(const char *ta, const char *ifname,
 }
 
 /**
- * Delete all addresses on a given interface, except of addr_to_save.
+ * Delete all IPv4 addresses on a given interface, except of
+ * addr_to_save or the first address in acquired list.
  *
  * @param ta            Test Agent name
  * @param if_name       interface name
@@ -138,13 +139,14 @@ tapi_cfg_base_if_add_net_addr(const char *ta, const char *ifname,
  *
  * @return Status code
  */ 
-extern int tapi_cfg_del_if_addresses(const char *ta,
-                                     const char *if_name,
-                                     const struct sockaddr *addr_to_save);
+extern te_errno tapi_cfg_del_if_ip4_addresses(const char *ta,
+                                              const char *if_name,
+                                              const struct sockaddr
+                                                  *addr_to_save);
 
 
-static inline
-int tapi_cfg_base_if_up(const char *ta, const char *iface)
+static inline te_errno
+tapi_cfg_base_if_up(const char *ta, const char *iface)
 {
     int if_status = 1; /* enable */
 
@@ -153,8 +155,8 @@ int tapi_cfg_base_if_up(const char *ta, const char *iface)
                                 ta, iface);
 }
 
-static inline
-int tapi_cfg_base_if_down(const char *ta, const char *iface)
+static inline te_errno
+tapi_cfg_base_if_down(const char *ta, const char *iface)
 {
     int if_status = 0; /* disable */
 
@@ -164,8 +166,8 @@ int tapi_cfg_base_if_down(const char *ta, const char *iface)
 
 }
 
-static inline 
-int tapi_cfg_base_if_arp_enable(const char *ta, const char * iface)
+static inline te_errno
+tapi_cfg_base_if_arp_enable(const char *ta, const char * iface)
 {
     int arp_use = 1; /* enable */
 
@@ -174,8 +176,8 @@ int tapi_cfg_base_if_arp_enable(const char *ta, const char * iface)
                                 ta, iface);
 }
 
-static inline 
-int tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
+static inline te_errno
+tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
 {
     int arp_use = 0; /* enable */
 

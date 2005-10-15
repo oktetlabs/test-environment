@@ -364,6 +364,21 @@ tapi_allocate_port_htons(uint16_t *p_port)
     return 0;
 }
 
+/**
+ * Convert network address from string and put it in provided sockaddr
+ * structure. Set address family appropriately.
+ *
+ * @param addr_str      Address in string format
+ * @param addr          Location for the address (should be sufficient
+ *                      for sockadddr structure which corresponds to
+ *                      provided address in string format, e.g.
+ *                      struct sockaddr_storage)
+ *
+ * @return Status code.
+ */
+extern te_errno sockaddr_netaddr_from_string(const char      *addr_str,
+                                             struct sockaddr *addr);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

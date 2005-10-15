@@ -567,3 +567,24 @@ tapi_allocate_port(uint16_t *p_port)
 
     return 0;
 }
+
+/* See description in tapi_sockaddr.h */
+te_errno
+sockaddr_netaddr_from_string(const char      *addr_str,
+                             struct sockaddr *addr)
+{
+    if (addr_str == NULL || addr == NULL)
+        return TE_RC(TE_TAPI, TE_EFAULT);
+
+    if (inet_pton(AF_INET, addr_str, &SIN(addr)->sin_addr) > 0)
+    {
+        addr->sa_family = AF_INET;
+        return 0;
+    }
+    if (inet_pton(AF_INET6, addr_str, &SIN6(addr)->sin6_addr) > 0)
+    {
+        addr->sa_family = AF_INET6;
+        return 0;
+    }
+    return TE_RC(TE_TAPI, TE_EINVAL);
+}

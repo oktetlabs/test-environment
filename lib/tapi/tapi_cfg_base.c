@@ -61,6 +61,7 @@
 #include "conf_api.h"
 
 #include "tapi_cfg_base.h"
+#include "tapi_sockaddr.h"
 
 #define TE_LGR_USER     "Configuration TAPI"
 #include "logger_api.h"
@@ -296,18 +297,24 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
 }
 
 /* See description in tapi_cfg_base.h */
-int
-tapi_cfg_del_if_addresses(const char *ta,
-                          const char *if_name,
-                          const struct sockaddr *addr_to_save)
+te_errno
+tapi_cfg_del_if_ip4_addresses(const char *ta,
+                              const char *if_name,
+                              const struct sockaddr *addr_to_save)
 {
-    cfg_handle   *addrs = NULL;
-    unsigned int  addr_num = 0;
-    unsigned int  i;
-    char          buf[INET_ADDRSTRLEN];
-    char         *addr_to_save_str = NULL;
-    char         *addr_str;
-    int           rc;
+    cfg_handle                 *addrs = NULL;
+    unsigned int                addr_num = 0;
+    unsigned int                i;
+    char                       *addr_str;
+    struct sockaddr_storage     addr;
+    te_errno                    rc;
+
+    if (addr_to_save != NULL && addr_to_save->sa_family != AF_INET)
+    {
+        ERROR("%s(): Invalid family %d of the address to save",
+              __FUNCTION__, (int)addr_to_save->sa_family);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
     
     if ((rc = cfg_find_pattern_fmt(&addr_num, &addrs,
                                    "/agent:%s/interface:%s/net_addr:*",
@@ -317,56 +324,48 @@ tapi_cfg_del_if_addresses(const char *ta,
               ta, if_name);
         return rc;
     }
-    if (addr_to_save != NULL)
-    {
-        if ((addr_to_save_str = 
-                (char *)inet_ntop(AF_INET, 
-                        &(SIN(addr_to_save)->sin_addr),
-                        buf, INET_ADDRSTRLEN)) == NULL)
-        {
-            ERROR("Failed to convert address to string, errno %s",
-                  strerror(errno));
-            free(addrs);
-            return -1;
-        }
-    }
-    else
-    {
-        if ((rc = cfg_get_inst_name(*addrs, &addr_to_save_str)) != 0)
-        {
-            ERROR("Failed to get instance name");
-            free(addrs);
-            return rc;
-        }
-    }
-    VERB("addr_to_save_str is %s", addr_to_save_str);
     
     for (i = 0; i < addr_num; i++)
     {
         if ((rc = cfg_get_inst_name(addrs[i], &addr_str)) != 0)
         {
-            ERROR("Failed to get instance name");
+            ERROR("Failed to get instance name: %r", rc);
             break;
         }
-
-        if (strncmp(addr_str, addr_to_save_str, 
-                    strlen(addr_to_save_str) + 1) == 0)
+        if ((rc = sockaddr_netaddr_from_string(addr_str, SA(&addr))) != 0)
         {
+            ERROR("Failed to convert address from string '%s': %r",
+                  addr_str, rc);
             free(addr_str);
+            break;
+        }
+        free(addr_str);
+        if (addr.ss_family != AF_INET)
+        {
+            continue;
+        }
+        if (addr_to_save == NULL)
+        {
+            /* Just to mark that one address is saved */
+            addr_to_save = SA(&addr);
+            continue;
+        }
+        if (addr_to_save != SA(&addr) &&
+            memcmp(&SIN(addr_to_save)->sin_addr,
+                   &SIN(&addr)->sin_addr,
+                   sizeof(SIN(&addr)->sin_addr)) == 0)
+        {
             continue;
         }
 
         if ((rc = cfg_del_instance(addrs[i], FALSE)) != 0)
         {
-            ERROR("Failed to delete address %s", addr_str);
-            free(addr_str);
+            ERROR("Failed to delete address with handle %#x: %r",
+                  addrs[i], rc);
             break;
         }
-        free(addr_str);
     }
 
-    if (addr_to_save_str != buf)
-        free(addr_to_save_str);
     free(addrs);
 
     return rc;
