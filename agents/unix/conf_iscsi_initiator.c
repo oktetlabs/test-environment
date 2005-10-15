@@ -32,6 +32,7 @@
  * input parameter should be added
  */
 #include <sys/types.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -128,6 +129,7 @@
 typedef enum {
     UNH,
     L5,
+    MICROSOFT,
 } iscsi_initiator_type;
 
 /* Encoding of challange and response */
@@ -151,6 +153,7 @@ typedef struct iscsi_tgt_chap_data {
 
 typedef struct iscsi_target_data {
     int               target_id;
+    te_bool           is_active;
     
     int               conf_params;
 
@@ -191,6 +194,7 @@ typedef struct iscsi_initiator_data {
     char                  last_cmd[MAX_CMD_SIZE];
 
     int                   host_bus_adapter;    
+    char                  script_path[MAX_CMD_SIZE];
     
     iscsi_target_data_t   targets[MAX_TARGETS_NUMBER];
 } iscsi_initiator_data_t;
@@ -268,6 +272,7 @@ iscsi_init_default_ini_parameters(int i)
     /* init_id */
     /* init_type */
     /* initiator name */
+    init_data->init_type = UNH;
     init_data->host_bus_adapter = DEFAULT_HOST_BUS_ADAPTER;
     
     if (i == CONF_NO_TARGETS)
@@ -369,6 +374,171 @@ ta_system_ex(const char *cmd, ...)
         }                                                                   \
     } while (0)
 
+/****** L5 Initiator specific stuff  ****/
+
+typedef struct iscsi_target_param_descr_t
+{
+    uint32_t offer;
+    char    *name;
+    te_bool  is_string;
+    int      offset;    
+} iscsi_target_param_descr_t;
+
+#define ISCSI_END_PARAM_TABLE {0, NULL, FALSE, 0}
+
+static void
+iscsi_write_param(FILE *destination, 
+                  iscsi_target_param_descr_t *param,
+                  void *data)
+{
+    const char *n;
+    for (n = param->name; *n != '\0'; n++)
+    {
+        if (*n != '_')
+            fputc(*n, destination);
+    }
+    fputs(": ", destination);
+    if (param->is_string)
+    {
+        fputs((char *)data + param->offset, destination);
+    }
+    else
+    {
+        fprintf(destination, "%d", 
+                *(int *)((char *)data + param->offset));
+    }
+    fputc('\n', destination);
+}
+
+static int
+iscsi_l5_write_target_params(FILE *destination, 
+                             iscsi_target_data_t *target)
+{
+    uint32_t mask;
+    int idx;
+    iscsi_target_param_descr_t *p;
+#define PARAMETER(field, offer, type) \
+    {OFFER_##offer, #field, type, offsetof(iscsi_target_data_t, field)}
+    static iscsi_target_param_descr_t params[] =
+        {
+            PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
+            PARAMETER(initial_r2t, INITIAL_R2T,  TRUE),
+            PARAMETER(header_digest, HEADER_DIGEST,  TRUE),
+            PARAMETER(data_digest, DATA_DIGEST,  TRUE),
+            PARAMETER(immediate_data, IMMEDIATE_DATA,  TRUE),
+            PARAMETER(max_recv_data_segment_length, MAX_RECV_DATA_SEGMENT_LENGTH,  
+                      FALSE),
+            PARAMETER(first_burst_length, FIRST_BURST_LENGTH,  FALSE),
+            PARAMETER(max_burst_length, MAX_BURST_LENGTH,  FALSE),
+            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  FALSE),
+            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  FALSE),
+            PARAMETER(max_outstanding_r2t, MAX_OUTSTANDING_R2T,  FALSE),
+            PARAMETER(data_pdu_in_order, DATA_PDU_IN_ORDER,  TRUE),
+            PARAMETER(data_sequence_in_order, DATA_SEQUENCE_IN_ORDER,  TRUE),
+            PARAMETER(error_recovery_level, ERROR_RECOVERY_LEVEL,  FALSE),
+            ISCSI_END_PARAM_TABLE
+        };
+#define AUTH_PARAM(field, name, type) \
+    static iscsi_target_param_descr_t authp_##field = \
+        {0, name, type, offsetof(iscsi_tgt_chap_data_t, field)}
+#define WRITE_AUTH(field) \
+    iscsi_write_param(destination, &authp_##field, &target->chap)
+
+    AUTH_PARAM(chap, "AuthMethod", TRUE);
+    
+    
+    for (idx = 0, mask = 1; mask != 0; mask <<= 1, idx++)
+    {
+        if ((target->conf_params & mask) != 0)
+        {
+            for (p = params; p->name != NULL; p++)
+            {
+                if (p->offer == mask)
+                {
+                    iscsi_write_param(destination, p, target);
+                    break;
+                }
+            }
+        }
+    }
+    WRITE_AUTH(chap);
+    /** Other authentication parameters are not supported by
+     *  L5 initiator, both on the level of script and on 
+     *  the level of ioctls
+     */
+    fprintf(destination, "\n\n[target%d_conn0]\n"
+                         "Host: %s\n"
+                         "Port: %d\n\n",
+            target->target_id,
+            target->target_addr, target->target_port);
+    return 0;
+#undef PARAMETER
+#undef AUTH_PARAM
+#undef WRITE_AUTH
+}
+
+static int
+iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
+{
+    static char filename[MAX_CMD_SIZE];
+    FILE *destination;
+    iscsi_target_data_t *target;
+    
+    snprintf(filename, sizeof(filename),
+             "%s/configs/te",
+             *iscsi_data->script_path != '\0' ? 
+             iscsi_data->script_path : ".");
+    destination = fopen(filename, "w");
+    if (destination == NULL)
+        return TE_RC(TE_TA_UNIX, errno);
+             
+    target = iscsi_data->targets;
+    if (target->target_id < 0)
+    {
+        ERROR("No targets configured");
+        return TE_RC(TE_TA_UNIX, ENOENT);
+    }
+    /** NOTE: L5 Initator seems to be unable 
+     *  to have different Initator names for
+     *  different Targets/Connections.
+     *  So we just using the first one
+     */
+    fprintf(destination, "[INITIATOR]\n"
+                         "Name: %s\n"
+                         "Targets:",
+            target->initiator_name);
+    for (; target < iscsi_data->targets + MAX_TARGETS_NUMBER; target++)
+    {
+        if (target->target_id >= 0)
+        {
+            fprintf(destination, " target_%d", target->target_id);
+        }
+    }
+    /** NOTE: Currently L5 initiator supports only a single
+     *  _local_ secret per initiator 
+     */
+    if (*target->chap.local_secret != '\0')
+    {
+        fprintf(destination, "\nCHAPSecret: %s\n", target->chap.local_secret);
+    }
+    for (; target < iscsi_data->targets + MAX_TARGETS_NUMBER; target++)
+    {
+        if (target->target_id >= 0)
+        {
+            fprintf(destination, "\n\n[target%d]\n"
+                                 "TargetName: %s\n"
+                                 "Connections: target%d_conn0\n", 
+                    target->target_id,
+                    target->target_name,
+                    target->target_id);
+            iscsi_l5_write_target_params(destination, target);
+        }
+    }
+    fclose(destination);
+    return 0;
+}
+
+/****** UNH Initiator specific stuff ****/
 static const char *conf_iscsi_unh_set_fmt =
     "iscsi_manage init set %s=%s target=%d host=%d";
 
@@ -507,8 +677,7 @@ iscsi_get_cid_and_target(const char *cmdline, int *cid, int *target)
  */
 /* TODO: write normal handler */
 static int
-iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
-                    const char *instance, ...)
+iscsi_initiator_unh_set(const char *value)
 {
     int                     rc = -1;
     int                     cid = 0;
@@ -517,34 +686,19 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
 
     int                     offer;
  
-    UNUSED(gid);
-    UNUSED(instance);
-    UNUSED(oid);
-    /* TODO: init_type = UNH */
-    init_data->init_type = UNH;
-
     iscsi_get_cid_and_target(value, &cid, &target_id);
     if (strncmp(value, "down", strlen("down")) == 0)
     {
+        init_data->targets[target_id].is_active = FALSE;
         /* We should down the connection */
-        switch (init_data->init_type)
+        rc = ta_system_ex("iscsi_config down cid=%d target=%d host=%d",
+                          cid, target_id, 
+                          init_data->host_bus_adapter);
+        if (rc != 0)
         {
-            case UNH:
-                rc = ta_system_ex("iscsi_config down cid=%d target=%d host=%d",
-                                   cid, target_id, 
-                                  init_data->host_bus_adapter);
-                if (rc != 0)
-                {
-                    ERROR("Failed to close the connection "
-                          "with CID = %d", cid);
-                    return TE_RC(TE_TA_UNIX, EINVAL);
-                }
-                break;
-            case L5:
-                break;
-            default:
-                ERROR("Unknown initiator type");
-                return TE_RC(TE_TA_UNIX, EINVAL);
+            ERROR("Failed to close the connection "
+                  "with CID = %d", cid);
+            return TE_RC(TE_TA_UNIX, EINVAL);
         }
         INFO("Connections with ID %d is closed", cid);
         return 0;
@@ -554,142 +708,214 @@ iscsi_initiator_set(unsigned int gid, const char *oid, const char *value,
 
     target = &init_data->targets[target_id];
     
+    offer = target->conf_params;
+    
+    IVERB("Offer: %d", (int)offer);
+    
+    CHECK_SHELL_CONFIG_RC(
+        ta_system_ex("iscsi_manage init restore target=%d host=%d",
+                     target_id, init_data->host_bus_adapter),
+        "Restoring");
+    
+    ISCSI_UNH_SET("TargetName", target->target_name, target_id);
+    
+    if ((offer & OFFER_MAX_CONNECTIONS) == OFFER_MAX_CONNECTIONS)
+        ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
+                          target_id);
+    if ((offer & OFFER_INITIAL_R2T) == OFFER_INITIAL_R2T)
+        ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id);
+    
+    if ((offer & OFFER_HEADER_DIGEST) == OFFER_INITIAL_R2T)
+        ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id);
+    
+    if ((offer & OFFER_DATA_DIGEST) == OFFER_DATA_DIGEST)
+        ISCSI_UNH_SET("DataDigest", target->data_digest, target_id);
+    
+    if ((offer & OFFER_IMMEDIATE_DATA) == OFFER_IMMEDIATE_DATA)
+        ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id);
+    
+    if ((offer & OFFER_MAX_RECV_DATA_SEGMENT_LENGTH) ==
+        OFFER_MAX_RECV_DATA_SEGMENT_LENGTH)
+        ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
+                          target->max_recv_data_segment_length,
+                          target_id);
+    
+    if ((offer & OFFER_FIRST_BURST_LENGTH) == OFFER_FIRST_BURST_LENGTH)
+        ISCSI_UNH_SET_INT("MaxBurstLength", 
+                          target->max_burst_length, target_id);
+    
+    if ((offer & OFFER_MAX_BURST_LENGTH) == OFFER_MAX_BURST_LENGTH)
+        ISCSI_UNH_SET_INT("FirstBurstLength", 
+                          target->first_burst_length, target_id);
+    
+    if ((offer & OFFER_DEFAULT_TIME2WAIT) == OFFER_DEFAULT_TIME2WAIT)
+        ISCSI_UNH_SET_INT("DefaultTime2Wait", 
+                          target->default_time2wait, target_id);
+    
+    if ((offer & OFFER_DEFAULT_TIME2RETAIN) == OFFER_DEFAULT_TIME2RETAIN)
+        ISCSI_UNH_SET_INT("DefaultTime2Retain", 
+                          target->default_time2retain, target_id);
+    
+    if ((offer & OFFER_MAX_OUTSTANDING_R2T) == OFFER_MAX_OUTSTANDING_R2T)
+        ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
+                          target->max_outstanding_r2t, target_id);
+    
+    if ((offer & OFFER_DATA_PDU_IN_ORDER) == OFFER_DATA_PDU_IN_ORDER)
+        ISCSI_UNH_SET("DataPDUInOrder", 
+                      target->data_pdu_in_order, target_id);
+
+    if ((offer & OFFER_DATA_SEQUENCE_IN_ORDER) == 
+        OFFER_DATA_SEQUENCE_IN_ORDER)
+        ISCSI_UNH_SET("DataSequenceInOrder", 
+                      target->data_sequence_in_order, target_id);
+
+    if ((offer & OFFER_ERROR_RECOVERY_LEVEL) == 
+        OFFER_ERROR_RECOVERY_LEVEL)
+        ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
+                          target->error_recovery_level, target_id);
+
+    ISCSI_UNH_SET("SessionType", target->session_type, target_id);
+    
+    /* Target' CHAP */
+    if (init_data->targets[target_id].chap.target_auth)
+    {
+        ISCSI_UNH_FORCE_FLAG("t", target_id,
+                             "Target Authentication");
+    }
+    else
+    {
+        ISCSI_UNH_UNSET_FLAG("t", target_id,
+                             "Target Authentication");
+    }
+
+    ISCSI_UNH_FORCE_STRING("px", target->chap.peer_secret, target_id,
+                           "Peer Secret");
+
+    ISCSI_UNH_FORCE("ln", target->chap.local_name, target_id,
+                    "Local Name");
+
+    /* Initiator itself */
+    ISCSI_UNH_SET("InitiatorName", 
+                  target->initiator_name,
+                  target_id);
+
+    ISCSI_UNH_SET("InitiatorAlias", 
+                  target->initiator_alias, 
+                  target_id);
+
+    ISCSI_UNH_SET("AuthMethod", target->chap.chap, target_id);
+
+    if (target->chap.enc_fmt == BASE_64)
+        ISCSI_UNH_FORCE_FLAG("b", target_id,
+                             "Encoding Format");
+    else
+        ISCSI_UNH_UNSET_FLAG("b", target_id,
+                             "Encoding Format");
+
+    ISCSI_UNH_FORCE_INT("cl", target->chap.challenge_length, target_id,
+                        "Challenge Length");
+
+    ISCSI_UNH_FORCE("pn", target->chap.peer_name, target_id,
+                    "Peer Name");
+
+    ISCSI_UNH_FORCE_STRING("lx", target->chap.local_secret, target_id,
+                           "Local Secret");
+
+
+    /* Now the connection should be opened */
+    rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
+                         "cid=%d target=%d host=%d",
+                         target->target_addr,
+                         target->target_port,
+                         cid, target_id, init_data->host_bus_adapter);
+    if (rc != 0)
+    {
+        ERROR("Failed to establish connection with cid=%d", cid);
+        return rc;
+    }
+    init_data->targets[target_id].is_active = TRUE;
+    return 0;
+}
+
+static int
+iscsi_initiator_l5_set(const char *value)
+{
+    int                     rc = -1;
+    int                     target_id = 0;
+    int                     cid = 0;
+    te_bool                 anything_to_stop = FALSE;
+    te_bool                 anything_to_start = FALSE;
+ 
+    for (target_id = 0; target_id < MAX_TARGETS_NUMBER; target_id++)
+    {
+        if (init_data->targets[target_id].is_active)
+        {
+            anything_to_stop = TRUE;
+            break;
+        }
+    }
+    iscsi_get_cid_and_target(value, &cid, &target_id);
+    if (strncmp(value, "down", strlen("down")) == 0)
+    {
+        init_data->targets[target_id].is_active = FALSE;
+    }
+    else
+    {
+        init_data->targets[target_id].is_active = TRUE;
+    }
+
+    for (target_id = 0; target_id < MAX_TARGETS_NUMBER; target_id++)
+    {
+        if (init_data->targets[target_id].is_active)
+        {
+            anything_to_start = TRUE;
+            break;
+        }
+    }
+    rc = iscsi_l5_write_config(init_data);
+    if (rc != 0)
+        return rc;
+    if (anything_to_stop)
+    {
+        rc = te_shell_cmd_ex("cd %s; ./iscsi_stop te", 
+                             init_data->script_path);
+        if (rc != 0)
+        {
+            ERROR("Unable to stop initiator connections");
+            return rc;
+        }
+    }
+    if (anything_to_start)
+    {
+        rc = te_shell_cmd_ex("cd %s; ./iscsi_start te", 
+                         init_data->script_path);    
+        if (rc != 0)
+        {
+            ERROR("Unable to start initiator connections");
+            return rc;
+        }
+    }
+    return 0;
+}
+
+
+static int
+iscsi_initiator_set(unsigned int gid, const char *oid,
+                    char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
     switch (init_data->init_type)
     {
         case UNH:
-            offer = target->conf_params;
-            
-            IVERB("Offer: %d", (int)offer);
-
-            CHECK_SHELL_CONFIG_RC(
-                ta_system_ex("iscsi_manage init restore target=%d host=%d",
-                             target_id, init_data->host_bus_adapter),
-                "Restoring");
-
-            ISCSI_UNH_SET("TargetName", target->target_name, target_id);
-
-            if ((offer & OFFER_MAX_CONNECTIONS) == OFFER_MAX_CONNECTIONS)
-                ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
-                                  target_id);
-            if ((offer & OFFER_INITIAL_R2T) == OFFER_INITIAL_R2T)
-                ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id);
-
-            if ((offer & OFFER_HEADER_DIGEST) == OFFER_INITIAL_R2T)
-                ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id);
-
-            if ((offer & OFFER_DATA_DIGEST) == OFFER_DATA_DIGEST)
-                ISCSI_UNH_SET("DataDigest", target->data_digest, target_id);
-
-            if ((offer & OFFER_IMMEDIATE_DATA) == OFFER_IMMEDIATE_DATA)
-                ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id);
-
-            if ((offer & OFFER_MAX_RECV_DATA_SEGMENT_LENGTH) ==
-                OFFER_MAX_RECV_DATA_SEGMENT_LENGTH)
-                ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
-                                  target->max_recv_data_segment_length,
-                                  target_id);
-
-            if ((offer & OFFER_FIRST_BURST_LENGTH) == OFFER_FIRST_BURST_LENGTH)
-                ISCSI_UNH_SET_INT("MaxBurstLength", 
-                                  target->max_burst_length, target_id);
-
-            if ((offer & OFFER_MAX_BURST_LENGTH) == OFFER_MAX_BURST_LENGTH)
-                ISCSI_UNH_SET_INT("FirstBurstLength", 
-                                  target->first_burst_length, target_id);
-
-            if ((offer & OFFER_DEFAULT_TIME2WAIT) == OFFER_DEFAULT_TIME2WAIT)
-                ISCSI_UNH_SET_INT("DefaultTime2Wait", 
-                                  target->default_time2wait, target_id);
-
-            if ((offer & OFFER_DEFAULT_TIME2RETAIN) == OFFER_DEFAULT_TIME2RETAIN)
-                ISCSI_UNH_SET_INT("DefaultTime2Retain", 
-                                  target->default_time2retain, target_id);
-
-            if ((offer & OFFER_MAX_OUTSTANDING_R2T) == OFFER_MAX_OUTSTANDING_R2T)
-                ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
-                                  target->max_outstanding_r2t, target_id);
-
-            if ((offer & OFFER_DATA_PDU_IN_ORDER) == OFFER_DATA_PDU_IN_ORDER)
-                ISCSI_UNH_SET("DataPDUInOrder", 
-                              target->data_pdu_in_order, target_id);
-
-            if ((offer & OFFER_DATA_SEQUENCE_IN_ORDER) == 
-                OFFER_DATA_SEQUENCE_IN_ORDER)
-                ISCSI_UNH_SET("DataSequenceInOrder", 
-                              target->data_sequence_in_order, target_id);
-
-            if ((offer & OFFER_ERROR_RECOVERY_LEVEL) == 
-                OFFER_ERROR_RECOVERY_LEVEL)
-                ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
-                                  target->error_recovery_level, target_id);
-
-            ISCSI_UNH_SET("SessionType", target->session_type, target_id);
-    
-            /* Target' CHAP */
-            if (init_data->targets[target_id].chap.target_auth)
-            {
-                ISCSI_UNH_FORCE_FLAG("t", target_id,
-                                     "Target Authentication");
-            }
-            else
-            {
-                ISCSI_UNH_UNSET_FLAG("t", target_id,
-                                     "Target Authentication");
-            }
-
-            ISCSI_UNH_FORCE_STRING("px", target->chap.peer_secret, target_id,
-                                   "Peer Secret");
-
-            ISCSI_UNH_FORCE("ln", target->chap.local_name, target_id,
-                            "Local Name");
-
-            /* Initiator itself */
-            ISCSI_UNH_SET("InitiatorName", 
-                          target->initiator_name,
-                          target_id);
-
-            ISCSI_UNH_SET("InitiatorAlias", 
-                          target->initiator_alias, 
-                          target_id);
-
-            ISCSI_UNH_SET("AuthMethod", target->chap.chap, target_id);
-
-            if (target->chap.enc_fmt == BASE_64)
-                ISCSI_UNH_FORCE_FLAG("b", target_id,
-                                     "Encoding Format");
-            else
-                ISCSI_UNH_UNSET_FLAG("b", target_id,
-                                     "Encoding Format");
-
-            ISCSI_UNH_FORCE_INT("cl", target->chap.challenge_length, target_id,
-                                "Challenge Length");
-
-            ISCSI_UNH_FORCE("pn", target->chap.peer_name, target_id,
-                            "Peer Name");
-
-            ISCSI_UNH_FORCE_STRING("lx", target->chap.local_secret, target_id,
-                                   "Local Secret");
-
-
-            /* Now the connection should be opened */
-            rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
-                                 "cid=%d target=%d host=%d",
-                                 target->target_addr,
-                                 target->target_port,
-                                 cid, target_id, init_data->host_bus_adapter);
-            if (rc != 0)
-            {
-                ERROR("Failed to establish connection with cid=%d", cid);
-                return rc;
-            }
-            break;
+            return iscsi_initiator_unh_set(value);
         case L5:
-            break;
+            return iscsi_initiator_l5_set(value);
         default:
-            ERROR("Wrong Initiator Type");
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-
-    return 0;
 }
 
 /* Operational parameters */
@@ -1560,6 +1786,69 @@ iscsi_target_port_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/* Initiator's path to scripts (for L5) */
+static int
+iscsi_script_path_set(unsigned int gid, const char *oid,
+                      char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    strcpy(init_data->script_path, value);
+    return 0;
+}
+
+static int
+iscsi_script_path_get(unsigned int gid, const char *oid,
+                      char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    strcpy(value, init_data->script_path);
+
+    return 0;
+}
+
+/* Initiator type */
+static int
+iscsi_type_set(unsigned int gid, const char *oid,
+               char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    if (strcmp(value, "unh") == 0)
+        init_data->init_type = UNH;
+    else if (strcmp(value, "l5") == 0)
+        init_data->init_type = L5;
+    else if (strcmp(value, "microsoft") == 0)
+        init_data->init_type = MICROSOFT;
+    else
+        return TE_RC(TE_TA_UNIX, EINVAL);
+
+    return 0;
+}
+
+static int
+iscsi_type_get(unsigned int gid, const char *oid,
+               char *value, const char *instance, ...)
+{
+    static char *types[] = {"unh", "l5", "microsoft"};
+            
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    strcpy(value, types[init_data->init_type]);
+
+    return 0;
+}
+
+
 /* Host Bus Adapter */
 static int
 iscsi_host_bus_adapter_set(unsigned int gid, const char *oid,
@@ -1620,8 +1909,16 @@ iscsi_initiator_local_name_get(unsigned int gid, const char *oid,
 
 /* Configuration tree */
 
+RCF_PCH_CFG_NODE_RW(node_iscsi_script_path, "script_path", NULL, 
+                    NULL, iscsi_script_path_get,
+                    iscsi_script_path_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_type, "type", NULL, 
+                    &node_iscsi_script_path, iscsi_type_get,
+                    iscsi_type_set);
+
 RCF_PCH_CFG_NODE_RW(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL, 
-                    NULL, iscsi_host_bus_adapter_get,
+                    &node_iscsi_type, iscsi_host_bus_adapter_get,
                     iscsi_host_bus_adapter_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_alias, "initiator_alias", NULL, 
