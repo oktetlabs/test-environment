@@ -188,7 +188,7 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     }
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
-    RING("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
+    INFO("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
 
     for (i = 0; i < 2; i++)
     {
@@ -203,7 +203,7 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         UNLOCK_QUEUE(iscsi_spec_data); 
         if (recv_pkt == NULL && i == 0)
             usleep(timeout); /* wait a bit */
-        RING("%s(CSAP %d), recv_pkt 0x%X", __FUNCTION__, csap_descr->id,
+        INFO("%s(CSAP %d), recv_pkt 0x%X", __FUNCTION__, csap_descr->id,
              recv_pkt);
     }
 
@@ -221,7 +221,7 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         free(recv_pkt->buffer);
         free(recv_pkt);
     }
-    RING("%s(CSAP %d), return %d", __FUNCTION__, csap_descr->id, len);
+    INFO("%s(CSAP %d), return %d", __FUNCTION__, csap_descr->id, len);
 
     return len;
 }
@@ -496,7 +496,7 @@ iscsi_tad_recv_internal(csap_p csap_descr, uint8_t *buffer, size_t buf_len)
 
     if (b == 'z')
     {
-        RING("%s(CSAP %d): Csap will be destroyed, last 'z' byte read",
+        INFO("%s(CSAP %d): Csap will be destroyed, last 'z' byte read",
              __FUNCTION__, csap_descr->id);
         return 0;
     }
