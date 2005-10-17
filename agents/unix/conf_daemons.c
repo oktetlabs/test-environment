@@ -459,7 +459,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
          (*value0 != *value) && (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
          ++attempt)
     {
-        msleep(TA_UNIX_DAEMON_WAIT_USEC);
+        msleep(TA_UNIX_DAEMON_WAIT_MSEC);
     }
     if (*value0 != *value)
     {
@@ -1852,7 +1852,7 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
              (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
              ++attempt)
         {
-            USLEEP(TA_UNIX_DAEMON_WAIT_USEC);
+            msleep(TA_UNIX_DAEMON_WAIT_MSEC);
         }
     }
     else
