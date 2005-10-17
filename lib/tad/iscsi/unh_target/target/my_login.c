@@ -1964,7 +1964,7 @@ handle_logout(struct iscsi_conn *conn,
 
     pthread_mutex_lock(&session->cmnd_mutex);
 	err = check_cmd_sn(cmnd, pdu, session, 1);
-    pthread_mutex_lock(&session->cmnd_mutex);
+    pthread_mutex_unlock(&session->cmnd_mutex);
 
 	if (err < 0) {	
 		/* out of range, silently ignore it */
