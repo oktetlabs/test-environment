@@ -272,12 +272,15 @@ static int
 iscsi_get_target_id(const char *oid)
 {
     char *c;
+    int   tgt_id;
     
     c = strstr(oid, "target_");
     c = strstr(c + 1, "target_");
     c += strlen("target_");
 
-    return atoi(c);
+    tgt_id = atoi(c);
+
+    return tgt_id;
 }
 
 /**
@@ -867,8 +870,6 @@ iscsi_initiator_unh_set(const char *value)
     
     offer = target->conf_params;
     
-    IVERB("Offer: %d", (int)offer);
-    
     CHECK_SHELL_CONFIG_RC(
         ta_system_ex("iscsi_manage init restore target=%d host=%d",
                      target_id, init_data->host_bus_adapter),
@@ -1198,7 +1199,7 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
     init_data->targets[tgt_id].target_id = tgt_id;
     init_data->targets[tgt_id].conf_params = 0;
 
-    fprintf(stderr, "Adding %s with value %s, id=%d\n", oid, value, tgt_id);
+    IVERB("Adding %s with value %s, id=%d\n", oid, value, tgt_id);
 
     return 0;
 }
@@ -1212,7 +1213,7 @@ iscsi_target_data_del(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     
-    fprintf(stderr, "Deletting %s\n", oid);
+    IVERB("Deletting %s\n", oid);
     init_data->targets[tgt_id].target_id = -1;
     return 0;
 }
@@ -1353,7 +1354,6 @@ iscsi_max_connections_set(unsigned int gid, const char *oid,
     init_data->targets[iscsi_get_target_id(oid)].conf_params |=
         OFFER_MAX_CONNECTIONS;
 
-    IVERB("Offer E: %d", init_data->targets[iscsi_get_target_id(oid)].conf_params);
     init_data->targets[iscsi_get_target_id(oid)].
         max_connections = atoi(value);
 
