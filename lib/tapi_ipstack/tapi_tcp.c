@@ -563,7 +563,6 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
         ERROR("%s(): write ip addr failed, rc %X", __FUNCTION__, rc);
         goto cleanup;
     }
-    RING("addr written");
 
     rc = asn_write_int32(csap_spec, ntohs(loc_port),
                          "0.#tcp.local-port.#plain");
@@ -572,7 +571,6 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
         ERROR("%s(): write port failed, rc %X", __FUNCTION__, rc);
         goto cleanup;
     }
-    RING("port written");
 
     rc = asn_write_value_field(csap_spec, NULL, 0,
                                "0.#tcp.data.#server");
@@ -581,14 +579,13 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
         ERROR("%s(): write server failed, rc %X", __FUNCTION__, rc);
         goto cleanup;
     }
-    RING("server written");
 
     rc = tapi_tad_csap_create(ta_name, sid, "data.tcp.ip4", 
                               csap_spec, tcp_csap); 
     if (rc != 0)
         ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
     else
-        RING("'data.tcp.ip4' CSAP created succesfully");
+        INFO("'data.tcp.ip4' CSAP created succesfully");
 
 cleanup:
     asn_free_value(csap_spec);
@@ -677,7 +674,7 @@ tcp_server_handler(const char *pkt_fname, void *user_param)
     if (rc != 0)
         ERROR("%s(): read socket failed, rc %r", __FUNCTION__, rc);
 
-    RING("%s(): received socket: %d", __FUNCTION__, *socket);
+    INFO("%s(): received socket: %d", __FUNCTION__, *socket);
 
     asn_free_value(pkt);
 }
@@ -790,7 +787,7 @@ int
 tapi_tcp_buffer_recv(const char *ta_name, int sid, 
                      csap_handle_t tcp_csap, 
                      unsigned int timeout, 
-                     csap_handle_t forward, te_bool exact,
+                     csap_handle_t forward, te_bool len_exact,
                      uint8_t *buf, size_t *length)
 {
     asn_value *pattern = NULL;
@@ -824,7 +821,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
     msg.data = buf;
     msg.length = ((length == NULL) ? 0 : *length);
 
-    if (exact)
+    if (len_exact)
     {
         if (length == NULL)
             return TE_EWRONGPTR;

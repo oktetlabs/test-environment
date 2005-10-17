@@ -290,7 +290,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                  conn_descr->agt, rc);
         }
         else 
-            RING("%s(conn %d): rcv CSAP %d on agt %s destroyed",
+            INFO("%s(conn %d): rcv CSAP %d on agt %s destroyed",
                  __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
                  conn_descr->agt);
     } 
@@ -306,7 +306,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                  conn_descr->agt, rc);
         }
         else
-            RING("%s(conn %d): snd CSAP %d on agt %s destroyed",
+            INFO("%s(conn %d): snd CSAP %d on agt %s destroyed",
                  __FUNCTION__, conn_descr->id, conn_descr->snd_csap,
                  conn_descr->agt);
     } 
@@ -332,7 +332,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                  conn_descr->agt, rc);
         }
         else
-            RING("%s(conn %d): arp CSAP %d on agt %s destroyed",
+            INFO("%s(conn %d): arp CSAP %d on agt %s destroyed",
                  __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
                  conn_descr->agt);
     } 
@@ -345,7 +345,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
     free(conn_descr->messages);
 
     CIRCLEQ_REMOVE(conns_root, conn_descr, link);
-    RING("%s(conn %d) finished", __FUNCTION__, conn_descr->id);
+    INFO("%s(conn %d) finished", __FUNCTION__, conn_descr->id);
     free(conn_descr);
     return 0;
 }
@@ -524,7 +524,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     if ((rc = asn_get_length(tcp_message, "payload")) > 0)
         pld_len = rc;
 
-    RING("length of payload: %d, new pld_len var %d", rc, pld_len);
+    INFO("length of payload: %d, new pld_len var %d", rc, pld_len);
 
     conn_descr->last_len_got = 0;
 
@@ -573,7 +573,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
 #undef CHECK_ERROR
     asn_free_value(tcp_message);
 
-    RING("%s(conn %d): seq got %u; len %d; ack %u, flags 0x%X",
+    INFO("%s(conn %d): seq got %u; len %d; ack %u, flags 0x%X",
          __FUNCTION__, conn_descr->id, seq_got, 
          conn_descr->last_len_got, ack_got, 
          flags);
@@ -676,7 +676,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                               &trafic_param, &arp_csap);
     CHECK_ERROR("%s(): create arp csap fails %r", __FUNCTION__, rc);
 
-    RING("%s(): created arp csap: %d", __FUNCTION__, arp_csap);
+    INFO("%s(): created arp csap: %d", __FUNCTION__, arp_csap);
 
     rc = tapi_tcp_ip4_eth_csap_create(agt, rcv_sid, local_iface,
                                       local_mac, remote_mac,
@@ -711,7 +711,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     tapi_tcp_insert_conn(conn_descr); 
     *handler = conn_descr->id;
 
-    RING("%s(): init TCP connection started, id %d, our ISN %u",
+    INFO("%s(): init TCP connection started, id %d, our ISN %u",
          __FUNCTION__, conn_descr->id, conn_descr->our_isn);
 
     /* make template for this connection */
@@ -791,13 +791,13 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
 
     if (rc == TE_ETIMEDOUT && !is_server)
     {
-        RING("%s(): re-send SYN", __FUNCTION__);
+        INFO("%s(): re-send SYN", __FUNCTION__);
         conn_send_syn(conn_descr);
         rc = conn_wait_msg(conn_descr, timeout);
 
         if (rc == TE_ETIMEDOUT)
         {
-            RING("%s(): re-send SYN again", __FUNCTION__);
+            INFO("%s(): re-send SYN again", __FUNCTION__);
             conn_send_syn(conn_descr);
             rc = conn_wait_msg(conn_descr, timeout);
         }
@@ -893,7 +893,7 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
 #else
     new_ackn = conn_descr->ack_sent;
 #endif
-    RING("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
+    INFO("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
     tapi_tcp_template(conn_next_seq(conn_descr), new_ackn, FALSE, TRUE, 
                       NULL, 0, &fin_template);
 
@@ -919,14 +919,14 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
 #endif
     conn_update_sent_seq(conn_descr, 1);
 
-    RING("fin sent");
+    INFO("fin sent");
     rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
                       conn_descr->rcv_csap, &num);
     if (conn_descr->ack_got != conn_descr->seq_sent + 1)
     {
         if (conn_descr->reset_got)
         {
-            RING("%s(conn %d) got reset", __FUNCTION__, handler);
+            INFO("%s(conn %d) got reset", __FUNCTION__, handler);
         }
         else
         {
@@ -1029,7 +1029,12 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
             break;
 
         case TAPI_TCP_AUTO:
-            return TE_EOPNOTSUPP; /* this is very hard to support */
+            /* make very simple ack: last sent one. */
+            new_ack = conn_descr->ack_sent;
+            break;
+
+        default:
+            return TE_EINVAL;
     }
 
     rc = tapi_tcp_template(new_seq, new_ack, FALSE, (new_ack != 0), 
@@ -1118,13 +1123,13 @@ tapi_tcp_recv_msg(tapi_tcp_handler_t handler, int timeout,
         if (flags != NULL)
             *flags = msg->flags;
 
-        RING("%s(conn %d): msg with seq %u, ack %u, len %d, flags 0x%X",
+        INFO("%s(conn %d): msg with seq %u, ack %u, len %d, flags 0x%X",
              __FUNCTION__, handler,
              msg->seqn, msg->ackn, msg->len, msg->flags);
         if (ack_mode == TAPI_TCP_AUTO)
         {
             if (msg->len == 0)
-                RING("%s(conn %d): do not send ACK to msg with zero len",
+                INFO("%s(conn %d): do not send ACK to msg with zero len",
                      __FUNCTION__, handler);
             else
                 tapi_tcp_send_ack(handler, msg->seqn + msg->len);
@@ -1260,7 +1265,7 @@ conn_next_ack(tapi_tcp_connection_t *conn_descr)
     if (conn_descr == NULL)
         return 0;
 
-    RING("%s(conn %d) seq got %u; last len got = %d;", 
+    INFO("%s(conn %d) seq got %u; last len got = %d;", 
          __FUNCTION__, conn_descr->id, 
          conn_descr->seq_got, conn_descr->last_len_got);
 
