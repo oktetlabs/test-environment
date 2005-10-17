@@ -751,8 +751,7 @@ trc_update_iters(test_iters *iters)
                 xmlNewProp(arg, BAD_CAST "name", BAD_CAST a->name);
             }
             node = xmlNewChild(p->tests.node, NULL,
-                               BAD_CAST "notes",
-                               BAD_CAST "");
+                               BAD_CAST "notes", NULL);
             if (node == NULL)
             {
                 ERROR("xmlNewChild() failed for 'notes'");
@@ -810,7 +809,7 @@ trc_update_tests(test_runs *tests)
                 return ENOMEM;
             }
             node = xmlNewChild(p->iters.node, NULL,
-                               BAD_CAST "notes", BAD_CAST "");
+                               BAD_CAST "notes", NULL);
             if (node == NULL)
             {
                 ERROR("xmlNewChild() failed for 'notes'");
