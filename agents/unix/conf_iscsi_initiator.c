@@ -60,34 +60,43 @@
 #define IVERB VERB
 #endif
 
+/** Maximum length of the (initiator|target)(name|alias) */
 #define MAX_NAME_LENGTH 256
 
-/* Yes or No */
+/** Maximum address length */
+#define MAX_ADDR_LENGTH 20
+
+/** Yes or No */
 #define YES_NO_LENGTH 4
 
-/* CHAP or None or CHAP,None */
+/** CHAP or None or CHAP,None */
 #define AUTH_METHOD_LENGTH 11
 
-/* Normal or Discovery */
+/** Normal or Discovery */
 #define SESSION_TYPE_LENGTH 10
 
-/* HeaderDigest length CRC32,None */
-#define HEADER_DIGEST_LENGTH 15
+/** HeaderDigest length CRC32R,None */
+#define DIGEST_LENGTH 15
 
-/* Maximum length of the list of cids of the initiator */
+/** Maximum length of the list of cids of the initiator */
 #define MAX_CID_LIST_LENGTH 100
 
-/* Maximum length of the CLI command */
+/** Maximum length of the CLI command */
 #define MAX_CMD_SIZE 1024
 
-/* Length of the peer_secret, peer_name, local_secret, local_name */
+/** Length of the peer_secret, peer_name, local_secret, local_name */
 #define SECURITY_COMMON_LENGTH 256
 
-/* Maximum number of targets the Initiator can connect to */
+/** Maximum number of targets the Initiator can connect to */
 #define MAX_TARGETS_NUMBER 3
 
+/** Default targets port */
 #define ISCSI_TARGET_DEFAULT_PORT 3260
 
+/* 
+ * List of default parameters, used during initialization of
+ * the target_data
+ */
 #define DEFAULT_TARGET_NAME                  "iqn.2004-01.com:0"
 #define DEFAULT_MAX_CONNECTIONS              1
 #define DEFAULT_INITIAL_R2T                  "Yes"
@@ -106,11 +115,27 @@
 #define DEFAULT_SESSION_TYPE                 "Normal"
 #define DEFAULT_CHAP                         "None"
 #define DEFAULT_CHALLENGE_LENGTH             256
-
-#define DEFAULT_HOST_BUS_ADAPTER            0
-#define DEFAULT_INITIATOR_NAME              "iqn.1999-11.edu.unh.iol.iscsi-initiator"
+#define DEFAULT_INITIATOR_NAME \
+    "iqn.1999-11.edu.unh.iol.iscsi-initiator"
 #define DEFAULT_INITIATOR_ALIAS             "UNH"
 
+/** 
+ * Host bus adapter default value. If
+ * the Initiator is the only scsi device on the
+ * system and it is loaded the first time since
+ * the last reboot than it is zero.
+ */
+#define DEFAULT_HOST_BUS_ADAPTER            0
+
+/**
+ * Flags:
+ * the following assumption holds:
+ * if parameter of the local Initiator structure 
+ * was untouched than it should not be synchronized
+ * with the Initiator. Than the Initiator uses the
+ * default parameter and MAY NOT offer the parameter
+ * during the negotiations.
+ */
 #define OFFER_MAX_CONNECTIONS                   (1 << 0)
 #define OFFER_INITIAL_R2T                       (1 << 1)
 #define OFFER_HEADER_DIGEST                     (1 << 2)
@@ -126,83 +151,123 @@
 #define OFFER_DATA_SEQUENCE_IN_ORDER            (1 << 12)
 #define OFFER_ERROR_RECOVERY_LEVEL              (1 << 13)
 
+/**
+ * Types of the Initiator to configure.
+ * The default type of the Initiator is UNH.
+ * The type of the Initiator can be changed via
+ * Configurator.
+ */
 typedef enum {
-    UNH,
-    L5,
+    UNH,       /**< UNH Initiator (GPL 2) */
+    L5,        /**< Level 5 Networks */
     MICROSOFT,
 } iscsi_initiator_type;
 
-/* Encoding of challange and response */
+/** Encoding of challenge and response */
 typedef enum {
-    BASE_16,
-    BASE_64
+    BASE_16,   /**< Base 16 encoding */
+    BASE_64,   /**< Base 64 encoding */
 } enc_fmt_e;
 
+/**
+ * Security related data.
+ * This structure is per target structure.
+ * The current supported security protocol
+ * is CHAP.
+ */
 typedef struct iscsi_tgt_chap_data {
-    char        chap[AUTH_METHOD_LENGTH];
-
-    enc_fmt_e   enc_fmt;
-    int         challenge_length;
-    char        peer_name[SECURITY_COMMON_LENGTH];
-    char        local_secret[SECURITY_COMMON_LENGTH];
-
-    te_bool target_auth;
-    char peer_secret[SECURITY_COMMON_LENGTH];
-    char local_name[SECURITY_COMMON_LENGTH];
+    char        chap[AUTH_METHOD_LENGTH];  /**< AuthMethod: 
+                                                (None|CHAP|CHAP,None) */
+    enc_fmt_e   enc_fmt;                   /**< Encoding of challenge
+                                                and response */
+    int         challenge_length;          /**< Length of the challenge */
+    
+    char        peer_name[SECURITY_COMMON_LENGTH]; /**< Peer Name (pn in UNH
+                                                        notation) */
+    char        peer_secret[SECURITY_COMMON_LENGTH]; /**< Peer Secret (px in
+                                                          UNH notation) */
+    
+    char        local_name[SECURITY_COMMON_LENGTH]; /**< Local Name (ln in UNH
+                                                         notation) */
+    char        local_secret[SECURITY_COMMON_LENGTH]; /**< Local Secret (lx in
+                                                           UNH Notation */
+    te_bool     target_auth; /**< If TRUE than Target authentication is
+                                  required during the Security Phase */
 } iscsi_tgt_chap_data_t;
 
+/**
+ * Per target data of the Initiator.
+ * Most of the fields correspond to operational parameters
+ * with the same name. See RFC3260 for allowed values.
+ */
 typedef struct iscsi_target_data {
-    int               target_id;
+    int               target_id; /**< Id of the Target */
     te_bool           is_active;
     
-    int               conf_params;
+    int               conf_params; /**< OR of OFFER_XXX flags */
 
-    char              initiator_name[MAX_NAME_LENGTH];
-    char              initiator_alias[MAX_NAME_LENGTH];
-    /* Target parameters */
-    char              target_name[MAX_NAME_LENGTH];
-    /* TODO: here the struct sockaddr should be used */
-    char              target_addr[MAX_NAME_LENGTH];
-    int               target_port;
+    char              initiator_name[MAX_NAME_LENGTH]; /**< InitiatorName */ 
+    char              initiator_alias[MAX_NAME_LENGTH]; /**< InitiatorAlias */
 
-    /* Initiator parameters */
-    int               max_connections;
-    char              initial_r2t[YES_NO_LENGTH];
-    char              header_digest[HEADER_DIGEST_LENGTH];
-    char              data_digest[HEADER_DIGEST_LENGTH];
-    char              immediate_data[YES_NO_LENGTH];
+    char              target_name[MAX_NAME_LENGTH];  /**< TargetName */
+    char              target_addr[MAX_ADDR_LENGTH];  /**< TargetAddr */
+    int               target_port;                   /**< TargetPort */
+
+    int               max_connections;               /**< MaxConnections */
+    char              initial_r2t[YES_NO_LENGTH];    /**< InitialR2T */
+    char              header_digest[DIGEST_LENGTH];  /**< HeaderDigest */
+    char              data_digest[DIGEST_LENGTH];    /**< DataDigest */
+    char              immediate_data[YES_NO_LENGTH]; /**< ImmediateData */
+    /** MaxRecvDataSegmentLength */
     int               max_recv_data_segment_length;
-    int               first_burst_length;
-    int               max_burst_length;
-    int               default_time2wait;
-    int               default_time2retain;
-    int               max_outstanding_r2t;
-    char              data_pdu_in_order[YES_NO_LENGTH];
+    int               first_burst_length; /**< FirstBurstLength */
+    int               max_burst_length;   /**< MaxBurstLength 
+                                               (>= FirstBurstLength) */
+    int               default_time2wait;  /**< DefaultTime2Wait */
+    int               default_time2retain; /**< DefaultTime2Retain */
+    int               max_outstanding_r2t; /**< MaxOutstandingR2T */
+    char              data_pdu_in_order[YES_NO_LENGTH]; /**< DataPDUInOrder */
+    /** DataSequenceInOrder */
     char              data_sequence_in_order[YES_NO_LENGTH];
-    int               error_recovery_level;
-    char              session_type[SESSION_TYPE_LENGTH];
+    int               error_recovery_level; /**< ErrorRecoveryLevel */
+    char              session_type[SESSION_TYPE_LENGTH]; /**< SessionType */
 
-    iscsi_tgt_chap_data_t chap;
+    iscsi_tgt_chap_data_t chap; /**< Serurity related data */
 
 } iscsi_target_data_t;
 
-/* Auxiliary variables used for during configuration request processing */
+/**
+ * Initiator data structure.
+ * Contains general information about the Initiator and
+ * per target data.
+ */
 typedef struct iscsi_initiator_data {
-    /* Auxiliary data of the initiator */
-    iscsi_initiator_type  init_type;
+    iscsi_initiator_type  init_type; /**< Type of the Initiator */
 
-    char                  last_cmd[MAX_CMD_SIZE];
+    char                  last_cmd[MAX_CMD_SIZE]; /**< Last cmd received by
+                                                       the Initiator */
 
-    int                   host_bus_adapter;    
+    int                   host_bus_adapter;  /**< Number of the host bus 
+                                                  adapter. Usually 0 */
     char                  script_path[MAX_CMD_SIZE];
     
-    iscsi_target_data_t   targets[MAX_TARGETS_NUMBER];
+    iscsi_target_data_t   targets[MAX_TARGETS_NUMBER]; /**< Per target data */
 } iscsi_initiator_data_t;
 
 
-/* List of all targets on this agent */
-iscsi_initiator_data_t *init_data;
+/** Initiator data */
+static iscsi_initiator_data_t *init_data;
 
+/**
+ * Function returns target ID from the name of the
+ * instance:
+ * /agent:Agt_A/iscsi_initiator:/target_data:target_x/...
+ * the target id is 'x'
+ *
+ * @param oid    The full name of the instance
+ *
+ * @return ID of the target
+ */
 static int
 iscsi_get_target_id(const char *oid)
 {
@@ -215,6 +280,13 @@ iscsi_get_target_id(const char *oid)
     return atoi(c);
 }
 
+/**
+ * Function initalize default parameters:
+ * operational parameters and security parameters.
+ *
+ * @param tgt_data    Structure of the target data to
+ *                    initalize.
+ */
 void
 iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
 {
@@ -247,7 +319,6 @@ iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
     tgt_data->chap.target_auth = FALSE;
     *(tgt_data->chap.peer_secret) = '\0';
     *(tgt_data->chap.local_name) = '\0';
-
     strcpy(tgt_data->chap.chap, "None");
     tgt_data->chap.enc_fmt = BASE_16;
     tgt_data->chap.challenge_length = DEFAULT_CHALLENGE_LENGTH;
@@ -255,16 +326,21 @@ iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
     *(tgt_data->chap.local_secret) = '\0';
 }
 
+/** Configure all targets (id: 0..MAX_TARGETS_NUMBER */
+#define ISCSI_CONF_ALL_TARGETS -1
+
+/** Configure only general Initiator data */
+#define ISCSI_CONF_NO_TARGETS -2
+
 /**
- * Function configures init_data and target number i.
- * If i == -1 it configures all targets with default parameters.
+ * Function configures the Initiator.
+ *
+ * @param how     ISCSI_CONF_ALL_TARGETS or ISCSI_CONF_NO_TARGETS
+ *                or ID of the target to configure with the Initiator.
+ *                The target is Initalized with default parameters.
  */
-
-#define CONF_ALL_TARGETS -1
-#define CONF_NO_TARGETS -2
-
 static void
-iscsi_init_default_ini_parameters(int i)
+iscsi_init_default_ini_parameters(int how)
 {
     init_data = malloc(sizeof(iscsi_initiator_data_t));
     memset(init_data, 0, sizeof(init_data));
@@ -275,7 +351,7 @@ iscsi_init_default_ini_parameters(int i)
     init_data->init_type = UNH;
     init_data->host_bus_adapter = DEFAULT_HOST_BUS_ADAPTER;
     
-    if (i == CONF_NO_TARGETS)
+    if (how == ISCSI_CONF_NO_TARGETS)
     {
         int j;
 
@@ -286,7 +362,7 @@ iscsi_init_default_ini_parameters(int i)
 
         VERB("No targets were configured");
     }
-    else if (i == CONF_ALL_TARGETS)
+    else if (how == ISCSI_CONF_ALL_TARGETS)
     {
         int j;
 
@@ -298,14 +374,13 @@ iscsi_init_default_ini_parameters(int i)
     }
     else
     {
-         iscsi_init_default_tgt_parameters(&init_data->targets[i]);
-         init_data->targets[i].target_id = i;
+         iscsi_init_default_tgt_parameters(&init_data->targets[how]);
+         init_data->targets[how].target_id = how;
     }
 }
 
 /**
- * Returns list of the CIDs of all open connections:
- * "5 3 2 6"
+ * Returns the last command received by the Initiator.
  */
 static int
 iscsi_initiator_get(const char *gid, const char *oid,
@@ -320,6 +395,14 @@ iscsi_initiator_get(const char *gid, const char *oid,
     return 0;
 }
 
+/**
+ * Executes te_shell_cmd() function.
+ *
+ * @param cmd    format of the command followed by
+ *               parameters
+ *
+ * @return errno
+ */
 static int
 te_shell_cmd_ex(const char *cmd, ...)
 {
@@ -334,7 +417,14 @@ te_shell_cmd_ex(const char *cmd, ...)
     return te_shell_cmd(cmdline, -1, NULL, NULL) > 0 ? 0 : -1;
 }
 
-static int
+/**
+ * Executes ta_system.
+ *
+ * @param cmd    format of the command followed by parameters
+ *
+ * @return -1 or result of the ta_system
+ */
+    static int
 ta_system_ex(const char *cmd, ...)
 {
     char   *cmdline;
@@ -364,6 +454,13 @@ ta_system_ex(const char *cmd, ...)
     return WIFEXITED(status) ? 0 : -1;
 }
 
+/**
+ * Checks return code of the configuration
+ * of the Initiator. If it is not zero calls return;
+ *
+ * @param rc_         return code
+ * @param parameter_  name of the parameter which was configured
+ */
 #define CHECK_SHELL_CONFIG_RC(rc_, parameter_) \
     do {                                                                    \
         if (rc_ != 0)                                                       \
@@ -375,7 +472,6 @@ ta_system_ex(const char *cmd, ...)
     } while (0)
 
 /****** L5 Initiator specific stuff  ****/
-
 typedef struct iscsi_target_param_descr_t
 {
     uint32_t offer;
@@ -544,28 +640,41 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
     return 0;
 }
 
-/****** UNH Initiator specific stuff ****/
+/** Format of the set command for UNH Initiator */
 static const char *conf_iscsi_unh_set_fmt =
-    "iscsi_manage init set %s=%s target=%d host=%d";
+"iscsi_manage init set %s=%s target=%d host=%d";
 
+/** Format of the set int value command for UNH Initiator */
 static const char *conf_iscsi_unh_set_int_fmt =
-    "iscsi_manage init set %s=%d target=%d host=%d";
+"iscsi_manage init set %s=%d target=%d host=%d";
 
+/** Format of the force command for UNH Initiator */
 static const char *conf_iscsi_unh_force_fmt =
-    "iscsi_manage init force %s=%s target=%d host=%d";
+"iscsi_manage init force %s=%s target=%d host=%d";
 
+/** 
+ * Format of the force string command for UNH Initiator.
+ * The string value is written in notation : "...".
+ */
 static const char *conf_iscsi_unh_force_string_fmt =
-    "iscsi_manage init force %s=\"%s\" target=%d host=%d";
-    
+"iscsi_manage init force %s=\"%s\" target=%d host=%d";
+
+/** Format of the set int value command for UNH Initiator */
 static const char *conf_iscsi_unh_force_int_fmt =
-    "iscsi_manage init force %s=%d target=%d host=%d";
+"iscsi_manage init force %s=%d target=%d host=%d";
 
+/** Format of the force for flag command for UNH Initiator */
 static const char *conf_iscsi_unh_force_flag_fmt =
-    "iscsi_manage init force %s target=%d host=%d";
+"iscsi_manage init force %s target=%d host=%d";
 
-static const char *conf_iscsi_unh_unset_flag_fmt =
-    "iscsi_manage init unset %s target=%d host=%d";
-
+/**
+ * Sets parameter of the UNH Initiator.
+ *
+ * @param param_     Name of the parameter
+ * @param value_     New value of the parameter
+ * @param target_id_ ID of the target for which the parameter
+ *                   is set.
+ */
 #define ISCSI_UNH_SET(param_, value_, target_id_) \
     do {                                                                    \
         IVERB("ISCSI_UNH_SET(%s,0x%x,%d)\n",                                \
@@ -577,6 +686,14 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
             (param_));                                                      \
     } while (0)
 
+/**
+ * Sets int parameter of the UNH Initiator.
+ *
+ * @param param_     Name of the parameter
+ * @param value_     New value of the parameter
+ * @param target_id_ ID of the target for which the parameter
+ *                   is set.
+ */
 #define ISCSI_UNH_SET_INT(param_, value_, target_id_) \
     do {                                                                    \
         IVERB("ISCSI_UNH_SET_INT(%s,0x%x,%d)\n",                            \
@@ -587,7 +704,15 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                          init_data->host_bus_adapter),                      \
             (param_));                                                      \
     } while (0)
-
+/**
+ * "Forces" parameter of the UNH Initiator.
+ * Is used for the security parameter due to the UNH notation.
+ *
+ * @param param_     Name of the parameter
+ * @param value_     New value of the parameter
+ * @param target_id_ ID of the target for which the parameter
+ *                   is set.
+ */
 #define ISCSI_UNH_FORCE(param_, value_, target_id_, info_) \
     do {                                                                    \
         IVERB("ISCSI_UNH_FORCE(%s,0x%x,%d)\n",                              \
@@ -598,7 +723,17 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                          init_data->host_bus_adapter),                      \
             (info_));                                                       \
     } while (0)
-    
+
+/**
+ * "Forces" string parameter of the UNH Initiator.
+ * Is called when the parameter should be passed in '"'.
+ * Is used for the security parameter due to the UNH notation.
+ *
+ * @param param_     Name of the parameter
+ * @param value_     New value of the parameter
+ * @param target_id_ ID of the target for which the parameter
+ *                   is set.
+ */
 #define ISCSI_UNH_FORCE_STRING(param_, value_, target_id_, info_) \
     do {                                                                    \
         IVERB("ISCSI_UNH_FORCE(%s,0x%x,%d)\n",                              \
@@ -609,7 +744,15 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
                          init_data->host_bus_adapter),                      \
             (info_));                                                       \
     } while (0)
-
+/**
+ * "Forces" int parameter of the UNH Initiator.
+ * Is used for the security parameter due to the UNH notation.
+ *
+ * @param param_     Name of the parameter
+ * @param value_     New value of the parameter
+ * @param target_id_ ID of the target for which the parameter
+ *                   is set.
+ */
 #define ISCSI_UNH_FORCE_INT(param_, value_, target_id_, info_) \
     do {                                                                    \
         IVERB("ISCSI_UNH_FORCE_INT(%s,0x%x,%d)\n",                          \
@@ -621,6 +764,15 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
             (info_));                                                       \
     } while (0)
 
+/**
+ * "Forces" flag parameter of the UNH Initiator.
+ * Is used for the security parameter due to the UNH notation.
+ *
+ * @param param_     Name of the parameter
+ * @param value_     New value of the parameter
+ * @param target_id_ ID of the target for which the parameter
+ *                   is set.
+ */
 #define ISCSI_UNH_FORCE_FLAG(flag_, target_id_, info_) \
     do {                                                                    \
         IVERB("ISCSI_UNH_FORCE_FLAG(%s,%d)\n",                              \
@@ -632,19 +784,16 @@ static const char *conf_iscsi_unh_unset_flag_fmt =
             (info_));                                                       \
     } while (0)
 
-#define ISCSI_UNH_UNSET_FLAG(flag_, target_id_, info_) \
-    do {                                                                    \
-        IVERB("ISCSI_UNH_UNSET_FLAG(%s,%d)\n",                              \
-                flag_, target_id_);                                         \
-        CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_unset_flag_fmt, (flag_),            \
-                         (target_id_),                                      \
-                         init_data->host_bus_adapter),                      \
-            (info_));                                                       \
-    } while (0)
-
-
-
+/**
+ * Parses the command received by the Initiator and retreives
+ * connection ID and target ID from it.
+ *
+ * @param cmdline     Comman to retreive from
+ * @param cid         (OUT) Connection ID
+ * @param target      (OUT) Target ID
+ * 
+ * @return 0 or errno
+ */
 static int
 iscsi_get_cid_and_target(const char *cmdline, int *cid, int *target)
 {
@@ -677,11 +826,13 @@ iscsi_get_cid_and_target(const char *cmdline, int *cid, int *target)
 }
 
 /**
+ * Handles set command for the Instance
+ * /agent:Agt_X/iscsi_initiator:
+ * 
  * Format of the value:
  * up 5 7 - establish the connection with id = 5 and target 7
  * down 5 3- destroy the connection with id = 5 and target 3
  */
-/* TODO: write normal handler */
 static int
 iscsi_initiator_unh_set(const char *value)
 {
@@ -788,11 +939,6 @@ iscsi_initiator_unh_set(const char *value)
         ISCSI_UNH_FORCE_FLAG("t", target_id,
                              "Target Authentication");
     }
-    else
-    {
-        ISCSI_UNH_UNSET_FLAG("t", target_id,
-                             "Target Authentication");
-    }
 
     ISCSI_UNH_FORCE_STRING("px", target->chap.peer_secret, target_id,
                            "Peer Secret");
@@ -813,9 +959,6 @@ iscsi_initiator_unh_set(const char *value)
 
     if (target->chap.enc_fmt == BASE_64)
         ISCSI_UNH_FORCE_FLAG("b", target_id,
-                             "Encoding Format");
-    else
-        ISCSI_UNH_UNSET_FLAG("b", target_id,
                              "Encoding Format");
 
     ISCSI_UNH_FORCE_INT("cl", target->chap.challenge_length, target_id,
@@ -904,7 +1047,6 @@ iscsi_initiator_l5_set(const char *value)
     return 0;
 }
 
-
 static int
 iscsi_initiator_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -924,7 +1066,6 @@ iscsi_initiator_set(unsigned int gid, const char *oid,
     }
 }
 
-/* Operational parameters */
 /* AuthMethod */
 static int
 iscsi_initiator_chap_set(unsigned int gid, const char *oid,
@@ -2077,11 +2218,15 @@ RCF_PCH_CFG_NODE_RW(node_ds_iscsi_initiator, "iscsi_initiator",
                     iscsi_initiator_set);
 
 
+/**
+ * Function to register the /agent/iscsi_initiator
+ * object in the agent's tree.
+ */
 int
 ta_unix_iscsi_initiator_init(rcf_pch_cfg_object **last)
 {
     /* On Init there is only one target configured on the Initiator */
-    iscsi_init_default_ini_parameters(CONF_NO_TARGETS);
+    iscsi_init_default_ini_parameters(ISCSI_CONF_NO_TARGETS);
 
     DS_REGISTER(iscsi_initiator);
 
