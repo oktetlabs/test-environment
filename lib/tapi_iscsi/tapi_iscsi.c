@@ -904,7 +904,8 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
     va_list list;
 
     if ((key_index = 
-         tapi_iscsi_get_key_index_by_name(segment_data, key_name)) ==
+         tapi_iscsi_get_key_index_by_name(segment_data, 
+                                          (char *)key_name)) ==
             TAPI_ISCSI_KEY_INVALID)
     {
         ERROR("%s, %d: No key with %s name",
@@ -1022,13 +1023,11 @@ tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
 
     int                key_index;
     iscsi_key_values   key_values;
-    int                key_values_num;
-    int                key_values_index;
-    int                i = 0;
 
 
     if ((key_index =
-         tapi_iscsi_get_key_index_by_name(segment_data, key_name)) ==
+         tapi_iscsi_get_key_index_by_name(segment_data, 
+                                          (char *)key_name)) ==
             TAPI_ISCSI_KEY_INVALID)
     {
         ERROR("%s, %d: No key with %s name",
@@ -1044,7 +1043,7 @@ tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
         return -1;
     }
 
-    rc = asn_sprint_value(key_values, buf, buf_len, 0);
+    rc = asn_sprint_value(key_values, (char *)buf, buf_len, 0);
     return rc;
 }
 
@@ -1112,6 +1111,41 @@ tapi_iscsi_target_customize(const char *ta, int id,
         (remote_rc ? TE_RC(TE_TAPI, TE_ESRCH) : 0);
 }
 
+/* Initiator configuration */
+static char *log_mapping[] = {
+        "HeaderDigest:",
+        "DataDigest:",
+        "MaxConnections:",
+        "",
+        "TargetName:",
+        "InitiatorName:",
+        "TargetAlias:",
+        "InitiatorAlias:",
+        "TargetAddr:",
+        "TargetPort:",
+        "InitialR2T:",
+        "ImmediateData:",
+        "MaxRecvDataSegmentLength:",
+        "MaxBurstLength:",
+        "FirstBurstLength:",
+        "DefaultTime2Wait:",
+        "DefaultTime2Retain:",
+        "MaxOutstandingR2T:",
+        "DataPDUInOrder:",
+        "DataSequenceInOrder:",
+        "ErrorRecoveryLevel:",
+        "SessionType:",
+        NULL,
+        "LocalSecret:",
+        "LocalName:",
+        "PeerSecret:",
+        "PeerName:",
+        "ChallengeLength:",
+        "EncFmt:",
+        "TargetAuth:",
+        "AuthMethod:"
+    };
+
 
 int 
 tapi_iscsi_initiator_set_parameter(const char *ta,
@@ -1156,10 +1190,10 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     assert(ta != NULL);
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
-#if 1
-    WARN("/agent:%s/iscsi_initiator:/target_data:"
-        "target_%d/%s = %s", ta, target_id, mapping[param], value);
-#endif
+    
+    RING("Set %s (%s, target=%d) to %s", log_mapping[param], 
+         ta, target_id, value);
+
     return cfg_set_instance_fmt(CVT_STRING, value,
                           "/agent:%s/iscsi_initiator:/target_data:"
                           "target_%d/%s",
