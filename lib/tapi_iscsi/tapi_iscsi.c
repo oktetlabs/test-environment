@@ -1153,6 +1153,8 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
                                    tapi_iscsi_parameter param,
                                    const char *value)
 {
+    int rc = -1;
+    
     static char *mapping[] = {
         "header_digest:",                         /* - */
         "data_digest:",                           /* - */
@@ -1194,10 +1196,17 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     RING("Set %s (%s, target=%d) to %s", log_mapping[param], 
          ta, target_id, value);
 
-    return cfg_set_instance_fmt(CVT_STRING, value,
-                          "/agent:%s/iscsi_initiator:/target_data:"
-                          "target_%d/%s",
-                          ta, target_id, mapping[param]);
+    rc = cfg_set_instance_fmt(CVT_STRING, value,
+                              "/agent:%s/iscsi_initiator:/target_data:"
+                              "target_%d/%s",
+                              ta, target_id, mapping[param]);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to set %s parameter to %s, rc = %d (%r)",
+              log_mapping[param], value, rc, rc);
+    }
+    return rc;
 }
 
 #define MAX_INI_CMD_SIZE 10
@@ -1229,16 +1238,22 @@ tapi_iscsi_initiator_conn_del(const char *ta,
                               iscsi_cid cid)
 {
     char cmd[MAX_INI_CMD_SIZE];
+    int  rc;
 
     cmd[0] = 0;
     sprintf(cmd, "down %d %d", cid, tgt_id);
 
-    return cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
-                                "/agent:%s/iscsi_initiator:",
-                                ta);
+    rc = cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
+                              "/agent:%s/iscsi_initiator:",
+                              ta);
+    if (rc != 0)
+    {
+        ERROR("Failed to delete connection with id %d from target %d",
+              cid, tgt_id);
+    }
+    return rc;
 }
 
-/* TODO: fix this */
 iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
                                 const struct sockaddr *target_addr)
 {
@@ -1261,8 +1276,8 @@ iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
             return -EINVAL;
     }
 
-    RING("Initiator add Target: addr=%s, port=%d",
-         target_addr_param, target_port);
+    RING("Initiator (%s): add Target: addr=%s, port=%d",
+         ta, target_addr_param, target_port);
     
     rc = cfg_add_instance_fmt(&handle, CVT_STRING,
                         "",
@@ -1297,7 +1312,8 @@ iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
     
     iscsi_current_cid[(int)iscsi_current_target] = 0;
     
-    VERB("Target with ID=%d added", iscsi_current_target);
+    VERB("Target with ID=%d added to Initiator on agent %s", 
+         iscsi_current_target, ta);
     return (iscsi_current_target++);
 }
 
@@ -1316,7 +1332,13 @@ tapi_iscsi_initiator_del_target(const char *ta,
         return rc;
     }
 
-    return cfg_del_instance(handle, FALSE);
+    rc = cfg_del_instance(handle, FALSE);
+    if (rc != 0)
+    {
+        ERROR("Failed to delete target with ID %d from agent %s",
+              tgt_id, ta);
+    }
+    return rc;
 }
 
 tapi_iscsi_parameter
