@@ -3179,8 +3179,6 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
     int                  family;
     struct in6_addr      addr_any = IN6ADDR_ANY_INIT;
 
-    char                 sss[46];
-
     UNUSED(who);
 
     if (user_data->filled)

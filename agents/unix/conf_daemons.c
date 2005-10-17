@@ -34,9 +34,9 @@
 
 
 /** Maximum number of attempts to wait a daemon in expected state */
-#define TA_UNIX_DAEMON_WAIT_ATTEMPTS    100
-/** Time to wait between checks of the daemon state */
-#define TA_UNIX_DAEMON_WAIT_USEC        100000
+#define TA_UNIX_DAEMON_WAIT_ATTEMPTS    1000
+/** Time to wait between checks of the daemon state, in milliseconds */
+#define TA_UNIX_DAEMON_WAIT_MSEC        10
 
 
 /* Array of daemons/services names */
@@ -459,7 +459,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
          (*value0 != *value) && (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
          ++attempt)
     {
-        USLEEP(TA_UNIX_DAEMON_WAIT_USEC);
+        msleep(TA_UNIX_DAEMON_WAIT_USEC);
     }
     if (*value0 != *value)
     {
