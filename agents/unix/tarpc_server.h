@@ -396,13 +396,14 @@ check_args(checked_arg *list)
     do {                                                         \
         struct timeval t_start;                                  \
         struct timeval t_finish;                                 \
-        int           _rc;                                       \
+        int            _rc;                                      \
+        int            _errno_save = errno;                      \
                                                                  \
         WAIT_START(in->common.start);                            \
         VERB("Calling: %s" , #x);                                \
         gettimeofday(&t_start, NULL);                            \
-        errno = 0;                                               \
         x;                                                       \
+        out->common.errno_changed = (_errno_save != errno);      \
         out->common._errno = RPC_ERRNO;                          \
         gettimeofday(&t_finish, NULL);                           \
         out->common.duration =                                   \
