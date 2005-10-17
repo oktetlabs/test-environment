@@ -706,11 +706,8 @@ get_delay_by_oid(const char *oid)
             strcmp(tmp->val.val_str, oid_obj) == 0)
         {
             for (tmp = tmp->son; tmp != NULL; tmp = tmp->brother)
-                if (*(tmp->val.val_str) == 0 || 
-                    strcmp(tmp->val.val_str, ta) == 0)
-                {
+                if (*tmp->name == 0 || strcmp(tmp->name, ta) == 0)
                     return tmp->val.val_int;
-                }
                 
             return 0;
         }
