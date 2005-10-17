@@ -565,7 +565,7 @@ ipc_init_client(const char *name, struct ipc_client **p_client)
         if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
         {
             rc = errno;
-            fprintf(stderr, "IPC client '%s' init failed: bind(): %s",
+            fprintf(stderr, "IPC client '%s' init failed: bind(): %s\n",
                     name, strerror(rc));
             close(s);
             return TE_OS_RC(TE_IPC, rc);
