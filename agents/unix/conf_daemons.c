@@ -35,8 +35,8 @@
 
 /** Maximum number of attempts to wait a daemon in expected state */
 #define TA_UNIX_DAEMON_WAIT_ATTEMPTS    1000
-/** Time to wait between checks of the daemon state, in milliseconds */
-#define TA_UNIX_DAEMON_WAIT_MSEC        10
+/** Time to wait between checks of the daemon state, in microseconds */
+#define TA_UNIX_DAEMON_WAIT_USEC        10000
 
 
 /* Array of daemons/services names */
@@ -459,7 +459,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
          (*value0 != *value) && (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
          ++attempt)
     {
-        msleep(TA_UNIX_DAEMON_WAIT_MSEC);
+        usleep(TA_UNIX_DAEMON_WAIT_USEC);
     }
     if (*value0 != *value)
     {
@@ -1852,7 +1852,7 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
              (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
              ++attempt)
         {
-            msleep(TA_UNIX_DAEMON_WAIT_MSEC);
+            usleep(TA_UNIX_DAEMON_WAIT_USEC);
         }
     }
     else
