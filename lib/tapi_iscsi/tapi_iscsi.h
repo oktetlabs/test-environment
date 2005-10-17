@@ -58,21 +58,7 @@
                  (value_)));                                        \
     } while (0)
 
-#define ISCSI_INITIATOR_SET_GLOBAL_PARAM_BY_NAME(ta_, param_name_,  \
-                                                 value_)            \
-    do {                                                            \
-        int param_id = tapi_iscsi_get_param_map(param_name_);       \
-                                                                    \
-        if (param_id < 0)                                           \
-            TEST_FAIL("Invalid parameter name used");               \
-                                                                    \
-        CHECK_RC(tapi_iscsi_initiator_set_global_parameter((ta_),   \
-                                                           param_id,\
-                                                          (value_)) \
-                );                                                  \
-    } while (0)
-
-#define ISCSI_INITIATOR_SET_LOCAL_PARAM_BY_NAME(ta_, target_id_,     \
+#define ISCSI_INITIATOR_SET_PARAM_BY_NAME(ta_, target_id_,           \
                                                 param_name_, value_) \
     do {                                                                \
         int param_id = tapi_iscsi_get_param_map(param_name_);           \
@@ -81,9 +67,9 @@
             TEST_FAIL("Invalid parameter name used");                   \
                                                                         \
         CHECK_RC(tapi_iscsi_initiator_set_parameter((ta_),              \
-                                                          (target_id_), \
-                                                          param_id,     \
-                                                          (value_)));   \
+                                                    (target_id_),       \
+                                                    param_id,           \
+                                                    (value_)));         \
     } while (0)
 
 
