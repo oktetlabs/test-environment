@@ -804,6 +804,17 @@ extern te_errno cfg_create_config(const char *name, te_bool history);
  */
 extern te_errno cfg_wait_changes(void);
 
+/**
+ * Notify the Configurator that instances matching OID template are
+ * touched by non-CS means (necesary for subsequent correct 
+ * cfg_wait_changes() processing).
+ *
+ * @param oid_tmpl      instance identifier format string (may contain
+ *                      '*' symbols)
+ *
+ * @return Status code (see te_errno.h)
+ */
+extern te_errno cfg_touch_instance(const char *oid_tmpl, ...);
 
 /**
  * Clean up resources allocated by Configurator API.

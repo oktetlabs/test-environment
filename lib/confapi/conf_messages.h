@@ -78,6 +78,8 @@ enum {
                         OUT: file name (for create) */
     CFG_CONFIG,    /**< Create configuration file:
                         IN: file name, history flag */
+    CFG_CONF_TOUCH,/**< Update conf_delay after touching the instance by
+                        non-CS means */                        
     CFG_CONF_DELAY,/**< Sleep conf_delay */                        
     CFG_SHUTDOWN   /**< Shutdown the Configurator */
 };
@@ -93,7 +95,7 @@ typedef struct cfg_msg {
     CFG_MSG_FIELDS
 } cfg_msg;
 
-/** Configurator message structure */
+/** CFG_REGISTER message content */
 typedef struct cfg_register_msg {
     CFG_MSG_FIELDS
     cfg_val_type  val_type; /**< Type of the object instance value */
@@ -106,42 +108,42 @@ typedef struct cfg_register_msg {
     char          oid[0];   /**< IN: start of the object identifier */
 } cfg_register_msg;
 
-/** Configurator message structure */
+/** CFG_FIND message content */
 typedef struct cfg_find_msg {
     CFG_MSG_FIELDS
     cfg_handle    handle;   /**< OUT: handle of found object */
     char          oid[0];   /**< In: start of the object identifier */
 } cfg_find_msg;
 
-/** Configurator message structure */
+/** CFG_GET_DESCR message content */
 typedef struct cfg_get_descr_msg {
     CFG_MSG_FIELDS
     cfg_handle    handle;   /**< IN: object handle */
     cfg_obj_descr descr;    /**< OUT: object description */
 } cfg_get_descr_msg;
 
-/** Configurator message structure */
+/** CFG_GET_OID message content */
 typedef struct cfg_get_oid_msg {
     CFG_MSG_FIELDS
     cfg_handle    handle;   /**< IN: object handle */
     char          oid[0];   /**< OUT: start of the object identifier */
 } cfg_get_oid_msg;
 
-/** Configurator message structure */
+/** CFG_GET_ID message content */
 typedef struct cfg_get_id_msg {
     CFG_MSG_FIELDS
     cfg_handle    handle;   /**< IN: object handle */
     char          id[0];    /**< OUT: start of the sub-identifier or name */
 } cfg_get_id_msg;
 
-/** Configurator message structure */
+/** CFG_PATTERN message content  */
 typedef struct cfg_pattern_msg {
     CFG_MSG_FIELDS
     char       pattern[0];  /**< IN: start of the pattern */
     cfg_handle handles[0];  /**< OUT: start of handles array */
 } cfg_pattern_msg;
 
-/** Configurator message structure */
+/** CFG_FAMILY message content  */
 typedef struct cfg_family_msg {
     CFG_MSG_FIELDS
     uint8_t who;            /**< IN: Family member to get */
@@ -154,7 +156,7 @@ typedef struct cfg_family_msg {
     cfg_handle    handle;   /**< Object handle (IN and OUT) */
 } cfg_family_msg;
 
-/** Configurator message structure */
+/** CFG_ADD message content  */
 typedef struct cfg_add_msg {
     CFG_MSG_FIELDS
     cfg_handle      handle;         /**< OUT: object instance handle */
@@ -167,13 +169,13 @@ typedef struct cfg_add_msg {
     int             val_int;        /**< int value */
 } cfg_add_msg;
 
-/** Configurator message structure */
+/** CFG_DEL message content  */
 typedef struct cfg_del_msg {
     CFG_MSG_FIELDS
     cfg_handle handle;  /**< IN: object to be deleted */
 } cfg_del_msg;
 
-/** Configurator message structure */
+/** CFG_SET message content  */
 typedef struct cfg_set_msg {
     CFG_MSG_FIELDS
     /* IN fields - should not be in answer */
@@ -185,13 +187,13 @@ typedef struct cfg_set_msg {
     int             val_int;     /**< int value */
 } cfg_set_msg;
 
-/** Configurator message structure */
+/** CFG_COMMIT message content  */
 typedef struct cfg_commit_msg {
     CFG_MSG_FIELDS
     char    oid[0];  /**< start of object identifier */
 } cfg_commit_msg;
 
-/** Configurator message structure */
+/** CFG_GET message content  */
 typedef struct cfg_get_msg {
     CFG_MSG_FIELDS
     te_bool         sync;        /**< Synchronization get */
@@ -202,14 +204,14 @@ typedef struct cfg_get_msg {
     int             val_int;     /**< int value */
 } cfg_get_msg;
 
-/** Configurator message structure */
+/** CFG_SYNC message content  */
 typedef struct cfg_sync_msg {
     CFG_MSG_FIELDS
     te_bool subtree;  /**< subtree synchronization*/
     char    oid[0];   /**< start of object identifier */
 } cfg_sync_msg;
 
-/** Configurator message structure */
+/** CFG_REBOOT message content  */
 typedef struct cfg_reboot_msg {
     CFG_MSG_FIELDS
     /* IN fields - should not be in the answer */
@@ -217,7 +219,7 @@ typedef struct cfg_reboot_msg {
     char    ta_name[0]; /**< start of Test Agent name*/
 } cfg_reboot_msg;
 
-/** Configurator message structure */
+/** CFG_BACKUP message content  */
 typedef struct cfg_backup_msg {
     CFG_MSG_FIELDS
     uint8_t op;            /**< Operation, always present */
@@ -235,14 +237,21 @@ typedef struct cfg_backup_msg {
     char    filename[0];  /**< IN or OUT depending on operation */
 } cfg_backup_msg;
 
-/** Configurator message structure */
+/** CFG_CONFIG message content  */
 typedef struct cfg_config_msg {
     CFG_MSG_FIELDS
     te_bool history;     /**< add to command history (if true) */
     char    filename[0]; /**< IN */
 } cfg_config_msg;
 
-/** Configurator message structure */
+/** CFG_CONF_TOUCH message content */
+typedef struct cfg_conf_touch_msg {
+    CFG_MSG_FIELDS
+    cfg_handle    handle;   /**< IN: object handle */
+    char          oid[0];   /**< IN: start of the instance identifier */
+} cfg_conf_touch_msg;
+
+/** CFG_SHUTDOWN message content */
 typedef struct cfg_shutdown_msg {
     CFG_MSG_FIELDS
 } cfg_shutdown_msg;

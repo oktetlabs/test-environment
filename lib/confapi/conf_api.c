@@ -2148,7 +2148,7 @@ cfg_api_cleanup(void)
 te_errno 
 cfg_wait_changes(void)
 {
-    cfg_config_msg *msg;
+    cfg_msg *msg;
 
     size_t  len = CFG_MSG_MAX;
     int     ret_val = 0;
@@ -2164,8 +2164,62 @@ cfg_wait_changes(void)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
-    msg = (cfg_config_msg *)cfgl_msg_buf;
+    msg = (cfg_msg *)cfgl_msg_buf;
     msg->type = CFG_CONF_DELAY;
+    msg->len = sizeof(*msg);
+
+    ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
+                                           CONFIGURATOR_SERVER,
+                                           msg, msg->len, msg, &len);
+    if (ret_val == 0)
+    {
+        ret_val = msg->rc;
+    }
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&cfgl_lock);
+#endif
+    return TE_RC(TE_CONF_API, ret_val);
+}
+
+/**
+ * Notify the Configurator that instances matching OID template are
+ * touched by non-CS means (necesary for subsequent correct 
+ * cfg_wait_changes() processing).
+ *
+ * @param oid_tmpl      instance identifier format string (may contain
+ *                      '*' symbols)
+ *
+ * @return Status code (see te_errno.h)
+ */
+te_errno 
+cfg_touch_instance(const char *oid_tmpl, ...)
+{
+    cfg_conf_touch_msg *msg;
+
+    size_t  len = CFG_MSG_MAX;
+    int     ret_val = 0;
+    va_list ap;
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_lock(&cfgl_lock);
+#endif
+    INIT_IPC;
+    if (cfgl_ipc_client == NULL)
+    {
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&cfgl_lock);
+#endif
+        return TE_RC(TE_CONF_API, TE_EIPC);
+    }
+    msg = (cfg_conf_touch_msg *)cfgl_msg_buf;
+    msg->type = CFG_CONF_TOUCH;
+
+    va_start(ap, oid_tmpl);
+    vsnprintf(msg->oid, sizeof(cfgl_msg_buf) - sizeof(*msg), oid_tmpl, ap);
+    va_end(ap);
+
+    msg->len = sizeof(*msg) + strlen(msg->oid) + 1;
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
                                            CONFIGURATOR_SERVER,
