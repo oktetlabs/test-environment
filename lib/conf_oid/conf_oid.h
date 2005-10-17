@@ -124,6 +124,30 @@ extern void cfg_free_oid(cfg_oid *oid);
  */
 extern int cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2);
 
+/**
+ * Convert instance identifier to object identifier.
+ *
+ * @param inst_oid       instance identifier
+ * @param obj_oid        object identifier (CFG_OID_MAX length)
+ */
+static inline void
+cfg_oid_inst2obj(const char *inst_oid, char *obj_oid)
+{
+    cfg_oid *oid = cfg_convert_oid_str(inst_oid);
+    
+    *obj_oid = 0;
+    
+    if (oid != NULL && oid->inst && oid->len > 1)
+    {
+        int i;
+        
+        for (i = 1; i < oid->len; i++)
+            obj_oid += sprintf(obj_oid, "/%s", 
+                               ((cfg_inst_subid *)(oid->ids))[i].subid);
+    }
+    
+    cfg_free_oid(oid);
+}
 
 #ifdef __cplusplus
 }
