@@ -29,7 +29,9 @@
 
 #include "te_config.h"
 
-//#define TCP_TRANSPORT
+#ifdef __CYGWIN__
+#define TCP_TRANSPORT
+#endif
 
 #include <stdio.h>
 #ifdef STDC_HEADERS
