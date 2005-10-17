@@ -687,21 +687,30 @@ static int
 get_delay_by_oid(const char *oid)
 {
     char ta[RCF_MAX_NAME];
+    char oid_obj[CFG_OID_MAX];
     int  i;
          
     if (!cfg_get_ta_name(oid, ta))
          return 0;
          
+    cfg_oid_inst2obj(oid, oid_obj);
+    
+    if (*oid_obj == 0)
+        return 0;
+        
     for (i = 0; i < cfg_all_inst_max; i++)
     {
         cfg_instance *tmp = cfg_all_inst[i];
         
         if (tmp != NULL && strcmp(tmp->obj->oid, "/conf_delay") == 0 &&
-            strcmp(tmp->val.val_str, oid) == 0)
+            strcmp(tmp->val.val_str, oid_obj) == 0)
         {
             for (tmp = tmp->son; tmp != NULL; tmp = tmp->brother)
-                if (*tmp->name == 0 || strcmp(tmp->name, ta) == 0)
+                if (*(tmp->val.val_str) == 0 || 
+                    strcmp(tmp->val.val_str, ta) == 0)
+                {
                     return tmp->val.val_int;
+                }
                 
             return 0;
         }
@@ -719,7 +728,7 @@ void
 cfg_conf_delay_update_str(const char *oid)
 {
     uint32_t delay = get_delay_by_oid(oid);
-
+    
     if (delay > cfg_conf_delay)
         cfg_conf_delay = delay;
 }
