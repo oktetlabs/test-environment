@@ -499,10 +499,14 @@ iscsi_write_param(FILE *destination,
     fputs(": ", destination);
     if (param->is_string)
     {
+        RING("Setting %s = %s", param->name, 
+             (char *)data + param->offset);
         fputs((char *)data + param->offset, destination);
     }
     else
     {
+        RING("Setting %s = %d", param->name,
+             *(int *)((char *)data + param->offset));
         fprintf(destination, "%d", 
                 *(int *)((char *)data + param->offset));
     }
@@ -513,8 +517,6 @@ static int
 iscsi_l5_write_target_params(FILE *destination, 
                              iscsi_target_data_t *target)
 {
-    uint32_t mask;
-    int idx;
     iscsi_target_param_descr_t *p;
 #define PARAMETER(field, offer, type) \
     {OFFER_##offer, #field, type, offsetof(iscsi_target_data_t, field)}
@@ -545,19 +547,11 @@ iscsi_l5_write_target_params(FILE *destination,
 
     AUTH_PARAM(chap, "AuthMethod", TRUE);
     
-    
-    for (idx = 0, mask = 1; mask != 0; mask <<= 1, idx++)
+    for (p = params; p->name != NULL; p++)
     {
-        if ((target->conf_params & mask) != 0)
+        if ((target->conf_params & p->offer) == p->offer)
         {
-            for (p = params; p->name != NULL; p++)
-            {
-                if (p->offer == mask)
-                {
-                    iscsi_write_param(destination, p, target);
-                    break;
-                }
-            }
+            iscsi_write_param(destination, p, target);
         }
     }
     WRITE_AUTH(chap);
