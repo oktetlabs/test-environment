@@ -338,7 +338,7 @@ cfg_sync_agt_volatile(const char *inst_name)
     if (!cfg_oid_match_volatile(inst_name, &ta))
         return 0;
         
-    TE_SPRINTF(oid, "/agent:%s", ta);
+    TE_SPRINTF(oid, CFG_TA_PREFIX"%s", ta);
     free(ta);
 
     return cfg_ta_sync(oid, TRUE);
@@ -408,7 +408,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (strcmp_start("/agent:", oid) != 0) /* Success */
+    if (strcmp_start(CFG_TA_PREFIX, oid) != 0) /* Success */
     {
         /*
          * Instance is not from agent subtree, but we set 'added'
@@ -566,7 +566,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (strncmp(inst->oid, "/agent:", strlen("/agent:")) != 0) /* Success */
+    if (strcmp_start(CFG_TA_PREFIX, inst->oid) != 0) /* Success */
     {
         cfg_types[obj->type].free(val);
         cfg_types[obj->type].free(old_val);
@@ -994,6 +994,11 @@ log_msg(cfg_msg *msg, te_bool before)
             LOG_MSG(level, "Wait configuration changes");
             break;
 
+        case CFG_CONF_TOUCH:
+            LOG_MSG(level, "Change of %s by non-CS means is reported",
+                    ((cfg_conf_touch_msg *)msg)->oid);
+            break;
+
         case CFG_SHUTDOWN:
             LOG_MSG(level, "Shutdown command%s", addon);
             break;
@@ -1250,6 +1255,10 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
 
         case CFG_CONF_DELAY:
             cfg_conf_delay_reset();
+            break;
+
+        case CFG_CONF_TOUCH:
+            cfg_conf_delay_update_str(((cfg_conf_touch_msg *)(*msg))->oid);
             break;
 
         case CFG_SHUTDOWN:

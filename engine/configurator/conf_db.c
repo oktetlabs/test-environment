@@ -140,7 +140,7 @@ cfg_db_destroy(void)
         return;
 
     INFO("Destroy instances");
-    for (i = 1; i < cfg_all_inst_size; i++)
+    for (i = 3; i < cfg_all_inst_size; i++)
     {
         if (cfg_all_inst[i] != NULL)
         {
@@ -682,44 +682,47 @@ cfg_db_add_children(cfg_instance *inst)
     return 0;
 }
 
-/** Calculate configuration changes delay for new instance */
-static void
-calculate_delay(cfg_instance *inst)
+/** Get delay corresponding to instance OID */
+static int
+get_delay_by_oid(const char *oid)
 {
-    int i;
-    
+    char ta[RCF_MAX_NAME];
+    int  i;
+         
+    if (!cfg_get_ta_name(oid, ta))
+         return 0;
+         
     for (i = 0; i < cfg_all_inst_max; i++)
     {
         cfg_instance *tmp = cfg_all_inst[i];
         
         if (tmp != NULL && strcmp(tmp->obj->oid, "/conf_delay") == 0 &&
-            strcmp(tmp->val.val_str, inst->obj->oid) == 0)
+            strcmp(tmp->val.val_str, oid) == 0)
         {
-            char  ta[RCF_MAX_NAME] = { 0, };
-            char *s = inst->oid + strlen("/agent:");
-            int   n = strchr(s, '/') - s;
-            
-            if (n == 0)
-                break;
-                
-            memcpy(ta, s, n);
-                
             for (tmp = tmp->son; tmp != NULL; tmp = tmp->brother)
-            {
                 if (*tmp->name == 0 || strcmp(tmp->name, ta) == 0)
-                {
-                    inst->conf_delay = tmp->val.val_int;
-                    return;
-                }
-            }
+                    return tmp->val.val_int;
                 
-            break;
+            return 0;
         }
     }
-    
-    inst->conf_delay = inst->father->conf_delay;
+    return 0;
 }
- 
+
+/** 
+ * Update the current configuration delay after adding/deleting/changing
+ * an instance.
+ *
+ * @param inst  OID template which added/deleted/changed instance matches
+ */
+void 
+cfg_conf_delay_update_str(const char *oid)
+{
+    uint32_t delay = get_delay_by_oid(oid);
+
+    if (delay > cfg_conf_delay)
+        cfg_conf_delay = delay;
+}
 
 /**
  * Add instance to the database.
@@ -823,13 +826,15 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
         cfg_all_inst_size += CFG_INST_NUM;
     }
     
-    cfg_all_inst[i] = (cfg_instance *)calloc(sizeof(cfg_instance), 1);
+    inst = cfg_all_inst[i] = 
+        (cfg_instance *)calloc(sizeof(cfg_instance), 1);
+        
     if (cfg_all_inst[i] == NULL)
         RET(TE_ENOMEM);
         
-    if ((cfg_all_inst[i]->oid = strdup(oid_s)) == NULL)
+    if ((inst->oid = strdup(oid_s)) == NULL)
     {
-        free(cfg_all_inst[i]);
+        free(inst);
         cfg_all_inst[i] = NULL;
         RET(TE_ENOMEM);
     }
@@ -839,17 +844,16 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
         int err;
         
         if (type != CVT_NONE)
-            err = cfg_types[obj->type].copy(val, &(cfg_all_inst[i]->val));
+            err = cfg_types[obj->type].copy(val, &(inst->val));
         else if (obj->def_val != NULL)
-            err = cfg_types[obj->type].str2val(obj->def_val, 
-                                               &(cfg_all_inst[i]->val));
+            err = cfg_types[obj->type].str2val(obj->def_val, &(inst->val));
         else
-            err = cfg_types[obj->type].def_val(&(cfg_all_inst[i]->val));
+            err = cfg_types[obj->type].def_val(&(inst->val));
         
         if (err)
         {
-            free(cfg_all_inst[i]->oid);
-            free(cfg_all_inst[i]);
+            free(inst->oid);
+            free(inst);
             cfg_all_inst[i] = NULL;
             RET(err);
         }
@@ -861,37 +865,37 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
      * It is the deal of uper layer to update this field to 'TRUE',
      * when this object is added to the Test Agent.
      */
-    cfg_all_inst[i]->added = FALSE;
-
-    cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
-    strcpy(cfg_all_inst[i]->name, s->name);
-    cfg_all_inst[i]->obj = obj;
-    cfg_all_inst[i]->father = father;
-    cfg_all_inst[i]->son = NULL;
+    inst->added = FALSE;
+    inst->handle = i | (cfg_inst_seq_num++) << 16;
+    strcpy(inst->name, s->name);
+    inst->obj = obj;
+    inst->father = father;
+    inst->son = NULL;
         
     if (prev)
     {
-        cfg_all_inst[i]->brother = prev->brother;
-        prev->brother = cfg_all_inst[i];
+        inst->brother = prev->brother;
+        prev->brother = inst;
     }
     else
     {
-        cfg_all_inst[i]->brother = father->son;
-        father->son = cfg_all_inst[i];
+        inst->brother = father->son;
+        father->son = inst;
     }
     
-    *handle = cfg_all_inst[i]->handle;
+    *handle = inst->handle;
     if (cfg_all_inst_max < i)
         cfg_all_inst_max = i;
     
     cfg_free_oid(oid);
-    if (strcmp_start("/agent", cfg_all_inst[i]->oid) != 0)
+    if (strcmp_start(CFG_TA_PREFIX, inst->oid) != 0)
     {
-        return cfg_db_add_children(cfg_all_inst[i]);
+        return cfg_db_add_children(inst);
     }
     else
     {
-        calculate_delay(cfg_all_inst[i]);
+        if ((inst->conf_delay = get_delay_by_oid(inst->oid)) == 0)
+            inst->conf_delay = inst->father->conf_delay;
     }
     return 0;
 

@@ -569,7 +569,7 @@ cfg_backup_restore_ta(char *ta)
     int           rc;
     int           i;
     
-    sprintf(buf, "/agent:%s", ta);
+    sprintf(buf, CFG_TA_PREFIX"%s", ta);
     
     /* Create list of instances on the TA */
     for (i = 0; i < cfg_all_inst_size; i++)

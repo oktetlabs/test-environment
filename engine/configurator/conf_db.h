@@ -97,12 +97,49 @@ extern cfg_instance **cfg_all_inst;
 extern int cfg_all_inst_size;
 extern int cfg_inst_seq_num;
 
-/** Check if instance is /agent:* */
+#define CFG_TA_PREFIX   "/agent:"
+
+/** 
+ * Check if instance is /agent:* 
+ * 
+ * @param inst  instance
+ * 
+ * @return TRUE if instance is /agent:*
+ */
 static inline te_bool
 cfg_inst_agent(cfg_instance *inst)
 {
     return (inst->father == &cfg_inst_root) &&
            (strcmp(inst->obj->subid, "agent") == 0);
+}
+
+/**
+ * Get name of the TA from /agent:xxx... object identifier.
+ *
+ * @param oid   instance identifier
+ * @param ta    TA name location (RCF_MAX_NAME length)
+ *
+ * @return TRUE if name is extracted or FALSE if OID content is unexpected
+ */
+static inline te_bool
+cfg_get_ta_name(const char *oid, char *ta)
+{
+    char *s = (char *)oid + strlen(CFG_TA_PREFIX);
+    char *tmp;
+    int   n;
+    
+    if (strcmp_start(CFG_TA_PREFIX, oid) != 0)
+        return FALSE;
+        
+    n = ((tmp = strchr(s, '/')) == NULL) ? (int)strlen(s) : tmp - s;
+        
+    if (n >= RCF_MAX_NAME)
+        return FALSE;
+        
+    memcpy(ta, s, n);
+    ta[n] = 0;
+    
+    return TRUE;
 }
 
 #define CFG_INST_HANDLE_VALID(_handle) \
@@ -244,6 +281,8 @@ uint32_t cfg_conf_delay;
 /** 
  * Update the current configuration delay after adding/deleting/changing
  * an instance.
+ *
+ * @param inst  added/changed/deleted instance 
  */
 static inline void
 cfg_conf_delay_update(cfg_instance *inst)
@@ -251,6 +290,14 @@ cfg_conf_delay_update(cfg_instance *inst)
     if (inst->conf_delay > cfg_conf_delay)
         cfg_conf_delay = inst->conf_delay;
 }
+
+/** 
+ * Update the current configuration delay after adding/deleting/changing
+ * an instance.
+ *
+ * @param inst  OID template which added/deleted/changed instance matches
+ */
+extern void cfg_conf_delay_update_str(const char *oid);
 
 /** Sleep the delay and reset it */
 static inline void

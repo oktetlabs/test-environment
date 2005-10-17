@@ -115,7 +115,7 @@ cfg_ta_add_agent_instances()
     {
         if ((cfg_all_inst[i] =
                  (cfg_instance *)calloc(sizeof(cfg_instance), 1)) == NULL ||
-            (cfg_all_inst[i]->oid = (char *)malloc(strlen("/agent:") +
+            (cfg_all_inst[i]->oid = (char *)malloc(strlen(CFG_TA_PREFIX) +
                                                    strlen(ta) + 1)) == NULL)
         {
             for (; i > 0; i--)
@@ -127,7 +127,7 @@ cfg_ta_add_agent_instances()
             return TE_ENOMEM;
         }
         strcpy(cfg_all_inst[i]->name, ta);
-        sprintf(cfg_all_inst[i]->oid, "/agent:%s", ta);
+        sprintf(cfg_all_inst[i]->oid, CFG_TA_PREFIX"%s", ta);
         cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
         cfg_all_inst[i]->obj = cfg_all_obj[1];
         if (i == 1)
@@ -472,7 +472,7 @@ cfg_ta_sync(char *oid, te_bool subtree)
         return TE_EINVAL;
     }
     
-    if (tmp_oid->len == 1 || strcmp_start("/agent:*", oid) == 0)
+    if (tmp_oid->len == 1 || strcmp_start(CFG_TA_PREFIX"*", oid) == 0)
     {
         for (ta = cfg_ta_list;
              ta < cfg_ta_list + ta_list_size;
@@ -480,9 +480,9 @@ cfg_ta_sync(char *oid, te_bool subtree)
         {
             char agent_oid[CFG_OID_MAX];
 
-            TE_SPRINTF(agent_oid, "/agent:%s%s", ta, 
+            TE_SPRINTF(agent_oid, CFG_TA_PREFIX"%s%s", ta, 
                        tmp_oid->len == 1 ? "" : 
-                       oid + strlen("/agent:*"));
+                       oid + strlen(CFG_TA_PREFIX"*"));
             if ((rc = sync_ta_subtree(ta, agent_oid)) != 0)
                 break;
         }
@@ -747,7 +747,7 @@ cfg_tas_commit(const char *oid)
 
         inst = CFG_GET_INST(handle);
 
-        if (strncmp(oid, "/agent:", strlen("/agent:")) != 0)
+        if (strcmp_start(CFG_TA_PREFIX, oid) != 0)
         {
             /* It's not TA subtree */
             VERB("Skip commit in non-TA subtree");
