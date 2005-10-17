@@ -152,6 +152,11 @@ asn_type ndn_iscsi_message_s =
 
 const asn_type *ndn_iscsi_message = &ndn_iscsi_message_s;
 
+/* Buffer for logging asn value */
+#define ASN_VAL_BUF_LEN  2048
+static char asn_val_buf[ASN_VAL_BUF_LEN];
+
+
 int
 asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
 {
@@ -178,6 +183,16 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
     asn_value    *value;
     asn_tag_class tag_class;
     uint16_t      tag;
+
+    memset(asn_val_buf, 0, ASN_VAL_BUF_LEN);
+    if (asn_sprint_value(segment_data, asn_val_buf, 
+                               ASN_VAL_BUF_LEN, 0) < 0)
+    {
+        ERROR("%s, %d: Cannot printf asn value",
+              __FUNCTION__, __LINE__);
+    }
+                                   
+    INFO("asn2bin_data result %s", asn_val_buf);
     
     memset(data, 0, *data_len);    
     segment_data_len = asn_get_length(segment_data, "");
@@ -602,6 +617,15 @@ padding:
     }
     *value = segment_data;    
     free(packet);
+    memset(asn_val_buf, 0, ASN_VAL_BUF_LEN);
+    if (asn_sprint_value(segment_data, asn_val_buf, 
+                               ASN_VAL_BUF_LEN, 0) < 0)
+    {
+        ERROR("%s, %d: Cannot printf asn value",
+              __FUNCTION__, __LINE__);
+    }
+                                   
+    INFO("bin_data2asn result %s", asn_val_buf);
     return 0;
 }
 
