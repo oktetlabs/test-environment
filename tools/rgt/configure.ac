@@ -72,10 +72,11 @@ fi
 
 GLIB_REQUIRED_VERSION=2.4.8
 AM_PATH_GLIB_2_0($GLIB_REQUIRED_VERSION, [],
-  AC_MSG_WARN("GLIB $GLIB_REQUIRED_VERSION or better is required. 
+  AC_MSG_WARN("GLIB $GLIB_REQUIRED_VERSION or better is required.
  The latest version of GLIB is always available from ftp://ftp.gtk.org/
- The package can't be built without this library, so you are allowed to 
- make only 'dist' target."), )
+ The package can't be built without this library, so you are allowed to
+ make only 'dist' target. You can specify a path to your local version 
+ of glib by using --with-glib configure option."), )
 
 
 if test "x$ac_cv_with_glib" != "x"

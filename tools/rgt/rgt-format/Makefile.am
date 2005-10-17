@@ -31,9 +31,9 @@ SUBDIRS = $(RGT_SUBDIRS) .
 pkgdatadir = $(datadir)/$(subdir)
 
 GEN_CFLAGS = -I$(top_srcdir) @TE_CFLAGS@ -I$(top_srcdir)/lib/tmpls \
-             @XML2_CFLAGS@ @GLIB_CFLAGS@
-GEN_LDADD = -L. -L$(top_builddir)/lib/tmpls @TE_LDFLAGS@ \
-            @XML2_LIBS@ @GLIB_LIBS@ -lxml2fmt_core -ltmpls -lpopt
+             @GLIB_CFLAGS@ @XML2_CFLAGS@
+GEN_LDADD = -L. -L$(top_builddir)/lib/tmpls @GLIB_LIBS@ @TE_LDFLAGS@ \
+            @XML2_LIBS@  -lxml2fmt_core -ltmpls -lpopt
 GEN_DEP = libxml2fmt_core.a $(top_builddir)/lib/tmpls/libtmpls.a
 
 noinst_LIBRARIES = libxml2fmt_core.a
