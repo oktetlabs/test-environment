@@ -99,7 +99,7 @@
  * second one is a TCP port.
  */
 
-#define RCFUNIX_SSH         "ssh -qn -o BatchMode=yes "
+#define RCFUNIX_SSH         "ssh -qxTn -o BatchMode=yes "
 #define RCFUNIX_REDIRECT    ">/dev/null 2>&1"
 
 #define RCFUNIX_KILL_TIMEOUT    15
@@ -559,6 +559,7 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
             return rc;
     }
 
+    /* FIXME */
     if ((*(ta->flags) & TA_DEAD) || strcmp(ta->ta_type, "win32") == 0)
     {
         if (ta->is_local)
