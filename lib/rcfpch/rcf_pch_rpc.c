@@ -350,11 +350,12 @@ create_thread_child(rpcserver *rpcs)
     if ((rc = call(rpcs->father, "pthread_create", &in, &out)) != 0)
         return rc;
         
-    if (out.common._errno != 0 || out.retval != 0)
+    if (out.retval != 0)
     {
         ERROR("RPC pthread_create() failed on the server %s with errno %r", 
               rpcs->father->name, out.common._errno);
-        return out.common._errno;
+        return (out.common._errno != 0) ?
+                   out.common._errno : TE_RC(TE_RCF_PCH, TE_ECORRUPTED);
     }
     
     rpcs->tid = out.tid;
@@ -381,7 +382,7 @@ delete_thread_child(rpcserver *rpcs)
     if (call(rpcs->father, "pthread_cancel", &in, &out) != 0)
         return;
         
-    if (out.common._errno != 0 || out.retval != 0)
+    if (out.retval != 0)
     {
         WARN("RPC pthread_cancel() failed on the server %s with errno %r",
               rpcs->father->name, out.common._errno);
@@ -415,11 +416,12 @@ fork_child(rpcserver *rpcs)
     if ((rc = call(rpcs->father, "fork", &in, &out)) != 0)
         return rc;
         
-    if (out.common._errno != 0 || out.pid < 0)
+    if (out.pid < 0)
     {
         ERROR("RPC fork() failed on the server %s with errno %r", 
               rpcs->father->name, out.common._errno);
-        return out.common._errno;
+        return (out.common._errno != 0) ?
+                   out.common._errno : TE_RC(TE_RCF_PCH, TE_ECORRUPTED);
     }
     
     rpcs->pid = out.pid;
@@ -511,7 +513,9 @@ connect_getpid(rpcserver *rpcs)
     if ((rc = call(rpcs, "getpid", &in, &out)) != 0)
         return rc;
         
-    if (out.common._errno != 0)
+    if (out.common._errno != 0 &&
+        (!RPC_IS_ERRNO_RPC(out.common._errno) ||
+         out.common.errno_changed))
     {
         ERROR("RPC getpid() failed on the server %s with errno %r", 
               rpcs->name, out.common._errno);
