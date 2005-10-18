@@ -28,6 +28,6 @@ AC_CONFIG_HEADER(package.h)
 
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([tests])
+#AC_CONFIG_SUBDIRS([tests])
 
 AC_OUTPUT
