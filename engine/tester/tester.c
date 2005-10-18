@@ -685,17 +685,17 @@ tester_build_suite(unsigned int flags, const test_suite_info *suite)
     rc = builder_build_test_suite(suite->name, suite->src);
     if (rc != 0)
     {
-        const char *te_build = getenv("TE_BUILD");
+        const char *pwd = getenv("PWD");
 
         ERROR("Build of Test Suite '%s' from '%s' failed, see "
               "%s/builder.log.%s.{1,2}",
-              suite->name, suite->src, te_build, suite->name);
+              suite->name, suite->src, pwd, suite->name);
         if (flags & TESTER_VERBOSE)
         {
             fprintf(stderr,
                     "Build of Test Suite '%s' from '%s' failed, see\n"
                     "%s/builder.log.%s.{1,2}\n",
-                    suite->name, suite->src, te_build, suite->name);
+                    suite->name, suite->src, pwd, suite->name);
         }
         return rc;
     }
