@@ -843,6 +843,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     PUT_INTO_BUF(route_inst_name, "%s|%d", dst_addr_str, prefix);
     
 #if 1
+    UNUSED(tos);
     if (gw_addr != NULL)
     {
         if (inet_ntop(addr_family, gw_addr, gw_addr_str,
