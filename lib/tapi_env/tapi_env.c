@@ -1570,6 +1570,9 @@ check_node_type_vs_pcos(enum net_node_type node_type, tapi_env_host *host)
             }
         }
     }
+#else
+    UNUSED(node_type);
+    UNUSED(host);
 #endif
     return TRUE;
 }
