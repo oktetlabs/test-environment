@@ -852,7 +852,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 										 STAT_DETAIL_ERR, outputpdu);
 							goto out;
 						}
-                        chap_i = iscsi_get_custom_value(conn->custom, "CHAP_I");
+                        chap_i = iscsi_get_custom_value(conn->custom, "fake_chap_id");
                         if (chap_i == 0)
                             chap_i = value;
 					} else if (got_bitmask == GOT_CHAP_C) {
