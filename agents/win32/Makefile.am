@@ -1,6 +1,6 @@
 
 MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include \
-            -include te_config.h -include config.h
+            -include te_config.h -include config.h -fno-strict-aliasing
 
 #
 # -lrcfpch must be before @TE_LDADD@ since the last may contain
