@@ -4361,7 +4361,7 @@ _set_buf_pattern_1_svc(tarpc_set_buf_pattern_in *in,
         }
         else
         {
-            int i;
+            unsigned int i;
             
             for (i = 0; i < in->len; i++)
                 dst_buf[i] = rand() % TAPI_RPC_BUF_RAND;
@@ -4948,7 +4948,6 @@ TARPC_FUNC(gettimeofday,
 },
 {
     struct timeval  tv;
-    struct timezone tz;
 
     if (out->tv.tv_len != 0)
         TARPC_CHECK_RC(timeval_rpc2h(out->tv.tv_val, &tv));
