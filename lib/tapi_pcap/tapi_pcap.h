@@ -28,8 +28,8 @@
  * $Id$
  */
 
-#ifndef __TE_TAPI_ETH_H__
-#define __TE_TAPI_ETH_H__
+#ifndef __TE_TAPI_PCAP_H__
+#define __TE_TAPI_PCAP_H__
 
 #include <stdio.h>
 #if HAVE_ASSERT_H
@@ -129,4 +129,4 @@ extern int tapi_pcap_pattern_add(const char *filter,
                                  const int   filter_id,
                                  asn_value **pattern);
 
-#endif /* __TE_TAPI_ETH_H__ */
+#endif /* __TE_TAPI_PCAP_H__ */
