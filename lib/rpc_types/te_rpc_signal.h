@@ -477,7 +477,7 @@ tarpc_sigevent2str(const tarpc_sigevent *sigevent)
     TE_SPRINTF(buf, "{ notify %s signo %s sigval %u function %s }",
                sigev_notify_rpc2str(sigevent->notify),
                signum_rpc2str(sigevent->signo),
-               sigevent->value.tarpc_sigval_u.sival_int,
+               (unsigned)sigevent->value.tarpc_sigval_u.sival_int,
                sigevent->function == NULL ? "NULL" : sigevent->function);
                
     return buf;               
