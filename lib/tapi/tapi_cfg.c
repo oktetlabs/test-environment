@@ -434,6 +434,10 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
         {
             rc = inet_pton(family, ptr, &(SIN6(&(rt->gw))->sin6_addr));
         }
+        else
+        {
+            rc = -1;
+        }
         if (rc <= 0)
         {
             ERROR("Incorrect format of 'gateway address' value in route %s",
