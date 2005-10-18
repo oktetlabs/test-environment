@@ -43,7 +43,7 @@
 #include "ndn_internal.h"
 #include "ndn_iscsi.h"
 #include "te_errno.h"
-#include "logger_ta.h"
+#include "logger_api.h"
 
 
 /* ISCSI-CSAP definitions */
