@@ -203,6 +203,8 @@ typedef struct iscsi_tgt_chap_data {
 typedef struct iscsi_target_data {
     int               target_id; /**< Id of the Target */
     te_bool           is_active;
+
+    int               number_of_open_connections;
     
     int               conf_params; /**< OR of OFFER_XXX flags */
 
@@ -841,6 +843,11 @@ iscsi_initiator_unh_set(const char *value)
     int                     offer;
  
     iscsi_get_cid_and_target(value, &cid, &target_id);
+
+    target = &init_data->targets[target_id];
+    
+    offer = target->conf_params;
+    
     if (strncmp(value, "down", strlen("down")) == 0)
     {
         init_data->targets[target_id].is_active = FALSE;
@@ -854,16 +861,14 @@ iscsi_initiator_unh_set(const char *value)
                   "with CID = %d", cid);
             return TE_RC(TE_TA_UNIX, EINVAL);
         }
+        target->number_of_open_connections--;
         INFO("Connections with ID %d is closed", cid);
+
         return 0;
     }
     /* We should open new connection */
     /* 1: configurating the Initiator */
 
-    target = &init_data->targets[target_id];
-    
-    offer = target->conf_params;
-    
     CHECK_SHELL_CONFIG_RC(
         ta_system_ex("iscsi_manage init restore target=%d host=%d",
                      target_id, init_data->host_bus_adapter),
@@ -871,76 +876,94 @@ iscsi_initiator_unh_set(const char *value)
     
     ISCSI_UNH_SET("TargetName", target->target_name, target_id);
     
-    if ((offer & OFFER_MAX_CONNECTIONS) == OFFER_MAX_CONNECTIONS)
-        ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
-                          target_id);
-    if ((offer & OFFER_INITIAL_R2T) == OFFER_INITIAL_R2T)
-        ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id);
-    
-    if ((offer & OFFER_HEADER_DIGEST) == OFFER_INITIAL_R2T)
-        ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id);
-    
-    if ((offer & OFFER_DATA_DIGEST) == OFFER_DATA_DIGEST)
-        ISCSI_UNH_SET("DataDigest", target->data_digest, target_id);
-    
-    if ((offer & OFFER_IMMEDIATE_DATA) == OFFER_IMMEDIATE_DATA)
-        ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id);
-    
-    if ((offer & OFFER_MAX_RECV_DATA_SEGMENT_LENGTH) ==
-        OFFER_MAX_RECV_DATA_SEGMENT_LENGTH)
-        ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
-                          target->max_recv_data_segment_length,
-                          target_id);
-    
-    if ((offer & OFFER_FIRST_BURST_LENGTH) == OFFER_FIRST_BURST_LENGTH)
-        ISCSI_UNH_SET_INT("MaxBurstLength", 
-                          target->max_burst_length, target_id);
-    
-    if ((offer & OFFER_MAX_BURST_LENGTH) == OFFER_MAX_BURST_LENGTH)
-        ISCSI_UNH_SET_INT("FirstBurstLength", 
-                          target->first_burst_length, target_id);
-    
-    if ((offer & OFFER_DEFAULT_TIME2WAIT) == OFFER_DEFAULT_TIME2WAIT)
-        ISCSI_UNH_SET_INT("DefaultTime2Wait", 
-                          target->default_time2wait, target_id);
-    
-    if ((offer & OFFER_DEFAULT_TIME2RETAIN) == OFFER_DEFAULT_TIME2RETAIN)
-        ISCSI_UNH_SET_INT("DefaultTime2Retain", 
-                          target->default_time2retain, target_id);
-    
-    if ((offer & OFFER_MAX_OUTSTANDING_R2T) == OFFER_MAX_OUTSTANDING_R2T)
-        ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
-                          target->max_outstanding_r2t, target_id);
-    
-    if ((offer & OFFER_DATA_PDU_IN_ORDER) == OFFER_DATA_PDU_IN_ORDER)
-        ISCSI_UNH_SET("DataPDUInOrder", 
-                      target->data_pdu_in_order, target_id);
-
-    if ((offer & OFFER_DATA_SEQUENCE_IN_ORDER) == 
-        OFFER_DATA_SEQUENCE_IN_ORDER)
-        ISCSI_UNH_SET("DataSequenceInOrder", 
-                      target->data_sequence_in_order, target_id);
-
-    if ((offer & OFFER_ERROR_RECOVERY_LEVEL) == 
-        OFFER_ERROR_RECOVERY_LEVEL)
-        ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
-                          target->error_recovery_level, target_id);
-
-    ISCSI_UNH_SET("SessionType", target->session_type, target_id);
-    
-    /* Target' CHAP */
-    if (init_data->targets[target_id].chap.target_auth)
+    if (target->number_of_open_connections == 0)
     {
-        ISCSI_UNH_FORCE_FLAG("t", target_id,
-                             "Target Authentication");
+        if ((offer & OFFER_MAX_CONNECTIONS) == OFFER_MAX_CONNECTIONS)
+            ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
+                              target_id);
+        if ((offer & OFFER_INITIAL_R2T) == OFFER_INITIAL_R2T)
+            ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id);
+
+        if ((offer & OFFER_HEADER_DIGEST) == OFFER_INITIAL_R2T)
+            ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id);
+
+        if ((offer & OFFER_DATA_DIGEST) == OFFER_DATA_DIGEST)
+            ISCSI_UNH_SET("DataDigest", target->data_digest, target_id);
+
+        if ((offer & OFFER_IMMEDIATE_DATA) == OFFER_IMMEDIATE_DATA)
+            ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id);
+
+        if ((offer & OFFER_MAX_RECV_DATA_SEGMENT_LENGTH) ==
+            OFFER_MAX_RECV_DATA_SEGMENT_LENGTH)
+            ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
+                              target->max_recv_data_segment_length,
+                              target_id);
+
+        if ((offer & OFFER_FIRST_BURST_LENGTH) == OFFER_FIRST_BURST_LENGTH)
+            ISCSI_UNH_SET_INT("MaxBurstLength", 
+                              target->max_burst_length, target_id);
+
+        if ((offer & OFFER_MAX_BURST_LENGTH) == OFFER_MAX_BURST_LENGTH)
+            ISCSI_UNH_SET_INT("FirstBurstLength", 
+                              target->first_burst_length, target_id);
+
+        if ((offer & OFFER_DEFAULT_TIME2WAIT) == OFFER_DEFAULT_TIME2WAIT)
+            ISCSI_UNH_SET_INT("DefaultTime2Wait", 
+                              target->default_time2wait, target_id);
+
+        if ((offer & OFFER_DEFAULT_TIME2RETAIN) == OFFER_DEFAULT_TIME2RETAIN)
+            ISCSI_UNH_SET_INT("DefaultTime2Retain", 
+                              target->default_time2retain, target_id);
+
+        if ((offer & OFFER_MAX_OUTSTANDING_R2T) == OFFER_MAX_OUTSTANDING_R2T)
+            ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
+                              target->max_outstanding_r2t, target_id);
+
+        if ((offer & OFFER_DATA_PDU_IN_ORDER) == OFFER_DATA_PDU_IN_ORDER)
+            ISCSI_UNH_SET("DataPDUInOrder", 
+                          target->data_pdu_in_order, target_id);
+
+        if ((offer & OFFER_DATA_SEQUENCE_IN_ORDER) == 
+            OFFER_DATA_SEQUENCE_IN_ORDER)
+            ISCSI_UNH_SET("DataSequenceInOrder", 
+                          target->data_sequence_in_order, target_id);
+
+        if ((offer & OFFER_ERROR_RECOVERY_LEVEL) == 
+            OFFER_ERROR_RECOVERY_LEVEL)
+            ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
+                              target->error_recovery_level, target_id);
+
+        ISCSI_UNH_SET("SessionType", target->session_type, target_id);
+
+        /* Target' CHAP */
+        if (init_data->targets[target_id].chap.target_auth)
+        {
+            ISCSI_UNH_FORCE_FLAG("t", target_id,
+                                 "Target Authentication");
+        }
+
+        ISCSI_UNH_FORCE_STRING("px", target->chap.peer_secret, target_id,
+                               "Peer Secret");
+
+        ISCSI_UNH_FORCE("ln", target->chap.local_name, target_id,
+                        "Local Name");
+
+        ISCSI_UNH_SET("AuthMethod", target->chap.chap, target_id);
+
+        if (target->chap.enc_fmt == BASE_64)
+            ISCSI_UNH_FORCE_FLAG("b", target_id,
+                                 "Encoding Format");
+
+        ISCSI_UNH_FORCE_INT("cl", target->chap.challenge_length, target_id,
+                            "Challenge Length");
+
+        ISCSI_UNH_FORCE("pn", target->chap.peer_name, target_id,
+                        "Peer Name");
+
+        ISCSI_UNH_FORCE_STRING("lx", target->chap.local_secret, target_id,
+                               "Local Secret");
+
     }
-
-    ISCSI_UNH_FORCE_STRING("px", target->chap.peer_secret, target_id,
-                           "Peer Secret");
-
-    ISCSI_UNH_FORCE("ln", target->chap.local_name, target_id,
-                    "Local Name");
-
     /* Initiator itself */
     ISCSI_UNH_SET("InitiatorName", 
                   target->initiator_name,
@@ -949,22 +972,6 @@ iscsi_initiator_unh_set(const char *value)
     ISCSI_UNH_SET("InitiatorAlias", 
                   target->initiator_alias, 
                   target_id);
-
-    ISCSI_UNH_SET("AuthMethod", target->chap.chap, target_id);
-
-    if (target->chap.enc_fmt == BASE_64)
-        ISCSI_UNH_FORCE_FLAG("b", target_id,
-                             "Encoding Format");
-
-    ISCSI_UNH_FORCE_INT("cl", target->chap.challenge_length, target_id,
-                        "Challenge Length");
-
-    ISCSI_UNH_FORCE("pn", target->chap.peer_name, target_id,
-                    "Peer Name");
-
-    ISCSI_UNH_FORCE_STRING("lx", target->chap.local_secret, target_id,
-                           "Local Secret");
-
 
     /* Now the connection should be opened */
     rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
@@ -978,6 +985,7 @@ iscsi_initiator_unh_set(const char *value)
         return rc;
     }
     init_data->targets[target_id].is_active = TRUE;
+    target->number_of_open_connections++;
     return 0;
 }
 
