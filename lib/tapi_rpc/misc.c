@@ -801,6 +801,7 @@ rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
     in.dst_buf = (tarpc_ptr)dst_buf;
     in.offset = (tarpc_ptr)offset;
     in.pattern = pattern;
+    in.len = len;
 
     rcf_rpc_call(rpcs, "set_buf_pattern", &in, &out);
 
