@@ -52,13 +52,18 @@ endif
 all: install-data
 
 dist-hook:
-	cp -pR @TE_CONF_DIR@ $(distdir)
-	rm -rf $(distdir)/conf/.svn $(distdir)/conf/CVS
+	if test -n "@TE_CONF_DIR@" ; then \
+            cp -pR @TE_CONF_DIR@ $(distdir) ; \
+            rm -rf `find $(distdir)/conf -name .svn` \
+                   `find $(distdir)/conf -name CVS` ; \
+        fi
 	if test -e $(distdir)/conf/builder.conf ; then \
-		chmod u+w $(distdir)/conf ; \
-		rm -f $(distdir)/conf/builder.conf ; \
-	fi ;
-	cp @TE_BUILDER_CONF@ $(distdir)/conf/builder.conf
+            chmod u+w $(distdir)/conf ; \
+            rm -f $(distdir)/conf/builder.conf ; \
+        fi ;
+	if test -n "@TE_BUILDER_CONF@" ; then \
+            cp @TE_BUILDER_CONF@ $(distdir)/conf/builder.conf ; \
+        fi
 
 install-exec-hook:
 	cd $(DESTDIR)/$(prefix) ; ln -sf $(host)/bin/dispatcher.sh dispatcher.sh
