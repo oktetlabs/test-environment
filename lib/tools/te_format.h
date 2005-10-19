@@ -36,6 +36,9 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
