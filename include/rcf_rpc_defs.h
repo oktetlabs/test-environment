@@ -178,7 +178,7 @@ typedef enum {
 
 /** Check, if errno is RPC errno, not other TE errno */
 #define RPC_IS_ERRNO_RPC(_errno) \
-    (TE_RC_GET_MODULE(_errno) == TE_RPC)
+    (((_errno) == 0) || (TE_RC_GET_MODULE(_errno) == TE_RPC))
 
 /**
  * Coverts system native constant to its mirror in RPC namespace

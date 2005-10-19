@@ -53,8 +53,7 @@
 
 /** Check, if RPC is called successfully */
 #define RPC_IS_CALL_OK(_rpcs) \
-    (((_rpcs) != NULL) && \
-     (((_rpcs)->_errno == 0) || RPC_IS_ERRNO_RPC((_rpcs)->_errno)))
+    (((_rpcs) != NULL) && RPC_IS_ERRNO_RPC((_rpcs)->_errno))
 
 /** Do not jump from the TAPI RPC library call in the case of IUT error */
 #define RPC_AWAIT_IUT_ERROR(_rpcs) \

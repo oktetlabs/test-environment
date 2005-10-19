@@ -513,9 +513,7 @@ connect_getpid(rpcserver *rpcs)
     if ((rc = call(rpcs, "getpid", &in, &out)) != 0)
         return rc;
         
-    if (out.common._errno != 0 &&
-        (!RPC_IS_ERRNO_RPC(out.common._errno) ||
-         out.common.errno_changed))
+    if (!RPC_IS_ERRNO_RPC(out.common._errno))
     {
         ERROR("RPC getpid() failed on the server %s with errno %r", 
               rpcs->name, out.common._errno);

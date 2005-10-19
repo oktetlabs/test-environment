@@ -1137,7 +1137,8 @@ TARPC_FUNC(signal,
              * Delete signal from set of received signals when
              * signal registrar is set for the signal.
              */
-            if (out->common._errno == 0 && handler == signal_registrar)
+            if ((handler == signal_registrar) &&
+                RPC_IS_ERRNO_RPC(out->common._errno))
             {
                 sigdelset(&rpcs_received_signals, signum);
             }
