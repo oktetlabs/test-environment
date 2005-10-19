@@ -76,12 +76,16 @@ else
 fi
 
 if test ! -e Makefile ; then
-    echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE}"
+    PLATFORM_NAME=`echo ${host} | sed s/-/_/g`
+    ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'`"
+    ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'`"
+    echo ${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} --build=${host} 
+    
     TE_INSTALL=${TE_INSTALL} \
     TE_PATH=${TE_PATH} \
     TE_BASE=${TE_BASE} \
-    TE_CFLAGS="-O0 -ggdb -Wall -W -I${TE_INSTALL}/${host}/include" \
-    TE_LDFLAGS="-L${TE_INSTALL}/${host}/lib" \
+    TE_CFLAGS="-O0 -ggdb -Wall -W -I${TE_INSTALL}/${host}/include ${ADD_CFLAGS}" \
+    TE_LDFLAGS="-L${TE_INSTALL}/${host}/lib ${ADD_LDFLAGS}" \
     eval ${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} --build=${host} || exit 1
 fi
 make install || exit 1
