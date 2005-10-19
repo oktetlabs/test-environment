@@ -320,7 +320,7 @@ extern int tapi_iscsi_find_key_and_value(
  * Find the key and return its value
  *
  * @param segment_data    iSCSI PDU Segment Data in asn format
- * @param key_name        the name of key (according to RFC3720
+ * @param key_name        the name of key (according to RFC3720)
  * @param buf             Location to return values of the key
  * @param buf_len         The lenght of the buf
  *
@@ -489,8 +489,38 @@ extern int tapi_iscsi_initiator_conn_del(const char *ta,
  *
  * @return           iSCSI parameter index or -1, if fails
  */
-extern tapi_iscsi_parameter
-tapi_iscsi_get_param_map(const char *param);
+extern tapi_iscsi_parameter tapi_iscsi_get_param_map(const char *param);
+
+/**
+ * Find specified key name in segment data and determine number of
+ * key values for its name. 
+ *
+ * @param segment_data    iSCSI PDU Segment Data in asn format
+ * @param key_name        the name of key (according to RFC3720)
+ * @param key_array       location for pointer to found ASN value
+ *                        to key values array (OUT)
+ *
+ * @return number of key values for passed key name, zero if none, 
+ *         or -1 if error encountered. 
+ */
+extern int tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
+                                      const char *key_name,
+                                      iscsi_key_values *key_array);
+
+/**
+ * Read key value by name and index of value.
+ *
+ * @param segment_data    iSCSI PDU Segment Data in asn format
+ * @param key_name        the name of key (according to RFC3720)
+ * @param val_index       index of key value to be read
+ * @param buf             location for key value (OUT)
+ * @param buf_len         length of buffer/read data (IN/OUT)
+ *
+ * @return status of operation
+ */
+extern int tapi_iscsi_key_value_read(iscsi_key_values key_array,
+                                     int val_index, char *buf, 
+                                     size_t *buf_len);
 
 /** The following functions are DEPRECATED!!! 
     They will be removed as soon as all the tests use the new API

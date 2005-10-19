@@ -1047,6 +1047,62 @@ tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
     return rc;
 }
 
+int
+tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
+                           const char *key_name,
+                           iscsi_key_values *key_array)
+{
+    int key_index;
+
+
+    if (key_array == NULL)
+        return -1;
+
+    if ((key_index =
+         tapi_iscsi_get_key_index_by_name(segment_data, 
+                                          (char *)key_name)) ==
+            TAPI_ISCSI_KEY_INVALID)
+    {
+        return 0;
+    }
+    if ((*key_array = tapi_iscsi_get_key_values(segment_data,
+                                                key_index)) == NULL)
+    {
+        ERROR("%s, %d: cannot get key values",
+              __FUNCTION__, __LINE__);
+        return -1;
+    }
+
+
+    return asn_get_length(*key_array, "");
+}
+
+int
+tapi_iscsi_key_value_read(iscsi_key_values key_array,
+                          int val_index, char *buf, size_t *buf_len)
+{
+    int rc;
+
+    const asn_value *key_value;
+
+    if ((rc = asn_get_indexed(key_array, &key_value, val_index)) != 0)
+    {
+        ERROR("%s(): asn_get_indexed failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if ((rc = asn_read_value_field((asn_value *)key_value,
+                                   buf, buf_len, "")) != 0)
+    {    
+        ERROR("%s(): cannot read key value %d, %r",
+              __FUNCTION__, rc);
+        return rc;
+    } 
+
+    return 0;
+}
+
+
 /* Target configuration */
 
 int
