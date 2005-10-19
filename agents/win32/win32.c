@@ -53,6 +53,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "logger_ta.h"
+#include "logfork.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
