@@ -80,7 +80,7 @@ typedef enum {
     TAPI_RADIUS_ACCT_STATUS_OFF     = 8,    /**< Accounting-Off */
 } tapi_radius_acct_status_t;
 
-/** Value of Acct-Terminate-Cause attribute, see RFC 2866 */
+/** Value of Acct-Terminate-Cause attribute, see RFC 2866, and RFC 3580 */
 typedef enum {
     TAPI_RADIUS_TERM_USER_REQUEST    = 1,    /**< User Request */
     TAPI_RADIUS_TERM_LOST_CARRIER    = 2,    /**< Lost Carrier */
@@ -100,6 +100,8 @@ typedef enum {
     TAPI_RADIUS_TERM_CALLBACK        = 16,   /**< Callback */
     TAPI_RADIUS_TERM_USER_ERROR      = 17,   /**< User Error */
     TAPI_RADIUS_TERM_HOST_REQUEST    = 18,   /**< Host Request */
+    TAPI_RADIUS_TERM_SUPP_RESTART    = 19,   /**< Supplicant Restart */
+    TAPI_RADIUS_TERM_REAUTH_FAILURE  = 20,   /**< Reauthentication Failure */
 } tapi_radius_term_cause_t;
 
 /**
@@ -137,6 +139,8 @@ tapi_radius_term_cause2str(tapi_radius_term_cause_t cause)
         CAUSE2STR(CALLBACK);
         CAUSE2STR(USER_ERROR);
         CAUSE2STR(HOST_REQUEST);
+        CAUSE2STR(SUPP_RESTART);
+        CAUSE2STR(REAUTH_FAILURE);
         
         default:
         {
