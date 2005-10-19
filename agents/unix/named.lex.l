@@ -1,11 +1,12 @@
 %{
+#define TE_LGR_USER      "Named Lexer"
+
 #include "te_config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "te_errno.h"
 #include "te_defs.h"
-#define TE_LGR_USER      "Daemons Lexer"
-#include "logger_ta.h"
+#include "logger_api.h"
 #include "named.conf.h"
 
 

@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER "RCF PCH TA CFG"
+
 #include "te_config.h"
 
 #ifdef STDC_HEADERS
@@ -69,10 +71,9 @@ extern int inet_pton(int af, const char *src, void *dst);
 
 #include "te_errno.h"
 #include "te_defs.h"
+#include "logger_api.h"
 #include "rcf_pch_ta_cfg.h"
 
-#define TE_LGR_USER "RCF PCH TA CFG"
-#include "logger_ta.h"
 
 #define TA_OBJS_NUM 10
 static ta_cfg_obj_t ta_objs[TA_OBJS_NUM];

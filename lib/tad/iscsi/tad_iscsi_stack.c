@@ -27,6 +27,8 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD iSCSI stack"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -75,8 +77,7 @@
 
 #include "tad_iscsi_impl.h"
 
-#define TE_LGR_USER     "TAD iSCSI stack"
-#include "logger_ta.h"
+#include "logger_api.h"
 
 
 #define LOCK_QUEUE(_spec_data) \

@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "Windows Conf"
+
 #include "windows.h"
 #include "w32api/iphlpapi.h"
 #undef _SYS_TYPES_FD_SET
@@ -36,11 +38,10 @@
 #include "iprtrmib.h"
 
 #undef ERROR
-#define TE_LGR_USER     "Windows Conf"
 
 #include "te_errno.h"
 #include "te_defs.h"
-#include "logger_ta.h"
+#include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"

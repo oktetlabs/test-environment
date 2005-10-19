@@ -27,14 +27,16 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD iSCSI Target"
+
 #include "config.h"
 
 #include <string.h>
 
 #include "tad_iscsi_impl.h"
 
-#define TE_LGR_USER     "TAD iSCSI Target"
-#include "logger_ta.h"
+#include "logger_api.h"
+
 
 /* target thread function */
 void *

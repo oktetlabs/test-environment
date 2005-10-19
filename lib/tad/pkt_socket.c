@@ -27,6 +27,8 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD packet sockets"
+
 #include "te_config.h"
 
 #ifdef HAVE_CONFIG_H
@@ -63,8 +65,7 @@
 
 #include <string.h>
 
-#define TE_LGR_USER     "TAD packet sockets"
-#include "logger_ta.h"
+#include "logger_api.h"
 
 #include "pkt_socket.h"
 

@@ -27,10 +27,11 @@
  * @(#) $Id$
  */
 
-#include "tad_snmp_impl.h"
-
 #define TE_LGR_USER     "TAD SNMP"
-#include "logger_ta.h"
+
+#include "tad_snmp_impl.h"
+#include "logger_api.h"
+
 
 #if HAVE_STDLIB_H
 #include <stdlib.h>

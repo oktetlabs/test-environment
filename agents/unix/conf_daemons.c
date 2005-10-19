@@ -30,6 +30,10 @@
 
 #include "conf_daemons.h"
 
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
 #include "te_shell_cmd.h"
 
 

@@ -27,14 +27,14 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD DHCP CSAP"
+
 #include "config.h"
 
 #include <string.h>
 
+#include "logger_api.h"
 #include "tad_dhcp_impl.h"
-
-#define TE_LGR_USER     "TAD DHCP CSAP"
-#include "logger_ta.h"
 
 
 csap_layer_neighbour_list_t dhcp_nbr_list = 

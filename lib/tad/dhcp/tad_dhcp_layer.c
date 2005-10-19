@@ -27,6 +27,8 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD DHCP layer"
+
 #include "config.h"
 
 #include <string.h>
@@ -34,10 +36,8 @@
 
 #include "tad_dhcp_impl.h"
 
-#define TE_LGR_USER     "TAD DHCP layer"
-
 #include "logger_api.h"
-#include "logger_ta.h"
+#include "logger_ta_fast.h"
 
 
 /**

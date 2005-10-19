@@ -53,7 +53,8 @@
 #include "ndn.h" 
 
 #define TE_LGR_USER     "TAD Send"
-#include "logger_ta.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 
 /* buffer for send answer */
 #define RBUF 100 

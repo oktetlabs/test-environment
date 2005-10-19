@@ -27,11 +27,12 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER "TAD TCP" 
+
+#include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#define TE_LGR_USER "TAD tcp" 
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -62,6 +63,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
+#include "logger_ta_fast.h"
 #include "tad_ipstack_impl.h"
 
 

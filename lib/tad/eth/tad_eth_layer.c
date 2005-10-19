@@ -27,6 +27,8 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD Ethernet"
+
 #include "te_config.h"
 
 #ifdef HAVE_CONFIG_H
@@ -36,11 +38,12 @@
 #include <string.h>
 #include <fcntl.h>
 
-#define TE_LGR_USER     "TAD Ethernet"
-#include "logger_ta.h"
+#include "te_defs.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 
 #include "tad_eth_impl.h"
-#include "te_defs.h"
+
 
 /**
  * Callback for read parameter value of ethernet CSAP.

@@ -27,14 +27,15 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD iSCSI CSAP"
+
 #include "config.h"
 
 #include <string.h>
 
 #include "tad_iscsi_impl.h"
 
-#define TE_LGR_USER     "TAD iSCSI CSAP"
-#include "logger_ta.h"
+#include "logger_api.h"
 
 
 csap_layer_neighbour_list_t iscsi_nbr_list = 

@@ -2,6 +2,7 @@
 #include <te_defs.h>
 #include <logger_ta.h>
 #include <tce_collector.h>
+#include "logger_defs.h"
 
 DEFINE_LGR_ENTITY("TCE collector");
 

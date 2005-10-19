@@ -132,12 +132,14 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
-#include "logger_ta.h"
+#include "logger_api.h"
+#include "logfork.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "rcf_rpc_defs.h"
 #include "te_rpc_types.h"
 #include "tarpc.h"
+
 
 /** Extract sigset from in argument */
 #define IN_SIGSET       ((sigset_t *)(rcf_pch_mem_get(in->set)))

@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD CH"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -43,10 +45,8 @@
 #include "rcf_pch.h"
 #include "te_defs.h"
 
-
-
-#define TE_LGR_USER     "TAD CH"
 #include "logger_api.h"
+#include "logger_ta_fast.h"
 
 #ifndef DUMMY_TAD
 #include "tad_csap_inst.h"
@@ -54,7 +54,6 @@
 #include "tad_utils.h"
 #include "ndn.h" 
 
-#include "logger_ta.h"
 
 static struct timeval tv_zero = {0,0};
 

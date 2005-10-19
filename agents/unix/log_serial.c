@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER      "Log Serial"
+
 #include "te_config.h"
 #include "config.h"
 
@@ -56,14 +58,14 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "comm_agent.h"
+#include "te_raw_log.h"
+#include "logger_api.h"
 #include "rcf_common.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
 #include "unix_internal.h"
 
-#define TE_LGR_USER      "Main"
-#include "logger_ta.h"
 
 /** Conserver escape sequences */
 #define CONSERVER_ESCAPE    "\05c"

@@ -33,7 +33,6 @@
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "te_errno.h"
-#include "logger_ta.h"
 #include "logger_api.h"
 
 

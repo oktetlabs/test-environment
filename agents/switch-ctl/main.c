@@ -26,6 +26,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER      "Main"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -38,14 +40,14 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "logger_api.h"
+#include "logger_ta.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
 #include "poe_lib.h"
 
-#define TE_LGR_USER      "Main"
-#include "logger_ta.h"
 
 extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
@@ -321,9 +323,9 @@ main(int argc, char **argv)
         return -1;
     }
 
-    if ((rc = log_init()) != 0)
+    if ((rc = ta_log_init()) != 0)
     {
-        fprintf(stderr, "log_init() failed: error=%d\n", rc);
+        fprintf(stderr, "ta_log_init() failed: error=%d\n", rc);
         return rc;
     }
 
@@ -350,10 +352,10 @@ main(int argc, char **argv)
 
     poe_lib_shutdown();
 
-    rc = log_shutdown();
+    rc = ta_log_shutdown();
     if (rc != 0)
     {
-        fprintf(stderr, "log_shutdown() failed: error=%d\n", rc);
+        fprintf(stderr, "ta_log_shutdown() failed: error=%d\n", rc);
         if (retval == 0)
             retval = rc;
     }

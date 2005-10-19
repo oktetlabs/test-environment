@@ -34,34 +34,24 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-
-#include <stdio.h>
-#if HAVE_STDARG_H
-#include <stdarg.h>
-#endif
-#if HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-#if HAVE_STRING_H
-#include <string.h>
-#endif
-#if HAVE_STRINGS_H
-#include <strings.h>
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
 #endif
 #if HAVE_TIME_H
 #include <time.h>
 #endif
-#if HAVE_SYS_TIME_H
-#include <sys/time.h>
+#if HAVE_STDLIB_H
+#include <stdlib.h>
 #endif
-#if HAVE_ERRNO_H
-#include <errno.h>
+#if HAVE_ASSERT_H
+#include <assert.h>
 #endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_raw_log.h"
 #include "logger_defs.h"
+#include "te_errno.h"
 #include "logger_ta_lock.h"
 
 
@@ -70,49 +60,8 @@ extern "C" {
 #endif
 
 
-/** Create timestamp */
-#define LGR_TIMESTAMP(_tval)    gettimeofday(_tval, NULL)
-
-
 /** Maximum arguments processed in this implementation */
 #define LGR_MAX_ARGS  12
-
-/**
- * These macros carry out preliminary argument processing
- * at compilation time to make logging as quick as possible.
- * Each macro processes only one argument and calls following macro.
- * This way only limited number of arguments can be processed
- * (twelve arguments for this implementation).
- * Each macro produces one pair of elements:
- *   - "4, (uint32_t)(arg + 0)"  , if argument exists
- *   or
- *   - "0, (uint32_t)(+0)"      , if argument is not specified.
- * This is done by following way: #a[0] converts argument to string;
- * if argument is not present, first symbol of this string is equal
- * to 0, otherwise it is not; the obtained symbol is converted
- * to 0 or 1 by means of !! and multiplied with 4 ( = sizeof(uint32_t)).
- * So, this way  valid numbers of arguments can be known in advance.
- */
-#define LARG1(a, args...)  !!(#a[0]) * 4, (uint32_t)(a +0)
-#define LARG2(a, args...)  !!(#a[0]) * 4, (uint32_t)(a +0), LARG1(args)
-#define LARG3(a, args...)  !!(#a[0]) * 4, (uint32_t)(a +0), LARG2(args)
-#define LARG4(a, args...)  !!(#a[0]) * 4, (uint32_t)(a +0), LARG3(args)
-#define LARG5(a, args...)  !!(#a[0]) * 4, (uint32_t)(a +0), LARG4(args)
-#define LARG6(a, args...)  !!(#a[0]) * 4, (uint32_t)(a +0), LARG5(args)
-#define LARG7(a, args...)  !!(#a[0]) * 4, (uint32_t)(a +0), LARG6(args)
-#define LARG8(a, args...)  !!(#a[0]) * 4, (uint32_t)(a +0), LARG7(args)
-#define LARG9(a, args...)  !!(#a[0]) * 4, (uint32_t)(a +0), LARG8(args)
-#define LARG10(a, args...) !!(#a[0]) * 4, (uint32_t)(a +0), LARG9(args)
-#define LARG11(a, args...) !!(#a[0]) * 4, (uint32_t)(a +0), LARG10(args)
-#define LARG12(a, args...) !!(#a[0]) * 4, (uint32_t)(a +0), LARG11(args)
-
-#if TALOGDEBUG
-#define LOGF_PUT(_us, _fs...) log_message_print(_us, _fs)
-#else
-#define LOGF_MESS(_lvl, _us, _fs, _args...) \
-    log_message_fast(_lvl, _us, _fs, LARG12(_args))
-#define LOGF_PUT(_us, _fs, _args...) LOGF_MESS(0x0, _us, _fs, _args)
-#endif
 
 /*
  * Following macros provide the means for ring buffer processing.
@@ -250,6 +199,9 @@ typedef struct md_list {
     uint32_t        length;
 } md_list;
 
+/** Type of argument native for a stack */
+typedef uint32_t ta_log_arg;
+
 /*
  * It defines the structure of the message header.
  * In the case of using fast logging the maximum logging value
@@ -264,24 +216,49 @@ typedef struct lgr_mess_header {
     uint32_t        sequence;       /**< Sequence number for this message */
     uint32_t        mark;           /**< Flag: message is marked as
                                          processed at this time */
-    struct timeval  timestamp;
+
+    te_log_ts_sec   sec;            /**< Seconds of the timestamp */
+    te_log_ts_usec  usec;           /**< Microseconds of the timestamp */
     te_log_level    level;          /**< Log level mask to be passed 
                                          in raw log*/
-    const char     *user_name;      /**< User_name string location */
-    const char     *fs;             /**< Format string location */
-    uint32_t        arg1;
-    uint32_t        arg2;
-    uint32_t        arg3;
-    uint32_t        arg4;
-    uint32_t        arg5;
-    uint32_t        arg6;
-    uint32_t        arg7;
-    uint32_t        arg8;
-    uint32_t        arg9;
-    uint32_t        arg10;
-    uint32_t        arg11;
-    uint32_t        arg12;
+    const char     *user;           /**< User_name string location */
+    const char     *fmt;            /**< Format string location */
+    unsigned int    n_args;         /**< Number of arguments */
+    ta_log_arg      arg1;
+    ta_log_arg      arg2;
+    ta_log_arg      arg3;
+    ta_log_arg      arg4;
+    ta_log_arg      arg5;
+    ta_log_arg      arg6;
+    ta_log_arg      arg7;
+    ta_log_arg      arg8;
+    ta_log_arg      arg9;
+    ta_log_arg      arg10;
+    ta_log_arg      arg11;
+    ta_log_arg      arg12;
 } lgr_mess_header;
+
+
+/**
+ * Get timestamp for a log message.
+ *
+ * @param sec       Location for seconds
+ * @param usec      Location for microseconds
+ */
+static inline void
+ta_log_timestamp(te_log_ts_sec *sec, te_log_ts_usec *usec)
+{
+    struct timeval  tv;
+
+    assert(sec != NULL);
+    assert(usec != NULL);
+
+    gettimeofday(&tv, NULL);
+
+    *sec  = tv.tv_sec;
+    *usec = tv.tv_usec;
+}
+
 
 /**
  * The main ring buffer structure.
@@ -550,107 +527,6 @@ lgr_rb_get_elements(struct lgr_rb *ring_buffer, uint32_t position,
    }
 }
 
-
-/**
- * Register message in the raw log (fast mode).
- *
- * @param  user_name      Arbitrary "user name";
- * @param  form_str       Raw log format string. This string should contain
- *                        conversion specifiers if some arguments following;
- * @param  argl1..argl12  Auxiliary args containing information about
- *                        appropriate arg;
- * @param  arg1..arg12    Arguments passed into the function according to
- *                        raw log format string description.
- */
-static inline void
-log_message_fast(uint16_t level, const char *user_name,
-                 const char *form_str,
-                 int argl1,  uint32_t arg1,  int argl2,  uint32_t arg2,
-                 int argl3,  uint32_t arg3,  int argl4,  uint32_t arg4,
-                 int argl5,  uint32_t arg5,  int argl6,  uint32_t arg6,
-                 int argl7,  uint32_t arg7,  int argl8,  uint32_t arg8,
-                 int argl9,  uint32_t arg9,  int argl10, uint32_t arg10,
-                 int argl11, uint32_t arg11, int argl12, uint32_t arg12)
-{
-    ta_log_lock_key key;
-    uint32_t        position;
-    int             res;
-
-    struct lgr_mess_header *message;
-
-    log_entries_fast++;
-
-    if (log_buffer.rb == NULL)
-        return;
-
-    if (ta_log_lock(&key) != 0)
-        return;
-    res = lgr_rb_allocate_head(&log_buffer, LGR_RB_FORCE, &position);
-    if (res == 0)
-    {
-        (void)ta_log_unlock(&key);
-        return;
-    }
-
-    message = (struct lgr_mess_header *)LGR_GET_MESSAGE_ARRAY(&log_buffer,
-                                                              position);
-
-    LGR_TIMESTAMP(&(message->timestamp));
-    message->user_name = user_name;
-    message->level = level;
-    message->fs = form_str;
-
-    if (argl1 > 0)
-    {
-        message->arg1 = arg1;
-        if (argl2 > 0)
-        {
-            message->arg2 = arg2;
-            if (argl3 > 0)
-            {
-                message->arg3 = arg3;
-                if (argl4 > 0)
-                {
-                    message->arg4 = arg4;
-                    if (argl5 > 0)
-                    {
-                        message->arg5 = arg5;
-                        if (argl6 > 0)
-                        {
-                            message->arg6 = arg6;
-                            if (argl7 > 0)
-                            {
-                                message->arg7 = arg7;
-                                if (argl8 > 0)
-                                {
-                                    message->arg8 = arg8;
-                                    if (argl9 > 0)
-                                    {
-                                        message->arg9 = arg9;
-                                        if (argl10 > 0)
-                                        {
-                                            message->arg10 = arg10;
-                                            if (argl11 > 0)
-                                            {
-                                                message->arg11 = arg11;
-                                                if (argl12 > 0)
-                                                    message->arg12 = arg12;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-#if 0
-    lgr_rb_view_head(&log_buffer, position);
-#endif
-    (void)ta_log_unlock(&key);
-}
 
 extern void logfork_log_message(const char *file, unsigned int line,
                                 unsigned int level,

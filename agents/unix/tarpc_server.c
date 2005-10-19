@@ -44,6 +44,7 @@
 
 #include "unix_internal.h"
 
+
 #if HAVE_AIO_H
 void *dummy = aio_read;
 #endif

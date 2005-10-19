@@ -27,6 +27,8 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD DHCP stack"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -63,10 +65,8 @@
 #include <errno.h>
 #include <string.h>
 
+#include "logger_api.h"
 #include "tad_dhcp_impl.h"
-
-#define TE_LGR_USER     "TAD DHCP stack"
-#include "logger_ta.h"
 
  
 /**

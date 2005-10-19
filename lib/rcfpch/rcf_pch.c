@@ -62,6 +62,7 @@
 #include "comm_agent.h"
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
+#include "logger_ta.h"
 
 #include "rcf_pch_internal.h"
 #undef SEND_ANSWER
@@ -330,7 +331,7 @@ transmit_log(struct rcf_comm_connection *conn, char *cbuf,
     int len;
     int rc;
 
-    len = log_get(sizeof(log_data), log_data);
+    len = ta_log_get(sizeof(log_data), log_data);
 
     if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,
                          "0 attach %d", len) >= (buflen - answer_plen))

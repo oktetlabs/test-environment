@@ -98,6 +98,7 @@
 #include "comm_agent.h"
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
+#include "logfork.h"
 
 #include "rcf_pch_internal.h"
 

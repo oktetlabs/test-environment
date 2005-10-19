@@ -39,7 +39,8 @@
 #include "te_defs.h"
 #include "te_printf.h"
 
-#include "logger_ta.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 
 #include "tad_pcap_impl.h"
 

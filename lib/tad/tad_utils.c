@@ -27,6 +27,7 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD Utils"
 
 #include <stdio.h>
 #include <string.h>
@@ -43,9 +44,8 @@
 #include "tad_utils.h"
 #include "asn_usr.h" 
 #include "ndn.h" 
+#include "logger_api.h"
 
-#define TE_LGR_USER     "TAD Utils"
-#include "logger_ta.h"
 
 /**
  * Description see in tad_utils.h

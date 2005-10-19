@@ -27,11 +27,12 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD IPv4"
+
+#include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#define TE_LGR_USER     "TAD IPv4"
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -59,6 +60,8 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <string.h>
+
+#include "logger_ta_fast.h"
 
 #ifdef WITH_ETH
 #include "../eth/tad_eth_impl.h"

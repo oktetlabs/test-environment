@@ -57,12 +57,12 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "comm_agent.h"
+#include "logger_api.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#include "logger_ta.h"
-
 #include "unix_internal.h"
+
 
 #define MAC_ADDR_LEN        6
 

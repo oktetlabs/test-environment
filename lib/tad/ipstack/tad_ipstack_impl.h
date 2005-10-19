@@ -49,7 +49,6 @@
 #include "ndn_ipstack.h"
 
 #include "logger_api.h"
-#include "logger_ta.h"
 
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"

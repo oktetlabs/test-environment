@@ -30,6 +30,8 @@
 #ifndef __TE_RCF_PCH_INTERNAL_H__
 #define __TE_RCF_PCH_INTERNAL_H__
 
+#define TE_LGR_USER     "RCF PCH"
+
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -38,9 +40,8 @@
 #include "te_defs.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
+#include "logger_api.h"
 
-#define TE_LGR_USER     "RCF PCH"
-#include "logger_ta.h"
 
 /** Size of the log data sent in one request */
 #define RCF_PCH_LOG_BULK        8192

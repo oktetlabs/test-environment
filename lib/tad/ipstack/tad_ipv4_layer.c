@@ -38,7 +38,8 @@
 
 #include "tad_ipstack_impl.h"
 
-#include "logger_ta.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 
 
 /**

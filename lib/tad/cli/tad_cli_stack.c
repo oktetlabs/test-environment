@@ -38,7 +38,9 @@
 #define assert(x) (x)
 #endif
 #include "tad_cli_impl.h"
-#include "logger_ta.h"
+#include "logger_api.h"
+#include "logfork.h"
+
 
 #define CLI_COMMAND_PROMPT  0
 #define CLI_LOGIN_PROMPT    1

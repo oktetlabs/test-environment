@@ -17,7 +17,7 @@
  * has not to take care about validity of logged data.
  *
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2003-2005 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -36,6 +36,7 @@
  * MA  02111-1307  USA
  *
  * 
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
  *
  * $Id$
@@ -44,140 +45,40 @@
 #ifndef __TE_LOGGER_TA_H__
 #define __TE_LOGGER_TA_H__
 
-#include "logger_ta_internal.h"
-#include "logger_api.h"
-#include "logfork.h"
+#include "te_stdint.h"
+#include "te_errno.h"
 
-#define LGRF_MESSAGE(_lvl, _lgruser, _fs, _args...) \
-    do {                                                            \
-        if (TE_LOG_LEVEL & (_lvl))                                  \
-        {                                                           \
-            log_message_fast(_lvl, _lgruser, _fs, LARG12(_args));   \
-        }                                                           \
-    } while (0) 
-    
-/** @name Logging abnormal/unexpected situations */
-#define LOGF_ERROR(_us, _fs...)  LGRF_MESSAGE(TE_LL_ERROR, _us, _fs)
-#define F_ERROR(_fs...)          LOGF_ERROR(TE_LGR_USER, _fs)
-/*@}*/
-
-/**
- * @name Logging situations same failed initialization of the optional
- *       feature
- */
-#define LOGF_WARN(_us, _fs...)  LGRF_MESSAGE(TE_LL_WARN, _us, _fs)
-#define F_WARN(_fs...)          LOGF_WARN(TE_LGR_USER, _fs)
-/*@}*/
-  
-/** @name Logging very important event in TE and tests */ 
-#define LOGF_RING(_us, _fs...)  LGRF_MESSAGE(TE_LL_RING, _us, _fs)
-#define F_RING(_fs...)          LOGF_RING(TE_LGR_USER, _fs)
-/*@}*/
-
-/** @name Logging important event for debugging of the test */
-#define LOGF_INFO(_us, _fs...)  LGRF_MESSAGE(TE_LL_INFO, _us, _fs)
-#define F_INFO(_fs...)          LOGF_INFO(TE_LGR_USER, _fs)
-/*@}*/
-   
-/** @name Logging additional events for detalization of processing */
-#define LOGF_VERB(_us, _fs...)  LGRF_MESSAGE(TE_LL_VERB, _us, _fs)
-#define F_VERB(_fs...)          LOGF_VERB(TE_LGR_USER, _fs)
-/*@}*/
-
-
-    
-/**< Logging of entry to and exit from function */    
-#define LOGF_SUPENTRY(_us, _fs, _args...) \
-    do {                                              \
-        log_message_fast(TE_LL_ENTRY_EXIT, _us,       \
-                         "ENTRY to %s(): " _fs,       \
-                         4, (uint32_t)__FUNCTION__,   \
-                         LARG10(_args));              \
-    } while (0)
-
-
-#define LOGF_ENTRY(_us, _fs...) \
-    do {                                                                \
-        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                            \
-        {                                                               \
-            if (!!(#_fs[0]))                                            \
-                LOGF_SUPENTRY(_us, _fs);                                \
-            else                                                        \
-                log_message_fast(TE_LL_ENTRY_EXIT, _us,                 \
-                                 "ENTRY to %s()",                       \
-                                 4, (uint32_t)__FUNCTION__,             \
-                                 LARG10());                             \
-        }                                                               \
-    } while (0)
-    
-#define F_ENTRY(_fs...)  LOGF_ENTRY(TE_LGR_USER, _fs)    
-    
-#define LOGF_SUPEXIT(_us, _fs, _args...) \
-    do {                                                        \
-        log_message_fast(TE_LL_ENTRY_EXIT, _us,                 \
-                         "EXIT in line %d from %s(): " _fs,     \
-                         4, __LINE__,                           \
-                         4, (uint32_t)__FUNCTION__,             \
-                         LARG9(_args));                         \
-    } while (0)
-  
-#define LOGF_EXIT(_us, _fs...)                                  \
-    do {                                                        \
-        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                    \
-        {                                                       \
-            if (!!(#_fs[0]))                                    \
-                LOGF_SUPEXIT(_us, _fs);                         \
-            else                                                \
-                log_message_fast(TE_LL_ENTRY_EXIT, _us,         \
-                                 "EXIT in line %d from %s()",   \
-                                 4, __LINE__,                   \
-                                 4, (uint32_t)__FUNCTION__,     \
-                                 LARG9());                      \
-        }                                                       \
-    } while (0)
-
-                
-#define F_EXIT(_fs...)  LOGF_EXIT(TE_LGR_USER, _fs)     
-   
 
 #ifdef _cplusplus
 extern "C" {
 #endif
 
-/* Some functions for interacting with logger resourcese on TA side */
-
 /**
  * Initialize Logger resources on the Test Agent side (log buffer, 
  * log file and so on).
  *     
- * @return  Operation status.
- *
- * @retval  0  Success.
- * @retval -1  Failure.       
+ * @return Status code (see te_errno.h)
  */
-extern int log_init(void);
+extern te_errno ta_log_init(void);
 
 /**
  * Finish Logger activity on the Test Agent side (fluhes buffers 
  * in the file if that means exists and so on).
- *     
- * @return  Operation status.
  *
- * @retval  0  Success.
- * @retval -1  Failure.        
+ * @return Status code (see te_errno.h)
  */ 
-extern int log_shutdown(void);
+extern te_errno ta_log_shutdown(void);
 
 /**
  * Request the log messages accumulated in the Test Agent local log 
  * buffer. Passed messages will be deleted from local log.
  *     
- * @param  buf_length   Length of the transfer buffer.
- * @param  transfer_buf Pointer to the transfer buffer.
+ * @param buf_length    Length of the transfer buffer.
+ * @param transfer_buf  Pointer to the transfer buffer.
  * 
- * @retval  Length of the filled part of the transfer buffer in bytes
+ * @retval Length of the filled part of the transfer buffer in bytes
  */
-extern uint32_t log_get(uint32_t buf_length, uint8_t *transfer_buf);
+extern uint32_t ta_log_get(uint32_t buf_length, uint8_t *transfer_buf);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -30,6 +30,8 @@
 #ifndef __TE_TAD_BRIDGE_IMPL_H__
 #define __TE_TAD_BRIDGE_IMPL_H__ 
 
+#define TE_LGR_USER     "TAD Bridge"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,13 +49,12 @@
 
 #include "asn_usr.h" 
 #include "ndn_bridge.h"
+#include "logger_api.h"
 
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
 
-#define TE_LGR_USER     "TAD Bridge"
-#include "logger_ta.h"
 
 #ifdef __cplusplus
 extern "C" {

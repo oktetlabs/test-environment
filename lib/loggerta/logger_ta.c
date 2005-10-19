@@ -30,14 +30,20 @@
 
 #include "te_config.h"
 
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
 #include "te_printf.h"
-#include "logger_ta.h"
+#include "logger_defs.h"
+#include "logger_api.h"
 #include "logger_int.h"
 #include "rcf_pch_mem.h"
+#include "logger_ta_internal.h"
+#include "logger_ta.h"
 
 
 /** Local log buffer instance */
@@ -48,9 +54,6 @@ struct lgr_rb log_buffer;
  * increases this variable by 1.
  */
 uint32_t log_sequence = 0;
-
-int log_entries_fast;
-int log_entries_slow;
 
 
 #if HAVE_PTHREAD_H
@@ -97,12 +100,10 @@ ta_log_message(const char *file, unsigned int line,
     skip_flags = "#-+ 0";
     skip_width = "*0123456789";
 
-    log_entries_slow++;
-    
     memset(&header, 0, sizeof(struct lgr_mess_header));
-    header.user_name = (user != NULL) ? user : null_str;
     header.level = level;
-    header.fs = (fmt != NULL) ? fmt : null_str;
+    header.user = (user != NULL) ? user : null_str;
+    header.fmt = (fmt != NULL) ? fmt : null_str;
     for (p_str = fmt; *p_str; p_str++)
     {
         if (*p_str != '%')
@@ -201,7 +202,7 @@ ta_log_message(const char *file, unsigned int line,
     header.sequence = hdr_addr->sequence;
     header.mark = hdr_addr->mark;
 
-    LGR_TIMESTAMP(&(header.timestamp));
+    ta_log_timestamp(&header.sec, &header.usec);
 
     *hdr_addr = header;
 
@@ -326,9 +327,9 @@ log_get_message(uint32_t length, uint8_t *buffer)
     tmp_buf++;
 
     /* Write timestamp */
-    *((uint32_t *)tmp_buf) = htonl(header.timestamp.tv_sec);
+    *((uint32_t *)tmp_buf) = htonl(header.sec);
     tmp_buf += sizeof(uint32_t);
-    *((uint32_t *)tmp_buf) = htonl(header.timestamp.tv_usec);
+    *((uint32_t *)tmp_buf) = htonl(header.usec);
     tmp_buf += sizeof(uint32_t);
 
     /* Write log level */
@@ -345,21 +346,21 @@ log_get_message(uint32_t length, uint8_t *buffer)
     tmp_buf += sizeof(te_log_level);
 
     /* Write user name and corresponding (NFL) next field length */
-    fs = header.user_name;
+    fs = header.user;
     tmp_length = strlen(fs);
     LGR_CHECK_LENGTH(sizeof(te_log_nfl) + tmp_length);
     *((te_log_nfl *)tmp_buf) = log_nfl_hton(tmp_length);
     tmp_buf += sizeof(te_log_nfl);
-    strncpy(tmp_buf, fs, tmp_length);
+    memcpy(tmp_buf, fs, tmp_length);
     tmp_buf += tmp_length;
 
     /* Write format string and corresponding NFL */
-    fs = header.fs;
+    fs = header.fmt;
     tmp_length = strlen(fs);
     LGR_CHECK_LENGTH(sizeof(te_log_nfl) + tmp_length);
     *((te_log_nfl *)tmp_buf) = log_nfl_hton(tmp_length);
     tmp_buf += sizeof(te_log_nfl);
-    strncpy(tmp_buf, fs, tmp_length);
+    memcpy(tmp_buf, fs, tmp_length);
     tmp_buf += tmp_length;
     
     /* Parse format string */
@@ -554,17 +555,14 @@ log_atfork_child(void)
  * @retval  0  Success.
  * @retval -1  Failure.
  */
-int
-log_init(void)
+te_errno
+ta_log_init(void)
 {
     if (pthread_atfork(NULL, NULL, log_atfork_child) != 0)
         return -1;
 
     if (ta_log_lock_init() != 0)
         return -1;
-
-    log_entries_fast = 0;
-    log_entries_slow = 0;
 
     if (lgr_rb_init(&log_buffer) != 0)
         return -1;
@@ -584,8 +582,8 @@ log_init(void)
  * @retval  0  Success.
  * @retval -1  Failure.
  */
-int
-log_shutdown(void)
+te_errno
+ta_log_shutdown(void)
 {
     (void)ta_log_lock_destroy();
 
@@ -603,7 +601,7 @@ log_shutdown(void)
  * @retval  Length of the filled part of the transfer buffer in bytes
  */
 uint32_t
-log_get(uint32_t buf_length, uint8_t *transfer_buf)
+ta_log_get(uint32_t buf_length, uint8_t *transfer_buf)
 {
     uint32_t log_length = 0;
     uint32_t mess_length, rest_length;
@@ -633,152 +631,3 @@ log_get(uint32_t buf_length, uint8_t *transfer_buf)
 ret:
     return log_length;
 }
-
-
-#if TALOGDEBUG
-/**
- * Print message in stderr (debug mode).
- *
- * @param us    Arbitrary "user name"
- * @param fs    Raw log format string. This string should contain
- *              conversion specifiers if some arguments following
- * @param ...   Arguments passed into the function according to
- *              raw log format string description
- */
-void
-log_message_print(const char *us, const char *fs, ...)
-{
-    va_list ap;
-    char *p_str;
-    char *beg_str;
-    struct timeval tv;
-    uint32_t narg = 0;
-    char tmp_str[TE_LOG_FIELD_MAX];
-
-    static char *skip_flags, *skip_width;
-
-    skip_flags = "#-+ 0";
-    skip_width = "*0123456789";
-
-    LGR_TIMESTAMP(&tv);
-    fprintf(stderr, "%ld: <%s> ", tv.tv_usec, us);
-    
-    /*TODO: insert log level printf */
-    
-    beg_str = (char *)fs;
-
-    va_start(ap, fs);
-    for (p_str = (char *)fs; *p_str; p_str++)
-    {
-        if (*p_str != '%')
-            continue;
-
-        if (*++p_str == '%')
-            continue;
-
-        /* skip the flags field  */
-        for (; index(skip_flags, *p_str); ++p_str);
-
-        /* skip to possible '.', get following precision */
-        for (; index(skip_width, *p_str); ++p_str);
-        if (*p_str == '.')
-            ++p_str;
-
-        /* skip to conversion char */
-        for (; index(skip_width, *p_str); ++p_str);
-
-        if ((++narg) > LGR_MAX_ARGS)
-        {
-            fprintf(stderr, "\n%ld: <LOGGER> Too many arguments\n",
-                    tv.tv_sec);
-            return;
-        }
-
-        switch (*p_str)
-        {
-            case 'd':
-            case 'i':
-            case 'o':
-            case 'x':
-            case 'X':
-            case 'u':
-            case 'c':
-            case 'p':
-                LGR_DEBUG_PRT(beg_str, p_str, int);
-                break;
-
-            case 's':
-                LGR_DEBUG_PRT(beg_str, p_str, char*);
-                break;
-
-            case 'T':
-                /*
-                 * Format: %TmX.Y
-                 * Args order: dumped memory address, length
-                 */
-                if ((*++p_str != 0) && (*p_str == 'm'))
-                {
-                    unsigned int    i;
-                    int             line_feed;
-                    int             type;
-                    uint8_t        *addr;
-                    uint32_t        length;
-                    char            aux_str[LGR_AUX_STR_LEN];
-                    
-                    addr = va_arg(ap, uint8_t *);
-                    length = va_arg(ap, uint32_t);
-
-                    memset(tmp_str, 0, TE_LOG_FIELD_MAX);
-                    strncpy(tmp_str, beg_str, (p_str - beg_str - 1));
-                    fprintf(stderr, tmp_str);
-                    beg_str = p_str;
-                    beg_str++;
-
-                    LGR_GET_DIGITS(aux_str, beg_str, p_str);
-                    line_feed = atoi(aux_str);
-
-                    LGR_GET_DIGITS(aux_str, beg_str, p_str);
-                    type = atoi(aux_str);
-
-                    length /= type;
-                    for (i = 0; i < length; ++i)
-                    {
-                         if ((i != 0) && (i % line_feed == 0))
-                             fprintf(stderr,"\n");
-
-                         if (type == 1)
-                             fprintf(stderr, "%" TE_PRINTF_8 "x ",
-                                     addr[i]);
-                         else if (type == 2)
-                             fprintf(stderr, "%" TE_PRINTF_16 "x ",
-                                     ((uint16_t *)addr)[i]);
-                         else if (type == 4)
-                             fprintf(stderr, "%" TE_PRINTF_32 "x ",
-                                     ((uint32_t *)addr)[i]);
-                         else
-                             assert(FALSE);
-                    }
-                    fprintf(stderr,"\n");
-
-                    beg_str = p_str;
-                    beg_str++;
-                }
-                break;
-
-            default:
-                fprintf(stderr, "\n%ld: <LOGGER> Illegal specifier - %c\n",
-                        tv.tv_sec, *p_str);
-                return;
-        }
-    }
-
-    if (1)
-    {
-        memset(tmp_str, 0, TE_LOG_FIELD_MAX);
-        strncpy(tmp_str, beg_str, (p_str - beg_str + 1));
-        fprintf(stderr, tmp_str);
-    }
-    fflush(stderr);
-    va_end(ap);
-}
-#endif /* TALOGDEBUG */

@@ -33,7 +33,8 @@
 #define TE_LGR_USER "TAD tcp" 
 #include "tad_ipstack_impl.h"
 
-#include "logger_ta.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 
 /**
  * Callback for read parameter value of ethernet CSAP.

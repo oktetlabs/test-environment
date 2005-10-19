@@ -27,6 +27,8 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD File"
+
 #include "config.h"
 
 #ifdef HAVE_STDLIB_H
@@ -51,8 +53,7 @@
 
 #include "tad_file_impl.h"
 
-#define TE_LGR_USER     "TAD File"
-#include "logger_ta.h"
+#include "logger_api.h"
 
 
 /**

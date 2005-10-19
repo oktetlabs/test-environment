@@ -28,6 +28,9 @@
  * @(#) $Id$
  */
 
+#define TE_LGR_USER     "TAD Ethernet"
+
+#include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -63,10 +66,8 @@
 #include "tad_eth_impl.h"
 #include "ndn_eth.h" 
 
-
-
-#define TE_LGR_USER     "TAD Ethernet"
-#include "logger_ta.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 
 
 

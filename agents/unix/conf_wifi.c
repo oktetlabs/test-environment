@@ -42,7 +42,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
-#include "logger_ta.h"
+#include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"

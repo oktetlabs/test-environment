@@ -482,7 +482,7 @@ main(int argc, char **argv)
     if (argc != 4)
         return -1;
 
-    if ((rc = log_init()) != 0)
+    if ((rc = ta_log_init()) != 0)
         return rc;
         
     ta_name = argv[1];

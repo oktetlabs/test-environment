@@ -29,6 +29,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER      "Configurator"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -52,13 +54,12 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "logger_api.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
 #include "poe_lib.h"
 
-#define TE_LGR_USER      "Configurator"
-#include "logger_ta.h"
 
 #define VLAN_DEFAULT    1
 

@@ -28,6 +28,9 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD Ethernet-PCAP"
+
+#include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -65,8 +68,8 @@
 #define TE_LOG_LEVEL    0xff
 #endif
 
-#define TE_LGR_USER     "TAD Ethernet-PCAP"
-#include "logger_ta.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 
 #include "tad_pcap_impl.h"
 #include "ndn_pcap.h" 

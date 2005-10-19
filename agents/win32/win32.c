@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER      "Main"
+
 #include <winsock2.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -49,12 +51,12 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "logger_api.h"
+#include "logger_ta.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 
-#define TE_LGR_USER      "Main"
-#include "logger_ta.h"
 
 /** Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
@@ -610,9 +612,9 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
     (void)signal(SIGINT, SIG_DFL);
     (void)signal(SIGPIPE, SIG_DFL);
 
-    rc = log_shutdown();
+    rc = ta_log_shutdown();
     if (rc != 0)
-        fprintf(stderr, "log_shutdown() failed: error=0x%X\n", rc);
+        fprintf(stderr, "ta_log_shutdown() failed: error=0x%X\n", rc);
 
     return -1; /* Call default callback as well */
 }
@@ -656,9 +658,9 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     (void)signal(SIGINT, ta_sigint_handler);
     (void)signal(SIGPIPE, ta_sigpipe_handler);
 
-    if ((rc = log_init()) != 0)
+    if ((rc = ta_log_init()) != 0)
     {
-        fprintf(stderr, "log_init() failed: error=%d\n", rc);
+        fprintf(stderr, "ta_log_init() failed: error=%d\n", rc);
         return rc;
     }
 

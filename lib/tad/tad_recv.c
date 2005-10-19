@@ -50,7 +50,9 @@
 
 #define TE_LGR_USER     "TAD Recv"
 
-#include "logger_ta.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
+
 
 #define SEND_ANSWER(_fmt...) \
     do {                                                             \

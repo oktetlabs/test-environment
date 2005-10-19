@@ -70,7 +70,7 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
-#include "logger_ta.h"
+#include "logger_api.h"
 #include "logfork.h"
 #include "te_tools.h"
 
