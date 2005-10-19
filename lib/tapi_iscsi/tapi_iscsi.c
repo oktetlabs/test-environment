@@ -151,9 +151,18 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
 
     int rc = 0, syms, num;
 
-    if (ta_name == NULL || socket == NULL ||
-        buffer == NULL || length == NULL)
+    if (ta_name == NULL || socket == NULL)
         return TE_EWRONGPTR;
+
+    if (buffer != NULL)
+    {
+        if (length == NULL)
+            return TE_EWRONGPTR;
+
+        msg.params = params;
+        msg.data   = buffer;
+        msg.length = *length;
+    }
 
     rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
                               ndn_traffic_pattern, &pattern, &syms);
@@ -164,9 +173,6 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
         return rc;
     }
 
-    msg.params = params;
-    msg.data   = buffer;
-    msg.length = *length;
 
     if (forward != CSAP_INVALID_HANDLE)
     {
@@ -181,7 +187,8 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
 
 
     rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern, 
-                               iscsi_msg_handler, &msg, timeout, 1);
+                               buffer == NULL ? NULL : iscsi_msg_handler,
+                               buffer == NULL ? NULL : &msg, timeout, 1);
     if (rc != 0)
     {
         ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
@@ -192,7 +199,8 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 
-    *length = msg.length;
+    if (buffer != NULL)
+        *length = msg.length;
 
 cleanup:
     asn_free_value(pattern);
