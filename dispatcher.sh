@@ -419,11 +419,11 @@ export TE_LOG_RAW=${TE_LOG_RAW:-${TE_LOG_DIR}/tmp_raw_log}
 
 # Export TE_INSTALL
 if test -z "$TE_INSTALL" ; then
-    if test -e $DISPATCHER_DIR/configure.ac ; then
+    if test -e "$DISPATCHER_DIR/configure.ac" ; then
         if test -n "${TE_BUILD}" ; then
-            TE_INSTALL=${TE_BUILD}/inst
+            TE_INSTALL="${TE_BUILD}/inst"
         else
-            TE_INSTALL=$DISPATCHER_DIR/build/inst
+            TE_INSTALL="$DISPATCHER_DIR/build/inst"
         fi
     else
         TE_PATH="$(dirname "${DISPATCHER_DIR}")"
@@ -433,20 +433,8 @@ if test -z "$TE_INSTALL" ; then
         echo "Exporting TE installation directory as TE_INSTALL:"
         echo '    '$TE_INSTALL
     fi
-    export TE_INSTALL ;
+    export TE_INSTALL
 fi
-
-if test -z "${TE_PATH}" ; then
-    tmp=`find -follow ${TE_INSTALL} -name dispatcher.sh 2>/dev/null`
-    if test -n "${tmp}" ; then
-        tmp=`dirname ${tmp}`
-        TE_PATH=${tmp/%\/bin/}
-        if test x${TE_PATH} = x${tmp} ; then
-            echo "dispatcher.sh is found in unexpected path." >&2
-            exit_with_log
-        fi
-    fi
-fi    
 
 if test -z "${TE_PATH}" ; then
     if test -e "${CONF_BUILDER}" ; then
@@ -454,9 +442,12 @@ if test -z "${TE_PATH}" ; then
         tmp=`echo 'changequote([,]) define([TE_HOST], [host=$1])' "${tmp}" | m4 | grep 'host=' | tail -n 1`
         eval $tmp
     fi
-    if test -z "${host}" ; then
+    if test -z "${host}" -a -n "${TE_BASE}" ; then
         host=$(${TE_BASE}/engine/builder/te_discover_host)
-    fi        
+    fi
+    if test -z "${host}" -a -x "${DISPATCHER_DIR}/te_discover_host" ; then
+        host=$(${DISPATCHER_DIR}/te_discover_host)
+    fi
     if test -z "$host" ; then
         echo 'Cannot determine host platform.' >&2
         exit_with_log
@@ -630,7 +621,7 @@ start_daemon LOGGER
 
 start_daemon RCF
 
-if test ${START_OK} -eq 0 ; then
+if test -n "${RCF_OK}" ; then
     # Wakeup Logger when RCF is ready
     TE_LOGGER_PID="$(cat "${TE_LOGGER_PID_FILE}" 2>/dev/null)"
     if test -n "${TE_LOGGER_PID}" ; then
