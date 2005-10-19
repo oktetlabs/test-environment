@@ -792,7 +792,11 @@ target_security_negotiate(struct iscsi_conn *conn,
 				attach_key_int(outputpdu, CHAP_A, chap_a);
 
 				/*  generate id number and challenge string to send to him */
-				chap_i = CHAP_GetIdentifier(auth_param.chap_local_ctx);
+                chap_i = iscsi_get_custom_value(conn->custom, "CHAP_I");
+                if (chap_i != 0)
+                    CHAP_SetIdentifier(chap_i, auth_param.chap_local_ctx);
+                else
+                    chap_i = CHAP_GetIdentifier(auth_param.chap_local_ctx);
 				attach_key_int(outputpdu, CHAP_I, chap_i);
 
 				chap_c = CHAP_GetChallenge(auth_param.chap_local_ctx);
@@ -852,9 +856,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 										 STAT_DETAIL_ERR, outputpdu);
 							goto out;
 						}
-                        chap_i = iscsi_get_custom_value(conn->custom, "fake_chap_id");
-                        if (chap_i == 0)
-                            chap_i = value;
+                        chap_i = value; 
 					} else if (got_bitmask == GOT_CHAP_C) {
 						if (check_step_key(key, &neg_flags, GOT_CHAP_C)
 							|| (chap_c = malloc(strlen(key->keyvalue) + 1)) == NULL)
