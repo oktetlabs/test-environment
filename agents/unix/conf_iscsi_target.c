@@ -466,6 +466,8 @@ map_oid_to_param(const char *oid)
             upper_case = TRUE;
     }
     *p = '\0';
+    if ((p = strstr(param_name, "Pdu")) != NULL)
+        memcpy(p, "PDU", 3);
     return param_name;
 }
 
