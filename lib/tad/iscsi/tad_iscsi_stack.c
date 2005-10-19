@@ -201,10 +201,13 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
                            recv_pkt, link);
         }
         UNLOCK_QUEUE(iscsi_spec_data); 
-        if (recv_pkt == NULL && i == 0)
-            usleep(timeout); /* wait a bit */
+
         INFO("%s(CSAP %d), recv_pkt 0x%X", __FUNCTION__, csap_descr->id,
              recv_pkt);
+        if (recv_pkt == NULL && i == 0)
+            usleep(timeout); /* wait a bit */
+        else
+            break;
     }
 
     if (recv_pkt != NULL)
