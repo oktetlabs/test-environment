@@ -496,6 +496,9 @@ tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     int      rc = 0;
     size_t   h_len = 0;
 
+    uint8_t *pld_data = pkt->data;
+    size_t   pld_len  = pkt->len;
+
     asn_value *tcp_header_pdu = NULL;
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
@@ -520,7 +523,7 @@ tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
              spec_data->data_tag);
         if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
         {
-            int acc_sock = *((int *)pkt->data);
+            int acc_sock = *((int *)data);
 
             INFO("match data server CSAP, socket %d", acc_sock);
 
@@ -528,11 +531,62 @@ tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
                 rc = asn_write_int32(tcp_header_pdu, acc_sock, "socket");
             if (rc != 0)
                 ERROR("write socket error: %r", rc);
-            h_len = 1; /* ugly hack for generic payload processing */
+            pld_len = 0;
         }
         else
         {
-            h_len = 0; /* ugly hack for generic payload processing */
+            if (spec_data->wait_length > 0)
+            {
+                int defect = spec_data->wait_length - 
+                            (spec_data->stored_length + pkt->len);
+
+                if (spec_data->stored_buffer == NULL)
+                    spec_data->stored_buffer =
+                        malloc(spec_data->wait_length);
+
+                if (defect > 0) 
+                {
+                    rc = TE_ETADLESSDATA;
+                    INFO("%s(CSAP %d): less data, "
+                         "wait %d, stored %d, get %d",
+                         __FUNCTION__, csap_descr->id, 
+                          spec_data->wait_length,
+                          spec_data->stored_length,
+                          pkt->len);
+
+                    memcpy(spec_data->stored_buffer + 
+                           spec_data->stored_length, 
+                           pkt->data, pkt->len); 
+                    spec_data->stored_length += pkt->len; 
+                }
+                else if (defect == 0)
+                {
+                    INFO("%s(CSAP %d): got last data, "
+                         "wait %d, stored %d, get %d",
+                         __FUNCTION__, csap_descr->id, 
+                          spec_data->wait_length,
+                          spec_data->stored_length,
+                          pkt->len);
+                    memcpy(spec_data->stored_buffer + 
+                               spec_data->stored_length, 
+                           pkt->data, pkt->len); 
+                    pld_data = spec_data->stored_buffer;
+                    pld_len = spec_data->wait_length;
+
+                    goto put_payload;
+                }
+                else 
+                {
+                    ERROR("read data more then asked: "
+                          "want %d, stored %d, last get %d", 
+                          spec_data->wait_length,
+                          spec_data->stored_length,
+                          pkt->len);
+                    rc = TE_ESMALLBUF;
+                }
+
+                goto cleanup;
+            }
         }
         goto put_payload;
     }
@@ -577,14 +631,17 @@ tcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
 
     /* TODO: Process TCP options */
 
+    pld_data += (h_len * 4);
+    pld_len  -= (h_len * 4); 
+
 put_payload:
     /* passing payload to upper layer */ 
     memset(payload, 0 , sizeof(*payload));
-    payload->len = pkt->len - (h_len * 4);
-    if (payload->len > 0)
+
+    if ((payload->len = pld_len) > 0)
     {
-        payload->data = malloc(payload->len);
-        memcpy(payload->data, pkt->data + (h_len * 4), payload->len); 
+        payload->data = malloc(pld_len);
+        memcpy(payload->data, pld_data, payload->len); 
     }
 
     if (parsed_packet)
@@ -595,6 +652,14 @@ put_payload:
             ERROR("%s, write TCP header to packet fails %r", 
                   __FUNCTION__, rc);
     } 
+
+    if (spec_data->wait_length > 0)
+    { 
+        free(spec_data->stored_buffer);
+        spec_data->stored_buffer = NULL;
+        spec_data->stored_length = 0;
+        spec_data->wait_length = 0;
+    }
 
 cleanup:
     asn_free_value(tcp_header_pdu);

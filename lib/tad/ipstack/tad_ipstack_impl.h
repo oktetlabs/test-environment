@@ -133,6 +133,8 @@ typedef struct tcp_csap_specific_data
 
     uint16_t         data_tag;
     size_t           wait_length;
+    uint8_t         *stored_buffer;
+    size_t           stored_length;
 
     tad_data_unit_t  du_src_port;
     tad_data_unit_t  du_dst_port;

@@ -115,19 +115,11 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
     if (spec_data->wait_length > 0)
     {
-        if (buf_len < spec_data->wait_length)
-        {
-            csap_descr->last_errno = TE_ESMALLBUF;
-            ERROR("%s(CSAP %d) wait buf passed %d, but buf_len %d",
-                  __FUNCTION__, csap_descr->id,
-                  spec_data->wait_length, buf_len);
-            return -1;
-        }
-        else
-        {
-            buf_len = spec_data->wait_length;
-            recv_flags |= MSG_WAITALL;
-        }
+        size_t rest_length = spec_data->wait_length -
+                             spec_data->stored_length;
+
+        if (buf_len > rest_length)
+            buf_len = rest_length;
     }
     FD_ZERO(&read_set);
     FD_SET(spec_data->socket, &read_set);
@@ -176,7 +168,7 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     else 
     {
         /* Note: possibly MSG_TRUNC and other flags are required */
-        rc = recv(spec_data->socket, buf, buf_len, recv_flags); 
+        rc = recv(spec_data->socket, buf, buf_len, 0); 
         if (rc == 0)
         {
             INFO("%s(CSAP %d): Peer closed connection", 
