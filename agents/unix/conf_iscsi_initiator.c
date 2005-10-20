@@ -52,8 +52,10 @@
 #include "config.h"
 #include "conf_daemons.h"
 #include "te_shell_cmd.h"
+#include "ndn_iscsi.h"
 
 /* Debug logs */
+#define ISCSI_DEBUG_LOG_
 #ifdef ISCSI_DEBUG_LOG
 #define IVERB(args...) fprintf(stderr, args); fprintf(stderr, "\n")
 #else
@@ -127,29 +129,6 @@
  */
 #define DEFAULT_HOST_BUS_ADAPTER            0
 
-/**
- * Flags:
- * the following assumption holds:
- * if parameter of the local Initiator structure 
- * was untouched than it should not be synchronized
- * with the Initiator. Than the Initiator uses the
- * default parameter and MAY NOT offer the parameter
- * during the negotiations.
- */
-#define OFFER_MAX_CONNECTIONS                   (1 << 0)
-#define OFFER_INITIAL_R2T                       (1 << 1)
-#define OFFER_HEADER_DIGEST                     (1 << 2)
-#define OFFER_DATA_DIGEST                       (1 << 3)
-#define OFFER_IMMEDIATE_DATA                    (1 << 4)
-#define OFFER_MAX_RECV_DATA_SEGMENT_LENGTH      (1 << 5)
-#define OFFER_FIRST_BURST_LENGTH                (1 << 6)
-#define OFFER_MAX_BURST_LENGTH                  (1 << 7)
-#define OFFER_DEFAULT_TIME2WAIT                 (1 << 8)
-#define OFFER_DEFAULT_TIME2RETAIN               (1 << 9)
-#define OFFER_MAX_OUTSTANDING_R2T               (1 << 10)
-#define OFFER_DATA_PDU_IN_ORDER                 (1 << 11)
-#define OFFER_DATA_SEQUENCE_IN_ORDER            (1 << 12)
-#define OFFER_ERROR_RECOVERY_LEVEL              (1 << 13)
 
 /**
  * Types of the Initiator to configure.
@@ -479,7 +458,7 @@ ta_system_ex(const char *cmd, ...)
 /****** L5 Initiator specific stuff  ****/
 typedef struct iscsi_target_param_descr_t
 {
-    uint32_t offer;
+    int      offer;
     char    *name;
     te_bool  is_string;
     int      offset;    
@@ -641,11 +620,11 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
 
 /** Format of the set command for UNH Initiator */
 static const char *conf_iscsi_unh_set_fmt =
-"iscsi_manage init set %s=%s target=%d host=%d";
+"iscsi_manage init set%s %s=%s target=%d host=%d";
 
 /** Format of the set int value command for UNH Initiator */
 static const char *conf_iscsi_unh_set_int_fmt =
-"iscsi_manage init set %s=%d target=%d host=%d";
+"iscsi_manage init set%s %s=%d target=%d host=%d";
 
 /** Format of the force command for UNH Initiator */
 static const char *conf_iscsi_unh_force_fmt =
@@ -666,20 +645,49 @@ static const char *conf_iscsi_unh_force_int_fmt =
 static const char *conf_iscsi_unh_force_flag_fmt =
 "iscsi_manage init force %s target=%d host=%d";
 
+#define SHOULD_OFFER(offer_, param_) \
+    (((offer_) & (param_)) == (param_))
+
 /**
  * Sets parameter of the UNH Initiator.
  *
- * @param param_     Name of the parameter
- * @param value_     New value of the parameter
- * @param target_id_ ID of the target for which the parameter
- *                   is set.
+ * @param param_            Name of the parameter
+ * @param value_            New value of the parameter
+ * @param target_id_        ID of the target for which the parameter
+ *                          is set
  */
-#define ISCSI_UNH_SET(param_, value_, target_id_) \
+#define ISCSI_UNH_SET_UNNEGOTIATED(param_, value_, target_id_) \
+    do {                                                                    \
+        IVERB("ISCSI_UNH_SET_UNNEGOTIATED(%s,0x%x,%d)\n",                   \
+                param_, value_, target_id_);                                \
+        CHECK_SHELL_CONFIG_RC(                                              \
+            ta_system_ex(conf_iscsi_unh_set_fmt,                            \
+                         "",                                                \
+                         (param_),                                          \
+                         (value_), (target_id_),                            \
+                         init_data->host_bus_adapter),                      \
+            (param_));                                                      \
+    } while (0)
+
+/**
+ * Sets parameter of the UNH Initiator.
+ *
+ * @param param_            Name of the parameter
+ * @param value_            New value of the parameter
+ * @param target_id_        ID of the target for which the parameter
+ *                          is set
+ * @param mask_             Bit mask for the parameter
+ * @param offered_params_   Set of params that should be offered by the
+ *                          Initiator during the login phase.
+ */
+#define ISCSI_UNH_SET(param_, value_, target_id_, mask_, offered_params_) \
     do {                                                                    \
         IVERB("ISCSI_UNH_SET(%s,0x%x,%d)\n",                                \
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_set_fmt, (param_),                  \
+            ta_system_ex(conf_iscsi_unh_set_fmt,                            \
+                         SHOULD_OFFER((offered_params_), (mask_)) ? "r":"p",\
+                         (param_),                                          \
                          (value_), (target_id_),                            \
                          init_data->host_bus_adapter),                      \
             (param_));                                                      \
@@ -692,13 +700,18 @@ static const char *conf_iscsi_unh_force_flag_fmt =
  * @param value_     New value of the parameter
  * @param target_id_ ID of the target for which the parameter
  *                   is set.
+ * @param mask_             Bit mask for the parameter
+ * @param offered_params_   Set of params that should be offered by the
+ *                          Initiator during the login phase.
  */
-#define ISCSI_UNH_SET_INT(param_, value_, target_id_) \
+#define ISCSI_UNH_SET_INT(param_, value_, target_id_, mask_, offered_params_) \
     do {                                                                    \
         IVERB("ISCSI_UNH_SET_INT(%s,0x%x,%d)\n",                            \
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
-            ta_system_ex(conf_iscsi_unh_set_int_fmt, (param_),              \
+            ta_system_ex(conf_iscsi_unh_set_int_fmt,                        \
+                         SHOULD_OFFER((offered_params_), (mask_)) ? "r":"p",\
+                         (param_),                                          \
                          (value_), (target_id_),                            \
                          init_data->host_bus_adapter),                      \
             (param_));                                                      \
@@ -841,12 +854,20 @@ iscsi_initiator_unh_set(const char *value)
     iscsi_target_data_t    *target;
 
     int                     offer;
- 
-    iscsi_get_cid_and_target(value, &cid, &target_id);
+
+    rc = iscsi_get_cid_and_target(value, &cid, &target_id);
+    if (rc == EINVAL)
+    {
+        sprintf(init_data->last_cmd, value);
+        return 0;
+    }
 
     target = &init_data->targets[target_id];
     
     offer = target->conf_params;
+
+    IVERB("Current number of open connections: %d", 
+          target->number_of_open_connections);
     
     if (strncmp(value, "down", strlen("down")) == 0)
     {
@@ -874,66 +895,63 @@ iscsi_initiator_unh_set(const char *value)
                      target_id, init_data->host_bus_adapter),
         "Restoring");
     
-    ISCSI_UNH_SET("TargetName", target->target_name, target_id);
+    ISCSI_UNH_SET_UNNEGOTIATED("TargetName", target->target_name, target_id);
     
     if (target->number_of_open_connections == 0)
     {
-        if ((offer & OFFER_MAX_CONNECTIONS) == OFFER_MAX_CONNECTIONS)
-            ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
-                              target_id);
-        if ((offer & OFFER_INITIAL_R2T) == OFFER_INITIAL_R2T)
-            ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id);
+        ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
+                          target_id, OFFER_MAX_CONNECTIONS, offer);
 
-        if ((offer & OFFER_HEADER_DIGEST) == OFFER_INITIAL_R2T)
-            ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id);
+        ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id, 
+                      OFFER_INITIAL_R2T, offer);
 
-        if ((offer & OFFER_DATA_DIGEST) == OFFER_DATA_DIGEST)
-            ISCSI_UNH_SET("DataDigest", target->data_digest, target_id);
+        ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id,
+                      OFFER_HEADER_DIGEST, offer);
 
-        if ((offer & OFFER_IMMEDIATE_DATA) == OFFER_IMMEDIATE_DATA)
-            ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id);
+        ISCSI_UNH_SET("DataDigest", target->data_digest, target_id,
+                      OFFER_DATA_DIGEST, offer);
 
-        if ((offer & OFFER_MAX_RECV_DATA_SEGMENT_LENGTH) ==
-            OFFER_MAX_RECV_DATA_SEGMENT_LENGTH)
-            ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
-                              target->max_recv_data_segment_length,
-                              target_id);
+        ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id,
+                      OFFER_IMMEDIATE_DATA, offer);
 
-        if ((offer & OFFER_FIRST_BURST_LENGTH) == OFFER_FIRST_BURST_LENGTH)
-            ISCSI_UNH_SET_INT("MaxBurstLength", 
-                              target->max_burst_length, target_id);
+        ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
+                          target->max_recv_data_segment_length,
+                          target_id, OFFER_MAX_RECV_DATA_SEGMENT_LENGTH,
+                          offer);
 
-        if ((offer & OFFER_MAX_BURST_LENGTH) == OFFER_MAX_BURST_LENGTH)
-            ISCSI_UNH_SET_INT("FirstBurstLength", 
-                              target->first_burst_length, target_id);
+        ISCSI_UNH_SET_INT("MaxBurstLength", 
+                          target->max_burst_length, target_id,
+                          OFFER_FIRST_BURST_LENGTH, offer);
 
-        if ((offer & OFFER_DEFAULT_TIME2WAIT) == OFFER_DEFAULT_TIME2WAIT)
-            ISCSI_UNH_SET_INT("DefaultTime2Wait", 
-                              target->default_time2wait, target_id);
+        ISCSI_UNH_SET_INT("FirstBurstLength", 
+                          target->first_burst_length, target_id,
+                          OFFER_MAX_BURST_LENGTH, offer);
 
-        if ((offer & OFFER_DEFAULT_TIME2RETAIN) == OFFER_DEFAULT_TIME2RETAIN)
-            ISCSI_UNH_SET_INT("DefaultTime2Retain", 
-                              target->default_time2retain, target_id);
+        ISCSI_UNH_SET_INT("DefaultTime2Wait", 
+                          target->default_time2wait, target_id,
+                          OFFER_DEFAULT_TIME2WAIT, offer);
 
-        if ((offer & OFFER_MAX_OUTSTANDING_R2T) == OFFER_MAX_OUTSTANDING_R2T)
-            ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
-                              target->max_outstanding_r2t, target_id);
+        ISCSI_UNH_SET_INT("DefaultTime2Retain", 
+                          target->default_time2retain, target_id,
+                          OFFER_DEFAULT_TIME2RETAIN, offer);
 
-        if ((offer & OFFER_DATA_PDU_IN_ORDER) == OFFER_DATA_PDU_IN_ORDER)
-            ISCSI_UNH_SET("DataPDUInOrder", 
-                          target->data_pdu_in_order, target_id);
+        ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
+                          target->max_outstanding_r2t, target_id,
+                          OFFER_MAX_OUTSTANDING_R2T, offer);
 
-        if ((offer & OFFER_DATA_SEQUENCE_IN_ORDER) == 
-            OFFER_DATA_SEQUENCE_IN_ORDER)
-            ISCSI_UNH_SET("DataSequenceInOrder", 
-                          target->data_sequence_in_order, target_id);
+        ISCSI_UNH_SET("DataPDUInOrder", 
+                      target->data_pdu_in_order, target_id,
+                      OFFER_DATA_PDU_IN_ORDER, offer);
 
-        if ((offer & OFFER_ERROR_RECOVERY_LEVEL) == 
-            OFFER_ERROR_RECOVERY_LEVEL)
-            ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
-                              target->error_recovery_level, target_id);
+        ISCSI_UNH_SET("DataSequenceInOrder", 
+                      target->data_sequence_in_order, target_id,
+                      OFFER_DATA_SEQUENCE_IN_ORDER, offer);
 
-        ISCSI_UNH_SET("SessionType", target->session_type, target_id);
+        ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
+                          target->error_recovery_level, target_id,
+                          OFFER_ERROR_RECOVERY_LEVEL, offer);
+
+        ISCSI_UNH_SET_UNNEGOTIATED("SessionType", target->session_type, target_id);
 
         /* Target' CHAP */
         if (init_data->targets[target_id].chap.target_auth)
@@ -948,7 +966,7 @@ iscsi_initiator_unh_set(const char *value)
         ISCSI_UNH_FORCE("ln", target->chap.local_name, target_id,
                         "Local Name");
 
-        ISCSI_UNH_SET("AuthMethod", target->chap.chap, target_id);
+        ISCSI_UNH_SET_UNNEGOTIATED("AuthMethod", target->chap.chap, target_id);
 
         if (target->chap.enc_fmt == BASE_64)
             ISCSI_UNH_FORCE_FLAG("b", target_id,
@@ -965,11 +983,11 @@ iscsi_initiator_unh_set(const char *value)
 
     }
     /* Initiator itself */
-    ISCSI_UNH_SET("InitiatorName", 
+    ISCSI_UNH_SET_UNNEGOTIATED("InitiatorName", 
                   target->initiator_name,
                   target_id);
 
-    ISCSI_UNH_SET("InitiatorAlias", 
+    ISCSI_UNH_SET_UNNEGOTIATED("InitiatorAlias", 
                   target->initiator_alias, 
                   target_id);
 
@@ -2056,6 +2074,32 @@ iscsi_initiator_local_name_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+static int
+iscsi_parameters2advertize_set(unsigned int gid, const char *oid,
+                               char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    
+    init_data->targets[iscsi_get_target_id(oid)].conf_params = atoi(value);
+
+    return 0;
+}
+
+static int
+iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
+                               char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    
+    IVERB("---> %d", init_data->targets[iscsi_get_target_id(oid)].conf_params);
+    sprintf(value, "%d", 
+            init_data->targets[iscsi_get_target_id(oid)].conf_params);
+    
+    return 0;
+}
+
 /* Configuration tree */
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_script_path, "script_path", NULL, 
@@ -2078,8 +2122,13 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_name, "initiator_name", NULL,
                     &node_iscsi_initiator_alias, iscsi_initiator_name_get,
                     iscsi_initiator_name_set);
 
+RCF_PCH_CFG_NODE_RW(node_iscsi_parameters2advertize, "parameters2advertize",
+                    NULL, &node_iscsi_initiator_name,
+                    iscsi_parameters2advertize_get, 
+                    iscsi_parameters2advertize_set);
+                    
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_port, "target_port", NULL, 
-                    &node_iscsi_initiator_name,
+                    &node_iscsi_parameters2advertize,
                     iscsi_target_port_get, iscsi_target_port_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_addr, "target_addr", NULL, 
