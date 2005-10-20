@@ -156,8 +156,9 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
 {
     const char *pt = text; 
 
-    char  buffer[PARSE_BUF];
-    char *pb = buffer;       
+    char  *buffer;
+    char  *pb;       
+    int    rc = 0;
     
     size_t l;
     size_t total = 0;
@@ -165,6 +166,7 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR; 
 
+    pb = buffer = malloc(strlen(text));       
     while (isspace(*pt))
         pt++;
 
@@ -175,15 +177,9 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
     } 
     pt++; 
 
-    while (*pt != '"') 
+    while (*pt != '"')
     { 
-        l = strcspn (pt, "\\\""); /* find first \ or " */ 
-        if (l + total > PARSE_BUF) 
-        { 
-            /* ERROR! string is too long.. 
-               really, allocation of more memory should be here.  */ 
-            return TE_EASNGENERAL; 
-        }
+        l = strcspn(pt, "\\\""); /* find first \ or " */ 
         memcpy(pb, pt, l); 
         pt+= l, pb += l, total += l;
 
@@ -199,7 +195,10 @@ asn_impl_pt_charstring(const char*text, const asn_type *type,
     *parsed = asn_init_value(type); 
     *syms_parsed = pt - text + 1; 
 
-    return asn_write_value_field(*parsed, buffer, total, ""); 
+    rc = asn_write_value_field(*parsed, buffer, total, ""); 
+    free(buffer);
+
+    return rc;
 }
 
 
@@ -220,11 +219,12 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
                       asn_value_p *parsed, int *syms_parsed)
 {
     const char *pt = text; 
-    uint8_t     buffer[PARSE_BUF];
+    uint8_t    *buffer;
     
     char txt_buf[3]; 
     int  octstr_len = 0;
     int  b_num = 0;
+    int  rc;
 
     txt_buf[2] = 0;
 
@@ -233,6 +233,11 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
 
     if (type) 
         octstr_len = type->len;
+
+    if (octstr_len == 0)
+        octstr_len = strlen(text)/2; 
+
+    buffer = malloc(octstr_len); 
 
     while (isspace(*pt)) 
         pt++;
@@ -251,11 +256,10 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
         int   byte;
         char *end_ptr;
 
-        if ((octstr_len && (b_num == octstr_len) ) || 
-            (b_num == PARSE_BUF))
+        if (b_num == octstr_len)
         {
             *syms_parsed = pt - text;
-            return TE_EASNTXTPARSE;
+            return TE_EASNGENERAL;
         }
 
         while (isspace(*pt)) 
@@ -297,7 +301,10 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
         b_num += rest_len;
     }
 
-    return asn_write_value_field(*parsed, buffer, b_num, ""); 
+    rc = asn_write_value_field(*parsed, buffer, b_num, ""); 
+    free(buffer);
+
+    return rc;
 }
 
 /**
