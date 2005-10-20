@@ -139,6 +139,8 @@ const asn_type * const ndn_iscsi_segment_data = &ndn_iscsi_segment_data_s;
 static asn_named_entry_t _ndn_iscsi_message_ne_array [] = 
 {
     { "param",   &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_PARAM} },
+    { "length",  &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_LEN} },
+    { "have-dig",&asn_base_null_s,    {PRIVATE, NDN_TAG_ISCSI_HAVE_DIG} },
     { "segment-data", &ndn_iscsi_segment_data_s, 
         {PRIVATE, NDN_TAG_ISCSI_SD} },
 };
