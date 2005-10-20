@@ -1177,39 +1177,111 @@ tapi_iscsi_target_customize(const char *ta, int id,
 
 /* Initiator configuration */
 static char *log_mapping[] = {
-        "HeaderDigest:",
-        "DataDigest:",
-        "MaxConnections:",
+        "HeaderDigest",
+        "DataDigest",
+        "MaxConnections",
         "",
-        "TargetName:",
-        "InitiatorName:",
-        "TargetAlias:",
-        "InitiatorAlias:",
-        "TargetAddr:",
-        "TargetPort:",
-        "InitialR2T:",
-        "ImmediateData:",
-        "MaxRecvDataSegmentLength:",
-        "MaxBurstLength:",
-        "FirstBurstLength:",
-        "DefaultTime2Wait:",
-        "DefaultTime2Retain:",
-        "MaxOutstandingR2T:",
-        "DataPDUInOrder:",
-        "DataSequenceInOrder:",
-        "ErrorRecoveryLevel:",
-        "SessionType:",
+        "TargetName",
+        "InitiatorName",
+        "TargetAlias",
+        "InitiatorAlias",
+        "TargetAddr",
+        "TargetPort",
+        "InitialR2T",
+        "ImmediateData",
+        "MaxRecvDataSegmentLength",
+        "MaxBurstLength",
+        "FirstBurstLength",
+        "DefaultTime2Wait",
+        "DefaultTime2Retain",
+        "MaxOutstandingR2T",
+        "DataPDUInOrder",
+        "DataSequenceInOrder",
+        "ErrorRecoveryLevel",
+        "SessionType",
         NULL,
-        "LocalSecret:",
-        "LocalName:",
-        "PeerSecret:",
-        "PeerName:",
-        "ChallengeLength:",
-        "EncFmt:",
-        "TargetAuth:",
-        "AuthMethod:"
+        "LocalSecret",
+        "LocalName",
+        "PeerSecret",
+        "PeerName",
+        "ChallengeLength",
+        "EncFmt",
+        "TargetAuth",
+        "AuthMethod"
     };
 
+int
+tapi_iscsi_initiator_not_advertize(const char *ta,
+                                   iscsi_target_id target_id,
+                                   tapi_iscsi_parameter param)
+{
+    static uint32_t offer_mapping[] = {
+        OFFER_HEADER_DIGEST,
+        OFFER_DATA_DIGEST,
+        OFFER_MAX_CONNECTIONS,
+        0,  
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        OFFER_INITIAL_R2T,
+        OFFER_IMMEDIATE_DATA,
+        OFFER_MAX_RECV_DATA_SEGMENT_LENGTH,
+        OFFER_MAX_BURST_LENGTH,
+        OFFER_FIRST_BURST_LENGTH,
+        OFFER_DEFAULT_TIME2WAIT,
+        OFFER_DEFAULT_TIME2RETAIN,
+        OFFER_MAX_OUTSTANDING_R2T,
+        OFFER_DATA_PDU_IN_ORDER,
+        OFFER_DATA_SEQUENCE_IN_ORDER,
+        OFFER_ERROR_RECOVERY_LEVEL,
+        0,
+    };
+
+    char         offer[50];
+    int          par2adv;
+    int          rc;
+    cfg_val_type type = CVT_STRING;
+
+    RING("Set not advertize %s param on (%s, taret_%d)",
+         log_mapping[param], ta, target_id);
+
+    memset(offer, 0, sizeof(offer));
+    
+    rc = cfg_get_instance_fmt(&type, offer,
+                              "/agent:%s/iscsi_initiator:/target_data:"
+                              "target_%d/parameters2advertize:",
+                              ta, target_id);
+    if (rc != 0)
+    {
+        ERROR("Failed to get current parameters2advertize");
+        return rc;
+    }
+
+    par2adv = atoi(offer);
+    
+    RING("--> %d", par2adv);
+
+    par2adv &= ~(offer_mapping[param]);
+    
+    RING("--##> %d", par2adv);
+
+    sprintf(offer, "%d", par2adv);
+
+    rc = cfg_set_instance_fmt(CVT_STRING, &par2adv,
+                              "/agent:%s/iscsi_initiator:/target_data:"
+                              "target_%d/parameters2advertize:",
+                              ta, target_id);
+    if (rc != 0)
+    {
+        ERROR("Failed to get current parameters2advertize");
+        return rc;
+    }
+    
+    return 0;
+}
 
 int 
 tapi_iscsi_initiator_set_parameter(const char *ta,
@@ -1253,6 +1325,7 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
         "chap:"
     };
 
+
     assert(ta != NULL);
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
@@ -1269,8 +1342,11 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     {
         ERROR("Failed to set %s parameter to %s, rc = %d (%r)",
               log_mapping[param], value, rc, rc);
+        
+        return rc;
     }
-    return rc;
+
+    return 0;
 }
 
 #define MAX_INI_CMD_SIZE 10

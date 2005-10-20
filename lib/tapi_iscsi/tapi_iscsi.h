@@ -72,6 +72,20 @@
                                                     (value_)));         \
     } while (0)
 
+#define ISCSI_INITIATOR_SET_NOT_ADVERTIZE(ta_, target_id_, \
+                                          param_name_)                  \
+    do {                                                                \
+        int param_id = tapi_iscsi_get_param_map(param_name_);           \
+                                                                        \
+        if (param_id < 0)                                               \
+        TEST_FAIL("Invalid parameter name used");                       \
+                                                                        \
+        CHECK_RC(tapi_iscsi_initiator_not_advertize((ta_),              \
+                                                    (target_id_),       \
+                                                    param_id));         \
+    } while (0)
+
+
 
 #define PDU_CONTAINS_KEY_VALUE_PAIR_STRING(segment_data_, \
                                            key_name_,     \
@@ -402,6 +416,19 @@ typedef int iscsi_target_id;
 typedef int iscsi_cid;
 
 /**
+ * Function configures parameter not to be advertized.
+ * By default the parameter is not advertized. When
+ * "SET" operation is called on it the Initiator is
+ * told to advertize the parameter.
+ *
+ * @param ta         Name of the TA on which the Initiator is configured
+ * @param target_id  ID of the Taraget
+ * @param param      Parameter to configure
+ */
+extern int tapi_iscsi_initiator_not_advertize(const char *ta,
+                                              iscsi_target_id target_id,
+                                              tapi_iscsi_parameter param);
+/**
  * Function configures parameters of the Initiator.
  *
  * @param ta         Name of the TA on which the Initiator is configured
@@ -412,9 +439,9 @@ typedef int iscsi_cid;
  * @return return of the cfg_set_instance_fmt
  */
 extern int tapi_iscsi_initiator_set_parameter(const char *ta,
-                                          iscsi_target_id target_id,
-                                          tapi_iscsi_parameter param,
-                                          const char *value);
+                                              iscsi_target_id target_id,
+                                              tapi_iscsi_parameter param,
+                                              const char *value);
 
 #ifdef ISCSI_INITIATOR_GET_SUPPORT
 /**
@@ -428,9 +455,9 @@ extern int tapi_iscsi_initiator_set_parameter(const char *ta,
  * @return return of the cfg_set_instance_fmt
  */
 extern int tapi_iscsi_initiator_get_parameter(const char *ta,
-                                         iscsi_target_id target_id,
-                                         tapi_iscsi_parameter param,
-                                         const char *value);
+                                              iscsi_target_id target_id,
+                                              tapi_iscsi_parameter param,
+                                              const char *value);
 #endif
 
 /**
