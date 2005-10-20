@@ -94,7 +94,6 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     int    rc; 
     int    layer;    
-    int    recv_flags = 0;
     fd_set read_set;
 
     tcp_csap_specific_data_t *spec_data; 
