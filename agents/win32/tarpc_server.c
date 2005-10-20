@@ -55,6 +55,7 @@ struct timezone {
 #include "te_errno.h"
 #include "rcf_pch.h"
 #include "logger_api.h"
+#include "logfork.h"
 #include "rcf_ch_api.h"
 #include "rcf_rpc_defs.h"
 #include "te_rpc_types.h"
