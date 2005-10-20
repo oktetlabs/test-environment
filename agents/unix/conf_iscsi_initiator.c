@@ -2093,7 +2093,6 @@ iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    IVERB("---> %d", init_data->targets[iscsi_get_target_id(oid)].conf_params);
     sprintf(value, "%d", 
             init_data->targets[iscsi_get_target_id(oid)].conf_params);
     
