@@ -34,6 +34,7 @@
 #include <string.h>
 #include "tad_bridge_impl.h"
 #include "te_defs.h"
+#include "logger_ta_fast.h"
 
 #define LLC_BPDU_DSAP_SSAP (0x42)
 #define LLC_BPDU_CONTROL (0x03)
