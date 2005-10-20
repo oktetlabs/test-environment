@@ -70,7 +70,7 @@
 #include "tad_bridge_impl.h"
 #include "ndn_bridge.h"
 #include "ndn_eth.h"
-
+#include "logger_ta_fast.h"
  
 
 /**

@@ -80,7 +80,8 @@ extern char* file_get_param_cb(int csap_id, int level, const char *param);
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-extern int file_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len);
+extern int file_read_cb(csap_p csap_descr, int timeout,
+                        char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of 'file' CSAP. 
@@ -92,11 +93,12 @@ extern int file_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_le
  * @return 
  *      quantity of written octets, or -1 if error occured. 
  */ 
-extern int file_write_cb(csap_p csap_descr, char *buf, size_t buf_len);
+extern int file_write_cb(csap_p csap_descr,
+                         const char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of 'file' CSAP and read
- *  data from media just after write, to get answer to sent request. 
+ * Callback for write data to media of 'file' CSAP and read data from
+ * media just after write, to get answer to sent request. 
  *
  * @param csap_id       identifier of CSAP.
  * @param timeout       timeout of waiting for data.
@@ -109,7 +111,7 @@ extern int file_write_cb(csap_p csap_descr, char *buf, size_t buf_len);
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 extern int file_write_read_cb(csap_p csap_descr, int timeout,
-                              char *w_buf, size_t w_buf_len,
+                              const char *w_buf, size_t w_buf_len,
                               char *r_buf, size_t r_buf_len);
 
 

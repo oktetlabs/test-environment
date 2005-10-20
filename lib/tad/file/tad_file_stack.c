@@ -108,7 +108,7 @@ file_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
  *      quantity of written octets, or -1 if error occured. 
  */ 
 int 
-file_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
+file_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     int rc; 
 
@@ -144,7 +144,7 @@ file_write_cb(csap_p csap_descr, char *buf, size_t buf_len)
  */ 
 int 
 file_write_read_cb(csap_p csap_descr, int timeout,
-                   char *w_buf, size_t w_buf_len,
+                   const char *w_buf, size_t w_buf_len,
                    char *r_buf, size_t r_buf_len)
 {
     UNUSED(csap_descr);

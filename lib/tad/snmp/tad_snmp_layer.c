@@ -33,6 +33,7 @@
 #include "tad_snmp_impl.h"
 
 #include "logger_api.h"
+#include "logger_ta_fast.h"
 
 #include <string.h>
 #include "te_stdint.h"
