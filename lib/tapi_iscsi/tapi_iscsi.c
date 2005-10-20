@@ -1262,12 +1262,8 @@ tapi_iscsi_initiator_not_advertize(const char *ta,
 
     par2adv = atoi(offer);
     
-    RING("--> %d", par2adv);
-
     par2adv &= ~(offer_mapping[param]);
     
-    RING("--##> %d", par2adv);
-
     sprintf(offer, "%d", par2adv);
 
     rc = cfg_set_instance_fmt(CVT_STRING, &par2adv,
