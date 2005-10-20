@@ -231,14 +231,6 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR; 
 
-    if (type) 
-        octstr_len = type->len;
-
-    if (octstr_len == 0)
-        octstr_len = strlen(text)/2; 
-
-    buffer = malloc(octstr_len); 
-
     while (isspace(*pt)) 
         pt++;
 
@@ -249,6 +241,15 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
         return TE_EASNTXTNOTOCTSTR;
     } 
     pt++; 
+
+
+    if (type) 
+        octstr_len = type->len;
+
+    if (octstr_len == 0)
+        octstr_len = (strchr(text + 1, '\'') - text + 1)/2; 
+
+    buffer = malloc(octstr_len); 
 
 
     while (*pt != '\'') 
