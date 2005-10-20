@@ -90,7 +90,7 @@ int
 tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr, 
                             const asn_value *pattern_unit,
                             asn_value_p *packet)
-{ 
+{
     int  level;
     int  rc;
     char label[20] = "pdus";
@@ -127,9 +127,9 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 
     for (level = csap_descr->depth - 1; level >= 0; level --)
     {
-        csap_spt_type_p csap_spt_descr; 
-        const asn_value  *level_pdu = NULL; 
-        asn_value_p parsed_pdu = NULL;
+        csap_spt_type_p  csap_spt_descr; 
+        const asn_value *level_pdu = NULL; 
+        asn_value_p      parsed_pdu = NULL;
 
         if (csap_descr->state & TAD_STATE_RESULTS)
         {
@@ -228,7 +228,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     if (rc == 0 && csap_descr->state & TAD_STATE_RESULTS)
     {
         if (data_to_check.len)
-        { /* There are non-parsed payload rest */
+        {
+            /* There are non-parsed payload rest */
             rc = asn_write_value_field(*packet, data_to_check.data, 
                                        data_to_check.len, "payload.#bytes");
             if (rc)
