@@ -140,7 +140,7 @@ cfg_db_destroy(void)
         return;
 
     INFO("Destroy instances");
-    for (i = 3; i < cfg_all_inst_size; i++)
+    for (i = 4; i < cfg_all_inst_size; i++)
     {
         if (cfg_all_inst[i] != NULL)
         {
