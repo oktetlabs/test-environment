@@ -49,12 +49,12 @@ endif
 
 AM_CPPFLAGS=$(MY_CPPFLAGS)
 
-tawin32_SOURCES=$(MY_SOURCES)
-nodist_tawin32_SOURCES=$(MY_NODIST_SOURCES)
+tawin32tmpl_SOURCES=$(MY_SOURCES)
+nodist_tawin32tmpl_SOURCES=$(MY_NODIST_SOURCES)
 
-tawin32_LDADD=$(MY_LDADD) 
+tawin32tmpl_LDADD=$(MY_LDADD) 
 
-tawin32_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
+tawin32tmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
@@ -71,13 +71,17 @@ tawin32_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 
-bin_PROGRAMS=tawin32
+bin_PROGRAMS=tawin32tmpl
 
 symtbl.c: $(MY_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
 install-exec-hook:
-	cd $(DESTDIR)/$(prefix)/bin; ln -fs tawin32.exe tawin32
+	mv $(DESTDIR)/$(bindir)/tawin32tmpl.exe \
+		$(DESTDIR)/$(bindir)/ta@with_name@.exe
+	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
 
 uninstall-hook:
-	cd $(DESTDIR)/$(prefix)/bin; rm -f tawin32
+	rm -f $(DESTDIR)/$(bindir)/ta@with_name@
+	mv $(DESTDIR)/$(bindir)/ta@with_name@.exe \
+		$(DESTDIR)/$(bindir)/tawin32tmpl.exe
