@@ -174,9 +174,11 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data;
 
-    packet_t *recv_pkt = NULL;
     size_t    len = 0;
+#if !SOCKET_PAIR
+    packet_t *recv_pkt = NULL;
     int       i;
+#endif
     
     if (csap_descr == NULL)
     {
@@ -285,7 +287,6 @@ int
 iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data;
-    packet_t *send_pkt;
     
     if (csap_descr == NULL)
     {
@@ -297,7 +298,6 @@ iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 #if SOCKET_PAIR
     {
         struct timeval tv = {0, 1000};
-        fd_set rset;
         int rc, fd = iscsi_spec_data->conn_fd[CSAP_SITE];
 
         rc = send(fd, buf, buf_len, MSG_DONTWAIT);
@@ -322,20 +322,24 @@ iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
              __FUNCTION__, csap_descr->id, rc, fd);
     }
 #else
-    if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
     {
-        csap_descr->last_errno = TE_ENOMEM;
-        return -1;
-    }
-    send_pkt->allocated_buffer = send_pkt->buffer = malloc(buf_len);
-    send_pkt->length = buf_len;
-    memcpy(send_pkt->buffer, buf, buf_len);
-    
+        packet_t *send_pkt;
 
-    LOCK_QUEUE(iscsi_spec_data);
-    CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_to_tgt,
-                        send_pkt, link);
-    UNLOCK_QUEUE(iscsi_spec_data);
+        if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
+        {
+            csap_descr->last_errno = TE_ENOMEM;
+            return -1;
+        }
+        send_pkt->allocated_buffer = send_pkt->buffer = malloc(buf_len);
+        send_pkt->length = buf_len;
+        memcpy(send_pkt->buffer, buf, buf_len);
+        
+
+        LOCK_QUEUE(iscsi_spec_data);
+        CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_to_tgt,
+                            send_pkt, link);
+        UNLOCK_QUEUE(iscsi_spec_data);
+    }
 
     write(iscsi_spec_data->conn_fd[1], "a", 1); 
 #endif
@@ -487,7 +491,9 @@ iscsi_single_destroy_cb(int csap_id, int layer)
 {
     int                         rc = 0;
     csap_p                      csap_descr; 
+#if !SOCKET_PAIR 
     packet_t                   *recv_pkt = NULL; 
+#endif
     iscsi_csap_specific_data_t *iscsi_spec_data; 
 
     csap_descr = csap_find(csap_id);
@@ -631,7 +637,6 @@ iscsi_tad_recv(int csap_id, uint8_t *buffer, size_t buf_len)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data;
     csap_p  csap_descr;
-    int     rx_loop = 0;
     size_t  rx_total = 0;
 
 
@@ -671,6 +676,8 @@ iscsi_tad_recv(int csap_id, uint8_t *buffer, size_t buf_len)
     }
 #else
     do {
+        int rx_loop;
+
         rx_loop = iscsi_tad_recv_internal(csap_descr, buffer, buf_len);
         if (rx_loop <= 0)
         {
@@ -702,7 +709,6 @@ int
 iscsi_tad_send(int csap_id, uint8_t *buffer, size_t buf_len)
 {
     csap_p    csap_descr;
-    packet_t *send_pkt;
 
     iscsi_csap_specific_data_t *iscsi_spec_data;
 
@@ -721,7 +727,6 @@ iscsi_tad_send(int csap_id, uint8_t *buffer, size_t buf_len)
 #if SOCKET_PAIR
     {
         struct timeval tv = {0, 1000};
-        fd_set rset;
         int rc, fd = iscsi_spec_data->conn_fd[TGT_SITE];
 
         rc = send(fd, buffer, buf_len, MSG_DONTWAIT);
@@ -746,23 +751,26 @@ iscsi_tad_send(int csap_id, uint8_t *buffer, size_t buf_len)
              __FUNCTION__, csap_descr->id, rc, fd);
     }
 #else
+    { 
+        packet_t *send_pkt;
 
-    if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
-    {
-        csap_descr->last_errno = TE_ENOMEM;
-        return -1;
+        if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
+        {
+            csap_descr->last_errno = TE_ENOMEM;
+            return -1;
+        }
+        send_pkt->buffer = malloc(buf_len);
+        send_pkt->length = buf_len;
+        memcpy(send_pkt->buffer, buffer, buf_len);
+        INFO("%s(CSAP %d): insert to out queue %d bytes from 0x%x addr", 
+             __FUNCTION__, csap_id, buf_len, buffer);
+        
+
+        LOCK_QUEUE(iscsi_spec_data);
+        CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_from_tgt,
+                            send_pkt, link);
+        UNLOCK_QUEUE(iscsi_spec_data);
     }
-    send_pkt->buffer = malloc(buf_len);
-    send_pkt->length = buf_len;
-    memcpy(send_pkt->buffer, buffer, buf_len);
-    INFO("%s(CSAP %d): insert to out queue %d bytes from 0x%x addr", 
-         __FUNCTION__, csap_id, buf_len, buffer);
-    
-
-    LOCK_QUEUE(iscsi_spec_data);
-    CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_from_tgt,
-                        send_pkt, link);
-    UNLOCK_QUEUE(iscsi_spec_data);
 #endif
 
 
