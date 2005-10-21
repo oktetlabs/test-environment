@@ -184,7 +184,8 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     }
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
-    INFO("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
+    INFO("%s(CSAP %d) called, wait len %d", 
+         __FUNCTION__, csap_descr->id, iscsi_spec_data->wait_length);
 
     if (iscsi_spec_data->wait_length == 0)
         len = ISCSI_BHS_LENGTH;
@@ -210,9 +211,14 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
         rc = select(fd + 1, &rset, NULL, NULL, &tv); 
 
+        INFO("%s(CSAP %d): select on fd %d rc %d", 
+             __FUNCTION__, csap_descr->id, fd, rc);
+
         if (rc > 0)
         {
             rc = read(fd, buf, buf_len);
+        INFO("%s(CSAP %d): read rc %d", 
+             __FUNCTION__, csap_descr->id, rc);
             if (rc >= 0)
                 len = rc;
             else
@@ -312,6 +318,8 @@ iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
                  csap_descr->id, csap_descr->last_errno);
             return -1;
         } 
+        INFO("%s(CSAP %d) written %d bytes to fd %d", 
+             __FUNCTION__, csap_descr->id, rc, fd);
     }
 #else
     if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
@@ -734,6 +742,8 @@ iscsi_tad_send(int csap_id, uint8_t *buffer, size_t buf_len)
                  csap_descr->id, csap_descr->last_errno);
             return -1;
         } 
+        INFO("%s(CSAP %d) written %d bytes to fd %d", 
+             __FUNCTION__, csap_descr->id, rc, fd);
     }
 #else
 
