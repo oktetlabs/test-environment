@@ -262,6 +262,10 @@ iscsi_match_bin_cb(int csap_id, int level, const asn_value *pattern_pdu,
     payload->len = spec_data->wait_length;
     payload->data = spec_data->stored_buffer; 
 
+    spec_data->wait_length = 0;
+    spec_data->stored_length = 0;
+    spec_data->stored_buffer = NULL;
+
     asn_write_int32(iscsi_msg, target_params.param, "param");
 
     asn_write_component_value(parsed_packet, iscsi_msg, "#iscsi");
