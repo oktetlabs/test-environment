@@ -709,6 +709,10 @@ tapi_cfg_del_arp_dynamic(const char *ta)
     te_errno        rc;
     te_errno        result = 0;
 
+    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/volatile:", ta);
+    if (rc != 0)
+        return rc;
+
     if ((rc = cfg_find_pattern_fmt(&num, &hndls,
                                    "/agent:%s/volatile:/arp:*", ta)) != 0)
     {
