@@ -176,7 +176,7 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
 
     if (forward != CSAP_INVALID_HANDLE)
     {
-        rc = asn_write_int32(pattern, forward, "0.action.#forward-pld");
+        rc = asn_write_int32(pattern, forward, "0.action.#forw-pld");
         if (rc != 0)
         {
             ERROR("%s():  write forward csap failed: %r",
