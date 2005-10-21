@@ -56,15 +56,6 @@
 #include "unix_internal.h"
 
 
-#if 1
-#undef ERROR
-#define ERROR(_msg...)  PRINT(_msg)
-#undef VERB
-#define VERB(_msg...)   PRINT(_msg)
-#undef ENTRY
-#define ENTRY(_msg...)  PRINT(_msg)
-#endif
-
 #define FTP_TEST_LOGIN_MAX      32
 #define FTP_TEST_PASSWD_MAX     32
 #define FTP_TEST_PATHNAME_MAX   64
