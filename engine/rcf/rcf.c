@@ -101,7 +101,7 @@
 #define RCF_CMD_TIMEOUT         100  /**< Default timeout (in seconds) for
                                          command processing on the TA */
 #define RCF_CMD_TIMEOUT_HUGE    10000  
-                                    /**< Default timeout for command
+                                    /**< Huge timeout for command
                                          processing on the TA */
 #define RCF_REBOOT_TIMEOUT      60  /**< TA reboot timeout in seconds */
 #define RCF_SHUTDOWN_TIMEOUT    5   /**< TA shutdown timeout in seconds */
@@ -1706,7 +1706,7 @@ send_cmd(ta *agent, usrreq *req)
                 return -1;
             }
             strcat(cmd, TE_PROTO_GET_LOG);
-            req->timeout = RCF_CMD_TIMEOUT;
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_VREAD:
