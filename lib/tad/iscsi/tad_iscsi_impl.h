@@ -54,6 +54,8 @@
 
 #include "iscsi_common.h"
 
+#define SOCKET_PAIR 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -66,17 +68,37 @@ typedef struct packet_t {
     uint8_t *allocated_buffer;
 } packet_t;
 
+#if 0
+typedef struct packet_queue_t {
+    CIRCLEQ_HEAD(q_head, packet_t) head; 
+
+    pthread_mutex_t  pkt_queue_lock;
+    int              conn_fd[2]; /* pipe for signalling */ 
+} packet_queue_t;
+#endif
     
+
+#if SOCKET_PAIR
+enum {
+    TGT_SITE,
+    CSAP_SITE
+};
+#endif
+
 /**
  * iSCSI CSAP specific data
  */
 typedef struct iscsi_csap_specific_data
 { 
+#if SOCKET_PAIR
+    int             conn_fd[2]; /* socketpair for data transfer */
+#else
     CIRCLEQ_HEAD(packets_to_head,   packet_t) packets_to_tgt;
     CIRCLEQ_HEAD(packets_from_head, packet_t) packets_from_tgt;
 
     int             conn_fd[2]; /* pipe for signalling */
     pthread_mutex_t pkt_queue_lock;
+#endif
     pthread_t       iscsi_target_thread;
 
     size_t          wait_length;
@@ -296,11 +318,56 @@ extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
  * @param arg   start argument, should be pointer to
  *              'iscsi_target_thread_params_t' struct
  *
- * @return NULL
+ * @return NULL.
  */
 extern void *iscsi_server_rx_thread(void *arg);
 
+#if 0
+/**
+ * Init packet_queue method.
+ *
+ * @param queue         pointer to packet_queue structure;
+ *
+ * @return status code.
+ */
+extern int packet_queue_init(packet_queue_t *queue);
 
+/**
+ * Destroy packet_queue method.
+ *
+ * @param queue         pointer to packet_queue structure;
+ *
+ * @return status code.
+ */
+extern int packet_queue_destroy(packet_queue_t *queue);
+
+/**
+ * Put data into packet_queue.
+ *
+ * @param queue         pointer to packet_queue structure;
+ * @param data          pointer to data packet;
+ * @param length        length of data;
+ *
+ * @return status code.
+ */
+extern int packet_queue_put(packet_queue_t *queue,
+                            uint8_t *data, size_t length);
+
+/**
+ * Get data from packet_queue.
+ *
+ * @param queue         pointer to packet_queue structure;
+ * @param timeout       time while wait for data, in milliseconds, 
+ *                      -1 means unlimited waiting;
+ * @param data          location for data packet (OUT);
+ * @param length        length of data (IN/OUT);
+ * @param wait_all      flag for wait all data or not;
+ *
+ * @return status code.
+ */
+extern int packet_queue_get(packet_queue_t *queue, int timeout,
+                            uint8_t *data, size_t *length, int wait_all);
+#endif
 
 #ifdef __cplusplus
 } /* extern "C" */

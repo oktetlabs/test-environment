@@ -54,7 +54,8 @@ iscsi_target_params_t target_params = { 0 };
  */ 
 char* iscsi_get_param_cb (csap_p csap_descr, int level, const char *param)
 {
-    iscsi_csap_specific_data_t *   spec_data; 
+    iscsi_csap_specific_data_t *spec_data; 
+
     spec_data = (iscsi_csap_specific_data_t *)
         csap_descr->layers[level].specific_data; 
 
@@ -102,7 +103,7 @@ iscsi_confirm_pdu_cb(int csap_id, int layer, asn_value *nds_pdu)
  * @param pkts          Callback have to fill this structure with list of 
  *                      generated packets. Almost always this list will 
  *                      contain only one element, but necessaty of 
- *                      fragmentation sometimes may occur. (OUT)
+ *                      fragmentation sometimes may occur (OUT)
  *
  * @return zero on success or error code.
  */ 
@@ -137,10 +138,10 @@ iscsi_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
  * Callback for parse received packet and match it with pattern. 
  *
  * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
+ * @param level         numeric index of layer in CSAP type to be processed.
  * @param pattern_pdu   pattern NDS 
  * @param pkt           recevied packet
- * @param payload       rest upper layer payload, if any exists. (OUT)
+ * @param payload       rest upper layer payload, if any exists (OUT)
  * @param parsed_packet caller of method should pass here empty asn_value 
  *                      instance of ASN type 'Generic-PDU'. Callback 
  *                      have to fill this instance with values from 
@@ -149,25 +150,126 @@ iscsi_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
  * @return zero on success or error code.
  */
 int 
-iscsi_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
+iscsi_match_bin_cb(int csap_id, int level, const asn_value *pattern_pdu,
                    const csap_pkts *pkt, csap_pkts *payload, 
                    asn_value *parsed_packet )
 { 
+    csap_p                      csap_descr;
+    iscsi_csap_specific_data_t *spec_data; 
+
     asn_value *iscsi_msg = asn_init_value(ndn_iscsi_message);
-    UNUSED(csap_id);
-    UNUSED(layer);
+    int        rc;
+    int        defect;
+
     UNUSED(pattern_pdu);
 
+    if ((csap_descr = csap_find(csap_id)) == NULL)
+        return TE_ETADCSAPNOTEX;
+
+    spec_data = (iscsi_csap_specific_data_t *)
+                        csap_descr->layers[level].specific_data; 
+
+    if (spec_data->wait_length == 0)
+    {
+        size_t  total_AHS_length,
+                data_segment_length;
+
+        int head_digest = 0, data_digest = 0; 
+
+        const asn_value *sval;
+
+        union { 
+            uint32_t i;
+            uint8_t b[4];
+        } dsl_convert;
+
+        if (pkt->len < ISCSI_BHS_LENGTH)
+        {
+            ERROR("%s(CSAP %d): very short first fragment, %d bytes", 
+                  __FUNCTION__, csap_id, pkt->len);
+            return TE_ETADLOWER;
+        }
+
+        total_AHS_length = ((uint8_t *)pkt->data)[4];
+
+        dsl_convert.b[0] = 0;
+        dsl_convert.b[1] = ((uint8_t *)pkt->data)[5];
+        dsl_convert.b[2] = ((uint8_t *)pkt->data)[6];
+        dsl_convert.b[3] = ((uint8_t *)pkt->data)[7];
+
+        data_segment_length = ntohl(dsl_convert.i);
+
+        /* DataSegment padding */
+        if (data_segment_length % 4)
+            data_segment_length += (4 - (data_segment_length % 4));
+
+        rc = asn_get_child_value(pattern_pdu, &sval, PRIVATE, 
+                                 NDN_TAG_ISCSI_HAVE_HDIG);
+        if (rc == 0)
+            head_digest = 1;
+
+        rc = asn_get_child_value(pattern_pdu, &sval, PRIVATE, 
+                                 NDN_TAG_ISCSI_HAVE_DDIG);
+        if (rc == 0)
+            data_digest = 1;
+
+        RING("%s(CSAP %d): AHS len = %d; DataSegmLen = %d; "
+             "HeadDig %d; DataDig %d", 
+             __FUNCTION__, csap_id,
+             (int)total_AHS_length,
+             (int)data_segment_length,
+             head_digest, data_digest);
+
+        spec_data->wait_length = ISCSI_BHS_LENGTH + data_segment_length +
+            (total_AHS_length + head_digest + data_digest) * 4;
+        RING("%s(CSAP %d): calculated PDU len: %d", 
+             __FUNCTION__, csap_id, spec_data->wait_length);
+    }
+    rc = 0;
+
+    if (spec_data->stored_buffer == NULL)
+    {
+        spec_data->stored_buffer = malloc(spec_data->wait_length);
+        spec_data->stored_length = 0;
+    }
+
+    defect = spec_data->wait_length - 
+            (spec_data->stored_length + pkt->len);
+
+    if (defect < 0)
+    {
+        ERROR("%s(CSAP %d) get too many data: %d bytes, "
+              "wait for %d, stored %d", 
+              __FUNCTION__, csap_id, pkt->len,
+              spec_data->wait_length, spec_data->stored_length); 
+        rc = TE_ETADLOWER;
+        goto cleanup;
+    }
+
+    memcpy(spec_data->stored_buffer + spec_data->stored_length, 
+           pkt->data, pkt->len);
+    spec_data->stored_length += pkt->len;
+
+    if (defect > 0)
+    {
+        RING("%s(CSAP %d) wait more %d bytes...", 
+             __FUNCTION__, csap_id, defect);
+        rc = TE_ETADLESSDATA;
+        goto cleanup;
+    }
+
     memset(payload, 0 , sizeof(*payload));
-    payload->len = pkt->len;
-    payload->data = malloc(payload->len);
-    memcpy(payload->data, pkt->data, payload->len);
+    payload->len = spec_data->wait_length;
+    payload->data = spec_data->stored_buffer; 
 
     asn_write_int32(iscsi_msg, target_params.param, "param");
 
     asn_write_component_value(parsed_packet, iscsi_msg, "#iscsi");
 
-    return 0;
+cleanup:
+    asn_free_value(iscsi_msg);
+
+    return rc;
 }
 
 /**
@@ -178,8 +280,8 @@ iscsi_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
  * @param csap_id       identifier of CSAP
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      ASN value with template PDU.
- * @param pattern_pdu   OUT: ASN value with pattern PDU, generated according 
- *                      to passed template PDU and CSAP parameters. 
+ * @param pattern_pdu   ASN value with pattern PDU, generated according 
+ *                      to passed template PDU and CSAP parameters (OUT). 
  *
  * @return zero on success or error code.
  */
