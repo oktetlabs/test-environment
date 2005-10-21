@@ -328,7 +328,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             }
             break;
 
-            case NDN_ACT_FORWARD:
+            case NDN_ACT_FORWARD_PLD:
             {
                 int32_t target_csap;
                 csap_p  target_csap_descr;
@@ -337,11 +337,16 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                 if ((target_csap_descr = csap_find(target_csap)) != NULL)
                 {
                     int b = target_csap_descr->write_cb(target_csap_descr,
-                                                        data, d_len);
-                    VERB("action forward processed, %d sent", b);
+                                                        data_to_check.data,
+                                                        data_to_check.len);
+                    VERB("action 'forward payload' processed, %d sent", b);
                 } 
             }
             break; 
+            default:
+                WARN("%s(CSAP %d) unsupported action tag %d",
+                     __FUNCTION__, csap_descr->id, t_val);
+                break;
         }
     } while (0);
 
