@@ -54,48 +54,15 @@
 
 extern uint32_t iscsi_trace_mask;
 
-#define TRACE_SET(mask)		iscsi_trace_mask = mask
-
-#define TRACE_GET(mask)		mask = iscsi_trace_mask
-
-#define TRACE_TEST(mask)	(iscsi_trace_mask & mask)
- 
-#define TRACE(mask, args...)						   \
-	do {								   \
-		if (iscsi_trace_mask & mask) { 				   \
-			INFO(args);		   			   \
-		}							   \
-	} while(0)
+#define TRACE(mask, args...) RING(args)
 
 #define TRACE_BUFFER(mask, buffer, len, args...)			   \
 	do {								   \
-		if (iscsi_trace_mask & mask) { 				   \
-			int ndx;					   \
-			INFO(args);					   \
-			for (ndx = 0; ndx < len; ndx++)	{		   \
-				if ((ndx & 0xf) == 0) {			   \
-					INFO("%3d:", ndx);		   \
-				}					   \
-				INFO(" %02x",				   \
-					*((uint8_t *)(buffer)+ndx)); \
-				if ((ndx & 0xf) == 0xf) {		   \
-					INFO("\n");			   \
-				}					   \
-			}						   \
-			if ((ndx & 0xf) != 0) {				   \
-				INFO("\n");				   \
-			}						   \
-		}							   \
+			TRACE(mask, args);					   \
+            print_payload(buffer, len);     \
 	} while(0)
 
-#define TRACE_ERROR(args...)						   \
-	do  {								   \
-		ERROR(args);			   \
-	} while(0)
-
-#define TRACE_WARNING(args...)						   \
-	do  {								   \
-		WARN(args);				   \
-	} while(0)
+#define TRACE_ERROR(args...) ERROR(args)			   
+#define TRACE_WARNING(args...) WARN(args)
 
 #endif

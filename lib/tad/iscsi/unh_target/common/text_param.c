@@ -403,10 +403,8 @@ check_type_correctness(struct parameter_type *p,
 			p->neg_info |= KEY_BAD;
 		} else {
 			/* Irrelevant is a legal reply in all negotiations */
-			if (TRACE_TEST(TRACE_ISCSI)) {
-				TRACE_WARNING("got key: %s=%s\n",
-						p->parameter_name, value);
-			}
+            TRACE_WARNING("got key: %s=%s\n",
+                          p->parameter_name, value);
 			p->neg_info |= KEY_IRRELEVANT;
 		}
 		goto out;
@@ -419,7 +417,7 @@ check_type_correctness(struct parameter_type *p,
 	 *  If used as specified, these keys MUST NOT be answered with
 	 *  NotUnderstood."
 	 */
-	if (!strcmp(value, key_table->notunderstood)) {
+    if (!strcmp(value, key_table->notunderstood)) {
 		if (!IS_KEY_SENT_TO_OTHER_SIDE(p->neg_info)) {
 			/* NotUnderstood always fatal as an offer */
 			TRACE_ERROR("illegal offer: %s=%s\n", p->parameter_name,
@@ -553,9 +551,7 @@ check_type_correctness(struct parameter_type *p,
 			}
 
 			/* If reach here have invalid iSCSI name */
-			if (TRACE_TEST(TRACE_ISCSI)) {
-			    TRACE_WARNING("invalid iSCSI name \"%s\"\n", value);
-			}
+            TRACE_WARNING("invalid iSCSI name \"%s\"\n", value);
 			goto out;
 		}
 	}
@@ -593,11 +589,9 @@ check_type_correctness(struct parameter_type *p,
 		 *  delimiter (comma or zero byte)."
 		 */
 		if (strlen(value) > MAX_KEY_VALUE_LENGTH) {
-			if (TRACE_TEST(TRACE_ISCSI)) {
-			      TRACE_WARNING("value of key \"%s\" "
-					"exceeds %d characters\n",
-					p->parameter_name,MAX_KEY_VALUE_LENGTH);
-			}
+            TRACE_WARNING("value of key \"%s\" "
+                          "exceeds %d characters\n",
+                          p->parameter_name,MAX_KEY_VALUE_LENGTH);
 		}
 
 		if (*value == '\0' && !IS_KEY_NO_VALUE(p->type)) {
@@ -734,10 +728,8 @@ check_correctness(char *keytext,
 	 *  must not exceed 63 characters."
 	 */
 	if (strlen(keytext) > MAX_KEY_NAME_LENGTH) {
-		if (TRACE_TEST(TRACE_ISCSI)) {
-		      TRACE_WARNING("length of key name \"%s\" exceeds %d\n",
-					keytext, MAX_KEY_NAME_LENGTH);
-		}
+        TRACE_WARNING("length of key name \"%s\" exceeds %d\n",
+                      keytext, MAX_KEY_NAME_LENGTH);
 	}
 
 	/*  Draft 20, Section 10.12.10 Login Parametersr
@@ -777,10 +769,8 @@ check_correctness(char *keytext,
 				it for later checks? */
 			/* chap support = CHONG */
 			if (!is_securitykey(keytext)) {
-				if (TRACE_TEST(TRACE_ISCSI)) {
-				      TRACE_WARNING("unknown key \"%s\"\n",
-							keytext);
-				}
+                TRACE_WARNING("unknown key \"%s\"\n",
+                              keytext);
 			}
 
 			if (count >= MAX_UNKNOWN_KEYS) {
@@ -1125,11 +1115,9 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 			if ((p2 = find_flag_parameter(MAXBURSTLENGTH_FLAG,
 						 p_param_tbl)) != NULL) {
 				if (p->int_value > p2->int_value) {
-					if (TRACE_TEST(TRACE_ISCSI)) {
-					     TRACE_WARNING("FirstBurstLength %u"
-					     " exceeds MaxBurstLength %u\n",
-					     p->int_value, p2->int_value);
-					}
+                    TRACE_WARNING("FirstBurstLength %u"
+                                  " exceeds MaxBurstLength %u\n",
+                                  p->int_value, p2->int_value);
 					/* fix FirstBurstLength */
 					p->int_value = p2->int_value;	
 				}
@@ -1182,12 +1170,10 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 						 * MaxOutstandingR2T = 1, 
 						 * change it to 1 
 						 */
-						if (TRACE_TEST(TRACE_ISCSI)) {
-						      TRACE_WARNING
+                        TRACE_WARNING
 							("%s=%u reset to 1\n",
-							p->parameter_name,
-							p->int_value);
-						}
+                             p->parameter_name,
+                             p->int_value);
 						p->int_value = 1;
 					}
 				}
@@ -1275,9 +1261,8 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
     {
         case ISCSI_INIT_LOGIN_CMND:
             /* Send the login Command */
-            if (TRACE_TEST(TRACE_ISCSI_FULL))
-                print_init_login_cmnd((struct iscsi_init_login_cmnd *)
-                                      outputpdu);
+            print_init_login_cmnd((struct iscsi_init_login_cmnd *)
+                                  outputpdu);
             break;
         case ISCSI_TARG_LOGIN_RSP:
             /* Send the Login Response */
@@ -1288,8 +1273,7 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
                   (outputpdu->flags & CSG) >> CSG_SHIFT,
                   outputpdu->flags & NSG, (outputpdu->flags & T_BIT) >> 7);
 
-            if (TRACE_TEST(TRACE_ISCSI_FULL))
-                print_targ_login_rsp(targ_login_rsp);
+            print_targ_login_rsp(targ_login_rsp);
             break;
         default:
             TRACE_ERROR("sending bad opcode 0x%02X during Login phase\n",
@@ -1319,7 +1303,8 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
         memcpy(buffer + ISCSI_HDR_LEN, outputpdu->text,
                outputpdu->text_length);
     } 
-    
+
+    print_payload(buffer, length);
     tx_loop = iscsi_tad_send(sock, buffer, length); 
     TRACE(TRACE_NET, "sent %d bytes", tx_loop);
     
@@ -1694,15 +1679,12 @@ scan_input_and_process(int sock,
 						 */
 						if (int_value < 512
 						    || int_value > 16777215) {
-							if (TRACE_TEST
-								(TRACE_ISCSI)) {
-							    TRACE_WARNING
+                            TRACE_WARNING
 							    ("%s %d out of "
-							    "bounds "
-							    "[512..16777215]\n",
-							    p->parameter_name,
-							    int_value);
-							}
+                                 "bounds "
+                                 "[512..16777215]\n",
+                                 p->parameter_name,
+                                 int_value);
 						} else {
 							/* value is within 
 							 * bounds, pass it back
@@ -1840,10 +1822,8 @@ scan_input_and_process(int sock,
 		 */
 		n = (input_string - this_key) - (key_value_len + 1);
 		if (n > 0) {
-			if (TRACE_TEST(TRACE_ISCSI)) {
-			      TRACE_WARNING("%d extra nulls (0x00) found after"
-						" key \"%s\"\n", n, this_key);
-			}
+            TRACE_WARNING("%d extra nulls (0x00) found after"
+                          " key \"%s\"\n", n, this_key);
 		}
 	}
 

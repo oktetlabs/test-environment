@@ -507,9 +507,7 @@ iscsi_release_session(struct iscsi_session *session)
         return -1;
     }
 
-    if (TRACE_TEST(TRACE_ISCSI)) {
-        print_isid_tsih_message(session, "Release session with ");
-    }
+    print_isid_tsih_message(session, "Release session with ");
 
 
     /* free commands */
@@ -700,7 +698,7 @@ search_tags(struct iscsi_conn *conn, uint32_t init_task_tag,
 
     pthread_mutex_lock(&session->cmnd_mutex);
 
-	if (dumpall || TRACE_TEST(TRACE_DEBUG)) {
+	if (dumpall) {
 		for (cmd = session->cmnd_list; cmd != NULL; cmd = cmd->next) {
 			TRACE(TRACE_DEBUG,
                   "scsi cmnd %p opcode 0x%02x init_task_tag %d target_xfer_tag"
@@ -817,11 +815,12 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
     {
         current_tx = 0;
         buffer = iov->iov_base;
+        print_payload(buffer, iov->iov_len);
         while (current_tx < iov->iov_len) 
         {
             TRACE(TRACE_DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d\n",
                   i, iov->iov_len, current_tx);
-            
+
             tx_loop = iscsi_tad_send(conn->conn_socket, buffer, (iov->iov_len - current_tx));
 
             if (tx_loop <= 0) {
@@ -988,8 +987,7 @@ iscsi_tx_login_reject(struct iscsi_conn *conn,
 
     TRACE(TRACE_ISCSI, "login response sent\n");
 
-    if (TRACE_TEST(TRACE_ISCSI_FULL))
-        print_targ_login_rsp(hdr);
+    print_targ_login_rsp(hdr);
 
     return 0;
 }
@@ -1020,8 +1018,7 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
     struct parameter_type (*temp_params)[MAX_CONFIG_PARAMS];
     struct iscsi_global   *host;
 
-    if (TRACE_TEST(TRACE_ISCSI_FULL))
-        print_init_login_cmnd(pdu);
+    print_init_login_cmnd(pdu);
 
     /* this will be non-NULL if the parameter table should be freed when done */
     temp_params = NULL;
@@ -1184,13 +1181,13 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
     }
 
     /* Bjorn Thordarson, 10-May-2004 -- start -- */
-    if (TRACE_TEST(TRACE_ISCSI_FULL)) {
+    {
         int k;
 
         for (k = 0; k < MAX_CONFIG_PARAMS ; k++) {
             if ((*this_param_tbl)[k].parameter_name != NULL &&
                 (*this_param_tbl)[k].str_value != NULL)
-                printf("PARAM: %s = %s\n", 
+                INFO("iSCSI PARAM: %s = %s\n", 
                        (*this_param_tbl)[k].parameter_name,
                        (*this_param_tbl)[k].str_value);
         }
@@ -1711,8 +1708,7 @@ handle_text_request(struct iscsi_conn *conn,
 	struct iscsi_cmnd *cmnd;
 	int err;
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_init_text_cmnd(pdu);
+    print_init_text_cmnd(pdu);
 
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
@@ -1795,8 +1791,7 @@ handle_nopout(struct iscsi_conn *conn,
 	struct iscsi_cmnd *cmnd;
 	int err;
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_init_nopout(pdu);
+    print_init_nopout(pdu);
 
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
@@ -1924,8 +1919,7 @@ handle_logout(struct iscsi_conn *conn,
 	struct iscsi_cmnd *cmnd;
 	int err;
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_init_logout_cmnd(pdu);
+    print_init_logout_cmnd(pdu);
 
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
@@ -2155,8 +2149,7 @@ iscsi_tx_rjt(struct iscsi_conn *conn, uint8_t *bad_hdr, uint8_t reason)
 
 	TRACE_WARNING("Send Reject\n");
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_targ_rjt(hdr);
+    print_targ_rjt(hdr);
 
 out:
 	return err;
@@ -2320,8 +2313,7 @@ handle_discovery_rsp(struct iscsi_cmnd *cmnd,
 
 	TRACE(TRACE_ISCSI, "text response sent, ITT %u\n",
 		  cmnd->init_task_tag);
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_targ_text_rsp(hdr);
+    print_targ_text_rsp(hdr);
 
 out:
     pthread_mutex_unlock(&conn->text_in_progress_mutex);
@@ -2389,8 +2381,7 @@ ask_for_more_text(struct iscsi_cmnd *cmnd,
 
 	TRACE(TRACE_ISCSI, "text response sent, ITT %u\n", 
 		  cmnd->init_task_tag);
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_targ_text_rsp(hdr);
+    print_targ_text_rsp(hdr);
 
 out1:
     pthread_mutex_unlock(&conn->text_in_progress_mutex);
@@ -2440,8 +2431,7 @@ handle_logout_rsp(struct iscsi_cmnd *cmnd,
 
 	TRACE(TRACE_ISCSI, "logout response sent\n");
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_targ_logout_rsp(hdr);
+    print_targ_logout_rsp(hdr);
 
 	return 0;
 }
@@ -2506,8 +2496,7 @@ handle_nopin(struct iscsi_cmnd *cmnd,
 
 	TRACE(TRACE_ISCSI, "nopin sent\n");
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_targ_nopin(hdr);
+    print_targ_nopin(hdr);
 
 	ZFREE(cmnd->ping_data);
 
@@ -2560,8 +2549,7 @@ handle_iscsi_mgt_fn_done(struct iscsi_cmnd *cmnd,
 
 	TRACE(TRACE_ISCSI, "task mgt response sent\n");
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_targ_task_mgt_response(&rsp);
+    print_targ_task_mgt_response(&rsp);
 
 	aborted_command = search_tags(conn, cmnd->ref_task_tag, ALL_ONES, 0);
 
@@ -2656,8 +2644,7 @@ handle_data(struct iscsi_conn *conn,
 
 	TRACE(TRACE_ENTER_LEAVE, "Entered handle_data\n");
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_init_scsi_data_out(hdr);
+    print_init_scsi_data_out(hdr);
 
 	hdr->length = ntohl(hdr->length);
 	hdr->init_task_tag = ntohl(hdr->init_task_tag);
@@ -2934,8 +2921,7 @@ handle_snack(struct iscsi_conn *conn,
 
 	TRACE(TRACE_ENTER_LEAVE, "Enter handle_snack\n");
 
-	if (TRACE_TEST(TRACE_ERROR_RECOVERY))
-		print_init_snack(pdu);
+    print_init_snack(pdu);
 
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
@@ -3467,8 +3453,7 @@ iscsi_tx_r2t(struct iscsi_cmnd *cmnd,
 			  cmnd->init_task_tag,
 			  ntohl(hdr->offset));
 
-		if (TRACE_TEST(TRACE_ISCSI_FULL))
-			print_targ_r2t(hdr);
+        print_targ_r2t(hdr);
 
 		/* store the r2t time stamp - SAI */
 		/* error recovery ver ref18_04 */
@@ -3621,8 +3606,7 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 	TRACE(TRACE_ISCSI, "scsi response sent, ITT %u\n",
 		  cmnd->init_task_tag);
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_targ_scsi_rsp(rsp);
+    print_targ_scsi_rsp(rsp);
 
 	return 0;
 }
@@ -3915,11 +3899,9 @@ send_read_data(struct iscsi_cmnd *cmnd,
 				goto out1;
 			}
 
-			if (TRACE_TEST(TRACE_ISCSI_FULL)) {
-				TRACE(TRACE_ISCSI_FULL, "DataIn sent, offset %u\n",
-					  htonl(hdr->offset));
-				print_targ_scsi_data_in(hdr);
-			}
+            TRACE(TRACE_ISCSI_FULL, "DataIn sent, offset %u\n",
+                  htonl(hdr->offset));
+            print_targ_scsi_data_in(hdr);
 
 			/* Added for error recovery - SAI */
 skip_transmission:
@@ -4860,8 +4842,7 @@ handle_cmnd(struct iscsi_conn *conn,
 
 	TRACE(TRACE_ENTER_LEAVE, "Enter handle_cmnd\n");
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_init_scsi_cmnd(pdu);
+    print_init_scsi_cmnd(pdu);
 
 	pdu->length = ntohl(pdu->length);
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
@@ -5053,15 +5034,9 @@ handle_task_mgt_command(struct iscsi_conn *conn,
 						= (struct iscsi_init_task_mgt_command *)buffer;
 	struct iscsi_cmnd *cmnd;
 	int err = 0;
-	uint32_t save_trace;
 
 	/* turn on (almost) all tracing while processing a TM command */
-	TRACE_GET(save_trace);
-	TRACE_SET(TRACE_ALL
-				& ~(TRACE_NET | TRACE_BUF | TRACE_MY_MEMORY | TRACE_TIMERS));
-
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_init_task_mgt_command(pdu);
+    print_init_task_mgt_command(pdu);
 
 	pdu->init_task_tag = ntohl(pdu->init_task_tag);
 	pdu->ref_task_tag = ntohl(pdu->ref_task_tag);
@@ -5151,8 +5126,6 @@ handle_task_mgt_command(struct iscsi_conn *conn,
 	err = 0;
 out:
 	/* restore tracing to what it was when we came in here */
-	TRACE_SET(save_trace);
-
 	return err;
 }
 
@@ -5194,7 +5167,8 @@ create_socket_pair(int *pipe)
 int
 iscsi_server_init(void)
 {
-    TRACE_SET(TRACE_ALL);
+    struct parameter_type *p;
+    
     if (scsi_target_init() != 0)
     {
         TRACE_ERROR("Can't initialize SCSI target");
@@ -5226,6 +5200,9 @@ iscsi_server_init(void)
     devdata->auth_parameter.chap_local_ctx = CHAP_InitializeContext();
     devdata->auth_parameter.chap_peer_ctx = CHAP_InitializeContext();
     devdata->auth_parameter.srp_ctx = SRP_InitializeContext();
+    p = find_flag_parameter(TARGETPORTALGROUPTAG_FLAG, *devdata->param_tbl);
+    if (p != NULL)
+        p->int_value = DEFAULT_TARGET_PORTAL_GROUP_TAG;
 
 	/* setup the security key hash table */
 	setup_security_hash_table();

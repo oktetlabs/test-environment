@@ -745,6 +745,8 @@ struct session_operational_parameters {
 
 extern char *string_llx(uint64_t x, char *str); 
 
+extern void print_payload(const void *buffer, int len);
+
 extern void print_init_scsi_cmnd(struct iscsi_init_scsi_cmnd *cmd);
 
 extern void print_targ_scsi_rsp(struct iscsi_targ_scsi_rsp *cmd);

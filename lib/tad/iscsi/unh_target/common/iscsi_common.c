@@ -32,6 +32,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include <inttypes.h>
 #include <netinet/in.h>
 
@@ -69,25 +70,48 @@ string_llx(uint64_t x, char *str)
 	return str;
 }
 
+void
+print_payload(const void *buffer, int len)
+{
+    char format[80] = "";
+    char *fptr;
+    int i;
+
+    TRACE(TRACE_DEBUG, "iSCSI Payload: ");
+    for (i = 0, fptr = format; i < len; i++)
+    {
+        sprintf(fptr, "%2.2x ", ((const uint8_t *)buffer)[i]);
+        fptr += 3;
+        if (fptr >= format + sizeof(format))
+        {
+            RING("%s", format);
+            fptr = format;
+            memset(format, 0, sizeof(format));
+        }
+    }
+    if (fptr != format)
+        TRACE(TRACE_DEBUG, "%s", format);
+}
+
 static void
 print_rsvd_u8(int n, uint8_t rsvd)
 {
 	if (rsvd != 0)
-		printf("    rsvd%d: 0x%.2x\n", n, rsvd);
+		TRACE(TRACE_DEBUG, "    rsvd%d: 0x%.2x\n", n, rsvd);
 }
 
 static void
 print_rsvd_u16(int n, uint16_t rsvd)
 {
 	if (rsvd != 0)
-		printf("    rsvd%d: 0x%.4x\n", n, rsvd);
+		TRACE(TRACE_DEBUG, "    rsvd%d: 0x%.4x\n", n, rsvd);
 }
 
 static void
 print_rsvd_u32(int n, uint32_t rsvd)
 {
 	if (rsvd != 0)
-		printf("    rsvd%d: 0x%.8x\n", n, rsvd);
+		TRACE(TRACE_DEBUG, "    rsvd%d: 0x%.8x\n", n, rsvd);
 }
 
 static void
@@ -96,40 +120,75 @@ print_rsvd_u64(int n, uint64_t rsvd)
 	char string[8];
 
 	if (rsvd != 0ll)
-		printf("    rsvd%d: %s\n", n, string_llx(rsvd, string));
+		TRACE(TRACE_DEBUG, "    rsvd%d: %s\n", n, string_llx(rsvd, string));
+}
+
+static const char *
+map_opcode_to_name(uint8_t opcode)
+{
+    switch(opcode)
+    {
+        case ISCSI_INIT_NOP_OUT: return "INIT_NOP_OUT";
+        case ISCSI_INIT_SCSI_CMND: return "INIT_SCSI_CMND";
+        case ISCSI_INIT_TASK_MGMT_CMND: return "INIT_TASK_MGMT_CMND";
+        case ISCSI_INIT_LOGIN_CMND: return "INIT_LOGIN_CMND";
+        case ISCSI_INIT_TEXT_CMND: return "INIT_TEXT_CMND";
+        case ISCSI_INIT_SCSI_DATA_OUT: return "INIT_SCSI_DATA_OUT";
+        case ISCSI_INIT_LOGOUT_CMND: return "INIT_LOGOUT_CMND";
+        case ISCSI_INIT_SNACK: return "INIT_SNACK";
+            
+/* Target opcodes */
+        case ISCSI_TARG_NOP_IN: return "TARG_NOP_IN";
+        case ISCSI_TARG_SCSI_RSP: return "TARG_SCSI_RSP";
+        case ISCSI_TARG_TASK_MGMT_RSP: return "TARG_TASK_MGMT_RSP";
+        case ISCSI_TARG_LOGIN_RSP: return "TARG_LOGIN_RSP";
+        case ISCSI_TARG_TEXT_RSP: return "TARG_TEXT_RSP";
+        case ISCSI_TARG_SCSI_DATA_IN: return "TARG_SCSI_DATA_IN";
+        case ISCSI_TARG_LOGOUT_RSP: return "TARG_LOGOUT_RSP";
+        case ISCSI_TARG_R2T: return "TARG_R2T";
+        case ISCSI_TARG_ASYNC_MSG: return "TARG_ASYNC_MSG";
+        case ISCSI_TARG_RJT: return "TARG_RJT";
+        default:
+        {
+            static char buf[32];
+            sprintf(buf, "Unknown opcode %2.2X", opcode);
+            return buf;
+        }
+    }
 }
 
 static void
 print_opcode(uint8_t opcode)
 {
-	printf("    Opcode: 0x%.2x,  I: %d\n", opcode & ISCSI_OPCODE,
-	       (opcode & I_BIT) != 0);
+	TRACE(TRACE_DEBUG, "    Opcode: %s,  I: %d\n", 
+          map_opcode_to_name(opcode & ISCSI_OPCODE),
+          (opcode & I_BIT) != 0);
 }
 
 static void
 print_flags(uint8_t flags)
 {
-	printf("    flags: 0x%.2x\n", flags);
+	TRACE(TRACE_DEBUG, "    flags: 0x%.2x\n", flags);
 }
 
 static void
 print_version(char *which, uint8_t version)
 {
-	printf("    Version%s: 0x%.2x\n", which, version);
+	TRACE(TRACE_DEBUG, "    Version%s: 0x%.2x\n", which, version);
 }
 
 static void
 print_response(uint8_t response)
 {
 	if (response != 0)
-		printf("    Response: 0x%.2x\n", response);
+		TRACE(TRACE_DEBUG, "    Response: 0x%.2x\n", response);
 }
 
 static void
 print_status(uint8_t status)
 {
 	if (status != 0)
-		printf("    Status: 0x%.2x\n", status);
+		TRACE(TRACE_DEBUG, "    Status: 0x%.2x\n", status);
 }
 
 static void
@@ -138,59 +197,59 @@ print_lun(uint64_t lun)
 	char string[20];
 
 	if (lun != 0ll)
-		printf("    LUN: %s\n", string_llx(lun, string));
+		TRACE(TRACE_DEBUG, "    LUN: %s\n", string_llx(lun, string));
 }
 
 static void
 print_isid_tsih(uint8_t isid[6], uint16_t tsih)
 {
-	printf("    ISID: 0x%.2x %.2x %.2x %.2x %.2x %.2x\n",
+	TRACE(TRACE_DEBUG, "    ISID: 0x%.2x %.2x %.2x %.2x %.2x %.2x\n",
 	       isid[0], isid[1], isid[2], isid[3], isid[4], isid[5]);
-	printf("    TSIH: %u\n", ntohs(tsih));
+	TRACE(TRACE_DEBUG, "    TSIH: %u\n", ntohs(tsih));
 }
 
 static void
 print_dsl(uint32_t length)
 {
 	if (length != 0)
-		printf("    DSL: %u\n", ntohl(length));
+		TRACE(TRACE_DEBUG, "    DSL: %u\n", ntohl(length));
 }
 
 static void
 print_itt(uint32_t init_task_tag)
 {
 	if (init_task_tag == ALL_ONES)
-		printf("    ITT: 0x%08x\n", init_task_tag);
+		TRACE(TRACE_DEBUG, "    ITT: 0x%08x\n", init_task_tag);
 	else
-		printf("    ITT: %u\n", ntohl(init_task_tag));
+		TRACE(TRACE_DEBUG, "    ITT: %u\n", ntohl(init_task_tag));
 }
 
 static void
 print_ttt(uint32_t target_xfer_tag)
 {
 	if (target_xfer_tag == ALL_ONES)
-		printf("    TTT: 0x%08x\n", target_xfer_tag);
+		TRACE(TRACE_DEBUG, "    TTT: 0x%08x\n", target_xfer_tag);
 	else
-		printf("    TTT: %u\n", ntohl(target_xfer_tag));
+		TRACE(TRACE_DEBUG, "    TTT: %u\n", ntohl(target_xfer_tag));
 }
 
 static void
 print_cid(uint16_t cid)
 {
-	printf("    CID: %u\n", ntohs(cid));
+	TRACE(TRACE_DEBUG, "    CID: %u\n", ntohs(cid));
 }
 
 static void
 print_expstatsn(uint32_t exp_stat_sn)
 {
 	if (exp_stat_sn != 0)
-		printf("    ExpStatSN: %u\n", ntohl(exp_stat_sn));
+		TRACE(TRACE_DEBUG, "    ExpStatSN: %u\n", ntohl(exp_stat_sn));
 }
 
 static void
 print_cmdsn_expstatsn(uint32_t cmd_sn, uint32_t exp_stat_sn)
 {
-	printf("    CmdSN: %u\n", ntohl(cmd_sn));
+	TRACE(TRACE_DEBUG, "    CmdSN: %u\n", ntohl(cmd_sn));
 	print_expstatsn(exp_stat_sn);
 }
 
@@ -198,56 +257,56 @@ static void
 print_statsn_exp_max(uint32_t stat_sn, uint32_t exp_cmd_sn, uint32_t max_cmd_sn)
 {
 	if (stat_sn != 0)
-		printf("    StatSN: %u\n", ntohl(stat_sn));
-	printf("    ExpCmdSN: %u\n", ntohl(exp_cmd_sn));
-	printf("    MaxCmdSN: %u\n", ntohl(max_cmd_sn));
+		TRACE(TRACE_DEBUG, "    StatSN: %u\n", ntohl(stat_sn));
+	TRACE(TRACE_DEBUG, "    ExpCmdSN: %u\n", ntohl(exp_cmd_sn));
+	TRACE(TRACE_DEBUG, "    MaxCmdSN: %u\n", ntohl(max_cmd_sn));
 }
 
 static void
 print_residual(uint32_t resid)
 {
 	if (resid != 0)
-		printf("    ResidualCount: %u\n", ntohl(resid));
+		TRACE(TRACE_DEBUG, "    ResidualCount: %u\n", ntohl(resid));
 }
 
 static void
 print_datasn(uint32_t data_sn)
 {
 	if (data_sn != 0)
-		printf("    DataSN: %u\n", ntohl(data_sn));
+		TRACE(TRACE_DEBUG, "    DataSN: %u\n", ntohl(data_sn));
 }
 
 static void
 print_offset(uint32_t offset)
 {
 	if (offset != 0)
-		printf("    BufferOffset: %u\n", ntohl(offset));
+		TRACE(TRACE_DEBUG, "    BufferOffset: %u\n", ntohl(offset));
 }
 
 static void
 print_rtt(uint32_t ref_task_tag)
 {
 	if (ref_task_tag != 0)
-		printf("    RTT: %u\n", ntohl(ref_task_tag));
+		TRACE(TRACE_DEBUG, "    RTT: %u\n", ntohl(ref_task_tag));
 }
 
 static void
 print_exp_data_sn(uint32_t exp_data_sn)
 {
 	if (exp_data_sn != 0)
-		printf("    ExpDataSN: %u\n", ntohl(exp_data_sn));
+		TRACE(TRACE_DEBUG, "    ExpDataSN: %u\n", ntohl(exp_data_sn));
 }
 
 static void
 print_begrun(uint32_t begrun)
 {
-	printf("    BegRun: %u\n", ntohl(begrun));
+	TRACE(TRACE_DEBUG, "    BegRun: %u\n", ntohl(begrun));
 }
 
 static void
 print_runlen(uint32_t runlen)
 {
-	printf("    RunLength: %u\n", ntohl(runlen));
+	TRACE(TRACE_DEBUG, "    RunLength: %u\n", ntohl(runlen));
 }
 
 void
@@ -259,9 +318,9 @@ print_init_scsi_cmnd(struct iscsi_init_scsi_cmnd *cmd)
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
 	print_itt(cmd->init_task_tag);
-	printf("    EDTL: %u\n", ntohl(cmd->xfer_len));
+	TRACE(TRACE_DEBUG, "    EDTL: %u\n", ntohl(cmd->xfer_len));
 	print_cmdsn_expstatsn(cmd->cmd_sn, cmd->exp_stat_sn);
-	printf
+	VERB
 	    ("    CDB: 0x%.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x "
 	     "%.2x %.2x %.2x %.2x %.2x\n", cmd->cdb[0], cmd->cdb[1],
 	     cmd->cdb[2], cmd->cdb[3], cmd->cdb[4], cmd->cdb[5], cmd->cdb[6],
@@ -283,7 +342,7 @@ print_targ_scsi_rsp(struct iscsi_targ_scsi_rsp *cmd)
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
 	print_exp_data_sn(cmd->exp_data_sn);
 	if (cmd->bidi_resid != 0)
-		printf("    BidiResidualCount: %u\n",
+		TRACE(TRACE_DEBUG, "    BidiResidualCount: %u\n",
 		       ntohl(cmd->bidi_resid));
 	print_residual(cmd->resid);
 }
@@ -348,9 +407,9 @@ print_targ_login_rsp(struct iscsi_targ_login_rsp *cmd)
 	print_rsvd_u32(1, cmd->rsvd1);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
 	if (cmd->status_class != 0)
-		printf("    StatusClass: 0x%.2x\n", cmd->status_class);
+		TRACE(TRACE_DEBUG, "    StatusClass: 0x%.2x\n", cmd->status_class);
 	if (cmd->status_detail != 0)
-		printf("    StatusDetail: 0x%.2x\n", cmd->status_detail);
+		TRACE(TRACE_DEBUG, "    StatusDetail: 0x%.2x\n", cmd->status_detail);
 	print_rsvd_u16(2, cmd->rsvd2);
 	print_rsvd_u64(3, cmd->rsvd3);
 }
@@ -359,7 +418,7 @@ void
 print_init_logout_cmnd(struct iscsi_init_logout_cmnd *cmd)
 {
 	print_opcode(cmd->opcode);
-	printf("reasoncod: 0x%.2x\n", cmd->flags);
+	TRACE(TRACE_DEBUG, "reasoncod: 0x%.2x\n", cmd->flags);
 	print_rsvd_u16(1, cmd->rsvd1);
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
@@ -384,8 +443,8 @@ print_targ_logout_rsp(struct iscsi_targ_logout_rsp *cmd)
 	print_rsvd_u32(3, cmd->rsvd3);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
 	print_rsvd_u32(4, cmd->rsvd4);
-	printf("    Time2Wait: 0x%.8x\n", ntohs(cmd->time2wait));
-	printf("    Tm2Retain: 0x%.8x\n", ntohs(cmd->time2retain));
+	TRACE(TRACE_DEBUG, "    Time2Wait: 0x%.8x\n", ntohs(cmd->time2wait));
+	TRACE(TRACE_DEBUG, "    Tm2Retain: 0x%.8x\n", ntohs(cmd->time2retain));
 	print_rsvd_u32(5, cmd->rsvd5);
 }
 
@@ -430,7 +489,7 @@ print_targ_rjt(struct iscsi_targ_rjt *cmd)
 	print_opcode(cmd->opcode);
 	print_flags(cmd->flags);
 	if (cmd->reason != 0)
-		printf("    Reason: 0x%.2x\n", cmd->reason);
+		TRACE(TRACE_DEBUG, "    Reason: 0x%.2x\n", cmd->reason);
 	print_rsvd_u8(2, cmd->rsvd2);
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
@@ -483,9 +542,9 @@ print_targ_r2t(struct iscsi_targ_r2t *cmd)
 	print_itt(cmd->init_task_tag);
 	print_ttt(cmd->target_xfer_tag);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
-	printf("    R2TSN: %u\n", ntohl(cmd->r2t_sn));
+	TRACE(TRACE_DEBUG, "    R2TSN: %u\n", ntohl(cmd->r2t_sn));
 	print_offset(cmd->offset);
-	printf("    DDTL: %u\n", ntohl(cmd->xfer_len));
+	TRACE(TRACE_DEBUG, "    DDTL: %u\n", ntohl(cmd->xfer_len));
 }
 
 void
@@ -499,14 +558,14 @@ print_targ_async_msg(struct iscsi_targ_async_msg *cmd)
 	print_itt(cmd->init_task_tag);
 	print_rsvd_u32(3, cmd->rsvd3);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
-	printf("AsyncEvnt: %u\n", cmd->async_event);
-	printf("AsyncVCod: %u\n", cmd->async_vcode);
+	TRACE(TRACE_DEBUG, "AsyncEvnt: %u\n", cmd->async_event);
+	TRACE(TRACE_DEBUG, "AsyncVCod: %u\n", cmd->async_vcode);
 	if (cmd->parameter1 != 0)
-		printf("   Param1: %u\n", ntohs(cmd->parameter1));
+		TRACE(TRACE_DEBUG, "   Param1: %u\n", ntohs(cmd->parameter1));
 	if (cmd->parameter2 != 0)
-		printf("   Param2: %u\n", ntohs(cmd->parameter2));
+		TRACE(TRACE_DEBUG, "   Param2: %u\n", ntohs(cmd->parameter2));
 	if (cmd->parameter3 != 0)
-		printf("   Param3: %u\n", ntohs(cmd->parameter3));
+		TRACE(TRACE_DEBUG, "   Param3: %u\n", ntohs(cmd->parameter3));
 	print_rsvd_u32(5, cmd->rsvd5);
 }
 
@@ -514,7 +573,7 @@ void
 print_init_task_mgt_command(struct iscsi_init_task_mgt_command *cmd)
 {
 	print_opcode(cmd->opcode);
-	printf("    Function: 0x%.2x\n", cmd->function);
+	TRACE(TRACE_DEBUG, "    Function: 0x%.2x\n", cmd->function);
 	print_rsvd_u16(1, cmd->rsvd1);
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
@@ -522,7 +581,7 @@ print_init_task_mgt_command(struct iscsi_init_task_mgt_command *cmd)
 	print_rtt(cmd->ref_task_tag);
 	print_cmdsn_expstatsn(cmd->cmd_sn, cmd->exp_stat_sn);
 	if (cmd->ref_cmd_sn != 0)
-		printf("    RefCmdSN: %u\n", ntohl(cmd->ref_cmd_sn));
+		TRACE(TRACE_DEBUG, "    RefCmdSN: %u\n", ntohl(cmd->ref_cmd_sn));
 	print_exp_data_sn(cmd->exp_data_sn);
 	print_rsvd_u64(4, cmd->rsvd4);
 }

@@ -88,6 +88,11 @@ int
 iscsi_tad_recv(int sock, uint8_t *buffer, size_t len)
 {
     int result = read(sock, buffer, len);
+    unsigned i;
+#if 1
+    for (i = 0; i < result; i++)
+        fprintf(stderr, "%2.2x %s", buffer[i], i % 8 == 7 ? "\n" : "");
+#endif
     return result >= 0 ? result : -errno;
 }
 
@@ -97,7 +102,7 @@ extern int iscsi_server_init();
 
 int main(int argc, char *argv[])
 {
-    static iscsi_target_thread_params_t config;
+    iscsi_target_thread_params_t *config;
 
     int                server_socket;
     int                data_socket;
@@ -115,7 +120,6 @@ int main(int argc, char *argv[])
         perror("can't open log file");
         return EXIT_FAILURE;
     }
-    TRACE_SET(TRACE_ALL); 
     TRACE(TRACE_VERBOSE, "Initializing");
     iscsi_server_init();
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -158,16 +162,7 @@ int main(int argc, char *argv[])
                           int_val / DRAFT_MULTIPLIER);
                 }
             }
-            else if (strncmp(*iter, "V=", 2) == 0) {
-                char  *ptr;
-                int trace_info;
-                TRACE(TRACE_ISCSI, "Debug Verbose set to \"%s\"\n",
-                      *iter + 2);
-                trace_info = strtoul(*iter + 2,
-                                            &ptr, 0);
-                TRACE_SET(trace_info);
-            }
-            
+
             /* set phase-collapse choice */
             else if (strncmp(*iter, "p=", 2) == 0) {
                 int_val = strtoul(*iter + 2, NULL, 0);
@@ -268,10 +263,12 @@ int main(int argc, char *argv[])
             perror("accept");
             return EXIT_FAILURE;
         }
-        config.send_recv_csap = data_socket;
-        config.reject = 0;
+        config = malloc(sizeof(*config)); 
+/** will be freed by iscsi_server_tx_thread **/
+        config->send_recv_csap = data_socket;
+        config->reject = 0;
         fputs("Accepted\n", stderr);
-        if (pthread_create(&thread, NULL, iscsi_server_rx_thread, &config) == 0)
+        if (pthread_create(&thread, NULL, iscsi_server_rx_thread, config) == 0)
             fputs("thread created\n", stderr);
     }
     return 0;

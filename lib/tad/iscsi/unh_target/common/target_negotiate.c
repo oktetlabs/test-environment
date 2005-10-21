@@ -350,8 +350,7 @@ target_check_login(struct iscsi_conn *conn,
 		  (inputpdu->flags & CSG) >> CSG_SHIFT, inputpdu->flags & NSG,
 		  (inputpdu->flags & T_BIT) >> 7);
 
-	if (TRACE_TEST(TRACE_ISCSI_FULL))
-		print_init_login_cmnd((struct iscsi_init_login_cmnd *)inputpdu);
+    print_init_login_cmnd((struct iscsi_init_login_cmnd *)inputpdu);
 
 	/* check if the login has I bit set */
 	if (!(inputpdu->opcode & I_BIT)) {
@@ -1319,8 +1318,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 			return -1;
 		}
 
-		if (TRACE_TEST(TRACE_ISCSI_FULL))
-			print_init_login_cmnd((struct iscsi_init_login_cmnd *) inputpdu);
+        print_init_login_cmnd((struct iscsi_init_login_cmnd *) inputpdu);
 
 		/*  Also get the text associated with it  */
 		inputpdu->text_length = ntohl(inputpdu->length);
