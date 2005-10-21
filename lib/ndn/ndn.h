@@ -154,7 +154,8 @@ typedef enum {
  */ 
 typedef enum {
     NDN_ACT_ECHO,
-    NDN_ACT_FORWARD,
+    NDN_ACT_FORWARD_PLD,
+    NDN_ACT_FORWARD_RAW,
     NDN_ACT_FUNCTION,
     NDN_ACT_FILE,
 } ndn_packet_action_tags_t;

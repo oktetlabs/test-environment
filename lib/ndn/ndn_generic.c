@@ -305,7 +305,8 @@ Packet-Action ::= CHOICE {
 static asn_named_entry_t _ndn_packet_action_ne_array[] = 
 {
     { "echo",    &asn_base_null_s, {PRIVATE, NDN_ACT_ECHO} },
-    { "forward", &asn_base_integer_s, {PRIVATE, NDN_ACT_FORWARD} },
+    { "forw-pld",&asn_base_integer_s, {PRIVATE, NDN_ACT_FORWARD_PLD} },
+    { "forw-raw",&asn_base_integer_s, {PRIVATE, NDN_ACT_FORWARD_RAW} },
     { "function",&asn_base_charstring_s, {PRIVATE, NDN_ACT_FUNCTION} },
     { "file",    &asn_base_charstring_s, {PRIVATE, NDN_ACT_FILE} },
 }; 

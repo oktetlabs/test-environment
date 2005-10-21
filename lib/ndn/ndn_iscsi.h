@@ -35,6 +35,8 @@
 extern "C" {
 #endif
 
+#define ISCSI_BHS_LENGTH (48)
+
 /**
  * ASN.1 tags for ISCSI CSAP NDN
  */
