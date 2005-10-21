@@ -95,6 +95,13 @@
 /** Default targets port */
 #define ISCSI_TARGET_DEFAULT_PORT 3260
 
+/** 
+ * Default lun number.
+ * When LUN is not provided to UNH Initiator it starts
+ * questioning the Target about it's LUNs.
+ */
+#define ISCSI_DEFAULT_LUN_NUMBER 1
+
 /* 
  * List of default parameters, used during initialization of
  * the target_data
@@ -993,10 +1000,11 @@ iscsi_initiator_unh_set(const char *value)
 
     /* Now the connection should be opened */
     rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
-                         "cid=%d target=%d host=%d",
+                         "cid=%d target=%d host=%d lun=%d" ,
                          target->target_addr,
                          target->target_port,
-                         cid, target_id, init_data->host_bus_adapter);
+                         cid, target_id, init_data->host_bus_adapter,
+                         ISCSI_DEFAULT_LUN_NUMBER);
     if (rc != 0)
     {
         ERROR("Failed to establish connection with cid=%d", cid);
