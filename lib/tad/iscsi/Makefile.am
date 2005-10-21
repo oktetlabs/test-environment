@@ -34,5 +34,11 @@ install-exec-local:
 	done
 	$(RANLIB) libtad_iscsi.a 	
 
+install-data-hook:
+	for i in $(include_HEADERS) ; do \
+	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
+	done
+
+
 all: install
 

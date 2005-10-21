@@ -25,3 +25,8 @@ libiscsi_common_a_SOURCES = range.c debug.c crc.c tcp_utilities.c \
 	                        lun_packing.c text_param.c default_param.c \
 	                        target_negotiate.c iscsi_common.c
 
+
+install-data-hook:
+	for i in $(include_HEADERS) ; do \
+	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
+	done

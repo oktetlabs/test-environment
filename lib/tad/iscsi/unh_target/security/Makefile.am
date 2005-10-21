@@ -22,3 +22,7 @@ libiscsi_security_a_SOURCES = chap.c srp.c misc_func.c	\
                               sha1.c md5.c bigint.c
 
 
+install-data-hook:
+	for i in $(include_HEADERS) ; do \
+	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
+	done
