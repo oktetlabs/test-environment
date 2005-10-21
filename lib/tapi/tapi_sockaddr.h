@@ -116,6 +116,19 @@ sockaddr_is_af_supported(int af)
 extern void sockaddr_clear_port(struct sockaddr *addr);
 
 /**
+ * Get pointer to "port" part of corresponding struct sockaddr.
+ *
+ * @param addr  Generic address structure
+ *
+ * @return Pointer to "port" part
+ *
+ * @note The function is not very safe because it does not get the length
+ * of the structure assuming that there is enough space for a structure
+ * defined from the value of "sa_family" field.
+ */
+extern uint16_t *sockaddr_get_port_ptr(const struct sockaddr *addr);
+
+/**
  * Get "port" part of corresponding struct sockaddr.
  *
  * @param addr  Generic address structure
@@ -126,7 +139,13 @@ extern void sockaddr_clear_port(struct sockaddr *addr);
  * of the structure assuming that there is enough space for a structure
  * defined from the value of "sa_family" field.
  */
-extern uint16_t sockaddr_get_port(const struct sockaddr *addr);
+static inline uint16_t
+sockaddr_get_port(const struct sockaddr *addr)
+{
+    uint16_t *port = sockaddr_get_port_ptr(addr);
+
+    return (port != NULL) ? *port : 0;
+}
 
 /**
  * Update "port" part of corresponding struct sockaddr.

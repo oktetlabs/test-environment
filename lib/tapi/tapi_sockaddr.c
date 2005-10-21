@@ -74,21 +74,21 @@ sockaddr_clear_port(struct sockaddr *addr)
 }
 
 /* See the description in sockapi-ts.h */
-uint16_t
-sockaddr_get_port(const struct sockaddr *addr)
+uint16_t *
+sockaddr_get_port_ptr(const struct sockaddr *addr)
 {
     switch (addr->sa_family)
     {
         case AF_INET:
-            return SIN(addr)->sin_port;
+            return &SIN(addr)->sin_port;
 
         case AF_INET6:
-            return SIN6(addr)->sin6_port;
+            return &SIN6(addr)->sin6_port;
             
         default:
             ERROR("%s(): Address family %d is not supported",
                   __FUNCTION__, addr->sa_family);
-            return 0;
+            return NULL;
     }
 }
 
