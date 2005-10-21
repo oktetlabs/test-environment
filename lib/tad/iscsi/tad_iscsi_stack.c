@@ -54,16 +54,10 @@
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
 
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#include <string.h>
+#endif
 
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
