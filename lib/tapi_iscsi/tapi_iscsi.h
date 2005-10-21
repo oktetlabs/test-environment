@@ -385,6 +385,10 @@ typedef enum {
     ISCSI_PARAM_DATA_SEQUENCE_IN_ORDER,                 /**< Local */
     ISCSI_PARAM_ERROR_RECOVERY_LEVEL,                   /**< Local */
     ISCSI_PARAM_SESSION_TYPE,                           /**< Local */
+    ISCSI_PARAM_OF_MARKER,
+    ISCSI_PARAM_IF_MARKER,
+    ISCSI_PARAM_OF_MARKER_INT,
+    ISCSI_PARAM_IF_MARKER_INT,
     ISCSI_PARAM_LAST_OPERATIONAL,        /* just a delimiter */
 /* TODO: Global and Local parameters */
     ISCSI_PARAM_LOCAL_SECRET,                           /**< Global */

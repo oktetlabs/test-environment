@@ -90,7 +90,7 @@ iscsi_tad_recv(int sock, uint8_t *buffer, size_t len)
     int result = read(sock, buffer, len);
     unsigned i;
 #if 1
-    for (i = 0; i < result; i++)
+    for (i = 0; i < (unsigned)result; i++)
         fprintf(stderr, "%2.2x %s", buffer[i], i % 8 == 7 ? "\n" : "");
 #endif
     return result >= 0 ? result : -errno;

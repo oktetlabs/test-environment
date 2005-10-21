@@ -497,8 +497,24 @@ iscsi_target_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_session_type, "session_type",
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_if_marker_int, "if_marker_int",
                     NULL, NULL,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_of_marker_int, "of_marker_int",
+                    NULL, &node_iscsi_target_oper_if_marker_int,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_if_marker, "if_marker",
+                    NULL, &node_iscsi_target_oper_of_marker_int,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_of_marker, "of_marker",
+                    NULL, &node_iscsi_target_oper_if_marker,
+                    iscsi_target_oper_get, iscsi_target_oper_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_session_type, "session_type",
+                    NULL, &node_iscsi_target_oper_of_marker,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_error_recovery_level, "error_recovery_level",

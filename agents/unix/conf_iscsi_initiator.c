@@ -43,7 +43,7 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
-              
+#include <glob.h>
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -1953,6 +1953,69 @@ iscsi_target_port_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+static int
+iscsi_host_device_get(unsigned int gid, const char *oid,
+                           char *value, const char *instance, ...)
+{
+    char        dev_pattern[128];
+    glob_t      devices;
+    int         rc;
+    char       *nameptr;
+    unsigned    i;
+
+
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:0:0:*/block", 
+            init_data->host_bus_adapter);
+    if ((rc = glob(dev_pattern, GLOB_ERR, NULL, &devices)) != 0)
+    {
+        switch(rc)
+        {
+            case GLOB_NOSPACE:
+                ERROR("Cannot read a list of devices: no memory");
+                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            case GLOB_ABORTED:
+                ERROR("Cannot read a list of devices: read error");
+                return TE_RC(TE_TA_UNIX, TE_EIO);
+            case GLOB_NOMATCH:
+                *value = '\0';
+                return 0;
+            default:
+                ERROR("unexpected error on glob()");
+                return TE_RC(TE_TA_UNIX, TE_EFAIL);
+        }
+    }
+
+    *value = '\0';
+    for (i = 0; i < devices.gl_pathc; i++)
+    {
+        if (realpath(devices.gl_pathv[i], dev_pattern) == NULL)
+        {
+            WARN("Cannot resolve %s: %s", devices.gl_pathv[i],
+                 strerror(errno));
+        }
+        else
+        {
+            nameptr = strrchr(dev_pattern, '/');
+            if (nameptr == NULL)
+                WARN("Strange sysfs name: %s", dev_pattern);
+            else
+            {
+                if (*value != '\0')
+                    strcat(value, " ");
+                strcat(value, "/dev/");
+                strcat(value, nameptr + 1);
+            }
+        }
+    }
+
+    globfree(&devices);
+    return 0;
+}
+
 /* Initiator's path to scripts (for L5) */
 static int
 iscsi_script_path_set(unsigned int gid, const char *oid,
@@ -2030,6 +2093,7 @@ iscsi_host_bus_adapter_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+
 static int
 iscsi_host_bus_adapter_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
@@ -2101,8 +2165,11 @@ iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
 
 /* Configuration tree */
 
+RCF_PCH_CFG_NODE_RO(node_iscsi_host_device, "host_device", NULL, 
+                    NULL, iscsi_host_device_get);
+
 RCF_PCH_CFG_NODE_RW(node_iscsi_script_path, "script_path", NULL, 
-                    NULL, iscsi_script_path_get,
+                    &node_iscsi_host_device, iscsi_script_path_get,
                     iscsi_script_path_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_type, "type", NULL, 
