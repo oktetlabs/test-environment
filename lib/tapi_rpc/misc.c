@@ -853,7 +853,7 @@ rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s,
     char                    process_name[12];
     static int              counter = 1;
     
-    sprintf(process_name, "pco_child%d\n", counter);
+    sprintf(process_name, "pco_child%d", counter);
     
     if (rpc_is_winsock2(pco_father))
     {
