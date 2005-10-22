@@ -82,6 +82,5 @@ install-exec-hook:
 	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
 
 uninstall-hook:
-	rm -f $(DESTDIR)/$(bindir)/ta@with_name@
-	mv $(DESTDIR)/$(bindir)/ta@with_name@.exe \
-		$(DESTDIR)/$(bindir)/tawin32tmpl.exe
+	rm -f $(DESTDIR)/$(bindir)/ta@with_name@ \
+		$(DESTDIR)/$(bindir)/ta@with_name@.exe

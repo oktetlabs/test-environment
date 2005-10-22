@@ -142,4 +142,4 @@ install-exec-hook:
 	mv $(DESTDIR)/$(bindir)/taunixtmpl $(DESTDIR)/$(bindir)/ta@with_name@
 
 uninstall-hook:
-	mv $(DESTDIR)/$(bindir)/ta@with_name@ $(DESTDIR)/$(bindir)/taunixtmpl
+	rm -f $(DESTDIR)/$(bindir)/ta@with_name@
