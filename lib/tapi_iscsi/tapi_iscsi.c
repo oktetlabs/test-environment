@@ -59,6 +59,7 @@
 #include "ndn_iscsi.h"
 
 #include "tapi_tad.h"
+#include "te_iscsi.h"
 #include "tapi_tcp.h"
 
 int
