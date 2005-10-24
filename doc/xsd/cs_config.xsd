@@ -83,6 +83,14 @@
                 </xs:simpleType>
             </xs:attribute>
             <xs:attribute name="default" type="xs:string"/>
+            <xs:attribute name="volatile" default="false">
+                <xs:simpleType>
+                    <xs:restriction base="xs:token">
+                        <xs:enumeration value="true"/>
+                        <xs:enumeration value="false"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 
