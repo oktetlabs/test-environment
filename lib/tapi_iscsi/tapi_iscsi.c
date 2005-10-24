@@ -257,6 +257,7 @@ tapi_iscsi_tcp_recv_pkt(const char *ta_name, int sid,
     len = iscsi_rest_data_len(bhs_buffer, header_digest, data_digest);
     RING("%s(%s:%d), on TCP connection, calculated rest bytes = %d", 
          __FUNCTION__, ta_name, (int)csap, (int)len);
+
     if (buffer != NULL)
     {
         if (length == NULL)
@@ -281,6 +282,10 @@ tapi_iscsi_tcp_recv_pkt(const char *ta_name, int sid,
                                       buffer + ISCSI_BHS_LENGTH, 
                                   &len); 
     }
+
+    if (length != NULL)
+        *length = ISCSI_BHS_LENGTH + len;
+
     return rc;
 }
 
