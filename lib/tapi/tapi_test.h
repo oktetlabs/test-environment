@@ -114,6 +114,9 @@ extern "C" {
      */                                                             \
     (void)signal(SIGINT, sigint_handler);                           \
                                                                     \
+    /* Initialize pseudo-random generator */                        \
+    srand(time(NULL));                                              \
+                                                                    \
     TAPI_ON_JMP(TEST_ON_JMP_DO);                                    \
     TEST_GET_INT_PARAM(te_test_id);                                 \
                                                                     \
