@@ -85,7 +85,7 @@ rpc_socket(rcf_rpc_server *rpcs,
     in.domain = domain;
     in.type = type;
     in.proto = protocol;
-    in.flags = 1;
+    in.flags = RPC_WSA_FLAG_OVERLAPPED;
 
     rcf_rpc_call(rpcs, "socket", &in, &out);
 
