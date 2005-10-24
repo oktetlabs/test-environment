@@ -115,30 +115,6 @@ extern int parse_key_value(char *str, asn_value *value);
 extern int iscsi_rest_data_len(uint8_t *bhs, te_bool header_digest,
                                te_bool data_digest);
  
-/**
- * Flags:
- * the following assumption holds:
- * if parameter of the local Initiator structure 
- * was untouched than it should not be synchronized
- * with the Initiator. Than the Initiator uses the
- * default parameter and MAY NOT offer the parameter
- * during the negotiations.
- */
-#define OFFER_MAX_CONNECTIONS                   (1 << 0)
-#define OFFER_INITIAL_R2T                       (1 << 1)
-#define OFFER_HEADER_DIGEST                     (1 << 2)
-#define OFFER_DATA_DIGEST                       (1 << 3)
-#define OFFER_IMMEDIATE_DATA                    (1 << 4)
-#define OFFER_MAX_RECV_DATA_SEGMENT_LENGTH      (1 << 5)
-#define OFFER_FIRST_BURST_LENGTH                (1 << 6)
-#define OFFER_MAX_BURST_LENGTH                  (1 << 7)
-#define OFFER_DEFAULT_TIME2WAIT                 (1 << 8)
-#define OFFER_DEFAULT_TIME2RETAIN               (1 << 9)
-#define OFFER_MAX_OUTSTANDING_R2T               (1 << 10)
-#define OFFER_DATA_PDU_IN_ORDER                 (1 << 11)
-#define OFFER_DATA_SEQUENCE_IN_ORDER            (1 << 12)
-#define OFFER_ERROR_RECOVERY_LEVEL              (1 << 13)
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

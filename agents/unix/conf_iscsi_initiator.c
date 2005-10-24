@@ -53,6 +53,7 @@
 #include "conf_daemons.h"
 #include "te_shell_cmd.h"
 #include "ndn_iscsi.h"
+#include "te_iscsi.h"
 
 /* Debug logs */
 #define ISCSI_DEBUG_LOG_
@@ -102,31 +103,6 @@
  */
 #define ISCSI_DEFAULT_LUN_NUMBER 1
 
-/* 
- * List of default parameters, used during initialization of
- * the target_data
- */
-#define DEFAULT_TARGET_NAME                  "iqn.2004-01.com:0"
-#define DEFAULT_MAX_CONNECTIONS              1
-#define DEFAULT_INITIAL_R2T                  "Yes"
-#define DEFAULT_HEADER_DIGEST                "None"
-#define DEFAULT_DATA_DIGEST                  "None"
-#define DEFAULT_IMMEDIATE_DATA               "Yes"
-#define DEFAULT_MAX_RECV_DATA_SEGMENT_LENGTH 8192
-#define DEFAULT_FIRST_BURST_LENGTH           65536
-#define DEFAULT_MAX_BURST_LENGTH             262144
-#define DEFAULT_DEFAULT_TIME2WAIT            2
-#define DEFAULT_DEFAULT_TIME2RETAIN          20
-#define DEFAULT_MAX_OUTSTANDING_R2T          1
-#define DEFAULT_DATA_PDU_IN_ORDER            "Yes"
-#define DEFAULT_DATA_SEQUENCE_IN_ORDER       "Yes"
-#define DEFAULT_ERROR_RECOVERY_LEVEL         0
-#define DEFAULT_SESSION_TYPE                 "Normal"
-#define DEFAULT_CHAP                         "None"
-#define DEFAULT_CHALLENGE_LENGTH             256
-#define DEFAULT_INITIATOR_NAME \
-    "iqn.1999-11.edu.unh.iol.iscsi-initiator"
-#define DEFAULT_INITIATOR_ALIAS             "UNH"
 
 /** 
  * Host bus adapter default value. If
