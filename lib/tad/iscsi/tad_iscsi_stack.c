@@ -449,6 +449,15 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
               __FUNCTION__, csap_id, csap_descr->last_errno);
         return csap_descr->last_errno;
     }
+#else
+    CIRCLEQ_INIT(&(iscsi_spec_data->packets_to_tgt));
+    CIRCLEQ_INIT(&(iscsi_spec_data->packets_from_tgt));
+    {
+        pthread_mutex_t fastmutex = PTHREAD_MUTEX_INITIALIZER;
+        iscsi_spec_data->pkt_queue_lock = fastmutex;
+    }
+
+    pipe(iscsi_spec_data->conn_fd);
 #endif
 
     thread_params = calloc(1, sizeof(*thread_params));
