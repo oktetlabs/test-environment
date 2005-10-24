@@ -7,7 +7,8 @@ include_HEADERS = \
 	te_bufs.h \
 	te_shell_cmd.h \
 	te_log_fmt.h \
-	te_format.h
+	te_format.h \
+	te_iscsi.h
 
 lib_LIBRARIES = libtools.a
 
