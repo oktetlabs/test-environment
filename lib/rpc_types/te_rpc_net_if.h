@@ -89,29 +89,44 @@ RPCBITMAP2STR(if_fl, IF_FL_MAPPING_LIST)
 
 #ifdef IFF_UP
 
-#ifdef IFF_MASTER
-#define HAVE_IFF_MASTER     1
-#else
-#define HAVE_IFF_MASTER     0
+#ifndef IFF_MASTER
 #define IFF_MASTER          0
 #endif
-#ifdef IFF_SLAVE
-#define HAVE_IFF_SLAVE      1
-#else
-#define HAVE_IFF_SLAVE      0
+
+#ifndef IFF_SLAVE
 #define IFF_SLAVE           0
 #endif
-#ifdef IFF_PORTSEL
-#define HAVE_IFF_PORTSEL    1
-#else
-#define HAVE_IFF_PORTSEL    0
+
+#ifndef IFF_PORTSEL
 #define IFF_PORTSEL         0
 #endif
-#ifdef IFF_NOTRAILERS
-#define HAVE_IFF_NOTRAILERS 1
-#else
-#define HAVE_IFF_NOTRAILERS 0
+
+#ifndef IFF_NOTRAILERS
 #define IFF_NOTRAILERS      0
+#endif
+
+#ifndef IFF_NOARP
+#define IFF_NOARP           0
+#endif
+
+#ifndef IFF_DEBUG
+#define IFF_DEBUG           0
+#endif
+
+#ifndef IFF_POINTOPOINT
+#define IFF_POINTOPOINT     0
+#endif
+
+#ifndef IFF_RUNNING     
+#define IFF_RUNNING         0
+#endif
+
+#ifndef IFF_PROMISC
+#define IFF_PROMISC         0
+#endif
+
+#ifndef IFF_ALLMULTI      
+#define IFF_ALLMULTI        0
 #endif
 
 #define IF_FLAGS_ALL (IFF_UP | IFF_BROADCAST | IFF_DEBUG |       \
@@ -133,23 +148,15 @@ if_fl_rpc2h(rpc_if_fl flags)
            (!!(flags & RPC_IFF_BROADCAST) * IFF_BROADCAST) |
            (!!(flags & RPC_IFF_DEBUG) * IFF_DEBUG) |
            (!!(flags & RPC_IFF_POINTOPOINT) * IFF_POINTOPOINT) |
-#if HAVE_IFF_NOTRAILERS
            (!!(flags & RPC_IFF_NOTRAILERS) * IFF_NOTRAILERS) |
-#endif
            (!!(flags & RPC_IFF_RUNNING) * IFF_RUNNING) |
            (!!(flags & RPC_IFF_NOARP) * IFF_NOARP) |
            (!!(flags & RPC_IFF_PROMISC) * IFF_PROMISC) |
            (!!(flags & RPC_IFF_ALLMULTI) * IFF_ALLMULTI) |
-#if HAVE_IFF_MASTER
            (!!(flags & RPC_IFF_MASTER) * IFF_MASTER) |
-#endif
-#if HAVE_IFF_SLAVE
            (!!(flags & RPC_IFF_SLAVE) * IFF_SLAVE) |
-#endif
            (!!(flags & RPC_IFF_MULTICAST) * IFF_MULTICAST) |
-#if HAVE_IFF_PORTSEL
            (!!(flags & RPC_IFF_PORTSEL) * IFF_PORTSEL) |
-#endif
            (!!(flags & RPC_IFF_AUTOMEDIA));
 }
 
@@ -172,12 +179,6 @@ if_fl_h2rpc(int flags)
            (!!(flags & (~IFF_UNKNOWN)) * RPC_IFF_UNKNOWN);
 }
 
-#undef HAVE_IFF_NOTRAILERS
-#undef HAVE_IFF_MASTER
-#undef HAVE_IFF_SLAVE
-#undef HAVE_IFF_PORTSEL
-
 #endif /* IFF_UP */
-
 
 #endif /* !__TE_RPC_NET_IF_H__ */

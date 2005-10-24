@@ -112,7 +112,9 @@ ai_rc_h2rpc(rpc_ai_rc rc)
         H2RPC(EAI_ADDRFAMILY);
 #endif
         H2RPC(EAI_MEMORY);
+#ifdef EAI_SYSTEM        
         H2RPC(EAI_SYSTEM);
+#endif        
 #if 0
         H2RPC(EAI_INPROGRESS);
         H2RPC(EAI_CANCELED);
