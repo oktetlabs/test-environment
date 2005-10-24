@@ -39,6 +39,11 @@
 #include <stdlib.h>
 #endif
 
+/* for ntohl */
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #include "asn_impl.h"
 #include "ndn_internal.h"
 #include "ndn_iscsi.h"
@@ -631,4 +636,39 @@ padding:
     INFO("bin_data2asn result %s", asn_val_buf);
     return 0;
 }
+
+
+int
+iscsi_rest_data_len(uint8_t *bhs, te_bool header_digest,
+                    te_bool data_digest)
+{
+        size_t  total_AHS_length,
+                data_segment_length;
+
+        int     h_dig = header_digest,
+                d_dig = data_digest; 
+
+        union { 
+            uint32_t i;
+            uint8_t b[4];
+        }       dsl_convert;
+
+        total_AHS_length = bhs[4];
+
+        dsl_convert.b[0] = 0;
+        dsl_convert.b[1] = bhs[5];
+        dsl_convert.b[2] = bhs[6];
+        dsl_convert.b[3] = bhs[7];
+
+        data_segment_length = ntohl(dsl_convert.i);
+
+        /* DataSegment padding */
+        if (data_segment_length % 4)
+            data_segment_length += (4 - (data_segment_length % 4));
+
+
+        return data_segment_length +
+                (total_AHS_length + h_dig + d_dig) * 4;
+}
+
 

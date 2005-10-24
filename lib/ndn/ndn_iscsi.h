@@ -102,6 +102,18 @@ bin_data2asn(uint8_t *data, uint32_t data_len,
             asn_value_p *value);
 
 extern int parse_key_value(char *str, asn_value *value);
+
+/**
+ * Calculate extra (non-BHS) length of iSCSI PDU. 
+ *
+ * @param bhs           pointer to iSCSI PDU begin
+ * @param header_digest flag is there HeaderDigest
+ * @param data_digest   flag is there DataDigest
+ *
+ * @return number of bytes rest in PDU
+ */
+extern int iscsi_rest_data_len(uint8_t *bhs, te_bool header_digest,
+                               te_bool data_digest);
  
 /**
  * Flags:
