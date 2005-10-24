@@ -1169,13 +1169,12 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
 
     rcf_rpc_call(rpcs, "getpwnam", &in, &out);
                  
+    CHECK_RETVAL_VAR(getpwnam, out.passwd.name.name_val,
+                     FALSE, NULL);
+
     free(in.name.name_val);
     res = (!RPC_IS_CALL_OK(rpcs) || out.passwd.name.name_val == NULL) ?
           NULL : &passwd;
-
-    TAPI_RPC_LOG("RPC (%s,%s): getpwnam(%s) -> %p (%s)",
-                 rpcs->ta, rpcs->name, name, res,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     if (res != NULL)
     {
@@ -1189,6 +1188,10 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
         memset(&out, 0, sizeof(out));
     }
     
+    TAPI_RPC_LOG("RPC (%s,%s): getpwnam(%s) -> %p (%s)",
+                 rpcs->ta, rpcs->name, name, res,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
     RETVAL_PTR(getpwnam, res);
 }
 
