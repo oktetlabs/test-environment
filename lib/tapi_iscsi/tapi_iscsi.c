@@ -59,6 +59,7 @@
 #include "ndn_iscsi.h"
 
 #include "tapi_tad.h"
+#include "tapi_tcp.h"
 
 int
 tapi_iscsi_csap_create(const char *ta_name, int sid, 
@@ -140,9 +141,11 @@ iscsi_msg_handler(const char *pkt_fname, void *user_param)
     asn_free_value(pkt);
 }
 
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
                     int timeout, csap_handle_t forward,
+                    te_bool header_digest, te_bool data_digest,
                     iscsi_target_params_t *params,
                     uint8_t *buffer, size_t  *length)
 {
@@ -171,8 +174,7 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
         ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
               __FUNCTION__, rc, syms);
         return rc;
-    }
-
+    } 
 
     if (forward != CSAP_INVALID_HANDLE)
     {
@@ -180,6 +182,27 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
         if (rc != 0)
         {
             ERROR("%s():  write forward csap failed: %r",
+                  __FUNCTION__, rc);
+            goto cleanup;
+        }
+    }
+    if (header_digest)
+    {
+        rc = asn_write_value_field(pattern, NULL, 0, "0.pdus.0.have-hdig");
+        if (rc != 0)
+        {
+            ERROR("%s():  write header-digest failed: %r",
+                  __FUNCTION__, rc);
+            goto cleanup;
+        }
+    }
+
+    if (data_digest)
+    {
+        rc = asn_write_value_field(pattern, NULL, 0, "0.pdus.0.have-ddig");
+        if (rc != 0)
+        {
+            ERROR("%s():  write data-digest failed: %r",
                   __FUNCTION__, rc);
             goto cleanup;
         }
@@ -208,7 +231,59 @@ cleanup:
 }
 
 
+/* See description in tapi_iscsi.h */
+int
+tapi_iscsi_tcp_recv_pkt(const char *ta_name, int sid, 
+                        csap_handle_t csap, int timeout,
+                        csap_handle_t forward,
+                        te_bool header_digest,
+                        te_bool data_digest,
+                        uint8_t *buffer, size_t  *length)
+{
+    uint8_t bhs_buffer[ISCSI_BHS_LENGTH];
+    int     rc; 
+    size_t  len = ISCSI_BHS_LENGTH;
 
+    rc = tapi_tcp_buffer_recv(ta_name, sid, csap, timeout, forward, 
+                              TRUE, bhs_buffer, &len); 
+    if (rc != 0)
+    {
+        WARN("%s(%s:%d) failed %r", __FUNCTION__,
+             ta_name, (int)csap, rc);
+        return TE_RC(TE_TAPI, rc);
+    } 
+
+    len = iscsi_rest_data_len(bhs_buffer, header_digest, data_digest);
+    RING("%s(%s:%d), on TCP connection, calculated rest bytes = %d", 
+         __FUNCTION__, ta_name, (int)csap, (int)len);
+    if (buffer != NULL)
+    {
+        if (length == NULL)
+        {
+            ERROR("%s(): len == NULL but buf != NULL", __FUNCTION__);
+            return TE_RC(TE_TAPI, EINVAL);
+        }
+        if (*length < ISCSI_BHS_LENGTH + len)
+        {
+            ERROR("%s() length %d of passed buffer too small, " 
+                  "rest part of iSCSI PDU %d", __FUNCTION__,
+                  (int)(*length), (int)len);
+            return TE_RC(TE_TAPI, TE_ESMALLBUF);
+        }
+        memcpy(buffer, bhs_buffer, ISCSI_BHS_LENGTH);
+    }
+    if (len > 0)
+    { 
+        rc = tapi_tcp_buffer_recv(ta_name, sid, csap, timeout, forward, 
+                                  TRUE,
+                                  buffer == NULL ? NULL : 
+                                      buffer + ISCSI_BHS_LENGTH, 
+                                  &len); 
+    }
+    return rc;
+}
+
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
                     iscsi_target_params_t *params,
@@ -254,6 +329,7 @@ cleanup:
 }
 
 
+/* See description in tapi_iscsi.h */
 int 
 tapi_iscsi_get_key_num(iscsi_segment_data data)
 {
@@ -268,6 +344,7 @@ tapi_iscsi_get_key_num(iscsi_segment_data data)
     return segment_data_len;
 }
     
+/* See description in tapi_iscsi.h */
 char *
 tapi_iscsi_get_key_name(iscsi_segment_data segment_data, int key_index)
 {
@@ -294,6 +371,7 @@ tapi_iscsi_get_key_name(iscsi_segment_data segment_data, int key_index)
     return name;
 }
 
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_get_key_index_by_name(iscsi_segment_data data, char *name)
 {
@@ -339,6 +417,7 @@ tapi_iscsi_get_key_index_by_name(iscsi_segment_data data, char *name)
     return key_index;
 }
 
+/* See description in tapi_iscsi.h */
 iscsi_key_values
 tapi_iscsi_get_key_values(iscsi_segment_data data,
                           int key_index)
@@ -369,6 +448,7 @@ tapi_iscsi_get_key_values(iscsi_segment_data data,
     return (iscsi_key_values)key_values;
 }
 
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_get_key_values_num(iscsi_key_values values)
 {
@@ -383,6 +463,7 @@ tapi_iscsi_get_key_values_num(iscsi_key_values values)
     return key_values_len;
 }
 
+/* See description in tapi_iscsi.h */
 iscsi_key_value_type
 tapi_iscsi_get_key_value_type(iscsi_key_values values, int key_value_index)
 {
@@ -435,6 +516,7 @@ tapi_iscsi_get_key_value_type(iscsi_key_values values, int key_value_index)
     return type;
 }
 
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_get_string_key_value(iscsi_key_values values, 
                                 int key_value_index, char **str)
@@ -475,6 +557,7 @@ tapi_iscsi_get_string_key_value(iscsi_key_values values,
     return 0;
 }
 
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_get_int_key_value(iscsi_key_values values, 
                              int key_value_index, int *int_val)
@@ -517,6 +600,7 @@ tapi_iscsi_get_int_key_value(iscsi_key_values values,
     return 0;
 }
 
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
 {
@@ -582,6 +666,7 @@ tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
 }
 
 
+/* See description in tapi_iscsi.h */
 iscsi_key_values 
 tapi_iscsi_key_values_create(int num, ...)
 {
@@ -684,6 +769,7 @@ cleanup:
     return key_values;
 }
 
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_set_key_values(iscsi_segment_data data,
                           int key_index,
@@ -712,6 +798,7 @@ tapi_iscsi_set_key_values(iscsi_segment_data data,
     return 0;
 }    
 
+/* See description in tapi_iscsi.h */
 void
 tapi_iscsi_free_key_values(iscsi_key_values values)
 {
@@ -719,6 +806,7 @@ tapi_iscsi_free_key_values(iscsi_key_values values)
     return;
 }
 
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_delete_key(iscsi_segment_data data, int key_index)
 {
@@ -733,6 +821,7 @@ tapi_iscsi_delete_key(iscsi_segment_data data, int key_index)
     return 0;
 }
 
+/* See description in tapi_iscsi.h */
 iscsi_segment_data
 tapi_iscsi_keys_create(int num, ...)
 {

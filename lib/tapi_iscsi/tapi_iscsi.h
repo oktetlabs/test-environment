@@ -131,6 +131,8 @@ extern int tapi_iscsi_csap_create(const char *ta_name, int sid,
  * @param csap          identifier of CSAP, to which received
  *                      data should be forwarded, may be
  *                      CSAP_INVALID_HANDLE
+ * @param header_digest flag if there is HeaderDigest field
+ * @param data_digest   flag if there is DataDigest field
  * @param params        location for iSCSI current params (OUT)
  * @param buffer        location for received data (OUT)
  * @param length        length of buffer / received data (IN/OUT)
@@ -141,6 +143,8 @@ extern int tapi_iscsi_recv_pkt(const char *ta_name, int sid,
                                csap_handle_t csap,
                                int timeout,
                                csap_handle_t forward,
+                               te_bool header_digest,
+                               te_bool data_digest,
                                iscsi_target_params_t *params,
                                uint8_t *buffer,
                                size_t  *length);
@@ -162,6 +166,32 @@ extern int tapi_iscsi_send_pkt(const char *ta_name, int sid,
                                iscsi_target_params_t *params,
                                uint8_t *buffer,
                                size_t  length);
+/**
+ * Receive one message from iSCSI TCP connection on TA.
+ * 
+ * @param ta_name       test Agent name
+ * @param sid           RCF SID
+ * @param csap          identifier of TCP CSAP
+ * @param timeout       timeout of operation in milliseconds
+ * @param csap          identifier of CSAP, to which received
+ *                      data should be forwarded, may be
+ *                      CSAP_INVALID_HANDLE
+ * @param header_digest flag if there is HeaderDigest field
+ * @param data_digest   flag if there is DataDigest field
+ * @param params        location for iSCSI current params (OUT)
+ * @param buffer        location for received data (OUT)
+ * @param length        length of buffer / received data (IN/OUT)
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_iscsi_tcp_recv_pkt(const char *ta_name, int sid, 
+                                   csap_handle_t csap,
+                                   int timeout,
+                                   csap_handle_t forward,
+                                   te_bool header_digest,
+                                   te_bool data_digest,
+                                   uint8_t *buffer,
+                                   size_t  *length);
 
 #define TAPI_ISCSI_KEY_INVALID     -1
 
