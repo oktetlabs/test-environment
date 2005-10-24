@@ -830,7 +830,8 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
     }
 
     rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, 
-                               tcp_data_csap_handler, &msg, timeout, 1);
+                               buf == NULL ? NULL : tcp_data_csap_handler,
+                               buf == NULL ? NULL : &msg, timeout, 1);
     if (rc != 0)
     {
         ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
@@ -841,7 +842,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 
-    if (length != NULL)
+    if (buf != NULL && length != NULL)
     {
         *length = msg.length;
     }
