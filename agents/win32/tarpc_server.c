@@ -31,6 +31,7 @@
 #include <winsock2.h>
 #include <winerror.h>
 #include <mswsock.h>
+#include <ws2tcpip.h>
 #define _SYS_SOCKET_H
 #define _NETINET_IN_H
 #include "tarpc.h"
