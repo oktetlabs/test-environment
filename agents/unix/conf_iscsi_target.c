@@ -444,6 +444,15 @@ map_oid_to_param(const char *oid)
     static char param_name[32];
     te_bool upper_case = TRUE;
     char *p = param_name;
+    static char *special_mappings[][2] =
+        {{"data_pdu_in_order", "DataPDUInOrder"},
+         {"if_marker", "IFMarker"},
+         {"of_marker", "OFMarker"},
+         {"if_marker_int", "IFMarkerInt"},
+         {"of_marker_int", "OFMarkerInt"},
+         {NULL, NULL}
+        };
+    int i;
     
     oid = strrchr(oid, '/');
     if (oid == NULL)
@@ -451,6 +460,15 @@ map_oid_to_param(const char *oid)
         ERROR("OID is malformed");
         return "";
     }
+
+    for (i = 0; special_mappings[i][0] != NULL; i++)
+    {
+        if (strcmp(special_mappings[i][0], oid) == 0)
+        {
+            return special_mappings[i][1];
+        }
+    }
+
     for (oid++; *oid != ':' && *oid != '\0'; oid++)
     {
         if (upper_case)
@@ -466,8 +484,6 @@ map_oid_to_param(const char *oid)
             upper_case = TRUE;
     }
     *p = '\0';
-    if ((p = strstr(param_name, "Pdu")) != NULL)
-        memcpy(p, "PDU", 3);
     return param_name;
 }
 
