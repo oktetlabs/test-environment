@@ -37,7 +37,7 @@ extern "C" {
 #include "te_defs.h"
 
 /** Maximum length of the instance in the message */
-#define CFG_MAX_INST_VALUE      128
+#define CFG_MAX_INST_VALUE      RCF_MAX_VAL
 
 /** Number of configurator primary types */
 #define CFG_PRIMARY_TYPES_NUM   4
