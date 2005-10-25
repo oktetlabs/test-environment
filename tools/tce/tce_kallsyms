@@ -3,6 +3,11 @@
 for mfile in "$@"; do
     module=`basename $mfile .ko`
     offset=`grep ^$module' ' /proc/modules | awk '{ print $NF }'`
-    nm $mfile | grep -i gcov | 
-    awk -vmodule=$module '{ printf "%8.8x %s %s %s [%s]\n", strtonum('$offset') + strtonum("0x" $1), $2, $3, $4, module }'
+    if test -z "$offset"; then
+        echo "Module $module not found" >&2 
+    else
+        nm $mfile | grep -i gcov | 
+        awk -vmodule=$module -voffset=$offset \
+            '{ printf "%8.8x %s %s %s [%s]\n", strtonum(offset) + strtonum("0x" $1), $2, $3, $4, module }'
+    fi
 done
