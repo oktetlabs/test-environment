@@ -1019,7 +1019,6 @@ iscsi_configure_param_value(int param_neg_info,
 		/* set the negotiation info only if no error */
 		param->neg_info = param_neg_info;
 	}
-
 }
 
 void
@@ -2671,7 +2670,7 @@ print_string_param(char *buffer, char *name, char *value)
  */
 int __attribute__ ((no_instrument_function))
 print_config_info(struct parameter_type param_tbl[MAX_CONFIG_PARAMS],
-		  char *buffer)
+                  char *buffer)
 {
 	struct parameter_type *params;
 	int pos;
@@ -2688,7 +2687,7 @@ print_config_info(struct parameter_type param_tbl[MAX_CONFIG_PARAMS],
 		} else {
 			pos += print_string_param(buffer + pos,
 						  params->parameter_name,
-						  params->str_value);
+						  params->value_list);
 		}
 	}
 

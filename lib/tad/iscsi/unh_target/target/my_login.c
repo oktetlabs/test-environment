@@ -5167,8 +5167,16 @@ create_socket_pair(int *pipe)
 int
 iscsi_server_init(void)
 {
+    static te_bool already_initialized;
     struct parameter_type *p;
     
+    if (already_initialized)
+    {
+        WARN("iscsi_server_init() called twice");
+        return 0;
+    }
+    already_initialized = TRUE;
+
     if (scsi_target_init() != 0)
     {
         TRACE_ERROR("Can't initialize SCSI target");
@@ -5254,7 +5262,7 @@ iscsi_server_rx_thread(void *param)
         TRACE_ERROR("Error init connection\n");
         return NULL;
     }
-
+    
     pthread_cleanup_push(iscsi_thread_cleanup, conn);
 	/* receive loop */
 	while (!terminate) 
