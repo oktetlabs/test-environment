@@ -3161,7 +3161,9 @@ TARPC_FUNC(fileno, {},
             out->passwd._field._field##_val = strdup(pw->pw_##_field);  \
             if (out->passwd._field._field##_val == NULL)                \
             {                                                           \
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);     \
+                ERROR("Failed to duplicate string '%s'",                \
+                      pw->pw_##_field);                                 \
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);      \
                 goto finish;                                            \
             }                                                           \
             out->passwd._field._field##_len =                           \
@@ -3184,6 +3186,10 @@ TARPC_FUNC(getpwnam, {},
         PUT_STR(shell);
 
     } 
+    else
+    {
+        ERROR("getpwnam() returned NULL");
+    }
     finish:
     if (out->common._errno != 0)
     {
