@@ -129,11 +129,11 @@ cnv_string_to_inet(char *ip_string, char *port_string,
 	struct sockaddr *ip;
 	uint16_t ipv6_array[8];
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter cnv_string_to_inet, ip %s, port %s\n",
+	TRACE(TRACE_ENTER_LEAVE, "Enter cnv_string_to_inet, ip %s, port %s",
 				ip_string, port_string);
 
 	ip = (struct sockaddr *)malloc(sizeof(struct sockaddr));
-	TRACE(TRACE_NET, "Alloc ip_address %p\n", ip);
+	TRACE(TRACE_NET, "Alloc ip_address %p", ip);
 
 	if (ip == NULL) {
 		/* couldn't get memory for structure, leave with error */
@@ -255,7 +255,7 @@ cnv_string_to_inet(char *ip_string, char *port_string,
 				}
 				ptr++;
 			}
-			TRACE(TRACE_ISCSI, "binary ipv4 address 0x%08x\n", uj);
+			TRACE(TRACE_ISCSI, "binary ipv4 address 0x%08x", uj);
 			((struct sockaddr_in *)ip)->sin_addr.s_addr = htonl(uj);
 		} else {
 			/* no colon or dot in ip_string,
@@ -270,13 +270,13 @@ cnv_string_to_inet(char *ip_string, char *port_string,
 		*length = sizeof(struct sockaddr_in);
 	}
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave cnv_string_to_inet, retval %d\n", i);
+	TRACE(TRACE_ENTER_LEAVE, "Leave cnv_string_to_inet, retval %d", i);
 	return i;
 out2:
 	TRACE_ERROR("Illegal ipv6 string %s\n", ip_string);
 	i = -EINVAL;
 out1:
-	TRACE(TRACE_NET, "Free ip_address %p\n", ip);
+	TRACE(TRACE_NET, "Free ip_address %p", ip);
 	free(ip);
 	goto out;
 }
@@ -296,7 +296,7 @@ dup_inet_struct(struct sockaddr *old_ip_address,
 	int i;
 
 	*new_ip_address = (struct sockaddr *)malloc(sizeof(struct sockaddr));
-	TRACE(TRACE_NET, "Alloc ip_address %p\n", *new_ip_address);
+	TRACE(TRACE_NET, "Alloc ip_address %p", *new_ip_address);
 
 	if (*new_ip_address == NULL) {
 		/* couldn't get memory for structure, leave with error */

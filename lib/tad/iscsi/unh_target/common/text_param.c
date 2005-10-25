@@ -160,16 +160,16 @@ setup_security_hash_table(void)
 		if ((prev_key = security_hash_table[hash]) != NULL
 		    && strcmp(key->name, prev_key->name)) {
 			printf
-			    ("Duplicate hash value %u for \"%s\" and \"%s\"\n",
+			    ("Duplicate hash value %u for \"%s\" and \"%s\"",
 			     hash, security_hash_table[hash]->name, key->name);
 			collides++;
 		} else if (prev_key == NULL) {
-			TRACE(TRACE_DEBUG, "%2u: Add \"%s\" at hash value %u\n",
+			TRACE(TRACE_DEBUG, "%2u: Add \"%s\" at hash value %u",
 			      count + 1, key->name, hash);
 			security_hash_table[hash] = key;
 		}
 	}
-	TRACE(TRACE_DEBUG, "%u hash collisions in %u security keys\n",
+	TRACE(TRACE_DEBUG, "%u hash collisions in %u security keys",
 	      collides, count);
 }
 
@@ -183,7 +183,7 @@ find_parameter(const char *keytext,
 	struct parameter_type *p, *result = NULL;
 	int i;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter find_parameter %s\n", keytext);
+	TRACE(TRACE_ENTER_LEAVE, "Enter find_parameter %s", keytext);
 
 	for (i = 0, p = p_param_tbl; i < MAX_CONFIG_PARAMS; i++, p++) {
 		if (!strcmp(p->parameter_name, keytext)) {
@@ -192,7 +192,7 @@ find_parameter(const char *keytext,
 		}
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave find_parameter, p %p\n", result);
+	TRACE(TRACE_ENTER_LEAVE, "Leave find_parameter, p %p", result);
 
 	return result;
 }
@@ -224,7 +224,7 @@ set_connection_recv_length(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 {
 	struct parameter_type *p;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter set_connection_recv_length\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter set_connection_recv_length");
 
 	if ((p =
 	     find_flag_parameter(MAXRECVDATASEGMENTLENGTH_FLAG, p_param_tbl))
@@ -233,7 +233,7 @@ set_connection_recv_length(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 		*max_recv_length = p->int_value;
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave set_connection_recv_length\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave set_connection_recv_length");
 
 }
 
@@ -246,13 +246,13 @@ set_digestflags(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 	if ((p = find_flag_parameter(HEADERDIGEST_FLAG, p_param_tbl))) {
 		if (strcmp(p->str_value, CRC32C) == 0) {
 			*connection_flags |= USE_HEADERDIGEST;
-			TRACE(TRACE_ISCSI, "Enabling Header Digests\n");
+			TRACE(TRACE_ISCSI, "Enabling Header Digests");
 		}
 	}
 	if ((p = find_flag_parameter(DATADIGEST_FLAG, p_param_tbl))) {
 		if (strcmp(p->str_value, CRC32C) == 0) {
 			*connection_flags |= USE_DATADIGEST;
-			TRACE(TRACE_ISCSI, "Enabling Data Digests\n");
+			TRACE(TRACE_ISCSI, "Enabling Data Digests");
 		}
 	}
 }
@@ -358,8 +358,8 @@ check_type_correctness(struct parameter_type *p,
 	char *dummy;
 	char *endptr = NULL;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter check_type_correctness\n");
-	TRACE(TRACE_ENTER_LEAVE, "Parameter: %s, value: %s\n",
+	TRACE(TRACE_ENTER_LEAVE, "Enter check_type_correctness");
+	TRACE(TRACE_ENTER_LEAVE, "Parameter: %s, value: %s",
 	      p->parameter_name, value);
 
 	/* If the value is inquiry, ignore it */
@@ -579,7 +579,7 @@ check_type_correctness(struct parameter_type *p,
 			*dummy = '\0';
 		}
 
-		TRACE(TRACE_DEBUG, "value: %s\n", value);
+		TRACE(TRACE_DEBUG, "value: %s", value);
 
 		/*  Check for length of the key value. */
 		/*  Draft 20, Section 5.1 Text Format
@@ -681,7 +681,7 @@ check_type_correctness(struct parameter_type *p,
 	while (value);
 
       out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave check_type_correctness\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave check_type_correctness");
 
 	return;
 }
@@ -708,9 +708,9 @@ check_correctness(char *keytext,
 	struct unknown_key *uptr;
 	uint32_t count;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter check_correctness\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter check_correctness");
 
-	TRACE(TRACE_ISCSI, "Got key: %s\n", keytext);
+	TRACE(TRACE_ISCSI, "Got key: %s", keytext);
 
 	if ((value = strchr(keytext, '=')) == NULL) {
 		/* could not find '=', don't accept this */
@@ -873,7 +873,7 @@ check_correctness(char *keytext,
 
       out:
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave check_correctness, p %p\n", p);
+	TRACE(TRACE_ENTER_LEAVE, "Leave check_correctness, p %p", p);
 	return p;
 }
 
@@ -912,7 +912,7 @@ param_tbl_cpy(struct parameter_type dst[MAX_CONFIG_PARAMS],
 	int i;
 
 	TRACE(TRACE_ENTER_LEAVE,
-	      "Enter param_tbl_cpy, dst %p, src %p, size %d\n", dst, src,
+	      "Enter param_tbl_cpy, dst %p, src %p, size %d", dst, src,
 	      sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
 
 	/* copy everything in the src table to the dst table "as is" */
@@ -931,7 +931,7 @@ param_tbl_cpy(struct parameter_type dst[MAX_CONFIG_PARAMS],
 		}
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave param_tbl_cpy\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave param_tbl_cpy");
 }
 
 /* Copy initial parameter table to dst, duplicating any strings */
@@ -948,7 +948,7 @@ param_tbl_uncpy(struct parameter_type dst[MAX_CONFIG_PARAMS])
 	struct parameter_type *dptr;
 	int i;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter param_tbl_uncpy, dst %p, size %d\n",
+	TRACE(TRACE_ENTER_LEAVE, "Enter param_tbl_uncpy, dst %p, size %d",
 	      dst, sizeof (struct parameter_type) * MAX_CONFIG_PARAMS);
 
 	/* go thru and free all the strings that were "duped" during copy */
@@ -964,7 +964,7 @@ param_tbl_uncpy(struct parameter_type dst[MAX_CONFIG_PARAMS])
 		}
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave param_tbl_uncpy\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave param_tbl_uncpy");
 }
 
 void
@@ -1029,7 +1029,7 @@ configure_parameter(int param_neg_info,
 {
 	char *value_list = NULL;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter configure_parameter\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter configure_parameter");
 
 	/* Get the value string */
 	value_list = strchr(ptr_to_keytext, '=');
@@ -1056,7 +1056,7 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 {
 	struct parameter_type *p, *p2;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter check_integrity_rules\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter check_integrity_rules");
 
 	/*  Draft 20, Section A.3.2 OFMarkInt, IFMarkInt
 	 *  "Reject is resetting the marker function in the specified
@@ -1065,18 +1065,18 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 	if ((p = find_flag_parameter(OFMARKINT_FLAG, p_param_tbl)) != NULL) {
 		if (p->neg_info & KEY_REJECT) {
 			/* got OFMarkInt=Reject, so set OFMarker=No */
-			TRACE(TRACE_DEBUG, "Checking %s=%d\n",
+			TRACE(TRACE_DEBUG, "Checking %s=%d",
 			      p->parameter_name, p->int_value);
 			if ((p = find_flag_parameter(OFMARKER_FLAG,
 						 p_param_tbl)) != NULL) {
-				TRACE(TRACE_DEBUG, "Have %s=%s\n",
+				TRACE(TRACE_DEBUG, "Have %s=%s",
 				      p->parameter_name, p->str_value);
 				if (!strcmp(p->str_value, key_table->yes)) {
 					/* have OFMarker=Yes, change value 
 						to No */
 					strreplace(&p->str_value,
 						   key_table->no);
-					TRACE(TRACE_ISCSI, "Reset %s to %s\n",
+					TRACE(TRACE_ISCSI, "Reset %s to %s",
 					      p->parameter_name, p->str_value);
 				}
 			}
@@ -1085,18 +1085,18 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 	if ((p = find_flag_parameter(IFMARKINT_FLAG, p_param_tbl)) != NULL) {
 		if (p->neg_info & KEY_REJECT) {
 			/* got IFMarkInt=Reject, so set IFMarker=No */
-			TRACE(TRACE_DEBUG, "Checking %s=%d\n",
+			TRACE(TRACE_DEBUG, "Checking %s=%d",
 			      p->parameter_name, p->int_value);
 			if ((p = find_flag_parameter(IFMARKER_FLAG,
 						 p_param_tbl)) != NULL) {
-				TRACE(TRACE_DEBUG, "Have %s=%s\n",
+				TRACE(TRACE_DEBUG, "Have %s=%s",
 				      p->parameter_name, p->str_value);
 				if (!strcmp(p->str_value, key_table->yes)) {
 					/* have IFMarker=Yes, change 
 						value to No */
 					strreplace(&p->str_value,
 						   key_table->no);
-					TRACE(TRACE_ISCSI, "Reset %s to %s\n",
+					TRACE(TRACE_ISCSI, "Reset %s to %s",
 					      p->parameter_name, p->str_value);
 				}
 			}
@@ -1138,7 +1138,7 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 					/* do not have MaxConnections=1, 
 						change value to 1 */
 					p2->int_value = 1;
-					TRACE(TRACE_ISCSI, "Reset %s to %u\n",
+					TRACE(TRACE_ISCSI, "Reset %s to %u",
 					      p2->parameter_name,
 					      p2->int_value);
 				}
@@ -1181,7 +1181,7 @@ check_integrity_rules(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 		}
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave check_integrity_rules\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave check_integrity_rules");
 }
 
 /*
@@ -1208,10 +1208,10 @@ iscsi_recv_msg(int sock, int length, char *buffer, int flags)
         retval = -1;
         goto out;
     }
-    TRACE(TRACE_DEBUG, "Received: %d\n", retval);
+    TRACE(TRACE_DEBUG, "Received: %d", retval);
 
 out:
-    TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_recv_msg, retval %d\n", retval);
+    TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_recv_msg, retval %d", retval);
 
     return retval;
 }
@@ -1225,13 +1225,13 @@ check_out_length(int out_length, int resp_len)
 {
 
 	TRACE(TRACE_ENTER_LEAVE,
-	      "Enter check_out_length cur_len: %d, add_len: %d\n", out_length,
+	      "Enter check_out_length cur_len: %d, add_len: %d", out_length,
 	      resp_len);
 
 	/* Increment the out_length */
 	out_length += resp_len + 2;
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave check_out_length\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave check_out_length");
 
 	if (out_length > MAX_TEXT_LEN)
 		return 1;
@@ -1255,7 +1255,7 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
 
     UNUSED(flags);
 
-    TRACE(TRACE_ENTER_LEAVE, "Enter iscsi_send_msg\n");
+    TRACE(TRACE_ENTER_LEAVE, "Enter iscsi_send_msg");
 
     switch (outputpdu->opcode & (ISCSI_OPCODE)) 
     {
@@ -1269,7 +1269,7 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
             targ_login_rsp = (struct iscsi_targ_login_rsp *) outputpdu;
             
             TRACE(TRACE_ISCSI,
-                  "Send Login Response, CSG %d, NSG %d, T %d\n",
+                  "Send Login Response, CSG %d, NSG %d, T %d",
                   (outputpdu->flags & CSG) >> CSG_SHIFT,
                   outputpdu->flags & NSG, (outputpdu->flags & T_BIT) >> 7);
 
@@ -1310,7 +1310,7 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
     
     free(buffer);
 
-    TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_send_msg\n");
+    TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_send_msg");
 
     return 0;
 }
@@ -1330,7 +1330,7 @@ check_neg_responses(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 	int retval = 0;
 	struct parameter_type *p = NULL;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter check_neg_responses\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter check_neg_responses");
 
 	for (i = 0; i < MAX_CONFIG_PARAMS; i++) {
 		p = &p_param_tbl[i];
@@ -1352,7 +1352,7 @@ check_neg_responses(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 				 */
 
 				TRACE(TRACE_DEBUG,
-				      "response not yet received for parameter %s\n",
+				      "response not yet received for parameter %s",
 				      p->parameter_name);
 				if (print_error) {
 					TRACE_ERROR
@@ -1366,7 +1366,7 @@ check_neg_responses(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 		}
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave check_neg_responses, retval = %d\n",
+	TRACE(TRACE_ENTER_LEAVE, "Leave check_neg_responses, retval = %d",
 	      retval);
 
 	return retval;
@@ -1387,14 +1387,14 @@ check_for_support(struct parameter_type *p, char *supplied_values_from_sender)
 	char *sender_value = NULL;
 	char *receiver_value = p->value_list;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter check_for_support, sender_value %s\n",
+	TRACE(TRACE_ENTER_LEAVE, "Enter check_for_support, sender_value %s",
 	      supplied_values_from_sender);
 
 	/* No support */
 	if (receiver_value == NULL)
 		goto out;
 
-	TRACE(TRACE_DEBUG, "%s's value_list: %s\n", p->parameter_name,
+	TRACE(TRACE_DEBUG, "%s's value_list: %s", p->parameter_name,
 	      receiver_value);
 
 	/* Check whether the parameter's str_value agrees with *
@@ -1407,7 +1407,7 @@ check_for_support(struct parameter_type *p, char *supplied_values_from_sender)
 			*dummy1 = '\0';
 		}
 
-		TRACE(TRACE_DEBUG, "receiver_value: %s\n", receiver_value);
+		TRACE(TRACE_DEBUG, "receiver_value: %s", receiver_value);
 
 		/* Initialise */
 		sender_value = supplied_values_from_sender;
@@ -1419,7 +1419,7 @@ check_for_support(struct parameter_type *p, char *supplied_values_from_sender)
 				*dummy2 = '\0';
 			}
 
-			TRACE(TRACE_DEBUG, "sender_value: %s\n", sender_value);
+			TRACE(TRACE_DEBUG, "sender_value: %s", sender_value);
 
 			if (!strcmp(receiver_value, sender_value)) {
 				/* Found a match, return pointer to it 
@@ -1435,11 +1435,11 @@ check_for_support(struct parameter_type *p, char *supplied_values_from_sender)
 			/* goto the next value supplied by sender */
 			if (dummy2) {
 				*dummy2++ = ',';	/* restore comma */
-				TRACE(TRACE_DEBUG, "dummy2++sender_value: %s\n",
+				TRACE(TRACE_DEBUG, "dummy2++sender_value: %s",
 				      sender_value);
 			} else {
 				TRACE(TRACE_DEBUG,
-				      "dummy2 null sender_value: %s\n",
+				      "dummy2 null sender_value: %s",
 				      sender_value);
 			}
 			sender_value = dummy2;
@@ -1460,11 +1460,11 @@ check_for_support(struct parameter_type *p, char *supplied_values_from_sender)
 
 	if (sender_value) {
 		TRACE(TRACE_ENTER_LEAVE,
-		      "Leave check_for_support, return value %s\n",
+		      "Leave check_for_support, return value %s",
 		      sender_value);
 	} else {
 		TRACE(TRACE_ENTER_LEAVE,
-		      "Leave check_for_support, return value NULL\n");
+		      "Leave check_for_support, return value NULL");
 	}
 
 	return sender_value;
@@ -1477,7 +1477,7 @@ update_key_value(struct parameter_type *p, int int_value, char *value)
 		if ((int)p->int_value != int_value) {
 			/* have a new numeric value for this key */
 			p->int_value = int_value;
-			TRACE(TRACE_ISCSI, "Update key %s, new value %d\n",
+			TRACE(TRACE_ISCSI, "Update key %s, new value %d",
 			      p->parameter_name, p->int_value);
 		}
 	} else if (p->str_value && !strcmp(value, p->str_value)) {
@@ -1485,7 +1485,7 @@ update_key_value(struct parameter_type *p, int int_value, char *value)
 		} else {
 			/* have a new string value for this key */
 			strreplace(&p->str_value, value);
-			TRACE(TRACE_ISCSI, "Update key %s, new value %s\n",
+			TRACE(TRACE_ISCSI, "Update key %s, new value %s",
 			      p->parameter_name, p->str_value);
 	}
 }
@@ -1551,7 +1551,7 @@ scan_input_and_process(int sock,
 
         UNUSED(sock);
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter scan_input_and_process\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter scan_input_and_process");
 
 	ALLOCATE_MAX_TEXT_LEN(dummy_string);
 	ALLOCATE_MAX_TEXT_LEN(input_str);
@@ -1567,8 +1567,8 @@ scan_input_and_process(int sock,
 
 	while (input_string < last_input) {
 		key_value_len = strlen(input_string);
-		TRACE(TRACE_DEBUG, "key_value_len = %d\n", key_value_len);
-		TRACE(TRACE_DEBUG, "FBLength %x MBLength %x\n",
+		TRACE(TRACE_DEBUG, "key_value_len = %d", key_value_len);
+		TRACE(TRACE_DEBUG, "FBLength %x MBLength %x",
 				FBLength,MBLength);
 
 		/* assume no reply will be sent */
@@ -1600,7 +1600,7 @@ scan_input_and_process(int sock,
 			 * string following the "=" in the input 
 			 */
 			TRACE(TRACE_DEBUG,
-			      "Process input param: %s, value: %s\n",
+			      "Process input param: %s, value: %s",
 			      p->parameter_name, value);
 
 			/* check if this is a Full Feature Only key */
@@ -1763,7 +1763,7 @@ scan_input_and_process(int sock,
 		/* Then the remaining parameters have to be sent in a     */
 		/* separate text command/response */
 
-		TRACE(TRACE_DEBUG, "resp_len = %d\n", resp_len);
+		TRACE(TRACE_DEBUG, "resp_len = %d", resp_len);
 
 		if (resp_len) {
 			if (check_out_length(out_length, resp_len)) {
@@ -1775,7 +1775,7 @@ scan_input_and_process(int sock,
 				sprintf(output_string, "%s", dummy_string);
 				output_string += resp_len + 1;
 
-				TRACE(TRACE_ISCSI, "Attach key: %s\n",
+				TRACE(TRACE_ISCSI, "Attach key: %s",
 				      dummy_string);
 
 				/* update out_length */
@@ -1829,7 +1829,7 @@ scan_input_and_process(int sock,
 
 	/* process FirstBurstLength and MaxBurstLength if their 
 		reply was delayed */
-	TRACE(TRACE_DEBUG, "FBLength %x MBLength %x\n",FBLength,MBLength);
+	TRACE(TRACE_DEBUG, "FBLength %x MBLength %x",FBLength,MBLength);
 
 	if (FBLength > 0 && MBLength > 0) {
 		/* both keys were offered by other side in this pdu */
@@ -1933,7 +1933,7 @@ scan_input_and_process(int sock,
 
 	if (FBLength > 0) {
 		/* reply to or offer the FirstBurstLength */
-		TRACE(TRACE_DEBUG, "FBLength %x FBp %p\n",FBLength,FBp);
+		TRACE(TRACE_DEBUG, "FBLength %x FBp %p",FBLength,FBp);
 		FBp->neg_info |= KEY_SENT_TO_OTHER_SIDE;
 		if (!IS_KEY_GOT_FROM_OTHER_SIDE(FBp->neg_info))
 			outputpdu->flags &= (~T_BIT);
@@ -1942,7 +1942,7 @@ scan_input_and_process(int sock,
 		sprintf(output_string, "%s", dummy_string);
 		output_string += resp_len + 1;
 
-		TRACE(TRACE_ISCSI, "Attach key, %s\n", dummy_string);
+		TRACE(TRACE_ISCSI, "Attach key, %s", dummy_string);
 
 		/* update out_length */
 		out_length += resp_len + 1;
@@ -1952,7 +1952,7 @@ scan_input_and_process(int sock,
 
 	if (MBLength > 0) {
 		/* reply to or offer the MaxBurstLength */
-		TRACE(TRACE_DEBUG, "MBLength %x MBp %p\n",MBLength,MBp);
+		TRACE(TRACE_DEBUG, "MBLength %x MBp %p",MBLength,MBp);
 		MBp->neg_info |= KEY_SENT_TO_OTHER_SIDE;
 		if (!IS_KEY_GOT_FROM_OTHER_SIDE(MBp->neg_info))
 			outputpdu->flags &= (~T_BIT);
@@ -1961,7 +1961,7 @@ scan_input_and_process(int sock,
 		sprintf(output_string, "%s", dummy_string);
 		output_string += resp_len + 1;
 
-		TRACE(TRACE_ISCSI, "Attach key, %s\n", dummy_string);
+		TRACE(TRACE_ISCSI, "Attach key, %s", dummy_string);
 
 		/* update out_length */
 		out_length += resp_len + 1;
@@ -1973,7 +1973,7 @@ scan_input_and_process(int sock,
 	FREE_STRING(input_str);
 
 	TRACE(TRACE_ENTER_LEAVE,
-	      "Leave scan_input_and_process, out_length %d\n", out_length);
+	      "Leave scan_input_and_process, out_length %d", out_length);
 
 	/* return the length added to the output_string */
 	return out_length;
@@ -1990,7 +1990,7 @@ handle_boolean_param(struct parameter_type *p, char **value)
 	int receiver_value;
 	int sender_value;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter handle_boolean_param %s=%s\n",
+	TRACE(TRACE_ENTER_LEAVE, "Enter handle_boolean_param %s=%s",
 		p->parameter_name, *value);
 
 	if (!strcmp(*value, key_table->yes))
@@ -2084,7 +2084,7 @@ handle_boolean_param(struct parameter_type *p, char **value)
 			*value = key_table->no;
 		}
 	}
-	TRACE(TRACE_ENTER_LEAVE, "Leave handle_boolean_param\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave handle_boolean_param");
 }
 
 /*
@@ -2108,7 +2108,7 @@ handle_params_noexch(struct parameter_type *p,
 {
 	struct parameter_type *p1 = NULL;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter handle_params_noexch\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter handle_params_noexch");
 
 	if (!IS_KEY_SENT_TO_OTHER_SIDE(p->neg_info)) {
 
@@ -2232,7 +2232,7 @@ handle_params_noexch(struct parameter_type *p,
 						p->int_value);
 			}
 		}
-		TRACE(TRACE_ENTER_LEAVE, "Leave handle_params_noexch\n");
+		TRACE(TRACE_ENTER_LEAVE, "Leave handle_params_noexch");
 		return 1;
 	}
 	return -1;
@@ -2248,7 +2248,7 @@ handle_params_resp(struct parameter_type *p,
                 int *out_length)
 {
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter handle_params_resp for %s\n",
+	TRACE(TRACE_ENTER_LEAVE, "Enter handle_params_resp for %s",
 			p->parameter_name);
 	if (!IS_NUMBER(p->type)) {
 		/* received parameter is not a number */
@@ -2261,7 +2261,7 @@ handle_params_resp(struct parameter_type *p,
 			     "response for parameter: %s\n", p->parameter_name);
 			*out_length = -1;
 			TRACE(TRACE_ENTER_LEAVE, 
-				"Leave handle_params_resp with error\n");
+				"Leave handle_params_resp with error");
 			return -1;
 		}
 
@@ -2289,7 +2289,7 @@ handle_params_resp(struct parameter_type *p,
 					TRACE_ERROR("check_range failed\n");
 					*out_length = -1;
 					TRACE(TRACE_ENTER_LEAVE, 
-				      "Leave handle_params_resp with error\n");
+				      "Leave handle_params_resp with error");
 					return -1;
 				}
 				if ((int)p->int_value != int_value) {
@@ -2304,7 +2304,7 @@ handle_params_resp(struct parameter_type *p,
 			     "%s, response %s\n", p->parameter_name, value);
 			*out_length = -1;
 			TRACE(TRACE_ENTER_LEAVE, 
-				"Leave handle_params_resp with error\n");
+				"Leave handle_params_resp with error");
 			return -1;	
 		}
 	} else {
@@ -2321,17 +2321,17 @@ handle_params_resp(struct parameter_type *p,
 			     IS_MIN_NUMBER (p->type) ? "min" : "max",
 			     p->parameter_name);
 			TRACE(TRACE_ENTER_LEAVE, 
-				"Leave handle_params_resp with error\n");
+				"Leave handle_params_resp with error");
 			*out_length = -1;
 		} else {
 			/* assign the negotiated value */
 			update_key_value(p, int_value, value);
 		}
-		TRACE(TRACE_ENTER_LEAVE, "Leave handle_params_resp\n");
+		TRACE(TRACE_ENTER_LEAVE, "Leave handle_params_resp");
 		return 1;
 
 	}
-	TRACE(TRACE_ENTER_LEAVE, "Leave handle_params_resp expected \n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave handle_params_resp expected ");
 	return 1;
 }
 
@@ -2348,7 +2348,7 @@ scan_table_and_count(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 	struct parameter_type *p;
 	int i;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter scan_table_and_count\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter scan_table_and_count");
 
 	/* initialize all counts to 0 */
 	*nsecurity = *ninformational = *noperational = 0;
@@ -2367,7 +2367,7 @@ scan_table_and_count(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS],
 		}
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave scan_table_and_count\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave scan_table_and_count");
 }
 
 /*
@@ -2399,7 +2399,7 @@ scan_table_and_process(int sock,
         UNUSED(inputpdu);
         UNUSED(flags);
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter scan_table_and_process\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter scan_table_and_process");
 
 	ALLOCATE_MAX_TEXT_LEN(dummy_string);
 
@@ -2409,7 +2409,7 @@ scan_table_and_process(int sock,
 		if ((IS_KEY_TO_BE_NEGOTIATED(p->neg_info))
 		    && (p->type & process_these_types)
 		    && (!IS_KEY_SENT_TO_OTHER_SIDE(p->neg_info))) {
-			TRACE(TRACE_DEBUG, "Process table parameter: %s\n",
+			TRACE(TRACE_DEBUG, "Process table parameter: %s",
 			      p->parameter_name);
 			/* Add it to the outgoing data */
 			if (IS_NUMBER(p->type)) {
@@ -2449,7 +2449,7 @@ scan_table_and_process(int sock,
 				strcpy(output_string, dummy_string);
 				output_string += resp_len + 1;
 
-				TRACE(TRACE_ISCSI, "Attach key: %s\n",
+				TRACE(TRACE_ISCSI, "Attach key: %s",
 				      dummy_string);
 
 				/* update out_length */
@@ -2468,15 +2468,15 @@ scan_table_and_process(int sock,
 						  key_table->yes) == 0)) {
 					p->neg_info |= KEY_REPLY_OPTIONAL;
 					TRACE(TRACE_DEBUG,
-					      "Reply optional for %s\n",
+					      "Reply optional for %s",
 					      dummy_string);
 				} else if (!IS_INFORMATIONAL_PARAM(p->type)) {
 					TRACE(TRACE_DEBUG,
-					      "Reply required for %s\n",
+					      "Reply required for %s",
 					      dummy_string);
 				} else {
 					TRACE(TRACE_DEBUG,
-					      "Reply not required for %s\n",
+					      "Reply not required for %s",
 					      dummy_string);
 				}
 				resp_len = 0;
@@ -2487,7 +2487,7 @@ scan_table_and_process(int sock,
 	FREE_STRING(dummy_string);
 
 	TRACE(TRACE_ENTER_LEAVE,
-	      "Leave scan_table_and_process, out_length %d\n", out_length);
+	      "Leave scan_table_and_process, out_length %d", out_length);
 
 	/* return the length added to the output_string */
 	return out_length;
@@ -2504,7 +2504,7 @@ set_session_parameters(struct session_operational_parameters *oper_param_entry,
 	struct parameter_type *p;
 	uint32_t i;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter set_session_parameters\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter set_session_parameters");
 
 	for (p = login_params, i = 0; i < MAX_CONFIG_PARAMS; p++, i++) {
 		/* For MaxConnections */
@@ -2578,7 +2578,7 @@ set_session_parameters(struct session_operational_parameters *oper_param_entry,
 		}
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave set_session_parameters\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave set_session_parameters");
 }
 
 /*
@@ -2596,13 +2596,13 @@ set_connection_parameters(struct connection_operational_parameters
         UNUSED(oper_param_entry);
         UNUSED(login_params);
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter set_connection_parameters\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter set_connection_parameters");
 
 	/*  for now, there are no connection-specific values used during
 	 *  FFP.  These would be the security values and the marker values.
 	 */
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave set_connection_parameters\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave set_connection_parameters");
 }
 
 /*
@@ -2617,7 +2617,7 @@ check_step_key(struct unknown_key *key, uint32_t * got_keys, uint32_t got_value)
 			    key->keyvalue);
 		return -1;
 	}
-	TRACE(TRACE_ISCSI_FULL, "got %s: %s\n", key->keyname, key->keyvalue);
+	TRACE(TRACE_ISCSI_FULL, "got %s: %s", key->keyname, key->keyvalue);
 	*got_keys |= got_value;
 	return 0;
 }

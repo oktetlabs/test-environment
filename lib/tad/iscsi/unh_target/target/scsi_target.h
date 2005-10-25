@@ -60,7 +60,7 @@ typedef struct scsi_pointer Scsi_Pointer;
 #define R_BIT		0x40
 #define W_BIT		0x20
 
-#define	MAX_LUNS	16
+#define	MAX_LUNS	1
 
 #define	MAX_TARGETS	16
 

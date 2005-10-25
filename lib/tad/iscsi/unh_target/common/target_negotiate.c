@@ -77,7 +77,7 @@ login_reject(struct iscsi_conn *conn, int class, int detail,
 			 struct generic_pdu *outputpdu)
 {
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter login_reject\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter login_reject");
 
 	outputpdu->status_class = class;
 	outputpdu->status_detail = detail;
@@ -104,11 +104,11 @@ login_reject(struct iscsi_conn *conn, int class, int detail,
 	outputpdu->text_length = 0;
 	if (iscsi_send_msg(conn->conn_socket, outputpdu, conn->connection_flags) <
 		0) {
-		TRACE(TRACE_DEBUG, "iscsi_send_msg failed\n");
+		TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
 		return -1;
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave login_reject\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave login_reject");
 
 	return 0;
 }
@@ -124,7 +124,7 @@ check_other_login(struct iscsi_conn *conn, int correct_CSG,
 {
 	int retval = 0;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter check_other_login\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter check_other_login");
 
 	/* check if the login has proper version set */
 	if ((inputpdu->version_max > ISCSI_MAX_VERSION) ||
@@ -137,7 +137,7 @@ check_other_login(struct iscsi_conn *conn, int correct_CSG,
 
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave check_other_login, retval %d\n", retval);
+	TRACE(TRACE_ENTER_LEAVE, "Leave check_other_login, retval %d", retval);
 
         UNUSED(correct_CSG);
 
@@ -158,7 +158,7 @@ check_flags(struct iscsi_conn *conn, uint64_t login_flags,
 	int err = 1;
 	struct parameter_type *ptr;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter check_flags\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter check_flags");
 
 	if (!(login_flags & INITIATORNAME_FLAG)) {
 		TRACE_ERROR("Initiator name not given in initial login\n");
@@ -202,7 +202,7 @@ check_flags(struct iscsi_conn *conn, uint64_t login_flags,
 					 outputpdu);
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave check_flags, err = %d\n", err);
+	TRACE(TRACE_ENTER_LEAVE, "Leave check_flags, err = %d", err);
 
 	return err;
 }
@@ -218,7 +218,7 @@ check_first_login(struct iscsi_conn *conn,
 {
 	int retval = 0;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter check_first_login\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter check_first_login");
 
 	/* check that this new connection does not exceed MaxConnections
 	 * except for the following:
@@ -253,7 +253,7 @@ check_first_login(struct iscsi_conn *conn,
 	conn->session->version_active = conn->session->version_max;
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave check_first_login, retval %d\n", retval);
+	TRACE(TRACE_ENTER_LEAVE, "Leave check_first_login, retval %d", retval);
 
 	return retval;
 }
@@ -334,7 +334,7 @@ target_check_login(struct iscsi_conn *conn,
 	int add_length;
 	int what_to_process;
 
-	TRACE(TRACE_DEBUG, "Enter target_check_login\n");
+	TRACE(TRACE_DEBUG, "Enter target_check_login");
 
 	if ((inputpdu->opcode & ISCSI_OPCODE) != ISCSI_INIT_LOGIN_CMND) {
 		/* opcode just received is not a Login, but is should be! */
@@ -346,7 +346,7 @@ target_check_login(struct iscsi_conn *conn,
 		goto out;
 	}
 
-	TRACE(TRACE_ISCSI, "Got Login command, CSG %d, NSG %d, T %d\n",
+	TRACE(TRACE_ISCSI, "Got Login command, CSG %d, NSG %d, T %d",
 		  (inputpdu->flags & CSG) >> CSG_SHIFT, inputpdu->flags & NSG,
 		  (inputpdu->flags & T_BIT) >> 7);
 
@@ -536,7 +536,7 @@ target_check_login(struct iscsi_conn *conn,
 	}
 
 out:
-	TRACE(TRACE_DEBUG, "Leave target_check_login, retval %d\n", retval);
+	TRACE(TRACE_DEBUG, "Leave target_check_login, retval %d", retval);
 
 	return retval;
 }
@@ -584,7 +584,7 @@ attach_key_int(struct generic_pdu *outputpdu, char *key_name, int key_int)
 
 	tmp_len = sprintf(outputpdu->text + outputpdu->text_length, "%s=%d",
 					  key_name, key_int);
-	TRACE(TRACE_ISCSI, "attach key %s\n",
+	TRACE(TRACE_ISCSI, "attach key %s",
 		  outputpdu->text + outputpdu->text_length);
 	outputpdu->text_length += tmp_len + 1;
 }
@@ -597,7 +597,7 @@ attach_key_string(struct generic_pdu *outputpdu, char *key_name,
 
 	tmp_len = sprintf(outputpdu->text + outputpdu->text_length, "%s=%s",
 					  key_name, key_string);
-	TRACE(TRACE_ISCSI, "attach key %s\n",
+	TRACE(TRACE_ISCSI, "attach key %s",
 		  outputpdu->text + outputpdu->text_length);
 	outputpdu->text_length += tmp_len + 1;
 }
@@ -657,7 +657,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 
 	ALLOCATE_MAX_TEXT_LEN(dummy_string);
 
-	TRACE(TRACE_DEBUG, "Entering target security negotiate\n");
+	TRACE(TRACE_DEBUG, "Entering target security negotiate");
 	if ((auth_p = find_flag_parameter(AUTHMETHOD_FLAG, p_param_tbl)) == NULL) {
 		/* should NEVER happen */
 		TRACE_ERROR("AuthMethod parameter not found\n");
@@ -681,7 +681,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 		goto out;
 
 	if (iscsi_send_msg(sock, outputpdu, conn->connection_flags) < 0) {
-		TRACE(TRACE_DEBUG, "iscsi_send_msg failed\n");
+		TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
 		retval = -1;
 		goto out;
 	} else {
@@ -695,7 +695,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 	while ((outputpdu->flags & NSG) != NSG3) {
 		if (iscsi_recv_msg(sock, ISCSI_HDR_LEN, (char *) inputpdu,
 						   conn->connection_flags) < 0) {
-			TRACE(TRACE_DEBUG, "iscsi_recv_msg failed\n");
+			TRACE(TRACE_DEBUG, "iscsi_recv_msg failed");
 			retval = -1;
 			goto out;
 		}
@@ -706,7 +706,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 			if (inputpdu->text_length < MAX_TEXT_LEN) {
 				if (iscsi_recv_msg(sock, inputpdu->text_length + padding,
 							   	inputpdu->text, conn->connection_flags) < 0) {
-					TRACE(TRACE_DEBUG, "iscsi_recv_msg failed\n");
+					TRACE(TRACE_DEBUG, "iscsi_recv_msg failed");
 					retval = -1;
 					goto out;
 				}
@@ -736,7 +736,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 			goto out;
 		}
 
-		TRACE(TRACE_ISCSI_FULL, "Target switch on security_step %d\n",
+		TRACE(TRACE_ISCSI_FULL, "Target switch on security_step %d",
 			  security_step);
 
 		switch (security_step) {
@@ -767,7 +767,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 										 STAT_DETAIL_ERR, outputpdu);
 							goto out;
 						}
-						TRACE(TRACE_ISCSI, "algorithm selected is %d\n",
+						TRACE(TRACE_ISCSI, "algorithm selected is %d",
 							  chap_a);
 						CHAP_SetAlgorithm(chap_a, auth_param.chap_local_ctx);
 						CHAP_SetAlgorithm(chap_a, auth_param.chap_peer_ctx);
@@ -1163,7 +1163,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 		}						/* switch */
 
 		if (iscsi_send_msg(sock, outputpdu, conn->connection_flags) < 0) {
-			TRACE(TRACE_DEBUG, "iscsi_send_msg failed\n");
+			TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
 			retval = -1;
 			goto out;
 		} else {
@@ -1184,7 +1184,7 @@ target_security_negotiate(struct iscsi_conn *conn,
 	ZFREE(srp_u);
 
 	FREE_STRING(dummy_string);
-	TRACE(TRACE_DEBUG, "Leaving target security negotiate\n");
+	TRACE(TRACE_DEBUG, "Leaving target security negotiate");
 	return retval;
 }
 
@@ -1210,7 +1210,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 	int correct_CSG;
 	uint64_t login_flags = FIRST_FLAG;
 
-	TRACE(TRACE_ENTER_LEAVE, "Entering target_parameter_negotiate\n");
+	TRACE(TRACE_ENTER_LEAVE, "Entering target_parameter_negotiate");
 
 	/* find out number of each type of key we want to offer */
 	scan_table_and_count(p_param_tbl, &nsecurity, &ninformational,
@@ -1224,7 +1224,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 		if (iscsi_recv_msg
 			(sock, inputpdu->text_length + padding, inputpdu->text,
 			 conn->connection_flags) < 0) {
-			TRACE(TRACE_DEBUG, "iscsi_recv_msg failed\n");
+			TRACE(TRACE_DEBUG, "iscsi_recv_msg failed");
 			return -1;
 		}
 	}
@@ -1275,7 +1275,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 
 		/* send out the output pdu */
 		if (iscsi_send_msg(sock, outputpdu, conn->connection_flags) < 0) {
-			TRACE(TRACE_DEBUG, "iscsi_send_msg failed\n");
+			TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
 			retval = -1;
 			goto out;
 		} else {
@@ -1314,7 +1314,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 		/*  wait for input from initiator  */
 		if (iscsi_recv_msg(sock, ISCSI_HDR_LEN, (char *) inputpdu,
 						   conn->connection_flags) < 0) {
-			TRACE(TRACE_DEBUG, "iscsi_recv_msg failed\n");
+			TRACE(TRACE_DEBUG, "iscsi_recv_msg failed");
 			return -1;
 		}
 
@@ -1329,7 +1329,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 		if (inputpdu->text_length <= MAX_TEXT_LEN) {
 			if (iscsi_recv_msg(sock, inputpdu->text_length + padding,
 							   inputpdu->text, conn->connection_flags) < 0) {
-				TRACE(TRACE_DEBUG, "iscsi_recv_msg failed\n");
+				TRACE(TRACE_DEBUG, "iscsi_recv_msg failed");
 				retval = -1;
 				goto out;
 			}
@@ -1344,7 +1344,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 	} while (1);
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave target_parameter_negotiate, retval %d\n",
+	TRACE(TRACE_ENTER_LEAVE, "Leave target_parameter_negotiate, retval %d",
 		  retval);
 	return retval;
 }
@@ -1360,7 +1360,7 @@ parameter_negotiate(struct iscsi_conn *conn,
 	struct generic_pdu *inputpdu, *outputpdu;
 	struct unknown_key *uptr, *unknown_key_list = NULL;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter parameter_negotiate\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter parameter_negotiate");
 
 	if ((inputpdu =
 		 malloc(sizeof (struct generic_pdu))) == NULL) {
@@ -1454,7 +1454,7 @@ parameter_negotiate(struct iscsi_conn *conn,
 	ZFREE(inputpdu);
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave parameter_negotiate, retval %d\n", retval);
+	TRACE(TRACE_ENTER_LEAVE, "Leave parameter_negotiate, retval %d", retval);
 	return retval;
 }
 
@@ -1468,14 +1468,14 @@ reset_parameter_table(struct parameter_type p_param_tbl[MAX_CONFIG_PARAMS])
 	struct parameter_type *p = NULL;
 	int i;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter reset_parameter_table\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter reset_parameter_table");
 
 	for (i = 0, p = p_param_tbl; i < MAX_CONFIG_PARAMS; i++, p++) {
 		if (IS_LEADING_ONLY(p->type))
 			p->neg_info &= ~KEY_TO_BE_NEGOTIATED;
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave reset_parameter_table\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave reset_parameter_table");
 }
 
 /* Ming Zhang, mingz@ele.uri.edu */

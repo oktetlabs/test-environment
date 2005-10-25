@@ -352,7 +352,7 @@ CHAP_GetResponse(unsigned char identifier,
 	if (challenge == NULL)
 		return NULL;
 
-	TRACE(TRACE_DEBUG, "CHAP_GetResponse number format %s\n",
+	TRACE(TRACE_DEBUG, "CHAP_GetResponse number format %s",
 	      context->number_format == BASE64_FORMAT ? "BASE64" :
 	      context->number_format == HEX_FORMAT ? "HEX" : "Unknown");
 

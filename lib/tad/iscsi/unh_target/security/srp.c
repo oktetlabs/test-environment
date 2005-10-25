@@ -1287,7 +1287,7 @@ SRP_Initiator_GetGroup(char *p_groups[], struct SRP_Context * p_context)
 	}
 	if (p_groups[i] == NULL) {
 		TRACE(TRACE_ISCSI,
-		      "Warning, %s not offered in SRP_GROUP list\n",
+		      "Warning, %s not offered in SRP_GROUP list",
 		      SRP_GROUP_NAMES[SRP_1536]);
 	}
 

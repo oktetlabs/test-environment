@@ -126,7 +126,7 @@ iscsi_release_connection(struct iscsi_conn *conn)
     }                                                                             
     /* Release socket */                                                          
     conn->conn_socket = -1;                                                       
-    TRACE(TRACE_ISCSI_FULL, "Dequeue connection conn->cid %u\n", conn->conn_id);  
+    TRACE(TRACE_ISCSI_FULL, "Dequeue connection conn->cid %u", conn->conn_id);  
     list_del(&conn->conn_link);                                                   
     conn->session->nconn--;
 #if 0                                                                             
@@ -196,7 +196,7 @@ iscsi_rx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 
 	total_rx = 0;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter iscsi_rx_data, niov %d, data %d\n",
+	TRACE(TRACE_ENTER_LEAVE, "Enter iscsi_rx_data, niov %d, data %d",
 		  niov, data);
 
 	if (!conn->conn_socket) {
@@ -220,7 +220,7 @@ iscsi_rx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 		if ((rx_loop = total_rx)) {
 			/* have done only partial read, recalculate iov and niov -- cdeng */
 			TRACE(TRACE_ISCSI,
-				  "iscsi_rx_data: data %d, received so far %d, recompute iov\n",
+				  "iscsi_rx_data: data %d, received so far %d, recompute iov",
 				  data, total_rx);
 			do {
 				if (iov_ptr->iov_len <= (unsigned)rx_loop) {
@@ -247,7 +247,7 @@ iscsi_rx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 		}
 
 		total_rx += rx_loop;
-		TRACE(TRACE_DEBUG, "iscsi_rx_data: rx_loop %d total_rx %d\n", rx_loop,
+		TRACE(TRACE_DEBUG, "iscsi_rx_data: rx_loop %d total_rx %d", rx_loop,
 			  total_rx);
 	}
 
@@ -266,11 +266,11 @@ iscsi_rx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 			total_rx = PAYLOAD_DIGERR;
 			goto out;
 		} else {
-			TRACE(TRACE_ISCSI_FULL, "Got data crc 0x%08x\n", ntohl(checksum));
+			TRACE(TRACE_ISCSI_FULL, "Got data crc 0x%08x", ntohl(checksum));
 		}
 	}
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_rx_data, total_rx %d\n", total_rx);
+	TRACE(TRACE_ENTER_LEAVE, "Leave iscsi_rx_data, total_rx %d", total_rx);
 
 	return total_rx;
 }
@@ -320,7 +320,7 @@ read_single_data_seg(uint8_t *buffer, struct iscsi_cmnd *cmd,
 			/* Payload Digest Error Recovery - SAI */
 			if (err == PAYLOAD_DIGERR) {
 				TRACE(TRACE_ERROR_RECOVERY,
-					  "Start payload digest error recovery\n");
+					  "Start payload digest error recovery");
 				err_rec.curr_conn = cmd->conn;
 				err_rec.pdu_hdr = (struct generic_pdu *)buffer;
 				err_rec.cmd = cmd;
@@ -354,12 +354,12 @@ save_unsolicited_data(struct iscsi_cmnd *cmnd, uint32_t offset,
 	struct data_list *data;
 	uint32_t total_length, length;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter save_unsolicited_data\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter save_unsolicited_data");
 
 	if ((total_length = hdr->length) == 0)
 		return 0;
 
-	TRACE(TRACE_ISCSI, "Save_unsolicited_data: offset %u, length %u\n", offset,
+	TRACE(TRACE_ISCSI, "Save_unsolicited_data: offset %u, length %u", offset,
 		  total_length);
 
 	while ((length = total_length)) {
@@ -395,7 +395,7 @@ save_unsolicited_data(struct iscsi_cmnd *cmnd, uint32_t offset,
 
 	update_after_read(hdr, cmnd);
 
-	TRACE(TRACE_ENTER_LEAVE, "Leaving save_unsolicited_data\n");
+	TRACE(TRACE_ENTER_LEAVE, "Leaving save_unsolicited_data");
 	return 0;
 }
 
@@ -458,7 +458,7 @@ read_list_data_seg(struct generic_pdu *hdr, struct iscsi_cmnd *cmd,
 		/* Payload Digest Error Recovery - SAI */
 		if (err == PAYLOAD_DIGERR) {
 			TRACE(TRACE_ERROR_RECOVERY,
-				  "Start payload digest error recovery\n");
+				  "Start payload digest error recovery");
 			err_rec.curr_conn = cmd->conn;
 			err_rec.pdu_hdr = hdr;
 			err_rec.cmd = cmd;
@@ -531,7 +531,7 @@ iscsi_release_session(struct iscsi_session *session)
     /* free connections */
     list_for_each_safe(list_ptr, list_temp, &session->conn_list) {
         conn = list_entry(list_ptr, struct iscsi_conn, conn_link);
-        TRACE(TRACE_ISCSI, "releasing connection %d\n", (int)
+        TRACE(TRACE_ISCSI, "releasing connection %d", (int)
               conn->conn_id);
 
         if (iscsi_release_connection(conn) < 0) {
@@ -713,7 +713,7 @@ search_tags(struct iscsi_conn *conn, uint32_t init_task_tag,
 		if ((cmd->init_task_tag == init_task_tag)
 			&& ((cmd->target_xfer_tag == target_xfer_tag)
 					  || (target_xfer_tag == ALL_ONES))) {
-			TRACE(TRACE_DEBUG, "Search found the command\n");
+			TRACE(TRACE_DEBUG, "Search found the command");
 			TRACE(TRACE_DEBUG,
 				  "scsi cmnd %p, init_task_tag %d target_xfer_tag %d"
 				  " data_done %d xfer length %d\n", cmd->cmnd,
@@ -764,7 +764,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
         return -1;
     }
 # ifdef DEBUG_DATA
-    TRACE(TRACE_DEBUG, "iscsi_tx_data: iovlen %d\n", niov);
+    TRACE(TRACE_DEBUG, "iscsi_tx_data: iovlen %d", niov);
 
     debug_iov = iov;
 
@@ -775,12 +775,12 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
             TRACE(TRACE_DEBUG, "%.2x ", to_print[j]);
 
             if (((j + 1) % 16) == 0)
-                TRACE(TRACE_DEBUG, "\n");
+                TRACE(TRACE_DEBUG, "");
             else if (((j + 1) % 4) == 0)
                 TRACE(TRACE_DEBUG, "    ");
         }
 
-        TRACE(TRACE_DEBUG, "\n");
+        TRACE(TRACE_DEBUG, "");
 
         debug_iov++;
     }
@@ -793,7 +793,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 
         iov[1].iov_base = &hdr_crc;
         iov[1].iov_len = CRC_LEN;
-        TRACE(TRACE_ISCSI_FULL, "Send header crc 0x%08x\n", ntohl(hdr_crc));
+        TRACE(TRACE_ISCSI_FULL, "Send header crc 0x%08x", ntohl(hdr_crc));
     }
 
     /* compute optional data digest */
@@ -807,7 +807,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 
         iov[niov - 1].iov_base = &data_crc;
         iov[niov - 1].iov_len = CRC_LEN;
-        TRACE(TRACE_ISCSI_FULL, "Send data len %d, data crc 0x%08x\n",
+        TRACE(TRACE_ISCSI_FULL, "Send data len %d, data crc 0x%08x",
               data_len, ntohl(data_crc));
     }
 
@@ -818,7 +818,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
         print_payload(buffer, iov->iov_len);
         while (current_tx < iov->iov_len) 
         {
-            TRACE(TRACE_DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d\n",
+            TRACE(TRACE_DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d",
                   i, iov->iov_len, current_tx);
 
             tx_loop = iscsi_tad_send(conn->conn_socket, buffer, (iov->iov_len - current_tx));
@@ -836,7 +836,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
             current_tx += tx_loop;
             total_tx   += tx_loop;
             buffer     += tx_loop;
-            TRACE(TRACE_DEBUG, "iscsi_tx_data: tx_loop %d total_tx %d\n", tx_loop,
+            TRACE(TRACE_DEBUG, "iscsi_tx_data: tx_loop %d total_tx %d", tx_loop,
                   total_tx);
         }
     }
@@ -883,7 +883,7 @@ send_hdr_plus_1_data(struct iscsi_conn *conn, void *iscsi_hdr,
             iov[niov].iov_len = padding;
             total_size += padding;
             niov++;                 /* one for padding */
-            TRACE(TRACE_DEBUG, "padding attached: %d bytes\n", padding);
+            TRACE(TRACE_DEBUG, "padding attached: %d bytes", padding);
         }
 
         if (conn->data_crc) {
@@ -985,7 +985,7 @@ iscsi_tx_login_reject(struct iscsi_conn *conn,
         return -1;
     }
 
-    TRACE(TRACE_ISCSI, "login response sent\n");
+    TRACE(TRACE_ISCSI, "login response sent");
 
     print_targ_login_rsp(hdr);
 
@@ -1118,7 +1118,7 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
         list_for_each(list_ptr, &session->conn_list) {
             temp_conn = list_entry(list_ptr, struct iscsi_conn, conn_link);
             if (temp_conn->cid == conn->cid) {
-                TRACE(TRACE_ISCSI, "connection reinstatement with cid %u\n",
+                TRACE(TRACE_ISCSI, "connection reinstatement with cid %u",
                       conn->cid);
 
                 if (iscsi_release_connection(temp_conn) < 0) {
@@ -1251,7 +1251,7 @@ err_conn_out:
 
     /* put this session onto end of "bad-session" list for cleanup later */
     session = conn->session;
-    TRACE(TRACE_DEBUG, "add to list bad session %p, conn %p\n",
+    TRACE(TRACE_DEBUG, "add to list bad session %p, conn %p",
           session, conn);
 
     list_add_tail(&session->sess_link, &host->bad_session_list);
@@ -1271,7 +1271,7 @@ convert_and_print_ip_stuff(char *ptr, struct sockaddr *real_ip_address,
 	if (cnv_inet_to_string(real_ip_address, ip_string, port_string) >= 0 ) {
 		k = 1 + sprintf(ptr, "TargetAddress=%s:%s,%u", ip_string, port_string,
 						pg_ptr->tag);
-		TRACE(TRACE_DEBUG, "Expand %s to %s\n", pg_ptr->ip_string, ptr);
+		TRACE(TRACE_DEBUG, "Expand %s to %s", pg_ptr->ip_string, ptr);
 	}
 	return k;
 }
@@ -1342,7 +1342,7 @@ parse_text_buffer(struct iscsi_cmnd *cmnd, uint8_t discovery_session,
 				} else {
 					which = "text request";
 				}
-				TRACE(TRACE_VERBOSE, "iscsi %s ITT %u %s\n", which, cmnd->init_task_tag, ptr);
+				TRACE(TRACE_VERBOSE, "iscsi %s ITT %u %s", which, cmnd->init_task_tag, ptr);
 
 				equal++;
 				if (strncmp(ptr, "SendTargets=", 12) == 0) {
@@ -1600,7 +1600,7 @@ do_text_request(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn,
 				which = "discovery";
 			else
 				which = "text request";
-			TRACE(TRACE_VERBOSE, "iscsi %s ITT %u reset\n", which,in_progress->init_task_tag);
+			TRACE(TRACE_VERBOSE, "iscsi %s ITT %u reset", which,in_progress->init_task_tag);
 			in_progress->state = ISCSI_DEQUEUE;
 			in_progress->init_task_tag = ALL_ONES;
 			conn->text_in_progress = in_progress = NULL;
@@ -1832,7 +1832,7 @@ handle_nopout(struct iscsi_conn *conn,
 #endif
 		}
 #if 0
-		TRACE(TRACE_ISCSI, "Got NopIn ping reply, TTT %u, %u nopins left\n",
+		TRACE(TRACE_ISCSI, "Got NopIn ping reply, TTT %u, %u nopins left",
 			  pdu->target_xfer_tag, atomic_read(&conn->outstanding_nopins));
 #endif
 	}
@@ -1927,7 +1927,7 @@ handle_logout(struct iscsi_conn *conn,
 	pdu->cmd_sn = ntohl(pdu->cmd_sn);
 	pdu->exp_stat_sn = ntohl(pdu->exp_stat_sn);
 
-	TRACE(TRACE_VERBOSE, "Logout ITT %u, CmdSN %u, reason %u, cid %u\n",
+	TRACE(TRACE_VERBOSE, "Logout ITT %u, CmdSN %u, reason %u, cid %u",
 			pdu->init_task_tag, pdu->cmd_sn, pdu->flags & LOGOUT_REASON,
 			pdu->cid);
 
@@ -2031,7 +2031,7 @@ build_conn_sess(int sock, struct portal_group *ptr)
         return NULL;
     }
 
-    TRACE(TRACE_DEBUG, "new conn %p for sock %p\n", conn, sock);
+    TRACE(TRACE_DEBUG, "new conn %p for sock %p", conn, sock);
     memset(conn, 0, sizeof(struct iscsi_conn));
 
     INIT_LIST_HEAD(&conn->conn_link);
@@ -2174,7 +2174,7 @@ do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
 
 	data_length_left = req->sr_bufflen;
 
-	TRACE(TRACE_DEBUG, "Sense: %02x %02x %02x %02x %02x %02x %02x %02x\n",
+	TRACE(TRACE_DEBUG, "Sense: %02x %02x %02x %02x %02x %02x %02x %02x",
 		  req->sr_sense_buffer[0], req->sr_sense_buffer[1],
 		  req->sr_sense_buffer[2], req->sr_sense_buffer[3],
 		  req->sr_sense_buffer[4], req->sr_sense_buffer[5],
@@ -2189,7 +2189,7 @@ do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
 			transfer = (req->sr_sense_buffer[3] << 24) |
 				(req->sr_sense_buffer[4] << 16) |
 				(req->sr_sense_buffer[5] << 8) | req->sr_sense_buffer[6];
-			TRACE(TRACE_DEBUG, "information in sense data: %d\n", transfer);
+			TRACE(TRACE_DEBUG, "information in sense data: %d", transfer);
 		}
 
 		if ((req->sr_sense_buffer[2] & 0x20) != 0) {		/* ILI bit set */
@@ -2197,7 +2197,7 @@ do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
 		}
 	} else if (req->sr_command) {
 		/* ensure correct DataSegmentLength and ResidualCount */
-		TRACE(TRACE_DEBUG, "data_length_left %d, sr_command->resid %d\n",
+		TRACE(TRACE_DEBUG, "data_length_left %d, sr_command->resid %d",
 				data_length_left, req->sr_command->resid);
 		data_length_left -= req->sr_command->resid;
 	}
@@ -2212,7 +2212,7 @@ do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
 		flags |= UNDERFLOW_FLAG;
 	}
 
-	TRACE(TRACE_DEBUG,"data_length_left %d, residual_count %d, flags 0x%08x\n",
+	TRACE(TRACE_DEBUG,"data_length_left %d, residual_count %d, flags 0x%08x",
 		  data_length_left, *residual_count, flags);
 
 	*data_left = data_length_left;
@@ -2311,7 +2311,7 @@ handle_discovery_rsp(struct iscsi_cmnd *cmnd,
 		goto out1;
 	}
 
-	TRACE(TRACE_ISCSI, "text response sent, ITT %u\n",
+	TRACE(TRACE_ISCSI, "text response sent, ITT %u",
 		  cmnd->init_task_tag);
     print_targ_text_rsp(hdr);
 
@@ -2379,7 +2379,7 @@ ask_for_more_text(struct iscsi_cmnd *cmnd,
 		goto out1;
 	}
 
-	TRACE(TRACE_ISCSI, "text response sent, ITT %u\n", 
+	TRACE(TRACE_ISCSI, "text response sent, ITT %u", 
 		  cmnd->init_task_tag);
     print_targ_text_rsp(hdr);
 
@@ -2429,7 +2429,7 @@ handle_logout_rsp(struct iscsi_cmnd *cmnd,
 		return -1;
 	}
 
-	TRACE(TRACE_ISCSI, "logout response sent\n");
+	TRACE(TRACE_ISCSI, "logout response sent");
 
     print_targ_logout_rsp(hdr);
 
@@ -2494,7 +2494,7 @@ handle_nopin(struct iscsi_cmnd *cmnd,
 						cmnd->cmd_sn, session->exp_cmd_sn,
 						cmnd->init_task_tag, cmnd->opcode_byte, cmnd->state);
 
-	TRACE(TRACE_ISCSI, "nopin sent\n");
+	TRACE(TRACE_ISCSI, "nopin sent");
 
     print_targ_nopin(hdr);
 
@@ -2547,7 +2547,7 @@ handle_iscsi_mgt_fn_done(struct iscsi_cmnd *cmnd,
 		return -1;
 	}
 
-	TRACE(TRACE_ISCSI, "task mgt response sent\n");
+	TRACE(TRACE_ISCSI, "task mgt response sent");
 
     print_targ_task_mgt_response(&rsp);
 
@@ -2642,7 +2642,7 @@ handle_data(struct iscsi_conn *conn,
 	int i;
 	uint32_t data_sn;
 
-	TRACE(TRACE_ENTER_LEAVE, "Entered handle_data\n");
+	TRACE(TRACE_ENTER_LEAVE, "Entered handle_data");
 
     print_init_scsi_data_out(hdr);
 
@@ -2669,7 +2669,7 @@ handle_data(struct iscsi_conn *conn,
 		TRACE_ERROR("DataOut ITT %u, DataSN %u, TTT %u, No matching "
 					"command\n", hdr->init_task_tag, data_sn,
 					hdr->target_xfer_tag);
-		TRACE(TRACE_ISCSI, "Probably SCSI cmnd PDU lost - drop it\n");
+		TRACE(TRACE_ISCSI, "Probably SCSI cmnd PDU lost - drop it");
 		targ_drop_pdu_data(conn, hdr->length);
 		goto end_handle_data;
 	}
@@ -2694,7 +2694,7 @@ handle_data(struct iscsi_conn *conn,
 						"expected %u\n", hdr->init_task_tag,
 						data_sn, hdr->offset, cmd->data_done);
 
-			TRACE(TRACE_ERROR_RECOVERY, "Start sequence error recovery\n");
+			TRACE(TRACE_ERROR_RECOVERY, "Start sequence error recovery");
 			err_rec.curr_conn = conn;
 			err_rec.pdu_hdr = (struct generic_pdu *) hdr;
 			err_rec.cmd = cmd;
@@ -2823,9 +2823,9 @@ handle_data(struct iscsi_conn *conn,
 		goto end_handle_data;
 	} else if ((cmd->state != ISCSI_BUFFER_RDY)
 			   && (cmd->state != ISCSI_ALL_R2TS_SENT)) {
-		TRACE(TRACE_SEM, "handle_data: Blocked on unsolicited_data_sem\n");
+		TRACE(TRACE_SEM, "handle_data: Blocked on unsolicited_data_sem");
         sem_wait(&cmd->unsolicited_data_sem);
-		TRACE(TRACE_SEM, "handle_data: Unblocked on unsolicited_data_sem\n");
+		TRACE(TRACE_SEM, "handle_data: Unblocked on unsolicited_data_sem");
 	}
 
 	/* receive this data */
@@ -2839,12 +2839,12 @@ handle_data(struct iscsi_conn *conn,
 		 */
 		offset = cmd->scatter_list_offset;
 		st_list += cmd->scatter_list_count;
-		TRACE(TRACE_DEBUG, "scatter list offset %d, count %d\n",
+		TRACE(TRACE_DEBUG, "scatter list offset %d, count %d",
 			  cmd->scatter_list_offset, cmd->scatter_list_count);
 	} else {
 		offset = skip_thru_sg_list(st_list, &i, hdr->offset);
 		st_list += i;
-		TRACE(TRACE_DEBUG, "scatter list offset %d, index %d\n", offset, i);
+		TRACE(TRACE_DEBUG, "scatter list offset %d, index %d", offset, i);
 	}
 
 	TRACE(TRACE_DEBUG, "handle_data: receiving data for cmd_sn %.8x "
@@ -2898,7 +2898,7 @@ end_handle_data:
 	if (cmd)
         time(&cmd->timestamp);
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave handle_data, err = %d\n", err);
+	TRACE(TRACE_ENTER_LEAVE, "Leave handle_data, err = %d", err);
 	return err;
 }
 
@@ -2919,7 +2919,7 @@ handle_snack(struct iscsi_conn *conn,
 	struct iscsi_init_snack *pdu = (struct iscsi_init_snack *) buffer;
 	struct iscsi_cmnd *cmd = NULL;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter handle_snack\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter handle_snack");
 
     print_init_snack(pdu);
 
@@ -2959,7 +2959,7 @@ handle_snack(struct iscsi_conn *conn,
 				goto out_reject;
 			} else if (session->targ_snack_flg & DATA_SNACK_REJECT) {
 				TRACE(TRACE_ERROR_RECOVERY,
-					  "handle_snack: Send Data-SNACK Reject for SNACK\n");
+					  "handle_snack: Send Data-SNACK Reject for SNACK");
 				goto out_reject;
 			} else {
 				TRACE_WARNING("Got Data/R2T-SNACK for ITT %u\n",
@@ -3005,7 +3005,7 @@ handle_snack(struct iscsi_conn *conn,
 				TRACE_ERROR("DataACK SNACK not enabled, reject SNACK\n");
 				goto out_reject;
 			} else {
-				TRACE(TRACE_ERROR_RECOVERY, "Got DataACK SNACK, TTT = %u\n",
+				TRACE(TRACE_ERROR_RECOVERY, "Got DataACK SNACK, TTT = %u",
 						pdu->target_xfer_tag);
 			}
 			/* we have nothing more to do with this type of snack */
@@ -3060,7 +3060,7 @@ handle_snack(struct iscsi_conn *conn,
 				if (cmd->data_sn >= pdu->begrun) {
 					/* have at least 1 DataIn pdu to retransmit for this READ */
 					TRACE(TRACE_ERROR_RECOVERY,
-						  "handle_snack: Re-Transmit Data on SNACK Request\n");
+						  "handle_snack: Re-Transmit Data on SNACK Request");
 					cmd->retransmit_flg = 1;
 					cmd->scatter_list_count = 0;
 					cmd->scatter_list_offset = 0;
@@ -3079,7 +3079,7 @@ handle_snack(struct iscsi_conn *conn,
 				if (cmd->r2t_sn >= pdu->begrun) {
 					/* Found the corresponding R2T PDU - re-transmit it */
 					TRACE(TRACE_ERROR_RECOVERY,
-						  "handle_snack: Re-Transmit R2T on SNACK Request\n");
+						  "handle_snack: Re-Transmit R2T on SNACK Request");
 
 					cmd->retransmit_flg = 1;
 					cmd->startsn = begrun;
@@ -3131,7 +3131,7 @@ handle_snack(struct iscsi_conn *conn,
     pthread_mutex_unlock(&session->cmnd_mutex);
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave handle_snack \n");
+	TRACE(TRACE_ENTER_LEAVE, "Leave handle_snack ");
 
 	return 0;
 
@@ -3150,7 +3150,7 @@ out_reject:
 static void
 iscsi_dequeue(struct iscsi_cmnd *cmnd, struct iscsi_conn *conn)
 {
-	TRACE(TRACE_DEBUG, "free cmnd with ITT %u\n", cmnd->init_task_tag);
+	TRACE(TRACE_DEBUG, "free cmnd with ITT %u", cmnd->init_task_tag);
 
 	if (cmnd->cmnd != NULL) {
 		if (scsi_target_done(cmnd->cmnd) < 0) {
@@ -3449,7 +3449,7 @@ iscsi_tx_r2t(struct iscsi_cmnd *cmnd,
 			goto r2t_out;
 		}
 
-		TRACE(TRACE_ISCSI, "r2t sent, ITT %u, offset %d\n",
+		TRACE(TRACE_ISCSI, "r2t sent, ITT %u, offset %d",
 			  cmnd->init_task_tag,
 			  ntohl(hdr->offset));
 
@@ -3487,7 +3487,7 @@ fill_iovec(struct iovec *iov, int p, int niov,
 	int count = 0;
 	uint32_t sglen;
 
-	TRACE(TRACE_DEBUG, "offset: %d, data_len: %d\n", *offset, data);
+	TRACE(TRACE_DEBUG, "offset: %d, data_len: %d", *offset, data);
 
 	iov += p;
 	while (data > 0 && p < niov) {
@@ -3506,7 +3506,7 @@ fill_iovec(struct iovec *iov, int p, int niov,
 
 		data -= iov->iov_len;
 
-		TRACE(TRACE_DEBUG, "iov %p, p %d, iov_base %p, iov_len %d\n", iov,
+		TRACE(TRACE_DEBUG, "iov %p, p %d, iov_base %p, iov_len %d", iov,
 			  p, iov->iov_base, iov->iov_len);
 
 		p++;
@@ -3541,7 +3541,7 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 	uint32_t flags = 0;
 	int residual_count = 0;
 
-	TRACE(TRACE_DEBUG, "send_scsi_response\n");
+	TRACE(TRACE_DEBUG, "send_scsi_response");
 
 	memset(iscsi_hdr, 0x0, ISCSI_HDR_LEN);
 	rsp = (struct iscsi_targ_scsi_rsp *)iscsi_hdr;
@@ -3578,14 +3578,14 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 		rsp->status = CHECK_CONDITION << 1;	/* why does Linux do this shift? */
 		sense_data.len = SCSI_SENSE_BUFFERSIZE;
 		if (flags & UNDERFLOW_FLAG) {
-			TRACE(TRACE_DEBUG, "underflow is found\n");
+			TRACE(TRACE_DEBUG, "underflow is found");
 			memset(sense_data.data, 0x0, SCSI_SENSE_BUFFERSIZE);
 			sense_data.data[0] = 0xf0;		/* scsi valid bit, code 70h */
 			sense_data.data[2] = 0x20;		/* scsi ILI bit */
 			sense_data.data[7] = 0x07;		/* scsi additional length = 7 */
 			memcpy(sense_data.data + 3, req->sr_sense_buffer + 3, 4);
 		} else {
-			TRACE(TRACE_DEBUG, "sense key 0x%x\n",
+			TRACE(TRACE_DEBUG, "sense key 0x%x",
 				  req->sr_sense_buffer[2] & 0xf);
 			memcpy(sense_data.data,req->sr_sense_buffer,SCSI_SENSE_BUFFERSIZE);
 		}
@@ -3603,7 +3603,7 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 		return -1;
 	}
 
-	TRACE(TRACE_ISCSI, "scsi response sent, ITT %u\n",
+	TRACE(TRACE_ISCSI, "scsi response sent, ITT %u",
 		  cmnd->init_task_tag);
 
     print_targ_scsi_rsp(rsp);
@@ -3695,7 +3695,7 @@ send_read_data(struct iscsi_cmnd *cmnd,
 
 		/* once around this loop for each pdu in this sequence */
 		while (seq_length > 0) {
-			TRACE(TRACE_DEBUG, "data_length_left: %d, seq_length: %d\n",
+			TRACE(TRACE_DEBUG, "data_length_left: %d, seq_length: %d",
 				  data_length_left, seq_length);
 
 			memset(iscsi_hdr, 0x0, ISCSI_HDR_LEN);
@@ -3726,7 +3726,7 @@ send_read_data(struct iscsi_cmnd *cmnd,
 					hdr->target_xfer_tag = htonl(cmnd->target_xfer_tag);
 					hdr->lun = cmnd->lun;
 					TRACE(TRACE_ERROR_RECOVERY,
-						  "Send DataIn, A=1, ITT %u, TTT %u, dataSN %u\n",
+						  "Send DataIn, A=1, ITT %u, TTT %u, dataSN %u",
 						  cmnd->init_task_tag, cmnd->target_xfer_tag,
 						  cmnd->data_sn);
 				}
@@ -3840,7 +3840,7 @@ send_read_data(struct iscsi_cmnd *cmnd,
 
 			iov = malloc(niov * sizeof(struct iovec));
 			if (!iov) {
-				TRACE(TRACE_DEBUG, "handle_iscsi_done: No space for iov\n");
+				TRACE(TRACE_DEBUG, "handle_iscsi_done: No space for iov");
 				err = -1;
 				goto out;
 			}
@@ -3866,7 +3866,7 @@ send_read_data(struct iscsi_cmnd *cmnd,
 			if (padding) {
 				iov[niov - 1 - conn->data_crc].iov_base = &pad_bytes;
 				iov[niov - 1 - conn->data_crc].iov_len = padding;
-				TRACE(TRACE_DEBUG, "padding attached: %d bytes\n", padding);
+				TRACE(TRACE_DEBUG, "padding attached: %d bytes", padding);
 			}
 
 			if (conn->data_crc) {
@@ -3899,7 +3899,7 @@ send_read_data(struct iscsi_cmnd *cmnd,
 				goto out1;
 			}
 
-            TRACE(TRACE_ISCSI_FULL, "DataIn sent, offset %u\n",
+            TRACE(TRACE_ISCSI_FULL, "DataIn sent, offset %u",
                   htonl(hdr->offset));
             print_targ_scsi_data_in(hdr);
 
@@ -3927,7 +3927,7 @@ skip_transmission:
 	}
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave send_read_data, err = %d\n", err);
+	TRACE(TRACE_ENTER_LEAVE, "Leave send_read_data, err = %d", err);
 	return err;
 out1:
 	free(iov);
@@ -3952,7 +3952,7 @@ handle_iscsi_done(struct iscsi_cmnd *cmnd,
 	int err = 0;
 	int phase_collapse = 0;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter handle_iscsi_done, cmnd %p, state %d\n",
+	TRACE(TRACE_ENTER_LEAVE, "Enter handle_iscsi_done, cmnd %p, state %d",
 		  cmnd, cmnd->state);
 
 	if (cmnd->cmnd == NULL) {
@@ -4000,7 +4000,7 @@ handle_iscsi_done(struct iscsi_cmnd *cmnd,
 	check_queued_cmnd(session);
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave handle_iscsi_done, err = %d\n", err);
+	TRACE(TRACE_ENTER_LEAVE, "Leave handle_iscsi_done, err = %d", err);
 	return err;
 }
 
@@ -4060,7 +4060,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
     prev_cmnd = NULL;
     cmnd = session->cmnd_list;
     while (cmnd != NULL) {
-        TRACE(TRACE_DEBUG, "pick up cmnd %p\n", cmnd);
+        TRACE(TRACE_DEBUG, "pick up cmnd %p", cmnd);
         if (cmnd->conn == conn && ++count >= skipover) {
             /* this command is for this connection, handle it */
             if (!(conn->connection_flags & CONN_LOGGED_OUT)) {
@@ -4232,7 +4232,7 @@ restart_after_dequeue:	/* back here after dequeueing a command from the list,
     /* unlock the session-wide list of commands */
     pthread_mutex_unlock(&session->cmnd_mutex);
 
-    TRACE(TRACE_DEBUG, "handled %d commands\n", count);
+    TRACE(TRACE_DEBUG, "handled %d commands", count);
 
 iscsi_tx_thread_out:
 	return 0;
@@ -4263,7 +4263,7 @@ iscsi_xmit_response(Target_Scsi_Cmnd * cmnd)
 
 	cmd->state = ISCSI_DONE;
 
-	TRACE(TRACE_ISCSI, "CmdSN %u ITT %u done by target, ExpCmdSN %u\n",
+	TRACE(TRACE_ISCSI, "CmdSN %u ITT %u done by target, ExpCmdSN %u",
 					  cmd->cmd_sn, cmd->init_task_tag, session->exp_cmd_sn);
     /** The mutex has been locked in `search_iscsi_cmnd' **/
 	pthread_mutex_unlock(&session->cmnd_mutex);
@@ -4321,7 +4321,7 @@ iscsi_rdy_to_xfer(Target_Scsi_Cmnd * cmnd)
     pthread_mutex_unlock(&session->cmnd_mutex);
 
 	/* tell iscsi rx thread that midlevel buffers are now ready */
-	TRACE(TRACE_SEM, "iscsi_rdy_to_xfer: unblocking unsolicited_data_sem\n");
+	TRACE(TRACE_SEM, "iscsi_rdy_to_xfer: unblocking unsolicited_data_sem");
 	sem_post(&cmd->unsolicited_data_sem);
 
     iscsi_tx(cmd->conn);
@@ -4470,7 +4470,7 @@ deliver_queue_other(struct iscsi_cmnd *cmnd, struct iscsi_session *session)
 		/* this was an out-of-order NopIn */
 		if (cmnd->init_task_tag == ALL_ONES) {
 			/* NopIn not used as a ping request, done with it now */
-			TRACE(TRACE_DEBUG, "Freeing NopIn, ITT 0x%08x, CmdSN %u\n",
+			TRACE(TRACE_DEBUG, "Freeing NopIn, ITT 0x%08x, CmdSN %u",
 					cmnd->init_task_tag, cmnd->cmd_sn);
 			/* NopOut pdu was not immediate, CmdSN was advanced */
 			session->max_cmd_sn++;
@@ -4525,7 +4525,7 @@ restart:
 		if (temp->cmd_sn == session->exp_cmd_sn
 			&& !(temp->opcode_byte & I_BIT)
 			&& temp->state != ISCSI_DEQUEUE) {
-			TRACE(TRACE_ISCSI, "CmdSN %u ITT %u now in order\n",
+			TRACE(TRACE_ISCSI, "CmdSN %u ITT %u now in order",
 				  temp->cmd_sn, temp->init_task_tag);
 
 			/* ok now to deliver the command to the target in proper order */
@@ -4541,7 +4541,7 @@ restart:
 				 * until delivery is confirmed */
 				temp->cmd_sn_increment = 1;
 				pthread_mutex_unlock(&session->cmnd_mutex);
-				TRACE(TRACE_ISCSI, "delivering CmdSN %u ITT %u to target\n",
+				TRACE(TRACE_ISCSI, "delivering CmdSN %u ITT %u to target",
 					  temp->cmd_sn, temp->init_task_tag);
 				pdu = (struct iscsi_init_scsi_cmnd *)temp->hdr;
 				rx_cmnd(temp->conn->dev->device,
@@ -4718,7 +4718,7 @@ send_unsolicited_data(struct iscsi_cmnd *cmd,
 	}
 
 	/* all unsolicited data has been read */
-	TRACE(TRACE_ISCSI, "Send_unsolicited_data: cmd_sn %d\n", cmd->cmd_sn);
+	TRACE(TRACE_ISCSI, "Send_unsolicited_data: cmd_sn %d", cmd->cmd_sn);
 
 	if (!cmd->cmnd) {
 		TRACE_ERROR("no cmnd found\n");
@@ -4823,7 +4823,7 @@ out_of_order_cmnd(struct iscsi_conn *conn,
 		free(cmnd);
 	} else {		
 		/* within range but out of order, we queued it for later (above) */
-		TRACE(TRACE_ISCSI, "out of order CmdSN %u bigger than ExpCmdSN %u\n",
+		TRACE(TRACE_ISCSI, "out of order CmdSN %u bigger than ExpCmdSN %u",
 			  cmnd->cmd_sn, cmnd->session->exp_cmd_sn);
 	}
 out:
@@ -4840,7 +4840,7 @@ handle_cmnd(struct iscsi_conn *conn,
 	struct iscsi_cmnd *cmnd;
 	int err;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter handle_cmnd\n");
+	TRACE(TRACE_ENTER_LEAVE, "Enter handle_cmnd");
 
     print_init_scsi_cmnd(pdu);
 
@@ -4948,9 +4948,9 @@ handle_cmnd(struct iscsi_conn *conn,
 		 * wait for midlevel to set up buffers so we can
 		 * read it directly into midlevel buffers
 		 */
-		TRACE(TRACE_SEM, "Blocked on unsolicited_data_sem\n");
+		TRACE(TRACE_SEM, "Blocked on unsolicited_data_sem");
 		sem_wait(&cmnd->unsolicited_data_sem);
-		TRACE(TRACE_SEM, "Unblocked on unsolicited_data_sem\n");
+		TRACE(TRACE_SEM, "Unblocked on unsolicited_data_sem");
 
 		/* state MUST now be ISCSI_BUFFER_RDY !*/
 		if (cmnd->state != ISCSI_BUFFER_RDY) {
@@ -4993,7 +4993,7 @@ handle_cmnd(struct iscsi_conn *conn,
 				free_range_list(&cmnd->pdu_range_list);
 			}
 
-			TRACE(TRACE_DEBUG, "%d received for cmnd %p\n", pdu->length, cmnd);
+			TRACE(TRACE_DEBUG, "%d received for cmnd %p", pdu->length, cmnd);
 
             pthread_mutex_lock(&session->cmnd_mutex);
             cmnd->state = ISCSI_DATA_IN;
@@ -5008,7 +5008,7 @@ handle_cmnd(struct iscsi_conn *conn,
 	}
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave handle_cmnd, err = %d\n", err);
+	TRACE(TRACE_ENTER_LEAVE, "Leave handle_cmnd, err = %d", err);
 	return err;
 
 out2:
@@ -5207,7 +5207,7 @@ iscsi_server_init(void)
 	/* setup the security key hash table */
 	setup_security_hash_table();
 
-	TRACE(TRACE_DEBUG, "iSCSI initialization completed\n");
+	TRACE(TRACE_DEBUG, "iSCSI initialization completed");
 
 	devdata->device = make_target_front_end();
 
@@ -5218,7 +5218,7 @@ iscsi_server_init(void)
 
 	devdata->device->dev_specific = (void *) devdata;
 
-	TRACE(TRACE_DEBUG, "Registration complete\n");
+	TRACE(TRACE_DEBUG, "Registration complete");
 
     return 0;
 }
@@ -5285,7 +5285,7 @@ iscsi_server_rx_thread(void *param)
                 break;
 			}
 
-			TRACE(TRACE_ISCSI, "Got login request, ITT %u\n",
+			TRACE(TRACE_ISCSI, "Got login request, ITT %u",
 				  local_itt);
 
 			if (handle_login(conn, buffer) < 0) {
@@ -5301,7 +5301,7 @@ iscsi_server_rx_thread(void *param)
 		/* connection belongs to session that is in full feature phase */
 		if (conn->hdr_crc) {
 			/* read and check header digest on this pdu */
-			TRACE(TRACE_DEBUG, "iscsi_rx_thread: Header digest check\n");
+			TRACE(TRACE_DEBUG, "iscsi_rx_thread: Header digest check");
 			hdr_crc = 0;
 			do_crc(buffer, ISCSI_HDR_LEN, &hdr_crc);
 
@@ -5316,7 +5316,7 @@ iscsi_server_rx_thread(void *param)
 							ntohl(hdr_crc), ntohl(digest));
 				/* Error Recovery Code Added by SAI */
 				TRACE(TRACE_ERROR_RECOVERY,
-					  "Start header digest error recovery\n");
+					  "Start header digest error recovery");
 				err_rec.curr_conn = conn;
 				err_rec.pdu_hdr = (struct generic_pdu *)buffer;
 				err_rec.pdu_hdr->length = ntohl(err_rec.pdu_hdr->length);
@@ -5327,7 +5327,7 @@ iscsi_server_rx_thread(void *param)
 			} 
             else 
             {
-				TRACE(TRACE_ISCSI_FULL, "Got header crc 0x%08x\n",
+				TRACE(TRACE_ISCSI_FULL, "Got header crc 0x%08x",
 					  ntohl(digest));
 			}
 		}
@@ -5344,7 +5344,7 @@ iscsi_server_rx_thread(void *param)
 			}
             case ISCSI_INIT_TEXT_CMND:
 			{
-				TRACE(TRACE_ISCSI, "Got text request, ITT %u\n",
+				TRACE(TRACE_ISCSI, "Got text request, ITT %u",
 					  local_itt);
                 
 				if (handle_text_request(conn, conn->session, buffer) < 0) {
@@ -5359,7 +5359,7 @@ iscsi_server_rx_thread(void *param)
 
             case ISCSI_INIT_SCSI_CMND:
 			{
-				TRACE(TRACE_ISCSI, "Got SCSI command, CmdSN %u, ITT %u\n",
+				TRACE(TRACE_ISCSI, "Got SCSI command, CmdSN %u, ITT %u",
 					  ntohl(((struct generic_pdu *)buffer)->cmd_sn),
 					  local_itt);
 
@@ -5375,7 +5375,7 @@ iscsi_server_rx_thread(void *param)
 
             case ISCSI_INIT_SCSI_DATA_OUT:
             {
-				TRACE(TRACE_ISCSI, "Got data-out, ITT %u, offset %u\n",
+				TRACE(TRACE_ISCSI, "Got data-out, ITT %u, offset %u",
 					  local_itt,
 					  ntohl(((struct generic_pdu *) buffer)->offset));
                 
@@ -5392,7 +5392,7 @@ iscsi_server_rx_thread(void *param)
             case ISCSI_INIT_TASK_MGMT_CMND:
 			{
 				TRACE(TRACE_ISCSI,
-					  "Got task mgt command, ITT %u\n",
+					  "Got task mgt command, ITT %u",
 					  local_itt);
                 
 				if (handle_task_mgt_command(conn, conn->session, buffer) < 0) {
@@ -5407,7 +5407,7 @@ iscsi_server_rx_thread(void *param)
 
             case ISCSI_INIT_LOGOUT_CMND:
 			{
-				TRACE(TRACE_ISCSI, "Got logout request, ITT %u\n",
+				TRACE(TRACE_ISCSI, "Got logout request, ITT %u",
 					  local_itt);
                 
 				if (handle_logout(conn, conn->session, buffer) < 0) {
@@ -5422,7 +5422,7 @@ iscsi_server_rx_thread(void *param)
 
             case ISCSI_INIT_NOP_OUT:
 			{
-				TRACE(TRACE_ISCSI, "Got NOP_OUT, ITT %u\n",
+				TRACE(TRACE_ISCSI, "Got NOP_OUT, ITT %u",
 					  local_itt);
 
 				if (handle_nopout(conn, conn->session, buffer) < 0) {
@@ -5438,7 +5438,7 @@ iscsi_server_rx_thread(void *param)
 			/* SNACK Handling by Target - SAI */
             case ISCSI_INIT_SNACK:
 			{
-				TRACE(TRACE_ERROR_RECOVERY, "Got SNACK Request\n");
+				TRACE(TRACE_ERROR_RECOVERY, "Got SNACK Request");
 
 				if (handle_snack(conn, conn->session, buffer) < 0) {
 					TRACE_ERROR("Trouble in handle_snack\n");

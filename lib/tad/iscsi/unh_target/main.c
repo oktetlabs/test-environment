@@ -32,6 +32,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/socket.h>
@@ -65,10 +66,12 @@ stderr_logging(const char   *file,
     UNUSED(user);
     fprintf(stderr, "[%d] ", level);
     vfprintf(stderr, fmt, args);
+    fputc('\n', stderr);
     va_end(args);
     va_start(args, fmt);
     fprintf(logfile, "[%d] ", level);
     vfprintf(logfile, fmt, args);
+    fputc('\n', logfile);
     va_end(args);
 }
 
@@ -77,9 +80,29 @@ iscsi_tad_send(int sock, uint8_t *buffer, size_t len)
 {
     int result = write(sock, buffer, len);
     unsigned i;
+    int width = 0;
+
+    fputs("\n> ", stderr);
 #if 1
     for (i = 0; i < len; i++)
-        fprintf(stderr, "%2.2x %s", buffer[i], i % 8 == 7 ? "\n" : "");
+    {
+        if (iscntrl(buffer[i]) || !isascii(buffer[i]))
+        {
+            fprintf(stderr, "\\%2.2x", buffer[i]);
+            width += 3;
+        }
+        else
+        {
+            fputc(buffer[i], stderr);
+            width++;
+        }
+        if (width > 32)
+        {
+            fputs("\\\n> ", stderr);
+            width = 0;
+        }
+    }
+    fputc('\n', stderr);
 #endif
     return result >= 0 ? result : -errno;
 }
