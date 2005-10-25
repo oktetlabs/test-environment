@@ -146,7 +146,7 @@ extern int rpc_shutdown(rcf_rpc_server *rpcs,
  */
 extern ssize_t rpc_send(rcf_rpc_server *rpcs,
                         int s, const void *buf, size_t len,
-                        int flags);
+                        rpc_send_recv_flags flags);
 
 /**
  * Transmit a message to descriptor @b s.
