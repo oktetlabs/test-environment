@@ -448,8 +448,8 @@ map_oid_to_param(const char *oid)
         {{"data_pdu_in_order", "DataPDUInOrder"},
          {"if_marker", "IFMarker"},
          {"of_marker", "OFMarker"},
-         {"if_marker_int", "IFMarkerInt"},
-         {"of_marker_int", "OFMarkerInt"},
+         {"if_mark_int", "IFMarkerInt"},
+         {"of_mark_int", "OFMarkerInt"},
          {NULL, NULL}
         };
     int i;
@@ -513,16 +513,16 @@ iscsi_target_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_if_marker_int, "if_marker_int",
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_if_mark_int, "if_mark_int",
                     NULL, NULL,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_of_marker_int, "of_marker_int",
-                    NULL, &node_iscsi_target_oper_if_marker_int,
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_of_mark_int, "of_mark_int",
+                    NULL, &node_iscsi_target_oper_if_mark_int,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_if_marker, "if_marker",
-                    NULL, &node_iscsi_target_oper_of_marker_int,
+                    NULL, &node_iscsi_target_oper_of_mark_int,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_of_marker, "of_marker",
