@@ -461,6 +461,7 @@ map_oid_to_param(const char *oid)
         return "";
     }
 
+    oid++;
     for (i = 0; special_mappings[i][0] != NULL; i++)
     {
         if (strcmp(special_mappings[i][0], oid) == 0)
@@ -469,7 +470,7 @@ map_oid_to_param(const char *oid)
         }
     }
 
-    for (oid++; *oid != ':' && *oid != '\0'; oid++)
+    for (; *oid != ':' && *oid != '\0'; oid++)
     {
         if (upper_case)
         {
