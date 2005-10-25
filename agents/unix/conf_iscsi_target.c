@@ -445,11 +445,11 @@ map_oid_to_param(const char *oid)
     te_bool upper_case = TRUE;
     char *p = param_name;
     static char *special_mappings[][2] =
-        {{"data_pdu_in_order", "DataPDUInOrder"},
-         {"if_marker", "IFMarker"},
-         {"of_marker", "OFMarker"},
-         {"if_mark_int", "IFMarkerInt"},
-         {"of_mark_int", "OFMarkerInt"},
+        {{"data_pdu_in_order:", "DataPDUInOrder"},
+         {"if_marker:", "IFMarker"},
+         {"of_marker:", "OFMarker"},
+         {"if_mark_int:", "IFMarkerInt"},
+         {"of_mark_int:", "OFMarkerInt"},
          {NULL, NULL}
         };
     int i;
