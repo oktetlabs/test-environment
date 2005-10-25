@@ -633,6 +633,63 @@ iscsi_openiscsi_set_param(const char *recid,
 }
 
 static int
+iscsi_openiscsi_start_daemon(iscsi_target_data_t *target)
+{
+    int   rc;
+    FILE *name_file;
+    
+    name_file = fopen("/tmp/initiatorname.iscsi", "w");
+    if (name_file == NULL)
+    {
+        rc = errno;
+        ERROR("Cannot open /tmp/initiatorname.iscsi: %s",
+              strerror(rc));
+        return TE_OS_RC(TE_TA_UNIX, rc);
+    }
+    fprintf(name_file, "InitiatorName=%s\n", target->initiator_name);
+    if (*target->initiator_alias != '\0')
+        fprintf(name_file, "InitiatorAlias=%s\n", target->initiator_alias);
+    fclose(name_file);
+
+    return te_shell_cmd("iscsid -c /dev/null -i /tmp/initiatorname.iscsi "
+                        "-p /tmp/openiscsi.pid", 
+                        -1, NULL, NULL);
+}
+
+static int
+iscsi_openiscsi_stop_daemon(void)
+{
+    FILE *name_file;
+    int   pid = 0;
+    int   unused;
+    
+    name_file = fopen("/tmp/openiscsi.pid", "r");
+    if (name_file == NULL)
+    {
+        WARN("Cannot open PID file, assuming no iscsid running");
+        return 0;
+    }
+    fscanf(name_file, "%d", &pid);
+    if (pid == 0)
+    {
+        ERROR("Malformed PID file");
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+    if (kill(pid, SIGTERM))
+    {
+        WARN("Unable to kill iscsid: %s",
+             strerror(errno));
+    }
+    else
+    if (waitpid(pid, &unused, 0) == -1)
+    {
+        WARN("Unable to wait for iscsid: %s",
+             strerror(errno));
+    }
+    return 0;
+}
+
+static int
 iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
 {
     iscsi_target_param_descr_t *p;
@@ -715,7 +772,8 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
             AUTH_PARAM(peer_secret, "password_in"),
             ISCSI_END_PARAM_TABLE
         };
-    int rc;
+
+    int   rc;
     
     for (p = params; p->name != NULL; p++)
     {
@@ -1258,11 +1316,20 @@ iscsi_initiator_openiscsi_set(const char *value)
             ERROR("Target %d has no associated record id", target_id);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
-        return te_shell_cmd_ex("iscsiadm -m node --record=%s --logout",
-                               init_data->targets[target_id].record_id);
+        rc = te_shell_cmd_ex("iscsiadm -m node --record=%s --logout",
+                             init_data->targets[target_id].record_id);
+        if (cid == 0 && target_id == 0)
+            iscsi_openiscsi_stop_daemon();
+        return rc;
     }
     else
     {
+        if (cid == 0 && target_id == 0)
+        {
+            rc = iscsi_openiscsi_start_daemon(init_data->targets);
+            if (rc != 0)
+                return rc;
+        }
         if (*init_data->targets[target_id].record_id == '\0')
         {
             const char *id = iscsi_openiscsi_find_free_recid(init_data);
