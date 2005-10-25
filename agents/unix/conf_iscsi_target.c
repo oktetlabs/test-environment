@@ -448,8 +448,8 @@ map_oid_to_param(const char *oid)
         {{"data_pdu_in_order:", "DataPDUInOrder"},
          {"if_marker:", "IFMarker"},
          {"of_marker:", "OFMarker"},
-         {"if_mark_int:", "IFMarkerInt"},
-         {"of_mark_int:", "OFMarkerInt"},
+         {"if_mark_int:", "IFMarkInt"},
+         {"of_mark_int:", "OFMarkInt"},
          {NULL, NULL}
         };
     int i;
