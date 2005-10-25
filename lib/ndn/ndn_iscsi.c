@@ -639,14 +639,14 @@ padding:
 
 
 int
-iscsi_rest_data_len(uint8_t *bhs, te_bool header_digest,
-                    te_bool data_digest)
+iscsi_rest_data_len(uint8_t *bhs, iscsi_digest_type digest)
 {
         size_t  total_AHS_length,
                 data_segment_length;
 
-        int     h_dig = header_digest,
-                d_dig = data_digest; 
+        int     h_dig = (digest & ISCSI_DIGEST_HEADER) == 
+                        ISCSI_DIGEST_HEADER;
+        int     d_dig = (digest & ISCSI_DIGEST_DATA) == ISCSI_DIGEST_DATA;
 
         union { 
             uint32_t i;

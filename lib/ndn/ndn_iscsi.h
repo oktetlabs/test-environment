@@ -68,6 +68,13 @@ typedef enum {
     NDN_TAG_ISCSI_SD,
 } ndn_iscsi_sd_tags_t;
 
+typedef enum {
+    ISCSI_DIGEST_NONE = 0,
+    ISCSI_DIGEST_HEADER = 1,
+    ISCSI_DIGEST_DATA = 2,
+    ISCSI_DIGEST_BOTH = ISCSI_DIGEST_DATA & ISCSI_DIGEST_HEADER,
+} iscsi_digest_type;
+
 
 extern const asn_type *ndn_iscsi_message;
 extern const asn_type *ndn_iscsi_csap;
@@ -112,8 +119,7 @@ extern int parse_key_value(char *str, asn_value *value);
  *
  * @return number of bytes rest in PDU
  */
-extern int iscsi_rest_data_len(uint8_t *bhs, te_bool header_digest,
-                               te_bool data_digest);
+extern int iscsi_rest_data_len(uint8_t *bhs, iscsi_digest_type digest);
  
 #ifdef __cplusplus
 } /* extern "C" */

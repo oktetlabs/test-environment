@@ -226,23 +226,21 @@ iscsi_match_bin_cb(int csap_id, int level, const asn_value *pattern_pdu,
         RING("%s(CSAP %d): calculated PDU len: %d", 
              __FUNCTION__, csap_id, spec_data->wait_length);
 #else
-        te_bool head_digest = FALSE, 
-                data_digest = FALSE; 
-
-        const asn_value *sval;
+        iscsi_digest_type digest = ISCSI_DIGEST_NONE;
+        const             asn_value *sval;
 
         rc = asn_get_child_value(pattern_pdu, &sval, PRIVATE, 
                                  NDN_TAG_ISCSI_HAVE_HDIG);
         if (rc == 0)
-            head_digest = TRUE;
+            digest |= ISCSI_DIGEST_HEADER;
 
         rc = asn_get_child_value(pattern_pdu, &sval, PRIVATE, 
                                  NDN_TAG_ISCSI_HAVE_DDIG);
         if (rc == 0)
-            data_digest = TRUE;
+            digest |= ISCSI_DIGEST_DATA;
 
         spec_data->wait_length = ISCSI_BHS_LENGTH + 
-             iscsi_rest_data_len(pkt->data, head_digest, data_digest);
+             iscsi_rest_data_len(pkt->data, digest);
 #endif
     }
     rc = 0;

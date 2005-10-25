@@ -146,7 +146,7 @@ iscsi_msg_handler(const char *pkt_fname, void *user_param)
 int
 tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
                     int timeout, csap_handle_t forward,
-                    te_bool header_digest, te_bool data_digest,
+                    iscsi_digest_type digest,
                     iscsi_target_params_t *params,
                     uint8_t *buffer, size_t  *length)
 {
@@ -187,7 +187,7 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
             goto cleanup;
         }
     }
-    if (header_digest)
+    if ((digest & ISCSI_DIGEST_HEADER) == ISCSI_DIGEST_HEADER)
     {
         rc = asn_write_value_field(pattern, NULL, 0, "0.pdus.0.have-hdig");
         if (rc != 0)
@@ -198,7 +198,7 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
         }
     }
 
-    if (data_digest)
+    if ((digest & ISCSI_DIGEST_DATA) == ISCSI_DIGEST_DATA)
     {
         rc = asn_write_value_field(pattern, NULL, 0, "0.pdus.0.have-ddig");
         if (rc != 0)
@@ -237,8 +237,7 @@ int
 tapi_iscsi_tcp_recv_pkt(const char *ta_name, int sid, 
                         csap_handle_t csap, int timeout,
                         csap_handle_t forward,
-                        te_bool header_digest,
-                        te_bool data_digest,
+                        iscsi_digest_type digest,
                         uint8_t *buffer, size_t  *length)
 {
     uint8_t bhs_buffer[ISCSI_BHS_LENGTH];
@@ -254,7 +253,7 @@ tapi_iscsi_tcp_recv_pkt(const char *ta_name, int sid,
         return TE_RC(TE_TAPI, rc);
     } 
 
-    len = iscsi_rest_data_len(bhs_buffer, header_digest, data_digest);
+    len = iscsi_rest_data_len(bhs_buffer, digest);
     RING("%s(%s:%d), on TCP connection, calculated rest bytes = %d", 
          __FUNCTION__, ta_name, (int)csap, (int)len);
 
