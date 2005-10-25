@@ -90,6 +90,9 @@
 /** Length of the peer_secret, peer_name, local_secret, local_name */
 #define SECURITY_COMMON_LENGTH 256
 
+/** Length of Open iSCSI record ID */
+#define RECORD_ID_LENGTH 32
+
 /** Maximum number of targets the Initiator can connect to */
 #define MAX_TARGETS_NUMBER 3
 
@@ -122,6 +125,7 @@
 typedef enum {
     UNH,       /**< UNH Initiator (GPL 2) */
     L5,        /**< Level 5 Networks */
+    OPENISCSI, /**< Open iSCSI */
     MICROSOFT,
 } iscsi_initiator_type;
 
@@ -195,6 +199,8 @@ typedef struct iscsi_target_data {
     char              data_sequence_in_order[YES_NO_LENGTH];
     int               error_recovery_level; /**< ErrorRecoveryLevel */
     char              session_type[SESSION_TYPE_LENGTH]; /**< SessionType */
+    char              record_id[RECORD_ID_LENGTH]; 
+                     /**< Open iSCSI db record id */
 
     iscsi_tgt_chap_data_t chap; /**< Serurity related data */
 
@@ -438,7 +444,6 @@ ta_system_ex(const char *cmd, ...)
         }                                                                   \
     } while (0)
 
-/****** L5 Initiator specific stuff  ****/
 typedef struct iscsi_target_param_descr_t
 {
     int      offer;
@@ -449,10 +454,12 @@ typedef struct iscsi_target_param_descr_t
 
 #define ISCSI_END_PARAM_TABLE {0, NULL, FALSE, 0}
 
+/****** L5 Initiator specific stuff  ****/
+
 static void
-iscsi_write_param(FILE *destination, 
-                  iscsi_target_param_descr_t *param,
-                  void *data)
+iscsi_l5_write_param(FILE *destination, 
+                     iscsi_target_param_descr_t *param,
+                     void *data)
 {
     const char *n;
     for (n = param->name; *n != '\0'; n++)
@@ -507,7 +514,7 @@ iscsi_l5_write_target_params(FILE *destination,
     static iscsi_target_param_descr_t authp_##field = \
         {0, name, type, offsetof(iscsi_tgt_chap_data_t, field)}
 #define WRITE_AUTH(field) \
-    iscsi_write_param(destination, &authp_##field, &target->chap)
+    iscsi_l5_write_param(destination, &authp_##field, &target->chap)
 
     AUTH_PARAM(chap, "AuthMethod", TRUE);
     
@@ -515,7 +522,7 @@ iscsi_l5_write_target_params(FILE *destination,
     {
         if ((target->conf_params & p->offer) == p->offer)
         {
-            iscsi_write_param(destination, p, target);
+            iscsi_l5_write_param(destination, p, target);
         }
     }
     WRITE_AUTH(chap);
@@ -600,6 +607,190 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
     fclose(destination);
     return 0;
 }
+
+static int
+iscsi_openiscsi_set_param(const char *recid,
+                          iscsi_target_param_descr_t *param,
+                          void *data)
+{
+    int rc = 0;
+
+    if (param->is_string)
+    {
+        rc = te_shell_cmd_ex("iscsiadm -m node --record=%s "
+                             "--name=%s --value=%s", recid,
+                             param->name,
+                             (char *)data + param->offset);
+    }
+    else
+    {
+        rc = te_shell_cmd_ex("iscsiadm -m node --record=%s "
+                        "--name=%s --value=%d", recid,
+                        param->name,
+                        *(int *)((char *)data + param->offset));
+    }
+    return rc;
+}
+
+static int
+iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
+{
+    iscsi_target_param_descr_t *p;
+#define PARAMETER(field, name, offer, type) \
+    {OFFER_##offer, name, type, offsetof(iscsi_target_data_t, field)}
+    static iscsi_target_param_descr_t params[] =
+        {
+            PARAMETER(target_name, "node.name", 0, TRUE),
+            PARAMETER(target_addr, "node.conn[0].address", 0, TRUE),
+            PARAMETER(target_port, "node.conn[0].port", 0, FALSE),
+            PARAMETER(max_connections, 
+                      "node.session.iscsi.MaxConnections", MAX_CONNECTIONS, FALSE),
+            PARAMETER(initial_r2t, 
+                      "node.session.iscsi.InitialR2T", INITIAL_R2T,  TRUE),
+            PARAMETER(header_digest, 
+                      "node.conn[0].iscsi.HeaderDigest", HEADER_DIGEST,  TRUE),
+            PARAMETER(data_digest, 
+                      "node.conn[0].icsi.DataDigest", DATA_DIGEST,  TRUE),
+            PARAMETER(immediate_data, 
+                      "node.session.iscsi.ImmediateData", IMMEDIATE_DATA,  TRUE),
+            PARAMETER(max_recv_data_segment_length, 
+                      "node.conn[0].iscsi.MaxRecvDataSegmentLength", 
+                      MAX_RECV_DATA_SEGMENT_LENGTH,  
+                      FALSE),
+            PARAMETER(first_burst_length, 
+                      "node.session.iscsi.FirstBurstLength", 
+                      FIRST_BURST_LENGTH,  FALSE),
+            PARAMETER(max_burst_length, 
+                      "node.session.iscsi.MaxBurstLength", 
+                      MAX_BURST_LENGTH,  FALSE),
+            PARAMETER(default_time2wait, 
+                      "node.session.iscsi.DefaultTime2Wait", 
+                      DEFAULT_TIME2WAIT,  FALSE),
+            PARAMETER(default_time2retain, 
+                      "node.session.iscsi.DefaultTime2Retain", 
+                      DEFAULT_TIME2RETAIN,  FALSE),
+            PARAMETER(max_outstanding_r2t, 
+                      "node.session.iscsi.MaxOutstandingr2t", 
+                      MAX_OUTSTANDING_R2T,  FALSE),
+#if 0 /* not implemented in open iscsi */
+            PARAMETER(data_pdu_in_order, 
+                      "node.session.iscsi.DataPDUInOrder", 
+                      DATA_PDU_IN_ORDER,  TRUE),
+            PARAMETER(data_sequence_in_order, 
+                      "node.session.iscsi.DataSequenceInOrder", 
+                      DATA_SEQUENCE_IN_ORDER,  TRUE),
+#endif
+#if 0 /* not implemented in the initiator config tree */
+            PARAMETER(if_marker, 
+                      "node.session.iscsi.IFMarker", 
+                      IF_MARKER,  TRUE),
+            PARAMETER(of_marker, 
+                      "node.session.iscsi.OFMarker", 
+                      OF_MARKER,  TRUE),
+
+#endif
+#if 0 /* not implemented both in the initiator and the config tree */
+            PARAMETER(if_mark_int, 
+                      "node.session.iscsi.IFMarkInt", 
+                      IF_MARKER,  TRUE),
+            PARAMETER(of_mark_int, 
+                      "node.session.iscsi.OFMarkInt", 
+                      OF_MARKER,  TRUE),
+
+#endif
+
+            PARAMETER(error_recovery_level, 
+                      "node.session.iscsi.ERL", 
+                      ERROR_RECOVERY_LEVEL,  FALSE),
+            ISCSI_END_PARAM_TABLE
+        };
+#define AUTH_PARAM(field, name) \
+        {0, "node.session.auth." name, TRUE, offsetof(iscsi_tgt_chap_data_t, field)}
+    static iscsi_target_param_descr_t auth_params[] =
+        {
+            AUTH_PARAM(chap, "authmethod"),
+            AUTH_PARAM(local_name, "username"),
+            AUTH_PARAM(local_secret, "password"),
+            AUTH_PARAM(peer_name, "username_in"),
+            AUTH_PARAM(peer_secret, "password_in"),
+            ISCSI_END_PARAM_TABLE
+        };
+    int rc;
+    
+    for (p = params; p->name != NULL; p++)
+    {
+        if (p->offer == 0 || 
+            ((target->conf_params & p->offer) == p->offer))
+        {
+            if ((rc = iscsi_openiscsi_set_param(target->record_id, 
+                                                p, target)) != 0)
+            {
+                ERROR("Unable to set param %s: %r", p->name, rc);
+                return rc;
+            }
+        }
+    }
+    for (p = auth_params; p->name != NULL; p++)
+    {
+        if ((rc = iscsi_openiscsi_set_param(target->record_id,
+                                            p, &target->chap)) != 0)
+        {
+            ERROR("Unable to set param %s: %r", p->name, rc);
+            return rc;
+        }
+    }
+
+    return 0;
+#undef PARAMETER
+#undef AUTH_PARAM
+#undef WRITE_AUTH
+}
+
+static const char *
+iscsi_openiscsi_find_free_recid (iscsi_initiator_data_t *data)
+{
+    char  buffer[80];
+    FILE *nodelist;
+    int   i;
+
+    static char recid[RECORD_ID_LENGTH];
+
+    
+    nodelist = popen("iscsiadm -m node", "r");
+    if (nodelist == NULL)
+    {
+        ERROR("Unable to get the list of records: %s",
+              strerror(errno));
+        return NULL;
+    }
+
+    while (fgets(buffer, sizeof(buffer), nodelist) != NULL)
+    {
+        *recid = '\0';
+        if (sscanf(buffer, "[%[^]]] %*s %*s", recid) != 1)
+        {
+            ERROR("Spurious record line '%s'", buffer);
+            continue;
+        }
+        for (i = 0; i < MAX_TARGETS_NUMBER; i++)
+        {
+            if (strcmp(data->targets[i].record_id, recid) == 0)
+            {
+                *recid = '\0';
+                break;
+            }
+        }
+        if (*recid != '\0')
+        {
+            pclose(nodelist);
+            return recid;
+        }
+    }
+    pclose(nodelist);
+    ERROR("No available record ids!");
+    return NULL;
+}
+
 
 /** Format of the set command for UNH Initiator */
 static const char *conf_iscsi_unh_set_fmt =
@@ -1053,6 +1244,44 @@ iscsi_initiator_l5_set(const char *value)
 }
 
 static int
+iscsi_initiator_openiscsi_set(const char *value)
+{
+    int                     rc = -1;
+    int                     target_id = 0;
+    int                     cid = 0;
+
+    iscsi_get_cid_and_target(value, &cid, &target_id);
+    if (strncmp(value, "down", strlen("down")) == 0)
+    {
+        if (*init_data->targets[target_id].record_id != '\0')
+        {
+            ERROR("Target %d has no associated record id", target_id);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+        return te_shell_cmd_ex("iscsiadm -m node --record=%s --logout",
+                               init_data->targets[target_id].record_id);
+    }
+    else
+    {
+        if (*init_data->targets[target_id].record_id == '\0')
+        {
+            const char *id = iscsi_openiscsi_find_free_recid(init_data);
+            if (id == NULL)
+                return TE_RC(TE_TA_UNIX, TE_ETOOMANY);
+            strcpy(init_data->targets[target_id].record_id, id);
+        }
+        rc = iscsi_openiscsi_set_target_params(init_data->targets + 
+                                               target_id);
+        if (rc != 0)
+            return rc;
+        return te_shell_cmd_ex("iscsiadm -m node --record=%s --login",
+                               init_data->targets[target_id].record_id);
+    }
+    
+    return 0;
+}
+
+static int
 iscsi_initiator_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -1066,6 +1295,8 @@ iscsi_initiator_set(unsigned int gid, const char *oid,
             return iscsi_initiator_unh_set(value);
         case L5:
             return iscsi_initiator_l5_set(value);
+        case OPENISCSI:
+            return iscsi_initiator_openiscsi_set(value);
         default:
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
@@ -2041,6 +2272,8 @@ iscsi_type_set(unsigned int gid, const char *oid,
         init_data->init_type = L5;
     else if (strcmp(value, "microsoft") == 0)
         init_data->init_type = MICROSOFT;
+    else if (strcmp(value, "open-iscsi") == 0)
+        init_data->init_type = OPENISCSI;
     else
         return TE_RC(TE_TA_UNIX, EINVAL);
 
@@ -2051,7 +2284,8 @@ static int
 iscsi_type_get(unsigned int gid, const char *oid,
                char *value, const char *instance, ...)
 {
-    static char *types[] = {"unh", "l5", "microsoft"};
+    static char *types[] = {"unh", "l5", 
+                            "microsoft", "open-iscsi"};
             
     UNUSED(gid);
     UNUSED(instance);

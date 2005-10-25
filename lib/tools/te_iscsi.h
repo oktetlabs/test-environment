@@ -66,6 +66,7 @@
  * default parameter and MAY NOT offer the parameter
  * during the negotiations.
  */
+#define OFFER_0                                 0
 #define OFFER_MAX_CONNECTIONS                   (1 << 0)
 #define OFFER_INITIAL_R2T                       (1 << 1)
 #define OFFER_HEADER_DIGEST                     (1 << 2)
