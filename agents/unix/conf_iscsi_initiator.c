@@ -2257,8 +2257,9 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
                     init_data->host_bus_adapter);
             if (access(dev_pattern, 0))
             {
-                ERROR("Host bus adapter %d is not an iSCSI device");
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                WARN("Host bus adapter %d is not an iSCSI device");
+                *value = '\0';
+                return 0;
             }
             break;
         default:
