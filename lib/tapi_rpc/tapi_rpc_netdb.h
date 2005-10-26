@@ -43,7 +43,7 @@
 #include "te_rpc_netdb.h"
 
 /**
- * Get network host entry by given name
+ * Get network host entry by given name.
  *
  * @param handle     RPC Server
  * @param name       given name   may be
@@ -51,20 +51,20 @@
  *                   - ipv4 address in standart dot notation
  *                   - ipv6 address
  *
- * @return host entry on success otherwise NULL
+ * @return Host entry on success otherwise NULL
  */
 extern struct hostent *rpc_gethostbyname(rcf_rpc_server *handle,
                                          const char *name);
 
 /**
- * Get network host entry by given address
+ * Get network host entry by given address.
  *
  * @param handle     RPC Server
  * @param addr       given address
  * @param len        length of given address
  * @param type       address type (IF_INET or IF_INET6)
  *
- * @return host entry on success otherwise NULL
+ * @return Host entry on success otherwise NULL
  */
 extern struct hostent *rpc_gethostbyaddr(rcf_rpc_server *handle,
                                          const char *addr,

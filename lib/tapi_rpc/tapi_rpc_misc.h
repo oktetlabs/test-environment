@@ -94,7 +94,7 @@ extern const char *timespec2str(const struct timespec *tv);
  * @param sent              location for number of sent bytes
  * @param ignore_err        Ignore errors while run
  *
- * @return number of sent bytes or -1 in the case of failure if ignore_err
+ * @return Number of sent bytes or -1 in the case of failure if ignore_err
  *         set to FALSE or number of sent bytes or 0 if ignore_err set to
  *         TRUE
  */
@@ -207,8 +207,7 @@ extern int rpc_iomux_echoer(rcf_rpc_server *handle,
  * @param path_name     path name where write received data
  * @param timeout       timeout to finish processing
  *
- * @return    number of processed bytes
- *            or -1 in the case of failure and appropriate errno
+ * @return Number of processed bytes or -1 in the case of failure 
  */
 extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
                                   int sock, const char *path_name,
@@ -225,7 +224,7 @@ extern ssize_t rpc_socket_to_file(rcf_rpc_server *handle,
  * @param offset        file offset
  * @param sock          pointer to a socket descriptor
  *
- * @return file descriptor, which may be used for reading/writing data
+ * @return File descriptor, which may be used for reading/writing data
  */
 extern int rpc_ftp_open(rcf_rpc_server *handle,
                         char *uri, te_bool rdonly, te_bool passive,
@@ -237,8 +236,7 @@ extern int rpc_ftp_open(rcf_rpc_server *handle,
  * @param handle        RPC server
  * @param sock          control socket descriptor
  *
- * @retval 0 success
- * @retval -1 failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_ftp_close(rcf_rpc_server *handle, int sock);
 
@@ -251,7 +249,7 @@ extern int rpc_ftp_close(rcf_rpc_server *handle, int sock);
  *                      while both sending and receiving side buffers
  *                      are overfilled.
  *
- * @return    -1 in the case of failure or 0 on success
+ * @return -1 in the case of failure or 0 on success
  */
 extern int rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock,
                                 uint64_t *sent);
@@ -267,7 +265,7 @@ extern int rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock,
 extern void rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start);
 
 /**
- * Copy the @b src_buf buffer in @b dst_buf located in TA address space
+ * Copy the @b src_buf buffer in @b dst_buf located in TA address space.
  *
  * @param rpcs     RPC server handle
  * @param src_buf  pointer to the source buffer
@@ -295,7 +293,7 @@ extern void rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
 
 /**
  * Copy the @b src_buf buffer located in TA address space to the 
- * @b dst_buf buffer
+ * @b dst_buf buffer.
  *
  * @param rpcs     RPC server handle
  * @param src_buf  source buffer
@@ -308,7 +306,7 @@ extern void rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
 
 
 /**
- * Creates a child process (with a duplicated socket in case of winsock2)
+ * Create a child process (with a duplicated socket in case of winsock2).
  *
  * @param pco_father     RPC server handle
  * @param father_s       socket on @b pco_father

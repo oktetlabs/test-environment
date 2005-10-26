@@ -73,10 +73,8 @@ rpc_fopen(rcf_rpc_server *rpcs,
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-    in.path.path_len = strlen(path) + 1;
-    in.path.path_val = (char *)strdup(path);    /* FIXME */
-    in.mode.mode_len = strlen(mode) + 1;
-    in.mode.mode_val = (char *)strdup(mode);    /* FIXME */
+    in.path = strdup(path == NULL ? "" : path);
+    in.mode = strdup(mode == NULL ? "" : mode);
 
     rcf_rpc_call(rpcs, "fopen", &in, &out);
 
@@ -84,6 +82,9 @@ rpc_fopen(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name,
                  path, mode,
                  (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 
+    free(in.path);
+    free(in.mode);                 
 
     RETVAL_RPC_PTR(fopen, out.mem_ptr);
 }
@@ -143,6 +144,66 @@ rpc_fileno(rcf_rpc_server *rpcs,
                  (unsigned)f, out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(fileno, out.fd);
+}
+
+rpc_file_p
+rpc_popen(rcf_rpc_server *rpcs,
+          const char *cmd, const char *mode)
+{
+    tarpc_popen_in  in;
+    tarpc_popen_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL || cmd == NULL || mode == NULL)
+    {
+        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
+        RETVAL_RPC_PTR(popen, RPC_NULL);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.cmd = strdup(cmd == NULL ? "" : cmd);
+    in.mode = strdup(mode== NULL ? "" : mode);
+
+    rcf_rpc_call(rpcs, "popen", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): popen(%s, %s) -> 0x%x (%s)",
+                 rpcs->ta, rpcs->name,
+                 cmd, mode,
+                 (unsigned)out.mem_ptr, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 
+    free(in.cmd);
+    free(in.mode);                 
+
+    RETVAL_RPC_PTR(popen, out.mem_ptr);
+}
+
+int
+rpc_pclose(rcf_rpc_server *rpcs, rpc_file_p file)
+{
+    tarpc_pclose_in  in;
+    tarpc_pclose_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pclose, EOF);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    in.mem_ptr = (tarpc_ptr)file;
+
+    rcf_rpc_call(rpcs, "pclose", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s): pclose(%x) -> %d (%s)",
+                 rpcs->ta, rpcs->name, file,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(pclose, out.retval);
 }
 
 /** 
@@ -431,5 +492,5 @@ rpc_setenv(rcf_rpc_server *rpcs, const char *name,
                  name, val, overwrite,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
                  
-    RETVAL_INT(fclose, out.retval);
+    RETVAL_INT(setenv, out.retval);
 }

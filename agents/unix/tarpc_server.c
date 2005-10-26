@@ -3101,8 +3101,40 @@ TARPC_FUNC(open, {},
 TARPC_FUNC(fopen, {},
 {
     MAKE_CALL(out->mem_ptr = 
-                  rcf_pch_mem_alloc(func_ptr_ret_ptr(in->path.path_val, 
-                                                     in->mode.mode_val)));
+                  rcf_pch_mem_alloc(func_ptr_ret_ptr(in->path,
+                                                     in->mode)));
+}
+)
+
+/*-------------- fclose() -------------------------------*/
+TARPC_FUNC(fclose, {},
+{
+    MAKE_CALL(out->retval = func_ptr(rcf_pch_mem_get(in->mem_ptr)));
+    rcf_pch_mem_free(in->mem_ptr);
+}
+)
+
+/*-------------- fileno() --------------------------------*/
+TARPC_FUNC(fileno, {},
+{
+    MAKE_CALL(out->fd = func_ptr(rcf_pch_mem_get(in->mem_ptr)));
+}
+)
+
+/*-------------- popen() --------------------------------*/
+TARPC_FUNC(popen, {},
+{
+    MAKE_CALL(out->mem_ptr = 
+                  rcf_pch_mem_alloc(func_ptr_ret_ptr(in->cmd,
+                                                     in->mode)));
+}
+)
+
+/*-------------- pclose() -------------------------------*/
+TARPC_FUNC(pclose, {},
+{
+    MAKE_CALL(out->retval = func_ptr(rcf_pch_mem_get(in->mem_ptr)));
+    rcf_pch_mem_free(in->mem_ptr);
 }
 )
 
@@ -3145,13 +3177,6 @@ TARPC_FUNC(setenv, {},
 {
     MAKE_CALL(out->retval = func_ptr(in->name, in->val, 
                                      (int)(in->overwrite)));
-}
-)
-
-/*-------------- fileno() --------------------------------*/
-TARPC_FUNC(fileno, {}, 
-{ 
-    MAKE_CALL(out->fd = func_ptr(rcf_pch_mem_get(in->mem_ptr)));
 }
 )
 

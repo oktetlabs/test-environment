@@ -51,7 +51,7 @@
  * @param flags     How to open
  * @param mode      The permissions to use in case a new file is created
  * 
- * @return file descriptor on success or -1 on failure
+ * @return File descriptor on success or -1 on failure
  */
 extern int rpc_open(rcf_rpc_server         *rpcs,
                     const char             *path,
@@ -59,7 +59,7 @@ extern int rpc_open(rcf_rpc_server         *rpcs,
                     rpc_file_mode_flags     mode);
 
 /**
- *  Close file descriptor on RPC server side
+ *  Close file descriptor on RPC server side.
  *
  *  @param rpcs     RPC server handle
  *  @param fd       file descriptor to close
@@ -80,15 +80,15 @@ extern int rpc_close(rcf_rpc_server *rpcs,
  *
  * @return  Number of bytes actually written or negative value on failure.
  *
- * \retval -2  Failed to reposition the file offset.
- * \retval -1  Failed to write the data.
- * \retval -3  Other errors.
+ * @retval -2  Failed to reposition the file offset.
+ * @retval -1  Failed to write the data.
+ * @retval -3  Other errors.
  */
 extern ssize_t rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
                                    size_t buflen, off_t offset);
 
 /**
- * Duplicate a file descriptor on RPC server side
+ * Duplicate a file descriptor on RPC server side.
  *
  * @note See @b dup manual page for more information
  *
@@ -100,7 +100,7 @@ extern ssize_t rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
 extern int rpc_dup(rcf_rpc_server *rpcs,
                    int oldfd);
 /**
- * Duplicate an open file descriptor on RPC server side
+ * Duplicate an open file descriptor on RPC server side.
  * 
  * @note See @b dup2 manual page for more information
  *
@@ -115,7 +115,7 @@ extern int rpc_dup2(rcf_rpc_server *rpcs,
 
 /**
  * Write up to @b count bytes from buffer @b buf to file with descriptor 
- * @b fd
+ * @b fd.
  * @note See write(2) manual page for more information
  *
  * @param rpcs     RPC server handle
@@ -144,7 +144,7 @@ extern int rpc_write(rcf_rpc_server *rpcs,
  * @param count    number of bytes to read
  * @param rbuflen  real size of the buffer to be copied by RPC
  *
- * @return  number of bytes read, otherwise -1 on error.
+ * @return  Number of bytes read, otherwise -1 on error.
  */
 extern int rpc_read_gen(rcf_rpc_server *rpcs,
                         int fd, void *buf, size_t count,
@@ -192,8 +192,7 @@ typedef struct rpc_iovec {
  * @param v2        the second vector
  * @param v2cnt     number of buffers in vector @b v1
  *
- * @retval 0        vectors are equal
- * @retval -1       vectors are not equal
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_iovec_cmp(size_t v1len, const struct rpc_iovec *v1,
                          size_t v1cnt,
@@ -219,7 +218,7 @@ extern int rpc_writev(rcf_rpc_server *rpcs,
 
 /**
  * Attempt to read data from specified file with descriptor @b fd
- * into a vector of buffer @b iov
+ * into a vector of buffer @b iov.
  *
  * @param rpcs     RPC server handle
  * @param fd       file descriptorfrom which data is read
@@ -237,7 +236,7 @@ extern int rpc_readv_gen(rcf_rpc_server *rpcs,
 
 /**
  * Attempt to read data from specified file with descriptor @b fd 
- * into a vector of buffer @b iov
+ * into a vector of buffer @b iov.
  *
  * @param rpcs     RPC server handle
  * @param fd       file descriptorfrom which data is read
@@ -257,17 +256,17 @@ rpc_readv(rcf_rpc_server *rpcs,
 }
 
 /**
- * Allocate a set of file descriptors on RPC server side
+ * Allocate a set of file descriptors on RPC server side.
  *
  * @param rpcs   RPC server handle
  *
- * @return set of descriptors,otherwise @b NULL is returned on error
+ * @return Set of descriptors,otherwise @b NULL is returned on error
  */
 extern rpc_fd_set_p rpc_fd_set_new(rcf_rpc_server *rpcs);
 
 /**
  * Destroy a specified set of file descriptors allocated by 
- * @b rpc_fd_set_new
+ * @b rpc_fd_set_new.
  *
  * @param rpcs     RPC server handle
  * @param set      set of descriptors to be deleted
@@ -286,7 +285,7 @@ extern void rpc_do_fd_zero(rcf_rpc_server *rpcs,
 
 /**
  * Add a specified descriptor @b fd to a given set of descriptors @b set
- * on RPC server side
+ * on RPC server side.
  *
  * @param rpcs  RPC server handle
  * @param fd    descriptor to add to the set
@@ -296,7 +295,7 @@ extern void rpc_do_fd_set(rcf_rpc_server *rpcs,
                           int fd, rpc_fd_set_p set);
 
 /**
- * Remove a specified descriptor from the set of descriptors
+ * Remove a specified descriptor from the set of descriptors.
  *
  * @param rpcs   RPC server handle
  * @param fd     descriptor to remove
@@ -307,13 +306,13 @@ extern void rpc_do_fd_clr(rcf_rpc_server *rpcs,
 
 /**
  * Test existance of specified descriptor @b fd in a given set of 
- * descriptor @b set
+ * descriptor @b set.
  *
  * @param rpcs    RPC server handle
  * @param fd      descriptor to test
  * @param set     set of descriptor
  *
- * @return value other than zero, other return 0 when failed. 
+ * @return Value other than zero, other return 0 when failed. 
  */
 extern int  rpc_do_fd_isset(rcf_rpc_server *rpcs,
                             int fd, rpc_fd_set_p set);
@@ -410,6 +409,12 @@ struct rpc_pollfd {
  *                  at least one of the specified condition occures.
  *                  A negative value means an infinite timeout.
  * @param rnfds    real size of the array of @b rpc_pollfd structures
+ *
+ * @return  A positive number is returned upon successful completion. 
+ *         That's the number of @b rpc_pollfd structure that have non-zero 
+ *         revents fields. A value of zero indicates that the timed out 
+ *         and no file descriptors have been selcted. -1 is returned 
+ *         on error.
  */
 extern int rpc_poll_gen(rcf_rpc_server *rpcs,
                         struct rpc_pollfd *ufds, unsigned int nfds,
@@ -456,7 +461,7 @@ rpc_poll(rcf_rpc_server *rpcs,
  * @param offset        pointer to input file pointer position
  * @param count         number of bytes to copy between file descriptors
  *
- * @return    number of bytes written to out_fd
+ * @return    Number of bytes written to out_fd
  *            or -1 in the case of failure and appropriate errno
  */
 extern ssize_t rpc_sendfile(rcf_rpc_server *rpcs,
@@ -476,7 +481,7 @@ extern ssize_t rpc_sendfile(rcf_rpc_server *rpcs,
  *                 (See te_rpc_sys_socket.h for availlable request codes)
  * @param ...      optional parameter for request specific information
  *
- * @return zero on success. Some ioctls use the returned value as an output
+ * @return Zero on success. Some ioctls use the returned value as an output
  *         parameter and return a non negative value on success.
  *         -1 is returned on error.
  * @note See @b ioctl manual page for more information
@@ -519,7 +524,7 @@ extern int rpc_pipe(rcf_rpc_server *rpcs,
  * Create a unnamed pair of connected socket on RPC server side.
  * the sockets belong to specified domain @b domain, and are of specified
  * type @b type. The descriptor used in referencing the new sockets are
- * returned in sv[0] and sv[1]
+ * returned in sv[0] and sv[1].
  *
  * @param rpcs     RPC server handle
  * @param domain   communication domain

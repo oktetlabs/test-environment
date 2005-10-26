@@ -43,13 +43,13 @@
 
 /**
  * Establish an action to be taken when a given signal @b signum occurs
- * on RPC server
+ * on RPC server.
  *
  * @param rpcs  RPC server handle
  * @param signum signal whose behavior is controlled 
  * @param handler signal handler
  *
- * return pointer to the signal handler function.
+ * return Pointer to the signal handler function.
  */
 extern char *rpc_signal(rcf_rpc_server *rpcs,
                         rpc_signum signum, const char *handler);
@@ -62,8 +62,7 @@ extern char *rpc_signal(rcf_rpc_server *rpcs,
  * @param pid  process or process group pid.
  * @param signum number of signal to be sent.
  *
- * @retval  0 on success 
- *         -1 on failure   
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_kill(rcf_rpc_server *rpcs,
                     tarpc_pid_t pid, rpc_signum signum);
@@ -102,7 +101,7 @@ typedef struct rpc_struct_sigaction {
 
 /**
  * Allow the calling process to examin or specify the action to be 
- * associated with a given signal
+ * associated with a given signal.
  *
  * @param rpcs    RPC server handle
  * @param signum  signal number
@@ -112,8 +111,7 @@ typedef struct rpc_struct_sigaction {
  * @param oldact  pointer to previously associated with the signal action 
  *                or NULL
  *
- * @retval 0 on sucess
- *        -1 on failure 
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_sigaction(rcf_rpc_server *rpcs,
                          rpc_signum signum,
@@ -163,8 +161,7 @@ extern rpc_sigset_p rpc_sigreceived(rcf_rpc_server *rpcs);
  * @param set    pointer to a new set of signals
  * @param oldset pointer to the old set of signals or NUL
  *
- * @retval       0 on success
- *              -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_sigprocmask(rcf_rpc_server *rpcs,
                            rpc_sighow how, const rpc_sigset_p set,
@@ -172,26 +169,24 @@ extern int rpc_sigprocmask(rcf_rpc_server *rpcs,
 
 /**
  * Initialize the signal set pointed by @b set, so that all signals are 
- * excluded
+ * excluded.
  *
  * @param rpcs   RPC server handle
  * @param set    pointer to signal set.
  *
- * @retval  0 on success
- *         -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_sigemptyset(rcf_rpc_server *rpcs,
                            rpc_sigset_p set);
 
 /**
  * Initialize the signal set pointed by @b set, so that all signals are 
- * included
+ * included.
  *
  * @param rpcs   RPC server handle.
  * @param set    pointer to signal set.
  *
- * @retval  0 on success
- *         -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_sigfillset(rcf_rpc_server *rpcs,
                           rpc_sigset_p set);
@@ -203,8 +198,7 @@ extern int rpc_sigfillset(rcf_rpc_server *rpcs,
  * @param set     set to which signal is added.
  * @param signum  number of signal to be added.
  *
- * @retval  0 on success
- *         -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_sigaddset(rcf_rpc_server *rpcs,
                          rpc_sigset_p set, rpc_signum signum);
@@ -216,8 +210,7 @@ extern int rpc_sigaddset(rcf_rpc_server *rpcs,
  * @param set     set from which signal is deleted.
  * @param signum  number of signal to be deleted.
  *
- * @retval  0 on success
- *         -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_sigdelset(rcf_rpc_server *rpcs,
                          rpc_sigset_p set, rpc_signum signum);
@@ -230,7 +223,7 @@ extern int rpc_sigdelset(rcf_rpc_server *rpcs,
  * @param set    signal set
  * @param signum signal number
  *
- * @retval  1 signal is a member of the set
+ * @return  1 signal is a member of the set
  *          0 signal is not a member of the set
  *         -1 on failure
  */
@@ -244,8 +237,7 @@ extern int rpc_sigismember(rcf_rpc_server *rpcs,
  * @param rpcs  RPC server handle
  * @param set   pointer to the set of pending signals
  *
- * @retval  0 on success
- *         -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_p set);
 
@@ -257,7 +249,7 @@ extern int rpc_sigpending(rcf_rpc_server *rpcs, rpc_sigset_p set);
  * @param rpcs  RPC server handle
  * @param set   pointer to new set replacing the current one.
  *
- * @retval  alwyas -1 with errno normally set to RPC_EINTR (to be fixed)
+ * @return  Always -1 with errno normally set to RPC_EINTR (to be fixed)
  */
 extern int rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_p set);
 
@@ -267,8 +259,8 @@ extern int rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_p set);
  * @param rpcs  RPC server handle
  * @param pid   PID of the child to be killed
  *
- * @retval 0 child was exited or killed successfully
- * @retval -1 there is no such child.
+ * @return 0 if child was exited or killed successfully or
+ *         -1 there is no such child.
  */
 extern int rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid);
 

@@ -2390,22 +2390,23 @@ TARPC_FUNC(open, {},
 /*-------------- fopen() --------------------------------*/
 TARPC_FUNC(fopen, {},
 {
-    MAKE_CALL(out->mem_ptr = (int)fopen(in->path.path_val,
-                                        in->mode.mode_val));
+    MAKE_CALL(out->mem_ptr = rcf_pch_mem_alloc(fopen(in->path,
+                                                     in->mode)));
 }
 )
 
 /*-------------- fclose() -------------------------------*/
 TARPC_FUNC(fclose, {},
 {
-    MAKE_CALL(out->retval = fclose((FILE *)in->mem_ptr));
+    MAKE_CALL(out->retval = fclose(rcf_pch_mem_get(in->mem_ptr)));
+    rcf_pch_mem_free(in->mem_ptr);
 }
 )
 
 /*-------------- fileno() --------------------------------*/
 TARPC_FUNC(fileno, {},
 {
-    MAKE_CALL(out->fd = fileno((FILE *)in->mem_ptr));
+    MAKE_CALL(out->fd = fileno(rcf_pch_mem_get(in->mem_ptr)));
 }
 )
 

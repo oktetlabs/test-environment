@@ -43,10 +43,10 @@
 /**
  * Convert network interface name to index.
  *
- * @param handle    RPC server handle.
- * @param ifname    interface name.
+ * @param handle    RPC server handle
+ * @param ifname    interface name
  *
- * @return interface index otherwise zero. 
+ * @return Interface index otherwise zero. 
  */
 extern unsigned int rpc_if_nametoindex(rcf_rpc_server *handle,
                                        const char *ifname);
@@ -54,12 +54,12 @@ extern unsigned int rpc_if_nametoindex(rcf_rpc_server *handle,
 /**
  * Map network interface index to its corresponding name.
  *
- * @param handle    RPC server handle.
- * @param ifindex   index of the interface.
+ * @param handle    RPC server handle
+ * @param ifindex   index of the interface
  * @param ifname    pointer to the network interface name with 
                     at least @c IF_NAMESIZE bytes size.
  *
- * @retval pointer to the interface name otherwise NULL
+ * @return Pointer to the interface name otherwise NULL
  *
  */
 extern char *rpc_if_indextoname(rcf_rpc_server *handle,
@@ -75,8 +75,8 @@ extern char *rpc_if_indextoname(rcf_rpc_server *handle,
  *
  * @param  handle RPC server handle
  *
- * @return array of all existing interfaces, upon successful completion,
- *         otherwise NULL is returned.
+ * @return Array of all existing interfaces, upon successful completion,
+ *         otherwise NULL is returned
  */
 extern struct if_nameindex *rpc_if_nameindex(rcf_rpc_server *handle);
 

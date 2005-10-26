@@ -48,6 +48,8 @@
  * Get socket domain native for the address family.
  *
  * @param af        An address family
+ *
+ * @return Domain
  */
 static inline int
 socket_domain_by_af(int af)
@@ -64,6 +66,8 @@ socket_domain_by_af(int af)
  * Get RPC socket domain native for the address family.
  *
  * @param af        An address family
+ *
+ * @return RPC domain
  */
 static inline rpc_socket_domain
 rpc_socket_domain_by_af(int af)
@@ -75,6 +79,8 @@ rpc_socket_domain_by_af(int af)
  * Get RPC socket domain native for the address.
  *
  * @param addr      An address
+ *
+ * @return RPC domain
  */
 static inline rpc_socket_domain
 rpc_socket_domain_by_addr(const struct sockaddr *addr)
@@ -98,8 +104,8 @@ rpc_socket_domain_by_addr(const struct sockaddr *addr)
  *                  protocol number for the socket domain and type 
  *                  specified.
  * 
- * @return the socket descriptor to be used. Otherwise -1 is returned when 
- *         error occured.
+ * @return The socket descriptor to be used. Otherwise -1 is returned when 
+ *         error occured
  */
 
 extern int rpc_socket(rcf_rpc_server *rpcs,
@@ -119,7 +125,7 @@ extern int rpc_socket(rcf_rpc_server *rpcs,
  *              - RPC_SHUT_WR   sending not allowed anymore
  *              - RPC_SHUT_RDWR receiving and sending not allowed anymore
  * 
- * @retval  0 on success
+ * @return  0 on success
  *         -1 on error and error code is set appropriately to @b RPC_XXX 
  *         where @b XXX - standard errno for @b shutdown() 
  * @note For more information about @b shutdown() see its corresponding 
@@ -129,7 +135,7 @@ extern int rpc_shutdown(rcf_rpc_server *rpcs,
                         int s, rpc_shut_how how);
 
 /**
- * Transmit a message to socket descriptor s on RPC server side
+ * Transmit a message to socket descriptor s on RPC server side.
  *
  * @param rpcs  RPC server handle
  * @param s     socket descriptor
@@ -150,7 +156,7 @@ extern ssize_t rpc_send(rcf_rpc_server *rpcs,
 
 /**
  * Transmit a message to descriptor @b s.
- * This operation takes place on RPC server side
+ * This operation takes place on RPC server side.
  *
  * @param rpcs  RPC server handle
  * @param s     socket descriptor
@@ -199,7 +205,7 @@ extern ssize_t rpc_recv_gen(rcf_rpc_server *rpcs,
 
 /**
  * Receive messages and store them in the buffer @b buf of length @b len.
- * This operation takes place on RPC server side
+ * This operation takes place on RPC server side.
  *
  * @param rpcs  RPC server handle
  * @param s     socket descriptor
@@ -330,7 +336,7 @@ typedef struct rpc_msghdr {
  *                   - @b RPC_MSG_BCAST datagram was received as a 
  *                        link-layer broadcast.
  *
- * @return length of message, otherwise -1 is returned when an error 
+ * @return Length of message, otherwise -1 is returned when an error 
  *         occured 
  */
 extern ssize_t rpc_sendmsg(rcf_rpc_server *rpcs,
@@ -351,7 +357,7 @@ extern ssize_t rpc_sendmsg(rcf_rpc_server *rpcs,
  *                   Other supported flags can be found in 
  *                   te_rpc_sys_socket.h
  *
- * @return length of received data, otherwise -1 when an error occured.
+ * @return Length of received data, otherwise -1 when an error occured.
  */
 extern ssize_t rpc_recvmsg(rcf_rpc_server *rpcs,
                            int s, struct rpc_msghdr *msg,
@@ -369,8 +375,7 @@ extern ssize_t rpc_recvmsg(rcf_rpc_server *rpcs,
  * @param my_addr   pointer to a @b sockaddr structure
  * @param addrlen   size of @b my_addr
  *
- * @retval 0 on success
- *        -1 on failure 
+ * @return 0 on success or -1 on failure 
  * @note See @b bind manual page for more infrormation.
  */
 extern int rpc_bind(rcf_rpc_server *rpcs,
@@ -386,8 +391,7 @@ extern int rpc_bind(rcf_rpc_server *rpcs,
  * @param addr      peer address to which the socket has to be connected
  * @param addrlen   size of peer address @b addr
  *
- * @retval   0 on success
- *         -1 on failure
+ * @return   0 on success or -1 on failure
  * @note   See @b connect manual page for more information
  */
 extern int rpc_connect(rcf_rpc_server *rpcs,
@@ -402,8 +406,7 @@ extern int rpc_connect(rcf_rpc_server *rpcs,
  * @param s           listening socket descriptor
  * @param backlog     maximum number of connections waiting to be accepted
  *
- * @retval 0 on success
- *        -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_listen(rcf_rpc_server *rpcs,
                       int s, int backlog);
@@ -427,8 +430,7 @@ extern int rpc_listen(rcf_rpc_server *rpcs,
  *                 in @b addr address 
  * @param raddrlen real size of @b addr
  *
- * @retval 0 on success
- *        -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_accept_gen(rcf_rpc_server *rpcs,
                           int s, struct sockaddr *addr,
@@ -452,8 +454,7 @@ extern int rpc_accept_gen(rcf_rpc_server *rpcs,
  *                 contain the actual size of the returned in @b addr 
  *                 address 
  *
- * @retval 0 on success
- *        -1 on failure
+ * @return 0 on success or -1 on failure
  */
 static inline int
 rpc_accept(rcf_rpc_server *rpcs,
@@ -485,8 +486,7 @@ rpc_accept(rcf_rpc_server *rpcs,
  *                 On return contain the actual size of the buffer.
  * @param roptlen  maximal length of the buffer or zero 
  *
- * @retval  0 on success
- *         -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                               int s, rpc_socklevel level,
@@ -517,8 +517,7 @@ extern int rpc_getsockopt_gen(rcf_rpc_server *rpcs,
  *                 On return contain the actual size of the buffer.
  * @param roptlen  maximal length of the buffer or zero 
  *
- * @retval  0 on success
- *         -1 on failure
+ * @return 0 on success or -1 on failure
  */
 static inline int
 rpc_getsockopt(rcf_rpc_server *rpcs,
@@ -548,8 +547,7 @@ rpc_getsockopt(rcf_rpc_server *rpcs,
  * @param optlen   initially point to the length of supplied buffer. On
  *                 contain the actual size of the @b optval buffer
  *
- * @retval   0 on success
- *          -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_setsockopt(rcf_rpc_server *rpcs,
                           int s, rpc_socklevel level, rpc_sockopt optname,
@@ -623,7 +621,7 @@ extern int rpc_getpeername_gen(rcf_rpc_server *rpcs,
 
 
 /**
- * Query the peer name of a specified socket
+ * Query the peer name of a specified socket.
  * 
  * @param  rpcs     RPC server handle
  * @param  s        socket descriptor

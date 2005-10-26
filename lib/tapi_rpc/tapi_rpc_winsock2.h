@@ -91,7 +91,7 @@ typedef struct _rpc_sys_info {
 } rpc_sys_info;
 
 /** 
- * See @b WSASocket() 
+ * @b WSASocket() remote call.
  *
  * @param rpcs      RPC server handle
  * @param domain    communication domain
@@ -102,7 +102,7 @@ typedef struct _rpc_sys_info {
  * @param info_len  length of @b info
  * @param overlapped support of overlapped I/O
  *
- * @return socket descriptor upon successful completion, otherwise -1
+ * @return Socket descriptor upon successful completion, otherwise -1
  *         is returned.
  */
 extern int rpc_wsa_socket(rcf_rpc_server *rpcs,
@@ -112,8 +112,9 @@ extern int rpc_wsa_socket(rcf_rpc_server *rpcs,
                           rpc_open_sock_flags flags);
 
 /**
- * WSADuplicateSocket(). Protocol info is copied to the Test Engine
- * and then back  to the TA (in rpc_wsa_socket() function) as is.
+ * @b WSADuplicateSocket() remote call. Protocol info is copied to the 
+ * Test Engine and then back  to the TA (in rpc_wsa_socket() function) 
+ * as is.
  *
  * @param rpcs          RPC server
  * @param s             old socket
@@ -122,7 +123,7 @@ extern int rpc_wsa_socket(rcf_rpc_server *rpcs,
  * @param info_len      buffer length location (IN)/protocol info length
  *                      location (OUT)
  *
- * @return value returned by WSADuplicateSocket() function
+ * @return Value returned by WSADuplicateSocket() function
  */
 extern int rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
                                     int s, int pid,
@@ -142,7 +143,7 @@ extern int rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
  *  @param bytes_sent pointer a the number of bytes sent 
  *  @param overlapped pointer to @b overlapped object
  *
- *  @return value returned by @b ConnectEx()
+ *  @return Value returned by @b ConnectEx()
  */
 extern int rpc_connect_ex(rcf_rpc_server *rpcs,
                           int s, const struct sockaddr *addr,
@@ -159,7 +160,7 @@ extern int rpc_connect_ex(rcf_rpc_server *rpcs,
  * @param overlapped  pointer to a rpc_overlapped structure
  * @param flags       customize behavior of operation
  *
- * @return value returned by @b DisconnectEx()
+ * @return Value returned by @b DisconnectEx()
  */
 extern int rpc_disconnect_ex(rcf_rpc_server *rpcs, int s,
                              rpc_overlapped overlapped, int flags);
@@ -181,7 +182,7 @@ typedef struct accept_cond {
 #define RCF_RPC_MAX_ACCEPT_CONDS    4
 
 /**
- * WSAAccept() with condition function support. List of conditions
+ * @b WSAAccept() with condition function support. List of conditions
  * describes the condition function behavior.
  *
  * @param rpcs     RPC server handle (IN)
@@ -194,8 +195,8 @@ typedef struct accept_cond {
  *                 caller information passed in as parameters.
  * @param cond_num number of conditions
  *
- * @return new connected socket upon successful completion, otherwise
- *         -1 is returned.
+ * @return New connected socket upon successful completion, otherwise
+ *         -1 is returned
  *                
  */
 extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
@@ -203,7 +204,7 @@ extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
                           socklen_t *addrlen, socklen_t raddrlen,
                           accept_cond *cond, int cond_num);
 /**
- * Client implementation of AcceptEx()-GetAcceptExSockAddr() call.
+ * Client implementation of @b AcceptEx()-@b GetAcceptExSockAddr() call.
  *
  * @param rpcs              RPC server
  * @param s                 descriptor of socket that has already been
@@ -215,14 +216,14 @@ extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
  * @param overlapped        WSAOVERLAPPED structure
  * @param bytes_received    number of received data bytes
  *
- * @return value returned by AcceptEx() function.
+ * @return Value returned by AcceptEx() function.
  */
 extern int rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
                          size_t len, rpc_overlapped overlapped,
                          size_t *bytes_received);
 
 /**
- * Client implementation of GetAcceptExSockAddr() call.
+ * @b GetAcceptExSockAddr() remote call.
  *
  * @param rpcs          RPC server
  * @param s             descriptor of socket that was passed
@@ -234,8 +235,6 @@ extern int rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
  * @param len           buffer size wich was passed to rpc_accept_ex()
  * @param laddr         local address returned by GetAcceptExSockAddr()
  * @param raddr         remote address returned by GetAcceptExSockAddr()
- *
- * @return N/A
  */
 extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
                                 int s, void *buf, size_t buflen, size_t len,
@@ -261,7 +260,7 @@ extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
  * @param tail_len     size of buffer @b tail
  * @param flags      call flags (See @b Transmit file for more information)
  *
- * @return value returned by @b TransmitFile upon successful completion,
+ * @return Value returned by @b TransmitFile upon successful completion,
  *         otherwise -1 is returned.
  */
 extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, rpc_handle file,
@@ -305,7 +304,7 @@ extern int rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s,
                                    ssize_t tail_len, ssize_t flags);
 
 /**
- * Windows CreateFile().
+ * @b CreateFile() remote call.
  *
  * @param rpcs                  RPC server handle.
  * @param name                  Null-terminated string - the name
@@ -330,17 +329,17 @@ extern rpc_handle rpc_create_file(rcf_rpc_server *rpcs, char *name,
                       rpc_handle template_file);
 
 /**
- * Windows CloseHandle().
+ * @b CloseHandle() remote call.
  *
  * @param rpcs           RPC server handle.
  * @param handle         Handle to close.
  *
- * @return   Nonzero on success, zero otherwise.
+ * @return   Non-zero on success, zero otherwise.
  */
 extern int rpc_close_handle(rcf_rpc_server *rpcs, rpc_handle handle);
 
 /**
- * Windows HasOverlappedIoCompleted().
+ * @b HasOverlappedIoCompleted() remote call.
  *
  * @param rpcs        RPC server handle
  * @param overlapped  overlapped structure
@@ -351,7 +350,7 @@ extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
                                            rpc_overlapped overlapped);
 
 /**
- * Windows CreateIoCompletionPort().
+ * @b CreateIoCompletionPort() remote call.
  *
  * @param rpcs                          RPC server handle
  * @param file_handle                   Handle of a file/socket
@@ -373,7 +372,7 @@ extern rpc_handle rpc_create_io_completion_port(rcf_rpc_server *rpcs,
                               unsigned int number_of_concurrent_threads);
 
 /**
- * Windows GetQueuedCompletionStatus().
+ * @b GetQueuedCompletionStatus() remote call.
  *
  * @param rpcs              RPC server handle.
  * @param completion_port   Handle of the existing completion port.
@@ -396,7 +395,7 @@ extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
                                  unsigned int milliseconds);
 
 /**
- * Windows PostQueuedCompletionStatus().
+ * @b PostQueuedCompletionStatus() remote call.
  *
  * @param rpcs              RPC server handle.
  * @param completion_port   Handle of the existing completion port.
@@ -413,7 +412,7 @@ extern te_bool rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
                                  rpc_overlapped overlapped);
 
 /**
- * Windows GetCurrentProcessId()
+ * @b GetCurrentProcessId() remote call.
  *
  * @param rpcs   RPC server handle
  *
@@ -431,7 +430,7 @@ extern int rpc_get_current_process_id(rcf_rpc_server *rpcs);
 extern void rpc_get_sys_info(rcf_rpc_server *rpcs, rpc_sys_info *sys_info);
 
 /** 
- * See @b WSARecvEx() 
+ * @b @b WSARecvEx() remote call.
  *
  * @param rpcs    RPC server handle
  * @param s       socket descriptor
@@ -440,7 +439,7 @@ extern void rpc_get_sys_info(rcf_rpc_server *rpcs, rpc_sys_info *sys_info);
  * @param flags   specify whether data is fully or partially received
  * @param rbuflen real size of buffer @b buf
  *
- * @return number of bytes received upon successful completion. If the 
+ * @return Number of bytes received upon successful completion. If the 
  *         connection has been close it returned zero.
  *         Otherwise -1 is returned.
  */
@@ -450,7 +449,7 @@ extern ssize_t rpc_wsa_recv_ex(rcf_rpc_server *rpcs,
                                size_t rbuflen);
 
 /**
- * Create a new event object
+ * Create a new event object.
  *
  * @param rpcs    RPC server handle
  *
@@ -460,7 +459,7 @@ extern ssize_t rpc_wsa_recv_ex(rcf_rpc_server *rpcs,
 extern rpc_wsaevent rpc_create_event(rcf_rpc_server *rpcs);
 
 /**
- * Close an open event object handle
+ * Close an open event object handle.
  *
  * @param rpcs    RPC server handle
  * @param hevent  handle of the event to be close
@@ -471,12 +470,12 @@ extern rpc_wsaevent rpc_create_event(rcf_rpc_server *rpcs);
 extern int rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
 
 /** 
- * Reset the state of the specified event object to nonsignaled.
+ * Reset the state of the specified event object to non-signaled.
  *
  * @param rpcs   RPC server handle
  * @param hevent event object handle
  *
- * @return value returned by @b WSAResetEvent upon successful completion.
+ * @return Value returned by @b WSAResetEvent() upon successful completion.
  *         Otherwise -1 is returned.
  */
 extern int rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
@@ -487,7 +486,7 @@ extern int rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
  * @param rpcs    RPC server handle
  * @param  hevent  event object handle
  *
- * @return  value returned by @b WSASetEvent upon successful completion.
+ * @return Value returned by @b WSASetEvent upon successful completion.
  *         Otherwise -1 is returned.
  */
 extern int rpc_set_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
@@ -506,8 +505,7 @@ extern int rpc_set_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
  *                 specified address (OUT)
  * @param addrstr_len length of buffer @b addrstr
  *
- * @retval  0 on success
- * @retval -1 on error
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_address_to_string(rcf_rpc_server *rpcs,
                                      struct sockaddr *addr,
@@ -515,9 +513,8 @@ extern int rpc_wsa_address_to_string(rcf_rpc_server *rpcs,
                                      int info_len, char *addrstr,
                                      ssize_t *addrstr_len);
      
-/* WSAStringToAddress */
 /**
- * Convert a numeric string to a @b sockaddr structure
+ * Convert a numeric string to a @b sockaddr structure.
  *
  * @param rpcs       RPC server handle
  * @param addrstr    numeric address string
@@ -529,8 +526,7 @@ extern int rpc_wsa_address_to_string(rcf_rpc_server *rpcs,
  *                   converted address.
  * @param addrlen    points to the length of @b addr
  *
- * @retval  0 on success
- * @retval -1 on error
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
                                      rpc_socket_domain address_family,
@@ -540,13 +536,12 @@ extern int rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
 
 
 /**
- * Cancel an incomplete asynchronous task
+ * Cancel an incomplete asynchronous task.
  *
  * @param rpcs   RPC server handle
  * @param async_task_handle task to be canceled
  *
- * @retval  0 upon successful completion
- * @retval -1 on failure 
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_cancel_async_request(rcf_rpc_server *rpcs,
                                         rpc_handle async_task_handle);
@@ -561,14 +556,13 @@ extern int rpc_wsa_cancel_async_request(rcf_rpc_server *rpcs,
  * @param wsabuf     pointer to a WSABUF structure
  * @param wsabuf_buf pointer to the buffer whose length is @b len
  *
- * @retval  0 upon successful completion
- * @retval -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
                             rpc_ptr *wsabuf, rpc_ptr *wsabuf_buf);
 
 /**
- * Free a previously allocated by @b rpc_alloc_wsabuf buffer
+ * Free a previously allocated by @b rpc_alloc_wsabuf buffer.
  *
  * @param rpcs     RPC server handle
  * @param wsabuf   pointer to the buffer to be freed
@@ -576,7 +570,7 @@ extern int rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
 extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
 
 /**
- * Windows WSAConnect().
+ * @b WSAConnect() remote call.
  *
  * @param rpcs           RPC server handle
  * @param s              Descriptor identifying an unconnected socket
@@ -602,7 +596,7 @@ extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            rpc_qos *sqos);
 
 /**
- * Windows WSAIoctl().
+ * @b WSAIoctl() remote call.
  *
  * @param rpcs            RPC server handle
  * @param s               Descriptor identifying a socket
@@ -655,7 +649,7 @@ extern int rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
 
 /**
  * Asynchronously retrieve host information by given address.
- *  See @b WSAAsyncGetHostByAddr 
+ * See @b WSAAsyncGetHostByAddr().
  *
  *  @param rpcs    RPC server handle 
  *  @param hwnd    handle to a window that receive a message when the
@@ -669,7 +663,7 @@ extern int rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
  *                 Contain the host entry data
  *  @param buflen  size of the buffer @b buf, in bytes 
  *
- *  @return  value returned by  @b WSAAsyncGetHostByAddr 
+ *  @return  Value returned by  @b WSAAsyncGetHostByAddr()
  */
 extern rpc_handle rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs, 
                                                  rpc_hwnd hwnd,
@@ -682,7 +676,7 @@ extern rpc_handle rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs,
 
 /**
  * Asynchronously retrieve host information by given name.
- * See @b WSAAsyncGetHostByName 
+ * See @b WSAAsyncGetHostByName().
  *
  * @param rpcs    RPC server handle 
  * @param hwnd    handle to a window that receive a message when the
@@ -694,7 +688,7 @@ extern rpc_handle rpc_wsa_async_get_host_by_addr(rcf_rpc_server *rpcs,
  *                Contain the host entry data
  * @param buflen  size of the buffer @b buf, in bytes 
  *
- * @return  value returned by  @b WSAAsyncGetHostByName 
+ * @return Value returned by  @b WSAAsyncGetHostByName()
  */
 extern rpc_handle rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs, 
                                                  rpc_hwnd hwnd,
@@ -704,7 +698,7 @@ extern rpc_handle rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs,
                                                  ssize_t buflen);
 /** 
  * Asynchronously retrieve protocol information by given name.
- * See @b WSAAsyncGetProtoByName 
+ * See @b WSAAsyncGetProtoByName().
  *
  * @param rpcs    RPC server handle 
  * @param hwnd    handle to a window that receive a message when the
@@ -716,7 +710,7 @@ extern rpc_handle rpc_wsa_async_get_host_by_name(rcf_rpc_server *rpcs,
  *                 Contain the protocol entry data
  * @param buflen  size of the buffer @b buf, in bytes 
  *
- * @return  value returned by  @b WSAAsyncGetProtoByName 
+ * @return  Value returned by  @b WSAAsyncGetProtoByName()
  */
 extern rpc_handle rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs, 
                                                   rpc_hwnd hwnd,
@@ -727,7 +721,7 @@ extern rpc_handle rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs,
 
 /** 
  * Asynchronously retrieve protocol information by given number.
- * See @b WSAAsyncGetProtoByNumber 
+ * See @b WSAAsyncGetProtoByNumber().
  *
  * @param rpcs    RPC server handle 
  * @param hwnd    handle to a window that receive a message when the
@@ -739,7 +733,7 @@ extern rpc_handle rpc_wsa_async_get_proto_by_name(rcf_rpc_server *rpcs,
  *                 Contain the protocol entry data
  * @param buflen  size of the buffer @b buf, in bytes 
  *
- * @return  value returned by  @b WSAAsyncGetProtoByNumber 
+ * @return  Value returned by  @b WSAAsyncGetProtoByNumber()
  */
 extern rpc_handle rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs, 
                                                     rpc_hwnd hwnd,
@@ -763,7 +757,7 @@ extern rpc_handle rpc_wsa_async_get_proto_by_number(rcf_rpc_server *rpcs,
  *                 Contain the service entry data
  * @param buflen  size of the buffer @b buf, in bytes 
  *
- * @return  value returned by  @b WSAAsyncGetServByName 
+ * @return  Value returned by  @b WSAAsyncGetServByName()
  */
 extern rpc_handle rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs, 
                                                  rpc_hwnd hwnd,
@@ -788,7 +782,7 @@ extern rpc_handle rpc_wsa_async_get_serv_by_name(rcf_rpc_server *rpcs,
  *                 Contain the service entry data
  * @param buflen  size of the buffer @b buf, in bytes 
  *
- * @return  value returned by  @b WSAAsyncGetServByName 
+ * @return  value returned by  @b WSAAsyncGetServByName()
  */
 extern rpc_handle rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs, 
                                                  rpc_hwnd hwnd,
@@ -798,7 +792,7 @@ extern rpc_handle rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs,
                                                  ssize_t buflen);
 
 /** 
- * Create WSAOVERLAPPED structure on TA side 
+ * Create WSAOVERLAPPED structure on TA side.
  *
  * @param rpcs        RPC server handle
  * @param hevent      handle to an event object
@@ -815,7 +809,7 @@ extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
                                             unsigned int offset_high);
 
 /** 
- * Delete specified WSAOVERLAPPED structure 
+ * Delete specified WSAOVERLAPPED structure.
  *
  * @param rpcs       RPC server handle
  * @param overlapped  WSAOVERLAPPED structure 
@@ -824,7 +818,7 @@ extern void rpc_delete_overlapped(rcf_rpc_server *rpcs,
                                   rpc_overlapped overlapped);
 
 /** 
- * Send data on a connected socket
+ * Send data on a connected socket.
  *
  * @param rpcs        RPC server handle
  * @param s           connected socket descriptor
@@ -837,8 +831,7 @@ extern void rpc_delete_overlapped(rcf_rpc_server *rpcs,
  * @param callback    support of completion routine. If true a completion
  *                    routine is call when the send operation has been 
  *                    completed
- * @retval  0 on success
- * @retval -1 on failure
+ * @return 0 on success or -1 on failure
  */ 
 extern int rpc_wsa_send(rcf_rpc_server *rpcs,
                        int s, const struct rpc_iovec *iov,
@@ -847,7 +840,7 @@ extern int rpc_wsa_send(rcf_rpc_server *rpcs,
                        te_bool callback);
 
 /**
- * Receive data from a connected socket
+ * Receive data from a connected socket.
  *
  * @param rpcs        RPC server handle
  * @param s           connected socket descriptor
@@ -862,8 +855,8 @@ extern int rpc_wsa_send(rcf_rpc_server *rpcs,
  * @param callback    support of completion routine. If true a completion
  *                    routine is call when the send operation has been 
  *                    completed
- * @retval  0 on success
- * @retval -1 on failure
+ *
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
                         int s, const struct rpc_iovec *iov,
@@ -873,7 +866,7 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
                         te_bool callback);
 
 /**
- * Send data to a specified destination
+ * Send data to a specified destination.
  *
  * @param rpcs         RPC server handle
  * @param s            descriptor identifying a possibly connected socket
@@ -889,8 +882,7 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
  * @param callback     support of completion routine. If true a completion
  *                     routine is call when the send operation has been 
  *                     completed
- * @retval  0 on success
- * @retval -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
                            const struct rpc_iovec *iov,
@@ -900,7 +892,7 @@ extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
                            te_bool callback);
 
 /**
- * Receive datagram from socket
+ * Receive datagram from socket.
  *
  * @param rpcs           RPC server handle
  * @param s              descriptor identifying a socket
@@ -918,8 +910,8 @@ extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
  * @param callback       support of completion routine. If true a completion
  *                       routine is called when the send operation has been 
  *                       completed
- * @retval  0 on success
- * @retval -1 on failure
+ *
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                              const struct rpc_iovec *iov, size_t iovcnt,
@@ -930,35 +922,33 @@ extern int rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
 
 /**
  * Initiate termination of the connection for the socket
- * and send disconnect data
+ * and send disconnect data.
  *
  * @param rpcs    RPC server handle
  * @param s       descriptor identifying a socket
  * @param iov     vector of buffers containing the disconnect data
  *
- * @retval  0 on success
- * @retval -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_send_disconnect(rcf_rpc_server *rpcs,
                                    int s, const struct rpc_iovec *iov);
 
 /**
  * Terminate reception on a socket, and retrieve disconnect data
- * in case of connection oriented socket
+ * in case of connection oriented socket.
  * 
  * @param rpcs    RPC server handle
  * @param s       descriptor identifying a socket
  * @param iov      vector of buffers containing the disconnect data
  *
- * @retval  0 on success
- * @retval -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
                                    int s, const struct rpc_iovec *iov);
 
 /**
  * Retrieve data and control information from connected or unconnected
- * sockets
+ * sockets.
  *
  * @param rpcs           RPC server handle
  * @param s              descriptor identifying a socket
@@ -969,15 +959,14 @@ extern int rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
  * @param callback       support of completion routine. If true a completion
  *                       routine is call when the send operation has been 
  *                       completed
- * @retval  0 on success
- * @retval -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
                             struct rpc_msghdr *msg, int *bytes_received,
                             rpc_overlapped overlapped, te_bool callback);
 
 /**
- * Retrieve the result of an overlapped operation on a specified socket
+ * Retrieve the result of an overlapped operation on a specified socket.
  *
  * @param rpcs           RPC server handle
  * @param s              desccriptor identifying a socket
@@ -991,6 +980,8 @@ extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
  *                       more flags that supplement the completion status
  * @param buf            pointer to a buffer containing result data
  * @param buflen         size of buffer @b buf
+ *
+ * @return TRUE on success, FALSE on failure
  */
 extern int rpc_get_overlapped_result(rcf_rpc_server *rpcs,
                                      int s, rpc_overlapped overlapped,
@@ -1017,7 +1008,7 @@ extern int rpc_completion_callback(rcf_rpc_server *rpcs,
 
 /**
  * Specify an event object to be associated with the specified set of
- * network events
+ * network events.
  *
  * @param rpcs         RPC server handle
  * @param s            socket descriptor
@@ -1025,22 +1016,21 @@ extern int rpc_completion_callback(rcf_rpc_server *rpcs,
  * @param event        bitmask the specifies the combination of network 
  *                     events
  *
- * @retval  0 on success
- * @retval -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_event_select(rcf_rpc_server *rpcs,
                                 int s, rpc_wsaevent event_object,
                                 rpc_network_event event);
 
 /**
- * Client implementation of WSAEnumNetworkEvents().
+ * @b WSAEnumNetworkEvents() remote call.
  *
  * @param rpcs              RPC server
  * @param s                 socket descriptor
  * @param event_object      event object to be reset
  * @param event             network events that occurred
  *
- * @return value returned by WSAEnumNetworkEvents() function
+ * @return Value returned by WSAEnumNetworkEvents() function
  */
 extern int rpc_enum_network_events(rcf_rpc_server *rpcs,
                                   int s, rpc_wsaevent event_object,
@@ -1055,7 +1045,7 @@ enum {
 };
 
 /** 
- * Convert WSAWaitForMultipleEvents() return code to a string 
+ * Convert @b WSAWaitForMultipleEvents() return code to a string 
  *
  * @param code code to be converted
  *
@@ -1080,7 +1070,7 @@ wsa_wait_rpc2str(int code)
 }
 
 /** 
- * WSAWaitForMultipleEvents(), 
+ * @b WSAWaitForMultipleEvents() remote call.
  * 
  * @param rpcs     RPC server handle
  * @param count    number of events in @b events
@@ -1095,7 +1085,7 @@ wsa_wait_rpc2str(int code)
  * @param alertable specify whether the completion routine has to be 
  *                  executed before the function returns.
  *                   
- * @return the event object that make the function to return.
+ * @return The event object that make the function to return.
  *         -1 is returned in the case of RPC error 
  */
 extern int rpc_wait_multiple_events(rcf_rpc_server *rpcs,
@@ -1105,7 +1095,7 @@ extern int rpc_wait_multiple_events(rcf_rpc_server *rpcs,
 
 
 /** 
- * Create a window for receiving event notifications
+ * Create a window for receiving event notifications.
  *
  * @param rpcs RPC server handle
  *
@@ -1115,7 +1105,7 @@ extern int rpc_wait_multiple_events(rcf_rpc_server *rpcs,
 extern rpc_hwnd rpc_create_window(rcf_rpc_server *rpcs);
 
 /** 
- * Destroy the specified window 
+ * Destroy the specified window.
  *
  * @param rpcs RPC server handle
  * @param hwnd handle of window to be destroyed
@@ -1123,7 +1113,7 @@ extern rpc_hwnd rpc_create_window(rcf_rpc_server *rpcs);
 extern void rpc_destroy_window(rcf_rpc_server *rpcs, rpc_hwnd hwnd);
 
 /** 
- * Request window-based notification of network events for a socket
+ * Request window-based notification of network events for a socket.
  *
  * @param rpcs   RPC server handle
  * @param s      socket descriptor
@@ -1131,14 +1121,12 @@ extern void rpc_destroy_window(rcf_rpc_server *rpcs, rpc_hwnd hwnd);
  *               event occurs
  * @param event  bitmask that specifies a combination of network events
  *
- * @retval  0 on success
- * @retval -1 on failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_async_select(rcf_rpc_server *rpcs,
                                 int s, rpc_hwnd hwnd,
                                 rpc_network_event event);
 
-/** PeekMessage() */
 /**
  * Check the thread message queue for a posted message and retrieve
  * the message, if any exist
@@ -1148,6 +1136,8 @@ extern int rpc_wsa_async_select(rcf_rpc_server *rpcs,
  * @param s       socket descriptor whose event causes message notification
  * @param event   pointer to the bitmask that specifies a combination
  *                of network events
+ *
+ * @return Value returned by @b PeekMessage()
  */
 extern int rpc_peek_message(rcf_rpc_server *rpcs,
                             rpc_hwnd hwnd, int *s,
@@ -1187,7 +1177,7 @@ extern te_bool rpc_is_winsock2(rcf_rpc_server *rpcs);
  *                       sender (JL_SENDER_ONLY), receiver 
  *                       (JL_RECEIVER_ONLY), or both (JL_BOTH).
  *
- * @return               a value of type SOCKET that is a descriptor for 
+ * @return               The value of type SOCKET that is a descriptor for 
  *                       the newly created multipoint socket in case of 
  *                       success, a value of INVALID_SOCKET otherwise.
  */

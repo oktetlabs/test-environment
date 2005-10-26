@@ -1809,14 +1809,6 @@ struct tarpc_sigaction_out {
     tarpc_int               retval;
 };
 
-/*
- * Is kill() RPC required? It seems RCF is sufficient.
- * It might be usefull, if IUT has it's own implementation,
- * but it look unreal.
- * Yes, it is necessary for handling processes spawned by popen-like
- * functions.
- */
-
 /* kill() */
 
 struct tarpc_kill_in {
@@ -2093,14 +2085,14 @@ struct tarpc_open_out {
 struct tarpc_fopen_in {
     struct tarpc_in_arg common;
     
-    char path<>;
-    char mode<>;
+    string path<>;
+    string mode<>;
 };
 
 struct tarpc_fopen_out {
     struct tarpc_out_arg common;
     
-    tarpc_ptr   mem_ptr;
+    tarpc_ptr mem_ptr;
 };
 
 /* fclose() */
@@ -2110,6 +2102,29 @@ struct tarpc_fclose_in {
 };
 
 struct tarpc_fclose_out {
+    struct tarpc_out_arg  common;
+    tarpc_int             retval;
+};
+
+/* popen() */
+struct tarpc_popen_in {
+    struct tarpc_in_arg  common;
+    string cmd<>;
+    string mode<>;
+};
+ 
+struct tarpc_popen_out {
+    struct tarpc_out_arg  common;
+    tarpc_ptr   mem_ptr;
+};
+
+/* pclose() */
+struct tarpc_pclose_in {
+    struct tarpc_in_arg  common;
+    tarpc_ptr            mem_ptr;
+};
+
+struct tarpc_pclose_out {
     struct tarpc_out_arg  common;
     tarpc_int             retval;
 };

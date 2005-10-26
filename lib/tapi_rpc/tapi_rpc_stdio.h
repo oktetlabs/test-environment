@@ -45,7 +45,7 @@
 typedef rpc_ptr rpc_file_p;
 
 /**
- * Query the descriptor of the given file on RPC server side
+ * Query the descriptor of the given file on RPC server side.
  *
  * @note See fileno manual page for more information
  * @param rpcs   RPC server handle
@@ -58,7 +58,7 @@ extern int rpc_fileno(rcf_rpc_server *rpcs,
                       rpc_file_p f);
 
 /**
- * Open a file on RPC server side and associate it with a stream
+ * Open a file on RPC server side and associate it with a stream.
  *
  * @note See @b fopen manual page for more information
  * @param rpcs     RPC server handle
@@ -73,8 +73,8 @@ extern rpc_file_p rpc_fopen(rcf_rpc_server *rpcs,
 /**
  * Close the stream associated with the file.
  *
- * @param rpcs           RPC server handle.
- * @param file           Stream to close.
+ * @param rpcs           RPC server handle
+ * @param file           Stream to close
  *
  * @return   Zero on success, otherwise -1.
  */
@@ -92,6 +92,32 @@ extern int rpc_fclose(rcf_rpc_server *rpcs, rpc_file_p file);
  * @return status of the process
  */
 extern rpc_wait_status rpc_system(rcf_rpc_server *rpcs, const char *cmd);
+
+/**
+ * Open a process by creating a pipe, forking, and invoking the shell.
+ *
+ * @note Do not use this function unless you test it - use 
+ *       rpc_ta_shell_cmd_ex instead.
+ *
+ * @param rpcs     RPC server handle
+ * @param cmd      NULL-terminated shell command line
+ * @param mode     "r" (for reading command output) or "w" (for writing to
+ *                 command standard input)
+ *
+ * @return Stream to be used for reading or writing or @b NULL on error
+ */
+extern rpc_file_p rpc_popen(rcf_rpc_server *rpcs,
+                            const char *cmd, const char *mode);
+ 
+/**
+ * Close the stream returned by @b popen().
+ *
+ * @param rpcs           RPC server handle
+ * @param file           Stream to close
+ *
+ * @return   Zero on success, otherwise -1
+ */
+extern int rpc_pclose(rcf_rpc_server *rpcs, rpc_file_p file);
 
 /**
  * Execute shell command on the IPC server and read the output.
@@ -126,7 +152,7 @@ extern rpc_wait_status rpc_shell_get_all(rcf_rpc_server *rpcs,
  * @param out_fd    location to stdin pipe to stdout or NULL
  * @param ...       parameters to command format
  *
- * @return pid of spawned process or -1 on failure.
+ * @return pid of spawned process or -1 on failure
  */
 extern tarpc_pid_t rpc_ta_shell_cmd_ex(rcf_rpc_server *rpcs, 
                                        const char *cmd, tarpc_uid_t uid, 
@@ -167,8 +193,7 @@ extern int rpc_setenv(rcf_rpc_server *rpcs,
  * @param pbuf          location for the command output buffer
  * @param bytes         location for the number of bytes read
  *
- * @retval  0 success
- * @retval -1 failure
+ * @return 0 on success or -1 on failure
  */
 extern int rpc_read_all(rcf_rpc_server *rpcs, int fd, 
                         char **pbuf, size_t *bytes);
