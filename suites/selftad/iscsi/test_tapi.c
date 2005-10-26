@@ -142,14 +142,6 @@ uint8_t iscsi_login_request[sizeof(iscsi_login_request_copy)] = {0x0,};
 int
 main(int argc, char *argv[]) 
 { 
-    csap_handle_t iscsi_csap = CSAP_INVALID_HANDLE;
-
-    char  ta[32];
-    char *agt_a = ta;
-    char *agt_b;
-
-    size_t  len = sizeof(ta);
-
     TEST_START; 
     
 #if 1
@@ -207,19 +199,20 @@ main(int argc, char *argv[])
                 {
                     case iscsi_key_value_type_int:
                     case iscsi_key_value_type_hex:    
-                    {    
                         if ((rc = tapi_iscsi_get_int_key_value(values, 
                                       key_values_index, &int_value)) != 0)
                             TEST_FAIL("cannot get int value");
                         break;
-                    }    
+
                     case iscsi_key_value_type_string:
-                    {
                         if ((rc = tapi_iscsi_get_string_key_value(values, 
                                       key_values_index, &str_value)) != 0)
                             TEST_FAIL("cannot get string value");
                         break;
-                    }
+
+                    default:
+                        WARN("Unexpected type of key: %d", type);
+                        break;
                 }
             }
         }
@@ -282,19 +275,20 @@ main(int argc, char *argv[])
                 {
                     case iscsi_key_value_type_int:
                     case iscsi_key_value_type_hex:    
-                    {    
                         if ((rc = tapi_iscsi_get_int_key_value(values, 
                                       key_values_index, &int_value)) != 0)
                             TEST_FAIL("cannot get int value");
                         break;
-                    }    
+
                     case iscsi_key_value_type_string:
-                    {
                         if ((rc = tapi_iscsi_get_string_key_value(values, 
                                       key_values_index, &str_value)) != 0)
                             TEST_FAIL("cannot get string value");
                         break;
-                    }
+
+                    default:
+                        WARN("Unexpected type of key: %d", type);
+                        break;
                 }
             }
         }
