@@ -120,7 +120,6 @@ tcp_pkt_handler(const char *pkt_fname, void *user_param)
     asn_free_value(pkt);
 }
 
-
 /* see description in tapi_tcp.h */
 int 
 tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
@@ -130,6 +129,25 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
                              in_addr_t loc_addr, in_addr_t rem_addr,
                              uint16_t loc_port, uint16_t rem_port,
                              csap_handle_t *tcp_csap)
+{
+    return tapi_tcp_ip4_eth_mode_csap_create(ta_name, sid, eth_dev, 0, 
+                                             loc_mac, rem_mac,
+                                             loc_addr, rem_addr, 
+                                             loc_port, rem_port, 
+                                             tcp_csap);
+}
+
+int
+tapi_tcp_ip4_eth_mode_csap_create(const char *ta_name, int sid, 
+                                  const char *eth_dev,
+                                  uint8_t eth_mode,
+                                  const uint8_t *loc_mac,
+                                  const uint8_t *rem_mac,
+                                  in_addr_t loc_addr,
+                                  in_addr_t rem_addr,
+                                  uint16_t loc_port,
+                                  uint16_t rem_port,
+                                  csap_handle_t *tcp_csap)
 {
     char  csap_fname[] = "/tmp/te_tcp_csap.XXXXXX";
     int   rc;
@@ -143,6 +161,11 @@ tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
 
         rc = asn_parse_value_text("{ tcp:{}, ip4:{}, eth:{}}", 
                                       ndn_csap_spec, &csap_spec, &num); 
+        if (rc) break; 
+
+        if (eth_mode |= 0)
+            rc = asn_write_int32(csap_spec, eth_mode,
+                                 "2.#eth.receive-mode");
         if (rc) break; 
 
         if (eth_dev)

@@ -179,6 +179,7 @@ extern int tapi_tcp_buffer_send(const char *ta_name, int sid,
 typedef void (*tcp_row_callback)(const asn_value *pkt, void *userdata);
 
 
+
 /**
  * Creates 'tcp.ip4.eth' CSAP.
  *
@@ -204,6 +205,37 @@ extern int tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid,
                                         uint16_t loc_port,
                                         uint16_t rem_port,
                                         csap_handle_t *tcp_csap);
+
+/**
+ * Creates 'tcp.ip4.eth' CSAP, allows to specifie receive mode of 
+ * low level packet socket.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param eth_mode      Bitmask with receive mode, see enum
+ *                      'eth_csap_receive_mode' in ndn_eth.h, 
+ *                      zero for default value
+ * @param loc_mac       Local MAC address  (or NULL)
+ * @param rem_mac       Remote MAC address  (or NULL)
+ * @param loc_addr      Local IP address in network order (or NULL)
+ * @param rem_addr      Remote IP address in network order (or NULL)
+ * @param loc_port      Local TCP port in network byte order 
+ * @param rem_port      Remote TCP port in network byte order 
+ * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
+ *
+ * @return  Status of the operation
+ */
+extern int tapi_tcp_ip4_eth_mode_csap_create(const char *ta_name, int sid, 
+                                             const char *eth_dev,
+                                             uint8_t eth_mode,
+                                             const uint8_t *loc_mac,
+                                             const uint8_t *rem_mac,
+                                             in_addr_t loc_addr,
+                                             in_addr_t rem_addr,
+                                             uint16_t loc_port,
+                                             uint16_t rem_port,
+                                             csap_handle_t *tcp_csap);
 
 
 /**
