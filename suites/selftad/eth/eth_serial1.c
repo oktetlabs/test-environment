@@ -129,7 +129,7 @@ main(int argc, char *argv[])
 
     agent_b = agent_a + strlen(agent_a) + 1;
 
-    if (agent_b - agent_a > len)
+    if (agent_b - agent_a > (int)len)
         TEST_FAIL("Second TA not found, at least two agents required");
 
     agent_b_if = agent_a_if = strdup("eth0");

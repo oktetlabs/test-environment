@@ -89,7 +89,7 @@ main(int argc, char *argv[])
 
     ta_A = ta;
     ta_B = ta + strlen(ta) + 1;
-    if (ta_B - ta > len)
+    if (ta_B - ta > (int)len)
         TEST_FAIL("Second TA not found, at least two agents required");
 
     INFO("Using agent A: '%s', agent B: '%s'", ta_A, ta_B);
