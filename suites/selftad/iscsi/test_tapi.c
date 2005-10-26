@@ -26,9 +26,7 @@
  * $Id$
  */
 
-#define TE_TEST_NAME    "iscsi/simple"
-
-#define TE_LOG_LEVEL 0xff
+#define TE_TEST_NAME    "iscsi/test_tapi"
 
 #include "config.h"
 

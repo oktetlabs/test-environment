@@ -20,7 +20,7 @@
             </script>
         </run> 
         <run>
-            <script name="establish">
+            <script name="test_tapi">
             </script>
         </run> 
 <!--
