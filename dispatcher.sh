@@ -78,15 +78,21 @@ Generic options:
   --tester-no-cs                Do not interact with Configurator
   --tester-nocfgtrack           Do not track configuration changes
   --tester-nologues             Disable prologues and epilogues globally
-  --tester-suite=[NAME:PATH]    Specify location of Test Sutie sources
+  --tester-suite=NAME:PATH      Specify location of Test Sutie sources
   --tester-req=[REQ|!REQ]       Requirement to be tested (or excluded,
                                 if its first symbol is !)
   --tester-quietskip            Quietly skip tests which do not meet
                                 specified requirements
-  --tester-run=[PATH]           Run a test item defined by PATH
-  --tester-vg=[PATH]            Run test scripts in specified path under
-                                valgrind
-  --tester-gdb=[PATH]           Run test scripts in specified path under gdb
+  --tester-run=TEST_PATH        Run a test item defined by TEST_PATH:
+                                  TEST_PATH   := <test_path>
+                                  <test_path> := <test_spec>[/<test_path>]
+                                  <test_spec> := <test_name>[:<args>]
+                                  <args>      := <arg>[,<args>]
+                                  <arg>       := <arg_name>=<arg_value>
+  --tester-vg=TEST_PATH         Run test scripts in specified path (see 
+                                --tester-run) under valgrind
+  --tester-gdb=TEST_PATH        Run test scripts in specified path (see
+                                --tester-run) under gdb
 
   --trc-db=<filename>           TRC database to be used
   --trc-tag=<TAG>               Tag to get specific expected results
