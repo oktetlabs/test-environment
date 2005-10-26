@@ -1370,7 +1370,7 @@ tapi_iscsi_initiator_not_advertize(const char *ta,
     
     sprintf(offer, "%d", par2adv);
 
-    rc = cfg_set_instance_fmt(CVT_STRING, &par2adv,
+    rc = cfg_set_instance_fmt(CVT_STRING, offer,
                               "/agent:%s/iscsi_initiator:/target_data:"
                               "target_%d/parameters2advertize:",
                               ta, target_id);
