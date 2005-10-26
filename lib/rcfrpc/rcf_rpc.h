@@ -92,6 +92,9 @@ typedef struct rcf_rpc_server {
                                      RPC server - it is unusable
                                      unless someone has restarted it */
 
+    te_bool errno_change_check; /**< Check errno changes in the case
+                                     of success */
+
     char   *nv_lib;             /**< Library name set for the server */
 
     char    lib[RCF_MAX_PATH];  /**< Library name to be used for the call

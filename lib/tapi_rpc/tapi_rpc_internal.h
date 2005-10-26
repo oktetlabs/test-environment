@@ -115,6 +115,16 @@
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
                 (_var) = (_error_val);                              \
             }                                                       \
+            else if (rpcs->errno_change_check &&                    \
+                     (_var) != (_error_val) &&                      \
+                     out.common.errno_changed)                      \
+            {                                                       \
+                ERROR("Function %s() returned %d, but changed "     \
+                      "errno to %s", #_func, (int)(_var),           \
+                      errno_rpc2str(RPC_ERRNO(rpcs)));              \
+                rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
+                (_var) = (_error_val);                              \
+            }                                                       \
             else if (RPC_ERRNO(rpcs) == RPC_ERPCNOTSUPP)            \
             {                                                       \
                 RING("Function %s() is not supported",  #_func);    \
