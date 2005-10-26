@@ -563,6 +563,18 @@ extern int tapi_iscsi_initiator_conn_del(const char *ta,
                                          iscsi_target_id tgt_id,
                                          iscsi_cid cid);
 
+
+/**
+ * Returns a space-separated list of iSCSI devices on TA
+ *
+ * @param ta         Name of the TA where the initiator is run
+ * @param buffer     A pointer to variable that will hold 
+                     a pointer a malloc'ed device list string
+ *
+ * @return           errno
+*/
+extern int tapi_iscsi_initiator_get_devices(const char *ta, char **buffer);
+
 /**
  * Function converts string representation of iSCSI parameter to 
  * corresponding enum value of tapi_iscsi_parameter type.

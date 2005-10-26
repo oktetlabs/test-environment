@@ -2250,6 +2250,21 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
+    switch (init_data->init_type)
+    {
+        case UNH:
+            sprintf(dev_pattern, "/proc/scsi/iscsi_initiator/%d", 
+                    init_data->host_bus_adapter);
+            if (access(dev_pattern, 0))
+            {
+                ERROR("Host bus adapter %d is not an iSCSI device");
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+            break;
+        default:
+            WARN("Cannot verify that a host bus is set correctly!!!");
+    }
+
     sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:0:0:*/block", 
             init_data->host_bus_adapter);
     if ((rc = glob(dev_pattern, GLOB_ERR, NULL, &devices)) != 0)

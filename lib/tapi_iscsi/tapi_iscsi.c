@@ -1585,6 +1585,19 @@ tapi_iscsi_initiator_del_target(const char *ta,
     return rc;
 }
 
+int
+tapi_iscsi_initiator_get_devices(const char *ta, char **buffer)
+{
+    cfg_val_type type = CVT_STRING;
+    
+
+    return cfg_get_instance_fmt(&type, buffer,
+                                "/agent:%s/iscsi_initiator:/host_device:",
+                                ta);
+}
+                                 
+
+
 tapi_iscsi_parameter
 tapi_iscsi_get_param_map(const char *param)
 {
@@ -1640,5 +1653,6 @@ tapi_iscsi_get_param_map(const char *param)
 
     return param_id;
 }
+
 
 #undef MAX_INI_CMD_SIZE
