@@ -40,6 +40,9 @@
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
+#if HAVE_TIME_H
+#include <time.h>
+#endif
 
 #include "rcf_api.h"
 #include "conf_api.h"
