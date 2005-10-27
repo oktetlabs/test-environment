@@ -51,6 +51,7 @@
 #include "tapi_rpc.h"
 
 #include "tapi_test.h"
+#include "tapi_env.h"
 #include "tapi_ip.h"
 #include "tapi_udp.h"
 #include "tapi_tcp.h"
@@ -89,6 +90,10 @@ main(int argc, char *argv[])
     int sock_dst = -1;
     struct sockaddr_in srv_addr;
 #endif
+    rcf_rpc_server *pco_iut = NULL;
+
+    tapi_env env;
+
     int  sid;
     char ta[32];
     char *agt_a = ta;
@@ -101,6 +106,7 @@ main(int argc, char *argv[])
 
 
     TEST_START; 
+    TEST_GET_PCO(pco_iut);
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
@@ -287,5 +293,6 @@ cleanup:
     }
 #endif
 
+    TEST_END_ENV;
     TEST_END;
 }

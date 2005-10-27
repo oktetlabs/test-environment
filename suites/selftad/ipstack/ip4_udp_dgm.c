@@ -53,6 +53,7 @@
 #include "tapi_tad.h"
 #include "tapi_eth.h"
 
+#include "tapi_env.h"
 #include "tapi_test.h"
 #include "tapi_ip.h"
 #include "tapi_udp.h"

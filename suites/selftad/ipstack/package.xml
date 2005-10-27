@@ -15,6 +15,21 @@
             <script name="ip4_simple">
                 <req id="TAD_IP4"/>
             </script>
+            <arg name="env">
+                <value>
+                {
+                    {
+                        {'pco_iut':IUT},
+                        addr:'iut_addr':inet:unicast,if:'iut_if'
+                    },
+                    {
+                        {'pco_tst':tester},
+                        addr:'tst_addr':inet:unicast,if:'tst_if'
+                    }
+                }
+                </value>
+            </arg>
+
         </run> 
         <run>
             <script name="ip4_recv_send">

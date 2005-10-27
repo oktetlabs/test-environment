@@ -60,8 +60,8 @@
 #include "ndn_eth.h"
 #include "ndn_ipstack.h"
 
-uint8_t tx_buffer[10000];
-uint8_t rx_buffer[10000];
+uint8_t tx_buffer[100000];
+uint8_t rx_buffer[100000];
 
 
 int
@@ -165,7 +165,7 @@ main(int argc, char *argv[])
      */
 
     memset(tx_buffer, 0, sizeof(tx_buffer));
-    len = 200;
+    len = 20000;
 
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
@@ -185,7 +185,7 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("RPC->CSAP: sent and received data differ, rc = %d", rc);
 
-    len = 250;
+    len = 20000;
 
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
