@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD Bridge Stack"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

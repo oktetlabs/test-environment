@@ -30,8 +30,6 @@
 #ifndef __TE_TAD_BRIDGE_IMPL_H__
 #define __TE_TAD_BRIDGE_IMPL_H__ 
 
-#define TE_LGR_USER     "TAD Bridge"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
