@@ -818,7 +818,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
 
     int rc = 0, syms, num;
 
-    if (ta_name == NULL || socket == NULL)
+    if (ta_name == NULL)
         return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{{pdus { tcp:{}, ip4:{} } }}",
@@ -885,7 +885,7 @@ tapi_tcp_buffer_send(const char *ta_name, int sid,
 
     int rc = 0, syms;
 
-    if (ta_name == NULL || socket == NULL)
+    if (ta_name == NULL)
         return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{pdus { tcp:{}, ip4:{} } }",
@@ -917,4 +917,31 @@ cleanup:
     return rc;
 }
 
+
+
+
+
+/* see description in tapi_tcp.h */
+int
+tapi_tcp_forward_all(const char *ta_name, int session,
+                     csap_handle_t csap_rcv, csap_handle_t csap_fwd,
+                     unsigned int timeout, int *forwarded)
+{
+    int rc, syms;
+
+    asn_value *pattern;
+    rc = asn_parse_value_text("{{pdus { tcp:{}, ip4:{} } }}",
+                              ndn_traffic_pattern, &pattern, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    rc = tapi_tad_forward_all(ta_name, session, csap_rcv, csap_fwd, 
+                              pattern, timeout, forwarded);
+    asn_free_value(pattern);
+    return rc;
+}
 

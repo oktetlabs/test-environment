@@ -620,6 +620,24 @@ extern int tapi_tcp_update_sent_seq(tapi_tcp_handler_t handler,
 
 
 
+/**
+ * Receive all data which currently are waiting for receive in 
+ * specified TCP data CSAP and forward them into another CSAP, without 
+ * passing via RCF to test. 
+ *
+ * @param ta            TA name
+ * @param sid           RCF session id
+ * @param csap_rcv      identifier of recieve CSAP
+ * @param csap_fwd      identifier of CSAP which should obtain data
+ * @param timeout       timeout to wait data, in milliseconds
+ * @param forwarded     number of forwarded data blocks (OUT)
+ *
+ * @return status code
+ */
+extern int tapi_tcp_forward_all(const char *ta_name, int session,
+                                csap_handle_t csap_rcv,
+                                csap_handle_t csap_fwd,
+                                unsigned int timeout, int *forwarded);
 
 
 #endif /* !__TE_TAPI_TCP_H__ */
