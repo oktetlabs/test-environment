@@ -672,8 +672,8 @@ tad_tr_recv_thread(void *arg)
 
     if (!(csap_descr->state & TAD_STATE_FOREGROUND))
     {
-        SEND_ANSWER("0 0"); 
-    } 
+        SEND_ANSWER("0 0");
+    }
     VERB("trrecv thread for CSAP %d started", csap_descr->id);
 
     if (rc != 0)
@@ -687,9 +687,9 @@ tad_tr_recv_thread(void *arg)
     /*
      * trsend_recv processing. 
      */
-    if (!(csap_descr->state   & TAD_STATE_COMPLETE) && 
+    if (!(csap_descr->state   & TAD_STATE_COMPLETE) &&
          (csap_descr->command == TAD_OP_SEND_RECV))
-    { 
+    {
         do {
             const asn_value *pattern_unit;
             csap_pkts   packets_root;
@@ -725,11 +725,11 @@ tad_tr_recv_thread(void *arg)
             INFO("generate pattern rc %r", rc);
             if (rc != 0)
                 break;
-            
+
             asn_free_value(nds);
             nds = pattern; 
 
-            d_len = csap_descr->write_read_cb(csap_descr, 
+            d_len = csap_descr->write_read_cb(csap_descr,
                                               csap_descr->timeout,
                                               packets_root.data, 
                                               packets_root.len,
@@ -864,18 +864,18 @@ tad_tr_recv_thread(void *arg)
                 gettimeofday(&current, NULL);
                 s_diff = current.tv_sec - csap_descr->wait_for.tv_sec; 
 
-                if (s_diff > 0 || 
+                if (s_diff > 0 ||
                     (s_diff == 0 &&
                      current.tv_usec > csap_descr->wait_for.tv_usec))
                 {
-                    csap_descr->last_errno = ETIMEDOUT; 
+                    csap_descr->last_errno = ETIMEDOUT;
                     csap_descr->state |= TAD_STATE_COMPLETE;
-                    VERB("CSAP %d status complete by timeout, " 
-                         "wait for: %u.%u, current: %u.%u", 
-                         csap_descr->id, 
-                         (uint32_t)csap_descr->wait_for.tv_sec, 
+                    VERB("CSAP %d status complete by timeout, "
+                         "wait for: %u.%u, current: %u.%u",
+                         csap_descr->id,
+                         (uint32_t)csap_descr->wait_for.tv_sec,
                          (uint32_t)csap_descr->wait_for.tv_usec,
-                         (uint32_t)current.tv_sec, 
+                         (uint32_t)current.tv_sec,
                          (uint32_t)current.tv_usec);
                     continue;
                 }

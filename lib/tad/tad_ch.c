@@ -768,7 +768,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         csap_descr_p->wait_for.tv_usec %= 1000000;
 
         VERB("%s(): csap %d, wait_for set to %u.%u", __FUNCTION__,
-             csap_descr_p->id,  
+             csap_descr_p->id,
              csap_descr_p->wait_for.tv_sec,
              csap_descr_p->wait_for.tv_usec);
     }
