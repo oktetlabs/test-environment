@@ -4268,6 +4268,8 @@ user_add(unsigned int gid, const char *oid, const char *value,
 
     unsigned int uid;
 
+    int rc;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
@@ -4283,38 +4285,41 @@ user_add(unsigned int gid, const char *oid, const char *value,
     if (tmp == tmp1 || *tmp1 != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if (ta_system("adduser --help >/dev/null 2>&1") != 0)
+    /* 
+     * We manually add group to be independent from system settings
+     * (one group for all users / each user with its group)
+     */
+    sprintf(buf, "strace /usr/sbin/groupadd -g %u %s ", uid, user);
+    if ((rc = ta_system(buf)) != 0)
     {
-        /* Red Hat/Fedora */
-        sprintf(buf, "/usr/sbin/adduser -d /tmp/%s -u %u -m %s ",
-                user, uid, user);
-        if (ta_system(buf) != 0)
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        ERROR("\"%s\" command failed with %d", buf, rc);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-    else
+    sprintf(buf, "/usr/sbin/useradd -d /tmp/%s -g %u -u %u -m %s ",
+            user, uid, uid, user);
+    if ((rc = ta_system(buf)) != 0)
     {
-        /* Debian */
-        sprintf(buf, "/usr/sbin/adduser --home /tmp/%s --force-badname "
-                     "--disabled-password --gecos \"\" "
-                     "--uid %u %s >/dev/null 2>&1", user, uid, user);
-        if (ta_system(buf) != 0)
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        ERROR("\"%s\" command failed with %d", buf, rc);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
+
     sprintf(buf, "echo %s:%s | /usr/sbin/chpasswd", user, user);
-    if (ta_system(buf) != 0)
+    if ((rc = ta_system(buf)) != 0)
     {
+        ERROR("\"%s\" command failed with %d", buf, rc);
         user_del(gid, oid, user);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-    ta_system("sync");
-    sleep(1);
-    ta_system("sync");
+
+    /* Fedora has very aggressive nscd cache */
+    ta_system("/etc/init.d/nscd restart");
 
     sprintf(buf, "su - %s -c 'ssh-keygen -t dsa -N \"\" "
                  "-f /tmp/%s/.ssh/id_dsa' >/dev/null 2>&1", user, user);
 
-    if (ta_system(buf) != 0)
+    if ((rc = ta_system(buf)) != 0)
     {
+        ERROR("\"%s\" command failed with %d", buf, rc);
         user_del(gid, oid, user);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
@@ -4334,6 +4339,8 @@ user_add(unsigned int gid, const char *oid, const char *value,
 static int
 user_del(unsigned int gid, const char *oid, const char *user)
 {
+    int rc;
+
     UNUSED(gid);
     UNUSED(oid);
 
@@ -4341,7 +4348,20 @@ user_del(unsigned int gid, const char *oid, const char *user)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     sprintf(buf, "/usr/sbin/userdel -r %s", user);
-    ta_system(buf);
+    if ((rc = ta_system(buf)) != 0)
+    {
+        ERROR("\"%s\" command failed with %d", buf, rc);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    sprintf(buf, "/usr/sbin/groupdel %s", user);
+    if ((rc = ta_system(buf)) != 0)
+    {
+        /* Yes, we ignore rc, as group may be deleted by userdel */
+        VERB("\"%s\" command failed with %d", buf, rc);
+    }
+
+    /* Fedora has very aggressive nscd cache */
+    ta_system("/etc/init.d/nscd restart");
 
     return 0;
 }
