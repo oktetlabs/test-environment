@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler
  * Dummy FILE protocol implementaion internal declarations.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
+ * Copyright (C) 2003 Test Environment authors (see tad_file AUTHORS in the
  * root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -61,23 +61,25 @@ extern int add_csap_spt(csap_spt_type_p spt_descr);
  *
  * The function complies with csap_get_param_cb_t prototype.
  */ 
-extern char* file_get_param_cb(int csap_id, unsigned int layer, const char *param);
+extern char *tad_file_get_param_cb(int           csap_id,
+                                   unsigned int  layer,
+                                   const char   *param);
 
 /**
  * Callback for read data from media of 'file' CSAP. 
  *
  * The function complies with csap_read_cb_t prototype.
  */ 
-extern int file_read_cb(csap_p csap_descr, int timeout,
-                        char *buf, size_t buf_len);
+extern int tad_file_read_cb(csap_p csap_descr, int timeout,
+                            char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of 'file' CSAP. 
  *
  * The function complies with csap_write_cb_t prototype.
  */ 
-extern int file_write_cb(csap_p csap_descr,
-                         const char *buf, size_t buf_len);
+extern int tad_file_write_cb(csap_p csap_descr,
+                             const char *buf, size_t buf_len);
 
 /**
  * Callback for write data to media of 'file' CSAP and read data from
@@ -85,9 +87,9 @@ extern int file_write_cb(csap_p csap_descr,
  *
  * The function complies with csap_write_read_cb_t prototype.
  */ 
-extern int file_write_read_cb(csap_p csap_descr, int timeout,
-                              const char *w_buf, size_t w_buf_len,
-                              char *r_buf, size_t r_buf_len);
+extern int tad_file_write_read_cb(csap_p csap_descr, int timeout,
+                                  const char *w_buf, size_t w_buf_len,
+                                  char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -95,33 +97,39 @@ extern int file_write_read_cb(csap_p csap_descr, int timeout,
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern int file_single_init_cb(int csap_id, const asn_value *csap_nds,
-                               int layer);
+extern te_errno tad_file_single_init_cb(int              csap_id,
+                                        const asn_value *csap_nds,
+                                        unsigned int     layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern int file_single_destroy_cb(int csap_id, unsigned int layer);
+extern te_errno tad_file_single_destroy_cb(int          csap_id,
+                                           unsigned int layer);
 
 /**
  * Callback for confirm PDU with 'file' CSAP parameters and possibilities.
  *
  * The function complies with csap_confirm_pdu_cb_t prototype.
  */ 
-extern int file_confirm_pdu_cb(int csap_id, unsigned int layer,
-                               asn_value_p tmpl_pdu); 
+extern te_errno tad_file_confirm_pdu_cb(int          csap_id,
+                                        unsigned int layer,
+                                        asn_value_p  tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
  *
  * The function complies with csap_gen_bin_cb_t prototype.
  */ 
-extern int file_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                           const asn_value *tmpl_pdu,
-                           const tad_tmpl_arg_t *args, size_t arg_num,
-                           csap_pkts_p up_payload, csap_pkts_p pkts);
+extern int tad_file_gen_bin_cb(csap_p                csap_descr,
+                               unsigned int          layer,
+                               const asn_value      *tmpl_pdu,
+                               const tad_tmpl_arg_t *args,
+                               size_t                arg_num,
+                               csap_pkts_p           up_payload,
+                               csap_pkts_p           pkts);
 
 
 /**
@@ -129,10 +137,12 @@ extern int file_gen_bin_cb(csap_p csap_descr, unsigned int layer,
  *
  * The function complies with csap_match_bin_cb_t prototype.
  */
-extern int file_match_bin_cb(int csap_id, unsigned int layer,
-                             const asn_value *pattern_pdu,
-                             const csap_pkts *pkt, csap_pkts *payload, 
-                             asn_value_p parsed_packet );
+extern int tad_file_match_bin_cb(int              csap_id,
+                                 unsigned int     layer,
+                                 const asn_value *pattern_pdu,
+                                 const csap_pkts *pkt,
+                                 csap_pkts       *payload, 
+                                 asn_value_p      parsed_packet);
 
 /**
  * Callback for generating pattern to filter 
@@ -141,15 +151,16 @@ extern int file_match_bin_cb(int csap_id, unsigned int layer,
  *
  * The function complies with csap_gen_pattern_cb_t prototype.
  */
-extern int file_gen_pattern_cb(int csap_id, unsigned int layer,
-                               const asn_value *tmpl_pdu, 
-                               asn_value_p *pattern_pdu);
+extern int tad_file_gen_pattern_cb(int              csap_id,
+                                   unsigned int     layer,
+                                   const asn_value *tmpl_pdu, 
+                                   asn_value_p     *pattern_pdu);
 
 struct file_csap_specific_data;
 typedef struct file_csap_specific_data *file_csap_specific_data_p;
 typedef struct file_csap_specific_data
 {
-    char * filename;
+    char * tad_filename;
     FILE * fstream;
 } file_csap_specific_data_t;
 
