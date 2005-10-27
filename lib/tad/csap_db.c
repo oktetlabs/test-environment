@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  * Implementation of CSAP dynamic DB methods 
@@ -22,18 +22,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD CSAP DB"
+
+#include "te_config.h"
 #include <stdlib.h>
 #include <string.h>
 
-#include "tad_csap_inst.h"
-#include "tad_csap_support.h"
 #include "te_errno.h"
 #include "logger_api.h"
+#include "tad_csap_inst.h"
+#include "tad_csap_support.h"
 
 
 /*
@@ -146,7 +149,7 @@ csap_db_clear()
  *
  * @return identifier of new CSAP or zero if error occured.
  */ 
-int 
+int
 csap_create(const char *type)
 {
     int   i; 
@@ -162,6 +165,9 @@ csap_create(const char *type)
 
     char *layer_protos[MAX_CSAP_DEPTH];
 
+
+    ENTRY("%s", type);
+
     if (new_csap != NULL)
         new_csap->csap_type = csap_type;
 
@@ -169,7 +175,6 @@ csap_create(const char *type)
         CSAP_CREATE_ERROR(TE_ENOMEM, "%s(): no memory for new CSAP", 
                           __FUNCTION__);
 
-    VERB("%s(): %s\n", __FUNCTION__, csap_type);
     new_dp->inst = new_csap;
 
     /* Find free identifier, set it to new CSAP and insert structure. */
@@ -220,7 +225,8 @@ csap_create(const char *type)
     {
         new_csap->layers[i].proto = layer_protos[i];
         new_csap->layers[i].proto_support =
-                        find_csap_spt(new_csap->layers[i].proto);
+            find_csap_spt(new_csap->layers[i].proto);
+
         VERB("%s(): layer %d: %s\n", __FUNCTION__,
              i, new_csap->layers[i].proto);
 
@@ -230,6 +236,7 @@ csap_create(const char *type)
                               __FUNCTION__, new_csap->layers[i].proto);
     } 
 
+    EXIT("ID=%u", new_csap->id);
     return new_csap->id;
 
 error:
@@ -238,8 +245,9 @@ error:
     free(new_dp);
     csap_free(new_csap);
 
+    EXIT("ERROR %r", rc);
     errno = rc;
-    return 0;
+    return CSAP_INVALID_HANDLE;
 }
 
 
@@ -285,7 +293,7 @@ csap_free(csap_p csap_descr)
 
     if (csap_descr->layers != NULL)
     {
-        int i;
+        unsigned int i;
 
         for (i = 0; i < csap_descr->depth; i++)
         {

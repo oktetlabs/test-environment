@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief PCAP TAD
  *
  * Traffic Application Domain Command Handler
  * Ethernet-PCAP CSAP, stack-related callbacks.
@@ -246,29 +246,6 @@ pcap_prepare_send(csap_p csap_descr)
 
 
 /**
- * Find number of Ethernet-PCAP layer in CSAP stack.
- *
- * @param csap_descr    CSAP description structure.
- * @param layer_name    Name of the layer to find.
- *
- * @return number of layer (start from zero) or -1 if not found. 
- */ 
-#if 0
-int 
-find_csap_layer(csap_p csap_descr, char *layer_name)
-{
-    int i; 
-
-    VERB("%s() started", __FUNCTION__);
-
-    for (i = 0; i < csap_descr->depth; i++)
-        if (strcmp(csap_descr->layers[i].proto, layer_name) == 0)
-            return i;
-    return -1;
-}
-#endif
-
-/**
  * Free all memory allocated by Ethernet-PCAP csap specific data
  *
  * @param pcap_csap_specific_data_p poiner to structure
@@ -285,19 +262,10 @@ free_pcap_csap_data(pcap_csap_specific_data_p spec_data, te_bool is_complete)
        free(spec_data);   
 }
 
-/**
- * Callback for read data from media of Ethernet-PCAP CSAP. 
- *
- * @param csap_descr    identifier of CSAP.
- * @param timeout       timeout of waiting for data in microseconds.
- * @param buf           buffer for read data.
- * @param buf_len       length of available buffer.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
- */ 
-int 
-pcap_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+
+/* See description tad_pcap_impl.h */
+int
+tad_pcap_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     pcap_csap_specific_data_p   spec_data;
     int                         ret_val;
@@ -411,8 +379,9 @@ pcap_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 }
 
 
-int 
-pcap_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
+/* See description tad_pcap_impl.h */
+te_errno
+tad_pcap_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 {
     char choice_label[20];
     int rc;
@@ -445,18 +414,11 @@ pcap_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     return 0;
 }
 
-/**
- * Callback for init Ethernet-PCAP CSAP layer  if single in stack.
- *
- * @param csap_descr       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
+
+/* See description tad_pcap_impl.h */
+te_errno
+tad_pcap_single_init_cb(int csap_id, const asn_value *csap_nds,
+                        unsigned int layer)
 {
     int      rc; 
     char     choice[100] = "";
@@ -530,11 +492,11 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     pcap_spec_data->read_timeout = PCAP_CSAP_DEFAULT_TIMEOUT; 
 
     if (csap_descr->check_pdus_cb == NULL)
-        csap_descr->check_pdus_cb = pcap_single_check_pdus;
+        csap_descr->check_pdus_cb = tad_pcap_single_check_pdus;
 
     csap_descr->layers[layer].specific_data = pcap_spec_data;
 
-    csap_descr->read_cb          = pcap_read_cb;
+    csap_descr->read_cb          = tad_pcap_read_cb;
     csap_descr->write_cb         = NULL;
     csap_descr->write_read_cb    = NULL;
     csap_descr->read_write_layer = layer; 
@@ -544,27 +506,15 @@ pcap_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->release_cb       = pcap_release;
     csap_descr->echo_cb          = NULL;
 
-    csap_descr->layers[layer].get_param_cb = pcap_get_param_cb; 
+    csap_descr->layers[layer].get_param_cb = tad_pcap_get_param_cb; 
     
     return 0;
 }
 
-/**
- * Callback for destroy ethernet CSAP layer  if single in stack.
- *
- * This callback should free all undeground media resources used by 
- * this layer and all memory used for layer-specific data and pointed 
- * in respective structure in 'layer-data' in CSAP instance struct. 
- *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed.
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-pcap_single_destroy_cb (int csap_id, int layer)
+
+/* See description tad_pcap_impl.h */
+te_errno
+tad_pcap_single_destroy_cb (int csap_id, unsigned int layer)
 {
     csap_p csap_descr = csap_find(csap_id);
 

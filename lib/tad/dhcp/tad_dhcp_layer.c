@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief DHCP TAD
  *
  * Traffic Application Domain Command Handler
  * Ethernet CSAP layer-related callbacks.
@@ -22,9 +22,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD DHCP layer"
@@ -46,22 +46,15 @@
  */
 static unsigned char magic_dhcp[] = { 99, 130, 83, 99 };
 
-/**
- * Callback for read parameter value of ethernet CSAP.
- *
- * @param csap_descr    CSAP descriptor structure.
- * @param level         Index of level in CSAP stack, which param is wanted.
- * @param param         Protocol-specific name of parameter.
- *
- * @return 
- *     String with textual presentation of parameter value, or NULL 
- *     if error occured. User have to free memory at returned pointer.
- */ 
-char* dhcp_get_param_cb (csap_p csap_descr, int level, const char *param)
+
+/* See description in tad_dhcp_impl.h */
+char *
+tad_dhcp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 {
-    dhcp_csap_specific_data_t *   spec_data; 
+    dhcp_csap_specific_data_t *spec_data; 
+    
     spec_data = (dhcp_csap_specific_data_t *)
-        csap_descr->layers[level].specific_data; 
+        csap_descr->layers[layer].specific_data; 
 
     if (strcmp (param, "ipaddr") == 0)
     { 
@@ -70,21 +63,13 @@ char* dhcp_get_param_cb (csap_p csap_descr, int level, const char *param)
     return NULL;
 }
 
-/**
- * Callback for confirm PDU with DHCP CSAP parameters and possibilities.
- *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU (IN/OUT)
- *
- * @return zero on success or error code.
- */ 
-int 
-dhcp_confirm_pdu_cb (int csap_id, int layer, asn_value *tmpl_pdu)
+/* See description in tad_dhcp_impl.h */
+te_errno
+tad_dhcp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value *tmpl_pdu)
 { 
-    int rc;
-    int xid;
-    size_t len = sizeof (xid);
+    te_errno    rc;
+    int         xid;
+    size_t      len = sizeof (xid);
 
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
@@ -187,34 +172,14 @@ fill_dhcp_options(void *buf, asn_value_p options)
 
 
 #define OPTIONS_IMPL 1
-/**
- * Callback for generate binary data to be sent to media.
- *
- * @param csap_descr    CSAP instance
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU. 
- * @param up_payload    pointer to data which is already generated for upper 
- *                      layers and is payload for this protocol level. 
- *                      May be zero.  Presented as list of packets. 
- *                      Almost always this list will contain only one element, 
- *                      but need in fragmentation sometimes may occur. 
- *                      Of cause, on up level only one PDU is passed, 
- *                      but upper layer (if any present) may perform 
- *                      fragmentation, and current layer may have possibility 
- *                      to de-fragment payload.
- * @param pkts          Callback have to fill this structure with list of 
- *                      generated packets. Almost always this list will 
- *                      contain only one element, but necessaty of 
- *                      fragmentation sometimes may occur. (OUT)
- *
- * @return zero on success or error code.
- */ 
+/* See description in tad_dhcp_impl.h */
 int 
-dhcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
-                const tad_tmpl_arg_t *args, size_t arg_num,
-                const csap_pkts_p up_payload, csap_pkts_p pkts)
+tad_dhcp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
+                    const asn_value *tmpl_pdu,
+                    const tad_tmpl_arg_t *args, size_t arg_num,
+                    const csap_pkts_p up_payload, csap_pkts_p pkts)
 {
-    int         rc;
+    te_errno    rc;
     uint8_t    *p; 
 #if OPTIONS_IMPL
     asn_value_p options = NULL;
@@ -318,33 +283,17 @@ dhcp_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 }
 
 
-/**
- * Callback for parse received packet and match it with pattern. 
- *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param pattern_pdu   pattern NDS 
- * @param pkt           recevied packet
- * @param payload       rest upper layer payload, if any exists. (OUT)
- * @param parsed_packet caller of mdhcpod should pass here empty asn_value 
- *                      instance of ASN type 'Generic-PDU'. Callback 
- *                      have to fill this instance with values from 
- *                      parsed and matched packet
- *
- * @return zero on success or error code.
- *
- * FIXME: Why are return values of the most of the functions used below
- *        not checked? Why are RCs ignored?
- */
-int 
-dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
-                  const csap_pkts *pkt, csap_pkts *payload, 
-                  asn_value *parsed_packet)
+/* See description in tad_dhcp_impl.h */
+te_errno
+tad_dhcp_match_bin_cb(int csap_id, unsigned int layer,
+                      const asn_value *pattern_pdu,
+                      const csap_pkts *pkt, csap_pkts *payload, 
+                      asn_value *parsed_packet)
 { 
     uint8_t    *data; 
     asn_value  *opt_list;
     asn_value  *dhcp_message_pdu = NULL;
-    int         rc;
+    te_errno    rc;
 
     UNUSED(payload); 
 
@@ -494,26 +443,15 @@ dhcp_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
     return 0;
 }
 
-/**
- * Callback for generating pattern to filter 
- * just one response to the packet which will be sent by this CSAP 
- * according to this template. 
- *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      ASN value with template PDU.
- * @param pattern_pdu   OUT: ASN value with pattern PDU, generated according 
- *                      to passed template PDU and CSAP parameters. 
- *
- * @return zero on success or error code.
- */
-int 
-dhcp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu, 
-                    asn_value **pattern_pdu)
+/* See description in tad_dhcp_impl.h */
+te_errno
+tad_dhcp_gen_pattern_cb(int csap_id, unsigned int layer,
+                        const asn_value *tmpl_pdu, 
+                        asn_value **pattern_pdu)
 {
-    int rc;
-    int xid;
-    size_t len = sizeof (xid);
+    te_errno    rc;
+    int         xid;
+    size_t      len = sizeof(xid);
 
     *pattern_pdu = asn_init_value(ndn_dhcpv4_message); 
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
@@ -529,5 +467,3 @@ dhcp_gen_pattern_cb(int csap_id, int layer, const asn_value *tmpl_pdu,
 
     return rc;
 }
-
-

@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Bridge/STP TAD
  *
  * Traffic Application Domain Command Handler
  * Ethernet CSAP, stack-related callbacks.
@@ -22,9 +22,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
@@ -84,16 +84,17 @@ void
 free_bridge_csap_data(bridge_csap_specific_data_p spec_data, char is_complete)
 { 
     if (is_complete)
-       free(spec_data);   
+        free(spec_data);   
 }
 
 
 
-int 
-bridge_eth_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
+/* See description tad_bridge_impl.h */
+te_errno
+tad_bridge_eth_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 { 
-    char choice_label[20];
-    int rc;
+    char     choice_label[20];
+    te_errno rc;
 
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
@@ -122,8 +123,8 @@ bridge_eth_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
     if ((TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) || 
         (strcmp(choice_label, "eth") != 0))
-    {
 
+    {
         asn_value *eth_pdu = asn_init_value(ndn_eth_header); 
         asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 
         
@@ -140,22 +141,12 @@ bridge_eth_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 }
 
 
-/**
- * Callback for init ethernet CSAP layer  if single in stack.
- *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-bridge_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
+/* See description tad_bridge_impl.h */
+te_errno 
+tad_bridge_eth_init_cb(int csap_id, const asn_value *csap_nds,
+                       unsigned int layer)
 {
-    int    rc;
-    csap_p csap_descr;      /**< csap description   */
-    
+    csap_p csap_descr;
 
     if (csap_nds == NULL)
         return TE_EWRONGPTR;
@@ -165,34 +156,20 @@ bridge_eth_init_cb (int csap_id, const asn_value *csap_nds, int layer)
 
     csap_descr->check_pdus_cb = bridge_eth_check_pdus;
 
-
     F_VERB("bridge_eth_init_cb called for csap %d, layer %d\n", csap_id, layer);
        
-    UNUSED (rc);
     return 0;
 }
 
-/**
- * Callback for destroy ethernet CSAP layer  if single in stack.
- *      This callback should free all undeground media resources used by 
- *      this layer and all memory used for layer-specific data and pointed 
- *      in respective structure in 'layer-data' in CSAP instance struct. 
- *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-bridge_eth_destroy_cb (int csap_id, int layer)
+
+/* See description tad_bridge_impl.h */
+te_errno
+tad_bridge_eth_destroy_cb(int csap_id, unsigned int layer)
 {
     csap_p csap_descr = csap_find(csap_id); 
 
-    UNUSED (csap_descr);
-    UNUSED (layer); 
+    UNUSED(csap_descr);
+    UNUSED(layer);
+
     return 0;
 }
-
-

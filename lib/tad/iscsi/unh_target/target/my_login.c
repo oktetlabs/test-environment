@@ -28,8 +28,8 @@
  * The name IOL and/or UNH may not be used to endorse or promote products
  * derived from this software without specific prior written permission.
  *
- * Author: Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
- * Author: Artem Andreev      <Artem.Andreev@oktetlabs.ru>
+ * @author Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
+ * @author Artem Andreev      <Artem.Andreev@oktetlabs.ru>
  *
  * $Id$
  */

@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief iSCSI TAD
  *
  * Traffic Application Domain Command Handler
  * Ethernet CSAP, stack-related callbacks.
@@ -22,9 +22,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD iSCSI stack"
@@ -158,19 +158,10 @@ iscsi_prepare_recv_cb(csap_p csap_descr)
 #endif
 }
 
-/**
- * Callback for read data from media of iSCSI CSAP. 
- *
- * @param csap_id       identifier of CSAP.
- * @param timeout       timeout of waiting for data in microseconds.
- * @param buf           buffer for read data.
- * @param buf_len       length of available buffer.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
- */ 
+
+/* See description tad_iscsi_impl.h */
 int 
-iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tad_iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data;
 
@@ -233,18 +224,10 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     return len;
 }
 
-/**
- * Callback for write data to media of iSCSI CSAP. 
- *
- * @param csap_id       identifier of CSAP.
- * @param buf           buffer with data to be written.
- * @param buf_len       length of data in buffer.
- *
- * @return 
- *      quantity of written octets, or -1 if error occured. 
- */ 
+
+/* See description tad_iscsi_impl.h */
 int 
-iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+tad_iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     iscsi_csap_specific_data_t *iscsi_spec_data;
     
@@ -284,24 +267,12 @@ iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     return buf_len;
 }
 
-/**
- * Callback for write data to media of iSCSI CSAP and read
- *  data from media just after write, to get answer to sent request. 
- *
- * @param csap_id       identifier of CSAP.
- * @param timeout       timeout of waiting for data.
- * @param w_buf         buffer with data to be written.
- * @param w_buf_len     length of data in w_buf.
- * @param r_buf         buffer for data to be read.
- * @param r_buf_len     available length r_buf.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
- */ 
-int 
-iscsi_write_read_cb(csap_p csap_descr, int timeout,
-                    const char *w_buf, size_t w_buf_len,
-                    char *r_buf, size_t r_buf_len)
+
+/* See description tad_iscsi_impl.h */
+int
+tad_iscsi_write_read_cb(csap_p csap_descr, int timeout,
+                        const char *w_buf, size_t w_buf_len,
+                        char *r_buf, size_t r_buf_len)
 {
 #if 1
     csap_descr->last_errno = TE_EOPNOTSUPP;
@@ -324,18 +295,11 @@ iscsi_write_read_cb(csap_p csap_descr, int timeout,
 #endif
 }
 
-/**
- * Callback for init iscsi CSAP layer  if single in stack.
- *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
+
+/* See description tad_iscsi_impl.h */
+te_errno
+tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
+                         unsigned int layer)
 {
     pthread_attr_t                pthread_attr; 
     iscsi_target_thread_params_t *thread_params;
@@ -367,13 +331,13 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return TE_ENOMEM; 
 
     csap_descr->layers[layer].specific_data = iscsi_spec_data;
-    csap_descr->layers[layer].get_param_cb = iscsi_get_param_cb;
+    csap_descr->layers[layer].get_param_cb = tad_iscsi_get_param_cb;
 
-    csap_descr->read_cb         = iscsi_read_cb;
-    csap_descr->write_cb        = iscsi_write_cb;
-    csap_descr->write_read_cb   = iscsi_write_read_cb;
-    csap_descr->prepare_recv_cb = iscsi_prepare_recv_cb;
-    csap_descr->prepare_send_cb = iscsi_prepare_send_cb;
+    csap_descr->read_cb          = tad_iscsi_read_cb;
+    csap_descr->write_cb         = tad_iscsi_write_cb;
+    csap_descr->write_read_cb    = tad_iscsi_write_read_cb;
+    csap_descr->prepare_recv_cb  = iscsi_prepare_recv_cb;
+    csap_descr->prepare_send_cb  = iscsi_prepare_send_cb;
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 100 * 1000;
 
@@ -409,20 +373,10 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     return 0;
 }
 
-/**
- * Callback for destroy iSCSI CSAP layer  if single in stack.
- *      This callback should free all undeground media resources used by 
- *      this layer and all memory used for layer-specific data and pointed 
- *      in respective structure in 'layer-data' in CSAP instance struct. 
- *
- * @param csap_id       identifier of CSAP.
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-iscsi_single_destroy_cb(int csap_id, int layer)
+
+/* See description tad_iscsi_impl.h */
+te_errno
+tad_iscsi_single_destroy_cb(int csap_id, unsigned int layer)
 {
     int                         rc = 0;
     csap_p                      csap_descr; 

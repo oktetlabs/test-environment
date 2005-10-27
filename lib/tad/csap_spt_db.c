@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  * Implementation of CSAP support DB methods 
@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -70,11 +70,11 @@ init_csap_spt(void)
  *
  * @param spt_descr     CSAP layer support structure. 
  *
- * @return zero on success, otherwise error code. 
+ * @return Zero on success, otherwise error code. 
  *
  * @todo check for uniqueness of protocol labels. 
  */
-int 
+te_errno
 add_csap_spt(csap_spt_type_p spt_descr)
 {
     csap_spt_entry_p new_spt_entry = malloc(sizeof(*new_spt_entry));

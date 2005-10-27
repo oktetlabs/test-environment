@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Ethernet TAD
  *
  * Traffic Application Domain Command Handler
  * Ethernet CSAP, stack-related callbacks.
@@ -22,10 +22,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Andrew Duka <duke@oktetlabs.ru>
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Andrew Duka <duke@oktet.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD Ethernet"
@@ -82,8 +82,7 @@
 
                    
 
-typedef struct iface_user_rec
-{
+typedef struct iface_user_rec {
     struct iface_user_rec *next, *prev;
     char name[IFNAME_SIZE];
     int  num_users;
@@ -259,25 +258,6 @@ eth_prepare_send(csap_p csap_descr)
 }
 
 /**
- * Find number of ethernet layer in CSAP stack.
- *
- * @param csap_descr    CSAP description structure.
- * @param layer_name    Name of the layer to find.
- *
- * @return number of layer (start from zero) or -1 if not found. 
- */ 
-int 
-find_csap_layer(csap_p csap_descr, char *layer_name)
-{
-    int i; 
-    for (i = 0; i < csap_descr->depth; i++)
-        if (strcmp(csap_descr->layers[i].proto, layer_name) == 0)
-            return i;
-    return -1;
-}
-
-
-/**
  * Free all memory allocated by eth csap specific data
  *
  * @param eth_csap_specific_data_p poiner to structure
@@ -300,20 +280,9 @@ free_eth_csap_data(eth_csap_specific_data_p spec_data, char is_complete)
 }
 
 
-
-/**
- * Callback for read data from media of ethernet CSAP. 
- *
- * @param csap_descr    identifier of CSAP.
- * @param timeout       timeout of waiting for data in microseconds.
- * @param buf           buffer for read data.
- * @param buf_len       length of available buffer.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
- */ 
+/* See description tad_eth_impl.h */
 int 
-eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tad_eth_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     eth_csap_specific_data_p spec_data;
     int                      ret_val;
@@ -442,18 +411,10 @@ eth_read_cb (csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 #endif
 }
 
-/**
- * Callback for write data to media of ethernet CSAP. 
- *
- * @param csap_descr       identifier of CSAP.
- * @param buf           buffer with data to be written.
- * @param buf_len       length of data in buffer.
- *
- * @return 
- *      quantity of written octets, or -1 if error occured. 
- */ 
+
+/* See description tad_eth_impl.h */
 int 
-eth_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+tad_eth_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     int ret_val = 0;
     eth_csap_specific_data_p spec_data;
@@ -555,41 +516,30 @@ eth_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 #endif
 }
 
-/**
- * Callback for write data to media of ethernet CSAP and read
- *  data from media just after write, to get answer to sent request. 
- *
- * @param csap_descr       identifier of CSAP.
- * @param timeout       timeout of waiting for data.
- * @param w_buf         buffer with data to be written.
- * @param w_buf_len     length of data in w_buf.
- * @param r_buf         buffer for data to be read.
- * @param r_buf_len     available length r_buf.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
- */ 
+
+/* See description tad_eth_impl.h */
 int 
-eth_write_read_cb(csap_p csap_descr, int timeout,
-                  const char *w_buf, size_t w_buf_len,
-                  char *r_buf, size_t r_buf_len)
+tad_eth_write_read_cb(csap_p csap_descr, int timeout,
+                      const char *w_buf, size_t w_buf_len,
+                      char *r_buf, size_t r_buf_len)
 {
     int ret_val; 
 
-    ret_val = eth_write_cb(csap_descr, w_buf, w_buf_len);
+    ret_val = tad_eth_write_cb(csap_descr, w_buf, w_buf_len);
     
     if (ret_val == -1)  
         return ret_val;
     else 
-        return eth_read_cb(csap_descr, timeout, r_buf, r_buf_len);;
+        return tad_eth_read_cb(csap_descr, timeout, r_buf, r_buf_len);;
 }
 
 
-int 
-eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
+/* See description tad_eth_impl.h */
+te_errno
+tad_eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 {
-    char choice_label[20];
-    int rc;
+    char     choice_label[20];
+    te_errno rc;
 
     RING("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
 
@@ -616,18 +566,12 @@ eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     }
     return 0;
 }
-/**
- * Callback for init ethernet CSAP layer  if single in stack.
- *
- * @param csap_descr       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
+
+
+/* See description tad_eth_impl.h */
+te_errno
+tad_eth_single_init_cb(int csap_id, const asn_value *csap_nds,
+                       unsigned int layer)
 {
     int      rc; 
     char     device_id[IFNAME_SIZE]; /**< ethernet interface id (e.g. eth0, eth1)      */
@@ -833,13 +777,13 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     eth_spec_data->read_timeout = ETH_CSAP_DEFAULT_TIMEOUT; 
 
     if (csap_descr->check_pdus_cb == NULL)
-        csap_descr->check_pdus_cb = eth_single_check_pdus;
+        csap_descr->check_pdus_cb = tad_eth_single_check_pdus;
 
     csap_descr->layers[layer].specific_data = eth_spec_data;
 
-    csap_descr->read_cb         = eth_read_cb;
-    csap_descr->write_cb        = eth_write_cb;
-    csap_descr->write_read_cb   = eth_write_read_cb;
+    csap_descr->read_cb          = tad_eth_read_cb;
+    csap_descr->write_cb         = tad_eth_write_cb;
+    csap_descr->write_read_cb    = tad_eth_write_read_cb;
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 500000;
     csap_descr->prepare_recv_cb  = eth_prepare_recv;
@@ -847,27 +791,15 @@ eth_single_init_cb (int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->release_cb       = eth_release;
     csap_descr->echo_cb          = eth_echo_method;
 
-    csap_descr->layers[layer].get_param_cb = eth_get_param_cb; 
+    csap_descr->layers[layer].get_param_cb = tad_eth_get_param_cb; 
     
     return 0;
 }
 
-/**
- * Callback for destroy ethernet CSAP layer  if single in stack.
- *
- * This callback should free all undeground media resources used by 
- * this layer and all memory used for layer-specific data and pointed 
- * in respective structure in 'layer-data' in CSAP instance struct. 
- *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed.
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-eth_single_destroy_cb (int csap_id, int layer)
+
+/* See description tad_eth_impl.h */
+te_errno
+tad_eth_single_destroy_cb(int csap_id, unsigned int layer)
 {
     csap_p csap_descr = csap_find(csap_id);
 
@@ -922,7 +854,7 @@ eth_single_destroy_cb (int csap_id, int layer)
  * @return zero on success or error code.
  */
 int 
-eth_echo_method (csap_p csap_descr, uint8_t *pkt, size_t len)
+eth_echo_method(csap_p csap_descr, uint8_t *pkt, size_t len)
 {
     uint8_t tmp_buffer [10000]; 
 
@@ -938,9 +870,9 @@ eth_echo_method (csap_p csap_descr, uint8_t *pkt, size_t len)
      * with OS interface statistics, but it cause many side effects, 
      * therefore it is disabled now. */
 
-    eth_write_cb (csap_descr, tmp_buffer, len - ETH_TAILING_CHECKSUM);
+    tad_eth_write_cb(csap_descr, tmp_buffer, len - ETH_TAILING_CHECKSUM);
 #else
-    eth_write_cb (csap_descr, tmp_buffer, len);
+    tad_eth_write_cb(csap_descr, tmp_buffer, len);
 #endif
 
 
@@ -948,5 +880,3 @@ eth_echo_method (csap_p csap_descr, uint8_t *pkt, size_t len)
 
     return 0;
 }
-
-

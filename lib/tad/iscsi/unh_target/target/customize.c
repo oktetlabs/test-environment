@@ -23,9 +23,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
+ * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #include <te_config.h>

@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  * Ethernet CSAP, stack-related callbacks.
@@ -22,9 +22,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD packet sockets"

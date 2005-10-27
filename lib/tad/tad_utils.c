@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  * Implementation of some common useful utilities for TAD.
@@ -85,39 +85,39 @@ tad_payload_asn_tag_to_enum(uint16_t tag)
 int 
 tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
 {
-    int level;
-    int rc = 0;
+    unsigned int layer;
+    te_errno     rc = 0;
 
-    for (level = 0; (rc == 0) && (level < csap_descr->depth); level ++)
+    for (layer = 0; (rc == 0) && (layer < csap_descr->depth); layer++)
     { 
         char       label[40];
-        asn_value *level_pdu;
+        asn_value *layer_pdu;
 
         csap_spt_type_p csap_spt_descr; 
 
-        csap_spt_descr = csap_descr->layers[level].proto_support;
+        csap_spt_descr = csap_descr->layers[layer].proto_support;
 
         snprintf(label, sizeof(label), "%d.#%s", 
-                level, csap_descr->layers[level].proto);
+                layer, csap_descr->layers[layer].proto);
 
-        rc = asn_get_subvalue(pdus, (const asn_value **)&level_pdu, label);
+        rc = asn_get_subvalue(pdus, (const asn_value **)&layer_pdu, label);
 
         if (rc != 0) 
         {
             ERROR("%s(CSAP %d): asn_get_subvalue rc %r, "
-                  "confirm level %d, label %s",
-                  __FUNCTION__, csap_descr->id, rc, level, label);
+                  "confirm layer %d, label %s",
+                  __FUNCTION__, csap_descr->id, rc, layer, label);
             break;
         }
 
-        rc = csap_spt_descr->confirm_cb(csap_descr->id, level, level_pdu);
+        rc = csap_spt_descr->confirm_cb(csap_descr->id, layer, layer_pdu);
         VERB("confirm rc: %d", rc);
 
         if (rc != 0)
         {
             ERROR("pdus do not confirm to CSAP; "
-                  "rc: %r, csap id: %d, level: %d", 
-                  rc, csap_descr->id, level);
+                  "rc: %r, csap id: %d, layer: %d", 
+                  rc, csap_descr->id, layer);
             break;
         }
     }
@@ -1051,7 +1051,7 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
 }
 
 /**
- * Make hex dump of packet into log with RING log level. 
+ * Make hex dump of packet into log with RING log level.
  *
  * @param csap_descr    CSAP descriptor structure
  * @param usr_param     string with some user parameter, not used 

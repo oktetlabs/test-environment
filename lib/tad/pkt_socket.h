@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  *

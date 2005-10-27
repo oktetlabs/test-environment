@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief CLI TAD
  *
  * Traffic Application Domain Command Handler
  * CLI CSAP support description structures. 
@@ -24,40 +24,45 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
+
+#define TE_LGR_USER     "TAD CLI CSAP"
 
 #include "te_config.h"
 
 #include "tad_cli_impl.h"
 
-csap_layer_neighbour_list_t cli_nbr_list = 
+
+static csap_layer_neighbour_list_t cli_nbr_list = 
 {
     NULL,
     NULL, 
-    cli_single_init_cb,
-    cli_single_destroy_cb,
+
+    tad_cli_single_init_cb,
+    tad_cli_single_destroy_cb,
 };
 
-csap_spt_type_t cli_csap_spt = 
+static csap_spt_type_t cli_csap_spt = 
 {
     "cli",
-    cli_confirm_pdu_cb,
-    cli_gen_bin_cb,
-    cli_match_bin_cb,
-    cli_gen_pattern_cb,
+
+    tad_cli_confirm_pdu_cb,
+    tad_cli_gen_bin_cb,
+    tad_cli_match_bin_cb,
+    tad_cli_gen_pattern_cb,
 
     &cli_nbr_list
 };
 
+
 /**
  * Register CLI CSAP callbacks and support structures in TAD Command Handler.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code
  */ 
-int
+te_errno
 csap_support_cli_register(void)
 { 
     return add_csap_spt(&cli_csap_spt);
 }
-

@@ -1,11 +1,11 @@
 /** @file
- * @brief Test Environment: 
+ * @brief iSCSI TAD
  *
  * Traffic Application Domain Command Handler
  * iSCSI CSAP support description structures. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+ * the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,54 +22,48 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD iSCSI CSAP"
 
-#include "config.h"
-
-#include <string.h>
+#include "te_config.h"
 
 #include "tad_iscsi_impl.h"
 
-#include "logger_api.h"
 
-
-csap_layer_neighbour_list_t iscsi_nbr_list = 
+static csap_layer_neighbour_list_t iscsi_nbr_list = 
 {
     NULL,
     NULL, 
-    iscsi_single_init_cb,
-    iscsi_single_destroy_cb,
+
+    tad_iscsi_single_init_cb,
+    tad_iscsi_single_destroy_cb,
 };
 
-csap_spt_type_t iscsi_csap_spt = 
+static csap_spt_type_t iscsi_csap_spt = 
 {
     "iscsi",
-    iscsi_confirm_pdu_cb,
-    iscsi_gen_bin_cb,
-    iscsi_match_bin_cb,
-    iscsi_gen_pattern_cb,
+
+    tad_iscsi_confirm_pdu_cb,
+    tad_iscsi_gen_bin_cb,
+    tad_iscsi_match_bin_cb,
+    tad_iscsi_gen_pattern_cb,
 
     &iscsi_nbr_list
 };
 
-extern int iscsi_server_init(void);
 
 /**
  * Register iSCSI CSAP callbacks and support structures in
  * TAD Command Handler.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code
  */ 
-int
+te_errno
 csap_support_iscsi_register(void)
 { 
-    iscsi_server_init();
-
     return add_csap_spt(&iscsi_csap_spt);
 }
-

@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief IP Stack TAD
  *
  * Traffic Application Domain Command Handler
  * Ethernet CSAP, stack-related callbacks.
@@ -22,9 +22,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #define TE_LGR_USER "TAD TCP" 
@@ -67,8 +67,9 @@
 #include "tad_ipstack_impl.h"
 
 
-int 
-tcp_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
+/* See description tad_ipstack_impl.h */
+te_errno
+tad_tcp_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 {
     UNUSED(csap_descr);
     UNUSED(traffic_nds);
@@ -78,19 +79,9 @@ tcp_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 }
 
  
-/**
- * Callback for read data from media of tcpernet CSAP. 
- *
- * @param csap_id       identifier of CSAP.
- * @param timeout       timeout of waiting for data in microseconds.
- * @param buf           buffer for read data.
- * @param buf_len       length of available buffer.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
- */ 
+/* See description tad_ipstack_impl.h */
 int 
-tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tad_tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     int    rc; 
     int    layer;    
@@ -179,18 +170,10 @@ tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     }
 }
 
-/**
- * Callback for write data to media of tcpernet CSAP. 
- *
- * @param csap_id       identifier of CSAP.
- * @param buf           buffer with data to be written.
- * @param buf_len       length of data in buffer.
- *
- * @return 
- *      quantity of written octets, or -1 if error occured. 
- */ 
+
+/* See description tad_ipstack_impl.h */
 int 
-tcp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+tad_tcp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     tcp_csap_specific_data_t * spec_data;
     int layer;    
@@ -224,47 +207,28 @@ tcp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     return rc;
 }
 
-/**
- * Callback for write data to media of tcpernet CSAP and read
- *  data from media just after write, to get answer to sent request. 
- *
- * @param csap_id       identifier of CSAP.
- * @param timeout       timeout of waiting for data.
- * @param w_buf         buffer with data to be written.
- * @param w_buf_len     length of data in w_buf.
- * @param r_buf         buffer for data to be read.
- * @param r_buf_len     available length r_buf.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
- */ 
+
+/* See description tad_ipstack_impl.h */
 int 
-tcp_write_read_cb(csap_p csap_descr, int timeout,
-                  const char *w_buf, size_t w_buf_len,
-                  char *r_buf, size_t r_buf_len)
+tad_tcp_write_read_cb(csap_p csap_descr, int timeout,
+                      const char *w_buf, size_t w_buf_len,
+                      char *r_buf, size_t r_buf_len)
 {
     int rc; 
 
-    rc = tcp_write_cb(csap_descr, w_buf, w_buf_len);
+    rc = tad_tcp_write_cb(csap_descr, w_buf, w_buf_len);
     
     if (rc == -1)  
         return rc;
     else 
-        return tcp_read_cb(csap_descr, timeout, r_buf, r_buf_len);;
+        return tad_tcp_read_cb(csap_descr, timeout, r_buf, r_buf_len);;
 }
 
-/**
- * Callback for init tcp CSAP layer  if single in stack.
- *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
+
+/* See description tad_ipstack_impl.h */
+te_errno
+tad_tcp_single_init_cb(int csap_id, const asn_value *csap_nds,
+                       unsigned int layer)
 {
     RING("%s(CSAP %d) called");
 #if 0
@@ -415,11 +379,11 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     tcp_spec_data->read_timeout = 200000;
 
     csap_descr->layers[layer].specific_data = tcp_spec_data;
-    csap_descr->layers[layer].get_param_cb = tcp_get_param_cb;
+    csap_descr->layers[layer].get_param_cb = tad_tcp_get_param_cb;
 
-    csap_descr->read_cb         = tcp_read_cb;
-    csap_descr->write_cb        = tcp_write_cb;
-    csap_descr->write_read_cb   = tcp_write_read_cb;
+    csap_descr->read_cb          = tad_tcp_read_cb;
+    csap_descr->write_cb         = tad_tcp_write_cb;
+    csap_descr->write_read_cb    = tad_tcp_write_read_cb;
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 500000;
 
@@ -432,20 +396,10 @@ tcp_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 #endif
 }
 
-/**
- * Callback for destroy tcpernet CSAP layer  if single in stack.
- *      This callback should free all undeground media resources used by 
- *      this layer and all memory used for layer-specific data and pointed 
- *      in respective structure in 'layer-data' in CSAP instance struct. 
- *
- * @param csap_id       identifier of CSAP.
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
+
+/* See description tad_ipstack_impl.h */
 int 
-tcp_single_destroy_cb(int csap_id, int layer)
+tad_tcp_single_destroy_cb(int csap_id, unsigned int layer)
 {
 #if 0
     csap_p csap_descr = csap_find(csap_id);
@@ -466,18 +420,10 @@ tcp_single_destroy_cb(int csap_id, int layer)
 }
 
 
-/**
- * Callback for init 'tcp' CSAP layer if over 'ip4' in stack.
- *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
+/* See description tad_ipstack_impl.h */
+te_errno
+tad_tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds,
+                    unsigned int layer)
 {
     csap_p                    csap_descr;      
     tcp_csap_specific_data_t *spec_data; 
@@ -487,8 +433,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     int32_t value_in_pdu;
     int     rc = 0;
 
-    VERB("%s called for csap %d, layer %d",
-         __FUNCTION__, csap_id, layer); 
+    ENTRY("CSAP=%d NDS=%p layer=%u", csap_id, csap_nds, layer);
 
     if (csap_nds == NULL)
         return TE_EWRONGPTR;
@@ -497,18 +442,16 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         return TE_ETADCSAPNOTEX;
 
     spec_data = calloc (1, sizeof(tcp_csap_specific_data_t));
-    
     if (spec_data == NULL)
-    {
         return TE_ENOMEM;
-    }
 
     csap_descr->layers[layer].specific_data = spec_data;
-    csap_descr->layers[layer].get_param_cb = tcp_get_param_cb;
+    csap_descr->layers[layer].get_param_cb = tad_tcp_get_param_cb;
 
     tcp_pdu = csap_descr->layers[layer].csap_layer_pdu;
 
-    csap_descr->check_pdus_cb = tcp_ip4_check_pdus; 
+    /* FIXME Why IPv4? */
+    csap_descr->check_pdus_cb = tad_tcp_ip4_check_pdus; 
 
     if (layer + 1 >= csap_descr->depth)
     {
@@ -528,9 +471,9 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         const asn_value *data_csap_spec, *subval;
         asn_tag_class    t_class;
 
-        csap_descr->read_cb         = tcp_read_cb;
-        csap_descr->write_cb        = tcp_write_cb;
-        csap_descr->write_read_cb   = tcp_write_read_cb;
+        csap_descr->read_cb         = tad_tcp_read_cb;
+        csap_descr->write_cb        = tad_tcp_write_cb;
+        csap_descr->write_read_cb   = tad_tcp_write_read_cb;
         csap_descr->read_write_layer = layer; 
 
         rc = asn_get_child_value(tcp_pdu, &data_csap_spec, 
@@ -594,20 +537,20 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                                &value_in_pdu);
     if (rc == 0)
     {
-        F_VERB("%s(): set TCP CSAP %d default local port to %d", 
-               __FUNCTION__, csap_descr->id, value_in_pdu);
+        VERB("%s(): set TCP CSAP %d default local port to %d", 
+             __FUNCTION__, csap_descr->id, value_in_pdu);
         spec_data->local_port = value_in_pdu;
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        F_VERB("%s(): set TCP CSAP %d default local port to zero", 
-               __FUNCTION__, csap_descr->id);
+        VERB("%s(): set TCP CSAP %d default local port to zero", 
+             __FUNCTION__, csap_descr->id);
         spec_data->local_port = 0;
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
     {
-        F_ERROR("%s(): TCP CSAP %d, non-plain local port not supported",
-                __FUNCTION__, csap_descr->id);
+        ERROR("%s(): TCP CSAP %d, non-plain local port not supported",
+              __FUNCTION__, csap_descr->id);
         return TE_EOPNOTSUPP;
     }
     else
@@ -620,20 +563,20 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
                                &value_in_pdu);
     if (rc == 0)
     {
-        F_VERB("%s(): set TCP CSAP %d default remote port to %d", 
-               __FUNCTION__, csap_descr->id, value_in_pdu);
+        VERB("%s(): set TCP CSAP %d default remote port to %d", 
+             __FUNCTION__, csap_descr->id, value_in_pdu);
         spec_data->remote_port = value_in_pdu;
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        F_VERB("%s(): set TCP CSAP %d default remote port to zero", 
-               __FUNCTION__, csap_descr->id);
+        VERB("%s(): set TCP CSAP %d default remote port to zero", 
+             __FUNCTION__, csap_descr->id);
         spec_data->remote_port = 0;
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
     {
-        F_ERROR("%s(): TCP CSAP %d, non-plain remote port not supported",
-                __FUNCTION__, csap_descr->id);
+        ERROR("%s(): TCP CSAP %d, non-plain remote port not supported",
+              __FUNCTION__, csap_descr->id);
         return TE_EOPNOTSUPP;
     }
     else
@@ -660,7 +603,7 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         }
 
         if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
-                       (void *) &opt, sizeof(opt)) == -1)
+                       &opt, sizeof(opt)) == -1)
         {
             rc = TE_OS_RC(TE_TAD_CSAP, errno);
             ERROR("%s(CSAP %d) set SO_REUSEADDR failed, errno %r", 
@@ -728,20 +671,10 @@ tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     return 0;
 }
 
-/**
- * Callback for destroy 'tcp' CSAP layer if over 'ip4' in stack.
- *      This callback should free all undeground media resources used by 
- *      this layer and all memory used for layer-specific data and pointed 
- *      in respective structure in 'layer-data' in CSAP instance struct. 
- *
- * @param csap_id       identifier of CSAP.
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-tcp_ip4_destroy_cb(int csap_id, int layer)
+
+/* See description tad_ipstack_impl.h */
+te_errno 
+tad_tcp_ip4_destroy_cb(int csap_id, unsigned int layer)
 {
     csap_p csap_descr;
 
@@ -763,4 +696,3 @@ tcp_ip4_destroy_cb(int csap_id, int layer)
 
     return 0;
 }
-

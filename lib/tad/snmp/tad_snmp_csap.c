@@ -1,11 +1,11 @@
 /** @file
- * @brief Test Environment: 
+ * @brief SNMP TAD
  *
  * Traffic Application Domain Command Handler
- * Dummy FILE protocol implementaion, CSAP support description structures. 
+ * SNMP protocol implementaion, CSAP support description structures. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS in
+ * the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,48 +22,50 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
-#define TE_LGR_USER     "TAD SNMP"
+#define TE_LGR_USER     "TAD SNMP CSAP"
 
-#include <string.h>
+#include "te_config.h"
 
 #include "tad_snmp_impl.h"
-#include "logger_api.h"
 
 
-csap_layer_neighbour_list_t snmp_nbr_list = 
+static csap_layer_neighbour_list_t snmp_nbr_list = 
 {
     NULL,
     NULL, 
-    snmp_single_init_cb,
-    snmp_single_destroy_cb,
+
+    tad_snmp_single_init_cb,
+    tad_snmp_single_destroy_cb,
 };
 
-csap_spt_type_t snmp_csap_spt = 
+static csap_spt_type_t snmp_csap_spt = 
 {
     "snmp",
 
-    snmp_confirm_pdu_cb,
-    snmp_gen_bin_cb,
-    snmp_match_bin_cb,
-    snmp_gen_pattern_cb,
+    tad_snmp_confirm_pdu_cb,
+    tad_snmp_gen_bin_cb,
+    tad_snmp_match_bin_cb,
+    tad_snmp_gen_pattern_cb,
 
     &snmp_nbr_list
 };
 
+
 /**
- * Register 'snmp' CSAP callbacks and support structures in TAD Command Handler.
+ * Register 'snmp' CSAP callbacks and support structures in TAD 
+ * Command Handler.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code
  */ 
-int csap_support_snmp_register (void)
+te_errno
+csap_support_snmp_register(void)
 { 
     init_snmp("snmpapp");
 
     return add_csap_spt(&snmp_csap_spt);
 }
-

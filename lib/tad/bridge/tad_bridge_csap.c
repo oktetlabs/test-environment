@@ -1,8 +1,8 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Bridge/STP TAD
  *
  * Traffic Application Domain Command Handler
- * Ethernet CSAP support description structures. 
+ * Bridge/STP CSAP support description structures. 
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -22,45 +22,48 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#define TE_LGR_USER     "TAD Bridge CSAP"
 
-#include <string.h>
+#include "te_config.h"
+
 #include "tad_bridge_impl.h"
 
 
-csap_layer_neighbour_list_t bridge_nbr_list = 
+static csap_layer_neighbour_list_t bridge_nbr_list = 
 {
     NULL, 
     "eth",
-    bridge_eth_init_cb,
-    bridge_eth_destroy_cb,
+
+    tad_bridge_eth_init_cb,
+    tad_bridge_eth_destroy_cb,
 };
 
-csap_spt_type_t bridge_csap_spt = 
+static csap_spt_type_t bridge_csap_spt = 
 {
     "bridge",
-    bridge_confirm_pdu_cb,
-    bridge_gen_bin_cb,
-    bridge_match_bin_cb,
-    bridge_gen_pattern_cb,
+
+    tad_bridge_confirm_pdu_cb,
+    tad_bridge_gen_bin_cb,
+    tad_bridge_match_bin_cb,
+    tad_bridge_gen_pattern_cb,
 
     &bridge_nbr_list
 };
 
+
 /**
- * Register bridgeernet CSAP callbacks and support structures in TAD Command Handler.
+ * Register bridgeernet CSAP callbacks and support structures in TAD
+ * Command Handler.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code
  */ 
-int csap_support_bridge_register (void)
+te_errno
+csap_support_bridge_register (void)
 { 
     return add_csap_spt(&bridge_csap_spt);
 }
-

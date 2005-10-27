@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief CLI TAD
  *
  * Traffic Application Domain Command Handler
  * CLI CSAP, stack-related callbacks.
@@ -619,19 +619,9 @@ free_cli_csap_data(cli_csap_specific_data_p spec_data)
 }
 
 
-/**
- * Callback for read data from media of CLI CSAP. 
- *
- * @param csap_id       identifier of CSAP.
- * @param timeout       timeout of waiting for data in microseconds.
- * @param buf           buffer for read data.
- * @param buf_len       length of available buffer.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
- */ 
+/* See description tad_cli_impl.h */
 int 
-cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tad_cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
     cli_csap_specific_data_p spec_data;
 
@@ -707,18 +697,10 @@ cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     return rc;
 }
 
-/**
- * Callback for write data to media of CLI CSAP. 
- *
- * @param csap_id       identifier of CSAP.
- * @param buf           buffer with data to be written.
- * @param buf_len       length of data in buffer.
- *
- * @return 
- *      quantity of written octets, or -1 if error occured. 
- */ 
+
+/* See description tad_cli_impl.h */
 int 
-cli_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+tad_cli_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     cli_csap_specific_data_p spec_data;
 
@@ -791,24 +773,12 @@ cli_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     return bytes_written;
 }
 
-/**
- * Callback for write data to media of CLI CSAP and read
- * data from media just after write, to get answer to sent request. 
- *
- * @param csap_id       identifier of CSAP.
- * @param timeout       timeout of waiting for data.
- * @param w_buf         buffer with data to be written.
- * @param w_buf_len     length of data in w_buf.
- * @param r_buf         buffer for data to be read.
- * @param r_buf_len     available length r_buf.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
- */ 
+
+/* See description tad_cli_impl.h */
 int 
-cli_write_read_cb(csap_p csap_descr, int timeout,
-                  const char *w_buf, size_t w_buf_len,
-                  char *r_buf, size_t r_buf_len)
+tad_cli_write_read_cb(csap_p csap_descr, int timeout,
+                      const char *w_buf, size_t w_buf_len,
+                      char *r_buf, size_t r_buf_len)
 {
     cli_csap_specific_data_p spec_data;
 
@@ -892,18 +862,11 @@ cli_write_read_cb(csap_p csap_descr, int timeout,
     return rc;
 }
 
-/**
- * Callback for init CLI CSAP layer  if single in stack.
- *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
+
+/* See description tad_cli_impl.h */
+te_errno
+tad_cli_single_init_cb(int csap_id, const asn_value *csap_nds,
+                       unsigned int layer)
 {
     int rc;
     size_t tmp_len;
@@ -1159,9 +1122,9 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
 
     csap_descr->layers[layer].specific_data = cli_spec_data;
 
-    csap_descr->read_cb           = cli_read_cb;
-    csap_descr->write_cb          = cli_write_cb;
-    csap_descr->write_read_cb     = cli_write_read_cb;
+    csap_descr->read_cb           = tad_cli_read_cb;
+    csap_descr->write_cb          = tad_cli_write_cb;
+    csap_descr->write_read_cb     = tad_cli_write_read_cb;
     csap_descr->read_write_layer  = layer; 
     csap_descr->timeout           = 500000;
 
@@ -1207,7 +1170,7 @@ cli_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
         /* Wait for child initialisation finished */
         if ((sync_res = parent_wait_sync(cli_spec_data)) != SYNC_RES_OK)
         {
-            cli_single_destroy_cb(csap_descr->id, layer);
+            tad_cli_single_destroy_cb(csap_descr->id, layer);
             return TE_OS_RC(TE_TAD_CSAP, MAP_SYN_RES2ERRNO(sync_res));
         }
 
@@ -1222,21 +1185,10 @@ error:
     return TE_RC(TE_TAD_CSAP, rc);
 }
 
-/**
- * Callback for destroy CLI CSAP layer  if single in stack.
- *      This callback should free all undeground media resources used by 
- *      this layer and all memory used for layer-specific data and pointed 
- *      in respective structure in 'layer-data' in CSAP instance struct. 
- *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
- */ 
-int 
-cli_single_destroy_cb(int csap_id, int layer)
+
+/* See description tad_cli_impl.h */
+te_errno
+tad_cli_single_destroy_cb(int csap_id, unsigned int layer)
 {
     int    status;
     int    child_pid;

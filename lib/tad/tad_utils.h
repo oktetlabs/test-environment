@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  *
@@ -80,7 +80,7 @@ typedef enum {
 /**
  * Template argument value plain C presentation
  */
-typedef struct tad_tmpl_arg_t { 
+struct tad_tmpl_arg_t { 
     tad_tmpl_arg_type_t type;  /**< Type of argument */
 
     size_t       length;       /**< Length of argument data */
@@ -89,7 +89,7 @@ typedef struct tad_tmpl_arg_t {
         char    *arg_str;      /**< Pointer to character sting value */
         uint8_t *arg_oct;      /**< Pointer to octet array value */
     };
-} tad_tmpl_arg_t;
+};
 
 /**
  * Type of template iterator.

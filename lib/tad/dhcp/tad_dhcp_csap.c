@@ -1,11 +1,11 @@
 /** @file
- * @brief Test Environment: 
+ * @brief DHCP TAD
  *
  * Traffic Application Domain Command Handler
- * Ethernet CSAP support description structures. 
+ * DHCP CSAP support description structures. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS in
+ * the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,50 +22,48 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD DHCP CSAP"
 
-#include "config.h"
+#include "te_config.h"
 
-#include <string.h>
-
-#include "logger_api.h"
 #include "tad_dhcp_impl.h"
 
 
-csap_layer_neighbour_list_t dhcp_nbr_list = 
+static csap_layer_neighbour_list_t dhcp_nbr_list = 
 {
     NULL,
     NULL, 
-    dhcp_single_init_cb,
-    dhcp_single_destroy_cb,
+
+    tad_dhcp_single_init_cb,
+    tad_dhcp_single_destroy_cb,
 };
 
-csap_spt_type_t dhcp_csap_spt = 
+static csap_spt_type_t dhcp_csap_spt = 
 {
     "dhcp",
-    dhcp_confirm_pdu_cb,
-    dhcp_gen_bin_cb,
-    dhcp_match_bin_cb,
-    dhcp_gen_pattern_cb,
+
+    tad_dhcp_confirm_pdu_cb,
+    tad_dhcp_gen_bin_cb,
+    tad_dhcp_match_bin_cb,
+    tad_dhcp_gen_pattern_cb,
 
     &dhcp_nbr_list
 };
+
 
 /**
  * Register dhcpernet CSAP callbacks and support structures in
  * TAD Command Handler.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code
  */ 
-int
+te_errno
 csap_support_dhcp_register(void)
 { 
-    VERB("match=%x", dhcp_csap_spt.match_cb);
     return add_csap_spt(&dhcp_csap_spt);
 }
-

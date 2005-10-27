@@ -1,12 +1,11 @@
 /** @file
- * @brief TAD: Ethernet
+ * @brief Ethernet TAD
  *
  * Traffic Application Domain Command Handler Ethernet CSAP support
  * description structures. 
  *
- *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS in
+ * the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,32 +22,35 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
 
-#include <string.h>
+#define TE_LGR_USER     "TAD Ethernet CSAP"
+
+#include "te_config.h"
 
 #include "tad_eth_impl.h"
 
 
-csap_layer_neighbour_list_t eth_nbr_list = 
+static csap_layer_neighbour_list_t eth_nbr_list =
 {
     NULL,
-    NULL, 
-    eth_single_init_cb,
-    eth_single_destroy_cb,
+    NULL,
+
+    tad_eth_single_init_cb,
+    tad_eth_single_destroy_cb,
 };
 
-csap_spt_type_t eth_csap_spt = 
+static csap_spt_type_t eth_csap_spt =
 {
     "eth",
-    eth_confirm_pdu_cb,
-    eth_gen_bin_cb,
-    eth_match_bin_cb,
-    eth_gen_pattern_cb,
+
+    tad_eth_confirm_pdu_cb,
+    tad_eth_gen_bin_cb,
+    tad_eth_match_bin_cb,
+    tad_eth_gen_pattern_cb,
 
     &eth_nbr_list,
 };
@@ -58,9 +60,9 @@ csap_spt_type_t eth_csap_spt =
  * Register Ethernet CSAP callbacks and support structures in TAD
  * Command Handler.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code.
  */ 
-int
+te_errno
 csap_support_eth_register(void)
 { 
     return add_csap_spt(&eth_csap_spt);

@@ -1,11 +1,11 @@
 /** @file
- * @brief Test Environment: 
+ * @brief IP Stack TAD
  *
  * Traffic Application Domain Command Handler
  * Ethernet CSAP support description structures. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2004 Test Environment authors (see file AUTHORS in
+ * the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,41 +22,45 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
-#include <string.h>
+#include "te_config.h"
+
 #include "tad_ipstack_impl.h"
 
 /*
  * IPv4
  */
 
-csap_layer_neighbour_list_t ip4_nbr_eth = 
+static csap_layer_neighbour_list_t ip4_nbr_eth = 
 {
     NULL, 
     "eth",
-    ip4_eth_init_cb,
-    ip4_eth_destroy_cb,
+
+    tad_ip4_eth_init_cb,
+    tad_ip4_eth_destroy_cb,
 };
 
-csap_layer_neighbour_list_t ip4_nbr_single = 
+static csap_layer_neighbour_list_t ip4_nbr_single = 
 {
     &ip4_nbr_eth, 
     NULL,
-    ip4_single_init_cb,
-    ip4_single_destroy_cb,
+
+    tad_ip4_single_init_cb,
+    tad_ip4_single_destroy_cb,
 };
 
-csap_spt_type_t ip4_csap_spt = 
+static csap_spt_type_t ip4_csap_spt = 
 {
     "ip4",
-    ip4_confirm_pdu_cb,
-    ip4_gen_bin_cb,
-    ip4_match_bin_cb,
-    ip4_gen_pattern_cb,
+
+    tad_ip4_confirm_pdu_cb,
+    tad_ip4_gen_bin_cb,
+    tad_ip4_match_bin_cb,
+    tad_ip4_gen_pattern_cb,
 
     &ip4_nbr_single
 };
@@ -66,32 +70,35 @@ csap_spt_type_t ip4_csap_spt =
  * UDP
  */
 
-csap_layer_neighbour_list_t udp_nbr_ip4 = 
+static csap_layer_neighbour_list_t udp_nbr_ip4 = 
 {
     NULL, 
     "ip4",
-    udp_ip4_init_cb,
-    udp_ip4_destroy_cb,
+
+    tad_udp_ip4_init_cb,
+    tad_udp_ip4_destroy_cb,
 };
 
 /* It seems, there should not be UDP CSAP without any layer under it. */
 #if 0 
-csap_layer_neighbour_list_t udp_nbr_single = 
+static csap_layer_neighbour_list_t udp_nbr_single = 
 {
     &udp_nbr_ip4, 
     NULL,
-    udp_single_init_cb,
-    udp_single_destroy_cb,
+
+    tad_udp_single_init_cb,
+    tad_udp_single_destroy_cb,
 };
 #endif
 
-csap_spt_type_t udp_csap_spt = 
+static csap_spt_type_t udp_csap_spt = 
 {
     "udp",
-    udp_confirm_pdu_cb,
-    udp_gen_bin_cb,
-    udp_match_bin_cb,
-    udp_gen_pattern_cb,
+
+    tad_udp_confirm_pdu_cb,
+    tad_udp_gen_bin_cb,
+    tad_udp_match_bin_cb,
+    tad_udp_gen_pattern_cb,
 
     &udp_nbr_ip4
 };
@@ -100,41 +107,46 @@ csap_spt_type_t udp_csap_spt =
  * TCP
  */
 
-csap_layer_neighbour_list_t tcp_nbr_ip4 = 
+static csap_layer_neighbour_list_t tcp_nbr_ip4 = 
 {
     NULL, /* next */
     "ip4",
-    tcp_ip4_init_cb,
-    tcp_ip4_destroy_cb,
+
+    tad_tcp_ip4_init_cb,
+    tad_tcp_ip4_destroy_cb,
 };
 
-csap_spt_type_t tcp_csap_spt = 
+static csap_spt_type_t tcp_csap_spt = 
 {
     "tcp",
-    tcp_confirm_pdu_cb,
-    tcp_gen_bin_cb,
-    tcp_match_bin_cb,
-    tcp_gen_pattern_cb,
+
+    tad_tcp_confirm_pdu_cb,
+    tad_tcp_gen_bin_cb,
+    tad_tcp_match_bin_cb,
+    tad_tcp_gen_pattern_cb,
 
     &tcp_nbr_ip4
 };
 
+
 /**
- * Register ipstack CSAP callbacks and support structures in TAD Command Handler.
+ * Register ipstack CSAP callbacks and support structures in TAD
+ * Command Handler.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code.
  */ 
-int csap_support_ipstack_register (void)
+te_errno
+csap_support_ipstack_register(void)
 { 
-    int rc;
+    te_errno rc;
+
     rc = add_csap_spt(&ip4_csap_spt);
-    if (rc) 
+    if (rc != 0) 
         return rc;
 
     rc = add_csap_spt(&tcp_csap_spt);
-    if (rc) 
+    if (rc != 0)
         return rc;
 
     return add_csap_spt(&udp_csap_spt);
 }
-

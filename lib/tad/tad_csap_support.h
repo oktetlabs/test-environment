@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  *
@@ -60,13 +60,12 @@ extern "C" {
 
 
 
-
-
 /* ============= Types and structures definitions =============== */
 
 
 /* Forward declaration of type for usage in callback prototypes */
 struct tad_tmpl_arg_t; 
+typedef struct tad_tmpl_arg_t tad_tmpl_arg_t;
 
 
 /**
@@ -79,10 +78,11 @@ struct tad_tmpl_arg_t;
  * @param layer         Numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code.
  */ 
-typedef int (*csap_nbr_init_cb_t)(int csap_id, 
-                                  const asn_value *csap_nds, int layer);
+typedef te_errno (*csap_nbr_init_cb_t)(int              csap_id,
+                                       const asn_value *csap_nds,
+                                       unsigned int     layer);
 
 /**
  * Callback type to destroy CSAP layer.
@@ -94,9 +94,10 @@ typedef int (*csap_nbr_init_cb_t)(int csap_id,
  * @param layer         Numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code.
  */ 
-typedef int (*csap_nbr_destroy_cb_t)(int csap_id, int layer);
+typedef te_errno (*csap_nbr_destroy_cb_t)(int          csap_id,
+                                          unsigned int layer);
 
 /**
  * Callback type to confirm Traffic Pattern or Template PDU with
@@ -108,14 +109,15 @@ typedef int (*csap_nbr_destroy_cb_t)(int csap_id, int layer);
  * @param layer         numeric index of layer in CSAP type to be processed
  * @param traffic_pdu   asn_value with PDU (IN/OUT)
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code.
  */ 
-typedef int (*csap_confirm_pdu_cb_t)(int csap_id, int layer, 
-                                     asn_value *traffic_pdu); 
-
+typedef te_errno (*csap_confirm_pdu_cb_t)(int           csap_id,
+                                          unsigned int  layer, 
+                                          asn_value    *traffic_pdu); 
 
 
 struct csap_pkts;
+
 /**
  * Pointer to packet struct
  */
@@ -138,10 +140,11 @@ typedef struct csap_pkts {
                                        free() may be used. */
 } csap_pkts;
 
+
 /**
  * Callback type to generate binary data to be sent to media.
  * If some iteration was specified in traffic template, it done on the
- * upper level of template processing, this callback is called for every
+ * upper layer of template processing, this callback is called for every
  * set of iteration parameters values. 
  *
  * @param csap_descr    CSAP instance.
@@ -153,7 +156,7 @@ typedef struct csap_pkts {
  *                      template PDU.
  * @param arg_num       Length of array above. 
  * @param up_payload    Pointer to data which is already generated for 
- *                      upper layers and is payload for this protocol level.
+ *                      upper layers and is payload for this protocol layer.
  *                      May be zero.  Presented as list of packets. 
  *                      Almost always this list will contain only one 
  *                      element, but need in fragmentation sometimes may 
@@ -168,14 +171,15 @@ typedef struct csap_pkts {
  *                      contain only one element, but need 
  *                      in fragmentation sometimes may occur. (OUT)
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code.
  */ 
-typedef int (*csap_gen_bin_cb_t)(csap_p csap_descr, int layer,
-                                 const asn_value *tmpl_pdu,
-                                 const struct tad_tmpl_arg_t *args,
-                                 size_t arg_num,
-                                 csap_pkts_p up_payload,
-                                 csap_pkts_p pkts);
+typedef te_errno (*csap_gen_bin_cb_t)(csap_p                csap_descr,
+                                      unsigned int          layer,
+                                      const asn_value      *tmpl_pdu,
+                                      const tad_tmpl_arg_t *args,
+                                      size_t                arg_num,
+                                      csap_pkts_p           up_payload,
+                                      csap_pkts_p           pkts);
 
 /**
  * Callback type to parse received packet and match it with pattern. 
@@ -192,14 +196,14 @@ typedef int (*csap_gen_bin_cb_t)(csap_p csap_descr, int layer,
  *                      have to fill this instance with values from 
  *                      parsed and matched packet
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code.
  */
-typedef int (*csap_match_bin_cb_t)(int csap_id, int layer,
-                                   const asn_value *pattern_pdu,
-                                   const csap_pkts *pkt,
-                                   csap_pkts *payload,
-                                   asn_value *parsed_packet);
-
+typedef te_errno (*csap_match_bin_cb_t)(int              csap_id,
+                                        unsigned int     layer,
+                                        const asn_value *pattern_pdu,
+                                        const csap_pkts *pkt,
+                                        csap_pkts       *payload,
+                                        asn_value       *parsed_packet);
 
 /**
  * Callback type to generating pattern to filter 
@@ -212,12 +216,12 @@ typedef int (*csap_match_bin_cb_t)(int csap_id, int layer,
  * @param pattern_pdu   OUT: ASN value with pattern PDU, generated according
  *                      to passed template PDU and CSAP parameters. 
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code.
  */
-typedef int (*csap_gen_pattern_cb_t)(int csap_id, int layer,
-                                     const asn_value *tmpl_pdu, 
-                                     asn_value **pattern_pdu);
-
+typedef te_errno (*csap_gen_pattern_cb_t)(int               csap_id,
+                                          unsigned int      layer,
+                                          const asn_value  *tmpl_pdu, 
+                                          asn_value       **pattern_pdu);
 
 
 /*=====================================================================
@@ -283,7 +287,7 @@ typedef struct csap_layer_neighbour_list_t {
               NULL    - this means that layer which neighbours are listed 
                         is single in stack;
               "data"  - for data-CSAPs;
-              id of lower neighbour level. */
+              id of lower neighbour layer. */
 
     csap_nbr_init_cb_t    init_cb;    /**< Callback for initialize 
                                            'current' CSAP layer regarding 
@@ -301,7 +305,7 @@ typedef struct csap_layer_neighbour_list_t {
  * and list with supported lower neighbours. 
  */
 typedef struct csap_spt_type_t {
-    char *proto;     /**< symbolic label of related protocol level */
+    char *proto;     /**< symbolic label of related protocol layer */
 
     /** @name protocol-specific callbacks */ 
     csap_confirm_pdu_cb_t confirm_cb;
@@ -325,9 +329,9 @@ typedef struct csap_spt_type_t {
  *
  * @param spt_descr     CSAP layer support structure. 
  *
- * @return zero on success, otherwise error code. 
+ * @return Zero on success, otherwise error code. 
  */
-extern int init_csap_spt(void);
+extern te_errno init_csap_spt(void);
 
 
 /**
@@ -335,9 +339,9 @@ extern int init_csap_spt(void);
  *
  * @param spt_descr     CSAP layer support structure. 
  *
- * @return zero on success, otherwise error code. 
+ * @return Zero on success, otherwise error code. 
  */
-extern int add_csap_spt(csap_spt_type_p spt_descr);
+extern te_errno add_csap_spt(csap_spt_type_p spt_descr);
 
 
 /**
@@ -345,7 +349,7 @@ extern int add_csap_spt(csap_spt_type_p spt_descr);
  *
  * @param proto      protocol label.
  *
- * @return pointer to structure or NULL if not found. 
+ * @return Pointer to structure or NULL if not found. 
  */
 extern csap_spt_type_p find_csap_spt(const char *proto);
 

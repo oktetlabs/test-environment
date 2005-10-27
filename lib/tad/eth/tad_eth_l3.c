@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Ethernet TAD
  *
  * User methods for fill in eth frame payload. 
  *
@@ -21,9 +21,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #define TE_LGR_USER "TAD ETH L3"
@@ -67,7 +67,7 @@ unsigned int userdata_to_udp(unsigned char *raw_pkt);
  * @return zero on success or error code.
  */
 int 
-eth_mac_ctrl_payload(int csap_id, int layer, asn_value *tmpl)
+eth_mac_ctrl_payload(int csap_id, unsigned int layer, asn_value *tmpl)
 {
     static unsigned char  buffer[20000];
     unsigned int          length = 4;
@@ -102,7 +102,7 @@ eth_mac_ctrl_payload(int csap_id, int layer, asn_value *tmpl)
  * @return zero on success or error code.
  */
 int
-eth_mac_ctrl_unsupp_payload(int csap_id, int layer, asn_value *tmpl)
+eth_mac_ctrl_unsupp_payload(int csap_id, unsigned int layer, asn_value *tmpl)
 {
     static unsigned char  buffer[20000];
     unsigned int          length = 4;
@@ -138,7 +138,7 @@ eth_mac_ctrl_unsupp_payload(int csap_id, int layer, asn_value *tmpl)
  * @return zero on success or error code.
  */
 int 
-eth_udp_payload(int csap_id, int layer, asn_value *tmpl)
+eth_udp_payload(int csap_id, unsigned int layer, asn_value *tmpl)
 {
     static unsigned char  buffer[20000];
     unsigned int          length;

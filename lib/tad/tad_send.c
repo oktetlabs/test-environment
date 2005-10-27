@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  * Transmit module. 
@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -559,8 +559,8 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
     csap_pkts *up_packets  = NULL;
     csap_pkts *low_packets = NULL;
 
-    int  level = 0;
-    int  rc = 0;
+    unsigned int    layer = 0;
+    te_errno        rc = 0;
 
     if (pld_data == NULL)
     {
@@ -674,19 +674,19 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
         return TE_RC(TE_TAD_CH, rc);
     }
 
-    for (level = 0; rc == 0 && level < csap_descr->depth; level ++)
+    for (layer = 0; rc == 0 && layer < csap_descr->depth; layer++)
     { 
         csap_spt_type_p  csap_spt_descr; 
-        const asn_value *level_pdu = NULL; 
+        const asn_value *layer_pdu = NULL; 
 
         char  label[20];
 
-        sprintf(label, "pdus.%d", level);
+        sprintf(label, "pdus.%u", layer);
 
         low_packets = malloc(sizeof(csap_pkts));
         memset(low_packets, 0, sizeof(csap_pkts));
 
-        rc = asn_get_subvalue(nds, &level_pdu, label); 
+        rc = asn_get_subvalue(nds, &layer_pdu, label); 
         if (rc != 0)
         {
             ERROR("get subvalue in generate packet fails %r", rc);
@@ -695,10 +695,10 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
 
         if (rc == 0)
         {
-            csap_spt_descr = csap_descr->layers[level].proto_support;
+            csap_spt_descr = csap_descr->layers[layer].proto_support;
 
-            rc = csap_spt_descr->generate_cb(csap_descr, level, 
-                                             level_pdu, args, arg_num,
+            rc = csap_spt_descr->generate_cb(csap_descr, layer, 
+                                             layer_pdu, args, arg_num,
                                              up_packets, low_packets); 
         }
 
@@ -718,8 +718,8 @@ tad_tr_send_prepare_bin(csap_p csap_descr, asn_value_p nds,
         if (rc != 0) 
         {
             ERROR("generate binary data error; "
-                  "rc: %r, csap id: %d, level: %d", 
-                  rc, csap_descr->id, level);
+                  "rc: %r, csap id: %d, layer: %u", 
+                  rc, csap_descr->id, layer);
 
             rc = TE_RC(TE_TAD_CSAP, rc);
         }

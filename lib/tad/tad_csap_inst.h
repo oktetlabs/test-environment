@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  *
@@ -90,7 +90,7 @@
  */
 #define TAD_WRITE_TIMEOUT_DEFAULT   {1, 0}
 /**
- * Number of retries to write data in low level
+ * Number of retries to write data in low layer
  */
 #define TAD_WRITE_RETRIES           128
 
@@ -156,27 +156,28 @@ struct csap_spt_type_t;
 /**
  * Callback type to read parameter value of CSAP.
  *
- * @param csap_descr    CSAP descriptor structure. 
- * @param level         Index of level in CSAP stack, which param is wanted.
+ * @param csap_descr    CSAP descriptor structure.
+ * @param layer         Index of layer in CSAP stack, which param is wanted.
  * @param param         Protocol-specific name of parameter.
  *
- * @return 
+ * @return
  *     String with textual presentation of parameter value, or NULL 
  *     if error occured. User have to free memory at returned pointer.
  */ 
-typedef char *(*csap_get_param_cb_t)(csap_p csap_descr, int level, 
-                                     const char *param);
+typedef char *(*csap_get_param_cb_t)(csap_p        csap_descr,
+                                     unsigned int  layer, 
+                                     const char   *param);
 
 /**
- * Callback type to prepare/release low-level resources 
+ * Callback type to prepare/release low-layer resources 
  * of CSAP used in traffic process.
  * Usually should open/close sockets, etc. 
  *
  * @param csap_descr    CSAP descriptor structure. 
  *
- * @return status code.
+ * @return Status code.
  */ 
-typedef int (*csap_low_resource_cb_t)(csap_p csap_descr);
+typedef te_errno (*csap_low_resource_cb_t)(csap_p csap_descr);
 
 /**
  * Callback type to read data from media of CSAP. 
@@ -186,8 +187,8 @@ typedef int (*csap_low_resource_cb_t)(csap_p csap_descr);
  * @param buf           Buffer for read data.
  * @param buf_len       Length of available buffer.
  *
- * @return  quantity of read octets, or -1 if error occured, 
- *          0 if timeout expired. 
+ * @return Quantity of read octets, or -1 if error occured, 
+ *         0 if timeout expired. 
  */ 
 typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout, 
                               char *buf, size_t buf_len);
@@ -199,7 +200,7 @@ typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout,
  * @param buf           Buffer with data to be written.
  * @param buf_len       Length of data in buffer.
  *
- * @return quantity of written octets, or -1 if error occured. 
+ * @return Quantity of written octets, or -1 if error occured. 
  */ 
 typedef int (*csap_write_cb_t)(csap_p csap_descr, const char *buf,
                                size_t buf_len);
@@ -215,7 +216,7 @@ typedef int (*csap_write_cb_t)(csap_p csap_descr, const char *buf,
  * @param r_buf         Buffer for data to be read.
  * @param r_buf_len     Available length r_buf.
  *
- * @return quantity of read octets, or -1 if error occured, 
+ * @return Quantity of read octets, or -1 if error occured, 
  *         0 if timeout expired. 
  */ 
 typedef int (*csap_write_read_cb_t)(csap_p csap_descr, int timeout,
@@ -232,10 +233,10 @@ typedef int (*csap_write_read_cb_t)(csap_p csap_descr, int timeout,
  *                      be checked to have sequence of PDUs according
  *                      with CSAP layer structure.
  *
- * @return zero on success, otherwise common TE error code.
+ * @return Zero on success, otherwise common TE error code.
  */ 
-typedef int (*csap_check_pdus_cb_t)(csap_p csap_descr, 
-                                    asn_value *traffic_nds);
+typedef te_errno (*csap_check_pdus_cb_t)(csap_p csap_descr, 
+                                         asn_value *traffic_nds);
 
 
 /**
@@ -248,10 +249,10 @@ typedef int (*csap_check_pdus_cb_t)(csap_p csap_descr,
  * @param pkt           Got packet, plain binary data. 
  * @param len           Length of packet.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code.
  */
-typedef int (*csap_echo_method)(csap_p csap_descr, uint8_t *pkt, 
-                                size_t len);
+typedef te_errno (*csap_echo_method)(csap_p csap_descr, uint8_t *pkt, 
+                                     size_t len);
 
 
 /**
@@ -305,16 +306,15 @@ typedef enum {
 } tad_csap_type_t;
 
 
-
 /**
  * CSAP instance support resources and attributes.
  */
 typedef struct csap_instance {
-    int      id;           /**< CSAP id */
+    int             id;         /**< CSAP id */
 
-    int      depth;        /**< number of layers in stack */
-    char    *csap_type;    /**< pointer to original CSAP type, proto[]
-                                entries are blocks of this string. */
+    unsigned int    depth;      /**< number of layers in stack */
+    char           *csap_type;  /**< pointer to original CSAP type, proto[]
+                                     entries are blocks of this string. */
 
     tad_csap_type_t type;  /**< type of CSAP */
 
@@ -366,7 +366,6 @@ typedef struct csap_instance {
 
 
 
-
 /**
  * Type for reference to user function for some magic processing 
  * with matched pkt
@@ -382,7 +381,6 @@ typedef int (*tad_processing_pkt_method)(csap_p csap_descr,
                                          const char *usr_param, 
                                          const uint8_t *pkt, 
                                          size_t pkt_len);
-
 
 
 /**
@@ -503,6 +501,7 @@ extern void *tad_tr_recv_thread(void *arg);
  * @return NULL 
  */
 extern void *tad_tr_send_thread(void *arg);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

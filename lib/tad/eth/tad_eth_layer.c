@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Ethernet TAD
  *
  * Traffic Application Domain Command Handler
  * Ethernet CSAP layer-related callbacks.
@@ -22,9 +22,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD Ethernet"
@@ -45,19 +45,9 @@
 #include "tad_eth_impl.h"
 
 
-/**
- * Callback for read parameter value of ethernet CSAP.
- *
- * @param csap_id       identifier of CSAP.
- * @param level         Index of level in CSAP stack, which param is wanted.
- * @param param         Protocol-specific name of parameter.
- *
- * @return 
- *     String with textual presentation of parameter value, or NULL 
- *     if error occured. User have to free memory at returned pointer.
- */ 
+/* See description in tad_eth_impl.h */
 char * 
-eth_get_param_cb (csap_p csap_descr, int level, const char *param)
+tad_eth_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 {
     char   *par_buffer;            
     eth_csap_specific_data_p spec_data;
@@ -69,7 +59,7 @@ eth_get_param_cb (csap_p csap_descr, int level, const char *param)
     }
 
     spec_data = (eth_csap_specific_data_p)
-            csap_descr->layers[level].specific_data; 
+            csap_descr->layers[layer].specific_data; 
 
     if (strcmp (param, "total_bytes") == 0)
     {
@@ -83,16 +73,10 @@ eth_get_param_cb (csap_p csap_descr, int level, const char *param)
     return NULL;
 }
 
-/**
- * Callback for confirm PDU with ethernet CSAP parameters and possibilities.
- *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU (IN/OUT)
- *
- * @return zero on success or error code.
- */ 
-int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
+
+/* See description in tad_eth_impl.h */
+te_errno
+tad_eth_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
 {
     csap_p                   csap_descr;
     eth_csap_specific_data_p spec_data; 
@@ -321,32 +305,13 @@ int eth_confirm_pdu_cb (int csap_id, int layer, asn_value_p tmpl_pdu)
     return 0;
 }
 
-/**
- * Callback for generate binary data to be sent to media.
- *
- * @param csap_descr    CSAP instance
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU. 
- * @param up_payload    pointer to data which is already generated for upper 
- *                      layers and is payload for this protocol level. 
- *                      May be zero.  Presented as list of packets. 
- *                      Almost always this list will contain only one element, 
- *                      but need in fragmentation sometimes may occur. 
- *                      Of cause, on up level only one PDU is passed, 
- *                      but upper layer (if any present) may perform 
- *                      fragmentation, and current layer may have possibility 
- *                      to de-fragment payload.
- * @param pkts          Callback have to fill this structure with list of 
- *                      generated packets. Almost always this list will 
- *                      contain only one element, but need 
- *                      in fragmentation sometimes may occur. (OUT)
- *
- * @return zero on success or error code.
- */ 
-int 
-eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
-               const tad_tmpl_arg_t *args, size_t arg_num, 
-               const csap_pkts_p up_payload, csap_pkts_p pkts)
+
+/* See description in tad_eth_impl.h */
+te_errno
+tad_eth_gen_bin_cb(csap_p csap_descr, unsigned int layer,
+                   const asn_value *tmpl_pdu,
+                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   const csap_pkts_p up_payload, csap_pkts_p pkts)
 {
     eth_csap_specific_data_p spec_data; 
     csap_pkts_p pld_fragment;
@@ -518,25 +483,12 @@ eth_gen_bin_cb(csap_p csap_descr, int layer, const asn_value *tmpl_pdu,
 }
 
 
-/**
- * Callback for parse received packet and match it with pattern. 
- *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param pattern_pdu   pattern NDS 
- * @param pkt           recevied packet
- * @param payload       rest upper layer payload, if any exists. (OUT)
- * @param parsed_packet caller of method should pass here empty asn_value 
- *                      instance of ASN type 'Generic-PDU'. Callback 
- *                      have to fill this instance with values from 
- *                      parsed and matched packet
- *
- * @return zero on success or error code.
- */
-int 
-eth_match_bin_cb(int csap_id, int layer, const asn_value *pattern_pdu,
-                 const csap_pkts *pkt, csap_pkts *payload, 
-                 asn_value_p parsed_packet)
+/* See description in tad_eth_impl.h */
+te_errno
+tad_eth_match_bin_cb(int csap_id, unsigned int layer,
+                     const asn_value *pattern_pdu,
+                     const csap_pkts *pkt, csap_pkts *payload, 
+                     asn_value_p parsed_packet)
 {
     struct timeval moment;
     csap_p                   csap_descr;
@@ -690,22 +642,12 @@ cleanup:
     return rc;
 }
 
-/**
- * Callback for generating pattern to filter 
- * just one response to the packet which will be sent by this CSAP 
- * according to this template. 
- *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      ASN value with template PDU.
- * @param pattern_pdu   OUT: ASN value with pattern PDU, generated according 
- *                      to passed template PDU and CSAP parameters. 
- *
- * @return zero on success or error code.
- */
-int 
-eth_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu, 
-                    asn_value_p   *pattern_pdu)
+
+/* See description in tad_eth_impl.h */
+te_errno
+tad_eth_gen_pattern_cb(int csap_id, unsigned int layer,
+                       const asn_value *tmpl_pdu, 
+                       asn_value_p *pattern_pdu)
 { 
     UNUSED(csap_id); 
     UNUSED(layer);
@@ -716,5 +658,3 @@ eth_gen_pattern_cb (int csap_id, int layer, const asn_value *tmpl_pdu,
 
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }
-
-

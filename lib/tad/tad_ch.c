@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  * Definition of routines provided for Portable Command Handler * 
@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -179,14 +179,14 @@ strcmp_imp(const char *l, const char *r)
 {
     if (l == NULL)
     {
-        if ((r == NULL) || (*r == 0))
+        if ((r == NULL) || (*r == '\0'))
             return 0;
         else 
             return -1;
     } 
     if (r == NULL)
     {
-        if (*l == 0)
+        if (*l == '\0')
             return 0;
         else
             return 1;
@@ -215,14 +215,14 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     VERB("CSAP create: stack <%s> params <%s>\n", stack, params);
     return -1;
 #else
-    csap_p      new_csap;
-    asn_value_p csap_nds;
-    char *lower_proto = NULL;
+    csap_p          new_csap;
+    asn_value_p     csap_nds;
+    char           *lower_proto = NULL;
 
-    int new_csap_id; 
-    int level;
-    int syms; 
-    int rc; 
+    csap_handle_t   new_csap_id; 
+    unsigned int    layer;
+    int             syms; 
+    te_errno        rc; 
 
     UNUSED(cmdlen);
     UNUSED(params);
@@ -231,9 +231,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     check_init();
 
     new_csap_id = csap_create(stack);
-
-
-    if (new_csap_id == 0)
+    if (new_csap_id == CSAP_INVALID_HANDLE)
     {
         rc = TE_RC(TE_TAD_CH, errno);
         SEND_ANSWER("%d CSAP creation internal error", rc);
@@ -246,86 +244,85 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     if (ba == NULL)
     {
         SEND_ANSWER("%d missing attached NDS", TE_ETADMISSNDS);
-        ERROR("missing attached NDS");
+        ERROR("Missing attached NDS");
         csap_destroy(new_csap_id);
         return 0;
     }
+
     new_csap = csap_find(new_csap_id); 
+    assert(new_csap != NULL);
 
     rc = asn_parse_value_text(ba, ndn_csap_spec, &csap_nds, &syms);
     if (rc != 0)
     {
-        VERB("parse error in attached NDS, rc: 0x%x, sym: %d", rc, syms);
+        VERB("Parse error in attached NDS, rc: 0x%x, sym: %d", rc, syms);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         csap_destroy(new_csap_id); 
         return 0;
     }
+    assert(csap_nds != NULL);
+
+    /* FIXME: Where is it used? */
     syms = asn_get_length(csap_nds, "");
-    INFO("length of PDU list in NDS: %d, csap depth %d", 
+    INFO("Length of PDU list in NDS: %d, csap depth %u", 
           syms, new_csap->depth); 
 
     /*
      * Init csap layers from lower to upper 
      */
-    level = new_csap->depth;
-    do {
-        csap_layer_neighbour_list_p nbr_p; 
-        csap_spt_type_p csap_spt_descr; 
-        asn_value *nds_pdu;
+    for (lower_proto = NULL, layer = new_csap->depth;
+         layer-- > 0;
+         lower_proto = new_csap->layers[layer].proto)
+    {
+        asn_value                      *nds_pdu;
+        csap_spt_type_p                 csap_spt_descr; 
+        csap_layer_neighbour_list_p     nbr_p; 
 
-        level--;
-
-        nds_pdu = asn_read_indexed(csap_nds, level, "");
-
+        nds_pdu = asn_read_indexed(csap_nds, layer, "");
         if (nds_pdu == NULL)
         {
-            ERROR("copy %d layer pdu from NDS ASN value failed", level);
+            ERROR("Copy %u layer PDU from NDS ASN value failed", layer);
             rc = TE_EASNGENERAL;
             break;
         }
-        new_csap->layers[level].csap_layer_pdu = nds_pdu;
-        csap_spt_descr = new_csap->layers[level].proto_support;
+
+        new_csap->layers[layer].csap_layer_pdu = nds_pdu;
+        csap_spt_descr = new_csap->layers[layer].proto_support;
 
         for (nbr_p = csap_spt_descr->neighbours;
-             nbr_p != NULL;
-             nbr_p = nbr_p->next)
-        {
-            int a;
+             nbr_p != NULL && strcmp_imp(lower_proto, nbr_p->nbr_type) != 0;
+             nbr_p = nbr_p->next);
 
-            if ((a = strcmp_imp(lower_proto, nbr_p->nbr_type)) == 0)
-            {
-                rc = nbr_p->init_cb(new_csap_id, csap_nds, level);
-                if (rc != 0) 
-                    ERROR("CSAP %d init error %r, level %d", 
-                          new_csap_id, rc, level);
-                INFO("init low proto '%s' upper proto '%s' success",
-                     (lower_proto == NULL) ? "(nil)" : lower_proto,
-                     new_csap->layers[level].proto);
-                break;
-            }
-        }
         if (nbr_p == NULL)
         {
-            /* ERROR! there was not found neighvour -- 
-               this stack is not supported.*/
             ERROR("Protocol stack for low '%s' under '%s' is not supported",
-                  (lower_proto == NULL) ? "(nil)" : lower_proto,
-                  new_csap->layers[level].proto);
+                  lower_proto, new_csap->layers[layer].proto);
             rc = TE_EPROTONOSUPPORT;
             break;
         }
 
-        lower_proto = new_csap->layers[level].proto; 
-    } while (rc == 0 && level > 0);
+        rc = nbr_p->init_cb(new_csap_id, csap_nds, layer);
+        if (rc != 0) 
+        {
+            ERROR("CSAP %d init error %r, layer %d", 
+                  new_csap_id, rc, layer);
+            break;
+        }
 
-    if (rc == 0)
-        SEND_ANSWER("0 %d", new_csap_id); 
-    else
-    {
-        SEND_ANSWER("%d Csap creation error", TE_RC(TE_TAD_CH, rc));
-        csap_destroy(new_csap_id); 
+        INFO("Init low proto '%s' upper proto '%s' success",
+             lower_proto, new_csap->layers[layer].proto);
     }
     asn_free_value(csap_nds);
+
+    if (rc == 0)
+    {
+        SEND_ANSWER("0 %u", new_csap_id); 
+    }
+    else
+    {
+        csap_destroy(new_csap_id); 
+        SEND_ANSWER("%u Csap creation error", TE_RC(TE_TAD_CH, rc));
+    }
     return 0; 
 #endif
 }
@@ -347,8 +344,8 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
 #else
     csap_p csap_descr_p;
 
-    int level;
-    int rc; 
+    unsigned int layer;
+    te_errno     rc; 
     
     check_init();
 
@@ -373,14 +370,14 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     } 
     CSAP_DA_UNLOCK(csap_descr_p);
 
-    for (level = 0; level < csap_descr_p->depth; level ++)
+    for (layer = 0; layer < csap_descr_p->depth; layer++)
     {
         csap_layer_neighbour_list_p nbr_p; 
         
         csap_spt_type_p  csap_spt_descr; 
         char            *lower_proto = NULL;
 
-        csap_spt_descr = csap_descr_p->layers[level].proto_support;
+        csap_spt_descr = csap_descr_p->layers[layer].proto_support;
 
         if (csap_spt_descr == NULL)
         {
@@ -391,10 +388,10 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
             return 0;
         }
         VERB("found protocol support for <%s>.", 
-             csap_descr_p->layers[level].proto);
+             csap_descr_p->layers[layer].proto);
 
-        if (level + 1 < csap_descr_p->depth)
-            lower_proto = csap_descr_p->layers[level + 1].proto;
+        if (layer + 1 < csap_descr_p->depth)
+            lower_proto = csap_descr_p->layers[layer + 1].proto;
         
         for (nbr_p = csap_spt_descr->neighbours;
              nbr_p;
@@ -403,7 +400,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
             if (strcmp_imp(lower_proto, nbr_p->nbr_type)==0)
             {
                 VERB("found destroy neigbour callback"); 
-                rc = nbr_p->destroy_cb(csap, level);
+                rc = nbr_p->destroy_cb(csap, layer);
                 break;
             }
         }

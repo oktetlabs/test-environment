@@ -1,11 +1,11 @@
 /** @file
- * @brief Test Environment: 
+ * @brief Dummy FILE protocol TAD
  *
  * Traffic Application Domain Command Handler
  * Dummy FILE protocol implementaion, CSAP support description structures. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS in
+ * the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,43 +22,48 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
-#include <string.h>
+#define TE_LGR_USER     "TAD FILE CSAP"
+
+#include "te_config.h"
+
 #include "tad_file_impl.h"
 
 
-csap_layer_neighbour_list_t file_nbr_list = 
+static csap_layer_neighbour_list_t file_nbr_list = 
 {
     NULL,
-    NULL, 
-    file_single_init_cb,
-    file_single_destroy_cb,
+    NULL,
+
+    tad_file_single_init_cb,
+    tad_file_single_destroy_cb,
 };
 
-csap_spt_type_t file_csap_spt = 
+static csap_spt_type_t file_csap_spt = 
 {
     "file",
 
-    file_confirm_pdu_cb,
-    file_gen_bin_cb,
-    file_match_bin_cb,
-    file_gen_pattern_cb,
+    tad_file_confirm_pdu_cb,
+    tad_file_gen_bin_cb,
+    tad_file_match_bin_cb,
+    tad_file_gen_pattern_cb,
 
     &file_nbr_list,
 };
 
+
 /**
- * Register 'file' CSAP callbacks and support structures in TAD Command Handler.
+ * Register 'file' CSAP callbacks and support structures in TAD
+ * Command Handler.
  *
  * @return zero on success or error code.
  */ 
-int
+te_errno
 csap_support_file_register(void)
 { 
     return add_csap_spt(&file_csap_spt);
 }
-

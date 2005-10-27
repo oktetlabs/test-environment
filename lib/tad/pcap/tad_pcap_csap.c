@@ -1,8 +1,8 @@
 /** @file
- * @brief TAD: Ethernet with Lib PCAP filtering
+ * @brief PCAP TAD
  *
- * Traffic Application Domain Command Handler Ethernet CSAP support
- * description structures. 
+ * Traffic Application Domain Command Handler Ethernet with Lib PCAP
+ * filtering CSAP support description structures. 
  *
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
@@ -24,32 +24,36 @@
  * MA  02111-1307  USA
  *
  *
- * @author Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
  * $Id$
  */
 
-#include <string.h>
+#define TE_LGR_USER     "TAD PCAP CSAP"
+
+#include "te_config.h"
 
 #include "tad_pcap_impl.h"
 
 
-csap_layer_neighbour_list_t pcap_nbr_list = 
+static csap_layer_neighbour_list_t pcap_nbr_list = 
 {
     NULL,
     NULL, 
-    pcap_single_init_cb,
-    pcap_single_destroy_cb,
+
+    tad_pcap_single_init_cb,
+    tad_pcap_single_destroy_cb,
 };
 
-csap_spt_type_t pcap_csap_spt = 
+static csap_spt_type_t pcap_csap_spt = 
 {
     "pcap",
-    pcap_confirm_pdu_cb,
-    pcap_gen_bin_cb,
-    pcap_match_bin_cb,
-    pcap_gen_pattern_cb,
+
+    tad_pcap_confirm_pdu_cb,
+    NULL,
+    tad_pcap_match_bin_cb,
+    NULL,
 
     &pcap_nbr_list,
 };
@@ -59,9 +63,9 @@ csap_spt_type_t pcap_csap_spt =
  * Register Ethernet-PCAP CSAP callbacks and support structures in TAD
  * Command Handler.
  *
- * @return zero on success or error code.
+ * @return Zero on success or error code
  */ 
-int
+te_errno
 csap_support_pcap_register(void)
 { 
     return add_csap_spt(&pcap_csap_spt);

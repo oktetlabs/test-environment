@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief IP Stack TAD
  *
  * Traffic Application Domain
  * ICMP messages generating routines
@@ -22,9 +22,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #include <string.h>

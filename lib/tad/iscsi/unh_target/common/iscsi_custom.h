@@ -22,9 +22,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * @(#) $Id: tad_iscsi_impl.h 19205 2005-10-10 16:02:41Z artem $
+ * $Id: tad_iscsi_impl.h 19205 2005-10-10 16:02:41Z artem $
  */
 
 #ifndef __TE_TAD_ISCSI_CUSTOM_H__

@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief IP Stack TAD
  *
  * Traffic Application Domain Command Handler
  * TCP/IP CSAP filtering support implementation. 
@@ -22,9 +22,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
+ * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #include <string.h>

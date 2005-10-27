@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAD Command Handler
  *
  * Traffic Application Domain Command Handler
  * Receive module. 
@@ -22,7 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * Author: Konstantin Abramenko <konst@oktetlabs.ru>
+ * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -91,7 +91,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                             const asn_value *pattern_unit,
                             asn_value_p *packet)
 {
-    int  level;
+    int  layer;
     int  rc;
     char label[20] = "pdus";
 
@@ -125,10 +125,10 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     
     memcpy(data_to_check.data, data, d_len);
 
-    for (level = csap_descr->depth - 1; level >= 0; level --)
+    for (layer = csap_descr->depth; layer-- > 0; )
     {
         csap_spt_type_p  csap_spt_descr; 
-        const asn_value *level_pdu = NULL; 
+        const asn_value *layer_pdu = NULL; 
         asn_value_p      parsed_pdu = NULL;
 
         if (csap_descr->state & TAD_STATE_RESULTS)
@@ -136,19 +136,19 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             parsed_pdu = asn_init_value(ndn_generic_pdu);
         }
 
-        sprintf(label + sizeof("pdus") - 1, ".%d", level);
-        rc = asn_get_subvalue(pattern_unit, &level_pdu, label); 
+        sprintf(label + sizeof("pdus") - 1, ".%d", layer);
+        rc = asn_get_subvalue(pattern_unit, &layer_pdu, label); 
         VERB("get subval with pattern unit for label %s rc %r",
              label, rc);
 
-        csap_spt_descr = csap_descr->layers[level].proto_support;
+        csap_spt_descr = csap_descr->layers[layer].proto_support;
 
-        rc = csap_spt_descr->match_cb(csap_descr->id, level, level_pdu, 
+        rc = csap_spt_descr->match_cb(csap_descr->id, layer, layer_pdu, 
                                       &data_to_check, &rest_payload,
                                       parsed_pdu); 
 
         VERB("match cb 0x%x for lev %d returned %r",
-             csap_spt_descr->match_cb, level, rc);
+             csap_spt_descr->match_cb, layer, rc);
 
         if (data_to_check.free_data_cb) 
             data_to_check.free_data_cb(data_to_check.data);
@@ -482,8 +482,8 @@ static int
 tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template, 
                            asn_value_p *pattern)
 {
-    int rc = 0;
-    int level;
+    te_errno     rc = 0;
+    unsigned int layer;
 
     asn_value_p pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
     asn_value_p pdus         = asn_init_value(ndn_generic_pdu_sequence);
@@ -495,36 +495,36 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
         return rc;
     asn_free_value(pdus);
 
-    for (level = 0; level < csap_descr->depth; level ++)
+    for (layer = 0; layer < csap_descr->depth; layer++)
     {
         csap_spt_type_p csap_spt_descr; 
 
-        asn_value_p level_tmpl_pdu; 
-        asn_value_p level_pattern; 
+        asn_value_p layer_tmpl_pdu; 
+        asn_value_p layer_pattern; 
         asn_value_p gen_pattern_pdu = asn_init_value(ndn_generic_pdu);
 
-        csap_spt_descr = csap_descr->layers[level].proto_support;
+        csap_spt_descr = csap_descr->layers[layer].proto_support;
 
-        level_tmpl_pdu = asn_read_indexed(template, level, "pdus"); 
+        layer_tmpl_pdu = asn_read_indexed(template, layer, "pdus"); 
 
-        rc = csap_spt_descr->generate_pattern_cb(csap_descr->id, level,
-                                                 level_tmpl_pdu, 
-                                                 &level_pattern);
+        rc = csap_spt_descr->generate_pattern_cb(csap_descr->id, layer,
+                                                 layer_tmpl_pdu,
+                                                 &layer_pattern);
 
         VERB("%s, lev %d, generate pattern cb rc %r", 
-                __FUNCTION__, level, rc);
+                __FUNCTION__, layer, rc);
 
         if (rc == 0) 
             rc = asn_write_component_value(gen_pattern_pdu, 
-                                           level_pattern, "");
+                                           layer_pattern, "");
 
         if (rc == 0) 
             rc = asn_insert_indexed(pattern_unit, gen_pattern_pdu, 
-                                    level, "pdus");
+                                    layer, "pdus");
 
         asn_free_value(gen_pattern_pdu);
-        asn_free_value(level_pattern);
-        asn_free_value(level_tmpl_pdu);
+        asn_free_value(layer_pattern);
+        asn_free_value(layer_tmpl_pdu);
 
         if (rc != 0) 
             break;

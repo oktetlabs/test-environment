@@ -1,5 +1,5 @@
 /** @file
- * @brief Test Environment: 
+ * @brief CLI TAD
  *
  * Traffic Application Domain Command Handler
  * CLI CSAP implementaion internal declarations.
@@ -24,7 +24,7 @@
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
  *
- * @(#) $Id$
+ * $Id$
  */
 
 #ifndef __TE_TAD_CLI_IMPL_H__
@@ -157,165 +157,97 @@ typedef struct cli_csap_specific_data
 /**
  * Callback for read parameter value of CLI CSAP.
  *
- * @param csap_id       identifier of CSAP.
- * @param level         Index of level in CSAP stack, which param is wanted.
- * @param param         Protocol-specific name of parameter.
- *
- * @return 
- *     String with textual presentation of parameter value, or NULL 
- *     if error occured. User have to free memory at returned pointer.
+ * The function complies with csap_get_param_cb_t prototype.
  */ 
-extern char *cli_get_param_cb(int csap_id, int level, const char *param);
+extern char *tad_cli_get_param_cb(int csap_id, unsigned int layer,
+                                  const char *param);
 
 /**
  * Callback for read data from media of CLI CSAP. 
  *
- * @param csap_descr    identifier of CSAP.
- * @param timeout       timeout of waiting for data.
- * @param buf           buffer for read data.
- * @param buf_len       length of available buffer.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
+ * The function complies with csap_read_cb_t prototype.
  */ 
-extern int cli_read_cb(csap_p csap_descr, int timeout, char *buf,
-                       size_t buf_len);
+extern int tad_cli_read_cb(csap_p csap_descr, int timeout, char *buf,
+                           size_t buf_len);
 
 /**
  * Callback for write data to media of CLI CSAP. 
  *
- * @param csap_descr    identifier of CSAP.
- * @param buf           buffer with data to be written.
- * @param buf_len       length of data in buffer.
- *
- * @return 
- *      quantity of written octets, or -1 if error occured. 
+ * The function complies with csap_write_cb_t prototype.
  */ 
-extern int cli_write_cb(csap_p csap_descr, const char *buf, 
-                        size_t buf_len);
+extern int tad_cli_write_cb(csap_p csap_descr, const char *buf, 
+                            size_t buf_len);
 
 /**
  * Callback for write data to media of CLI CSAP and read
- *  data from media just after write, to get answer to sent request. 
+ * data from media just after write, to get answer to sent request. 
  *
- * @param csap_descr    identifier of CSAP.
- * @param timeout       timeout of waiting for data.
- * @param w_buf         buffer with data to be written.
- * @param w_buf_len     length of data in w_buf.
- * @param r_buf         buffer for data to be read.
- * @param r_buf_len     available length r_buf.
- *
- * @return 
- *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
+ * The function complies with csap_write_read_cb_t prototype.
  */ 
-extern int cli_write_read_cb(csap_p csap_descr, int timeout,
-                             const char *w_buf, size_t w_buf_len,
-                             char *r_buf, size_t r_buf_len);
+extern int tad_cli_write_read_cb(csap_p csap_descr, int timeout,
+                                 const char *w_buf, size_t w_buf_len,
+                                 char *r_buf, size_t r_buf_len);
 
 
 /**
  * Callback for init 'file' CSAP layer if single in stack.
  *
- * @param csap_id       identifier of CSAP.
- * @param csap_nds      asn_value with CSAP init parameters
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
+ * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern int cli_single_init_cb(int csap_id, const asn_value * csap_nds, int layer);
+extern te_errno tad_cli_single_init_cb(int              csap_id,
+                                       const asn_value *csap_nds,
+                                       unsigned int     layer);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
- *      This callback should free all undeground media resources used by 
- *      this layer and all memory used for layer-specific data and pointed 
- *      in respective structure in 'layer-data' in CSAP instance struct. 
  *
- * @param csap_id       identifier of CSAP.
- * @param layer         numeric index of layer in CSAP type to be processed. 
- *                      Layers are counted from zero, from up to down.
- *
- * @return zero on success or error code.
+ * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern int cli_single_destroy_cb(int csap_id, int layer);
+extern te_errno tad_cli_single_destroy_cb(int csap_id, unsigned int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
  *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU (IN/OUT)
- *
- * @return zero on success or error code.
+ * The function complies with csap_confirm_pdu_cb_t prototype.
  */ 
-extern int cli_confirm_pdu_cb(int csap_id, int layer, asn_value * tmpl_pdu); 
+extern te_errno tad_cli_confirm_pdu_cb(int csap_id, unsigned int layer,
+                                       asn_value *tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
  *
- * @param csap_descr    CSAP instance
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      asn_value with PDU. 
- * @param args          Template iteration parameters array, may be used to 
- *                      prepare binary data.
- * @param arg_num       Length of array above. 
- * @param up_payload    pointer to data which is already generated for upper 
- *                      layers and is payload for this protocol level. 
- *                      May be zero.  Presented as list of packets. 
- *                      Almost always this list will contain only one element, 
- *                      but need in fragmentation sometimes may occur. 
- *                      Of cause, on up level only one PDU is passed, 
- *                      but upper layer (if any present) may perform 
- *                      fragmentation, and current layer may have possibility 
- *                      to de-fragment payload.
- * @param pkts          Callback have to fill this structure with list of 
- *                      generated packets. Almost always this list will 
- *                      contain only one element, but need 
- *                      in fragmentation sometimes may occur. (OUT)
- *
- * @return zero on success or error code.
+ * The function complies with csap_gen_bin_cb_t prototype.
  */ 
-extern int cli_gen_bin_cb(csap_p csap_descr, int layer,
-                          const asn_value *tmpl_pdu,
-                          const tad_tmpl_arg_t *args, size_t arg_num,
-                          csap_pkts_p up_payload, csap_pkts_p pkts);
-
+extern te_errno tad_cli_gen_bin_cb(csap_p                csap_descr,
+                                   unsigned int          layer,
+                                   const asn_value      *tmpl_pdu,
+                                   const tad_tmpl_arg_t *args,
+                                   size_t                arg_num,
+                                   csap_pkts_p           up_payload,
+                                   csap_pkts_p           pkts);
 
 /**
  * Callback for parse received packet and match it with pattern. 
  *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param pattern_pdu   pattern NDS 
- * @param pkt           recevied packet
- * @param payload       rest upper layer payload, if any exists. (OUT)
- * @param parsed_packet caller of method should pass here empty asn_value 
- *                      instance of ASN type of expected PDU. Callback 
- *                      have to fill this instance with values from 
- *                      parsed and matched packet
- *
- * @return zero on success or error code.
+ * The function complies with csap_match_bin_cb_t prototype.
  */
-extern int cli_match_bin_cb(int csap_id, int layer, 
-                            const asn_value * pattern_pdu,
-                            const csap_pkts *  pkt, csap_pkts * payload, 
-                            asn_value *  parsed_packet );
+extern te_errno tad_cli_match_bin_cb(int             csap_id,
+                                     unsigned int    layer, 
+                                     const asn_value *pattern_pdu,
+                                     const csap_pkts *pkt,
+                                     csap_pkts       *payload, 
+                                     asn_value       *parsed_packet);
 
 /**
  * Callback for generating pattern to filter 
  * just one response to the packet which will be sent by this CSAP 
  * according to this template. 
  *
- * @param csap_id       identifier of CSAP
- * @param layer         numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      ASN value with template PDU.
- * @param pattern_pdu   OUT: ASN value with pattern PDU, generated according 
- *                      to passed template PDU and CSAP parameters. 
- *
- * @return zero on success or error code.
+ * The function complies with csap_gen_pattern_cb_t prototype.
  */
-extern int cli_gen_pattern_cb(int csap_id, int layer, const asn_value * tmpl_pdu, 
-                              asn_value *   *pattern_pdu);
+extern te_errno tad_cli_gen_pattern_cb(int csap_id, unsigned int layer,
+                                       const asn_value *tmpl_pdu, 
+                                       asn_value **pattern_pdu);
 
 
 /**
