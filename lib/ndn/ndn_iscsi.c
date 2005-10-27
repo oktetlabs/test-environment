@@ -644,9 +644,8 @@ iscsi_rest_data_len(uint8_t *bhs, iscsi_digest_type digest)
         size_t  total_AHS_length,
                 data_segment_length;
 
-        int     h_dig = (digest & ISCSI_DIGEST_HEADER) == 
-                        ISCSI_DIGEST_HEADER;
-        int     d_dig = (digest & ISCSI_DIGEST_DATA) == ISCSI_DIGEST_DATA;
+        int     h_dig = (!!(digest & ISCSI_DIGEST_HEADER));
+        int     d_dig = (!!(digest & ISCSI_DIGEST_DATA));
 
         union { 
             uint32_t i;
@@ -665,7 +664,6 @@ iscsi_rest_data_len(uint8_t *bhs, iscsi_digest_type digest)
         /* DataSegment padding */
         if (data_segment_length % 4)
             data_segment_length += (4 - (data_segment_length % 4));
-
 
         return data_segment_length +
                 (total_AHS_length + h_dig + d_dig) * 4;

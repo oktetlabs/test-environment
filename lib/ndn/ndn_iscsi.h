@@ -42,8 +42,6 @@ extern "C" {
  */
 typedef enum {
     NDN_TAG_ISCSI_TYPE,
-    NDN_TAG_ISCSI_ADDR,
-    NDN_TAG_ISCSI_PORT,
     NDN_TAG_ISCSI_SOCKET,
     NDN_TAG_ISCSI_MESSAGE,
     NDN_TAG_ISCSI_LEN,
