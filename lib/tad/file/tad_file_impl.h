@@ -158,10 +158,9 @@ extern int tad_file_gen_pattern_cb(int              csap_id,
 
 struct file_csap_specific_data;
 typedef struct file_csap_specific_data *file_csap_specific_data_p;
-typedef struct file_csap_specific_data
-{
-    char * tad_filename;
-    FILE * fstream;
+typedef struct file_csap_specific_data {
+    char *filename;
+    FILE *fstream;
 } file_csap_specific_data_t;
 
 #ifdef __cplusplus
