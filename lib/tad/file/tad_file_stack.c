@@ -180,8 +180,8 @@ tad_file_single_init_cb(int csap_id, const asn_value *csap_nds,
     }
     printf ("file is opened\n");
 
-    csap_descr->write_cb         = file_write_cb; 
-    csap_descr->read_cb          = file_read_cb; 
+    csap_descr->write_cb         = tad_file_write_cb; 
+    csap_descr->read_cb          = tad_file_read_cb; 
     csap_descr->read_write_layer = layer;
 
     return 0;
