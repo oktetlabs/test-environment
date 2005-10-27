@@ -66,6 +66,14 @@ int
 tapi_iscsi_csap_create(const char *ta_name, int sid, 
                        csap_handle_t *csap)
 {
+    return tapi_iscsi_sock_csap_create(ta_name, sid, 0, csap);
+}
+
+
+int
+tapi_iscsi_sock_csap_create(const char *ta_name, int sid, 
+                            int socket, csap_handle_t *csap)
+{
     asn_value *csap_spec = NULL;
     int rc = 0, syms;
 
@@ -77,6 +85,10 @@ tapi_iscsi_csap_create(const char *ta_name, int sid,
               __FUNCTION__, rc, syms);
         return rc;
     } 
+    if (socket > 0)
+    {
+        asn_write_int32(csap_spec, socket, "0.#iscsi.socket");
+    }
 
     rc = tapi_tad_csap_create(ta_name, sid, "iscsi", 
                               csap_spec, csap); 
@@ -84,6 +96,27 @@ tapi_iscsi_csap_create(const char *ta_name, int sid,
         ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
 
     return rc;
+}
+
+
+int
+tapi_iscsi_ini_csap_create(const char *ta_name, int sid, 
+                           csap_handle_t listen_csap, 
+                           int timeout, csap_handle_t *csap)
+{
+    int ini_socket; 
+    int rc; 
+
+    rc = tapi_tcp_server_recv(ta_name, sid, listen_csap, 
+                              timeout, &ini_socket);
+    if (rc != 0)
+    {
+        WARN("%s(): wait for accepted socket failed, %r", 
+             __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    return tapi_iscsi_sock_csap_create(ta_name, sid, ini_socket, csap);
 }
 
 
@@ -885,6 +918,7 @@ cleanup:
     return segment_data;
 }
            
+/* see description in tapi_iscsi.h */
 void
 tapi_iscsi_keys_data_free(iscsi_segment_data segment_data)
 {
@@ -988,6 +1022,7 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
 }
 
 
+/* see description in tapi_iscsi.h */
 int
 tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
                               const char *key_name, int num, ...)
@@ -1115,6 +1150,7 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
 }
 
 
+/* see description in tapi_iscsi.h */
 int
 tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
                             const char *key_name,
@@ -1149,6 +1185,7 @@ tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
     return rc;
 }
 
+/* see description in tapi_iscsi.h */
 int
 tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
                            const char *key_name,
@@ -1179,6 +1216,7 @@ tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
     return asn_get_length(*key_array, "");
 }
 
+/* see description in tapi_iscsi.h */
 int
 tapi_iscsi_key_value_read(iscsi_key_values key_array,
                           int val_index, char *buf, size_t *buf_len)
@@ -1207,6 +1245,7 @@ tapi_iscsi_key_value_read(iscsi_key_values key_array,
 
 /* Target configuration */
 
+/* see description in tapi_iscsi.h */
 int
 tapi_iscsi_target_set_parameter(const char *ta,
                                 tapi_iscsi_parameter param, 
@@ -1258,6 +1297,7 @@ tapi_iscsi_target_set_parameter(const char *ta,
                                 ta, mapping[param]);
 } 
 
+/* see description in tapi_iscsi.h */
 int 
 tapi_iscsi_target_customize(const char *ta, int id, 
                             const char *key, 
@@ -1383,6 +1423,7 @@ tapi_iscsi_initiator_not_advertize(const char *ta,
     return 0;
 }
 
+/* see description in tapi_iscsi.h */
 int 
 tapi_iscsi_initiator_set_parameter(const char *ta,
                                    iscsi_target_id target_id,
@@ -1460,6 +1501,7 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
 static int iscsi_current_cid[MAX_CONNECTION_NUMBER];
 static int iscsi_current_target = 0;
 
+/* see description in tapi_iscsi.h */
 iscsi_cid 
 tapi_iscsi_initiator_conn_add(const char *ta,
                               iscsi_target_id tgt_id)
@@ -1476,6 +1518,7 @@ tapi_iscsi_initiator_conn_add(const char *ta,
     return (rc == 0) ? (iscsi_current_cid[tgt_id]++) : (-rc);
 }
 
+/* see description in tapi_iscsi.h */
 int 
 tapi_iscsi_initiator_conn_del(const char *ta,
                               iscsi_target_id tgt_id,
@@ -1498,7 +1541,9 @@ tapi_iscsi_initiator_conn_del(const char *ta,
     return rc;
 }
 
-iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
+/* see description in tapi_iscsi.h */
+iscsi_target_id
+tapi_iscsi_initiator_add_target(const char *ta,
                                 const struct sockaddr *target_addr)
 {
     int        rc;
@@ -1561,6 +1606,7 @@ iscsi_target_id tapi_iscsi_initiator_add_target(const char *ta,
     return (iscsi_current_target++);
 }
 
+/* see description in tapi_iscsi.h */
 int 
 tapi_iscsi_initiator_del_target(const char *ta,
                                 iscsi_target_id tgt_id)
@@ -1585,6 +1631,7 @@ tapi_iscsi_initiator_del_target(const char *ta,
     return rc;
 }
 
+/* see description in tapi_iscsi.h */
 int
 tapi_iscsi_initiator_get_devices(const char *ta, char **buffer)
 {
@@ -1598,6 +1645,7 @@ tapi_iscsi_initiator_get_devices(const char *ta, char **buffer)
                                  
 
 
+/* see description in tapi_iscsi.h */
 tapi_iscsi_parameter
 tapi_iscsi_get_param_map(const char *param)
 {
@@ -1653,6 +1701,31 @@ tapi_iscsi_get_param_map(const char *param)
 
     return param_id;
 }
+
+/* see description in tapi_iscsi.h */
+int
+tapi_iscsi_forward_all(const char *ta_name, int session,
+                       csap_handle_t csap_rcv, csap_handle_t csap_fwd,
+                       unsigned int timeout, int *forwarded)
+{
+    int rc, syms;
+
+    asn_value *pattern;
+    rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
+                              ndn_traffic_pattern, &pattern, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    rc = tapi_tad_forward_all(ta_name, session, csap_rcv, csap_fwd, 
+                              pattern, timeout, forwarded);
+    asn_free_value(pattern);
+    return rc;
+}
+
 
 
 #undef MAX_INI_CMD_SIZE

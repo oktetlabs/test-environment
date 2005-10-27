@@ -132,16 +132,48 @@
      TAPI_ISCSI_KEY_INVALID)
 
 /**
- * Creates 'iscsi' server CSAP
+ * Creates 'iscsi' target CSAP
+ *
+ * @param ta_name       Test Agent name;
+ * @param sid           RCF SID;
+ * @param csap          location for handle of new CSAP;
+ *
+ * @return  Status code of the operation.
+ */
+extern int tapi_iscsi_csap_create(const char *ta_name, int sid, 
+                                  csap_handle_t *csap);
+
+
+/**
+ * Create 'iscsi' CSAP over connectєd TCP socket on TA.
+ *
+ * @param ta_name       Test Agent name;
+ * @param sid           RCF SID;
+ * @param socket        file descriptor of TCP socket on TA, 
+ *                      zero means unspecified;
+ * @param csap          location for handle of new CSAP;
+ *
+ * @return  Status code of the operation.
+ */
+extern int tapi_iscsi_sock_csap_create(const char *ta_name, int sid, 
+                                       int socket, csap_handle_t *csap);
+
+/**
+ * Create 'iscsi' initiator CSAP.
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
+ * @param listen_csap   TCP listening CSAP, on which TCP connection
+ *                      from the Initiator sould be received
+ * @param timeout       timeout to wait connection
  * @param csap          location for handle of new CSAP
  *
  * @return  Status code of the operation
  */
-extern int tapi_iscsi_csap_create(const char *ta_name, int sid, 
-                                  csap_handle_t *csap);
+extern int tapi_iscsi_ini_csap_create(const char *ta_name, int sid, 
+                                      csap_handle_t listen_csap, 
+                                      int timeout, csap_handle_t *csap);
+
 
 
 /**
@@ -213,6 +245,26 @@ extern int tapi_iscsi_tcp_recv_pkt(const char *ta_name, int sid,
                                    iscsi_digest_type digest,
                                    uint8_t *buffer,
                                    size_t  *length);
+
+/**
+ * Receive all data which currently are waiting for receive in 
+ * specified iSCSI CSAP and forward them into another CSAP, without 
+ * passing via RCF to test. 
+ *
+ * @param ta            TA name
+ * @param sid           RCF session id
+ * @param csap_rcv      identifier of recieve CSAP
+ * @param csap_fwd      identifier of CSAP which should obtain data
+ * @param timeout       timeout to wait data, in milliseconds
+ * @param forwarded     number of forwarded PDUs (OUT)
+ *
+ * @return status code
+ */
+extern int tapi_iscsi_forward_all(const char *ta_name, int session,
+                                  csap_handle_t csap_rcv,
+                                  csap_handle_t csap_fwd,
+                                  unsigned int timeout, int *forwarded);
+
 
 #define TAPI_ISCSI_KEY_INVALID     -1
 
@@ -687,6 +739,7 @@ tapi_iscsi_set_security_negotiations_phase(const char *ta,
     return tapi_iscsi_target_set_parameter \
         (ta, ISCSI_PARAM_SECURITY_NEGOTIATION_PHASE, use ? "1" : "0");
 }
+
 
 
 
