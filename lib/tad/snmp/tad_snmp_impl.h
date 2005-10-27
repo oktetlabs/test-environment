@@ -109,16 +109,6 @@ extern "C" {
 
 
 /**
- * Add structure for CSAP support for respective protocol.
- *
- * @param spt_descr     CSAP layer support structure. 
- *
- * @return zero on success, otherwise error code. 
- */
-extern int add_csap_spt (csap_spt_type_p spt_descr);
-
-
-/**
  * Callback for read parameter value of SNMP CSAP.
  *
  * The function complies with csap_get_param_cb_t prototype.

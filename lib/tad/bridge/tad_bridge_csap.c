@@ -63,7 +63,7 @@ static csap_spt_type_t bridge_csap_spt =
  * @return Zero on success or error code
  */ 
 te_errno
-csap_support_bridge_register (void)
+csap_support_bridge_register(void)
 { 
     return add_csap_spt(&bridge_csap_spt);
 }

@@ -38,13 +38,13 @@
 #include "te_defs.h"
 #include "logger_ta_fast.h"
 
-#define LLC_BPDU_DSAP_SSAP (0x42)
-#define LLC_BPDU_CONTROL (0x03)
+#define LLC_BPDU_DSAP_SSAP  (0x42)
+#define LLC_BPDU_CONTROL    (0x03)
 
 
 /* See description in tad_bridge_impl.h */
 char *
-bridge_get_param_cb (int csap_id, unsigned int layer, const char *param)
+tad_bridge_get_param_cb(int csap_id, unsigned int layer, const char *param)
 {
     UNUSED(csap_id);
     UNUSED(layer);
@@ -54,8 +54,9 @@ bridge_get_param_cb (int csap_id, unsigned int layer, const char *param)
 
 
 /* See description in tad_bridge_impl.h */
-int
-bridge_confirm_pdu_cb (int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
+te_errno
+tad_bridge_confirm_pdu_cb(int csap_id, unsigned int layer,
+                          asn_value_p tmpl_pdu)
 {
     int    rc = 0; 
     csap_p csap_descr;
@@ -137,10 +138,11 @@ bridge_confirm_pdu_cb (int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
 
 
 /* See description in tad_bridge_impl.h */
-int
-bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer, const asn_value *tmpl_pdu,
-                  const tad_tmpl_arg_t *args, size_t  arg_num, 
-                  const csap_pkts_p  up_payload, csap_pkts_p pkts)
+te_errno
+tad_bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer,
+                      onst asn_value *tmpl_pdu,
+                      const tad_tmpl_arg_t *args, size_t  arg_num, 
+                      const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
     int rc;
     int frame_size = 50;/* TODO: correct, rather dummy */
@@ -233,10 +235,11 @@ bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer, const asn_value *tmpl_p
 
 
 /* See description in tad_bridge_impl.h */
-int
-bridge_match_bin_cb (int csap_id, unsigned int layer, const asn_value *pattern_pdu,
-                       const csap_pkts *pkt, csap_pkts *payload, 
-                       asn_value_p  parsed_packet )
+te_errno
+tad_bridge_match_bin_cb(int csap_id, unsigned int layer,
+                        const asn_value *pattern_pdu,
+                        const csap_pkts *pkt, csap_pkts *payload, 
+                        asn_value_p parsed_packet )
 {
     int      rc = 0;
     uint8_t *data;
@@ -300,9 +303,10 @@ bridge_match_bin_cb (int csap_id, unsigned int layer, const asn_value *pattern_p
 
 
 /* See description in tad_bridge_impl.h */
-int
-bridge_gen_pattern_cb (int csap_id, unsigned int layer, const asn_value *tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu)
+te_errno
+tad_bridge_gen_pattern_cb(int csap_id, unsigned int layer,
+                          const asn_value *tmpl_pdu, 
+                          asn_value_p *pattern_pdu)
 {
 
     UNUSED(csap_id); 
