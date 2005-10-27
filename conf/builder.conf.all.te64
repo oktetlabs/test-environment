@@ -8,12 +8,12 @@ TE_TOOLS([rgt rpcgen trc tce millicom])
 # Host platform
 #
 TE_PLATFORM([], [], [], [],
-            [tools rpc_types ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi \
-             tapi comm_net_engine rcfunix loggerta comm_net_agent \
-             rcfpch tce asn ndn tad tad_dummy rcfrpc tapi_rpc tapi_env \
-             tapi_tad tapi_pcap tapi_eth tapi_bridge tapi_arp tapi_iscsi \
-             tapi_ipstack tapi_dhcp tapi_snmp tapi_cli tapi_radius \
-            ])
+            [tools rpc_types conf_oid rpcxdr asn ndn \
+             comm_net_agent loggerta rcfpch tce tad tad_dummy talib \
+             ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \
+             tapi rcfrpc tapi_rpc tapi_env tapi_tad tapi_pcap tapi_eth \
+             tapi_bridge tapi_arp tapi_ipstack tapi_dhcp tapi_cli \
+             tapi_snmp tapi_iscsi tapi_radius])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
