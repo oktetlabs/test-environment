@@ -169,6 +169,8 @@ iscsi_match_bin_cb(int csap_id, int level, const asn_value *pattern_pdu,
     spec_data = (iscsi_csap_specific_data_t *)
                         csap_descr->layers[level].specific_data; 
 
+    INFO("%s(CSAP %d): got pkt %d bytes", __FUNCTION__, csap_id, pkt->len);
+
     if (spec_data->wait_length == 0)
     {
 #if 0
@@ -241,6 +243,8 @@ iscsi_match_bin_cb(int csap_id, int level, const asn_value *pattern_pdu,
 
         spec_data->wait_length = ISCSI_BHS_LENGTH + 
              iscsi_rest_data_len(pkt->data, digest);
+        INFO("%s(CSAP %d), calculated wait length %d",
+                __FUNCTION__, csap_id, spec_data->wait_length);
 #endif
     }
     rc = 0;

@@ -186,8 +186,9 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     }
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
-    INFO("%s(CSAP %d) called, wait len %d", 
-         __FUNCTION__, csap_descr->id, iscsi_spec_data->wait_length);
+    INFO("%s(CSAP %d) called, wait len %d, timeout %d",
+         __FUNCTION__, csap_descr->id,
+         iscsi_spec_data->wait_length, timeout);
 
     if (iscsi_spec_data->wait_length == 0)
         len = ISCSI_BHS_LENGTH;
@@ -204,9 +205,9 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         fd_set rset;
         int rc, fd = iscsi_spec_data->conn_fd[CSAP_SITE];
 
-        /* timeout in milliseconds */
-        tv.tv_usec = (timeout % 1000) * 1000;
-        tv.tv_sec =  timeout / 1000;
+        /* timeout in microseconds */
+        tv.tv_usec = timeout % (1000 * 1000);
+        tv.tv_sec =  timeout / (1000 * 1000);
 
         FD_ZERO(&rset);
         FD_SET(fd, &rset);
