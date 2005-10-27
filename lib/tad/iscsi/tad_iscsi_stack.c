@@ -175,10 +175,6 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     iscsi_csap_specific_data_t *iscsi_spec_data;
 
     size_t    len = 0;
-#if !SOCKET_PAIR
-    packet_t *recv_pkt = NULL;
-    int       i;
-#endif
     
     if (csap_descr == NULL)
     {
@@ -199,7 +195,6 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     if (buf_len > len)
         buf_len = len;
 
-#if SOCKET_PAIR
     {
         struct timeval tv = {0, 0};
         fd_set rset;
@@ -233,42 +228,6 @@ iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
             }
         }
     }
-#else
-    for (i = 0; i < 2; i++)
-    {
-        LOCK_QUEUE(iscsi_spec_data);
-        if (iscsi_spec_data->packets_from_tgt.cqh_first !=
-            (void *)(&iscsi_spec_data->packets_from_tgt))
-        {
-            recv_pkt = iscsi_spec_data->packets_from_tgt.cqh_first;
-            CIRCLEQ_REMOVE(&iscsi_spec_data->packets_from_tgt, 
-                           recv_pkt, link);
-        }
-        UNLOCK_QUEUE(iscsi_spec_data); 
-
-        INFO("%s(CSAP %d), recv_pkt 0x%X", __FUNCTION__, csap_descr->id,
-             recv_pkt);
-        if (recv_pkt == NULL && i == 0)
-            usleep(timeout); /* wait a bit */
-        else
-            break;
-    }
-
-    if (recv_pkt != NULL)
-    {
-        len = recv_pkt->length;
-        if (buf_len < recv_pkt->length)
-        {
-            WARN("%s(): packet received is too long: %d > buffer %d",
-                 __FUNCTION__, recv_pkt->length, buf_len);
-            len = buf_len;
-        }
-        memcpy(buf, recv_pkt->buffer, len); 
-
-        free(recv_pkt->buffer);
-        free(recv_pkt);
-    }
-#endif
     INFO("%s(CSAP %d), return %d", __FUNCTION__, csap_descr->id, len);
 
     return len;
@@ -296,7 +255,6 @@ iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
     iscsi_spec_data = csap_descr->layers[0].specific_data; 
 
-#if SOCKET_PAIR
     {
         struct timeval tv = {0, 1000};
         int rc, fd = iscsi_spec_data->conn_fd[CSAP_SITE];
@@ -322,28 +280,6 @@ iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
         INFO("%s(CSAP %d) written %d bytes to fd %d", 
              __FUNCTION__, csap_descr->id, rc, fd);
     }
-#else
-    {
-        packet_t *send_pkt;
-
-        if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
-        {
-            csap_descr->last_errno = TE_ENOMEM;
-            return -1;
-        }
-        send_pkt->allocated_buffer = send_pkt->buffer = malloc(buf_len);
-        send_pkt->length = buf_len;
-        memcpy(send_pkt->buffer, buf, buf_len);
-        
-
-        LOCK_QUEUE(iscsi_spec_data);
-        CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_to_tgt,
-                            send_pkt, link);
-        UNLOCK_QUEUE(iscsi_spec_data);
-    }
-
-    write(iscsi_spec_data->conn_fd[1], "a", 1); 
-#endif
 
     return buf_len;
 }
@@ -441,7 +377,6 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 100 * 1000;
 
-#if SOCKET_PAIR
     if ((rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, 
                          iscsi_spec_data->conn_fd)) < 0)
     {
@@ -450,19 +385,9 @@ iscsi_single_init_cb(int csap_id, const asn_value *csap_nds, int layer)
               __FUNCTION__, csap_id, csap_descr->last_errno);
         return csap_descr->last_errno;
     }
-#else
-    CIRCLEQ_INIT(&(iscsi_spec_data->packets_to_tgt));
-    CIRCLEQ_INIT(&(iscsi_spec_data->packets_from_tgt));
-    {
-        pthread_mutex_t fastmutex = PTHREAD_MUTEX_INITIALIZER;
-        iscsi_spec_data->pkt_queue_lock = fastmutex;
-    }
-
-    pipe(iscsi_spec_data->conn_fd);
-#endif
 
     thread_params = calloc(1, sizeof(*thread_params));
-    thread_params->send_recv_csap = csap_descr->id;
+    thread_params->send_recv_sock = iscsi_spec_data->conn_fd[TGT_SITE];
 
     if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
         (rc = pthread_attr_setdetachstate(&pthread_attr,
@@ -501,9 +426,6 @@ iscsi_single_destroy_cb(int csap_id, int layer)
 {
     int                         rc = 0;
     csap_p                      csap_descr; 
-#if !SOCKET_PAIR 
-    packet_t                   *recv_pkt = NULL; 
-#endif
     iscsi_csap_specific_data_t *iscsi_spec_data; 
 
     csap_descr = csap_find(csap_id);
@@ -514,43 +436,8 @@ iscsi_single_destroy_cb(int csap_id, int layer)
     iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 
     pthread_cancel(iscsi_spec_data->iscsi_target_thread);
-#if SOCKET_PAIR 
     close(iscsi_spec_data->conn_fd[CSAP_SITE]);
     /* leave TGT_SITE socket, there may be read or write */
-#else
-    write(iscsi_spec_data->conn_fd[1], "z", 1); 
-
-    LOCK_QUEUE(iscsi_spec_data);
-
-    /* clear queue to target */
-    while (!CIRCLEQ_EMPTY(&iscsi_spec_data->packets_to_tgt))
-    { 
-        recv_pkt = iscsi_spec_data->packets_to_tgt.cqh_first;
-
-        free(recv_pkt->buffer);
-
-        CIRCLEQ_REMOVE(&iscsi_spec_data->packets_to_tgt, 
-                       recv_pkt, link);
-        free(recv_pkt);
-    }
-
-    /* clear queue frœm target */
-    while (!CIRCLEQ_EMPTY(&iscsi_spec_data->packets_from_tgt))
-    { 
-        recv_pkt = iscsi_spec_data->packets_from_tgt.cqh_first;
-
-        free(recv_pkt->buffer);
-
-        CIRCLEQ_REMOVE(&iscsi_spec_data->packets_from_tgt, 
-                       recv_pkt, link);
-        free(recv_pkt);
-    }
-
-    close(iscsi_spec_data->conn_fd[0]);
-    close(iscsi_spec_data->conn_fd[1]);
-
-    UNLOCK_QUEUE(iscsi_spec_data);
-#endif
 
     csap_descr->layers[layer].specific_data = NULL; 
 
@@ -559,269 +446,3 @@ iscsi_single_destroy_cb(int csap_id, int layer)
 
     return rc;
 }
-
-
-#if !SOCKET_PAIR
-/**
- * Internal method for get some data from msg queue CSAP->Target. 
- * This method read no more then asked buf_len, if first pkt in queue 
- * is less then buf_len, it copies to the user buffer all data from pkt. 
- *
- * If first pkt in queue is greater then buf_len, it copies to the buffer
- * aѕked number of bytes, and rest in queue tail of packet. 
- *
- * @param csap_descr    pointer to CSAP descriptor
- * @param buffer        location for read data
- * @param buf_len       length of buffer
- *
- * @return number of read bytes, zero if CSAP destroyed or -1 on error.
- */
-static inline int
-iscsi_tad_recv_internal(csap_p csap_descr, uint8_t *buffer, size_t buf_len)
-{
-    iscsi_csap_specific_data_t *iscsi_spec_data;
-
-    char        b;
-    size_t      len = 0;
-    packet_t   *recv_pkt = NULL; 
-    uint8_t    *received_buffer = NULL;
-
-    INFO("%s(CSAP %d): want %d bytes", __FUNCTION__, csap_descr->id, buf_len);
-
-    iscsi_spec_data = csap_descr->layers[0].specific_data; 
-
-    read(iscsi_spec_data->conn_fd[0], &b, 1); 
-
-    if (b == 'z')
-    {
-        INFO("%s(CSAP %d): Csap will be destroyed, last 'z' byte read",
-             __FUNCTION__, csap_descr->id);
-        return 0;
-    }
-
-    LOCK_QUEUE(iscsi_spec_data);
-    if (iscsi_spec_data->packets_to_tgt.cqh_first !=
-        (void *)(&iscsi_spec_data->packets_to_tgt))
-    {
-        recv_pkt = iscsi_spec_data->packets_to_tgt.cqh_first;
-
-        len = recv_pkt->length;
-        received_buffer = recv_pkt->buffer;
-
-        if (buf_len < len)
-        {
-            INFO("%s(CSAP %d): received %d, asked %d, cut it",
-                 __FUNCTION__, csap_descr->id, recv_pkt->length, buf_len);
-            len = buf_len;
-            recv_pkt->length -= buf_len;
-            recv_pkt->buffer += buf_len;
-            write(iscsi_spec_data->conn_fd[1], "a", 1); 
-        }
-        else 
-            CIRCLEQ_REMOVE(&iscsi_spec_data->packets_to_tgt, 
-                           recv_pkt, link);
-    }
-    UNLOCK_QUEUE(iscsi_spec_data); 
-
-    if (recv_pkt != NULL)
-    { 
-        INFO("%s(CSAP %d): copy to user %d bytes from 0x%x addr", 
-             __FUNCTION__, csap_descr->id, len, received_buffer);
-        memcpy(buffer, received_buffer, len); 
-
-        /* If all data from pkt was read, free memory */
-        if (received_buffer == recv_pkt->buffer) 
-        { 
-            free(recv_pkt->allocated_buffer);
-            free(recv_pkt);
-        }
-    } 
-
-    return len;
-}
-
-#endif
-/* see description in tad_iscsi_impl.h */
-int
-iscsi_tad_recv(int csap_id, uint8_t *buffer, size_t buf_len)
-{
-    iscsi_csap_specific_data_t *iscsi_spec_data;
-    csap_p  csap_descr;
-    size_t  rx_total = 0;
-
-
-    csap_descr = csap_find(csap_id); 
-
-    if (csap_descr == NULL || 
-        (iscsi_spec_data = csap_descr->layers[0].specific_data) == NULL) 
-    {
-        return 0; 
-    } 
-
-    INFO("%s(CSAP %d): want %d bytes", __FUNCTION__, csap_id, buf_len);
-
-#if SOCKET_PAIR
-    {
-        fd_set rset;
-        int rc, fd = iscsi_spec_data->conn_fd[TGT_SITE];
-
-        FD_ZERO(&rset);
-        FD_SET(fd, &rset);
-
-        rc = select(fd + 1, &rset, NULL, NULL, NULL); 
-
-        if (rc > 0)
-        {
-            rc = read(fd, buffer, buf_len);
-            if (rc >= 0)
-                rx_total = rc;
-            else
-            {
-                csap_descr->last_errno = errno;
-                WARN("%s(CSAP %d) error %d on read", __FUNCTION__, 
-                     csap_descr->id, csap_descr->last_errno);
-                return -1;
-            }
-        }
-    }
-#else
-    do {
-        int rx_loop;
-
-        rx_loop = iscsi_tad_recv_internal(csap_descr, buffer, buf_len);
-        if (rx_loop <= 0)
-        {
-            WARN("%s(CSAP %d) internal recv return %d ",
-                 __FUNCTION__, csap_id, rx_loop);
-            break;
-        }
-        if ((unsigned)rx_loop > buf_len)
-        {
-            WARN("%s() internal recv return %d, greater then buf_len",
-                 __FUNCTION__, rx_loop);
-            return -1;
-        }
-
-        buffer += rx_loop;
-        buf_len -= rx_loop;
-        rx_total += rx_loop;
-    } while (buf_len > 0);
-#endif
-
-
-    return rx_total;
-
-}
-
-
-/* see description in tad_iscsi_impl.h */
-int
-iscsi_tad_send(int csap_id, uint8_t *buffer, size_t buf_len)
-{
-    csap_p    csap_descr;
-
-    iscsi_csap_specific_data_t *iscsi_spec_data;
-
-    INFO("%s(CSAP %d): send %d bytes", __FUNCTION__, csap_id, buf_len); 
-    
-    csap_descr = csap_find(csap_id);
-
-    if (csap_descr == NULL)
-    {
-        ERROR("%s() CSAP %d not found", __FUNCTION__, csap_id);
-        return -1;
-    }
-
-    iscsi_spec_data = csap_descr->layers[0].specific_data; 
-
-#if SOCKET_PAIR
-    {
-        struct timeval tv = {0, 1000};
-        int rc, fd = iscsi_spec_data->conn_fd[TGT_SITE];
-
-        rc = send(fd, buffer, buf_len, MSG_DONTWAIT);
-
-        if (rc < 0)
-        {
-            if (errno == EAGAIN)
-            {
-                select(0, NULL, NULL, NULL, &tv); 
-                rc = send(fd, buffer, buf_len, MSG_DONTWAIT);
-            } 
-        }
-
-        if (rc < 0)
-        {
-            csap_descr->last_errno = errno;
-            WARN("%s(CSAP %d) error %d on read", __FUNCTION__, 
-                 csap_descr->id, csap_descr->last_errno);
-            return -1;
-        } 
-        INFO("%s(CSAP %d) written %d bytes to fd %d", 
-             __FUNCTION__, csap_descr->id, rc, fd);
-    }
-#else
-    { 
-        packet_t *send_pkt;
-
-        if ((send_pkt = calloc(1, sizeof(*send_pkt))) == NULL)
-        {
-            csap_descr->last_errno = TE_ENOMEM;
-            return -1;
-        }
-        send_pkt->buffer = malloc(buf_len);
-        send_pkt->length = buf_len;
-        memcpy(send_pkt->buffer, buffer, buf_len);
-        INFO("%s(CSAP %d): insert to out queue %d bytes from 0x%x addr", 
-             __FUNCTION__, csap_id, buf_len, buffer);
-        
-
-        LOCK_QUEUE(iscsi_spec_data);
-        CIRCLEQ_INSERT_TAIL(&iscsi_spec_data->packets_from_tgt,
-                            send_pkt, link);
-        UNLOCK_QUEUE(iscsi_spec_data);
-    }
-#endif
-
-
-    return buf_len;
-}
-
-#if 0
-/* see description in tad_iscsi_impl.h */
-int
-packet_queue_init(packet_queue_t *queue)
-{
-    CIRCLEQ_INIT(&(queue->head));
-    {
-        pthread_mutex_t fastmutex = PTHREAD_MUTEX_INITIALIZER;
-        queue->pkt_queue_lock = fastmutex;
-    }
-    pipe(queue->conn_fd); 
-    return 0;
-}
-
-/* see description in tad_iscsi_impl.h */
-int
-packet_queue_destroy(packet_queue_t *queue)
-{
-    return 0;
-}
-
-/* see description in tad_iscsi_impl.h */
-int
-packet_queue_put(packet_queue_t *queue, uint8_t *data, size_t length)
-{
-    return 0;
-}
-
-/* see description in tad_iscsi_impl.h */
-int
-packet_queue_get(packet_queue_t *queue, int timeout,
-                 uint8_t *data, size_t *length, int wait_all)
-{
-    return 0;
-}
-
-#endif
-

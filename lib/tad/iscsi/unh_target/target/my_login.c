@@ -72,12 +72,6 @@
 
 #include "my_login.h"
 
-/* 
- * Declaration of send/recv methods from iSCSI TAD, see 
- * tad_iscsi_{impl.h|stack.c}
- */
-extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
-extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
 
 /** Pointer to the device specific data */
 struct iscsi_global *devdata;
@@ -170,7 +164,7 @@ iscsi_recv_iov (int csap, struct iovec *iov, int niov)
          niov != 0 && received != 0; 
          niov--, iov++, total += received)
     {
-        received = iscsi_tad_recv(csap, iov->iov_base, iov->iov_len);
+        received = recv(csap, iov->iov_base, iov->iov_len, MSG_WAITALL);
         pthread_testcancel();
         if (received < 0)
             return received;
@@ -822,7 +816,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
             TRACE(TRACE_DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d",
                   i, iov->iov_len, current_tx);
 
-            tx_loop = iscsi_tad_send(conn->conn_socket, buffer, (iov->iov_len - current_tx));
+            tx_loop = send(conn->conn_socket, buffer, (iov->iov_len - current_tx), 0);
 
             if (tx_loop <= 0) {
                 pdu = (struct generic_pdu *)iov[0].iov_base;
@@ -5267,7 +5261,7 @@ iscsi_server_rx_thread(void *param)
 
     local_params = *(iscsi_target_thread_params_t *)param;
     free(param);
-    conn = build_conn_sess(local_params.send_recv_csap, iscsi_portal_groups);
+    conn = build_conn_sess(local_params.send_recv_sock, iscsi_portal_groups);
 
     if (conn == NULL)
     {

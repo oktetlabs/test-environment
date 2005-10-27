@@ -289,30 +289,6 @@ extern int iscsi_prepare_send_cb(csap_p csap_descr);
 extern int iscsi_prepare_recv_cb(csap_p csap_descr);
 
 /**
- * Method for receive data from iSCSI 'target' CSAP to emulator of iSCSI 
- * target.
- *
- * @param csap          CSAP id, which should pass data to target
- * @param buffer        location for read data
- * @param len           length of buffer
- *
- * @return amount of passed bytes or -1 on error
- */
-extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
-
-/**
- * Method for send data to iSCSI 'target' CSAP from emulator of iSCSI 
- * target.
- *
- * @param csap          CSAP id, which should pass data from target
- * @param buffer        location with data to be sent
- * @param len           length of data
- *
- * @return amount of passed bytes or -1 on error
- */
-extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
-
-/**
  * Target thread function.
  *
  * @param arg   start argument, should be pointer to
@@ -322,52 +298,6 @@ extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
  */
 extern void *iscsi_server_rx_thread(void *arg);
 
-#if 0
-/**
- * Init packet_queue method.
- *
- * @param queue         pointer to packet_queue structure;
- *
- * @return status code.
- */
-extern int packet_queue_init(packet_queue_t *queue);
-
-/**
- * Destroy packet_queue method.
- *
- * @param queue         pointer to packet_queue structure;
- *
- * @return status code.
- */
-extern int packet_queue_destroy(packet_queue_t *queue);
-
-/**
- * Put data into packet_queue.
- *
- * @param queue         pointer to packet_queue structure;
- * @param data          pointer to data packet;
- * @param length        length of data;
- *
- * @return status code.
- */
-extern int packet_queue_put(packet_queue_t *queue,
-                            uint8_t *data, size_t length);
-
-/**
- * Get data from packet_queue.
- *
- * @param queue         pointer to packet_queue structure;
- * @param timeout       time while wait for data, in milliseconds, 
- *                      -1 means unlimited waiting;
- * @param data          location for data packet (OUT);
- * @param length        length of data (IN/OUT);
- * @param wait_all      flag for wait all data or not;
- *
- * @return status code.
- */
-extern int packet_queue_get(packet_queue_t *queue, int timeout,
-                            uint8_t *data, size_t *length, int wait_all);
-#endif
 
 #ifdef __cplusplus
 } /* extern "C" */

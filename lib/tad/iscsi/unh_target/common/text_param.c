@@ -47,13 +47,6 @@
 
 #include "text_param.h"
 
-/* 
- * Declaration of send/recv methods from iSCSI TAD, see 
- * tad_iscsi_{impl.h|stack.c}
- */
-extern int iscsi_tad_recv(int csap, uint8_t *buffer, size_t len);
-extern int iscsi_tad_send(int csap, uint8_t *buffer, size_t len);
-
 
 static struct key_values upper_case_values = {
 	none:NONE,
@@ -1195,7 +1188,7 @@ iscsi_recv_msg(int sock, int length, char *buffer, int flags)
 
     UNUSED(flags);
 
-    retval = iscsi_tad_recv(sock, buffer, length);
+    retval = recv(sock, buffer, length, MSG_WAITALL);
     pthread_testcancel();
 
     if (retval <= 0) {
@@ -1304,7 +1297,7 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
     } 
 
     print_payload(buffer, length);
-    tx_loop = iscsi_tad_send(sock, buffer, length); 
+    tx_loop = send(sock, buffer, length, 0); 
     TRACE(TRACE_NET, "sent %d bytes", tx_loop);
     
     free(buffer);

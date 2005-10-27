@@ -329,7 +329,7 @@
  * Parameters for iSCSI target emulator thread
  */
 typedef struct {
-    int send_recv_csap;
+    int send_recv_sock;
     int reject;
 } iscsi_target_thread_params_t;
 

@@ -75,50 +75,6 @@ stderr_logging(const char   *file,
     va_end(args);
 }
 
-int 
-iscsi_tad_send(int sock, uint8_t *buffer, size_t len)
-{
-    int result = write(sock, buffer, len);
-    unsigned i;
-    int width = 0;
-
-    fputs("\n> ", stderr);
-#if 1
-    for (i = 0; i < len; i++)
-    {
-        if (iscntrl(buffer[i]) || !isascii(buffer[i]))
-        {
-            fprintf(stderr, "\\%2.2x", buffer[i]);
-            width += 3;
-        }
-        else
-        {
-            fputc(buffer[i], stderr);
-            width++;
-        }
-        if (width > 32)
-        {
-            fputs("\\\n> ", stderr);
-            width = 0;
-        }
-    }
-    fputc('\n', stderr);
-#endif
-    return result >= 0 ? result : -errno;
-}
-
-int 
-iscsi_tad_recv(int sock, uint8_t *buffer, size_t len)
-{
-    int result = read(sock, buffer, len);
-    unsigned i;
-#if 1
-    for (i = 0; i < (unsigned)result; i++)
-        fprintf(stderr, "%2.2x %s", buffer[i], i % 8 == 7 ? "\n" : "");
-#endif
-    return result >= 0 ? result : -errno;
-}
-
 te_log_message_f te_log_message = stderr_logging;
 
 extern int iscsi_server_init();
@@ -288,7 +244,7 @@ int main(int argc, char *argv[])
         }
         config = malloc(sizeof(*config)); 
 /** will be freed by iscsi_server_tx_thread **/
-        config->send_recv_csap = data_socket;
+        config->send_recv_sock = data_socket;
         config->reject = 0;
         fputs("Accepted\n", stderr);
         if (pthread_create(&thread, NULL, iscsi_server_rx_thread, config) == 0)
