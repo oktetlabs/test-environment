@@ -217,6 +217,28 @@ extern int tapi_tad_add_iterator_for(asn_value *templ, int begin, int end,
 extern int tapi_tad_add_iterator_ints(asn_value *templ, int *array,
                                       size_t length);
 
+
+
+/**
+ * Receive all data which currently are waiting for receive in 
+ * specified CSAP and forward them into another CSAP, without 
+ * passing via RCF to test. 
+ *
+ * @param ta            TA name
+ * @param sid           RCF session id
+ * @param csap_rcv      identifier of recieve CSAP
+ * @param csap_fwd      identifier of CSAP which should obtain data
+ * @param pattern       traffic Pattern to receive data
+ * @param timeout       timeout to wait data, in milliseconds
+ * @param forwarded     number of forwarded PDUs (OUT)
+ *
+ * @return status code
+ */
+extern int tapi_tad_forward_all(const char *ta_name, int session,
+                                csap_handle_t csap_rcv,
+                                csap_handle_t csap_fwd,
+                                asn_value *pattern,
+                                unsigned int timeout, int *forwarded);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

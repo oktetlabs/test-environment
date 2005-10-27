@@ -377,3 +377,38 @@ tapi_tad_add_iterator_for(asn_value *templ, int begin, int end, int step)
 }
 
 
+
+/* Description in tapi_tad.h */
+int
+tapi_tad_forward_all(const char *ta_name, int session,
+                     csap_handle_t csap_rcv, csap_handle_t csap_fwd,
+                     asn_value *pattern, 
+                     unsigned int timeout, int *forwarded)
+{
+    int rc;
+
+    if (ta_name == NULL || csap_rcv == CSAP_INVALID_HANDLE ||
+        pattern == NULL)
+    {
+        ERROR("%s(): Invalid input", __FUNCTION__);
+        return TE_RC(TE_TAPI, EINVAL);
+    } 
+
+    if (csap_fwd != CSAP_INVALID_HANDLE)
+    {
+        asn_write_int32(pattern, csap_fwd, "0.action.#forw-pld");
+    }
+
+    rc = tapi_tad_trrecv_start(ta_name, session, csap_rcv,
+                               pattern, NULL, NULL, TAD_TIMEOUT_INF, 0);
+    if (rc != 0)
+    {
+        ERROR("%s(%s:%d): trrecv_start failed %r", 
+              __FUNCTION__, ta_name, csap_rcv, rc);
+    } 
+    MSLEEP(timeout);
+
+    rc = rcf_ta_trrecv_stop(ta_name, session, csap_rcv, forwarded);
+
+    return rc;
+}
