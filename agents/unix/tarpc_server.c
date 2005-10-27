@@ -4463,15 +4463,16 @@ int
 overfill_buffers(tarpc_overfill_buffers_in *in,
                  tarpc_overfill_buffers_out *out)
 {
-    ssize_t          rc = 0;
-    api_func    send_func;
-    api_func    select_func;
-    size_t           max_len = 4096;
-    uint8_t         *buf = NULL;
-    uint64_t         total = 0;
-    fd_set           writefds;
-    struct timeval   tv;
-    int              unchanged = 0;
+    ssize_t         rc = 0;
+    int             errno_save = errno;
+    api_func        send_func;
+    api_func        select_func;
+    size_t          max_len = 4096;
+    uint8_t        *buf = NULL;
+    uint64_t        total = 0;
+    fd_set          writefds;
+    struct timeval  tv;
+    int             unchanged = 0;
 
     out->bytes = 0;
 
@@ -4484,6 +4485,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         goto overfill_buffers_exit;
     }
 
+    /* FIXME */
     memset(buf, 0xDEADBEEF, sizeof(max_len));
 
     if (tarpc_find_func(in->common.lib, "send", &send_func) != 0)
@@ -4517,31 +4519,35 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
             goto overfill_buffers_exit;
         }
 
+        rc = 0;
         do {
+            out->bytes += rc;
             rc = send_func(in->sock, buf, max_len, MSG_DONTWAIT);
-            if (rc == -1 && errno != EAGAIN)
-            {
-                ERROR("%s(): send() failed", __FUNCTION__);
-                out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
-                goto overfill_buffers_exit;
-            }
-            if (rc != -1)
-                out->bytes += rc;
-        } while (errno != EAGAIN);
+        } while (rc > 0);
+        if (errno != EAGAIN)
+        {
+            ERROR("%s(): send() failed", __FUNCTION__);
+            out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+            goto overfill_buffers_exit;
+        }
 
         if (total != out->bytes)
+        {
             total = out->bytes;
+            unchanged = 0;
+        }
         else
         {
             unchanged++;
             rc = 0;
-            errno = 0;
         }
     } while (unchanged != 3);
 
 overfill_buffers_exit:
 
     free(buf);
+    if (rc == 0)
+        errno = errno_save;
     return rc;
 }
 
