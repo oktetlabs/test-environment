@@ -64,8 +64,7 @@ extern "C" {
 struct bridge_csap_specific_data;
 typedef struct bridge_csap_specific_data *bridge_csap_specific_data_p;
 
-typedef struct bridge_csap_specific_data
-{ 
+typedef struct bridge_csap_specific_data { 
 
 } bridge_csap_specific_data_t;
 
@@ -75,38 +74,47 @@ typedef struct bridge_csap_specific_data
  *
  * The function complies with csap_get_param_cb_t prototype.
  */ 
-extern char* bridge_get_param_cb (int csap_id, unsigned int layer, const char *param);
+extern char *tad_bridge_get_param_cb(int csap_id, unsigned int layer,
+                                     const char *param);
 
 /**
  * Callback for init 'bridge' CSAP layer over 'eth' in stack.
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern int bridge_eth_init_cb (int csap_id, const asn_value *csap_nds, unsigned int layer);
+extern te_errno tad_bridge_eth_init_cb(int              csap_id,
+                                       const asn_value *csap_nds,
+                                       unsigned int     layer);
 
 /**
  * Callback for destroy 'bridge' CSAP layer over 'eth' in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern int bridge_eth_destroy_cb (int csap_id, unsigned int layer);
+extern te_errno tad_bridge_eth_destroy_cb(int          csap_id,
+                                          unsigned int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
  *
  * The function complies with csap_confirm_pdu_cb_t prototype.
  */ 
-extern int bridge_confirm_pdu_cb (int csap_id, unsigned int layer, asn_value_p tmpl_pdu); 
+extern te_errno tad_bridge_confirm_pdu_cb(int          csap_id,
+                                          unsigned int layer,
+                                          asn_value_p  tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
  *
  * The function complies with csap_gen_bin_cb_t prototype.
  */ 
-extern int bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                             const asn_value *tmpl_pdu,
-                             const tad_tmpl_arg_t *args, size_t  arg_num,
-                             csap_pkts_p up_payload, csap_pkts_p pkts);
+extern te_errno tad_bridge_gen_bin_cb(csap_p                csap_descr,
+                                      unsigned int          layer,
+                                      const asn_value      *tmpl_pdu,
+                                      const tad_tmpl_arg_t *args,
+                                      size_t                arg_num,
+                                      csap_pkts_p           up_payload,
+                                      csap_pkts_p           pkts);
 
 
 /**
@@ -114,10 +122,12 @@ extern int bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer,
  *
  * The function complies with csap_match_bin_cb_t prototype.
  */
-extern int bridge_match_bin_cb(int csap_id, unsigned int layer,
-                               const asn_value *pattern_pdu,
-                              const csap_pkts *pkt, csap_pkts *payload, 
-                              asn_value_p  parsed_packet );
+extern te_errno tad_bridge_match_bin_cb(int              csap_id,
+                                        unsigned int     layer,
+                                        const asn_value *pattern_pdu,
+                                        const csap_pkts *pkt,
+                                        csap_pkts       *payload, 
+                                        asn_value_p      parsed_packet);
 
 /**
  * Callback for generating pattern to filter 
@@ -126,18 +136,21 @@ extern int bridge_match_bin_cb(int csap_id, unsigned int layer,
  *
  * The function complies with csap_gen_pattern_cb_t prototype.
  */
-extern int bridge_gen_pattern_cb (int csap_id, unsigned int layer, const asn_value *tmpl_pdu, 
-                               asn_value_p   *pattern_pdu);
+extern te_errno tad_bridge_gen_pattern_cb(int              csap_id,
+                                          unsigned int     layer,
+                                          const asn_value *tmpl_pdu, 
+                                          asn_value_p     *pattern_pdu);
 
 
 /**
- * Free all memory allocated by eth csap specific data
+ * Free all memory allocated by eth csap specific data.
  *
- * @param bridge_csap_specific_data_p poiner to structure
- * @param is_complete if not 0 the final free() will be called on passed pointer
- *
+ * @param csap_data     Poiner to structure
+ * @param is_complete   If not 0 the final free() will be called 
+ *                      on passed pointer
  */ 
-extern void free_bridge_csap_data(bridge_csap_specific_data_p spec_data, char is_colmplete);
+extern void free_bridge_csap_data(bridge_csap_specific_data_p spec_data,
+                                  char is_colmplete);
 
 #ifdef __cplusplus
 } /* extern "C" */
