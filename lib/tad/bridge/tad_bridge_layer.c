@@ -140,7 +140,7 @@ tad_bridge_confirm_pdu_cb(int csap_id, unsigned int layer,
 /* See description in tad_bridge_impl.h */
 te_errno
 tad_bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                      onst asn_value *tmpl_pdu,
+                      const asn_value *tmpl_pdu,
                       const tad_tmpl_arg_t *args, size_t  arg_num, 
                       const csap_pkts_p  up_payload, csap_pkts_p pkts)
 {
