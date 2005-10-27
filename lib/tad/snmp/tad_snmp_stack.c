@@ -138,7 +138,7 @@ snmp_csap_input(int                  op,
  * @return Status code
  */
 int 
-snmp_release_cb(csap_p csap_descr)
+tad_snmp_release_cb(csap_p csap_descr)
 {
     int layer = csap_descr->read_write_layer;
     snmp_csap_specific_data_p spec_data = 
@@ -739,10 +739,10 @@ tad_snmp_single_init_cb(int csap_id, const asn_value *csap_nds,
     if (csap_descr->check_pdus_cb == NULL)
         csap_descr->check_pdus_cb = tad_snmp_single_check_pdus;
 
-    csap_descr->write_cb         = snmp_write_cb; 
-    csap_descr->read_cb          = snmp_read_cb; 
-    csap_descr->write_read_cb    = snmp_write_read_cb; 
-    csap_descr->release_cb       = snmp_release_cb;
+    csap_descr->write_cb         = tad_snmp_write_cb; 
+    csap_descr->read_cb          = tad_snmp_read_cb; 
+    csap_descr->write_read_cb    = tad_snmp_write_read_cb; 
+    csap_descr->release_cb       = tad_snmp_release_cb;
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 2000000; 
 
