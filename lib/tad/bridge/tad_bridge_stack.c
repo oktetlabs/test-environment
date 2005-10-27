@@ -154,7 +154,7 @@ tad_bridge_eth_init_cb(int csap_id, const asn_value *csap_nds,
     if ((csap_descr = csap_find (csap_id)) == NULL)
         return TE_ETADCSAPNOTEX;
 
-    csap_descr->check_pdus_cb = bridge_eth_check_pdus;
+    csap_descr->check_pdus_cb = tad_bridge_eth_check_pdus;
 
     F_VERB("bridge_eth_init_cb called for csap %d, layer %d\n", csap_id, layer);
        
