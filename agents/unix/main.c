@@ -849,6 +849,7 @@ ta_sigchld_handler(int sig)
     int     pid;
     int     get = 0;
     te_bool logger = is_logger_available();
+    int     saved_errno = errno;
 
     UNUSED(sig);
     if (!ta_children_dead_heap_inited)
@@ -865,6 +866,7 @@ ta_sigchld_handler(int sig)
         int               dead = ta_children_dead_heap_next;
         ta_children_wait *wake;
 
+        errno = saved_errno;
         get++;
         if (get > 1 && logger)
             WARN("Get %d children from on SIGCHLD handler call", get);
@@ -970,12 +972,15 @@ ta_sigchld_handler(int sig)
         if (pid == 0 || errno == ECHILD)
         {
             RING("No child was available in SIGCHILD handler");
+            errno = saved_errno;
         }
         else
         {
             ERROR("waitpid() failed with errno %d", errno);
         }
     }
+    else
+        errno = saved_errno;
 }
 
 sigset_t rpcs_received_signals;
@@ -1160,6 +1165,8 @@ ta_waitpid(pid_t pid, int *status, int options)
     /* Sleep */
     if (!(options & WNOHANG))
     {
+        int saved_errno = errno;
+
         while (dead == -1 && (rc = sem_wait(&wake->sem)) != 0)
         {
             if (errno != EINTR)
@@ -1168,6 +1175,7 @@ ta_waitpid(pid_t pid, int *status, int options)
              * call find_dead_child, but we should not free(wake) before
              * signal handler will call sem_post(), so let's sleep until
              * ta_sigchld_handler will wake up us explicitly. */
+            errno = saved_errno;
         }
 
         /* Clean up wait queue and release the lock */
@@ -1213,12 +1221,14 @@ int
 ta_kill_death(pid_t pid)
 {
     int rc;
+    int saved_errno = errno;
 
     if (ta_waitpid(pid, NULL, WNOHANG) == pid)
         return 0;
     rc = kill(pid, SIGTERM);
     if (rc != 0 && errno != ESRCH)
         return -1;
+    errno = saved_errno;
 
     /* Check if the process exited. If kill failed, waitpid can't fail */
     if (ta_waitpid(pid, NULL, WNOHANG) == pid)
