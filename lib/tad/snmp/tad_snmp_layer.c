@@ -41,7 +41,7 @@
 
 /* See description in tad_snmp_impl.h */
 char *
-snmp_get_param_cb(int csap_id, unsigned int layer, const char *param)
+tad_snmp_get_param_cb(int csap_id, unsigned int layer, const char *param)
 {
     UNUSED(csap_id);
     UNUSED(layer);
@@ -50,8 +50,9 @@ snmp_get_param_cb(int csap_id, unsigned int layer, const char *param)
 }
 
 /* See description in tad_snmp_impl.h */
-int
-snmp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
+te_errno
+tad_snmp_confirm_pdu_cb(int csap_id, unsigned int layer,
+                        asn_value_p tmpl_pdu)
 {
     UNUSED(csap_id);
     UNUSED(layer);
@@ -61,10 +62,11 @@ snmp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
 }
 
 /* See description in tad_snmp_impl.h */
-int
-snmp_gen_bin_cb(csap_p csap_descr, unsigned int layer, const asn_value *tmpl_pdu,
-                const tad_tmpl_arg_t *args, size_t  arg_num, 
-                csap_pkts_p up_payload, csap_pkts_p pkts)
+te_errno
+tad_snmp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
+                    const asn_value *tmpl_pdu,
+                    const tad_tmpl_arg_t *args, size_t  arg_num, 
+                    csap_pkts_p up_payload, csap_pkts_p pkts)
 {
     int rc; 
     int operation;
@@ -208,8 +210,9 @@ snmp_gen_bin_cb(csap_p csap_descr, unsigned int layer, const asn_value *tmpl_pdu
 
 
 /* See description in tad_snmp_impl.h */
-int
-snmp_match_bin_cb(int csap_id, unsigned int layer, const asn_value *pattern_pdu,
+te_errno
+tad_snmp_match_bin_cb(int csap_id, unsigned int layer,
+                      const asn_value *pattern_pdu,
                       const csap_pkts *pkt, csap_pkts *payload,
                       asn_value *parsed_packet )
 { 
@@ -635,8 +638,9 @@ snmp_match_bin_cb(int csap_id, unsigned int layer, const asn_value *pattern_pdu,
 }
 
 /* See description in tad_snmp_impl.h */
-int
-snmp_gen_pattern_cb(int csap_id, unsigned int layer, const asn_value *tmpl_pdu, 
+te_errno
+tad_snmp_gen_pattern_cb(int csap_id, unsigned int layer,
+                        const asn_value *tmpl_pdu, 
                         asn_value_p *pattern_pdu)
 { 
     UNUSED(tmpl_pdu);
@@ -657,9 +661,9 @@ snmp_gen_pattern_cb(int csap_id, unsigned int layer, const asn_value *tmpl_pdu,
  *
  * @return Status code.
  */
-int
-snmp_inform_response(csap_p csap_descr, const char *usr_param,
-                     const uint8_t *pkt, size_t pkt_len)
+te_errno
+tad_snmp_inform_response(csap_p csap_descr, const char *usr_param,
+                         const uint8_t *pkt, size_t pkt_len)
 {
     struct snmp_pdu     *pdu = (struct snmp_pdu *)pkt;
     struct snmp_pdu     *reply;
