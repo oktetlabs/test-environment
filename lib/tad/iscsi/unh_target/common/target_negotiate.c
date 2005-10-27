@@ -454,6 +454,7 @@ target_check_login(struct iscsi_conn *conn,
 										outputpdu, conn->connection_flags,
 										login_flags, unknown_key_list);
 	if (add_length < 0) {
+        TRACE_ERROR("Cannot scan keys");
 		login_reject(conn, STAT_CLASS_INITIATOR, STAT_DETAIL_ERR, outputpdu);
 		retval = add_length;
 		goto out;
@@ -477,6 +478,7 @@ target_check_login(struct iscsi_conn *conn,
 										conn->connection_flags, login_flags);
 
 	if (add_length < 0) {
+        ERROR("Cannot scan keys in our table");
 		login_reject(conn, STAT_CLASS_INITIATOR, STAT_DETAIL_ERR, outputpdu);
 		retval = add_length;
 		goto out;
@@ -1233,6 +1235,7 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 	correct_CSG = (inputpdu->flags & CSG) >> CSG_SHIFT;
 
 	if ((nsecurity > 0 && (inputpdu->flags & CSG) != 0 )) {
+        TRACE_ERROR("Incorrect CSG");
 		login_reject(conn, STAT_CLASS_INITIATOR, STAT_DETAIL_ERR, outputpdu);
 		return -1;
 	}

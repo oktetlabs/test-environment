@@ -903,6 +903,7 @@ scsi_rx_data(Target_Scsi_Cmnd * the_command)
 {
 	the_command->state = ST_TO_PROCESS;
 
+    scsi_target_process();
 #if 0
 	/* wake up the mid-level scsi_target_process_thread */
 	if (atomic_read(&target_data.target_sem.count) <= 0) {

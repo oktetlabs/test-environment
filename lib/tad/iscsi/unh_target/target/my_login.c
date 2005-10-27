@@ -34,6 +34,7 @@
  * $Id$
  */
 
+#define _GNU_SOURCE
 #include <te_config.h>
 #include <te_defs.h>
 #include <stddef.h>
@@ -2091,7 +2092,18 @@ build_conn_sess(int sock, struct portal_group *ptr)
     /* Store SNACK flags as part of Session - SAI */
     session->targ_snack_flg = devdata->targ_snack_flg;
 
-    pthread_mutex_init(&session->cmnd_mutex, NULL);
+    if (pthread_mutexattr_init(&session->cmnd_mutex_recursive))
+        goto out7;
+    
+    if (pthread_mutexattr_settype(&session->cmnd_mutex_recursive, 
+                                  PTHREAD_MUTEX_RECURSIVE))
+        goto out7;
+    
+    if (pthread_mutex_init(&session->cmnd_mutex, &session->cmnd_mutex_recursive))
+    {
+        pthread_mutexattr_destroy(&session->cmnd_mutex_recursive);
+        goto out7;
+    }
     sem_init(&session->thr_kill_sem,0 ,0);
 
     conn->custom = iscsi_register_custom(sock);

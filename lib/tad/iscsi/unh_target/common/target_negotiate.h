@@ -226,6 +226,7 @@ struct iscsi_session {
 
 	/* conn_sem: semaphore to add/remove commands and reject items */
 	pthread_mutex_t cmnd_mutex;
+    pthread_mutexattr_t cmnd_mutex_recursive;
 
 	/* nconn: no of active connections */
 	int nconn;
