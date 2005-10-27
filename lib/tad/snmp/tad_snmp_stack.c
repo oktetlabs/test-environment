@@ -105,12 +105,11 @@ tad_snmp_free_pdu(void *ptr)
 }
 
 int
-snmp_csap_input(
-    int op,
-    struct snmp_session *session,
-    int reqid,
-    struct snmp_pdu *pdu,
-    void *magic)
+snmp_csap_input(int                  op,
+                struct snmp_session *session,
+                int                  reqid,
+                struct snmp_pdu     *pdu,
+                void                *magic)
 {
     snmp_csap_specific_data_p   spec_data; 
 
@@ -154,7 +153,8 @@ snmp_release_cb(csap_p csap_descr)
 
 /* See description in tad_snmp_impl.h */
 int 
-snmp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tad_snmp_read_cb(csap_p csap_descr, int timeout,
+                 char *buf, size_t buf_len)
 { 
     int rc = 0; 
     int layer;
@@ -225,7 +225,7 @@ snmp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
 /* See description in tad_snmp_impl.h */
 int 
-snmp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+tad_snmp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
     int layer;
 
@@ -254,9 +254,9 @@ snmp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
 /* See description in tad_snmp_impl.h */
 int 
-snmp_write_read_cb(csap_p csap_descr, int timeout,
-                   const char *w_buf, size_t w_buf_len,
-                   char *r_buf, size_t r_buf_len)
+tad_snmp_write_read_cb(csap_p csap_descr, int timeout,
+                       const char *w_buf, size_t w_buf_len,
+                       char *r_buf, size_t r_buf_len)
 {
     fd_set fdset;
     int    n_fds = 0; 
@@ -326,8 +326,8 @@ snmp_write_read_cb(csap_p csap_descr, int timeout,
 }
 
 
-int 
-snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
+te_errno
+tad_snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 {
     char choice_label[20];
     int  rc;
@@ -374,7 +374,8 @@ snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
 /* See description in tad_snmp_impl.h */
 te_errno
-snmp_single_init_cb(int csap_id, const asn_value *csap_nds, unsigned int layer)
+tad_snmp_single_init_cb(int csap_id, const asn_value *csap_nds,
+                        unsigned int layer)
 {
     int      rc;
     char     community[COMMUNITY_MAX_LEN + 1]; 
@@ -736,7 +737,7 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, unsigned int layer)
     }
     
     if (csap_descr->check_pdus_cb == NULL)
-        csap_descr->check_pdus_cb = snmp_single_check_pdus;
+        csap_descr->check_pdus_cb = tad_snmp_single_check_pdus;
 
     csap_descr->write_cb         = snmp_write_cb; 
     csap_descr->read_cb          = snmp_read_cb; 
@@ -818,9 +819,10 @@ snmp_single_init_cb(int csap_id, const asn_value *csap_nds, unsigned int layer)
     return 0;
 }
 
+
 /* See description in tad_snmp_impl.h */
 int 
-snmp_single_destroy_cb(int csap_id, unsigned int layer)
+tad_snmp_single_destroy_cb(int csap_id, unsigned int layer)
 {
     csap_p csap_descr = csap_find(csap_id);
 
