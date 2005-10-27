@@ -204,7 +204,6 @@ tad_iscsi_match_bin_cb(int csap_id, unsigned int layer, const asn_value *pattern
         spec_data->stored_buffer = malloc(spec_data->wait_length);
         spec_data->stored_length = 0;
     }
-
     defect = spec_data->wait_length - 
             (spec_data->stored_length + pkt->len);
 

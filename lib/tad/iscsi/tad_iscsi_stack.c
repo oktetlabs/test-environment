@@ -189,7 +189,7 @@ tad_iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     {
         struct timeval tv = {0, 0};
         fd_set rset;
-        int rc, fd = iscsi_spec_data->conn_fd[CSAP_SITE];
+        int rc, fd = iscsi_spec_data->socket;
 
         /* timeout in microseconds */
         tv.tv_usec = timeout % (1000 * 1000);
@@ -206,8 +206,8 @@ tad_iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         if (rc > 0)
         {
             rc = read(fd, buf, buf_len);
-        INFO("%s(CSAP %d): read rc %d", 
-             __FUNCTION__, csap_descr->id, rc);
+            INFO("%s(CSAP %d): read rc %d", 
+                 __FUNCTION__, csap_descr->id, rc);
             if (rc >= 0)
                 len = rc;
             else
@@ -218,6 +218,8 @@ tad_iscsi_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
                 return -1;
             }
         }
+        else 
+            len = 0;
     }
     INFO("%s(CSAP %d), return %d", __FUNCTION__, csap_descr->id, len);
 
@@ -240,7 +242,7 @@ tad_iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
     {
         struct timeval tv = {0, 1000};
-        int rc, fd = iscsi_spec_data->conn_fd[CSAP_SITE];
+        int rc, fd = iscsi_spec_data->socket;
 
         rc = send(fd, buf, buf_len, MSG_DONTWAIT);
 
@@ -306,6 +308,8 @@ tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
 
     csap_p  csap_descr;
     int     rc;
+    int     conn_pipe[2];
+    int32_t ready_socket;
 
     const asn_value            *iscsi_nds;
     iscsi_csap_specific_data_t *iscsi_spec_data; 
@@ -341,8 +345,22 @@ tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 100 * 1000;
 
+    if ((rc = asn_read_int32(csap_nds, &ready_socket, "0.socket")) == 0)
+    {
+        iscsi_spec_data->socket = ready_socket;
+        return 0;
+    }
+    else if (rc != TE_EASNINCOMPLVAL)
+    {
+        ERROR("%s(): read asn socket failed %r, unexpected", 
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
+
+    /* There was not 'socket' specified, start UNH Target thread */
+
     if ((rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, 
-                         iscsi_spec_data->conn_fd)) < 0)
+                         conn_pipe)) < 0)
     {
         csap_descr->last_errno = errno;
         ERROR("%s(CSAP %d) socketpair failed %d", 
@@ -351,7 +369,9 @@ tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
     }
 
     thread_params = calloc(1, sizeof(*thread_params));
-    thread_params->send_recv_sock = iscsi_spec_data->conn_fd[TGT_SITE];
+    thread_params->send_recv_sock = conn_pipe[TGT_SITE];
+
+    iscsi_spec_data->socket = conn_pipe[CSAP_SITE];
 
     if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
         (rc = pthread_attr_setdetachstate(&pthread_attr,
@@ -390,7 +410,7 @@ tad_iscsi_single_destroy_cb(int csap_id, unsigned int layer)
     iscsi_spec_data = csap_descr->layers[layer].specific_data; 
 
     pthread_cancel(iscsi_spec_data->iscsi_target_thread);
-    close(iscsi_spec_data->conn_fd[CSAP_SITE]);
+    close(iscsi_spec_data->socket);
     /* leave TGT_SITE socket, there may be read or write */
 
     csap_descr->layers[layer].specific_data = NULL; 

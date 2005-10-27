@@ -54,8 +54,6 @@
 
 #include "iscsi_common.h"
 
-#define SOCKET_PAIR 1
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -78,27 +76,17 @@ typedef struct packet_queue_t {
 #endif
     
 
-#if SOCKET_PAIR
 enum {
     TGT_SITE,
     CSAP_SITE
 };
-#endif
 
 /**
  * iSCSI CSAP specific data
  */
 typedef struct iscsi_csap_specific_data
 { 
-#if SOCKET_PAIR
-    int             conn_fd[2]; /* socketpair for data transfer */
-#else
-    CIRCLEQ_HEAD(packets_to_head,   packet_t) packets_to_tgt;
-    CIRCLEQ_HEAD(packets_from_head, packet_t) packets_from_tgt;
-
-    int             conn_fd[2]; /* pipe for signalling */
-    pthread_mutex_t pkt_queue_lock;
-#endif
+    int             socket;
     pthread_t       iscsi_target_thread;
 
     size_t          wait_length;
