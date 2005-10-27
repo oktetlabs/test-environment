@@ -4289,7 +4289,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
      * We manually add group to be independent from system settings
      * (one group for all users / each user with its group)
      */
-    sprintf(buf, "strace /usr/sbin/groupadd -g %u %s ", uid, user);
+    sprintf(buf, "/usr/sbin/groupadd -g %u %s ", uid, user);
     if ((rc = ta_system(buf)) != 0)
     {
         ERROR("\"%s\" command failed with %d", buf, rc);
@@ -4312,7 +4312,8 @@ user_add(unsigned int gid, const char *oid, const char *value,
     }
 
     /* Fedora has very aggressive nscd cache */
-    ta_system("/etc/init.d/nscd restart");
+    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
+    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
 
     sprintf(buf, "su - %s -c 'ssh-keygen -t dsa -N \"\" "
                  "-f /tmp/%s/.ssh/id_dsa' >/dev/null 2>&1", user, user);
@@ -4361,7 +4362,8 @@ user_del(unsigned int gid, const char *oid, const char *user)
     }
 
     /* Fedora has very aggressive nscd cache */
-    ta_system("/etc/init.d/nscd restart");
+    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
+    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
 
     return 0;
 }
