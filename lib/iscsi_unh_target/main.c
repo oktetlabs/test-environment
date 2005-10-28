@@ -38,7 +38,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include <tad_iscsi_impl.h>
 #include <iscsi_target.h>
 #include <my_login.h>
 
