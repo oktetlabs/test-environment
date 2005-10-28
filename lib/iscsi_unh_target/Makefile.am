@@ -17,6 +17,11 @@ unh_targetd_LDADD = target/libiscsi_target.a security/libiscsi_security.a \
                     common/libiscsi_common.a
 
 
+lib_LIBRARIES = libiscsi_unh_target.a
+
+libiscsi_unh_target_a_SOURCES =
+
+
 install-exec-hook:
 	touch -c -r libiscsi_unh_target.a \
 		$(DESTDIR)/$(libdir)/libiscsi_unh_target.a
@@ -27,7 +32,7 @@ install-exec-local:
 			$(AR) $(ARFLAGS) libiscsi_unh_target.a $$obj; \
 		done; \
 	done
-	$(RANLIB) libiscsi_tad_iscsi.a
+	$(RANLIB) libiscsi_unh_target.a
 
 
 all: install
