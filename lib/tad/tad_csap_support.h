@@ -151,7 +151,7 @@ typedef struct csap_pkts {
  * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      Asn_value with PDU. 
  * @param args          Array with values of template iteration parameters,
- *                      mast be used to prepare binary data, if references 
+ *                      must be used to prepare binary data, if references 
  *                      to these paramters are present in traffic
  *                      template PDU.
  * @param arg_num       Length of array above. 
@@ -185,7 +185,7 @@ typedef te_errno (*csap_gen_bin_cb_t)(csap_p                csap_descr,
  * Callback type to parse received packet and match it with pattern. 
  *
  * @param csap_id       Identifier of CSAP
- * @param layer         Numeric index of layer in CSAP type to be processed.
+ * @param layer         Numeric index of layer in CSAP type to be processed
  * @param pattern_pdu   Pattern NDS 
  * @param pkt           Recevied packet, may be list of fragments, which 
  *                      all should be defragmented by this callback and 
@@ -194,7 +194,7 @@ typedef te_errno (*csap_gen_bin_cb_t)(csap_p                csap_descr,
  * @param parsed_packet Caller of method should pass here empty asn_value
  *                      instance of ASN type 'Generic-PDU'. Callback 
  *                      have to fill this instance with values from 
- *                      parsed and matched packet
+ *                      parsed and matched packet.
  *
  * @return Zero on success or error code.
  */
