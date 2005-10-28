@@ -3217,8 +3217,8 @@ TARPC_FUNC(getpwnam, {},
     {
         ERROR("getpwnam() returned NULL");
     }
-    finish:
-    if (out->common._errno != 0)
+finish:
+    if (!RPC_IS_ERRNO_RPC(out->common._errno))
     {
         free(out->passwd.name.name_val);
         free(out->passwd.passwd.passwd_val);
