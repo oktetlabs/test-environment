@@ -695,7 +695,7 @@ extern int asn_get_subvalue(const asn_value *container,
  * @return zero on success or error code.
  */ 
 extern int asn_get_indexed(const asn_value *container, 
-                           const asn_value ** subval, 
+                           const asn_value **subval, 
                            int index);
 
 /**
