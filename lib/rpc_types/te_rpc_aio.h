@@ -151,6 +151,7 @@ aio_cancel_retval_rpc2h(rpc_aio_cancel_retval ret)
 {
     switch (ret)
     {
+        case -1: return -1;
         RPC2H(AIO_CANCELED);
         RPC2H(AIO_NOTCANCELED);
         RPC2H(AIO_ALLDONE);
@@ -164,6 +165,7 @@ aio_cancel_retval_h2rpc(int ret)
 {
     switch (ret)
     {
+        case -1: return -1;
         H2RPC(AIO_CANCELED);
         H2RPC(AIO_NOTCANCELED);
         H2RPC(AIO_ALLDONE);
