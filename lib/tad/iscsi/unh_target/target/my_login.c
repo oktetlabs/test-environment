@@ -5268,6 +5268,9 @@ iscsi_server_rx_thread(void *param)
         TRACE_ERROR("Error init connection\n");
         return NULL;
     }
+#if 1
+    memset(buffer, 0, sizeof(buffer));
+#endif
     
     pthread_cleanup_push(iscsi_thread_cleanup, conn);
 	/* receive loop */
@@ -5512,4 +5515,68 @@ iscsi_server_rx_thread(void *param)
 
     pthread_cleanup_pop(1);
 	return NULL;
+}
+
+/*
+ * Create a pipe (using socketpair()) and start UNH Target Rx thread 
+ * which works with one end of the pipe.
+ *
+ * @return Socket file descriptor or -1
+ *
+ * @todo Put it in appropriate place.
+ */
+int
+iscsi_target_start_rx_thread(void)
+{
+    int                             rc;
+    iscsi_target_thread_params_t   *thread_params = NULL;
+    int                             conn_pipe[2] = { -1, -1 };
+    pthread_attr_t                  pthread_attr;
+    pthread_t                       thread;
+
+
+    thread_params = calloc(1, sizeof(*thread_params));
+    if (thread_params == NULL)
+    {
+        ERROR("%s(): calloc() failed", __FUNCTION__);
+        goto error;
+    }
+
+    if ((rc = socketpair(AF_LOCAL, SOCK_STREAM, 0, conn_pipe)) < 0)
+    {
+        ERROR("%s(): socketpair(AF_LOCAL, SOCK_STREAM, 0) failed %d", 
+              __FUNCTION__, errno);
+        goto error;
+    }
+
+    thread_params->send_recv_sock = conn_pipe[0];
+
+    if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
+        (rc = pthread_attr_setdetachstate(&pthread_attr,
+                                          PTHREAD_CREATE_DETACHED)) != 0)
+    {
+        ERROR("Cannot initialize pthread attribute variable: %d", rc);
+        goto error;
+    } 
+
+    /* TODO get and store pthread_t */
+    rc = pthread_create(&thread, &pthread_attr,
+                        iscsi_server_rx_thread, thread_params);
+    if (rc != 0)
+    {
+        ERROR("Cannot create a new iSCSI thread: %d", rc);
+        goto error;
+    } 
+
+    /* thread_params is owned by the thread */
+
+    return conn_pipe[1];
+
+error:
+    free(thread_params);
+    if (conn_pipe[0] != -1)
+        (void)close(conn_pipe[0]);
+    if (conn_pipe[1] != -1)
+        (void)close(conn_pipe[1]);
+    return -1;
 }

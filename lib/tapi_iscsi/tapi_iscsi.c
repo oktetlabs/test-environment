@@ -62,11 +62,28 @@
 #include "te_iscsi.h"
 #include "tapi_tcp.h"
 
+
 int
 tapi_iscsi_csap_create(const char *ta_name, int sid, 
                        csap_handle_t *csap)
 {
-    return tapi_iscsi_sock_csap_create(ta_name, sid, 0, csap);
+    int rc;
+    int sock;
+
+    rc = rcf_ta_call(ta_name, sid, "iscsi_target_start_rx_thread",
+                     &sock, 0, FALSE);
+    if (rc != 0)
+    {
+        ERROR("Failed to call iscsi_target_start_rx_thread() on TA "
+              "'%s': %r", ta_name, rc);
+        return rc;
+    }
+    if (sock < 0)
+    {
+        ERROR("iscsi_target_start_rx_thread() on TA '%s' failed");
+        return TE_RC(TE_TAPI, TE_EFAULT);
+    }
+    return tapi_iscsi_sock_csap_create(ta_name, sid, sock, csap);
 }
 
 
@@ -77,6 +94,9 @@ tapi_iscsi_sock_csap_create(const char *ta_name, int sid,
     asn_value *csap_spec = NULL;
     int rc = 0, syms;
 
+    if (ta_name == NULL || socket < 0 || csap == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
     rc = asn_parse_value_text("{ iscsi:{}}",
                               ndn_csap_spec, &csap_spec, &syms); 
     if (rc != 0)
@@ -85,10 +105,7 @@ tapi_iscsi_sock_csap_create(const char *ta_name, int sid,
               __FUNCTION__, rc, syms);
         return rc;
     } 
-    if (socket > 0)
-    {
-        asn_write_int32(csap_spec, socket, "0.#iscsi.socket");
-    }
+    asn_write_int32(csap_spec, socket, "0.#iscsi.socket");
 
     rc = tapi_tad_csap_create(ta_name, sid, "iscsi", 
                               csap_spec, csap); 
