@@ -3005,6 +3005,8 @@ TARPC_FUNC(getaddrinfo, {},
     func = (api_func)getaddrinfo;
     MAKE_CALL(out->retval = func_ptr(in->node.node_val,
                                      in->service.service_val, info, &res));
+    /* GLIBC getaddrinfo clean up errno on success */
+    out->common.errno_changed = FALSE;
     if (out->retval != 0 && res != NULL)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
