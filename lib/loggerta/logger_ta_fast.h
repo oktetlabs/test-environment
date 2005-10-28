@@ -78,37 +78,37 @@
     
 /**< Logging of entry to and exit from function */    
 #define LOGF_SUPENTRY(_us, _fs, _args...) \
-    do {                                              \
-        log_message_fast(TE_LL_ENTRY_EXIT, _us,       \
-                         "ENTRY to %s(): " _fs,       \
-                         4, (uint32_t)__FUNCTION__,   \
-                         LARG10(_args));              \
+    do {                                                 \
+        ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,       \
+                            "ENTRY to %s(): " _fs,       \
+                            1, (uint32_t)__FUNCTION__,   \
+                            LARG11(_args));              \
     } while (0)
 
 
 #define LOGF_ENTRY(_us, _fs...) \
-    do {                                                                \
-        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                            \
-        {                                                               \
-            if (!!(#_fs[0]))                                            \
-                LOGF_SUPENTRY(_us, _fs);                                \
-            else                                                        \
-                log_message_fast(TE_LL_ENTRY_EXIT, _us,                 \
-                                 "ENTRY to %s()",                       \
-                                 4, (uint32_t)__FUNCTION__,             \
-                                 LARG10());                             \
-        }                                                               \
+    do {                                                        \
+        if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                    \
+        {                                                       \
+            if (!!(#_fs[0]))                                    \
+                LOGF_SUPENTRY(_us, _fs);                        \
+            else                                                \
+                ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,      \
+                                    "ENTRY to %s()",            \
+                                    1, (uint32_t)__FUNCTION__,  \
+                                    LARG11());                  \
+        }                                                       \
     } while (0)
     
 #define F_ENTRY(_fs...)  LOGF_ENTRY(TE_LGR_USER, _fs)    
     
 #define LOGF_SUPEXIT(_us, _fs, _args...) \
     do {                                                        \
-        log_message_fast(TE_LL_ENTRY_EXIT, _us,                 \
-                         "EXIT in line %d from %s(): " _fs,     \
-                         4, __LINE__,                           \
-                         4, (uint32_t)__FUNCTION__,             \
-                         LARG9(_args));                         \
+        ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,              \
+                            "EXIT in line %d from %s(): " _fs,  \
+                            1, __LINE__,                        \
+                            1, (uint32_t)__FUNCTION__,          \
+                            LARG9(_args));                      \
     } while (0)
   
 #define LOGF_EXIT(_us, _fs...)                                  \
@@ -118,11 +118,11 @@
             if (!!(#_fs[0]))                                    \
                 LOGF_SUPEXIT(_us, _fs);                         \
             else                                                \
-                log_message_fast(TE_LL_ENTRY_EXIT, _us,         \
-                                 "EXIT in line %d from %s()",   \
-                                 4, __LINE__,                   \
-                                 4, (uint32_t)__FUNCTION__,     \
-                                 LARG9());                      \
+                ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,      \
+                                    "EXIT in line %d from %s()",\
+                                    1, __LINE__,                \
+                                    1, (uint32_t)__FUNCTION__,  \
+                                    LARG9());                   \
         }                                                       \
     } while (0)
 
