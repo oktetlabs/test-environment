@@ -2016,6 +2016,9 @@ TARPC_FUNC(getsockopt,
     COPY_ARG(optlen);
 },
 {
+    int optlen_in = 0;
+    int optlen_out = 0;
+    
     if (out->optval.optval_val == NULL)
     {
         MAKE_CALL(out->retval = 
@@ -2033,19 +2036,19 @@ TARPC_FUNC(getsockopt,
             switch (out->optval.optval_val[0].opttype)
             {
                 case OPT_INT:
-                    *(out->optlen.optlen_val) = sizeof(int);
+                    optlen_in = optlen_out = sizeof(int);
                     break;
                     
                 case OPT_LINGER:
-                    *(out->optlen.optlen_val) = sizeof(struct linger);
+                    optlen_in = optlen_out = sizeof(struct linger);
                     break;
 
                 case OPT_IPADDR:
-                    *(out->optlen.optlen_val) = sizeof(struct in_addr);
+                    optlen_in = optlen_out = sizeof(struct in_addr);
                     break;
 
                 case OPT_TIMEVAL:
-                    *(out->optlen.optlen_val) = sizeof(struct timeval);
+                    optlen_in = optlen_out = sizeof(struct timeval);
                     break;
 
                 default:
@@ -2054,16 +2057,20 @@ TARPC_FUNC(getsockopt,
                     break;
             }
         }
+        else if (out->optlen.optlen_val)
+            optlen_in = optlen_out = *(out->optlen.optlen_val);
 
         memset(opt, 0, sizeof(opt));
-        INIT_CHECKED_ARG(opt, sizeof(opt),
-                         (out->optlen.optlen_val == NULL) ?
-                            0 : *out->optlen.optlen_val);
+        INIT_CHECKED_ARG(opt, sizeof(opt), optlen_in);
 
         MAKE_CALL(out->retval = 
                       getsockopt(in->s, socklevel_rpc2h(in->level),
                                  sockopt_rpc2h(in->optname),
-                                 opt, (int *)(out->optlen.optlen_val)));
+                                 opt, out->optlen.optlen_val == NULL ?
+                                      NULL : &optlen_out));
+                                 
+        if (optlen_in != optlen_out)                          
+            *(out->optlen.optlen_val) = optlen_out;
 
         switch (out->optval.optval_val[0].opttype)
         {
