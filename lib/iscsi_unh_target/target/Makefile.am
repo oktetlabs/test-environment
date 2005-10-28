@@ -1,6 +1,6 @@
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
-              -I$(srcdir)/../common -I$(srcdir)/../security \
+              -I$(srcdir)/../common -I$(srcdir)/../security
 
 
 noinst_HEADERS = \
