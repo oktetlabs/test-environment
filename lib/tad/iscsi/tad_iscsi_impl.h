@@ -2,7 +2,7 @@
  * @brief iSCSI TAD
  *
  * Traffic Application Domain Command Handler
- * Ethernet CSAP implementaion internal declarations.
+ * iSCSI CSAP implementaion internal declarations.
  *
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
  * the root directory of the distribution).
@@ -30,71 +30,30 @@
 #ifndef __TE_TAD_ISCSI_IMPL_H__
 #define __TE_TAD_ISCSI_IMPL_H__ 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
+#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#endif
 
-
-#include "te_defs.h"
 #include "te_errno.h"
-
-#include "asn_usr.h" 
-#include "ndn.h"
-#include "ndn_iscsi.h"
-
+#include "asn_usr.h"
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
-#include "tad_utils.h"
 
-#include <sys/queue.h>
-
-#include "iscsi_common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct packet_t {
-    CIRCLEQ_ENTRY(packet_t) link;
-
-    size_t   length;
-    uint8_t *buffer;
-    uint8_t *allocated_buffer;
-} packet_t;
-
-#if 0
-typedef struct packet_queue_t {
-    CIRCLEQ_HEAD(q_head, packet_t) head; 
-
-    pthread_mutex_t  pkt_queue_lock;
-    int              conn_fd[2]; /* pipe for signalling */ 
-} packet_queue_t;
-#endif
-    
-
-enum {
-    TGT_SITE,
-    CSAP_SITE
-};
-
 /**
  * iSCSI CSAP specific data
  */
-typedef struct iscsi_csap_specific_data
-{ 
+typedef struct iscsi_csap_specific_data { 
     int             socket;
-    pthread_t       iscsi_target_thread;
 
     size_t          wait_length;
     size_t          stored_length;
     uint8_t        *stored_buffer;
 } iscsi_csap_specific_data_t;
-
-extern iscsi_target_params_t target_params;
 
 
 /**
@@ -104,6 +63,7 @@ extern iscsi_target_params_t target_params;
  */ 
 extern char *tad_iscsi_get_param_cb(csap_p csap_descr, unsigned int layer,
                                     const char *param);
+
 
 /**
  * Callback for read data from media of iSCSI CSAP. 
@@ -126,8 +86,6 @@ extern int tad_iscsi_write_cb(csap_p csap_descr, const char *buf,
  * media just after write, to get answer to sent request. 
  *
  * The function complies with csap_write_read_cb_t prototype.
- *
- * The function complies with csap_write_read_cb_t prototype.
  */ 
 extern int tad_iscsi_write_read_cb(csap_p csap_descr, int timeout,
                                    const char *w_buf, size_t w_buf_len,
@@ -135,15 +93,16 @@ extern int tad_iscsi_write_read_cb(csap_p csap_descr, int timeout,
 
 
 /**
- * Callback for init 'file' CSAP layer if single in stack.
+ * Callback for init iSCSI CSAP layer if single in stack.
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern int tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
-                                    unsigned int layer);
+extern te_errno tad_iscsi_single_init_cb(int              csap_id,
+                                         const asn_value *csap_nds,
+                                         unsigned int     layer);
 
 /**
- * Callback for destroy 'file' CSAP layer if single in stack.
+ * Callback for destroy iSCSI CSAP layer if single in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
@@ -210,17 +169,7 @@ extern te_errno tad_iscsi_prepare_send_cb(csap_p csap_descr);
  *
  * @return status code.
  */ 
-extern int tad_iscsi_prepare_recv_cb(csap_p csap_descr);
-
-/**
- * Target thread function.
- *
- * @param arg   start argument, should be pointer to
- *              'iscsi_target_thread_params_t' struct
- *
- * @return NULL.
- */
-extern void *iscsi_server_rx_thread(void *arg);
+extern te_errno tad_iscsi_prepare_recv_cb(csap_p csap_descr);
 
 
 #ifdef __cplusplus

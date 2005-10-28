@@ -2,10 +2,10 @@
  * @brief iSCSI TAD
  *
  * Traffic Application Domain Command Handler
- * Ethernet CSAP layer-related callbacks.
+ * iSCSI CSAP layer-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
+ * the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,17 +29,35 @@
 
 #define TE_LGR_USER     "TAD iSCSI layer"
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
 #include "config.h"
+#endif
 
-#include <string.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
+
+#include "te_defs.h"
+#include "te_errno.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
+#include "ndn_iscsi.h"
+#include "asn_usr.h"
+#include "tad_csap_inst.h"
+#include "tad_csap_support.h"
 
 #include "tad_iscsi_impl.h"
 
-#include "logger_api.h"
-
-
-iscsi_target_params_t target_params = { 0 };
 
 
 /* See description in tad_iscsi_impl.h */
@@ -47,13 +65,9 @@ char *
 tad_iscsi_get_param_cb(csap_p csap_descr, unsigned int layer,
                        const char *param)
 {
-    iscsi_csap_specific_data_t *spec_data; 
+    assert(csap_descr != NULL);
+    ENTRY("(%d:%u) param=%s", csap_descr->id, layer, param);
 
-    spec_data = (iscsi_csap_specific_data_t *)
-        csap_descr->layers[layer].specific_data; 
-
-    UNUSED(spec_data);
-    UNUSED(param);
     return NULL;
 }
 
@@ -63,25 +77,24 @@ int
 tad_iscsi_confirm_pdu_cb(int csap_id, unsigned int layer,
                          asn_value *nds_pdu)
 { 
-    UNUSED(csap_id);
-    UNUSED(layer);
-    UNUSED(nds_pdu);
+    F_ENTRY("(%d:%u) nds=%p", csap_id, layer, (void *)nds_pdu);
     return 0;
 }
 
 
 /* See description in tad_iscsi_impl.h */
 te_errno
-tad_iscsi_gen_bin_cb(csap_p csap_descr, unsigned int layer, const asn_value *tmpl_pdu,
-                const tad_tmpl_arg_t *args, size_t arg_num,
-                csap_pkts_p up_payload, csap_pkts_p pkt_list)
+tad_iscsi_gen_bin_cb(csap_p csap_descr, unsigned int layer,
+                     const asn_value *tmpl_pdu,
+                     const tad_tmpl_arg_t *args, size_t arg_num,
+                     csap_pkts_p up_payload, csap_pkts_p pkt_list)
 {
-    int32_t val;
-    UNUSED(csap_descr);
-    UNUSED(layer);
     UNUSED(tmpl_pdu);
     UNUSED(args);
     UNUSED(arg_num);
+
+    assert(csap_descr != NULL);
+    ENTRY("(%d:%u)", csap_descr->id, layer);
 
     pkt_list->data = up_payload->data;
     pkt_list->len  = up_payload->len;
@@ -91,18 +104,18 @@ tad_iscsi_gen_bin_cb(csap_p csap_descr, unsigned int layer, const asn_value *tmp
     up_payload->len  = 0;
     up_payload->next = NULL;
 
-    if (asn_read_int32(tmpl_pdu, &val, "param") == 0)
-        target_params.param = val;
-
     return 0;
 }
 
 
 /* See description in tad_iscsi_impl.h */
 te_errno
-tad_iscsi_match_bin_cb(int csap_id, unsigned int layer, const asn_value *pattern_pdu,
-                   const csap_pkts *pkt, csap_pkts *payload, 
-                   asn_value *parsed_packet )
+tad_iscsi_match_bin_cb(int              csap_id,
+                       unsigned int     layer,
+                       const asn_value *pattern_pdu,
+                       const csap_pkts *pkt,
+                       csap_pkts       *payload, 
+                       asn_value       *parsed_packet)
 { 
     csap_p                      csap_descr;
     iscsi_csap_specific_data_t *spec_data; 
@@ -111,7 +124,8 @@ tad_iscsi_match_bin_cb(int csap_id, unsigned int layer, const asn_value *pattern
     int        rc;
     int        defect;
 
-    UNUSED(pattern_pdu);
+
+    ENTRY("(%d:%u)", csap_id, layer);
 
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return TE_ETADCSAPNOTEX;
@@ -237,8 +251,6 @@ tad_iscsi_match_bin_cb(int csap_id, unsigned int layer, const asn_value *pattern
     spec_data->stored_length = 0;
     spec_data->stored_buffer = NULL;
 
-    asn_write_int32(iscsi_msg, target_params.param, "param");
-
     asn_write_component_value(parsed_packet, iscsi_msg, "#iscsi");
 
 cleanup:
@@ -255,10 +267,10 @@ tad_iscsi_gen_pattern_cb(int                csap_id,
                          const asn_value   *tmpl_pdu, 
                          asn_value        **pattern_pdu)
 {
-    UNUSED(csap_id);
-    UNUSED(layer);
-    UNUSED(tmpl_pdu);
+    ENTRY("(%d:%u) tmpl_pdu=%p pattern_pdu=%p",
+          csap_id, layer, tmpl_pdu, pattern_pdu);
 
+    assert(pattern_pdu != NULL);
     *pattern_pdu = asn_init_value(ndn_iscsi_message); 
 
     return 0;
