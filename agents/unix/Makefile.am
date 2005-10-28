@@ -34,6 +34,7 @@ if ISCSI_TARGET_USE
 MY_CPPFLAGS+=-I$(DESTDIR)/$(prefix)/../@host@/include/iscsi_unh_target
 MY_SOURCES+=conf_iscsi_target.c conf_iscsi_initiator.c
 MY_LDADD+=-liscsi_unh_target
+MY_SYMTBL_OBJECTS+=$(DESTDIR)/$(prefix)/../@host@/lib/libiscsi_unh_target.a
 endif
 
 
