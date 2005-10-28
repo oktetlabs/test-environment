@@ -839,14 +839,15 @@
         {                                                               \
             if (!!((#args_)[0]))                                        \
             {                                                           \
-                ERROR(err_msg_ ": errno is set to %s instead of %s",    \
-                      args_ + 0, errno_rpc2str(err_),                   \
-                      errno_rpc2str(exp_errno_));                       \
+                ERROR_VERDICT(err_msg_ ": errno is set to %s instead "  \
+                              "of %s", args_ + 0, errno_rpc2str(err_),  \
+                              errno_rpc2str(exp_errno_));               \
             }                                                           \
             else                                                        \
             {                                                           \
-                ERROR(err_msg_ ": errno is set to %s instead of %s",    \
-                      errno_rpc2str(err_),  errno_rpc2str(exp_errno_)); \
+                ERROR_VERDICT(err_msg_ ": errno is set to %s instead "  \
+                              "of %s", errno_rpc2str(err_),             \
+                              errno_rpc2str(exp_errno_));               \
             }                                                           \
             MACRO_TEST_ERROR;                                           \
             MACRO_ERROR_EXIT;                                           \
