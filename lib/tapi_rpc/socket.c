@@ -1313,7 +1313,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
     if (RPC_IS_CALL_OK(rpcs))
     {
-        if (optlen != NULL)
+        if (optlen != NULL && out.optlen.optlen_val[0] != RPC_OPTLEN_AUTO)
             *optlen = out.optlen.optlen_val[0];
         if (optval != NULL)
         {
