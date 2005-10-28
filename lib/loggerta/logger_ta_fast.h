@@ -81,7 +81,7 @@
     do {                                                 \
         ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,       \
                             "ENTRY to %s(): " _fs,       \
-                            1, (uint32_t)__FUNCTION__,   \
+                            1, (ta_log_arg)__FUNCTION__, \
                             LARG11(_args));              \
     } while (0)
 
@@ -95,7 +95,7 @@
             else                                                \
                 ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,      \
                                     "ENTRY to %s()",            \
-                                    1, (uint32_t)__FUNCTION__,  \
+                                    1, (ta_log_arg)__FUNCTION__,\
                                     LARG11());                  \
         }                                                       \
     } while (0)
@@ -107,7 +107,7 @@
         ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,              \
                             "EXIT in line %d from %s(): " _fs,  \
                             1, __LINE__,                        \
-                            1, (uint32_t)__FUNCTION__,          \
+                            1, (ta_log_arg)__FUNCTION__,        \
                             LARG9(_args));                      \
     } while (0)
   
@@ -121,7 +121,7 @@
                 ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,      \
                                     "EXIT in line %d from %s()",\
                                     1, __LINE__,                \
-                                    1, (uint32_t)__FUNCTION__,  \
+                                    1, (ta_log_arg)__FUNCTION__,\
                                     LARG9());                   \
         }                                                       \
     } while (0)
@@ -140,9 +140,9 @@
  * This way only limited number of arguments can be processed
  * (twelve arguments for this implementation).
  * Each macro produces one pair of elements:
- *   - "1, (uint32_t)(arg + 0)"  , if argument exists
+ *   - "1, (ta_log_arg)(arg + 0)"  , if argument exists
  *   or
- *   - "0, (uint32_t)(+0)"      , if argument is not specified.
+ *   - "0, (ta_log_arg)(+0)"      , if argument is not specified.
  * This is done by following way: #a[0] converts argument to string;
  * if argument is not present, first symbol of this string is equal
  * to 0, otherwise it is not; the obtained symbol is converted

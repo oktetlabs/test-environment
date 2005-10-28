@@ -210,9 +210,9 @@ ta_log_message(const char *file, unsigned int line,
     tmp_list = cp_list.next;
     while (tmp_list != &cp_list)
     {
-        uint32_t  val;
-        uint8_t  *arg_addr;
-        uint32_t *arg_location = (&hdr_addr->arg1) + tmp_list->narg;
+        uint32_t    val;
+        uint8_t    *arg_addr;
+        ta_log_arg *arg_location = (&hdr_addr->arg1) + tmp_list->narg;
 
         res = lgr_rb_allocate_and_copy(&log_buffer, tmp_list->addr,
                                        tmp_list->length, &arg_addr);

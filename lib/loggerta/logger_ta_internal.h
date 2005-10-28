@@ -200,7 +200,7 @@ typedef struct md_list {
 } md_list;
 
 /** Type of argument native for a stack */
-typedef uint32_t ta_log_arg;
+typedef long ta_log_arg;
 
 /*
  * It defines the structure of the message header.
