@@ -162,7 +162,7 @@ extern "C" {
  *
  * @param fmt  the content of the verdict as format string with arguments
  */
-#define TEST_VERDICT(fmt...) \
+#define RING_VERDICT(fmt...) \
     LOG_RING(TE_LOG_CMSG_USER, fmt)
 
 /**
