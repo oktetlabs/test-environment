@@ -735,7 +735,7 @@ trc_update_iters(test_iters *iters)
                 return ENOMEM;
             }
             xmlNewProp(p->tests.node, BAD_CAST "result",
-                       BAD_CAST "UNSPEC");
+                       BAD_CAST "PASSED");
             for (a = p->args.head.tqh_first;
                  a != NULL;
                  a = a->links.tqe_next)
