@@ -166,6 +166,14 @@ extern "C" {
     LOG_RING(TE_LOG_CMSG_USER, fmt)
 
 /**
+ * Macro should be used to output verdict with ERROR log level from tests.
+ *
+ * @param fmt  the content of the verdict as format string with arguments
+ */
+#define ERROR_VERDICT(fmt...) \
+    LOG_ERROR(TE_LOG_CMSG_USER, fmt)
+
+/**
  * Check an expression passed as the argument against zero.
  * If the expression is something not zero the macro reports an
  * error, sets 'result' variable to EXIT_FAILURE and goes to 'cleanup'
