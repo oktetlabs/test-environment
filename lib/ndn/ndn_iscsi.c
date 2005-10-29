@@ -51,17 +51,42 @@
 #include "logger_api.h"
 
 
-/* ISCSI-CSAP definitions */
-static asn_named_entry_t _ndn_iscsi_csap_ne_array [] = 
+/** Length of iSCSI digests indexed by iscsi_digest_type */
+static size_t iscsi_digest_length[] = { 0, 1 };
+
+
+static asn_enum_entry_t _ndn_iscsi_digest_enum_entries[] =
 {
-    { "socket", &asn_base_int16_s, {PRIVATE, NDN_TAG_ISCSI_SOCKET} },
+    { "none",   ISCSI_DIGEST_NONE },
+    { "crc32c", ISCSI_DIGEST_CRC32C },
 };
 
-asn_type ndn_iscsi_csap_s =
+static asn_type ndn_iscsi_digest_s = {
+    "iSCSI-digest",
+    { PRIVATE, 1 /* FIXME */ },
+    ENUMERATED,
+    sizeof(_ndn_iscsi_digest_enum_entries) / sizeof(asn_enum_entry_t),
+    { enum_entries: _ndn_iscsi_digest_enum_entries }
+};
+
+static const asn_type * const ndn_iscsi_digest = &ndn_iscsi_digest_s;
+
+
+/* ISCSI-CSAP definitions */
+static asn_named_entry_t _ndn_iscsi_csap_ne_array[] = 
 {
-    "ISCSI-CSAP", {PRIVATE, NDN_TAD_ISCSI}, SEQUENCE, 
-    sizeof(_ndn_iscsi_csap_ne_array)/sizeof(asn_named_entry_t),
-    {_ndn_iscsi_csap_ne_array}
+    { "socket",        &asn_base_int16_s,
+      { PRIVATE, NDN_TAG_ISCSI_SOCKET } },
+    { "header-digest", &ndn_iscsi_digest_s,
+      { PRIVATE, NDN_TAG_ISCSI_HEADER_DIGEST } },
+    { "data-digest",   &ndn_iscsi_digest_s,
+      { PRIVATE, NDN_TAG_ISCSI_DATA_DIGEST } },
+};
+
+asn_type ndn_iscsi_csap_s = {
+    "iSCSI-CSAP", { PRIVATE, NDN_TAD_ISCSI }, SEQUENCE, 
+    sizeof(_ndn_iscsi_csap_ne_array) / sizeof(asn_named_entry_t),
+    { _ndn_iscsi_csap_ne_array }
 };
 
 const asn_type *ndn_iscsi_csap = &ndn_iscsi_csap_s;
@@ -87,7 +112,7 @@ static asn_named_entry_t _ndn_iscsi_key_value_ne_array [] =
 asn_type ndn_iscsi_key_value_s =
 {
     "Key-Value", {PRIVATE, NDN_TAG_ISCSI_SD_KEY_VALUE}, CHOICE,
-    sizeof(_ndn_iscsi_key_value_ne_array)/sizeof(asn_named_entry_t),
+    sizeof(_ndn_iscsi_key_value_ne_array) / sizeof(asn_named_entry_t),
     {_ndn_iscsi_key_value_ne_array}
 };
 
@@ -120,7 +145,7 @@ static asn_named_entry_t _ndn_iscsi_segment_data_ne_array [] =
 asn_type ndn_iscsi_key_pair_s =
 {
     "Key-Pair", {PRIVATE, NDN_TAG_ISCSI_SD_KEY_PAIR}, SEQUENCE,
-    sizeof(_ndn_iscsi_segment_data_ne_array)/sizeof(asn_named_entry_t),
+    sizeof(_ndn_iscsi_segment_data_ne_array) / sizeof(asn_named_entry_t),
     {_ndn_iscsi_segment_data_ne_array}
 };
 
@@ -145,8 +170,10 @@ static asn_named_entry_t _ndn_iscsi_message_ne_array [] =
 {
     { "param",    &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_PARAM} },
     { "length",   &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_LEN} },
+#if 0
     { "have-hdig",&asn_base_null_s,    {PRIVATE, NDN_TAG_ISCSI_HAVE_HDIG} },
     { "have-ddig",&asn_base_null_s,    {PRIVATE, NDN_TAG_ISCSI_HAVE_DDIG} },
+#endif
     { "segment-data", &ndn_iscsi_segment_data_s, 
         {PRIVATE, NDN_TAG_ISCSI_SD} },
 };
@@ -154,7 +181,7 @@ static asn_named_entry_t _ndn_iscsi_message_ne_array [] =
 asn_type ndn_iscsi_message_s =
 {
     "ISCSI-Message", {PRIVATE, NDN_TAD_ISCSI}, SEQUENCE,
-    sizeof(_ndn_iscsi_message_ne_array)/sizeof(asn_named_entry_t),
+    sizeof(_ndn_iscsi_message_ne_array) / sizeof(asn_named_entry_t),
     {_ndn_iscsi_message_ne_array}
 };
 
@@ -638,35 +665,59 @@ padding:
 }
 
 
-int
-iscsi_rest_data_len(uint8_t *bhs, iscsi_digest_type digest)
+/* See description in ndn_iscsi.h */
+size_t
+iscsi_rest_data_len(uint8_t           *bhs,
+                    iscsi_digest_type  header_digest,
+                    iscsi_digest_type  data_digest)
 {
-        size_t  total_AHS_length,
-                data_segment_length;
+    /* Lengths of header and data digests in 4-byte units */
+    size_t      h_dig_len = iscsi_digest_length[header_digest];
+    size_t      d_dig_len = iscsi_digest_length[data_digest];
 
-        int     h_dig = (!!(digest & ISCSI_DIGEST_HEADER));
-        int     d_dig = (!!(digest & ISCSI_DIGEST_DATA));
+    size_t      total_ahs_len;
+    uint32_t    data_segment_len;
 
-        union { 
-            uint32_t i;
-            uint8_t b[4];
-        }       dsl_convert;
+    union { 
+        uint32_t    i;
+        uint8_t     b[4];
+    } dsl_convert;
 
-        total_AHS_length = bhs[4];
+    /*
+     * It is assumed here that digests do not appear in
+     * Login Request/Response commands.
+     */
+    if ((bhs[0] & 0x1f) == 0x03)
+        h_dig_len = d_dig_len = 0;
 
-        dsl_convert.b[0] = 0;
-        dsl_convert.b[1] = bhs[5];
-        dsl_convert.b[2] = bhs[6];
-        dsl_convert.b[3] = bhs[7];
+    total_ahs_len = bhs[4];
 
-        data_segment_length = ntohl(dsl_convert.i);
+    dsl_convert.b[0] = 0;
+    dsl_convert.b[1] = bhs[5];
+    dsl_convert.b[2] = bhs[6];
+    dsl_convert.b[3] = bhs[7];
 
-        /* DataSegment padding */
-        if (data_segment_length % 4)
-            data_segment_length += (4 - (data_segment_length % 4));
+    data_segment_len = dsl_convert.i;
 
-        return data_segment_length +
-                (total_AHS_length + h_dig + d_dig) * 4;
+    /* Zero is the same in host and network byte orders */
+    if (data_segment_len == 0)
+    {
+        /* 
+         * RFC 3720 10.2.3.
+         * A zero-length Data Segment also implies a zero-length
+         * data-digest.
+         */
+        d_dig_len = 0;
+    }
+    else
+    {
+        data_segment_len = ntohl(data_segment_len);
+
+        /* DataSegment length in 4-byte units after padding */
+        data_segment_len = (data_segment_len + 0x3) >> 2;
+    }
+
+    return (total_ahs_len + h_dig_len + data_segment_len + d_dig_len) << 2;
 }
 
 

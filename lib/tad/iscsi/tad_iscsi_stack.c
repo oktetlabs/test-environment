@@ -248,7 +248,7 @@ tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
 {
     csap_p      csap_descr;
     te_errno    rc;
-    int32_t     ready_socket;
+    int32_t     int32_val;
 
     const asn_value            *iscsi_nds;
     iscsi_csap_specific_data_t *spec_data; 
@@ -262,23 +262,44 @@ tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
 
+    spec_data = calloc(1, sizeof(*spec_data));
+    if (spec_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
     rc = asn_get_indexed(csap_nds, &iscsi_nds, 0);
     if (rc != 0)
     {
         ERROR("%s() get iSCSI csap spec failed %r", __FUNCTION__, rc);
+        free(spec_data);
         return TE_RC(TE_TAD_CSAP, rc);
     } 
     
-    if ((rc = asn_read_int32(iscsi_nds, &ready_socket, "socket")) != 0)
+    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "socket")) != 0)
     {
-        ERROR("%s(): read asn socket failed %r, unexpected", 
+        ERROR("%s(): asn_read_int32() failed for 'socket': %r", 
               __FUNCTION__, rc);
+        free(spec_data);
         return TE_RC(TE_TAD_CSAP, rc);
     }
+    spec_data->socket = int32_val;
 
-    spec_data = calloc(1, sizeof(*spec_data));
-    if (spec_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "header-digest")) != 0)
+    {
+        ERROR("%s(): asn_read_bool() failed for 'header-digest': %r", 
+              __FUNCTION__, rc);
+        free(spec_data);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
+    spec_data->hdig = int32_val;
+
+    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "data-digest")) != 0)
+    {
+        ERROR("%s(): asn_read_bool() failed for 'data-digest': %r", 
+              __FUNCTION__, rc);
+        free(spec_data);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
+    spec_data->ddig = int32_val;
 
     csap_descr->layers[layer].specific_data = spec_data;
     csap_descr->layers[layer].get_param_cb = tad_iscsi_get_param_cb;
@@ -291,7 +312,6 @@ tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
     csap_descr->read_write_layer = layer; 
     csap_descr->timeout          = 100 * 1000; /* FIXME */
 
-    spec_data->socket = ready_socket;
 
     return 0;
 }

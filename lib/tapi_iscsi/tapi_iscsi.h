@@ -131,80 +131,93 @@
     (tapi_iscsi_get_key_index_by_name(segment_data_, key_name_) !=  \
      TAPI_ISCSI_KEY_INVALID)
 
-/**
- * Creates 'iscsi' target CSAP
- *
- * @param ta_name       Test Agent name;
- * @param sid           RCF SID;
- * @param csap          location for handle of new CSAP;
- *
- * @return  Status code of the operation.
- */
-extern int tapi_iscsi_csap_create(const char *ta_name, int sid, 
-                                  csap_handle_t *csap);
-
 
 /**
- * Create 'iscsi' CSAP over connectєd TCP socket on TA.
+ * Create 'iscsi' target CSAP.
  *
- * @param ta_name       Test Agent name;
- * @param sid           RCF SID;
- * @param socket        file descriptor of TCP socket on TA, 
- *                      zero means unspecified;
- * @param csap          location for handle of new CSAP;
+ * Run iSCSI UNH Target Rx thread and create a socket pair to
+ * communicate with it.
  *
- * @return  Status code of the operation.
+ * @param ta_name       Test Agent name
+ * @param hdr_dig       Header digests used by iSCSI protocol
+ * @param data_dig      Data digests used by iSCSI protocol
+ * @param csap          Location for handle of new CSAP
+ *
+ * @return Status code of the operation.
  */
-extern int tapi_iscsi_sock_csap_create(const char *ta_name, int sid, 
-                                       int socket, csap_handle_t *csap);
+extern te_errno tapi_iscsi_tgt_csap_create(const char        *ta_name,
+                                           iscsi_digest_type  hdr_dig,
+                                           iscsi_digest_type  data_dig,
+                                           csap_handle_t     *csap);
 
 /**
  * Create 'iscsi' initiator CSAP.
  *
  * @param ta_name       Test Agent name
- * @param sid           RCF SID
+ * @param sid           RCF SID to be used to wait connection on
+ *                      @a listen_csap
  * @param listen_csap   TCP listening CSAP, on which TCP connection
  *                      from the Initiator sould be received
- * @param timeout       timeout to wait connection
- * @param csap          location for handle of new CSAP
+ * @param timeout       Timeout to wait connection
+ * @param hdr_dig       Header digests used by iSCSI protocol
+ * @param data_dig      Data digests used by iSCSI protocol
+ * @param csap          Location for handle of new CSAP
  *
- * @return  Status code of the operation
+ * @return Status code of the operation.
  */
-extern int tapi_iscsi_ini_csap_create(const char *ta_name, int sid, 
-                                      csap_handle_t listen_csap, 
-                                      int timeout, csap_handle_t *csap);
+extern te_errno tapi_iscsi_ini_csap_create(const char        *ta_name,
+                                           int                sid,
+                                           csap_handle_t      listen_csap,
+                                           int                timeout,
+                                           iscsi_digest_type  hdr_dig,
+                                           iscsi_digest_type  data_dig,
+                                           csap_handle_t     *csap);
 
+/**
+ * Create 'iscsi' CSAP over connectєd TCP socket on TA.
+ *
+ * @param ta_name       Test Agent name
+ * @param socket        File descriptor of TCP socket on TA 
+ * @param hdr_dig       Header digests used by iSCSI protocol
+ * @param data_dig      Data digests used by iSCSI protocol
+ * @param csap          Location for handle of new CSAP
+ *
+ * @return Status code of the operation.
+ */
+extern te_errno tapi_iscsi_sock_csap_create(const char        *ta_name,
+                                            int                socket,
+                                            iscsi_digest_type  hdr_dig,
+                                            iscsi_digest_type  data_dig,
+                                            csap_handle_t     *csap);
 
 
 /**
- * Receive one message from internal TA iSCSI target.
+ * Receive one message via iSCSI CSAP.
  * 
- * @param ta_name       test Agent name
+ * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param csap          identifier of CSAP
- * @param timeout       timeout of operation in milliseconds
- * @param csap          identifier of CSAP, to which received
+ * @param csap          Identifier of CSAP
+ * @param timeout       Timeout of operation in milliseconds
+ * @param forward_csap  Identifier of CSAP, to which received
  *                      data should be forwarded, may be
  *                      CSAP_INVALID_HANDLE
- * @param header_digest flag if there is HeaderDigest field
- * @param data_digest   flag if there is DataDigest field
- * @param params        location for iSCSI current params (OUT)
- * @param buffer        location for received data (OUT)
- * @param length        length of buffer / received data (IN/OUT)
+ * @param params        Location for iSCSI current params (OUT)
+ * @param buffer        Location for received data (OUT)
+ * @param length        Length of buffer / received data (IN/OUT)
  * 
  * @return Zero on success or error code.
  */
-extern int tapi_iscsi_recv_pkt(const char *ta_name, int sid, 
-                               csap_handle_t csap,
-                               int timeout,
-                               csap_handle_t forward,
-                               iscsi_digest_type digest,
+extern int tapi_iscsi_recv_pkt(const char            *ta_name,
+                               int                    sid, 
+                               csap_handle_t          csap,
+                               int                    timeout,
+                               csap_handle_t          forward_csap,
                                iscsi_target_params_t *params,
-                               uint8_t *buffer,
-                               size_t  *length);
+                               uint8_t               *buffer,
+                               size_t                *length);
 
 /**
- * Send one message to internal TA iSCSI target.
+ * Send one message via iSCSI CSAP.
  * 
  * @param ta_name       test Agent name
  * @param sid           RCF SID
@@ -215,36 +228,12 @@ extern int tapi_iscsi_recv_pkt(const char *ta_name, int sid,
  * 
  * @return Zero on success or error code.
  */
-extern int tapi_iscsi_send_pkt(const char *ta_name, int sid, 
-                               csap_handle_t csap,
+extern int tapi_iscsi_send_pkt(const char            *ta_name,
+                               int                    sid, 
+                               csap_handle_t          csap,
                                iscsi_target_params_t *params,
-                               uint8_t *buffer,
-                               size_t  length);
-/**
- * Receive one message from iSCSI TCP connection on TA.
- * 
- * @param ta_name       test Agent name
- * @param sid           RCF SID
- * @param csap          identifier of TCP CSAP
- * @param timeout       timeout of operation in milliseconds
- * @param csap          identifier of CSAP, to which received
- *                      data should be forwarded, may be
- *                      CSAP_INVALID_HANDLE
- * @param header_digest flag if there is HeaderDigest field
- * @param data_digest   flag if there is DataDigest field
- * @param params        location for iSCSI current params (OUT)
- * @param buffer        location for received data (OUT)
- * @param length        length of buffer / received data (IN/OUT)
- * 
- * @return Zero on success or error code.
- */
-extern int tapi_iscsi_tcp_recv_pkt(const char *ta_name, int sid, 
-                                   csap_handle_t csap,
-                                   int timeout,
-                                   csap_handle_t forward,
-                                   iscsi_digest_type digest,
-                                   uint8_t *buffer,
-                                   size_t  *length);
+                               uint8_t               *buffer,
+                               size_t                 length);
 
 /**
  * Receive all data which currently are waiting for receive in 

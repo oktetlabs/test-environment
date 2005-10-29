@@ -61,17 +61,53 @@
 #include "tapi_tad.h"
 #include "te_iscsi.h"
 #include "tapi_tcp.h"
+#include "tapi_test.h"
 
 
-int
-tapi_iscsi_csap_create(const char *ta_name, int sid, 
-                       csap_handle_t *csap)
+/* See description in tapi_iscsi.h */
+te_errno
+tapi_iscsi_sock_csap_create(const char        *ta_name,
+                            int                socket,
+                            iscsi_digest_type  hdr_dig,
+                            iscsi_digest_type  data_dig,
+                            csap_handle_t     *csap)
 {
-    int rc;
-    int sock;
+    asn_value  *csap_spec = NULL;
+    te_errno    rc = 0;
+    int         syms;
 
-    rc = rcf_ta_call(ta_name, sid, "iscsi_target_start_rx_thread",
-                     &sock, 0, FALSE);
+    if (ta_name == NULL || socket < 0 || csap == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    CHECK_RC(asn_parse_value_text("{ iscsi:{} }",
+                                  ndn_csap_spec, &csap_spec, &syms));
+    CHECK_RC(asn_write_int32(csap_spec, socket, "0.#iscsi.socket"));
+    CHECK_RC(asn_write_int32(csap_spec, hdr_dig, "0.#iscsi.header-digest"));
+    CHECK_RC(asn_write_int32(csap_spec, data_dig, "0.#iscsi.data-digest"));
+
+    rc = tapi_tad_csap_create(ta_name, 0 /* sid */, "iscsi", 
+                              csap_spec, csap); 
+    if (rc != 0)
+        ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
+
+    asn_free_value(csap_spec);
+
+    return rc;
+}
+
+
+/* See description in tapi_iscsi.h */
+te_errno
+tapi_iscsi_tgt_csap_create(const char        *ta_name,
+                           iscsi_digest_type  hdr_dig,
+                           iscsi_digest_type  data_dig,
+                           csap_handle_t     *csap)
+{
+    te_errno    rc;
+    int         sock;
+
+    rc = rcf_ta_call(ta_name, 0 /* sid */,
+                     "iscsi_target_start_rx_thread", &sock, 0, FALSE);
     if (rc != 0)
     {
         ERROR("Failed to call iscsi_target_start_rx_thread() on TA "
@@ -83,57 +119,36 @@ tapi_iscsi_csap_create(const char *ta_name, int sid,
         ERROR("iscsi_target_start_rx_thread() on TA '%s' failed");
         return TE_RC(TE_TAPI, TE_EFAULT);
     }
-    return tapi_iscsi_sock_csap_create(ta_name, sid, sock, csap);
+
+    return tapi_iscsi_sock_csap_create(ta_name, sock, hdr_dig, data_dig,
+                                       csap);
 }
 
 
-int
-tapi_iscsi_sock_csap_create(const char *ta_name, int sid, 
-                            int socket, csap_handle_t *csap)
+/* See description in tapi_iscsi.h */
+te_errno
+tapi_iscsi_ini_csap_create(const char        *ta_name,
+                           int                sid,
+                           csap_handle_t      listen_csap,
+                           int                timeout,
+                           iscsi_digest_type  hdr_dig,
+                           iscsi_digest_type  data_dig,
+                           csap_handle_t     *csap)
 {
-    asn_value *csap_spec = NULL;
-    int rc = 0, syms;
-
-    if (ta_name == NULL || socket < 0 || csap == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
-
-    rc = asn_parse_value_text("{ iscsi:{}}",
-                              ndn_csap_spec, &csap_spec, &syms); 
-    if (rc != 0)
-    {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
-              __FUNCTION__, rc, syms);
-        return rc;
-    } 
-    asn_write_int32(csap_spec, socket, "0.#iscsi.socket");
-
-    rc = tapi_tad_csap_create(ta_name, sid, "iscsi", 
-                              csap_spec, csap); 
-    if (rc != 0)
-        ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
-
-    return rc;
-}
-
-
-int
-tapi_iscsi_ini_csap_create(const char *ta_name, int sid, 
-                           csap_handle_t listen_csap, 
-                           int timeout, csap_handle_t *csap)
-{
-    int ini_socket; 
-    int rc; 
+    te_errno    rc; 
+    int         ini_socket; 
 
     rc = tapi_tcp_server_recv(ta_name, sid, listen_csap, 
                               timeout, &ini_socket);
     if (rc != 0)
     {
-        WARN("%s(): wait for accepted socket failed, %r", 
+        WARN("%s(): wait for accepted socket failed: %r", 
              __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     }
 
-    return tapi_iscsi_sock_csap_create(ta_name, sid, ini_socket, csap);
+    return tapi_iscsi_sock_csap_create(ta_name, ini_socket,
+                                       hdr_dig, data_dig, csap);
 }
 
 
@@ -178,7 +193,8 @@ iscsi_msg_handler(const char *pkt_fname, void *user_param)
     len = asn_get_length(pkt, "payload.#bytes");
 
     if (len > msg->length)
-        WARN("%s(): length of message greater then buffer", __FUNCTION__);
+        WARN("%s(): length %u of message greater then buffer %u",
+             __FUNCTION__, (unsigned)len, (unsigned)msg->length);
 
     len = msg->length;
     rc = asn_read_value_field(pkt, msg->data, &len, "payload.#bytes");
@@ -196,7 +212,6 @@ iscsi_msg_handler(const char *pkt_fname, void *user_param)
 int
 tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
                     int timeout, csap_handle_t forward,
-                    iscsi_digest_type digest,
                     iscsi_target_params_t *params,
                     uint8_t *buffer, size_t  *length)
 {
@@ -237,28 +252,6 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
             goto cleanup;
         }
     }
-    if ((digest & ISCSI_DIGEST_HEADER) == ISCSI_DIGEST_HEADER)
-    {
-        rc = asn_write_value_field(pattern, NULL, 0, "0.pdus.0.have-hdig");
-        if (rc != 0)
-        {
-            ERROR("%s():  write header-digest failed: %r",
-                  __FUNCTION__, rc);
-            goto cleanup;
-        }
-    }
-
-    if ((digest & ISCSI_DIGEST_DATA) == ISCSI_DIGEST_DATA)
-    {
-        rc = asn_write_value_field(pattern, NULL, 0, "0.pdus.0.have-ddig");
-        if (rc != 0)
-        {
-            ERROR("%s():  write data-digest failed: %r",
-                  __FUNCTION__, rc);
-            goto cleanup;
-        }
-    }
-
 
     rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern, 
                                buffer == NULL ? NULL : iscsi_msg_handler,
@@ -278,63 +271,6 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
 
 cleanup:
     asn_free_value(pattern);
-    return rc;
-}
-
-
-/* See description in tapi_iscsi.h */
-int
-tapi_iscsi_tcp_recv_pkt(const char *ta_name, int sid, 
-                        csap_handle_t csap, int timeout,
-                        csap_handle_t forward,
-                        iscsi_digest_type digest,
-                        uint8_t *buffer, size_t  *length)
-{
-    uint8_t bhs_buffer[ISCSI_BHS_LENGTH];
-    int     rc; 
-    size_t  len = ISCSI_BHS_LENGTH;
-
-    rc = tapi_tcp_buffer_recv(ta_name, sid, csap, timeout, forward, 
-                              TRUE, bhs_buffer, &len); 
-    if (rc != 0)
-    {
-        WARN("%s(%s:%d) failed %r", __FUNCTION__,
-             ta_name, (int)csap, rc);
-        return TE_RC(TE_TAPI, rc);
-    } 
-
-    len = iscsi_rest_data_len(bhs_buffer, digest);
-    RING("%s(%s:%d), on TCP connection, calculated rest bytes = %d", 
-         __FUNCTION__, ta_name, (int)csap, (int)len);
-
-    if (buffer != NULL)
-    {
-        if (length == NULL)
-        {
-            ERROR("%s(): len == NULL but buf != NULL", __FUNCTION__);
-            return TE_RC(TE_TAPI, EINVAL);
-        }
-        if (*length < ISCSI_BHS_LENGTH + len)
-        {
-            ERROR("%s() length %d of passed buffer too small, " 
-                  "rest part of iSCSI PDU %d", __FUNCTION__,
-                  (int)(*length), (int)len);
-            return TE_RC(TE_TAPI, TE_ESMALLBUF);
-        }
-        memcpy(buffer, bhs_buffer, ISCSI_BHS_LENGTH);
-    }
-    if (len > 0)
-    { 
-        rc = tapi_tcp_buffer_recv(ta_name, sid, csap, timeout, forward, 
-                                  TRUE,
-                                  buffer == NULL ? NULL : 
-                                      buffer + ISCSI_BHS_LENGTH, 
-                                  &len); 
-    }
-
-    if (length != NULL)
-        *length = ISCSI_BHS_LENGTH + len;
-
     return rc;
 }
 

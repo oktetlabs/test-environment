@@ -38,6 +38,7 @@
 #include "asn_usr.h"
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
+#include "ndn_iscsi.h"
 
 
 #ifdef __cplusplus
@@ -48,11 +49,13 @@ extern "C" {
  * iSCSI CSAP specific data
  */
 typedef struct iscsi_csap_specific_data { 
-    int             socket;
+    int                 socket;
+    iscsi_digest_type   hdig;
+    iscsi_digest_type   ddig;
 
-    size_t          wait_length;
-    size_t          stored_length;
-    uint8_t        *stored_buffer;
+    size_t      wait_length;
+    size_t      stored_length;
+    uint8_t    *stored_buffer;
 } iscsi_csap_specific_data_t;
 
 

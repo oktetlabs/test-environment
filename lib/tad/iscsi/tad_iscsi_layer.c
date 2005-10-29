@@ -28,6 +28,7 @@
  */
 
 #define TE_LGR_USER     "TAD iSCSI layer"
+#define TE_LOG_LEVEL    0xff
 
 #include "te_config.h"
 #if HAVE_CONFIG_H
@@ -192,6 +193,7 @@ tad_iscsi_match_bin_cb(int              csap_id,
         RING("%s(CSAP %d): calculated PDU len: %d", 
              __FUNCTION__, csap_id, spec_data->wait_length);
 #else
+#if 0
         iscsi_digest_type digest = ISCSI_DIGEST_NONE;
         const             asn_value *sval;
 
@@ -204,9 +206,10 @@ tad_iscsi_match_bin_cb(int              csap_id,
                                  NDN_TAG_ISCSI_HAVE_DDIG);
         if (rc == 0)
             digest |= ISCSI_DIGEST_DATA;
-
+#endif
         spec_data->wait_length = ISCSI_BHS_LENGTH + 
-             iscsi_rest_data_len(pkt->data, digest);
+             iscsi_rest_data_len(pkt->data,
+                                 spec_data->hdig, spec_data->ddig);
         INFO("%s(CSAP %d), calculated wait length %d",
                 __FUNCTION__, csap_id, spec_data->wait_length);
 #endif

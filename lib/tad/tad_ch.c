@@ -255,7 +255,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
     rc = asn_parse_value_text(ba, ndn_csap_spec, &csap_nds, &syms);
     if (rc != 0)
     {
-        VERB("Parse error in attached NDS, rc: 0x%x, sym: %d", rc, syms);
+        ERROR("CSAP NDS parse error sym=%d: %r", syms, rc);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         csap_destroy(new_csap_id); 
         return 0;

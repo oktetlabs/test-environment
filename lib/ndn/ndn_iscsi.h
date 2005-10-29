@@ -43,10 +43,10 @@ extern "C" {
 typedef enum {
     NDN_TAG_ISCSI_TYPE,
     NDN_TAG_ISCSI_SOCKET,
+    NDN_TAG_ISCSI_HEADER_DIGEST,
+    NDN_TAG_ISCSI_DATA_DIGEST,
     NDN_TAG_ISCSI_MESSAGE,
     NDN_TAG_ISCSI_LEN,
-    NDN_TAG_ISCSI_HAVE_HDIG,
-    NDN_TAG_ISCSI_HAVE_DDIG,
     NDN_TAG_ISCSI_PARAM,
 } ndn_iscsi_tags_t;
 
@@ -66,11 +66,15 @@ typedef enum {
     NDN_TAG_ISCSI_SD,
 } ndn_iscsi_sd_tags_t;
 
+
+/**
+ * Types of iSCSI digests.
+ *
+ * @attention Values are used as index in iscsi_digest_length array.
+ */
 typedef enum {
     ISCSI_DIGEST_NONE = 0,
-    ISCSI_DIGEST_HEADER = 1,
-    ISCSI_DIGEST_DATA = 2,
-    ISCSI_DIGEST_BOTH = ISCSI_DIGEST_DATA & ISCSI_DIGEST_HEADER,
+    ISCSI_DIGEST_CRC32C,
 } iscsi_digest_type;
 
 
@@ -108,16 +112,19 @@ bin_data2asn(uint8_t *data, uint32_t data_len,
 
 extern int parse_key_value(char *str, asn_value *value);
 
+
 /**
  * Calculate extra (non-BHS) length of iSCSI PDU. 
  *
- * @param bhs           pointer to iSCSI PDU begin
- * @param header_digest flag is there HeaderDigest
- * @param data_digest   flag is there DataDigest
+ * @param bhs           Pointer to iSCSI PDU begin
+ * @param header_digest HeaderDigest type
+ * @param data_digest   DataDigest type
  *
- * @return number of bytes rest in PDU
+ * @return Number of bytes rest in PDU
  */
-extern int iscsi_rest_data_len(uint8_t *bhs, iscsi_digest_type digest);
+extern size_t iscsi_rest_data_len(uint8_t           *bhs,
+                                  iscsi_digest_type  header_digest,
+                                  iscsi_digest_type  data_digest);
  
 #ifdef __cplusplus
 } /* extern "C" */
