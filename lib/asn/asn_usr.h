@@ -111,8 +111,7 @@ typedef enum {
 
 
 
-typedef struct asn_tag_t
-{
+typedef struct asn_tag_t {
     asn_tag_class  cl;
     unsigned short val;
 } asn_tag_t;
