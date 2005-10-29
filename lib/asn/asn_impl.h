@@ -70,8 +70,7 @@ typedef struct asn_enum_entry_t
 /**
  * ASN type internal presentation
  */
-struct asn_type
-{
+struct asn_type {
     const char  *name;   /**< ASN.1 name of type, if any assigned. */
 
     asn_tag_t    tag;    /**< tag value of type. */
