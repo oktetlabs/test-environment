@@ -107,11 +107,13 @@ int asn_parse_value_text(const char*text, const asn_type *type,
  * @return zero on success, otherwise error code.
  */ 
 int 
-asn_impl_pt_label(const char*text, char *label, int *syms)
+asn_impl_pt_label(const char *text, char *label, int *syms)
 { 
     int         l = 0;
     const char *l_begin;
     const char *pt = text;
+
+    ENTRY("text='%s' label=%p syms=%p", text, label, syms);
 
     while (isspace(*pt)) 
         pt++;
@@ -122,6 +124,7 @@ asn_impl_pt_label(const char*text, char *label, int *syms)
     if (!islower(*pt)) 
     {
         *syms = pt - text;
+        EXIT("EASNTXTVALNAME because of '%d'", *pt);
         return TE_EASNTXTVALNAME; 
     }
     pt++, l++;
@@ -130,11 +133,16 @@ asn_impl_pt_label(const char*text, char *label, int *syms)
         pt++, l++;
 
     if ((l + 1) > *syms) /* '+ 1' for tailing zero. */
+    {
+        EXIT("ESMALLBUF since %d > %d", l + 1, *syms);
         return TE_ESMALLBUF;
+    }
 
     memcpy (label, l_begin, l);
     label[l] = 0;
     *syms = pt - text;
+
+    EXIT("label=%s *syms=%d", label, *syms);
 
     return 0; 
 }
@@ -320,11 +328,14 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
  * @return zero on success, otherwise error code.
  */ 
 int 
-asn_impl_pt_integer(const char*text, const asn_type *type, 
+asn_impl_pt_integer(const char *text, const asn_type *type, 
                     asn_value_p *parsed, int *syms_parsed)
 {
     int   p_value;
     char *endptr; 
+
+    ENTRY("text='%s' type=%p parsed=%p syms_parsed=%p",
+          text, type, parsed, syms_parsed);
 
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR; 
@@ -339,6 +350,9 @@ asn_impl_pt_integer(const char*text, const asn_type *type,
     *parsed = asn_init_value(type); 
     (*parsed)->data.integer = p_value; 
     (*parsed)->txt_len = number_of_digits(p_value);
+
+    EXIT("text+(*syms_parsed)='%s' *syms_parsed=%d",
+         text + *syms_parsed, *syms_parsed);
 
     return 0;
 }
@@ -437,6 +451,9 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
     char  label_buf[100];
     int   p_s = sizeof(label_buf);
 
+    ENTRY("text='%s' type=%p parsed=%p syms_parsed=%p",
+          text, type, parsed, syms_parsed);
+
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR; 
 
@@ -451,12 +468,15 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
         rc = asn_impl_pt_label(pt, label_buf, &p_s);
         if (rc)
             return rc;
+        VERB("%s(): Label to find is '%s'", __FUNCTION__, label_buf);
 
         pt += p_s; 
         *syms_parsed = pt - text;
 
         for (i = 0; i < type->len; i++)
         {
+            VERB("%s(): Compare label with '%s'", __FUNCTION__,
+                 type->sp.enum_entries[i].name);
             if (strcmp(label_buf, type->sp.enum_entries[i].name) == 0)
             {
                 p_value = type->sp.enum_entries[i].value;
@@ -595,6 +615,9 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
 
     char label_buf[100];
     int  rc;
+
+    ENTRY("text='%s' type=%p parsed=%p parsed_syms=%p",
+          text, type, parsed, parsed_syms);
 
     if (!text || !type || !parsed || !parsed_syms)
         return TE_EWRONGPTR; 
@@ -850,6 +873,8 @@ asn_parse_value_text(const char *text, const asn_type *type,
     if (!text || !type || !parsed || !syms_parsed)
         return TE_EWRONGPTR;
 
+    ENTRY("text='%s' type->syntax=%u parsed=%p syms_parsed=%p",
+          text, type->syntax, parsed, syms_parsed);
     switch (type->syntax)
     {
         case BOOL:
