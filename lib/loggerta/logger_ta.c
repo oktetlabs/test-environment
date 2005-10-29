@@ -41,7 +41,6 @@
 #include "logger_defs.h"
 #include "logger_api.h"
 #include "logger_int.h"
-#include "rcf_pch_mem.h"
 #include "logger_ta_internal.h"
 #include "logger_ta.h"
 
@@ -142,9 +141,9 @@ ta_log_message(const char *file, unsigned int line,
 
             case 'p':
             {
-                int tmp = rcf_pch_mem_alloc(va_arg(ap, void *));
+                void *tmp = va_arg(ap, void *);
                 
-                LGR_SET_ARG(header, narg, tmp);
+                LGR_SET_ARG(header, narg, (ta_log_arg)tmp);
                 break;
             }
 
@@ -222,7 +221,7 @@ ta_log_message(const char *file, unsigned int line,
             goto resume;
         }
 
-        *arg_location = rcf_pch_mem_alloc(arg_addr);
+        *arg_location = (ta_log_arg)arg_addr;
         val = LGR_GET_ELEMENTS_FIELD(&log_buffer, position);
         val += res;
         LGR_SET_ELEMENTS_FIELD(&log_buffer, position, val);
@@ -406,7 +405,6 @@ log_get_message(uint32_t length, uint8_t *buffer)
 
             case 'p':
             {
-                int         id;
                 void       *val;
                 uint32_t    tmp;
                 
@@ -414,9 +412,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 LGR_CHECK_LENGTH(sizeof(te_log_nfl) + sizeof(void *));
                 *((te_log_nfl *)tmp_buf) = log_nfl_hton(sizeof(void *));
                 tmp_buf += sizeof(te_log_nfl);
-                id = LGR_GET_ARG(header, argn++);
-                val = rcf_pch_mem_get(id);
-                rcf_pch_mem_free(id);
+                val = (void *)LGR_GET_ARG(header, argn++);
                 
 #if (SIZEOF_VOID_P == 4)
                 tmp = (uint32_t)val;
@@ -451,10 +447,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
             case 's':
             {
                 te_log_nfl *arglen_location;
-                int           id = LGR_GET_ARG(header, argn++);
-                char         *arg_str = (char *)rcf_pch_mem_get(id);
-                
-                rcf_pch_mem_free(id);
+                char       *arg_str = (char *)LGR_GET_ARG(header, argn++);
 
                 LGR_CHECK_LENGTH(sizeof(te_log_nfl));
                 arglen_location = (te_log_nfl *)tmp_buf;
@@ -482,9 +475,8 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 if ((*++fs != 0) && (*fs == 'm'))
                 {
                     uint8_t *mem_addr;
-                    int      id = LGR_GET_ARG(header, argn++);
 
-                    mem_addr = (uint8_t *)rcf_pch_mem_get(id);
+                    mem_addr = (uint8_t *)LGR_GET_ARG(header, argn++);
                     tmp_length = LGR_GET_ARG(header, argn++);
 
                     LGR_CHECK_LENGTH(sizeof(te_log_nfl) + tmp_length);
