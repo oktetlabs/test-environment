@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "RPC"
+
 #include "tarpc_server.h"
 
 #include "config.h"
