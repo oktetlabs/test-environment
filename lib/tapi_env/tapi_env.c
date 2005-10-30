@@ -955,7 +955,12 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
             {
                 SIN(env_addr->addr)->sin_addr.s_addr =
-                    htonl(rand_range(0xe0000000, 0xefffffff));
+                    htonl(rand_range(0xe0000100, 0xefffffff));
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_MCAST_ALL_HOSTS)
+            {
+                SIN(env_addr->addr)->sin_addr.s_addr =
+                    htonl(INADDR_ALLHOSTS_GROUP);
             }
             else if (env_addr->type == TAPI_ENV_ADDR_BROADCAST)
             {

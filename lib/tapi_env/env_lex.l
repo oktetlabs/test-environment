@@ -32,21 +32,23 @@ IUT|tester          {
                         return ENTITY_TYPE;
                     }
 loopback|unicast|broadcast|wildcard|alien|multicast|fake|ip4mapped_uc {
-    yylval.number = ((strcmp(yytext, "loopback") == 0) ?
+    yylval.number = (strcmp(yytext, "loopback") == 0) ?
                         TAPI_ENV_ADDR_LOOPBACK :
-                    ((strcmp(yytext, "unicast") == 0) ?
+                    (strcmp(yytext, "unicast") == 0) ?
                         TAPI_ENV_ADDR_UNICAST :
-                    ((strcmp(yytext, "broadcast") == 0) ?
+                    (strcmp(yytext, "broadcast") == 0) ?
                         TAPI_ENV_ADDR_BROADCAST :
-                    ((strcmp(yytext, "wildcard") == 0) ?
+                    (strcmp(yytext, "wildcard") == 0) ?
                         TAPI_ENV_ADDR_WILDCARD :
-                    ((strcmp(yytext, "alien") == 0) ?
+                    (strcmp(yytext, "alien") == 0) ?
                         TAPI_ENV_ADDR_ALIEN :
-                    ((strcmp(yytext, "multicast") == 0) ?
+                    (strcmp(yytext, "multicast") == 0) ?
                         TAPI_ENV_ADDR_MULTICAST :
-                    ((strcmp(yytext, "ip4mapped_uc") == 0) ?
+                    (strcmp(yytext, "mcast_all_hosts") == 0) ?
+                        TAPI_ENV_ADDR_MCAST_ALL_HOSTS :
+                    (strcmp(yytext, "ip4mapped_uc") == 0) ?
                         TAPI_ENV_ADDR_IP4MAPPED_UC :
-                        TAPI_ENV_ADDR_FAKE_UNICAST)))))));
+                        TAPI_ENV_ADDR_FAKE_UNICAST;
     return ADDR_TYPE;
 }
 ether|inet6|inet    {

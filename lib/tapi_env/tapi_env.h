@@ -199,16 +199,17 @@ typedef enum {
 
 /** Types of addresses */
 typedef enum {
-    TAPI_ENV_ADDR_LOOPBACK,     /**< Loopback */
-    TAPI_ENV_ADDR_UNICAST,      /**< Unicast */
-    TAPI_ENV_ADDR_FAKE_UNICAST, /**< Unicast from the same subnet, but
-                                     does not assigned */
-    TAPI_ENV_ADDR_MULTICAST,    /**< Multicast */
-    TAPI_ENV_ADDR_BROADCAST,    /**< Broadcast */
-    TAPI_ENV_ADDR_WILDCARD,     /**< Wildcard */
-    TAPI_ENV_ADDR_ALIEN,        /**< Address not assigned to any 
-                                     interface of the host */
-    TAPI_ENV_ADDR_IP4MAPPED_UC, /**< Unicast IPv4-mapped IPv6 address */
+    TAPI_ENV_ADDR_LOOPBACK,         /**< Loopback */
+    TAPI_ENV_ADDR_UNICAST,          /**< Unicast */
+    TAPI_ENV_ADDR_FAKE_UNICAST,     /**< Unicast from the same subnet,
+                                         but does not assigned */
+    TAPI_ENV_ADDR_MULTICAST,        /**< Multicast */
+    TAPI_ENV_ADDR_MCAST_ALL_HOSTS,  /**< Multicast all hosts group */
+    TAPI_ENV_ADDR_BROADCAST,        /**< Broadcast */
+    TAPI_ENV_ADDR_WILDCARD,         /**< Wildcard */
+    TAPI_ENV_ADDR_ALIEN,            /**< Address not assigned to any 
+                                         interface of the host */
+    TAPI_ENV_ADDR_IP4MAPPED_UC,     /**< Unicast IPv4-mapped IPv6 address */
 } tapi_env_addr_type;
 
 
