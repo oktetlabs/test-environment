@@ -18,7 +18,8 @@ val_set01.c \
 val_set02.c \
 val_set03.c \
 val_set04.c \
-write_ind1
+write_ind1.c \
+write_ind2.c
 
 noinst_HEADERS=test_types.h
 

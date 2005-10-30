@@ -18,6 +18,11 @@ main (int argc, char *argv[])
     asn_value_p packet;
     asn_value *pdus;
 
+    if (argc < 2)
+    {
+        fprintf(stderr, "too small parameters, NDN file should be passed");
+        return 1;
+    }
     rc = asn_parse_dvalue_in_file(argv[1], a_type, &packet, &s_parsed);
     
     if (rc)
@@ -47,7 +52,7 @@ main (int argc, char *argv[])
         level_pdu = asn_read_indexed(pdus, level, ""); 
 
         if (level_pdu == NULL) 
-            return TE_ETADWRONGNDS; 
+            return 2; 
 
         rc = asn_write_value_field(level_pdu, &eth_type, sizeof(eth_type), 
                                     "eth-type.#plain");
