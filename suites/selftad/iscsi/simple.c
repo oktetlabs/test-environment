@@ -101,13 +101,6 @@ main(int argc, char *argv[])
     size_t  len = sizeof(ta);
 
     TEST_START; 
-
-    {
-        struct timeval now;
-        gettimeofday(&now, NULL);
-        srand(now.tv_usec);
-    }
-
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);

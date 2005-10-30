@@ -127,11 +127,17 @@ main(int argc, char *argv[])
     rcf_ta_create_session(agt_a, &sid2);
 
 
-    rc = tapi_iscsi_csap_create(agt_a, sid1, &iscsi_csap1);
+    rc = tapi_iscsi_tgt_csap_create(agt_a,
+                                    ISCSI_DIGEST_NONE,
+                                    ISCSI_DIGEST_NONE,
+                                    &iscsi_csap1);
     if (rc != 0)
         TEST_FAIL("iSCSI csap 1 create failed: %r", rc); 
 
-    rc = tapi_iscsi_csap_create(agt_a, sid2, &iscsi_csap2);
+    rc = tapi_iscsi_tgt_csap_create(agt_a,
+                                    ISCSI_DIGEST_NONE,
+                                    ISCSI_DIGEST_NONE,
+                                    &iscsi_csap2);
     if (rc != 0)
         TEST_FAIL("iSCSI csap2 create failed: %r", rc); 
 
@@ -155,7 +161,7 @@ main(int argc, char *argv[])
     len = sizeof(rx_buffer);
     memset(rx_buffer, 0, len);
     rc = tapi_iscsi_recv_pkt(agt_a, sid1, iscsi_csap1, 2000, 
-                             iscsi_csap2, ISCSI_DIGEST_NONE, NULL, 
+                             iscsi_csap2, NULL, 
                              rx_buffer, &len);
     if (rc != 0)
         TEST_FAIL("recv on CSAP 1 failed: %r", rc); 
@@ -163,7 +169,7 @@ main(int argc, char *argv[])
     len = sizeof(rx_buffer);
     memset(rx_buffer, 0, len);
     rc = tapi_iscsi_recv_pkt(agt_a, sid2, iscsi_csap2, 2000, 
-                             iscsi_csap1, ISCSI_DIGEST_NONE, NULL, 
+                             iscsi_csap1, NULL, 
                              rx_buffer, &len);
     if (rc != 0)
         TEST_FAIL("recv on CSAP 2 failed: %r", rc); 
@@ -182,11 +188,8 @@ main(int argc, char *argv[])
 
 cleanup:
 
-    if (iscsi_csap1 != CSAP_INVALID_HANDLE)
-        rcf_ta_csap_destroy(agt_a, sid1, iscsi_csap1);
-
-    if (iscsi_csap2 != CSAP_INVALID_HANDLE)
-        rcf_ta_csap_destroy(agt_a, sid2, iscsi_csap2);
+    CLEANUP_CHECK_RC(rcf_ta_csap_destroy(agt_a, sid1, iscsi_csap1));
+    CLEANUP_CHECK_RC(rcf_ta_csap_destroy(agt_a, sid2, iscsi_csap2));
 
     TEST_END;
 }

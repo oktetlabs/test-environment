@@ -91,13 +91,6 @@ main(int argc, char *argv[])
     in_addr_t csap_ip_addr = inet_addr("192.168.37.18");
 
     TEST_START; 
-
-    {
-        struct timeval now;
-        gettimeofday(&now, NULL);
-        srand(now.tv_usec);
-    }
-
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
@@ -199,8 +192,7 @@ main(int argc, char *argv[])
 
 cleanup:
 
-    if (iscsi_csap != CSAP_INVALID_HANDLE)
-        rcf_ta_csap_destroy(agt_a, 0, iscsi_csap);
+    CLEANUP_CHECK_RC(rcf_ta_csap_destroy(agt_a, 0, iscsi_csap));
 
     free(buf);
     TEST_END;
