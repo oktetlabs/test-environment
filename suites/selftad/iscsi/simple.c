@@ -122,10 +122,13 @@ main(int argc, char *argv[])
 
     INFO("Found second TA: %s", agt_b, len);
 
-    rcf_ta_create_session(agt_a, &sid);
+    CHECK_RC(rcf_ta_create_session(agt_a, &sid));
 
 
-    rc = tapi_iscsi_csap_create(agt_a, sid, &iscsi_csap);
+    rc = tapi_iscsi_tgt_csap_create(agt_a,
+                                    ISCSI_DIGEST_NONE,
+                                    ISCSI_DIGEST_NONE,
+                                    &iscsi_csap);
     if (rc != 0)
         TEST_FAIL("iSCSI csap 1 create failed: %r", rc); 
 
@@ -140,7 +143,7 @@ main(int argc, char *argv[])
     len = sizeof(rx_buffer);
     memset(rx_buffer, 0, len);
     rc = tapi_iscsi_recv_pkt(agt_a, sid, iscsi_csap, 2000, 
-                             CSAP_INVALID_HANDLE, ISCSI_DIGEST_NONE,
+                             CSAP_INVALID_HANDLE,
                              NULL, rx_buffer, &len);
     if (rc != 0)
         TEST_FAIL("recv on CSAP 1 failed: %r", rc); 
@@ -151,9 +154,7 @@ main(int argc, char *argv[])
     TEST_SUCCESS;
 
 cleanup:
-
-    if (iscsi_csap != CSAP_INVALID_HANDLE)
-        rcf_ta_csap_destroy(agt_a, sid, iscsi_csap);
+    CLEANUP_CHECK_RC(rcf_ta_csap_destroy(agt_a, sid, iscsi_csap));
 
     TEST_END;
 }
