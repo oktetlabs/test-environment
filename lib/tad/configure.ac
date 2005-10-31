@@ -133,6 +133,14 @@ AC_ARG_WITH([bridge],,
  fi
 ], [w_bridge=false])
 
+AC_ARG_WITH([arp],, 
+[if test "${withval}" = yes; then
+   w_arp=true;
+   proto_specific arp;
+   AC_CONFIG_FILES([arp/Makefile])
+ fi
+], [w_arp=false])
+    
 AC_ARG_WITH([ipstack],, 
 [if test "${withval}" = yes; then
    w_ipstack=true;
@@ -244,6 +252,10 @@ fi
 
 if test x$w_eth = xtrue; then 
     AC_CHECK_HEADERS([netinet/ether.h])
+fi
+
+if test x$w_arp = xtrue; then 
+    AC_CHECK_HEADERS([net/if_arp.h])
 fi
 
 AC_SUBST([NET_SNMP_CFLAGS])
