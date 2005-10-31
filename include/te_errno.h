@@ -189,7 +189,7 @@ typedef enum {
     TE_EFAIL,     /**< Generic failure */
     TE_ESMALLBUF, /**< Too small buffer is provided */
     TE_EPENDING,  /**< Pending data retain on connection */
-    TE_EIPC,         /**< Could not interact with RCF */
+    TE_EIPC,      /**< Could not interact with RCF */
     TE_ESHCMD,    /**< Shell command returned non-zero exit status */
     TE_EWRONGPTR, /**< Wrong pointer was passed to function */
     TE_ETOOMANY,  /**< Too many objects have been already allocated, 
