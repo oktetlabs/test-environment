@@ -57,10 +57,10 @@
 #include "logger_api.h"
 
 /* Forward declaration of static functions */
-static uint8_t *tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
-                                            const uint8_t *data,
-                                            size_t data_len,
-                                            size_t *pkt_len);
+static uint8_t *tapi_arp_create_bin_arp_pkt(
+                    const ndn_arp_header_plain *arp_hdr,
+                    const uint8_t *data, size_t data_len,
+                    size_t *pkt_len);
 
 
 /* See the description in tapi_arp.h */
@@ -119,15 +119,15 @@ eth_frame_callback(const ndn_eth_header_plain *header,
         plen -= sizeof(short_var);                                 \
     } while (0)
 
-    ARP_GET_SHORT_VAR(hard_type);
+    ARP_GET_SHORT_VAR(hw_type);
     ARP_GET_SHORT_VAR(proto_type);
 
-    if (plen < sizeof(arp_frame.arp_hdr.hard_size))
+    if (plen < sizeof(arp_frame.arp_hdr.hw_size))
     {
-        ERROR("ARP Header is truncated at 'hard_size' field");
+        ERROR("ARP Header is truncated at 'hw_size' field");
         return;
     }
-    arp_frame.arp_hdr.hard_size = *(payload++);
+    arp_frame.arp_hdr.hw_size = *(payload++);
     plen--;
     if (plen < sizeof(arp_frame.arp_hdr.proto_size))
     {
@@ -137,7 +137,7 @@ eth_frame_callback(const ndn_eth_header_plain *header,
     arp_frame.arp_hdr.proto_size = *(payload++);
     plen--;
 
-    ARP_GET_SHORT_VAR(op_code);
+    ARP_GET_SHORT_VAR(opcode);
 
 #undef ARP_GET_SHORT_VAR
 
@@ -161,9 +161,9 @@ eth_frame_callback(const ndn_eth_header_plain *header,
         plen -= arp_frame.arp_hdr.size_fld_;                       \
     } while (0)
 
-    ARP_GET_ARRAY(snd_hw_addr, hard_size);
+    ARP_GET_ARRAY(snd_hw_addr, hw_size);
     ARP_GET_ARRAY(snd_proto_addr, proto_size);
-    ARP_GET_ARRAY(tgt_hw_addr, hard_size);
+    ARP_GET_ARRAY(tgt_hw_addr, hw_size);
     ARP_GET_ARRAY(tgt_proto_addr, proto_size);
 
 #undef ARP_GET_ARRAY
@@ -327,9 +327,9 @@ tapi_arp_prepare_template(const tapi_arp_frame_t *frame, asn_value **templ)
         return TE_EINVAL;
     }
 
-    if (frame->arp_hdr.hard_size > sizeof(frame->arp_hdr.snd_hw_addr))
+    if (frame->arp_hdr.hw_size > sizeof(frame->arp_hdr.snd_hw_addr))
     {
-        ERROR("The value of 'hard_size' field is more than the length of "
+        ERROR("The value of 'hw_size' field is more than the length of "
               "'snd_hw_addr' and 'tgt_hw_addr' fields");
         return TE_EINVAL;
     }
@@ -402,7 +402,7 @@ tapi_arp_prepare_pattern_eth_only(const uint8_t *src_mac,
 int
 tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
                                   const uint8_t *eth_dst_mac,
-                                  const uint16_t *op_code,
+                                  const uint16_t *opcode,
                                   const uint8_t *snd_hw_addr,
                                   const uint8_t *snd_proto_addr,
                                   const uint8_t *tgt_hw_addr,
@@ -430,7 +430,7 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
         return rc;
     }
 
-    TAPI_ARP_FILL_HDR(&arp_frame, (op_code != NULL) ? *op_code : 0,
+    TAPI_ARP_FILL_HDR(&arp_frame, (opcode != NULL) ? *opcode : 0,
                       snd_hw_addr, snd_proto_addr,
                       tgt_hw_addr, tgt_proto_addr);
 
@@ -444,7 +444,7 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
     }
 
     /* Create 'mask' for ethernet payload, which contains ARP header */
-    TAPI_ARP_FILL_HDR(&arp_frame, (op_code == NULL) ?  0x0000 : 0xffff,
+    TAPI_ARP_FILL_HDR(&arp_frame, (opcode == NULL) ?  0x0000 : 0xffff,
                       snd_hw_addr == NULL ? zero_mac : all_one_mac,
                       snd_proto_addr == NULL ? zero_ip : all_one_ip,
                       tgt_hw_addr == NULL ? zero_mac : all_one_mac,
@@ -462,9 +462,9 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
      * Set the first 6 bytes of mask with 0xff - we expect exact matching
      * for constant fields
      */
-    const_hdr_part_len = sizeof(arp_frame.arp_hdr.hard_type) + 
+    const_hdr_part_len = sizeof(arp_frame.arp_hdr.hw_type) + 
                          sizeof(arp_frame.arp_hdr.proto_type) +
-                         sizeof(arp_frame.arp_hdr.hard_size) + 
+                         sizeof(arp_frame.arp_hdr.hw_size) + 
                          sizeof(arp_frame.arp_hdr.proto_size);
 
     assert(const_hdr_part_len < arp_pkt_len);
@@ -517,7 +517,7 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
 
 /**
  * Create ARP header in binary format based on 
- * the 'tapi_arp_hdr_t' data structure.
+ * the 'ndn_arp_header_plain' data structure.
  *
  * @param arp_hdr   ARP packet header
  * @param data      Pointer to the raw data that should go after ARP header
@@ -528,7 +528,7 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
  *         memory to allocate.
  */
 static uint8_t *
-tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
+tapi_arp_create_bin_arp_pkt(const ndn_arp_header_plain *arp_hdr,
                             const uint8_t *data, size_t data_len,
                             size_t *pkt_len)
 {
@@ -548,9 +548,9 @@ tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
 
     /* Allocate memory under ARP packet */
 #define ARP_FIELD_SIZE(fld_) sizeof(arp_hdr->fld_)
-    arp_pkt_len = ARP_FIELD_SIZE(hard_type) + ARP_FIELD_SIZE(proto_type) +
-                  ARP_FIELD_SIZE(hard_size) + ARP_FIELD_SIZE(proto_size) +
-                  ARP_FIELD_SIZE(op_code) + arp_hdr->hard_size * 2 +
+    arp_pkt_len = ARP_FIELD_SIZE(hw_type) + ARP_FIELD_SIZE(proto_type) +
+                  ARP_FIELD_SIZE(hw_size) + ARP_FIELD_SIZE(proto_size) +
+                  ARP_FIELD_SIZE(opcode) + arp_hdr->hw_size * 2 +
                   arp_hdr->proto_size * 2 + data_len;
 #undef ARP_FIELD_SIZE
 
@@ -564,13 +564,13 @@ tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
         arp_pkt += sizeof(short_var);                   \
     } while (0)
 
-    ARP_FILL_SHORT_VAR(hard_type);
+    ARP_FILL_SHORT_VAR(hw_type);
     ARP_FILL_SHORT_VAR(proto_type);
 
-    *(arp_pkt++) = arp_hdr->hard_size;
+    *(arp_pkt++) = arp_hdr->hw_size;
     *(arp_pkt++) = arp_hdr->proto_size;
 
-    ARP_FILL_SHORT_VAR(op_code);
+    ARP_FILL_SHORT_VAR(opcode);
 
 #undef ARP_FILL_SHORT_VAR
 
@@ -581,9 +581,9 @@ tapi_arp_create_bin_arp_pkt(const tapi_arp_hdr_t *arp_hdr,
         arp_pkt += arp_hdr->size_fld_; \
     } while (0)
 
-    ARP_FILL_ARRAY(snd_hw_addr, hard_size);
+    ARP_FILL_ARRAY(snd_hw_addr, hw_size);
     ARP_FILL_ARRAY(snd_proto_addr, proto_size);
-    ARP_FILL_ARRAY(tgt_hw_addr, hard_size);
+    ARP_FILL_ARRAY(tgt_hw_addr, hw_size);
     ARP_FILL_ARRAY(tgt_proto_addr, proto_size);
 
 #undef ARP_FILL_ARRAY

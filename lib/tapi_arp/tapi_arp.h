@@ -45,41 +45,17 @@
 #include "tad_common.h"
 #include "asn_usr.h"
 #include "ndn_eth.h"
+#include "ndn_arp.h"
 
-/* ARP request operation - ARPOP_REQUEST */
-/* ARP reply operation - ARPOP_REPLY */
-
-/** Buffer size under hardware address */
-#define TAPI_ARP_MAX_HW_ADDR_LEN    6
-/** Buffer size under protocol address */
-#define TAPI_ARP_MAX_PROTO_ADDR_LEN 4
-
-/** Structure that represents ARP header */
-typedef struct tapi_arp_hdr {
-    uint16_t hard_type; /**< Hardware type filed */
-    uint16_t proto_type; /**< Protocol type filed */
-    uint8_t  hard_size; /**< Size of hardware address */
-    uint8_t  proto_size; /**< Size of protocol address */
-    uint16_t op_code; /**< Operation type */
-
-    /** Sender hardware address */
-    uint8_t  snd_hw_addr[TAPI_ARP_MAX_HW_ADDR_LEN]; 
-    /** Sender protocol address */
-    uint8_t  snd_proto_addr[TAPI_ARP_MAX_PROTO_ADDR_LEN];
-    /** Target hardware address */
-    uint8_t  tgt_hw_addr[TAPI_ARP_MAX_HW_ADDR_LEN];
-    /** Target protocol address */
-    uint8_t  tgt_proto_addr[TAPI_ARP_MAX_PROTO_ADDR_LEN];
-
-} tapi_arp_hdr_t;
 
 /** Structure that represents ARP frame: Ethernet header and ARP header */
 typedef struct tapi_arp_frame {
-    ndn_eth_header_plain  eth_hdr; /**< Ethernet header */
-    tapi_arp_hdr_t        arp_hdr; /**< ARP header */
+    ndn_eth_header_plain  eth_hdr;  /**< Ethernet header */
+    ndn_arp_header_plain  arp_hdr;  /**< ARP header */
 
     uint32_t              data_len; /**< Data length */
-    uint8_t              *data; /**< The data that goes after ARP header */
+    uint8_t              *data;     /**< The data that goes after 
+                                         ARP header */
 } tapi_arp_frame_t;
 
 /**
@@ -118,11 +94,11 @@ typedef struct tapi_arp_frame {
     do {                                                                \
         memset(&((arp_frame_)->arp_hdr), 0,                             \
                sizeof((arp_frame_)->arp_hdr));                          \
-        (arp_frame_)->arp_hdr.hard_type = ARPHRD_ETHER;                 \
+        (arp_frame_)->arp_hdr.hw_type = ARPHRD_ETHER;                   \
         (arp_frame_)->arp_hdr.proto_type = ETHERTYPE_IP;                \
-        (arp_frame_)->arp_hdr.hard_size = ETH_ALEN;                     \
+        (arp_frame_)->arp_hdr.hw_size = ETH_ALEN;                       \
         (arp_frame_)->arp_hdr.proto_size = sizeof(struct in_addr);      \
-        (arp_frame_)->arp_hdr.op_code = (op_);                          \
+        (arp_frame_)->arp_hdr.opcode = (op_);                           \
         if ((snd_hw_) != NULL)                                          \
             memcpy((arp_frame_)->arp_hdr.snd_hw_addr, snd_hw_,          \
                    ETH_ALEN);                                           \
@@ -260,7 +236,7 @@ extern int tapi_arp_prepare_pattern_eth_only(const uint8_t *src_mac,
  *
  * @param eth_src_mac     Desired source MAC address value
  * @param eth_dst_mac     Desired destination MAC address value
- * @param op_code         Desired operation code
+ * @param opcode          Desired operation code
  * @param snd_hw_addr     Desired sender hardware address
  * @param snd_proto_addr  Desired sender protocol address
  * @param tgt_hw_addr     Desired target hardware address
@@ -273,7 +249,7 @@ extern int tapi_arp_prepare_pattern_eth_only(const uint8_t *src_mac,
  */
 extern int tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
                                              const uint8_t *eth_dst_mac,
-                                             const uint16_t *op_code,
+                                             const uint16_t *opcode,
                                              const uint8_t *snd_hw_addr,
                                              const uint8_t *snd_proto_addr,
                                              const uint8_t *tgt_hw_addr,
