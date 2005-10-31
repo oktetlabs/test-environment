@@ -78,7 +78,8 @@
         CHECK_RC(tapi_iscsi_initiator_set_parameter((ta_),              \
                                                     (target_id_),       \
                                                     param_id,           \
-                                                    (value_)));         \
+                                                    (value_),           \
+                                                    TRUE));             \
     } while (0)
 
 /**
@@ -101,11 +102,8 @@
         CHECK_RC(tapi_iscsi_initiator_set_parameter((ta_),              \
                                                     (target_id_),       \
                                                     param_id,           \
-                                                    (value_)));         \
-                                                                        \
-        CHECK_RC(tapi_iscsi_initiator_not_advertize((ta_),              \
-                                                    (target_id_),       \
-                                                    param_id));         \
+                                                    (value_),           \
+                                                    FALSE));            \
     } while (0)
 
 
@@ -521,9 +519,10 @@ typedef int iscsi_cid;
  * @param target_id  ID of the Taraget
  * @param param      Parameter to configure
  */
-extern int tapi_iscsi_initiator_not_advertize(const char *ta,
+extern int tapi_iscsi_initiator_advertize_set(const char *ta,
                                               iscsi_target_id target_id,
-                                              tapi_iscsi_parameter param);
+                                              tapi_iscsi_parameter param,
+                                              te_bool advertize);
 /**
  * Function configures parameters of the Initiator.
  *
@@ -537,7 +536,8 @@ extern int tapi_iscsi_initiator_not_advertize(const char *ta,
 extern int tapi_iscsi_initiator_set_parameter(const char *ta,
                                               iscsi_target_id target_id,
                                               tapi_iscsi_parameter param,
-                                              const char *value);
+                                              const char *value,
+                                              te_bool advertize);
 
 #ifdef ISCSI_INITIATOR_GET_SUPPORT
 /**

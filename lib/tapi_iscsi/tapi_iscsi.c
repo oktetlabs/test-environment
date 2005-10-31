@@ -1306,9 +1306,10 @@ static char *log_mapping[] = {
     };
 
 int
-tapi_iscsi_initiator_not_advertize(const char *ta,
+tapi_iscsi_initiator_advertize_set(const char *ta,
                                    iscsi_target_id target_id,
-                                   tapi_iscsi_parameter param)
+                                   tapi_iscsi_parameter param,
+                                   te_bool advertize)
 {
     static uint32_t offer_mapping[] = {
         OFFER_HEADER_DIGEST,
@@ -1342,7 +1343,8 @@ tapi_iscsi_initiator_not_advertize(const char *ta,
     int          rc;
     cfg_val_type type = CVT_STRING;
 
-    RING("Set not advertize %s param on (%s, taret_%d)",
+    RING("Set %s advertize %s param on (%s, taret_%d)",
+         advertize ? "" : "not",
          log_mapping[param], ta, target_id);
 
     memset(offer, 0, sizeof(offer));
@@ -1359,8 +1361,14 @@ tapi_iscsi_initiator_not_advertize(const char *ta,
 
     par2adv = atoi(offer);
     
-    par2adv &= ~(offer_mapping[param]);
-    
+    if (offer_mapping[param] != 0)
+    {
+        if (advertize == TRUE)
+            par2adv |= offer_mapping[param];
+        else
+            par2adv &= ~(offer_mapping[param]);
+    }
+
     sprintf(offer, "%d", par2adv);
 
     rc = cfg_set_instance_fmt(CVT_STRING, offer,
@@ -1381,7 +1389,8 @@ int
 tapi_iscsi_initiator_set_parameter(const char *ta,
                                    iscsi_target_id target_id,
                                    tapi_iscsi_parameter param,
-                                   const char *value)
+                                   const char *value, 
+                                   te_bool advertize)
 {
     int rc = -1;
     
@@ -1428,8 +1437,13 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
     
-    RING("Set %s (%s, target=%d) to %s", log_mapping[param], 
-         ta, target_id, value);
+    RING("Set %s (%s, target=%d) to %s, %s advertizing", 
+         log_mapping[param], 
+         ta, target_id, value, advertize ? "with":"without");
+    
+    tapi_iscsi_initiator_advertize_set(ta, target_id,
+                                       param,
+                                       advertize);
 
     rc = cfg_set_instance_fmt(CVT_STRING, value,
                               "/agent:%s/iscsi_initiator:/target_data:"
@@ -1534,7 +1548,8 @@ tapi_iscsi_initiator_add_target(const char *ta,
     rc = tapi_iscsi_initiator_set_parameter(ta,
                                             iscsi_current_target,
                                             ISCSI_PARAM_TARGET_ADDRESS,
-                                            (void *)target_addr_param);
+                                            (void *)target_addr_param,
+                                            FALSE);
     if (rc != 0)
     {
         ERROR("Failed to set local parameter of the target rc = %d", rc);
@@ -1545,7 +1560,8 @@ tapi_iscsi_initiator_add_target(const char *ta,
     rc = tapi_iscsi_initiator_set_parameter(ta,
                                             iscsi_current_target,
                                             ISCSI_PARAM_TARGET_PORT,
-                                            (void *)port);
+                                            (void *)port,
+                                            FALSE);
     if (rc != 0)
     {
         ERROR("Failed to add target_data instance to the initiator");

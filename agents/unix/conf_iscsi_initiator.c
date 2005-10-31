@@ -110,7 +110,7 @@
 /**
  * Lun of the target to connect to.
  */
-#define DEFAULT_LUN_NUMBER 1
+#define DEFAULT_LUN_NUMBER 0
 
 
 /**
@@ -1221,7 +1221,7 @@ iscsi_initiator_unh_set(const char *value)
 
     /* Now the connection should be opened */
     rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
-                         "cid=%d target=%d host=%d lun=%d",
+                         "cid=%d target=%d host=%d lun=DEFAULT_LUN_NUMBER",
                          target->target_addr,
                          target->target_port,
                          cid, target_id, init_data->host_bus_adapter,
@@ -1642,9 +1642,6 @@ iscsi_max_connections_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_MAX_CONNECTIONS;
-
     init_data->targets[iscsi_get_target_id(oid)].
         max_connections = atoi(value);
 
@@ -1672,8 +1669,6 @@ iscsi_initial_r2t_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_INITIAL_R2T;
     *(init_data->targets[iscsi_get_target_id(oid)].initial_r2t) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].initial_r2t, value);
 
@@ -1700,8 +1695,6 @@ iscsi_header_digest_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_HEADER_DIGEST;
     *(init_data->targets[iscsi_get_target_id(oid)].header_digest) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].header_digest, value);
 
@@ -1729,8 +1722,6 @@ iscsi_data_digest_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_DATA_DIGEST;
     *(init_data->targets[iscsi_get_target_id(oid)].data_digest) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].data_digest, value);
 
@@ -1757,8 +1748,6 @@ iscsi_immediate_data_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_IMMEDIATE_DATA;
     *(init_data->targets[iscsi_get_target_id(oid)].immediate_data) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].immediate_data, value);
 
@@ -1786,8 +1775,6 @@ iscsi_max_recv_data_segment_length_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_MAX_RECV_DATA_SEGMENT_LENGTH;
     init_data->targets[iscsi_get_target_id(oid)].
         max_recv_data_segment_length = atoi(value);
 
@@ -1816,8 +1803,6 @@ iscsi_first_burst_length_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_FIRST_BURST_LENGTH;
     init_data->targets[iscsi_get_target_id(oid)].first_burst_length = 
         atoi(value);
 
@@ -1845,8 +1830,6 @@ iscsi_max_burst_length_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_MAX_BURST_LENGTH;
     init_data->targets[iscsi_get_target_id(oid)].max_burst_length = 
         atoi(value);
 
@@ -1874,8 +1857,6 @@ iscsi_default_time2wait_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_DEFAULT_TIME2WAIT;
     init_data->targets[iscsi_get_target_id(oid)].default_time2wait = atoi(value);
 
     return 0;
@@ -1902,8 +1883,6 @@ iscsi_default_time2retain_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_DEFAULT_TIME2RETAIN;
     init_data->targets[iscsi_get_target_id(oid)].default_time2retain = atoi(value);
 
     return 0;
@@ -1930,8 +1909,6 @@ iscsi_max_outstanding_r2t_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_MAX_OUTSTANDING_R2T;
     init_data->targets[iscsi_get_target_id(oid)].max_outstanding_r2t = atoi(value);
 
     return 0;
@@ -1957,8 +1934,6 @@ iscsi_data_pdu_in_order_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_DATA_PDU_IN_ORDER;
     *(init_data->targets[iscsi_get_target_id(oid)].data_pdu_in_order) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].data_pdu_in_order, value);
 
@@ -1986,8 +1961,6 @@ iscsi_data_sequence_in_order_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_DATA_SEQUENCE_IN_ORDER;
     *(init_data->targets[iscsi_get_target_id(oid)].data_sequence_in_order) =
         '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].data_sequence_in_order, 
@@ -2017,9 +1990,6 @@ iscsi_error_recovery_level_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |=
-        OFFER_ERROR_RECOVERY_LEVEL;
-
     init_data->targets[iscsi_get_target_id(oid)].error_recovery_level = atoi(value);
 
     return 0;
