@@ -493,11 +493,19 @@ iscsi_target_oper_set(unsigned int gid, const char *oid,
                       const char *value, const char *instance, ...)
 {
     UNUSED(gid);
-     UNUSED(instance);
-    iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
-                                map_oid_to_param(oid),
-                                value,
-                                *devdata->param_tbl);
+    UNUSED(instance);
+    if (*value == '\0')
+    {
+        iscsi_restore_default_param(map_oid_to_param(oid),
+                                    *devdata->param_tbl);
+    }
+    else
+    {
+        iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
+                                    map_oid_to_param(oid),
+                                    value,
+                                    *devdata->param_tbl);
+    }
     return 0;
 }
 

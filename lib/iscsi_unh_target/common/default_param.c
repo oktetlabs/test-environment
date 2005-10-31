@@ -334,3 +334,25 @@ struct parameter_type config_params[MAX_CONFIG_PARAMS] = {
 };
 
 
+void
+iscsi_restore_default_param (const char *name, struct parameter_type *param_tbl)
+{
+    struct parameter_type *def_param = find_parameter(name, config_params);
+    struct parameter_type *actual_param = find_parameter(name, param_tbl);
+    
+    if (def_param == NULL || actual_param == NULL || 
+        def_param->type != actual_param->type)
+    {
+        TRACE_ERROR("Inconsistency detected at parameter '%s'", name);
+        return;
+    }
+    if (IS_NUMBER(def_param->type))
+        actual_param->int_value = def_param->int_value;
+    else
+    {
+        strreplace(&actual_param->value_list, def_param->value_list);
+        strreplace(&actual_param->str_value, def_param->str_value);
+    }
+    actual_param->neg_info = 0;
+}
+

@@ -875,7 +875,7 @@ strreplace(char **str, const char *new_str)
 {
 	if (*str != NULL)
 		free(*str);
-	*str = strdup(new_str);
+	*str = (new_str == NULL ? NULL : strdup(new_str));
 }
 
 void __attribute__ ((no_instrument_function))
@@ -884,14 +884,19 @@ strreplace_upto(char **str, const char *new_str, int delim)
     const char *endptr;
 	if (*str != NULL)
 		free(*str);
-    endptr = strchr(new_str, delim);
-    if (endptr == NULL)
-        *str = strdup(new_str);
+    if (new_str == NULL)
+        *str = NULL;
     else
     {
-        *str = malloc(endptr - new_str);
-        memcpy(*str, new_str, endptr - new_str - 1);
-        (*str)[endptr - new_str] = '\0';
+        endptr = strchr(new_str, delim);
+        if (endptr == NULL)
+            *str = strdup(new_str);
+        else
+        {
+            *str = malloc(endptr - new_str);
+            memcpy(*str, new_str, endptr - new_str - 1);
+            (*str)[endptr - new_str] = '\0';
+        }
     }
 }
 

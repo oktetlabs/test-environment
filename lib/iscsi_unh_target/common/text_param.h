@@ -683,4 +683,7 @@ print_session_params(struct session_operational_parameters *sop,
 
 extern struct parameter_type config_params[];
 
+void iscsi_restore_default_param (const char *name, 
+                                  struct parameter_type *param_tbl);
+
 #endif
