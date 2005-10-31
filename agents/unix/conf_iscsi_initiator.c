@@ -1221,7 +1221,7 @@ iscsi_initiator_unh_set(const char *value)
 
     /* Now the connection should be opened */
     rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
-                         "cid=%d target=%d host=%d lun=DEFAULT_LUN_NUMBER",
+                         "cid=%d target=%d host=%d lun=%d",
                          target->target_addr,
                          target->target_port,
                          cid, target_id, init_data->host_bus_adapter,
