@@ -733,4 +733,14 @@ extern iscsi_digest_type iscsi_digest_str2enum(const char *digest_type);
 
 extern char* iscsi_digest_enum2str(iscsi_digest_type digest_type);
 
+
+/*** Functions for data transfer between Target and Initiator ***/
+
+extern int tapi_iscsi_put_file(const char *ta, const char *localfname, 
+                               const char *remotefname);
+
+extern int tapi_iscsi_get_file(const char *ta, const char *localfname, 
+                               const char *remotefname);
+
+
 #endif /* !__TE_TAPI_ISCSI_H__ */
