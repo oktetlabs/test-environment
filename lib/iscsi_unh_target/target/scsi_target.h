@@ -410,6 +410,9 @@ Target_Scsi_Cmnd*	rx_cmnd		(Scsi_Target_Device*, uint64_t,
 					Target_Scsi_Cmnd**);
 Target_Scsi_Message*	rx_task_mgmt_fn	(Scsi_Target_Device*,int,void*);
 
+/** Default size of an iSCSI backing store in 512-blocks */
+#define DEFAULT_STORAGE_SIZE   16384
+
 extern int scsi_target_init(void);
 
 #endif

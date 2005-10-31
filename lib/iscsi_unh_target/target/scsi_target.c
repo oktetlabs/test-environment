@@ -30,6 +30,7 @@
 */
 
 #include <te_config.h>
+#include <te_defs.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -93,16 +94,16 @@ struct proc_dir_entry *proc_scsi_target;
 #define MAX_FILE_TARGETS	2		/* number of default file targets */
 #define MAX_FILE_LUNS		4		/* number of default file luns per target */
 
-struct target_map_item	{
-		struct list_head link;		/* for doubly linked target_map_list */
-		int			target_id;		/* ordinal number of this target in list */
-		Scsi_Device	*the_device;	/* a "real" scsi device */
-		struct file	*the_file;		/* simulating scsi device with this file */
-		uint32_t		max_blocks;		/* maximum number of blocks in this file */
-		uint32_t		bytes_per_block;/* number of bytes in each block in file */
-		char		file_name[MAX_FILE_NAME];
-		int			in_use;			/* 1 if this item is defined, else 0 */
-	};
+struct target_map_item	
+{
+    struct list_head link;		/* for doubly linked target_map_list */
+    int              target_id;		/* ordinal number of this target in list */
+    uint32_t         storage_size;
+    uint32_t         buffer_size;
+    uint8_t         *buffer;
+    uint32_t         last_lba;
+    te_bool          in_use;			/* 1 if this item is defined, else 0 */
+};
 
 	/* doubly-linked circular list, one entry for every iscsi target
 	 * known to the scsi subsystem on this platform
@@ -196,8 +197,10 @@ scsi_target_init(void)
         uint32_t targ, lun;
         
         for (targ = 0; targ < MAX_TARGETS; targ++) {
-            for (lun = 0; lun < MAX_LUNS; lun++) {
-                target_map[targ][lun].in_use = 1;
+            for (lun = 0; lun < MAX_LUNS; lun++) 
+            {
+                target_map[targ][lun].storage_size = DEFAULT_STORAGE_SIZE;
+                target_map[targ][lun].in_use = TRUE;
             }
         }
         target_count = MAX_TARGETS * MAX_LUNS;
@@ -1186,7 +1189,7 @@ get_space(Scsi_Request * req, int space /* in bytes */ )
 	struct scatterlist *st_buffer;
 	int buff_needed, i;
 	int count;
-    long pagesize = sysconf(_SC_PAGESIZE);
+    long pagesize = FAKED_PAGE_SIZE;
 
 	/* we assume that all buffers are split by page size */
 
@@ -1558,6 +1561,147 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 	return 0;
 }
 
+struct scsi_io6_payload
+{
+    uint8_t  opcode;
+    uint8_t  lun_and_lba;
+    uint16_t lba;
+    uint8_t  length;
+    uint8_t  control;
+} __attribute__ ((packed));
+
+typedef struct scsi_io6_payload scsi_io6_payload;
+
+struct scsi_io10_payload
+{
+    uint8_t  opcode;
+    uint8_t  lun_and_flags;
+    uint32_t lba;
+    uint8_t  reserved;
+    uint16_t length;
+    uint8_t  control;
+} __attribute__ ((packed));
+
+typedef struct scsi_io10_payload scsi_io10_payload;
+
+static void
+do_scsi_io(Target_Scsi_Cmnd *command, 
+           te_bool (*op)(Target_Scsi_Cmnd *, uint8_t, uint32_t))
+{
+    uint8_t   lun;
+    uint32_t  lba;
+    uint32_t  length;
+    te_bool   success = TRUE;
+    
+    pthread_mutex_lock(&target_map_mutex);
+    if (command->cmd[0] == READ_6)
+    {
+        scsi_io6_payload *data = (void *)command->req->sr_cmnd;
+        lun = data->lun_and_lba >> 5;
+        lba = ((uint32_t)(data->lun_and_lba & 0x1F) << 16) +
+            (uint32_t)ntohs(data->lba);
+        length = data->length == 0 ? 256 : ntohs(data->length);
+    }
+    else
+    {
+        scsi_io10_payload *data = (void *)command->req->sr_cmnd;
+        lun = data->lun_and_flags >> 5;
+        lba = ntohl(data->lba);
+        if ((data->lun_and_flags & 1) == 1)
+        {
+            lba = target_map[command->target_id][lun].last_lba +
+                (int32_t)lba;
+        }
+        length = ntohs(data->length);
+    }
+    if (lun >= MAX_LUNS || 
+        !target_map[command->target_id][lun].in_use)
+    {
+        TRACE_ERROR("Invalid LUN %u specified for target %d", 
+                    lun, command->target_id);
+        success = FALSE;
+    }
+    else
+    {
+        struct target_map_item *target = &target_map[command->target_id][lun];
+        
+        if (lba >= target->storage_size)
+        {
+            TRACE_ERROR("LBA %lu is out of range for lun %d, target %d",
+                        lba, lun, command->target_id);
+            success = FALSE;
+        }
+        else if (lba + length >= target->storage_size)
+        {
+            TRACE_ERROR("LBA %lu + %lu is out of range for lun %d, target %d",
+                        lba, length, lun, command->target_id);
+            success = FALSE;
+        }
+        lba    *= SCSI_BLOCKSIZE;
+        length *= SCSI_BLOCKSIZE;
+        if (lba + length > target->buffer_size)
+        {
+            void *tmp = realloc(target->buffer, lba + length);
+            if (tmp == NULL)
+                success = FALSE;
+            else
+            {
+                target->buffer_size = lba + length;
+                target->buffer      = tmp;
+            }
+        }
+        if (success)
+            success = op(command, lun, lba);
+    }
+
+    if (!success)
+        command->req->sr_result = DID_OK << 16;
+    else
+    {
+        command->req->sr_result = DID_ERROR << 16;
+        if (length != 0)
+            target_map[command->target_id][lun].last_lba = 
+                lba + length - 1;
+    }
+    pthread_mutex_unlock(&target_map_mutex);
+}
+
+static te_bool
+do_scsi_read(Target_Scsi_Cmnd *command, uint8_t lun, 
+             uint32_t offset)
+{
+    struct target_map_item    *target = &target_map[command->target_id][lun];
+    char               *dataptr;
+    struct scatterlist *st_list = command->req->sr_buffer;
+    int                 st_idx;
+
+    dataptr = target->buffer + offset;
+    for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)
+    {
+        memcpy(st_list[st_idx].address, dataptr, st_list[st_idx].length);
+        dataptr += st_list[st_idx].length;
+    }
+    return TRUE;
+}
+
+static te_bool
+do_scsi_write(Target_Scsi_Cmnd *command, uint8_t lun, 
+              uint32_t offset)
+{
+    struct target_map_item  *target = &target_map[command->target_id][lun];
+    char               *dataptr;
+    struct scatterlist *st_list = command->req->sr_buffer;
+    int                 st_idx;
+
+    dataptr = target->buffer + offset;
+    for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)
+    {
+        memcpy(dataptr, st_list[st_idx].address, st_list[st_idx].length);
+        dataptr += st_list[st_idx].length;
+    }
+    return TRUE;
+}
+
 /*
  * hand_to_front_end: the scsi command has been tackled by the mid-level
  * and is now ready to be handed off to the front-end either because it
@@ -1911,10 +2055,11 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 				err = -1;
 				break;
 			}
+
+            do_scsi_io(cmnd, do_scsi_read);
             
 			/* this data can just be returned from memory */
 			/* change_status */
-			cmnd->req->sr_result = DID_OK << 16;
 			cmnd->state = ST_DONE;
 			err = 0;
 			break;
@@ -1957,8 +2102,8 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 				 * in memory mode of processing we do not
 				 * care about the data received at all
 				 */
+                do_scsi_io(cmnd, do_scsi_write);
 				cmnd->state = ST_DONE;
-				cmnd->req->sr_result = DID_OK << 16;
 			}
 			err = 0;
 			break;
