@@ -137,15 +137,7 @@ asn_type ndn_eth_csap_s =
 const asn_type * const ndn_eth_csap = &ndn_eth_csap_s;
 
 
-/** 
- * Convert Ehternet-Header ASN value to plain C structrue. 
- * 
- * @param pkt           ASN value of type Ethernet Header or Generic-PDU 
- *                      with choice "eth". 
- * @param eth_header    converted structure (OUT).
- *
- * @return zero on success or error code.
- */ 
+/* See description in ndn_eth.h */
 int 
 ndn_eth_packet_to_plain(const asn_value *pkt, 
                         ndn_eth_header_plain *eth_header)
@@ -195,13 +187,7 @@ ndn_eth_packet_to_plain(const asn_value *pkt,
 }
 
 
-/** 
- * Convert plain C structure to Ehternet-Header ASN value. 
- * 
- * @param eth_header    structure to be converted. 
- *
- * @return pointer to new ASN value object or NULL.
- */ 
+/* See description in ndn_eth.h */
 asn_value *
 ndn_eth_plain_to_packet(const ndn_eth_header_plain *eth_header)
 { 

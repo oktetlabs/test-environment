@@ -84,7 +84,7 @@ typedef enum {
 } ndn_eth_tags_t;
 
 /** 
- * Convert Ehternet-Header ASN value to plain C structure. 
+ * Convert Ethernet-Header ASN value to plain C structure. 
  * 
  * @param pkt           ASN value of type Ethernet Header or 
  *                      Generic-PDU with choice "eth". 
@@ -97,7 +97,7 @@ extern int ndn_eth_packet_to_plain(const asn_value *pkt,
 
 
 /** 
- * Convert plain C structure to Ehternet-Header ASN value. 
+ * Convert plain C structure to Ethernet-Header ASN value. 
  * 
  * @param eth_header    structure to be converted. 
  *
