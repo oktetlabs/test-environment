@@ -312,18 +312,16 @@ tad_ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, unsigned int layer)
     if ((csap_descr = csap_find(csap_id)) == NULL)
         return TE_ETADCSAPNOTEX;
 
-    spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
-    
-    if (spec_data == NULL)
-        return TE_ENOMEM;
-
-
     if (layer + 1 >= csap_descr->depth)
     {
         ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
               __FUNCTION__, csap_id, layer, csap_descr->depth);
         return TE_EINVAL;
     }
+
+    spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
+    if (spec_data == NULL)
+        return TE_ENOMEM;
 
     eth_spec_data = (eth_csap_specific_data_t *)
         csap_descr->layers[layer + 1].specific_data;
