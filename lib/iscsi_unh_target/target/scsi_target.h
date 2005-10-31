@@ -28,7 +28,8 @@
 #ifndef _SCSI_TARGET_H
 #define _SCSI_TARGET_H
 
-
+#include <te_config.h>
+#include <te_defs.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <stdlib.h>
@@ -414,5 +415,6 @@ Target_Scsi_Message*	rx_task_mgmt_fn	(Scsi_Target_Device*,int,void*);
 #define DEFAULT_STORAGE_SIZE   16384
 
 extern int scsi_target_init(void);
+extern void scsi_target_cleanup(void);
 
 #endif

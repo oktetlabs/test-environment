@@ -383,7 +383,7 @@ te_shell_cmd_ex(const char *cmd, ...)
     va_end(ap);
 
     IVERB("iSCSI Initiator: %s\n", cmdline);
-    return te_shell_cmd(cmdline, -1, NULL, NULL) > 0 ? 0 : -1;
+    return te_shell_cmd(cmdline, -1, NULL, NULL) > 0 ? 0 : TE_ESHCMD;
 }
 
 /**
@@ -403,7 +403,7 @@ ta_system_ex(const char *cmd, ...)
     if ((cmdline = (char *)malloc(MAX_CMD_SIZE)) == NULL)
     {
         ERROR("Not enough memory\n");
-        return -1;
+        return TE_ENOMEM;
     }
 
     IVERB("fmt=\"%s\"\n", cmd);
@@ -420,7 +420,7 @@ ta_system_ex(const char *cmd, ...)
 
     free(cmdline);
 
-    return WIFEXITED(status) ? 0 : -1;
+    return WIFEXITED(status) ? 0 : TE_ESHCMD;
 }
 
 /**
@@ -611,29 +611,43 @@ iscsi_openiscsi_set_param(const char *recid,
 {
     int rc = 0;
 
+
     if (param->is_string)
     {
-        rc = te_shell_cmd_ex("iscsiadm -m node --record=%s "
+        RING("Setting %s to %s", param->name, 
+             (char *)data + param->offset);
+        rc = ta_system_ex("iscsiadm -m node --record=%s --op=update "
                              "--name=%s --value=%s", recid,
                              param->name,
                              (char *)data + param->offset);
     }
     else
     {
-        rc = te_shell_cmd_ex("iscsiadm -m node --record=%s "
+        RING("Setting %s to %d", param->name,
+             *(int *)((char *)data + param->offset));
+        rc = ta_system_ex("iscsiadm -m node --record=%s --op=update "
                         "--name=%s --value=%d", recid,
                         param->name,
                         *(int *)((char *)data + param->offset));
     }
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
+
+static pid_t iscsid_process = (pid_t)-1;
 
 static int
 iscsi_openiscsi_start_daemon(iscsi_target_data_t *target)
 {
-    int   rc;
+    int   rc = 0;
     FILE *name_file;
     
+    RING("Starting iscsid daemon");
+    if (iscsid_process != (pid_t)-1)
+    {
+        WARN("iscsid already started");
+        return 0;
+    }
+
     name_file = fopen("/tmp/initiatorname.iscsi", "w");
     if (name_file == NULL)
     {
@@ -647,41 +661,36 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target)
         fprintf(name_file, "InitiatorAlias=%s\n", target->initiator_alias);
     fclose(name_file);
 
-    return te_shell_cmd("iscsid -c /dev/null -i /tmp/initiatorname.iscsi "
-                        "-p /tmp/openiscsi.pid", 
-                        -1, NULL, NULL);
+    iscsid_process = te_shell_cmd("iscsid -f -c /dev/null -i /tmp/initiatorname.iscsi",
+                                  -1, NULL, NULL);
+    if (iscsid_process == (pid_t)-1)
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    return 0;
 }
 
 static int
 iscsi_openiscsi_stop_daemon(void)
 {
-    FILE *name_file;
-    int   pid = 0;
     int   unused;
-    
-    name_file = fopen("/tmp/openiscsi.pid", "r");
-    if (name_file == NULL)
+
+    RING("Stopping iscsid daemon");    
+    if (iscsid_process == (pid_t)-1)
     {
-        WARN("Cannot open PID file, assuming no iscsid running");
+        WARN("iscsid already stopped");
         return 0;
     }
-    fscanf(name_file, "%d", &pid);
-    if (pid == 0)
-    {
-        ERROR("Malformed PID file");
-        return TE_RC(TE_TA_UNIX, TE_EFAIL);
-    }
-    if (kill(pid, SIGTERM))
+    if (kill(iscsid_process, SIGHUP))
     {
         WARN("Unable to kill iscsid: %s",
              strerror(errno));
+        iscsid_process = -1;
     }
-    else
-    if (waitpid(pid, &unused, 0) == -1)
+    else if (waitpid(iscsid_process, &unused, 0))
     {
         WARN("Unable to wait for iscsid: %s",
              strerror(errno));
     }
+    iscsid_process = -1;    
     return 0;
 }
 
@@ -820,6 +829,7 @@ iscsi_openiscsi_find_free_recid (iscsi_initiator_data_t *data)
 
     while (fgets(buffer, sizeof(buffer), nodelist) != NULL)
     {
+        VERB("Got '%s' from iscsiadm", buffer);
         *recid = '\0';
         if (sscanf(buffer, "[%[^]]] %*s %*s", recid) != 1)
         {
@@ -1029,41 +1039,34 @@ static const char *conf_iscsi_unh_force_flag_fmt =
  * connection ID and target ID from it.
  *
  * @param cmdline     Comman to retreive from
+ * @param status      (OUT) UP or DOWN
  * @param cid         (OUT) Connection ID
  * @param target      (OUT) Target ID
  * 
  * @return 0 or errno
  */
 static int
-iscsi_get_cid_and_target(const char *cmdline, int *cid, int *target)
+iscsi_get_cid_and_target(const char *cmdline, te_bool *status,
+                         int *cid, int *target)
 {
-    char *tmp = strdup(cmdline);
-    char *c;
-
-    if (tmp == NULL)
-        return ENOMEM;
-    
-    IVERB("COMMAND: %s", cmdline);
-
-    c = strrchr(tmp, ' ');
-    if (c == NULL)
-        return EINVAL;
-    *c = '\0';
-
-    if (*cmdline == 'd')
+    char buffer[32] = "";
+    if (sscanf(cmdline, "%32s %d %d", buffer, cid, target) != 3)
     {
-        *cid = atoi(tmp + strlen("down") + 1);
-        *target = atoi(c + 1);
+        ERROR("Error parsing '%s'", cmdline);
+        return TE_EINVAL;
     }
-    else if (*cmdline == 'u')
+    if (strcmp(buffer, "up") == 0)
+        *status = TRUE;
+    else if (strcmp(buffer, "down") == 0)
+        *status = FALSE;
+    else
     {
-        *cid = atoi(tmp + strlen("up") + 1);
-        *target = atoi(c + 1);
+        ERROR("Invalid status value '%s'", buffer);
+        return TE_EINVAL;
     }
-
-    free(tmp);
     return 0;
 }
+
 
 /**
  * Handles set command for the Instance
@@ -1080,11 +1083,11 @@ iscsi_initiator_unh_set(const char *value)
     int                     cid = 0;
     int                     target_id = 0;
     iscsi_target_data_t    *target;
+    te_bool                 status;
 
     int                     offer;
 
-    rc = iscsi_get_cid_and_target(value, &cid, &target_id);
-    if (rc == EINVAL)
+    if (iscsi_get_cid_and_target(value, &status, &cid, &target_id) != 0)
     {
         sprintf(init_data->last_cmd, value);
         return 0;
@@ -1097,7 +1100,7 @@ iscsi_initiator_unh_set(const char *value)
     IVERB("Current number of open connections: %d", 
           target->number_of_open_connections);
     
-    if (strncmp(value, "down", strlen("down")) == 0)
+    if (!status)
     {
         init_data->targets[target_id].is_active = FALSE;
         /* We should down the connection */
@@ -1229,7 +1232,7 @@ iscsi_initiator_unh_set(const char *value)
     if (rc != 0)
     {
         ERROR("Failed to establish connection with cid=%d", cid);
-        return rc;
+        return TE_RC(TE_TA_UNIX, rc);
     }
     init_data->targets[target_id].is_active = TRUE;
     target->number_of_open_connections++;
@@ -1244,6 +1247,7 @@ iscsi_initiator_l5_set(const char *value)
     int                     cid = 0;
     te_bool                 anything_to_stop = FALSE;
     te_bool                 anything_to_start = FALSE;
+    te_bool                 status;
  
     for (target_id = 0; target_id < MAX_TARGETS_NUMBER; target_id++)
     {
@@ -1253,8 +1257,14 @@ iscsi_initiator_l5_set(const char *value)
             break;
         }
     }
-    iscsi_get_cid_and_target(value, &cid, &target_id);
-    if (strncmp(value, "down", strlen("down")) == 0)
+    if (iscsi_get_cid_and_target(value, &status, 
+                                 &cid, &target_id) != 0)
+    {
+        sprintf(init_data->last_cmd, value);
+        return 0;
+    }
+    
+    if (!status)
     {
         init_data->targets[target_id].is_active = FALSE;
     }
@@ -1276,22 +1286,22 @@ iscsi_initiator_l5_set(const char *value)
         return rc;
     if (anything_to_stop)
     {
-        rc = te_shell_cmd_ex("cd %s; ./iscsi_stop te", 
+        rc = ta_system_ex("cd %s; ./iscsi_stop te", 
                              init_data->script_path);
         if (rc != 0)
         {
             ERROR("Unable to stop initiator connections");
-            return rc;
+            return TE_RC(TE_TA_UNIX, rc);
         }
     }
     if (anything_to_start)
     {
-        rc = te_shell_cmd_ex("cd %s; ./iscsi_start te", 
+        rc = ta_system_ex("cd %s; ./iscsi_start te", 
                          init_data->script_path);    
         if (rc != 0)
         {
             ERROR("Unable to start initiator connections");
-            return rc;
+            return TE_RC(TE_TA_UNIX, rc);
         }
     }
     return 0;
@@ -1303,26 +1313,41 @@ iscsi_initiator_openiscsi_set(const char *value)
     int                     rc = -1;
     int                     target_id = 0;
     int                     cid = 0;
+    te_bool                 status;
 
-    iscsi_get_cid_and_target(value, &cid, &target_id);
-    if (strncmp(value, "down", strlen("down")) == 0)
+    if (*value == '\0')
     {
-        if (*init_data->targets[target_id].record_id != '\0')
+        return iscsi_openiscsi_stop_daemon();
+    }
+
+    if (iscsi_get_cid_and_target(value, &status, &cid, &target_id) != 0)
+    {
+        sprintf(init_data->last_cmd, value);
+        return 0;
+    }
+    
+    if (!status)
+    {
+        if (*init_data->targets[target_id].record_id == '\0')
         {
             ERROR("Target %d has no associated record id", target_id);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
-        rc = te_shell_cmd_ex("iscsiadm -m node --record=%s --logout",
+        rc = ta_system_ex("iscsiadm -m node --record=%s --logout",
                              init_data->targets[target_id].record_id);
-        if (cid == 0 && target_id == 0)
-            iscsi_openiscsi_stop_daemon();
-        return rc;
+        if (cid == 0)
+        {
+            init_data->targets[target_id].is_active = FALSE;
+            if (target_id == 0)
+                iscsi_openiscsi_stop_daemon();
+        }
+        return rc ? TE_RC(TE_TA_UNIX, rc) : 0;
     }
     else
     {
-        if (cid == 0 && target_id == 0)
+        if (iscsid_process == (pid_t)-1)
         {
-            rc = iscsi_openiscsi_start_daemon(init_data->targets);
+            rc = iscsi_openiscsi_start_daemon(init_data->targets + target_id);
             if (rc != 0)
                 return rc;
         }
@@ -1337,8 +1362,11 @@ iscsi_initiator_openiscsi_set(const char *value)
                                                target_id);
         if (rc != 0)
             return rc;
-        return te_shell_cmd_ex("iscsiadm -m node --record=%s --login",
-                               init_data->targets[target_id].record_id);
+        rc = ta_system_ex("iscsiadm -m node --record=%s --login",
+                             init_data->targets[target_id].record_id);
+        if (rc == 0)
+            init_data->targets[target_id].is_active = TRUE;
+        return TE_RC(TE_TA_UNIX, rc);
     }
     
     return 0;

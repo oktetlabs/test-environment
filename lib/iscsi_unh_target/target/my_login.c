@@ -3976,10 +3976,12 @@ handle_iscsi_done(struct iscsi_cmnd *cmnd,
 	}
 
 	if ((req->sr_data_direction == SCSI_DATA_READ)
-									&& host_byte(req->sr_result) == DID_OK) {
-			err = send_read_data(cmnd, conn, session, &phase_collapse);
-			if (err < 0)
-				goto out;
+									&& host_byte(req->sr_result) == DID_OK) 
+    {
+        TRACE(TRACE_VERBOSE, "Sending data");
+        err = send_read_data(cmnd, conn, session, &phase_collapse);
+        if (err < 0)
+            goto out;
 	}
 
 	if (!(cmnd->opcode_byte & I_BIT)) {

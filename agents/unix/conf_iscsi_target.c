@@ -30,8 +30,10 @@
 #ifdef WITH_ISCSI
 #include <stddef.h>
 #include "conf_daemons.h"
+#include <sys/wait.h>
 #include "chap.h"
 #include "target_negotiate.h"
+#include <iscsi_target_api.h>
 
 extern struct iscsi_global *devdata;
 extern int iscsi_server_init();
@@ -509,6 +511,169 @@ iscsi_target_oper_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+#define TARGET_BLOCK_SIZE 512
+
+static int
+iscsi_target_backstore_get(unsigned int gid, const char *oid,
+                           char *value, const char *instance, ...)
+{
+    te_bool  is_mmap;
+    uint32_t size;
+    int      rc;
+
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+    rc = iscsi_get_device_param(0, 0, &is_mmap, &size);
+    if (rc != 0)
+        return rc;
+    if (!is_mmap)
+        *value = '\0';
+    else
+        sprintf(value, "%lu", (unsigned long)size);
+    return 0;
+}
+
+static int
+iscsi_target_backstore_mount(void)
+{
+    int status;
+    char cmd[64];
+    char buf[64];
+
+    sprintf(buf, "/tmp/te_bs_fs.%lu", (unsigned long)getpid());
+    if (mkdir(buf, S_IREAD | S_IWRITE | S_IEXEC) != 0 && errno != EEXIST)
+    {
+        status = errno;
+        ERROR("Cannot create mountpoint for backing store: %s",
+              strerror(status));
+        return TE_OS_RC(TE_TA_UNIX, status);
+    }
+    sprintf(cmd, "/bin/mount -o loop,sync /tmp/te_backing_store.%lu %s",
+            (unsigned long)getpid(), buf);
+    status = ta_system(cmd);
+    if (status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
+    {
+        ERROR("Cannot mount backing store");
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    return 0;
+}
+
+static void
+iscsi_target_backstore_unmount(void)
+{
+    int status;
+    char buf[64];
+    char cmd[64];
+
+    sprintf(buf, "/tmp/te_bs_fs.%lu", (unsigned long)getpid());
+    sprintf(cmd, "/bin/umount %s", buf);
+    status = ta_system(cmd);
+    if (status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
+    {
+        WARN("Cannot unount backing store");
+    }
+    if (rmdir(buf) != 0)
+    {
+        WARN("Cannot delete backing store mountpoint: %s",
+             strerror(errno));
+    }
+}
+
+static int
+iscsi_target_backstore_set(unsigned int gid, const char *oid,
+                           const char *value, const char *instance, ...)
+{
+    char         buf[64];
+    char         cmd[64];
+
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    iscsi_target_backstore_unmount();
+    sprintf(buf, "/tmp/te_backing_store.%lu", (unsigned long)getpid());
+    if (*value == '\0')
+    {
+        if (remove(buf) != 0)
+        {
+            WARN("Cannot remove backing store: %s", strerror(errno));
+        }
+        return iscsi_free_device(0, 0);
+    }
+    else
+    {
+        int          rc;
+        int          fd;
+        char         *end;
+        unsigned long size = strtoul(value, &end, 10);
+        const char   zero[1] = {0};
+        
+        switch(*end)
+        {
+            case 'k':
+            case 'K':
+                size *= 1024;
+                break;
+            case 'm':
+            case 'M':
+                size *= 1024 * 1024;
+                break;
+            case '\0': /* do nothing */
+                break;
+            default:
+                ERROR("Invalid size specifier '%s'", value);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+        if ((size % TARGET_BLOCK_SIZE) != 0)
+        {
+            ERROR("The size %lu is not a multiply of SCSI block size",
+                  size);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+        fd = open(buf, O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
+        if (fd < 0)
+        {
+            rc = errno;
+            ERROR("Cannot create backing store: %s", strerror(rc));
+            return TE_OS_RC(TE_TA_UNIX, rc);
+        }
+        lseek(fd, size - 1, SEEK_SET);
+        if (write(fd, zero, 1) < 1)
+        {
+            rc = errno;
+            ERROR("Cannot create a backing store of size %lu: %s", size,
+                  strerror(rc));
+            remove(buf);
+            close(fd);
+            return TE_OS_RC(TE_TA_UNIX, rc);
+        }
+        close(fd);
+        sprintf(cmd, "/sbin/mke2fs -F -q %s", buf);
+        rc = ta_system(cmd);
+        if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
+        {
+            ERROR("Cannot create a file system on backing store");
+            remove(buf);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+        rc = iscsi_mmap_device(0, 0, buf);
+        if (rc != 0)
+        {
+            remove(buf);
+            return rc;
+        }
+        rc = iscsi_target_backstore_mount();
+        if (rc != 0)
+        {
+            iscsi_free_device(0, 0);
+            remove(buf);
+            return rc;
+        }
+        return 0;
+    }
+}
 
 static int
 iscsi_target_get(unsigned int gid, const char *oid,
@@ -635,9 +800,14 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_header_digest,
                     NULL, &node_iscsi_target_oper_data_digest,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_backing_store, "backing_store", 
+                    NULL, NULL, 
+                    iscsi_target_backstore_get,
+                    iscsi_target_backstore_set);
+
 RCF_PCH_CFG_NODE_RO(node_iscsi_target_oper, "oper", 
                     &node_iscsi_target_oper_header_digest, 
-                    NULL, NULL);
+                    &node_iscsi_target_backing_store, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_pn, "pn",
                     NULL, NULL,

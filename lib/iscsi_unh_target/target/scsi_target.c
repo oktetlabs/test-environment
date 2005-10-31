@@ -34,6 +34,11 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
 
 #include <semaphore.h>
 #include "scsi_target.h"
@@ -42,6 +47,7 @@
 #include "../common/debug.h"
 #include <iscsi_common.h>
 #include <iscsi_target.h>
+#include <iscsi_target_api.h>
 
 #define FAKED_PAGE_SIZE 4096
 
@@ -103,6 +109,7 @@ struct target_map_item
     uint8_t         *buffer;
     uint32_t         last_lba;
     te_bool          in_use;			/* 1 if this item is defined, else 0 */
+    int              mmap_fd;
 };
 
 	/* doubly-linked circular list, one entry for every iscsi target
@@ -201,12 +208,108 @@ scsi_target_init(void)
             {
                 target_map[targ][lun].storage_size = DEFAULT_STORAGE_SIZE;
                 target_map[targ][lun].in_use = TRUE;
+                target_map[targ][lun].mmap_fd = -1;
             }
         }
         target_count = MAX_TARGETS * MAX_LUNS;
     }
 
 
+    return 0;
+}
+
+int
+iscsi_free_device(uint8_t target, uint8_t lun)
+{
+    struct target_map_item *device;
+    
+    if (target >= MAX_TARGETS)
+    {
+        TRACE_ERROR("Invalid target #%d", target);
+        return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
+    }
+    if (lun >= MAX_LUNS || !target_map[target][lun].in_use)
+    {
+        TRACE_ERROR("Invalid lun #%d on target %d", lun, target);
+        return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
+    }
+    device = &target_map[target][lun];
+    if (device->mmap_fd >= 0)
+    {
+        TRACE(TRACE_ISCSI_FULL, "Unmapping device for target %d, lun %d", 
+              target, lun);
+        if (munmap(device->buffer, device->buffer_size) != 0)
+        {
+            TRACE_WARNING("munmap() failed: %s", strerror(errno));
+        }
+        close(device->mmap_fd);
+        device->mmap_fd = -1;
+    }
+    else if (device->buffer != NULL)
+    {
+        free(device->buffer);
+    }
+    
+    device->buffer = NULL;
+    device->buffer_size = 0;
+    return 0;
+}
+
+int
+iscsi_mmap_device(uint8_t target, uint8_t lun, const char *fname)
+{
+    int rc;
+    struct target_map_item *device;
+    struct stat st;
+
+    rc = iscsi_free_device(target, lun);
+    if (rc != 0)
+        return rc;
+    device = &target_map[target][lun];
+    device->mmap_fd = open(fname, O_RDWR, 0);
+    if (device->mmap_fd < 0)
+    {
+        rc = errno;
+        TRACE_ERROR("Can't open '%s': %s", fname, strerror(errno));
+        return TE_OS_RC(TE_ISCSI_TARGET, rc);
+    }
+    if (fstat(device->mmap_fd, &st) != 0)
+    {
+        rc = errno;
+        TRACE_ERROR("Unable to stat '%s': %s", fname, strerror(errno));
+        close(device->mmap_fd);
+        device->mmap_fd = -1;
+        return TE_OS_RC(TE_ISCSI_TARGET, rc);
+    }
+    device->storage_size = st.st_size / SCSI_BLOCKSIZE;
+    device->buffer_size  = device->storage_size * SCSI_BLOCKSIZE;
+    device->buffer       = mmap(NULL, device->buffer_size, 
+                                PROT_READ | PROT_WRITE, MAP_SHARED,
+                                device->mmap_fd, 0);
+    if (device->buffer == NULL)
+    {
+        rc = errno;
+        close(device->mmap_fd);
+        device->mmap_fd = -1;
+        TRACE_ERROR("Cannot map '%s': %s", fname, strerror(rc));
+        return TE_OS_RC(TE_ISCSI_TARGET, rc);
+    }
+    return 0;
+}
+
+int iscsi_get_device_param(uint8_t target, uint8_t lun,
+                           te_bool *is_mmap,
+                           uint32_t *storage_size)
+{
+    if (target >= MAX_TARGETS || lun >= MAX_LUNS ||
+        !target_map[target][lun].in_use)
+    {
+        TRACE_ERROR("Invalid target %d or lun %d",
+                    target, lun);
+        return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
+    }
+    *is_mmap = (target_map[target][lun].mmap_fd >= 0);
+    *storage_size = target_map[target][lun].storage_size * SCSI_BLOCKSIZE;
     return 0;
 }
 
@@ -219,9 +322,10 @@ scsi_target_init(void)
 void
 scsi_target_cleanup(void)
 {
-
 	struct list_head *lptr, *next;
 	struct target_map_item *this_item;
+    int i;
+    int j;
     
 	list_for_each_safe(lptr, next, &target_map_list) {
 		list_del(lptr);
@@ -229,6 +333,11 @@ scsi_target_cleanup(void)
 		free(this_item);
 	}
 
+    for (i = 0; i < MAX_TARGETS; i++)
+    {
+        for (j = 0; j < MAX_LUNS; j++)
+            iscsi_free_device(i, j);
+    }
 }
 
 /*
@@ -1448,7 +1557,7 @@ get_read_capacity_response(Target_Scsi_Cmnd *cmnd)
 	uint8_t *buffer;
 
 /* RDR */
-	nblocks = FILESIZE;
+	nblocks = target_map[cmnd->target_id][cmnd->lun].storage_size;
 
 	buffer = ((struct scatterlist *)cmnd->req->sr_buffer)->address;
 
@@ -1609,6 +1718,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         lba = ntohl(data->lba);
         if ((data->lun_and_flags & 1) == 1)
         {
+            TRACE_WARNING("Using relative addressing");
             lba = target_map[command->target_id][lun].last_lba +
                 (int32_t)lba;
         }
@@ -1641,13 +1751,23 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         length *= SCSI_BLOCKSIZE;
         if (lba + length > target->buffer_size)
         {
-            void *tmp = realloc(target->buffer, lba + length);
-            if (tmp == NULL)
+            if (target->mmap_fd >= 0)
+            {
+                TRACE_ERROR("Buffer size inconsistent for mmapped LUN");
                 success = FALSE;
+            }
             else
             {
-                target->buffer_size = lba + length;
-                target->buffer      = tmp;
+                void *tmp = realloc(target->buffer, lba + length);
+                if (tmp == NULL)
+                    success = FALSE;
+                else
+                {
+                    memset((char *)tmp + target->buffer_size, '\xEB', 
+                           (lba + length) - target->buffer_size);
+                    target->buffer_size = lba + length;
+                    target->buffer      = tmp;
+                }
             }
         }
         if (success)
@@ -1655,10 +1775,10 @@ do_scsi_io(Target_Scsi_Cmnd *command,
     }
 
     if (!success)
-        command->req->sr_result = DID_OK << 16;
+        command->req->sr_result = DID_ERROR << 16;
     else
     {
-        command->req->sr_result = DID_ERROR << 16;
+        command->req->sr_result = DID_OK << 16;
         if (length != 0)
             target_map[command->target_id][lun].last_lba = 
                 lba + length - 1;
@@ -1675,9 +1795,13 @@ do_scsi_read(Target_Scsi_Cmnd *command, uint8_t lun,
     struct scatterlist *st_list = command->req->sr_buffer;
     int                 st_idx;
 
+    TRACE(TRACE_ISCSI_FULL, "Doing read from lun %u at %lx",
+          lun, offset);
     dataptr = target->buffer + offset;
     for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)
     {
+        TRACE(TRACE_ISCSI_FULL, "Reading chunk %d", st_idx);
+        TRACE_BUFFER(TRACE_VERBOSE, dataptr, st_list[st_idx].length, "Read:");
         memcpy(st_list[st_idx].address, dataptr, st_list[st_idx].length);
         dataptr += st_list[st_idx].length;
     }
@@ -1693,10 +1817,14 @@ do_scsi_write(Target_Scsi_Cmnd *command, uint8_t lun,
     struct scatterlist *st_list = command->req->sr_buffer;
     int                 st_idx;
 
+    TRACE(TRACE_ISCSI_FULL, "Doing write to lun %u at %lx",
+          lun, offset);
     dataptr = target->buffer + offset;
     for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)
     {
+        TRACE(TRACE_ISCSI_FULL, "Writing chunk %d", st_idx);
         memcpy(dataptr, st_list[st_idx].address, st_list[st_idx].length);
+        TRACE_BUFFER(TRACE_VERBOSE, dataptr, st_list[st_idx].length, "Written:");
         dataptr += st_list[st_idx].length;
     }
     return TRUE;

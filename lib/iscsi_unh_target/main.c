@@ -39,6 +39,7 @@
 #include <netinet/in.h>
 
 #include <iscsi_target.h>
+#include <scsi_target.h>
 #include <my_login.h>
 
 #include <logger_defs.h>
@@ -212,6 +213,12 @@ int main(int argc, char *argv[])
                 TRACE_ERROR("unknown force \"%s\"\n", 
                             *iter);
             }
+        }
+        else if (strcmp(*iter, "backfile") == 0)
+        {
+            iter++;
+            if (iscsi_mmap_device(0, 0, *iter) != 0)
+                exit(EXIT_FAILURE);
         }
         else if (strcmp(*iter, "permanent") == 0)
         {

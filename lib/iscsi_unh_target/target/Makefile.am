@@ -10,6 +10,8 @@ noinst_HEADERS = \
 	iscsi_portal_group.h \
 	target_error_rec.h 
 
+include_HEADERS = iscsi_target_api.h
+
 noinst_LIBRARIES = libiscsi_target.a 
 
 
