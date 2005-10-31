@@ -76,13 +76,6 @@ tapi_arp_csap_create(const char *ta_name, int sid, const char *device,
                                 &eth_type, arp_csap);
 }
 
-/* See the description in tapi_arp.h */
-int
-tapi_arp_send(const char *ta_name, int sid,
-              csap_handle_t arp_csap, const asn_value *templ)
-{
-    return tapi_eth_send(ta_name, sid, arp_csap, templ);
-}
 
 struct tapi_pkt_handler_data
 {

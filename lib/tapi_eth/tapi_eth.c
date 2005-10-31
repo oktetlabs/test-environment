@@ -276,44 +276,6 @@ tapi_eth_tagged_csap_create(const char *ta_name, int sid,
     return rc;
 }
 
-
-/**
- * Sends traffic template from specified CSAP
- * (the template can represent tagged and ordinary frames).
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF session identifier
- * @param eth_csap      CSAP handle
- * @param templ         Traffic template
- *
- * @return Zero on success, otherwise standard or common TE error code.
- */
-int tapi_eth_send_start(const char *ta_name, int sid,
-                        csap_handle_t eth_csap, const asn_value *templ)
-{
-    return tapi_tad_trsend_start(ta_name, sid, eth_csap, templ,
-                                 RCF_MODE_NONBLOCKING);
-}
-
-/**
- * Sends traffic template from specified CSAP.
- * (the template can represent tagged and ordinary frames)
- *
- * @param ta_name       Test Agent name;
- * @param sid           RCF session identifier;
- * @param eth_csap      CSAP handle;
- * @param templ         Traffic template;
- *
- * @return zero on success, otherwise standard or common TE error code.
- */
-int
-tapi_eth_send(const char *ta_name, int sid, csap_handle_t eth_csap,
-              const asn_value *templ)
-{
-    return tapi_tad_trsend_start(ta_name, sid, eth_csap, templ,
-                                 RCF_MODE_BLOCKING);
-}
-
 struct tapi_pkt_handler_data
 {
     tapi_eth_frame_callback user_callback;

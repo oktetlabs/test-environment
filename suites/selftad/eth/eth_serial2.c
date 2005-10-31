@@ -239,7 +239,8 @@ int main()
    
     
     /* Start sending process */
-    rc = tapi_eth_send_start(agent_a, sid_a, tx_csap, template);
+    rc = tapi_tad_trsend_start(agent_a, sid_a, tx_csap, template,
+                               RCF_MODE_NONBLOCKING);
     if (rc)
     {
         TEST_TERMINATION(" transmitting process error %x", rc);     

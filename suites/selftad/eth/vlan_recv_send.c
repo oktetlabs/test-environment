@@ -298,7 +298,8 @@ main(int argc, char *argv[])
                       rc, syms);
 #endif
 
-        rc = tapi_eth_send(ta, sid, eth_csap, template);
+        rc = tapi_tad_trsend_start(ta, sid, eth_csap, template,
+                                   RCF_MODE_BLOCKING);
 
         if (rc)
             TEST_FAIL("ETH send fails, rc %X", rc);

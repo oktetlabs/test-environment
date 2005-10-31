@@ -150,50 +150,6 @@ extern int tapi_eth_tagged_csap_create(const char *ta_name, int sid,
                                        uint16_t    vlan_id,
                                        csap_handle_t *eth_csap);
 
-/**
- * Sends traffic according specified template from the CSAP.
- * (the template can represent tagged and ordinary frames)
- * This function is blocking, returns after all packets are sent and
- * CSAP operation finished.
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF session identifier
- * @param eth_csap      CSAP handle
- * @param templ         Traffic template
- *
- * @return zero on success, otherwise standard or common TE error code.
- */
-extern int tapi_eth_send(const char *ta_name, int sid,
-                         csap_handle_t eth_csap,
-                         const asn_value *templ);
-
-/**
- * Start send traffic process according template from specified CSAP.
- * (the template can represent tagged and ordinary frames).
- * This function is non-blocking, returns just after send command via RCF.
- * CSAP operation finished when all packets are send OR trsend_stop command
- * received.
- *
- * If all packets are successfully sent before trrecv_stop command, CSAP
- * status become 'CSAP_IDLE', i.e. free for new traffic activity, and no
- * trsend_stop command is need.
- *
- * If some packet was not sent by cause of some error, CSAP status become
- * CSAP_ERROR and CSAP waits 'trsend_stop' command to clear resources, rc
- * code to trsend_stop is error code related to packet sending failure.  In
- * this case 'trsend_stop' command should be sent by 'rcf_ta_trsend_stop'
- * function.
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF session identifier
- * @param eth_csap      CSAP handle
- * @param templ         Traffic template
- *
- * @return zero on success, otherwise standard or common TE error code.
- */
-extern int tapi_eth_send_start(const char *ta_name, int sid,
-                               csap_handle_t eth_csap,
-                               const asn_value *templ);
 
 /**
  * Callback function for the tapi_eth_recv_start() routine, it is called

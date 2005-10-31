@@ -180,9 +180,10 @@ main(int argc, char *argv[])
         if (rc)
             TEST_FAIL("tapi_eth_recv_start failed %r", rc);
 
-        rc = tapi_eth_send(ta_A, sid_a, eth_csap, template);
+        rc = tapi_tad_trsend_start(ta_A, sid_a, eth_csap, template,
+                                   RCF_MODE_BLOCKING);
 
-        VERB("tapi_eth_send rc: %x\n", rc);
+        VERB("tapi_tad_trsend_start rc: %x\n", rc);
 
         if (rc)
             TEST_FAIL("Eth frame send error: %x", rc);

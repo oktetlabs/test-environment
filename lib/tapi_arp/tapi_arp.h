@@ -166,21 +166,6 @@ extern int tapi_arp_csap_create(const char *ta_name, int sid,
                                 csap_handle_t *arp_csap);
 
 /**
- * Sends traffic from specified CSAP according to the traffic template
- * passed.  This function blocks until all packets are sent.
- *
- * @param ta_name   Test Agent name
- * @param sid       RCF session identifier
- * @param arp_csap  CSAP handle
- * @param templ     Traffic template
- * 
- * @return zero on success, otherwise standard or common TE error code.
- */
-extern int tapi_arp_send(const char *ta_name, int sid,
-                         csap_handle_t arp_csap,
-                         const asn_value *templ);
-
-/**
  * Callback function for the tapi_arp_recv_start() routine, it is called
  * for each packet received on CSAP.
  *
