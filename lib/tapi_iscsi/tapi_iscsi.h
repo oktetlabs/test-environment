@@ -729,7 +729,8 @@ tapi_iscsi_set_security_negotiations_phase(const char *ta,
         (ta, ISCSI_PARAM_SECURITY_NEGOTIATION_PHASE, use ? "1" : "0");
 }
 
+extern iscsi_digest_type iscsi_digest_str2enum(const char *digest_type);
 
-
+extern char* iscsi_digest_enum2str(iscsi_digest_type digest_type);
 
 #endif /* !__TE_TAPI_ISCSI_H__ */

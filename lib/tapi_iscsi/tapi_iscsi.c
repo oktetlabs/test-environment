@@ -1679,6 +1679,24 @@ tapi_iscsi_forward_all(const char *ta_name, int session,
     return rc;
 }
 
+iscsi_digest_type 
+iscsi_digest_str2enum(const char *digest_type)
+{
+    if (strcmp(digest_type, "CRC32C") == 0)
+        return ISCSI_DIGEST_CRC32C;
 
+    return -1;
+}
+
+char* 
+iscsi_digest_enum2str(iscsi_digest_type digest_type)
+{
+    static char *digest_map[] = {
+        "None",
+        "CRC32C",
+    };
+
+    return digest_map[digest_type];
+}
 
 #undef MAX_INI_CMD_SIZE
