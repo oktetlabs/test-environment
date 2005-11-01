@@ -250,12 +250,13 @@ rcf_ch_start_task(int *pid,
                   int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
+    int   tries = 0;
     
     UNUSED(priority);
 
     VERB("Start task handler is executed");
 
-    if (addr != NULL)
+    while (addr != NULL)
     {
         VERB("fork process with entry point '%s'", rtn);
 
@@ -280,7 +281,10 @@ rcf_ch_start_task(int *pid,
 
             ERROR("%s(): fork() failed", __FUNCTION__);
             
-            return rc;
+            if (tries++ > 10)
+                return rc;
+                
+            sleep(1);
         }
         
         return 0;
