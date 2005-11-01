@@ -82,19 +82,6 @@
 #define RCF_MAX_INT     12
 
 
-/* CSAP structure for checking is the CSAP busy or not */
-typedef struct traffic_op {
-    struct traffic_op *next;    /**< Next CSAP in the list */
-    struct traffic_op *prev;    /**< Previous CSAP in the list */
-
-    char            ta[RCF_MAX_NAME];   /**< Test Agent name */
-    csap_handle_t   csap_id;    /**< CSAP handle returned by the TA */
-    int             num_users;  /**< Number of pending requests for CSAP */
-    int             state;      /**< CSAP_SEND, CSAP_RECV or
-                                     CSAP_SENDRECV */
-    int             sid;        /**< Session identifier */
-} traffic_op_t;
-
 typedef struct msg_buf_entry {
     CIRCLEQ_ENTRY(msg_buf_entry) link;
     rcf_msg                     *message;
@@ -110,10 +97,6 @@ typedef struct thread_ctx {
 } thread_ctx_t;
 
 
-/* Busy CSAPs list anchor */
-static traffic_op_t traffic_ops = { &traffic_ops, &traffic_ops, 
-                                    "", 0, 0, 0, 0 };
-
 /* Forward declaration */
 static int csap_tr_recv_get(const char *ta_name, int session, 
                             csap_handle_t csap_id, 
@@ -125,8 +108,9 @@ static int csap_tr_recv_get(const char *ta_name, int session,
 #ifndef PTHREAD_SETSPECIFIC_BUG
 static pthread_once_t   once_control = PTHREAD_ONCE_INIT;
 static pthread_key_t    key;
-#endif
+#else
 static pthread_mutex_t  rcf_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 #endif
 
 /* Following two macros are necessary to provide tread safety */
@@ -753,90 +737,6 @@ rcf_api_cleanup(void)
 #endif
 }
 
-    
-/**
- * Find CSAP in the list of busy CSAPs by its handle - should be called
- * under protection.
- *
- * @param ta_name   Test Agent name
- * @param handle    CSAP handle
- *
- * @return CSAP structure pointer or NULL
- */
-static traffic_op_t *
-find_traffic_op(const char *ta_name, csap_handle_t csap_id)
-{
-    traffic_op_t *tr_op;
-    
-    for (tr_op = traffic_ops.next; 
-         tr_op != &traffic_ops;
-         tr_op = tr_op->next)
-        if ((tr_op->csap_id == csap_id) && 
-            (strcmp(tr_op->ta, ta_name) == 0))
-        {
-            return tr_op;
-        }
-
-    return NULL;
-}
-
-/**
- * Insert CSAP into the list.
- *
- * @param cs            CSAP structure pointer
- * 
- * @return 0 (success) or 1 (CSAP is already in the list)
- */
-static te_errno
-insert_traffic_op(traffic_op_t *cs)
-{
-    te_errno rc;
-    
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&rcf_lock);
-#endif    
-    
-    if (rc = (find_traffic_op(cs->ta, cs->csap_id) != NULL), !rc)
-    {
-        QEL_INSERT(&traffic_ops, cs);
-    }
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&rcf_lock);
-#endif    
-
-    return rc;
-}
-
-/**
- * Remove CSAP from the list.
- *
- * @param ta_name       Test Agent name
- * @param csap_id       csap_id of CSAP to be removed
- */
-static void
-remove_traffic_op(const char *ta_name, csap_handle_t csap_id)
-{
-    traffic_op_t *cs;
-    
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&rcf_lock);
-#endif    
-
-    cs = find_traffic_op(ta_name, csap_id);
-    
-    if (cs != NULL)
-        QEL_DELETE(cs);
-    else
-        WARN("%s: csap %d, traffic operation handler not found",
-             __FUNCTION__, csap_id);
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&rcf_lock);
-#endif
-    
-    free(cs);
-}
 
 /**
  * Check that length of parameter string after quoting and inserting
@@ -2103,7 +2003,6 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
     int           fd;
-    traffic_op_t *tr_op;
     te_errno      rc;
 
     RCF_API_INIT;
@@ -2114,27 +2013,6 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     RING("Start %s send operation on the CSAP %d (%s:%d) with "
          "template:\n%Tf", rcf_call_mode2str(blk_mode), csap_id,
          ta_name, session, templ);
-    
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&rcf_lock);
-#endif    
-    if ((tr_op = find_traffic_op(ta_name, csap_id)) != NULL)
-    {
-        int state = tr_op->state;
-
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&rcf_lock);
-#endif
-        ERROR("Cannot start sending traffic on active CSAP\n"
-              "CSAP is %s",
-              (state & CSAP_SEND) ? "sending" :
-              (state & CSAP_RECV) ? "receiving" : "waiting for something");
-        return TE_RC(TE_RCF_API, (state & CSAP_SEND) ? TE_EINPROGRESS 
-                                                     : TE_EBUSY);
-    }
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&rcf_lock);
-#endif    
 
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRSEND_START;
@@ -2152,25 +2030,11 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     }
     close(fd);
 
-    if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
-    strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
-    tr_op->csap_id = csap_id;
-    tr_op->state = CSAP_SEND;
-    tr_op->next = &traffic_ops;
-    if (insert_traffic_op(tr_op) != 0)
-    {
-        free(tr_op);
-        ERROR("Cannot insert CSAP control block in the list of "
-              "active CSAPs");
-        return TE_RC(TE_RCF_API, TE_EEXIST);
-    }
-    
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
-    if (rc != 0 || (rc = msg.error) != 0 || (blk_mode == RCF_MODE_BLOCKING))
-        remove_traffic_op(ta_name, csap_id);
+    if (rc == 0)
+        rc = msg.error;
 
     return rc;
 }
@@ -2203,7 +2067,6 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
 {
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
-    traffic_op_t *tr_op;
     te_errno      rc;
     
     RCF_API_INIT;
@@ -2212,33 +2075,8 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&rcf_lock);
-#endif    
-    if ((tr_op = find_traffic_op(ta_name, csap_id)) == NULL)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&rcf_lock);
-#endif
-        WARN("There is no entry in the list of active CSAPs for "
-              "CSAP %d residing on Agent %s", csap_id, ta_name);
-        return TE_RC(TE_RCF_API, TE_EBADFD);
-    }
-    if (tr_op->state != CSAP_SEND)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&rcf_lock);
-#endif
-        ERROR("CSAP %d residing on Agent %s is not sending",
-              csap_id, ta_name);
-        return TE_RC(TE_RCF_API, TE_EINVAL);
-    }
 
     msg.sid = session;
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&rcf_lock);
-#endif    
-    
     msg.opcode = RCFOP_TRSEND_STOP;
     strcpy(msg.ta, ta_name);
     msg.handle = csap_id;
@@ -2246,12 +2084,8 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
-    if (rc == 0 && (rc = msg.error) == 0)
-    {
-        remove_traffic_op(ta_name, csap_id);
-        if (num != NULL)
-            *num = msg.num;
-    }
+    if (rc == 0 && (rc = msg.error) == 0 && (num != NULL))
+        *num = msg.num;
     
     return rc;
 }
@@ -2267,7 +2101,6 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     size_t        anslen = sizeof(msg);
     int           fd;
     te_errno      rc;
-    traffic_op_t *tr_op;
 
     RCF_API_INIT;
 
@@ -2277,22 +2110,6 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     RING("Start receive operation on the CSAP %d (%s:%d) with "
          "pattern\n%Tf", csap_id, ta_name, session, pattern);
     
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&rcf_lock);
-#endif    
-    if ((tr_op = find_traffic_op(ta_name, csap_id)) != NULL)
-    {
-        int state = tr_op->state;
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&rcf_lock);
-#endif    
-        return TE_RC(TE_RCF_API, (state & CSAP_RECV) ? TE_EINPROGRESS 
-                                                     : TE_EBUSY);
-    }
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&rcf_lock);
-#endif    
-
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRRECV_START;
     msg.flags |= BINARY_ATTACHMENT;
@@ -2311,23 +2128,11 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     }
     close(fd);
 
-    if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
-    strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
-    tr_op->csap_id = csap_id;
-    tr_op->state = CSAP_RECV;
-    tr_op->sid = session;    
-    if (insert_traffic_op(tr_op) != 0)
-    {
-        free(tr_op);
-        return TE_RC(TE_RCF_API, TE_EEXIST);
-    }
-        
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
                                   
-    if (rc != 0 || (rc = msg.error) != 0)
-        remove_traffic_op(ta_name, csap_id);
+    if (rc == 0)
+        rc = msg.error;
 
     return rc;
 }
@@ -2355,7 +2160,6 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     te_errno      rc;
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
-    traffic_op_t *tr_op;
     
     RCF_API_INIT;
     
@@ -2363,39 +2167,8 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     
     memset((char *)&msg, 0, sizeof(msg));
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&rcf_lock);
-#endif
-    tr_op = find_traffic_op(ta_name, csap_id);
-    if (tr_op == NULL && opcode != RCFOP_TRRECV_STOP)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&rcf_lock);
-#endif
-        ERROR("There is no entry in the list of active CSAPs for CSAP %d "
-              "residing on Agent %s", csap_id, ta_name);
-        return TE_RC(TE_RCF_API, TE_EBADFD);
-    }
-    if ((tr_op != NULL) && (tr_op->state != CSAP_RECV))
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&rcf_lock);
-#endif
-        ERROR("CSAP %d residing on Agent %s is not receiving, but %s",
-              csap_id, ta_name, (tr_op->state & CSAP_SEND) ? "sending" :
-                                   "waiting for something");
-        return TE_RC(TE_RCF_API, TE_EINVAL);
-    }
-
-    if (tr_op != NULL)
-        tr_op->num_users++;
 
     msg.sid = session;
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&rcf_lock);
-#endif
-
     msg.opcode = opcode;
     strcpy(msg.ta, ta_name);
     msg.handle = csap_id;
@@ -2404,7 +2177,6 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     if ((rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                         &msg, &anslen, NULL)) != 0)
     {
-        remove_traffic_op(ta_name, csap_id);
         ERROR("%s: IPC send with answer fails, rc %r", 
               __FUNCTION__, rc);
         return rc;
@@ -2434,19 +2206,6 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     if ((num != NULL) && (msg.error == 0 || opcode != RCFOP_TRRECV_GET))
         *num = msg.num;
 
-    if (tr_op != NULL)
-        tr_op->num_users--;
-
-    if ((opcode != RCFOP_TRRECV_GET) &&
-        (tr_op != NULL) && (tr_op->num_users == 0))
-    {
-        /* 
-         * For STOP and WAIT request descr should be removed 
-         * @todo investigate of consistant removing csap request record 
-         * in case of error. 
-         */
-        remove_traffic_op(ta_name, csap_id);
-    }
     if (msg.error != 0)
         WARN("RCF traffic operation fails with status code %r", msg.error);
     
@@ -2560,7 +2319,6 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
                    void *user_param, unsigned int timeout, int *error)
 {
     rcf_msg       msg;
-    traffic_op_t *tr_op;
     size_t        anslen = sizeof(msg);
     int           fd;
     te_errno      rc;
@@ -2570,21 +2328,6 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     /* First, validate parameters */
     if (BAD_TA || templ == NULL)
         return TE_RC(TE_RCF_API, TE_EINVAL);
-
-    /* Second, previously check that CSAP is not busy */
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&rcf_lock);
-#endif    
-    if ((tr_op = find_traffic_op(ta_name, csap_id)) != NULL)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&rcf_lock);
-#endif    
-        return TE_RC(TE_RCF_API, TE_EBUSY);
-    }
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&rcf_lock);
-#endif
 
     /* Third, check that template file is OK */
     if ((fd = open(templ, O_RDONLY)) < 0)
@@ -2606,18 +2349,6 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     msg.handle = csap_id;
     msg.intparm = handler == NULL ? 0 : TR_RESULTS;
     
-    /* Fifth, allocate traffic operation and remember it */
-    if ((tr_op = (traffic_op_t *)calloc(sizeof(traffic_op_t), 1)) == NULL)
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
-    strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
-    tr_op->csap_id = csap_id;
-    tr_op->state = CSAP_SENDRECV;
-    if (insert_traffic_op(tr_op) != 0)
-    {
-        free(tr_op);
-        return TE_RC(TE_RCF_API, TE_EBUSY);
-    }
-
     RING("Start send/receive operation on the CSAP %d (%s:%d) "
          "with timeout %u ms, handler=%p (param=%p), pattern:\n%Tf",
          csap_id, ta_name, session, timeout, handler, user_param, templ);
@@ -2626,10 +2357,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
                                    &msg, &anslen, NULL);
         
     if (rc != 0)
-    {
-        remove_traffic_op(ta_name, csap_id);
         return rc;
-    }
     
     while (msg.flags & INTERMEDIATE_ANSWER)
     {
@@ -2650,7 +2378,6 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
         }
     }
     
-    remove_traffic_op(ta_name, csap_id);
     if (msg.error != 0)
         return msg.error;
     
