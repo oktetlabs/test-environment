@@ -1011,38 +1011,24 @@ extern int tapi_snmp_get_syntax(tapi_snmp_oid_t *oid,
  * Callback function for the catching of SNMP traps. 
  *
  * @param trap          SNMP message with trap.
- * @param userdata      Parameter, provided by the caller of
+ * @param user_data     Parameter, provided by the caller of
  *                      tapi_snmp_walk().
  */
 typedef void (*tapi_snmp_trap_callback)(const tapi_snmp_message_t *trap,
-                                        void *userdata);
-
-
+                                        void *user_data);
 
 /**
- * Start receive process on specified SNMP CSAP. If process was started
- * correctly (rc is OK) it can be managed by common RCF methods
- * 'rcf_ta_trrecv_wait', 'rcf_ta_trrecv_get' and 'rcf_ta_trrecv_stop'.
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF session ID
- * @param snmp_csap     CSAP handle 
- * @param pattern       ASN value with receive pattern
- * @param cb            Callback function which will be called for each 
- *                      received frame, may me NULL if frames are not need
- * @param cb_data       Pointer to be passed to user callback
- * @param timeout       Timeout for receiving of packets, measured in 
- *                      milliseconds
- * @param num           Number of packets caller wants to receive
- *
- * @return Zero on success, otherwise standard or common TE error code.
+ * FIXME
  */
-extern int tapi_snmp_trap_recv_start(const char *ta_name, int sid,
-                                     int snmp_csap,
-                                     const asn_value *pattern,
-                                     tapi_snmp_trap_callback cb,
-                                     void *cb_data,
-                                     unsigned int timeout, int num);
+typedef struct tapi_snmp_pkt_handler_data {
+    tapi_snmp_trap_callback  callback;
+    void                    *user_data;
+} tapi_snmp_pkt_handler_data;
+
+/**
+ * FIXME
+ */
+extern void tapi_snmp_trap_handler(const char *fn, void *user_param);
 
 
 /**

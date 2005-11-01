@@ -76,44 +76,36 @@ extern int tapi_pcap_csap_create(const char *ta_name, int sid,
 
 
 /**
- * Callback function for the tapi_pcap_recv_start() routine, it is called
- * for each packet received for csap.
+ * Callback function for the tapi_pcap_pkt_handler() routine,
+ * it is called for each packet received for csap.
  *
  * @param filter_id     Filter ID that corresponds to received packet.
  * @param pkt_data      Received packet in binary form.
  * @param pkt_len       Length of the received packet.
- * @param userdata      Pointer to user data, provided by  the caller of
- *                      tapi_pcap_recv_start.
+ * @param user_data     Pointer to user data, passed to
+ *                      tapi_pcap_pkt_handler() in @a user_param as
+ *                      @a user_data field of tapi_pcap_pkt_handler_data.
  */
-typedef void (*tapi_pcap_recv_callback) (const int filter_id,
-                                         const uint8_t *pkt_data,
-                                         const uint16_t pkt_len,
-                                         void *userdata);
+typedef void (*tapi_pcap_recv_callback)(int            filter_id,
+                                        const uint8_t *pkt_data,
+                                        uint16_t       pkt_len,
+                                        void          *user_data);
 
 /**
- * Start receive process on specified Ethernet-PCAP CSAP. If process
- * was started correctly (rc is OK) it can be managed by common RCF
- * methods 'rcf_ta_trrecv_wait', 'rcf_ta_trrecv_get' and
- * 'rcf_ta_trrecv_stop'.
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF session
- * @param pcap_csap      CSAP handle
- * @param pattern       ASN value with receive pattern
- * @param cb            Callback function which will be called for each
- *                      received frame, may me NULL if frames are not need
- * @param cb_data       Pointer to be passed to user callback
- * @param timeout       Timeout for receiving of packets, measured in
- *                      milliseconds
- * @param num           Number of packets caller wants to receive
- *
- * @return Zero on success, otherwise standard or common TE error code.
+ * Structure to be passed as @a user_param to rcf_ta_trrecv_wait(),
+ * rcf_ta_trrecv_stop() and rcf_ta_trrecv_get(), if
+ * tapi_pcap_pkt_handler() function as @a handler.
  */
-extern int tapi_pcap_recv_start(const char *ta_name, int sid,
-                                csap_handle_t pcap_csap,
-                                const asn_value *pattern,
-                                tapi_pcap_recv_callback cb, void *cb_data,
-                                unsigned int timeout, int num);
+typedef struct tapi_pcap_pkt_handler_data {
+    tapi_pcap_recv_callback  callback;  /**< User callback function */
+    void                    *user_data; /**< Real user data */
+} tapi_pcap_pkt_handler_data;
+
+/**
+ * This function complies with rcf_pkt_handler prototype.
+ * @a user_param must point to tapi_pcap_pkt_handler_data structure.
+ */
+extern void tapi_pcap_pkt_handler(const char *fn, void *user_param);
 
 /**
  * Creates traffic    pattern for a single Ethernet-PCAP frame.

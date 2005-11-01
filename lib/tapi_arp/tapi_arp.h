@@ -46,6 +46,7 @@
 #include "asn_usr.h"
 #include "ndn_eth.h"
 #include "ndn_arp.h"
+#include "tapi_tad.h"
 
 
 /** Structure that represents ARP frame: Ethernet header and ARP header */
@@ -155,29 +156,18 @@ typedef void (*tapi_arp_frame_callback)(const tapi_arp_frame_t *header,
                                         void *userdata);
 
 /**
- * Start receive process on specified ARP CSAP. If process
- * was started correctly (rc is OK) it can be managed by common RCF
- * methods 'rcf_ta_trrecv_wait', 'rcf_ta_trrecv_get' and
- * 'rcf_ta_trrecv_stop'.
+ * Prepare callback data to be passed in tapi_tad_trrecv_{wait,stop,get}
+ * to process received ARP frames.
  *
- * @param ta_name    Test Agent name
- * @param sid        RCF session
- * @param arp_csap   CSAP handle 
- * @param pattern    ASN value with receive pattern
- * @param cb         Callback function which will be called for each 
- *                   received frame, may me NULL if frames are not need
- * @param cb_data    pointer to be passed to user callback
- * @param timeout    Timeout for receiving of packets, measured in 
- *                   milliseconds
- * @param num        Number of packets caller wants to receive
+ * @param callback        Callback for ARP frames handling
+ * @param user_data       User-supplied data to be passed to @a callback
  *
- * @return zero on success, otherwise standard or common TE error code.
+ * @return Pointer to allocated callback data or NULL.
  */
-extern int tapi_arp_recv_start(const char *ta_name, int sid,
-                               csap_handle_t arp_csap,
-                               const asn_value *pattern,
-                               tapi_arp_frame_callback cb, void *cb_data,
-                               unsigned int timeout, int num);
+extern tapi_tad_trrecv_cb_data *tapi_arp_trrecv_cb_data(
+                                    tapi_arp_frame_callback  callback,
+                                    void                    *user_data);
+
 
 /**
  * Receives specified number of ARP frames matched with the pattern.

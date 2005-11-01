@@ -3072,18 +3072,13 @@ tapi_snmp_make_oid(const char *oid_str, tapi_snmp_oid_t *bin_oid)
     return 0;
 }
 
-struct tapi_pkt_handler_data
-{
-    tapi_snmp_trap_callback user_callback;
-    void                    *user_data;
-};
 
-
-static void
+/* See description in tapi_snmp.h */
+void
 tapi_snmp_trap_handler(const char *fn, void *user_param)
 {
-    struct tapi_pkt_handler_data *i_data =
-        (struct tapi_pkt_handler_data *)user_param;
+    struct tapi_snmp_pkt_handler_data *i_data =
+        (struct tapi_snmp_pkt_handler_data *)user_param;
     tapi_snmp_message_t plain_msg;
 
     int rc, s_parsed;
@@ -3123,56 +3118,6 @@ tapi_snmp_trap_handler(const char *fn, void *user_param)
     tapi_snmp_free_message(&plain_msg);
 
     return;
-}
-
-
-/* See description in tapi_snmp.h */
-int
-tapi_snmp_trap_recv_start(const char *ta_name, int sid,
-                         int snmp_csap, const asn_value *pattern,
-                         tapi_snmp_trap_callback cb, void *cb_data,
-                         unsigned int timeout, int num)
-{
-    int    rc;
-    char   tmp_name[] = "/tmp/te_snmp_trap_trrecv.XXXXXX";
-    struct tapi_pkt_handler_data *i_data;
-
-    if (ta_name == NULL || pattern == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
-
-    if ((i_data = malloc(sizeof(*i_data))) == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-
-    i_data->user_callback = cb;
-    i_data->user_data = cb_data;
-
-    if ((rc = te_make_tmp_file(tmp_name)) != 0)
-    {
-        free(i_data);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    rc = asn_save_to_file(pattern, tmp_name);
-    if (rc)
-    {
-        unlink(tmp_name);
-        free(i_data);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    rc = rcf_ta_trrecv_start(ta_name, sid, snmp_csap, tmp_name,
-                             (cb != NULL) ? tapi_snmp_trap_handler : NULL,
-                             (cb != NULL) ? (void *) i_data : NULL,
-                             timeout, num);
-    if (rc != 0)
-    {
-        ERROR("%s() failed(%r) on TA %s:%d CSAP %d file %s",
-              __FUNCTION__, rc, ta_name, sid, snmp_csap, tmp_name);
-    }
-
-    unlink(tmp_name);
-
-    return rc;
 }
 
 

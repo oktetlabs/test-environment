@@ -230,8 +230,9 @@ int main()
 
     /* Start recieving process */
     recv_pkts = PKTS_TO_PROCESS;
-    rc = tapi_eth_recv_start(agent_b, sid_b, rx_csap, pattern, 
-                             NULL, NULL, TAD_TIMEOUT_INF, recv_pkts);
+    rc = tapi_tad_trrecv_start(agent_b, sid_b, rx_csap, pattern, 
+                               TAD_TIMEOUT_INF, recv_pkts,
+                               RCF_TRRECV_COUNT);
     if (rc)
     {
         TEST_TERMINATION(" recieving process error %x", rc);     
@@ -278,7 +279,8 @@ int main()
     sleep (3);
    
     /* Stop recieving process */
-    rc = rcf_ta_trrecv_stop(agent_b, sid_b, rx_csap, &recv_pkts);
+    rc = rcf_ta_trrecv_stop(agent_b, sid_b, rx_csap, NULL, NULL,
+                            &recv_pkts);
     if (rc)
     {
         TEST_TERMINATION(" receiving process shutdown error %x", rc);     

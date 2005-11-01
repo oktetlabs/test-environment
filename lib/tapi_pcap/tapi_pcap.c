@@ -112,16 +112,12 @@ tapi_pcap_csap_create(const char *ta_name, int sid,
 }
 
 
-struct tapi_pkt_handler_data {
-    tapi_pcap_recv_callback     user_callback;
-    void                       *user_data;
-};
-
-static void
+/* See description in tapi_pcap.h */
+void
 tapi_pcap_pkt_handler(const char *fn, void *user_param)
 {
-    struct tapi_pkt_handler_data *i_data =
-        (struct tapi_pkt_handler_data *)user_param;
+    struct tapi_pcap_pkt_handler_data *i_data =
+        (struct tapi_pcap_pkt_handler_data *)user_param;
 
     int rc;
     int syms = 0;
@@ -192,7 +188,7 @@ tapi_pcap_pkt_handler(const char *fn, void *user_param)
         return;
     }
 
-    i_data->user_callback(filter_id, pkt, pkt_len, i_data->user_data);
+    i_data->callback(filter_id, pkt, pkt_len, i_data->user_data);
 
     free(pkt);
 
@@ -200,55 +196,6 @@ tapi_pcap_pkt_handler(const char *fn, void *user_param)
     asn_free_value(pcap_filtered_pdu);
 
     return;
-}
-
-/* See the description in tapi_pcap.h */
-int
-tapi_pcap_recv_start(const char *ta_name, int sid,
-                     csap_handle_t pcap_csap,
-                     const asn_value *pattern,
-                     tapi_pcap_recv_callback cb, void *cb_data,
-                     unsigned int timeout, int num)
-{
-    int  rc;
-    char tmp_name[] = "/tmp/te_pcap_trrecv.XXXXXX";
-
-    struct tapi_pkt_handler_data *i_data;
-
-    if (ta_name == NULL || pattern == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
-
-    if ((i_data = malloc(sizeof(*i_data))) == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-
-    i_data->user_callback = cb;
-    i_data->user_data = cb_data;
-
-    if ((rc = te_make_tmp_file(tmp_name)) != 0)
-    {
-        free(i_data);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    if ((rc = asn_save_to_file(pattern, tmp_name)) != 0)
-    {
-        free(i_data);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    rc = rcf_ta_trrecv_start(ta_name, sid, pcap_csap, tmp_name,
-                             (cb != NULL) ? tapi_pcap_pkt_handler : NULL,
-                             (cb != NULL) ? (void *) i_data : NULL,
-                             timeout, num);
-    if (rc != 0)
-    {
-        ERROR("rcf_ta_trrecv_start() failed(%r) on TA %s:%d CSAP %d "
-              "file %s", rc, ta_name, sid, pcap_csap, tmp_name);
-    }
-
-    unlink(tmp_name);
-
-    return rc;
 }
 
 /* See the description in tapi_pcap.h */

@@ -481,18 +481,14 @@ udp4_pkt_handler(const char *pkt_fname, void *user_param)
 
 /* see description in tapi_udp.h */
 int
-tapi_udp4_dgram_start_recv(const char *ta_name,  int sid,
+tapi_udp4_dgram_recv_start(const char *ta_name,  int sid,
                            csap_handle_t csap,
                            const udp4_datagram *udp_dgram,
-                           udp4_callback callback, void *user_data)
+                           rcf_trrecv_mode mode)
 {
     char pattern_fname[] = "/tmp/te_udp4_pattern.XXXXXX";
-    udp4_cb_data_t  *cb_data = calloc(1, sizeof(*cb_data));
     int              rc;
     unsigned int     timeout = 0; /** @todo Fix me */
-
-    cb_data->callback = callback;
-    cb_data->callback_data = user_data;
 
     mktemp(pattern_fname);
 
@@ -501,7 +497,7 @@ tapi_udp4_dgram_start_recv(const char *ta_name,  int sid,
 
     /** Recevie unlimited number of packets */
     rc = rcf_ta_trrecv_start(ta_name, sid, csap, pattern_fname,
-                             udp4_pkt_handler, &cb_data, timeout, 0);
+                             timeout, 0, mode);
     unlink(pattern_fname);
     return rc;
 }
@@ -511,16 +507,12 @@ int
 tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
                             csap_handle_t csap,
                             const udp4_datagram *udp_dgram,
-                            udp4_callback callback, void *user_data)
+                            rcf_trrecv_mode mode)
 {
-    udp4_cb_data_t  *cb_data = calloc(1, sizeof(*cb_data));
     int              rc;
     unsigned int     timeout = 0; /** @todo Fix me */
     asn_value       *pattern;
     asn_value       *pattern_unit;
-
-    cb_data->callback = callback;
-    cb_data->callback_data = user_data;
 
     if (udp_dgram != NULL)
     {
@@ -550,7 +542,7 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
     asn_free_value(pattern_unit);
 
     rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern,
-                               udp4_pkt_handler, cb_data, timeout, 0);
+                               timeout, 0, mode);
     asn_free_value(pattern);
 
     return rc;

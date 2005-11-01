@@ -253,16 +253,18 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
         }
     }
 
-    rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern, 
-                               buffer == NULL ? NULL : iscsi_msg_handler,
-                               buffer == NULL ? NULL : &msg, timeout, 1);
+    rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern, timeout, 1,
+                               buffer == NULL ? RCF_TRRECV_COUNT
+                                              : RCF_TRRECV_PACKETS);
     if (rc != 0)
     {
         ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
         goto cleanup;
     }
 
-    rc = rcf_ta_trrecv_wait(ta_name, sid, csap, &num);
+    rc = rcf_ta_trrecv_wait(ta_name, sid, csap,
+                            buffer == NULL ? NULL : iscsi_msg_handler,
+                            buffer == NULL ? NULL : &msg, &num);
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 

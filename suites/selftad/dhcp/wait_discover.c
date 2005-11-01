@@ -136,13 +136,13 @@ main(int argc, char *argv[])
     rc = dhcpv4_prepare_traffic_pattern(dhcp_msg, &pattern_fname);
 
     rc = rcf_ta_trrecv_start(ta, 0, dhcp_csap, pattern_fname, 
-                             NULL, NULL, 5000, 1);
+                             5000, 1, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
         TEST_FAIL("dhcpv4_message_start_recv returns %X", rc);
     }
 
-    rc = rcf_ta_trrecv_wait(ta, 0, dhcp_csap, &num);
+    rc = rcf_ta_trrecv_wait(ta, 0, dhcp_csap, NULL, NULL, &num);
     switch (rc)
     {
         case 0:

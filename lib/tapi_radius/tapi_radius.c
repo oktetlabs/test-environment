@@ -639,18 +639,16 @@ tapi_radius_csap_create(const char *ta, int sid, const char *device,
                                         port, 0, csap);
 }
 
-typedef struct {
-    radius_callback  callback;
-    void            *userdata;
-} radius_cb_data_t;
-
-
-void
-tapi_radius_callback(const udp4_datagram *pkt, void *userdata)
+/**
+ * This function complies with udp4_callback prototype.
+ */
+static void
+tapi_radius_pkt_handler(const udp4_datagram *pkt, void *user_data)
 {
-    tapi_radius_packet_t  packet;
-    radius_cb_data_t     *cb_data = (radius_cb_data_t *)userdata;
-    int                   rc;
+    te_errno                        rc;
+    tapi_radius_packet_t            packet;
+    tapi_radius_pkt_handler_data   *cb_data =
+        (tapi_radius_pkt_handler_data *)user_data;
 
     rc = tapi_radius_parse_packet(pkt->payload, pkt->payload_len, &packet);
     if (rc != 0)
@@ -660,32 +658,34 @@ tapi_radius_callback(const udp4_datagram *pkt, void *userdata)
         return;
     }
     packet.ts = pkt->ts;
-    cb_data->callback(&packet, cb_data->userdata);
+    cb_data->callback(&packet, cb_data->user_data);
     tapi_radius_attr_list_free(&packet.attrs);
 }
 
-int
-tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
-                       radius_callback user_callback, void *user_data,
-                       unsigned int timeout)
+/* See the description in tapi_radius.h */
+tapi_tad_trrecv_cb_data *
+tapi_radius_trrecv_cb_data(radius_callback  user_callback,
+                           void            *user_data)
 {
-    radius_cb_data_t  *cb_data;
+    tapi_radius_pkt_handler_data   *cb_data;
+    tapi_tad_trrecv_cb_data        *res;
 
-    UNUSED(timeout);
-
-    cb_data = (radius_cb_data_t *)calloc(1, sizeof(radius_cb_data_t));
+    cb_data = (tapi_radius_pkt_handler_data *)calloc(1, sizeof(*cb_data));
     if (cb_data == NULL)
     {
-        ERROR("%s: failed to allocate memory", __FUNCTION__);
-        return TE_ENOMEM;
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
     }
     cb_data->callback = user_callback;
     cb_data->userdata = user_data;
-
-    return tapi_udp_ip4_eth_recv_start(ta, sid, csap, NULL,
-                                       tapi_radius_callback, cb_data);
+    
+    res = tapi_udp_ip4_eth_trrecv_cb_data(tapi_radius_pkt_handler,
+                                          cb_data);
+    if (res == NULL)
+        free(cb_data);
+    
+    return res;
 }
-
 
 
 /* See the description in tapi_radius.h */

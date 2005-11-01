@@ -212,8 +212,9 @@ main(int argc, char *argv[])
 #else
     recv_pkts = 0;
 #endif
-    rc = tapi_eth_recv_start(agent_b, sid_b, rx_csap, pattern, 
-                             NULL, NULL, TAD_TIMEOUT_INF, recv_pkts);
+    rc = tapi_tad_trrecv_start(agent_b, sid_b, rx_csap, pattern, 
+                               TAD_TIMEOUT_INF, recv_pkts,
+                               RCF_TRRECV_COUNT);
     if (rc)
     {
         TEST_FAIL(" recieving process error %x", rc);     
@@ -260,7 +261,7 @@ main(int argc, char *argv[])
             TEST_FAIL("v1: port A. RX CSAP get status error %x",
                              rc);
         }
-        rc = rcf_ta_trrecv_get(agent_b, sid_b, rx_csap, &num);
+        rc = rcf_ta_trrecv_get(agent_b, sid_b, rx_csap, NULL, NULL, &num);
         sleep(1);
         if (rc)
         {
@@ -280,7 +281,8 @@ main(int argc, char *argv[])
 
    
     /* Stop recieving process */
-    rc = rcf_ta_trrecv_stop(agent_b, sid_b, rx_csap, &recv_pkts);
+    rc = rcf_ta_trrecv_stop(agent_b, sid_b, rx_csap, NULL, NULL,
+                            &recv_pkts);
     if (rc)
     {
         TEST_FAIL(" receiving process shutdown error %x", rc);     

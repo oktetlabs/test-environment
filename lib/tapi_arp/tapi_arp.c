@@ -77,19 +77,18 @@ tapi_arp_csap_create(const char *ta_name, int sid, const char *device,
 }
 
 
-struct tapi_pkt_handler_data
-{
-    tapi_arp_frame_callback  user_callback;
+typedef struct tapi_arp_pkt_handler_data {
+    tapi_arp_frame_callback  callback;
     void                    *user_data;
-};
+} tapi_arp_pkt_handler_data;
 
 static void
 eth_frame_callback(const ndn_eth_header_plain *header,
                    const uint8_t *payload, uint16_t plen,
                    void *user_data)
 {
-    struct tapi_pkt_handler_data *i_data = 
-        (struct tapi_pkt_handler_data *)user_data;
+    struct tapi_arp_pkt_handler_data *i_data = 
+        (struct tapi_arp_pkt_handler_data *)user_data;
 
     tapi_arp_frame_t  arp_frame;
     uint16_t          short_var;
@@ -180,32 +179,35 @@ eth_frame_callback(const ndn_eth_header_plain *header,
         arp_frame.data_len = plen;
     }
 
-    i_data->user_callback(&arp_frame, i_data->user_data);
+    i_data->callback(&arp_frame, i_data->user_data);
 
     free(arp_frame.data);
     return;
 }
 
+
 /* See the description in tapi_arp.h */
-int
-tapi_arp_recv_start(const char *ta_name, int sid, csap_handle_t arp_csap,
-                    const asn_value *pattern,
-                    tapi_arp_frame_callback cb, void *cb_data,
-                    unsigned int timeout, int num)
+tapi_tad_trrecv_cb_data *
+tapi_arp_trrecv_cb_data(tapi_arp_frame_callback  callback,
+                        void                    *user_data)
 {
-    struct tapi_pkt_handler_data *i_data;
+    tapi_arp_pkt_handler_data  *cb_data;
+    tapi_tad_trrecv_cb_data    *res;
+
+    cb_data = (tapi_arp_pkt_handler_data *)calloc(1, sizeof(*cb_data));
+    if (cb_data == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
+    }
+    cb_data->callback = callback;
+    cb_data->user_data = user_data;
     
-    i_data = (struct tapi_pkt_handler_data *)malloc(
-                 sizeof(struct tapi_pkt_handler_data));
-    if (i_data == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+    res = tapi_eth_trrecv_cb_data(eth_frame_callback, cb_data);
+    if (res == NULL)
+        free(cb_data);
     
-    i_data->user_callback = cb;
-    i_data->user_data = cb_data;
- 
-    return tapi_eth_recv_start(ta_name, sid, arp_csap, pattern,
-                               (cb != NULL) ? eth_frame_callback : NULL,
-                               (cb != NULL) ? i_data : NULL, timeout, num);
+    return res;
 }
 
 
@@ -273,8 +275,8 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
 
     memset(&info, 0, sizeof(info));
     
-    rc = tapi_arp_recv_start(ta_name, sid, arp_csap, pattern,
-                             arp_frame_callback, &info, timeout, *num);
+    rc = tapi_tad_trrecv_start(ta_name, sid, arp_csap, pattern,
+                               timeout, *num, RCF_TRRECV_PACKETS);
     
     if (rc != 0)
     {
@@ -282,7 +284,10 @@ tapi_arp_recv(const char *ta_name, int sid, csap_handle_t arp_csap,
         return rc;
     }
     /* Wait until all the packets received or timeout */
-    rc = rcf_ta_trrecv_wait(ta_name, sid, arp_csap, &num_tmp);
+    rc = tapi_tad_trrecv_wait(ta_name, sid, arp_csap,
+                              tapi_arp_trrecv_cb_data(arp_frame_callback,
+                                                      &info),
+                              &num_tmp);
 
     if (rc != 0 || info.rc != 0)
     {

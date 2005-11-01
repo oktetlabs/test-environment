@@ -47,6 +47,7 @@
 #include "tad_common.h"
 #include "asn_usr.h"
 #include "ndn_eth.h"
+#include "tapi_tad.h"
 
 
 /**
@@ -152,44 +153,27 @@ extern int tapi_eth_tagged_csap_create(const char *ta_name, int sid,
 
 
 /**
- * Callback function for the tapi_eth_recv_start() routine, it is called
- * for each packet received for csap.
+ * Callback function for the tapi_eth_pkt_handler_data @a callback
+ * parameter, it is called for each packet received by CSAP.
  *
  * @param header        Structure with Ethernet header of the frame.
  * @param payload       Payload of the frame.
  * @param plen          Length of the frame payload.
- * @param userdata      Pointer to user data, provided by  the caller of
- *                      tapi_eth_recv_start.
+ * @param user_data     Pointer to user data, specified in @a user_data
+ *                      field of tapi_eth_pkt_handler_data.
  */
 typedef void (*tapi_eth_frame_callback)
                   (const ndn_eth_header_plain *header,
                    const uint8_t *payload, uint16_t plen,
-                   void *userdata);
+                   void *user_data);
 
 /**
- * Start receive process on specified Ethernet CSAP. If process
- * was started correctly (rc is OK) it can be managed by common RCF
- * methods 'rcf_ta_trrecv_wait', 'rcf_ta_trrecv_get' and
- * 'rcf_ta_trrecv_stop'.
- *
- * @param ta_name       Test Agent name
- * @param sid           RCF session
- * @param eth_csap      CSAP handle
- * @param pattern       ASN value with receive pattern
- * @param cb            Callback function which will be called for each
- *                      received frame, may me NULL if frames are not need
- * @param cb_data       Pointer to be passed to user callback
- * @param timeout       Timeout for receiving of packets, measured in
- *                      milliseconds
- * @param num           Number of packets caller wants to receive
- *
- * @return Zero on success, otherwise standard or common TE error code.
+ * FIXME
  */
-extern int tapi_eth_recv_start(const char *ta_name, int sid,
-                               csap_handle_t eth_csap,
-                               const asn_value *pattern,
-                               tapi_eth_frame_callback cb, void *cb_data,
-                               unsigned int timeout, int num);
+extern tapi_tad_trrecv_cb_data *tapi_eth_trrecv_cb_data(
+                                    tapi_eth_frame_callback  callback,
+                                    void                    *user_data);
+
 
 /**
  * Creates traffic    pattern for a single Ethernet frame.
@@ -208,6 +192,7 @@ extern int tapi_eth_prepare_pattern(const uint8_t *src_mac,
                                     const uint8_t *dst_mac,
                                     const uint16_t *eth_type,
                                     asn_value **pattern);
+
 /**
  * Creates ASN value of Traffic-Pattern-Unit type with single Ethernet PDU.
  *
@@ -236,4 +221,5 @@ extern int tapi_eth_prepare_pattern_unit(uint8_t *src_mac,
  * @return nothing.
  */
 extern void tapi_eth_fprint_mac(FILE *f, const uint8_t *addr);
+
 #endif /* __TE_TAPI_ETH_H__ */

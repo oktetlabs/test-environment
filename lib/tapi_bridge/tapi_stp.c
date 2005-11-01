@@ -205,7 +205,7 @@ struct tapi_pkt_handler_data {
 };
 
 
-static void
+void
 tapi_bpdu_pkt_handler(const char *fn, void *user_param)
 {
     struct tapi_pkt_handler_data *i_data = 
@@ -276,6 +276,7 @@ tapi_bpdu_pkt_handler(const char *fn, void *user_param)
     return;
 }
 
+#if 0
 /**
  * See description in tapi_stp.h
  */
@@ -327,3 +328,4 @@ tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
 
     return rc;
 }
+#endif

@@ -226,6 +226,12 @@ typedef struct {
 typedef void (*radius_callback)(const tapi_radius_packet_t *pkt,
                                 void *userdata);
 
+typedef struct tapi_radius_pkt_handler_data {
+    radius_callback  callback;
+    void            *user_data;
+} tapi_radius_pkt_handler_data;
+
+
 /** 
  * Initialize RADIUS attribute dictionary
  * (this function should be called before any other TAPI RADIUS calls)
@@ -343,22 +349,20 @@ extern int tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
 extern int tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
                                     tapi_radius_packet_t *packet);
 
+
 /**
- * Start receiving RADIUS packets using 'udp.ip4.eth' CSAP on the specified
- * Test Agent
+ * Prepare callback data to be passed in tapi_tad_trrecv_{wait,stop,get}
+ * to process received RADIUS packets.
  *
- * @param ta              Test Agent name
- * @param sid             RCF session identifier
- * @param csap            Handle of 'udp.ip4.eth' CSAP on the Test Agent
- * @param user_callback   Callback for RADIUS packets handling
- * @param user_data       User-supplied data to be passed to callback
- * @param timeout         
+ * @param callback        Callback for RADIUS packets handling
+ * @param user_data       User-supplied data to be passed to @a callback
  *
- * @return Zero on success or error code.
+ * @return Pointer to allocated callback data or NULL.
  */
-extern int tapi_radius_recv_start(const char *ta, int sid, csap_handle_t csap,
-                                  radius_callback user_callback,
-                                  void *user_data, unsigned int timeout);
+extern tapi_tad_trrecv_cb_data *tapi_radius_trrecv_cb_data(
+                                    radius_callback  callback,
+                                    void            *user_data);
+
 
 /**
  * Create 'udp.ip4.eth' CSAP for capturing RADIUS packets

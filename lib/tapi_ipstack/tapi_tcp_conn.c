@@ -164,6 +164,8 @@ static inline int conn_update_sent_seq(tapi_tcp_connection_t *conn_descr,
 
 static inline int conn_send_syn(tapi_tcp_connection_t *conn_descr);
 
+static void tcp_conn_pkt_handler(const char *pkt_file, void *user_param);
+
 /* global fields */
 CIRCLEQ_HEAD(tapi_tcp_conn_list_head, tapi_tcp_connection_t) 
     *conns_root = NULL;
@@ -272,7 +274,9 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
     if (conn_descr->rcv_csap != CSAP_INVALID_HANDLE)
     {
         int rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->rcv_sid,
-                                     conn_descr->rcv_csap, &num);
+                                    conn_descr->rcv_csap,
+                                    tcp_conn_pkt_handler, conn_descr,
+                                    &num);
 
         if (rc != 0)
         {
@@ -314,7 +318,9 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
     if (conn_descr->arp_csap != CSAP_INVALID_HANDLE)
     {
         int rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->arp_sid,
-                                    conn_descr->arp_csap, &num);
+                                    conn_descr->arp_csap,
+                                    tcp_conn_pkt_handler, conn_descr,
+                                    &num);
 
         if (rc != 0)
         {
@@ -360,7 +366,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
  * @return zero on success (one or more messages got), errno otherwise
  */
 static inline int
-conn_wait_msg(tapi_tcp_connection_t *conn_descr, int timeout)
+conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
 {
     int rc;
     int num = 0;
@@ -372,15 +378,17 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, int timeout)
     seq = conn_descr->seq_got;
 
     rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
-                           conn_descr->rcv_csap, &num);
+                           conn_descr->rcv_csap,
+                           tcp_conn_pkt_handler, conn_descr, &num);
     if (rc != 0)
         return rc;
 
     if (conn_descr->seq_got == seq)
     {
-        sleep((timeout + 999)/1000);
+        sleep((timeout + 999) / 1000);
         rc = rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
-                               conn_descr->rcv_csap, &num);
+                               conn_descr->rcv_csap,
+                               tcp_conn_pkt_handler, conn_descr, &num);
         if (rc != 0)
             return rc;
         if (conn_descr->seq_got == seq)
@@ -724,14 +732,14 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     /* start catch our ARP */
     rc = tapi_tad_trrecv_start(agt, conn_descr->arp_sid,
                                conn_descr->arp_csap, arp_pattern, 
-                               NULL, NULL, TAD_TIMEOUT_INF, 0); 
+                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT); 
     CHECK_ERROR("%s(): start recv ARPs failed %r",
                 __FUNCTION__, rc);
 
     rc = tapi_tad_trrecv_start(agt, conn_descr->rcv_sid,
                                conn_descr->rcv_csap, syn_pattern, 
-                               tcp_conn_pkt_handler, conn_descr, 
-                               TAD_TIMEOUT_INF, 0); 
+                               TAD_TIMEOUT_INF, 0,
+                               RCF_TRRECV_PACKETS); 
 
     /* send SYN - if we are client */
 
@@ -886,7 +894,8 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
 
     /* try to get messages and peer FIN, if they were sent */
     rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
-                      conn_descr->rcv_csap, &num);
+                      conn_descr->rcv_csap,
+                      tcp_conn_pkt_handler, conn_descr, &num);
 
 #if FIN_ACK
     new_ackn = conn_next_ack(conn_descr);
@@ -921,7 +930,8 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
 
     INFO("fin sent");
     rcf_ta_trrecv_get(conn_descr->agt, conn_descr->rcv_sid,
-                      conn_descr->rcv_csap, &num);
+                      conn_descr->rcv_csap,
+                      tcp_conn_pkt_handler, conn_descr, &num);
     if (conn_descr->ack_got != conn_descr->seq_sent + 1)
     {
         if (conn_descr->reset_got)

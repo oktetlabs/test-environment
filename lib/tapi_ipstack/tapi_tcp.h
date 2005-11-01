@@ -255,8 +255,8 @@ extern int tapi_tcp_ip4_eth_mode_csap_create(const char *ta_name, int sid,
  * @param timeout       Timeout of operation (in milliseconds, 
  *                      zero for infinitive)
  * @param num           nubmer of packets to be caugth
- * @param callback      pointer of method to be called for every packet
- * @param userdata      magic pointer which will be passed to user callback
+ * @param mode          Count received packets only or store packets
+ *                      to get to the test side later
  * 
  * @return Zero on success or error code.
  */
@@ -265,9 +265,9 @@ extern int tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
                                        in_addr_t  src_addr,
                                        in_addr_t  dst_addr,
                                        uint16_t src_port, uint16_t dst_port,
-                                       unsigned int timeout, int num,
-                                       tcp_row_callback callback,
-                                       void *userdata); 
+                                       unsigned int timeout,
+                                       unsigned int num,
+                                       rcf_trrecv_mode mode); 
 
 
 /**

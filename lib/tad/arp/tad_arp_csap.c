@@ -27,3 +27,44 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD ARP CSAP"
+
+#include "tad_csap_support.h"
+
+#include "tad_arp_impl.h"
+
+
+static csap_layer_neighbour_list_t arp_nbr_eth = 
+{
+    NULL, 
+    "eth",
+
+    tad_arp_eth_init_cb,
+    tad_arp_eth_destroy_cb,
+};
+
+static csap_spt_type_t arp_csap_spt = 
+{
+    "arp",
+
+    tad_arp_confirm_pdu_cb,
+    tad_arp_gen_bin_cb,
+    tad_arp_match_bin_cb,
+    tad_arp_gen_pattern_cb,
+
+    &arp_nbr_eth
+};
+
+
+
+/**
+ * Register ARP CSAP callbacks and support structures in TAD
+ * Command Handler.
+ *
+ * @return Zero on success or error code.
+ */ 
+te_errno
+csap_support_arp_register(void)
+{ 
+    return add_csap_spt(&arp_csap_spt);
+}

@@ -1024,7 +1024,7 @@ dhcp_pkt_handler(const char *pkt_fname, void *user_param)
  */
 int
 dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
-                          int timeout, dhcp_message_type msg_type)
+                          unsigned int timeout, dhcp_message_type msg_type)
 {
     struct dhcp_message *dhcp_msg = NULL;
 
@@ -1060,8 +1060,7 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
     /* receive exactly one packet */
     if ((rc = rcf_ta_create_session(ta_name, &sid)) != 0 ||
         (rc = rcf_ta_trrecv_start(ta_name, sid, dhcp_csap, pattern_fname,
-                                  dhcp_pkt_handler, &rcv_pkt,
-                                  timeout, 1)) != 0)
+                                  timeout, 1, RCF_TRRECV_PACKETS)) != 0)
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_lock(&tapi_dhcp_lock);
@@ -1089,12 +1088,14 @@ dhcpv4_message_capture(const char *ta_name, csap_handle_t dhcp_csap,
 
     while (tv > 0 && num == 0)
     {
-        rc = rcf_ta_trrecv_get(ta_name, 0, dhcp_csap, &num);
+        rc = rcf_ta_trrecv_get(ta_name, 0, dhcp_csap,
+                               dhcp_pkt_handler, &rcv_pkt, &num);
         sleep(1);
         tv--;
     }
 
-    rc = rcf_ta_trrecv_stop(ta_name, 0, dhcp_csap, &num);
+    rc = rcf_ta_trrecv_stop(ta_name, 0, dhcp_csap,
+                            dhcp_pkt_handler, &rcv_pkt, &num);
 
     msg = rcv_pkt.dhcp_msg;
 #ifdef HAVE_PTHREAD_H

@@ -119,28 +119,28 @@ main()
         strcpy(path + path_prefix, "file-filter.asn");
         printf ("receive pattern full path: %s\n", path);
 
-        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0, 
-                                 trap_handler, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 0, 0,
+                                 RCF_TRRECV_PACKETS);
         printf("trrecv_start: %r \n", rc);
         if (rc) break;
 
 #if 1
         sleep(5);
         printf ("try to get\n");
-        rc = rcf_ta_trrecv_get(ta, sid, handle, &num);
+        rc = rcf_ta_trrecv_get(ta, sid, handle, trap_handler, NULL, &num);
         printf("trrecv_get: %r num: %d\n", rc, num);
 
 #endif
         sleep(5);
         printf ("try to stop\n");
-        rc = rcf_ta_trrecv_stop(ta, sid, handle, &num);
+        rc = rcf_ta_trrecv_stop(ta, sid, handle, trap_handler, NULL, &num);
         printf("trrecv_stop: %r num: %d\n", rc, num);
 
 #endif
 
         printf ("wait for exactly 2 traps more:\n");
-        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 2,
-                                 trap_handler, NULL, 1);
+        rc = rcf_ta_trrecv_start(ta, sid, handle, path, 2, 1,
+                                 RCF_TRRECV_PACKETS);
         printf("trrecv_start: %r \n", rc);
 
 #if 0

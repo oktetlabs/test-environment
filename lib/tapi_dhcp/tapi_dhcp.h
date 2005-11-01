@@ -330,7 +330,7 @@ extern int dhcpv4_prepare_traffic_pattern(const dhcp_message *dhcp_msg,
  */
 extern int dhcpv4_message_start_recv(const char *ta_name,
                                      csap_handle_t dhcp_csap,
-                                     int timeout,
+                                     unsigned int timeout,
                                      dhcp_message_type msg_type);
 extern struct dhcp_message *dhcpv4_message_capture(const char *ta_name,
                                                    csap_handle_t dhcp_csap,

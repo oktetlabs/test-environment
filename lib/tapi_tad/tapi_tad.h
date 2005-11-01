@@ -164,28 +164,62 @@ extern int tapi_tad_trsend_start(const char *ta_name, int session,
  * Start receiving of traffic via already created CSAP. 
  * Started receiving process may be managed via standard function rcf_ta_*.
  *
- * @param ta_name      - Test Agent name.
- * @param session      - TA session or 0.
- * @param handle       - CSAP handle.
- * @param pattern      - ASN value of type Traffic-Pattern
- * @param handler      - Address of function to be used to process
- *                       received packets or NULL.
- * @param user_param   - User parameter to be passed to the handler.
- * @param timeout      - Timeout for traffic receive operation. After this
- *                       time interval CSAP stops capturing any traffic on
- *                       the agent and will be waiting until
- *                       rcf_ta_trrecv_stop or rcf_ta_trrecv_wait are
- *                       called.
- * @param num          - Number of packets that needs to be captured;
- *                       if it is zero, the number of received packets
- *                       is not limited.
+ * @param ta_name       Test Agent name
+ * @param session       TA session or 0
+ * @param handle        CSAP handle
+ * @param pattern       ASN value of type Traffic-Pattern
+ * @param timeout       Timeout for traffic receive operation. After this
+ *                      time interval CSAP stops capturing any traffic on
+ *                      the agent and will be waiting until
+ *                      rcf_ta_trrecv_stop() or rcf_ta_trrecv_wait() are
+ *                      called.
+ * @param num           Number of packets that needs to be captured;
+ *                      if it is zero, the number of received packets
+ *                      is not limited.
+ * @param mode          Count received packets only or store packets
+ *                      to get to the test side later
  *
- * @return zero on success or error code
+ * @return Zero on success or error code
  */
-extern int tapi_tad_trrecv_start(const char *ta_name, int session,
-                                 int handle, const asn_value *pattern,
-                                 rcf_pkt_handler handler, void *user_param, 
-                                 unsigned int timeout, int num);
+extern te_errno tapi_tad_trrecv_start(const char      *ta_name,
+                                      int              session,
+                                      csap_handle_t    handle,
+                                      const asn_value *pattern,
+                                      unsigned int     timeout,
+                                      unsigned int     num,
+                                      rcf_trrecv_mode  mode);
+
+
+typedef void (*tapi_tad_trrecv_cb)(asn_value *packet,
+                                   void      *user_data);
+
+typedef struct tapi_tad_trrecv_cb_data {
+    tapi_tad_trrecv_cb  callback;
+    void               *user_data;
+} tapi_tad_trrecv_cb_data;
+
+extern tapi_tad_trrecv_cb_data *tapi_tad_trrecv_make_cb_data(
+                                    tapi_tad_trrecv_cb  callback,
+                                    void               *user_data);
+
+extern te_errno tapi_tad_trrecv_wait(const char              *ta_name,
+                                     int                      session,
+                                     csap_handle_t            handle,
+                                     tapi_tad_trrecv_cb_data *cb_data,
+                                     unsigned int            *num);
+
+extern te_errno tapi_tad_trrecv_stop(const char              *ta_name,
+                                     int                      session,
+                                     csap_handle_t            handle,
+                                     tapi_tad_trrecv_cb_data *cb_data,
+                                     unsigned int            *num);
+
+extern te_errno tapi_tad_trrecv_get(const char              *ta_name,
+                                    int                      session,
+                                    csap_handle_t            handle,
+                                    tapi_tad_trrecv_cb_data *cb_data,
+                                    unsigned int            *num);
+
 
 
 /**

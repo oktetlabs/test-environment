@@ -59,31 +59,28 @@
 #include "ndn_eth.h"
 
 
-typedef struct tapi_ip4_cb_data_t {
-    ip4_callback  user_cb;
+typedef struct tapi_ip4_eth_pkt_handler_data {
+    ip4_callback  callback;
     void         *user_data;
-} tapi_ip4_cb_data_t;
+} tapi_ip4_eth_pkt_handler_data;
 
 
 /* 
  * Pkt handler for IP packets 
  */
 static void
-ip4_pkt_handler(const char *pkt_fname, void *user_param)
+ip4_pkt_handler(asn_value *pkt, void *user_param)
 {
-    tapi_ip4_cb_data_t *cb_data = (tapi_ip4_cb_data_t *)user_param;
-    asn_value          *pkt = NULL;
-    const asn_value    *ip_pdu;
+    tapi_ip4_eth_pkt_handler_data *cb_data =
+        (tapi_ip4_eth_pkt_handler_data *)user_param;
 
+    const asn_value    *ip_pdu;
     tapi_ip4_packet_t   plain_pkt;
     size_t              len;
 
-    int s_parsed = 0;
     int rc = 0;
 
     int32_t hdr_field;
-
-    RING("%s called file %s", __FUNCTION__, pkt_fname);
 
     if (user_param == NULL)
     {
@@ -91,7 +88,7 @@ ip4_pkt_handler(const char *pkt_fname, void *user_param)
         return;
     }
 
-    if (cb_data->user_cb == NULL)
+    if (cb_data->callback == NULL)
     {
         WARN("%s called with NULL user cb", __FUNCTION__);
         return; 
@@ -105,11 +102,6 @@ ip4_pkt_handler(const char *pkt_fname, void *user_param)
             return;             \
         }                       \
     } while (0)
-
-    rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
-                                  &pkt, &s_parsed);
-    CHECK_FAIL("%s(): parse packet fails, rc = %r,sym %d",
-              __FUNCTION__, rc, s_parsed);
 
     rc = asn_get_subvalue(pkt, &ip_pdu, "pdus.0.#ip4");
     CHECK_FAIL("%s(): get IP4 PDU fails, rc = %r",
@@ -136,7 +128,7 @@ ip4_pkt_handler(const char *pkt_fname, void *user_param)
 
     rc = asn_read_value_field(pkt, plain_pkt.payload, &len, "payload");
 
-    cb_data->user_cb(&plain_pkt, cb_data->user_data);
+    cb_data->callback(&plain_pkt, cb_data->user_data);
 
     free(plain_pkt.payload);
 #undef CHECK_FAIL
@@ -236,40 +228,24 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
 }
 
 
-
-/* see description in tapi_ip.h */
-int
-tapi_ip4_eth_recv_start(const char *ta_name, int sid, csap_handle_t csap,
-                        const uint8_t *src_mac_addr,
-                        const uint8_t *dst_mac_addr,
-                        in_addr_t      src_ip4_addr,
-                        in_addr_t      dst_ip4_addr,
-                        unsigned int timeout, int num)
+/* See description in tapi_ip.h */
+te_errno
+tapi_ip4_eth_recv_start(const char      *ta_name,
+                        int              sid,
+                        csap_handle_t    csap,
+                        const uint8_t   *src_mac_addr,
+                        const uint8_t   *dst_mac_addr,
+                        in_addr_t        src_ip4_addr,
+                        in_addr_t        dst_ip4_addr,
+                        unsigned int     timeout,
+                        unsigned int     num,
+                        rcf_trrecv_mode  mode)
 {
-    return tapi_ip4_eth_recv_start_pkt(ta_name, sid, csap, 
-                                       src_mac_addr, dst_mac_addr,
-                                       src_ip4_addr, dst_ip4_addr,
-                                       timeout, num, NULL, NULL);
-}
-
-/* see description in tapi_ip.h */
-int
-tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid, 
-                            csap_handle_t csap,
-                            const uint8_t *src_mac_addr,
-                            const uint8_t *dst_mac_addr,
-                            in_addr_t      src_ip4_addr,
-                            in_addr_t      dst_ip4_addr,
-                            unsigned int timeout, int num, 
-                            ip4_callback callback,
-                            void *userdata)
-{
-    char  template_fname[] = "/tmp/te_ip4_eth_recv.XXXXXX";
-    int   rc;
-    FILE *f;
+    char        template_fname[] = "/tmp/te_ip4_eth_recv.XXXXXX";
+    te_errno    rc;
+    FILE       *f;
 
     const uint8_t      *b;
-    tapi_ip4_cb_data_t *cb_data = NULL;
 
     mktemp(template_fname);
 
@@ -315,21 +291,37 @@ tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid,
     fprintf(f, "}}}\n");
     fclose(f);
 
-    if (callback != NULL)
-    {
-        cb_data = malloc(sizeof(*cb_data));
-        cb_data->user_cb = callback;
-        cb_data->user_data = userdata;
-    }
     rc = rcf_ta_trrecv_start(ta_name, sid, csap, template_fname,
-                             (callback == NULL) ? NULL : ip4_pkt_handler,
-                             (callback == NULL) ? NULL : cb_data,
-                             timeout, num);
+                             timeout, num, mode);
 
     RING("%s(): rc %x", __FUNCTION__, rc);
     unlink(template_fname); 
 
     return rc;
+}
+
+/* see description in tapi_ip.h */
+tapi_tad_trrecv_cb_data *
+tapi_ip4_eth_trrecv_cb_data(ip4_callback  callback,
+                            void         *user_data)
+{
+    tapi_ip4_eth_pkt_handler_data   *cb_data;
+    tapi_tad_trrecv_cb_data         *res;
+
+    cb_data = (tapi_ip4_eth_pkt_handler_data *)calloc(1, sizeof(*cb_data));
+    if (cb_data == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
+    }
+    cb_data->callback = callback;
+    cb_data->user_data = user_data;
+    
+    res = tapi_tad_trrecv_make_cb_data(ip4_pkt_handler, cb_data);
+    if (res == NULL)
+        free(cb_data);
+
+    return res;
 }
 
 /* see description in tapi_ip.h */

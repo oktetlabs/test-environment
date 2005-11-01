@@ -342,26 +342,26 @@ main()
                                   &timeout, &num));
 
         printf("trrecv_start: %d\n", 
-               rcf_ta_trrecv_start(ta, sid, handle, "/tmp/pattern", 0,
-                                   (void *)1, 0, 1));
+               rcf_ta_trrecv_start(ta, sid, handle, "/tmp/pattern",
+                                   0, 1, RCF_TRRECV_COUNT));
 
         printf("trrecv_start: %d\n", 
-               rcf_ta_trrecv_start(ta, sid, handle, "/tmp/pattern", 0,
-                                   (void *)1, 0, 0));
+               rcf_ta_trrecv_start(ta, sid, handle, "/tmp/pattern",
+                                   0, 0, RCF_TRRECV_COUNT));
 
         printf("trrecv_start: %d\n", 
-               rcf_ta_trrecv_start(ta, sid, handle, "/tmp/pattern", 0,
-                                   0, 0, 1));
+               rcf_ta_trrecv_start(ta, sid, handle, "/tmp/pattern",
+                                   0, 1, RCF_TRRECV_COUNT));
 
         printf("trrecv_start: %d\n", 
-               rcf_ta_trrecv_start(ta, sid, handle, "/tmp/pattern", 0,
-                                   0, 0, 0));
+               rcf_ta_trrecv_start(ta, sid, handle, "/tmp/pattern",
+                                   0, 0, RCF_TRRECV_COUNT));
 
         printf("trrecv_get: %d\n", 
-               rcf_ta_trrecv_get(ta, handle, &num));
+               rcf_ta_trrecv_get(ta, sid, handle, NULL, NULL, &num));
 
         printf("trrecv_stop: %d\n", 
-               rcf_ta_trrecv_stop(ta, handle, &num));
+               rcf_ta_trrecv_stop(ta, sid, handle, NULL, NULL, &num));
 #endif
     } while(0);
 #endif

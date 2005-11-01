@@ -106,7 +106,7 @@ typedef void (*tapi_stp_bpdu_callback)
                void *userdata);
 
 
-
+#if 0
 /**
  * Start receive process on specified STP CSAP.
  * This function does not block the caller and they should use standard RCF
@@ -132,6 +132,6 @@ extern int tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
                                     tapi_stp_bpdu_callback callback,
                                     void *callback_data,
                                     unsigned int timeout, int num);
-
+#endif
 
 #endif /* __TE_TAPI_BRIDGE_STP_H__ */

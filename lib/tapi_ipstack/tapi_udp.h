@@ -36,6 +36,7 @@
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
+#include "tapi_tad.h"
 #include "tapi_ip.h"
 
 
@@ -123,15 +124,21 @@ extern int tapi_udp4_dgram_send(const char *ta_name, int sid,
  * @param sid           RCF SID
  * @param csap          Identifier of an SNMP CSAP (OUT)
  * @param udp_dgram     UDP datagram with pattern for filter
- * @param callback      Callback function, which will be call for each 
- *                      received packet
- * @param user_data     Opaque data to be passed into the callback function
+ * @param mode          Count received packets only or store packets
+ *                      to get to the test side later
  * 
  * @return Zero on success or error code.
  */
-extern int tapi_udp4_dgram_start_recv(const char *ta_name,  int sid,
-            csap_handle_t csap, const  udp4_datagram *udp_dgram, 
-            udp4_callback callback, void *user_data);
+extern int tapi_udp4_dgram_recv_start(const char *ta_name,  int sid,
+            csap_handle_t csap, const  udp4_datagram *udp_dgram,
+            rcf_trrecv_mode mode);
+
+/**
+ * FIXME
+ */
+extern tapi_tad_trrecv_cb_data *tapi_udp_ip4_eth_trrecv_cb_data(
+                                    udp4_callback  callback,
+                                    void          *user_data);
 
 /**
  * Start receiving of UDP datagrams via 'udp.ip4.eth' CSAP, non-block
@@ -141,18 +148,17 @@ extern int tapi_udp4_dgram_start_recv(const char *ta_name,  int sid,
  * @param sid           RCF SID
  * @param csap          Identifier of CSAP
  * @param udp_dgram     UDP datagram with pattern for filter
- * @param callback      Callback function, which will be call for each
- *                      received packet
- * @param user_data     Opaque data to be passed into the callback function
+ * @param mode          Count received packets only or store packets
+ *                      to get to the test side later
  *
  * @return Zero on success or error code.
  */
 extern int tapi_udp_ip4_eth_recv_start(const char *ta_name, int sid,
                                        csap_handle_t csap,
                                        const udp4_datagram *udp_dgram,
-                                       udp4_callback callback,
-                                       void *user_data);
+                                       rcf_trrecv_mode mode);
 
+#if 0
 /**
  * Receive some number of UDP datagrams via 'data.udp.ip4' CSAP, block
  * method.
@@ -174,6 +180,7 @@ extern int tapi_udp4_dgram_recv(const char *ta_name, int sid,
                                 int number, int timeout,
                                 const udp4_datagram *udp_dgram, 
                                 udp4_callback callback, void *user_data);
+#endif
 
 /**
  * Send UDP datagram via 'data.udp.ip4' CSAP and receive response to it

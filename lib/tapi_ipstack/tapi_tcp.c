@@ -293,17 +293,14 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
 int
 tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid, 
                             csap_handle_t csap,
-                            in_addr_t      src_addr,
-                            in_addr_t      dst_addr,
+                            in_addr_t src_addr, in_addr_t dst_addr,
                             uint16_t src_port, uint16_t dst_port,
-                            unsigned int timeout, int num,
-                            tcp_row_callback callback, void *userdata)
+                            unsigned int timeout, unsigned int num,
+                            rcf_trrecv_mode mode)
 { 
     asn_value *pattern;
     asn_value *pattern_unit; 
     int        rc;
-
-    tapi_tcp_cb_data_t *cb_data = NULL;
     
     if ((rc = tapi_tcp_ip4_pattern_unit(src_addr, dst_addr, 
                                         src_port, dst_port, 
@@ -324,18 +321,9 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
     } 
 
     asn_free_value(pattern_unit);
-    
-    if (callback != NULL)
-    {
-        cb_data = malloc(sizeof(*cb_data));
-        cb_data->user_cb = callback;
-        cb_data->user_data = userdata;
-    }
 
     if ((rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern,
-                                    (callback == NULL) ? NULL : 
-                                        tcp_pkt_handler,
-                                    cb_data, timeout, num)) != 0) 
+                                    timeout, num, mode)) != 0) 
     {
         ERROR("%s: trrecv_start failed: %r", __FUNCTION__, rc);
     }
@@ -725,14 +713,15 @@ tapi_tcp_server_recv(const char *ta_name, int sid,
     }
 
     rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, 
-                               tcp_server_handler, socket, timeout, 1);
+                               timeout, 1, RCF_TRRECV_PACKETS);
     if (rc != 0)
     {
         ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
         goto cleanup;
     }
 
-    rc = rcf_ta_trrecv_wait(ta_name, sid, tcp_csap, &num);
+    rc = rcf_ta_trrecv_wait(ta_name, sid, tcp_csap,
+                            tcp_server_handler, socket, &num);
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 
@@ -852,16 +841,18 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
             asn_write_int32(pattern, *length, "0.pdus.0.length");
     }
 
-    rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, 
-                               buf == NULL ? NULL : tcp_data_csap_handler,
-                               buf == NULL ? NULL : &msg, timeout, 1);
+    rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, timeout, 1,
+                               buf == NULL ? RCF_TRRECV_COUNT
+                                           : RCF_TRRECV_PACKETS);
     if (rc != 0)
     {
         ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
         goto cleanup;
     }
 
-    rc = rcf_ta_trrecv_wait(ta_name, sid, tcp_csap, &num);
+    rc = rcf_ta_trrecv_wait(ta_name, sid, tcp_csap,
+                            buf == NULL ? NULL : tcp_data_csap_handler,
+                            buf == NULL ? NULL : &msg, &num);
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
 

@@ -161,15 +161,15 @@ main(int argc, char *argv[])
         INFO("prepared path: %s", path); 
 
 #if 1
-        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0,
-                                 udp_handler, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, 0,
+                                 RCF_TRRECV_PACKETS);
         INFO("trrecv_start: %r \n", rc);
         if (rc) break;
 
 #if 1
         sleep(1);
         INFO ("try to get\n");
-        rc = rcf_ta_trrecv_get(ta, sid, csap, &num);
+        rc = rcf_ta_trrecv_get(ta, sid, csap, udp_handler, NULL, &num);
         INFO("trrecv_get: %r num: %d\n", rc, num);
         if (rc) break;
 
@@ -179,7 +179,7 @@ main(int argc, char *argv[])
         sleep (num);
 
         INFO ("try to stop\n");
-        rc = rcf_ta_trrecv_stop(ta, sid, csap, &num);
+        rc = rcf_ta_trrecv_stop(ta, sid, csap, udp_handler, NULL, &num);
         INFO("trrecv_stop: %r num: %d\n", rc, num);
 
 #endif

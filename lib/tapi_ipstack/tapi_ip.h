@@ -36,7 +36,7 @@
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
-
+#include "tapi_tad.h"
 
 
 typedef struct tapi_ip_frag_spec_t {
@@ -93,35 +93,6 @@ extern int tapi_ip4_eth_csap_create(const char *ta_name, int sid,
                                     in_addr_t      rem_ip4_addr,
                                     csap_handle_t *ip4_csap);
 
-
-/**
- * Start receiving of IPv4 packets 'ip4.eth' CSAP, non-block
- * method. It cannot report received packets, only count them.
- *
- * Started receiving process may be controlled by rcf_ta_trrecv_get, 
- * rcf_ta_trrecv_wait, and rcf_ta_trrecv_stop methods.
- * 
- * @param ta_name       Test Agent name
- * @param sid           RCF SID
- * @param csap          Identifier of CSAP
- * @param src_mac_addr  Source MAC address (or NULL)
- * @param dst_mac_addr  Destination MAC address (or NULL)
- * @param src_ip4_addr  Source IP address in network order (or NULL)
- * @param dst_ip4_addr  Destination IP address in network order (or NULL)
- * @param timeout       Timeout of operation (in milliseconds, 
- *                      zero for infinitive)
- * @param num           nubmer of packets to be caugth
- * 
- * @return Zero on success or error code.
- */
-extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid, 
-                                   csap_handle_t csap,
-                                   const uint8_t *src_mac_addr,
-                                   const uint8_t *dst_mac_addr,
-                                   in_addr_t      src_ip4_addr,
-                                   in_addr_t      dst_ip4_addr,
-                                   unsigned int timeout, int num);
-
 /**
  * Start receiving of IPv4 packets 'ip4.eth' CSAP, non-block
  * method. 
@@ -139,20 +110,24 @@ extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid,
  * @param timeout       timeout of operation (in milliseconds, 
  *                      zero for infinitive)
  * @param num           nubmer of packets to be caugth
- * @param callback      pointer of method to be called for every packet
- * @param userdata      magic pointer which will be passed to user callback
- * 
+ * @param mode          Count received packets only or store packets
+ *                      to get to the test side later
+ *
  * @return Zero on success or error code.
  */
-extern int tapi_ip4_eth_recv_start_pkt(const char *ta_name, int sid, 
-                                       csap_handle_t csap,
-                                       const uint8_t *src_mac_addr,
-                                       const uint8_t *dst_mac_addr,
-                                       in_addr_t      src_ip4_addr,
-                                       in_addr_t      dst_ip4_addr,
-                                       unsigned int timeout, int num, 
-                                       ip4_callback callback,
-                                       void *userdata);
+extern int tapi_ip4_eth_recv_start(const char *ta_name, int sid, 
+                                   csap_handle_t csap,
+                                   const uint8_t *src_mac_addr,
+                                   const uint8_t *dst_mac_addr,
+                                   in_addr_t      src_ip4_addr,
+                                   in_addr_t      dst_ip4_addr,
+                                   unsigned int timeout,
+                                   unsigned int num,
+                                   rcf_trrecv_mode mode);
+
+extern tapi_tad_trrecv_cb_data *tapi_ip4_eth_trrecv_cb_data(
+                                    ip4_callback  callback,
+                                    void         *user_data);
 
 /**
  * Prepare ASN PDU value of IPv4 CSAP layer type for Traffic-Template. 

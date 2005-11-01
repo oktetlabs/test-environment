@@ -276,21 +276,29 @@ tapi_eth_tagged_csap_create(const char *ta_name, int sid,
     return rc;
 }
 
-struct tapi_pkt_handler_data
-{
-    tapi_eth_frame_callback user_callback;
-    void                    *user_data;
-};
 
+/**
+ * Structure to be passed as @a user_param to rcf_ta_trrecv_wait(),
+ * rcf_ta_trrecv_stop() and rcf_ta_trrecv_get(), if
+ * tapi_eth_pkt_handler() function as @a handler.
+ */
+typedef struct tapi_eth_pkt_handler_data {
+    tapi_eth_frame_callback  callback;  /**< User callback function */
+    void                    *user_data; /**< Real user data */
+} tapi_eth_pkt_handler_data;
+
+/**
+ * This function complies with tapi_tad_trrecv_cb prototype.
+ * @a user_param must point to tapi_eth_pkt_handler_data structure.
+ */
 static void
-tapi_eth_pkt_handler(const char *fn, void *user_param)
+tapi_eth_pkt_handler(asn_value *packet, void *user_param)
 {
-    struct tapi_pkt_handler_data *i_data =
-        (struct tapi_pkt_handler_data *)user_param;
+    struct tapi_eth_pkt_handler_data *i_data =
+        (struct tapi_eth_pkt_handler_data *)user_param;
 
     ndn_eth_header_plain header;
-    int rc, syms = 0;
-    asn_value *frame_val;
+    te_errno rc;
     asn_value *eth_hdr_val;
 
     size_t p_len;
@@ -302,15 +310,7 @@ tapi_eth_pkt_handler(const char *fn, void *user_param)
         return;
     }
 
-    rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &frame_val, &syms);
-    if (rc)
-    {
-        ERROR("Parse value from file %s failed, rc %x, syms: %d\n",
-                fn, rc, syms);
-        return;
-    }
-
-    eth_hdr_val = asn_read_indexed (frame_val, 0, "pdus");
+    eth_hdr_val = asn_read_indexed(packet, 0, "pdus");
     if (eth_hdr_val == NULL)
     {
         ERROR("tapi eth int cb, read_indexed error\n");
@@ -324,10 +324,10 @@ tapi_eth_pkt_handler(const char *fn, void *user_param)
         return;
     }
 
-    p_len = asn_get_length(frame_val, "payload.#bytes");
+    p_len = asn_get_length(packet, "payload.#bytes");
 
     payload = malloc(p_len + 1);
-    rc = asn_read_value_field(frame_val, payload, &p_len, "payload.#bytes");
+    rc = asn_read_value_field(packet, payload, &p_len, "payload.#bytes");
 
     if (rc)
     {
@@ -335,62 +335,37 @@ tapi_eth_pkt_handler(const char *fn, void *user_param)
         return;
     }
 
-    i_data->user_callback(&header, payload, p_len, i_data->user_data);
+    i_data->callback(&header, payload, p_len, i_data->user_data);
 
     free(payload);
-    asn_free_value(frame_val);
+    asn_free_value(packet);
     asn_free_value(eth_hdr_val);
 
     return;
 }
 
 /* See the description in tapi_eth.h */
-int
-tapi_eth_recv_start(const char *ta_name, int sid,
-                    csap_handle_t eth_csap,
-                    const asn_value *pattern,
-                    tapi_eth_frame_callback cb, void *cb_data,
-                    unsigned int timeout, int num)
+tapi_tad_trrecv_cb_data *
+tapi_eth_trrecv_cb_data(tapi_eth_frame_callback  callback,
+                        void                    *user_data)
 {
-    int    rc;
-    char   tmp_name[] = "/tmp/te_eth_trrecv.XXXXXX";
-    struct tapi_pkt_handler_data *i_data;
+    tapi_eth_pkt_handler_data  *cb_data;
+    tapi_tad_trrecv_cb_data    *res;
 
-    if (ta_name == NULL || pattern == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
-
-    if ((i_data = malloc(sizeof(*i_data))) == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-
-    i_data->user_callback = cb;
-    i_data->user_data = cb_data;
-
-    if ((rc = te_make_tmp_file(tmp_name)) != 0)
+    cb_data = (tapi_eth_pkt_handler_data *)calloc(1, sizeof(*cb_data));
+    if (cb_data == NULL)
     {
-        free(i_data);
-        return TE_RC(TE_TAPI, rc);
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
     }
+    cb_data->callback = callback;
+    cb_data->user_data = user_data;
+    
+    res = tapi_tad_trrecv_make_cb_data(tapi_eth_pkt_handler, cb_data);
+    if (res == NULL)
+        free(cb_data);
 
-    rc = asn_save_to_file(pattern, tmp_name);
-    if (rc)
-    {
-        free(i_data);
-        return TE_RC(TE_TAPI, rc);
-    }
-
-    rc = rcf_ta_trrecv_start(ta_name, sid, eth_csap, tmp_name,
-                             (cb != NULL) ? tapi_eth_pkt_handler : NULL,
-                             (cb != NULL) ? (void *) i_data : NULL,
-                             timeout, num);
-    if (rc != 0)
-    {
-        ERROR("rcf_ta_trrecv_start() failed(%r) on TA %s:%d CSAP %d "
-              "file %s", rc, ta_name, sid, eth_csap, tmp_name);
-    }
-
-    unlink(tmp_name);
-
-    return rc;
+    return res;
 }
 
 /* See the description in tapi_eth.h */

@@ -208,9 +208,9 @@ main(int argc, char *argv[])
 
 #if USE_TAPI
         
-        rc = tapi_ip4_eth_recv_start_pkt(ta, sid, csap, NULL, NULL,
-                                     htonl(INADDR_ANY), my_addr, 5000, 4,
-                                     user_pkt_handler, NULL);
+        rc = tapi_ip4_eth_recv_start(ta, sid, csap, NULL, NULL,
+                                     htonl(INADDR_ANY), my_addr,
+                                     5000, 4, RCF_TRRECV_PACKETS);
 #else
         strcpy(path, "/tmp/te_ip4_pattern.XXXXXX"); 
         mkstemp(path); 
@@ -226,7 +226,8 @@ main(int argc, char *argv[])
             TEST_FAIL("ASN error"); 
 
         asn_save_to_file(pattern, path);
-        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, NULL, NULL, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, 0,
+                                 RCF_TRRECV_COUNT);
         INFO("trrecv_start: %r \n", rc);
 #endif /* USE_TAPI */
 
@@ -235,7 +236,7 @@ main(int argc, char *argv[])
 #if 1
         sleep(2);
         INFO ("try to get\n");
-        rc = rcf_ta_trrecv_get(ta, sid, csap, &num);
+        rc = rcf_ta_trrecv_get(ta, sid, csap, user_pkt_handler, NULL, &num);
         INFO("trrecv_get: %r num: %d\n", rc, num);
         if (rc) break;
 
@@ -245,7 +246,7 @@ main(int argc, char *argv[])
         sleep (num);
 
         INFO ("try to wait\n");
-        rc = rcf_ta_trrecv_wait(ta, sid, csap, &num);
+        rc = rcf_ta_trrecv_wait(ta, sid, csap, NULL, NULL, &num);
         INFO("trrecv_wait: %r num: %d\n", rc, num);
         if (rc)
         {

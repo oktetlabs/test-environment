@@ -303,27 +303,137 @@ tapi_tad_trsend_start(const char *ta_name, int session,
     return rc;
 }
 
-/* Description in tapi_tad.h */
-int 
-tapi_tad_trrecv_start(const char *ta_name, int session, int handle, 
-                      const asn_value *pattern, rcf_pkt_handler handler, 
-                      void *user_param, unsigned int timeout, int num)
+/* See description in tapi_tad.h */
+te_errno
+tapi_tad_trrecv_start(const char *ta_name, int session,
+                      csap_handle_t handle, const asn_value *pattern,
+                      unsigned int timeout, unsigned int num,
+                      rcf_trrecv_mode mode)
 {
-    int rc = 0;
-    char tmp_name[] = "/tmp/te_tapi_tad_trsend_start.XXXXXX";
+    te_errno rc = 0;
+    char     tmp_name[] = "/tmp/te_tapi_tad_trrecv_start.XXXXXX";
 
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
 
-    asn_save_to_file(pattern, tmp_name); 
+    rc = asn_save_to_file(pattern, tmp_name);
+    if (rc != 0)
+    {
+        (void)unlink(tmp_name);
+        ERROR("Failed to save pattern to file: %r", rc);
+        return rc;
+    }
 
     rc = rcf_ta_trrecv_start(ta_name, session, handle, 
-                             tmp_name, handler, user_param, 
-                             timeout, num);
+                             tmp_name, timeout, num, mode);
     unlink(tmp_name);
     if (rc != 0)
         WARN("trrecv_start failed with rc %r", rc);
     return rc;
+}
+
+
+/**
+ * Packet handler which parse received packet from file into ASN value
+ * and pass it together with user data to user callback.
+ *
+ * This function complies with rcf_pkt_handler prototype.
+ *
+ * @param filename      Name of the file with received packet data
+ * @param my_data       Pointer to tapi_tad_trrecv_cb_data structure
+ */
+static void
+tapi_tad_trrecv_pkt_handler(const char *filename, void *my_data)
+{
+    te_errno    rc;
+    int         syms = 0;
+    asn_value  *packet;
+
+    tapi_tad_trrecv_cb_data *cb_data =
+        (tapi_tad_trrecv_cb_data *)my_data;
+
+
+    /* Parse file in any case to check that it is OK */
+    rc = asn_parse_dvalue_in_file(filename, ndn_raw_packet,
+                                  &packet, &syms);
+    if (rc != 0)
+    {
+        ERROR("Parse packet from file failed on symbol %d : %r\n%Tf",
+              syms, rc, filename);
+        return;
+    }
+
+    if (cb_data != NULL && cb_data->callback != NULL)
+    {
+        cb_data->callback(packet, cb_data->user_data);
+        /* Packet is owned by callback */
+    }
+    else
+    {
+        asn_free_value(packet);
+    }
+}
+
+/* See the description in tapi_eth.h */
+tapi_tad_trrecv_cb_data *
+tapi_tad_trrecv_make_cb_data(tapi_tad_trrecv_cb  callback,
+                             void               *user_data)
+{
+    tapi_tad_trrecv_cb_data *res;
+
+    res = (tapi_tad_trrecv_cb_data *)calloc(1, sizeof(*res));
+    if (res == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
+    }
+    res->callback = callback;
+    res->user_data = user_data;
+    
+    return res;
+}
+
+
+/* See description in tapi_tad.h */
+te_errno
+tapi_tad_trrecv_wait(const char              *ta_name,
+                     int                      session,
+                     csap_handle_t            handle,
+                     tapi_tad_trrecv_cb_data *cb_data,
+                     unsigned int            *num)
+{
+    return rcf_ta_trrecv_wait(ta_name, session, handle,
+                              cb_data == NULL ? NULL :
+                                  tapi_tad_trrecv_pkt_handler,
+                              cb_data, num);
+}
+
+/* See description in tapi_tad.h */
+te_errno
+tapi_tad_trrecv_stop(const char              *ta_name,
+                     int                      session,
+                     csap_handle_t            handle,
+                     tapi_tad_trrecv_cb_data *cb_data,
+                     unsigned int            *num)
+{
+    return rcf_ta_trrecv_stop(ta_name, session, handle,
+                              cb_data == NULL ? NULL :
+                                  tapi_tad_trrecv_pkt_handler,
+                              cb_data, num);
+}
+
+/* See description in tapi_tad.h */
+te_errno
+tapi_tad_trrecv_get(const char              *ta_name,
+                    int                      session,
+                    csap_handle_t            handle,
+                    tapi_tad_trrecv_cb_data *cb_data,
+                    unsigned int            *num)
+{
+    return rcf_ta_trrecv_get(ta_name, session, handle,
+                             cb_data == NULL ? NULL :
+                                 tapi_tad_trrecv_pkt_handler,
+                             cb_data, num);
 }
 
 
@@ -399,8 +509,8 @@ tapi_tad_forward_all(const char *ta_name, int session,
         asn_write_int32(pattern, csap_fwd, "0.action.#forw-pld");
     }
 
-    rc = tapi_tad_trrecv_start(ta_name, session, csap_rcv,
-                               pattern, NULL, NULL, TAD_TIMEOUT_INF, 0);
+    rc = tapi_tad_trrecv_start(ta_name, session, csap_rcv, pattern,
+                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
         ERROR("%s(%s:%d): trrecv_start failed %r", 
@@ -408,7 +518,8 @@ tapi_tad_forward_all(const char *ta_name, int session,
     } 
     MSLEEP(timeout);
 
-    rc = rcf_ta_trrecv_stop(ta_name, session, csap_rcv, forwarded);
+    rc = rcf_ta_trrecv_stop(ta_name, session, csap_rcv, NULL, NULL,
+                            forwarded);
 
     return rc;
 }

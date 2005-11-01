@@ -93,8 +93,6 @@ typedef struct traffic_op {
     int             state;      /**< CSAP_SEND, CSAP_RECV or
                                      CSAP_SENDRECV */
     int             sid;        /**< Session identifier */
-    rcf_pkt_handler handler;    /**< handler for received packet */
-    void           *user_param; /**< handler parameter */
 } traffic_op_t;
 
 typedef struct msg_buf_entry {
@@ -114,12 +112,13 @@ typedef struct thread_ctx {
 
 /* Busy CSAPs list anchor */
 static traffic_op_t traffic_ops = { &traffic_ops, &traffic_ops, 
-                                    "", 0, 0, 0, 0, NULL, NULL };
+                                    "", 0, 0, 0, 0 };
 
 /* Forward declaration */
 static int csap_tr_recv_get(const char *ta_name, int session, 
                             csap_handle_t csap_id, 
-                            int *num, int opcode);
+                            rcf_pkt_handler handler, void *user_param, 
+                            unsigned int *num, int opcode);
 
 /* If pthread mutexes are supported - OK; otherwise hope for best... */
 #ifdef HAVE_PTHREAD_H
@@ -2257,14 +2256,12 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
     return rc;
 }
 
-/**
- * See the description in rcf_api.h
- */
+/* See the description in rcf_api.h */
 te_errno
 rcf_ta_trrecv_start(const char *ta_name, int session,
                     csap_handle_t csap_id, const char *pattern,
-                    rcf_pkt_handler handler, void *user_param, 
-                    unsigned int timeout, int num)
+                    unsigned int timeout, unsigned int num,
+                    rcf_trrecv_mode mode)
 {
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
@@ -2302,7 +2299,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     strcpy(msg.ta, ta_name);
     strcpy(msg.file, pattern);
     msg.handle = csap_id;
-    msg.intparm = (handler == NULL ? 0 : TR_RESULTS); 
+    msg.intparm = (mode == RCF_TRRECV_COUNT ? 0 : TR_RESULTS); 
     msg.sid = session;
     msg.num = num;
     msg.timeout = timeout;
@@ -2319,8 +2316,6 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     strncpy(tr_op->ta, ta_name, RCF_MAX_NAME);
     tr_op->csap_id = csap_id;
     tr_op->state = CSAP_RECV;
-    tr_op->handler = handler;
-    tr_op->user_param = user_param;
     tr_op->sid = session;    
     if (insert_traffic_op(tr_op) != 0)
     {
@@ -2354,15 +2349,14 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
  */
 static te_errno
 csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
-                 int *num, int opcode)
+                 rcf_pkt_handler handler, void *user_param, 
+                 unsigned int *num, int opcode)
 {
     te_errno      rc;
     rcf_msg       msg;
     size_t        anslen = sizeof(msg);
     traffic_op_t *tr_op;
     
-    rcf_pkt_handler handler;
-    void           *user_param;
     RCF_API_INIT;
     
     if (BAD_TA)
@@ -2397,9 +2391,6 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         tr_op->num_users++;
 
     msg.sid = session;
-
-    handler    = (tr_op != NULL) ? tr_op->handler    : NULL;
-    user_param = (tr_op != NULL) ? tr_op->user_param : NULL;
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&rcf_lock);
@@ -2462,114 +2453,72 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     return msg.error;
 }
 
-/**
- * See the description in rcf_api.h
- */
+/* See the description in rcf_api.h */
 te_errno
 rcf_ta_trrecv_wait(const char *ta_name, int session,
-                   csap_handle_t csap_id, int *num)
+                   csap_handle_t csap_id,
+                   rcf_pkt_handler handler, void *user_param, 
+                   unsigned int *num)
 {
     te_errno rc;
 
     RING("Waiting for receive operation on the CSAP %d (%s:%d) ...",
          csap_id, ta_name, session);
 
-    rc = csap_tr_recv_get(ta_name, session, csap_id, num,
-                          RCFOP_TRRECV_WAIT);
+    rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
+                          user_param, num, RCFOP_TRRECV_WAIT);
 
     RING("Finished receive operation on the CSAP %d (%s:%d) got %d "
          "packets : %r", csap_id, ta_name, session,
-         (num == NULL) ? -1 : *num, rc);
+         (num == NULL) ? -1 : (int)*num, rc);
 
     return rc;
 }
                       
-/**
- * This function is used to stop receiving of traffic started by
- * rcf_ta_trrecv_start called in blocking mode.
- * If handler was specified in the function rcf_ta_trrecv_start, 
- * it is called for all received packets.
- *
- * @param ta_name       Test Agent name                 
- * @param csap_id       CSAP handle
- * @param num           location where number of received packets 
- *                      should be placed
- *
- * @return error code
- *
- * @retval 0               success
- * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
- * @retval TE_EBADF        no such CSAP
- * @retval TE_EALREADY     traffic receiving is not in progress now
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
- *
- * @sa rcf_ta_trrecv_start
- */ 
+/* See the description in rcf_api.h */
 te_errno
 rcf_ta_trrecv_stop(const char *ta_name, int session,
-                   csap_handle_t csap_id, int *num)
+                   csap_handle_t csap_id,
+                   rcf_pkt_handler handler, void *user_param, 
+                   unsigned int *num)
 {
     te_errno rc;
 
     RING("Stopping receive operation on the CSAP %d (%s:%d) ...",
          csap_id, ta_name, session);
 
-    rc = csap_tr_recv_get(ta_name, session, csap_id, num,
-                            RCFOP_TRRECV_STOP); 
+    rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
+                          user_param, num, RCFOP_TRRECV_STOP); 
 
     RING("Stopped receive operation on the CSAP %d (%s:%d) got %d "
          "packets : %r", csap_id, ta_name, session,
-         (num == NULL) ? -1: *num, rc);
+         (num == NULL) ? -1 : (int)*num, rc);
 
     return rc;
 }
 
-/**
- * This function is used to force processing of received packets 
- * without stopping of traffic receiving (handler specified in
- * rcf_ta_trrecv_start is used for packets processing).
- *
- * @param ta_name       Test Agent name                 
- * @param csap_id       CSAP handle
- * @param num           location where number of processed packets 
- *                      should be placed
- *
- * @return error code
- *
- * @retval 0               success
- * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                         session identifier is provided
- * @retval TE_EIPC         cannot interact with RCF 
- * @retval TE_EBADF        no such CSAP
- * @retval TE_EALREADY     traffic receiving is not in progress now
- * @retval TE_ENODATA      no data available on TA, because handler was not
- *                         specified in rcf_ta_trrecv_start
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
- *
- * @sa rcf_ta_trrecv_start
- */
+/* See the description in rcf_api.h */
 te_errno
 rcf_ta_trrecv_get(const char *ta_name, int session,
-                  csap_handle_t csap_id, int *num)
+                  csap_handle_t csap_id,
+                  rcf_pkt_handler handler, void *user_param, 
+                  unsigned int *num)
 {
     te_errno rc;
 
     VERB("%s(ta %s, csap %d, *num  %p) called", 
          ta_name, csap_id, num);
 
-    rc = csap_tr_recv_get(ta_name, session, csap_id, num,
-                          RCFOP_TRRECV_GET);
+    rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
+                          user_param, num, RCFOP_TRRECV_GET);
 
     RING("Traffic receive operation on the CSAP %d (%s:%d) got %d "
          "packets : %r", csap_id, ta_name, session,
-         (num == NULL) ? -1: *num, rc);
+         (num == NULL) ? -1 : (int)*num, rc);
 
     return rc;
 }
+
 
 /**
  * This function is used to send exactly one packet via CSAP and receive

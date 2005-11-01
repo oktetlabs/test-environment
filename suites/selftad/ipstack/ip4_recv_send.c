@@ -214,15 +214,17 @@ main(int argc, char *argv[])
         
         rc = tapi_ip4_eth_recv_start(agt_b, sid_b, ip4_listen_csap,
                                      NULL, NULL, INADDR_ANY, INADDR_ANY,
-                                     5000, num_pkts);
+                                     5000, num_pkts, RCF_TRRECV_COUNT);
         if (rc != 0) 
             TEST_FAIL("recv start failed %X", rc); 
 
-        rc = tapi_eth_recv_start(agt_b, sid_b, eth_listen_csap_2,
-                                 eth_pattern, NULL, NULL, 5000, num_pkts);
+        rc = tapi_tad_trrecv_start(agt_b, sid_b, eth_listen_csap_2,
+                                   eth_pattern, 5000, num_pkts,
+                                   RCF_TRRECV_COUNT);
 
-        rc = tapi_eth_recv_start(agt_b, sid_b, eth_listen_csap_1,
-                                 eth_pattern, NULL, NULL, 5000, num_pkts);
+        rc = tapi_tad_trrecv_start(agt_b, sid_b, eth_listen_csap_1,
+                                   eth_pattern, 5000, num_pkts,
+                                   RCF_TRRECV_COUNT);
         if (rc != 0) 
             TEST_FAIL("Eth recv start failed %X", rc); 
 
@@ -232,13 +234,16 @@ main(int argc, char *argv[])
             TEST_FAIL("send start failed %X", rc); 
 
         INFO ("try to wait\n");
-        rc = rcf_ta_trrecv_wait(agt_b, sid_b, ip4_listen_csap, &num);
+        rc = rcf_ta_trrecv_wait(agt_b, sid_b, ip4_listen_csap,
+                                NULL, NULL, &num);
         RING("trrecv_wait: %r num: %d\n", rc, num);
 
-        rc = rcf_ta_trrecv_stop(agt_b, sid_b, eth_listen_csap_2, &num);
+        rc = rcf_ta_trrecv_stop(agt_b, sid_b, eth_listen_csap_2,
+                                NULL, NULL, &num);
         RING("Eth trrecv_stop: %r num: %d\n", rc, num);
 
-        rc = rcf_ta_trrecv_stop(agt_b, sid_b, eth_listen_csap_1, &num);
+        rc = rcf_ta_trrecv_stop(agt_b, sid_b, eth_listen_csap_1,
+                                NULL, NULL, &num);
         RING("Eth trrecv_stop: %r num: %d\n", rc, num);
 
     } while(0);

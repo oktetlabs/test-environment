@@ -93,6 +93,8 @@ main(int argc, char *argv[])
     csap_handle_t eth_csap = CSAP_INVALID_HANDLE;
     csap_handle_t eth_listen_csap = CSAP_INVALID_HANDLE;
 
+    tapi_eth_pkt_handler_data eth_cb_data;
+
     TEST_START;
     
     if (rcf_get_ta_list(ta, &len) != 0)
@@ -286,16 +288,17 @@ main(int argc, char *argv[])
 
 #if 1
 #if 1
-        rc = tapi_eth_recv_start(ta, sid, eth_listen_csap, pattern, 
-                local_eth_frame_handler, NULL, 0, 1);
+        rc = tapi_tad_trrecv_start(ta, sid, eth_listen_csap, pattern, 
+                                   0, 1, RCF_TRRECV_PACKETS);
 #else
         syms = 4;
+        eth_cb_data.callback = local_eth_frame_handler;
+        eth_cb_data.user_data = NULL;
         rc = tapi_eth_recv_wait(ta, sid, eth_listen_csap, pattern, 
-                local_eth_frame_handler, NULL, 120000, &syms);
+                 tapi_eth_pkt_handler, &eth_cb_data, 120000, &syms);
 #endif
         if (rc)
-            TEST_FAIL("tapi_eth_recv_start/wait failed 0x%x, catched %d",
-                      rc, syms);
+            TEST_FAIL("failed %r, catched %d", rc, syms);
 #endif
 
         rc = tapi_tad_trsend_start(ta, sid, eth_csap, template,
@@ -326,7 +329,8 @@ main(int argc, char *argv[])
         rx_counter = atoi(rx_counter_txt);
         VERB("rx_counter: %d\n", rx_counter);
 
-        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap, &syms);
+        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap,
+                                local_eth_frame_handler, NULL, &syms);
 
         if (rc != 0)
             TEST_FAIL("ETH recv_stop fails, rc %X", rc);

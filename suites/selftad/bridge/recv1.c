@@ -186,8 +186,8 @@ main()
             CHECK_STATUS(rc, "bpdu set port-id mask rc: %x\n", rc); 
         }
 
-        rc = tapi_stp_bpdu_recv_start(ta, sid, bpdu_listen_csap, pattern, 
-                NULL, NULL, 20000, 1);
+        rc = tapi_tad_trrecv_start(ta, sid, bpdu_listen_csap, pattern, 
+                                   20000, 1, RCF_TRRECV_COUNT);
         CHECK_STATUS(rc, "bpdu recv start rc: %x\n", rc); 
 
 
@@ -197,7 +197,8 @@ main()
         sleep(1);
 
         syms = 0;
-        rc = rcf_ta_trrecv_stop(ta, sid, bpdu_listen_csap, &syms);
+        rc = rcf_ta_trrecv_stop(ta, sid, bpdu_listen_csap,
+                                NULL, NULL, &syms);
         printf ("trrecv stop rc: %x, num: %d\n", rc, syms);
         CHECK_STATUS(rc, "trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
 

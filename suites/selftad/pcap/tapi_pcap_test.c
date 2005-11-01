@@ -105,6 +105,8 @@ main(int argc, char *argv[])
     asn_value      *pcap_pattern = NULL;
 
     int             pcap_num = 0;
+    
+    tapi_pcap_pkt_handler_data pcap_cb_data;
 
     int   i;
     int   try_count = 3;
@@ -136,8 +138,8 @@ main(int argc, char *argv[])
 
     VERB("Try to recv_start()");
 
-    CHECK_RC(tapi_pcap_recv_start(ta, sid, pcap_csap, pcap_pattern,
-                                  &pcap_recv_cb, NULL, 10000000, 100));
+    CHECK_RC(tapi_tad_trrecv_start(ta, sid, pcap_csap, pcap_pattern,
+                                   10000000, 100, RCF_TRRECV_PACKETS));
 
     VERB("recv_start() finished");
 
@@ -146,7 +148,11 @@ main(int argc, char *argv[])
 
     VERB("Try to recv_stop()");
 
-    CHECK_RC(rcf_ta_trrecv_stop(ta, sid, pcap_csap, &pcap_num));
+    pcap_cb_data.callback = pcap_recv_cb;
+    pcap_cb_data.user_data = NULL;
+    CHECK_RC(rcf_ta_trrecv_stop(ta, sid, pcap_csap,
+                                tapi_pcap_pkt_handler, &pcap_cb_data,
+                                &pcap_num));
 
     VERB("recv_stop() finished, %d packets received", pcap_num);
 

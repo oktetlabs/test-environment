@@ -88,11 +88,13 @@ main(int argc, char *argv[])
     int      caught_num = 0;
     uint16_t eth_type = ETH_P_IP;
 
-    csap_handle_t eth_listen_csap = CSAP_INVALID_HANDLE;
+    csap_handle_t              eth_listen_csap = CSAP_INVALID_HANDLE;
+    tapi_eth_pkt_handler_data  eth_cb_data;
 
     asn_value *pattern_unit;
     asn_value *pattern;
     char       eth_device[] = "eth0"; 
+
 
     TEST_START;
     TEST_GET_INT_PARAM(num_pkts);
@@ -147,20 +149,29 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("Add pattern unit fails %X", rc);
 
-    rc = tapi_eth_recv_start(ta, sid, eth_listen_csap, pattern, 
-                             pass_results ? local_eth_frame_handler : NULL,
-                             NULL, timeout, num_pkts);
+    rc = tapi_tad_trrecv_start(ta, sid, eth_listen_csap, pattern, 
+                               timeout, num_pkts,
+                               pass_results ? RCF_TRRECV_PACKETS :
+                                              RCF_TRRECV_COUNT);
 
     if (rc != 0)
-        TEST_FAIL("tapi_eth_recv_start failed: %r", rc);
+        TEST_FAIL("tapi_tad_trrecv_start failed: %r", rc);
     VERB("eth recv start num: %d", num_pkts);
 
+    eth_cb_data.callback = local_eth_frame_handler;
+    eth_cb_data.user_data = NULL;
     if (blocked_mode)
-        rc = rcf_ta_trrecv_wait(ta, sid, eth_listen_csap, &caught_num);
+        rc = rcf_ta_trrecv_wait(ta, sid, eth_listen_csap,
+                                pass_results ? tapi_eth_pkt_handler : NULL,
+                                pass_results ? &eth_cb_data : NULL,
+                                &caught_num);
     else
     {
         sleep(timeout / 1000 + 1);
-        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap, &caught_num);
+        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap,
+                                pass_results ? tapi_eth_pkt_handler : NULL,
+                                pass_results ? &eth_cb_data : NULL,
+                                NULL, &caught_num);
     }
 
 

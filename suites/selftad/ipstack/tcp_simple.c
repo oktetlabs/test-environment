@@ -173,15 +173,15 @@ main(int argc, char *argv[])
 
         asn_save_to_file(pattern, path);
 #if 1
-        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, NULL,
-                                 TAD_TIMEOUT_INF, 0);
+        rc = rcf_ta_trrecv_start(ta, sid, csap, path, TAD_TIMEOUT_INF, 0,
+                                 RCF_TRRECV_COUNT);
         INFO("trrecv_start: %r \n", rc);
         if (rc) break;
 
 #if 1
         sleep(5);
         INFO ("try to get\n");
-        rc = rcf_ta_trrecv_get(ta, sid, csap, &num);
+        rc = rcf_ta_trrecv_get(ta, sid, csap, NULL, NULL, &num);
         INFO("trrecv_get: %r num: %d\n", rc, num);
         if (rc) break;
 
@@ -191,7 +191,7 @@ main(int argc, char *argv[])
         sleep (num);
 
         INFO ("try to stop\n");
-        rc = rcf_ta_trrecv_stop(ta, sid, csap, &num);
+        rc = rcf_ta_trrecv_stop(ta, sid, csap, NULL, NULL, &num);
         INFO("trrecv_stop: %r num: %d\n", rc, num);
 
 #endif
