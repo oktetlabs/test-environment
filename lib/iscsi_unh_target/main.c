@@ -40,6 +40,7 @@
 
 #include <iscsi_target.h>
 #include <scsi_target.h>
+#include <iscsi_target_api.h>
 #include <my_login.h>
 
 #include <logger_defs.h>
