@@ -1712,3 +1712,271 @@ iscsi_digest_enum2str(iscsi_digest_type digest_type)
 }
 
 #undef MAX_INI_CMD_SIZE
+
+
+/*** Functions for data transfer between Target and Initiator ***/
+
+int
+tapi_iscsi_target_mount(const char *ta)
+{
+    int  unused;
+    char mountpoint[64];
+    sprintf(mountpoint, "/tmp/te_target_fs.%lu", 
+            (unsigned long)getpid());
+
+    rcf_ta_call(ta, 0, "iscsi_sync_device", &unused,
+                2, FALSE,
+                RCF_UINT8, 0, RCF_UINT8, 0);
+
+    return cfg_set_instance_fmt(CVT_STRING, mountpoint,
+                                "/agent:%s/iscsi_target:/backing_store_fs:",
+                                ta);    
+}
+
+
+int
+tapi_iscsi_target_unmount(const char *ta)
+{
+    char mountpoint[64];
+    sprintf(mountpoint, "/tmp/te_target_fs.%lu", 
+            (unsigned long)getpid());
+
+    return cfg_set_instance_fmt(CVT_STRING, mountpoint,
+                                "/agent:%s/iscsi_target:/backing_store_fs:",
+                                ta);
+}
+
+static te_bool
+check_mounted(const char *ta)
+{
+    cfg_val_type type = CVT_STRING;
+    char         mountpoint[64];
+    char         my_mountpoint[64];
+    int          rc;
+
+    sprintf(my_mountpoint, "/tmp/te_target_fs.%lu", 
+            (unsigned long)getpid());
+    rc = cfg_get_instance_fmt(&type, mountpoint,
+                              "/agent:%s/iscsi_target:/backing_store_fs:",
+                              ta);
+    if (rc != 0 || strcmp(mountpoint, my_mountpoint) != 0)
+        return FALSE;
+    return TRUE;
+}
+
+int
+tapi_iscsi_target_put_file(const char *ta, const char *localfname, 
+                           const char *remotefname)
+{
+    char destination[128];
+    snprintf(destination, sizeof(destination),
+             "/tmp/te_target_fs.%lu/%s", 
+             (unsigned long)getpid(), 
+             remotefname);
+
+    if (!check_mounted(ta))
+        return TE_RC(TE_TAPI, TE_ENXIO);
+    return rcf_ta_put_file(ta, 0, localfname, destination);
+}
+
+int 
+tapi_iscsi_target_get_file(const char *ta, const char *localfname, 
+                           const char *remotefname)
+{
+    char source[128];
+    snprintf(source, sizeof(source),
+             "/tmp/te_target_fs.%lu/%s", 
+             (unsigned long)getpid(), 
+             remotefname);
+
+    if (!check_mounted(ta))
+        return TE_RC(TE_TAPI, TE_ENXIO);
+    return rcf_ta_get_file(ta, 0, source, localfname);
+}
+
+int
+tapi_iscsi_target_delete_file(const char *ta, const char *remotefname)
+{
+    char destination[128];
+    snprintf(destination, sizeof(destination),
+             "/tmp/te_target_fs.%lu/%s", 
+             (unsigned long)getpid(), 
+             remotefname);
+
+    if (!check_mounted(ta))
+        return TE_RC(TE_TAPI, TE_ENXIO);
+    return rcf_ta_del_file(ta, 0, destination);
+}
+
+int
+tapi_iscsi_target_raw_write(const char *ta, unsigned long offset,
+                            const char *data)
+{
+    int rc;
+    int result;
+    
+    rc = rcf_ta_call(ta, 0 /* sid */,
+                     "iscsi_write_to_device", &result, 5, FALSE,
+                     RCF_UINT8, 0, RCF_UINT8, 0,
+                     RCF_UINT32, offset, 
+                     RCF_STRING, data, 
+                     RCF_UINT32, strlen(data));
+    return rc == 0 ? result : rc;
+}
+
+int
+tapi_iscsi_target_raw_verify(const char *ta, unsigned long offset,
+                             const char *data)
+{
+   int rc;
+    int result;
+    
+    rc = rcf_ta_call(ta, 0 /* sid */,
+                     "iscsi_verify_device_data", &result, 5, FALSE,
+                     RCF_UINT8, 0, RCF_UINT8, 0,
+                     RCF_UINT32, offset, 
+                     RCF_STRING, data, 
+                     RCF_UINT32, strlen(data));
+    return rc == 0 ? result : rc;
+}
+
+static char *
+get_nth_device(const char *ta, unsigned id)
+{
+    cfg_val_type type = CVT_STRING;
+    char         devlist[RCF_MAX_PATH];
+    int          rc;
+    char        *ptr;
+    static char  device[64];
+
+    rc = cfg_get_instance_fmt(&type, devlist,
+                              "/agent:%s/iscsi_initiator:/host_device:",
+                              ta);
+    if (rc != 0)
+    {
+        ERROR("Cannot obtain host device string: %r", rc);
+        return NULL;
+    }
+
+    for (ptr = strtok(devlist, " "); ptr != NULL; ptr = strtok(NULL, " "))
+    {
+        if (id-- == 0)
+        {
+            sprintf(device, "/dev/%s", ptr);
+            return device;
+        }
+    }
+    return NULL;
+}
+
+static char *
+get_initiator_mountpoint(const char *ta, unsigned id)
+{
+    static char mountpoint[64];
+    sprintf(mountpoint, "/tmp/te_iscsi_fs_%s.%u", ta, id);
+    return mountpoint;
+}
+
+
+int 
+tapi_iscsi_initiator_mount(const char *ta, unsigned id)
+{
+    char *dev = get_nth_device(ta, id);
+    char *mp;
+    char  mount[128];
+    int   rc;
+    int   status;
+    
+    if (dev == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    mp = get_initiator_mountpoint(ta, id);
+    sprintf(mount, "mkdir %s && /bin/mount %s %s", mp, dev, mp);
+    rc = rcf_ta_call(ta, 0, "shell", &status,
+                     1, TRUE, mount);
+    return rc == 0 ? (status == 0 ? 0 : 
+                      TE_RC(TE_TAPI, TE_ESHCMD)): rc;
+}
+
+int
+tapi_iscsi_initiator_unmount(const char *ta, unsigned id)
+{
+    char  mount[128];
+    int   rc;
+    int   status;
+    char *mp;
+    
+    mp = get_initiator_mountpoint(ta, id);
+    sprintf(mount, "/bin/umount %s && rmdir %s", 
+            mp, mp);
+    rc = rcf_ta_call(ta, 0, "shell", &status,
+                     1, TRUE, mount);
+    return rc == 0 ? (status == 0 ? 0 : 
+                      TE_RC(TE_TAPI, TE_ESHCMD)) : rc;
+}
+
+int 
+tapi_iscsi_initiator_put_file(const char *ta, unsigned id, 
+                              const char *localfname, 
+                              const char *remotefname)
+{
+    char destination[128];
+    snprintf(destination, sizeof(destination),
+             "%s/%s", 
+             get_initiator_mountpoint(ta, id),
+             remotefname);
+
+    return rcf_ta_put_file(ta, 0, localfname, destination);
+}
+
+int 
+tapi_iscsi_initiator_get_file(const char *ta, unsigned id,
+                              const char *localfname, 
+                              const char *remotefname)
+{
+    char source[128];
+    snprintf(source, sizeof(source),
+             "%s/%s", 
+             get_initiator_mountpoint(ta, id),
+             remotefname);
+
+    return rcf_ta_get_file(ta, 0, source, localfname);
+}
+
+
+int
+tapi_iscsi_initiator_delete_file(const char *ta, int id,
+                                 const char *remotefname)
+{
+    char destination[128];
+    snprintf(destination, sizeof(destination),
+             "%s/%s", 
+             get_initiator_mountpoint(ta, id),
+             remotefname);
+
+    return rcf_ta_del_file(ta, 0, destination);
+}
+
+#if 0
+int tapi_iscsi_initiator_raw_write(const char *ta, int id,
+                                   unsigned long offset,
+                                   const char *data)
+{
+    char *dev = get_nth_device(ta, id);
+
+    if (dev == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    
+}
+
+int tapi_iscsi_initiator_raw_verify(const char *ta, int id, 
+                                    unsigned long offset,
+                                    const char *data)
+{
+    char *dev = get_nth_device(ta, id);
+
+    if (dev == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    
+    
+}
+#endif

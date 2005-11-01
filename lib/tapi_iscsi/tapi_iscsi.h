@@ -736,11 +736,42 @@ extern char* iscsi_digest_enum2str(iscsi_digest_type digest_type);
 
 /*** Functions for data transfer between Target and Initiator ***/
 
-extern int tapi_iscsi_put_file(const char *ta, const char *localfname, 
-                               const char *remotefname);
+extern int tapi_iscsi_target_mount(const char *ta);
+extern int tapi_iscsi_target_unmount(const char *ta);
 
-extern int tapi_iscsi_get_file(const char *ta, const char *localfname, 
-                               const char *remotefname);
+extern int tapi_iscsi_target_put_file(const char *ta, 
+                                      const char *localfname, 
+                                      const char *remotefname);
+extern int tapi_iscsi_target_get_file(const char *ta, 
+                                      const char *localfname, 
+                                      const char *remotefname);
+extern int tapi_iscsi_target_delete_file(const char *ta, 
+                                         const char *remotefname);
+extern int tapi_iscsi_target_raw_write(const char *ta, 
+                                       unsigned long offset,
+                                       const char *data);
+extern int tapi_iscsi_target_raw_verify(const char *ta, 
+                                        unsigned long offset,
+                                        const char *data);
+
+extern int tapi_iscsi_initiator_mount(const char *ta, unsigned id);
+extern int tapi_iscsi_initiator_unmount(const char *ta, unsigned id);
+
+extern int tapi_iscsi_initiator_put_file(const char *ta, unsigned id, 
+                                         const char *localfname, 
+                                         const char *remotefname);
+extern int tapi_iscsi_initiator_get_file(const char *ta, unsigned id,
+                                         const char *localfname, 
+                                         const char *remotefname);
+extern int tapi_iscsi_initiator_delete_file(const char *ta, int id,
+                                            const char *remotefname);
+extern int tapi_iscsi_initiator_raw_write(const char *ta, int id,
+                                          unsigned long offset,
+                                          const char *data);
+extern int tapi_iscsi_initiator_raw_verify(const char *ta, int id, 
+                                           unsigned long offset,
+                                           const char *data);
+
 
 
 #endif /* !__TE_TAPI_ISCSI_H__ */

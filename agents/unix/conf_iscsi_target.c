@@ -534,15 +534,23 @@ iscsi_target_backstore_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+static int is_backstore_mounted;
+static char backstore_mountpoint[128];
+
 static int
 iscsi_target_backstore_mount(void)
 {
     int status;
     char cmd[64];
-    char buf[64];
 
-    sprintf(buf, "/tmp/te_bs_fs.%lu", (unsigned long)getpid());
-    if (mkdir(buf, S_IREAD | S_IWRITE | S_IEXEC) != 0 && errno != EEXIST)
+    if (is_backstore_mounted++ > 0)
+        return 0;
+
+    status = iscsi_sync_device(0, 0);
+    if (status != 0)
+        return status;
+    
+    if (mkdir(backstore_mountpoint, S_IREAD | S_IWRITE | S_IEXEC) != 0 && errno != EEXIST)
     {
         status = errno;
         ERROR("Cannot create mountpoint for backing store: %s",
@@ -550,7 +558,8 @@ iscsi_target_backstore_mount(void)
         return TE_OS_RC(TE_TA_UNIX, status);
     }
     sprintf(cmd, "/bin/mount -o loop,sync /tmp/te_backing_store.%lu %s",
-            (unsigned long)getpid(), buf);
+            (unsigned long)getpid(), 
+            backstore_mountpoint);
     status = ta_system(cmd);
     if (status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
     {
@@ -564,21 +573,54 @@ static void
 iscsi_target_backstore_unmount(void)
 {
     int status;
-    char buf[64];
     char cmd[64];
 
-    sprintf(buf, "/tmp/te_bs_fs.%lu", (unsigned long)getpid());
-    sprintf(cmd, "/bin/umount %s", buf);
+    if (is_backstore_mounted == 0)
+        return;
+    if (--is_backstore_mounted != 0)
+        return;
+
+    sprintf(cmd, "/bin/umount %s", backstore_mountpoint);
     status = ta_system(cmd);
     if (status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
     {
         WARN("Cannot unount backing store");
     }
-    if (rmdir(buf) != 0)
+    if (rmdir(backstore_mountpoint) != 0)
     {
         WARN("Cannot delete backing store mountpoint: %s",
              strerror(errno));
     }
+}
+
+static int
+iscsi_tgt_backstore_fs_set(unsigned int gid, const char *oid,
+                           const char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    if (strcmp(value, backstore_mountpoint) != 0)
+    {
+        while (is_backstore_mounted > 0)
+            iscsi_target_backstore_unmount();
+    }
+
+    strcpy(backstore_mountpoint, value);
+    return *value == '\0' ? 0 : iscsi_target_backstore_mount();
+}
+
+static int
+iscsi_tgt_backstore_fs_get(unsigned int gid, const char *oid,
+                           char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    strcpy(value, backstore_mountpoint);
+    return 0;
 }
 
 static int
@@ -592,7 +634,8 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
-    iscsi_target_backstore_unmount();
+    while (is_backstore_mounted > 0)
+        iscsi_target_backstore_unmount();
     sprintf(buf, "/tmp/te_backing_store.%lu", (unsigned long)getpid());
     if (*value == '\0')
     {
@@ -661,13 +704,6 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
         rc = iscsi_mmap_device(0, 0, buf);
         if (rc != 0)
         {
-            remove(buf);
-            return rc;
-        }
-        rc = iscsi_target_backstore_mount();
-        if (rc != 0)
-        {
-            iscsi_free_device(0, 0);
             remove(buf);
             return rc;
         }
@@ -800,8 +836,13 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_header_digest,
                     NULL, &node_iscsi_target_oper_data_digest,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_backing_store, "backing_store", 
+RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_backstore_fs, "backing_store_fs", 
                     NULL, NULL, 
+                    iscsi_tgt_backstore_fs_get,
+                    iscsi_tgt_backstore_fs_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_backing_store, "backing_store", 
+                    &node_iscsi_tgt_backstore_fs, NULL, 
                     iscsi_target_backstore_get,
                     iscsi_target_backstore_set);
 

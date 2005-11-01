@@ -137,6 +137,9 @@ pthread_mutex_t target_map_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 Target_Emulator target_data;
 
+static te_bool iscsi_accomodate_buffer (struct target_map_item *target, 
+                                        uint32_t size);
+
 /*
  * okay the following is to get something off the ground and working.
  * In the mode that the emulator is talking to a real disk drive, there
@@ -297,9 +300,10 @@ iscsi_mmap_device(uint8_t target, uint8_t lun, const char *fname)
     return 0;
 }
 
-int iscsi_get_device_param(uint8_t target, uint8_t lun,
-                           te_bool *is_mmap,
-                           uint32_t *storage_size)
+int 
+iscsi_get_device_param(uint8_t target, uint8_t lun,
+                       te_bool *is_mmap,
+                       uint32_t *storage_size)
 {
     if (target >= MAX_TARGETS || lun >= MAX_LUNS ||
         !target_map[target][lun].in_use)
@@ -312,6 +316,76 @@ int iscsi_get_device_param(uint8_t target, uint8_t lun,
     *storage_size = target_map[target][lun].storage_size * SCSI_BLOCKSIZE;
     return 0;
 }
+
+int
+iscsi_sync_device(uint8_t target, uint8_t lun)
+{
+    if (target >= MAX_TARGETS || lun >= MAX_LUNS ||
+        !target_map[target][lun].in_use)
+    {
+        TRACE_ERROR("Invalid target %d or lun %d",
+                    target, lun);
+        return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
+    }
+    if (target_map[target][lun].mmap_fd >= 0)
+    {
+        if (msync(target_map[target][lun].buffer,
+                  target_map[target][lun].buffer_size,
+                  MS_SYNC) != 0)
+        {
+            return TE_OS_RC(TE_ISCSI_TARGET, errno);
+        }       
+    }
+    return 0;
+ }
+
+int
+iscsi_write_to_device(uint8_t target, uint8_t lun,
+                      uint32_t offset,
+                      void *buffer, uint32_t len)
+{
+    if (target >= MAX_TARGETS || lun >= MAX_LUNS ||
+        !target_map[target][lun].in_use)
+    {
+        TRACE_ERROR("Invalid target %d or lun %d",
+                    target, lun);
+        return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
+    }
+    if (buffer == NULL)
+        return TE_RC(TE_ISCSI_TARGET, TE_EFAULT);
+    if (offset + len > target_map[target][lun].storage_size * 
+        SCSI_BLOCKSIZE)
+        return TE_RC(TE_ISCSI_TARGET, TE_ENOSPC);
+    if (!iscsi_accomodate_buffer(&target_map[target][lun],
+                                 offset + len))
+        return TE_RC(TE_ISCSI_TARGET, TE_ENXIO);
+    memcpy((char *)target_map[target][lun].buffer + offset,
+           buffer, len);
+    return 0;
+}
+
+int
+iscsi_verify_device_data(uint8_t target, uint8_t lun,
+                         uint32_t offset,
+                         void *buffer, uint32_t len)
+{
+    if (target >= MAX_TARGETS || lun >= MAX_LUNS ||
+        !target_map[target][lun].in_use)
+    {
+        TRACE_ERROR("Invalid target %d or lun %d",
+                    target, lun);
+        return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
+    }
+    if (buffer == NULL)
+        return TE_RC(TE_ISCSI_TARGET, TE_EFAULT);
+    if (offset + len > target_map[target][lun].storage_size * 
+        SCSI_BLOCKSIZE)
+        return TE_RC(TE_ISCSI_TARGET, TE_ENXIO);
+    return memcmp((char *)target_map[target][lun].buffer + offset,
+                  buffer, len) == 0 ? 0 :
+        TE_RC(TE_ISCSI_TARGET, TE_ECORRUPTED);
+}
+
 
 /*
  * scsi_target_cleanup_module: Removal of the module from the kernel
@@ -1693,6 +1767,35 @@ struct scsi_io10_payload
 
 typedef struct scsi_io10_payload scsi_io10_payload;
 
+
+static te_bool
+iscsi_accomodate_buffer (struct target_map_item *target, uint32_t size)
+{
+    te_bool success = TRUE;
+    if (size > target->buffer_size)
+    {
+        if (target->mmap_fd >= 0)
+        {
+            TRACE_ERROR("Buffer size inconsistent for mmapped LUN");
+            success = FALSE;
+        }
+        else
+        {
+            void *tmp = realloc(target->buffer, size);
+            if (tmp == NULL)
+                success = FALSE;
+            else
+            {
+                memset((char *)tmp + target->buffer_size, '\xEB', 
+                       size - target->buffer_size);
+                target->buffer_size = size;
+                target->buffer      = tmp;
+            }
+        }
+    }
+    return success;
+}
+
 static void
 do_scsi_io(Target_Scsi_Cmnd *command, 
            te_bool (*op)(Target_Scsi_Cmnd *, uint8_t, uint32_t))
@@ -1749,27 +1852,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         }
         lba    *= SCSI_BLOCKSIZE;
         length *= SCSI_BLOCKSIZE;
-        if (lba + length > target->buffer_size)
-        {
-            if (target->mmap_fd >= 0)
-            {
-                TRACE_ERROR("Buffer size inconsistent for mmapped LUN");
-                success = FALSE;
-            }
-            else
-            {
-                void *tmp = realloc(target->buffer, lba + length);
-                if (tmp == NULL)
-                    success = FALSE;
-                else
-                {
-                    memset((char *)tmp + target->buffer_size, '\xEB', 
-                           (lba + length) - target->buffer_size);
-                    target->buffer_size = lba + length;
-                    target->buffer      = tmp;
-                }
-            }
-        }
+        success = iscsi_accomodate_buffer(target, lba + length);
         if (success)
             success = op(command, lun, lba);
     }

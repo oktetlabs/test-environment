@@ -41,4 +41,14 @@ extern int iscsi_mmap_device(uint8_t target, uint8_t lun,
 extern int iscsi_get_device_param(uint8_t target, uint8_t lun,
                                   te_bool *is_mmap,
                                   uint32_t *storage_size);
+extern int iscsi_sync_device(uint8_t target, uint8_t lun);
+
+extern int iscsi_write_to_device(uint8_t target, uint8_t lun,
+                                 uint32_t offset,
+                                 void *buffer, uint32_t len);
+
+extern int iscsi_verify_device_data(uint8_t target, uint8_t lun,
+                                    uint32_t offset,
+                                    void *buffer, uint32_t len);
+
 #endif
