@@ -491,7 +491,9 @@ asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
         return TE_EWRONGPTR; 
 
     if( !(type->syntax & CONSTRAINT) || (type->syntax & 1))
+    {
         return TE_EASNGENERAL; 
+    }
 
     n_en = type->sp.named_entries; 
         
@@ -519,17 +521,28 @@ asn_impl_named_subvalue_index(const asn_type *type, const char *label,
     if(!type || !label || !index)
         return TE_EWRONGPTR; 
 
-    if( !(type->syntax & CONSTRAINT) || (type->syntax & 1))
-        return TE_EASNGENERAL; 
+    switch (type->syntax)
+    {
+        case SEQUENCE:
+        case SET:
+        case CHOICE:
+            n_en = type->sp.named_entries; 
+            for (i = 0; i < type->len; i++, n_en++)
+                if(strcmp(label, n_en->name) == 0)
+                {            
+                    *index = i;
+                    return 0;
+                }
+            return TE_EASNWRONGLABEL;
 
-    n_en = type->sp.named_entries; 
-        
-    for (i = 0; i < type->len; i++, n_en++)
-        if(strcmp(label, n_en->name) == 0)
-        {            
-            *index = i;
+        case SEQUENCE_OF:
+            *index = atoi(label);
             return 0;
-        }
+            
+        default:
+            return TE_EASNGENERAL; 
+    } 
+        
     return TE_EASNWRONGLABEL;
 }
 
@@ -553,7 +566,9 @@ asn_impl_find_subtype(const asn_type * type, const char *label,
         return TE_EWRONGPTR; 
 
     if( !(type->syntax & CONSTRAINT) )
+    {
         return TE_EASNGENERAL;
+    }
 
     if (!(type->syntax & 1))
     {
@@ -633,12 +648,38 @@ static int
 asn_put_child_value_by_index(asn_value *container, asn_value *new_value, 
                              int leaf_type_index)
 {
-    int index = 0;
+    int     index = 0;
+    int     new_len;
+    te_bool named_value = TRUE;
 
     container->txt_len = -1;
 
     switch (container->syntax)
     {
+        case SEQUENCE_OF:
+            named_value = FALSE; 
+            new_len = container->len;
+
+            if (leaf_type_index >= new_len)
+            {
+                new_len = leaf_type_index + 1;
+                if ((container->data.array = 
+                      realloc(container->data.array, 
+                              new_len * sizeof(asn_value_p))) 
+                     == NULL) 
+                    return TE_ENOMEM; 
+
+                memset((void *)(container->data.array + container->len),
+                       0, sizeof(asn_value_p) * (new_len - container->len));
+
+                container->len = new_len;
+            }
+            else 
+                while (leaf_type_index < 0)
+                    leaf_type_index += new_len;
+
+
+            /* pass through ... */
         case SEQUENCE:
         case SET:
             index = leaf_type_index;
@@ -657,7 +698,7 @@ asn_put_child_value_by_index(asn_value *container, asn_value *new_value,
     }
 
     /* now set name of new subvalue, if it is. */
-    if (new_value != NULL)
+    if (new_value != NULL && named_value)
     {
         const asn_named_entry_t *ne =
             (container->asn_type->sp.named_entries) + leaf_type_index;
@@ -808,7 +849,9 @@ asn_impl_write_value_field(asn_value_p container,
             void * val = malloc(m_len);
 
             if (container->asn_type->len && (container->asn_type->len != d_len))
+            {
                 return TE_EASNGENERAL;
+            }
 
             if (container->data.other)
                 free (container->data.other);
@@ -1149,6 +1192,8 @@ asn_impl_write_component_value(asn_value_p container,
     asn_value_p  subvalue;
     int          rc;
 
+                asn_value_p new_value = NULL;
+
     if (!container || !elem_value || !subval_labels) return TE_EWRONGPTR; 
 
     if (!(container->syntax & CONSTRAINT))
@@ -1170,14 +1215,16 @@ asn_impl_write_component_value(asn_value_p container,
 
     rc = asn_impl_find_subvalue_writable(container, cur_label, &subvalue);
     if (rest_field_labels && (*rest_field_labels))
-    { /* There are more levels.. */
+    { 
+        /* There are more levels.. */
         if (rc) return rc;
 
         rc = asn_impl_write_component_value(subvalue, elem_value,
                                         rest_field_labels);
     }
     else
-    { /* no more labels, subvalue should be changed at this level */
+    { 
+        /* no more labels, subvalue should be changed at this level */
         switch(rc)
         {
             case 0: 
@@ -1186,7 +1233,6 @@ asn_impl_write_component_value(asn_value_p container,
                 /* pass through ... */
             case TE_EASNINCOMPLVAL:
             {
-                asn_value_p new_value = NULL;
 
                 if ((container->syntax == CHOICE) && (*cur_label == '\0'))
                 {
@@ -1240,7 +1286,9 @@ asn_impl_write_component_value(asn_value_p container,
                     new_value = asn_copy_value(elem_value);
 
                 if (new_value == NULL) 
+                {
                     return TE_EASNGENERAL;
+                }
 
                 rc = asn_put_child_value_by_label(container, new_value,
                                                   cur_label);
@@ -1812,7 +1860,9 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
         return TE_EWRONGPTR; 
 
     if( !(container->syntax & CONSTRAINT))
+    {
         return TE_EASNGENERAL; 
+    }
 
     if (!(container->syntax & 1))
     { /* we have current node constraint with named subtrees */
@@ -1950,7 +2000,6 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
 
     if (val->data.array == NULL)
     {
-        printf("data array is null\n");
         return TE_EASNGENERAL; 
     }
 
