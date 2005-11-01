@@ -924,7 +924,7 @@ static const char *conf_iscsi_unh_force_flag_fmt =
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_set_fmt,                            \
-                         SHOULD_OFFER((offered_params_), (mask_)) ? "r":"p",\
+                         SHOULD_OFFER((offered_params_), (mask_)) ? "":"p",\
                          (param_),                                          \
                          (value_), (target_id_),                            \
                          init_data->host_bus_adapter),                      \
@@ -948,7 +948,7 @@ static const char *conf_iscsi_unh_force_flag_fmt =
                 param_, value_, target_id_);                                \
         CHECK_SHELL_CONFIG_RC(                                              \
             ta_system_ex(conf_iscsi_unh_set_int_fmt,                        \
-                         SHOULD_OFFER((offered_params_), (mask_)) ? "r":"p",\
+                         SHOULD_OFFER((offered_params_), (mask_)) ? "":"p",\
                          (param_),                                          \
                          (value_), (target_id_),                            \
                          init_data->host_bus_adapter),                      \
@@ -1217,11 +1217,11 @@ iscsi_initiator_unh_set(const char *value)
     ISCSI_UNH_SET_UNNEGOTIATED("InitiatorName", 
                   target->initiator_name,
                   target_id);
-
+#if 0
     ISCSI_UNH_SET_UNNEGOTIATED("InitiatorAlias", 
                   target->initiator_alias, 
                   target_id);
-
+#endif
     /* Now the connection should be opened */
     rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
                          "cid=%d target=%d host=%d lun=%d",
@@ -1284,9 +1284,10 @@ iscsi_initiator_l5_set(const char *value)
     rc = iscsi_l5_write_config(init_data);
     if (rc != 0)
         return rc;
+
     if (anything_to_stop)
     {
-        rc = ta_system_ex("cd %s; ./iscsi_stop te", 
+        rc = te_shell_cmd_ex("cd %s; ./iscsi_stop te", 
                              init_data->script_path);
         if (rc != 0)
         {
@@ -1296,7 +1297,7 @@ iscsi_initiator_l5_set(const char *value)
     }
     if (anything_to_start)
     {
-        rc = ta_system_ex("cd %s; ./iscsi_start te", 
+        rc = te_shell_cmd_ex("cd %s; ./iscsi_start te", 
                          init_data->script_path);    
         if (rc != 0)
         {
