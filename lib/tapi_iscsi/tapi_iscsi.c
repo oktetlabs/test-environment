@@ -1343,10 +1343,6 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
     int          rc;
     cfg_val_type type = CVT_STRING;
 
-    RING("Set %s advertize %s param on (%s, taret_%d)",
-         advertize ? "" : "not",
-         log_mapping[param], ta, target_id);
-
     memset(offer, 0, sizeof(offer));
     
     rc = cfg_get_instance_fmt(&type, offer,
