@@ -1161,6 +1161,7 @@ get_sa_restorer(struct sigaction *sa)
 #else    
     static void *dummy = NULL;
     
+    UNUSED(sa);
     return &dummy;
 #endif
 }
