@@ -265,7 +265,7 @@ int main()
         printf ("TX status: %d\n", status);
         fflush (stdout);
 
-        rc = rcf_ta_trrecv_get(agent_b, sid_b, rx_csap, &num);
+        rc = rcf_ta_trrecv_get(agent_b, sid_b, rx_csap, NULL, NULL, &num);
         if (rc)
         {
             TEST_TERMINATION("v1: port A. RX CSAP get traffic error %x",
