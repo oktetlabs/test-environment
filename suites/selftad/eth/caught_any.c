@@ -89,7 +89,6 @@ main(int argc, char *argv[])
     uint16_t eth_type = ETH_P_IP;
 
     csap_handle_t              eth_listen_csap = CSAP_INVALID_HANDLE;
-    tapi_eth_pkt_handler_data  eth_cb_data;
 
     asn_value *pattern_unit;
     asn_value *pattern;
@@ -158,20 +157,22 @@ main(int argc, char *argv[])
         TEST_FAIL("tapi_tad_trrecv_start failed: %r", rc);
     VERB("eth recv start num: %d", num_pkts);
 
-    eth_cb_data.callback = local_eth_frame_handler;
-    eth_cb_data.user_data = NULL;
     if (blocked_mode)
-        rc = rcf_ta_trrecv_wait(ta, sid, eth_listen_csap,
-                                pass_results ? tapi_eth_pkt_handler : NULL,
-                                pass_results ? &eth_cb_data : NULL,
-                                &caught_num);
+        rc = tapi_tad_trrecv_wait(ta, sid, eth_listen_csap,
+                                  pass_results ?
+                                      tapi_eth_trrecv_cb_data(
+                                          local_eth_frame_handler, NULL) :
+                                      NULL,
+                                  &caught_num);
     else
     {
         sleep(timeout / 1000 + 1);
-        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap,
-                                pass_results ? tapi_eth_pkt_handler : NULL,
-                                pass_results ? &eth_cb_data : NULL,
-                                NULL, &caught_num);
+        rc = tapi_tad_trrecv_stop(ta, sid, eth_listen_csap,
+                                  pass_results ?
+                                      tapi_eth_trrecv_cb_data(
+                                          local_eth_frame_handler, NULL) :
+                                      NULL,
+                                  &caught_num);
     }
 
 

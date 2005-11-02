@@ -111,7 +111,6 @@ main(int argc, char *argv[])
         uint8_t payload [2000];
         int p_len = 100; /* for test */
         ndn_eth_header_plain plain_hdr;
-        tapi_eth_pkt_handler_data eth_cb_data;
         asn_value *asn_eth_hdr;
         asn_value *template;
         asn_value *asn_pdus;
@@ -192,11 +191,10 @@ main(int argc, char *argv[])
         sleep(2);
 
         num_pkts = 0;
-        eth_cb_data.callback = local_eth_frame_handler;
-        eth_cb_data.user_data = NULL;
-        rc = rcf_ta_trrecv_wait(ta_B, sid_b, eth_listen_csap,
-                                tapi_eth_pkt_handler, &eth_cb_data,
-                                &num_pkts);
+        rc = tapi_tad_trrecv_wait(ta_B, sid_b, eth_listen_csap,
+                                  tapi_eth_trrecv_cb_data(
+                                      local_eth_frame_handler, NULL),
+                                  &num_pkts);
 
         if (rc)
             TEST_FAIL("tapi_eth_recv_wait failed %r", rc);

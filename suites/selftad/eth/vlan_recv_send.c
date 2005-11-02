@@ -93,7 +93,6 @@ main(int argc, char *argv[])
     csap_handle_t eth_csap = CSAP_INVALID_HANDLE;
     csap_handle_t eth_listen_csap = CSAP_INVALID_HANDLE;
 
-    tapi_eth_pkt_handler_data eth_cb_data;
 
     TEST_START;
     
@@ -292,10 +291,10 @@ main(int argc, char *argv[])
                                    0, 1, RCF_TRRECV_PACKETS);
 #else
         syms = 4;
-        eth_cb_data.callback = local_eth_frame_handler;
-        eth_cb_data.user_data = NULL;
-        rc = tapi_eth_recv_wait(ta, sid, eth_listen_csap, pattern, 
-                 tapi_eth_pkt_handler, &eth_cb_data, 120000, &syms);
+        rc = tapi_tad_trrecv_wait(ta, sid, eth_listen_csap,
+                                  tapi_eth_trrecv_cb_data(
+                                      local_eth_frame_handler, NULL),
+                                  &syms);
 #endif
         if (rc)
             TEST_FAIL("failed %r, catched %d", rc, syms);
