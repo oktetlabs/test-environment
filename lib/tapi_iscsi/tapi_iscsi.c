@@ -1341,8 +1341,9 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
     };
 
     char         offer[50];
-    int          par2adv;
+    int          par2adv = 0;
     int          rc;
+#if 0
     cfg_val_type type = CVT_STRING;
 
     memset(offer, 0, sizeof(offer));
@@ -1358,14 +1359,23 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
     }
 
     par2adv = atoi(offer);
-    
     if (offer_mapping[param] != 0)
     {
+        printf("\n%x <--  %x\n", par2adv, offer_mapping[param]);
         if (advertize == TRUE)
             par2adv |= offer_mapping[param];
         else
             par2adv &= ~(offer_mapping[param]);
     }
+#else
+    if (offer_mapping[param] != 0)
+    {
+        if (advertize == TRUE)
+            par2adv = offer_mapping[param];
+        else
+            par2adv = 0;
+    }
+#endif
 
     sprintf(offer, "%d", par2adv);
 
@@ -1439,9 +1449,15 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
          log_mapping[param], 
          ta, target_id, value, advertize ? "with":"without");
     
-    tapi_iscsi_initiator_advertize_set(ta, target_id,
-                                       param,
-                                       advertize);
+    rc = tapi_iscsi_initiator_advertize_set(ta, target_id,
+                                            param,
+                                            advertize);
+    if (rc != 0)
+    {
+        ERROR("Failed to set %sadvertize for the parameter %s",
+              advertize ? "":"not ", log_mapping[param]);
+        return rc;
+    }
 
     rc = cfg_set_instance_fmt(CVT_STRING, value,
                               "/agent:%s/iscsi_initiator:/target_data:"
@@ -1650,8 +1666,8 @@ tapi_iscsi_get_param_map(const char *param)
         "PeerName",
         "ChallengeLength",
         "EncodingFormat",
-        "TargetAuthenticationRequired",
-        "SecurityNegotiationPhase",
+        "TargetAuth",
+        "AuthMethod",
     };
     static int param_map_size = sizeof(param_map) / sizeof(char *);
     

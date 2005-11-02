@@ -2412,7 +2412,7 @@ iscsi_parameters2advertize_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params = atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].conf_params |= atoi(value);
 
     return 0;
 }
