@@ -32,15 +32,18 @@
 #define __TE_TAPI_RADIUS_H__
 
 #include "te_config.h"
-#include "te_stdint.h"
-#include "te_defs.h"
-#include "tad_common.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
+
+#include "te_stdint.h"
+#include "te_defs.h"
+#include "tad_common.h"
+#include "tapi_tad.h"
+
 
 #ifdef __cplusplus
 extern "C" {
