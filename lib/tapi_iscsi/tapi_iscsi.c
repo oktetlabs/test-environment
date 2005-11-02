@@ -1347,7 +1347,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
     cfg_val_type type = CVT_STRING;
 
     memset(offer, 0, sizeof(offer));
-    
+
     rc = cfg_get_instance_fmt(&type, offer,
                               "/agent:%s/iscsi_initiator:/target_data:"
                               "target_%d/parameters2advertize:",
@@ -1974,27 +1974,45 @@ tapi_iscsi_initiator_delete_file(const char *ta, int id,
     return rcf_ta_del_file(ta, 0, destination);
 }
 
-#if 0
-int tapi_iscsi_initiator_raw_write(const char *ta, int id,
-                                   unsigned long offset,
-                                   const char *data)
+
+int
+tapi_iscsi_initiator_raw_write(const char *ta, int id,
+                               unsigned long offset,
+                               const char *data)
 {
     char *dev = get_nth_device(ta, id);
+    int   rc;
+    int   result;
 
     if (dev == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
     
+    rc = rcf_ta_call(ta, 0 /* sid */,
+                     "ta_write_to_file", &result, 3, FALSE,
+                     RCF_STRING, dev, 
+                     RCF_UINT32, offset,
+                     RCF_STRING, data);
+    return rc == 0 ? result : rc;
+    
 }
 
-int tapi_iscsi_initiator_raw_verify(const char *ta, int id, 
-                                    unsigned long offset,
-                                    const char *data)
+int
+tapi_iscsi_initiator_raw_verify(const char *ta, int id, 
+                                unsigned long offset,
+                                const char *data)
 {
     char *dev = get_nth_device(ta, id);
+    int   rc;
+    int   result;
 
     if (dev == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
-    
+
+    rc = rcf_ta_call(ta, 0 /* sid */,
+                     "ta_verify_file_data", &result, 3, FALSE,
+                     RCF_STRING, dev, 
+                     RCF_UINT32, offset,
+                     RCF_STRING, data);    
     
 }
-#endif
+
