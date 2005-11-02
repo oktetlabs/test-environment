@@ -227,7 +227,7 @@ main(int argc, char *argv[])
 
         asn_save_to_file(pattern, path);
         rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, 0,
-                                 RCF_TRRECV_COUNT);
+                                 RCF_TRRECV_PACKETS);
         INFO("trrecv_start: %r \n", rc);
 #endif /* USE_TAPI */
 
@@ -236,7 +236,9 @@ main(int argc, char *argv[])
 #if 1
         sleep(2);
         INFO ("try to get\n");
-        rc = rcf_ta_trrecv_get(ta, sid, csap, user_pkt_handler, NULL, &num);
+        rc = tapi_tad_trrecv_get(ta, sid, csap,
+                                 tapi_ip4_eth_trrecv_cb_data(
+                                     user_pkt_handler, NULL), &num);
         INFO("trrecv_get: %r num: %d\n", rc, num);
         if (rc) break;
 
@@ -246,7 +248,9 @@ main(int argc, char *argv[])
         sleep (num);
 
         INFO ("try to wait\n");
-        rc = rcf_ta_trrecv_wait(ta, sid, csap, NULL, NULL, &num);
+        rc = tapi_tad_trrecv_wait(ta, sid, csap, 
+                                  tapi_ip4_eth_trrecv_cb_data(
+                                      user_pkt_handler, NULL), &num);
         INFO("trrecv_wait: %r num: %d\n", rc, num);
         if (rc)
         {
