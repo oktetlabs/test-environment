@@ -677,7 +677,7 @@ tapi_radius_trrecv_cb_data(radius_callback  user_callback,
         return NULL;
     }
     cb_data->callback = user_callback;
-    cb_data->userdata = user_data;
+    cb_data->user_data = user_data;
     
     res = tapi_udp_ip4_eth_trrecv_cb_data(tapi_radius_pkt_handler,
                                           cb_data);
