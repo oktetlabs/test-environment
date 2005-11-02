@@ -1020,7 +1020,7 @@ tad_tr_recv_thread(void *arg)
     csap_descr->last_errno       = 0;
     CSAP_DA_UNLOCK(csap_descr);
 
-    RING("CSAP %d (type '%s') recv process finished, %d pkts got",
+    INFO("CSAP %d (type '%s') recv process finished, %d pkts got",
          csap_descr->id, csap_descr->csap_type, pkt_count);
 
     free(context);

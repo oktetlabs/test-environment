@@ -115,7 +115,7 @@ eth_release(csap_p csap_descr)
 
     if (spec_data->in >= 0)
     {
-        RING("%s: CSAP %d, close input socket %d", 
+        INFO("%s(): CSAP %d, close input socket %d", 
              __FUNCTION__, csap_descr->id, spec_data->in);
         if (close_packet_socket(spec_data->interface->name, spec_data->in) < 0)
         {
@@ -146,7 +146,7 @@ eth_release(csap_p csap_descr)
             WARN("%s(CSAP %d): system errno on select, %d", 
                  __FUNCTION__, csap_descr->id, errno);
 
-        RING("%s(CSAP %d): close output socket %d", 
+        INFO("%s(CSAP %d): close output socket %d", 
              __FUNCTION__, csap_descr->id, spec_data->out);
         if (close_packet_socket(spec_data->interface->name, spec_data->out) < 0)
         {
@@ -185,7 +185,8 @@ eth_prepare_recv(csap_p csap_descr)
 
     layer = csap_descr->read_write_layer;
     
-    spec_data = (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
+    spec_data =
+        (eth_csap_specific_data_p)csap_descr->layers[layer].specific_data;
     
     VERB("Before opened Socket %d", spec_data->in);
 
@@ -193,23 +194,26 @@ eth_prepare_recv(csap_p csap_descr)
     if ((rc = open_packet_socket(spec_data->interface->name,
                                  &spec_data->in)) != 0)
     {
-        ERROR("open_packet_socket error %d", rc);
-        return TE_OS_RC(TE_TAD_CSAP, rc);
+        rc = TE_OS_RC(TE_TAD_CSAP, rc);
+        ERROR("%s(): open_packet_socket() error: %r", __FUNCTION__, rc);
+        return rc;
     }
 
-    RING("%s(CSAP %d) open in socket %d", 
+    INFO("%s(CSAP %d) open in socket %d", 
          __FUNCTION__, csap_descr->id, spec_data->in);
 
-    buf_size = 0x100000; 
     /* TODO: reasonable size of receive buffer to be investigated */
+    buf_size = 0x100000; 
     if (setsockopt(spec_data->in, SOL_SOCKET, SO_RCVBUF,
-                &buf_size, sizeof(buf_size)) < 0)
+                   &buf_size, sizeof(buf_size)) < 0)
     {
-        perror ("set RCV_BUF failed");
-        fflush (stderr);
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        ERROR("%s(): set SO_RCVBUF to %d failed: %r", __FUNCTION__,
+              buf_size, rc);
+        /* FIXME close opened socket */
     }
 
-    return 0;
+    return rc;
  }
 
 
@@ -573,14 +577,14 @@ te_errno
 tad_eth_single_init_cb(int csap_id, const asn_value *csap_nds,
                        unsigned int layer)
 {
-    int      rc; 
-    char     device_id[IFNAME_SIZE]; /**< ethernet interface id (e.g. eth0, eth1)      */
-    char     local_addr[ETH_ALEN];   /**< local ethernet address                       */
-    char     remote_addr[ETH_ALEN];  /**< remote ethernet address                      */    
-    size_t   val_len;                /**< stores corresponding value length            */
+    te_errno rc; 
+    char     device_id[IFNAME_SIZE];
+    char     local_addr[ETH_ALEN];
+    char     remote_addr[ETH_ALEN];
+    size_t   val_len;
     
     eth_interface_p iface_p; /**< pointer to interface structure to be used with csap */
-    csap_p   csap_descr;          /**< csap description                                    */
+    csap_p   csap_descr;
 
     eth_csap_specific_data_p    eth_spec_data; 
     const asn_value            *eth_csap_spec; 
@@ -588,7 +592,7 @@ tad_eth_single_init_cb(int csap_id, const asn_value *csap_nds,
     int                         eth_type;      /**< Ethernet type                          */
     char     str_index_buf[10];
     
-    RING("%s called for csap %d, layer %d",
+    INFO("%s called for csap %d, layer %d",
          __FUNCTION__, csap_id, layer); 
 
     if (csap_nds == NULL)
