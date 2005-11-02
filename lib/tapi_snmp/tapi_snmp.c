@@ -3113,7 +3113,7 @@ tapi_snmp_trap_handler(const char *fn, void *user_param)
     asn_free_value(packet);
     asn_free_value(snmp_message);
 
-    i_data->user_callback(&plain_msg, i_data->user_data);
+    i_data->callback(&plain_msg, i_data->user_data);
 
     tapi_snmp_free_message(&plain_msg);
 
