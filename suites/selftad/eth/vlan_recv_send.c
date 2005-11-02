@@ -328,8 +328,10 @@ main(int argc, char *argv[])
         rx_counter = atoi(rx_counter_txt);
         VERB("rx_counter: %d\n", rx_counter);
 
-        rc = rcf_ta_trrecv_stop(ta, sid, eth_listen_csap,
-                                local_eth_frame_handler, NULL, &syms);
+        rc = tapi_tad_trrecv_stop(ta, sid, eth_listen_csap,
+                                  tapi_eth_trrecv_cb_data(
+                                      local_eth_frame_handler, NULL),
+                                  &syms);
 
         if (rc != 0)
             TEST_FAIL("ETH recv_stop fails, rc %X", rc);
