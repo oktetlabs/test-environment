@@ -2184,12 +2184,12 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
 
     while ((msg.flags & INTERMEDIATE_ANSWER))
     {
-        assert(handler != NULL);
         assert(msg.file != NULL);
 
         RING("Traffic receive operation on the CSAP %d (%s:%d) got "
              "packet\n%Tf", csap_id, ta_name, session, msg.file);
-        handler(msg.file, user_param);
+        if (handler != NULL)
+            handler(msg.file, user_param);
 
         anslen = sizeof(msg);
         if ((rc = wait_rcf_ipc_message(ipc_handle, 
