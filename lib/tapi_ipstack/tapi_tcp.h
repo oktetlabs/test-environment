@@ -170,15 +170,6 @@ extern int tapi_tcp_buffer_send(const char *ta_name, int sid,
  * ======================== ROW-TCP methods =============================
  */
 
-/** 
- * Callback function for the receiving TCP datagrams.
- *
- * @param pkt           Received IP packet.
- * @param userdata      Parameter, provided by the caller.
- */
-typedef void (*tcp_row_callback)(const asn_value *pkt, void *userdata);
-
-
 
 /**
  * Creates 'tcp.ip4.eth' CSAP.

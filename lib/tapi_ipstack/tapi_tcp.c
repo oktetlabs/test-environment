@@ -76,51 +76,7 @@
 #include "ndn_eth.h"
 
 
-
-/** Data to be passed to intermediate callback */
-typedef struct tapi_ip4_cb_data_t {
-    tcp_row_callback  user_cb;
-    void             *user_data;
-} tapi_tcp_cb_data_t;
-
-/* 
- * Pkt handler for TCP packets 
- */
-static void
-tcp_pkt_handler(const char *pkt_fname, void *user_param)
-{
-    tapi_tcp_cb_data_t *cb_data = (tapi_tcp_cb_data_t *)user_param;
-    asn_value          *pkt = NULL;
-
-    int s_parsed = 0;
-    int rc;
-
-    if (user_param == NULL) 
-    {
-        ERROR("%s called with NULL user param", __FUNCTION__);
-        return;
-    }
-
-    if (cb_data->user_cb == NULL)
-    {
-        ERROR("%s called with NULL user cb", __FUNCTION__);
-        return; 
-    }
-
-    if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
-                                       &pkt, &s_parsed)) != 0)
-    {                                      
-        ERROR("%s(): parse packet fails, rc = %r, sym %d",
-              __FUNCTION__, rc, s_parsed);
-        return;
-    }
-
-    cb_data->user_cb(pkt, cb_data->user_data);
-    
-    asn_free_value(pkt);
-}
-
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int 
 tapi_tcp_ip4_eth_csap_create(const char *ta_name, int sid, 
                              const char *eth_dev,
@@ -221,7 +177,7 @@ tapi_tcp_ip4_eth_mode_csap_create(const char *ta_name, int sid,
     return TE_RC(TE_TAPI, rc);
 }
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int 
 tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
                           uint16_t src_port, uint16_t dst_port,
@@ -289,7 +245,7 @@ tapi_tcp_ip4_pattern_unit(in_addr_t  src_addr, in_addr_t  dst_addr,
 }
 
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid, 
                             csap_handle_t csap,
@@ -334,7 +290,7 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
 
 
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
                   tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
@@ -382,7 +338,7 @@ tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
     return 0;
 }
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port,
              tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
@@ -465,7 +421,7 @@ tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port,
 }
 
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
                   te_bool syn_flag, te_bool ack_flag,
@@ -548,7 +504,7 @@ cleanup:
  */
 
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_server_csap_create(const char *ta_name, int sid, 
                             in_addr_t loc_addr, uint16_t loc_port,
@@ -603,7 +559,7 @@ cleanup:
     return rc;
 }
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_client_csap_create(const char *ta_name, int sid, 
                             in_addr_t loc_addr, in_addr_t rem_addr,
@@ -620,7 +576,7 @@ tapi_tcp_client_csap_create(const char *ta_name, int sid,
     return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 }
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
                             int socket, csap_handle_t *tcp_csap)
@@ -690,7 +646,7 @@ tcp_server_handler(const char *pkt_fname, void *user_param)
     asn_free_value(pkt);
 }
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_server_recv(const char *ta_name, int sid, 
                      csap_handle_t tcp_csap, 
@@ -794,7 +750,7 @@ tcp_data_csap_handler(const char *pkt_fname, void *user_param)
 
 
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_buffer_recv(const char *ta_name, int sid, 
                      csap_handle_t tcp_csap, 
@@ -866,7 +822,7 @@ cleanup:
     return rc;
 }
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_buffer_send(const char *ta_name, int sid, 
                      csap_handle_t tcp_csap, 
@@ -912,7 +868,7 @@ cleanup:
 
 
 
-/* see description in tapi_tcp.h */
+/* See description in tapi_tcp.h */
 int
 tapi_tcp_forward_all(const char *ta_name, int session,
                      csap_handle_t csap_rcv, csap_handle_t csap_fwd,
