@@ -207,7 +207,9 @@ rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid)
 
     rcf_rpc_call(rpcs, "ta_kill_death", &in, &out);
 
-    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(kill, out.retval);
+    /* This function should not check errno */
+    out.common.errno_changed = FALSE;
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(ta_kill_death, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: ta_kill_death(%d) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
