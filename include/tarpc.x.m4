@@ -55,7 +55,7 @@ typedef tarpc_ptr   tarpc_sigset_t;
 /** Handle of the 'fd_set' or 0 */
 typedef tarpc_ptr   tarpc_fd_set;
 /** RPC off_t analog */
-typedef int32_t     tarpc_off_t;
+typedef int64_t     tarpc_off_t;
 /** RPC time_t analogue */
 typedef int64_t     tarpc_time_t;
 /** RPC suseconds_t analogue */
