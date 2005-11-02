@@ -168,7 +168,16 @@ typedef void (*tapi_eth_frame_callback)
                    void *user_data);
 
 /**
- * FIXME
+ * Prepare Ethernet layer callback data for tapi_tad_trrecv_get(),
+ * tapi_tad_trrecv_stop() or tapi_tad_trrecv_wait() routines.
+ *
+ * @param callback      User callback to be called for each received
+ *                      packet
+ * @param user_data     Opaque user data to be passed to @a callback
+ *
+ * @return Allocated structure to be passed to tapi_tad_trrecv_get(),
+ *         tapi_tad_trrecv_stop() or tapi_tad_trrecv_wait() as
+ *         @a cb_data.
  */
 extern tapi_tad_trrecv_cb_data *tapi_eth_trrecv_cb_data(
                                     tapi_eth_frame_callback  callback,

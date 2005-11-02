@@ -112,17 +112,28 @@ tapi_pcap_csap_create(const char *ta_name, int sid,
 }
 
 
-/* See description in tapi_pcap.h */
-void
-tapi_pcap_pkt_handler(const char *fn, void *user_param)
+/**
+ * Structure to be passed as @a user_param to rcf_ta_trrecv_wait(),
+ * rcf_ta_trrecv_stop() and rcf_ta_trrecv_get(), if
+ * tapi_pcap_pkt_handler() function as @a handler.
+ */
+typedef struct tapi_pcap_pkt_handler_data {
+    tapi_pcap_recv_callback  callback;  /**< User callback function */
+    void                    *user_data; /**< Real user data */
+} tapi_pcap_pkt_handler_data;
+
+/**
+ * This function complies with rcf_pkt_handler prototype.
+ * @a user_param must point to tapi_pcap_pkt_handler_data structure.
+ */
+static void
+tapi_pcap_pkt_handler(asn_value *frame_val, void *user_param)
 {
     struct tapi_pcap_pkt_handler_data *i_data =
         (struct tapi_pcap_pkt_handler_data *)user_param;
 
-    int rc;
-    int syms = 0;
+    te_errno   rc;
 
-    asn_value *frame_val;
     asn_value *pcap_filtered_pdu;
 
     uint8_t   *pkt;
@@ -139,21 +150,12 @@ tapi_pcap_pkt_handler(const char *fn, void *user_param)
         return;
     }
 
-    rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &frame_val, &syms);
-    if (rc)
-    {
-        ERROR("Parse value from file %s failed, rc %x, syms: %d\n",
-                fn, rc, syms);
-        return;
-    }
-
-    pcap_filtered_pdu = asn_read_indexed (frame_val, 0, "pdus");
+    pcap_filtered_pdu = asn_read_indexed(frame_val, 0, "pdus");
     if (pcap_filtered_pdu == NULL)
     {
-        ERROR("%s, read_indexed error\n", __FUNCTION__);
+        ERROR("%s(): read_indexed error", __FUNCTION__);
         return;
     }
-
 
     tmp_len = sizeof(int);
     rc = asn_read_value_field(pcap_filtered_pdu, &filter_id, 
@@ -166,12 +168,12 @@ tapi_pcap_pkt_handler(const char *fn, void *user_param)
     rc = asn_get_length(frame_val, "payload.#bytes");
     if (rc < 0)
     {
-        ERROR( "%s, get_len error \n", __FUNCTION__);
+        ERROR("%s(): get_len error", __FUNCTION__);
         return;
     }
     pkt_len = rc;
     
-    VERB("%s: Packet payload length %u bytes\n",
+    VERB("%s(): Packet payload length %u bytes",
          __FUNCTION__, (unsigned)pkt_len);
 
     pkt = malloc(pkt_len);
@@ -184,7 +186,7 @@ tapi_pcap_pkt_handler(const char *fn, void *user_param)
     rc = asn_read_value_field(frame_val, pkt, &pkt_len, "payload.#bytes");
     if (rc < 0)
     {
-        ERROR( "%s, read payload error %x\n", __FUNCTION__, rc);
+        ERROR("%s(): read payload error %r", __FUNCTION__, rc);
         return;
     }
 
@@ -194,11 +196,34 @@ tapi_pcap_pkt_handler(const char *fn, void *user_param)
 
     asn_free_value(frame_val);
     asn_free_value(pcap_filtered_pdu);
-
-    return;
 }
 
-/* See the description in tapi_pcap.h */
+/* See description in tapi_eth.h */
+tapi_tad_trrecv_cb_data *
+tapi_pcap_trrecv_cb_data(tapi_pcap_recv_callback  callback,
+                         void                    *user_data)
+{
+    tapi_pcap_pkt_handler_data *cb_data;
+    tapi_tad_trrecv_cb_data    *res;
+
+    cb_data = (tapi_pcap_pkt_handler_data *)calloc(1, sizeof(*cb_data));
+    if (cb_data == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
+    }
+    cb_data->callback = callback;
+    cb_data->user_data = user_data;
+    
+    res = tapi_tad_trrecv_make_cb_data(tapi_pcap_pkt_handler, cb_data);
+    if (res == NULL)
+        free(cb_data);
+
+    return res;
+}
+
+
+/* See description in tapi_pcap.h */
 int
 tapi_pcap_pattern_add(const char *filter,
                       const int   filter_id,
@@ -276,4 +301,3 @@ tapi_pcap_pattern_add(const char *filter,
 
     return 0;
 }
-

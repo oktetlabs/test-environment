@@ -47,6 +47,7 @@
 #include "tad_common.h"
 #include "asn_usr.h"
 #include "ndn_pcap.h"
+#include "tapi_tad.h"
 
 
 /* Default recv mode: all except OUTGOING packets. */
@@ -92,20 +93,21 @@ typedef void (*tapi_pcap_recv_callback)(int            filter_id,
                                         void          *user_data);
 
 /**
- * Structure to be passed as @a user_param to rcf_ta_trrecv_wait(),
- * rcf_ta_trrecv_stop() and rcf_ta_trrecv_get(), if
- * tapi_pcap_pkt_handler() function as @a handler.
+ * Prepare PCAP callback data for tapi_tad_trrecv_get(),
+ * tapi_tad_trrecv_stop() or tapi_tad_trrecv_wait() routines.
+ *
+ * @param callback      User callback to be called for each received
+ *                      packet
+ * @param user_data     Opaque user data to be passed to @a callback
+ *
+ * @return Allocated structure to be passed to tapi_tad_trrecv_get(),
+ *         tapi_tad_trrecv_stop() or tapi_tad_trrecv_wait() as
+ *         @a cb_data.
  */
-typedef struct tapi_pcap_pkt_handler_data {
-    tapi_pcap_recv_callback  callback;  /**< User callback function */
-    void                    *user_data; /**< Real user data */
-} tapi_pcap_pkt_handler_data;
+extern tapi_tad_trrecv_cb_data *tapi_pcap_trrecv_cb_data(
+                                    tapi_pcap_recv_callback  callback,
+                                    void                    *user_data);
 
-/**
- * This function complies with rcf_pkt_handler prototype.
- * @a user_param must point to tapi_pcap_pkt_handler_data structure.
- */
-extern void tapi_pcap_pkt_handler(const char *fn, void *user_param);
 
 /**
  * Creates traffic    pattern for a single Ethernet-PCAP frame.
