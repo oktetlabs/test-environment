@@ -294,7 +294,6 @@ tapi_ip4_eth_recv_start(const char      *ta_name,
     rc = rcf_ta_trrecv_start(ta_name, sid, csap, template_fname,
                              timeout, num, mode);
 
-    RING("%s(): rc %x", __FUNCTION__, rc);
     unlink(template_fname); 
 
     return rc;
