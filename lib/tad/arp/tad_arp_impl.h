@@ -34,10 +34,23 @@
 #include <sys/types.h>
 #endif
 
+#include "te_stdint.h"
+#include "te_errno.h"
 #include "asn_usr.h"
 
 #include "tad_csap_support.h"
 #include "tad_csap_inst.h"
+
+
+/**
+ * ARP CSAP specific data
+ */
+typedef struct arp_csap_specific_data {
+    uint16_t    hw_type;
+    uint16_t    proto_type;
+    uint8_t     hw_size;
+    uint8_t     proto_size;
+} arp_csap_specific_data_t;
 
 
 /**

@@ -37,6 +37,7 @@
 #include "asn_usr.h"
 #include "tad_csap_support.h"
 #include "tad_csap_inst.h"
+#include "eth/tad_eth_impl.h"
 #include "tad_arp_impl.h"
 
 
@@ -45,9 +46,71 @@ te_errno
 tad_arp_eth_init_cb(int csap_id, const asn_value *csap_nds,
                     unsigned int layer)
 {
+    arp_csap_specific_data_t *arp_spec_data; 
+    eth_csap_specific_data_t *eth_spec_data; 
+
+    te_errno    rc;
+    csap_p      csap_descr;
+    int32_t     tmp;
+
+
+    UNUSED(csap_nds); /* All data are extractred from its layer */
+
     F_ENTRY("(%d:%u) nds=%p", csap_id, layer, (void *)csap_nds);
 
-    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+    if ((csap_descr = csap_find(csap_id)) == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
+
+    if (layer + 1 >= csap_descr->depth)
+    {
+        ERROR("%s(): CSAP %u too large layer %u, depth is %u", 
+              __FUNCTION__, csap_id, layer, csap_descr->depth);
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    }
+    eth_spec_data = (eth_csap_specific_data_t *)
+        csap_descr->layers[layer + 1].specific_data;
+    assert(eth_spec_data != NULL);
+    if (eth_spec_data->eth_type == 0)
+        eth_spec_data->eth_type = ETHERTYPE_ARP;
+
+    arp_spec_data = calloc(1, sizeof(*arp_spec_data));
+    if (arp_spec_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+    csap_descr->layers[layer].specific_data = arp_spec_data;
+    csap_descr->layers[layer].get_param_cb = tad_arp_get_param_cb;
+
+#define TAD_ARP_INIT_GET_INT(_str, _width, _field) \
+    do {                                                                \
+        rc = asn_read_int32(csap_descr->layers[layer].csap_layer_pdu,   \
+                            &tmp, _str ".#plain");                      \
+        if (rc == TE_EASNWRONGLABEL)                                    \
+        {                                                               \
+            INFO("%s(): " _str " is not specified", __FUNCTION__);      \
+        }                                                               \
+        else if (rc != 0)                                               \
+        {                                                               \
+            ERROR("%s(): asn_read_int32(" _str ".#plain) failed: %r",   \
+                  __FUNCTION__, rc);                                    \
+            return TE_RC(TE_TAD_CSAP, rc);                              \
+        }                                                               \
+        else if ((tmp >> (_width)) != 0)                                \
+        {                                                               \
+            ERROR("%s() " _str ".#plain value %u does not fit in "      \
+                  "%u-bit", __FUNCTION__, (unsigned)tmp, (_width));     \
+            return TE_RC(TE_TAD_CSAP, TE_EINVAL);                       \
+        }                                                               \
+        arp_spec_data->_field = tmp;                                    \
+    } while (0)
+
+    TAD_ARP_INIT_GET_INT("hw-type",    16, hw_type);
+    TAD_ARP_INIT_GET_INT("proto-type", 16, proto_type);
+    TAD_ARP_INIT_GET_INT("hw-size",    8,  hw_size);
+    TAD_ARP_INIT_GET_INT("proto-size", 8,  proto_size);
+
+#undef TAD_ARP_INIT_GET_INT
+
+    return 0;
 }
 
 /* See description in tad_arp_impl.h */
@@ -56,5 +119,5 @@ tad_arp_eth_destroy_cb(int csap_id, unsigned int layer)
 {
     F_ENTRY("(%d:%u)", csap_id, layer);
 
-    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+    return 0;
 }
