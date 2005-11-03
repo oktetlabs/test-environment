@@ -18,8 +18,9 @@ TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 TE_TOOLS([rgt rpcgen trc tce millicom])
 
 TE_LIB_PARMS([tad], [], [], \
-             [--with-file --with-eth --with-bridge --with-iscsi\
-              --with-ipstack --with-dhcp --with-snmp --with-cli], [])
+             [--with-file --with-pcap --with-eth --with-bridge \
+              --with-arp --with-ipstack --with-dhcp --with-iscsi \
+              --with-snmp --with-cli], [])
 
 TE_TA_TYPE([linux], [], [unix], [--with-rcf-rpc  --with-netlink --with-netlink-route ], [], [], \
             [ndn asn comm_net_agent])

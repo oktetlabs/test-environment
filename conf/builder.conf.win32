@@ -8,7 +8,7 @@ TE_PLATFORM([], [], [], [],
              tapi_eth tapi_arp tapi_ipstack tapi_dhcp tapi_cli])
 
 TE_LIB_PARMS([tad], [], [],
-             [--with-eth --with-ipstack --with-dhcp --with-cli], [])
+             [--with-eth --with-arp --with-ipstack --with-dhcp --with-cli], [])
 TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
 
 TE_TA_TYPE([linux], [], [unix], [--with-rcf-rpc --with-netlink], [], [], 

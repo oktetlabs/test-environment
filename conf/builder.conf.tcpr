@@ -12,7 +12,7 @@ TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
 
 TE_LIB_PARMS([forwarder], [], [${TAD_FORW_DIR}], [], [])
 
-TE_LIB_PARMS([tad], [], [], [--with-eth --with-ipstack], [])
+TE_LIB_PARMS([tad], [], [], [--with-eth --with-arp --with-ipstack], [])
               
 TE_TA_TYPE([linux], [], [unix],
            [--with-rcf-rpc], [], [],
