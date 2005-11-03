@@ -27,3 +27,81 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD ARP layer"
+
+#include "te_config.h"
+
+#include "te_errno.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
+#include "asn_usr.h"
+#include "tad_csap_support.h"
+#include "tad_csap_inst.h"
+#include "tad_arp_impl.h"
+
+
+/* See description in tad_arp_impl.h */
+char *
+tad_arp_get_param_cb(csap_p csap_descr, unsigned int  layer,
+                     const char *param)
+{
+    assert(csap_descr != NULL);
+    ENTRY("(%d:%u) param=%s", csap_descr->id, layer, param);
+
+    return NULL;
+}
+
+/* See description in tad_arp_impl.h */
+te_errno
+tad_arp_confirm_pdu_cb(int csap_id, unsigned int  layer, 
+                       asn_value *traffic_pdu)
+{
+    F_ENTRY("(%d:%u) traffic_pdu=%p", csap_id, layer, (void *)traffic_pdu);
+
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+}
+
+/* See description in tad_arp_impl.h */
+te_errno
+tad_arp_gen_bin_cb(csap_p                csap_descr,
+                   unsigned int          layer,
+                   const asn_value      *tmpl_pdu,
+                   const tad_tmpl_arg_t *args,
+                   size_t                arg_num,
+                   csap_pkts_p           up_payload,
+                   csap_pkts_p           pkts)
+{
+    assert(csap_descr != NULL);
+    F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u up_payload=%p pkts=%p",
+            csap_descr->id, layer, (void *)tmpl_pdu, (void *)args,
+            (unsigned)arg_num, up_payload, pkts);
+
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+}
+
+/* See description in tad_arp_impl.h */
+te_errno
+tad_arp_match_bin_cb(int              csap_id,
+                     unsigned int     layer,
+                     const asn_value *pattern_pdu,
+                     const csap_pkts *pkt,
+                     csap_pkts       *payload,
+                     asn_value       *parsed_packet)
+{
+    F_ENTRY("(%d:%u) pattern_pdu=%p pkt=%p payload=%p parsed_packet=%p",
+            csap_id, layer, (void *)pattern_pdu, pkt, payload,
+            (void *)parsed_packet);
+
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+}
+
+/* See description in tad_arp_impl.h */
+te_errno
+tad_arp_gen_pattern_cb(int csap_id, unsigned int layer,
+                       const asn_value *tmpl_pdu, asn_value **pattern_pdu)
+{
+    F_ENTRY("(%d:%u) tmpl_pdu=%p pattern_pdu=%p",
+            csap_id, layer, (void *)tmpl_pdu, pattern_pdu);
+
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+}

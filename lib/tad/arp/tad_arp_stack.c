@@ -27,3 +27,34 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD ARP stack"
+
+#include "te_config.h"
+
+#include "te_errno.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
+#include "asn_usr.h"
+#include "tad_csap_support.h"
+#include "tad_csap_inst.h"
+#include "tad_arp_impl.h"
+
+
+/* See description in tad_arp_impl.h */
+te_errno
+tad_arp_eth_init_cb(int csap_id, const asn_value *csap_nds,
+                    unsigned int layer)
+{
+    F_ENTRY("(%d:%u) nds=%p", csap_id, layer, (void *)csap_nds);
+
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+}
+
+/* See description in tad_arp_impl.h */
+te_errno
+tad_arp_eth_destroy_cb(int csap_id, unsigned int layer)
+{
+    F_ENTRY("(%d:%u)", csap_id, layer);
+
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+}
