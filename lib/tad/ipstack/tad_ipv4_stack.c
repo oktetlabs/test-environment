@@ -55,6 +55,9 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#if HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
+#endif
 
 #include <sys/ioctl.h>
 #include <netinet/in.h>
@@ -338,7 +341,7 @@ tad_ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, unsigned int layer)
     if (rc != 0)
     {
         INFO("%s(): read remote addr fails %X", __FUNCTION__, rc);
-        spec_data->remote_addr.s_addr = 0;
+        spec_data->remote_addr.s_addr = INADDR_ANY;
     }
 
     val_len = sizeof(spec_data->local_addr);
@@ -348,14 +351,14 @@ tad_ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, unsigned int layer)
     if (rc != 0)
     {
         INFO("%s(): read local addr fails %X", __FUNCTION__, rc);
-        spec_data->local_addr.s_addr = 0;
+        spec_data->local_addr.s_addr = INADDR_ANY;
     }
 
     F_VERB("%s(): csap %d, layer %d",
             __FUNCTION__, csap_id, layer); 
 
     if (eth_spec_data->eth_type == 0)
-        eth_spec_data->eth_type = 0x0800;
+        eth_spec_data->eth_type = ETHERTYPE_IP;
 
     UNUSED(csap_nds);
     return 0;
