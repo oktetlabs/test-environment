@@ -81,6 +81,10 @@ static int is_initialized = 0;
 extern int csap_support_eth_register(void);
 #endif
 
+#ifdef WITH_ARP
+extern te_errno csap_support_arp_register(void);
+#endif
+
 #ifdef WITH_IPSTACK
 extern int csap_support_ipstack_register(void);
 #endif
@@ -125,6 +129,9 @@ check_init(void)
 #ifdef WITH_ETH
     csap_support_eth_register();
 #endif 
+#ifdef WITH_ARP
+    csap_support_arp_register();
+#endif
 #ifdef WITH_IPSTACK
     csap_support_ipstack_register();
 #endif
