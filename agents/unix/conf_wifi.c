@@ -33,6 +33,9 @@
 #include "te_config.h"
 #include "config.h"
 
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
 #if HAVE_IWLIB_H
 #include <iwlib.h>
 #else
