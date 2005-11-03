@@ -65,7 +65,7 @@
  */
 typedef struct {
     udp4_datagram  *dgram;
-    void           *callback_data;
+    void           *user_data;
     udp4_callback   callback;
 } udp4_cb_data_t;
 
@@ -448,20 +448,10 @@ tapi_udp4_dgram_send(const char *ta_name, int sid,
 
 /* see description in tapi_udp.h */
 static void
-udp4_pkt_handler(const char *pkt_fname, void *user_param)
+udp4_asn_pkt_handler(asn_value *pkt, void *user_param)
 {
     udp4_cb_data_t *cb_data = (udp4_cb_data_t *)user_param;
-    asn_value      *pkt = NULL;
-    int s_parsed;
-    int rc;
-
-    if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
-                                       &pkt, &s_parsed)) != 0)
-    {
-        fprintf(stderr, "asn_parse_dvalue_in_file fails, rc = %x"
-                ", s_parsed=%d\n", rc, s_parsed);
-        return;
-    }
+    te_errno        rc;
 
     rc = ndn_udp4_dgram_to_plain(pkt, &cb_data->dgram);
     if (rc != 0)
@@ -471,13 +461,57 @@ udp4_pkt_handler(const char *pkt_fname, void *user_param)
     }
     if (cb_data->callback != NULL)
     {
-        cb_data->callback(cb_data->dgram, cb_data->callback_data);
+        cb_data->callback(cb_data->dgram, cb_data->user_data);
         if (cb_data->dgram->payload)
             free(cb_data->dgram->payload);
         free(cb_data->dgram);
         cb_data->dgram = NULL;
     }
+    asn_free_value(pkt);
 }
+
+/* see description in tapi_udp.h */
+static void
+udp4_pkt_handler(const char *pkt_fname, void *user_param)
+{
+    te_errno    rc;
+    asn_value  *pkt = NULL;
+    int         s_parsed;
+
+    if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
+                                       &pkt, &s_parsed)) != 0)
+    {
+        fprintf(stderr, "asn_parse_dvalue_in_file fails, rc = %x"
+                ", s_parsed=%d\n", rc, s_parsed);
+        return;
+    }
+
+    udp4_asn_pkt_handler(pkt, user_param);
+}
+
+/* See description in tapi_udp.h */
+tapi_tad_trrecv_cb_data *
+tapi_udp_ip4_eth_trrecv_cb_data(udp4_callback callback, void *user_data)
+{
+    udp4_cb_data_t             *cb_data;
+    tapi_tad_trrecv_cb_data    *res;
+
+    cb_data = (udp4_cb_data_t *)calloc(1, sizeof(*cb_data));
+    if (cb_data == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
+    }
+    cb_data->callback = callback;
+    cb_data->user_data = user_data;
+    
+    res = tapi_tad_trrecv_make_cb_data(udp4_asn_pkt_handler, cb_data);
+    if (res == NULL)
+        free(cb_data);
+    
+    return res;
+}
+
 
 /* see description in tapi_udp.h */
 int
@@ -547,7 +581,6 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
 
     return rc;
 }
-
 
 
 /* see description in tapi_udp.h */

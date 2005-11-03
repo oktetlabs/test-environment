@@ -134,7 +134,13 @@ extern int tapi_udp4_dgram_recv_start(const char *ta_name,  int sid,
             rcf_trrecv_mode mode);
 
 /**
- * FIXME
+ * Prepare callback data to be passed in tapi_tad_trrecv_{wait,stop,get}
+ * to process received UDP packet.
+ *
+ * @param callback        Callback for UDP packets handling
+ * @param user_data       User-supplied data to be passed to @a callback
+ *
+ * @return Pointer to allocated callback data or NULL.
  */
 extern tapi_tad_trrecv_cb_data *tapi_udp_ip4_eth_trrecv_cb_data(
                                     udp4_callback  callback,
