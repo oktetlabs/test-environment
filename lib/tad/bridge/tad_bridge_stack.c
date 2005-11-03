@@ -145,20 +145,16 @@ tad_bridge_eth_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
 /* See description tad_bridge_impl.h */
 te_errno 
-tad_bridge_eth_init_cb(int csap_id, const asn_value *csap_nds,
-                       unsigned int layer)
+tad_bridge_eth_init_cb(csap_p csap_descr, unsigned int layer,
+                       const asn_value *csap_nds)
 {
-    csap_p csap_descr;
-
     if (csap_nds == NULL)
         return TE_EWRONGPTR;
 
-    if ((csap_descr = csap_find (csap_id)) == NULL)
-        return TE_ETADCSAPNOTEX;
-
     csap_descr->check_pdus_cb = tad_bridge_eth_check_pdus;
 
-    F_VERB("bridge_eth_init_cb called for csap %d, layer %d\n", csap_id, layer);
+    F_VERB("bridge_eth_init_cb called for csap %d, layer %d\n",
+           csap_descr->id, layer);
        
     return 0;
 }
@@ -166,10 +162,8 @@ tad_bridge_eth_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description tad_bridge_impl.h */
 te_errno
-tad_bridge_eth_destroy_cb(int csap_id, unsigned int layer)
+tad_bridge_eth_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    csap_p csap_descr = csap_find(csap_id); 
-
     UNUSED(csap_descr);
     UNUSED(layer);
 

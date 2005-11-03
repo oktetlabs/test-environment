@@ -417,16 +417,14 @@ tad_pcap_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
 /* See description tad_pcap_impl.h */
 te_errno
-tad_pcap_single_init_cb(int csap_id, const asn_value *csap_nds,
-                        unsigned int layer)
+tad_pcap_single_init_cb(csap_p csap_descr, unsigned int layer,
+                        const asn_value *csap_nds)
 {
     int      rc; 
     char     choice[100] = "";
     char     ifname[IFNAME_SIZE];    /**< ethernet interface id
                                           (e.g. eth0, eth1) */
     size_t   val_len;                /**< stores corresponding value length */
-    
-    csap_p   csap_descr;             /**< csap description */
 
     pcap_csap_specific_data_p   pcap_spec_data; 
     const asn_value            *pcap_csap_spec; /**< ASN value with csap init
@@ -439,9 +437,6 @@ tad_pcap_single_init_cb(int csap_id, const asn_value *csap_nds,
     if (csap_nds == NULL)
         return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
-    if ((csap_descr = csap_find (csap_id)) == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
-
     /* TODO correct with Read-only get_indexed method */
     sprintf (str_index_buf, "%d", layer);
     rc = asn_get_subvalue(csap_nds, &pcap_csap_spec, str_index_buf);
@@ -450,13 +445,13 @@ tad_pcap_single_init_cb(int csap_id, const asn_value *csap_nds,
         val_len = asn_get_length(csap_nds, "");
         ERROR("pcap_single_init_cb called for csap %d, layer %d,"
               "rc %r getting '%s', ndn has len %d\n", 
-              csap_id, layer, rc, str_index_buf, val_len);
+              csap_descr->id, layer, rc, str_index_buf, val_len);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
     rc = asn_get_choice(pcap_csap_spec, "", choice, sizeof(choice));
     VERB("eth_single_init_cb called for csap %d, layer %d, ndn with type %s\n", 
-                csap_id, layer, choice);
+                csap_descr->id, layer, choice);
     
     val_len = sizeof(ifname);
     rc = asn_read_value_field(pcap_csap_spec, ifname, &val_len, "ifname");
@@ -514,23 +509,20 @@ tad_pcap_single_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description tad_pcap_impl.h */
 te_errno
-tad_pcap_single_destroy_cb (int csap_id, unsigned int layer)
+tad_pcap_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    csap_p csap_descr = csap_find(csap_id);
-
-    VERB("%s() started", __FUNCTION__);
-
-    VERB("CSAP N %d", csap_id);
-
     pcap_csap_specific_data_p spec_data = 
         (pcap_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 
+    VERB("%s() started", __FUNCTION__);
+
+    VERB("CSAP N %d", csap_descr->id);
+
     if (spec_data == NULL)
     {
-        WARN("No PCAP CSAP %d special data found!", csap_id);
+        WARN("No PCAP CSAP %d special data found!", csap_descr->id);
         return 0;
     }
-
 
     if(spec_data->in >= 0)
     {

@@ -41,9 +41,10 @@
 
 /* See description in tad_snmp_impl.h */
 char *
-tad_snmp_get_param_cb(int csap_id, unsigned int layer, const char *param)
+tad_snmp_get_param_cb(csap_p csap_descr, unsigned int layer,
+                      const char *param)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(param);
     return NULL;
@@ -51,13 +52,13 @@ tad_snmp_get_param_cb(int csap_id, unsigned int layer, const char *param)
 
 /* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_confirm_pdu_cb(int csap_id, unsigned int layer,
+tad_snmp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                         asn_value_p tmpl_pdu)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
-    VERB("%s, csap %d, layer %d", __FUNCTION__, csap_id, layer);
+    VERB("%s, csap %d, layer %d", __FUNCTION__, csap_descr->id, layer);
     return 0;
 }
 
@@ -211,7 +212,7 @@ tad_snmp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_match_bin_cb(int csap_id, unsigned int layer,
+tad_snmp_match_bin_cb(csap_p csap_descr, unsigned int layer,
                       const asn_value *pattern_pdu,
                       const csap_pkts *pkt, csap_pkts *payload,
                       asn_value *parsed_packet )
@@ -225,7 +226,7 @@ tad_snmp_match_bin_cb(int csap_id, unsigned int layer,
     asn_value *snmp_msg = NULL;
     asn_value *vb_seq = NULL;
 
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
 
     if (parsed_packet != NULL)
     {
@@ -639,14 +640,15 @@ tad_snmp_match_bin_cb(int csap_id, unsigned int layer,
 
 /* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_gen_pattern_cb(int csap_id, unsigned int layer,
+tad_snmp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
                         const asn_value *tmpl_pdu, 
                         asn_value_p *pattern_pdu)
 { 
     UNUSED(tmpl_pdu);
 
     *pattern_pdu = asn_init_value(ndn_snmp_message);
-    VERB("%s callback, CSAP # %d, layer %d", __FUNCTION__, csap_id, layer); 
+    VERB("%s callback, CSAP # %d, layer %d",
+         __FUNCTION__, csap_descr->id, layer); 
     return 0;
 }
 

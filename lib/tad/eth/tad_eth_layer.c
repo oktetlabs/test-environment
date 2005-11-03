@@ -76,20 +76,14 @@ tad_eth_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 
 /* See description in tad_eth_impl.h */
 te_errno
-tad_eth_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
+tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
+                       asn_value_p tmpl_pdu)
 {
-    csap_p                   csap_descr;
     eth_csap_specific_data_p spec_data; 
 
     size_t  val_len;
     int     rc; 
     
-    
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
-    }
     
     spec_data = (eth_csap_specific_data_p)
         csap_descr->layers[layer].specific_data; 
@@ -214,7 +208,7 @@ tad_eth_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
     rc = tad_data_unit_convert_by_label(tmpl_pdu, "eth-type",
                                         &spec_data->du_eth_type);
     VERB("%s(CSAP %d): rc from DU convert eth-type %x, du-type: %d", 
-         __FUNCTION__, csap_id, rc, spec_data->du_eth_type.du_type); 
+         __FUNCTION__, csap_descr->id, rc, spec_data->du_eth_type.du_type); 
 
     if (rc)
     {
@@ -230,7 +224,7 @@ tad_eth_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
         asn_write_int32(tmpl_pdu, spec_data->eth_type, 
                         "eth-type.#plain");
         VERB("%s(CSAP %d): chosen eth-type %d", 
-             __FUNCTION__, csap_id, spec_data->eth_type); 
+             __FUNCTION__, csap_descr->id, spec_data->eth_type); 
     }
 
     {
@@ -485,24 +479,17 @@ tad_eth_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_eth_impl.h */
 te_errno
-tad_eth_match_bin_cb(int csap_id, unsigned int layer,
+tad_eth_match_bin_cb(csap_p csap_descr, unsigned int layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt, csap_pkts *payload, 
                      asn_value_p parsed_packet)
 {
     struct timeval moment;
-    csap_p                   csap_descr;
     eth_csap_specific_data_p spec_data;
     int      rc;
     uint8_t *data;
     asn_value *eth_hdr_pdu = NULL;
   
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
-    }
-
     spec_data = (eth_csap_specific_data_p)
         csap_descr->layers[layer].specific_data;
     data = pkt->data; 
@@ -518,7 +505,7 @@ tad_eth_match_bin_cb(int csap_id, unsigned int layer,
 
             
         VERB("%s(): CSAP %d got data: %s, mcs %d",
-             __FUNCTION__, csap_id, buf, moment.tv_usec);
+             __FUNCTION__, csap_descr->id, buf, moment.tv_usec);
     } 
 #endif
 
@@ -539,7 +526,7 @@ tad_eth_match_bin_cb(int csap_id, unsigned int layer,
     data += ETH_ALEN; 
 
     VERB("%s(CSAP %d): univ match for dst rc %x\n",
-         __FUNCTION__, csap_id, rc);
+         __FUNCTION__, csap_descr->id, rc);
 
     if (rc != 0)
         goto cleanup;
@@ -549,7 +536,7 @@ tad_eth_match_bin_cb(int csap_id, unsigned int layer,
                               data, ETH_ALEN, "src-addr");
     data += ETH_ALEN;
     VERB("%s(CSAP %d): univ match for src rc %x\n",
-         __FUNCTION__, csap_id, rc);
+         __FUNCTION__, csap_descr->id, rc);
 
     if (rc == 0 && (ntohs(*((uint16_t *)data)) == ETH_TAGGED_TYPE_LEN))
     {
@@ -606,7 +593,7 @@ tad_eth_match_bin_cb(int csap_id, unsigned int layer,
         rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
                                   data, ETH_TYPE_LEN, "eth-type");
         VERB("%s(CSAP %d): univ match for eth-type rc %x\n",
-             __FUNCTION__, csap_id, rc);
+             __FUNCTION__, csap_descr->id, rc);
     }
 
     if (rc == 0 && eth_hdr_pdu)
@@ -634,7 +621,7 @@ tad_eth_match_bin_cb(int csap_id, unsigned int layer,
 
     gettimeofday(&moment, NULL);
     VERB("%s(CSAP %d), packet matches, pkt len %d, pld len %d, mcs %d", 
-         __FUNCTION__, csap_id, pkt->len, payload->len, moment.tv_usec);
+         __FUNCTION__, csap_descr->id, pkt->len, payload->len, moment.tv_usec);
 
 cleanup:
     asn_free_value(eth_hdr_pdu);
@@ -645,11 +632,11 @@ cleanup:
 
 /* See description in tad_eth_impl.h */
 te_errno
-tad_eth_gen_pattern_cb(int csap_id, unsigned int layer,
+tad_eth_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
                        const asn_value *tmpl_pdu, 
                        asn_value_p *pattern_pdu)
 { 
-    UNUSED(csap_id); 
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
 

@@ -94,11 +94,10 @@ tad_pcap_get_param_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_pcap_impl.h */
 te_errno
-tad_pcap_confirm_pdu_cb(int csap_id, unsigned int layer,
+tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                         asn_value_p tmpl_pdu)
 {
     pcap_csap_specific_data_p   spec_data; 
-    csap_p                      csap_descr;
 
     size_t                      val_len;
     char                       *pcap_str;
@@ -107,12 +106,6 @@ tad_pcap_confirm_pdu_cb(int csap_id, unsigned int layer,
     struct bpf_program         *bpf_program;
     
     VERB("%s() started", __FUNCTION__);
-    
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_ETADCSAPNOTEX;
-    }
     
     spec_data = (pcap_csap_specific_data_p)
         csap_descr->layers[layer].specific_data; 
@@ -179,12 +172,11 @@ tad_pcap_confirm_pdu_cb(int csap_id, unsigned int layer,
 
 /* See description in tad_pcap_impl.h */
 te_errno
-tad_pcap_match_bin_cb(int csap_id, unsigned int layer,
+tad_pcap_match_bin_cb(csap_p csap_descr, unsigned int layer,
                       const asn_value *pattern_pdu,
                       const csap_pkts *pkt, csap_pkts *payload, 
                       asn_value_p parsed_packet)
 {
-    csap_p                      csap_descr;
     pcap_csap_specific_data_p   spec_data;
     int                         rc;
     uint8_t                    *data;
@@ -194,12 +186,6 @@ tad_pcap_match_bin_cb(int csap_id, unsigned int layer,
     size_t                      tmp_len;
 
     VERB("%s() started", __FUNCTION__);
-
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_ETADCSAPNOTEX;
-    }
 
     spec_data = (pcap_csap_specific_data_p)
         csap_descr->layers[layer].specific_data;
@@ -309,7 +295,7 @@ tad_pcap_match_bin_cb(int csap_id, unsigned int layer,
     memcpy(payload->data, pkt->data, payload->len);
 
     F_VERB("PCAP csap N %d, packet matches, pkt len %ld, pld len %ld", 
-           csap_id, pkt->len, payload->len);
+           csap_descr->id, pkt->len, payload->len);
     
     return 0;
 }

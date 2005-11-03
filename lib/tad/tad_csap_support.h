@@ -73,16 +73,16 @@ typedef struct tad_tmpl_arg_t tad_tmpl_arg_t;
  * This callback depends on lower neighbour in protocol stack of 
  * particular CSAP. 
  *
- * @param csap_id       Identifier of CSAP.
- * @param csap_nds      Asn_value with CSAP init parameters
+ * @param csap_descr    CSAP descriptor structure.
  * @param layer         Numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
+ * @param csap_nds      Asn_value with CSAP init parameters
  *
  * @return Zero on success or error code.
  */ 
-typedef te_errno (*csap_nbr_init_cb_t)(int              csap_id,
-                                       const asn_value *csap_nds,
-                                       unsigned int     layer);
+typedef te_errno (*csap_nbr_init_cb_t)(csap_p           csap_descr,
+                                       unsigned int     layer,
+                                       const asn_value *csap_nds);
 
 /**
  * Callback type to destroy CSAP layer.
@@ -90,13 +90,13 @@ typedef te_errno (*csap_nbr_init_cb_t)(int              csap_id,
  * this layer and all memory used for layer-specific data and pointed
  * in respective structure in 'layer-data' in CSAP instance struct. 
  *
- * @param csap_id       Identifier of CSAP.
+ * @param csap_descr    CSAP descriptor structure.
  * @param layer         Numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
  *
  * @return Zero on success or error code.
  */ 
-typedef te_errno (*csap_nbr_destroy_cb_t)(int          csap_id,
+typedef te_errno (*csap_nbr_destroy_cb_t)(csap_p       csap_descr,
                                           unsigned int layer);
 
 /**
@@ -105,13 +105,13 @@ typedef te_errno (*csap_nbr_destroy_cb_t)(int          csap_id,
  * For example, it checks that there is sufficient information for 
  * traffic generating, and writes CSAP defaults to Traffic PDU.
  *
- * @param csap_id       identifier of CSAP
+ * @param csap_descr    CSAP descriptor structure.
  * @param layer         numeric index of layer in CSAP type to be processed
  * @param traffic_pdu   asn_value with PDU (IN/OUT)
  *
  * @return Zero on success or error code.
  */ 
-typedef te_errno (*csap_confirm_pdu_cb_t)(int           csap_id,
+typedef te_errno (*csap_confirm_pdu_cb_t)(csap_p        csap_descr,
                                           unsigned int  layer, 
                                           asn_value    *traffic_pdu); 
 
@@ -147,7 +147,7 @@ typedef struct csap_pkts {
  * upper layer of template processing, this callback is called for every
  * set of iteration parameters values. 
  *
- * @param csap_descr    CSAP instance.
+ * @param csap_descr    CSAP descriptor structure.
  * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      Asn_value with PDU. 
  * @param args          Array with values of template iteration parameters,
@@ -184,7 +184,7 @@ typedef te_errno (*csap_gen_bin_cb_t)(csap_p                csap_descr,
 /**
  * Callback type to parse received packet and match it with pattern. 
  *
- * @param csap_id       Identifier of CSAP
+ * @param csap_descr    CSAP descriptor structure.
  * @param layer         Numeric index of layer in CSAP type to be processed
  * @param pattern_pdu   Pattern NDS 
  * @param pkt           Recevied packet, may be list of fragments, which 
@@ -198,7 +198,7 @@ typedef te_errno (*csap_gen_bin_cb_t)(csap_p                csap_descr,
  *
  * @return Zero on success or error code.
  */
-typedef te_errno (*csap_match_bin_cb_t)(int              csap_id,
+typedef te_errno (*csap_match_bin_cb_t)(csap_p           csap_descr,
                                         unsigned int     layer,
                                         const asn_value *pattern_pdu,
                                         const csap_pkts *pkt,
@@ -210,7 +210,7 @@ typedef te_errno (*csap_match_bin_cb_t)(int              csap_id,
  * just one response to the packet which will be sent by this CSAP 
  * according to this template. 
  *
- * @param csap_id       Identifier of CSAP
+ * @param csap_descr    CSAP descriptor structure.
  * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      ASN value with template PDU.
  * @param pattern_pdu   OUT: ASN value with pattern PDU, generated according
@@ -218,7 +218,7 @@ typedef te_errno (*csap_match_bin_cb_t)(int              csap_id,
  *
  * @return Zero on success or error code.
  */
-typedef te_errno (*csap_gen_pattern_cb_t)(int               csap_id,
+typedef te_errno (*csap_gen_pattern_cb_t)(csap_p            csap_descr,
                                           unsigned int      layer,
                                           const asn_value  *tmpl_pdu, 
                                           asn_value       **pattern_pdu);

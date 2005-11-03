@@ -196,25 +196,26 @@ extern int tad_ip4_write_read_cb(csap_p csap_descr, int timeout,
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern te_errno tad_ip4_eth_init_cb(int              csap_id,
-                                    const asn_value *csap_nds,
-                                    unsigned int     layer);
+extern te_errno tad_ip4_eth_init_cb(csap_p           csap_descr,
+                                    unsigned int     layer,
+                                    const asn_value *csap_nds);
 
 /**
  * Callback for init 'ip4' CSAP layer if single in stack.
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern te_errno tad_ip4_single_init_cb(int              csap_id,
-                                       const asn_value *csap_nds,
-                                       unsigned int     layer);
+extern te_errno tad_ip4_single_init_cb(csap_p           csap_descr,
+                                       unsigned int     layer,
+                                       const asn_value *csap_nds);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern te_errno tad_ip4_single_destroy_cb(int csap_id, unsigned int layer);
+extern te_errno tad_ip4_single_destroy_cb(csap_p       csap_descr,
+                                          unsigned int layer);
 
 
 /**
@@ -222,15 +223,17 @@ extern te_errno tad_ip4_single_destroy_cb(int csap_id, unsigned int layer);
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern te_errno tad_ip4_eth_destroy_cb(int csap_id, unsigned int layer);
+extern te_errno tad_ip4_eth_destroy_cb(csap_p       csap_descr,
+                                       unsigned int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
  *
  * The function complies with csap_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_ip4_confirm_pdu_cb(int csap_id, unsigned int layer,
-                                       asn_value_p tmpl_pdu); 
+extern te_errno tad_ip4_confirm_pdu_cb(csap_p       csap_descr,
+                                       unsigned int layer,
+                                       asn_value_p  tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -251,7 +254,7 @@ extern te_errno tad_ip4_gen_bin_cb(csap_p                csap_descr,
  *
  * The function complies with csap_match_bin_cb_t prototype.
  */
-extern te_errno tad_ip4_match_bin_cb(int              csap_id,
+extern te_errno tad_ip4_match_bin_cb(csap_p           csap_descr,
                                      unsigned int     layer,
                                      const asn_value *pattern_pdu,
                                      const csap_pkts *pkt,
@@ -265,7 +268,7 @@ extern te_errno tad_ip4_match_bin_cb(int              csap_id,
  *
  * The function complies with csap_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_ip4_gen_pattern_cb(int              csap_id,
+extern te_errno tad_ip4_gen_pattern_cb(csap_p           csap_descr,
                                        unsigned int     layer,
                                        const asn_value *tmpl_pdu, 
                                        asn_value_p     *pattern_pdu);
@@ -318,16 +321,16 @@ extern int tad_icmp4_write_read_cb(csap_p csap_descr, int timeout,
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern te_errno tad_icmp4_single_init_cb(int              csap_id,
-                                         const asn_value *csap_nds,
-                                         unsigned int     layer);
+extern te_errno tad_icmp4_single_init_cb(csap_p           csap_descr,
+                                         unsigned int     layer,
+                                         const asn_value *csap_nds);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern te_errno tad_icmp4_single_destroy_cb(int          csap_id,
+extern te_errno tad_icmp4_single_destroy_cb(csap_p       csap_descr,
                                             unsigned int layer);
 
 /**
@@ -335,8 +338,9 @@ extern te_errno tad_icmp4_single_destroy_cb(int          csap_id,
  *
  * The function complies with csap_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_icmp4_confirm_pdu_cb(int csap_id, unsigned int layer,
-                                         asn_value_p tmpl_pdu); 
+extern te_errno tad_icmp4_confirm_pdu_cb(csap_p       csap_descr,
+                                         unsigned int layer,
+                                         asn_value_p  tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -357,7 +361,7 @@ extern te_errno tad_icmp4_gen_bin_cb(csap_p                csap_descr,
  *
  * The function complies with csap_match_bin_cb_t prototype.
  */
-extern te_errno tad_icmp4_match_bin_cb(int              csap_id, 
+extern te_errno tad_icmp4_match_bin_cb(csap_p           csap_descr,
                                        unsigned int     layer,
                                        const asn_value *pattern_pdu,
                                        const csap_pkts *pkt,
@@ -371,9 +375,10 @@ extern te_errno tad_icmp4_match_bin_cb(int              csap_id,
  *
  * The function complies with csap_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_icmp4_gen_pattern_cb(int csap_id, unsigned int layer,
+extern te_errno tad_icmp4_gen_pattern_cb(csap_p           csap_descr,
+                                         unsigned int     layer,
                                          const asn_value *tmpl_pdu, 
-                                         asn_value_p *pattern_pdu);
+                                         asn_value_p     *pattern_pdu);
 
 
 
@@ -422,24 +427,26 @@ extern int tad_udp_ip4_write_read_cb(csap_p csap_descr, int timeout,
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern te_errno tad_udp_ip4_init_cb(int              csap_id,
-                                    const asn_value *csap_nds,
-                                    unsigned int     layer);
+extern te_errno tad_udp_ip4_init_cb(csap_p           csap_descr,
+                                    unsigned int     layer,
+                                    const asn_value *csap_nds);
 
 /**
  * Callback for destroy 'udp' CSAP layer if over 'ip4' in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern te_errno tad_udp_ip4_destroy_cb(int csap_id, unsigned int layer);
+extern te_errno tad_udp_ip4_destroy_cb(csap_p       csap_descr,
+                                       unsigned int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
  *
  * The function complies with csap_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_udp_confirm_pdu_cb(int csap_id, unsigned int layer,
-                                       asn_value_p tmpl_pdu); 
+extern te_errno tad_udp_confirm_pdu_cb(csap_p       csap_descr,
+                                       unsigned int layer,
+                                       asn_value_p  tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -460,7 +467,7 @@ extern te_errno tad_udp_gen_bin_cb(csap_p                csap_descr,
  *
  * The function complies with csap_match_bin_cb_t prototype.
  */
-extern te_errno tad_udp_match_bin_cb(int              csap_id,
+extern te_errno tad_udp_match_bin_cb(csap_p           csap_descr,
                                      unsigned int     layer,
                                      const asn_value *pattern_pdu,
                                      const csap_pkts *pkt,
@@ -474,9 +481,10 @@ extern te_errno tad_udp_match_bin_cb(int              csap_id,
  *
  * The function complies with csap_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_udp_gen_pattern_cb(int csap_id, unsigned int layer,
+extern te_errno tad_udp_gen_pattern_cb(csap_p           csap_descr,
+                                       unsigned int     layer,
                                        const asn_value *tmpl_pdu, 
-                                       asn_value_p *pattern_pdu);
+                                       asn_value_p     *pattern_pdu);
 
 
 
@@ -525,24 +533,26 @@ extern int tad_tcp_write_read_cb(csap_p csap_descr, int timeout,
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern te_errno tad_tcp_single_init_cb(int              csap_id,
-                                       const asn_value *csap_nds,
-                                       unsigned int     layer);
+extern te_errno tad_tcp_single_init_cb(csap_p           csap_descr,
+                                       unsigned int     layer,
+                                       const asn_value *csap_nds);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern te_errno tad_tcp_single_destroy_cb(int csap_id, unsigned int layer);
+extern te_errno tad_tcp_single_destroy_cb(csap_p       csap_descr,
+                                          unsigned int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
  *
  * The function complies with csap_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_tcp_confirm_pdu_cb(int csap_id, unsigned int layer,
-                                       asn_value_p tmpl_pdu); 
+extern te_errno tad_tcp_confirm_pdu_cb(csap_p       csap_descr,
+                                       unsigned int layer,
+                                       asn_value_p  tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -562,7 +572,7 @@ extern te_errno tad_tcp_gen_bin_cb(csap_p                csap_descr,
  *
  * The function complies with csap_match_bin_cb_t prototype.
  */
-extern te_errno tad_tcp_match_bin_cb(int              csap_id,
+extern te_errno tad_tcp_match_bin_cb(csap_p           csap_descr,
                                      unsigned int     layer,
                                      const asn_value *pattern_pdu,
                                      const csap_pkts *pkt,
@@ -576,24 +586,27 @@ extern te_errno tad_tcp_match_bin_cb(int              csap_id,
  *
  * The function complies with csap_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_tcp_gen_pattern_cb(int csap_id, unsigned int layer,
+extern te_errno tad_tcp_gen_pattern_cb(csap_p           csap_descr,
+                                       unsigned int     layer,
                                        const asn_value *tmpl_pdu, 
-                                       asn_value_p *pattern_pdu);
+                                       asn_value_p     *pattern_pdu);
 
 /**
  * Callback for init 'tcp' CSAP layer if over 'ip4' in stack.
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern te_errno tad_tcp_ip4_init_cb(int csap_id, const asn_value *csap_nds,
-                                    unsigned int layer);
+extern te_errno tad_tcp_ip4_init_cb(csap_p           csap_descr,
+                                    unsigned int     layer,
+                                    const asn_value *csap_nds);
 
 /**
  * Callback for destroy 'tcp' CSAP layer if over 'ip4' in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern te_errno tad_tcp_ip4_destroy_cb(int csap_id, unsigned int layer);
+extern te_errno tad_tcp_ip4_destroy_cb(csap_p       csap_descr,
+                                       unsigned int layer);
 
 
 #ifdef __cplusplus

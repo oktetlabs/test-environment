@@ -75,10 +75,10 @@ tad_iscsi_get_param_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_iscsi_impl.h */
 int 
-tad_iscsi_confirm_pdu_cb(int csap_id, unsigned int layer,
+tad_iscsi_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                          asn_value *nds_pdu)
 { 
-    F_ENTRY("(%d:%u) nds=%p", csap_id, layer, (void *)nds_pdu);
+    F_ENTRY("(%d:%u) nds=%p", csap_descr->id, layer, (void *)nds_pdu);
     return 0;
 }
 
@@ -111,14 +111,13 @@ tad_iscsi_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_iscsi_impl.h */
 te_errno
-tad_iscsi_match_bin_cb(int              csap_id,
+tad_iscsi_match_bin_cb(csap_p           csap_descr,
                        unsigned int     layer,
                        const asn_value *pattern_pdu,
                        const csap_pkts *pkt,
                        csap_pkts       *payload, 
                        asn_value       *parsed_packet)
 { 
-    csap_p                      csap_descr;
     iscsi_csap_specific_data_t *spec_data; 
 
     asn_value *iscsi_msg = asn_init_value(ndn_iscsi_message);
@@ -126,15 +125,13 @@ tad_iscsi_match_bin_cb(int              csap_id,
     int        defect;
 
 
-    ENTRY("(%d:%u)", csap_id, layer);
-
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-        return TE_ETADCSAPNOTEX;
+    ENTRY("(%d:%u)", csap_descr->id, layer);
 
     spec_data = (iscsi_csap_specific_data_t *)
                         csap_descr->layers[layer].specific_data; 
 
-    INFO("%s(CSAP %d): got pkt %d bytes", __FUNCTION__, csap_id, pkt->len);
+    INFO("%s(CSAP %d): got pkt %d bytes",
+         __FUNCTION__, csap_descr->id, pkt->len);
 
     if (spec_data->wait_length == 0)
     {
@@ -154,7 +151,7 @@ tad_iscsi_match_bin_cb(int              csap_id,
         if (pkt->len < ISCSI_BHS_LENGTH)
         {
             ERROR("%s(CSAP %d): very short first fragment, %d bytes", 
-                  __FUNCTION__, csap_id, pkt->len);
+                  __FUNCTION__, csap_descr->id, pkt->len);
             return TE_ETADLOWER;
         }
 
@@ -183,7 +180,7 @@ tad_iscsi_match_bin_cb(int              csap_id,
 
         RING("%s(CSAP %d): AHS len = %d; DataSegmLen = %d; "
              "HeadDig %d; DataDig %d", 
-             __FUNCTION__, csap_id,
+             __FUNCTION__, csap_descr->id,
              (int)total_AHS_length,
              (int)data_segment_length,
              head_digest, data_digest);
@@ -191,7 +188,7 @@ tad_iscsi_match_bin_cb(int              csap_id,
         spec_data->wait_length = ISCSI_BHS_LENGTH + data_segment_length +
             (total_AHS_length + head_digest + data_digest) * 4;
         RING("%s(CSAP %d): calculated PDU len: %d", 
-             __FUNCTION__, csap_id, spec_data->wait_length);
+             __FUNCTION__, csap_descr->id, spec_data->wait_length);
 #else
 #if 0
         iscsi_digest_type digest = ISCSI_DIGEST_NONE;
@@ -211,7 +208,7 @@ tad_iscsi_match_bin_cb(int              csap_id,
              iscsi_rest_data_len(pkt->data,
                                  spec_data->hdig, spec_data->ddig);
         INFO("%s(CSAP %d), calculated wait length %d",
-                __FUNCTION__, csap_id, spec_data->wait_length);
+                __FUNCTION__, csap_descr->id, spec_data->wait_length);
 #endif
     }
     rc = 0;
@@ -228,7 +225,7 @@ tad_iscsi_match_bin_cb(int              csap_id,
     {
         ERROR("%s(CSAP %d) get too many data: %d bytes, "
               "wait for %d, stored %d", 
-              __FUNCTION__, csap_id, pkt->len,
+              __FUNCTION__, csap_descr->id, pkt->len,
               spec_data->wait_length, spec_data->stored_length); 
         rc = TE_ETADLOWER;
         goto cleanup;
@@ -241,7 +238,7 @@ tad_iscsi_match_bin_cb(int              csap_id,
     if (defect > 0)
     {
         RING("%s(CSAP %d) wait more %d bytes...", 
-             __FUNCTION__, csap_id, defect);
+             __FUNCTION__, csap_descr->id, defect);
         rc = TE_ETADLESSDATA;
         goto cleanup;
     }
@@ -265,13 +262,13 @@ cleanup:
 
 /* See description in tad_iscsi_impl.h */
 te_errno
-tad_iscsi_gen_pattern_cb(int                csap_id,
-                         unsigned int       layer,
-                         const asn_value   *tmpl_pdu, 
-                         asn_value        **pattern_pdu)
+tad_iscsi_gen_pattern_cb(csap_p            csap_descr,
+                         unsigned int      layer,
+                         const asn_value  *tmpl_pdu, 
+                         asn_value       **pattern_pdu)
 {
     ENTRY("(%d:%u) tmpl_pdu=%p pattern_pdu=%p",
-          csap_id, layer, tmpl_pdu, pattern_pdu);
+          csap_descr->id, layer, tmpl_pdu, pattern_pdu);
 
     assert(pattern_pdu != NULL);
     *pattern_pdu = asn_init_value(ndn_iscsi_message); 

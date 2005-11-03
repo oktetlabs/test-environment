@@ -51,7 +51,7 @@ extern "C" {
  *
  * The function complies with csap_get_param_cb_t prototype.
  */ 
-extern char *tad_file_get_param_cb(int           csap_id,
+extern char *tad_file_get_param_cb(csap_p        csap_descr,
                                    unsigned int  layer,
                                    const char   *param);
 
@@ -87,16 +87,16 @@ extern int tad_file_write_read_cb(csap_p csap_descr, int timeout,
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern te_errno tad_file_single_init_cb(int              csap_id,
-                                        const asn_value *csap_nds,
-                                        unsigned int     layer);
+extern te_errno tad_file_single_init_cb(csap_p           csap_descr,
+                                        unsigned int     layer,
+                                        const asn_value *csap_nds);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern te_errno tad_file_single_destroy_cb(int          csap_id,
+extern te_errno tad_file_single_destroy_cb(csap_p       csap_descr,
                                            unsigned int layer);
 
 /**
@@ -104,7 +104,7 @@ extern te_errno tad_file_single_destroy_cb(int          csap_id,
  *
  * The function complies with csap_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_file_confirm_pdu_cb(int          csap_id,
+extern te_errno tad_file_confirm_pdu_cb(csap_p       csap_descr,
                                         unsigned int layer,
                                         asn_value_p  tmpl_pdu); 
 
@@ -127,7 +127,7 @@ extern int tad_file_gen_bin_cb(csap_p                csap_descr,
  *
  * The function complies with csap_match_bin_cb_t prototype.
  */
-extern int tad_file_match_bin_cb(int              csap_id,
+extern int tad_file_match_bin_cb(csap_p           csap_descr,
                                  unsigned int     layer,
                                  const asn_value *pattern_pdu,
                                  const csap_pkts *pkt,
@@ -141,7 +141,7 @@ extern int tad_file_match_bin_cb(int              csap_id,
  *
  * The function complies with csap_gen_pattern_cb_t prototype.
  */
-extern int tad_file_gen_pattern_cb(int              csap_id,
+extern int tad_file_gen_pattern_cb(csap_p           csap_descr,
                                    unsigned int     layer,
                                    const asn_value *tmpl_pdu, 
                                    asn_value_p     *pattern_pdu);

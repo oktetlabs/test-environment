@@ -43,9 +43,10 @@ icmp4_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 
 /* See description in tad_ipstack_impl.h */
 int 
-icmp4_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
+icmp4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
+                     asn_value_p tmpl_pdu)
 { 
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
     return 0;
@@ -71,11 +72,12 @@ icmp4_gen_bin_cb(csap_p csap_descr, unsigned int layer, const asn_value *tmpl_pd
 
 /* See description in tad_ipstack_impl.h */
 int
-icmp4_match_bin_cb(int csap_id, unsigned int layer, const asn_value *pattern_pdu,
-                   const csap_pkts *  pkt, csap_pkts * payload, 
+icmp4_match_bin_cb(csap_p csap_descr, unsigned int layer,
+                   const asn_value *pattern_pdu,
+                   const csap_pkts *pkt, csap_pkts *payload, 
                    asn_value_p  parsed_packet )
 { 
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(pkt);
     UNUSED(payload);
@@ -88,10 +90,10 @@ icmp4_match_bin_cb(int csap_id, unsigned int layer, const asn_value *pattern_pdu
 
 /* See description in tad_ipstack_impl.h */
 int
-icmp4_gen_pattern_cb(int csap_id, unsigned int layer, const asn_value *tmpl_pdu, 
-                                         asn_value_p   *pattern_pdu)
+icmp4_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
+                     const asn_value *tmpl_pdu, asn_value_p *pattern_pdu)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu); 
     UNUSED(pattern_pdu); 

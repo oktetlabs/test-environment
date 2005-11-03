@@ -63,10 +63,10 @@ tad_tcp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_tcp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p pdu)
+tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
+                       asn_value_p pdu)
 { 
     te_errno    rc = 0;
-    csap_p      csap_descr = csap_find(csap_id);
 
     const asn_value *tcp_csap_pdu;
     const asn_value *du_field;
@@ -111,7 +111,7 @@ tad_tcp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p pdu)
         if (rc != 0)                                                    \
         {                                                               \
             ERROR("%s(csap %d),line %d, convert %s failed, rc %r",      \
-                  __FUNCTION__, csap_id, __LINE__, #du_field_, rc);     \
+                  __FUNCTION__, csap_descr->id, __LINE__, #du_field_, rc);\
             return rc;                                                  \
         }                                                               \
     } while (0) 
@@ -127,7 +127,7 @@ tad_tcp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p pdu)
             if (rc != 0)
             {          
                 ERROR("%s(csap %d), local_port to src failed, rc %r",
-                      __FUNCTION__, csap_id, rc);
+                      __FUNCTION__, csap_descr->id, rc);
                 return rc;
             }
         }
@@ -156,7 +156,7 @@ tad_tcp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p pdu)
             if (rc != 0)
             {          
                 ERROR("%s(csap %d), remote port to dst failed, rc %r",
-                      __FUNCTION__, csap_id, rc);
+                      __FUNCTION__, csap_descr->id, rc);
                 return rc;
             }
         }
@@ -432,12 +432,11 @@ cleanup:
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_tcp_match_bin_cb(int csap_id, unsigned int layer,
+tad_tcp_match_bin_cb(csap_p csap_descr, unsigned int layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt, csap_pkts *payload, 
                      asn_value_p parsed_packet)
 { 
-    csap_p                    csap_descr;
     tcp_csap_specific_data_t *spec_data;
 
     uint8_t *data;
@@ -450,11 +449,6 @@ tad_tcp_match_bin_cb(int csap_id, unsigned int layer,
 
     asn_value *tcp_header_pdu = NULL;
 
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
-    } 
 
     if (parsed_packet)
         tcp_header_pdu = asn_init_value(ndn_tcp_header);
@@ -619,11 +613,11 @@ cleanup:
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_tcp_gen_pattern_cb(int csap_id, unsigned int layer,
+tad_tcp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
                        const asn_value *tmpl_pdu, 
                        asn_value_p *pattern_pdu)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
     UNUSED(pattern_pdu); 

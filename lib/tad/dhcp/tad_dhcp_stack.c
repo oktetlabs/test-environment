@@ -190,11 +190,9 @@ tad_dhcp_write_read_cb(csap_p csap_descr, int timeout,
 
 /* See description tad_dhcp_impl.h */
 te_errno
-tad_dhcp_single_init_cb(int csap_id, const asn_value *csap_nds,
-                        unsigned int layer)
+tad_dhcp_single_init_cb(csap_p csap_descr, unsigned int layer,
+                        const asn_value *csap_nds)
 {
-    csap_p   csap_descr;
-
     dhcp_csap_specific_data_t *   dhcp_spec_data; 
     struct sockaddr_in local;
     struct sockaddr_in *ifa;
@@ -208,10 +206,6 @@ tad_dhcp_single_init_cb(int csap_id, const asn_value *csap_nds,
 
     if (csap_nds == NULL)
         return TE_EWRONGPTR;
-
-    if ((csap_descr = csap_find (csap_id)) == NULL)
-        return TE_ETADCSAPNOTEX;
-
 
     len = sizeof(mode);
     rc = asn_read_value_field(csap_nds, &mode, &len, "0.mode");
@@ -293,7 +287,7 @@ tad_dhcp_single_init_cb(int csap_id, const asn_value *csap_nds,
 
     if (rc)
     {
-        tad_dhcp_single_destroy_cb(csap_id, layer);
+        tad_dhcp_single_destroy_cb(csap_descr, layer);
         return rc;
     }
 
@@ -309,7 +303,7 @@ tad_dhcp_single_init_cb(int csap_id, const asn_value *csap_nds,
 
     if (rc != 0)
     {
-        tad_dhcp_single_destroy_cb(csap_id, layer);
+        tad_dhcp_single_destroy_cb(csap_descr, layer);
         return rc;
     }
 
@@ -317,7 +311,7 @@ tad_dhcp_single_init_cb(int csap_id, const asn_value *csap_nds,
     if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BROADCAST, 
                    (void *)&opt, sizeof(opt)) != 0)
     {
-        tad_dhcp_single_destroy_cb(csap_id, layer);
+        tad_dhcp_single_destroy_cb(csap_descr, layer);
         return errno;
     }
 
@@ -354,10 +348,8 @@ tad_dhcp_single_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description tad_dhcp_impl.h */
 te_errno
-tad_dhcp_single_destroy_cb(int csap_id, unsigned int layer)
+tad_dhcp_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    csap_p csap_descr = csap_find(csap_id);
-
     dhcp_csap_specific_data_t * spec_data = 
         (dhcp_csap_specific_data_t *)
         csap_descr->layers[layer].specific_data; 

@@ -574,8 +574,8 @@ tad_eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
 /* See description tad_eth_impl.h */
 te_errno
-tad_eth_single_init_cb(int csap_id, const asn_value *csap_nds,
-                       unsigned int layer)
+tad_eth_single_init_cb(csap_p csap_descr, unsigned int layer,
+                       const asn_value *csap_nds)
 {
     te_errno rc; 
     char     device_id[IFNAME_SIZE];
@@ -584,7 +584,6 @@ tad_eth_single_init_cb(int csap_id, const asn_value *csap_nds,
     size_t   val_len;
     
     eth_interface_p iface_p; /**< pointer to interface structure to be used with csap */
-    csap_p   csap_descr;
 
     eth_csap_specific_data_p    eth_spec_data; 
     const asn_value            *eth_csap_spec; 
@@ -593,13 +592,10 @@ tad_eth_single_init_cb(int csap_id, const asn_value *csap_nds,
     char     str_index_buf[10];
     
     INFO("%s called for csap %d, layer %d",
-         __FUNCTION__, csap_id, layer); 
+         __FUNCTION__, csap_descr->id, layer); 
 
     if (csap_nds == NULL)
         return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
-
-    if ((csap_descr = csap_find (csap_id)) == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
 
     /* TODO correct with Read-only get_indexed method */
     sprintf (str_index_buf, "%d", layer);
@@ -608,7 +604,7 @@ tad_eth_single_init_cb(int csap_id, const asn_value *csap_nds,
     {
         val_len = asn_get_length(csap_nds, "");
         ERROR("%s(CSAP %d), layer %d, rc %r getting '%s', ndn has len %d", 
-              __FUNCTION__, csap_id, layer, rc, str_index_buf, val_len);
+              __FUNCTION__, csap_descr->id, layer, rc, str_index_buf, val_len);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
@@ -803,18 +799,16 @@ tad_eth_single_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description tad_eth_impl.h */
 te_errno
-tad_eth_single_destroy_cb(int csap_id, unsigned int layer)
+tad_eth_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    csap_p csap_descr = csap_find(csap_id);
-
-    VERB("CSAP N %d", csap_id);
+    VERB("CSAP N %d", csap_descr->id);
 
     eth_csap_specific_data_p spec_data = 
         (eth_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 
     if (spec_data == NULL)
     {
-        WARN("Not ethernet CSAP %d special data found!", csap_id);
+        WARN("Not ethernet CSAP %d special data found!", csap_descr->id);
         return 0;
     }
 

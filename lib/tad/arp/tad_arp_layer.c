@@ -53,10 +53,11 @@ tad_arp_get_param_cb(csap_p csap_descr, unsigned int  layer,
 
 /* See description in tad_arp_impl.h */
 te_errno
-tad_arp_confirm_pdu_cb(int csap_id, unsigned int  layer, 
+tad_arp_confirm_pdu_cb(csap_p csap_descr, unsigned int  layer, 
                        asn_value *traffic_pdu)
 {
-    F_ENTRY("(%d:%u) traffic_pdu=%p", csap_id, layer, (void *)traffic_pdu);
+    F_ENTRY("(%d:%u) traffic_pdu=%p", csap_descr->id, layer,
+            (void *)traffic_pdu);
 
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }
@@ -81,7 +82,7 @@ tad_arp_gen_bin_cb(csap_p                csap_descr,
 
 /* See description in tad_arp_impl.h */
 te_errno
-tad_arp_match_bin_cb(int              csap_id,
+tad_arp_match_bin_cb(csap_p           csap_descr,
                      unsigned int     layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt,
@@ -89,7 +90,7 @@ tad_arp_match_bin_cb(int              csap_id,
                      asn_value       *parsed_packet)
 {
     F_ENTRY("(%d:%u) pattern_pdu=%p pkt=%p payload=%p parsed_packet=%p",
-            csap_id, layer, (void *)pattern_pdu, pkt, payload,
+            csap_descr->id, layer, (void *)pattern_pdu, pkt, payload,
             (void *)parsed_packet);
 
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
@@ -97,11 +98,11 @@ tad_arp_match_bin_cb(int              csap_id,
 
 /* See description in tad_arp_impl.h */
 te_errno
-tad_arp_gen_pattern_cb(int csap_id, unsigned int layer,
+tad_arp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
                        const asn_value *tmpl_pdu, asn_value **pattern_pdu)
 {
     F_ENTRY("(%d:%u) tmpl_pdu=%p pattern_pdu=%p",
-            csap_id, layer, (void *)tmpl_pdu, pattern_pdu);
+            csap_descr->id, layer, (void *)tmpl_pdu, pattern_pdu);
 
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }

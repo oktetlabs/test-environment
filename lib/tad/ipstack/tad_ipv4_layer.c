@@ -54,12 +54,10 @@ tad_ip4_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_ip4_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value *pdu)
+tad_ip4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer, asn_value *pdu)
 { 
     te_errno    rc;
     size_t      len;
-
-    csap_p csap_descr = csap_find(csap_id);
 
     const asn_value *ip4_csap_pdu;
     const asn_value *du_field;
@@ -120,7 +118,7 @@ tad_ip4_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value *pdu)
         if (rc != 0)                                                    \
         {                                                               \
             ERROR("%s(CSAP %d): du convert fails %r, tag %d, label %s", \
-                  __FUNCTION__, csap_id, rc, tag_, label_);             \
+                  __FUNCTION__, csap_descr->id, rc, tag_, label_);      \
             return TE_RC(TE_TAD_CSAP, rc);                              \
         }                                                               \
     } while (0)
@@ -641,12 +639,11 @@ cleanup:
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_ip4_match_bin_cb(int csap_id, unsigned int layer,
+tad_ip4_match_bin_cb(csap_p csap_descr, unsigned int layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt, csap_pkts *payload, 
                      asn_value_p parsed_packet)
 { 
-    csap_p                    csap_descr;
     ip4_csap_specific_data_t *spec_data;
 
     uint8_t *data;
@@ -656,12 +653,6 @@ tad_ip4_match_bin_cb(int csap_id, unsigned int layer,
     size_t   ip_len = 0;
 
     asn_value *ip4_header_pdu = NULL;
-
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        ERROR("null csap_descr for csap id %d", csap_id);
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
-    } 
 
     if (parsed_packet != NULL)
         ip4_header_pdu = asn_init_value(ndn_ip4_header); 
@@ -702,7 +693,7 @@ tad_ip4_match_bin_cb(int csap_id, unsigned int layer,
         if (rc != 0)                                            \
         {                                                       \
             F_VERB("%s: csap %d field %s not match, rc %r",     \
-                    csap_id, __FUNCTION__, _asn_label, rc);     \
+                   csap_descr->id, __FUNCTION__, _asn_label, rc);\
             goto cleanup;                                       \
         }                                                       \
         data += _size;                                          \
@@ -780,15 +771,15 @@ cleanup:
 #if 1
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_ip4_gen_pattern_cb(int              csap_id,
+tad_ip4_gen_pattern_cb(csap_p           csap_descr,
                        unsigned int     layer,
                        const asn_value *tmpl_pdu,
                        asn_value_p     *pattern_pdu)
 { 
-    UNUSED(pattern_pdu);
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
+    UNUSED(pattern_pdu);
 
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }

@@ -131,11 +131,6 @@ tad_icmp4_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     int rc;
     struct sockaddr_in dest;
     
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        return -1;
-    }
-    
     dest.sin_family = AF_INET;
     dest.sin_port = htons(68);
     dest.sin_addr.s_addr = INADDR_BROADCAST;
@@ -190,16 +185,10 @@ tad_icmp4_write_read_cb(csap_p csap_descr, int timeout,
 
 /* See description tad_ipstack_impl.h */
 te_errno
-tad_icmp4_single_init_cb(int csap_id, const asn_value *csap_nds,
-                         unsigned int layer)
+tad_icmp4_single_init_cb(csap_p csap_descr, unsigned int layer,
+                         const asn_value *csap_nds)
 { 
-    csap_p   csap_descr;
-
     UNUSED(csap_nds);
-
-    if ((csap_descr = csap_find (csap_id)) == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
-
 
     csap_descr->layers[layer].specific_data = NULL;
     csap_descr->layers[layer].get_param_cb = NULL;
@@ -216,11 +205,9 @@ tad_icmp4_single_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description tad_ipstack_impl.h */
 te_errno 
-icmp4_single_destroy_cb(int csap_id, unsigned int layer)
+icmp4_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    csap_p csap_descr = csap_find(csap_id);
-
-    UNUSED(layer);
     UNUSED(csap_descr);
+    UNUSED(layer);
     return 0;
 }

@@ -243,10 +243,9 @@ tad_iscsi_write_read_cb(csap_p csap_descr, int timeout,
 
 /* See description tad_iscsi_impl.h */
 te_errno
-tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
-                         unsigned int layer)
+tad_iscsi_single_init_cb(csap_p csap_descr, unsigned int layer,
+                         const asn_value *csap_nds)
 {
-    csap_p      csap_descr;
     te_errno    rc;
     int32_t     int32_val;
 
@@ -254,13 +253,10 @@ tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
     iscsi_csap_specific_data_t *spec_data; 
 
 
-    ENTRY("(%d:%u) csap_nds=%p", csap_id, layer, (void *)csap_nds);
+    ENTRY("(%d:%u) csap_nds=%p", csap_descr->id, layer, (void *)csap_nds);
 
     if (csap_nds == NULL)
         return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
-
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
 
     spec_data = calloc(1, sizeof(*spec_data));
     if (spec_data == NULL)
@@ -319,16 +315,11 @@ tad_iscsi_single_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description tad_iscsi_impl.h */
 te_errno
-tad_iscsi_single_destroy_cb(int csap_id, unsigned int layer)
+tad_iscsi_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    csap_p                      csap_descr; 
     iscsi_csap_specific_data_t *spec_data; 
 
-    ENTRY("(%d:%u)", csap_id, layer);
-
-    csap_descr = csap_find(csap_id);
-    if (csap_descr == NULL)
-        return TE_ETADCSAPNOTEX;
+    ENTRY("(%d:%u)", csap_descr->id, layer);
 
     spec_data = csap_descr->layers[layer].specific_data; 
     csap_descr->layers[layer].specific_data = NULL; 

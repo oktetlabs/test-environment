@@ -54,19 +54,13 @@ tad_udp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_udp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
+tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
+                       asn_value_p tmpl_pdu)
 {
     te_errno                  rc;
-    csap_p                    csap_descr;
     asn_value                *udp_tmpl_pdu;
     udp_csap_specific_data_t *udp_spec_data;
 
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        ERROR("%s: failed to find csap_descr by csap_id %d",
-              __FUNCTION__, csap_id);
-        return TE_ETADCSAPNOTEX;
-    }
     udp_spec_data = (udp_csap_specific_data_t *)
                     csap_descr->layers[layer].specific_data;
 
@@ -184,7 +178,7 @@ tad_udp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value_p tmpl_pdu)
             {
                 ERROR("%s: sending csap #%d, "
                       "has no dst-port in template and has no remote port",
-                      __FUNCTION__, csap_id);
+                      __FUNCTION__, csap_descr->id);
                 return TE_RC(TE_TAD_CSAP, TE_EINVAL);
             }
         }
@@ -302,7 +296,7 @@ cleanup:
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_udp_match_bin_cb(int csap_id, unsigned int layer,
+tad_udp_match_bin_cb(csap_p csap_descr, unsigned int layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt, csap_pkts *payload,
                      asn_value_p parsed_packet)
@@ -311,6 +305,7 @@ tad_udp_match_bin_cb(int csap_id, unsigned int layer,
     uint8_t    *data;
     int         rc = 0;
 
+    UNUSED(csap_descr);
     UNUSED(layer);
 
     if (pkt == NULL || payload == NULL)
@@ -319,12 +314,6 @@ tad_udp_match_bin_cb(int csap_id, unsigned int layer,
         return TE_EWRONGPTR;
     }
     data = (uint8_t *)(pkt->data);
-
-    if (csap_find(csap_id) == NULL)
-    {
-        ERROR("%s: csap_descr is NULL for csap id %d", __FUNCTION__, csap_id);
-        return TE_ETADCSAPNOTEX;
-    }
 
     /* Match UDP header fields */
     if (parsed_packet != 0)
@@ -377,14 +366,14 @@ tad_udp_match_bin_cb(int csap_id, unsigned int layer,
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_udp_gen_pattern_cb(int csap_id, unsigned int layer,
+tad_udp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
                        const asn_value *tmpl_pdu, 
                        asn_value_p *pattern_pdu)
 { 
-    UNUSED(pattern_pdu);
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
+    UNUSED(pattern_pdu);
 
     return TE_EOPNOTSUPP;
 }

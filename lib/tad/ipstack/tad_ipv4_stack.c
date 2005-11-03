@@ -183,14 +183,13 @@ tad_ip4_write_read_cb(csap_p csap_descr, int timeout,
 
 /* See description tad_ipstack_impl.h */
 te_errno
-tad_ip4_single_init_cb(int csap_id, const asn_value *csap_nds,
-                       unsigned int layer)
+tad_ip4_single_init_cb(csap_p csap_descr, unsigned int layer,
+                       const asn_value *csap_nds)
 { 
     ip4_csap_specific_data_t *ip4_spec_data; 
 
     struct sockaddr_in local;
 
-    csap_p csap_descr;
     int    opt = 1;
     int    rc;
     char   opt_label[100];
@@ -202,9 +201,6 @@ tad_ip4_single_init_cb(int csap_id, const asn_value *csap_nds,
 
     if (csap_nds == NULL)
         return TE_EWRONGPTR;
-
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-        return TE_ETADCSAPNOTEX;
 
     ip4_spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
     if (ip4_spec_data == NULL)
@@ -266,14 +262,12 @@ tad_ip4_single_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description tad_ipstack_impl.h */
 te_errno
-tad_ip4_single_destroy_cb(int csap_id, unsigned int layer)
+tad_ip4_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    csap_p csap_descr = csap_find(csap_id);
-
     ip4_csap_specific_data_t * spec_data = 
         (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
      
-    if(spec_data->socket >= 0)
+    if (spec_data->socket >= 0)
         close(spec_data->socket);    
 
     tad_data_unit_clear(&spec_data->du_version);
@@ -298,27 +292,24 @@ tad_ip4_single_destroy_cb(int csap_id, unsigned int layer)
 #ifdef WITH_ETH
 /* See description tad_ipstack_impl.h */
 te_errno
-tad_ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, unsigned int layer)
+tad_ip4_eth_init_cb(csap_p csap_descr, unsigned int layer,
+                    const asn_value *csap_nds)
 { 
     ip4_csap_specific_data_t *spec_data; 
     eth_csap_specific_data_t *eth_spec_data; 
-    csap_p csap_descr;
     size_t val_len;
     int    rc;
 
     VERB("%s called for csap %d, layer %d",
-         __FUNCTION__, csap_id, layer); 
+         __FUNCTION__, csap_descr->id, layer); 
 
     if (csap_nds == NULL)
         return TE_EWRONGPTR;
 
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-        return TE_ETADCSAPNOTEX;
-
     if (layer + 1 >= csap_descr->depth)
     {
         ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
-              __FUNCTION__, csap_id, layer, csap_descr->depth);
+              __FUNCTION__, csap_descr->id, layer, csap_descr->depth);
         return TE_EINVAL;
     }
 
@@ -355,7 +346,7 @@ tad_ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, unsigned int layer)
     }
 
     F_VERB("%s(): csap %d, layer %d",
-            __FUNCTION__, csap_id, layer); 
+            __FUNCTION__, csap_descr->id, layer); 
 
     if (eth_spec_data->eth_type == 0)
         eth_spec_data->eth_type = ETHERTYPE_IP;
@@ -367,9 +358,9 @@ tad_ip4_eth_init_cb(int csap_id, const asn_value *csap_nds, unsigned int layer)
 
 /* See description tad_ipstack_impl.h */
 te_errno
-tad_ip4_eth_destroy_cb(int csap_id, unsigned int layer)
+tad_ip4_eth_destroy_cb(csap_p csap_descr, unsigned int layer)
 { 
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     return 0;
 }

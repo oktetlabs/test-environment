@@ -58,11 +58,10 @@
 extern "C" {
 #endif
 
-/* 
+/**
  * DHCP CSAP specific data
  */
-typedef struct dhcp_csap_specific_data
-{
+typedef struct dhcp_csap_specific_data {
     int   in;           /**< Socket for receiving data to the media  */
     int   out;          /**< Socket for sending data to the media  */
     int   mode;
@@ -113,24 +112,26 @@ extern int tad_dhcp_write_read_cb(csap_p csap_descr, int timeout,
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern te_errno tad_dhcp_single_init_cb(int              csap_id,
-                                        const asn_value *csap_nds,
-                                        unsigned int     layer);
+extern te_errno tad_dhcp_single_init_cb(csap_p           csap_descr,
+                                        unsigned int     layer,
+                                        const asn_value *csap_nds);
 
 /**
  * Callback for destroy 'file' CSAP layer if single in stack.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern te_errno tad_dhcp_single_destroy_cb(int csap_id, unsigned int layer);
+extern te_errno tad_dhcp_single_destroy_cb(csap_p       csap_descr,
+                                           unsigned int layer);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
  *
  * The function complies with csap_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_dhcp_confirm_pdu_cb(int csap_id, unsigned int layer,
-                                        asn_value *tmpl_pdu); 
+extern te_errno tad_dhcp_confirm_pdu_cb(csap_p        csap_descr,
+                                        unsigned int  layer,
+                                        asn_value    *tmpl_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -150,7 +151,7 @@ extern te_errno tad_dhcp_gen_bin_cb(csap_p                csap_descr,
  *
  * The function complies with csap_match_bin_cb_t prototype.
  */
-extern te_errno tad_dhcp_match_bin_cb(int              csap_id,
+extern te_errno tad_dhcp_match_bin_cb(csap_p           csap_descr,
                                       unsigned int     layer,
                                       const asn_value *pattern_pdu,
                                       const csap_pkts *pkt,
@@ -164,9 +165,10 @@ extern te_errno tad_dhcp_match_bin_cb(int              csap_id,
  *
  * The function complies with csap_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_dhcp_gen_pattern_cb(int csap_id, unsigned int layer, 
-                                        const asn_value *tmpl_pdu, 
-                                        asn_value **pattern_pdu);
+extern te_errno tad_dhcp_gen_pattern_cb(csap_p            csap_descr,
+                                        unsigned int      layer,
+                                        const asn_value  *tmpl_pdu, 
+                                        asn_value       **pattern_pdu);
 
 
 #ifdef __cplusplus

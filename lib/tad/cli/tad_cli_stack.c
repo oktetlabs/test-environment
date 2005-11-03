@@ -865,8 +865,8 @@ tad_cli_write_read_cb(csap_p csap_descr, int timeout,
 
 /* See description tad_cli_impl.h */
 te_errno
-tad_cli_single_init_cb(int csap_id, const asn_value *csap_nds,
-                       unsigned int layer)
+tad_cli_single_init_cb(csap_p csap_descr, unsigned int layer,
+                       const asn_value *csap_nds)
 {
     int rc;
     size_t tmp_len;
@@ -875,8 +875,6 @@ tad_cli_single_init_cb(int csap_id, const asn_value *csap_nds,
 
     struct exp_case *prompt;    /**< prompts the Expect process waits
                                      from the CLI session                     */
-
-    csap_p   csap_descr;        /**< csap description                         */
 
     cli_csap_specific_data_p    cli_spec_data; /**< CLI CSAP specific data    */
     asn_value_p                 cli_csap_spec; /**< ASN value with csap init
@@ -888,9 +886,6 @@ tad_cli_single_init_cb(int csap_id, const asn_value *csap_nds,
 
     if (csap_nds == NULL)
         return TE_EWRONGPTR;
-
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-        return TE_ETADCSAPNOTEX;
 
     cli_csap_spec = asn_read_indexed(csap_nds, layer, "");
 
@@ -1170,7 +1165,7 @@ tad_cli_single_init_cb(int csap_id, const asn_value *csap_nds,
         /* Wait for child initialisation finished */
         if ((sync_res = parent_wait_sync(cli_spec_data)) != SYNC_RES_OK)
         {
-            tad_cli_single_destroy_cb(csap_descr->id, layer);
+            tad_cli_single_destroy_cb(csap_descr, layer);
             return TE_OS_RC(TE_TAD_CSAP, MAP_SYN_RES2ERRNO(sync_res));
         }
 
@@ -1188,16 +1183,15 @@ error:
 
 /* See description tad_cli_impl.h */
 te_errno
-tad_cli_single_destroy_cb(int csap_id, unsigned int layer)
+tad_cli_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
     int    status;
     int    child_pid;
-    csap_p csap_descr = csap_find(csap_id);
 
     cli_csap_specific_data_p spec_data = 
         (cli_csap_specific_data_p)csap_descr->layers[layer].specific_data;
 
-    VERB("%s() started, CSAP %d", __FUNCTION__, csap_id);
+    VERB("%s() started, CSAP %d", __FUNCTION__, csap_descr->id);
 
     if (spec_data == NULL)
     {

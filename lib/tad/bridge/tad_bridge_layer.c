@@ -44,9 +44,10 @@
 
 /* See description in tad_bridge_impl.h */
 char *
-tad_bridge_get_param_cb(int csap_id, unsigned int layer, const char *param)
+tad_bridge_get_param_cb(csap_p csap_descr, unsigned int layer,
+                        const char *param)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(param);
     return NULL;
@@ -55,21 +56,15 @@ tad_bridge_get_param_cb(int csap_id, unsigned int layer, const char *param)
 
 /* See description in tad_bridge_impl.h */
 te_errno
-tad_bridge_confirm_pdu_cb(int csap_id, unsigned int layer,
+tad_bridge_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                           asn_value_p tmpl_pdu)
 {
     int    rc = 0; 
-    csap_p csap_descr;
     char   buffer[8]; /* maximum length of field in Config BPDU*/
 
     UNUSED (layer);
 
     memset(buffer, 0, sizeof(buffer));
-
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        return TE_ETADCSAPNOTEX;
-    } 
 
     VERB("bridge confirm called\n");
     if (csap_descr->command == TAD_OP_RECV)
@@ -236,7 +231,7 @@ tad_bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_bridge_impl.h */
 te_errno
-tad_bridge_match_bin_cb(int csap_id, unsigned int layer,
+tad_bridge_match_bin_cb(csap_p csap_descr, unsigned int layer,
                         const asn_value *pattern_pdu,
                         const csap_pkts *pkt, csap_pkts *payload, 
                         asn_value_p parsed_packet )
@@ -246,7 +241,7 @@ tad_bridge_match_bin_cb(int csap_id, unsigned int layer,
     int      f_len;
     asn_value *bridge_pdu = NULL;
    
-    UNUSED(csap_id); 
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(payload);
  
@@ -304,12 +299,12 @@ tad_bridge_match_bin_cb(int csap_id, unsigned int layer,
 
 /* See description in tad_bridge_impl.h */
 te_errno
-tad_bridge_gen_pattern_cb(int csap_id, unsigned int layer,
+tad_bridge_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
                           const asn_value *tmpl_pdu, 
                           asn_value_p *pattern_pdu)
 {
 
-    UNUSED(csap_id); 
+    UNUSED(csap_descr);
     UNUSED(layer); 
     UNUSED(tmpl_pdu); 
     UNUSED(pattern_pdu); 

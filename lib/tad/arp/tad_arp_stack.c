@@ -43,28 +43,24 @@
 
 /* See description in tad_arp_impl.h */
 te_errno
-tad_arp_eth_init_cb(int csap_id, const asn_value *csap_nds,
-                    unsigned int layer)
+tad_arp_eth_init_cb(csap_p csap_descr, unsigned int layer,
+                    const asn_value *csap_nds)
 {
     arp_csap_specific_data_t *arp_spec_data; 
     eth_csap_specific_data_t *eth_spec_data; 
 
     te_errno    rc;
-    csap_p      csap_descr;
     int32_t     tmp;
 
 
     UNUSED(csap_nds); /* All data are extractred from its layer */
 
-    F_ENTRY("(%d:%u) nds=%p", csap_id, layer, (void *)csap_nds);
-
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
+    F_ENTRY("(%d:%u) nds=%p", csap_descr->id, layer, (void *)csap_nds);
 
     if (layer + 1 >= csap_descr->depth)
     {
         ERROR("%s(): CSAP %u too large layer %u, depth is %u", 
-              __FUNCTION__, csap_id, layer, csap_descr->depth);
+              __FUNCTION__, csap_descr->id, layer, csap_descr->depth);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
     eth_spec_data = (eth_csap_specific_data_t *)
@@ -115,9 +111,9 @@ tad_arp_eth_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description in tad_arp_impl.h */
 te_errno
-tad_arp_eth_destroy_cb(int csap_id, unsigned int layer)
+tad_arp_eth_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    F_ENTRY("(%d:%u)", csap_id, layer);
+    F_ENTRY("(%d:%u)", csap_descr->id, layer);
 
     return 0;
 }

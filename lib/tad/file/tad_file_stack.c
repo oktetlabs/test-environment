@@ -129,8 +129,8 @@ tad_file_write_read_cb(csap_p csap_descr, int timeout,
 
 /* See description tad_file_impl.h */
 te_errno
-tad_file_single_init_cb(int csap_id, const asn_value *csap_nds,
-                        unsigned int layer)
+tad_file_single_init_cb(csap_p csap_descr, unsigned int layer,
+                        const asn_value *csap_nds)
 {
     char  *filename;
     char   mode [8];
@@ -139,10 +139,8 @@ tad_file_single_init_cb(int csap_id, const asn_value *csap_nds,
 
     asn_value_p                 file_csap_spec; 
     file_csap_specific_data_p   spec_data; 
-    csap_p                      csap_descr;
 
     file_csap_spec = asn_read_indexed(csap_nds, layer, "");
-    csap_descr = csap_find(csap_id);
 
     fn_len = asn_get_length(file_csap_spec, "filename");
     filename = malloc(fn_len + 1);
@@ -190,10 +188,8 @@ tad_file_single_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description tad_file_impl.h */
 te_errno
-tad_file_single_destroy_cb(int csap_id, unsigned int layer)
+tad_file_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    csap_p csap_descr = csap_find(csap_id);
-
     file_csap_specific_data_p spec_data = 
         (file_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
 

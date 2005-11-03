@@ -65,7 +65,8 @@ tad_dhcp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 
 /* See description in tad_dhcp_impl.h */
 te_errno
-tad_dhcp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value *tmpl_pdu)
+tad_dhcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
+                        asn_value *tmpl_pdu)
 { 
     te_errno    rc;
     int         xid;
@@ -80,9 +81,9 @@ tad_dhcp_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value *tmpl_pdu)
             return rc;
     }
     
-    UNUSED (csap_id);
-    UNUSED (layer);
-    UNUSED (tmpl_pdu);
+    UNUSED(csap_descr);
+    UNUSED(layer);
+    UNUSED(tmpl_pdu);
     return 0;
 }
 
@@ -285,7 +286,7 @@ tad_dhcp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_dhcp_impl.h */
 te_errno
-tad_dhcp_match_bin_cb(int csap_id, unsigned int layer,
+tad_dhcp_match_bin_cb(csap_p csap_descr, unsigned int layer,
                       const asn_value *pattern_pdu,
                       const csap_pkts *pkt, csap_pkts *payload, 
                       asn_value *parsed_packet)
@@ -301,7 +302,7 @@ tad_dhcp_match_bin_cb(int csap_id, unsigned int layer,
         return TE_EWRONGPTR;
 
     ENTRY("%s: CSAP %d, layer %d, pkt len: %d", 
-          __FUNCTION__, csap_id, layer, pkt->len);
+          __FUNCTION__, csap_descr->id, layer, pkt->len);
 
     data = pkt->data;
     VERB("DHCP match callback called: %Tm", data, pkt->len);
@@ -445,7 +446,7 @@ tad_dhcp_match_bin_cb(int csap_id, unsigned int layer,
 
 /* See description in tad_dhcp_impl.h */
 te_errno
-tad_dhcp_gen_pattern_cb(int csap_id, unsigned int layer,
+tad_dhcp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
                         const asn_value *tmpl_pdu, 
                         asn_value **pattern_pdu)
 {
@@ -460,7 +461,7 @@ tad_dhcp_gen_pattern_cb(int csap_id, unsigned int layer,
         rc = asn_write_int32(*pattern_pdu, xid, "xid.#plain");
     }
     /* TODO: DHCP options to be inserted into pattern */
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
 

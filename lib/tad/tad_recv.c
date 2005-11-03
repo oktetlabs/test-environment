@@ -143,7 +143,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 
         csap_spt_descr = csap_descr->layers[layer].proto_support;
 
-        rc = csap_spt_descr->match_cb(csap_descr->id, layer, layer_pdu, 
+        rc = csap_spt_descr->match_cb(csap_descr, layer, layer_pdu, 
                                       &data_to_check, &rest_payload,
                                       parsed_pdu); 
 
@@ -507,7 +507,7 @@ tad_tr_sr_generate_pattern(csap_p csap_descr, asn_value_p template,
 
         layer_tmpl_pdu = asn_read_indexed(template, layer, "pdus"); 
 
-        rc = csap_spt_descr->generate_pattern_cb(csap_descr->id, layer,
+        rc = csap_spt_descr->generate_pattern_cb(csap_descr, layer,
                                                  layer_tmpl_pdu,
                                                  &layer_pattern);
 

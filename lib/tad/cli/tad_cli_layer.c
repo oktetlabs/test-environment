@@ -36,9 +36,10 @@
 
 /* See description in tad_cli_impl.h */
 char *
-tad_cli_get_param_cb(int csap_id, unsigned int layer, const char *param)
+tad_cli_get_param_cb(csap_p csap_descr, unsigned int layer,
+                     const char *param)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(param);
 
@@ -47,18 +48,13 @@ tad_cli_get_param_cb(int csap_id, unsigned int layer, const char *param)
 
 /* See description in tad_cli_impl.h */
 te_errno
-tad_cli_confirm_pdu_cb(int csap_id, unsigned int layer, asn_value *tmpl_pdu)
+tad_cli_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
+                       asn_value *tmpl_pdu)
 {
-    csap_p                   csap_descr;
     cli_csap_specific_data_p spec_data;
 
     UNUSED(tmpl_pdu);
 
-    if ((csap_descr = csap_find(csap_id)) == NULL)
-    {
-        return TE_ETADCSAPNOTEX;
-    }
-    
     spec_data = (cli_csap_specific_data_p)
         csap_descr->layers[layer].specific_data; 
     
@@ -107,7 +103,7 @@ tad_cli_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_cli_impl.h */
 te_errno
-tad_cli_match_bin_cb(int              csap_id,
+tad_cli_match_bin_cb(csap_p           csap_descr,
                      unsigned int     layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt,
@@ -120,7 +116,7 @@ tad_cli_match_bin_cb(int              csap_id,
     int rc;
 #endif
 
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(pattern_pdu);
     UNUSED(payload);
@@ -153,12 +149,12 @@ tad_cli_match_bin_cb(int              csap_id,
 
 /* See description in tad_cli_impl.h */
 te_errno
-tad_cli_gen_pattern_cb(int               csap_id,
+tad_cli_gen_pattern_cb(csap_p            csap_descr,
                        unsigned int      layer,
                        const asn_value  *tmpl_pdu, 
                        asn_value       **pattern_pdu)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(tmpl_pdu);
 
     *pattern_pdu = asn_init_value(ndn_cli_message);

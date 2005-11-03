@@ -374,8 +374,8 @@ tad_snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
 
 /* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_single_init_cb(int csap_id, const asn_value *csap_nds,
-                        unsigned int layer)
+tad_snmp_single_init_cb(csap_p csap_descr, unsigned int layer,
+                        const asn_value *csap_nds)
 {
     int      rc;
     char     community[COMMUNITY_MAX_LEN + 1]; 
@@ -383,8 +383,6 @@ tad_snmp_single_init_cb(int csap_id, const asn_value *csap_nds,
     int      timeout;
     int      version;
     size_t   v_len;
-
-    csap_p csap_descr;
 
     struct snmp_session         csap_session; 
     struct snmp_session        *ss = NULL; 
@@ -406,7 +404,7 @@ tad_snmp_single_init_cb(int csap_id, const asn_value *csap_nds,
 
     VERB("Init callback\n");
 
-    if (!csap_nds || (csap_id <=0))
+    if (!csap_nds)
         return TE_EWRONGPTR;
 
     rc = asn_get_indexed(csap_nds, &snmp_csap_spec, layer);
@@ -728,7 +726,6 @@ tad_snmp_single_init_cb(int csap_id, const asn_value *csap_nds,
         }
     }
 
-    csap_descr = csap_find(csap_id);
     snmp_spec_data = malloc(sizeof(snmp_csap_specific_data_t));
     if (snmp_spec_data == NULL)
     {
@@ -783,7 +780,7 @@ tad_snmp_single_init_cb(int csap_id, const asn_value *csap_nds,
 
         ss = snmp_add(&csap_session, transport, NULL, NULL);
         snmp_spec_data->sock = transport->sock;
-        VERB("%s(): CSAP %d, sock = %d", __FUNCTION__, csap_id,
+        VERB("%s(): CSAP %d, sock = %d", __FUNCTION__, csap_descr->id,
              snmp_spec_data->sock);
 #else
         ss = snmp_open(&csap_session); 
@@ -822,14 +819,12 @@ tad_snmp_single_init_cb(int csap_id, const asn_value *csap_nds,
 
 /* See description in tad_snmp_impl.h */
 int 
-tad_snmp_single_destroy_cb(int csap_id, unsigned int layer)
+tad_snmp_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
-    csap_p csap_descr = csap_find(csap_id);
-
     snmp_csap_specific_data_p spec_data = 
         (snmp_csap_specific_data_p) csap_descr->layers[layer].specific_data;
 
-    VERB("Destroy callback, id %d\n", csap_id);
+    VERB("Destroy callback, id %d\n", csap_descr->id);
     if (spec_data->pdu != NULL)
         tad_snmp_free_pdu(spec_data->pdu);
 

@@ -308,7 +308,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
             break;
         }
 
-        rc = nbr_p->init_cb(new_csap_id, csap_nds, layer);
+        rc = nbr_p->init_cb(new_csap, layer, csap_nds);
         if (rc != 0) 
         {
             ERROR("CSAP %d init error %r, layer %d", 
@@ -407,7 +407,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
             if (strcmp_imp(lower_proto, nbr_p->nbr_type)==0)
             {
                 VERB("found destroy neigbour callback"); 
-                rc = nbr_p->destroy_cb(csap, layer);
+                rc = nbr_p->destroy_cb(csap_descr_p, layer);
                 break;
             }
         }

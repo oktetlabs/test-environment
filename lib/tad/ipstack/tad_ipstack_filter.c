@@ -34,7 +34,7 @@
 /**
  * Callback for read data from media of icmpernet CSAP. 
  *
- * @param csap_id       identifier of CSAP.
+ * @param csap_descr    CSAP description sctucture.
  * @param timeout       timeout of waiting for data in microseconds.
  * @param buf           buffer for read data.
  * @param buf_len       length of available buffer.
@@ -43,7 +43,7 @@
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-tcpip_read_cb (csap_p csap_descr, int timeout, char *buf, int buf_len)
+tcpip_read_cb(csap_p csap_descr, int timeout, char *buf, int buf_len)
 {
     int    rc; 
     int    layer;    

@@ -57,7 +57,7 @@ unsigned int userdata_to_udp(unsigned char *raw_pkt);
  * Type for reference to user function for generating MAC Control frame data 
  * to be sent.
  *
- * @param csap_id       identifier of CSAP
+ * @param csap_descr    CSAP description structure
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl          ASN value with template. 
  *                      function should replace that field (which it should
@@ -67,7 +67,7 @@ unsigned int userdata_to_udp(unsigned char *raw_pkt);
  * @return zero on success or error code.
  */
 int 
-eth_mac_ctrl_payload(int csap_id, unsigned int layer, asn_value *tmpl)
+eth_mac_ctrl_payload(csap_p csap_descr, unsigned int layer, asn_value *tmpl)
 {
     static unsigned char  buffer[20000];
     unsigned int          length = 4;
@@ -83,7 +83,7 @@ eth_mac_ctrl_payload(int csap_id, unsigned int layer, asn_value *tmpl)
     buffer[3] = 0x00;
     
     rc = asn_write_value_field (tmpl, buffer, length, "payload.#bytes");
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     return rc;  
 }
@@ -102,7 +102,8 @@ eth_mac_ctrl_payload(int csap_id, unsigned int layer, asn_value *tmpl)
  * @return zero on success or error code.
  */
 int
-eth_mac_ctrl_unsupp_payload(int csap_id, unsigned int layer, asn_value *tmpl)
+eth_mac_ctrl_unsupp_payload(csap_p csap_descr, unsigned int layer,
+                            asn_value *tmpl)
 {
     static unsigned char  buffer[20000];
     unsigned int          length = 4;
@@ -118,7 +119,7 @@ eth_mac_ctrl_unsupp_payload(int csap_id, unsigned int layer, asn_value *tmpl)
     buffer[3] = 0x00;
     
     rc = asn_write_value_field (tmpl, buffer, length, "payload.#bytes");
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     return rc;  
 }
@@ -138,7 +139,7 @@ eth_mac_ctrl_unsupp_payload(int csap_id, unsigned int layer, asn_value *tmpl)
  * @return zero on success or error code.
  */
 int 
-eth_udp_payload(int csap_id, unsigned int layer, asn_value *tmpl)
+eth_udp_payload(csap_p csap_descr, unsigned int layer, asn_value *tmpl)
 {
     static unsigned char  buffer[20000];
     unsigned int          length;
@@ -151,7 +152,7 @@ eth_udp_payload(int csap_id, unsigned int layer, asn_value *tmpl)
     length = userdata_to_udp(buffer);
 
     rc = asn_write_value_field (tmpl, buffer, length, "payload.#bytes");
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     return rc;
 }

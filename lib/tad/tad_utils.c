@@ -110,7 +110,7 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
             break;
         }
 
-        rc = csap_spt_descr->confirm_cb(csap_descr->id, layer, layer_pdu);
+        rc = csap_spt_descr->confirm_cb(csap_descr, layer, layer_pdu);
         VERB("confirm rc: %d", rc);
 
         if (rc != 0)

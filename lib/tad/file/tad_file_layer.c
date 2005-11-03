@@ -45,9 +45,9 @@
 
 /* See description in tad_file_impl.h */
 char *
-tad_file_get_param_cb(int csap_id, unsigned int layer, const char *param)
+tad_file_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(param);
 
@@ -57,10 +57,10 @@ tad_file_get_param_cb(int csap_id, unsigned int layer, const char *param)
 
 /* See description in tad_file_impl.h */
 te_errno
-tad_file_confirm_pdu_cb(int csap_id, unsigned int layer,
+tad_file_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                         asn_value_p tmpl_pdu)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
 
@@ -114,7 +114,7 @@ tad_file_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_file_impl.h */
 te_errno
-tad_file_match_bin_cb(int csap_id, unsigned int layer,
+tad_file_match_bin_cb(csap_p csap_descr, unsigned int layer,
                       const asn_value *pattern_pdu,
                       const csap_pkts *pkt, csap_pkts *payload, 
                       asn_value_p parsed_packet)
@@ -125,7 +125,7 @@ tad_file_match_bin_cb(int csap_id, unsigned int layer,
     int line_len = pkt->len;
     int rc;
 
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(pattern_pdu);
     UNUSED(payload);
@@ -146,11 +146,11 @@ tad_file_match_bin_cb(int csap_id, unsigned int layer,
 
 /* See description in tad_file_impl.h */
 te_errno
-tad_file_gen_pattern_cb(int csap_id, unsigned int layer,
+tad_file_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
                         const asn_value *tmpl_pdu, 
                         asn_value_p *pattern_pdu)
 {
-    UNUSED(csap_id);
+    UNUSED(csap_descr);
     UNUSED(layer);
     UNUSED(tmpl_pdu);
     UNUSED(pattern_pdu);
