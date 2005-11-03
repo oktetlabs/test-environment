@@ -2107,8 +2107,12 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     if (pattern == NULL || strlen(pattern) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    RING("Start receive operation on the CSAP %d (%s:%d) with "
-         "pattern\n%Tf", csap_id, ta_name, session, pattern);
+    if ((fd = open(pattern, O_RDONLY)) < 0)
+    {
+        ERROR("Cannot open file %s for reading", pattern);
+        return TE_OS_RC(TE_RCF_API, errno);
+    }
+    close(fd);
     
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRRECV_START;
@@ -2121,12 +2125,8 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     msg.num = num;
     msg.timeout = timeout;
 
-    if ((fd = open(pattern, O_RDONLY)) < 0)
-    {
-        ERROR("Cannot open file %s for reading", pattern);
-        return TE_OS_RC(TE_RCF_API, errno);
-    }
-    close(fd);
+    RING("Starting receive operation on the CSAP %d (%s:%d) with "
+         "pattern\n%Tf", csap_id, ta_name, session, pattern);
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
