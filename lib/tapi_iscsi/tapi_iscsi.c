@@ -1340,15 +1340,12 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
         0,
     };
 
-    char         offer[50];
+    char         *offer;
     int          par2adv = 0;
     int          rc;
-#if 0
     cfg_val_type type = CVT_STRING;
 
-    memset(offer, 0, sizeof(offer));
-
-    rc = cfg_get_instance_fmt(&type, offer,
+    rc = cfg_get_instance_fmt(&type, &offer,
                               "/agent:%s/iscsi_initiator:/target_data:"
                               "target_%d/parameters2advertize:",
                               ta, target_id);
@@ -1361,21 +1358,11 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
     par2adv = atoi(offer);
     if (offer_mapping[param] != 0)
     {
-        printf("\n%x <--  %x\n", par2adv, offer_mapping[param]);
         if (advertize == TRUE)
             par2adv |= offer_mapping[param];
         else
             par2adv &= ~(offer_mapping[param]);
     }
-#else
-    if (offer_mapping[param] != 0)
-    {
-        if (advertize == TRUE)
-            par2adv = offer_mapping[param];
-        else
-            par2adv = 0;
-    }
-#endif
 
     sprintf(offer, "%d", par2adv);
 
@@ -2013,6 +2000,6 @@ tapi_iscsi_initiator_raw_verify(const char *ta, int id,
                      RCF_STRING, dev, 
                      RCF_UINT32, offset,
                      RCF_STRING, data);    
-    
+    return rc;   
 }
 
