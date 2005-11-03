@@ -40,57 +40,86 @@
 #include "tad_csap_inst.h"
 
 
-typedef char *(*csap_get_param_cb_t)(csap_p        csap_descr,
-                                     unsigned int  layer, 
-                                     const char   *param);
+/**
+ * Callback to initialize 'arp' CSAP layer if over 'eth' in stack.
+ *
+ * The function complies with csap_nbr_init_cb_t prototype.
+ */
+extern te_errno tad_arp_eth_init_cb(int              csap_id,
+                                    const asn_value *csap_nds,
+                                    unsigned int     layer);
 
-typedef te_errno (*csap_low_resource_cb_t)(csap_p csap_descr);
-
-typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout, 
-                              char *buf, size_t buf_len);
-
-typedef int (*csap_write_cb_t)(csap_p csap_descr, const char *buf,
-                               size_t buf_len);
-
-typedef int (*csap_write_read_cb_t)(csap_p csap_descr, int timeout,
-                                    const char *w_buf, size_t w_buf_len,
-                                    char *r_buf, size_t r_buf_len);
-typedef te_errno (*csap_check_pdus_cb_t)(csap_p csap_descr, 
-                                         asn_value *traffic_nds);
-
-typedef te_errno (*csap_echo_method)(csap_p csap_descr, uint8_t *pkt, 
-                                     size_t len);
+/**
+ * Callback to destroy 'arp' CSAP layer if over 'eth' in stack.
+ *
+ * The function complies with csap_nbr_destroy_cb_t prototype.
+ */
+extern te_errno tad_arp_eth_destroy_cb(int          csap_id,
+                                       unsigned int layer);
 
 
-typedef te_errno (*csap_nbr_init_cb_t)(int              csap_id,
-                                       const asn_value *csap_nds,
-                                       unsigned int     layer);
+/**
+ * Callback for read parameter value of ARP CSAP.
+ *
+ * The function complies with csap_get_param_cb_t prototype.
+ */
+extern char *tad_arp_get_param_cb(csap_p        csap_descr,
+                                  unsigned int  layer,
+                                  const char   *param);
 
-typedef te_errno (*csap_nbr_destroy_cb_t)(int          csap_id,
-                                          unsigned int layer);
+/**
+ * Callback for confirm PDU with ARP CSAP parameters and possibilities.
+ *
+ * The function complies with csap_confirm_pdu_cb_t prototype.
+ */
+extern te_errno tad_arp_confirm_pdu_cb(int           csap_id,
+                                       unsigned int  layer, 
+                                       asn_value    *traffic_pdu); 
 
-typedef te_errno (*csap_confirm_pdu_cb_t)(int           csap_id,
-                                          unsigned int  layer, 
-                                          asn_value    *traffic_pdu); 
+/**
+ * Callback for generate binary data to be sent to media.
+ *
+ * The function complies with csap_gen_bin_cb_t prototype.
+ */
+extern te_errno tad_arp_gen_bin_cb(csap_p                csap_descr,
+                                   unsigned int          layer,
+                                   const asn_value      *tmpl_pdu,
+                                   const tad_tmpl_arg_t *args,
+                                   size_t                arg_num,
+                                   csap_pkts_p           up_payload,
+                                   csap_pkts_p           pkts);
 
-typedef te_errno (*csap_gen_bin_cb_t)(csap_p                csap_descr,
-                                      unsigned int          layer,
-                                      const asn_value      *tmpl_pdu,
-                                      const tad_tmpl_arg_t *args,
-                                      size_t                arg_num,
-                                      csap_pkts_p           up_payload,
-                                      csap_pkts_p           pkts);
+/**
+ * Callback for parse received packet and match it with pattern.
+ *
+ * The function complies with csap_match_bin_cb_t prototype.
+ */
+extern te_errno tad_arp_match_bin_cb(int              csap_id,
+                                     unsigned int     layer,
+                                     const asn_value *pattern_pdu,
+                                     const csap_pkts *pkt,
+                                     csap_pkts       *payload,
+                                     asn_value       *parsed_packet);
 
-typedef te_errno (*csap_match_bin_cb_t)(int              csap_id,
-                                        unsigned int     layer,
-                                        const asn_value *pattern_pdu,
-                                        const csap_pkts *pkt,
-                                        csap_pkts       *payload,
-                                        asn_value       *parsed_packet);
+/**
+ * Callback for generating pattern to filter just one response to the
+ * packet which will be sent by this CSAP according to this template.
+ *
+ * The function complies with csap_gen_pattern_cb_t prototype.
+ */
+extern te_errno tad_arp_gen_pattern_cb(int               csap_id,
+                                       unsigned int      layer,
+                                       const asn_value  *tmpl_pdu, 
+                                       asn_value       **pattern_pdu);
 
-typedef te_errno (*csap_gen_pattern_cb_t)(int               csap_id,
-                                          unsigned int      layer,
-                                          const asn_value  *tmpl_pdu, 
-                                          asn_value       **pattern_pdu);
+#if 0
+/**
+ * Not implemented yet.
+ *
+ * The function complies with csap_echo_method_t prototype.
+ */
+extern te_errno tad_arp_echo_method(csap_p csap_descr, uint8_t *pkt, 
+                                    size_t len);
+#endif
 
 #endif /* !__TE_TAD_ARP_IMPL_H__ */
