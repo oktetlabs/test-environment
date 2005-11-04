@@ -1021,7 +1021,7 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
         cfg_types[type].val2str(value, &valstr);
         if (strncmp(oid, AGENT_BOID, BOID_LEN) == 0)
         {
-            RING("Added %s = %s", oid,
+            RING("Added %s%s = %s", local ? "locally " : "", oid,
                  (valstr != NULL) ? valstr : "(none)");
         }
         free(valstr);
