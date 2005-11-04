@@ -1229,9 +1229,26 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 val.opttype = OPT_IPADDR;
                 if (roptlen >= sizeof(struct in_addr))
                 {
-                    memcpy(&val.option_value_u.opt_ipaddr,
-                           optval, sizeof(struct in_addr));
-                }
+                    if (roptlen < sizeof(struct ip_mreq))
+                    {
+                        memcpy(&val.option_value_u.opt_ipaddr,
+                               optval, sizeof(struct in_addr));
+                    }
+#ifdef __linux__
+                    else if (roptlen >= sizeof(struct ip_mreqn))
+                    {
+                        val.opttype = OPT_MREQN;
+                        memcpy(&val.option_value_u.opt_mreqn,
+                               optval, sizeof(struct ip_mreqn));
+                    }
+#endif 
+                    else
+                    {
+                        val.opttype = OPT_MREQ;
+                        memcpy(&val.option_value_u.opt_mreq,
+                               optval, sizeof(struct ip_mreq));
+                    }
+               }
                 else
                 {
                     WARN("Length of socket option %s value is less than "
@@ -1420,16 +1437,47 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     if (roptlen >= sizeof(struct in_addr))
                     {
                         char addr_buf[INET_ADDRSTRLEN];
-
-                        memcpy(optval,
-                               &out.optval.optval_val[0].option_value_u.
-                                   opt_ipaddr,
-                               sizeof(struct in_addr));
-                        snprintf(opt_val_str, sizeof(opt_val_str),
-                                 "{ addr: %s }",
-                                 inet_ntop(AF_INET, optval,
-                                           addr_buf, sizeof(addr_buf)));
-                    }
+                        
+                        if (roptlen < sizeof(struct ip_mreq))
+                        {
+                            memcpy(optval,
+                                   &out.optval.optval_val[0].option_value_u.
+                                   opt_ipaddr, sizeof(struct in_addr));
+                            snprintf(opt_val_str, sizeof(opt_val_str),
+                                     "{ addr: %s }",
+                                     inet_ntop(AF_INET, optval,
+                                               addr_buf, sizeof(addr_buf)));
+                        }
+#ifdef __linux__                        
+                        else if (roptlen >= sizeof(struct ip_mreqn))
+                        {
+                            memcpy(optval,
+                                   &out.optval.optval_val[0].option_value_u.
+                                   opt_mreqn, sizeof(struct ip_mreqn));
+                            snprintf(opt_val_str, sizeof(opt_val_str),
+                                     "{ addr: %s if: %d }",
+                                     inet_ntop(AF_INET,
+                                               &((struct ip_mreqn *)
+                                               optval)->imr_address,
+                                               addr_buf, sizeof(addr_buf)),
+                                               ((struct ip_mreqn *)optval)
+                                               ->imr_ifindex);
+                            break;
+                        }
+#endif
+                        else
+                        {
+                            memcpy(optval,
+                                   &out.optval.optval_val[0].option_value_u.
+                                   opt_mreq, sizeof(struct ip_mreq));
+                            snprintf(opt_val_str, sizeof(opt_val_str),
+                                     "{ addr: %s }",
+                                     inet_ntop(AF_INET, &((struct ip_mreq *)
+                                               optval)->imr_interface,
+                                               addr_buf, sizeof(addr_buf)));
+                            break;
+                        }
+                   }
                     break;
 
                 case RPC_TCP_INFO:
@@ -1641,17 +1689,46 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
             {
                 char addr_buf[INET_ADDRSTRLEN];
 
-                memcpy(&(val.option_value_u.opt_ipaddr), optval,
-                       sizeof(struct in_addr));
-                val.opttype = OPT_IPADDR;
-
+                if (optlen < sizeof(struct ip_mreq))
+                {
+                    val.opttype = OPT_IPADDR;
+                    memcpy(&(val.option_value_u.opt_ipaddr), optval,
+                           sizeof(struct in_addr));
+                    snprintf(opt_val_str, sizeof(opt_val_str),
+                             "{ addr: %s } ",
+                             inet_ntop(AF_INET, (char *)optval,
+                                       addr_buf, sizeof(addr_buf)));
+                }
+#ifdef __linux__                
+                else if (optlen >= sizeof(struct ip_mreqn))
+                {
+                    val.opttype = OPT_MREQN;
+                    memcpy(&val.option_value_u.opt_mreqn, optval,
+                           sizeof(struct ip_mreqn));
+                    snprintf(opt_val_str, sizeof(opt_val_str),
+                             "{ addr: %s if: %d } ",
+                             inet_ntop(AF_INET,
+                                       &((struct ip_mreq *)optval)->
+                                       imr_interface, addr_buf,
+                                       sizeof(addr_buf)),
+                             ((struct ip_mreqn *)optval)->imr_ifindex);
+                }
+#endif                
+                else
+                {
+                    val.opttype = OPT_MREQ;
+                    memcpy(&val.option_value_u.opt_mreq, optval,
+                           sizeof(struct ip_mreq));
+                    snprintf(opt_val_str, sizeof(opt_val_str),
+                             "{ addr: %s } ",
+                             inet_ntop(AF_INET,
+                                       &((struct ip_mreq *)optval)->
+                                       imr_interface,
+                                       addr_buf, sizeof(addr_buf)));
+                }                
+ 
                 if (optlen == sizeof(struct in_addr))
                     in.optlen = RPC_OPTLEN_AUTO;
-
-                snprintf(opt_val_str, sizeof(opt_val_str),
-                         "{ addr: %s } ",
-                         inet_ntop(AF_INET, (char *)optval,
-                                   addr_buf, sizeof(addr_buf)));
 
                 break;
             }

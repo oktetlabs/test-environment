@@ -1541,13 +1541,14 @@ struct tarpc_poll_out {
  */
  
 enum option_type {
-    OPT_INT      = 1,
-    OPT_LINGER   = 2,
-    OPT_TIMEVAL  = 3,
-    OPT_MREQN    = 4,
-    OPT_IPADDR   = 5,
-    OPT_STRING   = 6,
-    OPT_TCP_INFO = 7
+    OPT_INT             = 1,
+    OPT_LINGER          = 2,
+    OPT_TIMEVAL         = 3,
+    OPT_MREQN           = 4,
+    OPT_MREQ            = 5,
+    OPT_IPADDR          = 6,
+    OPT_STRING          = 7,
+    OPT_TCP_INFO        = 8
 };
 
 struct tarpc_linger {
@@ -1560,6 +1561,11 @@ struct option_value_mreqn {
     uint32_t    imr_address;    /**< IP address of local interface */
     tarpc_int   imr_ifindex;    /**< Interpace index */
 };
+
+struct option_value_mreq{
+    uint32_t    imr_multiaddr;  /**< IP multicast group address */
+    uint32_t    imr_address;    /**< IP address of local interface */
+};    
 
 struct option_value_tcp_info {
     uint8_t     tcpi_state;
@@ -1600,13 +1606,14 @@ struct option_value_tcp_info {
 };
 
 union option_value switch (option_type opttype) {
-    case OPT_INT:     tarpc_int opt_int;
-    case OPT_LINGER:  struct tarpc_linger opt_linger;
-    case OPT_TIMEVAL: struct tarpc_timeval opt_timeval;
-    case OPT_MREQN:   struct option_value_mreqn  opt_mreqn;
-    case OPT_IPADDR:  uint32_t opt_ipaddr;
-    case OPT_STRING:  char opt_string<>;
-    case OPT_TCP_INFO: struct option_value_tcp_info opt_tcp_info;
+    case OPT_INT:               tarpc_int opt_int;
+    case OPT_LINGER:            struct tarpc_linger opt_linger;
+    case OPT_TIMEVAL:           struct tarpc_timeval opt_timeval;
+    case OPT_MREQN:             struct option_value_mreqn opt_mreqn;
+    case OPT_MREQ:              struct option_value_mreq opt_mreq;
+    case OPT_IPADDR:            uint32_t opt_ipaddr;
+    case OPT_STRING:            char opt_string<>;
+    case OPT_TCP_INFO:          struct option_value_tcp_info opt_tcp_info;
 };
 
 /* setsockopt() */

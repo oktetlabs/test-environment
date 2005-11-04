@@ -1238,208 +1238,137 @@ TARPC_FUNC(sigaction,
 
 /*-------------- setsockopt() ------------------------------*/
 
+typedef union opt_param {
+    int                 integer;
+    char               *str;
+    struct linger       linger;
 #ifdef __linux__
-
-TARPC_FUNC(setsockopt, {},
-{
-    if (in->optval.optval_val == NULL)
-    {
-        MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                     sockopt_rpc2h(in->optname),
-                                     NULL, in->optlen));
-    }
-    else
-    {
-        char *opt;
-        int   optlen;
-
-        struct linger   linger;
-        struct ip_mreqn mreqn;
-        struct in_addr  addr;
-        struct timeval  tv;
-
-        switch (in->optval.optval_val[0].opttype)
-        {
-            case OPT_INT:
-            {
-                opt = (char *)&(in->optval.optval_val[0].
-                                option_value_u.opt_int);
-                optlen = sizeof(int);
-                break;
-            }
-            
-            case OPT_LINGER:
-            {
-                opt = (char *)&linger;
-                linger.l_onoff = in->optval.optval_val[0].
-                                 option_value_u.opt_linger.l_onoff;
-                linger.l_linger = in->optval.optval_val[0].
-                                  option_value_u.opt_linger.l_linger;
-                optlen = sizeof(linger);
-                break;
-            }
-
-            case OPT_MREQN:
-            {
-                opt = (char *)&mreqn;
-
-                memcpy((char *)&(mreqn.imr_multiaddr),
-                       &in->optval.optval_val[0].option_value_u.opt_mreqn.
-                       imr_multiaddr, sizeof(mreqn.imr_multiaddr));
-                memcpy((char *)&(mreqn.imr_address),
-                       &in->optval.optval_val[0].option_value_u.opt_mreqn.
-                       imr_address, sizeof(mreqn.imr_address));
-
-                mreqn.imr_ifindex = in->optval.optval_val[0].option_value_u.
-                                    opt_mreqn.imr_ifindex;
-                optlen = sizeof(mreqn);
-                break;
-            }
-
-            case OPT_IPADDR:
-            {
-                opt = (char *)&addr;
-
-                memcpy(&addr,
-                       &in->optval.optval_val[0].option_value_u.opt_ipaddr,
-                       sizeof(struct in_addr));
-                optlen = sizeof(addr);
-                break;
-            }
-
-            case OPT_TIMEVAL:
-            {
-                opt = (char *)&tv;
-
-                tv.tv_sec = in->optval.optval_val[0].option_value_u.
-                    opt_timeval.tv_sec;
-                tv.tv_usec = in->optval.optval_val[0].option_value_u.
-                    opt_timeval.tv_usec;
-                optlen = sizeof(tv);
-                break;
-            }
-
-            case OPT_STRING:
-            {
-                opt = (char *)in->optval.optval_val[0].option_value_u.
-                    opt_string.opt_string_val;
-                optlen = in->optval.optval_val[0].option_value_u.
-                    opt_string.opt_string_len;
-                break;
-            }
-
-            default:
-                ERROR("incorrect option type %d is received",
-                      in->optval.optval_val[0].opttype);
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-                out->retval = -1;
-                goto finish;
-                break;
-        }
-        INIT_CHECKED_ARG(opt, optlen, 0);
-        if (in->optlen == RPC_OPTLEN_AUTO)
-            in->optlen = optlen;
-        MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                     sockopt_rpc2h(in->optname),
-                                     opt, in->optlen));
-    }
-    finish:
-    ;
-}
-)
-
-#else
-
-TARPC_FUNC(setsockopt, {},
-{
-    if (in->optval.optval_val == NULL)
-    {
-        MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                     sockopt_rpc2h(in->optname),
-                                     NULL, in->optlen));
-    }
-    else
-    {
-        char *opt;
-        int   optlen;
-
-        struct linger   linger;
-        struct in_addr  addr;
-        struct timeval  tv;
-
-        switch (in->optval.optval_val[0].opttype)
-        {
-            case OPT_INT:
-            {
-                opt = (char *)&(in->optval.optval_val[0].
-                                option_value_u.opt_int);
-                optlen = sizeof(int);
-                break;
-            }
-            case OPT_LINGER:
-            {
-                opt = (char *)&linger;
-                linger.l_onoff = in->optval.optval_val[0].
-                                 option_value_u.opt_linger.l_onoff;
-                linger.l_linger = in->optval.optval_val[0].
-                                  option_value_u.opt_linger.l_linger;
-                optlen = sizeof(linger);
-                break;
-            }
-
-            case OPT_IPADDR:
-            {
-                opt = (char *)&addr;
-
-                memcpy(&addr,
-                       &in->optval.optval_val[0].option_value_u.opt_ipaddr,
-                       sizeof(struct in_addr));
-                optlen = sizeof(addr);
-                break;
-            }
-
-            case OPT_TIMEVAL:
-            {
-                opt = (char *)&tv;
-
-                tv.tv_sec = in->optval.optval_val[0].option_value_u.
-                    opt_timeval.tv_sec;
-                tv.tv_usec = in->optval.optval_val[0].option_value_u.
-                    opt_timeval.tv_usec;
-                optlen = sizeof(tv);
-                break;
-            }
-
-            case OPT_STRING:
-            {
-                opt = (char *)in->optval.optval_val[0].option_value_u.
-                    opt_string.opt_string_val;
-                optlen = in->optval.optval_val[0].option_value_u.
-                    opt_string.opt_string_len;
-                break;
-            }
-
-            default:
-                ERROR("incorrect option type %d is received",
-                      in->optval.optval_val[0].opttype);
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-                out->retval = -1;
-                goto finish;
-                break;
-        }
-        INIT_CHECKED_ARG(opt, optlen, 0);
-        if (in->optlen == RPC_OPTLEN_AUTO)
-            in->optlen = optlen;
-        MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
-                                     sockopt_rpc2h(in->optname),
-                                     opt, in->optlen));
-    }
-    finish:
-    ;
-}
-)
-
+    struct ip_mreqn     mreqn;
 #endif
+    struct ip_mreq      mreq;
+    struct in_addr      addr;
+    struct timeval      tv;
+} opt_param;
+
+static void
+tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
+                 opt_param *param, socklen_t *optlen)
+{
+    switch (in->optval.optval_val[0].opttype)
+    {
+        case OPT_INT:
+        {
+            param->integer = in->optval.optval_val[0].
+                                 option_value_u.opt_int;
+            *optlen = sizeof(int);
+            break;
+        }
+
+        case OPT_LINGER:
+        {
+            param->linger.l_onoff = in->optval.optval_val[0].
+                                    option_value_u.opt_linger.l_onoff;
+            param->linger.l_linger = in->optval.optval_val[0].
+                                     option_value_u.opt_linger.l_linger;
+            *optlen = sizeof(param->linger);
+            break;
+        }
+        
+        case OPT_MREQ:
+        {
+            memcpy(&param->mreq.imr_multiaddr, &in->optval.optval_val[0].
+                   option_value_u.opt_mreq.imr_multiaddr,
+                   sizeof(param->mreq.imr_multiaddr));
+            memcpy(&param->mreq.imr_interface, &in->optval.optval_val[0].
+                   option_value_u.opt_mreq.imr_address,
+                   sizeof(param->mreq.imr_interface));
+            *optlen = sizeof(param->mreq);
+            break;
+        }
+
+#ifdef __linux__
+        case OPT_MREQN:
+        {
+            memcpy((char *)&(param->mreqn.imr_multiaddr),
+                   &in->optval.optval_val[0].option_value_u.opt_mreqn.
+                   imr_multiaddr, sizeof(param->mreqn.imr_multiaddr));
+            memcpy((char *)&(param->mreqn.imr_address),
+                   &in->optval.optval_val[0].option_value_u.opt_mreqn.
+                   imr_address, sizeof(param->mreqn.imr_address));
+            
+            param->mreqn.imr_ifindex = in->optval.optval_val[0].
+                                       option_value_u.
+                                       opt_mreqn.imr_ifindex;
+            *optlen = sizeof(param->mreqn);
+            break;
+        }
+#endif
+
+        case OPT_IPADDR:
+        {
+            memcpy(&param->addr,
+                   &in->optval.optval_val[0].option_value_u.opt_ipaddr,
+                   sizeof(struct in_addr));
+            *optlen = sizeof(&param->addr);
+            break;
+        }
+
+        case OPT_TIMEVAL:
+        {
+            param->tv.tv_sec = in->optval.optval_val[0].option_value_u.
+                               opt_timeval.tv_sec;
+            param->tv.tv_usec = in->optval.optval_val[0].option_value_u.
+                                opt_timeval.tv_usec;
+            *optlen = sizeof(param->tv);
+            break;
+        }
+
+        case OPT_STRING:
+        {
+            param->str = in->optval.optval_val[0].option_value_u.
+                             opt_string.opt_string_val;
+            *optlen = in->optval.optval_val[0].option_value_u.
+                          opt_string.opt_string_len;
+            break;
+        }
+
+        default:
+            ERROR("incorrect option type %d is received",
+                  in->optval.optval_val[0].opttype);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+            out->retval = -1;
+            break;
+    }
+}
+
+TARPC_FUNC(setsockopt, 
+{}, 
+{
+    if (in->optval.optval_val == NULL)
+    {
+        MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
+                                     sockopt_rpc2h(in->optname),
+                                     NULL, in->optlen));
+    }
+    else
+    {
+        opt_param param;
+        socklen_t optlen;
+
+        tarpc_setsockopt(in, out, &param, &optlen);
+        if (out->retval == 0)
+        {
+            INIT_CHECKED_ARG((char *)&param, optlen, 0);
+            if (in->optlen == RPC_OPTLEN_AUTO)
+                in->optlen = optlen;
+            MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
+                                         sockopt_rpc2h(in->optname),
+                                         &param, in->optlen));
+        }
+    }       
+}
+)
+
 
 /*-------------- getsockopt() ------------------------------*/
 
@@ -1581,6 +1510,19 @@ TARPC_FUNC(getsockopt,
                 break;
             }
 
+            case OPT_MREQ:
+            {
+                struct ip_mreq *mreq = (struct ip_mreq *)opt;
+
+                memcpy(&out->optval.optval_val[0].option_value_u.opt_mreq.
+                       imr_multiaddr, (char *)&(mreq->imr_multiaddr),
+                       sizeof(mreq->imr_multiaddr));
+                memcpy(&out->optval.optval_val[0].option_value_u.opt_mreq.
+                       imr_address, (char *)&(mreq->imr_interface),
+                       sizeof(mreq->imr_interface));
+                break;
+            }
+            
             case OPT_IPADDR:
             {
                 struct in_addr *addr = (struct in_addr *)opt;
@@ -1689,6 +1631,10 @@ TARPC_FUNC(getsockopt,
                     *(out->optlen.optlen_val) = sizeof(struct linger);
                     break;
 
+                case OPT_MREQ:
+                    *(out->optlen.optlen_val) = sizeof(struct ip_mreq);
+                    break;
+
                 case OPT_IPADDR:
                     *(out->optlen.optlen_val) = sizeof(struct in_addr);
                     break;
@@ -1750,6 +1696,19 @@ TARPC_FUNC(getsockopt,
                     opt_linger.l_onoff = linger->l_onoff;
                 out->optval.optval_val[0].option_value_u.
                     opt_linger.l_linger = linger->l_linger;
+                break;
+            }
+
+            case OPT_MREQ:
+            {
+                struct ip_mreq *mreq = (struct ip_mreq *)opt;
+                
+                memcpy(&out->optval.optval_val[0].option_value_u.opt_mreq.
+                       imr_multiaddr, (char *)&(mreq->imr_multiaddr),
+                       sizeof(mreq->imr_multiaddr));
+                memcpy(&out->optval.optval_val[0].option_value_u.opt_mreq.
+                       imr_address, (char *)&(mreq->imr_address),
+                       sizeof(mreq->imr_address));
                 break;
             }
 
