@@ -28,7 +28,6 @@
  */
 
 #define TE_LGR_USER     "TAD iSCSI layer"
-#define TE_LOG_LEVEL    0xff
 
 #include "te_config.h"
 #if HAVE_CONFIG_H
