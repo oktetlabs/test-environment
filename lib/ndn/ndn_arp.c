@@ -78,11 +78,22 @@ static asn_type ndn_arp_header_s =
 const asn_type * const ndn_arp_header = &ndn_arp_header_s;
 
 
+static asn_named_entry_t _ndn_arp_csap_ne_array[] = 
+{
+    { "hw-type",        &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ARP_HW_TYPE } },
+    { "proto-type",     &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ARP_PROTO } },
+    { "hw-size",        &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_ARP_HW_SIZE } },
+    { "proto-size",     &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_ARP_PROTO_SIZE } },
+};
 
-asn_type ndn_arp_csap_s =
+static asn_type ndn_arp_csap_s =
 {
     "ARP-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
-    sizeof(_ndn_arp_header_ne_array) / sizeof(asn_named_entry_t),
+    sizeof(_ndn_arp_csap_ne_array) / sizeof(asn_named_entry_t),
     {_ndn_arp_header_ne_array}
 };
 
