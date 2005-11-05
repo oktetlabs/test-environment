@@ -1352,18 +1352,23 @@ TARPC_FUNC(setsockopt,
     }
     else
     {
-        opt_param param;
-        socklen_t optlen;
+        opt_param  param;
+        socklen_t  optlen;
+        void      *optval;
 
         tarpc_setsockopt(in, out, &param, &optlen);
         if (out->retval == 0)
         {
-            INIT_CHECKED_ARG((char *)&param, optlen, 0);
+            if (in->optval.optval_val[0].opttype == OPT_STRING)
+                optval = param.str;
+            else
+                optval = &param;
+            INIT_CHECKED_ARG(optval, optlen, 0);
             if (in->optlen == RPC_OPTLEN_AUTO)
                 in->optlen = optlen;
             MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
                                          sockopt_rpc2h(in->optname),
-                                         &param, in->optlen));
+                                         optval, in->optlen));
         }
     }       
 }
