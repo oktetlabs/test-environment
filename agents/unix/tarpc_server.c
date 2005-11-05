@@ -1712,8 +1712,8 @@ TARPC_FUNC(getsockopt,
                        imr_multiaddr, (char *)&(mreq->imr_multiaddr),
                        sizeof(mreq->imr_multiaddr));
                 memcpy(&out->optval.optval_val[0].option_value_u.opt_mreq.
-                       imr_address, (char *)&(mreq->imr_address),
-                       sizeof(mreq->imr_address));
+                       imr_address, (char *)&(mreq->imr_interface),
+                       sizeof(mreq->imr_interface));
                 break;
             }
 
