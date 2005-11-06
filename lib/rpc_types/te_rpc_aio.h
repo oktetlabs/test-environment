@@ -187,5 +187,7 @@ aio_cancel_retval_rpc2str(rpc_aio_cancel_retval ret)
     }
 }
 
+/** Incorrect address of the callback function should be used */
+#define AIO_WRONG_CALLBACK      "aio_wrong_callback"
 
 #endif /* !__TE_RPC_AIO_H__ */
