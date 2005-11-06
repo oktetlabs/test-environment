@@ -4619,8 +4619,12 @@ _fill_aiocb_1_svc(tarpc_fill_aiocb_in *in,
         if ((cb->aio_sigevent._sigev_un._sigev_thread._function = 
              rcf_ch_symbol_addr(in->sigevent.function, 1)) == NULL)
         {
-            WARN("Failed to find address of AIO callback %s - "
-                 "use NULL callback", in->sigevent.function);
+            if (strcmp(in->sigevent.function, AIO_WRONG_CALLBACK) == 0)
+                cb->aio_sigevent._sigev_un._sigev_thread._function = 
+                    (void *)rand_range(1, 0xFFFFFFFF);
+            else
+                WARN("Failed to find address of AIO callback %s - "
+                     "use NULL callback", in->sigevent.function);
         }
 #else
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
