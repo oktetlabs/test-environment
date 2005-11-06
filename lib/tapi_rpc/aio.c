@@ -477,7 +477,7 @@ rpc_aio_suspend(rcf_rpc_server *rpcs, const rpc_aiocb_p *cblist,
     op = rpcs->op;
 
     in.cb.cb_val = (tarpc_aiocb_t *)cblist;
-    in.cb.cb_len = cblist == NULL ? 0 : n;
+    in.cb.cb_len = cblist == NULL ? 0 : (n <= 0 ? 1 : n);
     in.n = n;
 
     if (timeout != NULL && rpcs->op != RCF_RPC_WAIT)
@@ -537,7 +537,7 @@ rpc_lio_listio(rcf_rpc_server *rpcs,
     op = rpcs->op;
 
     in.cb.cb_val = (tarpc_aiocb_t *)cblist;
-    in.cb.cb_len = cblist == NULL ? 0 : nent;
+    in.cb.cb_len = cblist == NULL ? 0 : (nent <= 0 ? 1 : nent);
     in.nent = nent;
     in.mode = mode;
     
