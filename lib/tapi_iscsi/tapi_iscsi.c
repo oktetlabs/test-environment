@@ -244,7 +244,7 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
 
     if (forward != CSAP_INVALID_HANDLE)
     {
-        rc = asn_write_int32(pattern, forward, "0.action.#forw-pld");
+        rc = asn_write_int32(pattern, forward, "0.actions.0.#forw-pld");
         if (rc != 0)
         {
             ERROR("%s():  write forward csap failed: %r",
@@ -1173,14 +1173,14 @@ tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
 
 /* see description in tapi_iscsi.h */
 int
-tapi_iscsi_key_value_read(iscsi_key_values key_array,
+tapi_iscsi_key_value_read(iscsi_key_values val_array,
                           int val_index, char *buf, size_t *buf_len)
 {
     int rc;
 
     const asn_value *key_value;
 
-    if ((rc = asn_get_indexed(key_array, &key_value, val_index)) != 0)
+    if ((rc = asn_get_indexed(val_array, &key_value, val_index)) != 0)
     {
         ERROR("%s(): asn_get_indexed failed %r", __FUNCTION__, rc);
         return rc;
@@ -1197,6 +1197,37 @@ tapi_iscsi_key_value_read(iscsi_key_values key_array,
     return 0;
 }
 
+/* see description in tapi_iscsi.h */
+int
+tapi_iscsi_key_value_write(iscsi_key_values val_array,
+                           int val_index, const char *string)
+{
+    const asn_value *key_value;
+    int              rc;
+
+    if (string == NULL)
+    {
+        rc = asn_remove_indexed(val_array, val_index, "");
+        if (rc != 0)
+            ERROR("%s(): asn_remove_indexed failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if ((rc = asn_get_indexed(val_array, &key_value, val_index)) != 0)
+    {
+        ERROR("%s(): asn_get_indexed failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if ((rc = asn_write_string((asn_value *)key_value, string, "")) != 0)
+    {
+        ERROR("%s(): cannot read key value %d, %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+
+    return 0;
+}
 
 /* Target configuration */
 

@@ -643,19 +643,30 @@ extern int tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
                                       iscsi_key_values *key_array);
 
 /**
- * Read key value by name and index of value.
+ * Read key value by index of value in array.
  *
- * @param segment_data    iSCSI PDU Segment Data in asn format
- * @param key_name        the name of key (according to RFC3720)
+ * @param val_array       array with values for some key, ASN Value
  * @param val_index       index of key value to be read
  * @param buf             location for key value (OUT)
  * @param buf_len         length of buffer/read data (IN/OUT)
  *
  * @return status of operation
  */
-extern int tapi_iscsi_key_value_read(iscsi_key_values key_array,
+extern int tapi_iscsi_key_value_read(iscsi_key_values val_array,
                                      int val_index, char *buf, 
                                      size_t *buf_len);
+/**
+ * Write key value by index of value in array.
+ *
+ * @param val_array       array with values for some key, ASN Value
+ * @param val_index       index of key value to be read
+ * @param string          new string key value, NULL for remove
+ *
+ * @return status of operation
+ */
+extern int tapi_iscsi_key_value_write(iscsi_key_values val_array,
+                                      int val_index, const char *string);
+
 
 /** The following functions are DEPRECATED!!! 
     They will be removed as soon as all the tests use the new API
