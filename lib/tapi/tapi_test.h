@@ -174,6 +174,17 @@ extern "C" {
     LOG_ERROR(TE_LOG_CMSG_USER, fmt)
 
 /**
+ * Terminate a test with failure status, report an error as verdict.
+ *
+ * @param fmt       error message format string with parameters
+ */
+#define TEST_VERDICT(fmt..) \
+    do {                    \
+        ERROR_VERDICT(fmt); \
+        TEST_STOP;          \
+    } while (0)
+
+/**
  * Check an expression passed as the argument against zero.
  * If the expression is something not zero the macro reports an
  * error, sets 'result' variable to EXIT_FAILURE and goes to 'cleanup'
