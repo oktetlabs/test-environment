@@ -178,7 +178,7 @@ extern "C" {
  *
  * @param fmt       error message format string with parameters
  */
-#define TEST_VERDICT(fmt..) \
+#define TEST_VERDICT(fmt...) \
     do {                    \
         ERROR_VERDICT(fmt); \
         TEST_STOP;          \
