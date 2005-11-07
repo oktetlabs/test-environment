@@ -673,7 +673,7 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                         (int)local_mac[4], (int)local_mac[5]); 
 
     rc = asn_write_value_field(arp_pattern, arp_reply_method, func_len + 1,
-                               "0.action.#function");
+                               "0.actions.0.#function");
     CHECK_ERROR("%s(): write arp reply method name failed %r", 
                 __FUNCTION__, rc);
 

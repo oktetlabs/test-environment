@@ -158,6 +158,7 @@ typedef enum {
     NDN_ACT_FORWARD_RAW,
     NDN_ACT_FUNCTION,
     NDN_ACT_FILE,
+    NDN_ACT_BREAK,
 } ndn_packet_action_tags_t;
 
 
@@ -168,6 +169,7 @@ typedef enum {
     NDN_PU_PDUS,
     NDN_PU_PAYLOAD,
     NDN_PU_ACTION,
+    NDN_PU_ACTIONS,
 } ndn_pattern_unit_tags_t;
 
 /**

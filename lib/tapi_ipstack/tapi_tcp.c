@@ -478,15 +478,14 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 
     rc = asn_insert_indexed(*tmpl, tcp_pdu, 0, "pdus");
     if (rc != 0)
-    { ERROR("%s(): insert tcp pdu eror: %r", __FUNCTION__, rc);
+    { 
+        ERROR("%s(): insert tcp pdu eror: %r", __FUNCTION__, rc);
         goto cleanup;
     }
 
 cleanup:
-    if (tcp_pdu != NULL)
-        asn_free_value(tcp_pdu); 
-
-    if (rc != 0 && *tmpl != NULL)
+    asn_free_value(tcp_pdu); 
+    if (rc != 0)
         asn_free_value(*tmpl); 
 
     return TE_RC(TE_TAPI, rc); 
@@ -494,6 +493,61 @@ cleanup:
 
 
 
+int
+tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                 te_bool syn_flag, te_bool ack_flag,
+                 asn_value **pattern)
+{
+    int rc = 0,
+        syms; 
+
+    asn_value *tcp_pdu = NULL;
+
+    if (pattern == NULL)
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
+
+    *pattern = NULL; 
+
+    rc = asn_parse_value_text("{{ pdus {ip4:{}, eth:{} } }}", 
+                              ndn_traffic_pattern, 
+                              pattern, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): cannot parse template: %r, sym %d", 
+              __FUNCTION__, rc, syms);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    rc = tapi_tcp_pdu(0, 0, seqn, ackn, syn_flag, ack_flag, &tcp_pdu);
+    if (rc != 0)
+    {
+        ERROR("%s(): make tcp pdu eror: %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    if (seqn == 0)
+        rc = asn_free_subvalue(tcp_pdu, "#tcp.seqn");
+    WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+
+    if (ackn == 0)
+        rc = asn_free_subvalue(tcp_pdu, "#tcp.ackn");
+    WARN("%s(): free seqn rc %r", __FUNCTION__, rc);
+
+    rc = asn_insert_indexed(*pattern, tcp_pdu, 0, "0.pdus");
+    if (rc != 0)
+    { 
+        ERROR("%s(): insert tcp pdu eror: %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+cleanup:
+    asn_free_value(tcp_pdu); 
+
+    if (rc != 0)
+        asn_free_value(*pattern); 
+
+    return TE_RC(TE_TAPI, rc); 
+}
 
 
 
@@ -777,7 +831,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
 
     if (forward != CSAP_INVALID_HANDLE)
     {
-        rc = asn_write_int32(pattern, forward, "0.action.#forw-pld");
+        rc = asn_write_int32(pattern, forward, "0.actions.0.#forw-pld");
         if (rc != 0)
         {
             ERROR("%s():  write forward csap failed: %r",

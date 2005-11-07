@@ -75,6 +75,127 @@
 #define RBUF 0x4000
 
 /**
+ * Process action for received packet.
+ *
+ * @param csap_descr    CSAP descriptor
+ * @param raw_pkt       binary data with original packet received
+ * @param raw_len       length of original packet
+ * @param payload       binary data with payload after match
+ * @param payload_len   length of payload
+ * @param action        ASN value of Packet-Action type
+ *
+ * @return status of operation
+ */
+int
+tad_perform_action(csap_p csap_descr,
+                   uint8_t *raw_pkt, size_t raw_len,
+                   uint8_t *payload, size_t payload_len,
+                   const asn_value *action)
+{
+    const asn_value *action_ch_val;
+    asn_tag_class    t_class;
+    uint16_t         t_val; 
+    int              rc = 0;
+
+    if (csap_descr == NULL || action == NULL || raw_pkt == NULL)
+    {
+        ERROR("%s(): NULL parameters passed", __FUNCTION__);
+        return TE_EWRONGPTR;
+    }
+
+    rc = asn_get_choice_value(action, &action_ch_val,
+                              &t_class, &t_val);
+    VERB("%s(): get action choice rc %r, class %d, tag %d", 
+         __FUNCTION__, rc, (int)t_class, (int)t_val);
+
+    switch (t_val)
+    {
+        case NDN_ACT_ECHO:
+            if (csap_descr->echo_cb != NULL)
+            {
+                rc = csap_descr->echo_cb(csap_descr, raw_pkt, raw_len);
+                if (rc)
+                    ERROR("csap #%d, echo_cb returned %r code.", 
+                          csap_descr->id, rc);
+                /* Have no reason to stop receiving. */
+                rc = 0;
+            }
+            break;
+
+        case NDN_ACT_FUNCTION: 
+            {
+                tad_processing_pkt_method method_addr;
+
+                char  buffer[200] = {0,};
+                char *usr_place;
+                size_t buf_len = sizeof(buffer);
+
+                rc = asn_read_value_field(action_ch_val, buffer,
+                                          &buf_len, "");
+                if (rc != 0)
+                    ERROR("csap #%d, ASN read value error %r", 
+                          csap_descr->id, rc); 
+                else
+                { 
+                    /* 
+                     * If there is no user string for function after colon,
+                     * valid pointer to zero-length string will be passed.
+                     */
+                    for (usr_place = buffer; *usr_place; usr_place++)
+                        if (*usr_place == ':')
+                        {
+                            *usr_place = 0;
+                            usr_place++;
+                            break;
+                        }
+
+                    VERB("function name: \"%s\"", buffer);
+
+                    method_addr = (tad_processing_pkt_method) 
+                        rcf_ch_symbol_addr((char *)buffer, 1);
+
+                    if (method_addr == NULL)
+                    {
+                        ERROR("No funcion named '%s' found", buffer);
+                        rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
+                    }
+                    else
+                    {
+                        rc = method_addr(csap_descr, usr_place,
+                                         raw_pkt, raw_len);
+                        if (rc != 0)
+                            WARN("rc from user method %r", rc);
+                        rc = 0;
+                    }
+                }
+            }
+            break;
+
+        case NDN_ACT_FORWARD_PLD:
+            {
+                int32_t target_csap;
+                csap_p  target_csap_descr;
+
+                asn_read_int32(action_ch_val, &target_csap, "");
+                if ((target_csap_descr = csap_find(target_csap)) != NULL)
+                {
+                    int b = target_csap_descr->write_cb(target_csap_descr,
+                                                        payload,
+                                                        payload_len);
+                    VERB("action 'forward payload' processed, %d sent", b);
+                } 
+            }
+            break; 
+        default:
+            WARN("%s(CSAP %d) unsupported action tag %d",
+                 __FUNCTION__, csap_descr->id, t_val);
+            break;
+    }
+
+    return rc;
+}
+ 
+/**
  * Try match binary data with Traffic-Pattern-Unit and prepare ASN value 
  * with packet if it satisfies to the pattern unit.
  *
@@ -147,7 +268,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                                       &data_to_check, &rest_payload,
                                       parsed_pdu); 
 
-        VERB("match cb 0x%x for lev %d returned %r",
+        RING("match cb 0x%x for lev %d returned %r",
              csap_spt_descr->match_cb, layer, rc);
 
         if (data_to_check.free_data_cb) 
@@ -246,107 +367,141 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     /* process action, if it present. */
     if (rc == 0) do
     { 
+        const asn_value *action_seq;
         const asn_value *action_val;
         const asn_value *action_ch_val;
+        int              act_num = 0, i;
         asn_tag_class    t_class;
         uint16_t         t_val;
 
-        rc = asn_get_child_value(pattern_unit, &action_val,
-                                 PRIVATE, NDN_PU_ACTION);
+        rc = asn_get_child_value(pattern_unit, &action_seq,
+                                 PRIVATE, NDN_PU_ACTIONS);
 
-        if (rc != 0)
+        if (rc == 0)
+            act_num = asn_get_length(action_seq, ""); 
+        rc = 0;
+
+        for (i = 0; i < act_num; i++)
+        { 
+#if 1
+            rc = asn_get_indexed(action_seq, &action_val, i);
+
+            if (rc != 0)
+            {
+                ERROR("%s(): get %d action failed: %r",
+                      __FUNCTION__, i, rc);
+                break;
+            }
+
+            rc = tad_perform_action(csap_descr, data, d_len, 
+                                    data_to_check.data,
+                                    data_to_check.len,
+                                    action_val);
+            if (rc != 0)
+            {
+                ERROR("%s(): perform %d action failed: %r",
+                      __FUNCTION__, i, rc);
+                break;
+            }
+#else
+            rc = asn_get_child_value(pattern_unit, &action_val,
+                                     PRIVATE, NDN_PU_ACTION);
+
+            if (rc != 0)
+            {
+                VERB("%s() asn read action rc %r", __FUNCTION__, rc);
+                rc = 0;
+                break;
+            }
+            rc = asn_get_choice_value(action_val, &action_ch_val,
+                                      &t_class, &t_val);
+            VERB("%s(): get action choice rc %r, class %d, tag %d", 
+                 __FUNCTION__, rc, (int)t_class, (int)t_val);
+
+switch (t_val)
+{
+    case NDN_ACT_ECHO:
+        if (csap_descr->echo_cb != NULL)
         {
-            VERB("%s() asn read action rc %r", __FUNCTION__, rc);
+            rc = csap_descr->echo_cb(csap_descr, data, d_len);
+            if (rc)
+                ERROR("csap #%d, echo_cb returned %r code.", 
+                      csap_descr->id, rc);
+            /* Have no reason to stop receiving. */
             rc = 0;
-            break;
         }
-        rc = asn_get_choice_value(action_val, &action_ch_val,
-                             &t_class, &t_val);
-        VERB("%s(): get action choice rc %r, class %d, tag %d", 
-             __FUNCTION__, rc, (int)t_class, (int)t_val);
+        break;
 
-        switch (t_val)
+    case NDN_ACT_FUNCTION: 
         {
-            case NDN_ACT_ECHO:
-                if (csap_descr->echo_cb != NULL)
+            tad_processing_pkt_method method_addr;
+
+            char  buffer[200] = {0,};
+            char *usr_place;
+            size_t buf_len = sizeof(buffer);
+
+            rc = asn_read_value_field(action_ch_val, buffer,
+                                      &buf_len, "");
+            if (rc != 0)
+                ERROR("csap #%d, ASN read value error %r", 
+                      csap_descr->id, rc); 
+            else
+            { 
+                /* 
+                 * If there is no user string for function after colon,
+                 * valid pointer to zero-length string will be passed.
+                 */
+                for (usr_place = buffer; *usr_place; usr_place++)
+                    if (*usr_place == ':')
+                    {
+                        *usr_place = 0;
+                        usr_place++;
+                        break;
+                    }
+
+                VERB("function name: \"%s\"", buffer);
+
+                method_addr = (tad_processing_pkt_method) 
+                    rcf_ch_symbol_addr((char *)buffer, 1);
+
+                if (method_addr == NULL)
                 {
-                    rc = csap_descr->echo_cb(csap_descr, data, d_len);
-                    if (rc)
-                        ERROR("csap #%d, echo_cb returned %r code.", 
-                              csap_descr->id, rc);
-                        /* Have no reason to stop receiving. */
+                    ERROR("No funcion named '%s' found", buffer);
+                    rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
+                }
+                else
+                {
+                    rc = method_addr(csap_descr, usr_place,
+                                     data, d_len);
+                    if (rc != 0)
+                        WARN("rc from user method %r", rc);
                     rc = 0;
                 }
-                break;
-
-            case NDN_ACT_FUNCTION: 
-            {
-                tad_processing_pkt_method method_addr;
-
-                char  buffer[200] = {0,};
-                char *usr_place;
-                size_t buf_len = sizeof(buffer);
-
-                rc = asn_read_value_field(action_ch_val, buffer,
-                                          &buf_len, "");
-                if (rc != 0)
-                    ERROR("csap #%d, ASN read value error %r", 
-                          csap_descr->id, rc); 
-                else
-                { 
-                    /* 
-                     * If there is no user string for function after colon,
-                     * valid pointer to zero-length string will be passed.
-                     */
-                    for (usr_place = buffer; *usr_place; usr_place++)
-                        if (*usr_place == ':')
-                        {
-                            *usr_place = 0;
-                            usr_place++;
-                            break;
-                        }
-
-                    VERB("function name: \"%s\"", buffer);
-
-                    method_addr = (tad_processing_pkt_method) 
-                                rcf_ch_symbol_addr((char *)buffer, 1);
-
-                    if (method_addr == NULL)
-                    {
-                        ERROR("No funcion named '%s' found", buffer);
-                        rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
-                    }
-                    else
-                    {
-                        rc = method_addr(csap_descr, usr_place,
-                                         data, d_len);
-                        if (rc != 0)
-                            WARN("rc from user method %r", rc);
-                        rc = 0;
-                    }
-                }
             }
-            break;
+        }
+        break;
 
-            case NDN_ACT_FORWARD_PLD:
+    case NDN_ACT_FORWARD_PLD:
+        {
+            int32_t target_csap;
+            csap_p  target_csap_descr;
+
+            asn_read_int32(action_ch_val, &target_csap, "");
+            if ((target_csap_descr = csap_find(target_csap)) != NULL)
             {
-                int32_t target_csap;
-                csap_p  target_csap_descr;
-
-                asn_read_int32(action_ch_val, &target_csap, "");
-                if ((target_csap_descr = csap_find(target_csap)) != NULL)
-                {
-                    int b = target_csap_descr->write_cb(target_csap_descr,
-                                                        data_to_check.data,
-                                                        data_to_check.len);
-                    VERB("action 'forward payload' processed, %d sent", b);
-                } 
-            }
-            break; 
-            default:
-                WARN("%s(CSAP %d) unsupported action tag %d",
-                     __FUNCTION__, csap_descr->id, t_val);
-                break;
+                int b = target_csap_descr->write_cb(target_csap_descr,
+                                                    data_to_check.data,
+                                                    data_to_check.len);
+                VERB("action 'forward payload' processed, %d sent", b);
+            } 
+        }
+        break; 
+    default:
+        WARN("%s(CSAP %d) unsupported action tag %d",
+             __FUNCTION__, csap_descr->id, t_val);
+        break;
+}
+#endif
         }
     } while (0);
 

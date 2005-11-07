@@ -357,6 +357,24 @@ extern int tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
                              asn_value **tmpl);
 
 
+/**
+ * Prepare Traffic-Pattern ASN value for 'tcp.ip4.eth' CSAP. 
+ * It is assumed that all connection parameters 
+ * (src/dst MACs, IP, and ports) are already set in CSAP.
+ * If it is not, fill there parameters in obtained traffic template
+ * explicitely. 
+ *
+ * @param seqn          sequence number in host byte order
+ * @param ackn          acknowledge number in host byte order
+ * @param syn_flag      syn flag
+ * @param ack_flag      ack flag
+ * @param pattern       location for pointer to ASN value (OUT)
+ *
+ * @return Status code.
+ */
+extern int tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
+                            te_bool syn_flag, te_bool ack_flag,
+                            asn_value **pattern);
 
 
 

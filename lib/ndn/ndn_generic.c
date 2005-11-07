@@ -296,7 +296,8 @@ const asn_type * const  ndn_traffic_template = &ndn_traffic_template_s;
 /*
 Packet-Action ::= CHOICE {
     echo        NULL,
-    forward     INTEGER,
+    forw-pld    INTEGER,
+    forw-raw    INTEGER,
     function    UniversalString,
     file        UniversalString
 }
@@ -309,10 +310,11 @@ static asn_named_entry_t _ndn_packet_action_ne_array[] =
     { "forw-raw",&asn_base_integer_s, {PRIVATE, NDN_ACT_FORWARD_RAW} },
     { "function",&asn_base_charstring_s, {PRIVATE, NDN_ACT_FUNCTION} },
     { "file",    &asn_base_charstring_s, {PRIVATE, NDN_ACT_FILE} },
+    { "break",   &asn_base_null_s, {PRIVATE, NDN_ACT_BREAK} },
 }; 
 
 asn_type ndn_packet_action_s =
-{ "Payload", {PRIVATE, 2}, CHOICE, 
+{ "Packet-Action", {PRIVATE, NDN_PU_ACTION}, CHOICE, 
   sizeof(_ndn_packet_action_ne_array) /
       sizeof(_ndn_packet_action_ne_array[0]), 
   {_ndn_packet_action_ne_array} 
@@ -320,13 +322,26 @@ asn_type ndn_packet_action_s =
 
 const asn_type * const  ndn_packet_action = &ndn_packet_action_s;
 
+/*
+
+Packet-Actions ::= SEQUENCE OF Packet-Action
+
+*/
+
+asn_type ndn_packet_actions_s =
+{ "Packet-Actions", {PRIVATE, NDN_PU_ACTIONS}, SEQUENCE_OF, 0,
+  {subtype: &ndn_packet_action_s}
+};
+
+const asn_type * const  ndn_packet_actions = &ndn_packet_actions_s;
+
 
 /*
 
 Traffic-Pattern-Unit ::= SEQUENCE {
     pdus        SEQUENCE OF Generic-PDU,
     payload     Payload OPTIONAL,
-    action      Packet-Action OPTIONAL,
+    actions     SEQUENCE OF Packet-Action OPTIONAL,
 }
 */
 
@@ -335,7 +350,7 @@ static asn_named_entry_t _ndn_traffic_pattern_unit_ne_array[] =
 {
     { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, NDN_PU_PDUS} },
     { "payload",   &ndn_payload_s,       {PRIVATE, NDN_PU_PAYLOAD} },
-    { "action",    &ndn_packet_action_s, {PRIVATE, NDN_PU_ACTION} },
+    { "actions",   &ndn_packet_actions_s,{PRIVATE, NDN_PU_ACTIONS} },
 }; 
 
 asn_type ndn_traffic_pattern_unit_s =
@@ -345,7 +360,7 @@ asn_type ndn_traffic_pattern_unit_s =
   {_ndn_traffic_pattern_unit_ne_array}
 };
 
-const asn_type * const  ndn_traffic_pattern_unit = 
+const asn_type * const ndn_traffic_pattern_unit = 
                             &ndn_traffic_pattern_unit_s;
 
 

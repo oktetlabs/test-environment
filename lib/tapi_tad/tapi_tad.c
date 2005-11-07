@@ -506,7 +506,12 @@ tapi_tad_forward_all(const char *ta_name, int session,
 
     if (csap_fwd != CSAP_INVALID_HANDLE)
     {
-        asn_write_int32(pattern, csap_fwd, "0.action.#forw-pld");
+        rc = asn_write_int32(pattern, csap_fwd, "0.actions.0.#forw-pld");
+        if (rc != 0)
+        {
+            ERROR("%s():wrіte forward action failed %r", __FUNCTION__, rc);
+            return TE_RC(TE_TAPI, rc);
+        }
     }
 
     rc = tapi_tad_trrecv_start(ta_name, session, csap_rcv, pattern,
@@ -515,11 +520,12 @@ tapi_tad_forward_all(const char *ta_name, int session,
     {
         ERROR("%s(%s:%d): trrecv_start failed %r", 
               __FUNCTION__, ta_name, csap_rcv, rc);
+        return TE_RC(TE_TAPI, rc);
     } 
     MSLEEP(timeout);
 
     rc = rcf_ta_trrecv_stop(ta_name, session, csap_rcv, NULL, NULL,
                             forwarded);
 
-    return rc;
+    return TE_RC(TE_TAPI, rc);
 }
