@@ -230,6 +230,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
     INFO("asn2bin_data result %s", asn_val_buf);
     
     memset(data, 0, *data_len);    
+
     segment_data_len = asn_get_length(segment_data, "");
     segment_data_index = 0;
 #define tail_len (*data_len - write_data_len)    
@@ -389,23 +390,17 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
         *current = '\0';
         current += 1;
     }
-    if ((write_data_len % 4) != 0)
+
+    if ((write_data_len & 0x3) != 0)
     {
-        unsigned int i;
-        
-        for (i = 0; i < write_data_len % 4; i++)
-        {
-            if (tail_len < 1)
-            {
-                ERROR("%s, %d: unsufficient buffer length",
-                      __FUNCTION__, __LINE__);
-                return TE_ENOBUFS;
-            }
-            *current = '\0';
-            write_data_len += 1;
-            current += 1;
-        }
+        unsigned int pad_size = 4 - (write_data_len & 0x3);
+
+        if (pad_size > tail_len)
+            pad_size = tail_len;
+
+        memset(current, 0, pad_size);
     }
+
     *data_len = write_data_len; 
 #undef MAX_INT_VALUE_LEN    
 #undef tail_len    
