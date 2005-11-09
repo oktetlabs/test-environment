@@ -415,7 +415,7 @@ ta_handler(void *ta)
          * If we are not flushing, wait for polling timeout or
          * flush request
          */
-        if (do_flush == 0)
+        if (!do_flush)
         {
             struct timeval delay = { 0, 0 };
 
