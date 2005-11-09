@@ -1219,9 +1219,9 @@ tapi_iscsi_key_value_write(iscsi_key_values val_array,
         return rc;
     }
 
-    if ((rc = asn_write_string((asn_value *)key_value, string, "")) != 0)
+    if ((rc = asn_write_string(key_value, string, "#str")) != 0)
     {
-        ERROR("%s(): cannot read key value %d, %r",
+        ERROR("%s(): cannot write key value %d, %r",
               __FUNCTION__, rc);
         return rc;
     }
