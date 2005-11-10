@@ -54,9 +54,6 @@ typedef enum {
  * ASN.1 tags for ISCSI Segment Data fields access
  */
 typedef enum {
-    NDN_TAG_ISCSI_SD_INT_VALUE,
-    NDN_TAG_ISCSI_SD_HEX_VALUE,
-    NDN_TAG_ISCSI_SD_STR_VALUE,
     NDN_TAG_ISCSI_SD_KEY_VALUE,
     NDN_TAG_ISCSI_SD_KEY_VALUES,
     NDN_TAG_ISCSI_SD_KEY,
@@ -89,13 +86,6 @@ typedef int iscsi_key;
 typedef int iscsi_key_value;
 typedef asn_value *iscsi_segment_data;
 typedef asn_value *iscsi_key_values;
-
-typedef enum {
-    iscsi_key_value_type_invalid = -1,
-    iscsi_key_value_type_int = 0,
-    iscsi_key_value_type_hex = 1,
-    iscsi_key_value_type_string = 2,
-} iscsi_key_value_type;    
 
 extern const asn_type * const ndn_iscsi_segment_data;
 extern const asn_type * const ndn_iscsi_key_pair;

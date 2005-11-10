@@ -94,37 +94,13 @@ const asn_type *ndn_iscsi_csap = &ndn_iscsi_csap_s;
 /* ISSI Segment Data definitions */
 
 /*
-Key-Value ::= CHOICE {
-    int  INTEGER,
-    hex  INTEGER, 
-    str  UniversalString,
-};
-*/
-
-static asn_named_entry_t _ndn_iscsi_key_value_ne_array [] =
-{
-    { "int", &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_SD_INT_VALUE} },
-    { "hex", &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_SD_HEX_VALUE} },
-    { "str", &asn_base_charstring_s, 
-        {PRIVATE, NDN_TAG_ISCSI_SD_STR_VALUE} },
-};
-
-asn_type ndn_iscsi_key_value_s =
-{
-    "Key-Value", {PRIVATE, NDN_TAG_ISCSI_SD_KEY_VALUE}, CHOICE,
-    sizeof(_ndn_iscsi_key_value_ne_array) / sizeof(asn_named_entry_t),
-    {_ndn_iscsi_key_value_ne_array}
-};
-
-const asn_type * const ndn_iscsi_key_value = &ndn_iscsi_key_value_s;
-/*
-Key-Values ::= SEQUENCE OF Key-Value;
+Key-Values ::= SEQUENCE OF 'charstring'
 */
 
 asn_type ndn_iscsi_key_values_s =
 {
     "Key-Values", {PRIVATE, NDN_TAG_ISCSI_SD_KEY_VALUES}, SEQUENCE_OF,
-    0, {subtype: &ndn_iscsi_key_value_s}
+    0, {subtype: &asn_base_charstring_s}
 };
 
 const asn_type * const ndn_iscsi_key_values = &ndn_iscsi_key_values_s;
@@ -207,17 +183,12 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
 
     char      *key;
     char      *str_value;
-    uint32_t   int_value;
 
     uint32_t   write_data_len = 0;
    
     asn_value *key_pair;
     asn_value *key_values;
     asn_value *key_value;
-
-    asn_value    *value;
-    asn_tag_class tag_class;
-    uint16_t      tag;
 
     memset(asn_val_buf, 0, ASN_VAL_BUF_LEN);
     if (asn_sprint_value(segment_data, asn_val_buf, 
@@ -300,82 +271,27 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
                       __FUNCTION__, __LINE__, rc);
                 return rc;
             }
-            if ((rc = asn_get_choice_value(key_value, 
-                                           (const asn_value **)&value, 
-                                           &tag_class, &tag)) != 0)
+
+            if ((rc = asn_read_string(key_value, 
+                                      &str_value, 
+                                      "")) != 0)
             {
-                ERROR("%s, %d: cannot get choice value, %r",
+                ERROR("%s, %d: cannot read string value, %r",
                       __FUNCTION__, __LINE__, rc);
                 return rc;
             }
-            switch (tag)
-            {
-                case NDN_TAG_ISCSI_SD_INT_VALUE:
-                {
-                    if ((rc = asn_read_int32(value, 
-                                             &int_value, 
-                                             "")) != 0)
-                    {
-                        ERROR("%s, %d: cannot read int value, %r",
-                              __FUNCTION__, __LINE__, rc);
-                        return rc;
-                    }
-                    if (tail_len < MAX_INT_VALUE_LEN)
-                    {
-                        ERROR("%s, %d: unsufficient buffer length",
-                              __FUNCTION__, __LINE__);
-                        return TE_ENOBUFS;
-                    }
-                    sprintf(current, "%d", int_value);
-                    write_data_len += strlen(current);
-                    current += strlen(current);
-                    break;
-                }
-                case NDN_TAG_ISCSI_SD_HEX_VALUE:
-                {
-                    if ((rc = asn_read_int32(value, 
-                                             &int_value, 
-                                             "")) != 0)
-                    {
-                        ERROR("%s, %d: cannot read int value, %r",
-                              __FUNCTION__, __LINE__, rc);
-                        return rc;
-                    }
-                    if (tail_len < MAX_INT_VALUE_LEN)
-                    {
-                        ERROR("%s, %d: unsufficient buffer length",
-                              __FUNCTION__, __LINE__);
-                        return TE_ENOBUFS;
-                    }
-                    sprintf(current, "%x", int_value);
-                    write_data_len += strlen(current);
-                    current += strlen(current);
-                    break;
-                }
-                case NDN_TAG_ISCSI_SD_STR_VALUE:
-                {
-                    if ((rc = asn_read_string(value, 
-                                              &str_value, 
-                                              "")) != 0)
-                    {
-                        ERROR("%s, %d: cannot read string value, %r",
-                              __FUNCTION__, __LINE__, rc);
-                        return rc;
-                    }
 
-                    if (tail_len < strlen(str_value))
-                    {
-                        ERROR("%s, %d: unsufficient "
-                              "buffer length",
-                              __FUNCTION__, __LINE__);
-                        return TE_ENOBUFS;
-                    }
-                    sprintf(current, "%s", str_value);
-                    write_data_len += strlen(str_value);
-                    current += strlen(str_value);
-                    break;
-                }
-            }    
+            if (tail_len < strlen(str_value))
+            {
+                ERROR("%s, %d: unsufficient "
+                      "buffer length",
+                      __FUNCTION__, __LINE__);
+                return TE_ENOBUFS;
+            }
+            sprintf(current, "%s", str_value);
+            write_data_len += strlen(str_value);
+            current += strlen(str_value);
+            
             if (tail_len < 1)
             {
                 ERROR("%s, %d: unsufficient buffer length",
@@ -409,75 +325,15 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
 }
 
 
-
+#if 1
 int
 parse_key_value(char *str, asn_value *value)
 {
     int rc;
 
-    long int int_value;
-    char     *end = NULL;
-
-    /* String value */
-    if (!isdigit(*str))
-    {   
-        goto string;
-    }    
-            
-    else
-    {
-        if ((strlen(str)) > 3 && (strcmp(str, "0x") == 0))
-        {    
-            int_value = strtoll(str, &end, 16);
-            if (*end != '\0')
-            {
-                WARN("%s, %d: strange integer in segment data %s", 
-                     __FUNCTION__, __LINE__, str);
-                goto string;
-            }
-            if (errno == ERANGE)
-            {
-                WARN("%s, %d: strange integer in segment data %s",
-                     __FUNCTION__, __LINE__, str);
-                goto string;
-            }
-            if ((rc = asn_write_int32(value, 
-                                      int_value, "#hex")) != 0)
-            {
-                ERROR("%s, %d: cannot write integer, %r",
-                      __FUNCTION__, __LINE__, rc);
-                return rc;
-            }
-            return 0;
-        }    
-        else
-        {    
-            int_value = strtoll(str, &end, 0);
-            if (*end != '\0')
-            {
-                WARN("%s, %d: strange integer in segment data %s",
-                     __FUNCTION__, __LINE__, str);
-                goto string;
-            }
-            if (errno == ERANGE)
-            {
-                WARN("%s, %d: strange integer in segment data %s",
-                     __FUNCTION__, __LINE__, str);
-                goto string;
-            }
-            if ((rc = asn_write_int32(value, int_value, "#int")) != 0)
-            {
-                ERROR("%s, %d: cannot write integer, %r",
-                      __FUNCTION__, __LINE__, rc);
-                return rc;
-            }
-            return 0;
-        }    
-    }
-string:
     if ((rc = asn_write_string(value, 
                                str, 
-                               "#str")) != 0)
+                               "")) != 0)
     {
         ERROR("%s, %d: cannot write string, %r",
               __FUNCTION__, __LINE__, rc);
@@ -485,6 +341,7 @@ string:
     }
     return 0;    
 }
+#endif
 
 int
 bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
@@ -570,7 +427,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
         current = eq_delimiter + 1;
 
         key_values_index = 0;
-        if ((key_value = asn_init_value(ndn_iscsi_key_value)) == NULL)
+        if ((key_value = asn_init_value(asn_base_charstring)) == NULL)
         {
             ERROR("%s, %d: cannot init asn_value",
                   __FUNCTION__, __LINE__);
