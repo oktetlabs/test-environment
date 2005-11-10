@@ -671,9 +671,6 @@ te_rc_err2str(te_errno err)
 static inline te_errno
 te_rc_os2te(int err)
 {
-    if (err >= TE_MIN_ERRNO) /* Somebody called converter twice */
-        return err; 
-    
     switch (err)
     {
         case 0: return 0;
