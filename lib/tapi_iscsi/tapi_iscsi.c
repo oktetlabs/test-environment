@@ -456,61 +456,6 @@ tapi_iscsi_get_key_values_num(iscsi_key_values values)
     return key_values_len;
 }
 
-#if 0
-/* See description in tapi_iscsi.h */
-iscsi_key_value_type
-tapi_iscsi_get_key_value_type(iscsi_key_values values, int key_value_index)
-{
-    int rc;
-    
-    iscsi_key_value_type type;
-    const asn_value     *elem;
-    const asn_value     *value;
-    asn_tag_class        tag_class;
-    uint16_t             tag_val;
-        
-
-    if ((rc = asn_get_indexed(values, &elem, key_value_index)) != 0)
-    {
-        ERROR("%s, %d: cannot get value, %r",
-              __FUNCTION__, __LINE__, rc);
-        return iscsi_key_value_type_invalid;
-    }
-    if ((rc = asn_get_choice_value(elem, &value, 
-                                   &tag_class, &tag_val)) != 0)
-    {
-        ERROR("%s, %d: cannot get choice value, %r",
-              __FUNCTION__, __LINE__, rc);
-        return iscsi_key_value_type_invalid;
-    }
-    switch (tag_val)
-    {
-        case NDN_TAG_ISCSI_SD_INT_VALUE:
-        {
-            type = iscsi_key_value_type_int;
-            break;
-        }
-        case NDN_TAG_ISCSI_SD_HEX_VALUE:
-        {
-            type = iscsi_key_value_type_hex;
-            break;
-        }
-        case NDN_TAG_ISCSI_SD_STR_VALUE:
-        {
-            type = iscsi_key_value_type_string;
-            break;
-        }
-        default:
-        {
-            ERROR("%s, %d: strange tag value in asn value",
-                  __FUNCTION__, __LINE__);
-            type = iscsi_key_value_type_invalid;
-        }
-    }
-    return type;
-}
-#endif
-
 /* See description in tapi_iscsi.h */
 int
 tapi_iscsi_get_key_value(iscsi_key_values values, 
@@ -534,50 +479,6 @@ tapi_iscsi_get_key_value(iscsi_key_values values,
     }
     return 0;
 }
-#if 0
-/* See description in tapi_iscsi.h */
-int
-tapi_iscsi_get_int_key_value(iscsi_key_values values, 
-                             int key_value_index, int *int_val)
-{
-    int rc;
-    
-    const asn_value     *elem;
-    const asn_value     *value;
-    asn_tag_class        tag_class;
-    uint16_t             tag_val;
-        
-
-    if ((rc = asn_get_indexed(values, &elem, 
-                              key_value_index)) != 0)
-    {
-        ERROR("%s, %d: cannot get value, %r",
-              __FUNCTION__, __LINE__, rc);
-        return rc;
-    }
-    if ((rc = asn_get_choice_value(elem, &value, 
-                                   &tag_class, &tag_val)) != 0)
-    {
-        ERROR("%s, %d: cannot get choice value, %r",
-              __FUNCTION__, __LINE__, rc);
-        return rc;
-    }
-    if ((tag_val != iscsi_key_value_type_int) && 
-        (tag_val != iscsi_key_value_type_hex))
-    {
-        ERROR("%s, %d: bad type provided, %r",
-              __FUNCTION__, __LINE__, rc);
-        return TE_EASNWRONGTYPE;
-    }
-    if ((rc = asn_read_int32(value, int_val, "")) != 0)
-    {
-        ERROR("%s, %d: cannot read inetger_value, %r",
-              __FUNCTION__, __LINE__, rc);
-        return rc;
-    }
-    return 0;
-}
-#endif
 
 /* See description in tapi_iscsi.h */
 int
@@ -814,7 +715,7 @@ cleanup:
     return segment_data;
 }
            
-/* see description in tapi_iscsi.h */
+/* See description in tapi_iscsi.h */
 void
 tapi_iscsi_keys_data_free(iscsi_segment_data segment_data)
 {
@@ -822,6 +723,7 @@ tapi_iscsi_keys_data_free(iscsi_segment_data segment_data)
     return;
 }
 
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
                              char *key_name, 
@@ -887,9 +789,10 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
                   __FUNCTION__, __LINE__);
             return -1;
         }
-        if ((rc = parse_key_value(str, key_value)) != 0)
+        if ((rc = asn_write_string(key_value,
+                                   str, "")) != 0)
         {
-            ERROR("%s, %d: cannot parse key value",
+            ERROR("%s, %d: cannot write string",
                   __FUNCTION__, __LINE__);
             return rc;
         }
@@ -918,7 +821,7 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
 }
 
 
-/* see description in tapi_iscsi.h */
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
                               const char *key_name, int num, ...)
@@ -1000,7 +903,7 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
 }
 
 
-/* see description in tapi_iscsi.h */
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
                             const char *key_name,
@@ -1035,7 +938,7 @@ tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
     return rc;
 }
 
-/* see description in tapi_iscsi.h */
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
                            const char *key_name,
@@ -1066,7 +969,7 @@ tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
     return asn_get_length(*key_array, "");
 }
 
-/* see description in tapi_iscsi.h */
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_key_value_read(iscsi_key_values val_array,
                           int val_index, char *buf, size_t *buf_len)
@@ -1092,7 +995,7 @@ tapi_iscsi_key_value_read(iscsi_key_values val_array,
     return 0;
 }
 
-/* see description in tapi_iscsi.h */
+/* See description in tapi_iscsi.h */
 int
 tapi_iscsi_key_value_write(iscsi_key_values val_array,
                            int val_index, const char *string)

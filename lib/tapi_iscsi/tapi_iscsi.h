@@ -113,17 +113,6 @@
                                    key_value_)    \
     (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1, \
                                     key_value_))
-#if 0
-#define PDU_CONTAINS_KEY_VALUE_PAIR_INT(segment_data_, \
-                                        key_name_, key_value_) \
-    (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1,  \
-                                    iscsi_key_value_type_int, key_value_))
-
-#define PDU_CONTAINS_KEY_VALUE_PAIR_HEX(segment_data_, \
-                                        key_name_, key_value_) \
-    (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1,  \
-                                    iscsi_key_value_type_hex, key_value_))
-#endif
 #define PDU_CONTAINS_KEY(segment_data_, key_name_) \
     (tapi_iscsi_get_key_index_by_name(segment_data_, key_name_) !=  \
      TAPI_ISCSI_KEY_INVALID)
@@ -309,46 +298,19 @@ extern iscsi_key_values tapi_iscsi_get_key_values(
  */ 
 extern int tapi_iscsi_get_key_values_num(iscsi_key_values values);
 
-#if 0
 /**
- * Get type of key value.
- *
- * @param values           key values in asn format
- * @param key_value_index  index of key value
- *
- * @return type of key value or type_invalid if error occured.
- */ 
-extern iscsi_key_value_type tapi_iscsi_get_key_value_type(
-                                iscsi_key_values values, 
-                                int key_value_index);
-#endif
-
-/**
- * Get string key value from list of values.
+ * Get key value from list of values.
  *
  * @param values            key values list in asn format
  * @param key_value_index   value index in the list
- * @param str_value         location for string value (OUT)
+ * @param value             location for value (OUT)
  *
  * @return 0 or error code
  */ 
 extern int tapi_iscsi_get_key_value(iscsi_key_values values, 
                                     int key_value_index, 
-                                    char **str_value);
-#if 0
-/**
- * Get integer key value from list of values.
- *
- * @param values            key values list in asn format
- * @param key_value_index   value index in the list
- * @param int_value         location for integer value (OUT)
- *
- * @return 0 or error code
- */ 
-extern int tapi_iscsi_get_int_key_value(iscsi_key_values values, 
-                                        int key_value_index, 
-                                        int *int_value);
-#endif
+                                    char **value);
+
 /* To modify iSCSI PDU Segment Data */
 
 /**
@@ -356,7 +318,10 @@ extern int tapi_iscsi_get_int_key_value(iscsi_key_values values,
  *
  * @param segment_data    iSCSI PDU Segment Data in asn format
  * @param name            key name
- * @param key_index       index of key in iSCSI PDU Segment Data
+ * @param key_index       index of key in iSCSI PDU Segment Data,
+ *                        if key_index is TAPI_ISCSI_KEY_INVALID
+ *                        then key is to be inserted to the end
+ *                        of key list
  *
  * @return key index or -1 if error occured.
  */ 
@@ -417,6 +382,18 @@ extern int tapi_iscsi_delete_key(iscsi_segment_data segment_data,
  */                      
 extern iscsi_segment_data tapi_iscsi_keys_create(int num, ...);
 
+/**
+ * Check that iSCSI PDU SEgment Data contains
+ * a key with a given name and its list of values
+ * contains list of values followed by num
+ *
+ * @param segment_data   iSCSI PDU Segment Data in asn format
+ * @param key_name       Key name
+ * @param num            number of key values to be checked
+ * @param ...            List of key values, they should be
+ *                       contained in key values list
+ * @return Status code                      
+ */ 
 extern int tapi_iscsi_find_key_and_value(
     iscsi_segment_data segment_data,
     const char *key_name, int num, ...);
@@ -436,12 +413,31 @@ tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
                             const char *key_name,
                             const char *buf, int buf_len);
 
+/**
+ * Type of action upon key values list.
+ */ 
 typedef enum {
-    tapi_iscsi_insert_key_values,
-    tapi_iscsi_replace_key_values,
-    tapi_iscsi_remove_key_values,
+    tapi_iscsi_insert_key_values, /**< Add new key values to key 
+                                       values list */
+    tapi_iscsi_replace_key_values,/**< Remove all key values, 
+                                       add new key values to key 
+                                       values list */
+    tapi_iscsi_remove_key_values, /**< Remove given key values, if
+                                       any, from key values list */
 } tapi_iscsi_change_key_val_type;    
 
+/**
+ * Change key values list according action given (See comments to
+ * tapi_iscsi_change_key_val_type)
+ *
+ * @param segment_data    iSCSI PDU Segment Data in asn format
+ * @param key_name        Key name
+ * @param change          Action to take on key values list
+ * @param num             Number of given key values
+ * @param ...             List of key values
+ *
+ * @return Status code
+ */ 
 extern int tapi_iscsi_change_key_values(
     iscsi_segment_data segment_data,
     char *key_name, 
