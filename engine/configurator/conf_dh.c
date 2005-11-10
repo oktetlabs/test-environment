@@ -493,7 +493,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 continue;
 
             while (tmp != NULL &&
-                   xmlStrcmp(tmp->name , (const xmlChar *)"ta") == 0)
+                   xmlStrcmp(tmp->name, (const xmlChar *)"instance") == 0)
             {
                 if ((oid = xmlGetProp_exp(tmp, (xmlChar *)"oid")) == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",

@@ -35,6 +35,7 @@
 
 /* Forwards */
 static cfg_object cfg_obj_agent;
+static cfg_object cfg_obj_agent_rsrc;
 static cfg_object cfg_obj_conf_delay;
 static cfg_object cfg_obj_conf_delay_ta;
 
@@ -46,19 +47,25 @@ cfg_object cfg_obj_root =
 /** "/agent" object */
 static cfg_object cfg_obj_agent = 
     { 1, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
-      CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root, NULL, 
-      &cfg_obj_conf_delay };
+      CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root,  
+      &cfg_obj_agent_rsrc, &cfg_obj_conf_delay };
+
+/** "/agent/rsrc" object */
+static cfg_object cfg_obj_agent_rsrc = 
+    { 2, "/agent/rsrc", { 'r', 's', 'r', 'c', 0 },
+      CVT_STRING, CFG_READ_CREATE, NULL, FALSE, &cfg_obj_agent, 
+      NULL, NULL };
 
 /** "/conf_delay" object */
 static cfg_object cfg_obj_conf_delay = 
-    { 2, "/conf_delay", 
+    { 3, "/conf_delay", 
       { 'c', 'o', 'n', 'f', '_', 'd', 'e', 'l', 'a', 'y', 0 },
       CVT_STRING, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_root, 
       &cfg_obj_conf_delay_ta, NULL };
 
 /** "/conf_delay/ta" object */
 static cfg_object cfg_obj_conf_delay_ta = 
-    { 3, "/conf_delay/ta", { 't', 'a', 0 },
+    { 4, "/conf_delay/ta", { 't', 'a', 0 },
       CVT_INTEGER, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay, 
       NULL, NULL };
 
@@ -107,10 +114,12 @@ cfg_db_init(void)
     cfg_all_obj_size = CFG_OBJ_NUM;
     cfg_all_obj[0] = &cfg_obj_root;
     cfg_all_obj[1] = &cfg_obj_agent;
-    cfg_all_obj[2] = &cfg_obj_conf_delay;
-    cfg_all_obj[3] = &cfg_obj_conf_delay_ta;
+    cfg_all_obj[2] = &cfg_obj_agent_rsrc;
+    cfg_all_obj[3] = &cfg_obj_conf_delay;
+    cfg_all_obj[4] = &cfg_obj_conf_delay_ta;
     cfg_obj_root.son = &cfg_obj_agent;
-    cfg_obj_agent.son = NULL;
+    cfg_obj_agent.son = &cfg_obj_agent_rsrc;
+    cfg_obj_agent_rsrc.brother = NULL;
     cfg_obj_conf_delay.brother = NULL;
 
     if ((cfg_all_inst = (cfg_instance **)calloc(CFG_INST_NUM, 
@@ -154,7 +163,7 @@ cfg_db_destroy(void)
     cfg_all_inst = NULL;
 
     INFO("Destroy objects");
-    for (i = 4; i < cfg_all_obj_size; i++)
+    for (i = 5; i < cfg_all_obj_size; i++)
     {
         if (cfg_all_obj[i] != NULL)
         {
