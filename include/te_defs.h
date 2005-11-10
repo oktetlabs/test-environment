@@ -269,7 +269,7 @@ te_make_tmp_file(char *tmp_name)
     do {                                                        \
         int _n = snprintf(_buf, sizeof(_buf), _msg);            \
                                                                 \
-        if (_n == sizeof(_buf))                                 \
+        if (_n >= sizeof(_buf))                                 \
             ERROR("%s: string %s is cut by snprintf()", _buf,   \
                   __FUNCTION__);                                \
     } while (0)
