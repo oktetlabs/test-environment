@@ -43,6 +43,8 @@
 
 #define CSAP_PARAM_STATUS               "status"
 #define CSAP_PARAM_TOTAL_BYTES          "total_bytes"
+#define CSAP_PARAM_TOTAL_SENT           "total_sent"
+#define CSAP_PARAM_TOTAL_RECEIVED       "total_received"
 #define CSAP_PARAM_FIRST_PACKET_TIME    "first_pkt_time"
 #define CSAP_PARAM_LAST_PACKET_TIME     "last_pkt_time"
 
