@@ -473,6 +473,9 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if (obj->type != CVT_NONE)
         free(val_str);
 
+    if (strstr(oid, "/rsrc:") != NULL)
+        oid = "*:*";
+        
     if ((msg->rc = cfg_ta_sync(oid, TRUE)) != 0)
     {
         ERROR("Failed to synchronize subtree of a new instance %s "
@@ -692,6 +695,8 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
             return;
         }
         VERB("Instance %s successfully deleted from the Agent", inst->name);
+        if (strstr(inst->oid, "/rsrc:") != NULL)
+            cfg_ta_sync("*:*", TRUE);
     }
 
     cfg_db_del(handle);
