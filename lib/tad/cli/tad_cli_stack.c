@@ -1170,6 +1170,12 @@ tad_cli_single_init_cb(csap_p csap_descr, unsigned int layer,
         }
 
         VERB("Child has just been initialised");
+
+        /* As we do not call waitpid() at destroy time, we should print pid
+         * of CSAP in the log to find if sigchild handler will tell us of 
+         * any problems with exit status. */
+        RING("CLI CSAP with pid %d was initialized", 
+             cli_spec_data->expect_pid);
     }
 
     return 0;
@@ -1185,8 +1191,10 @@ error:
 te_errno
 tad_cli_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 {
+#if 0
     int    status;
     int    child_pid;
+#endif
 
     cli_csap_specific_data_p spec_data = 
         (cli_csap_specific_data_p)csap_descr->layers[layer].specific_data;
@@ -1205,6 +1213,9 @@ tad_cli_single_destroy_cb(csap_p csap_descr, unsigned int layer)
         kill(spec_data->expect_pid, SIGKILL);
     }
     
+#if 0
+    /* On agent, ta_waitpid() should be called. As temporary solution,
+     * disable it as sigchild handler will log any problems. */
     VERB("waitpid() for CLI session: PID = %d", spec_data->expect_pid);
 
     child_pid = waitpid(spec_data->expect_pid, &status, 0);
@@ -1227,6 +1238,7 @@ tad_cli_single_destroy_cb(csap_p csap_descr, unsigned int layer)
     {
         INFO("CLI session finished not by signal nor itself");
     }
+#endif
     
     VERB("%s(): try to free CLI CSAP specific data", __FUNCTION__);
     free_cli_csap_data(spec_data);
