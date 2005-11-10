@@ -108,13 +108,12 @@
 
 
 
-#define PDU_CONTAINS_KEY_VALUE_PAIR_STRING(segment_data_, \
-                                           key_name_,     \
-                                           key_value_)    \
+#define PDU_CONTAINS_KEY_VALUE_PAIR(segment_data_, \
+                                    key_name_,     \
+                                   key_value_)    \
     (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1, \
-                                    iscsi_key_value_type_string,         \
                                     key_value_))
-
+#if 0
 #define PDU_CONTAINS_KEY_VALUE_PAIR_INT(segment_data_, \
                                         key_name_, key_value_) \
     (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1,  \
@@ -124,7 +123,7 @@
                                         key_name_, key_value_) \
     (!tapi_iscsi_find_key_and_value(segment_data_, (char *)key_name_, 1,  \
                                     iscsi_key_value_type_hex, key_value_))
-
+#endif
 #define PDU_CONTAINS_KEY(segment_data_, key_name_) \
     (tapi_iscsi_get_key_index_by_name(segment_data_, key_name_) !=  \
      TAPI_ISCSI_KEY_INVALID)
@@ -310,6 +309,7 @@ extern iscsi_key_values tapi_iscsi_get_key_values(
  */ 
 extern int tapi_iscsi_get_key_values_num(iscsi_key_values values);
 
+#if 0
 /**
  * Get type of key value.
  *
@@ -321,6 +321,7 @@ extern int tapi_iscsi_get_key_values_num(iscsi_key_values values);
 extern iscsi_key_value_type tapi_iscsi_get_key_value_type(
                                 iscsi_key_values values, 
                                 int key_value_index);
+#endif
 
 /**
  * Get string key value from list of values.
@@ -331,10 +332,10 @@ extern iscsi_key_value_type tapi_iscsi_get_key_value_type(
  *
  * @return 0 or error code
  */ 
-extern int tapi_iscsi_get_string_key_value(iscsi_key_values values, 
-                                           int key_value_index, 
-                                           char **str_value);
-
+extern int tapi_iscsi_get_key_value(iscsi_key_values values, 
+                                    int key_value_index, 
+                                    char **str_value);
+#if 0
 /**
  * Get integer key value from list of values.
  *
@@ -347,7 +348,7 @@ extern int tapi_iscsi_get_string_key_value(iscsi_key_values values,
 extern int tapi_iscsi_get_int_key_value(iscsi_key_values values, 
                                         int key_value_index, 
                                         int *int_value);
-
+#endif
 /* To modify iSCSI PDU Segment Data */
 
 /**

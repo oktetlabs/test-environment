@@ -456,6 +456,7 @@ tapi_iscsi_get_key_values_num(iscsi_key_values values)
     return key_values_len;
 }
 
+#if 0
 /* See description in tapi_iscsi.h */
 iscsi_key_value_type
 tapi_iscsi_get_key_value_type(iscsi_key_values values, int key_value_index)
@@ -508,19 +509,16 @@ tapi_iscsi_get_key_value_type(iscsi_key_values values, int key_value_index)
     }
     return type;
 }
+#endif
 
 /* See description in tapi_iscsi.h */
 int
-tapi_iscsi_get_string_key_value(iscsi_key_values values, 
-                                int key_value_index, char **str)
+tapi_iscsi_get_key_value(iscsi_key_values values, 
+                         int key_value_index, char **str)
 {
     int rc;
     
     const asn_value     *elem;
-    const asn_value     *value;
-    asn_tag_class        tag_class;
-    uint16_t             tag_val;
-        
 
     if ((rc = asn_get_indexed(values, &elem, key_value_index)) != 0)
     {
@@ -528,20 +526,7 @@ tapi_iscsi_get_string_key_value(iscsi_key_values values,
               __FUNCTION__, __LINE__, rc);
         return rc;
     }
-    if ((rc = asn_get_choice_value(elem, &value, 
-                                   &tag_class, &tag_val)) != 0)
-    {
-        ERROR("%s, %d: cannot get choice value, %r",
-              __FUNCTION__, __LINE__, rc);
-        return rc;
-    }
-    if (tag_val != iscsi_key_value_type_string)
-    {
-        ERROR("%s, %d: bad type provided, %r",
-              __FUNCTION__, __LINE__, rc);
-        return TE_EASNWRONGTYPE;
-    }
-    if ((rc = asn_read_string(value, str, "")) != 0)
+    if ((rc = asn_read_string(elem, str, "")) != 0)
     {
         ERROR("%s, %d: cannot read string, %r",
               __FUNCTION__, __LINE__, rc);
@@ -549,7 +534,7 @@ tapi_iscsi_get_string_key_value(iscsi_key_values values,
     }
     return 0;
 }
-
+#if 0
 /* See description in tapi_iscsi.h */
 int
 tapi_iscsi_get_int_key_value(iscsi_key_values values, 
@@ -592,6 +577,7 @@ tapi_iscsi_get_int_key_value(iscsi_key_values values,
     }
     return 0;
 }
+#endif
 
 /* See description in tapi_iscsi.h */
 int
@@ -658,7 +644,6 @@ tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
     return (key_index == TAPI_ISCSI_KEY_INVALID) ? key_num : key_index;
 }
 
-
 /* See description in tapi_iscsi.h */
 iscsi_key_values 
 tapi_iscsi_key_values_create(int num, ...)
@@ -670,14 +655,9 @@ tapi_iscsi_key_values_create(int num, ...)
     asn_value *key_values = NULL;
     asn_value *key_value = NULL;
 
-    iscsi_key_value_type type;
-
     int i;
 
-    int   int_val;
     char *str_val;
-
-    const char *label;
 
     va_start(list, num);
     
@@ -690,8 +670,7 @@ tapi_iscsi_key_values_create(int num, ...)
 
     for (i = 0; i < num; i++)
     {
-        type = va_arg(list, iscsi_key_value_type);
-        if ((key_value = asn_init_value(ndn_iscsi_key_value)) == NULL)
+        if ((key_value = asn_init_value(asn_base_charstring)) == NULL)
         {
             ERROR("%s, %d: cannot init asn_value",
                   __FUNCTION__, __LINE__);
@@ -699,51 +678,13 @@ tapi_iscsi_key_values_create(int num, ...)
             goto cleanup;
         }
 
-        switch (type)
+        str_val = va_arg(list, char *);
+        if ((rc = asn_write_string(key_value, 
+                                   str_val, "")) != 0)
         {
-            case iscsi_key_value_type_int:
-            {
-                int_val = va_arg(list, int);
-                label = "#int";
-                if ((rc = asn_write_int32(key_value, int_val, "#int")) != 0)
-                {
-                    ERROR("%s, %d: cannot write int value, %r",
-                          __FUNCTION__, __LINE__, rc);
-                    goto cleanup;
-                }
-                break;
-            }
-            case iscsi_key_value_type_hex:
-            {
-                int_val = va_arg(list, int);
-                label = "#hex";
-                if ((rc = asn_write_int32(key_value, int_val, "#hex")) != 0)
-                {
-                    ERROR("%s, %d: cannot write int value, %r",
-                          __FUNCTION__, __LINE__, rc);
-                    goto cleanup;
-                }
-                break;
-            }
-            case iscsi_key_value_type_string:
-            {
-                str_val = va_arg(list, char *);
-                label = "#str";
-                if ((rc = asn_write_string(key_value, 
-                                           str_val, "#str")) != 0)
-                {
-                    ERROR("%s, %d: cannot write string value, %r",
-                          __FUNCTION__, __LINE__, rc);
-                    goto cleanup;
-                }
-                break;
-            }
-            default:
-            {
-                ERROR("%s, %d: bad type provided",
-                      __FUNCTION__, __LINE__);
-                goto cleanup;
-            }
+            ERROR("%s, %d: cannot write string value, %r",
+                  __FUNCTION__, __LINE__, rc);
+            goto cleanup;
         }
         if ((rc = asn_insert_indexed(key_values, key_value, i, "")) != 0)
         {
@@ -940,7 +881,7 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
     {
         char *str = va_arg(list, char *);
 
-        if ((key_value = asn_init_value(ndn_iscsi_key_value)) == NULL)
+        if ((key_value = asn_init_value(asn_base_charstring)) == NULL)
         {
             ERROR("%s, %d: cannot init key value",
                   __FUNCTION__, __LINE__);
@@ -991,8 +932,6 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
     te_bool            found;
     int                i = 0;
 
-    iscsi_key_value_type type;
-
     va_list list;
 
     if ((key_index = 
@@ -1024,82 +963,38 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
 
     while (i++ < num)
     {
-        type = va_arg(list, iscsi_key_value_type);
         found = FALSE;
         for (key_values_index = 0;
              (key_values_index < key_values_num) && (found == FALSE);
              key_values_index++)
         {
-            if (type != 
-                tapi_iscsi_get_key_value_type(key_values,
-                                              key_values_index))
-                continue;
-            switch (type)
+            char *search_value = va_arg(list, char *);
+            char *key_value;
+
+            if ((rc = 
+                 tapi_iscsi_get_key_value(
+                                          key_values,
+                                          key_values_index,
+                                          &key_value)) != 0)
             {
-                case iscsi_key_value_type_int:
-                case iscsi_key_value_type_hex:
-                {
-                    int search_value = va_arg(list, int);
-                    int key_value;
-
-                    if ((rc = 
-                        tapi_iscsi_get_int_key_value(
-                            key_values,
-                            key_values_index,
-                            &key_value)) != 0)
-                    {
-                        ERROR("%s, %d: cannot get integer value",
-                              __FUNCTION__, __LINE__);
-                        return rc;
-                    }
-                    if (search_value == key_value)
-                    {
-                        found = TRUE;
-                        continue;
-                    }
-                    break;
-                }
-                case iscsi_key_value_type_string:    
-                {
-                    char *search_value = va_arg(list, char *);
-                    char *key_value;
-
-                    if ((rc = 
-                        tapi_iscsi_get_string_key_value(
-                            key_values,
-                            key_values_index,
-                            &key_value)) != 0)
-                    {
-                        ERROR("%s, %d: cannot get string value",
-                              __FUNCTION__, __LINE__);
-                        return rc;
-                    }
-                    if (strcmp(search_value, key_value) == 0)
-                    {
-                        found = TRUE;
-                        continue;
-                    }
-                    break;
-                }
-                default:
-                {
-                    /* Should never happen */
-                    {
-                        ERROR("%s, %d: strange value type",
-                              __FUNCTION__, __LINE__);
-                        return -1;
-                    }
-                }
+                ERROR("%s, %d: cannot get string value",
+                      __FUNCTION__, __LINE__);
+                return rc;
             }
-            if (found == FALSE)
+            if (strcmp(search_value, key_value) == 0)
             {
-                va_end(list);
-                ERROR("%s, %d: cannot find value for key %s",
-                      __FUNCTION__, __LINE__, key_name);
-                return -1;
+                found = TRUE;
+                continue;
             }
         }
-    }
+        if (found == FALSE)
+        {
+            va_end(list);
+            ERROR("%s, %d: cannot find value for key %s",
+                  __FUNCTION__, __LINE__, key_name);
+            return -1;
+        }
+    }    
     va_end(list);
     return 0;
 }
