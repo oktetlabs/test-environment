@@ -4621,7 +4621,7 @@ _fill_aiocb_1_svc(tarpc_fill_aiocb_in *in,
         {
             if (strcmp(in->sigevent.function, AIO_WRONG_CALLBACK) == 0)
                 cb->aio_sigevent._sigev_un._sigev_thread._function = 
-                    (void *)rand_range(1, 0xFFFFFFFF);
+                    (void *)(long)rand_range(1, 0xFFFFFFFF);
             else
                 WARN("Failed to find address of AIO callback %s - "
                      "use NULL callback", in->sigevent.function);
