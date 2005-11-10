@@ -579,8 +579,9 @@ tad_tcp_ip4_init_cb(csap_p csap_descr, unsigned int layer,
         local.sin_family = AF_INET;
         local.sin_addr = ip4_spec_data->local_addr;
         local.sin_port = htons(spec_data->local_port);
-        INFO("%s(): Port passed %d, network order %d", 
-             __FUNCTION__, (int)spec_data->local_port, (int)local.sin_port);
+        INFO("%s(): Port passed %d, network order %d, IP addr %x", 
+             __FUNCTION__, (int)spec_data->local_port, (int)local.sin_port,
+             (int32_t)local.sin_addr.s_addr);
 
         if ((spec_data->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         {

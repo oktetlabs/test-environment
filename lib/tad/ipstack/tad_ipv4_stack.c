@@ -217,6 +217,7 @@ tad_ip4_single_init_cb(csap_p csap_descr, unsigned int layer,
 
     rc = 0;
 
+    ip4_spec_data->local_addr = ip4_spec_data->sa_op.sin_addr; 
  
     ip4_spec_data->sa_op.sin_family = AF_INET;
     ip4_spec_data->sa_op.sin_port = 0;
