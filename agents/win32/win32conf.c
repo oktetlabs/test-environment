@@ -348,14 +348,15 @@ rcf_ch_conf_root()
 {
     static te_bool init = FALSE;
     
-#ifdef RCF_RPC
     /* Link RPC nodes */
     if (!init)
     {
         init = TRUE;
+#ifdef RCF_RPC
         rcf_pch_rpc_init();
-    }
 #endif        
+        rcf_pch_rsrc_init();
+    }
 
     return &node_agent;
 }
@@ -377,6 +378,32 @@ rcf_ch_conf_agent()
 void
 rcf_ch_conf_release()
 {
+}
+
+/**
+ * Register a resource.
+ *
+ * @param rsrc          resource name
+ *
+ * @return Status code
+ */
+te_errno 
+rcf_ch_rsrc_reg(const char *rsrc)
+{
+    return 0;
+}
+
+/**
+ * Unregister a resource.
+ *
+ * @param rsrc          resource name
+ *
+ * @return Status code
+ */
+te_errno 
+rcf_ch_rsrc_unreg(const char *rsrc)
+{
+    return 0;
 }
 
 /**
