@@ -268,7 +268,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                                       &data_to_check, &rest_payload,
                                       parsed_pdu); 
 
-        RING("match cb 0x%x for lev %d returned %r",
+        INFO("match cb 0x%x for lev %d returned %r",
              csap_spt_descr->match_cb, layer, rc);
 
         if (data_to_check.free_data_cb) 
@@ -911,7 +911,7 @@ tad_tr_recv_thread(void *arg)
             rc = tad_tr_recv_match_with_unit(read_buffer, d_len, csap_descr,
                                              pattern_unit, &result); 
 
-            RING("CSAP %d: match_with_unit return %r", csap_descr->id, rc);
+            INFO("CSAP %d: match_with_unit return %r", csap_descr->id, rc);
 
             if (rc != 0)
             {
@@ -1065,7 +1065,7 @@ tad_tr_recv_thread(void *arg)
                 rc = tad_tr_recv_match_with_unit(read_buffer, d_len, 
                                                  csap_descr,
                                                  pattern_unit, &result); 
-                RING("CSAP %d, Match pkt return %x, unit %d", 
+                INFO("CSAP %d, Match pkt return %x, unit %d", 
                      csap_descr->id, rc, unit);
                 switch (TE_RC_GET_ERROR(rc))
                 {
