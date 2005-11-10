@@ -649,4 +649,64 @@ extern int tapi_tcp_forward_all(const char *ta_name, int session,
                                 unsigned int timeout, int *forwarded);
 
 
+typedef struct {
+    csap_handle_t  tcp_hack_csap;
+    uint8_t        rem_mac[6];
+    uint8_t        loc_mac[6];
+    in_addr_t      rem_ip_addr;
+    in_addr_t      loc_ip_addr;
+    tapi_tcp_pos_t rem_start_seq;
+    tapi_tcp_pos_t loc_start_seq;
+    uint16_t       rem_port;
+    uint16_t       loc_port;
+} tapi_tcp_reset_hack_t;
+
+/**
+ * Initialize RST sending hack framework: create CSAP, start listening of 
+ * SYN-ACK. Note, that it will catch FIRST SYN-ACK, matching passed
+ * filtering parameters, which user fill in 'context' structure. 
+ * All unset fields have to be zero. 
+ *
+ * @param ta_name       TA name
+ * @param sid           RCF session id
+ * @param iface         Ethernet interface
+ * @param dir_out       boolean flag wheather SYN-ACK will be outgoing;
+ *                      TRUE if it is.
+ * @param context       pointer to structure with context data, IN/OUT
+ *
+ * @return status code
+ */
+extern int tapi_tcp_reset_hack_init(const char *ta_name, int session, 
+                                    const char *iface, te_bool dir_out,
+                                    tapi_tcp_reset_hack_t *context);
+
+/**
+ * Catch SYN-ACK in RST sending hack framework.
+ * Note, that it will catch FIRST SYN-ACK, matching passed
+ * filtering parameters, which user fill in 'context' structure before
+ * call 'init'. 
+ *
+ * @param ta_name       TA name
+ * @param sid           RCF session id
+ * @param context       pointer to structure with context data, IN/OUT
+ *
+ * @return status code
+ */
+extern int tapi_tcp_reset_hack_catch(const char *ta_name, int session,
+                                     tapi_tcp_reset_hack_t *context);
+
+/**
+ * Send TCP RST.
+ *
+ * @param ta_name       TA name
+ * @param sid           RCF session id
+ * @param context       pointer to structure with context data
+ * @param received      received bytes during TCP connection life
+ * @param sent          sent bytes during TCP connection life
+ *
+ * @return status code
+ */
+extern int tapi_tcp_reset_hack_send(const char *ta_name, int session, 
+                                    tapi_tcp_reset_hack_t *context,
+                                    size_t received, size_t sent);
 #endif /* !__TE_TAPI_TCP_H__ */

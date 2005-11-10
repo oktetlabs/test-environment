@@ -946,3 +946,206 @@ tapi_tcp_forward_all(const char *ta_name, int session,
     return rc;
 }
 
+
+int
+tapi_tcp_reset_hack_init(const char *ta_name, int session,
+                         const char *iface, te_bool dir_out,
+                         tapi_tcp_reset_hack_t *context)
+{
+    int rc;
+    asn_value *syn_ack_pat;
+
+    if (context == NULL)
+    {
+        ERROR("%s(): null context passed", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    rc = tapi_tcp_ip4_eth_mode_csap_create(ta_name, session, iface, 
+                                           dir_out ? ETH_RECV_OUTGOING : 
+                                           ETH_RECV_HOST, 
+                                           NULL, NULL, 
+                                           context->loc_ip_addr,
+                                           context->rem_ip_addr,
+                                           0, /* port will be in pattern */
+                                           0, /* we dont know remote port */
+                                           &(context->tcp_hack_csap));
+    if (rc != 0)
+    {
+        ERROR("%s(): create tcp.ip4.eth CSAP failed %r", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    rc = tapi_tcp_pattern(0, 0, TRUE, TRUE, &syn_ack_pat);
+
+    if (context->loc_port)
+        asn_write_int32(syn_ack_pat, context->loc_port,
+                        "0.pdus.0.#tcp.src-port.#plain"); 
+
+    if (context->rem_ip_addr)
+        asn_write_value_field(syn_ack_pat, &(context->rem_ip_addr), 4, 
+                              "pdus.1.#ip4.dst-addr.#plain");
+
+    if (context->loc_ip_addr)
+        asn_write_value_field(syn_ack_pat, &(context->loc_ip_addr), 4, 
+                              "pdus.1.#ip4.src-addr.#plain");
+
+    rc = tapi_tad_trrecv_start(ta_name, session, 
+                               context->tcp_hack_csap,  syn_ack_pat,
+                               TAD_TIMEOUT_INF, 1,
+                               RCF_TRRECV_PACKETS);
+
+    asn_free_value(syn_ack_pat);
+    if (rc != 0)
+    {
+        ERROR("%s(): receive start on CSAP failed %r", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    return 0;
+}
+
+
+void
+tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
+{
+    int      rc;
+    int      syms = 0;
+    int32_t  port;
+    size_t   v_len;
+
+    tapi_tcp_reset_hack_t *context = user_param;
+
+    asn_value *pkt = NULL;
+
+    if (pkt_file == NULL || user_param == NULL)
+    {
+        ERROR("%s(): called with wrong arguments!", __FUNCTION__);
+        goto cleanup;
+    } 
+
+    rc = asn_parse_dvalue_in_file(pkt_file, ndn_raw_packet, &pkt, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse got packet failed %r, sym %d", 
+              __FUNCTION__, rc, syms);
+        goto cleanup;
+    }
+
+    rc = asn_read_int32(pkt, &(context->loc_start_seq), 
+                        "pdus.0.seqn.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): read loc seq failed %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+    RING("%s(): read loc start seq: %u",
+         __FUNCTION__, context->loc_start_seq);
+
+    rc = asn_read_int32(pkt, &(context->rem_start_seq), 
+                        "pdus.0.ackn.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): read rem seq failed %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+    RING("%s(): read rem start seq: %u",
+         __FUNCTION__, context->rem_start_seq);
+
+
+    rc = asn_read_int32(pkt, &port, "pdus.0.dst-port.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): read dst-port for 'ini' side failed %r",
+              __FUNCTION__, rc);
+        goto cleanup;
+    }
+    RING("%s(): read rem port: %u", __FUNCTION__, port);
+    context->rem_port = port;
+
+    if (context->loc_port == 0)
+    {
+        asn_read_int32(pkt, &port, "pdus.0.src-port.#plain");
+        context->loc_port = port;
+    }
+    v_len = sizeof(context->rem_mac);
+    asn_read_value_field(pkt, context->rem_mac, &v_len, 
+                         "pdus.2.#eth.dst-addr.#plain");
+    asn_read_value_field(pkt, context->loc_mac, &v_len, 
+                         "pdus.2.#eth.src-addr.#plain");
+
+    v_len = sizeof(context->rem_ip_addr);
+    if (context->rem_ip_addr == 0)
+        asn_read_value_field(pkt, &(context->rem_ip_addr), &v_len, 
+                             "pdus.1.#ip4.dst-addr.#plain"); 
+    if (context->loc_ip_addr == 0)
+        asn_read_value_field(pkt, &(context->loc_ip_addr), &v_len, 
+                             "pdus.1.#ip4.src-addr.#plain");
+
+cleanup:
+    asn_free_value(pkt);
+}
+
+int
+tapi_tcp_reset_hack_catch(const char *ta_name, int session,
+                          tapi_tcp_reset_hack_t *context)
+{
+    int syn_ack_num = 0;
+    if (context == NULL)
+    {
+        ERROR("%s(): null context passed", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    } 
+
+    return rcf_ta_trrecv_stop(ta_name, session, context->tcp_hack_csap, 
+                              tcp_reset_hack_pkt_handler, 
+                              context, &syn_ack_num);
+}
+
+
+int
+tapi_tcp_reset_hack_send(const char *ta_name, int session, 
+                         tapi_tcp_reset_hack_t *context,
+                         size_t received, size_t sent)
+{
+    int rc;
+    asn_value *reset_tmpl;
+
+    if (context == NULL)
+    {
+        ERROR("%s(): null context passed", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    } 
+
+    rc = tapi_tcp_template(context->loc_start_seq + sent,
+                           context->rem_start_seq + received, 
+                           FALSE, TRUE, NULL, 0, &reset_tmpl);
+    if (rc != 0)
+        ERROR("make reset template failed %r", rc);
+    asn_write_int32(reset_tmpl, TCP_RST_FLAG | TCP_ACK_FLAG, 
+                    "pdus.0.#tcp.flags.#plain");
+
+    asn_write_value_field(reset_tmpl, context->rem_mac, 6, 
+                          "pdus.2.#eth.dst-addr.#plain");
+    asn_write_value_field(reset_tmpl, context->loc_mac, 6, 
+                          "pdus.2.#eth.src-addr.#plain");
+
+    asn_write_value_field(reset_tmpl, &(context->rem_ip_addr), 4, 
+                          "pdus.1.#ip4.dst-addr.#plain");
+    asn_write_value_field(reset_tmpl, &(context->loc_ip_addr), 4, 
+                          "pdus.1.#ip4.src-addr.#plain");
+
+    asn_write_int32(reset_tmpl, context->rem_port,
+                    "pdus.0.#tcp.dst-port.#plain");
+    asn_write_int32(reset_tmpl, context->loc_port,
+                    "pdus.0.#tcp.src-port.#plain");
+
+    rc = tapi_tad_trsend_start(ta_name, session, context->tcp_hack_csap,
+                               reset_tmpl, RCF_MODE_BLOCKING);
+    if (rc != 0)
+        ERROR("send RST failed %r", rc);
+
+    asn_free_value(reset_tmpl);
+
+    return rc;
+}
+
