@@ -545,7 +545,7 @@ tapi_allocate_port(uint16_t *p_port)
     }
     if ((port < 20000) || (port >= 30000))
     {
-        srand((unsigned int)time(NULL));
+        /* Random numbers generator should be initialized earlier */
         port = 20000 + rand_range(0, 10000);
     }
     else
