@@ -72,7 +72,7 @@ typedef int (* rcf_argv_thr_rtn)(void *sem, int argc, char **argv);
 /**
  * Initialize structures.
  *
- * @return error code
+ * @return Status code
  */
 extern int rcf_ch_init();
 
@@ -639,6 +639,24 @@ extern int rcf_ch_kill_task(unsigned int pid);
 /** @name Standard configuration support */
 
 /**
+ * Register a resource.
+ *
+ * @param rsrc          resource name
+ *
+ * @return Status code
+ */
+extern te_errno rcf_ch_rsrc_reg(const char *rsrc);
+
+/**
+ * Unregister a resource.
+ *
+ * @param rsrc          resource name
+ *
+ * @return Status code
+ */
+extern te_errno rcf_ch_rsrc_unreg(const char *rsrc);
+
+/**
  * Prototype for get instance value routine.
  *
  * @param gid       group identifier
@@ -646,7 +664,7 @@ extern int rcf_ch_kill_task(unsigned int pid);
  * @param value     location for the value
  * @param instN     Nth instance name (maximum 10) or NULL
  *
- * @return error code
+ * @return Status code
  */
 typedef int (* rcf_ch_cfg_get)(unsigned int gid, const char *oid,
                                char *value, const char *instN, ...);
@@ -659,7 +677,7 @@ typedef int (* rcf_ch_cfg_get)(unsigned int gid, const char *oid,
  * @param value     value to set
  * @param instN     Nth instance name (maximum 10) or NULL
  *
- * @return error code
+ * @return Status code
  */
 typedef int (* rcf_ch_cfg_set)(unsigned int gid, const char *oid,
                                const char *value,
@@ -673,7 +691,7 @@ typedef int (* rcf_ch_cfg_set)(unsigned int gid, const char *oid,
  * @param value     value to set or NULL
  * @param instN     Nth instance name (maximum 10) or NULL
  *
- * @return error code
+ * @return Status code
  */
 typedef int (* rcf_ch_cfg_add)(unsigned int gid, const char *oid,
                                const char *value,
@@ -686,7 +704,7 @@ typedef int (* rcf_ch_cfg_add)(unsigned int gid, const char *oid,
  * @param oid       full object instance identifier
  * @param instN     Nth instance name (maximum 10) or NULL
  *
- * @return error code
+ * @return Status code
  */
 typedef int (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
                                const char *instN, ...);
@@ -702,7 +720,7 @@ typedef int (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
  * @param instN     Nth instance name (maximum 10, father's
  *                    instance name is last, if fit in 10)
  *
- * @return error code
+ * @return Status code
  */
 typedef int (* rcf_ch_cfg_list)(unsigned int gid, const char *oid,
                                 char **list, const char *instN, ...);
@@ -713,11 +731,10 @@ typedef int (* rcf_ch_cfg_list)(unsigned int gid, const char *oid,
  * @param gid       group identifier
  * @param p_oid     parsed object instance identifier
  *
- * @return Status code.
+ * @return Status code
  */
 typedef int (* rcf_ch_cfg_commit)(unsigned int gid,
                                   const cfg_oid *p_oid);
-
 
 /** Configuration tree node */
 typedef struct rcf_pch_cfg_object {

@@ -48,6 +48,9 @@
 #ifdef HAVE_SYS_QUEUE_H
 #include <sys/queue.h>
 #endif
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
 
 #include "te_errno.h"
 #include "te_defs.h"
@@ -774,7 +777,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
 
     UNUSED(ba);
     UNUSED(cmdlen);
-
+    
     ENTRY("op=%d id='%s' val='%s'", op, (oid == NULL) ? "NULL" : oid,
                                         (val == NULL) ? "NULL" : val);
     VERB("Default configuration hanlder is executed");
@@ -952,4 +955,237 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
     return 0;
 
 #undef ALL_INST_NAMES
+}
+
+/** Registered resources list entry */
+typedef struct rsrc {
+    struct rsrc *next;  /**< Next element in the list */
+    char        *id;    /**< Name of the instance in the OID */
+    char        *name;  /**< Resource name (instance value) */
+} rsrc;    
+
+/** List of registered resources */
+static rsrc *rsrc_lst;
+
+/**
+ * Get instance list for object "/agent/rsrc".
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param list          location for the list pointer
+ *
+ * @return Status code
+ * @retval 0            success
+ * @retval TE_ENOMEM    cannot allocate memory
+ */
+static int
+rsrc_list(unsigned int gid, const char *oid, char **list)
+{
+#define MEM_BULK        1024
+    int   len = MEM_BULK;
+    char *buf = calloc(1, len);
+    int   offset = 0;
+    rsrc *tmp;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (buf == NULL)
+        return TE_RC(TE_TA, TE_ENOMEM);
+        
+    for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
+    {
+        if (len - offset <= (int)strlen(tmp->id) + 2)
+        {
+            char *new_buf;
+            
+            len += MEM_BULK;
+            if ((new_buf = realloc(buf, len)) == NULL)
+            {
+                free(buf);
+                return TE_RC(TE_TA, TE_ENOMEM);
+            }
+        }
+        offset += sprintf(buf + offset, "%s ", tmp->id);
+    }
+    
+    *list = buf;
+
+    return 0;
+#undef MEM_BULK    
+}
+
+/**
+ * Get resource name.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         name location 
+ * @param id            resource instance name
+ *
+ * @return Status code
+ */
+static int
+rsrc_get(unsigned int gid, const char *oid, char *value, const char *id)
+{
+    rsrc *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
+        if (strcmp(tmp->id, id) == 0)
+        {
+            snprintf(value, RCF_MAX_VAL, tmp->name);
+            return 0;
+        }
+            
+    return TE_RC(TE_TA, TE_ENOENT);
+}
+
+/**
+ * Add a resource.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         resource name
+ * @param id            instance name
+ *
+ * @return Status code
+ */
+static int
+rsrc_add(unsigned int gid, const char *oid, const char *value,
+         const char *id)
+{
+    rsrc *tmp;
+    char  s[RCF_MAX_NAME];
+    int   rc;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if (rcf_pch_rsrc_is_reg(value) ||
+        rsrc_get(0, NULL, s, id) == 0)
+    {
+        return TE_RC(TE_TA, TE_EEXIST);
+    }
+    
+    if ((tmp = calloc(sizeof(*tmp), 1)) == NULL ||
+        (tmp->id = strdup(id)) == NULL ||
+        (tmp->name = strdup(value)) == NULL)
+    {
+        if (tmp)
+            free(tmp->id);
+        free(tmp);
+        return TE_RC(TE_TA, TE_ENOMEM);
+    }
+    
+    if ((rc = rcf_ch_rsrc_reg(tmp->name)) != 0)
+    {
+        free(tmp->name);
+        free(tmp->id);
+        free(tmp);
+        return rc;
+    }
+        
+    tmp->next = rsrc_lst;
+    rsrc_lst = tmp;
+    
+    return 0;
+}
+
+/**
+ * Delete resource.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param id            resource instance identifier
+ *
+ * @return Status code
+ */
+static int
+rsrc_del(unsigned int gid, const char *oid, const char *id)
+{
+    rsrc *cur, *prev;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+
+    for (cur = rsrc_lst, prev = NULL; 
+         cur != NULL; 
+         prev = cur, cur = cur->next)
+    {
+        if (strcmp(id, cur->id) == 0)
+        {
+            int rc = rcf_ch_rsrc_unreg(cur->name);
+            
+            if (rc != 0)
+                return rc;
+                
+            if (prev != NULL)
+                prev->next = cur->next;
+            else
+                rsrc_lst = cur->next;
+            
+            free(cur->name);
+            free(cur->id);
+            free(cur);
+            return 0;
+        }
+    }
+    
+    return TE_RC(TE_TA, TE_ENOENT);
+}
+
+/**
+ * Check if the resource is registered.
+ *
+ * @param fmt   format string for resource name
+ *
+ * @return TRUE is the resource is registered
+ *
+ * @note The function should be called from TA main thread only.
+ */
+te_bool 
+rcf_pch_rsrc_is_reg(const char *fmt, ...)
+{
+    va_list ap;
+    rsrc   *tmp;
+    char    buf[RCF_MAX_VAL];
+    
+    if (fmt == NULL)
+        return FALSE;
+
+    va_start(ap, fmt);
+    if (vsnprintf(buf, sizeof(buf), fmt, ap) >= (int)sizeof(buf))
+    {
+        ERROR("Too long resource name");
+        return FALSE;
+    }
+    va_end(ap);
+    
+    for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
+        if (strcmp(tmp->name, buf) == 0)
+            return TRUE;
+            
+    return FALSE;
+}
+
+/** Resource node */
+static rcf_pch_cfg_object node_rsrc =
+    { "rsrc", 0, NULL, NULL,
+      (rcf_ch_cfg_get)rsrc_get, NULL,
+      (rcf_ch_cfg_add)rsrc_add, (rcf_ch_cfg_del)rsrc_del,
+      (rcf_ch_cfg_list)rsrc_list, NULL, NULL };
+
+/** 
+ * Link resource configuration tree.
+ */
+void 
+rcf_pch_rsrc_init(void)
+{
+    rcf_pch_cfg_object *root = rcf_ch_conf_root();
+  
+    node_rsrc.brother = root->son;
+    root->son = &node_rsrc;
 }

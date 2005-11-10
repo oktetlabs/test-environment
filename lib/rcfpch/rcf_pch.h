@@ -260,6 +260,22 @@ extern void *rcf_pch_rpc_server(const char *name);
  */
 extern void rcf_pch_rpc_server_argv(int argc, char **argv);
 
+/**
+ * Check if the resource is registered.
+ *
+ * @param fmt   format string for resource name
+ *
+ * @return TRUE is the resource is registered
+ *
+ * @note The function should be called from TA main thread only.
+ */
+extern te_bool rcf_pch_rsrc_is_reg(const char *fmt, ...);
+
+/** 
+ * Link resource configuration tree.
+ */
+extern void rcf_pch_rsrc_init(void);
+
 /*@}*/
 
 #ifdef __cplusplus
