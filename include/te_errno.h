@@ -203,6 +203,7 @@ typedef enum {
 /** @name Remote Control Facility errno's */
     TE_ENORCF = TE_MIN_ERRNO + 600,       
                      /**< RCF initialization failed */
+    TE_EACK,         /**< The request is accepted for processing */
     TE_ETALOCAL,     /**< TA runs on the same station with TEN and
                           cannot be rebooted */
     TE_ETADEAD,      /**< Test Agent is dead */
@@ -585,6 +586,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(EENV);      
         ERR2STR(EWIN);      
         ERR2STR(ENORCF);        
+        ERR2STR(EACK);        
         ERR2STR(ETALOCAL);     
         ERR2STR(ETADEAD);      
         ERR2STR(ETAREBOOTED);  

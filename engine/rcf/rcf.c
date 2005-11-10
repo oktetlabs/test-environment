@@ -136,7 +136,7 @@ enum {
  *         ta.connect() (if fails, goto shutdown)
  *         synchronize time;
  *     response to user reboot request;
- *     response to all sent and pending requests (TE_ETAREBOOTED).
+ *     response to all sent, waiting and pending requests (TE_ETAREBOOTED).
  *
  * reboot_num variable is necessary to avoid TA list scanning every time
  * when select() is returned (list scanning is performed only if
@@ -149,7 +149,7 @@ enum {
  *     or response from all TA is received (set flag TA_DOWN and decriment
  *     shutdown_num every time when response is received);
  *     for all TA with TA_DOWN flag clear ta.finish();
- *     response to all sent and pending requests (EIO);
+ *     response to all sent, waiting and pending requests (EIO);
  *     response to user shutdown request.
  */
 
@@ -180,17 +180,27 @@ typedef struct ta {
                                                  by start() method */
     char               *name;               /**< Test Agent name */
     char               *type;               /**< Test Agent type */
-    te_bool             enable_synch_time;  /**< Enable synchronize time */ 
+    te_bool             enable_synch_time;  /**< Enable synchronize time */
     char               *conf;               /**< Configuration string */
     usrreq              sent;               /**< User requests sent
                                                  to the TA */
-    usrreq              pending;            /**< Pending user requests */
+    usrreq              waiting;            /**< User requests waiting
+                                                 for unblocking of 
+                                                 TA connection */ 
+    usrreq              pending;            /**< User requests pending
+                                                 until answer on previous
+                                                 request with the same SID
+                                                 is received */
     unsigned int        flags;              /**< Test Agent flags */
     int                 reboot_timestamp;   /**< Time of reboot command
                                                  sending (in seconds) */
     int                 sid;                /**< Free session identifier 
                                                  (starts from 2) */
-
+    te_bool             conn_locked;        /**< Connection is locked until
+                                                 the response from TA 
+                                                 is received */      
+    int                 lock_sid;           /**< SID of the command
+                                                 locked the connection */
     void               *dlhandle;           /**< Dynamic library handle */
     ta_initial_task    *initial_tasks;      /**< Startup tasks */
 
@@ -554,6 +564,7 @@ parse_config(const char *filename)
 
         agent->sent.prev = agent->sent.next = &(agent->sent);
         agent->pending.prev = agent->pending.next = &(agent->pending);
+        agent->waiting.prev = agent->waiting.next = &(agent->waiting);
 
         agent->sid = RCF_SID_UNUSED;
 
@@ -803,11 +814,13 @@ set_ta_dead(ta *agent)
 
         ERROR("TA '%s' is dead", agent->name);
         answer_all_requests(&(agent->sent), TE_ETADEAD);
+        answer_all_requests(&(agent->waiting), TE_ETADEAD);
         rc = (agent->close)(agent->handle, &set0);
         if (rc != 0)
             ERROR("Failed to close connection with TA '%s': rc=%r",
                   agent->name, rc);
         agent->flags |= TA_DEAD;
+        agent->conn_locked = FALSE;
     }
 }
 
@@ -824,6 +837,7 @@ set_ta_unrecoverable(ta *agent)
         ERROR("TA '%s' is unrecoverable dead", agent->name);
         answer_all_requests(&(agent->sent), TE_ETADEAD);
         answer_all_requests(&(agent->pending), TE_ETADEAD);
+        answer_all_requests(&(agent->waiting), TE_ETADEAD);
         if (agent->handle != NULL)
         {
             int rc;
@@ -898,6 +912,8 @@ init_agent(ta *agent)
     {
         answer_all_requests(&(agent->sent), TE_ETAREBOOTED);
         answer_all_requests(&(agent->pending), TE_ETAREBOOTED);
+        answer_all_requests(&(agent->waiting), TE_ETAREBOOTED);
+        agent->conn_locked = FALSE;
     }
 
     return rc;
@@ -1093,8 +1109,7 @@ send_pending_command(ta *agent, int sid)
     VERB("Send pending command to TA %s:%d", agent->name, sid);
 
     QEL_DELETE(req);
-    if (send_cmd(agent, req) == 0)
-        QEL_INSERT(&(agent->sent), req);
+    send_cmd(agent, req);
 }
 
 /**
@@ -1119,8 +1134,7 @@ send_all_pending_commands(ta *agent)
         {
             /* No requests with such SID sent */
             QEL_DELETE(req);
-            if (send_cmd(agent, req) == 0)
-                QEL_INSERT(&(agent->sent), req);
+            send_cmd(agent, req);
         }
     }
 }
@@ -1200,6 +1214,7 @@ process_reply(ta *agent)
     usrreq  *req = NULL;
     char    *ptr = cmd;
     char    *ba = NULL;
+    te_bool  ack = FALSE;
 
 #define READ_INT(n) \
     do {                                                    \
@@ -1215,24 +1230,24 @@ process_reply(ta *agent)
             ptr++;                                          \
     } while (0)
 
+    
     rc = (agent->receive)(agent->handle, cmd, &len, &ba);
 
-    if (rc == TE_RC(TE_COMM, TE_ESMALLBUF))
+    if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
     {
         ERROR("Too big answer from TA '%s' - increase memory constants", 
               agent->name);
         set_ta_dead(agent);
         return;
     }
-
-    if (rc != 0 && rc != TE_RC(TE_COMM, TE_EPENDING))
+    
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_EPENDING)
     {
         ERROR("Receiving answer from TA '%s' failed error=%r",
               agent->name, rc);
         set_ta_dead(agent);
         return;
     }
-
 
     VERB("Answer \"%s\" is received from TA '%s'", cmd, agent->name);
     
@@ -1253,8 +1268,7 @@ process_reply(ta *agent)
     if ((req = find_user_request(&(agent->sent), sid)) == NULL)
     {
         ERROR("Can't find user request with SID %d", sid);
-        send_pending_command(agent, sid);
-        return;
+        goto push;
     }
 
     msg = req->message;
@@ -1281,6 +1295,12 @@ process_reply(ta *agent)
     }
 
     READ_INT(error);
+
+    if (TE_RC_GET_ERROR(error) == TE_EACK)
+    {
+        ack = TRUE;
+        goto push;
+    }
 
     if (msg->opcode == RCFOP_REBOOT)
     {
@@ -1312,6 +1332,7 @@ process_reply(ta *agent)
             }
         }
         answer_user_request(req);
+        agent->conn_locked = FALSE;
         send_all_pending_commands(agent);
         return;
     }
@@ -1451,7 +1472,24 @@ process_reply(ta *agent)
     }
 
     answer_user_request(req);
-    send_pending_command(agent, sid);
+    
+    /* Push next waiting request */
+    push:
+    if (agent->conn_locked && sid == agent->lock_sid)
+    {
+        agent->conn_locked = FALSE;
+        req = agent->waiting.next;
+            
+        if (req != &agent->waiting)
+        {
+            QEL_DELETE(req);
+            send_cmd(agent, req);
+        }
+    }
+    
+    if (!ack)
+        send_pending_command(agent, sid);
+
     return;
 
 bad_protocol:
@@ -1505,7 +1543,7 @@ transmit_cmd(ta *agent, usrreq *req)
         sprintf(cmd + strlen(cmd), " attach %u", (unsigned int)st.st_size);
     }
 
-    VERB("Command \"%s\" is transmitted to TA '%s'", cmd, agent->name);
+    VERB("Transmit command \"%s\" to TA '%s'", cmd, agent->name);
 
     len = strlen(cmd) + 1;
     while (TRUE)
@@ -1516,6 +1554,9 @@ transmit_cmd(ta *agent, usrreq *req)
             ERROR("Failed to transmit command to TA '%s' errno %r", 
                   agent->name, req->message->error);
 
+            if (req->message->opcode == RCFOP_REBOOT)
+                return -1;
+                
             answer_user_request(req);
             set_ta_dead(agent);
 
@@ -1552,7 +1593,10 @@ transmit_cmd(ta *agent, usrreq *req)
     if (file != -1)
         close(file);
         
+    VERB("The command is transmitted to %s", agent->name);
     req->sent = time(NULL);
+    agent->conn_locked = TRUE;
+    agent->lock_sid = req->message->sid;
 
     return 0;
 }
@@ -1647,6 +1691,17 @@ static int
 send_cmd(ta *agent, usrreq *req)
 {
     rcf_msg *msg = req->message;
+
+    if (agent->conn_locked)
+    {
+        if (req->message->opcode == RCFOP_REBOOT)
+            return -1;
+        
+        INFO("Command '%s' is placed to waiting queue of TA %s", 
+             rcf_op_to_string(req->message->opcode), agent->name);
+        QEL_INSERT(&(agent->waiting), req);
+        return 0;
+    }
 
     sprintf(cmd, "SID %d ", msg->sid);
     switch (msg->opcode)
@@ -1888,7 +1943,10 @@ send_cmd(ta *agent, usrreq *req)
             ERROR("Unhandled case value %d", msg->opcode);
     }
 
-    return transmit_cmd(agent, req);
+    if (transmit_cmd(agent, req) == 0)
+        QEL_INSERT(&(agent->sent), req);
+        
+    return 0;
 }
 
 
@@ -2013,8 +2071,7 @@ rcf_ta_check_start(void)
             ERROR("TA '%s' checking is already in progress", agent->name);
         agent->flags |= TA_CHECKING;
         ta_checker.active++;
-        if ((rc = send_cmd(agent, req)) == 0)
-            QEL_INSERT(&(agent->sent), req);
+        send_cmd(agent, req);
     }
     rcf_ta_check_all_done();
 }
@@ -2159,7 +2216,6 @@ process_user_request(usrreq *req)
                 init_agent(agent);
                 return;
             }
-            QEL_INSERT(&(agent->sent), req);
             reboot_num++;
             agent->reboot_timestamp = time(NULL);
             RING("Reboot of TA '%s' initiated", agent->name);
@@ -2174,15 +2230,15 @@ process_user_request(usrreq *req)
     if (shutdown_num > 0 ||
         agent->reboot_timestamp > 0 ||
         (agent->flags & TA_CHECKING) ||
-        find_user_request(&(agent->sent), msg->sid) != NULL)
+        find_user_request(&(agent->sent), msg->sid) != NULL || 
+        find_user_request(&(agent->waiting), msg->sid) != NULL)
     {
         VERB("Pending user request for TA %s:%d", agent->name, msg->sid);
         QEL_INSERT(&(agent->pending), req);
     }
     else
     {
-        if ((rc = send_cmd(agent, req)) == 0)
-            QEL_INSERT(&(agent->sent), req);
+        send_cmd(agent, req);
     }
 }
 
@@ -2212,6 +2268,7 @@ rcf_shutdown()
         (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
         answer_all_requests(&(agent->sent), TE_EIO);
         answer_all_requests(&(agent->pending), TE_EIO);        
+        answer_all_requests(&(agent->waiting), TE_EIO);        
     }
 
     while (shutdown_num > 0 && time(NULL) - t < RCF_SHUTDOWN_TIMEOUT)
@@ -2473,7 +2530,6 @@ main(int argc, const char *argv[])
             process_user_request(req);
         }
 
-        now = time(NULL);
         for (agent = agents; agent != NULL; agent = agent->next)
         {
             usrreq *next;
@@ -2481,6 +2537,7 @@ main(int argc, const char *argv[])
             if ((agent->is_ready)(agent->handle))
                 process_reply(agent);
                 
+            now = time(NULL);
             for (req = agent->sent.next; 
                  req != &(agent->sent); 
                  req = next)
@@ -2489,7 +2546,7 @@ main(int argc, const char *argv[])
                 
                 if ((uint32_t)(now - req->sent) < req->timeout)
                     continue;
-
+                
                 {
                     size_t  ret;
                     char    time_buf[9];    /* Sufficient for format
@@ -2504,10 +2561,10 @@ main(int argc, const char *argv[])
                         time_buf[0] = '\0';
                     }
                     ERROR("Request %u:%d:'%s' sent to TA '%s' at '%s' is "
-                          "timed out",
+                          "timed out (%d)",
                           (unsigned)req->message->seqno, req->message->sid,
                           rcf_op_to_string(req->message->opcode),
-                          agent->name, time_buf);
+                          agent->name, time_buf, req->timeout);
                 }
                 req->message->error = TE_RC(TE_RCF, TE_ETIMEDOUT);
                 answer_user_request(req);

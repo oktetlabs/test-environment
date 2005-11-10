@@ -132,9 +132,11 @@ typedef struct rpcserver {
     te_bool   dead;        /**< RPC server does not respond */
 } rpcserver;
 
-static rpcserver *list;       /**< List of all RPC servers */
-static char      *rpc_buf;    /**< Buffer for sending/receiving of RPCs */
-static int        lsock = -1; /**< Listening socket */
+static rpcserver *list;        /**< List of all RPC servers */
+static char      *rpc_buf;     /**< Buffer for receiving of RPC answers;
+                                    may be used in dispatch thread
+                                    context only */
+static int        lsock = -1;  /**< Listening socket */
 
 static int rpcserver_get(unsigned int, const char *, char *,
                          const char *);
@@ -151,6 +153,10 @@ static rcf_pch_cfg_object node_rpcserver =
       (rcf_ch_cfg_list)rpcserver_list, NULL, NULL};
 
 static struct rcf_comm_connection *conn_saved;
+
+/** Lock for protection of RPC servers list */
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 
 #ifdef TCP_TRANSPORT
 /**
@@ -223,14 +229,18 @@ recv_timeout(int s, void *buf, int len, int t)
  * Receive encoded data from the RPC server.
  *
  * @param rpcs          RPC server handle
+ * @param buf           buffer for data receiving
+ * @param buflen        buffer length
  * @param p_len         location for length of received data
  *
  * @return Status code
  */
 static int
-recv_result(rpcserver *rpcs, uint32_t *p_len)
+recv_result(rpcserver *rpcs, uint8_t *buf, size_t buflen, 
+            uint32_t *p_len)
 {
-    uint32_t len = RCF_RPC_HUGE_BUF_LEN, offset = 0;
+    uint32_t len;
+    uint32_t offset = 0;
     
     int rc = recv_timeout(rpcs->sock, &len, sizeof(len), 5);
     
@@ -243,7 +253,7 @@ recv_result(rpcserver *rpcs, uint32_t *p_len)
         return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
     }
     
-    if (len > RCF_RPC_HUGE_BUF_LEN)
+    if (len > buflen)
     {
         ERROR("Too long RPC data bulk");
         return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
@@ -251,8 +261,8 @@ recv_result(rpcserver *rpcs, uint32_t *p_len)
     
     while (offset < len)
     {
-        int n = recv_timeout(rpcs->sock, rpc_buf + offset, 
-                             RCF_RPC_HUGE_BUF_LEN - offset, 5);
+        int n = recv_timeout(rpcs->sock, buf + offset, 
+                             buflen - offset, 5);
         
         if (n <= 0)
         {
@@ -281,7 +291,8 @@ recv_result(rpcserver *rpcs, uint32_t *p_len)
 static int
 call(rpcserver *rpcs, char *name, void *in, void *out)
 {
-    size_t   buflen = RCF_RPC_HUGE_BUF_LEN;
+    uint8_t  buf[1024];
+    size_t   buflen = sizeof(buf);
     uint32_t len;
     int      rc;
     char     c = '\0';
@@ -294,7 +305,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
         return TE_RC(TE_RCF_PCH, TE_EBUSY);
     }
     
-    if ((rc = rpc_xdr_encode_call(name, rpc_buf, &buflen, in)) != 0) 
+    if ((rc = rpc_xdr_encode_call(name, buf, &buflen, in)) != 0) 
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
             ERROR("Unknown RPC %s is called from TA", name);
@@ -306,16 +317,17 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
     len = buflen;
     if (send(rpcs->sock, &len, sizeof(len), MSG_MORE) !=
             (ssize_t)sizeof(len) ||
-        send(rpcs->sock, rpc_buf, len, 0) != (ssize_t)len)
+        send(rpcs->sock, buf, len, 0) != (ssize_t)len)
     {
         ERROR("Failed to send RPC data to the server %s", rpcs->name);
         return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
     }
     
-    if (recv_result(rpcs, &len) != 0)
+    buflen = sizeof(buf);
+    if (recv_result(rpcs, buf, buflen, &len) != 0)
         return TE_RC(TE_RCF_PCH, TE_ESUNRPC);
 
-    if ((rc = rpc_xdr_decode_result(name, rpc_buf, len, out)) != 0)
+    if ((rc = rpc_xdr_decode_result(name, buf, len, out)) != 0)
     {
         ERROR("Decoding of RPC %s input parameters failed", name);
         return rc;
@@ -536,15 +548,22 @@ connect_getpid(rpcserver *rpcs)
 static void
 rpc_error(rpcserver *rpcs, int rc)
 {
+    char error_buf[32];
+    int  n;
+    
     rc = TE_RC(TE_RCF_PCH, rc); 
 
-    sprintf(rpc_buf, "SID %d %d", rpcs->last_sid, rc); 
-    rcf_comm_agent_reply(conn_saved, rpc_buf, strlen(rpc_buf) + 1);
+    n = snprintf(error_buf, sizeof(error_buf),
+                 "SID %d %d", rpcs->last_sid, rc) + 1;
+    rcf_ch_lock();
+    rcf_comm_agent_reply(conn_saved, error_buf, n);
+    rcf_ch_unlock();
 } 
 
 /**
  * Entry point for the thread forwarding answers from RPC servers 
- * to RCF.
+ * to RCF. The thread should not release memory allocated for
+ * RPC server.
  */
 static void *
 dispatch(void *arg)
@@ -574,7 +593,7 @@ dispatch(void *arg)
         }
         
         FD_ZERO(&set1);
-        rcf_ch_lock();
+        pthread_mutex_lock(&lock);
         now = time(NULL);
         for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
         {
@@ -598,7 +617,8 @@ dispatch(void *arg)
             if (rpcs->last_sid == 0) /* AF_UNIX bug work-around */
                 continue;
                 
-            if ((rc = recv_result(rpcs, &len)) != 0)
+            if ((rc = recv_result(rpcs, rpc_buf, 
+                                  RCF_RPC_HUGE_BUF_LEN, &len)) != 0)
             {
                 if (TE_RC_GET_ERROR(rc) != TE_EAGAIN) 
                 /* AF_UNIX bug work-around */
@@ -610,7 +630,8 @@ dispatch(void *arg)
             }
             
             /* Send response */
-            if (len < RCF_MAX_VAL && strcmp_start("<?xml", rpc_buf) == 0)
+            if (len < RCF_MAX_VAL && 
+                strcmp_start("<?xml", rpc_buf) == 0)
             {
                 /* Send as string */
                 char *s0 = rpc_buf + RCF_MAX_VAL;
@@ -618,7 +639,9 @@ dispatch(void *arg)
                 
                 s += sprintf(s, "SID %d 0 ", rpcs->last_sid);
                 write_str_in_quotes(s, rpc_buf, len);
+                rcf_ch_lock();
                 rcf_comm_agent_reply(conn_saved, s0, strlen(s0) + 1);
+                rcf_ch_unlock();
             }
             else
             {
@@ -627,8 +650,10 @@ dispatch(void *arg)
                 
                 snprintf(s, sizeof(s), "SID %d 0 attach %u",
                          rpcs->last_sid, (unsigned)len);
+                rcf_ch_lock();
                 rcf_comm_agent_reply(conn_saved, s, strlen(s) + 1);
                 rcf_comm_agent_reply(conn_saved, rpc_buf, len);
+                rcf_ch_unlock();
             }
             
             if (rpcs->timeout == 0xFFFFFFFF) /* execve() */
@@ -643,7 +668,7 @@ dispatch(void *arg)
             
             rpcs->timeout = rpcs->sent = rpcs->last_sid = 0;
         }
-        rcf_ch_unlock();
+        pthread_mutex_unlock(&lock);
     }
 }
  
@@ -818,7 +843,7 @@ rcf_pch_rpc_shutdown(void)
 #endif        
         
     usleep(100000);
-    rcf_ch_lock();
+    pthread_mutex_lock(&lock);
     for (rpcs = list; rpcs != NULL; rpcs = next)
     {
         next = rpcs->next;
@@ -826,9 +851,9 @@ rcf_pch_rpc_shutdown(void)
         free(rpcs);
     }
     list = NULL;
-    rcf_ch_unlock();
+    pthread_mutex_unlock(&lock);
 
-    free(rpc_buf);
+    free(rpc_buf); 
     rpc_buf = NULL;
 }
 
@@ -852,15 +877,14 @@ rpcserver_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
     
-    rcf_ch_lock();
-    
+    pthread_mutex_lock(&lock);
     for (rpcs = list; 
          rpcs != NULL && strcmp(rpcs->name, name) != 0;
          rpcs = rpcs->next);
          
     if (rpcs == NULL)
     {
-        rcf_ch_unlock();
+        pthread_mutex_unlock(&lock);
         return TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
         
@@ -870,8 +894,8 @@ rpcserver_get(unsigned int gid, const char *oid, char *value,
         sprintf(value, "thread_%s", rpcs->father->name);
     else
         sprintf(value, "fork_%s", rpcs->father->name);
-        
-    rcf_ch_unlock();        
+
+    pthread_mutex_unlock(&lock);
         
     return 0;        
 }
@@ -912,12 +936,12 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
     }
     
-    rcf_ch_lock();
+    pthread_mutex_lock(&lock);
     for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
     {
         if (strcmp(rpcs->name, new_name) == 0)
         {
-            rcf_ch_unlock();
+            pthread_mutex_unlock(&lock);
             return TE_RC(TE_RCF_PCH, TE_EEXIST);
         }
             
@@ -927,7 +951,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     
     if (father_name != NULL && father == NULL)
     {
-        rcf_ch_unlock();
+        pthread_mutex_unlock(&lock);
         ERROR("Cannot find father '%s' for RPC server '%s' (%s)",
               father_name, new_name, value);
         return TE_RC(TE_RCF_PCH, TE_EEXIST);
@@ -935,7 +959,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     
     if ((rpcs = (rpcserver *)calloc(1, sizeof(*rpcs))) == NULL)
     {
-        rcf_ch_unlock();
+        pthread_mutex_unlock(&lock);
         ERROR("%s(): calloc(1, %u) failed", __FUNCTION__,
               (unsigned)sizeof(*rpcs));
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
@@ -954,7 +978,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
                                     "rcf_pch_rpc_server_argv",
                                     TRUE, 1, (void **)argv)) != 0)
         {
-            rcf_ch_unlock();
+            pthread_mutex_unlock(&lock);
             free(rpcs);
             ERROR("Failed to spawn RPC server process: error=%r", rc);
             return rc;
@@ -969,7 +993,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             
         if (rc != 0)
         {
-            rcf_ch_unlock();
+            pthread_mutex_unlock(&lock);
             free(rpcs);
             return rc;
         }
@@ -981,7 +1005,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
             delete_thread_child(rpcs);
         else
             rcf_ch_kill_task(rpcs->pid);
-        rcf_ch_unlock();
+        pthread_mutex_unlock(&lock);
         free(rpcs);
         return rc;
     }
@@ -991,8 +1015,8 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     
     rpcs->next = list;
     list = rpcs;
-    
-    rcf_ch_unlock();
+
+    pthread_mutex_unlock(&lock);
     
     return 0;
 }
@@ -1011,10 +1035,12 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
 {
     rpcserver *rpcs, *prev;
     
+    char buf[64];
+    
     UNUSED(gid);
     UNUSED(oid);
     
-    rcf_ch_lock();
+    pthread_mutex_lock(&lock);
     for (rpcs = list, prev = NULL; 
          rpcs != NULL; 
          prev = rpcs, rpcs = rpcs->next)
@@ -1024,14 +1050,14 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     }
     if (rpcs == NULL)
     {
-        rcf_ch_unlock();
+        pthread_mutex_unlock(&lock);
         ERROR("RPC server '%s' to be deleted not found", name);
         return TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
     
     if (rpcs->ref > 0)
     {
-        rcf_ch_unlock();
+        pthread_mutex_unlock(&lock);
         ERROR("Cannot delete RPC server '%s' with threads", name);
         return TE_RC(TE_RCF_PCH, TE_EPERM);
     }
@@ -1047,8 +1073,8 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     /* Try soft shutdown first */
     if (rpcs->sent > 0 || 
         send(rpcs->sock, "FIN", 4, 0) != 4 ||
-        recv_timeout(rpcs->sock, rpc_buf, sizeof(rpc_buf), 5) != 3 || 
-        strcmp(rpc_buf, "OK") != 0)
+        recv_timeout(rpcs->sock, buf, sizeof(buf), 5) != 3 || 
+        strcmp(buf, "OK") != 0)
     {
         WARN("Soft shutdown of RPC server '%s' failed", rpcs->name);
         if (rpcs->tid > 0)
@@ -1057,7 +1083,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
             rcf_ch_kill_task(rpcs->pid);
     }
 
-    rcf_ch_unlock();
+    pthread_mutex_unlock(&lock);
 
     if (rpcs->sock != -1)
         close(rpcs->sock);
@@ -1070,24 +1096,25 @@ static int
 rpcserver_list(unsigned int gid, const char *oid, char **value)
 {
     rpcserver *rpcs;
-    char      *s = rpc_buf;
+    char       buf[1024];
+    char      *s = buf;
     
     UNUSED(gid);
     UNUSED(oid);
     
-    rcf_ch_lock();
-    *rpc_buf = 0;
+    pthread_mutex_lock(&lock);
+    *buf = 0;
     
     for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
         s += sprintf(s, "%s ", rpcs->name);
         
-    if ((*value = strdup(rpc_buf)) == NULL)
+    if ((*value = strdup(buf)) == NULL)
     {
-        rcf_ch_unlock();
-        ERROR("%s(): strdup(%s) failed", __FUNCTION__, rpc_buf);
+        pthread_mutex_unlock(&lock);
+        ERROR("%s(): strdup(%s) failed", __FUNCTION__, buf);
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
     }
-    rcf_ch_unlock();
+    pthread_mutex_unlock(&lock);
     
     return 0;
 }
@@ -1111,22 +1138,27 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
 {
     rpcserver *rpcs;
     uint32_t   rpc_data_len = len;
+    char       buf[32];
+    int        n;
+    te_errno   rc;
     
     conn_saved = conn;
     
-#define RETERR(rc) \
-    do {                                                                \
-        int _rc = TE_RC(TE_RCF_PCH, rc);                                \
-                                                                        \
-        sprintf(rpc_buf, "SID %d %d", sid, _rc);                        \
-        _rc = rcf_comm_agent_reply(conn, rpc_buf, strlen(rpc_buf) + 1); \
-        rcf_ch_unlock();                                                \
-        return _rc;                                                     \
+#define RETERR(_rc) \
+    do {                                                        \
+        rc = TE_RC(TE_RCF_PCH, _rc);                            \
+                                                                \
+        n = snprintf(buf, sizeof(buf),                          \
+                          "SID %d %d", sid, _rc) + 1;           \
+                                                                \
+        rcf_ch_lock();                                          \
+        rc = rcf_comm_agent_reply(conn, buf, n);                \
+        rcf_ch_unlock();                                        \
+        return rc;                                              \
     } while (0)
     
-    rcf_ch_lock();
-    
     /* Look for the RPC server */
+    pthread_mutex_lock(&lock);
     for (rpcs = list; 
          rpcs != NULL && strcmp(rpcs->name, server) != 0;
          rpcs = rpcs->next);
@@ -1134,12 +1166,14 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     if (rpcs == NULL)
     {
         ERROR("Failed to find RPC server %s", server);
+        pthread_mutex_unlock(&lock);
         RETERR(TE_ENOENT);
     }
     
     if (rpcs->dead)
     {
         ERROR("Request to dead RPC server %s", server);
+        pthread_mutex_unlock(&lock);
         RETERR(TE_ERPCDEAD);
     }
     
@@ -1147,11 +1181,24 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     if (rpcs->sent != 0)
     {
         ERROR("RPC server %s is busy", server);
+        pthread_mutex_unlock(&lock);
         RETERR(TE_EBUSY);
     }
     rpcs->sent = time(NULL);
     rpcs->last_sid = sid;
     rpcs->timeout = timeout == 0xFFFFFFFF ? timeout : timeout / 1000;
+    pthread_mutex_unlock(&lock);
+
+    /* Sent ACK to RCF and pass handling to the thread */                                              
+    n = snprintf(buf, sizeof(buf), "SID %d %d", sid, 
+                 TE_RC(TE_RCF_PCH, TE_EACK)) + 1;
+                                                                
+    rcf_ch_lock();                                     
+    rc = rcf_comm_agent_reply(conn, buf, n);
+    rcf_ch_unlock(); 
+    
+    if (rc != 0)
+        return rc;
     
     /* Send encoded data to server */
     if (send(rpcs->sock, &rpc_data_len, sizeof(rpc_data_len), MSG_MORE) != 
@@ -1162,12 +1209,9 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         RETERR(TE_ESUNRPC);
     }
     
-    /* The answer will be sent by the thread */
-
-    rcf_ch_unlock();
-    
+    /* The final answer will be sent by the thread */
     return 0;
-    
+
 #undef RETERR    
 }            
 
