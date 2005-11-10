@@ -100,12 +100,6 @@ main(int argc, char *argv[])
     TEST_GET_BOOL_PARAM(is_server);
     TEST_GET_BOOL_PARAM(init_close);
 
-    {
-        struct timeval now;
-        gettimeofday(&now, NULL);
-        srand(now.tv_usec);
-    }
-
     rc = asn_parse_value_text(
               "{ arg-sets { ints:{0}, ints-assoc:{0} },"
               "  pdus { tcp:{seqn script:\"expr:$0\"}, "
