@@ -92,16 +92,34 @@ extern const asn_type * const ndn_iscsi_key_pair;
 extern const asn_type * const ndn_iscsi_key_values;
 extern const asn_type * const ndn_iscsi_key_value;
 
+/**
+ * Convert asn representation of iSCSI Segment Data
+ * to binary data
+ *
+ * @param segment_data   asn representation of iSCSI Segment Data
+ * @param data           buffer to contain result of convertion
+ * @param data_len       IN - length of buffer 
+ *                       OUT - length of binary data - result of converion
+ *
+ * @return Status code                      
+ */ 
 extern int
 asn2bin_data(asn_value *segment_data, 
              uint8_t *data, uint32_t *data_len);
              
+/**
+ * Convert iSCSI Segment Data represented as binary data
+ * to asn representation
+ *
+ * @param data           binary data
+ * @param data_len       binary data length
+ * @param segment_data   location for result of convertion
+ *
+ * @return Status code
+ */ 
 extern int
 bin_data2asn(uint8_t *data, uint32_t data_len, 
             asn_value_p *value);
-
-extern int parse_key_value(char *str, asn_value *value);
-
 
 /**
  * Calculate extra (non-BHS) length of iSCSI PDU. 

@@ -167,7 +167,7 @@ const asn_type *ndn_iscsi_message = &ndn_iscsi_message_s;
 #define ASN_VAL_BUF_LEN  2048
 static char asn_val_buf[ASN_VAL_BUF_LEN];
 
-
+/* See description in ndn_iscsi.h */
 int
 asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
 {
@@ -324,25 +324,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
     return 0;
 }
 
-
-#if 1
-int
-parse_key_value(char *str, asn_value *value)
-{
-    int rc;
-
-    if ((rc = asn_write_string(value, 
-                               str, 
-                               "")) != 0)
-    {
-        ERROR("%s, %d: cannot write string, %r",
-              __FUNCTION__, __LINE__, rc);
-        return rc;
-    }
-    return 0;    
-}
-#endif
-
+/* See description in ndn_iscsi.h */
 int
 bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
 {
@@ -442,12 +424,15 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
             else
                 *comma_delimiter = '\0';
 
-            if ((rc = parse_key_value(current, key_value)) != 0)
+            if ((rc = asn_write_string(key_value, 
+                                       current, 
+                                       "")) != 0)
             {
-                ERROR("%s, %d: cannot parse key value, %r",
+                ERROR("%s, %d: cannot write string, %r",
                       __FUNCTION__, __LINE__, rc);
                 return rc;
             }
+
             if ((rc = asn_insert_indexed(key_values, 
                                          key_value, 
                                          key_values_index++, "")) != 0)
