@@ -267,7 +267,7 @@ te_make_tmp_file(char *tmp_name)
 /** Macro to make safe sprintf to character array */
 #define TE_SPRINTF(_buf, _msg...) \
     do {                                                        \
-        int _n = snprintf(_buf, sizeof(_buf), _msg);            \
+        unsigned _n = snprintf(_buf, sizeof(_buf), _msg);       \
                                                                 \
         if (_n >= sizeof(_buf))                                 \
             ERROR("%s: string %s is cut by snprintf()", _buf,   \
