@@ -357,6 +357,12 @@ typedef struct csap_instance {
     size_t          total_bytes; /**< quantity of total processed bytes in
                                       last operation, for some protocols 
                                       it is not sensible */
+    size_t          total_sent;  /**< quantity of total sent bytes in
+                                      all CSAP live, for some protocols 
+                                      it is not sensible */
+    size_t          total_received;/**< quantity of total received bytes in
+                                      all CSAP live, for some protocols 
+                                      it is not sensible */
     tad_traffic_op_t command;    /**< last unprocessed command */
     uint8_t          state;      /**< current state bitmask */
     pthread_mutex_t  data_access_lock; 

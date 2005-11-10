@@ -530,6 +530,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         return 0;
     }
 
+    SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_EACK));
+
     rc = pthread_create(&send_thread, &pthread_attr, 
                         (void *)&tad_tr_send_thread, send_context);
     if (rc != 0)
@@ -906,6 +908,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *handle,
 
     if (csap_descr_p->command == TAD_OP_RECV)
     {
+        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_EACK));
         csap_descr_p->command = TAD_OP_WAIT; 
         strncpy(csap_descr_p->answer_prefix, cbuf, answer_plen);
         csap_descr_p->answer_prefix[answer_plen] = 0; 
@@ -1030,6 +1033,18 @@ rcf_ch_csap_param(struct rcf_comm_connection *handle,
         VERB("CSAP get_param, get total bytes %d\n", 
              (int)csap_descr_p->total_bytes);
         SEND_ANSWER("0 %u", (int)csap_descr_p->total_bytes);
+    }
+    else if (strcmp(param, CSAP_PARAM_TOTAL_SENT) == 0)
+    {
+        VERB("CSAP get_param, get total sent %d\n", 
+             (int)csap_descr_p->total_sent);
+        SEND_ANSWER("0 %u", (int)csap_descr_p->total_sent);
+    }
+    else if (strcmp(param, CSAP_PARAM_TOTAL_RECEIVED) == 0)
+    {
+        VERB("CSAP get_param, get total received %d\n", 
+             (int)csap_descr_p->total_received);
+        SEND_ANSWER("0 %u", (int)csap_descr_p->total_received);
     }
     else if (strcmp(param, CSAP_PARAM_FIRST_PACKET_TIME) == 0)
     {

@@ -321,6 +321,7 @@ tad_tr_send_thread(void * arg)
 
                 sent++;
                 csap_descr->total_bytes += rc;
+                csap_descr->total_sent += rc;
 
                 F_VERB("CSAP #%d write, %d bytes, sent %d pkts", 
                         csap_descr->id, rc, sent);

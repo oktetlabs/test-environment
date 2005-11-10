@@ -894,6 +894,7 @@ tad_tr_recv_thread(void *arg)
             VERB("write_read cb return d_len %d", d_len);
             gettimeofday(&csap_descr->first_pkt, NULL);
             csap_descr->last_pkt = csap_descr->first_pkt;
+            csap_descr->total_sent += packets_root.len;
 
             if (d_len < 0)
             {
@@ -910,7 +911,7 @@ tad_tr_recv_thread(void *arg)
             rc = tad_tr_recv_match_with_unit(read_buffer, d_len, csap_descr,
                                              pattern_unit, &result); 
 
-            VERB("match_with_unit returned %r", rc);
+            RING("CSAP %d: match_with_unit return %r", csap_descr->id, rc);
 
             if (rc != 0)
             {
@@ -929,6 +930,7 @@ tad_tr_recv_thread(void *arg)
             }
             csap_descr->state |= TAD_STATE_COMPLETE;
             csap_descr->total_bytes += d_len;
+            csap_descr->total_received += d_len;
         } while (0); 
     } /* finish of 'trsend_recv' special actions */
 
@@ -1063,8 +1065,8 @@ tad_tr_recv_thread(void *arg)
                 rc = tad_tr_recv_match_with_unit(read_buffer, d_len, 
                                                  csap_descr,
                                                  pattern_unit, &result); 
-                F_INFO("CSAP %d, Match pkt return %x, unit %d", 
-                       csap_descr->id, rc, unit);
+                RING("CSAP %d, Match pkt return %x, unit %d", 
+                     csap_descr->id, rc, unit);
                 switch (TE_RC_GET_ERROR(rc))
                 {
                     case 0: /* received data matches to this pattern unit */
@@ -1073,6 +1075,7 @@ tad_tr_recv_thread(void *arg)
                             csap_descr->first_pkt = csap_descr->last_pkt;
                         unit = num_pattern_units; /* to break from 'for' */
                         csap_descr->total_bytes += d_len;
+                        csap_descr->total_received += d_len;
                         pkt_count++;
                         F_VERB("Match pkt, d_len %d, total %d, pkts %u",
                                d_len, csap_descr->total_bytes, pkt_count);
