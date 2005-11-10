@@ -27,11 +27,16 @@
         Author: Elena Vengerova E-mail: Elena.Vengerova@oktetlabs.ru
     -->
     
-    <!-- Object registered by Configurator itself -->
+    <!-- Objects registered by Configurator itself -->
     
     <!-- Test Agent
          Name: TA name -->
     <object oid="/agent" access="read_create" type="none"/>
+    
+    <!-- Test Agent resource
+         Name: any 
+         Value: name of the resource, e.g. "/agent:Agt_A/interface:eth0" -->
+    <object oid="/agent/rsrc" access="read_create" type="string"/>
     
     <!-- Configuration changes accomodation delay.
          The object is used to specify the time necessary for
