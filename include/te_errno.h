@@ -403,6 +403,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(CONF_API);
         MOD2STR(TESTER);
         MOD2STR(TAPI);   
+        MOD2STR(TA);   
         MOD2STR(TA_UNIX);   
         MOD2STR(TA_WIN32);
         MOD2STR(TA_SWITCH_CTL);
