@@ -474,7 +474,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         free(val_str);
 
     if (strstr(oid, "/rsrc:") != NULL)
-        oid = "*:*";
+        oid = "/:";
         
     if ((msg->rc = cfg_ta_sync(oid, TRUE)) != 0)
     {
@@ -696,7 +696,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         }
         VERB("Instance %s successfully deleted from the Agent", inst->name);
         if (strstr(inst->oid, "/rsrc:") != NULL)
-            cfg_ta_sync("*:*", TRUE);
+            cfg_ta_sync("/:", TRUE);
     }
 
     cfg_db_del(handle);
