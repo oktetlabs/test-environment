@@ -1021,6 +1021,19 @@ rcf_pch_rsrc_info(const char *name,
     return 0;
 }           
 
+te_errno 
+rcf_pch_rsrc_grab_dummy(const char *name)
+{
+    UNUSED(name);
+    return 0;
+}
+
+te_errno 
+rcf_pch_rsrc_release_dummy(const char *name)
+{
+    UNUSED(name);
+    return 0;
+}
 
 /*
  * Create a lock for the resource with specified name.
@@ -1035,7 +1048,7 @@ create_lock(const char *name)
     char  fname[RCF_MAX_PATH];
     FILE *f;
     int   i; 
-    int   rc;
+    int   rc = 0;
 
     if (snprintf(fname, RCF_MAX_PATH, "%s/te_ta_lock_%s", 
                  te_lockdir, name) >= RCF_MAX_PATH)

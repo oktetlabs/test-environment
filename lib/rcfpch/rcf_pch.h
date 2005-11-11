@@ -336,6 +336,25 @@ extern te_errno rcf_pch_rsrc_info(const char *name,
                                   rcf_pch_rsrc_grab_callback grab,
                                   rcf_pch_rsrc_release_callback release);
 
+/* 
+ * Dummy callbacks for resources which need not additional
+ * processing during grabbing/releasing.
+ *
+ * Note that RCFPCH provides locking automatically. 
+ * Moreover, rcf_pch_rsrc_accessible() function may be used for
+ * checking of resource accessability (for example, during conf requests
+ * processing).
+ * Thus many resources need not additional processing and can use 
+ * callbacks below.
+ *
+ * Additional processing may be:
+ *    - modification of TA configuration tree to make some subtrees 
+ *      completely invisible;
+ *    - some initialization/shutdown, creation/restoring backups, etc.
+ */
+extern te_errno rcf_pch_rsrc_grab_dummy(const char *name);
+extern te_errno rcf_pch_rsrc_release_dummy(const char *name);
+
 /**
  * Check if the resource is accessible.
  *
