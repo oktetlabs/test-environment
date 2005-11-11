@@ -160,7 +160,7 @@ typedef struct usrreq {
     struct usrreq            *prev;
     rcf_msg                  *message;
     struct ipc_server_client *user;
-    uint32_t                  timeout;
+    uint32_t                  timeout;  /**< Timeout in seconds */
     time_t                    sent;
 } usrreq;
 
@@ -1916,8 +1916,8 @@ send_cmd(ta *agent, usrreq *req)
         {
             char *s = cmd + strlen(cmd);
             
-            s += sprintf(s, "%s %s %d ", 
-                         TE_PROTO_RPC, msg->id, msg->timeout);
+            s += sprintf(s, "%s %s %u ", 
+                         TE_PROTO_RPC, msg->id, (unsigned)msg->timeout);
             
             if (msg->intparm < RCF_MAX_VAL && 
                 strcmp_start("<?xml", msg->file) == 0)
@@ -2561,10 +2561,10 @@ main(int argc, const char *argv[])
                         time_buf[0] = '\0';
                     }
                     ERROR("Request %u:%d:'%s' sent to TA '%s' at '%s' is "
-                          "timed out (%d)",
+                          "timed out (%u sec)",
                           (unsigned)req->message->seqno, req->message->sid,
                           rcf_op_to_string(req->message->opcode),
-                          agent->name, time_buf, req->timeout);
+                          agent->name, time_buf, (unsigned)req->timeout);
                 }
                 req->message->error = TE_RC(TE_RCF, TE_ETIMEDOUT);
                 answer_user_request(req);
