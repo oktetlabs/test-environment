@@ -1002,16 +1002,16 @@ rcf_pch_rsrc_info(const char *name,
     rsrc_info *tmp;
     
     if (name == NULL || grab == NULL)
-        return TE_RC(TE_TA, TE_EINVAL);
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
         
     if (rsrc_lookup(name) != NULL)
-        return TE_RC(TE_TA, TE_EEXIST);
+        return TE_RC(TE_RCF_PCH, TE_EEXIST);
         
     if ((tmp = malloc(sizeof(*tmp))) == NULL)
-        return TE_RC(TE_TA, TE_ENOMEM);
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
       
     if ((tmp->name = strdup(name)) == NULL)
-        return TE_RC(TE_TA, TE_ENOMEM);
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
     
     tmp->grab = grab;
     tmp->release = release;
@@ -1055,7 +1055,7 @@ create_lock(const char *name)
     {
         ERROR("Too long pathname for lock: %s/te_ta_lock_%s", 
                  te_lockdir, name);
-        return TE_RC(TE_TA, TE_ENAMETOOLONG);
+        return TE_RC(TE_RCF_PCH, TE_ENAMETOOLONG);
     }
     
     for (i = strlen(te_lockdir) + 1; fname[i] != 0; i++)
@@ -1065,45 +1065,47 @@ create_lock(const char *name)
     if ((f = fopen(fname, "r")) != NULL)
     {
         char buf[16];
-        int  pid;
+        int  pid = 0;
         
-        rc = fread(buf, 1, 1, f);
+        rc = fread(buf, 1, sizeof(buf), f);
         fclose(f);
         if (rc <= 0 || (pid = atoi(buf)) == 0 || kill(pid, SIGCONT) == 0)
         {
-            ERROR("Cannot grab resource %s - lock is found", name);
-            return TE_RC(TE_TA, TE_EPERM);
+            ERROR("Cannot grab resource %s - lock of %d is found",
+                  name, pid);
+            return TE_RC(TE_RCF_PCH, TE_EPERM);
         }
+        rc = 0;
         if (unlink(fname) != 0)
         {
-            rc = TE_OS_RC(TE_TA, errno);
+            rc = TE_OS_RC(TE_RCF_PCH, errno);
         
             ERROR("Failed to delete lock %s of dead TA: %r", fname, rc);
-            return TE_RC(TE_TA, TE_EPERM);
+            return TE_RC(TE_RCF_PCH, TE_EPERM);
         }
         WARN("Lock '%s' of dead TA with PID=%d is deleted", buf, pid);
     }
     
     if ((f = fopen(fname, "w")) == NULL)
     {
-        rc = TE_OS_RC(TE_TA, errno);
+        rc = TE_OS_RC(TE_RCF_PCH, errno);
     }
     else if (fprintf(f, "%d", getpid()) < 0)
     {
-        rc = TE_OS_RC(TE_TA, errno);
+        rc = TE_OS_RC(TE_RCF_PCH, errno);
         fclose(f);
         unlink(fname);
     }
     else if (fclose(f) < 0)
     {
-        rc = TE_OS_RC(TE_TA, errno);
+        rc = TE_OS_RC(TE_RCF_PCH, errno);
         unlink(fname);
     }
     
     if (rc != 0)
     {
         ERROR("Failed to create resource lock %s: %r", fname, rc);
-        return TE_RC(TE_TA, TE_EPERM);
+        return TE_RC(TE_RCF_PCH, TE_EPERM);
     }
     
     return 0;
@@ -1128,7 +1130,8 @@ delete_lock(const char *name)
             fname[i] = '%';
 
     if ((rc = unlink(fname)) != 0)
-        ERROR("Failed to delete lock %s: %r", fname, TE_OS_RC(TE_TA, rc));
+        ERROR("Failed to delete lock %s: %r", fname,
+              TE_OS_RC(TE_RCF_PCH, rc));
 }
 
 /** Registered resources list entry */
@@ -1165,7 +1168,7 @@ rsrc_list(unsigned int gid, const char *oid, char **list)
     UNUSED(oid);
     
     if (buf == NULL)
-        return TE_RC(TE_TA, TE_ENOMEM);
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
         
     for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
     {
@@ -1177,7 +1180,7 @@ rsrc_list(unsigned int gid, const char *oid, char **list)
             if ((new_buf = realloc(buf, len)) == NULL)
             {
                 free(buf);
-                return TE_RC(TE_TA, TE_ENOMEM);
+                return TE_RC(TE_RCF_PCH, TE_ENOMEM);
             }
         }
         offset += sprintf(buf + offset, "%s ", tmp->id);
@@ -1214,7 +1217,7 @@ rsrc_get(unsigned int gid, const char *oid, char *value, const char *id)
             return 0;
         }
             
-    return TE_RC(TE_TA, TE_ENOENT);
+    return TE_RC(TE_RCF_PCH, TE_ENOENT);
 }
 
 /** 
@@ -1275,7 +1278,7 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
             free(tmp->name);            \
             free(tmp);                  \
         }                               \
-        return TE_RC(TE_TA, rc);        \
+        return TE_RC(TE_RCF_PCH, rc);        \
     } while (0)
     
     if ((info = rsrc_lookup(rsrc_gen_name(value))) == NULL)
@@ -1340,14 +1343,14 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
             if ((info = rsrc_lookup(rsrc_gen_name(cur->name))) == NULL)
             {
                 ERROR("Resource structures of RCFPCH are corrupted");
-                return TE_RC(TE_TA, TE_EFAIL);
+                return TE_RC(TE_RCF_PCH, TE_EFAIL);
             }
             
             if (info->release == NULL)
             {
                 ERROR("Cannot release the resource %s: release callback "
                       "is not provided", cur->name);
-                return TE_RC(TE_TA, TE_EPERM);
+                return TE_RC(TE_RCF_PCH, TE_EPERM);
             }
             
             if ((rc = info->release(cur->name)) != 0)
@@ -1367,7 +1370,7 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
         }
     }
     
-    return TE_RC(TE_TA, TE_ENOENT);
+    return TE_RC(TE_RCF_PCH, TE_ENOENT);
 }
 
 /**
