@@ -672,6 +672,8 @@ if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     START_OK=$?
 fi
 
+test "${START_OK}" -ne 0 && SHUTDOWN=yes
+
 
 shutdown_daemon() {
     DAEMON=$1
