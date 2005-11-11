@@ -31,7 +31,9 @@
 #ifndef __TE_TA_UNIX_CONF_DAEMONS_H__
 #define __TE_TA_UNIX_CONF_DAEMONS_H__
 
+#ifndef TE_LGR_USER
 #define TE_LGR_USER      "Daemons"
+#endif
 
 #include "te_config.h"
 #include "config.h"
@@ -269,7 +271,41 @@ extern int find_file(unsigned int n, const char * const *files,
                      te_bool exec);
 
 
-/* Initialisation/shutdown function for daemons/services */
+extern int ta_unix_conf_daemons_init(rcf_pch_cfg_object **last);
+extern void ta_unix_conf_daemons_release(void);
+
+/* 
+ * Grab/release functions for daemons/services - see rcfpch/rcf_pch.h 
+ * for details and prototypes.
+ */
+
+extern te_errno dhcp_server_grab(const char *name);
+extern te_errno dhcp_server_release(const char *name);
+
+extern te_errno vncserver_grab(const char *name);
+extern te_errno vncserver_release(const char *name);
+
+extern te_errno smtp_grab(const char *name);
+extern te_errno smtp_release(const char *name);
+
+extern te_errno ftp_server_grab(const char *name);
+extern te_errno ftp_server_release(const char *name);
+
+extern te_errno tftp_server_grab(const char *name);
+extern te_errno tftp_server_release(const char *name);
+
+extern te_errno dns_server_grab(const char *name);
+extern te_errno dns_server_release(const char *name);
+
+extern te_errno radius_server_grab(const char *name);
+extern te_errno radius_server_release(const char *name);
+
+extern te_errno vtund_grab(const char *name);
+extern te_errno vtund_release(const char *name);
+
+
+/* Initialisation/shutdown function for daemons/services -
+   should be removed */
 extern void ds_init_dhcp_server(rcf_pch_cfg_object **last);
 extern void ds_shutdown_dhcp_server();
 extern void ds_init_vncserver(rcf_pch_cfg_object **last);
@@ -283,5 +319,7 @@ extern void ds_init_radius_server(rcf_pch_cfg_object **last);
 extern void ds_shutdown_radius_server();
 extern void ds_init_vtund(rcf_pch_cfg_object **last);
 extern void ds_shutdown_vtund(void);
+extern int ta_unix_conf_daemons_init(rcf_pch_cfg_object **last);
+extern void ta_unix_conf_daemons_release(void);
 
 #endif /* __TE_TA_UNIX_CONF_DAEMONS_H__ */

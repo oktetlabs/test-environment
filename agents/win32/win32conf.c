@@ -234,6 +234,8 @@ RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
 
 RCF_PCH_CFG_NODE_AGENT(node_agent, &node_interface);
 
+char *te_lockdir = "/tmp";
+
 static MIB_IFROW if_entry;
 
 
@@ -378,32 +380,6 @@ rcf_ch_conf_agent()
 void
 rcf_ch_conf_release()
 {
-}
-
-/**
- * Register a resource.
- *
- * @param rsrc          resource name
- *
- * @return Status code
- */
-te_errno 
-rcf_ch_rsrc_reg(const char *rsrc)
-{
-    return 0;
-}
-
-/**
- * Unregister a resource.
- *
- * @param rsrc          resource name
- *
- * @return Status code
- */
-te_errno 
-rcf_ch_rsrc_unreg(const char *rsrc)
-{
-    return 0;
 }
 
 /**

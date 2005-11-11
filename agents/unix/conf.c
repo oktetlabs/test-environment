@@ -64,6 +64,10 @@
 #include "logger_api.h"
 #include "unix_internal.h"
 
+#ifdef CFG_UNIX_DAEMONS
+#include "conf_daemons.h"
+#endif
+
 #ifdef USE_NETLINK
 #include <sys/select.h>
 #include <asm/types.h>
@@ -88,11 +92,6 @@
 #endif
 
 
-#ifdef CFG_UNIX_DAEMONS
-extern int ta_unix_conf_daemons_init(rcf_pch_cfg_object **last);
-extern void ta_unix_conf_daemons_release(void);
-#endif
-
 #ifdef ENABLE_WIFI_SUPPORT
 extern int ta_unix_conf_wifi_init(rcf_pch_cfg_object **last);
 #endif
@@ -101,7 +100,6 @@ extern int ta_unix_conf_wifi_init(rcf_pch_cfg_object **last);
 extern int ta_unix_iscsi_target_init(rcf_pch_cfg_object **last);
 extern int ta_unix_iscsi_initiator_init(rcf_pch_cfg_object **last);
 #endif
-
 
 #ifdef USE_NETLINK
 struct nlmsg_list {
@@ -118,13 +116,14 @@ typedef union gen_ip_address {
     struct in6_addr ip6_addr;  /** IPv6 address */
 } gen_ip_address;
 
+const char *te_lockdir = "/tmp";
+
 /* Auxiliary variables used for during configuration request processing */
 static struct ifreq req;
 
 static char buf[4096];
 static char trash[128];
 static int  cfg_socket = -1;
-
 
 /*
  * Access routines prototypes (comply to procedure types
@@ -149,7 +148,6 @@ static const char * const env_hidden[] = {
     "TE_LOG_PORT",
     "TARPC_DL_NAME"
 };
-
 
 static int ip4_fw_get(unsigned int, const char *, char *);
 static int ip4_fw_set(unsigned int, const char *, const char *);
@@ -326,7 +324,6 @@ RCF_PCH_CFG_NODE_AGENT(node_agent, &node_user);
 
 static te_bool init = FALSE;
 
-
 /**
  * Get root of the tree of supported objects.
  *
@@ -452,33 +449,6 @@ rcf_ch_conf_release()
     if (cfg_socket >= 0)
         (void)close(cfg_socket);
 }
-
-/**
- * Register a resource.
- *
- * @param rsrc          resource name
- *
- * @return Status code
- */
-te_errno 
-rcf_ch_rsrc_reg(const char *rsrc)
-{
-    return 0;
-}
-
-/**
- * Unregister a resource.
- *
- * @param rsrc          resource name
- *
- * @return Status code
- */
-te_errno 
-rcf_ch_rsrc_unreg(const char *rsrc)
-{
-    return 0;
-}
-
 
 /**
  * Obtain value of the IPv4 forwarding sustem variable.
