@@ -33,9 +33,10 @@
          Name: TA name -->
     <object oid="/agent" access="read_create" type="none"/>
     
-    <!-- Test Agent resource
+    <!-- Dynamically grabbed Test Agent resource
          Name: any 
-         Value: name of the resource, e.g. "/agent:Agt_A/interface:eth0" -->
+         Value: name of the resource, e.g. "/agent:Agt_A/interface:eth0" 
+                or "my_peripheral" -->
     <object oid="/agent/rsrc" access="read_create" type="string"/>
     
     <!-- Configuration changes accomodation delay.
