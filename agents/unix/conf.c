@@ -352,6 +352,14 @@ rcf_ch_conf_root(void)
     {
         init = TRUE;
 
+        rcf_pch_rsrc_info("/agent/interface", 
+                          rcf_pch_rsrc_grab_dummy,
+                          rcf_pch_rsrc_release_dummy);
+
+        rcf_pch_rsrc_info("/agent/ip4_fw", 
+                          rcf_pch_rsrc_grab_dummy,
+                          rcf_pch_rsrc_release_dummy);
+
 #ifdef ENABLE_WIFI_SUPPORT
         rcf_pch_cfg_object *agt_if_tail = &node_status;
 
@@ -506,6 +514,9 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 
     UNUSED(gid);
     UNUSED(oid);
+    
+    if (!rcf_pch_rsrc_accessible("/agent/ip4_fw"))
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
 
     if ((*value != '0' && *value != '1') || *(value + 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
