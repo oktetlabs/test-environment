@@ -36,7 +36,8 @@
     <!-- Dynamically grabbed Test Agent resource
          Name: any 
          Value: name of the resource, e.g. "/agent:Agt_A/interface:eth0" 
-                or "my_peripheral" -->
+                or "my_peripheral"; if value is not OID it
+                should not contain '/' -->
     <object oid="/agent/rsrc" access="read_create" type="string"/>
     
     <!-- Configuration changes accomodation delay.
