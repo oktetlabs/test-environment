@@ -1072,14 +1072,14 @@ create_lock(const char *name)
         if (rc <= 0 || (pid = atoi(buf)) == 0 || kill(pid, SIGCONT) == 0)
         {
             ERROR("Cannot grab resource %s - lock is found", name);
-            return TE_RC(TE_TA, TE_EEXIST);
+            return TE_RC(TE_TA, TE_EPERM);
         }
         if (unlink(fname) != 0)
         {
             rc = TE_OS_RC(TE_TA, errno);
         
             ERROR("Failed to delete lock %s of dead TA: %r", fname, rc);
-            return rc;
+            return TE_RC(TE_TA, TE_EPERM);
         }
         WARN("Lock '%s' of dead TA with PID=%d is deleted", buf, pid);
     }
@@ -1101,9 +1101,12 @@ create_lock(const char *name)
     }
     
     if (rc != 0)
+    {
         ERROR("Failed to create resource lock %s: %r", fname, rc);
+        return TE_RC(TE_TA, TE_EPERM);
+    }
     
-    return rc;
+    return 0;
 } 
 
 /*
