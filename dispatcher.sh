@@ -17,8 +17,11 @@ USAGE: dispatcher.sh [<generic options>] [[<test options> tests ]...
 Generic options:
   -q                            Suppress part of output messages
 
+  --daemon[=<PID>]              Run/use TE engine daemons
+  --shutdown[=<PID>]            Shut down TE engine daemons on exit
+
   --conf-dir=<directory>        specify configuration file directory
-                                (${TE_BASE}/conf or . by default)
+                                (\${TE_BASE}/conf or . by default)
 
     In configuration files options below <filename> is full name of the
     configuration file or name of the file in the configuration directory.
@@ -163,6 +166,8 @@ exit_with_log()
 EXT_OPTS_PROCESSED=
 
 QUIET=
+DAEMON=
+SHUTDOWN=yes
 
 # No additional Tester options by default
 TESTER_OPTS=
@@ -237,6 +242,11 @@ process_opts()
     while test -n "$1" ; do
         case $1 in 
             --help ) usage ; exit 0 ;;
+
+            --daemon=* )    DAEMON="${1#--daemon=}" ; SHUTDOWN= ;;
+            --daemon   )    SHUTDOWN= ;;
+            --shutdown=* )  DAEMON="${1#--shutdown=}" ; SHUTDOWN=yes ;;
+            --shutdown )    SHUTDOWN=yes ;;
 
             --opts=* )
                 EXT_OPTS_PROCESSED=yes
@@ -417,11 +427,11 @@ if test -z "$TE_BUILD" ; then
     fi
 fi
 export TE_BUILD
-pushd $TE_BUILD >/dev/null
+pushd "${TE_BUILD}" >/dev/null
 
-export TE_LOG_DIR=${TE_LOG_DIR}
-mkdir -p ${TE_LOG_DIR}
-export TE_LOG_RAW=${TE_LOG_RAW:-${TE_LOG_DIR}/tmp_raw_log}
+export TE_LOG_DIR="${TE_LOG_DIR}"
+mkdir -p "${TE_LOG_DIR}"
+export TE_LOG_RAW="${TE_LOG_RAW:-${TE_LOG_DIR}/tmp_raw_log}"
 
 # Export TE_INSTALL
 if test -z "$TE_INSTALL" ; then
@@ -489,7 +499,7 @@ if test -z "$(which te_log_init 2>/dev/null)" ; then
 fi
 
 # Intitialize log
-te_log_init
+test -n "${DAEMON}" || te_log_init
 te_log_message Engine Dispatcher "Command-line options: ${CMD_LINE_OPTS}"
 
 # Log TRC tool options
@@ -573,9 +583,10 @@ myecho() {
     fi
 }
 
-export TE_RCF="TE_RCF_"$$
-export TE_LOGGER="TE_LOGGER_"$$
-export TE_CS="TE_CS_"$$
+if test -n "${DAEMON}" ; then TE_ID=${DAEMON} ; else TE_ID=$$ ; fi
+export TE_RCF="TE_RCF_${TE_ID}"
+export TE_LOGGER="TE_LOGGER_${TE_ID}"
+export TE_CS="TE_CS_${TE_ID}"
 
 # Run RGT in live mode in background
 if test -n "${LIVE_LOG}" ; then
@@ -623,22 +634,29 @@ start_daemon() {
     fi
 }
 
-start_daemon LOGGER
+if test -z "${DAEMON}" ; then
+    start_daemon LOGGER
 
-start_daemon RCF
+    start_daemon RCF
 
-if test -n "${RCF_OK}" ; then
-    # Wakeup Logger when RCF is ready
-    TE_LOGGER_PID="$(cat "${TE_LOGGER_PID_FILE}" 2>/dev/null)"
-    if test -n "${TE_LOGGER_PID}" ; then
-        kill -USR1 ${TE_LOGGER_PID}
-    else
-        echo "Failed to wake-up TE Logger" >&2
-        START_OK=1
+    if test -n "${RCF_OK}" ; then
+        # Wakeup Logger when RCF is ready
+        TE_LOGGER_PID="$(cat "${TE_LOGGER_PID_FILE}" 2>/dev/null)"
+        if test -n "${TE_LOGGER_PID}" ; then
+            kill -USR1 ${TE_LOGGER_PID}
+        else
+            echo "Failed to wake-up TE Logger" >&2
+            START_OK=1
+        fi
     fi
-fi
 
-start_daemon CS
+    start_daemon CS
+else
+    # It is assumed here that all TE engine daemons are running
+    LOGGER_OK=yes
+    RCF_OK=yes
+    CS_OK=yes
+fi
 
 if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
     te_log_message Engine Dispatcher \
@@ -657,7 +675,7 @@ fi
 
 shutdown_daemon() {
     DAEMON=$1
-    if test -n "$(eval echo '${'$DAEMON'_OK}')" ; then
+    if test -n "${SHUTDOWN}" -a -n "$(eval echo '${'$DAEMON'_OK}')" ; then
         DAEMON_NAME="$(eval echo '${'$DAEMON'_NAME}')"
         DAEMON_SHUT="$(eval echo '${'$DAEMON'_SHUT}')"
         te_log_message Engine Dispatcher "Shutdown ${DAEMON_NAME}"
@@ -688,6 +706,11 @@ fi
 shutdown_daemon RCF 
 
 shutdown_daemon LOGGER
+
+if test -z "${SHUTDOWN}" ; then
+    te_log_message Engine Dispatcher "Leave TE daemon ${TE_ID}"
+    myecho "--->>> Leave TE deamon ${TE_ID}"
+fi
 
 # Wait for RGT in live mode finish
 if test -n "${LIVE_LOG}" ; then
@@ -735,6 +758,6 @@ if test ${START_OK} -eq 0 -a -n "${TRC_OPTS}" ; then
     te_trc.sh ${TRC_OPTS} "${TE_LOG_RAW}"
 fi
 
-rm -rf "${TE_TMP}"
+test -n "${SHUTDOWN}" && rm -rf "${TE_TMP}"
 
 exit ${START_OK}
