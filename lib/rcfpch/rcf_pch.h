@@ -260,21 +260,100 @@ extern void *rcf_pch_rpc_server(const char *name);
  */
 extern void rcf_pch_rpc_server_argv(int argc, char **argv);
 
+/*--------------- Dynamically grabbed TA resources -------------------*/
+
 /**
- * Check if the resource is registered.
+ * These resources are resources provided by TA host (interfaces, services)
+ * which cannot be shared by several TAs and therefore should be
+ * locked/unlocked by particular TA dynamically.
+ *
+ * When resource is grabbed/released by adding/deleting instance of
+ * /agent/rsrc object via Configurator.
+ * 
+ * Three strings are associated with each resource:
+ *     * resource instance name, used only for adding/deleting
+ *       /agent/rsrc instances: e.g. r1 in /agent:A/rsrc:r1;
+ *     * resource name, which unique identifies the resource:
+ *       "/agent:A/interface:eth0", "/agent/dnsserver" 
+ *       or "my_peripheral"; this name should be OID or string, 
+ *       whithout '/' symbols;
+ *     * resource generic name, which is used by rcfpch to discover
+ *       callback for resource grabbing/releasing: e.g. /agent/interface.
+ *
+ * The name and generic name may be the same unless there are many resources
+ * of the same class which grabbing/releasing is handled by the single
+ * callback (e.g. network interfaces).
+ * 
+ * To use some dynamically grabbed resource one should:
+ *
+ * 1. Provide to rcfpch information about grabbing/releasing callbacks
+ *    for the resource. This may be done via explicit call of 
+ *    rcf_pch_rpcs_info during TA initialization or remote RCF or
+ *    RCF RPC call. 
+ *
+ * 2. Grab the resource from the test or during initialization 
+ *    adding /agent/rsrc instance via confapi or in cs.conf.
+ *
+ * RCFPCH automatically creates the lock for thre resource in TE_TMP
+ * directory. Name of the lock file containing TA PID is constructed as:
+ *     $(te_lockdir}/te_ta_lock_<converted name>
+ *
+ * "converted name" is resource name with '/' replaced by '%'.
+ * te_lock_dir should be exported by the TA. 
+ *
+ * If lock of dead TA is found it is automatically removed.
+ */
+
+/** 
+ * Callback for resource grabbing. 
+ * 
+ * @param name   resource name
+ *
+ * @return Status code
+ */
+typedef te_errno (* rcf_pch_rsrc_grab_callback)(const char *name);
+
+/** 
+ * Callback for resource releasing. 
+ * 
+ * @param name   resource name
+ *
+ * @return Status code
+ */
+typedef te_errno (* rcf_pch_rsrc_release_callback)(const char *name);
+
+
+/**
+ * Specify callbacks for dynamically registarable resource.
+ *
+ * @param name          resource generic name
+ * @param grab          grabbing callback
+ * @param release       releasing callback or NULL
+ *
+ * @return Status code
+ */
+extern te_errno rcf_pch_rsrc_info(const char *name, 
+                                  rcf_pch_rsrc_grab_callback grab,
+                                  rcf_pch_rsrc_release_callback release);
+
+/**
+ * Check if the resource is accessible.
  *
  * @param fmt   format string for resource name
  *
- * @return TRUE is the resource is registered
+ * @return TRUE is the resource is accessible
  *
  * @note The function should be called from TA main thread only.
  */
-extern te_bool rcf_pch_rsrc_is_reg(const char *fmt, ...);
+extern te_bool rcf_pch_rsrc_accessible(const char *fmt, ...);
 
 /** 
  * Link resource configuration tree.
  */
 extern void rcf_pch_rsrc_init(void);
+
+/** Directory for locks creation */
+extern const char *te_lockdir;
 
 /*@}*/
 

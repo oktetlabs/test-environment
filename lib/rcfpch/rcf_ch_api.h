@@ -639,24 +639,6 @@ extern int rcf_ch_kill_task(unsigned int pid);
 /** @name Standard configuration support */
 
 /**
- * Register a resource.
- *
- * @param rsrc          resource name
- *
- * @return Status code
- */
-extern te_errno rcf_ch_rsrc_reg(const char *rsrc);
-
-/**
- * Unregister a resource.
- *
- * @param rsrc          resource name
- *
- * @return Status code
- */
-extern te_errno rcf_ch_rsrc_unreg(const char *rsrc);
-
-/**
  * Prototype for get instance value routine.
  *
  * @param gid       group identifier

@@ -51,6 +51,9 @@
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #endif
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 
 #include "te_errno.h"
 #include "te_defs.h"
@@ -957,6 +960,161 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
 #undef ALL_INST_NAMES
 }
 
+/** Information about dynamically grabbed resource - see rcf_pch.h */
+typedef struct rsrc_info {
+    struct rsrc_info *next;     
+    
+    const char                   *name; /**< Generic resource name */
+    rcf_pch_rsrc_grab_callback    grab; /**< Grab callback */
+    rcf_pch_rsrc_release_callback release; /**< Release callback */
+} rsrc_info;    
+
+/** Information about all dynamically grabbed resources */
+static rsrc_info *rsrc_info_list;
+
+/** Find the resource with specified generic name */
+static rsrc_info *
+rsrc_lookup(const char *name)
+{
+    rsrc_info *tmp;
+    
+    for (tmp = rsrc_info_list; tmp != NULL && name != NULL; tmp = tmp->next)
+        if (strcmp(name, tmp->name) == 0)
+            return tmp;
+            
+    return NULL;            
+}
+
+/**
+ * Specify callbacks for dynamically registarable resource.
+ *
+ * @param name          resource generic name
+ * @param reg           grabbing callback
+ * @param unreg         releasing callback or NULL
+ *
+ * @return Status code
+ */
+te_errno 
+rcf_pch_rsrc_info(const char *name, 
+                  rcf_pch_rsrc_grab_callback grab,
+                  rcf_pch_rsrc_release_callback release)
+{
+    rsrc_info *tmp;
+    
+    if (name == NULL || grab == NULL)
+        return TE_RC(TE_TA, TE_EINVAL);
+        
+    if (rsrc_lookup(name) != NULL)
+        return TE_RC(TE_TA, TE_EEXIST);
+        
+    if ((tmp = malloc(sizeof(*tmp))) == NULL)
+        return TE_RC(TE_TA, TE_ENOMEM);
+      
+    if ((tmp->name = strdup(name)) == NULL)
+        return TE_RC(TE_TA, TE_ENOMEM);
+    
+    tmp->grab = grab;
+    tmp->release = release;
+    tmp->next = rsrc_info_list;
+    rsrc_info_list = tmp;
+    
+    return 0;
+}           
+
+
+/*
+ * Create a lock for the resource with specified name.
+ *
+ * @param name     resource name
+ *
+ * @return Status code
+ */
+static te_errno
+create_lock(const char *name)
+{
+    char  fname[RCF_MAX_PATH];
+    FILE *f;
+    int   i; 
+    int   rc;
+
+    if (snprintf(fname, RCF_MAX_PATH, "%s/te_ta_lock_%s", 
+                 te_lockdir, name) >= RCF_MAX_PATH)
+    {
+        ERROR("Too long pathname for lock: %s/te_ta_lock_%s", 
+                 te_lockdir, name);
+        return TE_RC(TE_TA, TE_ENAMETOOLONG);
+    }
+    
+    for (i = strlen(te_lockdir) + 1; fname[i] != 0; i++)
+        if (fname[i] == '/')
+            fname[i] = '%';
+            
+    if ((f = fopen(fname, "r")) != NULL)
+    {
+        char buf[16];
+        int  pid;
+        
+        rc = fread(buf, 1, 1, f);
+        fclose(f);
+        if (rc <= 0 || (pid = atoi(buf)) == 0 || kill(pid, SIGCONT) == 0)
+        {
+            ERROR("Cannot grab resource %s - lock is found", name);
+            return TE_RC(TE_TA, TE_EEXIST);
+        }
+        if (unlink(fname) != 0)
+        {
+            rc = TE_OS_RC(TE_TA, errno);
+        
+            ERROR("Failed to delete lock %s of dead TA: %r", fname, rc);
+            return rc;
+        }
+        WARN("Lock '%s' of dead TA with PID=%d is deleted", buf, pid);
+    }
+    
+    if ((f = fopen(fname, "w")) == NULL)
+    {
+        rc = TE_OS_RC(TE_TA, errno);
+    }
+    else if (fprintf(f, "%d", getpid()) < 0)
+    {
+        rc = TE_OS_RC(TE_TA, errno);
+        fclose(f);
+        unlink(fname);
+    }
+    else if (fclose(f) < 0)
+    {
+        rc = TE_OS_RC(TE_TA, errno);
+        unlink(fname);
+    }
+    
+    if (rc != 0)
+        ERROR("Failed to create resource lock %s: %r", fname, rc);
+    
+    return rc;
+} 
+
+/*
+ * Delete a lock for the resource with specified name.
+ *
+ * @param name     resource name
+ */
+static void
+delete_lock(const char *name)
+{
+    char fname[RCF_MAX_PATH];
+    int  rc;
+    int  i;
+    
+    TE_SPRINTF(fname, "%s/te_ta_lock_%s", te_lockdir, name);
+
+    for (i = strlen(te_lockdir) + 1; fname[i] != 0; i++)
+        if (fname[i] == '/')
+            fname[i] = '%';
+
+    if ((rc = unlink(fname)) != 0)
+        ERROR("Failed to delete lock %s: %r", fname, TE_OS_RC(TE_TA, rc));
+}
+
 /** Registered resources list entry */
 typedef struct rsrc {
     struct rsrc *next;  /**< Next element in the list */
@@ -1043,6 +1201,33 @@ rsrc_get(unsigned int gid, const char *oid, char *value, const char *id)
     return TE_RC(TE_TA, TE_ENOENT);
 }
 
+/** 
+ * Convert resource name to generic resource name.
+ *
+ * @param name  resource name
+ * 
+ * @return Generic name or NULL in the case of incorrect name
+ *
+ * @note non-reenterable
+ */
+static char *
+rsrc_gen_name(const char *name)
+{
+    static char buf[CFG_OID_MAX] = { 0, };
+    
+    if (name == NULL)
+        return NULL;
+    
+    if (strchr(name, '/') == NULL || strchr(name, ':') == NULL)
+        return (char *)name;
+        
+    cfg_oid_inst2obj(name, buf);
+    if (*buf == 0)
+        return NULL;
+        
+    return buf;
+}
+
 /**
  * Add a resource.
  *
@@ -1057,41 +1242,57 @@ static int
 rsrc_add(unsigned int gid, const char *oid, const char *value,
          const char *id)
 {
-    rsrc *tmp;
+    rsrc *tmp = NULL;
     char  s[RCF_MAX_NAME];
     int   rc;
+    
+    rsrc_info *info;
     
     UNUSED(gid);
     UNUSED(oid);
     
-    if (rcf_pch_rsrc_is_reg(value) ||
-        rsrc_get(0, NULL, s, id) == 0)
+#define RETERR(rc) \
+    do {                                \
+        if (tmp != NULL)                \
+        {                               \
+            free(tmp->id);              \
+            free(tmp->name);            \
+            free(tmp);                  \
+        }                               \
+        return TE_RC(TE_TA, rc);        \
+    } while (0)
+    
+    if ((info = rsrc_lookup(rsrc_gen_name(value))) == NULL)
     {
-        return TE_RC(TE_TA, TE_EEXIST);
+        ERROR("Unknown resource %s", value);
+        RETERR(TE_EINVAL);
     }
+    
+    if (rcf_pch_rsrc_accessible(value) || rsrc_get(0, NULL, s, id) == 0)
+        RETERR(TE_EEXIST);
     
     if ((tmp = calloc(sizeof(*tmp), 1)) == NULL ||
         (tmp->id = strdup(id)) == NULL ||
         (tmp->name = strdup(value)) == NULL)
     {
-        if (tmp)
-            free(tmp->id);
-        free(tmp);
-        return TE_RC(TE_TA, TE_ENOMEM);
+        RETERR(TE_ENOMEM);
     }
     
-    if ((rc = rcf_ch_rsrc_reg(tmp->name)) != 0)
-    {
-        free(tmp->name);
-        free(tmp->id);
-        free(tmp);
-        return rc;
-    }
+    if ((rc = create_lock(tmp->name)) != 0)
+        RETERR(rc);
         
+    if ((rc = info->grab(tmp->name)) != 0)
+    {
+        delete_lock(tmp->name);
+        RETERR(rc);
+    }
+    
     tmp->next = rsrc_lst;
     rsrc_lst = tmp;
     
     return 0;
+    
+#undef RETERR    
 }
 
 /**
@@ -1107,7 +1308,7 @@ static int
 rsrc_del(unsigned int gid, const char *oid, const char *id)
 {
     rsrc *cur, *prev;
-    
+
     UNUSED(gid);
     UNUSED(oid);
 
@@ -1117,10 +1318,26 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
     {
         if (strcmp(id, cur->id) == 0)
         {
-            int rc = rcf_ch_rsrc_unreg(cur->name);
+            rsrc_info *info;
+            int        rc;
+
+            if ((info = rsrc_lookup(rsrc_gen_name(cur->name))) == NULL)
+            {
+                ERROR("Resource structures of RCFPCH are corrupted");
+                return TE_RC(TE_TA, TE_EFAIL);
+            }
             
-            if (rc != 0)
+            if (info->release == NULL)
+            {
+                ERROR("Cannot release the resource %s: release callback "
+                      "is not provided", cur->name);
+                return TE_RC(TE_TA, TE_EPERM);
+            }
+            
+            if ((rc = info->release(cur->name)) != 0)
                 return rc;
+                
+            delete_lock(cur->name);
                 
             if (prev != NULL)
                 prev->next = cur->next;
@@ -1138,16 +1355,16 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
 }
 
 /**
- * Check if the resource is registered.
+ * Check if the resource is accessible.
  *
  * @param fmt   format string for resource name
  *
- * @return TRUE is the resource is registered
+ * @return TRUE is the resource is accessible
  *
  * @note The function should be called from TA main thread only.
  */
 te_bool 
-rcf_pch_rsrc_is_reg(const char *fmt, ...)
+rcf_pch_rsrc_accessible(const char *fmt, ...)
 {
     va_list ap;
     rsrc   *tmp;
