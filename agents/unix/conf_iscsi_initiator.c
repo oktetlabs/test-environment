@@ -56,7 +56,7 @@
 #include "te_iscsi.h"
 
 /* Debug logs */
-#define ISCSI_DEBUG_LOG_
+#define ISCSI_DEBUG_LOG
 #ifdef ISCSI_DEBUG_LOG
 #define IVERB(args...) fprintf(stderr, args); fprintf(stderr, "\n")
 #else
@@ -1126,15 +1126,36 @@ iscsi_initiator_unh_set(const char *value)
                      target_id, init_data->host_bus_adapter),
         "Restoring");
     
-    ISCSI_UNH_SET_UNNEGOTIATED("TargetName", target->target_name, target_id);
-    
+    if (strcmp(target->session_type, "Normal") == 0)
+        ISCSI_UNH_SET_UNNEGOTIATED("TargetName", target->target_name, target_id);
+
     if (target->number_of_open_connections == 0)
     {
-        ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
-                          target_id, OFFER_MAX_CONNECTIONS, offer);
+        if (strcmp(target->session_type, "Normal") == 0)
+        {
+            ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
+                              target_id, OFFER_MAX_CONNECTIONS, offer);
+            ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id, 
+                          OFFER_INITIAL_R2T, offer);
+            ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id,
+                          OFFER_IMMEDIATE_DATA, offer);
+            ISCSI_UNH_SET_INT("MaxBurstLength", 
+                              target->max_burst_length, target_id,
+                              OFFER_FIRST_BURST_LENGTH, offer);
+            ISCSI_UNH_SET_INT("FirstBurstLength", 
+                              target->first_burst_length, target_id,
+                              OFFER_MAX_BURST_LENGTH, offer);
+            ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
+                              target->max_outstanding_r2t, target_id,
+                              OFFER_MAX_OUTSTANDING_R2T, offer);
+            ISCSI_UNH_SET("DataPDUInOrder", 
+                          target->data_pdu_in_order, target_id,
+                          OFFER_DATA_PDU_IN_ORDER, offer);
+            ISCSI_UNH_SET("DataSequenceInOrder", 
+                          target->data_sequence_in_order, target_id,
+                          OFFER_DATA_SEQUENCE_IN_ORDER, offer);
+        }
 
-        ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id, 
-                      OFFER_INITIAL_R2T, offer);
 
         ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id,
                       OFFER_HEADER_DIGEST, offer);
@@ -1142,21 +1163,13 @@ iscsi_initiator_unh_set(const char *value)
         ISCSI_UNH_SET("DataDigest", target->data_digest, target_id,
                       OFFER_DATA_DIGEST, offer);
 
-        ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id,
-                      OFFER_IMMEDIATE_DATA, offer);
 
         ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
                           target->max_recv_data_segment_length,
                           target_id, OFFER_MAX_RECV_DATA_SEGMENT_LENGTH,
                           offer);
 
-        ISCSI_UNH_SET_INT("MaxBurstLength", 
-                          target->max_burst_length, target_id,
-                          OFFER_FIRST_BURST_LENGTH, offer);
 
-        ISCSI_UNH_SET_INT("FirstBurstLength", 
-                          target->first_burst_length, target_id,
-                          OFFER_MAX_BURST_LENGTH, offer);
 
         ISCSI_UNH_SET_INT("DefaultTime2Wait", 
                           target->default_time2wait, target_id,
@@ -1166,17 +1179,8 @@ iscsi_initiator_unh_set(const char *value)
                           target->default_time2retain, target_id,
                           OFFER_DEFAULT_TIME2RETAIN, offer);
 
-        ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
-                          target->max_outstanding_r2t, target_id,
-                          OFFER_MAX_OUTSTANDING_R2T, offer);
 
-        ISCSI_UNH_SET("DataPDUInOrder", 
-                      target->data_pdu_in_order, target_id,
-                      OFFER_DATA_PDU_IN_ORDER, offer);
 
-        ISCSI_UNH_SET("DataSequenceInOrder", 
-                      target->data_sequence_in_order, target_id,
-                      OFFER_DATA_SEQUENCE_IN_ORDER, offer);
 
         ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
                           target->error_recovery_level, target_id,
