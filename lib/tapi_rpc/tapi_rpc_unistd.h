@@ -466,7 +466,7 @@ rpc_poll(rcf_rpc_server *rpcs,
  */
 extern ssize_t rpc_sendfile(rcf_rpc_server *rpcs,
                             int out_fd, int in_fd,
-                            off_t *offset, size_t count);
+                            tarpc_off_t *offset, size_t count);
 
 
 /**

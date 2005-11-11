@@ -506,10 +506,10 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
 
 ssize_t
 rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
-             off_t *offset, size_t count)
+             tarpc_off_t *offset, size_t count)
 {
     rcf_rpc_op         op;
-    off_t              start = (offset != NULL) ? *offset : 0;
+    tarpc_off_t        start = (offset != NULL) ? *offset : 0;
     tarpc_sendfile_in  in;
     tarpc_sendfile_out out;
 
@@ -529,7 +529,7 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
     if (offset != NULL && rpcs->op != RCF_RPC_WAIT)
     {
         in.offset.offset_len = 1;
-        in.offset.offset_val = (tarpc_off_t *)offset;
+        in.offset.offset_val = offset;
     }
 
     rcf_rpc_call(rpcs, "sendfile", &in, &out);
@@ -545,9 +545,9 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
                  "sendfile(%d, %d, %p(%d), %u) -> %d (%s) offset=%d",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 out_fd, in_fd, offset, start, count,
+                 out_fd, in_fd, offset, (int)start, (unsigned)count,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 (offset != NULL) ? *offset : 0);
+                 (offset != NULL) ? (int)*offset : 0);
 
     RETVAL_INT(sendfile, out.retval);
 }
