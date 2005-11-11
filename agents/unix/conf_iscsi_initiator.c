@@ -96,6 +96,9 @@
 /** Maximum number of targets the Initiator can connect to */
 #define MAX_TARGETS_NUMBER 3
 
+/** Maximum number of the connections with one target */
+#define MAX_CONNECTIONS_NUMBER 10
+
 /** Default targets port */
 #define ISCSI_TARGET_DEFAULT_PORT 3260
 
@@ -111,7 +114,6 @@
  * Lun of the target to connect to.
  */
 #define DEFAULT_LUN_NUMBER 0
-
 
 /**
  * Types of the Initiator to configure.
@@ -158,26 +160,13 @@ typedef struct iscsi_tgt_chap_data {
                                   required during the Security Phase */
 } iscsi_tgt_chap_data_t;
 
-/**
- * Per target data of the Initiator.
- * Most of the fields correspond to operational parameters
- * with the same name. See RFC3260 for allowed values.
- */
-typedef struct iscsi_target_data {
-    int               target_id; /**< Id of the Target */
-    te_bool           is_active;
+typedef struct iscsi_connection_data {
+    int               cid;
 
-    int               number_of_open_connections;
-    
     int               conf_params; /**< OR of OFFER_XXX flags */
 
     char              initiator_name[MAX_NAME_LENGTH]; /**< InitiatorName */ 
     char              initiator_alias[MAX_NAME_LENGTH]; /**< InitiatorAlias */
-
-    char              target_name[MAX_NAME_LENGTH];  /**< TargetName */
-    char              target_addr[MAX_ADDR_LENGTH];  /**< TargetAddr */
-    int               target_port;                   /**< TargetPort */
-
     int               max_connections;               /**< MaxConnections */
     char              initial_r2t[YES_NO_LENGTH];    /**< InitialR2T */
     char              header_digest[DIGEST_LENGTH];  /**< HeaderDigest */
@@ -196,11 +185,31 @@ typedef struct iscsi_target_data {
     char              data_sequence_in_order[YES_NO_LENGTH];
     int               error_recovery_level; /**< ErrorRecoveryLevel */
     char              session_type[SESSION_TYPE_LENGTH]; /**< SessionType */
-    char              record_id[RECORD_ID_LENGTH]; 
-                     /**< Open iSCSI db record id */
 
     iscsi_tgt_chap_data_t chap; /**< Serurity related data */
+} iscsi_connection_data_t;
 
+
+/**
+ * Per target data of the Initiator.
+ * Most of the fields correspond to operational parameters
+ * with the same name. See RFC3260 for allowed values.
+ */
+typedef struct iscsi_target_data {
+    int               target_id; /**< Id of the Target */
+    te_bool           is_active;
+
+    int               number_of_open_connections;
+    
+    
+    char              target_name[MAX_NAME_LENGTH];  /**< TargetName */
+    char              target_addr[MAX_ADDR_LENGTH];  /**< TargetAddr */
+    int               target_port;                   /**< TargetPort */
+
+    iscsi_connection_data_t conns[MAX_CONNECTIONS_NUMBER];
+
+    char              record_id[RECORD_ID_LENGTH]; 
+                     /**< Open iSCSI db record id */
 } iscsi_target_data_t;
 
 /**
@@ -245,9 +254,30 @@ iscsi_get_target_id(const char *oid)
     c = strstr(c + 1, "target_");
     c += strlen("target_");
 
-    tgt_id = atoi(c);
+    tgt_id = strtol(c, NULL, 10);
 
     return tgt_id;
+}
+
+/**
+ * Function returns CID from the name of the instance.
+ *
+ * @param oid The full name of the instance
+ *
+ * @return ID of the connection
+ */
+static int
+iscsi_get_cid(const char *oid)
+{
+    char *c;
+    int cid;
+
+    c = strstr(oid, "conn:");
+    c += strlen("conn:");
+
+    cid = strtol(c, NULL, 10);
+
+    return cid;
 }
 
 /**
@@ -258,44 +288,62 @@ iscsi_get_target_id(const char *oid)
  *                    initalize.
  */
 void
+iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
+{
+    memset(conn_data, 0, sizeof(conn_data));
+    
+    conn_data->cid = ISCSI_CONNECTION_REMOVED;
+    strcpy(conn_data->initiator_name, DEFAULT_INITIATOR_NAME);
+    strcpy(conn_data->initiator_alias, DEFAULT_INITIATOR_ALIAS);
+    
+    conn_data->max_connections = DEFAULT_MAX_CONNECTIONS;
+    strcpy(conn_data->initial_r2t, DEFAULT_INITIAL_R2T);
+    strcpy(conn_data->header_digest, DEFAULT_HEADER_DIGEST);
+    strcpy(conn_data->data_digest, DEFAULT_DATA_DIGEST);
+    strcpy(conn_data->immediate_data, DEFAULT_IMMEDIATE_DATA);
+    conn_data->max_recv_data_segment_length = 
+        DEFAULT_MAX_RECV_DATA_SEGMENT_LENGTH;
+    conn_data->first_burst_length = DEFAULT_FIRST_BURST_LENGTH;
+    conn_data->max_burst_length = DEFAULT_MAX_BURST_LENGTH;
+    conn_data->default_time2wait = DEFAULT_DEFAULT_TIME2WAIT;
+    conn_data->default_time2retain = DEFAULT_DEFAULT_TIME2RETAIN;
+    conn_data->max_outstanding_r2t = DEFAULT_MAX_OUTSTANDING_R2T;
+    strcpy(conn_data->data_pdu_in_order, DEFAULT_DATA_PDU_IN_ORDER);
+    strcpy(conn_data->data_sequence_in_order, 
+           DEFAULT_DATA_SEQUENCE_IN_ORDER);
+    conn_data->error_recovery_level = DEFAULT_ERROR_RECOVERY_LEVEL;
+    strcpy(conn_data->session_type, DEFAULT_SESSION_TYPE);
+
+    /* target's chap */
+    conn_data->chap.target_auth = FALSE;
+    *(conn_data->chap.peer_secret) = '\0';
+    *(conn_data->chap.local_name) = '\0';
+    strcpy(conn_data->chap.chap, "None");
+    conn_data->chap.enc_fmt = BASE_16;
+    conn_data->chap.challenge_length = DEFAULT_CHALLENGE_LENGTH;
+    *(conn_data->chap.peer_name) = '\0';
+    *(conn_data->chap.local_secret) = '\0';
+}
+/**
+ * Function initalize default parameters:
+ * operational parameters and security parameters.
+ *
+ * @param tgt_data    Structure of the target data to
+ *                    initalize.
+ */
+void
 iscsi_init_default_tgt_parameters(iscsi_target_data_t *tgt_data)
 {
+    int i;
     memset(tgt_data, 0, sizeof(tgt_data));
-    
-    strcpy(tgt_data->initiator_name, DEFAULT_INITIATOR_NAME);
-    strcpy(tgt_data->initiator_alias, DEFAULT_INITIATOR_ALIAS);
     
     strcpy(tgt_data->target_name, DEFAULT_TARGET_NAME);
     
-    tgt_data->max_connections = DEFAULT_MAX_CONNECTIONS;
-    strcpy(tgt_data->initial_r2t, DEFAULT_INITIAL_R2T);
-    strcpy(tgt_data->header_digest, DEFAULT_HEADER_DIGEST);
-    strcpy(tgt_data->data_digest, DEFAULT_DATA_DIGEST);
-    strcpy(tgt_data->immediate_data, DEFAULT_IMMEDIATE_DATA);
-    tgt_data->max_recv_data_segment_length = 
-        DEFAULT_MAX_RECV_DATA_SEGMENT_LENGTH;
-    tgt_data->first_burst_length = DEFAULT_FIRST_BURST_LENGTH;
-    tgt_data->max_burst_length = DEFAULT_MAX_BURST_LENGTH;
-    tgt_data->default_time2wait = DEFAULT_DEFAULT_TIME2WAIT;
-    tgt_data->default_time2retain = DEFAULT_DEFAULT_TIME2RETAIN;
-    tgt_data->max_outstanding_r2t = DEFAULT_MAX_OUTSTANDING_R2T;
-    strcpy(tgt_data->data_pdu_in_order, DEFAULT_DATA_PDU_IN_ORDER);
-    strcpy(tgt_data->data_sequence_in_order, 
-           DEFAULT_DATA_SEQUENCE_IN_ORDER);
-    tgt_data->error_recovery_level = DEFAULT_ERROR_RECOVERY_LEVEL;
-    strcpy(tgt_data->session_type, DEFAULT_SESSION_TYPE);
-
-    /* target's chap */
-    tgt_data->chap.target_auth = FALSE;
-    *(tgt_data->chap.peer_secret) = '\0';
-    *(tgt_data->chap.local_name) = '\0';
-    strcpy(tgt_data->chap.chap, "None");
-    tgt_data->chap.enc_fmt = BASE_16;
-    tgt_data->chap.challenge_length = DEFAULT_CHALLENGE_LENGTH;
-    *(tgt_data->chap.peer_name) = '\0';
-    *(tgt_data->chap.local_secret) = '\0';
+    for (i = 0; i < MAX_CONNECTIONS_NUMBER; i++)
+    {
+        iscsi_init_default_connection_parameters(&tgt_data->conns[i]);
+    }
 }
-
 /** Configure all targets (id: 0..MAX_TARGETS_NUMBER */
 #define ISCSI_CONF_ALL_TARGETS -1
 
@@ -449,7 +497,7 @@ typedef struct iscsi_target_param_descr_t
 } iscsi_target_param_descr_t;
 
 #define ISCSI_END_PARAM_TABLE {0, NULL, FALSE, 0}
-
+#if 0
 /****** L5 Initiator specific stuff  ****/
 
 static void
@@ -854,7 +902,7 @@ iscsi_openiscsi_find_free_recid (iscsi_initiator_data_t *data)
     ERROR("No available record ids!");
     return NULL;
 }
-
+#endif
 
 /** Format of the set command for UNH Initiator */
 static const char *conf_iscsi_unh_set_fmt =
@@ -1034,6 +1082,7 @@ static const char *conf_iscsi_unh_force_flag_fmt =
             (info_));                                                       \
     } while (0)
 
+#if 0
 /**
  * Parses the command received by the Initiator and retreives
  * connection ID and target ID from it.
@@ -1066,44 +1115,36 @@ iscsi_get_cid_and_target(const char *cmdline, te_bool *status,
     }
     return 0;
 }
-
+#endif
 
 /**
- * Handles set command for the Instance
- * /agent:Agt_X/iscsi_initiator:
  * 
- * Format of the value:
- * up 5 7 - establish the connection with id = 5 and target 7
- * down 5 3- destroy the connection with id = 5 and target 3
+ * @param target_id The target with connection to which the operation should
+ *                  be performed.
+ * @param cid       CID of the new connection or ISCSI_CONNECTION_REMOVED
  */
 static int
-iscsi_initiator_unh_set(const char *value)
+iscsi_initiator_unh_set(const int target_id, const int cid, 
+                        int oper)
 {
-    int                     rc = -1;
-    int                     cid = 0;
-    int                     target_id = 0;
-    iscsi_target_data_t    *target;
-    te_bool                 status;
+    int                      rc = -1;
+    iscsi_target_data_t     *target;
+    iscsi_connection_data_t *conn;
 
     int                     offer;
 
-    if (iscsi_get_cid_and_target(value, &status, &cid, &target_id) != 0)
-    {
-        sprintf(init_data->last_cmd, value);
-        return 0;
-    }
-
     target = &init_data->targets[target_id];
+    conn = &target->conns[cid];
     
-    offer = target->conf_params;
+    offer = conn->conf_params;
 
     IVERB("Current number of open connections: %d", 
           target->number_of_open_connections);
     
-    if (!status)
+    if (oper == ISCSI_CONNECTION_DOWN)
     {
-        init_data->targets[target_id].is_active = FALSE;
-        /* We should down the connection */
+        conn->cid = ISCSI_CONNECTION_DOWN;
+
         rc = ta_system_ex("iscsi_config down cid=%d target=%d host=%d",
                           cid, target_id, 
                           init_data->host_bus_adapter);
@@ -1113,7 +1154,8 @@ iscsi_initiator_unh_set(const char *value)
                   "with CID = %d", cid);
             return TE_RC(TE_TA_UNIX, EINVAL);
         }
-        target->number_of_open_connections--;
+        if (target->number_of_open_connections > 0)
+            target->number_of_open_connections--;
         INFO("Connections with ID %d is closed", cid);
 
         return 0;
@@ -1126,104 +1168,97 @@ iscsi_initiator_unh_set(const char *value)
                      target_id, init_data->host_bus_adapter),
         "Restoring");
     
-    if (strcmp(target->session_type, "Normal") == 0)
+    if (strcmp(conn->session_type, "Normal") == 0)
         ISCSI_UNH_SET_UNNEGOTIATED("TargetName", target->target_name, target_id);
 
     if (target->number_of_open_connections == 0)
     {
-        if (strcmp(target->session_type, "Normal") == 0)
+        if (strcmp(conn->session_type, "Normal") == 0)
         {
-            ISCSI_UNH_SET_INT("MaxConnections", target->max_connections,
+            ISCSI_UNH_SET_INT("MaxConnections", conn->max_connections,
                               target_id, OFFER_MAX_CONNECTIONS, offer);
-            ISCSI_UNH_SET("InitialR2T", target->initial_r2t, target_id, 
+            ISCSI_UNH_SET("InitialR2T", conn->initial_r2t, target_id, 
                           OFFER_INITIAL_R2T, offer);
-            ISCSI_UNH_SET("ImmediateData", target->immediate_data, target_id,
+            ISCSI_UNH_SET("ImmediateData", conn->immediate_data, target_id,
                           OFFER_IMMEDIATE_DATA, offer);
             ISCSI_UNH_SET_INT("MaxBurstLength", 
-                              target->max_burst_length, target_id,
+                              conn->max_burst_length, target_id,
                               OFFER_FIRST_BURST_LENGTH, offer);
             ISCSI_UNH_SET_INT("FirstBurstLength", 
-                              target->first_burst_length, target_id,
+                              conn->first_burst_length, target_id,
                               OFFER_MAX_BURST_LENGTH, offer);
             ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
-                              target->max_outstanding_r2t, target_id,
+                              conn->max_outstanding_r2t, target_id,
                               OFFER_MAX_OUTSTANDING_R2T, offer);
             ISCSI_UNH_SET("DataPDUInOrder", 
-                          target->data_pdu_in_order, target_id,
+                          conn->data_pdu_in_order, target_id,
                           OFFER_DATA_PDU_IN_ORDER, offer);
             ISCSI_UNH_SET("DataSequenceInOrder", 
-                          target->data_sequence_in_order, target_id,
+                          conn->data_sequence_in_order, target_id,
                           OFFER_DATA_SEQUENCE_IN_ORDER, offer);
         }
 
-
-        ISCSI_UNH_SET("HeaderDigest", target->header_digest, target_id,
+        ISCSI_UNH_SET("HeaderDigest", conn->header_digest, target_id,
                       OFFER_HEADER_DIGEST, offer);
 
-        ISCSI_UNH_SET("DataDigest", target->data_digest, target_id,
+        ISCSI_UNH_SET("DataDigest", conn->data_digest, target_id,
                       OFFER_DATA_DIGEST, offer);
 
-
         ISCSI_UNH_SET_INT("MaxRecvDataSegmentLength", 
-                          target->max_recv_data_segment_length,
+                          conn->max_recv_data_segment_length,
                           target_id, OFFER_MAX_RECV_DATA_SEGMENT_LENGTH,
                           offer);
 
-
-
         ISCSI_UNH_SET_INT("DefaultTime2Wait", 
-                          target->default_time2wait, target_id,
+                          conn->default_time2wait, target_id,
                           OFFER_DEFAULT_TIME2WAIT, offer);
 
         ISCSI_UNH_SET_INT("DefaultTime2Retain", 
-                          target->default_time2retain, target_id,
+                          conn->default_time2retain, target_id,
                           OFFER_DEFAULT_TIME2RETAIN, offer);
 
-
-
-
         ISCSI_UNH_SET_INT("ErrorRecoveryLevel", 
-                          target->error_recovery_level, target_id,
+                          conn->error_recovery_level, target_id,
                           OFFER_ERROR_RECOVERY_LEVEL, offer);
 
-        ISCSI_UNH_SET_UNNEGOTIATED("SessionType", target->session_type, target_id);
+        ISCSI_UNH_SET_UNNEGOTIATED("SessionType", conn->session_type, target_id);
 
         /* Target' CHAP */
-        if (init_data->targets[target_id].chap.target_auth)
+        if (conn->chap.target_auth)
         {
             ISCSI_UNH_FORCE_FLAG("t", target_id,
                                  "Target Authentication");
         }
 
-        ISCSI_UNH_FORCE_STRING("px", target->chap.peer_secret, target_id,
+        ISCSI_UNH_FORCE_STRING("px", conn->chap.peer_secret, target_id,
                                "Peer Secret");
 
-        ISCSI_UNH_FORCE("ln", target->chap.local_name, target_id,
+        ISCSI_UNH_FORCE("ln", conn->chap.local_name, target_id,
                         "Local Name");
 
-        ISCSI_UNH_SET_UNNEGOTIATED("AuthMethod", target->chap.chap, target_id);
+        ISCSI_UNH_SET_UNNEGOTIATED("AuthMethod", conn->chap.chap, target_id);
 
-        if (target->chap.enc_fmt == BASE_64)
+        if (conn->chap.enc_fmt == BASE_64)
             ISCSI_UNH_FORCE_FLAG("b", target_id,
                                  "Encoding Format");
 
-        ISCSI_UNH_FORCE_INT("cl", target->chap.challenge_length, target_id,
+        ISCSI_UNH_FORCE_INT("cl", conn->chap.challenge_length, target_id,
                             "Challenge Length");
 
-        ISCSI_UNH_FORCE("pn", target->chap.peer_name, target_id,
+        ISCSI_UNH_FORCE("pn", conn->chap.peer_name, target_id,
                         "Peer Name");
 
-        ISCSI_UNH_FORCE_STRING("lx", target->chap.local_secret, target_id,
+        ISCSI_UNH_FORCE_STRING("lx", conn->chap.local_secret, target_id,
                                "Local Secret");
 
     }
     /* Initiator itself */
     ISCSI_UNH_SET_UNNEGOTIATED("InitiatorName", 
-                  target->initiator_name,
+                  conn->initiator_name,
                   target_id);
 #if 0
     ISCSI_UNH_SET_UNNEGOTIATED("InitiatorAlias", 
-                  target->initiator_alias, 
+                  conn->initiator_alias, 
                   target_id);
 #endif
     /* Now the connection should be opened */
@@ -1238,17 +1273,14 @@ iscsi_initiator_unh_set(const char *value)
         ERROR("Failed to establish connection with cid=%d", cid);
         return TE_RC(TE_TA_UNIX, rc);
     }
-    init_data->targets[target_id].is_active = TRUE;
     target->number_of_open_connections++;
     return 0;
 }
-
+#if 0
 static int
-iscsi_initiator_l5_set(const char *value)
+iscsi_initiator_l5_set(const int target_id, const int cid)
 {
     int                     rc = -1;
-    int                     target_id = 0;
-    int                     cid = 0;
     te_bool                 anything_to_stop = FALSE;
     te_bool                 anything_to_start = FALSE;
     te_bool                 status;
@@ -1260,12 +1292,6 @@ iscsi_initiator_l5_set(const char *value)
             anything_to_stop = TRUE;
             break;
         }
-    }
-    if (iscsi_get_cid_and_target(value, &status, 
-                                 &cid, &target_id) != 0)
-    {
-        sprintf(init_data->last_cmd, value);
-        return 0;
     }
     
     if (!status)
@@ -1313,12 +1339,12 @@ iscsi_initiator_l5_set(const char *value)
 }
 
 static int
-iscsi_initiator_openiscsi_set(const char *value)
+iscsi_initiator_openiscsi_set(const int target_id, const int cid)
 {
     int                     rc = -1;
-    int                     target_id = 0;
-    int                     cid = 0;
     te_bool                 status;
+    /* TODO: this is just a build fix */
+    char *value;
 
     if (*value == '\0')
     {
@@ -1376,6 +1402,7 @@ iscsi_initiator_openiscsi_set(const char *value)
     
     return 0;
 }
+#endif
 
 static int
 iscsi_initiator_set(unsigned int gid, const char *oid,
@@ -1384,18 +1411,8 @@ iscsi_initiator_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(oid);
-
-    switch (init_data->init_type)
-    {
-        case UNH:
-            return iscsi_initiator_unh_set(value);
-        case L5:
-            return iscsi_initiator_l5_set(value);
-        case OPENISCSI:
-            return iscsi_initiator_openiscsi_set(value);
-        default:
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    UNUSED(value);
+    return 0;
 }
 
 /* AuthMethod */
@@ -1406,8 +1423,8 @@ iscsi_initiator_chap_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].chap.chap) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].chap.chap, 
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].chap.chap, 
            value);
 
     return 0;
@@ -1421,7 +1438,8 @@ iscsi_initiator_chap_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].chap.chap);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].chap.chap);
 
     return 0;
 }
@@ -1434,8 +1452,8 @@ iscsi_initiator_peer_name_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].chap.peer_name) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].chap.peer_name, 
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].chap.peer_name, 
            value);
 
     return 0;
@@ -1449,7 +1467,8 @@ iscsi_initiator_peer_name_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].chap.peer_name);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].chap.peer_name);
 
     return 0;
 }
@@ -1463,7 +1482,8 @@ iscsi_initiator_challenge_length_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
     
-    init_data->targets[iscsi_get_target_id(oid)].chap.challenge_length = 
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].chap.challenge_length = 
         atoi(value);
 
     return 0;
@@ -1478,7 +1498,8 @@ iscsi_initiator_challenge_length_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].chap.challenge_length);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].chap.challenge_length);
 
     return 0;
 }
@@ -1492,7 +1513,8 @@ iscsi_initiator_enc_fmt_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
-    init_data->targets[iscsi_get_target_id(oid)].chap.enc_fmt = atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].chap.enc_fmt = atoi(value);
 
     return 0;
 }
@@ -1506,8 +1528,79 @@ iscsi_initiator_enc_fmt_get(unsigned int gid, const char *oid,
     UNUSED(oid);
 
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].chap.enc_fmt);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].chap.enc_fmt);
 
+    return 0;
+}
+
+/* Connection structure */
+static int
+iscsi_conn_add(unsigned int gid, const char *oid,
+                      char *value, const char *instance, ...)
+{
+    int cid = iscsi_get_cid(oid);
+    int tgt_id = iscsi_get_target_id(oid);
+
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(value);
+
+    IVERB("Adding connection with id=%d to target with id %d", cid, tgt_id);
+    iscsi_init_default_connection_parameters(&init_data->targets[tgt_id].
+                                             conns[cid]);
+
+    init_data->targets[tgt_id].conns[cid].cid = ISCSI_CONNECTION_DOWN;
+
+    return 0;
+}
+
+static int
+iscsi_conn_del(unsigned int gid, const char *oid,
+                      const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].cid = ISCSI_CONNECTION_REMOVED;
+
+    return 0;
+}
+
+static int
+iscsi_conn_list(unsigned int gid, const char *oid,
+                       char **list, const char *instance, ...)
+{
+    int   cid;
+    int   tgt_id = iscsi_get_target_id(oid);
+    char  conns_list[MAX_CONNECTIONS_NUMBER * 15];
+    char  conn[15];
+    
+    UNUSED(gid);
+    UNUSED(instance);
+    
+    conns_list[0] = '\0';
+    
+    for (cid = 0; cid < MAX_CONNECTIONS_NUMBER; cid++)
+    {
+        if (init_data->targets[tgt_id].conns[cid].cid != 
+            ISCSI_CONNECTION_REMOVED)
+        {
+            sprintf(conn,
+                    "%d ", cid);
+            strcat(conns_list, conn);
+        }
+    }
+
+    *list = strdup(conns_list);
+    if (*list == NULL)
+    {
+        ERROR("Failed to allocate memory for the list of connections.");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    RING("--> %s", conns_list); 
     return 0;
 }
 
@@ -1524,7 +1617,6 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
  
     iscsi_init_default_tgt_parameters(&init_data->targets[tgt_id]);
     init_data->targets[tgt_id].target_id = tgt_id;
-    init_data->targets[tgt_id].conf_params = 0;
 
     IVERB("Adding %s with value %s, id=%d\n", oid, value, tgt_id);
 
@@ -1592,7 +1684,8 @@ iscsi_initiator_target_auth_set(unsigned int gid, const char *oid,
     if (*value == '1')
         t = TRUE;
     
-    init_data->targets[iscsi_get_target_id(oid)].chap.target_auth = t;
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].chap.target_auth = t;
 
     return 0;
 }
@@ -1605,7 +1698,8 @@ iscsi_initiator_target_auth_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].chap.target_auth);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].chap.target_auth);
 
     return 0;
 }
@@ -1618,8 +1712,8 @@ iscsi_initiator_peer_secret_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    *init_data->targets[iscsi_get_target_id(oid)].chap.peer_secret = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].chap.peer_secret, value);
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].chap.peer_secret, value);
 
     return 0;
 }
@@ -1632,7 +1726,8 @@ iscsi_initiator_peer_secret_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].chap.peer_secret);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].chap.peer_secret);
 
     return 0;
 }
@@ -1646,8 +1741,8 @@ iscsi_initiator_local_secret_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
     
-    *init_data->targets[iscsi_get_target_id(oid)].chap.local_secret = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].chap.local_secret, 
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].chap.local_secret, 
            value);
 
     return 0;
@@ -1662,7 +1757,8 @@ iscsi_initiator_local_secret_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].chap.local_secret);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].chap.local_secret);
 
     return 0;
 }
@@ -1676,7 +1772,7 @@ iscsi_max_connections_set(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     init_data->targets[iscsi_get_target_id(oid)].
-        max_connections = atoi(value);
+        conns[iscsi_get_cid(oid)].max_connections = atoi(value);
 
     return 0;
 }
@@ -1689,7 +1785,7 @@ iscsi_max_connections_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     sprintf(value, "%d", init_data->targets[iscsi_get_target_id(oid)].
-            max_connections);
+            conns[iscsi_get_cid(oid)].max_connections);
 
     return 0;
 }
@@ -1702,8 +1798,8 @@ iscsi_initial_r2t_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].initial_r2t) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].initial_r2t, value);
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].initial_r2t, value);
 
     return 0;
 }
@@ -1715,7 +1811,8 @@ iscsi_initial_r2t_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    sprintf(value, "%s", init_data->targets[iscsi_get_target_id(oid)].initial_r2t);
+    sprintf(value, "%s", init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].initial_r2t);
 
     return 0;
 }
@@ -1728,8 +1825,8 @@ iscsi_header_digest_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    *(init_data->targets[iscsi_get_target_id(oid)].header_digest) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].header_digest, value);
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].header_digest, value);
 
     return 0;
 }
@@ -1742,7 +1839,8 @@ iscsi_header_digest_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].header_digest);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].header_digest);
 
     return 0;
 }
@@ -1755,8 +1853,8 @@ iscsi_data_digest_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    *(init_data->targets[iscsi_get_target_id(oid)].data_digest) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].data_digest, value);
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].data_digest, value);
 
     return 0;
 }
@@ -1768,7 +1866,8 @@ iscsi_data_digest_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    sprintf(value, "%s", init_data->targets[iscsi_get_target_id(oid)].data_digest);
+    sprintf(value, "%s", init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].data_digest);
 
     return 0;
 }
@@ -1781,8 +1880,8 @@ iscsi_immediate_data_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].immediate_data) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].immediate_data, value);
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].immediate_data, value);
 
     return 0;
 }
@@ -1795,7 +1894,8 @@ iscsi_immediate_data_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].immediate_data);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].immediate_data);
 
     return 0;
 }
@@ -1809,7 +1909,7 @@ iscsi_max_recv_data_segment_length_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     init_data->targets[iscsi_get_target_id(oid)].
-        max_recv_data_segment_length = atoi(value);
+        conns[iscsi_get_cid(oid)].max_recv_data_segment_length = atoi(value);
 
     return 0;
 }
@@ -1823,7 +1923,7 @@ iscsi_max_recv_data_segment_length_get(unsigned int gid, const char *oid,
     
     sprintf(value, "%d", 
             init_data->targets[iscsi_get_target_id(oid)].
-            max_recv_data_segment_length);
+            conns[iscsi_get_cid(oid)].max_recv_data_segment_length);
 
     return 0;
 }
@@ -1836,8 +1936,8 @@ iscsi_first_burst_length_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].first_burst_length = 
-        atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].first_burst_length = atoi(value);
 
     return 0;
 }
@@ -1850,7 +1950,8 @@ iscsi_first_burst_length_get(unsigned int gid, const char *oid,
     UNUSED(instance);
    
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].first_burst_length);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].first_burst_length);
 
     return 0;
 }
@@ -1863,8 +1964,8 @@ iscsi_max_burst_length_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].max_burst_length = 
-        atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].max_burst_length = atoi(value);
 
     return 0;
 }
@@ -1877,7 +1978,8 @@ iscsi_max_burst_length_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].max_burst_length);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].max_burst_length);
 
     return 0;
 }
@@ -1890,7 +1992,8 @@ iscsi_default_time2wait_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].default_time2wait = atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].default_time2wait = atoi(value);
 
     return 0;
 }
@@ -1903,7 +2006,8 @@ iscsi_default_time2wait_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].default_time2wait);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].default_time2wait);
 
     return 0;
 }
@@ -1916,7 +2020,8 @@ iscsi_default_time2retain_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].default_time2retain = atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].default_time2retain = atoi(value);
 
     return 0;
 }
@@ -1929,7 +2034,8 @@ iscsi_default_time2retain_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].default_time2retain);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].default_time2retain);
 
     return 0;
 }
@@ -1942,7 +2048,8 @@ iscsi_max_outstanding_r2t_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].max_outstanding_r2t = atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].max_outstanding_r2t = atoi(value);
 
     return 0;
 }
@@ -1954,7 +2061,8 @@ iscsi_max_outstanding_r2t_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    sprintf(value, "%d", init_data->targets[iscsi_get_target_id(oid)].max_outstanding_r2t);
+    sprintf(value, "%d", init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].max_outstanding_r2t);
 
     return 0;
 }
@@ -1967,8 +2075,8 @@ iscsi_data_pdu_in_order_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].data_pdu_in_order) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].data_pdu_in_order, value);
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].data_pdu_in_order, value);
 
     return 0;
 }
@@ -1981,7 +2089,8 @@ iscsi_data_pdu_in_order_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].data_pdu_in_order);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].data_pdu_in_order);
 
     return 0;
 }
@@ -1994,9 +2103,8 @@ iscsi_data_sequence_in_order_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].data_sequence_in_order) =
-        '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].data_sequence_in_order, 
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].data_sequence_in_order, 
            value);
 
     return 0;
@@ -2010,7 +2118,8 @@ iscsi_data_sequence_in_order_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].data_sequence_in_order);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].data_sequence_in_order);
 
     return 0;
 }
@@ -2023,7 +2132,8 @@ iscsi_error_recovery_level_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].error_recovery_level = atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].error_recovery_level = atoi(value);
 
     return 0;
 }
@@ -2036,7 +2146,8 @@ iscsi_error_recovery_level_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].error_recovery_level);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].error_recovery_level);
 
     return 0;
 }
@@ -2049,8 +2160,8 @@ iscsi_session_type_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].session_type) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].session_type, value);
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].session_type, value);
 
     return 0;
 }
@@ -2062,7 +2173,8 @@ iscsi_session_type_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    sprintf(value, "%s", init_data->targets[iscsi_get_target_id(oid)].session_type);
+    sprintf(value, "%s", init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].session_type);
 
     return 0;
 }
@@ -2075,7 +2187,6 @@ iscsi_target_name_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].target_name) = '\0';
     strcpy(init_data->targets[iscsi_get_target_id(oid)].target_name, value);
 
     return 0;
@@ -2101,8 +2212,8 @@ iscsi_initiator_name_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].initiator_name) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].initiator_name, 
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].initiator_name, 
            value);
 
     return 0;
@@ -2117,7 +2228,8 @@ iscsi_initiator_name_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].initiator_name);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].initiator_name);
 
     return 0;
 }
@@ -2130,8 +2242,8 @@ iscsi_initiator_alias_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    *(init_data->targets[iscsi_get_target_id(oid)].initiator_alias) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].initiator_alias, 
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].initiator_alias, 
            value);
 
     return 0;
@@ -2146,7 +2258,8 @@ iscsi_initiator_alias_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].initiator_alias);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].initiator_alias);
 
     return 0;
 }
@@ -2389,8 +2502,8 @@ iscsi_initiator_local_name_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    *(init_data->targets[iscsi_get_target_id(oid)].chap.local_name) = '\0';
-    strcpy(init_data->targets[iscsi_get_target_id(oid)].chap.local_name, value);
+    strcpy(init_data->targets[iscsi_get_target_id(oid)].
+           conns[iscsi_get_cid(oid)].chap.local_name, value);
 
     return 0;
 }
@@ -2404,7 +2517,8 @@ iscsi_initiator_local_name_get(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     sprintf(value, "%s", 
-            init_data->targets[iscsi_get_target_id(oid)].chap.local_name);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].chap.local_name);
 
     return 0;
 }
@@ -2416,7 +2530,8 @@ iscsi_parameters2advertize_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     
-    init_data->targets[iscsi_get_target_id(oid)].conf_params |= atoi(value);
+    init_data->targets[iscsi_get_target_id(oid)].
+        conns[iscsi_get_cid(oid)].conf_params |= atoi(value);
 
     return 0;
 }
@@ -2429,8 +2544,55 @@ iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].conf_params);
+            init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].conf_params);
     
+    return 0;
+}
+
+static int
+iscsi_cid_set(unsigned int gid, const char *oid,
+              char *value, const char *instance, ...)
+{
+    int cid = atoi(value);
+    int tgt_id = iscsi_get_target_id(oid);
+
+    if (*value == '\0')
+        return 0;
+        
+    UNUSED(gid);
+    UNUSED(instance);
+
+    switch (init_data->init_type)
+    {
+        case UNH:
+            return iscsi_initiator_unh_set(tgt_id, iscsi_get_cid(oid),
+                                           cid == ISCSI_CONNECTION_DOWN ?
+                                           ISCSI_CONNECTION_DOWN : 
+                                           ISCSI_CONNECTION_UP);
+#if 0
+        case L5:
+            return iscsi_initiator_l5_set(tgt_id, cid);
+        case OPENISCSI:
+            return iscsi_initiator_openiscsi_set(tgt_id, cid);
+#endif
+        default:
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+static int
+iscsi_cid_get(unsigned int gid, const char *oid,
+              char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    
+    sprintf(value, "%d", init_data->targets[iscsi_get_target_id(oid)].
+            conns[iscsi_get_cid(oid)].cid);
+
     return 0;
 }
 
@@ -2451,21 +2613,8 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL,
                     &node_iscsi_type, iscsi_host_bus_adapter_get,
                     iscsi_host_bus_adapter_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_alias, "initiator_alias", NULL, 
-                    NULL, iscsi_initiator_alias_get,
-                    iscsi_initiator_alias_set);
-
-RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_name, "initiator_name", NULL, 
-                    &node_iscsi_initiator_alias, iscsi_initiator_name_get,
-                    iscsi_initiator_name_set);
-
-RCF_PCH_CFG_NODE_RW(node_iscsi_parameters2advertize, "parameters2advertize",
-                    NULL, &node_iscsi_initiator_name,
-                    iscsi_parameters2advertize_get, 
-                    iscsi_parameters2advertize_set);
-                    
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_port, "target_port", NULL, 
-                    &node_iscsi_parameters2advertize,
+                    NULL,
                     iscsi_target_port_get, iscsi_target_port_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_addr, "target_addr", NULL, 
@@ -2476,8 +2625,26 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_name, "target_name", NULL,
                     &node_iscsi_target_addr, iscsi_target_name_get,
                     iscsi_target_name_set);
 
+
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_cid, "cid", NULL, NULL,
+                    iscsi_cid_get, iscsi_cid_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_alias, "initiator_alias", NULL, 
+                    &node_iscsi_cid, iscsi_initiator_alias_get,
+                    iscsi_initiator_alias_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_initiator_name, "initiator_name", NULL, 
+                    &node_iscsi_initiator_alias, iscsi_initiator_name_get,
+                    iscsi_initiator_name_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_parameters2advertize, "parameters2advertize",
+                    NULL, &node_iscsi_initiator_name,
+                    iscsi_parameters2advertize_get, 
+                    iscsi_parameters2advertize_set);
+
 RCF_PCH_CFG_NODE_RW(node_iscsi_session_type, "session_type", NULL,
-                    &node_iscsi_target_name, iscsi_session_type_get,
+                    &node_iscsi_parameters2advertize, iscsi_session_type_get,
                     iscsi_session_type_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_error_recovery_level, "error_recovery_level", 
@@ -2594,8 +2761,13 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_chap, "chap",
                     &node_iscsi_max_connections, iscsi_initiator_chap_get,
                     iscsi_initiator_chap_set);
 
+RCF_PCH_CFG_NODE_COLLECTION(node_iscsi_conn, "conn", 
+                            &node_iscsi_chap, &node_iscsi_target_name,
+                            iscsi_conn_add, iscsi_conn_del, iscsi_conn_list,
+                            NULL);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_iscsi_target_data, "target_data",
-                            &node_iscsi_chap, &node_iscsi_host_bus_adapter, 
+                            &node_iscsi_conn, &node_iscsi_host_bus_adapter, 
                             iscsi_target_data_add, iscsi_target_data_del,
                             iscsi_target_data_list, NULL);
 

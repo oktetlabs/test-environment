@@ -1139,6 +1139,7 @@ static char *log_mapping[] = {
 int
 tapi_iscsi_initiator_advertize_set(const char *ta,
                                    iscsi_target_id target_id,
+                                   iscsi_cid cid,
                                    tapi_iscsi_parameter param,
                                    te_bool advertize)
 {
@@ -1176,11 +1177,14 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
 
     rc = cfg_get_instance_fmt(&type, &offer,
                               "/agent:%s/iscsi_initiator:/target_data:"
-                              "target_%d/parameters2advertize:",
-                              ta, target_id);
+                              "target_%d/conn:%d/parameters2advertize:",
+                              ta, target_id, cid);
     if (rc != 0)
     {
-        ERROR("Failed to get current parameters2advertize");
+        ERROR("Failed to get current parameters2advertize: "
+              "/agent:%s/iscsi_initiator:/target_data:"
+              "target_%d/conn:%d/parameters2advertize:",
+              ta, target_id, cid);
         return rc;
     }
 
@@ -1197,11 +1201,11 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
 
     rc = cfg_set_instance_fmt(CVT_STRING, offer,
                               "/agent:%s/iscsi_initiator:/target_data:"
-                              "target_%d/parameters2advertize:",
-                              ta, target_id);
+                              "target_%d/conn:%d/parameters2advertize:",
+                              ta, target_id, cid);
     if (rc != 0)
     {
-        ERROR("Failed to get current parameters2advertize");
+        ERROR("Failed to set current parameters2advertize");
         return rc;
     }
     
@@ -1212,6 +1216,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
 int 
 tapi_iscsi_initiator_set_parameter(const char *ta,
                                    iscsi_target_id target_id,
+                                   iscsi_cid cid,
                                    tapi_iscsi_parameter param,
                                    const char *value, 
                                    te_bool advertize)
@@ -1261,29 +1266,40 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
     
-    RING("Set %s (%s, target=%d) to %s, %s advertizing", 
+    RING("Set %s (%s, target=%d, cid=%d param=%d) to %s, %s advertizing", 
          log_mapping[param], 
-         ta, target_id, value, advertize ? "with":"without");
+         ta, target_id, cid, param, value, advertize ? "with":"without");
     
-    rc = tapi_iscsi_initiator_advertize_set(ta, target_id,
-                                            param,
-                                            advertize);
-    if (rc != 0)
+
+    if (cid == ISCSI_ALL_CONNECTIONS)
     {
-        ERROR("Failed to set %sadvertize for the parameter %s",
-              advertize ? "":"not ", log_mapping[param]);
-        return rc;
+        rc = cfg_set_instance_fmt(CVT_STRING, value,
+                                  "/agent:%s/iscsi_initiator:/target_data:"
+                                  "target_%d/%s",
+                                  ta, target_id, mapping[param]);
+    }
+    else
+    {
+        rc = tapi_iscsi_initiator_advertize_set(ta, target_id, cid,
+                                                param, 
+                                                advertize);
+        if (rc != 0)
+        {
+            ERROR("Failed to set %sadvertize for the parameter %s",
+                  advertize ? "":"not ", log_mapping[param]);
+            return rc;
+        }
+
+        rc = cfg_set_instance_fmt(CVT_STRING, value,
+                                  "/agent:%s/iscsi_initiator:/target_data:"
+                                  "target_%d/conn:%d/%s",
+                                      ta, target_id, cid, mapping[param]);
     }
 
-    rc = cfg_set_instance_fmt(CVT_STRING, value,
-                              "/agent:%s/iscsi_initiator:/target_data:"
-                              "target_%d/%s",
-                              ta, target_id, mapping[param]);
-
     if (rc != 0)
     {
-        ERROR("Failed to set %s parameter to %s, rc = %d (%r)",
-              log_mapping[param], value, rc, rc);
+        ERROR("Failed to set %s parameter to %s, cid=%d, rc = %d (%r)",
+              log_mapping[param], value, cid, rc, rc);
         
         return rc;
     }
@@ -1295,7 +1311,7 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
 #define MAX_TARGETS_NUMBER 10
 #define MAX_CONNECTION_NUMBER 100
 
-static int iscsi_current_cid[MAX_CONNECTION_NUMBER];
+static int iscsi_current_cid[MAX_TARGETS_NUMBER];
 static int iscsi_current_target = 0;
 
 /* see description in tapi_iscsi.h */
@@ -1303,38 +1319,99 @@ iscsi_cid
 tapi_iscsi_initiator_conn_add(const char *ta,
                               iscsi_target_id tgt_id)
 {
-    int  rc;
-    char cmd[MAX_INI_CMD_SIZE];
+    int        rc;
+    cfg_handle handle;
 
-    cmd[0] = 0;
-    
-    sprintf(cmd, "up %d %d", iscsi_current_cid[tgt_id], tgt_id);
+    rc = cfg_add_instance_fmt(&handle, CVT_STRING,
+                              "",
+                              "/agent:%s/iscsi_initiator:/"
+                              "target_data:target_%d"
+                              "/conn:%d",
+                              ta, tgt_id, iscsi_current_cid[tgt_id]);
+    if (rc != 0)
+    {
+        ERROR("Failed to add connection instance to the initiator");
+        return -rc;
+    }
 
-    rc = cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
-                              "/agent:%s/iscsi_initiator:", ta);
-    return (rc == 0) ? (iscsi_current_cid[tgt_id]++) : (-rc);
+    return iscsi_current_cid[tgt_id]++;
 }
 
-/* see description in tapi_iscsi.h */
+int
+tapi_iscsi_initiator_conn_establish(const char *ta,
+                                    iscsi_target_id tgt_id,
+                                    iscsi_cid cid)
+{
+    int  rc;
+    char cmd[10];
+    
+    sprintf(cmd, "%d", cid);
+
+    RING("Setting: /agent:%s/iscsi_initiator:/target_data:"
+         "target_%d/conn:%d/cid:", ta, tgt_id, cid);
+
+    rc = cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
+                              "/agent:%s/iscsi_initiator:/target_data:"
+                              "target_%d/conn:%d/cid:", ta,
+                              tgt_id, cid);
+    if (rc != 0)
+    {
+        ERROR("Failed to establish the connection "
+              "with cid=%d for target %d", cid, tgt_id);
+        return rc;
+    }
+
+    return 0;
+}
+
+int
+tapi_iscsi_initiator_conn_down(const char *ta,
+                               iscsi_target_id tgt_id,
+                               iscsi_cid cid)
+{
+    int  rc;
+    char cmd[10];
+
+    sprintf(cmd, "%d", ISCSI_CONNECTION_DOWN);
+
+    rc = cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
+                              "/agent:%s/iscsi_initiator:/target_data:"
+                              "target_%d/conn:%d/cid:", ta,
+                              tgt_id,
+                              cid);
+    if (rc != 0)
+    {
+        ERROR("Failed to down the connection");
+        return rc;
+    }
+    
+    return 0;
+}
+
 int 
 tapi_iscsi_initiator_conn_del(const char *ta,
                               iscsi_target_id tgt_id,
                               iscsi_cid cid)
 {
-    char cmd[MAX_INI_CMD_SIZE];
-    int  rc;
+    int        rc;
+    cfg_handle handle;
 
-    cmd[0] = 0;
-    sprintf(cmd, "down %d %d", cid, tgt_id);
-
-    rc = cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
-                              "/agent:%s/iscsi_initiator:",
-                              ta);
+    rc = cfg_find_fmt(&handle, "/agent:%s/iscsi_initiator:/target_data:"
+                      "target_%d/conn:%d", ta, tgt_id, cid);
     if (rc != 0)
     {
-        ERROR("Failed to delete connection with id %d from target %d",
-              cid, tgt_id);
+        ERROR("No connection with such ID");
+        return rc;
     }
+
+    rc = cfg_del_instance(handle, FALSE);
+    if (rc != 0)
+    {
+        ERROR("Failed to delete connection with ID %d from agent %s",
+              tgt_id, ta);
+    }
+    iscsi_current_cid[tgt_id]--;
+
     return rc;
 }
 
@@ -1371,30 +1448,34 @@ tapi_iscsi_initiator_add_target(const char *ta,
                         ta, iscsi_current_target);
     if (rc != 0)
     {
-        ERROR("Failed to add target_data instance to the initiator");
+        ERROR("Failed to add target_data instance to the initiator, rc=%r");
         return -rc;
     }
 
     rc = tapi_iscsi_initiator_set_parameter(ta,
                                             iscsi_current_target,
+                                            ISCSI_ALL_CONNECTIONS,
                                             ISCSI_PARAM_TARGET_ADDRESS,
                                             (void *)target_addr_param,
                                             FALSE);
     if (rc != 0)
     {
-        ERROR("Failed to set local parameter of the target rc = %d", rc);
+        ERROR("Failed to set TargetAddress parameter of "
+              "the target rc = %r", 
+              rc);
         return -rc;
     }
 
     sprintf(port, "%d", target_port);
     rc = tapi_iscsi_initiator_set_parameter(ta,
                                             iscsi_current_target,
+                                            ISCSI_ALL_CONNECTIONS,
                                             ISCSI_PARAM_TARGET_PORT,
                                             (void *)port,
                                             FALSE);
     if (rc != 0)
     {
-        ERROR("Failed to add target_data instance to the initiator");
+        ERROR("Failed to set TargetPort aprameter of the initiator, rc=%r");
         return -rc;
     }
     

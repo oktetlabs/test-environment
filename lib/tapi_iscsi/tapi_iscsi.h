@@ -67,7 +67,7 @@
  * @param param_name_ Name of the parameter to configure
  * @param value_      New value of the parameter (in string form)
  */
-#define ISCSI_INITIATOR_SET_ADVERTIZE(ta_, target_id_, \
+#define ISCSI_INITIATOR_SET_ADVERTIZE(ta_, target_id_, cid_, \
                                       param_name_, value_)              \
     do {                                                                \
         int param_id = tapi_iscsi_get_param_map(param_name_);           \
@@ -77,6 +77,7 @@
                                                                         \
         CHECK_RC(tapi_iscsi_initiator_set_parameter((ta_),              \
                                                     (target_id_),       \
+                                                    (cid_),             \
                                                     param_id,           \
                                                     (value_),           \
                                                     TRUE));             \
@@ -91,7 +92,7 @@
  * @param param_name_ Name of the parameter to configure
  * @param value_      New value of the parameter (in string form)
  */
-#define ISCSI_INITIATOR_SET_NOT_ADVERTIZE(ta_, target_id_, \
+#define ISCSI_INITIATOR_SET_NOT_ADVERTIZE(ta_, target_id_, cid_, \
                                           param_name_, value_)          \
     do {                                                                \
         int param_id = tapi_iscsi_get_param_map(param_name_);           \
@@ -101,6 +102,7 @@
                                                                         \
         CHECK_RC(tapi_iscsi_initiator_set_parameter((ta_),              \
                                                     (target_id_),       \
+                                                    (cid_),             \
                                                     param_id,           \
                                                     (value_),           \
                                                     FALSE));            \
@@ -518,6 +520,7 @@ typedef int iscsi_cid;
  */
 extern int tapi_iscsi_initiator_advertize_set(const char *ta,
                                               iscsi_target_id target_id,
+                                              iscsi_cid cid,
                                               tapi_iscsi_parameter param,
                                               te_bool advertize);
 /**
@@ -532,6 +535,7 @@ extern int tapi_iscsi_initiator_advertize_set(const char *ta,
  */
 extern int tapi_iscsi_initiator_set_parameter(const char *ta,
                                               iscsi_target_id target_id,
+                                              iscsi_cid cid,
                                               tapi_iscsi_parameter param,
                                               const char *value,
                                               te_bool advertize);
@@ -576,16 +580,31 @@ extern int tapi_iscsi_initiator_del_target(const char *ta,
                                       iscsi_target_id tgt_id);
 
 /**
- * Function tries to establish connection with the Target.
+ * Function adds the connection. It should be called before the connection
+ * can be configured.
  *
+ * @param ta         Name of the TA on which the Initiator is placed
+ * @param tgt_id     Id of the Target to establish connection with
+ *
+ * @return CID of the newly created connection
+ */
+extern iscsi_cid tapi_iscsi_initiator_conn_add(const char *ta,
+                                               iscsi_target_id tgt_id);
+
+/**
+ * Function tries to establish the connection with the given cid
+ * between the target and the initiator. Before calling this function
+ * the tapi_iscsi_initiator_conn_add() function should be called.
+ * 
  * @param ta         Name of the TA on which the Initiator is placed
  * @param tgt_id     Id of the Target to establish connection with
  * @param cid        ID of the connection to establish
  *
  * @return CID of the newly created connection
  */
-extern iscsi_cid tapi_iscsi_initiator_conn_add(const char *ta,
-                                               iscsi_target_id tgt_id);
+extern iscsi_cid tapi_iscsi_initiator_conn_establish(const char *ta,
+                                                     iscsi_target_id tgt_id,
+                                                     iscsi_cid cid);
 
 /**
  * Function tries to delete connection from the Initiator.
@@ -600,6 +619,21 @@ extern iscsi_cid tapi_iscsi_initiator_conn_add(const char *ta,
 extern int tapi_iscsi_initiator_conn_del(const char *ta,
                                          iscsi_target_id tgt_id,
                                          iscsi_cid cid);
+
+/**
+ * Function stops the connection with the given cid between the initiator
+ * and the target.
+ *
+ * @param ta         Name of the TA on which the Initiator is placed
+ * @param tgt_id     Id of the Target the connection with which should be
+ *                   deleted
+ * @param cid        ID of the connection to delete
+ *
+ * @return           errno
+ */
+extern int tapi_iscsi_initiator_conn_down(const char *ta,
+                                          iscsi_target_id tgt_id,
+                                          iscsi_cid cid);
 
 
 /**

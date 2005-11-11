@@ -28,8 +28,8 @@
  * $Id: te_tools.h 18504 2005-09-17 15:59:32Z arybchik $
  */
 
-#ifndef __TE_TOOLS_H__
-#define __TE_TOOLS_H__
+#ifndef __TE_ISCSI_H__
+#define __TE_ISCSI_H__
 
 /* 
  * List of default parameters, used during initialization of
@@ -82,6 +82,26 @@
 #define OFFER_DATA_SEQUENCE_IN_ORDER            (1 << 12)
 #define OFFER_ERROR_RECOVERY_LEVEL              (1 << 13)
 
+/** 
+ * When the connection is added but not configured it is the
+ * cid field of the connection structure.
+ */
+#define ISCSI_CONNECTION_DOWN   -1
+
+#define ISCSI_CONNECTION_UP     -4
+
+/**
+ * When the connection is removed or was not added at all it is
+ * the cid field of the connection structure.
+ */
+#define ISCSI_CONNECTION_REMOVED -2
+
+/**
+ * If the parameters is session wide, than this value should be passed
+ * to the set parameter function as a cid
+ */
+#define ISCSI_ALL_CONNECTIONS -3
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -89,4 +109,4 @@ extern "C" {
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-#endif /* !__TE_TOOLS_H__ */
+#endif /* !__TE_ISCSI_H__ */
