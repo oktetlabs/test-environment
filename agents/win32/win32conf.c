@@ -234,7 +234,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
 
 RCF_PCH_CFG_NODE_AGENT(node_agent, &node_interface);
 
-char *te_lockdir = "/tmp";
+const char *te_lockdir = "/tmp";
 
 static MIB_IFROW if_entry;
 
