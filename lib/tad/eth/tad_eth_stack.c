@@ -545,7 +545,7 @@ tad_eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
     char     choice_label[20];
     te_errno rc;
 
-    RING("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
+    INFO("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
 
     rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
                         sizeof(choice_label));
