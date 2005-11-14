@@ -1223,35 +1223,36 @@ iscsi_initiator_unh_set(const int target_id, const int cid,
 
         ISCSI_UNH_SET_UNNEGOTIATED("SessionType", conn->session_type, target_id);
 
-        /* Target' CHAP */
-        if (conn->chap.target_auth)
-        {
-            ISCSI_UNH_FORCE_FLAG("t", target_id,
-                                 "Target Authentication");
-        }
-
-        ISCSI_UNH_FORCE_STRING("px", conn->chap.peer_secret, target_id,
-                               "Peer Secret");
-
-        ISCSI_UNH_FORCE("ln", conn->chap.local_name, target_id,
-                        "Local Name");
-
-        ISCSI_UNH_SET_UNNEGOTIATED("AuthMethod", conn->chap.chap, target_id);
-
-        if (conn->chap.enc_fmt == BASE_64)
-            ISCSI_UNH_FORCE_FLAG("b", target_id,
-                                 "Encoding Format");
-
-        ISCSI_UNH_FORCE_INT("cl", conn->chap.challenge_length, target_id,
-                            "Challenge Length");
-
-        ISCSI_UNH_FORCE("pn", conn->chap.peer_name, target_id,
-                        "Peer Name");
-
-        ISCSI_UNH_FORCE_STRING("lx", conn->chap.local_secret, target_id,
-                               "Local Secret");
+        
 
     }
+    ISCSI_UNH_SET_UNNEGOTIATED("AuthMethod", conn->chap.chap, target_id);
+
+    /* Target' CHAP */
+    if (conn->chap.target_auth)
+    {
+        ISCSI_UNH_FORCE_FLAG("t", target_id,
+                             "Target Authentication");
+    }
+
+    ISCSI_UNH_FORCE_STRING("px", conn->chap.peer_secret, target_id,
+                           "Peer Secret");
+
+    ISCSI_UNH_FORCE("ln", conn->chap.local_name, target_id,
+                    "Local Name");
+
+    if (conn->chap.enc_fmt == BASE_64)
+        ISCSI_UNH_FORCE_FLAG("b", target_id,
+                             "Encoding Format");
+
+    ISCSI_UNH_FORCE_INT("cl", conn->chap.challenge_length, target_id,
+                        "Challenge Length");
+
+    ISCSI_UNH_FORCE("pn", conn->chap.peer_name, target_id,
+                    "Peer Name");
+
+    ISCSI_UNH_FORCE_STRING("lx", conn->chap.local_secret, target_id,
+                           "Local Secret");
     /* Initiator itself */
     ISCSI_UNH_SET_UNNEGOTIATED("InitiatorName", 
                   conn->initiator_name,
