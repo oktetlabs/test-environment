@@ -171,6 +171,21 @@
 #define CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(_func, _var) \
     CHECK_RETVAL_VAR(_func, _var, (((_var) != 0) && ((_var) != -1)), -1)
 
+/**
+ * If RPC call status is OK, check that variable with function return
+ * value is zero and set specified variable to -1 and RPC
+ * server errno to TE_ECORRUPTED, it is true.  If RPC call status is
+ * not OK, variable is set to -1 and RPC server errno is not updated.
+ *
+ * The function assumes to have RPC server handle as 'rpcs' variable in
+ * the context.
+ *
+ * @param _func     function
+ * @param _var      variable with return value
+ */
+#define CHECK_RETVAL_VAR_IS_ZERO(_func, _var) \
+    CHECK_RETVAL_VAR(_func, _var, ((_var) != 0), -1)
+
 /** Return with check (for functions returning zero value) */
 #define RETVAL_ZERO_INT(_func, _retval) \
     do {                                                            \

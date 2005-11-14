@@ -403,10 +403,16 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
     rcf_rpc_call(rpcs, "system", &in, &out);
     rc.flag = out.status_flag;
     rc.value = out.status_value;
+    if (rc.flag == RPC_WAIT_STATUS_CORED || 
+        rc.flag == RPC_WAIT_STATUS_UNKNOWN)
+        rc.value = -1;
+
     TAPI_RPC_LOG("RPC (%s,%s): system(%s) -> %s %d (%s)",
                  rpcs->ta, rpcs->name,
                  cmd, wait_status_flag_rpc2str(rc.flag), rc.value, 
                  errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    CHECK_RETVAL_VAR_IS_ZERO(system, rc.value);
 
     RETVAL_WAIT_STATUS(system, rc);
 }
