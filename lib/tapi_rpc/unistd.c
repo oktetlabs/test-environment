@@ -376,6 +376,44 @@ rpc_write(rcf_rpc_server *rpcs,
     RETVAL_INT(write, out.retval);
 }
 
+off_t
+rpc_lseek(rcf_rpc_server *rpcs,
+          int fd, off_t pos, int mode)
+{
+    rcf_rpc_op      op;
+    tarpc_lseek_in  in;
+    tarpc_lseek_out out;
+
+    op = rpcs->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(lseek, (off_t)-1);
+    }
+
+    in.fd       = fd;
+    in.pos      = pos;
+    in.mode     = lseek_mode_h2rpc(mode);
+    if (in.mode == RPC_SEEK_INVALID)
+    {
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
+        RETVAL_INT(lseek, -1);
+    }
+
+    rcf_rpc_call(rpcs, "lseek", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: lseek(%d, %u, %u) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 fd, (int)pos, lseek_mode_rpc2str(in.mode), 
+                 (int)out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(lseek, out.retval);
+}
+
 int
 rpc_readv_gen(rcf_rpc_server *rpcs,
               int fd, const struct rpc_iovec *iov,

@@ -32,11 +32,13 @@
 
 #include <assert.h>
 #include <netinet/in.h>
+#include <semaphore.h>
 
 #include "te_stdint.h"
 #include "tad_common.h"
 #include "asn_usr.h"
 #include "ndn_iscsi.h"
+#include "tapi_rpc.h"
 
 #define ISCSI_TARGET_SET_PARAM(ta_, param_id_, value_) \
     do {                                                            \
@@ -505,6 +507,18 @@ extern int tapi_iscsi_target_customize(const char *ta,
                                        const char *key,
                                        const char *value);
 
+extern int tapi_iscsi_target_cause_logout(const char *ta, int id, 
+                                          int timeout);
+
+
+extern int tapi_iscsi_target_cause_renegotiate(const char *ta, int id, 
+                                               int timeout);
+
+extern int tapi_iscsi_target_will_drop(const char *ta, int id, 
+                                       te_bool drop_all,
+                                       int time2wait, int time2retain);
+
+
 typedef int iscsi_target_id;
 typedef int iscsi_cid;
 
@@ -778,6 +792,35 @@ extern char* iscsi_digest_enum2str(iscsi_digest_type digest_type);
 
 /*** Functions for data transfer between Target and Initiator ***/
 
+/*** NOTE: THIS IS NOT YET IMPLEMENTED NOR STABILIZED!!!
+ *  Do not use it now
+ */
+
+#define MAX_ISCSI_IO_CMDS  16
+
+typedef struct iscsi_io_cmd_t
+{
+    int        cmd;
+    int        fd;
+    off_t      length;
+    te_bool    spread_fd;
+    void      *data;
+    sem_t      when_done;
+} iscsi_io_cmd_t;
+
+typedef struct iscsi_io_handle_t
+{
+    pthread_t       thread;
+    rcf_rpc_server *rpcs;
+    iscsi_io_cmd_t  cmds[MAX_ISCSI_IO_CMDS];
+    sem_t           cmd_wait;
+    int             next_cmd;
+    char            agent[RCF_MAX_NAME];
+} iscsi_io_handle_t;
+
+extern int tapi_iscsi_io_prepare(const char *ta, unsigned id, 
+                                 iscsi_io_handle_t **ioh);
+
 extern int tapi_iscsi_target_mount(const char *ta);
 extern int tapi_iscsi_target_unmount(const char *ta);
 
@@ -796,8 +839,12 @@ extern int tapi_iscsi_target_raw_verify(const char *ta,
                                         unsigned long offset,
                                         const char *data);
 
-extern int tapi_iscsi_initiator_mount(const char *ta, unsigned id);
-extern int tapi_iscsi_initiator_unmount(const char *ta, unsigned id);
+extern int tapi_iscsi_initiator_mount(const char *ta, unsigned id, 
+                                      pid_t *pid);
+extern int tapi_iscsi_initiator_unmount(const char *ta, unsigned id, 
+                                        pid_t *pid);
+
+extern int tapi_iscsi_initiator_wait(const char *ta, pid_t pid);
 
 extern int tapi_iscsi_initiator_put_file(const char *ta, unsigned id, 
                                          const char *localfname, 
@@ -807,12 +854,13 @@ extern int tapi_iscsi_initiator_get_file(const char *ta, unsigned id,
                                          const char *remotefname);
 extern int tapi_iscsi_initiator_delete_file(const char *ta, int id,
                                             const char *remotefname);
-extern int tapi_iscsi_initiator_raw_write(const char *ta, int id,
+extern int tapi_iscsi_initiator_raw_write(iscsi_io_handle_t ioh,
                                           unsigned long offset,
                                           const char *data);
-extern int tapi_iscsi_initiator_raw_verify(const char *ta, int id, 
+extern int tapi_iscsi_initiator_raw_verify(iscsi_io_handle_t ioh,
                                            unsigned long offset,
-                                           const char *data);
+                                           const char *data, 
+                                           int tries, int time2wait);
 
 
 

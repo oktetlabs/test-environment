@@ -40,6 +40,7 @@ int iscsi_set_custom_value(int id, const char *param, const char *value);
 int iscsi_get_custom_value(iscsi_custom_data *block, const char *param);
 te_bool iscsi_is_changed_custom_value(iscsi_custom_data *block, const char *param);
 
+int iscsi_custom_wait_change(iscsi_custom_data *block);
 
 #endif /* __TE_TAD_ISCSI_CUSTOM_H__ */
 

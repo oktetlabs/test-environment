@@ -198,6 +198,9 @@ struct iscsi_conn {
 	uint32_t max_send_length;	/*initiator's MaxRecvPDULength */
 	uint32_t max_recv_length;	/*target's MaxRecvPDULength */
 
+    /** thread to produce async messages */
+    pthread_t manager_thread;
+
     iscsi_custom_data *custom;
 };
 
@@ -247,6 +250,7 @@ struct iscsi_session {
 	/* error recovery ver ref18_04 */
 	pthread_t retran_thread;
     te_bool   has_retran_thread;
+   
 	sem_t thr_kill_sem;
 
 	/* For parameters */

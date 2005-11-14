@@ -33,7 +33,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <time.h>
 #include <unistd.h>
+#include <signal.h>
 #include <pthread.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -41,6 +43,7 @@
 #include <iscsi_target.h>
 #include <scsi_target.h>
 #include <iscsi_target_api.h>
+#include <iscsi_custom.h>
 #include <my_login.h>
 
 #include <logger_defs.h>
@@ -59,7 +62,9 @@ stderr_logging(const char   *file,
                const char   *user,
                const char   *fmt, ...)
 {
+    time_t  curtime;
     va_list args;
+
     va_start(args, fmt);
     UNUSED(file);
     UNUSED(line);
@@ -70,10 +75,20 @@ stderr_logging(const char   *file,
     fputc('\n', stderr);
     va_end(args);
     va_start(args, fmt);
-    fprintf(logfile, "[%d] ", level);
+    time(&curtime);
+    fprintf(logfile, "[%d %s] ", level, ctime(&curtime));
     vfprintf(logfile, fmt, args);
     fputc('\n', logfile);
     va_end(args);
+}
+
+static sig_atomic_t need_async;
+static void
+send_async_message(int signo)
+{
+    UNUSED(signo);
+
+    need_async = 1;
 }
 
 te_log_message_f te_log_message = stderr_logging;
@@ -240,14 +255,33 @@ int main(int argc, char *argv[])
                                 *devdata->param_tbl);
         }
     }
-
+    
+    {
+        struct sigaction sa;
+        sa.sa_handler = send_async_message;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags   = 0;
+        sigaction(SIGQUIT, &sa, NULL);
+    }
+    
+        
     for(;;)
     {
         data_socket = accept(server_socket, NULL, NULL);
         if (data_socket < 0)
         {
-            perror("accept");
-            return EXIT_FAILURE;
+            if (errno == EINTR && need_async != 0)
+            {
+                need_async = 0;
+                fputs("Requesting async message sending\n", stderr);
+                iscsi_set_custom_value(-1, "send_async", "logout_request");   
+                continue;
+            }
+            else
+            {
+                perror("accept");
+                return EXIT_FAILURE;
+            }
         }
         config = malloc(sizeof(*config)); 
 /** will be freed by iscsi_server_tx_thread **/

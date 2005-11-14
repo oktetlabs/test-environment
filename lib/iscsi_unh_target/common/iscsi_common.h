@@ -330,6 +330,7 @@
  */
 typedef struct {
     int send_recv_sock;
+    int custom_id;
     int reject;
 } iscsi_target_thread_params_t;
 
@@ -473,6 +474,15 @@ struct iscsi_targ_async_msg {	/* Draft 20, Section 10.9 Asynchronous Message */
 	uint32_t header_digest;	/* holds header CRC if in use */
 };
 
+enum iscsi_targ_async_msg_events {
+    ISCSI_ASYNC_SCSI_EVENT,
+    ISCSI_ASYNC_LOGOUT_REQUEST,
+    ISCSI_ASYNC_DROP_CONNECTION,
+    ISCSI_ASYNC_DROP_ALL,
+    ISCSI_ASYNC_RENEGOTIATE,
+    ISCSI_ASYNC_VENDOR = 255
+};
+
 struct iscsi_init_text_cmnd {	/* Draft 20, Section 10.10 Text Request */
 	uint8_t opcode;
 	uint8_t flags;
@@ -544,7 +554,7 @@ struct iscsi_targ_login_rsp {	/* Draft 20, Section 10.13 Login Response */
 
 struct iscsi_init_logout_cmnd {	/* Draft 20, Section 10.14 Logout Request */
 	uint8_t opcode;
-	uint8_t flags;		/* reasoncode */
+	uint8_t reason;
 	uint16_t rsvd1;
 	uint32_t length;
 	uint64_t lun;		/* reserved */

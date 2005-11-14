@@ -41,7 +41,8 @@
  *    so the risk is obvious. 
  */
 
-
+#include <te_config.h>
+#include <te_defs.h>
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -54,6 +55,7 @@
 
 #include "my_memory.h"
 #include "iscsi_common.h"
+#include <iscsi_custom.h>
 #include "debug.h"
 #include "crc.h"
 
@@ -65,6 +67,71 @@
 
 #include "text_param.h"
 #include "target_negotiate.h"
+
+static int
+iscsi_send_msg_ex(struct iscsi_conn *conn, int sock,
+                  struct generic_pdu *outputpdu)
+{
+    unsigned split_pdu = iscsi_get_custom_value(conn->custom, "split_pdu_at");
+    struct generic_pdu inputpdu;
+
+    if (split_pdu == 0 || outputpdu->text_length <= split_pdu)
+    {
+        if (iscsi_send_msg(sock, outputpdu, conn->connection_flags) < 0) {
+            TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
+            return -1;
+        } else {
+            conn->stat_sn++;
+        }
+    }
+    else
+    {
+        unsigned total; 
+        
+        TRACE(TRACE_DEBUG, "Splitting PDU %d at %d", outputpdu->text_length, split_pdu);
+        for (total = outputpdu->text_length; total > 0; total -= split_pdu)
+        {
+            if (total > split_pdu)
+            {
+                outputpdu->text_length = split_pdu;
+                outputpdu->flags      |= C_BIT;
+            }
+            else
+            {
+                outputpdu->text_length = total;
+                outputpdu->flags &= ~C_BIT;
+            }
+            if (iscsi_send_msg(sock, outputpdu, conn->connection_flags) < 0) 
+            {
+                TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
+                return -1;
+            }
+            else 
+            {
+                conn->stat_sn++;
+                if ((outputpdu->flags & C_BIT) == C_BIT)
+                {
+                    TRACE(TRACE_DEBUG, "Waiting for a continuation request");
+                    outputpdu->cmd_sn = htonl(conn->stat_sn + 1);
+                    memmove(outputpdu->text, outputpdu->text + outputpdu->text_length,
+                            total - outputpdu->text_length);
+                    if (iscsi_recv_msg(sock, ISCSI_HDR_LEN, (char *) &inputpdu,
+                                       conn->connection_flags) < 0) 
+                    {
+                        TRACE_ERROR("iscsi_recv_msg failed");
+                        return -1;
+                    }
+                    if (inputpdu.length != 0)
+                    {
+                        TRACE_ERROR("An initiator sent a non-empty Login Request");
+                        return -1;
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
 
 /*************************************************************************
  *This function sends a login response with proper status code when error
@@ -410,7 +477,9 @@ target_check_login(struct iscsi_conn *conn,
 	 * "The next stage value is only valid when the T bit is 1;
 	 * otherwise, it is reserved."
 	 */
-	if (inputpdu->flags & T_BIT) {
+	if ((inputpdu->flags & T_BIT) &&
+        iscsi_get_custom_value(conn->custom, "disable_t_bit") != 0)
+    {
 		outputpdu->flags |= (inputpdu->flags & NSG) | T_BIT;
 	}
 
@@ -682,12 +751,11 @@ target_security_negotiate(struct iscsi_conn *conn,
 	if (no_security_key_allowed(conn, outputpdu, *unknown_key_list))
 		goto out;
 
-	if (iscsi_send_msg(sock, outputpdu, conn->connection_flags) < 0) {
+	if (iscsi_send_msg_ex(conn, sock, outputpdu) < 0) 
+    {
 		TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
 		retval = -1;
 		goto out;
-	} else {
-		conn->stat_sn++;
 	}
 
 	outputpdu->text_length = 0;
@@ -1164,13 +1232,13 @@ target_security_negotiate(struct iscsi_conn *conn,
 
 		}						/* switch */
 
-		if (iscsi_send_msg(sock, outputpdu, conn->connection_flags) < 0) {
-			TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
-			retval = -1;
-			goto out;
-		} else {
-			conn->stat_sn++;
-		}
+
+        if (iscsi_send_msg_ex(conn, sock, outputpdu) < 0) 
+        {
+            TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
+            retval = -1;
+            goto out;
+        }
 
 		outputpdu->text_length = 0;
 	}
@@ -1277,13 +1345,13 @@ target_parameter_negotiate(struct iscsi_conn *conn,
 		}
 
 		/* send out the output pdu */
-		if (iscsi_send_msg(sock, outputpdu, conn->connection_flags) < 0) {
-			TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
-			retval = -1;
-			goto out;
-		} else {
-			conn->stat_sn++;
-		}
+
+        if (iscsi_send_msg_ex(conn, sock, outputpdu) < 0) 
+        {
+            TRACE(TRACE_DEBUG, "iscsi_send_msg failed");
+            retval = -1;
+            goto out;
+        }
 
 		/* after sending the output pdu, reset its length to 0 */
 		outputpdu->text_length = 0;

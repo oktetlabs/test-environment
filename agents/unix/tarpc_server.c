@@ -704,6 +704,15 @@ TARPC_FUNC(writev,
 }
 )
 
+/*-------------- lseek() ------------------------------*/
+
+TARPC_FUNC(lseek, {},
+{
+    MAKE_CALL(out->retval = func(in->fd, in->pos, 
+        lseek_mode_rpc2h(in->mode)));
+})
+
+
 /*-------------- getsockname() ------------------------------*/
 TARPC_FUNC(getsockname,
 {

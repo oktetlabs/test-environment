@@ -34,6 +34,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <semaphore.h>
 
 #include <te_defs.h>
 #include <logger_api.h>
@@ -42,7 +43,7 @@
 #include <pthread.h>
 #include "iscsi_custom.h"
 
-#define ISCSI_CUSTOM_MAX_PARAM 2
+#define ISCSI_CUSTOM_MAX_PARAM 10
 
 struct iscsi_custom_data
 {
@@ -50,6 +51,7 @@ struct iscsi_custom_data
     struct iscsi_custom_data *next, *prev;
     int params[ISCSI_CUSTOM_MAX_PARAM];
     te_bool changed[ISCSI_CUSTOM_MAX_PARAM];
+    sem_t on_change;
 };
 
 static pthread_mutex_t custom_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -66,6 +68,7 @@ iscsi_register_custom(int id)
         return NULL;
     }
     memset(block, 0, sizeof(*block));
+    sem_init(&block->on_change, 0, 0);
     block->id = id;
     pthread_mutex_lock(&custom_mutex);
     block->next = custom_data_list;
@@ -91,38 +94,104 @@ iscsi_deregister_custom(iscsi_custom_data *block)
     free(block);
 }
 
-static int
-find_custom_param (const char *name)
+typedef struct iscsi_custom_descr
 {
-    static char *name_list[ISCSI_CUSTOM_MAX_PARAM + 1] = 
-        {
-            "reject",
-            "CHAP_I",
-            NULL
-        };
-    char **iter;
+    char    *name;
+    te_bool  need_post;
+    char   **enumeration;
+} iscsi_custom_descr;
 
-    for (iter = name_list; *iter != NULL; iter++)
+
+static char *async_messages[] = {"scsi_async_event",
+                                 "logout_request",
+                                 "drop_connection",
+                                 "drop_all_connections",
+                                 "renegotiate",
+                                 NULL};
+
+static char *boolean_values[] = {"no", "yes", NULL};
+
+static iscsi_custom_descr param_descr[ISCSI_CUSTOM_MAX_PARAM + 1] = 
+{
+    {"reject", FALSE, NULL},
+    {"CHAP_I", FALSE, NULL},
+    {"send_async", TRUE, async_messages},
+    {"async_logout_timeout", FALSE, NULL},
+    {"async_drop_time2wait", FALSE, NULL},
+    {"async_drop_time2retain", FALSE, NULL},
+    {"async_vcode", FALSE, NULL},
+    {"async_text_timeout", FALSE, NULL},
+    {"disable_t_bit", FALSE, boolean_values},
+    {"split_pdu_at", FALSE, NULL},
+    {NULL, FALSE, NULL},
+};
+    
+
+static int
+find_custom_param (const char *name, te_bool *need_post)
+{
+    iscsi_custom_descr *iter;
+
+    for (iter = param_descr; iter->name != NULL; iter++)
     {
-        if (strcmp(*iter, name) == 0)
-            return iter - name_list;
+        if (strcmp(iter->name, name) == 0)
+        {
+            if (need_post != NULL)
+                *need_post = iter->need_post;
+            return iter - param_descr;
+        }
     }
     ERROR("Unknown iSCSI customization parameter: '%s'", name);
     return -1;
+}
+
+
+static int
+translate_custom_value(int idx, const char *value)
+{
+    char  *endptr;
+    int    intval;
+    char **iter;
+    
+    intval = strtol(value, &endptr, 0);
+    if (*endptr == '\0')
+        return intval;
+    if (param_descr[idx].enumeration == NULL)
+    {
+        ERROR("Non-integer value '%s' for parameter '%s'", 
+              value, param_descr[idx].name);
+        return 0;
+    }
+    for (iter = param_descr[idx].enumeration; *iter != NULL; iter++)
+    {
+        if (strcmp(*iter, value) == 0)
+        {
+            return iter - param_descr[idx].enumeration;
+        }
+    }
+    ERROR("Unrecognized value '%s' for parameter '%s'", 
+          value, param_descr[idx].name);
+    return 0;    
 }
 
 int
 iscsi_set_custom_value(int id, const char *param, const char *value)
 {
     iscsi_custom_data *block;
-    int param_no = find_custom_param(param);
-    int intvalue = strtol(value, NULL, 10);
-
+    te_bool            need_post;
+    int                param_no = find_custom_param(param, &need_post);
+    int                intvalue;
+    te_bool            has_set = FALSE;
+        
     if (param_no < 0)
     {
+        ERROR("Parameter %s not found", param);
         return -1;
     }
-
+        
+    intvalue = translate_custom_value(param_no, value);
+    RING("Setting a custom value %s to %s (%d) for %d", param, value,
+         intvalue, id);
     pthread_mutex_lock(&custom_mutex);
     for (block = custom_data_list; block != NULL; block = block->next)
     {
@@ -130,12 +199,18 @@ iscsi_set_custom_value(int id, const char *param, const char *value)
         {
             block->params[param_no] = intvalue;
             block->changed[param_no] = TRUE;
+            if (need_post)
+            {
+                RING("Awakening the manager");
+                sem_post(&block->on_change);
+            }
+            has_set = TRUE;
             if (id >= 0)
                 break;
         }
     }
     pthread_mutex_unlock(&custom_mutex);
-    return (block == NULL);
+    return !has_set;
 }
 
 int
@@ -143,7 +218,7 @@ iscsi_get_custom_value(iscsi_custom_data *block,
                        const char *param)
 {
     int value;
-    int param_no = find_custom_param(param);
+    int param_no = find_custom_param(param, NULL);
 
     if (param_no < 0)
     {
@@ -162,7 +237,7 @@ iscsi_is_changed_custom_value(iscsi_custom_data *block,
                               const char *param)
 {
     te_bool flag;
-    int param_no = find_custom_param(param);
+    int param_no = find_custom_param(param, NULL);
 
     if (param_no < 0)
     {
@@ -173,4 +248,24 @@ iscsi_is_changed_custom_value(iscsi_custom_data *block,
     flag = block->changed[param_no];
     pthread_mutex_unlock(&custom_mutex);
     return flag;
+}
+
+int
+iscsi_custom_wait_change(iscsi_custom_data *block)
+{
+    int i;
+    int count;
+
+    VERB("Waiting for a custom change");
+    sem_wait(&block->on_change);
+    VERB("semaphore fired");
+    pthread_mutex_lock(&custom_mutex);
+    for (i = 0, count = 0; i < ISCSI_CUSTOM_MAX_PARAM; i++)
+    {
+        if(block->changed[i])
+            count++;
+    }
+    pthread_mutex_unlock(&custom_mutex);
+    VERB("Has %d changed values", count);
+    return count;
 }

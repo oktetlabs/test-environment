@@ -175,6 +175,21 @@ rpc_read(rcf_rpc_server *rpcs,
 }
 
 
+/**
+ * RPC equivalent of 'lseek'
+ *
+ * @param rpcs     RPC server handle
+ * @param fd       file descriptor
+ * @param pos      position to seek
+ * @param count    seek mode (SEEK_SET, SEEK_CUR, SEEK_END)
+ *
+ * @return  resuling file position or -1 on error
+ */
+extern off_t rpc_lseek(rcf_rpc_server *rpcs,
+                       int fd, off_t pos, int mode);
+
+
+
 /** Sturcture to store vector of buffers */
 typedef struct rpc_iovec {
     void   *iov_base;   /**< starting address of buffer */

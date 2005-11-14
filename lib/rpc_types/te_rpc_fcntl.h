@@ -326,4 +326,52 @@ fcntl_rpc2str(rpc_fcntl_command cmd)
     }
 }
 
+/*
+ * Seek modes
+ */
+
+
+typedef enum rpc_lseek_mode {
+    RPC_SEEK_SET,
+    RPC_SEEK_CUR,
+    RPC_SEEK_END,
+    RPC_SEEK_INVALID = -1
+} rpc_lseek_mode;
+
+static inline int
+lseek_mode_rpc2h(rpc_lseek_mode mode)
+{
+    switch (mode)
+    {
+        RPC2H(SEEK_SET);
+        RPC2H(SEEK_CUR);
+        RPC2H(SEEK_END);
+        default: return -1;
+    }    
+}
+
+static inline rpc_lseek_mode
+lseek_mode_h2rpc(int mode)
+{
+    switch (mode)
+    {
+        H2RPC(SEEK_SET);
+        H2RPC(SEEK_CUR);
+        H2RPC(SEEK_END);
+        default: return RPC_SEEK_INVALID;
+    }    
+}
+
+static inline const char *
+lseek_mode_rpc2str(rpc_lseek_mode mode)
+{
+    switch (mode)
+    {
+        RPC2STR(SEEK_SET);
+        RPC2STR(SEEK_CUR);
+        RPC2STR(SEEK_END);
+        default: return "invalid";
+    }
+}
+
 #endif /* !__TE_RPC_FCNTL_H__ */

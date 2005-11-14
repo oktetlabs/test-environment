@@ -64,6 +64,7 @@
 #include "scsi_target.h"
 #include <scsi_cmnd.h>
 #include <scsi_request.h>
+#include <linux-scsi.h>
 #include "iscsi_target.h"
 #include "iscsi_portal_group.h"
 #include "target_error_rec.h"
@@ -131,6 +132,8 @@ iscsi_release_connection(struct iscsi_conn *conn)
     free(conn->local_ip_address);                                    
     free(conn->ip_address);                                          
 #endif
+    pthread_cancel(conn->manager_thread);
+    pthread_join(conn->manager_thread, NULL);
     iscsi_deregister_custom(conn->custom);
     free(conn);
     return 0;                                                                     
@@ -164,7 +167,10 @@ iscsi_recv_iov (int csap, struct iovec *iov, int niov)
          niov != 0 && received != 0; 
          niov--, iov++, total += received)
     {
-        received = recv(csap, iov->iov_base, iov->iov_len, MSG_WAITALL);
+        if (iov->iov_len == 0)
+            received = 0;
+        else
+            received = recv(csap, iov->iov_base, iov->iov_len, MSG_WAITALL);
         pthread_testcancel();
         if (received < 0)
             return received;
@@ -541,9 +547,8 @@ iscsi_release_session(struct iscsi_session *session)
         /* error recovery ver new 18_04 - SAI */
         if (session->has_retran_thread) 
         {
-            void *data;
             pthread_cancel(session->retran_thread);
-            pthread_join(session->retran_thread, &data);
+            pthread_join(session->retran_thread, NULL);
         }
     }
 
@@ -780,6 +785,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
         debug_iov++;
     }
 # endif
+
 
     /* compute optional header digest */
     if (conn->hdr_crc) {
@@ -1923,7 +1929,7 @@ handle_logout(struct iscsi_conn *conn,
 	pdu->exp_stat_sn = ntohl(pdu->exp_stat_sn);
 
 	TRACE(TRACE_VERBOSE, "Logout ITT %u, CmdSN %u, reason %u, cid %u",
-			pdu->init_task_tag, pdu->cmd_sn, pdu->flags & LOGOUT_REASON,
+			pdu->init_task_tag, pdu->cmd_sn, pdu->reason & LOGOUT_REASON,
 			pdu->cid);
 
 	if ((cmnd = get_new_cmnd()) == NULL) {
@@ -1998,6 +2004,71 @@ generate_next_ttt(struct iscsi_session* session)
 	return retval;
 }
 
+static void *
+iscsi_manager_thread (void *data)
+{
+    struct iscsi_conn *conn = data;
+    int async_msg;
+    struct iscsi_targ_async_msg hdr;
+    
+    TRACE(TRACE_ISCSI_FULL, "Running the target manager thread");
+    for (;;)
+    {
+        iscsi_custom_wait_change(conn->custom);
+        pthread_testcancel();
+        TRACE(TRACE_ISCSI_FULL, "Got something for manager");
+        if (iscsi_is_changed_custom_value(conn->custom,
+                                          "send_async"))
+        {
+            TRACE(TRACE_ISCSI_FULL, "Got request to send AM");
+            async_msg = iscsi_get_custom_value(conn->custom, "send_async");
+            memset(&hdr, 0, sizeof(hdr));
+            hdr.opcode        = ISCSI_TARG_ASYNC_MSG;
+            hdr.init_task_tag = 0xFFFFFFFF;
+            /** NOTE: a possible race condition below. 
+             *  Needs further exploration
+             */
+            hdr.stat_sn       = conn->stat_sn++;
+            hdr.stat_sn       = htonl(hdr.stat_sn);
+            hdr.max_cmd_sn    = htonl(conn->session->max_cmd_sn);
+            hdr.exp_cmd_sn    = htonl(conn->session->exp_cmd_sn);
+            hdr.async_event   = async_msg;
+#define CUSTOM(id) (htons(iscsi_get_custom_value(conn->custom, #id)))
+#define CUSTOM_BYTE(id) (iscsi_get_custom_value(conn->custom, #id))
+            switch (async_msg)
+            {
+                case ISCSI_ASYNC_SCSI_EVENT:
+                    WARN("Async SCSI events are not yet fully supported");
+                    break;
+                case ISCSI_ASYNC_LOGOUT_REQUEST:
+                    hdr.parameter3 = CUSTOM(async_logout_timeout);
+                    break;
+                case ISCSI_ASYNC_DROP_CONNECTION:
+                    hdr.parameter1 = conn->cid;
+                    /* FALL THROUGH */
+                case ISCSI_ASYNC_DROP_ALL:
+                    hdr.parameter2 = CUSTOM(async_drop_time2wait);
+                    hdr.parameter3 = CUSTOM(async_drop_time2retain);
+                    break;
+                case ISCSI_ASYNC_RENEGOTIATE:
+                    hdr.parameter3 = CUSTOM(async_text_timeout);
+                    break;
+                case ISCSI_ASYNC_VENDOR:
+                    hdr.async_vcode = CUSTOM_BYTE(async_vcode);
+                    WARN("Issuing a vendor-specific async message");
+                    break;
+                default:
+                    WARN("Unknown async message event %d", async_msg);
+            }
+            send_hdr_only(conn, &hdr);
+        }
+#undef CUSTOM
+#undef CUSTOM_BYTE
+    }
+    return NULL;
+}
+
+
 /*
  * allocates all the structures necessary for a new connection and a
  * new session.  If later we find out that this connection belongs to
@@ -2015,7 +2086,7 @@ generate_next_ttt(struct iscsi_session* session)
  * @param ptr      Portal group structure pointer.
  */
 static struct iscsi_conn *
-build_conn_sess(int sock, struct portal_group *ptr)
+build_conn_sess(int sock, int custom_id, struct portal_group *ptr)
 {
     struct iscsi_conn *conn;
     struct iscsi_session *session;
@@ -2100,7 +2171,12 @@ build_conn_sess(int sock, struct portal_group *ptr)
     }
     sem_init(&session->thr_kill_sem,0 ,0);
 
-    conn->custom = iscsi_register_custom(sock);
+    conn->custom = iscsi_register_custom(custom_id);
+    if (pthread_create(&conn->manager_thread, NULL, 
+                       iscsi_manager_thread, conn) != 0)
+    {
+        TRACE_ERROR("Cannot create manager thread!!!");
+    }
 
     return conn;
 
@@ -5258,12 +5334,18 @@ iscsi_server_rx_thread(void *param)
 	int err;
     volatile te_bool terminate = FALSE;
     iscsi_target_thread_params_t local_params;
+    sigset_t mask;
 
     /****************/ 
 
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGINT);
+    pthread_sigmask(SIG_SETMASK, &mask, NULL);
+
     local_params = *(iscsi_target_thread_params_t *)param;
     free(param);
-    conn = build_conn_sess(local_params.send_recv_sock, iscsi_portal_groups);
+    conn = build_conn_sess(local_params.send_recv_sock, local_params.custom_id,
+                           iscsi_portal_groups);
 
     if (conn == NULL)
     {
@@ -5536,6 +5618,8 @@ iscsi_target_start_rx_thread(void)
     pthread_attr_t                  pthread_attr;
     pthread_t                       thread;
 
+    static int                      custom_id;
+
 
     thread_params = calloc(1, sizeof(*thread_params));
     if (thread_params == NULL)
@@ -5552,6 +5636,7 @@ iscsi_target_start_rx_thread(void)
     }
 
     thread_params->send_recv_sock = conn_pipe[0];
+    thread_params->custom_id      = custom_id++;
 
     if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
         (rc = pthread_attr_setdetachstate(&pthread_attr,

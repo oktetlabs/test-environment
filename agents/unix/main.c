@@ -218,6 +218,7 @@ kill_tasks(void)
     free(tasks);
 }
 
+
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_init()
@@ -1242,72 +1243,6 @@ ta_kill_death(pid_t pid)
     kill(pid, SIGKILL);
     ta_waitpid(pid, NULL, 0);
     return 0;
-}
-
-int
-ta_write_to_file(const char *name, unsigned long offset,
-                 const char *str)
-{
-    int     fd = open(name, O_WRONLY, 0);
-    ssize_t length = strlen(str);
-    ssize_t written;
-
-    if (fd < 0)
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    if (lseek(fd, offset, SEEK_SET) == (off_t)-1)
-    {
-        int rc = errno;
-        close(fd);
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    written = write(fd, str, length);
-    if (written < 0)
-    {
-        int rc = errno;
-        close(fd);
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    fsync(fd);
-    close(fd);
-    return written == length ? 0 : TE_RC(TE_TA_UNIX, TE_ENOSPC);
-}
-
-int
-ta_verify_file_data(const char *name, unsigned long offset,
-                    const char *test)
-{
-    int     fd = open(name, O_RDONLY, 0);
-    ssize_t length = strlen(test);
-    char   *buffer;
-    int     rc;
-
-    if (fd < 0)
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    if (lseek(fd, offset, SEEK_SET) == (off_t)-1)
-    {
-        int rc = errno;
-        close(fd);
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    buffer = calloc(length, 1);
-    if (buffer == NULL)
-    {
-        rc = errno;
-        close(fd);
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    
-    if (read(fd, buffer, length) < 0)
-    {
-        rc = errno;
-        free(buffer);
-        close(fd);
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    close(fd);
-    rc = (memcmp(buffer, test, length) == 0);
-    free(buffer);
-    return rc == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
 }
 
 /** Print environment to the console */

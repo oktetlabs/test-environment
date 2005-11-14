@@ -373,7 +373,21 @@ typedef struct tarpc_readv_in tarpc_writev_in;
 
 typedef struct tarpc_ssize_t_retval_out tarpc_writev_out;
 
+/* lseek() */
 
+struct tarpc_lseek_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int           fd;
+    tarpc_off_t         pos;
+    tarpc_int           mode; 
+};
+
+struct tarpc_lseek_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_off_t          retval;
+};
 
 /* send() */
 
@@ -2871,6 +2885,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(readv)
         RPC_DEF(writev)
+
+        RPC_DEF(lseek)
 
         RPC_DEF(send)
         RPC_DEF(recv)

@@ -77,7 +77,7 @@ print_payload(const void *buffer, int len)
     char *fptr;
     int i;
 
-    TRACE(TRACE_DEBUG, "iSCSI Payload: ");
+    TRACE(TRACE_DEBUG, "iSCSI Payload of length %d: ", len);
     for (i = 0, fptr = format; i < len; i++)
     {
         sprintf(fptr, "%2.2x ", ((const uint8_t *)buffer)[i]);
@@ -418,7 +418,7 @@ void
 print_init_logout_cmnd(struct iscsi_init_logout_cmnd *cmd)
 {
 	print_opcode(cmd->opcode);
-	TRACE(TRACE_DEBUG, "reasoncod: 0x%.2x", cmd->flags);
+	TRACE(TRACE_DEBUG, "reasoncod: 0x%.2x", cmd->reason);
 	print_rsvd_u16(1, cmd->rsvd1);
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
