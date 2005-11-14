@@ -339,6 +339,9 @@ typedef te_errno (* rcf_pch_rsrc_grab_callback)(const char *name);
  * @param name   resource name
  *
  * @return Status code
+ *
+ * @note Non-zero should be returned only if releasing is not allowed;
+ *       in this case RCFPCH keeps the lock.
  */
 typedef te_errno (* rcf_pch_rsrc_release_callback)(const char *name);
 
