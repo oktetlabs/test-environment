@@ -960,6 +960,109 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
 #undef ALL_INST_NAMES
 }
 
+/**
+ * Add subtree into the configuration tree.
+ *
+ * @param father        OID of father
+ * @param node          node to be inserted
+ *
+ * @return Status code
+ */
+te_errno 
+rcf_pch_add_node(const char *father, rcf_pch_cfg_object *node)
+{
+    rcf_pch_cfg_object *tmp = rcf_ch_conf_root();
+    cfg_oid            *oid = cfg_convert_oid_str(father);
+    int                 i = 1;
+    
+    if (oid == NULL || oid->inst || oid->len < 2)
+    {
+        cfg_free_oid(oid);
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
+    }
+        
+    while (TRUE)
+    {
+        for (; tmp != NULL; tmp = tmp->brother)
+        {
+            if (strcmp(((cfg_object_subid *)(oid->ids))[i].subid, 
+                       tmp->sub_id) == 0)
+            {
+                break;
+            }
+        }
+           
+        RING("Before comparison");
+        if (tmp == NULL)
+        {
+            ERROR("Failed to find father %s to insert node %s", father, 
+                  node->sub_id);
+            cfg_free_oid(oid);
+            return TE_RC(TE_RCF_PCH, TE_EINVAL);
+        }
+        if (++i == oid->len)
+            break;
+        tmp = tmp->son;
+    }
+    
+    node->brother = tmp->son;
+    tmp->son = node;
+    cfg_free_oid(oid);
+    
+    return 0;
+}
+
+/** Find family of the node */
+static rcf_pch_cfg_object *
+find_father(rcf_pch_cfg_object *node, rcf_pch_cfg_object *ancestor, 
+            rcf_pch_cfg_object **brother)
+{
+    rcf_pch_cfg_object *tmp1, *tmp2;
+    
+    for (tmp1 = ancestor->son, tmp2 = NULL; 
+         tmp1 != NULL; 
+         tmp2 = tmp1, tmp1= tmp1->brother)
+    {
+        if (tmp1 == node)
+        {
+            *brother = tmp2;
+            return ancestor;
+        }
+        
+        if ((tmp2 = find_father(node, tmp1, brother)) != NULL)
+            return tmp2;
+    }
+    
+    return NULL;
+}
+
+/**
+ * Delete subtree into the configuration tree.
+ *
+ * @param node          node to be deleted
+ *
+ * @return Status code
+ */
+te_errno 
+rcf_pch_del_node(rcf_pch_cfg_object *node)
+{
+    rcf_pch_cfg_object *brother;
+    rcf_pch_cfg_object *father = find_father(node, rcf_ch_conf_root(), 
+                                             &brother);
+    
+    if (father == NULL)
+    {
+        ERROR("Failed to find node family");
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+    if (brother != NULL)
+        brother->brother = node->brother;
+    else
+        father->son = node->brother;
+        
+    return 0;
+}
+
 /** Information about dynamically grabbed resource - see rcf_pch.h */
 typedef struct rsrc_info {
     struct rsrc_info *next;     
@@ -1420,8 +1523,5 @@ static rcf_pch_cfg_object node_rsrc =
 void 
 rcf_pch_rsrc_init(void)
 {
-    rcf_pch_cfg_object *root = rcf_ch_conf_root();
-  
-    node_rsrc.brother = root->son;
-    root->son = &node_rsrc;
+    rcf_pch_add_node("/agent", &node_rsrc);
 }

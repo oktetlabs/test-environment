@@ -260,6 +260,26 @@ extern void *rcf_pch_rpc_server(const char *name);
  */
 extern void rcf_pch_rpc_server_argv(int argc, char **argv);
 
+/**
+ * Add subtree into the configuration tree.
+ *
+ * @param father        OID of father
+ * @param node          node to be inserted
+ *
+ * @return Status code
+ */
+extern te_errno rcf_pch_add_node(const char *father, 
+                                 rcf_pch_cfg_object *node);
+
+/**
+ * Delete subtree into the configuration tree.
+ *
+ * @param node          node to be deleted
+ *
+ * @return Status code
+ */
+extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
+
 /*--------------- Dynamically grabbed TA resources -------------------*/
 
 /**
