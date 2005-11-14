@@ -1335,14 +1335,18 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     }
     else
     {
-        rc = tapi_iscsi_initiator_advertize_set(ta, target_id, cid,
-                                                param, 
-                                                advertize);
-        if (rc != 0)
+        if (strncmp(mapping[param], "chap:/",
+                    strlen("chap:/")) == 0)
         {
-            ERROR("Failed to set %sadvertize for the parameter %s",
-                  advertize ? "":"not ", log_mapping[param]);
-            return rc;
+            rc = tapi_iscsi_initiator_advertize_set(ta, target_id, cid,
+                                                    param, 
+                                                    advertize);
+            if (rc != 0)
+            {
+                ERROR("Failed to set %sadvertize for the parameter %s",
+                      advertize ? "":"not ", log_mapping[param]);
+                return rc;
+            }
         }
 
         rc = cfg_set_instance_fmt(CVT_STRING, value,
