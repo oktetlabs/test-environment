@@ -135,61 +135,6 @@ tad_iscsi_match_bin_cb(csap_p           csap_descr,
     if (spec_data->wait_length == 0)
     {
 #if 0
-        size_t  total_AHS_length,
-                data_segment_length;
-
-        int head_digest = 0, data_digest = 0; 
-
-        const asn_value *sval;
-
-        union { 
-            uint32_t i;
-            uint8_t b[4];
-        } dsl_convert;
-
-        if (pkt->len < ISCSI_BHS_LENGTH)
-        {
-            ERROR("%s(CSAP %d): very short first fragment, %d bytes", 
-                  __FUNCTION__, csap_descr->id, pkt->len);
-            return TE_ETADLOWER;
-        }
-
-        total_AHS_length = ((uint8_t *)pkt->data)[4];
-
-        dsl_convert.b[0] = 0;
-        dsl_convert.b[1] = ((uint8_t *)pkt->data)[5];
-        dsl_convert.b[2] = ((uint8_t *)pkt->data)[6];
-        dsl_convert.b[3] = ((uint8_t *)pkt->data)[7];
-
-        data_segment_length = ntohl(dsl_convert.i);
-
-        /* DataSegment padding */
-        if (data_segment_length % 4)
-            data_segment_length += (4 - (data_segment_length % 4));
-
-        rc = asn_get_child_value(pattern_pdu, &sval, PRIVATE, 
-                                 NDN_TAG_ISCSI_HAVE_HDIG);
-        if (rc == 0)
-            head_digest = 1;
-
-        rc = asn_get_child_value(pattern_pdu, &sval, PRIVATE, 
-                                 NDN_TAG_ISCSI_HAVE_DDIG);
-        if (rc == 0)
-            data_digest = 1;
-
-        RING("%s(CSAP %d): AHS len = %d; DataSegmLen = %d; "
-             "HeadDig %d; DataDig %d", 
-             __FUNCTION__, csap_descr->id,
-             (int)total_AHS_length,
-             (int)data_segment_length,
-             head_digest, data_digest);
-
-        spec_data->wait_length = ISCSI_BHS_LENGTH + data_segment_length +
-            (total_AHS_length + head_digest + data_digest) * 4;
-        RING("%s(CSAP %d): calculated PDU len: %d", 
-             __FUNCTION__, csap_descr->id, spec_data->wait_length);
-#else
-#if 0
         iscsi_digest_type digest = ISCSI_DIGEST_NONE;
         const             asn_value *sval;
 
@@ -202,13 +147,14 @@ tad_iscsi_match_bin_cb(csap_p           csap_descr,
                                  NDN_TAG_ISCSI_HAVE_DDIG);
         if (rc == 0)
             digest |= ISCSI_DIGEST_DATA;
+#else
+        UNUSED(pattern_pdu);
 #endif
         spec_data->wait_length = ISCSI_BHS_LENGTH + 
              iscsi_rest_data_len(pkt->data,
                                  spec_data->hdig, spec_data->ddig);
         INFO("%s(CSAP %d), calculated wait length %d",
                 __FUNCTION__, csap_descr->id, spec_data->wait_length);
-#endif
     }
     rc = 0;
 
