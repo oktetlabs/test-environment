@@ -478,7 +478,7 @@ target_check_login(struct iscsi_conn *conn,
 	 * otherwise, it is reserved."
 	 */
 	if ((inputpdu->flags & T_BIT) &&
-        iscsi_get_custom_value(conn->custom, "disable_t_bit") != 0)
+        iscsi_get_custom_value(conn->custom, "disable_t_bit") == 0)
     {
 		outputpdu->flags |= (inputpdu->flags & NSG) | T_BIT;
 	}
