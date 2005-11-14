@@ -1116,6 +1116,7 @@ typedef enum rpc_socklevel {
     RPC_SOL_IP,
     RPC_SOL_IPV6,
     RPC_SOL_TCP,
+    RPC_SOL_UDP,
     RPC_SOL_UNKNOWN
 } rpc_socklevel;
 
@@ -1140,6 +1141,11 @@ socklevel_rpc2h(rpc_socklevel level)
         case RPC_SOL_TCP: return IPPROTO_TCP;
 #else
         RPC2H(SOL_TCP);
+#endif
+#ifndef SOL_UDP
+        case RPC_SOL_UDP: return IPPROTO_UDP;
+#else
+        RPC2H(SOL_UDP);
 #endif
         default: return SOL_MAX;
     }
@@ -1167,6 +1173,11 @@ socklevel_h2rpc(int level)
 #else
         H2RPC(SOL_TCP);
 #endif
+#ifndef SOL_UDP
+        case IPPROTO_UDP: return RPC_SOL_UDP;
+#else
+        H2RPC(SOL_UDP);
+#endif
         default: return RPC_SOL_UNKNOWN;
     }
 }
@@ -1181,6 +1192,7 @@ socklevel_rpc2str(rpc_socklevel level)
         RPC2STR(SOL_IP);
         RPC2STR(SOL_IPV6);
         RPC2STR(SOL_TCP);
+        RPC2STR(SOL_UDP);
         RPC2STR(SOL_UNKNOWN);
         default: return "<SOL_FATAL_ERROR>";
     }
