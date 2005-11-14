@@ -919,7 +919,8 @@ run_test_script(tester_ctx *ctx, test_script *script, test_id id,
         if (WIFSIGNALED(rc))
         {
             /* @todo Signal-to-string */
-            ERROR("ID=%d was killed by signal %d", id, WTERMSIG(rc));
+            ERROR("ID=%d was killed by the signal %d : %s", id,
+                  WTERMSIG(rc), strsignal(WTERMSIG(rc)));
             /* TE_ETESTCORE may be already set */
             if (result == 0)
                 result = TE_RC(TE_TESTER, TE_ETESTKILL);
