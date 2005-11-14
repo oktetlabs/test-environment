@@ -1098,7 +1098,6 @@ tapi_iscsi_target_customize(const char *ta, int id,
                            3, FALSE, 
                            RCF_INT32, id,
                            RCF_STRING, key, RCF_STRING, value);
-    RING("Result is %d/%d", (int)local_rc, remote_rc);
     return local_rc != 0 ? local_rc : 
         (remote_rc != 0 ? TE_RC(TE_TAPI, TE_ESRCH) : 0);
 }
