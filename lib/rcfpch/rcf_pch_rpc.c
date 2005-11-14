@@ -680,7 +680,6 @@ dispatch(void *arg)
 void 
 rcf_pch_rpc_init()
 {
-    rcf_pch_cfg_object *root = rcf_ch_conf_root();
 #ifdef TCP_TRANSPORT    
     struct sockaddr_in  addr;
 #else    
@@ -769,8 +768,7 @@ rcf_pch_rpc_init()
     if (pthread_create(&tid, NULL, dispatch, NULL) != 0)
         RETERR("Failed to create the thread for RPC servers dispatching");
     
-    node_rpcserver.brother = root->son;
-    root->son = &node_rpcserver;
+    rcf_pch_add_node("/agent", &node_rpcserver);
     
 #undef RETERR    
 }
