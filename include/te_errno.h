@@ -40,6 +40,9 @@
 
 #include "te_stdint.h"
 #include "te_printf.h"
+#ifdef TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
+#include "logger_api.h"
+#endif
 
 
 #define TE_MIN_ERRNO    (1 << 22)
@@ -1176,7 +1179,11 @@ te_rc_os2te(int err)
         case ECANCELED: return TE_ECANCELED;
 #endif  
  
-        default: return TE_EUNKNOWN;
+        default:
+#ifdef TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
+            ERROR("Unknown OS errno %d converted to EUNKNOWN", err);
+#endif
+            return TE_EUNKNOWN;
     }
 }
 

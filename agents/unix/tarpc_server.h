@@ -129,6 +129,8 @@
 #include <sys/stat.h>
 #endif
 
+#define TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
+
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"

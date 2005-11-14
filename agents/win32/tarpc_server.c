@@ -51,6 +51,8 @@ struct timezone {
 };
 #endif
 
+#define TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
+
 #undef ERROR
 #include "te_defs.h"
 #include "te_errno.h"
