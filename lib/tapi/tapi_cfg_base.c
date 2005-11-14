@@ -29,6 +29,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "Configuration TAPI"
+
 #include "te_config.h"
 
 #include <stdio.h>
@@ -58,13 +60,11 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "logger_api.h"
 #include "conf_api.h"
 
 #include "tapi_cfg_base.h"
 #include "tapi_sockaddr.h"
-
-#define TE_LGR_USER     "Configuration TAPI"
-#include "logger_api.h"
 
 
 /* See description in tapi_cfg_base.h */

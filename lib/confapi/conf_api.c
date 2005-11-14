@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "Configurator API"
+
 #include "te_config.h"
 
 #include <stdio.h>
@@ -57,18 +59,16 @@
 #include <assert.h>
 #endif
 
-
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "logger_api.h"
 #include "conf_api.h"
 #include "conf_messages.h"
 #include "conf_types.h"
 #include "rcf_api.h"
 #include "ipc_client.h"
 
-#define TE_LGR_USER     "Configurator API"
-#include "logger_api.h"
 
 /** Maximum space for IPC message */
 #define CFG_MSG_MAX  4096

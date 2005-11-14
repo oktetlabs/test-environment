@@ -54,6 +54,9 @@
 #include <sys/time.h>
 #endif
 
+#include "rcf_pch_internal.h"
+#undef SEND_ANSWER
+
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_stdint.h"
@@ -63,9 +66,6 @@
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "logger_ta.h"
-
-#include "rcf_pch_internal.h"
-#undef SEND_ANSWER
 
 /** Include static array with string representation of types */
 #define RCF_NEED_TYPES

@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAPI Ethernet"
+
 #include "te_config.h"
 
 #include <stdio.h>
@@ -50,13 +52,11 @@
 #include <unistd.h>
 
 #include "te_errno.h"
+#include "logger_api.h"
 #include "rcf_api.h"
 #include "ndn_eth.h"
 #include "tapi_tad.h"
 #include "tapi_eth.h"
-
-#define TE_LGR_USER     "TAPI Ethernet"
-#include "logger_api.h"
 
 
 /**

@@ -26,6 +26,8 @@
  * $Id$
  */ 
 
+#define TE_LGR_USER     "TAPI ARP"
+
 #include "te_config.h"
 
 #ifdef HAVE_STDLIB_H
@@ -48,13 +50,12 @@
 #include <unistd.h>
 
 #include "te_errno.h"
+#include "logger_api.h"
 #include "rcf_api.h"
 #include "ndn_eth.h"
 #include "tapi_arp.h"
 #include "tapi_eth.h"
 
-#define TE_LGR_USER     "TAPI ARP"
-#include "logger_api.h"
 
 /* Forward declaration of static functions */
 static uint8_t *tapi_arp_create_bin_arp_pkt(

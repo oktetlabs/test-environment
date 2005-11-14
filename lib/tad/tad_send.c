@@ -27,6 +27,9 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD Send"
+
+#include "te_config.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -42,19 +45,17 @@
 /* for ntohs, etc */
 #include <netinet/in.h> 
 
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
-
 
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
 #include "ndn.h" 
 
-#define TE_LGR_USER     "TAD Send"
-#include "logger_api.h"
-#include "logger_ta_fast.h"
 
 /* buffer for send answer */
 #define RBUF 100 

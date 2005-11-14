@@ -30,6 +30,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAPI TAD"
+
 #include "te_config.h"
 
 #ifdef STDC_HEADERS
@@ -47,15 +49,14 @@
 #include "te_errno.h"
 #include "tad_common.h"
 
+#include "logger_api.h"
 #include "rcf_api.h"
 
 #include "tapi_tad.h"
 #include "ndn.h"
 
-#define SEC_USEC_SEPARATOR  '.'
 
-#define TE_LGR_USER     "TAPI TAD"
-#include "logger_api.h"
+#define SEC_USEC_SEPARATOR  '.'
 
 /**
  * Log exit point and return from function.

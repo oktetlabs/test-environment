@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "RCF RPC"
+
 /* To get pthread_mutexattr_settype() definition in pthread.h */
 #define _GNU_SOURCE 
 
@@ -75,6 +77,7 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "logger_api.h"
 #include "conf_api.h"
 #include "rcf_api.h"
 #include "rcf_rpc.h"
@@ -82,9 +85,6 @@
 #include "rpc_xdr.h"
 #include "tarpc.h"
 
-#define TE_LGR_USER     "RCF RPC"
-#include "logger_api.h"
-#include "logger_ten.h"
 
 /** Initialize mutex and forwarding semaphore for RPC server */
 static int

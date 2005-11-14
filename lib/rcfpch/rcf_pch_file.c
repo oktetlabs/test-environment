@@ -56,12 +56,13 @@
 #include <fcntl.h>
 #endif
 
+#include "rcf_pch_internal.h"
+
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "comm_agent.h"
 #include "rcf_pch.h"
-#include "rcf_pch_internal.h"
 
 
 /** Default file system directory for temporary files */

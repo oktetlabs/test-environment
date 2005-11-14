@@ -27,6 +27,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "Configurator OID API"
+
 #include "te_config.h"
 
 #include <stdio.h>
@@ -57,10 +59,9 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "logger_api.h"
 #include "conf_oid.h"
 
-#define TE_LGR_USER     "Configurator OID API"
-#include "logger_api.h"
 
 /**
  * Allocate memory for object identifier or object instance identifier.

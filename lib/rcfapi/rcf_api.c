@@ -26,6 +26,8 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "RCF API"
+
 #include "te_config.h"
 #include "config.h"
 
@@ -64,14 +66,13 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_printf.h"
+#include "logger_api.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"
 #define RCF_NEED_TYPE_LEN 1
 #include "te_proto.h"
 #include "ipc_client.h"
 
-#define TE_LGR_USER     "RCF API"
-#include "logger_api.h"
 
 /** Busy CSAPs state */
 #define CSAP_SEND       1

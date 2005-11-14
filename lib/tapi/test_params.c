@@ -28,19 +28,19 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAPI Params"
+
 #include "te_config.h"
 
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <string.h>
 #endif
-#ifdef HAVE_CTYPE_H
+#if HAVE_CTYPE_H
 #include <ctype.h>
 #endif
 
 #include "te_defs.h"
-
-#define TE_LGR_USER     "TAPI Params"
 #include "logger_api.h"
 
 #include "tapi_test.h"

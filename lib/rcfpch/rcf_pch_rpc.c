@@ -90,6 +90,8 @@
 
 #endif /* TCP_TRANSPORT */
 
+#include "rcf_pch_internal.h"
+
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_stdint.h"
@@ -99,8 +101,6 @@
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "logfork.h"
-
-#include "rcf_pch_internal.h"
 
 #include "rpc_xdr.h"
 #include "rcf_rpc_defs.h"

@@ -26,6 +26,7 @@
  * $Id$
  */
 
+#define TE_LGR_USER "TAPI iSCSI"
 
 #include "te_config.h"
 
@@ -51,8 +52,6 @@
 #include "rcf_api.h"
 #include "rcf_common.h"
 #include "conf_api.h"
-
-#define TE_LGR_USER "TAPI iSCSI"
 #include "logger_api.h"
 
 #include "tapi_iscsi.h"

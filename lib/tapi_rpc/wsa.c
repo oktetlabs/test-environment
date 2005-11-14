@@ -24,7 +24,6 @@
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
  * $Id$
  */
@@ -44,10 +43,11 @@
 #include <strings.h>
 #endif
 
-#include "te_printf.h"
 #include "tapi_rpc_internal.h"
+#include "te_printf.h"
 #include "tapi_rpc_winsock2.h"
 #include "conf_api.h"
+
 
 int
 rpc_wsa_socket(rcf_rpc_server *rpcs,
