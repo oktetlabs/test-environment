@@ -49,7 +49,7 @@ Supported OSes:
 ~~~~~~~~~~~~~~~
 All works fine with Debian 3.1 (Sarge) native packages.
 
-For Fedora Core 3, you need to install new flex (we use package from PLD
+For Fedora Core 3/4, you need to install new flex (we use package from PLD
 distribution) and netlink library (we use home-made iproute rpm which
 includes the library).
 
