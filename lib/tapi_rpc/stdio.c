@@ -407,7 +407,7 @@ rpc_system(rcf_rpc_server *rpcs, const char *cmd)
         rc.flag == RPC_WAIT_STATUS_UNKNOWN)
         rc.value = -1;
 
-    TAPI_RPC_LOG("RPC (%s,%s): system(%s) -> %s %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): system(%s) -> %s %u (%s)",
                  rpcs->ta, rpcs->name,
                  cmd, wait_status_flag_rpc2str(rc.flag), rc.value, 
                  errno_rpc2str(RPC_ERRNO(rpcs)));

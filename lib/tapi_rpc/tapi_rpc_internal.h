@@ -184,7 +184,7 @@
  * @param _var      variable with return value
  */
 #define CHECK_RETVAL_VAR_IS_ZERO(_func, _var) \
-    CHECK_RETVAL_VAR(_func, _var, ((_var) != 0), -1)
+    CHECK_RETVAL_VAR(_func, _var, ((_var) != 0), (uint32_t)-1)
 
 /** Return with check (for functions returning zero value) */
 #define RETVAL_ZERO_INT(_func, _retval) \
