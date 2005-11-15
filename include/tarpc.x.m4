@@ -1670,19 +1670,20 @@ struct tarpc_getsockopt_out {
 /* ioctl() */
 
 enum ioctl_type {
-    IOCTL_INT = 1,
-    IOCTL_TIMEVAL = 2,
-    IOCTL_IFREQ = 3,
-    IOCTL_IFCONF = 4,
-    IOCTL_ARPREQ = 5
+    IOCTL_UNKNOWN,
+    IOCTL_INT,
+    IOCTL_TIMEVAL,
+    IOCTL_IFREQ,
+    IOCTL_IFCONF,
+    IOCTL_ARPREQ
     
 };
 
 /* Access type of ioctl requests */
 enum ioctl_access {
-    IOCTL_RD = 1,
-    IOCTL_WR = 2,
-    IOCTL_RW = 3
+    IOCTL_RD,
+    IOCTL_WR,
+    IOCTL_RW
 };    
 
 union ioctl_request switch (ioctl_type type) {

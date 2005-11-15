@@ -432,8 +432,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             }
         }
     }
-
-    switch (in.req.req_val[0].type)
+    
+    switch (in.req.req_val != NULL ? in.req.req_val[0].type : IOCTL_UNKNOWN)
     {
         case IOCTL_TIMEVAL:
             req_val = tarpc_timeval2str((struct tarpc_timeval *)arg);
