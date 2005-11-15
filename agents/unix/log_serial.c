@@ -278,11 +278,7 @@ close_conserver_cleanup(long fd)
     char buf[1];
     
     write(fd, CONSERVER_STOP, CONSERVER_CMDLEN);
-    for(*buf = '\0'; *buf != '\n'; ) 
-    { 
-        if (read(fd, buf, 1) < 1)
-            break;
-    }
+    while(read(fd, buf, 1) == 1);
     close(fd);
 }
 
