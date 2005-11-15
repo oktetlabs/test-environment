@@ -1861,7 +1861,7 @@ tapi_iscsi_target_raw_verify(const char *ta, unsigned long offset,
                      RCF_UINT32, strlen(data));
     return rc == 0 ? result : rc;
 }
-
+#if 0
 static char *
 get_nth_device(const char *ta, unsigned id)
 {
@@ -1892,6 +1892,7 @@ get_nth_device(const char *ta, unsigned id)
     free(devlist);
     return NULL;
 }
+#endif
 
 enum tapi_iscsi_io_ops {
     ISCSI_IO_SHELL,
@@ -2039,6 +2040,7 @@ tapi_iscsi_io_finish(iscsi_io_handle_t *ioh)
     return 0;
 }
 
+#if 0
 static int
 post_command(iscsi_io_handle_t *ioh, int cmd,
              int fd, off_t length, void *data,
@@ -2065,6 +2067,7 @@ post_command(iscsi_io_handle_t *ioh, int cmd,
     sem_post(&ioh->cmd_wait);
     return 0;
 }
+#endif
 
 int
 tapi_iscsi_io_wait(iscsi_io_handle_t *ioh, unsigned id, 
