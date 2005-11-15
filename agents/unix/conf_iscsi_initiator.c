@@ -56,7 +56,7 @@
 #include "te_iscsi.h"
 
 /* Debug logs */
-#define ISCSI_DEBUG_LOG
+#define ISCSI_DEBUG_LOG_
 #ifdef ISCSI_DEBUG_LOG
 #define IVERB(args...) fprintf(stderr, args); fprintf(stderr, "\n")
 #else
