@@ -1051,7 +1051,7 @@ int
 tapi_iscsi_key_value_write(iscsi_key_values val_array,
                            int val_index, const char *string)
 {
-    const asn_value *key_value;
+    asn_value       *key_value;
     int              rc;
 
     if (string == NULL)
@@ -1062,7 +1062,8 @@ tapi_iscsi_key_value_write(iscsi_key_values val_array,
         return rc;
     }
 
-    if ((rc = asn_get_indexed(val_array, &key_value, val_index)) != 0)
+    if ((rc = asn_get_indexed(val_array, (const asn_value **)&key_value, 
+                              val_index)) != 0)
     {
         ERROR("%s(): asn_get_indexed failed %r", __FUNCTION__, rc);
         return rc;
