@@ -214,6 +214,39 @@ main(int argc, char *argv[])
     else
         TEST_FAIL("recv on TCP CSAP have detect that connection closed");
 
+    {
+        csap_handle_t tcp_raw;
+        asn_value *template;
+        uint8_t rem_addr[] = {0x00, 0x0E, 0xA6, 0x41, 0xD5, 0x2E};
+
+        rc = tapi_tcp_ip4_eth_csap_create(agt_a, 0, "eth0", 
+                                          NULL, rem_addr, 
+                                          &csap_ip_addr, &sock_ip_addr,
+                                          csap_addr.sin_port,
+                                          sock_addr.sin_port,
+                                          &tcp_raw);
+        if (rc != 0)
+            TEST_FAIL("create raw TCP socket failed, %r", rc); 
+
+        rc = tapi_tcp_template(5, 10, FALSE, FALSE,
+                               NULL, 0, &template);
+        if (rc != 0)
+            TEST_FAIL("create TCP template failed, %r", rc); 
+
+        rc = asn_write_int32(template, TCP_RST_FLAG, "pdus.0.flags.#plain");
+        if (rc != 0)
+            TEST_FAIL("write RESET to TCP template failed, %r", rc); 
+
+        rc = tapi_tad_trsend_start(agt_a, 0, tcp_raw, template,
+                                   RCF_MODE_BLOCKING);
+        if (rc != 0)
+            TEST_FAIL("send RESET via TCP raw ♣SAP failed, %r", rc); 
+    }
+
+    rc = rpc_recv(rpc_srv, socket, rx_buffer, sizeof(rx_buffer), 0); 
+
+    RING("++++++++++++ recv rc %d", rc);
+
     TEST_SUCCESS;
 
 cleanup:

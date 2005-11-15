@@ -136,9 +136,9 @@ main(int argc, char *argv[])
         char dump_fname[] = "tad_dump_hex";
         rc = asn_write_value_field(pattern_unit,
                                    dump_fname, sizeof(dump_fname), 
-                                   "action.#function");
+                                   "actions.0.#function");
         if (rc != 0)
-            TEST_FAIL("set action 'function' for pattern unit fails %X",
+            TEST_FAIL("set action 'function' for pattern unit fails %r",
                       rc);
     } 
 

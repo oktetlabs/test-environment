@@ -22,13 +22,13 @@
         <run>
             <package name="ipstack"/>
         </run>
-        <!--
         <run>
             <package name="iscsi"/>
         </run>
         <run>
             <package name="dhcp"/>
         </run>
+        <!--
         <run>
             <package name="cli"/>
         </run>
