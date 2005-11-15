@@ -578,6 +578,22 @@ extern int tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
 
 
 
+/**
+ * Send portion of data into TCP socket, and ensure that FIN will be send
+ * in last PUSH TCP message.
+ * Details: it set TCP_CORK option on the socket, write data to it, 
+ * and shut down socket for the write. 
+ * Note, that firther write to this socket are denied, and will cause
+ * SIG_PIPE.
+ *
+ * @param socket        TCP socket fd
+ * @param data          data to be sent
+ * @param length        length of data
+ *
+ * @return status code
+ */
+extern int tad_tcp_push_fin(int socket, const uint8_t *data, size_t length);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

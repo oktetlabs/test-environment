@@ -36,7 +36,10 @@
 #include <ctype.h>
 
 /* for ntohs, etc */
+#include <sys/socket.h> 
 #include <netinet/in.h> 
+#include <netinet/tcp.h>
+
 
 
 #include "tad_csap_inst.h"
@@ -45,6 +48,7 @@
 #include "asn_usr.h" 
 #include "ndn.h" 
 #include "logger_api.h"
+#include "logger_ta_fast.h"
 
 
 /**
@@ -965,16 +969,7 @@ tad_data_unit_clear(tad_data_unit_t *du)
 }
 
 
-/**
- * Constract data-unit structure from specified binary data for 
- * simple per-byte compare. 
- *
- * @param data          binary data which should be compared.
- * @param d_len         length of data.
- * @param location      location of data-unit structure (OUT)
- *
- * @return error status.
- */
+/* See description in tad_utils.h */
 int 
 tad_data_unit_from_bin(const uint8_t *data, size_t d_len, 
                        tad_data_unit_t *location)
@@ -1072,6 +1067,42 @@ tad_dump_hex(csap_p csap_descr, const char *usr_param,
         return TE_EINVAL;
 
     RING("PACKET: %Tm", pkt, pkt_len);
+
+    return 0;
+}
+
+
+/* See description in tad_utils.h */
+int
+tad_tcp_push_fin(int socket, const uint8_t *data, size_t length)
+{
+    int opt = 1;
+    int rc;
+
+    if (setsockopt(socket, SOL_TCP, TCP_CORK, &opt, sizeof(opt)) < 0)
+    {
+        F_ERROR("set CORK on socket %d failed, system errno %d",
+                socket, errno);
+        return errno;
+    }
+
+    if ((rc = send(socket, data, length, 0)) < 0)
+    { 
+        F_ERROR("Send last FIN & PUSH fail: errno %d", errno);
+        return errno;
+    }
+    else if ((unsigned)rc < length)
+    {
+        F_ERROR("Send last FIN & PUSH fail: sent %d, less then asked %d",
+                rc, length);
+        return TE_ETOOMANY;
+    }
+
+    if (shutdown(socket, SHUT_WR) < 0)
+    {
+        F_ERROR("SHUT_WR of %d fail: errno %d", socket, errno);
+        return errno;
+    }
 
     return 0;
 }

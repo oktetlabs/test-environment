@@ -45,6 +45,11 @@
 extern "C" {
 #endif
 
+typedef enum {
+    ISCSI_SEND_USUAL,
+    ISCSI_SEND_LAST,
+    ISCSI_SEND_INVALID,
+} tad_iscsi_send_mode_t;
 /**
  * iSCSI CSAP specific data
  */
@@ -55,7 +60,9 @@ typedef struct iscsi_csap_specific_data {
 
     size_t      wait_length;
     size_t      stored_length;
-    uint8_t    *stored_buffer;
+    uint8_t    *stored_buffer; 
+
+    tad_iscsi_send_mode_t send_mode;
 } iscsi_csap_specific_data_t;
 
 

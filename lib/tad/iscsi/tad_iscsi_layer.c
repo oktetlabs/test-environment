@@ -89,12 +89,24 @@ tad_iscsi_gen_bin_cb(csap_p csap_descr, unsigned int layer,
                      const tad_tmpl_arg_t *args, size_t arg_num,
                      csap_pkts_p up_payload, csap_pkts_p pkt_list)
 {
-    UNUSED(tmpl_pdu);
+    int rc;
+
+    iscsi_csap_specific_data_t *spec_data; 
+
+    assert(csap_descr != NULL);
+
+    ENTRY("(%d:%u)", csap_descr->id, layer);
+
+    spec_data = (iscsi_csap_specific_data_t *)
+                        csap_descr->layers[layer].specific_data; 
     UNUSED(args);
     UNUSED(arg_num);
 
-    assert(csap_descr != NULL);
-    ENTRY("(%d:%u)", csap_descr->id, layer);
+    rc = asn_read_value_field(tmpl_pdu, NULL, NULL, "last-data");
+    if (rc == 0 && spec_data->send_mode == ISCSI_SEND_USUAL) 
+        spec_data->send_mode = ISCSI_SEND_LAST;
+
+    RING("%s(): read last-data rc: %r", __FUNCTION__, rc);
 
     pkt_list->data = up_payload->data;
     pkt_list->len  = up_payload->len;

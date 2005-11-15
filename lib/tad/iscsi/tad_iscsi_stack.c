@@ -66,10 +66,12 @@
 #include "ndn.h"
 #include "ndn_iscsi.h"
 #include "asn_usr.h"
+
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 
 #include "tad_iscsi_impl.h"
+#include "tad_utils.h"
 
 
 /**
@@ -176,6 +178,10 @@ tad_iscsi_read_cb(csap_p csap_descr, int timeout,
 int 
 tad_iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 {
+    struct timeval tv = {0, 1000};
+
+    int rc = 0, fd;
+
     iscsi_csap_specific_data_t *spec_data;
 
     assert(csap_descr != NULL);
@@ -184,31 +190,53 @@ tad_iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
     spec_data = csap_descr->layers[0].specific_data; 
 
-    {
-        struct timeval tv = {0, 1000};
-        int rc, fd = spec_data->socket;
+    fd = spec_data->socket;
 
-        rc = send(fd, buf, buf_len, MSG_DONTWAIT);
+    switch (spec_data->send_mode)
+    { 
+        case ISCSI_SEND_USUAL:
+            rc = send(fd, buf, buf_len, MSG_DONTWAIT);
 
-        if (rc < 0)
-        {
-            if (errno == EAGAIN)
+            if (rc < 0)
             {
-                select(0, NULL, NULL, NULL, &tv); 
-                rc = send(fd, buf, buf_len, MSG_DONTWAIT);
-            } 
-        }
+                if (errno == EAGAIN)
+                {
+                    select(0, NULL, NULL, NULL, &tv); 
+                    rc = send(fd, buf, buf_len, MSG_DONTWAIT);
+                } 
+            }
+            break;
 
-        if (rc < 0)
-        {
-            csap_descr->last_errno = errno;
-            WARN("%s(CSAP %d) error %d on read", __FUNCTION__, 
-                 csap_descr->id, csap_descr->last_errno);
-            return -1;
-        } 
-        INFO("%s(CSAP %d) written %d bytes to fd %d", 
-             __FUNCTION__, csap_descr->id, rc, fd);
+        case ISCSI_SEND_LAST:
+
+            if ((rc = tad_tcp_push_fin(fd, buf, buf_len)) != 0)
+            { 
+                csap_descr->last_errno = rc;
+                rc = -1;
+            }
+            else
+            {
+                spec_data->send_mode = ISCSI_SEND_INVALID;
+                rc = buf_len;
+            }
+
+            break;
+
+        case ISCSI_SEND_INVALID:
+            csap_descr->last_errno = TE_EPIPE;
+            rc = -1;
+            break;
     }
+
+    if (rc < 0)
+    {
+        csap_descr->last_errno = errno;
+        WARN("%s(CSAP %d) error %d on read", __FUNCTION__, 
+             csap_descr->id, csap_descr->last_errno);
+        return -1;
+    } 
+    INFO("%s(CSAP %d) written %d bytes to fd %d", 
+         __FUNCTION__, csap_descr->id, rc, fd);
 
     return buf_len;
 }
