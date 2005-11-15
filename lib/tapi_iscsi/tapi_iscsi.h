@@ -226,6 +226,26 @@ extern int tapi_iscsi_send_pkt(const char            *ta_name,
                                size_t                 length);
 
 /**
+ * Send LAST message via iSCSI CSAP, and try to ensure sending
+ * FIN in the last TCP push.
+ * Note: use only with network TCP connection, not AF_LOCAL.
+ * 
+ * @param ta_name       test Agent name
+ * @param sid           RCF SID
+ * @param csap          identifier of CSAP
+ * @param params        iSCSI new params
+ * @param buffer        data to be sent
+ * @param length        length of buffer
+ * 
+ * @return Zero on success or error code.
+ */
+extern int tapi_iscsi_send_pkt_last(const char   *ta_name,
+                                    int           sid, 
+                                    csap_handle_t csap,
+                                    uint8_t      *buffer,
+                                    size_t        length);
+
+/**
  * Receive all data which currently are waiting for receive in 
  * specified iSCSI CSAP and forward them into another CSAP, without 
  * passing via RCF to test. 

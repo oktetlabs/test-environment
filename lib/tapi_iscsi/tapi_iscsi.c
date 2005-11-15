@@ -324,6 +324,54 @@ cleanup:
     return rc;
 }
 
+int
+tapi_iscsi_send_pkt_last(const char   *ta_name, int sid, 
+                         csap_handle_t csap, uint8_t *buffer,
+                         size_t        length)
+{
+    asn_value *template = NULL;
+
+    int rc = 0, syms;
+
+    if (ta_name == NULL || socket == NULL)
+        return TE_EWRONGPTR;
+
+    rc = asn_parse_value_text("{pdus { iscsi:{} } }",
+                              ndn_traffic_template, &template, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    rc = asn_write_value_field(template, buffer, length, "payload.#bytes");
+    if (rc != 0)
+    {
+        ERROR("%s(): write payload failed %r", __FUNCTION__, rc);
+        goto cleanup;
+    } 
+
+    rc = asn_write_value_field(template, NULL, 0,
+                               "pdus.0.#iscsi.last-data");
+    if (rc != 0)
+    {
+        ERROR("%s(): write last-data flag failed %r", __FUNCTION__, rc);
+        goto cleanup;
+    } 
+
+    rc = tapi_tad_trsend_start(ta_name, sid, csap, template,
+                               RCF_MODE_BLOCKING);
+    if (rc != 0)
+    {
+        ERROR("%s(): trsend_start failed %r", __FUNCTION__, rc);
+        goto cleanup;
+    } 
+
+cleanup:
+    asn_free_value(template);
+    return rc;
+}
 
 /* See description in tapi_iscsi.h */
 int 
