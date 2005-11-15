@@ -1336,7 +1336,7 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     else
     {
         if (strncmp(mapping[param], "chap:/",
-                    strlen("chap:/")) == 0)
+                    strlen("chap:/")) != 0)
         {
             rc = tapi_iscsi_initiator_advertize_set(ta, target_id, cid,
                                                     param, 
