@@ -1905,7 +1905,7 @@ tapi_iscsi_io_thread(void *param)
                     break;
                 case ISCSI_IO_SEEK:
                     cmd->length = rpc_lseek(ioh->rpcs, cmd->fd, 
-                                            cmd->length, SEEK_SET);
+                                            cmd->length, RPC_SEEK_SET);
                     break;
                 case ISCSI_IO_COMPARE:
                 {

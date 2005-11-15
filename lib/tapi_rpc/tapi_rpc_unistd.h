@@ -183,10 +183,10 @@ rpc_read(rcf_rpc_server *rpcs,
  * @param pos      position to seek
  * @param count    seek mode (SEEK_SET, SEEK_CUR, SEEK_END)
  *
- * @return  resuling file position or -1 on error
+ * @return Resuling file position or -1 on error
  */
-extern off_t rpc_lseek(rcf_rpc_server *rpcs,
-                       int fd, off_t pos, int mode);
+extern tarpc_off_t rpc_lseek(rcf_rpc_server *rpcs,
+                             int fd, tarpc_off_t pos, rpc_lseek_mode mode);
 
 
 
