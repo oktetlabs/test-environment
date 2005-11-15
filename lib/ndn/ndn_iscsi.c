@@ -144,7 +144,6 @@ const asn_type * const ndn_iscsi_segment_data = &ndn_iscsi_segment_data_s;
 /* ISCSI-Message definitions */
 static asn_named_entry_t _ndn_iscsi_message_ne_array [] = 
 {
-    { "param",    &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_PARAM} },
     { "length",   &asn_base_integer_s, {PRIVATE, NDN_TAG_ISCSI_LEN} },
 #if 0
     { "have-hdig",&asn_base_null_s,    {PRIVATE, NDN_TAG_ISCSI_HAVE_HDIG} },
@@ -152,6 +151,7 @@ static asn_named_entry_t _ndn_iscsi_message_ne_array [] =
 #endif
     { "segment-data", &ndn_iscsi_segment_data_s, 
         {PRIVATE, NDN_TAG_ISCSI_SD} },
+    { "last-data",  &asn_base_null_s, {PRIVATE, NDN_TAG_ISCSI_LAST} },
 };
 
 asn_type ndn_iscsi_message_s =

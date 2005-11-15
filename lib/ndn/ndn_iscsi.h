@@ -47,7 +47,7 @@ typedef enum {
     NDN_TAG_ISCSI_DATA_DIGEST,
     NDN_TAG_ISCSI_MESSAGE,
     NDN_TAG_ISCSI_LEN,
-    NDN_TAG_ISCSI_PARAM,
+    NDN_TAG_ISCSI_LAST,
 } ndn_iscsi_tags_t;
 
 /**
