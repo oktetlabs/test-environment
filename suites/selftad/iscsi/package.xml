@@ -19,12 +19,6 @@
             <script name="double">
             </script>
         </run> 
-        <run>
-            <script name="test_tapi">
-            </script>
-        </run> 
-<!--
--->
     </session>
 
 </package>

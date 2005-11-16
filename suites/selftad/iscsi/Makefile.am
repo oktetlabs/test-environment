@@ -10,7 +10,7 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 
 
-tetest_PROGRAMS = test_tapi simple double
+tetest_PROGRAMS = simple double
 
 #double
 
