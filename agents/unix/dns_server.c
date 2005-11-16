@@ -242,8 +242,8 @@ dnsserver_release(const char *name)
 {
     UNUSED(name);
     
-    ds_restore_backup(&dns_index);
-    rcf_pch_del_node(&node_ds_dnsserver);
+    ds_restore_backup(dns_index);
+    return rcf_pch_del_node(&node_ds_dnsserver);
 }
 
 void

@@ -1557,13 +1557,15 @@ dhcpserver_grab(const char *name)
 te_errno
 dhcpserver_release(const char *name)
 {
-    host  *host, *host_tmp;
-    group *group, *group_tmp;
+    te_errno    rc;
+    host       *host, *host_tmp;
+    group      *group, *group_tmp;
     
     UNUSED(name);
 
-    if (rcf_pch_del_node(&node_ds_dhcpserver) != 0)
-        return;
+    rc = rcf_pch_del_node(&node_ds_dhcpserver);
+    if (rc != 0)
+        return rc;
 
     /* Free old lists */
     for (host = hosts; host != NULL; host = host_tmp)
