@@ -1169,31 +1169,33 @@ RCF_PCH_CFG_NODE_NA(node_ds_vtund, "vtund",
                     &node_vtund_client, NULL);
 
 
-/**
- * (Re)initialize VTund configuration support.
- *
- * @return status code
- */
-void
-ds_init_vtund(rcf_pch_cfg_object **last)
+te_errno 
+vtund_grab(const char *name)
 {
+    UNUSED(name);
+    
     LIST_INIT(&clients);
     LIST_INIT(&servers);
 
-    DS_REGISTER(vtund);
+    return rcf_pch_add_node("/agent", &node_ds_vtund);
 }
 
-/** Release all memory allocated for VTund */
-void
-ds_shutdown_vtund(void)
+te_errno 
+vtund_release(const char *name)
 {
-    vtund_server   *server;
-    vtund_client   *client;
+    vtund_server *server;
+    vtund_client *client;
+    
+    UNUSED(name);
 
     while ((server = servers.lh_first) != NULL)
         vtund_server_free(server);
     while ((client = clients.lh_first) != NULL)
         vtund_client_free(client);
+        
+    rcf_pch_del_node(&node_ds_vtund);
+    
+    return 0;        
 }
 
 #endif /* WITH_VTUND */

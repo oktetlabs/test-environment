@@ -93,12 +93,12 @@
 
 
 #ifdef ENABLE_WIFI_SUPPORT
-extern int ta_unix_conf_wifi_init(rcf_pch_cfg_object **last);
+extern te_errno ta_unix_conf_wifi_init();
 #endif
 
 #ifdef WITH_ISCSI
-extern int ta_unix_iscsi_target_init(rcf_pch_cfg_object **last);
-extern int ta_unix_iscsi_initiator_init(rcf_pch_cfg_object **last);
+extern te_errno ta_unix_iscsi_target_init();
+extern te_errno ta_unix_iscsi_initiator_init();
 #endif
 
 #ifdef USE_NETLINK
@@ -332,50 +332,20 @@ static te_bool init = FALSE;
 rcf_pch_cfg_object *
 rcf_ch_conf_root(void)
 {
-#ifdef USE_NETLINK
-    struct rtnl_handle rth;
-#endif
-#if defined(CFG_UNIX_DAEMONS) || defined(WITH_ISCSI)
-    rcf_pch_cfg_object *tail = &node_volatile;
-    
-    if (!init && tail->brother != NULL)
-    {
-        ERROR("The last element in configuration tree has brother, "
-              "which is very strange - you must have forgotten to "
-              "update 'tail' variable in %s:%d", __FILE__, __LINE__);
-        return NULL;
-    }
-
-#endif
-
     if (!init)
     {
-        init = TRUE;
-
-        rcf_pch_rsrc_info("/agent/interface", 
-                          rcf_pch_rsrc_grab_dummy,
-                          rcf_pch_rsrc_release_dummy);
-
-        rcf_pch_rsrc_info("/agent/ip4_fw", 
-                          rcf_pch_rsrc_grab_dummy,
-                          rcf_pch_rsrc_release_dummy);
-
-#ifdef ENABLE_WIFI_SUPPORT
-        rcf_pch_cfg_object *agt_if_tail = &node_status;
-
-        if (agt_if_tail->brother != NULL)
+#ifdef USE_NETLINK
+        struct rtnl_handle rth;
+        
+        memset(&rth, 0, sizeof(rth));
+        if (rtnl_open(&rth, 0) < 0)
         {
-            ERROR("The last element in '/agent/interface' subtree "
-                  "has brother, which is very strange - you must have "
-                  "forgotten to replace '%s' variable in %s:%d",
-                  agt_if_tail->sub_id, __FILE__, __LINE__);
+            ERROR("Failed to open a netlink socket");
             return NULL;
         }
 
-        if (ta_unix_conf_wifi_init(&agt_if_tail) != 0)
-        {
-            return NULL;
-        }
+        ll_init_map(&rth);
+        rtnl_close(&rth);
 #endif
 
         if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP)) < 0)
@@ -388,44 +358,44 @@ rcf_ch_conf_root(void)
                   "socket: %r", errno);
         }
 
-#ifdef CFG_UNIX_DAEMONS
-        if (ta_unix_conf_daemons_init(&tail) != 0)
-        {
-            close(cfg_socket);
-            return NULL;
-        }
-        assert(tail->brother == NULL); 
-#endif
-#ifdef WITH_ISCSI
-        if (ta_unix_iscsi_target_init(&tail) != 0)
-        {
-            close(cfg_socket);
-            return NULL;
-        }
-        assert(tail->brother == NULL); 
+        init = TRUE;
 
-        if (ta_unix_iscsi_initiator_init(&tail) != 0)
-        {
-            close(cfg_socket);
-            return NULL;
-        }
-        assert(tail->brother == NULL); 
-#endif        
-#ifdef USE_NETLINK
-        memset(&rth, 0, sizeof(rth));
-        if (rtnl_open(&rth, 0) < 0)
-        {
-            ERROR("Failed to open a netlink socket");
-            return NULL;
-        }
+        rcf_pch_rsrc_info("/agent/interface", 
+                          rcf_pch_rsrc_grab_dummy,
+                          rcf_pch_rsrc_release_dummy);
 
-        ll_init_map(&rth);
-        rtnl_close(&rth);
-#endif
+        rcf_pch_rsrc_info("/agent/ip4_fw", 
+                          rcf_pch_rsrc_grab_dummy,
+                          rcf_pch_rsrc_release_dummy);
 
 #ifdef RCF_RPC
         /* Link RPC nodes */
         rcf_pch_rpc_init();
+#endif
+
+#ifdef CFG_UNIX_DAEMONS
+        if (ta_unix_conf_daemons_init() != 0)
+        {
+            close(cfg_socket);
+            return NULL;
+        }
+#endif
+#ifdef WITH_ISCSI
+        if (ta_unix_iscsi_target_init() != 0)
+        {
+            close(cfg_socket);
+            return NULL;
+        }
+
+        if (ta_unix_iscsi_initiator_init() != 0)
+        {
+            close(cfg_socket);
+            return NULL;
+        }
+#endif        
+#ifdef ENABLE_WIFI_SUPPORT
+        if (ta_unix_conf_wifi_init() != 0)
+            return NULL;
 #endif
 
         rcf_pch_rsrc_init();
@@ -957,7 +927,7 @@ get_addr(const char *ifname, struct in_addr *addr)
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFADDR, (int)&req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
         /* It's not always called for correct arguments */
         VERB("ioctl(SIOCGIFADDR) for '%s' failed: %r",
@@ -1001,7 +971,7 @@ set_prefix(const char *ifname, unsigned int prefix)
     SIN(&(req.ifr_addr))->sin_addr.s_addr = htonl(mask);
     if (ioctl(cfg_socket, SIOCSIFNETMASK, &req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
         ERROR("ioctl(SIOCSIFNETMASK) failed: %r", rc);
         return rc;
@@ -1148,7 +1118,7 @@ aliases_list()
     memset(buf, 0, sizeof(buf));
     if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
         ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
         return rc;
@@ -1513,7 +1483,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     memcpy(&req.ifr_addr, &sin, sizeof(struct sockaddr));
     if (ioctl(cfg_socket, SIOCSIFADDR, &req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCSIFADDR) failed: %r", rc);
         return rc;
@@ -1533,7 +1503,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         }
         if (ioctl(cfg_socket, SIOCALIFADDR, &lreq) < 0)
         {
-            int rc = TE_OS_RC(TE_TA_UNIX, errno);
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("ioctl(SIOCALIFADDR) failed: %r", rc);
             return rc;
@@ -1762,7 +1732,7 @@ net_addr_del(unsigned int gid, const char *oid,
 
         if (ioctl(cfg_socket, SIOCSIFADDR, (int)&req) < 0)
         {
-            int rc = TE_OS_RC(TE_TA_UNIX, errno);
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("ioctl(SIOCSIFADDR) failed: %r", rc);
             return rc;
@@ -1773,7 +1743,7 @@ net_addr_del(unsigned int gid, const char *oid,
         strncpy(req.ifr_name, name, IFNAMSIZ);
         if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
         {
-            int rc = TE_OS_RC(TE_TA_UNIX, errno);
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
             return rc;
@@ -1783,7 +1753,7 @@ net_addr_del(unsigned int gid, const char *oid,
         req.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
         if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
         {
-            int rc = TE_OS_RC(TE_TA_UNIX, errno);
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("ioctl(SIOCSIFFLAGS) failed: %r", rc);
             return rc;
@@ -2012,7 +1982,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     memset(buf, 0, sizeof(buf));
     if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
         return rc;
@@ -2098,7 +2068,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
     }
     if (ioctl(cfg_socket, SIOCGIFNETMASK, &req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCGIFNETMASK) failed for if=%s addr=%s: %r",
               ifname, addr, rc);
@@ -2203,7 +2173,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     }
     if (ioctl(cfg_socket, SIOCGIFBRDADDR, &req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %r",
               ifname, addr, rc);
@@ -2270,7 +2240,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
         SIN(&(req.ifr_addr))->sin_addr.s_addr = bcast;
         if (ioctl(cfg_socket, SIOCSIFBRDADDR, (int)&req) < 0)
         {
-            int rc = TE_OS_RC(TE_TA_UNIX, errno);
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("ioctl(SIOCSIFBRDADDR) failed: %s", rc);
             return rc;
@@ -2308,7 +2278,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFHWADDR, (int)&req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
     
         ERROR("ioctl(SIOCGIFHWADDR) failed: %r", rc);
         return rc;
@@ -2327,7 +2297,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     memset(buf, 0, sizeof(buf));
     if (ioctl(cfg_socket, SIOCGIFCONF, &ifc) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
         return rc;
@@ -2391,7 +2361,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFMTU, (int)&req) != 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
         ERROR("ioctl(SIOCGIFMTU) failed: %r", rc);
         return rc;
@@ -2426,7 +2396,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) != 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
         ERROR("ioctl(SIOCSIFMTU) failed: %r", rc);
         return rc;
@@ -2456,7 +2426,7 @@ arp_use_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
         return rc;
@@ -2487,7 +2457,7 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
         return rc;
@@ -2503,7 +2473,7 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCSIFFLAGS) failed: %r", rc);
         return rc;
@@ -2531,7 +2501,7 @@ status_get(unsigned int gid, const char *oid, char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
         return rc;
@@ -2593,7 +2563,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
         return rc;
@@ -2609,7 +2579,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCSIFFLAGS) failed: %r", rc);
         return rc;
@@ -2787,7 +2757,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 #ifdef SIOCSARP
     if (ioctl(cfg_socket, SIOCSARP, &arp_req) < 0)
     {
-        int rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCSARP) failed: %r", rc);
         return rc;
@@ -4040,11 +4010,11 @@ env_set(unsigned int gid, const char *oid, const char *value,
     }
     else
     {
-        int rc = errno;
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
-        ERROR("Failed to set Environment variable '%s' to '%s'",
-              name, value);
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        ERROR("Failed to set Environment variable '%s' to '%s'; errno %r",
+              name, value, rc);
+        return rc;
     }
 }
 
@@ -4076,11 +4046,11 @@ env_add(unsigned int gid, const char *oid, const char *value,
         }
         else
         {
-            int rc = errno;
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("Failed to add Environment variable '%s=%s'",
                   name, value);
-            return TE_OS_RC(TE_TA_UNIX, rc);
+            return rc;
         }
     }
     else
@@ -4196,10 +4166,10 @@ user_list(unsigned int gid, const char *oid, char **list)
 
     if ((f = fopen("/etc/passwd", "r")) == NULL)
     {
-        int rc = errno;
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
-        ERROR("Failed to open file /etc/passwd; errno %d", rc);
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        ERROR("Failed to open file /etc/passwd; errno %r", rc);
+        return rc;
     }
 
     buf[0] = 0;

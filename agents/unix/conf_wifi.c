@@ -1518,25 +1518,10 @@ RCF_PCH_CFG_NODE_COLLECTION(node_wifi, "wifi",
 /**
  * Initializes ta_unix_conf_wifi support.
  *
- * @param last  node in configuration tree (last sun of /agent/interface)
- *              to be updated
- *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
-int
-ta_unix_conf_wifi_init(rcf_pch_cfg_object **last)
+te_errno
+ta_unix_conf_wifi_init()
 {
-    rcf_pch_cfg_object *obj = &node_wifi;
-
-    if (last == NULL)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    (*last)->brother = obj;
-
-    while (obj->brother != NULL)
-        obj = obj->brother;
-
-    *last = obj;
-
-    return 0;
+    return rcf_pch_add_node("/agent/interface", &node_wifi);
 }

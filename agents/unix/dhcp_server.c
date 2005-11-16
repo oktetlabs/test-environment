@@ -1455,26 +1455,26 @@ RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver, "dhcpserver",
                     ds_dhcpserver_get, ds_dhcpserver_set);
 
 
-
-/**
- * (Re)initialize host & group lists parsing dhcpd.conf
- *
- * @return status code
- */
-void
-ds_init_dhcp_server(rcf_pch_cfg_object **last)
+te_errno 
+dhcpserver_grab(const char *name)
 {
     int rc = 0;
+    
+    UNUSED(name);
 
     TAILQ_INIT(&subnets);
+
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_dhcpserver)) != 0)
+        return rc;
 
     /* Find DHCP server executable */
     rc = find_file(dhcp_server_n_execs, dhcp_server_execs, TRUE);
     if (rc < 0)
     {
-        WARN("Failed to find DHCP server executable"
+        ERROR("Failed to find DHCP server executable"
              " - DHCP will not be available");
-        return;
+        rcf_pch_del_node(&node_ds_dhcpserver);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     dhcp_server_exec = dhcp_server_execs[rc];
 
@@ -1482,20 +1482,23 @@ ds_init_dhcp_server(rcf_pch_cfg_object **last)
     rc = find_file(dhcp_server_n_scripts, dhcp_server_scripts, TRUE);
     if (rc < 0)
     {
-        WARN("Failed to find DHCP server script"
-             " - DHCP will not be available");
-        return;
+        ERROR("Failed to find DHCP server script"
+              " - DHCP will not be available");
+        rcf_pch_del_node(&node_ds_dhcpserver);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     dhcp_server_script = dhcp_server_scripts[rc];
+
 
 #if TA_UNIX_ISC_DHCPS_NATIVE_CFG
     /* Find DHCP server configuration file */
     rc = find_file(dhcp_server_n_confs, dhcp_server_confs, FALSE);
     if (rc < 0)
     {
-        WARN("Failed to find DHCP server configuration file"
+        ERROR("Failed to find DHCP server configuration file"
              " - DHCP will not be available");
-        return;
+        rcf_pch_del_node(&node_ds_dhcpserver);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     dhcp_server_conf = dhcp_server_confs[rc];
 
@@ -1503,18 +1506,19 @@ ds_init_dhcp_server(rcf_pch_cfg_object **last)
     snprintf(buf, sizeof(buf), "%s -q -t -T", dhcp_server_exec);
     if (ta_system(buf) != 0)
     {
-        WARN("Bad found DHCP server configution file '%s'"
+        ERROR("Bad found DHCP server configution file '%s'"
              " - DHCP will not be available", dhcp_server_conf);
-        return;
+        rcf_pch_del_node(&node_ds_dhcpserver);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     rc = isc_dhcp_server_cfg_parse(dhcp_server_conf);
     if (rc != 0)
     {
-        WARN("Failed to parse DHCP server configuration file '%s'"
-             " - DHCP will not be available", dhcp_server_conf);
+        ERROR("Failed to parse DHCP server configuration file '%s'"
+              " - DHCP will not be available", dhcp_server_conf);
         ds_shutdown_dhcp_server();
-        return;
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 #else
     /* FIXME */
@@ -1527,7 +1531,8 @@ ds_init_dhcp_server(rcf_pch_cfg_object **last)
         {
             ERROR("Failed to open '%s' for writing: %s",
                   dhcp_server_leases, strerror(errno));
-            return;
+            rcf_pch_del_node(&node_ds_dhcpserver);
+            return TE_OS_RC(TE_TA_UNIX, errno);
         }
         fclose(f);
     }
@@ -1537,24 +1542,28 @@ ds_init_dhcp_server(rcf_pch_cfg_object **last)
         rc = ds_dhcpserver_script_stop();
         if (rc != 0)
         {
-            WARN("Failed to stop DHCP server"
-                 " - DHCP will not be available");
-            return;
+            ERROR("Failed to stop DHCP server"
+                  " - DHCP will not be available");
+            rcf_pch_del_node(&node_ds_dhcpserver);
+            return rc;
         }
         dhcp_server_was_run = TRUE;
     }
 #endif
 
-    DS_REGISTER(dhcpserver);
+    return 0;
 }
 
-
-/** Release all memory allocated for DHCP data */
-void
-ds_shutdown_dhcp_server()
+te_errno
+dhcpserver_release(const char *name)
 {
     host  *host, *host_tmp;
     group *group, *group_tmp;
+    
+    UNUSED(name);
+
+    if (rcf_pch_del_node(&node_ds_dhcpserver) != 0)
+        return;
 
     /* Free old lists */
     for (host = hosts; host != NULL; host = host_tmp)
@@ -1599,6 +1608,7 @@ ds_shutdown_dhcp_server()
               "file '%s': %s", dhcp_server_leases, strerror(errno));
     }
 #endif
+    return 0;
 }
 
 #endif /* WITH_DHCP_SERVER */

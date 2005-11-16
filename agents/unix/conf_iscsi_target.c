@@ -894,8 +894,8 @@ RCF_PCH_CFG_NODE_RO(node_ds_iscsi_target, "iscsi_target",
                     &node_iscsi_target_chap,
                     NULL, iscsi_target_get);
 
-int
-ta_unix_iscsi_target_init(rcf_pch_cfg_object **last)
+te_errno
+ta_unix_iscsi_target_init()
 {
     int rc;
         
@@ -904,9 +904,8 @@ ta_unix_iscsi_target_init(rcf_pch_cfg_object **last)
         ERROR("%s, %d: Cannot init iscsi server");
         return rc;
     }
-    DS_REGISTER(iscsi_target);
     
-    return 0;
+    return rcf_pch_add_node("/agent", &node_ds_iscsi_initiator);
 }
 
 #endif /* ! WITH_ISCSI */

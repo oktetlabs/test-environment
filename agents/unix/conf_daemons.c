@@ -50,14 +50,8 @@ static struct {
     te_bool changed;
 } ds[UNIX_SERVICE_MAX];
 
-/* Number of services registered */
-static int n_ds = 0;
-
 /** Auxiliary buffer */
 static char buf[2048];
-
-/** /etc/hosts backup index */
-static int hosts_index;
 
 
 /**
@@ -101,7 +95,8 @@ find_file(unsigned int n, const char * const *files, te_bool exec)
 const char *
 ds_config(int index)
 {
-    return (index >= n_ds || index < 0) ? "" : ds[index].config_file;
+    return (index >= UNIX_SERVICE_MAX || index < 0 ||
+            ds[index].config_file == NULL) ? "" : ds[index].config_file;
 }
 
 /**
@@ -119,9 +114,10 @@ ds_lookup(const char *dir, const char *name)
     int dirlen = strlen(dir);
     int i;
     
-    for (i = 0; i < n_ds; i++)
+    for (i = 0; i < UNIX_SERVICE_MAX; i++)
     {
-        if (strncmp(dir, ds[i].config_file, dirlen) == 0 &&
+        if (ds[i].config_file != NULL &&
+            strncmp(dir, ds[i].config_file, dirlen) == 0 &&
             strcmp(name, ds[i].config_file + dirlen) == 0)
         {
             return i;
@@ -141,7 +137,8 @@ ds_lookup(const char *dir, const char *name)
 const char *
 ds_backup(int index)
 {
-    return (index >= n_ds || index < 0) ? "" : ds[index].backup;
+    return (index >= UNIX_SERVICE_MAX || index < 0 ||
+            ds[index].backup == NULL) ? "" : ds[index].backup;
 }
 
 /** 
@@ -154,7 +151,8 @@ ds_backup(int index)
 te_bool 
 ds_config_changed(int index)
 {
-    return (index >= n_ds || index < 0) ? FALSE : ds[index].changed;
+    return (index >= UNIX_SERVICE_MAX || index < 0 ||
+            ds[index].backup == NULL) ? FALSE : ds[index].changed;
 }
 
 /** 
@@ -165,7 +163,7 @@ ds_config_changed(int index)
 void 
 ds_config_touch(int index)
 {
-    if (index < n_ds && index >= 0)
+    if (index < UNIX_SERVICE_MAX && index >= 0)
         ds[index].changed = TRUE;
 }
 
@@ -258,6 +256,7 @@ ds_create_backup(const char *dir, const char *name, int *index)
     const char *filename;
     FILE       *f;
     int         rc;
+    int         i;
 
     if (name == NULL)
     {
@@ -270,84 +269,87 @@ ds_create_backup(const char *dir, const char *name, int *index)
         filename = name;
     else
         filename++;
-
-    if (n_ds == sizeof(ds) / sizeof(ds[0]))          
-    {                                                              
-        WARN("Too many services are registered\n");     
+        
+    for (i = 0; i < UNIX_SERVICE_MAX; i++)
+        if (ds[i].backup == NULL)
+            break;
+     
+    if (i == UNIX_SERVICE_MAX)
+    {
+        ERROR("Too many services are registered");     
         return TE_RC(TE_TA_UNIX, TE_EMFILE);                         
     }
     
     TE_SPRINTF(buf, "%s%s", dir ? : "", name);
-    ds[n_ds].config_file = strdup(buf);
-    if (ds[n_ds].config_file == NULL)
+    ds[i].config_file = strdup(buf);
+    if (ds[i].config_file == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    if ((f = fopen(ds[n_ds].config_file, "a")) == NULL)
+    if ((f = fopen(ds[i].config_file, "a")) == NULL)
     {
         WARN("Failed to create backup for %s - no such file", 
-             ds[n_ds].config_file);
-        free(ds[n_ds].config_file);
+             ds[i].config_file);
+        free(ds[i].config_file);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     fclose(f);
     
     TE_SPRINTF(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX, filename);
     /* Addition memory for pid */
-    ds[n_ds].backup = malloc(strlen(buf) + 16); 
-    if (ds[n_ds].backup == NULL)
+    ds[i].backup = malloc(strlen(buf) + 16); 
+    if (ds[i].backup == NULL)
     {
-        free(ds[n_ds].config_file);
+        free(ds[i].config_file);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    strcpy(ds[n_ds].backup, buf);
+    strcpy(ds[i].backup, buf);
     
-    if ((rc = copy_or_rename(ds[n_ds].config_file, ds[n_ds].backup)) != 0)
+    if ((rc = copy_or_rename(ds[i].config_file, ds[i].backup)) != 0)
     {
-        free(ds[n_ds].config_file);
-        free(ds[n_ds].backup);
+        free(ds[i].config_file);
+        free(ds[i].backup);
         return rc;
     }
 
     TE_SPRINTF(buf, "diff -q %s %s >/dev/null 2>&1", 
-               ds[n_ds].config_file, ds[n_ds].backup);
+               ds[i].config_file, ds[i].backup);
     
-    ds[n_ds].changed = (ta_system(buf) != 0);
+    ds[i].changed = (ta_system(buf) != 0);
     
     if (index != NULL)                                        
-        *index = n_ds;
-    n_ds++;
+        *index = i;
+
     return 0;                               
 } 
 
-/** Restore initial state of the services */
-void
-ds_restore_backup()
+/** 
+ * Restore initial state of the service. 
+ * 
+ * @param index         service index
+ */
+void 
+ds_restore_backup(int index)
 {
-    int i;
+    if (index < 0 || index >= UNIX_SERVICE_MAX || ds[index].backup == NULL)
+        return;
     
-    RING("Restoring backups");
-
-    for (i = 0; i < n_ds; i++)
+    if (ds[index].changed)
     {
-        char *backup = ds[i].backup;
-        
-        if (ds[i].changed)
-        {
-            sprintf(buf, "mv %s %s >/dev/null 2>&1", 
-                    ds_backup(i), ds_config(i));
-        }
-        else
-        {
-            sprintf(buf, "rm %s >/dev/null 2>&1", ds_backup(i));
-        }
-        ds[i].backup = "";
-        if (ta_system(buf) != 0)
-            ERROR("Command <%s> failed", buf);
-            
-        free(backup);
-        free(ds[i].config_file);
+        sprintf(buf, "mv %s %s >/dev/null 2>&1", 
+                ds_backup(index), ds_config(index));
     }
-    
-    n_ds = 0;
+    else
+    {
+        sprintf(buf, "rm %s >/dev/null 2>&1", ds_backup(index));
+    }
+    if (ta_system(buf) != 0)
+        ERROR("Command <%s> failed", buf);
+        
+    free(ds[index].backup);
+    free(ds[index].config_file);
+    ds[index].config_file = NULL;
+    ds[index].backup = NULL;
+
+    sync();
 }
 
 /**
@@ -594,7 +596,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
         ERROR("xinetd failed to start with exit code %d", rc);
         return -1;
     }
-
+    
     return 0;
 }
 
@@ -741,6 +743,267 @@ ds_xinetd_service_addr_get(const char *service, char *value)
 #endif
 
 #endif /* WITH_XINETD */
+
+#ifdef WITH_ECHO_SERVER
+
+/** Get protocol type used by echo server (tcp or udp) */
+static int
+ds_echoserver_proto_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+    return 0;
+}
+
+/** Set protocol type used by echo server (tcp or udp) */
+static int
+ds_echoserver_proto_set(unsigned int gid, const char *oid,
+                        const char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+    return 0;
+}
+
+/** Get IPv4 address echo server is attached to */
+static int
+ds_echoserver_addr_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return ds_xinetd_service_addr_get("echo", value);
+}
+
+/** Attach echo server to specified IPv4 address */
+static int
+ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return ds_xinetd_service_addr_set("echo", value);
+}
+
+RCF_PCH_CFG_NODE_RW(node_ds_echoserver_addr, "net_addr",
+                    NULL, NULL,
+                    ds_echoserver_addr_get, ds_echoserver_addr_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_echoserver_proto, "proto",
+                    NULL, &node_ds_echoserver_addr,
+                    ds_echoserver_proto_get, ds_echoserver_proto_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_echoserver, "echoserver",
+                    &node_ds_echoserver_proto, NULL,
+                    xinetd_get, xinetd_set);
+
+static int echo_index;
+
+te_errno 
+echoserver_grab(const char *name)
+{
+    te_errno rc;
+    
+    UNUSED(name);
+
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_echoserver)) != 0)
+        return rc;
+    
+    if ((rc = ds_create_backup(XINETD_ETC_DIR, "echo", &echo_index)) != 0)
+    {
+        rcf_pch_del_node(&node_ds_echoserver);
+        return rc;
+    }
+    
+    return 0;
+}
+
+te_errno 
+echoserver_release(const char *name)
+{
+    UNUSED(name);
+    
+    if (rcf_pch_del_node(&node_ds_echoserver) != 0)
+        return 0;
+    ds_restore_backup(echo_index);
+    ta_system("/etc/init.d/xinetd restart >/dev/null");
+}
+
+#endif /* WITH_ECHO_SERVER */
+
+
+#ifdef WITH_TODUDP_SERVER
+
+/**
+ * Get address which TOD UDP daemon should bind to.
+ *
+ * @param gid   group identifier (unused)
+ * @param oid   full instance identifier (unused)
+ * @param value value location
+ *
+ * @return status code
+ */
+static int
+ds_todudpserver_addr_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return ds_xinetd_service_addr_get("daytime-udp", value);
+}
+
+/**
+ * Get address which TOD UDP daemon should bind to.
+ *
+ * @param gid   group identifier (unused)
+ * @param oid   full instance identifier (unused)
+ * @param value new address
+ *
+ * @return status code
+ */
+static int
+ds_todudpserver_addr_set(unsigned int gid, const char *oid,
+                         const char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return ds_xinetd_service_addr_set("daytime-udp", value);
+}
+
+RCF_PCH_CFG_NODE_RW(node_ds_todudpserver_addr, "net_addr",
+                    NULL, NULL,
+                    ds_todudpserver_addr_get, ds_todudpserver_addr_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_todudpserver, "todudpserver",
+                    &node_ds_todudpserver_addr, NULL,
+                    xinetd_get, xinetd_set);
+
+static int todudp_index;
+
+te_errno 
+todudpserver_grab(const char *name)
+{
+    te_errno rc;
+    
+    UNUSED(name);
+
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_todudpserver)) != 0)
+        return rc;
+
+    if ((rc = ds_create_backup(XINETD_ETC_DIR, "daytime-udp", 
+                               &todudp_index)) != 0)
+    {
+        rcf_pch_del_node(&node_ds_todudpserver);
+        return rc;
+    }
+    
+    return 0;
+}
+
+te_errno 
+todudpserver_release(const char *name)
+{
+    UNUSED(name);
+    
+    if (rcf_pch_del_node(&node_ds_todudpserver) != 0)
+        return 0;
+    ds_restore_backup(todudp_index);
+    ta_system("/etc/init.d/xinetd restart >/dev/null");
+}
+
+
+#endif /* WITH_TODUDP_SERVER */
+
+#ifdef WITH_TELNET
+
+RCF_PCH_CFG_NODE_RW(node_ds_telnetd, "telnetd",
+                    NULL, NULL, xinetd_get, xinetd_set);
+
+static int telnetd_index;
+
+te_errno 
+telnetd_grab(const char *name)
+{
+    te_errno rc;
+    
+    UNUSED(name);
+    
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_telnetd)) != 0)
+        return rc;
+
+    if ((rc = ds_create_backup(XINETD_ETC_DIR, "telnet", 
+                               &telnetd_index)) != 0)
+    {
+        rcf_pch_del_node(&node_ds_telnetd);
+        return rc;
+    }
+    
+    return 0;
+}
+
+te_errno 
+telnetd_release(const char *name)
+{
+    UNUSED(name);
+    
+    if (rcf_pch_del_node(&node_ds_telnetd) != 0)
+        return 0;
+        
+    ds_restore_backup(telnetd_index);
+    ta_system("/etc/init.d/xinetd restart >/dev/null");
+    
+    return 0;
+}
+
+#endif /* WITH_TELNET */
+
+#ifdef WITH_RSH
+
+RCF_PCH_CFG_NODE_RW(node_ds_rshd, "rshd",
+                    NULL, NULL, xinetd_get, xinetd_set);
+
+static int rshd_index;
+
+te_errno 
+rshd_grab(const char *name)
+{
+    te_errno rc;
+    
+    UNUSED(name);
+
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_rshd)) != 0)
+        return rc;
+
+    if ((rc = ds_create_backup(XINETD_ETC_DIR, "rsh", 
+                               &rshd_index)) != 0)
+    {
+        rcf_pch_del_node(&node_ds_rshd);
+        return rc;
+    }
+    
+    return 0;
+}
+
+te_errno 
+rshd_release(const char *name)
+{
+    UNUSED(name);
+    
+    if (rcf_pch_del_node(&node_ds_rshd) != 0)
+        return 0;
+        
+    ds_restore_backup(rshd_index);
+    ta_system("/etc/init.d/xinetd restart >/dev/null");
+    
+    return 0;
+}
+
+#endif /* WITH_RSH */
 
 
 #ifdef WITH_TFTP_SERVER
@@ -1117,19 +1380,17 @@ RCF_PCH_CFG_NODE_RW(node_ds_tftpserver, "tftpserver",
                     &node_ds_tftppserver_addr, NULL,
                     xinetd_get, xinetd_set);
 
-/** 
- * Patch TFTP server configuration file.
- *
- * @param last  configuration tree node
- */
-void
-ds_init_tftp_server(rcf_pch_cfg_object **last)
+te_errno 
+tftp_server_grab(const char *name);
 {
     FILE *f = NULL;
     FILE *g = NULL;
+    int   rc;
     
-    if (ds_create_backup(XINETD_ETC_DIR, "tftp", &tftp_index) != 0)
-        return;
+    UNUSED(name);
+    
+    if ((rc = ds_create_backup(XINETD_ETC_DIR, "tftp", &tftp_index)) != 0)
+        return rc;
     
     ds_config_touch(tftp_index);
 
@@ -1152,103 +1413,33 @@ ds_init_tftp_server(rcf_pch_cfg_object **last)
     fclose(f);
     fclose(g);
 
-    DS_REGISTER(tftpserver);
+    /* Commit all changes in config files */
+    sync();
+
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_tftpserver)) != 0)
+    {
+        ds_restore_backup(tftp_index);
+        return rc;
+    }
     
     return 0;
 }
 
+te_errno 
+tftp_server_release(const char *name)
+{
+    UNUSED(name);
+    
+    if (rcf_pch_del_node(&node_ds_tftpserver) != 0)
+        return 0;
+    ds_restore_backup(tftp_index);
+    ta_system("/etc/init.d/xinetd restart >/dev/null");
+}
+
+
 #endif /* WITH_TFTP_SERVER */
 
-#ifdef WITH_TODUDP_SERVER
-
-/**
- * Get address which TOD UDP daemon should bind to.
- *
- * @param gid   group identifier (unused)
- * @param oid   full instance identifier (unused)
- * @param value value location
- *
- * @return status code
- */
-static int
-ds_todudpserver_addr_get(unsigned int gid, const char *oid, char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return ds_xinetd_service_addr_get("daytime-udp", value);
-}
-
-/**
- * Get address which TOD UDP daemon should bind to.
- *
- * @param gid   group identifier (unused)
- * @param oid   full instance identifier (unused)
- * @param value new address
- *
- * @return status code
- */
-static int
-ds_todudpserver_addr_set(unsigned int gid, const char *oid,
-                         const char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return ds_xinetd_service_addr_set("daytime-udp", value);
-}
-
-#endif /* WITH_TODUDP_SERVER */
-
-#ifdef WITH_ECHO_SERVER
-
-/** Get protocol type used by echo server (tcp or udp) */
-static int
-ds_echoserver_proto_get(unsigned int gid, const char *oid, char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
-    return 0;
-}
-
-/** Set protocol type used by echo server (tcp or udp) */
-static int
-ds_echoserver_proto_set(unsigned int gid, const char *oid,
-                        const char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
-    return 0;
-}
-
-/** Get IPv4 address echo server is attached to */
-static int
-ds_echoserver_addr_get(unsigned int gid, const char *oid, char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return ds_xinetd_service_addr_get("echo", value);
-}
-
-/** Attach echo server to specified IPv4 address */
-static int
-ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return ds_xinetd_service_addr_set("echo", value);
-}
-
-#endif /* WITH_ECHO_SERVER */
-
 #ifdef WITH_FTP_SERVER
-
 
 enum ftp_server_kinds { FTP_VSFTPD, FTP_WUFTPD, FTP_PROFTPD };
 
@@ -1283,7 +1474,7 @@ get_ftp_daemon_name(void)
 }
 
 
-static void
+static te_errno
 ds_ftpserver_update_config(void)
 {
     FILE *f = NULL;
@@ -1382,6 +1573,8 @@ ds_ftpserver_update_config(void)
 
     /* Commit all changes in config files */
     sync();
+    
+    return 0;
 }
 
 #ifdef WITH_XINETD
@@ -1429,7 +1622,6 @@ ftpserver_running()
         
     return enable[0] == '1';        
 }    
-
 
 static int
 ds_ftpserver_server_set(unsigned int gid, const char *oid, 
@@ -1496,16 +1688,6 @@ ds_ftpserver_server_get(unsigned int gid, const char *oid, char *value)
 }
 
 
-RCF_PCH_CFG_NODE_RW(node_ds_ftpserver_server, "server",
-                    NULL, NULL,
-                    ds_ftpserver_server_get, 
-                    ds_ftpserver_server_set);
-
-RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
-                    &node_ds_ftpserver_server, NULL,
-                    ds_ftpserver_get, ds_ftpserver_set);
-
-
 static te_bool
 ftp_create_backup(enum ftp_server_kinds kind)
 {
@@ -1537,15 +1719,22 @@ ftp_create_backup(enum ftp_server_kinds kind)
     return TRUE;
 }
 
-/**
- * Initialize FTP daemon.
- *
- * @param last  configuration tree node
- */
-void
-ds_init_ftp_server(rcf_pch_cfg_object **last)
+RCF_PCH_CFG_NODE_RW(node_ds_ftpserver_server, "server",
+                    NULL, NULL,
+                    ds_ftpserver_server_get, 
+                    ds_ftpserver_server_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_ftpserver, "ftpserver",
+                    &node_ds_ftpserver_server, NULL,
+                    ds_ftpserver_get, ds_ftpserver_set);
+
+te_errno 
+ftpserver_grab(const char *name)
 {
-    te_bool ftp_register;
+    te_errno rc;
+    te_bool  ftp_register;
+    
+    UNUSED(name);
     
     ftp_register = ftp_create_backup(FTP_PROFTPD);
     ftp_register |= ftp_create_backup(FTP_WUFTPD);
@@ -1560,580 +1749,82 @@ ds_init_ftp_server(rcf_pch_cfg_object **last)
 #endif
 
     if (!ftp_register)
-        return;
+    {
+        ERROR("No FTP servers are discovered");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
 
-    ds_ftpserver_update_config();
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_ftpserver)) != 0)
+    {
+        return rc;
+    }
+
+    if ((rc = ds_ftpserver_update_config()) != 0)
+    {
+        ftpserver_release(NULL);
+        return rc;
+    }
+    
     if (ta_system("mkdir -p /var/ftp/pub") != 0)
     {
-        WARN("Cannot create /var/ftp/pub");
-        return;
+        ERROR("Cannot create /var/ftp/pub");
+        ftpserver_release(NULL);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
     if (ta_system("chmod o+w /var/ftp/pub") !=0)
     {
         ERROR("Cannot chmod /var/ftp/pub");
-        return;
+        ftpserver_release(NULL);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
+    
     if (ftpserver_running())
     {
         ds_ftpserver_set(0, "ftpserver", "0");
         ds_ftpserver_set(0, "ftpserver", "1");
     }
-    DS_REGISTER(ftpserver);
+    
+    return 0;
 }
 
-/* Restart FTP server, if necesary */
-void
-ds_shutdown_ftp_server()
+te_errno 
+ftpserver_release(const char *name)
 {
+    int i;
+    
+    UNUSED(name);
+
+    if (rcf_pch_del_node(&node_ds_ftpserver) != 0)
+        return 0;
+    
+    /* Restore backups */
+    
+    for (i = 0; 
+         i < (int)(sizeof(ftp_indices) / sizeof(ftp_indices[0])); 
+         i++)
+    {
+        if (ftp_indices[i] != -1)
+            ds_restore_backup(ftp_indices[i]);
+    }
+        
     ta_system("chmod o-w /var/ftp/pub 2>/dev/null");
     if (ftpserver_running())
     {
         ds_ftpserver_set(0, "ftpserver", "0");
         ds_ftpserver_set(0, "ftpserver", "1");
     }
+    
+    return 0;
 }
 
 #endif /* WITH_FTP_SERVER */
 
-/*--------------------------- SSH daemon ---------------------------------*/
-
-/** 
- * Check if the SSH daemon with specified port is running. 
- *
- * @param port  port in string representation
- *
- * @return pid of the daemon or 0
- */
-static uint32_t
-sshd_exists(char *port)
-{
-    FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
-    char  line[128];
-    int   len = strlen(port);
-    
-    buf[0] = 0;
-    while (fgets(line, sizeof(line), f) != NULL)
-    {
-        char *tmp = strstr(line, "sshd");
-        
-        tmp = strstr(tmp, "-p") + 2;
-        while (*++tmp == ' ');
-        
-        if (strncmp(tmp, port, len) == 0 && !isdigit(*(tmp + len)))
-        {
-            pclose(f);
-            return atoi(line);
-        }
-    }
-    
-    pclose(f);
-
-    return 0;
-}
-
-/**
- * Add a new SSH daemon with specified port.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         unused
- * @param addr          SSHD port
- *
- * @return error code
- */
-static int
-ds_sshd_add(unsigned int gid, const char *oid, const char *value,
-            const char *port)
-{
-    uint32_t pid = sshd_exists((char *)port);
-    uint32_t p;
-    char    *tmp;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    
-    p = strtol(port, &tmp, 10);
-    if (tmp == port || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    
-    if (pid != 0)
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-        
-    sprintf(buf, "/usr/sbin/sshd -p %s", port);
-
-    if (ta_system(buf) != 0)
-    {
-        ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    
-    return 0;
-}
-
-/**
- * Stop SSHD with specified port.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param addr          
- *
- * @return error code
- */
-static int
-ds_sshd_del(unsigned int gid, const char *oid, const char *port)
-{
-    uint32_t pid = sshd_exists((char *)port);
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (pid == 0)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-        
-    if (kill(pid, SIGTERM) != 0)
-    {
-        int kill_errno = errno;
-        ERROR("Failed to send SIGTERM "
-              "to process SSH daemon with PID=%u: %d",
-              pid, kill_errno);
-        /* Just to make sure */
-        kill(pid, SIGKILL);
-    }
-    
-    return 0;
-}
-
-/**
- * Return list of SSH daemons.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param list          location for the list pointer
- *
- * @return error code
- */
-static int
-ds_sshd_list(unsigned int gid, const char *oid, char **list)
-{
-    FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
-    char  line[128];
-    char *s = buf;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    
-    buf[0] = 0;
-    while (fgets(line, sizeof(line), f) != NULL)
-    {
-        char *tmp = strstr(line, "sshd");
-        
-        tmp = strstr(tmp, "-p") + 2;
-        while (*++tmp == ' ');
-        
-        s += sprintf(s, "%u ", atoi(tmp));
-    }
-    
-    pclose(f);
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
-    return 0;
-}
-
-/*--------------------------- X server ---------------------------------*/
-
-/** 
- * Check if the Xvfb daemon with specified display number is running. 
- *
- * @param number  display number
- *
- * @return pid of the daemon or 0
- */
-static uint32_t
-xvfb_exists(char *number)
-{
-    FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");
-    char  line[128];
-    int   len = strlen(number);
-    
-    buf[0] = 0;
-    while (fgets(line, sizeof(line), f) != NULL)
-    {
-        char *tmp = strstr(line, "Xvfb");
-
-        if (tmp == NULL)
-        {
-            ERROR("xvfb_list: ps returned %s", line);
-            break;
-        }
-        
-        if ((tmp  = strstr(tmp, ":")) == NULL)
-            continue;
-        
-        tmp++;
-        
-        if (strncmp(tmp, number, len) == 0 && !isdigit(*(tmp + len)))
-        {
-            pclose(f);
-            return atoi(line);
-        }
-    }
-    
-    pclose(f);
-
-    return 0;
-}
-
-/**
- * Add a new Xvfb daemon with specified display number.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         unused
- * @param number        display number
- *
- * @return error code
- */
-static int
-ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
-            const char *number)
-{
-    uint32_t pid = xvfb_exists((char *)number);
-    uint32_t n;
-    char    *tmp;
-    
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    
-    n = strtol(number, &tmp, 10);
-    if (tmp == number || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    
-    if (pid != 0)
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-        
-    sprintf(buf, "Xvfb :%s -ac 2>/dev/null &", number);
-
-    if (ta_system(buf) != 0)
-    {
-        ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    
-    return 0;
-}
-
-/**
- * Stop Xvfb with specified display number.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param number        display number          
- *
- * @return error code
- */
-static int
-ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
-{
-    int             pid;
-    unsigned int    attempt = TA_UNIX_DAEMON_WAIT_ATTEMPTS;
-    te_errno        err = TE_ETIMEDOUT;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    pid = xvfb_exists((char *)number);
-    if (pid == 0)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-        
-    if (kill(pid, SIGTERM) == 0)
-    {
-        for (attempt = 0;
-             xvfb_exists((char *)number) &&
-             (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
-             ++attempt)
-        {
-            usleep(TA_UNIX_DAEMON_WAIT_USEC);
-        }
-    }
-    else
-    {
-        err = te_rc_os2te(errno);
-    }
-
-    if (attempt == TA_UNIX_DAEMON_WAIT_ATTEMPTS)
-    {
-        ERROR("Failed to stop Xvfb '%s' with PID=%d: %r",
-              number, pid, err);
-        return TE_RC(TE_TA_UNIX, err);
-    }
-
-    return 0;
-}
-
-/**
- * Return list of Xvfb servers.
- *
- * @param gid    group identifier (unused)
- * @param oid    full object instence identifier (unused)
- * @param list   location for the list pointer
- *
- * @return error code
- */
-static int
-ds_xvfb_list(unsigned int gid, const char *oid, char **list)
-{
-    FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");
-    char  line[128];
-    char *s = buf;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    
-    buf[0] = 0;
-    while (fgets(line, sizeof(line), f) != NULL)
-    {
-        char *tmp = strstr(line, "Xvfb");
-        int   n;
-        
-        if (tmp == NULL)
-        {
-            ERROR("xvfb_list: ps returned %s", line);
-            break;
-        }
-
-        if ((tmp  = strstr(tmp, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
-            continue;
-        
-        s += sprintf(s, "%u ", n);
-    }
-    
-    pclose(f);
-    
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
-    return 0;
-}
-
-#ifdef WITH_VNCSERVER
-
-/** Read VNC password */
-static int
-ds_vncpasswd_get(unsigned int gid, const char *oid, char *value)
-{
-    FILE *f;
-    int   rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    
-    if ((f = fopen("/tmp/.vnc/passwd", "r")) == NULL)
-    {
-        rc = errno;
-        ERROR("Failed to open /tmp/.vnc directory");
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    
-    memset(value, 0, RCF_MAX_VAL);
-    fread(value, 1, RCF_MAX_VAL - 1, f);
-    fclose(f);
-    
-    return 0;
-}
-
-/** 
- * Check if the VNC server with specified display is running. 
- *
- * @param number  display number
- *
- * @return TRUE, if the server exists
- */
-static te_bool
-vncserver_exists(char *number)
-{
-    sprintf(buf, 
-            "ls /tmp/.vnc/*.pid 2>/dev/null | grep %s >/dev/null 2>&1",
-            number);
-    return ta_system(buf) == 0;
-}
-
-/**
- * Add a new VNC server with specified display number.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param value         unused
- * @param number        display number
- *
- * @return error code
- */
-static int
-ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
-                 const char *number)
-{
-    uint32_t n;
-    char    *tmp;
-    
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    
-    n = strtol(number, &tmp, 10);
-    if (tmp == number || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    
-    if (vncserver_exists((char *)number))
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-        
-    sprintf(buf, "HOME=/tmp vncserver :%s >/dev/null", number);
-
-    if (ta_system(buf) != 0)
-    {
-        ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-
-    sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost + >/dev/null", number);
-
-    if (ta_system(buf) != 0)
-    {
-        ERROR("Command '%s' failed", buf);
-        sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", 
-                number);
-        ta_system(buf);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    
-    return 0;
-}
-
-/**
- * Stop VNC server with specified display number.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param number        display number          
- *
- * @return error code
- */
-static int
-ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (!vncserver_exists((char *)number))
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-        
-    sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", number);
-
-    if (ta_system(buf) != 0)
-    {
-        ERROR("Command '%s' failed", buf);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    
-    return 0;
-}
-
-/**
- * Return list of VNC servers.
- *
- * @param gid    group identifier (unused)
- * @param oid    full object instence identifier (unused)
- * @param list   location for the list pointer
- *
- * @return error code
- */
-static int
-ds_vncserver_list(unsigned int gid, const char *oid, char **list)
-{
-    FILE *f = popen("ls /tmp/.vnc/*.pid 2>/dev/null", "r");
-    char  line[128];
-    char *s = buf;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    
-    buf[0] = 0;
-    while (fgets(line, sizeof(line), f) != NULL)
-    {
-        char *tmp;
-        int   n;
-
-        if ((tmp  = strstr(line, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
-            continue;
-        
-        s += sprintf(s, "%u ", n);
-    }
-    pclose(f);
-    
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
-    return 0;
-}
-
-RCF_PCH_CFG_NODE_RO(node_ds_vncpasswd, "vncpasswd",
-                    NULL, NULL, ds_vncpasswd_get);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_ds_vncserver, "vncserver",
-                            NULL, NULL, 
-                            ds_vncserver_add, ds_vncserver_del, 
-                            ds_vncserver_list, NULL);
-
-/**
- * Initialize VNC password file.
- *
- * @param last  configuration tree node
- */
-void
-ds_init_vncserver(rcf_pch_cfg_object **last)
-{
-    uint8_t passwd[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H' };
-    int     fd;
-
-    ta_system("rm -rf /tmp/.vnc");
-        
-    if (mkdir("/tmp/.vnc", 0700) < 0)
-    {
-        WARN("Failed to create /tmp/.vnc directory");
-        return;
-    } 
-    
-    if ((fd = open("/tmp/.vnc/passwd", O_CREAT | O_WRONLY, 0600)) <= 0)
-    {
-        WARN("Failed to create file /tmp/.vnc/passwd; errno %x", errno);
-        return;
-    }
-    
-    if (write(fd, passwd, sizeof(passwd)) < 0)
-    {
-        WARN("write() failed for the file /tmp/.vnc/passwd; errno %x", 
-             errno);
-        close(fd);
-        return;
-    }
-    
-    if (close(fd) < 0)
-    {
-        WARN("close() failed for the file /tmp/.vnc/passwd");
-        return;
-    }
-
-    DS_REGISTER(vncpasswd);
-    DS_REGISTER(vncserver);
-}
-
-#endif /* WITH_VNCSERVER */
-
 #ifdef WITH_SMTP
 
 #define SMTP_EMPTY_SMARTHOST    "0.0.0.0"
+
+/** /etc/hosts backup index */
+static int hosts_index;
 
 /** Index of smarthost name: te_tester<index> */
 static unsigned int smarthost_name_index = 0; 
@@ -2721,7 +2412,7 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
 {
     unsigned int i;
     
-    int rc;
+    te_errno rc;
     
     char *smtp_prev = smtp_current;
     char *smtp_prev_daemon = smtp_current_daemon;
@@ -2784,17 +2475,6 @@ ds_smtp_set(unsigned int gid, const char *oid, const char *value)
     return daemon_set(gid, smtp_current_daemon, value);
 }
 
-RCF_PCH_CFG_NODE_RW(node_ds_smtp_smarthost, "smarthost",
-                    NULL, NULL,
-                    ds_smtp_smarthost_get, ds_smtp_smarthost_set);
-
-RCF_PCH_CFG_NODE_RW(node_ds_smtp_server, "server",
-                    NULL, &node_ds_smtp_smarthost,
-                    ds_smtp_server_get, ds_smtp_server_set);
-
-RCF_PCH_CFG_NODE_RW(node_ds_smtp, "smtp",
-                    &node_ds_smtp_server, NULL,
-                    ds_smtp_get, ds_smtp_set);
 
 /**
  * Flush the current SMTP server's queue, so that
@@ -2805,6 +2485,7 @@ void
 flush_smtp_server_queue(void)
 {
     int rc = 0;
+    
     if (smtp_current == NULL)
         ERROR("No SMTP server running");
     else if (strcmp(smtp_current, "postfix") == 0)
@@ -2833,60 +2514,94 @@ flush_smtp_server_queue(void)
     }
     else
     {
-        WARN("Flushing not implemented for %s", smtp_current);
+        WARN("Flushing is not implemented for %s", smtp_current);
     }
     if (rc != 0)
         ERROR("Flushing failed with code %d", rc);
 }
 
+RCF_PCH_CFG_NODE_RW(node_ds_smtp_smarthost, "smarthost",
+                    NULL, NULL,
+                    ds_smtp_smarthost_get, ds_smtp_smarthost_set);
 
-/** 
- * Initialize SMTP-related variables. 
- *
- * @param last  configuration tree node
- */
-void
-ds_init_smtp(rcf_pch_cfg_object **last)
+RCF_PCH_CFG_NODE_RW(node_ds_smtp_server, "server",
+                    NULL, &node_ds_smtp_smarthost,
+                    ds_smtp_server_get, ds_smtp_server_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_smtp, "smtp",
+                    &node_ds_smtp_server, NULL,
+                    ds_smtp_get, ds_smtp_set);
+
+te_errno 
+smtp_grab(const char *name)
 {
     unsigned int i;
+    int          rc;
+    
+    UNUSED(name);
+
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_smtp)) != 0)
+        return rc;
+    
+    if ((rc = ds_create_backup("/etc/", "hosts", &hosts_index)) != 0)
+    {
+        ERROR("SMTP server updates /etc/hosts and cannot be initialized");
+        smtp_release(NULL);
+        return rc;
+    }
     
     if (file_exists(SENDMAIL_CONF_DIR "sendmail.mc") &&
-        ds_create_backup(SENDMAIL_CONF_DIR, "sendmail.mc", 
-                         &sendmail_index) != 0)
+        (rc = ds_create_backup(SENDMAIL_CONF_DIR, "sendmail.mc", 
+                               &sendmail_index)) != 0)
     {
-        return;
+        smtp_release(NULL);
+        return rc;
     }
 
     if (file_exists(EXIM_CONF_DIR "update-exim.conf.conf"))
     {
-        if (ds_create_backup(EXIM_CONF_DIR, "update-exim.conf.conf", 
-                             &exim_index) != 0)
-            return;
+        if ((rc = ds_create_backup(EXIM_CONF_DIR, "update-exim.conf.conf", 
+                                   &exim_index)) != 0)
+        {
+            smtp_release(NULL);
+            return rc;
+        }
     }
     else if (file_exists(EXIM4_CONF_DIR "update-exim4.conf.conf"))
     {
         exim_name = "exim4";
-        if (ds_create_backup(EXIM4_CONF_DIR, "update-exim4.conf.conf", 
-                             &exim_index) != 0)
-            return;                             
+        if ((rc = ds_create_backup(EXIM4_CONF_DIR, 
+                                   "update-exim4.conf.conf", 
+                                   &exim_index)) != 0)
+        {
+            smtp_release(NULL);
+            return rc;
+        }
     }
 
     if (file_exists(POSTFIX_CONF_DIR "main.cf") &&
-        ds_create_backup(POSTFIX_CONF_DIR, "main.cf", 
-                         &postfix_index) != 0)
+        (rc = ds_create_backup(POSTFIX_CONF_DIR, "main.cf", 
+                               &postfix_index)) != 0)
     {
-        return;
+        smtp_release(NULL);
+        return rc;
     }
 
     if (file_exists(QMAIL_CONF_DIR "smtproutes") &&
-        ds_create_backup(QMAIL_CONF_DIR, "smtproutes", 
-                         &qmail_index) != 0)
+        (rc = ds_create_backup(QMAIL_CONF_DIR, "smtproutes", 
+                               &qmail_index)) != 0)
     {
-        return;
+        smtp_release(NULL);
+        return rc;
     }
 
         
-    smtp_current_smarthost = strdup(SMTP_EMPTY_SMARTHOST);
+    if ((smtp_current_smarthost = strdup(SMTP_EMPTY_SMARTHOST)) == NULL)
+    {
+        smtp_release(NULL);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    
     for (i = 0; i < sizeof(smtp_servers) / sizeof(char *); i++)
     {
         smtp_current = smtp_servers[i];
@@ -2901,13 +2616,25 @@ ds_init_smtp(rcf_pch_cfg_object **last)
         }
         smtp_current = NULL;
     }
-    DS_REGISTER(smtp);
+    
+    return 0;
 }
 
-/** Restore SMTP */
-void
-ds_shutdown_smtp()
+te_errno 
+smtp_release(const char *name)
 {
+    UNUSED(name);
+
+    if (rcf_pch_del_node(&node_ds_smtp) != 0)
+        return 0;
+    
+    /* Restore backups */
+    ds_restore_backup(hosts_index);
+    ds_restore_backup(sendmail_index);
+    ds_restore_backup(exim_index);
+    ds_restore_backup(postfix_index);
+    ds_restore_backup(qmail_index);
+    
     if (sendmail_index >= 0 && ds_config_changed(sendmail_index))
     {
         if (file_exists(SENDMAIL_CONF_DIR))
@@ -2926,210 +2653,689 @@ ds_shutdown_smtp()
     if (smtp_initial != NULL)
         daemon_set(0, smtp_initial, "1");
 
-    free(smtp_current_smarthost);        
+    free(smtp_current_smarthost);
+    smtp_current_smarthost = NULL;
+    
+    return 0;
 }
 
 #endif /* WITH_SMTP */
 
-/*
- * Daemons configuration tree in reverse order.
+#ifdef WITH_VNCSERVER
+
+/** Read VNC password */
+static int
+ds_vncpasswd_get(unsigned int gid, const char *oid, char *value)
+{
+    FILE *f;
+    int   rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if ((f = fopen("/tmp/.vnc/passwd", "r")) == NULL)
+    {
+        rc = errno;
+        ERROR("Failed to open /tmp/.vnc directory");
+        return TE_OS_RC(TE_TA_UNIX, rc);
+    }
+    
+    memset(value, 0, RCF_MAX_VAL);
+    fread(value, 1, RCF_MAX_VAL - 1, f);
+    fclose(f);
+    
+    return 0;
+}
+
+/** 
+ * Check if the VNC server with specified display is running. 
+ *
+ * @param number  display number
+ *
+ * @return TRUE, if the server exists
  */
+static te_bool
+vncserver_exists(char *number)
+{
+    sprintf(buf, 
+            "ls /tmp/.vnc/*.pid 2>/dev/null | grep %s >/dev/null 2>&1",
+            number);
+    return ta_system(buf) == 0;
+}
 
-#ifdef WITH_ECHO_SERVER
+/**
+ * Add a new VNC server with specified display number.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         unused
+ * @param number        display number
+ *
+ * @return error code
+ */
+static int
+ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
+                 const char *number)
+{
+    uint32_t n;
+    char    *tmp;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    
+    n = strtol(number, &tmp, 10);
+    if (tmp == number || *tmp != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    
+    if (vncserver_exists((char *)number))
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+        
+    sprintf(buf, "HOME=/tmp vncserver :%s >/dev/null", number);
 
-RCF_PCH_CFG_NODE_RW(node_ds_echoserver_addr, "net_addr",
-                    NULL, NULL,
-                    ds_echoserver_addr_get, ds_echoserver_addr_set);
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
 
-RCF_PCH_CFG_NODE_RW(node_ds_echoserver_proto, "proto",
-                    NULL, &node_ds_echoserver_addr,
-                    ds_echoserver_proto_get, ds_echoserver_proto_set);
+    sprintf(buf, "HOME=/tmp DISPLAY=:%s xhost + >/dev/null", number);
 
-RCF_PCH_CFG_NODE_RW(node_ds_echoserver, "echoserver",
-                    &node_ds_echoserver_proto, NULL,
-                    xinetd_get, xinetd_set);
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", 
+                number);
+        ta_system(buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    
+    return 0;
+}
 
-#endif /* WITH_ECHO_SERVER */
+/**
+ * Stop VNC server with specified display number.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param number        display number          
+ *
+ * @return error code
+ */
+static int
+ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
+{
+    UNUSED(gid);
+    UNUSED(oid);
 
-#ifdef WITH_TELNET
-RCF_PCH_CFG_NODE_RW(node_ds_telnet, "telnetd",
-                    NULL, NULL, xinetd_get, xinetd_set);
-#endif /* WITH_TELNET */
+    if (!vncserver_exists((char *)number))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        
+    sprintf(buf, "HOME=/tmp vncserver -kill :%s >/dev/null 2>&1", number);
 
-#ifdef WITH_RSH
-RCF_PCH_CFG_NODE_RW(node_ds_rsh, "rshd",
-                    NULL, NULL, xinetd_get, xinetd_set);
-#endif /* WITH_RSH */
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    
+    return 0;
+}
 
-#ifdef WITH_TODUDP_SERVER
+/**
+ * Return list of VNC servers.
+ *
+ * @param gid    group identifier (unused)
+ * @param oid    full object instence identifier (unused)
+ * @param list   location for the list pointer
+ *
+ * @return error code
+ */
+static int
+ds_vncserver_list(unsigned int gid, const char *oid, char **list)
+{
+    FILE *f = popen("ls /tmp/.vnc/*.pid 2>/dev/null", "r");
+    char  line[128];
+    char *s = buf;
 
-RCF_PCH_CFG_NODE_RW(node_ds_todudpserver_addr, "net_addr",
-                    NULL, NULL,
-                    ds_todudpserver_addr_get, ds_todudpserver_addr_set);
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp;
+        int   n;
 
-RCF_PCH_CFG_NODE_RW(node_ds_todudpserver, "todudpserver",
-                    &node_ds_todudpserver_addr, NULL,
-                    xinetd_get, xinetd_set);
+        if ((tmp  = strstr(line, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
+            continue;
+        
+        s += sprintf(s, "%u ", n);
+    }
+    pclose(f);
+    
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    
+    return 0;
+}
 
-#endif /* WITH_TODUDP_SERVER */
+RCF_PCH_CFG_NODE_RO(node_ds_vncpasswd, "vncpasswd",
+                    NULL, NULL, ds_vncpasswd_get);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ds_vncserver, "vncserver",
+                            NULL, NULL, 
+                            ds_vncserver_add, ds_vncserver_del, 
+                            ds_vncserver_list, NULL);
+
+te_errno 
+vncserver_grab(const char *name)
+{
+    uint8_t passwd[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H' };
+    int     fd;
+    int     rc;
+    
+    UNUSED(name);
+
+    ta_system("rm -rf /tmp/.vnc");
+        
+    if (mkdir("/tmp/.vnc", 0700) < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        
+        ERROR("Failed to create /tmp/.vnc directory; errno %d", rc);
+        return rc;
+    } 
+    
+    if ((fd = open("/tmp/.vnc/passwd", O_CREAT | O_WRONLY, 0600)) <= 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        
+        ERROR("Failed to create file /tmp/.vnc/passwd; errno %r", rc);
+        return rc;
+    }
+    
+    if (write(fd, passwd, sizeof(passwd)) < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        
+        ERROR("write() failed for the file /tmp/.vnc/passwd; errno %r", 
+              rc);
+        close(fd);
+        return rc;
+    }
+    
+    if (close(fd) < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        
+        ERROR("close() failed for the file /tmp/.vnc/passwd; errno %r", rc);
+        return rc;
+    }
+
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_vncserver)) != 0 ||
+        (rc = rcf_pch_add_node("/agent", &node_ds_vncpasswd)) != 0)
+    {
+        vncserver_release(NULL);
+    }
+    
+    return rc;
+}
+
+te_errno 
+vncserver_release(const char *name)
+{
+    UNUSED(name);
+    
+    rcf_pch_del_node(&node_ds_vncpasswd);
+    rcf_pch_del_node(&node_ds_vncserver);
+    
+    ta_system("rm -rf /tmp/.vnc");
+    
+    return 0;
+}
+
+#endif /* WITH_VNCSERVER */
+
+
+/*--------------------------- SSH daemon ---------------------------------*/
+
+/** 
+ * Check if the SSH daemon with specified port is running. 
+ *
+ * @param port  port in string representation
+ *
+ * @return pid of the daemon or 0
+ */
+static uint32_t
+sshd_exists(char *port)
+{
+    FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
+    char  line[128];
+    int   len = strlen(port);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "sshd");
+        
+        tmp = strstr(tmp, "-p") + 2;
+        while (*++tmp == ' ');
+        
+        if (strncmp(tmp, port, len) == 0 && !isdigit(*(tmp + len)))
+        {
+            pclose(f);
+            return atoi(line);
+        }
+    }
+    
+    pclose(f);
+
+    return 0;
+}
+
+/**
+ * Add a new SSH daemon with specified port.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         unused
+ * @param addr          SSHD port
+ *
+ * @return error code
+ */
+static int
+ds_sshd_add(unsigned int gid, const char *oid, const char *value,
+            const char *port)
+{
+    uint32_t pid = sshd_exists((char *)port);
+    uint32_t p;
+    char    *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    
+    p = strtol(port, &tmp, 10);
+    if (tmp == port || *tmp != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    
+    if (pid != 0)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+        
+    sprintf(buf, "/usr/sbin/sshd -p %s", port);
+
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    
+    return 0;
+}
+
+/**
+ * Stop SSHD with specified port.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param addr          
+ *
+ * @return error code
+ */
+static int
+ds_sshd_del(unsigned int gid, const char *oid, const char *port)
+{
+    uint32_t pid = sshd_exists((char *)port);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (pid == 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        
+    if (kill(pid, SIGTERM) != 0)
+    {
+        int kill_errno = errno;
+        ERROR("Failed to send SIGTERM "
+              "to process SSH daemon with PID=%u: %d",
+              pid, kill_errno);
+        /* Just to make sure */
+        kill(pid, SIGKILL);
+    }
+    
+    return 0;
+}
+
+/**
+ * Return list of SSH daemons.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param list          location for the list pointer
+ *
+ * @return error code
+ */
+static int
+ds_sshd_list(unsigned int gid, const char *oid, char **list)
+{
+    FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
+    char  line[128];
+    char *s = buf;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "sshd");
+        
+        tmp = strstr(tmp, "-p") + 2;
+        while (*++tmp == ' ');
+        
+        s += sprintf(s, "%u ", atoi(tmp));
+    }
+    
+    pclose(f);
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    
+    return 0;
+}
 
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_sshd, "sshd",
                             NULL, NULL, 
                             ds_sshd_add, ds_sshd_del, ds_sshd_list, NULL);
 
+
+/*--------------------------- X server ---------------------------------*/
+
+/** 
+ * Check if the Xvfb daemon with specified display number is running. 
+ *
+ * @param number  display number
+ *
+ * @return pid of the daemon or 0
+ */
+static uint32_t
+xvfb_exists(char *number)
+{
+    FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");
+    char  line[128];
+    int   len = strlen(number);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "Xvfb");
+
+        if (tmp == NULL)
+        {
+            ERROR("xvfb_list: ps returned %s", line);
+            break;
+        }
+        
+        if ((tmp  = strstr(tmp, ":")) == NULL)
+            continue;
+        
+        tmp++;
+        
+        if (strncmp(tmp, number, len) == 0 && !isdigit(*(tmp + len)))
+        {
+            pclose(f);
+            return atoi(line);
+        }
+    }
+    
+    pclose(f);
+
+    return 0;
+}
+
+/**
+ * Add a new Xvfb daemon with specified display number.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         unused
+ * @param number        display number
+ *
+ * @return error code
+ */
+static int
+ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
+            const char *number)
+{
+    uint32_t pid = xvfb_exists((char *)number);
+    uint32_t n;
+    char    *tmp;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    
+    n = strtol(number, &tmp, 10);
+    if (tmp == number || *tmp != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    
+    if (pid != 0)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+        
+    sprintf(buf, "Xvfb :%s -ac 2>/dev/null &", number);
+
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    
+    return 0;
+}
+
+/**
+ * Stop Xvfb with specified display number.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param number        display number          
+ *
+ * @return error code
+ */
+static int
+ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
+{
+    int             pid;
+    unsigned int    attempt = TA_UNIX_DAEMON_WAIT_ATTEMPTS;
+    te_errno        err = TE_ETIMEDOUT;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    pid = xvfb_exists((char *)number);
+    if (pid == 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        
+    if (kill(pid, SIGTERM) == 0)
+    {
+        for (attempt = 0;
+             xvfb_exists((char *)number) &&
+             (attempt < TA_UNIX_DAEMON_WAIT_ATTEMPTS);
+             ++attempt)
+        {
+            usleep(TA_UNIX_DAEMON_WAIT_USEC);
+        }
+    }
+    else
+    {
+        err = te_rc_os2te(errno);
+    }
+
+    if (attempt == TA_UNIX_DAEMON_WAIT_ATTEMPTS)
+    {
+        ERROR("Failed to stop Xvfb '%s' with PID=%d: %r",
+              number, pid, err);
+        return TE_RC(TE_TA_UNIX, err);
+    }
+
+    return 0;
+}
+
+/**
+ * Return list of Xvfb servers.
+ *
+ * @param gid    group identifier (unused)
+ * @param oid    full object instence identifier (unused)
+ * @param list   location for the list pointer
+ *
+ * @return error code
+ */
+static int
+ds_xvfb_list(unsigned int gid, const char *oid, char **list)
+{
+    FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");
+    char  line[128];
+    char *s = buf;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    buf[0] = 0;
+    while (fgets(line, sizeof(line), f) != NULL)
+    {
+        char *tmp = strstr(line, "Xvfb");
+        int   n;
+        
+        if (tmp == NULL)
+        {
+            ERROR("xvfb_list: ps returned %s", line);
+            break;
+        }
+
+        if ((tmp  = strstr(tmp, ":")) == NULL || (n = atoi(tmp + 1)) == 0)
+            continue;
+        
+        s += sprintf(s, "%u ", n);
+    }
+    
+    pclose(f);
+    
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    
+    return 0;
+}
+
 RCF_PCH_CFG_NODE_COLLECTION(node_ds_xvfb, "Xvfb",
                             NULL, NULL, 
                             ds_xvfb_add, ds_xvfb_del, ds_xvfb_list, NULL);
 
-
-static void *
-supervise_backups(void *arg)
-{
-    UNUSED(arg);
+/** Information about all dynamically grabbed daemons/services */
+static struct {
+    const char *name;
     
-    while (TRUE)
-    {
-        int i;
-        
-        for (i = 0; i < n_ds; i++)
-        {
-            char       *backup = strdup(ds_backup(i));
-            struct stat st;
-            
-            if (backup[0] == 0)
-            {
-                free(backup);
-                continue;
-            }
-            if (stat(backup, &st) != 0)
-            {
-                WARN("Backup %s disappeared", backup);
-                ta_system("ls /tmp/te*backup");
-                USLEEP(200);
-                ta_system("ps ax");
-                free(backup);
-                return NULL;
-            }
-            free(backup);
-        }
-        sleep(1);
-    }
-}
+    rcf_pch_rsrc_grab_callback    grab;
+    rcf_pch_rsrc_release_callback release;
+} ds_info[] = {
 
+#ifdef WITH_DHCP_SERVER
+    { "/agent/dhcpserver", dhcpserver_grab, dhcpserver_release }, 
+#endif
+
+#ifdef WITH_ECHO_SERVER
+    { "/agent/echoserver", echoserver_grab, echoserver_release },
+#endif /* WITH_ECHO_SERVER */
+
+#ifdef WITH_TODUDP_SERVER
+    { "/agent/todudpserver", todudpserver_grab, todudpserver_release },
+#endif /* WITH_TODUDP_SERVER */
+
+#ifdef WITH_TELNET
+    { "/agent/telnetd", telnetd_grab, telnetd_release },
+#endif /* WITH_TELNET */
+
+#ifdef WITH_RSH
+    { "/agent/rshd", rshd_grab, rshd_release },
+#endif /* WITH_RSH */
+
+#ifdef WITH_TFTP_SERVER
+    { "/agent/tftpserver", tftpserver_grab, tftpserver_release },
+#endif /* WITH_TFTP_SERVER */
+
+#ifdef WITH_FTP_SERVER
+    { "/agent/ftpserver", ftpserver_grab, ftpserver_release },
+#endif /* WITH_FTP_SERVER */
+
+#ifdef WITH_SMTP
+    { "/agent/smtp", smtp_grab, smtp_release },
+#endif /* WITH_SMTP */
+
+#ifdef WITH_VNCSERVER
+    { "/agent/vncserver", vncserver_grab, vncserver_release },
+#endif /* WITH_VNCSERVER */
+
+#ifdef WITH_DNS_SERVER
+    { "/agent/dnsserver", dnsserver_grab, dnsserver_release },
+#endif /* WITH_DMS_SERVER */
+
+#ifdef WITH_RADIUS_SERVER
+    { "/agent/radiusserver", radiusserver_grab, radiusserver_release },
+#endif /* WITH_RADIUS_SERVER */
+
+#ifdef WITH_VTUND
+    { "/agent/vtund", vtund_grab, vtund_release }
+#endif
+
+};    
 
 /**
  * Initializes conf_daemons support.
  *
- * @param last  node in configuration tree (last sun of /agent) to be
- *              updated
- *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
-int
-ta_unix_conf_daemons_init(rcf_pch_cfg_object **last)
+te_errno
+ta_unix_conf_daemons_init()
 {
-#ifdef WITH_ECHO_SERVER
-    if (ds_create_backup(XINETD_ETC_DIR, "echo", NULL) == 0)
-        DS_REGISTER(echoserver);
-#endif /* WITH_ECHO_SERVER */
-
-#ifdef WITH_TODUDP_SERVER
-    if (ds_create_backup(XINETD_ETC_DIR, "daytime-udp", NULL) == 0)
-        DS_REGISTER(todudpserver);
-#endif /* WITH_TODUDP_SERVER */
-
-#ifdef WITH_TELNET
-    if (ds_create_backup(XINETD_ETC_DIR, "telnet", NULL) == 0)
-        DS_REGISTER(telnet);
-#endif /* WITH_TELNET */
-
-#ifdef WITH_RSH
-    if (ds_create_backup(XINETD_ETC_DIR, "rsh", NULL) == 0)
-        DS_REGISTER(rsh);
-#endif /* WITH_RSH */
-
-#ifdef WITH_TFTP_SERVER
-    ds_init_tftp_server(last);
-#endif /* WITH_TFTP_SERVER */
-
-#ifdef WITH_FTP_SERVER
-    ds_init_ftp_server(last);
-#endif /* WITH_FTP_SERVER */
-
-#ifdef WITH_VNCSERVER
-    ds_init_vncserver(last);
-#endif
-
-#ifdef WITH_DHCP_SERVER
-    ds_init_dhcp_server(last);
-#endif /* WITH_DHCP_SERVER */
-
-#ifdef WITH_RADIUS_SERVER
-    ds_init_radius_server(last);
-#endif /* WITH_RADIUS_SERVER */
-
-#ifdef WITH_DNS_SERVER
-    ds_init_dns_server(last);
-#endif /* WITH_DMS_SERVER */
-
-#ifdef WITH_VTUND
-    ds_init_vtund(last);
-#endif
-
-#ifdef WITH_SMTP
-    if (ds_create_backup("/etc/", "hosts", &hosts_index) == 0)
-        ds_init_smtp(last);
-    else
-        ERROR("SMTP server updates /etc/hosts and cannot be initialized");
-#endif /* WITH_SMTP */
-
-    DS_REGISTER(sshd);
-
-    DS_REGISTER(xvfb);
+    te_errno rc;
+    int      i;
     
+    /* Dynamically grabbed services */
+    
+    for (i = 0; i < (int)(sizeof(ds_info) / sizeof(ds_info[0])); i++)
     {
-        pthread_t tid = 0;
-        
-        pthread_create(&tid, NULL, supervise_backups, NULL);
+        if ((rc = rcf_pch_rsrc_info(ds_info[i].name, 
+                                    ds_info[i].grab, 
+                                    ds_info[i].release)) != 0)
+        {
+            return rc;
+        }                                    
     }
+    
+    /* Static services */
 
-    /* Commit all changes in config files */
-    sync();
-
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_sshd)) != 0 ||
+        (rc = rcf_pch_add_node("/agent", &node_ds_xvfb)) != 0)
+    {
+        return rc;
+    }
+    
     return 0;
-
-#undef CHECK_RC
 }
 
 
 /**
  * Release resources allocated for the configuration support.
+ * In theory nothing should happen here - CS should care about
+ * shutdown of dynamically grabbed resources. However if connection
+ * with engine is broken, it's better to cleanup.
  */
 void
 ta_unix_conf_daemons_release()
 {
-    ds_restore_backup();
-
-#ifdef WITH_DHCP_SERVER
-    ds_shutdown_dhcp_server();
-#endif /* WITH_DHCP_SERVER */
-
-#ifdef WITH_FTP_SERVER
-    ds_shutdown_ftp_server();
-#endif    
-
-#ifdef WITH_SMTP
-    ds_shutdown_smtp();
-#endif
-
-#ifdef WITH_RADIUS_SERVER
-    ds_shutdown_radius_server();
-#endif
-
-#ifdef WITH_VTUND
-    ds_shutdown_vtund();
-#endif
-
-    ta_system("/etc/init.d/xinetd restart >/dev/null");
+    int i;
+    
+    for (i = 0; i < (int)(sizeof(ds_info) / sizeof(ds_info[0])); i++)
+        (ds_info[i].release)(NULL);
 }
 

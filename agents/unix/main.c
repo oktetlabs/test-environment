@@ -1363,12 +1363,11 @@ main(int argc, char **argv)
         return rc;
     }
     
-    /* FIXME Is it required for logfork to used by exec'ed */
+    /* Is it required for logfork to used by exec'ed */
     te_lgr_entity = ta_name = argv[1];
 
     RING("Starting");
 
-    /* FIXME */
     sprintf(buf, "PID %u", getpid());
 
     pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
@@ -1384,7 +1383,6 @@ main(int argc, char **argv)
             retval = rc;
     }
     
-    /* FIXME */
     unlink(argv[0]);
 
     /* FIXME Correct retval to return */

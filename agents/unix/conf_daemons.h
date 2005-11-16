@@ -106,14 +106,6 @@ file_exists(char *file)
     return stat(file, &st) == 0;
 }
 
-/** Register daemon/service in the configuration tree */
-#define DS_REGISTER(_ds) \
-    do {                                   \
-        (*last)->brother = &node_ds_##_ds; \
-        *last = &node_ds_##_ds;            \
-    } while (0)
-
-
 /*--------------- Backup of configuration files --------------------*/
 
 /** Maximum number of services the implemntation supports */
@@ -139,8 +131,15 @@ file_exists(char *file)
  */
 extern int ds_create_backup(const char *dir, const char *name, int *index);
 
-/** Restore initial state of the services */
-extern void ds_restore_backup();
+/** 
+ * Restore initial state of the service. 
+ * 
+ * @param index         service index
+ */
+extern void ds_restore_backup(int index);
+
+/** Restore initial state of all services */
+extern void ds_restore_backups();
 
 /** 
  * Get configuration file name for the daemon/service.
@@ -195,13 +194,7 @@ extern void ds_config_touch(int index);
         {                                                       \
             ERROR("Cannot open file %s for reading; errno %d",  \
                   ds_backup(_index), errno);                    \
-            PRINT("No backup");                                 \
-            {                                                   \
-                char buf[128];                                  \
-                sprintf(buf, "ls -l %s", ds_backup(_index));    \
-                ta_system(buf);                                 \
-            }                                                   \
-            return;                                             \
+            return TE_OS_RC(TE_TA_UNIX, errno);                 \
         }                                                       \
     } while (0)
 
@@ -212,7 +205,7 @@ extern void ds_config_touch(int index);
         {                                                       \
             ERROR("Cannot open file %s for writing; errno %d",  \
                   ds_config(_index), errno);                    \
-            return;                                             \
+            return TE_OS_RC(TE_TA_UNIX, errno);                 \
         }                                                       \
     } while (0)
 
@@ -270,56 +263,55 @@ daemon_running(const char *daemon)
 extern int find_file(unsigned int n, const char * const *files,
                      te_bool exec);
 
-
-extern int ta_unix_conf_daemons_init(rcf_pch_cfg_object **last);
-extern void ta_unix_conf_daemons_release(void);
-
 /* 
  * Grab/release functions for daemons/services - see rcfpch/rcf_pch.h 
  * for details and prototypes.
  */
 
-extern te_errno dhcp_server_grab(const char *name);
-extern te_errno dhcp_server_release(const char *name);
+extern te_errno dhcpserver_grab(const char *name);
+extern te_errno dhcpserver_release(const char *name);
 
-extern te_errno vncserver_grab(const char *name);
-extern te_errno vncserver_release(const char *name);
+extern te_errno echoserver_grab(const char *name);
+extern te_errno echoserver_release(const char *name);
+
+extern te_errno todudpserver_grab(const char *name);
+extern te_errno todudpserver_release(const char *name);
+
+extern te_errno telnetd_grab(const char *name);
+extern te_errno telnetd_release(const char *name);
+
+extern te_errno rshd_grab(const char *name);
+extern te_errno rshd_release(const char *name);
+
+extern te_errno tftpserver_grab(const char *name);
+extern te_errno tftpserver_release(const char *name);
+
+extern te_errno ftpserver_grab(const char *name);
+extern te_errno ftpserver_release(const char *name);
 
 extern te_errno smtp_grab(const char *name);
 extern te_errno smtp_release(const char *name);
 
-extern te_errno ftp_server_grab(const char *name);
-extern te_errno ftp_server_release(const char *name);
+extern te_errno vncserver_grab(const char *name);
+extern te_errno vncserver_release(const char *name);
 
-extern te_errno tftp_server_grab(const char *name);
-extern te_errno tftp_server_release(const char *name);
+extern te_errno dnsserver_grab(const char *name);
+extern te_errno dnsserver_release(const char *name);
 
-extern te_errno dns_server_grab(const char *name);
-extern te_errno dns_server_release(const char *name);
-
-extern te_errno radius_server_grab(const char *name);
-extern te_errno radius_server_release(const char *name);
+extern te_errno radiusserver_grab(const char *name);
+extern te_errno radiusserver_release(const char *name);
 
 extern te_errno vtund_grab(const char *name);
 extern te_errno vtund_release(const char *name);
 
+/**
+ * Initializes conf_daemons support.
+ *
+ * @return Status code (see te_errno.h)
+ */
+extern te_errno ta_unix_conf_daemons_init(void);
 
-/* Initialisation/shutdown function for daemons/services -
-   should be removed */
-extern void ds_init_dhcp_server(rcf_pch_cfg_object **last);
-extern void ds_shutdown_dhcp_server();
-extern void ds_init_vncserver(rcf_pch_cfg_object **last);
-extern void ds_init_smtp(rcf_pch_cfg_object **last);
-extern void ds_shutdown_smtp();
-extern void ds_init_ftp_server(rcf_pch_cfg_object **last);
-extern void ds_shutdown_ftp_server();
-extern void ds_init_tftp_server(rcf_pch_cfg_object **last);
-extern void ds_init_dns_server(rcf_pch_cfg_object **last);
-extern void ds_init_radius_server(rcf_pch_cfg_object **last);
-extern void ds_shutdown_radius_server();
-extern void ds_init_vtund(rcf_pch_cfg_object **last);
-extern void ds_shutdown_vtund(void);
-extern int ta_unix_conf_daemons_init(rcf_pch_cfg_object **last);
+/** Release resources allocated for the configuration support. */
 extern void ta_unix_conf_daemons_release(void);
 
 #endif /* __TE_TA_UNIX_CONF_DAEMONS_H__ */

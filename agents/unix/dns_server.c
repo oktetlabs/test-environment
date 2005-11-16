@@ -195,18 +195,16 @@ RCF_PCH_CFG_NODE_RW(node_ds_dnsserver, "dnsserver",
                     &node_ds_dnsserver_recursive, NULL,
                     daemon_get, daemon_set);
 
-/**
- * Initialize DNS server.
- *
- */
-void
-ds_init_dns_server(rcf_pch_cfg_object **last)
+te_errno 
+dnsserver_grab(const char *name)
 {
-    char         *dir = NULL;
+    char        *dir = NULL;
     int          rc = 0;
     extern FILE *yyin;
 
     extern int yyparse(void);
+    
+    UNUSED(name);
 
     if (file_exists("/etc/named/" NAMED_CONF))
         dir = "/etc/named/";
@@ -218,13 +216,16 @@ ds_init_dns_server(rcf_pch_cfg_object **last)
     {
         INFO("Failed to locate DNS configuration file");
     }
+    
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_dnsserver)) != 0)
+        return rc;
 
     if (dir != NULL)
     {
         if ((rc = ds_create_backup(dir, NAMED_CONF, &dns_index)) != 0)
         {
             ERROR("Cannot create backup for %s" NAMED_CONF ": %d", dir, rc);
-            return;
+            return rc;
         }
 
         OPEN_BACKUP(dns_index, yyin);
@@ -232,7 +233,17 @@ ds_init_dns_server(rcf_pch_cfg_object **last)
     }
 
     named_conf_was_running = daemon_running("dnsserver");
-    DS_REGISTER(dnsserver);
+
+    return rc;
+}
+
+te_errno 
+dnsserver_release(const char *name)
+{
+    UNUSED(name);
+    
+    ds_restore_backup(&dns_index);
+    rcf_pch_del_node(&node_ds_dnsserver);
 }
 
 void

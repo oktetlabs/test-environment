@@ -2386,16 +2386,23 @@ rp_delete_all(radius_parameter *rp, void *extra)
  * - Ignored and defaulted parameters are processed
  * - RP_RADIUS_USERS_FILE is created and opened
  */
-void
-ds_init_radius_server (rcf_pch_cfg_object **last)
+te_errno 
+radiusserver_grab(const char *name)
 {
     const char **ignored;
     const char **defaulted;
+    
+    te_errno rc;
+    
+    UNUSED(name);
 
     /* Supplicant is not dependent on presence of RADIUS server */
-    DS_REGISTER(supplicant);
+    rcf_pch_add_node("/agent", &node_ds_supplicant);
 
     RING("Initializing RADIUS");
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_radiusserver)) != 0)
+        return rc;
+
     if (file_exists("/etc/raddb/radiusd.conf"))
         radius_conf = read_radius_file("/etc/raddb/radiusd.conf", NULL);
     else if (file_exists("/etc/freeradius/radiusd.conf"))
@@ -2403,9 +2410,10 @@ ds_init_radius_server (rcf_pch_cfg_object **last)
     else
     {
         ERROR("No RADIUS config found");
-        return;
+        rcf_pch_del_node(&node_ds_radiusserver);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
-    DS_REGISTER(radiusserver);
+
     for (ignored = radius_ignored_params; *ignored != NULL; ignored++)
     {
         find_rp(radius_conf, *ignored, FALSE, FALSE, rp_delete_all, NULL);
@@ -2420,6 +2428,7 @@ ds_init_radius_server (rcf_pch_cfg_object **last)
     write_radius(radius_conf);
     {
         int fd = creat(RADIUS_USERS_FILE, S_IRUSR | S_IROTH | S_IWUSR);
+        
         RING("Open %s, fd=%d", RADIUS_USERS_FILE, fd);
         if (fd < 0)
         {
@@ -2436,16 +2445,22 @@ ds_init_radius_server (rcf_pch_cfg_object **last)
             }
         }
     }
+    return 0;
 }
 
-void
-ds_shutdown_radius_server(void)
+te_errno
+radiusserver_release(const char *name)
 {
+    UNUSED(name);
+
+    rcf_pch_del_node(&node_ds_radiusserver);
     if (radius_users_file != NULL)
     {
         fclose(radius_users_file);
         remove(RADIUS_USERS_FILE);
     }
+    
+    return 0;
 }
 
 #endif /* ! WITH_RADIUS_SERVER */

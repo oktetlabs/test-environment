@@ -1052,7 +1052,7 @@ rcf_pch_del_node(rcf_pch_cfg_object *node)
     
     if (father == NULL)
     {
-        ERROR("Failed to find node family");
+        VERB("Failed to find node family");
         return TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
     if (brother != NULL)

@@ -2861,13 +2861,11 @@ RCF_PCH_CFG_NODE_RW(node_ds_iscsi_initiator, "iscsi_initiator",
  * Function to register the /agent/iscsi_initiator
  * object in the agent's tree.
  */
-int
-ta_unix_iscsi_initiator_init(rcf_pch_cfg_object **last)
+te_errno
+ta_unix_iscsi_initiator_init()
 {
     /* On Init there is only one target configured on the Initiator */
     iscsi_init_default_ini_parameters(ISCSI_CONF_NO_TARGETS);
 
-    DS_REGISTER(iscsi_initiator);
-
-    return 0;
+    return rcf_pch_add_node("/agent", &node_ds_iscsi_initiator);
 }
