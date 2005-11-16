@@ -993,7 +993,6 @@ rcf_pch_add_node(const char *father, rcf_pch_cfg_object *node)
             }
         }
            
-        RING("Before comparison");
         if (tmp == NULL)
         {
             ERROR("Failed to find father %s to insert node %s", father, 
