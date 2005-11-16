@@ -33,7 +33,7 @@
 #include <sys/wait.h>
 #include "chap.h"
 #include "target_negotiate.h"
-#include <iscsi_target_api.h>
+#include "iscsi_target_api.h"
 
 extern struct iscsi_global *devdata;
 extern int iscsi_server_init();
@@ -187,7 +187,7 @@ iscsi_target_t_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Bad cfmt parameter provideded",
               __FUNCTION__,
               __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_EBADF);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     
     if (tgt_cfmt == 1)
@@ -231,7 +231,7 @@ iscsi_target_b_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Bad format parameter provided",
               __FUNCTION__,
               __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_EBADF);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     if (fmt == 1)
     {    
@@ -250,7 +250,7 @@ iscsi_target_b_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Cannot set encoding format",
               __FUNCTION__,
               __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
         
     }
     return 0;
@@ -278,27 +278,27 @@ static int
 iscsi_target_cl_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
-    int len = strtol(value, NULL, 0);
+    int challenge_len = strtol(value, NULL, 0);
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
 
     DEVDATA_SET_CHECK;
     
-    if (len == 0)
+    if (challenge_len == 0)
     {
         RING("Attempted to set challenge length to 0, ignored");
         return 0;
     }
 
-    if (!CHAP_SET_CHALLENGE_LENGTH(len, 
+    if (!CHAP_SET_CHALLENGE_LENGTH(challenge_len, 
                                    devdata->auth_parameter.
-                                       chap_local_ctx))
+                                   chap_local_ctx))
     {
         ERROR("%s, %d: Cannot set challenge length",
               __FUNCTION__,
               __LINE__);
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }    
     return 0;
 }
@@ -408,7 +408,7 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
         ERROR("%s, %d: Bad chap_use parameter provideded %d",
               __FUNCTION__,
               __LINE__, chap_use);
-        return TE_RC(TE_TA_UNIX, TE_EBADF);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
                                 "AuthMethod",
@@ -627,7 +627,7 @@ static int
 iscsi_target_backstore_set(unsigned int gid, const char *oid,
                            const char *value, const char *instance, ...)
 {
-    char         buf[64];
+    char         fname[64];
     char         cmd[64];
 
     UNUSED(gid);
@@ -636,10 +636,10 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
 
     while (is_backstore_mounted > 0)
         iscsi_target_backstore_unmount();
-    sprintf(buf, "/tmp/te_backing_store.%lu", (unsigned long)getpid());
+    sprintf(fname, "/tmp/te_backing_store.%lu", (unsigned long)getpid());
     if (*value == '\0')
     {
-        if (remove(buf) != 0)
+        if (remove(fname) != 0)
         {
             WARN("Cannot remove backing store: %s", strerror(errno));
         }
@@ -675,7 +675,7 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
                   size);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
-        fd = open(buf, O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
+        fd = open(fname, O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
         if (fd < 0)
         {
             rc = errno;
@@ -688,23 +688,23 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
             rc = errno;
             ERROR("Cannot create a backing store of size %lu: %s", size,
                   strerror(rc));
-            remove(buf);
+            remove(fname);
             close(fd);
             return TE_OS_RC(TE_TA_UNIX, rc);
         }
         close(fd);
-        sprintf(cmd, "/sbin/mke2fs -F -q %s", buf);
+        sprintf(cmd, "/sbin/mke2fs -F -q %s", fname);
         rc = ta_system(cmd);
         if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
         {
             ERROR("Cannot create a file system on backing store");
-            remove(buf);
+            remove(fname);
             return TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
-        rc = iscsi_mmap_device(0, 0, buf);
+        rc = iscsi_mmap_device(0, 0, fname);
         if (rc != 0)
         {
-            remove(buf);
+            remove(fname);
             return rc;
         }
         return 0;
