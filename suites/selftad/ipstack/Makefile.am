@@ -7,6 +7,8 @@ dist_tetest_DATA = package.xml \
                    udp-data-csap.asn udp-filter.asn
 
 
+noinst_HEADERS=ipstack-ts.h
+
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
 

@@ -30,31 +30,8 @@
 
 #define TE_LOG_LEVEL 0xff
 
-#include "config.h"
+#include "ipstack-ts.h" 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-
-
-#include "te_stdint.h"
-#include "te_errno.h"
-#include "rcf_api.h"
-#include "logger_api.h"
-
-#include "conf_api.h"
-#include "tapi_rpc.h"
-
-#include "tapi_test.h"
-#include "tapi_env.h"
-#include "tapi_ip.h"
-#include "tapi_udp.h"
-#include "tapi_tcp.h"
 
 #include "ndn_eth.h"
 #include "ndn_ipstack.h"
@@ -91,8 +68,6 @@ main(int argc, char *argv[])
     struct sockaddr_in srv_addr;
 #endif
     rcf_rpc_server *pco_iut = NULL;
-
-    tapi_env env;
 
     int  sid;
     char ta[32];
@@ -298,6 +273,5 @@ cleanup:
     }
 #endif
 
-    TEST_END_ENV;
     TEST_END;
 }
