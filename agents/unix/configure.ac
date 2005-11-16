@@ -201,6 +201,12 @@ AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
                  [#include <signal.h>])
 
 dnl
+dnl Check for 'arp_dev' member in 'struct arpreq'.
+dnl
+AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],
+                 [#include <net/if_arp.h>])
+
+dnl
 dnl Check for 'sival_int' member in 'union sigval'.
 dnl
 AC_CHECK_MEMBERS([union sigval.sival_int], [], [],

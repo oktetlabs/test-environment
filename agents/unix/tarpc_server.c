@@ -1942,13 +1942,15 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                                      req_arpreq.rpc_arp_flags);
             }
 
+#if HAVE_STRUCT_ARPREQ_ARP_DEV
             if (in->code == RPC_SIOCGARP)
             {
-                 /* Copy device */
+                /* Copy device */
                 strcpy(req->arpreq.arp_dev,
                        out->req.req_val[0].ioctl_request_u.
                            req_arpreq.rpc_arp_dev.rpc_arp_dev_val);
             }
+#endif
             break;
 
         default:
