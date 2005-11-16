@@ -1038,9 +1038,9 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
             else
             {
                 VERB("Running test session prologue...");
-                ctx->flags |= TESTER_INLOGUE;
+                ctx->flags |= (TESTER_INLOGUE | TESTER_FORCE_RUN);
                 rc = iterate_test(ctx, session->prologue, &iters);
-                ctx->flags &= ~TESTER_INLOGUE;
+                ctx->flags &= ~(TESTER_INLOGUE | TESTER_FORCE_RUN);
                 if ((TE_RC_GET_ERROR(rc) != TE_ETESTPASS) && 
                     (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE))
                 {
@@ -1069,9 +1069,14 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
             if (session->keepalive != NULL)
             {
                 VERB("Running test session keep-alive validation...");
+                ctx->flags |= TESTER_FORCE_RUN;
                 rc = iterate_test(ctx, session->keepalive, &iters);
-                if ((rc != 0) && (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE))
+                ctx->flags &= ~TESTER_FORCE_RUN;
+                if ((TE_RC_GET_ERROR(rc) != TE_ETESTPASS) &&
+                    (TE_RC_GET_ERROR(rc) != TE_ETESTFAKE) &&
+                    (TE_RC_GET_ERROR(rc) != TE_ETESTSKIP))
                 {
+                    INFO("Keep-alive validation failed: %r", rc);
                     result = TE_RC(TE_TESTER, TE_ETESTALIVE);
                     break;
                 }
@@ -1110,9 +1115,9 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
                 /* Temporary remove shutdown flag for epilogue */
                 ctx->flags &= ~TESTER_SHUTDOWN;
 
-                ctx->flags |= TESTER_INLOGUE;
+                ctx->flags |= (TESTER_INLOGUE | TESTER_FORCE_RUN);
                 rc = iterate_test(ctx, session->epilogue, &iters);
-                ctx->flags &= ~TESTER_INLOGUE;
+                ctx->flags &= ~(TESTER_INLOGUE | TESTER_FORCE_RUN);
 
                 /* Restore shutdown flag */
                 if (shutdown)
@@ -1453,7 +1458,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
-                    if (~ctx->flags & TESTER_INLOGUE)
+                    if (~ctx->flags & TESTER_FORCE_RUN)
                     {
                         tester_ctx_free(ctx);
                         return TE_RC(TE_TESTER, TE_ETESTEMPTY);
@@ -1476,7 +1481,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
                 if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
                 {
                     /* Silently ignore nodes not of the path */
-                    if (~ctx->flags & TESTER_INLOGUE)
+                    if (~ctx->flags & TESTER_FORCE_RUN)
                     {
                         tester_ctx_free(ctx);
                         return TE_RC(TE_TESTER, TE_ETESTEMPTY);
@@ -1573,7 +1578,7 @@ iterate_test(tester_ctx *ctx, run_item *test,
         tester_ctx *test_ctx = ctx;
 
         if ((i == 0) && (ctx->path->params.tqh_first != NULL) &&
-            (~(ctx->flags) & TESTER_INLOGUE))
+            (~(ctx->flags) & TESTER_FORCE_RUN))
         {
             rc = tester_run_path_params_match(test_ctx, &(iter->params));
             if (rc != 0)
