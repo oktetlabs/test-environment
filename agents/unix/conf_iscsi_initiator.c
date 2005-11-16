@@ -568,8 +568,8 @@ iscsi_l5_write_target_params(FILE *destination,
     iscsi_l5_write_param(destination, &authp_##field, &connection->chap)
 
     AUTH_PARAM(chap, "AuthMethod", TRUE);
-    AUTH_PARAM(local_name, "CHAPName", TRUE);
-    AUTH_PARAM(local_secret, "CHAPSecret", TRUE);
+    AUTH_PARAM(peer_name, "CHAPName", TRUE);
+    AUTH_PARAM(peer_secret, "CHAPSecret", TRUE);
     
     for (p = session_params; p->name != NULL; p++)
     {
@@ -606,8 +606,8 @@ iscsi_l5_write_target_params(FILE *destination,
             WRITE_AUTH(chap);
             if (strstr(connection->chap.chap, "CHAP") != 0)
             {
-                WRITE_AUTH(local_name);
-                WRITE_AUTH(local_secret);
+                WRITE_AUTH(peer_name);
+                WRITE_AUTH(peer_secret);
             }
         }
     }
