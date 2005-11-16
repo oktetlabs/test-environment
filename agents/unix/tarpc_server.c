@@ -1801,6 +1801,8 @@ TARPC_FUNC(pselect, {},
 }
 )
 
+/*-------------- fcntl() --------------------------------*/
+
 TARPC_FUNC(fcntl, {},
 {
     long arg = in->arg;
@@ -1818,600 +1820,327 @@ TARPC_FUNC(fcntl, {},
 }
 )
 
-#ifdef __linux__
 
-TARPC_FUNC(ioctl,
+/*-------------- ioctl() --------------------------------*/
+
+typedef union ioctl_param {
+    int             integer;
+    struct timeval  tv;
+    struct ifreq    ifreq;
+    struct ifconf   ifconf;
+    struct arpreq   arpreq;
+} ioctl_param;
+
+static void
+tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
+                ioctl_param *req, checked_arg **list_ptr)
 {
-    COPY_ARG(req);
-},
-{
-    char *req = NULL;
-    int   reqlen = 0;
+    size_t  reqlen;
 
-    static struct timeval req_timeval;
-    static int            req_int;
-    static struct ifreq   req_ifreq;
-    static struct ifconf  req_ifconf;
-    static struct arpreq  req_arpreq;
+    assert(in != NULL);
+    assert(out != NULL);
+    assert(req != NULL);
 
-    if (out->req.req_val != NULL)
+    switch (out->req.req_val[0].type)
     {
-        switch (out->req.req_val[0].type)
+        case IOCTL_INT:
+            reqlen = sizeof(int);
+            req->integer = out->req.req_val[0].ioctl_request_u.req_int;
+            break;
+
+        case IOCTL_TIMEVAL:
+            reqlen = sizeof(struct timeval);
+            req->tv.tv_sec =
+                out->req.req_val[0].ioctl_request_u.req_timeval.tv_sec;
+            req->tv.tv_usec =
+                out->req.req_val[0].ioctl_request_u.req_timeval.tv_usec;
+            break;
+
+        case IOCTL_IFREQ:
         {
-            case IOCTL_TIMEVAL:
+            reqlen = sizeof(struct ifreq);
+
+            /* Copy the whole 'ifr_name' buffer, not just strcpy() */
+            memcpy(req->ifreq.ifr_name,
+                   out->req.req_val[0].ioctl_request_u.req_ifreq.
+                       rpc_ifr_name.rpc_ifr_name_val,
+                   sizeof(req->ifreq.ifr_name));
+
+            INIT_CHECKED_ARG(req->ifreq.ifr_name,
+                             strlen(req->ifreq.ifr_name) + 1, 0);
+
+            switch (in->code)
             {
-                req = (char *)&req_timeval;
-                reqlen = sizeof(struct timeval);
-                req_timeval.tv_sec = out->req.req_val[0].
-                    ioctl_request_u.req_timeval.tv_sec;
-                req_timeval.tv_usec = out->req.req_val[0].
-                    ioctl_request_u.req_timeval.tv_usec;
-                break;
-            }
-
-            case IOCTL_INT:
-            {
-                req = (char *)&req_int;
-                req_int = out->req.req_val[0].ioctl_request_u.req_int;
-                reqlen = sizeof(int);
-                break;
-            }
-
-            case IOCTL_IFREQ:
-            {
-                req = (char *)&req_ifreq;
-                reqlen = sizeof(struct ifreq);
-
-                memset(req, 0, reqlen);
-                /* Copy the whole 'ifr_name' buffer, not just strcpy() */
-                memcpy(req_ifreq.ifr_name,
-                       out->req.req_val[0].ioctl_request_u.req_ifreq.
-                           rpc_ifr_name.rpc_ifr_name_val,
-                       sizeof(req_ifreq.ifr_name));
-
-                INIT_CHECKED_ARG(req_ifreq.ifr_name,
-                                 strlen(req_ifreq.ifr_name) + 1, 0);
-
-                switch (in->code)
-                {
-                    case RPC_SIOCSIFFLAGS:
-                        req_ifreq.ifr_flags =
-                            if_fl_rpc2h((uint32_t)(unsigned short int)
-                                out->req.req_val[0].ioctl_request_u.
-                                    req_ifreq.rpc_ifr_flags);
-                        break;
-
-                    case RPC_SIOCSIFMTU:
-                        req_ifreq.ifr_mtu =
+                case RPC_SIOCSIFFLAGS:
+                    req->ifreq.ifr_flags =
+                        if_fl_rpc2h((uint32_t)(unsigned short int)
                             out->req.req_val[0].ioctl_request_u.
-                            req_ifreq.rpc_ifr_mtu;
-                        break;
+                                req_ifreq.rpc_ifr_flags);
+                    break;
 
-                    case RPC_SIOCSIFADDR:
-                    case RPC_SIOCSIFNETMASK:
-                    case RPC_SIOCSIFBRDADDR:
-                    case RPC_SIOCSIFDSTADDR:
-                        sockaddr_rpc2h(&(out->req.req_val[0].
-                            ioctl_request_u.req_ifreq.rpc_ifr_addr),
-                            (struct sockaddr_storage *)
-                                (&(req_ifreq.ifr_addr)));
-                       break;
-                }
-                break;
+                case RPC_SIOCSIFMTU:
+                    req->ifreq.ifr_mtu =
+                        out->req.req_val[0].ioctl_request_u.
+                        req_ifreq.rpc_ifr_mtu;
+                    break;
+
+                case RPC_SIOCSIFADDR:
+                case RPC_SIOCSIFNETMASK:
+                case RPC_SIOCSIFBRDADDR:
+                case RPC_SIOCSIFDSTADDR:
+                    sockaddr_rpc2h(&(out->req.req_val[0].
+                        ioctl_request_u.req_ifreq.rpc_ifr_addr),
+                        &(req->ifreq.ifr_addr),
+                        sizeof(req->ifreq.ifr_addr));
+                   break;
             }
+            break;
+        }
 
-            case IOCTL_IFCONF:
-            {
-                char *buf = NULL;
-                int   buflen = out->req.req_val[0].ioctl_request_u.
-                               req_ifconf.nmemb * sizeof(struct ifreq) +
-                               out->req.req_val[0].ioctl_request_u.
-                               req_ifconf.extra;
-
-                req = (char *)&req_ifconf;
-                reqlen = sizeof(req_ifconf);
-                
-                if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
-                {
-                    ERROR("Out of memory");
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                    goto finish;
-                }
-                req_ifconf.ifc_buf = buf;
-                req_ifconf.ifc_len = buflen;
-
-                if (buf != NULL)
-                    INIT_CHECKED_ARG(buf, buflen + 64, buflen);
-                break;
-            }
-            case IOCTL_ARPREQ:
-            {
-                req = (char *)&req_arpreq;
-                reqlen = sizeof(req_arpreq);
-
-                memset(req, 0, reqlen);
-                /* Copy protocol address for all requests */
-                sockaddr_rpc2h(&(out->req.req_val[0].ioctl_request_u.
-                               req_arpreq.rpc_arp_pa),
-                               (struct sockaddr_storage *)
-                                   (&(req_arpreq.arp_pa)));
-                if (in->code == RPC_SIOCSARP)
-                {
-                    /* Copy HW address */
-                    sockaddr_rpc2h(&(out->req.req_val[0].ioctl_request_u.
-                                   req_arpreq.rpc_arp_ha),
-                                   (struct sockaddr_storage *)
-                                       (&(req_arpreq.arp_ha)));
-                    /* Copy ARP flags */
-                    req_arpreq.arp_flags =
-                        arp_fl_rpc2h(out->req.req_val[0].ioctl_request_u.
-                                     req_arpreq.rpc_arp_flags);
-                }
-
-                if (in->code == RPC_SIOCGARP)
-                {
-                     /* Copy device */
-                    strcpy(req_arpreq.arp_dev,
+        case IOCTL_IFCONF:
+        {
+            char *buf = NULL;
+            int   buflen = out->req.req_val[0].ioctl_request_u.
+                           req_ifconf.nmemb * sizeof(struct ifreq) +
                            out->req.req_val[0].ioctl_request_u.
-                           req_arpreq.rpc_arp_dev.rpc_arp_dev_val);
-                }
-                break;
+                           req_ifconf.extra;
+
+            reqlen = sizeof(req->ifconf);
+            
+            if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
+            {
+                ERROR("Out of memory");
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                return;
+            }
+            req->ifconf.ifc_buf = buf;
+            req->ifconf.ifc_len = buflen;
+
+            if (buf != NULL)
+                INIT_CHECKED_ARG(buf, buflen + 64, buflen);
+            break;
+        }
+
+        case IOCTL_ARPREQ:
+            reqlen = sizeof(req->arpreq);
+
+            /* Copy protocol address for all requests */
+            sockaddr_rpc2h(&(out->req.req_val[0].ioctl_request_u.
+                                 req_arpreq.rpc_arp_pa),
+                           &(req->arpreq.arp_pa),
+                           sizeof(req->arpreq.arp_pa));
+            if (in->code == RPC_SIOCSARP)
+            {
+                /* Copy HW address */
+                sockaddr_rpc2h(&(out->req.req_val[0].ioctl_request_u.
+                                     req_arpreq.rpc_arp_ha),
+                               &(req->arpreq.arp_ha),
+                               sizeof(req->arpreq.arp_ha));
+                /* Copy ARP flags */
+                req->arpreq.arp_flags =
+                    arp_fl_rpc2h(out->req.req_val[0].ioctl_request_u.
+                                     req_arpreq.rpc_arp_flags);
             }
 
-            default:
-                ERROR("incorrect request type %d is received",
-                      out->req.req_val[0].type);
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-                goto finish;
-                break;
-        }
-    }
+            if (in->code == RPC_SIOCGARP)
+            {
+                 /* Copy device */
+                strcpy(req->arpreq.arp_dev,
+                       out->req.req_val[0].ioctl_request_u.
+                           req_arpreq.rpc_arp_dev.rpc_arp_dev_val);
+            }
+            break;
 
+        default:
+            ERROR("Incorrect request type %d is received",
+                  out->req.req_val[0].type);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+            return;
+    }
     if (in->access == IOCTL_WR)
         INIT_CHECKED_ARG(req, reqlen, 0);
-    MAKE_CALL(out->retval = func(in->s, ioctl_rpc2h(in->code), req));
-    if (req != NULL)
+}
+
+static void
+tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
+                 ioctl_param *req)
+{
+    switch (out->req.req_val[0].type)
     {
-        switch(out->req.req_val[0].type)
-        {
-            case IOCTL_INT:
-                out->req.req_val[0].ioctl_request_u.req_int = req_int;
-                break;
+        case IOCTL_INT:
+            out->req.req_val[0].ioctl_request_u.req_int = req->integer;
+            break;
 
-            case IOCTL_TIMEVAL:
-                out->req.req_val[0].ioctl_request_u.req_timeval.tv_sec =
-                    req_timeval.tv_sec;
-                out->req.req_val[0].ioctl_request_u.req_timeval.tv_usec =
-                    req_timeval.tv_usec;
-                break;
+        case IOCTL_TIMEVAL:
+            out->req.req_val[0].ioctl_request_u.req_timeval.tv_sec =
+                req->tv.tv_sec;
+            out->req.req_val[0].ioctl_request_u.req_timeval.tv_usec =
+                req->tv.tv_usec;
+            break;
 
-            case IOCTL_IFREQ:
-                switch (in->code)
-                {
-                    case RPC_SIOCGIFFLAGS:
-                    case RPC_SIOCSIFFLAGS:
-                        out->req.req_val[0].ioctl_request_u.req_ifreq.
-                            rpc_ifr_flags = if_fl_h2rpc(
-                                (uint32_t)(unsigned short int)
-                                    req_ifreq.ifr_flags);
-                        break;
-
-                    case RPC_SIOCGIFMTU:
-                    case RPC_SIOCSIFMTU:
-                        out->req.req_val[0].ioctl_request_u.req_ifreq.
-                            rpc_ifr_mtu = req_ifreq.ifr_mtu;
-                        break;
-
-                    case RPC_SIOCGIFADDR:
-                    case RPC_SIOCSIFADDR:
-                    case RPC_SIOCGIFNETMASK:
-                    case RPC_SIOCSIFNETMASK:
-                    case RPC_SIOCGIFBRDADDR:
-                    case RPC_SIOCSIFBRDADDR:
-                    case RPC_SIOCGIFDSTADDR:
-                    case RPC_SIOCSIFDSTADDR:
-                    case RPC_SIOCGIFHWADDR:
-                        sockaddr_h2rpc(&(req_ifreq.ifr_addr),
-                                       &(out->req.req_val[0].
-                                         ioctl_request_u.
-                                         req_ifreq.rpc_ifr_addr));
-                        break;
-
-                    default:
-                        ERROR("Unsupported IOCTL request %d of type IFREQ",
-                              in->code);
-                        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-                        goto finish;
-                }
-                break;
-
-            case IOCTL_IFCONF:
+        case IOCTL_IFREQ:
+            switch (in->code)
             {
-                struct ifreq       *req_c;
-                struct tarpc_ifreq *req_t;
-
-                int n = 1;
-                int i;
-
-                n = out->req.req_val[0].ioctl_request_u.req_ifconf.nmemb =
-                    req_ifconf.ifc_len / sizeof(struct ifreq);
-                out->req.req_val[0].ioctl_request_u.req_ifconf.extra =
-                    req_ifconf.ifc_len % sizeof(struct ifreq);
-
-                if (req_ifconf.ifc_req == NULL)
+                case RPC_SIOCGIFFLAGS:
+                case RPC_SIOCSIFFLAGS:
+                    out->req.req_val[0].ioctl_request_u.req_ifreq.
+                        rpc_ifr_flags = if_fl_h2rpc(
+                            (uint32_t)(unsigned short int)
+                                req->ifreq.ifr_flags);
                     break;
 
-                if ((req_t = calloc(n, sizeof(*req_t))) == NULL)
+                case RPC_SIOCGIFMTU:
+                case RPC_SIOCSIFMTU:
+                    out->req.req_val[0].ioctl_request_u.req_ifreq.
+                        rpc_ifr_mtu = req->ifreq.ifr_mtu;
+                    break;
+
+                case RPC_SIOCGIFADDR:
+                case RPC_SIOCSIFADDR:
+                case RPC_SIOCGIFNETMASK:
+                case RPC_SIOCSIFNETMASK:
+                case RPC_SIOCGIFBRDADDR:
+                case RPC_SIOCSIFBRDADDR:
+                case RPC_SIOCGIFDSTADDR:
+                case RPC_SIOCSIFDSTADDR:
+                case RPC_SIOCGIFHWADDR:
+                    sockaddr_h2rpc(&(req->ifreq.ifr_addr),
+                                   &(out->req.req_val[0].
+                                     ioctl_request_u.
+                                     req_ifreq.rpc_ifr_addr));
+                    break;
+
+                default:
+                    ERROR("Unsupported IOCTL request %d of type IFREQ",
+                          in->code);
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
+                    return;
+            }
+            break;
+
+        case IOCTL_IFCONF:
+        {
+            struct ifreq       *req_c;
+            struct tarpc_ifreq *req_t;
+
+            int n = 1;
+            int i;
+
+            n = out->req.req_val[0].ioctl_request_u.req_ifconf.nmemb =
+                req->ifconf.ifc_len / sizeof(struct ifreq);
+            out->req.req_val[0].ioctl_request_u.req_ifconf.extra =
+                req->ifconf.ifc_len % sizeof(struct ifreq);
+
+            if (req->ifconf.ifc_req == NULL)
+                break;
+
+            if ((req_t = calloc(n, sizeof(*req_t))) == NULL)
+            {
+                free(req->ifconf.ifc_buf);
+                ERROR("Out of memory");
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                return;
+            }
+            out->req.req_val[0].ioctl_request_u.req_ifconf.
+                rpc_ifc_req.rpc_ifc_req_val = req_t;
+            out->req.req_val[0].ioctl_request_u.req_ifconf.
+                rpc_ifc_req.rpc_ifc_req_len = n;
+            req_c = ((struct ifconf *)req)->ifc_req;
+
+            for (i = 0; i < n; i++, req_t++, req_c++)
+            {
+                req_t->rpc_ifr_name.rpc_ifr_name_val =
+                    calloc(1, sizeof(req_c->ifr_name));
+                if (req_t->rpc_ifr_name.rpc_ifr_name_val == NULL)
                 {
-                    free(req_ifconf.ifc_buf);
+                    free(req->ifconf.ifc_buf);
                     ERROR("Out of memory");
                     out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                    goto finish;
+                    return;
                 }
-                out->req.req_val[0].ioctl_request_u.req_ifconf.
-                    rpc_ifc_req.rpc_ifc_req_val = req_t;
-                out->req.req_val[0].ioctl_request_u.req_ifconf.
-                    rpc_ifc_req.rpc_ifc_req_len = n;
-                req_c = ((struct ifconf *)req)->ifc_req;
-
-                for (i = 0; i < n; i++, req_t++, req_c++)
+                memcpy(req_t->rpc_ifr_name.rpc_ifr_name_val,
+                       req_c->ifr_name, sizeof(req_c->ifr_name));
+                req_t->rpc_ifr_name.rpc_ifr_name_len =
+                    sizeof(req_c->ifr_name);
+                if ((req_t->rpc_ifr_addr.sa_data.sa_data_val =
+                     calloc(1, sizeof(struct sockaddr) - SA_COMMON_LEN))
+                     == NULL)
                 {
-                    req_t->rpc_ifr_name.rpc_ifr_name_val =
-                        calloc(1, sizeof(req_c->ifr_name));
-                    if (req_t->rpc_ifr_name.rpc_ifr_name_val == NULL)
-                    {
-                        free(req_ifconf.ifc_buf);
-                        ERROR("Out of memory");
-                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                        goto finish;
-                    }
-                    memcpy(req_t->rpc_ifr_name.rpc_ifr_name_val,
-                           req_c->ifr_name, sizeof(req_c->ifr_name));
-                    req_t->rpc_ifr_name.rpc_ifr_name_len =
-                        sizeof(req_c->ifr_name);
-                    if ((req_t->rpc_ifr_addr.sa_data.sa_data_val =
-                         calloc(1, sizeof(struct sockaddr) - SA_COMMON_LEN))
-                         == NULL)
-                    {
-                        /* 
-                         * Already allocated memory will be released 
-                         * by RPC
-                         */
-                        free(req_ifconf.ifc_buf);
-                        ERROR("Out of memory");
-                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                        goto finish;
-                    }
-                    req_t->rpc_ifr_addr.sa_data.sa_data_len =
-                        sizeof(struct sockaddr) - SA_COMMON_LEN;
-                    sockaddr_h2rpc(&(req_c->ifr_addr),
-                                   &(req_t->rpc_ifr_addr));
+                    /* 
+                     * Already allocated memory will be released 
+                     * by RPC
+                     */
+                    free(req->ifconf.ifc_buf);
+                    ERROR("Out of memory");
+                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                    return;
                 }
-                free(req_ifconf.ifc_buf);
-                break;
+                req_t->rpc_ifr_addr.sa_data.sa_data_len =
+                    sizeof(struct sockaddr) - SA_COMMON_LEN;
+                sockaddr_h2rpc(&(req_c->ifr_addr),
+                               &(req_t->rpc_ifr_addr));
             }
-
-            case IOCTL_ARPREQ:
-            {
-                if (in->code == RPC_SIOCGARP)
-                {
-                    /* Copy protocol address */
-                    sockaddr_h2rpc(&(req_arpreq.arp_pa),
-                                   &(out->req.req_val[0].ioctl_request_u.
-                                   req_arpreq.rpc_arp_pa));
-                    /* Copy HW address */
-                    sockaddr_h2rpc(&(req_arpreq.arp_ha),
-                                   &(out->req.req_val[0].ioctl_request_u.
-                                   req_arpreq.rpc_arp_ha));
-
-                    /* Copy flags */
-                    out->req.req_val[0].ioctl_request_u.req_arpreq.
-                        rpc_arp_flags = arp_fl_h2rpc(req_arpreq.arp_flags);
-                }
-                break;
-            }
-
+            free(req->ifconf.ifc_buf);
+            break;
         }
-    }
-    finish:
-    ;
-}
-)
 
-#else
+        case IOCTL_ARPREQ:
+        {
+            if (in->code == RPC_SIOCGARP)
+            {
+                /* Copy protocol address */
+                sockaddr_h2rpc(&(req->arpreq.arp_pa),
+                               &(out->req.req_val[0].ioctl_request_u.
+                               req_arpreq.rpc_arp_pa));
+                /* Copy HW address */
+                sockaddr_h2rpc(&(req->arpreq.arp_ha),
+                               &(out->req.req_val[0].ioctl_request_u.
+                               req_arpreq.rpc_arp_ha));
+
+                /* Copy flags */
+                out->req.req_val[0].ioctl_request_u.req_arpreq.
+                    rpc_arp_flags = arp_fl_h2rpc(req->arpreq.arp_flags);
+            }
+            break;
+        }
+
+        default:
+            assert(FALSE);
+    }
+}
 
 TARPC_FUNC(ioctl,
 {
     COPY_ARG(req);
 },
 {
-    char *req = NULL;
-    int   reqlen = 0;
-
-    static struct timeval req_timeval;
-    static int            req_int;
-    static struct ifreq   req_ifreq;
-    static struct ifconf  req_ifconf;
-    static struct arpreq  req_arpreq;
+    ioctl_param  req_local;
+    void        *req_ptr;
 
     if (out->req.req_val != NULL)
     {
-        switch (out->req.req_val[0].type)
-        {
-            case IOCTL_TIMEVAL:
-            {
-                req = (char *)&req_timeval;
-                reqlen = sizeof(struct timeval);
-                req_timeval.tv_sec = out->req.req_val[0].
-                    ioctl_request_u.req_timeval.tv_sec;
-                req_timeval.tv_usec = out->req.req_val[0].
-                    ioctl_request_u.req_timeval.tv_usec;
-                break;
-            }
-
-            case IOCTL_INT:
-            {
-                req = (char *)&req_int;
-                req_int = out->req.req_val[0].ioctl_request_u.req_int;
-                reqlen = sizeof(int);
-                break;
-            }
-
-            case IOCTL_IFREQ:
-            {
-                req = (char *)&req_ifreq;
-                reqlen = sizeof(struct ifreq);
-
-                memset(req, 0, reqlen);
-                /* Copy the whole 'ifr_name' buffer, not just strcpy() */
-                memcpy(req_ifreq.ifr_name,
-                       out->req.req_val[0].ioctl_request_u.req_ifreq.
-                           rpc_ifr_name.rpc_ifr_name_val,
-                       sizeof(req_ifreq.ifr_name));
-
-                INIT_CHECKED_ARG(req_ifreq.ifr_name,
-                                 strlen(req_ifreq.ifr_name) + 1, 0);
-
-                switch (in->code)
-                {
-                    case RPC_SIOCSIFFLAGS:
-                        req_ifreq.ifr_flags =
-                            if_fl_rpc2h((uint32_t)(unsigned short int)
-                                out->req.req_val[0].ioctl_request_u.
-                                    req_ifreq.rpc_ifr_flags);
-                        break;
-
-                    case RPC_SIOCSIFMTU:
-                        req_ifreq.ifr_mtu =
-                            out->req.req_val[0].ioctl_request_u.
-                            req_ifreq.rpc_ifr_mtu;
-                        break;
-
-                    case RPC_SIOCSIFADDR:
-                    case RPC_SIOCSIFNETMASK:
-                    case RPC_SIOCSIFBRDADDR:
-                    case RPC_SIOCSIFDSTADDR:
-                        sockaddr_rpc2h(&(out->req.req_val[0].
-                            ioctl_request_u.req_ifreq.rpc_ifr_addr),
-                            (struct sockaddr_storage *)
-                                (&(req_ifreq.ifr_addr)));
-                       break;
-                }
-                break;
-            }
-
-            case IOCTL_IFCONF:
-            {
-                char *buf = NULL;
-                int   buflen = out->req.req_val[0].ioctl_request_u.
-                               req_ifconf.nmemb * sizeof(struct ifreq) +
-                               out->req.req_val[0].ioctl_request_u.
-                               req_ifconf.extra;
-
-                req = (char *)&req_ifconf;
-                reqlen = sizeof(req_ifconf);
-                
-                if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
-                {
-                    ERROR("Out of memory");
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                    goto finish;
-                }
-                req_ifconf.ifc_buf = buf;
-                req_ifconf.ifc_len = buflen;
-
-                if (buf != NULL)
-                    INIT_CHECKED_ARG(buf, buflen + 64, buflen);
-                break;
-            }
-
-            case IOCTL_ARPREQ:
-            {
-                req = (char *)&req_arpreq;
-                reqlen = sizeof(req_arpreq);
-
-                memset(req, 0, reqlen);
-                /* Copy protocol address for all requests */
-                sockaddr_rpc2h(&(out->req.req_val[0].ioctl_request_u.
-                               req_arpreq.rpc_arp_pa),
-                               (struct sockaddr_storage *)
-                                   (&(req_arpreq.arp_pa)));
-                if (in->code == RPC_SIOCSARP)
-                {
-                    /* Copy HW address */
-                    sockaddr_rpc2h(&(out->req.req_val[0].ioctl_request_u.
-                                   req_arpreq.rpc_arp_ha),
-                                   (struct sockaddr_storage *)
-                                       (&(req_arpreq.arp_ha)));
-                    /* Copy ARP flags */
-                    req_arpreq.arp_flags =
-                        arp_fl_rpc2h(out->req.req_val[0].ioctl_request_u.
-                                     req_arpreq.rpc_arp_flags);
-                }
-                break;
-            }
-
-            default:
-                ERROR("incorrect request type %d is received",
-                      out->req.req_val[0].type);
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-                goto finish;
-                break;
-        }
+        memset(&req_local, 0, sizeof(req_local));
+        req_ptr = &req_local;
+        tarpc_ioctl_pre(in, out, req_ptr, list_ptr);
+        if (out->common._errno != 0)
+            goto finish;
     }
-
-    if (in->access == IOCTL_WR)
-        INIT_CHECKED_ARG(req, reqlen, 0);
-    MAKE_CALL(out->retval = func(in->s, ioctl_rpc2h(in->code), req));
-    if (req != NULL)
+    else
     {
-        switch(out->req.req_val[0].type)
-        {
-            case IOCTL_INT:
-                out->req.req_val[0].ioctl_request_u.req_int = req_int;
-                break;
-
-            case IOCTL_TIMEVAL:
-                out->req.req_val[0].ioctl_request_u.req_timeval.tv_sec =
-                    req_timeval.tv_sec;
-                out->req.req_val[0].ioctl_request_u.req_timeval.tv_usec =
-                    req_timeval.tv_usec;
-                break;
-
-            case IOCTL_IFREQ:
-                switch (in->code)
-                {
-                    case RPC_SIOCGIFFLAGS:
-                    case RPC_SIOCSIFFLAGS:
-                        out->req.req_val[0].ioctl_request_u.req_ifreq.
-                            rpc_ifr_flags = if_fl_h2rpc(
-                                (uint32_t)(unsigned short int)
-                                    req_ifreq.ifr_flags);
-                        break;
-
-                    case RPC_SIOCGIFMTU:
-                    case RPC_SIOCSIFMTU:
-                        out->req.req_val[0].ioctl_request_u.req_ifreq.
-                            rpc_ifr_mtu = req_ifreq.ifr_mtu;
-                        break;
-
-                    case RPC_SIOCGIFADDR:
-                    case RPC_SIOCSIFADDR:
-                    case RPC_SIOCGIFNETMASK:
-                    case RPC_SIOCSIFNETMASK:
-                    case RPC_SIOCGIFBRDADDR:
-                    case RPC_SIOCSIFBRDADDR:
-                    case RPC_SIOCGIFDSTADDR:
-                    case RPC_SIOCSIFDSTADDR:
-                    case RPC_SIOCGIFHWADDR:
-                        sockaddr_h2rpc(&(req_ifreq.ifr_addr),
-                                       &(out->req.req_val[0].
-                                         ioctl_request_u.
-                                         req_ifreq.rpc_ifr_addr));
-                        break;
-
-                    default:
-                        ERROR("Unsupported IOCTL request %d of type IFREQ",
-                              in->code);
-                        out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-                        goto finish;
-                }
-                break;
-
-            case IOCTL_IFCONF:
-            {
-                struct ifreq       *req_c;
-                struct tarpc_ifreq *req_t;
-
-                int n = 1;
-                int i;
-
-                n = out->req.req_val[0].ioctl_request_u.req_ifconf.nmemb =
-                    req_ifconf.ifc_len / sizeof(struct ifreq);
-                out->req.req_val[0].ioctl_request_u.req_ifconf.extra =
-                    req_ifconf.ifc_len % sizeof(struct ifreq);
-
-                if (req_ifconf.ifc_req == NULL)
-                    break;
-
-                if ((req_t = calloc(n, sizeof(*req_t))) == NULL)
-                {
-                    free(req_ifconf.ifc_buf);
-                    ERROR("Out of memory");
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                    goto finish;
-                }
-                out->req.req_val[0].ioctl_request_u.req_ifconf.
-                    rpc_ifc_req.rpc_ifc_req_val = req_t;
-                out->req.req_val[0].ioctl_request_u.req_ifconf.
-                    rpc_ifc_req.rpc_ifc_req_len = n;
-                req_c = ((struct ifconf *)req)->ifc_req;
-
-                for (i = 0; i < n; i++, req_t++, req_c++)
-                {
-                    req_t->rpc_ifr_name.rpc_ifr_name_val =
-                        calloc(1, sizeof(req_c->ifr_name));
-                    if (req_t->rpc_ifr_name.rpc_ifr_name_val == NULL)
-                    {
-                        free(req_ifconf.ifc_buf);
-                        ERROR("Out of memory");
-                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                        goto finish;
-                    }
-                    memcpy(req_t->rpc_ifr_name.rpc_ifr_name_val,
-                           req_c->ifr_name, sizeof(req_c->ifr_name));
-                    req_t->rpc_ifr_name.rpc_ifr_name_len =
-                        sizeof(req_c->ifr_name);
-                    if ((req_t->rpc_ifr_addr.sa_data.sa_data_val =
-                         calloc(1, sizeof(struct sockaddr) - SA_COMMON_LEN))
-                         == NULL)
-                    {
-                        /* 
-                         * Already allocated memory will be released 
-                         * by RPC
-                         */
-                        free(req_ifconf.ifc_buf);
-                        ERROR("Out of memory");
-                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                        goto finish;
-                    }
-                    req_t->rpc_ifr_addr.sa_data.sa_data_len =
-                        sizeof(struct sockaddr) - SA_COMMON_LEN;
-                    sockaddr_h2rpc(&(req_c->ifr_addr),
-                                   &(req_t->rpc_ifr_addr));
-                }
-                free(req_ifconf.ifc_buf);
-                break;
-            }
-
-            case IOCTL_ARPREQ:
-            {
-                if (in->code == RPC_SIOCGARP)
-                {
-                    /* Copy protocol address */
-                    sockaddr_h2rpc(&(req_arpreq.arp_pa),
-                                   &(out->req.req_val[0].ioctl_request_u.
-                                   req_arpreq.rpc_arp_pa));
-                    /* Copy HW address */
-                    sockaddr_h2rpc(&(req_arpreq.arp_ha),
-                                   &(out->req.req_val[0].ioctl_request_u.
-                                   req_arpreq.rpc_arp_ha));
-
-                    /* Copy flags */
-                    out->req.req_val[0].ioctl_request_u.req_arpreq.
-                        rpc_arp_flags = arp_fl_h2rpc(req_arpreq.arp_flags);
-                }
-                break;
-            }
-
-        }
+        req_ptr = NULL;
     }
-    finish:
+
+    MAKE_CALL(out->retval = func(in->s, ioctl_rpc2h(in->code), req_ptr));
+    if (req_ptr != NULL)
+    {
+        tarpc_ioctl_post(in, out, req_ptr);
+    }
+
+finish:
     ;
 }
 )
 
-#endif
 
 static const char *
 msghdr2str(const struct msghdr *msg)
@@ -2976,7 +2705,8 @@ TARPC_FUNC(getaddrinfo, {},
         hints.ai_socktype = socktype_rpc2h(in->hints.hints_val[0].socktype);
         hints.ai_protocol = proto_rpc2h(in->hints.hints_val[0].protocol);
         hints.ai_addrlen = in->hints.hints_val[0].addrlen + SA_COMMON_LEN;
-        a = sockaddr_rpc2h(&(in->hints.hints_val[0].addr), &addr);
+        a = sockaddr_rpc2h(&(in->hints.hints_val[0].addr), SA(&addr),
+                           sizeof(addr));
         INIT_CHECKED_ARG((char *)a,
                          in->hints.hints_val[0].addr.sa_data.sa_data_len +
                          SA_COMMON_LEN, 0);
@@ -3318,15 +3048,6 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
                 continue;
             }
         }
-#if 0 /* it's a legal situation if len < size */
-        if (len < size)
-        {
-            ERROR("send() returned %d instead %d in simple_sender()",
-                  len, size);
-            free(buf);
-            return -1;
-        }
-#endif
         out->bytes += len;
     }
 
@@ -4840,7 +4561,7 @@ TARPC_FUNC(malloc, {},
 {
     void *buf;
     
-    UNUSED(list);
+    UNUSED(list_ptr);
     
     buf = func_ret_ptr(in->size);
 
@@ -4854,7 +4575,7 @@ TARPC_FUNC(malloc, {},
 /*--------------------------- free ---------------------------------*/
 TARPC_FUNC(free, {},
 {
-    UNUSED(list);
+    UNUSED(list_ptr);
     UNUSED(out);
     func_ptr(rcf_pch_mem_get(in->buf));
     rcf_pch_mem_free(in->buf);

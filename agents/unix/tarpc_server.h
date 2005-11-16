@@ -196,21 +196,24 @@ shut_how_rpc2h(rpc_shut_how how)
  * Convert RPC sockaddr to struct sockaddr.
  *
  * @param rpc_addr      RPC address location
- * @param addr          pointer to struct sockaddr_storage
+ * @param addr          Pointer to struct sockaddr
+ * @param addrlen       Real length of the buffer under @a addr pointer
  *
- * @return struct sockaddr pointer
+ * @return struct sockaddr pointer or NULL
  */
 static inline struct sockaddr *
-sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr_storage *addr)
+sockaddr_rpc2h(struct tarpc_sa *rpc_addr,
+               struct sockaddr *addr, socklen_t addrlen)
 {
     uint32_t len = SA_DATA_MAX_LEN;
 
     if (rpc_addr->sa_data.sa_data_len == 0)
         return NULL;
 
-    memset(addr, 0, sizeof(struct sockaddr_storage));
+    memset(addr, 0, addrlen);
 
-    addr->ss_family = addr_family_rpc2h(rpc_addr->sa_family);
+    /* FIXME Use addrlen further */
+    addr->sa_family = addr_family_rpc2h(rpc_addr->sa_family);
 
     if (len < rpc_addr->sa_data.sa_data_len)
     {
@@ -274,7 +277,7 @@ typedef struct checked_arg {
 
 /** Initialise the checked argument and add it into the list */
 static inline void
-init_checked_arg(checked_arg **list, char *real_arg,
+init_checked_arg(checked_arg **list, uint8_t *real_arg,
                  int len, int len_visible)
 {
     checked_arg *arg;
@@ -303,7 +306,7 @@ init_checked_arg(checked_arg **list, char *real_arg,
 }
 
 #define INIT_CHECKED_ARG(_real_arg, _len, _len_visible) \
-    init_checked_arg(&list, _real_arg, _len, _len_visible)
+    init_checked_arg(list_ptr, (uint8_t *)(_real_arg), _len, _len_visible)
 
 /** Verify that arguments are not corrupted */
 static inline int
@@ -333,7 +336,7 @@ check_args(checked_arg *list)
     struct sockaddr_storage addr;                                \
     struct sockaddr        *a;                                   \
                                                                  \
-    a = sockaddr_rpc2h(&(_address), &addr);                      \
+    a = sockaddr_rpc2h(&(_address), SA(&addr), sizeof(addr));    \
     INIT_CHECKED_ARG((char *)a, (_address).sa_data.sa_data_len + \
                      SA_COMMON_LEN, _vlen);
 
@@ -413,7 +416,7 @@ check_args(checked_arg *list)
         out->common.duration =                                   \
             (t_finish.tv_sec - t_start.tv_sec) * 1000000 +       \
             t_finish.tv_usec - t_start.tv_usec;                  \
-        _rc = check_args(list);                                  \
+        _rc = check_args(*list_ptr);                             \
         if (out->common._errno == 0 && _rc != 0)                 \
             out->common._errno = _rc;                            \
     } while (0)
@@ -438,6 +441,7 @@ _func##_proc(void *arg)                                             \
     tarpc_##_func##_out    *out = &(data->out);                     \
                                                                     \
     checked_arg            *list = NULL;                            \
+    checked_arg           **list_ptr = &list;                       \
                                                                     \
                                                                     \
     logfork_register_user(#_func);                                  \
@@ -476,6 +480,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,  \
         case RCF_RPC_CALL_WAIT:                                     \
         {                                                           \
             checked_arg    *list = NULL;                            \
+            checked_arg   **list_ptr = &list;                       \
                                                                     \
             VERB("%s(): CALL-WAIT", #_func);                        \
                                                                     \
