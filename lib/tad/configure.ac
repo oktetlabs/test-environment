@@ -62,7 +62,9 @@ AC_TYPE_SIZE_T
 AC_HEADER_TIME
 
 # Checks for library functions.
-AC_FUNC_FORK
+# It is a good idea to check fork, but it's not used and generates a
+# warning at configure time.
+#AC_FUNC_FORK
 AC_PROG_GCC_TRADITIONAL
 AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_STRERROR_R
