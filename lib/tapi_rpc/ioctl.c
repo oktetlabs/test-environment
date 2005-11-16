@@ -430,6 +430,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                   req_arpreq.rpc_arp_flags);
                 break;
             }
+
+            default:
+                assert(FALSE);
         }
     }
     
