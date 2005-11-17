@@ -125,15 +125,6 @@
 
 
 /**
- * Close a socket on a particular RPC server, non-changing variable
- * with socket descriptor.
- *
- * @param rpcs_   RPC server handle
- * @param sockd_  socket descriptor
- */
-#define RPC_CLOSE_UNSAFE(rpcs_, sockd_)  rpc_close((rpcs_), (sockd_))
-
-/**
  * Close a socket on a particular RPC server
  *
  * @param rpcs_   RPC server handle
