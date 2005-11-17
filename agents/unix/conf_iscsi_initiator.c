@@ -1257,10 +1257,10 @@ iscsi_initiator_unh_set(const int target_id, const int cid,
                           OFFER_IMMEDIATE_DATA, offer);
             ISCSI_UNH_SET_INT("MaxBurstLength", 
                               conn->max_burst_length, target_id,
-                              OFFER_FIRST_BURST_LENGTH, offer);
+                              OFFER_MAX_BURST_LENGTH, offer);
             ISCSI_UNH_SET_INT("FirstBurstLength", 
                               conn->first_burst_length, target_id,
-                              OFFER_MAX_BURST_LENGTH, offer);
+                              OFFER_FIRST_BURST_LENGTH, offer);
             ISCSI_UNH_SET_INT("MaxOutstandingR2T", 
                               conn->max_outstanding_r2t, target_id,
                               OFFER_MAX_OUTSTANDING_R2T, offer);
