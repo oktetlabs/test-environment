@@ -573,10 +573,14 @@ iscsi_l5_write_target_params(FILE *destination,
     
     for (p = session_params; p->name != NULL; p++)
     {
+#if 0
         if ((connection->conf_params & p->offer) == p->offer)
         {
+#endif
             iscsi_l5_write_param(destination, p, connection);
+#if 0
         }
+#endif
     }
     /** Other authentication parameters are not supported by
      *  L5 initiator, both on the level of script and on 
@@ -598,10 +602,14 @@ iscsi_l5_write_target_params(FILE *destination,
                     target->target_port);
             for (p = connection_params; p->name != NULL; p++)
             {
+#if 0
                 if ((connection->conf_params & p->offer) == p->offer)
                 {
+#endif
                     iscsi_l5_write_param(destination, p, connection);
+#if 0
                 }
+#endif
             }
             WRITE_AUTH(chap);
             if (strstr(connection->chap.chap, "CHAP") != 0)
