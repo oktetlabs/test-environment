@@ -265,6 +265,23 @@ extern int tapi_iscsi_forward_all(const char *ta_name, int session,
                                   unsigned int timeout, int *forwarded);
 
 
+
+/**
+ * Pass all iSCSI PDUs from one iSCSI CSAP to another and reverse, 
+ * until in both directions silence will be established. 
+ *
+ * @param ta            TA name
+ * @param sid           RCF session id
+ * @param csap_a        identifier of one side CSAP
+ * @param csap_b        identifier of another side CSAP
+ * @param timeout       timeout to wait data, in milliseconds
+ *
+ * @return status code
+ */
+extern int tapi_iscsi_exchange_until_silent(const char *ta, int session, 
+                                            csap_handle_t csap_a,
+                                            csap_handle_t csap_b,
+                                            unsigned int timeout);
 #define TAPI_ISCSI_KEY_INVALID     -1
 
 /* To read iSCSI PDU Segment Data */

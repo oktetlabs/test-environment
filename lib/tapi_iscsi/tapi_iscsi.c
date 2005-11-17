@@ -374,6 +374,88 @@ cleanup:
 }
 
 /* See description in tapi_iscsi.h */
+int
+tapi_iscsi_exchange_until_silent(const char *ta, int session, 
+                                 csap_handle_t csap_a,
+                                 csap_handle_t csap_b,
+                                 unsigned int timeout)
+{
+    int         rc = 0, syms;
+    asn_value  *pattern = NULL;
+    unsigned    pkts_a = 0, pkts_b = 0, 
+                prev_pkts_a, prev_pkts_b;
+
+    if (csap_a == CSAP_INVALID_HANDLE || 
+        csap_b == CSAP_INVALID_HANDLE)
+    {
+
+        ERROR("%s(): both CSAPs should be valid", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
+                              ndn_traffic_pattern, &pattern, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    } 
+
+    /*First, start receive on A */
+    asn_write_int32(pattern, csap_b, "0.actions.0.#forw-pld");
+
+    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern, timeout, 
+                               0, RCF_TRRECV_COUNT);
+    if (rc != 0)
+    {
+        ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    /* Then, start receive on B */
+    asn_write_int32(pattern, csap_a, "0.actions.0.#forw-pld");
+
+    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern, timeout, 
+                               0, RCF_TRRECV_COUNT);
+    if (rc != 0)
+    {
+        ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    do { 
+        prev_pkts_a = pkts_a;
+        prev_pkts_b = pkts_b;
+
+        MSLEEP(timeout);
+
+        rc = rcf_ta_trrecv_get(ta, session, csap_a, NULL, NULL, &pkts_a);
+        if (rc != 0)
+        {
+            ERROR("%s(): trrecv_get on A failed %r", __FUNCTION__, rc);
+            goto cleanup;
+        }
+        rc = rcf_ta_trrecv_get(ta, session, csap_b, NULL, NULL, &pkts_b);
+        if (rc != 0)
+        {
+            ERROR("%s(): trrecv_get on B failed %r", __FUNCTION__, rc);
+            goto cleanup;
+        } 
+        RING("%s(): a %d, b %d, new a %d, new b %d", 
+             __FUNCTION__, prev_pkts_a, prev_pkts_b, pkts_a, pkts_b);
+
+    } while(prev_pkts_a < pkts_a || prev_pkts_b < pkts_b);
+
+    tapi_tad_trrecv_stop(ta, session, csap_a, NULL, &pkts_a);
+    tapi_tad_trrecv_stop(ta, session, csap_b, NULL, &pkts_b);
+
+cleanup:
+    asn_free_value(pattern);
+    return rc;
+}
+
+/* See description in tapi_iscsi.h */
 int 
 tapi_iscsi_get_key_num(iscsi_segment_data data)
 {
