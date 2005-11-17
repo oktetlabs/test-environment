@@ -236,22 +236,212 @@ RCF_PCH_CFG_NODE_AGENT(node_agent, &node_interface);
 
 const char *te_lockdir = "/tmp";
 
+/** Mapping of EF ports to interface indices */
+static int ef_index[2] = { -1, -1 };
+
+/* Convert wide string to usual one */
+static char *
+w2a(WCHAR *str)
+{
+    static char buf[256];
+    BOOL        b;
+    
+    WideCharToMultiByte(CP_ACP, 0, str, -1, buf, sizeof(buf), "-", &b);
+        
+    return buf;        
+}
+
+static te_errno
+efport2ifindex(void)
+{
+/* Path to network components in the registry */
+#define NET_PATH        "SYSTEM\\CurrentControlSet\\Control\\Class\\" \
+                        "{4D36E972-E325-11CE-BFC1-08002bE10318}"
+
+#define NDIS            "dev_c101_ndis_"
+#define BUFSIZE         256
+
+    HKEY key, subkey;
+    
+    static char subkey_name[BUFSIZE];
+    static char subkey_path[BUFSIZE];
+    static char value[BUFSIZE];
+    
+    static char guid1[BUFSIZE] = { 0, };
+    static char guid2[BUFSIZE] = { 0, };
+    
+    DWORD subkey_size;
+    DWORD value_size;
+    
+    FILETIME tmp;
+    ULONG    size = 0;
+    
+    PIP_INTERFACE_INFO iftable;
+    
+    int i;
+    
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, NET_PATH, 0, 
+                     KEY_READ, &key) != ERROR_SUCCESS) 
+    {
+        ERROR("RegOpenKeyEx() failed with errno %lu", GetLastError());
+        return TE_RC(TE_TA_WIN32, TE_EFAULT);
+    }
+
+    for (i = 0, subkey_size = value_size = BUFSIZE; 
+         RegEnumKeyEx(key, i, subkey_name, &subkey_size, 
+                      NULL, NULL, NULL, &tmp) != ERROR_NO_MORE_ITEMS;
+         i++, subkey_size = value_size = BUFSIZE)
+    { 
+        sprintf(subkey_path, "%s\\%s", NET_PATH, subkey_name);
+        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey_path, 
+                         0, KEY_READ, &subkey) != ERROR_SUCCESS)
+        {
+           continue;
+        }
+    
+        if (RegQueryValueEx(subkey, "MatchingDeviceId", 
+                            NULL, NULL, (unsigned char *)value, 
+                            &value_size) != ERROR_SUCCESS) 
+        {
+            /* Field with device ID is absent, may its virtual device */
+            RegCloseKey(subkey);
+            continue;
+        }
+        if (strstr(value, NDIS) != NULL)
+        {
+            unsigned char *guid = strstr(value, NDIS "0") != NULL ? 
+                                  guid1 : guid2;
+                
+            value_size = BUFSIZE;
+            if (RegQueryValueEx(subkey, "NetCfgInstanceId", 
+                                NULL, NULL, guid, &value_size) != 0)
+            {
+                ERROR("RegQueryValueEx() failed with errno %lu", 
+                      GetLastError());
+                RegCloseKey(subkey);
+                RegCloseKey(key);
+                return TE_RC(TE_TA_WIN32, TE_EFAULT);
+            }
+        }
+        RegCloseKey(subkey);
+        if (*guid1 != 0 && *guid2 != 0)
+            break;
+    } 
+    RegCloseKey(key);
+    
+    if (*guid1 == 0 && *guid2 == 0)
+        return 0;
+
+    if ((iftable = (PIP_INTERFACE_INFO)malloc(sizeof(*iftable))) == NULL) 
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+                                                                        
+    if (GetInterfaceInfo(iftable, &size) == ERROR_INSUFFICIENT_BUFFER)
+    {     
+        PIP_INTERFACE_INFO new_table = 
+            (PIP_INTERFACE_INFO)realloc(iftable, size);
+
+        if (new_table == NULL)
+        {
+            free(iftable);
+            return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+        }
+        
+        iftable = new_table;            
+    }                                                               
+    else 
+    {                                                               
+        free(iftable); 
+        ERROR("GetInterfaceInfo() failed");
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    }                                                               
+                                                                    
+    if (GetInterfaceInfo(iftable, &size) != NO_ERROR)                  
+    {                                                               
+        ERROR("GetInterfaceInfo() failed");
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    }                                                               
+
+    for (i = 0; i < iftable->NumAdapters; i++)
+    {
+        if (strstr(w2a(iftable->Adapter[i].Name), guid1) != NULL)
+            ef_index[0] = iftable->Adapter[i].Index;
+        else if (strstr(w2a(iftable->Adapter[i].Name), guid2) != NULL)
+            ef_index[1] = iftable->Adapter[i].Index;
+    }
+    free(iftable); 
+    
+    if (ef_index[0] > 0)
+        RING("Interface index for EF port 1 %d", ef_index[0]);
+
+    if (ef_index[1] > 0)
+        RING("Interface index for EF port 2 %d", ef_index[1]);
+    
+    return 0;
+    
+#undef BUFSIZE    
+#undef NET_PATH
+#undef NDIS
+}
+
+
 static MIB_IFROW if_entry;
 
+/** Convert interface name to interface index */
+static int
+ifname2ifindex(const char *ifname)
+{
+    char   *s;
+    char   *tmp;                                   
+    te_bool ef = FALSE;
+    int     index;
+    
+    if (ifname == NULL)
+        return 0;
+
+    if (strcmp_start("intf", ifname) == 0)
+        s = (char *)ifname + strlen("intf");
+    else if (strcmp_start("ef", ifname) == 0)
+    {
+        s = (char *)ifname + strlen("ef");
+        ef = TRUE;
+    }
+    else
+        return 0;
+    index = strtol(s, &tmp, 10);
+    if (tmp == s || *tmp != 0)
+        return 0;
+        
+    if (!ef)
+        return index;
+        
+    if (index < 1 || index > 2)
+        return 0;
+        
+    return ef_index[index - 1];
+}
+
+/** Convert interface index to interface name */
+char *
+ifindex2ifname(int ifindex)
+{
+    static char ifname[16];
+    
+    if (ef_index[0] == ifindex)
+        sprintf(ifname, "ef1");
+    else if (ef_index[1] == ifindex)
+        sprintf(ifname, "ef2");
+    else
+        sprintf(ifname, "intf%u", (unsigned int)ifindex);
+        
+    return ifname;        
+}
 
 /** Update information in if_entry. Local variable ifname should exist */
 #define GET_IF_ENTRY \
     do {                                                        \
-        char *tmp;                                              \
-                                                                \
-        if (ifname == NULL ||                                   \
-            strncmp(ifname, "intf", 4) != 0 ||                  \
-            (if_entry.dwIndex = strtol(ifname + 4, &tmp, 10),   \
-             tmp == ifname) || *tmp != 0 ||                     \
+        if ((if_entry.dwIndex = ifname2ifindex(ifname)) == 0 || \
             GetIfEntry(&if_entry) != 0)                         \
-        {                                                       \
             return TE_RC(TE_TA_WIN32, TE_ENOENT);               \
-        }                                                       \
     } while (0)
 
 #define RETURN_BUF
@@ -265,11 +455,18 @@ static MIB_IFROW if_entry;
         DWORD size = 0, rc;                                             \
                                                                         \
         if ((table = (_type *)malloc(sizeof(_type))) == NULL)           \
-            return TE_RC(TE_TA_WIN32, TE_ENOMEM);                          \
+            return TE_RC(TE_TA_WIN32, TE_ENOMEM);                       \
                                                                         \
         if ((rc = _func(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) \
         {                                                               \
-            table = (_type *)realloc(table, size);                      \
+            _type *new_table = (_type *)realloc(table, size);           \
+                                                                        \
+            if (new_table == NULL)                                      \
+            {                                                           \
+                free(table);                                            \
+                return TE_RC(TE_TA_WIN32, TE_ENOMEM);                   \
+            }                                                           \
+            table = new_table;                                          \
         }                                                               \
         else if (rc == NO_ERROR)                                        \
         {                                                               \
@@ -296,6 +493,7 @@ static MIB_IFROW if_entry;
             table = NULL;                                               \
         }                                                               \
     } while (0)
+
 
 /** Find an interface for destination IP */
 static int
@@ -353,6 +551,9 @@ rcf_ch_conf_root()
     /* Link RPC nodes */
     if (!init)
     {
+        if (efport2ifindex() != 0)
+            return NULL;
+        
         init = TRUE;
 #ifdef RCF_RPC
         rcf_pch_rpc_init();
@@ -415,7 +616,7 @@ interface_list(unsigned int gid, const char *oid, char **list)
     buf[0] = 0;
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
-        s += sprintf(s, "intf%lu ", table->table[i].dwIndex);
+        s += sprintf(s, "%s ", ifindex2ifname(table->table[i].dwIndex));
 
     free(table);
 
