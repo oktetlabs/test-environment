@@ -1801,9 +1801,9 @@ tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     tv.tv_sec = timeout;                                        
                                                                     
     if (type[0] == 'R')                                  
-        RPC_SELECT(rc, rpcs, s + 1, fds, RPC_NULL, RPC_NULL, &tv);
+        rc = rpc_select(rpcs, s + 1, fds, RPC_NULL, RPC_NULL, &tv);
     else
-        RPC_SELECT(rc, rpcs, s + 1, RPC_NULL, fds, RPC_NULL, &tv);
+        rc = rpc_select(rpcs, s + 1, RPC_NULL, fds, RPC_NULL, &tv);
 
     *answer = (rc == 1);
     result = 0;
