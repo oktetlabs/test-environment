@@ -486,7 +486,7 @@ typedef enum {
     ISCSI_PARAM_TARGET_PORT,                            /**< Local */
     ISCSI_PARAM_INITIAL_R2T,                            /**< Local */
     ISCSI_PARAM_IMMEDIATE_DATA,                         /**< Local */
-    ISCSI_PARAM_MAX_RECV_DATA_SEGMENT_LENGHT            /**< Local */,
+    ISCSI_PARAM_MAX_RECV_DATA_SEGMENT_LENGTH            /**< Local */,
     ISCSI_PARAM_MAX_BURST_LENGTH,                       /**< Local */
     ISCSI_PARAM_FIRST_BURST_LENGTH,                     /**< Local */
     ISCSI_PARAM_DEFAULT_TIME2WAIT,                      /**< Local */
@@ -836,6 +836,7 @@ typedef struct iscsi_io_handle_t
     sem_t           cmd_wait;
     int             next_cmd;
     char            agent[RCF_MAX_NAME];
+    char            mountpoint[RCF_MAX_NAME];
 } iscsi_io_handle_t;
 
 extern int tapi_iscsi_io_prepare(const char *ta, unsigned id, 
