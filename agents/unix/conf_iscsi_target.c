@@ -905,7 +905,7 @@ ta_unix_iscsi_target_init()
         return rc;
     }
     
-    return rcf_pch_add_node("/agent", &node_ds_iscsi_initiator);
+    return rcf_pch_add_node("/agent", &node_ds_iscsi_target);
 }
 
 #endif /* ! WITH_ISCSI */
