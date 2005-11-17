@@ -8,7 +8,7 @@
     <suite name="selftad"/>
 
     <run>
-        <package name="selftad"/>
+        <package name="selftad"  track_conf="silent"/>
     </run>
 
 </tester_cfg>
