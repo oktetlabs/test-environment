@@ -220,9 +220,6 @@ typedef struct iscsi_target_data {
 typedef struct iscsi_initiator_data {
     iscsi_initiator_type  init_type; /**< Type of the Initiator */
 
-    char                  last_cmd[MAX_CMD_SIZE]; /**< Last cmd received by
-                                                       the Initiator */
-
     int                   host_bus_adapter;  /**< Number of the host bus 
                                                   adapter. Usually 0 */
     char                  script_path[MAX_CMD_SIZE];
@@ -408,7 +405,7 @@ iscsi_initiator_get(const char *gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
-    sprintf(value, "%s", init_data->last_cmd);
+    *value = '\0';
     return 0;
 }
 
