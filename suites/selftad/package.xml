@@ -13,6 +13,11 @@
     <req id="TAD_IPSTACK"/> 
 
     <session>
+
+        <prologue>
+            <script name="prologue"/>
+        </prologue>
+
         <run>
             <package name="snmp"/>
         </run>

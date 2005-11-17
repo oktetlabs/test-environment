@@ -67,7 +67,7 @@ main(int argc, char *argv[])
     int sock_dst = -1;
     struct sockaddr_in srv_addr;
 #endif
-    rcf_rpc_server *pco_iut = NULL;
+    rcf_rpc_server *pco = NULL;
 
     int  sid;
     char ta[32];
@@ -81,7 +81,7 @@ main(int argc, char *argv[])
 
 
     TEST_START; 
-    TEST_GET_PCO(pco_iut);
+    TEST_GET_PCO(pco);
     
     if ((rc = rcf_get_ta_list(ta, &len)) != 0)
         TEST_FAIL("rcf_get_ta_list failed: %r", rc);
