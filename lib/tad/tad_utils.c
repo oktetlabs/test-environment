@@ -855,6 +855,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                     return TE_EINVAL;
 
             }
+
             /* process string values */ 
             if (location->du_type != TAD_DU_I32)
             {
@@ -923,6 +924,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                     return TE_EOPNOTSUPP;
                 }
             }
+            break;
 
         default:
             WARN("%s(): No support for choice: tag %d at sending",
