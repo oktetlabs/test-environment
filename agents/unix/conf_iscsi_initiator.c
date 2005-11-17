@@ -1410,7 +1410,7 @@ iscsi_initiator_l5_set(const int target_id, const int cid, int oper)
             {
                 if (target->number_of_open_connections == 0)
                 {
-                    rc = te_shell_cmd_ex("cd %s; ./iscsi_discovery te", 
+                    rc = te_shell_cmd_ex("cd %s; ./iscsi_discover te", 
                                          init_data->script_path);
                 }
                 else
