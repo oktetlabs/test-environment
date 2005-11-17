@@ -710,6 +710,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
         }
     }
     fclose(destination);
+    ta_system_ex("cat %s", filename);
     return ta_system_ex("cd %s; ./iscsi_setconfig te", 
                            init_data->script_path);
 }
