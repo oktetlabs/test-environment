@@ -1372,34 +1372,53 @@ iscsi_initiator_l5_set(const int target_id, const int cid, int oper)
             there_are_connections = TRUE;
     }
 
-    if (!there_are_connections)
-    {
-        rc = iscsi_l5_write_config(init_data);
-        if (rc != 0)
-            return rc;
-    }
-
-
     switch (oper)
     {
         case ISCSI_CONNECTION_DOWN:
             RING("Stopping connection %d, %d", target_id, cid);
-            rc = te_shell_cmd_ex("cd %s; ./iscsi_stopconns target%d_conn%d", 
-                                 init_data->script_path,
-                                 target_id, cid);
-            if (rc != 0)
+            
+            if (strcmp(target->conns[cid].session_type, "Discovery") != 0)
             {
-                ERROR("Unable to stop initiator connection %d, %d", 
-                      target_id, cid);
-                return TE_RC(TE_TA_UNIX, rc);
+                rc = te_shell_cmd_ex("cd %s; ./iscsi_stopconns target%d_conn%d", 
+                                     init_data->script_path,
+                                     target_id, cid);
+                if (rc != 0)
+                {
+                    ERROR("Unable to stop initiator connection %d, %d", 
+                          target_id, cid);
+                    return TE_RC(TE_TA_UNIX, rc);
+                }
             }
             if (target->number_of_open_connections > 0)
                 target->number_of_open_connections--;
             break;
         case ISCSI_CONNECTION_UP:
-            rc = te_shell_cmd_ex("cd %s; ./iscsi_startconns target%d_conn%d", 
-                                 init_data->script_path,
-                                 target_id, cid);
+            if (!there_are_connections)
+            {
+                rc = iscsi_l5_write_config(init_data);
+                if (rc != 0)
+                    return rc;
+            }
+
+            if (strcmp(target->conns[cid].session_type, "Discovery") != 0)
+            {
+                rc = te_shell_cmd_ex("cd %s; ./iscsi_startconns target%d_conn%d", 
+                                     init_data->script_path,
+                                     target_id, cid);
+            }
+            else
+            {
+                if (target->number_of_open_connections == 0)
+                {
+                    rc = te_shell_cmd_ex("cd %s; ./iscsi_discovery te", 
+                                         init_data->script_path);
+                }
+                else
+                {
+                    WARN("Discovery session already in progress");
+                    rc = 0;
+                }
+            }
             if (rc != 0)
             {
                 ERROR("Unable to start initiator connection %d, %d",
