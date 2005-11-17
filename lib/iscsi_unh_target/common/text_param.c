@@ -975,6 +975,7 @@ iscsi_configure_param_value(int param_neg_info,
 	char *endptr;
 	int int_value;
 
+    TRACE(TRACE_DEBUG, "Trying to set %s to %s", key, value);
 	if ((param = find_parameter(key, p_param_tbl)) != NULL) 
     {
 		if (value) 
@@ -995,6 +996,7 @@ iscsi_configure_param_value(int param_neg_info,
 				} else {
 					param->int_value = int_value;
 				}
+                TRACE(TRACE_DEBUG, "Having set int %s to %d", key, int_value);
 			} else {
 				/* parameter is a string, enumerated, boolean 
 				 * or range,
@@ -1011,6 +1013,8 @@ iscsi_configure_param_value(int param_neg_info,
 
 				strreplace(&param->value_list, value);
                 strreplace_upto(&param->str_value, value, ',');
+                TRACE(TRACE_DEBUG, "Having set str %s to %s (%s)", key, param->value_list, 
+                      param->str_value);
 			}
 		}
 
