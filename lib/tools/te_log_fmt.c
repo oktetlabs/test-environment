@@ -125,20 +125,20 @@ dump(const uint8_t *p, const uint8_t *q)
 
 
 /** Initial length of raw message buffer */
-#define TE_LOG_MSG_RAW_BUF_INIT     1
+#define TE_LOG_MSG_RAW_BUF_INIT     512
 /** 
  * Additional length to allocate for raw message buffer, if current
  * length is not sufficient.
  */
-#define TE_LOG_MSG_RAW_BUF_GROW     1
+#define TE_LOG_MSG_RAW_BUF_GROW     256
 
 /** Initial number of raw arguments the space allocate for */
-#define TE_LOG_MSG_RAW_ARGS_INIT    1
+#define TE_LOG_MSG_RAW_ARGS_INIT    16
 /** 
  * Number of additional arguments the space allocate for, if current
  * space is not sufficient.
  */
-#define TE_LOG_MSG_RAW_ARGS_GROW    1
+#define TE_LOG_MSG_RAW_ARGS_GROW    4
 
 
 
