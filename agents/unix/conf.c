@@ -151,7 +151,8 @@ static const char * const env_hidden[] = {
     "SUDO_COMMAND",
     "TE_RPC_PORT",
     "TE_LOG_PORT",
-    "TARPC_DL_NAME"
+    "TARPC_DL_NAME",
+    "TCE_CONNECTION"
 };
 
 static int ip4_fw_get(unsigned int, const char *, char *);
