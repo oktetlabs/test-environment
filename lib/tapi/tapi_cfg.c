@@ -1652,3 +1652,85 @@ tapi_cfg_alloc_ip4_addr(cfg_handle ip4_net, cfg_handle *p_entry,
 {
     return tapi_cfg_insert_ip4_addr(ip4_net, NULL, p_entry, addr);
 }
+
+
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_env_local_to_agent(void)
+{
+    const char * const  pattern = "/local:*/env:*";
+
+    te_errno        rc;
+    unsigned int    num;
+    cfg_handle     *handles = NULL;
+    unsigned int    i;
+    cfg_oid        *oid = NULL;
+    cfg_val_type    type = CVT_STRING;
+    char           *new_value = NULL;
+    char           *old_value = NULL;
+
+    rc = cfg_find_pattern(pattern, &num, &handles);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        return 0;
+    }
+    else if (rc != 0)
+    {
+        ERROR("Failed to find by pattern '%s': %r", pattern, rc);
+        return rc;
+    }
+
+    for (i = 0; i < num; ++i)
+    {
+        rc = cfg_get_instance(handles[i], &type, &new_value);
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_instance() failed for #%u: %r",
+                  __FUNCTION__, i, rc);
+            break;
+        }
+        rc = cfg_get_oid(handles[i], &oid);
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_oid() failed for #%u: %r",
+                  __FUNCTION__, i, rc);
+            break;
+        }
+        rc = cfg_get_instance_fmt(&type, &old_value,
+                                  "/agent:%s/env:%s",
+                                  CFG_OID_GET_INST_NAME(oid, 1),
+                                  CFG_OID_GET_INST_NAME(oid, 2));
+        if (rc == 0)
+        {
+            if (strcmp(new_value, old_value) != 0)
+            {
+                rc = cfg_set_instance_fmt(type, new_value,
+                                          "/agent:%s/env:%s",
+                                          CFG_OID_GET_INST_NAME(oid, 1),
+                                          CFG_OID_GET_INST_NAME(oid, 2));
+            }
+        }
+        else if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            rc = cfg_add_instance_fmt(NULL, type, new_value,
+                                      "/agent:%s/env:%s",
+                                      CFG_OID_GET_INST_NAME(oid, 1),
+                                      CFG_OID_GET_INST_NAME(oid, 2));
+        }
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed on #%u: %r", __FUNCTION__, i, rc);
+            break;
+        }
+        free(new_value); new_value = NULL;
+        free(oid); oid = NULL;
+        free(old_value); old_value = NULL;
+    }
+
+    free(new_value);
+    free(oid);
+    free(old_value);
+    free(handles);
+
+    return rc;
+}

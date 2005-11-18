@@ -476,6 +476,15 @@ extern int tapi_cfg_add_ip4_addr(cfg_handle           ip4_net,
                                  struct sockaddr_in  *ip4_addr,
                                  cfg_handle          *p_entry);
 
+/**
+ * Set Environment variables specified in /local/env on corresponding
+ * Test Agents. If such variable already exists, set new value. If
+ * it does not exist, add it with specified value.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_env_local_to_agent(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
