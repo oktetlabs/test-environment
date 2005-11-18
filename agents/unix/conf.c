@@ -108,6 +108,11 @@ struct nlmsg_list {
 };
 #endif
 
+/** Check that interface is locked for using of this TA */
+#define INTERFACE_IS_MINE(ifname) \
+    (strcmp(ifname, "lo") == 0 || \
+     rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
+
 /**
  * Type for both IPv4 and IPv6 address
  */
@@ -1069,6 +1074,9 @@ interface_list(unsigned int gid, const char *oid, char **list)
 
             if (*s == ' ')
                 s++;
+                
+            if (!INTERFACE_IS_MINE(s))
+                continue;
 
             off += snprintf(buf + off, sizeof(buf) - off, "%s ", s);
         }
@@ -1083,8 +1091,13 @@ interface_list(unsigned int gid, const char *oid, char **list)
         if (ifs != NULL)
         {
             for (p = ifs; (p->if_name != NULL) && (off < sizeof(buf)); ++p)
+            {
+                if (!INTERFACE_IS_MINE(p->if_name))
+                    continue;
+
                 off += snprintf(buf + off, sizeof(buf) - off,
                                 "%s ", p->if_name);
+            }
 
             if_freenameindex(ifs);
         }
@@ -1221,6 +1234,12 @@ interface_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     *vlan++ = 0;
+    
+    if (!INTERFACE_IS_MINE(devname))
+    {
+        free(devname);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
 
     vid = strtol(vlan, &tmp, 10);
     if (tmp == vlan || *tmp != 0 || !interface_exists(devname))
@@ -1247,11 +1266,31 @@ interface_add(unsigned int gid, const char *oid, const char *value,
 static int
 interface_del(unsigned int gid, const char *oid, const char *ifname)
 {
+    char *devname;
+    char *vlan;
+    
     UNUSED(gid);
     UNUSED(oid);
 
     if (!interface_exists(ifname))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if ((devname = strdup(ifname)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    if ((vlan = strchr(devname, '.')) == NULL)
+    {
+        free(devname);
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+    }
+    *vlan = 0;
+
+    if (!INTERFACE_IS_MINE(devname))
+    {
+        free(devname);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+    free(devname);
 
     sprintf(buf, "/sbin/vconfig rem %s", ifname);
 
@@ -1274,9 +1313,12 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
             const char *ifname)
 {
     unsigned int ifindex = if_nametoindex(ifname);;
-
+    
     UNUSED(gid);
     UNUSED(oid);
+
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (ifindex == 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1316,9 +1358,10 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(value);
 
     if (strlen(ifname) >= IF_NAMESIZE)
-    {
         return TE_RC(TE_TA_UNIX, TE_E2BIG);
-    }
+
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
         new_addr == 0 ||
@@ -1412,9 +1455,10 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(value);
 
     if (strlen(ifname) >= IF_NAMESIZE)
-    {
         return TE_RC(TE_TA_UNIX, TE_E2BIG);
-    }
+
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
         new_addr == 0 ||
@@ -1544,6 +1588,9 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     /* Check that address has not been assigned to any interface yet*/
     name = nl_find_net_addr(addr, NULL, &ip_addr, NULL, NULL);
     if (name != NULL)
@@ -1623,7 +1670,8 @@ find_net_addr(const char *ifname, const char *addr)
     int           rc;
 
     if (ifname != NULL &&
-        (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL))
+        (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL) ||
+        !INTERFACE_IS_MINE(ifname))
         return NULL;
 
     if (inet_pton(AF_INET, addr, (void *)&int_addr) <= 0)
@@ -1682,10 +1730,11 @@ net_addr_del(unsigned int gid, const char *oid,
     UNUSED(oid);
 
     /* FIXME */
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL ||
+        !INTERFACE_IS_MINE(ifname))
     {
         /* Alias does not exist from Configurator point of view */
-        return FALSE;
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if ((name = find_net_addr(ifname, addr)) == NULL)
@@ -1710,10 +1759,11 @@ net_addr_del(unsigned int gid, const char *oid,
     UNUSED(oid);
 
     /* FIXME */
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL ||
+        !INTERFACE_IS_MINE(ifname))
     {
         /* Alias does not exist from Configurator point of view */
-        return FALSE;
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if ((name = find_net_addr(ifname, addr)) == NULL)
@@ -1771,6 +1821,9 @@ net_addr_del(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
 
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     return nl_ip_addr_modify(NET_ADDR_DELETE, ifname, addr, NULL, NULL);
 }
 #endif
@@ -1809,7 +1862,8 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     UNUSED(oid);
 
     /* FIXME */
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL ||
+        !INTERFACE_IS_MINE(ifname))
     {
         /* Alias does not exist from Configurator point of view */
         return FALSE;
@@ -1971,7 +2025,8 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     UNUSED(oid);
 
     /* FIXME */
-    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL)
+    if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL ||
+        !INTERFACE_IS_MINE(ifname))
     {
         /* Alias does not exist from Configurator point of view */
         return FALSE;
@@ -2274,6 +2329,9 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
 #ifdef SIOCGIFHWADDR
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFHWADDR, (int)&req) < 0)
@@ -2358,6 +2416,9 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFMTU, (int)&req) != 0)
     {
@@ -2388,6 +2449,9 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(gid);
     UNUSED(oid);
+
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     req.ifr_mtu = strtol(value, &tmp1, 10);
     if (tmp1 == value || *tmp1 != 0)
@@ -2423,6 +2487,9 @@ arp_use_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
@@ -2453,6 +2520,9 @@ arp_use_set(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
+
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
@@ -2498,6 +2568,9 @@ status_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
     {
@@ -2524,41 +2597,15 @@ status_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-#if 0
 static int
 status_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname)
 {
-    int status;
-
     UNUSED(gid);
     UNUSED(oid);
 
-    if (!interface_exists(ifname))
+    if (!INTERFACE_IS_MINE(ifname))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (strcmp(value, "0") == 0)
-        status = 0;
-    else if (strcmp(value, "1") == 0)
-        status = 1;
-    else
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    sprintf(buf, "/sbin/ifconfig %s %s",
-            ifname, status == 1 ? "up" : "down");
-
-    if (ta_system(buf) != 0)
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-
-    return 0;
-}
-#else
-static int
-status_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname)
-{
-    UNUSED(gid);
-    UNUSED(oid);
 
     strncpy(req.ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
@@ -2587,7 +2634,6 @@ status_set(unsigned int gid, const char *oid, const char *value,
 
     return 0;
 }
-#endif
 
 /**
  * Get ARP entry value (hardware address corresponding to IPv4).
