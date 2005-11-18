@@ -1983,7 +1983,8 @@ enum tapi_iscsi_io_ops {
     ISCSI_IO_CLOSE,
     ISCSI_IO_SEEK,
     ISCSI_IO_COMPARE,
-    ISCSI_IO_WRITE
+    ISCSI_IO_WRITE,
+    ISCSI_IO_GETFILE
 };
 
 static void *
@@ -2016,6 +2017,8 @@ tapi_iscsi_io_thread(void *param)
                 {
                     rpc_wait_status status;
                     status = rpc_system(ioh->rpcs, cmd->data);
+                    cmd->length = (status.flag == RPC_WAIT_STATUS_EXITED &&
+                                   status.value == 0 ? 0 : -1);
                     break;
                 }
                 case ISCSI_IO_OPEN:
@@ -2056,6 +2059,14 @@ tapi_iscsi_io_thread(void *param)
                     cmd->length = rpc_write(ioh->rpcs, cmd->fd, 
                                             cmd->data, cmd->length);
                     break;
+#if 0
+                case ISCSI_IO_GETFILE:
+                {
+                    rpc_wait_status status;
+                    status = rpc_system(ioh->rpcs, cmd->data);
+                    rcf_ta_get_file(ioh->agent, 0, );
+                }
+#endif
             }
             pthread_testcancel();
             sem_post(&cmd->when_done);
@@ -2064,12 +2075,14 @@ tapi_iscsi_io_thread(void *param)
 }
 
 
+#if 0
 int
 tapi_iscsi_io_prepare(const char *ta, unsigned id, iscsi_io_handle_t **ioh)
 {
-    int  rc;
-    char name[10];
-    int  i;
+    int   rc;
+    char  name[10];
+    int   i;
+    pid_t 
 
     *ioh = malloc(sizeof(**ioh));
     if (*ioh == NULL)
@@ -2123,7 +2136,6 @@ tapi_iscsi_io_finish(iscsi_io_handle_t *ioh)
     return 0;
 }
 
-#if 0
 static int
 post_command(iscsi_io_handle_t *ioh, int cmd,
              int fd, off_t length, void *data,
@@ -2239,7 +2251,7 @@ tapi_iscsi_initiator_put_file(iscsi_io_handle_t ioh,
 {
     int rc;
     char destination[128];
-    char 
+    char cmd[128];
     snprintf(destination, sizeof(destination),
              "%s/%s", 
              get_initiator_mountpoint(ioh->agent, id),
