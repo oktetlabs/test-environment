@@ -1723,12 +1723,12 @@ tapi_cfg_env_local_to_agent(void)
             break;
         }
         free(new_value); new_value = NULL;
-        free(oid); oid = NULL;
+        cfg_free_oid(oid); oid = NULL;
         free(old_value); old_value = NULL;
     }
 
     free(new_value);
-    free(oid);
+    cfg_free_oid(oid);
     free(old_value);
     free(handles);
 
