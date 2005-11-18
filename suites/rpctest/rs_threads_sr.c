@@ -246,13 +246,13 @@ main(int argc, char *argv[])
         /* Create the client sockets */
         tst_s[i] = rpc_socket(pco_tst, RPC_PF_INET, RPC_SOCK_STREAM, 
                               RPC_PROTO_DEF);
-        RPC_BIND(pco_tst, tst_s[i], tst_addrs[i], iut_addrlen);
+        rpc_bind(pco_tst, tst_s[i], tst_addrs[i], iut_addrlen);
     }
 
     iut_sl = rpc_socket(pco_iut, RPC_PF_INET, RPC_SOCK_STREAM, 
                         RPC_PROTO_DEF);
-    RPC_BIND(pco_iut, iut_sl, iut_addr, iut_addrlen);
-    RPC_LISTEN(pco_iut, iut_sl, 64);
+    rpc_bind(pco_iut, iut_sl, iut_addr, iut_addrlen);
+    rpc_listen(pco_iut, iut_sl, 64);
 
     pco_iut_st =
         (rcf_rpc_server **)calloc(CLIENTS_NUM, sizeof(rcf_rpc_server *));
@@ -272,7 +272,7 @@ main(int argc, char *argv[])
     for (i = 0; i < CLIENTS_NUM; i++)
     {
         /* Connect a client socket to server */
-        RPC_CONNECT(pco_tst, tst_s[i], iut_addr, iut_addrlen);
+        rpc_connect(pco_tst, tst_s[i], iut_addr, iut_addrlen);
 
         iut_s[i] = rpc_accept(pco_iut, iut_sl, NULL, NULL);
 
