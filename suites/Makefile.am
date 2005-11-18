@@ -31,6 +31,8 @@ AUTOMAKE_OPTIONS = foreign
  
 DIST_SUBDIRS=$(TE_BS_SUITES) 
 
+EXTRA_DIST=Makefile.suites
+
 DISTCLEANFILES=Makefile.suites
 
 all:
@@ -43,3 +45,4 @@ all:
 
 uninstall-hook:
 	. ../builder.conf.processed ; rm -rf $${TE_INSTALL_SUITE}
+
