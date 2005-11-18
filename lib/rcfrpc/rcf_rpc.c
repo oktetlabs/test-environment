@@ -137,7 +137,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     char            val[RCF_RPC_NAME_LEN];
     
     /* Validate parameters */
-    if (ta == NULL || p_handle == NULL || name == NULL ||
+    if (ta == NULL || name == NULL ||
         strlen(name) >= RCF_RPC_NAME_LEN - strlen("thread_") ||
         strcmp_start("thread_", name) == 0 ||
         strcmp_start("fork_", name) == 0 ||
@@ -273,12 +273,67 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rpcs->op = RCF_RPC_CALL_WAIT;
     rpcs->def_timeout = RCF_RPC_DEFAULT_TIMEOUT;
     rpcs->sid = sid;
-    *p_handle = rpcs;
+    if (p_handle != NULL)
+        *p_handle = rpcs;
+    else
+        free(rpcs);
     
     free(val0);
 
     return 0;
 }
+
+/* See description in rcf_rpc.h */
+te_errno
+rcf_rpc_servers_restart_all(void)
+{
+    const char * const  pattern = "/agent:*/rpcserver:*";
+
+    te_errno        rc;
+    unsigned int    num;
+    cfg_handle     *handles = NULL;
+    unsigned int    i;
+    cfg_oid        *oid = NULL;
+
+    rc = cfg_find_pattern(pattern, &num, &handles);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        return 0;
+    }
+    else if (rc != 0)
+    {
+        ERROR("Failed to find by pattern '%s': %r", pattern, rc);
+        return rc;
+    }
+
+    for (i = 0; i < num; ++i)
+    {
+        rc = cfg_get_oid(handles[i], &oid);
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_oid() failed for #%u: %r",
+                  __FUNCTION__, i, rc);
+            break;
+        }
+
+        rc = rcf_rpc_server_get(CFG_OID_GET_INST_NAME(oid, 1),
+                                CFG_OID_GET_INST_NAME(oid, 2),
+                                NULL, FALSE, TRUE, TRUE, NULL);
+        if (rc != 0)
+        {
+            ERROR("%s(): rcf_rpc_server_get() failed for #%u: %r",
+                  __FUNCTION__, i, rc);
+            break;
+        }
+
+        cfg_free_oid(oid); oid = NULL;
+    }
+    cfg_free_oid(oid);
+    free(handles);
+
+    return rc;
+}
+
 
 /**
  * Perform execve() on the RPC server. Filename of the running process

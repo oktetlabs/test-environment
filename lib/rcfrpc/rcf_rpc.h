@@ -136,7 +136,7 @@ typedef struct rcf_rpc_server {
  *                      process
  * @param existing      get only existing RPC server
  * @param clear         get newly created or restarted RPC server
- * @param p_handle      location for new RPC server handle
+ * @param p_handle      location for new RPC server handle or NULL
  *
  * @return Status code
  */
@@ -255,6 +255,18 @@ rcf_rpc_server_restart(rcf_rpc_server *rpcs)
      
     return rc;       
 }
+
+/**
+ * Restart all RPC servers.
+ *
+ * @attention This function has a lot of limitations. It does not
+ *            work when fork child and thread RPC servers exist.
+ *            It does not preserve name of the dynamic library to
+ *            be used for functions name to pointer resolution.
+ *
+ * @return Status code.
+ */
+extern te_errno rcf_rpc_servers_restart_all(void);
 
 /**
  * Destroy RPC server.
