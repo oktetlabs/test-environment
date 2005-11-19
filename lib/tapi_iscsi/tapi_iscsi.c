@@ -1975,7 +1975,6 @@ get_nth_device(const char *ta, unsigned id)
     free(devlist);
     return NULL;
 }
-#endif
 
 enum tapi_iscsi_io_ops {
     ISCSI_IO_SHELL,
@@ -2017,8 +2016,9 @@ tapi_iscsi_io_thread(void *param)
                 {
                     rpc_wait_status status;
                     status = rpc_system(ioh->rpcs, cmd->data);
-                    cmd->length = (status.flag == RPC_WAIT_STATUS_EXITED &&
-                                   status.value == 0 ? 0 : -1);
+                    cmd->status = (status.flag == RPC_WAIT_STATUS_EXITED &&
+                                   status.value == 0 ? 0 : 
+                                   TE_RC(TE_TAPI, TE_ESHCMD));
                     break;
                 }
                 case ISCSI_IO_OPEN:
@@ -2031,16 +2031,23 @@ tapi_iscsi_io_thread(void *param)
                             ioh->cmds[i].fd = cmd->fd;
                         }
                     }
+                    cmd->status = (cmd->fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
                     break;
                 case ISCSI_IO_CLOSE:
-                    if (cmd->fd >= 0)
+                    if (cmd->fd < 0)
+                        cmd->status = TE_RC(TE_TAPI, TE_EBADF);
+                    else
                     {
                         rpc_close(ioh->rpcs, cmd->fd);
+                        cmd->status = 0;
                     }
                     break;
                 case ISCSI_IO_SEEK:
                     cmd->length = rpc_lseek(ioh->rpcs, cmd->fd, 
                                             cmd->length, RPC_SEEK_SET);
+                    cmd->status = (cmd->length == (off_t)-1 ?
+                                   RPC_ERRNO(ioh->rpcs) :
+                                   0);
                     break;
                 case ISCSI_IO_COMPARE:
                 {
@@ -2048,9 +2055,23 @@ tapi_iscsi_io_thread(void *param)
                     
                     if (buf != NULL)
                     {
+                        ssize_t len;
                         pthread_cleanup_push(free, buf);
-                        cmd->length = rpc_read(ioh->rpcs, cmd->fd, 
-                                               cmd->data, cmd->length);
+                        len = rpc_read(ioh->rpcs, cmd->fd, 
+                                       buf, cmd->length);
+                        if (len < 0)
+                        {
+                            cmd->length = (off_t)-1;
+                            cmd->status = RPC_ERRNO(ioh->rpcs);
+                        }
+                        else
+                        {
+                            cmd->length = (off_t)len;
+                            cmd->status = 
+                                (len == cmd->length &&
+                                 memcmp(buf, cmd->data, len) == 0 ?
+                                 0 : TE_RC(TE_TAPI, TE_EFAIL));
+                        }
                         pthread_cleanup_pop(1);
                     }
                     break;
@@ -2058,15 +2079,17 @@ tapi_iscsi_io_thread(void *param)
                 case ISCSI_IO_WRITE:
                     cmd->length = rpc_write(ioh->rpcs, cmd->fd, 
                                             cmd->data, cmd->length);
+                    cmd->status = (cmd->length == (off_t)-1 ?
+                                   RPC_ERRNO(ioh->rpcs) :
+                                   0);
                     break;
-#if 0
                 case ISCSI_IO_GETFILE:
                 {
-                    rpc_wait_status status;
-                    status = rpc_system(ioh->rpcs, cmd->data);
-                    rcf_ta_get_file(ioh->agent, 0, );
+                    cmd->status = rcf_ta_get_file(ioh->agent, 0, 
+                                                  cmd->data, 
+                                                  cmd->data);
+                    break;
                 }
-#endif
             }
             pthread_testcancel();
             sem_post(&cmd->when_done);
@@ -2075,7 +2098,6 @@ tapi_iscsi_io_thread(void *param)
 }
 
 
-#if 0
 int
 tapi_iscsi_io_prepare(const char *ta, unsigned id, iscsi_io_handle_t **ioh)
 {
@@ -2091,6 +2113,8 @@ tapi_iscsi_io_prepare(const char *ta, unsigned id, iscsi_io_handle_t **ioh)
     }
 
     strncpy((*ioh)->agent, ta, RCF_MAX_NAME - 1);
+    sprintf((*ioh)->mountpoint, 
+            "/tmp/te_iscsi_fs_%s.%u", ta, id);
     sprintf(name, "iscsi_%u", id);
     rc = rcf_rpc_server_create(ta, name, &((*ioh)->rpcs));
     if (rc != 0)
@@ -2162,11 +2186,10 @@ post_command(iscsi_io_handle_t *ioh, int cmd,
     sem_post(&ioh->cmd_wait);
     return 0;
 }
-#endif
 
-int
+te_errno
 tapi_iscsi_io_wait(iscsi_io_handle_t *ioh, unsigned id, 
-                   off_t *length, te_bool do_free)
+                   ssize_t *length, te_bool do_free)
 {
     iscsi_io_cmd_t *cmd;
     
@@ -2176,7 +2199,7 @@ tapi_iscsi_io_wait(iscsi_io_handle_t *ioh, unsigned id,
     cmd = ioh->cmds + id;
     sem_wait(&cmd->when_done);
     if (length != NULL)
-        *length = cmd->length;
+        *length = (ssize_t)cmd->length;
     if (do_free)
     {
         if (cmd->data != NULL)
@@ -2189,7 +2212,6 @@ tapi_iscsi_io_wait(iscsi_io_handle_t *ioh, unsigned id,
     return 0;
 }
 
-#if 0
 
 te_bool 
 tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, unsigned id)
@@ -2206,26 +2228,16 @@ tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, unsigned id)
     return val > 0;
 }
 
-
-static char *
-get_initiator_mountpoint(const char *ta, unsigned id)
-{
-    static char mountpoint[64];
-    sprintf(mountpoint, "/tmp/te_iscsi_fs_%s.%u", ta, id);
-    return mountpoint;
-}
-
 int 
 tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, unsigned *taskid)
 {
     char *dev = get_nth_device(ioh->agent, id);
-    char *mp;
     char  mount[128];
     
     if (dev == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
-    mp = get_initiator_mountpoint(ioh->agent, id);
-    sprintf(mount, "mkdir %s && /bin/mount %s %s", mp, dev, mp);
+    sprintf(mount, "mkdir %s && /bin/mount %s %s", ioh->mountpoint, 
+            dev, ioh->mountpoint);
     return post_command(ioh, ISCSI_IO_SHELL, 0, 0, 
                         strdup(data), FALSE, taskid);
 }
@@ -2236,15 +2248,15 @@ tapi_iscsi_initiator_unmount(iscsi_io_handle_t ioh, unsigned *taskid)
     char  mount[128];
     char *mp;
     
-    mp = get_initiator_mountpoint(ioh->agent, id);
     sprintf(mount, "/bin/umount %s && rmdir %s", 
-            mp, mp);
+            ioh->mountpoint, ioh->mountpoint);
     return post_command(ioh, ISCSI_IO_SHELL, 
                         0, 0, strdup(data), FALSE, taskid);
 }
 
 int 
 tapi_iscsi_initiator_put_file(iscsi_io_handle_t ioh,
+                              const char *localname,
                               const char *fname, 
                               const char *data,
                               unsigned *taskid)
@@ -2252,10 +2264,15 @@ tapi_iscsi_initiator_put_file(iscsi_io_handle_t ioh,
     int rc;
     char destination[128];
     char cmd[128];
+
     snprintf(destination, sizeof(destination),
-             "%s/%s", 
-             get_initiator_mountpoint(ioh->agent, id),
+             "cp /tmp/%s %s/%s", 
+             fname,
+             ioh->mountpoint,
              fname);
+    rc = rcf_ta_put_file(ioh->agent, 0, 
+                         cmd->data, 
+                         );
 
     return post_command(ioh, ISCSI_IO_SHELL, 0, 0, 
                         strdup(destination), FALSE, taskid);
