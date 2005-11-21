@@ -1893,6 +1893,7 @@ update_etc_hosts(char *ip)
     fclose(g);
     
     /* Commit all changes in config files */
+    ta_system("/usr/sbin/nscd -i hosts");
     sync();
 
     return 0;
