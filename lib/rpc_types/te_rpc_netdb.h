@@ -102,8 +102,10 @@ ai_rc_h2rpc(rpc_ai_rc rc)
         H2RPC(EAI_NONAME);
         H2RPC(EAI_AGAIN);
         H2RPC(EAI_FAIL);
+#ifdef EAI_NODATA
 #if (EAI_NODATA != EAI_NONAME)
         H2RPC(EAI_NODATA);
+#endif
 #endif
         H2RPC(EAI_FAMILY);
         H2RPC(EAI_SOCKTYPE);
