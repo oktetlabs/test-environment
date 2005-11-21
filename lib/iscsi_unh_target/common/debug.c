@@ -29,19 +29,45 @@
  * 	written permission.
  */
 
+#include "te_config.h"
+
 #include <inttypes.h>
+#include "te_defs.h"
 #include "debug.h"
 
-uint32_t iscsi_trace_mask = 
-        /*** TRACE_DEBUG | ***/
-	/*** TRACE_ISCSI_FULL | ***/
-	/*** TRACE_ISCSI | ***/
-	/*** TRACE_NET | ***/
-	/*** TRACE_BUFF | ***/
-	/*** TRACE_SEM | ***/
-	/*** TRACE_ENTER_LEAVE | ***/
-	/*** TRACE_MY_MEMORY | ***/
-	/*** TRACE_TIMERS | ***/
-	/*** TRACE_ERROR_RECOVERY | ***/
-	TRACE_ENDING;
+static int verbosity_level = ISCSI_VERBOSITY_SILENT;
+
+static char *level_map[] = {
+    "silent", "minimal",
+    "normal", "verbose", 
+    "debug",  "printall", NULL
+};
+
+te_bool
+iscsi_set_verbose(const char *level)
+{
+    char **iter;
+    for (iter = level_map; *iter != NULL; iter++)
+    {
+        if (strcmp(level, *iter) == 0)
+        {
+            verbosity_level = iter - level_map;
+            return TRUE;
+        }
+    }
+    ERROR("Unknown verbosity level '%s'", level);
+    return FALSE;
+}
+
+const char *
+iscsi_get_verbose(void)
+{
+    return level_map[verbosity_level];
+}
+
+te_bool
+iscsi_check_verbose(int level)
+{
+    return level <= verbosity_level;
+}
 

@@ -77,7 +77,7 @@ print_payload(const void *buffer, int len)
     char *fptr;
     int i;
 
-    TRACE(TRACE_DEBUG, "iSCSI Payload of length %d: ", len);
+    TRACE(DEBUG, "iSCSI Payload of length %d: ", len);
     for (i = 0, fptr = format; i < len; i++)
     {
         sprintf(fptr, "%2.2x ", ((const uint8_t *)buffer)[i]);
@@ -90,28 +90,28 @@ print_payload(const void *buffer, int len)
         }
     }
     if (fptr != format)
-        TRACE(TRACE_DEBUG, "%s", format);
+        TRACE(DEBUG, "%s", format);
 }
 
 static void
 print_rsvd_u8(int n, uint8_t rsvd)
 {
 	if (rsvd != 0)
-		TRACE(TRACE_DEBUG, "    rsvd%d: 0x%.2x", n, rsvd);
+		TRACE(DEBUG, "    rsvd%d: 0x%.2x", n, rsvd);
 }
 
 static void
 print_rsvd_u16(int n, uint16_t rsvd)
 {
 	if (rsvd != 0)
-		TRACE(TRACE_DEBUG, "    rsvd%d: 0x%.4x", n, rsvd);
+		TRACE(DEBUG, "    rsvd%d: 0x%.4x", n, rsvd);
 }
 
 static void
 print_rsvd_u32(int n, uint32_t rsvd)
 {
 	if (rsvd != 0)
-		TRACE(TRACE_DEBUG, "    rsvd%d: 0x%.8x", n, rsvd);
+		TRACE(DEBUG, "    rsvd%d: 0x%.8x", n, rsvd);
 }
 
 static void
@@ -120,7 +120,7 @@ print_rsvd_u64(int n, uint64_t rsvd)
 	char string[8];
 
 	if (rsvd != 0ll)
-		TRACE(TRACE_DEBUG, "    rsvd%d: %s", n, string_llx(rsvd, string));
+		TRACE(DEBUG, "    rsvd%d: %s", n, string_llx(rsvd, string));
 }
 
 static const char *
@@ -160,7 +160,7 @@ map_opcode_to_name(uint8_t opcode)
 static void
 print_opcode(uint8_t opcode)
 {
-	TRACE(TRACE_DEBUG, "    Opcode: %s,  I: %d", 
+	TRACE(DEBUG, "    Opcode: %s,  I: %d", 
           map_opcode_to_name(opcode & ISCSI_OPCODE),
           (opcode & I_BIT) != 0);
 }
@@ -168,27 +168,27 @@ print_opcode(uint8_t opcode)
 static void
 print_flags(uint8_t flags)
 {
-	TRACE(TRACE_DEBUG, "    flags: 0x%.2x", flags);
+	TRACE(DEBUG, "    flags: 0x%.2x", flags);
 }
 
 static void
 print_version(char *which, uint8_t version)
 {
-	TRACE(TRACE_DEBUG, "    Version%s: 0x%.2x", which, version);
+	TRACE(DEBUG, "    Version%s: 0x%.2x", which, version);
 }
 
 static void
 print_response(uint8_t response)
 {
 	if (response != 0)
-		TRACE(TRACE_DEBUG, "    Response: 0x%.2x", response);
+		TRACE(DEBUG, "    Response: 0x%.2x", response);
 }
 
 static void
 print_status(uint8_t status)
 {
 	if (status != 0)
-		TRACE(TRACE_DEBUG, "    Status: 0x%.2x", status);
+		TRACE(DEBUG, "    Status: 0x%.2x", status);
 }
 
 static void
@@ -197,59 +197,59 @@ print_lun(uint64_t lun)
 	char string[20];
 
 	if (lun != 0ll)
-		TRACE(TRACE_DEBUG, "    LUN: %s", string_llx(lun, string));
+		TRACE(DEBUG, "    LUN: %s", string_llx(lun, string));
 }
 
 static void
 print_isid_tsih(uint8_t isid[6], uint16_t tsih)
 {
-	TRACE(TRACE_DEBUG, "    ISID: 0x%.2x %.2x %.2x %.2x %.2x %.2x",
-	       isid[0], isid[1], isid[2], isid[3], isid[4], isid[5]);
-	TRACE(TRACE_DEBUG, "    TSIH: %u", ntohs(tsih));
+	TRACE(DEBUG, "    ISID: 0x%.2x %.2x %.2x %.2x %.2x %.2x",
+          isid[0], isid[1], isid[2], isid[3], isid[4], isid[5]);
+	TRACE(DEBUG, "    TSIH: %u", ntohs(tsih));
 }
 
 static void
 print_dsl(uint32_t length)
 {
 	if (length != 0)
-		TRACE(TRACE_DEBUG, "    DSL: %u", ntohl(length));
+		TRACE(DEBUG, "    DSL: %u", ntohl(length));
 }
 
 static void
 print_itt(uint32_t init_task_tag)
 {
 	if (init_task_tag == ALL_ONES)
-		TRACE(TRACE_DEBUG, "    ITT: 0x%08x", init_task_tag);
+		TRACE(DEBUG, "    ITT: 0x%08x", init_task_tag);
 	else
-		TRACE(TRACE_DEBUG, "    ITT: %u", ntohl(init_task_tag));
+		TRACE(DEBUG, "    ITT: %u", ntohl(init_task_tag));
 }
 
 static void
 print_ttt(uint32_t target_xfer_tag)
 {
 	if (target_xfer_tag == ALL_ONES)
-		TRACE(TRACE_DEBUG, "    TTT: 0x%08x", target_xfer_tag);
+		TRACE(DEBUG, "    TTT: 0x%08x", target_xfer_tag);
 	else
-		TRACE(TRACE_DEBUG, "    TTT: %u", ntohl(target_xfer_tag));
+		TRACE(DEBUG, "    TTT: %u", ntohl(target_xfer_tag));
 }
 
 static void
 print_cid(uint16_t cid)
 {
-	TRACE(TRACE_DEBUG, "    CID: %u", ntohs(cid));
+	TRACE(DEBUG, "    CID: %u", ntohs(cid));
 }
 
 static void
 print_expstatsn(uint32_t exp_stat_sn)
 {
 	if (exp_stat_sn != 0)
-		TRACE(TRACE_DEBUG, "    ExpStatSN: %u", ntohl(exp_stat_sn));
+		TRACE(DEBUG, "    ExpStatSN: %u", ntohl(exp_stat_sn));
 }
 
 static void
 print_cmdsn_expstatsn(uint32_t cmd_sn, uint32_t exp_stat_sn)
 {
-	TRACE(TRACE_DEBUG, "    CmdSN: %u", ntohl(cmd_sn));
+	TRACE(DEBUG, "    CmdSN: %u", ntohl(cmd_sn));
 	print_expstatsn(exp_stat_sn);
 }
 
@@ -257,56 +257,56 @@ static void
 print_statsn_exp_max(uint32_t stat_sn, uint32_t exp_cmd_sn, uint32_t max_cmd_sn)
 {
 	if (stat_sn != 0)
-		TRACE(TRACE_DEBUG, "    StatSN: %u", ntohl(stat_sn));
-	TRACE(TRACE_DEBUG, "    ExpCmdSN: %u", ntohl(exp_cmd_sn));
-	TRACE(TRACE_DEBUG, "    MaxCmdSN: %u", ntohl(max_cmd_sn));
+		TRACE(DEBUG, "    StatSN: %u", ntohl(stat_sn));
+	TRACE(DEBUG, "    ExpCmdSN: %u", ntohl(exp_cmd_sn));
+	TRACE(DEBUG, "    MaxCmdSN: %u", ntohl(max_cmd_sn));
 }
 
 static void
 print_residual(uint32_t resid)
 {
 	if (resid != 0)
-		TRACE(TRACE_DEBUG, "    ResidualCount: %u", ntohl(resid));
+		TRACE(DEBUG, "    ResidualCount: %u", ntohl(resid));
 }
 
 static void
 print_datasn(uint32_t data_sn)
 {
 	if (data_sn != 0)
-		TRACE(TRACE_DEBUG, "    DataSN: %u", ntohl(data_sn));
+		TRACE(DEBUG, "    DataSN: %u", ntohl(data_sn));
 }
 
 static void
 print_offset(uint32_t offset)
 {
 	if (offset != 0)
-		TRACE(TRACE_DEBUG, "    BufferOffset: %u", ntohl(offset));
+		TRACE(DEBUG, "    BufferOffset: %u", ntohl(offset));
 }
 
 static void
 print_rtt(uint32_t ref_task_tag)
 {
 	if (ref_task_tag != 0)
-		TRACE(TRACE_DEBUG, "    RTT: %u", ntohl(ref_task_tag));
+		TRACE(DEBUG, "    RTT: %u", ntohl(ref_task_tag));
 }
 
 static void
 print_exp_data_sn(uint32_t exp_data_sn)
 {
 	if (exp_data_sn != 0)
-		TRACE(TRACE_DEBUG, "    ExpDataSN: %u", ntohl(exp_data_sn));
+		TRACE(DEBUG, "    ExpDataSN: %u", ntohl(exp_data_sn));
 }
 
 static void
 print_begrun(uint32_t begrun)
 {
-	TRACE(TRACE_DEBUG, "    BegRun: %u", ntohl(begrun));
+	TRACE(DEBUG, "    BegRun: %u", ntohl(begrun));
 }
 
 static void
 print_runlen(uint32_t runlen)
 {
-	TRACE(TRACE_DEBUG, "    RunLength: %u", ntohl(runlen));
+	TRACE(DEBUG, "    RunLength: %u", ntohl(runlen));
 }
 
 void
@@ -318,7 +318,7 @@ print_init_scsi_cmnd(struct iscsi_init_scsi_cmnd *cmd)
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
 	print_itt(cmd->init_task_tag);
-	TRACE(TRACE_DEBUG, "    EDTL: %u", ntohl(cmd->xfer_len));
+	TRACE(DEBUG, "    EDTL: %u", ntohl(cmd->xfer_len));
 	print_cmdsn_expstatsn(cmd->cmd_sn, cmd->exp_stat_sn);
 	VERB
 	    ("    CDB: 0x%.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x "
@@ -342,7 +342,7 @@ print_targ_scsi_rsp(struct iscsi_targ_scsi_rsp *cmd)
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
 	print_exp_data_sn(cmd->exp_data_sn);
 	if (cmd->bidi_resid != 0)
-		TRACE(TRACE_DEBUG, "    BidiResidualCount: %u",
+		TRACE(DEBUG, "    BidiResidualCount: %u",
 		       ntohl(cmd->bidi_resid));
 	print_residual(cmd->resid);
 }
@@ -407,9 +407,9 @@ print_targ_login_rsp(struct iscsi_targ_login_rsp *cmd)
 	print_rsvd_u32(1, cmd->rsvd1);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
 	if (cmd->status_class != 0)
-		TRACE(TRACE_DEBUG, "    StatusClass: 0x%.2x", cmd->status_class);
+		TRACE(DEBUG, "    StatusClass: 0x%.2x", cmd->status_class);
 	if (cmd->status_detail != 0)
-		TRACE(TRACE_DEBUG, "    StatusDetail: 0x%.2x", cmd->status_detail);
+		TRACE(DEBUG, "    StatusDetail: 0x%.2x", cmd->status_detail);
 	print_rsvd_u16(2, cmd->rsvd2);
 	print_rsvd_u64(3, cmd->rsvd3);
 }
@@ -418,7 +418,7 @@ void
 print_init_logout_cmnd(struct iscsi_init_logout_cmnd *cmd)
 {
 	print_opcode(cmd->opcode);
-	TRACE(TRACE_DEBUG, "reasoncod: 0x%.2x", cmd->reason);
+	TRACE(DEBUG, "reasoncod: 0x%.2x", cmd->reason);
 	print_rsvd_u16(1, cmd->rsvd1);
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
@@ -443,8 +443,8 @@ print_targ_logout_rsp(struct iscsi_targ_logout_rsp *cmd)
 	print_rsvd_u32(3, cmd->rsvd3);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
 	print_rsvd_u32(4, cmd->rsvd4);
-	TRACE(TRACE_DEBUG, "    Time2Wait: 0x%.8x", ntohs(cmd->time2wait));
-	TRACE(TRACE_DEBUG, "    Tm2Retain: 0x%.8x", ntohs(cmd->time2retain));
+	TRACE(DEBUG, "    Time2Wait: 0x%.8x", ntohs(cmd->time2wait));
+	TRACE(DEBUG, "    Tm2Retain: 0x%.8x", ntohs(cmd->time2retain));
 	print_rsvd_u32(5, cmd->rsvd5);
 }
 
@@ -489,7 +489,7 @@ print_targ_rjt(struct iscsi_targ_rjt *cmd)
 	print_opcode(cmd->opcode);
 	print_flags(cmd->flags);
 	if (cmd->reason != 0)
-		TRACE(TRACE_DEBUG, "    Reason: 0x%.2x", cmd->reason);
+		TRACE(DEBUG, "    Reason: 0x%.2x", cmd->reason);
 	print_rsvd_u8(2, cmd->rsvd2);
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
@@ -542,9 +542,9 @@ print_targ_r2t(struct iscsi_targ_r2t *cmd)
 	print_itt(cmd->init_task_tag);
 	print_ttt(cmd->target_xfer_tag);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
-	TRACE(TRACE_DEBUG, "    R2TSN: %u", ntohl(cmd->r2t_sn));
+	TRACE(DEBUG, "    R2TSN: %u", ntohl(cmd->r2t_sn));
 	print_offset(cmd->offset);
-	TRACE(TRACE_DEBUG, "    DDTL: %u", ntohl(cmd->xfer_len));
+	TRACE(DEBUG, "    DDTL: %u", ntohl(cmd->xfer_len));
 }
 
 void
@@ -558,14 +558,14 @@ print_targ_async_msg(struct iscsi_targ_async_msg *cmd)
 	print_itt(cmd->init_task_tag);
 	print_rsvd_u32(3, cmd->rsvd3);
 	print_statsn_exp_max(cmd->stat_sn, cmd->exp_cmd_sn, cmd->max_cmd_sn);
-	TRACE(TRACE_DEBUG, "AsyncEvnt: %u", cmd->async_event);
-	TRACE(TRACE_DEBUG, "AsyncVCod: %u", cmd->async_vcode);
+	TRACE(DEBUG, "AsyncEvnt: %u", cmd->async_event);
+	TRACE(DEBUG, "AsyncVCod: %u", cmd->async_vcode);
 	if (cmd->parameter1 != 0)
-		TRACE(TRACE_DEBUG, "   Param1: %u", ntohs(cmd->parameter1));
+		TRACE(DEBUG, "   Param1: %u", ntohs(cmd->parameter1));
 	if (cmd->parameter2 != 0)
-		TRACE(TRACE_DEBUG, "   Param2: %u", ntohs(cmd->parameter2));
+		TRACE(DEBUG, "   Param2: %u", ntohs(cmd->parameter2));
 	if (cmd->parameter3 != 0)
-		TRACE(TRACE_DEBUG, "   Param3: %u", ntohs(cmd->parameter3));
+		TRACE(DEBUG, "   Param3: %u", ntohs(cmd->parameter3));
 	print_rsvd_u32(5, cmd->rsvd5);
 }
 
@@ -573,7 +573,7 @@ void
 print_init_task_mgt_command(struct iscsi_init_task_mgt_command *cmd)
 {
 	print_opcode(cmd->opcode);
-	TRACE(TRACE_DEBUG, "    Function: 0x%.2x", cmd->function);
+	TRACE(DEBUG, "    Function: 0x%.2x", cmd->function);
 	print_rsvd_u16(1, cmd->rsvd1);
 	print_dsl(cmd->length);
 	print_lun(cmd->lun);
@@ -581,7 +581,7 @@ print_init_task_mgt_command(struct iscsi_init_task_mgt_command *cmd)
 	print_rtt(cmd->ref_task_tag);
 	print_cmdsn_expstatsn(cmd->cmd_sn, cmd->exp_stat_sn);
 	if (cmd->ref_cmd_sn != 0)
-		TRACE(TRACE_DEBUG, "    RefCmdSN: %u", ntohl(cmd->ref_cmd_sn));
+		TRACE(DEBUG, "    RefCmdSN: %u", ntohl(cmd->ref_cmd_sn));
 	print_exp_data_sn(cmd->exp_data_sn);
 	print_rsvd_u64(4, cmd->rsvd4);
 }

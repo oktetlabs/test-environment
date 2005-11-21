@@ -278,7 +278,7 @@ iscsi_release(Scsi_Target_Device * device)
 		}
 		list_for_each_safe(list_ptr, list_temp, &devdata->bad_session_list) {
 			session = list_entry(list_ptr, struct iscsi_session, sess_link);
-			TRACE(TRACE_DEBUG, "iscsi%d: release bad session %p, tsih %u\n",
+			TRACE(DEBUG, "iscsi%d: release bad session %p, tsih %u\n",
 			  	(int) devdata->device->id, session, session->tsih);
 			iscsi_release_session(session);
 		}
@@ -335,7 +335,7 @@ build_conn_sess(struct socket *sock, struct portal_group *ptr)
 		goto out1;
 	}
 
-	TRACE(TRACE_DEBUG, "new conn %p for sock %p\n", conn, sock);
+	TRACE(DEBUG, "new conn %p for sock %p\n", conn, sock);
 
 	memset(conn, 0, sizeof(struct iscsi_conn));
 
@@ -408,7 +408,7 @@ build_conn_sess(struct socket *sock, struct portal_group *ptr)
 				goto out5;
 	}
 	init_timer(session->r2t_timer);
-	TRACE(TRACE_DEBUG, "Allocated R2T timer %p for session %p\n",
+	TRACE(DEBUG, "Allocated R2T timer %p for session %p\n",
 		  session->r2t_timer, session);
 
 	if (!(session->session_params = my_kmalloc(MAX_CONFIG_PARAMS *
@@ -441,7 +441,7 @@ out7:
 	my_kfree((void**)&session->session_params, "session_params");
 
 out6:
-	TRACE(TRACE_DEBUG, "Releasing R2T timer %p for session %p\n",
+	TRACE(DEBUG, "Releasing R2T timer %p for session %p\n",
 		  session->r2t_timer, session);
 	my_kfree((void**)&session->r2t_timer, "r2t timer");
 
@@ -666,14 +666,14 @@ iscsi_release_session(struct iscsi_session *session)
 		print_isid_tsih_message(session, "Release session with ");
 	}
 
-	TRACE(TRACE_DEBUG, "Releasing R2T timer %p for session %p\n",
+	TRACE(DEBUG, "Releasing R2T timer %p for session %p\n",
 		  session->r2t_timer, session);
 
 	/* Delete r2t timer - SAI */
 	if (session->r2t_timer) {
-		TRACE(TRACE_DEBUG, "Deleting r2t timer %p\n", session->r2t_timer);
+		TRACE(DEBUG, "Deleting r2t timer %p\n", session->r2t_timer);
 		del_timer_sync(session->r2t_timer);
-		TRACE(TRACE_DEBUG, "Deleted r2t timer\n");
+		TRACE(DEBUG, "Deleted r2t timer\n");
 		my_kfree((void**)&session->r2t_timer, "r2t timer");
 	}
 
@@ -1024,7 +1024,7 @@ iscsi_rx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
 		}
 
 		total_rx += rx_loop;
-		TRACE(TRACE_DEBUG, "iscsi_rx_data: rx_loop %d total_rx %d\n", rx_loop,
+		TRACE(DEBUG, "iscsi_rx_data: rx_loop %d total_rx %d\n", rx_loop,
 			  total_rx);
 	}
 
@@ -1324,7 +1324,7 @@ err_conn_out:
 
 	/* put this session onto end of "bad-session" list for cleanup later */
 	session = conn->session;
-	TRACE(TRACE_DEBUG, "add to list bad session %p, conn %p\n",
+	TRACE(DEBUG, "add to list bad session %p, conn %p\n",
 		  session, conn);
 
 	list_add_tail(&session->sess_link, &host->bad_session_list);
@@ -1354,7 +1354,7 @@ do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
 
 	data_length_left = req->sr_bufflen;
 
-	TRACE(TRACE_DEBUG, "Sense: %02x %02x %02x %02x %02x %02x %02x %02x\n",
+	TRACE(DEBUG, "Sense: %02x %02x %02x %02x %02x %02x %02x %02x\n",
 		  req->sr_sense_buffer[0], req->sr_sense_buffer[1],
 		  req->sr_sense_buffer[2], req->sr_sense_buffer[3],
 		  req->sr_sense_buffer[4], req->sr_sense_buffer[5],
@@ -1369,7 +1369,7 @@ do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
 			transfer = (req->sr_sense_buffer[3] << 24) |
 				(req->sr_sense_buffer[4] << 16) |
 				(req->sr_sense_buffer[5] << 8) | req->sr_sense_buffer[6];
-			TRACE(TRACE_DEBUG, "information in sense data: %d\n", transfer);
+			TRACE(DEBUG, "information in sense data: %d\n", transfer);
 		}
 
 		if ((req->sr_sense_buffer[2] & 0x20) != 0) {		/* ILI bit set */
@@ -1377,7 +1377,7 @@ do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
 		}
 	} else if (req->sr_command) {
 		/* ensure correct DataSegmentLength and ResidualCount */
-		TRACE(TRACE_DEBUG, "data_length_left %d, sr_command->resid %d\n",
+		TRACE(DEBUG, "data_length_left %d, sr_command->resid %d\n",
 				data_length_left, req->sr_command->resid);
 		data_length_left -= req->sr_command->resid;
 	}
@@ -1392,7 +1392,7 @@ do_command_status(struct iscsi_cmnd *cmnd, Scsi_Request *req,
 		flags |= UNDERFLOW_FLAG;
 	}
 
-	TRACE(TRACE_DEBUG,"data_length_left %d, residual_count %d, flags 0x%08x\n",
+	TRACE(DEBUG,"data_length_left %d, residual_count %d, flags 0x%08x\n",
 		  data_length_left, *residual_count, flags);
 
 	*data_left = data_length_left;
@@ -1524,7 +1524,7 @@ fill_iovec(struct iovec *iov, int p, int niov,
 	int count = 0;
 	__u32 sglen;
 
-	TRACE(TRACE_DEBUG, "offset: %d, data_len: %d\n", *offset, data);
+	TRACE(DEBUG, "offset: %d, data_len: %d\n", *offset, data);
 
 	iov += p;
 	while (data > 0 && p < niov) {
@@ -1543,7 +1543,7 @@ fill_iovec(struct iovec *iov, int p, int niov,
 
 		data -= iov->iov_len;
 
-		TRACE(TRACE_DEBUG, "iov %p, p %d, iov_base %p, iov_len %d\n", iov,
+		TRACE(DEBUG, "iov %p, p %d, iov_base %p, iov_len %d\n", iov,
 			  p, iov->iov_base, iov->iov_len);
 
 		p++;

@@ -31,38 +31,50 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
+#ifndef TE_LGR_USER
 #define TE_LGR_USER "UNH Target"
+#endif
+
 #include <stdio.h>
 #include "te_defs.h"
 #include "logger_api.h"
 #include "logger_defs.h"
 #include "te_errno.h"
 
-#define TRACE_ENDING		0x0000
-#define TRACE_DEBUG		0x0001
-#define TRACE_ISCSI_FULL	0x0002
-#define TRACE_ISCSI		0x0004
-#define TRACE_NET		0x0008
-#define TRACE_BUF		0x0010
-#define TRACE_SEM		0x0020
-#define TRACE_ENTER_LEAVE	0x0040
-#define TRACE_MY_MEMORY		0x0080
-#define TRACE_TIMERS		0x0100
-#define TRACE_ERROR_RECOVERY	0x0200
-#define TRACE_VERBOSE		0x0400
-#define TRACE_ALL		0xffff
+enum iscsi_verbosity_levels {
+    ISCSI_VERBOSITY_SILENT,
+    ISCSI_VERBOSITY_MINIMAL,
+    ISCSI_VERBOSITY_NORMAL,
+    ISCSI_VERBOSITY_VERBOSE,
+    ISCSI_VERBOSITY_DEBUG,
+    ISCSI_VERBOSITY_PRINTALL
+};
 
-extern uint32_t iscsi_trace_mask;
+extern te_bool iscsi_set_verbose(const char *level);
+extern const char *iscsi_get_verbose(void);
+extern te_bool iscsi_check_verbose(int level);
 
-#define TRACE(mask, args...) RING(args)
+#define TRACE(level, args...) do {                          \
+        if (iscsi_check_verbose(ISCSI_VERBOSITY_ ## level)) \
+            RING(args);                                     \
+    } while(0)
 
-#define TRACE_BUFFER(mask, buffer, len, args...)			   \
-	do {								   \
-			TRACE(mask, args);					   \
-            print_payload(buffer, len);     \
+#define TRACE_BUFFER(level, buffer, len, args...)               \
+	do {                                                        \
+			TRACE(level, args);                                 \
+            if (iscsi_check_verbose(ISCSI_VERBOSITY_PRINTALL))  \
+                print_payload(buffer, len);                     \
 	} while(0)
 
-#define TRACE_ERROR(args...) ERROR(args)			   
-#define TRACE_WARNING(args...) WARN(args)
+#define TRACE_ERROR(args...) do {                           \
+        if (iscsi_check_verbose(ISCSI_VERBOSITY_MINIMAL))   \
+            ERROR(args);                                    \
+    } while(0)
+
+#define TRACE_WARNING(args...) do {                           \
+        if (iscsi_check_verbose(ISCSI_VERBOSITY_MINIMAL))   \
+            WARN(args);                                     \
+    } while(0)
+
 
 #endif

@@ -46,7 +46,7 @@ targ_do_error_recovery(struct targ_error_rec *err_rec)
 	int retval = 0;
 	struct iscsi_conn *curr_conn;
 
-	TRACE(TRACE_ENTER_LEAVE, "Entering targ_do_error_recovery\n");
+	TRACE(DEBUG, "Entering targ_do_error_recovery\n");
 
 	if (err_rec == NULL) {
 		TRACE_ERROR("Error Recovery structure is NULL\n");
@@ -77,7 +77,7 @@ targ_do_error_recovery(struct targ_error_rec *err_rec)
 	}
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leaving targ_do_error_recovery, retval %d\n",
+	TRACE(DEBUG, "Leaving targ_do_error_recovery, retval %d\n",
 		retval);
 	return retval;
 }
@@ -92,16 +92,16 @@ targ_session_recovery(struct iscsi_conn *current_connection)
 {
 	struct iscsi_session *sess;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter targ_session_recovery\n");
+	TRACE(DEBUG, "Enter targ_session_recovery\n");
 
-	TRACE(TRACE_ISCSI,
+	TRACE(NORMAL,
 		  "Executing Target Session Recovery - cancelling Receive Thread\n");
 
 	sess = current_connection->session;
 
     iscsi_release_session(sess);
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave targ_session_recovery\n");
+	TRACE(DEBUG, "Leave targ_session_recovery\n");
 
 	return;
 }
@@ -126,7 +126,7 @@ targ_digest_recovery(struct targ_error_rec *err_rec)
 	err_type = err_rec->err_type;
 	cmd = err_rec->cmd;
 
-	TRACE(TRACE_ENTER_LEAVE, "Entering targ_digest_recovery\n");
+	TRACE(DEBUG, "Entering targ_digest_recovery\n");
 
 	if (err_rec->pdu_hdr == NULL) {
 		TRACE_ERROR("iscsi NULL PDU Header\n");
@@ -200,7 +200,7 @@ targ_digest_recovery(struct targ_error_rec *err_rec)
 
 digest_out:
 
-	TRACE(TRACE_ENTER_LEAVE, "Leaving targ_digest_recovery, retval %d\n",
+	TRACE(DEBUG, "Leaving targ_digest_recovery, retval %d\n",
 		retval);
 
 	return retval;
@@ -245,7 +245,7 @@ create_r2t_cookie(struct iscsi_cmnd *cmnd)
 {
 	struct iscsi_cookie *cookie = NULL;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter create_r2t_cookie\n");
+	TRACE(DEBUG, "Enter create_r2t_cookie\n");
 
 	cookie = malloc(sizeof(struct iscsi_cookie));
 	if (cookie == NULL) {
@@ -263,7 +263,7 @@ create_r2t_cookie(struct iscsi_cmnd *cmnd)
 
 end_iscsi_cookie:
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave create_r2t_cookie\n");
+	TRACE(DEBUG, "Leave create_r2t_cookie\n");
 
 	return cookie;
 }
@@ -275,7 +275,7 @@ free_r2t_cookie(struct iscsi_cmnd *cmnd)
 	struct iscsi_cookie *cookie = cmnd->first_r2t_cookie;
 	struct iscsi_cookie *tmp_cookie = NULL;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter free_r2t_cookie\n");
+	TRACE(DEBUG, "Enter free_r2t_cookie\n");
 
 	while (cookie) {
 		tmp_cookie = cookie;
@@ -283,7 +283,7 @@ free_r2t_cookie(struct iscsi_cmnd *cmnd)
 		free(tmp_cookie);
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leave free_r2t_cookie\n");
+	TRACE(DEBUG, "Leave free_r2t_cookie\n");
 
 	return;
 
@@ -313,7 +313,7 @@ send_recovery_r2t(struct iscsi_cmnd *cmnd, int data_offset,
 	int max_burst_len;
 	int err = 0;
 
-	TRACE(TRACE_ENTER_LEAVE, "Enter send_recovery_r2t, recovery_r2t %u\n",
+	TRACE(DEBUG, "Enter send_recovery_r2t, recovery_r2t %u\n",
 	      cmnd->recovery_r2t);
 
 	if (cmnd->recovery_r2t) {
@@ -363,7 +363,7 @@ send_recovery_r2t(struct iscsi_cmnd *cmnd, int data_offset,
 	cmnd->state = ISCSI_BUFFER_RDY;
 
 out:
-	TRACE(TRACE_ENTER_LEAVE, "Leave send_recovery_r2t, recovery_r2t %u, "
+	TRACE(DEBUG, "Leave send_recovery_r2t, recovery_r2t %u, "
 	      "err = %d\n", cmnd->recovery_r2t, err);
 	return err;
 }
@@ -398,7 +398,7 @@ iscsi_retran_thread(void *param)
 				 * R2Ts and no activity for a while.  Try
 				 * retransmitting the last R2T.
 				 */
-				TRACE(TRACE_ERROR_RECOVERY,
+				TRACE(VERBOSE,
 				      "activity timeout, ITT %u, "
 				      "recovery_r2t %u\n",
 				      cmnd->init_task_tag,
@@ -423,7 +423,7 @@ iscsi_retran_thread(void *param)
 void
 add_data_to_queue(struct iscsi_cmnd *cmd, struct iscsi_cookie *dataq)
 {
-	TRACE(TRACE_ENTER_LEAVE, "Entering add_data_to_queue\n");
+	TRACE(DEBUG, "Entering add_data_to_queue\n");
 
 	if (!cmd->first_data_q) {
 		cmd->first_data_q = dataq;
@@ -433,7 +433,7 @@ add_data_to_queue(struct iscsi_cmnd *cmd, struct iscsi_cookie *dataq)
 		cmd->last_data_q = cmd->last_data_q->next;
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leaving add_data_to_queue\n");
+	TRACE(DEBUG, "Leaving add_data_to_queue\n");
 
 	return;
 }
@@ -461,7 +461,7 @@ queue_data(struct targ_error_rec *err_rec)
 	struct scatterlist *st_list;
 	struct iovec *iov = NULL;
 
-	TRACE(TRACE_ENTER_LEAVE, "Entering queue_data\n");
+	TRACE(DEBUG, "Entering queue_data\n");
 
 	cmd = err_rec->cmd;
 	hdr = (struct iscsi_init_scsi_data_out *) err_rec->pdu_hdr;
@@ -500,7 +500,7 @@ queue_data(struct targ_error_rec *err_rec)
 		return -1;
 	}
 
-	TRACE(TRACE_DEBUG, "queue_data: no. of iovec needed %d\n", niov);
+	TRACE(DEBUG, "queue_data: no. of iovec needed %d\n", niov);
 
 	retval = fill_iovec(iov, 0, niov, st_list, &list_offset, size);
 
@@ -539,7 +539,7 @@ queue_data(struct targ_error_rec *err_rec)
 
 	add_data_to_queue(cmd, dataq);
 
-	TRACE(TRACE_ENTER_LEAVE, "Leaving queue_data\n");
+	TRACE(DEBUG, "Leaving queue_data\n");
 #endif
 
 	return 0;
@@ -557,7 +557,7 @@ search_data_q(struct iscsi_cmnd *cmd)
 	int unhook_flg = 0;
 	struct iscsi_cookie *dataq, *prev, *tmp_q;
 
-	TRACE(TRACE_ENTER_LEAVE, "Entering search_data_q\n");
+	TRACE(DEBUG, "Entering search_data_q\n");
 
 	if (!cmd->first_data_q)
 		return;
@@ -597,5 +597,5 @@ search_data_q(struct iscsi_cmnd *cmd)
 			break;
 	}
 
-	TRACE(TRACE_ENTER_LEAVE, "Leaving search_data_q\n");
+	TRACE(DEBUG, "Leaving search_data_q\n");
 }

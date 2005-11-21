@@ -31,6 +31,7 @@
 #include <stddef.h>
 #include "conf_daemons.h"
 #include <sys/wait.h>
+#include "debug.h"
 #include "chap.h"
 #include "target_negotiate.h"
 #include "iscsi_target_api.h"
@@ -712,6 +713,29 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
 }
 
 static int
+iscsi_tgt_verbose_get(unsigned int gid, const char *oid,
+                      char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    strcpy(value, iscsi_get_verbose());
+    return 0;
+}
+
+static int
+iscsi_tgt_verbose_set(unsigned int gid, const char *oid,
+                      const char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+    
+    return iscsi_set_verbose(value) ? 0 : TE_RC(TE_TA_UNIX, TE_EINVAL);
+}
+
+static int
 iscsi_target_get(unsigned int gid, const char *oid,
                  char *value, const char *instance, ...)
 {
@@ -836,13 +860,18 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_header_digest,
                     NULL, &node_iscsi_target_oper_data_digest,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_backstore_fs, "backing_store_fs", 
+RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_verbose, "verbose", 
                     NULL, NULL, 
+                    iscsi_tgt_verbose_get,
+                    iscsi_tgt_verbose_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_backstore_fs, "backing_store_fs", 
+                    NULL, &node_iscsi_tgt_verbose, 
                     iscsi_tgt_backstore_fs_get,
                     iscsi_tgt_backstore_fs_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_backing_store, "backing_store", 
-                    &node_iscsi_tgt_backstore_fs, NULL, 
+                    NULL, &node_iscsi_tgt_backstore_fs, 
                     iscsi_target_backstore_get,
                     iscsi_target_backstore_set);
 

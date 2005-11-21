@@ -5,12 +5,12 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(includedir)
 pkginclude_HEADERS = \
 	target_negotiate.h \
 	list.h \
+	debug.h \
 	iscsi_common.h \
 	text_param.h \
 	iscsi_custom.h
 
 noinst_HEADERS = \
-	debug.h \
 	range.h \
 	crc.h \
 	tcp_utilities.h \

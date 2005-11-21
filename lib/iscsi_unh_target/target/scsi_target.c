@@ -239,7 +239,7 @@ iscsi_free_device(uint8_t target, uint8_t lun)
     device = &target_map[target][lun];
     if (device->mmap_fd >= 0)
     {
-        TRACE(TRACE_ISCSI_FULL, "Unmapping device for target %d, lun %d", 
+        TRACE(VERBOSE, "Unmapping device for target %d, lun %d", 
               target, lun);
         if (munmap(device->buffer, device->buffer_size) != 0)
         {
@@ -1407,7 +1407,7 @@ get_space(Scsi_Request * req, int space /* in bytes */ )
 			st_buffer[i].length = count;
 
 
-		TRACE(TRACE_VERBOSE, "get_space: st_buffer[%d] = %d", i, st_buffer[i].length);
+		TRACE(VERBOSE, "get_space: st_buffer[%d] = %d", i, st_buffer[i].length);
 	}
 
 	req->sr_bufflen = space;
@@ -1489,7 +1489,7 @@ get_allocation_length(uint8_t *cmd)
 	case MODE_SELECT:
 		{
 			err = cmd[ALLOC_LEN_6];
-			TRACE(TRACE_VERBOSE,
+			TRACE(VERBOSE,
                   "get_allocation_length: INQUIRY/MODE SENSE/MODE SELECT length %d",
                   err);
 			break;
@@ -1501,7 +1501,7 @@ get_allocation_length(uint8_t *cmd)
 		{
 			err = (cmd[ALLOC_LEN_10] << BYTE) + cmd[ALLOC_LEN_10 + 1];
 			err *= SCSI_BLOCKSIZE;
-			TRACE(TRACE_VERBOSE, 
+			TRACE(VERBOSE, 
                   "get_allocation_length: READ_10/WRITE_10 length %d", err);
 			break;
 		}
@@ -1515,7 +1515,7 @@ get_allocation_length(uint8_t *cmd)
 			*****/
 			err = 0;
 
-			TRACE(TRACE_VERBOSE,
+			TRACE(VERBOSE,
                   "get_allocation_length: REPORT_LUNS length %d - FIXME", err);
 			break;
 		}
@@ -1526,7 +1526,7 @@ get_allocation_length(uint8_t *cmd)
 			err = cmd[4] * SCSI_BLOCKSIZE;
 			if (err == 0)
 				err = 256 * SCSI_BLOCKSIZE;
-			TRACE(TRACE_VERBOSE,
+			TRACE(VERBOSE,
                   "get_allocation_length: READ_6/WRITE_6 length %d", err);
 			break;
 		}
@@ -1878,13 +1878,13 @@ do_scsi_read(Target_Scsi_Cmnd *command, uint8_t lun,
     struct scatterlist *st_list = command->req->sr_buffer;
     int                 st_idx;
 
-    TRACE(TRACE_ISCSI_FULL, "Doing read from lun %u at %lx",
+    TRACE(VERBOSE, "Doing read from lun %u at %lx",
           lun, offset);
     dataptr = target->buffer + offset;
     for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)
     {
-        TRACE(TRACE_ISCSI_FULL, "Reading chunk %d", st_idx);
-        TRACE_BUFFER(TRACE_VERBOSE, dataptr, st_list[st_idx].length, "Read:");
+        TRACE(VERBOSE, "Reading chunk %d", st_idx);
+        TRACE_BUFFER(PRINTALL, dataptr, st_list[st_idx].length, "Read:");
         memcpy(st_list[st_idx].address, dataptr, st_list[st_idx].length);
         dataptr += st_list[st_idx].length;
     }
@@ -1900,14 +1900,14 @@ do_scsi_write(Target_Scsi_Cmnd *command, uint8_t lun,
     struct scatterlist *st_list = command->req->sr_buffer;
     int                 st_idx;
 
-    TRACE(TRACE_ISCSI_FULL, "Doing write to lun %u at %lx",
+    TRACE(VERBOSE, "Doing write to lun %u at %lx",
           lun, offset);
     dataptr = target->buffer + offset;
     for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)
     {
-        TRACE(TRACE_ISCSI_FULL, "Writing chunk %d", st_idx);
+        TRACE(VERBOSE, "Writing chunk %d", st_idx);
         memcpy(dataptr, st_list[st_idx].address, st_list[st_idx].length);
-        TRACE_BUFFER(TRACE_VERBOSE, dataptr, st_list[st_idx].length, "Written:");
+        TRACE_BUFFER(PRINTALL, dataptr, st_list[st_idx].length, "Written:");
         dataptr += st_list[st_idx].length;
     }
     return TRUE;
@@ -2063,12 +2063,12 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 	int err = 0;
 	int to_read;
 
-	TRACE(TRACE_VERBOSE, "Entering MEMORYIO handle_cmd");
+	TRACE(VERBOSE, "Entering MEMORYIO handle_cmd");
 
 	switch (cmnd->req->sr_cmnd[0]) {
         case READ_CAPACITY:
 		{
-			TRACE(TRACE_VERBOSE, "READ_CAPACITY received");
+			TRACE(VERBOSE, "READ_CAPACITY received");
 			/* perform checks on READ_CAPACITY - LATER */
 
 			/* set data direction */
@@ -2106,7 +2106,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
         
         case INQUIRY:
         {
-			TRACE(TRACE_VERBOSE, "INQUIRY received");
+			TRACE(VERBOSE, "INQUIRY received");
 			/* perform checks on INQUIRY - LATER */
 
 			/* set data direction */
@@ -2154,7 +2154,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
         case TEST_UNIT_READY:
 		{
-			TRACE(TRACE_VERBOSE, "TEST UNIT READY received");
+			TRACE(VERBOSE, "TEST UNIT READY received");
 
 			/* perform checks on TEST UNIT READY */
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
@@ -2184,7 +2184,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
         
         case MODE_SENSE:
 		{
-			TRACE(TRACE_VERBOSE, "MODE_SENSE received");
+			TRACE(VERBOSE, "MODE_SENSE received");
 			/* perform checks on MODE_SENSE - LATER */
 
 			/* set data direction */
@@ -2227,7 +2227,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
         
         case VERIFY:
 		{
-			TRACE(TRACE_VERBOSE, "VERIFY received");
+			TRACE(VERBOSE, "VERIFY received");
 			/* perform checks on TEST UNIT READY */
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
 			cmnd->req->sr_use_sg = 0;
@@ -2242,9 +2242,9 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
         case READ_10:
 		{
 			if (cmnd->req->sr_cmnd[0] == READ_6)
-				TRACE(TRACE_VERBOSE, "READ_6 received");
+				TRACE(VERBOSE, "READ_6 received");
 			else
-				TRACE(TRACE_VERBOSE, "READ_10 received");
+				TRACE(VERBOSE, "READ_10 received");
 			/* perform checks for READ_10 */
 
 			/* set data direction */
@@ -2280,9 +2280,9 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
         case WRITE_10:
 		{
 			if (cmnd->req->sr_cmnd[0] == WRITE_6)
-				TRACE(TRACE_VERBOSE, "WRITE_6 received");
+				TRACE(VERBOSE, "WRITE_6 received");
 			else
-				TRACE(TRACE_VERBOSE, "WRITE_10 received");
+				TRACE(VERBOSE, "WRITE_10 received");
 
 			if (cmnd->state == ST_NEW_CMND) {
 				/* perform checks on the received WRITE_10 */

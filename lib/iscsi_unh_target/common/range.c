@@ -48,7 +48,7 @@ free_range_list(struct order_range *head)
 
 	for (ptr = head->next; ptr != NULL; ptr = next) {
 		next = ptr->next;
-		TRACE(TRACE_ISCSI_FULL, "free range [%u..%u]\n", ptr->offset,
+		TRACE(VERBOSE, "free range [%u..%u]\n", ptr->offset,
 		      ptr->limit);
 		free(ptr);
 	}
@@ -65,7 +65,7 @@ collapse(struct order_range *here, struct order_range *next)
 		/* ranges are adjacent or overlap */
 		if (here->limit >= next->limit) {	
 			/* here range completely subsumes next range */
-			TRACE(TRACE_ISCSI, "range [%u..%u] subsumes [%u..%u]\n",
+			TRACE(NORMAL, "range [%u..%u] subsumes [%u..%u]\n",
 			      here->offset, here->limit, next->offset,
 			      next->limit);
 		} else {	
@@ -73,13 +73,13 @@ collapse(struct order_range *here, struct order_range *next)
 				lower end of next range */
 			if (here->limit > next->offset) {	
 				/* really have overlap, not just adjacency */
-				TRACE(TRACE_ISCSI,
+				TRACE(NORMAL,
 				      "range [%u..%u] overlaps [%u..%u]\n",
 				      here->offset, here->limit, next->offset,
 				      next->limit);
 			} else {	
 				/* have adjacency */
-				TRACE(TRACE_ISCSI_FULL,
+				TRACE(VERBOSE,
 				      "range [%u..%u] precedes [%u..%u]\n",
 				      here->offset, here->limit, next->offset,
 				      next->limit);
@@ -122,7 +122,7 @@ merge_offset_length(struct order_range *head, uint32_t new_offset,
 			/* new range starts at or before end of ptr range */
 			if (new_limit <= ptr->limit) {	
 				/* new range completely within ptr range */
-				TRACE(TRACE_ISCSI,
+				TRACE(NORMAL,
 				      "range [%u..%u] subsumes [%u..%u]\n",
 				      ptr->offset, ptr->limit, new_offset,
 				      new_limit);
@@ -132,12 +132,12 @@ merge_offset_length(struct order_range *head, uint32_t new_offset,
 				 */
 				if (new_offset == ptr->limit) {	
 					/* actually have adjacency */
-					TRACE(TRACE_ISCSI_FULL,
+					TRACE(VERBOSE,
 					      "range [%u..%u] precedes [%u..%u]\n",
 					      ptr->offset, ptr->limit,
 					      new_offset, new_limit);
 				} else {	/* true overlap */
-					TRACE(TRACE_ISCSI,
+					TRACE(NORMAL,
 					      "range [%u..%u] overlaps [%u..%u]\n",
 					      ptr->offset, ptr->limit,
 					      new_offset, new_limit);
@@ -155,7 +155,7 @@ merge_offset_length(struct order_range *head, uint32_t new_offset,
 		return;
 	}
 
-	TRACE(TRACE_ISCSI_FULL, "new range [%u..%u]\n", new_offset, new_limit);
+	TRACE(VERBOSE, "new range [%u..%u]\n", new_offset, new_limit);
 
 	newptr->offset = new_offset;
 	newptr->limit = new_limit;
@@ -181,7 +181,7 @@ check_range_list_complete(struct order_range *head)
 	uint32_t gap;
 	int missing;
 
-	TRACE((TRACE_ENTER_LEAVE | TRACE_ISCSI_FULL),
+	TRACE(DEBUG,
 	      "Enter check_range_list_complete [%u..%u]\n", head->offset,
 	      head->limit);
 
@@ -190,7 +190,7 @@ check_range_list_complete(struct order_range *head)
 		/* first range starts later than it 
 			was supposed to start */
 		gap = head->next->offset - head->offset;
-		TRACE(TRACE_ISCSI, "gap of %u before first range [%u..%u]\n",
+		TRACE(NORMAL, "gap of %u before first range [%u..%u]\n",
 		      gap, head->next->offset, head->next->limit);
 		missing += gap;
 	}
@@ -199,7 +199,7 @@ check_range_list_complete(struct order_range *head)
 		if (prev != NULL && prev->limit < ptr->offset) {
 			/* have a gap between the ranges of two list items */
 			gap = ptr->offset - prev->limit;
-			TRACE(TRACE_ISCSI,
+			TRACE(NORMAL,
 			      "gap of %u between range [%u..%u] and [%u..%u]\n",
 			      gap, prev->offset, prev->limit, ptr->offset,
 			      ptr->limit);
@@ -209,12 +209,12 @@ check_range_list_complete(struct order_range *head)
 	if (prev->limit < head->limit) {	
 		/* last range ends before it was supposed to end */
 		gap = head->limit - prev->limit;
-		TRACE(TRACE_ISCSI, "gap of %u after last range [%u..%u]\n", gap,
+		TRACE(NORMAL, "gap of %u after last range [%u..%u]\n", gap,
 		      prev->offset, prev->limit);
 		missing += gap;
 	}
 
-	TRACE((TRACE_ENTER_LEAVE | TRACE_ISCSI_FULL),
+	TRACE(DEBUG,
 	      "Leave check_range_list_complete, missing %d\n", missing);
 
 	return missing;

@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
         perror("can't open log file");
         return EXIT_FAILURE;
     }
-    TRACE(TRACE_VERBOSE, "Initializing");
+    TRACE(VERBOSE, "Initializing");
     iscsi_server_init();
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, NULL, 0);
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
                 /* formerly set draft number to enforce */
                 int_val = strtoul(*iter + 2, NULL, 0);
                 if (int_val != DRAFT20) {
-                    TRACE(TRACE_ISCSI, "Draft number %u ignored\n",
+                    TRACE(NORMAL, "Draft number %u ignored\n",
                           int_val / DRAFT_MULTIPLIER);
                 }
             }
@@ -174,33 +174,33 @@ int main(int argc, char *argv[])
             }
             /* chap and srp support - CHONG */
             else if (strcmp(*iter, "t") == 0) {
-                TRACE(TRACE_ISCSI, "target confirmation enabled\n");
+                TRACE(NORMAL, "target confirmation enabled\n");
                 devdata->auth_parameter.auth_flags |=
                     USE_TARGET_CONFIRMATION;
             } else if (strcmp(*iter, "b") == 0) {
-                TRACE(TRACE_ISCSI, "base64 number enabled\n");
+                TRACE(NORMAL, "base64 number enabled\n");
                 devdata->auth_parameter.auth_flags |= USE_BASE64;
                 devdata->auth_parameter.chap_local_ctx->number_format =
                     BASE64_FORMAT;
                 devdata->auth_parameter.chap_peer_ctx->number_format =
                     BASE64_FORMAT;
             } else if (strncmp(*iter, "px=", 3) == 0) {
-                TRACE(TRACE_ISCSI, "CHAP peer secret set to %s\n",
+                TRACE(NORMAL, "CHAP peer secret set to %s\n",
                       *iter + 3);
                 CHAP_SetSecret(*iter + 3,
                                devdata->auth_parameter.chap_peer_ctx);
             } else if (strncmp(*iter, "pn=", 3) == 0) {
-                TRACE(TRACE_ISCSI, "CHAP peer name set to %s\n",
+                TRACE(NORMAL, "CHAP peer name set to %s\n",
                       *iter + 3);
                 CHAP_SetName(*iter + 3,
                              devdata->auth_parameter.chap_peer_ctx);
             } else if (strncmp(*iter, "lx=", 3) == 0) {
-                TRACE(TRACE_ISCSI, "CHAP local secret set to %s\n",
+                TRACE(NORMAL, "CHAP local secret set to %s\n",
                       *iter + 3);
                 CHAP_SetSecret(*iter + 3,
                                devdata->auth_parameter.chap_local_ctx);
             } else if (strncmp(*iter, "ln=", 3) == 0) {
-                TRACE(TRACE_ISCSI, "CHAP local name set to %s\n",
+                TRACE(NORMAL, "CHAP local name set to %s\n",
                       *iter + 3);
                 CHAP_SetName(*iter + 3,
                              devdata->auth_parameter.chap_local_ctx);
@@ -210,18 +210,18 @@ int main(int argc, char *argv[])
                     TRACE_ERROR("invalid CHAP challenge length %d\n",
                                 int_val);
                 }
-                TRACE(TRACE_ISCSI, "challenge length set to %d\n",
+                TRACE(NORMAL, "challenge length set to %d\n",
                       int_val);
                 CHAP_SetChallengeLength(int_val,
                                         devdata->auth_parameter.
                                         chap_local_ctx);
             } else if (strncmp(*iter, "sx=", 3) == 0) {
-                TRACE(TRACE_ISCSI, "SRP secret set to \"%s\"\n",
+                TRACE(NORMAL, "SRP secret set to \"%s\"\n",
                       *iter + 3);
                 SRP_SetSecret(*iter + 3,
                               devdata->auth_parameter.srp_ctx);
             } else if (strncmp(*iter, "sn=", 3) == 0) {
-                TRACE(TRACE_ISCSI, "SRP name set to \"%s\"\n",
+                TRACE(NORMAL, "SRP name set to \"%s\"\n",
                       *iter + 3);
                 SRP_SetName(*iter + 3,
                             devdata->auth_parameter.srp_ctx);
