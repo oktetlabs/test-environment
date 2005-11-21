@@ -1956,6 +1956,42 @@ tapi_iscsi_target_raw_verify(const char *ta, unsigned long offset,
     return rc == 0 ? result : rc;
 }
 
+/** Asynchronous requests handler type */
+typedef te_errno (*iscsi_io_command_t)(iscsi_io_handle_t *ioh,
+                                       int *fd, const void *data, 
+                                       ssize_t length);
+
+/** Asynchronous iSCSI I/O request */
+typedef struct iscsi_io_cmd
+{
+    iscsi_io_command_t  cmd;    /**< Command handler */
+    te_errno            status; /**< Status */
+    int                 fd;     /**< File descriptor to operate on */
+    ssize_t             length; /**< Data length or seek position */
+    te_bool             spread_fd; /**< If TRUE, current fd is used for
+                                      later commands */
+    void               *data;   /**< Pointer to data */
+    sem_t               when_done; /**< Posted when a command is complete */
+} iscsi_io_cmd_t;
+
+#define MAX_ISCSI_IO_CMDS  16
+
+/** Asynchronous iSCSI I/O channel */
+struct iscsi_io_handle_t
+{
+    pthread_t       thread;     /**< A thread id that does all the stuff */
+    rcf_rpc_server *rpcs;       /**< RPC server handler for actual I/O */
+    iscsi_io_cmd_t  cmds[MAX_ISCSI_IO_CMDS]; /**< Buffer for requests */
+    sem_t           cmd_wait;   /**< Posted when a new request is added */
+    int             next_cmd;   /**< Next request number */
+    char            agent[RCF_MAX_NAME]; /**< Agent name */
+    char            mountpoint[RCF_MAX_NAME]; /**< A mount point on the
+                                                 initiator's side */
+    char            device[RCF_MAX_NAME]; /**< A SCSI device associated with
+                                             an iSCSI initiator */
+};
+
+
 /**
  * Get a SCSI device corresponding to a given iSCSI session
  * 
@@ -1997,6 +2033,10 @@ get_nth_device(const char *ta, unsigned id)
 
 #define ISCSI_IO_FILL_BUF_SIZE 1024
 
+/**
+ * The thread routine that interacts with a TA 
+ * when performing I/O operations
+ */
 static void *
 tapi_iscsi_io_thread(void *param)
 {
@@ -2278,7 +2318,8 @@ post_command(iscsi_io_handle_t *ioh, iscsi_io_command_t cmd,
 }
 
 te_errno
-tapi_iscsi_io_wait(iscsi_io_handle_t *ioh, unsigned taskid)
+tapi_iscsi_io_wait(iscsi_io_handle_t *ioh, unsigned taskid, 
+                   te_errno *status)
 {
     iscsi_io_cmd_t *cmd;
     
@@ -2292,13 +2333,16 @@ tapi_iscsi_io_wait(iscsi_io_handle_t *ioh, unsigned taskid)
         free(cmd->data);
         cmd->data = NULL;
     }
+    if (status != NULL)
+        *status = cmd->status;
     sem_post(&cmd->when_done);
     return 0;
 }
 
 
 te_bool 
-tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, unsigned taskid)
+tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, unsigned taskid,
+                          te_errno *status)
 {
     int val = 1;
 
@@ -2309,7 +2353,14 @@ tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, unsigned taskid)
 
     cmd = ioh->cmds + taskid;
     sem_getvalue(&cmd->when_done, &val);
-    return val > 0;
+    if (val == 0)
+        return FALSE;
+    else
+    {
+        if (status != NULL)
+            *status = cmd->status;
+        return TRUE;
+    }
 }
 
 te_errno
