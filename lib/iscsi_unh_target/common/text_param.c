@@ -2712,13 +2712,16 @@ iscsi_convert_param_to_str(char *buffer,
         *buffer = '\0';
     else
     {
-		if (found->type & NUMBER) 
+		if ((found->type & NUMBER) == NUMBER) 
         {
             sprintf(buffer, "%d", found->int_value);
 		} 
         else 
         {
-            strcpy(buffer, found->value_list);
+            if (found->value_list == NULL)
+                *buffer = '\0';
+            else
+                strcpy(buffer, found->value_list);
 		}
     }
 }
