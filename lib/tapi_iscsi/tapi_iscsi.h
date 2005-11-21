@@ -835,17 +835,24 @@ extern char* iscsi_digest_enum2str(iscsi_digest_type digest_type);
 
 #define MAX_ISCSI_IO_CMDS  16
 
-typedef struct iscsi_io_cmd_t
+typedef struct iscsi_io_handle_t iscsi_io_handle_t;
+typedef te_errno (*iscsi_io_command_t)(iscsi_io_handle_t *ioh,
+                                       int *fd, const void *data, 
+                                       ssize_t length);
+
+typedef struct iscsi_io_cmd
 {
-    int        cmd;
-    int        fd;
-    off_t      length;
-    te_bool    spread_fd;
-    void      *data;
-    sem_t      when_done;
+    iscsi_io_command_t  cmd;    /**< Command handler */
+    te_errno            status; /**< Status */
+    int                 fd;     /**< File descriptor to operate on */
+    ssize_t             length; /**< Data length or seek position */
+    te_bool             spread_fd; /**< If TRUE, current fd is used for
+                                      later commands */
+    void               *data;   /**< Pointer to data */
+    sem_t               when_done; /**< Posted when a command is complete */
 } iscsi_io_cmd_t;
 
-typedef struct iscsi_io_handle_t
+struct iscsi_io_handle_t
 {
     pthread_t       thread;
     rcf_rpc_server *rpcs;
@@ -854,52 +861,65 @@ typedef struct iscsi_io_handle_t
     int             next_cmd;
     char            agent[RCF_MAX_NAME];
     char            mountpoint[RCF_MAX_NAME];
-} iscsi_io_handle_t;
+    char            device[RCF_MAX_NAME];
+};
 
-extern int tapi_iscsi_io_prepare(const char *ta, unsigned id, 
+extern te_errno tapi_iscsi_io_prepare(const char *ta, unsigned id, 
                                  iscsi_io_handle_t **ioh);
 
-extern int tapi_iscsi_target_mount(const char *ta);
-extern int tapi_iscsi_target_unmount(const char *ta);
+extern te_errno tapi_iscsi_target_mount(const char *ta);
+extern te_errno tapi_iscsi_target_unmount(const char *ta);
 
-extern int tapi_iscsi_target_put_file(const char *ta, 
-                                      const char *localfname, 
-                                      const char *remotefname);
-extern int tapi_iscsi_target_get_file(const char *ta, 
-                                      const char *localfname, 
-                                      const char *remotefname);
-extern int tapi_iscsi_target_delete_file(const char *ta, 
+extern te_errno tapi_iscsi_target_put_file(const char *ta, 
+                                      const char *localfname);
+extern te_errno tapi_iscsi_target_get_file(const char *ta, 
+                                      const char *localfname);
+extern te_errno tapi_iscsi_target_delete_file(const char *ta, 
                                          const char *remotefname);
-extern int tapi_iscsi_target_raw_write(const char *ta, 
+extern te_errno tapi_iscsi_target_raw_write(const char *ta, 
                                        unsigned long offset,
                                        const char *data);
-extern int tapi_iscsi_target_raw_verify(const char *ta, 
+extern te_errno tapi_iscsi_target_raw_verify(const char *ta, 
                                         unsigned long offset,
                                         const char *data);
 
-extern int tapi_iscsi_initiator_mount(const char *ta, unsigned id, 
-                                      pid_t *pid);
-extern int tapi_iscsi_initiator_unmount(const char *ta, unsigned id, 
-                                        pid_t *pid);
 
-extern int tapi_iscsi_initiator_wait(const char *ta, pid_t pid);
+extern te_errno tapi_iscsi_initiator_wait(iscsi_io_handle_t *ioh, 
+                                     unsigned taskid);
+extern te_bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, 
+                                         unsigned taskid);
 
-extern int tapi_iscsi_initiator_put_file(const char *ta, unsigned id, 
-                                         const char *localfname, 
-                                         const char *remotefname);
-extern int tapi_iscsi_initiator_get_file(const char *ta, unsigned id,
-                                         const char *localfname, 
-                                         const char *remotefname);
-extern int tapi_iscsi_initiator_delete_file(const char *ta, int id,
-                                            const char *remotefname);
-extern int tapi_iscsi_initiator_raw_write(iscsi_io_handle_t ioh,
+extern te_errno tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, 
+                                           unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh,
+                                             unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_put_file(iscsi_io_handle_t *ioh, 
+                                         const char *localfname,
+                                         unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_get_file(iscsi_io_handle_t *ioh,
+                                         const char *localfname,
+                                         unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_delete_file(iscsi_io_handle_t *ioh,
+                                            const char *remotefname,
+                                            unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_raw_write(iscsi_io_handle_t *ioh,
                                           unsigned long offset,
-                                          const char *data);
-extern int tapi_iscsi_initiator_raw_verify(iscsi_io_handle_t ioh,
+                                          const char *data,
+                                          unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_raw_verify(iscsi_io_handle_t *ioh,
                                            unsigned long offset,
                                            const char *data, 
-                                           int tries, int time2wait);
-
+                                           unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_raw_fill(iscsi_io_handle_t *ioh,
+                                              unsigned long offset,
+                                              unsigned long repeat,
+                                              int byte, 
+                                              unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_raw_verify_fill(iscsi_io_handle_t *ioh,
+                                                     unsigned long offset,
+                                                     unsigned long repeat,
+                                                     int byte, 
+                                                     unsigned *taskid);
 
 
 #endif /* !__TE_TAPI_ISCSI_H__ */
