@@ -70,6 +70,7 @@ extern int iscsi_server_init();
         return 0;                                       \
     }
 
+/** Get CHAP peer name */
 static int
 iscsi_target_pn_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -91,6 +92,7 @@ iscsi_target_pn_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Set CHAP peer name */
 static int
 iscsi_target_pn_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -112,6 +114,7 @@ iscsi_target_pn_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Get CHAP peer secret */
 static int
 iscsi_target_px_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -134,6 +137,7 @@ iscsi_target_px_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Set CHAP peer name */
 static int
 iscsi_target_px_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -155,6 +159,7 @@ iscsi_target_px_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Get mutual auth status */
 static int
 iscsi_target_t_get(unsigned int gid, const char *oid,
                    char *value, const char *instance, ...)
@@ -171,6 +176,7 @@ iscsi_target_t_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Set mutual auth status */
 static int
 iscsi_target_t_set(unsigned int gid, const char *oid,
                    char *value, const char *instance, ...)
@@ -198,6 +204,7 @@ iscsi_target_t_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Get challenge encoding */
 static int
 iscsi_target_b_get(unsigned int gid, const char *oid,
                    char *value, const char *instance, ...)
@@ -214,6 +221,7 @@ iscsi_target_b_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Set challenge encoding */
 static int
 iscsi_target_b_set(unsigned int gid, const char *oid,
                    char *value, const char *instance, ...)
@@ -257,6 +265,7 @@ iscsi_target_b_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Get challenge length */
 static int
 iscsi_target_cl_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -275,6 +284,7 @@ iscsi_target_cl_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Set challenge length */
 static int
 iscsi_target_cl_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -304,6 +314,7 @@ iscsi_target_cl_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Get CHAP local name */
 static int
 iscsi_target_ln_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -326,6 +337,7 @@ iscsi_target_ln_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Set CHAP local name */
 static int
 iscsi_target_ln_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -347,6 +359,7 @@ iscsi_target_ln_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Get CHAP local secret */
 static int
 iscsi_target_lx_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -370,7 +383,7 @@ iscsi_target_lx_get(unsigned int gid, const char *oid,
 
 }
 
-
+/** Set CHAP local secret */
 static int
 iscsi_target_lx_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
@@ -392,32 +405,25 @@ iscsi_target_lx_set(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Get Auth method */
 static int
 iscsi_target_chap_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
-    int chap_use = strtol(value, NULL, 0);
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
 
     DEVDATA_SET_CHECK;
 
-    if (!(chap_use == 0 || chap_use == 1))
-    {
-        ERROR("%s, %d: Bad chap_use parameter provideded %d",
-              __FUNCTION__,
-              __LINE__, chap_use);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
     iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
                                 "AuthMethod",
-                                chap_use ? "CHAP,None" : "None",
+                                value,
                                 *devdata->param_tbl);
     return 0;
 }   
 
+/** Set auth method */
 static int
 iscsi_target_chap_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
@@ -426,21 +432,22 @@ iscsi_target_chap_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(value);
     UNUSED(instance);
-    sprintf(value, "0");
+
+    iscsi_convert_param_to_str(value,
+                               "AuthMethod",
+                               *devdata->param_tbl);
     return 0;
 }
 
-static int
-iscsi_target_oper_get(unsigned int gid, const char *oid,
-                      char *value, const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(instance);
-    return 0;
-}
-
+/** Maps OIDs to iSCSI parameter names algorithmically.
+ * The algoritm is as follows:
+ *  -# The OID is truncated to the rightmost object name
+ *  -# A list of special cases is looked up and the corresponding
+ *  name is used, if an OID is found in the list.
+ *  -# Otherwise, all underscores are removed and the following
+ *  letter is capitalized. Also capitalized are the first letter 
+ *  and any letter following a digit.
+ */   
 static const char *
 map_oid_to_param(const char *oid)
 {
@@ -491,6 +498,22 @@ map_oid_to_param(const char *oid)
     return param_name;
 }
 
+/** Get an operational parameter */
+static int
+iscsi_target_oper_get(unsigned int gid, const char *oid,
+                 char *value, const char *instance, ...)
+{
+    const char *param = map_oid_to_param(oid);
+    UNUSED(gid);
+    UNUSED(instance);
+
+    iscsi_convert_param_to_str(value, param,
+                               *devdata->param_tbl);
+    return 0;
+}
+
+
+/** Set an operational parameter */
 static int
 iscsi_target_oper_set(unsigned int gid, const char *oid,
                       const char *value, const char *instance, ...)
@@ -514,30 +537,10 @@ iscsi_target_oper_set(unsigned int gid, const char *oid,
 
 #define TARGET_BLOCK_SIZE 512
 
-static int
-iscsi_target_backstore_get(unsigned int gid, const char *oid,
-                           char *value, const char *instance, ...)
-{
-    te_bool  is_mmap;
-    uint32_t size;
-    int      rc;
-
-    UNUSED(gid);
-    UNUSED(instance);
-    UNUSED(oid);
-    rc = iscsi_get_device_param(0, 0, &is_mmap, &size);
-    if (rc != 0)
-        return rc;
-    if (!is_mmap)
-        *value = '\0';
-    else
-        sprintf(value, "%lu", (unsigned long)size);
-    return 0;
-}
-
 static int is_backstore_mounted;
 static char backstore_mountpoint[128];
 
+/** Mount a backing store as a loopback filesystem */
 static int
 iscsi_target_backstore_mount(void)
 {
@@ -570,6 +573,7 @@ iscsi_target_backstore_mount(void)
     return 0;
 }
 
+/** Unmount a backing store */
 static void
 iscsi_target_backstore_unmount(void)
 {
@@ -594,33 +598,25 @@ iscsi_target_backstore_unmount(void)
     }
 }
 
+/** Get the size of a target backing store */
 static int
-iscsi_tgt_backstore_fs_set(unsigned int gid, const char *oid,
-                           const char *value, const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(instance);
-    UNUSED(oid);
-
-    if (strcmp(value, backstore_mountpoint) != 0)
-    {
-        while (is_backstore_mounted > 0)
-            iscsi_target_backstore_unmount();
-    }
-
-    strcpy(backstore_mountpoint, value);
-    return *value == '\0' ? 0 : iscsi_target_backstore_mount();
-}
-
-static int
-iscsi_tgt_backstore_fs_get(unsigned int gid, const char *oid,
+iscsi_target_backstore_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
+    te_bool  is_mmap;
+    uint32_t size;
+    int      rc;
+
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(oid);
-
-    strcpy(value, backstore_mountpoint);
+    rc = iscsi_get_device_param(0, 0, &is_mmap, &size);
+    if (rc != 0)
+        return rc;
+    if (!is_mmap)
+        *value = '\0';
+    else
+        sprintf(value, "%lu", (unsigned long)size);
     return 0;
 }
 
@@ -683,7 +679,13 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
             ERROR("Cannot create backing store: %s", strerror(rc));
             return TE_OS_RC(TE_TA_UNIX, rc);
         }
-        lseek(fd, size - 1, SEEK_SET);
+        if (lseek(fd, size - 1, SEEK_SET) == (off_t)-1)
+        {
+            rc = errno;
+            ERROR("Cannot seek to %lu: %s", (unsigned long)size,
+                  strerror(rc));
+            return TE_OS_RC(TE_TA_UNIX, rc);
+        }
         if (write(fd, zero, 1) < 1)
         {
             rc = errno;
@@ -712,6 +714,40 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
     }
 }
 
+
+/** Set a backing store mount point */
+static int
+iscsi_tgt_backstore_mp_set(unsigned int gid, const char *oid,
+                           const char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    if (strcmp(value, backstore_mountpoint) != 0)
+    {
+        while (is_backstore_mounted > 0)
+            iscsi_target_backstore_unmount();
+    }
+
+    strcpy(backstore_mountpoint, value);
+    return *value == '\0' ? 0 : iscsi_target_backstore_mount();
+}
+
+/** Get a backing store mount point */
+static int
+iscsi_tgt_backstore_mp_get(unsigned int gid, const char *oid,
+                           char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    strcpy(value, backstore_mountpoint);
+    return 0;
+}
+
+/** Get a target verbosity level */
 static int
 iscsi_tgt_verbose_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
@@ -724,6 +760,7 @@ iscsi_tgt_verbose_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/** Set a target verbosity level */
 static int
 iscsi_tgt_verbose_set(unsigned int gid, const char *oid,
                       const char *value, const char *instance, ...)
@@ -735,15 +772,15 @@ iscsi_tgt_verbose_set(unsigned int gid, const char *oid,
     return iscsi_set_verbose(value) ? 0 : TE_RC(TE_TA_UNIX, TE_EINVAL);
 }
 
+/** A stub for a target topmost object */
 static int
 iscsi_target_get(unsigned int gid, const char *oid,
                  char *value, const char *instance, ...)
 {
     UNUSED(gid);
+    UNUSED(oid);
     UNUSED(instance);
-    iscsi_convert_param_to_str(value,
-                               map_oid_to_param(oid),
-                               *devdata->param_tbl);
+    *value = '\0';
     return 0;
 }
 
@@ -865,13 +902,13 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_verbose, "verbose",
                     iscsi_tgt_verbose_get,
                     iscsi_tgt_verbose_set);
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_backstore_fs, "backing_store_fs", 
+RCF_PCH_CFG_NODE_RW(node_iscsi_tgt_backstore_mp, "backing_store_mp", 
                     NULL, &node_iscsi_tgt_verbose, 
-                    iscsi_tgt_backstore_fs_get,
-                    iscsi_tgt_backstore_fs_set);
+                    iscsi_tgt_backstore_mp_get,
+                    iscsi_tgt_backstore_mp_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_backing_store, "backing_store", 
-                    NULL, &node_iscsi_tgt_backstore_fs, 
+                    NULL, &node_iscsi_tgt_backstore_mp, 
                     iscsi_target_backstore_get,
                     iscsi_target_backstore_set);
 
