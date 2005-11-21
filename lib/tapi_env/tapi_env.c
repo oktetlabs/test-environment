@@ -40,6 +40,7 @@
 #include "tapi_cfg.h"
 #include "tapi_cfg_net.h"
 #include "tapi_cfg_base.h"
+#include "tapi_cfg_ip6.h"
 #include "tapi_rpc.h"
 #include "tapi_sockaddr.h"
 
@@ -928,7 +929,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             else if (env_addr->type == TAPI_ENV_ADDR_FAKE_UNICAST)
             {
                 rc = tapi_env_allocate_addr(env_addr->net, AF_INET,
-                                          &env_addr->addr, NULL);
+                                            &env_addr->addr, NULL);
                 if (rc != 0)
                 {
                     ERROR("Failed to allocate additional IPv4 "
@@ -1001,6 +1002,41 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
                     SIN(ip4)->sin_addr.s_addr;
 
                 free(ip4);
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_LINKLOCAL)
+            {
+                char       *oid_string;
+                cfg_oid    *oid_struct;
+
+                val_type = CVT_STRING;
+                rc = cfg_get_instance(handle, &val_type, &oid_string);
+                if (rc != 0)
+                {
+                    ERROR("Failed to get instance value by handle "
+                          "0x%x: %r", handle, rc);
+                    return rc;
+                }
+                oid_struct = cfg_convert_oid_str(oid_string);
+                if (oid_struct == NULL)
+                {
+                    ERROR("Failed to convert OID '%s' to structure",
+                          oid_string);
+                    free(oid_string);
+                    return TE_RC(TE_TAPI, TE_EINVAL);
+                }
+
+                rc = tapi_cfg_ip6_get_linklocal_addr(
+                         CFG_OID_GET_INST_NAME(oid_struct, 1),
+                         CFG_OID_GET_INST_NAME(oid_struct, 2),
+                         SIN6(env_addr->addr));
+                if (rc != 0)
+                {
+                    ERROR("Failed to get link-local address for '%s': %r",
+                          oid_string, rc);
+                    free(oid_string);
+                }
+                free(oid_string);
+                cfg_free_oid(oid_struct);
             }
             else if (env_addr->type == TAPI_ENV_ADDR_WILDCARD)
             {

@@ -31,7 +31,7 @@ IUT|tester          {
                             TAPI_ENV_IUT : TAPI_ENV_TESTER;
                         return ENTITY_TYPE;
                     }
-loopback|unicast|broadcast|wildcard|alien|multicast|fake|ip4mapped_uc|mcast_all_hosts {
+loopback|unicast|broadcast|wildcard|alien|multicast|fake|ip4mapped_uc|mcast_all_hosts|linklocal {
     yylval.number = (strcmp(yytext, "loopback") == 0) ?
                         TAPI_ENV_ADDR_LOOPBACK :
                     (strcmp(yytext, "unicast") == 0) ?
@@ -48,6 +48,8 @@ loopback|unicast|broadcast|wildcard|alien|multicast|fake|ip4mapped_uc|mcast_all_
                         TAPI_ENV_ADDR_MCAST_ALL_HOSTS :
                     (strcmp(yytext, "ip4mapped_uc") == 0) ?
                         TAPI_ENV_ADDR_IP4MAPPED_UC :
+                    (strcmp(yytext, "linklocal") == 0) ?
+                        TAPI_ENV_ADDR_LINKLOCAL :
                         TAPI_ENV_ADDR_FAKE_UNICAST;
     return ADDR_TYPE;
 }

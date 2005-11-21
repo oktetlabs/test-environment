@@ -210,6 +210,7 @@ typedef enum {
     TAPI_ENV_ADDR_ALIEN,            /**< Address not assigned to any 
                                          interface of the host */
     TAPI_ENV_ADDR_IP4MAPPED_UC,     /**< Unicast IPv4-mapped IPv6 address */
+    TAPI_ENV_ADDR_LINKLOCAL,        /**< Link-local IPv6 address */
 } tapi_env_addr_type;
 
 
