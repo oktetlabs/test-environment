@@ -464,8 +464,10 @@ log_serial(void *ready, int argc, char *argv[])
     fence   = buffer + TE_LOG_FIELD_MAX;
     *fence  = '\0';
     
+#if 0
     pthread_cleanup_push((void (*)(void *))close_conserver_cleanup, 
                          (void *)(long)poller.fd);
+#endif
     pthread_cleanup_push(free, buffer);
     pthread_cleanup_push(free, other_buffer);
     for (;;)
@@ -525,7 +527,9 @@ log_serial(void *ready, int argc, char *argv[])
     }
     pthread_cleanup_pop(1); /* free other buffer */
     pthread_cleanup_pop(1); /* free buffer */
+#if 0
     pthread_cleanup_pop(1); /* close fd */
+#endif
     return 0;
 #undef MAYBE_DO_LOG
 }
