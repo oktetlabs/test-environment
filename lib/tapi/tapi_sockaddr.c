@@ -442,6 +442,14 @@ sockaddr2str(const struct sockaddr *sa)
         return "<Cannot convert network address>";
     }
     snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "%s:%hu", addr_buf, ntohs(port));
+    if (sa->sa_family == AF_INET6 &&
+        IN6_IS_ADDR_LINKLOCAL(&SIN6(sa)->sin6_addr))
+    {
+        size_t len = strlen(ptr);
+
+        snprintf(ptr + len, SOCKADDR2STR_ADDRSTRLEN - len,
+                 "<%u>", (unsigned)(SIN6(sa)->sin6_scope_id));
+    }
 
 #undef N_BUFS
 #undef SOCKADDR2STR_ADDRSTRLEN
