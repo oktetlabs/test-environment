@@ -37,11 +37,11 @@ TE_TA_TYPE([linux_lite], [], [unix],
 #
 # FreeBSD5 platform
 #
-TE_PLATFORM([i686-pc-freebsd5], [],
+TE_PLATFORM([i686-pc-freebsd6], [],
             [-I${FREEBSD5_HOME}/sys-include], [-L${FREEBSD5_HOME}/lib],
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
-TE_TA_TYPE([freebsd5], [i686-pc-freebsd5], [unix],
+TE_TA_TYPE([freebsd6], [i686-pc-freebsd6], [unix],
            [--with-rcf-rpc], [], [], [comm_net_agent])
 
 #
