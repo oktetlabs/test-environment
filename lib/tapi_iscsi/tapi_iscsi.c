@@ -442,7 +442,7 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
             ERROR("%s(): trrecv_get on B failed %r", __FUNCTION__, rc);
             goto cleanup;
         } 
-        RING("%s(): a %d, b %d, new a %d, new b %d", 
+        INFO("%s(): a %d, b %d, new a %d, new b %d", 
              __FUNCTION__, prev_pkts_a, prev_pkts_b, pkts_a, pkts_b);
 
     } while(prev_pkts_a < pkts_a || prev_pkts_b < pkts_b);
@@ -537,7 +537,7 @@ tapi_iscsi_get_key_index_by_name(iscsi_segment_data data, char *name)
     }
     if (key_index == key_num)
     {
-        RING("There is no key %s in Segment Data", name);
+        INFO("There is no key %s in Segment Data", name);
         return TAPI_ISCSI_KEY_INVALID;
     }
     return key_index;
@@ -1224,7 +1224,7 @@ tapi_iscsi_target_customize(const char *ta, int id,
     te_errno remote_rc;
     te_errno local_rc;
     
-    RING("Setting %s to %s on %s:%d", key, value, ta, id);
+    INFO("Setting %s to %s on %s:%d", key, value, ta, id);
     local_rc = rcf_ta_call(ta, 0, "iscsi_set_custom_value", &remote_rc,
                            3, FALSE, 
                            RCF_INT32, id,
@@ -1452,7 +1452,7 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
     
-    RING("Set %s (%s, target=%d, cid=%d param=%d) to %s, %s advertizing", 
+    INFO("Set %s (%s, target=%d, cid=%d param=%d) to %s, %s advertizing", 
          log_mapping[param], 
          ta, target_id, cid, param, value, advertize ? "with":"without");
     
@@ -1537,7 +1537,7 @@ tapi_iscsi_initiator_conn_establish(const char *ta,
     
     sprintf(cmd, "%d", cid);
 
-    RING("Setting: /agent:%s/iscsi_initiator:/target_data:"
+    INFO("Setting: /agent:%s/iscsi_initiator:/target_data:"
          "target_%d/conn:%d/cid:", ta, tgt_id, cid);
 
     rc = cfg_set_instance_fmt(CVT_STRING, (void *)cmd,
@@ -1629,7 +1629,7 @@ tapi_iscsi_initiator_add_target(const char *ta,
             return -EINVAL;
     }
 
-    RING("Initiator (%s): add Target: addr=%s, port=%d",
+    INFO("Initiator (%s): add Target: addr=%s, port=%d",
          ta, target_addr_param, target_port);
     
     rc = cfg_add_instance_fmt(&handle, CVT_STRING,
