@@ -106,7 +106,7 @@ tad_iscsi_gen_bin_cb(csap_p csap_descr, unsigned int layer,
     if (rc == 0 && spec_data->send_mode == ISCSI_SEND_USUAL) 
         spec_data->send_mode = ISCSI_SEND_LAST;
 
-    RING("%s(): read last-data rc: %r", __FUNCTION__, rc);
+    INFO("%s(): read last-data rc: %r", __FUNCTION__, rc);
 
     pkt_list->data = up_payload->data;
     pkt_list->len  = up_payload->len;
@@ -194,7 +194,7 @@ tad_iscsi_match_bin_cb(csap_p           csap_descr,
 
     if (defect > 0)
     {
-        RING("%s(CSAP %d) wait more %d bytes...", 
+        INFO("%s(CSAP %d) wait more %d bytes...", 
              __FUNCTION__, csap_descr->id, defect);
         rc = TE_ETADLESSDATA;
         goto cleanup;
