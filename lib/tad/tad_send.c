@@ -486,7 +486,7 @@ tad_convert_payload(const asn_value *ndn_payload,
                                           "function");
                 if (rc != 0)
                     break;
-                RING("%s(): stream function <%s>", __FUNCTION__, func_name);
+                INFO("%s(): stream function <%s>", __FUNCTION__, func_name);
                 if ((pld_spec->stream.func = (tad_stream_callback) 
                                     rcf_ch_symbol_addr(func_name, 1)) 
                     == NULL)
