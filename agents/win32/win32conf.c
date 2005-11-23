@@ -171,6 +171,20 @@ static int neigh_del(unsigned int, const char *,
                      const char *, const char *);
 static int neigh_list(unsigned int, const char *, char **, const char *);
 
+/* 
+ * This is a bit of hack - there are same handlers for static and dynamic
+ * branches, handler discovers dynamic subtree by presence of
+ * "dynamic" in OID. But list method does not contain the last subid.
+ */
+static int
+neigh_dynamic_list(unsigned int gid, const char *oid, char **list, 
+                   const char *ifname)
+{
+    UNUSED(oid);
+    
+    return neigh_list(gid, "dynamic", list, ifname);
+}                   
+
 static int route_metric_get(unsigned int, const char *, char *,
                             const char *);
 static int route_metric_set(unsigned int, const char *, const char *,
@@ -203,7 +217,7 @@ static rcf_pch_cfg_object node_neigh_dynamic =
     { "neigh_dynamic", 0, &node_neigh_state, NULL,
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
-      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
+      (rcf_ch_cfg_list)neigh_dynamic_list, NULL, NULL};
       
 static rcf_pch_cfg_object node_neigh_static =
     { "neigh_static", 0, NULL, &node_neigh_dynamic,
