@@ -1801,7 +1801,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
     {
         int fd;
 
-        RING("Create CSAP '%s' (%s:%d) with parameters:\n%Tf",
+        INFO("Create CSAP '%s' (%s:%d) with parameters:\n%Tf",
              stack_id, ta_name, session, params);
         if ((fd = open(params, O_RDONLY)) < 0)
         {
@@ -2011,7 +2011,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     if (templ == NULL || strlen(templ) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
         
-    RING("Start %s send operation on the CSAP %d (%s:%d) with "
+    INFO("Start %s send operation on the CSAP %d (%s:%d) with "
          "template:\n%Tf", rcf_call_mode2str(blk_mode), csap_id,
          ta_name, session, templ);
 
@@ -2126,7 +2126,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     msg.num = num;
     msg.timeout = timeout;
 
-    RING("Starting receive operation on the CSAP %d (%s:%d) with "
+    INFO("Starting receive operation on the CSAP %d (%s:%d) with "
          "pattern\n%Tf", csap_id, ta_name, session, pattern);
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
@@ -2187,7 +2187,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     {
         assert(msg.file != NULL);
 
-        RING("Traffic receive operation on the CSAP %d (%s:%d) got "
+        INFO("Traffic receive operation on the CSAP %d (%s:%d) got "
              "packet\n%Tf", csap_id, ta_name, session, msg.file);
         if (handler != NULL)
             handler(msg.file, user_param);
@@ -2222,13 +2222,13 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
 {
     te_errno rc;
 
-    RING("Waiting for receive operation on the CSAP %d (%s:%d) ...",
+    INFO("Waiting for receive operation on the CSAP %d (%s:%d) ...",
          csap_id, ta_name, session);
 
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
                           user_param, num, RCFOP_TRRECV_WAIT);
 
-    RING("Finished receive operation on the CSAP %d (%s:%d) got %d "
+    INFO("Finished receive operation on the CSAP %d (%s:%d) got %d "
          "packets : %r", csap_id, ta_name, session,
          (num == NULL) ? -1 : (int)*num, rc);
 
@@ -2244,13 +2244,13 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
 {
     te_errno rc;
 
-    RING("Stopping receive operation on the CSAP %d (%s:%d) ...",
+    INFO("Stopping receive operation on the CSAP %d (%s:%d) ...",
          csap_id, ta_name, session);
 
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
                           user_param, num, RCFOP_TRRECV_STOP); 
 
-    RING("Stopped receive operation on the CSAP %d (%s:%d) got %d "
+    INFO("Stopped receive operation on the CSAP %d (%s:%d) got %d "
          "packets : %r", csap_id, ta_name, session,
          (num == NULL) ? -1 : (int)*num, rc);
 
@@ -2272,7 +2272,7 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
                           user_param, num, RCFOP_TRRECV_GET);
 
-    RING("Traffic receive operation on the CSAP %d (%s:%d) got %d "
+    INFO("Traffic receive operation on the CSAP %d (%s:%d) got %d "
          "packets : %r", csap_id, ta_name, session,
          (num == NULL) ? -1 : (int)*num, rc);
 
@@ -2350,7 +2350,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     msg.handle = csap_id;
     msg.intparm = handler == NULL ? 0 : TR_RESULTS;
     
-    RING("Start send/receive operation on the CSAP %d (%s:%d) "
+    INFO("Start send/receive operation on the CSAP %d (%s:%d) "
          "with timeout %u ms, handler=%p (param=%p), pattern:\n%Tf",
          csap_id, ta_name, session, timeout, handler, user_param, templ);
 
@@ -2365,7 +2365,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
         assert(handler != NULL);
         assert(msg.file != NULL);
 
-        RING("Traffic send/receive operation on the CSAP %d (%s:%d) got "
+        INFO("Traffic send/receive operation on the CSAP %d (%s:%d) got "
              "packet\n%Tf", csap_id, ta_name, session, msg.file);
 
         handler(msg.file, user_param);
