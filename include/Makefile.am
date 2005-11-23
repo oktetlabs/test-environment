@@ -29,7 +29,7 @@ AUTOMAKE_OPTIONS = foreign
 
 te_headers = te_defs.h te_errno.h te_proto.h te_stdint.h te_printf.h \
              comm_agent.h rcf_methods.h rcf_common.h tad_common.h \
-             rcf_rpc_defs.h \
+             rcf_rpc_defs.h cs_common.h \
              te_raw_log.h logger_api.h logger_defs.h logger_int.h \
              rcf_internal.h rcf_pch_mem.h te_config.h te_expand.h
 

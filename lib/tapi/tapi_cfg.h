@@ -302,31 +302,36 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
 }
 
 /**
- * Get ARP entry on specified agent
+ * Get neighbour entry.
  *
- * @param ta            Test agent name
- * @param net_addr      IPv4 network address
+ * @param ta            Test Agent name
+ * @param ifname        Interface name
+ * @param net_addr      IP address
  * @param ret_addr      Returned IEEE 802.3 Link layer address
  * @param is_static     NULL or location for a flag: is found entry static?
+ * @param state         NULL or location for state of dynamic entry
  *
  * @return Status code
  *
  * @retval 0    on success
  *
- * @note Currently the function supports only (IPv4 -> IEEE 802.3 ethernet) 
+ * @note Currently the function supports only (IP -> IEEE 802.3 ethernet) 
  * entries. In the future it might be extended with an additional parameter
  * hw_type to support different classes of link layer addresses.
  */
-extern int tapi_cfg_get_arp_entry(const char *ta,
-                                  const void *net_addr,
-                                  void       *ret_addr,
-                                  te_bool    *is_static);
+extern te_errno tapi_cfg_get_neigh_entry(const char *ta,
+                                         const char *ifname, 
+                                         const struct sockaddr *net_addr,
+                                         void *ret_addr,
+                                         te_bool *is_static, 
+                                         cs_neigh_entry_state *state);
 
 /**
- * Add a new static ARP entry on specified agent
+ * Add a new neighbour entry.
  *
- * @param ta            Test agent name
- * @param net_addr      IPv4 network address
+ * @param ta            Test Agent name
+ * @param ifname        Interface name
+ * @param net_addr      IP address
  * @param link_addr     IEEE 802.3 Link layer address
  * @param is_static     Is static (or dynamic) entry should be added
  *
@@ -334,42 +339,48 @@ extern int tapi_cfg_get_arp_entry(const char *ta,
  *
  * @retval 0  - on success
  *
- * @note Currently the function supports only (IPv4 -> IEEE 802.3 ethernet) 
+ * @note Currently the function supports only (IP -> IEEE 802.3 ethernet) 
  * entries. In the future it might be extended with an additional parameter
  * hw_type to support different classes of link layer addresses.
  */
-extern int tapi_cfg_add_arp_entry(const char *ta,
-                                  const void *net_addr,
-                                  const void *link_addr,
-                                  te_bool     is_static);
+extern te_errno tapi_cfg_add_neigh_entry(const char *ta,
+                                         const char *ifname, 
+                                         const struct sockaddr *net_addr,
+                                         const void *link_addr,
+                                         te_bool is_static);
 
 /**
- * Delete a particular ARP entry from ARP table on specified agent
+ * Delete a neighbour entry.
  *
- * @param ta           Test agent name
- * @param net_addr     IPv4 network address
+ * @param ta           Test Agent name
+ * @param ifname       Interface name
+ * @param net_addr     IP address
  *
  * @return Status code
  *
  * @retval 0  - on success
  *
- * @note Currently the function supports only (IPv4 -> IEEE 802.3 ethernet) 
+ * @note Currently the function supports only (IP -> IEEE 802.3 ethernet) 
  * entries. In the future it might be extended with an additional parameter
  * address_family to support different classes of link layer addresses.
  */
-extern int tapi_cfg_del_arp_entry(const char *ta,
-                                  const void *net_addr);
+extern te_errno tapi_cfg_del_neigh_entry(const char *ta,
+                                         const char *ifname, 
+                                         const struct sockaddr *net_addr);
 
 /**
- * Clenup dynamic ARP entries on the Agent.
+ * Clenup dynamic neighbour entries.
  *
  * @param ta           Test agent name
+ * @param ifname       Interface name or NULL if all interfaces should
+ *                     be processed
  *
  * @return Status code
  *
  * @retval 0  - on success
  */
-extern int tapi_cfg_del_arp_dynamic(const char *ta);
+extern te_errno tapi_cfg_del_neigh_dynamic(const char *ta, 
+                                           const char *ifname);
 
 /**
  * Returns hardware address of specified interface on a particular 

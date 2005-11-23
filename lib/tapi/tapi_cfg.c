@@ -90,9 +90,12 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              uint32_t flags, int metric, int tos, int mtu,
                              int win, int irtt, cfg_handle *cfg_hndl);
 
-static int tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta,
-                           const void *net_addr, const void *link_addr,
-                           void *ret_addr, te_bool *is_static);
+static int tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
+                             const char *ifname, 
+                             const struct sockaddr *net_addr, 
+                             const void *link_addr,
+                             void *ret_addr, te_bool *is_static, 
+                             cs_neigh_entry_state *state);
 
 
 /* See description in tapi_cfg.h */
@@ -675,46 +678,76 @@ tapi_cfg_del_route(cfg_handle *rt_hndl)
 }
 
 /* See the description in tapi_cfg.h */
-int
-tapi_cfg_get_arp_entry(const char *ta, const void *net_addr,
-                       void *ret_addr, te_bool *is_static)
+te_errno
+tapi_cfg_get_neigh_entry(const char *ta, const char *ifname, 
+                         const struct sockaddr *net_addr,
+                         void *ret_addr, te_bool *is_static, 
+                         cs_neigh_entry_state *state)
 {
-    return tapi_cfg_arp_op(OP_GET, ta, net_addr, NULL, ret_addr,
-                           is_static);
+    return tapi_cfg_neigh_op(OP_GET, ta, ifname, net_addr, NULL, 
+                             ret_addr, is_static, state);
 }
 
 /* See the description in tapi_cfg.h */
-int
-tapi_cfg_add_arp_entry(const char *ta, const void *net_addr,
-                       const void *link_addr, te_bool is_static)
+te_errno
+tapi_cfg_add_neigh_entry(const char *ta, const char *ifname, 
+                         const struct sockaddr *net_addr,
+                         const void *link_addr, te_bool is_static)
 {
-    return tapi_cfg_arp_op(OP_ADD, ta, net_addr, link_addr, NULL,
-                           &is_static);
+    return tapi_cfg_neigh_op(OP_ADD, ta, ifname, net_addr, link_addr, NULL,
+                             &is_static, NULL);
 }
 
 /* See the description in tapi_cfg.h */
-int
-tapi_cfg_del_arp_entry(const char *ta, const void *net_addr)
+te_errno
+tapi_cfg_del_neigh_entry(const char *ta, const char *ifname, 
+                         const struct sockaddr *net_addr)
 {
-    return tapi_cfg_arp_op(OP_DEL, ta, net_addr, NULL, NULL, NULL);
+    return tapi_cfg_neigh_op(OP_DEL, ta, ifname, net_addr, NULL, 
+                             NULL, NULL, NULL);
 }
 
 /* See the description in tapi_cfg.h */
-int
-tapi_cfg_del_arp_dynamic(const char *ta)
+te_errno
+tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
 {
     cfg_handle     *hndls = NULL;
     unsigned int    num;
     unsigned int    i;
     te_errno        rc;
     te_errno        result = 0;
+    
+    if (ifname == NULL)
+    {
+        if ((rc = cfg_find_pattern_fmt(&num, &hndls,
+                                       "/agent:%s/interface:*", 
+                                       ta)) != 0)
+        {
+            return rc;
+        }
+        for (i = 0; i < num; i++)
+        {
+            char *name = NULL; 
+            
+            if ((rc = cfg_get_inst_name(hndls[i], &name)) != 0 ||
+                (rc = tapi_cfg_del_neigh_dynamic(ta, name)) != 0)
+            {
+                TE_RC_UPDATE(result, rc);
+            }
+            free(name);
+        }
+        free(hndls);
+        
+        return result;
+    }
 
-    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/volatile:", ta);
-    if (rc != 0)
+    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s", 
+                                  ta, ifname)) != 0)
         return rc;
 
     if ((rc = cfg_find_pattern_fmt(&num, &hndls,
-                                   "/agent:%s/volatile:/arp:*", ta)) != 0)
+                                   "/agent:%s/interface:*/neigh_dynamic:*", 
+                                   ta)) != 0)
     {
         return rc;
     }
@@ -986,31 +1019,38 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 }
 
 /**
- * Perform specified operation with ARP table
+ * Perform specified operation with neighbour cache.
  * 
  * @param op            Operation
  * @param ta            Test agent
+ * @param ifname        Interface name
  * @param net_addr      Network address
  * @param link_addr     Link-leyer address
  * @param ret_addr      Returned by OP_GET operation link_addr
+ * @param state         NULL or location for state of dynamic entry
  *
  * @return Status code
  *
  * @retval 0  on success
  */                   
 static int
-tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
-                const void *link_addr, void *ret_addr, te_bool *is_static)
+tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta, 
+                  const char *ifname, const struct sockaddr *net_addr,
+                  const void *link_addr, void *ret_addr, 
+                  te_bool *is_static, cs_neigh_entry_state *state)
 {
-    cfg_handle      handle;
-    char            net_addr_str[INET_ADDRSTRLEN];
-    int             rc;
+    cfg_handle handle;
+    char       net_addr_str[64];
+    int        rc = 0;
 
-    if (ta == NULL || net_addr == NULL)
+    if (ta == NULL || net_addr == NULL || ifname == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
     
-    if (inet_ntop(AF_INET, net_addr, net_addr_str, 
-                  sizeof(net_addr_str)) == NULL)
+    if (inet_ntop(net_addr->sa_family, 
+                  net_addr->sa_family == AF_INET ? 
+                      (void *)&SIN(net_addr)->sin_addr :
+                      (void *)&SIN6(net_addr)->sin6_addr,
+                  net_addr_str, sizeof(net_addr_str)) == NULL)
     {
         ERROR("%s() fails converting binary IPv4 address  "
               "into a character string", __FUNCTION__);
@@ -1024,19 +1064,34 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
             struct sockaddr *lnk_addr = NULL;
 
             rc = cfg_get_instance_fmt(NULL, &lnk_addr,
-                                      "/agent:%s/arp:%s",
-                                      ta, net_addr_str);
-            if (rc == TE_RC(TE_CS, TE_ENOENT))
+                                      "/agent:%s/interface:%s/"
+                                      "neigh_static:%s",
+                                      ta, ifname, net_addr_str);
+                                      
+            if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
             {
-                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/volatile:", ta);
+                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s", 
+                                         ta, ifname);
                 if (rc != 0)
                     break;
 
                 rc = cfg_get_instance_fmt(NULL, &lnk_addr,
-                                          "/agent:%s/volatile:/arp:%s",
-                                          ta, net_addr_str);
-                if ((rc == 0) && (is_static != NULL))
-                    *is_static = FALSE;
+                                          "/agent:%s/interface:%s/"
+                                          "neigh_dynamic:%s",
+                                          ta, ifname, net_addr_str);
+                if (rc == 0) 
+                {
+                    if (is_static != NULL)
+                        *is_static = FALSE;
+                        
+                    if (state != NULL)
+                    {
+                        rc = cfg_get_instance_fmt(NULL, state, 
+                                                  "/agent:%s/interface:%s/"
+                                                  "neigh_dynamic:%s/state:",
+                                                  ta, ifname, net_addr_str);
+                    }
+                }
             }
             else if ((rc == 0) && (is_static != NULL))
             {
@@ -1051,10 +1106,11 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
                 }
                 free(lnk_addr);
             }
-            else if (rc != TE_RC(TE_CS, TE_ENOENT))
+            else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
             {
-                ERROR("%s() fails to get ARP entry on TA '%s'",
-                      __FUNCTION__, ta);
+                ERROR("%s() cfg_get_instance_fmt() failed for neighbour "
+                      "entry %s on interface %s of TA %s with error %r",
+                      __FUNCTION__, net_addr_str, ifname, ta, rc);
             }
             break;
         }
@@ -1070,49 +1126,49 @@ tapi_cfg_arp_op(enum tapi_cfg_oper op, const char *ta, const void *net_addr,
             lnk_addr.sa_family = AF_LOCAL;
             memcpy(&(lnk_addr.sa_data), link_addr, IFHWADDRLEN);
 
-            if ((rc = cfg_add_instance_fmt(&handle,
-                                           CFG_VAL(ADDRESS, &lnk_addr),
-                                           "/agent:%s%s/arp:%s",
-                                           ta,
-                                           (*is_static) ? "" :
-                                                          "/volatile:",
-                                           net_addr_str)) != 0)
-            {
-                /* TODO Correct formating */
-                ERROR("%s() fails adding a new ARP entry "
-                      "%s -> %x:%x:%x:%x:%x:%x on TA '%s'",
-                      __FUNCTION__, net_addr_str,
-                      *(((uint8_t *)link_addr) + 0),
-                      *(((uint8_t *)link_addr) + 1),
-                      *(((uint8_t *)link_addr) + 2),
-                      *(((uint8_t *)link_addr) + 3),
-                      *(((uint8_t *)link_addr) + 4),
-                      *(((uint8_t *)link_addr) + 5), ta);
-            }
+            rc = cfg_add_instance_fmt(&handle,
+                                      CFG_VAL(ADDRESS, &lnk_addr),
+                                      "/agent:%s/interface:%s/neigh_%s:%s",
+                                      ta, ifname, 
+                                      (*is_static) ? "static" :
+                                                     "dynamic",
+                                      net_addr_str);
+            /* Error is logged by CS */          
             break;
         }
             
         case OP_DEL:
-            if ((rc = cfg_find_fmt(&handle, "/agent:%s/arp:%s",
-                          ta, net_addr_str) == TE_RC(TE_CS, TE_ENOENT)) &&
-                (rc = cfg_find_fmt(&handle, "/agent:%s/volatile:/arp:%s",
-                          ta, net_addr_str) == TE_RC(TE_CS, TE_ENOENT)))
-            {
-                RING("There is no ARP entry for %s address on %s Agent",
-                     net_addr_str, ta);
-                rc = 0;
-                break;
-            }
+            rc = cfg_find_fmt(&handle, 
+                              "/agent:%s/interface:%s/neigh_static:%s",
+                              ta, ifname, net_addr_str);
             if (rc != 0)
             {
-                ERROR("%s() fails finding '/agent:%s/arp:%s' instance "
-                      "with errno %r", __FUNCTION__, ta, net_addr_str, rc);
+                if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+                    break;
+
+                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s", 
+                                         ta, ifname);
+                if (rc != 0)
+                    break;
+                              
+                rc = cfg_find_fmt(&handle, 
+                                  "/agent:%s/interface:%s/neigh_dynamic:%s",
+                                   ta, ifname, net_addr_str);
+                
+                if (rc != 0)
+                {                                   
+                    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+                        break;
+                                   
+                    RING("%s: there is no neighbour entry for %s"
+                         " on interface %s of TA %s", __FUNCTION__, 
+                         net_addr_str, ifname, ta);
+                    rc = 0;
+                    break;
+                }
             }
-            else if ((rc = cfg_del_instance(handle, FALSE)) != 0)
-            {
-                ERROR("%s() fails deleting ARP entry for %s host "
-                      "on TA '%s'", __FUNCTION__, net_addr_str, ta);
-            }
+            rc = cfg_del_instance(handle, FALSE);
+            /* Error is logged by CS */                
             break;
 
         default:

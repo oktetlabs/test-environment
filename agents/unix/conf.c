@@ -63,6 +63,7 @@
 #include "rcf_pch_ta_cfg.h"
 #include "logger_api.h"
 #include "unix_internal.h"
+#include "cs_common.h"
 
 #ifdef CFG_UNIX_DAEMONS
 #include "conf_daemons.h"
@@ -191,25 +192,42 @@ static int status_get(unsigned int, const char *, char *,
 static int status_set(unsigned int, const char *, const char *,
                       const char *);
 
-static int arp_use_get(unsigned int, const char *, char *,
-                       const char *);
-static int arp_use_set(unsigned int, const char *, const char *,
-                       const char *);
+static int arp_get(unsigned int, const char *, char *,
+                   const char *);
+static int arp_set(unsigned int, const char *, const char *,
+                   const char *);
 
 static int mtu_get(unsigned int, const char *, char *,
                    const char *);
 static int mtu_set(unsigned int, const char *, const char *,
                    const char *);
 
-static int arp_get(unsigned int, const char *, char *,
-                   const char *, const char *);
-static int arp_set(unsigned int, const char *, const char *,
-                   const char *, const char *);
-static int arp_add(unsigned int, const char *, const char *,
-                   const char *, const char *);
-static int arp_del(unsigned int, const char *,
-                   const char *, const char *);
-static int arp_list(unsigned int, const char *, char **);
+static int neigh_state_get(unsigned int, const char *, char *,
+                           const char *, const char *);
+static int neigh_get(unsigned int, const char *, char *,
+                     const char *, const char *);
+
+static int neigh_set(unsigned int, const char *, const char *,
+                     const char *, const char *);
+static int neigh_add(unsigned int, const char *, const char *,
+                     const char *, const char *);
+static int neigh_del(unsigned int, const char *,
+                     const char *, const char *);
+static int neigh_list(unsigned int, const char *, char **, const char *);
+
+/* 
+ * This is a bit of hack - there are same handlers for static and dynamic
+ * branches, handler discovers dynamic subtree by presence of
+ * "dynamic" in OID. But list method does not contain the last subid.
+ */
+static int
+neigh_dynamic_list(unsigned int gid, const char *oid, char **list, 
+                   const char *ifname)
+{
+    UNUSED(oid);
+    
+    return neigh_list(gid, "dynamic", list, ifname);
+}                   
 
 static int route_metric_get(unsigned int, const char *, char *,
                             const char *);
@@ -244,17 +262,6 @@ static int user_del(unsigned int, const char *, const char *);
 
 /* Unix Test Agent configuration tree */
 
-/* Volatile subtree */
-static rcf_pch_cfg_object node_volatile_arp =
-    { "arp", 0, NULL, NULL,
-      (rcf_ch_cfg_get)arp_get, (rcf_ch_cfg_set)arp_set,
-      (rcf_ch_cfg_add)arp_add, (rcf_ch_cfg_del)arp_del,
-      (rcf_ch_cfg_list)arp_list, NULL, NULL};
-
-RCF_PCH_CFG_NODE_NA(node_volatile, "volatile", &node_volatile_arp, NULL);
-
-/* Non-volatile subtree */
-
 static rcf_pch_cfg_object node_route;
 
 RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, NULL,
@@ -270,29 +277,40 @@ RCF_PCH_CFG_NODE_RWC(node_route_metric, "metric", NULL, &node_route_mtu,
                      route_metric_get, route_metric_set, &node_route);
                      
 RCF_PCH_CFG_NODE_COLLECTION(node_route, "route", &node_route_metric,
-                            &node_volatile,
+                            NULL,
                             route_add, route_del, route_list, route_commit);
 
-static rcf_pch_cfg_object node_arp =
-    { "arp", 0, NULL, &node_route,
-      (rcf_ch_cfg_get)arp_get, (rcf_ch_cfg_set)arp_set,
-      (rcf_ch_cfg_add)arp_add, (rcf_ch_cfg_del)arp_del,
-      (rcf_ch_cfg_list)arp_list, NULL, NULL};
 
 RCF_PCH_CFG_NODE_RO(node_dns, "dns",
-                    NULL, &node_arp,
+                    NULL, &node_route,
                     (rcf_ch_cfg_list)nameserver_get);
 
-RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, NULL,
+RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
+                    NULL, NULL,
+                    (rcf_ch_cfg_list)neigh_state_get);
+
+static rcf_pch_cfg_object node_neigh_dynamic =
+    { "neigh_dynamic", 0, &node_neigh_state, NULL,
+      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
+      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
+      (rcf_ch_cfg_list)neigh_dynamic_list, NULL, NULL};
+      
+static rcf_pch_cfg_object node_neigh_static =
+    { "neigh_static", 0, NULL, &node_neigh_dynamic,
+      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
+      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
+      
+RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_neigh_static,
                     status_get, status_set);
 
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
                     mtu_get, mtu_set);
 
-RCF_PCH_CFG_NODE_RW(node_arp_use, "arp", NULL, &node_mtu,
-                    arp_use_get, arp_use_set);
+RCF_PCH_CFG_NODE_RW(node_arp, "arp", NULL, &node_mtu,
+                    arp_get, arp_set);
 
-RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_arp_use,
+RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_arp,
                     link_addr_get);
 
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
@@ -1861,7 +1879,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
-
+    
     /* FIXME */
     if (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL ||
         !INTERFACE_IS_MINE(ifname))
@@ -2471,7 +2489,8 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Get ARP use on the interface ("0" - arp disable, "1" - arp enable)
+ * Check if ARP is enabled on the interface 
+ * ("0" - arp disable, "1" - arp enable).
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -2481,8 +2500,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
  * @return error code
  */
 static int
-arp_use_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname)
+arp_get(unsigned int gid, const char *oid, char *value, const char *ifname)
 {
 
     UNUSED(gid);
@@ -2506,7 +2524,8 @@ arp_use_get(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Change ARP use on the interface ("0" - arp disable, "1" - arp enable)
+ * Enable/disable ARP on the interface 
+ * ("0" - arp disable, "1" - arp enable).
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -2516,8 +2535,8 @@ arp_use_get(unsigned int gid, const char *oid, char *value,
  * @return error code
  */
 static int
-arp_use_set(unsigned int gid, const char *oid, const char *value,
-            const char *ifname)
+arp_set(unsigned int gid, const char *oid, const char *value,
+        const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
@@ -2636,47 +2655,20 @@ status_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-/**
- * Get ARP entry value (hardware address corresponding to IPv4).
- *
- * @param gid            group identifier (unused)
- * @param oid            full object instence identifier (unused)
- * @param value          location for the value
- *                       (XX:XX:XX:XX:XX:XX is returned)
- * @param addr           IPv4 address in the dotted notation
- * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
- *                       in this case @p addr parameter points to zero
- *                       length string
- *
- * @return error code
- */
-static int
-arp_get(unsigned int gid, const char *oid, char *value,
-        const char *addr, const char *addr_volatile)
+/** Find neighbour entry and return its parameters */
+static te_errno
+neigh_find(const char *oid, const char *ifname, const char *addr,
+           char *mac_p, unsigned int *flags_p)
 {
-    te_bool  volatile_entry = FALSE;
+    te_bool  volatile_entry = strstr(oid, "dynamic") != NULL;
     FILE    *fp;
-
-    UNUSED(gid);
-
-    /*
-     * Determine which subtree we are working with
-     * (volatile or non-volatile).
-     */
-    if (strstr(oid, node_volatile.sub_id) != NULL)
-    {
-        /*
-         * Volatile subtree, as soon as its instance names are
-         * /agent:NAME/volatile:/arp:ADDR,
-         * in which case we have:
-         * + addr          - "" (empty string 'volatile' instance name);
-         * + addr_volatile - "ADDR" (dynamic ARP entry name).
-         */
-        volatile_entry = TRUE;
-        addr = addr_volatile;
-
-        assert(strlen(addr_volatile) > 0);
-    }
+    char     device[32];
+    char     mac[MAC_ADDR_LEN * 3];
+    
+    unsigned int flags;
+    
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if ((fp = fopen("/proc/net/arp", "r")) == NULL)
     {
@@ -2689,15 +2681,17 @@ arp_get(unsigned int gid, const char *oid, char *value,
     {
         if (strcmp(buf, addr) == 0)
         {
-            unsigned int flags = 0;
-
-            if (fscanf(fp, "%s %x %s", buf, &flags, value) != 3)
+            if (fscanf(fp, "%s %x %s %s %s", buf, &flags, mac, 
+                       trash, device) != 5)
             {
                 fclose(fp);
                 ERROR("Failed to parse ARP entry values");
                 return TE_RC(TE_TA_UNIX, TE_EFMT);
             }
             fclose(fp);
+            
+            if (strcmp(ifname, device) != 0)
+                return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
             if (flags == 0)
             {
@@ -2712,73 +2706,128 @@ arp_get(unsigned int gid, const char *oid, char *value,
                           (flags & ATF_PERM) ? "has" : "does not have");
                     return TE_RC(TE_TA_UNIX, TE_EFAULT);
                 }
+                
+                if (flags_p != NULL)
+                    *flags_p = flags;
+                    
+                if (mac_p != NULL)
+                    strcpy(mac_p, mac);
 
                 return 0;
             }
         }
         fgets(buf, sizeof(buf), fp);
     }
-
     fclose(fp);
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
 /**
- * Change already existing ARP entry.
- *
- * @param gid            group identifier
- * @param oid            full object instence identifier (unused)
- * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
- * @param addr           IPv4 address in the dotted notation
- * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
- *                       in this case @p addr parameter points to zero
- *                       length string
- *
- * @return error code
- */
-static int
-arp_set(unsigned int gid, const char *oid, const char *value,
-        const char *addr, const char *addr_volatile)
-{
-    char val[RCF_MAX_VAL];
-
-    if (arp_get(gid, oid, val, addr, addr_volatile) != 0)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    return arp_add(gid, oid, value, addr, addr_volatile);
-}
-
-/**
- * Add a new ARP entry.
+ * Get neighbour entry state.
  *
  * @param gid            group identifier (unused)
  * @param oid            full object instence identifier (unused)
- * @param value          new entry value pointer ("XX:XX:XX:XX:XX:XX")
- * @param addr           IPv4 address in the dotted notation
- * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
- *                       in this case @p addr parameter points to zero
- *                       length string
+ * @param value          location for the value
+ *                       (XX:XX:XX:XX:XX:XX is returned)
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
  *
- * @return error code
+ * @return Status code
+ */
+int 
+neigh_state_get(unsigned int gid, const char *oid, char *value,
+                const char *ifname, const char *addr)
+{
+    unsigned int flags;
+    int          rc;
+    char         mac[MAC_ADDR_LEN * 3];
+    
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if ((rc = neigh_find("dynamic", ifname, addr, mac, &flags)) != 0)
+        return rc;
+        
+    /* TODO: extract state via netlink */
+    if (flags & ATF_COM)
+        sprintf(value, "%u", CS_NEIGH_REACHABLE);
+    else if (strcmp(mac, "00:00:00:00:00:00") == 0)
+        sprintf(value, "%u", CS_NEIGH_INCOMPLETE);
+    else
+        sprintf(value, "%u", CS_NEIGH_STALE);
+        
+    return 0;
+}
+
+/**
+ * Get neighbour entry value (hardware address corresponding to IP).
+ *
+ * @param gid            group identifier (unused)
+ * @param oid            full object instance identifier or NULL for
+ *                       dynamic entries (hack)
+ * @param value          location for the value
+ *                       (XX:XX:XX:XX:XX:XX is returned)
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
  */
 static int
-arp_add(unsigned int gid, const char *oid, const char *value,
-        const char *addr, const char *addr_volatile)
+neigh_get(unsigned int gid, const char *oid, char *value, 
+          const char *ifname, const char *addr)
 {
-    te_bool       volatile_entry = FALSE;
+    UNUSED(gid);
+    
+    return neigh_find(oid, ifname, addr, value, NULL);
+}
+
+/**
+ * Change already existing neighbour entry.
+ *
+ * @param gid            group identifier
+ * @param oid            full object instance identifier (unused)
+ * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
+ */
+static int
+neigh_set(unsigned int gid, const char *oid, const char *value,
+          const char *ifname, const char *addr)
+{
+    if (neigh_find(oid, ifname, addr, NULL, NULL) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return neigh_add(gid, oid, value, ifname, addr);
+}
+
+/**
+ * Add a new neighbour entry.
+ *
+ * @param gid            group identifier (unused)
+ * @param oid            full object instance identifier (unused)
+ * @param value          new entry value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
+ */
+static int
+neigh_add(unsigned int gid, const char *oid, const char *value,
+          const char *ifname, const char *addr)
+{
+    te_bool       volatile_entry = strstr(oid, "dynamic") != NULL;
     struct arpreq arp_req;
-    int           int_addr[6];
+    int           int_addr[MAC_ADDR_LEN];
     int           res;
     int           i;
 
     UNUSED(gid);
-
-    if (strstr(oid, node_volatile.sub_id) != NULL)
-    {
-        volatile_entry = TRUE;
-        addr = addr_volatile;
-    }
+    
+    /* TODO: check that address corresponds to interface */
+    UNUSED(ifname);
 
     res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s",
                  int_addr, int_addr + 1, int_addr + 2, int_addr + 3,
@@ -2787,7 +2836,7 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     if (res != 6)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    memset (&arp_req, 0, sizeof(arp_req));
+    memset(&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
 
     if (inet_pton(AF_INET, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
@@ -2817,29 +2866,25 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Delete ARP entry.
+ * Delete neighbour entry.
  *
  * @param gid            group identifier (unused)
- * @param oid            full object instence identifier (unused)
- * @param value          value string (unused)
- * @param addr           IPv4 address in the dotted notation
- * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
- *                       in this case @p addr parameter points to zero
- *                       length string
+ * @param oid            full object instance identifier (unused)
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
  *
- * @return error code
+ * @return Status code
  */
 static int
-arp_del(unsigned int gid, const char *oid,
-        const char *addr, const char *addr_volatile)
+neigh_del(unsigned int gid, const char *oid, const char *ifname, 
+          const char *addr)
 {
     struct arpreq arp_req;
-    char          val[32];
     int           rc;
 
     UNUSED(gid);
 
-    if ((rc = arp_get(gid, oid, val, addr, addr_volatile)) != 0)
+    if ((rc = neigh_find(oid, ifname, addr, NULL, NULL)) != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
@@ -2848,9 +2893,6 @@ arp_del(unsigned int gid, const char *oid,
         }
         return rc;
     }
-
-    if (strstr(oid, node_volatile.sub_id) != NULL)
-        addr = addr_volatile;
 
     memset(&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
@@ -2877,25 +2919,23 @@ arp_del(unsigned int gid, const char *oid,
  * Get instance list for object "agent/arp" and "agent/volatile/arp".
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier
+ * @param oid           full object instance identifier
  * @param list          location for the list pointer
+ * @param ifname        interface name
  *
- * @return error code
+ * @return Status code
  */
 static int
-arp_list(unsigned int gid, const char *oid, char **list)
+neigh_list(unsigned int gid, const char *oid, char **list, 
+           const char *ifname)
 {
 #ifdef __linux__
-    te_bool  volatile_entry = FALSE;
+    te_bool  volatile_entry = strstr(oid, "dynamic") != NULL;
     char    *ptr = buf;
     FILE    *fp;
-
-    /*
-     * Determine which subtree we are working with
-     * (volatile or non-volatile).
-     */
-    if (strstr(oid, node_volatile.sub_id) != NULL)
-        volatile_entry = TRUE;
+    
+    if (!INTERFACE_IS_MINE(ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if ((fp = fopen("/proc/net/arp", "r")) == NULL)
     {
@@ -2908,8 +2948,18 @@ arp_list(unsigned int gid, const char *oid, char **list)
     while (fscanf(fp, "%s", ptr) != EOF)
     {
         unsigned int flags = 0;
+        char         device[32];
 
-        fscanf(fp, "%s %x", trash, &flags);
+        fscanf(fp, "%s %x %s %s %s", trash, &flags, 
+               trash, trash, device);
+        fgets(trash, sizeof(trash), fp);
+               
+        if (strcmp(device, ifname) != 0)
+        {
+            *ptr = 0;
+            continue;
+        }
+        
         if ((flags & ATF_COM) &&
             (volatile_entry != !!(flags & ATF_PERM)))
         {
@@ -2917,9 +2967,8 @@ arp_list(unsigned int gid, const char *oid, char **list)
             ptr += strlen(ptr);
         }
         else
-            *ptr = '\0';
+            *ptr = 0;
 
-        fgets(trash, sizeof(trash), fp);
     }
     fclose(fp);
 #else
@@ -2932,7 +2981,7 @@ arp_list(unsigned int gid, const char *oid, char **list)
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+        
     return 0;
 }
 
@@ -3563,7 +3612,7 @@ DEF_ROUTE_SET_FUNC(irtt);
  * Add a new route.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
@@ -3585,7 +3634,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
  * Delete a route.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
@@ -3783,7 +3832,7 @@ do {                                                                  \
  * Commit changes made for the route.
  *
  * @param gid           group identifier (unused)
- * @param p_oid         object instence data structure
+ * @param p_oid         object instance data structure
  *
  * @return error code
  */
@@ -4003,7 +4052,7 @@ env_is_hidden(const char *name, int name_len)
  * Get Environment variable value.
  *
  * @param gid       Request's group identifier (unused)
- * @param oid       Full object instence identifier (unused)
+ * @param oid       Full object instance identifier (unused)
  * @param value     Location for the value (OUT)
  * @param name      Variable name
  *
@@ -4035,7 +4084,7 @@ env_get(unsigned int gid, const char *oid, char *value,
  * Change already existing Environment variable.
  *
  * @param gid       Request's group identifier (unused)
- * @param oid       Full object instence identifier (unused)
+ * @param oid       Full object instance identifier (unused)
  * @param value     New value to set
  * @param name      Variable name
  *
@@ -4069,7 +4118,7 @@ env_set(unsigned int gid, const char *oid, const char *value,
  * Add a new Environment variable.
  *
  * @param gid       Request's group identifier (unused)
- * @param oid       Full object instence identifier (unused)
+ * @param oid       Full object instance identifier (unused)
  * @param value     Value
  * @param name      Variable name
  *
@@ -4110,7 +4159,7 @@ env_add(unsigned int gid, const char *oid, const char *value,
  * Delete Environment variable.
  *
  * @param gid       Request's group identifier (unused)
- * @param oid       Full object instence identifier (unused)
+ * @param oid       Full object instance identifier (unused)
  * @param name      Variable name
  *
  * @return Error code
@@ -4139,7 +4188,7 @@ env_del(unsigned int gid, const char *oid, const char *name)
  * Get instance list for object "/agent/env".
  *
  * @param gid       Request's group identifier (unused)
- * @param oid       Full object instence identifier (unused)
+ * @param oid       Full object instance identifier (unused)
  * @param list      Location for the list pointer
  *
  * @return Error code
@@ -4279,7 +4328,7 @@ user_exists(const char *user)
  * Add tester user.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
  * @param user          user name: te_tester_<uid>
  *
@@ -4358,7 +4407,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
  * Delete tester user.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instance identifier (unused)
  * @param user          user name
  *
  * @return error code

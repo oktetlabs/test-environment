@@ -112,9 +112,26 @@
          Limit: 1 -->
     <object oid="/agent/interface/arp" access="read_write" type="integer"/>
 
-    <!-- Static ARP entries.
-         Name:  IPv4 address in dotted notation -->
-    <object oid="/agent/arp" access="read_create" type="address"/>
+    <!-- Static neighbour entries.
+         Name:  IPv4/6 address in human notation -->
+    <object oid="/agent/interface/neigh_static" access="read_create" 
+            type="address"/>
+
+    <!-- Dynamic neighbour entries.
+         Name:  IPv4/6 address in human notation -->
+    <object oid="/agent/interface/neigh_dynamic" access="read_create" 
+            type="address" volatile="true"/>
+
+    <!-- Dynamic neighbour entry state.
+         Name:  empty 
+         Value: incomplete (1)
+                reachable (2) 
+                stale (3)
+                delay (4)
+                probe (5)
+                failed (6) -->
+    <object oid="/agent/interface/neigh_dynamic/state" access="read_only" 
+            type="integer" volatile="true"/>
 
     <!-- Routing table entry.
          Name: (network address in human notation)'|'(prefix)
@@ -196,9 +213,6 @@
     <object oid="/rpcserver_sid" 
             access="read_create" type="integer" volatile="true"/>
 
-    <!-- Dynamic ARP entries.
-         Name:  IPv4 address in dotted notation -->
-    <object oid="/agent/volatile/arp" access="read_create" type="address"/>
 
     <!-- ************** Daemons running on the Test Agent ************** -->
     

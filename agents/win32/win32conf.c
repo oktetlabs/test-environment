@@ -46,6 +46,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "rcf_pch_ta_cfg.h"
+#include "cs_common.h"
 
 /* TA name pointer */
 extern char *ta_name;
@@ -157,15 +158,18 @@ static int status_set(unsigned int, const char *, const char *,
 static int mtu_get(unsigned int, const char *, char *,
                    const char *);
 
-static int arp_get(unsigned int, const char *, char *,
-                   const char *, const char *);
-static int arp_set(unsigned int, const char *, const char *,
-                   const char *, const char *);
-static int arp_add(unsigned int, const char *, const char *,
-                   const char *, const char *);
-static int arp_del(unsigned int, const char *,
-                   const char *, const char *);
-static int arp_list(unsigned int, const char *, char **);
+static int neigh_state_get(unsigned int, const char *, char *,
+                           const char *, const char *);
+                           
+static int neigh_get(unsigned int, const char *, char *,
+                     const char *, const char *);
+static int neigh_set(unsigned int, const char *, const char *,
+                     const char *, const char *);
+static int neigh_add(unsigned int, const char *, const char *,
+                     const char *, const char *);
+static int neigh_del(unsigned int, const char *,
+                     const char *, const char *);
+static int neigh_list(unsigned int, const char *, char **, const char *);
 
 static int route_metric_get(unsigned int, const char *, char *,
                             const char *);
@@ -179,16 +183,8 @@ static int route_list(unsigned int, const char *, char **);
 
 static int route_commit(unsigned int, const cfg_oid *);
 
-/* Volatile subtree */
-static rcf_pch_cfg_object node_volatile_arp =
-    { "arp", 0, NULL, NULL,
-      (rcf_ch_cfg_get)arp_get, (rcf_ch_cfg_set)arp_set,
-      (rcf_ch_cfg_add)arp_add, (rcf_ch_cfg_del)arp_del,
-      (rcf_ch_cfg_list)arp_list, NULL, NULL};
-
-RCF_PCH_CFG_NODE_NA(node_volatile, "volatile", &node_volatile_arp, NULL);
-
 /* win32 Test Agent configuration tree */
+
 
 static rcf_pch_cfg_object node_route;
 
@@ -196,16 +192,26 @@ RCF_PCH_CFG_NODE_RWC(node_route_metric, "metric", NULL, NULL,
                      route_metric_get, route_metric_set, &node_route);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_route, "route", &node_route_metric,
-                            &node_volatile,
+                            NULL,
                             route_add, route_del, route_list, route_commit);
 
-static rcf_pch_cfg_object node_arp =
-    { "arp", 0, NULL, &node_route,
-      (rcf_ch_cfg_get)arp_get, (rcf_ch_cfg_set)arp_set,
-      (rcf_ch_cfg_add)arp_add, (rcf_ch_cfg_del)arp_del,
-      (rcf_ch_cfg_list)arp_list, NULL, NULL};
+RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
+                    NULL, NULL,
+                    (rcf_ch_cfg_list)neigh_state_get);
 
-RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, NULL,
+static rcf_pch_cfg_object node_neigh_dynamic =
+    { "neigh_dynamic", 0, &node_neigh_state, NULL,
+      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
+      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
+      
+static rcf_pch_cfg_object node_neigh_static =
+    { "neigh_static", 0, NULL, &node_neigh_dynamic,
+      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
+      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
+      
+RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_neigh_static,
                     status_get, status_set);
 
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
@@ -229,7 +235,7 @@ RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_net_addr,
                     ifindex_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_ifindex, &node_arp,
+                            &node_ifindex, &node_route,
                             NULL, NULL, interface_list, NULL);
 
 RCF_PCH_CFG_NODE_AGENT(node_agent, &node_interface);
@@ -237,7 +243,7 @@ RCF_PCH_CFG_NODE_AGENT(node_agent, &node_interface);
 const char *te_lockdir = "/tmp";
 
 /** Mapping of EF ports to interface indices */
-static int ef_index[2] = { -1, -1 };
+static DWORD ef_index[2] = { 0, 0 };
 
 /* Convert wide string to usual one */
 static char *
@@ -387,13 +393,13 @@ efport2ifindex(void)
 static MIB_IFROW if_entry;
 
 /** Convert interface name to interface index */
-static int
+static DWORD
 ifname2ifindex(const char *ifname)
 {
     char   *s;
     char   *tmp;                                   
     te_bool ef = FALSE;
-    int     index;
+    DWORD   index;
     
     if (ifname == NULL)
         return 0;
@@ -422,7 +428,7 @@ ifname2ifindex(const char *ifname)
 
 /** Convert interface index to interface name */
 char *
-ifindex2ifname(int ifindex)
+ifindex2ifname(DWORD ifindex)
 {
     static char ifname[16];
     
@@ -1169,49 +1175,21 @@ status_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-/**
- * Get ARP entry value (hardware address corresponding to IPv4).
- *
- * @param gid            group identifier (unused)
- * @param oid            full object instence identifier (unused)
- * @param value          location for the value
- *                       (XX:XX:XX:XX:XX:XX is returned)
- * @param addr           IPv4 address in the dotted notation
- * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
- *                       in this case @p addr parameter points to zero
- *                       length string
- *
- * @return error code
- */
-static int
-arp_get(unsigned int gid, const char *oid, char *value,
-        const char *addr, const char *addr_volatile)
+/** Find neighbour entry and return its parameters */
+static te_errno
+neigh_find(const char *oid, const char *ifname, const char *addr,
+           char *mac)
 {
     MIB_IPNETTABLE *table;
     DWORD           a;
     int             i;
-    DWORD           type = ARP_STATIC;
+    DWORD           type = strstr(oid, "dynamic") == NULL ? 
+                           ARP_STATIC : ARP_DYNAMIC;
+    DWORD           ifindex = ifname2ifindex(ifname);
+    
+    if (ifindex == 0)
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
-    UNUSED(gid);
-    UNUSED(oid);
-    
-    /* 
-     * Determine which subtree we are working with
-     * (volatile or non-volatile).
-     */
-    if (strstr(oid, node_volatile.sub_id) != NULL)
-    {
-        /*
-         * Volatile subtree, as soon as its instance names are
-         * /agent:NAME/volatile:/arp:ADDR,
-         * in which case we have:
-         * + addr          - "" (empty string 'volatile' instance name);
-         * + addr_volatile - "ADDR" (dynamic ARP entry name).
-         */
-        type = ARP_DYNAMIC;
-        addr = addr_volatile;
-    }
-    
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, TE_EINVAL);
         
@@ -1224,14 +1202,18 @@ arp_get(unsigned int gid, const char *oid, char *value,
         if (a == table->table[i].dwAddr && table->table[i].dwType == type)
         {
             uint8_t *ptr = table->table[i].bPhysAddr;
+            
+            if (table->table[i].dwIndex != ifindex)
+                continue;
 
             if (table->table[i].dwPhysAddrLen != 6)
             {
                 free(table);
                 return TE_RC(TE_TA_WIN32, TE_ENOENT);
             }
-            snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
-                     ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
+            if (mac != NULL)
+                snprintf(mac, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
+                         ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
             free(table);
             return 0;
         }
@@ -1240,53 +1222,99 @@ arp_get(unsigned int gid, const char *oid, char *value,
     free(table);
 
     return TE_RC(TE_TA_WIN32, TE_ENOENT);
-}
-
-
+}           
 
 /**
- * Change already existing ARP entry.
+ * Get neighbour entry state.
  *
  * @param gid            group identifier (unused)
  * @param oid            full object instence identifier (unused)
- * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
- * @param addr           IPv4 address in the dotted notation
- * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
- *                       in this case @p addr parameter points to zero
- *                       length string
+ * @param value          location for the value
+ *                       (XX:XX:XX:XX:XX:XX is returned)
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
  *
- * @return error code
+ * @return Status code
  */
-static int
-arp_set(unsigned int gid, const char *oid, const char *value,
-        const char *addr, const char *addr_volatile)
+int 
+neigh_state_get(unsigned int gid, const char *oid, char *value,
+                const char *ifname, const char *addr)
 {
-    int rc;
-
-    if ((rc = arp_del(gid, oid, addr, addr_volatile)) != 0)
+    int  rc;
+    
+    UNUSED(gid);
+    
+    if (strstr(oid, "dynamic") == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    
+    if ((rc = neigh_find(oid, ifname, addr, NULL)) != 0)
         return rc;
-
-    return arp_add(gid, oid, value, addr, addr_volatile);
+        
+    sprintf(value, "%u", CS_NEIGH_REACHABLE);
+        
+    return 0;
 }
 
 /**
- * Add a new ARP entry.
+ * Get neighbour entry value (hardware address corresponding to IP).
+ *
+ * @param gid            group identifier (unused)
+ * @param oid            full object instence identifier (unused)
+ * @param value          location for the value
+ *                       (XX:XX:XX:XX:XX:XX is returned)
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
+ */
+static int
+neigh_get(unsigned int gid, const char *oid, char *value,
+          const char *ifname, const char *addr)
+{
+    UNUSED(gid);
+    
+    return neigh_find(oid, ifname, addr, value);
+}
+
+
+/**
+ * Change already existing neighbour entry.
+ *
+ * @param gid            group identifier
+ * @param oid            full object instence identifier (unused)
+ * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
+ */
+static int
+neigh_set(unsigned int gid, const char *oid, const char *value,
+          const char *ifname, const char *addr)
+{
+    UNUSED(gid);
+    
+    if (neigh_find(oid, ifname, addr, NULL) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return neigh_add(gid, oid, value, ifname, addr);
+}
+
+/**
+ * Add a new neighbour entry.
  *
  * @param gid            group identifier (unused)
  * @param oid            full object instence identifier (unused)
  * @param value          new entry value pointer ("XX:XX:XX:XX:XX:XX")
- * @param addr           IPv4 address in the dotted notation
- * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
- *                       in this case @p addr parameter points to zero
- *                       length string
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
  *
- * @return error code
+ * @return Status code
  */
 static int
-arp_add(unsigned int gid, const char *oid, const char *value,
-        const char *addr, const char *addr_volatile)
+neigh_add(unsigned int gid, const char *oid, const char *value,
+          const char *ifname, const char *addr)
 {
-    char           val[32];
     MIB_IPNETROW   entry;
     int            int_mac[6];
     int            rc;
@@ -1295,18 +1323,16 @@ arp_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     
-    if (arp_get(0, oid, val, addr, addr_volatile) == 0)
+    if (neigh_find(oid, ifname, addr, NULL) == 0)
         return TE_RC(TE_TA_WIN32, TE_EEXIST);
 
     memset(&entry, 0, sizeof(entry));
     
-    if (strstr(oid, node_volatile.sub_id) != NULL)
-    {
-        entry.dwType = ARP_DYNAMIC;
-        addr = addr_volatile;
-    }
-    else
-        entry.dwType = ARP_STATIC;
+    entry.dwType = strstr(oid, "dynamic") != NULL ? ARP_DYNAMIC 
+                                                  : ARP_STATIC;
+                                                  
+    if ((entry.dwIndex =  ifname2ifindex(ifname)) == 0)
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     if (sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s", int_mac, int_mac + 1,
             int_mac + 2, int_mac + 3, int_mac + 4, int_mac + 5, buf) != 6)
@@ -1318,9 +1344,6 @@ arp_add(unsigned int gid, const char *oid, const char *value,
         entry.bPhysAddr[i] = (unsigned char)int_mac[i];
 
     entry.dwAddr = inet_addr(addr);
-    if ((rc = find_ifindex(entry.dwAddr, &entry.dwIndex)) != 0)
-        return rc;
-
     entry.dwPhysAddrLen = 6;
     if ((rc = CreateIpNetEntry(&entry)) != NO_ERROR)
     {
@@ -1331,36 +1354,33 @@ arp_add(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Delete ARP entry.
+ * Delete neighbour entry.
  *
  * @param gid            group identifier (unused)
  * @param oid            full object instence identifier (unused)
- * @param addr           IPv4 address in the dotted notation
- * @param addr_volatile  IPv4 address in case of volatile ARP subtree,
- *                       in this case @p addr parameter points to zero
- *                       length string
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
  *
- * @return error code
+ * @return Status code
  */
 static int
-arp_del(unsigned int gid, const char *oid, const char *addr, 
-        const char *addr_volatile)
+neigh_del(unsigned int gid, const char *oid, const char *ifname, 
+          const char *addr)
 {
     MIB_IPNETTABLE *table;
     int             i;
     DWORD           a;
     int             rc;
-    DWORD           type = ARP_STATIC;
+    DWORD           type = strstr(oid, "dynamic") == NULL ? ARP_STATIC
+                                                          : ARP_DYNAMIC;
     te_bool         found = FALSE;
-
+    DWORD           ifindex = ifname2ifindex(ifname);
+    
     UNUSED(gid);
     UNUSED(oid);
 
-    if (strstr(oid, node_volatile.sub_id) != NULL)
-    {
-        type = ARP_DYNAMIC;
-        addr = addr_volatile;
-    }
+    if (ifindex == 0)
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     if ((a = inet_addr(addr)) == INADDR_NONE)
         return TE_RC(TE_TA_WIN32, TE_EINVAL);
@@ -1371,7 +1391,8 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
 
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
-        if (table->table[i].dwAddr == a && table->table[i].dwType == type)
+        if (table->table[i].dwAddr == a && table->table[i].dwType == type &&
+            table->table[i].dwIndex == ifindex)
         {
             if ((rc = DeleteIpNetEntry(table->table + i)) != 0)
             {
@@ -1392,27 +1413,31 @@ arp_del(unsigned int gid, const char *oid, const char *addr,
 }
 
 /**
- * Get instance list for object "agent/arp".
+ * Get instance list for object "agent/arp" and "agent/volatile/arp".
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full object instence identifier
  * @param list          location for the list pointer
+ * @param ifname        interface name
  *
- * @return error code
+ * @return Status code
  */
 static int
-arp_list(unsigned int gid, const char *oid, char **list)
+neigh_list(unsigned int gid, const char *oid, char **list, 
+           const char *ifname)
 {
     MIB_IPNETTABLE *table;
     int             i;
     char           *s = buf;
-    DWORD           type = ARP_STATIC;
-
+    DWORD           type = strstr(oid, "dynamic") == NULL ? ARP_STATIC
+                                                          : ARP_DYNAMIC;
+    DWORD           ifindex = ifname2ifindex(ifname);
+    
     UNUSED(gid);
     UNUSED(oid);
 
-    if (strstr(oid, node_volatile.sub_id) != NULL)
-        type = ARP_DYNAMIC;
+    if (ifindex == 0)
+        return TE_RC(TE_TA_WIN32, TE_ENOENT);
 
     GET_TABLE(MIB_IPNETTABLE, GetIpNetTable);
     if (table == NULL)
@@ -1428,8 +1453,11 @@ arp_list(unsigned int gid, const char *oid, char **list)
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
         if (table->table[i].dwPhysAddrLen != 6 ||
-            table->table[i].dwType != type)
+            table->table[i].dwType != type || 
+            table->table[i].dwIndex != ifindex)
+        {
             continue;
+        }
         s += sprintf(s, "%s ",
                  inet_ntoa(*(struct in_addr *)&(table->table[i].dwAddr)));
     }

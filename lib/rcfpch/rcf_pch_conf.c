@@ -234,12 +234,12 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
  * @param full_oid      initial identifier
  * @param list          list of identifiers to be updated
  *
- * @return error code
- * @retval 0            success
+ * @return Status code
+ * @retval 0               success
  * @retval TE_EINVAL       invalid identifier
  * @retval TE_ENOMEM       malloc() failed
  */
-static int
+static te_errno
 create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                           const char *full_oid, olist **list)
 {
@@ -399,12 +399,12 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
  * @param full_oid      initial identifier
  * @param list          list of identifiers to be updated
  *
- * @return error code
- * @retval 0            success
+ * @return Status code
+ * @retval 0               success
  * @retval TE_EINVAL       invalid identifier
  * @retval TE_ENOMEM       malloc() failed
  */
-static int
+static te_errno
 create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                          const char *full_oid, olist **list)
 {
@@ -493,11 +493,11 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
  * @param answer    - location for the answer string address (memory
  *                    is allocated using malloc())
  *
- * @return error code
- * @retval 0        - success
- * @retval TE_ENOMEM   - memory allocation failed
+ * @return Status code
+ * @retval 0             success
+ * @retval TE_ENOMEM     memory allocation failed
  */
-static int
+static te_errno
 convert_to_answer(olist *list, char **answer)
 {
     olist  *tmp;
@@ -548,7 +548,7 @@ convert_to_answer(olist *list, char **answer)
  *
  * @return 0 or error returned by communication library
  */
-static int
+static te_errno
 process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
                  size_t buflen, size_t answer_plen, const char *oid)
 {

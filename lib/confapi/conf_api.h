@@ -48,8 +48,8 @@
 
 #include "te_errno.h"
 #include "conf_types.h"
+#include "cs_common.h"
 #include "conf_oid.h"
-
 
 #ifdef __cplusplus
 extern "C" {
