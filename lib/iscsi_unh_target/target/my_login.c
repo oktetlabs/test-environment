@@ -816,7 +816,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
     {
         current_tx = 0;
         buffer = iov->iov_base;
-        print_payload(buffer, iov->iov_len);
+        TRACE_BUFFER(DEBUG, buffer, iov->iov_len, "sending PDU chunk");
         while (current_tx < iov->iov_len) 
         {
             TRACE(DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d",

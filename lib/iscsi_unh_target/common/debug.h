@@ -50,6 +50,20 @@ enum iscsi_verbosity_levels {
     ISCSI_VERBOSITY_PRINTALL
 };
 
+/**
+ * Sets the verbosity level for the target.
+ * The following levels are defined:
+ * -# silent   The target logs nothing)
+ * -# minimal  Only errors and warnings are reported (the default level)
+ * -# normal   Important events are reported
+ * -# verbose  All non-debug info is reported
+ * -# debug    All debug info is reported, excluding raw PDU dumps
+ * -# printall Everything is reported
+ * 
+ * @param level Verbosity level
+ * 
+ * @return TRUE if the level is a valid string
+ */
 extern te_bool iscsi_set_verbose(const char *level);
 extern const char *iscsi_get_verbose(void);
 extern te_bool iscsi_check_verbose(int level);

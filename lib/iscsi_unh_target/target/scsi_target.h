@@ -87,23 +87,6 @@ typedef struct scsi_pointer Scsi_Pointer;
 #define	CMND_RELEASED	2 /* No response needed for this cmnd */
 
 
-/* Values for management functions from
- * RFC 3720 Section 10.5.1 Function (field in TMF Request)
- *
- * N.B. These definitions are duplicated in common/iscsi_common.h
- * because they are needed in iSCSI but that common file cannot be
- * included in this file (scsi_target.h)
- */
-#define	TMF_ABORT_TASK			1	/*1000*/
-#define	TMF_ABORT_TASK_SET		2	/*1001*/
-#define	TMF_CLEAR_ACA			3	/*1002*/
-#define	TMF_CLEAR_TASK_SET		4	/*1003*/
-#define	TMF_LUN_RESET			5	/*1004*/
-#define	TMF_TARGET_WARM_RESET		6	/*1005*/
-#define TMF_TARGET_COLD_RESET		7
-#define TMF_TASK_REASSIGN		8
-
-
 /* command response lengths */
 #define	READ_CAP_LEN	8
 #define	ALLOC_LEN_6	4

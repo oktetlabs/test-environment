@@ -1308,7 +1308,7 @@ iscsi_send_msg(int sock, struct generic_pdu *outputpdu, int flags)
                outputpdu->text_length);
     } 
 
-    print_payload(buffer, length);
+    TRACE_BUFFER(DEBUG, buffer, length, "sending PDU");
     tx_loop = send(sock, buffer, length, 0); 
     TRACE(VERBOSE, "sent %d bytes", tx_loop);
     
