@@ -49,15 +49,17 @@
                  (value_)));                                        \
     } while (0)
 
-#define ISCSI_TARGET_SET_PARAM_BY_NAME(ta_, param_name_, value_) \
+#define ISCSI_TARGET_SET_PARAM_BY_NAME(_ta_, _param_name_, _value_) \
     do {                                                            \
-        int param_id = tapi_iscsi_get_param_map(param_name_);       \
+        int param_id = tapi_iscsi_get_param_map(_param_name_);      \
                                                                     \
         if (param_id < 0)                                           \
             TEST_FAIL("Invalid parameter name used");               \
                                                                     \
-        CHECK_RC(tapi_iscsi_target_set_parameter((ta_), param_id,   \
-                 (value_)));                                        \
+        CHECK_RC(tapi_iscsi_target_set_parameter((_ta_), param_id,  \
+                 (_value_)));                                       \
+        RING("%s: Set %s to %s",                                    \
+             (_ta_), (_param_name_), (_value_));                    \
     } while (0)
 
 /**
@@ -69,20 +71,24 @@
  * @param param_name_ Name of the parameter to configure
  * @param value_      New value of the parameter (in string form)
  */
-#define ISCSI_INITIATOR_SET_ADVERTIZE(ta_, target_id_, cid_, \
-                                      param_name_, value_)              \
+#define ISCSI_INITIATOR_SET_ADVERTIZE(_ta_, _target_id_, _cid_, \
+                                      _param_name_, _value_)            \
     do {                                                                \
-        int param_id = tapi_iscsi_get_param_map(param_name_);           \
+        int param_id = tapi_iscsi_get_param_map(_param_name_);          \
                                                                         \
         if (param_id < 0)                                               \
             TEST_FAIL("Invalid parameter name used");                   \
                                                                         \
-        CHECK_RC(tapi_iscsi_initiator_set_parameter((ta_),              \
-                                                    (target_id_),       \
-                                                    (cid_),             \
+        CHECK_RC(tapi_iscsi_initiator_set_parameter((_ta_),             \
+                                                    (_target_id_),      \
+                                                    (_cid_),            \
                                                     param_id,           \
-                                                    (value_),           \
+                                                    (_value_),          \
                                                     TRUE));             \
+        RING("%s: Set %s for session ID %d, CID=%d to %s, with "        \
+             "advertizing",                                             \
+             (_ta_), (_param_name_),                                    \
+             (_target_id_), (_cid_), (_value_));                        \
     } while (0)
 
 /**
@@ -94,20 +100,24 @@
  * @param param_name_ Name of the parameter to configure
  * @param value_      New value of the parameter (in string form)
  */
-#define ISCSI_INITIATOR_SET_NOT_ADVERTIZE(ta_, target_id_, cid_, \
-                                          param_name_, value_)          \
+#define ISCSI_INITIATOR_SET_NOT_ADVERTIZE(_ta_, _target_id_, _cid_, \
+                                          _param_name_, _value_)        \
     do {                                                                \
-        int param_id = tapi_iscsi_get_param_map(param_name_);           \
+        int param_id = tapi_iscsi_get_param_map(_param_name_);          \
                                                                         \
         if (param_id < 0)                                               \
             TEST_FAIL("Invalid parameter name used");                   \
                                                                         \
-        CHECK_RC(tapi_iscsi_initiator_set_parameter((ta_),              \
-                                                    (target_id_),       \
-                                                    (cid_),             \
+        CHECK_RC(tapi_iscsi_initiator_set_parameter((_ta_),             \
+                                                    (_target_id_),      \
+                                                    (_cid_),            \
                                                     param_id,           \
-                                                    (value_),           \
+                                                    (_value_),          \
                                                     FALSE));            \
+        RING("%s: Set %s for session ID %d, CID=%d to %s, without "     \
+             "advertizing",                                             \
+             (_ta_), (_param_name_),                                    \
+             (_target_id_), (_cid_), (_value_));                        \
     } while (0)
 
 
