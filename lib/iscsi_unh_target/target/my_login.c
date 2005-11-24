@@ -5597,6 +5597,14 @@ iscsi_server_rx_thread(void *param)
 	return NULL;
 }
 
+static int iscsi_custom_id;
+
+void
+iscsi_start_new_session_group(void)
+{
+    iscsi_custom_id = 0;
+}
+
 /*
  * Create a pipe (using socketpair()) and start UNH Target Rx thread 
  * which works with one end of the pipe.
@@ -5614,7 +5622,7 @@ iscsi_target_start_rx_thread(void)
     pthread_attr_t                  pthread_attr;
     pthread_t                       thread;
 
-    static int                      custom_id;
+
 
 
     thread_params = calloc(1, sizeof(*thread_params));
@@ -5632,7 +5640,7 @@ iscsi_target_start_rx_thread(void)
     }
 
     thread_params->send_recv_sock = conn_pipe[0];
-    thread_params->custom_id      = custom_id++;
+    thread_params->custom_id      = iscsi_custom_id++;
 
     if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
         (rc = pthread_attr_setdetachstate(&pthread_attr,
