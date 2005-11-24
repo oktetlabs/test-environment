@@ -1903,7 +1903,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
 
     TE_RC_UPDATE(rc, msg.error);
 
-    LOG_MSG((rc == 0) ? TE_LL_RING : TE_LL_ERROR,
+    LOG_MSG((rc == 0) ? TE_LL_INFO : TE_LL_ERROR,
             "Destroy CSAP %u (%s:%d): %r", csap_id, ta_name, session, rc);
 
     return rc == 0 ? msg.error : rc;
