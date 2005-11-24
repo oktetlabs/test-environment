@@ -1672,7 +1672,7 @@ tapi_iscsi_initiator_add_target(const char *ta,
 
     iscsi_current_cid[(int)iscsi_current_target] = 0;
 
-    RING("Target with ID=%d added to Initiator on "
+    VERB("Target with ID=%d added to Initiator on "
          "agent %s, addr=%s, port=%d",
          iscsi_current_target, ta,
          target_addr_param, target_port);
