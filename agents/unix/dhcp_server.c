@@ -1599,7 +1599,8 @@ dhcpserver_release(const char *name)
         }
         dhcp_server_was_run = FALSE;
     }
-    if (dhcp_server_conf != NULL && unlink(dhcp_server_conf) != 0)
+    if (dhcp_server_conf != NULL && unlink(dhcp_server_conf) != 0 &&
+        errno != ENOENT)
     {
         ERROR("Failed to delete DHCP server temporary configuration "
               "file '%s': %s", dhcp_server_conf, strerror(errno));
