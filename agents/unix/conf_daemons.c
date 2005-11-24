@@ -1444,7 +1444,7 @@ tftp_server_release(const char *name)
 enum ftp_server_kinds { FTP_VSFTPD, FTP_WUFTPD, FTP_PROFTPD };
 
 
-static int                     ftp_indices[] = {-1, -1, -1};
+static int                     ftp_indices[] = { -1, -1, -1 };
 static int                     ftp_xinetd_index = -1;
 static te_bool                 ftp_standalone   = TRUE;
 static enum  ftp_server_kinds  ftp_server_kind  = FTP_VSFTPD;
@@ -1806,6 +1806,14 @@ ftpserver_release(const char *name)
         if (ftp_indices[i] != -1)
             ds_restore_backup(ftp_indices[i]);
     }
+    
+#ifdef WITH_XINETD
+    if (ftp_xinetd_index != -1)
+    {
+        ds_restore_backup(ftp_xinetd_index);
+        ta_system("/etc/init.d/xinetd restart >/dev/null");
+    }
+#endif
         
     ta_system("chmod o-w /var/ftp/pub 2>/dev/null");
     if (ftpserver_running())
