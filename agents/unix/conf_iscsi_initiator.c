@@ -1701,7 +1701,6 @@ iscsi_conn_list(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    RING("--> %s", conns_list); 
     return 0;
 }
 
