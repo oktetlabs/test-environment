@@ -271,7 +271,7 @@ struct iscsi_init_scsi_cmnd {
 	uint32_t cmd_sn;
 	uint32_t exp_stat_sn;
 	uint8_t cdb[16];
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.4 SCSI Response */
@@ -281,7 +281,7 @@ struct iscsi_targ_scsi_rsp {
 	uint8_t response;
 	uint8_t status;
 	uint32_t length;
-	uint64_t lun;		/**> reserved */
+	uint64_t lun;		/**< reserved */
 	uint32_t init_task_tag;
 	uint32_t target_xfer_tag;
 	uint32_t stat_sn;
@@ -290,7 +290,7 @@ struct iscsi_targ_scsi_rsp {
 	uint32_t exp_data_sn;
 	uint32_t bidi_resid;
 	uint32_t resid;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.5 Task Management Function Request */
@@ -298,7 +298,7 @@ struct iscsi_init_task_mgt_command {
 	uint8_t opcode;
 	uint8_t function;
 	uint16_t rsvd1;
-	uint32_t length;		/**> reserved */
+	uint32_t length;		/**< reserved */
 	uint64_t lun;
 	uint32_t init_task_tag;
 	uint32_t ref_task_tag;
@@ -307,7 +307,7 @@ struct iscsi_init_task_mgt_command {
 	uint32_t ref_cmd_sn;
 	uint32_t exp_data_sn;
 	uint64_t rsvd4;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.6 Task Management Function Response */
@@ -316,8 +316,8 @@ struct iscsi_targ_task_mgt_response {
 	uint8_t flags;
 	uint8_t response;
 	uint8_t rsvd1;
-	uint32_t length;		/**> reserved */
-	uint64_t lun;		/**> reserved */
+	uint32_t length;		/**< reserved */
+	uint64_t lun;		/**< reserved */
 	uint32_t init_task_tag;
 	uint32_t rsvd2;
 	uint32_t stat_sn;
@@ -325,7 +325,7 @@ struct iscsi_targ_task_mgt_response {
 	uint32_t max_cmd_sn;
 	uint32_t rsvd4;
 	uint64_t rsvd5;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.7 SCSI Data-out */
@@ -343,7 +343,7 @@ struct iscsi_init_scsi_data_out {
 	uint32_t data_sn;
 	uint32_t offset;
 	uint32_t rsvd5;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.7 SCSI Data-in */
@@ -362,7 +362,7 @@ struct iscsi_targ_scsi_data_in {
 	uint32_t data_sn;
 	uint32_t offset;
 	uint32_t resid;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.8 Ready To Transfer (R2T) */
@@ -370,7 +370,7 @@ struct iscsi_targ_r2t {
 	uint8_t opcode;
 	uint8_t flags;
 	uint16_t rsvd2;
-	uint32_t length;		/**> reserved */
+	uint32_t length;		/**< reserved */
 	uint64_t lun;
 	uint32_t init_task_tag;
 	uint32_t target_xfer_tag;
@@ -380,7 +380,7 @@ struct iscsi_targ_r2t {
 	uint32_t r2t_sn;
 	uint32_t offset;
 	uint32_t xfer_len;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.9 Asynchronous Message */
@@ -390,7 +390,7 @@ struct iscsi_targ_async_msg {
 	uint16_t rsvd2;
 	uint32_t length;
 	uint64_t lun;
-	uint32_t init_task_tag;	/**> reserved 0xffffffff */
+	uint32_t init_task_tag;	/**< reserved 0xffffffff */
 	uint32_t rsvd3;
 	uint32_t stat_sn;
 	uint32_t exp_cmd_sn;
@@ -401,7 +401,7 @@ struct iscsi_targ_async_msg {
 	uint16_t parameter2;
 	uint16_t parameter3;
 	uint32_t rsvd5;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 enum iscsi_targ_async_msg_events {
@@ -426,10 +426,10 @@ struct iscsi_init_text_cmnd {
 	uint32_t exp_stat_sn;
 	uint64_t rsvd4;
 	uint64_t rsvd5;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
-/**> Draft 20, Section 10.11 Text Response */
+/**< Draft 20, Section 10.11 Text Response */
 struct iscsi_targ_text_rsp {	
 	uint8_t opcode;
 	uint8_t flags;
@@ -443,7 +443,7 @@ struct iscsi_targ_text_rsp {
 	uint32_t max_cmd_sn;
 	uint32_t rsvd4;
 	uint64_t rsvd5;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.12 Login Request */
@@ -492,7 +492,7 @@ struct iscsi_init_logout_cmnd {
 	uint8_t reason;
 	uint16_t rsvd1;
 	uint32_t length;
-	uint64_t lun;		/**> reserved */
+	uint64_t lun;		/**< reserved */
 	uint32_t init_task_tag;
 	uint16_t cid;
 	uint16_t rsvd2;
@@ -500,7 +500,7 @@ struct iscsi_init_logout_cmnd {
 	uint32_t exp_stat_sn;
 	uint64_t rsvd4;
 	uint64_t rsvd5;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.15 Logout Response */
@@ -509,8 +509,8 @@ struct iscsi_targ_logout_rsp {
 	uint8_t flags;
 	uint8_t response;
 	uint8_t rsvd1;
-	uint32_t length;		/**> reserved */
-	uint64_t lun;		/**> reserved */
+	uint32_t length;		/**< reserved */
+	uint64_t lun;		/**< reserved */
 	uint32_t init_task_tag;
 	uint32_t rsvd3;
 	uint32_t stat_sn;
@@ -520,7 +520,7 @@ struct iscsi_targ_logout_rsp {
 	uint16_t time2wait;
 	uint16_t time2retain;
 	uint32_t rsvd5;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.16 SNACK Request */
@@ -537,7 +537,7 @@ struct iscsi_init_snack {
 	uint64_t rsvd3;
 	uint32_t begrun;
 	uint32_t runlen;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.17 Reject */
@@ -547,15 +547,15 @@ struct iscsi_targ_rjt {
 	uint8_t reason;
 	uint8_t rsvd2;
 	uint32_t length;
-	uint64_t lun;		/**> reserved */
-	uint32_t init_task_tag;	/**> reserved 0xffffffff */
+	uint64_t lun;		/**< reserved */
+	uint32_t init_task_tag;	/**< reserved 0xffffffff */
 	uint32_t rsvd4;
 	uint32_t stat_sn;
 	uint32_t exp_cmd_sn;
 	uint32_t max_cmd_sn;
 	uint32_t data_sn;
 	uint64_t rsvd5;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.18 NOP-Out */
@@ -571,7 +571,7 @@ struct iscsi_init_nopout {
 	uint32_t exp_stat_sn;
 	uint64_t rsvd2;
 	uint64_t rsvd3;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Draft 20, Section 10.19 NOP-In */
@@ -588,7 +588,7 @@ struct iscsi_targ_nopin {
 	uint32_t max_cmd_sn;
 	uint32_t rsvd2;
 	uint64_t rsvd3;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** Used in Login negotiations */
@@ -620,8 +620,8 @@ struct generic_pdu {
 struct response_pdu {
 	uint8_t opcode;
 	uint8_t flags;
-	uint8_t reason;		/**> for reject PDU */
-	uint8_t version_active;	/**> for login response PDU */
+	uint8_t reason;		/**< for reject PDU */
+	uint8_t version_active;	/**< for login response PDU */
 	uint32_t length;
 	uint64_t lun;
 	uint32_t init_task_tag;
@@ -634,7 +634,7 @@ struct response_pdu {
 	uint16_t rsvd2;
 	uint32_t offset;
 	uint32_t xfer_len;
-	uint32_t header_digest;	/**> holds header CRC if in use */
+	uint32_t header_digest;	/**< holds header CRC if in use */
 };
 
 /** The format of the data returned by the SCSI REQUEST SENSE command.
