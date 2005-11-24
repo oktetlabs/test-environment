@@ -784,7 +784,7 @@ tcp_data_csap_handler(const char *pkt_fname, void *user_param)
     }
 
     len = asn_get_length(pkt, "payload.#bytes");
-    RING("%s(): %d bytes received", __FUNCTION__, (int)len);
+    INFO("%s(): %d bytes received", __FUNCTION__, (int)len);
 
     if (len > msg->length)
         WARN("%s(): length of message greater then buffer", __FUNCTION__);
@@ -1038,7 +1038,7 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
         ERROR("%s(): read loc seq failed %r", __FUNCTION__, rc);
         goto cleanup;
     }
-    RING("%s(): read loc start seq: %u",
+    INFO("%s(): read loc start seq: %u",
          __FUNCTION__, context->loc_start_seq);
 
     rc = asn_read_int32(pkt, &(context->rem_start_seq), 
@@ -1048,7 +1048,7 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
         ERROR("%s(): read rem seq failed %r", __FUNCTION__, rc);
         goto cleanup;
     }
-    RING("%s(): read rem start seq: %u",
+    INFO("%s(): read rem start seq: %u",
          __FUNCTION__, context->rem_start_seq);
 
 
@@ -1059,7 +1059,7 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
               __FUNCTION__, rc);
         goto cleanup;
     }
-    RING("%s(): read rem port: %u", __FUNCTION__, port);
+    INFO("%s(): read rem port: %u", __FUNCTION__, port);
     context->rem_port = port;
 
     if (context->loc_port == 0)
