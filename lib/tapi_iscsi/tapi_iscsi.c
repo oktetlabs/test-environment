@@ -1248,8 +1248,7 @@ tapi_iscsi_target_set_parameter(const char *ta,
     assert(ta != NULL);
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
-    RING("Configuring %s parameter on Agent %s", 
-         log_mapping[param], ta);
+
     return cfg_set_instance_fmt(CVT_STRING, value,
                                 "/agent:%s/iscsi_target:/%s",
                                 ta, mapping[param]);
