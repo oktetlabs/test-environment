@@ -2630,7 +2630,7 @@ iscsi_parameters2advertize_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    RING("SETTING %s to %s", oid, value);
+    INFO("SETTING %s to %s", oid, value);
     init_data->targets[iscsi_get_target_id(oid)].
         conns[iscsi_get_cid(oid)].conf_params |= atoi(value);
 
