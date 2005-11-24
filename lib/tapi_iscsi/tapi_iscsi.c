@@ -66,6 +66,44 @@
 #include "tapi_test.h"
 #include "tapi_rpc.h"
 
+/* Initiator configuration */
+static char *log_mapping[] = {
+        "HeaderDigest",
+        "DataDigest",
+        "MaxConnections",
+        "",
+        "TargetName",
+        "InitiatorName",
+        "TargetAlias",
+        "InitiatorAlias",
+        "TargetAddr",
+        "TargetPort",
+        "InitialR2T",
+        "ImmediateData",
+        "MaxRecvDataSegmentLength",
+        "MaxBurstLength",
+        "FirstBurstLength",
+        "DefaultTime2Wait",
+        "DefaultTime2Retain",
+        "MaxOutstandingR2T",
+        "DataPDUInOrder",
+        "DataSequenceInOrder",
+        "ErrorRecoveryLevel",
+        "SessionType",
+        "OFMarker",
+        "IFMarker",
+        "OFMarkInt",
+        "IFMarkInt",
+        NULL,
+        "LocalSecret",
+        "LocalName",
+        "PeerSecret",
+        "PeerName",
+        "ChallengeLength",
+        "EncFmt",
+        "TargetAuth",
+        "AuthMethod"
+    };
 
 /* See description in tapi_iscsi.h */
 te_errno
@@ -1210,10 +1248,12 @@ tapi_iscsi_target_set_parameter(const char *ta,
     assert(ta != NULL);
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
+    RING("Configuring %s parameter on Agent %s", 
+         log_mapping[param], ta);
     return cfg_set_instance_fmt(CVT_STRING, value,
                                 "/agent:%s/iscsi_target:/%s",
                                 ta, mapping[param]);
-} 
+}
 
 /* see description in tapi_iscsi.h */
 int 
@@ -1283,44 +1323,6 @@ tapi_iscsi_target_will_drop(const char *ta, int id, te_bool drop_all,
 }
 
 
-/* Initiator configuration */
-static char *log_mapping[] = {
-        "HeaderDigest",
-        "DataDigest",
-        "MaxConnections",
-        "",
-        "TargetName",
-        "InitiatorName",
-        "TargetAlias",
-        "InitiatorAlias",
-        "TargetAddr",
-        "TargetPort",
-        "InitialR2T",
-        "ImmediateData",
-        "MaxRecvDataSegmentLength",
-        "MaxBurstLength",
-        "FirstBurstLength",
-        "DefaultTime2Wait",
-        "DefaultTime2Retain",
-        "MaxOutstandingR2T",
-        "DataPDUInOrder",
-        "DataSequenceInOrder",
-        "ErrorRecoveryLevel",
-        "SessionType",
-        "OFMarker",
-        "IFMarker",
-        "OFMarkInt",
-        "IFMarkInt",
-        NULL,
-        "LocalSecret",
-        "LocalName",
-        "PeerSecret",
-        "PeerName",
-        "ChallengeLength",
-        "EncFmt",
-        "TargetAuth",
-        "AuthMethod"
-    };
 
 int
 tapi_iscsi_initiator_advertize_set(const char *ta,
@@ -1668,11 +1670,13 @@ tapi_iscsi_initiator_add_target(const char *ta,
         ERROR("Failed to set TargetPort aprameter of the initiator, rc=%r");
         return -rc;
     }
-    
+
     iscsi_current_cid[(int)iscsi_current_target] = 0;
-    
-    VERB("Target with ID=%d added to Initiator on agent %s", 
-         iscsi_current_target, ta);
+
+    RING("Target with ID=%d added to Initiator on "
+         "agent %s, addr=%s, port=%d",
+         iscsi_current_target, ta,
+         target_addr_param, target_port);
     return (iscsi_current_target++);
 }
 
