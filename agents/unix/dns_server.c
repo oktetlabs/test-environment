@@ -243,6 +243,12 @@ dnsserver_release(const char *name)
     UNUSED(name);
     
     ds_restore_backup(dns_index);
+    if (daemon_running("dnsserver"))
+    {
+        daemon_set(0, "dnsserver", "0");
+        daemon_set(0, "dnsserver", "1");
+    }
+    
     return rcf_pch_del_node(&node_ds_dnsserver);
 }
 
