@@ -2426,9 +2426,8 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
 {
     char        dev_pattern[128];
     glob_t      devices;
-    int         rc;
+    int         rc = 0;
     char       *nameptr;
-    unsigned    i;
 
 
     UNUSED(gid);
@@ -2451,8 +2450,8 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
             WARN("Cannot verify that a host bus is set correctly!!!");
     }
 
-    sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:0:0:*/block", 
-            init_data->host_bus_adapter);
+    sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:*:%d/block", 
+            init_data->host_bus_adapter, iscsi_get_target_id(oid));
     if ((rc = glob(dev_pattern, GLOB_ERR, NULL, &devices)) != 0)
     {
         switch(rc)
@@ -2464,6 +2463,7 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
                 ERROR("Cannot read a list of devices: read error");
                 return TE_RC(TE_TA_UNIX, TE_EIO);
             case GLOB_NOMATCH:
+                WARN("No iSCSI devices found!!!");
                 *value = '\0';
                 return 0;
             default:
@@ -2473,30 +2473,32 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
     }
 
     *value = '\0';
-    for (i = 0; i < devices.gl_pathc; i++)
+    if (devices.gl_pathc > 1)
     {
-        if (realpath(devices.gl_pathv[i], dev_pattern) == NULL)
-        {
-            WARN("Cannot resolve %s: %s", devices.gl_pathv[i],
-                 strerror(errno));
-        }
-        else
-        {
-            nameptr = strrchr(dev_pattern, '/');
-            if (nameptr == NULL)
-                WARN("Strange sysfs name: %s", dev_pattern);
-            else
-            {
-                if (*value != '\0')
-                    strcat(value, " ");
-                strcat(value, "/dev/");
-                strcat(value, nameptr + 1);
-            }
-        }
+        WARN("Multiple devices associated with the target -- very strange");
     }
 
+    if (realpath(devices.gl_pathv[0], dev_pattern) == NULL)
+    {
+        rc = errno;
+        WARN("Cannot resolve %s: %s", devices.gl_pathv[0], rc);
+        rc = TE_OS_RC(TE_TA_UNIX, rc);
+    }
+    else
+    {
+        nameptr = strrchr(dev_pattern, '/');
+        if (nameptr == NULL)
+            WARN("Strange sysfs name: %s", dev_pattern);
+        else
+        {
+            if (*value != '\0')
+                strcat(value, " ");
+            strcat(value, "/dev/");
+            strcat(value, nameptr + 1);
+        }
+    }
     globfree(&devices);
-    return 0;
+    return rc;;
 }
 
 /* Initiator's path to scripts (for L5) */
@@ -2701,11 +2703,8 @@ iscsi_cid_get(unsigned int gid, const char *oid,
 
 /* Configuration tree */
 
-RCF_PCH_CFG_NODE_RO(node_iscsi_host_device, "host_device", NULL, 
-                    NULL, iscsi_host_device_get);
-
 RCF_PCH_CFG_NODE_RW(node_iscsi_script_path, "script_path", NULL, 
-                    &node_iscsi_host_device, iscsi_script_path_get,
+                    NULL, iscsi_script_path_get,
                     iscsi_script_path_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_type, "type", NULL, 
@@ -2716,8 +2715,12 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_host_bus_adapter, "host_bus_adapter", NULL,
                     &node_iscsi_type, iscsi_host_bus_adapter_get,
                     iscsi_host_bus_adapter_set);
 
+RCF_PCH_CFG_NODE_RO(node_iscsi_initiator_host_device, "host_device",
+                    NULL, NULL,
+                    iscsi_host_device_get);
+
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_port, "target_port", NULL, 
-                    NULL,
+                    &node_iscsi_initiator_host_device,
                     iscsi_target_port_get, iscsi_target_port_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_addr, "target_addr", NULL, 
@@ -2727,8 +2730,6 @@ RCF_PCH_CFG_NODE_RW(node_iscsi_target_addr, "target_addr", NULL,
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_name, "target_name", NULL,
                     &node_iscsi_target_addr, iscsi_target_name_get,
                     iscsi_target_name_set);
-
-
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_cid, "cid", NULL, NULL,
                     iscsi_cid_get, iscsi_cid_set);

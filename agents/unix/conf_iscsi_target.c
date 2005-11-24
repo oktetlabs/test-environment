@@ -545,11 +545,12 @@ static int
 iscsi_target_backstore_mount(void)
 {
     int status;
-    char cmd[64];
+    char cmd[128];
 
     if (is_backstore_mounted++ > 0)
         return 0;
 
+    RING("Mounting iSCSI target backing store as a loop device");
     status = iscsi_sync_device(0, 0);
     if (status != 0)
         return status;
@@ -561,9 +562,9 @@ iscsi_target_backstore_mount(void)
               strerror(status));
         return TE_OS_RC(TE_TA_UNIX, status);
     }
-    sprintf(cmd, "/bin/mount -o loop,sync /tmp/te_backing_store.%lu %s",
-            (unsigned long)getpid(), 
-            backstore_mountpoint);
+    snprintf(cmd,  sizeof(cmd), "/bin/mount -o loop,sync /tmp/te_backing_store.%lu %s",
+             (unsigned long)getpid(), 
+             backstore_mountpoint);
     status = ta_system(cmd);
     if (status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
     {
@@ -578,14 +579,14 @@ static void
 iscsi_target_backstore_unmount(void)
 {
     int status;
-    char cmd[64];
+    char cmd[128];
 
     if (is_backstore_mounted == 0)
         return;
     if (--is_backstore_mounted != 0)
         return;
 
-    sprintf(cmd, "/bin/umount %s", backstore_mountpoint);
+    snprintf(cmd, sizeof(cmd), "/bin/umount %s", backstore_mountpoint);
     status = ta_system(cmd);
     if (status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
     {
@@ -615,8 +616,18 @@ iscsi_target_backstore_get(unsigned int gid, const char *oid,
         return rc;
     if (!is_mmap)
         *value = '\0';
+    else if (size > 1024 * 1024 && (size % (1024 * 1024) == 0))
+    {
+        sprintf(value, "%lum", (unsigned long)size / (1024 * 1024));
+    }
+    else if (size > 1024 && (size % 1024) == 0)
+    {
+        sprintf(value, "%luk", (unsigned long)size / 1024);
+    }
     else
+    {
         sprintf(value, "%lu", (unsigned long)size);
+    }
     return 0;
 }
 

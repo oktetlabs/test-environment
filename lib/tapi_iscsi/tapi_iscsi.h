@@ -698,17 +698,6 @@ extern int tapi_iscsi_initiator_conn_down(const char *ta,
 
 
 /**
- * Returns a space-separated list of iSCSI devices on TA
- *
- * @param ta         Name of the TA where the initiator is run
- * @param buffer     A pointer to variable that will hold 
-                     a pointer a malloc'ed device list string
- *
- * @return           errno
-*/
-extern int tapi_iscsi_initiator_get_devices(const char *ta, char **buffer);
-
-/**
  * Function converts string representation of iSCSI parameter to 
  * corresponding enum value of tapi_iscsi_parameter type.
  *
@@ -841,6 +830,8 @@ extern char* iscsi_digest_enum2str(iscsi_digest_type digest_type);
 
 /**
  * Mount a target backing store.
+ * Note: this will work only if the target is using 
+ * a file-based backing store.
  * 
  * @param ta    Test Agent name
  * 
@@ -940,16 +931,17 @@ extern te_errno tapi_iscsi_target_raw_verify(const char *ta,
  * a test.
  * 
  * So, the basic action sequence in the test is as follows:
- * -# create a I/O handler with 
- *    @sa tapi_iscsi_io_prepare
+ * -# create a I/O handler with tapi_iscsi_io_prepare()
  * -# issues all the necessary I/O tasks, remembering
  *    the task id of the last task
  * -# proceed with passing iSCSI packets to/from the target,
- *    performing the necessary checks etc, until
- *    the last issued report is reported to complete by
- *    @sa tapi_iscsi_io_is_complete
- * -# destroy the handler with
- *    @sa tapi_iscsi_io_finish
+ *    performing the necessary checks etc, until 
+ *    tapi_iscsi_io_is_complete() returns TRUE
+ * -# destroy the handler with tapi_iscsi_io_finish()
+ * 
+ * Note: the processing thread will send a signal to the main thread,
+ * so the user should be prepared to handle "interrupted system call"
+ * condition, or use tapi_iscsi_io_block_signal()
  */
 typedef struct iscsi_io_handle_t iscsi_io_handle_t;
 
@@ -962,8 +954,21 @@ typedef struct iscsi_io_handle_t iscsi_io_handle_t;
  * 
  * @return Status code
  */
-extern te_errno tapi_iscsi_io_prepare(const char *ta, unsigned id, 
+extern te_errno tapi_iscsi_io_prepare(const char *ta, 
+                                      iscsi_target_id id, 
                                       iscsi_io_handle_t **ioh);
+
+
+/**
+ * Resets the I/O handler task queue
+ * 
+ * @param ioh   I/O handler
+ * 
+ * @return Status code
+ * @retval TE_EINPROGRESS   There are incomplete tasks pending
+ */
+extern te_errno tapi_iscsi_io_reset(iscsi_io_handle_t *ioh);
+
 
 /**
  * Destroy an asynchronous I/O handler
@@ -974,38 +979,53 @@ extern te_errno tapi_iscsi_io_prepare(const char *ta, unsigned id,
  */
 extern te_errno tapi_iscsi_io_finish(iscsi_io_handle_t *ioh);
 
+
 /**
- * Wait for an I/O task to complete 
- * NOTE: this function should be used with caution, because
- * if a pending task generates any traffic, and the function
- * is called in the same thread as the main test code, the
- * test will obviously hang.
+ *  Gets the status code of a task of a I/O handler
  * 
- * @param ioh           I/O handler
- * @param taskid        A task id to wait
- * @param status        Status code of the task (OUT)
+ * @param ioh           I/O handle
+ * @param taskid        Task ID
+ * 
+ * @return Status code of a given task
+ * @retval TE_EINPROGRESS if the task has not completed
+ */
+extern te_errno tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh, 
+                                         unsigned taskid);
+
+
+/**
+ *  Checks whether a task has completed
+ * 
+ * @param ioh           I/O handle
+ * @param taskid        Task ID
+ * 
+ * @return TRUE if the task has completed
+ */
+extern te_bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, 
+                                         unsigned taskid);
+
+/**
+ *  Blocks I/O completion signal delivery for a calling thread
+ *  (may be used in conjunction with a non-blocking
+ *  TAPI functions that do not handle interrupted system
+ *  calls well.
+ *  The signal will be unblocked by a following call to
+ *  tapi_iscsi_io_is_complete() or tapi_iscsi_io_get_status()
  * 
  * @return Status code
  */
-extern te_errno tapi_iscsi_initiator_wait(iscsi_io_handle_t *ioh, 
-                                          unsigned taskid,
-                                          te_errno *status);
+extern te_errno tapi_iscsi_io_block_signal(void);
 
-/**
- * Checks whether a given I/O task has completed
- * 
- * @param ioh           I/O handler
- * @param taskid        A task id to check
- * @param status        Status code of the task (OUT)
- * 
- * @return TRUE if the task is complete
- */
-extern te_bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, 
-                                         unsigned taskid,
-                                         te_errno *status);
+
 
 /**
  * Request mounting an iSCSI device on the TA.
+ *
+ * Note: you need to call tapi_iscsi_target_mount() before this
+ * function to create a filesystem on a target backing store.
+ *
+ * As a consequence, this function will only work if the target
+ * is configured to use a file-based backing store
  * 
  * @param ioh           I/O handler
  * @param taskid        A pointer to store a task ID or NULL (OUT)
