@@ -345,6 +345,51 @@ cfg_sync_agt_volatile(const char *inst_name)
 }
 
 /**
+ * Find out the subtree to be synchronized.
+ * 
+ * @param ta    Test Agent name
+ * @param val   value for /agent/rsrc instance
+ *
+ * @return OID of the subtree to be synchronized after addition/deletion
+ *         of the resource
+ */
+static char *
+rsrc_oid_to_sync(const char *ta, const char *val)
+{
+    static char buf[CFG_OID_MAX];
+    char       *tmp = buf;
+    cfg_oid    *oid = cfg_convert_oid_str(val);
+    int         i;
+    
+    if (oid == NULL)
+        return "/:";
+
+    if (oid->inst)
+    {
+        cfg_free_oid(oid);
+        strcpy(buf, val);
+        return buf;       
+    } 
+    
+    *buf = 0;
+        
+    /* 
+     * It is object identifier. Assume that all instance names 
+     * except TA name are empty.
+     */
+    for (i = 1; i < oid->len; i++)
+    {
+        tmp += sprintf(tmp, "/%s:%s",
+                       ((cfg_object_subid *)(oid->ids))[i].subid,
+                       i == 1 ?  ta : "");
+    }
+
+    cfg_free_oid(oid);
+
+    return buf;
+}
+
+/**
  * Process add user request.
  *
  * @param msg           message pointer
@@ -470,15 +515,15 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         return;              
     }
 
+    if (strstr(oid, "/rsrc:") != NULL)
+        oid = rsrc_oid_to_sync(ta, val_str);
+
     if (obj->type != CVT_NONE)
         free(val_str);
-
-    if (strstr(oid, "/rsrc:") != NULL)
-        oid = "/:";
         
     if ((msg->rc = cfg_ta_sync(oid, TRUE)) != 0)
     {
-        ERROR("Failed to synchronize subtree of a new instance %s "
+        ERROR("Failed to synchronize subtree %s "
               "error=%r", oid, msg->rc);
         if ((inst = CFG_GET_INST(handle)) != NULL)
         {
@@ -695,8 +740,6 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
             return;
         }
         VERB("Instance %s successfully deleted from the Agent", inst->name);
-        if (strstr(inst->oid, "/rsrc:") != NULL)
-            cfg_ta_sync("/:", TRUE);
     }
 
     cfg_db_del(handle);

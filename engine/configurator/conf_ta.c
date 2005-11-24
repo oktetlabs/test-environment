@@ -420,6 +420,8 @@ sync_ta_subtree(const char *ta, const char *oid)
     sprintf(limit, " %s", oid);
     if (rc == 0)
         remove_excessive(CFG_GET_INST(handle), cfg_get_buf);
+    else
+        rc = 0;
         
     /* Calculate number of OIDs to be synchronized */
     for (tmp = cfg_get_buf; tmp < limit; tmp = next)
