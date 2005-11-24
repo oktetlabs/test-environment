@@ -523,7 +523,7 @@ tapi_tad_forward_all(const char *ta_name, int session,
               __FUNCTION__, ta_name, csap_rcv, rc);
         return TE_RC(TE_TAPI, rc);
     } 
-    MSLEEP(timeout);
+    usleep(timeout * 1000);
 
     rc = rcf_ta_trrecv_stop(ta_name, session, csap_rcv, NULL, NULL,
                             forwarded);
