@@ -1335,7 +1335,9 @@ rsrc_get(unsigned int gid, const char *oid, char *value, const char *id)
 static char *
 rsrc_gen_name(const char *name)
 {
-    static char buf[CFG_OID_MAX] = { 0, };
+    static char buf[CFG_OID_MAX];
+    
+    *buf = 0;
     
     if (name == NULL)
         return NULL;
