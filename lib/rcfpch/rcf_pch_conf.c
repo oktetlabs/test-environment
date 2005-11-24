@@ -321,7 +321,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         {
             int   len;
             int   rc = 0;
-            char *tmp_parsed;
+            char  tmp_parsed[CFG_OID_MAX];
             
             if ((tmp = strchr(tmp_inst_name, ' ')) == NULL)
             {
@@ -337,19 +337,16 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             }
 
             len = strlen(obj->sub_id) + strlen(tmp_inst_name) + 3;
-            tmp_parsed = (char *)
-                calloc(1, len + (parsed == NULL ? 0 : strlen(parsed)));
 
             sprintf(tmp_parsed, "%s/%s:%s", parsed == NULL ? "" : parsed,
                     obj->sub_id, tmp_inst_name);
 
-            if (*next_level == 0 || all)
+            if (*next_level == 0 || all || strcmp(next_level, OID_ETC) == 0)
             {
                 olist *new_entry;
 
                 if ((new_entry = (olist *)malloc(sizeof(olist))) == NULL)
                 {
-                    free(tmp_parsed);
                     free(tmp_list);
                     RET(TE_ENOMEM);
                 }
@@ -363,8 +360,6 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             if (obj->son != NULL && *next_level != 0)
                 rc = create_wildcard_inst_list(obj->son, tmp_parsed,
                                                next_level, full_oid, list);
-            free(tmp_parsed);
-
             if (rc != 0)
             {
                 free(tmp_list);
@@ -439,26 +434,21 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
     {
         int   len;
         int   rc = 0;
-        char *tmp_parsed;
+        char  tmp_parsed[CFG_OID_MAX];
 
         if (!all && strcmp(obj->sub_id, sub_id) != 0)
             continue;
 
         len = strlen(obj->sub_id) + 2;
-        tmp_parsed = (char *)calloc(1, len +
-            ((parsed == NULL) ? 0 : strlen(parsed)));
         sprintf(tmp_parsed, "%s/%s",
                 parsed == NULL ? "" : parsed, obj->sub_id);
 
-        if (*next_level == 0 || all)
+        if (*next_level == 0 || all || strcmp(next_level, OID_ETC) == 0)
         {
             olist *new_entry;
 
             if ((new_entry = (olist *)malloc(sizeof(olist))) == NULL)
-            {
-                free(tmp_parsed);
                 RET(TE_ENOMEM);
-            }
 
             strcpy(new_entry->oid, tmp_parsed);
             new_entry->next = *list;
@@ -469,7 +459,6 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             rc = create_wildcard_obj_list(obj->son, tmp_parsed,
                                           next_level, full_oid, list);
 
-        free(tmp_parsed);
         if (rc != 0)
             RET(rc);
 
