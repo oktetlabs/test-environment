@@ -240,7 +240,7 @@ rpc_te_shell_cmd(rcf_rpc_server *rpcs, const char *cmd,
     if (out_fd != NULL)
         *out_fd = out.out_fd;
 
-    TAPI_RPC_LOG("RPC (%s,%s): te_shell_cmd(%s, %d, %p(%d), %p(%d)) "
+    TAPI_RPC_LOG("RPC (%s,%s): te_shell_cmd(\"%s\", %d, %p(%d), %p(%d)) "
                  "-> %d (%s)",
                  rpcs->ta, rpcs->name, cmd, uid, 
                  in_fd, (in_fd == NULL) ? 0 : *in_fd,
