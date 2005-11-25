@@ -37,12 +37,8 @@ extern "C" {
                                       including trailing 0 */
 #define CFG_INST_NAME_MAX   128  /**< Instance name, including trailing 0 */
 
-#define CFG_OID_LEN_MAX     8    /**< Maximum number of elements in OID */
-
-/** Maximum space for object (instance) identifier, 2 is for '/' and ':' */
 #define CFG_OID_MAX \
     ((CFG_SUBID_MAX + CFG_INST_NAME_MAX + 2) * CFG_OID_LEN_MAX)
-
 
 /** Object identifier element */
 typedef struct cfg_object_subid {

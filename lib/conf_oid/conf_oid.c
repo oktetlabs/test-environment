@@ -112,13 +112,13 @@ cfg_oid *
 cfg_convert_oid_str(const char *str)
 {
     cfg_oid *oid;
-    char     oid_buf[CFG_OID_MAX] = {0,};
+    char     oid_buf[CFG_OID_MAX] = { 0, };
     char     str_buf[CFG_OID_MAX];
     char    *token;
     te_bool  inst;
     int      depth = 1;
     int      size;
-
+    
     if (str == NULL)
     {
         ERROR("%s: 'str' parameter can't be NULL", __FUNCTION__);
@@ -209,8 +209,8 @@ char *
 cfg_convert_oid(const cfg_oid *oid)
 {
     char *str;
-    char *tmp;
     int   i;
+    int   len = 0;
 
     if (oid == NULL)
         return NULL;
@@ -225,16 +225,27 @@ cfg_convert_oid(const cfg_oid *oid)
         return str;
     }
 
-    for (i = 1, tmp = str; i < oid->len; tmp += strlen(tmp), i++)
+    for (i = 1; i < oid->len; i++)
     {
         if (oid->inst)
         {
-            sprintf(tmp, "/%s:%s", ((cfg_inst_subid *)(oid->ids))[i].subid,
-                    ((cfg_inst_subid *)(oid->ids))[i].name);
+            len += snprintf(str + len, CFG_OID_MAX - len, 
+                            "/%s:%s", 
+                            ((cfg_inst_subid *)(oid->ids))[i].subid,
+                            ((cfg_inst_subid *)(oid->ids))[i].name);
         }
         else
         {
-            sprintf(tmp, "/%s", ((cfg_object_subid *)(oid->ids))[i].subid);
+            len += snprintf(str + len, CFG_OID_MAX - len, 
+                            "/%s", 
+                            ((cfg_object_subid *)(oid->ids))[i].subid);
+        }
+        
+        if (len == CFG_OID_MAX)
+        {
+            ERROR("%s: resulting OID is too long", __FUNCTION__);
+            free(str);
+            return NULL;
         }
     }
 
