@@ -37,7 +37,7 @@ extern "C" {
                                       including trailing 0 */
 #define CFG_INST_NAME_MAX   128  /**< Instance name, including trailing 0 */
 
-#define CFG_OID_LEN_MAX     16   /**< Maximum number of elements in OID */
+#define CFG_OID_LEN_MAX     8    /**< Maximum number of elements in OID */
 
 /** Maximum space for object (instance) identifier, 2 is for '/' and ':' */
 #define CFG_OID_MAX \
