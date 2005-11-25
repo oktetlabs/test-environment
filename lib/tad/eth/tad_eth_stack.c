@@ -140,7 +140,7 @@ eth_release(csap_p csap_descr)
         ret_val = select(spec_data->out + 1, NULL, &write_set, NULL,
                          &wr_timeout);
         if (ret_val == 0)
-            RING("%s(CSAP %d): output socket %d is not ready for write", 
+            INFO("%s(CSAP %d): output socket %d is not ready for write", 
                  __FUNCTION__, csap_descr->id, spec_data->out);
         else if (ret_val < 0)
             WARN("%s(CSAP %d): system errno on select, %d", 
@@ -247,7 +247,7 @@ eth_prepare_send(csap_p csap_descr)
         ERROR("open_packet_socket error %d", rc);
         return TE_OS_RC(TE_TAD_CSAP, rc);
     }
-    RING("%s(CSAP %d) open out socket %d", 
+    INFO("%s(CSAP %d) open out socket %d", 
          __FUNCTION__, csap_descr->id, spec_data->out);
 
     buf_size = 0x100000; 
@@ -816,7 +816,7 @@ tad_eth_single_destroy_cb(csap_p csap_descr, unsigned int layer)
 
     if(spec_data->in >= 0)
     {
-        RING("%s(CSAP %d), close in socket %d",
+        INFO("%s(CSAP %d), close in socket %d",
              __FUNCTION__, csap_descr->id, spec_data->in);
         if (close_packet_socket(spec_data->interface->name, spec_data->in) < 0)
             assert(0);
@@ -825,7 +825,7 @@ tad_eth_single_destroy_cb(csap_p csap_descr, unsigned int layer)
     
     if (spec_data->out >= 0)
     {
-        RING("%s(CSAP %d), close out socket %d",
+        INFO("%s(CSAP %d), close out socket %d",
              __FUNCTION__, csap_descr->id, spec_data->out);
         if (close_packet_socket(spec_data->interface->name, spec_data->out) < 0)
             assert(0);
