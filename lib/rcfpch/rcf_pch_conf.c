@@ -1156,10 +1156,10 @@ create_lock(const char *name)
             
     if ((f = fopen(fname, "r")) != NULL)
     {
-        char buf[16];
+        char buf[16] = { 0, };
         int  pid = 0;
         
-        rc = fread(buf, 1, sizeof(buf), f);
+        rc = fread(buf, 1, sizeof(buf) - 1, f);
         fclose(f);
         if (rc <= 0 || (pid = atoi(buf)) == 0 || kill(pid, SIGCONT) == 0)
         {
@@ -1175,7 +1175,7 @@ create_lock(const char *name)
             ERROR("Failed to delete lock %s of dead TA: %r", fname, rc);
             return TE_RC(TE_RCF_PCH, TE_EPERM);
         }
-        WARN("Lock '%s' of dead TA with PID=%d is deleted", buf, pid);
+        WARN("Lock '%s' of dead TA with PID=%d is deleted", fname, pid);
     }
     
     if ((f = fopen(fname, "w")) == NULL)
