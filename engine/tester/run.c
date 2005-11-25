@@ -1066,7 +1066,8 @@ run_test_session(tester_ctx *ctx, test_session *session, test_id id,
              test != NULL && (~(ctx->flags) & TESTER_SHUTDOWN);
              test = test->links.tqe_next)
         {
-            if (session->keepalive != NULL)
+            if (session->keepalive != NULL &&
+                (TE_RC_GET_ERROR(rc) != TE_ETESTEMPTY))
             {
                 VERB("Running test session keep-alive validation...");
                 ctx->flags |= TESTER_FORCE_RUN;
