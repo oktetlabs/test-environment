@@ -1500,7 +1500,7 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
             break;
             
         case RCF_UINT32:
-            *(uint8_t *)val = (uint32_t)value;
+            *(uint32_t *)val = (uint32_t)value;
             break;
             
         case RCF_INT64:
