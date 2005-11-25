@@ -454,6 +454,17 @@ extern te_errno rcf_ta_del_file(const char *ta_name, int session,
                                 const char *rfile);
 
 /**
+ * Switch traffic operations logging among RING (enabled) and INFO
+ * (disabled) levels.
+ *
+ * @param ring      TRUE - log using RING level,
+ *                  FALSE - log using INFO level
+ *
+ * @return Status code.
+ */
+extern te_errno rcf_tr_op_log(te_bool ring);
+
+/**
  * This function creates CSAP (communication service access point) on the 
  * Test Agent. 
  *

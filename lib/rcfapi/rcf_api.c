@@ -114,6 +114,15 @@ static pthread_mutex_t  rcf_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 #endif
 
+/**
+ * Log traffic operations using RING (TRUE) or INFO (FALSE) level.
+ *
+ * It is per library instance configuration variable. It is not
+ * protected by any means.
+ */
+static te_bool  rcf_tr_op_ring = TRUE;
+
+
 /* Following two macros are necessary to provide tread safety */
 
 #ifndef HAVE_PTHREAD_H
@@ -1751,6 +1760,15 @@ rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
     return get_put_file(ta_name, session, rfile, "", RCFOP_FDEL);
 }
 
+
+/* See description in rcf_api.h */
+te_errno
+rcf_tr_op_log(te_bool ring)
+{
+    rcf_tr_op_ring = ring;
+    return 0;
+}
+
 /**
  * This function creates CSAP (communication service access point) on the 
  * Test Agent. 
@@ -1801,8 +1819,9 @@ rcf_ta_csap_create(const char *ta_name, int session,
     {
         int fd;
 
-        RING("Create CSAP '%s' (%s:%d) with parameters:\n%Tf",
-             stack_id, ta_name, session, params);
+        LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+                "Create CSAP '%s' (%s:%d) with parameters:\n%Tf",
+                stack_id, ta_name, session, params);
         if ((fd = open(params, O_RDONLY)) < 0)
         {
             if ((len = strlen(params) + 1) >
@@ -1903,7 +1922,8 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
 
     TE_RC_UPDATE(rc, msg.error);
 
-    LOG_MSG((rc == 0) ? TE_LL_RING : TE_LL_ERROR,
+    LOG_MSG((rc != 0) ? TE_LL_ERROR :
+            (rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO),
             "Destroy CSAP %u (%s:%d): %r", csap_id, ta_name, session, rc);
 
     return rc == 0 ? msg.error : rc;
@@ -2011,9 +2031,10 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     if (templ == NULL || strlen(templ) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
         
-    RING("Start %s send operation on the CSAP %d (%s:%d) with "
-         "template:\n%Tf", rcf_call_mode2str(blk_mode), csap_id,
-         ta_name, session, templ);
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Start %s send operation on the CSAP %d (%s:%d) with "
+            "template:\n%Tf", rcf_call_mode2str(blk_mode), csap_id,
+            ta_name, session, templ);
 
     memset((char *)&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRSEND_START;
@@ -2126,8 +2147,9 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     msg.num = num;
     msg.timeout = timeout;
 
-    RING("Starting receive operation on the CSAP %d (%s:%d) with "
-         "pattern\n%Tf", csap_id, ta_name, session, pattern);
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Starting receive operation on the CSAP %d (%s:%d) with "
+            "pattern\n%Tf", csap_id, ta_name, session, pattern);
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
@@ -2187,8 +2209,9 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     {
         assert(msg.file != NULL);
 
-        RING("Traffic receive operation on the CSAP %d (%s:%d) got "
-             "packet\n%Tf", csap_id, ta_name, session, msg.file);
+        LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+                "Traffic receive operation on the CSAP %d (%s:%d) got "
+                 "packet\n%Tf", csap_id, ta_name, session, msg.file);
         if (handler != NULL)
             handler(msg.file, user_param);
 
@@ -2222,15 +2245,17 @@ rcf_ta_trrecv_wait(const char *ta_name, int session,
 {
     te_errno rc;
 
-    RING("Waiting for receive operation on the CSAP %d (%s:%d) ...",
-         csap_id, ta_name, session);
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Waiting for receive operation on the CSAP %d (%s:%d) ...",
+             csap_id, ta_name, session);
 
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
                           user_param, num, RCFOP_TRRECV_WAIT);
 
-    RING("Finished receive operation on the CSAP %d (%s:%d) got %d "
-         "packets : %r", csap_id, ta_name, session,
-         (num == NULL) ? -1 : (int)*num, rc);
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Finished receive operation on the CSAP %d (%s:%d) got %d "
+            "packets : %r", csap_id, ta_name, session,
+            (num == NULL) ? -1 : (int)*num, rc);
 
     return rc;
 }
@@ -2244,15 +2269,17 @@ rcf_ta_trrecv_stop(const char *ta_name, int session,
 {
     te_errno rc;
 
-    RING("Stopping receive operation on the CSAP %d (%s:%d) ...",
-         csap_id, ta_name, session);
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Stopping receive operation on the CSAP %d (%s:%d) ...",
+            csap_id, ta_name, session);
 
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
                           user_param, num, RCFOP_TRRECV_STOP); 
 
-    RING("Stopped receive operation on the CSAP %d (%s:%d) got %d "
-         "packets : %r", csap_id, ta_name, session,
-         (num == NULL) ? -1 : (int)*num, rc);
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Stopped receive operation on the CSAP %d (%s:%d) got %d "
+            "packets : %r", csap_id, ta_name, session,
+            (num == NULL) ? -1 : (int)*num, rc);
 
     return rc;
 }
@@ -2272,9 +2299,10 @@ rcf_ta_trrecv_get(const char *ta_name, int session,
     rc = csap_tr_recv_get(ta_name, session, csap_id, handler,
                           user_param, num, RCFOP_TRRECV_GET);
 
-    RING("Traffic receive operation on the CSAP %d (%s:%d) got %d "
-         "packets : %r", csap_id, ta_name, session,
-         (num == NULL) ? -1 : (int)*num, rc);
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Traffic receive operation on the CSAP %d (%s:%d) got %d "
+            "packets : %r", csap_id, ta_name, session,
+            (num == NULL) ? -1 : (int)*num, rc);
 
     return rc;
 }
@@ -2350,9 +2378,10 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     msg.handle = csap_id;
     msg.intparm = handler == NULL ? 0 : TR_RESULTS;
     
-    RING("Start send/receive operation on the CSAP %d (%s:%d) "
-         "with timeout %u ms, handler=%p (param=%p), pattern:\n%Tf",
-         csap_id, ta_name, session, timeout, handler, user_param, templ);
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Start send/receive operation on the CSAP %d (%s:%d) "
+            "with timeout %u ms, handler=%p (param=%p), pattern:\n%Tf",
+            csap_id, ta_name, session, timeout, handler, user_param, templ);
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
@@ -2365,8 +2394,9 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
         assert(handler != NULL);
         assert(msg.file != NULL);
 
-        RING("Traffic send/receive operation on the CSAP %d (%s:%d) got "
-             "packet\n%Tf", csap_id, ta_name, session, msg.file);
+        LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+                "Traffic send/receive operation on the CSAP %d (%s:%d) "
+                "got packet\n%Tf", csap_id, ta_name, session, msg.file);
 
         handler(msg.file, user_param);
         anslen = sizeof(msg);
