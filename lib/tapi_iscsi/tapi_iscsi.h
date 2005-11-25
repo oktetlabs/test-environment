@@ -58,7 +58,7 @@
                                                                     \
         CHECK_RC(tapi_iscsi_target_set_parameter((_ta_), param_id,  \
                  (_value_)));                                       \
-        RING("%s: Set %s to %s",                                    \
+        RING("%s: Target: set %s to %s",                            \
              (_ta_), (_param_name_), (_value_));                    \
     } while (0)
 
@@ -85,8 +85,8 @@
                                                     param_id,           \
                                                     (_value_),          \
                                                     TRUE));             \
-        RING("%s: Set %s for session ID %d, CID=%d to %s, with "        \
-             "advertizing",                                             \
+        RING("%s: Initiator: set %s for session ID %d, CID=%d to %s, "  \
+             "with advertizing",                                        \
              (_ta_), (_param_name_),                                    \
              (_target_id_), (_cid_), (_value_));                        \
     } while (0)
@@ -114,8 +114,8 @@
                                                     param_id,           \
                                                     (_value_),          \
                                                     FALSE));            \
-        RING("%s: Set %s for session ID %d, CID=%d to %s, without "     \
-             "advertizing",                                             \
+        RING("%s: Initiator: set %s for session ID %d, CID=%d to %s, "  \
+             "without advertizing",                                     \
              (_ta_), (_param_name_),                                    \
              (_target_id_), (_cid_), (_value_));                        \
     } while (0)
