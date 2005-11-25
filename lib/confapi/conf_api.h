@@ -136,7 +136,7 @@ typedef struct cfg_obj_descr {
  * @param descr     object properties description
  * @param handle    location for handle of the new object
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_register_object_str(const char    *oid,
                                         cfg_obj_descr *descr,
@@ -149,7 +149,7 @@ extern te_errno cfg_register_object_str(const char    *oid,
  * @param descr     object properties description
  * @param handle    location for handle of the new object
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_register_object(const cfg_oid *oid,
                                     cfg_obj_descr *descr,
@@ -161,7 +161,7 @@ extern te_errno cfg_register_object(const cfg_oid *oid,
  * @param handle    object handle
  * @param descr     OUT: location for the object properties description
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_get_object_descr(cfg_handle     handle,
                                      cfg_obj_descr *descr);
@@ -243,7 +243,7 @@ extern te_errno cfg_get_ith_inst_name(const char    *str_oid,
  * @param oid       object identifier in string representation
  * @param p_handle  location for object or instance handle
  *
- * @return      status code
+ * @return      Status code
  */
 extern te_errno cfg_find_str(const char *oid, cfg_handle *p_handle);
 
@@ -278,7 +278,7 @@ cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
  * @param oid       object identifier
  * @param handle    location for object or instance handle
  *
- * @return status code
+ * @return Status code
  */
 extern te_errno cfg_find(const cfg_oid *oid, cfg_handle *handle);
 
@@ -288,7 +288,7 @@ extern te_errno cfg_find(const cfg_oid *oid, cfg_handle *handle);
  * @param instance  instance handle
  * @param object    location for object handle
  *
- * @return status code.
+ * @return Status code
  */
 extern te_errno cfg_find_object_by_instance(cfg_handle  instance, 
                                             cfg_handle *object);
@@ -330,7 +330,7 @@ cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
  * @param handle    handle of the object or object instance
  * @param son       pointer to oldest son of the object or object instance.
  *
- * @returns Status code.
+ * @returns Status code
  */
 extern te_errno cfg_get_son(cfg_handle handle, cfg_handle *son);
 
@@ -340,7 +340,7 @@ extern te_errno cfg_get_son(cfg_handle handle, cfg_handle *son);
  * @param handle    handle of the object or object instance
  * @param brother   pointer to the brother's handle
  *
- * @returns Status code.
+ * @returns Status code
  */
 extern te_errno cfg_get_brother(cfg_handle handle, cfg_handle *brother);
 
@@ -350,7 +350,7 @@ extern te_errno cfg_get_brother(cfg_handle handle, cfg_handle *brother);
  * @param handle    handle of the object or object instance
  * @param father    pointer to the father's handle 
  *
- * @returns Status code.
+ * @returns Status code
  */
 extern te_errno cfg_get_father(cfg_handle handle, cfg_handle *father);
 
@@ -365,7 +365,7 @@ extern te_errno cfg_get_father(cfg_handle handle, cfg_handle *father);
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
                                  cfg_val_type type, ...);
@@ -382,7 +382,7 @@ extern te_errno cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_add_instance_str(const char *oid, cfg_handle *p_handle,
                                      cfg_val_type type, ...);
@@ -420,7 +420,7 @@ cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_add_instance_local(const cfg_oid *oid,
                                        cfg_handle    *handle,
@@ -438,7 +438,7 @@ extern te_errno cfg_add_instance_local(const cfg_oid *oid,
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_add_instance_local_str(const char   *oid,
                                            cfg_handle   *p_handle,
@@ -477,7 +477,7 @@ cfg_add_instance_local_fmt(cfg_handle *p_handle, cfg_val_type type,
  * @param suboid_fmt    Sub-identifier format string
  * @param ...           Format string arguments
  *
- * @return Status code.
+ * @return Status code
  */
 static inline te_errno
 cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
@@ -535,7 +535,7 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
  * @param handle            object instance handle
  * @param with_children     delete the children subtree, if necessary
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_del_instance(cfg_handle handle, te_bool with_children);
 
@@ -557,7 +557,7 @@ cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_set_instance(cfg_handle handle, cfg_val_type type, ...);
 
@@ -586,7 +586,7 @@ cfg_set_instance_fmt(cfg_val_type type, const void *val,
  *                    for strings: char *
  *                    for addreses: struct sockaddr *
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_set_instance_local(cfg_handle handle,
                                        cfg_val_type type, ...);
@@ -606,7 +606,7 @@ cfg_set_instance_local_fmt(cfg_val_type type, const void *val,
  * @param oid       subtree object identifier or NULL if whole
  *                  database should be synchronized
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_commit(const char *oid);
 
@@ -636,7 +636,7 @@ cfg_commit_fmt(const char *oid_fmt, ...)
  *                    for strings: char **
  *                    for addreses: struct sockaddr **
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_get_instance(cfg_handle handle,
                                  cfg_val_type *type, ...);
@@ -662,7 +662,7 @@ cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
  *                    for strings: char **
  *                    for addreses: struct sockaddr **
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_get_instance_sync(cfg_handle handle,
                                       cfg_val_type *type, ...);
@@ -684,7 +684,7 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
  * @param subtree    1 if the subtree of the specified node should
  *                   be synchronized
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_synchronize(const char *oid, te_bool subtree);
 
@@ -717,7 +717,7 @@ typedef int (* cfg_inst_handler)(
  * @param callback  the function to be called for each object instance
  * @param user_data opaque user data
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
                               void *user_data);
@@ -727,9 +727,9 @@ extern te_errno cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
  * Reboot the Test Agent.
  *
  * @param ta_name      name of the Test Agent
- * @param restore   if TRUE, restore the current configuration
+ * @param restore      if TRUE, restore the current configuration
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_reboot_ta(const char *ta_name, te_bool restore);
 
@@ -739,7 +739,7 @@ extern te_errno cfg_reboot_ta(const char *ta_name, te_bool restore);
  *
  * @param name      OUT: location for backup file name
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_create_backup(char **name);
 
@@ -748,7 +748,7 @@ extern te_errno cfg_create_backup(char **name);
  *
  * @param name      name returned by cfg_create_backup
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  * @retval 0            current configuration is equal to backup
  * @retval TE_EBACKUP   current configuration differs from backup
  */
@@ -759,7 +759,7 @@ extern te_errno cfg_verify_backup(const char *name);
  *
  * @param name      name returned by cfg_create_backup
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_restore_backup(const char *name);
 
@@ -769,7 +769,7 @@ extern te_errno cfg_restore_backup(const char *name);
  * @param name      Location of name returned by cfg_create_backup
  *                  (set to NULL on success)
  *
- * @return status code
+ * @return Status code
  */
 extern te_errno cfg_release_backup(char **name);
 
@@ -781,7 +781,7 @@ extern te_errno cfg_release_backup(char **name);
  * @param history   if TRUE "history" configuration file is created;
  *                    otherwise "backup" configuration file is created
  *
- * @return status code (see te_errno.h)
+ * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_create_config(const char *name, te_bool history);
 
