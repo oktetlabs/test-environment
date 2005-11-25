@@ -269,6 +269,25 @@ sockaddrcmp(const struct sockaddr *a1, socklen_t a1len,
                 break;
             }
 
+            case AF_INET6:
+            {
+                if (a1len < sizeof(struct sockaddr_in6) ||
+                    a2len < sizeof(struct sockaddr_in6))
+                {
+                    ERROR("One of sockaddr structures is shorter "
+                          "than it should be");
+                    return -2;
+                }
+
+                if ((SIN6(a1)->sin6_port == SIN6(a2)->sin6_port) &&
+                    (memcmp(&(SIN6(a1)->sin6_addr), &(SIN6(a2)->sin6_addr),
+                            sizeof(SIN6(a1)->sin6_addr)) == 0))
+                {
+                    return 0;
+                }
+                break;
+            }
+
             default:
                 ERROR("Comparison of addresses with unsupported "
                       "family %d", a1->sa_family);
