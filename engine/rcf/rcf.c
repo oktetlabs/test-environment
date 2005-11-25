@@ -1411,7 +1411,7 @@ process_reply(ta *agent)
                 break;
 
             case RCFOP_EXECUTE:
-                if(msg->handle == RCF_FUNC)
+                if(msg->intparm == RCF_FUNC)
                     READ_INT(msg->intparm);
                 else
                     READ_INT(msg->handle);
@@ -1866,7 +1866,7 @@ send_cmd(ta *agent, usrreq *req)
                     answer_user_request(req);
                     return -1;
             }
-            PUT(msg->id);
+            PUT(" %s", msg->id);
             if (msg->num >= 0)
                 PUT(" %d", msg->num);
 
