@@ -243,6 +243,8 @@ rcf_ch_call(struct rcf_comm_connection *handle,
     return -1;
 }
 
+uint32_t ta_processes_num = 0;
+
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_process(int *pid, 
@@ -286,6 +288,7 @@ rcf_ch_start_process(int *pid,
                 
             sleep(1);
         }
+        ta_processes_num++;
         
         return 0;
     }
@@ -319,6 +322,7 @@ rcf_ch_start_process(int *pid,
             
             return rc;
         }
+        ta_processes_num++;
         
         return 0;
     }
@@ -631,6 +635,12 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
         fprintf(stderr, "ta_log_shutdown() failed: error=0x%X\n", rc);
 
     return -1; /* Call default callback as well */
+}
+
+int
+die(void)
+{
+    _exit(0);
 }
 
 HINSTANCE ta_hinstance;
