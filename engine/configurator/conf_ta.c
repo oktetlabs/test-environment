@@ -174,12 +174,10 @@ sync_ta_instance(const char *ta, const char *oid)
     
     if (obj == NULL)
         return 0;
-
+        
     rc = cfg_db_find(oid, &handle);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
-    {
         return rc;
-    }
 
     VERB("Add TA '%s' object instance '%s'", ta, oid);
 
@@ -297,7 +295,7 @@ remove_excessive(cfg_instance *inst, char *list)
 /** Sorted list element */
 typedef struct olist {
     struct olist *next;
-    char          oid[RCF_MAX_ID];
+    char          oid[CFG_OID_MAX];
 } olist;    
 
 /** Insert the entry in lexico-graphical order */
@@ -309,7 +307,7 @@ insert_entry(char *oid, olist **list)
     if ((tmp = malloc(sizeof(olist))) == NULL)
         return TE_ENOMEM;
         
-    strcpy(tmp->oid, oid);
+    strncpy(tmp->oid, oid, CFG_OID_MAX);
         
     for (prev = NULL, cur = *list; 
          cur != NULL && strcmp(cur->oid, oid) < 0; 
@@ -442,7 +440,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     for (entry = list; entry != NULL; entry = entry->next)
         if ((rc = sync_ta_instance(ta, entry->oid)) != 0)
             break; 
-
+            
     rcf_ta_cfg_group(ta, 0, FALSE);
     
     free_list(list);

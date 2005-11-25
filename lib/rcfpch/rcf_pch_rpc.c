@@ -845,7 +845,7 @@ rcf_pch_rpc_shutdown(void)
     for (rpcs = list; rpcs != NULL; rpcs = next)
     {
         next = rpcs->next;
-        rcf_ch_kill_task(rpcs->pid);
+        rcf_ch_kill_process(rpcs->pid);
         free(rpcs);
     }
     list = NULL;
@@ -972,9 +972,9 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         
         argv[0] = rpcs->name;
         
-        if ((rc = rcf_ch_start_task(&rpcs->pid, 0, 
-                                    "rcf_pch_rpc_server_argv",
-                                    TRUE, 1, (void **)argv)) != 0)
+        if ((rc = rcf_ch_start_process(&rpcs->pid, 0, 
+                                       "rcf_pch_rpc_server_argv",
+                                       TRUE, 1, (void **)argv)) != 0)
         {
             pthread_mutex_unlock(&lock);
             free(rpcs);
@@ -1002,7 +1002,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         if (rpcs->tid > 0)
             delete_thread_child(rpcs);
         else
-            rcf_ch_kill_task(rpcs->pid);
+            rcf_ch_kill_process(rpcs->pid);
         pthread_mutex_unlock(&lock);
         free(rpcs);
         return rc;
@@ -1078,7 +1078,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
         if (rpcs->tid > 0)
             delete_thread_child(rpcs);
         else
-            rcf_ch_kill_task(rpcs->pid);
+            rcf_ch_kill_process(rpcs->pid);
     }
 
     pthread_mutex_unlock(&lock);

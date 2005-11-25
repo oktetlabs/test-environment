@@ -2,7 +2,7 @@
 AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
-include_HEADERS=rcf_ch_api.h rcf_pch.h rcf_pch_ta_cfg.h
+include_HEADERS=rcf_ch_api.h rcf_pch.h rcf_pch_ta_cfg.h rcf_pch_mem.h
 noinst_HEADERS=rcf_pch_internal.h
 
 lib_LIBRARIES=librcfpch.a

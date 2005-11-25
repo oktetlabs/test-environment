@@ -116,13 +116,14 @@ typedef struct rcf_msg {
     te_errno error;              /**< Error code (in the answer) */
     char     ta[RCF_MAX_NAME];   /**< Test Agent name */
     int      handle;             /**< CSAP handle or PID */
-    int      num;                /**< Number of sent/received packets */
+    int      num;                /**< Number of sent/received packets 
+                                      or process priority*/
     uint32_t timeout;            /**< Timeout value (RCFOP_TRSEND_RECV,
                                       RCFOP_TRRECV_START, RCFOP_RPC) */
     int      intparm;            /**< Integer parameter: 
-                                      variable type;
+                                       variable type;
                                        routine arguments passing mode;
-                                       process priority (valid is >= 0);
+                                       execute mode;
                                        postponed and results flags
                                        (tr_* commands);
                                        routine return code (RCFOP_EXECUTE);
@@ -177,7 +178,7 @@ typedef struct rcf_params {
 /**
  * Convert RCF operation number to text.
  *
- * @param op    - operation number
+ * @param op      operation number
  *
  * @return Pointer to null-terminated string.
  */
@@ -220,15 +221,6 @@ rcf_op_to_string(rcf_op_t op)
         default:                    return "(unknown)";
     }
 }
-
-/** 
- * The ways a function may be called on TA
- */
-enum rcf_start_modes { 
-    RCF_START_FUNC,    /**< Execute a function in the same context */
-    RCF_START_THREAD,  /**< Execute a function in another thread */
-    RCF_START_FORK     /**< Execute a function in a forked process */
-};
 
 #ifdef __cplusplus
 }

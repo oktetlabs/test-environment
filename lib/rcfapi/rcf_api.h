@@ -887,20 +887,23 @@ extern te_errno rcf_ta_start_thread(const char *ta_name, int session,
  * @param session       TA session or 0   
  * @param pid           identifier of the process to be killed
  *
- * @return error code
- *
- * @retval 0               success
- * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                         session identifier is provided
- * @retval TE_ENOENT       no such process
- * @retval TE_EIPC         cannot interact with RCF 
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
- *
- * @sa rcf_ta_start_process
+ * @return Status code
  */
 extern te_errno rcf_ta_kill_task(const char *ta_name, int session,
                                  pid_t pid);
+
+/**
+ * This function is used to kill a thread on the Test Agent or 
+ * NUT served by it.
+ *
+ * @param ta_name       Test Agent name                 
+ * @param session       TA session or 0   
+ * @param tid           identifier of the thread to be killed
+ *
+ * @return Status code
+ */
+extern te_errno rcf_ta_kill_thread(const char *ta_name, int session,
+                                   int tid);
 
 /**
  * Call SUN RPC on the TA.

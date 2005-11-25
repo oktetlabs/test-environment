@@ -245,9 +245,9 @@ rcf_ch_call(struct rcf_comm_connection *handle,
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_start_task(int *pid, 
-                  int priority, const char *rtn, te_bool is_argv,
-                  int argc, void **params)
+rcf_ch_start_process(int *pid, 
+                    int priority, const char *rtn, te_bool is_argv,
+                    int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
     int   tries = 0;
@@ -375,9 +375,9 @@ rcf_ch_thread_wrapper(void *arg)
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_start_task_thr(int *tid,
-                      int priority, const char *rtn, te_bool is_argv,
-                      int argc, void **params)
+rcf_ch_start_thread(int *tid,
+                    int priority, const char *rtn, te_bool is_argv,
+                    int argc, void **params)
 {
     void *addr = rcf_ch_symbol_addr(rtn, TRUE);
     
@@ -431,13 +431,22 @@ rcf_ch_start_task_thr(int *tid,
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_kill_task(unsigned int pid)
+rcf_ch_kill_process(unsigned int pid)
 {
     kill(pid, SIGTERM); 
     kill(pid, SIGKILL); 
     return 0;
 }
 
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_kill_thread(unsigned int tid)
+{
+    if (pthread_cancel((pthread_t)tid) != 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    else
+        return 0;
+}
 
 /**
  * Routine to be executed remotely to run any program from shell.

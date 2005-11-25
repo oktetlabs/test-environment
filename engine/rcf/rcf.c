@@ -166,7 +166,7 @@ typedef struct usrreq {
 
 /** A description for a task/thread to be executed at TA startup */
 typedef struct ta_initial_task {
-    enum rcf_start_modes    mode;          /**< Task execution mode */
+    rcf_execute_mode        mode;          /**< Task execution mode */
     char                   *entry;         /**< Procedure entry point */
     int                     argc;          /**< Number of arguments */
     char                  **argv;          /**< Arguments as strings */
@@ -526,9 +526,9 @@ parse_config(const char *filename)
             }
             ta_task->mode = 
                 (xmlStrcmp(task->name , (const xmlChar *)"thread") == 0 ?
-                 RCF_START_THREAD : 
+                 RCF_THREAD : 
                  (xmlStrcmp(task->name , (const xmlChar *)"function") == 0 ?
-                  RCF_START_FUNC : RCF_START_FORK));
+                  RCF_FUNC : RCF_PROCESS));
             
             if ((attr = xmlGetProp_exp(task, (const xmlChar *)"name")) 
                 != NULL)
@@ -768,10 +768,10 @@ startup_tasks(ta *agent)
     
     for (task = agent->initial_tasks; task; task = task->next)
     {
-        strcpy(cmd, "SID 0 " TE_PROTO_EXECUTE " ");
-        strcat(cmd, (task->mode == RCF_START_FUNC) ? "function " :
-               (task->mode == RCF_START_THREAD) ? "thread " : "fork ");
-        strcat(cmd, task->entry);
+        sprintf(cmd,  "SID 0 " TE_PROTO_EXECUTE " %s %s",
+                task->mode == RCF_FUNC ? TE_PROTO_FUNC :
+                task->mode == RCF_THREAD ? TE_PROTO_THREAD 
+                : TE_PROTO_PROCESS, task->entry);
         args = cmd + strlen(cmd);
         if (task->argc > 0)
             strcat(cmd, " argv ");
@@ -782,8 +782,8 @@ startup_tasks(ta *agent)
         }
         RING("Running startup task(%s) on TA '%s': entry-point='%s' "
              "args=%s",
-             (task->mode == RCF_START_FUNC) ? "function" :
-             (task->mode == RCF_START_THREAD) ? "thread" : "fork",
+             (task->mode == RCF_FUNC) ? "function" :
+             (task->mode == RCF_THREAD) ? "thread" : "process",
              agent->name, task->entry, args);
         VERB("Running startup task %s", cmd);
         (agent->transmit)(agent->handle, cmd, strlen(cmd) + 1);
@@ -1411,7 +1411,7 @@ process_reply(ta *agent)
                 break;
 
             case RCFOP_EXECUTE:
-                if(msg->handle == RCF_START_FUNC)
+                if(msg->handle == RCF_FUNC)
                     READ_INT(msg->intparm);
                 else
                     READ_INT(msg->handle);
@@ -1691,6 +1691,8 @@ static int
 send_cmd(ta *agent, usrreq *req)
 {
     rcf_msg *msg = req->message;
+    
+    unsigned int space = 0;
 
     if (agent->conn_locked)
     {
@@ -1703,53 +1705,57 @@ send_cmd(ta *agent, usrreq *req)
         return 0;
     }
 
-    sprintf(cmd, "SID %d ", msg->sid);
+#define PUT(fmt...) \
+    do {                                                          \
+        space += snprintf(cmd + space, sizeof(cmd) - space, fmt); \
+        if (space >= sizeof(cmd))                                 \
+        {                                                         \
+            ERROR("Too long RCF command");                        \
+            msg->error = TE_RC(TE_RCF, TE_EINVAL);                \
+            answer_user_request(req);                             \
+            return -1;                                            \
+        }                                                         \
+    } while (0)
+
+    PUT("SID %d ", msg->sid);
     switch (msg->opcode)
     {
         case RCFOP_REBOOT:
-            strcat(cmd, TE_PROTO_REBOOT);
+            PUT(TE_PROTO_REBOOT);
             if (msg->data_len > 0)
                 write_str(msg->data, msg->data_len);
             req->timeout = RCF_REBOOT_TIMEOUT;
             break;
 
         case RCFOP_CONFGET:
-            strcat(cmd, TE_PROTO_CONFGET);
-            strcat(cmd, " ");
-            strncat(cmd, msg->id, RCF_MAX_ID);
+            PUT(TE_PROTO_CONFGET " %s", msg->id);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFDEL:
-            strcat(cmd, TE_PROTO_CONFDEL);
-            strcat(cmd, " ");
-            strncat(cmd, msg->id, RCF_MAX_ID);
+            PUT(TE_PROTO_CONFDEL " %s", msg->id);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFADD:
-            strcat(cmd, TE_PROTO_CONFADD);
-            strcat(cmd, " ");
-            strncat(cmd, msg->id, RCF_MAX_ID);
+            PUT(TE_PROTO_CONFADD " %s", msg->id);
             write_str(msg->value, RCF_MAX_VAL);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFSET:
-            strcat(cmd, TE_PROTO_CONFSET);
-            strcat(cmd, " ");
-            strncat(cmd, msg->id, RCF_MAX_ID);
+            PUT(TE_PROTO_CONFSET " %s", msg->id);
             write_str(msg->value, RCF_MAX_VAL);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFGRP_START:
-            strcat(cmd, TE_PROTO_CONFGRP_START);
+            PUT(TE_PROTO_CONFGRP_START);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CONFGRP_END:
-            strcat(cmd, TE_PROTO_CONFGRP_END);
+            PUT(TE_PROTO_CONFGRP_END);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
@@ -1760,124 +1766,109 @@ send_cmd(ta *agent, usrreq *req)
                 answer_user_request(req);
                 return -1;
             }
-            strcat(cmd, TE_PROTO_GET_LOG);
+            PUT(TE_PROTO_GET_LOG);
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_VREAD:
-            strcat(cmd, TE_PROTO_VREAD);
-            sprintf(cmd + strlen(cmd), " %s %s", msg->id,
-                    rcf_types[msg->intparm]);
+            PUT(TE_PROTO_VREAD " %s %s", msg->id, rcf_types[msg->intparm]);
             if (req->timeout == 0)
                 req->timeout = RCF_CMD_TIMEOUT;
             break;
 
-        case RCFOP_VWRITE:
-            strcat(cmd, TE_PROTO_VWRITE);
-            sprintf(cmd + strlen(cmd), " %s %s ", msg->id,
-                    rcf_types[msg->intparm]);
+        case RCFOP_VWRITE: 
+            PUT(TE_PROTO_VWRITE " %s %s ", msg->id, 
+                rcf_types[msg->intparm]);
             if (msg->intparm == RCF_STRING)
                 write_str(msg->value, RCF_MAX_VAL);
             else
-                sprintf(cmd + strlen(cmd), "%s", msg->value);
+                PUT(msg->value);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_FPUT:
         case RCFOP_FGET:
         case RCFOP_FDEL:
-            strcat(cmd, msg->opcode == RCFOP_FPUT ? TE_PROTO_FPUT :
-                        msg->opcode == RCFOP_FDEL ? TE_PROTO_FDEL :
-                                                    TE_PROTO_FGET);
-            strcat(cmd, " ");
-            strncat(cmd, msg->data, RCF_MAX_PATH);
+            PUT("%s %s", 
+                msg->opcode == RCFOP_FPUT ? TE_PROTO_FPUT :
+                msg->opcode == RCFOP_FDEL ? TE_PROTO_FDEL : TE_PROTO_FGET,
+                msg->data);
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_CSAP_CREATE:
-            strcat(cmd, TE_PROTO_CSAP_CREATE);
-            strcat(cmd, " ");
-            strncat(cmd, msg->id, RCF_MAX_ID);
+            PUT(TE_PROTO_CSAP_CREATE " %s", msg->id);
             if (msg->data_len > 0)
                 write_str(msg->data, msg->data_len);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CSAP_DESTROY:
-            strcat(cmd, TE_PROTO_CSAP_DESTROY);
-            sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            PUT(TE_PROTO_CSAP_DESTROY " %u", msg->handle);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_CSAP_PARAM:
-            strcat(cmd, TE_PROTO_CSAP_PARAM);
-            sprintf(cmd + strlen(cmd), " %u %s", msg->handle, msg->id);
+            PUT(TE_PROTO_CSAP_PARAM " %u %s", msg->handle, msg->id);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_TRSEND_START:
-            strcat(cmd, TE_PROTO_TRSEND_START);
-            sprintf(cmd + strlen(cmd), " %u %s", msg->handle,
-                    (msg->intparm & TR_POSTPONED) ? "postponed" : "");
+            PUT(TE_PROTO_TRSEND_START " %u %s", msg->handle,
+                (msg->intparm & TR_POSTPONED) ? "postponed" : "");
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRSEND_STOP:
-            strcat(cmd, TE_PROTO_TRSEND_STOP);
-            sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            PUT(TE_PROTO_TRSEND_STOP " %u", msg->handle);
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRRECV_START:
-            strcat(cmd, TE_PROTO_TRRECV_START);
-            sprintf(cmd + strlen(cmd), " %u %u %u%s", msg->handle,
-                    msg->num, msg->timeout,
-                    (msg->intparm & TR_RESULTS) ? " results" : "");
+            PUT(TE_PROTO_TRRECV_START " %u %u %u%s", msg->handle,
+                msg->num, msg->timeout,
+                (msg->intparm & TR_RESULTS) ? " results" : "");
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRRECV_WAIT:
-            strcat(cmd, TE_PROTO_TRRECV_WAIT);
-            sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            PUT(TE_PROTO_TRRECV_WAIT " %u", msg->handle);
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRRECV_STOP:
         case RCFOP_TRRECV_GET:
-            strcat(cmd, msg->opcode == RCFOP_TRRECV_STOP ?
-                            TE_PROTO_TRRECV_STOP : TE_PROTO_TRRECV_GET);
-            sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            PUT("%s %u", 
+                msg->opcode == RCFOP_TRRECV_STOP ?
+                TE_PROTO_TRRECV_STOP : TE_PROTO_TRRECV_GET,
+                msg->handle);
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_TRSEND_RECV:
-            strcat(cmd, TE_PROTO_TRSEND_RECV);
-            sprintf(cmd + strlen(cmd), " %u %u%s",
-                    msg->handle, msg->timeout,
-                    (msg->intparm & TR_RESULTS) ? " results" : "");
+            PUT(TE_PROTO_TRSEND_RECV " %u %u%s",
+                msg->handle, msg->timeout,
+                (msg->intparm & TR_RESULTS) ? " results" : "");
             msg->num = 0;
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_EXECUTE:
-            strcat(cmd, TE_PROTO_EXECUTE);
-            strcat(cmd, " ");
-            switch ((enum rcf_start_modes)msg->handle)
+            PUT(TE_PROTO_EXECUTE " ");
+            switch (msg->intparm)
             {
-                case RCF_START_FUNC:
-                    strcat(cmd, "function ");
-                    break;
-                case RCF_START_THREAD:
-                    strcat(cmd, "thread ");
-                    break;                  
-                case RCF_START_FORK:
-                    strcat(cmd, "fork ");
-                    break;
+                case RCF_FUNC:    PUT(TE_PROTO_FUNC); break;
+                case RCF_THREAD:  PUT(TE_PROTO_THREAD); break;
+                case RCF_PROCESS: PUT(TE_PROTO_PROCESS); break;
+                default: 
+                    ERROR("Incorrect execute mode");
+                    msg->error = TE_RC(TE_RCF, TE_EINVAL);
+                    answer_user_request(req);
+                    return -1;
             }
-            strncat(cmd, msg->id, RCF_MAX_NAME);
-            strcat(cmd, " ");
-            if (msg->intparm >= 0)
-                sprintf(cmd + strlen(cmd), " %d", msg->intparm);
+            PUT(msg->id);
+            if (msg->num >= 0)
+                PUT(" %d", msg->num);
 
             if (msg->num > 0)
             {
@@ -1886,7 +1877,7 @@ send_cmd(ta *agent, usrreq *req)
 
                 if (msg->flags & PARAMETERS_ARGV)
                 {
-                    strcat(cmd, " argv ");
+                    PUT(" argv ");
                     for (i = 0 ; i < msg->num; i++)
                     {
                         write_str(ptr, strlen(ptr));
@@ -1899,9 +1890,9 @@ send_cmd(ta *agent, usrreq *req)
                     {
                         unsigned char type = *(ptr++);
 
-                        sprintf(cmd + strlen(cmd), " %s ", rcf_types[type]);
+                        PUT(" %s ", rcf_types[type]);
 
-                        print_value(cmd + strlen(cmd), type, ptr);
+                        print_value(cmd + space, type, ptr);
                         if (type == RCF_STRING)
                             ptr += strlen(ptr) + 1;
                         else
@@ -1914,10 +1905,8 @@ send_cmd(ta *agent, usrreq *req)
             
         case RCFOP_RPC:
         {
-            char *s = cmd + strlen(cmd);
-            
-            s += sprintf(s, "%s %s %u ", 
-                         TE_PROTO_RPC, msg->id, (unsigned)msg->timeout);
+            PUT("%s %s %u ", 
+                TE_PROTO_RPC, msg->id, (unsigned)msg->timeout);
             
             if (msg->intparm < RCF_MAX_VAL && 
                 strcmp_start("<?xml", msg->file) == 0)
@@ -1926,7 +1915,7 @@ send_cmd(ta *agent, usrreq *req)
             }
             else
             {
-                sprintf(s, "attach %u", (unsigned int)msg->intparm);
+                PUT("attach %u", (unsigned int)msg->intparm);
                 msg->flags |= BINARY_ATTACHMENT;
             }
             req->timeout = msg->timeout / 1000 + 5;
@@ -1934,18 +1923,33 @@ send_cmd(ta *agent, usrreq *req)
         }
 
         case RCFOP_KILL:
-            strcat(cmd, TE_PROTO_KILL);
-            sprintf(cmd + strlen(cmd), " %u", msg->handle);
+            PUT(TE_PROTO_KILL " ");
+            switch (msg->intparm)
+            {
+                case RCF_THREAD:  PUT(TE_PROTO_THREAD); break;
+                case RCF_PROCESS: PUT(TE_PROTO_PROCESS); break;
+                default: 
+                    ERROR("Incorrect execute mode");
+                    msg->error = TE_RC(TE_RCF, TE_EINVAL);
+                    answer_user_request(req);
+                    return -1;
+            }
+            PUT(" %u", msg->handle);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         default:
             ERROR("Unhandled case value %d", msg->opcode);
+            msg->error = TE_RC(TE_RCF, TE_EINVAL);
+            answer_user_request(req);
+            return -1;
     }
+
+#undef PUT
 
     if (transmit_cmd(agent, req) == 0)
         QEL_INSERT(&(agent->sent), req);
-        
+
     return 0;
 }
 

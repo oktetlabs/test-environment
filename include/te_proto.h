@@ -31,6 +31,8 @@
 #ifndef __TE_PROTO_H__
 #define __TE_PROTO_H__
 
+/** TE Protocol literals */
+
 #define TE_PROTO_SHUTDOWN       "shutdown"
 #define TE_PROTO_REBOOT         "reboot"
 #define TE_PROTO_CONFGET        "configure get"
@@ -58,6 +60,10 @@
 #define TE_PROTO_EXECUTE        "execute"
 #define TE_PROTO_RPC            "rpc"
 #define TE_PROTO_KILL           "kill"
+
+#define TE_PROTO_FUNC           "function"
+#define TE_PROTO_THREAD         "thread"
+#define TE_PROTO_PROCESS        "process"
 
 #ifdef RCF_NEED_TYPES
 /**

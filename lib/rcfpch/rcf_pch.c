@@ -916,22 +916,23 @@ rcf_pch_run(const char *confstr, const char *info)
                 int      argc;
                 te_bool  is_argv;
                 int      priority = -1;
-                enum rcf_start_modes mode; 
-
-                if (strcmp_start("function ", ptr) == 0)
+                
+                rcf_execute_mode mode; 
+                
+                if (strcmp_start(TE_PROTO_FUNC " ", ptr) == 0)
                 {
-                    mode = RCF_START_FUNC;
-                    ptr += strlen("function ");
+                    mode = RCF_FUNC;
+                    ptr += strlen(TE_PROTO_FUNC);
                 }
-                else if(strcmp_start("thread ", ptr) == 0)
+                else if(strcmp_start(TE_PROTO_THREAD " ", ptr) == 0)
                 {
-                    mode = RCF_START_THREAD;
-                    ptr += strlen("thread ");
+                    mode = RCF_THREAD;
+                    ptr += strlen(TE_PROTO_THREAD);
                 }
-                else if(strcmp_start("fork ", ptr) == 0)
+                else if(strcmp_start(TE_PROTO_PROCESS " ", ptr) == 0)
                 {
-                    mode = RCF_START_FORK;
-                    ptr += strlen("fork ");
+                    mode = RCF_PROCESS;
+                    ptr += strlen(TE_PROTO_PROCESS);
                 }
                 else
                 {
@@ -955,7 +956,7 @@ rcf_pch_run(const char *confstr, const char *info)
 
                 switch(mode)
                 {
-                    case RCF_START_FUNC:
+                    case RCF_FUNC:
                     {
                         rc = rcf_ch_call(conn, cmd, cmd_buf_len, 
                                          answer_plen,
@@ -971,13 +972,13 @@ rcf_pch_run(const char *confstr, const char *info)
                         break;
                     }
                         
-                    case RCF_START_FORK:
+                    case RCF_PROCESS:
                     {
                         pid_t pid;
                         
-                        if ((rc = rcf_ch_start_task(&pid, priority, 
-                                                    rtn, is_argv, 
-                                                    argc, param)) != 0)
+                        if ((rc = rcf_ch_start_process(&pid, priority, 
+                                                       rtn, is_argv, 
+                                                       argc, param)) != 0)
                         {
                             SEND_ANSWER("%d", rc);
                         }
@@ -989,13 +990,13 @@ rcf_pch_run(const char *confstr, const char *info)
                         break;
                     }
                     
-                    case RCF_START_THREAD:
+                    case RCF_THREAD:
                     {
                         int tid;
                         
-                        if ((rc = rcf_ch_start_task_thr(&tid, priority, 
-                                                        rtn, is_argv, 
-                                                        argc, param)) != 0)
+                        if ((rc = rcf_ch_start_thread(&tid, priority, 
+                                                      rtn, is_argv, 
+                                                      argc, param)) != 0)
                         {
                             SEND_ANSWER("%d", rc);
                         }
@@ -1051,14 +1052,35 @@ rcf_pch_run(const char *confstr, const char *info)
             {
                 unsigned int pid;
 
+                rcf_execute_mode mode; 
+                
                 if (*ptr == 0 || ba != NULL)
                     goto bad_protocol;
+
+                if(strcmp_start(TE_PROTO_THREAD " ", ptr) == 0)
+                {
+                    mode = RCF_THREAD;
+                    ptr += strlen(TE_PROTO_THREAD);
+                }
+                else if(strcmp_start(TE_PROTO_PROCESS " ", ptr) == 0)
+                {
+                    mode = RCF_PROCESS;
+                    ptr += strlen(TE_PROTO_PROCESS);
+                }
+                else
+                {
+                    goto bad_protocol;
+                }
+                SKIP_SPACES(ptr);
 
                 READ_INT(pid);
                 if (*ptr != 0)
                     goto bad_protocol;
 
-                SEND_ANSWER("%d", rcf_ch_kill_task(pid));
+                if (mode == RCF_PROCESS)
+                    SEND_ANSWER("%d", rcf_ch_kill_process(pid));
+                else
+                    SEND_ANSWER("%d", rcf_ch_kill_thread(pid));
 
                 break;
             }

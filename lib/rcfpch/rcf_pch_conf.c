@@ -940,7 +940,9 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             break;
 
         default:
-            assert(FALSE);
+            ERROR("Unknown congfigure operation: op=%d id='%s' val='%s'", 
+                  op, oid, val);
+            SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EINVAL));
     }
 
     /* Unreachable */

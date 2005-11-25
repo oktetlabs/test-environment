@@ -2570,7 +2570,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
 static te_errno
 call_start(const char *ta_name, int session, int priority, const char *rtn, 
            int *res, int argc, int argv, va_list ap, 
-           enum rcf_start_modes mode)
+           rcf_execute_mode mode)
 {
     rcf_msg    *msg;
     size_t      anslen = sizeof(*msg);
@@ -2589,8 +2589,8 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
     strcpy(msg->ta, ta_name);
     strcpy(msg->id, rtn);
     
-    msg->intparm = priority;
-    msg->handle = mode;
+    msg->intparm = mode;
+    msg->num = priority;
         
     if (argc != 0)
     {
@@ -2614,7 +2614,7 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
 
     if (rc == 0 && (rc = msg->error) == 0)
     {
-        *res = (mode == RCF_START_FUNC ? msg->intparm : msg->handle);
+        *res = (mode == RCF_FUNC ? msg->intparm : msg->handle);
         VERB("Call/start %s on the TA %s", rtn, ta_name);
     }
         
@@ -2635,7 +2635,7 @@ rcf_ta_call(const char *ta_name, int session, const char *rtn,
     va_start(ap, argv);
     
     rc = call_start(ta_name, session, 0, rtn, error, argc, argv, ap, 
-                    RCF_START_FUNC);
+                    RCF_FUNC);
     
     va_end(ap);
     
@@ -2654,7 +2654,7 @@ rcf_ta_start_task(const char *ta_name, int session, int priority,
     va_start(ap, argv);
     
     rc = call_start(ta_name, session, priority, rtn, pid, argc, argv, ap,
-                    RCF_START_FORK);
+                    RCF_PROCESS);
     
     va_end(ap);
     
@@ -2672,7 +2672,7 @@ rcf_ta_start_thread(const char *ta_name, int session, int priority,
     va_start(ap, argv);
     
     rc = call_start(ta_name, session, priority, rtn, tid, argc, argv, ap,
-                    RCF_START_THREAD);
+                    RCF_THREAD);
     
     va_end(ap);
     
@@ -2688,17 +2688,7 @@ rcf_ta_start_thread(const char *ta_name, int session, int priority,
  * @param session       TA session or 0   
  * @param pid           identifier of the process to be killed
  *
- * @return error code
- *
- * @retval 0            success
- * @retval TE_EINVAL       name of non-running TN Test Agent or non-existent
- *                      session identifier is provided
- * @retval TE_ENOENT       no such process
- * @retval TE_EIPC      cannot interact with RCF 
- * @retval TE_ETAREBOOTED  Test Agent is rebooted
- * @retval TE_ENOMEM       out of memory
- *
- * @sa rcf_ta_start_process
+ * @return Status code
  */
 te_errno
 rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
@@ -2716,6 +2706,42 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
     msg.opcode = RCFOP_KILL;
     strcpy(msg.ta, ta_name);
     msg.handle = pid;
+    msg.intparm = RCF_PROCESS;
+    msg.sid = session;
+        
+    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
+                                   &msg, &anslen, NULL);
+    
+    return rc == 0 ? msg.error : rc;
+}
+
+/**
+ * This function is used to kill a thread on the Test Agent or 
+ * NUT served by it.
+ *
+ * @param ta_name       Test Agent name                 
+ * @param session       TA session or 0   
+ * @param tid           identifier of the thread to be killed
+ *
+ * @return Status code
+ */
+te_errno
+rcf_ta_kill_thread(const char *ta_name, int session, int tid)
+{
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
+    
+    RCF_API_INIT;
+    
+    if (BAD_TA)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+    
+    memset((char *)&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_KILL;
+    strcpy(msg.ta, ta_name);
+    msg.handle = tid;
+    msg.intparm = RCF_PROCESS;
     msg.sid = session;
         
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),

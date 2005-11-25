@@ -154,9 +154,7 @@ cfg_get_ta_name(const char *oid, char *ta)
 /*----------------- User request processing ----------------------------*/
 
 /* SIze of the buffer requered for messages and responses except pattern */
-#define CFG_BUF_LEN \
-    (CFG_OID_LEN_MAX * (CFG_SUBID_MAX + CFG_INST_NAME_MAX + 2) + \
-     sizeof(cfg_get_oid_msg))
+#define CFG_BUF_LEN     (CFG_OID_MAX + sizeof(cfg_get_oid_msg))
 
 /**
  * Process message with user request.

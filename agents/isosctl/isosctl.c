@@ -387,10 +387,10 @@ rcf_ch_call(char *cbuf, int buflen,
 
 /* See description in rcf_ch_api.h */
 int 
-rcf_ch_start_task(char *cbuf, int buflen, 
-                  struct rcf_comm_connection *handle, int answer_plen, 
-                  int priority, char *rtn, int argc, int argv,
-                  uint32_t *params)
+rcf_ch_start_process(char *cbuf, int buflen, 
+                     struct rcf_comm_connection *handle, int answer_plen, 
+                     int priority, char *rtn, int argc, int argv,
+                     uint32_t *params)
 {
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -405,19 +405,37 @@ rcf_ch_start_task(char *cbuf, int buflen,
     return 0;
 }
 
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_start_thread(int *tid,
+                    int priority, const char *rtn, te_bool is_argv,
+                    int argc, uint32_t *params)
+{
+    UNUSED(priority);
+    UNUSED(rtn);
+    UNUSED(is_argv);
+    UNUSED(argc);
+    UNUSED(params);
+
+    return TE_EOPNOTSUPP;
+}
 
 /* See description in rcf_ch_api.h */
-int 
-rcf_ch_kill_task(char *cbuf, int buflen, 
-                 struct rcf_comm_connection *handle, 
-                 int answer_plen, int pid)
+int
+rcf_ch_kill_process(unsigned int pid)
 {
-    UNUSED(cbuf);
-    UNUSED(buflen);
-    UNUSED(answer_plen);
     UNUSED(pid);
-    SEND_ANSWER("%d", TE_EOPNOTSUPP);
-    return 0;
+
+    return TE_EOPNOTSUPP;
+}
+
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_kill_thread(unsigned int tid)
+{
+    UNUSED(tid);
+
+    return TE_EOPNOTSUPP;
 }
 
 /**

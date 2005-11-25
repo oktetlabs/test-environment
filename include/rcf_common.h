@@ -79,4 +79,13 @@ typedef enum {
     RCF_TYPE_TOTAL  /**< total number of RCF types */
 } rcf_var_type_t;
 
+/** 
+ * The ways a function may be called on TA
+ */
+typedef enum rcf_execute_mode { 
+    RCF_FUNC = 1,  /**< Execute a function in the same context */
+    RCF_THREAD,    /**< Execute a function in the TA thread */
+    RCF_PROCESS    /**< Execute a function in the separate process */
+} rcf_execute_mode;
+
 #endif /* !__TE_RCF_COMMON_H__ */

@@ -601,9 +601,9 @@ extern int rcf_ch_call(struct rcf_comm_connection *handle,
  *
  * @return Status code
  */
-extern int rcf_ch_start_task(pid_t *pid, int priority,
-                             const char *rtn, te_bool is_argv,
-                             int argc, void **params);
+extern int rcf_ch_start_process(pid_t *pid, int priority,
+                                const char *rtn, te_bool is_argv,
+                                int argc, void **params);
 
 /**
  * Start thread on the Test Agent or NUT served by it.
@@ -620,9 +620,9 @@ extern int rcf_ch_start_task(pid_t *pid, int priority,
  *
  * @return Status code
  */
-extern int rcf_ch_start_task_thr(int *tid, int priority,
-                                 const char *rtn, te_bool is_argv,
-                                 int argc, void **params);
+extern int rcf_ch_start_thread(int *tid, int priority,
+                               const char *rtn, te_bool is_argv,
+                               int argc, void **params);
 
 
 /**
@@ -630,10 +630,18 @@ extern int rcf_ch_start_task_thr(int *tid, int priority,
  *
  * @param pid           process identifier
  *
+ * @return Status code
+ */
+extern int rcf_ch_kill_process(unsigned int pid);
+
+/**
+ * Kill the thread on the Test Agent or NUT served by it.
+ *
+ * @param tid           thread identifier
  *
  * @return Status code
  */
-extern int rcf_ch_kill_task(unsigned int pid);
+extern int rcf_ch_kill_thread(unsigned int tid);
 
 
 /** @name Standard configuration support */
