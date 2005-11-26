@@ -1313,38 +1313,6 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
     return -1; /* Call default callback as well */
 }
 
-#if 1
-static void *
-inet6_addr_checker(void *unused)
-{
-    te_bool diff;
-
-    UNUSED(unused);
-
-    ta_system("/sbin/ip -f inet6 addr list >/tmp/te_inet6_addrs_save");
-    ta_system("grep inet6 /tmp/te_inet6_addrs_save "
-              ">/tmp/te_inet6_addrs_save_for_diff");
-    while (TRUE)
-    {
-        sleep(1);
-        ta_system("/sbin/ip -f inet6 addr list >/tmp/te_inet6_addrs_check");
-        ta_system("grep inet6 /tmp/te_inet6_addrs_check "
-                  ">/tmp/te_inet6_addrs_check_for_diff");
-        diff = ta_system("diff -u /tmp/te_inet6_addrs_save_for_diff "
-                         "/tmp/te_inet6_addrs_check_for_diff") != 0;
-        if (diff)
-        {
-            PRINT("Set of IPv6 addresses changed!");
-            ta_system("echo Old: ; cat /tmp/te_inet6_addrs_save");
-            ta_system("echo New: ; cat /tmp/te_inet6_addrs_check");
-            ta_system("mv /tmp/te_inet6_addrs_check "
-                      "/tmp/te_inet6_addrs_save");
-            ta_system("mv /tmp/te_inet6_addrs_check_for_diff "
-                      "/tmp/te_inet6_addrs_save_for_diff");
-        }
-    }
-}
-#endif
 
 /**
  * Entry point of the Unix Test Agent.
@@ -1412,9 +1380,6 @@ main(int argc, char **argv)
     sprintf(buf, "PID %u", getpid());
 
     pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
-#if 1
-    pthread_create(&tid, NULL, inet6_addr_checker, NULL);
-#endif
 
     /* FIXME Is it OK position? */
     init_tce_subsystem();
