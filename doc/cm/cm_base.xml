@@ -135,21 +135,26 @@
 
     <!-- Routing table entry.
          Name: (network address in human notation)'|'(prefix)
-               for example: 1.2.3.0|24[,gw:Gw][,dev:If]
+               for example: 1.2.3.0|24[,metric:Mtr][,tos:Mtu]
 
          Each route has a set of attributes, which are represented 
          as children of route instance. -->
-    <object oid="/agent/route" access="read_create" type="none"/>
+    <object oid="/agent/route" access="read_create" type="address"/>
     
-    <!-- Route metric value.
+    <!-- Route gateway address.
          Name:  empty
-         Value: Metric value -->
-    <object oid="/agent/route/metric" access="read_write" type="integer"/>
+         Value: Address of the gateway -->
+    <object oid="/agent/route/gw" access="read_write" type="address"/>
 
-    <!-- Route MTU value.
+    <!-- Route interface name.
          Name:  empty
-         Value: MTU value for the route -->
-    <object oid="/agent/route/mtu" access="read_write" type="integer"/>
+         Value: Name of the interface -->
+    <object oid="/agent/route/ifname" access="read_write" type="string"/>
+
+    <!-- Route MTU.
+         Name:  empty
+         Value: Route MTU -->
+    <object oid="/agent/route/mtu" access="read_write" type="string"/>
 
     <!-- Route Window Size value (TCP window size).
          Name:  empty

@@ -419,68 +419,20 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
 
     term_byte = (char *)(tmp + strlen(tmp));
 
-    if ((ptr = strstr(tmp, "gw=")) != NULL)
-    {
-        int rc;
-
-        end_ptr = ptr += strlen("gw=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        rt->gw.ss_family = family;
-        if (family == AF_INET)
-        {
-            rc = inet_pton(family, ptr, &(SIN(&(rt->gw))->sin_addr));
-        }
-        else if (family == AF_INET6)
-        {
-            rc = inet_pton(family, ptr, &(SIN6(&(rt->gw))->sin6_addr));
-        }
-        else
-        {
-            rc = -1;
-        }
-        if (rc <= 0)
-        {
-            ERROR("Incorrect format of 'gateway address' value in route %s",
-                  inst_name);
-            return TE_RC(TE_TAPI, TE_ENOENT);
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-
-        rt->flags |= TAPI_RT_GW;
-    }
-
-    if ((ptr = strstr(tmp, "dev=")) != NULL)
-    {
-        end_ptr = ptr += strlen("dev=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (strlen(ptr) >= sizeof(rt->dev))
-        {
-            ERROR("Interface name is too long: %s in route %s",
-                  ptr, inst_name);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-        }
-        strcpy(rt->dev, ptr);
-
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-
-        rt->flags |= TAPI_RT_IF;
-    }
-
     if ((ptr = strstr(tmp, "metric=")) != NULL)
     {
         end_ptr = ptr += strlen("metric=");
         rt->metric = atoi(end_ptr);
         rt->flags |= TAPI_RT_METRIC;
-    }           
-
+    }
+    
+    if ((ptr = strstr(tmp, "tos=")) != NULL)
+    {
+        end_ptr = ptr += strlen("tos=");
+        rt->metric = atoi(end_ptr);
+        rt->flags |= TAPI_RT_TOS;
+    }       
+    
     return 0;
 }
 
@@ -546,7 +498,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
             cfg_val_type  type;
             char         *name;
             cfg_oid      *oid;
-            int          *val_p;
+            void         *val_p;
 
             handle1 = handle2;
             
@@ -559,8 +511,12 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
             name = ((cfg_inst_subid *)
                             (oid->ids))[oid->len - 1].subid;
 
-            if (strcmp(name, "metric") == 0)
-                val_p = &tbl[i].metric;
+            type = CVT_INTEGER;
+            if (strcmp(name, "dev") == 0)
+            {
+                val_p = &tbl[i].dev;
+                type = CVT_STRING;
+            }
             else if (strcmp(name, "mtu") == 0)
                 val_p = &tbl[i].mtu;
             else if (strcmp(name, "win") == 0)
@@ -576,7 +532,6 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
                 break;
             }
 
-            type = CVT_INTEGER;
             if ((rc = cfg_get_instance(handle1, &type, val_p)) != 0)
             {
                 ERROR("%s(): Cannot get value of %s route attribute %r",
@@ -789,7 +744,6 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     cfg_handle  handle;
     char        dst_addr_str[INET6_ADDRSTRLEN];
     char        dst_addr_str_orig[INET6_ADDRSTRLEN];
-    char        gw_addr_str[INET6_ADDRSTRLEN];
     char        route_inst_name[1024];
     int         rc;
     int         netaddr_size = netaddr_get_size(addr_family);
@@ -879,29 +833,11 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     route_inst_name[0] = '\0';
     PUT_INTO_BUF(route_inst_name, "%s|%d", dst_addr_str, prefix);
     
-#if 1
-    UNUSED(tos);
-    if (gw_addr != NULL)
-    {
-        if (inet_ntop(addr_family, gw_addr, gw_addr_str,
-                      sizeof(gw_addr_str)) == NULL)
-        {
-            ERROR("%s() fails converting binary gateway address "
-                  "into a character string", __FUNCTION__);
-            return TE_OS_RC(TE_TAPI, errno);
-        }
-        PUT_INTO_BUF(route_inst_name, ",gw=%s", gw_addr_str);
-    }
-
-    if (dev != NULL)
-        PUT_INTO_BUF(route_inst_name, ",dev=%s", dev);
-#else
     if (metric > 0)
         PUT_INTO_BUF(route_inst_name, ",metric=%d", metric);
 
     if (tos > 0)
-        PUT_INTO_BUF(route_inst_name, "tos=%d", tos);
-#endif
+        PUT_INTO_BUF(route_inst_name, ",tos=%d", tos);
     switch (op)
     {
         case OP_MODIFY:
@@ -929,7 +865,17 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
             }
             
             do {
-                CFG_RT_SET_LOCAL(metric);
+                if ((dev != NULL) &&
+                    ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, dev),
+                          "/agent:%s/route:%s/dev:", ta, route_inst_name))
+                      != 0))
+                {
+                    ERROR("%s() fails to set dev to %s "
+                          "on route %s on '%s' Agent errno = %r",
+                          __FUNCTION__, dev, route_inst_name, ta, rc);
+                    break;
+                }
+                
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);
                 CFG_RT_SET_LOCAL(irtt);
@@ -946,10 +892,23 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
             break;
 
         case OP_ADD:
-            if ((rc = cfg_add_instance_local_fmt(&handle,
-                                                 CFG_VAL(NONE, ""),
-                                                 "/agent:%s/route:%s",
-                                                 ta, route_inst_name)) != 0)
+        {
+            struct sockaddr_storage ss;
+
+            memset(&ss, 0, sizeof(ss));
+            ss.ss_family = addr_family;
+            
+            if (gw_addr != NULL)
+            {
+                sockaddr_set_netaddr(SA(&ss), gw_addr);
+            }
+                
+            rc = cfg_add_instance_local_fmt(&handle,
+                                            CFG_VAL(ADDRESS, &ss),
+                                            "/agent:%s/route:%s",
+                                            ta, route_inst_name);
+             
+            if (rc != 0)
             {
                 ERROR("%s() fails adding a new route %s on '%s' Agent "
                       "errno = %r", __FUNCTION__,
@@ -960,7 +919,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 #define CFG_RT_SET_LOCAL(field_) \
             if (field_ != 0 &&                                  \
                 (rc = cfg_set_instance_local_fmt(               \
-                          CFG_VAL(INTEGER, field_),             \
+                          CFG_VAL(INTEGER, field_),               \
                           "/agent:%s/route:%s/" #field_ ":",    \
                           ta, route_inst_name)) != 0)           \
             {                                                   \
@@ -972,11 +931,22 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
             }
 
             do {
-                CFG_RT_SET_LOCAL(metric);
+                if ((dev != NULL) &&
+                    (rc = cfg_set_instance_local_fmt(
+                              CFG_VAL(STRING, dev),
+                              "/agent:%s/route:%s/dev:",
+                              ta, route_inst_name)) != 0)
+                {
+                    ERROR("%s() fails to set dev to %s "
+                          "on a new route %s on '%s' Agent errno = %r",
+                          __FUNCTION__, dev, route_inst_name, ta, rc);
+                    break;
+                }
+                
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);
                 CFG_RT_SET_LOCAL(irtt);
-            } while (FALSE);
+           } while (FALSE);
 
 #undef CFG_RT_SET_LOCAL
 
@@ -997,6 +967,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
             if (rc == 0 && cfg_hndl != NULL)
                 *cfg_hndl = handle;
             break;
+        }
 
         case OP_DEL:
             if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/route:%s",

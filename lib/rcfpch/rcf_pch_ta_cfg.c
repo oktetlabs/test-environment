@@ -212,6 +212,20 @@ ta_obj_add(const char *type, const char *name, const char *value,
 
 /* See the description in rcf_pch_ta_cfg.h */
 int
+ta_obj_value_set(const char *type, const char *name, const char *value)
+{
+    ta_cfg_obj_t *obj = ta_obj_find(type, name);
+    
+    if (obj == NULL)
+        return TE_ENOENT;
+
+    obj->value = ((value != NULL) ? strdup(value) : NULL);
+
+    return 0;
+}
+
+/* See the description in rcf_pch_ta_cfg.h */
+int
 ta_obj_set(const char *type, const char *name,
            const char *attr_name, const char *attr_value,
            ta_obj_set_cb cb_func)
@@ -321,61 +335,72 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
 
     term_byte = (char *)(tmp + strlen(tmp));
 
-    if ((ptr = strstr(tmp, "gw=")) != NULL)
-    {
-        end_ptr = ptr += strlen("gw=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        ((struct sockaddr *)&(rt_info->gw))->sa_family = family;
-        if ((family == AF_INET &&
-             inet_pton(family, ptr, &(SIN(&(rt_info->gw))->sin_addr))
-             == 0) ||
-            (family == AF_INET6 &&
-             inet_pton(family, ptr, &(SIN6(&(rt_info->gw))->sin6_addr))
-             == 0))
-        {
-            ERROR("Incorrect format of 'gateway address' value in route %s",
-                  name);
-            return TE_EINVAL;
-        }
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-
-        rt_info->flags |= TA_RT_INFO_FLG_GW;
-    }
-
-    if ((ptr = strstr(tmp, "dev=")) != NULL)
-    {
-        end_ptr = ptr += strlen("dev=");
-        while (*end_ptr != ',' && *end_ptr != '\0')
-            end_ptr++;
-        *end_ptr = '\0';
-
-        if (strlen(ptr) >= sizeof(rt_info->ifname))
-        {
-            ERROR("Interface name is too long: %s in route %s",
-                  ptr, name);
-            return TE_EINVAL;
-        }
-        strcpy(rt_info->ifname, ptr);
-
-        if (term_byte != end_ptr)
-            *end_ptr = ',';
-
-        rt_info->flags |= TA_RT_INFO_FLG_IF;
-    }
-
     if ((ptr = strstr(tmp, "metric=")) != NULL)
     {
         end_ptr = ptr += strlen("metric=");
         rt_info->metric = atoi(ptr);
         rt_info->flags |= TA_RT_INFO_FLG_METRIC;
     }
-
+    
+    if ((ptr = strstr(tmp, "tos=")) != NULL)
+    {
+        end_ptr = ptr += strlen("tos=");
+        rt_info->tos = atoi(ptr);
+        rt_info->flags |= TA_RT_INFO_FLG_TOS;
+    }
+    
     return 0;
 }
+
+/* See the description in rcf_pch_ta_cfg.h */
+int
+ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
+{
+    int family = AF_INET;
+    int rc;
+
+    if (value != NULL)
+    {
+        if (index(value, ':') != NULL)
+            family = AF_INET6;
+        
+        rt_info->gw.ss_family = family;
+        if (family == AF_INET)
+        {
+            rc = inet_pton(family, value,
+                           &SIN(&rt_info->gw)->sin_addr);
+            if (SIN(&rt_info->gw)->sin_addr.s_addr != INADDR_ANY)
+            {
+                rt_info->flags |= TA_RT_INFO_FLG_GW;
+            }            
+        }
+        else if (family == AF_INET6)
+        {
+            rc = inet_pton(family, value,
+                           &SIN6(&rt_info->gw)->sin6_addr);
+            if (!IN6_IS_ADDR_UNSPECIFIED(&SIN6(&rt_info->gw)->sin6_addr))
+            {
+                rt_info->flags |= TA_RT_INFO_FLG_GW;
+            } 
+        }
+        
+        if (rc <= 0)
+        {
+            /* Clear gateway flag */
+            rt_info->flags &= (!TA_RT_INFO_FLG_GW);            
+            ERROR("Invalid value of route: '%s'", value);
+            return TE_EINVAL;
+        }
+
+        WARN("Set gateway flag");
+    }
+    else
+    {
+        rt_info->flags &= (!TA_RT_INFO_FLG_GW);
+    }
+
+    return 0;
+}        
 
 /* See the description in rcf_pch_ta_cfg.h */
 int
@@ -387,24 +412,18 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
 
     for (attr = attrs; attr != NULL; attr = attr->next)
     {
-        if (strcmp(attr->name, "gw") == 0)
+        if (strcmp(attr->name, "dev") == 0)
         {
-            if (inet_pton(SIN(&rt_info->dst)->sin_family, attr->value,
-                          &rt_info->gw) == 0)
+            if (attr->value[0] != '\0')
             {
-                ERROR("Incorrect gateway address specified");
-                return TE_EINVAL;
+                if (strlen(attr->value) > IFNAMSIZ)
+                {
+                    ERROR("Interface name is too long");
+                    return TE_EINVAL;
+                }
+                rt_info->flags |= TA_RT_INFO_FLG_IF;
+                strcpy(rt_info->ifname, attr->value);
             }
-            rt_info->flags |= TA_RT_INFO_FLG_GW;            
-        }
-        else if (strcmp(attr->name, "dev") == 0)
-        {
-            if (strlen(attr->value) > IFNAMSIZ)
-            {
-                ERROR("Interface name is too long");
-                return TE_EINVAL;
-            }
-            strcpy(rt_info->ifname, attr->value);
         }
         else if (strcmp(attr->name, "metric") == 0)
         {
@@ -463,7 +482,6 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
             return TE_EINVAL;
         }
     }
-
     return 0;
 }
 
@@ -473,8 +491,13 @@ ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info)
 {
     int rc;
 
+    memset(rt_info, 0, sizeof(ta_rt_info_t));
+
     if ((rc = ta_rt_parse_inst_name(obj->name, rt_info)) != 0)
         return rc;
 
+    if ((rc = ta_rt_parse_inst_value(obj->value, rt_info)) != 0)
+        return rc;
+    
     return ta_rt_parse_attrs(obj->attrs, rt_info);
 }

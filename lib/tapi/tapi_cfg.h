@@ -125,11 +125,13 @@ typedef struct tapi_rt_entry {
 
 /** @name TAPI Route flags */
 /** Route is indirect and has gateway address */
-#define TAPI_RT_GW 0x0001
+#define TAPI_RT_GW      0x0001
 /** Route is direct, so interface name is specified */
-#define TAPI_RT_IF 0x0002
+#define TAPI_RT_IF      0x0002
 /** Metric is specified for the route */
-#define TAPI_RT_METRIC 0x0004
+#define TAPI_RT_METRIC  0x0004
+/** Type of service is specified for the route */
+#define TAPI_RT_TOS     0x0008
 /*@}*/
 
 /**

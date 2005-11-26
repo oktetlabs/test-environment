@@ -175,6 +175,16 @@ extern int ta_obj_add(const char *type,
                       const char *name, const char *value,
                       void *user_data, ta_cfg_obj_t **new_obj);
 
+/**
+ * Set the value of the object.
+ *
+ * @param type       Object type - user-defined constant
+ * @param name       Object name
+ * @param value      Object value
+ */
+extern int ta_obj_value_set(const char *type, const char *name,
+                            const char *value); 
+
 /** Prototype for callback function used in ta_obj_set() */
 typedef int (* ta_obj_set_cb)(ta_cfg_obj_t *obj);
 
@@ -225,11 +235,12 @@ typedef struct ta_rt_info {
     struct sockaddr_storage gw;
     /** Interface name - for direct routes */
     char                    ifname[IF_NAMESIZE];
-    uint16_t                flags; /**< Route flags */
+    uint16_t                flags;  /**< Route flags */
     uint32_t                metric; /**< Route metric */
-    uint32_t                mtu; /**< Route metric */
-    uint32_t                win; /**< Route metric */
-    uint32_t                irtt; /**< Route metric */
+    uint32_t                mtu;    /**< Route MTU */
+    uint32_t                win;    /**< Route window size */
+    uint32_t                irtt;   /**< Route transfer time */
+    uint32_t                tos;    /**< Route type of service */
 } ta_rt_info_t;
 
 /** Gateway address is specified for the route */
@@ -244,6 +255,8 @@ typedef struct ta_rt_info {
 #define TA_RT_INFO_FLG_WIN    0x0010
 /** IRTT is specified for the route */
 #define TA_RT_INFO_FLG_IRTT   0x0020
+/** TOS is specified for the route */
+#define TA_RT_INFO_FLG_TOS    0x0040
 
 /**
  * Parses route instance name and fills in a part of rt_info 
@@ -253,6 +266,14 @@ typedef struct ta_rt_info {
  * @param rt_info  Routing information data structure (OUT)
  */
 extern int ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info);
+
+/**
+ * Parses route instance value to rt_info data structure.
+ *
+ * @param value    Value of the instance
+ * @param rt_info  Routing information data structure (OUT)
+ */
+extern int ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info);
 
 /**
  * Parses route object attributes and fills in a part of rt_info 

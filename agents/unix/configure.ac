@@ -195,6 +195,12 @@ AC_CHECK_TYPES([struct rtentry, struct ortentry], [], [],
                 #include <net/route.h>])
 
 dnl
+dnl Check for 'struct ip_mreqn'
+dnl
+AC_CHECK_TYPES([struct ip_mreqn], [], [],
+               [#include <netinet/in.h>])
+
+dnl
 dnl Check for 'sa_restorer' member in 'struct sigaction'.
 dnl
 AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],

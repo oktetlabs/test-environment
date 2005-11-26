@@ -229,10 +229,6 @@ neigh_dynamic_list(unsigned int gid, const char *oid, char **list,
     return neigh_list(gid, "dynamic", list, ifname);
 }                   
 
-static int route_metric_get(unsigned int, const char *, char *,
-                            const char *);
-static int route_metric_set(unsigned int, const char *, const char *,
-                            const char *);
 static int route_mtu_get(unsigned int, const char *, char *,
                          const char *);
 static int route_mtu_set(unsigned int, const char *, const char *,
@@ -245,6 +241,13 @@ static int route_irtt_get(unsigned int, const char *, char *,
                           const char *);
 static int route_irtt_set(unsigned int, const char *, const char *,
                           const char *);
+static int route_dev_get(unsigned int, const char *, char *,
+                         const char *);
+static int route_dev_set(unsigned int, const char *, const char *,
+                         const char *);
+static int route_get(unsigned int, const char *, char *, const char *);
+static int route_set(unsigned int, const char *, const char *,
+                     const char *);
 static int route_add(unsigned int, const char *, const char *,
                      const char *);
 static int route_del(unsigned int, const char *,
@@ -273,13 +276,15 @@ RCF_PCH_CFG_NODE_RWC(node_route_win, "win", NULL, &node_route_irtt,
 RCF_PCH_CFG_NODE_RWC(node_route_mtu, "mtu", NULL, &node_route_win,
                      route_mtu_get, route_mtu_set, &node_route);
 
-RCF_PCH_CFG_NODE_RWC(node_route_metric, "metric", NULL, &node_route_mtu,
-                     route_metric_get, route_metric_set, &node_route);
-                     
-RCF_PCH_CFG_NODE_COLLECTION(node_route, "route", &node_route_metric,
-                            NULL,
-                            route_add, route_del, route_list, route_commit);
+RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, &node_route_mtu,
+                     route_dev_get, route_dev_set, &node_route);
 
+static rcf_pch_cfg_object node_route =
+    {"route", 0, &node_route_dev, NULL,
+        (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
+        (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
+        (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit,
+        NULL};
 
 RCF_PCH_CFG_NODE_RO(node_dns, "dns",
                     NULL, &node_route,
@@ -290,7 +295,7 @@ RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
                     (rcf_ch_cfg_list)neigh_state_get);
 
 static rcf_pch_cfg_object node_neigh_dynamic =
-    { "neigh_dynamic", 0, &node_neigh_state, NULL,
+    { "neigh_dynamic", 0, &node_neigh_state, &node_route,
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
       (rcf_ch_cfg_list)neigh_dynamic_list, NULL, NULL};
@@ -3015,6 +3020,7 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
 {
     char                 mxbuf[256];
     struct rtattr       *mxrta = (void*)mxbuf;
+    unsigned char        family;  
 
     assert(rt_info != NULL && req != NULL);
 
@@ -3022,15 +3028,25 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
     mxrta->rta_len = RTA_LENGTH(0);
 
     req->r.rtm_dst_len = rt_info->prefix;
-    if (addattr_l(&req->n, sizeof(*req), RTA_DST,
-                  &(SIN(&(rt_info->dst))->sin_addr),
-                  sizeof(SIN(&(rt_info->dst))->sin_addr)) != 0)
+    family = req->r.rtm_family = rt_info->dst.ss_family;
+    
+    if ((family == AF_INET && 
+         addattr_l(&req->n, sizeof(*req), RTA_DST,
+                   &SIN(&rt_info->dst)->sin_addr,
+                   sizeof(struct in_addr)) != 0) ||
+        (family == AF_INET6 &&
+         addattr_l(&req->n, sizeof(*req), RTA_DST,
+                   &SIN6(&rt_info->dst)->sin6_addr,
+                   sizeof(struct in6_addr)) != 0))
     {
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     if ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0)
     {
+#if 1
+        WARN("Setting gateway %s", inet_ntoa(SIN(&rt_info->gw)->sin_addr));
+#endif
         if (addattr_l(&req->n, sizeof(*req), RTA_GATEWAY,
                       &(SIN(&(rt_info->gw))->sin_addr),
                       sizeof(SIN(&(rt_info->gw))->sin_addr)) != 0)
@@ -3038,7 +3054,9 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
     }
-
+#if 1
+    WARN("Check for interface");
+#endif    
     if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
     {
         int idx;
@@ -3048,6 +3066,9 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
             ERROR("Cannot find interface %s", rt_info->ifname);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
+#if 1
+        WARN("Interface index %d\n", idx);
+#endif        
         addattr32(&req->n, sizeof(*req), RTA_OIF, idx);
     }
 
@@ -3063,6 +3084,9 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
     if ((rt_info->flags & TA_RT_INFO_FLG_IRTT) != 0)
         rta_addattr32(mxrta, sizeof(mxbuf), RTAX_RTT, rt_info->irtt);
 
+    if ((rt_info->flags & TA_RT_INFO_FLG_TOS) != 0)
+        req->r.rtm_tos = rt_info->tos;
+    
     if (mxrta->rta_len > RTA_LENGTH(0))
     {
         addattr_l(&req->n, sizeof(*req), RTA_METRICS, RTA_DATA(mxrta),
@@ -3086,6 +3110,9 @@ route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
     struct rtnl_handle rth;
     int                rc;
 
+#if 1
+    WARN("Destination: %s", inet_ntoa(SIN(&rt_info->dst)->sin_addr));
+#endif
     if (rt_info == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
@@ -3095,7 +3122,7 @@ route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
     req.n.nlmsg_flags = NLM_F_REQUEST | flags;
     req.n.nlmsg_type = action;
 
-    req.r.rtm_family = SIN(&rt_info->dst)->sin_family;
+    req.r.rtm_family = SA(&rt_info->dst)->sa_family;
     req.r.rtm_table = RT_TABLE_MAIN;
     req.r.rtm_scope = RT_SCOPE_NOWHERE;
 
@@ -3121,13 +3148,17 @@ route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
          */
         ll_init_map(&rth);
     }
-
+#if 1
+    WARN("Call rt_info2nl_req");
+#endif    
     if ((rc = rt_info2nl_req(rt_info, &req)) != 0)
     {
         rtnl_close(&rth);
         return rc;
     }
-
+#if 1
+    WARN("rt_info2nl_req() finished");
+#endif    
     {
         if (req.r.rtm_type == RTN_LOCAL ||
             req.r.rtm_type == RTN_NAT)
@@ -3186,7 +3217,8 @@ rt_info2rtentry(const ta_rt_info_t *rt_info,
     ((struct sockaddr_in *)&(rt->rt_genmask))->sin_addr.s_addr =
         htonl(PREFIX2MASK(rt_info->prefix));
 #endif
-    if (rt_info->prefix == 32)
+    if ((rt_info->dst.family == AF_INET && rt_info->prefix == 32) ||
+        (rt_info->dst.family == AF_INET6 && rt_info->prefix == 128))
         rt->rt_flags |= RTF_HOST;
 
     if ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0)
@@ -3221,6 +3253,7 @@ rt_info2rtentry(const ta_rt_info_t *rt_info,
         rt->rt_irtt = rt_info->irtt;
         rt->rt_flags |= RTF_IRTT;
     }
+
 #endif /* !__linux__ */
 }
 #endif /* !USE_NETLINK_ROUTE */
@@ -3264,7 +3297,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
     
     if (r->rtm_family != AF_INET && r->rtm_family != AF_INET6)
     {
-        return 0;
+       return 0;        
     }
 
     len -= NLMSG_LENGTH(sizeof(*r));
@@ -3289,30 +3322,46 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
           memcmp(RTA_DATA(tb[RTA_DST]),
                   &(SIN6(&(user_data->rt_info->dst))->sin6_addr),
                   sizeof(struct in6_addr)) == 0)) &&
-         /* If so, get interface index (if specified) */      
-         ((((user_data->rt_info->flags & TA_RT_INFO_FLG_IF) != 0) &&
-            tb[RTA_OIF] != NULL &&
-            user_data->if_index == *(int*)RTA_DATA(tb[RTA_OIF])) ||
-         /* If not specified, get gateway address */
-           ((user_data->rt_info->flags & TA_RT_INFO_FLG_GW) != 0 &&
-            tb[RTA_GATEWAY] != NULL &&
-
-            (((family == AF_INET &&
-              memcmp(RTA_DATA(tb[RTA_GATEWAY]),
-                     &SIN(&(user_data->rt_info->gw))->sin_addr,
-                     sizeof(struct in_addr)) == 0) ||
-             (family == AF_INET6 &&
-              memcmp(RTA_DATA(tb[RTA_GATEWAY]),
-                     &SIN6(&(user_data->rt_info->gw))->sin6_addr,
-                     sizeof(struct in6_addr)) == 0))))) &&
-            /* Check that prefix is correct */
-             user_data->rt_info->prefix == r->rtm_dst_len))
-   {
+          /* Check that prefix is correct */
+          user_data->rt_info->prefix == r->rtm_dst_len
+#if 0
+             &&
+            /* Check that type of service is correct */
+             ((user_data->rt_info->flags & TA_RT_INFO_FLG_TOS) != 0 &&
+             user_data->rt_info->tos == r->rtm_tos)
+#endif             
+             ))            
+    {
+        if (tb[RTA_OIF] != NULL)
+        {            
+            user_data->rt_info->flags |= TA_RT_INFO_FLG_IF;
+            user_data->if_index = *(int *)RTA_DATA(tb[RTA_OIF]);
+            memcpy(user_data->rt_info->ifname,
+                   ll_index_to_name(user_data->if_index),
+                   IFNAMSIZ);
+        }
+        
+        if (tb[RTA_GATEWAY] != NULL)
+        {
+            user_data->rt_info->flags |= TA_RT_INFO_FLG_GW;
+            user_data->rt_info->gw.ss_family = family;
+            if (family == AF_INET)
+            {
+                memcpy(&SIN(&user_data->rt_info->gw)->sin_addr,
+                       RTA_DATA(tb[RTA_GATEWAY]), sizeof(struct in_addr));
+            }
+            else if (family == AF_INET6)
+            {
+                memcpy(&SIN6(&user_data->rt_info->gw)->sin6_addr,
+                       RTA_DATA(tb[RTA_GATEWAY]), sizeof(struct in6_addr));
+            }
+        }
+ 
         if (tb[RTA_PRIORITY] != NULL)
         {
             user_data->rt_info->flags |= TA_RT_INFO_FLG_METRIC;
-            user_data->rt_info->metric = 
-                *(uint32_t *)RTA_DATA(tb[RTA_PRIORITY]);
+            user_data->rt_info->metric = *(uint32_t *)
+                                         RTA_DATA(tb[RTA_PRIORITY]);
         }
         
         if (tb[RTA_METRICS] != NULL)
@@ -3340,7 +3389,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
                 user_data->rt_info->irtt = 
                     *(unsigned *)RTA_DATA(mxrta[RTAX_RTT]);
             }
-        }
+        }        
 
         user_data->filled = TRUE;
         return 0;
@@ -3350,7 +3399,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
 #endif /* USE_NETLINK_ROUTE */
 
 /**
- * Get route attributes.
+ * Find route and return its attributes.
  *
  * @param route    route instance name: see doc/cm_cm_base.xml
  *                 for the format
@@ -3359,7 +3408,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
  * @return error code
  */
 static int
-route_get(const char *route, ta_rt_info_t *rt_info)
+route_find(const char *route, ta_rt_info_t *rt_info)
 {
 #ifdef __linux__
     int       rc;
@@ -3396,7 +3445,7 @@ route_get(const char *route, ta_rt_info_t *rt_info)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
     ll_init_map(&rth);
-    
+#if 0    
     if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
     {
         if ((user_data.if_index = ll_name_to_index(rt_info->ifname)) == 0)
@@ -3406,7 +3455,8 @@ route_get(const char *route, ta_rt_info_t *rt_info)
             return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
         }
     }
-    if (rtnl_wilddump_request(&rth, SIN(&rt_info->dst)->sin_family,
+#endif
+    if (rtnl_wilddump_request(&rth, rt_info->dst.ss_family,
                               RTM_GETROUTE) < 0)
     {
         rtnl_close(&rth);
@@ -3429,7 +3479,7 @@ route_get(const char *route, ta_rt_info_t *rt_info)
 
     if (!user_data.filled)
     {
-        ERROR("Cannot find %s", route);
+        ERROR("Cannot find route %s", route);
         return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
@@ -3528,6 +3578,80 @@ route_get(const char *route, ta_rt_info_t *rt_info)
 }
 
 /**
+ * Get route value.
+ *
+ * @param  gid          Group identifier (unused)
+ * @param  oid          Object identifier (unused)
+ * @param  value        Place for route value (gateway address
+ *                      or zero if it is a direct route)
+ * @param route_name    Name of the route
+ *
+ * @return error code
+ */
+static int
+route_get(unsigned int gid, const char *oid,
+          char *value, const char *route_name)
+{
+    ta_rt_info_t  attr;
+    int           rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if ((rc = route_find(route_name, &attr)) != 0)
+    {
+        ERROR("Route %s cannot be found", route_name);
+        return rc;
+    }
+
+    switch (attr.dst.ss_family)
+    {
+        case AF_INET:
+        {
+            inet_ntop(AF_INET, &SIN(&attr.gw)->sin_addr,
+                      value, INET_ADDRSTRLEN);
+            break;
+        }
+
+        case AF_INET6:
+        {
+            inet_ntop(AF_INET6, &SIN6(&attr.gw)->sin6_addr,
+                      value, INET6_ADDRSTRLEN);
+            break;
+        }
+
+        default:
+        {
+            ERROR("Unexpected destination address family: %d",
+                  attr.dst.ss_family);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Set route value.
+ *
+ * @param       gid        Group identifier (unused)
+ * @param       oid        Object identifier
+ * @param       value      New value for the route
+ * @param       route_name Name of the route
+ *
+ * @return      error code.
+ */
+static int
+route_set(unsigned int gid, const char *oid, const char *value,
+          const char *route_name)
+{   
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE ,route_name, value);
+}
+
+/**
  * Load all route-specific attributes into route object.
  *
  * @param obj  Object to be uploaded
@@ -3541,7 +3665,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
     int          rc;
     char         val[128];
 
-    if ((rc = route_get(obj->name, &rt_info)) != 0)
+    if ((rc = route_find(obj->name, &rt_info)) != 0)
         return rc;
 
 #define ROUTE_LOAD_ATTR(field_flg_, field_) \
@@ -3556,10 +3680,30 @@ route_load_attrs(ta_cfg_obj_t *obj)
         }                                                     \
     } while (0)
 
-    ROUTE_LOAD_ATTR(METRIC, metric);
     ROUTE_LOAD_ATTR(MTU, mtu);
     ROUTE_LOAD_ATTR(WIN, win);
     ROUTE_LOAD_ATTR(IRTT, irtt);
+
+    snprintf(val, sizeof(val), "%s", rt_info.ifname);
+    if (rt_info.flags & TA_RT_INFO_FLG_IF &&
+        (rc = ta_obj_set(TA_OBJ_TYPE_ROUTE,
+                        obj->name, "dev",
+                        val, NULL) != 0))
+    {
+        ERROR("Invalid interface");
+        return rc;
+    }
+
+    if (rt_info.gw.ss_family == AF_INET)
+    {
+        inet_ntop(AF_INET, &(SIN(&rt_info.gw)->sin_addr),
+                  val, INET_ADDRSTRLEN);
+    }
+    else if (rt_info.gw.ss_family == AF_INET6)
+    {
+        inet_ntop(AF_INET6, &(SIN6(&rt_info.gw)->sin6_addr),
+                  val, INET6_ADDRSTRLEN);
+    }    
 
 #undef ROUTE_LOAD_ATTR
 
@@ -3577,7 +3721,7 @@ route_ ## field_ ## _get(unsigned int gid, const char *oid, \
     UNUSED(gid);                                            \
     UNUSED(oid);                                            \
                                                             \
-    if ((rc = route_get(route, &rt_info)) != 0)             \
+    if ((rc = route_find(route, &rt_info)) != 0)             \
         return rc;                                          \
                                                             \
     sprintf(value, "%d", rt_info.field_);                   \
@@ -3596,14 +3740,30 @@ route_ ## field_ ## _set(unsigned int gid, const char *oid,    \
                       value, route_load_attrs);                \
 }
 
-DEF_ROUTE_GET_FUNC(metric);
-DEF_ROUTE_SET_FUNC(metric);
 DEF_ROUTE_GET_FUNC(mtu);
 DEF_ROUTE_SET_FUNC(mtu);
 DEF_ROUTE_GET_FUNC(win);
 DEF_ROUTE_SET_FUNC(win);
 DEF_ROUTE_GET_FUNC(irtt);
 DEF_ROUTE_SET_FUNC(irtt);
+DEF_ROUTE_SET_FUNC(dev);
+
+static int                                       
+route_dev_get(unsigned int gid, const char *oid,
+              char *value, const char *route) 
+{
+    int          rc;
+    ta_rt_info_t rt_info;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if ((rc = route_find(route, &rt_info)) != 0)
+        return rc;
+
+    sprintf(value, "%s", rt_info.ifname);
+    return 0;
+}
 
 #undef DEF_ROUTE_GET_FUNC
 #undef DEF_ROUTE_SET_FUNC
@@ -3613,7 +3773,7 @@ DEF_ROUTE_SET_FUNC(irtt);
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instance identifier (unused)
- * @param value         value string (unused)
+ * @param value         value string
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
@@ -3627,7 +3787,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
-    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, NULL, NULL, NULL);
+    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, value, NULL, NULL);
 }
 
 /**
@@ -3708,24 +3868,12 @@ route_list(unsigned int gid, const char *oid, char **list)
                     ((uint8_t *)&addr)[2], ((uint8_t *)&addr)[3], prefix);
             ptr += strlen(ptr);
 
-            if (flags & RTF_GATEWAY)
-            {
-                snprintf(ptr, end_ptr - ptr, ",gw=%d.%d.%d.%d",
-                        ((uint8_t *)&gateway)[0], ((uint8_t *)&gateway)[1],
-                        ((uint8_t *)&gateway)[2], ((uint8_t *)&gateway)[3]);
-            }
-            else
-            {
-                snprintf(ptr, end_ptr - ptr, ",dev=%s", ifname);
-            }
-            ptr += strlen(ptr);
-#if 1 
             if (metric > 0)
             {
                 snprintf(ptr, end_ptr - ptr, ",metric=%d", metric);
                 ptr += strlen(ptr);
             }
-#endif
+
             snprintf(ptr, end_ptr - ptr, " ");
             ptr += strlen(ptr);
         }
@@ -3733,7 +3881,9 @@ route_list(unsigned int gid, const char *oid, char **list)
     }
     fclose(fp);
 
-#if 0
+    VERB("Got IPv4 routes");
+
+#if 1
     if ((fp = fopen("/proc/net/ipv6_route", "r")) == NULL)
     {
         ERROR("Failed to open /proc/net/ipv6_route for reading: %s",
@@ -3745,32 +3895,29 @@ route_list(unsigned int gid, const char *oid, char **list)
 #define IPV6_RAW_PRINT(addr, _ptr)                                    \
 do {                                                                  \
     char *p;                                                          \
-    char *p0;                                                         \
-    for (p = addr; *p != '\0' && strncmp (p, "0000", 4) != 0; p += 4) \
-    {                                                                 \
-        if (p != addr)                                                \
-            snprintf(_ptr++, MIN(2, end_ptr-_ptr), ":");              \
-        for (p0 = p; *p0 == '0'; p0++);                               \
+    int   i = 0;                                                      \
                                                                       \
-        snprintf(_ptr, MIN(5 - (p0 - p), end_ptr - _ptr), p0);        \
+    /* Print the address */                                           \
+    for (p = addr; isxdigit(*p); p += 4 - i)                          \
+    {                                                                 \
+        /*                                                            \
+         * If it is not the first quad of digits,                     \
+         * print a colon before it                                    \
+         */                                                           \
+        if (p != addr && end_ptr >= _ptr)                             \
+        {                                                             \
+            snprintf(_ptr, end_ptr - _ptr, ":");                      \
+            _ptr++;                                                   \
+        }                                                             \
+        for (i = 0; (i < 3) && (*p == '0'); i++, p++);                \
+                                                                      \
+        /* Do not print more than 4 digits at once */                 \
+        if (end_ptr >= _ptr)                                          \
+            snprintf(_ptr, MIN(5 - i, end_ptr - _ptr), p);            \
         _ptr += strlen(_ptr);                                         \
     }                                                                 \
-    for (; *p != '\0' && strncmp (p, "0000", 4) == 0; p += 4);        \
-                                                                      \
-    snprintf(_ptr++, MIN(2, end_ptr-_ptr), ":");                      \
-    if (*p == '\0')                                                   \
-        snprintf(_ptr++, MIN(2, end_ptr-_ptr), ":");                  \
-                                                                      \
-    for (; *p != '\0'; p += 4)                                        \
-    {                                                                 \
-        for (p0 = p; *p0 == '0'; p0++);                               \
-                                                                      \
-        snprintf(_ptr++, MIN(2, end_ptr-_ptr), ":");                  \
-        snprintf(_ptr, MIN(5 - (p0 - p), end_ptr-_ptr), p0);          \
-        _ptr += strlen(_ptr);                                         \
-    }                                                                 \
-} while (0)
-    
+} while(0)    
+   
     {        
         char         mask[IPV6_RAW_STR_LEN];
         char         dst[IPV6_RAW_STR_LEN];
@@ -3780,31 +3927,20 @@ do {                                                                  \
         int          metric;
         
         while (fscanf(fp, "%s %x %s %*x %s %x %*x %*x %x %s", dst, &prefix,
-                      mask, gate, &metric, &flags, ifname) >0 )
+                      mask, gate, &metric, &flags, ifname) >0)
         {
             if (flags & RTF_UP)
             {
                 IPV6_RAW_PRINT(dst, ptr);
-                snprintf(ptr, end_ptr - ptr, "|%d,", prefix);
+                snprintf(ptr, end_ptr - ptr, "|%d", prefix);
                 ptr += strlen(ptr);
-                if (flags & RTF_GATEWAY)
-                {
-                    snprintf(ptr, end_ptr - ptr, "gw=");
-                    ptr += strlen(ptr);
-                    IPV6_RAW_PRINT(gate, ptr);
-                }
-                else
-                {
-                    snprintf(ptr, end_ptr - ptr, "dev=%s", ifname);
-                }
-                ptr += strlen(ptr);
-#if 1
+
                 if (metric > 0)
                 {
                     snprintf(ptr, end_ptr - ptr, ",metric=%d", metric);
                     ptr += strlen(ptr);
                 }
-#endif 
+
                 snprintf(ptr, end_ptr - ptr, " ");
                 ptr += strlen(ptr);
             }
@@ -3857,14 +3993,23 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         WARN("Commit for %s route which has not been updated", route);
         return 0;
     }
+
+    memset(&rt_info, 0, sizeof(rt_info));
+#if 1
+    WARN("Parse object %s\n", obj->name);
+#endif    
+
     if ((rc = ta_rt_parse_obj(obj, &rt_info)) != 0)
     {
         ta_obj_free(obj);
         return rc;
     }
+#if 1
+    printf("Object parsed\n");
+#endif    
     obj_action = obj->action;
     ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
-
+printf("Name parsed\n");
     ta_obj_free(obj);
 
 #ifdef USE_NETLINK_ROUTE
@@ -3894,6 +4039,8 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         }
 
         rc = route_change(&rt_info, nlm_action, nlm_flags);
+        system("ip route");
+        WARN("Route changed");
     }
 #else
     /* Use ioctl interface */
