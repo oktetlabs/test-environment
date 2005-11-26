@@ -3044,9 +3044,6 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
 
     if ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0)
     {
-#if 1
-        WARN("Setting gateway %s", inet_ntoa(SIN(&rt_info->gw)->sin_addr));
-#endif
         if (addattr_l(&req->n, sizeof(*req), RTA_GATEWAY,
                       &(SIN(&(rt_info->gw))->sin_addr),
                       sizeof(SIN(&(rt_info->gw))->sin_addr)) != 0)
@@ -3054,9 +3051,6 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
     }
-#if 1
-    WARN("Check for interface");
-#endif    
     if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
     {
         int idx;
@@ -3066,9 +3060,6 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
             ERROR("Cannot find interface %s", rt_info->ifname);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
-#if 1
-        WARN("Interface index %d\n", idx);
-#endif        
         addattr32(&req->n, sizeof(*req), RTA_OIF, idx);
     }
 
@@ -3110,9 +3101,6 @@ route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
     struct rtnl_handle rth;
     int                rc;
 
-#if 1
-    WARN("Destination: %s", inet_ntoa(SIN(&rt_info->dst)->sin_addr));
-#endif
     if (rt_info == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
@@ -3148,17 +3136,13 @@ route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
          */
         ll_init_map(&rth);
     }
-#if 1
-    WARN("Call rt_info2nl_req");
-#endif    
+    
     if ((rc = rt_info2nl_req(rt_info, &req)) != 0)
     {
         rtnl_close(&rth);
         return rc;
     }
-#if 1
-    WARN("rt_info2nl_req() finished");
-#endif    
+    
     {
         if (req.r.rtm_type == RTN_LOCAL ||
             req.r.rtm_type == RTN_NAT)
@@ -3995,21 +3979,15 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     }
 
     memset(&rt_info, 0, sizeof(rt_info));
-#if 1
-    WARN("Parse object %s\n", obj->name);
-#endif    
 
     if ((rc = ta_rt_parse_obj(obj, &rt_info)) != 0)
     {
         ta_obj_free(obj);
         return rc;
     }
-#if 1
-    printf("Object parsed\n");
-#endif    
+    
     obj_action = obj->action;
     ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
-printf("Name parsed\n");
     ta_obj_free(obj);
 
 #ifdef USE_NETLINK_ROUTE
@@ -4039,8 +4017,6 @@ printf("Name parsed\n");
         }
 
         rc = route_change(&rt_info, nlm_action, nlm_flags);
-        system("ip route");
-        WARN("Route changed");
     }
 #else
     /* Use ioctl interface */
