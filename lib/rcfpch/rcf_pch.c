@@ -187,6 +187,9 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
     char *ptr = params;
     int   n = 0;
 
+    ENTRY("params='%s' is_argv=%p argc=%p param=%p",
+          params, is_argv, argc, param);
+
     memset((char *)param, 0, RCF_MAX_PARAMS * sizeof(void *));
 
     if (strncmp(ptr, "argv ", strlen("argv ")) == 0)
@@ -218,17 +221,21 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
 
             if ((type = get_type(&ptr)) == RCF_TYPE_TOTAL)
                 return TE_EINVAL;
+            VERB("%s(): type is %d", __FUNCTION__, type);
 
             if (type == RCF_STRING)
             {
                 if (transform_str(&ptr, (char **)(param + n)) != 0)
                     return TE_EINVAL;
+                VERB("%s(): got string '%s'", __FUNCTION__, param[n]);
                 n++;
                 continue;
             }
+            /* FIXME Use appropriate converter */
             val = strtoll(ptr, &tmp, 10);
             if (tmp == ptr || (*tmp != ' ' && *tmp != 0))
                 return TE_EINVAL;
+            VERB("%s(): got integer %d", __FUNCTION__, (int)val);
 
             ptr = tmp;
             SKIP_SPACES(ptr);
