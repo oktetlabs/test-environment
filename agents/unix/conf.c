@@ -1694,8 +1694,8 @@ find_net_addr(const char *ifname, const char *addr)
     int           rc;
 
     if (ifname != NULL &&
-        (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL) ||
-        !INTERFACE_IS_MINE(ifname))
+        (strlen(ifname) >= IF_NAMESIZE || strchr(ifname, ':') != NULL ||
+         !INTERFACE_IS_MINE(ifname)))
         return NULL;
 
     if (inet_pton(AF_INET, addr, (void *)&int_addr) <= 0)
