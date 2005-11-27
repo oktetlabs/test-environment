@@ -394,13 +394,14 @@ ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
         if (rc <= 0)
         {
             /* Clear gateway flag */
-            rt_info->flags &= (!TA_RT_INFO_FLG_GW);            
+            rt_info->flags &= (!TA_RT_INFO_FLG_GW); 
             ERROR("Invalid value of route: '%s'", value);
             return TE_EINVAL;
         }
     }
     else
     {
+        WARN("NULL route value");
         rt_info->flags &= (!TA_RT_INFO_FLG_GW);
     }
 
@@ -503,6 +504,6 @@ ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info)
 
     if ((rc = ta_rt_parse_inst_value(obj->value, rt_info)) != 0)
         return rc;
-    
+
     return ta_rt_parse_attrs(obj->attrs, rt_info);
 }

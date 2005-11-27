@@ -185,13 +185,17 @@ neigh_dynamic_list(unsigned int gid, const char *oid, char **list,
     return neigh_list(gid, "dynamic", list, ifname);
 }                   
 
-static int route_metric_get(unsigned int, const char *, char *,
-                            const char *);
-static int route_metric_set(unsigned int, const char *, const char *,
-                            const char *);
+static int route_dev_get(unsigned int, const char *, char *,
+                         const char *);
+static int route_dev_set(unsigned int, const char *, const char *,
+                         const char *);
 static int route_add(unsigned int, const char *, const char *,
                      const char *);
 static int route_del(unsigned int, const char *,
+                     const char *);
+static int route_get(unsigned int, const char *, char *,
+                     const char *);
+static int route_set(unsigned int, const char *, const char *,
                      const char *);
 static int route_list(unsigned int, const char *, char **);
 
@@ -202,12 +206,14 @@ static int route_commit(unsigned int, const cfg_oid *);
 
 static rcf_pch_cfg_object node_route;
 
-RCF_PCH_CFG_NODE_RWC(node_route_metric, "metric", NULL, NULL,
-                     route_metric_get, route_metric_set, &node_route);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_route, "route", &node_route_metric,
-                            NULL,
-                            route_add, route_del, route_list, route_commit);
+RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, NULL,
+                     route_dev_get, route_dev_set, &node_route);
+static rcf_pch_cfg_object node_route =
+    { "route", 0, &node_route_dev, NULL,
+      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
+      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
+      (rcf_ch_cfg_list)route_list,
+      (rcf_ch_cfg_commit)route_commit, NULL};
 
 RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
                     NULL, NULL,
@@ -1564,12 +1570,10 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
  * @return error code
  */
 static int
-route_get(const char *route, ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
+route_find(const char *route, ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
 {
     MIB_IPFORWARDTABLE *table;
     DWORD               route_addr;
-    DWORD               route_gw;
-    DWORD               route_if_index;
     int                 rc;
     int                 i;
 
@@ -1579,13 +1583,8 @@ route_get(const char *route, ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
-
     route_addr = SIN(&(rt_info->dst))->sin_addr.s_addr;
-    route_gw = SIN(&(rt_info->gw))->sin_addr.s_addr;
-
-    if ((rc = route_get_if_index(rt_info, &route_if_index)) != 0)
-        return rc;
-
+    
     for (i = 0; i < (int)table->dwNumEntries; i++)
     {
         uint32_t p;
@@ -1598,27 +1597,30 @@ route_get(const char *route, ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
 
         MASK2PREFIX(table->table[i].dwForwardMask, p);
         if (table->table[i].dwForwardDest != route_addr ||
-            p != rt_info->prefix ||
-            ((table->table[i].dwForwardType == FORW_TYPE_LOCAL) ^
-             ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)) ||
-            (table->table[i].dwForwardType == FORW_TYPE_LOCAL &&
-             table->table[i].dwForwardIfIndex != route_if_index) ||
-
-            ((table->table[i].dwForwardType == FORW_TYPE_REMOTE) ^
-             ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0)) ||
-            (table->table[i].dwForwardType == FORW_TYPE_REMOTE &&
-             table->table[i].dwForwardNextHop != route_gw))
+            (p != rt_info->prefix) ||
+            ((rt_info->flags & TA_RT_INFO_FLG_METRIC) != 0 &&
+             (table->table[i].dwForwardMetric1 != rt_info->metric)))
         {
             continue;
+        }        
+        
+        if (table->table[i].dwForwardIfIndex != 0)
+        {
+            rt_info->flags |= TA_RT_INFO_FLG_IF;
+            sprintf(rt_info->ifname, "intf%ld",
+                    table->table[i].dwForwardIfIndex);
         }
+        if (table->table[i].dwForwardNextHop != 0)
+        {
+            rt_info->flags |= TA_RT_INFO_FLG_GW;
+            SIN(&rt_info->gw)->sin_family = AF_INET;
+            SIN(&rt_info->gw)->sin_addr.s_addr = 
+                table->table[i].dwForwardNextHop;
+        }        
 
-        rt_info->metric = table->table[i].dwForwardMetric1;
-        if (rt_info->metric != METRIC_DEFAULT)
-            rt_info->flags |= TA_RT_INFO_FLG_METRIC;
-         
         if (rt != NULL)   
             *rt = table->table[i];
-
+        
         /*
          * win32 agent supports only a limited set of route attributes.
          */
@@ -1645,13 +1647,13 @@ route_load_attrs(ta_cfg_obj_t *obj)
     int          rc;
     char         val[128];
 
-    if ((rc = route_get(obj->name, &rt_info, NULL)) != 0)
+    if ((rc = route_find(obj->name, &rt_info, NULL)) != 0)
         return rc;
 
-    snprintf(val, sizeof(val), "%lu", rt_info.metric);
-    if ((rt_info.flags & TA_RT_INFO_FLG_METRIC) != 0 &&
+    snprintf(val, sizeof(val), "%s", rt_info.ifname);
+    if ((rt_info.flags & TA_RT_INFO_FLG_IF) != 0 &&
         (rc = ta_obj_set(TA_OBJ_TYPE_ROUTE, obj->name,
-                         "metric", val, NULL)) != 0)
+                         "dev", val, NULL)) != 0)
     {
         return rc;
     }
@@ -1660,8 +1662,8 @@ route_load_attrs(ta_cfg_obj_t *obj)
 }
 
 static int
-route_metric_get(unsigned int gid, const char *oid,
-                 char *value, const char *route)
+route_dev_get(unsigned int gid, const char *oid,
+              char *value, const char *route)
 {
     int          rc;
     ta_rt_info_t rt_info;
@@ -1669,20 +1671,21 @@ route_metric_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = route_get(route, &rt_info, NULL)) != 0)
+    if ((rc = route_find(route, &rt_info, NULL)) != 0)
         return rc;
 
-    sprintf(value, "%lu", rt_info.metric);
+    sprintf(value, "%s", rt_info.ifname);
     return 0;
 }
 
 static int
-route_metric_set(unsigned int gid, const char *oid,
-                 const char *value, const char *route)
+route_dev_set(unsigned int gid, const char *oid,
+              const char *value, const char *route)
 {
     UNUSED(gid);
     UNUSED(oid);
-    return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, "metric",
+
+    return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, "dev",
                       value, route_load_attrs);
 }
 
@@ -1705,7 +1708,7 @@ route_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
-    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, NULL, NULL, NULL);
+    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, value, NULL, NULL);
 }
 
 /**
@@ -1726,6 +1729,68 @@ route_del(unsigned int gid, const char *oid, const char *route)
 
     return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL);
 }
+
+/** Get the value of the route.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param route         route instance name: see doc/cm_cm_base.xml
+ *                      for the format
+ *
+ * @return error code
+ */
+static int
+route_get(unsigned int gid, const char *oid, char *value,
+          const char *route_name)
+{
+    ta_rt_info_t  attr;
+    int           rc;
+    char         *addr; 
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = route_find(route_name, &attr, NULL)) != 0)
+    {
+        ERROR("Route %s cannot be found", route_name);
+        return rc;
+    }
+                        
+    if (attr.dst.ss_family == AF_INET)
+    {
+        addr = inet_ntoa(SIN(&attr.gw)->sin_addr);
+        memcpy(value, addr, strlen(addr));
+    }
+    else
+    {
+        ERROR("Unexpected destination address family: %d",
+               attr.dst.ss_family);
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
+    }
+    
+    return 0;
+}            
+
+/** Set new value for the route.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value string (unused)
+ * @param route         route instance name: see doc/cm_cm_base.xml
+ *                      for the format
+ *
+ * @return error code
+ */
+static int
+route_set(unsigned int gid, const char *oid, const char *value,
+          const char *route_name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value);
+}            
 
 /**
  * Get instance list for object "agent/route".
@@ -1776,18 +1841,12 @@ route_list(unsigned int gid, const char *oid, char **list)
                  inet_ntoa(*(struct in_addr *)
                      &(table->table[i].dwForwardDest)), prefix);
         ptr += strlen(ptr);
-        if (table->table[i].dwForwardType == FORW_TYPE_REMOTE)
+        if (table->table[i].dwForwardMetric1 != METRIC_DEFAULT)
         {
-            /* Route via gateway */
-            snprintf(ptr, end_ptr - ptr, ",gw=%s",
-                     inet_ntoa(*(struct in_addr *)
-                         &(table->table[i].dwForwardNextHop)));
+            snprintf(ptr, end_ptr - ptr, ",metric=%ld",
+                     table->table[i].dwForwardMetric1);
         }
-        else
-        {
-            snprintf(ptr, end_ptr - ptr, ",dev=intf%d",
-                     (int)(table->table[i].dwForwardIfIndex));
-        }
+
         ptr += strlen(ptr);
         snprintf(ptr, end_ptr - ptr, " ");
         ptr += strlen(ptr);
@@ -1823,7 +1882,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
 
     UNUSED(gid);
     ENTRY("%s", route);
-    
+
     memset(&rt, 0, sizeof(rt));
 
     route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
@@ -1833,15 +1892,17 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         WARN("Commit for %s route which has not been updated", route);
         return 0;
     }
+
     if ((rc = ta_rt_parse_obj(obj, &rt_info)) != 0)
     {
         ta_obj_free(obj);
         return rc;
     }
+
     if ((obj_action = obj->action) == TA_CFG_OBJ_DELETE ||
         obj_action == TA_CFG_OBJ_SET)
     {
-        rc = route_get(obj->name, &rt_info, &rt);
+        rc = route_find(obj->name, &rt_info, &rt);
     }
     else
     {

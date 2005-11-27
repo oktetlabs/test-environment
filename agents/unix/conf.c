@@ -281,10 +281,10 @@ RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, &node_route_mtu,
 
 static rcf_pch_cfg_object node_route =
     {"route", 0, &node_route_dev, NULL,
-        (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
-        (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
-        (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit,
-        NULL};
+     (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
+     (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
+     (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit,
+     NULL};
 
 RCF_PCH_CFG_NODE_RO(node_dns, "dns",
                     NULL, &node_route,
