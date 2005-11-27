@@ -474,6 +474,8 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
 
     for (i = 0; i < num; i++)
     {
+        struct sockaddr  *addr;
+        
         if ((rc = cfg_get_inst_name(handles[i], &rt_name)) != 0)
         {
             ERROR("%s: Route handle cannot be processed", __FUNCTION__);
@@ -483,7 +485,23 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
         rc = route_parse_inst_name(rt_name, &tbl[i]);
 
         free(rt_name);
+        
         assert(rc == 0);
+
+        if ((rc = cfg_get_instance(handles[i], NULL, &addr)) != 0)
+        {
+            ERROR("%s: Cannot obtain route instance value", __FUNCTION__);
+            break;
+        }        
+
+        if ((addr->sa_family == AF_INET &&
+             SIN(addr)->sin_addr.s_addr != htonl(INADDR_ANY)) ||
+            (addr->sa_family == AF_INET6 &&
+             !IN6_IS_ADDR_UNSPECIFIED(&SIN6(addr)->sin6_addr)))
+        {
+            tbl[i].flags |= TAPI_RT_GW;
+            memcpy(&tbl[i].gw, addr, sizeof(struct sockaddr_storage));
+        }
         
         /* Get route attributes */
         if ((rc = cfg_get_son(handles[i], &handle2)) != 0 ||
@@ -752,6 +770,8 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     int         diff;
     uint8_t     mask;
 
+    struct sockaddr_storage ss;
+
     UNUSED(flags);
 
     if (netaddr_size < 0)
@@ -838,10 +858,21 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
 
     if (tos > 0)
         PUT_INTO_BUF(route_inst_name, ",tos=%d", tos);
+
+    /* Prepare structure with gateway address */
+    memset(&ss, 0, sizeof(ss));
+    ss.ss_family = addr_family;
+           
+    if (gw_addr != NULL)
+    {
+        sockaddr_set_netaddr(SA(&ss), gw_addr);
+    }
+    
     switch (op)
     {
         case OP_MODIFY:
-
+        {
+            
 /*
  * Macro makes local set for route attribute whose name specified
  * with 'field_' parameter.
@@ -865,6 +896,17 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
             }
             
             do {
+                if ((rc = cfg_set_instance_local_fmt(CFG_VAL(ADDRESS, &ss),
+                                                     "/agent:%s/route:%s",
+                                                     ta, route_inst_name))
+                    != 0)
+                {
+                    ERROR("%s() fails to set value of route %s on '%s'"
+                           " Agent errno = %r",
+                           __FUNCTION__, dev, route_inst_name, ta, rc);
+                    break;
+                }
+
                 if ((dev != NULL) &&
                     ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, dev),
                           "/agent:%s/route:%s/dev:", ta, route_inst_name))
@@ -890,19 +932,11 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
             }
 
             break;
+        }
 
         case OP_ADD:
         {
-            struct sockaddr_storage ss;
-
-            memset(&ss, 0, sizeof(ss));
-            ss.ss_family = addr_family;
-            
-            if (gw_addr != NULL)
-            {
-                sockaddr_set_netaddr(SA(&ss), gw_addr);
-            }
-                
+             
             rc = cfg_add_instance_local_fmt(&handle,
                                             CFG_VAL(ADDRESS, &ss),
                                             "/agent:%s/route:%s",

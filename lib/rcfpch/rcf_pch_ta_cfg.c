@@ -215,9 +215,16 @@ int
 ta_obj_value_set(const char *type, const char *name, const char *value)
 {
     ta_cfg_obj_t *obj = ta_obj_find(type, name);
+    int           rc;
     
     if (obj == NULL)
-        return TE_ENOENT;
+    {
+        /* Add object first, but reset add flag */
+        if ((rc = ta_obj_add(type, name, NULL, NULL, &obj)) != 0)
+            return rc;
+
+        obj->action = TA_CFG_OBJ_SET;
+    }
 
     obj->value = ((value != NULL) ? strdup(value) : NULL);
 
@@ -357,7 +364,7 @@ int
 ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
 {
     int family = AF_INET;
-    int rc;
+    int rc = 0;
 
     if (value != NULL)
     {
@@ -391,8 +398,6 @@ ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
             ERROR("Invalid value of route: '%s'", value);
             return TE_EINVAL;
         }
-
-        WARN("Set gateway flag");
     }
     else
     {
