@@ -3201,8 +3201,8 @@ rt_info2rtentry(const ta_rt_info_t *rt_info,
     ((struct sockaddr_in *)&(rt->rt_genmask))->sin_addr.s_addr =
         htonl(PREFIX2MASK(rt_info->prefix));
 #endif
-    if ((rt_info->dst.family == AF_INET && rt_info->prefix == 32) ||
-        (rt_info->dst.family == AF_INET6 && rt_info->prefix == 128))
+    if ((rt_info->dst.ss_family == AF_INET && rt_info->prefix == 32) ||
+        (rt_info->dst.ss_family == AF_INET6 && rt_info->prefix == 128))
         rt->rt_flags |= RTF_HOST;
 
     if ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0)
