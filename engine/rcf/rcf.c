@@ -256,6 +256,7 @@ static char *tmp_dir;
 
 
 /* Forward decraration */
+static int write_str(char *s, size_t len);
 static int send_cmd(ta *agent, usrreq *req);
 static void rcf_ta_check_done(usrreq *req);
 
@@ -746,9 +747,6 @@ answer_all_requests(usrreq *req, int error)
         answer_user_request(tmp);
     }
 }
-
-
-void write_str(char *s, int len);
 
 
 /**
@@ -1606,12 +1604,15 @@ transmit_cmd(ta *agent, usrreq *req)
  *
  * @param s     string to be filled in
  * @param len   number of symbols to be copied
+ *
+ * @return Number of added symbols
  */
-void
-write_str(char *s, int len)
+static int
+write_str(char *s, size_t len)
 {
-    char *ptr = cmd + strlen(cmd);
-    int i = 0;
+    char   *ptr0 = cmd + strlen(cmd);
+    char   *ptr = ptr0;
+    size_t  i = 0;
 
     *ptr++ = ' ';
     *ptr++ = '\"';
@@ -1626,57 +1627,76 @@ write_str(char *s, int len)
         i++;
     }
     *ptr++ = '\"';
-    *ptr = 0;
+    *ptr = '\0';
+
+    return ptr - ptr0;
 }
 
 /**
  * Print type and value to the Test Protocol command.
  *
  * @param cmd           command pointer
+ * @param size          maximum command size
  * @param type          type (see rcf_api.h)
  * @param value         value pointer
+ *
+ * @return snprintf() return value
  */
-static void
-print_value(char *cmd, unsigned char type, void *value)
+static int
+print_value(char *cmd, size_t size, unsigned char type, void *value)
 {
+    int ret = 0;
+
     switch (type)
     {
         case RCF_INT8:
-            sprintf(cmd, "%" TE_PRINTF_8 "d", *(int8_t *)value);
+            ret = snprintf(cmd, size, "%" TE_PRINTF_8 "d",
+                           *(int8_t *)value);
             break;
 
         case RCF_INT16:
-            sprintf(cmd, "%" TE_PRINTF_16 "d", *(int16_t *)value);
+            ret = snprintf(cmd, size, "%" TE_PRINTF_16 "d",
+                           *(int16_t *)value);
             break;
 
         case RCF_INT32:
-            sprintf(cmd, "%" TE_PRINTF_32 "d", *(int32_t *)value);
+            ret = snprintf(cmd, size, "%" TE_PRINTF_32 "d",
+                           *(int32_t *)value);
             break;
 
         case RCF_INT64:
-            sprintf(cmd, "%" TE_PRINTF_64 "d", *(int64_t *)value);
+            ret = snprintf(cmd, size, "%" TE_PRINTF_64 "d",
+                           *(int64_t *)value);
             break;
 
         case RCF_UINT8:
-            sprintf(cmd, "%" TE_PRINTF_8 "u", *(uint8_t *)value);
+            ret = snprintf(cmd, size, "%" TE_PRINTF_8 "u",
+                           *(uint8_t *)value);
             break;
 
         case RCF_UINT16:
-            sprintf(cmd, "%" TE_PRINTF_16 "u", *(uint16_t *)value);
+            ret = snprintf(cmd, size, "%" TE_PRINTF_16 "u",
+                           *(uint16_t *)value);
             break;
 
         case RCF_UINT32:
-            sprintf(cmd, "%" TE_PRINTF_32 "u", *(uint32_t *)value);
+            ret = snprintf(cmd, size, "%" TE_PRINTF_32 "u",
+                           *(uint32_t *)value);
             break;
 
         case RCF_UINT64:
-            sprintf(cmd, "%" TE_PRINTF_64 "u", *(uint64_t *)value);
+            ret = snprintf(cmd, size, "%" TE_PRINTF_64 "u",
+                           *(uint64_t *)value);
             break;
 
         case RCF_STRING:
-            write_str((char *)value, strlen((char *)value));
+            ret = write_str((char *)value, strlen((char *)value));
             break;
+
+        default:
+            assert(FALSE);
     }
+    return ret;
 }
 
 /**
@@ -1705,9 +1725,8 @@ send_cmd(ta *agent, usrreq *req)
         return 0;
     }
 
-#define PUT(fmt...) \
+#define CHECK_SPACE \
     do {                                                          \
-        space += snprintf(cmd + space, sizeof(cmd) - space, fmt); \
         if (space >= sizeof(cmd))                                 \
         {                                                         \
             ERROR("Too long RCF command");                        \
@@ -1715,6 +1734,12 @@ send_cmd(ta *agent, usrreq *req)
             answer_user_request(req);                             \
             return -1;                                            \
         }                                                         \
+    } while (0)
+
+#define PUT(fmt...) \
+    do {                                                          \
+        space += snprintf(cmd + space, sizeof(cmd) - space, fmt); \
+        CHECK_SPACE;                                              \
     } while (0)
 
     PUT("SID %d ", msg->sid);
@@ -1892,7 +1917,11 @@ send_cmd(ta *agent, usrreq *req)
 
                         PUT(" %s ", rcf_types[type]);
 
-                        print_value(cmd + space, type, ptr);
+                        space += print_value(cmd + space,
+                                             sizeof(cmd) - space,
+                                             type, ptr);
+                        CHECK_SPACE;
+
                         if (type == RCF_STRING)
                             ptr += strlen(ptr) + 1;
                         else
