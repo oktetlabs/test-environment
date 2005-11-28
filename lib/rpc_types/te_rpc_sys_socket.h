@@ -1051,8 +1051,10 @@ sockopt_h2rpc(int opt_type, int opt)
 #ifdef IPV6_RECVERR
                 H2RPC(IPV6_RECVERR);
 #endif                
+#if 0
 #if IPV6_ROUTER_ALERT
                 H2RPC(IPV6_ROUTER_ALERT);
+#endif                
 #endif                
 
                 default: return RPC_SOCKOPT_MAX;
