@@ -101,7 +101,12 @@ trc_db_find_by_args(test_iters *iters, const test_args *args)
 
     for (p = iters->head.tqh_first; p != NULL; p = p->links.tqe_next)
     {
-        if (!p->used && test_args_equal(&p->args, args))
+        if (
+/* FIXME Process tests called many times correctly */
+#if 0
+            !p->used &&
+#endif
+            test_args_equal(&p->args, args))
             break;
     }
 
