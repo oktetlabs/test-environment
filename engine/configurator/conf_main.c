@@ -541,7 +541,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
      */
     inst = CFG_GET_INST(handle);
     inst->added = TRUE;
-    cfg_conf_delay_update(inst);
+    cfg_conf_delay_update(inst->oid);
     
     msg->handle = handle;
 }
@@ -656,7 +656,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         cfg_db_set(handle, old_val);
     }
 
-    cfg_conf_delay_update(inst);
+    cfg_conf_delay_update(inst->oid);
 
     cfg_types[obj->type].free(old_val);
     cfg_types[obj->type].free(val);
@@ -713,7 +713,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
 
-    cfg_conf_delay_update(inst);
+    cfg_conf_delay_update(inst->oid);
 
     /*
      * We should not try to delete locally added instances from
@@ -1307,7 +1307,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_CONF_TOUCH:
-            cfg_conf_delay_update_str(((cfg_conf_touch_msg *)(*msg))->oid);
+            cfg_conf_delay_update(((cfg_conf_touch_msg *)(*msg))->oid);
             break;
 
         case CFG_SHUTDOWN:

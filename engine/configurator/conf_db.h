@@ -280,22 +280,9 @@ uint32_t cfg_conf_delay;
  * Update the current configuration delay after adding/deleting/changing
  * an instance.
  *
- * @param inst  added/changed/deleted instance 
+ * @param oid   instance OID
  */
-static inline void
-cfg_conf_delay_update(cfg_instance *inst)
-{
-    if (inst->conf_delay > cfg_conf_delay)
-        cfg_conf_delay = inst->conf_delay;
-}
-
-/** 
- * Update the current configuration delay after adding/deleting/changing
- * an instance.
- *
- * @param inst  OID template which added/deleted/changed instance matches
- */
-extern void cfg_conf_delay_update_str(const char *oid);
+extern void cfg_conf_delay_update(const char *oid);
 
 /** Sleep the delay and reset it */
 static inline void

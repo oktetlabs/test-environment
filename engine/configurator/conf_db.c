@@ -728,10 +728,10 @@ get_delay_by_oid(const char *oid)
  * Update the current configuration delay after adding/deleting/changing
  * an instance.
  *
- * @param inst  OID template which added/deleted/changed instance matches
+ * @param oid   instance OID
  */
 void 
-cfg_conf_delay_update_str(const char *oid)
+cfg_conf_delay_update(const char *oid)
 {
     uint32_t delay = get_delay_by_oid(oid);
     
