@@ -2708,7 +2708,7 @@ iscsi_convert_param_to_str(char *buffer,
 {
     struct parameter_type *found = find_parameter(param, param_tbl);
     
-    if (found == NULL)
+    if (found == NULL || found->neg_info == 0)
         *buffer = '\0';
     else
     {
