@@ -826,6 +826,17 @@ extern iscsi_digest_type iscsi_digest_str2enum(const char *digest_type);
 extern char* iscsi_digest_enum2str(iscsi_digest_type digest_type);
 
 
+/*
+ * Informs the iSCSI target that a new test is being run.
+ * Note: this function should not be necessary in most situations,
+ * as any change of target parameters will do the job
+ *
+ * @param ta    Test Agent name
+ *
+ * @return Status code
+ */
+extern int tapi_iscsi_target_inform_new_test(const char *ta);
+
 /*** Functions for data transfer between Target and Initiator ***/
 
 /**
