@@ -1098,6 +1098,7 @@ process_backup(cfg_backup_msg *msg)
             {
                 char diff_file[RCF_MAX_PATH];
                 
+                cfg_conf_delay_reset();
                 cfg_ta_sync("/:", TRUE);
 
                 TE_SPRINTF(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
