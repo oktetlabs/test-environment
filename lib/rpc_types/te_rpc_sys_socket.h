@@ -895,6 +895,23 @@ sockopt_rpc2h(rpc_sockopt opt)
     }
 }
 
+#if !defined(SOL_IP) && defined(IPPROTO_IP)
+#define SOL_IP          IPPROTO_IP
+#endif
+
+#if !defined(SOL_IPV6) && defined(IPPROTO_IPV6)
+#define SOL_IPV6        IPPROTO_IPV6
+#endif
+
+#if !defined(SOL_TCP) && defined(IPPROTO_TCP)
+#define SOL_TCP         IPPROTO_TCP
+#endif
+
+#if !defined(SOL_UDP) && defined(IPPROTO_UDP)
+#define SOL_UDP         IPPROTO_UDP
+#endif
+
+
 /** Convert native socket options to RPC one */
 static inline rpc_sockopt
 sockopt_h2rpc(int opt_type, int opt)
@@ -939,8 +956,12 @@ sockopt_h2rpc(int opt_type, int opt)
         case SOL_TCP:
             switch (opt)
             {
+#ifdef TCP_MAXSEG            
                 H2RPC(TCP_MAXSEG);
+#endif
+#ifdef TCP_NODELAY                
                 H2RPC(TCP_NODELAY);
+#endif                
 #ifdef TCP_KEEPIDLE
                 H2RPC(TCP_KEEPIDLE);
 #endif
@@ -969,11 +990,21 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC(IP_MULTICAST_TTL);
                 H2RPC(IP_OPTIONS);
                 H2RPC(IP_PKTINFO);
+#ifdef IP_RECVERR                
                 H2RPC(IP_RECVERR);
+#endif
+#ifdef IP_RECVOPTS                
                 H2RPC(IP_RECVOPTS);
+#endif
+#ifdef IP_RECVTOS                
                 H2RPC(IP_RECVTOS);
+#endif
+#ifdef IP_RECVTTL                
                 H2RPC(IP_RECVTTL);
+#endif
+#ifdef IP_RETOPTS                
                 H2RPC(IP_RETOPTS);
+#endif                
                 H2RPC(IP_TOS);
                 H2RPC(IP_TTL);
 #ifdef IP_MTU
@@ -994,8 +1025,12 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC(IPV6_UNICAST_HOPS);
                 H2RPC(IPV6_MULTICAST_HOPS);
                 H2RPC(IPV6_MULTICAST_IF);
+#ifdef IPV6_ADDRFORM                
                 H2RPC(IPV6_ADDRFORM);
+#endif
+#ifdef IPV6_PKTINFO                
                 H2RPC(IPV6_PKTINFO);
+#endif                
 #if 0                
                 H2RPC(IPV6_RTHDR);
                 H2RPC(IPV6_AUTHHDR);
@@ -1013,8 +1048,10 @@ sockopt_h2rpc(int opt_type, int opt)
 #ifdef IPV6_MTU_DISCOVER                
                 H2RPC(IPV6_MTU_DISCOVER);
 #endif
+#ifdef IPV6_RECVERR
                 H2RPC(IPV6_RECVERR);
-#if 0                
+#endif                
+#if IPV6_ROUTER_ALERT
                 H2RPC(IPV6_ROUTER_ALERT);
 #endif                
 
@@ -1127,26 +1164,18 @@ socklevel_rpc2h(rpc_socklevel level)
     switch (level)
     {
         RPC2H(SOL_SOCKET);
-#ifndef SOL_IP
-        case RPC_SOL_IP:  return IPPROTO_IP;
-#else                          
+#ifdef SOL_IP        
         RPC2H(SOL_IP);
 #endif
-#ifndef SOL_IPV6
-        case RPC_SOL_IPV6: return IPPROTO_IPV6;
-#else
+#ifdef SOL_IPV6        
         RPC2H(SOL_IPV6);
 #endif        
-#ifndef SOL_TCP
-        case RPC_SOL_TCP: return IPPROTO_TCP;
-#else
+#ifdef SOL_TCP
         RPC2H(SOL_TCP);
 #endif
-#ifndef SOL_UDP
-        case RPC_SOL_UDP: return IPPROTO_UDP;
-#else
+#ifdef SOL_UDP        
         RPC2H(SOL_UDP);
-#endif
+#endif        
         default: return SOL_MAX;
     }
 }
@@ -1158,26 +1187,18 @@ socklevel_h2rpc(int level)
     switch (level)
     {
         H2RPC(SOL_SOCKET);
-#ifndef SOL_IP
-        case IPPROTO_IP: return RPC_SOL_IP;
-#else
+#ifdef SOL_IP        
         H2RPC(SOL_IP);
 #endif
-#ifndef SOL_IPV6
-        case IPPROTO_IPV6: return RPC_SOL_IPV6;
-#else
+#ifdef SOL_IPV6        
         H2RPC(SOL_IPV6);
 #endif
-#ifndef SOL_TCP
-        case IPPROTO_TCP: return RPC_SOL_TCP;
-#else
+#ifdef SOL_TCP        
         H2RPC(SOL_TCP);
 #endif
-#ifndef SOL_UDP
-        case IPPROTO_UDP: return RPC_SOL_UDP;
-#else
+#ifdef SOL_UDP        
         H2RPC(SOL_UDP);
-#endif
+#endif        
         default: return RPC_SOL_UNKNOWN;
     }
 }
