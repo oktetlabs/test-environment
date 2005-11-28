@@ -81,7 +81,6 @@ typedef struct cfg_instance {
                                          to the Test Agent or not
                                          (has sense only for read-create
                                          instances) */
-    uint32_t    conf_delay;         /**< Configuration changes delay */
 
     /** @name Family */
     struct cfg_instance *father;    /**< Link to father */

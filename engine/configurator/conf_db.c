@@ -77,7 +77,7 @@ int cfg_all_obj_size;
 
 /** Root of configuration instances */
 cfg_instance cfg_inst_root = 
-    { 0x10000, "/:", { 0 }, &cfg_obj_root, TRUE, 0, NULL, NULL, NULL, 
+    { 0x10000, "/:", { 0 }, &cfg_obj_root, TRUE, NULL, NULL, NULL, 
       { 0 } };
 /** Pool with configuration instances */
 cfg_instance **cfg_all_inst = NULL;
@@ -698,19 +698,19 @@ get_delay_by_oid(const char *oid)
     char ta[RCF_MAX_NAME];
     char oid_obj[CFG_OID_MAX];
     int  i;
-         
+    
     if (!cfg_get_ta_name(oid, ta))
          return 0;
-         
+
     cfg_oid_inst2obj(oid, oid_obj);
     
     if (*oid_obj == 0)
         return 0;
-        
+
     for (i = 0; i < cfg_all_inst_max; i++)
     {
         cfg_instance *tmp = cfg_all_inst[i];
-        
+
         if (tmp != NULL && strcmp(tmp->obj->oid, "/conf_delay") == 0 &&
             strcmp(tmp->val.val_str, oid_obj) == 0)
         {
@@ -907,11 +907,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     {
         return cfg_db_add_children(inst);
     }
-    else
-    {
-        if ((inst->conf_delay = get_delay_by_oid(inst->oid)) == 0)
-            inst->conf_delay = inst->father->conf_delay;
-    }
+
     return 0;
 
 #undef RET

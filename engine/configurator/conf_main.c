@@ -656,7 +656,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         cfg_db_set(handle, old_val);
     }
 
-    cfg_conf_delay_update(inst->oid);
+    cfg_conf_delay_update(CFG_GET_INST(handle)->oid);
 
     cfg_types[obj->type].free(old_val);
     cfg_types[obj->type].free(val);
