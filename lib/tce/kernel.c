@@ -53,22 +53,22 @@
 
 struct bb_function_info 
 {
-    long checksum;
-    int arc_count;
+    long        checksum;
+    int         arc_count;
     const char *name;
 };
 
 /* Structure emitted by --profile-arcs  */
 struct bb
 {
-    long zero_word;
+    long        zero_word;
     const char *filename;
-    long long *counts;
-    long ncounts;
-    struct bb *next;
+    long long  *counts;
+    long        ncounts;
+    struct bb  *next;
     
     /* Older GCC's did not emit these fields.  */
-    long sizeof_bb;
+    long                     sizeof_bb;
     struct bb_function_info *function_infos;
 };
 
@@ -80,17 +80,17 @@ struct bb
 
 struct gcov_ctr_summary
 {
-  unsigned num;      /* number of counters.  */
-  unsigned runs;     /* number of program runs */
-  long long sum_all;        /* sum of all counters accumulated.  */
-  long long run_max;        /* maximum value on a single run.  */
-  long long sum_max;        /* sum of individual run max values.  */
+    unsigned  num;                /* number of counters.  */
+    unsigned  runs;               /* number of program runs */
+    long long sum_all;            /* sum of all counters accumulated.  */
+    long long run_max;            /* maximum value on a single run.  */
+    long long sum_max;            /* sum of individual run max values.  */
 };
 
 /* Object & program summary record.  */
 struct gcov_summary
 {
-  unsigned checksum; /* checksum of program */
+  unsigned                checksum; /* checksum of program */
   struct gcov_ctr_summary ctrs[GCOV_COUNTERS_SUMMABLE];
 };
 
@@ -103,53 +103,56 @@ struct gcov_summary
        explicitly calculate the correct array stride.  */
 struct gcov_fn_info
 {
-  unsigned ident;    /* unique ident of function */
-  unsigned checksum; /* function checksum */
-  unsigned n_ctrs[0];       /* instrumented counters */
+    unsigned ident;             /* unique ident of function */
+    unsigned checksum;          /* function checksum */
+    unsigned n_ctrs[0];         /* instrumented counters */
 };
 
 /* Information about counters.  */
 struct gcov_ctr_info
 {
-  unsigned num;      /* number of counters.  */
-  long long *values;        /* their values.  */
-  void *merge;      /* The function used to merge them.  */
+    unsigned   num;             /* number of counters.  */
+    long long *values;          /* their values.  */
+    void *merge;      /* The function used to merge them.  */
 };
 
 /* Information about a single object file.  */
 struct gcov_info
 {
-  unsigned version;  /* expected version number */
-  struct gcov_info *next;   /* link to next, used by libgcov */
-
-  unsigned stamp;    /* uniquifying time stamp */
-  const char *filename;     /* output file name */
-  
-  unsigned n_functions;     /* number of functions */
-  const struct gcov_fn_info *functions; /* table of functions */
-
-  unsigned ctr_mask;        /* mask of counters instrumented.  */
-  struct gcov_ctr_info counts[0]; /* count data. The number of bits
-                     set in the ctr_mask field
-                     determines how big this array
-                     is.  */
+    unsigned          version;  /* expected version number */
+    struct gcov_info *next;     /* link to next, used by libgcov */
+    
+    unsigned    stamp;          /* uniquifying time stamp */
+    const char *filename;       /* output file name */
+    
+    unsigned                   n_functions; /* number of functions */
+    const struct gcov_fn_info *functions; /* table of functions */
+    
+    unsigned ctr_mask;          /* mask of counters instrumented.  */
+    struct gcov_ctr_info counts[0]; /* count data. The number of bits
+                                       set in the ctr_mask field
+                                       determines how big this array
+                                       is.  */
 };
 
 typedef struct summary_data
 {
     long long sum;
     long long max;
-    long arcs;
+    long      arcs;
 } summary_data;
 
 typedef union object_coverage
 {
-    struct bb old;
+    struct bb        old;
     struct gcov_info new;
 } object_coverage;
 
+typedef void (*gcov_processor_t)(void *, const char *, unsigned long, 
+                                 unsigned long, object_coverage *, void *);
+
 static void process_gcov_syms(FILE *symfile, int core_file,
-                              void (*functor)(void *, const char *, unsigned long, unsigned long, object_coverage *, void *), 
+                              gcov_processor_t processor,
                               void *extra);
 static void do_gcov_sum(void *data, const char *modname, 
                         unsigned long start, unsigned long size, 
@@ -184,11 +187,11 @@ static module_info *module_list;
 static te_bool
 read_modules(void)
 {
-    FILE *modules = fopen("/proc/modules", "r");
-    char buffer[256];
-    char name[64];
-    unsigned long size, start;
-    module_info *the_module;
+    FILE          *modules = fopen("/proc/modules", "r");
+    char           buffer[256];
+    char           name[64];
+    unsigned long  size, start;
+    module_info   *the_module;
     
     if (modules == NULL)
     {
@@ -200,10 +203,11 @@ read_modules(void)
         if (sscanf(buffer, "%63s %lu %*d %*s %*s 0x%lx", 
                    name, &size, &start) != 3)
         {
-            tce_report_notice("malformed string in /proc/modules: %s", buffer);
+            tce_report_notice("malformed string in /proc/modules: %s", 
+                              buffer);
             continue;
         }
-        the_module = malloc(sizeof(*the_module));
+        the_module              = malloc(sizeof(*the_module));
         the_module->name        = strdup(name);
         the_module->start       = start;
         the_module->size        = size;
@@ -215,22 +219,27 @@ read_modules(void)
 }
 
 static void *
-read_module_data (const char *name, int core_file, unsigned long *start, unsigned long *size)
+read_module_data (const char *name, int core_file,
+                  unsigned long *start, unsigned long *size)
 {
     module_info *mod;
+
     for (mod = module_list; mod != NULL; mod = mod->next)
     {
         if (strcmp(mod->name, name) == 0)
         {
             if (mod->kernel_data == NULL)
             {
-                tce_print_debug("reading %lu bytes from %lx", mod->size, mod->start);
+                tce_print_debug("reading %lu bytes from %lx", 
+                                mod->size, mod->start);
                 mod->kernel_data = malloc(mod->size);
                 lseek(core_file, mod->start, SEEK_SET);
                 errno = 0;
-                if (read(core_file, mod->kernel_data, mod->size) < (ssize_t)mod->size)
+                if (read(core_file, mod->kernel_data, mod->size) < 
+                    (ssize_t)mod->size)
                 {
-                    tce_report_error("error reading module %s data: %s", name, strerror(errno));
+                    tce_report_error("error reading module %s data: %s", 
+                                     name, strerror(errno));
                     free(mod->kernel_data);
                     mod->kernel_data = NULL;
                     return NULL;
@@ -249,6 +258,7 @@ static ssize_t
 read_safe(int fildes, void *buffer, size_t size)
 {
     ssize_t nsize;
+
     nsize = read(fildes, buffer, size);
     tce_print_debug("read %d bytes", (int)nsize);
     if (nsize == (ssize_t)-1)
@@ -261,10 +271,10 @@ read_safe(int fildes, void *buffer, size_t size)
 static void
 detect_kernel_gcov_version(FILE *symfile)
 {
-    size_t offset;
-    static char symbuf[256];
-    char *token;
-    int procfile = open("/proc/tce_gcov_magic", O_RDONLY);
+    size_t       offset;
+    static char  symbuf[256];
+    char        *token;
+    int          procfile = open("/proc/tce_gcov_magic", O_RDONLY);
     
     if (procfile >= 0)
     {
@@ -328,7 +338,8 @@ tce_obtain_kernel_coverage(void)
                 core_file = open("/dev/kmem", O_RDONLY);
                 if (core_file < 0)
                 {
-                    tce_report_error("Cannot open kernel memory file: %s", strerror(errno));
+                    tce_report_error("Cannot open kernel memory file: %s", 
+                                     strerror(errno));
                     fclose(symfile);
                     return;
                 }
@@ -336,7 +347,8 @@ tce_obtain_kernel_coverage(void)
             
             detect_kernel_gcov_version(symfile);
             process_gcov_syms(symfile, core_file, do_gcov_sum, &summary);
-            process_gcov_syms(symfile, core_file, get_kernel_gcov_data, &summary);
+            process_gcov_syms(symfile, core_file, get_kernel_gcov_data, 
+                              &summary);
             close(core_file);
             fclose(symfile);
         }
@@ -346,19 +358,20 @@ tce_obtain_kernel_coverage(void)
 
 static void
 process_gcov_syms(FILE *symfile, int core_file,
-                  void (*functor)(void *, const char *, unsigned long, unsigned long, object_coverage *, void *), void *extra)
+                  gcov_processor_t functor, void *extra)
 {
-    unsigned long offset;
-    unsigned long mod_start, mod_size;
-    char *mod_data;
-    static char symbuf[256];
-    char symname[128];
-    char modname[64];
+    unsigned long  offset;
+    unsigned long  mod_start, mod_size;
+    char          *mod_data;
+    static char    symbuf[256];
+    char           symname[128];
+    char           modname[64];
     
     rewind(symfile);
     while (fgets(symbuf, sizeof(symbuf) - 1, symfile) != NULL)
     {
-        if (sscanf(symbuf, "%lx %*s %s [%[^]]]", &offset, symname, modname) != 3)
+        if (sscanf(symbuf, "%lx %*s %s [%[^]]]", 
+                   &offset, symname, modname) != 3)
         {
             continue;
         }
@@ -366,17 +379,18 @@ process_gcov_syms(FILE *symfile, int core_file,
         {
             /* This is a very crude hack relying on internals of GCC */
             /* It is necessary because GCOV symbols are pointing to
-               constructors, rather than actual data. 
-               On x86, the pointer to the actual data happen to be
-               4 bytes later (an immediate argument to mov).
-               Most probably, this won't work on x86-64 :(
-            */
+             *  constructors, rather than actual data. 
+             *  On x86, the pointer to the actual data happen to be
+             *  4 bytes later (an immediate argument to mov).
+             *  Most probably, this won't work on x86-64 :(
+             */
             unsigned long actual_offset = 0;
             object_coverage *bb_ptr;
             static int address_offset = -1;
 
             tce_print_debug("processing %s in module %s", symname, modname);
-            mod_data = read_module_data(modname, core_file, &mod_start, &mod_size);
+            mod_data = read_module_data(modname, core_file, 
+                                        &mod_start, &mod_size);
             if (mod_data == NULL)
             {
                 continue;
@@ -385,7 +399,8 @@ process_gcov_syms(FILE *symfile, int core_file,
             {
                 tce_report_error("invalid symbol offset %lx "
                                  "(must be in range %lx..%lx)", 
-                                 offset, mod_start, mod_start + mod_size - 1);
+                                 offset, mod_start, 
+                                 mod_start + mod_size - 1);
                 continue;
             }
             offset -= mod_start;
@@ -395,13 +410,20 @@ process_gcov_syms(FILE *symfile, int core_file,
                             core_file);
             if (address_offset < 0)
             {
-                for (address_offset = 0; address_offset < 16 && address_offset < (int)mod_size; 
+                for (address_offset = 0; 
+                     address_offset < 16 && address_offset < (int)mod_size;
                      address_offset++)
                 {
-                    tce_print_debug("trying offset %lx", offset + address_offset);
-                    actual_offset = *(unsigned long *)(mod_data + offset + address_offset);
-                    if (actual_offset >= mod_start && actual_offset < mod_start + mod_size)
+                    tce_print_debug("trying offset %lx", 
+                                    offset + address_offset);
+                    actual_offset = *(unsigned long *)(mod_data + 
+                                                       offset + 
+                                                       address_offset);
+                    if (actual_offset >= mod_start && 
+                        actual_offset < mod_start + mod_size)
+                    {
                         break;
+                    }
                 }
                 if (address_offset >= 16 || address_offset >= (int)mod_size)
                 {
@@ -409,15 +431,18 @@ process_gcov_syms(FILE *symfile, int core_file,
                     address_offset = -1;
                     continue;
                 }
-                tce_report_notice("data pointer is %d bytes after the symbol",
-                                  address_offset);
+                tce_report_notice("data pointer is %d bytes "
+                                  "after the symbol", address_offset);
             }
             else
             {
-                actual_offset = *(unsigned long *)(mod_data + offset + address_offset);
-                if (actual_offset < mod_start || actual_offset >= mod_start + mod_size)
+                actual_offset = *(unsigned long *)(mod_data + 
+                                                   offset + address_offset);
+                if (actual_offset < mod_start || 
+                    actual_offset >= mod_start + mod_size)
                 {
-                    tce_report_error("invalid data pointer %lx", actual_offset);
+                    tce_report_error("invalid data pointer %lx", 
+                                     actual_offset);
                 }
             }
             actual_offset -= mod_start;
@@ -430,7 +455,8 @@ process_gcov_syms(FILE *symfile, int core_file,
 }
 
 static void
-summarize_counters(long long *values, unsigned ncounts, summary_data *summary)
+summarize_counters(long long *values, unsigned ncounts, 
+                   summary_data *summary)
 {
     unsigned i;
 
@@ -454,11 +480,12 @@ do {                                                                  \
         return;                                                       \
     }                                                                 \
     offset -= start;                                                  \
-} while(0)
+} while (0)
 
 static void
 do_gcov_sum(void *data, const char *modname,
-            unsigned long start, unsigned long size, object_coverage *object, void *extra)
+            unsigned long start, unsigned long size, 
+            object_coverage *object, void *extra)
 {
     summary_data *summary = extra;
 
@@ -471,32 +498,35 @@ do_gcov_sum(void *data, const char *modname,
         {
             offset = (unsigned long)object->new.counts[0].values;
             NORMALIZE_OFFSET(offset, start, size);
-            summarize_counters((void *)((char *)data + offset), object->new.counts[0].num, summary);
+            summarize_counters((void *)((char *)data + offset), 
+                               object->new.counts[0].num, summary);
         }
     }
     else
     {
         unsigned long values = (unsigned long)object->old.counts;
         NORMALIZE_OFFSET(values, start, size);
-        summarize_counters((void *)((char *)data + values), object->old.ncounts, summary);
+        summarize_counters((void *)((char *)data + values), 
+                           object->old.ncounts, summary);
     }
 }
 
 
 static void
 get_kernel_gcov_data(void *data, const char *modname,
-                     unsigned long start, unsigned long size, object_coverage *object, void *extra)
+                     unsigned long start, unsigned long size, 
+                     object_coverage *object, void *extra)
 {
-    unsigned long offset;
-    summary_data *summary = extra;
-    summary_data object_summary = {0, 0, 0};
-    long object_functions = 0;
+    unsigned long      offset;
+    summary_data      *summary          = extra;
+    summary_data       object_summary   = {0, 0, 0};
+    long               object_functions = 0;
     tce_function_info *fi;
-    tce_object_info *oi;
-    long long *target_counters;
-    int i;
-    char *name_ptr;
-    char *real_start;
+    tce_object_info   *oi;
+    long long         *target_counters;
+    int                i;
+    char              *name_ptr;
+    char              *real_start;
         
 
     if (kernel_gcov_version_magic != 0)
@@ -509,7 +539,9 @@ get_kernel_gcov_data(void *data, const char *modname,
 
         offset = (unsigned long)object->old.function_infos;
         NORMALIZE_OFFSET(offset, start, size);
-        for (fn_info = (void *)((char *)data + offset); fn_info->arc_count >= 0; fn_info++)
+        for (fn_info = (void *)((char *)data + offset); 
+             fn_info->arc_count >= 0; 
+             fn_info++)
         {
             object_functions++;
         }
@@ -520,40 +552,40 @@ get_kernel_gcov_data(void *data, const char *modname,
         (unsigned long)object->old.filename :
         (unsigned long)object->new.filename;
     NORMALIZE_OFFSET(offset, start, size);
-    name_ptr = (char *)data + offset;
+    name_ptr   = (char *)data + offset;
     real_start = strstr(name_ptr, "//");
-    oi = tce_get_object_info(tce_obtain_principal_peer_id(), 
+    oi         = tce_get_object_info(tce_obtain_principal_peer_id(), 
                              real_start ? real_start + 1 : name_ptr,
                              modname);
     tce_print_debug("accessing %s", name_ptr);
-    oi->gcov_version = kernel_gcov_version_magic;
-    oi->object_functions = object_functions;
-    oi->object_sum += object_summary.sum;
-    oi->program_sum += summary->sum;
-    oi->program_arcs += summary->arcs;
-    oi->program_runs = 1;
-    oi->object_runs  = 1;
+    oi->gcov_version      = kernel_gcov_version_magic;
+    oi->object_functions  = object_functions;
+    oi->object_sum       += object_summary.sum;
+    oi->program_sum      += summary->sum;
+    oi->program_arcs     += summary->arcs;
+    oi->program_runs      = 1;
+    oi->object_runs       = 1;
     if (object_summary.max > oi->object_max)
-        oi->object_max = object_summary.max;
+        oi->object_max    = object_summary.max;
     if (summary->max > oi->program_max)
-        oi->program_max = summary->max;
-    oi->program_sum_max += summary->max;
-    oi->object_sum_max  += object_summary.max;
+        oi->program_max   = summary->max;
+    oi->program_sum_max  += summary->max;
+    oi->object_sum_max   += object_summary.max;
 
     if (kernel_gcov_version_magic != 0)
     {
-        unsigned fn;
+        unsigned             fn;
         struct gcov_fn_info *new_fn_info;
-        unsigned n_counts = 0;
-        unsigned n_sub_counts[GCOV_COUNTER_GROUPS];
-        unsigned fi_stride;
-        char name_buffer[32];
-        int grp;
+        unsigned             n_counts = 0;
+        unsigned             n_sub_counts[GCOV_COUNTER_GROUPS];
+        unsigned             fi_stride;
+        char                 name_buffer[32];
+        int                  grp;
 
-        oi->ncounts = object_summary.arcs;
+        oi->ncounts         = object_summary.arcs;
         oi->program_ncounts = summary->arcs;
-        oi->stamp = object->new.stamp;
-        oi->ctr_mask = object->new.ctr_mask;
+        oi->stamp           = object->new.stamp;
+        oi->ctr_mask        = object->new.ctr_mask;
 
         for (i = 0; i < GCOV_COUNTER_GROUPS; i++)
         {
@@ -606,7 +638,8 @@ get_kernel_gcov_data(void *data, const char *modname,
                     {
                         unsigned j;
 
-                        offset = (unsigned long)object->new.counts[i].values;
+                        offset = 
+                            (unsigned long)object->new.counts[i].values;
                         NORMALIZE_OFFSET(offset, start, size);
                         source_counters = (void *)((char *)data + offset);
 
@@ -616,8 +649,9 @@ get_kernel_gcov_data(void *data, const char *modname,
                             fi->groups[i].mode = TCE_MERGE_ADD;
                             for (j = 0; j < fi->groups[i].number; j++)
                             {
-                                tce_print_debug("counter is %Ld", *source_counters);
-                                *target_counters++ += *source_counters++;                              
+                                tce_print_debug("counter is %Ld", 
+                                                *source_counters);
+                                *target_counters++ += *source_counters++;
                             }
                         }
                         else if ((size_t)object->new.counts[i].merge == 
@@ -626,15 +660,25 @@ get_kernel_gcov_data(void *data, const char *modname,
                             fi->groups[i].mode = TCE_MERGE_SINGLE;
                             for (j = 0; j < fi->groups[i].number; j += 3)
                             {
-                                if (target_counters[0] == source_counters[0])
-                                    target_counters[1] += source_counters[1];
-                                else if (source_counters[1] > target_counters[1])
+                                if (target_counters[0] == 
+                                    source_counters[0])
+                                {
+                                    target_counters[1] += 
+                                        source_counters[1];
+                                }
+                                else if (source_counters[1] > 
+                                         target_counters[1])
                                 {
                                     target_counters[0] = source_counters[0];
-                                    target_counters[1] = source_counters[1] - target_counters[1];
+                                    target_counters[1] = 
+                                        source_counters[1] - 
+                                        target_counters[1];
                                 }
                                 else
-                                    target_counters[1] -= source_counters[1];
+                                {
+                                    target_counters[1] -= 
+                                        source_counters[1];
+                                }
                                 target_counters[2] += source_counters[2];
 
                                 target_counters += 3;
@@ -647,15 +691,25 @@ get_kernel_gcov_data(void *data, const char *modname,
                             fi->groups[i].mode = TCE_MERGE_DELTA;
                             for (j = 0; j < fi->groups[i].number; j += 4)
                             {
-                                if (target_counters[1] == source_counters[1])
-                                    target_counters[2] += source_counters[2];
-                                else if (source_counters[2] > target_counters[2])
+                                if (target_counters[1] == 
+                                    source_counters[1])
+                                {
+                                    target_counters[2] += 
+                                        source_counters[2];
+                                }
+                                else if (source_counters[2] > 
+                                         target_counters[2])
                                 {
                                     target_counters[1] = source_counters[1];
-                                    target_counters[2] = source_counters[2] - target_counters[2];
+                                    target_counters[2] = 
+                                        source_counters[2] - 
+                                        target_counters[2];
                                 }
                                 else
-                                    target_counters[2] -= source_counters[2];
+                                {
+                                    target_counters[2] -= 
+                                        source_counters[2];
+                                }
                                 target_counters[3] += source_counters[3];
 
                                 target_counters += 4;
@@ -667,7 +721,8 @@ get_kernel_gcov_data(void *data, const char *modname,
                             tce_report_error("unknown merge function");
                         }
                        
-                        object->new.counts[i].values += fi->groups[i].number;                      
+                        object->new.counts[i].values += 
+                            fi->groups[i].number;                      
                     }                 
                 }             
             }
@@ -679,18 +734,22 @@ get_kernel_gcov_data(void *data, const char *modname,
     else
     {
         struct bb_function_info *fn_info;
+
         oi->ncounts = object->old.ncounts;
 
         offset = (unsigned long)object->old.function_infos;
         NORMALIZE_OFFSET(offset, start, size);
 
-        for (fn_info = (void *)((char *)data + offset); fn_info->arc_count >= 0; fn_info++)
+        for (fn_info = (void *)((char *)data + offset); 
+             fn_info->arc_count >= 0; 
+             fn_info++)
         {          
             offset = (unsigned long)fn_info->name;
             NORMALIZE_OFFSET(offset, start, size);
             name_ptr = (char *)data + offset;
             fi = tce_get_function_info(oi, name_ptr, 
-                                       fn_info->arc_count, fn_info->checksum);
+                                       fn_info->arc_count, 
+                                       fn_info->checksum);
             if (fi != NULL)
             {
                 long long *source_counters;

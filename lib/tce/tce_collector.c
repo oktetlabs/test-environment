@@ -103,8 +103,9 @@ te_bool tce_standalone = FALSE;
 int 
 tce_init_collector(int argc, char **argv)
 {
-    char buf[RCF_MAX_PATH + 16];
+    char   buf[RCF_MAX_PATH + 16];
     char **ptr;
+
     strcpy(tar_file_prefix, *argv);
     collector_args = malloc(sizeof(*collector_args) * argc);
     for (argv++, ptr = collector_args; *argv != NULL; argv++, ptr++)
@@ -165,6 +166,7 @@ void
 tce_report_error(const char *fmt, ...)
 {
     va_list args;
+
     va_start(args, fmt);
     tce_generic_report("ERROR", fmt, args);
     va_end(args);
@@ -174,6 +176,7 @@ void
 tce_report_notice(const char *fmt, ...)
 {
     va_list args;
+
     va_start(args, fmt);
     tce_generic_report(NULL, fmt, args);
     va_end(args);
@@ -183,6 +186,7 @@ void
 tce_print_debug(const char *fmt, ...)
 {
     va_list args;
+
     va_start(args, fmt);
     if (tce_debugging)
         tce_generic_report("DEBUG", fmt, args);
@@ -198,10 +202,10 @@ lock_data(void)
         struct flock lock;
 
         already_dumped = FALSE;
-        lock.l_type = F_WRLCK;
-        lock.l_whence = SEEK_SET;
-        lock.l_start = 0;
-        lock.l_len = 0;
+        lock.l_type    = F_WRLCK;
+        lock.l_whence  = SEEK_SET;
+        lock.l_start   = 0;
+        lock.l_len     = 0;
         if (fcntl(data_lock, F_SETLKW, &lock) != 0)
         {
             int rc = errno;
@@ -216,12 +220,13 @@ lock_data(void)
 int 
 tce_collector(void)
 {
-    fd_set sockets;
-    fd_set current;
-    int listen_on = -1;
-    int max_fd = -1;
-    te_bool is_socket;
-    char **args;
+    fd_set    sockets;
+    fd_set    current;
+    int       listen_on = -1;
+    int       max_fd    = -1;
+    te_bool   is_socket;
+    char    **args;
+
     static struct sigaction on_signals;
 
     tce_report_notice("Starting TCE collector, pid = %u", 
@@ -239,7 +244,7 @@ tce_collector(void)
     signal(SIGPIPE, SIG_IGN);
 
     on_signals.sa_handler = signal_handler;
-    on_signals.sa_flags = 0;
+    on_signals.sa_flags   = 0;
     sigemptyset(&on_signals.sa_mask);
     sigaction(SIGUSR1, &on_signals, NULL);
     sigaction(SIGTERM, &on_signals, NULL);
@@ -249,8 +254,8 @@ tce_collector(void)
     FD_ZERO(&sockets);
     for (args = collector_args; *args != NULL; args++)
     {
-        is_socket = FALSE;
-        listen_on = -1;
+        is_socket                       = FALSE;
+        listen_on                       = -1;
         if (strncmp(*args, "fifo:", 5) == 0)
         {
             remove(*args + 5);
@@ -268,6 +273,7 @@ tce_collector(void)
         else if (strncmp(*args, "unix:", 5) == 0)
         {
             struct sockaddr_un addr;
+
             is_socket = TRUE;
             remove(*args + 5);            
             listen_on = socket(PF_UNIX, SOCK_STREAM, 0);
@@ -297,6 +303,7 @@ tce_collector(void)
         else if (strncmp(*args, "abstract:", 9) == 0)
         {
             struct sockaddr_un addr;
+
             is_socket = TRUE;
             listen_on = socket(PF_UNIX, SOCK_STREAM, 0);
             if (listen_on < 0)
@@ -306,10 +313,11 @@ tce_collector(void)
             }
             else
             {
-                addr.sun_family = AF_UNIX;
+                addr.sun_family         = AF_UNIX;
                 memset(addr.sun_path, 0, sizeof(addr.sun_path));
                 strcpy(addr.sun_path + 1, *args + 9);
-                if (bind(listen_on, (struct sockaddr *)&addr, sizeof(addr)))
+                if (bind(listen_on, (struct sockaddr *)&addr, 
+                         sizeof(addr)) != 0)
                 {
                     tce_report_error("can't bind to abstract socket " 
                                      "%s (%s)",
@@ -323,8 +331,9 @@ tce_collector(void)
 #ifdef HAVE_NETINET_TCP_H
         else if (strncmp(*args, "tcp:", 4) == 0)
         {
-            char *tmp;
-            struct sockaddr_in addr;
+            char               *tmp;
+            struct sockaddr_in  addr;
+
             is_socket = TRUE;
             listen_on = socket(PF_INET, SOCK_STREAM, 0);
             if (listen_on < 0)
@@ -335,7 +344,7 @@ tce_collector(void)
             else
             {
                 addr.sin_family = AF_INET;
-                addr.sin_port = htons(strtoul(*args + 4, &tmp, 0));
+                addr.sin_port   = htons(strtoul(*args + 4, &tmp, 0));
                 
                 if (addr.sin_port == 0)
                 {
@@ -352,7 +361,8 @@ tce_collector(void)
                     inet_pton(AF_INET, tmp + 1, &addr.sin_addr);
                 }
                 setsockopt(listen_on, SOL_SOCKET, SO_REUSEADDR, NULL, 0);
-                if (bind(listen_on, (struct sockaddr *)&addr, sizeof(addr)))
+                if (bind(listen_on, (struct sockaddr *)&addr, 
+                         sizeof(addr)) != 0)
                 {
                     tce_report_error("can't bind to TCP socket %d:%s (%s)",
                             ntohs(addr.sin_port),
@@ -384,7 +394,7 @@ tce_collector(void)
             {
                 fcntl(listen_on, F_SETFL, 
                       O_NONBLOCK | fcntl(listen_on, F_GETFL));
-                if (listen(listen_on, 5))
+                if (listen(listen_on, 5) != 0)
                 {
                     tce_report_error("can't listen at '%s'", *args);
                     close(listen_on);
@@ -407,6 +417,7 @@ tce_collector(void)
     for (;;)
     {
         int result = 0;
+
         memcpy(&current, &active_channels, sizeof(current));
         errno = 0;
         if (caught_signo == 0)
@@ -416,6 +427,7 @@ tce_collector(void)
         if (caught_signo != 0)
         {
             int signo = caught_signo;
+
             tce_print_debug("TCE collector caught signal %d", signo);
             caught_signo = 0;
             if (signo == SIGHUP)
@@ -448,6 +460,7 @@ tce_collector(void)
         else
         {
             int fd;
+
             for (fd = 0; fd <= max_fd && result; fd++)
             {
                 if (FD_ISSET(fd, &current))
@@ -487,17 +500,18 @@ pid_t tce_collector_pid = 0;
 int
 tce_run_collector(int argc, char *argv[])
 {
-    int rc;
-    int peerid;
-    static char buffer[64];
-    const char *connect;
+    int          rc;
+    int          peerid;
+    static char  buffer[64];
+    const char  *connect;
 
     if (tce_collector_pid != 0)
         return TE_RC(TE_TA, TE_EALREADY);
     peerid = tce_obtain_principal_peer_id();
-    rc = tce_init_collector(argc, argv);
+    rc     = tce_init_collector(argc, argv);
     if (rc != 0)
         return rc;
+
     tce_collector_pid = fork();
     if (tce_collector_pid == (pid_t)-1)
         return TE_OS_RC(TE_TA, errno);
@@ -505,6 +519,7 @@ tce_run_collector(int argc, char *argv[])
     {
         exit(tce_collector());
     }
+
     connect = tce_obtain_principal_connect();
     if (connect == NULL)
         tce_report_notice("no principal connection");
@@ -534,10 +549,12 @@ tce_dump_collector(void)
 
     if (kill(tce_collector_pid, SIGHUP) != 0)
         return TE_OS_RC(TE_TA, errno);
-    lock.l_type = F_WRLCK;
+
+    lock.l_type   = F_WRLCK;
     lock.l_whence = SEEK_SET;
-    lock.l_start = 0;
-    lock.l_len = 0;
+    lock.l_start  = 0;
+    lock.l_len    = 0;
+
     if (fcntl(data_lock, F_SETLKW, &lock) != 0)
     {
         int rc = errno;
@@ -545,10 +562,12 @@ tce_dump_collector(void)
                          strerror(rc));
         return rc;
     }
-    lock.l_type = F_UNLCK;
+
+    lock.l_type   = F_UNLCK;
     lock.l_whence = SEEK_SET;
-    lock.l_start = 0;
-    lock.l_len = 0;
+    lock.l_start  = 0;
+    lock.l_len    = 0;
+  
     fcntl(data_lock, F_SETLK, &lock);
     return 0;
 }
@@ -560,11 +579,11 @@ tce_stop_collector(void)
     
     if (tce_collector_pid == 0)
         return 0;
-    if (kill(tce_collector_pid, SIGTERM) != 0)
+    if (kill(tce_collector_pid, SIGTERM)                    != 0)
         return TE_OS_RC(TE_TA, errno);
     if (waitpid(tce_collector_pid, &tce_status, 0) < 0)
         return TE_OS_RC(TE_TA, errno);
-    tce_collector_pid = 0;
+    tce_collector_pid                                        = 0;
     return WIFEXITED(tce_status) && WEXITSTATUS(tce_status) == 0 ? 0 : 
         TE_RC(TE_TA, TE_ESHCMD);
 }
@@ -596,8 +615,8 @@ counter_state(tce_channel_data *ch)
     }
     else
     {
-        char *tmp;
-        long long value = strtoll(ch->buffer, &tmp, 10);
+        char      *tmp;
+        long long  value = strtoll(ch->buffer, &tmp, 10);
         if (ch->counter_guard <= 0)
         {
             tce_report_error("too many arcs for peer %d", ch->peer_id);
@@ -605,7 +624,7 @@ counter_state(tce_channel_data *ch)
         }
         else
         {
-            switch(ch->function->groups[ch->the_group].mode)
+            switch (ch->function->groups[ch->the_group].mode)
             {
                 case TCE_MERGE_ADD:
                     *ch->counter++ += value;
@@ -615,8 +634,8 @@ counter_state(tce_channel_data *ch)
                 {
                     long long counter, all;
                     
-                    counter = strtoll(tmp, &tmp, 10);
-                    all     = strtoll(tmp, &tmp, 10);
+                    counter             = strtoll(tmp, &tmp, 10);
+                    all                 = strtoll(tmp, &tmp, 10);
                     if (ch->counter[0] == value)
                         ch->counter[1] += counter;
                     else if (counter > ch->counter[1])
@@ -626,19 +645,19 @@ counter_state(tce_channel_data *ch)
                     }
                     else
                         ch->counter[1] -= counter;
-                    ch->counter[2] += all;
-                    ch->counter += 3;
-                    ch->counter_guard -= 3;
+                    ch->counter[2]     += all;
+                    ch->counter        += 3;
+                    ch->counter_guard  -= 3;
                     break;
                 }
                 case TCE_MERGE_DELTA:
                 {
                     long long last, counter, all;
 
-                    last = value;
-                    value = strtoll(tmp, &tmp, 10);
+                    last    = value;
+                    value   = strtoll(tmp, &tmp, 10);
                     counter = strtoll(tmp, &tmp, 10);
-                    all = strtoll(tmp, &tmp, 10);
+                    all     = strtoll(tmp, &tmp, 10);
                     
                     if (ch->counter[1] == value)
                         ch->counter[2] += counter;
@@ -649,9 +668,9 @@ counter_state(tce_channel_data *ch)
                     }
                     else
                         ch->counter[2] -= counter;
-                    ch->counter[3] += all;
-                    ch->counter += 4;
-                    ch->counter_guard -= 4;
+                    ch->counter[3]     += all;
+                    ch->counter        += 4;
+                    ch->counter_guard  -= 4;
                     break;
                 }
                 default:
@@ -673,9 +692,9 @@ counter_group_state(tce_channel_data *ch)
     }
     else
     {
-        char word[16];
+        char                word[16];
         enum tce_merge_mode mode;
-        unsigned count;
+        unsigned            count;
         
         if (sscanf(ch->buffer + 1, "%15s %u", word, &count) != 2)
         {
@@ -695,12 +714,12 @@ counter_group_state(tce_channel_data *ch)
             ch->state = NULL;
             return;
         }
-        if (strcmp(word, "add") == 0)
-            mode = TCE_MERGE_ADD;
+        if (strcmp(word, "add")         == 0)
+            mode                         = TCE_MERGE_ADD;
         else if (strcmp(word, "single") == 0)
-            mode = TCE_MERGE_SINGLE;
-        else if (strcmp(word, "delta") == 0)
-            mode = TCE_MERGE_DELTA;
+            mode                         = TCE_MERGE_SINGLE;
+        else if (strcmp(word, "delta")  == 0)
+            mode                         = TCE_MERGE_DELTA;
         else
         {
             tce_report_error("unknown merge mode '%s' for peer %d", 
@@ -727,8 +746,8 @@ counter_group_state(tce_channel_data *ch)
             return;
         }
         ch->function->groups[ch->the_group].number = count;
-        ch->function->groups[ch->the_group].mode = mode;
-        ch->state = counter_state;
+        ch->function->groups[ch->the_group].mode   = mode;
+        ch->state                                  = counter_state;
     }
 }
 
@@ -752,7 +771,7 @@ function_header_state(tce_channel_data *ch)
         }
         else
         {
-            unsigned arc_count, checksum;
+            unsigned           arc_count, checksum;
             tce_function_info *fi;
 
             *space++ = '\0';
@@ -773,11 +792,11 @@ function_header_state(tce_channel_data *ch)
             }
             if (fi->arc_count != 0)
             {
-                ch->counter = fi->counts;
+                ch->counter       = fi->counts;
                 ch->counter_guard = fi->arc_count;
-                ch->function = fi;
-                ch->the_group = -1;
-                ch->state = counter_group_state;
+                ch->function      = fi;
+                ch->the_group     = -1;
+                ch->state         = counter_group_state;
             }
         }
     }
@@ -793,10 +812,10 @@ summary_state(tce_channel_data *ch)
     }
     else
     {
-        unsigned n_counters;
-        unsigned program_n_counters;
-        unsigned object_runs;
-        unsigned program_runs;
+        unsigned  n_counters;
+        unsigned  program_n_counters;
+        unsigned  object_runs;
+        unsigned  program_runs;
         long long program_max;
         long long program_sum;
         long long program_sum_max;
@@ -817,6 +836,7 @@ summary_state(tce_channel_data *ch)
             ch->state = NULL;
             return;
         }
+
         if (ch->object->ncounts != 0 &&
             (ch->object->ncounts != (long)n_counters ||
              ch->object->program_ncounts != program_n_counters))
@@ -826,12 +846,12 @@ summary_state(tce_channel_data *ch)
             ch->state = NULL;
             return;
         }
-        ch->object->ncounts = n_counters;
-        ch->object->program_ncounts = program_n_counters;
-        ch->object->object_runs  += object_runs;
-        ch->object->program_runs += program_runs;
-        ch->object->program_sum  += program_sum;
-        ch->object->object_sum   += object_sum;
+        ch->object->ncounts          = n_counters;
+        ch->object->program_ncounts  = program_n_counters;
+        ch->object->object_runs     += object_runs;
+        ch->object->program_runs    += program_runs;
+        ch->object->program_sum     += program_sum;
+        ch->object->object_sum      += object_sum;
         if (program_max > ch->object->program_max)
             ch->object->program_max = program_max;
         if (object_max > ch->object->object_max)
@@ -863,13 +883,13 @@ object_header_state(tce_channel_data *ch)
     }
     else
     {
-        long long program_sum = 0;
-        long long program_max = 0;
-        long program_arcs = 0;
-        long long object_max = 0;
-        long long object_sum = 0;
-        long object_functions = 0;
-        long ncounts;
+        long long        program_sum      = 0;
+        long long        program_max      = 0;
+        long             program_arcs     = 0;
+        long long        object_max       = 0;
+        long long        object_sum       = 0;
+        long             object_functions = 0;
+        long             ncounts;
         tce_object_info *oi;
 
         *space++ = '\0';
@@ -878,11 +898,13 @@ object_header_state(tce_channel_data *ch)
         if (strncmp(space, "new ", 4) == 0)
         {
             unsigned gcov_version;
-            unsigned checksum, program_checksum, ctr_mask;
+            unsigned checksum;
+            unsigned program_checksum;
+            unsigned ctr_mask;
 
             tce_print_debug("new format peer detected");
             space += 4;
-            if(sscanf(space, "%u %u %u %u %ld %u",
+            if (sscanf(space, "%u %u %u %u %ld %u",
                       &gcov_version, &oi->stamp, 
                       &checksum, 
                       &program_checksum,
@@ -911,7 +933,7 @@ object_header_state(tce_channel_data *ch)
                 ch->state = NULL;
                 return;
             }
-            oi->checksum = checksum;
+            oi->checksum         = checksum;
             oi->program_checksum = program_checksum;
             if (oi->object_functions != 0 && 
                 object_functions != oi->object_functions)
@@ -921,14 +943,14 @@ object_header_state(tce_channel_data *ch)
                 ch->state = NULL;
                 return;
             }
-            oi->object_functions = object_functions;
-            oi->ctr_mask |= ctr_mask;
-            ch->state = summary_state;
-            ch->object = oi;
+            oi->object_functions  = object_functions;
+            oi->ctr_mask         |= ctr_mask;
+            ch->state             = summary_state;
+            ch->object            = oi;
         }
         else
         {
-            if(sscanf(space, "%ld %ld %Ld %Ld %ld %Ld %Ld",
+            if (sscanf(space, "%ld %ld %Ld %Ld %ld %Ld %Ld",
                       &object_functions, 
                       &program_arcs, 
                       &program_sum, 
@@ -951,19 +973,19 @@ object_header_state(tce_channel_data *ch)
             }
             else
             {
-                oi->ncounts = ncounts;
-                oi->program_arcs = program_arcs;
-                oi->object_functions = object_functions;
-                oi->object_sum = object_sum;
-                oi->program_sum += program_sum;
+                oi->ncounts           = ncounts;
+                oi->program_arcs      = program_arcs;
+                oi->object_functions  = object_functions;
+                oi->object_sum        = object_sum;
+                oi->program_sum      += program_sum;
                 if (object_max > oi->object_max)
-                    oi->object_max = object_max;
+                    oi->object_max    = object_max;
                 if (program_max > oi->program_max)
-                    oi->program_max = program_max;
-                oi->ctr_mask = 1;
+                    oi->program_max   = program_max;
+                oi->ctr_mask          = 1;
                 if (ncounts != 0)
                 {
-                    ch->state = function_header_state;
+                    ch->state  = function_header_state;
                     ch->object = oi;
                 }
             }
@@ -975,13 +997,14 @@ static void
 auth_state(tce_channel_data *ch)
 {
     ch->peer_id = strtoul(ch->buffer, NULL, 10);
-    ch->state = (ch->peer_id != 0 ? object_header_state : NULL);
+    ch->state   = (ch->peer_id != 0 ? object_header_state : NULL);
 }
 
 static te_bool 
 are_there_working_channels(void)
 {
     tce_channel_data *iter;
+
     for (iter = channels; iter != NULL; iter = iter->next)
     {
         if (iter->state != NULL)
@@ -1006,11 +1029,11 @@ read_data(int channel)
     }
     if (found == NULL)
     {
-        found = calloc(1, sizeof(*found));
-        found->fd = channel;
-        found->next = channels;
-        channels = found;
-        found->bufptr = found->buffer;
+        found            = calloc(1, sizeof(*found));
+        found->fd        = channel;
+        found->next      = channels;
+        channels         = found;
+        found->bufptr    = found->buffer;
         found->remaining = sizeof(found->buffer) - 1;
         tce_report_notice("new peer connected");
     }
@@ -1036,9 +1059,11 @@ static void
 collect_line(tce_channel_data *ch)
 {
     int len;
+
     tce_print_debug("requesting %d bytes on %d", ch->remaining, ch->fd);
     len = read(ch->fd, ch->bufptr, ch->remaining);
     tce_print_debug("read %d bytes from %d", len, ch->fd);
+
     if (len <= 0)
     {
         tce_report_error("read error on %d: %s", ch->fd,
@@ -1049,7 +1074,7 @@ collect_line(tce_channel_data *ch)
     {
         char *found_newline;
 
-        ch->bufptr += len;
+        ch->bufptr    += len;
         ch->remaining -= len;
         do
         {
@@ -1087,7 +1112,7 @@ hash(int peer_id, const char *str)
     unsigned int ctr = 0;
 
 
-    while (*str)
+    while (*str != '\0')
     {
         ret ^= (*str++ & 0xFF) << ctr;
         ctr = (ctr + 1) % sizeof (void *);
@@ -1099,7 +1124,7 @@ hash(int peer_id, const char *str)
 tce_object_info *
 tce_get_object_info(int peer_id, const char *filename, const char *module)
 {
-    unsigned key = hash(peer_id, filename);
+    unsigned         key = hash(peer_id, filename);
     tce_object_info *found;
     
     for (found = tce_hash_table[key]; found != NULL; found = found->next)
@@ -1117,14 +1142,14 @@ tce_get_object_info(int peer_id, const char *filename, const char *module)
             return found;
         }
     }
-    found = malloc(sizeof(*found));
-    found->peer_id = peer_id;
-    found->filename = strdup(filename);
-    found->module = (module != NULL ? strdup(module) : NULL);
-    found->ncounts = 0;
-    found->function_infos = NULL;
-    found->gcov_version = 0;
-    found->checksum = 0;
+    found                   = malloc(sizeof(*found));
+    found->peer_id          = peer_id;
+    found->filename         = strdup(filename);
+    found->module           = (module != NULL ? strdup(module) : NULL);
+    found->ncounts          = 0;
+    found->function_infos   = NULL;
+    found->gcov_version     = 0;
+    found->checksum         = 0;
     found->program_checksum = 0;
     found->program_ncounts  = 0;
     found->program_sum_max  = 0;
@@ -1135,9 +1160,10 @@ tce_get_object_info(int peer_id, const char *filename, const char *module)
     found->program_max      = 0;
     found->object_runs      = 0;
     found->program_runs     = 0;
-    found->ctr_mask = 0;
-    found->stamp    = 0;
-    found->next = tce_hash_table[key];
+    found->ctr_mask         = 0;
+    found->stamp            = 0;
+    found->next             = tce_hash_table[key];
+
     tce_hash_table[key] = found;
     return found;
 }
@@ -1147,6 +1173,7 @@ tce_get_function_info(tce_object_info *oi, const char *name,
                       long arc_count, long checksum)
 {
     tce_function_info *fi;
+
     for (fi = oi->function_infos; fi != NULL; fi = fi->next)
     {
         if (strcmp(fi->name, name) == 0)
@@ -1154,12 +1181,12 @@ tce_get_function_info(tce_object_info *oi, const char *name,
     }
     if (fi == NULL)
     {
-        fi = malloc(sizeof(*fi));
-        fi->name = strdup(name);
-        fi->arc_count = arc_count;
-        fi->checksum = checksum;
-        fi->next = oi->function_infos;
-        fi->counts = calloc(fi->arc_count, sizeof(*fi->counts));
+        fi                 = malloc(sizeof(*fi));
+        fi->name           = strdup(name);
+        fi->arc_count      = arc_count;
+        fi->checksum       = checksum;
+        fi->next           = oi->function_infos;
+        fi->counts         = calloc(fi->arc_count, sizeof(*fi->counts));
         memset(fi->groups, 0, sizeof(fi->groups));
         oi->function_infos = fi;
     }
@@ -1186,8 +1213,8 @@ static void
 dump_data(void)
 {
     tce_object_info *iter;
-    unsigned idx;
-    struct flock lock;
+    unsigned         idx;
+    struct flock     lock;
 
     if (already_dumped)
         return;
@@ -1202,17 +1229,19 @@ dump_data(void)
     clear_data();
     tce_report_notice("Dumping TCE data");
     tce_obtain_kernel_coverage();
+
     for (idx = 0; idx < TCE_HASH_SIZE; idx++)
     {
         for (iter = tce_hash_table[idx]; iter != NULL; iter = iter->next)
             dump_object(iter);
     }
 
-    lock.l_type = F_UNLCK;
+    lock.l_type   = F_UNLCK;
     lock.l_whence = SEEK_SET;
-    lock.l_start = 0;
-    lock.l_len = 0;
+    lock.l_start  = 0;
+    lock.l_len    = 0;
     fcntl(data_lock, F_SETLK, &lock);
+
     tce_report_notice("TCE data dumped");
     already_dumped = TRUE;
 }
@@ -1221,12 +1250,12 @@ dump_data(void)
 static void
 dump_object(tce_object_info *oi)
 {
-    static char tar_name[RCF_MAX_PATH + 16];
-    static char tar_header[512];
-    FILE *tar_file;
-    long pos, len;
-    unsigned long checksum;
-    unsigned idx;
+    static char    tar_name[RCF_MAX_PATH + 16];
+    static char    tar_header[512];
+    FILE          *tar_file;
+    long           pos, len;
+    unsigned long  checksum;
+    unsigned       idx;
 
     sprintf(tar_name, "%s%d.map", tar_file_prefix, oi->peer_id);
     tar_file = fopen(tar_name, "a");
@@ -1277,11 +1306,11 @@ dump_object(tce_object_info *oi)
     fwrite(tar_header, sizeof(tar_header), 1, tar_file);
     pos = ftell(tar_file);
 
-    if(dump_object_data(oi, tar_file))
+    if (dump_object_data(oi, tar_file))
     {
         len = ftell(tar_file) - pos;
         sprintf(tar_header + TAR_SIZE, "%#11.11lo", len);
-        for(idx = 0, checksum = 0; idx < sizeof(tar_header); idx++)
+        for (idx = 0, checksum = 0; idx < sizeof(tar_header); idx++)
         {
             checksum += (unsigned char)tar_header[idx];
         }        
@@ -1307,20 +1336,19 @@ dump_object(tce_object_info *oi)
 static te_bool
 dump_new_object_data(tce_object_info *oi, FILE *tar_file)
 {
-    const unsigned magic = GCOV_DATA_MAGIC;
-    const unsigned func_magic[2] = {GCOV_TAG_FUNCTION, 
-                                    GCOV_TAG_FUNCTION_LENGTH};
-    unsigned ident;
-    unsigned group_magic[2];
-    const unsigned obj_summary_magic[2] = {GCOV_TAG_OBJECT_SUMMARY,
-                                           GCOV_TAG_SUMMARY_LENGTH};
+    const unsigned magic                 = GCOV_DATA_MAGIC;
+    const unsigned func_magic[2]         = {GCOV_TAG_FUNCTION, 
+                                            GCOV_TAG_FUNCTION_LENGTH};
+    unsigned       group_magic[2];
+    const unsigned obj_summary_magic[2]  = {GCOV_TAG_OBJECT_SUMMARY,
+                                            GCOV_TAG_SUMMARY_LENGTH};
     const unsigned prog_summary_magic[2] = {GCOV_TAG_PROGRAM_SUMMARY,
-                                           GCOV_TAG_SUMMARY_LENGTH};
-            
+                                            GCOV_TAG_SUMMARY_LENGTH};
 
-    int group;
-    int c_offset = 0;
-    unsigned count;
+    unsigned           ident;
+    int                group;
+    int                c_offset = 0;
+    unsigned           count;
     tce_function_info *fi;
 
 #define SAFE_FWRITE(data, size, count, stream)     \
@@ -1392,8 +1420,8 @@ static te_bool
 dump_object_data(tce_object_info *oi, FILE *tar_file)
 {
     tce_function_info *fi;
-    long long *ci;
-    long arc_count;
+    long long         *ci;
+    long               arc_count;
  
     if (oi->gcov_version != 0)
         return dump_new_object_data(oi, tar_file);
