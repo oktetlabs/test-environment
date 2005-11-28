@@ -295,7 +295,7 @@ RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
                     (rcf_ch_cfg_list)neigh_state_get);
 
 static rcf_pch_cfg_object node_neigh_dynamic =
-    { "neigh_dynamic", 0, &node_neigh_state, &node_route,
+    { "neigh_dynamic", 0, &node_neigh_state, NULL,
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
       (rcf_ch_cfg_list)neigh_dynamic_list, NULL, NULL};
