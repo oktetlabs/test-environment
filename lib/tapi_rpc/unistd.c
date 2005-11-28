@@ -413,6 +413,7 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
               int fd, const struct rpc_iovec *iov,
               size_t iovcnt, size_t riovcnt)
 {
+    char            str_buf[1024] = { '\0', };
     rcf_rpc_op      op;
     tarpc_readv_in  in;
     tarpc_readv_out out;
@@ -449,19 +450,24 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
     in.fd = fd;
     in.count = iovcnt;
 
-    VERB("IN readv(%d, %p[%u], %u)", fd, iov, riovcnt, riovcnt);
     if (iov != NULL)
     {
         in.vector.vector_len = riovcnt;
         in.vector.vector_val = iovec_arr;
+        snprintf(str_buf + strlen(str_buf),
+                 sizeof(str_buf) - strlen(str_buf), "{");
         for (i = 0; i < riovcnt; i++)
         {
-            VERB("IN readv() I/O vector #%d: %p[%u] %u",
-                 i, iov[i].iov_base, iov[i].iov_rlen, iov[i].iov_len);
             iovec_arr[i].iov_base.iov_base_val = iov[i].iov_base;
             iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
             iovec_arr[i].iov_len = iov[i].iov_len;
+            snprintf(str_buf + strlen(str_buf),
+                     sizeof(str_buf) - strlen(str_buf), "%s{%u, %p[%u]}",
+                     (i == 0) ? "" : ", ", iov[i].iov_len,
+                     iov[i].iov_base, iov[i].iov_rlen);
         }
+        snprintf(str_buf + strlen(str_buf),
+                 sizeof(str_buf) - strlen(str_buf), "}");
     }
 
     rcf_rpc_call(rpcs, "readv", &in, &out);
@@ -485,9 +491,9 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(readv, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: readv(%d, %p[%u], %u) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: readv(%d, %s, %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, iov, riovcnt, iovcnt,
+                 fd, (*str_buf == '\0') ? "(nil)" : str_buf, iovcnt,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(readv, out.retval);
@@ -497,6 +503,7 @@ int
 rpc_writev(rcf_rpc_server *rpcs,
            int fd, const struct rpc_iovec *iov, size_t iovcnt)
 {
+    char             str_buf[1024] = { '\0', };
     rcf_rpc_op       op;
     tarpc_writev_in  in;
     tarpc_writev_out out;
@@ -523,17 +530,24 @@ rpc_writev(rcf_rpc_server *rpcs,
         RETVAL_INT(writev, -1);
     }
 
-    for (i = 0; i < iovcnt && iov != NULL; i++)
-    {
-        iovec_arr[i].iov_base.iov_base_val = iov[i].iov_base;
-        iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
-        iovec_arr[i].iov_len = iov[i].iov_len;
-    }
-
     if (iov != NULL)
     {
         in.vector.vector_val = iovec_arr;
         in.vector.vector_len = iovcnt;
+        snprintf(str_buf + strlen(str_buf),
+                 sizeof(str_buf) - strlen(str_buf), "{");
+        for (i = 0; i < iovcnt && iov != NULL; i++)
+        {
+            iovec_arr[i].iov_base.iov_base_val = iov[i].iov_base;
+            iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
+            iovec_arr[i].iov_len = iov[i].iov_len;
+            snprintf(str_buf + strlen(str_buf),
+                     sizeof(str_buf) - strlen(str_buf), "%s{%u, %p[%u]}",
+                     (i == 0) ? "" : ", ", iov[i].iov_len,
+                     iov[i].iov_base, iov[i].iov_rlen);
+        }
+        snprintf(str_buf + strlen(str_buf),
+                 sizeof(str_buf) - strlen(str_buf), "}");
     }
 
     in.fd = fd;
@@ -543,9 +557,9 @@ rpc_writev(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(writev, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: writev(%d, %p, %u) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: writev(%d, %s, %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, iov, iovcnt,
+                 fd, (*str_buf == '\0') ? "(nil)" : str_buf, iovcnt,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(writev, out.retval);
