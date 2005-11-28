@@ -644,6 +644,8 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
 
+    iscsi_start_new_session_group();
+
     while (is_backstore_mounted > 0)
         iscsi_target_backstore_unmount();
     sprintf(fname, "/tmp/te_backing_store.%lu", (unsigned long)getpid());
@@ -782,6 +784,7 @@ iscsi_tgt_verbose_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
     
+    iscsi_start_new_session_group();
     return iscsi_set_verbose(value) ? 0 : TE_RC(TE_TA_UNIX, TE_EINVAL);
 }
 

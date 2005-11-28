@@ -1839,6 +1839,16 @@ get_target_mountpoint(void)
 }
 
 te_errno
+tapi_iscsi_target_inform_new_test(const char *ta)
+{
+    int  unused;
+
+    return rcf_ta_call(ta, 0, "iscsi_start_new_session_group", 
+                       &unused,
+                       0, FALSE);
+}
+
+te_errno
 tapi_iscsi_target_mount(const char *ta)
 {
     int  rc;
@@ -2026,6 +2036,12 @@ get_host_device(const char *ta, unsigned id)
 #define ISCSI_IO_FILL_BUF_SIZE 1024
 #define ISCSI_IO_SIGNAL        SIGPOLL
 
+static void
+rpc_server_destructor (void *rpcs)
+{
+    rcf_rpc_server_destroy(rpcs);
+}
+
 /**
  * The thread routine that interacts with a TA 
  * when performing I/O operations
@@ -2041,7 +2057,7 @@ tapi_iscsi_io_thread(void *param)
     sigemptyset(&mask);
     sigaddset(&mask, ISCSI_IO_SIGNAL);
     pthread_sigmask(SIG_BLOCK, &mask, NULL);
-    pthread_cleanup_push(rcf_rpc_server_destroy, ioh->rpcs);
+    pthread_cleanup_push(rpc_server_destructor, ioh->rpcs);
     for (;;)
     {
         sem_wait(&ioh->cmd_wait);

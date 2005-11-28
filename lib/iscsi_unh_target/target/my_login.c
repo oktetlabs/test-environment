@@ -2171,6 +2171,7 @@ build_conn_sess(int sock, int custom_id, struct portal_group *ptr)
     }
     sem_init(&session->thr_kill_sem,0 ,0);
 
+    RING("Registering target thread %d", custom_id);
     conn->custom = iscsi_register_custom(custom_id);
     if (pthread_create(&conn->manager_thread, NULL, 
                        iscsi_manager_thread, conn) != 0)
@@ -5599,10 +5600,12 @@ iscsi_server_rx_thread(void *param)
 
 static int iscsi_custom_id;
 
-void
+int
 iscsi_start_new_session_group(void)
 {
+    RING("Informing target that we are running a new test");
     iscsi_custom_id = 0;
+    return 0;
 }
 
 /*
@@ -5621,9 +5624,6 @@ iscsi_target_start_rx_thread(void)
     int                             conn_pipe[2] = { -1, -1 };
     pthread_attr_t                  pthread_attr;
     pthread_t                       thread;
-
-
-
 
     thread_params = calloc(1, sizeof(*thread_params));
     if (thread_params == NULL)

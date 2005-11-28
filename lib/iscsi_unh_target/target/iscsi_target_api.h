@@ -33,22 +33,95 @@
 #include <te_defs.h>
 #include <inttypes.h>
 
-
+/**
+ * Frees all resources (memory mappings and buffers)
+ * associated with a given virtual iSCSI target device
+ * 
+ * @param target        Target No
+ * @param lun           LUN
+ * 
+ * @return Status code
+ */
 extern int iscsi_free_device(uint8_t target, uint8_t lun);
+
+
+/**
+ * Causes a specified target device to use a named file
+ * as a backend instead of a memory buffer
+ * 
+ * @param target        Target No
+ * @param lun           LUN
+ * @param fname         Name of a backend file
+ * 
+ * @return Status code
+ */
 extern int iscsi_mmap_device(uint8_t target, uint8_t lun, 
                              const char *fname);
 
+/**
+ * Gets information about the target device's backend parameters
+ * 
+ * @param target        Target No
+ * @param lun           LUN
+ * @param is_mmap       Set to TRUE if the device uses a file backend (OUT)
+ * @param storage_size  The size of the device storage in bytes (OUT)
+ * 
+ * @return Status code
+ */
 extern int iscsi_get_device_param(uint8_t target, uint8_t lun,
                                   te_bool *is_mmap,
                                   uint32_t *storage_size);
+
+/**
+ * Causes the target device to sync its file backend to disk.
+ * No-op for a memory backend.
+ * 
+ * @param target        Target No
+ * @param lun           LUN
+ * 
+ * @return Status code
+ */
 extern int iscsi_sync_device(uint8_t target, uint8_t lun);
 
+/**
+ * Writes a specified amount of data to the target virtual device
+ * at a given position.
+ * 
+ * @param target        Target No
+ * @param lun           LUN
+ * @param offset        Position to write at
+ * @param buffer        Data to write
+ * @param len           Length of data
+ * 
+ * @return Status code
+ */
 extern int iscsi_write_to_device(uint8_t target, uint8_t lun,
                                  uint32_t offset,
                                  void *buffer, uint32_t len);
 
+/**
+ * Verifies that the target virtual device contains specified data
+ * at a given position.
+ * 
+ * @param target        Target No
+ * @param lun           LUN
+ * @param offset        Position to read from
+ * @param buffer        Data to verify
+ * @param len           Length of data
+ * 
+ * @return Status code
+ */
 extern int iscsi_verify_device_data(uint8_t target, uint8_t lun,
                                     uint32_t offset,
                                     void *buffer, uint32_t len);
+
+/**
+ * Informs the target that the following sessions will be 
+ * somewhat different from the previous ones.
+ * In practice, that means informing the target that a new test
+ * is being run.
+ * 
+ */
+extern void iscsi_start_new_session_group(void);
 
 #endif
