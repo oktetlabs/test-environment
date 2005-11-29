@@ -87,8 +87,7 @@
 #endif
 
 
-#if !defined(__linux__) && \
-    (defined(USE_NETLINK) || defined(USE_NETLINK_ROUTE))
+#if !defined(__linux__) && defined(USE_NETLINK)
 #error netlink can be used on Linux only
 #endif
 
@@ -283,8 +282,7 @@ static rcf_pch_cfg_object node_route =
     {"route", 0, &node_route_dev, NULL,
      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
-     (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit,
-     NULL};
+     (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL};
 
 RCF_PCH_CFG_NODE_RO(node_dns, "dns",
                     NULL, &node_route,
@@ -2994,8 +2992,6 @@ neigh_list(unsigned int gid, const char *oid, char **list,
 /* Implementation of /agent/route subtree                         */
 /******************************************************************/
 
-#ifdef USE_NETLINK_ROUTE
-
 /*
  * The following code is based on iproute2-050816 package.
  * There is no clear specification of netlink interface.
@@ -3172,78 +3168,6 @@ route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
     return 0;
 }
 
-
-#else /* !USE_NETLINK_ROUTE */
-
-/** 
- * Convert system-independent route info data structure to
- * ioctl-specific rtentry data structure.
- *
- * @param rt_info TA portable route info
- * @Param rt      ioctl-specific data structure (OUT)
- */
-static void
-rt_info2rtentry(const ta_rt_info_t *rt_info,
-#ifdef __linux__
-                struct rtentry  *rt
-#else
-                struct ortentry *rt
-#endif
-)
-{
-    assert(rt_info != NULL && rt != NULL);
-
-    memset(rt, 0, sizeof(*rt));
-    memcpy(&(rt->rt_dst), &(rt_info->dst), sizeof(rt->rt_dst));
-
-#ifdef __linux__
-    rt->rt_genmask.sa_family = SIN(rt_info)->sin_family;
-    ((struct sockaddr_in *)&(rt->rt_genmask))->sin_addr.s_addr =
-        htonl(PREFIX2MASK(rt_info->prefix));
-#endif
-    if ((rt_info->dst.ss_family == AF_INET && rt_info->prefix == 32) ||
-        (rt_info->dst.ss_family == AF_INET6 && rt_info->prefix == 128))
-        rt->rt_flags |= RTF_HOST;
-
-    if ((rt_info->flags & TA_RT_INFO_FLG_GW) != 0)
-    {
-        memcpy(&(rt->rt_gateway), &(rt_info->gw), sizeof(rt->rt_gateway));
-        rt->rt_flags |= RTF_GATEWAY;
-    }
-
-#ifdef __linux__
-    if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
-    {
-        rt->rt_dev = strdup(rt_info->ifname);
-    }
-
-    if ((rt_info->flags & TA_RT_INFO_FLG_METRIC) != 0)
-        rt->rt_metric = rt_info->metric;
-
-    if ((rt_info->flags & TA_RT_INFO_FLG_MTU) != 0)
-    {
-        rt->rt_mtu = rt_info->mtu;
-        rt->rt_flags |= RTF_MSS;
-    }
-
-    if ((rt_info->flags & TA_RT_INFO_FLG_WIN) != 0)
-    {
-        rt->rt_window = rt_info->win;
-        rt->rt_flags |= RTF_WINDOW;
-    }
-
-    if ((rt_info->flags & TA_RT_INFO_FLG_IRTT) != 0)
-    {
-        rt->rt_irtt = rt_info->irtt;
-        rt->rt_flags |= RTF_IRTT;
-    }
-
-#endif /* !__linux__ */
-}
-#endif /* !USE_NETLINK_ROUTE */
-
-#ifdef USE_NETLINK_ROUTE
-
 /** Structure used for RTNL user callback */
 typedef struct rtnl_cb_user_data {
     ta_rt_info_t *rt_info; /**< Routing entry information (IN/OUT)
@@ -3307,14 +3231,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
                   &(SIN6(&(user_data->rt_info->dst))->sin6_addr),
                   sizeof(struct in6_addr)) == 0)) &&
           /* Check that prefix is correct */
-          user_data->rt_info->prefix == r->rtm_dst_len
-#if 0
-             &&
-            /* Check that type of service is correct */
-             ((user_data->rt_info->flags & TA_RT_INFO_FLG_TOS) != 0 &&
-             user_data->rt_info->tos == r->rtm_tos)
-#endif             
-             ))            
+          user_data->rt_info->prefix == r->rtm_dst_len))
     {
         if (tb[RTA_OIF] != NULL)
         {            
@@ -3380,7 +3297,6 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
     }
     return 0;
 }
-#endif /* USE_NETLINK_ROUTE */
 
 /**
  * Find route and return its attributes.
@@ -3396,16 +3312,6 @@ route_find(const char *route, ta_rt_info_t *rt_info)
 {
 #ifdef __linux__
     int       rc;
-#ifndef USE_NETLINK_ROUTE
-    FILE     *fp;
-    char      ifname[IF_NAMESIZE];
-    uint32_t  route_addr;
-    uint32_t  route_mask;
-    uint32_t  route_gw;
-    char     *route_table;
-    char      ip4_route_table[] = "/proc/net/route";
-    char      ip6_route_table[] = "/proc/net/ipv6_route";
-#endif /* !USE_NETLINK_ROUTE */
 
     ENTRY("%s", route);
 
@@ -3414,8 +3320,6 @@ route_find(const char *route, ta_rt_info_t *rt_info)
         ERROR("Error parsing instance name: %s", route);
         return rc;
     }
-
-#ifdef USE_NETLINK_ROUTE
 
     struct rtnl_handle  rth;
     rtnl_cb_user_data_t user_data;
@@ -3429,17 +3333,7 @@ route_find(const char *route, ta_rt_info_t *rt_info)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
     ll_init_map(&rth);
-#if 0    
-    if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
-    {
-        if ((user_data.if_index = ll_name_to_index(rt_info->ifname)) == 0)
-        {
-            rtnl_close(&rth);
-            ERROR("Cannot find device %s", rt_info->ifname);
-            return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
-        }
-    }
-#endif
+
     if (rtnl_wilddump_request(&rth, rt_info->dst.ss_family,
                               RTM_GETROUTE) < 0)
     {
@@ -3468,89 +3362,6 @@ route_find(const char *route, ta_rt_info_t *rt_info)
     }
 
     return 0;
-
-#else
-
-    route_addr = ((struct sockaddr_in *)&(rt_info->dst))->sin_addr.s_addr;
-    route_mask = htonl(PREFIX2MASK(rt_info->prefix));
-    route_gw = ((struct sockaddr_in *)&(rt_info->gw))->sin_addr.s_addr;
-
-    if (SIN(&rt_info->dst)->sin_family == AF_INET)
-    {
-        route_table = ip4_route_table;
-    }
-    else if (SIN(&rt_info->dst)->sin_family == AF_INET6)
-    {
-        ERROR("Retrieving IPv6 routing table is not yet supported");
-        return TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
-#if 0        
-        route_table = ip6_route_table;
-#endif        
-    }
-
-    if ((fp = fopen(route_table, "r")) == NULL)
-    {
-        ERROR("Failed to open %s for reading: %s", route_table,
-               strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    fgets(trash, sizeof(trash), fp);
-    while (fscanf(fp, "%s", ifname) != EOF)
-    {
-        uint32_t     addr;
-        uint32_t     mask;
-        uint32_t     gateway = 0;
-        unsigned int flags = 0;
-        unsigned int metric;
-        int          mtu;
-        int          win;
-        int          irtt;
-
-        fscanf(fp, "%x %x %x %*d %*d %d %x %d %d %d", &addr, &gateway,
-               &flags, &metric, &mask, &mtu, &win, &irtt);
-        VERB("%s: Route %s %x %x %x %d %d %d %x %d %d %d", __FUNCTION__,
-             ifname, addr, gateway, flags, 0, 0, metric, mask,
-             mtu, win, irtt);
-
-        if (((rt_info->flags & TA_RT_INFO_FLG_IF) != 0 &&
-             strcmp(rt_info->ifname, ifname) != 0) ||
-            addr != route_addr ||
-            gateway != route_gw || mask != route_mask)
-        {
-            fgets(trash, sizeof(trash), fp);
-            VERB("Continue processing ...");
-            continue;
-        }
-
-        if ((flags & RTF_UP) == 0)
-            break;
-
-        fclose(fp);
-
-        rt_info->metric = metric;
-        if (metric != 0)
-            rt_info->flags |= TA_RT_INFO_FLG_METRIC;
-
-        rt_info->mtu = mtu;
-        if (mtu != 0)
-            rt_info->flags |= TA_RT_INFO_FLG_MTU;
-
-        rt_info->win = win;
-        if (win != 0)
-            rt_info->flags |= TA_RT_INFO_FLG_WIN;
-
-        rt_info->irtt = irtt;
-        if (irtt != 0)
-            rt_info->flags |= TA_RT_INFO_FLG_IRTT;
-        
-        return 0;
-    }
-
-    fclose(fp);
-
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
-#endif /* !USE_NETLINK_ROUTE */
 
 #else
 
@@ -3990,7 +3801,6 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
     ta_obj_free(obj);
 
-#ifdef USE_NETLINK_ROUTE
     {
         int nlm_flags;
         int nlm_action;
@@ -4018,84 +3828,6 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
 
         rc = route_change(&rt_info, nlm_action, nlm_flags);
     }
-#else
-    /* Use ioctl interface */
-#ifdef __linux__
-    {
-        struct rtentry rt;
-
-        rt_info2rtentry(&rt_info, &rt);
-
-        switch (obj_action)
-        {
-            case TA_CFG_OBJ_DELETE:
-            {
-                if (ioctl(cfg_socket, SIOCDELRT, &rt) < 0)
-                {
-                    rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-                    ERROR("ioctl(SIOCDELRT) failed: %r", rc);
-                    return rc;
-                }
-                return 0;
-            }
-            
-            case TA_CFG_OBJ_SET:
-            {
-                struct rtentry rt_cur;
-
-                /*
-                 * In case of SET we first should delete an existing 
-                 * route and then add a new one.
-                 */
-                rt_info2rtentry(&rt_info_name_only, &rt_cur);
-
-                if (ioctl(cfg_socket, SIOCDELRT, &rt_cur) < 0)
-                {
-                    rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-                    ERROR("ioctl(SIOCDELRT) failed: %r", rc);
-                    return rc;
-                }
-                 
-                /* FALLTHROUGH */
-            }
-
-            case TA_CFG_OBJ_CREATE:
-            {
-                /* Add or set operation */
-                if (rt.rt_metric != 0)
-                {
-                    /*
-                     * Increment metric because ioctl substracts 
-                     * one from the value ('route' command does 
-                     * the same thing).
-                     */
-                    rt.rt_metric++;
-                }
-
-                rt.rt_flags |= (RTF_UP | RTF_STATIC);
-
-                if (ioctl(cfg_socket, SIOCADDRT, &rt) < 0)
-                {
-                    rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-                    ERROR("ioctl(SIOCADDRT) failed: %r", rc);
-                    return rc;
-                }
-                break;
-            }
-            
-            default:
-                ERROR("Unknown object action specified %d", obj_action);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-    }
-#else
-    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-#endif
-
-#endif /* !USE_NETLINK_ROUTE */
     
     return rc;
 }

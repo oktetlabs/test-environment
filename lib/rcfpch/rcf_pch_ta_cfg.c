@@ -401,7 +401,6 @@ ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
     }
     else
     {
-        WARN("NULL route value");
         rt_info->flags &= (!TA_RT_INFO_FLG_GW);
     }
 
@@ -430,18 +429,6 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
                 rt_info->flags |= TA_RT_INFO_FLG_IF;
                 strcpy(rt_info->ifname, attr->value);
             }
-        }
-        else if (strcmp(attr->name, "metric") == 0)
-        {
-            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
-                (int_val = strtol(attr->value, &end_ptr, 10),
-                 *end_ptr != '\0'))
-            {
-                ERROR("Incorrect 'route metric' value in route");
-                return TE_EINVAL;
-            }
-            rt_info->metric = int_val;
-            rt_info->flags |= TA_RT_INFO_FLG_METRIC;
         }
         else if (strcmp(attr->name, "mtu") == 0)
         {
