@@ -504,6 +504,13 @@ iovec2overlapped(rpc_overlapped *overlapped, int vector_len,
                  struct tarpc_iovec *vector)
 {
     rpc_overlapped_free_memory(overlapped);
+    
+    if (vector_len == 0)
+    {
+        overlapped->buffers = NULL;
+        overlapped->bufnum = 0;
+        return 0;
+    }
 
     if ((overlapped->buffers =
             (WSABUF *)calloc(vector_len, sizeof(WSABUF))) == NULL)
@@ -539,6 +546,13 @@ overlapped2iovec(rpc_overlapped *overlapped, int *vector_len,
                  struct tarpc_iovec **vector_val)
 {
     int i;
+    
+    if (overlapped->bufnum == 0)
+    {
+        *vector_val = NULL;
+        *vector_len = 0;
+        return 0;
+    }
 
     *vector_val = (struct tarpc_iovec *)
         malloc(sizeof(struct tarpc_iovec) * overlapped->bufnum);
@@ -553,6 +567,7 @@ overlapped2iovec(rpc_overlapped *overlapped, int *vector_len,
         (*vector_val)[i].iov_base.iov_base_val = overlapped->buffers[i].buf;
         (*vector_val)[i].iov_len = (*vector_val)[i].iov_base.iov_base_len =
            overlapped->buffers[i].len;
+        overlapped->buffers[i].buf = NULL;
     }
     free(overlapped->buffers);
     overlapped->buffers = NULL;
@@ -3489,7 +3504,7 @@ TARPC_FUNC(create_overlapped, {},
     rpc_overlapped *tmp;
 
     UNUSED(list);
-    if ((tmp = (rpc_overlapped *)calloc(1, sizeof(rpc_overlapped))) == 0)
+    if ((tmp = (rpc_overlapped *)calloc(1, sizeof(rpc_overlapped))) == NULL)
     {
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
     }
@@ -3528,6 +3543,7 @@ completion_callback(DWORD error, DWORD bytes, LPWSAOVERLAPPED overlapped,
                     DWORD flags)
 {
     UNUSED(flags);
+
     pthread_mutex_lock(&completion_lock);
     completion_called++;
     completion_error = win_error_h2rpc(error);
@@ -3621,15 +3637,15 @@ TARPC_FUNC(wsa_recv,
 
     MAKE_CALL(out->retval =
                   WSARecv(in->s, overlapped->buffers, in->count,
-                      out->bytes_received.bytes_received_len == 0 ?
-                        NULL :
-                        (LPDWORD)(out->bytes_received.bytes_received_val),
-                      out->flags.flags_len > 0 ?
-                        (LPDWORD)(out->flags.flags_val) : NULL,
-                      in->overlapped == 0 ? NULL :
-                        (LPWSAOVERLAPPED)overlapped,
-                      in->callback ?
-                        (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
+                          out->bytes_received.bytes_received_len == 0 ?
+                          NULL :
+                          (LPDWORD)(out->bytes_received.bytes_received_val),
+                          out->flags.flags_len > 0 ?
+                          (LPDWORD)(out->flags.flags_val) : NULL,
+                          in->overlapped == 0 ? NULL :
+                          (LPWSAOVERLAPPED)overlapped,
+                          in->callback ?
+                          (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                           completion_callback : NULL));
 
      
@@ -3907,7 +3923,7 @@ TARPC_FUNC(wsa_recv_disconnect, {},
     rpc_overlapped *overlapped = &tmp;
 
     memset(&tmp, 0, sizeof(tmp));
-
+    
     if (iovec2overlapped(overlapped, in->vector.vector_len,
                          in->vector.vector_val) != 0)
     {
