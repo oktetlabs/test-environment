@@ -1373,7 +1373,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
         if (ret_val == 0 && cfg_get_oid_str(handle, &oidstr) == 0 && 
             strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0 && valstr != NULL)
         {
-            RING("Set %s = %s", oidstr, valstr);
+            RING("Set %s%s = %s", local ? "locally " : "", oidstr, valstr);
         }
         free(oidstr);
         free(valstr);
@@ -1445,6 +1445,8 @@ cfg_commit(const char *oid)
                                                 msg, &len)) == 0)
     {
         ret_val = msg->rc;
+        if (ret_val == 0)
+            RING("Committed %s", oid);
     }
 
 #ifdef HAVE_PTHREAD_H
