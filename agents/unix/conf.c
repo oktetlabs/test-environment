@@ -4,7 +4,7 @@
  * Unix TA configuring support
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004,2005 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -104,7 +104,7 @@ extern te_errno ta_unix_iscsi_initiator_init();
 #ifdef USE_NETLINK
 struct nlmsg_list {
     struct nlmsg_list *next;
-    struct nlmsghdr      h;
+    struct nlmsghdr    h;
 };
 #endif
 
@@ -538,32 +538,35 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 /**
  * Store answer from RTM_GETXXX in nlmsg list.
  *
- * @param who          address pointer
- * @param n            address info to be stored
- * @arg                location for nlmsg list
+ * @param who           address pointer
+ * @param msg           address info to be stored
+ * @param arg           location for nlmsg list
  *
- * @return error code
+ * @retval 0            success
+ * @retval -1           failure
  */
 static int
 store_nlmsg(const struct sockaddr_nl *who,
-            const struct nlmsghdr *n,
+            const struct nlmsghdr *msg,
             void *arg)
 {
-    struct nlmsg_list **linfo = (struct nlmsg_list**)arg;
-    struct nlmsg_list *h;
+    struct nlmsg_list **linfo = (struct nlmsg_list **)arg;
+    struct nlmsg_list  *h;
     struct nlmsg_list **lp;
 
-    h = malloc(n->nlmsg_len+sizeof(void*));
+    h = malloc(msg->nlmsg_len + sizeof(void *));
     if (h == NULL)
         return -1;
 
-    memcpy(&h->h, n, n->nlmsg_len);
+    memcpy(&h->h, msg, msg->nlmsg_len);
     h->next = NULL;
 
-    for (lp = linfo; *lp; lp = &(*lp)->next);
+    for (lp = linfo; *lp != NULL; lp = &(*lp)->next);
+
     *lp = h;
 
-    ll_remember_index(who, n, NULL);
+    ll_remember_index(who, msg, NULL);
+
     return 0;
 }
 
@@ -578,10 +581,10 @@ free_nlmsg(struct nlmsg_list *linfo)
     struct nlmsg_list *next;
     struct nlmsg_list *cur;
 
-    for (cur = linfo; cur; cur = next)
+    for (cur = linfo; cur != NULL; cur = next)
     {
         next = cur->next;
-        free (cur);
+        free(cur);
     }
     return;
 }
@@ -633,7 +636,8 @@ ip_addr_get(int family, struct nlmsg_list **list)
 }
 
 /**
- * Find name of the interface with specified address.
+ * Find name of the interface with specified address and retrive
+ * attributes of the address.
  *
  * @param str_addr  Address in dotted notation
  * @param ifname    Name the interface or NULL
@@ -641,7 +645,7 @@ ip_addr_get(int family, struct nlmsg_list **list)
  * @param prefix    Location for prefix or NULL
  * @param bcast     Location for broadcast address or NULL
  *
- * @return pointer to interface name in ll_map static buffer or NULL
+ * @return Pointer to interface name in ll_map static buffer or NULL.
  */
 static const char *
 nl_find_net_addr(const char *str_addr, const char *ifname,
@@ -680,14 +684,14 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
         return NULL;
     }
 
-    for (a = ainfo;  a; a = a->next)
+    for (a = ainfo; a != NULL; a = a->next)
     {
         n = &a->h;
         ifa = NLMSG_DATA(n);
 
         if (n->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
         {
-            ERROR("%s(): Bad netlink mesg hdr length", __FUNCTION__);
+            ERROR("%s(): Bad netlink message header length", __FUNCTION__);
             free_nlmsg(ainfo);
             return NULL;
         }
@@ -739,6 +743,8 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
             if (addr != NULL)
                 memcpy(&addr->ip6_addr, &ip_addr.ip6_addr,
                        sizeof(struct in6_addr));
+            if (prefix != NULL)
+                *prefix = ifa->ifa_prefixlen;
             if (bcast != NULL)
                 *bcast = 0;
         }
@@ -907,10 +913,10 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
              ((family == AF_INET6) &&
               (nl_find_net_addr(addr, ifname, &ip_addr,
                                 NULL, NULL) == NULL)))
-    {
-        ERROR("Address '%s' on interface '%s' not found", addr, ifname);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
+        {
+            ERROR("Address '%s' on interface '%s' not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
     }
 
     if (new_prefix != NULL)
@@ -1067,68 +1073,30 @@ interface_exists(const char *ifname)
 static int
 interface_list(unsigned int gid, const char *oid, char **list)
 {
-    size_t off = 0;
+    struct if_nameindex *ifs;
+    struct if_nameindex *p;
+    size_t               off = 0;
 
     UNUSED(gid);
     UNUSED(oid);
 
     buf[0] = '\0';
-
-#ifdef __linux__
+    ifs = if_nameindex();
+    if (ifs != NULL)
     {
-        FILE *f;
-
-        if ((f = fopen("/proc/net/dev", "r")) == NULL)
+        for (p = ifs; (p->if_name != NULL) && (off < sizeof(buf)); ++p)
         {
-            ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
-                  __FUNCTION__, strerror(errno));
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-
-        while (fgets(trash, sizeof(trash), f) != NULL)
-        {
-            char *s = strchr(trash, ':');
-
-            if (s == NULL)
+            if (!INTERFACE_IS_MINE(p->if_name))
                 continue;
 
-            for (*s-- = 0; s != trash && *s != ' '; s--);
-
-            if (*s == ' ')
-                s++;
-                
-            if (!INTERFACE_IS_MINE(s))
-                continue;
-
-            off += snprintf(buf + off, sizeof(buf) - off, "%s ", s);
+            off += snprintf(buf + off, sizeof(buf) - off,
+                            "%s ", p->if_name);
         }
 
-        fclose(f);
+        if_freenameindex(ifs);
     }
-#else
-    {
-        struct if_nameindex *ifs = if_nameindex();
-        struct if_nameindex *p;
-
-        if (ifs != NULL)
-        {
-            for (p = ifs; (p->if_name != NULL) && (off < sizeof(buf)); ++p)
-            {
-                if (!INTERFACE_IS_MINE(p->if_name))
-                    continue;
-
-                off += snprintf(buf + off, sizeof(buf) - off,
-                                "%s ", p->if_name);
-            }
-
-            if_freenameindex(ifs);
-        }
-    }
-#endif
     if (off >= sizeof(buf))
         return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
-    else if (off > 0)
-        buf[off - 1]  = '\0';
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1613,7 +1581,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     if (!INTERFACE_IS_MINE(ifname))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    /* Check that address has not been assigned to any interface yet*/
+    /* Check that address has not been assigned to any interface yet */
     name = nl_find_net_addr(addr, NULL, &ip_addr, NULL, NULL);
     if (name != NULL)
     {
