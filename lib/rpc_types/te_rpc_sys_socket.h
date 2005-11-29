@@ -983,13 +983,27 @@ sockopt_h2rpc(int opt_type, int opt)
         case SOL_IP:
             switch (opt)
             {
+#ifdef IP_ADD_MEMBERSHIP
                 H2RPC(IP_ADD_MEMBERSHIP);
+#endif
+#ifdef IP_DROP_MEMBERSHIP
                 H2RPC(IP_DROP_MEMBERSHIP);
+#endif
+#ifdef IP_MULTICAST_IF
                 H2RPC(IP_MULTICAST_IF);
+#endif
+#ifdef IP_MULTICAST_LOOP
                 H2RPC(IP_MULTICAST_LOOP);
+#endif
+#ifdef IP_MULTICAST_TTL
                 H2RPC(IP_MULTICAST_TTL);
+#endif
+#ifdef IP_OPTIONS
                 H2RPC(IP_OPTIONS);
+#endif
+#ifdef IP_PKTINFO
                 H2RPC(IP_PKTINFO);
+#endif
 #ifdef IP_RECVERR                
                 H2RPC(IP_RECVERR);
 #endif
@@ -1005,8 +1019,12 @@ sockopt_h2rpc(int opt_type, int opt)
 #ifdef IP_RETOPTS                
                 H2RPC(IP_RETOPTS);
 #endif                
+#ifdef IP_TOS
                 H2RPC(IP_TOS);
+#endif
+#ifdef IP_TTL
                 H2RPC(IP_TTL);
+#endif
 #ifdef IP_MTU
                 H2RPC(IP_MTU);
 #endif
@@ -1022,26 +1040,50 @@ sockopt_h2rpc(int opt_type, int opt)
         case SOL_IPV6:
             switch (opt)
             {
+#ifdef IPV6_UNICAST_HOPS
                 H2RPC(IPV6_UNICAST_HOPS);
+#endif
+#ifdef IPV6_MULTICAST_HOPS
                 H2RPC(IPV6_MULTICAST_HOPS);
+#endif
+#ifdef IPV6_MULTICAST_IF
                 H2RPC(IPV6_MULTICAST_IF);
+#endif
 #ifdef IPV6_ADDRFORM                
                 H2RPC(IPV6_ADDRFORM);
 #endif
 #ifdef IPV6_PKTINFO                
                 H2RPC(IPV6_PKTINFO);
 #endif                
-#if 0                
+#if 0
+#ifdef IPV6_RTHDR
                 H2RPC(IPV6_RTHDR);
+#endif
+#ifdef IPV6_AUTHHDR
                 H2RPC(IPV6_AUTHHDR);
+#endif
+#ifdef IPV6_DSTOPS
                 H2RPC(IPV6_DSTOPS);
+#endif
+#ifdef IPV6_HOPOPTS
                 H2RPC(IPV6_HOPOPTS);
+#endif
+#ifdef IPV6_FLOWINFO
                 H2RPC(IPV6_FLOWINFO);
+#endif
+#ifdef IPV6_HOPLIMIT
                 H2RPC(IPV6_HOPLIMIT);
+#endif
 #endif                
+#ifdef IPV6_MULTICAST_LOOP
                 H2RPC(IPV6_MULTICAST_LOOP);
+#endif
+#ifdef IPV6_ADD_MEMBERSHIP
                 H2RPC(IPV6_ADD_MEMBERSHIP);
+#endif
+#ifdef IPV6_DROP_MEMBERSHIP
                 H2RPC(IPV6_DROP_MEMBERSHIP);
+#endif
 #ifdef IPV6_MTU                
                 H2RPC(IPV6_MTU);
 #endif
@@ -1056,7 +1098,6 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC(IPV6_ROUTER_ALERT);
 #endif                
 #endif                
-
                 default: return RPC_SOCKOPT_MAX;
             }
 #endif                
