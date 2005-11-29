@@ -131,7 +131,10 @@ iter_stats_update_by_result(test_iter *iter)
     {
         return;
     }
-    iter->stats.not_run--;
+#if 1 /* Temporary fix */
+    if (iter->stats.not_run > 0)
+#endif
+        iter->stats.not_run--;
 
     switch (iter->exp_result.value)
     {
