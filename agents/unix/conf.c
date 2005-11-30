@@ -1080,6 +1080,8 @@ interface_list(unsigned int gid, const char *oid, char **list)
     UNUSED(gid);
     UNUSED(oid);
 
+    ENTRY("gid=%u oid='%s'", gid, oid);
+
     buf[0] = '\0';
     ifs = if_nameindex();
     if (ifs != NULL)
@@ -1100,6 +1102,8 @@ interface_list(unsigned int gid, const char *oid, char **list)
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    EXIT("list='%s'", *list);
 
     return 0;
 }
