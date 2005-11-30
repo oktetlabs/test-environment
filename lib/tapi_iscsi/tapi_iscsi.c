@@ -200,6 +200,7 @@ struct iscsi_data_message {
 
     uint8_t *data;
     size_t   length;
+    int      error;
 };
 
 
@@ -227,8 +228,9 @@ iscsi_msg_handler(const char *pkt_fname, void *user_param)
     if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
                                        &pkt, &s_parsed)) != 0)
     {                                      
-        ERROR("%s(): parse packet fails, rc = %r, sym %d",
-              __FUNCTION__, rc, s_parsed);
+        ERROR("%s(): parse packet fails, rc = %r, sym %d, pkt file: %Tf",
+              __FUNCTION__, rc, s_parsed, pkt_fname);
+        msg->error = rc; 
         return;
     }
 
@@ -241,7 +243,10 @@ iscsi_msg_handler(const char *pkt_fname, void *user_param)
     len = msg->length;
     rc = asn_read_value_field(pkt, msg->data, &len, "payload.#bytes");
     if (rc != 0)
+    {
+        msg->error = rc;
         ERROR("%s(): read payload failed %r", __FUNCTION__, rc);
+    }
     msg->length = len;
 
     if (msg->params != NULL)
@@ -265,11 +270,14 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
     if (ta_name == NULL || socket == NULL)
         return TE_EWRONGPTR;
 
+    msg.error  = 0;
+
     if (buffer != NULL)
     {
         if (length == NULL)
             return TE_EWRONGPTR;
 
+        RING("%s(): called with length %d", __FUNCTION__, *length);
         msg.params = params;
         msg.data   = buffer;
         msg.length = *length;
@@ -312,6 +320,12 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
 
     if (buffer != NULL)
         *length = msg.length;
+
+    if (msg.error != 0)
+    {
+        rc = msg.error;
+        ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, rc);
+    }
 
 cleanup:
     asn_free_value(pattern);
