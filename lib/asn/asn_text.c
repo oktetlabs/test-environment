@@ -159,7 +159,7 @@ asn_impl_pt_label(const char *text, char *label, int *syms)
  * @return zero on success, otherwise error code.
  */ 
 int 
-asn_impl_pt_charstring(const char*text, const asn_type *type, 
+asn_impl_pt_charstring(const char *text, const asn_type *type, 
                        asn_value_p *parsed, int *syms_parsed)
 {
     const char *pt = text; 
