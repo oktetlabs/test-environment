@@ -291,6 +291,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             {
                 ERROR("ASN error in add next pdu %r", rc);
                 asn_free_value(*packet);
+                *packet = NULL;
                 return rc;
             } 
 
@@ -324,6 +325,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             {
                 ERROR("%s(): get mask failed %r", __FUNCTION__, rc);
                 asn_free_value(*packet);
+                *packet = NULL;
                 return rc;
             }
             rc = ndn_match_mask(mask_pat,
@@ -447,6 +449,12 @@ tad_report_packet(asn_value_p packet, struct rcf_comm_connection *handle,
     char *buffer;
     char *attach;
 
+    if (packet == NULL)
+    {
+        WARN("%s(): NULL packet passed", __FUNCTION__);
+        return 0;
+    }
+
     attach_len = asn_count_txt_len(packet, 0);
 
     /* 
@@ -465,7 +473,7 @@ tad_report_packet(asn_value_p packet, struct rcf_comm_connection *handle,
         ERROR("asn_sprint_value returns greater than expected!");
     } 
 
-    VERB("report about packet to test, attach len: %d", attach_len);
+    VERB("%s():  attach len %d", __FUNCTION__, attach_len);
 
     rcf_ch_lock();
     rc = rcf_comm_agent_reply(handle, buffer,
@@ -977,7 +985,7 @@ tad_tr_recv_thread(void *arg)
                         break;
 
                     case TE_ETADLESSDATA: /* @todo fragmentation */
-                        rc = 0;
+                        unit = num_pattern_units; /* to break from 'for' */
                     case TE_ETADNOTMATCH:
                         continue;
 
@@ -990,7 +998,8 @@ tad_tr_recv_thread(void *arg)
                     break;
             }
 
-            if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH)
+            if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH ||
+                TE_RC_GET_ERROR(rc) == TE_ETADLESSDATA)
             {
                 rc = 0;
                 continue;
@@ -998,13 +1007,15 @@ tad_tr_recv_thread(void *arg)
 
             /* Here packet is successfully received, parsed and matched */
 
-            if ((rc == 0) && (csap_descr->state & TAD_STATE_RESULTS))
+            if ((rc == 0) && (csap_descr->state & TAD_STATE_RESULTS) 
+                && (result != NULL))
             { 
                 if (csap_descr->state & TAD_STATE_FOREGROUND)
                 {
                     F_VERB("in foreground mode");
                     rc = tad_report_packet(result, handle, answer_buffer,
                                            ans_len);
+                    asn_free_value(result);
                 }
                 else
                 {
@@ -1014,6 +1025,7 @@ tad_tr_recv_thread(void *arg)
                     new_qelem->pkt = result;
                     INSQUE(new_qelem, received_packets.prev);
                 }
+                result = NULL;
             } 
 
             if (rc != 0) 
