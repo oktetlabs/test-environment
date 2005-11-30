@@ -394,10 +394,10 @@ asn_free_subvalue(asn_value_p value, const char* labels)
 
         value = subvalue; 
     } 
-
+#if 0
     if (rc == 0)
         rc = asn_impl_find_subvalue_writable(value, low_label, &subvalue);
-
+#endif
     if (rc == 0)
     {
         asn_put_child_value_by_label(value, NULL, low_label);
