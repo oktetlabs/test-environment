@@ -1497,8 +1497,15 @@ rcf_pch_rsrc_accessible(const char *fmt, ...)
     va_end(ap);
     
     for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
+    {
+        VERB("%s(): check '%s' vs '%s'", __FUNCTION__, tmp->name, buf);
         if (strcmp(tmp->name, buf) == 0)
+        {
+            VERB("%s(): match", __FUNCTION__);
             return TRUE;
+        }
+    }
+    VERB("%s(): no match", __FUNCTION__);
             
     return FALSE;
 }
