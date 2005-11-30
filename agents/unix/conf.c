@@ -1073,9 +1073,7 @@ interface_exists(const char *ifname)
 static int
 interface_list(unsigned int gid, const char *oid, char **list)
 {
-    struct if_nameindex *ifs;
-    struct if_nameindex *p;
-    size_t               off = 0;
+    size_t off = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1083,20 +1081,62 @@ interface_list(unsigned int gid, const char *oid, char **list)
     ENTRY("gid=%u oid='%s'", gid, oid);
 
     buf[0] = '\0';
-    ifs = if_nameindex();
-    if (ifs != NULL)
-    {
-        for (p = ifs; (p->if_name != NULL) && (off < sizeof(buf)); ++p)
-        {
-            if (!INTERFACE_IS_MINE(p->if_name))
-                continue;
 
-            off += snprintf(buf + off, sizeof(buf) - off,
-                            "%s ", p->if_name);
+#ifdef __linux__
+    {
+        FILE *f;
+
+        if ((f = fopen("/proc/net/dev", "r")) == NULL)
+        {
+            ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
+                  __FUNCTION__, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
         }
 
-        if_freenameindex(ifs);
+        while (fgets(trash, sizeof(trash), f) != NULL)
+        {
+            char *s = strchr(trash, ':');
+
+            if (s == NULL)
+                continue;
+
+            for (*s-- = 0; s != trash && *s != ' '; s--);
+
+            if (*s == ' ')
+                s++;
+                
+            if (!INTERFACE_IS_MINE(s))
+                continue;
+
+            off += snprintf(buf + off, sizeof(buf) - off, "%s ", s);
+        }
+
+        fclose(f);
     }
+#else
+    {
+        /*
+         * This branch does not show interfaces in down state, be
+         * carefull.
+         */
+        struct if_nameindex *ifs = if_nameindex();
+        struct if_nameindex *p;
+
+        if (ifs != NULL)
+        {
+            for (p = ifs; (p->if_name != NULL) && (off < sizeof(buf)); ++p)
+            {
+                if (!INTERFACE_IS_MINE(p->if_name))
+                    continue;
+
+                off += snprintf(buf + off, sizeof(buf) - off,
+                                "%s ", p->if_name);
+            }
+
+            if_freenameindex(ifs);
+        }
+    }
+#endif
     if (off >= sizeof(buf))
         return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
 
