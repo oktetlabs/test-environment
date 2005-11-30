@@ -1433,18 +1433,20 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
     if (buf_len <= asn_count_len_choice(value, indent))
         return -1;
 
-    v_el = value->data.array[0];
-    if (v_el)
-    { 
-        strcpy(buffer, v_el->name);
-        strcat(buffer, ":");
+    if ((v_el = value->data.array[0]) == NULL)
+    {
+        WARN("%s(): incomplete", __FUNCTION__);
+        return -1;
+    }
 
-        used = strlen(buffer);
-        all_used += used; buffer += used; 
+    strcpy(buffer, v_el->name);
+    strcat(buffer, ":");
 
-        used = asn_sprint_value(v_el, buffer, buf_len - all_used, indent);
-        all_used += used; 
-    } 
+    used = strlen(buffer);
+    all_used += used; buffer += used; 
+
+    used = asn_sprint_value(v_el, buffer, buf_len - all_used, indent);
+    all_used += used; 
 
     return all_used;
 }
