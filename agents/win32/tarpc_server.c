@@ -92,15 +92,15 @@ wsp_proto_rpc2h(int socktype, int proto)
 
     switch (proto_h)
     {
-        case RPC_IPPROTO_TCP:
+        case IPPROTO_TCP:
             proto_h = WSP_IPPROTO_TCP;
             break;
          
-        case RPC_IPPROTO_UDP:
+        case IPPROTO_UDP:
             proto_h = WSP_IPPROTO_UDP;
             break;
         
-        case RPC_PROTO_DEF:
+        case 0:
             switch (socktype_rpc2h(socktype))
             {
                 case SOCK_STREAM:
@@ -111,10 +111,6 @@ wsp_proto_rpc2h(int socktype, int proto)
                     proto_h = WSP_IPPROTO_UDP;
                     break;
             }
-            break;
-          
-        default:
-            proto_h = proto_rpc2h(proto);
             break;
     }
 
