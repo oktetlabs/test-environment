@@ -198,19 +198,16 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
 
     in.fd = fd;
     in.buf.buf_len = buflen;
-    if (buf != NULL)
-        in.buf.buf_val = buf;
-    else
-        in.buf.buf_val = NULL;
+    in.buf.buf_val = buf;
     in.offset = offset;
 
     rcf_rpc_call(rpcs, "write_at_offset", &in, &out);
-
-    TAPI_RPC_LOG("RPC (%s,%s)%s: write_at_offset(%d, %p %d, %d)"
-                 " -> %d, %d (%s)",
+    
+    TAPI_RPC_LOG("RPC (%s,%s)%s: write_at_offset(%d, %p, %d, %d)"
+                 " -> %d, %d (%r)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  fd, buf, buflen, offset, out.offset, out.written,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+                 RPC_ERRNO(rpcs));
 
     if (out.offset == (off_t)-1)  /* failed to repsition the file offset */
         RETVAL_INT(write_at_offset, -2);
