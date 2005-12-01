@@ -1382,7 +1382,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
         0,
     };
 
-    char         *offer;
+    char         *offer = NULL;
     int          par2adv = 0;
     int          rc;
     cfg_val_type type = CVT_STRING;
@@ -1401,6 +1401,8 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
     }
 
     par2adv = atoi(offer);
+    free(offer);
+    
     if (offer_mapping[param] != 0)
     {
         if (advertize == TRUE)
@@ -1408,6 +1410,10 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
         else
             par2adv &= ~(offer_mapping[param]);
     }
+    
+#define MAX_OFFER_LENGTH 15
+    offer = calloc(MAX_OFFER_LENGTH, 1);
+#undef MAX_OFFER_LENGTH
 
     sprintf(offer, "%d", par2adv);
 
@@ -1421,6 +1427,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
         return rc;
     }
     
+    free(offer);
     return 0;
 }
 
