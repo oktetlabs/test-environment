@@ -201,6 +201,31 @@ static int route_list(unsigned int, const char *, char **);
 
 static int route_commit(unsigned int, const cfg_oid *);
 
+/*
+ * Access routines prototypes (comply to procedure types
+ * specified in rcf_ch_api.h).
+ */
+static int env_get(unsigned int, const char *, char *,
+                   const char *);
+static int env_set(unsigned int, const char *, const char *,
+                   const char *);
+static int env_add(unsigned int, const char *, const char *,
+                   const char *);
+static int env_del(unsigned int, const char *,
+                   const char *);
+static int env_list(unsigned int, const char *, char **);
+
+/** Environment variables hidden in list operation */
+static const char * const env_hidden[] = {
+    "SSH_CLIENT",
+    "SSH_CONNECTION",
+    "SUDO_COMMAND",
+    "TE_RPC_PORT",
+    "TE_LOG_PORT",
+    "TARPC_DL_NAME",
+    "TCE_CONNECTION"
+};
+
 /* win32 Test Agent configuration tree */
 
 
@@ -258,7 +283,13 @@ RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             &node_ifindex, &node_route,
                             NULL, NULL, interface_list, NULL);
 
-RCF_PCH_CFG_NODE_AGENT(node_agent, &node_interface);
+static rcf_pch_cfg_object node_env =
+    { "env", 0, NULL, &node_interface,
+      (rcf_ch_cfg_get)env_get, (rcf_ch_cfg_set)env_set,
+      (rcf_ch_cfg_add)env_add, (rcf_ch_cfg_del)env_del,
+      (rcf_ch_cfg_list)env_list, NULL, NULL };
+
+RCF_PCH_CFG_NODE_AGENT(node_agent, &node_env);
 
 const char *te_lockdir = "/tmp";
 
@@ -1494,31 +1525,6 @@ neigh_list(unsigned int gid, const char *oid, char **list,
 /* Implementation of /agent/route subtree                         */
 /******************************************************************/
 
-/**
- * If route has interface name specified, then it returns 
- * interface index corresponding to the interface name.
- *
- * @param rt_info   Route info data structure
- * @param if_index  Location for interface index value (OUT)
- *
- * @return 0 on success, or errno on failure
- */
-static int
-route_get_if_index(const ta_rt_info_t *rt_info, DWORD *if_index)
-{
-    if ((rt_info->flags & TA_RT_INFO_FLG_IF) == 0)
-        return 0;
-
-    assert(strlen(rt_info->ifname) > 0);
-
-    if (sscanf(rt_info->ifname, "intf%lu", if_index) != 1)
-    {
-        return TE_RC(TE_TA_WIN32, TE_ENOENT);
-    }
-
-    return 0;
-}
-
 /** 
  * Convert system-independent route info data structure to
  * Win32-specific MIB_IPFORWARDROW data structure.
@@ -1950,5 +1956,219 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
             return TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
     
+    return 0;
+}
+
+/**
+ * Is Environment variable with such name hidden?
+ *
+ * @param name      Variable name
+ * @param name_len  -1, if @a name is a NUL-terminated string;
+ *                  >= 0, if length of the @a name is @a name_len
+ */
+static te_bool
+env_is_hidden(const char *name, int name_len)
+{
+    unsigned int    i;
+
+    for (i = 0; i < sizeof(env_hidden) / sizeof(env_hidden[0]); ++i)
+    {
+        if (memcmp(env_hidden[i], name,
+                   (name_len < 0) ? strlen(name) : (size_t)name_len) == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/**
+ * Get Environment variable value.
+ *
+ * @param gid       Request's group identifier (unused)
+ * @param oid       Full object instance identifier (unused)
+ * @param value     Location for the value (OUT)
+ * @param name      Variable name
+ *
+ * @return Error code
+ */
+static int
+env_get(unsigned int gid, const char *oid, char *value,
+        const char *name)
+{
+    const char *tmp = getenv(name);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (!env_is_hidden(name, -1) && (tmp != NULL))
+    {
+        if (strlen(tmp) >= RCF_MAX_VAL)
+            WARN("Environment variable '%s' value truncated", name);
+        snprintf(value, RCF_MAX_VAL, "%s", tmp);
+        return 0;
+    }
+    else
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+}
+
+/**
+ * Change already existing Environment variable.
+ *
+ * @param gid       Request's group identifier (unused)
+ * @param oid       Full object instance identifier (unused)
+ * @param value     New value to set
+ * @param name      Variable name
+ *
+ * @return Error code
+ */
+static int
+env_set(unsigned int gid, const char *oid, const char *value,
+        const char *name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (env_is_hidden(name, -1))
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+
+    if (setenv(name, value, TRUE) == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        ERROR("Failed to set Environment variable '%s' to '%s'; errno %r",
+              name, value, rc);
+        return rc;
+    }
+}
+
+/**
+ * Add a new Environment variable.
+ *
+ * @param gid       Request's group identifier (unused)
+ * @param oid       Full object instance identifier (unused)
+ * @param value     Value
+ * @param name      Variable name
+ *
+ * @return Error code
+ */
+static int
+env_add(unsigned int gid, const char *oid, const char *value,
+        const char *name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (env_is_hidden(name, -1))
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+
+    if (getenv(name) == NULL)
+    {
+        if (setenv(name, value, FALSE) == 0)
+        {
+            return 0;
+        }
+        else
+        {
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+            ERROR("Failed to add Environment variable '%s=%s'",
+                  name, value);
+            return rc;
+        }
+    }
+    else
+    {
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+}
+
+/**
+ * Delete Environment variable.
+ *
+ * @param gid       Request's group identifier (unused)
+ * @param oid       Full object instance identifier (unused)
+ * @param name      Variable name
+ *
+ * @return Error code
+ */
+static int
+env_del(unsigned int gid, const char *oid, const char *name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (env_is_hidden(name, -1))
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+
+    if (getenv(name) != NULL)
+    {
+        unsetenv(name);
+        return 0;
+    }
+    else
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+}
+
+/**
+ * Get instance list for object "/agent/env".
+ *
+ * @param gid       Request's group identifier (unused)
+ * @param oid       Full object instance identifier (unused)
+ * @param list      Location for the list pointer
+ *
+ * @return Error code
+ */
+static int
+env_list(unsigned int gid, const char *oid, char **list)
+{
+    char **env;
+
+    char   *ptr = buf;
+    char   *buf_end = buf + sizeof(buf);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (environ == NULL)
+        return 0;
+
+    *ptr = '\0';
+    for (env = environ; *env != NULL; ++env)
+    {
+        char    *s = strchr(*env, '=');
+        ssize_t  name_len;
+
+        if (s == NULL)
+        {
+            ERROR("Invalid Environment entry format: %s", *env);
+            return TE_RC(TE_TA_UNIX, TE_EFMT);
+        }
+        name_len = s - *env;
+        if (env_is_hidden(*env, name_len))
+            continue;
+
+        if (ptr != buf)
+            *ptr++ = ' ';
+        if ((buf_end - ptr) <= name_len)
+        {
+            ERROR("Too small buffer for the list of Environment "
+                  "variables");
+            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        }
+        memcpy(ptr, *env, name_len);
+        ptr += name_len;
+        *ptr = '\0';
+    }
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
     return 0;
 }
