@@ -3785,6 +3785,7 @@ do {                                                                  \
 static int
 route_commit(unsigned int gid, const cfg_oid *p_oid)
 {
+#ifdef USE_NETLINK
     const char   *route;
     ta_cfg_obj_t *obj;
     ta_rt_info_t  rt_info_name_only;
@@ -3845,6 +3846,12 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     }
     
     return rc;
+
+#else /* USE_NETLINK */
+    UNUSED(gid);
+    UNUSED(p_oid);
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif /* USE_NETLINK */
 }
 
 
