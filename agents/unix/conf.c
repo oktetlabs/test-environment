@@ -3004,6 +3004,7 @@ neigh_list(unsigned int gid, const char *oid, char **list,
 /* Implementation of /agent/route subtree                         */
 /******************************************************************/
 
+#ifdef USE_NETLINK
 /*
  * The following code is based on iproute2-050816 package.
  * There is no clear specification of netlink interface.
@@ -3309,6 +3310,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
     }
     return 0;
 }
+#endif /* USE_NETLINK */
 
 /**
  * Find route and return its attributes.
@@ -3322,7 +3324,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
 static int
 route_find(const char *route, ta_rt_info_t *rt_info)
 {
-#ifdef __linux__
+#ifdef USE_NETLINK
     int       rc;
 
     ENTRY("%s", route);
@@ -3375,13 +3377,14 @@ route_find(const char *route, ta_rt_info_t *rt_info)
 
     return 0;
 
-#else
+#else /* USE_NETLINK */
 
     UNUSED(route);
     UNUSED(rt_info);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-#endif /* !__linux__ */
+
+#endif /* !USE_NETLINK */
 }
 
 /**
