@@ -105,6 +105,9 @@ extern "C" {
     int         result = EXIT_FAILURE;                              \
     TEST_START_VARS                                                 \
                                                                     \
+    /* 'rc' may be unused in the test */                            \
+    UNUSED(rc);                                                     \
+                                                                    \
     /* Shift programm name */                                       \
     argc--;                                                         \
     argv++;                                                         \
