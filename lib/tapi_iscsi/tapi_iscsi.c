@@ -460,8 +460,8 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
     /*First, start receive on A */
     asn_write_int32(pattern, csap_b, "0.actions.0.#forw-pld");
 
-    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern, timeout, 
-                               0, RCF_TRRECV_COUNT);
+    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern, 
+                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
         ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
@@ -471,8 +471,8 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
     /* Then, start receive on B */
     asn_write_int32(pattern, csap_a, "0.actions.0.#forw-pld");
 
-    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern, timeout, 
-                               0, RCF_TRRECV_COUNT);
+    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern, 
+                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
         ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
@@ -485,10 +485,10 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
 
         ts_timeout.tv_sec  = timeout / 1000;
         ts_timeout.tv_nsec = (timeout % 1000) * 1000000;
-        RING("Sleeping %u milliseconds", timeout);
+        INFO("%s(): Sleeping %u milliseconds", __FUNCTION__, timeout);
         if (nanosleep(&ts_timeout, NULL) != 0)
         {
-            RING("Sleep interrupted");
+            INFO("Sleep interrupted");
             rc = TE_OS_RC(TE_TAPI, errno);
             break;
         }
