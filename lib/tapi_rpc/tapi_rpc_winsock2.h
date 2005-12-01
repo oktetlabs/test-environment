@@ -591,7 +591,7 @@ extern void rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf);
  * @return   0 in case of success, nonzero otherwise.
  */
 extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
-                           struct sockaddr *addr, socklen_t addrlen,
+                           const struct sockaddr *addr, socklen_t addrlen,
                            rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                            rpc_qos *sqos);
 

@@ -2593,7 +2593,7 @@ rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
  *                               TA virtual address space.
  */
 int
-rpc_wsa_connect(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
+rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
                 socklen_t addrlen, rpc_ptr caller_wsabuf,
                 rpc_ptr callee_wsabuf, rpc_qos *sqos)
 {
