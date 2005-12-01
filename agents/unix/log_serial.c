@@ -272,6 +272,7 @@ open_conserver(const char *conserver)
  * should not hurt much
  */
 static te_bool use_conserver = FALSE;
+#if 0
 static void
 close_conserver_cleanup(long fd)
 {
@@ -281,6 +282,7 @@ close_conserver_cleanup(long fd)
     while(read(fd, buf, 1) == 1);
     close(fd);
 }
+#endif
 
 /**
  * Log host serial output via Logger component
