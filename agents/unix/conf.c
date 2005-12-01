@@ -2988,6 +2988,7 @@ neigh_list(unsigned int gid, const char *oid, char **list,
     fclose(fp);
 #else
     UNUSED(oid);
+    UNUSED(ifname);
 
     *buf = '\0';
 #endif
