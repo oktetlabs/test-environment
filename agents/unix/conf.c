@@ -3694,7 +3694,7 @@ route_list(unsigned int gid, const char *oid, char **list)
 
     VERB("Got IPv4 routes");
 
-#if 1
+#if 0
     if ((fp = fopen("/proc/net/ipv6_route", "r")) == NULL)
     {
         ERROR("Failed to open /proc/net/ipv6_route for reading: %s",
