@@ -780,10 +780,15 @@ check_args(checked_arg *list)
         uint64_t msec_now;                                      \
                                                                 \
         gettimeofday(&t, NULL);                                 \
-        msec_now = t.tv_sec * 1000 + t.tv_usec / 1000;          \
+        msec_now = (uint64_t)((uint32_t)(t.tv_sec) * 1000 +     \
+                              (uint32_t)(t.tv_usec) / 1000);    \
                                                                 \
         if (msec_start > msec_now)                              \
+        {                                                       \
+            RING("Sleep %u microseconds before call",           \
+                 (msec_start - msec_now) * 1000);               \
             usleep((msec_start - msec_now) * 1000);             \
+        }                                                       \
         else if (msec_start != 0)                               \
             WARN("Start time is gone");                         \
     } while (0)
@@ -1089,8 +1094,6 @@ TARPC_FUNC(signal,
 
 TARPC_FUNC(socket, {},
 {
-   
-
     MAKE_CALL(out->fd = WSASocket(domain_rpc2h(in->domain),
                                   socktype_rpc2h(in->type),
                                   wsp_proto_rpc2h(in->type, in->proto),
@@ -2685,11 +2688,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
 #endif
     }
 
-    {
-        char buf[64] = {0,};
-        sprintf(buf, "Received %llu", received);
-        ERROR(buf);
-    }
+    RING("Received %llu", received);
     free(buf);
 
     out->bytes = received;
@@ -3542,6 +3541,7 @@ completion_callback(DWORD error, DWORD bytes, LPWSAOVERLAPPED overlapped,
 
     pthread_mutex_lock(&completion_lock);
     completion_called++;
+    PRINT("Callback %d", completion_called);
     completion_error = win_error_h2rpc(error);
     completion_bytes = bytes;
     completion_overlapped = 
