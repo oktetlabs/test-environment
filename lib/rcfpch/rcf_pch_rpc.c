@@ -214,21 +214,17 @@ static int
 recv_timeout(int s, void *buf, int len, int t)
 {
     int rc = -1;
+    
+    fd_set set;
+    
+#ifdef __CYGWIN__
     int i;
     
     for (i = 0; i < t && rc <= 0; i++)
     {
-        struct timeval tv;
-        fd_set         set;
+        struct timeval tv = { 0, 990000 };
         
-#ifdef __CYGWIN__
-        sleep_waitable(100);
-        tv.tv_sec = 0;
-        tv.tv_usec = 900000;
-#else
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;        
-#endif                
+        sleep_waitable(10);
         
         FD_ZERO(&set);
         FD_SET(s, &set);
@@ -238,6 +234,19 @@ recv_timeout(int s, void *buf, int len, int t)
     
     if (rc <= 0)
         return -2;
+#else
+    struct timeval tv = { t, 0 };
+    
+    while (rc < 0)
+    {
+        FD_ZERO(&set);
+        FD_SET(s, &set);
+    
+        if ((rc = select(s + 1, &set, NULL, NULL, &tv)) == 0)
+            return -2;
+    }
+    
+#endif
         
     return recv(s, buf, len, 0);
 }
