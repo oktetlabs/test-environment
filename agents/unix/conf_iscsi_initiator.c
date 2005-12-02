@@ -567,6 +567,8 @@ iscsi_l5_write_target_params(FILE *destination,
     AUTH_PARAM(chap, "AuthMethod", TRUE);
     AUTH_PARAM(peer_name, "CHAPName", TRUE);
     AUTH_PARAM(peer_secret, "CHAPSecret", TRUE);
+    AUTH_PARAM(local_name, "TargetCHAPName", TRUE);
+    AUTH_PARAM(local_secret, "TargetCHAPSecret", TRUE);
     
     for (p = session_params; p->name != NULL; p++)
     {
@@ -608,11 +610,22 @@ iscsi_l5_write_target_params(FILE *destination,
                 }
 #endif
             }
-            WRITE_AUTH(chap);
+            if (!connection->chap.target_auth)
+                WRITE_AUTH(chap);
+            else
+            {
+                fputs("AuthMethod: CHAPWithTargetAuth\n", 
+                      destination);
+            }
             if (strstr(connection->chap.chap, "CHAP") != 0)
             {
                 WRITE_AUTH(peer_name);
                 WRITE_AUTH(peer_secret);
+            }
+            if (connection->chap.target_auth)
+            {
+                WRITE_AUTH(local_name);
+                WRITE_AUTH(local_secret);
             }
         }
     }
