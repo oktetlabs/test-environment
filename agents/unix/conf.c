@@ -2479,7 +2479,8 @@ static int
 mtu_set(unsigned int gid, const char *oid, const char *value,
         const char *ifname)
 {
-    char    *tmp1;
+    char *tmp;
+    int   rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2487,8 +2488,8 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     if (!INTERFACE_IS_MINE(ifname))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    req.ifr_mtu = strtol(value, &tmp1, 10);
-    if (tmp1 == value || *tmp1 != 0)
+    req.ifr_mtu = strtol(value, &tmp, 10);
+    if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     strcpy(req.ifr_name, ifname);
@@ -2496,9 +2497,31 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
-        ERROR("ioctl(SIOCSIFMTU) failed: %r", rc);
-        return rc;
+        if (errno == EBUSY)
+        {
+            char status[2];
+            
+            /* Try to down interface */
+            if (status_get(0, NULL, status, ifname) == 0 &&
+                *status == 1 && status_set(0, NULL, "0", ifname) == 0)
+            {
+                int rc1;
+                
+                if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) == 0)
+                    rc = 0;
+                
+                if ((rc1 = status_set(0, NULL, "1", ifname)) != 0)
+                {
+                    ERROR("Failed to up interface after changing of mtu "
+                          "error %r", rc1);
+                    return rc1;
+                }
+            }
+        }
     }
+    
+    if (rc != 0)
+        ERROR("ioctl(SIOCSIFMTU) failed: %r", rc);
 
     return 0;
 }
