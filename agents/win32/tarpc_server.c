@@ -2771,6 +2771,8 @@ flooder(tarpc_flooder_in *in)
     }
 
     /* Calculate max descriptor */
+    FD_ZERO(&rfds0);
+    FD_ZERO(&wfds0);
     for (i = 0; i < rcvnum; ++i)
     {
         if (rcvrs[i] > max_descr)
