@@ -196,6 +196,10 @@ tcp_nodelay_enable(int sock)
 }
 #endif /* TCP_TRANSPORT */
  
+#ifdef __CYGWIN__
+extern void sleep_waitable(int);
+#endif
+
 /** 
  * Receive data with specified timeout.
  *
@@ -209,18 +213,31 @@ tcp_nodelay_enable(int sock)
 static int
 recv_timeout(int s, void *buf, int len, int t)
 {
-    struct timeval tv = { t, 0 };
-    fd_set         set;
-    int            rc = -1;
+    int rc = -1;
+    int i;
     
-    while (rc < 0)
+    for (i = 0; i < t && rc <= 0; i++)
     {
+        struct timeval tv;
+        fd_set         set;
+        
+#ifdef __CYGWIN__
+        sleep_waitable(100);
+        tv.tv_sec = 0;
+        tv.tv_usec = 900000;
+#else
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;        
+#endif                
+        
         FD_ZERO(&set);
         FD_SET(s, &set);
     
-        if ((rc = select(s + 1, &set, NULL, NULL, &tv)) == 0)
-            return -2;
+        rc = select(s + 1, &set, NULL, NULL, &tv);
     }
+    
+    if (rc <= 0)
+        return -2;
         
     return recv(s, buf, len, 0);
 }
