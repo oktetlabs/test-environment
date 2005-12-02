@@ -223,7 +223,8 @@ static const char * const env_hidden[] = {
     "TE_RPC_PORT",
     "TE_LOG_PORT",
     "TARPC_DL_NAME",
-    "TCE_CONNECTION"
+    "TCE_CONNECTION",
+    "TZ"
 };
 
 /* win32 Test Agent configuration tree */
@@ -1559,15 +1560,13 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
     if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
     {
         rc = name2index(rt_info->ifname, &(rt->dwForwardIfIndex));
+        rt->dwForwardNextHop = rt->dwForwardDest;
     }
     else
     {
         /* Use Next Hop address to define outgoing interface */
         rc = find_ifindex(rt->dwForwardNextHop, &rt->dwForwardIfIndex);
-    }
-
-    if (rt->dwForwardType == FORW_TYPE_LOCAL)
-        rt->dwForwardNextHop = rt->dwForwardDest;
+    } 
         
     return rc;
 }
@@ -1620,8 +1619,8 @@ route_find(const char *route, ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
         if (table->table[i].dwForwardIfIndex != 0)
         {
             rt_info->flags |= TA_RT_INFO_FLG_IF;
-            sprintf(rt_info->ifname, "intf%ld",
-                    table->table[i].dwForwardIfIndex);
+            sprintf(rt_info->ifname, 
+                    ifindex2ifname(table->table[i].dwForwardIfIndex));
         }
         if (table->table[i].dwForwardNextHop != 0)
         {
@@ -1697,7 +1696,7 @@ route_dev_set(unsigned int gid, const char *oid,
 {
     UNUSED(gid);
     UNUSED(oid);
-
+    
     return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, "dev",
                       value, route_load_attrs);
 }
