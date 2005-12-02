@@ -3543,7 +3543,6 @@ completion_callback(DWORD error, DWORD bytes, LPWSAOVERLAPPED overlapped,
 
     pthread_mutex_lock(&completion_lock);
     completion_called++;
-    PRINT("Callback %d", completion_called);
     completion_error = win_error_h2rpc(error);
     completion_bytes = bytes;
     completion_overlapped = 
@@ -3555,6 +3554,7 @@ TARPC_FUNC(completion_callback, {},
 {
     UNUSED(list);
     UNUSED(in);
+    SleepEx(100, TRUE);
     pthread_mutex_lock(&completion_lock);
     out->called = completion_called;
     completion_called = 0;
@@ -4320,6 +4320,7 @@ TARPC_FUNC(free, {},
 {
     UNUSED(list);
     UNUSED(out);
+    
     free(rcf_pch_mem_get(in->buf));
     rcf_pch_mem_free(in->buf);
 }
