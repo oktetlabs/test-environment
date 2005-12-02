@@ -1557,13 +1557,17 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
     rt->dwForwardProto = 3;
     
     if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
+    {
         rc = name2index(rt_info->ifname, &(rt->dwForwardIfIndex));
+    }
     else
     {
         /* Use Next Hop address to define outgoing interface */
         rc = find_ifindex(rt->dwForwardNextHop, &rt->dwForwardIfIndex);
-        rt->dwForwardNextHop = rt->dwForwardDest;
     }
+
+    if (rt->dwForwardType == FORW_TYPE_LOCAL)
+        rt->dwForwardNextHop = rt->dwForwardDest;
         
     return rc;
 }
