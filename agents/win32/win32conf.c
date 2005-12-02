@@ -1559,8 +1559,11 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
     if ((rt_info->flags & TA_RT_INFO_FLG_IF) != 0)
         rc = name2index(rt_info->ifname, &(rt->dwForwardIfIndex));
     else
+    {
         /* Use Next Hop address to define outgoing interface */
         rc = find_ifindex(rt->dwForwardNextHop, &rt->dwForwardIfIndex);
+        rt->dwForwardNextHop = rt->dwForwardDest;
+    }
         
     return rc;
 }
@@ -1879,7 +1882,6 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
 {
     const char       *route;
     ta_cfg_obj_t     *obj;
-    ta_rt_info_t      rt_info_name_only;
     ta_rt_info_t      rt_info;
     int               rc;
     MIB_IPFORWARDROW  rt;
@@ -1909,13 +1911,6 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         obj_action == TA_CFG_OBJ_SET)
     {
         rc = route_find(obj->name, &rt_info, &rt);
-    }
-    else
-    {
-        ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
-        if ((rc = rt_info2ipforw(&rt_info, &rt)) != 0)
-            ERROR("Failed to convert %s route to "
-                  "MIB_IPFORWARDROW data structure", obj->name);
     }
     ta_obj_free(obj);
     if (rc != 0)
