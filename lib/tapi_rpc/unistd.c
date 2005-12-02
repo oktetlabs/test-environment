@@ -202,12 +202,13 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
     in.offset = offset;
 
     rcf_rpc_call(rpcs, "write_at_offset", &in, &out);
-    
+
     TAPI_RPC_LOG("RPC (%s,%s)%s: write_at_offset(%d, %p, %d, %d)"
-                 " -> %d, %d (%r)",
+                 " -> %lld, %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, buf, buflen, offset, out.offset, out.written,
-                 RPC_ERRNO(rpcs));
+                 fd, buf, buflen, offset, 
+                 out.offset, out.written,
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
 
     if (out.offset == (off_t)-1)  /* failed to repsition the file offset */
         RETVAL_INT(write_at_offset, -2);
@@ -397,10 +398,10 @@ rpc_lseek(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "lseek", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: lseek(%d, %d, %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: lseek(%d, %lld, %s) -> %lld (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 fd, (int)pos, lseek_mode_rpc2str(mode), 
-                 (int)out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 fd, pos, lseek_mode_rpc2str(mode), 
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(lseek, out.retval);
 }
