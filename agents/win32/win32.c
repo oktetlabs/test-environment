@@ -643,6 +643,13 @@ die(void)
     _exit(0);
 }
 
+/** Sleep in waitable state */
+void 
+sleep_waitable(int msec)
+{
+    SleepEx(msec, TRUE);
+} 
+
 HINSTANCE ta_hinstance;
 
 /**

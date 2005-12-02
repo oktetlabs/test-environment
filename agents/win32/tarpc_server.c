@@ -3554,7 +3554,7 @@ TARPC_FUNC(completion_callback, {},
 {
     UNUSED(list);
     UNUSED(in);
-    SleepEx(100, TRUE);
+
     pthread_mutex_lock(&completion_lock);
     out->called = completion_called;
     completion_called = 0;
