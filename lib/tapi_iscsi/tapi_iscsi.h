@@ -862,11 +862,15 @@ extern te_errno tapi_iscsi_target_unmount(const char *ta);
 /**
  * Write data to a target's backing store filesystem 
  * to a file with a given name.
+ *
+ * Note: This function should be called only after 
+ * tapi_iscsi_target_mount().
  * 
  * @param ta            Test Agent name
  * @param fname         A filename to write
  * @param data          Buffer to write
  * @param length        Length of data to write
+ * @param multiply      Write the buffer that many times
  * 
  * @return Status code
  *
@@ -875,11 +879,15 @@ extern te_errno tapi_iscsi_target_unmount(const char *ta);
 extern te_errno tapi_iscsi_target_file_write(const char *ta, 
                                              const char *fname,
                                              const void *data,
-                                             size_t length);
+                                             size_t length,
+                                             size_t multiply);
 
 /**
  * Read data from a target's backing store filesystem 
  * from a file with a given name.
+ *
+ * Note: This function should be called only after 
+ * tapi_iscsi_target_mount(). 
  * 
  * @param ta            Test Agent name
  * @param fname         A filename to read from
@@ -896,34 +904,16 @@ extern te_errno tapi_iscsi_target_file_read(const char *ta,
 
 
 /**
- * Reads data from a target's device at a given position
- * 
- * @param ta            Test Agent name
- * @param offset        A position to read from
- * @param data          Buffer to store data
- * @param length        Length of data  
- * 
- * @return Status code
- *
- * @sa tapi_iscsi_initiator_raw_write
- */
-extern te_errno tapi_iscsi_target_raw_read(const char *ta, off_t offset,
-                                           void *data, size_t length);
-
-
-
-
-/**
  * Write raw data to a target's backing store.
- * NOTE: It is unwise to call this function between
- * tapi_iscsi_target_mount()
- * and
- * tapi_iscsi_target_unmount()
- * 
+ *
+ * Note: This function is NOT to be used in conjunction with
+ * tapi_iscsi_target_mount().
+ *
  * @param ta            Test Agent name
  * @param offset        A position to write
  * @param data          Buffer to write
- * @param length        Lengthg of data to write
+ * @param length        Length of data to write
+ * @param multiply      Write the buffer that many times
  * 
  * @return Status code
  *
@@ -931,11 +921,15 @@ extern te_errno tapi_iscsi_target_raw_read(const char *ta, off_t offset,
  */
 extern te_errno tapi_iscsi_target_raw_write(const char *ta, off_t offset,
                                             const void *data,
-                                            size_t length);
+                                            size_t length,
+                                            size_t multiply);
 
 /**
  * Reads data from a target's device at a given position
- * 
+ *
+ * Note: This function is NOT to be used in conjunction with
+ * tapi_iscsi_target_mount().
+ *
  * @param ta            Test Agent name
  * @param offset        A position to read from
  * @param data          Buffer to store data

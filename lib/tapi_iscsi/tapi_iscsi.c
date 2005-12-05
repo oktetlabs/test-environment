@@ -1933,7 +1933,8 @@ tapi_iscsi_target_file_read(const char *ta, const char *fname,
 
 int 
 tapi_iscsi_target_file_write(const char *ta, const char *fname,
-                             const void *buf, size_t length)
+                             const void *buf, size_t length,
+                             size_t multiply)
 {
 #if 0
     char source[128];
@@ -1952,7 +1953,8 @@ tapi_iscsi_target_file_write(const char *ta, const char *fname,
 
 int
 tapi_iscsi_target_raw_write(const char *ta, off_t offset,
-                            const void *data, size_t length)
+                            const void *data, size_t length,
+                            size_t multiply)
 {
 #if 0
     int rc;
