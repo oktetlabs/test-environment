@@ -173,6 +173,7 @@ fi
 if test ! -e configure.ac ; then
 
 svn co https://svn.oktetlabs.ru/svnroot/prj/oktetlabs/test-environment/src/trunk/auxdir
+rm -rf auxdir/.svn
 cat > configure.ac << EOF
 dnl Process this file with autoconf to produce a configure script.
 
