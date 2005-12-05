@@ -90,14 +90,15 @@ extern int iscsi_sync_device(uint8_t target, uint8_t lun);
  * @param target        Target No
  * @param lun           LUN
  * @param offset        Position to write at
- * @param buffer        Data to write
+ * @param fname         File to read from
  * @param len           Length of data
  * 
  * @return Status code
  */
 extern int iscsi_write_to_device(uint8_t target, uint8_t lun,
                                  uint32_t offset,
-                                 void *buffer, uint32_t len);
+                                 const char *fname, 
+                                 uint32_t len);
 
 /**
  * Verifies that the target virtual device contains specified data
@@ -106,14 +107,15 @@ extern int iscsi_write_to_device(uint8_t target, uint8_t lun,
  * @param target        Target No
  * @param lun           LUN
  * @param offset        Position to read from
- * @param buffer        Data to verify
+ * @param fname         File to read to
  * @param len           Length of data
  * 
  * @return Status code
  */
-extern int iscsi_verify_device_data(uint8_t target, uint8_t lun,
-                                    uint32_t offset,
-                                    void *buffer, uint32_t len);
+extern int iscsi_read_from_device(uint8_t target, uint8_t lun,
+                                  uint32_t offset,
+                                  const char *fname,
+                                  uint32_t len);
 
 /**
  * Informs the target that the following sessions will be 

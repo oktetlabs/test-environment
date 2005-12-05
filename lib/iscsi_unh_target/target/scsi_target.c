@@ -342,8 +342,15 @@ iscsi_sync_device(uint8_t target, uint8_t lun)
 int
 iscsi_write_to_device(uint8_t target, uint8_t lun,
                       uint32_t offset,
-                      void *buffer, uint32_t len)
+                      const char *fname, uint32_t len)
 {
+    ssize_t result_len;
+    
+    int src_fd;
+    int rc;
+
+    struct target_map_item *device;
+
     if (target >= MAX_TARGETS || lun >= MAX_LUNS ||
         !target_map[target][lun].in_use)
     {
@@ -351,24 +358,41 @@ iscsi_write_to_device(uint8_t target, uint8_t lun,
                     target, lun);
         return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
     }
-    if (buffer == NULL)
-        return TE_RC(TE_ISCSI_TARGET, TE_EFAULT);
-    if (offset + len > target_map[target][lun].storage_size * 
+
+    device = &target_map[target][lun];
+
+    if (offset + len > device->storage_size * 
         SCSI_BLOCKSIZE)
         return TE_RC(TE_ISCSI_TARGET, TE_ENOSPC);
-    if (!iscsi_accomodate_buffer(&target_map[target][lun],
-                                 offset + len))
+    if (!iscsi_accomodate_buffer(device, offset + len))
         return TE_RC(TE_ISCSI_TARGET, TE_ENXIO);
-    memcpy((char *)target_map[target][lun].buffer + offset,
-           buffer, len);
-    return 0;
+    src_fd = open(fname, O_RDONLY);
+    if (src_fd < 0)
+        return TE_OS_RC(TE_ISCSI_TARGET, errno);
+    result_len = read(src_fd, (char *)device->buffer + offset, len);
+    if (result_len < 0)
+        rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
+    else
+    {
+        rc = ((size_t)result_len == len ? 0 : 
+              TE_RC(TE_ISCSI_TARGET, TE_EFAIL));
+    }
+    close(src_fd);
+    return rc;
 }
 
 int
-iscsi_verify_device_data(uint8_t target, uint8_t lun,
-                         uint32_t offset,
-                         void *buffer, uint32_t len)
+iscsi_read_from_device(uint8_t target, uint8_t lun,
+                       uint32_t offset,
+                       const char *fname, uint32_t len)
 {
+    ssize_t result_len;
+    
+    int dest_fd;
+    int rc;
+
+    struct target_map_item *device;
+
     if (target >= MAX_TARGETS || lun >= MAX_LUNS ||
         !target_map[target][lun].in_use)
     {
@@ -376,14 +400,28 @@ iscsi_verify_device_data(uint8_t target, uint8_t lun,
                     target, lun);
         return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
     }
-    if (buffer == NULL)
-        return TE_RC(TE_ISCSI_TARGET, TE_EFAULT);
-    if (offset + len > target_map[target][lun].storage_size * 
-        SCSI_BLOCKSIZE)
+
+    device = &target_map[target][lun];
+
+    if (offset + len > device->storage_size * SCSI_BLOCKSIZE)
         return TE_RC(TE_ISCSI_TARGET, TE_ENXIO);
-    return memcmp((char *)target_map[target][lun].buffer + offset,
-                  buffer, len) == 0 ? 0 :
-        TE_RC(TE_ISCSI_TARGET, TE_ECORRUPTED);
+
+    if (offset + len > device->buffer_size)
+    {
+        len = device->buffer_size - offset;
+    }
+
+    
+    dest_fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+    if (dest_fd < 0)
+        return TE_OS_RC(TE_ISCSI_TARGET, errno);
+    result_len = write(dest_fd, (char *)device->buffer + offset, len);
+    if (result_len < 0)
+        rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
+    else
+        rc = ((size_t)result_len == len ? 0 : TE_RC(TE_ISCSI_TARGET, TE_EFAIL));
+    close(dest_fd);
+    return rc;
 }
 
 

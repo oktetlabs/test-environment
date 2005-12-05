@@ -66,6 +66,7 @@
 #include "tapi_tcp.h"
 #include "tapi_test.h"
 #include "tapi_rpc.h"
+#include "tapi_file.h"
 
 /* Initiator configuration */
 static char *log_mapping[] = {
@@ -1842,12 +1843,6 @@ iscsi_digest_enum2str(iscsi_digest_type digest_type)
 
 /*** Functions for data transfer between Target and Initiator ***/
 
-static const char *
-get_last_comp(const char *name)
-{
-    const char *comp = strrchr(name, '/');
-    return (comp == NULL ? NULL : comp + 1);
-}
 
 static char *
 get_target_mountpoint(void)
@@ -1913,22 +1908,66 @@ check_mounted(const char *ta)
             strcmp(mountpoint, expected_mountpoint) != 0);
 }
 
+static te_errno
+multiply_file_content(const char *fname, int multiply,
+                      const void *data, size_t length)
+{
+    int fd = open(fname, O_WRONLY | O_APPEND, 0);
+
+    ssize_t  result_len = 0;
+    te_errno status     = 0;
+    
+    if (fd < 0)
+        return TE_OS_RC(TE_TAPI, errno);
+    for (; multiply != 0; multiply--)
+    {
+        result_len = write(fd, data, length);
+        if (result_len != 0)
+        {
+            status = (result_len < 0 ? TE_OS_RC(TE_TAPI, errno) : 
+                      TE_RC(TE_TAPI, TE_ENOSPC));
+            break;
+        }
+    }
+    close(fd);
+    return status;
+}
+
 int
 tapi_iscsi_target_file_read(const char *ta, const char *fname,
                             void *buf, size_t length)
 {
-#if 0
-    char destination[128];
-    snprintf(destination, sizeof(destination),
+    const char *localfname;
+    char        source[128];
+    int         rc;
+    int         fd;
+    ssize_t     result_len;
+
+    snprintf(source, sizeof(source),
              "%s/%s", 
              get_target_mountpoint(),
-             get_last_comp(fname));
+             fname);
 
     if (!check_mounted(ta))
         return TE_RC(TE_TAPI, TE_ENXIO);
-    return rcf_ta_put_file(ta, 0, localfname, destination);
-#endif
-    return TE_RC(TE_TAPI, TE_ENOSYS);
+    localfname = tapi_file_generate_pathname();
+    if (localfname == NULL)
+        return TE_RC(TE_TAPI, TE_EBADF);
+    rc = rcf_ta_get_file(ta, 0, source, localfname);
+    if (rc != 0)
+        return rc;
+    fd = open(localfname, O_RDONLY, 0);
+    if (fd < 0)
+        return TE_OS_RC(TE_TAPI, errno);
+    result_len = read(fd, buf, length);
+    if (result_len < 0)
+        rc = TE_OS_RC(TE_TAPI, errno);
+    else
+        rc = ((size_t)result_len == length ? 0 : TE_RC(TE_TAPI, TE_EFAIL));
+    close(fd);
+    if (remove(localfname) != 0)
+        ERROR("Cannot remove '%s': %s", localfname, strerror(errno));
+    return rc;
 }
 
 int 
@@ -1936,18 +1975,30 @@ tapi_iscsi_target_file_write(const char *ta, const char *fname,
                              const void *buf, size_t length,
                              size_t multiply)
 {
-#if 0
-    char source[128];
-    snprintf(source, sizeof(source),
+    const char *localfname;
+    char        destination[128];
+    int         rc;
+
+    snprintf(destination, sizeof(destination),
              "%s/%s", 
              get_target_mountpoint(),
-             get_last_comp(localfname));
+             fname);
 
     if (!check_mounted(ta))
         return TE_RC(TE_TAPI, TE_ENXIO);
-    return rcf_ta_get_file(ta, 0, source, localfname);
-#endif
-    return TE_RC(TE_TAPI, TE_ENOSYS);
+    /** tapi_file_create() may modify buf, but only if the
+     *  third parameter is TRUE, i.e. randomize the buffer
+     */
+    localfname = tapi_file_create(length, (void *)buf, FALSE);
+    if (localfname == NULL)
+        return TE_RC(TE_TAPI, TE_EBADF);
+    if (multiply > 1)
+        multiply_file_content(localfname, multiply - 1, buf, length);
+
+    rc = rcf_ta_put_file(ta, 0, localfname, destination);
+    if (remove(localfname) != 0)
+        ERROR("Cannot remove '%s': %s", localfname, strerror(errno));
+    return rc;
 }
 
 
@@ -1956,38 +2007,85 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
                             const void *data, size_t length,
                             size_t multiply)
 {
-#if 0
     int rc;
     int result;
-    
+    const char *localfname; 
+    const char *remotefname;
+
+    remotefname = tapi_file_generate_pathname();
+    if (remotefname == NULL)
+        return TE_RC(TE_TAPI, TE_EBADF);
+    localfname = tapi_file_create(length, data, FALSE);
+    if (localfname == NULL)
+        return TE_RC(TE_TAPI, TE_EBADF);
+
+    if (multiply > 1)
+        multiply_file_content(localfname, data, length, multiply);
+
+    rc = rcf_ta_put_file(ta, 0, localfname, remotefname);
+    if (rc != 0)
+    {
+        remove(localfname);
+        return rc;
+    }
+
     rc = rcf_ta_call(ta, 0 /* sid */,
                      "iscsi_write_to_device", &result, 5, FALSE,
                      RCF_UINT8, 0, RCF_UINT8, 0,
                      RCF_UINT32, offset, 
-                     RCF_STRING, data, 
-                     RCF_UINT32, strlen(data));
+                     RCF_STRING, remotefname,
+                     RCF_UINT32, length);
     return rc == 0 ? result : rc;
-#endif
-    return TE_RC(TE_TAPI, TE_ENOSYS);
 }
 
 int
 tapi_iscsi_target_raw_read(const char *ta, off_t offset,
                            void *data, size_t length)
 {
-#if 0
    int rc;
    int result;
+   int fd;
     
-    rc = rcf_ta_call(ta, 0 /* sid */,
-                     "iscsi_verify_device_data", &result, 5, FALSE,
-                     RCF_UINT8, 0, RCF_UINT8, 0,
-                     RCF_UINT32, offset, 
-                     RCF_STRING, data, 
-                     RCF_UINT32, strlen(data));
-    return rc == 0 ? result : rc;
-#endif
-    return TE_RC(TE_TAPI, TE_ENOSYS);
+   ssize_t result_len;
+
+   const char *localfname; 
+   const char *remotefname;
+   
+   remotefname = tapi_file_generate_pathname();
+   if (remotefname == NULL)
+       return TE_RC(TE_TAPI, TE_EBADF);
+   localfname = tapi_file_generate_pathname();
+   if (localfname == NULL)
+       return TE_RC(TE_TAPI, TE_EBADF);
+
+   rc = rcf_ta_call(ta, 0 /* sid */,
+                    "iscsi_read_from_device", &result, 5, FALSE,
+                    RCF_UINT8, 0, RCF_UINT8, 0,
+                    RCF_UINT32, offset, 
+                    RCF_STRING, remotefname, 
+                    RCF_UINT32, strlen(data));
+   if (rc != 0)
+       return rc;
+   if (result != 0)
+       return rc;
+   rc = rcf_ta_get_file(ta, 0, remotefname, localfname);
+   rcf_ta_del_file(ta, 0, remotefname);
+   if (rc != 0)
+       return rc;
+   fd = open(localfname, O_RDONLY);
+   remove(localfname);    
+   if (fd < 0)
+   {
+       rc = TE_OS_RC(TE_TAPI, errno);
+       return rc;
+   }
+   result_len = read(fd, data, length);
+   if (result_len < 0)
+       rc = TE_OS_RC(TE_TAPI, errno);
+   else 
+       rc = ((size_t)result_len == length ? 0 : TE_RC(TE_TAPI, TE_EFAIL));
+   close(fd);
+   return rc;
 }
 
 /** Asynchronous requests handler type */
