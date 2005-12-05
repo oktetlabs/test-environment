@@ -1914,22 +1914,28 @@ check_mounted(const char *ta)
 }
 
 int
-tapi_iscsi_target_put_file(const char *ta, const char *localfname)
+tapi_iscsi_target_file_read(const char *ta, const char *fname,
+                            void *buf, size_t length)
 {
+#if 0
     char destination[128];
     snprintf(destination, sizeof(destination),
              "%s/%s", 
              get_target_mountpoint(),
-             get_last_comp(localfname));
+             get_last_comp(fname));
 
     if (!check_mounted(ta))
         return TE_RC(TE_TAPI, TE_ENXIO);
     return rcf_ta_put_file(ta, 0, localfname, destination);
+#endif
+    return TE_RC(TE_TAPI, TE_ENOSYS);
 }
 
 int 
-tapi_iscsi_target_get_file(const char *ta, const char *localfname)
+tapi_iscsi_target_file_write(const char *ta, const char *fname,
+                             const void *buf, size_t length)
 {
+#if 0
     char source[128];
     snprintf(source, sizeof(source),
              "%s/%s", 
@@ -1939,26 +1945,16 @@ tapi_iscsi_target_get_file(const char *ta, const char *localfname)
     if (!check_mounted(ta))
         return TE_RC(TE_TAPI, TE_ENXIO);
     return rcf_ta_get_file(ta, 0, source, localfname);
+#endif
+    return TE_RC(TE_TAPI, TE_ENOSYS);
 }
 
-int
-tapi_iscsi_target_delete_file(const char *ta, const char *remotefname)
-{
-    char destination[128];
-    snprintf(destination, sizeof(destination),
-             "%s/%s", 
-             get_target_mountpoint(),
-             remotefname);
-
-    if (!check_mounted(ta))
-        return TE_RC(TE_TAPI, TE_ENXIO);
-    return rcf_ta_del_file(ta, 0, destination);
-}
 
 int
-tapi_iscsi_target_raw_write(const char *ta, unsigned long offset,
-                            const char *data)
+tapi_iscsi_target_raw_write(const char *ta, off_t offset,
+                            const void *data, size_t length)
 {
+#if 0
     int rc;
     int result;
     
@@ -1969,14 +1965,17 @@ tapi_iscsi_target_raw_write(const char *ta, unsigned long offset,
                      RCF_STRING, data, 
                      RCF_UINT32, strlen(data));
     return rc == 0 ? result : rc;
+#endif
+    return TE_RC(TE_TAPI, TE_ENOSYS);
 }
 
 int
-tapi_iscsi_target_raw_verify(const char *ta, unsigned long offset,
-                             const char *data)
+tapi_iscsi_target_raw_read(const char *ta, off_t offset,
+                           void *data, size_t length)
 {
+#if 0
    int rc;
-    int result;
+   int result;
     
     rc = rcf_ta_call(ta, 0 /* sid */,
                      "iscsi_verify_device_data", &result, 5, FALSE,
@@ -1985,25 +1984,32 @@ tapi_iscsi_target_raw_verify(const char *ta, unsigned long offset,
                      RCF_STRING, data, 
                      RCF_UINT32, strlen(data));
     return rc == 0 ? result : rc;
+#endif
+    return TE_RC(TE_TAPI, TE_ENOSYS);
 }
 
 /** Asynchronous requests handler type */
 typedef te_errno (*iscsi_io_command_t)(iscsi_io_handle_t *ioh,
-                                       int *fd, const void *data, 
+                                       int *fd, void *data, 
                                        ssize_t length);
+
+typedef void (*iscsi_io_data_destroy_t)(void *);
 
 /** Asynchronous iSCSI I/O request */
 typedef struct iscsi_io_cmd
 {
-    iscsi_io_command_t  cmd;    /**< Command handler */
-    volatile te_errno   status; /**< Status */
-    int                 fd;     /**< File descriptor to operate on */
-    ssize_t             length; /**< Data length or seek position */
-    te_bool             spread_fd; /**< If TRUE, current fd is used for
+    iscsi_io_command_t       cmd; /**< Command handler */
+    volatile te_errno        status; /**< Status */
+    int                      fd; /**< File descriptor to operate on */
+    ssize_t                  length; /**< Data length or seek position */
+    te_bool                  spread_fd; /**< If TRUE, current fd is used for
                                       later commands */
-    te_bool             do_signal; /**< Signal when a task is done */
-    te_bool             is_complete; /**< TRUE after the task completion */
-    void               *data;   /**< Pointer to data */
+    te_bool                  do_signal; /**< Signal when a task is done */
+    te_bool                  is_complete; /**< TRUE after the task
+                                           * completion */
+    te_bool                  leader; /**< Leading command */
+    void                    *data; /**< Pointer to data */
+    iscsi_io_data_destroy_t  destroy; /**< Data destruction function */
 } iscsi_io_cmd_t;
 
 #define MAX_ISCSI_IO_CMDS  16
@@ -2013,6 +2019,12 @@ struct iscsi_io_handle_t
 {
     pthread_t       thread;     /**< A thread id that does all the stuff */
     rcf_rpc_server *rpcs;       /**< RPC server handler for actual I/O */
+    te_bool         use_signal; /**< TRUE if a signal is to be sent when an
+                                     operation is complete */
+    te_bool         use_fs;     /**< TRUE when using filesystem on the
+                                     device, as opposed to raw access */
+    size_t          bufsize;    /**< Buffer size for file copying */
+    void           *buffer;     /**< Buffer for file copying */
     iscsi_io_cmd_t  cmds[MAX_ISCSI_IO_CMDS]; /**< Buffer for requests */
     sem_t           cmd_wait;   /**< Posted when a new request is added */
     int             next_cmd;   /**< Next request number */
@@ -2054,7 +2066,6 @@ get_host_device(const char *ta, unsigned id)
     return device;
 }
 
-#define ISCSI_IO_FILL_BUF_SIZE 1024
 #define ISCSI_IO_SIGNAL        SIGPOLL
 
 static void
@@ -2098,18 +2109,36 @@ tapi_iscsi_io_thread(void *param)
             cmd->cmd    = NULL;
             RING("Executing task %d: fd = %d, data = %p, length = %lu",
                  i, cmd->fd, cmd->data, (unsigned long)cmd->length);
-            cmd->status = op(ioh, &cmd->fd, cmd->data, cmd->length);
-            RING("I/O Task status for task %d is %r, fd = %d", 
-                 i, cmd->status, cmd->fd);
-            if (cmd->spread_fd)
+            if (cmd->leader || cmd->status == 0)
             {
-                for (i++; i < MAX_ISCSI_IO_CMDS; i++)
+                int next;
+
+                cmd->status = op(ioh, &cmd->fd, cmd->data, cmd->length);
+                RING("I/O Task status for task %d is %r, fd = %d", 
+                     i, cmd->status, cmd->fd);
+                if (cmd->spread_fd)
                 {
-                    ioh->cmds[i].fd = cmd->fd;
+                    if (cmd->status == 0)
+                    {
+                        for (next = i + 1; next < MAX_ISCSI_IO_CMDS; next++)
+                        {
+                            ioh->cmds[next].fd = cmd->fd;
+                        }
+                    }
+                }
+
+                if (cmd->status != 0)
+                {
+                    for (next = i + 1; next < MAX_ISCSI_IO_CMDS; next++)
+                    {
+                        if (ioh->cmds[next].leader)
+                            break;
+                        ioh->cmds[next].status = cmd->status;
+                    }
                 }
             }
             cmd->is_complete = TRUE;
-            if (cmd->do_signal)
+            if (ioh->use_signal && cmd->do_signal)
             {
                 RING("Sending task completion signal");
                 kill(getpid(), ISCSI_IO_SIGNAL);
@@ -2122,15 +2151,16 @@ tapi_iscsi_io_thread(void *param)
 
 static te_errno
 command_open(iscsi_io_handle_t *ioh, int *fd, 
-             const void *data, ssize_t length)
+             void *data, ssize_t length)
 {
-    *fd = rpc_open(ioh->rpcs, data, length, S_IREAD | S_IWRITE);
+    *fd = rpc_open(ioh->rpcs, data, length, 
+                   RPC_S_IREAD | RPC_S_IWRITE);
     return (*fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
 }
 
 static te_errno
 command_close(iscsi_io_handle_t *ioh, int *fd, 
-              const void *data, ssize_t length)
+              void *data, ssize_t length)
 {
     UNUSED(data);
     UNUSED(length);
@@ -2145,7 +2175,7 @@ command_close(iscsi_io_handle_t *ioh, int *fd,
 
 static te_errno
 command_seek(iscsi_io_handle_t *ioh, int *fd, 
-             const void *data, ssize_t length)
+             void *data, ssize_t length)
 {
     off_t result = rpc_lseek(ioh->rpcs, *fd, 
                              (off_t)length, RPC_SEEK_SET);
@@ -2154,101 +2184,90 @@ command_seek(iscsi_io_handle_t *ioh, int *fd,
 }
  
 static te_errno
-command_compare(iscsi_io_handle_t *ioh, int *fd, 
-                const void *data, ssize_t length)
+command_read(iscsi_io_handle_t *ioh, int *fd, 
+                void *data, ssize_t length)
 {
     ssize_t   result_len;
-    char     *buf = malloc(length);
     te_errno  status;
                     
-    if (buf == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-
-    pthread_cleanup_push(free, buf);
-    result_len = rpc_read(ioh->rpcs, *fd, buf, length);
-    if (result_len < 0)
-        status = RPC_ERRNO(ioh->rpcs);
-    else
-    {
-        status = (result_len == length &&
-                  memcmp(buf, data, length) == 0 ?
-                  0 : TE_RC(TE_TAPI, TE_EFAIL));
-    }
-    pthread_cleanup_pop(1);
+    result_len = rpc_read(ioh->rpcs, *fd, data, length);
+    return result_len < 0 ? RPC_ERRNO(ioh->rpcs) : 
+        (result_len != length ? TE_RC(TE_TAPI, TE_EFAIL) : 0);
     return status;
 }
 
 static te_errno
-command_compare_fill(iscsi_io_handle_t *ioh, int *fd, 
-                     const void *data, ssize_t length)
-{
-    int      i;
-    te_errno status;
-    ldiv_t   block = ldiv((long)length, ISCSI_IO_FILL_BUF_SIZE);
-    
-    for (i = block.quot; i != 0; i--)
-    {
-        status = command_compare(ioh, fd, data, ISCSI_IO_FILL_BUF_SIZE);
-        if (status != 0)
-            return status;
-    }
-    return (block.rem != 0 ?
-            command_compare(ioh, fd, data, block.rem) :
-            0);
-}
-
-static te_errno
 command_write(iscsi_io_handle_t *ioh, int *fd, 
-              const void *data, ssize_t length)
+              void *data, ssize_t length)
 {
     ssize_t  result_len;
 
     result_len = rpc_write(ioh->rpcs, *fd, data, length);
     return (result_len < 0 ?
             RPC_ERRNO(ioh->rpcs) :
-            (result_len < length ?
+            (result_len != length ?
              TE_RC(TE_TAPI, TE_ENOSPC) :
              0));
 }
 
-static te_errno
-command_write_fill(iscsi_io_handle_t *ioh, int *fd, 
-                   const void *data, ssize_t length)
-{
-    int      i;
-    te_errno status;
-    ldiv_t   block = ldiv((long)length, ISCSI_IO_FILL_BUF_SIZE);
-    
-    for (i = block.quot; i != 0; i--)
-    {
-        status = command_write(ioh, fd, data, ISCSI_IO_FILL_BUF_SIZE);
-        if (status != 0)
-            return status;
-    }
-    return (block.rem != 0 ?
-            command_write(ioh, fd, data, block.rem) :
-            0);
-}
+#define ISCSI_COPY_FILE_IN  0
+#define ISCSI_COPY_FILE_OUT 1
 
 static te_errno
-command_getfile(iscsi_io_handle_t *ioh, int *fd, const void *data, 
-                ssize_t length)
+command_copy_file(iscsi_io_handle_t *ioh, int *fd, 
+                  void *data, ssize_t length)
 {
-    char        fullname[128];
-    const char *remotename = strrchr(data, '/');
-    UNUSED(length);
-    UNUSED(fd);
+    ssize_t   result_len;
+    te_errno  status;
+    te_errno  status_close;
+    int       dest_fd;
+    int       src_fd;
+    int       open_fd;
+
+    if (length == ISCSI_COPY_FILE_IN)
+    {
+        open_fd = src_fd = rpc_open(ioh->rpcs, data, 
+                                    RPC_O_RDONLY | RPC_O_SYNC, 0);
+        dest_fd = *fd;
+        status  = (src_fd < 0 ? TE_RC(TE_TAPI, RPC_ERRNO(ioh->rpcs)) : 0);
+    }
+    else
+    {
+        open_fd = dest_fd = rpc_open(ioh->rpcs, data, 
+                                     RPC_O_WRONLY | RPC_O_SYNC,
+                                     RPC_S_IREAD | RPC_S_IWRITE);
+        src_fd = *fd;
+        status = (dest_fd < 0 ? TE_RC(TE_TAPI, RPC_ERRNO(ioh->rpcs)) : 0);
+    }
     
-    if (remotename == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    remotename++;
-    snprintf(fullname, sizeof(fullname), "/tmp/%s", remotename);
-    return rcf_ta_get_file(ioh->agent, 0, fullname, data);
+    if (status != 0)
+        return status;
+    do {
+        length = rpc_read(ioh->rpcs, src_fd, ioh->buffer, ioh->bufsize);
+        if (length < 0)
+        {
+            status = RPC_ERRNO(ioh->rpcs);
+            break;
+        }
+        result_len = rpc_write(ioh->rpcs, dest_fd, ioh->buffer, 
+                               ((size_t)length > ioh->bufsize ? 
+                                ioh->bufsize : 
+                                (size_t)length));
+        if (result_len < 0)
+            status = TE_RC(TE_TAPI, RPC_ERRNO(ioh->rpcs));
+        else if (result_len != length)
+            status = TE_RC(TE_TAPI, TE_ENOSPC);
+    } while (status == 0 && length != 0);
+
+    status_close = (rpc_close(ioh->rpcs, open_fd) == 0 ? 0 : 
+                    RPC_ERRNO(ioh->rpcs));
+    return status == 0 ? status_close : status;
 }
+
 
 static te_errno
 command_shell(iscsi_io_handle_t *ioh, int *fd, 
-              const void *data, ssize_t length)
+              void *data, ssize_t length)
 {
     rpc_wait_status status;
     UNUSED(length);
@@ -2271,6 +2290,8 @@ iscsi_io_signal_handler(int signo)
 
 te_errno
 tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id, 
+                      te_bool use_signal, te_bool use_fs,
+                      size_t bufsize,
                       iscsi_io_handle_t **ioh)
 {
     int   rc;
@@ -2300,6 +2321,17 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     strcpy((*ioh)->device, dev);
     free(dev);
 
+    (*ioh)->use_signal     = use_signal;
+    (*ioh)->use_fs         = use_fs;
+    (*ioh)->bufsize        = bufsize;
+    (*ioh)->buffer         = malloc(bufsize);
+    if ((*ioh)->buffer == NULL)
+    {
+        free(*ioh);
+        *ioh = NULL;
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+
     sprintf(name, "iscsi_%u", id);
     rc = rcf_rpc_server_create(ta, name, &((*ioh)->rpcs));
     if (rc != 0)
@@ -2316,15 +2348,22 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
         (*ioh)->cmds[i].fd          = -1;
         (*ioh)->cmds[i].is_complete = TRUE;
         (*ioh)->cmds[i].status      = 0;
+        (*ioh)->cmds[i].leader      = FALSE;
+        (*ioh)->cmds[i].do_signal   = FALSE;
     }
     (*ioh)->next_cmd = 0;
-    action.sa_handler = iscsi_io_signal_handler;
-    action.sa_flags   = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(ISCSI_IO_SIGNAL, &action, NULL);
-    sigemptyset(&mask);
-    sigaddset(&mask, ISCSI_IO_SIGNAL);
-    sigprocmask(SIG_UNBLOCK, &mask, NULL);
+
+    if (use_signal)
+    {
+        action.sa_handler = iscsi_io_signal_handler;
+        action.sa_flags   = 0;
+        sigemptyset(&action.sa_mask);
+        sigaction(ISCSI_IO_SIGNAL, &action, NULL);
+        sigemptyset(&mask);
+        sigaddset(&mask, ISCSI_IO_SIGNAL);
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);
+    }
+    
     rc = pthread_create(&((*ioh)->thread), NULL, 
                         tapi_iscsi_io_thread, *ioh);
     if (rc != 0)
@@ -2346,8 +2385,8 @@ tapi_iscsi_io_finish(iscsi_io_handle_t *ioh)
     pthread_join(ioh->thread, NULL);
     for (i = 0; i < MAX_ISCSI_IO_CMDS; i++)
     {
-        if (ioh->cmds[i].data != NULL)
-            free(ioh->cmds[i].data);
+        if (ioh->cmds[i].destroy != NULL)
+            ioh->cmds[i].destroy(ioh->cmds[i].data);
     }
     free(ioh);
     return 0;
@@ -2366,33 +2405,25 @@ tapi_iscsi_io_reset(iscsi_io_handle_t *ioh)
     for (i = 0; i < MAX_ISCSI_IO_CMDS; i++)
     {
         ioh->cmds[i].cmd         = NULL;
-        if (ioh->cmds[i].data != NULL)
+        if (ioh->cmds[i].destroy != NULL)
         {
-            free(ioh->cmds[i].data);
+            ioh->cmds[i].destroy(ioh->cmds[i].data);
             ioh->cmds[i].data        = NULL;
+            ioh->cmds[i].destroy     = NULL;
         }
         ioh->cmds[i].fd          = -1;
         ioh->cmds[i].is_complete = TRUE;
         ioh->cmds[i].status      = 0;
+        ioh->cmds[i].leader      = FALSE;
+        ioh->cmds[i].do_signal   = FALSE;
     }
     ioh->next_cmd = 0;
     return 0;
 }
 
-static inline void
-tapi_iscsi_io_unblock_signal(void)
-{
-    sigset_t mask;
-
-    sigemptyset(&mask);
-    sigaddset(&mask, ISCSI_IO_SIGNAL);
-    pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
-}
-
 te_errno
-tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh, unsigned taskid)
+tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh, iscsi_io_taskid taskid)
 {
-    tapi_iscsi_io_unblock_signal();
     if (taskid >= MAX_ISCSI_IO_CMDS)
         return TE_RC(TE_TAPI, TE_EINVAL);
     return ioh->cmds[taskid].is_complete ? ioh->cmds[taskid].status :
@@ -2400,31 +2431,18 @@ tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh, unsigned taskid)
 }
 
 te_bool
-tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, unsigned taskid)
+tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, iscsi_io_taskid taskid)
 {
     if (taskid >= MAX_ISCSI_IO_CMDS)
     {
         ERROR("Invalid task id %u", taskid);
         return FALSE;
     }
-    tapi_iscsi_io_unblock_signal();
     if (ioh->cmds[taskid].is_complete && completed_tasks != 0)
     {
         completed_tasks--;
     }
     return ioh->cmds[taskid].is_complete;
-}
-
-te_errno
-tapi_iscsi_io_block_signal(void)
-{
-    sigset_t mask;
-    int      rc = 0;
-
-    sigemptyset(&mask);
-    sigaddset(&mask, ISCSI_IO_SIGNAL);
-    rc = pthread_sigmask(SIG_BLOCK, &mask, NULL);
-    return rc == 0 ? 0 : TE_OS_RC(TE_TAPI, rc);
 }
 
 static inline te_bool
@@ -2434,11 +2452,13 @@ is_enough_cmds_avail(iscsi_io_handle_t *ioh, int ncmds)
 }
 
 static te_errno
-post_command(iscsi_io_handle_t *ioh, iscsi_io_command_t cmd,
-             int fd, ssize_t length, void *data, te_bool spread,
-             te_bool do_signal, unsigned *taskid)
+post_command(iscsi_io_handle_t *ioh, iscsi_io_cmd_t *src,
+             iscsi_io_taskid *taskid)
 {
     iscsi_io_cmd_t *ioc = ioh->cmds + ioh->next_cmd;
+
+    int tmp_fd;
+    int tmp_status;
 
     if (ioh->next_cmd == MAX_ISCSI_IO_CMDS)
         return TE_RC(TE_TAPI, TE_ETOOMANY);
@@ -2447,14 +2467,13 @@ post_command(iscsi_io_handle_t *ioh, iscsi_io_command_t cmd,
         *taskid = ioh->next_cmd;
     ioh->next_cmd++;
 
-    ioc->cmd      = cmd;
-    if (ioc->fd >= 0)
-        ioc->fd   = fd;
-    ioc->length   = length;
-    ioc->data     = data;
-    ioc->spread_fd = spread;
-    ioc->do_signal = do_signal;
+    tmp_fd           = src->fd >= 0 ? src->fd : ioc->fd;
+    tmp_status       = ioc->status;
+    *ioc             = *src;
     ioc->is_complete = FALSE;
+    ioc->fd          = tmp_fd;
+    ioc->status      = tmp_status;
+
     VERB("Posting task %d: fd = %d, data = %p, length = %lu", 
          ioh->next_cmd - 1, 
          ioc->fd, ioc->data, (unsigned long)ioc->length);
@@ -2463,200 +2482,203 @@ post_command(iscsi_io_handle_t *ioh, iscsi_io_command_t cmd,
 }
 
 te_errno
-tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, unsigned *taskid)
+tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
 {
-    char  mount[128];
+    iscsi_io_cmd_t cmd;
+
+    cmd.leader    = TRUE;
+    cmd.do_signal = (taskid != NULL);
+    if (!ioh->use_fs)
+    {
+        cmd.cmd       = command_open;
+        cmd.fd        = -1;
+        cmd.length    = (ssize_t)(RPC_O_RDWR | RPC_O_SYNC);
+        cmd.data      = ioh->device;
+        cmd.spread_fd = TRUE;
+        cmd.destroy   = NULL;
+    }
+    else
+    {
+        char  mount[128];
+        
+        snprintf(mount, sizeof(mount), 
+                 "mkdir %s && /bin/mount -o sync %s %s", ioh->mountpoint,
+                 ioh->device, ioh->mountpoint);
+        cmd.cmd       = command_shell;
+        cmd.fd        = 0;
+        cmd.length    = 0;
+        cmd.data      = strdup(mount);
+        cmd.spread_fd = FALSE;
+        cmd.destroy   = free;
+    }
+    return post_command(ioh, &cmd, taskid);
+}
+
+te_errno
+tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh, 
+                             iscsi_io_taskid *taskid)
+{
+    iscsi_io_cmd_t cmd;
+
+    cmd.leader    = FALSE;
+    cmd.do_signal = (taskid != NULL);
+    if (!ioh->use_fs)
+    {
+        cmd.cmd       = command_close;
+        cmd.fd        = -1;
+        cmd.length    = 0;
+        cmd.data      = NULL;
+        cmd.spread_fd = FALSE;
+        cmd.destroy   = NULL;
+    }
+    else
+    {
+        char  umount[128];
+        
+        snprintf(umount, sizeof(umount), 
+                 "/bin/umount %s && rmdir %s", 
+                ioh->mountpoint, ioh->mountpoint);
+
+        cmd.cmd       = command_shell;
+        cmd.fd        = 0;
+        cmd.length    = 0;
+        cmd.data      = strdup(umount);
+        cmd.spread_fd = FALSE;
+        cmd.destroy   = free;
+    }
+    return post_command(ioh, &cmd, taskid);
+}
+
+te_errno
+tapi_iscsi_initiator_open(iscsi_io_handle_t *ioh,
+                          iscsi_io_taskid *taskid,
+                          const char *fname, int mode)
+{
+    iscsi_io_cmd_t cmd;
+
+    if (!ioh->use_fs)
+        return TE_RC(TE_TAPI, TE_ENOTBLK);
     
-    sprintf(mount, "mkdir %s && /bin/mount -o sync %s %s", ioh->mountpoint, 
-            ioh->device, ioh->mountpoint);
-    return post_command(ioh, command_shell, 0, 0, 
-                        strdup(mount), FALSE, taskid != NULL, taskid);
+    cmd.cmd       = command_open;
+    cmd.fd        = -1;
+    cmd.length    = fcntl_flags_h2rpc(mode) | RPC_O_SYNC;
+    cmd.data      = strdup(fname);
+    cmd.spread_fd = TRUE;
+    cmd.leader    = TRUE;
+    cmd.do_signal = (taskid != NULL);
+    cmd.destroy   = free;
+    return post_command(ioh, &cmd, taskid);
 }
 
 te_errno
-tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh, unsigned *taskid)
+tapi_iscsi_initiator_close(iscsi_io_handle_t *ioh,
+                          iscsi_io_taskid *taskid)
 {
-    char  mount[128];
+    iscsi_io_cmd_t cmd;
+
+    if (!ioh->use_fs)
+        return TE_RC(TE_TAPI, TE_ENOTBLK);
     
-    sprintf(mount, "/bin/umount %s && rmdir %s", 
-            ioh->mountpoint, ioh->mountpoint);
-    return post_command(ioh, command_shell, 0, 0, 
-                        strdup(mount), FALSE, taskid != NULL, taskid);
+    cmd.cmd       = command_close;
+    cmd.fd        = -1;
+    cmd.length    = 0;
+    cmd.data      = NULL;
+    cmd.spread_fd = FALSE;
+    cmd.leader    = FALSE;
+    cmd.do_signal = (taskid != NULL);
+    cmd.destroy   = NULL;
+    return post_command(ioh, &cmd, taskid);
 }
 
 te_errno
-tapi_iscsi_initiator_put_file(iscsi_io_handle_t *ioh,
-                              const char *localname,
-                              unsigned *taskid)
+tapi_iscsi_initiator_seek(iscsi_io_handle_t *ioh,
+                          iscsi_io_taskid *taskid,
+                          off_t pos)
 {
-    int  rc;
-    char destination[128];
-    char cmd[128];
-    char *remotename = strrchr(localname, '/');
-
-    if (remotename == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
-
-    remotename++;
-    snprintf(destination, sizeof(destination),
-             "/tmp/%s", remotename);
-    snprintf(cmd, sizeof(cmd),
-             "cp %s %s/%s", 
-             destination,
-             ioh->mountpoint,
-             remotename);
-    rc = rcf_ta_put_file(ioh->agent, 0, 
-                         localname,
-                         destination);
-    if (rc != 0)
-        return rc;
-    return post_command(ioh, command_shell, 0, 0, 
-                        strdup(cmd), FALSE, taskid != NULL, taskid);
-}
-
-te_errno
-tapi_iscsi_initiator_get_file(iscsi_io_handle_t *ioh,
-                              const char        *localfname, 
-                              unsigned          *taskid)
-{
-    char destination[128];
-    char cmd[128];
-    char *remotename = strrchr(localfname, '/');
-
-    if (remotename == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
-
-    remotename++;
+    iscsi_io_cmd_t cmd;
     
-    if (!is_enough_cmds_avail(ioh, 2))
-        return TE_RC(TE_TAPI, TE_ETOOMANY);
-
-    snprintf(destination, sizeof(destination),
-             "/tmp/%s", remotename);
-    snprintf(cmd, sizeof(cmd),
-             "cp %s %s/%s", 
-             destination,
-             ioh->mountpoint,
-             remotename);
-
-    post_command(ioh, command_shell, 0, 0, 
-                 strdup(destination), FALSE, FALSE, NULL);
-    post_command(ioh, command_getfile, 0, 0, 
-                 strdup(localfname), FALSE, taskid != NULL, taskid);
-    return 0;
+    cmd.cmd       = command_seek;
+    cmd.fd        = -1;
+    cmd.length    = pos;
+    cmd.data      = NULL;
+    cmd.spread_fd = FALSE;
+    cmd.leader    = FALSE;
+    cmd.do_signal = (taskid != NULL);
+    cmd.destroy   = NULL;
+    return post_command(ioh, &cmd, taskid);
 }
 
 
 te_errno
-tapi_iscsi_initiator_delete_file(iscsi_io_handle_t *ioh,
-                                 const char *remotefname,
-                                 unsigned *taskid)
+tapi_iscsi_initiator_write(iscsi_io_handle_t *ioh,
+                           iscsi_io_taskid *taskid,
+                           void *data, size_t length)
 {
-    char destination[128];
-    snprintf(destination, sizeof(destination),
-             "rm -f %s/%s", 
-             ioh->mountpoint,
-             remotefname);
-    return post_command(ioh, command_shell, 0, 0, 
-                        strdup(destination), FALSE, taskid != NULL, taskid);
+    iscsi_io_cmd_t cmd;
+    
+    cmd.cmd       = command_write;
+    cmd.fd        = -1;
+    cmd.length    = length;
+    cmd.data      = data;
+    cmd.spread_fd = FALSE;
+    cmd.leader    = FALSE;
+    cmd.do_signal = (taskid != NULL);
+    cmd.destroy   = NULL;
+    return post_command(ioh, &cmd, taskid);
 }
 
 te_errno
-tapi_iscsi_initiator_raw_write(iscsi_io_handle_t *ioh,
-                               unsigned long offset,
-                               const char *data,
-                               unsigned *taskid)
+tapi_iscsi_initiator_read(iscsi_io_handle_t *ioh,
+                          iscsi_io_taskid *taskid,
+                          void *data, size_t length)
 {
-    if (!is_enough_cmds_avail(ioh, 4))
-        return TE_RC(TE_TAPI, TE_ETOOMANY);
+    iscsi_io_cmd_t cmd;
+    
+    cmd.cmd       = command_read;
+    cmd.fd        = -1;
+    cmd.length    = length;
+    cmd.data      = data;
+    cmd.spread_fd = FALSE;
+    cmd.leader    = FALSE;
+    cmd.do_signal = (taskid != NULL);
+    cmd.destroy   = NULL;
+    return post_command(ioh, &cmd, taskid);
+}
 
-    post_command(ioh, command_open, -1, 
-                 (ssize_t)(RPC_O_WRONLY | RPC_O_SYNC), 
-                 strdup(ioh->device), TRUE, FALSE, NULL);
-    post_command(ioh, command_seek, -1, offset, 
-                 NULL, FALSE, FALSE, NULL);
-    post_command(ioh, command_write, -1, strlen(data), 
-                 strdup(data), FALSE, FALSE, taskid);
-    post_command(ioh, command_close, -1, 0, 
-                 NULL, FALSE, taskid != NULL, taskid);
-    return 0;    
+
+te_errno
+tapi_iscsi_initiator_write_file(iscsi_io_handle_t *ioh,
+                                iscsi_io_taskid *taskid,
+                                const char *filename)
+{
+    iscsi_io_cmd_t cmd;
+    
+    cmd.cmd       = command_copy_file;
+    cmd.fd        = -1;
+    cmd.length    = ISCSI_COPY_FILE_IN;
+    cmd.data      = strdup(filename);
+    cmd.spread_fd = FALSE;
+    cmd.leader    = FALSE;
+    cmd.do_signal = (taskid != NULL);
+    cmd.destroy   = free;
+    return post_command(ioh, &cmd, taskid);
 }
 
 te_errno
-tapi_iscsi_initiator_raw_verify(iscsi_io_handle_t *ioh,
-                                unsigned long offset,
-                                const char *data,
-                                unsigned *taskid)
+tapi_iscsi_initiator_read_file(iscsi_io_handle_t *ioh,
+                          iscsi_io_taskid *taskid,
+                          const char *filename)
 {
-    if (!is_enough_cmds_avail(ioh, 4))
-        return TE_RC(TE_TAPI, TE_ETOOMANY);
-
-    post_command(ioh, command_open, -1, 
-                 (ssize_t)(RPC_O_RDONLY | RPC_O_SYNC), 
-                 strdup(ioh->device), TRUE, FALSE, NULL);
-    post_command(ioh, command_seek, -1, offset, 
-                 NULL, FALSE, FALSE, NULL);
-    post_command(ioh, command_compare, -1, strlen(data), 
-                 strdup(data), FALSE, FALSE, taskid);
-    post_command(ioh, command_close, -1, 0, 
-                 NULL, FALSE, taskid != NULL, taskid);
-    return 0;
-}
-
-te_errno
-tapi_iscsi_initiator_raw_fill(iscsi_io_handle_t *ioh,
-                              unsigned long offset,
-                              unsigned long repeat,
-                              int byte, 
-                              unsigned *taskid)
-{
-    char   *buf;
-
-    if (!is_enough_cmds_avail(ioh, 4))
-        return TE_RC(TE_TAPI, TE_ETOOMANY);
-
-    buf = malloc(ISCSI_IO_FILL_BUF_SIZE);
-    if (buf == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    memset(buf, byte, ISCSI_IO_FILL_BUF_SIZE);
-
-    post_command(ioh, command_open, -1, 
-                 (ssize_t)(O_WRONLY | O_SYNC), 
-                 strdup(ioh->device), TRUE, FALSE, NULL);
-    post_command(ioh, command_seek, -1, offset, 
-                 NULL, FALSE, FALSE, NULL);
-    post_command(ioh, command_write_fill, -1, repeat, 
-                 buf, FALSE, FALSE, taskid);
-    post_command(ioh, command_close, -1, 0, 
-                 NULL, FALSE, taskid != NULL, NULL);
-    return 0;    
-}
-
-te_errno
-tapi_iscsi_initiator_raw_verify_fill(iscsi_io_handle_t *ioh,
-                                     unsigned long offset,
-                                     unsigned long repeat,
-                                     int byte, 
-                                     unsigned *taskid)
-{
-    char *buf;
-
-    if (!is_enough_cmds_avail(ioh, 4))
-        return TE_RC(TE_TAPI, TE_ETOOMANY);
-
-    buf = malloc(ISCSI_IO_FILL_BUF_SIZE);
-    if (buf == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    memset(buf, byte, ISCSI_IO_FILL_BUF_SIZE);
-
-    post_command(ioh, command_open, -1, (ssize_t)O_RDONLY, 
-                 strdup(ioh->device), TRUE, FALSE, NULL);
-    post_command(ioh, command_seek, -1, offset, 
-                 NULL, FALSE, FALSE, NULL);
-    post_command(ioh, command_compare_fill, -1, repeat, 
-                 buf, FALSE, FALSE, taskid);
-    post_command(ioh, command_close, -1, 0, 
-                 NULL, FALSE, taskid != NULL, NULL);
-    return 0;    
+    iscsi_io_cmd_t cmd;
+    
+    cmd.cmd       = command_copy_file;
+    cmd.fd        = -1;
+    cmd.length    = ISCSI_COPY_FILE_OUT;
+    cmd.data      = strdup(filename);
+    cmd.spread_fd = FALSE;
+    cmd.leader    = FALSE;
+    cmd.do_signal = (taskid != NULL);
+    cmd.destroy   = free;
+    return post_command(ioh, &cmd, taskid);
 }
 

@@ -860,79 +860,93 @@ extern te_errno tapi_iscsi_target_mount(const char *ta);
 extern te_errno tapi_iscsi_target_unmount(const char *ta);
 
 /**
- * Put a file to a mounted target's backing store
+ * Write data to a target's backing store filesystem 
+ * to a file with a given name.
  * 
  * @param ta            Test Agent name
- * @param localfname    Local file name
+ * @param fname         A filename to write
+ * @param data          Buffer to write
+ * @param length        Length of data to write
  * 
  * @return Status code
  *
- * @sa tapi_iscsi_target_mount
- * @sa tapi_iscsi_initiator_get_file
+ * @sa tapi_iscsi_initiator_raw_read
  */
-extern te_errno tapi_iscsi_target_put_file(const char *ta, 
-                                           const char *localfname);
+extern te_errno tapi_iscsi_target_file_write(const char *ta, 
+                                             const char *fname,
+                                             const void *data,
+                                             size_t length);
 
 /**
- * Gets a file from a mounted target's backing store
+ * Read data from a target's backing store filesystem 
+ * from a file with a given name.
  * 
  * @param ta            Test Agent name
- * @param localfname    Local file name
+ * @param fname         A filename to read from
+ * @param data          Buffer to store data
+ * @param length        Length of buffer
  * 
  * @return Status code
  *
- * @sa tapi_iscsi_target_mount
- * @sa tapi_iscsi_initiator_put_file
+ * @sa tapi_iscsi_initiator_raw_read
  */
-extern te_errno tapi_iscsi_target_get_file(const char *ta, 
-                                           const char *localfname);
-/**
- * Delete a file from a mounted target's backing store
- * 
- * @param ta            Test Agent name
- * @param remotefname   Remote file name (w/o directory components)
- * 
- * @return Status code
- *
- * @sa tapi_iscsi_target_mount
- */
-extern te_errno tapi_iscsi_target_delete_file(const char *ta, 
-                                              const char *remotefname);
+extern te_errno tapi_iscsi_target_file_read(const char *ta, 
+                                            const char *fname,
+                                            void *data, size_t length);
+
 
 /**
- * Write raw data to a target's backing store.
- * NOTE: It is unwise to call this function between
- * @sa tapi_iscsi_target_mount
- * and
- * @sa tapi_iscsi_target_unmount 
+ * Reads data from a target's device at a given position
  * 
  * @param ta            Test Agent name
- * @param offseyt       A position to write
- * @param data          A zero-terminated string to write
- * 
- * @return Status code
- *
- * @sa tapi_iscsi_initiator_raw_verify
- */
-extern te_errno tapi_iscsi_target_raw_write(const char *ta, 
-                                            unsigned long offset,
-                                            const char *data);
-
-/**
- * Verify that a target's backing store contains given data 
- * startintg from a given position
- * 
- * @param ta            Test Agent name
- * @param offseyt       A position to read from
- * @param data          A zero-terminated string to verify
+ * @param offset        A position to read from
+ * @param data          Buffer to store data
+ * @param length        Length of data  
  * 
  * @return Status code
  *
  * @sa tapi_iscsi_initiator_raw_write
  */
-extern te_errno tapi_iscsi_target_raw_verify(const char *ta, 
-                                             unsigned long offset,
-                                             const char *data);
+extern te_errno tapi_iscsi_target_raw_read(const char *ta, off_t offset,
+                                           void *data, size_t length);
+
+
+
+
+/**
+ * Write raw data to a target's backing store.
+ * NOTE: It is unwise to call this function between
+ * tapi_iscsi_target_mount()
+ * and
+ * tapi_iscsi_target_unmount()
+ * 
+ * @param ta            Test Agent name
+ * @param offset        A position to write
+ * @param data          Buffer to write
+ * @param length        Lengthg of data to write
+ * 
+ * @return Status code
+ *
+ * @sa tapi_iscsi_initiator_raw_read
+ */
+extern te_errno tapi_iscsi_target_raw_write(const char *ta, off_t offset,
+                                            const void *data,
+                                            size_t length);
+
+/**
+ * Reads data from a target's device at a given position
+ * 
+ * @param ta            Test Agent name
+ * @param offset        A position to read from
+ * @param data          Buffer to store data
+ * @param length        Length of data  
+ * 
+ * @return Status code
+ *
+ * @sa tapi_iscsi_initiator_raw_write
+ */
+extern te_errno tapi_iscsi_target_raw_read(const char *ta, off_t offset,
+                                           void *data, size_t length);
 
 
 /*** Functions to initiate I/O on an iSCSI device at TA 
@@ -955,18 +969,27 @@ extern te_errno tapi_iscsi_target_raw_verify(const char *ta,
  * condition, or use tapi_iscsi_io_block_signal()
  */
 typedef struct iscsi_io_handle_t iscsi_io_handle_t;
+typedef unsigned iscsi_io_taskid;
 
 /**
  * Create a new asynchronous I/O handler 
  * 
- * @param ta    Test Agent name
- * @param id    target id to connect
- * @param ioh   A pointer to resulting handler (OUT)
+ * @param ta            Test Agent name
+ * @param id            target id to connect
+ * @param use_signal    Should a signal be sent after
+ *                      an I/O operation is complete
+ * @param use_fs        TRUE if using a filesystem on
+ *                      an ISCSI device
+ * @param bufsize       Buffer size for file copying
+ * @param ioh           A pointer to resulting handler (OUT)
  * 
  * @return Status code
  */
 extern te_errno tapi_iscsi_io_prepare(const char *ta, 
                                       iscsi_target_id id, 
+                                      te_bool use_signal,
+                                      te_bool use_fs,
+                                      size_t  bufsize,
                                       iscsi_io_handle_t **ioh);
 
 
@@ -1001,7 +1024,7 @@ extern te_errno tapi_iscsi_io_finish(iscsi_io_handle_t *ioh);
  * @retval TE_EINPROGRESS if the task has not completed
  */
 extern te_errno tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh, 
-                                         unsigned taskid);
+                                         iscsi_io_taskid taskid);
 
 
 /**
@@ -1013,30 +1036,15 @@ extern te_errno tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh,
  * @return TRUE if the task has completed
  */
 extern te_bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, 
-                                         unsigned taskid);
-
-/**
- *  Blocks I/O completion signal delivery for a calling thread
- *  (may be used in conjunction with a non-blocking
- *  TAPI functions that do not handle interrupted system
- *  calls well.
- *  The signal will be unblocked by a following call to
- *  tapi_iscsi_io_is_complete() or tapi_iscsi_io_get_status()
- * 
- * @return Status code
- */
-extern te_errno tapi_iscsi_io_block_signal(void);
-
+                                         iscsi_io_taskid taskid);
 
 
 /**
- * Request mounting an iSCSI device on the TA.
+ * Request mounting an iSCSI device on the TA, if the I/O handler 
+ * has been created with "use_fs" == TRUE. Otherwise a no-op.
  *
  * Note: you need to call tapi_iscsi_target_mount() before this
  * function to create a filesystem on a target backing store.
- *
- * As a consequence, this function will only work if the target
- * is configured to use a file-based backing store
  * 
  * @param ioh           I/O handler
  * @param taskid        A pointer to store a task ID or NULL (OUT)
@@ -1044,128 +1052,119 @@ extern te_errno tapi_iscsi_io_block_signal(void);
  * @return Status code
  */
 extern te_errno tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, 
-                                           unsigned *taskid);
+                                           iscsi_io_taskid *taskid);
 
 /**
  * Request unmounting an iSCSI device on the TA.
- * 
+ * No-op if "use_fs" is not TRUE for the I/O handler. 
+ *
  * @param ioh           I/O handler
  * @param taskid        A pointer to store a task ID or NULL (OUT)
  * 
  * @return Status code
  */
 extern te_errno tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh,
-                                             unsigned *taskid);
+                                             iscsi_io_taskid *taskid);
+
 
 /**
- * Request putting a file onto an iSCSI device.
- * 
+ * Opens a file on an iSCSI filesystem
+ *
  * @param ioh           I/O handler
- * @param localfname    A local filename
  * @param taskid        A pointer to store a task ID or NULL (OUT)
- * 
- * @return Status code
+ * @param fname         Filename
+ * @param mode          Standard UNIX file open mode
  *
- * @sa tapi_iscsi_initiator_mount
+ * @return Status code
  */
-extern te_errno tapi_iscsi_initiator_put_file(iscsi_io_handle_t *ioh, 
-                                              const char *localfname,
-                                              unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_open(iscsi_io_handle_t *ioh,
+                                          iscsi_io_taskid *taskid,
+                                          const char *fname,
+                                          int mode);
+
 
 /**
- * Request getting a file from an iSCSI device.
- * 
+ * Closes a file on an iSCSI filesystem previously opened by
+ * tapi_iscsi_initiator_open().
+ *
  * @param ioh           I/O handler
- * @param localfname    A local filename
  * @param taskid        A pointer to store a task ID or NULL (OUT)
- * 
- * @return Status code
  *
- * @sa tapi_iscsi_initiator_mount
+ * @return Status code
  */
-extern te_errno tapi_iscsi_initiator_get_file(iscsi_io_handle_t *ioh,
-                                              const char *localfname,
-                                              unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_close(iscsi_io_handle_t *ioh,
+                                           iscsi_io_taskid *taskid);
+
 
 /**
- * Request deleting a file on an iSCSI device.
- * 
+ * Request a seek operation on an iSCSI device.
+ *
  * @param ioh           I/O handler
- * @param remotefname   A remote filename
  * @param taskid        A pointer to store a task ID or NULL (OUT)
- * 
- * @return Status code
+ * @param pos           Positiion to seek to
  *
- * @sa tapi_iscsi_initiator_mount
+ * @return Status code
  */
-extern te_errno tapi_iscsi_initiator_delete_file(iscsi_io_handle_t *ioh,
-                                                 const char *remotefname,
-                                                 unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_seek(iscsi_io_handle_t *ioh,
+                                          iscsi_io_taskid *taskid,
+                                          off_t pos);
 
 /**
- * Request a write operation on an iSCSI device at a given position
+ * Request a write operation on an iSCSI device.
  *
  * @param ioh           I/O handler
- * @param offset        A position to write
+ * @param taskid        A pointer to store a task ID or NULL (OUT)
+ * @param data          A pointer to a buffer with data
+ * @param length        Length of data to write
+ *
+ * @return Status code
+ */
+extern te_errno tapi_iscsi_initiator_write(iscsi_io_handle_t *ioh,
+                                           iscsi_io_taskid *taskid,
+                                           void *data,
+                                           size_t length);
+
+/**
+ * Request a read operation on an iSCSI device.
+ *
+ * @param ioh           I/O handler
+ * @param taskid        A pointer to store a task ID or NULL (OUT)
+ * @param data          A pointer to a buffer to store data
+ * @param length        Length of the buffer
+ *
+ * @return Status code
+ */
+extern te_errno tapi_iscsi_initiator_read(iscsi_io_handle_t *ioh,
+                                          iscsi_io_taskid *taskid,
+                                          void *data,
+                                          size_t length);
+
+/**
+ * Request a write operation on an iSCSI device using data from a file
+ *
+ * @param ioh           I/O handler
  * @param data          A pointer to a zero-terminated string to write
  * @param taskid        A pointer to store a task ID or NULL (OUT)
+ * @param fname         Name of a file with data
  *
  * @return Status code
  */
-extern te_errno tapi_iscsi_initiator_raw_write(iscsi_io_handle_t *ioh,
-                                               unsigned long offset,
-                                               const char *data,
-                                               unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_write_file(iscsi_io_handle_t *ioh,
+                                                iscsi_io_taskid *taskid,
+                                                const char *fname);
 
 /**
- * Request a read operation on an iSCSI device to verify that
- * it contains given data at a specific position.
+ * Request a read operation on an iSCSI device putting data to a file
  *
  * @param ioh           I/O handler
- * @param offset        A position to read from
  * @param data          A pointer to a zero-terminated string to verify
- * @param taskid        A pointer to store a task ID or NULL (OUT)
+ * @param fname         Name of a file to store data
  *
  * @return Status code
  */
-extern te_errno tapi_iscsi_initiator_raw_verify(iscsi_io_handle_t *ioh,
-                                                unsigned long offset,
-                                                const char *data, 
-                                                unsigned *taskid);
-
-/**
- * Request to fill an iSCSI device with a given value 
- * starting at a given position.
- * 
- * @param ioh           I/O handler
- * @param offset        A position to write
- * @param repeat        Number of bytes to write
- * @param byte          Value to fill
- * 
- * @return Status code
- */
-extern te_errno tapi_iscsi_initiator_raw_fill(iscsi_io_handle_t *ioh,
-                                              unsigned long offset,
-                                              unsigned long repeat,
-                                              int byte, 
-                                              unsigned *taskid);
-
-/**
- * Request to verify that an iSCSI device is with a given value 
- * starting at a given position.
- * 
- * @param ioh           I/O handler
- * @param offset        A position to write
- * @param repeat        Number of bytes to write
- * @param byte          Value to fill
- * 
- * @return Status code
- */
-extern te_errno tapi_iscsi_initiator_raw_verify_fill(iscsi_io_handle_t *ioh,
-                                                     unsigned long offset,
-                                                     unsigned long repeat,
-                                                     int byte, 
-                                                     unsigned *taskid);
+extern te_errno tapi_iscsi_initiator_read_file(iscsi_io_handle_t *ioh,
+                                               iscsi_io_taskid *taskid,
+                                               const char *fname);
 
 
 #endif /* !__TE_TAPI_ISCSI_H__ */
