@@ -281,6 +281,7 @@ typedef enum {
     TAD_OP_GET,         /**< trrecv_get */
     TAD_OP_WAIT,        /**< trrecv_wait */
     TAD_OP_STOP,        /**< tr{send|recv}_stop */
+    TAD_OP_DESTROY,     /**< csap_destroy */
 } tad_traffic_op_t;
 
 /** @name CSAP processing flags */
@@ -365,6 +366,8 @@ typedef struct csap_instance {
                                       it is not sensible */
     tad_traffic_op_t command;    /**< last unprocessed command */
     uint8_t          state;      /**< current state bitmask */
+    pthread_t        traffic_thread; 
+                                 /**< ID of traffic operation thread */
     pthread_mutex_t  data_access_lock; 
                                  /**< mutex for lock CSAP data changing 
                                       from different threads */

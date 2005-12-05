@@ -240,7 +240,8 @@ tad_tr_send_thread(void * arg)
             csap_pkts *pkt;
 
             if (!(csap_descr->state   & TAD_STATE_FOREGROUND) &&
-                 (csap_descr->command == TAD_OP_STOP))
+                 (csap_descr->command == TAD_OP_STOP ||
+                  csap_descr->command == TAD_OP_DESTROY))
             {
                 strcpy(answer_buffer, csap_descr->answer_prefix);
                 ans_len = strlen(answer_buffer); 
@@ -356,8 +357,15 @@ tad_tr_send_thread(void * arg)
     tad_tmpl_args_clear(arg_set_specs, arg_num);
     free(arg_set_specs);
 
-    if ((csap_descr->state   & TAD_STATE_FOREGROUND) || 
-        (csap_descr->command == TAD_OP_STOP) )
+    if (csap_descr->command == TAD_OP_DESTROY && 
+        !(csap_descr->state  & TAD_STATE_FOREGROUND))
+    {
+        RING("%s(CSAP %d) destroy flag", __FUNCTION__, csap_descr->id);
+        csap_descr->command = TAD_OP_IDLE;
+        csap_descr->state   = 0;
+    }
+    else if ((csap_descr->state   &  TAD_STATE_FOREGROUND) || 
+             (csap_descr->command == TAD_OP_STOP) )
     {
         VERB("blocked or long trsend finished. rc %x, sent %d", 
              rc, sent);
@@ -377,16 +385,21 @@ tad_tr_send_thread(void * arg)
 
         while(1) 
         {
-            struct timeval wait_for_stop_delay = {0, 30000};
-            select(0, NULL, NULL, NULL, &wait_for_stop_delay);
+            te_bool need_answer = (csap_descr->command != TAD_OP_DESTROY);
 
-            if (csap_descr->command == TAD_OP_STOP)
+            usleep(30*1000);
+
+            if (csap_descr->command == TAD_OP_STOP ||
+                csap_descr->command == TAD_OP_DESTROY)
             {
                 csap_descr->command = TAD_OP_IDLE;
                 csap_descr->state = 0;
-                strcpy(answer_buffer, csap_descr->answer_prefix);
-                ans_len = strlen(answer_buffer); 
-                SEND_ANSWER("%d",  TE_RC(TE_TAD_CH, rc)); 
+                if (need_answer)
+                {
+                    strcpy(answer_buffer, csap_descr->answer_prefix);
+                    ans_len = strlen(answer_buffer); 
+                    SEND_ANSWER("%d",  TE_RC(TE_TAD_CH, rc)); 
+                }
                 break;
             }
         }

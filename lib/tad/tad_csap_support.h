@@ -282,7 +282,7 @@ typedef struct csap_layer_neighbour_list_t {
     csap_layer_neighbour_list_p next; /**< pointer to the next possible
                                            neighbour*/
 
-    char *nbr_type; /**< symbolic identifier of neighvour. 
+    char *nbr_type; /**< symbolic identifier of neighbour. 
               May have such values: 
               NULL    - this means that layer which neighbours are listed 
                         is single in stack;

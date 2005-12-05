@@ -357,6 +357,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     check_init();
 
     VERB("%s: CSAP %d\n", __FUNCTION__, csap); 
+    RING("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
@@ -369,13 +370,24 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     CSAP_DA_LOCK(csap_descr_p);
     if (csap_descr_p->command != TAD_OP_IDLE)
     {
-        WARN("%s: CSAP %d is busy", __FUNCTION__, csap);
+        csap_descr_p->command = TAD_OP_DESTROY;
         CSAP_DA_UNLOCK(csap_descr_p);
-        SEND_ANSWER("%d Specified CSAP is busy", 
-                    TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
-        return 0;
+#if 0
+        void *th_return;
+
+        rc = pthread_join(csap_descr_p->traffic_thread, &th_return);
+        if (rc != 0)
+        {
+            ERROR("%s(): thread join failed, rc %d, errno %d", 
+                  __FUNCTION__, rc, errno);
+        }
+#else
+        while (csap_descr_p->command != TAD_OP_IDLE)
+            usleep(10*1000);
+#endif
     } 
-    CSAP_DA_UNLOCK(csap_descr_p);
+    else
+        CSAP_DA_UNLOCK(csap_descr_p);
 
     for (layer = 0; layer < csap_descr_p->depth; layer++)
     {
@@ -413,6 +425,11 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
         }
     }
     csap_destroy(csap);
+
+    cbuf[answer_plen] = 0;
+    RING("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
+
+    usleep(100*1000);
     
     SEND_ANSWER("0");
 
@@ -444,7 +461,6 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     int            syms;
     asn_value_p    nds; 
     csap_p         csap_descr_p;
-    pthread_t      send_thread;
     pthread_attr_t pthread_attr;
 
     tad_task_context *send_context;
@@ -452,6 +468,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     UNUSED(cmdlen);
 
     VERB("trsend_start CSAP %d\n", csap);
+    cbuf[answer_plen] = 0;
+    RING("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
 
     check_init();
 
@@ -532,7 +550,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
 
     SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_EACK));
 
-    rc = pthread_create(&send_thread, &pthread_attr, 
+    rc = pthread_create(&csap_descr_p->traffic_thread, &pthread_attr, 
                         (void *)&tad_tr_send_thread, send_context);
     if (rc != 0)
     {
@@ -606,7 +624,6 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
                     unsigned int num, te_bool results, unsigned int timeout)
 {
 #ifndef DUMMY_TAD 
-    pthread_t   recv_thread = 0;
     int         syms;
     int         rc;
     asn_value_p nds = NULL; 
@@ -794,7 +811,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         return 0;
     }
 
-    if ((rc = pthread_create(&recv_thread, &pthread_attr,
+    if ((rc = pthread_create(&csap_descr_p->traffic_thread, &pthread_attr,
                              tad_tr_recv_thread, recv_context)) != 0)
     {
         ERROR("recv thread create error; rc %d", rc);

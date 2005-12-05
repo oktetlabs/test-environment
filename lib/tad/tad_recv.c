@@ -527,6 +527,23 @@ tad_tr_recv_send_results(received_packets_queue_t *queue_root,
 
 
 
+void
+tad_tr_recv_clear_results(received_packets_queue_t *queue_root)
+{
+    received_packets_queue_t *pkt_qelem;
+
+    for (pkt_qelem = queue_root->next; pkt_qelem != queue_root; 
+         pkt_qelem = queue_root->next)
+   {
+        if(pkt_qelem->pkt != NULL)
+        {
+            asn_free_value(pkt_qelem->pkt);
+        } 
+        REMQUE(pkt_qelem);
+        free(pkt_qelem);
+    }
+}
+
 /**
  * Generate Traffic Pattern NDS by template for trsend_recv command
  *
@@ -859,7 +876,8 @@ tad_tr_recv_thread(void *arg)
         const asn_value *pattern_unit;
 
         CSAP_DA_LOCK(csap_descr);
-        if (csap_descr->command == TAD_OP_STOP)
+        if (csap_descr->command == TAD_OP_STOP || 
+            csap_descr->command == TAD_OP_DESTROY)
         {
             strcpy(answer_buffer, csap_descr->answer_prefix);
             ans_len = strlen(answer_buffer); 
@@ -1052,8 +1070,11 @@ tad_tr_recv_thread(void *arg)
 
     /* either stop got or foreground operation completed */ 
 
-    rc = tad_tr_recv_send_results(&received_packets, handle, 
-                                  answer_buffer, ans_len);
+    if (csap_descr->command == TAD_OP_DESTROY)
+        tad_tr_recv_clear_results(&received_packets);
+    else
+        rc = tad_tr_recv_send_results(&received_packets, handle, 
+                                      answer_buffer, ans_len);
     if (rc != 0)
     {
         ERROR("trrecv thread: send results failed with code %r", rc);
@@ -1075,10 +1096,22 @@ tad_tr_recv_thread(void *arg)
     free(read_buffer);
 
     CSAP_DA_LOCK(csap_descr);
-    csap_descr->command = TAD_OP_IDLE;
-    csap_descr->state   = 0;
-    SEND_ANSWER("%d %u", TE_OS_RC(TE_TAD_CSAP, csap_descr->last_errno), 
-                pkt_count);
+
+    if (csap_descr->command != TAD_OP_DESTROY ||
+        csap_descr->state & TAD_STATE_FOREGROUND)
+    {
+        csap_descr->command = TAD_OP_IDLE;
+        csap_descr->state   = 0;
+        SEND_ANSWER("%d %u", TE_OS_RC(TE_TAD_CSAP, csap_descr->last_errno),
+                    pkt_count);
+    }
+    else
+    {
+        RING("%s(): There was non-foreground operation, destroy CSAP", 
+             __FUNCTION__);
+        csap_descr->command = TAD_OP_IDLE;
+        csap_descr->state   = 0;
+    }
 
     csap_descr->answer_prefix[0] = '\0';
     csap_descr->num_packets      = pkt_count;
