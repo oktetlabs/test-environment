@@ -2327,6 +2327,9 @@ command_copy_file(iscsi_io_handle_t *ioh, int *fd,
     int       src_fd;
     int       open_fd;
 
+    if (ioh->buffer == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
     if (length == ISCSI_COPY_FILE_IN)
     {
         open_fd = src_fd = rpc_open(ioh->rpcs, data, 
@@ -2427,18 +2430,25 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     (*ioh)->use_signal     = use_signal;
     (*ioh)->use_fs         = use_fs;
     (*ioh)->bufsize        = bufsize;
-    (*ioh)->buffer         = malloc(bufsize);
-    if ((*ioh)->buffer == NULL)
+    if (bufsize == 0)
+        (*ioh)->buffer     = NULL;
+    else
     {
-        free(*ioh);
-        *ioh = NULL;
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+        (*ioh)->buffer     = malloc(bufsize);
+        if ((*ioh)->buffer == NULL)
+        {
+            free(*ioh);
+            *ioh = NULL;
+            return TE_RC(TE_TAPI, TE_ENOMEM);
+        }
     }
 
     sprintf(name, "iscsi_%u", id);
     rc = rcf_rpc_server_create(ta, name, &((*ioh)->rpcs));
     if (rc != 0)
     {
+        if ((*ioh)->buffer != NULL)
+            free((*ioh)->buffer);
         free(*ioh);
         *ioh = NULL;
         return rc;
@@ -2472,6 +2482,8 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     if (rc != 0)
     {
         rcf_rpc_server_destroy((*ioh)->rpcs);
+        if ((*ioh)->buffer != NULL)
+            free((*ioh)->buffer);
         free(*ioh);
         *ioh = NULL;
         return TE_OS_RC(TE_TAPI, rc);
@@ -2491,6 +2503,8 @@ tapi_iscsi_io_finish(iscsi_io_handle_t *ioh)
         if (ioh->cmds[i].destroy != NULL)
             ioh->cmds[i].destroy(ioh->cmds[i].data);
     }
+    if (ioh->buffer != NULL)
+        free(ioh->buffer);
     free(ioh);
     return 0;
 }
@@ -2584,13 +2598,38 @@ post_command(iscsi_io_handle_t *ioh, iscsi_io_cmd_t *src,
     return 0;
 }
 
+static te_errno
+tapi_iscsi_disable_read_ahead(iscsi_io_handle_t *ioh)
+{
+    iscsi_io_cmd_t cmd;
+    char           blockdev[128];
+
+    snprintf(blockdev, sizeof(blockdev),
+             "blockdev --setra=0 %s", ioh->device);
+    cmd.leader    = TRUE;
+    cmd.do_signal = FALSE;
+    cmd.cmd       = command_shell;
+    cmd.fd        = -1;
+    cmd.data      = strdup(blockdev);
+    cmd.length    = 0;
+    cmd.spread_fd = FALSE;
+    cmd.destroy   = free;
+    return post_command(ioh, &cmd, NULL);
+}
+
 te_errno
 tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
 {
+    int rc;
+    
     iscsi_io_cmd_t cmd;
+
+    if ((rc = tapi_iscsi_disable_read_ahead(ioh)) != 0)
+        return rc;
 
     cmd.leader    = TRUE;
     cmd.do_signal = (taskid != NULL);
+
     if (!ioh->use_fs)
     {
         cmd.cmd       = command_open;
