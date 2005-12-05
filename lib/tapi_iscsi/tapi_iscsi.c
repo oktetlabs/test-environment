@@ -2015,12 +2015,15 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
     remotefname = tapi_file_generate_pathname();
     if (remotefname == NULL)
         return TE_RC(TE_TAPI, TE_EBADF);
-    localfname = tapi_file_create(length, data, FALSE);
+    /** tapi_file_create() may modify buf, but only if the
+     *  third parameter is TRUE, i.e. randomize the buffer
+     */
+    localfname = tapi_file_create(length, (void *)data, FALSE);
     if (localfname == NULL)
         return TE_RC(TE_TAPI, TE_EBADF);
 
     if (multiply > 1)
-        multiply_file_content(localfname, data, length, multiply);
+        multiply_file_content(localfname, multiply, data, length);
 
     rc = rcf_ta_put_file(ta, 0, localfname, remotefname);
     if (rc != 0)

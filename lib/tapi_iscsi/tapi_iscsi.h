@@ -974,7 +974,9 @@ typedef unsigned iscsi_io_taskid;
  *                      an I/O operation is complete
  * @param use_fs        TRUE if using a filesystem on
  *                      an ISCSI device
- * @param bufsize       Buffer size for file copying
+ * @param bufsize       Buffer size for file copying operations,
+ *                      that is, tapi_iscsi_initiator_read_file() and
+ *                      tapi_iscsi_initiator_write_file(). 
  * @param ioh           A pointer to resulting handler (OUT)
  * 
  * @return Status code
@@ -1134,7 +1136,9 @@ extern te_errno tapi_iscsi_initiator_read(iscsi_io_handle_t *ioh,
                                           size_t length);
 
 /**
- * Request a write operation on an iSCSI device using data from a file
+ * Request a write operation on an iSCSI device using data from a file.
+ * The copying is done in chunks of size 'bufsize' passed 
+ * to iscsi_io_prepare().
  *
  * @param ioh           I/O handler
  * @param data          A pointer to a zero-terminated string to write
@@ -1148,7 +1152,9 @@ extern te_errno tapi_iscsi_initiator_write_file(iscsi_io_handle_t *ioh,
                                                 const char *fname);
 
 /**
- * Request a read operation on an iSCSI device putting data to a file
+ * Request a read operation on an iSCSI device putting data to a file.
+ * The copying is done in chunks of size 'bufsize' passed 
+ * to iscsi_io_prepare().
  *
  * @param ioh           I/O handler
  * @param data          A pointer to a zero-terminated string to verify
