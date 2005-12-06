@@ -1824,7 +1824,7 @@ iscsi_accomodate_buffer (struct target_map_item *target, uint32_t size)
                 success = FALSE;
             else
             {
-                memset((char *)tmp + target->buffer_size, '\xEB', 
+                memset((char *)tmp + target->buffer_size, 0, 
                        size - target->buffer_size);
                 target->buffer_size = size;
                 target->buffer      = tmp;
