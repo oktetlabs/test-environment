@@ -727,10 +727,9 @@ tad_tr_recv_thread(void *arg)
     }
     asn_save_to_file(nds, "/tmp/nds.asn");
 
-    do /* symbolic do {} while(0) for traffic operation init block */
-    {
-        rc = tad_prepare_csap(csap_descr, nds);
+    do { /* symbolic do {} while(0) for traffic operation init block */
 
+        rc = tad_prepare_csap(csap_descr, nds);
         if (rc != 0)
             break; 
 
