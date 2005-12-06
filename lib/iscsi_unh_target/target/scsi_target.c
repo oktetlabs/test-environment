@@ -1916,7 +1916,7 @@ do_scsi_read(Target_Scsi_Cmnd *command, uint8_t lun,
     struct scatterlist *st_list = command->req->sr_buffer;
     int                 st_idx;
 
-    TRACE(VERBOSE, "Doing read from lun %u at %lx",
+    TRACE(VERBOSE, "Doing read from lun %u at 0x%x",
           lun, offset);
     dataptr = target->buffer + offset;
     for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)
