@@ -633,7 +633,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     tad_task_context *recv_context;
     pthread_attr_t    pthread_attr;
     char              srname[] = "trsend_recv";
-    int               sr_flag = 0;
+    te_bool           sr_flag = FALSE;
 #endif
 
     INFO("%s: csap %d, num %u, timeout %u ms, %s", __FUNCTION__,
@@ -659,7 +659,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     check_init(); 
 
     if (strncmp(cbuf + answer_plen, srname, strlen(srname)) == 0)
-        sr_flag = 1;
+        sr_flag = TRUE;
 
     if (ba == NULL)
     {
@@ -697,7 +697,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     if (rc)
     { 
         ERROR("parse error in NDS, rc: %r, sym: %d", rc, syms);
-        INFO("sr_flag %d, NDS: <%s>", sr_flag, ba);
+        INFO("sr_flag %d, NDS: <%s>", (int)sr_flag, ba);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         return 0;
     } 
@@ -733,7 +733,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
     recv_context->nds           = nds;
     recv_context->rcf_handle    = handle; 
 
-    if (sr_flag == 0)
+    if (!sr_flag)
         num_units = asn_get_length(nds, "");
     else
         num_units = 1; /* There is a single unit */
@@ -743,7 +743,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         asn_value *pattern_unit = NULL;
         asn_value *pdus = NULL;
 
-        if (sr_flag == 0)
+        if (!sr_flag)
             asn_get_indexed(nds, (const asn_value **)&pattern_unit, i);
         else
             pattern_unit = nds;
