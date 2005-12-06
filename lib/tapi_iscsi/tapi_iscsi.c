@@ -2605,7 +2605,7 @@ tapi_iscsi_disable_read_ahead(iscsi_io_handle_t *ioh)
     char           blockdev[128];
 
     snprintf(blockdev, sizeof(blockdev),
-             "blockdev --setra=0 %s", ioh->device);
+             "blockdev --setra 0 %s", ioh->device);
     cmd.leader    = TRUE;
     cmd.do_signal = FALSE;
     cmd.cmd       = command_shell;

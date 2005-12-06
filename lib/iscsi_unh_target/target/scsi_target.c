@@ -1875,7 +1875,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
     else
     {
         struct target_map_item *target = &target_map[command->target_id][lun];
-        
+
         if (lba >= target->storage_size)
         {
             TRACE_ERROR("LBA %lu is out of range for lun %d, target %d",
@@ -1888,6 +1888,9 @@ do_scsi_io(Target_Scsi_Cmnd *command,
                         lba, length, lun, command->target_id);
             success = FALSE;
         }
+        TRACE(VERBOSE, 
+              "Got SCSI I/O request at %x, length = %d",
+              lba, length);
         lba    *= SCSI_BLOCKSIZE;
         length *= SCSI_BLOCKSIZE;
         success = iscsi_accomodate_buffer(target, lba + length);
