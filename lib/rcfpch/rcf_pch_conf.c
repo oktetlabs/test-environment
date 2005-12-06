@@ -1105,7 +1105,10 @@ rcf_pch_rsrc_info(const char *name,
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
       
     if ((tmp->name = strdup(name)) == NULL)
+    {
+        free(tmp);
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    }
     
     tmp->grab = grab;
     tmp->release = release;
