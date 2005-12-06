@@ -581,6 +581,12 @@ iscsi_l5_write_target_params(FILE *destination,
         }
 #endif
     }
+    if (connection->chap.target_auth)
+    {
+        WRITE_AUTH(local_name);
+        WRITE_AUTH(local_secret);
+    }
+
     /** Other authentication parameters are not supported by
      *  L5 initiator, both on the level of script and on 
      *  the level of ioctls
@@ -621,11 +627,6 @@ iscsi_l5_write_target_params(FILE *destination,
             {
                 WRITE_AUTH(peer_name);
                 WRITE_AUTH(peer_secret);
-            }
-            if (connection->chap.target_auth)
-            {
-                WRITE_AUTH(local_name);
-                WRITE_AUTH(local_secret);
             }
         }
     }
