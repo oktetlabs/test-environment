@@ -252,7 +252,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 /**
  * Return from function with resources deallocation.
  *
- * @param _rc   - return code
+ * @param _rc     return code
  */
 #define RET(_rc) \
     do {                                \
@@ -411,7 +411,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 /**
  * Return from function with resources deallocation.
  *
- * @param _rc   - return code
+ * @param _rc     return code
  */
 #define RET(_rc) \
     do {                                \
@@ -478,8 +478,8 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
  * Convert the list of objects or object instances identifiers
  * to the single string and always free the list.
  *
- * @param list      - list of identifiers to be converted
- * @param answer    - location for the answer string address (memory
+ * @param list        list of identifiers to be converted
+ * @param answer      location for the answer string address (memory
  *                    is allocated using malloc())
  *
  * @return Status code
@@ -526,13 +526,13 @@ convert_to_answer(olist *list, char **answer)
 /**
  * Process wildcard configure get request.
  *
- * @param conn          - connection handle
- * @param cbuf          - command buffer
- * @param buflen        - length of the command buffer
- * @param answer_plen   - number of bytes in the command buffer
+ * @param conn            connection handle
+ * @param cbuf            command buffer
+ * @param buflen          length of the command buffer
+ * @param answer_plen     number of bytes in the command buffer
  *                        to be copied to the answer
  *
- * @param oid           - object or instance identifier
+ * @param oid             object or instance identifier
  *
  *
  * @return 0 or error returned by communication library
@@ -600,8 +600,8 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
 /**
  * Find postponed commit operation with specified parameters.
  *
- * @param f_commit  - commit function
- * @param p_oid     - configurator object identfier
+ * @param f_commit    commit function
+ * @param p_oid       configurator object identfier
  *
  * @return Pointer to found commit operation or NULL.
  */
@@ -621,8 +621,8 @@ find_commit_op(rcf_ch_cfg_commit f_commit, const cfg_oid *p_oid)
 /**
  * Immediate or postponed commit of changes.
  *
- * @param commit_obj    - configuration tree object with commit function
- * @param pp_oid        - pointer to pointer to configuration OID (IN/OUT)
+ * @param commit_obj      configuration tree object with commit function
+ * @param pp_oid          pointer to pointer to configuration OID (IN/OUT)
  *
  * @return Status code.
  */
