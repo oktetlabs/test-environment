@@ -109,9 +109,13 @@ struct nlmsg_list {
 #endif
 
 /** Check that interface is locked for using of this TA */
+#if 0 /* Until dependencies in configurator are implemented */
 #define INTERFACE_IS_MINE(ifname) \
     (strcmp(ifname, "lo") == 0 || \
      rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
+#else
+#define INTERFACE_IS_MINE(ifname)       TRUE
+#endif
 
 /**
  * Type for both IPv4 and IPv6 address
