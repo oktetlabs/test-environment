@@ -1401,6 +1401,9 @@ bind_host(tapi_env_host *host, tapi_env_hosts *hosts,
             p = host;
             while ((p = p->links.cqe_prev) != (void *)hosts)
             {
+                te_bool one_host;
+                te_bool one_ta;
+
                 if (host->nets.lh_first == p->nets.lh_first)
                 {
                     if (i != p->i_net)
@@ -1410,19 +1413,21 @@ bind_host(tapi_env_host *host, tapi_env_hosts *hosts,
                         break;
                     }
                 }
-                if ((strlen(host->name) > 0) &&
-                    (strcmp(host->name, p->name) == 0))
+                one_host = (strlen(host->name) > 0) &&
+                           (strcmp(host->name, p->name) == 0);
+                one_ta = (cmp_agent_names(
+                              cfg_nets->nets[i].nodes[j].handle,
+                              cfg_nets->nets[p->i_net].
+                                  nodes[p->i_node].handle) == 0);
+                if (one_host != one_ta)
                 {
-                    if (cmp_agent_names(
-                            cfg_nets->nets[i].nodes[j].handle,
-                             cfg_nets->nets[p->i_net].
-                                       nodes[p->i_node].handle) != 0)
-                    {
-                        VERB("Hosts with the same name '%s' can't be "
-                             "bound to nodes on different agents",
-                             host->name);
-                        break;
-                    }
+                    VERB("Hosts with %s names ('%s' vs '%s') can't be "
+                         "bound to nodes %s",
+                         one_host ? "the same" : "different",
+                         host->name, p->name,
+                         one_ta ? "with the same test agent" :
+                                  "on different agents");
+                    break;
                 }
             }
             if (p == (void *)hosts)
