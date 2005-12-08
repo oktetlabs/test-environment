@@ -1347,6 +1347,10 @@ iscsi_initiator_unh_set(const int target_id, const int cid,
 
     ISCSI_UNH_FORCE_STRING("lx", conn->chap.local_secret, target_id,
                            "Local Secret");
+
+    ISCSI_UNH_FORCE_INT("sch", 1, target_id,
+                        "Load-balancing"); /* Turning on round-robin */
+
     /* Initiator itself */
     ISCSI_UNH_SET_UNNEGOTIATED("InitiatorName", 
                   conn->initiator_name,
