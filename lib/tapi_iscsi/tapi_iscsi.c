@@ -2335,7 +2335,7 @@ command_copy_file(iscsi_io_handle_t *ioh, int *fd,
         open_fd = src_fd = rpc_open(ioh->rpcs, data, 
                                     RPC_O_RDONLY | RPC_O_SYNC, 0);
         dest_fd = *fd;
-        status  = (src_fd < 0 ? TE_RC(TE_TAPI, RPC_ERRNO(ioh->rpcs)) : 0);
+        status  = (src_fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
     }
     else
     {
@@ -2343,7 +2343,7 @@ command_copy_file(iscsi_io_handle_t *ioh, int *fd,
                                      RPC_O_WRONLY | RPC_O_SYNC,
                                      RPC_S_IREAD | RPC_S_IWRITE);
         src_fd = *fd;
-        status = (dest_fd < 0 ? TE_RC(TE_TAPI, RPC_ERRNO(ioh->rpcs)) : 0);
+        status = (dest_fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
     }
     
     if (status != 0)
@@ -2360,7 +2360,7 @@ command_copy_file(iscsi_io_handle_t *ioh, int *fd,
                                 ioh->bufsize : 
                                 (size_t)length));
         if (result_len < 0)
-            status = TE_RC(TE_TAPI, RPC_ERRNO(ioh->rpcs));
+            status = RPC_ERRNO(ioh->rpcs);
         else if (result_len != length)
             status = TE_RC(TE_TAPI, TE_ENOSPC);
     } while (status == 0 && length != 0);
