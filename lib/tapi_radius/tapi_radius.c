@@ -524,6 +524,7 @@ tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
     return 0;
 }
 
+/* See the description in tapi_radius.h */
 int
 tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
                          tapi_radius_packet_t *packet)

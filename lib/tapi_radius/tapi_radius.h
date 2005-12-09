@@ -61,6 +61,46 @@ typedef enum {
     TAPI_RADIUS_CODE_STATUS_CLIENT       = 13,  /**< Status-Client */
 } tapi_radius_code_t;
 
+/**
+ * Convert the code of RADIUS packet from integer to readable string.
+ *
+ * @param code  the code value of RADIUS packet
+ *
+ * @return string literal pointer
+ *
+ * @note non-reenterable in the case of unknown value
+ */
+static inline const char *
+tapi_radius_code2str(tapi_radius_code_t code)
+{
+#define CODE2STR(code_) case TAPI_RADIUS_CODE_ ## code_: return #code_
+
+    switch (code)
+    {
+        CODE2STR(ACCESS_REQUEST);
+        CODE2STR(ACCESS_ACCEPT);
+        CODE2STR(ACCESS_REJECT);
+        CODE2STR(ACCOUNTING_REQUEST);
+        CODE2STR(ACCOUNTING_RESPONSE);
+        CODE2STR(ACCESS_CHALLENGE);
+        CODE2STR(STATUS_SERVER);
+        CODE2STR(STATUS_CLIENT);
+
+        default:
+        {
+            static char unknown_code[32];
+        
+            snprintf(unknown_code, sizeof(unknown_code),
+                     "Unknown(%u)", code);
+            return unknown_code;
+        }
+    }
+#undef CODE2STR
+
+    /* We will never reach this code */
+    return "";
+}
+
 /** Type of RADIUS attribute data, see RFC 2865 */
 typedef enum {
     TAPI_RADIUS_TYPE_TEXT,      /**< UTF-8 encoded text string,
@@ -74,6 +114,43 @@ typedef enum {
                                      TAPI RADIUS dictionary */
 } tapi_radius_type_t;
 
+/**
+ * Convert the type of RADIUS atribute from integer to readable string.
+ *
+ * @param type  RADIUS attribute type
+ *
+ * @return string literal pointer
+ *
+ * @note non-reenterable in the case of unknown value
+ */
+static inline const char *
+tapi_radius_attr_type2str(tapi_radius_type_t type)
+{
+#define ATTR_TYPE2STR(type_) case TAPI_RADIUS_TYPE_ ## type_: return #type_
+
+    switch (type)
+    {
+        ATTR_TYPE2STR(TEXT);
+        ATTR_TYPE2STR(STRING);
+        ATTR_TYPE2STR(ADDRESS);
+        ATTR_TYPE2STR(INTEGER);
+        ATTR_TYPE2STR(TIME);
+
+        default:
+        {
+            static char unknown_type[32];
+        
+            snprintf(unknown_type, sizeof(unknown_type),
+                     "Unknown(%u)", type);
+            return unknown_type;
+        }
+    }
+#undef ATTR_TYPE2STR
+
+    /* We will never reach this code */
+    return "";
+}
+
 /** Value of Acct-Status-Type attribute, see RFC 2866 */
 typedef enum {
     TAPI_RADIUS_ACCT_STATUS_START   = 1,    /**< Start */
@@ -82,6 +159,45 @@ typedef enum {
     TAPI_RADIUS_ACCT_STATUS_ON      = 7,    /**< Accounting-On */
     TAPI_RADIUS_ACCT_STATUS_OFF     = 8,    /**< Accounting-Off */
 } tapi_radius_acct_status_t;
+
+/**
+ * Convert Accounting Status from integer to readable string.
+ *
+ * @param status  Accounting status value
+ *
+ * @return string literal pointer
+ *
+ * @note non-reenterable in the case of unknown value
+ */
+static inline const char *
+tapi_radius_acct_status2str(tapi_radius_acct_status_t status)
+{
+#define ACCT_STATUS2STR(status_) \
+    case TAPI_RADIUS_ACCT_STATUS_ ## status_: return #status_
+
+    switch (status)
+    {
+        ACCT_STATUS2STR(START);
+        ACCT_STATUS2STR(STOP);
+        ACCT_STATUS2STR(INTERIM);
+        ACCT_STATUS2STR(ON);
+        ACCT_STATUS2STR(OFF);
+
+        default:
+        {
+            static char unknown_status[32];
+        
+            snprintf(unknown_status, sizeof(unknown_status),
+                     "Unknown(%u)", status);
+            return unknown_status;
+        }
+    }
+#undef ACCT_STATUS2STR
+
+    /* We will never reach this code */
+    return "";
+}
+
 
 /** Value of Acct-Terminate-Cause attribute, see RFC 2866, and RFC 3580 */
 typedef enum {
@@ -165,6 +281,12 @@ typedef enum {
     TAPI_RADIUS_TERM_ACTION_DEFAULT = 0,    /**< Default */
     TAPI_RADIUS_TERM_ACTION_REQUEST = 1,    /**< RADIUS-Request */
 } tapi_radius_term_action_t;
+
+/** Value of NAS-Port-Type attribute, see RFC 2865 */
+typedef enum {
+    TAPI_RADIUS_NAS_PORT_TYPE_ETHERNET = 15, /**< Ethernet */
+    TAPI_RADIUS_NAS_PORT_TYPE_IEEE_802_11 = 19, /**< Wireless - IEEE 802.11 */
+} tapi_radius_nas_port_type_t;
 
 /** Type of RADIUS attribute */
 typedef uint8_t tapi_radius_attr_type_t;
@@ -260,6 +382,7 @@ extern const tapi_radius_attr_info_t
  */
 extern const tapi_radius_attr_info_t
              *tapi_radius_dict_lookup_by_name(const char *name);
+
 
 /**
  * Initialize a list of RADIUS attributes
