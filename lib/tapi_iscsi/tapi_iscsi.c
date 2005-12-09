@@ -2012,7 +2012,7 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
     const char *localfname; 
     const char *remotefname;
 
-    remotefname = tapi_file_generate_pathname();
+    remotefname = tapi_file_generate_name();
     if (remotefname == NULL)
         return TE_RC(TE_TAPI, TE_EBADF);
     /** tapi_file_create() may modify buf, but only if the
