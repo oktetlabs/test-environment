@@ -1116,6 +1116,8 @@ radiusserver_find_name()
             radius_daemon = candidate[i];
             return 0;
         }
+        else
+            ERROR("'test -x /etc/init.d/%s' failes", candidate[i]);
     }
     return TE_ENOENT;
 }
@@ -1134,8 +1136,15 @@ ds_radiusserver_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
+    RING("%s() called", __FUNCTION__);
+
     if (radius_daemon == NULL && radiusserver_find_name() != 0)
+    {
+        RING("radius_daemon = %x, radiusserver_find_name() = %x",
+             radius_daemon, radiusserver_find_name());
+
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
 
     return daemon_get(gid, radius_daemon, value);
 }
@@ -1590,6 +1599,7 @@ ds_radiusserver_netaddr_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
+    RING("%s() called", __FUNCTION__);
     retrieve_rp(radius_conf, "listen.ipaddr", &v);
     strcpy(value, *v == '*' ? "0.0.0.0" : v);
     return 0;
@@ -2397,7 +2407,8 @@ radiusserver_grab(const char *name)
     UNUSED(name);
 
     /* Supplicant is not dependent on presence of RADIUS server */
-    rcf_pch_add_node("/agent", &node_ds_supplicant);
+    rc = rcf_pch_add_node("/agent", &node_ds_supplicant);
+    RING("Supplicant registering rc %d", rc);
 
     RING("Initializing RADIUS");
     if ((rc = rcf_pch_add_node("/agent", &node_ds_radiusserver)) != 0)
@@ -2411,6 +2422,11 @@ radiusserver_grab(const char *name)
     {
         ERROR("No RADIUS config found");
         rcf_pch_del_node(&node_ds_radiusserver);
+        /*
+         * Temporary solution - we have to split up
+         * Supplicant & RADIUS Server!
+         */
+        return 0;
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
@@ -2459,7 +2475,8 @@ radiusserver_release(const char *name)
         fclose(radius_users_file);
         remove(RADIUS_USERS_FILE);
     }
-    
+    rcf_pch_del_node(&node_ds_supplicant);
+
     return 0;
 }
 
