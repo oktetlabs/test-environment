@@ -1506,7 +1506,8 @@ neigh_list(unsigned int gid, const char *oid, char **list,
     {
         if (table->table[i].dwPhysAddrLen != 6 ||
             table->table[i].dwType != type || 
-            table->table[i].dwIndex != ifindex)
+            table->table[i].dwIndex != ifindex ||
+            table->table[i].dwAddr == 0xFFFFFFFF /* FIXME */)
         {
             continue;
         }

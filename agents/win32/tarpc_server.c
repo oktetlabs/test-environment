@@ -793,6 +793,16 @@ check_args(checked_arg *list)
             WARN("Start time is gone");                         \
     } while (0)
 
+/** Set output error */
+#define SET_ERROR \
+    do {                                                            \
+        out->common.win_error = win_error_h2rpc(WSAGetLastError()); \
+        out->common._errno = RPC_ERRNO;                             \
+        if (out->common.win_error != 0)                             \
+            out->common._errno =                                    \
+                wsaerr2errno(out->common.win_error);                \
+    } while (0)                
+
 /**
  * Declare and initialise time variables; execute the code and store
  * duration and errno in the output argument.
@@ -808,11 +818,7 @@ check_args(checked_arg *list)
         errno = 0;                                                  \
         WSASetLastError(0);                                         \
         x;                                                          \
-        out->common.win_error = win_error_h2rpc(WSAGetLastError()); \
-        out->common._errno = RPC_ERRNO;                             \
-        if (out->common.win_error != 0)                             \
-            out->common._errno =                                    \
-                wsaerr2errno(out->common.win_error);                \
+        SET_ERROR;                                                  \
         gettimeofday(&t_finish, NULL);                              \
         out->common.duration =                                      \
             (t_finish.tv_sec - t_start.tv_sec) * 1000000 +          \
@@ -1717,6 +1723,82 @@ TARPC_FUNC(wsa_recv_ex,
             send_recv_flags_h2rpc(out->flags.flags_val[0]);
 }
 )
+
+/*-------------- read() ------------------------------*/
+
+TARPC_FUNC(read,
+{
+    COPY_ARG(buf);
+},
+{
+    DWORD rc;
+    
+    WSAOVERLAPPED overlapped;
+    
+    memset(&overlapped, 0, sizeof(overlapped));
+    
+    INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
+
+    MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd), out->buf.buf_val, 
+                                      in->len, &rc, &overlapped));
+
+    if (out->retval == 0)
+    {
+        if (out->common.win_error != RPC_WSA_IO_PENDING)
+        {
+            ERROR("read(): ReadFile() failed with error %d", 
+                  WSAGetLastError());
+            rc = -1;
+        }
+        else if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+                                     &rc, 1) == 0)
+        {
+            SET_ERROR;
+            ERROR("read(): GetOverlappedResult() failed with error %d", 
+                  WSAGetLastError());
+            rc = -1;
+        }
+    }
+    out->retval = rc;
+}
+)
+
+/*-------------- write() ------------------------------*/
+
+TARPC_FUNC(write, {},
+{
+    DWORD rc;
+    
+    WSAOVERLAPPED overlapped;
+    
+    memset(&overlapped, 0, sizeof(overlapped));
+    
+    INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
+
+    MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd), in->buf.buf_val, 
+                                      in->len, &rc, &overlapped));
+
+    if (out->retval == 0)
+    {
+        if (out->common.win_error != RPC_WSA_IO_PENDING)
+        {
+            ERROR("write(): WriteFile() failed with error %d", 
+                  WSAGetLastError());
+            rc = -1;
+        }
+        else if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+                                     &rc, 1) == 0)
+        {
+            SET_ERROR;
+            ERROR("write(): GetOverlappedResult() failed with error %d", 
+                  WSAGetLastError());
+            rc = -1;
+        }
+    }
+    out->retval = rc;
+}
+)
+
 
 /*-------------- shutdown() ------------------------------*/
 
