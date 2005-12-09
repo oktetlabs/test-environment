@@ -3282,6 +3282,8 @@ typedef int (*flood_api_func)(struct pollfd *ufds,
 int
 flooder(tarpc_flooder_in *in)
 {
+    int errno_save = errno;
+
     api_func select_func;
     api_func pselect_func;
     api_func p_func;
@@ -3650,7 +3652,7 @@ flooder(tarpc_flooder_in *in)
     INFO("%s(): OK", __FUNCTION__);
 
     /* Clean up errno */
-    errno = 0;
+    errno = errno_save;
 
     return 0;
 }
