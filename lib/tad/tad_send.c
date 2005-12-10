@@ -87,7 +87,7 @@
  * @return nothing. 
  */
 void * 
-tad_tr_send_thread(void * arg)
+tad_tr_send_thread(void *arg)
 {
     struct rcf_comm_connection *handle; 
 
@@ -308,7 +308,6 @@ tad_tr_send_thread(void * arg)
             for (pkt = &packets_root; pkt!= NULL; pkt = pkt->next)
             {
                 rc = csap_descr->write_cb(csap_descr, pkt->data, pkt->len);
-
                 if (rc < 0)
                 {
                     F_ERROR("CSAP #%d internal write error %d", 
@@ -317,8 +316,8 @@ tad_tr_send_thread(void * arg)
                     break;
                 }
 
-                gettimeofday (&csap_descr->last_pkt, NULL);
-                if (!sent)
+                gettimeofday(&csap_descr->last_pkt, NULL);
+                if (sent == 0)
                     csap_descr->first_pkt = csap_descr->last_pkt;
 
                 sent++;
@@ -332,15 +331,15 @@ tad_tr_send_thread(void * arg)
                     pkt->free_data_cb(pkt->data);
                 else
                     free(pkt->data);
+                pkt->data = NULL;
 
-                pkt->data = 0;
                 rc = 0;
             }
             for (pkt = packets_root.next; pkt != NULL;
                  packets_root.next = pkt->next, free(pkt),
                  pkt = packets_root.next);
 
-            if (rc)
+            if (rc != 0)
                 break;
             
         } while (tad_iterate_tmpl_args(arg_set_specs, 
@@ -373,17 +372,17 @@ tad_tr_send_thread(void * arg)
         csap_descr->command = TAD_OP_IDLE;
         csap_descr->state   = 0;
 
-        if (rc)
+        if (rc != 0)
             SEND_ANSWER("%d",  TE_RC(TE_TAD_CH, rc)); 
         else 
             SEND_ANSWER("0 %d", sent); 
     }
-    else if (rc)
+    else if (rc != 0)
     { 
         csap_descr->last_errno = rc; 
         csap_descr->state |= TAD_STATE_COMPLETE;
 
-        while(1) 
+        while (1) 
         {
             te_bool need_answer = (csap_descr->command != TAD_OP_DESTROY);
 
