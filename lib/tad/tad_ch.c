@@ -488,6 +488,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         return 0;
     }
 
+    /* FIXME: It would be nice to check that CSAP is not busy. */
     csap_descr_p->total_bytes = 0;
     csap_descr_p->first_pkt = tv_zero;
     csap_descr_p->last_pkt  = tv_zero;
