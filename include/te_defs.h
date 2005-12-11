@@ -133,6 +133,13 @@ typedef unsigned char te_bool;
 #define SIN6(_p)        ((struct sockaddr_in6 *)(_p))
 
 
+/** 
+ * Number of elements in array.
+ *
+ * @param _array    C name of an array
+ */
+#define TE_ARRAY_SZ(_array)  (sizeof(_array) / sizeof(_array[0]))
+
 /**
  * Swap two pointers.
  *
