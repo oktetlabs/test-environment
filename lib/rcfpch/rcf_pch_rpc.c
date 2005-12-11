@@ -138,13 +138,13 @@ static char      *rpc_buf;     /**< Buffer for receiving of RPC answers;
                                     context only */
 static int        lsock = -1;  /**< Listening socket */
 
-static int rpcserver_get(unsigned int, const char *, char *,
-                         const char *);
-static int rpcserver_add(unsigned int, const char *, const char *,
-                         const char *);
-static int rpcserver_del(unsigned int, const char *,
-                         const char *);
-static int rpcserver_list(unsigned int, const char *, char **);
+static te_errno rpcserver_get(unsigned int, const char *, char *,
+                              const char *);
+static te_errno rpcserver_add(unsigned int, const char *, const char *,
+                              const char *);
+static te_errno rpcserver_del(unsigned int, const char *,
+                              const char *);
+static te_errno rpcserver_list(unsigned int, const char *, char **);
 
 static rcf_pch_cfg_object node_rpcserver =
     { "rpcserver", 0, NULL, NULL,

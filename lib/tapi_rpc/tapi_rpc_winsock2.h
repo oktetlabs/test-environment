@@ -983,11 +983,11 @@ extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
  *
  * @return TRUE on success, FALSE on failure
  */
-extern int rpc_get_overlapped_result(rcf_rpc_server *rpcs,
-                                     int s, rpc_overlapped overlapped,
-                                     int *bytes, te_bool wait,
-                                     rpc_send_recv_flags *flags,
-                                     char *buf, int buflen);
+extern te_bool rpc_get_overlapped_result(rcf_rpc_server *rpcs,
+                                         int s, rpc_overlapped overlapped,
+                                         int *bytes, te_bool wait,
+                                         rpc_send_recv_flags *flags,
+                                         char *buf, int buflen);
 /**
  * Get result of completion callback (if called).
  *
@@ -1036,9 +1036,9 @@ extern int rpc_enum_network_events(rcf_rpc_server *rpcs,
                                   int s, rpc_wsaevent event_object,
                                   rpc_network_event *event);
 
-/** Return codes for rpc_wait_multiple_events */
+/** Return codes for rpc_wait_for_multiple_events */
 enum {
-    WSA_WAIT_FAILED,
+    WSA_WAIT_FAILED = 1,
     WAIT_IO_COMPLETION,
     WSA_WAIT_TIMEOUT,
     WSA_WAIT_EVENT_0
@@ -1058,6 +1058,7 @@ wsa_wait_rpc2str(int code)
 
     switch (code)
     {
+        case 0:                  return "0";
         case WSA_WAIT_FAILED:    return "WSA_WAIT_FAILED";
         case WAIT_IO_COMPLETION: return "WSA_WAIT_COMPLETION";
         case WSA_WAIT_TIMEOUT:   return "WSA_WAIT_TIMOUT";
@@ -1088,10 +1089,10 @@ wsa_wait_rpc2str(int code)
  * @return The event object that make the function to return.
  *         -1 is returned in the case of RPC error 
  */
-extern int rpc_wait_multiple_events(rcf_rpc_server *rpcs,
-                                    int count, rpc_wsaevent *events,
-                                    te_bool wait_all, uint32_t timeout,
-                                    te_bool alertable);
+extern int rpc_wait_for_multiple_events(rcf_rpc_server *rpcs,
+                                        int count, rpc_wsaevent *events,
+                                        te_bool wait_all, uint32_t timeout,
+                                        te_bool alertable);
 
 
 /** 

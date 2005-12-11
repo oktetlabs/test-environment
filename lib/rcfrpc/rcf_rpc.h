@@ -109,7 +109,6 @@ typedef struct rcf_rpc_server {
     /* Returned read-only fields with status of the last operation */
     uint64_t        duration;   /**< Call Duration in microseconds */
     int             _errno;     /**< error number */
-    int             win_error;  /**< Value returned by GetLastError() */
     
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_t lock;       /**< lock mutex */

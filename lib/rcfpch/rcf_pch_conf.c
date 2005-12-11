@@ -734,7 +734,7 @@ rcf_pch_cfg_init(void)
 
 
 /* See description in rcf_ch_api.h */
-int
+te_errno
 rcf_pch_agent_list(unsigned int id, const char *oid, char **list)
 {
     UNUSED(id);

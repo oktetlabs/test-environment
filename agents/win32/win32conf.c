@@ -1289,7 +1289,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
  *
  * @return Status code
  */
-int 
+te_errno
 neigh_state_get(unsigned int gid, const char *oid, char *value,
                 const char *ifname, const char *addr)
 {

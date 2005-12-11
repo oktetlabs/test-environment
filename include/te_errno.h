@@ -183,6 +183,13 @@ typedef enum {
     TE_EMEDIUMTYPE,   /**< Wrong medium type */
     TE_ECANCELED,     /**< Operation is cancelled */
     
+    /* Windows-specific error codes */
+    TE_E_UNEXP_NET_ERR,  /**< Unexpected network error */
+    TE_E_WAIT_TIMEOUT,   /**< The wait operation timed out */
+    TE_E_IO_INCOMPLETE,  /**< Overlapped I/O event is not in a
+                              signaled state */
+    TE_E_IO_PENDING,     /**< Overlapped I/O operation is in progress */
+    
     /* TE-specific error codes */
     TE_EUNKNOWN,      /**< Unknown OS errno */
     
@@ -576,6 +583,11 @@ te_rc_err2str(te_errno err)
         ERR2STR(ENOMEDIUM);    
         ERR2STR(EMEDIUMTYPE);  
         ERR2STR(ECANCELED);
+
+        ERR2STR(E_UNEXP_NET_ERR);
+        ERR2STR(E_WAIT_TIMEOUT);
+        ERR2STR(E_IO_INCOMPLETE);
+        ERR2STR(E_IO_PENDING);
 
         ERR2STR(EUNKNOWN);
 

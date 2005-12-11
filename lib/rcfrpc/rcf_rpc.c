@@ -519,7 +519,6 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     {
         rpcs->duration = out->duration; 
         rpcs->_errno = out->_errno;
-        rpcs->win_error = out->win_error;
         rpcs->timed_out = FALSE;
         if (rpcs->op == RCF_RPC_CALL)
         {

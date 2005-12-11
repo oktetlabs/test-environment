@@ -118,7 +118,6 @@ struct tarpc_out_arg {
                                  TA context to be set when function
                                  which is called using non-blocking
                                  RPC call finishes */
-    tarpc_int   win_error;  /**< Windows error as is */                                 
 };
 
 
@@ -2687,7 +2686,7 @@ struct tarpc_get_overlapped_result_out {
 
 /* WSAWaitForMultipleEvents */
 
-/** Return codes for rpc_wait_multiple_events */
+/** Return codes for rpc_wait_for_multiple_events */
 enum tarpc_wait_code {
     TARPC_WSA_WAIT_FAILED,
     TARPC_WAIT_IO_COMPLETION,
@@ -2695,7 +2694,7 @@ enum tarpc_wait_code {
     TARPC_WSA_WAIT_EVENT_0
 };
 
-struct tarpc_wait_multiple_events_in {
+struct tarpc_wait_for_multiple_events_in {
     struct tarpc_in_arg common; 
     
     tarpc_wsaevent  events<>;   /**< Events array */
@@ -2704,7 +2703,7 @@ struct tarpc_wait_multiple_events_in {
     tarpc_int       alertable;  /**< Alertable flag */
 };
 
-struct tarpc_wait_multiple_events_out {
+struct tarpc_wait_for_multiple_events_out {
     struct tarpc_out_arg common;
 
     tarpc_wait_code      retval;
@@ -3025,7 +3024,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_recv)
         RPC_DEF(wsa_recv_ex)
         RPC_DEF(get_overlapped_result)
-        RPC_DEF(wait_multiple_events)
+        RPC_DEF(wait_for_multiple_events)
         RPC_DEF(wsa_send_to)
         RPC_DEF(wsa_recv_from)
         RPC_DEF(wsa_send_disconnect)

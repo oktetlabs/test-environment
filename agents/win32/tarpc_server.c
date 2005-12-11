@@ -69,9 +69,6 @@ struct timezone {
        printf(msg); printf("\n"); fflush(stdout);       \
     } while (0)
 
-/** Obtain RCF RPC errno code */
-#define RPC_ERRNO errno_h2rpc(errno)
-
 /** Check return code and update the errno */
 #define TARPC_CHECK_RC(expr_) \
     do {                                            \
@@ -213,215 +210,59 @@ static te_bool init = FALSE;
 #define IN_FDSET        ((fd_set *)(rcf_pch_mem_get(in->set)))
 
 /**
- * Translates WSAError to errno.
+ * Converts the windows error to RPC one.
  */ 
 static int 
-wsaerr2errno(int wsaerr)
+win_rpc_errno(int err)
 {
-    int err = 0;
-    
-    switch (wsaerr)
+    switch (err)
     {
-        case RPC_WSAEACCES:
-        {
-            err = RPC_EACCES;
-            break;
-        }    
+        case 0: return 0;
+        case WSAEACCES: return RPC_EACCES;
+        case WSAEFAULT: return RPC_EFAULT;
+        case WSAEINVAL: return RPC_EINVAL;
+        case WSAEMFILE: return RPC_EMFILE;
+        case WSAEWOULDBLOCK: return RPC_EAGAIN;
+        case WSAEINPROGRESS: return RPC_EINPROGRESS;
+        case WSAEALREADY: return RPC_EALREADY;
+        case WSAENOTSOCK: return RPC_ENOTSOCK;
+        case WSAEDESTADDRREQ: return RPC_EDESTADDRREQ;
+        case WSAEMSGSIZE: return RPC_EMSGSIZE;
+        case WSAEPROTOTYPE: return RPC_EPROTOTYPE;
+        case WSAENOPROTOOPT: return RPC_ENOPROTOOPT;
+        case WSAEPROTONOSUPPORT: return RPC_EPROTONOSUPPORT;
+        case WSAESOCKTNOSUPPORT: return RPC_ESOCKTNOSUPPORT;
+        case WSAEOPNOTSUPP: return RPC_EOPNOTSUPP;
+        case WSAEPFNOSUPPORT: return RPC_EPFNOSUPPORT;
+        case WSAEAFNOSUPPORT: return RPC_EAFNOSUPPORT;
+        case WSAEADDRINUSE: return RPC_EADDRINUSE;
+        case WSAEADDRNOTAVAIL: return RPC_EADDRNOTAVAIL;
+        case WSAENETDOWN: return RPC_ENETDOWN;
+        case WSAENETUNREACH: return RPC_ENETUNREACH;
+        case WSAENETRESET: return RPC_ENETRESET;
+        case WSAECONNABORTED: return RPC_ECONNABORTED;
+        case WSAECONNRESET: return RPC_ECONNRESET;
+        case WSAENOBUFS: return RPC_ENOBUFS;
+        case WSAEISCONN: return RPC_EISCONN;
+        case WSAENOTCONN: return RPC_ENOTCONN;
+        case WSAESHUTDOWN: return RPC_ESHUTDOWN;
+        case WSAETIMEDOUT: return RPC_ETIMEDOUT;
+        case WSAECONNREFUSED: return RPC_ECONNREFUSED;
+        case WSAEHOSTDOWN: return RPC_EHOSTDOWN;
+        case WSAEHOSTUNREACH: return RPC_EHOSTUNREACH;
+        case WSA_INVALID_HANDLE: return RPC_EBADF;
         
-        case RPC_WSAEFAULT:
-        {
-            err = RPC_EFAULT;
-            break;
-        }
+        case ERROR_UNEXP_NET_ERR: return RPC_E_UNEXP_NET_ERR;
+        case ERROR_IO_INCOMPLETE: return RPC_E_IO_INCOMPLETE;
+        case ERROR_IO_PENDING: return RPC_E_IO_PENDING;
+        case ERROR_NOACCESS: return RPC_EFAULT; /* FIXME? */
+        case ERROR_MORE_DATA: return RPC_EMSGSIZE; /* FIXME? */
+        case WAIT_TIMEOUT: return RPC_E_WAIT_TIMEOUT;
         
-        case RPC_WSAEINVAL:
-        {
-            err = RPC_EINVAL;
-            break;
-        }    
-        
-        case RPC_WSAEMFILE:
-        {
-            err = RPC_EMFILE;
-            break;
-        }    
-        
-        case RPC_WSAEWOULDBLOCK:
-        {
-            err = RPC_EAGAIN;
-            break;
-        }    
-        
-        case RPC_WSAEINPROGRESS:
-        {
-            err = RPC_EINPROGRESS;
-            break;
-        }    
-        
-        case RPC_WSAEALREADY:
-        {
-            err = RPC_EALREADY;
-            break;
-        }
-        
-        case RPC_WSAENOTSOCK:
-        {
-            err = RPC_ENOTSOCK;
-            break;
-        }    
-        
-        case RPC_WSAEDESTADDRREQ:
-        {
-            err = RPC_EDESTADDRREQ;
-            break;
-        }    
-        
-        case RPC_WSAEMSGSIZE:
-        {
-            err = RPC_EMSGSIZE;
-            break;
-        }
-        
-        case RPC_WSAEPROTOTYPE:
-        {
-            err = RPC_EPROTOTYPE;
-            break;
-        }    
-        
-        case RPC_WSAENOPROTOOPT:
-        {
-            err = RPC_ENOPROTOOPT;
-            break;
-        }    
-        
-        case RPC_WSAEPROTONOSUPPORT:
-        {
-            err = RPC_EPROTONOSUPPORT;
-            break;
-        }    
-        
-        case RPC_WSAESOCKTNOSUPPORT:
-        {
-            err = RPC_ESOCKTNOSUPPORT;
-            break;
-        }    
-        
-        case RPC_WSAEOPNOTSUPP:
-        {
-            err = RPC_EOPNOTSUPP;
-            break;
-        } 
-        
-        case RPC_WSAEPFNOSUPPORT:
-        {
-            err = RPC_EPFNOSUPPORT;
-            break;
-        } 
-        
-        case RPC_WSAEAFNOSUPPORT:
-        {
-            err = RPC_EAFNOSUPPORT;
-            break;
-        } 
-        
-        case RPC_WSAEADDRINUSE:
-        {
-            err = RPC_EADDRINUSE;
-            break;
-        } 
-        
-        case RPC_WSAEADDRNOTAVAIL:
-        {
-            err = RPC_EADDRNOTAVAIL;
-            break;
-        } 
-        
-        case RPC_WSAENETDOWN:
-        {
-            err = RPC_ENETDOWN;
-            break;
-        } 
-        
-        case RPC_WSAENETUNREACH:
-        {
-            err = RPC_ENETUNREACH;
-            break;
-        } 
-        
-        case RPC_WSAENETRESET:
-        {
-            err = RPC_ENETRESET;
-            break;
-        } 
-        
-        case RPC_WSAECONNABORTED:
-        {
-            err = RPC_ECONNABORTED;
-            break;
-        } 
-        
-        case RPC_WSAECONNRESET:
-        {
-            err = RPC_ECONNRESET;
-            break;
-        }
-        
-        case RPC_WSAENOBUFS:
-        {
-            err = RPC_ENOBUFS;
-            break;
-        } 
-
-        case RPC_WSAEISCONN:
-        {
-            err = RPC_EISCONN;
-            break;
-        } 
-        
-        case RPC_WSAENOTCONN:
-        {
-            err = RPC_ENOTCONN;
-            break;
-        } 
-        
-        case RPC_WSAESHUTDOWN:
-        {
-            err = RPC_ESHUTDOWN;
-            break;
-        } 
-        
-        case RPC_WSAETIMEDOUT:
-        {
-            err = RPC_ETIMEDOUT;
-            break;
-        } 
-        
-        case RPC_WSAECONNREFUSED:
-        {
-            err = RPC_ECONNREFUSED;
-            break;
-        } 
-        
-        case RPC_WSAEHOSTDOWN:
-        {
-            err = RPC_EHOSTDOWN;
-            break;
-        } 
-        
-        case RPC_WSAEHOSTUNREACH:
-        {
-            err = RPC_EHOSTUNREACH;
-            break;
-        } 
- 
-        default:
-        {
-            err = RPC_EINVAL; 
-        }
-    }    
-
-    
-    return err;    
+        default: 
+            ERROR("Unknown windows error code %d", err);
+            return RPC_EUNKNOWN; 
+    }
 }
 
 static void 
@@ -443,7 +284,7 @@ wsa_func_handles_discover()
                      (LPVOID)&pf_##_func, sizeof(LPFN_##_func_cup),     \
                       &bytes_returned, NULL, NULL) == SOCKET_ERROR)     \
         {                                                               \
-            int _errno = WSAGetLastError();                             \
+            int _errno = GetLastError();                                \
             PRINT("Cannot retrieve %s pointer via WSAIoctl();"          \
                  " errno %d", #_func, _errno);                          \
         }                                                               \
@@ -461,10 +302,10 @@ wsa_func_handles_discover()
     closesocket(s);
 }
 
-static int wsaerr2errno(int wsaerr);
-
-/** Overlapped object with additional parameters - memory associated
-    with overlapped information  */
+/** 
+ * Overlapped object with additional parameters - memory associated
+ * with overlapped information  
+ */
 typedef struct rpc_overlapped {
     WSAOVERLAPPED  overlapped; /**< WSAOVERLAPPED object itself */
     LPWSABUF       buffers;     /**< List of allocated buffers   */
@@ -793,15 +634,6 @@ check_args(checked_arg *list)
             WARN("Start time is gone");                         \
     } while (0)
 
-/** Set output error */
-#define SET_ERROR \
-    do {                                                            \
-        out->common.win_error = win_error_h2rpc(WSAGetLastError()); \
-        out->common._errno = RPC_ERRNO;                             \
-        if (out->common.win_error != 0)                             \
-            out->common._errno =                                    \
-                wsaerr2errno(out->common.win_error);                \
-    } while (0)                
 
 /**
  * Declare and initialise time variables; execute the code and store
@@ -818,7 +650,7 @@ check_args(checked_arg *list)
         errno = 0;                                                  \
         WSASetLastError(0);                                         \
         x;                                                          \
-        SET_ERROR;                                                  \
+        out->common._errno = win_rpc_errno(GetLastError());         \
         gettimeofday(&t_finish, NULL);                              \
         out->common.duration =                                      \
             (t_finish.tv_sec - t_start.tv_sec) * 1000000 +          \
@@ -1744,18 +1576,18 @@ TARPC_FUNC(read,
 
     if (out->retval == 0)
     {
-        if (out->common.win_error != RPC_WSA_IO_PENDING)
+        if (out->common._errno != RPC_E_IO_PENDING)
         {
-            ERROR("read(): ReadFile() failed with error %d", 
-                  WSAGetLastError());
+            INFO("read(): ReadFile() failed with error %r (%d)", 
+                  out->common._errno, GetLastError());
             rc = -1;
         }
         else if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
-            SET_ERROR;
-            ERROR("read(): GetOverlappedResult() failed with error %d", 
-                  WSAGetLastError());
+            out->common._errno = win_rpc_errno(GetLastError());
+            ERROR("read(): GetOverlappedResult() failed with error %r (%d)",
+                  out->common._errno, GetLastError());
             rc = -1;
         }
     }
@@ -1780,18 +1612,18 @@ TARPC_FUNC(write, {},
 
     if (out->retval == 0)
     {
-        if (out->common.win_error != RPC_WSA_IO_PENDING)
+        if (out->common._errno != RPC_E_IO_PENDING)
         {
-            ERROR("write(): WriteFile() failed with error %d", 
-                  WSAGetLastError());
+            INFO("write(): WriteFile() failed with error %r (%d)", 
+                 out->common._errno, GetLastError());
             rc = -1;
         }
         else if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
-            SET_ERROR;
-            ERROR("write(): GetOverlappedResult() failed with error %d", 
-                  WSAGetLastError());
+            out->common._errno = win_rpc_errno(GetLastError());
+            ERROR("write(): GetOverlappedResult() failed with "
+                 "error %r (%d)", out->common._errno, GetLastError());
             rc = -1;
         }
     }
@@ -1887,7 +1719,7 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
     }
     else
     {
-        out->common._errno = RPC_ERRNO;
+        out->common._errno = win_rpc_errno(GetLastError());
         out->retval = rcf_pch_mem_alloc(set);
     }
 
@@ -1908,7 +1740,7 @@ _fd_set_delete_1_svc(tarpc_fd_set_delete_in *in,
     errno = 0;
     free(IN_FDSET);
     rcf_pch_mem_free(in->set);
-    out->common._errno = RPC_ERRNO;
+    out->common._errno = win_rpc_errno(GetLastError());
 
     return TRUE;
 }
@@ -2188,7 +2020,7 @@ TARPC_FUNC(getsockopt,
                 if (in->level == RPC_SOL_SOCKET &&
                     in->optname == RPC_SO_ERROR)
                 {
-                    *(int *)opt = errno_h2rpc(*(int *)opt);
+                    *(int *)opt = win_rpc_errno(*(int *)opt);
                 }
 
                 /*
@@ -2526,7 +2358,7 @@ TARPC_FUNC(fileno, {},
             out->passwd._field._field##_val = strdup(pw->pw_##_field);  \
             if (out->passwd._field._field##_val == NULL)                \
             {                                                           \
-                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);        \
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);     \
                 goto finish;                                            \
             }                                                           \
             out->passwd._field._field##_len =                           \
@@ -2634,7 +2466,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
             int err = 0;
             if (in->ignore_err)
                 continue;
-            err = WSAGetLastError();
+            err = GetLastError();
             ERROR("send() failed in simple_sender(): errno %d", err);
             return -1;
         }
@@ -2723,7 +2555,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         {
             int err = 0;
             
-            err = WSAGetLastError();
+            err = GetLastError();
             ERROR("select() failed in simple_receiver(): errno %d", err);
             free(buf);
             return -1;
@@ -2742,7 +2574,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         {
             int err = 0;
             
-            err = WSAGetLastError();
+            err = GetLastError();
             ERROR("recv() failed in simple_receiver(): errno %d", err);
             free(buf);
             return -1;
@@ -2899,7 +2731,7 @@ flooder(tarpc_flooder_in *in)
                          NULL, &call_timeout)) < 0)
         {
             ERROR("%s(): (p)select() failed: %d", __FUNCTION__, 
-                  WSAGetLastError());
+                  GetLastError());
             return -1;
         }
 
@@ -2914,7 +2746,7 @@ flooder(tarpc_flooder_in *in)
                 if (FD_ISSET(sndrs[i], &wfds))
                 {
                     sent = send(sndrs[i], snd_buf, bulkszs, 0);
-                    err = WSAGetLastError();
+                    err = GetLastError();
                     if (sent < 0 && err != WSAEWOULDBLOCK)
                     {
                         ERROR("%s(): write() failed: %d",
@@ -2935,7 +2767,7 @@ flooder(tarpc_flooder_in *in)
             if (FD_ISSET(rcvrs[i], &rfds))
             {
                 received = recv(rcvrs[i], rcv_buf, sizeof(rcv_buf), 0);
-                err = WSAGetLastError();
+                err = GetLastError();
                 if (received < 0 && err != WSAEWOULDBLOCK)
                 {
                     ERROR("%s(): read() failed: %d", __FUNCTION__, err);
@@ -2990,7 +2822,7 @@ flooder(tarpc_flooder_in *in)
             if ((ioctlsocket((unsigned int)rcvrs[i], FIONBIO, &off)) != 0)
             {
                 ERROR("%s(): ioctl(FIONBIO) failed: %d",
-                      __FUNCTION__, WSAGetLastError());
+                      __FUNCTION__, GetLastError());
                 return -1;
             }
         }
@@ -3285,7 +3117,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
                 INFO("socket_to_file(): select observes data for "
                      "reading on the socket=%d", sock);
                 received = recv(sock, buffer, sizeof(buffer), 0);
-                err = WSAGetLastError();
+                err = GetLastError();
                 if (received < 0 && err != WSAEWOULDBLOCK)
                 {
                     ERROR("%s(): read() failed: %d", __FUNCTION__, err);
@@ -3625,7 +3457,7 @@ completion_callback(DWORD error, DWORD bytes, LPWSAOVERLAPPED overlapped,
 
     pthread_mutex_lock(&completion_lock);
     completion_called++;
-    completion_error = win_error_h2rpc(error);
+    completion_error = win_rpc_errno(error);
     completion_bytes = bytes;
     completion_overlapped = 
         (tarpc_overlapped)rcf_pch_mem_get_id(overlapped);
@@ -3681,7 +3513,7 @@ TARPC_FUNC(wsa_send,
                               completion_callback : NULL));
 
     if (in->overlapped == 0 || out->retval >= 0 ||
-        out->common.win_error != RPC_WSA_IO_PENDING)
+        out->common._errno != RPC_E_IO_PENDING)
     {
         rpc_overlapped_free_memory(overlapped);
     }
@@ -3729,7 +3561,7 @@ TARPC_FUNC(wsa_recv,
                           completion_callback : NULL));
 
      
-    if ((out->retval >= 0) || (out->common.win_error == RPC_WSAEMSGSIZE))
+    if ((out->retval >= 0) || (out->common._errno == RPC_EMSGSIZE))
     {
         overlapped2iovec(overlapped, &(out->vector.vector_len),
                          &(out->vector.vector_val));
@@ -3738,7 +3570,7 @@ TARPC_FUNC(wsa_recv,
                 send_recv_flags_h2rpc(out->flags.flags_val[0]);
     }
     else if (in->overlapped == 0 ||
-             out->common.win_error != RPC_WSA_IO_PENDING)
+             out->common._errno != RPC_E_IO_PENDING)
     {
         rpc_overlapped_free_memory(overlapped);
     }
@@ -3811,7 +3643,7 @@ TARPC_FUNC(duplicate_socket,
 
 /*-------------- WSAWaitForMultipleEvents() -------------------------*/
 #define MULTIPLE_EVENTS_MAX     128
-TARPC_FUNC(wait_multiple_events, 
+TARPC_FUNC(wait_for_multiple_events, 
 {
     if (in->events.events_len > MULTIPLE_EVENTS_MAX)
     {
@@ -3895,7 +3727,7 @@ TARPC_FUNC(wsa_send_to,
 
 
     if (in->overlapped == 0 || out->retval >= 0 ||
-        out->common.win_error != RPC_WSA_IO_PENDING)
+        out->common._errno != RPC_E_IO_PENDING)
     {
         rpc_overlapped_free_memory(overlapped);
     }
@@ -3950,7 +3782,7 @@ TARPC_FUNC(wsa_recv_from,
             in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
                 completion_callback : NULL));
     
-    if ((out->retval >= 0) || (out->common.win_error == RPC_WSAEMSGSIZE))
+    if ((out->retval >= 0) || (out->common._errno == RPC_EMSGSIZE))
     {
         overlapped2iovec(overlapped, &(out->vector.vector_len),
                          &(out->vector.vector_val));
@@ -3961,7 +3793,7 @@ TARPC_FUNC(wsa_recv_from,
         sockaddr_h2rpc(a, &(out->from));    
     }
     else if (in->overlapped == 0 ||
-             out->common.win_error != RPC_WSA_IO_PENDING)
+             out->common._errno != RPC_E_IO_PENDING)
     {
         rpc_overlapped_free_memory(overlapped);
     }
@@ -4134,7 +3966,7 @@ TARPC_FUNC(wsa_recv_msg,
             rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.dwFlags);
         }
         else if (in->overlapped == 0 ||
-                 out->common.win_error != RPC_WSA_IO_PENDING)
+                 out->common._errno != RPC_E_IO_PENDING)
         {
             rpc_overlapped_free_memory(overlapped);
         }
@@ -4165,7 +3997,7 @@ _sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
     }
     else
     {
-        out->common._errno = RPC_ERRNO;
+        out->common._errno = win_rpc_errno(GetLastError());
         out->set = rcf_pch_mem_alloc(set);
     }
 
@@ -4186,7 +4018,7 @@ _sigset_delete_1_svc(tarpc_sigset_delete_in *in,
     errno = 0;
     free(rcf_pch_mem_get(in->set));
     rcf_pch_mem_free(in->set);
-    out->common._errno = RPC_ERRNO;
+    out->common._errno = win_rpc_errno(GetLastError());
 
     return TRUE;
 }
@@ -4275,7 +4107,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     
     if (ioctlsocket(in->sock, FIONBIO, &val) < 0)
     {
-        err = WSAGetLastError();
+        err = GetLastError();
         rc = -1;
         ERROR("%s(): Failed to move socket to non-blocking state", 
               __FUNCTION__);
@@ -4285,7 +4117,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     do {
         do {
             rc = send(in->sock, &c, 1, 0);
-            err = WSAGetLastError();
+            err = GetLastError();
             
             if (rc == -1 && err != WSAEWOULDBLOCK)
             {
@@ -4315,13 +4147,12 @@ overfill_buffers_exit:
     val = 0;
     if (ioctlsocket(in->sock, FIONBIO, &val) < 0)
     {
-        err = WSAGetLastError();
+        err = GetLastError();
         rc = -1;
         ERROR("%s(): Failed to move socket back to blocking state", 
               __FUNCTION__);
     }
-    out->common.win_error = win_error_h2rpc(err);
-    out->common._errno = wsaerr2errno(out->common.win_error); 
+    out->common._errno = win_rpc_errno(GetLastError());
 
     return rc;
 }
@@ -4823,7 +4654,7 @@ TARPC_FUNC(wsa_ioctl, {},
         }
     }
     else if ((overlapped != NULL) &&
-            (out->common.win_error != RPC_WSA_IO_PENDING))
+            (out->common._errno != RPC_E_IO_PENDING))
     {
         rpc_overlapped_free_memory(overlapped);
     }

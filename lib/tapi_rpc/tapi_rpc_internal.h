@@ -196,6 +196,16 @@
         return __retval;                                            \
     } while (0)
 
+/** Return with check (for functions returning boolean value) */
+#define RETVAL_TRUE(_func, _retval) \
+    do {                                  \
+        te_bool __retval = _retval;       \
+                                          \
+        TAPI_RPC_OUT(_func, !(__retval)); \
+                                          \
+        return __retval;                  \
+    } while (0)
+
 
 /** Return with check (for functions returning value >= -1) */
 #define RETVAL_INT(_func, _retval) \
