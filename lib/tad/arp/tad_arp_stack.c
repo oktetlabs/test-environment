@@ -49,8 +49,10 @@ tad_arp_eth_init_cb(csap_p csap_descr, unsigned int layer,
     arp_csap_specific_data_t *arp_spec_data; 
     eth_csap_specific_data_t *eth_spec_data; 
 
+#if 0
     te_errno    rc;
     int32_t     tmp;
+#endif
 
 
     UNUSED(csap_nds); /* All data are extractred from its layer */
@@ -99,10 +101,12 @@ tad_arp_eth_init_cb(csap_p csap_descr, unsigned int layer,
         arp_spec_data->_field = tmp;                                    \
     } while (0)
 
+#if 0
     TAD_ARP_INIT_GET_INT("hw-type",    16, hw_type);
     TAD_ARP_INIT_GET_INT("proto-type", 16, proto_type);
     TAD_ARP_INIT_GET_INT("hw-size",    8,  hw_size);
     TAD_ARP_INIT_GET_INT("proto-size", 8,  proto_size);
+#endif
 
 #undef TAD_ARP_INIT_GET_INT
 

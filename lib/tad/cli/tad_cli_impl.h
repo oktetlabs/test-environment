@@ -209,7 +209,7 @@ extern te_errno tad_cli_single_destroy_cb(csap_p       csap_descr,
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
  *
- * The function complies with csap_confirm_pdu_cb_t prototype.
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */ 
 extern te_errno tad_cli_confirm_pdu_cb(csap_p        csap_descr,
                                        unsigned int  layer,
@@ -218,7 +218,7 @@ extern te_errno tad_cli_confirm_pdu_cb(csap_p        csap_descr,
 /**
  * Callback for generate binary data to be sent to media.
  *
- * The function complies with csap_gen_bin_cb_t prototype.
+ * The function complies with csap_layer_gen_bin_cb_t prototype.
  */ 
 extern te_errno tad_cli_gen_bin_cb(csap_p                csap_descr,
                                    unsigned int          layer,
@@ -231,7 +231,7 @@ extern te_errno tad_cli_gen_bin_cb(csap_p                csap_descr,
 /**
  * Callback for parse received packet and match it with pattern. 
  *
- * The function complies with csap_match_bin_cb_t prototype.
+ * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_cli_match_bin_cb(csap_p          csap_descr,
                                      unsigned int    layer, 
@@ -245,7 +245,7 @@ extern te_errno tad_cli_match_bin_cb(csap_p          csap_descr,
  * just one response to the packet which will be sent by this CSAP 
  * according to this template. 
  *
- * The function complies with csap_gen_pattern_cb_t prototype.
+ * The function complies with csap_layer_gen_pattern_cb_t prototype.
  */
 extern te_errno tad_cli_gen_pattern_cb(csap_p            csap_descr,
                                        unsigned int      layer,

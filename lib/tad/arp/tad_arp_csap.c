@@ -47,6 +47,8 @@ static csap_spt_type_t arp_csap_spt =
 {
     "arp",
 
+    NULL,
+    NULL,
     tad_arp_confirm_pdu_cb,
     tad_arp_gen_bin_cb,
     tad_arp_match_bin_cb,

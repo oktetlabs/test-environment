@@ -50,6 +50,8 @@ static csap_spt_type_t pcap_csap_spt =
 {
     "pcap",
 
+    NULL,
+    NULL,
     tad_pcap_confirm_pdu_cb,
     NULL,
     tad_pcap_match_bin_cb,

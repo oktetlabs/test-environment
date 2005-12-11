@@ -46,10 +46,7 @@
  * ARP CSAP specific data
  */
 typedef struct arp_csap_specific_data {
-    uint16_t    hw_type;
-    uint16_t    proto_type;
-    uint8_t     hw_size;
-    uint8_t     proto_size;
+    /* Nothing for now */
 } arp_csap_specific_data_t;
 
 
@@ -73,7 +70,7 @@ extern te_errno tad_arp_eth_destroy_cb(csap_p       csap_descr,
 
 /**
  * Callback for read parameter value of ARP CSAP.
- *
+    *
  * The function complies with csap_get_param_cb_t prototype.
  */
 extern char *tad_arp_get_param_cb(csap_p        csap_descr,
@@ -83,7 +80,7 @@ extern char *tad_arp_get_param_cb(csap_p        csap_descr,
 /**
  * Callback for confirm PDU with ARP CSAP parameters and possibilities.
  *
- * The function complies with csap_confirm_pdu_cb_t prototype.
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
 extern te_errno tad_arp_confirm_pdu_cb(csap_p        csap_descr,
                                        unsigned int  layer, 
@@ -92,7 +89,7 @@ extern te_errno tad_arp_confirm_pdu_cb(csap_p        csap_descr,
 /**
  * Callback for generate binary data to be sent to media.
  *
- * The function complies with csap_gen_bin_cb_t prototype.
+ * The function complies with csap_layer_gen_bin_cb_t prototype.
  */
 extern te_errno tad_arp_gen_bin_cb(csap_p                csap_descr,
                                    unsigned int          layer,
@@ -105,7 +102,7 @@ extern te_errno tad_arp_gen_bin_cb(csap_p                csap_descr,
 /**
  * Callback for parse received packet and match it with pattern.
  *
- * The function complies with csap_match_bin_cb_t prototype.
+ * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_arp_match_bin_cb(csap_p           csap_descr,
                                      unsigned int     layer,
@@ -118,7 +115,7 @@ extern te_errno tad_arp_match_bin_cb(csap_p           csap_descr,
  * Callback for generating pattern to filter just one response to the
  * packet which will be sent by this CSAP according to this template.
  *
- * The function complies with csap_gen_pattern_cb_t prototype.
+ * The function complies with csap_layer_gen_pattern_cb_t prototype.
  */
 extern te_errno tad_arp_gen_pattern_cb(csap_p            csap_descr,
                                        unsigned int      layer,

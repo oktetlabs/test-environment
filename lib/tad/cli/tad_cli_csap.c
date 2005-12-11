@@ -47,6 +47,8 @@ static csap_spt_type_t cli_csap_spt =
 {
     "cli",
 
+    NULL,
+    NULL,
     tad_cli_confirm_pdu_cb,
     tad_cli_gen_bin_cb,
     tad_cli_match_bin_cb,

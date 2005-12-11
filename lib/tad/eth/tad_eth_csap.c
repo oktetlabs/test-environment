@@ -47,6 +47,8 @@ static csap_spt_type_t eth_csap_spt =
 {
     "eth",
 
+    NULL,
+    NULL,
     tad_eth_confirm_pdu_cb,
     tad_eth_gen_bin_cb,
     tad_eth_match_bin_cb,

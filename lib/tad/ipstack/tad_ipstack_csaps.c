@@ -57,6 +57,8 @@ static csap_spt_type_t ip4_csap_spt =
 {
     "ip4",
 
+    NULL,
+    NULL,
     tad_ip4_confirm_pdu_cb,
     tad_ip4_gen_bin_cb,
     tad_ip4_match_bin_cb,
@@ -95,6 +97,8 @@ static csap_spt_type_t udp_csap_spt =
 {
     "udp",
 
+    NULL,
+    NULL,
     tad_udp_confirm_pdu_cb,
     tad_udp_gen_bin_cb,
     tad_udp_match_bin_cb,
@@ -120,6 +124,8 @@ static csap_spt_type_t tcp_csap_spt =
 {
     "tcp",
 
+    NULL,
+    NULL,
     tad_tcp_confirm_pdu_cb,
     tad_tcp_gen_bin_cb,
     tad_tcp_match_bin_cb,

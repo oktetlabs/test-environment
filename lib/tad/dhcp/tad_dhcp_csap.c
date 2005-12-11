@@ -47,6 +47,8 @@ static csap_spt_type_t dhcp_csap_spt =
 {
     "dhcp",
 
+    NULL,
+    NULL,
     tad_dhcp_confirm_pdu_cb,
     tad_dhcp_gen_bin_cb,
     tad_dhcp_match_bin_cb,
