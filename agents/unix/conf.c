@@ -117,7 +117,7 @@ struct nlmsg_list {
 #define INTERFACE_IS_MINE(ifname)       TRUE
 #endif
 
-#define CHECK_INTERFACE(ifname, __rc)               \
+#define CHECK_INTERFACE(ifname)                     \
     ((ifname == NULL)? TE_EINVAL :                  \
      (strlen(ifname) > IFNAMSIZ)? TE_E2BIG :        \
      (strchr(ifname, ':') != NULL ||                \
@@ -1263,16 +1263,16 @@ interface_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(value);
 
+    if ((devname = strdup(ifname)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
     if ((rc = CHECK_INTERFACE(devname)) != 0)
     {
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-   if (interface_exists(ifname))
+    if (interface_exists(ifname))
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
-
-    if ((devname = strdup(ifname)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     if ((vlan = strchr(devname, '.')) == NULL)
     {
@@ -2719,7 +2719,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
     FILE    *fp;
     char     device[32];
     char     mac[MAC_ADDR_LEN * 3];
-    te_ernro rc;
+    te_errno rc;
     
     unsigned int flags;
     
