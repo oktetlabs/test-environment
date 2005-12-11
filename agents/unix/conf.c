@@ -3648,6 +3648,121 @@ route_del(unsigned int gid, const char *oid, const char *route)
     return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL);
 }
 
+typedef struct{
+    int           family;        /**< Route address family */
+    char         *buf;           /**< Where to print the route */
+}rtnl_print_route_cb_user_data_t;
+
+static int
+rtnl_print_route_cb(const struct sockaddr_nl *who,
+                    const struct nlmsghdr *n, void *arg)
+{
+    struct rtmsg        *r = NLMSG_DATA(n);
+    int                  len = n->nlmsg_len;
+    char                *p;
+    
+    rtnl_print_route_cb_user_data_t *user_data = 
+                         (rtnl_print_route_cb_user_data_t *)arg;
+    
+    struct rtattr       *tb[RTA_MAX + 1] = {};
+    int                  family;
+
+    UNUSED(who);
+
+      
+    family = r->rtm_family;
+    
+    if (family != user_data->family)
+    {
+        return 0;
+    }
+
+    if (family != AF_INET && family != AF_INET6)
+    {
+        return 0;
+    }
+    
+    if (family == AF_INET6)
+    {
+#if 1
+        /* Route destination is unreachable */
+        if (tb[RTA_PRIORITY] && *(int*)RTA_DATA(tb[RTA_PRIORITY]) == -1)
+            return 0;
+
+        if ((r->rtm_flags & RTM_F_CLONED) != 0)
+            return 0;
+
+        if (r->rtm_type != RTN_UNICAST)
+            return 0;
+
+        if (n->nlmsg_type != RTM_NEWROUTE)
+            return 0;
+#endif        
+    }
+    else
+    {
+        if (r->rtm_table != RT_TABLE_MAIN)
+            return 0;
+    }
+
+    len -= NLMSG_LENGTH(sizeof(*r));
+
+    parse_rtattr(tb, RTA_MAX, RTM_RTA(r), len);
+   
+    p = user_data->buf;
+    
+    if (tb[RTA_DST] == NULL)
+    {
+        if (r->rtm_dst_len != 0)
+        {
+            ERROR("NULL destination with non-zero prefix");
+            return 0;
+        }
+        else
+        {
+            if (family == AF_INET)
+            {
+                p += sprintf(p, "0.0.0.0|0");
+            }
+            else
+            {    
+                p += sprintf(p, "::|0");
+            }
+        }
+    }
+    else
+    {
+        if (tb[RTA_GATEWAY] != NULL &&
+            memcmp(RTA_DATA(tb[RTA_DST]), RTA_DATA(tb[RTA_GATEWAY]),
+            r->rtm_dst_len) == 0)
+        {
+            WARN("Gateway = destination, skip route");
+            return 0;
+        }
+            
+        inet_ntop(family, RTA_DATA(tb[RTA_DST]), p, INET6_ADDRSTRLEN);
+        p += strlen(p);
+        p += sprintf(p, "|%d", r->rtm_dst_len);        
+    }
+
+    if (tb[RTA_PRIORITY] != NULL &&
+        (*(uint32_t *)RTA_DATA(tb[RTA_PRIORITY]) != 0))
+    {
+        p += sprintf(p, ",metric=%d", 
+                     *(uint32_t *)RTA_DATA(tb[RTA_PRIORITY]));
+    }
+
+    if (r->rtm_tos != 0)
+    {
+        p += sprintf(p, ",tos=%d", r->rtm_tos);
+    }
+
+    p += sprintf(p, " ");
+    user_data->buf = p;
+
+    return 0;
+}
+
 /**
  * Get instance list for object "agent/route".
  *
@@ -3662,11 +3777,6 @@ route_del(unsigned int gid, const char *oid, const char *route)
 static int
 route_list(unsigned int gid, const char *oid, char **list)
 {
-    char *ptr = buf;
-    char *end_ptr = buf + sizeof(buf);
-    char  ifname[RCF_MAX_NAME];
-    FILE *fp;
-
     UNUSED(gid);
     UNUSED(oid);
 
@@ -3675,119 +3785,51 @@ route_list(unsigned int gid, const char *oid, char **list)
     buf[0] = '\0';
 
 #ifdef __linux__
-    if ((fp = fopen("/proc/net/route", "r")) == NULL)
+
+    struct rtnl_handle               rth;
+    rtnl_print_route_cb_user_data_t  user_data;    
+
+    memset(&user_data, 0, sizeof(user_data));
+
+    user_data.buf = buf;
+
+    memset(&rth, 0, sizeof(rth));
+    if (rtnl_open(&rth, 0) < 0)
     {
-        ERROR("Failed to open /proc/net/route for reading: %s",
-              strerror(errno));
+        ERROR("Failed to open a netlink socket");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
-
-    fgets(trash, sizeof(trash), fp);
-    while (fscanf(fp, "%s", ifname) != EOF)
-    {
-        unsigned int addr;
-        unsigned int mask;
-        uint32_t     gateway = 0;
-        unsigned int flags = 0;
-        unsigned int prefix = 0;
-        int          metric;
-        int          mtu;
-        int          win;
-        int          irtt;
-
-        fscanf(fp, "%x %x %x %*d %*d %d %x %d %d %d", &addr, &gateway,
-               &flags, &metric, &mask, &mtu, &win, &irtt);
-
-        if (flags & RTF_UP)
-        {
-            MASK2PREFIX(ntohl(mask), prefix);
-
-            snprintf(ptr, end_ptr - ptr, "%d.%d.%d.%d|%d",
-                    ((uint8_t *)&addr)[0], ((uint8_t *)&addr)[1],
-                    ((uint8_t *)&addr)[2], ((uint8_t *)&addr)[3], prefix);
-            ptr += strlen(ptr);
-
-            if (metric > 0)
-            {
-                snprintf(ptr, end_ptr - ptr, ",metric=%d", metric);
-                ptr += strlen(ptr);
-            }
-
-            snprintf(ptr, end_ptr - ptr, " ");
-            ptr += strlen(ptr);
-        }
-        fgets(trash, sizeof(trash), fp);
-    }
-    fclose(fp);
-
-    VERB("Got IPv4 routes");
-
-#if 0
-    if ((fp = fopen("/proc/net/ipv6_route", "r")) == NULL)
-    {
-        ERROR("Failed to open /proc/net/ipv6_route for reading: %s",
-              strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
+    ll_init_map(&rth);
     
-#define IPV6_RAW_STR_LEN  33
-#define IPV6_RAW_PRINT(addr, _ptr)                                    \
-do {                                                                  \
-    char *p;                                                          \
-    int   i = 0;                                                      \
-                                                                      \
-    /* Print the address */                                           \
-    for (p = addr; isxdigit(*p); p += 4 - i)                          \
-    {                                                                 \
-        /*                                                            \
-         * If it is not the first quad of digits,                     \
-         * print a colon before it                                    \
-         */                                                           \
-        if (p != addr && end_ptr >= _ptr)                             \
-        {                                                             \
-            snprintf(_ptr, end_ptr - _ptr, ":");                      \
-            _ptr++;                                                   \
-        }                                                             \
-        for (i = 0; (i < 3) && (*p == '0'); i++, p++);                \
-                                                                      \
-        /* Do not print more than 4 digits at once */                 \
-        if (end_ptr >= _ptr)                                          \
-            snprintf(_ptr, MIN(5 - i, end_ptr - _ptr), p);            \
-        _ptr += strlen(_ptr);                                         \
-    }                                                                 \
-} while(0)    
-   
-    {        
-        char         mask[IPV6_RAW_STR_LEN];
-        char         dst[IPV6_RAW_STR_LEN];
-        char         gate[IPV6_RAW_STR_LEN];
-        uint32_t     prefix = 0;
-        uint32_t     flags = 0;
-        int          metric;
-        
-        while (fscanf(fp, "%s %x %s %*x %s %x %*x %*x %x %s", dst, &prefix,
-                      mask, gate, &metric, &flags, ifname) >0)
-        {
-            if (flags & RTF_UP)
-            {
-                IPV6_RAW_PRINT(dst, ptr);
-                snprintf(ptr, end_ptr - ptr, "|%d", prefix);
-                ptr += strlen(ptr);
+#define GET_ALL_ROUTES_OF_FAMILY(__family)                      \
+do {                                                            \
+    if (rtnl_wilddump_request(&rth, __family,                   \
+                              RTM_GETROUTE) < 0)                \
+    {                                                           \
+        rtnl_close(&rth);                                       \
+        ERROR("Cannot send dump request to netlink");           \
+        return TE_OS_RC(TE_TA_UNIX, errno);                     \
+    }                                                           \
+                                                                \
+    /* Fill in user_data, which will be passed to callback function */  \
+    user_data.family = __family;                                \
+    if (rtnl_dump_filter(&rth, rtnl_print_route_cb,             \
+                         &user_data, NULL, NULL) < 0)           \
+    {                                                           \
+        rtnl_close(&rth);                                       \
+        ERROR("Dump terminated");                               \
+        return TE_OS_RC(TE_TA_UNIX, errno);                     \
+    }                                                           \
+} while (0)
 
-                if (metric > 0)
-                {
-                    snprintf(ptr, end_ptr - ptr, ",metric=%d", metric);
-                    ptr += strlen(ptr);
-                }
-
-                snprintf(ptr, end_ptr - ptr, " ");
-                ptr += strlen(ptr);
-            }
-        }
-        fgets(trash, sizeof(trash), fp);
-        fclose(fp);
-    }
+    GET_ALL_ROUTES_OF_FAMILY(AF_INET);
+#if 0 
+    GET_ALL_ROUTES_OF_FAMILY(AF_INET6);
 #endif
+
+#undef GET_ALL_ROUTES_OF_FAMILY    
+    
+    rtnl_close(&rth);
 
 #else
     UNUSED(ptr);
