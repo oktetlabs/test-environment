@@ -59,7 +59,7 @@ extern "C" {
  * @param info      if not NULL, the string to be send to the engine
  *                  after initialisation
  *
- * @return error code
+ * @return Status code
  */
 extern int rcf_pch_run(const char *confstr, const char *info);
 
@@ -154,8 +154,8 @@ extern int rcf_pch_configure(struct rcf_comm_connection *conn,
  * @retval 0        success
  * @retval TE_ENOMEM   memory allocation failure
  */
-extern int rcf_pch_agent_list(unsigned int gid, const char *oid,
-                              char **list);
+extern te_errno rcf_pch_agent_list(unsigned int gid, const char *oid,
+                                   char **list);
 
 /**
  * Default file processing handler.

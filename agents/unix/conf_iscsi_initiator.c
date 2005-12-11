@@ -397,7 +397,7 @@ iscsi_init_default_ini_parameters(int how)
 /**
  * Returns the last command received by the Initiator.
  */
-static int
+static te_errno
 iscsi_initiator_get(const char *gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -417,7 +417,7 @@ iscsi_initiator_get(const char *gid, const char *oid,
  *
  * @return errno
  */
-static int
+static te_errno
 te_shell_cmd_ex(const char *cmd, ...)
 {
     char    cmdline[MAX_CMD_SIZE];
@@ -438,7 +438,7 @@ te_shell_cmd_ex(const char *cmd, ...)
  *
  * @return -1 or result of the ta_system
  */
-    static int
+static int
 ta_system_ex(const char *cmd, ...)
 {
     char   *cmdline;
@@ -1523,7 +1523,7 @@ iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -1535,7 +1535,7 @@ iscsi_initiator_set(unsigned int gid, const char *oid,
 }
 
 /* AuthMethod */
-static int
+static te_errno
 iscsi_initiator_chap_set(unsigned int gid, const char *oid,
                          char *value, const char *instance, ...)
 {
@@ -1549,7 +1549,7 @@ iscsi_initiator_chap_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_chap_get(unsigned int gid, const char *oid,
                          char *value, const char *instance, ...)
 {
@@ -1564,7 +1564,7 @@ iscsi_initiator_chap_get(unsigned int gid, const char *oid,
 }
 
 /* Peer Name */
-static int
+static te_errno
 iscsi_initiator_peer_name_set(unsigned int gid, const char *oid,
                               char *value, const char *instance, ...)
 {
@@ -1578,7 +1578,7 @@ iscsi_initiator_peer_name_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_peer_name_get(unsigned int gid, const char *oid,
                               char *value, const char *instance, ...)
 {
@@ -1593,7 +1593,7 @@ iscsi_initiator_peer_name_get(unsigned int gid, const char *oid,
 }
 
 /* Challenge Length */
-static int
+static te_errno
 iscsi_initiator_challenge_length_set(unsigned int gid, const char *oid,
                                      char *value, const char *instance, ...)
 {
@@ -1608,7 +1608,7 @@ iscsi_initiator_challenge_length_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_challenge_length_get(unsigned int gid, const char *oid,
                                       char *value, const char *instance, ...)
 {
@@ -1624,9 +1624,9 @@ iscsi_initiator_challenge_length_get(unsigned int gid, const char *oid,
 }
 
 /* Encoding Format */
-static int
+static te_errno
 iscsi_initiator_enc_fmt_set(unsigned int gid, const char *oid,
-                                    char *value, const char *instance, ...)
+                            char *value, const char *instance, ...)
 {
     UNUSED(gid);
     UNUSED(instance);
@@ -1638,9 +1638,9 @@ iscsi_initiator_enc_fmt_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_enc_fmt_get(unsigned int gid, const char *oid,
-                                    char *value, const char *instance, ...)
+                            char *value, const char *instance, ...)
 {
     UNUSED(gid);
     UNUSED(instance);
@@ -1654,9 +1654,9 @@ iscsi_initiator_enc_fmt_get(unsigned int gid, const char *oid,
 }
 
 /* Connection structure */
-static int
+static te_errno
 iscsi_conn_add(unsigned int gid, const char *oid,
-                      char *value, const char *instance, ...)
+               char *value, const char *instance, ...)
 {
     int cid = iscsi_get_cid(oid);
     int tgt_id = iscsi_get_target_id(oid);
@@ -1674,9 +1674,9 @@ iscsi_conn_add(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_conn_del(unsigned int gid, const char *oid,
-                      const char *instance, ...)
+               const char *instance, ...)
 {
     UNUSED(gid);
     UNUSED(instance);
@@ -1687,9 +1687,9 @@ iscsi_conn_del(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_conn_list(unsigned int gid, const char *oid,
-                       char **list, const char *instance, ...)
+                char **list, const char *instance, ...)
 {
     int   cid;
     int   tgt_id = iscsi_get_target_id(oid);
@@ -1723,7 +1723,7 @@ iscsi_conn_list(unsigned int gid, const char *oid,
 }
 
 /* Target Data */
-static int
+static te_errno
 iscsi_target_data_add(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -1741,7 +1741,7 @@ iscsi_target_data_add(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_target_data_del(unsigned int gid, const char *oid,
                       const char *instance, ...)
 {
@@ -1755,7 +1755,7 @@ iscsi_target_data_del(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_target_data_list(unsigned int gid, const char *oid,
                        char **list, const char *instance, ...)
 {
@@ -1790,7 +1790,7 @@ iscsi_target_data_list(unsigned int gid, const char *oid,
 }
 
 /* Target Authentication */
-static int
+static te_errno
 iscsi_initiator_target_auth_set(unsigned int gid, const char *oid,
                                 char *value, const char *instance, ...)
 {
@@ -1808,7 +1808,7 @@ iscsi_initiator_target_auth_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_target_auth_get(unsigned int gid, const char *oid,
                                 char *value, const char *instance, ...)
 {
@@ -1823,7 +1823,7 @@ iscsi_initiator_target_auth_get(unsigned int gid, const char *oid,
 }
 
 /* Peer Secret */
-static int
+static te_errno
 iscsi_initiator_peer_secret_set(unsigned int gid, const char *oid,
                                 char *value, const char *instance, ...)
 {
@@ -1836,7 +1836,7 @@ iscsi_initiator_peer_secret_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_peer_secret_get(unsigned int gid, const char *oid,
                                 char *value, const char *instance, ...)
 {
@@ -1851,7 +1851,7 @@ iscsi_initiator_peer_secret_get(unsigned int gid, const char *oid,
 }
 
 /* Local Secret */
-static int
+static te_errno
 iscsi_initiator_local_secret_set(unsigned int gid, const char *oid,
                                  char *value, const char *instance, ...)
 {
@@ -1866,7 +1866,7 @@ iscsi_initiator_local_secret_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_local_secret_get(unsigned int gid, const char *oid,
                                 char *value, const char *instance, ...)
 {
@@ -1882,7 +1882,7 @@ iscsi_initiator_local_secret_get(unsigned int gid, const char *oid,
 }
 
 /* MaxConnections */
-static int
+static te_errno
 iscsi_max_connections_set(unsigned int gid, const char *oid,
                           char *value, const char *instance, ...)
 {
@@ -1895,7 +1895,7 @@ iscsi_max_connections_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_max_connections_get(unsigned int gid, const char *oid,
                           char *value, const char *instance, ...)
 {
@@ -1909,7 +1909,7 @@ iscsi_max_connections_get(unsigned int gid, const char *oid,
 }
 
 /* InitialR2T */
-static int
+static te_errno
 iscsi_initial_r2t_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -1922,7 +1922,7 @@ iscsi_initial_r2t_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initial_r2t_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -1936,7 +1936,7 @@ iscsi_initial_r2t_get(unsigned int gid, const char *oid,
 }
 
 /* HeaderDigest */
-static int
+static te_errno
 iscsi_header_digest_set(unsigned int gid, const char *oid,
                         char *value, const char *instance, ...)
 {
@@ -1949,7 +1949,7 @@ iscsi_header_digest_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_header_digest_get(unsigned int gid, const char *oid,
                         char *value, const char *instance, ...)
 {
@@ -1964,7 +1964,7 @@ iscsi_header_digest_get(unsigned int gid, const char *oid,
 }
 
 /* DataDigest */
-static int
+static te_errno
 iscsi_data_digest_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -1977,7 +1977,7 @@ iscsi_data_digest_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_data_digest_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -1991,7 +1991,7 @@ iscsi_data_digest_get(unsigned int gid, const char *oid,
 }
 
 /* ImmediateData */
-static int
+static te_errno
 iscsi_immediate_data_set(unsigned int gid, const char *oid,
                          char *value, const char *instance, ...)
 {
@@ -2004,7 +2004,7 @@ iscsi_immediate_data_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_immediate_data_get(unsigned int gid, const char *oid,
                          char *value, const char *instance, ...)
 {
@@ -2019,7 +2019,7 @@ iscsi_immediate_data_get(unsigned int gid, const char *oid,
 }
 
 /* MaxRecvDataSegmentLength */
-static int
+static te_errno
 iscsi_max_recv_data_segment_length_set(unsigned int gid, const char *oid,
                                        char *value, const char *instance, ...)
 {
@@ -2032,7 +2032,7 @@ iscsi_max_recv_data_segment_length_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_max_recv_data_segment_length_get(unsigned int gid, const char *oid,
                                        char *value, const char *instance, ...)
 {
@@ -2047,7 +2047,7 @@ iscsi_max_recv_data_segment_length_get(unsigned int gid, const char *oid,
 }
 
 /* FirstBurstLength */
-static int
+static te_errno
 iscsi_first_burst_length_set(unsigned int gid, const char *oid,
                              char *value, const char *instance, ...)
 {
@@ -2060,7 +2060,7 @@ iscsi_first_burst_length_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_first_burst_length_get(unsigned int gid, const char *oid,
                              char *value, const char *instance, ...)
 {
@@ -2075,7 +2075,7 @@ iscsi_first_burst_length_get(unsigned int gid, const char *oid,
 }
 
 /* MaxBurstLength */
-static int
+static te_errno
 iscsi_max_burst_length_set(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -2088,7 +2088,7 @@ iscsi_max_burst_length_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_max_burst_length_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -2103,7 +2103,7 @@ iscsi_max_burst_length_get(unsigned int gid, const char *oid,
 }
 
 /* DefaultTime2Wait */
-static int
+static te_errno
 iscsi_default_time2wait_set(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -2116,7 +2116,7 @@ iscsi_default_time2wait_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_default_time2wait_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -2131,7 +2131,7 @@ iscsi_default_time2wait_get(unsigned int gid, const char *oid,
 }
 
 /* DefaultTime2Retain */
-static int
+static te_errno
 iscsi_default_time2retain_set(unsigned int gid, const char *oid,
                               char *value, const char *instance, ...)
 {
@@ -2144,7 +2144,7 @@ iscsi_default_time2retain_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_default_time2retain_get(unsigned int gid, const char *oid,
                               char *value, const char *instance, ...)
 {
@@ -2159,7 +2159,7 @@ iscsi_default_time2retain_get(unsigned int gid, const char *oid,
 }
 
 /* MaxOutstandingR2T */
-static int
+static te_errno
 iscsi_max_outstanding_r2t_set(unsigned int gid, const char *oid,
                               char *value, const char *instance, ...)
 {
@@ -2172,7 +2172,7 @@ iscsi_max_outstanding_r2t_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_max_outstanding_r2t_get(unsigned int gid, const char *oid,
                               char *value, const char *instance, ...)
 {
@@ -2186,7 +2186,7 @@ iscsi_max_outstanding_r2t_get(unsigned int gid, const char *oid,
 }
 
 /* DataPDUInOrder */
-static int
+static te_errno
 iscsi_data_pdu_in_order_set(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
@@ -2199,7 +2199,7 @@ iscsi_data_pdu_in_order_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_data_pdu_in_order_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
@@ -2214,7 +2214,7 @@ iscsi_data_pdu_in_order_get(unsigned int gid, const char *oid,
 }
 
 /* DataSequenceInOrder */
-static int
+static te_errno
 iscsi_data_sequence_in_order_set(unsigned int gid, const char *oid,
                                  char *value, const char *instance, ...)
 {
@@ -2228,7 +2228,7 @@ iscsi_data_sequence_in_order_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_data_sequence_in_order_get(unsigned int gid, const char *oid,
                                  char *value, const char *instance, ...)
 {
@@ -2243,7 +2243,7 @@ iscsi_data_sequence_in_order_get(unsigned int gid, const char *oid,
 }
 
 /* ErrorRecoveryLevel */
-static int
+static te_errno
 iscsi_error_recovery_level_set(unsigned int gid, const char *oid,
                                      char *value, const char *instance, ...)
 {
@@ -2256,7 +2256,7 @@ iscsi_error_recovery_level_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_error_recovery_level_get(unsigned int gid, const char *oid,
                                char *value, const char *instance, ...)
 {
@@ -2271,7 +2271,7 @@ iscsi_error_recovery_level_get(unsigned int gid, const char *oid,
 }
 
 /* SessionType */
-static int
+static te_errno
 iscsi_session_type_set(unsigned int gid, const char *oid,
                        char *value, const char *instance, ...)
 {
@@ -2284,7 +2284,7 @@ iscsi_session_type_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_session_type_get(unsigned int gid, const char *oid,
                        char *value, const char *instance, ...)
 {
@@ -2298,7 +2298,7 @@ iscsi_session_type_get(unsigned int gid, const char *oid,
 }
 
 /* TargetName */
-static int
+static te_errno
 iscsi_target_name_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -2310,7 +2310,7 @@ iscsi_target_name_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_target_name_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -2323,7 +2323,7 @@ iscsi_target_name_get(unsigned int gid, const char *oid,
 }
 
 /* InitiatorName */
-static int
+static te_errno
 iscsi_initiator_name_set(unsigned int gid, const char *oid,
                          char *value, const char *instance, ...)
 {
@@ -2337,7 +2337,7 @@ iscsi_initiator_name_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_name_get(unsigned int gid, const char *oid,
                          char *value, const char *instance, ...)
 {
@@ -2353,7 +2353,7 @@ iscsi_initiator_name_get(unsigned int gid, const char *oid,
 }
 
 /* InitiatorAlias */
-static int
+static te_errno
 iscsi_initiator_alias_set(unsigned int gid, const char *oid,
                           char *value, const char *instance, ...)
 {
@@ -2367,7 +2367,7 @@ iscsi_initiator_alias_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_alias_get(unsigned int gid, const char *oid,
                           char *value, const char *instance, ...)
 {
@@ -2383,7 +2383,7 @@ iscsi_initiator_alias_get(unsigned int gid, const char *oid,
 }
 
 /* TargetAddress */
-static int
+static te_errno
 iscsi_target_addr_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -2396,7 +2396,7 @@ iscsi_target_addr_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_target_addr_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -2411,7 +2411,7 @@ iscsi_target_addr_get(unsigned int gid, const char *oid,
 }
 
 /* TargetPort */
-static int
+static te_errno
 iscsi_target_port_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -2423,7 +2423,7 @@ iscsi_target_port_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_target_port_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -2438,9 +2438,9 @@ iscsi_target_port_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_host_device_get(unsigned int gid, const char *oid,
-                           char *value, const char *instance, ...)
+                      char *value, const char *instance, ...)
 {
     char        dev_pattern[128];
     glob_t      devices;
@@ -2520,7 +2520,7 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
 }
 
 /* Initiator's path to scripts (for L5) */
-static int
+static te_errno
 iscsi_script_path_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -2532,7 +2532,7 @@ iscsi_script_path_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_script_path_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -2546,7 +2546,7 @@ iscsi_script_path_get(unsigned int gid, const char *oid,
 }
 
 /* Initiator type */
-static int
+static te_errno
 iscsi_type_set(unsigned int gid, const char *oid,
                char *value, const char *instance, ...)
 {
@@ -2568,7 +2568,7 @@ iscsi_type_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_type_get(unsigned int gid, const char *oid,
                char *value, const char *instance, ...)
 {
@@ -2586,7 +2586,7 @@ iscsi_type_get(unsigned int gid, const char *oid,
 
 
 /* Host Bus Adapter */
-static int
+static te_errno
 iscsi_host_bus_adapter_set(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -2600,7 +2600,7 @@ iscsi_host_bus_adapter_set(unsigned int gid, const char *oid,
 }
 
 
-static int
+static te_errno
 iscsi_host_bus_adapter_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -2615,7 +2615,7 @@ iscsi_host_bus_adapter_get(unsigned int gid, const char *oid,
 }
 
 /* Local Name */
-static int
+static te_errno
 iscsi_initiator_local_name_set(unsigned int gid, const char *oid,
                                char *value, const char *instance, ...)
 {
@@ -2628,7 +2628,7 @@ iscsi_initiator_local_name_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_initiator_local_name_get(unsigned int gid, const char *oid,
                                char *value, const char *instance, ...)
 {
@@ -2643,7 +2643,7 @@ iscsi_initiator_local_name_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_parameters2advertize_set(unsigned int gid, const char *oid,
                                char *value, const char *instance, ...)
 {
@@ -2657,7 +2657,7 @@ iscsi_parameters2advertize_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
                                char *value, const char *instance, ...)
 {
@@ -2674,7 +2674,7 @@ iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_cid_set(unsigned int gid, const char *oid,
               char *value, const char *instance, ...)
 {
@@ -2706,7 +2706,7 @@ iscsi_cid_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_cid_get(unsigned int gid, const char *oid,
               char *value, const char *instance, ...)
 {

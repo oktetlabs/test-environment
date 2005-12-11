@@ -217,7 +217,7 @@ extern void ds_config_touch(int index);
  *
  * @return Status code
  */
-extern int daemon_get(unsigned int gid, const char *oid, char *value);
+extern te_errno daemon_get(unsigned int gid, const char *oid, char *value);
 
 /**
  * Start/stop daemon.
@@ -228,7 +228,8 @@ extern int daemon_get(unsigned int gid, const char *oid, char *value);
  *
  * @return Status code
  */
-extern int daemon_set(unsigned int gid, const char *oid, const char *value);
+extern te_errno daemon_set(unsigned int gid, const char *oid,
+                           const char *value);
 
 /** 
  * Check, if daemon/service is running (enabled).

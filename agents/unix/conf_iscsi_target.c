@@ -71,7 +71,7 @@ extern int iscsi_server_init();
     }
 
 /** Get CHAP peer name */
-static int
+static te_errno
 iscsi_target_pn_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -93,7 +93,7 @@ iscsi_target_pn_get(unsigned int gid, const char *oid,
 }
 
 /** Set CHAP peer name */
-static int
+static te_errno
 iscsi_target_pn_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -115,7 +115,7 @@ iscsi_target_pn_set(unsigned int gid, const char *oid,
 }
 
 /** Get CHAP peer secret */
-static int
+static te_errno
 iscsi_target_px_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -138,7 +138,7 @@ iscsi_target_px_get(unsigned int gid, const char *oid,
 }
 
 /** Set CHAP peer name */
-static int
+static te_errno
 iscsi_target_px_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -160,7 +160,7 @@ iscsi_target_px_set(unsigned int gid, const char *oid,
 }
 
 /** Get mutual auth status */
-static int
+static te_errno
 iscsi_target_t_get(unsigned int gid, const char *oid,
                    char *value, const char *instance, ...)
 {
@@ -177,7 +177,7 @@ iscsi_target_t_get(unsigned int gid, const char *oid,
 }
 
 /** Set mutual auth status */
-static int
+static te_errno
 iscsi_target_t_set(unsigned int gid, const char *oid,
                    char *value, const char *instance, ...)
 {
@@ -205,7 +205,7 @@ iscsi_target_t_set(unsigned int gid, const char *oid,
 }
 
 /** Get challenge encoding */
-static int
+static te_errno
 iscsi_target_b_get(unsigned int gid, const char *oid,
                    char *value, const char *instance, ...)
 {   
@@ -222,7 +222,7 @@ iscsi_target_b_get(unsigned int gid, const char *oid,
 }
 
 /** Set challenge encoding */
-static int
+static te_errno
 iscsi_target_b_set(unsigned int gid, const char *oid,
                    char *value, const char *instance, ...)
 {
@@ -266,7 +266,7 @@ iscsi_target_b_set(unsigned int gid, const char *oid,
 }
 
 /** Get challenge length */
-static int
+static te_errno
 iscsi_target_cl_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -285,7 +285,7 @@ iscsi_target_cl_get(unsigned int gid, const char *oid,
 }
 
 /** Set challenge length */
-static int
+static te_errno
 iscsi_target_cl_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -315,7 +315,7 @@ iscsi_target_cl_set(unsigned int gid, const char *oid,
 }
 
 /** Get CHAP local name */
-static int
+static te_errno
 iscsi_target_ln_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -338,7 +338,7 @@ iscsi_target_ln_get(unsigned int gid, const char *oid,
 }
 
 /** Set CHAP local name */
-static int
+static te_errno
 iscsi_target_ln_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -360,7 +360,7 @@ iscsi_target_ln_set(unsigned int gid, const char *oid,
 }
 
 /** Get CHAP local secret */
-static int
+static te_errno
 iscsi_target_lx_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -384,7 +384,7 @@ iscsi_target_lx_get(unsigned int gid, const char *oid,
 }
 
 /** Set CHAP local secret */
-static int
+static te_errno
 iscsi_target_lx_set(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -406,7 +406,7 @@ iscsi_target_lx_set(unsigned int gid, const char *oid,
 }
 
 /** Get Auth method */
-static int
+static te_errno
 iscsi_target_chap_set(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -425,7 +425,7 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
 }   
 
 /** Set auth method */
-static int
+static te_errno
 iscsi_target_chap_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -500,7 +500,7 @@ map_oid_to_param(const char *oid)
 }
 
 /** Get an operational parameter */
-static int
+static te_errno
 iscsi_target_oper_get(unsigned int gid, const char *oid,
                  char *value, const char *instance, ...)
 {
@@ -515,7 +515,7 @@ iscsi_target_oper_get(unsigned int gid, const char *oid,
 
 
 /** Set an operational parameter */
-static int
+static te_errno
 iscsi_target_oper_set(unsigned int gid, const char *oid,
                       const char *value, const char *instance, ...)
 {
@@ -602,7 +602,7 @@ iscsi_target_backstore_unmount(void)
 }
 
 /** Get the size of a target backing store */
-static int
+static te_errno
 iscsi_target_backstore_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -633,7 +633,7 @@ iscsi_target_backstore_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 iscsi_target_backstore_set(unsigned int gid, const char *oid,
                            const char *value, const char *instance, ...)
 {
@@ -731,7 +731,7 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
 
 
 /** Set a backing store mount point */
-static int
+static te_errno
 iscsi_tgt_backstore_mp_set(unsigned int gid, const char *oid,
                            const char *value, const char *instance, ...)
 {
@@ -750,7 +750,7 @@ iscsi_tgt_backstore_mp_set(unsigned int gid, const char *oid,
 }
 
 /** Get a backing store mount point */
-static int
+static te_errno
 iscsi_tgt_backstore_mp_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -763,7 +763,7 @@ iscsi_tgt_backstore_mp_get(unsigned int gid, const char *oid,
 }
 
 /** Get a target verbosity level */
-static int
+static te_errno
 iscsi_tgt_verbose_get(unsigned int gid, const char *oid,
                       char *value, const char *instance, ...)
 {
@@ -776,7 +776,7 @@ iscsi_tgt_verbose_get(unsigned int gid, const char *oid,
 }
 
 /** Set a target verbosity level */
-static int
+static te_errno
 iscsi_tgt_verbose_set(unsigned int gid, const char *oid,
                       const char *value, const char *instance, ...)
 {
@@ -789,7 +789,7 @@ iscsi_tgt_verbose_set(unsigned int gid, const char *oid,
 }
 
 /** A stub for a target topmost object */
-static int
+static te_errno
 iscsi_target_get(unsigned int gid, const char *oid,
                  char *value, const char *instance, ...)
 {

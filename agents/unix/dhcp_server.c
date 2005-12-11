@@ -342,7 +342,7 @@ ds_dhcpserver_is_run(void)
 }
 
 /** Get DHCP server daemon on/off */
-static int
+static te_errno
 ds_dhcpserver_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -354,7 +354,7 @@ ds_dhcpserver_get(unsigned int gid, const char *oid, char *value)
 }
 
 /** Stop DHCP server using script from /etc/init.d */
-static int
+static te_errno
 ds_dhcpserver_script_stop(void)
 {
     sprintf(buf, "%s stop >/dev/null 2>&1", dhcp_server_script);
@@ -367,7 +367,7 @@ ds_dhcpserver_script_stop(void)
 }
 
 /** Stop DHCP server */
-static int
+static te_errno
 ds_dhcpserver_stop(void)
 {
     ENTRY("%s()", __FUNCTION__);
@@ -382,7 +382,7 @@ ds_dhcpserver_stop(void)
 
 
 /** Start DHCP server using script from /etc/init.d */
-static int
+static te_errno
 ds_dhcpserver_script_start(void)
 {
     sprintf(buf, "%s start >/dev/null 2>&1", dhcp_server_script);
@@ -396,10 +396,10 @@ ds_dhcpserver_script_start(void)
 }
 
 /** Start DHCP server */
-static int
+static te_errno
 ds_dhcpserver_start(void)
 {
-    int rc;
+    te_errno rc;
 
     ENTRY("%s()", __FUNCTION__);
     rc = ds_dhcpserver_save_conf();
@@ -438,12 +438,12 @@ ds_dhcpserver_start(void)
 }
 
 /** On/off DHCP server */
-static int
+static te_errno
 ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
 {
-    te_bool is_run = ds_dhcpserver_is_run();
-    te_bool do_run;
-    int     rc;
+    te_bool  is_run = ds_dhcpserver_is_run();
+    te_bool  do_run;
+    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -482,7 +482,7 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
 }
 
 /** Get DHCP server interfaces */
-static int
+static te_errno
 ds_dhcpserver_ifs_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -494,7 +494,7 @@ ds_dhcpserver_ifs_get(unsigned int gid, const char *oid, char *value)
 }
 
 /** Get DHCP server interfaces */
-static int
+static te_errno
 ds_dhcpserver_ifs_set(unsigned int gid, const char *oid, const char *value)
 {
     char *copy;
@@ -537,7 +537,7 @@ find_subnet(const char *subnet)
     return s;
 }
 
-static int
+static te_errno
 ds_subnet_get(unsigned int gid, const char *oid, char *value,
               const char *dhcpserver, const char *subnet)
 {
@@ -555,7 +555,7 @@ ds_subnet_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-static int
+static te_errno
 ds_subnet_set(unsigned int gid, const char *oid, const char *value,
               const char *dhcpserver, const char *subnet)
 {
@@ -579,7 +579,7 @@ ds_subnet_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-static int
+static te_errno
 ds_subnet_add(unsigned int gid, const char *oid, const char *value,
               const char *dhcpserver, const char *subnet)
 {
@@ -613,7 +613,7 @@ ds_subnet_add(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-static int
+static te_errno
 ds_subnet_del(unsigned int gid, const char *oid,
               const char *dhcpserver, const char *subnet)
 {
@@ -633,7 +633,7 @@ ds_subnet_del(unsigned int gid, const char *oid,
     
 }
 
-static int
+static te_errno
 ds_subnet_list(unsigned int gid, const char *oid, char **list)
 {
     te_dhcp_server_subnet  *s;
@@ -654,7 +654,7 @@ ds_subnet_list(unsigned int gid, const char *oid, char **list)
 
 /** Definition of list method for host and groups */
 #define LIST_METHOD(_gh) \
-static int \
+static te_errno \
 ds_##_gh##_list(unsigned int gid, const char *oid, char **list) \
 {                                                               \
     _gh *gh;                                                    \
@@ -678,7 +678,7 @@ LIST_METHOD(group)
 
 /** Definition of add method for host and groups */
 #define ADD_METHOD(_gh) \
-static int \
+static te_errno \
 ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
                const char *dhcpserver, const char *name)                \
 {                                                                       \
@@ -712,7 +712,7 @@ ADD_METHOD(group)
 
 /** Definition of delete method for host and groups */
 #define DEL_METHOD(_gh) \
-static int \
+static te_errno \
 ds_##_gh##_del(unsigned int gid, const char *oid,       \
                const char *dhcpserver, const char *name)\
 {                                                       \
@@ -743,7 +743,7 @@ DEL_METHOD(host)
 DEL_METHOD(group)
 
 /** Obtain the group of the host */
-static int
+static te_errno
 ds_host_group_get(unsigned int gid, const char *oid, char *value,
                   const char *dhcpserver, const char *name)
 {
@@ -765,7 +765,7 @@ ds_host_group_get(unsigned int gid, const char *oid, char *value,
 }
 
 /** Change the group of the host */
-static int
+static te_errno
 ds_host_group_set(unsigned int gid, const char *oid, const char *value,
                   const char *dhcpserver, const char *name)
 {
@@ -796,7 +796,7 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
  * attributes (except options).
  */
 #define ATTR_GET(_attr, _gh) \
-static int \
+static te_errno \
 ds_##_gh##_##_attr##_get(unsigned int gid, const char *oid,     \
                          char *value, const char *dhcpserver,   \
                          const char *name)                      \
@@ -819,7 +819,7 @@ ds_##_gh##_##_attr##_get(unsigned int gid, const char *oid,     \
 }
 
 #define ATTR_SET(_attr, _gh) \
-static int \
+static te_errno \
 ds_##_gh##_##_attr##_set(unsigned int gid, const char *oid,     \
                          const char *value,                     \
                          const char *dhcpserver,                \
@@ -871,7 +871,7 @@ ATTR_SET(filename, group)
  * for the host/group.
  */
 #define GET_OPT_LIST(_gh) \
-static int \
+static te_errno \
 ds_##_gh##_option_list(unsigned int gid, const char *oid,       \
                        char **list, const char *dhcpserver,     \
                        const char *name)                        \
@@ -902,7 +902,7 @@ GET_OPT_LIST(group)
 
 /* Method for adding of the option for group/host */
 #define ADD_OPT(_gh) \
-static int \
+static te_errno \
 ds_##_gh##_option_add(unsigned int gid, const char *oid,        \
                       const char *value, const char *dhcpserver,\
                       const char *name, const char *optname)    \
@@ -943,7 +943,7 @@ ADD_OPT(group)
 
 /* Method for obtaining of the option for group/host */
 #define GET_OPT(_gh) \
-static int \
+static te_errno \
 ds_##_gh##_option_get(unsigned int gid, const char *oid,        \
                       char *value, const char *dhcpserver,      \
                       const char *name, const char *optname)    \
@@ -972,7 +972,7 @@ GET_OPT(group)
 
 /* Method for changing of the option value for group/host */
 #define SET_OPT(_gh) \
-static int \
+static te_errno \
 ds_##_gh##_option_set(unsigned int gid, const char *oid,        \
                       const char *value, const char *dhcpserver,\
                       const char *name, const char *optname)    \
@@ -1016,7 +1016,7 @@ SET_OPT(group)
 
 /* Method for deletion of the option value for group/host */
 #define DEL_OPT(_gh) \
-static int \
+static te_errno      \
 ds_##_gh##_option_del(unsigned int gid, const char *oid,        \
                       const char *dhcpserver, const char *name, \
                       const char *optname)                      \
@@ -1057,7 +1057,7 @@ DEL_OPT(group)
 #define ADDR_LIST_BULK      128
 
 /** Obtain the list of leases */
-static int
+static te_errno
 ds_lease_list(unsigned int gid, const char *oid, char **list)
 {
     FILE *f;
@@ -1135,7 +1135,7 @@ open_lease(const char *name)
 }
 
 /** Get lease node */
-static int
+static te_errno
 ds_lease_get(unsigned int gid, const char *oid, char *value,
              const char *dhcpserver, const char *name)
 {
@@ -1172,13 +1172,13 @@ ds_lease_get(unsigned int gid, const char *oid, char *value,
 }
 
 /** Get lease state */
-static int
+static te_errno
 ds_lease_state_get(unsigned int gid, const char *oid, char *value,
                    const char *dhcpserver, const char *name)
 GET_INT_LEASE_ATTR("state")
 
 /** Get lease client identifier */
-static int
+static te_errno
 ds_lease_client_id_get(unsigned int gid, const char *oid, char *value,
                        const char *dhcpserver, const char *name)
 {
@@ -1226,7 +1226,7 @@ ds_lease_client_id_get(unsigned int gid, const char *oid, char *value,
 }
 
 /** Get lease hostname */
-static int
+static te_errno
 ds_lease_hostname_get(unsigned int gid, const char *oid, char *value,
                       const char *dhcpserver, const char *name)
 {
@@ -1252,7 +1252,7 @@ ds_lease_hostname_get(unsigned int gid, const char *oid, char *value,
 }
 
 /** Get lease IP address */
-static int
+static te_errno
 ds_lease_host_get(unsigned int gid, const char *oid, char *value,
                   const char *dhcpserver, const char *name)
 {
@@ -1276,7 +1276,7 @@ ds_lease_host_get(unsigned int gid, const char *oid, char *value,
 }
 
 /** Get lease MAC address */
-static int
+static te_errno
 ds_lease_chaddr_get(unsigned int gid, const char *oid, char *value,
                     const char *dhcpserver, const char *name)
 {
@@ -1305,17 +1305,17 @@ ds_lease_chaddr_get(unsigned int gid, const char *oid, char *value,
 
 /* Get lease attributes */
 
-static int
+static te_errno
 ds_lease_ends_get(unsigned int gid, const char *oid, char *value,
                   char *dhcpserver, char *name)
 GET_INT_LEASE_ATTR("ends")
 
-static int
+static te_errno
 ds_lease_tstp_get(unsigned int gid, const char *oid, char *value,
                   char *dhcpserver, char *name)
 GET_INT_LEASE_ATTR("tstp")
 
-static int
+static te_errno
 ds_lease_cltt_get(unsigned int gid, const char *oid, char *value,
                   char *dhcpserver, char *name)
 GET_INT_LEASE_ATTR("cltt")

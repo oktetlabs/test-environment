@@ -338,7 +338,7 @@ struct rcf_thread_parameter {
     te_bool   is_argv;
     int       argc;
     void    **params;
-    int       rc;
+    te_errno  rc;
     te_bool   sem_created;
     sem_t     params_processed;
 };

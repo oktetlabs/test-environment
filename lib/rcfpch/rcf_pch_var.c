@@ -320,8 +320,8 @@ rcf_pch_call(struct rcf_comm_connection *conn,
              const char *rtn, te_bool is_argv, int argc,
              void **params)
 {
-    void *addr;
-    int   rc;
+    void     *addr;
+    te_errno  rc;
 
     ENTRY("rtn='%s' is_argv=%d argc=%d params=%x",
           rtn, is_argv, argc, params);

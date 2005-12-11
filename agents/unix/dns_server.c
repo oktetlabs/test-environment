@@ -78,7 +78,7 @@ dns_update_config(void)
 }
 
 
-static int
+static te_errno
 ds_dns_forwarder_get(unsigned int gid, const char *oid,
                      char *value, const char *instN, ...)
 {
@@ -91,7 +91,7 @@ ds_dns_forwarder_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_dns_forwarder_set(unsigned int gid, const char *oid,
                      const char *value, const char *instN, ...)
 {
@@ -108,7 +108,7 @@ ds_dns_forwarder_set(unsigned int gid, const char *oid,
     return dns_update_config();
 }
 
-static int
+static te_errno
 ds_dns_directory_get(unsigned int gid, const char *oid,
                      char *value, const char *instN, ...)
 {
@@ -119,7 +119,7 @@ ds_dns_directory_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_dns_directory_set(unsigned int gid, const char *oid,
                      const char *value, const char *instN, ...)
 {
@@ -137,7 +137,7 @@ ds_dns_directory_set(unsigned int gid, const char *oid,
 }
 
 
-static int
+static te_errno
 ds_dns_recursive_get(unsigned int gid, const char *oid,
                      char *value, const char *instN, ...)
 {
@@ -149,7 +149,7 @@ ds_dns_recursive_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_dns_recursive_set(unsigned int gid, const char *oid,
                      const char *value, const char *instN, ...)
 {

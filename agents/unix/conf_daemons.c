@@ -361,7 +361,7 @@ ds_restore_backup(int index)
  *
  * @return Status code
  */
-int
+te_errno
 daemon_get(unsigned int gid, const char *oid, char *value)
 {
     const char *daemon_name = get_ds_name(oid);
@@ -417,7 +417,7 @@ daemon_get(unsigned int gid, const char *oid, char *value)
  *
  * @return Status code
  */
-int
+te_errno
 daemon_set(unsigned int gid, const char *oid, const char *value)
 {
     const char *daemon_name = get_ds_name(oid);
@@ -481,7 +481,7 @@ daemon_set(unsigned int gid, const char *oid, const char *value)
 #ifdef WITH_XINETD
 
 /* Get current state of xinetd service */
-static int
+static te_errno
 xinetd_get(unsigned int gid, const char *oid, char *value)
 {
     int   index = ds_lookup(XINETD_ETC_DIR, get_ds_name(oid));
@@ -524,7 +524,7 @@ xinetd_get(unsigned int gid, const char *oid, char *value)
 static char *xinetd_server;
 
 /* On/off xinetd service */
-static int
+static te_errno
 xinetd_set(unsigned int gid, const char *oid, const char *value)
 {
     int   index = ds_lookup(XINETD_ETC_DIR, get_ds_name(oid));
@@ -619,7 +619,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
  * After all it appends "bind" attribute to the end of the temporay file and
  * replace service configuration file with that file.
  */
-static int
+static te_errno
 ds_xinetd_service_addr_set(const char *service, const char *value)
 {
     in_addr_t  addr;
@@ -695,7 +695,7 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
  *
  * @se It is assumed that value buffer is big enough.
  */
-static int
+static te_errno
 ds_xinetd_service_addr_get(const char *service, char *value)
 {
     unsigned int  addr;
@@ -747,7 +747,7 @@ ds_xinetd_service_addr_get(const char *service, char *value)
 #ifdef WITH_ECHO_SERVER
 
 /** Get protocol type used by echo server (tcp or udp) */
-static int
+static te_errno
 ds_echoserver_proto_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -758,7 +758,7 @@ ds_echoserver_proto_get(unsigned int gid, const char *oid, char *value)
 }
 
 /** Set protocol type used by echo server (tcp or udp) */
-static int
+static te_errno
 ds_echoserver_proto_set(unsigned int gid, const char *oid,
                         const char *value)
 {
@@ -770,7 +770,7 @@ ds_echoserver_proto_set(unsigned int gid, const char *oid,
 }
 
 /** Get IPv4 address echo server is attached to */
-static int
+static te_errno
 ds_echoserver_addr_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -780,7 +780,7 @@ ds_echoserver_addr_get(unsigned int gid, const char *oid, char *value)
 }
 
 /** Attach echo server to specified IPv4 address */
-static int
+static te_errno
 ds_echoserver_addr_set(unsigned int gid, const char *oid, const char *value)
 {
     UNUSED(gid);
@@ -847,7 +847,7 @@ echoserver_release(const char *name)
  *
  * @return status code
  */
-static int
+static te_errno
 ds_todudpserver_addr_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -865,7 +865,7 @@ ds_todudpserver_addr_get(unsigned int gid, const char *oid, char *value)
  *
  * @return status code
  */
-static int
+static te_errno
 ds_todudpserver_addr_set(unsigned int gid, const char *oid,
                          const char *value)
 {
@@ -1019,7 +1019,7 @@ static int tfpt_server_index;
  *
  * @return status code
  */
-static int
+static te_errno
 ds_tftpserver_addr_get(unsigned int gid, const char *oid, char *value)
 {
     unsigned int addr;
@@ -1078,7 +1078,7 @@ ds_tftpserver_addr_get(unsigned int gid, const char *oid, char *value)
  *
  * @return status code
  */
-static int
+static te_errno
 ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
 {
     unsigned int addr;
@@ -1159,7 +1159,7 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
 }
 
 /** Get home directory of the TFTP server */
-static int
+static te_errno
 ds_tftpserver_root_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -1330,7 +1330,7 @@ ds_tftpserver_last_access_params_get(char *fname, time_t *time_val)
 }
 
 /** Get name of the last file obtained via TFTP */
-static int
+static te_errno
 ds_tftpserver_file_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -1340,7 +1340,7 @@ ds_tftpserver_file_get(unsigned int gid, const char *oid, char *value)
 }
 
 /** Get last time of the TFTP access */
-static int
+static te_errno
 ds_tftpserver_time_get(unsigned int gid, const char *oid, char *value)
 {
     int    rc;
@@ -1578,7 +1578,7 @@ ds_ftpserver_update_config(void)
 }
 
 #ifdef WITH_XINETD
-static int
+static te_errno
 ds_ftpserver_set(unsigned int gid, const char *oid, const char *value)
 {
     UNUSED(oid);
@@ -1593,7 +1593,7 @@ ds_ftpserver_set(unsigned int gid, const char *oid, const char *value)
            xinetd_set(gid, "ftp", value);
 }
 
-static int
+static te_errno
 ds_ftpserver_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(oid);
@@ -1623,9 +1623,9 @@ ftpserver_running()
     return enable[0] == '1';        
 }    
 
-static int
+static te_errno
 ds_ftpserver_server_set(unsigned int gid, const char *oid, 
-                            const char *value)
+                        const char *value)
 {
     te_bool standalone = (strncmp(value, "xinetd_", 7) != 0);
     int     newkind;
@@ -1678,7 +1678,7 @@ ds_ftpserver_server_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_ftpserver_server_get(unsigned int gid, const char *oid, char *value)
 {
     strcpy(value, ftpd_conf_names[ftp_server_kind][ftp_standalone]);
@@ -2258,7 +2258,7 @@ qmail_smarthost_set(te_bool enable, const char *relay)
 /*------------------ Common mail staff --------------------------*/
 
 /** Get SMTP smarthost */
-static int
+static te_errno
 ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -2317,7 +2317,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
 }
 
 /** Set SMTP smarthost */
-static int
+static te_errno
 ds_smtp_smarthost_set(unsigned int gid, const char *oid,
                       const char *value)
 {
@@ -2386,7 +2386,7 @@ error:
 }
 
 /** Get SMTP server program */
-static int
+static te_errno
 ds_smtp_server_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(gid);
@@ -2401,7 +2401,7 @@ ds_smtp_server_get(unsigned int gid, const char *oid, char *value)
 }
 
 /** Check if SMTP server is enabled */
-static int
+static te_errno
 ds_smtp_get(unsigned int gid, const char *oid, char *value)
 {
     UNUSED(oid);
@@ -2416,7 +2416,7 @@ ds_smtp_get(unsigned int gid, const char *oid, char *value)
 }
 
 /** Set SMTP server program */
-static int
+static te_errno
 ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
 {
     unsigned int i;
@@ -2468,7 +2468,7 @@ ds_smtp_server_set(unsigned int gid, const char *oid, const char *value)
 }
 
 /** Enable/disable SMTP server */
-static int
+static te_errno
 ds_smtp_set(unsigned int gid, const char *oid, const char *value)
 {
     UNUSED(oid);
@@ -2673,7 +2673,7 @@ smtp_release(const char *name)
 #ifdef WITH_VNCSERVER
 
 /** Read VNC password */
-static int
+static te_errno
 ds_vncpasswd_get(unsigned int gid, const char *oid, char *value)
 {
     FILE *f;
@@ -2722,7 +2722,7 @@ vncserver_exists(char *number)
  *
  * @return error code
  */
-static int
+static te_errno
 ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
                  const char *number)
 {
@@ -2771,7 +2771,7 @@ ds_vncserver_add(unsigned int gid, const char *oid, const char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
 {
     UNUSED(gid);
@@ -2800,7 +2800,7 @@ ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
  *
  * @return error code
  */
-static int
+static te_errno
 ds_vncserver_list(unsigned int gid, const char *oid, char **list)
 {
     FILE *f = popen("ls /tmp/.vnc/*.pid 2>/dev/null", "r");
@@ -2953,7 +2953,7 @@ sshd_exists(char *port)
  *
  * @return error code
  */
-static int
+static te_errno
 ds_sshd_add(unsigned int gid, const char *oid, const char *value,
             const char *port)
 {
@@ -2992,7 +2992,7 @@ ds_sshd_add(unsigned int gid, const char *oid, const char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 ds_sshd_del(unsigned int gid, const char *oid, const char *port)
 {
     uint32_t pid = sshd_exists((char *)port);
@@ -3025,7 +3025,7 @@ ds_sshd_del(unsigned int gid, const char *oid, const char *port)
  *
  * @return error code
  */
-static int
+static te_errno
 ds_sshd_list(unsigned int gid, const char *oid, char **list)
 {
     FILE *f = popen("ps ax | grep 'sshd -p' | grep -v grep", "r");
@@ -3113,7 +3113,7 @@ xvfb_exists(char *number)
  *
  * @return error code
  */
-static int
+static te_errno
 ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
             const char *number)
 {
@@ -3152,7 +3152,7 @@ ds_xvfb_add(unsigned int gid, const char *oid, const char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
 {
     int             pid;
@@ -3200,7 +3200,7 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
  *
  * @return error code
  */
-static int
+static te_errno
 ds_xvfb_list(unsigned int gid, const char *oid, char **list)
 {
     FILE *f = popen("ps ax | grep 'Xvfb' | grep -v grep", "r");

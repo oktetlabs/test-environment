@@ -892,7 +892,7 @@ rcf_pch_rpc_shutdown(void)
  *
  * @return Status code
  */
-static int 
+static te_errno
 rpcserver_get(unsigned int gid, const char *oid, char *value,
               const char *name)
 {
@@ -936,7 +936,7 @@ rpcserver_get(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code
  */
-static int 
+static te_errno
 rpcserver_add(unsigned int gid, const char *oid, const char *value,
               const char *new_name)
 {
@@ -1054,7 +1054,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
  *
  * @return Status code
  */
-static int 
+static te_errno
 rpcserver_del(unsigned int gid, const char *oid, const char *name)
 {
     rpcserver *rpcs, *prev;
@@ -1116,7 +1116,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     return 0;
 }
 
-static int 
+static te_errno
 rpcserver_list(unsigned int gid, const char *oid, char **value)
 {
     rpcserver *rpcs;

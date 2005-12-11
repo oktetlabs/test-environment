@@ -678,7 +678,7 @@ vtund_server_del(unsigned int gid, const char *oid,
     return vtund_server_free(p);
 }
 
-static int
+static te_errno
 vtund_server_list(unsigned int gid, const char *oid, char **list)
 {
     vtund_server *p;

@@ -172,8 +172,8 @@ get_type(char **ptr)
  * @param argc          argc location
  * @param param         location for parameters
  *
- * @return error code
- * @retval 0            success
+ * @return Status code:
+ * @retval 0               success
  * @retval TE_EINVAL       invalid command
  *
  * @alg It is assumed that all parameters are stored in the routine
@@ -366,7 +366,7 @@ transmit_log(struct rcf_comm_connection *conn, char *cbuf,
  * @param info      if not NULL, the string to be send to the engine
  *                  after initialisation
  *
- * @return error code
+ * @return Status code
  */
 int
 rcf_pch_run(const char *confstr, const char *info)

@@ -1129,7 +1129,7 @@ radiusserver_find_name()
  * both names are first tried and, if either is detected, 
  * 'radius_daemon' is set appropriately.
  */
-static int
+static te_errno
 ds_radiusserver_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, ...)
 {
@@ -1150,7 +1150,7 @@ ds_radiusserver_get(unsigned int gid, const char *oid,
 }
 
 
-static int
+static te_errno
 ds_radiusserver_set(unsigned int gid, const char *oid,
                     const char *value, const char *instance, ...)
 {
@@ -1182,7 +1182,7 @@ radiusserver_reload()
     return ta_system(buf);
 }
 
-static int
+static te_errno
 ds_radius_accept_get(unsigned int gid, const char *oid,
                      char *value, const char *instance, 
                      const char *username, ...)
@@ -1202,7 +1202,7 @@ ds_radius_accept_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radius_accept_set(unsigned int gid, const char *oid,
                      const char *value, const char *instance, 
                      const char *username, ...)
@@ -1224,7 +1224,7 @@ ds_radius_accept_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radius_challenge_get(unsigned int gid, const char *oid,
                         char *value, const char *instance, 
                         const char *username, ...)
@@ -1243,7 +1243,7 @@ ds_radius_challenge_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radius_challenge_set(unsigned int gid, const char *oid,
                         const char *value, const char *instance, 
                         const char *username, ...)
@@ -1265,7 +1265,7 @@ ds_radius_challenge_set(unsigned int gid, const char *oid,
     return rc;
 }
 
-static int
+static te_errno
 ds_radius_check_get(unsigned int gid, const char *oid,
                     char *value, const char *instance, 
                     const char *username, ...)
@@ -1284,7 +1284,7 @@ ds_radius_check_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radius_check_set(unsigned int gid, const char *oid,
                     const char *value, const char *instance, 
                     const char *username, ...)
@@ -1306,7 +1306,7 @@ ds_radius_check_set(unsigned int gid, const char *oid,
     return rc;
 }
 
-static int
+static te_errno
 ds_radius_user_add(unsigned int gid, const char *oid,
                    const char *value, const char *instance, 
                    const char *username, ...)
@@ -1333,7 +1333,7 @@ ds_radius_user_add(unsigned int gid, const char *oid,
     }
 }
 
-static int
+static te_errno
 ds_radius_user_set(unsigned int gid, const char *oid,
                    const char *value, const char *instance, 
                    const char *username, ...)
@@ -1350,7 +1350,7 @@ ds_radius_user_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radius_user_get(unsigned int gid, const char *oid,
                    char *value, const char *instance,
                    const char *username, ...)
@@ -1368,7 +1368,7 @@ ds_radius_user_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radius_user_del(unsigned int gid, const char *oid,
                    const char *instance, const char *username, ...)
 {
@@ -1382,7 +1382,7 @@ ds_radius_user_del(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radius_user_list(unsigned int gid, const char *oid,
                     char **list,
                     const char *instance, ...)
@@ -1410,7 +1410,7 @@ ds_radius_user_list(unsigned int gid, const char *oid,
 
 static char client_buffer[256];
 
-static int
+static te_errno
 ds_radius_client_add(unsigned int gid, const char *oid,
                      const char *value, const char *unused, 
                      const char *client_name)
@@ -1447,7 +1447,7 @@ ds_radius_client_add(unsigned int gid, const char *oid,
     return rc;
 }
 
-static int
+static te_errno
 ds_radius_client_del(unsigned int gid, const char *oid,
                      const char *instance, 
                      const char *client_name, ...)
@@ -1487,7 +1487,7 @@ static te_bool client_list(radius_parameter *rp, void *extra)
     return FALSE;
 }
 
-static int
+static te_errno
 ds_radius_client_list(unsigned int gid, const char *oid,
                     char **list,
                     const char *instance, ...)
@@ -1509,7 +1509,7 @@ ds_radius_client_list(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radius_secret_get(unsigned int gid, const char *oid,
                      char *value, const char *instance,
                      const char *client_name, ...)
@@ -1534,7 +1534,7 @@ ds_radius_secret_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radius_secret_set(unsigned int gid, const char *oid,
                      const char *value, const char *instance,
                      const char *client_name)
@@ -1589,7 +1589,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_ds_radiusserver_client, "client",
                             ds_radius_client_list,
                             NULL);
 
-static int
+static te_errno
 ds_radiusserver_netaddr_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
@@ -1605,7 +1605,7 @@ ds_radiusserver_netaddr_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radiusserver_netaddr_set(unsigned int gid, const char *oid,
                             const char *value, const char *instance, ...)
 {
@@ -1622,7 +1622,7 @@ ds_radiusserver_netaddr_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radiusserver_acctport_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
@@ -1637,7 +1637,7 @@ ds_radiusserver_acctport_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radiusserver_acctport_set(unsigned int gid, const char *oid,
                             const char *value, const char *instance, ...)
 {
@@ -1651,7 +1651,7 @@ ds_radiusserver_acctport_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radiusserver_authport_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, ...)
 {
@@ -1666,7 +1666,7 @@ ds_radiusserver_authport_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_radiusserver_authport_set(unsigned int gid, const char *oid,
                             const char *value, const char *instance, ...)
 {
@@ -1901,7 +1901,7 @@ reload_supplicant(supplicant *supp)
     }
 }
 
-static int
+static te_errno
 ds_supplicant_get(unsigned int gid, const char *oid,
                   char *value, const char *instance, ...)
 {
@@ -1921,7 +1921,7 @@ ds_supplicant_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_supplicant_set(unsigned int gid, const char *oid,
                   const char *value, const char *instance, ...)
 {
@@ -1950,7 +1950,7 @@ ds_supplicant_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_supplicant_add(unsigned int gid, const char *oid,
                   const char *value, const char *instance, ...)
 {
@@ -1969,7 +1969,7 @@ ds_supplicant_add(unsigned int gid, const char *oid,
         return 0;
 }
 
-static int
+static te_errno
 ds_supplicant_del(unsigned int gid, const char *oid,
                   const char *instance, ...)
 {
@@ -2005,7 +2005,7 @@ ds_supplicant_del(unsigned int gid, const char *oid,
 }
 
 
-static int
+static te_errno
 ds_supplicant_list(unsigned int gid, const char *oid,
                    char **value, const char *instance, ...)
 {
@@ -2035,7 +2035,7 @@ ds_supplicant_list(unsigned int gid, const char *oid,
 static char supplicant_buffer[256];
 static char supplicant_buffer2[256];
 
-static int
+static te_errno
 ds_supp_method_username_set(unsigned int gid, const char *oid,
                             const char *value, const char *instance, 
                             const char *method, ...)
@@ -2087,7 +2087,7 @@ strcpy_dequote(char *dst, const char *src)
     }
 }
 
-static int
+static te_errno
 ds_supp_method_username_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, 
                             const char *method, ...)
@@ -2113,7 +2113,7 @@ ds_supp_method_username_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_supp_method_passwd_set(unsigned int gid, const char *oid,
                           const char *value, const char *instance, 
                           const char *method, ...)
@@ -2140,7 +2140,7 @@ ds_supp_method_passwd_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_supp_method_passwd_get(unsigned int gid, const char *oid,
                           char *value, const char *instance, 
                           const char *method, ...)
@@ -2166,7 +2166,7 @@ ds_supp_method_passwd_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_supplicant_method_list(unsigned int gid, const char *oid,
                          char **list,
                          const char *instance, ...)
@@ -2182,7 +2182,7 @@ ds_supplicant_method_list(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_supplicant_cur_method_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -2204,7 +2204,7 @@ ds_supplicant_cur_method_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_supplicant_cur_method_set(unsigned int gid, const char *oid,
                              const char *value, const char *instance, ...)
 {
@@ -2225,7 +2225,7 @@ ds_supplicant_cur_method_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_supplicant_identity_get(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {
@@ -2247,7 +2247,7 @@ ds_supplicant_identity_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 ds_supplicant_identity_set(unsigned int gid, const char *oid,
                            char *value, const char *instance, ...)
 {

@@ -119,14 +119,14 @@ static ta_priv_ioctl priv_ioctl[TA_PRIV_IOCTL_MAX];
 
 #endif
 
-static int wifi_wep_get(unsigned int gid, const char *oid,
-                        char *value, const char *ifname);
-static int wifi_wep_set(unsigned int gid, const char *oid,
-                        char *value, const char *ifname);
-static int wifi_auth_get(unsigned int gid, const char *oid,
-                         char *value, const char *ifname);
-static int wifi_auth_set(unsigned int gid, const char *oid,
-                         char *value, const char *ifname);
+static te_errno wifi_wep_get(unsigned int gid, const char *oid,
+                             char *value, const char *ifname);
+static te_errno wifi_wep_set(unsigned int gid, const char *oid,
+                             char *value, const char *ifname);
+static te_errno wifi_auth_get(unsigned int gid, const char *oid,
+                              char *value, const char *ifname);
+static te_errno wifi_auth_set(unsigned int gid, const char *oid,
+                              char *value, const char *ifname);
 
 
 /**
@@ -790,7 +790,7 @@ wifi_get_item(const char *ifname, int req, struct iwreq *wrp)
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_list(unsigned int gid, const char *oid, char **list,
           const char *ifname)
 {
@@ -826,7 +826,7 @@ wifi_list(unsigned int gid, const char *oid, char **list,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_wep_key_get(unsigned int gid, const char *oid, char *value,
                  const char *ifname)
 {
@@ -866,7 +866,7 @@ wifi_wep_key_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
                  const char *ifname)
 {
@@ -925,7 +925,7 @@ wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_wep_get(unsigned int gid, const char *oid, char *value,
              const char *ifname)
 {
@@ -983,7 +983,7 @@ wifi_wep_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_wep_set(unsigned int gid, const char *oid, char *value,
              const char *ifname)
 {
@@ -1170,7 +1170,7 @@ wifi_ta_set_auth_alg(const char *ifname, ta_auth_alg_e alg)
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_auth_get(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
@@ -1211,7 +1211,7 @@ wifi_auth_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_auth_set(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
@@ -1246,7 +1246,7 @@ wifi_auth_set(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_channel_get(unsigned int gid, const char *oid, char *value,
                  const char *ifname)
 {
@@ -1296,7 +1296,7 @@ wifi_channel_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_channel_set(unsigned int gid, const char *oid, char *value,
                  const char *ifname)
 {
@@ -1341,7 +1341,7 @@ wifi_channel_set(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_channels_get(unsigned int gid, const char *oid, char *value,
                   const char *ifname)
 {
@@ -1382,7 +1382,7 @@ wifi_channels_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_ap_get(unsigned int gid, const char *oid, char *value,
             const char *ifname)
 {
@@ -1426,7 +1426,7 @@ wifi_ap_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_essid_get(unsigned int gid, const char *oid, char *value,
                const char *ifname)
 {
@@ -1454,7 +1454,7 @@ wifi_essid_get(unsigned int gid, const char *oid, char *value,
  *
  * @return error code
  */
-static int
+static te_errno
 wifi_essid_set(unsigned int gid, const char *oid, char *value,
                const char *ifname)
 {

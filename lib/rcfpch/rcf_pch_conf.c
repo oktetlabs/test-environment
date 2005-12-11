@@ -112,7 +112,7 @@ free_list(olist *list)
  * @param inst_name     location for instance name address (memory is
  *                      allocated for instance name using malloc())
  *
- * @return error code
+ * @return Status code
  * @retval 0            success
  * @retval TE_EINVAL       invalid identifier
  * @retval TE_ENOMEM       malloc() failed
@@ -1252,7 +1252,7 @@ static rsrc *rsrc_lst;
  * @retval 0            success
  * @retval TE_ENOMEM    cannot allocate memory
  */
-static int
+static te_errno
 rsrc_list(unsigned int gid, const char *oid, char **list)
 {
 #define MEM_BULK        1024
@@ -1299,7 +1299,7 @@ rsrc_list(unsigned int gid, const char *oid, char **list)
  *
  * @return Status code
  */
-static int
+static te_errno
 rsrc_get(unsigned int gid, const char *oid, char *value, const char *id)
 {
     rsrc *tmp;
@@ -1356,7 +1356,7 @@ rsrc_gen_name(const char *name)
  *
  * @return Status code
  */
-static int
+static te_errno
 rsrc_add(unsigned int gid, const char *oid, const char *value,
          const char *id)
 {
@@ -1422,7 +1422,7 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
  *
  * @return Status code
  */
-static int
+static te_errno
 rsrc_del(unsigned int gid, const char *oid, const char *id)
 {
     rsrc *cur, *prev;

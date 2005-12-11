@@ -57,16 +57,16 @@ extern "C" {
  */
 
 /** Generic routine prototype */
-typedef int (* rcf_rtn)(void *arg, ...);
+typedef te_errno (* rcf_rtn)(void *arg, ...);
 
 /** Generic threaded routine prototype */
-typedef int (* rcf_thr_rtn)(void *sem, void *arg, ...);
+typedef te_errno (* rcf_thr_rtn)(void *sem, void *arg, ...);
 
 /** argv/argc routine prototype */
-typedef int (* rcf_argv_rtn)(int argv, char **argc);
+typedef te_errno (* rcf_argv_rtn)(int argv, char **argc);
 
 /** argv/argc threaded routine prototype */
-typedef int (* rcf_argv_thr_rtn)(void *sem, int argc, char **argv);
+typedef te_errno (* rcf_argv_thr_rtn)(void *sem, int argc, char **argv);
 
 
 /**
@@ -656,8 +656,8 @@ extern int rcf_ch_kill_thread(unsigned int tid);
  *
  * @return Status code
  */
-typedef int (* rcf_ch_cfg_get)(unsigned int gid, const char *oid,
-                               char *value, const char *instN, ...);
+typedef te_errno (* rcf_ch_cfg_get)(unsigned int gid, const char *oid,
+                                    char *value, const char *instN, ...);
 
 /**
  * Prototype for set instance value routine.
@@ -669,8 +669,8 @@ typedef int (* rcf_ch_cfg_get)(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-typedef int (* rcf_ch_cfg_set)(unsigned int gid, const char *oid,
-                               const char *value,
+typedef te_errno (* rcf_ch_cfg_set)(unsigned int gid, const char *oid,
+                                    const char *value,
                                const char *instN, ...);
 
 /**
@@ -683,9 +683,9 @@ typedef int (* rcf_ch_cfg_set)(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-typedef int (* rcf_ch_cfg_add)(unsigned int gid, const char *oid,
-                               const char *value,
-                               const char *instN, ...);
+typedef te_errno (* rcf_ch_cfg_add)(unsigned int gid, const char *oid,
+                                    const char *value,
+                                    const char *instN, ...);
 
 /**
  * Prototype for delete instance routine.
@@ -696,8 +696,8 @@ typedef int (* rcf_ch_cfg_add)(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-typedef int (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
-                               const char *instN, ...);
+typedef te_errno (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
+                                    const char *instN, ...);
 
 /**
  * Prototype for get instance list routine. The routine should
@@ -712,8 +712,8 @@ typedef int (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-typedef int (* rcf_ch_cfg_list)(unsigned int gid, const char *oid,
-                                char **list, const char *instN, ...);
+typedef te_errno (* rcf_ch_cfg_list)(unsigned int gid, const char *oid,
+                                     char **list, const char *instN, ...);
 
 /**
  * Propotype of the commit function.
@@ -723,8 +723,8 @@ typedef int (* rcf_ch_cfg_list)(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-typedef int (* rcf_ch_cfg_commit)(unsigned int gid,
-                                  const cfg_oid *p_oid);
+typedef te_errno (* rcf_ch_cfg_commit)(unsigned int gid,
+                                       const cfg_oid *p_oid);
 
 /** Configuration tree node */
 typedef struct rcf_pch_cfg_object {

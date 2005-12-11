@@ -124,59 +124,60 @@ extern char *ta_name;
  * Access routines prototypes (comply to procedure types
  * specified in rcf_ch_api.h).
  */
-static int interface_list(unsigned int, const char *, char **);
+static te_errno interface_list(unsigned int, const char *, char **);
 
-static int net_addr_add(unsigned int, const char *, const char *,
-                        const char *, const char *);
-static int net_addr_del(unsigned int, const char *,
-                        const char *, const char *);
-static int net_addr_list(unsigned int, const char *, char **,
-                         const char *);
+static te_errno net_addr_add(unsigned int, const char *, const char *,
+                             const char *, const char *);
+static te_errno net_addr_del(unsigned int, const char *,
+                             const char *, const char *);
+static te_errno net_addr_list(unsigned int, const char *, char **,
+                              const char *);
 
-static int prefix_get(unsigned int, const char *, char *,
-                       const char *, const char *);
-static int prefix_set(unsigned int, const char *, const char *,
-                       const char *, const char *);
-
-
-static int broadcast_get(unsigned int, const char *, char *,
-                         const char *, const char *);
-static int broadcast_set(unsigned int, const char *, const char *,
-                         const char *, const char *);
-
-static int link_addr_get(unsigned int, const char *, char *,
-                         const char *);
-
-static int ifindex_get(unsigned int, const char *, char *,
-                       const char *);
-
-static int status_get(unsigned int, const char *, char *,
-                      const char *);
-static int status_set(unsigned int, const char *, const char *,
-                      const char *);
-
-static int mtu_get(unsigned int, const char *, char *,
-                   const char *);
-
-static int neigh_state_get(unsigned int, const char *, char *,
+static te_errno prefix_get(unsigned int, const char *, char *,
                            const char *, const char *);
+static te_errno prefix_set(unsigned int, const char *, const char *,
+                           const char *, const char *);
+
+
+static te_errno broadcast_get(unsigned int, const char *, char *,
+                              const char *, const char *);
+static te_errno broadcast_set(unsigned int, const char *, const char *,
+                              const char *, const char *);
+
+static te_errno link_addr_get(unsigned int, const char *, char *,
+                              const char *);
+
+static te_errno ifindex_get(unsigned int, const char *, char *,
+                            const char *);
+
+static te_errno status_get(unsigned int, const char *, char *,
+                           const char *);
+static te_errno status_set(unsigned int, const char *, const char *,
+                           const char *);
+
+static te_errno mtu_get(unsigned int, const char *, char *,
+                        const char *);
+
+static te_errno neigh_state_get(unsigned int, const char *, char *,
+                                const char *, const char *);
                            
-static int neigh_get(unsigned int, const char *, char *,
-                     const char *, const char *);
-static int neigh_set(unsigned int, const char *, const char *,
-                     const char *, const char *);
-static int neigh_add(unsigned int, const char *, const char *,
-                     const char *, const char *);
-static int neigh_del(unsigned int, const char *,
-                     const char *, const char *);
-static int neigh_list(unsigned int, const char *, char **, const char *);
+static te_errno neigh_get(unsigned int, const char *, char *,
+                          const char *, const char *);
+static te_errno neigh_set(unsigned int, const char *, const char *,
+                          const char *, const char *);
+static te_errno neigh_add(unsigned int, const char *, const char *,
+                          const char *, const char *);
+static te_errno neigh_del(unsigned int, const char *,
+                          const char *, const char *);
+static te_errno neigh_list(unsigned int, const char *, char **,
+                           const char *);
 
 /* 
  * This is a bit of hack - there are same handlers for static and dynamic
  * branches, handler discovers dynamic subtree by presence of
  * "dynamic" in OID. But list method does not contain the last subid.
  */
-static int
+static te_errno
 neigh_dynamic_list(unsigned int gid, const char *oid, char **list, 
                    const char *ifname)
 {
@@ -185,35 +186,35 @@ neigh_dynamic_list(unsigned int gid, const char *oid, char **list,
     return neigh_list(gid, "dynamic", list, ifname);
 }                   
 
-static int route_dev_get(unsigned int, const char *, char *,
-                         const char *);
-static int route_dev_set(unsigned int, const char *, const char *,
-                         const char *);
-static int route_add(unsigned int, const char *, const char *,
-                     const char *);
-static int route_del(unsigned int, const char *,
-                     const char *);
-static int route_get(unsigned int, const char *, char *,
-                     const char *);
-static int route_set(unsigned int, const char *, const char *,
-                     const char *);
-static int route_list(unsigned int, const char *, char **);
+static te_errno route_dev_get(unsigned int, const char *, char *,
+                              const char *);
+static te_errno route_dev_set(unsigned int, const char *, const char *,
+                              const char *);
+static te_errno route_add(unsigned int, const char *, const char *,
+                          const char *);
+static te_errno route_del(unsigned int, const char *,
+                          const char *);
+static te_errno route_get(unsigned int, const char *, char *,
+                          const char *);
+static te_errno route_set(unsigned int, const char *, const char *,
+                          const char *);
+static te_errno route_list(unsigned int, const char *, char **);
 
-static int route_commit(unsigned int, const cfg_oid *);
+static te_errno route_commit(unsigned int, const cfg_oid *);
 
 /*
  * Access routines prototypes (comply to procedure types
  * specified in rcf_ch_api.h).
  */
-static int env_get(unsigned int, const char *, char *,
-                   const char *);
-static int env_set(unsigned int, const char *, const char *,
-                   const char *);
-static int env_add(unsigned int, const char *, const char *,
-                   const char *);
-static int env_del(unsigned int, const char *,
-                   const char *);
-static int env_list(unsigned int, const char *, char **);
+static te_errno env_get(unsigned int, const char *, char *,
+                        const char *);
+static te_errno env_set(unsigned int, const char *, const char *,
+                        const char *);
+static te_errno env_add(unsigned int, const char *, const char *,
+                        const char *);
+static te_errno env_del(unsigned int, const char *,
+                        const char *);
+static te_errno env_list(unsigned int, const char *, char **);
 
 /** Environment variables hidden in list operation */
 static const char * const env_hidden[] = {
@@ -648,11 +649,11 @@ rcf_ch_conf_release()
  * @param id            full identifier of the father instance
  * @param list          location for the list pointer
  *
- * @return error code
+ * @return status code
  * @retval 0            success
  * @retval TE_ENOMEM       cannot allocate memory
  */
-static int
+static te_errno
 interface_list(unsigned int gid, const char *oid, char **list)
 {
     MIB_IFTABLE *table;
@@ -703,9 +704,9 @@ name2index(const char *ifname, DWORD *ifindex)
  * @param value         location for interface index
  * @param ifname        name of the interface (like "eth0")
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 ifindex_get(unsigned int gid, const char *oid, char *value,
             const char *ifname)
 {
@@ -794,9 +795,9 @@ get_addr_mask(const char *addr, const char *value, DWORD *p_a, DWORD *p_m)
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
@@ -833,10 +834,10 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
  *
- * @return error code
+ * @return status code
  */
 
-static int
+static te_errno
 net_addr_del(unsigned int gid, const char *oid,
              const char *ifname, const char *addr)
 {
@@ -901,12 +902,12 @@ net_addr_del(unsigned int gid, const char *oid,
  * @param list          location for the list pointer
  * @param ifname        interface name
  *
- * @return error code
+ * @return status code
  * @retval 0                    success
  * @retval TE_ENOENT            no such instance
  * @retval TE_ENOMEM               cannot allocate memory
  */
-static int
+static te_errno
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
@@ -956,9 +957,9 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 prefix_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
@@ -997,9 +998,9 @@ prefix_get(unsigned int gid, const char *oid, char *value,
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 prefix_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
@@ -1042,9 +1043,9 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 broadcast_get(unsigned int gid, const char *oid, char *value,
               const char *ifname, const char *addr)
 {
@@ -1083,9 +1084,9 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
  * @param ifname        name of the interface (like "eth0")
  * @param addr          IPv4 address in dotted notation
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 broadcast_set(unsigned int gid, const char *oid, const char *value,
               const char *ifname, const char *addr)
 {
@@ -1120,9 +1121,9 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
  *                      as XX:XX:XX:XX:XX:XX)
  * @param ifname        name of the interface (like "eth0")
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 link_addr_get(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
@@ -1150,9 +1151,9 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 mtu_get(unsigned int gid, const char *oid, char *value,
         const char *ifname)
 {
@@ -1174,9 +1175,9 @@ mtu_get(unsigned int gid, const char *oid, char *value,
  * @param value         value location
  * @param ifname        name of the interface (like "eth0")
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 status_get(unsigned int gid, const char *oid, char *value,
            const char *ifname)
 {
@@ -1203,9 +1204,9 @@ status_get(unsigned int gid, const char *oid, char *value,
  * @param value         new value pointer
  * @param ifname        name of the interface (like "eth0")
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 status_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname)
 {
@@ -1319,7 +1320,7 @@ neigh_state_get(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code
  */
-static int
+static te_errno
 neigh_get(unsigned int gid, const char *oid, char *value,
           const char *ifname, const char *addr)
 {
@@ -1340,7 +1341,7 @@ neigh_get(unsigned int gid, const char *oid, char *value,
  *
  * @return Status code
  */
-static int
+static te_errno
 neigh_set(unsigned int gid, const char *oid, const char *value,
           const char *ifname, const char *addr)
 {
@@ -1363,7 +1364,7 @@ neigh_set(unsigned int gid, const char *oid, const char *value,
  *
  * @return Status code
  */
-static int
+static te_errno
 neigh_add(unsigned int gid, const char *oid, const char *value,
           const char *ifname, const char *addr)
 {
@@ -1415,7 +1416,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
  *
  * @return Status code
  */
-static int
+static te_errno
 neigh_del(unsigned int gid, const char *oid, const char *ifname, 
           const char *addr)
 {
@@ -1474,7 +1475,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
  *
  * @return Status code
  */
-static int
+static te_errno
 neigh_list(unsigned int gid, const char *oid, char **list, 
            const char *ifname)
 {
@@ -1580,7 +1581,7 @@ rt_info2ipforw(const ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
  * @param rt_info  route related information (OUT)
  * @param rt       route related information in win32 format (OUT)
  *
- * @return error code
+ * @return status code
  */
 static int
 route_find(const char *route, ta_rt_info_t *rt_info, MIB_IPFORWARDROW *rt)
@@ -1674,7 +1675,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
     return 0;
 }
 
-static int
+static te_errno
 route_dev_get(unsigned int gid, const char *oid,
               char *value, const char *route)
 {
@@ -1691,7 +1692,7 @@ route_dev_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-static int
+static te_errno
 route_dev_set(unsigned int gid, const char *oid,
               const char *value, const char *route)
 {
@@ -1711,9 +1712,9 @@ route_dev_set(unsigned int gid, const char *oid,
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 route_add(unsigned int gid, const char *oid, const char *value,
           const char *route)
 {
@@ -1732,9 +1733,9 @@ route_add(unsigned int gid, const char *oid, const char *value,
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 route_del(unsigned int gid, const char *oid, const char *route)
 {
     UNUSED(gid);
@@ -1751,9 +1752,9 @@ route_del(unsigned int gid, const char *oid, const char *route)
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 route_get(unsigned int gid, const char *oid, char *value,
           const char *route_name)
 {
@@ -1793,9 +1794,9 @@ route_get(unsigned int gid, const char *oid, char *value,
  * @param route         route instance name: see doc/cm_cm_base.xml
  *                      for the format
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 route_set(unsigned int gid, const char *oid, const char *value,
           const char *route_name)
 {
@@ -1812,12 +1813,12 @@ route_set(unsigned int gid, const char *oid, const char *value,
  * @param id            full identifier of the father instance
  * @param list          location for the list pointer
  *
- * @return error code
+ * @return status code
  * @retval 0                    success
  * @retval TE_ENOENT            no such instance
  * @retval TE_ENOMEM               cannot allocate memory
  */
-static int
+static te_errno
 route_list(unsigned int gid, const char *oid, char **list)
 {
     MIB_IPFORWARDTABLE *table;
@@ -1879,9 +1880,9 @@ route_list(unsigned int gid, const char *oid, char **list)
  * @param gid           group identifier (unused)
  * @param p_oid         object instence data structure
  *
- * @return error code
+ * @return status code
  */
-static int
+static te_errno
 route_commit(unsigned int gid, const cfg_oid *p_oid)
 {
     const char       *route;
@@ -1987,9 +1988,9 @@ env_is_hidden(const char *name, int name_len)
  * @param value     Location for the value (OUT)
  * @param name      Variable name
  *
- * @return Error code
+ * @return status code
  */
-static int
+static te_errno
 env_get(unsigned int gid, const char *oid, char *value,
         const char *name)
 {
@@ -2019,9 +2020,9 @@ env_get(unsigned int gid, const char *oid, char *value,
  * @param value     New value to set
  * @param name      Variable name
  *
- * @return Error code
+ * @return status code
  */
-static int
+static te_errno
 env_set(unsigned int gid, const char *oid, const char *value,
         const char *name)
 {
@@ -2053,9 +2054,9 @@ env_set(unsigned int gid, const char *oid, const char *value,
  * @param value     Value
  * @param name      Variable name
  *
- * @return Error code
+ * @return status code
  */
-static int
+static te_errno
 env_add(unsigned int gid, const char *oid, const char *value,
         const char *name)
 {
@@ -2093,9 +2094,9 @@ env_add(unsigned int gid, const char *oid, const char *value,
  * @param oid       Full object instance identifier (unused)
  * @param name      Variable name
  *
- * @return Error code
+ * @return status code
  */
-static int
+static te_errno
 env_del(unsigned int gid, const char *oid, const char *name)
 {
     UNUSED(gid);
@@ -2122,9 +2123,9 @@ env_del(unsigned int gid, const char *oid, const char *name)
  * @param oid       Full object instance identifier (unused)
  * @param list      Location for the list pointer
  *
- * @return Error code
+ * @return status code
  */
-static int
+static te_errno
 env_list(unsigned int gid, const char *oid, char **list)
 {
     char **env;
