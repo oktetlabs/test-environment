@@ -342,5 +342,5 @@ rcf_pch_call(struct rcf_comm_connection *conn,
                                params[6], params[7], params[8],
                                params[9]);
 
-    SEND_ANSWER("0 %d", rc);
+    SEND_ANSWER("0 %u", (unsigned)rc);
 }
