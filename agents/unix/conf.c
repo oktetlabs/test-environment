@@ -3852,8 +3852,6 @@ do {                                                            \
     
     rtnl_close(&rth);
 
-#else
-    UNUSED(ifname);
 #endif
 
     INFO("%s: Routes: %s", __FUNCTION__, buf);
