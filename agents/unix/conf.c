@@ -2505,7 +2505,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     strcpy(req.ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) != 0)
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         
         if (errno == EBUSY)
         {
@@ -2513,12 +2513,14 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
             
             /* Try to down interface */
             if (status_get(0, NULL, status, ifname) == 0 &&
-                *status == 1 && status_set(0, NULL, "0", ifname) == 0)
+                *status == '1' && status_set(0, NULL, "0", ifname) == 0)
             {
                 int rc1;
                 
                 if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) == 0)
+                {
                     rc = 0;
+                }
                 
                 if ((rc1 = status_set(0, NULL, "1", ifname)) != 0)
                 {
@@ -2533,7 +2535,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     if (rc != 0)
         ERROR("ioctl(SIOCSIFMTU) failed: %r", rc);
 
-    return 0;
+    return rc;
 }
 
 /**
