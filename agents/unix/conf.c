@@ -3664,6 +3664,9 @@ route_del(unsigned int gid, const char *oid, const char *route)
     return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL);
 }
 
+
+#ifdef __linux__
+
 typedef struct{
     int           family;        /**< Route address family */
     char         *buf;           /**< Where to print the route */
@@ -3778,6 +3781,8 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
 
     return 0;
 }
+
+#endif
 
 /**
  * Get instance list for object "agent/route".
