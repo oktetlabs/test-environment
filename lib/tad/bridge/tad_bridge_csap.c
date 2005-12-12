@@ -47,6 +47,8 @@ static csap_spt_type_t bridge_csap_spt =
 {
     "bridge",
 
+    NULL,
+    NULL,
     tad_bridge_confirm_pdu_cb,
     tad_bridge_gen_bin_cb,
     tad_bridge_match_bin_cb,

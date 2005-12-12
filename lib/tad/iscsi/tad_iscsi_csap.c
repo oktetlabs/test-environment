@@ -47,6 +47,8 @@ static csap_spt_type_t iscsi_csap_spt =
 {
     "iscsi",
 
+    NULL,
+    NULL,
     tad_iscsi_confirm_pdu_cb,
     tad_iscsi_gen_bin_cb,
     tad_iscsi_match_bin_cb,

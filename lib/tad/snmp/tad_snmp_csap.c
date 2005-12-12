@@ -47,6 +47,8 @@ static csap_spt_type_t snmp_csap_spt =
 {
     "snmp",
 
+    NULL,
+    NULL,
     tad_snmp_confirm_pdu_cb,
     tad_snmp_gen_bin_cb,
     tad_snmp_match_bin_cb,

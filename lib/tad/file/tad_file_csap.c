@@ -47,6 +47,8 @@ static csap_spt_type_t file_csap_spt =
 {
     "file",
 
+    NULL,
+    NULL,
     tad_file_confirm_pdu_cb,
     tad_file_gen_bin_cb,
     tad_file_match_bin_cb,
