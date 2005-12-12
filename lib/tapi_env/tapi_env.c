@@ -1419,7 +1419,8 @@ bind_host(tapi_env_host *host, tapi_env_hosts *hosts,
                               cfg_nets->nets[i].nodes[j].handle,
                               cfg_nets->nets[p->i_net].
                                   nodes[p->i_node].handle) == 0);
-                if (one_host != one_ta)
+                if (((strlen(host->name) > 0) || (strlen(p->name) > 0)) &&
+                    (one_host != one_ta))
                 {
                     VERB("Hosts with %s names ('%s' vs '%s') can't be "
                          "bound to nodes %s",
