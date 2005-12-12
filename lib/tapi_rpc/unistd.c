@@ -374,6 +374,78 @@ rpc_write(rcf_rpc_server *rpcs,
     RETVAL_INT(write, out.retval);
 }
 
+tarpc_ssize_t
+rpc_readbuf(rcf_rpc_server *rpcs,
+            int fd, rpc_ptr buf, size_t count)
+{
+    rcf_rpc_op      op;
+    tarpc_readbuf_in  in;
+    tarpc_readbuf_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(write, -1);
+    }
+
+    op = rpcs->op;
+
+    in.fd  = fd;
+    in.len = count;
+    in.buf = buf;
+
+    rcf_rpc_call(rpcs, "readbuf", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(readbuf, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: readbuf(%d, %p, %u) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 fd, (void *)buf, count,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(writebuf, out.retval);
+}
+
+
+tarpc_ssize_t
+rpc_writebuf(rcf_rpc_server *rpcs,
+             int fd, rpc_ptr buf, size_t count)
+{
+    rcf_rpc_op      op;
+    tarpc_writebuf_in  in;
+    tarpc_writebuf_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(write, -1);
+    }
+
+    op = rpcs->op;
+
+    in.fd  = fd;
+    in.len = count;
+    in.buf = buf;
+
+    rcf_rpc_call(rpcs, "writebuf", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(writebuf, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: writebuf(%d, %p, %u) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 fd, (void *)buf, count,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(writebuf, out.retval);
+}
+
+
 tarpc_off_t
 rpc_lseek(rcf_rpc_server *rpcs,
           int fd, tarpc_off_t pos, rpc_lseek_mode mode)
@@ -1370,4 +1442,47 @@ rpc_free(rcf_rpc_server *rpcs, rpc_ptr buf)
                  buf, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(free);
+}
+
+/**
+ * Allocate a buffer of specified size in the TA address space
+ * aligned at a specified boundary.
+ *
+ * @param rpcs          RPC server handle
+ * @param alignment     buffer alignment
+ * @param size          size of the buffer to be allocated
+ *
+ * @return   Allocated buffer identifier or RPC_NULL
+ */
+rpc_ptr
+rpc_memalign(rcf_rpc_server *rpcs, size_t alignment, size_t size)
+{
+    rcf_rpc_op          op;
+    tarpc_memalign_in     in;
+    tarpc_memalign_out    out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(malloc, 0);
+    }
+
+    op = rpcs->op;
+
+    in.alignment = alignment;
+    in.size      = size;
+
+    rcf_rpc_call(rpcs, "memalign", &in, &out);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: memalign(%" TE_PRINTF_SIZE_T "u "
+                 "%" TE_PRINTF_SIZE_T "u) -> "
+                 "%u (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 alignment,
+                 size,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_RPC_PTR(memalign, (rpc_ptr)out.retval);
 }

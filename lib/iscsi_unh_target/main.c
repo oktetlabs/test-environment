@@ -225,7 +225,12 @@ int main(int argc, char *argv[])
                       *iter + 3);
                 SRP_SetName(*iter + 3,
                             devdata->auth_parameter.srp_ctx);
-            } else {
+            } 
+            else if (strncmp(*iter, "log=", 4) == 0) 
+            {
+                iscsi_set_verbose(*iter + 4);
+            }
+            else {
                 TRACE_ERROR("unknown force \"%s\"\n", 
                             *iter);
             }

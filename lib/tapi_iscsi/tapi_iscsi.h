@@ -1011,6 +1011,17 @@ extern te_errno tapi_iscsi_io_finish(iscsi_io_handle_t *ioh);
 
 
 /**
+ * 
+ * 
+ * @param ioh I/O handler
+ * @param enable 
+ *
+ * @return Previous state
+ */
+extern te_bool tapi_iscsi_io_enable_signal(iscsi_io_handle_t *ioh, 
+                                           te_bool enable);
+
+/**
  *  Gets the status code of a task of a I/O handler
  * 
  * @param ioh           I/O handle

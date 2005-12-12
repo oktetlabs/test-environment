@@ -372,6 +372,23 @@ typedef struct tarpc_readv_in tarpc_writev_in;
 
 typedef struct tarpc_ssize_t_retval_out tarpc_writev_out;
 
+/* readbuf() / writebuf() */
+
+struct tarpc_readbuf_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int       fd;
+    tarpc_ptr       buf;
+    tarpc_size_t    len;
+};
+
+typedef struct tarpc_ssize_t_retval_out tarpc_readbuf_out;
+
+typedef struct tarpc_readbuf_in tarpc_writebuf_in;
+
+typedef struct tarpc_ssize_t_retval_out tarpc_writebuf_out;
+
+
 /* lseek() */
 
 struct tarpc_lseek_in {
@@ -1038,6 +1055,19 @@ struct tarpc_free_in {
 struct tarpc_free_out {
     struct tarpc_out_arg common;
 };
+
+/* memalign */
+struct tarpc_memalign_in {
+    struct tarpc_in_arg  common;
+    tarpc_size_t         alignment; /**< Alignment of a block */    
+    tarpc_size_t         size;      /**< Bytes to allocate */
+};
+
+struct tarpc_memalign_out {
+    struct tarpc_out_arg common;
+    tarpc_ptr            retval; /**< A pointer in the TA address space */
+};
+
 
 /* set_buf */
 struct tarpc_set_buf_in {
@@ -2872,6 +2902,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         
         RPC_DEF(malloc)
         RPC_DEF(free)
+        RPC_DEF(memalign)
 
         RPC_DEF(socket)
         RPC_DEF(duplicate_socket)
@@ -2882,6 +2913,9 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(read)
         RPC_DEF(write)
+
+        RPC_DEF(readbuf)
+        RPC_DEF(writebuf)
 
         RPC_DEF(readv)
         RPC_DEF(writev)

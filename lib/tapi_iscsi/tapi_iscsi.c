@@ -2126,8 +2126,9 @@ struct iscsi_io_handle_t
                                      operation is complete */
     te_bool         use_fs;     /**< TRUE when using filesystem on the
                                      device, as opposed to raw access */
-    size_t          bufsize;    /**< Buffer size for file copying */
-    void           *buffer;     /**< Buffer for file copying */
+    size_t          chunksize;  /**< Chunk size for file copying */
+    size_t          bufsize;    /**< Current buffer size */
+    tarpc_ptr       buffer;     /**< Aligned buffer */
     iscsi_io_cmd_t  cmds[MAX_ISCSI_IO_CMDS]; /**< Buffer for requests */
     sem_t           cmd_wait;   /**< Posted when a new request is added */
     int             next_cmd;   /**< Next request number */
@@ -2172,9 +2173,13 @@ get_host_device(const char *ta, unsigned id)
 #define ISCSI_IO_SIGNAL        SIGPOLL
 
 static void
-rpc_server_destructor (void *rpcs)
+rpc_server_destructor (void *arg)
 {
-    rcf_rpc_server_destroy(rpcs);
+    iscsi_io_handle_t *ioh = arg;
+    
+    if (ioh->buffer != RPC_NULL)
+        rpc_free(ioh->rpcs, ioh->buffer);
+    rcf_rpc_server_destroy(ioh->rpcs);
 }
 
 /**
@@ -2192,7 +2197,7 @@ tapi_iscsi_io_thread(void *param)
     sigemptyset(&mask);
     sigaddset(&mask, ISCSI_IO_SIGNAL);
     pthread_sigmask(SIG_BLOCK, &mask, NULL);
-    pthread_cleanup_push(rpc_server_destructor, ioh->rpcs);
+    pthread_cleanup_push(rpc_server_destructor, ioh);
     for (;;)
     {
         sem_wait(&ioh->cmd_wait);
@@ -2256,9 +2261,21 @@ static te_errno
 command_open(iscsi_io_handle_t *ioh, int *fd, 
              void *data, ssize_t length)
 {
-    *fd = rpc_open(ioh->rpcs, data, length, 
+    *fd = rpc_open(ioh->rpcs, data, length | RPC_O_DIRECT,
                    RPC_S_IREAD | RPC_S_IWRITE);
     return (*fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
+}
+
+static te_bool
+realloc_buffer(iscsi_io_handle_t *ioh, size_t bufsize)
+{
+    if (ioh->bufsize < bufsize)
+    {
+        if (ioh->buffer != RPC_NULL)
+            rpc_free(ioh->rpcs, ioh->buffer);
+        ioh->buffer = rpc_memalign(ioh->rpcs, 512, bufsize);
+    }
+    return ioh->buffer != RPC_NULL;
 }
 
 static te_errno
@@ -2292,10 +2309,17 @@ command_read(iscsi_io_handle_t *ioh, int *fd,
 {
     ssize_t   result_len;
     te_errno  status;
-                    
-    result_len = rpc_read(ioh->rpcs, *fd, data, length);
-    return result_len < 0 ? RPC_ERRNO(ioh->rpcs) : 
-        (result_len != length ? TE_RC(TE_TAPI, TE_EFAIL) : 0);
+         
+    if (!realloc_buffer(ioh, length))
+        return RPC_ERRNO(ioh->rpcs);
+
+    result_len = rpc_readbuf(ioh->rpcs, *fd, ioh->buffer, length);
+    status = (result_len < 0 ? RPC_ERRNO(ioh->rpcs) : 
+              (result_len != length ? TE_RC(TE_TAPI, TE_EFAIL) : 0));
+    if (status == 0)
+    {
+        rpc_get_buf(ioh->rpcs, ioh->buffer, 0, length, data);
+    }
     return status;
 }
 
@@ -2305,6 +2329,10 @@ command_write(iscsi_io_handle_t *ioh, int *fd,
 {
     ssize_t  result_len;
 
+    if (!realloc_buffer(ioh, length))
+        return RPC_ERRNO(ioh->rpcs);
+    
+    rpc_set_buf(ioh->rpcs, data, length, ioh->buffer, 0);
     result_len = rpc_write(ioh->rpcs, *fd, data, length);
     return (result_len < 0 ?
             RPC_ERRNO(ioh->rpcs) :
@@ -2318,8 +2346,9 @@ command_write(iscsi_io_handle_t *ioh, int *fd,
 
 static te_errno
 command_copy_file(iscsi_io_handle_t *ioh, int *fd, 
-                  void *data, ssize_t length)
+                  void *data, ssize_t direction)
 {
+    ssize_t   length;
     ssize_t   result_len;
     te_errno  status;
     te_errno  status_close;
@@ -2327,10 +2356,11 @@ command_copy_file(iscsi_io_handle_t *ioh, int *fd,
     int       src_fd;
     int       open_fd;
 
-    if (ioh->buffer == NULL)
-        return TE_RC(TE_TAPI, TE_EINVAL);
 
-    if (length == ISCSI_COPY_FILE_IN)
+    if (!realloc_buffer(ioh, ioh->chunksize))
+        return RPC_ERRNO(ioh->rpcs);
+
+    if (direction == ISCSI_COPY_FILE_IN)
     {
         open_fd = src_fd = rpc_open(ioh->rpcs, data, 
                                     RPC_O_RDONLY | RPC_O_SYNC, 0);
@@ -2349,16 +2379,17 @@ command_copy_file(iscsi_io_handle_t *ioh, int *fd,
     if (status != 0)
         return status;
     do {
-        length = rpc_read(ioh->rpcs, src_fd, ioh->buffer, ioh->bufsize);
+        length = rpc_readbuf(ioh->rpcs, src_fd, 
+                             ioh->buffer, ioh->chunksize);
         if (length < 0)
         {
             status = RPC_ERRNO(ioh->rpcs);
             break;
         }
-        result_len = rpc_write(ioh->rpcs, dest_fd, ioh->buffer, 
-                               ((size_t)length > ioh->bufsize ? 
-                                ioh->bufsize : 
-                                (size_t)length));
+        result_len = rpc_writebuf(ioh->rpcs, dest_fd, ioh->buffer, 
+                                  ((size_t)length > ioh->chunksize ? 
+                                   ioh->chunksize : 
+                                   (size_t)length));
         if (result_len < 0)
             status = RPC_ERRNO(ioh->rpcs);
         else if (result_len != length)
@@ -2397,7 +2428,7 @@ iscsi_io_signal_handler(int signo)
 te_errno
 tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id, 
                       te_bool use_signal, te_bool use_fs,
-                      size_t bufsize,
+                      size_t chunksize,
                       iscsi_io_handle_t **ioh)
 {
     int   rc;
@@ -2429,26 +2460,14 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
 
     (*ioh)->use_signal     = use_signal;
     (*ioh)->use_fs         = use_fs;
-    (*ioh)->bufsize        = bufsize;
-    if (bufsize == 0)
-        (*ioh)->buffer     = NULL;
-    else
-    {
-        (*ioh)->buffer     = malloc(bufsize);
-        if ((*ioh)->buffer == NULL)
-        {
-            free(*ioh);
-            *ioh = NULL;
-            return TE_RC(TE_TAPI, TE_ENOMEM);
-        }
-    }
+    (*ioh)->chunksize      = chunksize;
+    (*ioh)->bufsize        = 0;
+    (*ioh)->buffer         = RPC_NULL;
 
     sprintf(name, "iscsi_%u", id);
     rc = rcf_rpc_server_create(ta, name, &((*ioh)->rpcs));
     if (rc != 0)
     {
-        if ((*ioh)->buffer != NULL)
-            free((*ioh)->buffer);
         free(*ioh);
         *ioh = NULL;
         return rc;
@@ -2463,6 +2482,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
         (*ioh)->cmds[i].status      = 0;
         (*ioh)->cmds[i].leader      = FALSE;
         (*ioh)->cmds[i].do_signal   = FALSE;
+        (*ioh)->cmds[i].destroy     = NULL;
     }
     (*ioh)->next_cmd = 0;
 
@@ -2482,13 +2502,19 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     if (rc != 0)
     {
         rcf_rpc_server_destroy((*ioh)->rpcs);
-        if ((*ioh)->buffer != NULL)
-            free((*ioh)->buffer);
         free(*ioh);
         *ioh = NULL;
         return TE_OS_RC(TE_TAPI, rc);
     }
     return 0;
+}
+
+te_bool
+tapi_iscsi_io_enable_signal(iscsi_io_handle_t *ioh, te_bool enable)
+{
+    te_bool prev = ioh->use_signal;
+    ioh->use_signal = enable;
+    return prev;
 }
 
 te_errno
@@ -2503,8 +2529,6 @@ tapi_iscsi_io_finish(iscsi_io_handle_t *ioh)
         if (ioh->cmds[i].destroy != NULL)
             ioh->cmds[i].destroy(ioh->cmds[i].data);
     }
-    if (ioh->buffer != NULL)
-        free(ioh->buffer);
     free(ioh);
     return 0;
 }

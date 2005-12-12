@@ -54,7 +54,7 @@ typedef enum rpc_fcntl_flags {
     RPC_O_SYNC      = 0x00000400,
     RPC_O_FSYNC     = 0x00000800,
     RPC_O_ASYNC     = 0x00001000,
-    RPC_O_DIRECY    = 0x00002000,
+    RPC_O_DIRECT    = 0x00002000,
     RPC_O_DIRECTORY = 0x00004000,
     RPC_O_NOFOLLOW  = 0x00008000,
     RPC_O_DSYNC     = 0x00010000,
@@ -80,7 +80,7 @@ typedef enum rpc_fcntl_flags {
     RPC_BIT_MAP_ENTRY(O_SYNC), \
     RPC_BIT_MAP_ENTRY(O_FSYNC), \
     RPC_BIT_MAP_ENTRY(O_ASYNC), \
-    RPC_BIT_MAP_ENTRY(O_DIRECY), \
+    RPC_BIT_MAP_ENTRY(O_DIRECT), \
     RPC_BIT_MAP_ENTRY(O_DIRECTORY), \
     RPC_BIT_MAP_ENTRY(O_NOFOLLOW), \
     RPC_BIT_MAP_ENTRY(O_DSYNC), \
@@ -136,8 +136,8 @@ fcntl_flags_rpc2h(unsigned int flags)
 #ifdef O_ASYNC
         | (!!(flags & RPC_O_ASYNC) * O_ASYNC)
 #endif
-#ifdef O_DIRECY
-        | (!!(flags & RPC_O_DIRECY) * O_DIRECY)
+#ifdef O_DIRECT
+        | (!!(flags & RPC_O_DIRECT) * O_DIRECT)
 #endif
 #ifdef O_DIRECTORY
         | (!!(flags & RPC_O_DIRECTORY) * O_DIRECTORY)
@@ -202,8 +202,8 @@ fcntl_flags_h2rpc(unsigned int flags)
 #ifdef O_ASYNC
         | (!!(flags & O_ASYNC) * RPC_O_ASYNC)
 #endif
-#ifdef O_DIRECY
-        | (!!(flags & O_DIRECY) * RPC_O_DIRECY)
+#ifdef O_DIRECT
+        | (!!(flags & O_DIRECT) * RPC_O_DIRECT)
 #endif
 #ifdef O_DIRECTORY
         | (!!(flags & O_DIRECTORY) * RPC_O_DIRECTORY)

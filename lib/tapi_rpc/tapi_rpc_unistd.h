@@ -129,6 +129,21 @@ extern int rpc_write(rcf_rpc_server *rpcs,
                      int fd, const void *buf, size_t count);
 
 /**
+ * Like rpc_write(), but uses a buffer that has been allocated
+ * by the user earlier.
+ *
+ * @param rpcs     RPC server handle
+ * @param fd       file descriptor
+ * @param buf      pointer to the data buffer in the TA address space
+ * @param count    number of bytes to be written
+ *
+ * @return  Number of bytes actually written, otherwise -1 on failure
+ */
+extern int rpc_writebuf(rcf_rpc_server *rpcs,
+                        int fd, rpc_ptr buf, size_t count);
+
+
+/**
  * This generic routine attemps to read up to @b count bytes from file 
  * with descriptor @b fdinto buffer pointed by @b buf.
  * The behavior of this call depends on the following operations
@@ -174,6 +189,20 @@ rpc_read(rcf_rpc_server *rpcs,
     return rpc_read_gen(rpcs, fd, buf, count, count);
 }
 
+
+/**
+ * Like rpc_read() but uses a buffer allocated by the user 
+ * on the TA earlier.
+ * 
+ * @param rpcs     RPC server handle
+ * @param fd       file descriptor
+ * @param buf      pointer to buffer into where data is read
+ * @param count    number of bytes to read
+ *
+ * @return  number of bytes read, otherwise -1 on error.
+ */
+extern tarpc_ssize_t rpc_readbuf(rcf_rpc_server *rpcs,
+                                 int fd, rpc_ptr buf, size_t count);
 
 /**
  * RPC equivalent of 'lseek'
@@ -647,6 +676,21 @@ extern rpc_ptr rpc_malloc(rcf_rpc_server *rpcs,
  */
 extern void rpc_free(rcf_rpc_server *rpcs,
                      rpc_ptr buf);
+
+
+/**
+ * Allocate a buffer of specified size in the TA address space
+ * aligned at a specified boundary
+ *
+ * @param rpcs          RPC server handle
+ * @param alignment     alignment of the buffer
+ * @param size          size of the buffer to be allocated
+ *
+ * @return   Allocated buffer identifier or RPC_NULL
+ */
+extern rpc_ptr rpc_memalign(rcf_rpc_server *rpcs,
+                            size_t alignment,
+                            size_t size);
 
 
 /**

@@ -642,6 +642,46 @@ TARPC_FUNC(write, {},
 }
 )
 
+
+/*-------------- readbuf() ------------------------------*/
+
+bool_t
+_readbuf_1_svc(tarpc_readbuf_in *in, tarpc_readbuf_out *out,
+                  struct svc_req *rqstp)
+{
+
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+
+    errno = 0;
+    if ((out->retval = read(in->fd, rcf_pch_mem_get(in->buf), in->len)) < 0)
+    {
+        out->common._errno = TE_RC(TE_TA_UNIX, errno);
+    }
+    return TRUE;
+}
+
+
+/*-------------- writebuf() ------------------------------*/
+
+bool_t
+_writebuf_1_svc(tarpc_writebuf_in *in, tarpc_writebuf_out *out,
+                struct svc_req *rqstp)
+{
+
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+
+    errno = 0;
+    if ((out->retval = 
+         write(in->fd, rcf_pch_mem_get(in->buf), in->len)) < 0)
+    {
+        out->common._errno = TE_RC(TE_TA_UNIX, errno);
+    }
+    return TRUE;
+}
+
+
 /*-------------- readv() ------------------------------*/
 
 TARPC_FUNC(readv,
@@ -4570,7 +4610,7 @@ TARPC_FUNC(malloc, {},
     buf = func_ret_ptr(in->size);
 
     if (buf == NULL)
-        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
     else
         out->retval = rcf_pch_mem_alloc(buf);
 }
@@ -4583,6 +4623,23 @@ TARPC_FUNC(free, {},
     UNUSED(out);
     func_ptr(rcf_pch_mem_get(in->buf));
     rcf_pch_mem_free(in->buf);
+}
+)
+
+/*-------------- memalign() ------------------------------*/
+
+TARPC_FUNC(memalign, {},
+{
+    void *buf;
+    
+    UNUSED(list_ptr);
+    
+    buf = func_ret_ptr(in->alignment, in->size);
+
+    if (buf == NULL)
+        out->common._errno = TE_RC(TE_TA_UNIX, errno);
+    else
+        out->retval = rcf_pch_mem_alloc(buf);
 }
 )
 
