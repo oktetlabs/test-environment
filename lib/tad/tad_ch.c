@@ -494,10 +494,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     csap_descr_p->last_pkt  = tv_zero;
 
     rc = asn_parse_value_text(ba, ndn_traffic_template, &nds, &syms);
-
-    if (rc)
+    if (rc != 0)
     {
-        /* ERROR! NDS is not parsed correctly */
         ERROR("parse error in attached NDS, code %r, symbol: %d",
               rc, syms);
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
