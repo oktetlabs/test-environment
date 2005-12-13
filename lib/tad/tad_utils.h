@@ -261,8 +261,8 @@ typedef struct {
  * Convert ASN specification of payload from Traffic-Template
  * to plain C sturcture. 
  *
- * @param ndn_payload   ASN value of Payload type
- * @param pld_spec      locaion for converted data (OUT)
+ * @param[in]  ndn_payload  ASN value of Payload type
+ * @param[out] pld_spec     locaion for converted data
  *
  * @return Status code.
  */
@@ -464,33 +464,33 @@ extern int tad_get_tmpl_arg_specs(const asn_value *arg_set,
  * Memory need to store dynamic data, is allocated in this method and
  * should be freed by user. 
  *
- * @param pdu_val       ASN value with pdu, which DATA-UNIT field 
+ * @param[in]  pdu_val  ASN value with pdu, which DATA-UNIT field 
  *                      should be converted.
- * @param label         Textual label of DATA_UNIT field in PDU.
- * @param location      Location for converted structure (OUT). 
+ * @param[in]  label    Textual label of DATA_UNIT field in PDU.
+ * @param[out] location Location for converted structure.
  *
  * @return zero on success or error code. 
  */ 
 extern int tad_data_unit_convert_by_label(const asn_value *pdu_val, 
-                                          const char *label,
+                                          const char      *label,
                                           tad_data_unit_t *location);
 
 /**
  * Convert DATA-UNIT ASN field of PDU to plain C structure.
  * Uses tad_data_unit_convert_simple' method, see notes to it.
  *
- * @param pdu_val       ASN value with pdu, which DATA-UNIT field 
- *                      should be converted
- * @param tag_value     ASN tag value of field, tag class is
- *                      assumed to be PRIVATE
- * @param location      location for converted structure, should not
- *                      contain any 'data staff' - i.e. should be 
- *                      correctly filled or zeroed (OUT) 
+ * @param[in]  pdu_val      ASN value with pdu, which DATA-UNIT field 
+ *                          should be converted
+ * @param[in]  tag_value    ASN tag value of field, tag class is
+ *                          assumed to be PRIVATE
+ * @param[out] location     location for converted structure, should not
+ *                          contain any 'data staff' - i.e. should be 
+ *                          correctly filled or zeroed
  *
  * @return zero on success or error code. 
  */ 
 extern int tad_data_unit_convert(const asn_value *pdu_val, 
-                                 uint16_t tag_value,
+                                 asn_tag_value    tag_value,
                                  tad_data_unit_t *location);
 
 /**
@@ -503,10 +503,10 @@ extern int tad_data_unit_convert(const asn_value *pdu_val,
  * before the call of this method, will be cleared.
  * 
  *
- * @param du_field      ASN value of DATA-UNIT type to  be converted
- * @param location      location for converted structure, should not
+ * @param[in]  du_field ASN value of DATA-UNIT type to  be converted
+ * @param[out] location Location for converted structure, should not
  *                      contain any 'data staff' - i.e. should be 
- *                      correctly filled or zeroed (OUT)
+ *                      correctly filled or zeroed
  *
  * @return zero on success or error code. 
  */ 
@@ -518,10 +518,10 @@ extern int tad_data_unit_convert_simple(const asn_value *du_field,
  * Constract data-unit structure from specified binary data for 
  * simple per-byte compare. 
  *
- * @param data          Binary data which should be compared.
- * @param d_len         Length of data.
- * @param location      Location of data-unit structure to be 
- *                      initialized (OUT).
+ * @param[in]  data     Binary data which should be compared
+ * @param[in]  d_len    Length of data
+ * @param[out] location Location of data-unit structure to be 
+ *                      initialized
  *
  * @return error status.
  */

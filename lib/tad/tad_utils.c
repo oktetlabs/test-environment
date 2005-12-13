@@ -756,9 +756,9 @@ tad_data_unit_convert_by_label(const asn_value *pdu_val,
 
 /* See description in tad_utils.h */ 
 int 
-tad_data_unit_convert(const asn_value *pdu_val,
-                      uint16_t tag_value,
-                      tad_data_unit_t *location)
+tad_data_unit_convert(const asn_value  *pdu_val,
+                      asn_tag_value     tag_value,
+                      tad_data_unit_t  *location)
 {
     int rc;
 
