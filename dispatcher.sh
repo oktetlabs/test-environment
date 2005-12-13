@@ -56,10 +56,6 @@ Generic options:
 
   --opts=<filename>             Get additional command-line options from file
 
-  --script-tester               Use script Tester with text configuration files
-  --vg-tests                    Run tests under valgrind (without by default)
-                                May be used with script Tester only
-
   --cs-print-trees              Print configurator trees.
   --cs-log-diff                 Log backup diff unconditionally.
 
@@ -185,7 +181,6 @@ BUILDER_OPTS=
 LIVE_LOG=
 
 VG_OPTIONS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=32"
-VG_TESTS=
 VG_RCF=
 VG_CS=
 VG_LOGGER=
@@ -197,9 +192,6 @@ TESTER=yes
 RCF=yes
 CS=yes
 LOGGER=yes
-
-# Tester executable extension (set to .sh for script tester)
-TESTER_EXT=
 
 # Whether Test Suite should be built
 BUILD_TS=yes
@@ -282,7 +274,6 @@ process_opts()
             --log-html=*)       RGT_LOG_HTML="${1#--log-html=}" ;;
             --log-plain-html=*) RGT_LOG_HTML_PLAIN="${1#--log-plain-html=}" ;;
 
-            --vg-tests)  VG_TESTS=yes ;;
             --vg-rcf)    VG_RCF=yes ;;
             --vg-cs)     VG_CS=yes ;;
             --vg-logger) VG_LOGGER=yes ;;
@@ -317,8 +308,6 @@ process_opts()
             --log-online) LOG_ONLINE=yes ;;
             
             --no-ts-build) BUILD_TS= ; TESTER_OPTS="${TESTER_OPTS} --nobuild" ;;
-
-            --script-tester) TESTER_EXT=".sh" ;;
 
             --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
 
@@ -663,11 +652,10 @@ if test ${START_OK} -eq 0 -a -n "${TESTER}" ; then
         "Start Tester:${TESTER_OPTS} ${CONF_TESTER}"
     myecho "--->>> Start Tester"
     if test -n "$VG_TESTER" ; then
-        VG_TESTS=${VG_TESTS} valgrind ${VG_OPTIONS} te_tester${TESTER_EXT} \
-            ${TESTER_OPTS} "${CONF_TESTER}" 2>valgrind.te_tester
+        valgrind ${VG_OPTIONS} te_tester ${TESTER_OPTS} "${CONF_TESTER}" \
+            2>valgrind.te_tester
     else
-        VG_TESTS=${VG_TESTS} te_tester${TESTER_EXT} ${TESTER_OPTS} \
-            "${CONF_TESTER}" 
+        te_tester ${TESTER_OPTS} "${CONF_TESTER}" 
     fi
     START_OK=$?
 fi

@@ -34,5 +34,3 @@ te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
                          $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
                          $(DESTDIR)/$(prefix)/lib/libipc.a \
                          $(DESTDIR)/$(prefix)/lib/libtools.a
-
-dist_bin_SCRIPTS = te_tester.sh
