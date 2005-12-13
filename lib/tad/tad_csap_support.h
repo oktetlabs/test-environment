@@ -103,13 +103,14 @@ typedef te_errno (*csap_nbr_destroy_cb_t)(csap_p       csap_descr,
  * @param csap_descr    CSAP descriptor structure.
  * @param layer         Numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
- * @param csap_nds      ASN.1 value with CSAP init parameters
+ * @param layer_nds     ASN.1 value with CSAP init parameters for this
+ *                      layer
  *
  * @return Status code.
  */ 
 typedef te_errno (*csap_layer_init_cb_t)(csap_p           csap_descr,
                                          unsigned int     layer,
-                                         const asn_value *csap_nds);
+                                         const asn_value *layer_nds);
 
 /**
  * Callback type to destroy CSAP layer.
