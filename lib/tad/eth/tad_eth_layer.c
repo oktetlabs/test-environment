@@ -136,9 +136,8 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
             }
             else
             {
-                ERROR("sending csap, no remote address found, ret TE_EINVAL.");
-                return TE_RC(TE_TAD_CSAP, TE_EINVAL); 
-                       /* NO DESTINATION ADDRESS IS SPECIFIED */
+                ERROR("sending csap, no remote address found");
+                return TE_RC(TE_TAD_CSAP, TE_ETADMISSNDS); 
             }                  
         }
     }
@@ -237,7 +236,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
 
 #define CHECK_VLAN_FIELD(c_du_field, label, flag) \
     do { \
-        rc = tad_data_unit_convert_by_label(layer_pdu, label,    \
+        rc = tad_data_unit_convert_by_label(layer_pdu, label,   \
                                    &spec_data-> c_du_field );   \
         if (rc)                                                 \
         {                                                       \
@@ -258,8 +257,8 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
             spec_data->du_cfi.val_i32 = int_val;
             is_cfi = 1;
         }
-        CHECK_VLAN_FIELD (du_priority,  "priority", is_prio);
-        CHECK_VLAN_FIELD (du_vlan_id,   "vlan-id",  is_vlan_id);
+        CHECK_VLAN_FIELD(du_priority, "priority", is_prio);
+        CHECK_VLAN_FIELD(du_vlan_id,  "vlan-id",  is_vlan_id);
 
         if ((csap_descr->state & TAD_STATE_SEND) && 
             (is_cfi || is_prio || is_vlan_id ||
