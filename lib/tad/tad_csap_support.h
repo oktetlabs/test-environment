@@ -132,16 +132,17 @@ typedef te_errno (*csap_layer_destroy_cb_t)(csap_p       csap_descr,
  * For example, it checks that there is sufficient information for 
  * traffic generating, and writes CSAP defaults to Traffic PDU.
  *
- * @param csap_descr    CSAP descriptor structure.
- * @param layer         numeric index of layer in CSAP type to be processed
- * @param traffic_pdu   asn_value with PDU (IN/OUT)
+ * @param[in]    csap_descr    CSAP descriptor structure.
+ * @param[in]    layer         numeric index of layer in CSAP type 
+ *                             to be processed
+ * @param[inout] layer_pdu     ASN.1 value with PDU
  *
  * @return Status code.
  */ 
 typedef te_errno (*csap_layer_confirm_pdu_cb_t)(
                        csap_p        csap_descr,
                        unsigned int  layer, 
-                       asn_value    *traffic_pdu); 
+                       asn_value    *layer_pdu); 
 
 
 struct csap_pkts;
