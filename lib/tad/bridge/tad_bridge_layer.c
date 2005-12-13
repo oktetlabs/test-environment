@@ -57,7 +57,7 @@ tad_bridge_get_param_cb(csap_p csap_descr, unsigned int layer,
 /* See description in tad_bridge_impl.h */
 te_errno
 tad_bridge_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                          asn_value_p tmpl_pdu)
+                          asn_value_p layer_pdu)
 {
     int    rc = 0; 
     char   buffer[8]; /* maximum length of field in Config BPDU*/
@@ -79,7 +79,7 @@ tad_bridge_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         char _buffer[100];                                      \
         size_t _len = sizeof(_buffer);                          \
                                                                 \
-        rc = asn_read_value_field(tmpl_pdu, _buffer, &_len,     \
+        rc = asn_read_value_field(layer_pdu, _buffer, &_len,     \
                                   label ".#plain");             \
         VERB("CHECK field %s, asn_read rc %x", label, rc);      \
         switch (rc)                                             \
@@ -90,10 +90,10 @@ tad_bridge_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                                                                 \
             case TE_EASNOTHERCHOICE:                            \
             /* TODO: process complex tmpl should be here*/      \
-                asn_free_subvalue (tmpl_pdu, label);            \
+                asn_free_subvalue (layer_pdu, label);            \
             /* fall through! */                                 \
             case TE_EASNINCOMPLVAL:                             \
-                rc = asn_write_value_field(tmpl_pdu, val, len,  \
+                rc = asn_write_value_field(layer_pdu, val, len,  \
                                            label ".#plain");    \
                 VERB("rc from asn write %x\n", rc);             \
         }                                                       \
@@ -102,7 +102,7 @@ tad_bridge_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     CHECK_FIELD("proto-id", buffer, 2);
     CHECK_FIELD("version-id", buffer, 1);
     CHECK_FIELD("bpdu-type", buffer, 1);
-    rc = asn_get_choice(tmpl_pdu, "content", buffer, sizeof(buffer));
+    rc = asn_get_choice(layer_pdu, "content", buffer, sizeof(buffer));
     /* if there are no content, we assume CFG PBDU ??? */
 
     if (rc && TE_RC_GET_ERROR(rc) != TE_EASNINCOMPLVAL)

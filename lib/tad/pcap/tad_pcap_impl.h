@@ -167,7 +167,7 @@ extern te_errno tad_pcap_single_destroy_cb(csap_p       csap_descr,
  */ 
 extern te_errno tad_pcap_confirm_pdu_cb(csap_p       csap_descr,
                                         unsigned int layer,
-                                        asn_value_p  tmpl_pdu); 
+                                        asn_value_p  layer_pdu); 
 
 
 /**

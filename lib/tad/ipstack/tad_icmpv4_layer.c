@@ -44,11 +44,11 @@ icmp4_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 /* See description in tad_ipstack_impl.h */
 int 
 icmp4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                     asn_value_p tmpl_pdu)
+                     asn_value_p layer_pdu)
 { 
     UNUSED(csap_descr);
     UNUSED(layer);
-    UNUSED(tmpl_pdu);
+    UNUSED(layer_pdu);
     return 0;
 }
 

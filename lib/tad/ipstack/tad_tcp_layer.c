@@ -64,7 +64,7 @@ tad_tcp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 /* See description in tad_ipstack_impl.h */
 te_errno
 tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                       asn_value_p pdu)
+                       asn_value_p layer_pdu)
 { 
     te_errno    rc = 0;
 
@@ -75,16 +75,16 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     tcp_csap_specific_data_t *spec_data = 
         (tcp_csap_specific_data_t *)csap_descr->layers[layer].specific_data;
 
-    if (asn_get_syntax(pdu, "") == CHOICE)
+    if (asn_get_syntax(layer_pdu, "") == CHOICE)
     {
-        if ((rc = asn_get_choice_value(pdu,
+        if ((rc = asn_get_choice_value(layer_pdu,
                                        (const asn_value **)&tcp_pdu,
                                        NULL, NULL))
              != 0)
             return rc;
     }
     else
-        tcp_pdu = pdu; 
+        tcp_pdu = layer_pdu; 
 
     tcp_csap_pdu = csap_descr->layers[layer].csap_layer_pdu; 
 
@@ -138,7 +138,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                 (rc = asn_write_component_value(tcp_pdu, du_field,
                                                "src-port")) != 0)
             {
-                ERROR("%s(): write src-port to tcp pdu failed %r",
+                ERROR("%s(): write src-port to tcp layer_pdu failed %r",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
@@ -167,7 +167,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                 (rc = asn_write_component_value(tcp_pdu, du_field,
                                                "dst-port")) != 0)
             {
-                ERROR("%s(): write dst-port to tcp pdu failed %r",
+                ERROR("%s(): write dst-port to tcp layer_pdu failed %r",
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }

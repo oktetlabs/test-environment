@@ -53,11 +53,11 @@ tad_snmp_get_param_cb(csap_p csap_descr, unsigned int layer,
 /* See description in tad_snmp_impl.h */
 te_errno
 tad_snmp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                        asn_value_p tmpl_pdu)
+                        asn_value_p layer_pdu)
 {
     UNUSED(csap_descr);
     UNUSED(layer);
-    UNUSED(tmpl_pdu);
+    UNUSED(layer_pdu);
     VERB("%s, csap %d, layer %d", __FUNCTION__, csap_descr->id, layer);
     return 0;
 }

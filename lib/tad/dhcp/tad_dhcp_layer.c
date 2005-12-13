@@ -66,24 +66,24 @@ tad_dhcp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 /* See description in tad_dhcp_impl.h */
 te_errno
 tad_dhcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                        asn_value *tmpl_pdu)
+                        asn_value *layer_pdu)
 { 
     te_errno    rc;
     int         xid;
     size_t      len = sizeof (xid);
 
-    rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
+    rc = asn_read_value_field(layer_pdu, &xid, &len, "xid.#plain");
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         xid = random();
-        rc = asn_write_int32(tmpl_pdu, xid, "xid.#plain");
+        rc = asn_write_int32(layer_pdu, xid, "xid.#plain");
         if (rc) 
             return rc;
     }
     
     UNUSED(csap_descr);
     UNUSED(layer);
-    UNUSED(tmpl_pdu);
+    UNUSED(layer_pdu);
     return 0;
 }
 

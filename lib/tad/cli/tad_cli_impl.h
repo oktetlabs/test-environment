@@ -213,7 +213,7 @@ extern te_errno tad_cli_single_destroy_cb(csap_p       csap_descr,
  */ 
 extern te_errno tad_cli_confirm_pdu_cb(csap_p        csap_descr,
                                        unsigned int  layer,
-                                       asn_value    *tmpl_pdu); 
+                                       asn_value    *layer_pdu); 
 
 /**
  * Callback for generate binary data to be sent to media.

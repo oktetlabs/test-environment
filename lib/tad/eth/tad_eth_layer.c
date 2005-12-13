@@ -77,7 +77,7 @@ tad_eth_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 /* See description in tad_eth_impl.h */
 te_errno
 tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                       asn_value_p tmpl_pdu)
+                       asn_value_p layer_pdu)
 {
     eth_csap_specific_data_p spec_data; 
 
@@ -90,7 +90,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     
     /* =========== Destination MAC address ============ */
 
-    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_ETH_DST,
+    rc = tad_data_unit_convert(layer_pdu, NDN_TAG_ETH_DST,
                                &spec_data->du_dst_addr);
 
     VERB("rc from DU convert dst-addr %r, du-type: %d", 
@@ -112,7 +112,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                                             &spec_data->du_dst_addr);
 
                 if (rc == 0)
-                    rc = asn_write_value_field(tmpl_pdu, 
+                    rc = asn_write_value_field(layer_pdu, 
                                                spec_data->local_addr, 
                                                ETH_ALEN, "dst-addr.#plain");
                 if (rc)
@@ -130,7 +130,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                 rc = tad_data_unit_from_bin(spec_data->remote_addr, ETH_ALEN, 
                                            &spec_data->du_dst_addr);
                 if (rc == 0)
-                    rc = asn_write_value_field(tmpl_pdu, 
+                    rc = asn_write_value_field(layer_pdu, 
                                                spec_data->remote_addr, 
                                                ETH_ALEN, "dst-addr.#plain");
             }
@@ -147,7 +147,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     
     /* =========== Source MAC address ============ */
 
-    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_ETH_SRC,
+    rc = tad_data_unit_convert(layer_pdu, NDN_TAG_ETH_SRC,
                                &spec_data->du_src_addr);
     VERB("rc from DU convert src-addr %x, du-type: %d", 
             rc, spec_data->du_src_addr.du_type);
@@ -169,7 +169,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
                                             ETH_ALEN,
                                             &spec_data->du_src_addr);
                 if (rc == 0)
-                    rc = asn_write_value_field(tmpl_pdu, 
+                    rc = asn_write_value_field(layer_pdu, 
                                                spec_data->remote_addr, 
                                                ETH_ALEN, "src-addr.#plain");
             }
@@ -191,7 +191,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
             rc = tad_data_unit_from_bin(local_addr, ETH_ALEN, 
                                        &spec_data->du_src_addr);
             if (rc == 0)
-                rc = asn_write_value_field(tmpl_pdu, local_addr, 
+                rc = asn_write_value_field(layer_pdu, local_addr, 
                                            ETH_ALEN, "src-addr.#plain");
         }
         if (rc)
@@ -205,7 +205,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     
 
     /* =========== Ethernet type/length field ============ */
-    rc = tad_data_unit_convert_by_label(tmpl_pdu, "eth-type",
+    rc = tad_data_unit_convert_by_label(layer_pdu, "eth-type",
                                         &spec_data->du_eth_type);
     VERB("%s(CSAP %d): rc from DU convert eth-type %x, du-type: %d", 
          __FUNCTION__, csap_descr->id, rc, spec_data->du_eth_type.du_type); 
@@ -221,7 +221,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     {
         spec_data->du_eth_type.du_type = TAD_DU_I32;     
         spec_data->du_eth_type.val_i32 = spec_data->eth_type;         
-        asn_write_int32(tmpl_pdu, spec_data->eth_type, 
+        asn_write_int32(layer_pdu, spec_data->eth_type, 
                         "eth-type.#plain");
         VERB("%s(CSAP %d): chosen eth-type %d", 
              __FUNCTION__, csap_descr->id, spec_data->eth_type); 
@@ -237,7 +237,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
 
 #define CHECK_VLAN_FIELD(c_du_field, label, flag) \
     do { \
-        rc = tad_data_unit_convert_by_label(tmpl_pdu, label,    \
+        rc = tad_data_unit_convert_by_label(layer_pdu, label,    \
                                    &spec_data-> c_du_field );   \
         if (rc)                                                 \
         {                                                       \
@@ -251,7 +251,7 @@ tad_eth_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     } while (0)
 
         /* cfi is not data unit! */
-        rc = asn_read_value_field(tmpl_pdu, &int_val, &val_len, "cfi");
+        rc = asn_read_value_field(layer_pdu, &int_val, &val_len, "cfi");
         if (rc == 0)
         {
             spec_data->du_cfi.du_type = TAD_DU_I32;

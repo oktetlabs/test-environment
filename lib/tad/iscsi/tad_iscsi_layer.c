@@ -75,9 +75,9 @@ tad_iscsi_get_param_cb(csap_p csap_descr, unsigned int layer,
 /* See description in tad_iscsi_impl.h */
 int 
 tad_iscsi_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                         asn_value *nds_pdu)
+                         asn_value *layer_pdu)
 { 
-    F_ENTRY("(%d:%u) nds=%p", csap_descr->id, layer, (void *)nds_pdu);
+    F_ENTRY("(%d:%u) nds=%p", csap_descr->id, layer, (void *)layer_pdu);
     return 0;
 }
 

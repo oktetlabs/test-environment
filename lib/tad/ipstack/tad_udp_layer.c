@@ -55,10 +55,10 @@ tad_udp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 /* See description in tad_ipstack_impl.h */
 te_errno
 tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                       asn_value_p tmpl_pdu)
+                       asn_value_p layer_pdu)
 {
     te_errno                  rc;
-    asn_value                *udp_tmpl_pdu;
+    asn_value                *udp_layer_pdu;
     udp_csap_specific_data_t *udp_spec_data;
 
     udp_spec_data = (udp_csap_specific_data_t *)
@@ -70,13 +70,13 @@ tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         return TE_EWRONGPTR;
     } 
 
-    if(asn_get_syntax(tmpl_pdu, "") != CHOICE)
-        asn_get_choice_value(tmpl_pdu, (const asn_value **)&udp_tmpl_pdu,
+    if(asn_get_syntax(layer_pdu, "") != CHOICE)
+        asn_get_choice_value(layer_pdu, (const asn_value **)&udp_layer_pdu,
                              NULL, NULL);
     else
-        udp_tmpl_pdu = tmpl_pdu;
+        udp_layer_pdu = layer_pdu;
 
-    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_UDP_SRC_PORT,
+    rc = tad_data_unit_convert(layer_pdu, NDN_TAG_UDP_SRC_PORT,
                               &(udp_spec_data->du_src_port)); 
     if (rc != 0)
     {
@@ -88,7 +88,7 @@ tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         udp_spec_data->src_port = udp_spec_data->du_src_port.val_i32;
 
 
-    rc = tad_data_unit_convert(tmpl_pdu, NDN_TAG_UDP_DST_PORT,
+    rc = tad_data_unit_convert(layer_pdu, NDN_TAG_UDP_DST_PORT,
                               &(udp_spec_data->du_dst_port)); 
     if (rc != 0)
     {
@@ -109,7 +109,7 @@ tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         {
             VERB("%s: set dst-port to %u",
                   __FUNCTION__, udp_spec_data->local_port);
-            rc = asn_write_int32(tmpl_pdu, udp_spec_data->local_port,
+            rc = asn_write_int32(layer_pdu, udp_spec_data->local_port,
                                  "dst-port.#plain");
             if (rc != 0)
             {
@@ -124,7 +124,7 @@ tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         {
             VERB("%s: set src-port to %u",
                   __FUNCTION__, udp_spec_data->remote_port);
-            rc = asn_write_int32(tmpl_pdu, udp_spec_data->remote_port,
+            rc = asn_write_int32(layer_pdu, udp_spec_data->remote_port,
                                  "src-port.#plain");
             if (rc != 0)
             {
@@ -143,7 +143,7 @@ tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         {
             VERB("%s: set src-port to %u",
                   __FUNCTION__, udp_spec_data->local_port);
-            rc = asn_write_int32(tmpl_pdu, udp_spec_data->local_port,
+            rc = asn_write_int32(layer_pdu, udp_spec_data->local_port,
                                  "src-port.#plain");
             if (rc != 0)
             {
@@ -161,7 +161,7 @@ tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
             {
                 VERB("%s: set dst-port to %u",
                       __FUNCTION__, udp_spec_data->remote_port);
-                rc = asn_write_int32(tmpl_pdu, udp_spec_data->remote_port,
+                rc = asn_write_int32(layer_pdu, udp_spec_data->remote_port,
                                      "dst-port.#plain");
                 if (rc != 0)
                 {

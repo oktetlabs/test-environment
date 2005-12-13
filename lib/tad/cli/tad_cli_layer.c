@@ -49,11 +49,11 @@ tad_cli_get_param_cb(csap_p csap_descr, unsigned int layer,
 /* See description in tad_cli_impl.h */
 te_errno
 tad_cli_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                       asn_value *tmpl_pdu)
+                       asn_value *layer_pdu)
 {
     cli_csap_specific_data_p spec_data;
 
-    UNUSED(tmpl_pdu);
+    UNUSED(layer_pdu);
 
     spec_data = (cli_csap_specific_data_p)
         csap_descr->layers[layer].specific_data; 

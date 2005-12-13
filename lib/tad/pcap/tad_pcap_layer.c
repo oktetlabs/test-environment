@@ -95,7 +95,7 @@ tad_pcap_get_param_cb(csap_p csap_descr, unsigned int layer,
 /* See description in tad_pcap_impl.h */
 te_errno
 tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                        asn_value_p tmpl_pdu)
+                        asn_value_p layer_pdu)
 {
     pcap_csap_specific_data_p   spec_data; 
 
@@ -110,7 +110,7 @@ tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     spec_data = (pcap_csap_specific_data_p)
         csap_descr->layers[layer].specific_data; 
 
-    rc = asn_get_length(tmpl_pdu, "filter");
+    rc = asn_get_length(layer_pdu, "filter");
     if (rc < 0)
     {
         ERROR("%s(): asn_get_length() failed, rc=%r", __FUNCTION__, rc);
@@ -125,7 +125,7 @@ tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
     
-    rc = asn_read_value_field(tmpl_pdu, pcap_str, &val_len, "filter");
+    rc = asn_read_value_field(layer_pdu, pcap_str, &val_len, "filter");
     if (rc < 0)
     {
         ERROR("%s(): asn_read_value_field() failed, rc=%r", __FUNCTION__, rc);
@@ -152,7 +152,7 @@ tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     spec_data->bpfs[++spec_data->bpf_count] = bpf_program;
 
     val_len = sizeof(int);
-    rc = asn_write_value_field(tmpl_pdu, &spec_data->bpf_count,
+    rc = asn_write_value_field(layer_pdu, &spec_data->bpf_count,
                                val_len, "bpf-id");
     if (rc < 0)
     {
