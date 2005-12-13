@@ -1636,7 +1636,7 @@ asn_read_indexed(const asn_value *container, int index,
  * @param elem_value    ASN value to be placed into the array, specified 
  *                      by subval_labels at place, specified by index.
  * @param index         Array index of place to which element should be
- *                      inserted. 
+ *                      inserted (-1 to insert to the end). 
  * @param subval_labels string with dot-separated sequence of textual field
  *                      labels, specifying indexed syntax subvalue in ASN value 
  *                      tree with 'container' as a root. 
