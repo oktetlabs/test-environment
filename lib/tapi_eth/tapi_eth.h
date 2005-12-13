@@ -49,6 +49,50 @@
 #include "ndn_eth.h"
 #include "tapi_tad.h"
 
+#include "tapi_test.h"
+
+
+/**
+ * Create ASN.1 value for Ethernet CSAP layer.
+ *
+ * @param device        Interface name on TA host
+ * @param recv_mode     Pointer to receive mode or NULL, bit scale defined
+ *                      by elements of 'enum eth_csap_receive_mode' in
+ *                      ndn_eth.h. If NULL, keep it unspecified.
+ * @param remote_addr   Default remote MAC address, may be NULL - in this
+ *                      case frames will be sent only dst is specified in
+ *                      template, and frames from all src's will be
+ *                      catched.
+ *                      If NULL, CSAP will have remote address unconfigured
+ *                      and will require it in traffic template.
+ * @param local_addr    Default local MAC address. may be NULL - in this
+ *                      case frames will be sent with src specifed in
+ *                      template or native for outgoing device (if not
+ *                      present in template).
+ *                      If NULL, CSAP will have remote address unconfigured
+ *                      and will require it in traffic template.
+ * @param eth_type_len  Pointer to default Ethernet type/length field.
+ *                      See description in IEEE 802.3.
+ *                      If NULL, CSAP will have eth-type/len unconfigured
+ *                      and will require it in traffic template.
+ * @param cfi           Pointer to CFI field in VLAN header extension or
+ *                      NULL
+ * @param priority      Pointer to priority field in VLAN header extension
+ *                      or NULL
+ * @param vlan_id       Pointer to VLAN identifier field in VLAN header
+ *                      extension or NULL
+ *
+ * @retval Status code.
+ */
+extern te_errno tapi_eth_csap_layer(const char      *device,
+                                    const uint8_t   *recv_mode,
+                                    const uint8_t   *remote_addr,
+                                    const uint8_t   *local_addr,
+                                    const uint16_t  *eth_type_len,
+                                    te_bool         *cfi,
+                                    const uint8_t   *priority,
+                                    const uint16_t  *vlan_id,
+                                    asn_value      **eth_layer);
 
 /**
  * Create common Ethernet CSAP.

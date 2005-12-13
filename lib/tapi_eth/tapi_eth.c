@@ -77,6 +77,65 @@ tapi_eth_fprint_mac (FILE *f, const uint8_t *addr)
     }
 }
 
+/* See description in tapi_eth.h */
+te_errno
+tapi_eth_csap_layer(const char      *device,
+                    const uint8_t   *recv_mode,
+                    const uint8_t   *remote_addr,
+                    const uint8_t   *local_addr,
+                    const uint16_t  *eth_type_len,
+                    te_bool         *cfi,
+                    const uint8_t   *priority,
+                    const uint16_t  *vlan_id,
+                    asn_value      **eth_layer)
+{
+    if (device == NULL)
+    {
+        ERROR("Device have to be specified for Ethernet CSAP layer");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (eth_layer == NULL)
+    {
+        ERROR("Location for created ASN.1 value have to be provided");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    *eth_layer = asn_init_value(ndn_eth_csap);
+    if (*eth_layer == NULL)
+    {
+        ERROR("Failed to initialize ASN.1 value for Ethernet CSAP "
+              "layer");
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+
+    CHECK_RC(asn_write_string(*eth_layer, device, "device-id.#plain"));
+    if (recv_mode != NULL)
+        CHECK_RC(asn_write_int32(*eth_layer, *recv_mode,
+                                 "receive-mode"));
+    if (remote_addr != NULL)
+        CHECK_RC(asn_write_value_field(*eth_layer, remote_addr,
+                                       ETHER_ADDR_LEN,
+                                       "remote-addr.#plain"));
+    if (local_addr != NULL)
+        CHECK_RC(asn_write_value_field(*eth_layer, local_addr,
+                                       ETHER_ADDR_LEN,
+                                       "local-addr.#plain"));
+    if (eth_type_len != NULL)
+        CHECK_RC(asn_write_int32(*eth_layer, *eth_type_len,
+                                 "eth-type.#plain"));
+    if (cfi != NULL)
+        CHECK_RC(asn_write_int32(*eth_layer, *cfi,
+                                 "cfi"));
+    if (priority != NULL)
+        CHECK_RC(asn_write_int32(*eth_layer, *priority,
+                                 "priority.#plain"));
+    if (vlan_id != NULL)
+        CHECK_RC(asn_write_int32(*eth_layer, *vlan_id,
+                                 "vlan-id.#plain"));
+
+    return 0;
+}
+
 /**
  * Create common Ethernet CSAP.
  *
@@ -275,7 +334,6 @@ tapi_eth_tagged_csap_create(const char *ta_name, int sid,
 
     return rc;
 }
-
 
 /**
  * Structure to be passed as @a user_param to rcf_ta_trrecv_wait(),
