@@ -109,11 +109,12 @@ typedef enum {
     PRIVATE
 } asn_tag_class;
 
-
+/** Value of the ASN.1 tag */
+typedef unsigned short asn_tag_value;
 
 typedef struct asn_tag_t {
-    asn_tag_class  cl;
-    unsigned short val;
+    asn_tag_class   cl;
+    asn_tag_value   val;
 } asn_tag_t;
 
 
