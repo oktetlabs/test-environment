@@ -540,40 +540,6 @@ tad_eth_write_read_cb(csap_p csap_descr, int timeout,
 
 /* See description tad_eth_impl.h */
 te_errno
-tad_eth_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
-{
-    char     choice_label[20];
-    te_errno rc;
-
-    INFO("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
-
-    rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
-                        sizeof(choice_label));
-
-    if (rc && TE_RC_GET_ERROR(rc) != TE_EASNINCOMPLVAL)
-        return TE_RC(TE_TAD_CSAP, rc);
-
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
-    {
-        asn_value *eth_pdu = asn_init_value(ndn_eth_header); 
-        asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 
-        
-        asn_write_component_value(asn_pdu, eth_pdu, "#eth");
-        asn_insert_indexed(traffic_nds, asn_pdu, 0, "pdus"); 
-
-        asn_free_value(asn_pdu);
-        asn_free_value(eth_pdu);
-    } 
-    else if (strcmp (choice_label, "eth") != 0)
-    {
-        return TE_ETADWRONGNDS;
-    }
-    return 0;
-}
-
-
-/* See description tad_eth_impl.h */
-te_errno
 tad_eth_single_init_cb(csap_p csap_descr, unsigned int layer,
                        const asn_value *csap_nds)
 {
@@ -775,9 +741,6 @@ tad_eth_single_init_cb(csap_p csap_descr, unsigned int layer,
 
     /* default read timeout */
     eth_spec_data->read_timeout = ETH_CSAP_DEFAULT_TIMEOUT; 
-
-    if (csap_descr->check_pdus_cb == NULL)
-        csap_descr->check_pdus_cb = tad_eth_single_check_pdus;
 
     csap_descr->layers[layer].specific_data = eth_spec_data;
 

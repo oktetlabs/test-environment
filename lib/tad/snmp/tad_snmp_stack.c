@@ -326,50 +326,6 @@ tad_snmp_write_read_cb(csap_p csap_descr, int timeout,
 }
 
 
-te_errno
-tad_snmp_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
-{
-    char choice_label[20];
-    int  rc;
-
-    UNUSED(csap_descr);
-
-    VERB("%s callback, CSAP # %d", __FUNCTION__, csap_descr->id); 
-
-    if (traffic_nds == NULL)
-    {
-        ERROR("%s: NULL traffic nds!", __FUNCTION__);
-        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
-    }
-
-    rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
-                        sizeof(choice_label));
-
-    VERB("%s callback, got choice rc %r", __FUNCTION__, rc); 
-
-    if (rc && TE_RC_GET_ERROR(rc) != TE_EASNINCOMPLVAL)
-        return TE_RC(TE_TAD_CSAP, rc);
-
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
-    {
-        asn_value *snmp_pdu = asn_init_value(ndn_snmp_message); 
-        asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 
-        
-        asn_write_component_value(asn_pdu, snmp_pdu, "#snmp");
-        asn_insert_indexed(traffic_nds, asn_pdu, 0, "pdus"); 
-
-        asn_free_value(asn_pdu);
-        asn_free_value(snmp_pdu);
-    } 
-    else if (strcmp (choice_label, "snmp") != 0)
-    {
-        WARN("%s callback, got unexpected choice %s", 
-                __FUNCTION__, choice_label); 
-        return TE_ETADWRONGNDS;
-    }
-    return 0;
-}
-
 #define COMMUNITY 1
 
 /* See description in tad_snmp_impl.h */
@@ -733,9 +689,6 @@ tad_snmp_single_init_cb(csap_p csap_descr, unsigned int layer,
         return TE_ENOMEM;
     }
     
-    if (csap_descr->check_pdus_cb == NULL)
-        csap_descr->check_pdus_cb = tad_snmp_single_check_pdus;
-
     csap_descr->write_cb         = tad_snmp_write_cb; 
     csap_descr->read_cb          = tad_snmp_read_cb; 
     csap_descr->write_read_cb    = tad_snmp_write_read_cb; 

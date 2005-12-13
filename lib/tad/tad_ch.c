@@ -296,6 +296,14 @@ rcf_ch_csap_create(struct rcf_comm_connection *handle,
         new_csap->layers[layer].csap_layer_pdu = nds_pdu;
         csap_spt_descr = new_csap->layers[layer].proto_support;
 
+        if ((csap_spt_descr->init_cb != NULL) &&
+            (rc = csap_spt_descr->init_cb(new_csap, layer)) != 0)
+        {
+            ERROR("CSAP %d init layer error %r, layer %d",
+                  new_csap_id, rc, layer);
+            break;
+        }
+
         for (nbr_p = csap_spt_descr->neighbours;
              nbr_p != NULL && strcmp_imp(lower_proto, nbr_p->nbr_type) != 0;
              nbr_p = nbr_p->next);
@@ -515,19 +523,6 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         csap_descr_p->state |= TAD_STATE_FOREGROUND;
 
     CSAP_DA_UNLOCK(csap_descr_p);
-
-    if (csap_descr_p->check_pdus_cb)
-    {
-        rc = csap_descr_p->check_pdus_cb(csap_descr_p, nds);
-        if (rc) 
-        {
-            ERROR("send nds check_pdus error: %r", rc);
-            SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
-            csap_descr_p->command = TAD_OP_IDLE;
-            csap_descr_p->state = 0;
-            return 0;
-        }
-    }
 
     send_context = malloc(sizeof(tad_task_context));
     send_context->csap          = csap_descr_p;
@@ -754,16 +749,6 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
             break;
         }
 
-        if (csap_descr_p->check_pdus_cb)
-        {
-            rc = csap_descr_p->check_pdus_cb(csap_descr_p, pattern_unit);
-            if (rc != 0) 
-            {
-                WARN("%s(): CSAP %d, check_pdus error: %r",
-                     __FUNCTION__, csap_descr_p->id, rc);
-                break;
-            }
-        }
         asn_get_subvalue(pattern_unit, (const asn_value **)&pdus, "pdus");
 
         rc = tad_confirm_pdus(csap_descr_p, pdus);

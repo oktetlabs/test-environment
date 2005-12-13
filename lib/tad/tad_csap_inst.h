@@ -223,21 +223,6 @@ typedef int (*csap_write_read_cb_t)(csap_p csap_descr, int timeout,
                                     const char *w_buf, size_t w_buf_len,
                                     char *r_buf, size_t r_buf_len);
 
-/**
- * Callback type to check sequence of PDUs in template
- * or pattern, and fill absent layers if necessary. 
- *
- * @param csap_descr    CSAP descriptor structure. 
- * @param pdus          ASN value with Traffic-Template or 
- *                      Traffic-Pattern, which field pdus will 
- *                      be checked to have sequence of PDUs according
- *                      with CSAP layer structure.
- *
- * @return Zero on success, otherwise common TE error code.
- */ 
-typedef te_errno (*csap_check_pdus_cb_t)(csap_p csap_descr, 
-                                         asn_value *traffic_nds);
-
 
 /**
  * Callback type to echo CSAP method. 
@@ -324,7 +309,6 @@ typedef struct csap_instance {
     csap_read_cb_t       read_cb;       /**< read data from CSAP media */
     csap_write_cb_t      write_cb;      /**< write data to CSAP media */ 
     csap_write_read_cb_t write_read_cb; /**< write data and read answer.*/
-    csap_check_pdus_cb_t check_pdus_cb; /**< check PDUs sequence */
     csap_echo_method     echo_cb;       /**< method for echo */
 
     csap_low_resource_cb_t prepare_recv_cb; /**< prepare CSAP for receive */

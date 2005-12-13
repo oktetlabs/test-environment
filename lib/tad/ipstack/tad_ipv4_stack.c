@@ -73,10 +73,6 @@
 #include "tad_ipstack_impl.h"
 
 
-/* Forward declaration */
-extern int tad_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds);
-
- 
 /* See description tad_ipstack_impl.h */
 int 
 tad_ip4_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
@@ -324,8 +320,6 @@ tad_ip4_eth_init_cb(csap_p csap_descr, unsigned int layer,
     csap_descr->layers[layer].specific_data = spec_data;
     csap_descr->layers[layer].get_param_cb = tad_ip4_get_param_cb;
 
-    csap_descr->check_pdus_cb = tad_ip4_check_pdus; 
-
     val_len = sizeof(spec_data->remote_addr);
     rc = asn_read_value_field(csap_descr->layers[layer].csap_layer_pdu,
                               &spec_data->remote_addr, &val_len,
@@ -367,16 +361,3 @@ tad_ip4_eth_destroy_cb(csap_p csap_descr, unsigned int layer)
 }
 
 #endif /* WITH_ETH */
-
-
-/* See description tad_ipstack_impl.h */
-te_errno
-tad_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
-{
-    UNUSED(csap_descr);
-    UNUSED(traffic_nds);
-
-    INFO("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
-
-    return 0;
-}

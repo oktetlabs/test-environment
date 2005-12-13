@@ -381,42 +381,6 @@ tad_pcap_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
 /* See description tad_pcap_impl.h */
 te_errno
-tad_pcap_single_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
-{
-    char choice_label[20];
-    int rc;
-
-    UNUSED(csap_descr);
-
-    VERB("%s() started", __FUNCTION__);
-
-    rc = asn_get_choice(traffic_nds, "pdus.0", choice_label, 
-                        sizeof(choice_label));
-
-    if (rc && TE_RC_GET_ERROR(rc) != TE_EASNINCOMPLVAL)
-        return TE_RC(TE_TAD_CSAP, rc);
-
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
-    {
-        asn_value *pcap_pdu = asn_init_value(ndn_pcap_filter); 
-        asn_value *asn_pdu    = asn_init_value(ndn_generic_pdu); 
-        
-        asn_write_component_value(asn_pdu, pcap_pdu, "#pcap");
-        asn_insert_indexed(traffic_nds, asn_pdu, 0, "pdus"); 
-
-        asn_free_value(asn_pdu);
-        asn_free_value(pcap_pdu);
-    } 
-    else if (strcmp (choice_label, "pcap") != 0)
-    {
-        return TE_ETADWRONGNDS;
-    }
-    return 0;
-}
-
-
-/* See description tad_pcap_impl.h */
-te_errno
 tad_pcap_single_init_cb(csap_p csap_descr, unsigned int layer,
                         const asn_value *csap_nds)
 {
@@ -485,9 +449,6 @@ tad_pcap_single_init_cb(csap_p csap_descr, unsigned int layer,
 
     /* default read timeout */
     pcap_spec_data->read_timeout = PCAP_CSAP_DEFAULT_TIMEOUT; 
-
-    if (csap_descr->check_pdus_cb == NULL)
-        csap_descr->check_pdus_cb = tad_pcap_single_check_pdus;
 
     csap_descr->layers[layer].specific_data = pcap_spec_data;
 

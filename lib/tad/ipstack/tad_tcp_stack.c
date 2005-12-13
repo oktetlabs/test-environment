@@ -68,18 +68,6 @@
 
 
 /* See description tad_ipstack_impl.h */
-te_errno
-tad_tcp_ip4_check_pdus(csap_p csap_descr, asn_value *traffic_nds)
-{
-    UNUSED(csap_descr);
-    UNUSED(traffic_nds);
-    VERB("%s(CSAP %d) called", __FUNCTION__, csap_descr->id);
-
-    return 0;
-}
-
- 
-/* See description tad_ipstack_impl.h */
 int 
 tad_tcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 {
@@ -438,9 +426,6 @@ tad_tcp_ip4_init_cb(csap_p csap_descr, unsigned int layer,
 
     tcp_pdu = csap_descr->layers[layer].csap_layer_pdu;
 
-    /* FIXME Why IPv4? */
-    csap_descr->check_pdus_cb = tad_tcp_ip4_check_pdus; 
-
     if (layer + 1 >= csap_descr->depth)
     {
         ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
@@ -448,6 +433,7 @@ tad_tcp_ip4_init_cb(csap_p csap_descr, unsigned int layer,
         return TE_EINVAL;
     }
 
+    /* FIXME Why IPv4? */
     ip4_spec_data = (ip4_csap_specific_data_t *)
         csap_descr->layers[layer + 1].specific_data;
 
