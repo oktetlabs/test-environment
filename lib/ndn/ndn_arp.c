@@ -29,6 +29,9 @@
 
 #include "te_config.h"
 
+#if HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
+#endif
 #if 0
 #if HAVE_STDLIB_H
 #include <stdlib.h>
@@ -68,7 +71,7 @@ static asn_named_entry_t _ndn_arp_header_ne_array[] =
       { PRIVATE, NDN_TAG_ARP_TGT_PROTO_ADDR } },
 };
 
-static asn_type ndn_arp_header_s =
+asn_type ndn_arp_header_s =
 {
     "ARP-Header", { PRIVATE, 100 /* FIXME */}, SEQUENCE, 
     sizeof(_ndn_arp_header_ne_array) / sizeof(asn_named_entry_t),
@@ -90,7 +93,7 @@ static asn_named_entry_t _ndn_arp_csap_ne_array[] =
       { PRIVATE, NDN_TAG_ARP_PROTO_SIZE } },
 };
 
-static asn_type ndn_arp_csap_s =
+asn_type ndn_arp_csap_s =
 {
     "ARP-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
     sizeof(_ndn_arp_csap_ne_array) / sizeof(asn_named_entry_t),
@@ -99,8 +102,8 @@ static asn_type ndn_arp_csap_s =
 
 const asn_type * const ndn_arp_csap = &ndn_arp_csap_s;
 
-#if 0
 
+#if 0
 /* See description in ndn_arp.h */
 te_errno
 ndn_arp_packet_to_plain(const asn_value *pkt, 
@@ -149,6 +152,7 @@ ndn_arp_packet_to_plain(const asn_value *pkt,
 
     return rc;
 }
+#endif
 
 
 /* See description in ndn_arp.h */
@@ -208,4 +212,3 @@ ndn_arp_plain_to_packet(const ndn_arp_header_plain *arp_header)
 
     return asn_arp_hdr;
 }
-#endif
