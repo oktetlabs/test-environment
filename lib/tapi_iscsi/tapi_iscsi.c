@@ -2170,6 +2170,19 @@ get_host_device(const char *ta, unsigned id)
     return device;
 }
 
+te_bool
+tapi_iscsi_initiator_is_device_ready(const char *ta, iscsi_target_id id)
+{
+    char    *dev = get_host_device(ta, id);
+    te_bool  result;
+    
+    if (dev == NULL)
+        return FALSE;
+    result = (*dev != '\0');
+    free(dev);
+    return result;
+}
+
 #define ISCSI_IO_SIGNAL        SIGPOLL
 
 static void
@@ -2449,12 +2462,15 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     sprintf((*ioh)->mountpoint, 
             "/tmp/te_iscsi_fs_%s.%u", ta, id);
     dev = get_host_device(ta, id);
-    if (dev == NULL)
+    if (dev == NULL || *dev == '\0')
     {
+        if (dev != NULL)
+            free(dev);
         free(*ioh);
         *ioh = NULL;
         return TE_RC(TE_TAPI, TE_ENODEV);
     }
+    RING("The device detected is %s", dev);
     strcpy((*ioh)->device, dev);
     free(dev);
 

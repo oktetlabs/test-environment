@@ -1047,6 +1047,17 @@ extern te_bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh,
 
 
 /**
+ * Checks whether an iSCSI device is present and ready
+ *
+ * @param ta  Test Agent
+ * @param id  Target id
+ *
+ * @return TRUE if the device is ready
+ */
+extern te_bool tapi_iscsi_initiator_is_device_ready(const char *ta,
+                                                    iscsi_target_id id);
+
+/**
  * Request mounting an iSCSI device on the TA, if the I/O handler 
  * has been created with "use_fs" == TRUE. Otherwise a no-op.
  *

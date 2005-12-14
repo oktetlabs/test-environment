@@ -2499,11 +2499,13 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
     if (realpath(devices.gl_pathv[0], dev_pattern) == NULL)
     {
         rc = errno;
-        WARN("Cannot resolve %s: %s", devices.gl_pathv[0], rc);
+        WARN("Cannot resolve %s: %s", devices.gl_pathv[0], strerror(rc));
         rc = TE_OS_RC(TE_TA_UNIX, rc);
     }
     else
     {
+        int  fd;
+
         nameptr = strrchr(dev_pattern, '/');
         if (nameptr == NULL)
             WARN("Strange sysfs name: %s", dev_pattern);
@@ -2514,9 +2516,32 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
             strcat(value, "/dev/");
             strcat(value, nameptr + 1);
         }
+        /** Now checking that the device is active */
+        strcpy(dev_pattern, devices.gl_pathv[0]);
+        nameptr = strrchr(dev_pattern, '/');
+        strcpy(nameptr + 1, "state");
+        fd = open(dev_pattern, O_RDONLY);
+        if (fd < 0)
+        {
+            rc = errno;
+            ERROR("Cannot get device state for %s: %s", 
+                  dev_pattern, strerror(errno));
+            rc = TE_OS_RC(TE_TA_UNIX, rc);
+        }
+        else
+        {
+            char state[16] = "";
+            read(fd, state, sizeof(state) - 1);
+            if (strcmp(state, "running\n") != 0)
+            {
+                WARN("Device is present but not ready: %s", state);
+                *value = '\0';
+            }
+            close(fd);
+        }
     }
     globfree(&devices);
-    return rc;;
+    return rc;
 }
 
 /* Initiator's path to scripts (for L5) */
