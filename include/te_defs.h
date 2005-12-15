@@ -138,7 +138,7 @@ typedef unsigned char te_bool;
  *
  * @param _array    C name of an array
  */
-#define TE_ARRAY_SZ(_array)  (sizeof(_array) / sizeof(_array[0]))
+#define TE_ARR_LEN(_array)  (sizeof(_array) / sizeof(_array[0]))
 
 /**
  * Swap two pointers.
