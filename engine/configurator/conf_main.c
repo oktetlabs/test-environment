@@ -175,6 +175,48 @@ cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
     return 0;
 }
 
+/**
+ * This function should be called when an error occures during processing 
+ * ADD and SET requestes.
+ * In case of local commands processing state, it rolles back all the 
+ * configuration that was before the first local command (in sequence of 
+ * local commands) and clears all resources allocated under local commands.
+ * In case of non-local command it deletes an instance specified by 
+ * @p handle parameter.
+ *
+ * @param type       Command type
+ * @param handle     Handle of the instance to delete from Data Base
+ *
+ * @return Nothing
+ */
+static void
+cfg_wipe_cmd_error(uint8_t type, cfg_handle handle)
+{
+    if (type != CFG_ADD && type != CFG_SET)
+    {
+        ERROR("Please support handling %d type in %s function",
+              type, __FUNCTION__);
+        assert(0);
+        return;
+    }
+
+    if (local_cmd_seq)
+    {
+        int rc;
+
+        /* Restore configuration before the first local SET/ADD */
+        local_cmd_seq = FALSE;
+        rc = cfg_dh_restore_backup(local_cmd_bkp, FALSE);
+        WARN("Restore backup to configuration which was before "
+             "the first local ADD/SET commands. Restored with code %r", rc);
+    }
+    else if (type == CFG_ADD)
+    {
+        if (handle != CFG_HANDLE_INVALID)
+            cfg_db_del(handle);
+    }
+}
+
 static void
 print_tree(cfg_instance *inst, int indent)
 {
@@ -415,18 +457,23 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     {
         ERROR("Cannot synchronize /agent/volatile subtree, "
               "errno %r", msg->rc);
+        cfg_wipe_cmd_error(CFG_ADD, CFG_HANDLE_INVALID);
         return;
     }
 
     if ((msg->rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg, 
                                                          &val)) != 0)
+    {
+        cfg_wipe_cmd_error(CFG_ADD, CFG_HANDLE_INVALID);
         return;
+    }
 
     if ((msg->rc = cfg_db_add(oid, &handle, msg->val_type, val)) != 0)
     {
         ERROR("Failed to add a new instance %s into configuration "
               "database; errno %r", oid, msg->rc);
         cfg_types[msg->val_type].free(val); 
+        cfg_wipe_cmd_error(CFG_ADD, CFG_HANDLE_INVALID);
         return;
     }
     cfg_types[msg->val_type].free(val);
@@ -438,18 +485,18 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
 
     if (obj->access != CFG_READ_CREATE)
     {
-        cfg_db_del(handle);
         msg->rc = TE_EACCES;
         ERROR("Failed to add a new instance %s: "
              "object %s is not read-create", oid, obj->oid);
+        cfg_wipe_cmd_error(CFG_ADD, handle);
         return;
     }
 
     if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
     {
-        cfg_db_del(handle);
         ERROR("Failed to add a new instance %s in DH: error=%r", 
               oid, msg->rc);
+        cfg_wipe_cmd_error(CFG_ADD, handle);
         return;
     }
 
@@ -579,13 +626,17 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
     if ((msg->rc = cfg_types[obj->type].
                    get_from_msg((cfg_msg *)msg, &val)) != 0)
+    {
+        cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
         return;
+    }
 
     if (obj->access != CFG_READ_WRITE &&
         obj->access != CFG_READ_CREATE)
     {
         cfg_types[obj->type].free(val);
         msg->rc = TE_EACCES;
+        cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
         return;
     }
 
@@ -593,6 +644,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
     {
         ERROR("Failed to get old value from DB: error=%r", msg->rc);
         cfg_types[obj->type].free(val);
+        cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
         return;
     }
 
@@ -601,6 +653,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         ERROR("Failed to add command in DH: error=%r", msg->rc);
         cfg_types[obj->type].free(val);
         cfg_types[obj->type].free(old_val);
+        cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
         return;
     }
 
@@ -611,6 +664,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         cfg_types[obj->type].free(old_val);
         if (update_dh)
             cfg_dh_delete_last_command();
+        cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
         return;
     }
 
