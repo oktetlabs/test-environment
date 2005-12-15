@@ -97,7 +97,7 @@ asn_type ndn_arp_csap_s =
 {
     "ARP-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
     sizeof(_ndn_arp_csap_ne_array) / sizeof(asn_named_entry_t),
-    {_ndn_arp_header_ne_array}
+    { _ndn_arp_csap_ne_array }
 };
 
 const asn_type * const ndn_arp_csap = &ndn_arp_csap_s;
