@@ -328,7 +328,7 @@ if test -n "$with_ifconfig" ; then
     CPPFLAGS="$CPPFLAGS -DUSE_IFCONFIG"
 elif test -n "$ifcfg_via_netlink" ; then
     # On Linux netlink is default way to configure interfaces and IP
-    AM_CONDITIONAL(CFG_NETLINK_USE, true)
+    use_netlink=yes
     CPPFLAGS="$CPPFLAGS -DUSE_NETLINK"
     AC_CHECK_LIB([netlink], [rtnl_open], [],
                  AC_MSG_ERROR([Cannot find libnetlink!]))
@@ -336,6 +336,7 @@ else
     # The rest should use IOCTL interface for now
     CPPFLAGS="$CPPFLAGS -DUSE_IOCTL"
 fi
+AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$use_netlink")
 
 if test -n "$with_iscsi"; then
     CPPFLAGS="$CPPFLAGS -DWITH_ISCSI"
