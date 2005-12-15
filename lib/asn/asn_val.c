@@ -2187,13 +2187,31 @@ const asn_type asn_base_enum_s =
 const asn_type asn_base_charstring_s = 
 { "UniversalString",   {UNIVERSAL,28}, CHAR_STRING, 0, {NULL} }; 
 
-const asn_type asn_base_int4_s = 
-{ "INTEGER (0..15)",   {UNIVERSAL, 2}, INTEGER, 4, {0}}; 
-const asn_type asn_base_int8_s = 
-{ "INTEGER (0..255)",  {UNIVERSAL, 2}, INTEGER, 8, {0}}; 
-const asn_type asn_base_int16_s = 
-{ "INTEGER (0..65535)",{UNIVERSAL, 2}, INTEGER, 16, {0}};
 
+const asn_type  asn_base_int1_s = 
+{ "INTEGER (0..1)",   {UNIVERSAL, 2}, INTEGER, 1, {0}};
+const asn_type  asn_base_int2_s = 
+{ "INTEGER (0..3)",   {UNIVERSAL, 2}, INTEGER, 2, {0}};
+const asn_type  asn_base_int3_s = 
+{ "INTEGER (0..7)",   {UNIVERSAL, 2}, INTEGER, 3, {0}};
+const asn_type  asn_base_int4_s = 
+{ "INTEGER (0..15)",   {UNIVERSAL, 2}, INTEGER, 4, {0}};
+const asn_type  asn_base_int5_s = 
+{ "INTEGER (0..31)",   {UNIVERSAL, 2}, INTEGER, 5, {0}};
+const asn_type  asn_base_int6_s = 
+{ "INTEGER (0..63)",   {UNIVERSAL, 2}, INTEGER, 6, {0}};
+const asn_type  asn_base_int7_s = 
+{ "INTEGER (0..127)",   {UNIVERSAL, 2}, INTEGER, 7, {0}};
+const asn_type  asn_base_int8_s = 
+{ "INTEGER (0..255)",   {UNIVERSAL, 2}, INTEGER, 8, {0}};
+const asn_type  asn_base_int9_s = 
+{ "INTEGER (0..511)",   {UNIVERSAL, 2}, INTEGER, 9, {0}};
+const asn_type  asn_base_int12_s = 
+{ "INTEGER (0..4095)",   {UNIVERSAL, 2}, INTEGER, 12, {0}};
+const asn_type  asn_base_int16_s = 
+{ "INTEGER (0..65535)",   {UNIVERSAL, 2}, INTEGER, 16, {0}};
+const asn_type  asn_base_int32_s = 
+{ "INTEGER (0..4294967295)",   {UNIVERSAL, 2}, INTEGER, 32, {0}};
 
 
 const asn_type * const asn_base_boolean     = &asn_base_boolean_s;

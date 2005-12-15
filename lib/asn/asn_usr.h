@@ -853,9 +853,18 @@ extern const asn_type  asn_base_real_s;
 extern const asn_type  asn_base_null_s;
 extern const asn_type  asn_base_objid_s;
 
+extern const asn_type  asn_base_int1_s;
+extern const asn_type  asn_base_int2_s;
+extern const asn_type  asn_base_int3_s;
 extern const asn_type  asn_base_int4_s;
+extern const asn_type  asn_base_int5_s;
+extern const asn_type  asn_base_int6_s;
+extern const asn_type  asn_base_int7_s;
 extern const asn_type  asn_base_int8_s;
+extern const asn_type  asn_base_int9_s;
+extern const asn_type  asn_base_int12_s;
 extern const asn_type  asn_base_int16_s;
+extern const asn_type  asn_base_int32_s;
 
 
 #ifdef __cplusplus
