@@ -7,6 +7,7 @@ IMPORTS DATA-UNIT FROM TE-NDN-General;
 EXPORTS ATM-UNI-Header, ATM-NNI-Header, ATM-CSAP,
         CPCS-PDU-Trailer, AAL5-CSAP;
 
+
 ATM-UNI-Header ::= SEQUENCE {
     gfc             DATA-UNIT{INTEGER (0..15)} OPTIONAL,
     vpi             DATA-UNIT{INTEGER (0..255)} OPTIONAL,
@@ -31,6 +32,7 @@ ATM-Coding-Scheme ::= INTEGER {
 
 ATM-CSAP ::= SEQUENCE { 
     type            ATM-Coding-Scheme,
+    gfc             DATA-UNIT{INTEGER (0..15)} OPTIONAL,
     vpi             DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
     vci             DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     payload-type    DATA-UNIT{INTEGER (0..7)} OPTIONAL,
