@@ -22,5 +22,5 @@ TE_LIB_PARMS([tad], [], [], \
               --with-arp --with-ipstack --with-dhcp --with-iscsi \
               --with-snmp --with-cli], [])
 
-TE_TA_TYPE([linux], [], [unix], [--with-rcf-rpc  --with-netlink --with-netlink-route --with-iscsi], \
+TE_TA_TYPE([linux], [], [unix], [--with-rcf-rpc --with-iscsi], \
             [], [], [ndn asn comm_net_agent])

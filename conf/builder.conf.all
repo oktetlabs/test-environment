@@ -24,14 +24,14 @@ TE_LIB_PARMS([tad], [], [],
               --with-snmp --with-cli], [])
 
 TE_TA_TYPE([linux], [], [unix],
-           [--with-rcf-rpc --with-netlink --with-netlink-route \
+           [--with-rcf-rpc \
             --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
            [], [], [comm_net_agent ndn asn])
 
 TE_LIB_PARMS([tad_dummy], [], [tad], [], [])
 
 TE_TA_TYPE([linux_lite], [], [unix],
-            [--with-tad=tad_dummy --with-netlink --with-netlink-route],
+            [--with-tad=tad_dummy],
             [], [], [comm_net_agent])
 
 #

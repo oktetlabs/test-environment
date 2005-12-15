@@ -37,6 +37,17 @@ AC_ARG_VAR([TE_LDFLAGS])
 AC_ARG_VAR([TE_LDADD])
 AC_ARG_VAR([TE_DEPENDENCIES])
 
+
+if test -n "$with_netlink" -o -n "$with_netlink_route" ; then
+    AC_MSG_WARN([--with-netlink and --with-netlink-route are not
+                 supported any more])
+fi
+
+if test x"$host" != x"${host/linux/}" ; then
+    # Linux platform
+    ifcfg_via_netlink=yes
+fi
+
 AC_ARG_ENABLE([wifi],
               AS_HELP_STRING([--enable-wifi],
                              [enable WiFi support (default is NO)]),
@@ -181,7 +192,6 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_RADIUS_SERVER,
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_VTUND, 
     [expr "$with_cfg_unix_daemons" : ".*vtund" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
-AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$with_netlink")
 
 AM_CONDITIONAL(ISCSI_TARGET_USE, test -n "$with_iscsi")
 
@@ -314,23 +324,16 @@ if test -n "$with_rcf_rpc" ; then
             [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 fi
 
-if test -n "$with_netlink" ; then
-    if test -n "$with_ifconfig" ; then
-        AC_MSG_ERROR([Test Environment cannot 
-        use both ioctl calls and netlink calls
-        to configure interfaces]) ;
-    fi        
+if test -n "$with_ifconfig" ; then
+    CPPFLAGS="$CPPFLAGS -DUSE_IFCONFIG"
+elif test -n "$ifcfg_via_netlink" ; then
+    # On Linux netlink is default way to configure interfaces and IP
+    AM_CONDITIONAL(CFG_NETLINK_USE, true)
     CPPFLAGS="$CPPFLAGS -DUSE_NETLINK"
     AC_CHECK_LIB([netlink], [rtnl_open], [],
                  AC_MSG_ERROR([Cannot find libnetlink!]))
-    if test -n "$with_netlink_route" ; then
-        CPPFLAGS="$CPPFLAGS -DUSE_NETLINK_ROUTE"
-    fi
-
-else
-    if test -n "$with_ifconfig" ; then
-        CPPFLAGS="$CPPFLAGS -DUSE_IFCONFIG"
-    fi    
+else 
+    # The rest should use IOCTL interface for now
     CPPFLAGS="$CPPFLAGS -DUSE_IOCTL"
 fi
 
