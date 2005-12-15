@@ -2054,10 +2054,10 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
    const char *localfname; 
    const char *remotefname;
    
-   remotefname = tapi_file_generate_pathname();
+   remotefname = tapi_file_generate_name();
    if (remotefname == NULL)
        return TE_RC(TE_TAPI, TE_EBADF);
-   localfname = tapi_file_generate_pathname();
+   localfname = tapi_file_generate_name();
    if (localfname == NULL)
        return TE_RC(TE_TAPI, TE_EBADF);
 
@@ -2066,7 +2066,7 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
                     RCF_UINT8, 0, RCF_UINT8, 0,
                     RCF_UINT32, offset, 
                     RCF_STRING, remotefname, 
-                    RCF_UINT32, strlen(data));
+                    RCF_UINT32, length);
    if (rc != 0)
        return rc;
    if (result != 0)
