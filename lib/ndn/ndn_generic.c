@@ -311,6 +311,7 @@ static asn_named_entry_t _ndn_packet_action_ne_array[] =
     { "function",&asn_base_charstring_s, {PRIVATE, NDN_ACT_FUNCTION} },
     { "file",    &asn_base_charstring_s, {PRIVATE, NDN_ACT_FILE} },
     { "break",   &asn_base_null_s, {PRIVATE, NDN_ACT_BREAK} },
+    { "report",  &asn_base_null_s, {PRIVATE, NDN_ACT_REPORT} },
 }; 
 
 asn_type ndn_packet_action_s =
@@ -434,16 +435,17 @@ const asn_type * const  ndn_raw_packet = &ndn_raw_packet_s;
 int
 ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
 {
-    int exact_len_index, pat_index, val_index;
+    int exact_len_index = -1, pat_index, val_index;
     int rc = 0;
 
-    te_bool exact_len;
+    te_bool exact_len = FALSE;
 
     size_t           mask_len;
     size_t           cmp_len;
 
     const asn_value *leaf_m = NULL;
     const asn_value *leaf_v = NULL;
+    const asn_value *leaf_el = NULL;
 
     const uint8_t *data_m;
     const uint8_t *data_v;
@@ -480,8 +482,9 @@ ndn_match_mask(const asn_value *mask_pat, uint8_t *data, size_t d_len)
 
     cmp_len = mask_len = leaf_m->len;
 
-    exact_len = ((mask_pat->data.array[exact_len_index]->data.integer == 0)
-                    ? FALSE : TRUE);
+    if ((leaf_el = mask_pat->data.array[exact_len_index]) != NULL &&
+         leaf_el->data.integer != 0)
+        exact_len = TRUE;
 
     if (exact_len && mask_len != d_len)
     {
