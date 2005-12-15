@@ -4,7 +4,8 @@ BEGIN
 
 IMPORTS DATA-UNIT FROM TE-NDN-General;
 
-EXPORTS ATM-Header, ATM-CSAP;
+EXPORTS ATM-UNI-Header, ATM-NNI-Header, ATM-CSAP,
+        CPCS-PDU-Trailer, AAL5-CSAP;
 
 ATM-UNI-Header ::= SEQUENCE {
     gfc             DATA-UNIT{INTEGER (0..15)} OPTIONAL,
@@ -23,19 +24,30 @@ ATM-NNI-Header ::= SEQUENCE {
     hec             DATA-UNIT{INTEGER (0..255)} OPTIONAL
 }
 
+ATM-Coding-Scheme ::= INTEGER {
+    uni(0),
+    nni(1)
+}
+
 ATM-CSAP ::= SEQUENCE { 
-    type            DATA-UNIT{INTEGER {0, 1}}, -- UNI/NNI
+    type            ATM-Coding-Scheme,
     vpi             DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
     vci             DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     payload-type    DATA-UNIT{INTEGER (0..7)} OPTIONAL,
     clp             DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
 }
 
+
 CPCS-PDU-Trailer ::= SEQUENCE {
     cpcs-uu         DATA-UNIT{INTEGER (0..255)} OPTIONAL,
     cpi             DATA-UNIT{INTEGER (0..255)} OPTIONAL,
     length          DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     crc             DATA-UNIT{INTEGER (0..4294967295)} OPTIONAL
+}
+
+AAL5-CSAP ::=  SEQUENCE {
+    cpcs-uu         DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    cpi             DATA-UNIT{INTEGER (0..255)} OPTIONAL
 }
 
 END
