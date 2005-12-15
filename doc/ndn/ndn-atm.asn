@@ -7,28 +7,35 @@ IMPORTS DATA-UNIT FROM TE-NDN-General;
 EXPORTS ATM-Header, ATM-CSAP;
 
 ATM-UNI-Header ::= SEQUENCE {
-    gfc           DATA-UNIT{INTEGER (0..15)} OPTIONAL,
-    vpi           DATA-UNIT{INTEGER (0..255)} OPTIONAL,
-    vci           DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
-    payload-type  DATA-UNIT{INTEGER (0..7)} OPTIONAL,
-    clp           DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
-    hec           DATA-UNIT{INTEGER (0..255)} OPTIONAL
+    gfc             DATA-UNIT{INTEGER (0..15)} OPTIONAL,
+    vpi             DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    vci             DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    payload-type    DATA-UNIT{INTEGER (0..7)} OPTIONAL,
+    clp             DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
+    hec             DATA-UNIT{INTEGER (0..255)} OPTIONAL
 }
 
 ATM-NNI-Header ::= SEQUENCE {
-    vpi           DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
-    vci           DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
-    payload-type  DATA-UNIT{INTEGER (0..7)} OPTIONAL,
-    clp           DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
-    hec           DATA-UNIT{INTEGER (0..255)} OPTIONAL
+    vpi             DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
+    vci             DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    payload-type    DATA-UNIT{INTEGER (0..7)} OPTIONAL,
+    clp             DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
+    hec             DATA-UNIT{INTEGER (0..255)} OPTIONAL
 }
 
 ATM-CSAP ::= SEQUENCE { 
-    type          DATA-UNIT{INTEGER {0, 1}}, -- UNI/NNI
-    vpi           DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
-    vci           DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
-    payload-type  DATA-UNIT{INTEGER (0..7)} OPTIONAL,
-    clp           DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
+    type            DATA-UNIT{INTEGER {0, 1}}, -- UNI/NNI
+    vpi             DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
+    vci             DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    payload-type    DATA-UNIT{INTEGER (0..7)} OPTIONAL,
+    clp             DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
+}
+
+CPCS-PDU-Trailer ::= SEQUENCE {
+    cpcs-uu         DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    cpi             DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    length          DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    crc             DATA-UNIT{INTEGER (0..4294967295)} OPTIONAL
 }
 
 END
