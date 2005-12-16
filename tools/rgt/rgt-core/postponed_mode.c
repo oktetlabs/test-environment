@@ -774,7 +774,15 @@ output_regular_log_msg(log_msg *msg)
                 break;
             
             default:
-                obstack_1grow(log_obstk, msg->fmt_str[i]);
+                if (msg->fmt_str[i] == '\t' || isprint(msg->fmt_str[i]))
+                {
+                    obstack_1grow(log_obstk, msg->fmt_str[i]);
+                }
+                else
+                {
+                    obstack_printf(log_obstk, "&lt;0x%02x&gt;",
+                                   (unsigned char)msg->fmt_str[i]);
+                }
                 break;
         }
 
