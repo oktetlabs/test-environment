@@ -569,6 +569,26 @@ output_regular_log_msg(log_msg *msg)
             switch (msg->fmt_str[i + 1])
             {
                 case 'c':
+                {
+                    uint32_t val;
+                    char     c_buf[2] = {};
+
+                    val = ntohl(*(uint32_t *)arg->val);
+                    if (val > UCHAR_MAX)
+                    {
+                        obstack_printf(log_obstk, "&lt;0x%08x&gt;", val);
+                    }
+                    else
+                    {
+                        c_buf[0] = (char)val;
+                        fwrite_string(log_obstk, c_buf);
+                    }
+
+                    i++;
+
+                    continue;
+                }
+
                 case 'd':
                 case 'u':
                 case 'o':
