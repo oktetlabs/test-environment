@@ -55,8 +55,8 @@ rpc_wsa_socket(rcf_rpc_server *rpcs,
                rpc_socket_proto protocol, uint8_t *info, int info_len,
                rpc_open_sock_flags flags)
 {
-    tarpc_socket_in  in;
-    tarpc_socket_out out;
+    tarpc_wsa_socket_in  in;
+    tarpc_wsa_socket_out out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
