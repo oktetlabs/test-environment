@@ -956,7 +956,7 @@ TARPC_FUNC(wsa_socket, {},
 
 TARPC_FUNC(close, {}, 
 { 
-    MAKE_CALL(out->retval = CloseHandle((HANDLE)(in->fd))); 
+    MAKE_CALL(out->retval = CloseHandle((HANDLE)(in->fd) ? 0 : -1)); 
 })
 
 /*-------------- bind() ------------------------------*/
