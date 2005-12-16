@@ -532,7 +532,8 @@ rpc_readv_gen(rcf_rpc_server *rpcs,
             iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
             iovec_arr[i].iov_len = iov[i].iov_len;
             snprintf(str_buf + strlen(str_buf),
-                     sizeof(str_buf) - strlen(str_buf), "%s{%zu, %p[%zu]}",
+                     sizeof(str_buf) - strlen(str_buf), 
+                     "%s{%"TE_PRINTF_SIZE_T"u, %p[%"TE_PRINTF_SIZE_T"u]}",
                      (i == 0) ? "" : ", ", iov[i].iov_len,
                      iov[i].iov_base, iov[i].iov_rlen);
         }
@@ -612,7 +613,8 @@ rpc_writev(rcf_rpc_server *rpcs,
             iovec_arr[i].iov_base.iov_base_len = iov[i].iov_rlen;
             iovec_arr[i].iov_len = iov[i].iov_len;
             snprintf(str_buf + strlen(str_buf),
-                     sizeof(str_buf) - strlen(str_buf), "%s{%zu, %p[%zu]}",
+                     sizeof(str_buf) - strlen(str_buf), 
+                     "%s{%"TE_PRINTF_SIZE_T"u, %p[%"TE_PRINTF_SIZE_T"u]}",
                      (i == 0) ? "" : ", ", iov[i].iov_len,
                      iov[i].iov_base, iov[i].iov_rlen);
         }
