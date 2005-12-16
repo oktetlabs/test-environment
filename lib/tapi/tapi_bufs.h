@@ -84,7 +84,7 @@ extern int tapi_log_buf_append(tapi_log_buf *buf, const char *fmt, ...);
 extern const char *tapi_log_buf_get(tapi_log_buf *buf);
 
 /**
- * Release buffer allocated by tapi_snmp_alloc_str_buf()
+ * Release buffer allocated by tapi_log_buf_alloc()
  *
  * @param ptr  Pointer to the buffer
  *
