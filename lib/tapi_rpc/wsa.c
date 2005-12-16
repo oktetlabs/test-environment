@@ -573,11 +573,11 @@ rpc_create_file(rcf_rpc_server *rpcs, char *name,
 }
 
 int
-rpc_close_handle(rcf_rpc_server *rpcs, rpc_handle handle)
+rpc_closesocket(rcf_rpc_server *rpcs, int s)
 {
     rcf_rpc_op             op;
-    tarpc_close_handle_in  in;
-    tarpc_close_handle_out out;
+    tarpc_closesocket_in  in;
+    tarpc_closesocket_out out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -585,19 +585,19 @@ rpc_close_handle(rcf_rpc_server *rpcs, rpc_handle handle)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(close_handle, -1);
+        RETVAL_INT(closesocket, -1);
     }
     op = rpcs->op;
     
-    in.handle = (tarpc_handle)handle;
+    in.s = s;
 
-    rcf_rpc_call(rpcs, "close_handle", &in, &out);
+    rcf_rpc_call(rpcs, "closesocket", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: close_handle(%x) -> %x (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: closesocket(%d) -> %x (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 handle, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 s, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(close_handle, out.retval);
+    RETVAL_INT(closesocket, out.retval);
 }
 
 int

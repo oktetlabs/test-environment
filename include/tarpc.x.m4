@@ -245,9 +245,6 @@ struct tarpc_socket_in {
     tarpc_int   domain; /**< TA-independent domain */
     tarpc_int   type;   /**< TA-independent socket type */
     tarpc_int   proto;  /**< TA-independent socket protocol */
-
-    char        info<>; /**< Protocol Info (for winsock2 only) */
-    tarpc_int   flags;  /**< flags (for winsock2 only) */
 };
 
 struct tarpc_socket_out {
@@ -255,6 +252,26 @@ struct tarpc_socket_out {
 
     tarpc_int   fd;     /**< TA-local socket */
 };
+
+/* WSASocket() */
+
+struct tarpc_wsa_socket_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int   domain; /**< TA-independent domain */
+    tarpc_int   type;   /**< TA-independent socket type */
+    tarpc_int   proto;  /**< TA-independent socket protocol */
+
+    char        info<>; /**< Protocol Info (for winsock2 only) */
+    tarpc_int   flags;  /**< flags (for winsock2 only) */
+};
+
+struct tarpc_wsa_socket_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int   fd;     /**< TA-local socket */
+};
+
 
 /* WSADuplicateSocket() */
 struct tarpc_duplicate_socket_in {
@@ -729,7 +746,7 @@ struct tarpc_transmit_file_in {
     struct tarpc_in_arg common;
                                                                                
     tarpc_int               fd;           /**< TA-local socket */
-    tarpc_handle            file;         /**< Handle to the open file to be
+    tarpc_int               file;         /**< Handle to the open file to be
                                                transmitted */
     tarpc_size_t            len;          /**< Number of file bytes to
                                                transmit */
@@ -758,7 +775,7 @@ struct tarpc_transmitfile_tabufs_in {
     struct tarpc_in_arg common;
                                                                                
     tarpc_int           s;            /**< TA-local socket */
-    tarpc_handle        file;         /**< Handle to the open file to be
+    tarpc_int           file;         /**< Handle to the open file to be
                                            transmitted */
     tarpc_size_t        len;          /**< Number of file bytes to transmit */
     tarpc_size_t        bytes_per_send; /**< Number of bytes of each block of
@@ -784,21 +801,21 @@ struct tarpc_create_file_in {
     tarpc_ptr            security_attributes;
     tarpc_uint           creation_disposition;
     tarpc_uint           flags_attributes;
-    tarpc_handle         template_file;
+    tarpc_int            template_file;
 };
 
 struct tarpc_create_file_out {
     struct tarpc_out_arg  common;
-    tarpc_handle          handle;
+    tarpc_int             handle;
 };
 
-/* Windows CloseHandle() */
-struct tarpc_close_handle_in {
+/* Windows closesocket() */
+struct tarpc_closesocket_in {
     struct tarpc_in_arg  common;
-    tarpc_handle         handle;       /**< HANDLE to close */
+    tarpc_int            s;       /**< socket to close */
 };
 
-struct tarpc_close_handle_out {
+struct tarpc_closesocket_out {
     struct tarpc_out_arg  common;
     int                   retval;
 };
@@ -819,22 +836,22 @@ struct tarpc_has_overlapped_io_completed_out {
 
 struct tarpc_create_io_completion_port_in {
     struct tarpc_in_arg  common;
-    tarpc_handle         file_handle;
-    tarpc_handle         existing_completion_port;
+    tarpc_int            file_handle;
+    tarpc_int            existing_completion_port;
     tarpc_int            completion_key;
     tarpc_uint           number_of_concurrent_threads;
 };    
 
 struct tarpc_create_io_completion_port_out {
     struct tarpc_out_arg  common;
-    tarpc_handle          retval;
+    tarpc_int             retval;
 };    
 
 /* GetQueuedCompletionStatus() */
 
 struct tarpc_get_queued_completion_status_in {
     struct tarpc_in_arg  common;
-    tarpc_handle         completion_port;
+    tarpc_int            completion_port;
     tarpc_uint           milliseconds;
 };    
 
@@ -850,7 +867,7 @@ struct tarpc_get_queued_completion_status_out {
 
 struct tarpc_post_queued_completion_status_in {
     struct tarpc_in_arg   common;
-    tarpc_handle          completion_port;
+    tarpc_int             completion_port;
     tarpc_uint            number_of_bytes;
     tarpc_int             completion_key;
     tarpc_overlapped      overlapped;
@@ -3044,7 +3061,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(transmit_file)
         RPC_DEF(transmitfile_tabufs)
         RPC_DEF(create_file)
-        RPC_DEF(close_handle)
+        RPC_DEF(closesocket)
         RPC_DEF(has_overlapped_io_completed)
         RPC_DEF(create_io_completion_port)
         RPC_DEF(get_queued_completion_status)

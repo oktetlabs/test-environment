@@ -932,6 +932,16 @@ TARPC_FUNC(signal,
 
 TARPC_FUNC(socket, {},
 {
+    MAKE_CALL(out->fd = socket(domain_rpc2h(in->domain),
+                               socktype_rpc2h(in->type),
+                               wsp_proto_rpc2h(in->type, in->proto)));
+}
+)
+
+/*-------------- WSASocket() ------------------------------*/
+
+TARPC_FUNC(wsa_socket, {},
+{
     MAKE_CALL(out->fd = WSASocket(domain_rpc2h(in->domain),
                                   socktype_rpc2h(in->type),
                                   wsp_proto_rpc2h(in->type, in->proto),
@@ -946,9 +956,7 @@ TARPC_FUNC(socket, {},
 
 TARPC_FUNC(close, {}, 
 { 
-    MAKE_CALL(out->retval = closesocket(in->fd)); 
-    if (out->retval == -1 && out->common._errno == RPC_ENOTSOCK)
-        out->retval = close(in->fd); /* For files */
+    MAKE_CALL(out->retval = CloseHandle((HANDLE)(in->fd))); 
 })
 
 /*-------------- bind() ------------------------------*/
@@ -1236,7 +1244,7 @@ TARPC_FUNC(transmit_file, {},
     }
 
     MAKE_CALL( out->retval = (*pf_transmit_file)(in->fd,
-                              (HANDLE)rcf_pch_mem_get(in->file),
+                              (HANDLE)(in->file),
                               in->len, in->len_per_send,
                               (LPWSAOVERLAPPED)overlapped,
                               &transmit_buffers,
@@ -1275,7 +1283,7 @@ TARPC_FUNC(transmitfile_tabufs, {},
     }
 
     MAKE_CALL( out->retval = (*pf_transmit_file)(in->s,
-                              (HANDLE)rcf_pch_mem_get(in->file),
+                              (HANDLE)(in->file),
                               in->len, in->bytes_per_send,
                               (LPWSAOVERLAPPED)overlapped,
                               &transmit_buffers,
@@ -1321,30 +1329,22 @@ cf_flags_attributes_rpc2h(unsigned int fa)
 
 TARPC_FUNC(create_file, {},
 {
-    HANDLE handle = NULL;
-
-    MAKE_CALL(handle = CreateFile(in->name.name_val,
+    MAKE_CALL(out->handle = (tarpc_handle)CreateFile(in->name.name_val,
         cf_access_right_rpc2h(in->desired_access),
         cf_share_mode_rpc2h(in->share_mode),
         (LPSECURITY_ATTRIBUTES)rcf_pch_mem_get(in->security_attributes),
         cf_creation_disposition_rpc2h(in->creation_disposition),
         cf_flags_attributes_rpc2h(in->flags_attributes),
-        (HANDLE)rcf_pch_mem_get(in->template_file))
+        (HANDLE)(in->template_file))
     );
-    
-    if (handle != NULL)
-        out->handle = (tarpc_handle)rcf_pch_mem_alloc((void *)handle);
-    else
-        out->handle = (tarpc_handle)NULL;
 }
 )
 
-/*-------------- CloseHandle() --------------*/
-TARPC_FUNC(close_handle, {},
+/*-------------- closesocket() --------------*/
+TARPC_FUNC(closesocket, {},
 {
     UNUSED(list);
-    out->retval = CloseHandle((HANDLE)rcf_pch_mem_get(in->handle));
-    rcf_pch_mem_free(in->handle);
+    out->retval = closesocket(in->s);
 }
 )
 
@@ -4814,36 +4814,17 @@ TARPC_FUNC(create_io_completion_port,
 {},
 {
     HANDLE file_handle = NULL;
-    HANDLE iocp = NULL;
-    HANDLE existing_iocp = NULL;
 
     UNUSED(list);
 
-    /* ATTENTION! The code below supposes that in->file_handle can
-     * be only a socket descriptor: currently the socket descriptors
-     * are not passed through rcf_pch_mem_alloc() (when returned by
-     * socket() RPC), but other handles are. I.e. other handles would
-     * have to be obtained here by rcf_pch_mem_get(in->file_handle),
-     * not just directly in->file_handle. */
     file_handle = in->file_handle == (tarpc_handle)-1 ?
                   INVALID_HANDLE_VALUE : (HANDLE)in->file_handle;
 
-    existing_iocp = (HANDLE)rcf_pch_mem_get(in->existing_completion_port);
-
-    MAKE_CALL(iocp = CreateIoCompletionPort(file_handle,
-                         existing_iocp, (ULONG_PTR)in->completion_key,
+    MAKE_CALL(out->retval = (tarpc_int)CreateIoCompletionPort(file_handle,
+                         in->existing_completion_port, 
+                         (ULONG_PTR)in->completion_key,
                          (DWORD)in->number_of_concurrent_threads)
     );
-
-    if (iocp != NULL)
-    {
-        if (iocp == existing_iocp)
-            out->retval = in->existing_completion_port;
-        else
-            out->retval = (tarpc_handle)rcf_pch_mem_alloc(iocp);
-    }
-    else
-        out->retval = (tarpc_handle)0;
 }
 )
 
@@ -4857,7 +4838,7 @@ TARPC_FUNC(get_queued_completion_status,
     UNUSED(list);
 
     MAKE_CALL(out->retval = GetQueuedCompletionStatus(
-        (HANDLE)rcf_pch_mem_get(in->completion_port),
+        (HANDLE)(in->completion_port),
         (DWORD *)&out->number_of_bytes,
         (ULONG_PTR *)&out->completion_key,
         &overlapped, (DWORD)in->milliseconds)
@@ -4878,7 +4859,7 @@ TARPC_FUNC(post_queued_completion_status,
     UNUSED(list);
 
     MAKE_CALL(out->retval = PostQueuedCompletionStatus(
-        (HANDLE)rcf_pch_mem_get(in->completion_port),
+        (HANDLE)(in->completion_port),
         (DWORD)in->number_of_bytes,
         (ULONG_PTR)in->completion_key,
         in->overlapped == 0 ? NULL :

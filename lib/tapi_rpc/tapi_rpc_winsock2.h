@@ -329,14 +329,14 @@ extern rpc_handle rpc_create_file(rcf_rpc_server *rpcs, char *name,
                       rpc_handle template_file);
 
 /**
- * @b CloseHandle() remote call.
+ * @b closesocket() remote call.
  *
- * @param rpcs           RPC server handle.
- * @param handle         Handle to close.
+ * @param rpcs           RPC server handle
+ * @param s              Socket to close
  *
  * @return   Non-zero on success, zero otherwise.
  */
-extern int rpc_close_handle(rcf_rpc_server *rpcs, rpc_handle handle);
+extern int rpc_closesocket(rcf_rpc_server *rpcs, int s);
 
 /**
  * @b HasOverlappedIoCompleted() remote call.
