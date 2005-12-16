@@ -1206,6 +1206,11 @@ ta_waitpid(pid_t pid, int *status, int options)
         if (status != NULL)
             *status = ta_children_dead_heap[dead].status;
         ta_children_dead_heap[dead].valid = FALSE;
+    } 
+    else if ((options & WNOHANG))
+    {
+        /* We should check if the process is running and return 0 or -1. */
+        return waitpid(pid, status, options);
     }
     return dead == -1 ? -1 : pid;
 }
