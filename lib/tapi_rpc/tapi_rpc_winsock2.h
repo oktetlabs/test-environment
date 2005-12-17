@@ -1187,4 +1187,34 @@ extern int rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s,
                             rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                             rpc_qos *sqos, rpc_join_leaf_flags flags);
 
+/** Convert WSA function name to RPC name */
+static inline const char *
+wsa_name_convert(const char *name)
+{
+    if (strcmp(name, "WSARecv") == 0)
+        return "wsa_recv";
+    else if (strcmp(name, "WSARecvFrom") == 0)
+        return "wsa_recv_from";
+    else if (strcmp(name, "WSASend") == 0)
+        return "wsa_send";
+    else if (strcmp(name, "WSASendTo") == 0)
+        return "wsa_send";
+    else if (strcmp(name, "WSARecvEx") == 0)
+        return "wsa_recv_ex";
+    else if (strcmp(name, "WSARecvMsg") == 0)
+        return "wsa_recv_msg";
+    else if (strcmp(name, "ReadFile") == 0)
+        return "read_file";
+    else if (strcmp(name, "WriteFile") == 0)
+        return "write_file";
+    else if (strcmp(name, "WSAAccept") == 0)
+        return "wsa_accept";
+    else if (strcmp(name, "WSAConnect") == 0)
+        return "wsa_connect";
+    else if (strcmp(name, "WSADisconnect") == 0)
+        return "wsa_disconnect";
+    else
+        return name;
+}
+
 #endif /* !__TE_TAPI_RPC_WINSOCK2_H__ */
