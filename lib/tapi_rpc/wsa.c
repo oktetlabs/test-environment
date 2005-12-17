@@ -593,7 +593,7 @@ rpc_closesocket(rcf_rpc_server *rpcs, int s)
 
     rcf_rpc_call(rpcs, "closesocket", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: closesocket(%d) -> %x (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: closesocket(%d) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 

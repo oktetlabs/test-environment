@@ -1343,8 +1343,7 @@ TARPC_FUNC(create_file, {},
 /*-------------- closesocket() --------------*/
 TARPC_FUNC(closesocket, {},
 {
-    UNUSED(list);
-    out->retval = closesocket(in->s);
+    MAKE_CALL(out->retval = closesocket(in->s));
 }
 )
 
