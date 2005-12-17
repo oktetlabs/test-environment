@@ -2922,6 +2922,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(memalign)
 
         RPC_DEF(socket)
+        RPC_DEF(wsa_socket)
         RPC_DEF(duplicate_socket)
         RPC_DEF(dup)
         RPC_DEF(dup2)
