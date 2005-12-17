@@ -1198,7 +1198,7 @@ wsa_name_convert(const char *name)
     else if (strcmp(name, "WSASend") == 0)
         return "wsa_send";
     else if (strcmp(name, "WSASendTo") == 0)
-        return "wsa_send";
+        return "wsa_send_to";
     else if (strcmp(name, "WSARecvEx") == 0)
         return "wsa_recv_ex";
     else if (strcmp(name, "WSARecvMsg") == 0)
