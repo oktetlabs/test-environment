@@ -75,7 +75,7 @@ rpc_wsa_socket(rcf_rpc_server *rpcs,
     in.flags = flags;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-    rcf_rpc_call(rpcs, "socket", &in, &out);
+    rcf_rpc_call(rpcs, "wsa_socket", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(wsa_socket, out.fd);
 
