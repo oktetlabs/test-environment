@@ -263,7 +263,7 @@ extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
  * @return Value returned by @b TransmitFile upon successful completion,
  *         otherwise -1 is returned.
  */
-extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, rpc_handle file,
+extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
                              ssize_t len, ssize_t len_per_send,
                              rpc_overlapped overlapped,
                              void *head, ssize_t head_len, void *tail,
@@ -297,7 +297,7 @@ extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, rpc_handle file,
  * and @b tail will be freed when you call rpc_get_overlapped_result().
  */
 extern int rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s,
-                                   rpc_handle file, ssize_t len,
+                                   int file, ssize_t len,
                                    ssize_t bytes_per_send,
                                    rpc_overlapped overlapped, rpc_ptr head,
                                    ssize_t head_len, rpc_ptr tail,
@@ -320,13 +320,13 @@ extern int rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s,
  *
  * @return   TA-side handle of the object, otherwise -1.
  */
-extern rpc_handle rpc_create_file(rcf_rpc_server *rpcs, char *name,
-                      rpc_cf_access_right desired_access,
-                      rpc_cf_share_mode share_mode,
-                      rpc_ptr security_attributes,
-                      rpc_cf_creation_disposition creation_disposition,
-                      rpc_cf_flags_attributes flags_attributes,
-                      rpc_handle template_file);
+extern int rpc_create_file(rcf_rpc_server *rpcs, char *name,
+                           rpc_cf_access_right desired_access,
+                           rpc_cf_share_mode share_mode,
+                           rpc_ptr security_attributes,
+                           rpc_cf_creation_disposition creation_disposition,
+                           rpc_cf_flags_attributes flags_attributes,
+                           int template_file);
 
 /**
  * @b closesocket() remote call.
@@ -365,11 +365,12 @@ extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
  *
  * @return   Completion port handle on success, @c 0 otherwise.
  */
-extern rpc_handle rpc_create_io_completion_port(rcf_rpc_server *rpcs,
-                              rpc_handle file_handle,
-                              rpc_handle existing_completion_port,
-                              int completion_key,
-                              unsigned int number_of_concurrent_threads);
+extern int rpc_create_io_completion_port(rcf_rpc_server *rpcs,
+                                         int file_handle,
+                                         int existing_completion_port,
+                                         int completion_key,
+                                         unsigned int 
+                                             number_of_concurrent_threads);
 
 /**
  * @b GetQueuedCompletionStatus() remote call.
@@ -388,7 +389,7 @@ extern rpc_handle rpc_create_io_completion_port(rcf_rpc_server *rpcs,
  * @return   Non-zero on success, zero otherwise.
  */
 extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
-                                 rpc_handle completion_port,
+                                 int completion_port,
                                  unsigned int *number_of_bytes,
                                  int *completion_key,
                                  rpc_overlapped *overlapped,
@@ -406,7 +407,7 @@ extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
  * @return   Non-zero on success, zero otherwise.
  */
 extern te_bool rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
-                                 rpc_handle completion_port,
+                                 int completion_port,
                                  unsigned int number_of_bytes,
                                  int completion_key,
                                  rpc_overlapped overlapped);

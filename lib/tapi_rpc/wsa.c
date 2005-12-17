@@ -369,7 +369,6 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_VOID(get_accept_addr);
     }
-
     
     in.fd = s;
     in.buflen = len;
@@ -422,7 +421,7 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
 }
 
 int
-rpc_transmit_file(rcf_rpc_server *rpcs, int s, rpc_handle file,
+rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
                   ssize_t len, ssize_t len_per_send,
                   rpc_overlapped overlapped,
                   void *head, ssize_t head_len,
@@ -483,7 +482,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, rpc_handle file,
  * and tail will be freed when you call rpc_get_overlapped_result().
  */
 int
-rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, rpc_handle file,
+rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, int file,
                         ssize_t len, ssize_t bytes_per_send,
                         rpc_overlapped overlapped,
                         rpc_ptr head, ssize_t head_len,
@@ -504,7 +503,7 @@ rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, rpc_handle file,
     op = rpcs->op;
     
     in.s = s;
-    in.file = (tarpc_handle)file;
+    in.file = file;
     in.len = len;
     in.bytes_per_send = bytes_per_send;
     in.overlapped = (tarpc_overlapped)overlapped;
@@ -527,14 +526,14 @@ rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, rpc_handle file,
     RETVAL_INT(transmitfile_tabufs, out.retval);
 }
 
-rpc_handle
+int
 rpc_create_file(rcf_rpc_server *rpcs, char *name,
                 rpc_cf_access_right desired_access,
                 rpc_cf_share_mode share_mode,
                 rpc_ptr security_attributes,
                 rpc_cf_creation_disposition creation_disposition,
                 rpc_cf_flags_attributes flags_attributes,
-                rpc_handle template_file)
+                int template_file)
 {
     rcf_rpc_op            op;
     tarpc_create_file_in  in;
@@ -561,15 +560,15 @@ rpc_create_file(rcf_rpc_server *rpcs, char *name,
     in.security_attributes = (tarpc_ptr)security_attributes;
     in.creation_disposition = creation_disposition;
     in.flags_attributes = flags_attributes;
-    in.template_file = (tarpc_handle)template_file;
+    in.template_file = template_file;
 
     rcf_rpc_call(rpcs, "create_file", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: create_file(%s) -> %x (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: create_file(%s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  name, out.handle, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RPC_PTR(create_file, out.handle);
+    RETVAL_INT(create_file, out.handle);
 }
 
 int
@@ -631,10 +630,10 @@ rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
     RETVAL_INT(has_overlapped_io_completed, out.retval);
 }
 
-rpc_handle
+int
 rpc_create_io_completion_port(rcf_rpc_server *rpcs,
-                              rpc_handle file_handle,
-                              rpc_handle existing_completion_port,
+                              int file_handle,
+                              int existing_completion_port,
                               int completion_key,
                               unsigned int number_of_concurrent_threads)
 {
@@ -653,8 +652,8 @@ rpc_create_io_completion_port(rcf_rpc_server *rpcs,
 
     op = rpcs->op;
 
-    in.file_handle = (tarpc_handle)file_handle;
-    in.existing_completion_port = (tarpc_handle)existing_completion_port;
+    in.file_handle = file_handle;
+    in.existing_completion_port = existing_completion_port;
     in.completion_key = completion_key;
     in.number_of_concurrent_threads = number_of_concurrent_threads;
 
@@ -671,7 +670,7 @@ rpc_create_io_completion_port(rcf_rpc_server *rpcs,
 
 te_bool
 rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
-                                 rpc_handle completion_port,
+                                 int completion_port,
                                  unsigned int *number_of_bytes,
                                  int *completion_key,
                                  rpc_overlapped *overlapped,
@@ -692,7 +691,7 @@ rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
 
     op = rpcs->op;
 
-    in.completion_port = (tarpc_handle)completion_port;
+    in.completion_port = completion_port;
     in.milliseconds = milliseconds;
 
     rcf_rpc_call(rpcs, "get_queued_completion_status", &in, &out);
@@ -717,10 +716,10 @@ rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
 
 te_bool
 rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
-                                 rpc_handle completion_port,
-                                 unsigned int number_of_bytes,
-                                 int completion_key,
-                                 rpc_overlapped overlapped)
+                                  int completion_port,
+                                  unsigned int number_of_bytes,
+                                  int completion_key,
+                                  rpc_overlapped overlapped)
 {
     rcf_rpc_op                              op;
     tarpc_post_queued_completion_status_in  in;
@@ -737,7 +736,7 @@ rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
 
     op = rpcs->op;
 
-    in.completion_port = (tarpc_handle)completion_port;
+    in.completion_port = completion_port;
     in.number_of_bytes = number_of_bytes;
     in.completion_key = completion_key;
     in.overlapped = overlapped;

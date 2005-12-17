@@ -952,7 +952,7 @@ TARPC_FUNC(wsa_socket, {},
 }
 )
 
-/*-------------- close() ------------------------------*/
+/*-------------- CloseHandle() ------------------------------*/
 
 TARPC_FUNC(close, {}, 
 { 
@@ -1482,12 +1482,12 @@ TARPC_FUNC(vm_trasher, {},
 
 TARPC_FUNC(write_at_offset, {},
 {
-    off_t offset = in->offset;
-    
     MAKE_CALL(
-        out->offset = lseek(in->fd, offset, SEEK_SET);
-        if (out->offset != (off_t)-1)
-            out->written = write(in->fd, in->buf.buf_val, in->buf.buf_len);
+        out->offset = SetFilePointer((HANDLE)(in->fd), in->offset, 
+                                     NULL, FILE_BEGIN);
+        if (out->offset != INVALID_SET_FILE_POINTER)
+            WriteFile((HANDLE)(in->fd), in->buf.buf_val, 
+                      in->buf.buf_len, &(out->written), NULL);
     );
 }
 )
@@ -2315,39 +2315,6 @@ TARPC_FUNC(gethostbyaddr, {},
         else
             out->res.res_len = 1;
     }
-}
-)
-
-/*-------------- open() --------------------------------*/
-TARPC_FUNC(open, {},
-{
-    MAKE_CALL(out->fd = open((in->path.path_len == 0) ? NULL :
-                                 in->path.path_val,
-                             fcntl_flags_rpc2h(in->flags),
-                             file_mode_flags_rpc2h(in->mode)));
-}
-)
-
-/*-------------- fopen() --------------------------------*/
-TARPC_FUNC(fopen, {},
-{
-    MAKE_CALL(out->mem_ptr = rcf_pch_mem_alloc(fopen(in->path,
-                                                     in->mode)));
-}
-)
-
-/*-------------- fclose() -------------------------------*/
-TARPC_FUNC(fclose, {},
-{
-    MAKE_CALL(out->retval = fclose(rcf_pch_mem_get(in->mem_ptr)));
-    rcf_pch_mem_free(in->mem_ptr);
-}
-)
-
-/*-------------- fileno() --------------------------------*/
-TARPC_FUNC(fileno, {},
-{
-    MAKE_CALL(out->fd = fileno(rcf_pch_mem_get(in->mem_ptr)));
 }
 )
 
