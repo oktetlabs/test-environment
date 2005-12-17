@@ -503,6 +503,23 @@ TARPC_FUNC(dup2, {}, { MAKE_CALL(out->fd = func(in->oldfd, in->newfd)); })
 
 TARPC_FUNC(close, {}, { MAKE_CALL(out->retval = func(in->fd)); })
 
+/*-------------- closesocket() ------------------------------*/
+
+int
+closesocket(tarpc_closesocket_in *in)
+{
+    api_func close_func;
+
+    if (tarpc_find_func(in->common.lib, "close", &close_func) != 0)
+    {
+        ERROR("Failed to find function \"close\"");
+        return -1;
+    }
+    return close_func(in->s);
+}
+
+TARPC_FUNC(closesocket, {}, { MAKE_CALL(out->retval = func_ptr(in)); })
+
 /*-------------- bind() ------------------------------*/
 
 TARPC_FUNC(bind, {},

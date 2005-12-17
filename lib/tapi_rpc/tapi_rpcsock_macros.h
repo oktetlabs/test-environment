@@ -125,20 +125,19 @@
 
 
 /**
- * Close a socket on a particular RPC server
+ * Close a file descriptor on a particular RPC server.
  *
  * @param rpcs_   RPC server handle
- * @param sockd_  socket descriptor
+ * @param fd_     file descriptor
  *
- * @note @p sockd_ parameter is updated to -1 after successfull
+ * @note @p fd_ parameter is updated to -1 after successfull
  * completion of the macro.
  */
-#define RPC_CLOSE(rpcs_, sockd_) \
-    do {                                             \
-        rpc_close((rpcs_), (sockd_));                \
-        (sockd_) = -1;                               \
+#define RPC_CLOSE(rpcs_, fd_) \
+    do {                            \
+        rpc_close((rpcs_), (fd_));  \
+        (fd_) = -1;                 \
     } while (0)
-
 
 /**
  * Call send() function on RPC server and check return value.
