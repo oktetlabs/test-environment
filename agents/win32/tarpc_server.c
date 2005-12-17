@@ -956,7 +956,7 @@ TARPC_FUNC(wsa_socket, {},
 
 TARPC_FUNC(close, {}, 
 { 
-    MAKE_CALL(out->retval = CloseHandle((HANDLE)(in->fd) ? 0 : -1)); 
+    MAKE_CALL(out->retval = CloseHandle((HANDLE)(in->fd)) ? 0 : -1); 
 })
 
 /*-------------- bind() ------------------------------*/
@@ -4817,11 +4817,11 @@ TARPC_FUNC(create_io_completion_port,
 
     UNUSED(list);
 
-    file_handle = in->file_handle == (tarpc_handle)-1 ?
+    file_handle = in->file_handle == -1 ?
                   INVALID_HANDLE_VALUE : (HANDLE)in->file_handle;
 
     MAKE_CALL(out->retval = (tarpc_int)CreateIoCompletionPort(file_handle,
-                         in->existing_completion_port, 
+                         (HANDLE)(in->existing_completion_port), 
                          (ULONG_PTR)in->completion_key,
                          (DWORD)in->number_of_concurrent_threads)
     );
