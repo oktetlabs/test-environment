@@ -850,6 +850,42 @@ is_logger_available(void)
 }
 
 /**
+ * Logs death of a child. This function SHOULD be called ater waitpid() to
+ * log exist status.
+ *
+ * @param pid       pid of the dead child
+ * @param status    status of the death child
+ */
+static void
+log_child_death(int pid, int status)
+{
+    if (WIFEXITED(status))
+    {
+        INFO("Child process with PID %d exited with value %d", 
+             pid, WEXITSTATUS(status));
+    }
+    else if (WIFSIGNALED(status))
+    {
+        if (WTERMSIG(status) == SIGTERM)
+            RING("Child process with PID %d was terminated", pid);
+        else
+        {
+            WARN("Child process with PID %d is killed "
+                 "by the signal %d", pid, WTERMSIG(status));
+        }
+    }
+#ifdef WCOREDUMP
+    else if (WCOREDUMP(status))
+        ERROR("Child process with PID %d core dumped", pid);
+#endif
+    else
+    {
+        WARN("Child process with PID %d exited due to unknown reason", 
+             pid);
+    }
+}
+
+/**
  * Wait for a child and log its exit status information.
  */
 static void
@@ -943,32 +979,8 @@ ta_sigchld_handler(int sig)
         }
 
         /* Now try to log status of the child */
-        if (!logger)
-            continue;
-        if (WIFEXITED(status))
-        {
-            INFO("Child process with PID %d exited with value %d", 
-                 pid, WEXITSTATUS(status));
-        }
-        else if (WIFSIGNALED(status))
-        {
-            if (WTERMSIG(status) == SIGTERM)
-                RING("Child process with PID %d was terminated", pid);
-            else
-            {
-                WARN("Child process with PID %d is killed "
-                     "by the signal %d", pid, WTERMSIG(status));
-            }
-        }
-#ifdef WCOREDUMP
-        else if (WCOREDUMP(status))
-            ERROR("Child process with PID %d core dumped", pid);
-#endif
-        else
-        {
-            WARN("Child process with PID %d exited due to unknown reason", 
-                 pid);
-        }
+        if (logger)
+            log_child_death(pid, status);
     }
 
     if (logger && get == 0)
@@ -1106,6 +1118,23 @@ ta_waitpid(pid_t pid, int *status, int options)
         errno = EINVAL;
         return -1;
     }
+
+    /* For WNOHANG, check if the process is running. There is possible race
+     * condition, because any call of waitpid() may perform a race with
+     * waitpid() from SIGCHLD handler. So, we should return to user any
+     * non-error value. */
+    if ((options & WNOHANG))
+    {
+        rc = waitpid(pid, status, options);
+        if (rc == 0)
+            return rc;
+        if (rc != -1)
+        {
+            log_child_death(pid, *status);
+            return rc;
+        }
+    }
+
     if ((wake = malloc(sizeof(ta_children_wait))) == NULL)
     {
         ERROR("%s: Out of memory", __FUNCTION__);
@@ -1207,11 +1236,6 @@ ta_waitpid(pid_t pid, int *status, int options)
             *status = ta_children_dead_heap[dead].status;
         ta_children_dead_heap[dead].valid = FALSE;
     } 
-    else if ((options & WNOHANG))
-    {
-        /* We should check if the process is running and return 0 or -1. */
-        return waitpid(pid, status, options);
-    }
     return dead == -1 ? -1 : pid;
 }
 #undef LOCK
