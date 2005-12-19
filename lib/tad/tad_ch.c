@@ -365,7 +365,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     check_init();
 
     VERB("%s: CSAP %d\n", __FUNCTION__, csap); 
-    RING("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
+    VERB("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
 
     if ((csap_descr_p = csap_find(csap)) == NULL)
     {
@@ -435,7 +435,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *handle,
     csap_destroy(csap);
 
     cbuf[answer_plen] = 0;
-    RING("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
+    VERB("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
 
     usleep(100*1000);
     
@@ -477,7 +477,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
 
     VERB("trsend_start CSAP %d\n", csap);
     cbuf[answer_plen] = 0;
-    RING("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
+    VERB("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
 
     check_init();
 
