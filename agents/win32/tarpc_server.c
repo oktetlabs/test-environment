@@ -720,7 +720,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
                                                                         \
         if ((arg = malloc(sizeof(*arg))) == NULL)                       \
         {                                                               \
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);            \
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);         \
             return TRUE;                                                \
         }                                                               \
                                                                         \
