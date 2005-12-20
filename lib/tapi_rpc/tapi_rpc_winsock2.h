@@ -149,7 +149,7 @@ extern te_bool rpc_connect_ex(rcf_rpc_server *rpcs,
                               int s, const struct sockaddr *addr,
                               socklen_t addrlen,
                               void *buf, ssize_t len_buf,
-                              ssize_t *bytes_sent,
+                              size_t *bytes_sent,
                               rpc_overlapped overlapped);
 
 /**

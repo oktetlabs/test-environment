@@ -110,8 +110,8 @@
         {                                                           \
             if (_cond)                                              \
             {                                                       \
-                ERROR("Function %s() returned incorrect value %d",  \
-                      #_func, (int)(_var));                         \
+                ERROR("Function %s() returned incorrect value",     \
+                      #_func);                                      \
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
                 (_var) = (_error_val);                              \
             }                                                       \
@@ -119,8 +119,8 @@
                      (_var) != (_error_val) &&                      \
                      out.common.errno_changed)                      \
             {                                                       \
-                ERROR("Function %s() returned %d, but changed "     \
-                      "errno to %s", #_func, (int)(_var),           \
+                ERROR("Function %s() returned correct value, but "  \
+                      "changed errno to %s", #_func,                \
                       errno_rpc2str(RPC_ERRNO(rpcs)));              \
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
                 (_var) = (_error_val);                              \
