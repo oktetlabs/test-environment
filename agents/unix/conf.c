@@ -652,7 +652,7 @@ ip_addr_get(int family, struct nlmsg_list **list)
 }
 
 /**
- * Find name of the interface with specified address and retrive
+ * Find name of the interface with specified address and retrieve
  * attributes of the address.
  *
  * @param str_addr  Address in dotted notation
@@ -680,6 +680,9 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
 
     /* If address contains a colon, it is IPv6 address */
     family = (strchr(str_addr, ':') == NULL) ? AF_INET : AF_INET6;
+
+    if (bcast != NULL)
+        memset(bcast, 0, sizeof(*bcast));
     
     if (ifname != NULL && (strlen(ifname) >= IF_NAMESIZE))
     {
@@ -759,8 +762,6 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
             if (addr != NULL)
                 memcpy(&addr->ip6_addr, &ip_addr.ip6_addr,
                        sizeof(struct in6_addr));
-            if (bcast != NULL)
-                memset(&bcast->ip6_addr, 0, sizeof(&bcast->ip6_addr));
         }
     }
 
@@ -2278,7 +2279,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
 #error Way to work with network addresses is not defined.
 #endif
 
-    if (inet_ntop(family, &bcast.ip4_addr, value, RCF_MAX_VAL) == NULL)
+    if (inet_ntop(family, &bcast, value, RCF_MAX_VAL) == NULL)
     {
         ERROR("inet_ntop() failed");
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -3851,7 +3852,8 @@ do {                                                            \
 #undef GET_ALL_ROUTES_OF_FAMILY    
     
     rtnl_close(&rth);
-
+#else
+    ERROR("Only routes via Netlink are currently supported");
 #endif
 
     INFO("%s: Routes: %s", __FUNCTION__, buf);
