@@ -100,7 +100,7 @@ typedef struct _rpc_sys_info {
  * @param info      pointer to an object than defines the characteristics
  *                  of the created socket
  * @param info_len  length of @b info
- * @param overlapped support of overlapped I/O
+ * @param flags     flags for socket creation (overlapped, multipoint, etc.)
  *
  * @return Socket descriptor upon successful completion, otherwise -1
  *         is returned.
@@ -130,40 +130,40 @@ extern int rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
                                     uint8_t *info, int *info_len);
 
 /**
- *  Establish a connection to a specified socket, and optionally send data
- *  once connection is established.
+ * Establish a connection to a specified socket, and optionally send data
+ * once connection is established.
  *
- *  @param rpcs     RPC server handle
- *  @param s        socket descriptor
- *  @param addr     pointer to a @b sockaddr structure containing the 
- *                  address to connect to.
- *  @param addrlen  length of sockaddr structure
- *  @param buf      pointer to buffer containing connect data
- *  @param len_buf  length of the buffer @b buf
- *  @param bytes_sent pointer a the number of bytes sent 
- *  @param overlapped pointer to @b overlapped object
+ * @param rpcs         RPC server handle
+ * @param s            socket descriptor
+ * @param addr         pointer to a @b sockaddr structure containing the 
+ *                     address to connect to.
+ * @param addrlen      length of sockaddr structure
+ * @param buf          pointer to buffer containing connect data
+ * @param len_buf      length of the buffer @b buf
+ * @param bytes_sent   pointer a the number of bytes sent 
+ * @param overlapped   @b overlapped object or RPC_NULL
  *
- *  @return Value returned by @b ConnectEx()
+ * @return Value returned by @b ConnectEx()
  */
-extern int rpc_connect_ex(rcf_rpc_server *rpcs,
-                          int s, const struct sockaddr *addr,
-                          socklen_t addrlen,
-                          void *buf, ssize_t len_buf,
-                          ssize_t *bytes_sent,
-                          rpc_overlapped overlapped);
+extern te_bool rpc_connect_ex(rcf_rpc_server *rpcs,
+                              int s, const struct sockaddr *addr,
+                              socklen_t addrlen,
+                              void *buf, ssize_t len_buf,
+                              ssize_t *bytes_sent,
+                              rpc_overlapped overlapped);
 
 /**
  * Close connection to a socket and allow the socket handle to be reused.
  *
  * @param rpcs        RPC server handle
  * @param s           conencted socket descriptor
- * @param overlapped  pointer to a rpc_overlapped structure
+ * @param overlapped  @b overlapped object or RPC_NULL
  * @param flags       customize behavior of operation
  *
  * @return Value returned by @b DisconnectEx()
  */
-extern int rpc_disconnect_ex(rcf_rpc_server *rpcs, int s,
-                             rpc_overlapped overlapped, int flags);
+extern te_bool rpc_disconnect_ex(rcf_rpc_server *rpcs, int s,
+                                 rpc_overlapped overlapped, int flags);
 
 /** Accept decision making */
 typedef enum accept_verdict {
@@ -213,14 +213,14 @@ extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
  *                          accept an incomming connection
  * @param len               length of the buffer to receive data (should not
  *                          include the size of local and remote addresses)
- * @param overlapped        WSAOVERLAPPED structure
+ * @param overlapped        @b overlapped object or RPC_NULL
  * @param bytes_received    number of received data bytes
  *
  * @return Value returned by AcceptEx() function.
  */
-extern int rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
-                         size_t len, rpc_overlapped overlapped,
-                         size_t *bytes_received);
+extern te_bool rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
+                             size_t len, rpc_overlapped overlapped,
+                             size_t *bytes_received);
 
 /**
  * @b GetAcceptExSockAddr() remote call.
@@ -251,7 +251,7 @@ extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
  *                     transmited; should be got by rpc_create_file().
  * @param len          length of data to transmit
  * @param len_per_send size of each block of data in each send operation.
- * @param overlapped   pointer to an rpc_overlapped structure
+ * @param overlapped   @b overlapped object or RPC_NULL
  * @param head         pointer to a buffer to be transmitted before file 
  *                     data is transmitted
  * @param head_len     size of buffer @b head
@@ -260,14 +260,13 @@ extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
  * @param tail_len     size of buffer @b tail
  * @param flags      call flags (See @b Transmit file for more information)
  *
- * @return Value returned by @b TransmitFile upon successful completion,
- *         otherwise -1 is returned.
+ * @return Value returned by @b TransmitFile()
  */
-extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
-                             ssize_t len, ssize_t len_per_send,
-                             rpc_overlapped overlapped,
-                             void *head, ssize_t head_len, void *tail,
-                             ssize_t tail_len, ssize_t flags);
+extern te_bool rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
+                                 ssize_t len, ssize_t len_per_send,
+                                 rpc_overlapped overlapped,
+                                 void *head, ssize_t head_len, void *tail,
+                                 ssize_t tail_len, ssize_t flags);
 
 /**
  * Transmit file data over a connected socket. This function uses the 
@@ -280,7 +279,7 @@ extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
  *                       transmited; should be got by rpc_create_file().
  * @param len            amount of file data to transmit.
  * @param bytes_per_send size of each block of data in each send operation.
- * @param overlapped     pointer to an rpc_overlapped structure.
+ * @param overlapped     @b overlapped object or RPC_NULL
  * @param head           a pointer valid in the TA virtual address space
  *                       and pointing to a buffer to be transmitted before
  *                       the file data.
@@ -296,12 +295,13 @@ extern int rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
  * ATTENTION: when using the overlapped I/O the supplied buffers @b head
  * and @b tail will be freed when you call rpc_get_overlapped_result().
  */
-extern int rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s,
-                                   int file, ssize_t len,
-                                   ssize_t bytes_per_send,
-                                   rpc_overlapped overlapped, rpc_ptr head,
-                                   ssize_t head_len, rpc_ptr tail,
-                                   ssize_t tail_len, ssize_t flags);
+extern te_bool rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s,
+                                       int file, ssize_t len,
+                                       ssize_t bytes_per_send,
+                                       rpc_overlapped overlapped, 
+                                       rpc_ptr head,
+                                       ssize_t head_len, rpc_ptr tail,
+                                       ssize_t tail_len, ssize_t flags);
 
 /**
  * @b CreateFile() remote call.
@@ -342,7 +342,7 @@ extern int rpc_closesocket(rcf_rpc_server *rpcs, int s);
  * @b HasOverlappedIoCompleted() remote call.
  *
  * @param rpcs        RPC server handle
- * @param overlapped  overlapped structure
+ * @param overlapped  @b overlapped object or RPC_NULL
  *
  * @return   @c TRUE if overlapped I/O has completed, @c FALSE otherwise.
  */
@@ -354,7 +354,7 @@ extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
  *
  * @param rpcs                          RPC server handle
  * @param file_handle                   Handle of a file/socket
- *                                      opened for overlapped I/O.
+ *                                      opened for overlapped I/O
  * @param existing_completion_port      Handle of the existing
  *                                      completion port.
  * @param completion_key                Per-file completion key.
@@ -363,7 +363,7 @@ extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
  *                                      completion packets for the I/O
  *                                      completion port.
  *
- * @return   Completion port handle on success, @c 0 otherwise.
+ * @return   Completion port handle on success, @c 0 otherwise
  */
 extern int rpc_create_io_completion_port(rcf_rpc_server *rpcs,
                                          int file_handle,
@@ -375,18 +375,17 @@ extern int rpc_create_io_completion_port(rcf_rpc_server *rpcs,
 /**
  * @b GetQueuedCompletionStatus() remote call.
  *
- * @param rpcs              RPC server handle.
- * @param completion_port   Handle of the existing completion port.
+ * @param rpcs              RPC server handle
+ * @param completion_port   Handle of the existing completion port
  * @param number_of_bytes   Where to store the number of bytes
- *                          transferred during the I/O operation.
+ *                          transferred during the I/O operation
  * @param completion_key    Where to store the completion key value
  *                          associated with the file handle whose I/O
- *                          has completed.
- * @param overlapped        Where to store the overlapped structure id
- *                          of the completed operation.
+ *                          has completed
+ * @param overlapped        @b overlapped object or RPC_NULL
  * @param milliseconds      Timeout to wait for the I/O completion.
  *
- * @return   Non-zero on success, zero otherwise.
+ * @return   Non-zero on success, zero otherwise
  */
 extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
                                  int completion_port,
@@ -398,13 +397,13 @@ extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
 /**
  * @b PostQueuedCompletionStatus() remote call.
  *
- * @param rpcs              RPC server handle.
- * @param completion_port   Handle of the existing completion port.
- * @param number_of_bytes   Number of bytes transferred.
- * @param completion_key    Completion key value.
- * @param overlapped        Overlapped structure id.
+ * @param rpcs              RPC server handle
+ * @param completion_port   Handle of the existing completion port
+ * @param number_of_bytes   Number of bytes transferred
+ * @param completion_key    Completion key value
+ * @param overlapped        @b overlapped object or RPC_NULL
  *
- * @return   Non-zero on success, zero otherwise.
+ * @return   Non-zero on success, zero otherwise
  */
 extern te_bool rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
                                  int completion_port,
@@ -465,10 +464,9 @@ extern rpc_wsaevent rpc_create_event(rcf_rpc_server *rpcs);
  * @param rpcs    RPC server handle
  * @param hevent  handle of the event to be close
  *
- * @return value returned by @b WSACloseEvent upon successful completion,
- *         otherwise -1 is returned
+ * @return value returned by @b WSACloseEvent()
  */
-extern int rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
+extern te_bool rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
 
 /** 
  * Reset the state of the specified event object to non-signaled.
@@ -476,10 +474,9 @@ extern int rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
  * @param rpcs   RPC server handle
  * @param hevent event object handle
  *
- * @return Value returned by @b WSAResetEvent() upon successful completion.
- *         Otherwise -1 is returned.
+ * @return Value returned by @b WSAResetEvent() 
  */
-extern int rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
+extern te_bool rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
 
 /**
  * Set the state of the specified event object to signaled.
@@ -487,10 +484,9 @@ extern int rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
  * @param rpcs    RPC server handle
  * @param  hevent  event object handle
  *
- * @return Value returned by @b WSASetEvent upon successful completion.
- *         Otherwise -1 is returned.
+ * @return Value returned by @b WSASetEvent()
  */
-extern int rpc_set_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
+extern te_bool rpc_set_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent);
 
 
 /**
@@ -607,7 +603,7 @@ extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
  * @param outbuf          Pointer to the output buffer
  * @param outbuf_len      Size of the output buffer
  * @param bytes_returned  Pointer to the actual number of bytes of output
- * @param overlapped      Overlapped structure
+ * @param overlapped      @b overlapped object or RPC_NULL
  * @param callback        Support of completion routine; if true than a
  *                        completion routine is called when the overlapped
  *                        operation has been completed.
@@ -626,7 +622,7 @@ extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
  *
  * @param rpcs           RPC server handle
  * @param s              desccriptor identifying a socket
- * @param overlapped     overlapped structure
+ * @param overlapped     @b overlapped object or RPC_NULL
  * @param bytes          pointer to the variable that will accept the
  *                       number of bytes returned in @b buf
  * @param wait           specifies whether the function should wait
@@ -641,7 +637,7 @@ extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
  *
  * @return   Nonzero in case of success, otherwise 0.
  */
-extern int rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
+extern te_bool rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
                                     int s, rpc_overlapped overlapped,
                                     int *bytes, te_bool wait,
                                     rpc_send_recv_flags *flags,
@@ -801,8 +797,7 @@ extern rpc_handle rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs,
  * @param offset_high high-order word of the position at which to start
  *                    the transfert
  * 
- * @return WSAOVERLAPPED structure upon successful completion, otherwise
- *         error code is returned (TE_ENOMEM)
+ * @return WSAOVERLAPPED structure upon successful completion or RPC_NULL
  */
 extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
                                             rpc_wsaevent hevent,
@@ -812,8 +807,8 @@ extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
 /** 
  * Delete specified WSAOVERLAPPED structure.
  *
- * @param rpcs       RPC server handle
- * @param overlapped  WSAOVERLAPPED structure 
+ * @param rpcs        RPC server handle
+ * @param overlapped  @b overlapped object
  */
 extern void rpc_delete_overlapped(rcf_rpc_server *rpcs,
                                   rpc_overlapped overlapped);
@@ -828,7 +823,7 @@ extern void rpc_delete_overlapped(rcf_rpc_server *rpcs,
  * @param iovcnt      number of buffers in the vector
  * @param flags       modifies the behavior of the call.      
  * @param bytes_sent  pointer to the number of bytes sent
- * @param overlapped  overlapped structure
+ * @param overlapped  @b overlapped object or RPC_NULL
  * @param callback    support of completion routine. If true a completion
  *                    routine is call when the send operation has been 
  *                    completed
@@ -852,7 +847,7 @@ extern int rpc_wsa_send(rcf_rpc_server *rpcs,
  * @param flags       modifies the behavior of the call.
  *                    (See @b rpc_send_recv_flags)
  * @param bytes_received pointer to the number of bytes received
- * @param overlapped  overlapped structure
+ * @param overlapped  @b overlapped object or RPC_NULL
  * @param callback    support of completion routine. If true a completion
  *                    routine is call when the send operation has been 
  *                    completed
@@ -879,7 +874,7 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
  * @param bytes_sent   pointer to the number of bytes sent
  * @param to           pointer to the address of the target socket
  * @param tolen        size of the address @b to
- * @param overlapped   overlapped structure
+ * @param overlapped   @b overlapped object or RPC_NULL
  * @param callback     support of completion routine. If true a completion
  *                     routine is call when the send operation has been 
  *                     completed
@@ -907,7 +902,7 @@ extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
  * @param from           pointer to a buffer that hold the source address 
  *                       upon the completion of overlapped operation
  * @param fromlen        size of the address @b from
- * @param overlapped     overlapped structure
+ * @param overlapped     @b overlapped object or RPC_NULL
  * @param callback       support of completion routine. If true a completion
  *                       routine is called when the send operation has been 
  *                       completed
@@ -956,7 +951,7 @@ extern int rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
  * @param msg            pointer to a @b rpc_msghdr structure containing
  *                       received data
  * @param bytes_received pointer to the number of bytes received
- * @param overlapped     overlapped structure  
+ * @param overlapped     @b overlapped object or RPC_NULL
  * @param callback       support of completion routine. If true a completion
  *                       routine is call when the send operation has been 
  *                       completed
@@ -971,7 +966,7 @@ extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
  *
  * @param rpcs           RPC server handle
  * @param s              desccriptor identifying a socket
- * @param overlapped     overlapped structure
+ * @param overlapped     @b overlapped object or RPC_NULL
  * @param bytes          pointer to the number of bytes that were 
  *                       transfered by a send or receive operation
  * @param wait           specifies whether the function should wait for
@@ -1187,6 +1182,38 @@ extern int rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s,
                             struct sockaddr *addr, socklen_t addrlen,
                             rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                             rpc_qos *sqos, rpc_join_leaf_flags flags);
+
+/**
+ * @b ReadFile() remote call.
+ *
+ * @param rpcs       RPC server handle
+ * @param fd         file descriptor
+ * @param buf        buffer for data 
+ * @param count      number of bytes to be read
+ * @param received   location for number of read bytes
+ * @param overlapped @b overlapped object or RPC_NULL
+ *
+ * @return  TRUE (success) of FALSE (failure)
+ */
+extern te_bool rpc_read_file(rcf_rpc_server *rpcs,
+                             int fd, void *buf, size_t count,
+                             size_t *received, rpc_overlapped overlapped);
+
+/**
+ * @b WriteFile() remote call.
+ *
+ * @param rpcs       RPC server handle
+ * @param fd         file descriptor
+ * @param buf        buffer for data 
+ * @param count      number of bytes to be sent
+ * @param sent       location for number of sent bytes
+ * @param overlapped @b overlapped object or RPC_NULL
+ *
+ * @return  TRUE (success) of FALSE (failure)
+ */
+extern te_bool rpc_write_file(rcf_rpc_server *rpcs,
+                              int fd, void *buf, size_t count,
+                              size_t *sent, rpc_overlapped overlapped);
 
 /** Convert WSA function name to RPC name */
 static inline const char *

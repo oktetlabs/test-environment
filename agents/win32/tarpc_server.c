@@ -1352,7 +1352,7 @@ TARPC_FUNC(has_overlapped_io_completed, {},
 {
     UNUSED(list);
     MAKE_CALL(out->retval =
-            HasOverlappedIoCompleted((LPWSAOVERLAPPED)IN_OVERLAPPED));
+              HasOverlappedIoCompleted((LPWSAOVERLAPPED)IN_OVERLAPPED));
 }
 )
 
@@ -1627,6 +1627,103 @@ TARPC_FUNC(write, {},
         }
     }
     out->retval = rc;
+}
+)
+
+/*-------------- ReadFile() ------------------------------*/
+
+TARPC_FUNC(read_file,
+{
+    COPY_ARG(received);
+    COPY_ARG(buf);
+},
+{
+    rpc_overlapped *overlapped = IN_OVERLAPPED;
+    rpc_overlapped  tmp;
+
+    if (overlapped == NULL)
+    {
+        memset(&tmp, 0, sizeof(tmp));
+        overlapped = &tmp;
+    }
+    
+    if (buf2overlapped(overlapped, out->buf.buf_len, out->buf.buf_val) != 0)
+    {
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+        goto finish;
+    }
+    
+    MAKE_CALL(out->retval = ReadFile((HANDLE)(in->fd), 
+                                     overlapped->buffers[0].buf,
+                                     in->len, 
+                                     (LPDWORD)(out->received.received_val),
+                                     (LPWSAOVERLAPPED)overlapped));
+                                     
+    if (out->retval)
+    {
+        /* Non-overlapped operation */
+        free(overlapped->buffers);
+        overlapped->buffers = NULL;
+        overlapped->bufnum = 0;
+    }
+    else if (out->common._errno != RPC_E_IO_PENDING)
+    {
+        /* Fatal error */
+        rpc_overlapped_free_memory(overlapped);
+    }
+    else
+    {
+        /* 
+         * Overlapped request is posted, let's avoid releasing of the
+         * buffer by RPC.
+         */
+        out->buf.buf_val = NULL;
+        out->buf.buf_len = 0;
+    }
+    finish:
+    ;
+}
+)
+
+/*-------------- WriteFile() ------------------------------*/
+
+TARPC_FUNC(write_file, 
+{
+    COPY_ARG(sent);
+},
+{
+    rpc_overlapped *overlapped = IN_OVERLAPPED;
+    rpc_overlapped  tmp;
+
+    if (overlapped == NULL)
+    {
+        memset(&tmp, 0, sizeof(tmp));
+        overlapped = &tmp;
+    }
+
+    if (buf2overlapped(overlapped, in->buf.buf_len, in->buf.buf_val) != 0)
+    {
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+        goto finish;
+    }
+    in->buf.buf_val = NULL;
+    in->buf.buf_len = 0;
+
+    MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd),
+                                      overlapped->buffers[0].buf,
+                                      in->len, 
+                                      (LPDWORD)(out->sent.sent_val),
+                                      (LPWSAOVERLAPPED)overlapped));
+                        
+    /* 
+     * If the operation is not overlapped or fatal error occured,  
+     * release memory.
+     */
+    if (out->retval || out->common._errno != RPC_E_IO_PENDING)
+        rpc_overlapped_free_memory(overlapped);
+        
+    finish:
+    ;
 }
 )
 

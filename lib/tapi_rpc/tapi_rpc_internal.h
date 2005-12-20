@@ -143,7 +143,7 @@
 /**
  * If RPC call status is OK, check that variable with function return
  * value is greater or equal to minus one and set specified variable
- * to -1 and RPC server errno to TE_ECORRUPTED, it is true.
+ * to -1 and RPC server errno to TE_ECORRUPTED, if it is not true.
  * If RPC call status is not OK, variable is set to -1 and RPC server
  * errno is not updated.
  *
@@ -159,7 +159,7 @@
 /**
  * If RPC call status is OK, check that variable with function return
  * value is zero or minus one and set specified variable to -1 and RPC
- * server errno to TE_ECORRUPTED, it is true.  If RPC call status is
+ * server errno to TE_ECORRUPTED, if it is not true.  If RPC call status is
  * not OK, variable is set to -1 and RPC server errno is not updated.
  *
  * The function assumes to have RPC server handle as 'rpcs' variable in
@@ -173,9 +173,9 @@
 
 /**
  * If RPC call status is OK, check that variable with function return
- * value is zero and set specified variable to -1 and RPC
- * server errno to TE_ECORRUPTED, it is true.  If RPC call status is
- * not OK, variable is set to -1 and RPC server errno is not updated.
+ * value is TRUE or FALSE and set specified variable to FALSE and RPC
+ * server errno to TE_ECORRUPTED, if it is not true.  If RPC call status is
+ * not OK, variable is set to FALSE and RPC server errno is not updated.
  *
  * The function assumes to have RPC server handle as 'rpcs' variable in
  * the context.
@@ -183,8 +183,10 @@
  * @param _func     function
  * @param _var      variable with return value
  */
-#define CHECK_RETVAL_VAR_IS_ZERO(_func, _var) \
-    CHECK_RETVAL_VAR(_func, _var, ((_var) != 0), (uint32_t)-1)
+#define CHECK_RETVAL_VAR_IS_BOOL(_func, _var) \
+    CHECK_RETVAL_VAR(_func, _var, (((_var) != FALSE) && ((_var) != TRUE)), \
+                     FALSE)
+
 
 /** Return with check (for functions returning zero value) */
 #define RETVAL_ZERO_INT(_func, _retval) \
@@ -197,7 +199,7 @@
     } while (0)
 
 /** Return with check (for functions returning boolean value) */
-#define RETVAL_TRUE(_func, _retval) \
+#define RETVAL_BOOL(_func, _retval) \
     do {                                  \
         te_bool __retval = _retval;       \
                                           \

@@ -360,6 +360,42 @@ typedef struct tarpc_read_in tarpc_write_in;
 typedef struct tarpc_ssize_t_retval_out tarpc_write_out;
 
 
+/* ReadFile() / WriteFile() */
+
+struct tarpc_read_file_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int        fd;
+    uint8_t          buf<>;
+    tarpc_size_t     len;
+    tarpc_size_t     received<>;
+    tarpc_overlapped overlapped;
+};
+
+struct tarpc_read_file_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_bool      retval;
+    uint8_t         buf<>;
+    tarpc_size_t    received<>;
+};
+
+struct tarpc_write_file_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int        fd;
+    uint8_t          buf<>;
+    tarpc_size_t     len;
+    tarpc_size_t     sent<>;
+    tarpc_overlapped overlapped;
+};
+
+struct tarpc_write_file_out {
+    struct tarpc_out_arg    common;
+
+    tarpc_bool      retval;
+    tarpc_size_t    sent<>;
+};
 
 /* readv() / writev() */
 
@@ -3082,6 +3118,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_send_disconnect)
         RPC_DEF(wsa_recv_disconnect)
         RPC_DEF(wsa_recv_msg)
+        RPC_DEF(read_file)
+        RPC_DEF(write_file)
         RPC_DEF(wsa_address_to_string)
         RPC_DEF(wsa_string_to_address)
         RPC_DEF(wsa_async_get_host_by_addr)

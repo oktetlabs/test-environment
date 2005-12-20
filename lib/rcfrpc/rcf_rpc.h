@@ -59,6 +59,13 @@
 #define RPC_AWAIT_IUT_ERROR(_rpcs) \
     (_rpcs)->iut_err_jump = FALSE
 
+/** Roll back RPC_AWAIT_IUT_ERROR effect */
+#define RPC_DONT_AWAIT_IUT_ERROR(_rpcs) \
+    (_rpcs)->iut_err_jump = TRUE
+
+/** Are we awaiting an error? */
+#define RPC_AWAITING_ERROR(_rpcs)       (!(_rpcs)->iut_err_jump)
+
 /**
  * Extract name of the PCO by RCP server handle
  *
