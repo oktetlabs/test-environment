@@ -4258,8 +4258,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         goto overfill_buffers_exit;
     }
 
-    /* FIXME */
-    memset(buf, 0xDEADBEEF, sizeof(max_len));
+    memset(buf, 0xAD, sizeof(max_len));
 
     if (tarpc_find_func(in->common.lib, "send", &send_func) != 0)
     {
