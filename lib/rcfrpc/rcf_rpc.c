@@ -593,6 +593,9 @@ rcf_rpc_setlibname(rcf_rpc_server *rpcs, const char *libname)
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "setlibname", &in, &out);
 
+    if (!RPC_IS_CALL_OK(rpcs))
+        out.retval = -1;
+
     LOG_MSG(out.retval != 0 ? TE_LL_ERROR : TE_LL_RING,
             "RPC (%s,%s) setlibname(%s) -> %d (%s)",
             rpcs->ta, rpcs->name, libname ? : "(NULL)",
