@@ -809,7 +809,7 @@ nl_ip_addr_add_del(int cmd, const char *ifname,
 #define AF_INET6_DEFAULT_BITLEN  (AF_INET6_DEFAULT_BYTELEN << 3)
 
     ENTRY("cmd=%d ifname=%s addr=0x%x prefix=%u bcast=%s",
-          cmd, ifname, addr, prefix,
+          cmd, ifname, addr, prefix, bcast == NULL ? "<null>" :
           inet_ntop(family, bcast, addrstr, INET6_ADDRSTRLEN));
 
     memset(&req, 0, sizeof(req));
