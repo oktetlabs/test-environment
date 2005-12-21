@@ -2979,6 +2979,8 @@ TARPC_FUNC(getpwnam, {},
     struct passwd *pw;
     
     MAKE_CALL(pw = (struct passwd *)func_ptr_ret_ptr(in->name.name_val));
+    /* GLIBC getpwnam clean up errno on success */
+    out->common.errno_changed = FALSE;
     
     if (pw != NULL)
     {
