@@ -647,6 +647,7 @@ check_args(checked_arg *list)
                                                                     \
         WAIT_START(in->common.start);                               \
         gettimeofday(&t_start, NULL);                               \
+        SetLastError(0xFFFFF);                                      \
         x;                                                          \
         out->common._errno = win_rpc_errno(GetLastError());         \
         gettimeofday(&t_finish, NULL);                              \
