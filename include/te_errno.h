@@ -191,7 +191,9 @@ typedef enum {
     TE_E_IO_PENDING,     /**< Overlapped I/O operation is in progress */
     
     /* TE-specific error codes */
-    TE_EUNKNOWN,      /**< Unknown OS errno */
+    TE_EUNSPEC,         /**< Undefined OS errno 
+                             (is not updated by the function) */
+    TE_EUNKNOWN,        /**< Unknown OS errno */
     
 /** @name Common errno's */
     TE_EOK = TE_MIN_ERRNO + 500, 
@@ -589,6 +591,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(E_IO_INCOMPLETE);
         ERR2STR(E_IO_PENDING);
 
+        ERR2STR(EUNSPEC);
         ERR2STR(EUNKNOWN);
 
         ERR2STR(EOK); 

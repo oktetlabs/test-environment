@@ -63,6 +63,8 @@ struct timezone {
 #include "rcf_rpc_defs.h"
 #include "te_rpc_types.h"
 
+/** Unspecified error code */
+#define ERROR_UNSPEC    0xFFFFFF
 
 #define PRINT(msg...) \
     do {                                                \
@@ -258,6 +260,8 @@ win_rpc_errno(int err)
         case ERROR_NOACCESS: return RPC_EFAULT; /* FIXME? */
         case ERROR_MORE_DATA: return RPC_EMSGSIZE; /* FIXME? */
         case WAIT_TIMEOUT: return RPC_E_WAIT_TIMEOUT;
+        
+        case ERROR_UNSPEC: return RPC_EUNSPEC;
         
         default: 
             ERROR("Unknown windows error code %d", err);
@@ -647,7 +651,7 @@ check_args(checked_arg *list)
                                                                     \
         WAIT_START(in->common.start);                               \
         gettimeofday(&t_start, NULL);                               \
-        SetLastError(0xFFFFF);                                      \
+        SetLastError(ERROR_UNSPEC);                                 \
         x;                                                          \
         out->common._errno = win_rpc_errno(GetLastError());         \
         gettimeofday(&t_finish, NULL);                              \
