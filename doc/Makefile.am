@@ -25,8 +25,6 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AUTOMAKE_OPTIONS = foreign 
-
 SUBDIRS=hld guides xsd cm ndn
 
 EXTRA_DIST=OKTL-REQ-0000043-TE.doc

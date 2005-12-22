@@ -7,7 +7,7 @@ TE_TOOLS([rgt rpcgen trc tce millicom])
 #
 # Host platform
 #
-TE_PLATFORM([], [], [], [],
+TE_PLATFORM([], [], [], [], [],
             [tools rpc_types conf_oid rpcxdr asn ndn \
              comm_net_agent loggerta rcfpch tce tad tad_dummy \
              iscsi_unh_target \
@@ -16,68 +16,69 @@ TE_PLATFORM([], [], [], [],
              tapi_bridge tapi_arp tapi_ipstack tapi_dhcp tapi_cli \
              tapi_snmp tapi_iscsi tapi_radius])
 
-TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [])
+TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [], [])
 
 TE_LIB_PARMS([tad], [], [],
              [--with-file --with-pcap --with-eth --with-bridge \
               --with-arp --with-ipstack --with-dhcp --with-iscsi \
-              --with-snmp --with-cli], [])
+              --with-snmp --with-cli], [], [], [])
 
 TE_TA_TYPE([linux64], [], [unix],
            [--with-rcf-rpc \
             --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
-           [], [], [comm_net_agent ndn asn])
+           [], [], [], [comm_net_agent ndn asn])
 
-TE_LIB_PARMS([tad_dummy], [], [tad], [], [])
+TE_LIB_PARMS([tad_dummy], [], [tad], [], [], [], [])
 
-TE_TA_TYPE([linux64_lite], [], [unix], [--with-tad=tad_dummy], [], [],
+TE_TA_TYPE([linux64_lite], [], [unix], [--with-tad=tad_dummy], [], [], [],
            [comm_net_agent])
 
 #
 # i386 Linux platform
 #
-TE_PLATFORM([i386-linux], [], [], [],
+TE_PLATFORM([i386-linux], [], [], [], [],
             [tools rpc_types comm_net_agent loggerta conf_oid rpcxdr rcfpch \
              asn ndn tad])
 
 TE_LIB_PARMS([tad], [i386-linux], [],
              [--with-file --with-pcap --with-eth --with-bridge \
               --with-arp --with-ipstack --with-dhcp --with-iscsi \
-              --with-snmp --with-cli], [])
+              --with-snmp --with-cli], [], [], [])
 
 TE_TA_TYPE([linux], [i386-linux], [unix],
            [--with-rcf-rpc \
             --with-cfg-linux-daemons='todudp tftp ftp echo dns Xvfb smtp telnet rsh vncserver dhcp vtund radius sshd'],
-           [], [], [comm_net_agent ndn asn])
+           [], [], [], [comm_net_agent ndn asn])
 
 #
 # FreeBSD5 platform
 #
 TE_PLATFORM([i686-pc-freebsd6], [],
-            [-I${FREEBSD6_HOME}/sys-include], [-L${FREEBSD6_HOME}/lib],
+            [-I${FREEBSD6_HOME}/sys-include], [], [-L${FREEBSD6_HOME}/lib],
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([freebsd6], [i686-pc-freebsd6], [unix],
-           [--with-rcf-rpc], [], [], [comm_net_agent])
+           [--with-rcf-rpc], [], [], [], [comm_net_agent])
 
 #
 # NetBSD platform
 #
 TE_PLATFORM([i686-pc-netbsdelf], [],
-            [-I${NETBSD_HOME}/sys-include], [-L${NETBSD_HOME}/lib],
+            [-I${NETBSD_HOME}/sys-include], [], [-L${NETBSD_HOME}/lib],
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([netbsd], [i686-pc-netbsdelf], [unix],
-           [--with-rcf-rpc], [], [], [comm_net_agent])
+           [--with-rcf-rpc], [], [], [], [comm_net_agent])
 
 #
 # CygWin platform
 #
 TE_PLATFORM([i686-pc-cygwin], [],
             [-I${CYGWIN_HOME}/include -I${CYGWIN_HOME}/include/ws32api -D__CYGWIN__],
+            [],
             [-L${CYGWIN_HOME}/lib -L${CYGWIN_HOME}/lib/w32api], 
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
 TE_TA_TYPE([win32], [i686-pc-cygwin], [],
-           [--with-rcf-rpc], [], [], [ws2_32 comm_net_agent])
+           [--with-rcf-rpc], [], [], [], [ws2_32 comm_net_agent])
 

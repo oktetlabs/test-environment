@@ -1,5 +1,5 @@
 
-AUTOMAKE_OPTIONS = foreign 
+ACLOCAL_AMFLAGS = -I @TE_M4@
 
 if JUST_DIST
 
@@ -9,9 +9,9 @@ install-exec-hook:
 
 else
 
-AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include 
-AM_CFLAGS =
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include 
+AM_CFLAGS = @TE_CFLAGS@
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 libtavxworks_a_DEPENDENCIES=@TE_DEPENDENCIES@
 

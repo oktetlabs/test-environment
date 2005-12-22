@@ -30,26 +30,14 @@
 #ifndef __TE_RGT_LOG_MSG_H__
 #define __TE_RGT_LOG_MSG_H__
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "rgt_common.h"
 
 #include <obstack.h>
 #include <glib.h>
 
-/* Check if we have definitions from Test Envirounment */
-#ifdef HAVE_TE_RAW_LOG_H
 #include "te_raw_log.h"
-#else
-#error RGT cannot be built without te_raw_log.h file exported by TE sources
-#endif
-#ifdef HAVE_LOGGER_DEFS_H
 #include "logger_defs.h"
-#else
-#error RGT cannot be built without logger_defs.h file exported by TE sources
-#endif
 
-#include "rgt_common.h"
 
 
 /** @name A set of macros used in string representation of log level */

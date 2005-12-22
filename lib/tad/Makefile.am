@@ -1,9 +1,11 @@
 
 SUBDIRS= @TAD_SUBDIRS@ .
 
+ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS=@TAD_CH_DEFS@ -I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
-AM_LDFLAGS=@TE_LDFLAGS@ 
+AM_CPPFLAGS = @TE_CPPFLAGS@ @TAD_CH_DEFS@ -I$(DESTDIR)/$(includedir) \
+              -I$(top_srcdir)
+AM_CFLAGS = @TE_CFLAGS@ 
 
 include_HEADERS=tad_csap_inst.h
 noinst_HEADERS=tad_csap_support.h tad_utils.h pkt_socket.h
@@ -51,12 +53,12 @@ te-@with_name@.pc:
 	Cflags: \n" > $@
 
 install-exec-hook:
-	touch -c -r lib@with_name@.a $(DESTDIR)/$(prefix)/lib/lib@with_name@.a
+	touch -c -r lib@with_name@.a $(DESTDIR)/$(libdir)/lib@with_name@.a
 
 install-data-hook:
 	touch -c -r te-@with_name@.pc $(mybindir)/te-@with_name@.pc ; \
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
+	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

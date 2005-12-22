@@ -6,12 +6,10 @@ tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 dist_tetest_DATA = package.xml
 
 
-AM_CPPFLAGS = @TE_CFLAGS@ -I. -I$(DESTDIR)/$(prefix)/include \
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir) \
               -I$(top_srcdir)/lib
-              
-AM_CFLAGS = @NET_SNMP_CFLAGS@
-
-AM_LDFLAGS = @TE_LDFLAGS@ -L. -L$(DESTDIR)/$(prefix)/lib
+AM_CFLAGS = @TE_CFLAGS@ @NET_SNMP_CFLAGS@
+AM_LDFLAGS = @TE_LDFLAGS@ -L. -L$(DESTDIR)/$(libdir)
 
 
 tetest_PROGRAMS = snmp_gets snmp_get_if_table walk trap_any

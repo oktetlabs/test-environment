@@ -25,8 +25,6 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AUTOMAKE_OPTIONS = foreign 
-
 SUBDIRS=@TA_SUBDIRS@
 
 DIST_SUBDIRS=@TA_DIST_SUBDIRS@

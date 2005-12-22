@@ -1,6 +1,6 @@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
-AM_LDFLAGS=@TE_LDFLAGS@ 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) -I$(top_srcdir)
+AM_CFLAGS = @TE_CFLAGS@ 
 
 noinst_HEADERS=tad_bridge_impl.h
 
@@ -11,7 +11,7 @@ libtad_bridge_a_SOURCES=tad_bridge_stack.c tad_bridge_layer.c \
 
 
 install-exec-hook:
-	touch -c -r libtad_bridge.a $(DESTDIR)/$(prefix)/lib/libtad_bridge.a
+	touch -c -r libtad_bridge.a $(DESTDIR)/$(libdir)/libtad_bridge.a
 
 all: install
 

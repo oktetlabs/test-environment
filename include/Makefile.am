@@ -25,8 +25,6 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AUTOMAKE_OPTIONS = foreign 
-
 te_headers = te_defs.h te_errno.h te_proto.h te_stdint.h te_printf.h \
              comm_agent.h rcf_methods.h rcf_common.h tad_common.h \
              rcf_rpc_defs.h cs_common.h \
@@ -43,7 +41,7 @@ install-data-hook:
 	TE_BUILD=.. ; $(srcdir)/../engine/builder/te_create_inst_dirs \
                           $(DESTDIR)/$(prefix)/..
 	for i in $(te_headers) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
+	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 	touch -c -r $(srcdir)/configure.ac \
-                    $(DESTDIR)/$(prefix)/include/te_config_internal.h
+                    $(DESTDIR)/$(includedir)/te_config_internal.h

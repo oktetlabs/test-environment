@@ -28,9 +28,7 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "rgt_common.h"
 
 #ifdef FLOW_TREE_LIBRARY_DEBUG
 #include <stdio.h>
@@ -40,7 +38,6 @@
 #include <glib.h>
 #include <obstack.h>
 
-#include "rgt_common.h"
 #include "flow_tree.h"
 #include "log_msg.h"
 #include "filter.h"

@@ -25,7 +25,8 @@
 
 SUBDIRS = .
 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/@includedir@ @EXTRA_CPPFLAGS@
+AM_CFLAGS = @TE_CFLAGS@
+
 noinst_LIBRARIES = libtmpls.a
 libtmpls_a_SOURCES = rgt_tmpls_lib.c rgt_tmpls_lib.h
-AM_CFLAGS = -W -Wall
-

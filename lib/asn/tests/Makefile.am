@@ -1,7 +1,7 @@
 
-AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include
-AM_CFLAGS=$(SNMP_F)
-AM_LDFLAGS=@TE_LDFLAGS@ 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CFLAGS = @TE_CFLAGS@ $(SNMP_F)
+AM_LDFLAGS = @TE_LDFLAGS@ 
 
 
 TESTS=parse_simple put_get parse_file val_set03 write_ind2

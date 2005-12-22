@@ -5949,3 +5949,130 @@ SED=$lt_cv_path_SED
 ])
 AC_MSG_RESULT([$SED])
 ])
+
+# TE_PLAIN_SET
+# ----------------
+# The macro should be called in configure.ac file of a module
+# that builds nothing (such as include modules).
+# It should be put just after AM_INIT_AUTOMAKE() macro or after 
+# checkings against a set of programms.
+# 
+AC_DEFUN([TE_PLAIN_SET], [
+    AC_SUBST([TE_M4])
+    AC_ARG_VAR([TE_M4])
+])
+
+# TE_PLAIN_RESTORE
+# ----------------
+# The macro should be called in configure.ac file of a module
+# that builds nothing (such as include modules).
+# It should be put just before AC_OUTPUT() macro.
+# 
+# NOTE: For now this macro does nothing.
+#
+AC_DEFUN([TE_PLAIN_RESTORE], [
+])
+
+# TE_LIB_SET
+# ----------------
+# The macro should be called in configure.ac file of a module
+# that does not build an application, but a library.
+# It should be put just after AM_INIT_AUTOMAKE() macro or after 
+# checkings against a set of programms.
+#
+AC_DEFUN([TE_LIB_SET], [
+    TE_PLAIN_SET
+
+    AC_SUBST(TE_CPPFLAGS)
+    AC_SUBST(TE_CFLAGS)
+    AC_SUBST([TE_LDFLAGS])
+
+    AC_ARG_VAR([TE_CPPFLAGS])
+    AC_ARG_VAR([TE_CFLAGS])
+    AC_ARG_VAR([TE_LDFLAGS])
+
+    ORIG_CPPFLAGS=${CPPFLAGS}
+    CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
+
+    ORIG_CFLAGS=${CFLAGS}
+    CFLAGS=${CFLAGS}" "${TE_CFLAGS}
+
+    ORIG_LDFLAGS=${LDFLAGS}
+    LDFLAGS=${LDFLAGS}" "${TE_LDFLAGS}
+])
+
+# TE_LIB_RESTORE
+# ----------------
+# The macro should be called in configure.ac file of a module
+# that does not build an application, but a library.
+#
+# It should be put just before AC_OUTPUT() macro.
+#
+AC_DEFUN([TE_LIB_RESTORE], [
+    CFLAGS=${ORIG_CFLAGS}
+    CPPFLAGS=${ORIG_CPPFLAGS}
+    LDFLAGS=${ORIG_LDFLAGS}
+    
+    TE_PLAIN_RESTORE
+])
+
+# TE_APP_SET
+# ----------------
+# The macro should be called in configure.ac file of a module
+# that builds an application.
+# It should be put just after AM_INIT_AUTOMAKE() macro or after 
+# checkings against a set of programms.
+#
+AC_DEFUN([TE_APP_SET], [
+    TE_LIB_SET
+
+    AC_SUBST([TE_LDADD])
+    AC_SUBST([TE_DEPENDENCIES])
+
+    AC_ARG_VAR([TE_LDADD])
+    AC_ARG_VAR([TE_DEPENDENCIES])
+])
+
+# TE_APP_RESTORE
+# ----------------
+# The macro should be called in configure.ac file of a module
+# that builds an application.
+#
+# It should be put just before AC_OUTPUT() macro.
+#
+AC_DEFUN([TE_APP_RESTORE], [
+    TE_LIB_RESTORE
+])
+
+# TE_PATH_LIBXML2
+# ----------------
+# The macro is used for checking against LIB XML2 library.
+# It defines the following varables:
+# XML2_CFLAGS, XML2_LIBS
+#
+AC_DEFUN([TE_PATH_LIBXML2], [
+    LIBXML_CONFIG_PREFIX=""
+    AC_ARG_WITH([libxml-prefix],
+        [--with-libxml-prefix=[PFX] \
+         Specify location of libxml config (not including bin directory)],
+        LIBXML_CONFIG_PREFIX=$withval)
+    if test "x$LIBXML_CONFIG_PREFIX" != "x"
+    then
+        XML_CONFIG=${LIBXML_CONFIG_PREFIX}/bin/xml2-config
+    else
+        XML_CONFIG=xml2-config
+    fi
+
+    AC_MSG_CHECKING([for libxml2 library])
+    if ${XML_CONFIG} --libs print > /dev/null 2>&1
+    then
+        XML2_LIBS="$XML2_LIBS `$XML_CONFIG --libs`"
+        XML2_CFLAGS="$XML2_CFLAGS `$XML_CONFIG --cflags`"
+        AC_MSG_RESULT([found])
+    else
+        AC_MSG_ERROR([Could not find libxml2, check ftp://xmlsoft.org/.])
+    fi
+
+    AC_SUBST([XML2_CFLAGS])
+    AC_SUBST([XML2_LIBS])
+])

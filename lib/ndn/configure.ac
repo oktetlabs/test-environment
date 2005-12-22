@@ -1,12 +1,14 @@
 
 # Process this file with autoconf to produce a configure script.
 
-#AC_PREREQ([2.59])
+AC_PREREQ(2.59)
+
 AC_INIT([ndn], [0.90], [konst@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([ndn_generic.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
+AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
@@ -20,18 +22,8 @@ AC_CHECK_TOOL(NM, nm)
 AC_CHECK_TOOL(OBJDUMP, objdump)
 AC_CHECK_TOOL(OBJCOPY, objcopy)
 
-CFLAGS="${CFLAGS} ${TE_CFLAGS}"
-CPPFLAGS="${CPPFLAGS} ${TE_CFLAGS}"
 
-AC_SUBST([TE_CFLAGS])
-AC_SUBST([TE_LDFLAGS])
-AC_SUBST([TE_LDADD])
-AC_SUBST([TE_DEPENDENCIES])
-
-AC_ARG_VAR([TE_CFLAGS])
-AC_ARG_VAR([TE_LDFLAGS])
-AC_ARG_VAR([TE_LDADD])
-AC_ARG_VAR([TE_DEPENDENCIES])
+TE_LIB_SET
 
 
 AC_CHECK_HEADERS(ucd-snmp/snmp_impl.h, has_snmp=true,has_snmp=false,  
@@ -46,8 +38,9 @@ AC_CHECK_HEADERS(net-snmp/definitions.h, has_snmp=true,has_snmp=false,
 AM_CONDITIONAL(HAS_SNMP, test x$has_snmp = xtrue )
 
 
-
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
+
+TE_LIB_RESTORE
 
 AC_OUTPUT

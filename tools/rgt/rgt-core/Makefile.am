@@ -26,6 +26,9 @@
 
 SUBDIRS = . tests
 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(top_srcdir) @EXTRA_CPPFLAGS@
+AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @TCL_CFLAGS@
+
 bin_PROGRAMS = rgt-core
 
 rgt_core_SOURCES = filter.c filter.h \
@@ -40,9 +43,7 @@ rgt_core_SOURCES = filter.c filter.h \
                    rgt_core.c rgt_common.h
 
 rgt_core_LDADD = @GLIB_LIBS@ -lpopt @TCL_LIB_SPEC@ -lm -ldl
-AM_CPPFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir) @TCL_CFLAGS@
 
-AM_CFLAGS = -W -Wall
 bin_SCRIPTS = rgt-filter-prepare rgt-conv
 
 dist_data_DATA = rgt-filter-xml2tcl.xsl

@@ -31,6 +31,8 @@
 extern "C" {
 #endif
 
+#include "te_config.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -64,6 +66,9 @@ extern "C" {
 #include <sys/types.h>
 #include <errno.h>
 #include <setjmp.h>
+
+/* To get obstack_printf() definition */
+#define _GNU_SOURCE 1
 #include <stdio.h>
 
 /* For byte order conversions */

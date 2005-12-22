@@ -23,7 +23,8 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-AUTOMAKE_OPTIONS = foreign
 SUBDIRS = lib rgt-core rgt-format .
+
+ACLOCAL_AMFLAGS = -I @TE_M4@
 
 EXTRA_DIST = acsite.m4

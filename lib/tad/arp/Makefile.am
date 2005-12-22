@@ -1,5 +1,6 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(includedir) -I$(top_srcdir)
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) -I$(top_srcdir)
+AM_CFLAGS = @TE_CFLAGS@ 
 
 noinst_HEADERS = tad_arp_impl.h
 

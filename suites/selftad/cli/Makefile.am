@@ -3,12 +3,16 @@
 
 tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
-dist_tetest_DATA = package.xml \
-                   cli-csap.asn cli-filter.asn cli-tmpl01.asn
+dist_tetest_DATA = \
+    package.xml \
+    cli-csap.asn \
+    cli-filter.asn \
+    cli-tmpl01.asn
 
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include 
-AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CFLAGS = @TE_CFLAGS@
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 
 tetest_PROGRAMS = \

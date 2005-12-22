@@ -1,6 +1,8 @@
 
-AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
-AM_LDFLAGS = @TE_LDFLAGS@ 
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CFLAGS = @TE_CFLAGS@ 
 
 include_HEADERS=rcf_ch_api.h rcf_pch.h rcf_pch_ta_cfg.h rcf_pch_mem.h
 noinst_HEADERS=rcf_pch_internal.h
@@ -13,11 +15,11 @@ librcfpch_a_SOURCES=rcf_pch.c rcf_pch_rpc.c rcf_pch_mem.c \
                     
 
 install-exec-hook:
-	touch -c -r librcfpch.a $(DESTDIR)/$(prefix)/lib/librcfpch.a
+	touch -c -r librcfpch.a $(DESTDIR)/$(libdir)/librcfpch.a
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
+	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

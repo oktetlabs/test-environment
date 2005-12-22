@@ -67,10 +67,13 @@ configure_package()
                              --prefix=$PREFIX ${PARMS}
     
     TE_BASE="$TE_BASE" \
-    TE_CFLAGS="-ggdb -Wall -W ${ADD_CFLAGS} -I${PREFIX}/include" \
+    TE_M4="$TE_BASE/auxdir" \
+    TE_CPPFLAGS="${ADD_CPPFLAGS} -I${PREFIX}/include" \
+    TE_CFLAGS="-O2 -ggdb -Wall -W ${ADD_CFLAGS} " \
     TE_LDFLAGS="${ADD_LDFLAGS} -L${PREFIX}/lib" \
     TE_LDADD="$LDADD" \
     TE_DEPENDENCIES="$DEPENDENCIES" \
+    CFLAGS="" \
     eval ${PKGSRC}/configure --${option}=$PLATFORM $add_option \
                              '-q --prefix=$PREFIX' ${PARMS}
 }
@@ -136,6 +139,7 @@ process_libs
 
 PARMS="--with-name=$PACKAGE `eval echo '$'${PLATFORM_NAME}'_PARMS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_PARMS'`"
 
+ADD_CPPFLAGS="`eval echo '$'${PLATFORM_NAME}'_CPPFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CPPFLAGS'`"
 ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_CFLAGS'`"
 ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'` `eval echo '$TE_BS_'${KIND}'_'${PKGNAME}'_LDFLAGS'`"
 

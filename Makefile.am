@@ -25,8 +25,6 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AUTOMAKE_OPTIONS = foreign 
-
 host=@host@
 
 SUBDIRS = include doc lib tools engine agents suites
@@ -36,7 +34,7 @@ dist_mybin_SCRIPTS = dispatcher.sh
 
 DISTCLEANFILES = builder.conf builder.conf.processed 
 
-EXTRA_DIST = Doxyfile
+EXTRA_DIST = Doxyfile auxdir/acinclude.m4 auxdir/pkg.m4
 
 if SUITE_SCRIPTS_PROVIDED
 

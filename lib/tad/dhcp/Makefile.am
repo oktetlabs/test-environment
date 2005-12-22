@@ -1,6 +1,6 @@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
-AM_LDFLAGS=@TE_LDFLAGS@ 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) -I$(top_srcdir)
+AM_CFLAGS = @TE_CFLAGS@ 
 
 noinst_HEADERS=tad_dhcp_impl.h
 
@@ -10,7 +10,7 @@ libtad_dhcp_a_SOURCES=tad_dhcp_stack.c tad_dhcp_layer.c tad_dhcp_csap.c
 
 
 install-exec-hook:
-	touch -c -r libtad_dhcp.a $(DESTDIR)/$(prefix)/lib/libtad_dhcp.a
+	touch -c -r libtad_dhcp.a $(DESTDIR)/$(libdir)/libtad_dhcp.a
 
 all: install
 

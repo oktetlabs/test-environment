@@ -1,6 +1,8 @@
 
-AM_CPPFLAGS = @TE_CFLAGS@ -I. -I$(DESTDIR)/$(prefix)/include -include config.h
-AM_LDFLAGS = @TE_LDFLAGS@
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir) -include config.h
+AM_CFLAGS = @TE_CFLAGS@ 
 include_HEADERS=rpc_xdr.h tarpc.h
 
 lib_LIBRARIES=librpcxdr.a
@@ -34,12 +36,12 @@ tarpc.h tarpc_xdr.c tarpc_dummy.c: $(srcdir)/../../include/tarpc.x.m4 @RPCDEFS@
 	rm -f tarpc.x tmp.x.m4
 
 install-exec-hook:
-	touch -c -r librpcxdr.a $(DESTDIR)/$(prefix)/lib/librpcxdr.a
+	touch -c -r librpcxdr.a $(DESTDIR)/$(libdir)/librpcxdr.a
 
 install-data-hook:
 	touch -c -r $(srcdir)/rpc_xdr.h \
-                    $(DESTDIR)/$(prefix)/include/rpc_xdr.h 
+                    $(DESTDIR)/$(includedir)/rpc_xdr.h 
 	touch -c -r $(srcdir)/../../include/tarpc.x.m4 \
-                    $(DESTDIR)/$(prefix)/include/tarpc.h
+                    $(DESTDIR)/$(includedir)/tarpc.h
 
 all: install

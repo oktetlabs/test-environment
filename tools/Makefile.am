@@ -25,8 +25,6 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
-AUTOMAKE_OPTIONS = foreign 
-
 AM_MAKEFLAGS="prefix=$(prefix)/@host@"
 
 SUBDIRS=@TOOLS_SUBDIRS@

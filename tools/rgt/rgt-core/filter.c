@@ -27,13 +27,10 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "rgt_common.h"
 
 #include <tcl.h>
 
-#include "rgt_common.h"
 #include "filter.h"
 
 static Tcl_Interp *tcl_interp = NULL;

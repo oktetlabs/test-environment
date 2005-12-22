@@ -1,6 +1,6 @@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
-AM_LDFLAGS=@TE_LDFLAGS@ 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) -I$(top_srcdir)
+AM_CFLAGS = @TE_CFLAGS@ 
 
 noinst_HEADERS=tad_pcap_impl.h
 
@@ -9,7 +9,7 @@ noinst_LIBRARIES=libtad_pcap.a
 libtad_pcap_a_SOURCES=tad_pcap_stack.c tad_pcap_layer.c tad_pcap_csap.c
 
 install-exec-hook:
-	touch -c -r libtad_pcap.a $(DESTDIR)/$(prefix)/lib/libtad_pcap.a
+	touch -c -r libtad_pcap.a $(DESTDIR)/$(libdir)/libtad_pcap.a
 
 all: install
 

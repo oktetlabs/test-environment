@@ -1,5 +1,7 @@
 
-MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include \
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
+MY_CPPFLAGS=@TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
             -include te_config.h -include config.h -fno-strict-aliasing
 
 #

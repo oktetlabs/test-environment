@@ -7,6 +7,7 @@ AC_INIT([rpcxdr],[0.02],[Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([rpc_xdr.h])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
+AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
@@ -15,16 +16,7 @@ AC_PROG_CC
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 
-CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
-CFLAGS=${CFLAGS}" "${TE_CFLAGS}
-
-AC_SUBST([TE_CPPFLAGS])
-AC_SUBST([TE_CFLAGS])
-AC_SUBST([TE_LDFLAGS])
-
-AC_ARG_VAR([TE_CPPFLAGS])
-AC_ARG_VAR([TE_CFLAGS])
-AC_ARG_VAR([TE_LDFLAGS])
+TE_LIB_SET
 
 AC_CHECK_HEADERS([expat.h rpc/types.h])
 AC_CHECK_HEADERS([rpc/xdr.h], [], [], [
@@ -33,10 +25,14 @@ AC_CHECK_HEADERS([rpc/xdr.h], [], [], [
 #endif
 ])
 
+#
+# First we need to define which library we should use in our
+# environment. This macro updates LIBS variable, which is used
+# in the next checkings against in AC_CHECK_MEMBER() macro.
+#
 LIBS=${TE_LDFLAGS}
-AC_CHECK_LIB([rpc], [xdr_bytes], 
-             [LIBS="${LIBS} -lrpc"],
-             [LIBS="${LIBS} -lc"])
+AC_SEARCH_LIBS([xdr_bytes], [rpc], [],
+               AC_MSG_ERROR([No RPC library found]))
 
 AH_TEMPLATE([x_putint32], [Put 32-bit integer to the stream])
 AC_CHECK_MEMBER(struct XDR.x_ops->x_putint32, [],
@@ -122,5 +118,7 @@ AC_CHECK_LIB([expat], [XML_ParserCreate], [],
 AC_CONFIG_HEADER(config.h)
 
 AC_CONFIG_FILES([Makefile])
+
+TE_LIB_RESTORE
 
 AC_OUTPUT

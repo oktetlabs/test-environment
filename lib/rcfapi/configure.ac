@@ -7,6 +7,7 @@ AC_INIT([rcfapi], [0.02], [Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([rcf_api.h])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
+AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
@@ -15,19 +16,9 @@ AC_PROG_CC
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 
+TE_LIB_SET
+
 AC_CHECK_TOOL(AR, ar)
-
-
-CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
-CFLAGS=${CFLAGS}" "${TE_CFLAGS}
-
-AC_SUBST([TE_CPPFLAGS])
-AC_SUBST([TE_CFLAGS])
-AC_SUBST([TE_LDFLAGS])
-
-AC_ARG_VAR([TE_CPPFLAGS])
-AC_ARG_VAR([TE_CFLAGS])
-AC_ARG_VAR([TE_LDFLAGS])
 
 AC_CONFIG_HEADERS([config.h])
 
@@ -44,5 +35,7 @@ if test x$ac_cv_header_pthread_h = x"yes" -a -e /etc/redhat-release ; then
 fi
 
 AC_CONFIG_FILES([Makefile])
+
+TE_LIB_RESTORE
 
 AC_OUTPUT

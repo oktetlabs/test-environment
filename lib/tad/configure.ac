@@ -1,19 +1,25 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
+
 AC_INIT([tad],[0.1],[konst@oktetlabs.ru])
+
+AC_CONFIG_SRCDIR([tad_ch.c])
     
 AC_CONFIG_AUX_DIR([../../auxdir])
-AC_CONFIG_SRCDIR([tad_ch.c])
-AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
+
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([Makefile])
 
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_RANLIB
 AC_PROG_INSTALL
+
+TE_LIB_SET
 
 # FIXME: make it AC macro
 find_lib()
@@ -92,18 +98,7 @@ semaphore.h \
 ])
 
 
-CFLAGS="${CFLAGS} ${TE_CFLAGS}"
-CPPFLAGS="${CPPFLAGS} ${TE_CFLAGS}"
-
 AC_SUBST([with_name])
-AC_SUBST([TE_CFLAGS])
-AC_SUBST([TE_LDFLAGS])
-AC_SUBST([TE_DEPENDENCIES])
-
-AC_ARG_VAR([TE_CFLAGS])
-AC_ARG_VAR([TE_LDFLAGS])
-AC_ARG_VAR([TE_DEPENDENCIES])
-
 
 TAD_LIBLIST=
 TAD_SUBDIRS=
@@ -263,5 +258,6 @@ fi
 AC_SUBST([NET_SNMP_CFLAGS])
 AC_SUBST([NET_SNMP_LIBS])
 
+TE_LIB_RESTORE
 
 AC_OUTPUT

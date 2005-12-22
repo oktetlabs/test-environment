@@ -49,12 +49,13 @@ TE_HOST_DEFINED=yes
 
 dnl Declares a platform for and specifies platform-specific 
 dnl parameters for configure script as well platform-specific 
-dnl CFLAGS and LDFLAGS. 
+dnl CPPFLAGS, CFLAGS and LDFLAGS. 
 dnl May be called once for each platform (including host platform).
 dnl
 dnl Parameters:
 dnl       canonical host name
 dnl       configure parameters (may be empty)
+dnl       additional preprocessor flags
 dnl       additional compiler flags
 dnl       additional linker flags
 dnl       list of all libraries to be built
@@ -69,9 +70,10 @@ fi
 PLATFORM_NAME=`echo $PLATFORM | sed s/-/_/g`
 TE_BS_PLATFORMS="$TE_BS_PLATFORMS $PLATFORM_NAME"
 eval `echo ${PLATFORM_NAME}_PARMS=\"$2\"`
-eval `echo ${PLATFORM_NAME}_CFLAGS=\"$3\"`
-eval `echo ${PLATFORM_NAME}_LDFLAGS=\"$4\"`
-eval `echo ${PLATFORM_NAME}_LIBS=\"$5\"`
+eval `echo ${PLATFORM_NAME}_CPPFLAGS=\"$3\"`
+eval `echo ${PLATFORM_NAME}_CFLAGS=\"$4\"`
+eval `echo ${PLATFORM_NAME}_LDFLAGS=\"$5\"`
+eval `echo ${PLATFORM_NAME}_LIBS=\"$6\"`
 eval `echo ${PLATFORM_NAME}_PLATFORM=$PLATFORM`
 ])
 
@@ -84,6 +86,7 @@ dnl       name of the library
 dnl       platform
 dnl       source directory
 dnl       additional parameters to configure script (may be empty)
+dnl       additional preprocessor flags
 dnl       additional compiler flags
 dnl       additional linker flags
 dnl
@@ -113,8 +116,9 @@ fi
 ]
 eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_SOURCES=$SOURCES`
 eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_PARMS=\"$4\"`
-eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_CFLAGS=\"$5\"`
-eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_LDFLAGS=\"$6\"`
+eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_CPPFLAGS=\"$5\"`
+eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_CFLAGS=\"$6\"`
+eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_LDFLAGS=\"$7\"`
 ])
 
 
@@ -138,6 +142,7 @@ dnl
 dnl Parameters:
 dnl       name of the directory in ${TE_BASE}/engine
 dnl       additional parameters to configure script (may be empty)
+dnl       additional preprocessor flags
 dnl       additional compiler flags
 dnl       additional linker flags
 dnl       list of libraries names (names of directories 
@@ -154,9 +159,10 @@ then
 fi
 ]
 TE_BS_APP_$1_PARMS="$2"
-TE_BS_APP_$1_CFLAGS="$3"
-TE_BS_APP_$1_LDFLAGS="$4"
-TE_BS_APP_$1_LIBS="$5"
+TE_BS_APP_$1_CPPFLAGS="$3"
+TE_BS_APP_$1_CFLAGS="$4"
+TE_BS_APP_$1_LDFLAGS="$5"
+TE_BS_APP_$1_LIBS="$6"
 TE_BS_$1_APP_PARMS_SPECIFIED=yes
 ])
 
@@ -179,6 +185,7 @@ dnl
 dnl Parameters:
 dnl       name of the directory in ${TE_BASE}/tools
 dnl       additional parameters to configure script (may be empty)
+dnl       additional preprocessor flags
 dnl       additional compiler flags
 dnl       additional linker flags
 dnl
@@ -193,8 +200,9 @@ then
 fi
 ]
 TE_BS_TOOL_$1_PARMS="$2"
-TE_BS_TOOL_$1_CFLAGS="$3"
-TE_BS_TOOL_$1_LDFLAGS="$4"
+TE_BS_TOOL_$1_CPPFLAGS="$3"
+TE_BS_TOOL_$1_CFLAGS="$4"
+TE_BS_TOOL_$1_LDFLAGS="$5"
 TE_BS_$1_TOOL_PARMS_SPECIFIED=yes
 ])
 
@@ -218,6 +226,7 @@ dnl       platform (may be empty)
 dnl       sources location (name of the directory in ${TE_BASE}/agents or
 dnl               full absolute path to sources)
 dnl       additional parameters to configure script (may be empty)
+dnl       additional preprocessor flags
 dnl       additional compiler flags
 dnl       additional linker flags
 dnl       list of external libraries names 
@@ -248,9 +257,10 @@ fi
 TE_BS_TA="$TE_BS_TA $1"
 TE_BS_TA_$1_SOURCES=$SOURCES
 TE_BS_TA_$1_PARMS="$4"
-TE_BS_TA_$1_CFLAGS="$5"
-TE_BS_TA_$1_LDFLAGS="$6"
-TE_BS_TA_$1_LIBS="$7"
+TE_BS_TA_$1_CPPFLAGS="$5"
+TE_BS_TA_$1_CFLAGS="$6"
+TE_BS_TA_$1_LDFLAGS="$7"
+TE_BS_TA_$1_LIBS="$8"
 [
 if test -z "$2" ; then
     PLATFORM=${host};

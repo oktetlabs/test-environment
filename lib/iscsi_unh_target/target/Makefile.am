@@ -1,6 +1,7 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include \
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
               -I$(srcdir)/../common -I$(srcdir)/../security
+AM_CFLAGS = @TE_CFLAGS@ 
 
 
 noinst_HEADERS = \

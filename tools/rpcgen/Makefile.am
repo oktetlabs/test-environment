@@ -1,5 +1,8 @@
 
-AM_CPPFLAGS = @TE_CFLAGS@ -D_RPC_THREAD_SAFE_
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
+AM_CPPFLAGS = @TE_CPPFLAGS@ -D_RPC_THREAD_SAFE_
+AM_CFLAGS = @TE_CFLAGS@ 
 
 noinst_HEADERS=proto.h rpc_util.h rpc_parse.h rpc_scan.h
 

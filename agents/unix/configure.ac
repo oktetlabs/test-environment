@@ -6,6 +6,7 @@ AC_INIT([ta-unix],[0.55555],[Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([main.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
+AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
@@ -23,20 +24,10 @@ if test -z "$host" ; then
 AC_CANONICAL_HOST
 fi
 
+TE_APP_SET
+
 AC_SUBST([host])
 AC_SUBST([with_name])
-AC_SUBST([TE_CPPFLAGS])
-AC_SUBST([TE_CFLAGS])
-AC_SUBST([TE_LDFLAGS])
-AC_SUBST([TE_LDADD])
-AC_SUBST([TE_DEPENDENCIES])
-
-AC_ARG_VAR([TE_CPPFLAGS])
-AC_ARG_VAR([TE_CFLAGS])
-AC_ARG_VAR([TE_LDFLAGS])
-AC_ARG_VAR([TE_LDADD])
-AC_ARG_VAR([TE_DEPENDENCIES])
-
 
 if test -n "$with_netlink" -o -n "$with_netlink_route" ; then
     AC_MSG_WARN([--with-netlink and --with-netlink-route are not
@@ -77,10 +68,6 @@ fi
 AC_SUBST([TAD], [$with_tad])
 
 AC_SUBST([TAD_LIBS])
-
-CPPFLAGS="${TE_CPPFLAGS} ${CPPFLAGS}"
-CFLAGS="${TE_CFLAGS} ${CFLAGS}"
-LDFLAGS="${TE_LDFLAGS} ${LDFLAGS}"
 
 AC_CONFIG_HEADERS([config.h])
 
@@ -325,24 +312,24 @@ if test -n "$with_rcf_rpc" ; then
 fi
 
 if test -n "$with_ifconfig" ; then
-    CPPFLAGS="$CPPFLAGS -DUSE_IFCONFIG"
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_IFCONFIG"
 elif test -n "$ifcfg_via_netlink" ; then
     # On Linux netlink is default way to configure interfaces and IP
     use_netlink=yes
-    CPPFLAGS="$CPPFLAGS -DUSE_NETLINK"
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_NETLINK"
     AC_CHECK_LIB([netlink], [rtnl_open], [],
                  AC_MSG_ERROR([Cannot find libnetlink!]))
 else 
     # The rest should use IOCTL interface for now
-    CPPFLAGS="$CPPFLAGS -DUSE_IOCTL"
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_IOCTL"
 fi
 AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$use_netlink")
 
 if test -n "$with_iscsi"; then
-    CPPFLAGS="$CPPFLAGS -DWITH_ISCSI"
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_ISCSI"
 fi    
 
-export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
+export PKG_CONFIG_PATH="$DESTDIR/$prefix/../$host/lib/pkgconfig/"
 
 PKG_CHECK_MODULES(TAD, te-$with_tad)
 
@@ -352,6 +339,10 @@ dnl
 AC_SEARCH_LIBS([openpty], [util])
 
 AC_CONFIG_FILES([Makefile])
+
+AC_SUBST([EXTRA_CPPFLAGS])
+
+TE_APP_RESTORE
 
 AC_OUTPUT
 

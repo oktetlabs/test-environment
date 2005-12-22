@@ -5,9 +5,10 @@ SUBDIRS = lib
 # XXXX: need to install here paths to include/ and lib/ directories
 # from some TE variables
 #
-AM_CPPFLAGS = @TE_CFLAGS@ -I$(srcdir)/include \
-              -I$(DESTDIR)/$(prefix)/include 
-AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/lib -L@abs_top_builddir@/lib \
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(srcdir)/include \
+              -I$(DESTDIR)/$(includedir) 
+AM_CFLAGS = @TE_CFLAGS@ 
+AM_LDFLAGS = -L$(DESTDIR)/$(libdir) -L@abs_top_builddir@/lib \
              -L@abs_top_builddir@/..
 
 TESTS = init01 init02 reply01 close01 \

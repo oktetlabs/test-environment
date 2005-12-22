@@ -1,12 +1,13 @@
 
 # Process this file with autoconf to produce a configure script.
 
-#AC_PREREQ([2.59])
+AC_PREREQ([2.59])
 AC_INIT([asn], [0.90], [konst@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([asn_val.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
+AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
@@ -20,21 +21,13 @@ AC_CHECK_TOOL(NM, nm)
 AC_CHECK_TOOL(OBJDUMP, objdump)
 AC_CHECK_TOOL(OBJCOPY, objcopy)
 
-CFLAGS="${CFLAGS} ${TE_CFLAGS}"
-CPPFLAGS="${CPPFLAGS} ${TE_CFLAGS}"
-
-AC_SUBST([TE_CFLAGS])
-AC_SUBST([TE_LDFLAGS])
-AC_SUBST([TE_LDADD])
-AC_SUBST([TE_DEPENDENCIES])
-
-AC_ARG_VAR([TE_CFLAGS])
-AC_ARG_VAR([TE_LDFLAGS])
-AC_ARG_VAR([TE_LDADD])
-AC_ARG_VAR([TE_DEPENDENCIES])
+# We use APP here as we need to build tests
+TE_APP_SET
 
 AC_CONFIG_HEADER(package.h)
 
 AC_CONFIG_FILES([Makefile tests/Makefile])
+
+TE_APP_RESTORE
 
 AC_OUTPUT

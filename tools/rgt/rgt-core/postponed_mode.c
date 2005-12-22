@@ -28,13 +28,7 @@
  * $Id$
  */
 
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-/* To get obstack_printf() definition */
-#define _GNU_SOURCE 1
-#include <stdio.h>
+#include "rgt_common.h"
 
 #if HAVE_TIME_H
 #include <time.h>
@@ -45,7 +39,6 @@
 #endif
 
 #include "log_msg.h"
-#include "rgt_common.h"
 #include "postponed_mode.h"
 #include "memory.h"
 

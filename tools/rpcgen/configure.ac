@@ -6,20 +6,18 @@ AC_INIT([rpcgen], [0.1], [Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([rpc_main.c])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
+AC_CONFIG_MACRO_DIR([../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-
 AC_PROG_INSTALL
 
-CPPFLAGS=${CPPFLAGS}" "${TE_CPPFLAGS}
-CFLAGS=${CFLAGS}" "${TE_CFLAGS}
-AC_SUBST([TE_CPPFLAGS])
-AC_SUBST([TE_CFLAGS])
-AC_SUBST([TE_LDFLAGS])
+TE_APP_SET
 
 AC_CONFIG_FILES([Makefile])
+
+TE_APP_RESTORE
 
 AC_OUTPUT

@@ -13,12 +13,12 @@ tests-info.xml: $(srcdir)/*.c
 CLEANFILES = tests-info.xml
 
 
-AM_CPPFLAGS = @TE_CFLAGS@ 
-AM_LDFLAGS = @TE_LDFLAGS@
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CFLAGS = @TE_CFLAGS@ 
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 
-tetest_PROGRAMS = \
-    example
+tetest_PROGRAMS = example
 
 
 example_SOURCES = example.c

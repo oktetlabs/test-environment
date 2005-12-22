@@ -1,15 +1,16 @@
 
 SUBDIRS = common security target
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(includedir) \
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
               -I$(srcdir)/common -I$(srcdir)/target
-
 AM_CFLAGS = @TE_CFLAGS@ -pthread
-
-AM_LDFLAGS = @TE_LDFLAGS@ 
+AM_LDFLAGS = @TE_LDFLAGS@
 
 
 noinst_PROGRAMS = unh_targetd
+
 
 unh_targetd_SOURCES = main.c
 

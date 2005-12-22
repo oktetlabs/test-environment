@@ -26,9 +26,7 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "rgt_common.h"
 
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
@@ -41,7 +39,6 @@
 #include <stdio.h>
 #include <setjmp.h>
 
-#include "rgt_common.h"
 #include "log_msg.h"
 #include "log_format.h"
 #include "flow_tree.h"

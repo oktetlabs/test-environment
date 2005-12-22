@@ -1,10 +1,12 @@
 
-AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
-AM_CFLAGS = @XML2_CFLAGS@
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) 
+AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@
 AM_LFLAGS = --header-file=$*.h -o $(LEX_OUTPUT_ROOT).c
 AM_YFLAGS = -d
 
-AM_LDFLAGS = -L$(DESTDIR)/$(prefix)/lib 
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir) 
 
 
 noinst_HEADERS = internal.h reqs.h run_path.h tester_flags.h test_params.h \
@@ -28,9 +30,9 @@ reqs_expr_lex.h: reqs_expr_lex.c
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid -llogger_ten \
                   -lipc -ltools @XML2_LIBS@ -lpopt -lfl -lpthread 
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ \
-                         $(DESTDIR)/$(prefix)/lib/libbsapi.a \
-                         $(DESTDIR)/$(prefix)/lib/libconfapi.a \
-                         $(DESTDIR)/$(prefix)/lib/libconf_oid.a \
-                         $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
-                         $(DESTDIR)/$(prefix)/lib/libipc.a \
-                         $(DESTDIR)/$(prefix)/lib/libtools.a
+                         $(DESTDIR)/$(libdir)/libbsapi.a \
+                         $(DESTDIR)/$(libdir)/libconfapi.a \
+                         $(DESTDIR)/$(libdir)/libconf_oid.a \
+                         $(DESTDIR)/$(libdir)/liblogger_ten.a \
+                         $(DESTDIR)/$(libdir)/libipc.a \
+                         $(DESTDIR)/$(libdir)/libtools.a

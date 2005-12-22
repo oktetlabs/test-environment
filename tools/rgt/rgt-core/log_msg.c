@@ -27,9 +27,7 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "rgt_common.h"
 
 #include <obstack.h>
 #include <stdio.h>

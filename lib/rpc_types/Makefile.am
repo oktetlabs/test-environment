@@ -1,6 +1,5 @@
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
-AM_LDFLAGS = @TE_LDFLAGS@ 
+ACLOCAL_AMFLAGS = -I @TE_M4@
 
 include_HEADERS = \
 	te_rpc_types.h \
@@ -21,7 +20,7 @@ include_HEADERS = \
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(prefix)/include/$$i ; \
+	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

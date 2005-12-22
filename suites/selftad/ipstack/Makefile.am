@@ -9,8 +9,9 @@ dist_tetest_DATA = package.xml \
 
 noinst_HEADERS=ipstack-ts.h
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include 
-AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CFLAGS = @TE_CFLAGS@
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 
 tetest_PROGRAMS = tcp_simple ip4_simple ip4_recv_send ip4_udp_dgm \

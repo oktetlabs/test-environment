@@ -1,19 +1,21 @@
 
-AM_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
-AM_CFLAGS = 
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CFLAGS =@TE_CFLAGS@
+AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(libdir) 
 
 bin_PROGRAMS = tce_collector tce_dump
 
 tce_collector_SOURCES = tce_collector.c
 tce_collector_LDADD = -ltce @TE_LDADD@
 tce_collector_DEPENDENCIES = @TE_DEPENDENCIES@ \
-                             $(DESTDIR)/$(prefix)/lib/libtce.a
+                             $(DESTDIR)/$(libdir)/libtce.a
 
 tce_dump_SOURCES = tce_dump.c
 tce_dump_LDADD = -ltce @TE_LDADD@
 tce_dump_DEPENDENCIES = @TE_DEPENDENCIES@ \
-                        $(DESTDIR)/$(prefix)/lib/libtce.a
+                        $(DESTDIR)/$(libdir)/libtce.a
 
 mybindir=$(bindir)
 dist_mybin_SCRIPTS=\

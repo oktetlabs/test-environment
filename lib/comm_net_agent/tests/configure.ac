@@ -6,6 +6,7 @@ AC_REVISION([$Id: configure.ac,v 1.1 2003/10/28 09:35:42 arybchik Exp $])
 AC_CONFIG_SRCDIR([init01.c])
 
 AC_CONFIG_AUX_DIR([../../../auxdir])
+AC_CONFIG_MACRO_DIR([../../../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 

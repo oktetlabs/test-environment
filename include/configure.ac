@@ -7,6 +7,7 @@ AC_INIT([include], [1.0], [Elena.Vengerova@oktetlabs.ru])
 AC_CONFIG_SRCDIR([te_defs.h])
 
 AC_CONFIG_AUX_DIR([../auxdir])
+AC_CONFIG_MACRO_DIR([../auxdir])
 
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
@@ -14,11 +15,7 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 AC_PROG_CC
 AC_PROG_INSTALL
 
-CPPFLAGS=${CPPFLAGS}" "${TE_CFLAGS}
-CFLAGS=${CFLAGS}" "${TE_CFLAGS}
-
-AC_SUBST([TE_CFLAGS])
-AC_ARG_VAR([TE_CFLAGS])
+TE_PLAIN_SET
 
 AC_CONFIG_HEADERS([te_config_internal.h])
 AH_TOP([#ifndef __TE_CONFIG_INTERNAL_H__
@@ -91,6 +88,7 @@ sys/select.h \
 sys/sendfile.h \
 sys/stat.h \
 sys/time.h \
+sys/types.h \
 sys/un.h \
 sys/wait.h \
 tcl.h \
@@ -163,5 +161,7 @@ AC_CHECK_SIZEOF([te_log_seqno],   [], [#include "te_raw_log.h"])
 AC_C_INLINE
 
 AC_CONFIG_FILES([Makefile])
+
+TE_PLAIN_RESTORE
 
 AC_OUTPUT

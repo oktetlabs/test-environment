@@ -7,8 +7,9 @@ dist_tetest_DATA = package.xml
 #tetest_DATA = ${NDS_DIR}/file-csap.asn ${NDS_DIR}/file-tmpl01.asn
 
 
-AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/include
-AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CFLAGS = @TE_CFLAGS@ 
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 
 tetest_PROGRAMS = rcftest tareboot

@@ -1,5 +1,7 @@
 
-MY_CPPFLAGS=@TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include \
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
+MY_CPPFLAGS=@TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
             -I$(DESTDIR)/$(prefix)/../@host@/include \
             -include te_config.h \
             -include config.h -fno-strict-aliasing 
@@ -107,8 +109,8 @@ endif
 
 LIBS+=@TAD_LIBS@
 
-AM_CPPFLAGS=$(MY_CPPFLAGS)
-
+AM_CPPFLAGS = $(MY_CPPFLAGS) @EXTRA_CPPFLAGS@
+AM_CFLAGS = @TE_CFLAGS@ 
 
 #
 # Static linkage may be required, since agent may be copied to another

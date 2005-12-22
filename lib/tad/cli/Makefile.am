@@ -1,6 +1,6 @@
 
-AM_CPPFLAGS=-I$(DESTDIR)/$(prefix)/include -I$(top_srcdir)
-AM_LDFLAGS=@TE_LDFLAGS@ 
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) -I$(top_srcdir)
+AM_CFLAGS = @TE_CFLAGS@
 
 
 noinst_HEADERS=tad_cli_impl.h
@@ -11,7 +11,7 @@ libtad_cli_a_SOURCES=tad_cli_stack.c tad_cli_layer.c tad_cli_csap.c
 
 
 install-exec-hook:
-	touch -c -r libtad_cli.a $(DESTDIR)/$(prefix)/lib/libtad_cli.a
+	touch -c -r libtad_cli.a $(DESTDIR)/$(libdir)/libtad_cli.a
 
 all: install
 

@@ -1,25 +1,27 @@
 
-AM_CPPFLAGS = @TE_CFLAGS@ -I$(DESTDIR)/$(prefix)/include 
-AM_CFLAGS = 
-AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/lib 
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
+AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
+AM_CFLAGS = @TE_CFLAGS@
+AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 bin_PROGRAMS = te_stdouterr te_tce_dump
 
 te_stdouterr_SOURCES = te_stdouterr.c
 te_stdouterr_LDADD = -llogger_ten -lipc -ltools @TE_LDADD@ -lpthread
 te_stdouterr_DEPENDENCIES = @TE_DEPENDENCIES@ \
-                            $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
-                            $(DESTDIR)/$(prefix)/lib/libipc.a \
-                            $(DESTDIR)/$(prefix)/lib/libtools.a
+                            $(DESTDIR)/$(libdir)/liblogger_ten.a \
+                            $(DESTDIR)/$(libdir)/libipc.a \
+                            $(DESTDIR)/$(libdir)/libtools.a
 
 te_tce_dump_SOURCES = te_tce_dump.c
 te_tce_dump_LDADD = -lrcfapi -llogger_ten -lipc -ltools @TE_LDADD@ \
                     -lpthread
 te_tce_dump_DEPENDENCIES = @TE_DEPENDENCIES@ \
-                           $(DESTDIR)/$(prefix)/lib/librcfapi.a \
-                           $(DESTDIR)/$(prefix)/lib/liblogger_ten.a \
-                           $(DESTDIR)/$(prefix)/lib/libipc.a\
-                           $(DESTDIR)/$(prefix)/lib/libtools.a
+                           $(DESTDIR)/$(libdir)/librcfapi.a \
+                           $(DESTDIR)/$(libdir)/liblogger_ten.a \
+                           $(DESTDIR)/$(libdir)/libipc.a\
+                           $(DESTDIR)/$(libdir)/libtools.a
 
 # Scripts to be installed by 'install-data' (required for TE build)
 # Test Suites are build on distcheck, therefore 'te_build_suite' and
