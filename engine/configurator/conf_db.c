@@ -42,32 +42,32 @@ static cfg_object cfg_obj_conf_delay_ta;
 /** Root of configuration objects */
 cfg_object cfg_obj_root = 
     { 0, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, FALSE, NULL,
-      &cfg_obj_agent, NULL };
+      &cfg_obj_agent, NULL, CFG_DEP_INITIALIZER };
       
 /** "/agent" object */
 static cfg_object cfg_obj_agent = 
     { 1, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
       CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root,  
-      &cfg_obj_agent_rsrc, &cfg_obj_conf_delay };
+      &cfg_obj_agent_rsrc, &cfg_obj_conf_delay, CFG_DEP_INITIALIZER };
 
 /** "/agent/rsrc" object */
 static cfg_object cfg_obj_agent_rsrc = 
     { 2, "/agent/rsrc", { 'r', 's', 'r', 'c', 0 },
       CVT_STRING, CFG_READ_CREATE, NULL, FALSE, &cfg_obj_agent, 
-      NULL, NULL };
+      NULL, NULL, CFG_DEP_INITIALIZER };
 
 /** "/conf_delay" object */
 static cfg_object cfg_obj_conf_delay = 
     { 3, "/conf_delay", 
       { 'c', 'o', 'n', 'f', '_', 'd', 'e', 'l', 'a', 'y', 0 },
       CVT_STRING, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_root, 
-      &cfg_obj_conf_delay_ta, NULL };
+      &cfg_obj_conf_delay_ta, NULL, CFG_DEP_INITIALIZER };
 
 /** "/conf_delay/ta" object */
 static cfg_object cfg_obj_conf_delay_ta = 
     { 4, "/conf_delay/ta", { 't', 'a', 0 },
       CVT_INTEGER, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay, 
-      NULL, NULL };
+      NULL, NULL, CFG_DEP_INITIALIZER };
 
       
 /** Pool with configuration objects */
@@ -95,6 +95,104 @@ uint32_t cfg_conf_delay;
 /* Locals */
 static int pattern_match(char *pattern, char *str);
 
+/** Description for a dependency referenced 
+ *  before its master object
+ */
+typedef struct cfg_orphan
+{
+    cfg_object *object;       /**< Dependant object */
+    cfg_oid    *master;       /**< Master object */
+    struct cfg_orphan *next;  /**< Next dependency */
+    struct cfg_orphan *prev;  /**< Previous dependency */
+} cfg_orphan;
+
+/** List of dependencies referenced before their master objects are
+ *  registered 
+ */
+static cfg_orphan *orphaned_objects;
+
+/** Ordered list of all objects such that a master object always
+ *  preceeds all its dependant objects 
+ */
+static cfg_object *topological_order;
+
+
+/**
+ *  Create a dependency record.
+ *
+ * @param master        Master object
+ * @param obj           Dependant object
+ */
+static void
+cfg_create_dep(cfg_object *master, cfg_object *obj)
+{
+    cfg_dependency *newdep;
+    cfg_object     *place, *prev;
+    
+    VERB("Creating a dependency %s to %s (%p)", obj->oid, master->oid);
+
+    newdep = calloc(1, sizeof(*newdep));
+    newdep->next = obj->depends_on;
+    newdep->depends = master;
+    obj->depends_on = newdep;
+    obj->num_deps++;
+
+    /** Find a place for a new record in the topologically sorted list.
+     *  The idea is that when a new dependency is added, 
+     *  we move a dependent object beyond all the objects with 
+     *  the same or lesser number of master objects.
+     *
+     *  Actually, this is a "real-time" version of an topological sorting
+     *  algorithm given in Knuth 2.2.3 (Algorithm T).
+     *
+     * NOTE: there is no explicit checking for loops.
+     */
+    if (obj->dep_next != NULL && obj->dep_next->num_deps <= obj->num_deps)
+    {
+        for (prev = obj, place = obj->dep_next; 
+             place != NULL; 
+             prev = place, place = place->dep_next)
+        {
+            if (place->num_deps > obj->num_deps)
+                break;
+        }
+        if (obj->dep_next != NULL)
+            obj->dep_next->dep_prev = obj->dep_prev;
+        if (obj->dep_prev != NULL)
+            obj->dep_prev->dep_next = obj->dep_next;
+        else
+            topological_order = obj->dep_next;
+        prev->dep_next = obj;
+        if (place != NULL)
+            place->dep_prev = obj;
+        obj->dep_next = place;
+        obj->dep_prev = prev;
+    }
+
+    /* Now we add the object to the dependants list of its master, keeping
+     * the list in lexicographic order
+     */
+    newdep = calloc(1, sizeof(*newdep));
+    newdep->depends = obj;
+
+    if (master->dependants == NULL)
+        master->dependants = newdep;
+    else
+    {
+        cfg_dependency *dep_iter;
+
+        for (dep_iter = master->dependants; ; dep_iter = dep_iter->next)
+        {
+            if (dep_iter->next == NULL ||
+                strcmp(dep_iter->depends->oid, obj->oid) > 0)
+            {
+                newdep->next = dep_iter->next;
+                dep_iter->next = newdep;
+                break;
+            }
+        }
+    }
+}
 
 /**
  * Initialize the database during startup or re-initialization.
@@ -174,6 +272,50 @@ cfg_db_destroy(void)
     }
     free(cfg_all_obj);
     cfg_all_obj = NULL;
+}
+
+static void
+cfg_maybe_adopt_objects (cfg_object *master, cfg_oid *oid)
+{
+    cfg_orphan *iter, *next;
+    
+    for (iter = orphaned_objects; iter != NULL; iter = next)
+    {
+        next = iter->next;
+        if (cfg_oid_cmp(oid, iter->master) == 0)
+        {
+            VERB("Adopting object '%s' by '%s'", 
+                 iter->object->oid, master->oid);
+            cfg_create_dep(master, iter->object);
+            cfg_free_oid(iter->master);
+            if (iter->prev == NULL)
+                orphaned_objects = next;
+            else
+                iter->prev->next = next;
+            
+            if (next != NULL)
+                next->prev = iter->prev;
+            free(iter);
+        }
+    }
+}
+
+/**
+ * Order the objects according to their dependencies 
+ *
+ */
+void
+cfg_order_objects_topologically(void)
+{
+    cfg_object *iter;
+    unsigned    seqno;
+    
+    for (iter = topological_order, seqno = 0;
+         iter != NULL;
+         iter = iter->dep_next, seqno++)
+    {
+        iter->ordinal_number = seqno;
+    }
 }
 
 /**
@@ -290,9 +432,70 @@ cfg_process_msg_register(cfg_register_msg *msg)
     cfg_all_obj[i]->son = NULL;
     cfg_all_obj[i]->brother = father->son;
     father->son = cfg_all_obj[i];
+
+    cfg_all_obj[i]->num_deps   = 0;
+    cfg_all_obj[i]->depends_on = NULL;
+    cfg_all_obj[i]->dependants = NULL;
+    cfg_all_obj[i]->dep_next   = topological_order;
+    cfg_all_obj[i]->dep_prev   = NULL;
+    if (topological_order != NULL)
+    {
+        topological_order->dep_prev = cfg_all_obj[i];
+    }
+    topological_order          = cfg_all_obj[i];
+    cfg_maybe_adopt_objects(cfg_all_obj[i], oid);
+
     cfg_free_oid(oid);
     msg->handle = i;
     msg->len = sizeof(*msg);
+}
+
+void
+cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
+{
+    cfg_object *obj;
+    cfg_handle  master_handle;
+    int         rc;
+
+    if (CFG_IS_INST(msg->handle))
+    {
+        msg->rc = TE_EINVAL;
+        return;
+    }
+    
+    if ((obj = CFG_GET_OBJ(msg->handle)) == NULL)
+    {
+        msg->rc = TE_ENOENT;
+        return;
+    }
+
+    RING("Adding dependency '%s' for '%s'", msg->oid, obj->oid);
+
+    
+    rc = cfg_db_find(msg->oid, &master_handle);
+    if (rc != 0 && rc != TE_ENOENT)
+    {
+        ERROR("Cannot find the master object: %r", TE_RC(TE_CS, rc));
+    }
+
+    if (rc != 0)
+    {
+        cfg_orphan *orph;
+        
+        RING("Creating an orphaned object %s <- %s", msg->oid, obj->oid);
+        orph         = calloc(1, sizeof(*orph));
+        orph->object = obj;
+        orph->master = cfg_convert_oid_str(msg->oid);
+        orph->next   = orphaned_objects;
+        orph->prev   = NULL;
+        if (orphaned_objects != NULL)
+            orphaned_objects->prev = orph;
+        orphaned_objects = orph;
+    }
+    else
+    {
+        cfg_create_dep(CFG_GET_OBJ(master_handle), obj);
+    }
 }
 
 void 

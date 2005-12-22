@@ -81,7 +81,8 @@ enum {
     CFG_CONF_TOUCH,/**< Update conf_delay after touching the instance by
                         non-CS means */                        
     CFG_CONF_DELAY,/**< Sleep conf_delay */                        
-    CFG_SHUTDOWN   /**< Shutdown the Configurator */
+    CFG_SHUTDOWN,  /**< Shutdown the Configurator */
+    CFG_ADD_DEPENDENCY, /**< Add a dependency */
 };
 
 /* Set of generic fields of the Configurator message */
@@ -250,6 +251,14 @@ typedef struct cfg_conf_touch_msg {
     cfg_handle    handle;   /**< IN: object handle */
     char          oid[0];   /**< IN: start of the instance identifier */
 } cfg_conf_touch_msg;
+
+/** CFG_ADD_DEPENDENCY message content */
+typedef struct cfg_add_dependency_msg {
+    CFG_MSG_FIELDS
+    cfg_handle    handle;   /**< IN: object handle */
+    char          oid[0];   /**< IN: start of the master 
+                                 instance identifier */
+} cfg_add_dependency_msg;
 
 /** CFG_SHUTDOWN message content */
 typedef struct cfg_shutdown_msg {

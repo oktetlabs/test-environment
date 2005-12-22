@@ -562,8 +562,10 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         return;              
     }
 
+#if 0
     if (strstr(oid, "/rsrc:") != NULL)
         oid = rsrc_oid_to_sync(ta, val_str);
+#endif
 
     if (obj->type != CVT_NONE)
         free(val_str);
@@ -589,6 +591,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     inst = CFG_GET_INST(handle);
     inst->added = TRUE;
     cfg_conf_delay_update(inst->oid);
+
+    cfg_ta_sync_dependants(inst);
     
     msg->handle = handle;
 }
@@ -710,6 +714,8 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         cfg_db_set(handle, old_val);
     }
 
+    cfg_ta_sync_dependants(CFG_GET_INST(handle));
+
     cfg_conf_delay_update(CFG_GET_INST(handle)->oid);
 
     cfg_types[obj->type].free(old_val);
@@ -766,6 +772,8 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         cfg_db_del(handle);
         return;
     }
+
+    cfg_ta_sync_dependants(inst);
 
     cfg_conf_delay_update(inst->oid);
 
@@ -927,6 +935,17 @@ log_msg(cfg_msg *msg, te_bool before)
                     "unknown access", 
                     m->def_val > 0 ? m->oid + m->def_val : "NULL",
                     addon);
+            break;
+        }
+
+        case CFG_ADD_DEPENDENCY:
+        {
+            cfg_add_dependency_msg *ad = (cfg_add_dependency_msg *)msg;
+            GET_STRS(cfg_add_dependency_msg);
+            
+            LOG_MSG(level,
+                    "Add dependency %s on %s %s",
+                    ad->oid, s1, s2);
             break;
         }
 
@@ -1265,6 +1284,10 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             cfg_process_msg_register((cfg_register_msg *)*msg);
             if ((*msg)->rc != 0 && update_dh)
                 cfg_dh_delete_last_command();
+            break;
+
+        case CFG_ADD_DEPENDENCY:
+            cfg_process_msg_add_dependency((cfg_add_dependency_msg *)*msg);
             break;
 
         case CFG_FIND:

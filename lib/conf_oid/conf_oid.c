@@ -291,8 +291,8 @@ cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2)
         cfg_inst_subid *iids2 = (cfg_inst_subid *)(o2->ids);
 
         for (i = 0; i < o1->len; ++i)
-            if ((strcmp(iids1->subid, iids2->subid) != 0) ||
-                (strcmp(iids1->name,  iids2->name)  != 0))
+            if ((strcmp(iids1[i].subid, iids2[i].subid) != 0) ||
+                (strcmp(iids1[i].name,  iids2[i].name)  != 0))
             {
                 return 1;
             }
@@ -303,9 +303,65 @@ cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2)
         cfg_object_subid   *oids2 = (cfg_object_subid *)(o2->ids);
 
         for (i = 0; i < o1->len; ++i)
-            if (strcmp(oids1->subid, oids2->subid) != 0)
+        {
+            if (strcmp(oids1[i].subid, oids2[i].subid) != 0)
                 return 1;
+        }
     }
 
     return 0;
+}
+
+
+/* See description in conf_oid.h */
+cfg_oid *
+cfg_oid_common_root(const cfg_oid *oid1, const cfg_oid *oid2)
+{
+    unsigned    common;
+    unsigned    oidlen = (oid1->len > oid2->len ? oid2->len : oid1->len);
+    cfg_oid    *result;
+    
+#define GET_SUBID(oid, index)  \
+    (oid->inst ? ((cfg_inst_subid *)oid->ids)[index].subid : \
+     ((cfg_object_subid *)oid->ids)[index].subid)
+    
+    for (common = 0; common < oidlen; common++)
+    {
+        if (strcmp(GET_SUBID(oid1, common), GET_SUBID(oid2, common)) != 0)
+            break;
+    }
+    
+    if (oid1->inst || oid2->inst)
+    {
+        unsigned i;
+        cfg_inst_subid *subids;
+        
+        result = cfg_allocate_oid(oid1->len, TRUE);
+        subids = result->ids;
+        for (i = 0; i < common; i++)
+        {
+            strcpy(subids[i].subid, GET_SUBID(oid1, i));
+            strcpy(subids[i].name, 
+                   CFG_OID_GET_INST_NAME((oid1->inst ? oid1 : oid2), i));
+        }
+        for (; i < oid1->len; i++)
+        {
+            strcpy(subids[i].subid, GET_SUBID(oid1, i));
+            strcpy(subids[i].name, "*");
+        }
+    }
+    else
+    {
+        unsigned i;
+        cfg_object_subid *subids;
+        
+        result = cfg_allocate_oid(oid1->len, TRUE);
+        subids = oid1->ids;
+        for (i = 0; i < common; i++)
+        {
+            strcpy(subids[i].subid, GET_SUBID(oid1, i));
+        }
+    }
+    return result;
+#undef GET_SUBID
 }

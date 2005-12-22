@@ -30,6 +30,70 @@
 #include "conf_defs.h"
 
 /**
+ * Parses all object dependencies in the configuration file
+ * 
+ * @param node     first dependency node
+ */
+int
+cfg_register_dependency(xmlNodePtr node, const char *dependant)
+{
+    xmlChar                *oid = NULL;
+    cfg_add_dependency_msg *msg = NULL;
+    cfg_handle              dep_handle;
+
+    int      rc = 0;
+    unsigned len;
+    
+    RING("Registering dependencies for %s", dependant);
+
+    rc = cfg_db_find(dependant, &dep_handle);
+    if (rc != 0)
+    {
+        ERROR("Cannot find a dependant OID: %r", TE_RC(TE_CS, rc));
+        return rc;
+    }
+    
+    for (; node != NULL && rc == 0; node = node->next)
+    {
+        if (xmlStrcmp(node->name, (const xmlChar *)"comment") == 0 ||
+            xmlStrcmp(node->name, (const xmlChar *)"text") == 0)
+            continue;
+        if (xmlStrcmp(node->name, (const xmlChar *)"depends") != 0)
+        {
+            ERROR("Invalid dependency tag: <%s>", node->name);
+            return TE_EINVAL;
+        }
+        oid = xmlGetProp(node, (const xmlChar *)"oid");
+        if (oid == NULL)
+        {
+            ERROR("Missing OID attribute in <depends>");
+            return TE_EINVAL;
+        }
+        if (node->children != NULL)
+        {
+            ERROR("<depends> cannot have children");
+            return TE_EINVAL;
+        }
+        len = sizeof(*msg) + strlen(oid) + 1;
+        msg = calloc(1, len);
+        msg->type = CFG_ADD_DEPENDENCY;
+        msg->len = len;
+        msg->rc = 0;
+        msg->handle = dep_handle;
+        strcpy(msg->oid, oid);
+        cfg_process_msg((cfg_msg **)&msg, TRUE);
+        if (msg->rc != 0)
+        {
+            ERROR("Cannot add dependency for %s: %r", oid, msg->rc);
+            rc = msg->rc;
+        }
+        free(msg);
+    }
+    return rc;
+}
+
+
+/**
  * Parse all objects specified in the configuration file.
  *
  * @param node     first object node
@@ -61,8 +125,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
         if (!reg)
             continue;
             
-        if (cur->xmlChildrenNode != NULL || 
-            (oid = xmlGetProp(cur, (const xmlChar *)"oid")) == NULL)
+        if ((oid = xmlGetProp(cur, (const xmlChar *)"oid")) == NULL)
         {
             ERROR("Incorrect description of the object %s", cur->name);
             return TE_EINVAL;
@@ -156,14 +219,17 @@ register_objects(xmlNodePtr *node, te_bool reg)
             xmlFree(attr);
         }
         attr = NULL;
-        
+
         cfg_process_msg((cfg_msg **)&msg, TRUE);
         if (msg->rc != 0)
             RETERR(msg->rc, "Failed to register object %s", msg->oid);
-        
+
+        cfg_register_dependency(cur->children, msg->oid);
+
         free(msg);
         msg = NULL;
-#undef RETERR        
+#undef RETERR
+
     }
 
     *node = cur;
@@ -525,6 +591,8 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
     if (cur == NULL)
         return 0;
 
+    RING("Processing backup file");
+
     if ((rc = register_objects(&cur, !restore)) != 0)
         return rc;
         
@@ -551,6 +619,22 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
     return restore_entries(list);
 }
 
+static
+int cfg_topo_order(const void *arg1, const void *arg2)
+{
+    cfg_instance *inst1 = *((cfg_instance **)arg1);
+    cfg_instance *inst2 = *((cfg_instance **)arg2);
+
+    if (inst1 == inst2)
+        return 0;
+    if (inst1 == NULL)
+        return -1;
+    if (inst2 == NULL)
+        return 1;
+
+    return inst1->obj->ordinal_number - inst2->obj->ordinal_number;
+}
+
 /**
  * Save current version of the TA subtree,
  * synchronize DB with TA and restore TA configuration.
@@ -562,19 +646,28 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
 int 
 cfg_backup_restore_ta(char *ta)
 {
-    cfg_instance *list = NULL;
-    cfg_instance *prev = NULL;
-    cfg_instance *tmp;
-    char          buf[CFG_SUBID_MAX + CFG_INST_NAME_MAX + 1];
-    int           rc;
-    int           i;
+    cfg_instance  *list   = NULL;
+    cfg_instance  *prev   = NULL;
+    cfg_instance **sorted = NULL;
+    cfg_instance  *tmp;
+    char           buf[CFG_SUBID_MAX + CFG_INST_NAME_MAX + 1];
+    int            rc;
+    int            i;
     
     sprintf(buf, CFG_TA_PREFIX"%s", ta);
-    
+
+    /* Topologically sort instances */
+    cfg_order_objects_topologically();
+    sorted = calloc(cfg_all_inst_size, sizeof(*sorted));
+    if (sorted == NULL)
+        return TE_ENOMEM;
+    memcpy(sorted, cfg_all_inst, cfg_all_inst_size * sizeof(*sorted));
+    qsort(sorted, cfg_all_inst_size, sizeof(*sorted), cfg_topo_order);
+
     /* Create list of instances on the TA */
     for (i = 0; i < cfg_all_inst_size; i++)
     {
-        cfg_instance *inst = cfg_all_inst[i];
+        cfg_instance *inst = sorted[i];
         
         if (inst == NULL || strncmp(inst->oid, buf, strlen(buf)) != 0)
         {
@@ -584,12 +677,14 @@ cfg_backup_restore_ta(char *ta)
         if ((tmp = (cfg_instance *)calloc(sizeof(*tmp), 1)) == NULL)
         {
             free_instances(list);
+            free(sorted);
             return TE_ENOMEM;
         }
         if ((tmp->oid = strdup(inst->oid)) == NULL)
         {
             free_instances(list);
             free(tmp);
+            free(sorted);
             return TE_ENOMEM;
         }
         if (cfg_types[inst->obj->type].copy(inst->val, &tmp->val) != 0)
@@ -597,18 +692,22 @@ cfg_backup_restore_ta(char *ta)
             free_instances(list);
             free(tmp->oid);
             free(tmp);
+            free(sorted);
             return TE_ENOMEM;
         }
         tmp->handle = inst->handle;
         tmp->obj = inst->obj;
 
-        if (prev != NULL)
-            prev->brother = tmp;
-        else
+
+        if (prev ==  NULL)
             list = tmp;
-            
+        else
+            prev->brother = tmp;
+
         prev = tmp;
     }
+
+    free(sorted);
 
     if ((rc = cfg_ta_sync(buf, TRUE)) != 0)
     {

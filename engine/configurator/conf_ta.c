@@ -377,8 +377,10 @@ sync_ta_subtree(const char *ta, const char *oid)
     cfg_get_buf[0] = 0;
     while (TRUE)
     {
+        RING("%s: Sending %s", __FUNCTION__, wildcard_oid);
         rc = rcf_ta_cfg_get(ta, 0, wildcard_oid, cfg_get_buf, 
                             cfg_get_buf_len);
+        RING("Received %s (%r)", cfg_get_buf, rc);
         if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
         {
             cfg_get_buf_len <<= 1;
@@ -497,6 +499,37 @@ cfg_ta_sync(char *oid, te_bool subtree)
     cfg_free_oid(tmp_oid);
 
     return rc;
+}
+
+/* see description in conf_ta.h */
+te_errno
+cfg_ta_sync_dependants(cfg_instance *inst)
+{
+    cfg_dependency *dep;
+    cfg_oid        *my_oid;
+    cfg_oid        *dep_oid;
+    cfg_oid        *to_sync;
+    char           *to_sync_str;
+
+    int rc;
+
+    my_oid = cfg_convert_oid_str(inst->oid);
+    VERB("Syncing dependants for %s (%p)", inst->obj->oid, inst->obj);
+    for (dep = inst->obj->dependants; dep != NULL; dep = dep->next)
+    {
+        dep_oid = cfg_convert_oid_str(dep->depends->oid);
+        to_sync = cfg_oid_common_root(dep_oid, my_oid);
+        to_sync_str = cfg_convert_oid(to_sync);
+        VERB("Syncing dependant oid %s", to_sync_str);
+        rc = cfg_ta_sync(to_sync_str, TRUE);
+        if (rc != 0)
+            ERROR("Cannot sync %s: %r", to_sync_str, TE_RC(TE_CS, rc));
+        free(to_sync_str);
+        cfg_free_oid(to_sync);
+        cfg_free_oid(dep_oid);
+    }
+    cfg_free_oid(my_oid);
+    return 0;
 }
 
 /**

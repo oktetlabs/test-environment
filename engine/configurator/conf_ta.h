@@ -104,6 +104,16 @@ extern int cfg_ta_add_agent_instances(void);
  */
 extern int cfg_tas_commit(const char *oid);
 
+
+/**
+ * Synchronize dependant nodes.
+ *
+ * @param inst Instance to 
+ *
+ * @return 0 on success, error code otherwise
+ */
+extern int cfg_ta_sync_dependants(cfg_instance *inst);
+
 #ifdef __cplusplus
 }
 #endif

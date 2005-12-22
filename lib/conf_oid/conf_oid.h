@@ -122,6 +122,30 @@ extern void cfg_free_oid(cfg_oid *oid);
  */
 extern int cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2);
 
+
+/**
+ * Determines a common part of two OIDs. 
+ * If both OIDs are object OIDs, an object OID is returned.
+ * Otherwise, an instance OID is returned that starts with
+ * a common part of the two, with instance names taken from
+ * either 'oid1' or 'oid2' whichever is an instance OID, and
+ * the rest is filled from 'oid1' with names set to '*'.
+ *
+ * Example:
+ * - /a/b/c + /a/b/d -> /a/b
+ * - /a/b/c + /a:A/b:B/d -> /a:A/b:B/c:*
+ * - /a:A/b:B/c:C + /a/b/d -> /a:A/b:B/c:*
+ * - /a:A/b:B/c:C + /a:A1/b:B1/d:D -> /a:A/b:B/c:*
+ *
+ * @param oid1  the first OID
+ * @param oid2  the second OID
+ *
+ * @retval resulting OID
+ */
+extern  cfg_oid *cfg_oid_common_root(const cfg_oid *oid1, 
+                                     const cfg_oid *oid2);
+    
+
 /**
  * Convert instance identifier to object identifier.
  *

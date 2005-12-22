@@ -29,6 +29,9 @@
 
 #include "conf_defs.h"
 #include "te_expand.h"
+
+/* defined in conf_backup.c */
+extern int cfg_register_dependency(xmlNodePtr node, const char *dependant);
   
 /** Backup descriptor */  
 typedef struct cfg_backup {
@@ -393,6 +396,8 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 if (msg->rc != 0)
                     RETERR(msg->rc, "Failed to execute register command "
                                     "for object %s", oid);
+
+                cfg_register_dependency(tmp->children, msg->oid);
 
                 free(val_s);
                 val_s = NULL;

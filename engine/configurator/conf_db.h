@@ -35,6 +35,12 @@ extern "C" {
 
 #define CFG_INST_HANDLE_TO_INDEX(_handle)    (_handle & 0xFFFF)
 
+/** Configurator dependency item */
+typedef struct cfg_dependency {
+    struct cfg_object     *depends;
+    struct cfg_dependency *next;
+} cfg_dependency;
+
 /* Configurator object */
 typedef struct cfg_object {
     cfg_handle         handle;  /**< Handle of the object */
@@ -51,7 +57,22 @@ typedef struct cfg_object {
     struct cfg_object *son;     /**< Link to the first son */
     struct cfg_object *brother; /**< Link to the next brother */
     /*@}*/
+
+    /** @name Dependency tracking */
+    unsigned               num_deps; /**< The length of depends_on list */
+    unsigned               ordinal_number; 
+    /**< Ordinal number of this object in the topologically sorted list */
+    struct cfg_dependency *depends_on; 
+                               /**< Objects this object depends on */
+    struct cfg_dependency *dependants;
+                               /**< Objects depending on this object */
+    struct cfg_object     *dep_next; /**< The next object in topological
+                                          order */
+    struct cfg_object     *dep_prev; /**< The previous object in toplogical
+                                          order */
 } cfg_object;
+
+#define CFG_DEP_INITIALIZER  0, 0, NULL, NULL, NULL, NULL
 
 extern cfg_object cfg_obj_root;
 extern cfg_object **cfg_all_obj;
@@ -168,6 +189,7 @@ extern void cfg_process_msg_get_descr(cfg_get_descr_msg *msg);
 extern void cfg_process_msg_get_oid(cfg_get_oid_msg *msg);
 extern void cfg_process_msg_get_id(cfg_get_id_msg *msg);
 extern void cfg_process_msg_family(cfg_family_msg *msg);
+extern void cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg);
 
 /**
  * Process pattern user request.
@@ -282,6 +304,12 @@ uint32_t cfg_conf_delay;
  * @param oid   instance OID
  */
 extern void cfg_conf_delay_update(const char *oid);
+
+/**
+ * Order the objects according to their dependencies 
+ *
+ */
+extern void cfg_order_objects_topologically(void);
 
 /** Sleep the delay and reset it */
 static inline void
