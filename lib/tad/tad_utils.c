@@ -1109,3 +1109,158 @@ tad_tcp_push_fin(int socket, const uint8_t *data, size_t length)
     return 0;
 }
 
+
+
+
+/* See description in tad_utils.h */
+int
+tad_check_pdu_seq(csap_p csap_descr, asn_value *pdus)
+{
+    const char *last_matched_proto = NULL;
+    const char *next_proto = NULL;
+    int i;
+    int rc;
+
+    if (csap_descr == NULL || pdus == NULL)
+    {
+        ERROR("%s(): NULL ptrs passed", __FUNCTION__);
+        return TE_EWRONGPTR;
+    }
+    for (i = 0; i < (int)csap_descr->depth; i++)
+    {
+        const asn_value *gen_pdu;
+        rc = asn_get_indexed(pdus, &gen_pdu, i);
+        if (rc != 0)
+        {
+            /* do something, I dont know yet */;
+        }
+    } 
+    UNUSED(last_matched_proto);
+    UNUSED(next_proto);
+
+    return 0;
+}
+
+/* See description in tad_utils.h */
+te_tad_protocols_t
+te_proto_from_str(const char *proto_txt)
+{
+    if (proto_txt == NULL)
+        return TE_PROTO_INVALID;
+
+    switch (proto_txt[0])
+    {
+        case 'a':
+            if (strcmp(proto_txt + 1, "rp") == 0)
+                return TE_PROTO_ARP;
+            break;
+
+        case 'b':
+            if (strcmp(proto_txt + 1, "ridge") == 0)
+                return TE_PROTO_BRIDGE;
+            break;
+
+        case 'c':
+            if (strcmp(proto_txt + 1, "li") == 0)
+                return TE_PROTO_CLI;
+            break;
+
+        case 'd':
+            if (strcmp(proto_txt + 1, "hcp") == 0)
+                return TE_PROTO_DHCP;
+            break;
+
+        case 'e':
+            if (strcmp(proto_txt + 1, "th") == 0)
+                return TE_PROTO_ETH;
+            break;
+
+        case 'f':
+            if (strcmp(proto_txt + 1, "ile") == 0)
+                return TE_PROTO_FILE;
+            break;
+
+        case 'i':
+            if (strcmp(proto_txt + 1, "p4") == 0)
+                return TE_PROTO_IP4;
+            if (strcmp(proto_txt + 1, "cmp4") == 0)
+                return TE_PROTO_ICMP4;
+            if (strcmp(proto_txt + 1, "scsi") == 0)
+                return TE_PROTO_ISCSI;
+            break;
+
+        case 'p':
+            if (strcmp(proto_txt + 1, "cap") == 0)
+                return TE_PROTO_PCAP;
+            break;
+
+        case 's':
+            if (strcmp(proto_txt + 1, "nmp") == 0)
+                return TE_PROTO_SNMP;
+            break;
+
+        case 't':
+            if (strcmp(proto_txt + 1, "cp") == 0)
+                return TE_PROTO_TCP;
+            break;
+
+        case 'u':
+            if (strcmp(proto_txt + 1, "dp") == 0)
+                return TE_PROTO_UDP;
+            break; 
+    } 
+
+    return TE_PROTO_INVALID;
+}
+
+
+
+const char *
+te_proto_to_str(te_tad_protocols_t proto)
+{
+    switch (proto)
+    {
+         case TE_PROTO_INVALID:
+            return NULL; 
+
+         case TE_PROTO_ARP:
+             return "arp";
+
+         case TE_PROTO_BRIDGE:
+             return "bridge";
+
+         case TE_PROTO_CLI:
+             return "cli";
+
+         case TE_PROTO_DHCP:
+             return "dhcp";
+
+         case TE_PROTO_ETH:
+             return "eth";
+
+         case TE_PROTO_FILE:
+             return "file";
+
+         case TE_PROTO_ICMP4:
+             return "icmp4";
+
+         case TE_PROTO_IP4:
+             return "ip4";
+
+         case TE_PROTO_ISCSI:
+             return "iscsi";
+
+         case TE_PROTO_PCAP:
+             return "pcap";
+
+         case TE_PROTO_SNMP:
+             return "snmp";
+
+         case TE_PROTO_TCP:
+             return "tcp";
+
+         case TE_PROTO_UDP:
+             return "udp";
+    }
+    return NULL;
+}

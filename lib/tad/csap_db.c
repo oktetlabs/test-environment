@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "te_errno.h"
+#include "tad_utils.h"
 #include "logger_api.h"
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
@@ -224,6 +225,7 @@ csap_create(const char *type)
     for (i = 0; i < depth; i++)
     {
         new_csap->layers[i].proto = layer_protos[i];
+        new_csap->layers[i].proto_tag = te_proto_from_str(layer_protos[i]);
         new_csap->layers[i].proto_support =
             find_csap_spt(new_csap->layers[i].proto);
 

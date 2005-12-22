@@ -50,25 +50,6 @@ typedef enum {
     NDN_CSAP_SPEC,
 } ndn_message_tags_t;
 
-/**
- * Constants for ASN tags of protocol choices in PDUs and CSAPs 
- */
-typedef enum { 
-    NDN_TAD_PCAP,
-    NDN_TAD_ETH,
-    NDN_TAD_BRIDGE,
-    NDN_TAD_ARP,
-    NDN_TAD_IP4,
-    NDN_TAD_ICMP4,
-    NDN_TAD_UDP,
-    NDN_TAD_DHCP,
-    NDN_TAD_TCP,
-    NDN_TAD_ISCSI,
-    NDN_TAD_SNMP,
-    NDN_TAD_CLI,
-    NDN_TAD_FILE,
-} ndn_tad_protocols_t;
-
 
 /** 
  * ASN.1 tag values for DATA-UNIT choice, see definition of DATA-UNIT

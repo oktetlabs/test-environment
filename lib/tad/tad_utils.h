@@ -258,6 +258,25 @@ typedef struct {
 /* ============= Function prototypes declarations =============== */
 
 /**
+ * Convert text protocol label into integer tag.
+ *
+ * @param proto_txt     string with protocol text label
+ *
+ * @return value from enum 'te_tad_protocols_t'
+ */
+extern te_tad_protocols_t te_proto_from_str(const char *proto_txt);
+
+/**
+ * Convert protocol integer tag into text protocol label.
+ *
+ * @param proto  value from enum 'te_tad_protocols_t'
+ *
+ * @return constant string with protocol text label or NULL
+ */
+extern const char *te_proto_to_str(te_tad_protocols_t proto);
+
+
+/**
  * Convert ASN specification of payload from Traffic-Template
  * to plain C sturcture. 
  *
@@ -596,6 +615,24 @@ extern int tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
  * @return status code
  */
 extern int tad_tcp_push_fin(int socket, const uint8_t *data, size_t length);
+
+
+
+/**
+ * Check that types in sequence of Gengeric-PDU ASN values are
+ * corresponding with protocol types in CSAP protocol label stack.
+ * If some PDU in ASN value sequence is absent, add empty one. 
+ * If it is not possible to determine, where empty PDU should be 
+ * inserted (for example, if CSAP is 'ip4.ip4.eth' and ASN sequence
+ * has only one 'ip4' PDU), error returned.
+ * If ASN pdus sequence has extra PDU, error returned. 
+ *
+ * @param csap_descr    Pointer to CSAP descriptor
+ * @param pdus          ASN value, 'SEQUENCE OF Generic-PDU' (IN/OUT)
+ *
+ * @return status code
+ */
+extern int tad_check_pdu_seq(csap_p csap_descr, asn_value *pdus);
 
 #ifdef __cplusplus
 } /* extern "C" */

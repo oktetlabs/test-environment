@@ -668,7 +668,7 @@ tad_ip4_match_bin_cb(csap_p csap_descr, unsigned int layer,
             if (parsed_packet != NULL)
             {
                 rc = asn_put_child_value(parsed_packet, ip4_header_pdu, 
-                                         PRIVATE, NDN_TAD_IP4);
+                                         PRIVATE, TE_PROTO_IP4);
                 if (rc != 0)
                     ERROR("%s(): rc from put IP4 empty header: %r",
                           __FUNCTION__, rc);

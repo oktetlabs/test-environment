@@ -29,6 +29,7 @@
 #include "te_config.h" 
 
 #include "asn_impl.h"
+#include "tad_common.h"
 #include "ndn_internal.h"
 #include "ndn_cli.h"
 
@@ -40,7 +41,7 @@ static asn_named_entry_t _ndn_cli_message_ne_array [] =
 
 asn_type ndn_cli_message_s =
 {
-    "CLI-Message", {PRIVATE, NDN_TAD_CLI}, SEQUENCE,
+    "CLI-Message", {PRIVATE, TE_PROTO_CLI}, SEQUENCE,
     sizeof(_ndn_cli_message_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_cli_message_ne_array}
 };
@@ -136,7 +137,7 @@ static asn_named_entry_t _ndn_cli_csap_ne_array [] =
 
 asn_type ndn_cli_csap_s =
 {
-    "CLI-CSAP", {PRIVATE, NDN_TAD_CLI}, SEQUENCE, 
+    "CLI-CSAP", {PRIVATE, TE_PROTO_CLI}, SEQUENCE, 
     sizeof(_ndn_cli_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_cli_csap_ne_array}
 };

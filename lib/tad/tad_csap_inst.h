@@ -244,10 +244,12 @@ typedef te_errno (*csap_echo_method)(csap_p csap_descr, uint8_t *pkt,
  * Collection of common protocol layer attributes of CSAP.
  */
 typedef struct csap_layer_t { 
-    char        *proto;          /**< procolol layer text label */
-    void        *specific_data;  /**< protocol-specific data */ 
-    asn_value   *csap_layer_pdu; /**< ASN value with CSAP specification
-                                      layer PDU */
+    char               *proto;    /**< protocol layer text label */
+    te_tad_protocols_t  proto_tag;/**< protocol layer int tag */
+
+    void        *specific_data;   /**< protocol-specific data */ 
+    asn_value   *csap_layer_pdu;  /**< ASN value with CSAP specification
+                                       layer PDU */
 
     struct csap_spt_type_t *proto_support; /**< protocol layer 
                                                 support descroptor */

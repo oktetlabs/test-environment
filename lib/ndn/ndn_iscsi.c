@@ -45,6 +45,7 @@
 #endif
 
 #include "asn_impl.h"
+#include "tad_common.h"
 #include "ndn_internal.h"
 #include "ndn_iscsi.h"
 #include "te_errno.h"
@@ -84,7 +85,7 @@ static asn_named_entry_t _ndn_iscsi_csap_ne_array[] =
 };
 
 asn_type ndn_iscsi_csap_s = {
-    "iSCSI-CSAP", { PRIVATE, NDN_TAD_ISCSI }, SEQUENCE, 
+    "iSCSI-CSAP", { PRIVATE, TE_PROTO_ISCSI }, SEQUENCE, 
     sizeof(_ndn_iscsi_csap_ne_array) / sizeof(asn_named_entry_t),
     { _ndn_iscsi_csap_ne_array }
 };
@@ -156,7 +157,7 @@ static asn_named_entry_t _ndn_iscsi_message_ne_array [] =
 
 asn_type ndn_iscsi_message_s =
 {
-    "ISCSI-Message", {PRIVATE, NDN_TAD_ISCSI}, SEQUENCE,
+    "ISCSI-Message", {PRIVATE, TE_PROTO_ISCSI}, SEQUENCE,
     sizeof(_ndn_iscsi_message_ne_array) / sizeof(asn_named_entry_t),
     {_ndn_iscsi_message_ne_array}
 };

@@ -210,6 +210,10 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                             const asn_value *pattern_unit,
                             asn_value_p *packet)
 {
+    const asn_value *action_seq = NULL;
+    int              act_num = 0, i;
+    te_bool          action_result = FALSE;
+
     int  layer;
     int  rc;
     char label[20] = "pdus";
@@ -226,8 +230,41 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     memset(&data_to_check, 0, sizeof(data_to_check));
 
 
+    rc = asn_get_child_value(pattern_unit, &action_seq,
+                             PRIVATE, NDN_PU_ACTIONS);
+
+    /* Check if there is 'result' in actions */
+    if (rc == 0)
+    {
+        const asn_value *action_val;
+        const asn_value *action_ch_val;
+        asn_tag_class    t_class;
+        uint16_t         t_val; 
+
+        act_num = asn_get_length(action_seq, ""); 
+
+        for (i = 0; i < act_num; i++)
+        { 
+            rc = asn_get_indexed(action_seq, &action_val, i);
+            if (rc != 0)
+            {
+                ERROR("%s(): get %d action failed: %r",
+                      __FUNCTION__, i, rc);
+                break;
+            }
+            rc = asn_get_choice_value(action_val, &action_ch_val,
+                                      &t_class, &t_val);
+            if (rc == 0 && t_val == NDN_ACT_REPORT)
+            {
+                action_result = TRUE;
+                break;
+            }
+        }
+    }
+    rc = 0;
+
     *packet = NULL;
-    if (csap_descr->state & TAD_STATE_RESULTS)
+    if ((csap_descr->state & TAD_STATE_RESULTS) || action_result)
     {
         asn_value_p pdus = asn_init_value(ndn_generic_pdu_sequence);
 
@@ -250,10 +287,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         const asn_value *layer_pdu = NULL; 
         asn_value_p      parsed_pdu = NULL;
 
-        if (csap_descr->state & TAD_STATE_RESULTS)
-        {
+        if ((csap_descr->state & TAD_STATE_RESULTS) || action_result)
             parsed_pdu = asn_init_value(ndn_generic_pdu);
-        }
 
         sprintf(label + sizeof("pdus") - 1, ".%d", layer);
         rc = asn_get_subvalue(pattern_unit, &layer_pdu, label); 
@@ -283,7 +318,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
             return rc;
         }
 
-        if (csap_descr->state & TAD_STATE_RESULTS)
+        if ((csap_descr->state & TAD_STATE_RESULTS) || action_result)
         {
             rc = asn_insert_indexed(*packet, parsed_pdu, 0, "pdus");
             asn_free_value(parsed_pdu);
@@ -346,7 +381,8 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
         rc = 0;
 
 
-    if (rc == 0 && csap_descr->state & TAD_STATE_RESULTS)
+    if (rc == 0 && ((csap_descr->state & TAD_STATE_RESULTS) || 
+                    action_result))
     {
         if (data_to_check.len)
         {
@@ -365,19 +401,9 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
 
 
     /* process action, if it present. */
-    if (rc == 0) do
+    if (rc == 0) 
     { 
-        const asn_value *action_seq;
         const asn_value *action_val;
-        int              act_num = 0, i;
-
-        rc = asn_get_child_value(pattern_unit, &action_seq,
-                                 PRIVATE, NDN_PU_ACTIONS);
-
-        if (rc == 0)
-            act_num = asn_get_length(action_seq, ""); 
-        rc = 0;
-
         for (i = 0; i < act_num; i++)
         { 
             rc = asn_get_indexed(action_seq, &action_val, i);
@@ -400,7 +426,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
                 break;
             }
         }
-    } while (0);
+    }
 
     F_VERB("Packet to RX CSAP #%d matches", csap_descr->id);
 
@@ -409,7 +435,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap_descr,
     else
         free(data_to_check.data); 
 
-    if ((rc != 0) && (csap_descr->state & TAD_STATE_RESULTS))
+    if (rc != 0)
     {
         asn_free_value(*packet);
         *packet = NULL;
@@ -826,6 +852,9 @@ tad_tr_recv_thread(void *arg)
             if (d_len == 0)
                 break;
 
+            asn_free_value(result);
+            result = NULL;
+
             asn_get_indexed(pattern, &pattern_unit, 0);
             rc = tad_tr_recv_match_with_unit(read_buffer, d_len, csap_descr,
                                              pattern_unit, &result); 
@@ -839,7 +868,7 @@ tad_tr_recv_thread(void *arg)
                 break;
             }
 
-            if (csap_descr->state & TAD_STATE_RESULTS)
+            if (result != NULL)
             { 
                 received_packets_queue_t *new_qelem = 
                             malloc(sizeof(*new_qelem));
@@ -1024,8 +1053,7 @@ tad_tr_recv_thread(void *arg)
 
             /* Here packet is successfully received, parsed and matched */
 
-            if ((rc == 0) && (csap_descr->state & TAD_STATE_RESULTS) 
-                && (result != NULL))
+            if ((rc == 0) && (result != NULL))
             { 
                 if (csap_descr->state & TAD_STATE_FOREGROUND)
                 {

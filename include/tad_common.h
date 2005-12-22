@@ -71,6 +71,30 @@ typedef enum {
 } tad_csap_status_t;
     
 /**
+ * Constants for ASN.1 tags of protocol choices in PDUs and CSAPs 
+ * and for marks in CSAP instance and CSAP support descriptors.
+ */
+typedef enum { 
+    TE_PROTO_INVALID = 0, /**< Invalid protocol, for error and undef */
+
+    TE_PROTO_ARP,
+    TE_PROTO_BRIDGE,
+    TE_PROTO_CLI,
+    TE_PROTO_DHCP,
+    TE_PROTO_ETH,
+    TE_PROTO_FILE,
+    TE_PROTO_ICMP4,
+    TE_PROTO_IP4,
+    TE_PROTO_ISCSI,
+    TE_PROTO_PCAP,
+    TE_PROTO_SNMP,
+    TE_PROTO_TCP,
+    TE_PROTO_UDP,
+} te_tad_protocols_t;
+
+
+
+/**
  * Calculate 16-bit checksum: 16-bit one's complement of the one's
  * complement sum of all 16 bit words.
  * Function works correctly with length less then 64k.

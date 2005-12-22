@@ -31,6 +31,7 @@
 #include "config.h"
 
 #include "asn_impl.h"
+#include "tad_common.h"
 #include "ndn.h"
 
 #ifdef HAS_SNMP
@@ -66,21 +67,21 @@ extern asn_type ndn_file_csap_s;
 static asn_named_entry_t _ndn_generic_csap_level_ne_array[] = 
 {
 /* Add here reference to protocol-specific CSAP init params */ 
-    { "pcap",   &ndn_pcap_csap_s,       {PRIVATE, NDN_TAD_PCAP} }, 
-    { "eth",    &ndn_eth_csap_s,        {PRIVATE, NDN_TAD_ETH} }, 
-    { "bridge", &ndn_bridge_csap_s,     {PRIVATE, NDN_TAD_BRIDGE} },
-    { "arp",    &ndn_arp_csap_s,        {PRIVATE, NDN_TAD_ARP} },
-    { "ip4",    &ndn_ip4_csap_s,        {PRIVATE, NDN_TAD_IP4} },
-    { "icmp4",  &ndn_icmp4_csap_s,      {PRIVATE, NDN_TAD_ICMP4} },
-    { "udp",    &ndn_udp_csap_s,        {PRIVATE, NDN_TAD_UDP} },
-    { "dhcp",   &ndn_dhcpv4_csap_s,     {PRIVATE, NDN_TAD_DHCP} }, 
-    { "tcp",    &ndn_tcp_csap_s,        {PRIVATE, NDN_TAD_TCP} }, 
-    { "iscsi",  &ndn_iscsi_csap_s,      {PRIVATE, NDN_TAD_ISCSI} },
+    { "pcap",   &ndn_pcap_csap_s,       {PRIVATE, TE_PROTO_PCAP} }, 
+    { "eth",    &ndn_eth_csap_s,        {PRIVATE, TE_PROTO_ETH} }, 
+    { "bridge", &ndn_bridge_csap_s,     {PRIVATE, TE_PROTO_BRIDGE} },
+    { "arp",    &ndn_arp_csap_s,        {PRIVATE, TE_PROTO_ARP} },
+    { "ip4",    &ndn_ip4_csap_s,        {PRIVATE, TE_PROTO_IP4} },
+    { "icmp4",  &ndn_icmp4_csap_s,      {PRIVATE, TE_PROTO_ICMP4} },
+    { "udp",    &ndn_udp_csap_s,        {PRIVATE, TE_PROTO_UDP} },
+    { "dhcp",   &ndn_dhcpv4_csap_s,     {PRIVATE, TE_PROTO_DHCP} }, 
+    { "tcp",    &ndn_tcp_csap_s,        {PRIVATE, TE_PROTO_TCP} }, 
+    { "iscsi",  &ndn_iscsi_csap_s,      {PRIVATE, TE_PROTO_ISCSI} },
 #ifdef HAS_SNMP
-    { "snmp",   &ndn_snmp_csap_s,       {PRIVATE, NDN_TAD_SNMP} },
+    { "snmp",   &ndn_snmp_csap_s,       {PRIVATE, TE_PROTO_SNMP} },
 #endif
-    { "cli",    &ndn_cli_csap_s,        {PRIVATE, NDN_TAD_CLI} },
-    { "file",   &ndn_file_csap_s,       {PRIVATE, NDN_TAD_FILE} }, 
+    { "cli",    &ndn_cli_csap_s,        {PRIVATE, TE_PROTO_CLI} },
+    { "file",   &ndn_file_csap_s,       {PRIVATE, TE_PROTO_FILE} }, 
 };
 
 asn_type ndn_generic_csap_level_s =
@@ -112,21 +113,21 @@ extern asn_type ndn_file_message_s;
 
 static asn_named_entry_t _ndn_generic_pdu_ne_array[] = 
 {
-    { "pcap",   &ndn_pcap_filter_s,       {PRIVATE, NDN_TAD_PCAP} }, 
-    { "eth",    &ndn_eth_header_s,        {PRIVATE, NDN_TAD_ETH} }, 
-    { "bridge", &ndn_bridge_pdu_s,        {PRIVATE, NDN_TAD_BRIDGE} },
-    { "arp",    &ndn_arp_header_s,        {PRIVATE, NDN_TAD_ARP} },
-    { "ip4",    &ndn_ip4_header_s,        {PRIVATE, NDN_TAD_IP4} },
-    { "icmp4",  &ndn_icmp4_message_s,     {PRIVATE, NDN_TAD_ICMP4} },
-    { "udp",    &ndn_udp_header_s,        {PRIVATE, NDN_TAD_UDP} },
-    { "dhcp",   &ndn_dhcpv4_message_s,    {PRIVATE, NDN_TAD_DHCP} }, 
-    { "tcp",    &ndn_tcp_header_s,        {PRIVATE, NDN_TAD_TCP} }, 
-    { "iscsi",  &ndn_iscsi_message_s,     {PRIVATE, NDN_TAD_ISCSI} },
+    { "pcap",   &ndn_pcap_filter_s,       {PRIVATE, TE_PROTO_PCAP} }, 
+    { "eth",    &ndn_eth_header_s,        {PRIVATE, TE_PROTO_ETH} }, 
+    { "bridge", &ndn_bridge_pdu_s,        {PRIVATE, TE_PROTO_BRIDGE} },
+    { "arp",    &ndn_arp_header_s,        {PRIVATE, TE_PROTO_ARP} },
+    { "ip4",    &ndn_ip4_header_s,        {PRIVATE, TE_PROTO_IP4} },
+    { "icmp4",  &ndn_icmp4_message_s,     {PRIVATE, TE_PROTO_ICMP4} },
+    { "udp",    &ndn_udp_header_s,        {PRIVATE, TE_PROTO_UDP} },
+    { "dhcp",   &ndn_dhcpv4_message_s,    {PRIVATE, TE_PROTO_DHCP} }, 
+    { "tcp",    &ndn_tcp_header_s,        {PRIVATE, TE_PROTO_TCP} }, 
+    { "iscsi",  &ndn_iscsi_message_s,     {PRIVATE, TE_PROTO_ISCSI} },
 #ifdef HAS_SNMP
-    { "snmp",   &ndn_snmp_message_s,      {PRIVATE, NDN_TAD_SNMP} },
+    { "snmp",   &ndn_snmp_message_s,      {PRIVATE, TE_PROTO_SNMP} },
 #endif
-    { "cli",    &ndn_cli_message_s,       {PRIVATE, NDN_TAD_CLI} },
-    { "file",   &ndn_file_message_s,      {PRIVATE, NDN_TAD_FILE} }, 
+    { "cli",    &ndn_cli_message_s,       {PRIVATE, TE_PROTO_CLI} },
+    { "file",   &ndn_file_message_s,      {PRIVATE, TE_PROTO_FILE} }, 
 };
 
 asn_type ndn_generic_pdu_s =

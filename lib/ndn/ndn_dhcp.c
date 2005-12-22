@@ -30,6 +30,7 @@
 
 #include <stdlib.h>
 #include "asn_impl.h"
+#include "tad_common.h"
 #include "ndn.h"
 #include "ndn_internal.h"
 #include "ndn_dhcp.h"
@@ -85,7 +86,7 @@ static asn_named_entry_t _ndn_dhcpv4_message_ne_array [] =
 
 asn_type ndn_dhcpv4_message_s = 
 {
-    "DHCPv4-Message", {PRIVATE, NDN_TAD_DHCP}, SEQUENCE, 
+    "DHCPv4-Message", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_message_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_message_ne_array}
 };
@@ -122,7 +123,7 @@ static asn_named_entry_t _ndn_dhcpv4_csap_ne_array [] =
 
 asn_type ndn_dhcpv4_csap_s =
 {
-    "DHCPv4-CSAP", {PRIVATE, NDN_TAD_DHCP}, SEQUENCE, 
+    "DHCPv4-CSAP", {PRIVATE, TE_PROTO_DHCP}, SEQUENCE, 
     sizeof(_ndn_dhcpv4_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_dhcpv4_csap_ne_array}
 };

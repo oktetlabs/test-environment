@@ -35,6 +35,7 @@
 #include "asn_impl.h"
 #include "ndn_internal.h"
 #include "ndn_bridge.h"
+#include "tad_common.h"
 
 
 
@@ -100,7 +101,7 @@ static asn_named_entry_t _ndn_bridge_pdu_ne_array [] =
 
 asn_type ndn_bridge_pdu_s =
 {
-    "Bridge-PDU", {PRIVATE, NDN_TAD_BRIDGE}, SEQUENCE, 
+    "Bridge-PDU", {PRIVATE, TE_PROTO_BRIDGE}, SEQUENCE, 
     sizeof(_ndn_bridge_pdu_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_bridge_pdu_ne_array}
 };
@@ -128,7 +129,7 @@ static asn_named_entry_t _ndn_bridge_csap_ne_array [] =
 
 asn_type ndn_bridge_csap_s =
 {
-    "Bridge-CSAP", {PRIVATE, NDN_TAD_BRIDGE}, SEQUENCE, 
+    "Bridge-CSAP", {PRIVATE, TE_PROTO_BRIDGE}, SEQUENCE, 
     sizeof(_ndn_bridge_csap_ne_array)/sizeof(asn_named_entry_t),
     {_ndn_bridge_csap_ne_array}
 };

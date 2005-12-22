@@ -475,9 +475,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
 
     UNUSED(cmdlen);
 
-    VERB("trsend_start CSAP %d\n", csap);
+    VERB("%s(CSAP %d)", __FUNCTION__, csap);
     cbuf[answer_plen] = 0;
-    VERB("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap,  cbuf);
 
     check_init();
 
@@ -496,7 +495,16 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
         return 0;
     }
 
-    /* FIXME: It would be nice to check that CSAP is not busy. */
+    CSAP_DA_LOCK(csap_descr_p);
+    if (csap_descr_p->command != TAD_OP_IDLE)
+    {
+        CSAP_DA_UNLOCK(csap_descr_p);
+        WARN("%s(CSAP %d) is busy", __FUNCTION__, csap);
+        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
+        return 0;
+    }
+    CSAP_DA_UNLOCK(csap_descr_p);
+
     csap_descr_p->total_bytes = 0;
     csap_descr_p->first_pkt = tv_zero;
     csap_descr_p->last_pkt  = tv_zero;
