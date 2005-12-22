@@ -30,7 +30,8 @@
 #include "conf_defs.h"
 
 /**
- * Parses all object dependencies in the configuration file
+ * Parses all object dependencies in the configuration file.
+ * Note: this function is also used in conf_dh.c.
  * 
  * @param node     first dependency node
  */
