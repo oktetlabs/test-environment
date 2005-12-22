@@ -86,6 +86,10 @@
 #define IF_NAMESIZE IFNAMSIZ
 #endif
 
+/**< MAC address in human notation */
+#ifndef ETH_ADDRSTRLEN
+#define ETH_ADDRSTRLEN (3 * ETH_ALEN - 1)
+#endif
 
 #if !defined(__linux__) && defined(USE_NETLINK)
 #error netlink can be used on Linux only
@@ -2252,6 +2256,8 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+    memset(&bcast, 0, sizeof(bcast));
+
 #if defined(USE_NETLINK)
     if (nl_find_net_addr(addr, ifname, NULL, NULL, &bcast) == NULL)
     {
@@ -2714,73 +2720,140 @@ status_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /** Find neighbour entry and return its parameters */
+/**< User data for neigh_find_cb() callback function */
+typedef struct {
+    char      ifname[IFNAMSIZ];     /**< Interface name */
+    char     *addr;                 /**< IP address in human notation */
+    te_bool   dynamic;              /**< Dynamic or static neighbour */
+    char     *mac_addr;             /**< MAC address (OUT) */
+    uint16_t  state;                /**< Neighbour state (OUT) */
+    te_bool   found;                /**< Neighbour already found */
+} neigh_find_cb_param; 
+    
+int
+neigh_find_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
+              void *arg)
+{    
+    neigh_find_cb_param *p = (neigh_find_cb_param *)arg;
+    int                  af = (strchr(p->addr, ':') == NULL)?
+                              AF_INET : AF_INET6;
+    struct ndmsg        *r = NLMSG_DATA(n);
+    struct rtattr       *tb[NDA_MAX+1];
+    uint8_t              addr_buf[sizeof(struct in6_addr)];    
+    
+    /* One item was already found, skip others */
+    if (p->found)
+    {
+        return 0;
+    }
+
+    /* Neighbour from alien interface */
+    if (ll_name_to_index(p->ifname) != r->ndm_ifindex)
+    {
+        return 0;
+    }
+    
+    parse_rtattr(tb, NDA_MAX, NDA_RTA(r), n->nlmsg_len -
+                 NLMSG_LENGTH(sizeof(*r)));
+
+    if (inet_pton(af, p->addr, addr_buf) < 0)
+    {
+        return 0;
+    }
+
+    /* Check that destination is one we look for */    
+    if (tb[NDA_DST] == NULL ||
+        memcmp(RTA_DATA(tb[NDA_DST]), addr_buf, (af == AF_INET)?
+               sizeof(struct in_addr) : sizeof(struct in6_addr)) != 0)
+        return 0;
+
+    /* Check neighbour state */
+    if (r->ndm_state & NUD_FAILED)
+        return 0;
+
+    if (p->dynamic == !!(r->ndm_state & NUD_PERMANENT))
+        return 0;
+
+    /* Save MAC address */
+    if (p->mac_addr != NULL && tb[NDA_LLADDR] != NULL)
+    {
+        int      i;
+        char    *s = p->mac_addr;
+
+        for (i = 0; i < 6; i++)
+        {
+            sprintf(s, "%02x:", ((uint8_t *)RTA_DATA(tb[NDA_LLADDR]))[i]);
+            s += strlen(s);
+        }
+        *(s - 1) = '\0';
+    }
+
+    /* Save neighbour state */
+    p->state = r->ndm_state;
+    p->found = TRUE;
+
+    UNUSED(who);
+    
+    return 0;
+}
+
 static te_errno
 neigh_find(const char *oid, const char *ifname, const char *addr,
-           char *mac_p, unsigned int *flags_p)
+           char *mac_p, unsigned int *state_p)
 {
-    te_bool  volatile_entry = strstr(oid, "dynamic") != NULL;
-    FILE    *fp;
-    char     device[32];
-    char     mac[MAC_ADDR_LEN * 3];
-    te_errno rc;
-    
-    unsigned int flags;
+#ifdef __linux__
+    struct rtnl_handle   rth;    
+    neigh_find_cb_param  user_data;
+    te_errno             rc;
     
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
-
-    if ((fp = fopen("/proc/net/arp", "r")) == NULL)
+    
+    memset(&rth, 0, sizeof(rth));
+    if (rtnl_open(&rth, 0) < 0)
     {
-        ERROR("Failed to open /proc/net/arp for reading: %s",
-              strerror(errno));
+        ERROR("Failed to open a netlink socket");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
+    ll_init_map(&rth);
 
-    while (fscanf(fp, "%s", buf) != EOF)
+    memset(&user_data, 0, sizeof(user_data));
+
+    strcpy(user_data.ifname, ifname);
+    user_data.addr = (char *)addr;
+    user_data.dynamic = strstr(oid, "dynamic") != NULL;
+    user_data.mac_addr = mac_p;
+    user_data.found = FALSE;
+
+    rtnl_wilddump_request(&rth, strchr(addr, ':') == NULL?
+                          AF_INET : AF_INET6, RTM_GETNEIGH);
+    rtnl_dump_filter(&rth, neigh_find_cb, &user_data, NULL, NULL);
+    
+    if (!user_data.found)
     {
-        if (strcmp(buf, addr) == 0)
-        {
-            if (fscanf(fp, "%s %x %s %s %s", buf, &flags, mac, 
-                       trash, device) != 5)
-            {
-                fclose(fp);
-                ERROR("Failed to parse ARP entry values");
-                return TE_RC(TE_TA_UNIX, TE_EFMT);
-            }
-            fclose(fp);
-            
-            if (strcmp(ifname, device) != 0)
-                return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-            if (flags == 0)
-            {
-                return TE_RC(TE_TA_UNIX, TE_ENOENT);
-            }
-            else
-            {
-                if (volatile_entry == !!(flags & ATF_PERM))
-                {
-                    ERROR("%s ARP entry %s ATF_PERM flag",
-                          volatile_entry ? "Volatile" : "Non-volatile",
-                          (flags & ATF_PERM) ? "has" : "does not have");
-                    return TE_RC(TE_TA_UNIX, TE_EFAULT);
-                }
-                
-                if (flags_p != NULL)
-                    *flags_p = flags;
-                    
-                if (mac_p != NULL)
-                    strcpy(mac_p, mac);
-
-                return 0;
-            }
-        }
-        fgets(buf, sizeof(buf), fp);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
-    fclose(fp);
+
+    if (state_p != NULL)
+    {
+        *state_p = user_data.state;
+    }
+
+    rtnl_close(&rth);
+    return 0;
+    
+#else
+    UNUSED(oid);
+    UNUSED(ifname);
+    UNUSED(addr);
+    UNUSED(mac_p);
+    UNUSED(state_p);
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
 }
+
+
 
 /**
  * Get neighbour entry state.
@@ -2798,23 +2871,17 @@ int
 neigh_state_get(unsigned int gid, const char *oid, char *value,
                 const char *ifname, const char *addr)
 {
-    unsigned int flags;
+    unsigned int state;
     te_errno     rc;
     char         mac[MAC_ADDR_LEN * 3];
     
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((rc = neigh_find("dynamic", ifname, addr, mac, &flags)) != 0)
+    if ((rc = neigh_find("dynamic", ifname, addr, mac, &state)) != 0)
         return rc;
-        
-    /* TODO: extract state via netlink */
-    if (flags & ATF_COM)
-        sprintf(value, "%u", CS_NEIGH_REACHABLE);
-    else if (strcmp(mac, "00:00:00:00:00:00") == 0)
-        sprintf(value, "%u", CS_NEIGH_INCOMPLETE);
-    else
-        sprintf(value, "%u", CS_NEIGH_STALE);
+
+    sprintf(value, "%u", state);
         
     return 0;
 }
@@ -2940,6 +3007,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 {
     struct arpreq arp_req;
     te_errno      rc;
+    int           family;
 
     UNUSED(gid);
 
@@ -2954,8 +3022,9 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
     }
 
     memset(&arp_req, 0, sizeof(arp_req));
-    arp_req.arp_pa.sa_family = AF_INET;
-    if (inet_pton(AF_INET, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
+    family = (strchr(addr, ':') != NULL)? AF_INET6 : AF_INET;
+    arp_req.arp_pa.sa_family = family;
+    if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
 #ifdef SIOCDARP
@@ -2974,6 +3043,46 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 #endif
 }
 
+typedef struct {
+    te_bool dynamic;
+    char    ifname[IFNAMSIZ];
+    char   *list;
+} neigh_print_cb_param;
+
+int
+neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
+               void *arg)
+{
+    neigh_print_cb_param *p = (neigh_print_cb_param *)arg;
+
+    struct ndmsg   *r = NLMSG_DATA(n);
+    struct rtattr  *tb[NDA_MAX+1];    
+    char           *s = p->list + strlen(p->list);
+ 
+    if (ll_name_to_index(p->ifname) != r->ndm_ifindex)
+        return 0;
+    
+    if ((r->ndm_state & NUD_INCOMPLETE) != 0)
+        return 0;
+    
+    if (!!(r->ndm_state & NUD_PERMANENT) == p->dynamic)
+        return 0;
+
+    parse_rtattr(tb, NDA_MAX, NDA_RTA(r), n->nlmsg_len -
+                 NLMSG_LENGTH(sizeof(*r)));
+    if (tb[NDA_DST] == NULL ||
+        inet_ntop(r->ndm_family, RTA_DATA(tb[NDA_DST]), s,
+                  INET6_ADDRSTRLEN) == NULL)
+        return 0;
+        
+    s += strlen(s);
+    sprintf(s, " ");
+
+    UNUSED(who);
+    
+    return 0;
+}
+ 
 /**
  * Get instance list for object "agent/arp" and "agent/volatile/arp".
  *
@@ -2989,48 +3098,33 @@ neigh_list(unsigned int gid, const char *oid, char **list,
            const char *ifname)
 {
 #ifdef __linux__
-    te_bool  volatile_entry = strstr(oid, "dynamic") != NULL;
-    char    *ptr = buf;
-    FILE    *fp;
-    te_errno rc;
+    struct rtnl_handle   rth;    
+    neigh_print_cb_param user_data;
     
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    if ((fp = fopen("/proc/net/arp", "r")) == NULL)
+    buf[0] = '\0';
+        
+    memset(&rth, 0, sizeof(rth));
+    if (rtnl_open(&rth, 0) < 0)
     {
-        ERROR("Failed to open /proc/net/arp for reading: %s",
-              strerror(errno));
+        ERROR("Failed to open a netlink socket");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
+    ll_init_map(&rth);
 
-    fgets(trash, sizeof(trash), fp);
-    while (fscanf(fp, "%s", ptr) != EOF)
-    {
-        unsigned int flags = 0;
-        char         device[32];
+    strcpy(user_data.ifname, ifname);
+    user_data.dynamic = strstr(oid, "dynamic") != NULL;
+    user_data.list = buf;
 
-        fscanf(fp, "%s %x %s %s %s", trash, &flags, 
-               trash, trash, device);
-        fgets(trash, sizeof(trash), fp);
-               
-        if (strcmp(device, ifname) != 0)
-        {
-            *ptr = 0;
-            continue;
-        }
-        
-        if ((flags & ATF_COM) &&
-            (volatile_entry != !!(flags & ATF_PERM)))
-        {
-            sprintf(ptr + strlen(ptr), " ");
-            ptr += strlen(ptr);
-        }
-        else
-            *ptr = 0;
+    rtnl_wilddump_request(&rth, AF_INET, RTM_GETNEIGH);
+    rtnl_dump_filter(&rth, neigh_print_cb, &user_data, NULL, NULL);    
+ 
+    user_data.list = buf + strlen(buf);
 
-    }
-    fclose(fp);
+    rtnl_wilddump_request(&rth, AF_INET6, RTM_GETNEIGH);
+    rtnl_dump_filter(&rth, neigh_print_cb, &user_data, NULL, NULL);
+
+    rtnl_close(&rth);
+
 #else
     UNUSED(oid);
     UNUSED(ifname);
@@ -3131,7 +3225,9 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
         rta_addattr32(mxrta, sizeof(mxbuf), RTAX_RTT, rt_info->irtt);
 
     if ((rt_info->flags & TA_RT_INFO_FLG_TOS) != 0)
+    {
         req->r.rtm_tos = rt_info->tos;
+    }
     
     if (mxrta->rta_len > RTA_LENGTH(0))
     {
@@ -3290,7 +3386,12 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
                   &(SIN6(&(user_data->rt_info->dst))->sin6_addr),
                   sizeof(struct in6_addr)) == 0)) &&
           /* Check that prefix is correct */
-          user_data->rt_info->prefix == r->rtm_dst_len))
+          user_data->rt_info->prefix == r->rtm_dst_len &&
+          ((user_data->rt_info->flags & TA_RT_INFO_FLG_METRIC) == 0 ||
+           user_data->rt_info->metric ==
+               *(uint32_t *)RTA_DATA(tb[RTA_PRIORITY])) &&
+          ((user_data->rt_info->flags & TA_RT_INFO_FLG_TOS) == 0 ||
+           user_data->rt_info->tos == r->rtm_tos)))
     {
         if (tb[RTA_OIF] != NULL)
         {            
@@ -3761,7 +3862,7 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
             memcmp(RTA_DATA(tb[RTA_DST]), RTA_DATA(tb[RTA_GATEWAY]),
             r->rtm_dst_len) == 0)
         {
-            WARN("Gateway = destination, skip route");
+            /* Gateway = destination, skip route */
             return 0;
         }
             
@@ -3904,9 +4005,10 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         ta_obj_free(obj);
         return rc;
     }
-    
+   
     obj_action = obj->action;
     ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
+
     ta_obj_free(obj);
 
     {
@@ -3933,20 +4035,18 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
                 ERROR("Unknown object action specified %d", obj_action);
                 return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
-
-        rc = route_change(&rt_info, nlm_action, nlm_flags);
+        
+    rc = route_change(&rt_info, nlm_action, nlm_flags);
     }
     
     return rc;
 
-#else /* USE_NETLINK */
+#else /* !USE_NETLINK */
     UNUSED(gid);
     UNUSED(p_oid);
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif /* USE_NETLINK */
 }
-
-
 
 static te_errno
 nameserver_get(unsigned int gid, const char *oid, char *result,
