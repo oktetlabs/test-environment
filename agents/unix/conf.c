@@ -3680,6 +3680,7 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
     struct rtmsg        *r = NLMSG_DATA(n);
     int                  len = n->nlmsg_len;
     char                *p;
+    const char          *ifname;
     
     rtnl_print_route_cb_user_data_t *user_data = 
                          (rtnl_print_route_cb_user_data_t *)arg;
@@ -3728,6 +3729,10 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
     len -= NLMSG_LENGTH(sizeof(*r));
 
     parse_rtattr(tb, RTA_MAX, RTM_RTA(r), len);
+
+    ifname = ll_index_to_name(*(int *)RTA_DATA(tb[RTA_OIF]));
+    if (!INTERFACE_IS_MINE(ifname))
+        return 0;
    
     p = user_data->buf;
     
@@ -3845,9 +3850,7 @@ do {                                                            \
 } while (0)
 
     GET_ALL_ROUTES_OF_FAMILY(AF_INET);
-#if 0 
     GET_ALL_ROUTES_OF_FAMILY(AF_INET6);
-#endif
 
 #undef GET_ALL_ROUTES_OF_FAMILY    
     
