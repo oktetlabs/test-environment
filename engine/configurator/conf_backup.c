@@ -726,6 +726,7 @@ cfg_backup_restore_ta(char *ta)
 }
 
 
+#if 0
 /**
  * Put description of the object and its (grand-...)children to
  * the configuration file.
@@ -755,6 +756,8 @@ put_object(FILE *f, cfg_object *obj)
     for (obj = obj->son; obj != NULL; obj = obj->brother)
         put_object(f, obj);
 }
+#endif
+
 
 /**
  * Put description of the object instance and its (grand-...)children to
@@ -815,8 +818,10 @@ cfg_backup_create_file(char *filename)
         
     fprintf(f, "<?xml version=\"1.0\"?>\n");
     fprintf(f, "<backup>\n");
-    
+
+#if 0    
     put_object(f, &cfg_obj_root);
+#endif
     if (put_instance(f, &cfg_inst_root) != 0)
     {
         fclose(f);
