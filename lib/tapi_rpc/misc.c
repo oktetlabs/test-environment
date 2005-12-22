@@ -53,6 +53,40 @@
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
 #include "tapi_rpc_winsock2.h"
+/* See description in tapi_rpc_misc.h */
+tarpc_ssize_t
+rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
+{
+    struct tarpc_get_sizeof_in  in;
+    struct tarpc_get_sizeof_out out;
+    int                         rc;
+    rcf_rpc_op                  op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(get_sizeof, -1);
+    }
+
+    op = rpcs->op;
+    
+    in.typename.typename_len = strlen(type_name) + 1;
+    in.typename.typename_val = strdup(type_name);
+
+    rcf_rpc_call(rpcs, "get_sizeof", &in, &out);
+
+    free(in.typename.typename_val);
+
+    rc = out.size;
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: get_sizeof(%s) -> %d",
+                 rpcs->ta, rpcs->name, rpcop2str(op), type_name, rc);
+
+    RETVAL_INT(get_sizeof, rc);
+}
 
 /**
  * Convert I/O vector to array.

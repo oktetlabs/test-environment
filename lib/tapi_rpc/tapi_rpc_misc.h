@@ -49,6 +49,16 @@
 #include "te_stdint.h"
 #include "rcf_rpc.h"
 
+/**
+ * Get host value of sizeof(type_name).
+ *
+ * @param type_name Name of the type
+ *
+ * @return          Size of the type or 
+ *                  -1 if such a type does not exist.
+ */
+extern tarpc_ssize_t rpc_get_sizeof(rcf_rpc_server *rpcs,
+                                    const char *type_name);
 
 /**
  * Convert 'struct timeval' to string.

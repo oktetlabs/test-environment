@@ -1655,13 +1655,21 @@ struct tarpc_linger {
 struct option_value_mreqn {
     uint32_t    imr_multiaddr;  /**< IP multicast group address */
     uint32_t    imr_address;    /**< IP address of local interface */
-    tarpc_int   imr_ifindex;    /**< Interpace index */
+    tarpc_int   imr_ifindex;    /**< Interface index */
 };
 
 struct option_value_mreq{
     uint32_t    imr_multiaddr;  /**< IP multicast group address */
     uint32_t    imr_address;    /**< IP address of local interface */
 };    
+
+struct tarpc_mreqn {
+    enum option_type    type;
+    uint32_t            multiaddr;
+    uint32_t            address;
+    tarpc_int           ifindex;
+    tarpc_int           len_diff;
+};
 
 struct option_value_tcp_info {
     uint8_t     tcpi_state;
@@ -1722,6 +1730,7 @@ struct tarpc_setsockopt_in {
     tarpc_int       optname;
     option_value    optval<>;
     tarpc_socklen_t optlen;
+    tarpc_int       len_diff;
 };
 
 typedef struct tarpc_int_retval_out tarpc_setsockopt_out;
@@ -2934,6 +2943,19 @@ struct tarpc_overfill_buffers_out {
     uint64_t    bytes;      /**< Number of sent bytes */
 };
 
+/* get_sizeof() */
+struct tarpc_get_sizeof_in {
+    struct tarpc_in_arg common;
+
+    char typename<>;
+};
+
+struct tarpc_get_sizeof_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int size;
+};
+
 program tarpc
 {
     version ver0
@@ -2946,6 +2968,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(rpc_is_op_done)
         RPC_DEF(setlibname)
 
+        RPC_DEF(get_sizeof)
+        
         RPC_DEF(fork)
         RPC_DEF(pthread_create)
         RPC_DEF(pthread_cancel)

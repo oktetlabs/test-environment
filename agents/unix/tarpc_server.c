@@ -359,6 +359,47 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
     return TRUE;
 }
 
+/*-------------- sizeof() -------------------------------*/
+#define MAX_TYPE_NAME_SIZE 30
+typedef struct {
+    char           type_name[MAX_TYPE_NAME_SIZE];
+    tarpc_ssize_t  type_size;
+} type_info_t;
+
+static type_info_t type_info[] = 
+{
+    {"char", sizeof(char)},
+    {"short", sizeof(short)},
+    {"int", sizeof(int)},
+    {"long", sizeof(long)},
+    {"long long", sizeof(long long)},
+    {"size_t", sizeof(size_t)},
+    {"socklen_t", sizeof(socklen_t)},
+    {"struct timeval", sizeof(struct timeval)},
+    {"struct linger", sizeof(struct linger)},
+    {"struct ip_mreq", sizeof(struct ip_mreq)},
+    {"struct ip_mreqn", sizeof(struct ip_mreqn)}
+};
+
+bool_t
+_get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
+                  struct svc_req *rqstp)
+{
+    uint32_t i;
+    
+    UNUSED(rqstp);    
+    
+    out->size = 0;
+    for (i = 0; i < sizeof(type_info) / sizeof(type_info_t); i++)
+    {
+        if (strcmp(in->typename.typename_val, type_info[i].type_name) == 0)
+        {
+            out->size = type_info[i].type_size;
+        }
+    }
+    return TRUE;
+}
+
 /*-------------- fork() ---------------------------------*/
 
 TARPC_FUNC(fork, {},
@@ -1432,6 +1473,7 @@ TARPC_FUNC(setsockopt,
             INIT_CHECKED_ARG(optval, optlen, 0);
             if (in->optlen == RPC_OPTLEN_AUTO)
                 in->optlen = optlen;
+            
             MAKE_CALL(out->retval = func(in->s, socklevel_rpc2h(in->level),
                                          sockopt_rpc2h(in->optname),
                                          optval, in->optlen));
@@ -1522,8 +1564,15 @@ TARPC_FUNC(getsockopt,
         {
             /* Workaround to avoid corrupting of "auto" length */
             *(out->optlen.optlen_val) = optlen_out;
-        }
-                                                          
+            
+            if (out->optval.optval_val[0].opttype == OPT_MREQN &&
+                (unsigned)optlen_out <= sizeof(struct in_addr))
+            {
+                /* Adjust option type from OPT_MREQN to OPT_IPADDR */
+                out->optval.optval_val[0].opttype = OPT_IPADDR;
+            }
+       }
+
         switch (out->optval.optval_val[0].opttype)
         {
             case OPT_INT:
