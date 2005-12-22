@@ -386,6 +386,7 @@ cfg_sync_agt_volatile(const char *inst_name)
     return cfg_ta_sync(oid, TRUE);
 }
 
+#if 0
 /**
  * Find out the subtree to be synchronized.
  * 
@@ -430,6 +431,7 @@ rsrc_oid_to_sync(const char *ta, const char *val)
 
     return buf;
 }
+#endif
 
 /**
  * Process add user request.
