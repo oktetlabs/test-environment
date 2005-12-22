@@ -303,9 +303,10 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
     char        *term_byte; /* Pointer to the trailing zero byte
                                in instance name */
     static char  inst_copy[RCF_MAX_VAL];
-    int          family;    
+    int          family;
 
     memset(rt_info, 0, sizeof(*rt_info));
+
     strncpy(inst_copy, name, sizeof(inst_copy));
     inst_copy[sizeof(inst_copy) - 1] = '\0';
 
@@ -394,14 +395,14 @@ ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
         if (rc <= 0)
         {
             /* Clear gateway flag */
-            rt_info->flags &= (!TA_RT_INFO_FLG_GW); 
+            rt_info->flags &= (~TA_RT_INFO_FLG_GW); 
             ERROR("Invalid value of route: '%s'", value);
             return TE_EINVAL;
         }
     }
     else
     {
-        rt_info->flags &= (!TA_RT_INFO_FLG_GW);
+        rt_info->flags &= (~TA_RT_INFO_FLG_GW);
     }
 
     return 0;
@@ -483,8 +484,6 @@ int
 ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info)
 {
     int rc;
-
-    memset(rt_info, 0, sizeof(ta_rt_info_t));
 
     if ((rc = ta_rt_parse_inst_name(obj->name, rt_info)) != 0)
         return rc;
