@@ -469,7 +469,7 @@ cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
         return;
     }
 
-    RING("Adding dependency '%s' for '%s'", msg->oid, obj->oid);
+    VERB("Adding dependency '%s' for '%s'", msg->oid, obj->oid);
 
     
     rc = cfg_db_find(msg->oid, &master_handle);
@@ -482,7 +482,7 @@ cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
     {
         cfg_orphan *orph;
         
-        RING("Creating an orphaned object %s <- %s", msg->oid, obj->oid);
+        VERB("Creating an orphaned object %s <- %s", msg->oid, obj->oid);
         orph         = calloc(1, sizeof(*orph));
         orph->object = obj;
         orph->master = cfg_convert_oid_str(msg->oid);

@@ -45,7 +45,7 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
     int      rc = 0;
     unsigned len;
     
-    RING("Registering dependencies for %s", dependant);
+    VERB("Registering dependencies for %s", dependant);
 
     rc = cfg_db_find(dependant, &dep_handle);
     if (rc != 0)

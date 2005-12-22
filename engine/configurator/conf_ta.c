@@ -377,10 +377,8 @@ sync_ta_subtree(const char *ta, const char *oid)
     cfg_get_buf[0] = 0;
     while (TRUE)
     {
-        RING("%s: Sending %s", __FUNCTION__, wildcard_oid);
         rc = rcf_ta_cfg_get(ta, 0, wildcard_oid, cfg_get_buf, 
                             cfg_get_buf_len);
-        RING("Received %s (%r)", cfg_get_buf, rc);
         if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
         {
             cfg_get_buf_len <<= 1;
