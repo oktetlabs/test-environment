@@ -795,7 +795,9 @@ static type_info_t type_info[] =
     {"struct timeval", sizeof(struct timeval)},
     {"struct linger", sizeof(struct linger)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
+#if 0
     {"struct ip_mreqn", sizeof(struct ip_mreqn)}
+#endif
 };
 
 bool_t
