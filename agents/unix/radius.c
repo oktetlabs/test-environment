@@ -75,32 +75,27 @@ typedef struct radius_parameter
 
 #define RP_DELETE_VALUE ((char *)-1)
 
+/** Root entry of the tree created from RADIUS configuration file */
 static struct radius_parameter *radius_conf;
 
 /** An attribute==value check in RADIUS users file */
-typedef struct radius_user_check
+typedef struct radius_attr
 {
-    char *attribute;
-    char *value;
-} radius_user_check;
-
-/** A reply record for a RADIUS user */
-typedef struct radius_user_reply
-{
-    char *attribute;    /**< Attribute to set */
-    char *in_accept;    /**< A value to set in Access-Accept packets */
-    char *in_challenge; /**< A value to set in Access-Challenge packets */
-} radius_user_reply;
+    char               *name;   /**< Attribute name */
+    char               *value;  /**< Attribute value */
+} radius_attr;
 
 /** A record for a RADIUS user */
 typedef struct radius_user
 {
     te_bool             reject;
     char               *name;
-    radius_user_check  *checks;
-    int                 n_replies;
-    int                 n_checks;
-    radius_user_reply  *replies;
+    radius_attr        *checks;
+    unsigned int        n_checks;
+    radius_attr        *accept_replies;
+    unsigned int        n_accept_replies;
+    radius_attr        *challenge_replies;
+    unsigned int        n_challenge_replies;
     struct radius_user *next;
 } radius_user;
 
@@ -127,11 +122,11 @@ make_rp(enum radius_parameters kind,
         const char *name, 
         const char *value, radius_parameter *parent)
 {
-    radius_parameter *parm = malloc(sizeof(*parm));
+    radius_parameter *parm = (radius_parameter *)malloc(sizeof(*parm));
 
     if (parm == NULL)
     {
-        ERROR("make_rp: not enough memory");
+        ERROR("%s(): not enough memory", __FUNCTION__);
         return NULL;
     }
 
@@ -163,16 +158,17 @@ make_rp(enum radius_parameters kind,
 }
 
 /**
- * Destroys the parameter and all its children if any 
+ * Destroys the parameter and all its children if any
+ *
  * Note: this function does not exclude the parameter
  * from its parent's children list, so it's normally
  * should be called on a topmost parameter only.
  */
 static void
-destroy_rp (radius_parameter *parm)
+destroy_rp(radius_parameter *parm)
 {
     radius_parameter *child, *next;
-    
+
     if (parm->name != NULL)
         free(parm->name);
     if (parm->value != NULL)
@@ -704,25 +700,69 @@ update_rp (radius_parameter *top, enum radius_parameters kind,
 }
 
 /**
+ * FreeRADIUS user authentication rules are configured via the separate
+ * file, e.g. /etc/radiusd/users, with the following syntax:
+ *
+ * Usename  Attr1 == Value1, Attr2 == Value2, Auth-Type := Reject
+ *      Attr3 := Value3
+ *      Attr4 := Value4
+ *
+ * Here Attr1 and Attr2 are the attributes (and their values) required
+ * to be present in incoming RADIUS requests, Attr3 and Attr4 will be
+ * placed into the server reply. Auth-Type may be specified here
+ * (as Reject or Accept) or omitted (for EAP requests).
+ *
+ * There are many operators that can be used in check and reply list,
+ * not '==' and ':=' only, but we use only a subset of syntax.
+ *
+ * For each user we create two rules - separately for outgoing 
+ * Access-Challenge and Access-Accept packets. (This feature requires
+ * patched version of FreeRADIUS server, because it needs to check
+ * Response-Packet-Type pseudoattribute, that is not provided to user
+ * rules checking function in original code.)
+ */
+
+
+/**
  * Creates a RADIUS user record named 'name' and adds it 
- * to 'radius_users' list
+ * to the end of 'radius_users' list
  */
 static radius_user *
-make_radius_user (const char *name)
+make_radius_user(const char *name)
 {
-    radius_user *user = malloc(sizeof(*user));
+    radius_user *user;
+
+    if (name == NULL)
+    {
+        ERROR("%s(): NULL argument", __FUNCTION__);
+        return NULL;
+    }
+    if ((user = (radius_user *)calloc(1, sizeof(*user))) == NULL)
+    {
+        ERROR("%s(): not enough memory", __FUNCTION__);
+        return NULL;
+    }
     user->reject = FALSE;
-    user->name = strdup(name);
+    if ((user->name = strdup(name)) == NULL)
+    {
+        ERROR("%s(): not enough memory", __FUNCTION__);
+        free(user);
+        return NULL;
+    }
     user->n_checks = 0;
     user->checks = NULL;
-    user->n_replies = 0;
-    user->replies = NULL;
+    user->n_accept_replies = 0;
+    user->accept_replies = NULL;
+    user->n_challenge_replies = 0;
+    user->challenge_replies = NULL;
     user->next = NULL;
+
     if (radius_last_user != NULL)
         radius_last_user->next = user;
     else
         radius_users = user;
     radius_last_user = user;
+
     return user;
 }
 
@@ -730,25 +770,41 @@ make_radius_user (const char *name)
  * Finds a record for a user named 'name'
  */
 static radius_user *
-find_radius_user (const char *name)
+find_radius_user(const char *name)
 {
     radius_user *user;
 
     for (user = radius_users; user != NULL; user = user->next)
     {
         if (strcmp(user->name, name) == 0)
-        {
             break;
-        }
     }
     return user;
+}
+
+/**
+ * Free an array of 'attribute=value' pairs.
+ */
+static void
+radius_free_attr_array(radius_attr **attrs, unsigned int *n_attrs)
+{
+    unsigned int i;
+
+    for (i = 0; i < *n_attrs; i++)
+    {
+        free((*attrs)[i].name);
+        free((*attrs)[i].value);
+    }
+    free(*attrs);
+    *attrs = NULL;
+    *n_attrs = 0;
 }
 
 /**
  * Deletes a user named 'name' from 'radius_users' list
  */
 static void
-delete_radius_user (const char *name)
+delete_radius_user(const char *name)
 {
     radius_user *user, *prev = NULL;
 
@@ -758,15 +814,17 @@ delete_radius_user (const char *name)
         {
             if (prev == NULL)
                 radius_users = user->next;
-            else 
+            else
                 prev->next = user->next;
             if (user == radius_last_user)
                 radius_last_user = prev;
+
             free(user->name);
-            if (user->checks != NULL)
-                free(user->checks);
-            if (user->replies != NULL)
-                free(user->replies);
+            radius_free_attr_array(&user->checks, &user->n_checks);
+            radius_free_attr_array(&user->accept_replies,
+                                   &user->n_accept_replies);
+            radius_free_attr_array(&user->challenge_replies,
+                                   &user->n_challenge_replies);
             free(user);
             return;
         }
@@ -775,305 +833,277 @@ delete_radius_user (const char *name)
 
 /**
  * Given the 'string' has the form "Attribute=Value[,Attribute=Value...]",
- * puts the attribute into 'attr' and the value into value
+ * separates 'Attribute' and 'Value' and allocates new arrays for them.
  *
- * @returns the pointer to the next pair or the terminating zero.
+ * @param string   Pointer to start of 'attribute=value' string,
+ *                 after function execution this pointer moves to the next
+ *                 'attribute=value' pair, or NULL, if no attributes
+ *                 can be read
+ * @param attr     Pointer to allocated attribute name string
+ * @param value    Pointer to allocated attribute value string
+ *
+ * @returns Status code.
  */
-static const char *
-parse_attr_value_pair (const char *string, char **attr, char **value)
+static te_errno
+radius_parse_attr_value_pair(const char **string, char **attr, char **value)
 {
-    static char attr_buffer[64];
-    static char value_buffer[256];
-    char *bufptr;
+    const char *p, *start;
+    size_t      len;
 
-    for (bufptr = attr_buffer; *string != '='; string++, bufptr++)
+    if (string == NULL)
+        return TE_EINVAL;
+
+    start = *string;
+
+    /* End of attribute list */
+    if (start == NULL || *start == '\0')
     {
-        if (*string == '\0')
-        {
-            *attr = *value = NULL;
-            ERROR("syntax error in attribute string");
-            return NULL;
-        }
-        if (bufptr == attr_buffer + sizeof(attr_buffer))
-        {
-            *attr = *value = NULL;
-            ERROR("too long attribute name");
-            return NULL;
-        }
-        *bufptr = *string;
-    }
-    *bufptr = '\0';
-    *attr = attr_buffer;
-    for (bufptr = value_buffer, string++; 
-         *string != ',' && *string != '\0'; 
-         string++, bufptr++)
-    {
-        if (bufptr == value_buffer + sizeof(value_buffer))
-        {
-            *attr = *value = NULL;
-            ERROR("too long value name");
-            return NULL;
-        }
-        *bufptr = *string;
-    }
-    *bufptr = '\0';
-    *value = value_buffer;
-    if (*string == ',')
-        string++;
-    return *string == '\0' ? NULL : string;
-}
-
-/**
- * Parses 'check' as per 'parse_attr_value_pair' and
- * adds the result to a list of checks for a user named 'name'
- */
-static int
-set_user_checks(const char *name, const char *checks)
-{
-    radius_user *user = find_radius_user(name);
-    radius_user_check *ch;
-    char *attr;
-    char *value;
-
-    if (user == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (checks == NULL || *checks == '\0')
-    {
-        free(user->checks);
-        user->checks = NULL;
-        user->n_checks = 0;
+        *string = NULL;
         return 0;
     }
 
-    do
+    /* Attribute name */
+    if ((p = strchr(start, '=')) == NULL)
     {
-        checks = parse_attr_value_pair(checks, &attr, &value);
-        if (attr == NULL)
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        for (ch = user->checks; ch != NULL && ch->attribute != NULL; ch++)
-        {
-            if (strcmp(ch->attribute, attr) == 0)
-            {
-                if (ch->value != NULL)
-                    free(ch->value);
-                ch->value = *value == '\0' ? NULL : strdup(value);
-                break;
-            }
-        }
-        if ((ch == NULL || ch->attribute == NULL) && *value != '\0')
-        {
-            user->n_checks++;
-            user->checks = realloc(user->checks, (user->n_checks + 1) * sizeof(*user->checks));
-            user->checks[user->n_checks - 1].attribute = strdup(attr);
-            user->checks[user->n_checks - 1].value     = strdup(value);
-            user->checks[user->n_checks].attribute = NULL;
-        }
-    } while (checks != NULL);
-    return 0;
-}
-
-/**
- * Parses 'replies' as per 'parse_attr_value_pair' and 
- * adds the results to a list of replies for a user named 'name'.
- *
- * The replies are for Access-Accept if 'in_accept' is TRUE,
- * for Access-Challenge otherwise
- */
-static int
-set_user_replies(const char *name, const char *replies, te_bool in_accept)
-{
-    radius_user *user = find_radius_user(name);
-    radius_user_reply *rep;
-    char *attr;
-    char *value;
-
-    if (user == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    do
+        ERROR("%s(): attribute has no value in '%s'", __FUNCTION__, start);
+        return TE_EINVAL;
+    }
+    if ((*attr = (char *)calloc(p - start, 1)) == NULL)
     {
-        replies = parse_attr_value_pair(replies, &attr, &value);
-        if (attr == NULL)
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        for (rep = user->replies; rep != NULL && rep->attribute != NULL; rep++)
-        {
-            if (strcmp(rep->attribute, attr) == 0)
-            {
-                if ((in_accept ? rep->in_accept : rep->in_challenge) != NULL)
-                    free(in_accept ? rep->in_accept : rep->in_challenge);
-                if (*value == '\0')
-                {
-                    if (in_accept) 
-                    {
-                        rep->in_accept = NULL;
-                    }
-                    else
-                    {
-                        rep->in_challenge = NULL;
-                    }
-                }
-                else
-                {
-                    if (in_accept) 
-                    {
-                        rep->in_accept = strdup(value);
-                    }
-                    else
-                    {
-                        rep->in_challenge = strdup(value);
-                    }
-                }
-                break;
-            }
-        }
-        if ((rep == NULL || rep->attribute == NULL) && *value != '\0')
-        {
-            user->n_replies++;
-            user->replies = realloc(user->replies, (user->n_replies + 1) * sizeof(*user->replies));
-            user->replies[user->n_replies - 1].attribute = strdup(attr);
-            if (in_accept)
-            {
-                user->replies[user->n_replies - 1].in_accept     = strdup(value);
-                user->replies[user->n_replies - 1].in_challenge  = NULL;
-            }
-            else
-            {
-                user->replies[user->n_replies - 1].in_challenge  = strdup(value);
-                user->replies[user->n_replies - 1].in_accept  = NULL;
-            }
-            user->replies[user->n_replies].attribute = NULL;
-        }
-    } while (replies != NULL);
-    return 0;
-}
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return TE_ENOMEM;
+    }
+    memcpy(*attr, start, p - start);
 
-/**
- * A generic routine to convert a user check or reply list 
- * to a textual form 
- *
- * @param dest         The address of the buffer to put data
- * @param data         The list
- * @param itemsize     The size of a list item
- * @param attr_at      The offset inside an item of an attribute field
- * @param value_at     The offset inside an item of a value field
- */
-static void
-stringify_attribute_values(char *dest, 
-                           void *data, size_t itemsize, size_t attr_at, size_t value_at)
-{
-    void *ptr;
-    int tmp;
-    te_bool need_comma = FALSE;
+    /* Attribute value */
+    start = p + 1;
+    if ((p = strchr(start, ',')) != NULL)
+        len = p - start;
+    else
+        len = strlen(start);
 
-    if (data == NULL)
+    if (len == 0)
     {
-        *dest = '\0';
-        return;
+        ERROR("%s(): attribute '%s' has empty value", __FUNCTION__, *attr);
+        free(*attr);
+        *attr = NULL;
+        return TE_EINVAL;
     }
 
-#define ATTR(ptr)  *(char **)((char *)ptr + attr_at)
-#define VALUE(ptr) *(char **)((char *)ptr + value_at)
-    for (ptr = data; ATTR(ptr) != NULL; ptr = (char *)ptr + itemsize)
+    if ((*value = (char *)calloc(len, 1)) == NULL)
     {
-        if (VALUE(ptr) != NULL)
+        ERROR("%s(): failed to alocate memory", __FUNCTION__);
+        free(*attr);
+        *attr = NULL;
+        return TE_ENOMEM;
+    }
+    memcpy(*value, start, len);
+
+    *string = start + len;
+    return 0;
+}
+
+/**
+ * Parses string of RADIUS attribute 'name=value' pairs and
+ * creates corresponding array of radius_attr structures
+ *
+ * @param attr_array     Pointer to array of radius_attr structures
+ *                       (if *attr_array is not NULL, the old array will
+ *                       be deallocated)
+ * @param attr_array_len Number of items in 'attr_array'
+ * @param attr_string    String of comma-separated 'Attribute=Value' pairs
+ */
+static te_errno
+radius_set_attr_array(radius_attr **attr_array, unsigned int *attr_array_len,
+                      const char *attr_string)
+{
+    unsigned int  n_attrs = 0;
+    radius_attr  *attrs = NULL;
+
+    while (TRUE)
+    {
+        char        *name;
+        char        *value;
+        radius_attr *p;
+        te_errno     rc;
+
+        if ((rc = radius_parse_attr_value_pair(&attr_string, &name,
+                                               &value)) != 0)
+            return TE_RC(TE_TA_UNIX, rc);
+
+        if (attr_string == NULL)
+            break;
+
+        p = (radius_attr *)realloc(attrs,
+                                   (n_attrs + 1) * sizeof(radius_attr));
+        if (p == NULL)
         {
-            if (need_comma)
-            {
-                *dest++ = ',';
-            }
-            tmp = strlen(ATTR(ptr));
-            memcpy(dest, ATTR(ptr), tmp);
-            dest += tmp;
-            *dest++ = '=';
-            tmp = strlen(VALUE(ptr));
-            memcpy(dest, VALUE(ptr), tmp);
-            dest += tmp;
-            need_comma = TRUE;
+            ERROR("%s(): failed to allocate memory", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
         }
+        attrs = p;
+
+        attrs[n_attrs].name = name;
+        attrs[n_attrs].value = value;
+        n_attrs++;
+    }
+
+    radius_free_attr_array(attr_array, attr_array_len);
+    *attr_array = attrs;
+    *attr_array_len = n_attrs;
+    return 0;
+}
+
+/**
+ * A generic routine to convert an array of RADIUS attribute 
+ * name-value pairs to a textual form
+ *
+ * @param dest           The address of the buffer to put data
+ * @param attr_array     Attribute array to convert
+ * @param attr_array_len Number of items in 'attr_array'
+ */
+static void
+stringify_attr_array(char *dest, radius_attr *attr_array,
+                     unsigned int attr_array_len)
+{
+    unsigned int i;
+    size_t       len;
+
+    for (i = 0; i < attr_array_len; i++)
+    {
+        radius_attr *attr = &attr_array[i];
+
+        if (i != 0)
+            *dest++ = ',';
+
+        len = strlen(attr->name);
+        memcpy(dest, attr->name, len);
+        dest += len;
+        *dest++ = '=';
+
+        len = strlen(attr->value);
+        memcpy(dest, attr->value, len);
+        dest += len;
     }
     *dest = '\0';
-#undef ATTR
-#undef VALUE
+}
+
+#ifdef HAVE_FREERADIUS_UPDATE
+/**
+ * Compare two arrays of RADIUS 'attribute=value' pairs for equality
+ * (arrays are equal if they contains the same items in the same order)
+ *
+ * @param attrs1    First array
+ * @param n_attrs1  Number of items in 'attrs1'
+ * @param attrs2    Second array
+ * @param n_attrs2  Number of items in 'attrs2'
+ *
+ * @return TRUE if arrays are equal, FALSE otherwise.
+ */
+static te_bool
+radius_compare_attr_array(const radius_attr *attrs1, unsigned int n_attrs1,
+                          const radius_attr *attrs2, unsigned int n_attrs2)
+{
+    unsigned int i;
+
+    if (n_attrs1 != n_attrs2)
+        return FALSE;
+
+    for (i = 0; i < n_attrs1; i++)
+    {
+        if (strcmp(attrs1[i].name, attrs2[i].name) != 0 ||
+            strcmp(attrs1[i].value, attrs2[i].value) != 0)
+            return FALSE;
+    }
+    return TRUE;
+}
+#endif
+
+/**
+ * Write array of 'attribute=value' pairs to the file
+ * in the form of comma-separated list
+ *
+ * @param f          Opened file to write to
+ * @param attrs      Array to write
+ * @param n_attrs    Number of items in 'attrs'
+ * @param operator   'Operator' string to place between attribute name and
+ *                   its value (e.g., operator ':=' gives 'Attribute := Value')
+ * @param separator  Additional symbol to place after separating commas
+ *                   (usually space or '\n')
+ */
+static void
+radius_write_attr_array(FILE *f, const radius_attr *attrs,
+                        unsigned int n_attrs,
+                        const char *operator, char separator)
+{
+    unsigned int i;
+
+    for (i = 0; i < n_attrs; i++)
+    {
+        if (i != 0)
+            fprintf(f, ",%c", separator);
+
+        fprintf(f, "%s %s %s", attrs[i].name, operator, attrs[i].value);
+    }
 }
 
 /**
- * Writes user records from 'users' to 'conf'
+ * Writes list of users to the FreeRADIUS users configuration file
+ *
+ * @param conf   Opened file to write to
  */
 static void
-write_radius_users (FILE *conf, radius_user *users)
+write_radius_users(FILE *conf)
 {
-    radius_user_check *check;
-    radius_user_reply *action;
+    const radius_user *user;
 
     rewind(conf);
     ftruncate(fileno(conf), 0);
-    for (; users != NULL; users = users->next)
+    for (user = radius_users; user != NULL; user = user->next)
     {
-        te_bool need_comma = FALSE;
-        if (!users->reject)
+        if (user->reject)
         {
-            fprintf(conf, "\"%s\" Response-Packet-Type == Access-Accept",
-                    users->name);
-            for (check = users->checks; check != NULL && check->attribute != NULL; check++)
-            {
-                if (check->value != NULL)
-                {
-                    fprintf(conf, ", %s == %s", 
-                            check->attribute, check->value);
-                }
-            }
+            fprintf(conf, "\"%s\" Auth-Type := Reject\n\n", user->name);
+        }
+        else
+#ifdef HAVE_FREERADIUS_UPDATE
+        if (radius_compare_attr_list(user->accept_replies,
+                                     user->n_accept_replies,
+                                     user->challenge_replies,
+                                     user->n_challenge_replies))
+#endif
+        {
+            /* Common configuration for all replies */
+            fprintf(conf, "\"%s\" ", user->name);
+            radius_write_attr_array(conf, user->checks,
+                                    user->n_checks, "==", ' ');
             fputc('\n', conf);
-            need_comma = FALSE;
-            for (action = users->replies; action != NULL && action->attribute != NULL; action++)
-            {
-                if (action->in_accept != NULL)
-                {
-                    if (action->in_challenge == NULL || 
-                        strcmp(action->in_accept, action->in_challenge) != 0)
-                    {
-                        fprintf(conf, "%s    %s := %s", 
-                                need_comma ? ",\n" : "",
-                                action->attribute,
-                                action->in_accept);
-                        need_comma = TRUE;
-                    }
-                }
-                else if (action->in_challenge != NULL)
-                {
-                    fprintf(conf, "%s    %s -= %s", 
-                            need_comma ? ",\n" : "",
-                            action->attribute,
-                            action->in_challenge);
-                    need_comma = TRUE;
-                }
-            }
+            radius_write_attr_array(conf, user->accept_replies,
+                                    user->n_accept_replies, ":=", '\n');
             fputs("\n\n", conf);
         }
-        fprintf(conf, "\"%s\" Auth-Type := %s",
-                users->name, users->reject ? "Reject" : "EAP");
-        for (check = users->checks; check != NULL && check->attribute != NULL; check++)
+#ifdef HAVE_FREERADIUS_UPDATE
+        else
         {
-            if (check->value != NULL)
-            {
-                fprintf(conf, ", %s == %s", 
-                        check->attribute, check->value);
-            }
+            /* Access-Accept configuration */
+            fprintf(conf, "\"%s\" ", user->name);
+            radius_write_attr_array(conf, user->checks,
+                                    user->n_checks, "==", ' ');
+            fputs(", Response-Packet-Type == Access-Accept\n", conf);
+            radius_write_attr_array(conf, user->accept_replies,
+                                    user->n_accept_replies, ":=", '\n');
+            fputs("\n\n", conf);
+
+            /* Access-Challenge configuration */
+            fprintf(conf, "\"%s\" ", user->name);
+            radius_write_attr_array(conf, user->checks,
+                                    user->n_checks, "==", ' ');
+            fputs(", Response-Packet-Type == Access-Challenge\n", conf);
+            radius_write_attr_array(conf, user->challenge_replies,
+                                    user->n_challenge_replies, ":=", '\n')
+            fputs("\n\n", conf);
         }
-        fputc('\n', conf);
-        need_comma = FALSE;
-        for (action = users->replies; action != NULL && action->attribute != NULL; action++)
-        {
-            if (action->in_challenge != NULL)
-            {
-                fprintf(conf, "%s    %s += %s", 
-                        need_comma ? ",\n" : "",
-                        action->attribute,
-                        action->in_challenge);
-                need_comma = TRUE;
-            }
-        }
-        fputc('\n', conf);
+#endif
     }
     fflush(conf);
 }
@@ -1112,12 +1142,12 @@ radiusserver_find_name()
         snprintf(buf, sizeof(buf), "test -x /etc/init.d/%s", candidate[i]);
         if (ta_system(buf) == 0)
         {
-            RING("RADIUS server named <%s> is detected", candidate[i]);
+            RING("RADIUS server named '%s' is detected", candidate[i]);
             radius_daemon = candidate[i];
             return 0;
         }
         else
-            ERROR("'test -x /etc/init.d/%s' failes", candidate[i]);
+            ERROR("'test -x /etc/init.d/%s' fails", candidate[i]);
     }
     return TE_ENOENT;
 }
@@ -1196,9 +1226,7 @@ ds_radius_accept_get(unsigned int gid, const char *oid,
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    stringify_attribute_values(value, user->replies, sizeof(*user->replies), 
-                               offsetof(radius_user_reply, attribute),
-                               offsetof(radius_user_reply, in_accept));
+    stringify_attr_array(value, user->accept_replies, user->n_accept_replies);
     return 0;
 }
 
@@ -1207,7 +1235,8 @@ ds_radius_accept_set(unsigned int gid, const char *oid,
                      const char *value, const char *instance, 
                      const char *username, ...)
 {
-    int rc;
+    te_errno     rc;
+    radius_user *user;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1216,12 +1245,16 @@ ds_radius_accept_set(unsigned int gid, const char *oid,
     if (radius_users_file == NULL)
         return TE_RC(TE_TA_UNIX, TE_EBADF);
 
-    if ((rc = set_user_replies(username, value, TRUE)) == 0)
+    if ((user = find_radius_user(username)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if ((rc = radius_set_attr_array(&user->accept_replies,
+                                    &user->n_accept_replies, value)) == 0)
     {
-        write_radius_users(radius_users_file, radius_users);
+        write_radius_users(radius_users_file);
         radiusserver_reload();
     }
-    return 0;
+    return rc;
 }
 
 static te_errno
@@ -1237,9 +1270,9 @@ ds_radius_challenge_get(unsigned int gid, const char *oid,
 
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    stringify_attribute_values(value, user->replies, sizeof(*user->replies), 
-                               offsetof(radius_user_reply, attribute),
-                               offsetof(radius_user_reply, in_challenge));
+
+    stringify_attr_array(value, user->challenge_replies,
+                         user->n_challenge_replies);
     return 0;
 }
 
@@ -1248,7 +1281,8 @@ ds_radius_challenge_set(unsigned int gid, const char *oid,
                         const char *value, const char *instance, 
                         const char *username, ...)
 {
-    int rc;
+    te_errno     rc;
+    radius_user *user;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1256,10 +1290,14 @@ ds_radius_challenge_set(unsigned int gid, const char *oid,
 
     if (radius_users_file == NULL)
         return TE_RC(TE_TA_UNIX, TE_EBADF);
-    rc = set_user_replies(username, value, FALSE);
-    if (rc == 0)
+
+    if ((user = find_radius_user(username)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if ((rc = radius_set_attr_array(&user->challenge_replies,
+                                    &user->n_challenge_replies, value)) == 0)
     {
-        write_radius_users(radius_users_file, radius_users);
+        write_radius_users(radius_users_file);
         radiusserver_reload();
     }
     return rc;
@@ -1278,9 +1316,8 @@ ds_radius_check_get(unsigned int gid, const char *oid,
 
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    stringify_attribute_values(value, user->checks, sizeof(*user->checks), 
-                               offsetof(radius_user_check, attribute),
-                               offsetof(radius_user_check, value));
+
+    stringify_attr_array(value, user->checks, user->n_checks);
     return 0;
 }
 
@@ -1289,7 +1326,8 @@ ds_radius_check_set(unsigned int gid, const char *oid,
                     const char *value, const char *instance, 
                     const char *username, ...)
 {
-    int rc;
+    te_errno     rc;
+    radius_user *user;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1297,10 +1335,14 @@ ds_radius_check_set(unsigned int gid, const char *oid,
 
     if (radius_users_file == NULL)
         return TE_RC(TE_TA_UNIX, TE_EBADF);
-    rc = set_user_checks(username, value);
-    if (rc == 0)
+
+    if ((user = find_radius_user(username)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if ((rc = radius_set_attr_array(&user->checks,
+                                    &user->n_checks, value)) == 0)
     {
-        write_radius_users(radius_users_file, radius_users);
+        write_radius_users(radius_users_file);
         radiusserver_reload();
     }
     return rc;
@@ -1323,11 +1365,13 @@ ds_radius_user_add(unsigned int gid, const char *oid,
 
         if (user != NULL)
             return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
         user = make_radius_user(username);
         if (user == NULL)
             return TE_RC(TE_TA_UNIX, TE_EFAULT);
+
         user->reject = (*value == '0');
-        write_radius_users(radius_users_file, radius_users);
+        write_radius_users(radius_users_file);
         radiusserver_reload();
         return 0;
     }
@@ -1346,6 +1390,7 @@ ds_radius_user_set(unsigned int gid, const char *oid,
 
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     user->reject = (*value == '0');
     return 0;
 }
@@ -1363,7 +1408,8 @@ ds_radius_user_get(unsigned int gid, const char *oid,
 
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    *value = (user->reject ? '0' : '1');
+
+    value[0] = (user->reject ? '0' : '1');
     value[1] = '\0';
     return 0;
 }
@@ -1377,7 +1423,7 @@ ds_radius_user_del(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     delete_radius_user(username);
-    write_radius_users(radius_users_file, radius_users);
+    write_radius_users(radius_users_file);
     radiusserver_reload();
     return 0;
 }
@@ -1388,21 +1434,27 @@ ds_radius_user_list(unsigned int gid, const char *oid,
                     const char *instance, ...)
 {
     radius_user *user;
-    int size;
-    char *iter;
+    size_t       size = 0;
+    char        *iter;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
 
-    for (user = radius_users, size = 0; user != NULL; size += strlen(user->name) + 1, user = user->next)
-        ;
-    *list = malloc(size + 1);
-    for (user = radius_users, iter = *list; user != NULL; user = user->next, iter += size + 1)
+    for (user = radius_users; user != NULL; user = user->next)
+        size += strlen(user->name) + 1;
+
+    if ((*list = (char *)malloc(size + 1)) == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    for (user = radius_users, iter = *list; user != NULL; user = user->next)
     {
         size = strlen(user->name);
         memcpy(iter, user->name, size);
         iter[size] = ' ';
+        iter += size + 1;
     }
     *iter = '\0';
     return 0;
