@@ -378,7 +378,9 @@ static type_info_t type_info[] =
     {"struct timeval", sizeof(struct timeval)},
     {"struct linger", sizeof(struct linger)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
+#if HAVE_STRUCT_IP_MREQN
     {"struct ip_mreqn", sizeof(struct ip_mreqn)}
+#endif
 };
 
 bool_t
@@ -1349,7 +1351,7 @@ typedef union opt_param {
     int                 integer;
     char               *str;
     struct linger       linger;
-#ifdef __linux__
+#if HAVE_STRUCT_IP_MREQN
     struct ip_mreqn     mreqn;
 #endif
     struct ip_mreq      mreq;
@@ -1393,7 +1395,7 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             break;
         }
 
-#ifdef __linux__
+#if HAVE_STRUCT_IP_MREQN
         case OPT_MREQN:
         {
             memcpy((char *)&(param->mreqn.imr_multiaddr),
