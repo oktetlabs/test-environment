@@ -2831,6 +2831,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
     
     if (!user_data.found)
     {
+        rtnl_close(&rth);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
