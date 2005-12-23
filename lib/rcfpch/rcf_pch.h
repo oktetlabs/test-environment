@@ -296,7 +296,7 @@ extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
  *     * resource name, which unique identifies the resource:
  *       "/agent:A/interface:eth0", "/agent/dnsserver" 
  *       or "my_peripheral"; this name should be OID or string, 
- *       whithout '/' symbols;
+ *       without '/' symbols;
  *     * resource generic name, which is used by rcfpch to discover
  *       callback for resource grabbing/releasing: e.g. /agent/interface.
  *
