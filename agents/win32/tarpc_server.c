@@ -3379,8 +3379,10 @@ TARPC_FUNC(set_event, {},
 TARPC_FUNC(event_select, {},
 {
     UNUSED(list);
+    SetLastError(ERROR_UNSPEC);  
     out->retval = WSAEventSelect(in->fd, IN_HEVENT,
                                  network_event_rpc2h(in->event));
+    out->common._errno = win_rpc_errno(GetLastError());
 }
 )
 
@@ -3484,8 +3486,10 @@ _wsa_async_select_1_svc(tarpc_wsa_async_select_in *in,
 
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
+    SetLastError(ERROR_UNSPEC);  
     out->retval = WSAAsyncSelect(in->sock, IN_HWND, WM_USER + 1,
                                  network_event_rpc2h(in->event));
+    out->common._errno = win_rpc_errno(GetLastError());
     return TRUE;
 }
 
