@@ -2032,13 +2032,13 @@ env_set(unsigned int gid, const char *oid, const char *value,
     if (env_is_hidden(name, -1))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
 
-    if (setenv(name, value, TRUE) == 0)
+    if (SetEnvironmentVariable(name, value) == TRUE)
     {
         return 0;
     }
     else
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        te_errno rc = TE_OS_RC(TE_TA_WIN32, GetLastError());
 
         ERROR("Failed to set Environment variable '%s' to '%s'; errno %r",
               name, value, rc);
@@ -2066,15 +2066,18 @@ env_add(unsigned int gid, const char *oid, const char *value,
     if (env_is_hidden(name, -1))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
 
-    if (getenv(name) == NULL)
+    /* Don't check if env. var exists */
+    /* if (getenv(name) == NULL) */
+    /* Just set it */
+    if (1)
     {
-        if (setenv(name, value, FALSE) == 0)
+        if (SetEnvironmentVariable(name, value) == TRUE)
         {
             return 0;
         }
         else
         {
-            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+            te_errno rc = TE_OS_RC(TE_TA_WIN32, GetLastError());
 
             ERROR("Failed to add Environment variable '%s=%s'",
                   name, value);
