@@ -2719,6 +2719,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+#ifdef USE_NETLINK
 /** Find neighbour entry and return its parameters */
 /**< User data for neigh_find_cb() callback function */
 typedef struct {
@@ -2796,6 +2797,7 @@ neigh_find_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     
     return 0;
 }
+#endif
 
 static te_errno
 neigh_find(const char *oid, const char *ifname, const char *addr,
