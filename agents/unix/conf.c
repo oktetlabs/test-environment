@@ -2803,7 +2803,7 @@ static te_errno
 neigh_find(const char *oid, const char *ifname, const char *addr,
            char *mac_p, unsigned int *state_p)
 {
-#ifdef __linux__
+#ifdef USE_NETLINK
     struct rtnl_handle   rth;    
     neigh_find_cb_param  user_data;
     te_errno             rc;
@@ -3046,6 +3046,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 #endif
 }
 
+#ifdef USE_NETLINK
 typedef struct {
     te_bool dynamic;
     char    ifname[IFNAMSIZ];
@@ -3085,6 +3086,7 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     
     return 0;
 }
+#endif
  
 /**
  * Get instance list for object "agent/arp" and "agent/volatile/arp".
@@ -3100,7 +3102,7 @@ static te_errno
 neigh_list(unsigned int gid, const char *oid, char **list, 
            const char *ifname)
 {
-#ifdef __linux__
+#ifdef USE_NETLINK
     struct rtnl_handle   rth;    
     neigh_print_cb_param user_data;
     
@@ -3770,7 +3772,7 @@ route_del(unsigned int gid, const char *oid, const char *route)
 }
 
 
-#ifdef __linux__
+#ifdef USE_NETLINK
 
 typedef struct{
     int           family;        /**< Route address family */
@@ -3915,7 +3917,7 @@ route_list(unsigned int gid, const char *oid, char **list)
 
     buf[0] = '\0';
 
-#ifdef __linux__
+#ifdef USE_NETLINK
 
     struct rtnl_handle               rth;
     rtnl_print_route_cb_user_data_t  user_data;    
