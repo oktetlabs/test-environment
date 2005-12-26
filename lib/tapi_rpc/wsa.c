@@ -192,7 +192,7 @@ rpc_disconnect_ex(rcf_rpc_server *rpcs, int s,
 
     CHECK_RETVAL_VAR_IS_BOOL(disconnect_ex, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: DisconnectEx(%d, %p, %d) -> %s (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: DisconnectEx(%d, %u, %d) -> %s (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, overlapped, flags,
                  out.retval ? "true" : "false",
@@ -481,7 +481,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
 
     CHECK_RETVAL_VAR_IS_BOOL(transmit_file, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: TransmitFile(%d, %x, %d, %d, %p, ...) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: TransmitFile(%d, %x, %d, %d, %u, ...) "
                  "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  s, file, len, len_per_send, overlapped,
                  out.retval ? "true" : "false",
@@ -533,7 +533,7 @@ rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, int file,
 
     CHECK_RETVAL_VAR_IS_BOOL(transmitfile_tabufs, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: TransmitFile(%d, %x, %d, %d, %p, "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: TransmitFile(%d, %x, %d, %d, %u, "
                  "...) -> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  s, file, len, bytes_per_send, overlapped,
                  out.retval ? "true" : "false",
@@ -580,6 +580,8 @@ rpc_create_file(rcf_rpc_server *rpcs, char *name,
 
     rcf_rpc_call(rpcs, "create_file", &in, &out);
 
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(create_file, out.handle);
+
     TAPI_RPC_LOG("RPC (%s,%s)%s: CreateFile(%s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  name, out.handle, errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -615,7 +617,7 @@ rpc_closesocket(rcf_rpc_server *rpcs, int s)
     RETVAL_INT(closesocket, out.retval);
 }
 
-int
+te_bool
 rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
                                 rpc_overlapped overlapped)
 {
@@ -638,12 +640,46 @@ rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "has_overlapped_io_completed", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: HasOverlappedIoCompleted(%p)"
+    CHECK_RETVAL_VAR_IS_BOOL(has_overlapped_io_completed, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: HasOverlappedIoCompleted(%u)"
                  " -> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  overlapped, out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_INT(has_overlapped_io_completed, out.retval);
+    RETVAL_BOOL(has_overlapped_io_completed, out.retval);
+}
+
+te_bool 
+rpc_cancel_io(rcf_rpc_server *rpcs, int fd)
+{
+    rcf_rpc_op          op;
+    tarpc_cancel_io_in  in;
+    tarpc_cancel_io_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(cancel_io, -1);
+    }
+
+    op = rpcs->op;
+
+    in.fd = fd;
+
+    rcf_rpc_call(rpcs, "cancel_io", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_BOOL(cancel_io, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: CancelIo(%d)"
+                 " -> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 fd, out.retval ? "true" : "false",
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_BOOL(cancel_io, out.retval);
 }
 
 int
@@ -675,13 +711,16 @@ rpc_create_io_completion_port(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "create_io_completion_port", &in, &out);
 
+    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(create_io_completion_port, 
+                                      out.retval);
+
     TAPI_RPC_LOG("RPC (%s,%s)%s: CreateIoCompletionPort(%x, %x, %d, %u)"
                  " -> %x (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  file_handle, existing_completion_port,
                  completion_key, number_of_concurrent_threads,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_RPC_PTR(create_io_completion_port, out.retval);
+    RETVAL_INT(create_io_completion_port, out.retval);
 }
 
 te_bool
@@ -770,7 +809,7 @@ rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_BOOL(post_queued_completion_status, out.retval);
     
     TAPI_RPC_LOG("RPC (%s,%s)%s: PostQueuedCompletionStatus"
-                 "(%x, %u, %d, %x) -> %s (%s)", rpcs->ta,
+                 "(%x, %u, %d, %u) -> %s (%s)", rpcs->ta,
                  rpcs->name, rpcop2str(op), completion_port,
                  number_of_bytes, completion_key, overlapped, 
                  out.retval ? "true" : "false", 
@@ -1077,7 +1116,7 @@ rpc_delete_overlapped(rcf_rpc_server *rpcs,
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "delete_overlapped", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): delete_overlapped(%p)",
+    TAPI_RPC_LOG("RPC (%s,%s): delete_overlapped(%u)",
                  rpcs->ta, rpcs->name, overlapped);
 
     RETVAL_VOID(delete_overlapped);
@@ -2160,7 +2199,7 @@ rpc_get_overlapped_result(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_BOOL(get_overlapped_result, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: GetOverlappedResult(%d, %p, ...) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: GetOverlappedResult(%d, %u, ...) "
                  "-> %s (%s) bytes transferred %u",
                  rpcs->ta, rpcs->name, rpcop2str(op), s, overlapped,
                  out.retval ? "true" : "false",
@@ -3032,7 +3071,7 @@ rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
         }
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: GetOverlappedResult(%d, %p, %d, ...) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: GetOverlappedResult(%d, %p, %u, ...) "
                  "-> %s (%s) bytes transferred %u",
                  rpcs->ta, rpcs->name, rpcop2str(op), s, overlapped,
                  control_code, out.retval ? "true" : "false",

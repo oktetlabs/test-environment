@@ -865,7 +865,20 @@ struct tarpc_has_overlapped_io_completed_in {
 
 struct tarpc_has_overlapped_io_completed_out {
     struct tarpc_out_arg  common;
-    tarpc_int             retval;
+    tarpc_bool            retval;
+};    
+
+
+/* CancelIo() */
+
+struct tarpc_cancel_io_in {
+    struct tarpc_in_arg  common;
+    tarpc_int            fd;
+};    
+
+struct tarpc_cancel_io_out {
+    struct tarpc_out_arg  common;
+    tarpc_bool            retval;
 };    
 
 /* CreateIoCompletionPort() */
@@ -3124,6 +3137,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(create_file)
         RPC_DEF(closesocket)
         RPC_DEF(has_overlapped_io_completed)
+        RPC_DEF(cancel_io)
         RPC_DEF(create_io_completion_port)
         RPC_DEF(get_queued_completion_status)
         RPC_DEF(post_queued_completion_status)

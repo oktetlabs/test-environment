@@ -31,6 +31,7 @@
 #ifndef __TARPC_SERVER_H__
 #define __TARPC_SERVER_H__
 
+#include "config.h"
 #include "te_config.h"
 
 #ifdef HAVE_STDIO_H

@@ -13,8 +13,9 @@ MY_LDADD=symtbl.o -lrcfpch -lrpcxdr \
          -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin \
          -lexpat 
          
-MY_LDAFLAGS=-rdynamic -export-dynamic 
+noinst_HEADERS=tarpc_server.h
 
+MY_LDAFLAGS=-rdynamic -export-dynamic 
 MY_SOURCES=win32.c win32conf.c inet_pton.c
 MY_SYMTBL_OBJECTS=win32.o 
 

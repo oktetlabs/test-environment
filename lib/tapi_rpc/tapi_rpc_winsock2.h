@@ -339,6 +339,17 @@ extern int rpc_create_file(rcf_rpc_server *rpcs, char *name,
 extern int rpc_closesocket(rcf_rpc_server *rpcs, int s);
 
 /**
+ * @b CancelIo() remote call.
+ *
+ * @param rpcs           RPC server handle
+ * @param fd             File handle which requests to be cancelled
+ *                       belong to
+ *
+ * @return  @c TRUE (success) or @c FALSE (failure)
+ */
+extern te_bool rpc_cancel_io(rcf_rpc_server *rpcs, int fd);
+
+/**
  * @b HasOverlappedIoCompleted() remote call.
  *
  * @param rpcs        RPC server handle
@@ -346,8 +357,8 @@ extern int rpc_closesocket(rcf_rpc_server *rpcs, int s);
  *
  * @return   @c TRUE if overlapped I/O has completed, @c FALSE otherwise.
  */
-extern int rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
-                                           rpc_overlapped overlapped);
+extern te_bool rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
+                                               rpc_overlapped overlapped);
 
 /**
  * @b CreateIoCompletionPort() remote call.
