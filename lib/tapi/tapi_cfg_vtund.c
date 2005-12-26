@@ -129,6 +129,22 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
               "by the tunnel on server side: %r", rc);
         return rc;
     }
+
+    {
+        char if_oid[100];
+
+        snprintf(if_oid, sizeof(if_oid), "/agent:%s/interface:%s",
+                 ta_srv, str);
+        rc = cfg_add_instance_fmt(NULL, CVT_STRING, if_oid,
+                                  "/agent:%s/rsrc:%s",
+                                  ta_srv, str);
+        if (rc != 0)
+        {
+            ERROR("Failed to add resource for a new PPP interface '%s'"
+                  "on TA '%s': %r", str, ta_srv, rc);
+            return rc;
+        }
+    }
     
     rc = cfg_find_fmt(&tmp, "/agent:%s/interface:%s", ta_srv, str);
     if (rc != 0)
@@ -157,6 +173,22 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
         ERROR("Failed to get name of the network interface created "
               "by the tunnel on client side: %r", rc);
         return rc;
+    }
+    
+    {
+        char if_oid[100];
+
+        snprintf(if_oid, sizeof(if_oid), "/agent:%s/interface:%s",
+                 ta_clnt, str);
+        rc = cfg_add_instance_fmt(NULL, CVT_STRING, if_oid,
+                                  "/agent:%s/rsrc:%s",
+                                  ta_clnt, str);
+        if (rc != 0)
+        {
+            ERROR("Failed to add resource for a new PPP interface '%s'"
+                  "on TA '%s': %r", str, ta_clnt, rc);
+            return rc;
+        }
     }
     
     rc = cfg_find_fmt(&tmp, "/agent:%s/interface:%s", ta_clnt, str);
