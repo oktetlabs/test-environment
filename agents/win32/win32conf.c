@@ -225,7 +225,8 @@ static const char * const env_hidden[] = {
     "TE_LOG_PORT",
     "TARPC_DL_NAME",
     "TCE_CONNECTION",
-    "TZ"
+    "TZ",
+    "_"
 };
 
 /* win32 Test Agent configuration tree */
