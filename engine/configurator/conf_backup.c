@@ -573,6 +573,75 @@ restore_entries(cfg_instance *list)
     return 0;
 }
 
+static cfg_instance *
+topo_sort_instances_rec(cfg_instance *list, unsigned length)
+{
+    cfg_instance *first;
+    cfg_instance *second;
+    cfg_instance *result = NULL;
+    cfg_instance *prev   = NULL;
+    cfg_instance *chosen = NULL;
+    unsigned      i;
+    
+    if (length <= 1)
+        return list;
+    
+    first = list;
+    for (i = 1; i < length / 2; i++)
+        list = list->brother;
+    second = list->brother;
+    list->brother = NULL;
+
+    first = topo_sort_instances_rec(first, length / 2);
+    second = topo_sort_instances_rec(second, length - (length / 2));
+    
+    while (first != NULL && second != NULL)
+    {
+        chosen = (first->obj->ordinal_number < second->obj->ordinal_number ?
+                  first : second);
+
+        if (chosen == first)
+            first = first->brother;
+        else
+            second = second->brother;
+
+        if (prev != NULL)
+            prev->brother = chosen;
+        else
+            result        = chosen;
+        prev              = chosen;
+    }
+    chosen = (first != NULL ? first : second);
+    if (prev != NULL)
+        prev->brother = chosen;
+    else
+        result        = chosen;
+    return result;
+}
+
+static cfg_instance *
+topo_sort_instances(cfg_instance *list)
+{
+    unsigned      length = 0;
+    cfg_instance *tmp;
+    int           seq    = -1;
+    
+    for (tmp = list; tmp != NULL; tmp = tmp->brother)
+        length++;
+    list = topo_sort_instances_rec(list, length);
+
+    for (tmp = list; tmp != NULL; tmp = tmp->brother)
+    {
+        if ((int)tmp->obj->ordinal_number < seq)
+        {
+            ERROR("Dependency order is broken for %s (%u <= %d)", 
+                  tmp->oid, tmp->obj->ordinal_number, seq);
+        }
+        seq = tmp->obj->ordinal_number;
+    }
+    return list;
+}
+
 /**
  * Process "backup" configuration file or backup file.
  *
@@ -586,7 +655,7 @@ int
 cfg_backup_process_file(xmlNodePtr node, te_bool restore)
 {
     cfg_instance *list;
-    xmlNodePtr    cur = node->xmlChildrenNode;
+    xmlNodePtr    cur         = node->xmlChildrenNode;
     int           rc;
 
     if (cur == NULL)
@@ -609,32 +678,21 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
             return rc;
         }
     }
-    
+
+    cfg_order_objects_topologically();
+
     if ((rc = remove_excessive("/", list)) != 0)
     {
         ERROR("Failed to remove excessive entries");
         free_instances(list);
         return rc;
     }
+
+    list = topo_sort_instances(list);
     
     return restore_entries(list);
 }
 
-static
-int cfg_topo_order(const void *arg1, const void *arg2)
-{
-    cfg_instance *inst1 = *((cfg_instance **)arg1);
-    cfg_instance *inst2 = *((cfg_instance **)arg2);
-
-    if (inst1 == inst2)
-        return 0;
-    if (inst1 == NULL)
-        return -1;
-    if (inst2 == NULL)
-        return 1;
-
-    return inst1->obj->ordinal_number - inst2->obj->ordinal_number;
-}
 
 /**
  * Save current version of the TA subtree,
@@ -649,7 +707,6 @@ cfg_backup_restore_ta(char *ta)
 {
     cfg_instance  *list   = NULL;
     cfg_instance  *prev   = NULL;
-    cfg_instance **sorted = NULL;
     cfg_instance  *tmp;
     char           buf[CFG_SUBID_MAX + CFG_INST_NAME_MAX + 1];
     int            rc;
@@ -659,16 +716,11 @@ cfg_backup_restore_ta(char *ta)
 
     /* Topologically sort instances */
     cfg_order_objects_topologically();
-    sorted = calloc(cfg_all_inst_size, sizeof(*sorted));
-    if (sorted == NULL)
-        return TE_ENOMEM;
-    memcpy(sorted, cfg_all_inst, cfg_all_inst_size * sizeof(*sorted));
-    qsort(sorted, cfg_all_inst_size, sizeof(*sorted), cfg_topo_order);
 
     /* Create list of instances on the TA */
     for (i = 0; i < cfg_all_inst_size; i++)
     {
-        cfg_instance *inst = sorted[i];
+        cfg_instance *inst = cfg_all_inst[i];
         
         if (inst == NULL || strncmp(inst->oid, buf, strlen(buf)) != 0)
         {
@@ -678,14 +730,12 @@ cfg_backup_restore_ta(char *ta)
         if ((tmp = (cfg_instance *)calloc(sizeof(*tmp), 1)) == NULL)
         {
             free_instances(list);
-            free(sorted);
             return TE_ENOMEM;
         }
         if ((tmp->oid = strdup(inst->oid)) == NULL)
         {
             free_instances(list);
             free(tmp);
-            free(sorted);
             return TE_ENOMEM;
         }
         if (cfg_types[inst->obj->type].copy(inst->val, &tmp->val) != 0)
@@ -693,7 +743,6 @@ cfg_backup_restore_ta(char *ta)
             free_instances(list);
             free(tmp->oid);
             free(tmp);
-            free(sorted);
             return TE_ENOMEM;
         }
         tmp->handle = inst->handle;
@@ -708,8 +757,6 @@ cfg_backup_restore_ta(char *ta)
         prev = tmp;
     }
 
-    free(sorted);
-
     if ((rc = cfg_ta_sync(buf, TRUE)) != 0)
     {
         free_instances(list);
@@ -721,6 +768,8 @@ cfg_backup_restore_ta(char *ta)
         free_instances(list);
         return rc;
     }
+
+    list = topo_sort_instances(list);
     
     return restore_entries(list);
 }
@@ -749,8 +798,19 @@ put_object(FILE *f, cfg_object *obj)
                 
         if (obj->def_val != NULL)
             fprintf(f, " default=\"%s\"", obj->def_val);
-        fprintf(f, "/>\n");
-                
+        if (obj->depends_on == NULL)
+            fprintf(f, "/>\n");
+        else
+        {
+            cfg_dependency *dep;
+            fputs(">\n", f);
+            for (dep = obj->depends_on; dep != NULL; dep = dep->next)
+            {
+                fprintf(f, "    <depends oid=\"%s\" />\n", 
+                        dep->depends->oid);
+            }
+            fputs("  </object>\n", f);
+        }
     }
     for (obj = obj->son; obj != NULL; obj = obj->brother)
         put_object(f, obj);
