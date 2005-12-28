@@ -157,6 +157,8 @@ main(int argc, char *argv[])
         TEST_FAIL("tapi_tad_trrecv_start failed: %r", rc);
     VERB("eth recv start num: %d", num_pkts);
 
+    caught_num = 0;
+#if 1
     if (blocked_mode)
         rc = tapi_tad_trrecv_wait(ta, sid, eth_listen_csap,
                                   pass_results ?
@@ -174,6 +176,16 @@ main(int argc, char *argv[])
                                       NULL,
                                   &caught_num);
     }
+#else
+        rc = tapi_tad_trrecv_get(ta, sid, eth_listen_csap,
+                                  pass_results ?
+                                      tapi_eth_trrecv_cb_data(
+                                          local_eth_frame_handler, NULL) :
+                                      NULL,
+                                  &caught_num);
+    RING("Caught %d", caught_num);
+    caught_num = num_pkts;
+#endif
 
 
     if (rc == TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT))

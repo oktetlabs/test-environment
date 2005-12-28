@@ -35,7 +35,7 @@
 
 
 /* The number of packets to be processed */
-#define PKTS_TO_PROCESS                15
+#define PKTS_TO_PROCESS                2000
 
 /*NOTE: internal buffer length allocated 20000 bytes */
 #define PAYLOAD_LENGTH                 1460
@@ -120,6 +120,9 @@ main(int argc, char *argv[])
     asn_value *template;/* eth frame template for traffic generation */ 
 
     size_t len = 100;
+
+    int prev = 0, num = 0;
+    int i;
 
     TEST_START; 
 
@@ -229,9 +232,6 @@ main(int argc, char *argv[])
         TEST_FAIL(" transmitting process error %x", rc);     
     }
 
-    {
-        int prev = 0, num = 0;
-        int i;
     do {
         sleep(1);
         VERB("before get status\n");
@@ -256,14 +256,14 @@ main(int argc, char *argv[])
     while (i < 3 && status == CSAP_BUSY) 
     {
         prev = num;
-        if (rc)
+        if (rc != 0)
         {
             TEST_FAIL("v1: port A. RX CSAP get status error %x",
                              rc);
         }
         rc = rcf_ta_trrecv_get(agent_b, sid_b, rx_csap, NULL, NULL, &num);
         sleep(1);
-        if (rc)
+        if (rc != 0)
         {
             TEST_FAIL("v1: port A. RX CSAP get traffic error %x",
                              rc);
@@ -275,11 +275,11 @@ main(int argc, char *argv[])
         sleep (1);
         i++;
         rc = tapi_csap_get_status(agent_b, sid_b, rx_csap, &status);
+        if (rc != 0)
+            TEST_FAIL("get status of CSAP %s:%d fails %r",
+                      agent_b, rx_csap, rc);
     } 
 
-    }
-
-   
     /* Stop recieving process */
     rc = rcf_ta_trrecv_stop(agent_b, sid_b, rx_csap, NULL, NULL,
                             &recv_pkts);
@@ -330,7 +330,7 @@ main(int argc, char *argv[])
         TEST_FAIL(" TX/RX process has traffic inconsistence");
     } 
 
-    INFO("TEST PASS: recv_pkts:%d, rx_counter: %d, "
+    RING("TEST PASS: recv_pkts:%d, rx_counter: %d, "
               "tx_counter: %d\n", recv_pkts, rx_counter, tx_counter);     
 
     TEST_SUCCESS;
