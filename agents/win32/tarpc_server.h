@@ -210,6 +210,8 @@ extern LPFN_WSARECVMSG           pf_wsa_recvmsg;
 #define IN_OVERLAPPED   ((rpc_overlapped *)rcf_pch_mem_get(in->overlapped))
 #define IN_SIGSET       ((sigset_t *)(rcf_pch_mem_get(in->set)))
 #define IN_FDSET        ((fd_set *)(rcf_pch_mem_get(in->set)))
+#define IN_CALLBACK     ((LPWSAOVERLAPPED_COMPLETION_ROUTINE) \
+                             rcf_ch_symbol_addr(in->callback, 1))
 
 /**
  * Converts the windows error to RPC one.

@@ -615,9 +615,7 @@ extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
  * @param outbuf_len      Size of the output buffer
  * @param bytes_returned  Pointer to the actual number of bytes of output
  * @param overlapped      @b overlapped object or RPC_NULL
- * @param callback        Support of completion routine; if true than a
- *                        completion routine is called when the overlapped
- *                        operation has been completed.
+ * @param callback        completion callback name
  *
  * @return   0 in case of success, nonzero otherwise.
  */
@@ -626,7 +624,8 @@ extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
                          char *inbuf, unsigned int inbuf_len,
                          char *outbuf, unsigned int outbuf_len,
                          unsigned int *bytes_returned,
-                         rpc_overlapped overlapped, te_bool callback);
+                         rpc_overlapped overlapped, 
+                         const char *callback);
 
 /**
  * Retrieve the result of the preceding overlapped WSAIoctl() call.
@@ -835,16 +834,15 @@ extern void rpc_delete_overlapped(rcf_rpc_server *rpcs,
  * @param flags       modifies the behavior of the call.      
  * @param bytes_sent  pointer to the number of bytes sent
  * @param overlapped  @b overlapped object or RPC_NULL
- * @param callback    support of completion routine. If true a completion
- *                    routine is call when the send operation has been 
- *                    completed
+ * @param callback    completion callback name
+ *
  * @return 0 on success or -1 on failure
  */ 
 extern int rpc_wsa_send(rcf_rpc_server *rpcs,
                        int s, const struct rpc_iovec *iov,
                        size_t iovcnt, rpc_send_recv_flags flags,
                        int *bytes_sent, rpc_overlapped overlapped,
-                       te_bool callback);
+                       const char *callback);
 
 /**
  * Receive data from a connected socket.
@@ -859,9 +857,7 @@ extern int rpc_wsa_send(rcf_rpc_server *rpcs,
  *                    (See @b rpc_send_recv_flags)
  * @param bytes_received pointer to the number of bytes received
  * @param overlapped  @b overlapped object or RPC_NULL
- * @param callback    support of completion routine. If true a completion
- *                    routine is call when the send operation has been 
- *                    completed
+ * @param callback    completion callback name
  *
  * @return 0 on success or -1 on failure
  */
@@ -870,7 +866,7 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
                         size_t iovcnt, size_t riovcnt,
                         rpc_send_recv_flags *flags,
                         int *bytes_received, rpc_overlapped overlapped,
-                        te_bool callback);
+                        const char *callback);
 
 /**
  * Send data to a specified destination.
@@ -886,9 +882,8 @@ extern int rpc_wsa_recv(rcf_rpc_server *rpcs,
  * @param to           pointer to the address of the target socket
  * @param tolen        size of the address @b to
  * @param overlapped   @b overlapped object or RPC_NULL
- * @param callback     support of completion routine. If true a completion
- *                     routine is call when the send operation has been 
- *                     completed
+ * @param callback     completion callback name
+ *
  * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
@@ -896,7 +891,7 @@ extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
                            size_t iovcnt, rpc_send_recv_flags flags,
                            int *bytes_sent, const struct sockaddr *to,
                            socklen_t tolen, rpc_overlapped overlapped,
-                           te_bool callback);
+                           const char *callback);
 
 /**
  * Receive datagram from socket.
@@ -914,9 +909,7 @@ extern int rpc_wsa_send_to(rcf_rpc_server *rpcs, int s,
  *                       upon the completion of overlapped operation
  * @param fromlen        size of the address @b from
  * @param overlapped     @b overlapped object or RPC_NULL
- * @param callback       support of completion routine. If true a completion
- *                       routine is called when the send operation has been 
- *                       completed
+ * @param callback       completion callback name
  *
  * @return 0 on success or -1 on failure
  */
@@ -925,7 +918,7 @@ extern int rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                              size_t riovcnt, rpc_send_recv_flags *flags,
                              int *bytes_received, struct sockaddr *from,
                              socklen_t *fromlen, rpc_overlapped overlapped,
-                             te_bool callback);
+                             const char *callback);
 
 /**
  * Initiate termination of the connection for the socket
@@ -963,14 +956,14 @@ extern int rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
  *                       received data
  * @param bytes_received pointer to the number of bytes received
  * @param overlapped     @b overlapped object or RPC_NULL
- * @param callback       support of completion routine. If true a completion
- *                       routine is call when the send operation has been 
- *                       completed
+ * @param callback        completion callback name
+ *
  * @return 0 on success or -1 on failure
  */
 extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
                             struct rpc_msghdr *msg, int *bytes_received,
-                            rpc_overlapped overlapped, te_bool callback);
+                            rpc_overlapped overlapped, 
+                            const char *callback);
 
 /**
  * Retrieve the result of an overlapped operation on a specified socket.

@@ -3,6 +3,8 @@ ACLOCAL_AMFLAGS = -I @TE_M4@
 
 MY_CPPFLAGS=@TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
             -include te_config.h -include config.h -fno-strict-aliasing
+            
+MY_CFLAGS=--disable-stdcall-fixup            
 
 #
 # -lrcfpch must be before @TE_LDADD@ since the last may contain

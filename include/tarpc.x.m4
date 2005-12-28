@@ -1282,7 +1282,7 @@ struct tarpc_wsa_ioctl_in {
     tarpc_size_t        inbuf_len;
     tarpc_size_t        outbuf_len;
     tarpc_overlapped    overlapped;
-    tarpc_bool          callback;
+    string              callback<>;
 };
 
 struct tarpc_wsa_ioctl_out {
@@ -2731,8 +2731,7 @@ struct tarpc_wsa_send_in {
     tarpc_int           bytes_sent<>;   /**< Location for sent bytes num */
     tarpc_int           flags;          /**< Flags */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
-    tarpc_bool          callback;       /**< If 1, completion callback should be 
-                                             specified */
+    string              callback<>;     /**< Callback name */
 };
 
 struct tarpc_wsa_send_out {
@@ -2752,8 +2751,7 @@ struct tarpc_wsa_recv_in {
                                         /**< Location for received bytes num */
     tarpc_int           flags<>;        /**< Flags */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
-    tarpc_bool          callback;       /**< If 1, completion callback
-                                             should be specified */
+    string              callback<>;     /**< Callback name */
 };
 
 struct tarpc_wsa_recv_out {
@@ -2825,8 +2823,7 @@ struct tarpc_wsa_send_to_in {
     struct tarpc_sa     to;             /**< Target address */
     tarpc_socklen_t     tolen;          /**< Target address lenght */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
-    tarpc_bool          callback;       /**< If 1, completion callback should be 
-                                             specified */
+    string              callback<>;     /**< Callback name */
 };
 
 struct tarpc_wsa_send_to_out {
@@ -2849,8 +2846,7 @@ struct tarpc_wsa_recv_from_in {
     tarpc_int           fromlen<>;      /**< Maximum expected length of the
                                              address */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
-    tarpc_bool          callback;       /**< If 1, completion callback
-                                             should be specified */
+    string              callback<>;     /**< Callback name */
 };
 
 struct tarpc_wsa_recv_from_out {
@@ -2897,8 +2893,7 @@ struct tarpc_wsa_recv_msg_in {
     tarpc_int           bytes_received<>;   
                                         /**< Location for received bytes num */
     tarpc_overlapped    overlapped;     /**< WSAOVERLAPPED structure pointer */
-    tarpc_bool          callback;       /**< If 1, completion callback
-                                             should be specified */
+    string              callback<>;     /**< Callback name */
 };                
 
 struct tarpc_wsa_recv_msg_out {

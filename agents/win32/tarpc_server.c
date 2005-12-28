@@ -2884,9 +2884,10 @@ static int completion_bytes = 0;
 static tarpc_overlapped completion_overlapped = 0;
 static pthread_mutex_t completion_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static void CALLBACK
-completion_callback(DWORD error, DWORD bytes, LPWSAOVERLAPPED overlapped,
-                    DWORD flags)
+void CALLBACK
+default_completion_callback(DWORD error, DWORD bytes, 
+                            LPWSAOVERLAPPED overlapped,
+                            DWORD flags)
 {
     UNUSED(flags);
 
@@ -2943,9 +2944,7 @@ TARPC_FUNC(wsa_send,
                           send_recv_flags_rpc2h(in->flags),
                           in->overlapped == 0 ? NULL
                                   : (LPWSAOVERLAPPED)overlapped,
-                          in->callback ?
-                          (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
-                              completion_callback : NULL));
+                          IN_CALLBACK));
 
     if (in->overlapped == 0 || out->retval >= 0 ||
         out->common._errno != RPC_E_IO_PENDING)
@@ -2991,10 +2990,7 @@ TARPC_FUNC(wsa_recv,
                           (LPDWORD)(out->flags.flags_val) : NULL,
                           in->overlapped == 0 ? NULL :
                           (LPWSAOVERLAPPED)overlapped,
-                          in->callback ?
-                          (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
-                          completion_callback : NULL));
-
+                          IN_CALLBACK));
      
     if ((out->retval >= 0) || (out->common._errno == RPC_EMSGSIZE))
     {
@@ -3156,10 +3152,7 @@ TARPC_FUNC(wsa_send_to,
             a,
             in->tolen,
             in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
-            in->callback ?
-                (LPWSAOVERLAPPED_COMPLETION_ROUTINE)completion_callback :
-                    NULL));
-
+            IN_CALLBACK));
 
     if (in->overlapped == 0 || out->retval >= 0 ||
         out->common._errno != RPC_E_IO_PENDING)
@@ -3214,8 +3207,7 @@ TARPC_FUNC(wsa_recv_from,
             out->fromlen.fromlen_len == 0 ? NULL :
                 (LPINT)out->fromlen.fromlen_val,
             in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
-            in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
-                completion_callback : NULL));
+            IN_CALLBACK));
     
     if ((out->retval >= 0) || (out->common._errno == RPC_EMSGSIZE))
     {
@@ -3328,8 +3320,7 @@ TARPC_FUNC(wsa_recv_msg,
                 out->bytes_received.bytes_received_len == 0 ? NULL :
                     (LPDWORD)(out->bytes_received.bytes_received_val),
                 in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
-                in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
-                    completion_callback : NULL));
+                IN_CALLBACK));
     }
     else
     {
@@ -3376,8 +3367,7 @@ TARPC_FUNC(wsa_recv_msg,
                 out->bytes_received.bytes_received_len == 0 ? NULL :
                     (LPDWORD)(out->bytes_received.bytes_received_val),
                 in->overlapped == 0 ? NULL : (LPWSAOVERLAPPED)overlapped,
-                in->callback ? (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
-                    completion_callback : NULL));
+                IN_CALLBACK));
 
         if (out->retval >= 0)
         {
@@ -4071,9 +4061,7 @@ TARPC_FUNC(wsa_ioctl, {},
                                 &out->bytes_returned,
                                 in->overlapped == 0 ? NULL
                                   : (LPWSAOVERLAPPED)overlapped,
-                                in->callback ?
-                                  (LPWSAOVERLAPPED_COMPLETION_ROUTINE)
-                                  completion_callback : NULL));
+                                IN_CALLBACK));
 
     if (out->retval == 0)
     {

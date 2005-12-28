@@ -48,6 +48,15 @@
 #include "tapi_rpc_winsock2.h"
 #include "conf_api.h"
 
+#define FILL_CALLBACK(func) \
+   do {                                                                 \
+       if ((in.callback = strdup(callback == NULL ? ""                  \
+                                                  : callback)) == NULL) \
+       {                                                                \
+           ERROR("Out of memory");                                      \
+           RETVAL_INT(func, -1);                                        \
+       }                                                                \
+   } while (0)                                     
 
 int
 rpc_wsa_socket(rcf_rpc_server *rpcs,
@@ -640,14 +649,14 @@ rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "has_overlapped_io_completed", &in, &out);
 
-    CHECK_RETVAL_VAR_IS_BOOL(has_overlapped_io_completed, out.retval);
+    /* No check - it's strange to assume FALSE as failure here */
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: HasOverlappedIoCompleted(%u)"
                  " -> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  overlapped, out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
-    RETVAL_BOOL(has_overlapped_io_completed, out.retval);
+    RETVAL_INT(has_overlapped_io_completed, out.retval);
 }
 
 te_bool 
@@ -1383,14 +1392,14 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
              int s, const struct rpc_iovec *iov,
              size_t iovcnt, rpc_send_recv_flags flags,
              int *bytes_sent, rpc_overlapped overlapped,
-             te_bool callback)
+             const char *callback)
 {
     rcf_rpc_op         op;
     tarpc_wsa_send_in  in;
     tarpc_wsa_send_out out;
 
     struct tarpc_iovec iovec_arr[RCF_RPC_MAX_IOVEC];
-
+    
     size_t i;
 
     memset(&in, 0, sizeof(in));
@@ -1428,7 +1437,7 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
     in.s = s;
     in.count = iovcnt;
     in.overlapped = (tarpc_overlapped)overlapped;
-    in.callback = callback;
+    FILL_CALLBACK(wsa_send);
     if (bytes_sent != NULL)
     {
         in.bytes_sent.bytes_sent_len = 1;
@@ -1437,6 +1446,8 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
     in.flags = flags;
 
     rcf_rpc_call(rpcs, "wsa_send", &in, &out);
+    
+    free(in.callback);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -1459,9 +1470,9 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
              size_t iovcnt, size_t riovcnt,
              rpc_send_recv_flags *flags,
              int *bytes_received, rpc_overlapped overlapped,
-             te_bool callback)
+             const char *callback)
 {
-    rcf_rpc_op      op;
+    rcf_rpc_op         op;
     tarpc_wsa_recv_in  in;
     tarpc_wsa_recv_out out;
 
@@ -1497,7 +1508,7 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
     in.s = s;
     in.count = iovcnt;
     in.overlapped = (tarpc_overlapped)overlapped;
-    in.callback = callback;
+    FILL_CALLBACK(wsa_recv);
     if (bytes_received != NULL)
     {
         in.bytes_received.bytes_received_len = 1;
@@ -1524,6 +1535,8 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
     }
 
     rcf_rpc_call(rpcs, "wsa_recv", &in, &out);
+
+    free(in.callback);
 
     if (RPC_IS_CALL_OK(rpcs) &&
         iov != NULL && out.vector.vector_val != NULL)
@@ -1562,7 +1575,7 @@ int
 rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
                 size_t iovcnt, rpc_send_recv_flags flags, int *bytes_sent,
                 const struct sockaddr *to, socklen_t tolen,
-                rpc_overlapped overlapped, te_bool callback)
+                rpc_overlapped overlapped, const char *callback)
 {
     rcf_rpc_op            op;
     tarpc_wsa_send_to_in  in;
@@ -1583,7 +1596,6 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
     }
 
     op = rpcs->op;
-
 
     if (iovcnt > RCF_RPC_MAX_IOVEC)
     {
@@ -1607,7 +1619,7 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
     in.s = s;
     in.count = iovcnt;
     in.overlapped = (tarpc_overlapped)overlapped;
-    in.callback = callback;
+    FILL_CALLBACK(wsa_send_to);
     if (bytes_sent != NULL)
     {
         in.bytes_sent.bytes_sent_len = 1;
@@ -1635,6 +1647,8 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
 
     rcf_rpc_call(rpcs, "wsa_send_to", &in, &out);
 
+    free(in.callback);
+
     if (RPC_IS_CALL_OK(rpcs))
     {
         if (bytes_sent != NULL && out.bytes_sent.bytes_sent_val != NULL)
@@ -1657,7 +1671,7 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                   size_t riovcnt, rpc_send_recv_flags *flags,
                   int *bytes_received, struct sockaddr *from,
                   socklen_t *fromlen, rpc_overlapped overlapped,
-                  te_bool callback)
+                  const char *callback)
 {
     rcf_rpc_op              op;
     tarpc_wsa_recv_from_in  in;
@@ -1695,7 +1709,7 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
     in.s = s;
     in.count = iovcnt;
     in.overlapped = (tarpc_overlapped)overlapped;
-    in.callback = callback;
+    FILL_CALLBACK(wsa_recv_from);
     if (bytes_received != NULL)
     {
         in.bytes_received.bytes_received_len = 1;
@@ -1751,6 +1765,8 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
     }
 
     rcf_rpc_call(rpcs, "wsa_recv_from", &in, &out);
+
+    free(in.callback);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -1904,7 +1920,7 @@ rpc_wsa_recv_disconnect(rcf_rpc_server *rpcs,
 int
 rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
                  struct rpc_msghdr *msg, int *bytes_received,
-                 rpc_overlapped overlapped, te_bool callback)
+                 rpc_overlapped overlapped, const char *callback)
 {
     char                   str_buf[1024];
     rcf_rpc_op             op;
@@ -2030,9 +2046,11 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
         in.bytes_received.bytes_received_val = bytes_received;
     }
     in.overlapped = (tarpc_overlapped)overlapped;
-    in.callback = callback;
+    FILL_CALLBACK(wsa_recv_msg);
 
     rcf_rpc_call(rpcs, "wsa_recv_msg", &in, &out);
+
+    free(in.callback);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_recv_msg, out.retval);
 
@@ -2846,7 +2864,7 @@ int
 rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
               char *inbuf, unsigned int inbuf_len, char *outbuf,
               unsigned int outbuf_len, unsigned int *bytes_returned,
-              rpc_overlapped overlapped, te_bool callback)
+              rpc_overlapped overlapped, const char *callback)
 {
     rcf_rpc_op           op;
     tarpc_wsa_ioctl_in   in;
@@ -2868,7 +2886,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
     in.code = control_code;
     in.outbuf_len = outbuf_len;
     in.overlapped = (tarpc_overlapped)overlapped;
-    in.callback = callback;
+    FILL_CALLBACK(wsa_ioctl);
 
     switch (control_code)
     {
@@ -2977,6 +2995,8 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
     }
 
     rcf_rpc_call(rpcs, "wsa_ioctl", &in, &out);
+
+    free(in.callback);
 
     if (RPC_IS_CALL_OK(rpcs) && (out.retval == 0))
     {
