@@ -92,6 +92,8 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
     unsigned int layer;
     te_errno     rc = 0;
 
+    rc = tad_check_pdu_seq(csap_descr, pdus);
+
     for (layer = 0; (rc == 0) && (layer < csap_descr->depth); layer++)
     { 
         char       label[40];
@@ -1111,34 +1113,150 @@ tad_tcp_push_fin(int socket, const uint8_t *data, size_t length)
 
 
 
+/**
+ * Calculate, how much  ways are no insert nds_protos sequence
+ * into csap protos sequence. 
+ * If there are more then one way, they are not calculated accurately, 
+ * just number, greater 1, is returned.
+ *
+ * @param csap_seq_len  length of array layers
+ * @param layers        array with CSAP layers descriptors 
+ * @param nds_seq_len   length of array nds_protos
+ * @param nds_protos    array with NDS protos tags 
+ *
+ * @return calculate quantity (zero, 1 or more), or -1 on error. 
+ */
+static int 
+tad_compare_seqs(size_t csap_seq_len, const csap_layer_t *layers,
+                 size_t nds_seq_len, const te_tad_protocols_t *nds_protos)
+{ 
+    int csap_shift = 0;
+    int both_shift = 0;
+
+    if (layers == NULL || nds_protos == NULL)
+        return -1;
+
+    if (nds_seq_len == 0)
+        return 1;
+
+    if (csap_seq_len < nds_seq_len)
+        return 0; 
+
+    if (layers[0].proto_tag == nds_protos[0])
+        both_shift = tad_compare_seqs(csap_seq_len - 1, layers + 1,
+                                      nds_seq_len - 1, nds_protos + 1); 
+
+    if (both_shift <= 1)
+        csap_shift = tad_compare_seqs(csap_seq_len - 1, layers + 1,
+                                      nds_seq_len, nds_protos);
+
+    /* recursive calls cannot return -1 */
+    return csap_shift + both_shift;
+}
+
 
 /* See description in tad_utils.h */
 int
 tad_check_pdu_seq(csap_p csap_descr, asn_value *pdus)
 {
-    const char *last_matched_proto = NULL;
-    const char *next_proto = NULL;
+    te_tad_protocols_t *nds_protos = NULL;
     int i;
-    int rc;
+    int rc = 0;
+    int nds_len;
 
     if (csap_descr == NULL || pdus == NULL)
     {
         ERROR("%s(): NULL ptrs passed", __FUNCTION__);
         return TE_EWRONGPTR;
     }
-    for (i = 0; i < (int)csap_descr->depth; i++)
+
+    nds_len = asn_get_length(pdus, "");
+    nds_protos = calloc(nds_len, sizeof(nds_protos[0]));
+
+    for (i = 0; i < nds_len; i++)
     {
         const asn_value *gen_pdu;
+        uint16_t pdu_tag;
+
         rc = asn_get_indexed(pdus, &gen_pdu, i);
         if (rc != 0)
         {
-            /* do something, I dont know yet */;
+            ERROR("%s(CSAP %d): asn_get_indexed failed %r", 
+                  __FUNCTION__, csap_descr->id, rc);
+            break;
         }
+        rc = asn_get_choice_value(gen_pdu, NULL, NULL, &pdu_tag);
+        if (rc != 0)
+        {
+            ERROR("%s(CSAP %d): asn_get_choice failed %r", 
+                  __FUNCTION__, csap_descr->id, rc);
+            break;
+        } 
+        nds_protos[i] = pdu_tag;
     } 
-    UNUSED(last_matched_proto);
-    UNUSED(next_proto);
 
-    return 0;
+    if (rc == 0) 
+    {
+        int ways_insert = tad_compare_seqs(csap_descr->depth, 
+                                           csap_descr->layers, 
+                                           nds_len, 
+                                           nds_protos);
+
+        if (ways_insert < 1)
+        {
+            ERROR("%s(CSAP %d): There is no way to fix PDUs", 
+                  __FUNCTION__, csap_descr->id);
+            rc = TE_ETADWRONGNDS;
+        }
+        else if (ways_insert > 1)
+        {
+            ERROR("%s(CSAP %d): There are many ways to fix PDUs", 
+                  __FUNCTION__, csap_descr->id);
+            rc = TE_ETADWRONGNDS;
+        }
+        else /* Ohh, lets fix */
+        {
+            int pos_in_old_nds = 0;
+            char buf[20];
+            int syms;
+
+            for (i = 0; i < (int)csap_descr->depth; i++)
+            {
+                asn_value *new_pdu;
+
+                if (nds_protos[pos_in_old_nds] == 
+                    csap_descr->layers[i].proto_tag)
+                {
+                    pos_in_old_nds++;
+                    continue;
+                }
+                snprintf(buf, sizeof(buf), "%s:{}",
+                         csap_descr->layers[i].proto);
+                syms = 0;
+                rc = asn_parse_value_text(buf, ndn_generic_pdu,
+                                          &new_pdu, &syms);
+                if (rc != 0)
+                {
+                    ERROR("%s(CSAP %d) parse '%s' failed %r, sym %d",
+                          __FUNCTION__, csap_descr->id, 
+                          buf, rc, syms);
+                    break;
+
+                }
+                rc = asn_insert_indexed(pdus, new_pdu, i, "");
+                if (rc != 0)
+                {
+                    ERROR("%s(CSAP %d) insert new value to %d failed %r",
+                          __FUNCTION__, csap_descr->id, i, rc);
+                    break;
+                }
+            }
+        }
+    }
+
+    free(nds_protos);
+
+    return rc;
 }
 
 /* See description in tad_utils.h */

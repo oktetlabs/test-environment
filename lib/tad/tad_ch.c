@@ -467,7 +467,8 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
 #else
     int            rc;
     int            syms;
-    asn_value_p    nds; 
+    asn_value     *nds; 
+    asn_value     *pdus; 
     csap_p         csap_descr_p;
     pthread_attr_t pthread_attr;
 
@@ -509,11 +510,28 @@ rcf_ch_trsend_start(struct rcf_comm_connection *handle,
     csap_descr_p->first_pkt = tv_zero;
     csap_descr_p->last_pkt  = tv_zero;
 
+
     rc = asn_parse_value_text(ba, ndn_traffic_template, &nds, &syms);
     if (rc != 0)
     {
         ERROR("parse error in attached NDS, code %r, symbol: %d",
               rc, syms);
+        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
+        return 0;
+    } 
+
+
+    rc = asn_get_subvalue(nds, (const asn_value **)&pdus, "pdus");
+    if (rc != 0)
+    {
+        ERROR("attached NDS has no 'pdus'");
+        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_ETADWRONGNDS));
+        return 0;
+    }
+
+    if ((rc = tad_confirm_pdus(csap_descr_p, pdus)) != 0)
+    {
+        ERROR("PDUs in attached NDS does not match to CSAP");
         SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
         return 0;
     } 
@@ -760,7 +778,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *handle,
         asn_get_subvalue(pattern_unit, (const asn_value **)&pdus, "pdus");
 
         rc = tad_confirm_pdus(csap_descr_p, pdus);
-        if (rc)
+        if (rc != 0)
             break; 
     } /* loop by pattern units */
 
