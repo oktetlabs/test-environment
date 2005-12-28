@@ -56,7 +56,7 @@ dnl
     AC_CHECK_LIB([iw], [iw_sockets_open], [],
                  AC_MSG_ERROR([Cannot find iw library]))
 
-    AC_DEFINE([ENABLE_WIFI_SUPPORT], [], [Wheter to enable WiFi support])
+    AC_DEFINE([ENABLE_WIFI_SUPPORT], [], [Whether to enable WiFi support])
     LDADD="$LDADD -liw"
 fi
 
