@@ -1418,7 +1418,7 @@ asn_get_choice_value(const asn_value *container, const asn_value **subval,
                      asn_tag_class *tag_class, uint16_t *tag_val)
 {
     asn_value *sv;
-    if (!container || !subval)
+    if (!container)
         return TE_EWRONGPTR; 
 
     if (container->syntax != CHOICE)
