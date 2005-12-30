@@ -2932,6 +2932,89 @@ neigh_set(unsigned int gid, const char *oid, const char *value,
     return neigh_add(gid, oid, value, ifname, addr);
 }
 
+/** Add or delete a neighbour entry.
+ *
+ * @param oid           Object instance identifier
+ * @param addr          Destination IP address in human notation.
+ * @param ifname        Interface name
+ * @param value         Entry value (raw MAC address)
+ * @param cmd           RTM_NEWNEIGH to add a neighbour,
+ *                      RTM_DELNEIGH to delete it.
+ *
+ * @return Status code
+ */
+static te_errno
+neigh_change(const char *oid, const char *addr, const char *ifname,
+             uint8_t *value, int cmd)
+{
+    te_bool       volatile_entry = strstr(oid, "dynamic") != NULL;
+
+    struct rtnl_handle rth;
+    struct {
+        struct nlmsghdr         n;
+        struct ndmsg            ndm;
+        char                    buf[256];
+    } req;    
+    inet_prefix dst;   
+    
+    /* TODO: check that address corresponds to interface */
+
+    memset(&req, 0, sizeof(req));
+    req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ndmsg));
+    req.n.nlmsg_flags = NLM_F_REQUEST;
+
+    if (cmd == RTM_NEWNEIGH)
+    {
+        req.n.nlmsg_flags |= (NLM_F_CREATE | NLM_F_REPLACE);
+    }
+        
+    req.n.nlmsg_type = cmd;
+
+    dst.family = (strchr(addr, ':') != NULL)? AF_INET6 : AF_INET;
+    dst.bytelen = (dst.family == AF_INET)?
+                  sizeof(struct in_addr) : sizeof(struct in6_addr);
+    dst.bitlen = dst.bytelen << 3;
+    if (inet_pton(dst.family, addr, dst.data) < 0)
+    {
+        ERROR("Invalid neighbour address (%s)", addr);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    
+    req.ndm.ndm_family = dst.family;
+    
+    if (!volatile_entry)
+        req.ndm.ndm_state = NUD_PERMANENT;
+    
+    addattr_l(&req.n, sizeof(req), NDA_DST, &dst.data, dst.bytelen);
+    
+    if (value != NULL)
+    {        
+        addattr_l(&req.n, sizeof(req), NDA_LLADDR, value, MAC_ADDR_LEN);
+    }
+
+    if (rtnl_open(&rth, 0) < 0)
+    {
+        ERROR("Failed to open Netlink socket");
+        return TE_RC(TE_TA_UNIX, errno);
+    }
+
+    ll_init_map(&rth);
+
+    if ((req.ndm.ndm_ifindex = ll_name_to_index(ifname)) == 0)
+    {
+        ERROR("No device (%s) found", ifname);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
+    {
+        ERROR("Failed to send the Netlink message");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+}
+
 /**
  * Add a new neighbour entry.
  *
@@ -2947,24 +3030,44 @@ static te_errno
 neigh_add(unsigned int gid, const char *oid, const char *value,
           const char *ifname, const char *addr)
 {
-    te_bool       volatile_entry = strstr(oid, "dynamic") != NULL;
+#ifdef USE_IOCTL 
     struct arpreq arp_req;
-    int           int_addr[MAC_ADDR_LEN];
-    int           res;
     int           i;
-
+#endif    
+ 
+    int           int_addr[MAC_ADDR_LEN]; 
+    int           res;
+    
     UNUSED(gid);
     
     /* TODO: check that address corresponds to interface */
     UNUSED(ifname);
 
-    res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%s",
+    res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%*s",
                  int_addr, int_addr + 1, int_addr + 2, int_addr + 3,
-                 int_addr + 4, int_addr + 5, trash);
+                 int_addr + 4, int_addr + 5);
 
     if (res != 6)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
+#ifdef __linux__ 
+    if (value != NULL)
+    {        
+        int   i;
+        uint8_t       raw_addr[MAC_ADDR_LEN];
+
+        for (i = 0; i < MAC_ADDR_LEN; i++)
+        {
+            raw_addr[i] = (uint8_t)int_addr[i];
+        }
+        return neigh_change(oid, addr, ifname, raw_addr, RTM_NEWNEIGH);
+    }
+    else
+    {
+        return neigh_change(oid, addr, ifname, NULL, RTM_NEWNEIGH);
+    }
+#endif
+#ifdef USE_IOCTL
     memset(&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
 
@@ -2992,6 +3095,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
 #else
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
+#endif    
 }
 
 /**
@@ -3008,10 +3112,7 @@ static te_errno
 neigh_del(unsigned int gid, const char *oid, const char *ifname, 
           const char *addr)
 {
-    struct arpreq arp_req;
-    te_errno      rc;
-    int           family;
-
+    te_errno      rc;    
     UNUSED(gid);
 
     if ((rc = neigh_find(oid, ifname, addr, NULL, NULL)) != 0)
@@ -3023,27 +3124,35 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         }
         return rc;
     }
-
-    memset(&arp_req, 0, sizeof(arp_req));
-    family = (strchr(addr, ':') != NULL)? AF_INET6 : AF_INET;
-    arp_req.arp_pa.sa_family = family;
-    if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#if 0
+    return neigh_change(oid, addr, ifname, NULL, RTM_DELNEIGH); 
+#else /* USE_IOCTL */
+    {
+        struct arpreq arp_req;
+        int           family;
+        
+        memset(&arp_req, 0, sizeof(arp_req));
+        family = (strchr(addr, ':') != NULL)? AF_INET6 : AF_INET;
+        arp_req.arp_pa.sa_family = family;
+        if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
 #ifdef SIOCDARP
 
-    if (ioctl(cfg_socket, SIOCDARP, &arp_req) < 0)
-    {
-        if (errno == ENXIO || errno == ENETDOWN || errno == ENETUNREACH)
-            return 0;
-        else
-            return TE_OS_RC(TE_TA_UNIX, errno);
-    }
+        if (ioctl(cfg_socket, SIOCDARP, &arp_req) < 0)
+        {
+            if (errno == ENXIO || errno == ENETDOWN || errno == ENETUNREACH)
+                return 0;
+            else
+                return TE_OS_RC(TE_TA_UNIX, errno);
+        }
 
-    return 0;
+        return 0;
 #else
-    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
+    }
+#endif    
 }
 
 #ifdef USE_NETLINK
@@ -3107,6 +3216,9 @@ neigh_list(unsigned int gid, const char *oid, char **list,
     neigh_print_cb_param user_data;
     
     buf[0] = '\0';
+
+    if (strcmp(ifname, "lo") == 0)
+        return 0;
         
     memset(&rth, 0, sizeof(rth));
     if (rtnl_open(&rth, 0) < 0)
