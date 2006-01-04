@@ -37,7 +37,7 @@
 # Files for new tests are created if they are not exist.
 #
 #
-# Copyright (C) 2003 Test Environment authors (see file AUTHORS in the 
+# Copyright (C) 2005 Test Environment authors (see file AUTHORS in the 
 # root directory of the distribution).
 #
 # Test Environment is free software; you can redistribute it and/or 
