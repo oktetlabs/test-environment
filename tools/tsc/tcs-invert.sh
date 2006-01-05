@@ -62,12 +62,12 @@ function PROCESS_SUBDIR ()
     if WORD=`grep '/** @page '$CURRENTDIRECTORY' ' ./package.dox`;then
 
         WORD=${WORD/*'@page '$CURRENTDIRECTORY' '/''}
-	echo 'dir '$DIRECTORYPATH'	'$WORD >> $OUTPUTFILE;
+        echo 'dir '$DIRECTORYPATH'        '$WORD >> $OUTPUTFILE;
 
     else
 
         echo 'File ./'$DIRECTORYPATH'/package.dox is absend or corrupted'
-	exit 1;
+        exit 1;
 
     fi;
 
@@ -75,53 +75,53 @@ function PROCESS_SUBDIR ()
     if REFSLIST=`grep ^'\-\#\ @ref\ ' ./package.dox`;then
 
         # Cutting out template '-# @ref'
-	REFSLIST=${REFSLIST//'-# @ref'/''}
+        REFSLIST=${REFSLIST//'-# @ref'/''}
 
-	# REFSLIST processing routine
-	for WORD in $REFSLIST;do
-	    
-	    # Check if WORD is subdir
-	    if test -d $WORD;then
+        # REFSLIST processing routine
+        for WORD in $REFSLIST;do
+            
+            # Check if WORD is subdir
+            if test -d $WORD;then
 
                 # Goto subdir and recurrent
-		cd $WORD
-		
-		CURRENTDIRECTORY=$WORD
-		
-		OLDDIRECTORYPATH=$DIRECTORYPATH
-		
-		DIRECTORYPATH=$DIRECTORYPATH'/'$WORD
-		
+                cd $WORD
+                
+                CURRENTDIRECTORY=$WORD
+                
+                OLDDIRECTORYPATH=$DIRECTORYPATH
+                
+                DIRECTORYPATH=$DIRECTORYPATH'/'$WORD
+                
                 # recurrent call of the PROCESSSUBDIR
-		PROCESS_SUBDIR
-		
-		DIRECTORYPATH=$OLDDIRECTORYPATH
-		
+                PROCESS_SUBDIR
+                
+                DIRECTORYPATH=$OLDDIRECTORYPATH
+                
                 # Return from subdir to continue
-		cd ../;
+                cd ../;
 
-	    else
+            else
 
                 # Search for the *.c files
-		# containing the WORD
+                # containing the WORD
                 if GREPPEDLINE=`grep '/** @page '$WORD' '\
-		                    ./*.c`;then
+                                    ./*.c`;then
 
                     GREPPEDLINE=${GREPPEDLINE/*$WORD/''}
-		    
-		    echo ${WORD/*'-'/''}'	'$GREPPEDLINE\
-		         >> $OUTPUTFILE;
+                    
+                    echo ${WORD/*'-'/''}'        '$GREPPEDLINE\
+                         >> $OUTPUTFILE;
 
                 fi;
 
-	    fi;
-	    
-	done;
+            fi;
+            
+        done;
 
     else
 
         echo 'file ./'$DIRECTORYPATH'/package.dox is corrupted'
-	exit 1;
+        exit 1;
 
     fi;
 
@@ -133,11 +133,11 @@ if [[ $# > 0 ]];then
     # May be $1 is -h or --help option
     if [[ $1 == '-h' ||\
           $1 == '--help' ||\
-	  $1 == '-help' ||\
-	  $1 == 'help' ]];then
+          $1 == '-help' ||\
+          $1 == 'help' ]];then
 
         echo './invertest1 [output file name]'
-	echo './invertest1 -h|--help|-help|help';
+        echo './invertest1 -h|--help|-help|help';
 
     else 
 
@@ -159,25 +159,25 @@ if REFSLIST=`grep ^'\-\ @ref\ ' ./mainpage.dox`; then
     for DIRECTORYTREE in $REFSLIST;do
 
         # Entering the DIRECTORYTREE subdir
-	if cd $DIRECTORYTREE;then
+        if cd $DIRECTORYTREE;then
 
             # Setting DIRECTORYPATH variable
-	    DIRECTORYPATH=$DIRECTORYTREE
+            DIRECTORYPATH=$DIRECTORYTREE
 
-	    # Setting CURRENTDIRECTORY variable
-	    CURRENTDIRECTORY=$DIRECTORYTREE
+            # Setting CURRENTDIRECTORY variable
+            CURRENTDIRECTORY=$DIRECTORYTREE
 
             # Recursive subdir processing rouine call
             PROCESS_SUBDIR;
 
-	else
+        else
 
             echo 'The ./'$DIRECTORYTREE' subdir is absend';
 
-	fi
+        fi
 
-	# Leaving the DIRECTORYTREE subdir
-	cd ../;
+        # Leaving the DIRECTORYTREE subdir
+        cd ../;
 
     done;
 
