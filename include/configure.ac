@@ -89,6 +89,7 @@ sys/sendfile.h \
 sys/stat.h \
 sys/time.h \
 sys/types.h \
+sys/uio.h \
 sys/un.h \
 sys/wait.h \
 tcl.h \
