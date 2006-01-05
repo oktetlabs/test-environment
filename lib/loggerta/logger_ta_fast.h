@@ -108,7 +108,7 @@
                             "EXIT in line %d from %s(): " _fs,  \
                             1, __LINE__,                        \
                             1, (ta_log_arg)__FUNCTION__,        \
-                            LARG9(_args));                      \
+                            LARG10(_args));                     \
     } while (0)
   
 #define LOGF_EXIT(_us, _fs...)                                  \
@@ -122,7 +122,7 @@
                                     "EXIT in line %d from %s()",\
                                     1, __LINE__,                \
                                     1, (ta_log_arg)__FUNCTION__,\
-                                    LARG9());                   \
+                                    LARG10());                  \
         }                                                       \
     } while (0)
 
