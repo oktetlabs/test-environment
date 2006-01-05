@@ -1,11 +1,11 @@
 /** @file
- * @brief IP Stack TAD
+ * @brief TAD IP Stack
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * TCP/IP CSAP filtering support implementation. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2004-2005 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,14 +27,19 @@
  * $Id$
  */
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string.h>
-#invlude <pcap.h>
+#include <pcap.h>
 #include "tad_ipstack_impl.h"
 
 /**
  * Callback for read data from media of icmpernet CSAP. 
  *
- * @param csap_descr    CSAP description sctucture.
+ * @param csap    CSAP description sctucture.
  * @param timeout       timeout of waiting for data in microseconds.
  * @param buf           buffer for read data.
  * @param buf_len       length of available buffer.
@@ -43,7 +48,7 @@
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
 int 
-tcpip_read_cb(csap_p csap_descr, int timeout, char *buf, int buf_len)
+tcpip_read_cb(csap_p csap, int timeout, char *buf, int buf_len)
 {
     int    rc; 
     int    layer;    
@@ -57,9 +62,9 @@ tcpip_read_cb(csap_p csap_descr, int timeout, char *buf, int buf_len)
     struct timeval timeout_val;
     
     
-    layer = csap_descr->read_write_layer;
+    layer = csap_get_rw_layer(csap);
     
-    spec_data = (udp_csap_specific_data_t *) csap_descr->layer_data[layer]; 
+    spec_data = (udp_csap_specific_data_t *) csap->layer_data[layer]; 
 
 #ifdef TALOGDEBUG
     printf("Reading data from the socket: %d", spec_data->in);

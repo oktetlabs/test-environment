@@ -137,14 +137,24 @@ const asn_type * const  ndn_octet_string6 = &ndn_octet_string6_s;
 
 
 
-NDN_DATA_UNIT_TYPE(int32,         asn_base_integer_s,    INTEGER);
-NDN_DATA_UNIT_TYPE(int4,          asn_base_int4_s,       INTEGER(0..15));
-NDN_DATA_UNIT_TYPE(int8,          asn_base_int8_s,       INTEGER(0..255));
-NDN_DATA_UNIT_TYPE(int16,         asn_base_int16_s,      INTEGER(0..65535));
+//NDN_DATA_UNIT_TYPE(int,   asn_base_integer_s, INTEGER);
+NDN_DATA_UNIT_TYPE(int1,  asn_base_int1_s,    INTEGER(0..1));
+NDN_DATA_UNIT_TYPE(int2,  asn_base_int2_s,    INTEGER(0..3));
+NDN_DATA_UNIT_TYPE(int3,  asn_base_int3_s,    INTEGER(0..7));
+NDN_DATA_UNIT_TYPE(int4,  asn_base_int4_s,    INTEGER(0..15));
+NDN_DATA_UNIT_TYPE(int5,  asn_base_int5_s,    INTEGER(0..31));
+NDN_DATA_UNIT_TYPE(int6,  asn_base_int6_s,    INTEGER(0..63));
+NDN_DATA_UNIT_TYPE(int7,  asn_base_int7_s,    INTEGER(0..127));
+NDN_DATA_UNIT_TYPE(int8,  asn_base_int8_s,    INTEGER(0..255));
+NDN_DATA_UNIT_TYPE(int9,  asn_base_int9_s,    INTEGER(0..511));
+NDN_DATA_UNIT_TYPE(int12, asn_base_int12_s,   INTEGER(0..4095));
+NDN_DATA_UNIT_TYPE(int16, asn_base_int16_s,   INTEGER(0..65535));
+NDN_DATA_UNIT_TYPE(int32, asn_base_int32_s,   INTEGER(0..4294967295));
+
 NDN_DATA_UNIT_TYPE(octet_string,  asn_base_octstring_s,  OCTET STRING);
-NDN_DATA_UNIT_TYPE(octet_string6, ndn_octet_string6_s,   OCTET STRING (6));
-NDN_DATA_UNIT_TYPE(char_string,   asn_base_charstring_s, UniversalString );
-NDN_DATA_UNIT_TYPE(ip_address,    ndn_ip_address_s,      IpAddress );
+NDN_DATA_UNIT_TYPE(octet_string6, ndn_octet_string6_s,   OCTET STRING(6));
+NDN_DATA_UNIT_TYPE(char_string,   asn_base_charstring_s, UniversalString);
+NDN_DATA_UNIT_TYPE(ip_address,    ndn_ip_address_s,      IpAddress);
 NDN_DATA_UNIT_TYPE(objid,         asn_base_objid_s,      OBJECT IDENTIFIER);
 
 

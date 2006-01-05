@@ -1,11 +1,11 @@
 /** @file
- * @brief TAD Command Handler
+ * @brief TAD CSAP Support Database
  *
- * Traffic Application Domain Command Handler
- * Implementation of CSAP support DB methods 
+ * Traffic Application Domain Command Handler.
+ * Implementation of CSAP support DB methods.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -26,6 +26,13 @@
  *
  * $Id$
  */
+
+#define TE_LGR_USER     "CSAP support"
+
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -60,7 +67,7 @@ static csap_spt_entry_t csap_spt_root = {
  * @return zero on success, otherwise error code. 
  */
 int 
-init_csap_spt(void)
+csap_spt_init(void)
 {
     return 0;
 }
@@ -75,7 +82,7 @@ init_csap_spt(void)
  * @todo check for uniqueness of protocol labels. 
  */
 te_errno
-add_csap_spt(csap_spt_type_p spt_descr)
+csap_spt_add(csap_spt_type_p spt_descr)
 {
     csap_spt_entry_p new_spt_entry = malloc(sizeof(*new_spt_entry));
 
@@ -84,6 +91,8 @@ add_csap_spt(csap_spt_type_p spt_descr)
 
     new_spt_entry->spt_data = spt_descr;
     INSQUE(new_spt_entry, &csap_spt_root);
+
+    INFO("Registered '%s' protocol support", spt_descr->proto);
 
     return 0;
 }
@@ -96,7 +105,7 @@ add_csap_spt(csap_spt_type_p spt_descr)
  * @return pointer to structure or NULL if not found. 
  */
 csap_spt_type_p 
-find_csap_spt(const char *proto)
+csap_spt_find(const char *proto)
 {
     csap_spt_entry_p spt_entry;
 

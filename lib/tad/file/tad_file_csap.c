@@ -1,11 +1,11 @@
 /** @file
- * @brief Dummy FILE protocol TAD
+ * @brief TAD Dummy FILE Protocol
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * Dummy FILE protocol implementaion, CSAP support description structures. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in
- * the root directory of the distribution).
+ * Copyright (C) 2003-2005 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,34 +27,52 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD FILE CSAP"
+#define TE_LGR_USER     "TAD FILE"
 
 #include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "te_errno.h"
+#include "tad_csap_support.h"
+#include "tad_utils.h"
 
 #include "tad_file_impl.h"
 
 
-static csap_layer_neighbour_list_t file_nbr_list = 
-{
-    NULL,
-    NULL,
-
-    tad_file_single_init_cb,
-    tad_file_single_destroy_cb,
-};
-
 static csap_spt_type_t file_csap_spt = 
 {
-    "file",
+    proto               : "file",
 
-    NULL,
-    NULL,
-    tad_file_confirm_pdu_cb,
-    tad_file_gen_bin_cb,
-    tad_file_match_bin_cb,
-    tad_file_gen_pattern_cb,
+    init_cb             : NULL,
+    destroy_cb          : NULL,
+    get_param_cb        : NULL,
 
-    &file_nbr_list,
+    confirm_tmpl_cb     : NULL,
+    generate_pkts_cb    : tad_file_gen_bin_cb,
+    release_tmpl_cb     : NULL,
+
+    confirm_ptrn_cb     : NULL,
+    match_do_cb         : tad_file_match_bin_cb,
+    match_done_cb       : NULL,
+    match_post_cb       : NULL,
+    release_ptrn_cb     : NULL,
+
+    generate_pattern_cb : NULL,
+
+    rw_init_cb          : NULL,
+    rw_destroy_cb       : NULL,
+
+    prepare_send_cb     : NULL,
+    write_cb            : tad_file_write_cb,
+    shutdown_send_cb    : NULL,
+    
+    prepare_recv_cb     : NULL,
+    read_cb             : tad_file_read_cb,
+    shutdown_recv_cb    : NULL,
+
+    write_read_cb       : NULL,
 };
 
 
@@ -67,5 +85,5 @@ static csap_spt_type_t file_csap_spt =
 te_errno
 csap_support_file_register(void)
 { 
-    return add_csap_spt(&file_csap_spt);
+    return csap_spt_add(&file_csap_spt);
 }

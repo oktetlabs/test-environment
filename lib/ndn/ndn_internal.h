@@ -29,41 +29,8 @@
 #ifndef __TE_NDN_INTERNAL_H__ 
 #define __TE_NDN_INTERNAL_H__ 
 
-
-extern const asn_type asn_base_boolean_s;
-extern const asn_type asn_base_integer_s;
-extern const asn_type asn_base_bitstring_s;
-extern const asn_type asn_base_octstring_s;
-extern const asn_type asn_base_null_s;
-extern const asn_type asn_base_objid_s;
-extern const asn_type asn_base_real_s;
-extern const asn_type asn_base_enum_s;
-extern const asn_type asn_base_charstring_s;
-
-extern const asn_type asn_base_int4_s;
-extern const asn_type asn_base_int8_s;
-extern const asn_type asn_base_int16_s;
-
-extern asn_type ndn_data_unit_ints_s;
-extern asn_type ndn_data_unit_enum_s;
-extern asn_type ndn_data_unit_mask_s;
-extern asn_type ndn_data_unit_env_s;
-
-
-extern asn_type ndn_data_unit_int8_s;  
-extern asn_type ndn_data_unit_int16_s;  
-extern asn_type ndn_data_unit_int32_s;  
-extern asn_type ndn_data_unit_octet_string_s;  
-extern asn_type ndn_data_unit_char_string_s;  
-extern asn_type ndn_data_unit_objid_s;  
-extern asn_type ndn_data_unit_ip_address_s;  
-
-extern asn_type ndn_ip_address_s;
-extern asn_type ndn_octet_string6_s;
-
-extern asn_type ndn_generic_pdu_s;
-extern asn_type ndn_generic_csap_level_s;
-
+#include "asn_usr.h"
+#include "asn_impl.h"
 
 
 /**
@@ -94,5 +61,34 @@ extern asn_type ndn_generic_csap_level_s;
     };                                                                    \
     const asn_type * const ndn_data_unit_##id = &ndn_data_unit_##id##_s
 
+
+extern asn_type ndn_data_unit_ints_s;
+extern asn_type ndn_data_unit_enum_s;
+extern asn_type ndn_data_unit_mask_s;
+extern asn_type ndn_data_unit_env_s;
+
+extern asn_type ndn_data_unit_int1_s;  
+extern asn_type ndn_data_unit_int2_s;  
+extern asn_type ndn_data_unit_int3_s;  
+extern asn_type ndn_data_unit_int4_s;  
+extern asn_type ndn_data_unit_int5_s;  
+extern asn_type ndn_data_unit_int6_s;  
+extern asn_type ndn_data_unit_int7_s;  
+extern asn_type ndn_data_unit_int8_s;  
+extern asn_type ndn_data_unit_int9_s;  
+extern asn_type ndn_data_unit_int12_s;  
+extern asn_type ndn_data_unit_int16_s;  
+extern asn_type ndn_data_unit_int32_s;  
+
+extern asn_type ndn_data_unit_octet_string_s;  
+extern asn_type ndn_data_unit_char_string_s;  
+extern asn_type ndn_data_unit_objid_s;  
+extern asn_type ndn_data_unit_ip_address_s;  
+
+extern asn_type ndn_ip_address_s;
+extern asn_type ndn_octet_string6_s;
+
+extern asn_type ndn_generic_pdu_s;
+extern asn_type ndn_generic_csap_level_s;
 
 #endif /* __TE_NDN_INTERNAL_H__ */

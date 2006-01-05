@@ -1,11 +1,11 @@
 /** @file
- * @brief Ethernet TAD
+ * @brief TAD Ethernet
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * Ethernet CSAP implementaion internal declarations.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -26,10 +26,9 @@
  *
  * $Id$
  */
+
 #ifndef __TE_TAD_ETH_IMPL_H__
 #define __TE_TAD_ETH_IMPL_H__ 
-
-#include "te_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +55,7 @@
 #include "pkt_socket.h"
 
 
-#ifndef ETH_ALEN          /* Octets in one ethernet addr     */
+#ifndef ETH_ALEN          /* Octets in one Ethernet addr     */
 #define ETH_ALEN    6 
 #endif
 
@@ -77,7 +76,7 @@
 #endif
 
 
-#ifndef ETH_TYPE_LEN      /* Octets in ethernet type         */
+#ifndef ETH_TYPE_LEN      /* Octets in Ethernet type         */
 #define ETH_TYPE_LEN    2 
 #endif
 
@@ -102,7 +101,7 @@
 #define ETH_CSAP_DEFAULT_TIMEOUT 5 
 #endif
 
-/* Linux does not process ethernet checksum */
+/* Linux does not process Ethernet checksum */
 #define ETH_TAILING_CHECKSUM 4
 
 /* special eth type/length value for tagged frames. */
@@ -117,118 +116,136 @@
 extern "C" {
 #endif
 
-/* 
- * Ethernet CSAP specific data
- */
-struct eth_csap_specific_data;
-typedef struct eth_csap_specific_data *eth_csap_specific_data_p;
-typedef struct eth_csap_specific_data
-{
-    eth_interface_p interface; /**< Ethernet interface data        */
-
-    int   out;          /**< Socket for sending data to the media       */
-    int   in;           /**< Socket for receiving data                  */
-   
-    uint16_t eth_type;  /**< Ethernet protocol type                     */
-
-    uint8_t recv_mode;  /**< Receive mode, bit mask from values in 
-                             enum eth_csap_receive_mode in ndn_eth.h    */
-    
-    char *remote_addr;  /**< Default remote address (NULL if undefined) */
-    char *local_addr;   /**< Default local address (NULL if undefined)  */
-
-    int   read_timeout; /**< Number of second to wait for data          */
-    int   cfi;
-    int   vlan_id;
-    int   priority;
-    size_t total_bytes; /**< Total number of sent or received bytes     */ 
-
-
-    /* integer scripts for iteration: */ 
-    tad_data_unit_t   du_dst_addr;
-    tad_data_unit_t   du_src_addr;
-    tad_data_unit_t   du_eth_type;
-    tad_data_unit_t   du_cfi;
-    tad_data_unit_t   du_vlan_id;
-    tad_data_unit_t   du_priority;
-
-} eth_csap_specific_data_t;
-
 
 /**
- * Callback for read parameter value of ethernet CSAP.
+ * Callback for init 'eth' CSAP layer if single in stack.
  *
- * The function complies with csap_get_param_cb_t prototype.
+ * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern char *tad_eth_get_param_cb(csap_p        csap_descr,
-                                  unsigned int  layer,
-                                  const char   *param);
+extern te_errno tad_eth_rw_init_cb(csap_p           csap,
+                                   const asn_value *csap_nds);
 
 /**
- * Callback for read data from media of ethernet CSAP. 
+ * Callback for destroy 'eth' CSAP layer if single in stack.
+ *
+ * The function complies with csap_nbr_destroy_cb_t prototype.
+ */ 
+extern te_errno tad_eth_rw_destroy_cb(csap_p csap);
+
+
+/**
+ * Callback for read data from media of Ethernet CSAP. 
  *
  * The function complies with csap_read_cb_t prototype.
  */ 
-extern int tad_eth_read_cb(csap_p csap_descr, int timeout,
+extern int tad_eth_read_cb(csap_p csap, int timeout,
                            char *buf, size_t buf_len);
 
 /**
- * Callback for write data to media of ethernet CSAP. 
+ * Open transmit socket for Ethernet CSAP. 
+ *
+ * The function complies with csap_low_resource_cb_t prototype.
+ */
+extern te_errno tad_eth_prepare_send(csap_p csap);
+
+/**
+ * Close transmit socket for Ethernet CSAP.
+ *
+ * The function complies with csap_low_resource_cb_t prototype.
+ */
+extern te_errno tad_eth_shutdown_send(csap_p csap);
+
+/**
+ * Callback for write data to media of Ethernet CSAP. 
  *
  * The function complies with csap_write_cb_t prototype.
  */ 
-extern int tad_eth_write_cb(csap_p csap_descr,
-                            const char *buf, size_t buf_len);
+extern te_errno tad_eth_write_cb(csap_p csap, const tad_pkt *pkt);
 
 /**
- * Callback for write data to media of ethernet CSAP and read
+ * Open receive socket for Ethernet CSAP.
+ *
+ * The function complies with csap_low_resource_cb_t prototype.
+ */
+extern te_errno tad_eth_prepare_recv(csap_p csap);
+
+/**
+ * Close receive socket for Ethernet CSAP.
+ *
+ * The function complies with csap_low_resource_cb_t prototype.
+ */
+extern te_errno tad_eth_shutdown_recv(csap_p csap);
+
+/**
+ * Callback for write data to media of Ethernet CSAP and read
  * data from media just after write, to get answer to sent request. 
  *
  * The function complies with csap_write_read_cb_t prototype.
  */ 
-extern int tad_eth_write_read_cb(csap_p csap_descr, int timeout,
-                                 const char *w_buf, size_t w_buf_len,
+extern int tad_eth_write_read_cb(csap_p csap, int timeout,
+                                 const tad_pkt *w_pkt,
                                  char *r_buf, size_t r_buf_len);
 
 
 /**
- * Callback for init 'file' CSAP layer if single in stack.
+ * Callback to initialize 'eth' CSAP layer.
  *
- * The function complies with csap_nbr_init_cb_t prototype.
- */ 
-extern te_errno tad_eth_single_init_cb(csap_p           csap_descr,
-                                       unsigned int     layer,
-                                       const asn_value *csap_nds);
+ * The function complies with csap_layer_init_cb_t prototype.
+ */
+extern te_errno tad_eth_init_cb(csap_p csap, unsigned int layer);
 
 /**
- * Callback for destroy 'file' CSAP layer if single in stack.
+ * Callback for destroy 'eth' CSAP layer.
  *
- * The function complies with csap_nbr_destroy_cb_t prototype.
+ * The function complies with csap_destroy_cb_t prototype.
  */ 
-extern te_errno tad_eth_single_destroy_cb(csap_p       csap_descr,
-                                          unsigned int layer);
+extern te_errno tad_eth_destroy_cb(csap_p csap, unsigned int layer);
 
 /**
- * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
+ * Callback for read parameter value of Ethernet CSAP.
+ *
+ * The function complies with csap_layer_get_param_cb_t prototype.
+ */ 
+extern char *tad_eth_get_param_cb(csap_p        csap,
+                                  unsigned int  layer,
+                                  const char   *param);
+
+
+/**
+ * Callback for confirm template PDU with Ethernet protocol CSAP
+ * parameters and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_eth_confirm_pdu_cb(csap_p       csap_descr,
-                                       unsigned int layer,
-                                       asn_value_p  layer_pdu); 
+extern te_errno tad_eth_confirm_tmpl_cb(csap_p         csap,
+                                        unsigned int   layer,
+                                        asn_value_p    layer_pdu,
+                                        void         **p_opaque); 
+
+/**
+ * Callback for confirm pattern PDU with Ethernet protocol CSAP
+ * arameters and possibilities.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */ 
+extern te_errno tad_eth_confirm_ptrn_cb(csap_p         csap,
+                                        unsigned int   layer,
+                                        asn_value_p    layer_pdu,
+                                        void         **p_opaque); 
 
 /**
  * Callback for generate binary data to be sent to media.
  *
- * The function complies with csap_layer_gen_bin_cb_t prototype.
+ * The function complies with csap_layer_generate_pkts_cb_t prototype.
  */ 
-extern te_errno tad_eth_gen_bin_cb(csap_p                csap_descr,
+extern te_errno tad_eth_gen_bin_cb(csap_p                csap,
                                    unsigned int          layer,
                                    const asn_value      *tmpl_pdu,
+                                   void                 *opaque,
                                    const tad_tmpl_arg_t *args,
                                    size_t                arg_num, 
-                                   csap_pkts_p           up_payload,
-                                   csap_pkts_p           pkts);
+                                   tad_pkts             *sdus,
+                                   tad_pkts             *pdus);
 
 
 /**
@@ -236,24 +253,12 @@ extern te_errno tad_eth_gen_bin_cb(csap_p                csap_descr,
  *
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
-extern te_errno tad_eth_match_bin_cb(csap_p           csap_descr,
+extern te_errno tad_eth_match_bin_cb(csap_p           csap,
                                      unsigned int     layer,
                                      const asn_value *pattern_pdu,
                                      const csap_pkts *pkt,
                                      csap_pkts       *payload,
                                      asn_value_p      parsed_packet);
-
-/**
- * Callback for generating pattern to filter 
- * just one response to the packet which will be sent by this CSAP 
- * according to this template. 
- *
- * The function complies with csap_layer_gen_pattern_cb_t prototype.
- */
-extern te_errno tad_eth_gen_pattern_cb(csap_p           csap_descr,
-                                       unsigned int     layer,
-                                       const asn_value *tmpl_pdu, 
-                                       asn_value_p     *pattern_pdu);
 
 /**
  * Create and bind raw socket to listen specified interface
@@ -270,25 +275,6 @@ extern int open_raw_socket(int eth_type, int pkt_type, int if_index,
                            int *sock);
 
 
-/**
- * Free all memory allocated by eth csap specific data
- *
- * @param eth_csap_specific_data_p  poiner to structure
- * @param is_complete               if not 0 the final free() will be 
- *                                  called on passed pointer
- */ 
-extern void free_eth_csap_data(eth_csap_specific_data_p spec_data,
-                               char is_colmplete);
-
-
-/**
- * Open receive socket for ethernet CSAP 
- *
- * @param csap_descr    CSAP descriptor
- *
- * @return status code
- */
-extern int eth_prepare_recv(csap_p csap_descr);
 
 /**
  * Ethernet echo CSAP method. 
@@ -296,13 +282,13 @@ extern int eth_prepare_recv(csap_p csap_descr);
  * respective write method to send it. 
  * Method may change data stored at passed location.  
  *
- * @param csap_descr    identifier of CSAP
+ * @param csap    identifier of CSAP
  * @param pkt           Got packet, plain binary data. 
  * @param len           length of data.
  *
  * @return zero on success or error code.
  */
-extern int eth_echo_method(csap_p csap_descr, uint8_t *pkt, size_t len);
+extern int eth_echo_method(csap_p csap, uint8_t *pkt, size_t len);
 
 #ifdef __cplusplus
 } /* extern "C" */

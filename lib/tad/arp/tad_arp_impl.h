@@ -1,11 +1,11 @@
 /** @file
- * @brief ARP TAD
+ * @brief TAD ARP
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * ARP CSAP support internal declarations.
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
- * the root directory of the distribution).
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -43,93 +43,53 @@
 
 
 /**
- * ARP CSAP specific data
- */
-typedef struct arp_csap_specific_data {
-    /* Nothing for now */
-} arp_csap_specific_data_t;
-
-
-/**
- * Callback to initialize 'arp' CSAP layer if over 'eth' in stack.
+ * Callback to initialize 'arp' CSAP layer.
  *
- * The function complies with csap_nbr_init_cb_t prototype.
+ * The function complies with csap_layer_init_cb_t prototype.
  */
-extern te_errno tad_arp_eth_init_cb(csap_p           csap_descr,
-                                    unsigned int     layer,
-                                    const asn_value *csap_nds);
+extern te_errno tad_arp_init_cb(csap_p csap, unsigned int layer);
 
 /**
- * Callback to destroy 'arp' CSAP layer if over 'eth' in stack.
+ * Callback to destroy 'arp' CSAP layer.
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */
-extern te_errno tad_arp_eth_destroy_cb(csap_p       csap_descr,
-                                       unsigned int layer);
-
-
-/**
- * Callback for read parameter value of ARP CSAP.
-    *
- * The function complies with csap_get_param_cb_t prototype.
- */
-extern char *tad_arp_get_param_cb(csap_p        csap_descr,
-                                  unsigned int  layer,
-                                  const char   *param);
+extern te_errno tad_arp_destroy_cb(csap_p csap, unsigned int layer);
 
 /**
  * Callback for confirm PDU with ARP CSAP parameters and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
-extern te_errno tad_arp_confirm_pdu_cb(csap_p        csap_descr,
-                                       unsigned int  layer, 
-                                       asn_value    *traffic_pdu); 
+extern te_errno tad_arp_confirm_pdu_cb(csap_p         csap,
+                                       unsigned int   layer, 
+                                       asn_value     *layer_pdu,
+                                       void         **p_opaque); 
 
 /**
  * Callback for generate binary data to be sent to media.
  *
- * The function complies with csap_layer_gen_bin_cb_t prototype.
+ * The function complies with csap_layer_generate_pkts_cb_t prototype.
  */
-extern te_errno tad_arp_gen_bin_cb(csap_p                csap_descr,
+extern te_errno tad_arp_gen_bin_cb(csap_p                csap,
                                    unsigned int          layer,
                                    const asn_value      *tmpl_pdu,
+                                   void                 *opaque,
                                    const tad_tmpl_arg_t *args,
                                    size_t                arg_num,
-                                   csap_pkts_p           up_payload,
-                                   csap_pkts_p           pkts);
+                                   tad_pkts             *sdus,
+                                   tad_pkts             *pdus);
 
 /**
  * Callback for parse received packet and match it with pattern.
  *
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
-extern te_errno tad_arp_match_bin_cb(csap_p           csap_descr,
+extern te_errno tad_arp_match_bin_cb(csap_p           csap,
                                      unsigned int     layer,
                                      const asn_value *pattern_pdu,
                                      const csap_pkts *pkt,
                                      csap_pkts       *payload,
                                      asn_value       *parsed_packet);
-
-/**
- * Callback for generating pattern to filter just one response to the
- * packet which will be sent by this CSAP according to this template.
- *
- * The function complies with csap_layer_gen_pattern_cb_t prototype.
- */
-extern te_errno tad_arp_gen_pattern_cb(csap_p            csap_descr,
-                                       unsigned int      layer,
-                                       const asn_value  *tmpl_pdu, 
-                                       asn_value       **pattern_pdu);
-
-#if 0
-/**
- * Not implemented yet.
- *
- * The function complies with csap_echo_method_t prototype.
- */
-extern te_errno tad_arp_echo_method(csap_p csap_descr, uint8_t *pkt, 
-                                    size_t len);
-#endif
 
 #endif /* !__TE_TAD_ARP_IMPL_H__ */

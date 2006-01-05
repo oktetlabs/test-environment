@@ -8,7 +8,7 @@ main()
     int id, id2;
     csap_p cp;
 
-    csap_db_init(); 
+    csap_id_init(); 
     id = csap_create("first.low"); 
     if (id == 0)
     {

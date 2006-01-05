@@ -1,11 +1,11 @@
 /** @file
- * @brief CLI TAD
+ * @brief TAD CLI
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * CLI CSAP layer-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,75 +27,64 @@
  * $Id$
  */
 
-#include "te_config.h"
+#define TE_LGR_USER     "TAD CLI"
 
-#include "tad_cli_impl.h"
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdio.h>
 
-
-/* See description in tad_cli_impl.h */
-char *
-tad_cli_get_param_cb(csap_p csap_descr, unsigned int layer,
-                     const char *param)
-{
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(param);
-
-    return NULL;
-}
-
-/* See description in tad_cli_impl.h */
-te_errno
-tad_cli_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                       asn_value *layer_pdu)
-{
-    cli_csap_specific_data_p spec_data;
-
-    UNUSED(layer_pdu);
-
-    spec_data = (cli_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data; 
-    
-    return 0;
-}
+#include "tad_cli_impl.h"
 
 
 /* See description in tad_cli_impl.h */
 te_errno
-tad_cli_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                   const asn_value *tmpl_pdu,
-                   const tad_tmpl_arg_t *args, size_t arg_num,
-                   const csap_pkts_p  up_payload, csap_pkts_p pkts)
+tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
+                   const asn_value *tmpl_pdu, void *opaque,
+                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   tad_pkts *sdus, tad_pkts *pdus)
 {
-    int rc;
-    size_t msg_len;
+    te_errno    rc;
+    int         msg_len;
+    char       *msg;
 
-    char *msg;
-
-    /* XXX */
-    UNUSED(csap_descr);
+    UNUSED(csap);
     UNUSED(layer);
+    UNUSED(opaque);
     UNUSED(args);
     UNUSED(arg_num);
-    UNUSED(up_payload);
 
+    /* FIXME: Use read_string here */
     msg_len = asn_get_length(tmpl_pdu, "message");
     if (msg_len <= 0)
     {
-        return 1;
+        ERROR("Unexpected length of the 'message' %d", msg_len);
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    }
+    if ((msg = malloc(msg_len)) == NULL)
+    {
+        ERROR("%s(): Failed to allocate %d bytes of memory",
+              __FUNCTION__, msg_len);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+    rc = asn_read_value_field(tmpl_pdu, msg, &msg_len, "message");
+    if (rc != 0)
+    {
+        ERROR("Failed to read 'message' from NDS: %r", rc);
+        free(msg);
+        return rc;
     }
 
-    if ((msg = malloc(msg_len)) == NULL)
-        return TE_ENOMEM;
-    rc = asn_read_value_field(tmpl_pdu, msg, &msg_len, "message");
-
-    pkts->data = msg;
-    pkts->len  = msg_len;
-    pkts->next = NULL;
-
-    pkts->free_data_cb = free;
+    tad_pkts_move(pdus, sdus);
+    rc = tad_pkts_add_new_seg(pdus, TRUE,
+                              msg, msg_len, tad_pkt_seg_data_free);
+    if (rc != 0)
+    {
+        free(msg);
+        return rc;
+    }
 
     return 0;
 }
@@ -103,7 +92,7 @@ tad_cli_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_cli_impl.h */
 te_errno
-tad_cli_match_bin_cb(csap_p           csap_descr,
+tad_cli_match_bin_cb(csap_p           csap,
                      unsigned int     layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt,
@@ -116,7 +105,7 @@ tad_cli_match_bin_cb(csap_p           csap_descr,
     int rc;
 #endif
 
-    UNUSED(csap_descr);
+    UNUSED(csap);
     UNUSED(layer);
     UNUSED(pattern_pdu);
     UNUSED(payload);
@@ -149,12 +138,12 @@ tad_cli_match_bin_cb(csap_p           csap_descr,
 
 /* See description in tad_cli_impl.h */
 te_errno
-tad_cli_gen_pattern_cb(csap_p            csap_descr,
+tad_cli_gen_pattern_cb(csap_p            csap,
                        unsigned int      layer,
                        const asn_value  *tmpl_pdu, 
                        asn_value       **pattern_pdu)
 {
-    UNUSED(csap_descr);
+    UNUSED(csap);
     UNUSED(tmpl_pdu);
 
     *pattern_pdu = asn_init_value(ndn_cli_message);

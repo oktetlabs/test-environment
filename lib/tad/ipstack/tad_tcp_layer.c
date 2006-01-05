@@ -1,11 +1,11 @@
 /** @file
- * @brief IP Stack TAD
+ * @brief TAD IP Stack
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP layer-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * TCP CSAP layer-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,23 +27,281 @@
  * $Id$
  */
 
-#include <string.h>
-#include <stdlib.h>
+#define TE_LGR_USER "TAD TCP" 
 
-#define TE_LGR_USER "TAD tcp" 
-#include "tad_ipstack_impl.h"
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
+#include "tad_ipstack_impl.h"
+
+
+/* See description tad_ipstack_impl.h */
+te_errno
+tad_tcp_init_cb(csap_p csap, unsigned int layer)
+{
+    tcp_csap_specific_data_t *spec_data; 
+    ip4_csap_specific_data_t *ip4_spec_data; 
+    const asn_value          *tcp_pdu;
+
+    int32_t value_in_pdu;
+    int     rc = 0;
+
+    spec_data = calloc(1, sizeof(*spec_data));
+    if (spec_data == NULL)
+        return TE_ENOMEM;
+
+    csap_set_proto_spec_data(csap, layer, spec_data);
+
+    tcp_pdu = csap->layers[layer].csap_layer_pdu;
+
+    if (layer + 1 >= csap->depth)
+    {
+        ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
+              __FUNCTION__, csap->id, layer, csap->depth);
+        return TE_EINVAL;
+    }
+
+    /* FIXME Why IPv4? */
+    ip4_spec_data = (ip4_csap_specific_data_t *)
+        csap->layers[layer + 1].specific_data;
+
+    if (csap->type == TAD_CSAP_DATA)
+    {
+        const asn_value *data_csap_spec, *subval;
+        asn_tag_class    t_class;
+
+        rc = asn_get_child_value(tcp_pdu, &data_csap_spec, 
+                                 PRIVATE, NDN_TAG_TCP_DATA);
+        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+        {
+            ERROR("%s(CSAP %d) data TCP csap should have 'data' spec",
+                  __FUNCTION__, csap->id); 
+            return TE_ETADWRONGNDS;
+        }
+        else if (rc != 0)
+        {
+            ERROR("%s(CSAP %d): unexpected error reading 'data': %r", 
+                  __FUNCTION__, csap->id, rc); 
+            return rc;
+        } 
+
+        rc = asn_get_choice_value(data_csap_spec, &subval, 
+                                  &t_class, &(spec_data->data_tag));
+        if (rc != 0)
+        {
+            ERROR("%s(CSAP %d): error reading choice of 'data': %r", 
+                  __FUNCTION__, csap->id, rc); 
+            return rc;
+        } 
+
+        INFO("tag of TCP data csap: %d, socket tag is %d", 
+             spec_data->data_tag, NDN_TAG_TCP_DATA_SOCKET);
+        if (spec_data->data_tag == NDN_TAG_TCP_DATA_SOCKET)
+        {
+            struct sockaddr_storage   remote_sa;
+            socklen_t                 remote_len = sizeof(remote_sa);
+
+            asn_read_int32(subval, &(spec_data->socket), "");
+
+            if (getpeername(spec_data->socket, SA(&remote_sa), &remote_len)
+                < 0)
+                WARN("%s(CSAP %d) getpeername(sock %d) failed, errno %d", 
+                     __FUNCTION__, csap->id, 
+                     spec_data->socket, errno);
+            else
+            {
+                spec_data->remote_port = SIN(&remote_sa)->sin_port;
+                ip4_spec_data->remote_addr = SIN(&remote_sa)->sin_addr;
+
+                RING("init CSAP on accepted connection from %s:%d", 
+                     inet_ntoa(ip4_spec_data->remote_addr), 
+                     ntohs(spec_data->remote_port));
+            }
+
+            /* nothing more to do */
+            return 0;
+        }
+    }
+
+
+    /*
+     * Set local port
+     */
+    rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_LOCAL_PORT,
+                               &value_in_pdu);
+    if (rc == 0)
+    {
+        VERB("%s(): set TCP CSAP %d default local port to %d", 
+             __FUNCTION__, csap->id, value_in_pdu);
+        spec_data->local_port = value_in_pdu;
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        VERB("%s(): set TCP CSAP %d default local port to zero", 
+             __FUNCTION__, csap->id);
+        spec_data->local_port = 0;
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
+    {
+        ERROR("%s(): TCP CSAP %d, non-plain local port not supported",
+              __FUNCTION__, csap->id);
+        return TE_EOPNOTSUPP;
+    }
+    else
+        return rc;
+
+    /*
+     * Set remote port
+     */
+    rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_REMOTE_PORT,
+                               &value_in_pdu);
+    if (rc == 0)
+    {
+        VERB("%s(): set TCP CSAP %d default remote port to %d", 
+             __FUNCTION__, csap->id, value_in_pdu);
+        spec_data->remote_port = value_in_pdu;
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        VERB("%s(): set TCP CSAP %d default remote port to zero", 
+             __FUNCTION__, csap->id);
+        spec_data->remote_port = 0;
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
+    {
+        ERROR("%s(): TCP CSAP %d, non-plain remote port not supported",
+              __FUNCTION__, csap->id);
+        return TE_EOPNOTSUPP;
+    }
+    else
+        return rc;
+
+    if (csap->type == TAD_CSAP_DATA)
+    {
+        /* TODO: support of TCP over IPv6 */
+        struct sockaddr_in local;
+        int                opt = 1;
+
+        local.sin_family = AF_INET;
+        local.sin_addr = ip4_spec_data->local_addr;
+        local.sin_port = htons(spec_data->local_port);
+        INFO("%s(): Port passed %d, network order %d, IP addr %x", 
+             __FUNCTION__, (int)spec_data->local_port, (int)local.sin_port,
+             (int32_t)local.sin_addr.s_addr);
+
+        if ((spec_data->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            ERROR("%s(CSAP %d) socket create failed, errno %r", 
+                  __FUNCTION__, csap->id, rc);
+            return rc;
+        }
+
+        if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
+                       &opt, sizeof(opt)) == -1)
+        {
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            ERROR("%s(CSAP %d) set SO_REUSEADDR failed, errno %r", 
+                  __FUNCTION__, csap->id, rc);
+            return rc;
+        }
+
+        if (bind(spec_data->socket, SA(&local), sizeof(local)) < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            ERROR("%s(CSAP %d) socket bind failed, errno %r", 
+                  __FUNCTION__, csap->id, rc);
+            return rc;
+        }
+
+        switch (spec_data->data_tag)
+        {
+            case NDN_TAG_TCP_DATA_SERVER:
+
+                if (listen(spec_data->socket, 10) < 0)
+                {
+                    rc = TE_OS_RC(TE_TAD_CSAP, errno);
+                    ERROR("%s(CSAP %d) listen failed, errno %r", 
+                          __FUNCTION__, csap->id, rc);
+                    return rc;
+                }
+                INFO("%s(CSAP %d) listen success", __FUNCTION__,
+                     csap->id);
+                break;
+
+            case NDN_TAG_TCP_DATA_CLIENT: 
+                {
+                    struct sockaddr_in remote;
+
+                    if (spec_data->remote_port == 0 ||
+                        ip4_spec_data->remote_addr.s_addr == INADDR_ANY)
+                    {
+                        ERROR("%s(CSAP %d) client csap, remote need", 
+                              __FUNCTION__, csap->id);
+                        return TE_ETADWRONGNDS;
+                    }
+                    remote.sin_family = AF_INET;
+                    remote.sin_port = spec_data->remote_port;
+                    remote.sin_addr = ip4_spec_data->remote_addr;
+
+                    if (connect(spec_data->socket, SA(&remote), 
+                                sizeof(remote)) < 0)
+                    {
+                        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+                        ERROR("%s(CSAP %d) connect failed, errno %r", 
+                              __FUNCTION__, csap->id, rc);
+                        return rc;
+                    }
+                }
+                break;
+
+            default:
+                ERROR("%s(CSAP %d) unexpected tag of 'data' field %d", 
+                      __FUNCTION__, csap->id, spec_data->data_tag);
+                return TE_ETADWRONGNDS;
+        }
+    }
+
+    return 0;
+}
+
+/* See description tad_ipstack_impl.h */
+te_errno 
+tad_tcp_destroy_cb(csap_p csap, unsigned int layer)
+{
+    UNUSED(csap);
+    UNUSED(layer);
+    return 0;
+}
+
 
 /* See description in tad_ipstack_impl.h */
 char *
-tad_tcp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
+tad_tcp_get_param_cb(csap_p csap, unsigned int layer, const char *param)
 {
-    tcp_csap_specific_data_t *   spec_data; 
-    spec_data = (tcp_csap_specific_data_t *) csap_descr->
-                    layers[layer].specific_data; 
+    tcp_csap_specific_data_t *spec_data = 
+        csap_get_proto_spec_data(csap, layer);
 
     static char buf[20];
 
@@ -63,8 +321,8 @@ tad_tcp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                       asn_value_p layer_pdu)
+tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
+                       asn_value_p layer_pdu, void **p_opaque)
 { 
     te_errno    rc = 0;
 
@@ -73,7 +331,9 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     asn_value       *tcp_pdu;
 
     tcp_csap_specific_data_t *spec_data = 
-        (tcp_csap_specific_data_t *)csap_descr->layers[layer].specific_data;
+        csap_get_proto_spec_data(csap, layer);
+
+    UNUSED(p_opaque);
 
     if (asn_get_syntax(layer_pdu, "") == CHOICE)
     {
@@ -86,9 +346,9 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     else
         tcp_pdu = layer_pdu; 
 
-    tcp_csap_pdu = csap_descr->layers[layer].csap_layer_pdu; 
+    tcp_csap_pdu = csap->layers[layer].csap_layer_pdu; 
 
-    if (csap_descr->type == TAD_CSAP_DATA)
+    if (csap->type == TAD_CSAP_DATA)
     {
         if (spec_data->data_tag != NDN_TAG_TCP_DATA_SERVER)
         {
@@ -111,7 +371,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         if (rc != 0)                                                    \
         {                                                               \
             ERROR("%s(csap %d),line %d, convert %s failed, rc %r",      \
-                  __FUNCTION__, csap_descr->id, __LINE__, #du_field_, rc);\
+                  __FUNCTION__, csap->id, __LINE__, #du_field_, rc);\
             return rc;                                                  \
         }                                                               \
     } while (0) 
@@ -119,7 +379,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     CONVERT_FIELD(NDN_TAG_TCP_SRC_PORT, du_src_port); 
     if (spec_data->du_src_port.du_type == TAD_DU_UNDEF)
     {
-        if (csap_descr->state & TAD_STATE_SEND)
+        if (csap->state & TAD_STATE_SEND)
         {
             rc = tad_data_unit_convert(tcp_csap_pdu,
                                        NDN_TAG_TCP_LOCAL_PORT,
@@ -127,7 +387,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
             if (rc != 0)
             {          
                 ERROR("%s(csap %d), local_port to src failed, rc %r",
-                      __FUNCTION__, csap_descr->id, rc);
+                      __FUNCTION__, csap->id, rc);
                 return rc;
             }
         }
@@ -148,7 +408,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     CONVERT_FIELD(NDN_TAG_TCP_DST_PORT, du_dst_port);
     if (spec_data->du_dst_port.du_type == TAD_DU_UNDEF)
     {
-        if (csap_descr->state & TAD_STATE_SEND)
+        if (csap->state & TAD_STATE_SEND)
         {
             rc = tad_data_unit_convert(tcp_csap_pdu,
                                        NDN_TAG_TCP_REMOTE_PORT,
@@ -156,7 +416,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
             if (rc != 0)
             {          
                 ERROR("%s(csap %d), remote port to dst failed, rc %r",
-                      __FUNCTION__, csap_descr->id, rc);
+                      __FUNCTION__, csap->id, rc);
                 return rc;
             }
         }
@@ -274,57 +534,31 @@ fill_tcp_options(void *buf, asn_value_p options)
 }
 
 
-/* See description in tad_ipstack_impl.h */
-te_errno
-tad_tcp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                   const asn_value *tmpl_pdu,
-                   const tad_tmpl_arg_t *args, size_t arg_num, 
-                   csap_pkts_p up_payload, csap_pkts_p pkt_list)
+/** Opaque data for tad_tcp_fill_in_hdr() callback */
+typedef struct tad_tcp_fill_in_hdr_data {
+    tcp_csap_specific_data_t   *spec_data;
+    const tad_tmpl_arg_t       *args;
+    unsigned int                arg_num;
+} tad_tcp_fill_in_hdr_data;
+
+/**
+ * Callback function to fill in TCP header.
+ *
+ * This function complies with tad_pkt_seg_enum_cb prototype.
+ */
+static te_errno
+tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
+                    unsigned int seg_num, void *opaque)
 {
-    int rc = 0;
-    unsigned char *p; 
+    tad_tcp_fill_in_hdr_data   *data = opaque;
+    uint8_t                    *p = seg->data_ptr;
+    te_errno                    rc;
 
     int hdr_len = 20;
-    int pld_len = (up_payload == NULL) ? 0 : up_payload->len;
 
-    tcp_csap_specific_data_t *spec_data = NULL;
-
-    /* TODO: TCP options */
-
-    if (csap_descr == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
-
-    if (pkt_list == NULL || tmpl_pdu == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
-
-    spec_data = (tcp_csap_specific_data_t *)
-                csap_descr->layers[layer].specific_data; 
-
-    if (csap_descr->type == TAD_CSAP_DATA) 
-    {
-        if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
-        {
-            ERROR("%s(CSAP %d) write to TCP data 'server' is not allowed",
-                  __FUNCTION__, csap_descr->id);
-            return TE_RC(TE_TAD_CSAP, TE_ETADLOWER);
-        } 
-
-        pkt_list->data = up_payload->data;
-        pkt_list->len  = up_payload->len;
-        pkt_list->next = up_payload->next;
-
-        up_payload->data = NULL;
-        up_payload->len  = 0;
-        up_payload->next = NULL;
-
-        return 0;
-    } 
-
-
-    pkt_list->len = hdr_len + pld_len; 
-    pkt_list->data = malloc(pkt_list->len);
-    pkt_list->next = NULL; 
-    p = pkt_list->data;
+    UNUSED(pkt);
+    UNUSED(seg_num);
+    assert(seg->data_len == 20);
 
 #define CHECK_ERROR(fail_cond_, error_, msg_...) \
     do {                                     \
@@ -338,10 +572,11 @@ tad_tcp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 #define PUT_BIN_DATA(c_du_field_, def_val_, length_) \
     do {                                                                \
-        if (spec_data->c_du_field_.du_type != TAD_DU_UNDEF)             \
+        if (data->spec_data->c_du_field_.du_type != TAD_DU_UNDEF)       \
         {                                                               \
-            rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
-                                      args, arg_num, p, length_);       \
+            rc = tad_data_unit_to_bin(&(data->spec_data->c_du_field_),  \
+                                      data->args, data->arg_num, p,     \
+                                      length_);                         \
             CHECK_ERROR(rc != 0, rc,                                    \
                         "%s():%d: " #c_du_field_ " error: %r",          \
                         __FUNCTION__,  __LINE__, rc);                   \
@@ -361,78 +596,107 @@ tad_tcp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
                 case 4:                                                 \
                     *((uint32_t *)p) = htonl((uint32_t)(def_val_));     \
                     break;                                              \
+                default:                                                \
+                    assert(FALSE);                                      \
             }                                                           \
         }                                                               \
         p += (length_);                                                 \
     } while (0) 
 
 
-    CHECK_ERROR(spec_data->du_src_port.du_type == TAD_DU_UNDEF && 
-                spec_data->local_port == 0,
+    CHECK_ERROR(data->spec_data->du_src_port.du_type == TAD_DU_UNDEF && 
+                data->spec_data->local_port == 0,
                 TE_ETADLESSDATA, 
-                "%s(): CSAP %d, no source port specified",
-                __FUNCTION__, csap_descr->id);
-    PUT_BIN_DATA(du_src_port, spec_data->local_port, 2);
+                "%s(): no source port specified",
+                __FUNCTION__);
+    PUT_BIN_DATA(du_src_port, data->spec_data->local_port, 2);
 
-    CHECK_ERROR(spec_data->du_dst_port.du_type == TAD_DU_UNDEF && 
-                spec_data->remote_port == 0,
+    CHECK_ERROR(data->spec_data->du_dst_port.du_type == TAD_DU_UNDEF && 
+                data->spec_data->remote_port == 0,
                 TE_ETADLESSDATA, 
-                "%s(): CSAP %d, no destination port specified",
-                __FUNCTION__, csap_descr->id);
-    PUT_BIN_DATA(du_dst_port, spec_data->remote_port, 2);
+                "%s():  no destination port specified",
+                __FUNCTION__);
+    PUT_BIN_DATA(du_dst_port, data->spec_data->remote_port, 2);
 
-    CHECK_ERROR(spec_data->du_seqn.du_type == TAD_DU_UNDEF,
+    CHECK_ERROR(data->spec_data->du_seqn.du_type == TAD_DU_UNDEF,
                 TE_ETADLESSDATA, 
-                "%s(): CSAP %d, no sequence number specified",
-                __FUNCTION__, csap_descr->id); 
-    rc = tad_data_unit_to_bin(&(spec_data->du_seqn),
-                              args, arg_num, p, 4);
+                "%s():  no sequence number specified",
+                __FUNCTION__); 
+    rc = tad_data_unit_to_bin(&(data->spec_data->du_seqn),
+                              data->args, data->arg_num, p, 4);
     CHECK_ERROR(rc != 0, rc, "%s():%d: seqn error: %r",
                 __FUNCTION__,  __LINE__, rc);
     p += 4;
 
     PUT_BIN_DATA(du_ackn, 0, 4);
-    if (spec_data->du_hlen.du_type != TAD_DU_UNDEF)
+    if (data->spec_data->du_hlen.du_type != TAD_DU_UNDEF)
     {
-        WARN("%s(CSAP %d): hlen field is ignored required in NDS",
-              __FUNCTION__, csap_descr->id);
+        WARN("%s(): hlen field is ignored required in NDS",
+              __FUNCTION__);
     }
     *p = (hdr_len / 4) << 4;
     p++;
     PUT_BIN_DATA(du_flags, 0, 1);
 
     VERB("du flags type %d, value %d, put value %d",
-         spec_data->du_flags.du_type, 
-         spec_data->du_flags.val_i32,
+         data->spec_data->du_flags.du_type, 
+         data->spec_data->du_flags.val_i32,
          (int)(*(p-1)));
 
     PUT_BIN_DATA(du_win_size, 1400, 2); /* TODO: good default window */
     PUT_BIN_DATA(du_checksum, 0, 2);
     PUT_BIN_DATA(du_urg_p, 0, 2); 
 
-    if (pld_len > 0 && up_payload != NULL)
-    {
-        memcpy(p, up_payload->data, pld_len);
-    }
-
     return 0;
 #undef PUT_BIN_DATA
+
 cleanup:
+    return rc;
+}
+
+/* See description in tad_ipstack_impl.h */
+te_errno
+tad_tcp_gen_bin_cb(csap_p csap, unsigned int layer,
+                   const asn_value *tmpl_pdu, void *opaque,
+                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   tad_pkts *sdus, tad_pkts *pdus)
+{
+    te_errno                  rc = 0;
+    tcp_csap_specific_data_t *spec_data;
+ 
+    UNUSED(tmpl_pdu); 
+    UNUSED(opaque);
+ 
+    spec_data = csap_get_proto_spec_data(csap, layer);
+
+    /* UDP layer does no fragmentation, just copy all SDUs to PDUs */
+    tad_pkts_move(pdus, sdus);
+
+    if (csap->type != TAD_CSAP_DATA)
     {
-        csap_pkts_p pkt_fr;
-        for (pkt_fr = pkt_list; pkt_fr != NULL; pkt_fr = pkt_fr->next)
-        {
-            free(pkt_fr->data);
-            pkt_fr->data = NULL; pkt_fr->len = 0;
-        }
+        tad_tcp_fill_in_hdr_data    opaque_data =
+            { spec_data, args, arg_num };
+
+        /*
+         * Allocate and add TCP header to all packets.
+         * FIXME sizeof(struct tcphdr) instead of 20.
+         */
+        rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, 20, NULL);
+        if (rc != 0)
+            return rc;
+
+        /* Fill in added segment as TCP header */
+        rc = tad_pkts_enumerate_first_segs(pdus, tad_tcp_fill_in_hdr,
+                                           &opaque_data);
     }
+
     return rc;
 }
 
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_tcp_match_bin_cb(csap_p csap_descr, unsigned int layer,
+tad_tcp_match_bin_cb(csap_p csap, unsigned int layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt, csap_pkts *payload, 
                      asn_value_p parsed_packet)
@@ -453,16 +717,15 @@ tad_tcp_match_bin_cb(csap_p csap_descr, unsigned int layer,
     if (parsed_packet)
         tcp_header_pdu = asn_init_value(ndn_tcp_header);
 
-    spec_data = (tcp_csap_specific_data_t*)csap_descr->
-                    layers[layer].specific_data; 
+    spec_data = csap_get_proto_spec_data(csap, layer);
 
     data = pkt->data; 
 
-    INFO("%s(CSAP %d) type %d", __FUNCTION__, csap_descr->id, 
-         csap_descr->type);
-    if (csap_descr->type == TAD_CSAP_DATA) 
+    INFO("%s(CSAP %d) type %d", __FUNCTION__, csap->id, 
+         csap->type);
+    if (csap->type == TAD_CSAP_DATA) 
     {
-        INFO("%s(CSAP %d) data tag %d", __FUNCTION__, csap_descr->id, 
+        INFO("%s(CSAP %d) data tag %d", __FUNCTION__, csap->id, 
              spec_data->data_tag);
         if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
         {
@@ -492,7 +755,7 @@ tad_tcp_match_bin_cb(csap_p csap_descr, unsigned int layer,
                     rc = TE_ETADLESSDATA;
                     INFO("%s(CSAP %d): less data, "
                          "wait %d, stored %d, get %d",
-                         __FUNCTION__, csap_descr->id, 
+                         __FUNCTION__, csap->id, 
                           spec_data->wait_length,
                           spec_data->stored_length,
                           pkt->len);
@@ -506,7 +769,7 @@ tad_tcp_match_bin_cb(csap_p csap_descr, unsigned int layer,
                 {
                     INFO("%s(CSAP %d): got last data, "
                          "wait %d, stored %d, get %d",
-                         __FUNCTION__, csap_descr->id, 
+                         __FUNCTION__, csap->id, 
                           spec_data->wait_length,
                           spec_data->stored_length,
                           pkt->len);
@@ -608,18 +871,4 @@ cleanup:
     asn_free_value(tcp_header_pdu);
 
     return rc;
-}
-
-
-/* See description in tad_ipstack_impl.h */
-te_errno
-tad_tcp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
-                       const asn_value *tmpl_pdu, 
-                       asn_value_p *pattern_pdu)
-{
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(tmpl_pdu);
-    UNUSED(pattern_pdu); 
-    return 0; /* FIXME */
 }

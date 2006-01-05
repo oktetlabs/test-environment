@@ -1,11 +1,11 @@
 /** @file
- * @brief DHCP TAD
+ * @brief TAD DHCP
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * DHCP CSAP implementaion internal declarations.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -74,9 +74,9 @@ typedef struct dhcp_csap_specific_data {
 /**
  * Callback for read parameter value of DHCP CSAP.
  *
- * The function complies with csap_get_param_cb_t prototype.
+ * The function complies with csap_layer_get_param_cb_t prototype.
  */ 
-extern char *tad_dhcp_get_param_cb(csap_p        csap_descr,
+extern char *tad_dhcp_get_param_cb(csap_p        csap,
                                    unsigned int  layer,
                                    const char    *param);
 
@@ -85,7 +85,7 @@ extern char *tad_dhcp_get_param_cb(csap_p        csap_descr,
  *
  * The function complies with csap_read_cb_t prototype.
  */ 
-extern int tad_dhcp_read_cb(csap_p csap_descr, int timeout, char *buf,
+extern int tad_dhcp_read_cb(csap_p csap, int timeout, char *buf,
                             size_t buf_len);
 
 /**
@@ -93,8 +93,7 @@ extern int tad_dhcp_read_cb(csap_p csap_descr, int timeout, char *buf,
  *
  * The function complies with csap_write_cb_t prototype.
  */ 
-extern int tad_dhcp_write_cb(csap_p csap_descr,
-                             const char *buf, size_t buf_len);
+extern te_errno tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt);
 
 /**
  * Callback for write data to media of DHCP CSAP and read
@@ -102,56 +101,55 @@ extern int tad_dhcp_write_cb(csap_p csap_descr,
  *
  * The function complies with csap_write_read_cb_t prototype.
  */ 
-extern int tad_dhcp_write_read_cb(csap_p csap_descr, int timeout,
-                                  const char *w_buf, size_t w_buf_len,
+extern int tad_dhcp_write_read_cb(csap_p csap, int timeout,
+                                  const tad_pkt *w_pkt,
                                   char *r_buf, size_t r_buf_len);
 
 
 /**
- * Callback for init 'file' CSAP layer if single in stack.
+ * Callback for init 'file' CSAP layer as read/write layer.
  *
- * The function complies with csap_nbr_init_cb_t prototype.
+ * The function complies with csap_rw_init_cb_t prototype.
  */ 
-extern te_errno tad_dhcp_single_init_cb(csap_p           csap_descr,
-                                        unsigned int     layer,
-                                        const asn_value *csap_nds);
+extern te_errno tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds);
 
 /**
- * Callback for destroy 'file' CSAP layer if single in stack.
+ * Callback for destroy 'file' CSAP layer as read/write layer.
  *
- * The function complies with csap_nbr_destroy_cb_t prototype.
+ * The function complies with csap_rw_destroy_cb_t prototype.
  */ 
-extern te_errno tad_dhcp_single_destroy_cb(csap_p       csap_descr,
-                                           unsigned int layer);
+extern te_errno tad_dhcp_rw_destroy_cb(csap_p csap);
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
  *
- * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ * The function complies with csap_layer_confirm_send_cb_t prototype.
  */ 
-extern te_errno tad_dhcp_confirm_pdu_cb(csap_p        csap_descr,
+extern te_errno tad_dhcp_confirm_pdu_cb(csap_p        csap,
                                         unsigned int  layer,
-                                        asn_value    *layer_pdu); 
+                                        asn_value    *layer_pdu,
+                                        void         **p_opaque); 
 
 /**
  * Callback for generate binary data to be sent to media.
  *
- * The function complies with csap_layer_gen_bin_cb_t prototype.
+ * The function complies with csap_layer_generate_pkts_cb_t prototype.
  */ 
-extern te_errno tad_dhcp_gen_bin_cb(csap_p                csap_descr,
+extern te_errno tad_dhcp_gen_bin_cb(csap_p                csap,
                                     unsigned int          layer,
                                     const asn_value      *tmpl_pdu,
+                                    void                 *opaque,
                                     const tad_tmpl_arg_t *args,
                                     size_t                arg_num,
-                                    csap_pkts_p           up_payload,
-                                    csap_pkts_p           pkts);
+                                    tad_pkts             *sdus,
+                                    tad_pkts             *pdus);
 
 /**
  * Callback for parse received packet and match it with pattern. 
  *
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
-extern te_errno tad_dhcp_match_bin_cb(csap_p           csap_descr,
+extern te_errno tad_dhcp_match_bin_cb(csap_p           csap,
                                       unsigned int     layer,
                                       const asn_value *pattern_pdu,
                                       const csap_pkts *pkt,
@@ -165,7 +163,7 @@ extern te_errno tad_dhcp_match_bin_cb(csap_p           csap_descr,
  *
  * The function complies with csap_layer_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_dhcp_gen_pattern_cb(csap_p            csap_descr,
+extern te_errno tad_dhcp_gen_pattern_cb(csap_p            csap,
                                         unsigned int      layer,
                                         const asn_value  *tmpl_pdu, 
                                         asn_value       **pattern_pdu);

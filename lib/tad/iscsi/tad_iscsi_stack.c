@@ -1,11 +1,11 @@
 /** @file
- * @brief iSCSI TAD
+ * @brief TAD iSCSI
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * iSCSI CSAP, stack-related callbacks.
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
- * the root directory of the distribution).
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,7 +27,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD iSCSI stack"
+#define TE_LGR_USER     "TAD iSCSI"
 
 #include "te_config.h"
 #if HAVE_CONFIG_H
@@ -75,60 +75,93 @@
 
 
 /**
- * Prepare send callback
- *
- * @param csap_descr    CSAP descriptor structure. 
- *
- * @return status code.
- */ 
-int
-tad_iscsi_prepare_send_cb(csap_p csap_descr)
+ * iSCSI layer read/write data
+ */
+typedef struct tad_iscsi_rw_data { 
+    int     socket;
+} tad_iscsi_rw_data;
+
+
+/* See description tad_iscsi_impl.h */
+te_errno
+tad_iscsi_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 {
-    assert(csap_descr != NULL);
-    F_ENTRY("(%d:)", csap_descr->id);
+    te_errno            rc;
+    int32_t             int32_val;
+    const asn_value    *iscsi_nds;
+    tad_iscsi_rw_data  *rw_data; 
+
+
+    if (csap_nds == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
+
+    rw_data = calloc(1, sizeof(*rw_data));
+    if (rw_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    csap_set_rw_data(csap, rw_data);
+
+    rc = asn_get_indexed(csap_nds, &iscsi_nds, 0);
+    if (rc != 0)
+    {
+        ERROR("%s() get iSCSI csap spec failed %r", __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, rc);
+    } 
+    
+    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "socket")) != 0)
+    {
+        ERROR("%s(): asn_read_int32() failed for 'socket': %r", 
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
+    rw_data->socket = int32_val;
+
+    csap->timeout = 100 * 1000; /* FIXME */
+
     return 0;
 }
 
-/**
- * Prepare recv callback
- *
- * @param csap_descr    CSAP descriptor structure. 
- *
- * @return status code.
- */ 
-int
-tad_iscsi_prepare_recv_cb(csap_p csap_descr)
+/* See description tad_iscsi_impl.h */
+te_errno
+tad_iscsi_rw_destroy_cb(csap_p csap)
 {
-    assert(csap_descr != NULL);
-    F_ENTRY("(%d:)", csap_descr->id);
+    tad_iscsi_rw_data *rw_data; 
+
+    rw_data = csap_get_rw_data(csap); 
+    if (rw_data == NULL)
+        return 0;
+
+    csap_set_rw_data(csap, NULL); 
+
+    close(rw_data->socket);
+
+    free(rw_data);
+
     return 0;
 }
 
 
 /* See description tad_iscsi_impl.h */
 int 
-tad_iscsi_read_cb(csap_p csap_descr, int timeout,
+tad_iscsi_read_cb(csap_p csap, int timeout,
                   char *buf, size_t buf_len)
 {
-    iscsi_csap_specific_data_t *spec_data;
+    tad_iscsi_rw_data      *rw_data = csap_get_rw_data(csap);
+    tad_iscsi_layer_data   *layer_data =
+        csap_get_proto_spec_data(csap, csap_get_rw_layer(csap));;
 
     size_t    len = 0;
 
-    assert(csap_descr != NULL);
+    assert(csap != NULL);
     F_ENTRY("(%d:-) timeout=%d buf=%p buf_len=%u",
-            csap_descr->id, timeout, buf, (unsigned)buf_len);
-
-    spec_data = csap_descr->layers[0].specific_data; 
+            csap->id, timeout, buf, (unsigned)buf_len);
 
     INFO("%s(CSAP %d) called, wait len %d, timeout %d",
-         __FUNCTION__, csap_descr->id,
-         spec_data->wait_length, timeout);
+         __FUNCTION__, csap->id, layer_data->wait_length, timeout);
 
-    if (spec_data->wait_length == 0)
+    if (layer_data->wait_length == 0)
         len = ISCSI_BHS_LENGTH;
     else
-        len = spec_data->wait_length -
-              spec_data->stored_length;
+        len = layer_data->wait_length - layer_data->stored_length;
 
     if (buf_len > len)
         buf_len = len;
@@ -136,7 +169,7 @@ tad_iscsi_read_cb(csap_p csap_descr, int timeout,
     {
         struct timeval tv = {0, 0};
         fd_set rset;
-        int rc, fd = spec_data->socket;
+        int rc, fd = rw_data->socket;
 
         /* timeout in microseconds */
         tv.tv_usec = timeout % (1000 * 1000);
@@ -148,51 +181,60 @@ tad_iscsi_read_cb(csap_p csap_descr, int timeout,
         rc = select(fd + 1, &rset, NULL, NULL, &tv); 
 
         INFO("%s(CSAP %d): select on fd %d rc %d", 
-             __FUNCTION__, csap_descr->id, fd, rc);
+             __FUNCTION__, csap->id, fd, rc);
 
         if (rc > 0)
         {
             rc = read(fd, buf, buf_len);
             INFO("%s(CSAP %d): read rc %d", 
-                 __FUNCTION__, csap_descr->id, rc);
+                 __FUNCTION__, csap->id, rc);
             if (rc >= 0)
                 len = rc;
             else
             {
-                csap_descr->last_errno = errno;
+                csap->last_errno = errno;
                 WARN("%s(CSAP %d) error %d on read", __FUNCTION__, 
-                     csap_descr->id, csap_descr->last_errno);
+                     csap->id, csap->last_errno);
                 return -1;
             }
         }
         else 
             len = 0;
     }
-    INFO("%s(CSAP %d), return %d", __FUNCTION__, csap_descr->id, len);
+    INFO("%s(CSAP %d), return %d", __FUNCTION__, csap->id, len);
 
     return len;
 }
 
 
 /* See description tad_iscsi_impl.h */
-int 
-tad_iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+te_errno
+tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
 {
+#if 1
+    const void *buf;
+    size_t      buf_len;
+
+    if (pkt == NULL || tad_pkt_get_seg_num(pkt) != 1)
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    buf     = pkt->segs.cqh_first->data_ptr;
+    buf_len = pkt->segs.cqh_first->data_len;
+#endif
     struct timeval tv = {0, 1000};
 
     int rc = 0, fd;
 
-    iscsi_csap_specific_data_t *spec_data;
+    tad_iscsi_rw_data      *rw_data = csap_get_rw_data(csap);
+    tad_iscsi_layer_data   *layer_data =
+        csap_get_proto_spec_data(csap, csap_get_rw_layer(csap));;
 
-    assert(csap_descr != NULL);
+    assert(csap != NULL);
     F_ENTRY("(%d:-) buf=%p buf_len=%u",
-            csap_descr->id, buf, (unsigned)buf_len);
+            csap->id, buf, (unsigned)buf_len);
 
-    spec_data = csap_descr->layers[0].specific_data; 
+    fd = rw_data->socket;
 
-    fd = spec_data->socket;
-
-    switch (spec_data->send_mode)
+    switch (layer_data->send_mode)
     { 
         case ISCSI_SEND_USUAL:
             rc = send(fd, buf, buf_len, MSG_DONTWAIT);
@@ -211,150 +253,32 @@ tad_iscsi_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
             if ((rc = tad_tcp_push_fin(fd, buf, buf_len)) != 0)
             { 
-                csap_descr->last_errno = rc;
+                csap->last_errno = rc;
                 rc = -1;
             }
             else
             {
-                spec_data->send_mode = ISCSI_SEND_INVALID;
+                layer_data->send_mode = ISCSI_SEND_INVALID;
                 rc = buf_len;
             }
 
             break;
 
         case ISCSI_SEND_INVALID:
-            csap_descr->last_errno = TE_EPIPE;
+            csap->last_errno = TE_EPIPE;
             rc = -1;
             break;
     }
 
     if (rc < 0)
     {
-        csap_descr->last_errno = errno;
+        csap->last_errno = errno;
         WARN("%s(CSAP %d) error %d on read", __FUNCTION__, 
-             csap_descr->id, csap_descr->last_errno);
+             csap->id, csap->last_errno);
         return -1;
     } 
     INFO("%s(CSAP %d) written %d bytes to fd %d", 
-         __FUNCTION__, csap_descr->id, rc, fd);
+         __FUNCTION__, csap->id, rc, fd);
 
     return buf_len;
-}
-
-
-/* See description tad_iscsi_impl.h */
-int
-tad_iscsi_write_read_cb(csap_p csap_descr, int timeout,
-                        const char *w_buf, size_t w_buf_len,
-                        char *r_buf, size_t r_buf_len)
-{
-    int rc = -1; 
-
-    assert(csap_descr != NULL);
-    F_ENTRY("(%d:-) w_buf=%p w_buf_len=%u timeout=%d r_buf=%p "
-            "r_buf_len=%u", csap_descr->id,
-            w_buf, (unsigned)w_buf_len, timeout,
-            r_buf, (unsigned)r_buf_len);
-#if 1
-    csap_descr->last_errno = TE_EOPNOTSUPP;
-    ERROR("%s() not allowed for iSCSI", __FUNCTION__);
-#else
-    rc = iscsi_write_cb(csap_descr, w_buf, w_buf_len);
-    if (rc != -1)  
-    {
-        rc = iscsi_read_cb(csap_descr, timeout, r_buf, r_buf_len);
-    }
-#endif
-    return rc;
-}
-
-
-/* See description tad_iscsi_impl.h */
-te_errno
-tad_iscsi_single_init_cb(csap_p csap_descr, unsigned int layer,
-                         const asn_value *csap_nds)
-{
-    te_errno    rc;
-    int32_t     int32_val;
-
-    const asn_value            *iscsi_nds;
-    iscsi_csap_specific_data_t *spec_data; 
-
-
-    ENTRY("(%d:%u) csap_nds=%p", csap_descr->id, layer, (void *)csap_nds);
-
-    if (csap_nds == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
-
-    spec_data = calloc(1, sizeof(*spec_data));
-    if (spec_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-
-    rc = asn_get_indexed(csap_nds, &iscsi_nds, 0);
-    if (rc != 0)
-    {
-        ERROR("%s() get iSCSI csap spec failed %r", __FUNCTION__, rc);
-        free(spec_data);
-        return TE_RC(TE_TAD_CSAP, rc);
-    } 
-    
-    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "socket")) != 0)
-    {
-        ERROR("%s(): asn_read_int32() failed for 'socket': %r", 
-              __FUNCTION__, rc);
-        free(spec_data);
-        return TE_RC(TE_TAD_CSAP, rc);
-    }
-    spec_data->socket = int32_val;
-
-    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "header-digest")) != 0)
-    {
-        ERROR("%s(): asn_read_bool() failed for 'header-digest': %r", 
-              __FUNCTION__, rc);
-        free(spec_data);
-        return TE_RC(TE_TAD_CSAP, rc);
-    }
-    spec_data->hdig = int32_val;
-
-    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "data-digest")) != 0)
-    {
-        ERROR("%s(): asn_read_bool() failed for 'data-digest': %r", 
-              __FUNCTION__, rc);
-        free(spec_data);
-        return TE_RC(TE_TAD_CSAP, rc);
-    }
-    spec_data->ddig = int32_val;
-
-    csap_descr->layers[layer].specific_data = spec_data;
-    csap_descr->layers[layer].get_param_cb = tad_iscsi_get_param_cb;
-
-    csap_descr->read_cb          = tad_iscsi_read_cb;
-    csap_descr->write_cb         = tad_iscsi_write_cb;
-    csap_descr->write_read_cb    = tad_iscsi_write_read_cb;
-    csap_descr->prepare_recv_cb  = tad_iscsi_prepare_recv_cb;
-    csap_descr->prepare_send_cb  = tad_iscsi_prepare_send_cb;
-    csap_descr->read_write_layer = layer; 
-    csap_descr->timeout          = 100 * 1000; /* FIXME */
-
-
-    return 0;
-}
-
-
-/* See description tad_iscsi_impl.h */
-te_errno
-tad_iscsi_single_destroy_cb(csap_p csap_descr, unsigned int layer)
-{
-    iscsi_csap_specific_data_t *spec_data; 
-
-    ENTRY("(%d:%u)", csap_descr->id, layer);
-
-    spec_data = csap_descr->layers[layer].specific_data; 
-    csap_descr->layers[layer].specific_data = NULL; 
-
-    close(spec_data->socket);
-
-    free(spec_data);
-
-    return 0;
 }

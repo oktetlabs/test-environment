@@ -1,6 +1,6 @@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ @TAD_CH_DEFS@ -I$(DESTDIR)/$(includedir) \
-              -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @TAD_CH_DEFS@ \
+              -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ 
 
 
@@ -11,8 +11,6 @@ noinst_LIBRARIES=libtad_ipstack.a
 libtad_ipstack_a_SOURCES=tad_ipstack_csaps.c \
                          tad_ipv4_layer.c \
                          tad_ipv4_stack.c \
-                         tad_icmpv4_layer.c \
-                         tad_icmpv4_stack.c \
                          tad_icmp_methods.c \
                          tad_udp_layer.c \
                          tad_udp_stack.c \

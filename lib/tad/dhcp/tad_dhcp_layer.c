@@ -1,11 +1,13 @@
 /** @file
- * @brief DHCP TAD
+ * @brief TAD DHCP
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP layer-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * DHCP CSAP layer-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * See RFC 2131.
+ *
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,17 +29,22 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD DHCP layer"
+#define TE_LGR_USER     "TAD DHCP"
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 #include <string.h>
 #include <stdlib.h>
 
-#include "tad_dhcp_impl.h"
-
 #include "logger_api.h"
 #include "logger_ta_fast.h"
+
+#include "tad_bps.h"
+#include "tad_dhcp_impl.h"
+
 
 
 /**
@@ -49,12 +56,11 @@ static unsigned char magic_dhcp[] = { 99, 130, 83, 99 };
 
 /* See description in tad_dhcp_impl.h */
 char *
-tad_dhcp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
+tad_dhcp_get_param_cb(csap_p csap, unsigned int layer, const char *param)
 {
     dhcp_csap_specific_data_t *spec_data; 
     
-    spec_data = (dhcp_csap_specific_data_t *)
-        csap_descr->layers[layer].specific_data; 
+    spec_data = csap_get_proto_spec_data(csap, layer); 
 
     if (strcmp (param, "ipaddr") == 0)
     { 
@@ -65,12 +71,16 @@ tad_dhcp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
 
 /* See description in tad_dhcp_impl.h */
 te_errno
-tad_dhcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                        asn_value *layer_pdu)
+tad_dhcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
+                        asn_value *layer_pdu, void **p_opaque)
 { 
     te_errno    rc;
     int         xid;
     size_t      len = sizeof (xid);
+
+    UNUSED(csap);
+    UNUSED(layer);
+    UNUSED(p_opaque);
 
     rc = asn_read_value_field(layer_pdu, &xid, &len, "xid.#plain");
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
@@ -81,9 +91,6 @@ tad_dhcp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
             return rc;
     }
     
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(layer_pdu);
     return 0;
 }
 
@@ -174,42 +181,43 @@ fill_dhcp_options(void *buf, asn_value_p options)
 
 #define OPTIONS_IMPL 1
 /* See description in tad_dhcp_impl.h */
-int 
-tad_dhcp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                    const asn_value *tmpl_pdu,
-                    const tad_tmpl_arg_t *args, size_t arg_num,
-                    const csap_pkts_p up_payload, csap_pkts_p pkts)
+te_errno
+tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
+                    const asn_value *tmpl_pdu, void *opaque,
+                    const tad_tmpl_arg_t *args, size_t arg_num, 
+                    tad_pkts *sdus, tad_pkts *pdus)
 {
     te_errno    rc;
+    size_t      msg_len;
+    uint8_t    *msg;
     uint8_t    *p; 
 #if OPTIONS_IMPL
     asn_value_p options = NULL;
 #endif
 
-    UNUSED(up_payload); /* DHCP has no payload */ 
-    UNUSED(csap_descr); 
+    UNUSED(csap); 
+    UNUSED(layer); 
+    UNUSED(opaque);
     UNUSED(args); 
     UNUSED(arg_num); 
-    UNUSED(layer); 
     
     /* Total length of mandatory fields in DHCP message */
-    pkts->len = 236;
+    msg_len = 236;
 
 #if OPTIONS_IMPL
     rc = asn_read_component_value(tmpl_pdu, &options, "options"); 
-    pkts->len += (rc != 0) ? 0 :
+    msg_len += (rc != 0) ? 0 :
         (sizeof(magic_dhcp) + dhcp_calculate_options_data(options));
 #endif
 
-    pkts->data = calloc(1, pkts->len);
-    if (pkts->data == NULL)
+    msg = calloc(1, msg_len);
+    if (msg == NULL)
     {
-        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, pkts->len);
-        return errno;
+        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, msg_len);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
-    pkts->next = NULL;
     
-    p = pkts->data;
+    p = msg;
 
 #define PUT_DHCP_FIELD(_label, _defval, _type, _conv) \
     do {                                                               \
@@ -223,9 +231,7 @@ tad_dhcp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
         }                                                              \
         else if (rc != 0)                                              \
         {                                                              \
-            free(pkts->data);                                          \
-            pkts->data = NULL;                                         \
-            pkts->len = 0;                                             \
+            free(msg);                                                 \
             return rc;                                                 \
         }                                                              \
         *((_type *)p) = _conv(value);                                  \
@@ -255,9 +261,7 @@ tad_dhcp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
         }                                                           \
         else if (rc != 0)                                           \
         {                                                           \
-            free(pkts->data);                                       \
-            pkts->data = NULL;                                      \
-            pkts->len = 0;                                          \
+            free(msg);                                              \
             return rc;                                              \
         }                                                           \
         p += (_length);                                             \
@@ -274,19 +278,29 @@ tad_dhcp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
         if ((rc = fill_dhcp_options(p, options)) != 0)
         {
-            free(pkts->data);
-            pkts->data = NULL;
-            pkts->len = 0;
+            free(msg);
             return rc;
         }
     }
+
+    /* DHCP message is ready */
+
+    tad_pkts_move(pdus, sdus);
+    rc = tad_pkts_add_new_seg(pdus, TRUE,
+                              msg, msg_len, tad_pkt_seg_data_free);
+    if (rc != 0)
+    {
+        free(msg);
+        return rc;
+    }
+
     return 0;
 }
 
 
 /* See description in tad_dhcp_impl.h */
 te_errno
-tad_dhcp_match_bin_cb(csap_p csap_descr, unsigned int layer,
+tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
                       const asn_value *pattern_pdu,
                       const csap_pkts *pkt, csap_pkts *payload, 
                       asn_value *parsed_packet)
@@ -302,7 +316,7 @@ tad_dhcp_match_bin_cb(csap_p csap_descr, unsigned int layer,
         return TE_EWRONGPTR;
 
     ENTRY("%s: CSAP %d, layer %d, pkt len: %d", 
-          __FUNCTION__, csap_descr->id, layer, pkt->len);
+          __FUNCTION__, csap->id, layer, pkt->len);
 
     data = pkt->data;
     VERB("DHCP match callback called: %Tm", data, pkt->len);
@@ -446,13 +460,16 @@ tad_dhcp_match_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_dhcp_impl.h */
 te_errno
-tad_dhcp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
+tad_dhcp_gen_pattern_cb(csap_p csap, unsigned int layer,
                         const asn_value *tmpl_pdu, 
                         asn_value **pattern_pdu)
 {
     te_errno    rc;
     int         xid;
     size_t      len = sizeof(xid);
+
+    UNUSED(csap);
+    UNUSED(layer);
 
     *pattern_pdu = asn_init_value(ndn_dhcpv4_message); 
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
@@ -461,10 +478,6 @@ tad_dhcp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
         rc = asn_write_int32(*pattern_pdu, xid, "xid.#plain");
     }
     /* TODO: DHCP options to be inserted into pattern */
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(tmpl_pdu);
-
 
     return rc;
 }

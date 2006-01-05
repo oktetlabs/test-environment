@@ -1,11 +1,11 @@
 /** @file
- * @brief iSCSI TAD
+ * @brief TAD iSCSI
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * iSCSI CSAP implementaion internal declarations.
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
- * the root directory of the distribution).
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -45,16 +45,17 @@
 extern "C" {
 #endif
 
+
 typedef enum {
     ISCSI_SEND_USUAL,
     ISCSI_SEND_LAST,
     ISCSI_SEND_INVALID,
 } tad_iscsi_send_mode_t;
+
 /**
- * iSCSI CSAP specific data
+ * iSCSI CSAP layer specific data
  */
-typedef struct iscsi_csap_specific_data { 
-    int                 socket;
+typedef struct tad_iscsi_layer_data { 
     iscsi_digest_type   hdig;
     iscsi_digest_type   ddig;
 
@@ -63,90 +64,84 @@ typedef struct iscsi_csap_specific_data {
     uint8_t    *stored_buffer; 
 
     tad_iscsi_send_mode_t send_mode;
-} iscsi_csap_specific_data_t;
+} tad_iscsi_layer_data;
 
 
 /**
- * Callback for read parameter value of iSCSI CSAP.
+ * Callback for init iSCSI CSAP layer.
  *
- * The function complies with csap_get_param_cb_t prototype.
+ * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern char *tad_iscsi_get_param_cb(csap_p csap_descr, unsigned int layer,
-                                    const char *param);
+extern te_errno tad_iscsi_rw_init_cb(csap_p csap,
+                                     const asn_value *csap_nds);
 
+/**
+ * Callback for destroy iSCSI CSAP layer.
+ *
+ * The function complies with csap_nbr_destroy_cb_t prototype.
+ */ 
+extern te_errno tad_iscsi_rw_destroy_cb(csap_p csap);
 
 /**
  * Callback for read data from media of iSCSI CSAP. 
  *
  * The function complies with csap_read_cb_t prototype.
  */ 
-extern int tad_iscsi_read_cb(csap_p csap_descr, int timeout, char *buf,
+extern int tad_iscsi_read_cb(csap_p csap, int timeout, char *buf,
                              size_t buf_len);
 
 /**
- * Callback for write data to media of ISCSI CSAP. 
+ * Callback for write data to media of iSCSI CSAP. 
  *
  * The function complies with csap_write_cb_t prototype.
  */ 
-extern int tad_iscsi_write_cb(csap_p csap_descr, const char *buf,
-                              size_t buf_len);
+extern te_errno tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt);
 
 /**
- * Callback for write data to media of ISCSI CSAP and read data from 
+ * Callback for write data to media of iSCSI CSAP and read data from 
  * media just after write, to get answer to sent request. 
  *
  * The function complies with csap_write_read_cb_t prototype.
  */ 
-extern int tad_iscsi_write_read_cb(csap_p csap_descr, int timeout,
-                                   const char *w_buf, size_t w_buf_len,
+extern int tad_iscsi_write_read_cb(csap_p csap, int timeout,
+                                   const tad_pkt *w_pkt,
                                    char *r_buf, size_t r_buf_len);
 
 
 /**
- * Callback for init iSCSI CSAP layer if single in stack.
+ * Callback for init iSCSI CSAP layer.
  *
- * The function complies with csap_nbr_init_cb_t prototype.
+ * The function complies with csap_layer_init_cb_t prototype.
  */ 
-extern te_errno tad_iscsi_single_init_cb(csap_p           csap_descr,
-                                         unsigned int     layer,
-                                         const asn_value *csap_nds);
+extern te_errno tad_iscsi_init_cb(csap_p csap, unsigned int layer);
 
 /**
- * Callback for destroy iSCSI CSAP layer if single in stack.
+ * Callback for destroy iSCSI CSAP layer.
  *
- * The function complies with csap_nbr_destroy_cb_t prototype.
+ * The function complies with csap_layer_destroy_cb_t prototype.
  */ 
-extern te_errno tad_iscsi_single_destroy_cb(csap_p       csap_descr,
-                                            unsigned int layer);
-
-/**
- * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
- *
- * The function complies with csap_layer_confirm_pdu_cb_t prototype.
- */ 
-extern te_errno tad_iscsi_confirm_pdu_cb(csap_p        csap_descr,
-                                         unsigned int  layer,
-                                         asn_value    *layer_pdu); 
+extern te_errno tad_iscsi_destroy_cb(csap_p csap, unsigned int layer);
 
 /**
  * Callback for generate binary data to be sent to media.
  *
- * The function complies with csap_layer_gen_bin_cb_t prototype.
+ * The function complies with csap_layer_generate_pkts_cb_t prototype.
  */ 
-extern te_errno tad_iscsi_gen_bin_cb(csap_p                 csap_descr,
-                                     unsigned int           layer,
-                                     const asn_value       *tmpl_pdu,
-                                     const tad_tmpl_arg_t  *args,
-                                     size_t                 arg_num,
-                                     csap_pkts_p            up_payload,
-                                     csap_pkts_p            pkts);
+extern te_errno tad_iscsi_gen_bin_cb(csap_p                csap,
+                                     unsigned int          layer,
+                                     const asn_value      *tmpl_pdu,
+                                     void                 *opaque,
+                                     const tad_tmpl_arg_t *args,
+                                     size_t                arg_num,
+                                     tad_pkts             *sdus,
+                                     tad_pkts             *pdus);
 
 /**
  * Callback for parse received packet and match it with pattern. 
  *
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
-extern te_errno tad_iscsi_match_bin_cb(csap_p           csap_descr,
+extern te_errno tad_iscsi_match_bin_cb(csap_p           csap,
                                        unsigned int     layer,
                                        const asn_value *pattern_pdu,
                                        const csap_pkts *pkt,
@@ -159,7 +154,7 @@ extern te_errno tad_iscsi_match_bin_cb(csap_p           csap_descr,
  *
  * The function complies with csap_layer_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_iscsi_gen_pattern_cb(csap_p            csap_descr,
+extern te_errno tad_iscsi_gen_pattern_cb(csap_p            csap,
                                          unsigned int      layer,
                                          const asn_value  *tmpl_pdu, 
                                          asn_value       **pattern_pdu);
@@ -167,20 +162,20 @@ extern te_errno tad_iscsi_gen_pattern_cb(csap_p            csap_descr,
 /**
  * Prepare send callback
  *
- * @param csap_descr    CSAP descriptor structure. 
+ * @param csap    CSAP descriptor structure. 
  *
  * @return status code.
  */ 
-extern te_errno tad_iscsi_prepare_send_cb(csap_p csap_descr);
+extern te_errno tad_iscsi_prepare_send_cb(csap_p csap);
 
 /**
  * Prepare recv callback
  *
- * @param csap_descr    CSAP descriptor structure. 
+ * @param csap    CSAP descriptor structure. 
  *
  * @return status code.
  */ 
-extern te_errno tad_iscsi_prepare_recv_cb(csap_p csap_descr);
+extern te_errno tad_iscsi_prepare_recv_cb(csap_p csap);
 
 
 #ifdef __cplusplus

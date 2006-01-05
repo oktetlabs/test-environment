@@ -1,11 +1,11 @@
 /** @file
- * @brief SNMP TAD
+ * @brief TAD SNMP
  *
- * Traffic Application Domain Command Handler
- * Dummy FILE protocol implementaion, layer-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * SNMP CSAP implementaion, layer-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,6 +29,11 @@
 
 #define TE_LGR_USER     "TAD SNMP"
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #undef SNMPDEBUG
 #include "tad_snmp_impl.h"
 
@@ -40,34 +45,11 @@
 
 
 /* See description in tad_snmp_impl.h */
-char *
-tad_snmp_get_param_cb(csap_p csap_descr, unsigned int layer,
-                      const char *param)
-{
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(param);
-    return NULL;
-}
-
-/* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                        asn_value_p layer_pdu)
-{
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(layer_pdu);
-    VERB("%s, csap %d, layer %d", __FUNCTION__, csap_descr->id, layer);
-    return 0;
-}
-
-/* See description in tad_snmp_impl.h */
-te_errno
-tad_snmp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                    const asn_value *tmpl_pdu,
-                    const tad_tmpl_arg_t *args, size_t  arg_num, 
-                    csap_pkts_p up_payload, csap_pkts_p pkts)
+tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
+                    const asn_value *tmpl_pdu, void *opaque,
+                    const tad_tmpl_arg_t *args, size_t arg_num, 
+                    tad_pkts *sdus, tad_pkts *pdus)
 {
     int rc; 
     int operation;
@@ -80,14 +62,12 @@ tad_snmp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
     struct snmp_pdu *pdu;
     const asn_value *var_bind_list;
 
+    UNUSED(csap);
+    UNUSED(opaque);
     UNUSED(args);
     UNUSED(arg_num);
-    UNUSED(csap_descr);
-    UNUSED(up_payload); 
 
     VERB("%s, layer %d", __FUNCTION__, layer);
-
-    memset(pkts, 0, sizeof(*pkts));
 
     rc = asn_read_value_field(tmpl_pdu, &operation, &operation_len, "type");
     if (rc != 0)
@@ -194,16 +174,15 @@ tad_snmp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
         if (rc != 0) break;
     }
 
+    if (rc == 0)
+    {
+        tad_pkts_move(pdus, sdus);
+        rc = tad_pkts_add_new_seg(pdus, TRUE, pdu, 0, tad_snmp_free_pdu);
+    }
 
     if (rc != 0)
         snmp_free_pdu(pdu);
-    else
-    {
-        pkts->next = 0;
-        pkts->data = pdu;
-        pkts->len  = sizeof(*pdu);
-        pkts->free_data_cb = tad_snmp_free_pdu;
-    }
+
     VERB("%s rc %r", __FUNCTION__, rc);
 
     return rc;
@@ -212,7 +191,7 @@ tad_snmp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_match_bin_cb(csap_p csap_descr, unsigned int layer,
+tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
                       const asn_value *pattern_pdu,
                       const csap_pkts *pkt, csap_pkts *payload,
                       asn_value *parsed_packet )
@@ -226,7 +205,7 @@ tad_snmp_match_bin_cb(csap_p csap_descr, unsigned int layer,
     asn_value *snmp_msg = NULL;
     asn_value *vb_seq = NULL;
 
-    UNUSED(csap_descr);
+    UNUSED(csap);
 
     if (parsed_packet != NULL)
     {
@@ -640,7 +619,7 @@ tad_snmp_match_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
+tad_snmp_gen_pattern_cb(csap_p csap, unsigned int layer,
                         const asn_value *tmpl_pdu, 
                         asn_value_p *pattern_pdu)
 { 
@@ -648,15 +627,15 @@ tad_snmp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
 
     *pattern_pdu = asn_init_value(ndn_snmp_message);
     VERB("%s callback, CSAP # %d, layer %d",
-         __FUNCTION__, csap_descr->id, layer); 
+         __FUNCTION__, csap->id, layer); 
     return 0;
 }
 
-
+#if 0
 /**
  * Action function for replying to SNMPv2 InformRequest-PDU
  *
- * @param csap_descr    CSAP Descriptor structure.
+ * @param csap    CSAP Descriptor structure.
  * @param usr_param     User-supplied optional parameter.
  * @param pkt           Packet data (in the form of snmp_pdu structure).
  * @param pkt_len       Length of packet data.
@@ -664,7 +643,7 @@ tad_snmp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
  * @return Status code.
  */
 te_errno
-tad_snmp_inform_response(csap_p csap_descr, const char *usr_param,
+tad_snmp_inform_response(csap_p csap, const char *usr_param,
                          const uint8_t *pkt, size_t pkt_len)
 {
     struct snmp_pdu     *pdu = (struct snmp_pdu *)pkt;
@@ -694,7 +673,7 @@ tad_snmp_inform_response(csap_p csap_descr, const char *usr_param,
     reply->errstat = 0;
     reply->errindex = 0;
 
-    if (csap_descr->write_cb(csap_descr, (char *)reply, sizeof(*reply)) < 0)
+    if (csap->write_cb(csap, (char *)reply, sizeof(*reply)) < 0)
     {
         ERROR("%s: failed sending SNMP Response PDU", __FUNCTION__);
         snmp_free_pdu(reply);
@@ -704,3 +683,4 @@ tad_snmp_inform_response(csap_p csap_descr, const char *usr_param,
 
     return 0;
 }
+#endif

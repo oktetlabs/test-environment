@@ -1,11 +1,11 @@
 /** @file
- * @brief TAD Command Handler
+ * @brief TAD Utils
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * Implementation of some common useful utilities for TAD.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,6 +28,11 @@
  */
 
 #define TE_LGR_USER     "TAD Utils"
+
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -87,24 +92,26 @@ tad_payload_asn_tag_to_enum(uint16_t tag)
  * Description see in tad_utils.h
  */
 int 
-tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
+tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
+                 void **layer_opaque)
 {
     unsigned int layer;
     te_errno     rc = 0;
 
-    rc = tad_check_pdu_seq(csap_descr, pdus);
+    rc = tad_check_pdu_seq(csap, pdus);
 
-    for (layer = 0; (rc == 0) && (layer < csap_descr->depth); layer++)
+#if 0
+    /* FIXME */
+    assert(layer_opaque != NULL);
+#endif
+    for (layer = 0; (rc == 0) && (layer < csap->depth); layer++)
     { 
-        char       label[40];
-        asn_value *layer_pdu;
-
-        csap_spt_type_p csap_spt_descr; 
-
-        csap_spt_descr = csap_descr->layers[layer].proto_support;
+        csap_layer_confirm_pdu_cb_t  confirm_cb;
+        char                         label[40];
+        asn_value                   *layer_pdu;
 
         snprintf(label, sizeof(label), "%d.#%s", 
-                layer, csap_descr->layers[layer].proto);
+                layer, csap->layers[layer].proto);
 
         rc = asn_get_subvalue(pdus, (const asn_value **)&layer_pdu, label);
 
@@ -112,19 +119,28 @@ tad_confirm_pdus(csap_p csap_descr, asn_value *pdus)
         {
             ERROR("%s(CSAP %d): asn_get_subvalue rc %r, "
                   "confirm layer %d, label %s",
-                  __FUNCTION__, csap_descr->id, rc, layer, label);
+                  __FUNCTION__, csap->id, rc, layer, label);
             break;
         }
 
-        rc = csap_spt_descr->confirm_cb(csap_descr, layer, layer_pdu);
-        VERB("confirm rc: %d", rc);
-
-        if (rc != 0)
+        confirm_cb = (recv) ?
+            csap_get_proto_support(csap, layer)->confirm_ptrn_cb :
+            csap_get_proto_support(csap, layer)->confirm_tmpl_cb;
+        if (confirm_cb != NULL)
         {
-            ERROR("pdus do not confirm to CSAP; "
-                  "rc: %r, csap id: %d, layer: %d", 
-                  rc, csap_descr->id, layer);
-            break;
+            /* FIXME */
+            rc = confirm_cb(csap, layer, layer_pdu,
+                            (layer_opaque == NULL) ?
+                                NULL : (layer_opaque + layer));
+            VERB("confirm rc: %d", rc);
+
+            if (rc != 0)
+            {
+                ERROR("pdus do not confirm to CSAP; "
+                      "rc: %r, csap id: %d, layer: %d", 
+                      rc, csap->id, layer);
+                break;
+            }
         }
     }
 
@@ -1052,7 +1068,7 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
 /**
  * Make hex dump of packet into log with RING log level.
  *
- * @param csap_descr    CSAP descriptor structure
+ * @param csap    CSAP descriptor structure
  * @param usr_param     string with some user parameter, not used 
  *                      in this callback
  * @param pkt           pointer to packet binary data
@@ -1061,10 +1077,10 @@ tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
  * @return status code
  */
 int
-tad_dump_hex(csap_p csap_descr, const char *usr_param,
+tad_dump_hex(csap_p csap, const char *usr_param,
              const uint8_t *pkt, size_t pkt_len)
 {
-    UNUSED(csap_descr);
+    UNUSED(csap);
     UNUSED(usr_param);
 
     if (pkt == NULL || pkt_len == 0)
@@ -1157,14 +1173,14 @@ tad_compare_seqs(size_t csap_seq_len, const csap_layer_t *layers,
 
 /* See description in tad_utils.h */
 int
-tad_check_pdu_seq(csap_p csap_descr, asn_value *pdus)
+tad_check_pdu_seq(csap_p csap, asn_value *pdus)
 {
     te_tad_protocols_t *nds_protos = NULL;
     int i;
     int rc = 0;
     int nds_len;
 
-    if (csap_descr == NULL || pdus == NULL)
+    if (csap == NULL || pdus == NULL)
     {
         ERROR("%s(): NULL ptrs passed", __FUNCTION__);
         return TE_EWRONGPTR;
@@ -1182,14 +1198,14 @@ tad_check_pdu_seq(csap_p csap_descr, asn_value *pdus)
         if (rc != 0)
         {
             ERROR("%s(CSAP %d): asn_get_indexed failed %r", 
-                  __FUNCTION__, csap_descr->id, rc);
+                  __FUNCTION__, csap->id, rc);
             break;
         }
         rc = asn_get_choice_value(gen_pdu, NULL, NULL, &pdu_tag);
         if (rc != 0)
         {
             ERROR("%s(CSAP %d): asn_get_choice failed %r", 
-                  __FUNCTION__, csap_descr->id, rc);
+                  __FUNCTION__, csap->id, rc);
             break;
         } 
         nds_protos[i] = pdu_tag;
@@ -1197,21 +1213,21 @@ tad_check_pdu_seq(csap_p csap_descr, asn_value *pdus)
 
     if (rc == 0) 
     {
-        int ways_insert = tad_compare_seqs(csap_descr->depth, 
-                                           csap_descr->layers, 
+        int ways_insert = tad_compare_seqs(csap->depth, 
+                                           csap->layers, 
                                            nds_len, 
                                            nds_protos);
 
         if (ways_insert < 1)
         {
             ERROR("%s(CSAP %d): There is no way to fix PDUs", 
-                  __FUNCTION__, csap_descr->id);
+                  __FUNCTION__, csap->id);
             rc = TE_ETADWRONGNDS;
         }
         else if (ways_insert > 1)
         {
             ERROR("%s(CSAP %d): There are many ways to fix PDUs", 
-                  __FUNCTION__, csap_descr->id);
+                  __FUNCTION__, csap->id);
             rc = TE_ETADWRONGNDS;
         }
         else /* Ohh, lets fix */
@@ -1220,25 +1236,25 @@ tad_check_pdu_seq(csap_p csap_descr, asn_value *pdus)
             char buf[20];
             int syms;
 
-            for (i = 0; i < (int)csap_descr->depth; i++)
+            for (i = 0; i < (int)csap->depth; i++)
             {
                 asn_value *new_pdu;
 
                 if (nds_protos[pos_in_old_nds] == 
-                    csap_descr->layers[i].proto_tag)
+                    csap->layers[i].proto_tag)
                 {
                     pos_in_old_nds++;
                     continue;
                 }
                 snprintf(buf, sizeof(buf), "%s:{}",
-                         csap_descr->layers[i].proto);
+                         csap->layers[i].proto);
                 syms = 0;
                 rc = asn_parse_value_text(buf, ndn_generic_pdu,
                                           &new_pdu, &syms);
                 if (rc != 0)
                 {
                     ERROR("%s(CSAP %d) parse '%s' failed %r, sym %d",
-                          __FUNCTION__, csap_descr->id, 
+                          __FUNCTION__, csap->id, 
                           buf, rc, syms);
                     break;
 
@@ -1247,7 +1263,7 @@ tad_check_pdu_seq(csap_p csap_descr, asn_value *pdus)
                 if (rc != 0)
                 {
                     ERROR("%s(CSAP %d) insert new value to %d failed %r",
-                          __FUNCTION__, csap_descr->id, i, rc);
+                          __FUNCTION__, csap->id, i, rc);
                     break;
                 }
             }
@@ -1381,4 +1397,23 @@ te_proto_to_str(te_tad_protocols_t proto)
              return "udp";
     }
     return NULL;
+}
+
+
+/* See description tad_utils.h */
+te_errno
+tad_common_write_read_cb(csap_p csap, int timeout,
+                         const tad_pkt *w_pkt,
+                         char *r_buf, size_t r_buf_len)
+{
+    te_errno        rc;
+    unsigned int    layer = csap_get_rw_layer(csap);
+
+    rc = csap_get_proto_support(csap, layer)->write_cb(csap, w_pkt);
+    
+    if (rc == 0)  
+        rc = csap_get_proto_support(csap, layer)->read_cb(csap, timeout,
+                                                          r_buf, r_buf_len);
+
+    return rc;
 }

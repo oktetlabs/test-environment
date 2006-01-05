@@ -1,11 +1,11 @@
 /** @file
- * @brief iSCSI TAD
+ * @brief TAD iSCSI
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * iSCSI CSAP layer-related callbacks.
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
- * the root directory of the distribution).
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,7 +27,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD iSCSI layer"
+#define TE_LGR_USER     "TAD iSCSI"
 
 #include "te_config.h"
 #if HAVE_CONFIG_H
@@ -59,48 +59,84 @@
 #include "tad_iscsi_impl.h"
 
 
-
-/* See description in tad_iscsi_impl.h */
-char *
-tad_iscsi_get_param_cb(csap_p csap_descr, unsigned int layer,
-                       const char *param)
+/* See description tad_iscsi_impl.h */
+te_errno
+tad_iscsi_init_cb(csap_p csap, unsigned int layer)
 {
-    assert(csap_descr != NULL);
-    ENTRY("(%d:%u) param=%s", csap_descr->id, layer, param);
+    te_errno    rc;
+    int32_t     int32_val;
 
-    return NULL;
+    const asn_value        *iscsi_nds;
+    tad_iscsi_layer_data   *spec_data; 
+
+
+    spec_data = calloc(1, sizeof(*spec_data));
+    if (spec_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+    iscsi_nds = csap->layers[layer].csap_layer_pdu;
+
+    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "header-digest")) != 0)
+    {
+        ERROR("%s(): asn_read_bool() failed for 'header-digest': %r", 
+              __FUNCTION__, rc);
+        free(spec_data);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
+    spec_data->hdig = int32_val;
+
+    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "data-digest")) != 0)
+    {
+        ERROR("%s(): asn_read_bool() failed for 'data-digest': %r", 
+              __FUNCTION__, rc);
+        free(spec_data);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
+    spec_data->ddig = int32_val;
+
+    csap_set_proto_spec_data(csap, layer, spec_data);
+
+    return 0;
 }
 
+/* See description tad_iscsi_impl.h */
+te_errno
+tad_iscsi_destroy_cb(csap_p csap, unsigned int layer)
+{
+    tad_iscsi_layer_data *spec_data; 
 
-/* See description in tad_iscsi_impl.h */
-int 
-tad_iscsi_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                         asn_value *layer_pdu)
-{ 
-    F_ENTRY("(%d:%u) nds=%p", csap_descr->id, layer, (void *)layer_pdu);
+    ENTRY("(%d:%u)", csap->id, layer);
+
+    spec_data = csap_get_proto_spec_data(csap, layer); 
+    if (spec_data == NULL)
+        return 0;
+    csap_set_proto_spec_data(csap, layer, NULL); 
+
+    free(spec_data);
+
     return 0;
 }
 
 
 /* See description in tad_iscsi_impl.h */
 te_errno
-tad_iscsi_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                     const asn_value *tmpl_pdu,
-                     const tad_tmpl_arg_t *args, size_t arg_num,
-                     csap_pkts_p up_payload, csap_pkts_p pkt_list)
+tad_iscsi_gen_bin_cb(csap_p csap, unsigned int layer,
+                     const asn_value *tmpl_pdu, void *opaque,
+                     const tad_tmpl_arg_t *args, size_t arg_num, 
+                     tad_pkts *sdus, tad_pkts *pdus)
 {
-    int rc;
+    te_errno    rc;
 
-    iscsi_csap_specific_data_t *spec_data; 
+    tad_iscsi_layer_data *spec_data; 
 
-    assert(csap_descr != NULL);
+    assert(csap != NULL);
 
-    ENTRY("(%d:%u)", csap_descr->id, layer);
-
-    spec_data = (iscsi_csap_specific_data_t *)
-                        csap_descr->layers[layer].specific_data; 
+    UNUSED(opaque);
     UNUSED(args);
     UNUSED(arg_num);
+    ENTRY("(%d:%u)", csap->id, layer);
+
+    spec_data = csap_get_proto_spec_data(csap, layer); 
 
     rc = asn_read_value_field(tmpl_pdu, NULL, NULL, "last-data");
     if (rc == 0 && spec_data->send_mode == ISCSI_SEND_USUAL) 
@@ -108,13 +144,7 @@ tad_iscsi_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
     INFO("%s(): read last-data rc: %r", __FUNCTION__, rc);
 
-    pkt_list->data = up_payload->data;
-    pkt_list->len  = up_payload->len;
-    pkt_list->next = up_payload->next;
-
-    up_payload->data = NULL;
-    up_payload->len  = 0;
-    up_payload->next = NULL;
+    tad_pkts_move(pdus, sdus);
 
     return 0;
 }
@@ -122,27 +152,26 @@ tad_iscsi_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_iscsi_impl.h */
 te_errno
-tad_iscsi_match_bin_cb(csap_p           csap_descr,
+tad_iscsi_match_bin_cb(csap_p           csap,
                        unsigned int     layer,
                        const asn_value *pattern_pdu,
                        const csap_pkts *pkt,
                        csap_pkts       *payload, 
                        asn_value       *parsed_packet)
 { 
-    iscsi_csap_specific_data_t *spec_data; 
+    tad_iscsi_layer_data *spec_data; 
 
     asn_value *iscsi_msg = asn_init_value(ndn_iscsi_message);
     int        rc;
     int        defect;
 
 
-    ENTRY("(%d:%u)", csap_descr->id, layer);
+    ENTRY("(%d:%u)", csap->id, layer);
 
-    spec_data = (iscsi_csap_specific_data_t *)
-                        csap_descr->layers[layer].specific_data; 
+    spec_data = csap_get_proto_spec_data(csap, layer); 
 
     INFO("%s(CSAP %d): got pkt %d bytes",
-         __FUNCTION__, csap_descr->id, pkt->len);
+         __FUNCTION__, csap->id, pkt->len);
 
     if (spec_data->wait_length == 0)
     {
@@ -166,7 +195,7 @@ tad_iscsi_match_bin_cb(csap_p           csap_descr,
              iscsi_rest_data_len(pkt->data,
                                  spec_data->hdig, spec_data->ddig);
         INFO("%s(CSAP %d), calculated wait length %d",
-                __FUNCTION__, csap_descr->id, spec_data->wait_length);
+                __FUNCTION__, csap->id, spec_data->wait_length);
     }
     rc = 0;
 
@@ -182,7 +211,7 @@ tad_iscsi_match_bin_cb(csap_p           csap_descr,
     {
         ERROR("%s(CSAP %d) get too many data: %d bytes, "
               "wait for %d, stored %d", 
-              __FUNCTION__, csap_descr->id, pkt->len,
+              __FUNCTION__, csap->id, pkt->len,
               spec_data->wait_length, spec_data->stored_length); 
         rc = TE_ETADLOWER;
         goto cleanup;
@@ -195,7 +224,7 @@ tad_iscsi_match_bin_cb(csap_p           csap_descr,
     if (defect > 0)
     {
         INFO("%s(CSAP %d) wait more %d bytes...", 
-             __FUNCTION__, csap_descr->id, defect);
+             __FUNCTION__, csap->id, defect);
         rc = TE_ETADLESSDATA;
         goto cleanup;
     }
@@ -219,13 +248,13 @@ cleanup:
 
 /* See description in tad_iscsi_impl.h */
 te_errno
-tad_iscsi_gen_pattern_cb(csap_p            csap_descr,
+tad_iscsi_gen_pattern_cb(csap_p            csap,
                          unsigned int      layer,
                          const asn_value  *tmpl_pdu, 
                          asn_value       **pattern_pdu)
 {
     ENTRY("(%d:%u) tmpl_pdu=%p pattern_pdu=%p",
-          csap_descr->id, layer, tmpl_pdu, pattern_pdu);
+          csap->id, layer, tmpl_pdu, pattern_pdu);
 
     assert(pattern_pdu != NULL);
     *pattern_pdu = asn_init_value(ndn_iscsi_message); 

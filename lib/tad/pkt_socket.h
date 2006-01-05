@@ -1,13 +1,11 @@
 /** @file
- * @brief TAD Command Handler
+ * @brief TAD Packet Socket
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
+ * Declaration of the interface to deal with AF_PACKET sockets.
  *
- * Declarations of types and functions, used in common and 
- * protocol-specific modules implemnting TAD.
- *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

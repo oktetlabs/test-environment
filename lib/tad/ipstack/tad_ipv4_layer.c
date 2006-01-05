@@ -1,11 +1,11 @@
 /** @file
- * @brief IP Stack TAD
+ * @brief TAD IP Stack
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP layer-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * IPv4 CSAP layer-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,35 +27,121 @@
  * $Id$
  */
 
-#include <string.h>
-#include <stdlib.h>
-
 #define TE_LGR_USER     "TAD IPv4"
 
-#if 0
-#define TE_LOG_LEVEL    0xff
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
 #endif
+
+#include <string.h>
+#include <stdlib.h>
 
 #include "tad_ipstack_impl.h"
 
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
-/* See description in tad_ipstack_impl.h */
-char *
-tad_ip4_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
+
+/* See description tad_ipstack_impl.h */
+te_errno
+tad_ip4_init_cb(csap_p csap, unsigned int layer)
+{ 
+    ip4_csap_specific_data_t *spec_data; 
+    size_t val_len;
+    int    rc;
+
+    VERB("%s called for csap %d, layer %d",
+         __FUNCTION__, csap->id, layer); 
+
+    spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
+    if (spec_data == NULL)
+        return TE_ENOMEM;
+
+    csap_set_proto_spec_data(csap, layer, spec_data);
+
+    val_len = sizeof(spec_data->remote_addr);
+    rc = asn_read_value_field(csap->layers[layer].csap_layer_pdu,
+                              &spec_data->remote_addr, &val_len,
+                              "remote-addr.#plain");
+    if (rc != 0)
+    {
+        INFO("%s(): read remote addr fails %X", __FUNCTION__, rc);
+        spec_data->remote_addr.s_addr = INADDR_ANY;
+    }
+
+    val_len = sizeof(spec_data->local_addr);
+    rc = asn_read_value_field(csap->layers[layer].csap_layer_pdu,
+                              &spec_data->local_addr, &val_len,
+                              "local-addr.#plain");
+    if (rc != 0)
+    {
+        INFO("%s(): read local addr fails %X", __FUNCTION__, rc);
+        spec_data->local_addr.s_addr = INADDR_ANY;
+    }
+
+    F_VERB("%s(): csap %d, layer %d",
+            __FUNCTION__, csap->id, layer); 
+
+    /* FIXME */
+    if (layer > 0)
+    {
+        switch (csap->layers[layer - 1].proto_tag)
+        {
+            case TE_PROTO_IP4:
+                spec_data->protocol = IPPROTO_IPIP;
+                break;
+
+            case TE_PROTO_UDP:
+                spec_data->protocol = IPPROTO_UDP;
+                break;
+
+            case TE_PROTO_TCP:
+                spec_data->protocol = IPPROTO_TCP;
+                break;
+
+            case TE_PROTO_ICMP4:
+                spec_data->protocol = IPPROTO_ICMP;
+                break;
+
+            default:
+                break;
+        }
+        VERB("%s(): try to guess default protocol = %u",
+             __FUNCTION__, spec_data->protocol);
+    }
+
+    return 0;
+}
+
+/* See description tad_ipstack_impl.h */
+te_errno
+tad_ip4_destroy_cb(csap_p csap, unsigned int layer)
 {
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(param);
-    return NULL;
+    ip4_csap_specific_data_t *spec_data = 
+        csap_get_proto_spec_data(csap, layer); 
+     
+    tad_data_unit_clear(&spec_data->du_version);
+    tad_data_unit_clear(&spec_data->du_header_len);
+    tad_data_unit_clear(&spec_data->du_tos);
+    tad_data_unit_clear(&spec_data->du_ip_len);
+    tad_data_unit_clear(&spec_data->du_ip_ident);
+    tad_data_unit_clear(&spec_data->du_flags);
+    tad_data_unit_clear(&spec_data->du_ip_offset);
+    tad_data_unit_clear(&spec_data->du_ttl);
+    tad_data_unit_clear(&spec_data->du_protocol);
+    tad_data_unit_clear(&spec_data->du_h_checksum);
+    tad_data_unit_clear(&spec_data->du_src_addr);
+    tad_data_unit_clear(&spec_data->du_dst_addr);
+
+    return 0;
 }
 
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_ip4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                       asn_value *layer_pdu)
+tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
+                       asn_value *layer_pdu, void **p_opaque)
 { 
     te_errno    rc;
     size_t      len;
@@ -65,8 +151,9 @@ tad_ip4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     asn_value       *ip4_pdu;
 
     ip4_csap_specific_data_t * spec_data = 
-        (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
+        (ip4_csap_specific_data_t *) csap_get_proto_spec_data(csap, layer); 
 
+    UNUSED(p_opaque);
 
     if (asn_get_syntax(layer_pdu, "") == CHOICE)
     {
@@ -81,14 +168,14 @@ tad_ip4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
 
 
 
-    ip4_csap_pdu = csap_descr->layers[layer].csap_layer_pdu; 
+    ip4_csap_pdu = csap->layers[layer].csap_layer_pdu; 
     if (asn_get_syntax(ip4_csap_pdu, "") == CHOICE)
     {
         if ((rc = asn_get_choice_value(ip4_csap_pdu, &ip4_csap_pdu,
                                        NULL, NULL)) != 0)
         {
             ERROR("%s(CSAP %d) get choice value of csap layer_pdu fails %r",
-                  __FUNCTION__, csap_descr->id, rc);
+                  __FUNCTION__, csap->id, rc);
             return TE_RC(TE_TAD_CSAP, rc);
         }
     }
@@ -119,7 +206,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         if (rc != 0)                                                    \
         {                                                               \
             ERROR("%s(CSAP %d): du convert fails %r, tag %d, label %s", \
-                  __FUNCTION__, csap_descr->id, rc, tag_, label_);      \
+                  __FUNCTION__, csap->id, rc, tag_, label_);      \
             return TE_RC(TE_TAD_CSAP, rc);                              \
         }                                                               \
     } while (0)
@@ -157,30 +244,6 @@ tad_ip4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         }
     }
 
-#if 0
-    /* this should be done in init of upper CSAP layer. */
-    if (spec_data->du_protocol.du_type == TAD_DU_UNDEF)
-    {
-        if (layer > 0) /* There is in CSAP upper protocol */
-        {
-            const char *up_proto = csap_descr->layers[layer - 1].proto;
-
-            if (strcmp(up_proto, "tcp") == 0) 
-                spec_data->protocol = IPPROTO_TCP;
-            else if (strcmp(up_proto, "udp") == 0) 
-                spec_data->protocol = IPPROTO_UDP;
-            else if (strcmp(up_proto, "icmp4") == 0) 
-                spec_data->protocol = IPPROTO_ICMP;
-            else if (strcmp(up_proto, "ip4") == 0) 
-                spec_data->protocol = IPPROTO_IPIP;
-            else
-                spec_data->protocol = 0;
-        }
-        else
-            spec_data->protocol = 0;
-    }
-#endif
-
     tad_data_unit_convert(layer_pdu, NDN_TAG_IP4_H_CHECKSUM,
                           &spec_data->du_h_checksum);
 
@@ -194,7 +257,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         spec_data->src_addr.s_addr = INADDR_ANY;
-        if (csap_descr->state & TAD_STATE_RECV && 
+        if (csap->state & TAD_STATE_RECV && 
             (rc = asn_get_child_value(ip4_csap_pdu, &du_field, PRIVATE,
                                       NDN_TAG_IP4_REMOTE_ADDR)) == 0)
         { 
@@ -220,7 +283,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     {
         spec_data->dst_addr.s_addr = INADDR_ANY;
 
-        if (csap_descr->state & TAD_STATE_SEND)
+        if (csap->state & TAD_STATE_SEND)
         { 
             if (spec_data->remote_addr.s_addr == INADDR_ANY)
             {
@@ -250,35 +313,112 @@ tad_ip4_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
 }
 
 
+/**
+ * Segment payload checksum calculation data.
+ */
+typedef struct tad_ip4_upper_checksum_seg_cb_data {
+    uint32_t    checksum;   /**< Accumulated checksum */
+} tad_ip4_upper_checksum_seg_cb_data;
+
+/**
+ * Calculate checksum of the segment data.
+ *
+ * This function complies with tad_pkt_seg_enum_cb prototype.
+ */
+static te_errno
+tad_ip4_upper_checksum_seg_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
+                              unsigned int seg_num, void *opaque)
+{
+    tad_ip4_upper_checksum_seg_cb_data *data = opaque;
+
+    /* Data length is even or it is the last segument */
+    assert(((seg->data_len & 1) == 0) ||
+           (seg_num == tad_pkt_get_seg_num(pkt) - 1));
+    data->checksum += calculate_checksum(seg->data_ptr, seg->data_len);
+
+    return 0;
+}
+
+/**
+ * Packet payload checksum calculation data.
+ */
+typedef struct tad_ip4_upper_checksum_pkt_cb_data {
+    size_t  offset;             /**< Offset of the checksum itself
+                                     in payload */
+    uint8_t pseudo_header[12];  /**< Partially filled in pseudo header */
+} tad_ip4_upper_checksum_pkt_cb_data;
+
+/**
+ * Calculate upper protocol (TCP, UDP) checksum.
+ *
+ * This function complies with tad_pkt_enum_cb prototype.
+ */
+static te_errno
+tad_ip4_upper_checksum_pkt_cb(tad_pkt *pkt, void *opaque)
+{
+    tad_ip4_upper_checksum_pkt_cb_data *pkt_data = opaque;
+    tad_ip4_upper_checksum_seg_cb_data  seg_data;
+    uint8_t                            *ptr;
+
+    assert(pkt->n_segs > 0);
+    assert(pkt->segs.cqh_first->data_len >= pkt_data->offset + 2);
+
+    /* FIXME: Not aligned memory access */
+    *((uint16_t *)(pkt_data->pseudo_header + 10)) =
+        htons(tad_pkt_get_len(pkt));
+    seg_data.checksum = calculate_checksum(pkt_data->pseudo_header,
+                                           sizeof(pkt_data->pseudo_header));
+
+    ptr = pkt->segs.cqh_first->data_ptr;
+    /* FIXME: Not aligned memory access */
+    *((uint16_t *)(ptr + pkt_data->offset)) = (uint16_t)0;
+
+    (void)tad_pkt_enumerate_seg(pkt, tad_ip4_upper_checksum_seg_cb,
+                                &seg_data);
+
+    F_VERB("%s(): calculated checksum %x", 
+           __FUNCTION__, seg_data.checksum);
+
+    /* FIXME: Not aligned memory access */
+    *((uint16_t *)(ptr + pkt_data->offset)) =
+        (uint16_t)(~((seg_data.checksum & 0xffff) +
+                     (seg_data.checksum >> 16)));
+
+    return 0;
+}
+
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_ip4_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                   const asn_value *tmpl_pdu,
+tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
+                   const asn_value *tmpl_pdu, void *opaque,
                    const tad_tmpl_arg_t *args, size_t arg_num, 
-                   const csap_pkts_p up_payload, csap_pkts_p pkt_list)
+                   tad_pkts *sdus, tad_pkts *pdus)
 {
     static uint16_t ident = 1;
 
     int      rc = 0; 
     uint8_t *p;
-    uint8_t *checksum_place = NULL;
+    uint8_t *h_csum_place = NULL;
     size_t   pkt_len,
              h_len;
-    int      fr_index = 0,
-             fr_number = 0;
+    int      fr_index,
+             fr_number;
 
     int      pld_chksm_offset = -1;
 
     const asn_value    *fragments_seq; 
     const asn_value    *pld_checksum; 
-    csap_pkts_p         pkt_curr,
-                        pkt_prev;
 
     ip4_csap_specific_data_t *spec_data = NULL;
 
     uint8_t src_ip_addr[4];
     uint8_t dst_ip_addr[4];
     uint8_t protocol;
+
+    tad_pkt *pkt;
+
+
+    UNUSED(opaque);
 
     ident++;
 
@@ -287,7 +427,7 @@ tad_ip4_gen_bin_cb(csap_p csap_descr, unsigned int layer,
         if (fail_cond_)                 \
         {                               \
             ERROR(msg_);                \
-            goto cleanup;               \
+            return rc;                  \
         }                               \
     } while (0)
 
@@ -343,43 +483,9 @@ tad_ip4_gen_bin_cb(csap_p csap_descr, unsigned int layer,
         }                                                               \
     } while (0);
 
-    if (csap_descr == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
-
-    if (pkt_list == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
-
-    if (up_payload == NULL)
-    {
-        ERROR("%s(CSAP %d): Cannot generate IP packet without payload",
-              __FUNCTION__, csap_descr->id);
-        return TE_RC(TE_TAD_CSAP, TE_ETADLESSDATA);
-    }
-
-    spec_data = (ip4_csap_specific_data_t *)
-                csap_descr->layers[layer].specific_data; 
-
-    if (csap_descr->type == TAD_CSAP_DATA) 
-    {
-        if (layer > 0)
-        {
-            pkt_list->data = up_payload->data;
-            pkt_list->len = up_payload->len;
-            up_payload->data = NULL;
-            up_payload->len = 0;
-            return 0;
-        }
-        else 
-            return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);/* TODO */
-    }
+    spec_data = csap_get_proto_spec_data(csap, layer); 
 
     /* TODO: IPv4 options generating */ 
-
-    if ((rc = asn_get_child_value(tmpl_pdu, &fragments_seq, 
-                                  PRIVATE, NDN_TAG_IP4_FRAGMENTS)) != 0)
-        fragments_seq = NULL;
-    else
-        fr_number = asn_get_length(fragments_seq, "");
 
     GEN_BIN_DATA(du_protocol, spec_data->protocol, 1, &protocol); 
 
@@ -401,7 +507,7 @@ tad_ip4_gen_bin_cb(csap_p csap_descr, unsigned int layer,
                 break;
         }
         F_VERB("%s(CSAP %d): proto %d, auto pld checksum offset %d", 
-               __FUNCTION__, csap_descr->id, protocol, pld_chksm_offset);
+               __FUNCTION__, csap->id, protocol, pld_chksm_offset);
     }
     else
     {
@@ -411,11 +517,8 @@ tad_ip4_gen_bin_cb(csap_p csap_descr, unsigned int layer,
             asn_read_int32(pld_checksum, &pld_chksm_offset, "#offset");
 
         F_VERB("%s(CSAP %d): explicit payload checksum offset %d", 
-               __FUNCTION__, csap_descr->id, pld_chksm_offset);
+               __FUNCTION__, csap->id, pld_chksm_offset);
     }
-        
-    pkt_prev = NULL;
-    pkt_curr = pkt_list; 
 
     GEN_BIN_DATA(du_src_addr, ntohl(spec_data->local_addr.s_addr),
                  4, src_ip_addr); 
@@ -424,58 +527,70 @@ tad_ip4_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
     if (pld_chksm_offset > 0)
     {
-        uint32_t full_checksum;
-        uint8_t pseudo_header[12];
+        tad_ip4_upper_checksum_pkt_cb_data  csum_cb_data;
 
-        memcpy(pseudo_header, src_ip_addr, 4);
-        memcpy(pseudo_header + 4, dst_ip_addr, 4);
+        csum_cb_data.offset = pld_chksm_offset;
+        memcpy(csum_cb_data.pseudo_header, src_ip_addr, 4);
+        memcpy(csum_cb_data.pseudo_header + 4, dst_ip_addr, 4);
 
-        pseudo_header[8] = 0;
-        pseudo_header[9] = protocol;
-        *((uint16_t *)(&pseudo_header[10])) = htons(up_payload->len);
+        csum_cb_data.pseudo_header[8] = 0;
+        csum_cb_data.pseudo_header[9] = protocol;
+        /* Length to be filled in per packet */
 
-        *((uint16_t *)(up_payload->data + pld_chksm_offset)) = (uint16_t)0;
-
-        full_checksum = calculate_checksum(pseudo_header,
-                                           sizeof(pseudo_header));
-        full_checksum += calculate_checksum(up_payload->data, 
-                                            up_payload->len);
-
-        F_VERB("%s(CSAP %d): calculated checksum %x", 
-               __FUNCTION__, csap_descr->id, full_checksum);
-
-        *((uint16_t *)(up_payload->data + pld_chksm_offset)) =
-            (uint16_t)(~((full_checksum & 0xffff) + (full_checksum >> 16)));
+        (void)tad_pkt_enumerate(sdus, tad_ip4_upper_checksum_pkt_cb,
+                                &csum_cb_data);
     }
 
-    do {
+    /* Further processing assumes that there is only once SDU packet */
+    assert(sdus->n_pkts == 1);
+
+    if ((rc = asn_get_child_value(tmpl_pdu, &fragments_seq, 
+                                  PRIVATE, NDN_TAG_IP4_FRAGMENTS)) != 0)
+    {
+        fragments_seq = NULL;
+        fr_number = 1;
+    }
+    else
+    {
+        fr_number = asn_get_length(fragments_seq, "");
+    }
+
+    h_len = 20 / 4;
+    /* 
+     * Allocate PDU packets with one pre-allocated segment for IPv4
+     * header
+     */
+    rc = tad_pkts_alloc(pdus, fr_number, 1, h_len << 2);
+    if (rc != 0)
+        return rc;
+
+    for (fr_index = 0, pkt = pdus->pkts.cqh_first;
+         fr_index < fr_number;
+         fr_index++, pkt = pkt->links.cqe_next)
+    {
         const asn_value *frag_spec = NULL;
         int32_t          hdr_field;
         size_t           ip4_pld_real_len;
+        int32_t          frag_offset;
+        uint8_t         *hdr;
 
-        checksum_place = NULL;
-        h_len = 20 / 4;
-
+        h_csum_place = NULL;
 
         if (fragments_seq != NULL)
         {
             rc = asn_get_indexed(fragments_seq, &frag_spec, fr_index); 
             CHECK(rc != 0, "%s(): get frag fail %X", __FUNCTION__, rc);
+            /* FIXME */
             asn_read_int32(frag_spec, &hdr_field, "real-length");
             ip4_pld_real_len = hdr_field;
-
-            if (pkt_prev != NULL) 
-                pkt_curr = pkt_prev->next = calloc(1, sizeof(*pkt_curr));
         }
         else
         {
-            ip4_pld_real_len = up_payload->len;
+            ip4_pld_real_len = tad_pkt_get_len(sdus->pkts.cqh_first);
         }
 
         pkt_len = ip4_pld_real_len + (h_len * 4);
-        p = pkt_curr->data = malloc(pkt_len);
-        pkt_curr->next = NULL;
-        pkt_curr->len = pkt_len;
+        p = hdr = pkt->segs.cqh_first->data_ptr;
 
         /* version, header len */
         {
@@ -555,7 +670,7 @@ tad_ip4_gen_bin_cb(csap_p csap_descr, unsigned int layer,
         p++;
 
         if (spec_data->du_h_checksum.du_type == TAD_DU_UNDEF)
-            checksum_place = p; 
+            h_csum_place = p; 
         PUT_BIN_DATA(du_h_checksum, 0, 2); 
 
         memcpy(p, src_ip_addr, 4);
@@ -563,84 +678,47 @@ tad_ip4_gen_bin_cb(csap_p csap_descr, unsigned int layer,
         memcpy(p, dst_ip_addr, 4);
         p += 4;
 
-        if (checksum_place != NULL) /* Have to calculate header checksum */
+        if (h_csum_place != NULL) /* Have to calculate header checksum */
         {
-            *((uint16_t *)checksum_place) = 
-                ~(calculate_checksum(pkt_curr->data, h_len * 4));
+            *((uint16_t *)h_csum_place) = 
+                ~(calculate_checksum(hdr, h_len * 4));
         } 
         
-
         if (frag_spec == NULL)
         { 
-            F_VERB("%s(CSAP %d): simple copy up payload %d bytes",
-                   __FUNCTION__, csap_descr->id, up_payload->len);
-            memcpy(p, up_payload->data, up_payload->len); 
+            frag_offset = 0;
         }
         else
         {
-            int32_t pkt_offset,
-                    frag_data_len;
-
-            asn_read_int32(frag_spec, &pkt_offset, "real-offset");
-            frag_data_len = up_payload->len - pkt_offset; 
-
-            if (frag_data_len > (int32_t)ip4_pld_real_len)
-                frag_data_len = ip4_pld_real_len;
-
-            if (frag_data_len < 0)
-                frag_data_len = 0;
-
-            if (frag_data_len > 0)
-            {
-                memcpy(p, up_payload->data + pkt_offset, frag_data_len);
-                p += frag_data_len;
-            }
-
-            while (frag_data_len < (int32_t)ip4_pld_real_len)
-            {
-                *p = rand();
-                p++, frag_data_len++;
-            }
-            F_VERB("%s(CSAP %d): fill fragment, real offset %d, %d bytes",
-                   __FUNCTION__, csap_descr->id, pkt_offset,
-                   ip4_pld_real_len);
+            /* FIXME */
+            asn_read_int32(frag_spec, &frag_offset, "real-offset");
         }
-        /* fragment iteration procedures */
-        fr_index++;
-        pkt_prev = pkt_curr;
-    } while ((fragments_seq != NULL) && (fr_index < fr_number));
 
-#if 0
-    if (up_payload->free_data_cb)
-        up_payload->free_data_cb(up_payload->data);
-    else
-        free(up_payload->data);
+        rc = tad_pkt_get_frag(pkt, sdus->pkts.cqh_first,
+                              frag_offset, ip4_pld_real_len,
+                              TAD_PKT_GET_FRAG_RAND);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to get fragment %d:%u from payload: %r",
+                  __FUNCTION__, (int)frag_offset,
+                  (unsigned)ip4_pld_real_len, rc);
+            return rc;
+        }
 
-    up_payload->data = NULL;
-    up_payload->len = 0;
-#endif
+    } /* for */
 
+#undef CUT_BITS
 #undef PUT_BIN_DATA
 #undef GEN_BIN_DATA
 #undef CHECK
 
     return 0;
-cleanup:
-    {
-        csap_pkts_p pkt_fr;
-        for (pkt_fr = pkt_list; pkt_fr != NULL; pkt_fr = pkt_fr->next)
-        {
-            free(pkt_fr->data);
-            pkt_fr->data = NULL; pkt_fr->len = 0;
-        }
-    }
-    return rc;
 }
 
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_ip4_match_bin_cb(csap_p csap_descr, unsigned int layer,
+tad_ip4_match_bin_cb(csap_p csap, unsigned int layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt, csap_pkts *payload, 
                      asn_value_p parsed_packet)
@@ -658,7 +736,7 @@ tad_ip4_match_bin_cb(csap_p csap_descr, unsigned int layer,
     if (parsed_packet != NULL)
         ip4_header_pdu = asn_init_value(ndn_ip4_header); 
 
-    if (csap_descr->type == TAD_CSAP_DATA) 
+    if (csap->type == TAD_CSAP_DATA) 
     {
         if (layer > 0)
         {
@@ -682,7 +760,7 @@ tad_ip4_match_bin_cb(csap_p csap_descr, unsigned int layer,
         }
     }
 
-    spec_data = (ip4_csap_specific_data_t*)csap_descr->layers[layer].specific_data; 
+    spec_data = (ip4_csap_specific_data_t*)csap_get_proto_spec_data(csap, layer); 
 
 
     data = pkt->data; 
@@ -694,7 +772,7 @@ tad_ip4_match_bin_cb(csap_p csap_descr, unsigned int layer,
         if (rc != 0)                                            \
         {                                                       \
             F_VERB("%s: csap %d field %s not match, rc %r",     \
-                   csap_descr->id, __FUNCTION__, _asn_label, rc);\
+                   csap->id, __FUNCTION__, _asn_label, rc);\
             goto cleanup;                                       \
         }                                                       \
         data += _size;                                          \
@@ -767,21 +845,3 @@ cleanup:
 
     return TE_RC(TE_TAD_CSAP, rc);
 }
-
-/* Now we don't support traffic generating for this CSAP */
-#if 1
-/* See description in tad_ipstack_impl.h */
-te_errno
-tad_ip4_gen_pattern_cb(csap_p           csap_descr,
-                       unsigned int     layer,
-                       const asn_value *tmpl_pdu,
-                       asn_value_p     *pattern_pdu)
-{ 
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(tmpl_pdu);
-    UNUSED(pattern_pdu);
-
-    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
-}
-#endif

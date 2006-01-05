@@ -1,13 +1,12 @@
 /** @file
- * @brief TAD Command Handler
+ * @brief TAD CSAP Instance
  *
- * Traffic Application Domain Command Handler
- *
- * Declarations of types and functions, used in common and 
+ * Traffic Application Domain Command Handler.
+ * Declarations of CSAP instance types and functions, used in common and 
  * protocol-specific modules implemnting TAD.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -42,6 +41,9 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
 #if HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
@@ -50,6 +52,7 @@
 #include "te_errno.h"
 #include "asn_usr.h" 
 #include "tad_common.h"
+#include "tad_pkt.h"
 
 
 /* ============= Macros definitions =============== */
@@ -153,91 +156,6 @@ typedef struct csap_instance *csap_p;
 
 struct csap_spt_type_t;
 
-/**
- * Callback type to read parameter value of CSAP.
- *
- * @param csap_descr    CSAP descriptor structure.
- * @param layer         Index of layer in CSAP stack, which param is wanted.
- * @param param         Protocol-specific name of parameter.
- *
- * @return
- *     String with textual presentation of parameter value, or NULL 
- *     if error occured. User have to free memory at returned pointer.
- */ 
-typedef char *(*csap_get_param_cb_t)(csap_p        csap_descr,
-                                     unsigned int  layer, 
-                                     const char   *param);
-
-/**
- * Callback type to prepare/release low-layer resources 
- * of CSAP used in traffic process.
- * Usually should open/close sockets, etc. 
- *
- * @param csap_descr    CSAP descriptor structure. 
- *
- * @return Status code.
- */ 
-typedef te_errno (*csap_low_resource_cb_t)(csap_p csap_descr);
-
-/**
- * Callback type to read data from media of CSAP. 
- *
- * @param csap_descr    CSAP descriptor structure. 
- * @param timeout       Timeout of waiting for data in microseconds.
- * @param buf           Buffer for read data.
- * @param buf_len       Length of available buffer.
- *
- * @return Quantity of read octets, or -1 if error occured, 
- *         0 if timeout expired. 
- */ 
-typedef int (*csap_read_cb_t)(csap_p csap_descr, int timeout, 
-                              char *buf, size_t buf_len);
-
-/**
- * Callback type to write data to media of CSAP. 
- *
- * @param csap_descr    CSAP descriptor structure. 
- * @param buf           Buffer with data to be written.
- * @param buf_len       Length of data in buffer.
- *
- * @return Quantity of written octets, or -1 if error occured. 
- */ 
-typedef int (*csap_write_cb_t)(csap_p csap_descr, const char *buf,
-                               size_t buf_len);
-
-/**
- * Callback type to write data to media of CSAP and read
- *  data from media just after write, to get answer to sent request. 
- *
- * @param csap_descr    CSAP descriptor structure. 
- * @param timeout       Timeout of waiting for data in microseconds.
- * @param w_buf         Buffer with data to be written.
- * @param w_buf_len     Length of data in w_buf.
- * @param r_buf         Buffer for data to be read.
- * @param r_buf_len     Available length r_buf.
- *
- * @return Quantity of read octets, or -1 if error occured, 
- *         0 if timeout expired. 
- */ 
-typedef int (*csap_write_read_cb_t)(csap_p csap_descr, int timeout,
-                                    const char *w_buf, size_t w_buf_len,
-                                    char *r_buf, size_t r_buf_len);
-
-
-/**
- * Callback type to echo CSAP method. 
- * Method should prepare binary data to be send as "echo" and call 
- * respective write method to send it. 
- * Method may change data stored at passed location.
- *
- * @param csap_descr    CSAP descriptor structure. 
- * @param pkt           Got packet, plain binary data. 
- * @param len           Length of packet.
- *
- * @return Zero on success or error code.
- */
-typedef te_errno (*csap_echo_method)(csap_p csap_descr, uint8_t *pkt, 
-                                     size_t len);
 
 
 /**
@@ -253,8 +171,6 @@ typedef struct csap_layer_t {
 
     struct csap_spt_type_t *proto_support; /**< protocol layer 
                                                 support descroptor */
-    csap_get_param_cb_t     get_param_cb;  /**< callbacks to get
-                                                CSAP parameters */
 } csap_layer_t;
 
 /**
@@ -298,7 +214,7 @@ typedef enum {
  * CSAP instance support resources and attributes.
  */
 typedef struct csap_instance {
-    int             id;         /**< CSAP id */
+    unsigned int    id;         /**< CSAP id */
 
     unsigned int    depth;      /**< number of layers in stack */
     char           *csap_type;  /**< pointer to original CSAP type, proto[]
@@ -308,23 +224,15 @@ typedef struct csap_instance {
 
     csap_layer_t   *layers;/**< array of protocol layer descroptors */
 
-    csap_read_cb_t       read_cb;       /**< read data from CSAP media */
-    csap_write_cb_t      write_cb;      /**< write data to CSAP media */ 
-    csap_write_read_cb_t write_read_cb; /**< write data and read answer.*/
-    csap_echo_method     echo_cb;       /**< method for echo */
 
-    csap_low_resource_cb_t prepare_recv_cb; /**< prepare CSAP for receive */
-    csap_low_resource_cb_t prepare_send_cb; /**< prepare CSAP for send */
-    csap_low_resource_cb_t release_cb;      /**< release all lower non-TAD
-                                                 send/recv resources */
+    unsigned int    read_write_layer;   /**< index of layer in protocol
+                                             stack responsible for read and
+                                             write operations, usually
+                                             upper or lower */
+    void           *read_write_data;    /**< Private data of read/write
+                                             layer */
 
-
-
-    int         read_write_layer;/**< index of layer in protocol stack 
-                                      responsible for read and write 
-                                      operations, usually upper or lower */
-
-    int         last_errno;      /**< errno of last operation */
+    te_errno    last_errno;      /**< errno of last operation */
     int         timeout;         /**< timeout for read operations in 
                                       microseconds */
 
@@ -332,26 +240,19 @@ typedef struct csap_instance {
                                  /**< prefix for test-protocol answer to 
                                       the current command */
 
-    struct timeval  wait_for;    /**< Zero or moment of timeout current 
-                                       CSAP operation */
-    struct timeval  first_pkt;   /**< moment of first good packet processed:
-                                      matched or sent. */ 
-    struct timeval  last_pkt;    /**< moment of last good packet processed:
-                                      matched or sent. */
+    struct timeval  wait_for;       /**< Zero or moment of timeout
+                                         current CSAP operation */
+    struct timeval  first_pkt;      /**< moment of first good packet
+                                         processed: matched or sent */ 
+    struct timeval  last_pkt;       /**< moment of last good packet 
+                                         processed: matched or sent */
 
-    unsigned int    num_packets; /**< number of good packets to be 
-                                      processed. */
-    size_t          total_bytes; /**< quantity of total processed bytes in
-                                      last operation, for some protocols 
-                                      it is not sensible */
-    size_t          total_sent;  /**< quantity of total sent bytes in
-                                      all CSAP live, for some protocols 
-                                      it is not sensible */
-    size_t          total_received;/**< quantity of total received bytes in
-                                      all CSAP live, for some protocols 
-                                      it is not sensible */
-    tad_traffic_op_t command;    /**< last unprocessed command */
-    uint8_t          state;      /**< current state bitmask */
+    unsigned int     num_packets;   /**< number of good packets to be 
+                                         processed */
+    unsigned int     sent_packets;  /**< number of sent packets */
+
+    tad_traffic_op_t command;       /**< last unprocessed command */
+    uint8_t          state;         /**< current state bitmask */
     pthread_t        traffic_thread; 
                                  /**< ID of traffic operation thread */
     pthread_mutex_t  data_access_lock; 
@@ -365,14 +266,14 @@ typedef struct csap_instance {
  * Type for reference to user function for some magic processing 
  * with matched pkt
  *
- * @param csap_descr  CSAP descriptor structure.
+ * @param csap  CSAP descriptor structure.
  * @param usr_param   String passed by user.
  * @param pkt         Packet binary data, as it was caught from net.
  * @param pkt_len     Length of pkt data.
  *
  * @return zero on success or error code.
  */
-typedef int (*tad_processing_pkt_method)(csap_p csap_descr,
+typedef int (*tad_processing_pkt_method)(csap_p csap,
                                          const char *usr_param, 
                                          const uint8_t *pkt, 
                                          size_t pkt_len);
@@ -410,21 +311,7 @@ extern void tad_ch_init(void);
 
 
 /**
- * Initialize CSAP database.
- *
- * @return zero on success, otherwise error code 
- */ 
-extern int csap_db_init();
-
-/**
- * Clear CSAP database.
- *
- * @return zero on success, otherwise error code 
- */ 
-extern int csap_db_clear();
-
-/**
- * Create new CSAP. 
+ * Create a new CSAP. 
  * This method does not perform any actions related to CSAP functionality,
  * neither processing of CSAP init parameters, nor initialyzing some 
  * communication media units (for example, sockets, etc.).
@@ -436,7 +323,7 @@ extern int csap_db_clear();
  *
  * @return identifier of new CSAP or zero if error occured.
  */ 
-extern int csap_create(const char *type);
+extern csap_handle_t csap_create(const char *type);
 
 /**
  * Destroy CSAP.
@@ -447,56 +334,126 @@ extern int csap_create(const char *type);
  *      therefore if there are some more pointers in that structures, 
  *      memory may be lost. 
  *
- * @param csap_id       Identifier of CSAP to be destroyed.
+ * @param csap_id       Identifier of CSAP to be destroyed
  *
- * @return zero on success, otherwise error code 
+ * @return Status code.
  */ 
-extern int csap_destroy(int csap_id);
+extern te_errno csap_destroy(csap_handle_t csap_id);
 
 /**
  * Find CSAP by its identifier.
  *
  * @param csap_id       Identifier of CSAP 
  *
- * @return      Pointer to structure with internal CSAP information 
- *              or NULL if not found. 
+ * @return Pointer to structure with internal CSAP information or NULL
+ *         if not found. 
  *
- * Change data in this structure if you really know what does it mean!
+ * Change data in this structure if you really know what it means!
  */ 
-extern csap_p csap_find(int csap_id);
-
-
-/**
- * Traffic operation thread special data.
- */
-typedef struct tad_task_context {
-    csap_p     csap; /**< Pointer to CSAP descriptor */
-    asn_value *nds;  /**< ASN value with NDS */
-
-    struct rcf_comm_connection *rcf_handle; /**< RCF handle to answer */
-} tad_task_context;
-
+extern csap_p csap_find(csap_handle_t csap_id);
 
 /**
- * Start routine for tr_recv thread. 
+ * Get CSAP read/write layer number.
  *
- * @param arg      start argument, should be pointer to 
- *                 tad_task_context struct.
- *
- * @return NULL 
+ * @param csap          CSAP instance
+ * 
+ * @return Number of CSAP read/write layer.
  */
-extern void *tad_tr_recv_thread(void *arg);
+static inline unsigned int
+csap_get_rw_layer(csap_p csap)
+{
+    return csap->read_write_layer;
+}
 
 /**
- * Start routine for tr_send thread. 
+ * Get read/write layer specific data.
  *
- * @param arg           start argument, should be pointer to 
- *                      tad_task_context struct.
+ * @param csap          CSAP instance
  *
- * @return NULL 
+ * @return Pointer to read/write layer specific data.
  */
-extern void *tad_tr_send_thread(void *arg);
+static inline void *
+csap_get_rw_data(csap_p csap)
+{
+    assert(csap != NULL);
+    return csap->read_write_data;
+}
 
+/**
+ * Set read/write layer specific data.
+ *
+ * @param csap          CSAP instance
+ * @param data          Pointer to protocol specific data
+ */
+static inline void
+csap_set_rw_data(csap_p csap, void *data)
+{
+    assert(csap != NULL);
+    csap->read_write_data = data;
+}
+
+/**
+ * Get protocol specific data of the layer.
+ *
+ * @param csap          CSAP instance
+ * @param layer         Layer number
+ *
+ * @return Pointer to protocol specific data for the layer.
+ */
+static inline void *
+csap_get_proto_spec_data(csap_p csap, unsigned int layer)
+{
+    assert(csap != NULL);
+    assert(layer < csap->depth);
+    return csap->layers[layer].specific_data;
+}
+
+/**
+ * Set protocol specific data of the layer.
+ *
+ * @param csap          CSAP instance
+ * @param layer         Layer number
+ * @param data          Pointer to protocol specific data
+ */
+static inline void
+csap_set_proto_spec_data(csap_p csap, unsigned int layer, void *data)
+{
+    assert(csap != NULL);
+    assert(layer < csap->depth);
+    csap->layers[layer].specific_data = data;
+}
+
+/**
+ * Get protocol specific data of the layer.
+ *
+ * @param csap          CSAP instance
+ * @param layer         Layer number
+ *
+ * @return Pointer to protocol support definition.
+ */
+static inline struct csap_spt_type_t *
+csap_get_proto_support(csap_p csap, unsigned int layer)
+{
+    assert(csap != NULL);
+    assert(layer < csap->depth);
+    return csap->layers[layer].proto_support;
+}
+
+/**
+ * Set protocol specific data of the layer.
+ *
+ * @param csap          CSAP instance
+ * @param layer         Layer number
+ * @param proto_support Protocol support description
+ */
+static inline void
+csap_set_proto_support(csap_p csap, unsigned int layer,
+                       struct csap_spt_type_t *proto_support)
+{
+    assert(csap != NULL);
+    assert(layer < csap->depth);
+    csap->layers[layer].proto_support = proto_support;
+}
 
 #ifdef __cplusplus
 } /* extern "C" */

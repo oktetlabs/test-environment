@@ -1,11 +1,11 @@
 /** @file
- * @brief IP Stack TAD
+ * @brief TAD IP Stack
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP, stack-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * IPv4 CSAP layer stack-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -30,7 +30,7 @@
 #define TE_LGR_USER     "TAD IPv4"
 
 #include "te_config.h"
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -73,29 +73,112 @@
 #include "tad_ipstack_impl.h"
 
 
+/** IPv4 layer as read/write specific data */
+typedef struct tad_ip4_rw_data {
+    int                 socket;
+    int                 read_timeout;
+    struct sockaddr_in  sa_op;
+} tad_ip4_rw_data;
+
+
+/* See description tad_ipstack_impl.h */
+te_errno
+tad_ip4_rw_init_cb(csap_p csap, const asn_value *csap_nds)
+{ 
+    tad_ip4_rw_data    *spec_data;
+
+    struct sockaddr_in local;
+
+    int    opt = 1;
+    int    rc;
+    char   opt_label[100];
+    size_t len;
+
+    UNUSED(local);
+
+
+    if (csap_nds == NULL)
+        return TE_EWRONGPTR;
+
+    spec_data = calloc(1, sizeof(*spec_data));
+    if (spec_data == NULL)
+        return TE_ENOMEM;
+    csap_set_rw_data(csap, spec_data);
+
+    /* FIXME */
+    sprintf(opt_label, "%u.local-addr", csap_get_rw_layer(csap));
+    len = sizeof(struct in_addr);
+    rc = asn_read_value_field(csap_nds, 
+                              &spec_data->sa_op.sin_addr.s_addr, &len, 
+                              opt_label);
+    if (rc != 0 && rc != TE_EASNINCOMPLVAL)
+        return TE_RC(TE_TAD_CSAP, rc);
+
+    rc = 0;
+ 
+    spec_data->sa_op.sin_family = AF_INET;
+    spec_data->sa_op.sin_port = 0;
+
+    /* default read timeout */
+    spec_data->read_timeout = 200000; /* FIXME */
+
+
+    if (csap->type == TAD_CSAP_RAW)
+    {
+        /* opening incoming socket */
+        spec_data->socket = socket(AF_INET, SOCK_RAW, IPPROTO_IP); 
+        if (spec_data->socket < 0)
+        {
+            return TE_OS_RC(TE_TAD_CSAP, errno);
+        }
+        if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR, 
+                       &opt, sizeof(opt)) < 0)
+        {
+            return TE_OS_RC(TE_TAD_CSAP, errno);
+        }
+
+        csap->timeout          = 500000; /* FIXME */
+
+    }
+    else
+    {
+        spec_data->socket = -1;
+    } 
+
+    return 0;
+}
+
+/* See description tad_ipstack_impl.h */
+te_errno
+tad_ip4_rw_destroy_cb(csap_p csap)
+{
+    tad_ip4_rw_data    *spec_data = csap_get_rw_data(csap);
+     
+    if (spec_data->socket >= 0)
+    {
+        close(spec_data->socket);    
+        spec_data->socket = -1;
+    }
+
+    return 0;
+}
+
+
 /* See description tad_ipstack_impl.h */
 int 
-tad_ip4_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tad_ip4_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
 {
-    int    rc; 
-    int    layer;    
-    fd_set read_set;
-    ip4_csap_specific_data_t *spec_data;
+    fd_set              read_set;
+    tad_ip4_rw_data    *spec_data;
+    int                 ret; 
     
     struct timeval timeout_val;
     
-    layer = csap_descr->read_write_layer;
-    
-    spec_data = (ip4_csap_specific_data_t *)
-        csap_descr->layers[layer].specific_data; 
+    spec_data = csap_get_rw_data(csap); 
 
-#ifdef TALOGDEBUG
-    printf("Reading data from the socket: %d", spec_data->in);
-#endif       
-
-    if(spec_data->socket < 0)
+    if (spec_data->socket < 0)
     {
-        return -1;
+        return -1; /* TE_EIO */
     }
 
     FD_ZERO(&read_set);
@@ -112,252 +195,58 @@ tad_ip4_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
         timeout_val.tv_usec = timeout % 1000000L;
     }
     
-    rc = select(spec_data->socket + 1, &read_set, NULL, NULL, &timeout_val); 
+    ret = select(spec_data->socket + 1, &read_set, NULL, NULL,
+                 &timeout_val); 
     
-    if (rc == 0)
+    if (ret == 0)
         return 0;
 
-    if (rc < 0)
+    if (ret < 0)
         return -1;
     
     /* Note: possibly MSG_TRUNC and other flags are required */
-    return recv (spec_data->socket, buf, buf_len, 0); 
+    return recv(spec_data->socket, buf, buf_len, 0); 
 }
 
 
 /* See description tad_ipstack_impl.h */
-int 
-tad_ip4_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+te_errno
+tad_ip4_write_cb(csap_p csap, const tad_pkt *pkt)
 {
-    ip4_csap_specific_data_t * spec_data;
-    int layer;    
-    int rc;
-    
-       
-    layer = csap_descr->read_write_layer;
-    
-    spec_data = (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
+    tad_ip4_rw_data    *spec_data = csap_get_rw_data(csap);
+    ssize_t             ret;
+    struct msghdr       msg;
+    size_t              iovlen = tad_pkt_get_seg_num(pkt);
+    struct iovec        iov[iovlen];
+    te_errno            rc;
 
-#ifdef TALOGDEBUG
-    printf("Writing data to socket: %d", spec_data->out);
-#endif        
-
-    if(spec_data->socket < 0)
+    if (spec_data->socket < 0)
     {
-        return -1;
+        return TE_RC(TE_TAD_CSAP, TE_EIO);
     }
 
-    rc = sendto (spec_data->socket, buf, buf_len, 0, 
-                 (struct sockaddr *)&spec_data->sa_op, 
-                 sizeof(spec_data->sa_op));
-    if (rc < 0) 
+    /* Convert packet segments to IO vector */
+    rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
+    if (rc != 0)
     {
-        perror("ip sendto fail");
-        csap_descr->last_errno = errno;
-    }
-
-    return rc;
-}
-
-
-/* See description tad_ipstack_impl.h */
-int 
-tad_ip4_write_read_cb(csap_p csap_descr, int timeout,
-                      const char *w_buf, size_t w_buf_len,
-                      char *r_buf, size_t r_buf_len)
-{
-    int rc; 
-
-    rc = tad_ip4_write_cb(csap_descr, w_buf, w_buf_len);
-    
-    if (rc == -1)  
+        ERROR("Failed to convert segments to IO vector: %r", rc);
         return rc;
-    else 
-        return tad_ip4_read_cb(csap_descr, timeout, r_buf, r_buf_len);;
-}
-
-
-/* See description tad_ipstack_impl.h */
-te_errno
-tad_ip4_single_init_cb(csap_p csap_descr, unsigned int layer,
-                       const asn_value *csap_nds)
-{ 
-    ip4_csap_specific_data_t *ip4_spec_data; 
-
-    struct sockaddr_in local;
-
-    int    opt = 1;
-    int    rc;
-    char   opt_label[100];
-    size_t len;
-
-    UNUSED(local);
-
-    ENTRY("CSAP=%d NDS=%p layer=%u");
-
-    if (csap_nds == NULL)
-        return TE_EWRONGPTR;
-
-    ip4_spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
-    if (ip4_spec_data == NULL)
-        return TE_ENOMEM;
-
-    /* FIXME */
-    sprintf(opt_label, "%u.local-addr", layer);
-    len = sizeof(struct in_addr);
-    rc = asn_read_value_field(csap_nds, 
-                              &ip4_spec_data->sa_op.sin_addr.s_addr, &len, 
-                              opt_label);
-    if (rc != 0 && rc != TE_EASNINCOMPLVAL)
-        return TE_RC(TE_TAD_CSAP, rc);
-
-    rc = 0;
-
-    ip4_spec_data->local_addr = ip4_spec_data->sa_op.sin_addr; 
- 
-    ip4_spec_data->sa_op.sin_family = AF_INET;
-    ip4_spec_data->sa_op.sin_port = 0;
-    
-
-    /* default read timeout */
-    ip4_spec_data->read_timeout = 200000; /* FIXME */
-
-    csap_descr->layers[layer].specific_data = ip4_spec_data;
-    csap_descr->layers[layer].get_param_cb = tad_ip4_get_param_cb;
-
-    if (csap_descr->type == TAD_CSAP_RAW)
-    {
-        /* opening incoming socket */
-        ip4_spec_data->socket = socket(AF_INET, SOCK_RAW, IPPROTO_IP); 
-        if (ip4_spec_data->socket < 0)
-        {
-            return TE_OS_RC(TE_TAD_CSAP, errno);
-        }
-        if (setsockopt(ip4_spec_data->socket, SOL_SOCKET, SO_REUSEADDR, 
-                       &opt, sizeof(opt)) < 0)
-        {
-            return TE_OS_RC(TE_TAD_CSAP, errno);
-        }
-
-        csap_descr->read_cb          = tad_ip4_read_cb;
-        csap_descr->write_cb         = tad_ip4_write_cb;
-        csap_descr->write_read_cb    = tad_ip4_write_read_cb;
-        csap_descr->read_write_layer = layer; 
-        csap_descr->timeout          = 500000; /* FIXME */
-
     }
-    else
-    {
-        ip4_spec_data->socket = -1;
-    } 
 
-    EXIT("OK");
+    msg.msg_name = (struct sockaddr *)&spec_data->sa_op;
+    msg.msg_namelen = sizeof(spec_data->sa_op);
+    msg.msg_iov = iov;
+    msg.msg_iovlen = iovlen;
+    msg.msg_control = NULL;
+    msg.msg_controllen = 0;
+    msg.msg_flags = 0;
+
+    ret = sendmsg(spec_data->socket, &msg, 0);
+    if (ret < 0) 
+    {
+        csap->last_errno = errno;
+        return TE_OS_RC(TE_TAD_CSAP, csap->last_errno);
+    }
 
     return 0;
 }
-
-
-/* See description tad_ipstack_impl.h */
-te_errno
-tad_ip4_single_destroy_cb(csap_p csap_descr, unsigned int layer)
-{
-    ip4_csap_specific_data_t * spec_data = 
-        (ip4_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
-     
-    if (spec_data->socket >= 0)
-        close(spec_data->socket);    
-
-    tad_data_unit_clear(&spec_data->du_version);
-    tad_data_unit_clear(&spec_data->du_header_len);
-    tad_data_unit_clear(&spec_data->du_tos);
-    tad_data_unit_clear(&spec_data->du_ip_len);
-    tad_data_unit_clear(&spec_data->du_ip_ident);
-    tad_data_unit_clear(&spec_data->du_flags);
-    tad_data_unit_clear(&spec_data->du_ip_offset);
-    tad_data_unit_clear(&spec_data->du_ttl);
-    tad_data_unit_clear(&spec_data->du_protocol);
-    tad_data_unit_clear(&spec_data->du_h_checksum);
-    tad_data_unit_clear(&spec_data->du_src_addr);
-    tad_data_unit_clear(&spec_data->du_dst_addr);
-
-    spec_data->socket = -1;
-
-    return 0;
-}
-
-
-#ifdef WITH_ETH
-/* See description tad_ipstack_impl.h */
-te_errno
-tad_ip4_eth_init_cb(csap_p csap_descr, unsigned int layer,
-                    const asn_value *csap_nds)
-{ 
-    ip4_csap_specific_data_t *spec_data; 
-    eth_csap_specific_data_t *eth_spec_data; 
-    size_t val_len;
-    int    rc;
-
-    VERB("%s called for csap %d, layer %d",
-         __FUNCTION__, csap_descr->id, layer); 
-
-    if (csap_nds == NULL)
-        return TE_EWRONGPTR;
-
-    if (layer + 1 >= csap_descr->depth)
-    {
-        ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
-              __FUNCTION__, csap_descr->id, layer, csap_descr->depth);
-        return TE_EINVAL;
-    }
-
-    spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
-    if (spec_data == NULL)
-        return TE_ENOMEM;
-
-    eth_spec_data = (eth_csap_specific_data_t *)
-        csap_descr->layers[layer + 1].specific_data;
-
-    csap_descr->layers[layer].specific_data = spec_data;
-    csap_descr->layers[layer].get_param_cb = tad_ip4_get_param_cb;
-
-    val_len = sizeof(spec_data->remote_addr);
-    rc = asn_read_value_field(csap_descr->layers[layer].csap_layer_pdu,
-                              &spec_data->remote_addr, &val_len,
-                              "remote-addr.#plain");
-    if (rc != 0)
-    {
-        INFO("%s(): read remote addr fails %X", __FUNCTION__, rc);
-        spec_data->remote_addr.s_addr = INADDR_ANY;
-    }
-
-    val_len = sizeof(spec_data->local_addr);
-    rc = asn_read_value_field(csap_descr->layers[layer].csap_layer_pdu,
-                              &spec_data->local_addr, &val_len,
-                              "local-addr.#plain");
-    if (rc != 0)
-    {
-        INFO("%s(): read local addr fails %X", __FUNCTION__, rc);
-        spec_data->local_addr.s_addr = INADDR_ANY;
-    }
-
-    F_VERB("%s(): csap %d, layer %d",
-            __FUNCTION__, csap_descr->id, layer); 
-
-    if (eth_spec_data->eth_type == 0)
-        eth_spec_data->eth_type = ETHERTYPE_IP;
-
-    UNUSED(csap_nds);
-    return 0;
-}
-
-
-/* See description tad_ipstack_impl.h */
-te_errno
-tad_ip4_eth_destroy_cb(csap_p csap_descr, unsigned int layer)
-{ 
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    return 0;
-}
-
-#endif /* WITH_ETH */

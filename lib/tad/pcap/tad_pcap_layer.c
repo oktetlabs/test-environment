@@ -1,11 +1,11 @@
 /** @file
- * @brief PCAP TAD
+ * @brief TAD PCAP
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP layer-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * Ethernet-PCAP CSAP layer-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2005 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -30,11 +30,10 @@
 
 #define TE_LGR_USER     "TAD Ethernet-PCAP"
 
-#ifdef HAVE_CONFIG_H
+#include "te_config.h"
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include <string.h>
 
 #include "te_defs.h"
 #include "te_printf.h"
@@ -45,70 +44,80 @@
 #include "tad_pcap_impl.h"
 
 
-/* See description in tad_pcap_impl.h */
-char *
-tad_pcap_get_param_cb(csap_p csap_descr, unsigned int layer,
-                      const char *param)
+#define PCAP_LINKTYPE_DEFAULT           DLT_EN10MB  /* See pcap-bpf.h */
+
+#define PCAP_COMPILED_BPF_PROGRAMS_MAX  1024
+
+#define TAD_PCAP_SNAPLEN                0xffff
+
+
+typedef struct tad_pcap_layer_data {
+    int                 iftype;     /**< Default link type
+                                         (see man 3 pcap) */
+
+    /** Array of pre-compiled BPF programs */
+    struct bpf_program *bpfs[PCAP_COMPILED_BPF_PROGRAMS_MAX];
+
+    int                 bpf_count;  /**< Total count of pre-compiled
+                                         BPF programs */
+} tad_pcap_layer_data;
+
+
+/* See description tad_pcap_impl.h */
+te_errno
+tad_pcap_init_cb(csap_p csap, unsigned int layer)
 {
-    char   *param_buf;            
-    pcap_csap_specific_data_p spec_data;
+    tad_pcap_layer_data    *layer_data;
 
-    VERB("%s() started", __FUNCTION__);
-
-    if (csap_descr == NULL)
+    layer_data = calloc(1, sizeof(*layer_data));
+    if (layer_data == NULL)
     {
-        VERB("error in pcap_get_param %s: wrong csap descr passed\n", param);
-        return NULL;
+        ERROR("Init, not memory for layer_data");
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
+    csap_set_proto_spec_data(csap, layer, layer_data);
 
-    spec_data =
-        (pcap_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
+    layer_data->iftype = PCAP_LINKTYPE_DEFAULT;
 
-    if (strcmp (param, "total_bytes") == 0)
+    return 0;
+}
+
+/* See description tad_pcap_impl.h */
+te_errno
+tad_pcap_destroy_cb(csap_p csap, unsigned int layer)
+{
+    tad_pcap_layer_data    *layer_data;
+
+    layer_data = csap_get_proto_spec_data(csap, layer);
+    if (layer_data == NULL)
     {
-        param_buf  = malloc(20);
-        sprintf(param_buf, "%" TE_PRINTF_SIZE_T "u",
-                spec_data->total_bytes);
-        return param_buf;
+        WARN("No PCAP CSAP %d special data found!", csap->id);
+        return 0;
     }
-    else if (strcmp (param, "total_packets") == 0)
-    {
-        param_buf  = malloc(20);
-        sprintf(param_buf, "%" TE_PRINTF_SIZE_T "u",
-                spec_data->total_packets);
-        return param_buf;
-    }
-    else if (strcmp (param, "filtered_packets") == 0)
-    {
-        param_buf  = malloc(20);
-        sprintf(param_buf, "%" TE_PRINTF_SIZE_T "u",
-                spec_data->filtered_packets);
-        return param_buf;
-    }
+    csap_set_proto_spec_data(csap, layer, NULL);
 
-    VERB("error in pcap_get_param %s: not supported parameter\n", param);
+    free(layer_data);
 
-    return NULL;
+    return 0;
 }
 
 
 /* See description in tad_pcap_impl.h */
 te_errno
-tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                        asn_value_p layer_pdu)
+tad_pcap_confirm_pdu_cb(csap_p csap, unsigned int layer,
+                        asn_value_p layer_pdu, void **p_opaque)
 {
-    pcap_csap_specific_data_p   spec_data; 
+    tad_pcap_layer_data    *layer_data;
 
-    size_t                      val_len;
-    char                       *pcap_str;
-    int                         rc; 
+    size_t                  val_len;
+    char                   *pcap_str;
+    int                     rc;
 
-    struct bpf_program         *bpf_program;
-    
-    VERB("%s() started", __FUNCTION__);
-    
-    spec_data = (pcap_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data; 
+    struct bpf_program     *bpf_program;
+
+    UNUSED(p_opaque);
+
+    layer_data = csap_get_proto_spec_data(csap, layer);
 
     rc = asn_get_length(layer_pdu, "filter");
     if (rc < 0)
@@ -116,7 +125,7 @@ tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         ERROR("%s(): asn_get_length() failed, rc=%r", __FUNCTION__, rc);
         return rc;
     }
-    
+
     val_len = rc;
 
     pcap_str = (char *)malloc(val_len + 1);
@@ -124,7 +133,7 @@ tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     {
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
-    
+
     rc = asn_read_value_field(layer_pdu, pcap_str, &val_len, "filter");
     if (rc < 0)
     {
@@ -132,7 +141,7 @@ tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         return rc;
     }
 
-    VERB("%s: Try to compile filter string \"%s\"", __FUNCTION__, pcap_str);    
+    VERB("%s: Try to compile filter string \"%s\"", __FUNCTION__, pcap_str);
 
     bpf_program = (struct bpf_program *)malloc(sizeof(struct bpf_program));
     if (bpf_program == NULL)
@@ -140,7 +149,7 @@ tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
 
-    rc = pcap_compile_nopcap(TAD_PCAP_SNAPLEN, spec_data->iftype,
+    rc = pcap_compile_nopcap(TAD_PCAP_SNAPLEN, layer_data->iftype,
                              bpf_program, pcap_str, TRUE, 0);
     if (rc != 0)
     {
@@ -149,10 +158,10 @@ tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     }
     VERB("%s: pcap_compile_nopcap() returns %d", __FUNCTION__, rc);
 
-    spec_data->bpfs[++spec_data->bpf_count] = bpf_program;
+    layer_data->bpfs[++layer_data->bpf_count] = bpf_program;
 
     val_len = sizeof(int);
-    rc = asn_write_value_field(layer_pdu, &spec_data->bpf_count,
+    rc = asn_write_value_field(layer_pdu, &layer_data->bpf_count,
                                val_len, "bpf-id");
     if (rc < 0)
     {
@@ -162,34 +171,33 @@ tad_pcap_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
     }
 
     VERB("%s: filter string compiled, bpf-id %d", __FUNCTION__,
-         spec_data->bpf_count);
+         layer_data->bpf_count);
 
     VERB("exit, return 0");
-    
+
     return 0;
 }
 
 
 /* See description in tad_pcap_impl.h */
 te_errno
-tad_pcap_match_bin_cb(csap_p csap_descr, unsigned int layer,
+tad_pcap_match_bin_cb(csap_p csap, unsigned int layer,
                       const asn_value *pattern_pdu,
-                      const csap_pkts *pkt, csap_pkts *payload, 
+                      const csap_pkts *pkt, csap_pkts *payload,
                       asn_value_p parsed_packet)
 {
-    pcap_csap_specific_data_p   spec_data;
-    int                         rc;
-    uint8_t                    *data;
-    int                         bpf_id;
-    struct bpf_program         *bpf_program;
-    struct bpf_insn            *bpf_code;
-    size_t                      tmp_len;
+    tad_pcap_layer_data    *layer_data;
+    int                     rc;
+    uint8_t                *data;
+    int                     bpf_id;
+    struct bpf_program     *bpf_program;
+    struct bpf_insn        *bpf_code;
+    size_t                  tmp_len;
 
     VERB("%s() started", __FUNCTION__);
 
-    spec_data = (pcap_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data;
-    data = pkt->data; 
+    layer_data = csap_get_proto_spec_data(csap, layer);
+    data = pkt->data;
 
     if (pattern_pdu == NULL)
     {
@@ -206,21 +214,21 @@ tad_pcap_match_bin_cb(csap_p csap_descr, unsigned int layer,
     }
 
     /* bpf_id == 0 means that filter string is not compiled yet */
-    if ((bpf_id <= 0) || (bpf_id > spec_data->bpf_count))
+    if ((bpf_id <= 0) || (bpf_id > layer_data->bpf_count))
     {
         ERROR("%s(): Invalid bpf_id value in PDU pattern", __FUNCTION__);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
-    bpf_program = spec_data->bpfs[bpf_id];
+    bpf_program = layer_data->bpfs[bpf_id];
     if (bpf_program == NULL)
     {
         ERROR("%s(): Invalid bpf_id value in PDU pattern", __FUNCTION__);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
-    
+
     bpf_code = bpf_program->bf_insns;
-    
+
     rc = bpf_filter(bpf_code, pkt->data, pkt->len, pkt->len);
     VERB("bpf_filter() returns 0x%x (%d)", rc, rc);
     if (rc <= 0)
@@ -237,14 +245,14 @@ tad_pcap_match_bin_cb(csap_p csap_descr, unsigned int layer,
         VERB("Packet matches, try to get filter string");
 
         filter_len = sizeof(int);
-        
-        if (asn_read_value_field(pattern_pdu, &filter_id, 
+
+        if (asn_read_value_field(pattern_pdu, &filter_id,
                                  &filter_len, "filter-id") < 0)
         {
             ERROR("Cannot get filter-id");
             filter_id = -1;
         }
-        
+
         rc = asn_get_length(pattern_pdu, "filter");
         if (rc < 0)
         {
@@ -252,14 +260,14 @@ tad_pcap_match_bin_cb(csap_p csap_descr, unsigned int layer,
             break;
         }
         filter_len = rc;
-        
+
         filter = (char *) malloc(filter_len + 1);
         if (filter == NULL)
         {
             ERROR("Cannot allocate memory for filter string");
             break;
         }
-        
+
         if (asn_read_value_field(pattern_pdu, filter,
                                  &filter_len, "filter") < 0)
         {
@@ -267,12 +275,12 @@ tad_pcap_match_bin_cb(csap_p csap_descr, unsigned int layer,
             free(filter);
             break;
         }
-        
+
         filter[filter_len] = '\0';
-        
+
         VERB("Received packet matches to filter: \"%s\", filter-id=%d",
              filter, filter_id);
-        
+
         free(filter);
     } while (0);
 #endif
@@ -280,7 +288,7 @@ tad_pcap_match_bin_cb(csap_p csap_descr, unsigned int layer,
     /* Fill parsed packet value */
     if (parsed_packet)
     {
-        rc = asn_write_component_value(parsed_packet, pattern_pdu, "#pcap"); 
+        rc = asn_write_component_value(parsed_packet, pattern_pdu, "#pcap");
         if (rc)
             ERROR("write pcap filter to packet rc %r", rc);
     }
@@ -294,8 +302,32 @@ tad_pcap_match_bin_cb(csap_p csap_descr, unsigned int layer,
     payload->data = malloc(payload->len);
     memcpy(payload->data, pkt->data, payload->len);
 
-    F_VERB("PCAP csap N %d, packet matches, pkt len %ld, pld len %ld", 
-           csap_descr->id, pkt->len, payload->len);
-    
+    F_VERB("PCAP csap N %d, packet matches, pkt len %ld, pld len %ld",
+           csap->id, pkt->len, payload->len);
+
     return 0;
+}
+
+/* See description tad_pcap_impl.h */
+void
+tad_pcap_release_ptrn_cb(csap_p csap, unsigned int layer, void *opaque)
+{
+    tad_pcap_layer_data    *layer_data;
+    int                     bpf_id;
+
+    UNUSED(opaque);
+
+    layer_data = csap_get_proto_spec_data(csap, layer); 
+
+    for (bpf_id = 1; bpf_id <= layer_data->bpf_count; bpf_id++)
+    {
+        if (layer_data->bpfs[bpf_id] != NULL)
+        {
+            pcap_freecode(layer_data->bpfs[bpf_id]);
+            free(layer_data->bpfs[bpf_id]);
+            layer_data->bpfs[bpf_id] = NULL;
+        }
+    }
+
+    layer_data->bpf_count = 0;
 }

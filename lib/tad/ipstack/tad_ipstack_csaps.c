@@ -1,11 +1,11 @@
 /** @file
- * @brief IP Stack TAD
+ * @brief TAD IP Stack
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP support description structures. 
+ * Traffic Application Domain Command Handler.
+ * IP Stack CSAPs support description structures.
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS in
- * the root directory of the distribution).
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,132 +27,128 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD IP Stack"
+
 #include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "te_errno.h"
+#include "tad_csap_support.h"
+#include "tad_utils.h"
 
 #include "tad_ipstack_impl.h"
 
-/*
+
+/**
  * IPv4
  */
-
-static csap_layer_neighbour_list_t ip4_nbr_eth = 
-{
-    NULL, 
-    "eth",
-
-    tad_ip4_eth_init_cb,
-    tad_ip4_eth_destroy_cb,
-};
-
-static csap_layer_neighbour_list_t ip4_nbr_single = 
-{
-    &ip4_nbr_eth, 
-    NULL,
-
-    tad_ip4_single_init_cb,
-    tad_ip4_single_destroy_cb,
-};
-
 static csap_spt_type_t ip4_csap_spt = 
 {
-    "ip4",
+    proto               : "ip4",
 
-    NULL,
-    NULL,
-    tad_ip4_confirm_pdu_cb,
-    tad_ip4_gen_bin_cb,
-    tad_ip4_match_bin_cb,
-    tad_ip4_gen_pattern_cb,
+    init_cb             : tad_ip4_init_cb,
+    destroy_cb          : tad_ip4_destroy_cb,
+    get_param_cb        : NULL,
 
-    &ip4_nbr_single
+    confirm_tmpl_cb     : tad_ip4_confirm_pdu_cb,
+    generate_pkts_cb    : tad_ip4_gen_bin_cb,
+    release_tmpl_cb     : NULL,
+
+    confirm_ptrn_cb     : tad_ip4_confirm_pdu_cb,
+    match_do_cb         : tad_ip4_match_bin_cb,
+    match_done_cb       : NULL,
+    match_post_cb       : NULL,
+    release_ptrn_cb     : NULL,
+
+    generate_pattern_cb : NULL,
+
+    rw_init_cb          : tad_ip4_rw_init_cb,
+    rw_destroy_cb       : tad_ip4_rw_destroy_cb,
+
+    prepare_send_cb     : NULL,
+    write_cb            : tad_ip4_write_cb,
+    shutdown_send_cb    : NULL,
+    
+    prepare_recv_cb     : NULL,
+    read_cb             : tad_ip4_read_cb,
+    shutdown_recv_cb    : NULL,
+
+    write_read_cb       : tad_common_write_read_cb,
 };
 
-
-/*
+/**
  * UDP
  */
-
-static csap_layer_neighbour_list_t udp_nbr_ip4 = 
-{
-    NULL, 
-    "ip4",
-
-    tad_udp_ip4_init_cb,
-    tad_udp_ip4_destroy_cb,
-};
-
-/* It seems, there should not be UDP CSAP without any layer under it. */
-#if 0 
-static csap_layer_neighbour_list_t udp_nbr_single = 
-{
-    &udp_nbr_ip4, 
-    NULL,
-
-    tad_udp_single_init_cb,
-    tad_udp_single_destroy_cb,
-};
-#endif
-
 static csap_spt_type_t udp_csap_spt = 
 {
-    "udp",
+    proto               : "udp",
 
-    NULL,
-    NULL,
-    tad_udp_confirm_pdu_cb,
-    tad_udp_gen_bin_cb,
-    tad_udp_match_bin_cb,
-    tad_udp_gen_pattern_cb,
+    init_cb             : tad_udp_init_cb,
+    destroy_cb          : tad_udp_destroy_cb,
+    get_param_cb        : NULL,
 
-    &udp_nbr_ip4
+    confirm_tmpl_cb     : tad_udp_confirm_pdu_cb,
+    generate_pkts_cb    : tad_udp_gen_bin_cb,
+    release_tmpl_cb     : NULL,
+
+    confirm_ptrn_cb     : tad_udp_confirm_pdu_cb,
+    match_do_cb         : tad_udp_match_bin_cb,
+    match_done_cb       : NULL,
+    match_post_cb       : NULL,
+    release_ptrn_cb     : NULL,
+
+    generate_pattern_cb : NULL,
+
+    CSAP_SUPPORT_NO_RW,
 };
 
-/*
+/**
  * TCP
  */
-
-static csap_layer_neighbour_list_t tcp_nbr_ip4 = 
-{
-    NULL, /* next */
-    "ip4",
-
-    tad_tcp_ip4_init_cb,
-    tad_tcp_ip4_destroy_cb,
-};
-
 static csap_spt_type_t tcp_csap_spt = 
 {
-    "tcp",
+    proto               : "tcp",
 
-    NULL,
-    NULL,
-    tad_tcp_confirm_pdu_cb,
-    tad_tcp_gen_bin_cb,
-    tad_tcp_match_bin_cb,
-    tad_tcp_gen_pattern_cb,
+    init_cb             : tad_tcp_init_cb,
+    destroy_cb          : tad_tcp_destroy_cb,
+    get_param_cb        : tad_tcp_get_param_cb,
 
-    &tcp_nbr_ip4
+    confirm_tmpl_cb     : tad_tcp_confirm_pdu_cb,
+    generate_pkts_cb    : tad_tcp_gen_bin_cb,
+    release_tmpl_cb     : NULL,
+
+    confirm_ptrn_cb     : tad_tcp_confirm_pdu_cb,
+    match_do_cb         : tad_tcp_match_bin_cb,
+    match_done_cb       : NULL,
+    match_post_cb       : NULL,
+    release_ptrn_cb     : NULL,
+
+    generate_pattern_cb : NULL,
+
+    CSAP_SUPPORT_NO_RW,
 };
 
 
 /**
- * Register ipstack CSAP callbacks and support structures in TAD
+ * Register IP stack CSAP callbacks and support structures in TAD
  * Command Handler.
  *
- * @return Zero on success or error code.
+ * @return Status code.
  */ 
 te_errno
 csap_support_ipstack_register(void)
 { 
     te_errno rc;
 
-    rc = add_csap_spt(&ip4_csap_spt);
+    rc = csap_spt_add(&ip4_csap_spt);
     if (rc != 0) 
         return rc;
 
-    rc = add_csap_spt(&tcp_csap_spt);
+    rc = csap_spt_add(&tcp_csap_spt);
     if (rc != 0)
         return rc;
 
-    return add_csap_spt(&udp_csap_spt);
+    return csap_spt_add(&udp_csap_spt);
 }

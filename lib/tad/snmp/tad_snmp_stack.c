@@ -1,11 +1,11 @@
 /** @file
- * @brief SNMP TAD
+ * @brief TAD SNMP
  *
- * Traffic Application Domain Command Handler
- * Dummy FILE protocol implementaion, stack-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * SNMP CSAP implementaion, stack-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,6 +28,11 @@
  */
 
 #define TE_LGR_USER     "TAD SNMP"
+
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "tad_snmp_impl.h"
 #include "logger_api.h"
@@ -94,10 +99,11 @@ print_oid(unsigned long * subids, size_t len)
 
 
 void 
-tad_snmp_free_pdu(void *ptr)
+tad_snmp_free_pdu(void *ptr, size_t len)
 {
     struct snmp_pdu *pdu = (struct snmp_pdu *)ptr;
 
+    UNUSED(len);
     if (pdu == NULL) 
         return; 
 
@@ -133,19 +139,19 @@ snmp_csap_input(int                  op,
 /**
  * Callback for release internal data after traffic processing. 
  *
- * @param csap_descr    pointer to CSAP descriptor structure
+ * @param csap    pointer to CSAP descriptor structure
  *
  * @return Status code
  */
-int 
-tad_snmp_release_cb(csap_p csap_descr)
+te_errno
+tad_snmp_release_cb(csap_p csap)
 {
-    int layer = csap_descr->read_write_layer;
+    int layer = csap_get_rw_layer(csap);
     snmp_csap_specific_data_p spec_data = 
-        (snmp_csap_specific_data_p) csap_descr->layers[layer].specific_data;
+        csap_get_proto_spec_data(csap, layer);
 
     if (spec_data->pdu != NULL)
-        tad_snmp_free_pdu(spec_data->pdu);
+        tad_snmp_free_pdu(spec_data->pdu, 0);
     spec_data->pdu = NULL;
 
     return 0;
@@ -153,7 +159,7 @@ tad_snmp_release_cb(csap_p csap_descr)
 
 /* See description in tad_snmp_impl.h */
 int 
-tad_snmp_read_cb(csap_p csap_descr, int timeout,
+tad_snmp_read_cb(csap_p csap, int timeout,
                  char *buf, size_t buf_len)
 { 
     int rc = 0; 
@@ -170,12 +176,11 @@ tad_snmp_read_cb(csap_p csap_descr, int timeout,
 
     VERB("read callback");
 
-    if (csap_descr == NULL) return -1;
+    if (csap == NULL) return -1;
 
-    layer = csap_descr->read_write_layer;
+    layer = csap_get_rw_layer(csap);
 
-    spec_data = (snmp_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data; 
+    spec_data = csap_get_proto_spec_data(csap, layer); 
     ss = spec_data->ss;
 
     FD_ZERO(&fdset);
@@ -191,12 +196,12 @@ tad_snmp_read_cb(csap_p csap_descr, int timeout,
     }
     
     if (spec_data->pdu) 
-        tad_snmp_free_pdu(spec_data->pdu); 
+        tad_snmp_free_pdu(spec_data->pdu, 0); 
     spec_data->pdu = NULL;
 
     rc = select(n_fds, &fdset, 0, 0, &sel_timeout);
     VERB("%s(): CSAP %d, after select, rc %d\n",
-         __FUNCTION__, csap_descr->id, rc);
+         __FUNCTION__, csap->id, rc);
 
     if (rc > 0) 
     { 
@@ -224,9 +229,18 @@ tad_snmp_read_cb(csap_p csap_descr, int timeout,
 }
 
 /* See description in tad_snmp_impl.h */
-int 
-tad_snmp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+te_errno
+tad_snmp_write_cb(csap_p csap, const tad_pkt *pkt)
 {
+#if 1
+    const void *buf;
+    size_t      buf_len;
+
+    if (pkt == NULL || tad_pkt_get_seg_num(pkt) != 1)
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    buf     = pkt->segs.cqh_first->data_ptr;
+    buf_len = pkt->segs.cqh_first->data_len;
+#endif
     int layer;
 
     snmp_csap_specific_data_p   spec_data;
@@ -236,12 +250,11 @@ tad_snmp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     VERB("write callback\n"); 
     UNUSED(buf_len);
 
-    if (csap_descr == NULL) return -1;
+    if (csap == NULL) return -1;
 
-    layer = csap_descr->read_write_layer;
+    layer = csap_get_rw_layer(csap);
 
-    spec_data = (snmp_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data; 
+    spec_data = csap_get_proto_spec_data(csap, layer); 
     ss = spec_data->ss;
 
     if (!snmp_send(ss, pdu))
@@ -254,8 +267,8 @@ tad_snmp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
 /* See description in tad_snmp_impl.h */
 int 
-tad_snmp_write_read_cb(csap_p csap_descr, int timeout,
-                       const char *w_buf, size_t w_buf_len,
+tad_snmp_write_read_cb(csap_p csap, int timeout,
+                       const tad_pkt *w_pkt,
                        char *r_buf, size_t r_buf_len)
 {
     fd_set fdset;
@@ -268,17 +281,16 @@ tad_snmp_write_read_cb(csap_p csap_descr, int timeout,
 
     snmp_csap_specific_data_p   spec_data;
     struct snmp_session       * ss;
-    struct snmp_pdu           * pdu = (struct snmp_pdu *) w_buf;
+    struct snmp_pdu           * pdu =
+        (struct snmp_pdu *)w_pkt->segs.cqh_first->data_ptr;
 
     UNUSED(timeout);
-    UNUSED(w_buf_len);
     UNUSED(r_buf_len);
 
-    if (csap_descr == NULL) return -1;
-    layer = csap_descr->read_write_layer;
+    if (csap == NULL) return -1;
+    layer = csap_get_rw_layer(csap);
 
-    spec_data = (snmp_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data; 
+    spec_data = csap_get_proto_spec_data(csap, layer); 
     ss = spec_data->ss; 
 
     FD_ZERO(&fdset);
@@ -301,14 +313,14 @@ tad_snmp_write_read_cb(csap_p csap_descr, int timeout,
     }
 
     if (spec_data->pdu)
-        tad_snmp_free_pdu(spec_data->pdu);
+        tad_snmp_free_pdu(spec_data->pdu, 0);
 
     spec_data->pdu = NULL;
 
     rc = select(n_fds, &fdset, 0, 0, &sel_timeout);
     
     VERB("%s(): CSAP %d, after select, rc %d\n",
-         __FUNCTION__, csap_descr->id, rc);
+         __FUNCTION__, csap->id, rc);
 
     if (rc > 0) 
     {
@@ -330,8 +342,7 @@ tad_snmp_write_read_cb(csap_p csap_descr, int timeout,
 
 /* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_single_init_cb(csap_p csap_descr, unsigned int layer,
-                        const asn_value *csap_nds)
+tad_snmp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 {
     int      rc;
     char     community[COMMUNITY_MAX_LEN + 1]; 
@@ -344,7 +355,8 @@ tad_snmp_single_init_cb(csap_p csap_descr, unsigned int layer,
     struct snmp_session        *ss = NULL; 
 
     snmp_csap_specific_data_p   snmp_spec_data;
-    const asn_value            *snmp_csap_spec;
+    const asn_value            *snmp_csap_spec =
+        csap->layers[csap_get_rw_layer(csap)].csap_layer_pdu;
 
     char                        security_model_name[32];
     ndn_snmp_sec_model_t        security_model;
@@ -363,13 +375,6 @@ tad_snmp_single_init_cb(csap_p csap_descr, unsigned int layer,
     if (!csap_nds)
         return TE_EWRONGPTR;
 
-    rc = asn_get_indexed(csap_nds, &snmp_csap_spec, layer);
-    if (rc != 0)
-    {
-        ERROR("%s(): get csap spec layer failed %r", __FUNCTION__, rc);
-        return rc;
-    }
-    
 #if NEW_SNMP_API
     snmp_sess_init(&csap_session);
 #else
@@ -689,12 +694,7 @@ tad_snmp_single_init_cb(csap_p csap_descr, unsigned int layer,
         return TE_ENOMEM;
     }
     
-    csap_descr->write_cb         = tad_snmp_write_cb; 
-    csap_descr->read_cb          = tad_snmp_read_cb; 
-    csap_descr->write_read_cb    = tad_snmp_write_read_cb; 
-    csap_descr->release_cb       = tad_snmp_release_cb;
-    csap_descr->read_write_layer = layer; 
-    csap_descr->timeout          = 2000000; 
+    csap->timeout = 2000000; 
 
     VERB("try to open SNMP session: \n");
     VERB("  version:    %d\n", csap_session.version);
@@ -733,7 +733,7 @@ tad_snmp_single_init_cb(csap_p csap_descr, unsigned int layer,
 
         ss = snmp_add(&csap_session, transport, NULL, NULL);
         snmp_spec_data->sock = transport->sock;
-        VERB("%s(): CSAP %d, sock = %d", __FUNCTION__, csap_descr->id,
+        VERB("%s(): CSAP %d, sock = %d", __FUNCTION__, csap->id,
              snmp_spec_data->sock);
 #else
         ss = snmp_open(&csap_session); 
@@ -762,7 +762,8 @@ tad_snmp_single_init_cb(csap_p csap_descr, unsigned int layer,
 #endif
 #endif
 
-    csap_descr->layers[layer].specific_data = snmp_spec_data;
+    csap_set_proto_spec_data(csap, csap_get_rw_layer(csap), snmp_spec_data);
+    csap_set_rw_data(csap, snmp_spec_data);
     snmp_spec_data->ss  = ss;
     snmp_spec_data->pdu = 0;
 
@@ -772,14 +773,13 @@ tad_snmp_single_init_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_snmp_impl.h */
 int 
-tad_snmp_single_destroy_cb(csap_p csap_descr, unsigned int layer)
+tad_snmp_rw_destroy_cb(csap_p csap)
 {
-    snmp_csap_specific_data_p spec_data = 
-        (snmp_csap_specific_data_p) csap_descr->layers[layer].specific_data;
+    snmp_csap_specific_data_p spec_data = csap_get_rw_data(csap);
 
-    VERB("Destroy callback, id %d\n", csap_descr->id);
+    VERB("Destroy callback, id %d\n", csap->id);
     if (spec_data->pdu != NULL)
-        tad_snmp_free_pdu(spec_data->pdu);
+        tad_snmp_free_pdu(spec_data->pdu, 0);
 
     if (spec_data->ss)
     {

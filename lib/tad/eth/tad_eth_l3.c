@@ -1,10 +1,10 @@
 /** @file
- * @brief Ethernet TAD
+ * @brief TAD Ethernet
  *
  * User methods for fill in eth frame payload. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,6 +27,11 @@
  */
 
 #define TE_LGR_USER "TAD ETH L3"
+
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <string.h>
 #include "tad_eth_impl.h"
@@ -57,7 +62,7 @@ unsigned int userdata_to_udp(unsigned char *raw_pkt);
  * Type for reference to user function for generating MAC Control frame data 
  * to be sent.
  *
- * @param csap_descr    CSAP description structure
+ * @param csap    CSAP description structure
  * @param layer         numeric index of layer in CSAP type to be processed.
  * @param tmpl          ASN value with template. 
  *                      function should replace that field (which it should
@@ -67,7 +72,7 @@ unsigned int userdata_to_udp(unsigned char *raw_pkt);
  * @return zero on success or error code.
  */
 int 
-eth_mac_ctrl_payload(csap_p csap_descr, unsigned int layer, asn_value *tmpl)
+eth_mac_ctrl_payload(csap_p csap, unsigned int layer, asn_value *tmpl)
 {
     static unsigned char  buffer[20000];
     unsigned int          length = 4;
@@ -83,7 +88,7 @@ eth_mac_ctrl_payload(csap_p csap_descr, unsigned int layer, asn_value *tmpl)
     buffer[3] = 0x00;
     
     rc = asn_write_value_field (tmpl, buffer, length, "payload.#bytes");
-    UNUSED(csap_descr);
+    UNUSED(csap);
     UNUSED(layer);
     return rc;  
 }
@@ -102,7 +107,7 @@ eth_mac_ctrl_payload(csap_p csap_descr, unsigned int layer, asn_value *tmpl)
  * @return zero on success or error code.
  */
 int
-eth_mac_ctrl_unsupp_payload(csap_p csap_descr, unsigned int layer,
+eth_mac_ctrl_unsupp_payload(csap_p csap, unsigned int layer,
                             asn_value *tmpl)
 {
     static unsigned char  buffer[20000];
@@ -119,7 +124,7 @@ eth_mac_ctrl_unsupp_payload(csap_p csap_descr, unsigned int layer,
     buffer[3] = 0x00;
     
     rc = asn_write_value_field (tmpl, buffer, length, "payload.#bytes");
-    UNUSED(csap_descr);
+    UNUSED(csap);
     UNUSED(layer);
     return rc;  
 }
@@ -139,7 +144,7 @@ eth_mac_ctrl_unsupp_payload(csap_p csap_descr, unsigned int layer,
  * @return zero on success or error code.
  */
 int 
-eth_udp_payload(csap_p csap_descr, unsigned int layer, asn_value *tmpl)
+eth_udp_payload(csap_p csap, unsigned int layer, asn_value *tmpl)
 {
     static unsigned char  buffer[20000];
     unsigned int          length;
@@ -152,7 +157,7 @@ eth_udp_payload(csap_p csap_descr, unsigned int layer, asn_value *tmpl)
     length = userdata_to_udp(buffer);
 
     rc = asn_write_value_field (tmpl, buffer, length, "payload.#bytes");
-    UNUSED(csap_descr);
+    UNUSED(csap);
     UNUSED(layer);
     return rc;
 }
@@ -368,11 +373,6 @@ userdata_to_udp( unsigned char *raw_pkt)
     src_addr = inet_addr(mi_src_addr_human);
     dst_addr = inet_addr(mi_dst_addr_human);
     
-#if 0   
-    src_addr = inet_addr("192.168.200.10");
-    dst_addr = inet_addr("192.168.220.10");
-#endif   
-    
     add_udp_header(raw_pkt, udata_len, mi_src_port, mi_dst_port, 
                    src_addr, dst_addr);
     add_ip_header(raw_pkt, udata_len, src_addr, dst_addr, 17);
@@ -430,29 +430,32 @@ mac_str2addr(const char *mac_str, uint8_t *mac)
  * Prototype made according with 'tad_processing_pkt_method' function type.
  * This method uses write_cb callback of passed 'eth' CSAP for send reply.
  *
- * @param csap_descr  CSAP descriptor structure.
- * @param usr_param   String passed by user.
- * @param pkt         Packet binary data, as it was caught from net.
- * @param pkt_len     Length of pkt data.
+ * @param csap          CSAP descriptor structure
+ * @param usr_param     String passed by user
+ * @param frame         Packet binary data, as it was caught from net
+ * @param frame_len     Length of frame data
  *
  * @return zero on success or error code.
  */
 int 
-tad_eth_arp_reply(csap_p csap_descr, const char *usr_param, 
-                  const uint8_t *pkt, size_t pkt_len)
+tad_eth_arp_reply(csap_p csap, const char *usr_param, 
+                  const uint8_t *frame, size_t frame_len)
 {
-    uint8_t  my_mac[ETH_ALEN];
-    uint8_t *arp_reply_frame;
-    uint8_t *p;
+    csap_spt_type_p rw_layer_cbs;
+
+    uint8_t     my_mac[ETH_ALEN];
+    tad_pkt    *pkt;
+    uint8_t    *p;
 
     int rc;
 
-    if (csap_descr == NULL || usr_param == NULL ||
-        pkt == NULL || pkt_len == 0)
+    if (csap == NULL || usr_param == NULL ||
+        frame == NULL || frame_len == 0)
         return TE_EWRONGPTR;
 
-    if (csap_descr->prepare_send_cb != NULL && 
-        (rc = csap_descr->prepare_send_cb(csap_descr)) != 0)
+    rw_layer_cbs = csap_get_proto_support(csap, csap_get_rw_layer(csap));
+    if (rw_layer_cbs->prepare_send_cb != NULL && 
+        (rc = rw_layer_cbs->prepare_send_cb(csap)) != 0)
     {
         ERROR("%s(): prepare for recv failed %r", rc);
         return rc;
@@ -477,42 +480,41 @@ tad_eth_arp_reply(csap_p csap_descr, const char *usr_param,
          (int)my_mac[0], (int)my_mac[1], (int)my_mac[2], 
          (int)my_mac[3], (int)my_mac[4], (int)my_mac[5]); 
 
-    if ((p = arp_reply_frame = calloc(1, pkt_len)) == NULL)
+    pkt = tad_pkt_alloc(1, frame_len);
+    if (pkt == NULL)
     {
         ERROR("%s(): no memory!", __FUNCTION__);
         return TE_ENOMEM;
     }
+    p = pkt->segs.cqh_first->data_ptr;
+
     /* fill eth header */
-    memcpy(p, pkt + 6, 6);
+    memcpy(p, frame + 6, 6);
     memcpy(p + 6, my_mac, 6);
-    memcpy(p + 12, pkt + 12, 2);
+    memcpy(p + 12, frame + 12, 2);
 
     p += 14;
-    pkt += 14; 
+    frame += 14; 
 
-    memcpy(p, pkt, 6);
+    memcpy(p, frame, 6);
     p += 7;
     *p = 2; /* ARP reply */
     p++;
 
-    pkt += 8;
+    frame += 8;
     memcpy(p, my_mac, 6);
-    memcpy(p + 6, pkt + 6 + 4 + 6, 4);
+    memcpy(p + 6, frame + 6 + 4 + 6, 4);
 
+    memcpy(p + 6 + 4, frame, 6 + 4); 
 
+    rc = rw_layer_cbs->write_cb(csap, pkt);
+    tad_pkt_free(pkt);
 
-    memcpy(p + 6 + 4, pkt, 6 + 4); 
-
-    rc = csap_descr->write_cb(csap_descr, arp_reply_frame, pkt_len);
-    RING("%s(): sent %d bytes", __FUNCTION__, rc);
-    if (rc < 0)
+    INFO("%s(): ARP reply send", __FUNCTION__);
+    if (rc != 0)
     {
         ERROR("%s() write error", __FUNCTION__);
-        return csap_descr->last_errno;
     }
 
-    free(arp_reply_frame);
-    return 0;
+    return rc;
 }
-
-

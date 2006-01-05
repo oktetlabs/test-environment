@@ -9,7 +9,7 @@ main()
     int id;
     csap_p cp;
 
-    csap_db_init(); 
+    csap_id_init(); 
     id = csap_create(my_type); 
     printf("new csap id: %d\n", id);
     cp = csap_find(id);

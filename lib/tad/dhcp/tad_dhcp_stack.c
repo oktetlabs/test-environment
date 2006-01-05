@@ -1,11 +1,11 @@
 /** @file
- * @brief DHCP TAD
+ * @brief TAD DHCP
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP, stack-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * DHCP CSAP, stack-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,9 +27,10 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD DHCP stack"
+#define TE_LGR_USER     "TAD DHCP"
 
-#ifdef HAVE_CONFIG_H
+#include "te_config.h"
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -68,130 +69,10 @@
 #include "logger_api.h"
 #include "tad_dhcp_impl.h"
 
- 
-/* See description tad_dhcp_impl.h */
-int 
-tad_dhcp_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
-{
-    int    rc; 
-    int    layer;    
-    fd_set read_set;
-    dhcp_csap_specific_data_t *spec_data;
-    
-    struct timeval timeout_val;
-    
-    if (csap_descr == NULL)
-    {
-        return -1;
-    }
-    
-    layer = csap_descr->read_write_layer;
-    
-    spec_data = (dhcp_csap_specific_data_t *)
-        csap_descr->layers[layer].specific_data; 
-
-#ifdef TALOGDEBUG
-    printf("Reading data from the socket: %d", spec_data->in);
-#endif       
-
-    if(spec_data->in < 0)
-    {
-        return -1;
-    }
-
-    FD_ZERO(&read_set);
-    FD_SET(spec_data->in, &read_set);
-
-    if (timeout == 0)
-    {
-        timeout_val.tv_sec = spec_data->read_timeout;
-        timeout_val.tv_usec = 0;
-    }
-    else
-    {
-        timeout_val.tv_sec = timeout / 1000000L; 
-        timeout_val.tv_usec = timeout % 1000000L;
-    }
-    
-    rc = select(spec_data->in + 1, &read_set, NULL, NULL, &timeout_val); 
-    VERB("%s(): select = %d", __FUNCTION__, rc);
-    
-    if (rc == 0)
-        return 0;
-
-    if (rc < 0)
-        return -1;
-    
-    /* Note: possibly MSG_TRUNC and other flags are required */
-    return recv (spec_data->in, buf, buf_len, 0); 
-}
-
-
-/* See description tad_dhcp_impl.h */
-int 
-tad_dhcp_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
-{
-    dhcp_csap_specific_data_t * spec_data;
-    int layer;    
-    int rc;
-    struct sockaddr_in dest;
-    
-    if (csap_descr == NULL)
-    {
-        return -1;
-    }
-    
-    layer = csap_descr->read_write_layer;
-    spec_data = (dhcp_csap_specific_data_t *)
-        csap_descr->layers[layer].specific_data; 
-    dest.sin_family = AF_INET;
-    dest.sin_port = htons(spec_data->mode == DHCP4_CSAP_MODE_SERVER ? 
-                          DHCP_CLIENT_PORT : DHCP_SERVER_PORT);
-    dest.sin_addr.s_addr = INADDR_BROADCAST;
-    
-    
-
-#ifdef TALOGDEBUG
-    printf("Writing data to socket: %d", spec_data->out);
-#endif        
-
-    if(spec_data->out < 0)
-    {
-        return -1;
-    }
-    rc = sendto (spec_data->out, buf, buf_len, 0, 
-                 (struct sockaddr *)&dest, sizeof(dest));
-    if (rc < 0) 
-    {
-        perror("dhcp sendto fail");
-        csap_descr->last_errno = errno;
-    }
-
-    return rc;
-}
-
-
-/* See description tad_dhcp_impl.h */
-int 
-tad_dhcp_write_read_cb(csap_p csap_descr, int timeout,
-                       const char *w_buf, size_t w_buf_len,
-                       char *r_buf, size_t r_buf_len)
-{
-    int rc; 
-    
-    rc = tad_dhcp_write_cb(csap_descr, w_buf, w_buf_len);
-    
-    if (rc == -1)  
-        return rc;
-    else 
-        return tad_dhcp_read_cb(csap_descr, timeout, r_buf, r_buf_len);;
-}
-
 
 /* See description tad_dhcp_impl.h */
 te_errno
-tad_dhcp_single_init_cb(csap_p csap_descr, unsigned int layer,
-                        const asn_value *csap_nds)
+tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 {
     dhcp_csap_specific_data_t *   dhcp_spec_data; 
     struct sockaddr_in local;
@@ -287,7 +168,7 @@ tad_dhcp_single_init_cb(csap_p csap_descr, unsigned int layer,
 
     if (rc)
     {
-        tad_dhcp_single_destroy_cb(csap_descr, layer);
+        tad_dhcp_rw_destroy_cb(csap);
         return rc;
     }
 
@@ -303,7 +184,7 @@ tad_dhcp_single_init_cb(csap_p csap_descr, unsigned int layer,
 
     if (rc != 0)
     {
-        tad_dhcp_single_destroy_cb(csap_descr, layer);
+        tad_dhcp_rw_destroy_cb(csap);
         return rc;
     }
 
@@ -311,7 +192,7 @@ tad_dhcp_single_init_cb(csap_p csap_descr, unsigned int layer,
     if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BROADCAST, 
                    (void *)&opt, sizeof(opt)) != 0)
     {
-        tad_dhcp_single_destroy_cb(csap_descr, layer);
+        tad_dhcp_rw_destroy_cb(csap);
         return errno;
     }
 
@@ -333,14 +214,9 @@ tad_dhcp_single_init_cb(csap_p csap_descr, unsigned int layer,
     /* default read timeout */
     dhcp_spec_data->read_timeout = 200000;
 
-    csap_descr->layers[layer].specific_data = dhcp_spec_data;
-    csap_descr->layers[layer].get_param_cb = tad_dhcp_get_param_cb;
+    csap_set_rw_data(csap, dhcp_spec_data);
 
-    csap_descr->read_cb          = tad_dhcp_read_cb;
-    csap_descr->write_cb         = tad_dhcp_write_cb;
-    csap_descr->write_read_cb    = tad_dhcp_write_read_cb;
-    csap_descr->read_write_layer = layer; 
-    csap_descr->timeout          = 500000;
+    csap->timeout = 500000;
     
     return 0;
 }
@@ -348,16 +224,118 @@ tad_dhcp_single_init_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description tad_dhcp_impl.h */
 te_errno
-tad_dhcp_single_destroy_cb(csap_p csap_descr, unsigned int layer)
+tad_dhcp_rw_destroy_cb(csap_p csap)
 {
-    dhcp_csap_specific_data_t * spec_data = 
-        (dhcp_csap_specific_data_t *)
-        csap_descr->layers[layer].specific_data; 
+    dhcp_csap_specific_data_t *spec_data = csap_get_rw_data(csap); 
      
-    if(spec_data->in >= 0)
+    if (spec_data->in >= 0)
         close(spec_data->in);    
 
-    if(spec_data->out >= 0)
+    if (spec_data->out >= 0)
         close(spec_data->out);    
     return 0;
+}
+
+ 
+/* See description tad_dhcp_impl.h */
+int 
+tad_dhcp_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
+{
+    int    rc; 
+    fd_set read_set;
+    dhcp_csap_specific_data_t *spec_data;
+    
+    struct timeval timeout_val;
+    
+    if (csap == NULL)
+    {
+        return -1;
+    }
+    
+    spec_data = csap_get_rw_data(csap); 
+
+#ifdef TALOGDEBUG
+    printf("Reading data from the socket: %d", spec_data->in);
+#endif       
+
+    if(spec_data->in < 0)
+    {
+        return -1;
+    }
+
+    FD_ZERO(&read_set);
+    FD_SET(spec_data->in, &read_set);
+
+    if (timeout == 0)
+    {
+        timeout_val.tv_sec = spec_data->read_timeout;
+        timeout_val.tv_usec = 0;
+    }
+    else
+    {
+        timeout_val.tv_sec = timeout / 1000000L; 
+        timeout_val.tv_usec = timeout % 1000000L;
+    }
+    
+    rc = select(spec_data->in + 1, &read_set, NULL, NULL, &timeout_val); 
+    VERB("%s(): select = %d", __FUNCTION__, rc);
+    
+    if (rc == 0)
+        return 0;
+
+    if (rc < 0)
+        return -1;
+    
+    /* Note: possibly MSG_TRUNC and other flags are required */
+    return recv (spec_data->in, buf, buf_len, 0); 
+}
+
+
+/* See description tad_dhcp_impl.h */
+te_errno
+tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt)
+{
+#if 1
+    const void *buf;
+    size_t      buf_len;
+
+    if (pkt == NULL || tad_pkt_get_seg_num(pkt) != 1)
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    buf     = pkt->segs.cqh_first->data_ptr;
+    buf_len = pkt->segs.cqh_first->data_len;
+#endif
+    dhcp_csap_specific_data_t * spec_data;
+    int rc;
+    struct sockaddr_in dest;
+    
+    if (csap == NULL)
+    {
+        return -1;
+    }
+    
+    spec_data = csap_get_rw_data(csap); 
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(spec_data->mode == DHCP4_CSAP_MODE_SERVER ? 
+                          DHCP_CLIENT_PORT : DHCP_SERVER_PORT);
+    dest.sin_addr.s_addr = INADDR_BROADCAST;
+    
+    
+
+#ifdef TALOGDEBUG
+    printf("Writing data to socket: %d", spec_data->out);
+#endif        
+
+    if(spec_data->out < 0)
+    {
+        return -1;
+    }
+    rc = sendto (spec_data->out, buf, buf_len, 0, 
+                 (struct sockaddr *)&dest, sizeof(dest));
+    if (rc < 0) 
+    {
+        perror("dhcp sendto fail");
+        csap->last_errno = errno;
+    }
+
+    return rc;
 }

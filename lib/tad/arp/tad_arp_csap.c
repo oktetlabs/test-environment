@@ -1,11 +1,11 @@
 /** @file
- * @brief ARP TAD
+ * @brief TAD ARP
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * ARP CSAP support description structures. 
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS in
- * the root directory of the distribution).
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,46 +27,52 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD ARP CSAP"
+#define TE_LGR_USER     "TAD ARP"
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "te_errno.h"
 #include "tad_csap_support.h"
+#include "tad_utils.h"
 
 #include "tad_arp_impl.h"
 
 
-static csap_layer_neighbour_list_t arp_nbr_eth = 
-{
-    NULL, 
-    "eth",
-
-    tad_arp_eth_init_cb,
-    tad_arp_eth_destroy_cb,
-};
-
 static csap_spt_type_t arp_csap_spt = 
 {
-    "arp",
+    proto               : "arp",
 
-    NULL,
-    NULL,
-    tad_arp_confirm_pdu_cb,
-    tad_arp_gen_bin_cb,
-    tad_arp_match_bin_cb,
-    tad_arp_gen_pattern_cb,
+    init_cb             : tad_arp_init_cb,
+    destroy_cb          : tad_arp_destroy_cb,
+    get_param_cb        : NULL,
 
-    &arp_nbr_eth
+    confirm_tmpl_cb     : tad_arp_confirm_pdu_cb,
+    generate_pkts_cb    : tad_arp_gen_bin_cb,
+    release_tmpl_cb     : NULL,
+
+    confirm_ptrn_cb     : tad_arp_confirm_pdu_cb,
+    match_do_cb         : tad_arp_match_bin_cb,
+    match_done_cb       : NULL,
+    match_post_cb       : NULL,
+    release_ptrn_cb     : NULL,
+
+    generate_pattern_cb : NULL,
+
+    CSAP_SUPPORT_NO_RW,
 };
-
 
 
 /**
  * Register ARP CSAP callbacks and support structures in TAD
  * Command Handler.
  *
- * @return Zero on success or error code.
+ * @return Status code.
  */ 
 te_errno
 csap_support_arp_register(void)
 { 
-    return add_csap_spt(&arp_csap_spt);
+    return csap_spt_add(&arp_csap_spt);
 }

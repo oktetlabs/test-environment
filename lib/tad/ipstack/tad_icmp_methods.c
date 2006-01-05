@@ -1,11 +1,11 @@
 /** @file
- * @brief IP Stack TAD
+ * @brief TAD IP Stack
  *
- * Traffic Application Domain
- * ICMP messages generating routines
+ * Traffic Application Domain Command Handler.
+ * ICMP messages generating routines.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,11 +27,15 @@
  * $Id$
  */
 
+#define TE_LGR_USER     "TAD ICMP" 
+
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string.h>
 #include <stdlib.h>
-
-#define TE_LGR_USER "TAD ICMP" 
-
 
 #include "tad_ipstack_impl.h"
 
@@ -51,7 +55,7 @@
  * <rate> contains number of original packets per one ICMP error. 
  * Default value is 1.
  *
- * @param csap_descr  CSAP descriptor structure.
+ * @param csap  CSAP descriptor structure.
  * @param usr_param   String passed by user.
  * @param orig_pkt    Packet binary data, as it was caught from net.
  * @param pkt_len     Length of pkt data.
@@ -59,9 +63,13 @@
  * @return zero on success or error code.
  */
 int 
-tad_icmp_error(csap_p csap_descr, const char *usr_param, 
+tad_icmp_error(csap_p csap, const char *usr_param, 
                const uint8_t *orig_pkt, size_t pkt_len)
 {
+    csap_spt_type_p rw_layer_cbs;
+
+    tad_pkt    *pkt;
+
     uint8_t type, 
             code;
     int     rc = 0;
@@ -72,7 +80,7 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     uint32_t unused = 0;
     int      rate = 1;
 
-    if (csap_descr == NULL || usr_param == NULL ||
+    if (csap == NULL || usr_param == NULL ||
         orig_pkt == NULL || pkt_len == 0)
         return TE_EWRONGPTR;
 
@@ -118,8 +126,9 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     if ((rand() % rate) != 0)
         return 0;
 
-    if (csap_descr->prepare_send_cb != NULL && 
-        (rc = csap_descr->prepare_send_cb(csap_descr)) != 0)
+    rw_layer_cbs = csap_get_proto_support(csap, csap_get_rw_layer(csap));
+    if (rw_layer_cbs->prepare_send_cb != NULL && 
+        (rc = rw_layer_cbs->prepare_send_cb(csap)) != 0)
     {
         ERROR("%s(): prepare for recv failed %r", __FUNCTION__, rc);
         return rc;
@@ -129,7 +138,13 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     msg_len = 14 /* eth */ + 20 /* IP */ + 8 /* ICMP */
             + ICMP_PLD_SIZE /* IP header + 8 bytes of orig pkt */;
 
-    p = msg = calloc(1, msg_len); 
+    pkt = tad_pkt_alloc(1, msg_len);
+    if (pkt == NULL)
+    {
+        ERROR("%s(): no memory!", __FUNCTION__);
+        return TE_ENOMEM;
+    }
+    p = msg = pkt->segs.cqh_first->data_ptr;
 
     /* Ethernet header */
     memcpy(p, orig_pkt + ETH_ALEN, ETH_ALEN); 
@@ -171,13 +186,13 @@ tad_icmp_error(csap_p csap_descr, const char *usr_param,
     *(uint16_t *)(msg + 14 + 20 + 2) = 
         ~calculate_checksum(msg + 14 + 20, ICMP_PLD_SIZE + 8);
 
-    rc = csap_descr->write_cb(csap_descr, msg, msg_len);
-    INFO("%s(): sent %d bytes", __FUNCTION__, rc);
-    if (rc < 0)
+    rc = rw_layer_cbs->write_cb(csap, pkt);
+    tad_pkt_free(pkt);
+
+    if (rc != 0)
     {
-        ERROR("%s() write error", __FUNCTION__);
-        return csap_descr->last_errno;
+        ERROR("%s() write error: %r", __FUNCTION__, rc);
     }
 
-    return 0;
+    return rc;
 }

@@ -3,31 +3,46 @@ SUBDIRS= @TAD_SUBDIRS@ .
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ @TAD_CH_DEFS@ -I$(DESTDIR)/$(includedir) \
-              -I$(top_srcdir)
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @TAD_CH_DEFS@ \
+              -I$(DESTDIR)/$(includedir)
+AM_CFLAGS = @TE_CFLAGS@
 
-include_HEADERS=tad_csap_inst.h
-noinst_HEADERS=tad_csap_support.h tad_utils.h pkt_socket.h
+include_HEADERS = tad_csap_inst.h tad_pkt.h
+noinst_HEADERS = \
+	csap_id.h \
+	tad_csap_support.h \
+	tad_send_recv.h \
+	tad_utils.h \
+	pkt_socket.h \
+	tad_bps.h
 
-noinst_LIBRARIES=libtad_core.a
+noinst_LIBRARIES = libtad_core.a
 
 if DUMMY_TAD
-AM_CPPFLAGS+= -DDUMMY_TAD
-libtad_core_a_SOURCES=tad_ch.c
+AM_CPPFLAGS += -DDUMMY_TAD
+libtad_core_a_SOURCES = tad_ch.c
 else 
-libtad_core_a_SOURCES=tad_ch.c csap_db.c csap_spt_db.c tad_recv.c \
-                      tad_send.c tad_utils.c pkt_socket.c
+libtad_core_a_SOURCES = \
+	tad_pkt.c \
+	pkt_socket.c \
+	tad_utils.c \
+	tad_ch.c \
+	csap_id.c \
+	csap_spt_db.c \
+	csap_inst.c \
+	tad_send.c \
+	tad_recv.c \
+	tad_bps.c
 endif 
 
 
 
-TAD_FULL_LIBLIST=$(noinst_LIBRARIES)@TAD_LIBLIST@
+TAD_FULL_LIBLIST = $(noinst_LIBRARIES)@TAD_LIBLIST@
 
-lib_LIBRARIES=lib@with_name@.a
+lib_LIBRARIES = lib@with_name@.a
 
-lib@with_name@_a_SOURCES=
-lib@with_name@_a_DEPENDENCIES=$(TAD_FULL_LIBLIST)
+lib@with_name@_a_SOURCES =
+lib@with_name@_a_DEPENDENCIES = $(TAD_FULL_LIBLIST)
 
 lib@with_name@.a: $(lib@with_name@_a_DEPENDENCIES)
 	AR_SCRIPT="CREATE $@\n" ; \
@@ -39,7 +54,7 @@ lib@with_name@.a: $(lib@with_name@_a_DEPENDENCIES)
 	$(RANLIB) $@
 
 
-mypkgdir=$(libdir)/pkgconfig
+mypkgdir = $(libdir)/pkgconfig
 mypkg_DATA = te-@with_name@.pc
 CLEANFILES = te-@with_name@.pc
 

@@ -1,11 +1,11 @@
 /** @file
- * @brief Dummy FILE Protocol TAD
+ * @brief TAD Dummy FILE Protocol
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * Dummy FILE protocol implementaion, stack-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,7 +29,10 @@
 
 #define TE_LGR_USER     "TAD File"
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -58,17 +61,17 @@
 
 /* See description tad_file_impl.h */
 int 
-tad_file_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tad_file_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
 {
     int rc = 0; 
 
     UNUSED(timeout);
 
     file_csap_specific_data_p spec_data = 
-        (file_csap_specific_data_p) csap_descr->layers[0].specific_data; 
+        (file_csap_specific_data_p) csap->layers[0].specific_data; 
         /* Maybe this zero should be changed to something more appr. */ 
 
-    csap_descr->last_errno = 0;
+    csap->last_errno = 0;
 
     if(spec_data->fstream == NULL)
         return -1;
@@ -76,9 +79,9 @@ tad_file_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     if (fgets (buf, buf_len, spec_data->fstream) == NULL)
     {
         if (feof( spec_data->fstream))
-            csap_descr->last_errno = TE_ETADENDOFDATA;
+            csap->last_errno = TE_ETADENDOFDATA;
         else
-            csap_descr->last_errno = errno;
+            csap->last_errno = errno;
         rc = -1;
     }
     else
@@ -89,13 +92,22 @@ tad_file_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
 
 /* See description tad_file_impl.h */
-int 
-tad_file_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+te_errno
+tad_file_write_cb(csap_p csap, const tad_pkt *pkt)
 {
+#if 1
+    const void *buf;
+    size_t      buf_len;
+
+    if (pkt == NULL || tad_pkt_get_seg_num(pkt) != 1)
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    buf     = pkt->segs.cqh_first->data_ptr;
+    buf_len = pkt->segs.cqh_first->data_len;
+#endif
     int rc; 
 
     file_csap_specific_data_p spec_data = 
-        (file_csap_specific_data_p) csap_descr->layers[0].specific_data; 
+        (file_csap_specific_data_p) csap->layers[0].specific_data; 
         /* Maybe this zero should be changed to something more appr. */ 
 
 
@@ -112,24 +124,8 @@ tad_file_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
 
 /* See description tad_file_impl.h */
-int 
-tad_file_write_read_cb(csap_p csap_descr, int timeout,
-                       const char *w_buf, size_t w_buf_len,
-                       char *r_buf, size_t r_buf_len)
-{
-    UNUSED(csap_descr);
-    UNUSED(timeout);
-    UNUSED(w_buf);
-    UNUSED(w_buf_len);
-    UNUSED(r_buf);
-    UNUSED(r_buf_len);
-    return -1;
-}
-
-
-/* See description tad_file_impl.h */
 te_errno
-tad_file_single_init_cb(csap_p csap_descr, unsigned int layer,
+tad_file_single_init_cb(csap_p csap, unsigned int layer,
                         const asn_value *csap_nds)
 {
     char  *filename;
@@ -165,8 +161,8 @@ tad_file_single_init_cb(csap_p csap_descr, unsigned int layer,
         return TE_ENOMEM;
 
 
-    csap_descr->timeout          = 50000; 
-    csap_descr->layers[layer].specific_data = spec_data;
+    csap->timeout          = 50000; 
+    csap_set_proto_spec_data(csap, layer, spec_data);
     spec_data->filename = filename;
 
     printf ("open file for CSAP file: %s with mode <%s>\n", filename, mode);
@@ -178,9 +174,7 @@ tad_file_single_init_cb(csap_p csap_descr, unsigned int layer,
     }
     printf ("file is opened\n");
 
-    csap_descr->write_cb         = tad_file_write_cb; 
-    csap_descr->read_cb          = tad_file_read_cb; 
-    csap_descr->read_write_layer = layer;
+    csap->read_write_layer = layer;
 
     return 0;
 }
@@ -188,10 +182,10 @@ tad_file_single_init_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description tad_file_impl.h */
 te_errno
-tad_file_single_destroy_cb(csap_p csap_descr, unsigned int layer)
+tad_file_single_destroy_cb(csap_p csap, unsigned int layer)
 {
     file_csap_specific_data_p spec_data = 
-        (file_csap_specific_data_p) csap_descr->layers[layer].specific_data; 
+        (file_csap_specific_data_p) csap_get_proto_spec_data(csap, layer); 
 
     if(spec_data->fstream)
         fclose(spec_data->fstream);

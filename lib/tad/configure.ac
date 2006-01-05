@@ -115,6 +115,14 @@ proto_specific()
 
 
 
+AC_ARG_WITH([atm],, 
+[if test "${withval}" = yes; then
+   w_atm=true;
+   proto_specific atm;
+   AC_CONFIG_FILES([atm/Makefile])
+ fi
+], [w_atm=false])
+
 AC_ARG_WITH([eth],, 
 [if test "${withval}" = yes; then
    w_eth=true;

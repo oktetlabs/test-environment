@@ -1,13 +1,12 @@
 /** @file
- * @brief TAD Command Handler
+ * @brief TAD Utils
  *
- * Traffic Application Domain Command Handler
- *
+ * Traffic Application Domain Command Handler.
  * Declarations of types and functions, used in common and 
  * protocol-specific modules implemnting TAD.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -53,6 +52,10 @@
 #include "rcf_ch_api.h"
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
+
+
+#define CSAP_LOG_FMT            "CSAP %u: "
+#define CSAP_LOG_ARGS(_csap)    (_csap)->id
 
 
 #ifdef __cplusplus
@@ -299,50 +302,6 @@ extern int tad_convert_payload(const asn_value *ndn_payload,
 extern void tad_payload_spec_clear(tad_payload_spec_t *pld_spec);
 
 /**
- * Prepare binary data by NDS.
- *
- * @param csap_descr    CSAP description structure
- * @param nds           ASN value with traffic-template NDS, should be
- *                      preprocessed (all iteration and function calls
- *                      performed)
- * @param args          array with template iteration parameter values,
- *                      may be used to prepare binary data, 
- *                      references to interation parameter values may
- *                      be set in ASN traffic template PDUs
- * @param arg_num       length of array above
- * @param pld_type      type of payload in nds, passed to make function
- *                      more fast
- * @param pld_data      payload data read from original NDS
- * @param pkts          packets with generated binary data (OUT)
- *
- * @return zero on success, otherwise error code.  
- */
-extern int tad_tr_send_prepare_bin(csap_p csap_descr, asn_value *nds, 
-                                   const tad_tmpl_arg_t *args, 
-                                   size_t arg_num, 
-                                   tad_payload_spec_t *pld_data,
-                                   csap_pkts_p pkts);
-
-
-
-/**
- * Confirm traffic template or pattern PDUS set with CSAP settings and 
- * protocol defaults. 
- * This function changes passed ASN value, user have to ensure that changes
- * will be set in traffic template or pattern ASN value which will be used 
- * in next operation. This may be done by such ways:
- *
- * Pass pointer got by asn_get_subvalue method, or write modified value 
- * into original NDS. 
- *
- * @param csap_descr    CSAP descriptor.
- * @param pdus          ASN value with SEQUENCE OF Generic-PDU (IN/OUT).
- *
- * @return zero on success, otherwise error code.
- */
-extern int tad_confirm_pdus(csap_p csap_descr, asn_value *pdus);
-
-/**
  * Transform payload symbolic type label of ASN choice to enum.
  *
  * @param label         Char string with ASN choice label.
@@ -459,7 +418,7 @@ extern int tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
  * @return nothing.
  */
 extern void tad_tmpl_args_clear(tad_tmpl_iter_spec_t *arg_specs,
-                                size_t arg_num);
+                                unsigned int arg_num);
 
 /**
  * Get argument set from template ASN value and put it into plain-C array
@@ -627,12 +586,22 @@ extern int tad_tcp_push_fin(int socket, const uint8_t *data, size_t length);
  * has only one 'ip4' PDU), error returned.
  * If ASN pdus sequence has extra PDU, error returned. 
  *
- * @param csap_descr    Pointer to CSAP descriptor
+ * @param csap    Pointer to CSAP descriptor
  * @param pdus          ASN value, 'SEQUENCE OF Generic-PDU' (IN/OUT)
  *
  * @return status code
  */
-extern int tad_check_pdu_seq(csap_p csap_descr, asn_value *pdus);
+extern int tad_check_pdu_seq(csap_p csap, asn_value *pdus);
+
+/**
+ * Generic implementation of write/read method using write and read
+ * in sequence.
+ *
+ * This function complies with csap_write_read_cb_t prototype.
+ */
+extern te_errno tad_common_write_read_cb(csap_p csap, int timeout,
+                                         const tad_pkt *w_pkt,
+                                         char *r_buf, size_t r_buf_len);
 
 #ifdef __cplusplus
 } /* extern "C" */

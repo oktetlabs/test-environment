@@ -1,13 +1,13 @@
 /** @file
- * @brief TAD Command Handler
+ * @brief TAD CSAP Support
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  *
  * Declarations of types and functions, used in common and 
  * protocol-specific modules implemnting TAD.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -53,6 +53,8 @@
 #include "tad_common.h"
 
 #include "tad_csap_inst.h"
+#include "tad_pkt.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,44 +71,15 @@ typedef struct tad_tmpl_arg_t tad_tmpl_arg_t;
 
 
 /**
- * Callback type to init CSAP layer part which depends on lower
- * neighbour.
- *
- * @param csap_descr    CSAP descriptor structure.
- * @param layer         Numeric index of layer in CSAP type to be processed.
- *                      Layers are counted from zero, from up to down.
- * @param csap_nds      Asn_value with CSAP init parameters
- *
- * @return Status code.
- */ 
-typedef te_errno (*csap_nbr_init_cb_t)(csap_p           csap_descr,
-                                       unsigned int     layer,
-                                       const asn_value *csap_nds);
-
-/**
- * Callback type to destroy CSAP layer part which depends on lower
- * neighbour.
- *
- * @param csap_descr    CSAP descriptor structure.
- * @param layer         Numeric index of layer in CSAP type to be processed.
- *                      Layers are counted from zero, from up to down.
- *
- * @return Status code.
- */ 
-typedef te_errno (*csap_nbr_destroy_cb_t)(csap_p       csap_descr,
-                                          unsigned int layer);
-
-
-/**
  * Callback type to initialize CSAP layer.
  *
- * @param csap_descr    CSAP descriptor structure.
+ * @param csap    CSAP instance.
  * @param layer         Numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
  *
  * @return Status code.
  */ 
-typedef te_errno (*csap_layer_init_cb_t)(csap_p       csap_descr,
+typedef te_errno (*csap_layer_init_cb_t)(csap_p       csap,
                                          unsigned int layer);
 
 /**
@@ -115,14 +88,29 @@ typedef te_errno (*csap_layer_init_cb_t)(csap_p       csap_descr,
  * this layer and all memory used for layer-specific data and pointed
  * in respective structure in 'layer-data' in CSAP instance structure. 
  *
- * @param csap_descr    CSAP descriptor structure.
+ * @param csap    CSAP instance.
  * @param layer         Numeric index of layer in CSAP type to be processed.
  *                      Layers are counted from zero, from up to down.
  *
  * @return Status code.
  */ 
-typedef te_errno (*csap_layer_destroy_cb_t)(csap_p       csap_descr,
+typedef te_errno (*csap_layer_destroy_cb_t)(csap_p       csap,
                                             unsigned int layer);
+
+/**
+ * Callback type to read parameter value of CSAP.
+ *
+ * @param csap    CSAP instance.
+ * @param layer         Index of layer in CSAP stack, which param is wanted.
+ * @param param         Protocol-specific name of parameter.
+ *
+ * @return
+ *     String with textual presentation of parameter value, or NULL 
+ *     if error occured. User have to free memory at returned pointer.
+ */ 
+typedef char *(*csap_layer_get_param_cb_t)(csap_p        csap,
+                                           unsigned int  layer, 
+                                           const char   *param);
 
 /**
  * Callback type to confirm Traffic Pattern or Template PDU with
@@ -130,18 +118,64 @@ typedef te_errno (*csap_layer_destroy_cb_t)(csap_p       csap_descr,
  * For example, it checks that there is sufficient information for 
  * traffic generating, and writes CSAP defaults to Traffic PDU.
  *
- * @param[in]    csap_descr    CSAP descriptor structure.
- * @param[in]    layer         numeric index of layer in CSAP type 
- *                             to be processed
- * @param[inout] layer_pdu     ASN.1 value with PDU
+ * @param[in]    csap CSAP instance.
+ * @param[in]    layer      numeric index of layer in CSAP type 
+ *                          to be processed
+ * @param[inout] layer_pdu  ASN.1 value with PDU
+ * @param[out]   p_opaque   Location for opaque data pointer to be
+ *                          passed later to binary data generation
+ *                          callback
  *
  * @return Status code.
  */ 
 typedef te_errno (*csap_layer_confirm_pdu_cb_t)(
-                       csap_p        csap_descr,
-                       unsigned int  layer, 
-                       asn_value    *layer_pdu); 
+                       csap_p         csap,
+                       unsigned int   layer, 
+                       asn_value     *layer_pdu,
+                       void         **p_opaque); 
 
+/**
+ * Callback to release opaque data prepared by confirm callback.
+ *
+ * @param csap          CSAP instance
+ * @param layer         Numeric index of layer in CSAP type to be processed
+ * @param opaque        Opaque data pointer prepared by confirm callback
+ */
+typedef void (*csap_layer_release_opaque_cb_t)(csap_p        csap,
+                                               unsigned int  layer,
+                                               void         *opaque);
+
+
+/**
+ * Callback type to generate binary data to be sent to media.
+ * If some iteration was specified in traffic template, it done on the
+ * upper layer of template processing, this callback is called for every
+ * set of iteration parameters values. 
+ *
+ * @param csap    CSAP instance.
+ * @param layer         Numeric index of layer in CSAP type to be processed.
+ * @param tmpl_pdu      ASN.1 value with PDU.
+ * @param opaque        Opaque data prepared by confirm callback.
+ * @param args          Array with values of template iteration parameters,
+ *                      must be used to prepare binary data, if references 
+ *                      to these paramters are present in traffic
+ *                      template PDU.
+ * @param arg_num       Length of array above. 
+ * @param sdus          List of upper layer packets. May be NULL or
+ *                      empty list.
+ * @param pdus          List to put packets generated by the layer.
+ *
+ * @return Status code.
+ */ 
+typedef te_errno (*csap_layer_generate_pkts_cb_t)(
+                       csap_p                csap,
+                       unsigned int          layer,
+                       const asn_value      *tmpl_pdu,
+                       void                 *opaque,
+                       const tad_tmpl_arg_t *args,
+                       size_t                arg_num,
+                       tad_pkts             *sdus,
+                       tad_pkts             *pdus);
 
 struct csap_pkts;
 
@@ -169,50 +203,9 @@ typedef struct csap_pkts {
 
 
 /**
- * Callback type to generate binary data to be sent to media.
- * If some iteration was specified in traffic template, it done on the
- * upper layer of template processing, this callback is called for every
- * set of iteration parameters values. 
- *
- * @param csap_descr    CSAP descriptor structure.
- * @param layer         Numeric index of layer in CSAP type to be processed.
- * @param tmpl_pdu      Asn_value with PDU. 
- * @param args          Array with values of template iteration parameters,
- *                      must be used to prepare binary data, if references 
- *                      to these paramters are present in traffic
- *                      template PDU.
- * @param arg_num       Length of array above. 
- * @param up_payload    Pointer to data which is already generated for 
- *                      upper layers and is payload for this protocol layer.
- *                      May be zero.  Presented as list of packets. 
- *                      Almost always this list will contain only one 
- *                      element, but need in fragmentation sometimes may 
- *                      occur. Of cause, to high layer only one PDU
- *                      is passed, but lower layers (if any present) may
- *                      perform fragmentation, and current layer may have 
- *                      possibility to de-fragment payload.
- *                      Callback is responsible for freeing of memory, used
- *                      in up_payload list. 
- * @param pkts          Callback have to fill this structure with list of 
- *                      generated packets. Almost always this list will 
- *                      contain only one element, but need 
- *                      in fragmentation sometimes may occur. (OUT)
- *
- * @return Status code.
- */ 
-typedef te_errno (*csap_layer_gen_bin_cb_t)(
-                       csap_p                csap_descr,
-                       unsigned int          layer,
-                       const asn_value      *tmpl_pdu,
-                       const tad_tmpl_arg_t *args,
-                       size_t                arg_num,
-                       csap_pkts_p           up_payload,
-                       csap_pkts_p           pkts);
-
-/**
  * Callback type to parse received packet and match it with pattern. 
  *
- * @param csap_descr    CSAP descriptor structure.
+ * @param csap    CSAP instance.
  * @param layer         Numeric index of layer in CSAP type to be processed
  * @param pattern_pdu   Pattern NDS 
  * @param pkt           Recevied packet, may be list of fragments, which 
@@ -226,20 +219,24 @@ typedef te_errno (*csap_layer_gen_bin_cb_t)(
  *
  * @return Status code.
  */
-typedef te_errno (*csap_layer_match_bin_cb_t)(
-                       csap_p           csap_descr,
+typedef te_errno (*csap_layer_match_do_cb_t)(
+                       csap_p           csap,
                        unsigned int     layer,
                        const asn_value *pattern_pdu,
                        const csap_pkts *pkt,
                        csap_pkts       *payload,
                        asn_value       *parsed_packet);
 
+typedef csap_layer_match_do_cb_t csap_layer_match_done_cb_t;
+typedef csap_layer_match_do_cb_t csap_layer_match_post_cb_t;
+
+
 /**
  * Callback type to generating pattern to filter 
  * just one response to the packet which will be sent by this CSAP 
  * according to this template. 
  *
- * @param csap_descr    CSAP descriptor structure.
+ * @param csap    CSAP instance.
  * @param layer         Numeric index of layer in CSAP type to be processed.
  * @param tmpl_pdu      ASN value with template PDU.
  * @param pattern_pdu   OUT: ASN value with pattern PDU, generated according
@@ -248,11 +245,103 @@ typedef te_errno (*csap_layer_match_bin_cb_t)(
  * @return Status code.
  */
 typedef te_errno (*csap_layer_gen_pattern_cb_t)(
-                       csap_p            csap_descr,
+                       csap_p            csap,
                        unsigned int      layer,
                        const asn_value  *tmpl_pdu, 
                        asn_value       **pattern_pdu);
 
+
+/**
+ * Callback type to init CSAP layer part which is responsible for
+ * read/write.
+ *
+ * @param csap          CSAP instance.
+ * @param csap_nds      Asn_value with CSAP init parameters
+ *
+ * @return Status code.
+ */ 
+typedef te_errno (*csap_rw_init_cb_t)(csap_p           csap,
+                                      const asn_value *csap_nds);
+
+/**
+ * Callback type to destroy CSAP layer part which is responsible for
+ * read/write.
+ *
+ * @param csap          CSAP instance.
+ *
+ * @return Status code.
+ */ 
+typedef te_errno (*csap_rw_destroy_cb_t)(csap_p csap);
+
+
+/**
+ * Callback type to prepare/release low-layer resources 
+ * of CSAP used in traffic process.
+ * Usually should open/close sockets, etc. 
+ *
+ * @param csap    CSAP instance. 
+ *
+ * @return Status code.
+ */ 
+typedef te_errno (*csap_low_resource_cb_t)(csap_p csap);
+
+/**
+ * Callback type to read data from media of CSAP. 
+ *
+ * @param csap    CSAP instance. 
+ * @param timeout       Timeout of waiting for data in microseconds.
+ * @param buf           Buffer for read data.
+ * @param buf_len       Length of available buffer.
+ *
+ * @return Quantity of read octets, or -1 if error occured, 
+ *         0 if timeout expired. 
+ */ 
+typedef int (*csap_read_cb_t)(csap_p csap, int timeout, 
+                              char *buf, size_t buf_len);
+
+/**
+ * Callback type to write data to media of CSAP. 
+ *
+ * @param csap          CSAP instance
+ * @param pkt           Packet to send
+ *
+ * @return Status code.
+ */ 
+typedef te_errno (*csap_write_cb_t)(csap_p csap, const tad_pkt *pkt);
+
+/**
+ * Callback type to write data to media of CSAP and read
+ *  data from media just after write, to get answer to sent request. 
+ *
+ * @param csap    CSAP instance. 
+ * @param timeout       Timeout of waiting for data in microseconds.
+ * @param w_pkt         Packet to be sent
+ * @param r_buf         Buffer for data to be read.
+ * @param r_buf_len     Available length r_buf.
+ *
+ * @return Quantity of read octets, or -1 if error occured, 
+ *         0 if timeout expired. 
+ */ 
+typedef int (*csap_write_read_cb_t)(csap_p csap, int timeout,
+                                    const tad_pkt *w_pkt,
+                                    char *r_buf, size_t r_buf_len);
+
+#if 0
+/**
+ * Callback type to echo CSAP method. 
+ * Method should prepare binary data to be send as "echo" and call 
+ * respective write method to send it. 
+ * Method may change data stored at passed location.
+ *
+ * @param csap          CSAP instance. 
+ * @param pkt           Got packet, plain binary data. 
+ * @param len           Length of packet.
+ *
+ * @return Status code.
+ */
+typedef te_errno (*csap_echo_method)(csap_p csap, uint8_t *pkt, 
+                                     size_t len);
+#endif
 
 /*=====================================================================
  * Structures for CSAP types support specifications. 
@@ -290,44 +379,6 @@ typedef te_errno (*csap_layer_gen_pattern_cb_t)(
  */
 
 
-
-struct csap_layer_neighbour_list_t;
-/**
- * Pointer to neigbour list struct
- */
-typedef struct csap_layer_neighbour_list_t *csap_layer_neighbour_list_p;
-
-/**
- * Structure for description of CSAP lower neighbours supported. 
- * This list specifies lower neighbours may present under 
- * that ('current') CSAP layer, which has in it's "CSAP type descriptor" 
- * reference to this list. 
- *
- * One 'low neighbour' sturct contains neighbour label and references to 
- * callbacks performing some actions, which may depend on low layer.
- * These callbacks are responsible for non-TAD external means used for 
- * traffic operations. 
- */
-typedef struct csap_layer_neighbour_list_t {
-    csap_layer_neighbour_list_p next; /**< pointer to the next possible
-                                           neighbour*/
-
-    char *nbr_type; /**< symbolic identifier of neighbour. 
-              May have such values: 
-              NULL    - this means that layer which neighbours are listed 
-                        is single in stack;
-              "data"  - for data-CSAPs;
-              id of lower neighbour layer. */
-
-    csap_nbr_init_cb_t    init_cb;    /**< Callback for initialize 
-                                           'current' CSAP layer regarding 
-                                           with this low layer. */
-    csap_nbr_destroy_cb_t destroy_cb; /**< Callback for free resources, 
-                                           related to 'current' CSAP layer*/
-
-   
-} csap_layer_neighbour_list_t;
-
 /**
  * Structure for description of particluar CSAP layer type supported
  * in current TAD build.
@@ -335,25 +386,61 @@ typedef struct csap_layer_neighbour_list_t {
  * and list with supported lower neighbours. 
  */
 typedef struct csap_spt_type_t {
-    char *proto;    /**< Symbolic label of related protocol layer */
+    const char *proto;  /**< Symbolic label of the protocol layer */
 
     /** @name protocol-specific callbacks */ 
-    csap_layer_init_cb_t          init_cb;
-    csap_layer_destroy_cb_t       destroy_cb;
-    csap_layer_confirm_pdu_cb_t   confirm_cb;
-    csap_layer_gen_bin_cb_t       generate_cb;
-    csap_layer_match_bin_cb_t     match_cb;
-    csap_layer_gen_pattern_cb_t   generate_pattern_cb;
+    csap_layer_init_cb_t            init_cb;
+    csap_layer_destroy_cb_t         destroy_cb;
+    csap_layer_get_param_cb_t       get_param_cb;
+
+    csap_layer_confirm_pdu_cb_t     confirm_tmpl_cb;
+    csap_layer_generate_pkts_cb_t   generate_pkts_cb;
+    csap_layer_release_opaque_cb_t  release_tmpl_cb;
+
+    csap_layer_confirm_pdu_cb_t     confirm_ptrn_cb;
+    csap_layer_match_do_cb_t        match_do_cb;
+    csap_layer_match_done_cb_t      match_done_cb;
+    csap_layer_match_post_cb_t      match_post_cb;
+    csap_layer_release_opaque_cb_t  release_ptrn_cb;
+
+    csap_layer_gen_pattern_cb_t     generate_pattern_cb;
     /*@}*/
 
-    csap_layer_neighbour_list_p neighbours; /**< Link to the list
-                                                 with possible (lower)
-                                                 neighbours */ 
+    csap_rw_init_cb_t       rw_init_cb;
+    csap_rw_destroy_cb_t    rw_destroy_cb;
+
+    csap_low_resource_cb_t  prepare_send_cb;
+    csap_write_cb_t         write_cb;
+    csap_low_resource_cb_t  shutdown_send_cb;
+
+    csap_low_resource_cb_t  prepare_recv_cb;
+    csap_read_cb_t          read_cb;
+    csap_low_resource_cb_t  shutdown_recv_cb;
+
+    csap_write_read_cb_t    write_read_cb;
+#if 0
+    csap_echo_method     echo_cb;       /**< method for echo */
+#endif
+
 } *csap_spt_type_p, csap_spt_type_t;
 
-
-
-/* ============= Function prototypes declarations =============== */
+/**
+ * Helper macro to initialize part of csap_spt_type_t structure,
+ * if layer does not provide read/write functions.
+ */
+#define CSAP_SUPPORT_NO_RW \
+    rw_init_cb       : NULL,    \
+    rw_destroy_cb    : NULL,    \
+                                \
+    prepare_send_cb  : NULL,    \
+    write_cb         : NULL,    \
+    shutdown_send_cb : NULL,    \
+                                \
+    prepare_recv_cb  : NULL,    \
+    read_cb          : NULL,    \
+    shutdown_recv_cb : NULL,    \
+                                \
+    write_read_cb    : NULL
 
 
 /**
@@ -363,8 +450,7 @@ typedef struct csap_spt_type_t {
  *
  * @return Status code.
  */
-extern te_errno init_csap_spt(void);
-
+extern te_errno csap_spt_init(void);
 
 /**
  * Add structure for CSAP support for respective protocol.
@@ -373,8 +459,7 @@ extern te_errno init_csap_spt(void);
  *
  * @return Status code.
  */
-extern te_errno add_csap_spt(csap_spt_type_p spt_descr);
-
+extern te_errno csap_spt_add(csap_spt_type_p spt_descr);
 
 /**
  * Find structure for CSAP support respective to passed protocol label.
@@ -383,7 +468,8 @@ extern te_errno add_csap_spt(csap_spt_type_p spt_descr);
  *
  * @return Pointer to structure or NULL if not found. 
  */
-extern csap_spt_type_p find_csap_spt(const char *proto);
+extern csap_spt_type_p csap_spt_find(const char *proto);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

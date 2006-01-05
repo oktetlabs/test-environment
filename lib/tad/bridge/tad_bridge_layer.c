@@ -1,11 +1,11 @@
 /** @file
- * @brief Bridge/STP TAD
+ * @brief TAD Bridge/STP
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP layer-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * Ethernet Bridge/STP CSAP layer-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,9 +27,10 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD Bridge Layer"
+#define TE_LGR_USER     "TAD Bridge"
 
-#ifdef HAVE_CONFIG_H
+#include "te_config.h"
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -43,31 +44,20 @@
 
 
 /* See description in tad_bridge_impl.h */
-char *
-tad_bridge_get_param_cb(csap_p csap_descr, unsigned int layer,
-                        const char *param)
-{
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(param);
-    return NULL;
-}
-
-
-/* See description in tad_bridge_impl.h */
 te_errno
-tad_bridge_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                          asn_value_p layer_pdu)
+tad_bridge_confirm_pdu_cb(csap_p csap, unsigned int layer,
+                          asn_value_p layer_pdu, void **p_opaque)
 {
     int    rc = 0; 
     char   buffer[8]; /* maximum length of field in Config BPDU*/
 
-    UNUSED (layer);
+    UNUSED(layer);
+    UNUSED(p_opaque);
 
     memset(buffer, 0, sizeof(buffer));
 
     VERB("bridge confirm called\n");
-    if (csap_descr->command == TAD_OP_RECV)
+    if (csap->command == TAD_OP_RECV)
     {
         VERB("Noting to do with RX CSAP\n");
         return 0;
@@ -134,10 +124,10 @@ tad_bridge_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_bridge_impl.h */
 te_errno
-tad_bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                      const asn_value *tmpl_pdu,
-                      const tad_tmpl_arg_t *args, size_t  arg_num, 
-                      const csap_pkts_p  up_payload, csap_pkts_p pkts)
+tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
+                      const asn_value *tmpl_pdu, void *opaque,
+                      const tad_tmpl_arg_t *args, size_t arg_num, 
+                      tad_pkts *sdus, tad_pkts *pdus)
 {
     int rc;
     int frame_size = 50;/* TODO: correct, rather dummy */
@@ -148,11 +138,12 @@ tad_bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer,
     ndn_stp_bpdu_t bridge_pdu; 
 
 
-    UNUSED(csap_descr); /* not necessary for this method currently. */
-    UNUSED(layer); /* not necessary for this method currently. */
-    UNUSED(up_payload); /* N/A for this CSAP. */
+    UNUSED(csap);
+    UNUSED(layer);
+    UNUSED(opaque);
     UNUSED(args); 
     UNUSED(arg_num); 
+    UNUSED(sdus);
 
 
     /* At this moment only #plain choices should leave in template */
@@ -221,9 +212,11 @@ tad_bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
     } 
 
+#if 0
     pkts->data = data;
     pkts->len  = p - data;
     pkts->next = NULL;
+#endif
 
     return 0;
 }
@@ -231,7 +224,7 @@ tad_bridge_gen_bin_cb(csap_p csap_descr, unsigned int layer,
 
 /* See description in tad_bridge_impl.h */
 te_errno
-tad_bridge_match_bin_cb(csap_p csap_descr, unsigned int layer,
+tad_bridge_match_bin_cb(csap_p csap, unsigned int layer,
                         const asn_value *pattern_pdu,
                         const csap_pkts *pkt, csap_pkts *payload, 
                         asn_value_p parsed_packet )
@@ -241,7 +234,7 @@ tad_bridge_match_bin_cb(csap_p csap_descr, unsigned int layer,
     int      f_len;
     asn_value *bridge_pdu = NULL;
    
-    UNUSED(csap_descr);
+    UNUSED(csap);
     UNUSED(layer);
     UNUSED(payload);
  
@@ -294,20 +287,4 @@ tad_bridge_match_bin_cb(csap_p csap_descr, unsigned int layer,
 
     asn_free_value(bridge_pdu); 
     return rc; 
-}
-
-
-/* See description in tad_bridge_impl.h */
-te_errno
-tad_bridge_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
-                          const asn_value *tmpl_pdu, 
-                          asn_value_p *pattern_pdu)
-{
-
-    UNUSED(csap_descr);
-    UNUSED(layer); 
-    UNUSED(tmpl_pdu); 
-    UNUSED(pattern_pdu); 
-
-    return TE_EOPNOTSUPP;
 }

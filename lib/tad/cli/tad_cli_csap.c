@@ -1,11 +1,11 @@
 /** @file
- * @brief CLI TAD
+ * @brief TAD CLI
  *
- * Traffic Application Domain Command Handler
+ * Traffic Application Domain Command Handler.
  * CLI CSAP support description structures. 
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,44 +27,62 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD CLI CSAP"
+#define TE_LGR_USER     "TAD CLI"
 
 #include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "te_errno.h"
+#include "tad_csap_support.h"
+#include "tad_utils.h"
 
 #include "tad_cli_impl.h"
 
 
-static csap_layer_neighbour_list_t cli_nbr_list = 
-{
-    NULL,
-    NULL, 
-
-    tad_cli_single_init_cb,
-    tad_cli_single_destroy_cb,
-};
-
 static csap_spt_type_t cli_csap_spt = 
 {
-    "cli",
+    proto               : "cli",
 
-    NULL,
-    NULL,
-    tad_cli_confirm_pdu_cb,
-    tad_cli_gen_bin_cb,
-    tad_cli_match_bin_cb,
-    tad_cli_gen_pattern_cb,
+    init_cb             : NULL,
+    destroy_cb          : NULL,
+    get_param_cb        : NULL,
 
-    &cli_nbr_list
+    confirm_tmpl_cb     : NULL,
+    generate_pkts_cb    : tad_cli_gen_bin_cb,
+    release_tmpl_cb     : NULL,
+
+    confirm_ptrn_cb     : NULL,
+    match_do_cb         : tad_cli_match_bin_cb,
+    match_done_cb       : NULL,
+    match_post_cb       : NULL,
+    release_ptrn_cb     : NULL,
+
+    generate_pattern_cb : tad_cli_gen_pattern_cb,
+
+    rw_init_cb          : tad_cli_rw_init_cb,
+    rw_destroy_cb       : tad_cli_rw_destroy_cb,
+
+    prepare_send_cb     : NULL,
+    write_cb            : tad_cli_write_cb,
+    shutdown_send_cb    : NULL,
+    
+    prepare_recv_cb     : NULL,
+    read_cb             : tad_cli_read_cb,
+    shutdown_recv_cb    : NULL,
+
+    write_read_cb       : tad_cli_write_read_cb,
 };
 
 
 /**
  * Register CLI CSAP callbacks and support structures in TAD Command Handler.
  *
- * @return Zero on success or error code
+ * @return Status code
  */ 
 te_errno
 csap_support_cli_register(void)
 { 
-    return add_csap_spt(&cli_csap_spt);
+    return csap_spt_add(&cli_csap_spt);
 }

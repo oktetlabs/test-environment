@@ -1,11 +1,11 @@
 /** @file
- * @brief Bridge/STP TAD
+ * @brief TAD Bridge/STP
  *
- * Traffic Application Domain Command Handler
- * Bridge PDU CSAP implementaion internal declarations.
+ * Traffic Application Domain Command Handler.
+ * Ethernet Bridge/STP PDU CSAP implementaion internal declarations.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -70,19 +70,11 @@ typedef struct bridge_csap_specific_data {
 
 
 /**
- * Callback for read parameter value of ethernet CSAP.
- *
- * The function complies with csap_get_param_cb_t prototype.
- */ 
-extern char *tad_bridge_get_param_cb(csap_p csap_descr, unsigned int layer,
-                                     const char *param);
-
-/**
  * Callback for init 'bridge' CSAP layer over 'eth' in stack.
  *
  * The function complies with csap_nbr_init_cb_t prototype.
  */ 
-extern te_errno tad_bridge_eth_init_cb(csap_p           csap_descr,
+extern te_errno tad_bridge_eth_init_cb(csap_p           csap,
                                        unsigned int     layer,
                                        const asn_value *csap_nds);
 
@@ -91,7 +83,7 @@ extern te_errno tad_bridge_eth_init_cb(csap_p           csap_descr,
  *
  * The function complies with csap_nbr_destroy_cb_t prototype.
  */ 
-extern te_errno tad_bridge_eth_destroy_cb(csap_p       csap_descr,
+extern te_errno tad_bridge_eth_destroy_cb(csap_p       csap,
                                           unsigned int layer);
 
 /**
@@ -99,22 +91,24 @@ extern te_errno tad_bridge_eth_destroy_cb(csap_p       csap_descr,
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_bridge_confirm_pdu_cb(csap_p       csap_descr,
+extern te_errno tad_bridge_confirm_pdu_cb(csap_p       csap,
                                           unsigned int layer,
-                                          asn_value_p  layer_pdu); 
+                                          asn_value_p  layer_pdu,
+                                       void         **p_opaque); 
 
 /**
  * Callback for generate binary data to be sent to media.
  *
- * The function complies with csap_layer_gen_bin_cb_t prototype.
+ * The function complies with csap_layer_generate_pkts_cb_t prototype.
  */ 
-extern te_errno tad_bridge_gen_bin_cb(csap_p                csap_descr,
+extern te_errno tad_bridge_gen_bin_cb(csap_p                csap,
                                       unsigned int          layer,
                                       const asn_value      *tmpl_pdu,
+                                      void                 *opaque,
                                       const tad_tmpl_arg_t *args,
                                       size_t                arg_num,
-                                      csap_pkts_p           up_payload,
-                                      csap_pkts_p           pkts);
+                                      tad_pkts             *sdus,
+                                      tad_pkts             *pdus);
 
 
 /**
@@ -122,7 +116,7 @@ extern te_errno tad_bridge_gen_bin_cb(csap_p                csap_descr,
  *
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
-extern te_errno tad_bridge_match_bin_cb(csap_p           csap_descr,
+extern te_errno tad_bridge_match_bin_cb(csap_p           csap,
                                         unsigned int     layer,
                                         const asn_value *pattern_pdu,
                                         const csap_pkts *pkt,
@@ -136,7 +130,7 @@ extern te_errno tad_bridge_match_bin_cb(csap_p           csap_descr,
  *
  * The function complies with csap_layer_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_bridge_gen_pattern_cb(csap_p           csap_descr,
+extern te_errno tad_bridge_gen_pattern_cb(csap_p           csap,
                                           unsigned int     layer,
                                           const asn_value *tmpl_pdu, 
                                           asn_value_p     *pattern_pdu);

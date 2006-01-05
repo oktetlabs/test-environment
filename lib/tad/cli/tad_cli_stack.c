@@ -1,11 +1,11 @@
 /** @file
- * @brief CLI TAD
+ * @brief TAD CLI
  *
- * Traffic Application Domain Command Handler
- * CLI CSAP, stack-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * CLI CSAP stack-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,9 +28,12 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "TAD CLI STACK"
+#define TE_LGR_USER     "TAD CLI"
 
 #include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #if HAVE_ASSERT_H
 #include <assert.h>
@@ -550,33 +553,6 @@ cli_get_asn_string_value(asn_value * csap_spec,
     return rc;
 }
 
-#if 0
-/**
- * Read the INTEGER type value from the CSAP description (in ASN.1 notation).
- *
- * @param csap_spec    CSAP description (in ASN.1 notation).
- * @param asn_name     Name of the field to read.
- * @param str_value    Pointer to returned integer.
- *
- * @return 0 on success or -1 if not found.
- */ 
-static int
-cli_get_asn_integer_value(asn_value * csap_spec,
-                          const char *asn_name,
-                          int *int_value)
-{
-    int rc = 0;
-    int tmp_len = sizeof(int);
-
-    rc = asn_read_value_field(csap_spec, int_value, &tmp_len, asn_name);
-    if (rc != 0)
-    {
-        rc = TE_EINVAL;
-    }
-
-    return rc;
-}
-#endif
 
 /**************************************************************************
  *
@@ -621,25 +597,21 @@ free_cli_csap_data(cli_csap_specific_data_p spec_data)
 
 /* See description tad_cli_impl.h */
 int 
-tad_cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tad_cli_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
 {
     cli_csap_specific_data_p spec_data;
 
     int    timeout_rate;
-    int    layer;
     int    rc;
 
     struct timeval tv = { timeout / 100000, timeout % 100000 };
     
-    if (csap_descr == NULL)
+    if (csap == NULL)
         return -1;
 
-    VERB("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
+    VERB("%s() Called with CSAP %d", __FUNCTION__, csap->id);
 
-    layer = csap_descr->read_write_layer;
-    
-    spec_data = (cli_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data; 
+    spec_data = csap_get_rw_data(csap); 
 
     assert(spec_data->io >= 0);
 
@@ -690,7 +662,7 @@ tad_cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
                            buf, buf_len, &tv);
     if (rc < 0)
     {
-        csap_descr->last_errno = -rc;
+        csap->last_errno = -rc;
         rc = -1;
     }
 
@@ -699,27 +671,32 @@ tad_cli_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
 
 /* See description tad_cli_impl.h */
-int 
-tad_cli_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+te_errno
+tad_cli_write_cb(csap_p csap, const tad_pkt *pkt)
 {
+#if 1
+    const void *buf;
+    size_t      buf_len;
+
+    if (pkt == NULL || tad_pkt_get_seg_num(pkt) != 1)
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    buf     = pkt->segs.cqh_first->data_ptr;
+    buf_len = pkt->segs.cqh_first->data_len;
+#endif
     cli_csap_specific_data_p spec_data;
 
     int    timeout;
-    int    layer;
     size_t bytes_written;
     int    rc;
 
     struct timeval tv;
 
-    if (csap_descr == NULL)
+    if (csap == NULL)
         return -1;
 
-    VERB("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
+    VERB("%s() Called with CSAP %d", __FUNCTION__, csap->id);
 
-    layer = csap_descr->read_write_layer;
-    
-    spec_data = (cli_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data; 
+    spec_data = csap_get_rw_data(csap); 
 
     assert(spec_data->io >= 0);
 
@@ -739,7 +716,7 @@ tad_cli_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
             return -1;
     }
 
-    timeout = csap_descr->timeout;
+    timeout = csap->timeout;
 
     rc = write(spec_data->data_sock, &timeout, sizeof(timeout));
     bytes_written = write(spec_data->data_sock, buf, buf_len);
@@ -754,13 +731,13 @@ tad_cli_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     spec_data->last_cmd_len = buf_len;
 
     /* Wait for CLI response */
-    tv.tv_sec =  csap_descr->timeout / 1000000;
-    tv.tv_usec = csap_descr->timeout % 1000000;
+    tv.tv_sec =  csap->timeout / 1000000;
+    tv.tv_usec = csap->timeout % 1000000;
     if ((rc = parent_read_reply(spec_data, buf_len, NULL, 0, &tv)) <= 0)
     {
         if (rc < 0)
         {
-            csap_descr->last_errno = -rc;
+            csap->last_errno = -rc;
             rc = -1;
         }
         /*
@@ -776,27 +753,32 @@ tad_cli_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
 /* See description tad_cli_impl.h */
 int 
-tad_cli_write_read_cb(csap_p csap_descr, int timeout,
-                      const char *w_buf, size_t w_buf_len,
+tad_cli_write_read_cb(csap_p csap, int timeout,
+                      const tad_pkt *w_pkt,
                       char *r_buf, size_t r_buf_len)
 {
+#if 1
+    const void *w_buf;
+    size_t      w_buf_len;
+
+    if (w_pkt == NULL || tad_pkt_get_seg_num(w_pkt) != 1)
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    w_buf     = w_pkt->segs.cqh_first->data_ptr;
+    w_buf_len = w_pkt->segs.cqh_first->data_len;
+#endif
     cli_csap_specific_data_p spec_data;
 
-    int    layer;    
     size_t bytes_written;
     int    rc;
 
     struct timeval tv = { timeout / 100000, timeout % 100000 };
 
-    VERB("%s() Called with CSAP %d", __FUNCTION__, csap_descr->id);
+    VERB("%s() Called with CSAP %d", __FUNCTION__, csap->id);
 
-    if (csap_descr == NULL)
+    if (csap == NULL)
         return -1;
     
-    layer = csap_descr->read_write_layer;
-    
-    spec_data = (cli_csap_specific_data_p)
-        csap_descr->layers[layer].specific_data; 
+    spec_data = csap_get_rw_data(csap); 
 
     assert(spec_data->io >= 0);
 
@@ -827,7 +809,7 @@ tad_cli_write_read_cb(csap_p csap_descr, int timeout,
                                NULL, 0, &tv);
         if (rc < 0)
         {
-            csap_descr->last_errno = -rc;
+            csap->last_errno = -rc;
             rc = -1;
         }
 
@@ -855,7 +837,7 @@ tad_cli_write_read_cb(csap_p csap_descr, int timeout,
     if (rc < 0)
     {
         VERB("Reading reply from Expect side finishes with %x return code", -rc);
-        csap_descr->last_errno = -rc;
+        csap->last_errno = -rc;
         rc = -1;
     }
 
@@ -865,8 +847,7 @@ tad_cli_write_read_cb(csap_p csap_descr, int timeout,
 
 /* See description tad_cli_impl.h */
 te_errno
-tad_cli_single_init_cb(csap_p csap_descr, unsigned int layer,
-                       const asn_value *csap_nds)
+tad_cli_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 {
     int rc;
     size_t tmp_len;
@@ -887,7 +868,7 @@ tad_cli_single_init_cb(csap_p csap_descr, unsigned int layer,
     if (csap_nds == NULL)
         return TE_EWRONGPTR;
 
-    cli_csap_spec = asn_read_indexed(csap_nds, layer, "");
+    cli_csap_spec = csap->layers[csap_get_rw_layer(csap)].csap_layer_pdu;
 
     cli_spec_data = calloc(1, sizeof(cli_csap_specific_data_t));
     if (cli_spec_data == NULL)
@@ -1115,13 +1096,9 @@ tad_cli_single_init_cb(csap_p csap_descr, unsigned int layer,
     /* Default read timeout */
     cli_spec_data->read_timeout = CLI_CSAP_DEFAULT_TIMEOUT; 
 
-    csap_descr->layers[layer].specific_data = cli_spec_data;
+    csap_set_rw_data(csap, cli_spec_data);
 
-    csap_descr->read_cb           = tad_cli_read_cb;
-    csap_descr->write_cb          = tad_cli_write_cb;
-    csap_descr->write_read_cb     = tad_cli_write_read_cb;
-    csap_descr->read_write_layer  = layer; 
-    csap_descr->timeout           = 500000;
+    csap->timeout           = 500000;
 
     if ((cli_spec_data->expect_pid = fork()) == -1)
     {
@@ -1165,7 +1142,7 @@ tad_cli_single_init_cb(csap_p csap_descr, unsigned int layer,
         /* Wait for child initialisation finished */
         if ((sync_res = parent_wait_sync(cli_spec_data)) != SYNC_RES_OK)
         {
-            tad_cli_single_destroy_cb(csap_descr, layer);
+            tad_cli_rw_destroy_cb(csap);
             return TE_OS_RC(TE_TAD_CSAP, MAP_SYN_RES2ERRNO(sync_res));
         }
 
@@ -1189,17 +1166,16 @@ error:
 
 /* See description tad_cli_impl.h */
 te_errno
-tad_cli_single_destroy_cb(csap_p csap_descr, unsigned int layer)
+tad_cli_rw_destroy_cb(csap_p csap)
 {
 #if 0
     int    status;
     int    child_pid;
 #endif
 
-    cli_csap_specific_data_p spec_data = 
-        (cli_csap_specific_data_p)csap_descr->layers[layer].specific_data;
+    cli_csap_specific_data_p spec_data = csap_get_rw_data(csap);
 
-    VERB("%s() started, CSAP %d", __FUNCTION__, csap_descr->id);
+    VERB("%s() started, CSAP %d", __FUNCTION__, csap->id);
 
     if (spec_data == NULL)
     {
@@ -1243,7 +1219,7 @@ tad_cli_single_destroy_cb(csap_p csap_descr, unsigned int layer)
     VERB("%s(): try to free CLI CSAP specific data", __FUNCTION__);
     free_cli_csap_data(spec_data);
 
-    csap_descr->layers[layer].specific_data = NULL;
+    csap_set_rw_data(csap, NULL);
    
     return 0;
 }

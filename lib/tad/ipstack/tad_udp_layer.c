@@ -1,11 +1,11 @@
 /** @file
- * @brief IP Stack TAD
+ * @brief TAD IP Stack
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP layer-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * UDP CSAP layer-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2004-2005 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,41 +29,85 @@
 
 #define TE_LGR_USER "TAD UDP" 
 
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string.h>
 #include <stdlib.h>
+
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 
 #include "tad_ipstack_impl.h"
 
 
-/* See description in tad_ipstack_impl.h */
-char *
-tad_udp_get_param_cb(csap_p csap_descr, unsigned int layer, const char *param)
+
+/* See description tad_ipstack_impl.h */
+te_errno 
+tad_udp_init_cb(csap_p csap, unsigned int layer)
 {
-    udp_csap_specific_data_t *spec_data; 
+    udp_csap_specific_data_t *udp_spec_data; 
+    const asn_value          *proto_nds;
 
-    spec_data =
-        (udp_csap_specific_data_t *)csap_descr->layers[layer].specific_data; 
+    size_t len; 
+    int    rc; 
 
-    if (strcmp (param, "ipaddr") == 0)
-    { 
-        return NULL; /* some other parameters will be soon.. */
+    proto_nds = csap->layers[layer].csap_layer_pdu;
+
+    udp_spec_data = calloc (1, sizeof(udp_csap_specific_data_t));
+    if (udp_spec_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+    /* Init local port */
+    len = sizeof(udp_spec_data->local_port);
+    rc = asn_read_value_field(proto_nds, &udp_spec_data->local_port,
+                              &len, "local-port");
+    if (rc != 0)
+    {
+        WARN("%s: %d.local-port is not found in CSAP pattern, set to 0",
+             __FUNCTION__, layer);
+        udp_spec_data->local_port = 0;
     }
-    return NULL;
+
+    /* Init remote port */
+    len = sizeof(udp_spec_data->remote_port);
+    rc = asn_read_value_field(proto_nds, &udp_spec_data->remote_port, 
+                              &len, "remote-port");
+    if (rc != 0)
+    {
+        WARN("%s: %d.remote-port is not found in CSAP pattern, set to 0",
+             __FUNCTION__, layer);
+        udp_spec_data->remote_port = 0;
+    }
+
+    csap_set_proto_spec_data(csap, layer, udp_spec_data);
+
+    return 0;
 }
 
+/* See description tad_ipstack_impl.h */
+te_errno 
+tad_udp_destroy_cb(csap_p csap, unsigned int layer)
+{
+    UNUSED(csap);
+    UNUSED(layer);
+    return 0;
+}
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
-                       asn_value_p layer_pdu)
+tad_udp_confirm_pdu_cb(csap_p csap, unsigned int layer,
+                       asn_value_p layer_pdu, void **p_opaque)
 {
     te_errno                  rc;
     asn_value                *udp_layer_pdu;
     udp_csap_specific_data_t *udp_spec_data;
 
-    udp_spec_data = (udp_csap_specific_data_t *)
-                    csap_descr->layers[layer].specific_data;
+    UNUSED(p_opaque);
 
+    udp_spec_data = csap_get_proto_spec_data(csap, layer);
     if (udp_spec_data == NULL)
     {
         ERROR("%s: CSAP-specific data is NULL", __FUNCTION__);
@@ -101,7 +145,7 @@ tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
 
 
     /* Update pattern with CSAP defaults */
-    if (csap_descr->command == TAD_OP_RECV)
+    if (csap->command == TAD_OP_RECV)
     {
         /* receive, local is destination */
         if (udp_spec_data->dst_port == 0 && 
@@ -178,7 +222,7 @@ tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
             {
                 ERROR("%s: sending csap #%d, "
                       "has no dst-port in template and has no remote port",
-                      __FUNCTION__, csap_descr->id);
+                      __FUNCTION__, csap->id);
                 return TE_RC(TE_TAD_CSAP, TE_EINVAL);
             }
         }
@@ -188,107 +232,102 @@ tad_udp_confirm_pdu_cb(csap_p csap_descr, unsigned int layer,
 }
 
 
-/* See description in tad_ipstack_impl.h */
-te_errno
-tad_udp_gen_bin_cb(csap_p csap_descr, unsigned int layer,
-                   const asn_value *tmpl_pdu,
-                   const tad_tmpl_arg_t *args, size_t arg_num, 
-                   const csap_pkts_p  up_payload, csap_pkts_p pkts)
+/** Opaque data for tad_udp_fill_in_hdr() callback */
+typedef struct tad_udp_fill_in_hdr_data {
+    udp_csap_specific_data_t   *spec_data;
+    const tad_tmpl_arg_t       *args;
+    unsigned int                arg_num;
+} tad_udp_fill_in_hdr_data;
+
+/**
+ * Callback function to fill in UDP header.
+ *
+ * This function complies with tad_pkt_seg_enum_cb prototype.
+ */
+static te_errno
+tad_udp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
+                    unsigned int seg_num, void *opaque)
 {
-    te_errno                  rc;
-    udp_csap_specific_data_t *spec_data;
- 
-    if (csap_descr == NULL)
-    {
-        ERROR("%s(): null csap descr passed", __FUNCTION__);
-        return TE_RC(TE_TAD_CSAP, TE_ETADCSAPNOTEX);
-    }
- 
-    UNUSED(args); 
-    UNUSED(arg_num); 
-    UNUSED(tmpl_pdu); 
+    tad_udp_fill_in_hdr_data   *data = opaque;
+    uint8_t                    *p = seg->data_ptr;
+    te_errno                    rc;
 
-    spec_data = (udp_csap_specific_data_t *)
-                    csap_descr->layers[layer].specific_data;
+    UNUSED(seg_num);
+    assert(seg->data_len == 8);
 
-    if (csap_descr->type == TAD_CSAP_DATA)
-    {
-        if (up_payload != NULL)
-        {
-            pkts->data = malloc(up_payload->len);
-            if (pkts->data == NULL)
-                return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+#define PUT_UINT16(val_) \
+    do {                                            \
+        *((uint16_t *)p) = htons((uint16_t)val_);   \
+        p += sizeof(uint16_t);                      \
+    } while (0) 
 
-            pkts->len  = up_payload->len;
-            memcpy(pkts->data, up_payload->data, up_payload->len);
-        }
-        else
-        {
-            pkts->data = NULL;
-            pkts->len = 0;
-        }
-
-        pkts->free_data_cb = NULL;
-        pkts->next = NULL; 
-
-        return 0;
-    }
-    else
-    {
-        int       header_len = 8; /* sizeof(struct udphdr) */
-        int       payload_len = (up_payload == NULL) ? 0 : up_payload->len;
-        uint8_t  *p;
-
-        pkts->len = header_len + payload_len;
-        pkts->data = malloc(pkts->len);
-        if (pkts->data == NULL)
-            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-
-        pkts->next = NULL;
-        p = (uint8_t *)pkts->data;
-
-#define PUT_BIN_DATA(c_du_field_, def_val_) \
+#define PUT_DU16(c_du_field_, def_val_) \
     do {                                                                \
-        if (spec_data->c_du_field_.du_type != TAD_DU_UNDEF)             \
+        if (data->spec_data->c_du_field_.du_type != TAD_DU_UNDEF)       \
         {                                                               \
-            rc = tad_data_unit_to_bin(&(spec_data->c_du_field_),        \
-                                      args, arg_num, p, 2);             \
+            rc = tad_data_unit_to_bin(&(data->spec_data->c_du_field_),  \
+                                      data->args, data->arg_num, p, 2); \
             if (rc != 0)                                                \
             {                                                           \
                 ERROR("%s():%d: " #c_du_field_ " error: %r",            \
                       __FUNCTION__,  __LINE__, rc);                     \
-                goto cleanup;                                           \
+                return rc;                                              \
             }                                                           \
+            p += sizeof(uint16_t);                                      \
         }                                                               \
         else                                                            \
-            *((uint16_t *)p) = htons((uint16_t)def_val_);               \
-        p += 2;                                                         \
+            PUT_UINT16(def_val_);                                       \
     } while (0) 
 
+    PUT_DU16(du_src_port, data->spec_data->local_port);
+    PUT_DU16(du_dst_port, data->spec_data->remote_port);
 
-#define PUT_UINT16(val_)                                \
-    do {                                                \
-        *((uint16_t *)p) = htons((uint16_t)val_);       \
-        p +=  2;                                        \
-    } while (0) 
+    /* Length in the UDP header includes length of the header itself */
+    PUT_UINT16(tad_pkt_get_len(pkt)); 
+    /* FIXME Checksum will be filled in later by IPv4 layer */
+    PUT_UINT16(0);
 
-        PUT_BIN_DATA(du_src_port, spec_data->local_port);
-        PUT_BIN_DATA(du_dst_port, spec_data->remote_port);
-
-        PUT_UINT16(pkts->len); 
-        /* Checksum */
-        PUT_UINT16(0);
 #undef PUT_UINT16
-#undef PUT_BIN_DATA
-
-        if (payload_len > 0)
-            memcpy(p, up_payload->data, payload_len);
-    }
+#undef PUT_DU16
 
     return 0;
-cleanup:
-    free(pkts->data);
-    pkts->data = NULL; pkts->len = 0;
+}
+
+/* See description in tad_ipstack_impl.h */
+te_errno
+tad_udp_gen_bin_cb(csap_p csap, unsigned int layer,
+                   const asn_value *tmpl_pdu, void *opaque,
+                   const tad_tmpl_arg_t *args, size_t arg_num, 
+                   tad_pkts *sdus, tad_pkts *pdus)
+{
+    te_errno                  rc = 0;
+    udp_csap_specific_data_t *spec_data;
+ 
+    UNUSED(tmpl_pdu); 
+    UNUSED(opaque);
+ 
+    spec_data = csap_get_proto_spec_data(csap, layer);
+
+    /* UDP layer does no fragmentation, just copy all SDUs to PDUs */
+    tad_pkts_move(pdus, sdus);
+
+    if (csap->type != TAD_CSAP_DATA)
+    {
+        tad_udp_fill_in_hdr_data    opaque_data =
+            { spec_data, args, arg_num };
+
+        /*
+         * Allocate and add UDP header to all packets.
+         * FIXME sizeof(struct udphdr) instead of 8.
+         */
+        rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, 8, NULL);
+        if (rc != 0)
+            return rc;
+
+        /* Fill in added segment as UDP header */
+        rc = tad_pkts_enumerate_first_segs(pdus, tad_udp_fill_in_hdr,
+                                           &opaque_data);
+    }
 
     return rc;
 }
@@ -296,7 +335,7 @@ cleanup:
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_udp_match_bin_cb(csap_p csap_descr, unsigned int layer,
+tad_udp_match_bin_cb(csap_p csap, unsigned int layer,
                      const asn_value *pattern_pdu,
                      const csap_pkts *pkt, csap_pkts *payload,
                      asn_value_p parsed_packet)
@@ -305,7 +344,7 @@ tad_udp_match_bin_cb(csap_p csap_descr, unsigned int layer,
     uint8_t    *data;
     int         rc = 0;
 
-    UNUSED(csap_descr);
+    UNUSED(csap);
     UNUSED(layer);
 
     if (pkt == NULL || payload == NULL)
@@ -361,19 +400,4 @@ tad_udp_match_bin_cb(csap_p csap_descr, unsigned int layer,
     asn_free_value(udp_header_pdu);
 
     return rc;
-}
-
-
-/* See description in tad_ipstack_impl.h */
-te_errno
-tad_udp_gen_pattern_cb(csap_p csap_descr, unsigned int layer,
-                       const asn_value *tmpl_pdu, 
-                       asn_value_p *pattern_pdu)
-{ 
-    UNUSED(csap_descr);
-    UNUSED(layer);
-    UNUSED(tmpl_pdu);
-    UNUSED(pattern_pdu);
-
-    return TE_EOPNOTSUPP;
 }

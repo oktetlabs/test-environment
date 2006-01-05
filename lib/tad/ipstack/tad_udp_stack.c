@@ -1,11 +1,11 @@
 /** @file
- * @brief IP Stack TAD
+ * @brief TAD IP Stack
  *
- * Traffic Application Domain Command Handler
- * Ethernet CSAP, stack-related callbacks.
+ * Traffic Application Domain Command Handler.
+ * UDP CSAP layer stack-related callbacks.
  *
- * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,7 +27,10 @@
  * $Id$
  */
 
-#ifdef HAVE_CONFIG_H
+#define TE_LGR_USER     "TAD UDP"
+
+#include "te_config.h"
+#if HAVE_CONFIG_H
 #include "config.h"
 #endif
 
@@ -65,7 +68,7 @@
 
 /* See description tad_ipstack_impl.h */
 int 
-tad_udp_ip4_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
+tad_udp_ip4_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
 {
     int    rc; 
     int    layer;    
@@ -75,9 +78,9 @@ tad_udp_ip4_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
     struct timeval timeout_val;
     
     
-    layer = csap_descr->read_write_layer;
+    layer = csap_get_rw_layer(csap);
     
-    spec_data = (udp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
+    spec_data = (udp_csap_specific_data_t *) csap_get_proto_spec_data(csap, layer); 
 
 #ifdef TALOGDEBUG
     printf("Reading data from the socket: %d", spec_data->in);
@@ -116,9 +119,18 @@ tad_udp_ip4_read_cb(csap_p csap_descr, int timeout, char *buf, size_t buf_len)
 
 
 /* See description tad_ipstack_impl.h */
-int 
-tad_udp_ip4_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
+te_errno
+tad_udp_ip4_write_cb(csap_p csap, const tad_pkt *pkt)
 {
+#if 1
+    const void *buf;
+    size_t      buf_len;
+
+    if (pkt == NULL || tad_pkt_get_seg_num(pkt) != 1)
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    buf     = pkt->segs.cqh_first->data_ptr;
+    buf_len = pkt->segs.cqh_first->data_len;
+#endif
     udp_csap_specific_data_t *udp_spec_data;
     ip4_csap_specific_data_t *ip4_spec_data;
     struct sockaddr_in dest;
@@ -132,10 +144,10 @@ tad_udp_ip4_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     memset (&source, 0, sizeof (source));
     memset (&dest, 0, sizeof (dest));
     
-    layer = csap_descr->read_write_layer;
+    layer = csap_get_rw_layer(csap);
     
-    udp_spec_data = (udp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
-    ip4_spec_data = (ip4_csap_specific_data_t *) csap_descr->layers[layer+1].specific_data; 
+    udp_spec_data = (udp_csap_specific_data_t *) csap_get_proto_spec_data(csap, layer); 
+    ip4_spec_data = (ip4_csap_specific_data_t *) csap->layers[layer+1].specific_data; 
  
     dest.sin_family  = AF_INET;
     if (udp_spec_data->dst_port)
@@ -181,7 +193,7 @@ tad_udp_ip4_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
                  (struct sockaddr *)&source, sizeof(source)) == -1)
         {
             perror ("udp csap socket bind");
-            csap_descr->last_errno = errno;
+            csap->last_errno = errno;
             return TE_OS_RC(TE_TAD_CSAP, errno);
         }
     }
@@ -191,7 +203,7 @@ tad_udp_ip4_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     if (rc < 0) 
     {
         perror("udp sendto fail");
-        csap_descr->last_errno = errno;
+        csap->last_errno = errno;
     }
 
     ip4_spec_data->src_addr.s_addr = INADDR_ANY;
@@ -205,7 +217,7 @@ tad_udp_ip4_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
     if (bind(udp_spec_data->socket, (struct sockaddr *)&source, sizeof(source)) == -1)
     {
         perror ("udp csap socket reverse bind");
-        rc = csap_descr->last_errno = errno;
+        rc = csap->last_errno = errno;
     }
 
     return TE_RC(TE_TAD_CSAP, rc);
@@ -213,25 +225,8 @@ tad_udp_ip4_write_cb(csap_p csap_descr, const char *buf, size_t buf_len)
 
 
 /* See description tad_ipstack_impl.h */
-int 
-tad_udp_ip4_write_read_cb(csap_p csap_descr, int timeout,
-                          const char *w_buf, size_t w_buf_len,
-                          char *r_buf, size_t r_buf_len)
-{
-    int rc; 
-
-    rc = tad_udp_ip4_write_cb(csap_descr, w_buf, w_buf_len);
-    
-    if (rc == -1)  
-        return rc;
-    else 
-        return tad_udp_ip4_read_cb(csap_descr, timeout, r_buf, r_buf_len);;
-}
-
-
-/* See description tad_ipstack_impl.h */
 te_errno 
-tad_udp_ip4_init_cb(csap_p csap_descr, unsigned int layer,
+tad_udp_ip4_init_cb(csap_p csap, unsigned int layer,
                     const asn_value *csap_nds)
 {
     udp_csap_specific_data_t *udp_spec_data; 
@@ -245,15 +240,15 @@ tad_udp_ip4_init_cb(csap_p csap_descr, unsigned int layer,
     if (csap_nds == NULL)
         return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
-    if (layer + 1 >= csap_descr->depth)
+    if (layer + 1 >= csap->depth)
     {
         ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
-              __FUNCTION__, csap_descr->id, layer, csap_descr->depth);
+              __FUNCTION__, csap->id, layer, csap->depth);
         return TE_EINVAL;
     }
 
     ip4_spec_data = (ip4_csap_specific_data_t *)
-        csap_descr->layers[layer + 1].specific_data;
+        csap->layers[layer + 1].specific_data;
 
     if (ip4_spec_data != NULL && ip4_spec_data->protocol == 0)
         ip4_spec_data->protocol = IPPROTO_UDP;
@@ -269,7 +264,7 @@ tad_udp_ip4_init_cb(csap_p csap_descr, unsigned int layer,
                               &len, opt_label);
     if (rc != 0)
     {
-        if (csap_descr->type != TAD_CSAP_DATA)
+        if (csap->type != TAD_CSAP_DATA)
         {
             WARN("%s: %d.local-port is not found in CSAP pattern, set to 0",
                  __FUNCTION__, layer);
@@ -290,7 +285,7 @@ tad_udp_ip4_init_cb(csap_p csap_descr, unsigned int layer,
                               &len, opt_label);
     if (rc != 0)
     {
-        if (csap_descr->type != TAD_CSAP_DATA)
+        if (csap->type != TAD_CSAP_DATA)
         {
             WARN("%s: %d.remote-port is not found in CSAP pattern, set to 0",
                  __FUNCTION__, layer);
@@ -304,7 +299,7 @@ tad_udp_ip4_init_cb(csap_p csap_descr, unsigned int layer,
         }
     }
 
-    if (csap_descr->type == TAD_CSAP_DATA)
+    if (csap->type == TAD_CSAP_DATA)
     {
         /* opening incoming socket */
         udp_spec_data->socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
@@ -342,31 +337,25 @@ tad_udp_ip4_init_cb(csap_p csap_descr, unsigned int layer,
             return errno;
         }
 
-        csap_descr->read_cb          = tad_udp_ip4_read_cb;
-        csap_descr->write_cb         = tad_udp_ip4_write_cb;
-        csap_descr->write_read_cb    = tad_udp_ip4_write_read_cb;
-        csap_descr->read_write_layer = layer; 
-        csap_descr->timeout          = 100000;
+        csap->read_write_layer = layer; 
+        csap->timeout          = 100000;
     }
     else
     {
         udp_spec_data->socket = -1;
     }
 
-
-
-    csap_descr->layers[layer].specific_data = udp_spec_data;
-    csap_descr->layers[layer].get_param_cb = tad_udp_get_param_cb;
+    csap_set_proto_spec_data(csap, layer, udp_spec_data);
 
     return 0;
 }
 
 /* See description tad_ipstack_impl.h */
 te_errno 
-tad_udp_ip4_destroy_cb(csap_p csap_descr, unsigned int layer)
+tad_udp_ip4_destroy_cb(csap_p csap, unsigned int layer)
 {
     udp_csap_specific_data_t * spec_data = 
-        (udp_csap_specific_data_t *) csap_descr->layers[layer].specific_data; 
+        (udp_csap_specific_data_t *) csap_get_proto_spec_data(csap, layer); 
      
     if (spec_data->socket >= 0)
         close(spec_data->socket);    
