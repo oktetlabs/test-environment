@@ -328,6 +328,7 @@ typedef enum {
     TE_RCF_CH,          /**< RCF Command Handler */
     TE_TAD_CH,          /**< TAD Command Handler */
     TE_TAD_CSAP,        /**< TAD CSAP support */
+    TE_TAD_PKT,         /**< TAD Packets Representation */
     TE_TAD_BPS,         /**< TAD binary PDU support */
     TE_TARPC,           /**< RPC support in Test Agent */
     TE_LOGGER,          /**< Logger application */
@@ -410,6 +411,7 @@ te_rc_mod2str(te_errno err)
         MOD2STR(RCF_CH);     
         MOD2STR(TAD_CH);   
         MOD2STR(TAD_CSAP);
+        MOD2STR(TAD_PKT);   
         MOD2STR(TAD_BPS);   
         MOD2STR(TARPC);
         MOD2STR(LOGGER);
