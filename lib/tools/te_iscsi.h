@@ -25,7 +25,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: te_tools.h 18504 2005-09-17 15:59:32Z arybchik $
+ * $Id$
  */
 
 #ifndef __TE_ISCSI_H__
