@@ -3050,7 +3050,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     if (res != 6)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-#ifdef __linux__ 
+#ifdef USE_NETLINK
     if (value != NULL)
     {        
         int   i;
@@ -3066,8 +3066,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     {
         return neigh_change(oid, addr, ifname, NULL, RTM_NEWNEIGH);
     }
-#endif
-#ifdef USE_IOCTL
+#else /* USE_IOCTL */
     memset(&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
 
@@ -3124,7 +3123,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         }
         return rc;
     }
-#if 0
+#ifdef USE_NETLINK
     return neigh_change(oid, addr, ifname, NULL, RTM_DELNEIGH); 
 #else /* USE_IOCTL */
     {
