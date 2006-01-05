@@ -25,6 +25,8 @@
 #
 # Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
 
+ACLOCAL_AMFLAGS = -I @TE_M4@
+
 te_headers = te_defs.h te_errno.h te_proto.h te_stdint.h te_printf.h \
              comm_agent.h rcf_methods.h rcf_common.h tad_common.h \
              rcf_rpc_defs.h cs_common.h \
