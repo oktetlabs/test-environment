@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  * 
- * $Id: rpc_suite.h 18394 2005-09-14 16:01:10Z helen $
+ * $Id$
  */
 
 #ifndef __IPSTACK_SUITE_H__

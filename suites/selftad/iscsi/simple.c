@@ -23,7 +23,7 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * 
- * $Id: simple.c 17763 2005-08-30 09:52:37Z konst $
+ * $Id$
  */
 
 #define TE_TEST_NAME    "iscsi/simple"
