@@ -61,7 +61,6 @@ te_errno
 tad_tcp_init_cb(csap_p csap, unsigned int layer)
 {
     tcp_csap_specific_data_t *spec_data; 
-    ip4_csap_specific_data_t *ip4_spec_data; 
     const asn_value          *tcp_pdu;
 
     int32_t value_in_pdu;
@@ -74,76 +73,6 @@ tad_tcp_init_cb(csap_p csap, unsigned int layer)
     csap_set_proto_spec_data(csap, layer, spec_data);
 
     tcp_pdu = csap->layers[layer].csap_layer_pdu;
-
-    if (layer + 1 >= csap->depth)
-    {
-        ERROR("%s(CSAP %d) too large layer %d!, depth %d", 
-              __FUNCTION__, csap->id, layer, csap->depth);
-        return TE_EINVAL;
-    }
-
-    /* FIXME Why IPv4? */
-    ip4_spec_data = (ip4_csap_specific_data_t *)
-        csap->layers[layer + 1].specific_data;
-
-    if (csap->type == TAD_CSAP_DATA)
-    {
-        const asn_value *data_csap_spec, *subval;
-        asn_tag_class    t_class;
-
-        rc = asn_get_child_value(tcp_pdu, &data_csap_spec, 
-                                 PRIVATE, NDN_TAG_TCP_DATA);
-        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
-        {
-            ERROR("%s(CSAP %d) data TCP csap should have 'data' spec",
-                  __FUNCTION__, csap->id); 
-            return TE_ETADWRONGNDS;
-        }
-        else if (rc != 0)
-        {
-            ERROR("%s(CSAP %d): unexpected error reading 'data': %r", 
-                  __FUNCTION__, csap->id, rc); 
-            return rc;
-        } 
-
-        rc = asn_get_choice_value(data_csap_spec, &subval, 
-                                  &t_class, &(spec_data->data_tag));
-        if (rc != 0)
-        {
-            ERROR("%s(CSAP %d): error reading choice of 'data': %r", 
-                  __FUNCTION__, csap->id, rc); 
-            return rc;
-        } 
-
-        INFO("tag of TCP data csap: %d, socket tag is %d", 
-             spec_data->data_tag, NDN_TAG_TCP_DATA_SOCKET);
-        if (spec_data->data_tag == NDN_TAG_TCP_DATA_SOCKET)
-        {
-            struct sockaddr_storage   remote_sa;
-            socklen_t                 remote_len = sizeof(remote_sa);
-
-            asn_read_int32(subval, &(spec_data->socket), "");
-
-            if (getpeername(spec_data->socket, SA(&remote_sa), &remote_len)
-                < 0)
-                WARN("%s(CSAP %d) getpeername(sock %d) failed, errno %d", 
-                     __FUNCTION__, csap->id, 
-                     spec_data->socket, errno);
-            else
-            {
-                spec_data->remote_port = SIN(&remote_sa)->sin_port;
-                ip4_spec_data->remote_addr = SIN(&remote_sa)->sin_addr;
-
-                RING("init CSAP on accepted connection from %s:%d", 
-                     inet_ntoa(ip4_spec_data->remote_addr), 
-                     ntohs(spec_data->remote_port));
-            }
-
-            /* nothing more to do */
-            return 0;
-        }
-    }
-
 
     /*
      * Set local port
@@ -196,92 +125,6 @@ tad_tcp_init_cb(csap_p csap, unsigned int layer)
     }
     else
         return rc;
-
-    if (csap->type == TAD_CSAP_DATA)
-    {
-        /* TODO: support of TCP over IPv6 */
-        struct sockaddr_in local;
-        int                opt = 1;
-
-        local.sin_family = AF_INET;
-        local.sin_addr = ip4_spec_data->local_addr;
-        local.sin_port = htons(spec_data->local_port);
-        INFO("%s(): Port passed %d, network order %d, IP addr %x", 
-             __FUNCTION__, (int)spec_data->local_port, (int)local.sin_port,
-             (int32_t)local.sin_addr.s_addr);
-
-        if ((spec_data->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            ERROR("%s(CSAP %d) socket create failed, errno %r", 
-                  __FUNCTION__, csap->id, rc);
-            return rc;
-        }
-
-        if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
-                       &opt, sizeof(opt)) == -1)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            ERROR("%s(CSAP %d) set SO_REUSEADDR failed, errno %r", 
-                  __FUNCTION__, csap->id, rc);
-            return rc;
-        }
-
-        if (bind(spec_data->socket, SA(&local), sizeof(local)) < 0)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            ERROR("%s(CSAP %d) socket bind failed, errno %r", 
-                  __FUNCTION__, csap->id, rc);
-            return rc;
-        }
-
-        switch (spec_data->data_tag)
-        {
-            case NDN_TAG_TCP_DATA_SERVER:
-
-                if (listen(spec_data->socket, 10) < 0)
-                {
-                    rc = TE_OS_RC(TE_TAD_CSAP, errno);
-                    ERROR("%s(CSAP %d) listen failed, errno %r", 
-                          __FUNCTION__, csap->id, rc);
-                    return rc;
-                }
-                INFO("%s(CSAP %d) listen success", __FUNCTION__,
-                     csap->id);
-                break;
-
-            case NDN_TAG_TCP_DATA_CLIENT: 
-                {
-                    struct sockaddr_in remote;
-
-                    if (spec_data->remote_port == 0 ||
-                        ip4_spec_data->remote_addr.s_addr == INADDR_ANY)
-                    {
-                        ERROR("%s(CSAP %d) client csap, remote need", 
-                              __FUNCTION__, csap->id);
-                        return TE_ETADWRONGNDS;
-                    }
-                    remote.sin_family = AF_INET;
-                    remote.sin_port = spec_data->remote_port;
-                    remote.sin_addr = ip4_spec_data->remote_addr;
-
-                    if (connect(spec_data->socket, SA(&remote), 
-                                sizeof(remote)) < 0)
-                    {
-                        rc = TE_OS_RC(TE_TAD_CSAP, errno);
-                        ERROR("%s(CSAP %d) connect failed, errno %r", 
-                              __FUNCTION__, csap->id, rc);
-                        return rc;
-                    }
-                }
-                break;
-
-            default:
-                ERROR("%s(CSAP %d) unexpected tag of 'data' field %d", 
-                      __FUNCTION__, csap->id, spec_data->data_tag);
-                return TE_ETADWRONGNDS;
-        }
-    }
 
     return 0;
 }
@@ -347,22 +190,6 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
         tcp_pdu = layer_pdu; 
 
     tcp_csap_pdu = csap->layers[layer].csap_layer_pdu; 
-
-    if (csap->type == TAD_CSAP_DATA)
-    {
-        if (spec_data->data_tag != NDN_TAG_TCP_DATA_SERVER)
-        {
-            uint32_t len;
-            rc = asn_read_int32(tcp_pdu, &len, "length");
-
-            INFO("TCP data CSAP confirm, length read rc %r, value %d",
-                 rc, len);
-
-            if (rc == 0)
-                spec_data->wait_length = len;
-        }
-        return 0;
-    }
 
 #define CONVERT_FIELD(tag_, du_field_)                                  \
     do {                                                                \
@@ -661,34 +488,29 @@ tad_tcp_gen_bin_cb(csap_p csap, unsigned int layer,
                    const tad_tmpl_arg_t *args, size_t arg_num, 
                    tad_pkts *sdus, tad_pkts *pdus)
 {
-    te_errno                  rc = 0;
-    tcp_csap_specific_data_t *spec_data;
+    te_errno                    rc;
+    tad_tcp_fill_in_hdr_data    opaque_data;
  
     UNUSED(tmpl_pdu); 
     UNUSED(opaque);
  
-    spec_data = csap_get_proto_spec_data(csap, layer);
-
     /* UDP layer does no fragmentation, just copy all SDUs to PDUs */
     tad_pkts_move(pdus, sdus);
 
-    if (csap->type != TAD_CSAP_DATA)
-    {
-        tad_tcp_fill_in_hdr_data    opaque_data =
-            { spec_data, args, arg_num };
+    /*
+     * Allocate and add TCP header to all packets.
+     * FIXME sizeof(struct tcphdr) instead of 20.
+     */
+    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, 20, NULL);
+    if (rc != 0)
+        return rc;
 
-        /*
-         * Allocate and add TCP header to all packets.
-         * FIXME sizeof(struct tcphdr) instead of 20.
-         */
-        rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, 20, NULL);
-        if (rc != 0)
-            return rc;
-
-        /* Fill in added segment as TCP header */
-        rc = tad_pkts_enumerate_first_segs(pdus, tad_tcp_fill_in_hdr,
-                                           &opaque_data);
-    }
+    /* Fill in added segment as TCP header */
+    opaque_data.spec_data = csap_get_proto_spec_data(csap, layer);
+    opaque_data.args      = args;
+    opaque_data.arg_num   = arg_num;
+    rc = tad_pkts_enumerate_first_segs(pdus, tad_tcp_fill_in_hdr,
+                                       &opaque_data);
 
     return rc;
 }
@@ -721,81 +543,7 @@ tad_tcp_match_bin_cb(csap_p csap, unsigned int layer,
 
     data = pkt->data; 
 
-    INFO("%s(CSAP %d) type %d", __FUNCTION__, csap->id, 
-         csap->type);
-    if (csap->type == TAD_CSAP_DATA) 
-    {
-        INFO("%s(CSAP %d) data tag %d", __FUNCTION__, csap->id, 
-             spec_data->data_tag);
-        if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
-        {
-            int acc_sock = *((int *)data);
-
-            INFO("match data server CSAP, socket %d", acc_sock);
-
-            if (parsed_packet != NULL)
-                rc = asn_write_int32(tcp_header_pdu, acc_sock, "socket");
-            if (rc != 0)
-                ERROR("write socket error: %r", rc);
-            pld_len = 0;
-        }
-        else
-        {
-            if (spec_data->wait_length > 0)
-            {
-                int defect = spec_data->wait_length - 
-                            (spec_data->stored_length + pkt->len);
-
-                if (spec_data->stored_buffer == NULL)
-                    spec_data->stored_buffer =
-                        malloc(spec_data->wait_length);
-
-                if (defect > 0) 
-                {
-                    rc = TE_ETADLESSDATA;
-                    INFO("%s(CSAP %d): less data, "
-                         "wait %d, stored %d, get %d",
-                         __FUNCTION__, csap->id, 
-                          spec_data->wait_length,
-                          spec_data->stored_length,
-                          pkt->len);
-
-                    memcpy(spec_data->stored_buffer + 
-                           spec_data->stored_length, 
-                           pkt->data, pkt->len); 
-                    spec_data->stored_length += pkt->len; 
-                }
-                else if (defect == 0)
-                {
-                    INFO("%s(CSAP %d): got last data, "
-                         "wait %d, stored %d, get %d",
-                         __FUNCTION__, csap->id, 
-                          spec_data->wait_length,
-                          spec_data->stored_length,
-                          pkt->len);
-                    memcpy(spec_data->stored_buffer + 
-                               spec_data->stored_length, 
-                           pkt->data, pkt->len); 
-                    pld_data = spec_data->stored_buffer;
-                    pld_len = spec_data->wait_length;
-
-                    goto put_payload;
-                }
-                else 
-                {
-                    ERROR("read data more then asked: "
-                          "want %d, stored %d, last get %d", 
-                          spec_data->wait_length,
-                          spec_data->stored_length,
-                          pkt->len);
-                    rc = TE_ESMALLBUF;
-                }
-
-                goto cleanup;
-            }
-        }
-        goto put_payload;
-    }
+    INFO("%s(CSAP %d)", __FUNCTION__, csap->id);
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
@@ -840,7 +588,6 @@ tad_tcp_match_bin_cb(csap_p csap, unsigned int layer,
     pld_data += (h_len * 4);
     pld_len  -= (h_len * 4); 
 
-put_payload:
     /* passing payload to upper layer */ 
     memset(payload, 0 , sizeof(*payload));
 

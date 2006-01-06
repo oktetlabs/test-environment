@@ -51,9 +51,6 @@
 /** Max number of CSAP layers */
 #define MAX_CSAP_DEPTH 200
 
-/** Pseudo-protocol label for 'data' CSAPs */
-#define CSAP_DATA_PROTO "data"
-
 
 /** 
  * Free memory allocatad for all common CSAP data.
@@ -136,14 +133,8 @@ csap_create(const char *type)
                           __FUNCTION__, rc); 
     depth = 0; 
 
-    if (strncmp(csap_type, CSAP_DATA_PROTO, strlen(CSAP_DATA_PROTO)) != 0)
-    {
-        layer_protos[depth] = csap_type;
-        depth++; 
-        new_csap->type = TAD_CSAP_RAW;
-    }
-    else
-        new_csap->type = TAD_CSAP_DATA;
+    layer_protos[depth] = csap_type;
+    depth++; 
 
     for (i = 0, proto = strchr(csap_type, '.');
          proto != NULL && *proto != '\0';

@@ -300,34 +300,29 @@ tad_udp_gen_bin_cb(csap_p csap, unsigned int layer,
                    const tad_tmpl_arg_t *args, size_t arg_num, 
                    tad_pkts *sdus, tad_pkts *pdus)
 {
-    te_errno                  rc = 0;
-    udp_csap_specific_data_t *spec_data;
+    te_errno                  rc;
+    tad_udp_fill_in_hdr_data  opaque_data;
  
     UNUSED(tmpl_pdu); 
     UNUSED(opaque);
  
-    spec_data = csap_get_proto_spec_data(csap, layer);
-
     /* UDP layer does no fragmentation, just copy all SDUs to PDUs */
     tad_pkts_move(pdus, sdus);
 
-    if (csap->type != TAD_CSAP_DATA)
-    {
-        tad_udp_fill_in_hdr_data    opaque_data =
-            { spec_data, args, arg_num };
+    /*
+     * Allocate and add UDP header to all packets.
+     * FIXME sizeof(struct udphdr) instead of 8.
+     */
+    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, 8, NULL);
+    if (rc != 0)
+        return rc;
 
-        /*
-         * Allocate and add UDP header to all packets.
-         * FIXME sizeof(struct udphdr) instead of 8.
-         */
-        rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, 8, NULL);
-        if (rc != 0)
-            return rc;
-
-        /* Fill in added segment as UDP header */
-        rc = tad_pkts_enumerate_first_segs(pdus, tad_udp_fill_in_hdr,
-                                           &opaque_data);
-    }
+    /* Fill in added segment as UDP header */
+    opaque_data.spec_data = csap_get_proto_spec_data(csap, layer);
+    opaque_data.args      = args;
+    opaque_data.arg_num   = arg_num;
+    rc = tad_pkts_enumerate_first_segs(pdus, tad_udp_fill_in_hdr,
+                                       &opaque_data);
 
     return rc;
 }

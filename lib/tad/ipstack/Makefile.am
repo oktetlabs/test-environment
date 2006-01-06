@@ -4,18 +4,17 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @TAD_CH_DEFS@ \
 AM_CFLAGS = @TE_CFLAGS@ 
 
 
-noinst_HEADERS=tad_ipstack_impl.h
+noinst_HEADERS = tad_ipstack_impl.h
 
-noinst_LIBRARIES=libtad_ipstack.a
+noinst_LIBRARIES = libtad_ipstack.a
 
-libtad_ipstack_a_SOURCES=tad_ipstack_csaps.c \
-                         tad_ipv4_layer.c \
-                         tad_ipv4_stack.c \
-                         tad_icmp_methods.c \
-                         tad_udp_layer.c \
-                         tad_udp_stack.c \
-                         tad_tcp_layer.c \
-                         tad_tcp_stack.c
+libtad_ipstack_a_SOURCES = \
+	tad_ipstack_csaps.c \
+	tad_ipv4_stack.c \
+	tad_ipv4_layer.c \
+	tad_udp_layer.c \
+	tad_tcp_layer.c \
+	tad_icmp_methods.c
 
 
 install-exec-hook:

@@ -106,10 +106,6 @@ typedef struct udp_csap_specific_data
     unsigned short   src_port;    /**< Source UDP port for current packet*/
     unsigned short   dst_port;    /**< Dest.  UDP port for current packet*/
 
-    int              socket;        /**< Network socket for 'data' CSAP*/ 
-    struct sockaddr *low_sa_dest;   /**< Network sockaddr for 'data' CSAP,*/
-    size_t           low_sa_dest_len;
-
     tad_data_unit_t  du_src_port;
     tad_data_unit_t  du_dst_port;
 
@@ -126,10 +122,6 @@ typedef struct tcp_csap_specific_data
 
     unsigned short   src_port;    /**< Source TCP port for current packet*/
     unsigned short   dst_port;    /**< Dest.  TCP port for current packet*/
-
-    int              socket;        /**< Network socket for 'data' CSAP*/ 
-    struct sockaddr *low_sa_dest;   /**< Network sockaddr for 'data' CSAP,*/
-    size_t           low_sa_dest_len;
 
     uint16_t         data_tag;
     size_t           wait_length;

@@ -114,36 +114,25 @@ tad_ip4_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     if (rc != 0 && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 
-    rc = 0;
- 
     spec_data->sa_op.sin_family = AF_INET;
     spec_data->sa_op.sin_port = 0;
 
     /* default read timeout */
     spec_data->read_timeout = 200000; /* FIXME */
 
-
-    if (csap->type == TAD_CSAP_RAW)
+    /* opening incoming socket */
+    spec_data->socket = socket(AF_INET, SOCK_RAW, IPPROTO_IP); 
+    if (spec_data->socket < 0)
     {
-        /* opening incoming socket */
-        spec_data->socket = socket(AF_INET, SOCK_RAW, IPPROTO_IP); 
-        if (spec_data->socket < 0)
-        {
-            return TE_OS_RC(TE_TAD_CSAP, errno);
-        }
-        if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR, 
-                       &opt, sizeof(opt)) < 0)
-        {
-            return TE_OS_RC(TE_TAD_CSAP, errno);
-        }
-
-        csap->timeout          = 500000; /* FIXME */
-
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
-    else
+    if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR, 
+                   &opt, sizeof(opt)) < 0)
     {
-        spec_data->socket = -1;
-    } 
+        return TE_OS_RC(TE_TAD_CSAP, errno);
+    }
+
+    csap->timeout          = 500000; /* FIXME */
 
     return 0;
 }

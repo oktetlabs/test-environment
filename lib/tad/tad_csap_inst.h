@@ -199,18 +199,6 @@ enum {
 
 
 /**
- * Type of CSAP: raw or data 
- */
-typedef enum {
-    TAD_CSAP_RAW,  /**< Raw CSAP, which allows full control of 
-                        byte flow */
-    TAD_CSAP_DATA, /**< Data CSAP, which have 'data' prefix in its 
-                        type string and provides only service
-                        to transport data over some protocol */
-} tad_csap_type_t;
-
-
-/**
  * CSAP instance support resources and attributes.
  */
 typedef struct csap_instance {
@@ -219,8 +207,6 @@ typedef struct csap_instance {
     unsigned int    depth;      /**< number of layers in stack */
     char           *csap_type;  /**< pointer to original CSAP type, proto[]
                                      entries are blocks of this string. */
-
-    tad_csap_type_t type;  /**< type of CSAP */
 
     csap_layer_t   *layers;/**< array of protocol layer descroptors */
 
