@@ -3080,7 +3080,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
         (arp_req.arp_ha.sa_data)[i] = (unsigned char)(int_addr[i]);
 
     arp_req.arp_flags = ATF_COM;
-    if (!volatile_entry)
+    if (strstr(oid, "dynamic") == NULL)
         arp_req.arp_flags |= ATF_PERM;
 
 #ifdef SIOCSARP
