@@ -579,7 +579,7 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
     asn_write_value_field(csap_socket,
                           &loc_addr, sizeof(loc_addr),
                           "local-addr.#plain");
-    asn_write_int32(csap_socket, loc_port, "local-port.#plain");
+    asn_write_int32(csap_socket, ntohs(loc_port), "local-port.#plain");
 
     asn_write_component_value(csap_level_spec, csap_socket, "#socket");
 
