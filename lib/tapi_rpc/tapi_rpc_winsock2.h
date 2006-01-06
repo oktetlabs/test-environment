@@ -620,7 +620,7 @@ extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
  * @return   0 in case of success, nonzero otherwise.
  */
 extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
-                         rpc_wsa_ioctl_code control_code,
+                         rpc_ioctl_code control_code,
                          char *inbuf, unsigned int inbuf_len,
                          char *outbuf, unsigned int outbuf_len,
                          unsigned int *bytes_returned,
@@ -652,7 +652,7 @@ extern te_bool rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
                                     int *bytes, te_bool wait,
                                     rpc_send_recv_flags *flags,
                                     char *buf, int buflen,
-                                    rpc_wsa_ioctl_code control_code);
+                                    rpc_ioctl_code control_code);
 
 /**
  * Asynchronously retrieve host information by given address.

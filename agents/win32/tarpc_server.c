@@ -3952,15 +3952,15 @@ static void convert_wsa_ioctl_result(DWORD code, char *buf,
 
     switch (code)
     {
-        case RPC_WSA_FIONREAD: /* unsigned int */
-        case RPC_WSA_SIOCATMARK: /* BOOL */
-        case RPC_WSA_SIO_CHK_QOS: /* DWORD */
-        case RPC_WSA_SIO_UDP_CONNRESET: /* BOOL */
-        case RPC_WSA_SIO_TRANSLATE_HANDLE: /* HANDLE??? */
+        case RPC_FIONREAD: /* unsigned int */
+        case RPC_SIOCATMARK: /* BOOL */
+        case RPC_SIO_CHK_QOS: /* DWORD */
+        case RPC_SIO_UDP_CONNRESET: /* BOOL */
+        case RPC_SIO_TRANSLATE_HANDLE: /* HANDLE??? */
             res->wsa_ioctl_request_u.req_int = *(int*)buf;
             break;
 
-        case RPC_WSA_SIO_ADDRESS_LIST_QUERY:
+        case RPC_SIO_ADDRESS_LIST_QUERY:
         {
             SOCKET_ADDRESS_LIST *sal;
             tarpc_sa            *tsa;
@@ -3979,19 +3979,19 @@ static void convert_wsa_ioctl_result(DWORD code, char *buf,
             break;
         }
 
-        case RPC_WSA_SIO_GET_BROADCAST_ADDRESS:
-        case RPC_WSA_SIO_ROUTING_INTERFACE_QUERY:
+        case RPC_SIO_GET_BROADCAST_ADDRESS:
+        case RPC_SIO_ROUTING_INTERFACE_QUERY:
             sockaddr_h2rpc((struct sockaddr *)buf,
                 &res->wsa_ioctl_request_u.req_sa);
             break;
 
-        case RPC_WSA_SIO_GET_EXTENSION_FUNCTION_POINTER:
+        case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
             res->wsa_ioctl_request_u.req_ptr = 
                 rcf_pch_mem_alloc(*(void **)buf);
             break;
 
-        case RPC_WSA_SIO_GET_GROUP_QOS:
-        case RPC_WSA_SIO_GET_QOS:
+        case RPC_SIO_GET_GROUP_QOS:
+        case RPC_SIO_GET_QOS:
         {
             QOS       *qos;
             tarpc_qos *tqos;
@@ -4128,15 +4128,15 @@ TARPC_FUNC(wsa_ioctl, {},
         }
     }
 
-    MAKE_CALL(out->retval = WSAIoctl(in->s, wsa_ioctl_rpc2h(in->code),
-                                inbuf,
-                                inbuf_len,
-                                outbuf,
-                                outbuf_len,
-                                &out->bytes_returned,
-                                in->overlapped == 0 ? NULL
-                                  : (LPWSAOVERLAPPED)overlapped,
-                                IN_CALLBACK));
+    MAKE_CALL(out->retval = WSAIoctl(in->s, ioctl_rpc2h(in->code),
+                                     inbuf,
+                                     inbuf_len,
+                                     outbuf,
+                                     outbuf_len,
+                                     &out->bytes_returned,
+                                     in->overlapped == 0 ? NULL
+                                       : (LPWSAOVERLAPPED)overlapped,
+                                     IN_CALLBACK));
 
     if (out->retval == 0)
     {

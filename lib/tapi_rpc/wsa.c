@@ -2736,7 +2736,7 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
 /**
  * Convert the data from wsa_ioctl_request structure to the output buffer.
  */
-static int convert_wsa_ioctl_result(unsigned int code,
+static int convert_wsa_ioctl_result(rpc_ioctl_code code,
                                     wsa_ioctl_request *res,
                                     char *buf, int buflen,
                                     unsigned int *bytes_returned)
@@ -2745,17 +2745,17 @@ static int convert_wsa_ioctl_result(unsigned int code,
 
     switch (code)
     {
-        case RPC_WSA_FIONREAD: /* unsigned int */
-        case RPC_WSA_SIOCATMARK: /* BOOL */
-        case RPC_WSA_SIO_CHK_QOS: /* DWORD */
-        case RPC_WSA_SIO_UDP_CONNRESET: /* BOOL */
+        case RPC_FIONREAD: /* unsigned int */
+        case RPC_SIOCATMARK: /* BOOL */
+        case RPC_SIO_CHK_QOS: /* DWORD */
+        case RPC_SIO_UDP_CONNRESET: /* BOOL */
             ret = sizeof(int);
             if (buflen < ret)
                 return -1;
             *(int *)buf = res->wsa_ioctl_request_u.req_int;
             break;
 
-        case RPC_WSA_SIO_TRANSLATE_HANDLE: /* HANDLE??? */
+        case RPC_SIO_TRANSLATE_HANDLE: /* HANDLE??? */
             ret = sizeof(rpc_handle);
             if (buflen < ret)
                 return -1;
@@ -2763,7 +2763,7 @@ static int convert_wsa_ioctl_result(unsigned int code,
                 (rpc_handle)res->wsa_ioctl_request_u.req_int;
             break;
 
-        case RPC_WSA_SIO_ADDRESS_LIST_QUERY:
+        case RPC_SIO_ADDRESS_LIST_QUERY:
         {
             struct sockaddr *addr;
             unsigned int    i;
@@ -2792,8 +2792,8 @@ static int convert_wsa_ioctl_result(unsigned int code,
             break;
         }
 
-        case RPC_WSA_SIO_GET_BROADCAST_ADDRESS:
-        case RPC_WSA_SIO_ROUTING_INTERFACE_QUERY:
+        case RPC_SIO_GET_BROADCAST_ADDRESS:
+        case RPC_SIO_ROUTING_INTERFACE_QUERY:
         {
             struct sockaddr *addr;
 
@@ -2810,15 +2810,15 @@ static int convert_wsa_ioctl_result(unsigned int code,
             break;
         }
 
-        case RPC_WSA_SIO_GET_EXTENSION_FUNCTION_POINTER:
+        case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
             ret = sizeof(rpc_ptr);
             if (buflen < ret)
                 return -1;
             *(rpc_ptr *)buf = res->wsa_ioctl_request_u.req_ptr;
             break;
 
-        case RPC_WSA_SIO_GET_GROUP_QOS:
-        case RPC_WSA_SIO_GET_QOS:
+        case RPC_SIO_GET_GROUP_QOS:
+        case RPC_SIO_GET_QOS:
         {
             tarpc_qos *rqos;
             rpc_qos   *qos;
@@ -2861,7 +2861,7 @@ static int convert_wsa_ioctl_result(unsigned int code,
  * operation can be obtained by rpc_get_wsa_ioctl_overlapped_result().
  */
 int
-rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
+rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
               char *inbuf, unsigned int inbuf_len, char *outbuf,
               unsigned int outbuf_len, unsigned int *bytes_returned,
               rpc_overlapped overlapped, const char *callback)
@@ -2890,14 +2890,14 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
 
     switch (control_code)
     {
-        case RPC_WSA_FIONBIO:
-        case RPC_WSA_SIO_CHK_QOS:
-        case RPC_WSA_SIO_MULTIPOINT_LOOPBACK:
-        case RPC_WSA_SIO_MULTICAST_SCOPE:
-        case RPC_WSA_SIO_RCVALL:
-        case RPC_WSA_SIO_RCVALL_IGMPMCAST:
-        case RPC_WSA_SIO_RCVALL_MCAST:
-        case RPC_WSA_SIO_UDP_CONNRESET:
+        case RPC_FIONBIO:
+        case RPC_SIO_CHK_QOS:
+        case RPC_SIO_MULTIPOINT_LOOPBACK:
+        case RPC_SIO_MULTICAST_SCOPE:
+        case RPC_SIO_RCVALL:
+        case RPC_SIO_RCVALL_IGMPMCAST:
+        case RPC_SIO_RCVALL_MCAST:
+        case RPC_SIO_UDP_CONNRESET:
             if (inbuf != NULL)
             {
                 in.req.type = WSA_IOCTL_INT;
@@ -2905,9 +2905,9 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
             }
             break;
 
-        case RPC_WSA_SIO_FIND_ROUTE:
-        case RPC_WSA_SIO_ROUTING_INTERFACE_CHANGE:
-        case RPC_WSA_SIO_ROUTING_INTERFACE_QUERY:
+        case RPC_SIO_FIND_ROUTE:
+        case RPC_SIO_ROUTING_INTERFACE_CHANGE:
+        case RPC_SIO_ROUTING_INTERFACE_QUERY:
             if (inbuf != NULL)
             {
                 struct sockaddr *addr = (struct sockaddr *)inbuf;
@@ -2921,7 +2921,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
             }
             break;
 
-        case RPC_WSA_SIO_GET_EXTENSION_FUNCTION_POINTER:
+        case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
             if (inbuf != NULL)
             {
                 in.req.type = WSA_IOCTL_GUID;
@@ -2940,7 +2940,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
             }
             break;
 
-        case RPC_WSA_SIO_KEEPALIVE_VALS:
+        case RPC_SIO_KEEPALIVE_VALS:
             if (inbuf != NULL)
             {
                 tarpc_tcp_keepalive *rpc_tka =
@@ -2953,7 +2953,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
             }
             break;
 
-        case RPC_WSA_SIO_SET_QOS:
+        case RPC_SIO_SET_QOS:
             if (inbuf != NULL)
             {
                 tarpc_qos *rqos;
@@ -2974,8 +2974,8 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_wsa_ioctl_code control_code,
             }
             break;
 
-        case RPC_WSA_SIO_ASSOCIATE_HANDLE:
-        case RPC_WSA_SIO_TRANSLATE_HANDLE:
+        case RPC_SIO_ASSOCIATE_HANDLE:
+        case RPC_SIO_TRANSLATE_HANDLE:
             if (inbuf != NULL)
             {
                 in.req.type = WSA_IOCTL_PTR;
@@ -3033,7 +3033,7 @@ rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
                                     int *bytes, te_bool wait,
                                     rpc_send_recv_flags *flags,
                                     char *buf, int buflen,
-                                    rpc_wsa_ioctl_code control_code)
+                                    rpc_ioctl_code control_code)
 {
     rcf_rpc_op op;
 

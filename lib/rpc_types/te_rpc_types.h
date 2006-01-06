@@ -55,10 +55,10 @@ typedef rpc_ptr rpc_aiocb_p;
 #include "te_rpc_signal.h"
 #include "te_rpc_sys_poll.h"
 #include "te_rpc_sys_time.h"
+#include "te_rpc_wsa.h"
 #include "te_rpc_sys_socket.h"
 #include "te_rpc_sys_stat.h"
 #include "te_rpc_sys_wait.h"
-#include "te_rpc_wsa.h"
 
 /** 
  * Pattern passed to set_buf_pattern to indicate that the buffer should

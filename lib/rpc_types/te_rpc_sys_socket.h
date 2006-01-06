@@ -1313,11 +1313,36 @@ typedef enum rpc_ioctl_code {
                                  interface */
     RPC_SIOCSIFMTU,         /**< Set the value of MTU on a network
                                  interface */
-    RPC_SIO_FLUSH,          /**< Flush send queue */
     RPC_SIOCSARP,           /**< Set ARP mapping */
     RPC_SIOCDARP,           /**< Delete ARP mapping */ 
     RPC_SIOCGARP,           /**< Get ARP mapping */
+    
+    /* Winsock2-specific codes */
+    RPC_SIO_ADDRESS_LIST_CHANGE,
+    RPC_SIO_ADDRESS_LIST_QUERY,
+    RPC_SIO_ASSOCIATE_HANDLE,
+    RPC_SIO_CHK_QOS,
+    RPC_SIO_ENABLE_CIRCULAR_QUEUEING,
+    RPC_SIO_FIND_ROUTE,
+    RPC_SIO_FLUSH,
+    RPC_SIO_GET_BROADCAST_ADDRESS,
+    RPC_SIO_GET_EXTENSION_FUNCTION_POINTER,
+    RPC_SIO_GET_GROUP_QOS,
+    RPC_SIO_GET_QOS,
+    RPC_SIO_KEEPALIVE_VALS,
+    RPC_SIO_MULTIPOINT_LOOPBACK,
+    RPC_SIO_MULTICAST_SCOPE,
+    RPC_SIO_RCVALL,
+    RPC_SIO_RCVALL_IGMPMCAST,
+    RPC_SIO_RCVALL_MCAST,
+    RPC_SIO_ROUTING_INTERFACE_CHANGE,
+    RPC_SIO_ROUTING_INTERFACE_QUERY,
+    RPC_SIO_SET_QOS,
+    RPC_SIO_TRANSLATE_HANDLE,
+    RPC_SIO_UDP_CONNRESET,
+
     RPC_SIOUNKNOWN          /**< Invalid ioctl code */
+    
 } rpc_ioctl_code; 
 
 /* Define some value for unknown IOCTL request */
@@ -1400,9 +1425,6 @@ ioctl_rpc2h(rpc_ioctl_code code)
 #ifdef SIOCSIFMTU
         RPC2H(SIOCSIFMTU);
 #endif
-#ifdef SIO_FLUSH
-        RPC2H(SIO_FLUSH);
-#endif
 #ifdef SIOCSARP
         RPC2H(SIOCSARP);
 #endif
@@ -1411,6 +1433,31 @@ ioctl_rpc2h(rpc_ioctl_code code)
 #endif
 #ifdef SIOCGARP
         RPC2H(SIOCGARP);
+#endif
+
+#ifdef SIO_ADDRESS_LIST_CHANGE
+        RPC2H(SIO_ADDRESS_LIST_CHANGE);
+        RPC2H(SIO_ADDRESS_LIST_QUERY);
+        RPC2H(SIO_ASSOCIATE_HANDLE);
+        RPC2H(SIO_CHK_QOS);
+        RPC2H(SIO_ENABLE_CIRCULAR_QUEUEING);
+        RPC2H(SIO_FIND_ROUTE);
+        RPC2H(SIO_FLUSH);
+        RPC2H(SIO_GET_BROADCAST_ADDRESS);
+        RPC2H(SIO_GET_EXTENSION_FUNCTION_POINTER);
+        RPC2H(SIO_GET_GROUP_QOS);
+        RPC2H(SIO_GET_QOS);
+        RPC2H(SIO_KEEPALIVE_VALS);
+        RPC2H(SIO_MULTIPOINT_LOOPBACK);
+        RPC2H(SIO_MULTICAST_SCOPE);
+        RPC2H(SIO_RCVALL);
+        RPC2H(SIO_RCVALL_IGMPMCAST);
+        RPC2H(SIO_RCVALL_MCAST);
+        RPC2H(SIO_ROUTING_INTERFACE_CHANGE);
+        RPC2H(SIO_ROUTING_INTERFACE_QUERY);
+        RPC2H(SIO_SET_QOS);
+        RPC2H(SIO_TRANSLATE_HANDLE);
+        RPC2H(SIO_UDP_CONNRESET);
 #endif
         default: return IOCTL_MAX;
     }
@@ -1444,11 +1491,33 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SIOCGIFHWADDR);
         RPC2STR(SIOCGIFMTU);
         RPC2STR(SIOCSIFMTU);
-        RPC2STR(SIO_FLUSH);
         RPC2STR(SIOUNKNOWN);
         RPC2STR(SIOCSARP);
         RPC2STR(SIOCDARP);
         RPC2STR(SIOCGARP);
+
+        RPC2STR(SIO_ADDRESS_LIST_CHANGE);
+        RPC2STR(SIO_ADDRESS_LIST_QUERY);
+        RPC2STR(SIO_ASSOCIATE_HANDLE);
+        RPC2STR(SIO_CHK_QOS);
+        RPC2STR(SIO_ENABLE_CIRCULAR_QUEUEING);
+        RPC2STR(SIO_FIND_ROUTE);
+        RPC2STR(SIO_FLUSH);
+        RPC2STR(SIO_GET_BROADCAST_ADDRESS);
+        RPC2STR(SIO_GET_EXTENSION_FUNCTION_POINTER);
+        RPC2STR(SIO_GET_GROUP_QOS);
+        RPC2STR(SIO_GET_QOS);
+        RPC2STR(SIO_KEEPALIVE_VALS);
+        RPC2STR(SIO_MULTIPOINT_LOOPBACK);
+        RPC2STR(SIO_MULTICAST_SCOPE);
+        RPC2STR(SIO_RCVALL);
+        RPC2STR(SIO_RCVALL_IGMPMCAST);
+        RPC2STR(SIO_RCVALL_MCAST);
+        RPC2STR(SIO_ROUTING_INTERFACE_CHANGE);
+        RPC2STR(SIO_ROUTING_INTERFACE_QUERY);
+        RPC2STR(SIO_SET_QOS);
+        RPC2STR(SIO_TRANSLATE_HANDLE);
+        RPC2STR(SIO_UDP_CONNRESET);
         default: return "<IOCTL_FATAL_ERROR>";
     }
 }
