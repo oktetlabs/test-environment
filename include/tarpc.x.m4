@@ -56,6 +56,8 @@ typedef tarpc_ptr   tarpc_sigset_t;
 typedef tarpc_ptr   tarpc_fd_set;
 /** RPC off_t analog */
 typedef int64_t     tarpc_off_t;
+/** RPC rlim_t analog */
+typedef int32_t     tarpc_rlim_t;
 /** RPC time_t analogue */
 typedef int64_t     tarpc_time_t;
 /** RPC suseconds_t analogue */
@@ -214,6 +216,12 @@ struct tarpc_ssize_t_retval_out {
     struct tarpc_out_arg    common;
 
     tarpc_ssize_t           retval;
+};
+
+/** struct rlimit */
+struct tarpc_rlimit {
+    tarpc_rlim_t rlim_cur;
+    tarpc_rlim_t rlim_max;
 };
 
 
@@ -2951,6 +2959,35 @@ struct tarpc_overfill_buffers_out {
     uint64_t    bytes;      /**< Number of sent bytes */
 };
 
+/* setrlimit() */
+
+struct tarpc_setrlimit_in {
+    struct tarpc_in_arg  common;
+
+    tarpc_int            resource; /**< resource type */
+    struct tarpc_rlimit  rlim<>; /**< struct rlimit */
+};
+
+typedef struct tarpc_int_retval_out tarpc_setrlimit_out;
+
+/* getrlimit() */
+
+struct tarpc_getrlimit_in {
+    struct tarpc_in_arg  common;
+
+    tarpc_int            resource; /**< resource type */
+    struct tarpc_rlimit  rlim<>; /**< struct rlimit */
+};
+
+struct tarpc_getrlimit_out {
+    struct tarpc_out_arg  common;
+
+    tarpc_int             retval;
+
+    struct tarpc_rlimit   rlim<>; /**< struct rlimit */
+};
+
+
 /* get_sizeof() */
 struct tarpc_get_sizeof_in {
     struct tarpc_in_arg common;
@@ -3177,5 +3214,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(peek_message)
         RPC_DEF(wsa_join_leaf)
         
+        RPC_DEF(setrlimit)
+        RPC_DEF(getrlimit)
+
     } = 1;
 } = 1;
