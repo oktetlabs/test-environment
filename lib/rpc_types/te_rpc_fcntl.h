@@ -93,9 +93,10 @@ typedef enum rpc_fcntl_flags {
 RPCBITMAP2STR(fcntl_flags, FCNTL_FLAGS_MAPPING_LIST)
 
 /** Convert RPC file control flags to native flags */
-static inline int
+static inline unsigned int
 fcntl_flags_rpc2h(unsigned int flags)
 {
+    UNUSED(flags);  /* Possibly unused */
     return 0
 #ifdef O_RDONLY
         | (!!(flags & RPC_O_RDONLY) * O_RDONLY)
@@ -159,9 +160,10 @@ fcntl_flags_rpc2h(unsigned int flags)
 
 
 /** Convert file control native flags to RPC flags */
-static inline int
+static inline unsigned int
 fcntl_flags_h2rpc(unsigned int flags)
 {
+    UNUSED(flags);  /* Possibly unused */
     return 0
 #ifdef O_RDONLY
         | (!!(flags & O_RDONLY) * RPC_O_RDONLY)
