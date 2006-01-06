@@ -81,8 +81,12 @@ static struct timeval tv_zero = {0,0};
 
 static int is_initialized = 0;
 
+#ifdef WITH_ATM
+extern te_errno csap_support_atm_register(void);
+#endif
+
 #ifdef WITH_ETH
-extern int csap_support_eth_register(void);
+extern te_errno csap_support_eth_register(void);
 #endif
 
 #ifdef WITH_ARP
@@ -90,35 +94,39 @@ extern te_errno csap_support_arp_register(void);
 #endif
 
 #ifdef WITH_IPSTACK
-extern int csap_support_ipstack_register(void);
+extern te_errno csap_support_ipstack_register(void);
 #endif
 
 #ifdef WITH_FILE
-extern int csap_support_file_register(void);
+extern te_errno csap_support_file_register(void);
 #endif
 
 #ifdef WITH_SNMP
-extern int csap_support_snmp_register(void);
+extern te_errno csap_support_snmp_register(void);
 #endif
 
 #ifdef WITH_DHCP
-extern int csap_support_dhcp_register(void);
+extern te_errno csap_support_dhcp_register(void);
 #endif
 
 #ifdef WITH_BRIDGE
-extern int csap_support_bridge_register(void);
+extern te_errno csap_support_bridge_register(void);
 #endif
 
 #ifdef WITH_CLI
-extern int csap_support_cli_register(void);
+extern te_errno csap_support_cli_register(void);
 #endif
 
 #ifdef WITH_PCAP
-extern int csap_support_pcap_register(void);
+extern te_errno csap_support_pcap_register(void);
 #endif
 
 #ifdef WITH_ISCSI
-extern int csap_support_iscsi_register(void);
+extern te_errno csap_support_iscsi_register(void);
+#endif
+
+#ifdef WITH_SOCKET
+extern te_errno csap_support_socket_register(void);
 #endif
 
 
@@ -130,6 +138,9 @@ check_init(void)
 #ifndef DUMMY_TAD
     csap_id_init();
     csap_spt_init();
+#ifdef WITH_ATM
+    csap_support_atm_register();
+#endif
 #ifdef WITH_ETH
     csap_support_eth_register();
 #endif 
@@ -159,6 +170,9 @@ check_init(void)
 #endif
 #ifdef WITH_ISCSI
     csap_support_iscsi_register();
+#endif
+#ifdef WITH_SOCKET
+    csap_support_socket_register();
 #endif
 #endif /* DUMMY_TAD */
 
