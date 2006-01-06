@@ -42,6 +42,9 @@
 #if HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
 #endif
+#if HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 #ifdef HAVE_AIO_H
 #include <aio.h>
 #endif

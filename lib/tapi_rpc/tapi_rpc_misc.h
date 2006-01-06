@@ -44,10 +44,17 @@
 #if HAVE_TIME_H
 #include <time.h>
 #endif
+#if HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "rcf_rpc.h"
+#include "te_rpc_sys_resource.h"
 
 /**
  * Get host value of sizeof(type_name).
@@ -275,7 +282,35 @@ extern int rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock,
 extern void rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start);
 
 /**
- * Copy the @b src_buf buffer in @b dst_buf located in TA address space.
+ * Set resource limits and usage
+ *
+ * @param rpcs          RPC server
+ * @param resource      Resource type (see 'man 2 setrlimit').
+ * @param rlim          RPC analog of rlimit structure
+ *                      (see 'man 2 setrlimit').
+ *
+ * @return    -1 in the case of failure or 0 on success
+ */
+extern int rpc_setrlimit(rcf_rpc_server *rpcs,
+                         int resource,
+                         const struct rlimit *rlim);
+
+/**
+ * Get resource limits and usage
+ *
+ * @param rpcs          RPC server
+ * @param resource      Resource type (see 'man 2 setrlimit').
+ * @param rlim          RPC analog of rlimit structure
+ *                      (see 'man 2 getrlimit').
+ *
+ * @return    -1 in the case of failure or 0 on success
+ */
+extern int rpc_getrlimit(rcf_rpc_server *rpcs,
+                         int resource,
+                         struct rlimit *rlim);
+
+/**
+ * Copy the @b src_buf buffer in @b dst_buf located in TA address space
  *
  * @param rpcs     RPC server handle
  * @param src_buf  pointer to the source buffer
