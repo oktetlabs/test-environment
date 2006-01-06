@@ -230,6 +230,13 @@ AC_ARG_WITH([iscsi],,
  fi
 ], [w_iscsi=false])
 
+AC_ARG_WITH([socket],, 
+[if test "${withval}" = yes; then
+   proto_specific socket;
+   AC_CONFIG_FILES([socket/Makefile])
+ fi
+], [w_socket=false])
+
 
 AC_SUBST([TAD_LIBLIST])
 AC_SUBST([TAD_SUBDIRS])
