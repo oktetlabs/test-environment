@@ -37,10 +37,17 @@
 #include "rcf_common.h"
 #include "rcf_rpc_defs.h"
 
-#ifdef HAVE_PTHREAD_H
+#if HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
 
+/* 
+ * It is mandatory to include signal.h before tarpc.h, since tarpc.h
+ * defines _kill as a number.
+ */
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 #include "tarpc.h"
 
 /** Default RPC timeout in milliseconds */
