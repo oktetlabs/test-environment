@@ -2983,7 +2983,7 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
     
     req.ndm.ndm_family = dst.family;
     
-    if (!volatile_entry)
+    if (strstr(oid, "dynamic") == NULL)
         req.ndm.ndm_state = NUD_PERMANENT;
     
     addattr_l(&req.n, sizeof(req), NDA_DST, &dst.data, dst.bytelen);
