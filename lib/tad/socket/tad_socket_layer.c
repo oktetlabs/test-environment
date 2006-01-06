@@ -24,7 +24,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: tad_socket_layer.c 22403 2006-01-05 15:59:36Z arybchik $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD Socket"
@@ -97,7 +97,7 @@ tad_socket_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     }
     return 0;
 #endif
-    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+    return 0;
 }
 
 
