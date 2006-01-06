@@ -36,6 +36,11 @@
 
 #include "te_rpc_defs.h"
 
+/* FIXME: Ideally remove it from here */
+#if HAVE_AIO_H
+#include <aio.h>
+#endif
+
 
 /** TA-independent operation code for lio_listio function */
 typedef enum rpc_lio_opcode {
@@ -45,7 +50,7 @@ typedef enum rpc_lio_opcode {
     RPC_LIO_UNKNOWN
 } rpc_lio_opcode; 
 
-#ifdef HAVE_AIO_H
+#if HAVE_AIO_H
 
 /** Convert RPC lio_listio opcode to native one */
 static inline int

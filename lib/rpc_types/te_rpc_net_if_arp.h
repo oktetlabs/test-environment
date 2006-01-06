@@ -36,6 +36,11 @@
 
 #include "te_rpc_defs.h"
 
+/* FIXME: Ideally remove it from hehe */
+#if HAVE_NET_IF_ARP_H
+#include <net/if_arp.h>
+#endif
+
 
 /* arpreq flags */
 typedef enum rpc_arp_flags {
