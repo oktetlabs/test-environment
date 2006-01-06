@@ -2948,8 +2948,6 @@ static te_errno
 neigh_change(const char *oid, const char *addr, const char *ifname,
              uint8_t *value, int cmd)
 {
-    te_bool       volatile_entry = strstr(oid, "dynamic") != NULL;
-
     struct rtnl_handle rth;
     struct {
         struct nlmsghdr         n;
