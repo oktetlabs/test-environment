@@ -36,16 +36,6 @@
 /** Logger user */
 #define TE_LGR_USER     "TAPI RPC"
 
-#if HAVE_SIGNAL_H
-#include <signal.h>
-#endif
-#if HAVE_NET_IF_ARP_H
-#include <net/if_arp.h>
-#endif
-#ifdef HAVE_AIO_H
-#include <aio.h>
-#endif
-
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -54,6 +44,13 @@
 #include "tapi_sockaddr.h"
 #include "te_rpc_types.h"
 
+/* 
+ * It is mandatory to include signal.h before tarpc.h, since tarpc.h
+ * defines _kill as a number.
+ */
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 #include "tarpc.h"
 #include "tapi_jmp.h"
 

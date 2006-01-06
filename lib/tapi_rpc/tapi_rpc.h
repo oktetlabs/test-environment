@@ -49,22 +49,7 @@
 #ifndef __TE_TAPI_RPC_H__
 #define __TE_TAPI_RPC_H__
 
-#if HAVE_SIGNAL_H
-#include <signal.h>
-#endif
-#if HAVE_AIO_H
-#include <aio.h>
-#endif
-#if HAVE_NET_IF_ARP_H
-#include <net/if_arp.h>
-#endif
-#if HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif
-#if HAVE_PWD_H
-#include <pwd.h>
-#endif
-
+#include "te_defs.h"
 #include "rcf_rpc.h"
 #include "tapi_rpc_socket.h"
 #include "tapi_rpc_unistd.h"
@@ -76,6 +61,10 @@
 #include "tapi_rpc_winsock2.h"
 #include "tapi_rpc_misc.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Get readability (there are data to read) or writability (it is allowed
@@ -92,4 +81,7 @@
 extern int tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
                                    int s, int timeout, char *type);
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_RPC_H__ */
