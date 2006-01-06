@@ -2739,7 +2739,7 @@ neigh_find_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     int                  af = (strchr(p->addr, ':') == NULL)?
                               AF_INET : AF_INET6;
     struct ndmsg        *r = NLMSG_DATA(n);
-    struct rtattr       *tb[NDA_MAX+1];
+    struct rtattr       *tb[NDA_MAX+1] = {NULL,};
     uint8_t              addr_buf[sizeof(struct in6_addr)];    
     
     /* One item was already found, skip others */
@@ -3168,7 +3168,7 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     neigh_print_cb_param *p = (neigh_print_cb_param *)arg;
 
     struct ndmsg   *r = NLMSG_DATA(n);
-    struct rtattr  *tb[NDA_MAX+1];    
+    struct rtattr  *tb[NDA_MAX+1] = {NULL,};
     char           *s = p->list + strlen(p->list);
  
     if (ll_name_to_index(p->ifname) != r->ndm_ifindex)
@@ -3462,7 +3462,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
     struct rtmsg        *r = NLMSG_DATA(n);
     int                  len = n->nlmsg_len;
     rtnl_cb_user_data_t *user_data = (rtnl_cb_user_data_t *)arg;
-    struct rtattr       *tb[RTA_MAX + 1] = {};
+    struct rtattr       *tb[RTA_MAX + 1] = {NULL,};
     int                  family;
     struct in6_addr      addr_any = IN6ADDR_ANY_INIT;
 
@@ -3543,7 +3543,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
         
         if (tb[RTA_METRICS] != NULL)
         {
-            struct rtattr *mxrta[RTAX_MAX + 1] = {};
+            struct rtattr *mxrta[RTAX_MAX + 1] = {NULL,};
 
             parse_rtattr(mxrta, RTAX_MAX, RTA_DATA(tb[RTA_METRICS]),
                          RTA_PAYLOAD(tb[RTA_METRICS]));
@@ -3902,7 +3902,7 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
     rtnl_print_route_cb_user_data_t *user_data = 
                          (rtnl_print_route_cb_user_data_t *)arg;
     
-    struct rtattr       *tb[RTA_MAX + 1] = {};
+    struct rtattr       *tb[RTA_MAX + 1] = {NULL,};
     int                  family;
 
     UNUSED(who);
