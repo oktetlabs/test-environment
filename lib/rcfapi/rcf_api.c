@@ -1819,9 +1819,6 @@ rcf_ta_csap_create(const char *ta_name, int session,
     {
         int fd;
 
-        LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
-                "Create CSAP '%s' (%s:%d) with parameters:\n%Tf",
-                stack_id, ta_name, session, params);
         if ((fd = open(params, O_RDONLY)) < 0)
         {
             if ((len = strlen(params) + 1) >
@@ -1865,7 +1862,12 @@ rcf_ta_csap_create(const char *ta_name, int session,
                                    msg, &anslen, NULL);
     
     if (rc == 0 && (rc = msg->error) == 0)
+    {
         *csap_id = msg->handle;
+        LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+                "Created CSAP #%u '%s' (%s:%d) with parameters:\n%Tf",
+                msg->handle, stack_id, ta_name, session, params);
+    }
         
     free(msg);
         
