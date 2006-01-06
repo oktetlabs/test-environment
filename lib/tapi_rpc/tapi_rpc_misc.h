@@ -59,7 +59,8 @@
 /**
  * Get host value of sizeof(type_name).
  *
- * @param type_name Name of the type
+ * @param handle      RPC server
+ * @param type_name   Name of the type
  *
  * @return          Size of the type or 
  *                  -1 if such a type does not exist.
@@ -68,11 +69,50 @@ extern tarpc_ssize_t rpc_get_sizeof(rcf_rpc_server *rpcs,
                                     const char *type_name);
 
 /**
+ * Get address of the variable known on RPC server.
+ *
+ * @param handle RPC server
+ * @param name   variable name
+ *
+ * @return RPC address pointer or NULL is variable is not found
+ */
+extern rpc_ptr rpc_get_addrof(rcf_rpc_server *rpcs, const char *name);
+
+/**
+ * Get value of the integer variable.
+ *
+ * @param handle  RPC server
+ * @param name    variable name
+ * @param size    variable size (1, 2, 4, 8)
+ *
+ * @return variable value
+ *
+ * @note Routine jumps to failure is the variable is not found or incorrect
+ *       parameters are provided
+ */
+extern uint64_t rpc_get_var(rcf_rpc_server *rpcs, 
+                            const char *name, tarpc_size_t size);
+
+/**
+ * Change value of the integer variable.
+ *
+ * @param handle  RPC server
+ * @param name    variable name
+ * @param size    variable size (1, 2, 4, 8)
+ * @param val     variable value
+ *
+ * @note Routine jumps to failure is the variable is not found or incorrect
+ *       parameters are provided
+ */
+extern void rpc_set_var(rcf_rpc_server *rpcs, 
+                        const char *name, tarpc_size_t size, uint64_t val);
+
+/**
  * Convert 'struct timeval' to string.
  *
  * @note Static buffer is used for return value.
  *
- * @param tv    - pointer to 'struct timeval'
+ * @param tv     pointer to 'struct timeval'
  *
  * @return null-terminated string
  */
@@ -83,7 +123,7 @@ extern const char *tarpc_timeval2str(const struct tarpc_timeval *tv);
  *
  * @note Static buffer is used for return value.
  *
- * @param tv    - pointer to 'struct timespec'
+ * @param tv     pointer to 'struct timespec'
  *
  * @return null-terminated string
  */

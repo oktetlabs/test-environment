@@ -2992,13 +2992,56 @@ struct tarpc_getrlimit_out {
 struct tarpc_get_sizeof_in {
     struct tarpc_in_arg common;
 
-    char typename<>;
+    string typename<>;
 };
 
 struct tarpc_get_sizeof_out {
     struct tarpc_out_arg common;
 
-    tarpc_int size;
+    tarpc_ssize_t size;
+};
+
+/* get_addrof() */
+struct tarpc_get_addrof_in {
+    struct tarpc_in_arg common;
+       
+    string name<>;
+};
+
+struct tarpc_get_addrof_out {
+    struct tarpc_out_arg common;
+
+    tarpc_ptr addr;
+};
+
+/* get_var() */
+struct tarpc_get_var_in {
+    struct tarpc_in_arg common;
+       
+    string       name<>; /**< Name of the variable */
+    tarpc_size_t size;   /**< size of the variable: 1, 2, 4, 8 */
+};    
+
+struct tarpc_get_var_out {
+    struct tarpc_out_arg common;
+    
+    uint64_t   val;   /**< Variable value */
+    tarpc_bool found; /**< If TRUE, variable is found */
+};
+
+/* set_var() */
+struct tarpc_set_var_in {
+    struct tarpc_in_arg common;
+       
+    string       name<>; /**< Name of the variable */
+    tarpc_size_t size;   /**< size of the variable: 1, 2, 4, 8 */
+    uint64_t     val; /**< Variable value */
+};    
+
+struct tarpc_set_var_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_bool found; /**< If TRUE, variable is found */
 };
 
 program tarpc
@@ -3014,6 +3057,10 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(setlibname)
 
         RPC_DEF(get_sizeof)
+        RPC_DEF(get_addrof)
+
+        RPC_DEF(get_var)
+        RPC_DEF(set_var)
         
         RPC_DEF(fork)
         RPC_DEF(pthread_create)

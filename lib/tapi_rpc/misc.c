@@ -65,7 +65,6 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
     struct tarpc_get_sizeof_in  in;
     struct tarpc_get_sizeof_out out;
     int                         rc;
-    rcf_rpc_op                  op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -75,23 +74,139 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(get_sizeof, -1);
     }
-
-    op = rpcs->op;
     
-    in.typename.typename_len = strlen(type_name) + 1;
-    in.typename.typename_val = strdup(type_name);
+    if (type_name == NULL)
+    {
+        ERROR("%s(): NULL type name", __FUNCTION__);
+        RETVAL_INT(get_sizeof, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+    
+    in.typename = strdup(type_name);
 
     rcf_rpc_call(rpcs, "get_sizeof", &in, &out);
 
-    free(in.typename.typename_val);
+    free(in.typename);
 
     rc = out.size;
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: get_sizeof(%s) -> %d",
-                 rpcs->ta, rpcs->name, rpcop2str(op), type_name, rc);
+    TAPI_RPC_LOG("RPC (%s,%s): get_sizeof(%s) -> %d",
+                 rpcs->ta, rpcs->name, type_name, rc);
 
     RETVAL_INT(get_sizeof, rc);
 }
+
+/* See description in tapi_rpc_misc.h */
+rpc_ptr
+rpc_get_addrof(rcf_rpc_server *rpcs, const char *name)
+{
+    struct tarpc_get_addrof_in  in;
+    struct tarpc_get_addrof_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_RPC_PTR(get_addrof, RPC_NULL);
+    }
+    
+    if (name == NULL)
+    {
+        ERROR("%s(): NULL type name", __FUNCTION__);
+        RETVAL_RPC_PTR(get_addrof, RPC_NULL);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.name = strdup(name);
+
+    rcf_rpc_call(rpcs, "get_addrof", &in, &out);
+
+    free(in.name);
+
+    TAPI_RPC_LOG("RPC (%s,%s): get_addrof(%s) -> %u",
+                 rpcs->ta, rpcs->name, name, out.addr);
+
+    RETVAL_RPC_PTR(get_addrof, out.addr);
+}
+
+/* See description in tapi_rpc_misc.h */
+uint64_t 
+rpc_get_var(rcf_rpc_server *rpcs, const char *name, tarpc_size_t size)
+{
+    struct tarpc_get_var_in  in;
+    struct tarpc_get_var_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL || name == NULL || 
+        !(size == 1 || size == 2 || size == 4 || size == 8))
+    {
+        ERROR("%s(): Invalid parameter is provided", __FUNCTION__);
+        TAPI_JMP_DO(TE_EFAIL);
+    }
+    
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.name = strdup(name);
+    in.size = size;
+
+    rcf_rpc_call(rpcs, "get_var", &in, &out);
+
+    free(in.name);
+
+    CHECK_RETVAL_VAR_IS_BOOL(get_var, out.found);
+    
+    TAPI_RPC_LOG("RPC (%s,%s): get_var(%s, %u) -> %llu%s",
+                 rpcs->ta, rpcs->name, name, size, out.found ? out.val : 0,
+                 out.found ? "" : " (not found)");
+
+    TAPI_RPC_OUT(get_var, !out.found);
+    
+    return out.val;
+}
+
+/* See description in tapi_rpc_misc.h */
+void 
+rpc_set_var(rcf_rpc_server *rpcs, const char *name, 
+            tarpc_size_t size, uint64_t val)
+{
+    struct tarpc_set_var_in  in;
+    struct tarpc_set_var_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL || name == NULL || 
+        !(size == 1 || size == 2 || size == 4 || size == 8))
+    {
+        ERROR("%s(): Invalid parameter is provided", __FUNCTION__);
+        TAPI_JMP_DO(TE_EFAIL);
+    }
+    
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.name = strdup(name);
+    in.size = size;
+    in.val = val;
+
+    rcf_rpc_call(rpcs, "set_var", &in, &out);
+
+    free(in.name);
+
+    CHECK_RETVAL_VAR_IS_BOOL(get_var, out.found);
+    
+    TAPI_RPC_LOG("RPC (%s,%s): set_var(%s, %u, %llu) -> %s",
+                 rpcs->ta, rpcs->name, name, size, in.val,
+                 out.found ? "OK" : "not found");
+
+    TAPI_RPC_OUT(set_var, !out.found);
+}
+
 
 /**
  * Convert I/O vector to array.

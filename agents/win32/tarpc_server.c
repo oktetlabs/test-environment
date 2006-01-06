@@ -113,26 +113,101 @@ static type_info_t type_info[] =
 #endif
 };
 
+/*-------------- get_sizeof() ---------------------------------*/
 bool_t
 _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
                   struct svc_req *rqstp)
 {
     uint32_t i;
-
-    UNUSED(rqstp);
     
-    out->size = 0;
+    UNUSED(rqstp);    
+    
+    out->size = -1;
     for (i = 0; i < sizeof(type_info) / sizeof(type_info_t); i++)
     {
-        if (strcmp(in->typename.typename_val, type_info[i].type_name) == 0)
+        if (strcmp(in->typename, type_info[i].type_name) == 0)
         {
             out->size = type_info[i].type_size;
         }
     }
-    
     return TRUE;
 }
-                    
+
+/*-------------- get_addrof() ---------------------------------*/
+bool_t
+_get_addrof_1_svc(tarpc_get_addrof_in *in, tarpc_get_addrof_out *out,
+                  struct svc_req *rqstp)
+{
+    void *addr = rcf_ch_symbol_addr(in->name, 0);
+    
+    UNUSED(rqstp);
+    
+    out->addr = addr == NULL ? 0 : rcf_pch_mem_alloc(addr);
+
+    return TRUE;
+}
+
+/*-------------- get_var() ---------------------------------*/
+bool_t
+_get_var_1_svc(tarpc_get_var_in *in, tarpc_get_var_out *out,
+                   struct svc_req *rqstp)
+{
+    void *addr = rcf_ch_symbol_addr(in->name, 0);
+    
+    UNUSED(rqstp);
+    
+    if (addr == NULL)
+    {
+        ERROR("Variable %s is not found", in->name);
+        out->found = FALSE;
+        return TRUE;
+    }
+    
+    out->found = TRUE;
+    
+    switch (in->size)
+    {
+        case 1: out->val = *(uint8_t *)addr; break;
+        case 2: out->val = *(uint16_t *)addr; break;
+        case 4: out->val = *(uint32_t *)addr; break;
+        case 8: out->val = *(uint64_t *)addr; break;
+        default: return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*-------------- set_var() ---------------------------------*/
+bool_t
+_set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
+               struct svc_req *rqstp)
+{
+    void *addr = rcf_ch_symbol_addr(in->name, 0);
+    
+    UNUSED(rqstp);
+    UNUSED(out);
+    
+    if (addr == NULL)
+    {
+        ERROR("Variable %s is not found", in->name);
+        out->found = FALSE;
+        return TRUE;
+    }
+    
+    out->found = TRUE;
+    
+    switch (in->size)
+    {
+        case 1: *(uint8_t *)addr  = in->val; break;
+        case 2: *(uint16_t *)addr = in->val; break;
+        case 4: *(uint32_t *)addr = in->val; break;
+        case 8: *(uint64_t *)addr = in->val; break;
+        default: return FALSE;
+    }
+
+    return TRUE;
+}
+                   
 /*-------------- fork() ---------------------------------*/
 TARPC_FUNC(fork, {},
 {
