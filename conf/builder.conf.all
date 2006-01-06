@@ -21,7 +21,8 @@ TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [], [])
 TE_LIB_PARMS([tad], [], [],
              [--with-file --with-pcap --with-eth --with-bridge \
               --with-arp --with-ipstack --with-dhcp --with-iscsi \
-              --with-snmp --with-cli], [], [], [])
+              --with-snmp --with-cli --with-atm --with-socket],
+             [], [], [])
 
 TE_TA_TYPE([linux], [], [unix],
            [--with-rcf-rpc \
