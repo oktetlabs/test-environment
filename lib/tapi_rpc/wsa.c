@@ -2891,6 +2891,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
     switch (control_code)
     {
         case RPC_FIONBIO:
+        case RPC_FIONREAD:
         case RPC_SIO_CHK_QOS:
         case RPC_SIO_MULTIPOINT_LOOPBACK:
         case RPC_SIO_MULTICAST_SCOPE:

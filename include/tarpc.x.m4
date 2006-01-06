@@ -1274,6 +1274,7 @@ enum wsa_ioctl_type {
 
 union wsa_ioctl_request switch (wsa_ioctl_type type) {
     case WSA_IOCTL_INT:            tarpc_int              req_int;
+    case WSA_IOCTL_VOID:           tarpc_int              req_void;
     case WSA_IOCTL_SA:             tarpc_sa               req_sa;
     case WSA_IOCTL_SAA:            tarpc_sa               req_saa<>;
     case WSA_IOCTL_GUID:           tarpc_guid             req_guid;

@@ -3944,27 +3944,18 @@ TARPC_FUNC(wsa_connect, {},
  * Convert the TA-dependent result (output) of the WSAIoctl() call into
  * the wsa_ioctl_request structure representation.
  */
-static void convert_wsa_ioctl_result(DWORD code, char *buf,
-                                     wsa_ioctl_request *res)
+static void 
+convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
 {
-    if (buf == NULL)
-        return;
-
     switch (code)
     {
-        case RPC_FIONREAD: /* unsigned int */
-        case RPC_SIOCATMARK: /* BOOL */
-        case RPC_SIO_CHK_QOS: /* DWORD */
-        case RPC_SIO_UDP_CONNRESET: /* BOOL */
-        case RPC_SIO_TRANSLATE_HANDLE: /* HANDLE??? */
-            res->wsa_ioctl_request_u.req_int = *(int*)buf;
-            break;
-
         case RPC_SIO_ADDRESS_LIST_QUERY:
         {
             SOCKET_ADDRESS_LIST *sal;
             tarpc_sa            *tsa;
             int                 i;
+            
+            res->type = WSA_IOCTL_SAA;
         
             sal = (SOCKET_ADDRESS_LIST *)buf;
             tsa = (tarpc_sa *)calloc(sal->iAddressCount, sizeof(tarpc_sa));
@@ -3981,11 +3972,13 @@ static void convert_wsa_ioctl_result(DWORD code, char *buf,
 
         case RPC_SIO_GET_BROADCAST_ADDRESS:
         case RPC_SIO_ROUTING_INTERFACE_QUERY:
+            res->type = WSA_IOCTL_SA;
             sockaddr_h2rpc((struct sockaddr *)buf,
                 &res->wsa_ioctl_request_u.req_sa);
             break;
 
         case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
+            res->type = WSA_IOCTL_PTR;
             res->wsa_ioctl_request_u.req_ptr = 
                 rcf_pch_mem_alloc(*(void **)buf);
             break;
@@ -3995,6 +3988,8 @@ static void convert_wsa_ioctl_result(DWORD code, char *buf,
         {
             QOS       *qos;
             tarpc_qos *tqos;
+            
+            res->type = WSA_IOCTL_QOS;
             
             qos = (QOS*)buf;
             tqos = &res->wsa_ioctl_request_u.req_qos;
@@ -4017,6 +4012,12 @@ static void convert_wsa_ioctl_result(DWORD code, char *buf,
                tqos->provider_specific_buf.provider_specific_buf_len = 0;
             }
         }
+        
+        default:
+            res->type = WSA_IOCTL_INT;
+            res->wsa_ioctl_request_u.req_int = *(int*)buf;
+            break;
+
     }
 }
 
@@ -4033,6 +4034,9 @@ TARPC_FUNC(wsa_ioctl, {},
     struct tcp_keepalive     tka;
     GUID                     guid;
 
+    out->result.type = WSA_IOCTL_INT;
+    out->result.wsa_ioctl_request_u.req_int = 0;
+    
     switch (in->req.type)
     {
         case WSA_IOCTL_VOID:
@@ -4137,7 +4141,6 @@ TARPC_FUNC(wsa_ioctl, {},
                                      in->overlapped == 0 ? NULL
                                        : (LPWSAOVERLAPPED)overlapped,
                                      IN_CALLBACK));
-
     if (out->retval == 0)
     {
         if ((outbuf != NULL) && (out->bytes_returned != 0))
@@ -4171,6 +4174,10 @@ TARPC_FUNC(get_wsa_ioctl_overlapped_result,
     rpc_overlapped *overlapped = IN_OVERLAPPED;
 
     UNUSED(list);
+    
+    out->result.type = WSA_IOCTL_INT;
+    out->result.wsa_ioctl_request_u.req_int = 0;
+    
     MAKE_CALL(out->retval = WSAGetOverlappedResult(in->s,
                                 (LPWSAOVERLAPPED)overlapped,
                                 out->bytes.bytes_len == 0 ? NULL :
