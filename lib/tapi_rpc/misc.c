@@ -47,12 +47,17 @@
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#if HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 
 #include "te_printf.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
 #include "tapi_rpc_winsock2.h"
+
+
 /* See description in tapi_rpc_misc.h */
 tarpc_ssize_t
 rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
