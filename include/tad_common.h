@@ -90,6 +90,7 @@ typedef enum {
     TE_PROTO_SNMP,
     TE_PROTO_TCP,
     TE_PROTO_UDP,
+    TE_PROTO_SOCKET,
 } te_tad_protocols_t;
 
 
