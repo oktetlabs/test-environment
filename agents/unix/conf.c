@@ -2769,7 +2769,7 @@ neigh_find_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
         return 0;
 
     /* Check neighbour state */
-    if (r->ndm_state & NUD_FAILED)
+    if (r->ndm_state == NUD_NONE || r->ndm_state & NUD_FAILED)
         return 0;
 
     if (p->dynamic == !!(r->ndm_state & NUD_PERMANENT))
@@ -3174,7 +3174,7 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     if (ll_name_to_index(p->ifname) != r->ndm_ifindex)
         return 0;
     
-    if ((r->ndm_state & NUD_INCOMPLETE) != 0)
+    if (r->ndm_state == NUD_NONE || (r->ndm_state & NUD_INCOMPLETE) != 0)
         return 0;
     
     if (!!(r->ndm_state & NUD_PERMANENT) == p->dynamic)
