@@ -1149,22 +1149,45 @@ tad_compare_seqs(size_t csap_seq_len, const csap_layer_t *layers,
     int csap_shift = 0;
     int both_shift = 0;
 
+    ENTRY("csap=%u nds=%u",
+            (unsigned)csap_seq_len, (unsigned)nds_seq_len);
+
     if (layers == NULL || nds_protos == NULL)
+    {
+        ERROR("%s(): Invalid arguments layers=%p nds_protos=%p",
+              __FUNCTION__, layers, nds_protos);
         return -1;
+    }
 
     if (nds_seq_len == 0)
+    {
+        EXIT("Sequence length in NDS is 0 - OK");
         return 1;
+    }
 
     if (csap_seq_len < nds_seq_len)
+    {
+        EXIT("Sequence length in CSAP is %u and less than "
+               "sequence length in NDS which is equal to %u",
+               (unsigned)csap_seq_len, (unsigned)nds_seq_len);
         return 0; 
+    }
 
+    VERB("%s(): Compare '%d' vs '%d'", __FUNCTION__,
+         layers[0].proto_tag, nds_protos[0]);
     if (layers[0].proto_tag == nds_protos[0])
+    {
         both_shift = tad_compare_seqs(csap_seq_len - 1, layers + 1,
-                                      nds_seq_len - 1, nds_protos + 1); 
+                                      nds_seq_len - 1, nds_protos + 1);
+    }
 
     if (both_shift <= 1)
+    {
         csap_shift = tad_compare_seqs(csap_seq_len - 1, layers + 1,
                                       nds_seq_len, nds_protos);
+    }
+
+    EXIT("%d+%d=%d", csap_shift, both_shift, csap_shift + both_shift);
 
     /* recursive calls cannot return -1 */
     return csap_shift + both_shift;
@@ -1331,6 +1354,8 @@ te_proto_from_str(const char *proto_txt)
         case 's':
             if (strcmp(proto_txt + 1, "nmp") == 0)
                 return TE_PROTO_SNMP;
+            if (strcmp(proto_txt + 1, "ocket") == 0)
+                return TE_PROTO_SOCKET;
             break;
 
         case 't':
@@ -1395,6 +1420,9 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_UDP:
              return "udp";
+
+         case TE_PROTO_SOCKET:
+             return "socket";
     }
     return NULL;
 }
