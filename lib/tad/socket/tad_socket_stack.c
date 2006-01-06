@@ -24,7 +24,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: tad_socket_stack.c 22403 2006-01-05 15:59:36Z arybchik $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD Socket"
@@ -43,6 +43,12 @@
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
@@ -50,7 +56,8 @@
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 #include "asn_usr.h"
-#include "ndn_ipstack.h"
+#include "ndn.h"
+#include "ndn_socket.h"
 
 #include "tad_csap_inst.h"
 #include "tad_utils.h"
@@ -66,6 +73,11 @@ typedef struct tad_socket_rw_data {
     uint8_t    *stored_buffer;
     size_t      stored_length;
 
+    struct in_addr   local_addr;
+    struct in_addr   remote_addr;
+    unsigned short   local_port;    /**< Local UDP port */
+    unsigned short   remote_port;   /**< Remote UDP port */ 
+
 } tad_socket_rw_data;
 
 
@@ -78,6 +90,12 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     const asn_value    *csap_spec = csap->layers[layer].csap_layer_pdu; 
     tad_socket_rw_data *spec_data; 
     
+    const asn_value    *data_csap_spec, *subval;
+    asn_tag_class       t_class;
+    int32_t             value_in_pdu;
+    struct sockaddr_in  local;
+    int                 opt = 1;
+
 
     UNUSED(csap_nds);
     
@@ -88,72 +106,64 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     }
     csap_set_rw_data(csap, spec_data);
 
-#if TCP
-    int32_t value_in_pdu;
 
-    if (csap->type == TAD_CSAP_DATA)
+    rc = asn_get_child_value(csap_spec, &data_csap_spec, 
+                             PRIVATE, NDN_TAG_SOCKET_TYPE);
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        const asn_value *data_csap_spec, *subval;
-        asn_tag_class    t_class;
+        ERROR("%s(CSAP %d) socket csap have to have 'type' spec",
+              __FUNCTION__, csap->id); 
+        return TE_ETADWRONGNDS;
+    }
+    else if (rc != 0)
+    {
+        ERROR("%s(CSAP %d): unexpected error reading 'data': %r", 
+              __FUNCTION__, csap->id, rc); 
+        return rc;
+    } 
 
-        rc = asn_get_child_value(tcp_pdu, &data_csap_spec, 
-                                 PRIVATE, NDN_TAG_TCP_DATA);
-        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    rc = asn_get_choice_value(data_csap_spec, &subval, 
+                              &t_class, &(spec_data->data_tag));
+    if (rc != 0)
+    {
+        ERROR("%s(CSAP %d): error reading choice of 'data': %r", 
+              __FUNCTION__, csap->id, rc); 
+        return rc;
+    } 
+
+    INFO("tag of socket CSAP: %d, socket tag is %d", 
+         spec_data->data_tag, NDN_TAG_SOCKET_TYPE_FD);
+    if (spec_data->data_tag == NDN_TAG_SOCKET_TYPE_FD)
+    {
+        struct sockaddr_storage   remote_sa;
+        socklen_t                 remote_len = sizeof(remote_sa);
+
+        asn_read_int32(subval, &(spec_data->socket), "");
+
+        if (getpeername(spec_data->socket, SA(&remote_sa), &remote_len)
+            < 0)
+            WARN("%s(CSAP %d) getpeername(sock %d) failed, errno %d", 
+                 __FUNCTION__, csap->id, 
+                 spec_data->socket, errno);
+        else
         {
-            ERROR("%s(CSAP %d) data TCP csap should have 'data' spec",
-                  __FUNCTION__, csap->id); 
-            return TE_ETADWRONGNDS;
+            spec_data->remote_port = SIN(&remote_sa)->sin_port;
+            spec_data->remote_addr = SIN(&remote_sa)->sin_addr;
+
+            RING("init CSAP on accepted connection from %s:%d", 
+                 inet_ntoa(spec_data->remote_addr), 
+                 ntohs(spec_data->remote_port));
         }
-        else if (rc != 0)
-        {
-            ERROR("%s(CSAP %d): unexpected error reading 'data': %r", 
-                  __FUNCTION__, csap->id, rc); 
-            return rc;
-        } 
 
-        rc = asn_get_choice_value(data_csap_spec, &subval, 
-                                  &t_class, &(spec_data->data_tag));
-        if (rc != 0)
-        {
-            ERROR("%s(CSAP %d): error reading choice of 'data': %r", 
-                  __FUNCTION__, csap->id, rc); 
-            return rc;
-        } 
-
-        INFO("tag of TCP data csap: %d, socket tag is %d", 
-             spec_data->data_tag, NDN_TAG_TCP_DATA_SOCKET);
-        if (spec_data->data_tag == NDN_TAG_TCP_DATA_SOCKET)
-        {
-            struct sockaddr_storage   remote_sa;
-            socklen_t                 remote_len = sizeof(remote_sa);
-
-            asn_read_int32(subval, &(spec_data->socket), "");
-
-            if (getpeername(spec_data->socket, SA(&remote_sa), &remote_len)
-                < 0)
-                WARN("%s(CSAP %d) getpeername(sock %d) failed, errno %d", 
-                     __FUNCTION__, csap->id, 
-                     spec_data->socket, errno);
-            else
-            {
-                spec_data->remote_port = SIN(&remote_sa)->sin_port;
-                ip4_spec_data->remote_addr = SIN(&remote_sa)->sin_addr;
-
-                RING("init CSAP on accepted connection from %s:%d", 
-                     inet_ntoa(ip4_spec_data->remote_addr), 
-                     ntohs(spec_data->remote_port));
-            }
-
-            /* nothing more to do */
-            return 0;
-        }
+        /* nothing more to do */
+        return 0;
     }
 
 
     /*
      * Set local port
      */
-    rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_LOCAL_PORT,
+    rc = ndn_du_read_plain_int(csap_spec, NDN_TAG_SOCKET_LOCAL_PORT,
                                &value_in_pdu);
     if (rc == 0)
     {
@@ -179,7 +189,7 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     /*
      * Set remote port
      */
-    rc = ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_REMOTE_PORT,
+    rc = ndn_du_read_plain_int(csap_spec, NDN_TAG_SOCKET_REMOTE_PORT,
                                &value_in_pdu);
     if (rc == 0)
     {
@@ -202,194 +212,92 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     else
         return rc;
 
-    if (csap->type == TAD_CSAP_DATA)
+    /* TODO: support of TCP over IPv6 */
+
+    local.sin_family = AF_INET;
+    local.sin_addr = spec_data->local_addr;
+    local.sin_port = htons(spec_data->local_port);
+    INFO("%s(): Port passed %d, network order %d, IP addr %x", 
+         __FUNCTION__, (int)spec_data->local_port, (int)local.sin_port,
+         (int32_t)local.sin_addr.s_addr);
+
+    if ((spec_data->socket = socket(AF_INET,
+                                    (spec_data->data_tag ==
+                                         NDN_TAG_SOCKET_TYPE_UDP) ?
+                                    SOCK_DGRAM : SOCK_STREAM, 0)) < 0)
     {
-        /* TODO: support of TCP over IPv6 */
-        struct sockaddr_in local;
-        int                opt = 1;
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        ERROR("%s(CSAP %d) socket create failed, errno %r", 
+              __FUNCTION__, csap->id, rc);
+        return rc;
+    }
 
-        local.sin_family = AF_INET;
-        local.sin_addr = ip4_spec_data->local_addr;
-        local.sin_port = htons(spec_data->local_port);
-        INFO("%s(): Port passed %d, network order %d, IP addr %x", 
-             __FUNCTION__, (int)spec_data->local_port, (int)local.sin_port,
-             (int32_t)local.sin_addr.s_addr);
+    if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
+                   &opt, sizeof(opt)) == -1)
+    {
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        ERROR("%s(CSAP %d) set SO_REUSEADDR failed, errno %r", 
+              __FUNCTION__, csap->id, rc);
+        return rc;
+    }
 
-        if ((spec_data->socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            ERROR("%s(CSAP %d) socket create failed, errno %r", 
-                  __FUNCTION__, csap->id, rc);
-            return rc;
-        }
+    if (bind(spec_data->socket, SA(&local), sizeof(local)) < 0)
+    {
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        ERROR("%s(CSAP %d) socket bind failed, errno %r", 
+              __FUNCTION__, csap->id, rc);
+        return rc;
+    }
 
-        if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
-                       &opt, sizeof(opt)) == -1)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            ERROR("%s(CSAP %d) set SO_REUSEADDR failed, errno %r", 
-                  __FUNCTION__, csap->id, rc);
-            return rc;
-        }
+    switch (spec_data->data_tag)
+    {
+        case NDN_TAG_SOCKET_TYPE_TCP_SERVER:
+            if (listen(spec_data->socket, 10) < 0)
+            {
+                rc = TE_OS_RC(TE_TAD_CSAP, errno);
+                ERROR("%s(CSAP %d) listen failed, errno %r", 
+                      __FUNCTION__, csap->id, rc);
+                return rc;
+            }
+            INFO("%s(CSAP %d) listen success", __FUNCTION__,
+                 csap->id);
+            break;
 
-        if (bind(spec_data->socket, SA(&local), sizeof(local)) < 0)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            ERROR("%s(CSAP %d) socket bind failed, errno %r", 
-                  __FUNCTION__, csap->id, rc);
-            return rc;
-        }
+#if 0
+        case NDN_TAG_SOCKET_TYPE_TCP_CLIENT: 
+            {
+                struct sockaddr_in remote;
 
-        switch (spec_data->data_tag)
-        {
-            case NDN_TAG_TCP_DATA_SERVER:
+                if (spec_data->remote_port == 0 ||
+                    spec_data->remote_addr.s_addr == INADDR_ANY)
+                {
+                    ERROR("%s(CSAP %d) client csap, remote need", 
+                          __FUNCTION__, csap->id);
+                    return TE_ETADWRONGNDS;
+                }
+                remote.sin_family = AF_INET;
+                remote.sin_port = spec_data->remote_port;
+                remote.sin_addr = ip4_spec_data->remote_addr;
 
-                if (listen(spec_data->socket, 10) < 0)
+                if (connect(spec_data->socket, SA(&remote), 
+                            sizeof(remote)) < 0)
                 {
                     rc = TE_OS_RC(TE_TAD_CSAP, errno);
-                    ERROR("%s(CSAP %d) listen failed, errno %r", 
+                    ERROR("%s(CSAP %d) connect failed, errno %r", 
                           __FUNCTION__, csap->id, rc);
                     return rc;
                 }
-                INFO("%s(CSAP %d) listen success", __FUNCTION__,
-                     csap->id);
-                break;
-
-            case NDN_TAG_TCP_DATA_CLIENT: 
-                {
-                    struct sockaddr_in remote;
-
-                    if (spec_data->remote_port == 0 ||
-                        ip4_spec_data->remote_addr.s_addr == INADDR_ANY)
-                    {
-                        ERROR("%s(CSAP %d) client csap, remote need", 
-                              __FUNCTION__, csap->id);
-                        return TE_ETADWRONGNDS;
-                    }
-                    remote.sin_family = AF_INET;
-                    remote.sin_port = spec_data->remote_port;
-                    remote.sin_addr = ip4_spec_data->remote_addr;
-
-                    if (connect(spec_data->socket, SA(&remote), 
-                                sizeof(remote)) < 0)
-                    {
-                        rc = TE_OS_RC(TE_TAD_CSAP, errno);
-                        ERROR("%s(CSAP %d) connect failed, errno %r", 
-                              __FUNCTION__, csap->id, rc);
-                        return rc;
-                    }
-                }
-                break;
-
-            default:
-                ERROR("%s(CSAP %d) unexpected tag of 'data' field %d", 
-                      __FUNCTION__, csap->id, spec_data->data_tag);
-                return TE_ETADWRONGNDS;
-        }
-    }
-
-    UNUSED(csap_nds);
-    return 0;
-}
+            }
+            break;
 #endif
 
-#if UDP
-/* See description tad_ipstack_impl.h */
-te_errno 
-tad_udp_ip4_init_cb(csap_p csap, unsigned int layer,
-                    const asn_value *csap_nds)
-{
-    udp_csap_specific_data_t *udp_spec_data; 
-    ip4_csap_specific_data_t *ip4_spec_data; 
-    struct sockaddr_in        local;
-
-    size_t len; 
-    char   opt_label[100];
-    int    rc; 
-
-    /* Init local port */
-    sprintf(opt_label, "%d.local-port", layer);
-    len = sizeof(udp_spec_data->local_port);
-    rc = asn_read_value_field(csap_nds, &udp_spec_data->local_port,
-                              &len, opt_label);
-    if (rc != 0)
-    {
-        if (csap->type != TAD_CSAP_DATA)
-        {
-            WARN("%s: %d.local-port is not found in CSAP pattern, set to 0",
-                 __FUNCTION__, layer);
-            udp_spec_data->local_port = 0;
-        }
-        else
-        {
-            free(udp_spec_data);
-            ERROR("%s: %d.local-port is not specified", __FUNCTION__, layer);
-            return TE_RC(TE_TAD_CSAP, rc);
-        }
+        default:
+            ERROR("%s(CSAP %d) unexpected tag of 'data' field %d", 
+                  __FUNCTION__, csap->id, spec_data->data_tag);
+            return TE_ETADWRONGNDS;
     }
 
-    /* Init remote port */
-    sprintf(opt_label, "%d.remote-port", layer);
-    len = sizeof(udp_spec_data->remote_port);
-    rc = asn_read_value_field(csap_nds, &udp_spec_data->remote_port, 
-                              &len, opt_label);
-    if (rc != 0)
-    {
-        if (csap->type != TAD_CSAP_DATA)
-        {
-            WARN("%s: %d.remote-port is not found in CSAP pattern, set to 0",
-                 __FUNCTION__, layer);
-            udp_spec_data->remote_port = 0;
-        }
-        else
-        {
-            free(udp_spec_data);
-            ERROR("%s: %d.remote-port is not specified", __FUNCTION__, layer);
-            return TE_RC(TE_TAD_CSAP, rc);
-        }
-    }
-
-    if (csap->type == TAD_CSAP_DATA)
-    {
-        /* opening incoming socket */
-        udp_spec_data->socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
-        if (udp_spec_data->socket < 0)
-        {
-            free(udp_spec_data);
-            return TE_OS_RC(TE_TAD_CSAP, errno);
-        } 
-
-        local.sin_family = AF_INET;
-        local.sin_port = htons(udp_spec_data->local_port);
-
-        sprintf (opt_label, "%d.local-addr", layer+1); /* Next layer is IPv4 */
-        len = sizeof(struct in_addr);
-        rc = asn_read_value_field(csap_nds, &local.sin_addr.s_addr, 
-                                  &len, opt_label);
-        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
-        {
-            local.sin_addr.s_addr = INADDR_ANY; 
-            rc = 0;
-        } 
-        else if (rc)
-        {
-            free(udp_spec_data);
-            return TE_RC(TE_TAD_CSAP, rc); 
-        }
-
-        if ((rc == 0 ||            /* there is some meaning IP-address */
-             local.sin_port != 0 ) /* there is some meaning UDP-port */
-            && bind(udp_spec_data->socket, 
-                    (struct sockaddr *)&local, sizeof(local)) == -1)
-        {
-            perror ("udp csap socket bind");
-            free(udp_spec_data);
-            return errno;
-        }
-
-        csap->timeout          = 100000;
-}
-#endif
+    csap->timeout = 100000;
 
     return 0;
 }
@@ -463,7 +371,7 @@ tad_socket_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
         return -1;
     }
 
-    if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
+    if (spec_data->data_tag == NDN_TAG_SOCKET_TYPE_TCP_SERVER)
     {
         ret = accept(spec_data->socket, NULL, NULL);
 
@@ -519,7 +427,7 @@ tad_socket_write_cb(csap_p csap, const tad_pkt *pkt)
 
 
     /* Capabilities have to be verified by confirm_tmpl_cb */
-    assert(spec_data->data_tag != NDN_TAG_TCP_DATA_SERVER);
+    assert(spec_data->data_tag != NDN_TAG_SOCKET_TYPE_TCP_SERVER);
 
     if (spec_data->socket < 0)
     {
