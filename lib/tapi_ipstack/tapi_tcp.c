@@ -74,6 +74,7 @@
 
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
+#include "ndn_socket.h"
 
 
 /* See description in tapi_tcp.h */
@@ -564,53 +565,32 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
                             in_addr_t loc_addr, uint16_t loc_port,
                             csap_handle_t *tcp_csap)
 {
-    asn_value *csap_spec = NULL;
-    int rc = 0, syms;
+    te_errno        rc;
+    asn_value_p     csap_spec;
+    asn_value_p     csap_level_spec;
+    asn_value_p     csap_socket;
 
-    rc = asn_parse_value_text("{  tcp:{}, ip4:{} }",
-                              ndn_csap_spec, &csap_spec, &syms); 
-    if (rc != 0)
-    {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
-              __FUNCTION__, rc, syms);
-        return rc;
-    }
+    csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_level_spec = asn_init_value(ndn_generic_csap_level);
+    csap_socket     = asn_init_value(ndn_socket_csap);
 
-    rc = asn_write_value_field(csap_spec, (uint8_t *)&loc_addr,
-                               sizeof(loc_addr),
-                               "1.#ip4.local-addr.#plain");
-    if (rc != 0)
-    {
-        ERROR("%s(): write ip addr failed, rc %X", __FUNCTION__, rc);
-        goto cleanup;
-    }
+    asn_write_value_field(csap_socket, NULL, 0,
+                          "type.#tcp-server");
+    asn_write_value_field(csap_socket,
+                          &loc_addr, sizeof(loc_addr),
+                          "local-addr.#plain");
+    asn_write_int32(csap_socket, loc_port, "local-port.#plain");
 
-    rc = asn_write_int32(csap_spec, ntohs(loc_port),
-                         "0.#tcp.local-port.#plain");
-    if (rc != 0)
-    {
-        ERROR("%s(): write port failed, rc %X", __FUNCTION__, rc);
-        goto cleanup;
-    }
+    asn_write_component_value(csap_level_spec, csap_socket, "#socket");
 
-    rc = asn_write_value_field(csap_spec, NULL, 0,
-                               "0.#tcp.data.#server");
-    if (rc != 0)
-    {
-        ERROR("%s(): write server failed, rc %X", __FUNCTION__, rc);
-        goto cleanup;
-    }
+    asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
 
-    rc = tapi_tad_csap_create(ta_name, sid, "data.tcp.ip4", 
-                              csap_spec, tcp_csap); 
-    if (rc != 0)
-        ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
-    else
-        INFO("'data.tcp.ip4' CSAP created succesfully");
+    rc = tapi_tad_csap_create(ta_name, sid, "socket", 
+                              csap_spec, tcp_csap);
 
-cleanup:
     asn_free_value(csap_spec);
-    return rc;
+
+    return TE_RC(TE_TAPI, rc);
 }
 
 /* See description in tapi_tcp.h */
@@ -635,33 +615,27 @@ int
 tapi_tcp_socket_csap_create(const char *ta_name, int sid, 
                             int socket, csap_handle_t *tcp_csap)
 {
-    asn_value *csap_spec = NULL;
-    int rc = 0, syms;
+    te_errno        rc;
+    asn_value_p     csap_spec;
+    asn_value_p     csap_level_spec;
+    asn_value_p     csap_socket;
 
-    rc = asn_parse_value_text("{ tcp:{}, ip4:{} }",
-                              ndn_csap_spec, &csap_spec, &syms); 
-    if (rc != 0)
-    {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
-              __FUNCTION__, rc, syms);
-        return rc;
-    }
+    csap_spec       = asn_init_value(ndn_csap_spec);
+    csap_level_spec = asn_init_value(ndn_generic_csap_level);
+    csap_socket     = asn_init_value(ndn_socket_csap);
 
-    rc = asn_write_int32(csap_spec, socket, "0.#tcp.data.#socket");
-    if (rc != 0)
-    {
-        ERROR("%s(): write socket failed, rc %X", __FUNCTION__, rc);
-        goto cleanup;
-    } 
+    asn_write_int32(csap_socket, socket, "type.#file-descr");
 
-    rc = tapi_tad_csap_create(ta_name, sid, "data.tcp.ip4", 
-                              csap_spec, tcp_csap); 
-    if (rc != 0)
-        ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
+    asn_write_component_value(csap_level_spec, csap_socket, "#socket");
 
-cleanup:
+    asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+
+    rc = tapi_tad_csap_create(ta_name, sid, "socket", 
+                              csap_spec, tcp_csap);
+
     asn_free_value(csap_spec);
-    return rc;
+
+    return TE_RC(TE_TAPI, rc);
 }
 
 
@@ -713,7 +687,7 @@ tapi_tcp_server_recv(const char *ta_name, int sid,
     if (ta_name == NULL || socket == NULL)
         return TE_EWRONGPTR;
 
-    rc = asn_parse_value_text("{{pdus { tcp:{}, ip4:{} } }}",
+    rc = asn_parse_value_text("{ { pdus { socket:{} } } }",
                               ndn_traffic_pattern, &pattern, &syms);
     if (rc != 0)
     {

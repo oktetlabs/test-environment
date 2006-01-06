@@ -58,6 +58,7 @@
 #include "tapi_tad.h"
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
+#include "ndn_socket.h"
 
 
 /**
@@ -283,15 +284,13 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
                       uint16_t loc_port, uint16_t rem_port,
                       csap_handle_t *udp_csap)
 {
-    int         rc;
-    char        csap_fname[100] = "/tmp/te_udp4_csap.XXXXXX";
-    asn_value_p csap_udp_level;
-    asn_value_p csap_ip4_level;
-    asn_value_p csap_spec;
-    asn_value_p csap_level_spec;
+    te_errno        rc;
+    asn_value_p     csap_spec;
+    asn_value_p     csap_level_spec;
+    asn_value_p     csap_socket;
 
-    struct in_addr loc_addr = {0};
-    struct in_addr rem_addr = {0};
+    struct in_addr  loc_addr = { 0 };
+    struct in_addr  rem_addr = { 0 };
 
     if ((loc_addr_str != NULL && inet_aton(loc_addr_str, &loc_addr) == 0) ||
         (rem_addr_str != NULL && inet_aton(rem_addr_str, &rem_addr) == 0))
@@ -301,51 +300,27 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
 
     csap_spec       = asn_init_value(ndn_csap_spec);
     csap_level_spec = asn_init_value(ndn_generic_csap_level);
-    csap_udp_level  = asn_init_value(ndn_udp_csap);
+    csap_socket     = asn_init_value(ndn_socket_csap);
 
-    asn_write_int32(csap_udp_level, loc_port, "local-port.#plain");
-    asn_write_int32(csap_udp_level, rem_port, "remote-port.#plain");
+    asn_write_value_field(csap_socket, NULL, 0,
+                          "type.#udp");
+    asn_write_value_field(csap_socket,
+                          &loc_addr, sizeof(loc_addr),
+                          "local-addr.#plain");
+    asn_write_value_field(csap_socket,
+                          &rem_addr, sizeof(rem_addr),
+                          "remote-addr.#plain");
+    asn_write_int32(csap_socket, loc_port, "local-port.#plain");
+    asn_write_int32(csap_socket, rem_port, "remote-port.#plain");
 
-    asn_write_component_value(csap_level_spec, csap_udp_level, "#udp");
+    asn_write_component_value(csap_level_spec, csap_socket, "#socket");
 
-    rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
+    asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
 
-    rc = asn_free_subvalue(csap_level_spec, "#udp");
-    csap_level_spec = asn_init_value(ndn_generic_csap_level);
-    rc = 0;
-
-    if (rc == 0)
-    {
-        csap_ip4_level   = asn_init_value(ndn_ip4_csap);
-
-        rc = asn_write_value_field(csap_ip4_level,
-                                   &loc_addr, sizeof(loc_addr),
-                                    "local-addr.#plain");
-        rc = asn_write_value_field(csap_ip4_level,
-                                   &rem_addr, sizeof(rem_addr),
-                                    "remote-addr.#plain");
-        rc = asn_write_component_value(csap_level_spec,
-                                       csap_ip4_level, "#ip4");
-    }
-
-    if (rc == 0)
-        rc = asn_insert_indexed(csap_spec, csap_level_spec, 1, "");
-
-    if (rc == 0)
-    {
-        mktemp(csap_fname);
-        rc = asn_save_to_file(csap_spec, csap_fname);
-        VERB("TAPI: udp create csap, save to file %s, rc: %x\n",
-                csap_fname, rc);
-    }
+    rc = tapi_tad_csap_create(ta_name, sid, "socket", 
+                              csap_spec, udp_csap);
 
     asn_free_value(csap_spec);
-    asn_free_value(csap_udp_level);
-    asn_free_value(csap_ip4_level);
-
-    if (rc == 0)
-        rc = rcf_ta_csap_create(ta_name, sid, "data.udp", 
-                                csap_fname, udp_csap);
 
     return TE_RC(TE_TAPI, rc);
 }
