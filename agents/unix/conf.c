@@ -2932,6 +2932,7 @@ neigh_set(unsigned int gid, const char *oid, const char *value,
     return neigh_add(gid, oid, value, ifname, addr);
 }
 
+#ifdef USE_NETLINK
 /** Add or delete a neighbour entry.
  *
  * @param oid           Object instance identifier
@@ -3014,6 +3015,7 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
 
     return 0;
 }
+#endif
 
 /**
  * Add a new neighbour entry.
