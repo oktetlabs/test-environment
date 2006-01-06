@@ -159,7 +159,12 @@ csap_create(const char *type)
     for (i = 0; i < depth; i++)
     {
         new_csap->layers[i].proto = layer_protos[i];
+
         new_csap->layers[i].proto_tag = te_proto_from_str(layer_protos[i]);
+        if (new_csap->layers[i].proto_tag == TE_PROTO_INVALID)
+            CSAP_CREATE_ERROR(TE_EINVAL, "Failed to convert protocol "
+                              "'%s' to tag", layer_protos[i]);
+
         new_csap->layers[i].proto_support =
             csap_spt_find(new_csap->layers[i].proto);
 
