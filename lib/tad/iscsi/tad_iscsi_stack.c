@@ -203,6 +203,8 @@ tad_iscsi_read_cb(csap_p csap, int timeout,
     }
     INFO("%s(CSAP %d), return %d", __FUNCTION__, csap->id, len);
 
+    layer_data->total_received += len;
+
     return len;
 }
 

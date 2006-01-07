@@ -64,6 +64,9 @@ typedef struct tad_iscsi_layer_data {
     uint8_t    *stored_buffer; 
 
     tad_iscsi_send_mode_t send_mode;
+
+    uint32_t    total_received;
+
 } tad_iscsi_layer_data;
 
 
@@ -121,6 +124,16 @@ extern te_errno tad_iscsi_init_cb(csap_p csap, unsigned int layer);
  * The function complies with csap_layer_destroy_cb_t prototype.
  */ 
 extern te_errno tad_iscsi_destroy_cb(csap_p csap, unsigned int layer);
+
+/**
+ * Callback for read parameter value of iSCSI CSAP layer.
+ *
+ * The function complies with csap_layer_get_param_cb_t prototype.
+ */ 
+extern char *tad_iscsi_get_param_cb(csap_p        csap,
+                                    unsigned int  layer,
+                                    const char   *param);
+
 
 /**
  * Callback for generate binary data to be sent to media.

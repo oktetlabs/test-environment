@@ -34,6 +34,8 @@
 #include "config.h"
 #endif
 
+#define _GNU_SOURCE
+#include <stdio.h>
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -115,6 +117,29 @@ tad_iscsi_destroy_cb(csap_p csap, unsigned int layer)
     free(spec_data);
 
     return 0;
+}
+
+
+/* See description in tad_iscsi_impl.h */
+char *
+tad_iscsi_get_param_cb(csap_p csap, unsigned int layer, const char *param)
+{
+    tad_iscsi_layer_data *spec_data;
+    char                 *result = NULL;
+
+    spec_data = csap_get_proto_spec_data(csap, layer); 
+
+    if (strcmp(param, "total_received") == 0)
+    {
+        if (asprintf(&result, "%llu",
+                     (unsigned long long)spec_data->total_received) < 0)
+        {
+            ERROR("%s(): asprintf() failed", __FUNCTION__);
+            result = NULL;
+        }
+    }
+
+    return result;
 }
 
 

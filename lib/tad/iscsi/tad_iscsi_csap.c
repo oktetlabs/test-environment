@@ -47,7 +47,7 @@ static csap_spt_type_t iscsi_csap_spt =
 
     init_cb             : tad_iscsi_init_cb,
     destroy_cb          : tad_iscsi_destroy_cb,
-    get_param_cb        : NULL,
+    get_param_cb        : tad_iscsi_get_param_cb,
 
     confirm_tmpl_cb     : NULL,
     generate_pkts_cb    : tad_iscsi_gen_bin_cb,
