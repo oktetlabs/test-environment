@@ -61,24 +61,7 @@
 
 #include "tad_csap_inst.h"
 #include "tad_utils.h"
-
-
-/** Socket read/write specific data */
-typedef struct tad_socket_rw_data {
-
-    int         socket;
-
-    uint16_t    data_tag;
-    size_t      wait_length;
-    uint8_t    *stored_buffer;
-    size_t      stored_length;
-
-    struct in_addr   local_addr;
-    struct in_addr   remote_addr;
-    unsigned short   local_port;    /**< Local UDP port */
-    unsigned short   remote_port;   /**< Remote UDP port */ 
-
-} tad_socket_rw_data;
+#include "tad_socket_impl.h"
 
 
 /* See description tad_socket_impl.h */
@@ -217,9 +200,6 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     local.sin_family = AF_INET;
     local.sin_addr = spec_data->local_addr;
     local.sin_port = htons(spec_data->local_port);
-    INFO("%s(): Port passed %d, network order %d, IP addr %x", 
-         __FUNCTION__, (int)spec_data->local_port, (int)local.sin_port,
-         (int32_t)local.sin_addr.s_addr);
 
     if ((spec_data->socket = socket(AF_INET,
                                     (spec_data->data_tag ==
@@ -231,15 +211,18 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
               __FUNCTION__, csap->id, rc);
         return rc;
     }
+    INFO(CSAP_LOG_FMT "opened socket %d", CSAP_LOG_ARGS(csap),
+         spec_data->socket);
 
     if (setsockopt(spec_data->socket, SOL_SOCKET, SO_REUSEADDR,
-                   &opt, sizeof(opt)) == -1)
+                   &opt, sizeof(opt)) != 0)
     {
         rc = TE_OS_RC(TE_TAD_CSAP, errno);
         ERROR("%s(CSAP %d) set SO_REUSEADDR failed, errno %r", 
               __FUNCTION__, csap->id, rc);
         return rc;
     }
+    VERB(CSAP_LOG_FMT "SO_REUSEADDR is enabled", CSAP_LOG_ARGS(csap));
 
     if (bind(spec_data->socket, SA(&local), sizeof(local)) < 0)
     {
@@ -248,6 +231,8 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
               __FUNCTION__, csap->id, rc);
         return rc;
     }
+    INFO(CSAP_LOG_FMT "bound to %s:%u", CSAP_LOG_ARGS(csap),
+         inet_ntoa(local.sin_addr), ntohs(local.sin_port));
 
     switch (spec_data->data_tag)
     {
@@ -259,8 +244,7 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
                       __FUNCTION__, csap->id, rc);
                 return rc;
             }
-            INFO("%s(CSAP %d) listen success", __FUNCTION__,
-                 csap->id);
+            INFO(CSAP_LOG_FMT "listen() success", CSAP_LOG_ARGS(csap));
             break;
 
 #if 0
