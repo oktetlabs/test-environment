@@ -24,7 +24,7 @@
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
- * $Id: tad_socket_impl.h 22403 2006-01-05 15:59:36Z arybchik $
+ * $Id$
  */
 
 #ifndef __TE_TAD_SOCKET_IMPL_H__
@@ -33,8 +33,12 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 
 #include "te_errno.h"
+#include "te_stdint.h"
 #include "asn_usr.h"
 
 #include "tad_pkt.h"
@@ -45,6 +49,24 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/** Socket read/write specific data */
+typedef struct tad_socket_rw_data {
+
+    int         socket;
+
+    uint16_t    data_tag;
+    size_t      wait_length;
+    uint8_t    *stored_buffer;
+    size_t      stored_length;
+
+    struct in_addr   local_addr;
+    struct in_addr   remote_addr;
+    unsigned short   local_port;    /**< Local UDP port */
+    unsigned short   remote_port;   /**< Remote UDP port */ 
+
+} tad_socket_rw_data;
 
 
 /**
