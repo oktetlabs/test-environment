@@ -665,7 +665,7 @@ tcp_server_handler(const char *pkt_fname, void *user_param)
 
         return;
     }
-    rc = asn_read_int32(pkt, socket, "pdus.0.socket");
+    rc = asn_read_int32(pkt, socket, "pdus.0.file-descr");
     if (rc != 0)
         ERROR("%s(): read socket failed, rc %r", __FUNCTION__, rc);
 
