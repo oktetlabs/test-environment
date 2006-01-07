@@ -175,23 +175,30 @@ tad_perform_action(csap_p csap,
             }
             break;
 
-#if 0
         case NDN_ACT_FORWARD_PLD:
             {
-                int32_t target_csap;
-                csap_p  target_csap;
+                int32_t         target_csap_id;
+                csap_p          target_csap;
+                csap_spt_type_p cbs;
 
-                asn_read_int32(action_ch_val, &target_csap, "");
-                if ((target_csap = csap_find(target_csap)) != NULL)
+                asn_read_int32(action_ch_val, &target_csap_id, "");
+                if ((target_csap = csap_find(target_csap_id)) != NULL)
                 {
-                    int b = target_csap->write_cb(target_csap,
-                                                        payload,
-                                                        payload_len);
-                    VERB("action 'forward payload' processed, %d sent", b);
+                    tad_pkt     pkt;
+                    tad_pkt_seg seg;
+
+                    tad_pkt_init(&pkt);
+                    tad_pkt_init_seg_data(&seg, payload, payload_len, NULL);
+                    tad_pkt_append_seg(&pkt, &seg);
+
+                    cbs = csap_get_proto_support(target_csap,
+                              csap_get_rw_layer(target_csap));
+                    rc = cbs->write_cb(target_csap, &pkt);
+                    VERB("action 'forward payload' processed");
                 } 
             }
             break; 
-#endif
+
         default:
             WARN("%s(CSAP %d) unsupported action tag %d",
                  __FUNCTION__, csap->id, t_val);
