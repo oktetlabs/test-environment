@@ -844,10 +844,13 @@ tad_pkt_get_frag(tad_pkt *dst, tad_pkt *src,
     add_seg_len = frag_off + frag_len - tad_pkt_get_len(src);
     if (add_seg_len > 0)
     {
+        if ((size_t)add_seg_len > frag_len)
+            add_seg_len = frag_len;
+
         F_VERB("%s(): No enough data in source packet (len=%u) "
                "to get fragment %u+%u=%u", __FUNCTION__,
                (unsigned)tad_pkt_get_len(src), (unsigned)frag_off,
-               (unsigned)frag_len,, (unsigned)(frag_off + frag_len));
+               (unsigned)frag_len, (unsigned)(frag_off + frag_len));
         switch (mode)
         {
             case TAD_PKT_GET_FRAG_ERROR:
