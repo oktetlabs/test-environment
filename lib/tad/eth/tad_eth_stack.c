@@ -453,6 +453,22 @@ tad_eth_write_cb(csap_p csap, const tad_pkt *pkt)
                     continue;
 
                 default:
+#if 0
+                    {
+                        unsigned int    i;
+                        size_t          total = 0;
+
+                        ERROR("pkt=%p iovlen=%u iov=%p",
+                              pkt, (unsigned)iovlen, iov);
+                        for (i = 0; i < iovlen; ++i)
+                        {
+                            total += iov[i].iov_len;
+                            ERROR("#%u: len=%u ptr=%p", i,
+                                  iov[i].iov_len, iov[i].iov_base);
+                        }
+                        ERROR("total=%u", (unsigned)total);
+                    }
+#endif
                     ERROR("%s(CSAP %d): internal error %d, socket %d", 
                           __FUNCTION__, csap->id,
                           csap->last_errno, spec_data->out);
