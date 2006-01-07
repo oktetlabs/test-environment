@@ -31,8 +31,6 @@
 #ifndef __TE_TA_UNIX_INTERNAL_H__
 #define __TE_TA_UNIX_INTERNAL_H__
 
-#define MAC_ADDR_LEN        6
-
 /** Fast conversion of the network mask to prefix */
 #define MASK2PREFIX(mask, prefix)            \
     switch (mask)                            \

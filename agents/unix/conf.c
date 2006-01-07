@@ -2876,7 +2876,7 @@ neigh_state_get(unsigned int gid, const char *oid, char *value,
 {
     unsigned int state;
     te_errno     rc;
-    char         mac[MAC_ADDR_LEN * 3];
+    char         mac[ETHER_ADDR_LEN * 3];
     
     UNUSED(gid);
     UNUSED(oid);
@@ -2956,6 +2956,10 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
     } req;    
     inet_prefix dst;   
     
+    ENTRY("oid=%s addr=%s ifname=%s value=%x:%x:%x:%x:%x:%x cmd=%d",
+          oid, addr, ifname, value[0], value[1], value[2], value[3],
+          value[4], value[5], cmd);
+
     /* TODO: check that address corresponds to interface */
 
     memset(&req, 0, sizeof(req));
@@ -2969,8 +2973,8 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
         
     req.n.nlmsg_type = cmd;
 
-    dst.family = (strchr(addr, ':') != NULL)? AF_INET6 : AF_INET;
-    dst.bytelen = (dst.family == AF_INET)?
+    dst.family = (strchr(addr, ':') != NULL) ? AF_INET6 : AF_INET;
+    dst.bytelen = (dst.family == AF_INET) ?
                   sizeof(struct in_addr) : sizeof(struct in6_addr);
     dst.bitlen = dst.bytelen << 3;
     if (inet_pton(dst.family, addr, dst.data) < 0)
@@ -2981,14 +2985,23 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
     
     req.ndm.ndm_family = dst.family;
     
-    if (strstr(oid, "dynamic") == NULL)
-        req.ndm.ndm_state = NUD_PERMANENT;
+    if (cmd == RTM_NEWNEIGH)
+    {
+        if (strstr(oid, "dynamic") == NULL)
+            req.ndm.ndm_state = NUD_PERMANENT;
+        else
+            req.ndm.ndm_state = NUD_REACHABLE;
+    }
+    else
+    {
+        req.ndm.ndm_state = NUD_NONE;
+    }
     
     addattr_l(&req.n, sizeof(req), NDA_DST, &dst.data, dst.bytelen);
     
     if (value != NULL)
     {        
-        addattr_l(&req.n, sizeof(req), NDA_LLADDR, value, MAC_ADDR_LEN);
+        addattr_l(&req.n, sizeof(req), NDA_LLADDR, value, ETHER_ADDR_LEN);
     }
 
     if (rtnl_open(&rth, 0) < 0)
@@ -3001,15 +3014,19 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
 
     if ((req.ndm.ndm_ifindex = ll_name_to_index(ifname)) == 0)
     {
+        rtnl_close(&rth);
         ERROR("No device (%s) found", ifname);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
     {
+        rtnl_close(&rth);
         ERROR("Failed to send the Netlink message");
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
+
+    rtnl_close(&rth);
 
     return 0;
 }
@@ -3035,14 +3052,11 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     int           i;
 #endif    
  
-    int           int_addr[MAC_ADDR_LEN]; 
+    int           int_addr[ETHER_ADDR_LEN]; 
     int           res;
     
     UNUSED(gid);
     
-    /* TODO: check that address corresponds to interface */
-    UNUSED(ifname);
-
     res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%*s",
                  int_addr, int_addr + 1, int_addr + 2, int_addr + 3,
                  int_addr + 4, int_addr + 5);
@@ -3053,10 +3067,10 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
 #ifdef USE_NETLINK
     if (value != NULL)
     {        
-        int   i;
-        uint8_t       raw_addr[MAC_ADDR_LEN];
+        unsigned int    i;
+        uint8_t         raw_addr[ETHER_ADDR_LEN];
 
-        for (i = 0; i < MAC_ADDR_LEN; i++)
+        for (i = 0; i < ETHER_ADDR_LEN; i++)
         {
             raw_addr[i] = (uint8_t)int_addr[i];
         }
@@ -3067,6 +3081,9 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
         return neigh_change(oid, addr, ifname, NULL, RTM_NEWNEIGH);
     }
 #else /* USE_IOCTL */
+    /* TODO: check that address corresponds to interface */
+    UNUSED(ifname);
+
     memset(&arp_req, 0, sizeof(arp_req));
     arp_req.arp_pa.sa_family = AF_INET;
 
