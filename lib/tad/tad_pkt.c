@@ -24,7 +24,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD PKT"
@@ -785,8 +785,10 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     tad_pkt_get_frag_cb_data   *data = opaque;
     size_t                      next_seg_off;
 
-    UNUSED(pkt);
-    UNUSED(seg_num);
+    ENTRY("pkt=%p seg=%p seg_num=%u opaque=%p "
+          "{frag_off=%u frag_end=%u seg_off=%u dst=%p}",
+          pkt, seg, seg_num, opaque,
+          data->frag_off, data->frag_end, data->seg_off, data->dst);
 
     next_seg_off = data->seg_off + seg->data_len;
 
@@ -795,7 +797,8 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     {
         uint8_t        *ptr = seg->data_ptr;
         ssize_t         off = data->frag_off - data->seg_off;
-        size_t          len = next_seg_off - data->frag_off;
+        size_t          len = MIN(data->frag_end, next_seg_off) -
+                              MAX(data->frag_off, data->seg_off);
         tad_pkt_seg    *dst_seg;
 
         if (off < 0)
@@ -803,15 +806,18 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
         if (len > seg->data_len)
             len = seg->data_len;
         
-        dst_seg = tad_pkt_alloc_seg(ptr + off, len - off, NULL);
+        dst_seg = tad_pkt_alloc_seg(ptr + off, len, NULL);
         if (dst_seg == NULL)
             return TE_RC(TE_TAD_PKT, TE_ENOMEM);
 
         tad_pkt_append_seg(data->dst, dst_seg);
         F_VERB("%s(): Segment off=%u len=%u appended", __FUNCTION__,
-               off, len - off);
+               off, len);
     }
     data->seg_off = next_seg_off;
+
+    EXIT();    
+
     /* 
      * TODO: May be it is usefull to interrupt iteration here,
      * if we went after the interested fragment.
