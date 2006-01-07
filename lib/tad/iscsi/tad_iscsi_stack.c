@@ -222,9 +222,9 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     buf     = pkt->segs.cqh_first->data_ptr;
     buf_len = pkt->segs.cqh_first->data_len;
 #endif
-    struct timeval tv = {0, 1000};
-
-    int rc = 0, fd;
+    int         fd;
+    te_errno    rc = 0;
+    ssize_t     sent;
 
     tad_iscsi_rw_data      *rw_data = csap_get_rw_data(csap);
     tad_iscsi_layer_data   *layer_data =
@@ -239,48 +239,49 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     switch (layer_data->send_mode)
     { 
         case ISCSI_SEND_USUAL:
-            rc = send(fd, buf, buf_len, MSG_DONTWAIT);
-
-            if (rc < 0)
+            sent = send(fd, buf, buf_len, MSG_DONTWAIT);
+            if (sent < 0)
             {
-                if (errno == EAGAIN)
+                rc = te_rc_os2te(errno); 
+                if (rc == TE_EAGAIN)
                 {
+                    struct timeval tv = {0, 1000};
+
                     select(0, NULL, NULL, NULL, &tv); 
-                    rc = send(fd, buf, buf_len, MSG_DONTWAIT);
+                    sent = send(fd, buf, buf_len, MSG_DONTWAIT);
+                    if (sent < 0)
+                        rc = te_rc_os2te(errno); 
                 } 
             }
             break;
 
         case ISCSI_SEND_LAST:
-
-            if ((rc = tad_tcp_push_fin(fd, buf, buf_len)) != 0)
+            if ((rc = tad_tcp_push_fin(fd, buf, buf_len)) == 0)
             { 
-                csap->last_errno = rc;
-                rc = -1;
-            }
-            else
-            {
                 layer_data->send_mode = ISCSI_SEND_INVALID;
-                rc = buf_len;
+                sent = buf_len;
             }
-
             break;
 
         case ISCSI_SEND_INVALID:
-            csap->last_errno = TE_EPIPE;
-            rc = -1;
+            rc = TE_EPIPE;
             break;
+
+        default:
+            assert(FALSE);
     }
 
-    if (rc < 0)
+    if (rc != 0)
     {
-        csap->last_errno = errno;
-        WARN("%s(CSAP %d) error %d on read", __FUNCTION__, 
-             csap->id, csap->last_errno);
-        return -1;
+        WARN("%s(CSAP %u) error %r on read", __FUNCTION__, csap->id, rc);
+        /* FIXME: Is it necessary? */
+        csap->last_errno = rc;
     } 
-    INFO("%s(CSAP %d) written %d bytes to fd %d", 
-         __FUNCTION__, csap->id, rc, fd);
+    else
+    {
+        INFO("%s(CSAP %u) written %d bytes to fd %d", 
+             __FUNCTION__, csap->id, (int)sent, fd);
+    }
 
-    return buf_len;
+    return TE_RC(TE_TAD_CSAP, rc);
 }
