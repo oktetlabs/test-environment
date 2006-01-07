@@ -95,6 +95,8 @@
 #error netlink can be used on Linux only
 #endif
 
+#undef NEIGH_USE_NETLINK
+
 
 #ifdef ENABLE_WIFI_SUPPORT
 extern te_errno ta_unix_conf_wifi_init();
@@ -2719,7 +2721,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-#ifdef USE_NETLINK
+#ifdef NEIGH_USE_NETLINK
 /** Find neighbour entry and return its parameters */
 /**< User data for neigh_find_cb() callback function */
 typedef struct {
@@ -2803,7 +2805,7 @@ static te_errno
 neigh_find(const char *oid, const char *ifname, const char *addr,
            char *mac_p, unsigned int *state_p)
 {
-#ifdef USE_NETLINK
+#ifdef NEIGH_USE_NETLINK
     struct rtnl_handle   rth;    
     neigh_find_cb_param  user_data;
     te_errno             rc;
@@ -2932,7 +2934,7 @@ neigh_set(unsigned int gid, const char *oid, const char *value,
     return neigh_add(gid, oid, value, ifname, addr);
 }
 
-#ifdef USE_NETLINK
+#ifdef NEIGH_USE_NETLINK
 /** Add or delete a neighbour entry.
  *
  * @param oid           Object instance identifier
@@ -3047,7 +3049,7 @@ static te_errno
 neigh_add(unsigned int gid, const char *oid, const char *value,
           const char *ifname, const char *addr)
 {
-#ifdef USE_IOCTL 
+#ifndef NEIGH_USE_NETLINK
     struct arpreq arp_req;
     int           i;
 #endif    
@@ -3064,7 +3066,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     if (res != 6)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-#ifdef USE_NETLINK
+#ifdef NEIGH_USE_NETLINK
     if (value != NULL)
     {        
         unsigned int    i;
@@ -3140,7 +3142,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         }
         return rc;
     }
-#ifdef USE_NETLINK
+#ifdef NEIGH_USE_NETLINK
     return neigh_change(oid, addr, ifname, NULL, RTM_DELNEIGH); 
 #else /* USE_IOCTL */
     {
@@ -3171,7 +3173,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 #endif    
 }
 
-#ifdef USE_NETLINK
+#ifdef NEIGH_USE_NETLINK
 typedef struct {
     te_bool dynamic;
     char    ifname[IFNAMSIZ];
@@ -3227,7 +3229,7 @@ static te_errno
 neigh_list(unsigned int gid, const char *oid, char **list, 
            const char *ifname)
 {
-#ifdef USE_NETLINK
+#ifdef NEIGH_USE_NETLINK
     struct rtnl_handle   rth;    
     neigh_print_cb_param user_data;
     
