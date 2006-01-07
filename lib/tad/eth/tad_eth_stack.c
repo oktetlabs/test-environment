@@ -400,7 +400,7 @@ tad_eth_write_cb(csap_p csap, const tad_pkt *pkt)
 
     if (spec_data->out < 0)
     {
-        ERROR("%s: no output socket", __FUNCTION__);
+        ERROR("%s(): no output socket", __FUNCTION__);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
@@ -408,7 +408,7 @@ tad_eth_write_cb(csap_p csap, const tad_pkt *pkt)
     rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
     if (rc != 0)
     {
-        ERROR("Failed to convert segments to IO vector: %r", rc);
+        ERROR("Failed to convert segments to I/O vector: %r", rc);
         return rc;
     }
 
