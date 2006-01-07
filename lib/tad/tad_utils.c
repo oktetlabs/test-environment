@@ -1093,35 +1093,39 @@ tad_dump_hex(csap_p csap, const char *usr_param,
 
 
 /* See description in tad_utils.h */
-int
+te_errno
 tad_tcp_push_fin(int socket, const uint8_t *data, size_t length)
 {
-    int opt = 1;
-    int rc;
+    int         opt = 1;
+    ssize_t     sent;
+    te_errno    rc;
 
     if (setsockopt(socket, SOL_TCP, TCP_CORK, &opt, sizeof(opt)) < 0)
     {
-        F_ERROR("set CORK on socket %d failed, system errno %d",
-                socket, errno);
-        return errno;
+        rc = te_rc_os2te(errno);
+        F_ERROR("set CORK on socket %d failed, system errno %r",
+                socket, rc);
+        return rc;
     }
 
-    if ((rc = send(socket, data, length, 0)) < 0)
+    if ((sent = send(socket, data, length, 0)) < 0)
     { 
-        F_ERROR("Send last FIN & PUSH fail: errno %d", errno);
-        return errno;
+        rc = te_rc_os2te(errno);
+        F_ERROR("Send last FIN & PUSH fail: errno %r", rc);
+        return rc;
     }
-    else if ((unsigned)rc < length)
+    else if ((size_t)sent < length)
     {
-        F_ERROR("Send last FIN & PUSH fail: sent %d, less then asked %d",
-                rc, length);
+        F_ERROR("Send last FIN & PUSH fail: sent %d, less then asked %u",
+                (int)sent, (unsigned)length);
         return TE_ETOOMANY;
     }
 
     if (shutdown(socket, SHUT_WR) < 0)
     {
-        F_ERROR("SHUT_WR of %d fail: errno %d", socket, errno);
-        return errno;
+        rc = te_rc_os2te(errno);
+        F_ERROR("SHUT_WR of %d fail: errno %r", socket, rc);
+        return rc;
     }
 
     return 0;

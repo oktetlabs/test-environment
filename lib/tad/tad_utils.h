@@ -573,7 +573,8 @@ extern int tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl,
  *
  * @return status code
  */
-extern int tad_tcp_push_fin(int socket, const uint8_t *data, size_t length);
+extern te_errno tad_tcp_push_fin(int socket, const uint8_t *data,
+                                 size_t length);
 
 
 
