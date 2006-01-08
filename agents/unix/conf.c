@@ -119,7 +119,7 @@
 
 /**< MAC address in human notation */
 #ifndef ETH_ADDRSTRLEN
-#define ETH_ADDRSTRLEN (3 * ETH_ALEN - 1)
+#define ETH_ADDRSTRLEN (3 * ETHER_ADDR_LEN - 1)
 #endif
 
 #if !defined(__linux__) && defined(USE_NETLINK)
