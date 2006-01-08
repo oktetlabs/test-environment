@@ -43,16 +43,22 @@ extern "C" {
 #endif
 
 
+/** ATM cell header format */
+typedef enum ndn_atm_type {
+    NDN_ATM_NNI,    /**< Network-Node Interface */
+    NDN_ATM_UNI,    /**< User-Network Interface */
+} ndn_atm_type;
+
+/** ASN.1 tags for ATM */
 typedef enum {
-    NDN_TAG_ATM_HW_TYPE,
-    NDN_TAG_ATM_PROTO,
-    NDN_TAG_ATM_HW_SIZE,
-    NDN_TAG_ATM_PROTO_SIZE,
-    NDN_TAG_ATM_OPCODE,
-    NDN_TAG_ATM_SND_HW_ADDR,
-    NDN_TAG_ATM_SND_PROTO_ADDR,
-    NDN_TAG_ATM_TGT_HW_ADDR,
-    NDN_TAG_ATM_TGT_PROTO_ADDR,
+    NDN_TAG_ATM_TYPE,
+    NDN_TAG_ATM_GFC,
+    NDN_TAG_ATM_VPI,
+    NDN_TAG_ATM_VCI,
+    NDN_TAG_ATM_PAYLOAD_TYPE,
+    NDN_TAG_ATM_CLP,
+    NDN_TAG_ATM_HEC,
+    NDN_TAG_ATM_TYPE_ENUM,
 } ndn_atm_tags_t;
 
 

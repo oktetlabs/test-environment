@@ -36,38 +36,49 @@
 
 static asn_named_entry_t _ndn_atm_header_ne_array[] = 
 {
-    { "hw-type",        &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_ATM_HW_TYPE } },
-    { "proto-type",     &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_ATM_PROTO } },
-    { "hw-size",        &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_ATM_HW_SIZE } },
-    { "proto-size",     &ndn_data_unit_int8_s,
-      { PRIVATE, NDN_TAG_ATM_PROTO_SIZE } },
-    { "opcode",         &ndn_data_unit_int16_s,
-      { PRIVATE, NDN_TAG_ATM_OPCODE } },
-    { "snd-hw-addr",    &ndn_data_unit_octet_string_s,
-      { PRIVATE, NDN_TAG_ATM_SND_HW_ADDR } },
-    { "snd-proto-addr", &ndn_data_unit_octet_string_s,
-      { PRIVATE, NDN_TAG_ATM_SND_PROTO_ADDR } },
-    { "tgt-hw-addr",    &ndn_data_unit_octet_string_s,
-      { PRIVATE, NDN_TAG_ATM_TGT_HW_ADDR } },
-    { "tgt-proto-addr", &ndn_data_unit_octet_string_s,
-      { PRIVATE, NDN_TAG_ATM_TGT_PROTO_ADDR } },
+    { "gfc",            &ndn_data_unit_int4_s,
+      { PRIVATE, NDN_TAG_ATM_GFC } },
+    { "vpi",            &ndn_data_unit_int12_s,
+      { PRIVATE, NDN_TAG_ATM_VPI } },
+    { "vci",            &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_ATM_VCI } },
+    { "payload-type",   &ndn_data_unit_int3_s,
+      { PRIVATE, NDN_TAG_ATM_PAYLOAD_TYPE } },
+    { "clp",            &ndn_data_unit_int1_s,
+      { PRIVATE, NDN_TAG_ATM_CLP } },
+    { "hec",            &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_ATM_HEC } },
 };
 
 asn_type ndn_atm_header_s =
 {
-    "ATM-Header", { PRIVATE, 100 /* FIXME */}, SEQUENCE, 
-    sizeof(_ndn_atm_header_ne_array) / sizeof(asn_named_entry_t),
-    {_ndn_atm_header_ne_array}
+    "ATM-Header", { PRIVATE, 100 /* FIXME */ }, SEQUENCE, 
+    TE_ARRAY_LEN(_ndn_atm_header_ne_array),
+    { _ndn_atm_header_ne_array }
 };
 
 const asn_type * const ndn_atm_header = &ndn_atm_header_s;
 
 
+asn_enum_entry_t _ndn_atm_type_enum_entries[] = 
+{
+    { "nni", NDN_ATM_NNI },
+    { "uni", NDN_ATM_UNI },
+};
+
+asn_type ndn_atm_type_s =
+{
+    "ATM-CSAP-Type",
+    { PRIVATE, NDN_TAG_ATM_TYPE_ENUM },
+    ENUMERATED,
+    TE_ARRAY_LEN(_ndn_atm_type_enum_entries),
+    { enum_entries: _ndn_atm_type_enum_entries }
+};
+
 static asn_named_entry_t _ndn_atm_csap_ne_array[] = 
 {
+    { "type",           &ndn_atm_type_s,
+      { PRIVATE, NDN_TAG_ATM_TYPE } },
     { "gfc",            &ndn_data_unit_int4_s,
       { PRIVATE, NDN_TAG_ATM_GFC } },
     { "vpi",            &ndn_data_unit_int12_s,
@@ -83,8 +94,8 @@ static asn_named_entry_t _ndn_atm_csap_ne_array[] =
 asn_type ndn_atm_csap_s =
 {
     "ATM-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
-    sizeof(_ndn_atm_csap_ne_array) / sizeof(asn_named_entry_t),
-    { _ndn_atm_header_ne_array }
+    TE_ARRAY_LEN(_ndn_atm_csap_ne_array),
+    { _ndn_atm_csap_ne_array }
 };
 
 const asn_type * const ndn_atm_csap = &ndn_atm_csap_s;
