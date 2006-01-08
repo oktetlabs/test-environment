@@ -122,8 +122,8 @@ typedef struct tapi_tcp_connection_t {
 
     char loc_iface[IFNAME_SIZE];
 
-    uint8_t loc_mac[ETH_ALEN];
-    uint8_t rem_mac[ETH_ALEN];
+    uint8_t loc_mac[ETHER_ADDR_LEN];
+    uint8_t rem_mac[ETHER_ADDR_LEN];
 
     struct sockaddr_storage loc_addr;
     struct sockaddr_storage rem_addr;

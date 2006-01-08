@@ -421,9 +421,9 @@ tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
     uint8_t          *pkt_mask;
     size_t            arp_pkt_len;
     tapi_arp_frame_t  arp_frame;
-    uint8_t           zero_mac[ETH_ALEN] = { 0, };
+    uint8_t           zero_mac[ETHER_ADDR_LEN] = { 0, };
     uint8_t           zero_ip[sizeof(struct in_addr)] = { 0, };
-    uint8_t           all_one_mac[ETH_ALEN] =
+    uint8_t           all_one_mac[ETHER_ADDR_LEN] =
                           { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
     uint8_t           all_one_ip[sizeof(struct in_addr)] = 
                           { 0xff, 0xff, 0xff, 0xff };

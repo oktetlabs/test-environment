@@ -515,7 +515,8 @@ tapi_ip4_eth_template(const uint8_t *src_mac_addr,
               __FUNCTION__, rc, syms);
 
     if ((src_mac_addr != NULL) && 
-        ((rc = asn_write_value_field(*result_value, src_mac_addr, ETH_ALEN,
+        ((rc = asn_write_value_field(*result_value,
+                                     src_mac_addr, ETHER_ADDR_LEN,
                                      "pdus.0.#eth.src-addr.#plain")) != 0)) 
     {
         ERROR("%s(): src MAC specified, but write error %X", 
@@ -524,7 +525,8 @@ tapi_ip4_eth_template(const uint8_t *src_mac_addr,
     } 
 
     if ((dst_mac_addr != NULL) && 
-        ((rc = asn_write_value_field(*result_value, dst_mac_addr, ETH_ALEN,
+        ((rc = asn_write_value_field(*result_value,
+                                     dst_mac_addr, ETHER_ADDR_LEN,
                                      "pdus.0.#eth.dst-addr.#plain")) != 0)) 
     {
         ERROR("%s(): dst MAC specified, but write error %X", 

@@ -68,7 +68,7 @@
 
 
 /** Bridge Group Address according to IEEE 802.1D, Table 7.9 */
-static uint8_t bridge_group_addr[ETH_ALEN] =
+static uint8_t bridge_group_addr[ETHER_ADDR_LEN] =
     {0x01, 0x80, 0xC2, 0x00, 0x00, 0x00};
 
 

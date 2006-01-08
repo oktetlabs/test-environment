@@ -68,15 +68,15 @@ typedef struct tapi_arp_frame {
  * @param dst_mac_    Destination MAC address
  */
 #define TAPI_ARP_FILL_ETH_HDR(arp_frame_, src_mac_, dst_mac_) \
-    do {                                                            \
-        memset(&((arp_frame_)->eth_hdr), 0,                         \
-                sizeof((arp_frame_)->eth_hdr));                     \
-        assert(sizeof((arp_frame_)->eth_hdr.src_addr) == ETH_ALEN); \
-        memcpy((arp_frame_)->eth_hdr.src_addr, src_mac_, ETH_ALEN); \
-        assert(sizeof((arp_frame_)->eth_hdr.dst_addr) == ETH_ALEN); \
-        memcpy((arp_frame_)->eth_hdr.dst_addr, dst_mac_, ETH_ALEN); \
-        (arp_frame_)->eth_hdr.eth_type_len = ETHERTYPE_ARP;         \
-        (arp_frame_)->eth_hdr.is_tagged = FALSE;                    \
+    do {                                                                  \
+        memset(&((arp_frame_)->eth_hdr), 0,                               \
+                sizeof((arp_frame_)->eth_hdr));                           \
+        assert(sizeof((arp_frame_)->eth_hdr.src_addr) == ETHER_ADDR_LEN); \
+        memcpy((arp_frame_)->eth_hdr.src_addr, src_mac_, ETHER_ADDR_LEN); \
+        assert(sizeof((arp_frame_)->eth_hdr.dst_addr) == ETHER_ADDR_LEN); \
+        memcpy((arp_frame_)->eth_hdr.dst_addr, dst_mac_, ETHER_ADDR_LEN); \
+        (arp_frame_)->eth_hdr.eth_type_len = ETHERTYPE_ARP;               \
+        (arp_frame_)->eth_hdr.is_tagged = FALSE;                          \
     } while (0)
     
 /**
@@ -97,18 +97,18 @@ typedef struct tapi_arp_frame {
                sizeof((arp_frame_)->arp_hdr));                          \
         (arp_frame_)->arp_hdr.hw_type = ARPHRD_ETHER;                   \
         (arp_frame_)->arp_hdr.proto_type = ETHERTYPE_IP;                \
-        (arp_frame_)->arp_hdr.hw_size = ETH_ALEN;                       \
+        (arp_frame_)->arp_hdr.hw_size = ETHER_ADDR_LEN;                 \
         (arp_frame_)->arp_hdr.proto_size = sizeof(struct in_addr);      \
         (arp_frame_)->arp_hdr.opcode = (op_);                           \
         if ((snd_hw_) != NULL)                                          \
             memcpy((arp_frame_)->arp_hdr.snd_hw_addr, snd_hw_,          \
-                   ETH_ALEN);                                           \
+                   ETHER_ADDR_LEN);                                     \
         if ((snd_proto_) != NULL)                                       \
             memcpy((arp_frame_)->arp_hdr.snd_proto_addr, snd_proto_,    \
                    sizeof(struct in_addr));                             \
         if ((tgt_hw_) != NULL)                                          \
             memcpy((arp_frame_)->arp_hdr.tgt_hw_addr, tgt_hw_,          \
-                   ETH_ALEN);                                           \
+                   ETHER_ADDR_LEN);                                     \
         if ((tgt_proto_) != NULL)                                       \
             memcpy((arp_frame_)->arp_hdr.tgt_proto_addr, tgt_proto_,    \
                    sizeof(struct in_addr));                             \

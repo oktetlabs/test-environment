@@ -533,12 +533,12 @@ tapi_eth_prepare_pattern_unit(uint8_t *src_mac, uint8_t *dst_mac,
         if (rc) break;
 
         if (src_mac)
-            rc = asn_write_value_field(pat_unit, src_mac, ETH_ALEN, 
+            rc = asn_write_value_field(pat_unit, src_mac, ETHER_ADDR_LEN, 
                                        "pdus.0.#eth.src-addr.#plain");
         if (rc) break;
 
         if (dst_mac)
-            rc = asn_write_value_field(pat_unit, dst_mac, ETH_ALEN, 
+            rc = asn_write_value_field(pat_unit, dst_mac, ETHER_ADDR_LEN, 
                                        "pdus.0.#eth.dst-addr.#plain");
         if (rc) break;
 

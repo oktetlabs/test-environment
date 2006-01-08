@@ -354,13 +354,13 @@ tapi_udp_ip4_eth_csap_create(const char *ta_name, int sid,
         }
         if (loc_mac != NULL)
         {
-            rc = asn_write_value_field(csap_spec, loc_mac, ETH_ALEN,
+            rc = asn_write_value_field(csap_spec, loc_mac, ETHER_ADDR_LEN,
                                        "2.#eth.local-addr.#plain");
             if (rc != 0) break;
         }
         if (rem_mac != NULL)
         {
-            rc = asn_write_value_field(csap_spec, rem_mac, ETH_ALEN,
+            rc = asn_write_value_field(csap_spec, rem_mac, ETHER_ADDR_LEN,
                                        "2.#eth.remote-addr.#plain");
             if (rc != 0) break;
         }
