@@ -36,8 +36,19 @@
 #include "config.h"
 #endif
 
+#if HAVE_STRING_H
 #include <string.h>
-#include <fcntl.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#if HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
+#endif
+#if HAVE_NET_IF_ETHER_H
+#include <net/if_ether.h>
+#endif
+//#include <fcntl.h>
 
 #include "te_defs.h"
 #include "logger_api.h"
@@ -177,8 +188,8 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
 
 #if 1
 {
-    uint8_t remote_addr[ETH_ALEN];
-    uint8_t local_addr[ETH_ALEN];
+    uint8_t remote_addr[ETHER_ADDR_LEN];
+    uint8_t local_addr[ETHER_ADDR_LEN];
     uint16_t eth_type;
     size_t              val_len;
     eth_csap_specific_data_p spec_data = &proto_data->old;
@@ -199,7 +210,7 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
     }
     else
     {
-        spec_data->remote_addr = malloc(ETH_ALEN);
+        spec_data->remote_addr = malloc(ETHER_ADDR_LEN);
     
         if (spec_data->remote_addr == NULL)
         {
@@ -207,7 +218,7 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
             ERROR("Init, no mem");
             return TE_RC(TE_TAD_CSAP, TE_ENOMEM); 
         }
-        memcpy (spec_data->remote_addr, remote_addr, ETH_ALEN);
+        memcpy (spec_data->remote_addr, remote_addr, ETHER_ADDR_LEN);
     }
 
     /* setting local address */
@@ -225,14 +236,14 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
     }
     else
     {
-        spec_data->local_addr = malloc(ETH_ALEN);
+        spec_data->local_addr = malloc(ETHER_ADDR_LEN);
         if (spec_data->local_addr == NULL)
         {
             free_eth_csap_data(spec_data,ETH_COMPLETE_FREE);
             ERROR("Init, no mem");
             return TE_RC(TE_TAD_CSAP, TE_ENOMEM); 
         }
-        memcpy (spec_data->local_addr, local_addr, ETH_ALEN);
+        memcpy (spec_data->local_addr, local_addr, ETHER_ADDR_LEN);
     }
     
     /* setting ethernet type */
@@ -346,10 +357,12 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 static te_errno
 tad_eth_check_frame_len(tad_pkt *pkt, void *opaque)
 {
+    ssize_t tailer_len = (ETHER_MIN_LEN - ETHER_CRC_LEN) -
+                         tad_pkt_get_len(pkt);
+
     UNUSED(opaque);
-    if (tad_pkt_get_len(pkt) < ETH_ZLEN)
+    if (tailer_len > 0)
     {
-        size_t       tailer_len = ETH_ZLEN - tad_pkt_get_len(pkt);
         tad_pkt_seg *seg = tad_pkt_alloc_seg(NULL, tailer_len, NULL);
 
         if (seg == NULL)
@@ -465,7 +478,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
     pld_fragment = up_payload;
     do {
 
-        frame_size = pld_fragment->len + ETH_HLEN;
+        frame_size = pld_fragment->len + ETHER_HDR_LEN;
 
         F_VERB("%s(): pld_fragment len %d, frame size %d", 
                __FUNCTION__, pld_fragment->len, frame_size);
@@ -478,14 +491,10 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
                      spec_data->du_vlan_id .du_type != TAD_DU_UNDEF); 
 
         if (is_tagged)
-            frame_size += ETH_TAG_EXC_LEN + ETH_TYPE_LEN;
+            frame_size += ETH_TAG_EXC_LEN + ETHER_TYPE_LEN;
         
-        if (frame_size < ETH_ZLEN)
-        {
-            frame_size = ETH_ZLEN;
-        }
 #if 0 /* for attacks tests we decided theat this check is not necessary */
-        else if (frame_size > ETH_FRAME_LEN) 
+        else if (frame_size > (ETHER_MAX_LEN - ETHER_CRC_LEN)) 
         { /* TODO: this check seems to be not correct, compare with interface MTU
                   should be here. */
             ERROR("too greate frame size %d", frame_size);
@@ -517,8 +526,8 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
             p += length;                                                    \
         } while (0) 
 
-        PUT_BIN_DATA(du_dst_addr, ETH_ALEN);
-        PUT_BIN_DATA(du_src_addr, ETH_ALEN); 
+        PUT_BIN_DATA(du_dst_addr, ETHER_ADDR_LEN);
+        PUT_BIN_DATA(du_src_addr, ETHER_ADDR_LEN); 
 
         if (is_tagged)
         { 
@@ -547,7 +556,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
 
             /* put "tagged special" eth type/length */
             *((uint16_t *) p) = htons (ETH_TAGGED_TYPE_LEN); 
-            p += ETH_TYPE_LEN; 
+            p += ETHER_TYPE_LEN; 
 
             /* vlan_id prepared already in network byte order */
             *((uint16_t *)p) = vlan_id;
@@ -569,7 +578,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
             spec_data->du_eth_type.val_i32 = pld_fragment->len;
 
         }
-        PUT_BIN_DATA(du_eth_type, ETH_TYPE_LEN); 
+        PUT_BIN_DATA(du_eth_type, ETHER_TYPE_LEN); 
     } while (pld_fragment != NULL);
 
 #undef PUT_BIN_DATA
@@ -619,13 +628,13 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
         spec_data->local_addr != NULL)
     {
         VERB("receive, dst = local");
-        rc = tad_data_unit_from_bin(spec_data->local_addr, ETH_ALEN,
+        rc = tad_data_unit_from_bin(spec_data->local_addr, ETHER_ADDR_LEN,
                                     &spec_data->du_dst_addr);
 
         if (rc == 0)
             rc = asn_write_value_field(layer_pdu, 
                                        spec_data->local_addr, 
-                                       ETH_ALEN, "dst-addr.#plain");
+                                       ETHER_ADDR_LEN, "dst-addr.#plain");
         if (rc)
         {
             ERROR("construct dst addr rc %r", rc);
@@ -653,12 +662,12 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     {
         VERB("receive, src = remote");
         rc = tad_data_unit_from_bin(spec_data->remote_addr, 
-                                    ETH_ALEN,
+                                    ETHER_ADDR_LEN,
                                     &spec_data->du_src_addr);
         if (rc == 0)
             rc = asn_write_value_field(layer_pdu, 
                                        spec_data->remote_addr, 
-                                       ETH_ALEN, "src-addr.#plain");
+                                       ETHER_ADDR_LEN, "src-addr.#plain");
         if (rc)
         {
             ERROR("construct src addr rc %r", rc);
@@ -791,8 +800,8 @@ tad_eth_match_bin_cb(csap_p csap, unsigned int layer,
         eth_hdr_pdu = asn_init_value(ndn_eth_header);
 
     rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
-                              data, ETH_ALEN, "dst-addr");
-    data += ETH_ALEN; 
+                              data, ETHER_ADDR_LEN, "dst-addr");
+    data += ETHER_ADDR_LEN; 
 
     VERB("%s(CSAP %d): univ match for dst rc %x\n",
          __FUNCTION__, csap->id, rc);
@@ -802,8 +811,8 @@ tad_eth_match_bin_cb(csap_p csap, unsigned int layer,
 
     /* source  */ 
     rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
-                              data, ETH_ALEN, "src-addr");
-    data += ETH_ALEN;
+                              data, ETHER_ADDR_LEN, "src-addr");
+    data += ETHER_ADDR_LEN;
     VERB("%s(CSAP %d): univ match for src rc %x\n",
          __FUNCTION__, csap->id, rc);
 
@@ -815,7 +824,7 @@ tad_eth_match_bin_cb(csap_p csap, unsigned int layer,
 
         VERB("VLan info found in Ethernet frame");
 
-        data += ETH_TYPE_LEN; 
+        data += ETHER_TYPE_LEN; 
 
         prio = *data >> 5; 
 
@@ -860,7 +869,7 @@ tad_eth_match_bin_cb(csap_p csap, unsigned int layer,
     if (rc == 0)
     { 
         rc = ndn_match_data_units(pattern_pdu, eth_hdr_pdu, 
-                                  data, ETH_TYPE_LEN, "eth-type");
+                                  data, ETHER_TYPE_LEN, "eth-type");
         VERB("%s(CSAP %d): univ match for eth-type rc %x\n",
              __FUNCTION__, csap->id, rc);
     }
@@ -881,12 +890,12 @@ tad_eth_match_bin_cb(csap_p csap, unsigned int layer,
     /* Correction for number of read bytes was insered to synchronize 
      * with OS interface statistics, but it cause many side effects, 
      * therefore it is disabled now. */ 
-    payload->len = (pkt->len - ETH_HLEN - ETH_TAILING_CHECKSUM);
+    payload->len = (pkt->len - ETHER_HDR_LEN - ETH_TAILING_CHECKSUM);
 #else
-    payload->len = (pkt->len - ETH_HLEN);
+    payload->len = (pkt->len - ETHER_HDR_LEN);
 #endif
     payload->data = malloc(payload->len);
-    memcpy(payload->data, pkt->data + ETH_HLEN, payload->len); 
+    memcpy(payload->data, pkt->data + ETHER_HDR_LEN, payload->len); 
 
     gettimeofday(&moment, NULL);
     VERB("%s(CSAP %d), packet matches, pkt len %d, pld len %d, mcs %d", 

@@ -36,11 +36,14 @@
 
 #include <string.h>
 #include <stdlib.h>
+#if HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
+#endif
+#if HAVE_NET_IF_ETHER_H
+#include <net/if_ether.h>
+#endif
 
 #include "tad_ipstack_impl.h"
-
-/* for ETH_ALEN */
-#include "ndn_eth.h"
 
 
 /**
@@ -147,9 +150,9 @@ tad_icmp_error(csap_p csap, const char *usr_param,
     p = msg = pkt->segs.cqh_first->data_ptr;
 
     /* Ethernet header */
-    memcpy(p, orig_pkt + ETH_ALEN, ETH_ALEN); 
-    memcpy(p + ETH_ALEN, orig_pkt, ETH_ALEN); 
-    memcpy(p + 2 * ETH_ALEN, orig_pkt + 2 * ETH_ALEN, 2); 
+    memcpy(p, orig_pkt + ETHER_ADDR_LEN, ETHER_ADDR_LEN); 
+    memcpy(p + ETHER_ADDR_LEN, orig_pkt, ETHER_ADDR_LEN); 
+    memcpy(p + 2 * ETHER_ADDR_LEN, orig_pkt + 2 * ETHER_ADDR_LEN, 2); 
     p += 14; orig_pkt += 14;
 
     /* IP header, now leave orig_pkt unchanged */

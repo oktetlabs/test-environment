@@ -94,11 +94,13 @@ typedef struct eth_interface
     char  name[IFNAME_SIZE];    /**< Etherner interface name (e.g. eth0) */
     int   if_index;             /**< Interface index                     */
     
-    char  local_addr[ETH_ALEN]; /**< Hardware address of the home interface
-                                     Extracted through ioctls if not defined
-                                     by the user in the configuration param.
-                                     (may differ from real hardware address)
-                                 */
+    char  local_addr[ETHER_ADDR_LEN];   /**< Hardware address of the home
+                                             interface extracted through
+                                             ioctls if not defined
+                                             by the user in the
+                                             configuration param. (may
+                                             differ from real
+                                             hardware address) */
     
 } eth_interface_t;
 

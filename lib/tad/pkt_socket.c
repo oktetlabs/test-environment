@@ -153,7 +153,7 @@ open_packet_socket(const char *ifname, int *sock)
     bind_addr.sll_ifindex = ifdescr.if_index;
     bind_addr.sll_hatype = ARPHRD_ETHER;
     bind_addr.sll_pkttype = 0;
-    bind_addr.sll_halen = ETH_ALEN;
+    bind_addr.sll_halen = ETHER_ADDR_LEN;
 
     VERB("RAW Socket opened");
 
@@ -287,7 +287,7 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
         return ETH_IFACE_HWADDR_ERROR;
     }
 
-    memcpy(ifdescr->local_addr, if_req.ifr_hwaddr.sa_data, ETH_ALEN);
+    memcpy(ifdescr->local_addr, if_req.ifr_hwaddr.sa_data, ETHER_ADDR_LEN);
     strncpy(if_req.ifr_name, name, sizeof(if_req.ifr_name));
 
     if (ioctl(cfg_socket, SIOCGIFINDEX, &if_req))

@@ -55,31 +55,6 @@
 #include "pkt_socket.h"
 
 
-#ifndef ETH_ALEN          /* Octets in one Ethernet addr     */
-#define ETH_ALEN    6 
-#endif
-
-#ifndef ETH_HLEN         /* Total octets in header.         */
-#define ETH_HLEN    14 
-#endif
-
-#ifndef ETH_ZLEN         /* Min. octets in frame sans FCS   */
-#define ETH_ZLEN    60 
-#endif
-
-#ifndef ETH_DATA_LEN    /* Max. octets in payload          */
-#define ETH_DATA_LEN    1500
-#endif
-
-#ifndef ETH_FRAME_LEN   /* Max. octets in frame sans FCS   */
-#define ETH_FRAME_LEN    1514
-#endif
-
-
-#ifndef ETH_TYPE_LEN      /* Octets in Ethernet type         */
-#define ETH_TYPE_LEN    2 
-#endif
-
 #ifndef ETH_TAG_EXC_LEN  /* Extra tagging octets in eth. header */
 #define ETH_TAG_EXC_LEN    2       
 #endif

@@ -644,9 +644,10 @@ eth_echo_method(csap_p csap, uint8_t *pkt, size_t len)
     if (csap == NULL || pkt == NULL || len == 0)
         return TE_EINVAL;
 #if 1
-    memcpy (tmp_buffer, pkt + ETH_ALEN, ETH_ALEN);
-    memcpy (tmp_buffer + ETH_ALEN, pkt, ETH_ALEN);
-    memcpy (tmp_buffer + 2*ETH_ALEN, pkt + 2*ETH_ALEN, len - 2*ETH_ALEN);
+    memcpy(tmp_buffer, pkt + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
+    memcpy(tmp_buffer + ETHER_ADDR_LEN, pkt, ETHER_ADDR_LEN);
+    memcpy(tmp_buffer + 2*ETHER_ADDR_LEN, pkt + 2*ETHER_ADDR_LEN,
+           len - 2 * ETHER_ADDR_LEN);
 
 #if 0
     /* Correction for number of read bytes was insered to synchronize 

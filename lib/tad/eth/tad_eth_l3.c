@@ -399,7 +399,7 @@ mac_str2addr(const char *mac_str, uint8_t *mac)
     if (mac_str == NULL || mac == NULL)
         return TE_EWRONGPTR;
 
-    for (i = 0; i < ETH_ALEN; i++, mac_str = endptr)
+    for (i = 0; i < ETHER_ADDR_LEN; i++, mac_str = endptr)
     {
         if (i > 0)
         {
@@ -416,7 +416,7 @@ mac_str2addr(const char *mac_str, uint8_t *mac)
             break;
     }
 
-    if (i < ETH_ALEN) /* parse error */ 
+    if (i < ETHER_ADDR_LEN) /* parse error */ 
     {
         ERROR("too small index %d, NULL endptr", i);
         return TE_EINVAL;
@@ -443,7 +443,7 @@ tad_eth_arp_reply(csap_p csap, const char *usr_param,
 {
     csap_spt_type_p rw_layer_cbs;
 
-    uint8_t     my_mac[ETH_ALEN];
+    uint8_t     my_mac[ETHER_ADDR_LEN];
     tad_pkt    *pkt;
     uint8_t    *p;
 
