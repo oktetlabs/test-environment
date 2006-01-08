@@ -2752,7 +2752,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-#ifdef NEIGH_USE_NETLINK
+#ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
 /** Find neighbour entry and return its parameters */
 /**< User data for neigh_find_cb() callback function */
 typedef struct {
@@ -2836,7 +2836,7 @@ static te_errno
 neigh_find(const char *oid, const char *ifname, const char *addr,
            char *mac_p, unsigned int *state_p)
 {
-#ifdef NEIGH_USE_NETLINK
+#ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
     struct rtnl_handle   rth;    
     neigh_find_cb_param  user_data;
     te_errno             rc;
@@ -3309,7 +3309,7 @@ neigh_list(unsigned int gid, const char *oid, char **list,
 
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        
+
     return 0;
 }
 
