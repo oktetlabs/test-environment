@@ -481,6 +481,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     cfg_types[msg->val_type].free(val);
 
     inst = CFG_GET_INST(handle);
+    assert(inst != NULL);
     obj = inst->obj;
     if (cfg_instance_volatile(inst))
         update_dh = FALSE;
@@ -590,11 +591,20 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
      * We've just added a new instance to the Agent, so mark that 
      * in instance data structure.
      */
-    inst = CFG_GET_INST(handle);
-    inst->added = TRUE;
-    cfg_conf_delay_update(inst->oid);
+    if ((inst = CFG_GET_INST(handle)) != NULL)
+    {
+        inst->added = TRUE;
+        cfg_conf_delay_update(inst->oid);
 
-    cfg_ta_sync_dependants(inst);
+        cfg_ta_sync_dependants(inst);
+    }
+    else
+    {
+        /*
+         * FIXME: We have added instance, but it disappeared too fast
+         * during synchronization.
+         */
+    }
     
     msg->handle = handle;
 }
