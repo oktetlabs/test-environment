@@ -48,6 +48,7 @@ tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
 {
     te_errno    rc;
     int         msg_len;
+    size_t      read_len;
     char       *msg;
 
     UNUSED(csap);
@@ -69,12 +70,18 @@ tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
               __FUNCTION__, msg_len);
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
-    rc = asn_read_value_field(tmpl_pdu, msg, &msg_len, "message");
+    rc = asn_read_value_field(tmpl_pdu, msg, &read_len, "message");
     if (rc != 0)
     {
         ERROR("Failed to read 'message' from NDS: %r", rc);
         free(msg);
         return rc;
+    }
+    if (read_len != (size_t)msg_len)
+    {
+        ERROR("%s(): Unexpected number of bytes %u read using "
+              "asn_read_value_field(), expected %d", __FUNCTION__,
+              (unsigned)read_len, msg_len);
     }
 
     tad_pkts_move(pdus, sdus);
