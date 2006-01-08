@@ -32,7 +32,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #ifndef __TE_TAD_PKT_H__
@@ -331,6 +331,69 @@ extern void tad_pkt_insert_after_seg(tad_pkt *pkt, tad_pkt_seg *seg,
 extern te_errno tad_pkt_flatten_copy(tad_pkt *pkt,
                                      uint8_t **data, size_t *len);
 
+/**
+ * Get the first segment of the packet.
+ *
+ * @param pkt       Packet
+ *
+ * @return Pointer to the first segment or NULL.
+ */
+static inline tad_pkt_seg *
+tad_pkt_first_seg(const tad_pkt *pkt)
+{
+    assert(pkt != NULL);
+    return (pkt->segs.cqh_first != (void *)&pkt->segs) ?
+               pkt->segs.cqh_first : NULL;
+}
+
+/**
+ * Get the last segment of the packet.
+ *
+ * @param pkt       Packet
+ *
+ * @return Pointer to the last segment or NULL.
+ */
+static inline tad_pkt_seg *
+tad_pkt_last_seg(const tad_pkt *pkt)
+{
+    assert(pkt != NULL);
+    return (pkt->segs.cqh_last != (void *)&pkt->segs) ?
+               pkt->segs.cqh_last : NULL;
+}
+
+/**
+ * Get the next segment of the packet.
+ *
+ * @param pkt       Packet
+ *
+ * @return Pointer to the next segment or NULL.
+ */
+static inline tad_pkt_seg *
+tad_pkt_next_seg(const tad_pkt *pkt, const tad_pkt_seg *seg)
+{
+    assert(pkt != NULL);
+    assert(seg != NULL);
+    assert(seg != (void *)&pkt->segs);
+    return (seg->links.cqe_next != (void *)&pkt->segs) ?
+               seg->links.cqe_next : NULL;
+}
+
+/**
+ * Get the previous segment of the packet.
+ *
+ * @param pkt       Packet
+ *
+ * @return Pointer to the previous segment or NULL.
+ */
+static inline tad_pkt_seg *
+tad_pkt_prev_seg(const tad_pkt *pkt, const tad_pkt_seg *seg)
+{
+    assert(pkt != NULL);
+    assert(seg != NULL);
+    assert(seg != (void *)&pkt->segs);
+    return (seg->links.cqe_prev != (void *)&pkt->segs) ?
+               seg->links.cqe_prev : NULL;
+}
 
 /**
  * Prototype of the function to be called for each packet segment.
