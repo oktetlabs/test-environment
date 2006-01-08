@@ -83,12 +83,15 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
 }
 
 #define EXAMPLE_MULT_PKTS 0
+
 int
 main(int argc, char *argv[])
 {
     char   ta[32];
     size_t len = sizeof(ta);
     int  sid;
+
+    int  num;
 
     csap_handle_t eth_csap = CSAP_INVALID_HANDLE;
     csap_handle_t eth_listen_csap = CSAP_INVALID_HANDLE;
@@ -123,16 +126,6 @@ main(int argc, char *argv[])
 #if 0
         char payload_fill_method[100] = "eth_udp_payload";
 #endif
-
-        /* returned from CSAP total byte counter */
-        unsigned long    tx_counter;
-        /* buffer for tx_counter */
-        char             tx_counter_txt[20];
-        /* returned from CSAP total byte counter */
-        unsigned long    rx_counter;
-        /* buffer for rx_counter */
-        char             rx_counter_txt[20];
-
 
 #if 0
         uint8_t rem_addr[6] = {0x01,0x02,0x03,0x04,0x05,0x06};
@@ -285,20 +278,10 @@ main(int argc, char *argv[])
 
 #endif
 
-#if 1
-#if 1
         rc = tapi_tad_trrecv_start(ta, sid, eth_listen_csap, pattern, 
                                    0, 1, RCF_TRRECV_PACKETS);
-#else
-        syms = 4;
-        rc = tapi_tad_trrecv_wait(ta, sid, eth_listen_csap,
-                                  tapi_eth_trrecv_cb_data(
-                                      local_eth_frame_handler, NULL),
-                                  &syms);
-#endif
-        if (rc)
+        if (rc != 0)
             TEST_FAIL("failed %r, catched %d", rc, syms);
-#endif
 
         rc = tapi_tad_trsend_start(ta, sid, eth_csap, template,
                                    RCF_MODE_BLOCKING);
@@ -310,33 +293,19 @@ main(int argc, char *argv[])
 
         sleep(2);
 
-        /* Retrieve total TX bytes sent */
-        rc = rcf_ta_csap_param(ta, sid, eth_csap, "total_bytes", 
-                               sizeof(tx_counter_txt), tx_counter_txt);
-        if (rc)
-            TEST_FAIL("get total bytes recv rc %x", rc);
-
-        tx_counter = atoi(tx_counter_txt);
-        VERB("tx_counter: %d\n", tx_counter);
-       
-        /* Retrieve total RX bytes received */    
-        rc = rcf_ta_csap_param(ta, sid, eth_listen_csap, "total_bytes", 
-                               sizeof(rx_counter_txt), rx_counter_txt);
-        if (rc)
-            TEST_FAIL("get total bytes recv rc %x", rc);
-
-        rx_counter = atoi(rx_counter_txt);
-        VERB("rx_counter: %d\n", rx_counter);
-
+        num = 0;
         rc = tapi_tad_trrecv_stop(ta, sid, eth_listen_csap,
                                   tapi_eth_trrecv_cb_data(
                                       local_eth_frame_handler, NULL),
-                                  &syms);
+                                  &num);
 
         if (rc != 0)
             TEST_FAIL("ETH recv_stop fails, rc %X", rc);
 
-        VERB ("trrecv stop rc: %x, num of pkts: %d\n", rc, syms);
+        INFO("trrecv stop rc: %x, num of pkts: %d\n", rc, num);
+
+        if (num <= 0)
+            TEST_FAIL("no received packets");
 
     } while (0);
 
