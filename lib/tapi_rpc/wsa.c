@@ -2736,33 +2736,16 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
 /**
  * Convert the data from wsa_ioctl_request structure to the output buffer.
  */
-static int convert_wsa_ioctl_result(rpc_ioctl_code code,
-                                    wsa_ioctl_request *res,
-                                    char *buf, int buflen,
-                                    unsigned int *bytes_returned)
+static int 
+convert_wsa_ioctl_result(rpc_ioctl_code code,
+                         wsa_ioctl_request *res,
+                         char *buf, int buflen,
+                         unsigned int *bytes_returned)
 {
     int ret = 0;
 
     switch (code)
     {
-        case RPC_FIONREAD: /* unsigned int */
-        case RPC_SIOCATMARK: /* BOOL */
-        case RPC_SIO_CHK_QOS: /* DWORD */
-        case RPC_SIO_UDP_CONNRESET: /* BOOL */
-            ret = sizeof(int);
-            if (buflen < ret)
-                return -1;
-            *(int *)buf = res->wsa_ioctl_request_u.req_int;
-            break;
-
-        case RPC_SIO_TRANSLATE_HANDLE: /* HANDLE??? */
-            ret = sizeof(rpc_handle);
-            if (buflen < ret)
-                return -1;
-            *(rpc_handle *)buf =
-                (rpc_handle)res->wsa_ioctl_request_u.req_int;
-            break;
-
         case RPC_SIO_ADDRESS_LIST_QUERY:
         {
             struct sockaddr *addr;
@@ -2848,6 +2831,14 @@ static int convert_wsa_ioctl_result(rpc_ioctl_code code,
 
             ret = sizeof(rpc_qos);
         }
+        
+        default:
+            ret = sizeof(int);
+            if (buflen < ret)
+                return -1;
+            *(int *)buf = res->wsa_ioctl_request_u.req_int;
+            break;
+
     }
 
     if ((bytes_returned != NULL) && (ret > 0))
