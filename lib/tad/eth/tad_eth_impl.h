@@ -76,9 +76,6 @@
 #define ETH_CSAP_DEFAULT_TIMEOUT 5 
 #endif
 
-/* Linux does not process Ethernet checksum */
-#define ETH_TAILING_CHECKSUM 4
-
 /* special eth type/length value for tagged frames. */
 #define ETH_TAGGED_TYPE_LEN 0x8100
 

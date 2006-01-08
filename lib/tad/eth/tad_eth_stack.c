@@ -376,7 +376,7 @@ tad_eth_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
     /* Correction for number of read bytes was insered to synchronize 
      * with OS interface statistics, but it cause many side effects, 
      * therefore it is disabled now. */
-    return pkt_size + ETH_TAILING_CHECKSUM;
+    return pkt_size + ETHER_CRC_LEN;
 #else
     return pkt_size;
 #endif
@@ -654,7 +654,7 @@ eth_echo_method(csap_p csap, uint8_t *pkt, size_t len)
      * with OS interface statistics, but it cause many side effects, 
      * therefore it is disabled now. */
 
-    tad_eth_write_cb(csap, tmp_buffer, len - ETH_TAILING_CHECKSUM);
+    tad_eth_write_cb(csap, tmp_buffer, len - ETHER_CRC_LEN);
 #else
     tad_eth_write_cb(csap, tmp_buffer, len);
 #endif
