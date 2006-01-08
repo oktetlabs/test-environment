@@ -100,10 +100,6 @@ main(int argc, char *argv[])
 
     csap_handle_t    tx_csap = CSAP_INVALID_HANDLE; 
     csap_handle_t    rx_csap = CSAP_INVALID_HANDLE; 
-    unsigned long    tx_counter;/* returned from CSAP total byte counter */
-    char             tx_counter_txt[20];/* buffer for tx_counter */
-    unsigned long    rx_counter; /* returned from CSAP total byte counter*/
-    char             rx_counter_txt[20];/* buffer for rx_counter */
     
     char       *src_mac = SRC1_MAC;
     char       *dst_mac = DST1_MAC;
@@ -272,7 +268,7 @@ main(int argc, char *argv[])
         if (prev == num || status != CSAP_BUSY)
             break;
 
-        sleep (1);
+        sleep(1);
         i++;
         rc = tapi_csap_get_status(agent_b, sid_b, rx_csap, &status);
         if (rc != 0)
@@ -288,24 +284,6 @@ main(int argc, char *argv[])
         TEST_FAIL(" receiving process shutdown error %x", rc);     
     }
 
-    /* Retrieve total TX bytes sent */
-    rc = rcf_ta_csap_param(agent_a, sid_a, tx_csap, "total_bytes", 
-                           sizeof(tx_counter_txt), tx_counter_txt);
-    if (rc)
-    {
-        TEST_FAIL(" total TX counter retrieving error %x", rc);
-    }
-    tx_counter = atoi(tx_counter_txt);
-   
-    /* Retrieve total RX bytes received */    
-    rc = rcf_ta_csap_param(agent_b, sid_b, rx_csap, "total_bytes", 
-                           sizeof(rx_counter_txt), rx_counter_txt);
-    if (rc)
-    {
-        TEST_FAIL(" total RX counter retrieving error %x", rc);
-    } 
-    rx_counter = atoi(rx_counter_txt);
-
 
     rc = tapi_csap_get_duration(agent_b, sid_b, rx_csap, &duration);
     VERB("rx_duration: rc %x sec %d, usec %d\n", 
@@ -315,23 +293,13 @@ main(int argc, char *argv[])
     VERB("tx_duration: rc %x sec %d, usec %d\n", 
          rc, duration.tv_sec, duration.tv_usec);
 
-    VERB("recv_pkts: %d, rx_counter: %d, tx_counter: %d\n", 
-         recv_pkts, rx_counter, tx_counter);     
 
     if (recv_pkts != PKTS_TO_PROCESS)
-    {
         TEST_FAIL("some frames from flow are lost; got %d, should %d",
                   recv_pkts, PKTS_TO_PROCESS);
-    }
 
-    /* Check port counters for both ingress and egress ports */
-    if (tx_counter != rx_counter)
-    {
-        TEST_FAIL(" TX/RX process has traffic inconsistence");
-    } 
 
-    RING("TEST PASS: recv_pkts:%d, rx_counter: %d, "
-              "tx_counter: %d\n", recv_pkts, rx_counter, tx_counter);     
+    RING("TEST PASS: recv_pkts:%d", recv_pkts);     
 
     TEST_SUCCESS;
 
