@@ -38,6 +38,14 @@
 #include "te_errno.h"
 
 
+/** Length of ATM cell */
+#define ATM_CELL_LEN        53
+/** Length of ATM cell header */
+#define ATM_HEADER_LEN      5
+/** Length of ATM cell payload */
+#define ATM_PAYLOAD_LEN     (ATM_CELL_LEN - ATM_HEADER_LEN)
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
