@@ -3121,7 +3121,11 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     arp_req.arp_pa.sa_family = AF_INET;
 
     if (inet_pton(AF_INET, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
+    {
+        ERROR("%s(): Failed to convert IPv4 address from string '%s'",
+              __FUNCTION__, addr);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
 
     arp_req.arp_ha.sa_family = AF_LOCAL;
     for (i = 0; i < 6; i++)
@@ -3129,7 +3133,10 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
 
     arp_req.arp_flags = ATF_COM;
     if (strstr(oid, "dynamic") == NULL)
+    {
+        VERB("%s(): Add permanent ARP entry", __FUNCTION__);
         arp_req.arp_flags |= ATF_PERM;
+    }
 
 #ifdef SIOCSARP
     if (ioctl(cfg_socket, SIOCSARP, &arp_req) < 0)
