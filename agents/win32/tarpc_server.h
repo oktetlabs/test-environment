@@ -277,7 +277,7 @@ win_rpc_errno(int err)
  */
 typedef struct rpc_overlapped {
     WSAOVERLAPPED  overlapped; /**< WSAOVERLAPPED object itself */
-    LPWSABUF       buffers;     /**< List of allocated buffers   */
+    LPWSABUF       buffers;    /**< List of allocated buffers   */
     int            bufnum;     /**< Number of allocated buffers */
 } rpc_overlapped;
 
