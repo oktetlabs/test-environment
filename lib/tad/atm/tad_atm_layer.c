@@ -150,7 +150,7 @@ tad_atm_init_cb(csap_p csap, unsigned int layer)
 
 /* See description in tad_atm_impl.h */
 te_errno
-tad_atm_eth_destroy_cb(csap_p csap, unsigned int layer)
+tad_atm_destroy_cb(csap_p csap, unsigned int layer)
 {
     return 0;
 }
