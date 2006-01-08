@@ -79,8 +79,8 @@ int main()
 
     struct timeval duration;
 
-    uint8_t    src_bin_mac[ETH_ALEN];
-    uint8_t    dst_bin_mac[ETH_ALEN];
+    uint8_t    src_bin_mac[ETHER_ADDR_LEN];
+    uint8_t    dst_bin_mac[ETHER_ADDR_LEN];
 
     uint16_t   eth_type = ETH_P_IP;
 
@@ -136,8 +136,8 @@ int main()
         TEST_TERMINATION(" second session creation error");
     } 
 
-    memcpy (dst_bin_mac, ether_aton(dst_mac), ETH_ALEN);
-    memcpy (src_bin_mac, ether_aton(src_mac), ETH_ALEN);
+    memcpy (dst_bin_mac, ether_aton(dst_mac), ETHER_ADDR_LEN);
+    memcpy (src_bin_mac, ether_aton(src_mac), ETHER_ADDR_LEN);
 
     if (tapi_eth_csap_create(agent_a, sid_a, agent_a_if, 
                              dst_bin_mac, src_bin_mac, 
@@ -219,7 +219,7 @@ int main()
 #if 1
     if (rc == 0)
         rc = asn_write_value_field(pattern, dst_bin_mac, 
-                                   ETH_ALEN,
+                                   ETHER_ADDR_LEN,
                                    "0.pdus.0.#eth.dst-addr.#plain");
     if (rc)
     {

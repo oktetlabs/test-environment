@@ -62,10 +62,10 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
 
     VERB ("++++ Ethernet frame received\n");
     sprintf(buffer, "dst: ");
-    for (i = 0; i < ETH_ALEN; i ++ )
+    for (i = 0; i < ETHER_ADDR_LEN; i ++ )
         sprintf(buffer, "%02x ", header->dst_addr[i]);
     sprintf(buffer, "src: ");
-    for (i = 0; i < ETH_ALEN; i ++ )
+    for (i = 0; i < ETHER_ADDR_LEN; i ++ )
         sprintf(buffer, "%02x ", header->src_addr[i]);
     VERB("addrs: %s", buffer);
 
@@ -143,7 +143,7 @@ main(int argc, char *argv[])
 
                     
         memset (&plain_hdr, 0, sizeof(plain_hdr));
-        memcpy (plain_hdr.dst_addr, rem_addr, ETH_ALEN);  
+        memcpy (plain_hdr.dst_addr, rem_addr, ETHER_ADDR_LEN);  
         memset (payload, 0, sizeof(payload));
         plain_hdr.eth_type_len = ETH_P_IP; 
 
@@ -188,7 +188,7 @@ main(int argc, char *argv[])
 #endif
 
 #if 1
-    VERB("come data from addr: %Tm", rem_addr,  ETH_ALEN);
+    VERB("come data from addr: %Tm", rem_addr,  ETHER_ADDR_LEN);
 #endif
 
         if (rc)

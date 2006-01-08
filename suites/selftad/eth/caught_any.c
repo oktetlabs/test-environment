@@ -64,8 +64,8 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
     UNUSED(userdata);
 
     INFO("Ethernet frame received\n");
-    INFO("dst: %Tm", header->dst_addr, ETH_ALEN);
-    INFO("src: %Tm", header->src_addr, ETH_ALEN); 
+    INFO("dst: %Tm", header->dst_addr, ETHER_ADDR_LEN);
+    INFO("src: %Tm", header->src_addr, ETHER_ADDR_LEN); 
     INFO("payload len: %d", plen);
 
     cb_called++;

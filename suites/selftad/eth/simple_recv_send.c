@@ -60,8 +60,8 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
     UNUSED(userdata);
 
     INFO("++++ Ethernet frame received\n");
-    INFO("dst: %Tm", header->dst_addr, ETH_ALEN);
-    INFO("src: %Tm", header->src_addr, ETH_ALEN); 
+    INFO("dst: %Tm", header->dst_addr, ETHER_ADDR_LEN);
+    INFO("src: %Tm", header->src_addr, ETHER_ADDR_LEN); 
     INFO("eth_len_type: 0x%x = %d",
            header->eth_type_len,  header->eth_type_len); 
     INFO("payload len: %d", plen);
@@ -125,8 +125,8 @@ main(int argc, char *argv[])
 
                     
         memset(&plain_hdr, 0, sizeof(plain_hdr));
-        memcpy(plain_hdr.dst_addr, mac_b, ETH_ALEN);  
-        memcpy(plain_hdr.src_addr, mac_a, ETH_ALEN);  
+        memcpy(plain_hdr.dst_addr, mac_b, ETHER_ADDR_LEN);  
+        memcpy(plain_hdr.src_addr, mac_a, ETHER_ADDR_LEN);  
         memset(payload, 0, sizeof(payload));
         plain_hdr.eth_type_len = ETH_P_IP; 
 
