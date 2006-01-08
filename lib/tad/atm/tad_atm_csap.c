@@ -45,8 +45,8 @@ static csap_spt_type_t atm_csap_spt =
 {
     proto               : "atm",
 
-    init_cb             : NULL /*tad_atm_init_cb*/,
-    destroy_cb          : NULL /*tad_atm_destroy_cb*/,
+    init_cb             : tad_atm_init_cb,
+    destroy_cb          : tad_atm_destroy_cb,
     get_param_cb        : NULL,
 
     confirm_tmpl_cb     : tad_atm_confirm_pdu_cb,

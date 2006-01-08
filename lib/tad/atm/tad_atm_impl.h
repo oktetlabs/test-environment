@@ -34,7 +34,6 @@
 #include <sys/types.h>
 #endif
 
-#include "te_stdint.h"
 #include "te_errno.h"
 #include "asn_usr.h"
 
@@ -43,42 +42,19 @@
 
 
 /**
- * ATM CSAP specific data
+ * Callback to initialize 'atm' CSAP layer.
+ *
+ * The function complies with csap_layer_init_cb_t prototype.
  */
-typedef struct atm_csap_specific_data {
-    uint16_t    hw_type;
-    uint16_t    proto_type;
-    uint8_t     hw_size;
-    uint8_t     proto_size;
-} atm_csap_specific_data_t;
-
+extern te_errno tad_atm_init_cb(csap_p csap, unsigned int layer);
 
 /**
- * Callback to initialize 'atm' CSAP layer if over 'eth' in stack.
+ * Callback to destroy 'atm' CSAP layer.
  *
- * The function complies with csap_nbr_init_cb_t prototype.
+ * The function complies with csap_layer_destroy_cb_t prototype.
  */
-extern te_errno tad_atm_eth_init_cb(csap_p           csap,
-                                    unsigned int     layer,
-                                    const asn_value *csap_nds);
+extern te_errno tad_atm_destroy_cb(csap_p csap, unsigned int layer);
 
-/**
- * Callback to destroy 'atm' CSAP layer if over 'eth' in stack.
- *
- * The function complies with csap_nbr_destroy_cb_t prototype.
- */
-extern te_errno tad_atm_eth_destroy_cb(csap_p       csap,
-                                       unsigned int layer);
-
-
-/**
- * Callback for read parameter value of ATM CSAP.
- *
- * The function complies with csap_layer_get_param_cb_t prototype.
- */
-extern char *tad_atm_get_param_cb(csap_p        csap,
-                                  unsigned int  layer,
-                                  const char   *param);
 
 /**
  * Callback for confirm PDU with ATM CSAP parameters and possibilities.

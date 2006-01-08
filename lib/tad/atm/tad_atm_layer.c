@@ -38,17 +38,114 @@
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 #include "asn_usr.h"
+
 #include "tad_csap_support.h"
 #include "tad_csap_inst.h"
+#include "tad_bps.h"
+
+#include "ndn_atm.h"
 #include "tad_atm_impl.h"
 
+
+/**
+ * ATM layer specific data
+ */
+typedef struct tad_atm_proto_data {
+    tad_bps_pkt_frag_def    hdr;
+} tad_atm_proto_data;
+
+/**
+ * ATM layer specific data for send processing
+ */
+typedef struct tad_atm_proto_tmpl_data {
+    tad_bps_pkt_frag_data   hdr;
+} tad_atm_proto_tmpl_data;
+
+
+/**
+ * Definition of ATM cell UNI header.
+ */
+static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
+{
+    { "gfc",            4,  BPS_FLD_SIMPLE(NDN_TAG_ATM_GFC) },
+    { "vpi",            8,  BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI) },
+    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI) },
+    { "payload-type",   3,  BPS_FLD_SIMPLE(NDN_TAG_ATM_PAYLOAD_TYPE) },
+    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP) },
+    { "hec",            8,  BPS_FLD_NO_DEF(ASN_TAG_USER) },
+};
+
+/**
+ * Definition of ATM cell NNI header.
+ */
+static const tad_bps_pkt_frag tad_atm_nni_bps_hdr[] =
+{
+    { "vpi",            12, BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI) },
+    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI) },
+    { "payload-type",   3,  BPS_FLD_SIMPLE(NDN_TAG_ATM_PAYLOAD_TYPE) },
+    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP) },
+    { "hec",            8,  BPS_FLD_NO_DEF(ASN_TAG_USER) },
+};
 
 
 /* See description in tad_atm_impl.h */
 te_errno
 tad_atm_init_cb(csap_p csap, unsigned int layer)
 {
-    return 0;
+    te_errno                rc;
+    tad_atm_proto_data     *proto_data;
+    const asn_value        *layer_nds;
+    int32_t                 type;
+    const tad_bps_pkt_frag *hdr_descr;
+    unsigned int            hdr_descr_len;
+
+    proto_data = calloc(1, sizeof(*proto_data));
+    if (proto_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+    csap_set_proto_spec_data(csap, layer, proto_data);
+
+    layer_nds = csap->layers[layer].csap_layer_pdu;
+
+    rc = asn_read_int32(layer_nds, &type, "type");
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "%s() failed to get ATM type",
+              CSAP_LOG_ARGS(csap), __FUNCTION__);
+        return rc;
+    }
+    switch (type)
+    {
+        case NDN_ATM_NNI:
+            hdr_descr = tad_atm_nni_bps_hdr;
+            hdr_descr_len = TE_ARRAY_LEN(tad_atm_nni_bps_hdr);
+            break;
+
+        case NDN_ATM_UNI:
+            hdr_descr = tad_atm_uni_bps_hdr;
+            hdr_descr_len = TE_ARRAY_LEN(tad_atm_uni_bps_hdr);
+            break;
+
+        default:
+            ERROR(CSAP_LOG_FMT "Unexpected ATM cell header format type %d",
+                  CSAP_LOG_ARGS(csap), (int)type);
+            return TE_RC(TE_TAD_CH, TE_EINVAL);
+    }
+
+    rc = tad_bps_pkt_frag_init(hdr_descr, hdr_descr_len,
+                               layer_nds, &proto_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    if (tad_bps_pkt_frag_data_bitlen(&proto_data->hdr, NULL) !=
+            (ATM_HEADER_LEN << 3))
+    {
+        ERROR(CSAP_LOG_FMT "Unexpected ATM cell header length",
+              CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CH, TE_EINVAL);
+    }
+
+    return rc;
 }
 
 /* See description in tad_atm_impl.h */
@@ -64,10 +161,65 @@ te_errno
 tad_atm_confirm_pdu_cb(csap_p csap, unsigned int  layer, 
                        asn_value *layer_pdu, void **p_opaque)
 {
-    F_ENTRY("(%d:%u) layer_pdu=%p", csap->id, layer,
-            (void *)layer_pdu);
+    te_errno                    rc;
+    tad_atm_proto_data         *proto_data;
+    tad_atm_proto_tmpl_data    *tmpl_data;
 
-    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
+    tmpl_data = malloc(sizeof(*tmpl_data));
+    if (tmpl_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    *p_opaque = tmpl_data;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
+                                   &tmpl_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    if (csap->command == TAD_OP_SEND)
+    {
+        rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
+        if (rc != 0)
+            return rc;
+    }
+
+    return rc;
+}
+
+
+/**
+ * Check length of packet is equal to 53 bytes (ATM cell).
+ * Fill in the first segment as ATM header.
+ *
+ * @a opaque parameter refers to ATM cell header template.
+ *
+ * This function complies with tad_pkt_enum_cb prototype.
+ */
+static te_errno
+tad_atm_prepare_cell(tad_pkt *pkt, void *opaque)
+{
+    tad_pkt_seg *seg;
+
+    if (tad_pkt_get_len(pkt) != ATM_CELL_LEN)
+    {
+        ERROR("Invalid length (%u) of the packet as ATM cell",
+              (unsigned)tad_pkt_get_len(pkt));
+        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+    }
+
+    seg = tad_pkt_first_seg(pkt);
+    assert(seg->data_len >= ATM_HEADER_LEN);
+
+    /* Copy template of the header */
+    memcpy(seg->data_ptr, opaque, ATM_HEADER_LEN);
+
+    /* Process packet specific data provided by the upper layer */
+
+    /* Calculate HEC */
+    /* FIXME: Implement HEC calculation */
+
+    return 0;
 }
 
 /* See description in tad_atm_impl.h */
@@ -81,13 +233,51 @@ tad_atm_gen_bin_cb(csap_p                csap,
                    tad_pkts             *sdus,
                    tad_pkts             *pdus)
 {
-    assert(csap != NULL);
-    F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u sdus=%p pdus=%p",
-            csap->id, layer, (void *)tmpl_pdu, (void *)args,
-            (unsigned)arg_num, sdus, pdus);
+    tad_atm_proto_data         *proto_data;
+    tad_atm_proto_tmpl_data    *tmpl_data = opaque;
 
-    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+    te_errno    rc;
+    uint8_t     header[ATM_HEADER_LEN];
+    size_t      bitoff = 0;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
+    /* Prepare ATM cell header template */
+    rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
+                                  args, arg_num, header, &bitoff,
+                                  ATM_CELL_LEN << 3);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to prepare ATM cell header: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+    assert(bitoff == (sizeof(header) << 3));
+
+    /* Move all SDUs to PDUs */
+    tad_pkts_move(pdus, sdus);
+
+    /* Add space for ATM cell header segment to each PDU */
+    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, ATM_CELL_LEN, NULL);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to add ATM cell header segment: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    /* Check each packet and fill in its header */
+    rc = tad_pkt_enumerate(pdus, tad_atm_prepare_cell, header);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to prepare ATM cells: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    return 0;
 }
+
 
 /* See description in tad_atm_impl.h */
 te_errno
