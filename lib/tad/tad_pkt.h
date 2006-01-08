@@ -163,6 +163,10 @@ struct tad_pkt {
 
     tad_pkt_ctrl_free   my_free;    /**< Function to free this
                                          control block */
+
+    void               *opaque;         /**< Attached opaque data */
+    tad_pkt_ctrl_free   opaque_free;    /**< Function to free opaque
+                                             data */
 };
 
 /** Head of packets list */
@@ -226,7 +230,7 @@ extern tad_pkt_seg *tad_pkt_alloc_seg(void *data_ptr, size_t data_len,
  *
  * @return Number of segments in the packet.
  */
-extern unsigned int tad_pkt_get_seg_num(const tad_pkt *pkt);
+extern unsigned int tad_pkt_seg_num(const tad_pkt *pkt);
 
 /**
  * Get total length of a packet.
@@ -238,14 +242,23 @@ extern unsigned int tad_pkt_get_seg_num(const tad_pkt *pkt);
  *
  * @return Sum of all segments length.
  */
-extern size_t tad_pkt_get_len(const tad_pkt *pkt);
+extern size_t tad_pkt_len(const tad_pkt *pkt);
 
 /**
- * Initialize packet as empty.
+ * Get opaque data pointer of the packet.
+ *
+ * @param pkt       Pointer to a packet
+ *
+ * @return Opaque data pointer.
+ */
+extern void *tad_pkt_opaque(const tad_pkt *pkt);
+
+/**
+ * Initialize packet as empty (no segments).
  *
  * @param pkt       Pointer to a packet
  */
-extern void tad_pkt_init(tad_pkt *pkt);
+extern void tad_pkt_init_segs(tad_pkt *pkt);
 
 /**
  * Free packet segments.
@@ -253,6 +266,17 @@ extern void tad_pkt_init(tad_pkt *pkt);
  * @param pkt       Pointer to a packet
  */
 extern void tad_pkt_free_segs(tad_pkt *pkt);
+
+/**
+ * Initialize packet.
+ *
+ * @param pkt           Pointer to a packet
+ * @param my_free       Function to free packet itself
+ * @param opaque        Opaque data
+ * @param opaque_free   Function to free opaque data
+ */
+extern void tad_pkt_init(tad_pkt *pkt, tad_pkt_ctrl_free my_free,
+                         void *opaque, tad_pkt_ctrl_free opaque_free);
 
 /**
  * Free packet.

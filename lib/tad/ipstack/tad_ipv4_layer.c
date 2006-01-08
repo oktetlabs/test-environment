@@ -333,7 +333,7 @@ tad_ip4_upper_checksum_seg_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
 
     /* Data length is even or it is the last segument */
     assert(((seg->data_len & 1) == 0) ||
-           (seg_num == tad_pkt_get_seg_num(pkt) - 1));
+           (seg_num == tad_pkt_seg_num(pkt) - 1));
     data->checksum += calculate_checksum(seg->data_ptr, seg->data_len);
 
     return 0;
@@ -365,7 +365,7 @@ tad_ip4_upper_checksum_pkt_cb(tad_pkt *pkt, void *opaque)
 
     /* FIXME: Not aligned memory access */
     *((uint16_t *)(pkt_data->pseudo_header + 10)) =
-        htons(tad_pkt_get_len(pkt));
+        htons(tad_pkt_len(pkt));
     seg_data.checksum = calculate_checksum(pkt_data->pseudo_header,
                                            sizeof(pkt_data->pseudo_header));
 
@@ -586,7 +586,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
         }
         else
         {
-            ip4_pld_real_len = tad_pkt_get_len(sdus->pkts.cqh_first);
+            ip4_pld_real_len = tad_pkt_len(sdus->pkts.cqh_first);
         }
 
         pkt_len = ip4_pld_real_len + (h_len * 4);

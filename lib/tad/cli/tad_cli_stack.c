@@ -678,7 +678,7 @@ tad_cli_write_cb(csap_p csap, const tad_pkt *pkt)
     const void *buf;
     size_t      buf_len;
 
-    if (pkt == NULL || tad_pkt_get_seg_num(pkt) != 1)
+    if (pkt == NULL || tad_pkt_seg_num(pkt) != 1)
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     buf     = pkt->segs.cqh_first->data_ptr;
     buf_len = pkt->segs.cqh_first->data_len;
@@ -761,7 +761,7 @@ tad_cli_write_read_cb(csap_p csap, int timeout,
     const void *w_buf;
     size_t      w_buf_len;
 
-    if (w_pkt == NULL || tad_pkt_get_seg_num(w_pkt) != 1)
+    if (w_pkt == NULL || tad_pkt_seg_num(w_pkt) != 1)
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     w_buf     = w_pkt->segs.cqh_first->data_ptr;
     w_buf_len = w_pkt->segs.cqh_first->data_len;

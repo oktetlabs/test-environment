@@ -90,16 +90,23 @@ tad_pkt_put_seg_data(tad_pkt *pkt, tad_pkt_seg *seg,
 
 /* See description in tad_pkt.h */
 unsigned int
-tad_pkt_get_seg_num(const tad_pkt *pkt)
+tad_pkt_seg_num(const tad_pkt *pkt)
 {
     return pkt->n_segs;
 }
 
 /* See description in tad_pkt.h */
 size_t
-tad_pkt_get_len(const tad_pkt *pkt)
+tad_pkt_len(const tad_pkt *pkt)
 {
     return pkt->segs_len;
+}
+
+/* See description in tad_pkt.h */
+void *
+tad_pkt_opaque(const tad_pkt *pkt)
+{
+    return pkt->opaque;
 }
 
 /* See description in tad_pkt.h */
@@ -186,7 +193,7 @@ tad_pkt_free_seg(tad_pkt_seg *seg)
 
 /* See description in tad_pkt.h */
 void
-tad_pkt_init(tad_pkt *pkt)
+tad_pkt_init_segs(tad_pkt *pkt)
 {
     CIRCLEQ_INIT(&pkt->segs);
     pkt->n_segs = 0;
@@ -210,7 +217,20 @@ tad_pkt_free_segs(tad_pkt *pkt)
     }
 
     /* Initialize packet from scratch */
-    tad_pkt_init(pkt);
+    tad_pkt_init_segs(pkt);
+}
+
+/* See description in tad_pkt.h */
+void
+tad_pkt_init(tad_pkt *pkt, tad_pkt_ctrl_free my_free,
+             void *opaque, tad_pkt_ctrl_free opaque_free)
+{
+    tad_pkt_init_segs(pkt);
+
+    pkt->opaque = opaque;
+    pkt->opaque_free = opaque_free;
+
+    pkt->my_free = my_free;
 }
 
 /* See description in tad_pkt.h */
@@ -219,6 +239,10 @@ tad_pkt_free(tad_pkt *pkt)
 {
     /* Free packet segments */
     tad_pkt_free_segs(pkt);
+
+    /* Free opaque data */
+    if (pkt->opaque_free != NULL)
+        pkt->opaque_free(pkt->opaque);
 
     /* Free packet itself */
     if (pkt->my_free != NULL)
@@ -393,8 +417,7 @@ tad_pkt_alloc(unsigned int n_segs, size_t first_seg_len)
     seg = (tad_pkt_seg *)(pkt + 1);
     data = (uint8_t *)(seg + n_segs);
 
-    pkt->my_free = free;
-    tad_pkt_init(pkt);
+    tad_pkt_init(pkt, free, NULL, NULL);
 
     for (i = 0; i < n_segs; ++i, ++seg)
     {
@@ -439,9 +462,7 @@ tad_pkts_alloc(tad_pkts *pkts, unsigned int n_pkts, unsigned int n_segs,
     for (i = 0; i < n_pkts; ++i, ++pkt)
     {
         /* Set non-NULL free function for the first packet only */
-        pkt->my_free = (i == 0) ? free : NULL;
-
-        tad_pkt_init(pkt);
+        tad_pkt_init(pkt, (i == 0) ? free : NULL, NULL, NULL);
 
         for (j = 0; j < n_segs; ++j, ++seg)
         {
@@ -478,7 +499,7 @@ tad_pkt_flatten_copy(tad_pkt *pkt, uint8_t **data, size_t *len)
     if (pkt == NULL || data == NULL || (*data != NULL && len == NULL))
         return TE_RC(TE_TAD_PKT, TE_EINVAL);
 
-    total_len = (len == NULL || *len == 0) ? tad_pkt_get_len(pkt) : *len;
+    total_len = (len == NULL || *len == 0) ? tad_pkt_len(pkt) : *len;
     if (*data == NULL)
     {
         *data = malloc(total_len);
@@ -497,9 +518,9 @@ tad_pkt_flatten_copy(tad_pkt *pkt, uint8_t **data, size_t *len)
     }
     if (len != NULL)
     {
-        if (*len > 0 && *len < tad_pkt_get_len(pkt))
+        if (*len > 0 && *len < tad_pkt_len(pkt))
             return TE_RC(TE_TAD_PKT, TE_ESMALLBUF);
-        *len = tad_pkt_get_len(pkt);
+        *len = tad_pkt_len(pkt);
     }
     return 0;
 }
@@ -723,12 +744,12 @@ tad_pkt_fragment(tad_pkt *pkt, size_t frag_data_len,
     if (pkt == NULL || pkts == NULL || frag_data_len == 0)
         return TE_RC(TE_TAD_PKT, TE_EINVAL);
 
-    if (tad_pkt_get_len(pkt) == 0)
+    if (tad_pkt_len(pkt) == 0)
         return 0;
-    assert(tad_pkt_get_seg_num(pkt) > 0);
+    assert(tad_pkt_seg_num(pkt) > 0);
 
     /* Calculate number of fragment packets */
-    n_frags = (tad_pkt_get_len(pkt) + frag_data_len - 1) / frag_data_len;
+    n_frags = (tad_pkt_len(pkt) + frag_data_len - 1) / frag_data_len;
 
     /* Initialize empty fragment packets list */
     tad_pkts_init(&frags);
@@ -841,7 +862,7 @@ tad_pkt_get_frag(tad_pkt *dst, tad_pkt *src,
             (unsigned)frag_len, mode);
 
     /* At first, check sizes */
-    add_seg_len = frag_off + frag_len - tad_pkt_get_len(src);
+    add_seg_len = frag_off + frag_len - tad_pkt_len(src);
     if (add_seg_len > 0)
     {
         if ((size_t)add_seg_len > frag_len)
@@ -849,13 +870,13 @@ tad_pkt_get_frag(tad_pkt *dst, tad_pkt *src,
 
         F_VERB("%s(): No enough data in source packet (len=%u) "
                "to get fragment %u+%u=%u", __FUNCTION__,
-               (unsigned)tad_pkt_get_len(src), (unsigned)frag_off,
+               (unsigned)tad_pkt_len(src), (unsigned)frag_off,
                (unsigned)frag_len, (unsigned)(frag_off + frag_len));
         switch (mode)
         {
             case TAD_PKT_GET_FRAG_ERROR:
                 ERROR("Source packet is too small (%u bytes) to get "
-                      "fragment %u+%u=%u", tad_pkt_get_len(src),
+                      "fragment %u+%u=%u", tad_pkt_len(src),
                       frag_off, frag_len, frag_off + frag_len);
                 return TE_RC(TE_TAD_PKT, TE_E2BIG);
 

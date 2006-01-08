@@ -205,7 +205,7 @@ tad_ip4_write_cb(csap_p csap, const tad_pkt *pkt)
     tad_ip4_rw_data    *spec_data = csap_get_rw_data(csap);
     ssize_t             ret;
     struct msghdr       msg;
-    size_t              iovlen = tad_pkt_get_seg_num(pkt);
+    size_t              iovlen = tad_pkt_seg_num(pkt);
     struct iovec        iov[iovlen];
     te_errno            rc;
 

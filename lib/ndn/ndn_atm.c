@@ -44,6 +44,8 @@ static asn_named_entry_t _ndn_atm_header_ne_array[] =
       { PRIVATE, NDN_TAG_ATM_VCI } },
     { "payload-type",   &ndn_data_unit_int3_s,
       { PRIVATE, NDN_TAG_ATM_PAYLOAD_TYPE } },
+    { "congestion",     &ndn_data_unit_int1_s,
+      { PRIVATE, NDN_TAG_ATM_CONGESTION } },
     { "clp",            &ndn_data_unit_int1_s,
       { PRIVATE, NDN_TAG_ATM_CLP } },
     { "hec",            &ndn_data_unit_int8_s,
@@ -87,6 +89,8 @@ static asn_named_entry_t _ndn_atm_csap_ne_array[] =
       { PRIVATE, NDN_TAG_ATM_VCI } },
     { "payload-type",   &ndn_data_unit_int3_s,
       { PRIVATE, NDN_TAG_ATM_PAYLOAD_TYPE } },
+    { "congestion",     &ndn_data_unit_int1_s,
+      { PRIVATE, NDN_TAG_ATM_CONGESTION } },
     { "clp",            &ndn_data_unit_int1_s,
       { PRIVATE, NDN_TAG_ATM_CLP } },
 };

@@ -34,11 +34,23 @@
 #include <sys/types.h>
 #endif
 
+#include "te_defs.h"
 #include "te_errno.h"
 #include "asn_usr.h"
 
 #include "tad_csap_support.h"
 #include "tad_csap_inst.h"
+
+
+/** 
+ * ATM cell control data specified by upper layers.
+ *
+ * Pointer to this structure may be attached to ATM cell packets
+ * as opaque data.
+ */
+typedef struct tad_atm_cell_ctrl_data {
+    te_bool indication; /**< ATM-user-to-ATM-user indication */
+} tad_atm_cell_ctrl_data;
 
 
 /**

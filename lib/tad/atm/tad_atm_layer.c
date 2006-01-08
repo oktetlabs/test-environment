@@ -34,6 +34,11 @@
 #include "config.h"
 #endif
 
+/* To get ntohl(),... */
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #include "te_errno.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
@@ -52,6 +57,7 @@
  */
 typedef struct tad_atm_proto_data {
     tad_bps_pkt_frag_def    hdr;
+    tad_data_unit_t         congestion;
 } tad_atm_proto_data;
 
 /**
@@ -59,6 +65,7 @@ typedef struct tad_atm_proto_data {
  */
 typedef struct tad_atm_proto_tmpl_data {
     tad_bps_pkt_frag_data   hdr;
+    tad_data_unit_t         congestion;
 } tad_atm_proto_tmpl_data;
 
 
@@ -132,6 +139,18 @@ tad_atm_init_cb(csap_p csap, unsigned int layer)
             return TE_RC(TE_TAD_CH, TE_EINVAL);
     }
 
+    /* Get default for congestion state */
+    rc = tad_data_unit_convert(layer_nds,
+                               NDN_TAG_ATM_CONGESTION,
+                               &proto_data->congestion);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to get congestion default from "
+              "layer parameters: %r", CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    /* Initialize ATM cell header binary support */
     rc = tad_bps_pkt_frag_init(hdr_descr, hdr_descr_len,
                                layer_nds, &proto_data->hdr);
     if (rc != 0)
@@ -172,6 +191,18 @@ tad_atm_confirm_pdu_cb(csap_p csap, unsigned int  layer,
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     *p_opaque = tmpl_data;
 
+    /* Get template value for congestion state */
+    rc = tad_data_unit_convert(layer_pdu,
+                               NDN_TAG_ATM_CONGESTION,
+                               &tmpl_data->congestion);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to get congestion default from "
+              "layer parameters: %r", CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    /* Get template values for ATM cell header fields */
     rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
                                    &tmpl_data->hdr);
     if (rc != 0)
@@ -199,12 +230,13 @@ tad_atm_confirm_pdu_cb(csap_p csap, unsigned int  layer,
 static te_errno
 tad_atm_prepare_cell(tad_pkt *pkt, void *opaque)
 {
-    tad_pkt_seg *seg;
+    tad_pkt_seg            *seg;
+    tad_atm_cell_ctrl_data *cell_ctrl;
 
-    if (tad_pkt_get_len(pkt) != ATM_CELL_LEN)
+    if (tad_pkt_len(pkt) != ATM_CELL_LEN)
     {
         ERROR("Invalid length (%u) of the packet as ATM cell",
-              (unsigned)tad_pkt_get_len(pkt));
+              (unsigned)tad_pkt_len(pkt));
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
 
@@ -215,6 +247,24 @@ tad_atm_prepare_cell(tad_pkt *pkt, void *opaque)
     memcpy(seg->data_ptr, opaque, ATM_HEADER_LEN);
 
     /* Process packet specific data provided by the upper layer */
+    cell_ctrl = tad_pkt_opaque(pkt);
+    if (cell_ctrl != NULL)
+    {
+        uint32_t    ind = !!cell_ctrl->indication;
+        uint32_t    hdr;
+
+        memcpy(&hdr, seg->data_ptr, sizeof(hdr));
+        hdr = ntohl(hdr);
+        if (((hdr >> 1) & 1) != ind)
+        {
+            hdr &= ~(1 << 1);
+            hdr |= (ind << 1);
+            hdr = htonl(hdr);
+            memcpy(seg->data_ptr, &hdr, sizeof(hdr));
+            VERB("ATM cell indication is set to %u in pkt=%p",
+                 (unsigned)ind, pkt);
+        }
+    }
 
     /* Calculate HEC */
     /* FIXME: Implement HEC calculation */

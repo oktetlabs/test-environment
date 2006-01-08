@@ -403,7 +403,7 @@ te_errno
 tad_socket_write_cb(csap_p csap, const tad_pkt *pkt)
 {
     tad_socket_rw_data *spec_data = csap_get_rw_data(csap);
-    size_t              iovlen = tad_pkt_get_seg_num(pkt);
+    size_t              iovlen = tad_pkt_seg_num(pkt);
     struct iovec        iov[iovlen];
     struct msghdr       msg;
     te_errno            rc;

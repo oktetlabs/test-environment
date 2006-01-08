@@ -236,7 +236,7 @@ tad_snmp_write_cb(csap_p csap, const tad_pkt *pkt)
     const void *buf;
     size_t      buf_len;
 
-    if (pkt == NULL || tad_pkt_get_seg_num(pkt) != 1)
+    if (pkt == NULL || tad_pkt_seg_num(pkt) != 1)
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     buf     = pkt->segs.cqh_first->data_ptr;
     buf_len = pkt->segs.cqh_first->data_len;

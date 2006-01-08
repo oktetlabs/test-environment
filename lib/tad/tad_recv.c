@@ -187,7 +187,7 @@ tad_perform_action(csap_p csap,
                     tad_pkt     pkt;
                     tad_pkt_seg seg;
 
-                    tad_pkt_init(&pkt);
+                    tad_pkt_init(&pkt, NULL, NULL, NULL);
                     tad_pkt_init_seg_data(&seg, payload, payload_len, NULL);
                     tad_pkt_append_seg(&pkt, &seg);
 

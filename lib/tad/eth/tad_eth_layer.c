@@ -358,7 +358,7 @@ static te_errno
 tad_eth_check_frame_len(tad_pkt *pkt, void *opaque)
 {
     ssize_t tailer_len = (ETHER_MIN_LEN - ETHER_CRC_LEN) -
-                         tad_pkt_get_len(pkt);
+                         tad_pkt_len(pkt);
 
     UNUSED(opaque);
     if (tailer_len > 0)

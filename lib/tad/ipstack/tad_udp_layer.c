@@ -283,7 +283,7 @@ tad_udp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
     PUT_DU16(du_dst_port, data->spec_data->remote_port);
 
     /* Length in the UDP header includes length of the header itself */
-    PUT_UINT16(tad_pkt_get_len(pkt)); 
+    PUT_UINT16(tad_pkt_len(pkt)); 
     /* FIXME Checksum will be filled in later by IPv4 layer */
     PUT_UINT16(0);
 
