@@ -24,7 +24,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD BPS"
@@ -257,9 +257,11 @@ tad_bps_pkt_frag_data_bitlen(const tad_bps_pkt_frag_def *def,
                              const tad_bps_pkt_frag_data *pkt)
 {
     size_t  len;
+
+    assert(def != NULL);
     
     len = tad_bps_pkt_frag_bitlen(def->descr, def->fields);
-    if (len == 0)
+    if (len == 0 && pkt != NULL)
     {
         /* 
          * Length of the fragment is not fixed. It is assumed that it
