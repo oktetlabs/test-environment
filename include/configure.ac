@@ -30,10 +30,24 @@ AC_HEADER_STDC
 dnl
 dnl At first check headers used by other headers to be checked
 dnl 
-AC_CHECK_HEADERS([sys/types.h])
+
+AC_CHECK_HEADERS([sys/types.h sys/queue.h])
+
 AC_CHECK_HEADERS([sys/socket.h], [], [], [
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+])
+
+AC_CHECK_HEADERS([net/if.h], [], [], [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
 #endif
 ])
 
@@ -51,7 +65,6 @@ inttypes.h \
 limits.h \
 math.h \
 net/ethernet.h \
-net/if.h \
 net/if_arp.h \
 net/if_dl.h \
 net/if_ether.h \
@@ -83,13 +96,11 @@ strings.h \
 sys/errno.h \
 sys/ioctl.h \
 sys/poll.h \
-sys/queue.h \
 sys/resource.h \
 sys/select.h \
 sys/sendfile.h \
 sys/stat.h \
 sys/time.h \
-sys/types.h \
 sys/uio.h \
 sys/un.h \
 sys/wait.h \
@@ -105,6 +116,12 @@ unistd.h \
 #endif
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#if HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
 #endif
 ])
 
