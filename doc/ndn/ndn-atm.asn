@@ -32,10 +32,9 @@ ATM-Coding-Scheme ::= INTEGER {
 
 ATM-CSAP ::= SEQUENCE { 
     type            ATM-Coding-Scheme,
-    gfc             DATA-UNIT{INTEGER (0..15)} OPTIONAL,
     vpi             DATA-UNIT{INTEGER (0..4095)} OPTIONAL,
     vci             DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
-    payload-type    DATA-UNIT{INTEGER (0..7)} OPTIONAL,
+    congestion      DATA-UNIT{INTEGER (0, 1)} OPTIONAL,
     clp             DATA-UNIT{INTEGER {0, 1}} OPTIONAL,
 }
 

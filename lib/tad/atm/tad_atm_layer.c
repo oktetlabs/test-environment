@@ -74,10 +74,10 @@ typedef struct tad_atm_proto_tmpl_data {
  */
 static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
 {
-    { "gfc",            4,  BPS_FLD_SIMPLE(NDN_TAG_ATM_GFC) },
+    { "gfc",            4,  BPS_FLD_NO_DEF(NDN_TAG_ATM_GFC) },
     { "vpi",            8,  BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI) },
     { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI) },
-    { "payload-type",   3,  BPS_FLD_SIMPLE(NDN_TAG_ATM_PAYLOAD_TYPE) },
+    { "payload-type",   3,  BPS_FLD_NO_DEF(NDN_TAG_ATM_PAYLOAD_TYPE) },
     { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP) },
     { "hec",            8,  BPS_FLD_NO_DEF(ASN_TAG_USER) },
 };
@@ -89,7 +89,7 @@ static const tad_bps_pkt_frag tad_atm_nni_bps_hdr[] =
 {
     { "vpi",            12, BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI) },
     { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI) },
-    { "payload-type",   3,  BPS_FLD_SIMPLE(NDN_TAG_ATM_PAYLOAD_TYPE) },
+    { "payload-type",   3,  BPS_FLD_NO_DEF(NDN_TAG_ATM_PAYLOAD_TYPE) },
     { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP) },
     { "hec",            8,  BPS_FLD_NO_DEF(ASN_TAG_USER) },
 };
