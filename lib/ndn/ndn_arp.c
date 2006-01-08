@@ -113,10 +113,10 @@ ndn_arp_packet_to_plain(const asn_value *pkt,
     int val;
     size_t len;
 
-    len = ETH_ALEN;
+    len = ETHER_ADDR_LEN;
     rc = asn_read_value_field(pkt, arp_header->dst_addr, &len, 
                               "dst-addr.#plain"); 
-    len = ETH_ALEN;
+    len = ETHER_ADDR_LEN;
     if (rc == 0) 
         rc = asn_read_value_field(pkt, arp_header->src_addr, &len, 
                                   "src-addr.#plain"); 

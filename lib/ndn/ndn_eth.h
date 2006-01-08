@@ -28,21 +28,20 @@
 #ifndef __TE_NDN_ETH_H__
 #define __TE_NDN_ETH_H__
 
-#ifdef HAVE_NETINET_ETHER_H
+#if HAVE_NETINET_ETHER_H
 #include <netinet/ether.h>
 #endif
-
-#ifdef HAVE_NET_ETHERNET_H
+#if HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
+#endif
+#if HAVE_NET_IF_ETHER_H
+#include <net/if_ether.h>
 #endif
 
 #include "te_stdint.h"
 #include "asn_usr.h"
 #include "ndn.h"
 
-#ifndef ETH_ALEN
-#define ETH_ALEN (6)
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,13 +50,16 @@ extern "C" {
 
 /* Structure for Ethernet frame header. written according to IEEE 802.3 */
 typedef struct ndn_eth_header_plain {
-    uint8_t  dst_addr[ETH_ALEN];  /**< Destination MAC address */
-    uint8_t  src_addr[ETH_ALEN];  /**< Source MAC address */ 
-    uint16_t eth_type_len;        /**< Ethernet Length/Type */
-    int      is_tagged;           /**< BOOL, flag - is frame tagged. */
-    int      cfi;                 /**< BOOL, Canonical Format Indicator*/
-    uint8_t  priority;            /**< Priority */
-    uint16_t vlan_id;             /**< VLAN tag */
+
+    uint8_t  dst_addr[ETHER_ADDR_LEN];  /**< Destination MAC address */
+    uint8_t  src_addr[ETHER_ADDR_LEN];  /**< Source MAC address */ 
+
+    uint16_t eth_type_len;  /**< Ethernet Length/Type */
+    int      is_tagged;     /**< BOOL, flag - is frame tagged. */
+    int      cfi;           /**< BOOL, Canonical Format Indicator*/
+    uint8_t  priority;      /**< Priority */
+    uint16_t vlan_id;       /**< VLAN tag */
+
 } ndn_eth_header_plain;
 
 

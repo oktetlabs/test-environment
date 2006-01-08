@@ -40,10 +40,6 @@
 #include "asn_usr.h"
 #include "ndn.h"
 
-#ifndef ETH_ALEN
-#define ETH_ALEN (6)
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
