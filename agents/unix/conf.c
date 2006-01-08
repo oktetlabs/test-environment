@@ -31,27 +31,59 @@
 #define TE_LGR_USER     "Unix Conf"
 
 #include "te_config.h"
+#if HAVE_CONFIG_H
 #include "config.h"
-
-#include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
-#if HAVE_NET_IF_DL_H
-#include <net/if_dl.h>
 #endif
+
+#include <stdio.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+#if HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
-#include <net/route.h>
+#endif
 #if HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
 #endif
-#include <arpa/inet.h>
+#if HAVE_NET_IF_ETHER_H
+#include <net/if_ether.h>
+#endif
+#if HAVE_NET_IF_DL_H
+#include <net/if_dl.h>
+#endif
+#if HAVE_NET_ROUTE_H
+#include <net/route.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -71,7 +103,6 @@
 
 #ifdef USE_NETLINK
 #include <sys/select.h>
-#include <asm/types.h>
 #include <linux/netlink.h>
 #include <fnmatch.h>
 #include <linux/sockios.h>
@@ -3173,7 +3204,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 #endif    
 }
 
-#ifdef NEIGH_USE_NETLINK
+#ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
 typedef struct {
     te_bool dynamic;
     char    ifname[IFNAMSIZ];
@@ -3229,7 +3260,7 @@ static te_errno
 neigh_list(unsigned int gid, const char *oid, char **list, 
            const char *ifname)
 {
-#ifdef NEIGH_USE_NETLINK
+#ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
     struct rtnl_handle   rth;    
     neigh_print_cb_param user_data;
     

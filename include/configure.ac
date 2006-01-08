@@ -54,6 +54,7 @@ net/ethernet.h \
 net/if.h \
 net/if_arp.h \
 net/if_dl.h \
+net/if_ether.h \
 net/route.h \
 netdb.h \
 netinet/ether.h \
