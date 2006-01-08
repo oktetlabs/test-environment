@@ -1096,8 +1096,8 @@ rpc_create_overlapped(rcf_rpc_server *rpcs, rpc_wsaevent hevent,
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "create_overlapped", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): create_overlapped(%p) -> %p (%s)",
-                 rpcs->ta, rpcs->name, hevent,
+    TAPI_RPC_LOG("RPC (%s,%s): create_overlapped(%u, %u, %u) -> %p (%s)",
+                 rpcs->ta, rpcs->name, hevent, offset, offset_high,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_RPC_PTR(create_overlapped, out.retval);
