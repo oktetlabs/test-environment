@@ -37,6 +37,12 @@ extern "C" {
 #include <config.h>
 #endif
 
+/* 
+ * To get obstack_printf() definition (have to be before inclusion of
+ * any system header).
+ */
+#define _GNU_SOURCE 1
+
 #if HAVE_INTTYPES_H
 # include <inttypes.h>
 #else
@@ -67,8 +73,6 @@ extern "C" {
 #include <errno.h>
 #include <setjmp.h>
 
-/* To get obstack_printf() definition */
-#define _GNU_SOURCE 1
 #include <stdio.h>
 
 /* For byte order conversions */
