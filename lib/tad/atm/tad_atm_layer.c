@@ -175,6 +175,10 @@ tad_atm_init_cb(csap_p csap, unsigned int layer)
 te_errno
 tad_atm_destroy_cb(csap_p csap, unsigned int layer)
 {
+    tad_atm_proto_data *proto_data;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
     return 0;
 }
 
