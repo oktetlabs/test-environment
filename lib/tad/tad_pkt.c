@@ -111,6 +111,17 @@ tad_pkt_opaque(const tad_pkt *pkt)
 
 /* See description in tad_pkt.h */
 void
+tad_pkt_set_seg_data_len(tad_pkt *pkt, tad_pkt_seg *seg, size_t new_len)
+{
+    assert(pkt != NULL);
+    assert(seg != NULL);
+    pkt->segs_len -= seg->data_len;
+    seg->data_len = new_len;
+    pkt->segs_len += seg->data_len;
+}
+
+/* See description in tad_pkt.h */
+void
 tad_pkt_append_seg(tad_pkt *pkt, tad_pkt_seg *seg)
 {
     CIRCLEQ_INSERT_TAIL(&pkt->segs, seg, links);

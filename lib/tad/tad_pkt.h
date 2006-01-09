@@ -311,6 +311,16 @@ extern void tad_pkt_put_seg_data(tad_pkt *pkt, tad_pkt_seg *seg,
                                  tad_pkt_seg_free free);
 
 /**
+ * Set new length of the packet segment data.
+ *
+ * @param pkt       Packet
+ * @param seg       Segment
+ * @param new_len   New value of the segment data length
+ */
+extern void tad_pkt_set_seg_data_len(tad_pkt *pkt, tad_pkt_seg *seg,
+                                     size_t new_len);
+
+/**
  * Add segment to the packet as trailer.
  *
  * @param pkt       Packet

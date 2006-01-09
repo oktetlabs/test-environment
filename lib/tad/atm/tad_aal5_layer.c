@@ -193,7 +193,7 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
     pad_len = tad_pkt_len(pkt) % ATM_PAYLOAD_LEN;
     if (pad_len > 0)
         pad_len = ATM_PAYLOAD_LEN - pad_len;
-    tad_pkt_seg_set_data_len(pkt, padding, pad_len);
+    tad_pkt_set_seg_data_len(pkt, padding, pad_len);
 
     assert(tad_pkt_len(pkt) % ATM_PAYLOAD_LEN == 0);
 
