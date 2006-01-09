@@ -34,6 +34,10 @@
 #include "ndn_atm.h"
 
 
+/*
+ * ATM
+ */
+
 static asn_named_entry_t _ndn_atm_header_ne_array[] = 
 {
     { "gfc",            &ndn_data_unit_int4_s,
@@ -99,3 +103,47 @@ asn_type ndn_atm_csap_s =
 };
 
 const asn_type * const ndn_atm_csap = &ndn_atm_csap_s;
+
+
+/*
+ * AAL5
+ */
+
+static asn_named_entry_t _ndn_aal5_cpcs_trailer_ne_array[] = 
+{
+    { "cpcs-uu",    &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_AAL5_CPCS_UU } },
+    { "cpi",        &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_AAL5_CPI } },
+    { "length",     &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_AAL5_LENGTH } },
+    { "crc",        &ndn_data_unit_int32_s,
+      { PRIVATE, NDN_TAG_AAL5_CRC } },
+};
+
+asn_type ndn_aal5_cpcs_trailer_s =
+{
+    "AAL5-CPCS-Trailer", { PRIVATE, 100 /* FIXME */ }, SEQUENCE, 
+    TE_ARRAY_LEN(_ndn_aal5_cpcs_trailer_ne_array),
+    { _ndn_aal5_cpcs_trailer_ne_array }
+};
+
+const asn_type * const ndn_aal5_cpcs_trailer = &ndn_aal5_cpcs_trailer_s;
+
+
+static asn_named_entry_t _ndn_aal5_csap_ne_array[] = 
+{
+    { "cpcs-uu",    &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_AAL5_CPCS_UU } },
+    { "cpi",        &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_AAL5_CPI } },
+};
+
+asn_type ndn_aal5_csap_s =
+{
+    "AAL5-CSAP", { PRIVATE, 101 /* FIXME */ }, SEQUENCE, 
+    TE_ARRAY_LEN(_ndn_aal5_csap_ne_array),
+    { _ndn_aal5_csap_ne_array }
+};
+
+const asn_type * const ndn_aal5_csap = &ndn_aal5_csap_s;

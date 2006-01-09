@@ -69,11 +69,19 @@ typedef enum {
     NDN_TAG_ATM_CLP,
     NDN_TAG_ATM_HEC,
     NDN_TAG_ATM_TYPE_ENUM,
+
+    NDN_TAG_AAL5_CPCS_UU,
+    NDN_TAG_AAL5_CPI,
+    NDN_TAG_AAL5_LENGTH,
+    NDN_TAG_AAL5_CRC,
 } ndn_atm_tags_t;
 
 
 extern const asn_type * const ndn_atm_header;
 extern const asn_type * const ndn_atm_csap;
+
+extern const asn_type * const ndn_aal5_cpcs_trailer;
+extern const asn_type * const ndn_all5_csap;
 
 
 #ifdef __cplusplus
