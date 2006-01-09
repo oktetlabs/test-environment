@@ -77,9 +77,11 @@ static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
     { "gfc",            4,  BPS_FLD_NO_DEF(NDN_TAG_ATM_GFC) },
     { "vpi",            8,  BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI) },
     { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI) },
-    { "payload-type",   3,  BPS_FLD_NO_DEF(NDN_TAG_ATM_PAYLOAD_TYPE) },
+    { "payload-type",   3,  NDN_TAG_ATM_PAYLOAD_TYPE,
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
     { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP) },
-    { "hec",            8,  BPS_FLD_NO_DEF(ASN_TAG_USER) },
+    { "hec",            8,  NDN_TAG_ATM_HEC,
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
 };
 
 /**
@@ -89,9 +91,11 @@ static const tad_bps_pkt_frag tad_atm_nni_bps_hdr[] =
 {
     { "vpi",            12, BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI) },
     { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI) },
-    { "payload-type",   3,  BPS_FLD_NO_DEF(NDN_TAG_ATM_PAYLOAD_TYPE) },
+    { "payload-type",   3,  NDN_TAG_ATM_PAYLOAD_TYPE,
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
     { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP) },
-    { "hec",            8,  BPS_FLD_NO_DEF(ASN_TAG_USER) },
+    { "hec",            8,  NDN_TAG_ATM_HEC,
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
 };
 
 
@@ -186,7 +190,8 @@ tad_atm_confirm_pdu_cb(csap_p csap, unsigned int  layer,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    tmpl_data = malloc(sizeof(*tmpl_data));
+    /* FIXME: Use malloc() and initialize data units at first */
+    tmpl_data = calloc(1, sizeof(*tmpl_data));
     if (tmpl_data == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     *p_opaque = tmpl_data;
@@ -290,12 +295,14 @@ tad_atm_gen_bin_cb(csap_p                csap,
     uint8_t     header[ATM_HEADER_LEN];
     size_t      bitoff = 0;
 
+    UNUSED(tmpl_pdu);
+
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     /* Prepare ATM cell header template */
     rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
                                   args, arg_num, header, &bitoff,
-                                  ATM_CELL_LEN << 3);
+                                  ATM_HEADER_LEN << 3);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Failed to prepare ATM cell header: %r",
@@ -308,7 +315,7 @@ tad_atm_gen_bin_cb(csap_p                csap,
     tad_pkts_move(pdus, sdus);
 
     /* Add space for ATM cell header segment to each PDU */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, ATM_CELL_LEN, NULL);
+    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, ATM_HEADER_LEN, NULL);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Failed to add ATM cell header segment: %r",
