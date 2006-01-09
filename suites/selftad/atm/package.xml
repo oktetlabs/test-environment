@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    
+    <description>CSAP ATM layer tests</description>
+    
+    <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
+    <req id="TAD_ATM" sticky="true"/>
+
+    <session>
+        <arg name="env">
+            <value>{'iut_host'{addr:'iut_addr':inet:unicast},{{'pco_tst':tester},addr:'tst_addr':inet:unicast}}</value>
+        </arg>
+
+        <run>
+            <script name="simple_send"/>
+            <arg name="gfc">
+                <value>2</value>
+            </arg>
+            <arg name="vpi"> 
+                <value>200</value>
+            </arg>
+            <arg name="vci">
+                <value>1000</value>
+            </arg>
+            <arg name="congestion">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
+            <arg name="clp">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
+        </run>
+   </session>
+</package>

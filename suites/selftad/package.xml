@@ -19,6 +19,9 @@
         </prologue>
 
         <run>
+            <package name="atm"/>
+        </run>
+        <run>
             <package name="snmp"/>
         </run>
         <run>
