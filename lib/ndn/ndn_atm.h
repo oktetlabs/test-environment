@@ -36,6 +36,7 @@
 
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "asn_usr.h"
 
 
 /** Length of ATM cell */
