@@ -242,7 +242,7 @@ tad_atm_prepare_cell(tad_pkt *pkt, void *opaque)
     {
         ERROR("Invalid length (%u) of the packet as ATM cell",
               (unsigned)tad_pkt_len(pkt));
-        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+        return TE_RC(TE_TAD_CSAP, TE_ETADWRONGNDS);
     }
 
     seg = tad_pkt_first_seg(pkt);
