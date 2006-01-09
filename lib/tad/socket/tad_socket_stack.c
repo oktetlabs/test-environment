@@ -29,6 +29,8 @@
 
 #define TE_LGR_USER     "TAD Socket"
 
+#define TE_LOG_LEVEL 0xff
+
 #include "te_config.h"
 #if HAVE_CONFIG_H
 #include "config.h"
@@ -78,6 +80,8 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     int32_t             value_in_pdu;
     struct sockaddr_in  local;
     int                 opt = 1;
+
+    size_t              addr_len;
 
 
     UNUSED(csap_nds);
@@ -142,6 +146,30 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
         return 0;
     }
 
+    /*
+     * Set local addr
+     */
+    addr_len = sizeof(spec_data->local_addr.s_addr);
+    rc = ndn_du_read_plain_oct(csap_spec, NDN_TAG_SOCKET_LOCAL_ADDR, 
+                               (uint8_t *)&(spec_data->local_addr.s_addr), 
+                               &addr_len);
+    if (rc == 0)
+        INFO(CSAP_LOG_FMT "set local addr to %s", CSAP_LOG_ARGS(csap),
+             inet_ntoa(local.sin_addr)); 
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        INFO("%s(): set TCP CSAP %d default local address to zero", 
+             __FUNCTION__, csap->id);
+        spec_data->local_addr.s_addr = INADDR_ANY;
+    }
+    else if (TE_RC_GET_ERROR(rc) == TE_EASNOTHERCHOICE)
+    {
+        ERROR("%s(): TCP CSAP %d, non-plain local address not supported",
+              __FUNCTION__, csap->id);
+        return TE_EOPNOTSUPP;
+    }
+    else
+        return rc;
 
     /*
      * Set local port
@@ -150,13 +178,13 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
                                &value_in_pdu);
     if (rc == 0)
     {
-        VERB("%s(): set TCP CSAP %d default local port to %d", 
+        INFO("%s(): set TCP CSAP %d default local port to %d", 
              __FUNCTION__, csap->id, value_in_pdu);
         spec_data->local_port = value_in_pdu;
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        VERB("%s(): set TCP CSAP %d default local port to zero", 
+        INFO("%s(): set TCP CSAP %d default local port to zero", 
              __FUNCTION__, csap->id);
         spec_data->local_port = 0;
     }
