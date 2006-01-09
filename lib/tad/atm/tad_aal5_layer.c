@@ -163,6 +163,7 @@ tad_aal5_confirm_pdu_cb(csap_p csap, unsigned int  layer,
  * Data for callback to prepare AAL5 PDUs.
  */
 typedef struct tad_aal5_prepare_pdus_data {
+    csap_p      csap;       /**< CSAP */
     tad_pkts   *pdus;       /**< List to put PDUs */
     uint8_t    *trailer;    /**< CPCS PDU trailer template */
 } tad_aal5_prepare_pdus_data;
@@ -182,8 +183,14 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
 
     tad_pkt_seg            *trailer = tad_pkt_last_seg(pkt);
     tad_pkt_seg            *padding = tad_pkt_prev_seg(pkt, trailer);
+    size_t                  pld_len;
     size_t                  pad_len;
+    te_errno                rc;
     tad_atm_cell_ctrl_data *cell_ctrl;
+
+    /* Remember actual length of the payload */
+    assert(tad_pkt_len(pkt) >= AAL5_TRAILER_LEN);
+    pld_len = tad_pkt_len(pkt) - AAL5_TRAILER_LEN;
 
     /*
      * Calculate padding length
@@ -203,10 +210,37 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
     assert(trailer->data_len == AAL5_TRAILER_LEN);
     memcpy(trailer->data_ptr, data->trailer, AAL5_TRAILER_LEN);
 
-    /* Calculate CRC and write it to trailer */
-    /* FIXME: Implement CRC calculation */
+    /*
+     * Write length of the payload to trailer
+     */
+    /* TODO */
 
-    return 0;
+    /* Calculate CRC and write it to trailer */
+    /* TODO: Implement CRC calculation */
+
+    /*
+     * CPCS-PDU is ready for 'segmentation'
+     */
+    rc = tad_pkt_fragment(pkt, ATM_PAYLOAD_LEN,
+                          -1 /* no additional segment */,
+                          FALSE /* meaningless with -1 */,
+                          data->pdus);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Segmentation of CPCS-PDU to ATM cells "
+              "payload failed: %r", CSAP_LOG_ARGS(data->csap), rc);
+    }
+    else
+    {
+        /* Set ATM-User-to-ATM-User indication to 1 in the last cell */
+        cell_ctrl = malloc(sizeof(*cell_ctrl));
+        if (cell_ctrl == NULL)
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        cell_ctrl->indication = TRUE;
+        tad_pkt_set_opaque(data->pdus->pkts.cqh_last, cell_ctrl, free);
+    }
+
+    return rc;
 }
 
 /* See description in tad_atm_impl.h */
@@ -262,6 +296,7 @@ tad_aal5_gen_bin_cb(csap_p                csap,
     }
 
     /* Check each packet and fill in its header */
+    cb_data.csap = csap;
     cb_data.pdus = pdus;
     cb_data.trailer = trailer;
     rc = tad_pkt_enumerate(sdus, tad_aal5_prepare_pdus, &cb_data);
