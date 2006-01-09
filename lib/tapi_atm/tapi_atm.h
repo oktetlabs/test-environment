@@ -93,6 +93,31 @@ extern te_errno tapi_atm_csap_create(const char     *ta_name,
                                      te_bool        *clp,
                                      csap_handle_t  *csap);
 
+/**
+ * Create simple ATM cell traffic template with plain values.
+ *
+ * @param gfc           Pointer to GFC field value or NULL, if
+ *                      unspecified (default value is 0)
+ * @param vpi           Pointer to VPI or NULL (default value have to
+ *                      be specified during CSAP creation)
+ * @param vci           Pointer to VCI or NULL (default value have to
+ *                      be specified during CSAP creation)
+ * @param payload_type  Pointer to payload type or NULL (default
+ *                      value is zero or'ed with congestion bit
+ *                      specified during CSAP creation)
+ * @parma clp           Pointer to CLP or NULL (default value is
+ *                      specified during CSAP creation or 0)
+ * @param tmpl          Location for pointer to created traffic template
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_atm_simple_template(const uint8_t   *gfc,
+                                         const uint16_t  *vpi,
+                                         const uint16_t  *vci,
+                                         const uint8_t   *payload_type,
+                                         te_bool         *clp,
+                                         asn_value      **tmpl);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

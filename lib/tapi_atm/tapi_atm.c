@@ -40,12 +40,14 @@
 #include <strings.h>
 #endif
 
+#include "te_stdint.h"
 #include "te_errno.h"
 #include "logger_api.h"
 #include "rcf_api.h"
 #include "ndn.h"
 #include "ndn_socket.h"
 #include "ndn_atm.h"
+#include "tapi_tad.h"
 
 #include "tapi_atm.h"
 
@@ -121,6 +123,7 @@ tapi_atm_csap_create(const char     *ta_name,
     {
         ERROR("%s(): Location for created CSAP handle have to be "
               "provided", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
     nds = asn_init_value(ndn_csap_spec);
@@ -176,6 +179,50 @@ tapi_atm_csap_create(const char     *ta_name,
     asn_free_value(nds);
 
     return rc;
+}
+
+/* See the description in tapi_atm.h */
+te_errno
+tapi_atm_simple_template(const uint8_t   *gfc,
+                         const uint16_t  *vpi,
+                         const uint16_t  *vci,
+                         const uint8_t   *payload_type,
+                         te_bool         *clp,
+                         asn_value      **tmpl)
+{
+    asn_value *atm_hdr;
+    asn_value *asn_pdus, *asn_pdu;
+
+    if (tmpl == NULL)
+    {
+        ERROR("%s(): Location for created traffic tempalte have to be "
+              "provided", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    
+    CHECK_NOT_NULL(*tmpl = asn_init_value(ndn_traffic_template));
+
+    CHECK_NOT_NULL(asn_pdus = asn_init_value(ndn_generic_pdu_sequence));
+    CHECK_NOT_NULL(asn_pdu = asn_init_value(ndn_generic_pdu));
+    CHECK_NOT_NULL(atm_hdr = asn_init_value(ndn_atm_header));
+
+    if (gfc != NULL)
+        CHECK_RC(asn_write_int32(atm_hdr, *gfc, "gfc.#plain"));
+    if (vpi != NULL)
+        CHECK_RC(asn_write_int32(atm_hdr, *vpi, "vpi.#plain"));
+    if (vci != NULL)
+        CHECK_RC(asn_write_int32(atm_hdr, *vci, "vci.#plain"));
+    if (payload_type != NULL)
+        CHECK_RC(asn_write_int32(atm_hdr, *payload_type,
+                                 "payload-type.#plain"));
+    if (clp != NULL)
+        CHECK_RC(asn_write_int32(atm_hdr, *clp, "clp.#plain"));
+
+    CHECK_RC(asn_write_component_value(asn_pdu, atm_hdr, "#atm"));
+    CHECK_RC(asn_insert_indexed(asn_pdus, asn_pdu, 0, ""));
+    CHECK_RC(asn_write_component_value(*tmpl, asn_pdus, "pdus"));
+
+    return 0;
 }
 
 
