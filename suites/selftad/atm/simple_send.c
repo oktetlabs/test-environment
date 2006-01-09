@@ -75,6 +75,8 @@ main(int argc, char *argv[])
     int                     tst_s = -1;
     int                     iut_s = -1;
     csap_handle_t           csap = CSAP_INVALID_HANDLE;
+    void                   *payload = NULL;
+    size_t                  payload_len;
     asn_value              *tmpl = NULL;
     uint8_t                 cell[ATM_CELL_LEN];
     ssize_t                 r;
@@ -90,6 +92,8 @@ main(int argc, char *argv[])
     TEST_GET_BOOL_PARAM(congestion);
     TEST_GET_BOOL_PARAM(clp);
     TEST_GET_INT_PARAM(gfc);
+
+    CHECK_NOT_NULL(payload = te_make_buf(0, ATM_PAYLOAD_LEN, &payload_len));
 
     CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, 
                                          SIN(iut_addr)->sin_addr.s_addr,
@@ -111,13 +115,22 @@ main(int argc, char *argv[])
                                   &csap));
 
     CHECK_RC(tapi_atm_simple_template(&gfc, NULL, NULL, NULL, NULL,
-                                      &tmpl));
+                                      payload_len, payload, &tmpl));
     CHECK_RC(tapi_tad_trsend_start(iut_host->ta, 0, csap, tmpl,
                                    RCF_MODE_BLOCKING));
 
     r = rpc_read(pco_tst, tst_s, cell, sizeof(cell));
 
-    RING("Received cell is %Tm", cell, sizeof(cell));
+    if (memcmp(payload, cell + ATM_HEADER_LEN, payload_len) != 0)
+    {
+        TEST_FAIL("Payload received in ATM cell%Tm\n"
+                  "does not match sent data%Tm",
+                  cell + ATM_HEADER_LEN, payload_len,
+                  payload, payload_len);
+    }
+
+    RING("Sent payload is %Tm\nReceived cell is %Tm",
+         payload, payload_len, cell, sizeof(cell));
 
     TEST_SUCCESS;
 
