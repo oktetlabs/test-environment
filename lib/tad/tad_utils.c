@@ -1314,6 +1314,8 @@ te_proto_from_str(const char *proto_txt)
         case 'a':
             if (strcmp(proto_txt + 1, "rp") == 0)
                 return TE_PROTO_ARP;
+            if (strcmp(proto_txt + 1, "tm") == 0)
+                return TE_PROTO_ATM;
             break;
 
         case 'b':
@@ -1385,6 +1387,9 @@ te_proto_to_str(te_tad_protocols_t proto)
     {
          case TE_PROTO_INVALID:
             return NULL; 
+
+         case TE_PROTO_ATM:
+             return "atm";
 
          case TE_PROTO_ARP:
              return "arp";

@@ -49,6 +49,7 @@
 
 /* Add here declaraions of protocol-specific CSAP init params */ 
 extern asn_type ndn_pcap_csap_s;
+extern asn_type ndn_atm_csap_s;
 extern asn_type ndn_eth_csap_s;
 extern asn_type ndn_bridge_csap_s;
 extern asn_type ndn_arp_csap_s;
@@ -68,6 +69,7 @@ extern asn_type ndn_socket_csap_s;
 static asn_named_entry_t _ndn_generic_csap_level_ne_array[] = 
 {
 /* Add here reference to protocol-specific CSAP init params */ 
+    { "atm",    &ndn_atm_csap_s,        {PRIVATE, TE_PROTO_ATM} },
     { "pcap",   &ndn_pcap_csap_s,       {PRIVATE, TE_PROTO_PCAP} }, 
     { "eth",    &ndn_eth_csap_s,        {PRIVATE, TE_PROTO_ETH} }, 
     { "bridge", &ndn_bridge_csap_s,     {PRIVATE, TE_PROTO_BRIDGE} },
@@ -97,6 +99,7 @@ const asn_type * const ndn_generic_csap_level = &ndn_generic_csap_level_s;
 
 
 /* Add here declaraions of protocol-specific PDU ASN type */ 
+extern asn_type ndn_atm_header_s; 
 extern asn_type ndn_pcap_filter_s; 
 extern asn_type ndn_eth_header_s; 
 extern asn_type ndn_bridge_pdu_s;
@@ -116,6 +119,7 @@ extern asn_type ndn_socket_message_s;
 
 static asn_named_entry_t _ndn_generic_pdu_ne_array[] = 
 {
+    { "atm",    &ndn_atm_header_s,        {PRIVATE, TE_PROTO_ATM} },
     { "pcap",   &ndn_pcap_filter_s,       {PRIVATE, TE_PROTO_PCAP} }, 
     { "eth",    &ndn_eth_header_s,        {PRIVATE, TE_PROTO_ETH} }, 
     { "bridge", &ndn_bridge_pdu_s,        {PRIVATE, TE_PROTO_BRIDGE} },
