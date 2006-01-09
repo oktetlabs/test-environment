@@ -49,15 +49,20 @@ te_errno
 tad_socket_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                            asn_value *layer_pdu, void **p_opaque)
 {
-#if 0
-    if (spec_data->data_tag == NDN_TAG_TCP_DATA_SERVER)
+    tad_socket_rw_data *spec_data = csap_get_rw_data(csap); 
+
+    UNUSED(layer);
+    UNUSED(layer_pdu);
+    UNUSED(p_opaque);
+
+    if (spec_data->data_tag == NDN_TAG_SOCKET_TYPE_TCP_SERVER)
     {
         ERROR(CSAP_LOG_FMT "write to TCP 'server' socket is not allowed",
               CSAP_LOG_ARGS(csap));
         return TE_RC(TE_TAD_CSAP, TE_ETADLOWER);
     }
-#endif
-    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+
+    return 0;
 }
 
 
@@ -87,7 +92,7 @@ tad_socket_confirm_ptrn_cb(csap_p csap, unsigned int layer,
                            asn_value *layer_pdu, void **p_opaque)
 {
 #if 0
-    if (spec_data->data_tag != NDN_TAG_TCP_DATA_SERVER)
+    if (spec_data->data_tag != NDN_TAG_SOCKET_TYPE_TCP_SERVER)
     {
         uint32_t len;
         rc = asn_read_int32(tcp_pdu, &len, "length");
