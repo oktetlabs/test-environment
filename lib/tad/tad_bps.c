@@ -43,6 +43,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -305,6 +308,47 @@ tad_bps_pkt_frag_data_bitlen(const tad_bps_pkt_frag_def *def,
 }
 
 
+typedef uint32_t myint_t;
+
+/**
+ * Write specified number of bits of an integer to memory array starting
+ * from specified offset in bits.
+ *
+ * @param ptr           Destination memory array
+ * @param off           Offset in destination in bits
+ * @param value         Integer value
+ * @param bits          Number of bits to write
+ */
+static void
+write_bits(uint8_t *ptr, size_t off, myint_t value, size_t bits)
+{
+    size_t  off_byte = off >> 3;
+    size_t  off_bit  = off & 7;
+    size_t  space_bits = 8 - off_bit;
+    uint8_t mask = (~0 << space_bits);
+    int     left_bits = bits - space_bits;
+    int     shift = (sizeof(myint_t) << 3) - off_bit - bits;
+    myint_t tmp;
+    uint8_t write;
+    uint8_t read;
+
+    if (left_bits < 0)
+        mask = mask | ~(~0 << -left_bits);
+
+    if (shift == 0)
+        tmp = value;
+    else if (shift > 0)
+        tmp = value << shift;
+    else
+        tmp = value >> shift;
+    tmp = htonl(tmp);
+    write = *((uint8_t *)&tmp) & ~mask;
+    read = ptr[off_byte] & mask;
+    ptr[off_byte] = read | write;
+    if (left_bits > 0)
+        write_bits(ptr, off + space_bits, value, left_bits);
+}
+
 /* See description in tad_bps.h */
 te_errno
 tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
@@ -330,12 +374,6 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
 
     for (i = 0; i < def->fields; ++i)
     {
-        if ((def->descr[i].len & 7) != 0)
-        {
-            ERROR("Not bit-aligned offsets and lengths are not supported");
-            return TE_RC(TE_TAD_BPS, TE_EOPNOTSUPP);
-        }
-
         if (pkt->dus[i].du_type != TAD_DU_UNDEF)
             du = pkt->dus + i;
         else if (def->tx_def[i].du_type != TAD_DU_UNDEF)
@@ -344,22 +382,35 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
             assert(FALSE);
 
         if (def->descr[i].len > 0)
-            len = def->descr[i].len >> 3;
+            len = def->descr[i].len;
         else if (du->du_type == TAD_DU_OCTS)
-            len = du->val_data.len;
+            len = du->val_data.len << 3;
         else
             assert(FALSE);
 
-        rc = tad_data_unit_to_bin(du, args, arg_num,
-                                  bin + (*bitoff >> 3), len);
-        if (rc != 0)
+        if (((*bitoff & 7) == 0) && ((len & 7) == 0))
         {
-            ERROR("%s(): tad_data_unit_to_bin() failed: %r",
-                  __FUNCTION__, rc);
-            return rc;
+            rc = tad_data_unit_to_bin(du, args, arg_num,
+                                      bin + (*bitoff >> 3), len >> 3);
+            if (rc != 0)
+            {
+                ERROR("%s(): tad_data_unit_to_bin() failed: %r",
+                      __FUNCTION__, rc);
+                return rc;
+            }
+        }
+        else if (du->du_type == TAD_DU_I32)
+        {
+            write_bits(bin, *bitoff, du->val_i32, len);
+        }
+        else
+        {
+            ERROR("Not bit-aligned offsets and lengths are supported "
+                  "for plain integers only");
+            return TE_RC(TE_TAD_BPS, TE_EOPNOTSUPP);
         }
 
-        *bitoff += len << 3;
+        *bitoff += len;
     }
     return 0;
 }
