@@ -43,7 +43,7 @@
 #include <pthread.h>
 #include "iscsi_custom.h"
 
-#define ISCSI_CUSTOM_MAX_PARAM 10
+#define ISCSI_CUSTOM_MAX_PARAM 12
 
 struct iscsi_custom_data
 {
@@ -123,6 +123,8 @@ static iscsi_custom_descr param_descr[ISCSI_CUSTOM_MAX_PARAM + 1] =
     {"async_text_timeout", FALSE, NULL},
     {"disable_t_bit", FALSE, boolean_values},
     {"split_pdu_at", FALSE, NULL},
+    {"max_cmd_sn_delta", FALSE, NULL},
+    {"send_nopin", TRUE, boolean_values},
     {NULL, FALSE, NULL},
 };
     

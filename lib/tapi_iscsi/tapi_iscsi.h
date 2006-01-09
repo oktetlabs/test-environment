@@ -554,6 +554,9 @@ extern int tapi_iscsi_target_customize(const char *ta,
                                        const char *key,
                                        const char *value);
 
+extern int tapi_iscsi_target_customize_intval(const char *ta, int id, 
+                                              const char *key, int value);
+
 extern int tapi_iscsi_target_cause_logout(const char *ta, int id, 
                                           int timeout);
 

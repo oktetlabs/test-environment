@@ -51,7 +51,7 @@
 #define MASK_22_BITS			0x3FFFFF
 #define MASK_16_BITS			0xFFFF
 #define MASK_8_BITS			0xFF
-#define QUEUE_DEPTH_ALLOWED		100
+#define QUEUE_DEPTH_ALLOWED		0
 #define SERIAL_BITS			31
 
 #define WHITE_SPACE			" \t\v\f\n\r"

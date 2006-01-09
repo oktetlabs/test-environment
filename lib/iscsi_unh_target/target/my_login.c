@@ -87,6 +87,9 @@ static uint32_t skip_thru_sg_list(struct scatterlist *st_list, uint32_t *i, uint
 static int send_unsolicited_data(struct iscsi_cmnd *cmd,
                                  struct iscsi_conn *conn,
                                  struct iscsi_session *session);
+static int handle_nopin(struct iscsi_cmnd *cmnd,
+                        struct iscsi_conn *conn,
+                        struct iscsi_session *session);
 
 int fill_iovec(struct iovec *iov, int p, int niov,
                struct scatterlist *st_list, int *offset, uint32_t data);
@@ -2004,6 +2007,48 @@ generate_next_ttt(struct iscsi_session* session)
 	return retval;
 }
 
+/*
+ * executed only by the tx thread.
+ * generates and sends a NopIn "ping" PDU to initiator
+ */
+static int
+generate_nopin(struct iscsi_conn *conn,
+			   struct iscsi_session *session)
+{
+	struct iscsi_cmnd *cmnd;
+	struct iscsi_cmnd *temp;
+
+	if ((cmnd = get_new_cmnd()) == NULL) {
+		return -1;
+	}
+
+	/* set up new command to look like an immediate NopOut sent by initiator */
+	cmnd->conn = conn;
+	cmnd->session = session;
+	cmnd->opcode_byte = ISCSI_INIT_NOP_OUT | I_BIT;
+	cmnd->init_task_tag = ALL_ONES;
+	cmnd->state = ISCSI_NOPIN_SENT;
+
+    pthread_mutex_lock(&session->cmnd_mutex);
+	cmnd->target_xfer_tag = generate_next_ttt(session);
+
+	/* Add this command to end of the queue */
+	for (temp = session->cmnd_list; temp != NULL; temp = temp->next) {
+		if (temp->next == NULL)
+			break;
+	}
+
+	if (temp)
+		temp->next = cmnd;
+	else
+		session->cmnd_list = cmnd;
+    pthread_mutex_lock(&session->cmnd_mutex);
+
+	TRACE(VERBOSE, "Send NopIn ping, TTT %u\n", cmnd->target_xfer_tag);
+
+	return handle_nopin(cmnd, conn, session);
+}
+
 static void *
 iscsi_manager_thread (void *data)
 {
@@ -2064,6 +2109,10 @@ iscsi_manager_thread (void *data)
         }
 #undef CUSTOM
 #undef CUSTOM_BYTE
+        else if (iscsi_is_changed_custom_value(conn->custom, "send_nopin"))
+        {
+            generate_nopin(conn, conn->session);
+        }
     }
     return NULL;
 }
@@ -2519,6 +2568,7 @@ handle_logout_rsp(struct iscsi_cmnd *cmnd,
 	return 0;
 }
 
+
 /*
  * executed only by the tx thread.
  * sends a NopIn PDU to initiator
@@ -2532,6 +2582,7 @@ handle_nopin(struct iscsi_cmnd *cmnd,
 {
 	uint8_t iscsi_hdr[ISCSI_HDR_LEN];
 	struct iscsi_targ_nopin *hdr;
+    int max_cmd_sn_delta;
 
 	memset(iscsi_hdr, 0x0, ISCSI_HDR_LEN);
 	hdr = (struct iscsi_targ_nopin *) iscsi_hdr;
@@ -2555,7 +2606,17 @@ handle_nopin(struct iscsi_cmnd *cmnd,
 
     pthread_mutex_lock(&session->cmnd_mutex);	
     hdr->exp_cmd_sn = htonl(session->exp_cmd_sn);
-	hdr->max_cmd_sn = htonl(session->max_cmd_sn);
+
+    max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
+                                              "max_cmd_sn_delta");
+    if (max_cmd_sn_delta == 0)
+        hdr->max_cmd_sn = htonl(session->max_cmd_sn);
+    else
+    {
+        RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
+        hdr->max_cmd_sn = htonl(session->exp_cmd_sn + max_cmd_sn_delta);
+    }
+    
 	if (!(cmnd->opcode_byte & I_BIT)) {
 		/* the nopout command pdu was not immediate, CmdSN advances */
 		session->max_cmd_sn++;
@@ -3623,6 +3684,7 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 		} sense_data = {0, {0}};
 	uint32_t flags = 0;
 	int residual_count = 0;
+    int max_cmd_sn_delta = 0;
 
 	TRACE(DEBUG, "send_scsi_response");
 
@@ -3654,7 +3716,16 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 	}
 	rsp->stat_sn = htonl(cmnd->stat_sn);
 	rsp->exp_cmd_sn = htonl(session->exp_cmd_sn);
-	rsp->max_cmd_sn = htonl(session->max_cmd_sn);
+
+    max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
+                                              "max_cmd_sn_delta");
+    if (max_cmd_sn_delta == 0)
+        rsp->max_cmd_sn = htonl(session->max_cmd_sn);
+    else
+    {
+        RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
+        rsp->max_cmd_sn = htonl(session->exp_cmd_sn + max_cmd_sn_delta);
+    }
 
 	if (flags & SEND_SENSE_FLAG) {
 		/* sense data has to be sent as part of SCSI Response pdu */
@@ -3732,6 +3803,7 @@ send_read_data(struct iscsi_cmnd *cmnd,
 	int pdu_offset;
 	int data_payload_length;
 	int total_data_length;
+    int max_cmd_sn_delta;
 
 /* Daren Hayward, darenh@4bridgeworks.com */
 #if defined(MANGLE_INQUIRY_DATA)
@@ -3848,7 +3920,17 @@ send_read_data(struct iscsi_cmnd *cmnd,
 			}
 
 			hdr->exp_cmd_sn = htonl(session->exp_cmd_sn);
-			hdr->max_cmd_sn = htonl(session->max_cmd_sn);
+            max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
+                                                      "max_cmd_sn_delta");
+
+            if (max_cmd_sn_delta == 0)
+                hdr->max_cmd_sn = htonl(session->max_cmd_sn);
+            else
+            {
+                RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
+                hdr->max_cmd_sn = htonl(session->exp_cmd_sn + 
+                                        max_cmd_sn_delta);
+            }
 
 			/* re-transmit only the requested Data PDU - SAI */
 			if (!cmnd->retransmit_flg)

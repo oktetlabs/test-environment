@@ -1299,6 +1299,16 @@ tapi_iscsi_target_customize(const char *ta, int id,
 }
 
 int
+tapi_iscsi_target_customize_intval(const char *ta, int id, 
+                                   const char *key, int value)
+{
+    char buf[16];
+    
+    snprintf(buf, sizeof(buf), "%d", value);
+    return tapi_iscsi_target_customize(ta, id, key, buf);
+}
+
+int
 tapi_iscsi_target_cause_logout(const char *ta, int id, int timeout)
 {
     int  rc;
@@ -2209,6 +2219,7 @@ tapi_iscsi_io_thread(void *param)
 
     sigemptyset(&mask);
     sigaddset(&mask, ISCSI_IO_SIGNAL);
+    sigaddset(&mask, SIGALRM);
     pthread_sigmask(SIG_BLOCK, &mask, NULL);
     pthread_cleanup_push(rpc_server_destructor, ioh);
     for (;;)
