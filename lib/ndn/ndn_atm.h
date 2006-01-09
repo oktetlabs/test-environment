@@ -84,7 +84,7 @@ extern const asn_type * const ndn_atm_header;
 extern const asn_type * const ndn_atm_csap;
 
 extern const asn_type * const ndn_aal5_cpcs_trailer;
-extern const asn_type * const ndn_all5_csap;
+extern const asn_type * const ndn_aal5_csap;
 
 
 #ifdef __cplusplus
