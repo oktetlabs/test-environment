@@ -1347,11 +1347,6 @@ te_proto_from_str(const char *proto_txt)
                 return TE_PROTO_ETH;
             break;
 
-        case 'f':
-            if (strcmp(proto_txt + 1, "ile") == 0)
-                return TE_PROTO_FILE;
-            break;
-
         case 'i':
             if (strcmp(proto_txt + 1, "p4") == 0)
                 return TE_PROTO_IP4;
@@ -1417,9 +1412,6 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_ETH:
              return "eth";
-
-         case TE_PROTO_FILE:
-             return "file";
 
          case TE_PROTO_ICMP4:
              return "icmp4";
