@@ -35,6 +35,14 @@
             <script name="simple_recv_send">
                 <req id="TAD_ETH"/> 
             </script>
+            <arg name="send_src_csap">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
+            <arg name="send_src_tmpl">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
         </run>
         <run>
             <script name="vlan_recv_send">
