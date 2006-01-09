@@ -1214,7 +1214,14 @@ tad_check_pdu_seq(csap_p csap, asn_value *pdus)
     }
 
     nds_len = asn_get_length(pdus, "");
-    nds_protos = calloc(nds_len, sizeof(nds_protos[0]));
+    if (nds_len > (int)csap->depth)
+    {
+        ERROR("Too many PDUs (%d) in NDS in comparison with CSAP "
+              "depth (%u)", nds_len, csap->depth);
+        return TE_ETADWRONGNDS;
+    }
+
+    nds_protos = calloc(csap->depth, sizeof(nds_protos[0]));
 
     for (i = 0; i < nds_len; i++)
     {
