@@ -93,6 +93,35 @@ tapi_atm_csap_layer(ndn_atm_type     type,
 
 /* See the description in tapi_atm.h */
 te_errno 
+tapi_aal5_csap_layer(const uint8_t  *cpcs_uu,
+                     const uint8_t  *cpi,
+                     asn_value     **aal5_layer)
+{
+    if (aal5_layer == NULL)
+    {
+        ERROR("%s(): Location for created ASN.1 value have to be provided",
+              __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    *aal5_layer = asn_init_value(ndn_aal5_csap);
+    if (*aal5_layer == NULL)
+    {
+        ERROR("Failed to initialize ASN.1 value for CSAP AAL5 layer");
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+
+    if (cpcs_uu != NULL)
+        CHECK_RC(asn_write_int32(*aal5_layer, *cpcs_uu, "cpcs-uu.#plain"));
+    if (cpi != NULL)
+        CHECK_RC(asn_write_int32(*aal5_layer, *cpi, "cpi.#plain"));
+
+    return 0;
+}
+
+
+/* See the description in tapi_atm.h */
+te_errno 
 tapi_atm_csap_create(const char     *ta_name,
                      int             sid,
                      int             fd,
@@ -180,6 +209,120 @@ tapi_atm_csap_create(const char     *ta_name,
 
     return rc;
 }
+
+/* See the description in tapi_atm.h */
+te_errno 
+tapi_aal5_atm_csap_create(const char     *ta_name,
+                          int             sid,
+                          int             fd,
+                          ndn_atm_type    type,
+                          const uint16_t *vpi,
+                          const uint16_t *vci,
+                          te_bool        *congestion,
+                          te_bool        *clp,
+                          const uint8_t  *cpcs_uu,
+                          const uint8_t  *cpi,
+                          csap_handle_t  *csap)
+{
+    te_errno    rc;
+    asn_value  *nds = NULL;
+    asn_value  *layer = NULL;
+    asn_value  *gen_layer = NULL;
+
+    if (ta_name == NULL)
+    {
+        ERROR("%s(): TA name have to be specified", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (fd < 0)
+    {
+        ERROR("%s(): Valid file descriptor have to be specified",
+              __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (csap == NULL)
+    {
+        ERROR("%s(): Location for created CSAP handle have to be "
+              "provided", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    nds = asn_init_value(ndn_csap_spec);
+    if (nds == NULL)
+    {
+        ERROR("%s(): Failed to initialize CSAP NDS", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+
+    rc = tapi_aal5_csap_layer(cpcs_uu, cpi, &layer);
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to create CSAP AAL5 layer specification: %r",
+              __FUNCTION__, rc);
+        asn_free_value(nds);
+        return rc;
+    }
+    CHECK_NOT_NULL(gen_layer = asn_init_value(ndn_generic_csap_level));
+    CHECK_RC(asn_write_component_value(gen_layer, layer, "#aal5"));
+    rc = asn_insert_indexed(nds, gen_layer, -1, "");
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to insert AAL5 layer in CSAP NDS: %r",
+              __FUNCTION__, rc);
+        asn_free_value(layer);
+        asn_free_value(nds);
+        return rc;
+    }
+    layer = NULL;
+
+    rc = tapi_atm_csap_layer(type, vpi, vci, congestion, clp, &layer);
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to create CSAP ATM layer specification: %r",
+              __FUNCTION__, rc);
+        asn_free_value(nds);
+        return rc;
+    }
+    CHECK_NOT_NULL(gen_layer = asn_init_value(ndn_generic_csap_level));
+    CHECK_RC(asn_write_component_value(gen_layer, layer, "#atm"));
+    rc = asn_insert_indexed(nds, gen_layer, -1, "");
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to insert ATM layer in CSAP NDS: %r",
+              __FUNCTION__, rc);
+        asn_free_value(layer);
+        asn_free_value(nds);
+        return rc;
+    }
+    layer = NULL;
+
+    CHECK_NOT_NULL(layer = asn_init_value(ndn_socket_csap));
+    CHECK_RC(asn_write_int32(layer, fd, "type.#file-descr"));
+    CHECK_NOT_NULL(gen_layer = asn_init_value(ndn_generic_csap_level));
+    CHECK_RC(asn_write_component_value(gen_layer, layer, "#socket"));
+    rc = asn_insert_indexed(nds, gen_layer, -1, "");
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to insert Socket layer in CSAP NDS: %r",
+              __FUNCTION__, rc);
+        asn_free_value(layer);
+        asn_free_value(nds);
+        return rc;
+    }
+    layer = NULL;
+
+    rc = tapi_tad_csap_create(ta_name, sid, "aal5.atm.socket", nds, csap);
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to create 'aal5.atm.socket' CSAP: %r",
+              __FUNCTION__, rc);
+    }
+
+    asn_free_value(nds);
+
+    return rc;
+}
+
 
 /* See the description in tapi_atm.h */
 te_errno

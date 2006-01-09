@@ -72,6 +72,25 @@ extern te_errno tapi_atm_csap_layer(ndn_atm_type     type,
                                     asn_value      **atm_layer);
 
 /**
+ * Create ASN.1 value for CSAP AAL5 layer.
+ *
+ * @param cpcs_uu       Pointer to CPCS User-to-User indication or NULL.
+ *                      If NULL, default value on transmit is 0 and
+ *                      match any on receive.
+ * @param cpi           Pointer to Common Part Indicator or NULL.
+ *                      If NULL, default value on transmit is 0 and
+ *                      match any on receive.
+ * @param aal5_layer    Location for prepared CSAP AAL5 layer
+ *                      specification pointer.
+ *
+ * @retval Status code.
+ */
+extern te_errno tapi_aal5_csap_layer(const uint8_t  *cpcs_uu,
+                                     const uint8_t  *cpi,
+                                     asn_value     **aal5_layer);
+
+
+/**
  * Create ATM CSAP that runs over a file descriptor.
  *
  * @param ta_name       Test Agent name
