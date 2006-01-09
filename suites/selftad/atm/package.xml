@@ -14,7 +14,9 @@
         <run>
             <script name="simple_send"/>
             <arg name="gfc">
-                <value>2</value>
+                <value>0</value>
+                <value>1</value>
+                <value>8</value>
             </arg>
             <arg name="vpi"> 
                 <value>200</value>

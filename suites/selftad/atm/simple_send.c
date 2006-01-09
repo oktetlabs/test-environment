@@ -48,6 +48,7 @@
 #include "tapi_rpc.h"
 #include "tapi_rpcsock_macros.h"
 #include "tapi_env.h"
+#include "tapi_tad.h"
 #include "tapi_tcp.h"
 #include "tapi_atm.h"
 
@@ -74,6 +75,9 @@ main(int argc, char *argv[])
     int                     tst_s = -1;
     int                     iut_s = -1;
     csap_handle_t           csap = CSAP_INVALID_HANDLE;
+    asn_value              *tmpl = NULL;
+    uint8_t                 cell[ATM_CELL_LEN];
+    ssize_t                 r;
 
 
     TEST_START;
@@ -106,9 +110,20 @@ main(int argc, char *argv[])
                                   &vpi, &vci, &congestion, &clp,
                                   &csap));
 
+    CHECK_RC(tapi_atm_simple_template(&gfc, NULL, NULL, NULL, NULL,
+                                      &tmpl));
+    CHECK_RC(tapi_tad_trsend_start(iut_host->ta, 0, csap, tmpl,
+                                   RCF_MODE_BLOCKING));
+
+    r = rpc_read(pco_tst, tst_s, cell, sizeof(cell));
+
+    RING("Received cell is %Tm", cell, sizeof(cell));
+
     TEST_SUCCESS;
 
 cleanup:
+    asn_free_value(tmpl);
+
     CLEANUP_RPC_CLOSE(pco_tst, tst_s);
 
     if (iut_host != NULL)
