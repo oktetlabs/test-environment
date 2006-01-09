@@ -1153,9 +1153,8 @@ tad_tr_send_prepare_bin(csap_p csap, asn_value_p nds,
                      args, arg_num, sdus, pdus); 
             if (rc != 0) 
             {
-                ERROR("generate binary data error; "
-                      "rc: %r, csap id: %d, layer: %u", 
-                      rc, csap->id, layer);
+                ERROR(CSAP_LOG_FMT "generate binary data on layer %u "
+                      "failed: %r", CSAP_LOG_ARGS(csap), layer, rc);
             }
         }
     }
