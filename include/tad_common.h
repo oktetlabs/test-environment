@@ -77,6 +77,7 @@ typedef enum {
 typedef enum { 
     TE_PROTO_INVALID = 0, /**< Invalid protocol, for error and undef */
 
+    TE_PROTO_AAL5,
     TE_PROTO_ARP,
     TE_PROTO_ATM,
     TE_PROTO_BRIDGE,
