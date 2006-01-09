@@ -103,6 +103,7 @@
 
 #ifdef USE_NETLINK
 #include <sys/select.h>
+#include <asm/types.h>
 #include <linux/netlink.h>
 #include <fnmatch.h>
 #include <linux/sockios.h>
