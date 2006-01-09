@@ -3292,10 +3292,16 @@ neigh_list(unsigned int gid, const char *oid, char **list,
     rtnl_wilddump_request(&rth, AF_INET, RTM_GETNEIGH);
     rtnl_dump_filter(&rth, neigh_print_cb, &user_data, NULL, NULL);    
  
+#ifdef NEIGH_USE_NETLINK
+    /* 
+     * We cannot list IPv6 entries because we'll not be able 
+     * to delete them 
+     */
     user_data.list = buf + strlen(buf);
 
     rtnl_wilddump_request(&rth, AF_INET6, RTM_GETNEIGH);
     rtnl_dump_filter(&rth, neigh_print_cb, &user_data, NULL, NULL);
+#endif
 
     rtnl_close(&rth);
 
