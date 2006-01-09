@@ -2042,7 +2042,7 @@ generate_nopin(struct iscsi_conn *conn,
 		temp->next = cmnd;
 	else
 		session->cmnd_list = cmnd;
-    pthread_mutex_lock(&session->cmnd_mutex);
+    pthread_mutex_unlock(&session->cmnd_mutex);
 
 	TRACE(VERBOSE, "Send NopIn ping, TTT %u\n", cmnd->target_xfer_tag);
 
@@ -5066,7 +5066,9 @@ handle_cmnd(struct iscsi_conn *conn,
 	sem_init(&cmnd->unsolicited_data_sem, 0, 1);
 
 	/* check cmd_sn for command ordering */
+    TRACE(DEBUG, "trying cmnd_mutex locking");
     pthread_mutex_lock(&session->cmnd_mutex);
+    TRACE(DEBUG, "cmnd_mutex successfully locked");
 
 	/* Last parameter is 0 because we cannot bump the exp_cmd_sn for the session
 	 * until this command has been delivered to the mid-level in proper order.
