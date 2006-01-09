@@ -254,6 +254,16 @@ extern size_t tad_pkt_len(const tad_pkt *pkt);
 extern void *tad_pkt_opaque(const tad_pkt *pkt);
 
 /**
+ * Set opaque data pointer of the packet.
+ *
+ * @param pkt           Pointer to a packet
+ * @param opaque        Opaque pointer
+ * @param opaque_free   Function to free opaque data
+ */
+extern void tad_pkt_set_opaque(tad_pkt *pkt, void *opaque,
+                               tad_pkt_ctrl_free opaque_free);
+
+/**
  * Initialize packet as empty (no segments).
  *
  * @param pkt       Pointer to a packet

@@ -102,12 +102,28 @@ tad_pkt_len(const tad_pkt *pkt)
     return pkt->segs_len;
 }
 
+
 /* See description in tad_pkt.h */
 void *
 tad_pkt_opaque(const tad_pkt *pkt)
 {
     return pkt->opaque;
 }
+
+/* See description in tad_pkt.h */
+void
+tad_pkt_set_opaque(tad_pkt *pkt, void *opaque,
+                   tad_pkt_ctrl_free opaque_free)
+{
+    assert(pkt != NULL);
+
+    if (pkt->opaque_free != NULL)
+        pkt->opaque_free(pkt->opaque);
+
+    pkt->opaque = opaque;
+    pkt->opaque_free = opaque_free;
+}
+
 
 /* See description in tad_pkt.h */
 void
