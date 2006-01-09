@@ -188,11 +188,19 @@ tapi_atm_simple_template(const uint8_t   *gfc,
                          const uint16_t  *vci,
                          const uint8_t   *payload_type,
                          te_bool         *clp,
+                         size_t           pld_len,
+                         const uint8_t   *pld,
                          asn_value      **tmpl)
 {
-    asn_value *atm_hdr;
-    asn_value *asn_pdus, *asn_pdu;
+    asn_value  *atm_hdr;
+    asn_value  *asn_pdus, *asn_pdu;
+    uint8_t     payload[ATM_PAYLOAD_LEN];
 
+    if (pld_len > ATM_PAYLOAD_LEN)
+    {
+        ERROR("Too long (%u) ATM cell payload", (unsigned)pld_len);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
     if (tmpl == NULL)
     {
         ERROR("%s(): Location for created traffic tempalte have to be "
@@ -221,6 +229,11 @@ tapi_atm_simple_template(const uint8_t   *gfc,
     CHECK_RC(asn_write_component_value(asn_pdu, atm_hdr, "#atm"));
     CHECK_RC(asn_insert_indexed(asn_pdus, asn_pdu, 0, ""));
     CHECK_RC(asn_write_component_value(*tmpl, asn_pdus, "pdus"));
+
+    memcpy(payload, pld, pld_len);
+    memset(payload + pld_len, 0, ATM_PAYLOAD_LEN - pld_len);
+    CHECK_RC(asn_write_value_field(*tmpl, payload, sizeof(payload),
+                                   "payload.#bytes"));
 
     return 0;
 }

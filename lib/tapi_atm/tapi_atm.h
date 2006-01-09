@@ -107,6 +107,9 @@ extern te_errno tapi_atm_csap_create(const char     *ta_name,
  *                      specified during CSAP creation)
  * @parma clp           Pointer to CLP or NULL (default value is
  *                      specified during CSAP creation or 0)
+ * @param pld_len       Length of user payload (should be not greater
+ *                      than 48, if less, the rest is padded by zeros)
+ * @param pld           Payload
  * @param tmpl          Location for pointer to created traffic template
  *
  * @return Status code.
@@ -116,6 +119,8 @@ extern te_errno tapi_atm_simple_template(const uint8_t   *gfc,
                                          const uint16_t  *vci,
                                          const uint8_t   *payload_type,
                                          te_bool         *clp,
+                                         size_t           pld_len,
+                                         const uint8_t   *pld,
                                          asn_value      **tmpl);
 
 #ifdef __cplusplus
