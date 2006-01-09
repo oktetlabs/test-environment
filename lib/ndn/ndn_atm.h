@@ -46,6 +46,9 @@
 /** Length of ATM cell payload */
 #define ATM_PAYLOAD_LEN     (ATM_CELL_LEN - ATM_HEADER_LEN)
 
+/** Length of AAL5 CPCS PDU trailer */
+#define AAL5_TRAILER_LEN    8
+
 
 #ifdef __cplusplus
 extern "C" {
