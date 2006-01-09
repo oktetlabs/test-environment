@@ -65,6 +65,30 @@ static csap_spt_type_t atm_csap_spt =
 };
 
 
+static csap_spt_type_t aal5_csap_spt = 
+{
+    proto               : "aal5",
+
+    init_cb             : tad_aal5_init_cb,
+    destroy_cb          : tad_aal5_destroy_cb,
+    get_param_cb        : NULL,
+
+    confirm_tmpl_cb     : tad_aal5_confirm_pdu_cb,
+    generate_pkts_cb    : tad_aal5_gen_bin_cb,
+    release_tmpl_cb     : NULL,
+
+    confirm_ptrn_cb     : tad_aal5_confirm_pdu_cb,
+    match_do_cb         : tad_aal5_match_bin_cb,
+    match_done_cb       : NULL,
+    match_post_cb       : NULL,
+    release_ptrn_cb     : NULL,
+
+    generate_pattern_cb : NULL,
+
+    CSAP_SUPPORT_NO_RW,
+};
+
+
 /**
  * Register ATM CSAP callbacks and support structures in TAD
  * Command Handler.
@@ -74,5 +98,11 @@ static csap_spt_type_t atm_csap_spt =
 te_errno
 csap_support_atm_register(void)
 { 
+    te_errno    rc;
+
+    rc = csap_spt_add(&aal5_csap_spt);
+    if (rc != 0)
+        return rc;
+
     return csap_spt_add(&atm_csap_spt);
 }

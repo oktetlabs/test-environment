@@ -104,4 +104,57 @@ extern te_errno tad_atm_match_bin_cb(csap_p           csap,
                                      csap_pkts       *payload,
                                      asn_value       *parsed_packet);
 
+
+
+/**
+ * Callback to initialize 'aal5' CSAP layer.
+ *
+ * The function complies with csap_layer_init_cb_t prototype.
+ */
+extern te_errno tad_aal5_init_cb(csap_p csap, unsigned int layer);
+
+/**
+ * Callback to destroy 'aal5' CSAP layer.
+ *
+ * The function complies with csap_layer_destroy_cb_t prototype.
+ */
+extern te_errno tad_aal5_destroy_cb(csap_p csap, unsigned int layer);
+
+
+/**
+ * Callback for confirm PDU with ATM CSAP parameters and possibilities.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */
+extern te_errno tad_aal5_confirm_pdu_cb(csap_p         csap,
+                                        unsigned int   layer, 
+                                        asn_value     *layer_pdu,
+                                        void         **p_opaque); 
+
+/**
+ * Callback for generate binary data to be sent to media.
+ *
+ * The function complies with csap_layer_generate_pkts_cb_t prototype.
+ */
+extern te_errno tad_aal5_gen_bin_cb(csap_p                csap,
+                                    unsigned int          layer,
+                                    const asn_value      *tmpl_pdu,
+                                    void                 *opaque,
+                                    const tad_tmpl_arg_t *args,
+                                    size_t                arg_num,
+                                    tad_pkts             *sdus,
+                                    tad_pkts             *pdus);
+
+/**
+ * Callback for parse received packet and match it with pattern.
+ *
+ * The function complies with csap_layer_match_bin_cb_t prototype.
+ */
+extern te_errno tad_aal5_match_bin_cb(csap_p           csap,
+                                      unsigned int     layer,
+                                      const asn_value *pattern_pdu,
+                                      const csap_pkts *pkt,
+                                      csap_pkts       *payload,
+                                      asn_value       *parsed_packet);
+
 #endif /* !__TE_TAD_ATM_IMPL_H__ */

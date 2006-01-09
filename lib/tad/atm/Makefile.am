@@ -6,7 +6,7 @@ noinst_HEADERS = tad_atm_impl.h
 
 noinst_LIBRARIES = libtad_atm.a
 
-libtad_atm_a_SOURCES = tad_atm_csap.c tad_atm_layer.c
+libtad_atm_a_SOURCES = tad_atm_csap.c tad_atm_layer.c tad_aal5_layer.c
 
 
 install-exec-hook:
