@@ -33,5 +33,31 @@
                 <value>TRUE</value>
             </arg>
         </run>
+
+        <run iterate="4">
+            <script name="aal5_send"/>
+            <arg name="gfc">
+                <value>8</value>
+            </arg>
+            <arg name="vpi"> 
+                <value>1</value>
+            </arg>
+            <arg name="vci">
+                <value>1</value>
+            </arg>
+            <arg name="congestion">
+                <value>FALSE</value>
+            </arg>
+            <arg name="clp">
+                <value>TRUE</value>
+            </arg>
+            <arg name="cpcs_uu">
+                <value>127</value>
+            </arg>
+            <arg name="cpi">
+                <value>192</value>
+            </arg>
+        </run>
+
    </session>
 </package>
