@@ -34,6 +34,7 @@ main(void)
     TEST_SUCCESS;
 
 cleanup:
+    CFG_WAIT_CHANGES;
 
     return result;
 }
