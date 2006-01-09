@@ -84,7 +84,6 @@ typedef enum {
     TE_PROTO_CLI,
     TE_PROTO_DHCP,
     TE_PROTO_ETH,
-    TE_PROTO_FILE,
     TE_PROTO_ICMP4,
     TE_PROTO_IP4,
     TE_PROTO_ISCSI,

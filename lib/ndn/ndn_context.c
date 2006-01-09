@@ -38,7 +38,6 @@
 #include "ndn_snmp.h"
 #endif
 
-#include "ndn_file.h"
 #include "ndn_eth.h"
 #include "ndn_pcap.h"
 #include "ndn_ipstack.h"
@@ -64,7 +63,6 @@ extern asn_type ndn_iscsi_csap_s;
 extern asn_type ndn_snmp_csap_s;
 #endif
 extern asn_type ndn_cli_csap_s;
-extern asn_type ndn_file_csap_s;
 extern asn_type ndn_socket_csap_s;
 
 static asn_named_entry_t _ndn_generic_csap_level_ne_array[] = 
@@ -86,7 +84,6 @@ static asn_named_entry_t _ndn_generic_csap_level_ne_array[] =
     { "snmp",   &ndn_snmp_csap_s,       {PRIVATE, TE_PROTO_SNMP} },
 #endif
     { "cli",    &ndn_cli_csap_s,        {PRIVATE, TE_PROTO_CLI} },
-    { "file",   &ndn_file_csap_s,       {PRIVATE, TE_PROTO_FILE} }, 
     { "socket", &ndn_socket_csap_s,     {PRIVATE, TE_PROTO_SOCKET} }, 
 };
 
@@ -117,7 +114,6 @@ extern asn_type ndn_iscsi_message_s;
 extern asn_type ndn_snmp_message_s;
 #endif
 extern asn_type ndn_cli_message_s; 
-extern asn_type ndn_file_message_s;
 extern asn_type ndn_socket_message_s;
 
 static asn_named_entry_t _ndn_generic_pdu_ne_array[] = 
@@ -138,7 +134,6 @@ static asn_named_entry_t _ndn_generic_pdu_ne_array[] =
     { "snmp",   &ndn_snmp_message_s,      {PRIVATE, TE_PROTO_SNMP} },
 #endif
     { "cli",    &ndn_cli_message_s,       {PRIVATE, TE_PROTO_CLI} },
-    { "file",   &ndn_file_message_s,      {PRIVATE, TE_PROTO_FILE} }, 
     { "socket", &ndn_socket_message_s,    {PRIVATE, TE_PROTO_SOCKET} },
 };
 

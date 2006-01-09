@@ -19,7 +19,6 @@ lib_LIBRARIES = libndn.a
 include_HEADERS = \
 	ndn.h \
 	ndn_internal.h \
-	ndn_file.h \
 	ndn_pcap.h \
 	ndn_atm.h \
 	ndn_eth.h \
@@ -36,7 +35,6 @@ include_HEADERS = \
 libndn_a_SOURCES = \
 	ndn_generic.c \
 	ndn_context.c \
-	ndn_file.c \
 	ndn_pcap.c \
 	ndn_atm.c \
 	ndn_eth.c \

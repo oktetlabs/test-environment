@@ -193,13 +193,6 @@ AC_ARG_WITH([snmp],,
  fi
 ], [w_snmp=false])
 
-AC_ARG_WITH([file],, 
-[if test "${withval}" = yes; then
-    proto_specific file;
-    AC_CONFIG_FILES([file/Makefile])
- fi
-], [w_file=false])
-
 AC_ARG_WITH([cli],, 
 [if test "${withval}" = yes; then
     w_cli=true;

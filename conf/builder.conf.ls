@@ -18,7 +18,7 @@ TE_APP_PARMS([rcf], [--enable-ltdl-install], [], [], [], [])
 TE_TOOLS([rgt rpcgen trc tce millicom])
 
 TE_LIB_PARMS([tad], [], [], \
-             [--with-file --with-pcap --with-eth --with-bridge \
+             [-with-pcap --with-eth --with-bridge \
               --with-arp --with-ipstack --with-dhcp --with-iscsi \
               --with-snmp --with-cli], [], [], [])
 
