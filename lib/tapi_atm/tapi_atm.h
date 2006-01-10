@@ -42,8 +42,9 @@ extern "C" {
 
 
 /**
- * Create ASN.1 value for CSAP ATM layer.
+ * Add ATM layer in CSAP specification.
  *
+ * @param csap_spec     Location of CSAP specification pointer.
  * @param type          ATM cell header format.
  * @param vpi           Pointer to Virtual Path Identifier or NULL.
  *                      If NULL, it have to be specified in traffic
@@ -59,62 +60,41 @@ extern "C" {
  * @param clp           Pointer to Cell Loss Priority bit value or NULL.
  *                      If NULL, default value on transmit is 0 and
  *                      match any on receive.
- * @param atm_layer     Location for prepared CSAP ATM layer
- *                      specification pointer.
  *
  * @retval Status code.
  */
-extern te_errno tapi_atm_csap_layer(ndn_atm_type     type,
-                                    const uint16_t  *vpi,
-                                    const uint16_t  *vci,
-                                    te_bool         *congestion,
-                                    te_bool         *clp,
-                                    asn_value      **atm_layer);
+extern te_errno tapi_atm_add_csap_layer(asn_value      **csap_spec,
+                                        ndn_atm_type     type,
+                                        const uint16_t  *vpi,
+                                        const uint16_t  *vci,
+                                        te_bool         *congestion,
+                                        te_bool         *clp);
 
 /**
- * Create ASN.1 value for CSAP AAL5 layer.
+ * Add AAL5 layer in CSAP specification.
  *
+ * @param csap_spec     Location of CSAP specification pointer.
  * @param cpcs_uu       Pointer to CPCS User-to-User indication or NULL.
  *                      If NULL, default value on transmit is 0 and
  *                      match any on receive.
  * @param cpi           Pointer to Common Part Indicator or NULL.
  *                      If NULL, default value on transmit is 0 and
  *                      match any on receive.
- * @param aal5_layer    Location for prepared CSAP AAL5 layer
- *                      specification pointer.
  *
  * @retval Status code.
  */
-extern te_errno tapi_aal5_csap_layer(const uint8_t  *cpcs_uu,
-                                     const uint8_t  *cpi,
-                                     asn_value     **aal5_layer);
+extern te_errno tapi_atm_aal5_add_csap_layer(asn_value     **csap_spec,
+                                             const uint8_t  *cpcs_uu,
+                                             const uint8_t  *cpi);
 
 
 /**
- * Create ATM CSAP that runs over a file descriptor.
+ * Add ATM PDU as the last PDU to the last unit of the traffic 
+ * template or pattern.
  *
- * @param ta_name       Test Agent name
- * @param sid           RCF session
- * @param fd            File descriptor to read/write data
- * @param csap          Identifier of created CSAP
- *
- * @sa tapi_atm_csap_layer() for description of the rest of parameters.
- *
- * @retval Status code.
- */
-extern te_errno tapi_atm_csap_create(const char     *ta_name,
-                                     int             sid,
-                                     int             fd,
-                                     ndn_atm_type    type,
-                                     const uint16_t *vpi,
-                                     const uint16_t *vci,
-                                     te_bool        *congestion,
-                                     te_bool        *clp,
-                                     csap_handle_t  *csap);
-
-/**
- * Create simple ATM cell traffic template with plain values.
- *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param is_pattern    Is the first argument template or pattern
  * @param gfc           Pointer to GFC field value or NULL, if
  *                      unspecified (default value is 0)
  * @param vpi           Pointer to VPI or NULL (default value have to
@@ -126,21 +106,51 @@ extern te_errno tapi_atm_csap_create(const char     *ta_name,
  *                      specified during CSAP creation)
  * @parma clp           Pointer to CLP or NULL (default value is
  *                      specified during CSAP creation or 0)
- * @param pld_len       Length of user payload (should be not greater
- *                      than 48, if less, the rest is padded by zeros)
- * @param pld           Payload
- * @param tmpl          Location for pointer to created traffic template
  *
  * @return Status code.
  */
-extern te_errno tapi_atm_simple_template(const uint8_t   *gfc,
-                                         const uint16_t  *vpi,
-                                         const uint16_t  *vci,
-                                         const uint8_t   *payload_type,
-                                         te_bool         *clp,
-                                         size_t           pld_len,
-                                         const uint8_t   *pld,
-                                         asn_value      **tmpl);
+extern te_errno tapi_atm_add_pdu(asn_value      **tmpl_or_ptrn,
+                                 te_bool          is_pattern,
+                                 const uint8_t   *gfc,
+                                 const uint16_t  *vpi,
+                                 const uint16_t  *vci,
+                                 const uint8_t   *payload_type,
+                                 te_bool         *clp);
+
+/**
+ * Add ATM cell payload to traffic template or pattern unit.
+ *
+ * @param container     Container to add payload
+ * @param pld_len       Length of user payload (should be not greater
+ *                      than 48, if less, the rest is padded by zeros)
+ * @param pld           Payload
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_atm_add_payload(asn_value      *container,
+                                     size_t          pld_len,
+                                     const uint8_t  *pld);
+
+/**
+ * Add AAL5 PDU as the last PDU to the last unit of the traffic 
+ * template or pattern.
+ *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param is_pattern    Is the first argument template or pattern
+ * @param cpcs_uu       Pointer to CPCS User-to-User indication or NULL.
+ *                      If NULL, default value is specified during CSAP
+ *                      creation or 0 on transmit/match any on receive.
+ * @param cpi           Pointer to Common Part Indicator or NULL.
+ *                      If NULL, default value is specified during CSAP
+ *                      creation or 0 on transmit/match any on receive.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_atm_aal5_add_pdu(asn_value     **tmpl_or_ptrn,
+                                      te_bool         is_pattern,
+                                      const uint8_t  *cpcs_uu,
+                                      const uint8_t  *cpi);
 
 #ifdef __cplusplus
 } /* extern "C" */

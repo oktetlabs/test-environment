@@ -44,6 +44,7 @@
 #include "logger_api.h"
 #include "rcf_api.h"
 #include "ndn_atm.h"
+#include "te_bufs.h"
 #include "tapi_sockaddr.h"
 #include "tapi_rpc.h"
 #include "tapi_rpcsock_macros.h"
@@ -74,6 +75,7 @@ main(int argc, char *argv[])
     csap_handle_t           tcp_srv_csap = CSAP_INVALID_HANDLE;
     int                     tst_s = -1;
     int                     iut_s = -1;
+    asn_value              *csap_spec = NULL;
     csap_handle_t           csap = CSAP_INVALID_HANDLE;
     void                   *payload = NULL;
     size_t                  payload_len;
@@ -110,12 +112,14 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_ta_csap_destroy(iut_host->ta, 0, tcp_srv_csap));
     tcp_srv_csap = CSAP_INVALID_HANDLE;
 
-    CHECK_RC(tapi_atm_csap_create(iut_host->ta, 0, iut_s, type,
-                                  &vpi, &vci, &congestion, &clp,
-                                  &csap));
+    CHECK_RC(tapi_atm_add_csap_layer(&csap_spec,
+                                     type, &vpi, &vci, &congestion, &clp));
+    CHECK_RC(tapi_tad_socket_add_csap_layer(&csap_spec, iut_s));
+    CHECK_RC(tapi_tad_csap_create(iut_host->ta, 0, "atm.socket",
+                                  csap_spec, &csap));
 
-    CHECK_RC(tapi_atm_simple_template(&gfc, NULL, NULL, NULL, NULL,
-                                      payload_len, payload, &tmpl));
+    CHECK_RC(tapi_atm_add_pdu(&tmpl, FALSE, &gfc, NULL, NULL, NULL, NULL));
+    CHECK_RC(tapi_atm_add_payload(tmpl, payload_len, payload));
     CHECK_RC(tapi_tad_trsend_start(iut_host->ta, 0, csap, tmpl,
                                    RCF_MODE_BLOCKING));
 
@@ -136,6 +140,7 @@ main(int argc, char *argv[])
 
 cleanup:
     asn_free_value(tmpl);
+    asn_free_value(csap_spec);
 
     CLEANUP_RPC_CLOSE(pco_tst, tst_s);
 

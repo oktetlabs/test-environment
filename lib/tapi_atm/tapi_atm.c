@@ -54,329 +54,480 @@
 #include "tapi_test.h"
 
 
-/* See the description in tapi_atm.h */
-te_errno 
-tapi_atm_csap_layer(ndn_atm_type     type,
-                    const uint16_t  *vpi,
-                    const uint16_t  *vci,
-                    te_bool         *congestion,
-                    te_bool         *clp,
-                    asn_value      **atm_layer)
+/**
+ * Check ASN.1 value pointer. If it is NULL, initialize a new value of
+ * specified type. All errors are logged inside the function. There is
+ * no necessity to log them after call.
+ *
+ * @param value     Location of ASN.1 value pointer
+ * @param type      ASN.1 type to which value should belong
+ *
+ * @return Status code.
+ *
+ * @todo Check that ASN.1 value belongs to @a type
+ */
+te_errno
+tapi_tad_init_asn_value(asn_value **value, const asn_type *type)
 {
-    if (atm_layer == NULL)
+    if (value == NULL)
     {
-        ERROR("Location for created ASN.1 value have to be provided");
+        ERROR("Location of ASN.1 value with CSAP specification have "
+              "to be provided");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (*value == NULL)
+    {
+        *value = asn_init_value(type);
+        if (*value == NULL)
+        {
+            ERROR("Failed to initialize ASN.1 value for CSAP "
+                  "specification");
+            return TE_RC(TE_TAPI, TE_ENOMEM);
+        }
+    }
+    return 0;
+}
+
+/**
+ * Add a new CSAP specification layer.
+ *
+ * @param csap_spec     Location of ASN.1 value with CSAP specification
+ *                      (if NULL pointer is stored in location, a new
+ *                      CSAP specification is initialized)
+ * @param layer_type    ASN.1 type of a new layer
+ * @param layer_choice  String name of a new layer as ASN.1 choice
+ *                      (including '#', e.g. "#eth")
+ * @param layer_spec    Location for a new ASN.1 value with layer
+ *                      specification (may be NULL)
+ *
+ * @return Status code.
+ */
+te_errno
+tapi_tad_csap_add_layer(asn_value       **csap_spec,
+                        const asn_type   *layer_type,
+                        const char       *layer_choice,
+                        asn_value       **layer_spec)
+{
+    te_errno    rc;
+    asn_value  *gen_layer;
+    asn_value  *layer;
+
+    if (layer_type == NULL || layer_choice == NULL)
+    {
+        ERROR("%s(): ASN.1 type of the layer have to be specified",
+              __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    *atm_layer = asn_init_value(ndn_atm_csap);
-    if (*atm_layer == NULL)
+    rc = tapi_tad_init_asn_value(csap_spec, ndn_csap_spec);
+    if (rc != 0)
+        return rc;
+
+    gen_layer = asn_init_value(ndn_generic_csap_level);
+    if (gen_layer == NULL)
     {
-        ERROR("Failed to initialize ASN.1 value for CSAP ATM layer");
+        ERROR("Failed to initialize ASN.1 value for CSAP specification "
+              "generic layer");
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
 
-    CHECK_RC(asn_write_int32(*atm_layer, type, "type"));
+    rc = asn_insert_indexed(*csap_spec, gen_layer, -1, "");
+    if (rc != 0)
+    {
+        ERROR("Failed to add a new generic layer in CSAP specification: "
+              "%r", rc);
+        asn_free_value(gen_layer);
+        return TE_RC(TE_TAPI, rc);
+    }
+    /* FIXME: Remove it when non-coping insert is supported */
+    {
+        asn_free_value(gen_layer);
+
+        /* FIXME: Use -1 as index */
+        rc = asn_get_indexed(*csap_spec, (const asn_value **)&gen_layer,
+                             asn_get_length(*csap_spec, "") - 1);
+        if (rc != 0)
+        {
+            ERROR("Failed to get just inserted ASN.1 value: %r", rc);
+            return TE_RC(TE_TAPI, rc);
+        }
+    }
+    
+    layer = asn_init_value(layer_type);
+    if (layer == NULL)
+    {
+        ERROR("Failed to initialize ASN.1 value for CSAP specification "
+              "layer by type");
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+
+    rc = asn_write_component_value(gen_layer, layer, layer_choice);
+    if (rc != 0)
+    {
+        ERROR("Failed to put layer as choice of generic CSAP "
+              "specification layer: %r", rc);
+        return rc;
+    }
+    /* FIXME: Remove it when non-coping write (put) is supported */
+    {
+        asn_free_value(layer);
+
+        rc = asn_get_choice_value(gen_layer, (const asn_value **)&layer,
+                                  NULL, NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to get just written ASN.1 value as choice: "
+                  "%r", rc);
+            return TE_RC(TE_TAPI, rc);
+        }
+    }
+
+    if (layer_spec != NULL)
+        *layer_spec = layer;
+
+    return 0;
+}
+
+/**
+ * Add a new layer specification in traffic template/pattern.
+ *
+ * @param csap_spec     Location of ASN.1 value with CSAP specification
+ *                      (if NULL pointer is stored in location, a new
+ *                      CSAP specification is initialized)
+ * @param pdu_type      ASN.1 type of a new PDU
+ * @param pdu_choice    String name of a new PDU as ASN.1 choice
+ *                      (including '#', e.g. "#eth")
+ * @param pdu_spec      Location for a new ASN.1 value with PDU
+ *                      specification (may be NULL)
+ *
+ * @return Status code.
+ */
+te_errno
+tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
+                             te_bool           is_pattern,
+                             const asn_type   *pdu_type,
+                             const char       *pdu_choice,
+                             asn_value       **pdu_spec)
+{
+    te_errno    rc;
+    asn_value  *unit_spec;
+    asn_value  *pdus;
+    asn_value  *gen_pdu;
+    asn_value  *pdu;
+
+    if (pdu_type == NULL || pdu_choice == NULL)
+    {
+        ERROR("%s(): ASN.1 type of the layer have to be specified",
+              __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    /*
+     * Check the root object and initialize it, if it is necessary.
+     */
+    rc = tapi_tad_init_asn_value(obj_spec, (is_pattern) ?
+                                               ndn_traffic_pattern :
+                                               ndn_traffic_template);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * Get traffic template/pattern unit or create a new
+     */
+    if (is_pattern)
+    {
+        int len = asn_get_length(*obj_spec, "");
+
+        if (len < 0)
+        {
+            ERROR("%s(): asn_get_length() failed unexpectedly: %r",
+                  __FUNCTION__, rc);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        if (len == 0)
+        {
+            unit_spec = asn_init_value(ndn_traffic_pattern_unit);
+            if (unit_spec == NULL)
+            {
+                ERROR("Failed to initialize traffic pattern unit");
+                return TE_RC(TE_TAPI, TE_ENOMEM);
+            }
+
+            rc = asn_insert_indexed(*obj_spec, unit_spec, 0, "");
+            if (rc != 0)
+            {
+                ERROR("Failed to add a new unit in traffic pattern: "
+                      "%r", rc);
+                asn_free_value(unit_spec);
+                return TE_RC(TE_TAPI, rc);
+            }
+            asn_free_value(unit_spec);
+            len = 1;
+        }
+
+        /* FIXME: Avoid type cast and asn_get_length() */
+        rc = asn_get_indexed(*obj_spec, (const asn_value **)&unit_spec,
+                             len - 1);
+        if (rc != 0)
+        {
+            ERROR("Failed to get just inserted ASN.1 value: %r", rc);
+            return TE_RC(TE_TAPI, rc);
+        }
+    }
+    else
+    {
+        unit_spec = *obj_spec;
+    }
+
+    /*
+     * Get or create PDUs sequence
+     */
+    /* FIXME: Remove type cast */
+    rc = asn_get_child_value(unit_spec, (const asn_value **)&pdus,
+                             PRIVATE, (is_pattern) ? NDN_PU_PDUS :
+                                                     NDN_TMPL_PDUS);
+    if (rc == TE_EASNINCOMPLVAL)
+    {
+        pdus = asn_init_value(ndn_generic_pdu_sequence);
+        if (pdus == NULL)
+        {
+            ERROR("Failed to initiaze ASN.1 value for generic PDUs "
+                  "sequence");
+            return TE_RC(TE_TAPI, TE_ENOMEM);
+        }
+        rc = asn_write_component_value(unit_spec, pdus, "pdus");
+        if (rc != 0)
+        {
+            ERROR("Failed to put 'pdus' in ASN.1 value: %r", rc);
+            return rc;
+        }
+        /* FIXME: Remove it when non-coping write (put) is supported */
+        {
+            asn_free_value(pdus);
+            rc = asn_get_child_value(unit_spec, (const asn_value **)&pdus,
+                                     PRIVATE,
+                                     (is_pattern) ? NDN_PU_PDUS :
+                                                    NDN_TMPL_PDUS);
+        }
+    }
+    if (rc != 0)
+    {
+        ERROR("Failed to get 'pdus' from ASN.1 value: %r", rc);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    /*
+     * Create a new generic PDU and insert it in PDUs sequence as the
+     * last
+     */
+    gen_pdu = asn_init_value(ndn_generic_pdu);
+    if (gen_pdu == NULL)
+    {
+        ERROR("Failed to initialize ASN.1 value for generic PDU");
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+    rc = asn_insert_indexed(pdus, gen_pdu, -1, "");
+    if (rc != 0)
+    {
+        ERROR("Failed to add a new generic PDU in sequence: %r", rc);
+        asn_free_value(gen_pdu);
+        return TE_RC(TE_TAPI, rc);
+    }
+    /* FIXME: Remove it when non-coping insert is supported */
+    {
+        asn_free_value(gen_pdu);
+
+        /* FIXME: Use -1 as index */
+        rc = asn_get_indexed(pdus, (const asn_value **)&gen_pdu,
+                             asn_get_length(pdus, "") - 1);
+        if (rc != 0)
+        {
+            ERROR("Failed to get just inserted ASN.1 value: %r", rc);
+            return TE_RC(TE_TAPI, rc);
+        }
+    }
+    
+    pdu = asn_init_value(pdu_type);
+    if (pdu == NULL)
+    {
+        ERROR("Failed to initialize ASN.1 value for PDU by type");
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+
+    rc = asn_write_component_value(gen_pdu, pdu, pdu_choice);
+    if (rc != 0)
+    {
+        ERROR("Failed to put PDU as choice of generic PDU: %r", rc);
+        return rc;
+    }
+    /* FIXME: Remove it when non-coping write (put) is supported */
+    {
+        asn_free_value(pdu);
+
+        rc = asn_get_choice_value(gen_pdu, (const asn_value **)&pdu,
+                                  NULL, NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to get just written ASN.1 value as choice: "
+                  "%r", rc);
+            return TE_RC(TE_TAPI, rc);
+        }
+    }
+
+    if (pdu_spec != NULL)
+        *pdu_spec = pdu;
+
+    return 0;
+}
+
+/**
+ * Add socket layer over existing file descriptor in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ * @param fd            File descriptor to read/write data
+ *
+ * @retval Status code.
+ */
+te_errno 
+tapi_tad_socket_add_csap_layer(asn_value **csap_spec, int fd)
+{
+    asn_value  *layer;
+
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_socket_csap,
+                                     "#socket", &layer));
+
+    CHECK_RC(asn_write_int32(layer, fd, "type.#file-descr"));
+
+    return 0;
+}
+
+
+/* See the description in tapi_atm.h */
+te_errno 
+tapi_atm_add_csap_layer(asn_value      **csap_spec,
+                        ndn_atm_type     type,
+                        const uint16_t  *vpi,
+                        const uint16_t  *vci,
+                        te_bool         *congestion,
+                        te_bool         *clp)
+{
+    asn_value  *layer;
+
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_atm_csap, "#atm",
+                                     &layer));
+
+    CHECK_RC(asn_write_int32(layer, type, "type"));
 
     if (vpi != NULL)
-        CHECK_RC(asn_write_int32(*atm_layer, *vpi, "vpi.#plain"));
+        CHECK_RC(asn_write_int32(layer, *vpi, "vpi.#plain"));
     if (vci != NULL)
-        CHECK_RC(asn_write_int32(*atm_layer, *vci, "vci.#plain"));
+        CHECK_RC(asn_write_int32(layer, *vci, "vci.#plain"));
     if (congestion != NULL)
-        CHECK_RC(asn_write_int32(*atm_layer, *congestion,
+        CHECK_RC(asn_write_int32(layer, *congestion,
                                  "congestion.#plain"));
     if (clp != NULL)
-        CHECK_RC(asn_write_int32(*atm_layer, *clp, "clp.#plain"));
+        CHECK_RC(asn_write_int32(layer, *clp, "clp.#plain"));
 
     return 0;
 }
 
 /* See the description in tapi_atm.h */
 te_errno 
-tapi_aal5_csap_layer(const uint8_t  *cpcs_uu,
-                     const uint8_t  *cpi,
-                     asn_value     **aal5_layer)
+tapi_atm_aal5_add_csap_layer(asn_value     **csap_spec,
+                             const uint8_t  *cpcs_uu,
+                             const uint8_t  *cpi)
 {
-    if (aal5_layer == NULL)
-    {
-        ERROR("%s(): Location for created ASN.1 value have to be provided",
-              __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
+    asn_value  *layer;
 
-    *aal5_layer = asn_init_value(ndn_aal5_csap);
-    if (*aal5_layer == NULL)
-    {
-        ERROR("Failed to initialize ASN.1 value for CSAP AAL5 layer");
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
+    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_aal5_csap, "#aal5",
+                                     &layer));
 
     if (cpcs_uu != NULL)
-        CHECK_RC(asn_write_int32(*aal5_layer, *cpcs_uu, "cpcs-uu.#plain"));
+        CHECK_RC(asn_write_int32(layer, *cpcs_uu, "cpcs-uu.#plain"));
     if (cpi != NULL)
-        CHECK_RC(asn_write_int32(*aal5_layer, *cpi, "cpi.#plain"));
+        CHECK_RC(asn_write_int32(layer, *cpi, "cpi.#plain"));
 
     return 0;
 }
-
-
-/* See the description in tapi_atm.h */
-te_errno 
-tapi_atm_csap_create(const char     *ta_name,
-                     int             sid,
-                     int             fd,
-                     ndn_atm_type    type,
-                     const uint16_t *vpi,
-                     const uint16_t *vci,
-                     te_bool        *congestion,
-                     te_bool        *clp,
-                     csap_handle_t  *csap)
-{
-    te_errno    rc;
-    asn_value  *nds = NULL;
-    asn_value  *layer = NULL;
-    asn_value  *gen_layer = NULL;
-
-    if (ta_name == NULL)
-    {
-        ERROR("%s(): TA name have to be specified", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-    if (fd < 0)
-    {
-        ERROR("%s(): Valid file descriptor have to be specified",
-              __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-    if (csap == NULL)
-    {
-        ERROR("%s(): Location for created CSAP handle have to be "
-              "provided", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
-    nds = asn_init_value(ndn_csap_spec);
-    if (nds == NULL)
-    {
-        ERROR("%s(): Failed to initialize CSAP NDS", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
-
-    rc = tapi_atm_csap_layer(type, vpi, vci, congestion, clp, &layer);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to create CSAP ATM layer specification: %r",
-              __FUNCTION__, rc);
-        asn_free_value(nds);
-        return rc;
-    }
-    CHECK_NOT_NULL(gen_layer = asn_init_value(ndn_generic_csap_level));
-    CHECK_RC(asn_write_component_value(gen_layer, layer, "#atm"));
-    rc = asn_insert_indexed(nds, gen_layer, 0, "");
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to insert ATM layer in CSAP NDS: %r",
-              __FUNCTION__, rc);
-        asn_free_value(layer);
-        asn_free_value(nds);
-        return rc;
-    }
-    layer = NULL;
-
-    CHECK_NOT_NULL(layer = asn_init_value(ndn_socket_csap));
-    CHECK_RC(asn_write_int32(layer, fd, "type.#file-descr"));
-    CHECK_NOT_NULL(gen_layer = asn_init_value(ndn_generic_csap_level));
-    CHECK_RC(asn_write_component_value(gen_layer, layer, "#socket"));
-    rc = asn_insert_indexed(nds, gen_layer, 1, "");
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to insert Socket layer in CSAP NDS: %r",
-              __FUNCTION__, rc);
-        asn_free_value(layer);
-        asn_free_value(nds);
-        return rc;
-    }
-    layer = NULL;
-
-    rc = tapi_tad_csap_create(ta_name, sid, "atm.socket", nds, csap);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to create 'atm.socket' CSAP: %r",
-              __FUNCTION__, rc);
-    }
-
-    asn_free_value(nds);
-
-    return rc;
-}
-
-/* See the description in tapi_atm.h */
-te_errno 
-tapi_aal5_atm_csap_create(const char     *ta_name,
-                          int             sid,
-                          int             fd,
-                          ndn_atm_type    type,
-                          const uint16_t *vpi,
-                          const uint16_t *vci,
-                          te_bool        *congestion,
-                          te_bool        *clp,
-                          const uint8_t  *cpcs_uu,
-                          const uint8_t  *cpi,
-                          csap_handle_t  *csap)
-{
-    te_errno    rc;
-    asn_value  *nds = NULL;
-    asn_value  *layer = NULL;
-    asn_value  *gen_layer = NULL;
-
-    if (ta_name == NULL)
-    {
-        ERROR("%s(): TA name have to be specified", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-    if (fd < 0)
-    {
-        ERROR("%s(): Valid file descriptor have to be specified",
-              __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-    if (csap == NULL)
-    {
-        ERROR("%s(): Location for created CSAP handle have to be "
-              "provided", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
-    nds = asn_init_value(ndn_csap_spec);
-    if (nds == NULL)
-    {
-        ERROR("%s(): Failed to initialize CSAP NDS", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
-
-    rc = tapi_aal5_csap_layer(cpcs_uu, cpi, &layer);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to create CSAP AAL5 layer specification: %r",
-              __FUNCTION__, rc);
-        asn_free_value(nds);
-        return rc;
-    }
-    CHECK_NOT_NULL(gen_layer = asn_init_value(ndn_generic_csap_level));
-    CHECK_RC(asn_write_component_value(gen_layer, layer, "#aal5"));
-    rc = asn_insert_indexed(nds, gen_layer, -1, "");
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to insert AAL5 layer in CSAP NDS: %r",
-              __FUNCTION__, rc);
-        asn_free_value(layer);
-        asn_free_value(nds);
-        return rc;
-    }
-    layer = NULL;
-
-    rc = tapi_atm_csap_layer(type, vpi, vci, congestion, clp, &layer);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to create CSAP ATM layer specification: %r",
-              __FUNCTION__, rc);
-        asn_free_value(nds);
-        return rc;
-    }
-    CHECK_NOT_NULL(gen_layer = asn_init_value(ndn_generic_csap_level));
-    CHECK_RC(asn_write_component_value(gen_layer, layer, "#atm"));
-    rc = asn_insert_indexed(nds, gen_layer, -1, "");
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to insert ATM layer in CSAP NDS: %r",
-              __FUNCTION__, rc);
-        asn_free_value(layer);
-        asn_free_value(nds);
-        return rc;
-    }
-    layer = NULL;
-
-    CHECK_NOT_NULL(layer = asn_init_value(ndn_socket_csap));
-    CHECK_RC(asn_write_int32(layer, fd, "type.#file-descr"));
-    CHECK_NOT_NULL(gen_layer = asn_init_value(ndn_generic_csap_level));
-    CHECK_RC(asn_write_component_value(gen_layer, layer, "#socket"));
-    rc = asn_insert_indexed(nds, gen_layer, -1, "");
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to insert Socket layer in CSAP NDS: %r",
-              __FUNCTION__, rc);
-        asn_free_value(layer);
-        asn_free_value(nds);
-        return rc;
-    }
-    layer = NULL;
-
-    rc = tapi_tad_csap_create(ta_name, sid, "aal5.atm.socket", nds, csap);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to create 'aal5.atm.socket' CSAP: %r",
-              __FUNCTION__, rc);
-    }
-
-    asn_free_value(nds);
-
-    return rc;
-}
-
 
 /* See the description in tapi_atm.h */
 te_errno
-tapi_atm_simple_template(const uint8_t   *gfc,
-                         const uint16_t  *vpi,
-                         const uint16_t  *vci,
-                         const uint8_t   *payload_type,
-                         te_bool         *clp,
-                         size_t           pld_len,
-                         const uint8_t   *pld,
-                         asn_value      **tmpl)
+tapi_atm_add_pdu(asn_value      **tmpl_or_ptrn,
+                 te_bool          is_pattern,
+                 const uint8_t   *gfc,
+                 const uint16_t  *vpi,
+                 const uint16_t  *vci,
+                 const uint8_t   *payload_type,
+                 te_bool         *clp)
 {
-    asn_value  *atm_hdr;
-    asn_value  *asn_pdus, *asn_pdu;
-    uint8_t     payload[ATM_PAYLOAD_LEN];
+    asn_value  *pdu;
+
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
+                                          ndn_atm_header, "#atm",
+                                          &pdu));
+
+    if (gfc != NULL)
+        CHECK_RC(asn_write_int32(pdu, *gfc, "gfc.#plain"));
+    if (vpi != NULL)
+        CHECK_RC(asn_write_int32(pdu, *vpi, "vpi.#plain"));
+    if (vci != NULL)
+        CHECK_RC(asn_write_int32(pdu, *vci, "vci.#plain"));
+    if (payload_type != NULL)
+        CHECK_RC(asn_write_int32(pdu, *payload_type,
+                                 "payload-type.#plain"));
+    if (clp != NULL)
+        CHECK_RC(asn_write_int32(pdu, *clp, "clp.#plain"));
+
+    return 0;
+}
+
+/* See the description in tapi_atm.h */
+te_errno
+tapi_atm_add_payload(asn_value      *container,
+                     size_t          pld_len,
+                     const uint8_t  *pld)
+{
+    uint8_t payload[ATM_PAYLOAD_LEN];
 
     if (pld_len > ATM_PAYLOAD_LEN)
     {
         ERROR("Too long (%u) ATM cell payload", (unsigned)pld_len);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    if (tmpl == NULL)
+    if (container == NULL)
     {
-        ERROR("%s(): Location for created traffic tempalte have to be "
-              "provided", __FUNCTION__);
+        ERROR("%s(): Container for payload have to be provided",
+              __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    
-    CHECK_NOT_NULL(*tmpl = asn_init_value(ndn_traffic_template));
-
-    CHECK_NOT_NULL(asn_pdus = asn_init_value(ndn_generic_pdu_sequence));
-    CHECK_NOT_NULL(asn_pdu = asn_init_value(ndn_generic_pdu));
-    CHECK_NOT_NULL(atm_hdr = asn_init_value(ndn_atm_header));
-
-    if (gfc != NULL)
-        CHECK_RC(asn_write_int32(atm_hdr, *gfc, "gfc.#plain"));
-    if (vpi != NULL)
-        CHECK_RC(asn_write_int32(atm_hdr, *vpi, "vpi.#plain"));
-    if (vci != NULL)
-        CHECK_RC(asn_write_int32(atm_hdr, *vci, "vci.#plain"));
-    if (payload_type != NULL)
-        CHECK_RC(asn_write_int32(atm_hdr, *payload_type,
-                                 "payload-type.#plain"));
-    if (clp != NULL)
-        CHECK_RC(asn_write_int32(atm_hdr, *clp, "clp.#plain"));
-
-    CHECK_RC(asn_write_component_value(asn_pdu, atm_hdr, "#atm"));
-    CHECK_RC(asn_insert_indexed(asn_pdus, asn_pdu, 0, ""));
-    CHECK_RC(asn_write_component_value(*tmpl, asn_pdus, "pdus"));
 
     memcpy(payload, pld, pld_len);
     memset(payload + pld_len, 0, ATM_PAYLOAD_LEN - pld_len);
-    CHECK_RC(asn_write_value_field(*tmpl, payload, sizeof(payload),
+    CHECK_RC(asn_write_value_field(container, payload, sizeof(payload),
                                    "payload.#bytes"));
+
+    return 0;
+}
+
+
+/* See the description in tapi_atm.h */
+te_errno
+tapi_atm_aal5_add_pdu(asn_value     **tmpl_or_ptrn,
+                      te_bool         is_pattern,
+                      const uint8_t  *cpcs_uu,
+                      const uint8_t  *cpi)
+{ 
+    asn_value  *pdu;
+
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl_or_ptrn, is_pattern,
+                                          ndn_aal5_cpcs_trailer, "#aal5",
+                                          &pdu));
+
+    if (cpcs_uu != NULL)
+        CHECK_RC(asn_write_int32(pdu, *cpcs_uu, "cpcs-uu.#plain"));
+    if (cpi != NULL)
+        CHECK_RC(asn_write_int32(pdu, *cpi, "cpi.#plain"));
 
     return 0;
 }
