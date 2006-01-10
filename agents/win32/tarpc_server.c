@@ -3085,7 +3085,7 @@ TARPC_FUNC(wsa_recv,
 }
 )
 
-TARPC_FUNC(get_overlapped_result,
+TARPC_FUNC(wsa_get_overlapped_result,
 {
     COPY_ARG(bytes);
     COPY_ARG(flags);
@@ -3944,7 +3944,7 @@ TARPC_FUNC(wsa_connect, {},
  * Convert the TA-dependent result (output) of the WSAIoctl() call into
  * the wsa_ioctl_request structure representation.
  */
-static void 
+static int
 convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
 {
     switch (code)
@@ -3961,9 +3961,8 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
             tsa = (tarpc_sa *)calloc(sal->iAddressCount, sizeof(tarpc_sa));
         
             for (i = 0; i < sal->iAddressCount; i++)
-            {
                 sockaddr_h2rpc(sal->Address[i].lpSockaddr, &tsa[i]);
-            }
+
             res->wsa_ioctl_request_u.req_saa.req_saa_val = tsa;
             res->wsa_ioctl_request_u.req_saa.req_saa_len = i;
             
@@ -3991,7 +3990,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
             
             res->type = WSA_IOCTL_QOS;
             
-            qos = (QOS*)buf;
+            qos = (QOS *)buf;
             tqos = &res->wsa_ioctl_request_u.req_qos;
 
             flowspec_h2rpc(&qos->SendingFlowspec, &tqos->sending);
@@ -4001,6 +4000,12 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
             {
                tqos->provider_specific_buf.provider_specific_buf_val =
                    malloc(qos->ProviderSpecific.len);
+               if (tqos->provider_specific_buf.provider_specific_buf_val == 
+                   NULL)
+               {
+                   ERROR("Failed to allocate memory for ProviderSpecific");
+                   return -1;
+               }
                memcpy(tqos->provider_specific_buf.provider_specific_buf_val,
                    qos->ProviderSpecific.buf, qos->ProviderSpecific.len);
                tqos->provider_specific_buf.provider_specific_buf_len =
@@ -4015,54 +4020,87 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
         
         default:
             res->type = WSA_IOCTL_INT;
-            res->wsa_ioctl_request_u.req_int = *(int*)buf;
+            res->wsa_ioctl_request_u.req_int = *(int *)buf;
             break;
-
     }
+    return 0;
 }
 
 /*-------------- WSAIoctl -------------------------------*/
-TARPC_FUNC(wsa_ioctl, {},
+TARPC_FUNC(wsa_ioctl, 
+{
+    COPY_ARG(outbuf);
+    COPY_ARG(bytes_returned);
+},
 {
     rpc_overlapped           *overlapped = NULL;
     void                     *inbuf = NULL;
     void                     *outbuf = NULL;
-    DWORD                    inbuf_len = 0;
-    DWORD                    outbuf_len = 0;
-    struct sockaddr_storage  addr;
-    QOS                      qos;
-    struct tcp_keepalive     tka;
-    GUID                     guid;
-
-    out->result.type = WSA_IOCTL_INT;
-    out->result.wsa_ioctl_request_u.req_int = 0;
+    struct sockaddr_storage   addr;
+    QOS                       qos;
+    struct tcp_keepalive      tka;
+    GUID                      guid;
+    int                       inbuf_len = 0;
+    wsa_ioctl_request        *req = in->inbuf.inbuf_val;
     
-    switch (in->req.type)
+    /* Prepare output buffer */
+    if (out->outbuf.outbuf_val != NULL)
+    {
+        if ((outbuf = malloc(in->outbuf_len + 1)) == NULL)
+        {
+            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+            goto finish;
+        }
+        INIT_CHECKED_ARG(outbuf, in->outbuf_len + 1, in->outbuf_len);
+    }
+
+    if (in->overlapped != 0)
+    {
+        overlapped = IN_OVERLAPPED;
+        rpc_overlapped_free_memory(overlapped);
+
+        if (outbuf != NULL)
+        {
+            overlapped->buffers = malloc(sizeof(WSABUF));
+            if (overlapped->buffers == NULL)
+            {
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+                free(outbuf);
+                goto finish;
+            }
+            overlapped->buffers[0].buf = outbuf;
+            overlapped->buffers[0].len = in->outbuf_len + 1;
+        }
+    }
+
+    
+    /* Prepare input data */
+    if (in->inbuf.inbuf_val == NULL)
+        goto call;
+
+    switch (req->type)
     {
         case WSA_IOCTL_VOID:
         case WSA_IOCTL_SAA:
             break;
 
         case WSA_IOCTL_INT:
-            inbuf = &in->req.wsa_ioctl_request_u.req_int;
-            inbuf_len = sizeof(tarpc_int);
+            inbuf = &req->wsa_ioctl_request_u.req_int;
+            inbuf_len = sizeof(int);
             break;
 
         case WSA_IOCTL_SA:
-            inbuf = sockaddr_rpc2h(
-                    &in->req.wsa_ioctl_request_u.req_sa, &addr);
-            INIT_CHECKED_ARG((char *)inbuf,
-                in->req.wsa_ioctl_request_u.req_sa.sa_data.sa_data_len
-                 + SA_COMMON_LEN, 0);
-            inbuf_len = sizeof(struct sockaddr);
+            inbuf = sockaddr_rpc2h(&req->wsa_ioctl_request_u.req_sa, &addr);
+            inbuf_len = sizeof(addr);
             break;
 
         case WSA_IOCTL_GUID:
-            guid.Data1 = in->req.wsa_ioctl_request_u.req_guid.data1;
-            guid.Data2 = in->req.wsa_ioctl_request_u.req_guid.data2;
-            guid.Data3 = in->req.wsa_ioctl_request_u.req_guid.data3;
+            guid.Data1 = req->wsa_ioctl_request_u.req_guid.data1;
+            guid.Data2 = req->wsa_ioctl_request_u.req_guid.data2;
+            guid.Data3 = req->wsa_ioctl_request_u.req_guid.data3;
             memcpy(guid.Data4,
-                   in->req.wsa_ioctl_request_u.req_guid.data4.data4_val, 8);
+                   req->wsa_ioctl_request_u.req_guid.data4,
+                   sizeof(guid.Data4)); 
             inbuf = &guid;
             inbuf_len = sizeof(GUID);
             break;
@@ -4071,7 +4109,7 @@ TARPC_FUNC(wsa_ioctl, {},
         {
             tarpc_tcp_keepalive *intka;
 
-            intka = &in->req.wsa_ioctl_request_u.req_tka;
+            intka = &req->wsa_ioctl_request_u.req_tka;
             tka.onoff = intka->onoff;
             tka.keepalivetime = intka->keepalivetime;
             tka.keepaliveinterval = intka->keepaliveinterval;
@@ -4084,75 +4122,49 @@ TARPC_FUNC(wsa_ioctl, {},
         {
             tarpc_qos *inqos;
 
-            inqos = &in->req.wsa_ioctl_request_u.req_qos;
+            inqos = &req->wsa_ioctl_request_u.req_qos;
             flowspec_rpc2h(&qos.SendingFlowspec, &inqos->sending);
             flowspec_rpc2h(&qos.ReceivingFlowspec, &inqos->receiving);
             qos.ProviderSpecific.buf =
                 inqos->provider_specific_buf.provider_specific_buf_val;
             qos.ProviderSpecific.len =
                 inqos->provider_specific_buf.provider_specific_buf_len;
+            INIT_CHECKED_ARG(qos.ProviderSpecific.buf, 
+                             qos.ProviderSpecific.len, 0);
             inbuf = &qos;
             inbuf_len = sizeof(QOS);
             break;
         }
 
         case WSA_IOCTL_PTR:
-            inbuf = rcf_pch_mem_get(in->req.wsa_ioctl_request_u.req_ptr);
+            inbuf = rcf_pch_mem_get(req->wsa_ioctl_request_u.req_ptr);
             inbuf_len = in->inbuf_len;
             break;
     }
 
-    outbuf_len = in->outbuf_len;
+    INIT_CHECKED_ARG(inbuf, inbuf_len, 0);
 
-    if (outbuf_len != 0)
-    {
-        outbuf = calloc(1, outbuf_len);
-        if (outbuf == NULL)
-        {
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-            goto finish;
-        }
-    }
 
-    if (in->overlapped != 0)
-    {
-        overlapped = IN_OVERLAPPED;
-        rpc_overlapped_free_memory(overlapped);
-
-        if (outbuf_len != 0)
-        {
-            overlapped->buffers = malloc(sizeof(WSABUF));
-            if (overlapped->buffers == NULL)
-            {
-                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-                goto finish;
-            }
-            overlapped->buffers[0].buf = outbuf;
-            overlapped->buffers[0].len = outbuf_len;
-        }
-    }
-
+call:
     MAKE_CALL(out->retval = WSAIoctl(in->s, ioctl_rpc2h(in->code),
                                      inbuf,
-                                     inbuf_len,
+                                     in->inbuf_len,
                                      outbuf,
-                                     outbuf_len,
-                                     &out->bytes_returned,
+                                     in->outbuf_len,
+                                     out->bytes_returned.bytes_returned_val,
                                      in->overlapped == 0 ? NULL
                                        : (LPWSAOVERLAPPED)overlapped,
                                      IN_CALLBACK));
     if (out->retval == 0)
     {
-        if ((outbuf != NULL) && (out->bytes_returned != 0))
-        {
-            convert_wsa_ioctl_result(in->code, outbuf, &out->result);
-            if ( ! ((overlapped != NULL) &&
-                    (overlapped->buffers != NULL) &&
-                    (overlapped->buffers[0].buf == outbuf)))
-            {
-                free(outbuf);
-            }
-        }
+        if (outbuf != NULL && out->outbuf.outbuf_val != NULL)
+            convert_wsa_ioctl_result(in->code, outbuf, 
+                                     out->outbuf.outbuf_val);
+
+        if (overlapped != NULL)
+            rpc_overlapped_free_memory(overlapped);
+        else
+            free(outbuf);
     }
     else if ((overlapped != NULL) &&
             (out->common._errno != RPC_E_IO_PENDING))

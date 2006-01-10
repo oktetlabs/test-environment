@@ -470,22 +470,6 @@ typedef enum rpc_open_sock_flags {
 RPCBITMAP2STR(open_sock_flags, OPEN_SOCK_FLAGS_MAPPING_LIST)
 
 
-/** Convert rpc_open_sock_flags to string */
-static inline const char *
-open_sock_rpc2str(rpc_open_sock_flags open_code)
-{
-    switch (open_code)
-    {
-        RPC2STR(WSA_FLAG_OVERLAPPED);
-        RPC2STR(WSA_FLAG_MULTIPOINT_C_ROOT);
-        RPC2STR(WSA_FLAG_MULTIPOINT_C_LEAF);
-        RPC2STR(WSA_FLAG_MULTIPOINT_D_ROOT);
-        RPC2STR(WSA_FLAG_MULTIPOINT_D_LEAF);
-        default: return "<OPEN_SOCKET_FATAL_ERROR>";
-    }
-}
-
-
 #ifdef WSA_FLAG_OVERLAPPED
 /** Convert rpc_open_sock_flags to the native ones */
 static inline unsigned int

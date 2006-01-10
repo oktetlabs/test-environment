@@ -1250,7 +1250,7 @@ struct tarpc_guid {
     uint32_t data1;
     uint16_t data2;
     uint16_t data3;
-    uint8_t  data4<>;  /* 8 bytes array */
+    uint8_t  data4[8];  
 };
 
 /* Windows tcp_keepalive structure */
@@ -1262,19 +1262,19 @@ struct tarpc_tcp_keepalive {
 
 /* WSAIoctl() */
 enum wsa_ioctl_type {
-    WSA_IOCTL_VOID = 1,      /* no data */
+    WSA_IOCTL_VOID = 0,      /* no data */
     WSA_IOCTL_INT,
     WSA_IOCTL_SA,            /* socket address */
     WSA_IOCTL_SAA,           /* socket addresses array */
     WSA_IOCTL_GUID,
     WSA_IOCTL_TCP_KEEPALIVE,
     WSA_IOCTL_QOS,
-    WSA_IOCTL_PTR            /* a pointer valid in the TA address spase */
+    WSA_IOCTL_PTR
 };
 
 union wsa_ioctl_request switch (wsa_ioctl_type type) {
-    case WSA_IOCTL_INT:            tarpc_int              req_int;
     case WSA_IOCTL_VOID:           tarpc_int              req_void;
+    case WSA_IOCTL_INT:            tarpc_int              req_int;
     case WSA_IOCTL_SA:             tarpc_sa               req_sa;
     case WSA_IOCTL_SAA:            tarpc_sa               req_saa<>;
     case WSA_IOCTL_GUID:           tarpc_guid             req_guid;
@@ -1287,18 +1287,20 @@ struct tarpc_wsa_ioctl_in {
     struct tarpc_in_arg common;
     tarpc_int           s;
     tarpc_int           code;
-    wsa_ioctl_request   req;
+    wsa_ioctl_request   inbuf<>;
     tarpc_size_t        inbuf_len;
+    wsa_ioctl_request   outbuf<>;
     tarpc_size_t        outbuf_len;
     tarpc_overlapped    overlapped;
     string              callback<>;
+    tarpc_uint          bytes_returned<>;
 };
 
 struct tarpc_wsa_ioctl_out {
     struct tarpc_out_arg common;
     tarpc_int            retval;
-    wsa_ioctl_request    result;
-    tarpc_uint           bytes_returned;
+    wsa_ioctl_request    outbuf<>;
+    tarpc_uint           bytes_returned<>;
 };
 
 /* rpc_get_wsa_ioctl_overlapped_result() */
@@ -2773,7 +2775,7 @@ struct tarpc_wsa_recv_out {
 
 
 /* WSAGetOverlappedResult */
-struct tarpc_get_overlapped_result_in {
+struct tarpc_wsa_get_overlapped_result_in {
     struct tarpc_in_arg common;
 
     tarpc_int           s;              /**< Socket    */
@@ -2785,7 +2787,7 @@ struct tarpc_get_overlapped_result_in {
                                          *   returned in out.vector */
 };    
 
-struct tarpc_get_overlapped_result_out {
+struct tarpc_wsa_get_overlapped_result_out {
     struct tarpc_out_arg common;
 
     tarpc_int           retval;
@@ -3229,7 +3231,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_send)
         RPC_DEF(wsa_recv)
         RPC_DEF(wsa_recv_ex)
-        RPC_DEF(get_overlapped_result)
+        RPC_DEF(wsa_get_overlapped_result)
         RPC_DEF(wait_for_multiple_events)
         RPC_DEF(wsa_send_to)
         RPC_DEF(wsa_recv_from)

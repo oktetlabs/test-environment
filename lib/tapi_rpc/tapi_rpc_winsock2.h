@@ -40,49 +40,22 @@
 /** Windows Event Objects */
 typedef rpc_ptr rpc_wsaevent;
 
+/** HANDLE */
+typedef rpc_ptr rpc_handle;
+
 /** Windows WSAOVERLAPPED structure */
 typedef rpc_ptr rpc_overlapped;
 
 /** Windows HWND */
 typedef rpc_ptr rpc_hwnd;
 
-/** Windows HANDLE  */
-typedef rpc_ptr rpc_handle;
-
-/** Windows FLOWSPEC structure */
-typedef struct _rpc_flowspec {
-    uint32_t TokenRate;    /**< Permitted rate at which data can be 
-                                transmitted*/
-    uint32_t TokenBucketSize; /**< Muximum amount of credits a given 
-                                   direction of a flow can accrue */
-    uint32_t PeakBandwidth; /**< Upper limit of time-based transmission */
-    uint32_t Latency; /**< Maximum acceptable delay between transmission */
-    uint32_t DelayVariation; /**< Difference between Max and Min possible
-                                  delay a packet will experience */
-    uint32_t ServiceType;/**< Level of service to negociate for the flow */
-    uint32_t MaxSduSize; /**< Maximum packet size permitted */
-    uint32_t MinimumPolicedSize;/**< Minimum packet size for which the 
-                                     requested quality of service is 
-                                     provided */
-} rpc_flowspec;
-
 /** Windows QOS structure */
 typedef struct _rpc_qos {
-    rpc_flowspec  sending;            /**< QOS parameters for sending */
-    rpc_flowspec  receiving;          /**< QOS parameters for receiving */
+    tarpc_flowspec  sending;          /**< QOS parameters for sending */
+    tarpc_flowspec  receiving;        /**< QOS parameters for receiving */
     char          *provider_specific_buf; /**< Provider specific buffer */
-    size_t        provider_specific_buf_len;/**< length of buffer */
+    size_t         provider_specific_buf_len; /**< length of buffer */
 } rpc_qos;
-
-/** Windows GUID */
-typedef struct _rpc_guid {
-    uint32_t data1;    /**< First 8 hexadecimal digits */
-    uint16_t data2;    /**< First group of 4 hexadecimal digits */
-    uint16_t data3;    /**< Second group of 4 hexadecimal digits */
-    uint8_t  data4[8]; /**< 2 first bytes for third group of 4 
-                            hexadecimal digits and 6 bytes for final
-                            12 hexadecimal digits */
-} rpc_guid;
 
 typedef struct _rpc_sys_info {
     uint64_t      ram_size;              /** Physical RAM size */
@@ -229,9 +202,9 @@ extern te_bool rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
  * @param s             descriptor of socket that was passed
  *                      to rpc_accept_ex() fuinction as 3d parameter
  * @param buf           pointer to a buffer passed to
- *                      rpc_get_overlapped_result()
+ *                      rpc_wsa_get_overlapped_result()
  * @param buflen        size of the buffer passed to
- *                      rpc_get_overlapped_result()
+ *                      rpc_wsa_get_overlapped_result()
  * @param len           buffer size wich was passed to rpc_accept_ex()
  * @param laddr         local address returned by GetAcceptExSockAddr()
  * @param raddr         remote address returned by GetAcceptExSockAddr()
@@ -293,7 +266,7 @@ extern te_bool rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
  * @return   @c TRUE in case of success, @c FALSE otherwise.
  *
  * ATTENTION: when using the overlapped I/O the supplied buffers @b head
- * and @b tail will be freed when you call rpc_get_overlapped_result().
+ * and @b tail will be freed when you call rpc_wsa_get_overlapped_result().
  */
 extern te_bool rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s,
                                        int file, ssize_t len,
@@ -602,18 +575,35 @@ extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            const struct sockaddr *addr, socklen_t addrlen,
                            rpc_ptr caller_wsabuf, rpc_ptr callee_wsabuf,
                            rpc_qos *sqos);
+                           
+/** Maximum length of expected result */                           
+#define RPC_WSA_IOCTL_OUTBUF_MAX        1024                           
 
 /**
  * @b WSAIoctl() remote call.
  *
+ * If input/output argument is list of addresses, buffer should contain 
+ * array of sockaddr_storage structures.
+ * If input/output argument is QOS, rpc_qos structure should be in the
+ * buffer.
+ * If input/output argument is keepalive or GUID, corresponding tarpc_* 
+ * structures should be in the buffer.
+ *
  * @param rpcs            RPC server handle
  * @param s               Descriptor identifying a socket
  * @param control_code    Control code of operation to perform
- * @param inbuf           Pointer to the input buffer
- * @param inbuf_len       Size of the input buffer
- * @param outbuf          Pointer to the output buffer
- * @param outbuf_len      Size of the output buffer
+ * @param inbuf           Pointer to the input buffer with correct
+ *                        data
+ * @param inbuf_len       Size of the input buffer to be passed to
+ *                        WSAIoctl()
+ * @param outbuf          Pointer to the output buffer big enough to
+ *                        decode any result (if length of decoded result
+ *                        is greater than RPC_WSA_IOCTL_OUTBUF_MAX, error
+ *                        is returned)
+ * @param outbuf_len      Size of the output buffer to be passed to
+ *                        WSAIoctl()
  * @param bytes_returned  Pointer to the actual number of bytes of output
+ *                        (filled by WSAIoctl())
  * @param overlapped      @b overlapped object or RPC_NULL
  * @param callback        completion callback name
  *
@@ -641,7 +631,6 @@ extern int rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s,
  * @param flags          pointer to a variable that will receive one or
  *                       more flags that supplement the completion status
  * @param buf            pointer to a buffer containing result data
- * @param buflen         size of buffer @b buf
  * @param control_code   the control code the preceding WSAIoctl()
  *                       call has been called with
  *
@@ -651,7 +640,7 @@ extern te_bool rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
                                     int s, rpc_overlapped overlapped,
                                     int *bytes, te_bool wait,
                                     rpc_send_recv_flags *flags,
-                                    char *buf, int buflen,
+                                    char *buf, 
                                     rpc_ioctl_code control_code);
 
 /**
@@ -983,11 +972,12 @@ extern int rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
  *
  * @return TRUE on success, FALSE on failure
  */
-extern te_bool rpc_get_overlapped_result(rcf_rpc_server *rpcs,
-                                         int s, rpc_overlapped overlapped,
-                                         int *bytes, te_bool wait,
-                                         rpc_send_recv_flags *flags,
-                                         char *buf, int buflen);
+extern te_bool rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
+                                             int s, 
+                                             rpc_overlapped overlapped,
+                                             int *bytes, te_bool wait,
+                                             rpc_send_recv_flags *flags,
+                                             char *buf, int buflen);
 /**
  * Get result of completion callback (if called).
  *

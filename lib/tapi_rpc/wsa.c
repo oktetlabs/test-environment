@@ -88,10 +88,12 @@ rpc_wsa_socket(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(wsa_socket, out.fd);
 
-    TAPI_RPC_LOG("RPC (%s,%s): WSASocket(%s, %s, %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): WSASocket(%s, %s, %s, %x, %d, %s) -> "
+                 "%d (%s)",
                  rpcs->ta, rpcs->name,
                  domain_rpc2str(domain), socktype_rpc2str(type),
                  proto_rpc2str(protocol),
+                 info, info_len, open_sock_flags_rpc2str(flags),
                  out.fd, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(socket, out.fd);
@@ -501,7 +503,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
 
 /**
  * Attention: when using the overlapped I/O the supplied buffers head
- * and tail will be freed when you call rpc_get_overlapped_result().
+ * and tail will be freed when you call rpc_wsa_get_overlapped_result().
  */
 te_bool
 rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, int file,
@@ -2148,15 +2150,15 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
 }
 
 te_bool
-rpc_get_overlapped_result(rcf_rpc_server *rpcs,
-                          int s, rpc_overlapped overlapped,
-                          int *bytes, te_bool wait,
-                          rpc_send_recv_flags *flags,
-                          char *buf, int buflen)
+rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
+                              int s, rpc_overlapped overlapped,
+                              int *bytes, te_bool wait,
+                              rpc_send_recv_flags *flags,
+                              char *buf, int buflen)
 {
-    rcf_rpc_op                       op;
-    tarpc_get_overlapped_result_in   in;
-    tarpc_get_overlapped_result_out  out;
+    tarpc_wsa_get_overlapped_result_in   in;
+    tarpc_wsa_get_overlapped_result_out  out;
+    rcf_rpc_op                           op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -2164,7 +2166,7 @@ rpc_get_overlapped_result(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_INT(get_overlapped_result, -1);
+        RETVAL_INT(wsa_get_overlapped_result, -1);
     }
 
     op = rpcs->op;
@@ -2184,7 +2186,7 @@ rpc_get_overlapped_result(rcf_rpc_server *rpcs,
     }
     in.get_data = buf == NULL ? FALSE : TRUE;
 
-    rcf_rpc_call(rpcs, "get_overlapped_result", &in, &out);
+    rcf_rpc_call(rpcs, "wsa_get_overlapped_result", &in, &out);
 
     if ((out.retval) && (buf != NULL) && (buflen > 0))
     {
@@ -2215,16 +2217,16 @@ rpc_get_overlapped_result(rcf_rpc_server *rpcs,
     if (op == RCF_RPC_CALL)
         out.retval = TRUE;
 
-    CHECK_RETVAL_VAR_IS_BOOL(get_overlapped_result, out.retval);
+    CHECK_RETVAL_VAR_IS_BOOL(wsa_get_overlapped_result, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: GetOverlappedResult(%d, %u, ...) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WSAGetOverlappedResult(%d, %u, ...) "
                  "-> %s (%s) bytes transferred %u",
                  rpcs->ta, rpcs->name, rpcop2str(op), s, overlapped,
                  out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)),
                  out.bytes.bytes_val != NULL ? *bytes : 0);
 
-    RETVAL_BOOL(get_overlapped_result, out.retval);
+    RETVAL_BOOL(wsa_get_overlapped_result, out.retval);
 }
 
 int
@@ -2714,8 +2716,8 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     else
     {
         in.sqos_is_null = FALSE;
-        in.sqos.sending = *(tarpc_flowspec*)&sqos->sending;
-        in.sqos.receiving = *(tarpc_flowspec*)&sqos->receiving;
+        in.sqos.sending = sqos->sending;
+        in.sqos.receiving = sqos->receiving;
         in.sqos.provider_specific_buf.provider_specific_buf_val =
             sqos->provider_specific_buf;
         in.sqos.provider_specific_buf.provider_specific_buf_len =
@@ -2738,38 +2740,37 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
  */
 static int 
 convert_wsa_ioctl_result(rpc_ioctl_code code,
-                         wsa_ioctl_request *res,
-                         char *buf, int buflen,
-                         unsigned int *bytes_returned)
+                         wsa_ioctl_request *res, char *buf)
 {
-    int ret = 0;
-
     switch (code)
     {
         case RPC_SIO_ADDRESS_LIST_QUERY:
         {
             struct sockaddr *addr;
             unsigned int    i;
-
-            ret = sizeof(struct sockaddr) *
-                res->wsa_ioctl_request_u.req_saa.req_saa_len;
-            if (buflen < ret)
+            
+            if (res->wsa_ioctl_request_u.req_saa.req_saa_len * 
+                sizeof(struct sockaddr_storage) > RPC_WSA_IOCTL_OUTBUF_MAX)
+            {
                 return -1;
+            }
 
-            for (i = 0; i < res->wsa_ioctl_request_u.req_saa.req_saa_len;
+            for (i = 0; 
+                 i < res->wsa_ioctl_request_u.req_saa.req_saa_len;
                  i++)
             {
-                addr = &((struct sockaddr *)buf)[i];
+                addr = (struct sockaddr *)
+                           (((struct sockaddr_storage *)buf) + i);
 
                 addr->sa_family = addr_family_rpc2h(
                     res->wsa_ioctl_request_u.req_saa.req_saa_val[i]
                         .sa_family);
 
                 memcpy(addr->sa_data,
-                    res->wsa_ioctl_request_u.req_saa.req_saa_val[i]
-                        .sa_data.sa_data_val,
-                    res->wsa_ioctl_request_u.req_saa.req_saa_val[i]
-                        .sa_data.sa_data_len);
+                       res->wsa_ioctl_request_u.req_saa.req_saa_val[i].
+                           sa_data.sa_data_val,
+                       res->wsa_ioctl_request_u.req_saa.req_saa_val[i].
+                           sa_data.sa_data_len);
             }
 
             break;
@@ -2778,13 +2779,8 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
         case RPC_SIO_GET_BROADCAST_ADDRESS:
         case RPC_SIO_ROUTING_INTERFACE_QUERY:
         {
-            struct sockaddr *addr;
+            struct sockaddr *addr = (struct sockaddr *)buf;
 
-            ret = sizeof(struct sockaddr);
-            if (buflen < ret)
-                return -1;
-
-            addr = (struct sockaddr *)buf;
             addr->sa_family = addr_family_rpc2h(
                 res->wsa_ioctl_request_u.req_sa.sa_family);
             memcpy(addr->sa_data,
@@ -2794,9 +2790,6 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
         }
 
         case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
-            ret = sizeof(rpc_ptr);
-            if (buflen < ret)
-                return -1;
             *(rpc_ptr *)buf = res->wsa_ioctl_request_u.req_ptr;
             break;
 
@@ -2806,45 +2799,33 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
             tarpc_qos *rqos;
             rpc_qos   *qos;
 
-            if (buflen < (int)sizeof(rpc_qos))
-                return -1;
-
             rqos = &res->wsa_ioctl_request_u.req_qos;
             qos = (rpc_qos *)buf;
 
-            /* rpc_flowspec and tarpc_flowspec declarations are
-             * identical, so we can freely cast each to other. */
-            qos->sending = *(rpc_flowspec*)&rqos->sending;
-            qos->receiving = *(rpc_flowspec*)&rqos->receiving;
+            qos->sending = *(tarpc_flowspec*)&rqos->sending;
+            qos->receiving = *(tarpc_flowspec*)&rqos->receiving;
 
-            ret = rqos->provider_specific_buf.provider_specific_buf_len;
-            qos->provider_specific_buf_len = ret;
-            if (ret != 0)
+            if (sizeof(*qos) + 
+                rqos->provider_specific_buf.provider_specific_buf_len >
+                RPC_WSA_IOCTL_OUTBUF_MAX)
             {
-                qos->provider_specific_buf = malloc(ret);
-                memcpy(qos->provider_specific_buf,
-                    rqos->provider_specific_buf.provider_specific_buf_val,
-                    ret);
+                return -1;
             }
-            else
-                qos->provider_specific_buf = NULL;
-
-            ret = sizeof(rpc_qos);
+            qos->provider_specific_buf_len = 
+                rqos->provider_specific_buf.provider_specific_buf_len;
+            qos->provider_specific_buf = buf + sizeof(*qos);
+            memcpy(qos->provider_specific_buf,
+                   rqos->provider_specific_buf.provider_specific_buf_val,
+                   qos->provider_specific_buf_len);
         }
         
         default:
-            ret = sizeof(int);
-            if (buflen < ret)
-                return -1;
             *(int *)buf = res->wsa_ioctl_request_u.req_int;
             break;
 
     }
 
-    if ((bytes_returned != NULL) && (ret > 0))
-        *bytes_returned = ret;
-
-    return ret;
+    return 0;
 }
 
 /**
@@ -2860,24 +2841,45 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
     rcf_rpc_op           op;
     tarpc_wsa_ioctl_in   in;
     tarpc_wsa_ioctl_out  out;
-    void                *buf = NULL;
+    
+    wsa_ioctl_request in_req, out_req;
 
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return -1;
+        RETVAL_INT(wsa_ioctl, -1);
     }
 
     op = rpcs->op;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
+    memset(&in_req, 0, sizeof(in_req));
+    memset(&out_req, 0, sizeof(out_req));
 
     in.s = s;
     in.code = control_code;
     in.outbuf_len = outbuf_len;
+    in.inbuf_len = inbuf_len;
     in.overlapped = (tarpc_overlapped)overlapped;
     FILL_CALLBACK(wsa_ioctl);
+    if (bytes_returned != NULL)
+    {
+        in.bytes_returned.bytes_returned_val = bytes_returned;
+        in.bytes_returned.bytes_returned_len = 1;
+    }
+    if (outbuf != NULL)
+    {
+        in.outbuf.outbuf_val = &out_req;
+        in.outbuf.outbuf_len = 1;
+    }
+    if (inbuf != NULL)
+    {
+        in.inbuf.inbuf_val = &in_req;
+        in.inbuf.inbuf_len = 1;
+    }
+    else
+        goto call;
 
     switch (control_code)
     {
@@ -2890,130 +2892,95 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
         case RPC_SIO_RCVALL_IGMPMCAST:
         case RPC_SIO_RCVALL_MCAST:
         case RPC_SIO_UDP_CONNRESET:
-            if (inbuf != NULL)
-            {
-                in.req.type = WSA_IOCTL_INT;
-                in.req.wsa_ioctl_request_u.req_int = *(int *)inbuf;
-            }
+            in_req.type = WSA_IOCTL_INT;
+            in_req.wsa_ioctl_request_u.req_int = *(int *)inbuf;
             break;
 
         case RPC_SIO_FIND_ROUTE:
         case RPC_SIO_ROUTING_INTERFACE_CHANGE:
         case RPC_SIO_ROUTING_INTERFACE_QUERY:
-            if (inbuf != NULL)
-            {
-                struct sockaddr *addr = (struct sockaddr *)inbuf;
-                tarpc_sa *rpc_addr = &in.req.wsa_ioctl_request_u.req_sa;
+        {
+            struct sockaddr *addr = (struct sockaddr *)inbuf;
+            tarpc_sa        *rpc_addr = &in_req.wsa_ioctl_request_u.req_sa;
 
-                in.req.type = WSA_IOCTL_SA;
-                rpc_addr->sa_family = addr_family_h2rpc(addr->sa_family);
-                rpc_addr->sa_data.sa_data_val = addr->sa_data;
-                rpc_addr->sa_data.sa_data_len =
-                    sizeof(struct sockaddr) - SA_COMMON_LEN;
-            }
+            in_req.type = WSA_IOCTL_SA;
+            rpc_addr->sa_family = addr_family_h2rpc(addr->sa_family);
+            rpc_addr->sa_data.sa_data_val = addr->sa_data;
+            rpc_addr->sa_data.sa_data_len =
+                sizeof(struct sockaddr) - SA_COMMON_LEN;
             break;
+        }
 
         case RPC_SIO_GET_EXTENSION_FUNCTION_POINTER:
-            if (inbuf != NULL)
-            {
-                in.req.type = WSA_IOCTL_GUID;
-                /* Here inbuf must be a pointer to rpc_guid structure. */
-                in.req.wsa_ioctl_request_u.req_guid.data1 =
-                    ((rpc_guid *)inbuf)->data1;
-                in.req.wsa_ioctl_request_u.req_guid.data2 =
-                    ((rpc_guid *)inbuf)->data2;
-                in.req.wsa_ioctl_request_u.req_guid.data3 =
-                    ((rpc_guid *)inbuf)->data3;
-                buf = malloc(8);
-                memcpy(buf, ((rpc_guid *)inbuf)->data4, 8);
-                in.req.wsa_ioctl_request_u.req_guid.data4.data4_val =
-                    (uint8_t *)buf;
-                in.req.wsa_ioctl_request_u.req_guid.data4.data4_len = 8;
-            }
+            in_req.type = WSA_IOCTL_GUID;
+            in_req.wsa_ioctl_request_u.req_guid = *(tarpc_guid *)inbuf;
             break;
 
         case RPC_SIO_KEEPALIVE_VALS:
-            if (inbuf != NULL)
-            {
-                tarpc_tcp_keepalive *rpc_tka =
-                    &in.req.wsa_ioctl_request_u.req_tka;
-
-                in.req.type = WSA_IOCTL_TCP_KEEPALIVE;
-                rpc_tka->onoff = ((unsigned long *)inbuf)[0];
-                rpc_tka->keepalivetime = ((unsigned long *)inbuf)[1];
-                rpc_tka->keepaliveinterval = ((unsigned long *)inbuf)[2];
-            }
+            in_req.type = WSA_IOCTL_TCP_KEEPALIVE;
+            in_req.wsa_ioctl_request_u.req_tka = 
+                *(tarpc_tcp_keepalive *)inbuf;
             break;
 
         case RPC_SIO_SET_QOS:
-            if (inbuf != NULL)
-            {
-                tarpc_qos *rqos;
-                rpc_qos   *qos;
+        {
+            tarpc_qos *rqos;
+            rpc_qos   *qos;
 
-                rqos = &in.req.wsa_ioctl_request_u.req_qos;
-                qos = (rpc_qos *)inbuf;
+            rqos = &in_req.wsa_ioctl_request_u.req_qos;
+            qos = (rpc_qos *)inbuf;
 
-                in.req.type = WSA_IOCTL_QOS;
-                /* rpc_flowspec and tarpc_flowspec declarations are
-                 * identical, so we can freely cast each to other. */
-                rqos->sending = *(tarpc_flowspec*)&qos->sending;
-                rqos->receiving = *(tarpc_flowspec*)&qos->receiving;
-                rqos->provider_specific_buf.provider_specific_buf_val =
-                    qos->provider_specific_buf;
-                rqos->provider_specific_buf.provider_specific_buf_len =
-                    qos->provider_specific_buf_len;
-            }
+            in_req.type = WSA_IOCTL_QOS;
+            /* rpc_flowspec and tarpc_flowspec declarations are
+             * identical, so we can freely cast each to other. */
+            rqos->sending = *(tarpc_flowspec *)&qos->sending;
+            rqos->receiving = *(tarpc_flowspec *)&qos->receiving;
+            rqos->provider_specific_buf.provider_specific_buf_val =
+                qos->provider_specific_buf;
+            rqos->provider_specific_buf.provider_specific_buf_len =
+                qos->provider_specific_buf_len;
             break;
+        }
 
         case RPC_SIO_ASSOCIATE_HANDLE:
         case RPC_SIO_TRANSLATE_HANDLE:
-            if (inbuf != NULL)
-            {
-                in.req.type = WSA_IOCTL_PTR;
-                /* Here inbuf must point to the variable of type rpc_ptr,
-                 * which stores the pointer valid in TA address space.
-                 * That buffer in TA address space must contain the
-                 * data required to perform the IOCTL call. */
-                in.req.wsa_ioctl_request_u.req_ptr = *((rpc_ptr *)inbuf);
-                /* Here inbuf_len must contain the size of the
-                 * buffer in the TA address space. */
-                in.inbuf_len = inbuf_len;
-            }
+            ERROR("SIO_*_HANDLE are not supported yet");
+            RETVAL_INT(wsa_ioctl, -1);
             break;
 
         default:
-            in.req.type = WSA_IOCTL_VOID; /* No input data */
+            in_req.type = WSA_IOCTL_VOID; /* No input data */
     }
 
+call:
     rcf_rpc_call(rpcs, "wsa_ioctl", &in, &out);
 
     free(in.callback);
 
     if (RPC_IS_CALL_OK(rpcs) && (out.retval == 0))
     {
-        if (outbuf != NULL)
+        if (bytes_returned != NULL)
+            *bytes_returned = *(out.bytes_returned.bytes_returned_val);
+            
+        if (outbuf != NULL && out.outbuf.outbuf_val != NULL)
         {
-            if (convert_wsa_ioctl_result(control_code, &out.result,
-                           outbuf, outbuf_len, bytes_returned) < 0)
+            if (convert_wsa_ioctl_result(control_code, 
+                                         out.outbuf.outbuf_val,
+                                         outbuf) < 0)
             {
+                ERROR("Cannot convert the result: increase "
+                      "RPC_WSA_IOCTL_OUTBUF_MAX");
+                      
                 out.retval = -1;
             }
         }
-        else
-        {
-            /* Intentional feature */
-            if (bytes_returned != NULL)
-                *bytes_returned = out.bytes_returned;
-        }
     }
-
-    free(buf);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_ioctl, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: WSAIoctl() -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WSAIoctl(%d, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
+                 s, ioctl_rpc2str(control_code),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(wsa_ioctl, out.retval);
@@ -3024,7 +2991,7 @@ rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
                                     int s, rpc_overlapped overlapped,
                                     int *bytes, te_bool wait,
                                     rpc_send_recv_flags *flags,
-                                    char *buf, int buflen,
+                                    char *buf, 
                                     rpc_ioctl_code control_code)
 {
     rcf_rpc_op op;
@@ -3075,15 +3042,15 @@ rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
 
         if (out.retval && (buf != NULL))
         {
-            if (convert_wsa_ioctl_result(control_code, &out.result,
-                                           buf, buflen, bytes) < 0)
+            if (convert_wsa_ioctl_result(control_code, &out.result, 
+                                         buf) < 0)
             {
                 out.retval = 0;
             }
         }
     }
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: GetOverlappedResult(%d, %p, %u, ...) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WSAGetOverlappedResult(%d, %p, %u, ...) "
                  "-> %s (%s) bytes transferred %u",
                  rpcs->ta, rpcs->name, rpcop2str(op), s, overlapped,
                  control_code, out.retval ? "true" : "false",
