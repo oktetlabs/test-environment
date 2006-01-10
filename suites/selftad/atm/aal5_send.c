@@ -83,7 +83,9 @@ main(int argc, char *argv[])
     size_t                  payload_len;
     asn_value              *tmpl = NULL;
     uint8_t                 cell[ATM_CELL_LEN];
+    uint8_t                 idle[ATM_CELL_LEN] = { 0, };
     ssize_t                 r;
+    size_t                  received;
 
 
     TEST_START;
@@ -130,10 +132,59 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tad_trsend_start(iut_host->ta, 0, csap, tmpl,
                                    RCF_MODE_BLOCKING));
 
+    RING("Sent %u bytes as AAL5 payload, it is expected to receive %u "
+         "cells", payload_len,
+         (payload_len + AAL5_TRAILER_LEN + ATM_PAYLOAD_LEN - 1) /
+             ATM_PAYLOAD_LEN);
+    SLEEP(1);
+
+    received = 0;
     while ((r = rpc_recv(pco_tst, tst_s, cell, sizeof(cell),
                          RPC_MSG_DONTWAIT)) > 0)
     {
-        RING("Received cell is %Tm", cell, sizeof(cell));
+        ssize_t useful = MIN((ssize_t)payload_len - (ssize_t)received,
+                             ATM_PAYLOAD_LEN);
+        ssize_t rest = ATM_PAYLOAD_LEN - MAX(useful, 0);
+
+        RING("Received cell is %Tm", cell, r);
+
+        if (r != ATM_CELL_LEN)
+            TEST_FAIL("Unexpected number of bytes received");
+
+        if (useful > 0 &&
+            memcmp(cell + ATM_HEADER_LEN, payload + received, useful) != 0)
+        {
+            TEST_FAIL("Unexpected payload in received cell.\n"
+                      "Expected:%Tm\nGot:%Tm\n",
+                      payload + received, useful,
+                      cell + ATM_HEADER_LEN, useful);
+        }
+
+        if (rest > 0)
+        {
+            if (rest < AAL5_TRAILER_LEN)
+            {
+                if (memcmp(idle, cell + ATM_HEADER_LEN + useful,
+                           rest) != 0)
+                {
+                    TEST_FAIL("Unexpected padding%Tm",
+                              cell + ATM_HEADER_LEN + useful, rest);
+                }
+            }
+            else if (rest > AAL5_TRAILER_LEN)
+            {
+                if (memcmp(idle, cell + ATM_HEADER_LEN + useful,
+                           rest - AAL5_TRAILER_LEN) != 0)
+                {
+                    TEST_FAIL("Unexpected padding%Tm",
+                              cell + ATM_HEADER_LEN + useful,
+                              rest - AAL5_TRAILER_LEN);
+                }
+            }
+        }
+
+        received += (r - ATM_HEADER_LEN);
+
         RPC_AWAIT_IUT_ERROR(pco_tst);
     }
 
