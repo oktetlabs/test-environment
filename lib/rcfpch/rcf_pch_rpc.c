@@ -374,8 +374,8 @@ create_thread_child(rpcserver *rpcs)
 {
     int rc;
 
-    tarpc_pthread_create_in  in;
-    tarpc_pthread_create_out out;
+    tarpc_thread_create_in  in;
+    tarpc_thread_create_out out;
 
     RING("Create thread RPC server '%s' from '%s'",
          rpcs->name, rpcs->father->name);
@@ -386,12 +386,12 @@ create_thread_child(rpcserver *rpcs)
     in.name.name_len = strlen(rpcs->name) + 1;
     in.name.name_val = rpcs->name;
     
-    if ((rc = call(rpcs->father, "pthread_create", &in, &out)) != 0)
+    if ((rc = call(rpcs->father, "thread_create", &in, &out)) != 0)
         return rc;
         
     if (out.retval != 0)
     {
-        ERROR("RPC pthread_create() failed on the server %s with errno %r", 
+        ERROR("RPC thread_create() failed on the server %s with errno %r", 
               rpcs->father->name, out.common._errno);
         return (out.common._errno != 0) ?
                    out.common._errno : TE_RC(TE_RCF_PCH, TE_ECORRUPTED);
@@ -410,20 +410,20 @@ create_thread_child(rpcserver *rpcs)
 static void
 delete_thread_child(rpcserver *rpcs)
 {
-    tarpc_pthread_cancel_in  in;
-    tarpc_pthread_cancel_out out;
+    tarpc_thread_cancel_in  in;
+    tarpc_thread_cancel_out out;
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.common.op = RCF_RPC_CALL_WAIT;
     in.tid = rpcs->tid;
     
-    if (call(rpcs->father, "pthread_cancel", &in, &out) != 0)
+    if (call(rpcs->father, "thread_cancel", &in, &out) != 0)
         return;
         
     if (out.retval != 0)
     {
-        WARN("RPC pthread_cancel() failed on the server %s with errno %r",
+        WARN("RPC thread_cancel() failed on the server %s with errno %r",
               rpcs->father->name, out.common._errno);
     }
 }
@@ -440,8 +440,8 @@ fork_child(rpcserver *rpcs)
 {
     int rc;
 
-    tarpc_fork_in  in;
-    tarpc_fork_out out;
+    tarpc_create_process_in  in;
+    tarpc_create_process_out out;
 
     RING("Fork RPC server '%s' from '%s'",
          rpcs->name, rpcs->father->name);
@@ -452,12 +452,12 @@ fork_child(rpcserver *rpcs)
     in.name.name_len = strlen(rpcs->name) + 1;
     in.name.name_val = rpcs->name;
     
-    if ((rc = call(rpcs->father, "fork", &in, &out)) != 0)
+    if ((rc = call(rpcs->father, "create_process", &in, &out)) != 0)
         return rc;
         
     if (out.pid < 0)
     {
-        ERROR("RPC fork() failed on the server %s with errno %r", 
+        ERROR("RPC create_process() failed on the server %s with errno %r", 
               rpcs->father->name, out.common._errno);
         return (out.common._errno != 0) ?
                    out.common._errno : TE_RC(TE_RCF_PCH, TE_ECORRUPTED);

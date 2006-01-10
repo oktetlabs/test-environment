@@ -207,11 +207,17 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
 
     return TRUE;
 }
-                   
-/*-------------- fork() ---------------------------------*/
-TARPC_FUNC(fork, {},
+
+/*-------------- create_process() ---------------------------------*/
+bool_t
+_create_process_1_svc(tarpc_create_process_in *in, 
+                      tarpc_create_process_out *out,
+                      struct svc_req *rqstp)
 {
-    MAKE_CALL(out->pid = fork());
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+    
+    out->pid = fork();
 
     if (out->pid == 0)
     {
@@ -219,24 +225,43 @@ TARPC_FUNC(fork, {},
         rcf_pch_rpc_server(in->name.name_val);
         exit(EXIT_FAILURE);
     }
+    
+    return TRUE;
 }
-)
 
-/*-------------- pthread_create() -----------------------------*/
-TARPC_FUNC(pthread_create, {},
+/*-------------- thread_create() -----------------------------*/
+bool_t
+_thread_create_1_svc(tarpc_thread_create_in *in, 
+                     tarpc_thread_create_out *out,
+                     struct svc_req *rqstp)
 {
-    MAKE_CALL(out->retval = pthread_create((pthread_t *)&(out->tid), NULL,
-                                           (void *)rcf_pch_rpc_server,
-                                           strdup(in->name.name_val)));
-}
-)
+    pthread_t tid;
+    
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+    
+    out->retval = pthread_create(&tid, NULL, (void *)rcf_pch_rpc_server,
+                                 strdup(in->name.name_val));
+    if (out->retval == 0)                                 
+        out->tid = rcf_pch_mem_alloc((void *)tid);
 
-/*-------------- pthread_cancel() -----------------------------*/
-TARPC_FUNC(pthread_cancel, {},
-{
-    MAKE_CALL(out->retval = pthread_cancel((pthread_t)in->tid));
+    return TRUE;
 }
-)
+
+/*-------------- thread_cancel() -----------------------------*/
+bool_t
+_thread_cancel_1_svc(tarpc_thread_cancel_in *in, 
+                     tarpc_thread_cancel_out *out,
+                     struct svc_req *rqstp)
+{ 
+    UNUSED(rqstp);
+    memset(out, 0, sizeof(*out));
+    
+    out->retval = pthread_cancel((pthread_t)rcf_pch_mem_get(in->tid));
+    rcf_pch_mem_free(in->tid);
+
+    return TRUE;
+}
 
 /**
  * Check, if some signals were received by the RPC server (as a process)

@@ -2655,38 +2655,38 @@ struct tarpc_echoer_out {
     uint64_t    rx_stat<>;
 };
 
-struct tarpc_fork_in {
+struct tarpc_create_process_in {
     struct tarpc_in_arg common;
     
-    char name<>;        /**< RPC server name */
+    char       name<>;           /**< RPC server name */
 };
 
-struct tarpc_fork_out {
+struct tarpc_create_process_out {
     struct tarpc_out_arg common;
     
     int32_t     pid;
 };
 
-struct tarpc_pthread_create_in {
+struct tarpc_thread_create_in {
     struct tarpc_in_arg common;
     
     char name<>;
 };
 
-struct tarpc_pthread_create_out {
+struct tarpc_thread_create_out {
     struct tarpc_out_arg common;
     
     tarpc_ptr   tid;
     tarpc_int   retval;
 };
 
-struct tarpc_pthread_cancel_in {
+struct tarpc_thread_cancel_in {
     struct tarpc_in_arg common;
     
     tarpc_ptr           tid;
 };
 
-struct tarpc_pthread_cancel_out {
+struct tarpc_thread_cancel_out {
     struct tarpc_out_arg common;
     
     tarpc_int   retval;
@@ -3065,9 +3065,9 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(get_var)
         RPC_DEF(set_var)
         
-        RPC_DEF(fork)
-        RPC_DEF(pthread_create)
-        RPC_DEF(pthread_cancel)
+        RPC_DEF(create_process)
+        RPC_DEF(thread_create)
+        RPC_DEF(thread_cancel)
         RPC_DEF(execve)
         RPC_DEF(getpid)
         RPC_DEF(gettimeofday)
