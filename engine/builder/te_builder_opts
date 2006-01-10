@@ -47,6 +47,7 @@ function build()
 {
     for i in $1 ; do
         CURRDIR=`pwd`
+        i=${i#build\/} ;
         if ! cd ${TE_BUILD}/$i ; then
             echo Directory ${TE_BUILD}/$i not found ; exit 1 ;
         fi
