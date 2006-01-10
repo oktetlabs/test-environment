@@ -155,7 +155,7 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
                                &addr_len);
     if (rc == 0)
         INFO(CSAP_LOG_FMT "set local addr to %s", CSAP_LOG_ARGS(csap),
-             inet_ntoa(local.sin_addr)); 
+             inet_ntoa(spec_data->local_addr)); 
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         INFO("%s(): set TCP CSAP %d default local address to zero", 
