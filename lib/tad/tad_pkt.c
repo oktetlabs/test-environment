@@ -87,6 +87,9 @@ tad_pkt_put_seg_data(tad_pkt *pkt, tad_pkt_seg *seg,
     seg->data_free = free;
 
     pkt->segs_len += len;
+
+    F_VERB("%s(): pkt=%p n_segs=%u segs_len=%u", __FUNCTION__,
+           pkt, pkt->n_segs, (unsigned)pkt->segs_len);
 }
 
 
@@ -136,6 +139,8 @@ tad_pkt_set_seg_data_len(tad_pkt *pkt, tad_pkt_seg *seg, size_t new_len)
     pkt->segs_len -= seg->data_len;
     seg->data_len = new_len;
     pkt->segs_len += seg->data_len;
+    F_VERB("%s(): pkt=%p n_segs=%u segs_len=%u", __FUNCTION__,
+           pkt, pkt->n_segs, (unsigned)pkt->segs_len);
 }
 
 /* See description in tad_pkt.h */
@@ -167,7 +172,9 @@ tad_pkt_insert_after_seg(tad_pkt *pkt, tad_pkt_seg *seg,
 {
     CIRCLEQ_INSERT_AFTER(&pkt->segs, seg, new_seg, links);
     pkt->n_segs++; 
-    pkt->segs_len += seg->data_len;
+    pkt->segs_len += new_seg->data_len;
+    F_VERB("%s(): pkt=%p n_segs=%u segs_len=%u", __FUNCTION__,
+           pkt, pkt->n_segs, (unsigned)pkt->segs_len);
 }
 
 /* See description in tad_pkt.h */
@@ -703,18 +710,24 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
     tad_pkt_fragment_cb_data   *data = (tad_pkt_fragment_cb_data *)opaque;
     
     size_t          dst_rest = data->frag_data_len;
-    tad_pkt_seg    *dst_seg = pkt->segs.cqh_first;
+    tad_pkt_seg    *dst_seg = tad_pkt_first_seg(pkt);
     size_t          dst_seg_len;
     tad_pkt_seg    *new_seg;
+
+    ENTRY("pkt=%p skip_first_seg=%d src_pkt=%p src_seg=%p src_data=%p "
+          "src_len=%u", pkt, (int)data->skip_first_seg, data->src_pkt,
+          data->src_seg, data->src_data, (unsigned)data->src_len);
 
     /* If we have allocated additional segment as header, skip it */
     if (data->skip_first_seg)
     {
-        dst_seg = dst_seg->links.cqe_next;
-        assert(dst_seg != (void *)&pkt->segs);
+        dst_seg = tad_pkt_next_seg(pkt, dst_seg);
+        assert(dst_seg != NULL);
     }
     /* Destination segment have to be empty yet */
     assert(dst_seg->data_ptr == NULL && dst_seg->data_len == 0);
+
+    VERB("%s(): Destination segment is %p", __FUNCTION__, dst_seg);
 
     do {
         if (data->src_len == 0)
@@ -722,9 +735,15 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
             data->src_seg = tad_pkt_next_not_empty_seg(data->src_pkt,
                                                        data->src_seg);
             if (data->src_seg == NULL)
+            {
+                VERB("%s(): No more non-empty source segments",
+                     __FUNCTION__);
                 return 0;
+            }
             data->src_data = data->src_seg->data_ptr;
             data->src_len = data->src_seg->data_len;
+            VERB("%s(): Next source segment ptr=%p len=%u",
+                 __FUNCTION__, data->src_data, (unsigned)data->src_len);
         }
 
         /* 
@@ -735,6 +754,8 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
 
         tad_pkt_put_seg_data(pkt, dst_seg, data->src_data, dst_seg_len,
                              NULL);
+        VERB("%s(): destionation segment %p put ptr=%p len=%u",
+             __FUNCTION__, dst_seg, data->src_data, dst_seg_len);
 
         /* Data remaining in the source segment */
         data->src_data += dst_seg_len;
@@ -743,7 +764,11 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
         dst_rest -= dst_seg_len;
 
         if (dst_rest == 0)
+        {
+            VERB("%s(): No space rest in destination packet",
+                 __FUNCTION__);
             break;
+        }
 
         new_seg = tad_pkt_alloc_seg(NULL, 0, NULL);
         if (new_seg == NULL)
@@ -751,6 +776,8 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
             return TE_RC(TE_TAD_PKT, TE_ENOMEM);
         }
         tad_pkt_insert_after_seg(pkt, dst_seg, new_seg);
+        dst_seg = new_seg;
+        VERB("%s(): New segment %p allocated", __FUNCTION__, new_seg);
 
     } while (TRUE);
 
