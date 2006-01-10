@@ -31,7 +31,6 @@
 
 #include "te_defs.h"
 #include "te_stdint.h"
-#include "tad_common.h"
 #include "asn_usr.h"
 #include "ndn_atm.h"
 

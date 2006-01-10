@@ -273,8 +273,19 @@ extern int tapi_tad_forward_all(const char *ta_name, int session,
                                 csap_handle_t csap_fwd,
                                 asn_value *pattern,
                                 unsigned int timeout, int *forwarded);
+
+/**
+ * Add socket layer over existing file descriptor in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ * @param fd            File descriptor to read/write data
+ *
+ * @retval Status code.
+ */
+extern te_errno tapi_tad_socket_add_csap_layer(asn_value **csap_spec,
+                                               int         fd);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
 #endif /* !__TE_TAPI_TAD_H__ */

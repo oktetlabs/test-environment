@@ -5,11 +5,11 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ 
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
-include_HEADERS = tapi_tad.h
+include_HEADERS = tapi_tad.h tapi_ndn.h
 
 lib_LTLIBRARIES = libtapi_tad.la
 
-libtapi_tad_la_SOURCES = tapi_tad.c
+libtapi_tad_la_SOURCES = tapi_tad.c tapi_ndn.c
 
 
 install-exec-hook:

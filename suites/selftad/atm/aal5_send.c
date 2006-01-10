@@ -142,9 +142,9 @@ main(int argc, char *argv[])
     while ((r = rpc_recv(pco_tst, tst_s, cell, sizeof(cell),
                          RPC_MSG_DONTWAIT)) > 0)
     {
-        ssize_t useful = MIN((ssize_t)payload_len - (ssize_t)received,
-                             ATM_PAYLOAD_LEN);
-        ssize_t rest = ATM_PAYLOAD_LEN - MAX(useful, 0);
+        ssize_t useful = MAX(MIN((ssize_t)payload_len - (ssize_t)received,
+                                 ATM_PAYLOAD_LEN), 0);
+        ssize_t rest = ATM_PAYLOAD_LEN - useful;
 
         RING("Received cell is %Tm", cell, r);
 
