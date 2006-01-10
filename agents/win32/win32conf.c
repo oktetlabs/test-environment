@@ -1845,8 +1845,12 @@ route_list(unsigned int gid, const char *oid, char **list)
     {
         int prefix;
 
-        if (table->table[i].dwForwardType != FORW_TYPE_LOCAL &&
-            table->table[i].dwForwardType != FORW_TYPE_REMOTE)
+        if ((table->table[i].dwForwardType != FORW_TYPE_LOCAL &&
+             table->table[i].dwForwardType != FORW_TYPE_REMOTE) ||
+             table->table[i].dwForwardDest == 0xFFFFFFFF ||
+             (table->table[i].dwForwardMask == 0xFFFFFFFF &&
+              table->table[i].dwForwardDest != htonl(INADDR_LOOPBACK) &&
+              table->table[i].dwForwardNextHop == htonl(INADDR_LOOPBACK)))
         {
             continue;
         }
