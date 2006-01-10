@@ -75,9 +75,11 @@ void
 tad_pkt_put_seg_data(tad_pkt *pkt, tad_pkt_seg *seg,
                      void *ptr, size_t len, tad_pkt_seg_free free)
 {
+    assert(pkt != NULL);
     assert(pkt->n_segs > 0);
-    assert(pkt->segs_len >= len);
-    pkt->segs_len -= len;
+    assert(seg != NULL);
+    assert(pkt->segs_len >= seg->data_len);
+    pkt->segs_len -= seg->data_len;
 
     tad_pkt_free_seg_data(seg);
     seg->data_ptr = ptr;
