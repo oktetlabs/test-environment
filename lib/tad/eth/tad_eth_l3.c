@@ -486,26 +486,36 @@ tad_eth_arp_reply(csap_p csap, const char *usr_param,
         ERROR("%s(): no memory!", __FUNCTION__);
         return TE_ENOMEM;
     }
-    p = pkt->segs.cqh_first->data_ptr;
+    p = tad_pkt_first_seg(pkt)->data_ptr;
 
     /* fill eth header */
-    memcpy(p, frame + 6, 6);
-    memcpy(p + 6, my_mac, 6);
-    memcpy(p + 12, frame + 12, 2);
+    memcpy(p, frame + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
+    memcpy(p + ETHER_ADDR_LEN, my_mac, ETHER_ADDR_LEN);
+    memcpy(p + 2 * ETHER_ADDR_LEN, frame + 2 * ETHER_ADDR_LEN,
+           ETHER_TYPE_LEN);
 
-    p += 14;
-    frame += 14; 
+    p += 2 * ETHER_ADDR_LEN + ETHER_TYPE_LEN;
+    frame += 2 * ETHER_ADDR_LEN + ETHER_TYPE_LEN; 
 
     memcpy(p, frame, 6);
-    p += 7;
-    *p = 2; /* ARP reply */
-    p++;
-
+    p += 6;
+    /* ARP reply */
+    *p++ = 0;
+    *p++ = 2;
     frame += 8;
-    memcpy(p, my_mac, 6);
-    memcpy(p + 6, frame + 6 + 4 + 6, 4);
 
-    memcpy(p + 6 + 4, frame, 6 + 4); 
+    memcpy(p, my_mac, ETHER_ADDR_LEN);
+    memcpy(p + ETHER_ADDR_LEN, frame + ETHER_ADDR_LEN + 4 + ETHER_ADDR_LEN,
+           4);
+
+    memcpy(p + ETHER_ADDR_LEN + 4, frame, ETHER_ADDR_LEN + 4); 
+
+    p += ETHER_ADDR_LEN + 4 + ETHER_ADDR_LEN + 4;
+
+    assert(frame_len >=
+           (size_t)(p - (uint8_t *)tad_pkt_first_seg(pkt)->data_ptr));
+    memset(p, 0,
+           frame_len - (p - (uint8_t *)tad_pkt_first_seg(pkt)->data_ptr));
 
     rc = rw_layer_cbs->write_cb(csap, pkt);
     tad_pkt_free(pkt);
