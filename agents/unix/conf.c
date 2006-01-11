@@ -4131,7 +4131,9 @@ do {                                                            \
 } while (0)
 
     GET_ALL_ROUTES_OF_FAMILY(AF_INET);
+#if 0
     GET_ALL_ROUTES_OF_FAMILY(AF_INET6);
+#endif
 
 #undef GET_ALL_ROUTES_OF_FAMILY    
     
