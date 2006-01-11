@@ -97,43 +97,44 @@
             type="string"/>
 
             
-    <!-- Supplicant Service configuration model -->
+    <!-- IEEE 802.1x Supplicant Service configuration model -->
 
             
     <!-- Root object of the supplicant daemon.
          Name: interface name where this supplicant works
          Value: 0 (disabled) or 1 (enabled) -->
-    <object oid="/agent/supplicant" access="read_create" type="integer" />
+    <object oid="/agent/interface/supplicant" access="read_write"
+            type="integer" />
 
     <!-- Identity value used on this supplicant.
          Name: empty
          Value: identity string -->
-    <object oid="/agent/supplicant/identity" access="read_write"
+    <object oid="/agent/interface/supplicant/identity" access="read_write"
             type="string"/>
     
     <!-- EAP method that is currently being used on the supplicant.
          Name: empty
          Value: md5, tls -->
-    <object oid="/agent/supplicant/cur_method" access="read_write"
+    <object oid="/agent/interface/supplicant/cur_method" access="read_write"
             type="string"/>
 
     
     <!-- Configuration subtree for supported EAP methods.
          Name: EAP method - any value valid for "cur_method" object
          Value: none -->
-    <object oid="/agent/supplicant/method" access="read_create"
+    <object oid="/agent/interface/supplicant/method" access="read_create"
             type="none"/>
 
     <!-- MD5-specific object - User name
          Name: empty
          Value: username for EAP-MD5 -->
-    <object oid="/agent/supplicant/method/username"
+    <object oid="/agent/interface/supplicant/method/username"
             access="read_write" type="string"/>
     
     <!-- MD5-specific object - User password
          Name: empty
          Value: password for EAP-MD5 -->
-    <object oid="/agent/supplicant/method/passwd"
+    <object oid="/agent/interface/supplicant/method/passwd"
             access="read_write" type="string"/>
 
     <!-- @todo Write objects for TLS -->
