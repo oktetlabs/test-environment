@@ -44,7 +44,8 @@ TE_PLATFORM([i386-linux], [], [], [], [],
 TE_LIB_PARMS([tad], [i386-linux], [],
              [-with-pcap --with-eth --with-bridge \
               --with-arp --with-ipstack --with-dhcp --with-iscsi \
-              --with-snmp --with-cli], [], [], [])
+              --with-snmp --with-cli --with-atm --with-socket],
+             [], [], [])
 
 TE_TA_TYPE([linux], [i386-linux], [unix],
            [--with-rcf-rpc \
