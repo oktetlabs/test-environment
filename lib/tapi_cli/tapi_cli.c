@@ -508,7 +508,7 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
     int                       rc;
     int                       s_parsed;
     asn_value_p               cli_response;
-#if 0
+#if 1
     asn_value_p               cli_msg;
 #endif
     size_t                    msg_len;
@@ -526,7 +526,7 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
         return;
     }
 
-#if 0
+#if 1
     cli_msg = asn_read_indexed(cli_response, 0, "pdus");
     if (cli_msg == NULL)
     {
@@ -557,6 +557,7 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
     if (rc != 0)
     {
         ERROR("Failed to get message body from CLI response rc=%r", rc);
+        free(msg);
         return;
     }
 #else

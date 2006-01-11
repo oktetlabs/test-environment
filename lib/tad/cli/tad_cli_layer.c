@@ -108,7 +108,7 @@ tad_cli_match_bin_cb(csap_p           csap,
 {
     char *msg = (char*) pkt->data;
     int msg_len = pkt->len;
-#if 0
+#if 1
     int rc;
 #endif
 
@@ -116,20 +116,20 @@ tad_cli_match_bin_cb(csap_p           csap,
     UNUSED(layer);
     UNUSED(pattern_pdu);
     UNUSED(payload);
-#if 1
+#if 0
     UNUSED(parsed_packet);
 #endif
 
     VERB("cli_match. len: %d, message: %s\n", msg_len, msg);
 
-#if 0
+#if 1
     rc = asn_write_value_field(parsed_packet, msg, msg_len, 
-                                "#cli.message.#plain");
+                               "#cli.message.#plain");
 
     if (rc)
     {
         VERB("cli_match. asn_write_value_field() failed");
-        free(buf);
+    /*    free(buf); */
         return rc;
     }
 
