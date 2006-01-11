@@ -27,10 +27,10 @@
  * $Id$
  */
 
-#ifdef WITH_RADIUS_SERVER
 #include <stddef.h>
 #include "conf_daemons.h"
-#include <sys/wait.h>
+
+/* Part 1: Common parsing and creating configuration files */
 
 /**
  * Both FreeRADIUS server and XSupplicant use similar scheme of configuration
@@ -49,7 +49,7 @@
  * its representation as a tree of nodes.
  */
 
-/** RADIUS configuration parameter types */
+/** Type of node of configuration file */
 enum radius_parameters { 
     RP_FLAG,          /**< a parameter which has no value */
     RP_ATTRIBUTE,     /**< a parameter with the value */
@@ -57,7 +57,7 @@ enum radius_parameters {
     RP_FILE           /**< an included config file */
 };
 
-/** Node of the RADIUS configuration parameter */
+/** Node of the configuration file */
 typedef struct radius_parameter
 {
     te_bool deleted;
@@ -72,45 +72,9 @@ typedef struct radius_parameter
     struct radius_parameter *children, *last_child;
 } radius_parameter;
 
-
 #define RP_DELETE_VALUE ((char *)-1)
 
-/** Root entry of the tree created from RADIUS configuration file */
-static struct radius_parameter *radius_conf;
-
-/** An attribute==value check in RADIUS users file */
-typedef struct radius_attr
-{
-    char               *name;   /**< Attribute name */
-    char               *value;  /**< Attribute value */
-} radius_attr;
-
-/** A record for a RADIUS user */
-typedef struct radius_user
-{
-    te_bool             reject;
-    char               *name;
-    radius_attr        *checks;
-    unsigned int        n_checks;
-    radius_attr        *accept_replies;
-    unsigned int        n_accept_replies;
-    radius_attr        *challenge_replies;
-    unsigned int        n_challenge_replies;
-    struct radius_user *next;
-} radius_user;
-
-/** A supplicant <-> interface correspondence */
-typedef struct supplicant
-{
-    char              *ifname;     /**< interface name */
-    te_bool            started;    /**< Supplicant was started and
-                                        is supposed to be running */
-    radius_parameter  *config;     /**< Supplicant config tree */
-    struct supplicant *next;       /**< chain link */
-} supplicant;
-
-static FILE *radius_users_file;
-static struct radius_user *radius_users, *radius_last_user;
+#define RP_DEFAULT_EMPTY_SECTION ((const char *)-1)
 
 static char *expand_rp (const char *value, radius_parameter *top);
 
@@ -180,6 +144,12 @@ destroy_rp(radius_parameter *parm)
     }
     free(parm);
 }
+
+#ifdef WITH_RADIUS_SERVER
+/**
+ * Note: Supplicant configuration files are created from scratch,
+ * without reading - so we mark reading as radiusserver-specific
+ */
 
 static void read_radius(FILE *conf, radius_parameter *top);
 
@@ -299,6 +269,7 @@ read_radius(FILE *conf, radius_parameter *top)
     if (top != initial_top)
         ERROR("section %s is not closed!!!", top->name);
 }
+#endif
 
 static int write_radius(radius_parameter *top);
 
@@ -328,8 +299,9 @@ write_radius_parameter (FILE *outfile, radius_parameter *parm, int indent)
             case RP_SECTION:
             {
                 radius_parameter *child;
-                fprintf(outfile, "%s %s {\n", parm->name, 
-                        parm->value == NULL || *parm->value == '#' ? "" : parm->value);
+                fprintf(outfile, "%s %s {\n", parm->name,
+                        (parm->value == NULL || *parm->value == '#') ?
+                        "" : parm->value);
                 for (child = parm->children; child != NULL; child = child->next)
                     write_radius_parameter(outfile, child, indent + 4);
                 for (i = indent; i > 0; i--)
@@ -371,7 +343,10 @@ write_radius(radius_parameter *top)
     else
     {
         top->modified = FALSE;
+#ifdef WITH_RADIUS_SERVER
+        /* Supplicant files were not backed up at all */
         ds_config_touch(top->backup_index);
+#endif
         outfile = fopen(top->name, "w");
         if (outfile == NULL)
         {
@@ -429,8 +404,8 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
     radius_parameter *iter;
     const char *next  = NULL;
     const char *value = NULL;
-    int         name_length;
-    int         value_length  = 0;
+    size_t      name_length;
+    size_t      value_length  = 0;
     te_bool     wildcard      = FALSE;
 
     VERB("looking for RADIUS parameter %s", name);
@@ -561,7 +536,7 @@ retrieve_rp (radius_parameter *top, const char *name, const char **value)
     {
         if (value != NULL)
             *value = rp->value;
-        return TRUE;       
+        return TRUE;
     }
     if (value != NULL)
         *value = NULL;
@@ -574,37 +549,54 @@ retrieve_rp (radius_parameter *top, const char *name, const char **value)
  * @returns A malloced string with references expanded.
  */
 static char *
-expand_rp (const char *value, radius_parameter *top)
+expand_rp(const char *value, radius_parameter *top)
 {
-    int value_len = strlen(value) + 1;
-    char *new_val = malloc(value_len);
-    char *new_ptr;
-    char *next;
+    size_t  value_len;
+    char   *new_val;
+    char   *new_ptr;
+    char   *next;
 
-    memcpy(new_val, value, value_len);
+    if ((new_val = strdup(value)) == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
+    }
+    value_len = strlen(new_val) + 1;
+
     for (new_ptr = new_val; *new_ptr != '\0'; new_ptr++)
     {
-        if (*new_ptr == '$' && new_ptr[1] == '{' && 
+        if (new_ptr[0] == '$' && new_ptr[1] == '{' && 
             (next = strchr(new_ptr, '}')) != NULL)
         {
             const char *rp_val;
-            int rpv_len;
-            int diff_len;
+            size_t      rpv_len;
+            size_t      diff_len;
 
             *next = '\0';
-            if (!retrieve_rp (top, new_ptr + 2, &rp_val))
+            if (!retrieve_rp(top, new_ptr + 2, &rp_val))
             {
-                ERROR("Undefined RADIUS parameter: %s", new_ptr + 2);
+                ERROR("Undefined RADIUS parameter '%s' in '%s'",
+                      new_ptr + 2, value);
                 continue;
             }
             rpv_len = strlen(rp_val);
             diff_len = rpv_len - (next - new_ptr + 1);
             if (diff_len > 0)
             {
+                size_t  next_ofs = next - new_val;
+                char   *p;
+
                 value_len += diff_len;
                 diff_len = new_ptr - new_val;
-                new_val = realloc(new_val, value_len);
+                if ((p = (char *)realloc(new_val, value_len)) == NULL)
+                {
+                    ERROR("%s(): failed to allocate memory", __FUNCTION__);
+                    free(new_val);
+                    return NULL;
+                }
+                new_val = p;
                 new_ptr = new_val + diff_len;
+                next = new_val + next_ofs;
             }
             memmove(new_ptr + rpv_len, next + 1, strlen(next + 1) + 1);
             memcpy(new_ptr, rp_val, rpv_len);
@@ -630,7 +622,7 @@ mark_rp_changes(radius_parameter *rp)
  * Recursively marks as deleted all descendands of a given node
  */
 static void
-wipe_rp_section (radius_parameter *rp)
+wipe_rp_section(radius_parameter *rp)
 {
     mark_rp_changes(rp);
     for (rp = rp->children; rp != NULL; rp = rp->next)
@@ -659,8 +651,8 @@ wipe_rp_section (radius_parameter *rp)
  * value (which may be encoded in 'name').
  */
 static int
-update_rp (radius_parameter *top, enum radius_parameters kind, 
-           const char *name, const char *value)
+update_rp(radius_parameter *top, enum radius_parameters kind, 
+          const char *name, const char *value)
 {
     radius_parameter *rp = find_rp(top, name, TRUE, TRUE, NULL, NULL);
 
@@ -673,16 +665,14 @@ update_rp (radius_parameter *top, enum radius_parameters kind,
     if (value != NULL)
     {
         free(rp->value);
+        rp->value = NULL;
     }
     if (value == RP_DELETE_VALUE)
     {
         rp->deleted = TRUE;
-        if (rp->kind != RP_SECTION)
-            rp->value = NULL;
-        else
-        {
+        if (rp->kind == RP_SECTION)
             wipe_rp_section(rp);
-        }
+
         VERB("deleted RADIUS parameter %s", name);
     }
     else
@@ -698,6 +688,9 @@ update_rp (radius_parameter *top, enum radius_parameters kind,
 
     return 0;
 }
+
+#ifdef WITH_RADIUS_SERVER
+/* Part 2: FreeRADIUS-specific functions */
 
 /**
  * FreeRADIUS user authentication rules are configured via the separate
@@ -722,6 +715,41 @@ update_rp (radius_parameter *top, enum radius_parameters kind,
  * rules checking function in original code.)
  */
 
+/** Root entry of the tree created from RADIUS configuration file */
+static struct radius_parameter *radius_conf;
+
+/** Temporary FreeRADIUS users file created for TE */
+static FILE *radius_users_file = NULL;
+
+/** Name of temporary FreeRADIUS users file created for TE */
+#define RADIUS_USERS_FILE "/tmp/te_radius_users"
+
+/** An attribute==value pair for RADIUS users file */
+typedef struct radius_attr
+{
+    char               *name;   /**< Attribute name */
+    char               *value;  /**< Attribute value in textual form */
+} radius_attr;
+
+/** A record for a RADIUS user */
+typedef struct radius_user
+{
+    te_bool             reject;
+    char               *name;
+    radius_attr        *checks;
+    unsigned int        n_checks;
+    radius_attr        *accept_replies;
+    unsigned int        n_accept_replies;
+    radius_attr        *challenge_replies;
+    unsigned int        n_challenge_replies;
+    struct radius_user *next;
+} radius_user;
+
+/** Head of the list of FreeRADIUS users */
+static struct radius_user *radius_users;
+
+/** Tail of the list of FreeRADIUS users */
+static struct radius_user *radius_last_user;
 
 /**
  * Creates a RADIUS user record named 'name' and adds it 
@@ -868,7 +896,7 @@ radius_parse_attr_value_pair(const char **string, char **attr, char **value)
         ERROR("%s(): attribute has no value in '%s'", __FUNCTION__, start);
         return TE_EINVAL;
     }
-    if ((*attr = (char *)calloc(p - start, 1)) == NULL)
+    if ((*attr = (char *)calloc(p - start + 1, 1)) == NULL)
     {
         ERROR("%s(): failed to allocate memory", __FUNCTION__);
         return TE_ENOMEM;
@@ -890,7 +918,7 @@ radius_parse_attr_value_pair(const char **string, char **attr, char **value)
         return TE_EINVAL;
     }
 
-    if ((*value = (char *)calloc(len, 1)) == NULL)
+    if ((*value = (char *)calloc(len + 1, 1)) == NULL)
     {
         ERROR("%s(): failed to alocate memory", __FUNCTION__);
         free(*attr);
@@ -920,6 +948,7 @@ radius_set_attr_array(radius_attr **attr_array, unsigned int *attr_array_len,
     unsigned int  n_attrs = 0;
     radius_attr  *attrs = NULL;
 
+    RING("%s('%s')", __FUNCTION__, attr_string);
     while (TRUE)
     {
         char        *name;
@@ -1001,8 +1030,8 @@ stringify_attr_array(char *dest, radius_attr *attr_array,
  * @return TRUE if arrays are equal, FALSE otherwise.
  */
 static te_bool
-radius_compare_attr_array(const radius_attr *attrs1, unsigned int n_attrs1,
-                          const radius_attr *attrs2, unsigned int n_attrs2)
+radius_equal_attr_array(const radius_attr *attrs1, unsigned int n_attrs1,
+                        const radius_attr *attrs2, unsigned int n_attrs2)
 {
     unsigned int i;
 
@@ -1028,20 +1057,20 @@ radius_compare_attr_array(const radius_attr *attrs1, unsigned int n_attrs1,
  * @param n_attrs    Number of items in 'attrs'
  * @param operator   'Operator' string to place between attribute name and
  *                   its value (e.g., operator ':=' gives 'Attribute := Value')
- * @param separator  Additional symbol to place after separating commas
- *                   (usually space or '\n')
+ * @param separator  Additional symbols to place after separating commas
+ *                   (usually space or "\n\t")
  */
 static void
 radius_write_attr_array(FILE *f, const radius_attr *attrs,
                         unsigned int n_attrs,
-                        const char *operator, char separator)
+                        const char *operator, const char *separator)
 {
     unsigned int i;
 
     for (i = 0; i < n_attrs; i++)
     {
         if (i != 0)
-            fprintf(f, ",%c", separator);
+            fprintf(f, ",%s", separator);
 
         fprintf(f, "%s %s %s", attrs[i].name, operator, attrs[i].value);
     }
@@ -1067,40 +1096,46 @@ write_radius_users(FILE *conf)
         }
         else
 #ifdef HAVE_FREERADIUS_UPDATE
-        if (radius_compare_attr_list(user->accept_replies,
-                                     user->n_accept_replies,
-                                     user->challenge_replies,
-                                     user->n_challenge_replies))
+        if (radius_equal_attr_array(user->accept_replies,
+                                    user->n_accept_replies,
+                                    user->challenge_replies,
+                                    user->n_challenge_replies))
 #endif
         {
             /* Common configuration for all replies */
             fprintf(conf, "\"%s\" ", user->name);
             radius_write_attr_array(conf, user->checks,
-                                    user->n_checks, "==", ' ');
-            fputc('\n', conf);
+                                    user->n_checks, "==", " ");
+            fputs("\n\t", conf);
             radius_write_attr_array(conf, user->accept_replies,
-                                    user->n_accept_replies, ":=", '\n');
+                                    user->n_accept_replies, ":=", "\n\t");
             fputs("\n\n", conf);
         }
 #ifdef HAVE_FREERADIUS_UPDATE
         else
         {
+            /* Common part */
+            fprintf(conf, "\"%s\" ", user->name);
+            radius_write_attr_array(conf, user->checks,
+                                    user->n_checks, "==", " ");
+            fputs("\n\tFall-Through = Yes\n\n", conf);
+
             /* Access-Accept configuration */
             fprintf(conf, "\"%s\" ", user->name);
             radius_write_attr_array(conf, user->checks,
-                                    user->n_checks, "==", ' ');
-            fputs(", Response-Packet-Type == Access-Accept\n", conf);
+                                    user->n_checks, "==", " ");
+            fputs(", Response-Packet-Type == Access-Accept\n\t", conf);
             radius_write_attr_array(conf, user->accept_replies,
-                                    user->n_accept_replies, ":=", '\n');
+                                    user->n_accept_replies, ":=", "\n\t");
             fputs("\n\n", conf);
 
             /* Access-Challenge configuration */
             fprintf(conf, "\"%s\" ", user->name);
             radius_write_attr_array(conf, user->checks,
-                                    user->n_checks, "==", ' ');
-            fputs(", Response-Packet-Type == Access-Challenge\n", conf);
+                                    user->n_checks, "==", " ");
+            fputs(", Response-Packet-Type == Access-Challenge\n\t", conf);
             radius_write_attr_array(conf, user->challenge_replies,
-                                    user->n_challenge_replies, ":=", '\n')
+                                    user->n_challenge_replies, ":=", "\n\t");
             fputs("\n\n", conf);
         }
 #endif
@@ -1165,8 +1200,6 @@ ds_radiusserver_get(unsigned int gid, const char *oid,
 {
     UNUSED(oid);
     UNUSED(instance);
-
-    RING("%s() called", __FUNCTION__);
 
     if (radius_daemon == NULL && radiusserver_find_name() != 0)
     {
@@ -1651,7 +1684,6 @@ ds_radiusserver_netaddr_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(instance);
 
-    RING("%s() called", __FUNCTION__);
     retrieve_rp(radius_conf, "listen.ipaddr", &v);
     strcpy(value, *v == '*' ? "0.0.0.0" : v);
     return 0;
@@ -1746,8 +1778,191 @@ RCF_PCH_CFG_NODE_RW(node_ds_radiusserver, "radiusserver",
                     &node_ds_radiusserver_auth_port, NULL,
                     ds_radiusserver_get, ds_radiusserver_set);
 
-static supplicant *supplicant_list;
+/** The list of parameters that must be deleted on startup */
+const char *radius_ignored_params[] = {"bind_address", 
+                                       "port", 
+                                       "listen",
+                                       "client",
+                                       "modules",
+                                       "instantiate",
+                                       "authorize",
+                                       "authenticate",
+                                       "preacct",
+                                       "accounting",
+                                       "session",
+                                       "post-auth",
+                                       "pre-proxy",
+                                       "post-proxy",
+                                       NULL
+};
 
+/** The list of pairs attribute, value that must be set on startup.
+ *  Use RP_DEFAULT_EMPTY_SECTION to create an empty section
+ */ 
+const char *radius_predefined_params[] = {
+    "listen(#auth).type", "auth",
+    "listen(#auth).ipaddr", "*",
+    "listen(#acct).type", "acct",
+    "listen(#acct).ipaddr", "*",
+    "modules.pap.encryption_scheme", "crypt",
+    "modules.chap.authtype", "chap",
+    "modules.files.usersfile", RADIUS_USERS_FILE,
+    "modules.eap.default_eap_type", "md5",
+    "modules.eap.md5", RP_DEFAULT_EMPTY_SECTION,
+    "modules.eap.gtc.auth_type", "PAP",
+    "modules.eap.mschapv2", RP_DEFAULT_EMPTY_SECTION,
+    "modules.mschap.authtype", "MS-CHAP",
+    "modules.realm(suffix).format", "suffix",
+    "modules.realm(suffix).delimiter", "\"@\"",
+    "modules.realm(suffix).ignore_default", "no",
+    "modules.realm(suffix).ignore_null", "no",
+    "modules.detail.detailfile", "${radacctdir}/%{Client-IP-Address}/detail-%Y%m%d",
+    "modules.detail.detailperm", "0600",
+    "modules.acct_unique.key", "\"User-Name, Acct-Session-Id, NAS-IP-Address, Client-IP-Address, NAS-Port\"",
+
+    "preacct.acct_unique", NULL,
+    "accounting.detail", NULL,
+        
+    "authorize.chap", NULL,
+    "authorize.mschap", NULL,
+    "authorize.eap", NULL,
+    "authorize.files", NULL,
+    "authenticate.Auth-Type(PAP).pap", NULL,
+    "authenticate.Auth-Type(CHAP).chap", NULL,
+    "authenticate.Auth-Type(MS-CHAP).mschap", NULL,
+    "authenticate.eap", NULL,
+#ifdef HAVE_FREERADIUS_UPDATE
+    "post-auth.files", NULL,    /* Patched FreeRADIUS is required */
+#endif
+    NULL, NULL
+};
+
+static te_bool
+rp_delete_all(radius_parameter *rp, void *extra)
+{
+    UNUSED(extra);
+
+    INFO("Wiping out RADIUS parameter %s %s", rp->name, 
+         rp->value == NULL ? "" : rp->value);
+    if (rp->kind != RP_SECTION && rp->value != NULL)
+    {
+        free(rp->value);
+        rp->value = NULL;
+    }
+    rp->deleted = TRUE;
+    if (rp->kind == RP_SECTION)
+        wipe_rp_section(rp);
+    mark_rp_changes(rp);
+    return FALSE;
+}
+
+/**
+ * Initializes support for RADIUS server.
+ * - The config files are read and parsed
+ * - Ignored and defaulted parameters are processed
+ * - RP_RADIUS_USERS_FILE is created and opened
+ */
+te_errno 
+radiusserver_grab(const char *name)
+{
+    const char **param;
+    te_errno     rc;
+
+    UNUSED(name);
+
+    if ((rc = rcf_pch_add_node("/agent", &node_ds_radiusserver)) != 0)
+        return rc;
+
+    if (file_exists("/etc/raddb/radiusd.conf"))
+        radius_conf = read_radius_file("/etc/raddb/radiusd.conf", NULL);
+    else if (file_exists("/etc/freeradius/radiusd.conf"))
+        radius_conf = read_radius_file("/etc/freeradius/radiusd.conf", NULL);
+    else
+    {
+        ERROR("No RADIUS config found");
+        rcf_pch_del_node(&node_ds_radiusserver);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    for (param = radius_ignored_params; *param != NULL; param++)
+    {
+        find_rp(radius_conf, *param, FALSE, FALSE, rp_delete_all, NULL);
+    }
+    for (param = radius_predefined_params; *param != NULL; param += 2)
+    {
+        update_rp(radius_conf, param[1] == NULL ? RP_FLAG :
+                  (param[1] == RP_DEFAULT_EMPTY_SECTION ? RP_SECTION : 
+                   RP_ATTRIBUTE), *param,
+                  param[1] == RP_DEFAULT_EMPTY_SECTION ? NULL : param[1]);
+    }
+    write_radius(radius_conf);
+    {
+        int fd = creat(RADIUS_USERS_FILE, S_IRUSR | S_IROTH | S_IWUSR);
+        
+        RING("Open %s, fd=%d", RADIUS_USERS_FILE, fd);
+        if (fd < 0)
+        {
+            ERROR("Unable to create " RADIUS_USERS_FILE ", %s", strerror(errno));
+        }
+        else
+        {
+            RING("Reopen fd %d", fd);
+            radius_users_file = fdopen(fd, "w");
+            if (radius_users_file == NULL)
+            {
+                close(fd);
+                ERROR("cannot reopen " RADIUS_USERS_FILE ", %s", strerror(errno));
+            }
+        }
+    }
+    return 0;
+}
+
+/**
+ * Release '/agent/radiusserver' resource
+ *
+ * @param name    Name of resource (unused)
+ */
+te_errno
+radiusserver_release(const char *name)
+{
+    UNUSED(name);
+
+    rcf_pch_del_node(&node_ds_radiusserver);
+    if (radius_users_file != NULL)
+    {
+        fclose(radius_users_file);
+        remove(RADIUS_USERS_FILE);
+        radius_users_file = NULL;
+    }
+
+    return 0;
+}
+#endif /* WITH_RADIUS_SERVER */
+
+#ifdef ENABLE_8021X
+/* Part 3: Supplicant-specific functions */
+
+/** A supplicant <-> interface correspondence */
+typedef struct supplicant
+{
+    char              *ifname;     /**< interface name */
+    te_bool            started;    /**< Supplicant was started and
+                                        is supposed to be running */
+    radius_parameter  *config;     /**< Supplicant config tree */
+    struct supplicant *next;       /**< chain link */
+} supplicant;
+
+/** List of all available supplicants */
+static supplicant *supplicant_list = NULL;
+
+/**
+ * Create new supplicant structure for the interface
+ *
+ * @param ifname   Name of interface to create supplicant at
+ *
+ * @return Pointer to new supplicant structure, or NULL if creation failed.
+ */
 static supplicant *
 make_supplicant(const char *ifname)
 {
@@ -1773,6 +1988,12 @@ make_supplicant(const char *ifname)
     update_rp(ns->config, RP_ATTRIBUTE, "logfile", "/tmp/te_supp.log");
     update_rp(ns->config, RP_SECTION, "tester", NULL);
     update_rp(ns->config, RP_ATTRIBUTE, "tester.allow_types", "all");
+
+    /* Set default value for all available methods */
+    update_rp(ns->config, RP_SECTION, "tester.eap-md5", NULL);
+    update_rp(ns->config, RP_ATTRIBUTE, "tester.eap-md5.username", "\"\"");
+    update_rp(ns->config, RP_ATTRIBUTE, "tester.eap-md5.password", "\"\"");
+
     write_radius(ns->config);
 
     ns->next = supplicant_list;
@@ -1781,6 +2002,15 @@ make_supplicant(const char *ifname)
     return ns;
 }
 
+/**
+ * Find the supplicant for specified interface in the list of available
+ * supplicants
+ *
+ * @param ifname  Name of interface to find
+ *
+ * @return Pointer to supplicant structure or NULL if there is no supplicant
+ *         configured at the specified interface.
+ */
 static supplicant *
 find_supplicant(const char *ifname)
 {
@@ -1963,7 +2193,10 @@ ds_supplicant_get(unsigned int gid, const char *oid,
     UNUSED(oid);
 
     if ((supp = find_supplicant(instance)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    {
+        if ((supp = make_supplicant(instance)) == NULL)
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
 
     if (xsupplicant_get(supp->ifname))
         strcpy(value, "1");
@@ -2002,101 +2235,21 @@ ds_supplicant_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static te_errno
-ds_supplicant_add(unsigned int gid, const char *oid,
-                  const char *value, const char *instance, ...)
-{
-    if (find_supplicant(instance) != NULL)
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-
-    if (make_supplicant(instance) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    if (*value == '1')
-    {
-        RING("Adding supplicant for %s in started state", instance);
-        return ds_supplicant_set(gid, oid, value, instance);
-    }
-    else
-        return 0;
-}
-
-static te_errno
-ds_supplicant_del(unsigned int gid, const char *oid,
-                  const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    supplicant *supp = find_supplicant(instance);
-    supplicant *prev = NULL;
-    supplicant *iter;
-
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    for (iter = supplicant_list; iter != NULL; prev = iter, iter = iter->next)
-    {
-        if (supp == iter)
-            break;
-    }
-    if (iter != NULL)
-    {
-        if (iter->started)
-            xsupplicant_stop(iter->ifname);
-
-        destroy_rp(iter->config);
-        free(iter->ifname);
-        if (prev != NULL)
-            prev->next = iter->next;
-        else
-            supplicant_list = iter->next;
-        free(iter);
-    }
-    return 0;
-}
-
-
-static te_errno
-ds_supplicant_list(unsigned int gid, const char *oid,
-                   char **value, const char *instance, ...)
-{
-    supplicant *iter;
-    int         length = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    for (iter = supplicant_list; iter != NULL; iter = iter->next)
-    {
-        length += strlen(iter->ifname) + 1;
-    }
-    if ((*value = malloc(length + 1)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    **value = '\0';
-    for (iter = supplicant_list; iter != NULL; iter = iter->next)
-    {
-        strcat(*value, iter->ifname);
-        strcat(*value, " ");
-    }
-    return 0;
-}
-
+/* Temporary buffers for string operations */
 static char supplicant_buffer[256];
 static char supplicant_buffer2[256];
 
 static te_errno
 ds_supp_method_username_set(unsigned int gid, const char *oid,
                             const char *value, const char *instance, 
-                            const char *method, ...)
+                            const char *supp_inst, const char *method, ...)
 {
     supplicant *supp = find_supplicant(instance);
     int rc;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(supp_inst);
 
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2117,6 +2270,7 @@ ds_supp_method_username_set(unsigned int gid, const char *oid,
 
 /**
  * Copy null-terminated string with removing enclosing quotes if they exist
+ * (e.g. from strings "text" or "\"text\"" we get "text" in both cases)
  *
  * @param src   Source string
  * @param dst   Destination string
@@ -2142,13 +2296,14 @@ strcpy_dequote(char *dst, const char *src)
 static te_errno
 ds_supp_method_username_get(unsigned int gid, const char *oid,
                             char *value, const char *instance, 
-                            const char *method, ...)
+                            const char *supp_inst, const char *method, ...)
 {
     supplicant *supp = find_supplicant(instance);
     const char *username;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(supp_inst);
 
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2168,13 +2323,14 @@ ds_supp_method_username_get(unsigned int gid, const char *oid,
 static te_errno
 ds_supp_method_passwd_set(unsigned int gid, const char *oid,
                           const char *value, const char *instance, 
-                          const char *method, ...)
+                          const char *supp_inst, const char *method, ...)
 {
     supplicant *supp = find_supplicant(instance);
     int rc;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(supp_inst);
 
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2195,13 +2351,14 @@ ds_supp_method_passwd_set(unsigned int gid, const char *oid,
 static te_errno
 ds_supp_method_passwd_get(unsigned int gid, const char *oid,
                           char *value, const char *instance, 
-                          const char *method, ...)
+                          const char *supp_inst, const char *method, ...)
 {
     supplicant *supp = find_supplicant(instance);
     const char *password;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(supp_inst);
 
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2248,7 +2405,7 @@ ds_supplicant_cur_method_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     retrieve_rp(supp->config, "tester.allow_types", &type);
 
-    if (type == NULL)
+    if (type == NULL || strcmp(type, "all") == 0)
         *value = '\0';
     else
         strcpy(value, type);
@@ -2353,183 +2510,93 @@ static rcf_pch_cfg_object node_ds_supplicant = {
     &node_ds_supplicant_identity, NULL,
     (rcf_ch_cfg_get)ds_supplicant_get,
     (rcf_ch_cfg_set)ds_supplicant_set,
-    (rcf_ch_cfg_add)ds_supplicant_add,
-    (rcf_ch_cfg_del)ds_supplicant_del,
-    ds_supplicant_list,
+    NULL, /*(rcf_ch_cfg_add)ds_supplicant_add,*/
+    NULL, /*(rcf_ch_cfg_del)ds_supplicant_del,*/
+    NULL, /*ds_supplicant_list,*/
     NULL, NULL
 };
 
-
-/** The list of parameters that must be deleted on startup */
-const char *radius_ignored_params[] = {"bind_address", 
-                                       "port", 
-                                       "listen",
-                                       "client",
-                                       "modules",
-                                       "instantiate",
-                                       "authorize",
-                                       "authenticate",
-                                       "preacct",
-                                       "accounting",
-                                       "session",
-                                       "post-auth",
-                                       "pre-proxy",
-                                       "post-proxy",
-                                       NULL
-};
-
-#define RP_DEFAULT_EMPTY_SECTION ((const char *)-1)
-
-#define RADIUS_USERS_FILE "/tmp/te_radius_users"
-
-/** The list of pairs attribute, value that must be set on startup.
- *  Use RP_DEFAULT_EMPTY_SECTION to create an empty section
- */ 
-const char *radius_predefined_params[] = {
-    "listen(#auth).type", "auth",
-    "listen(#auth).ipaddr", "*",
-    "listen(#acct).type", "acct",
-    "listen(#acct).ipaddr", "*",
-    "modules.pap.encryption_scheme", "crypt",
-    "modules.chap.authtype", "chap",
-    "modules.files.usersfile", RADIUS_USERS_FILE,
-    "modules.eap.default_eap_type", "md5",
-    "modules.eap.md5", RP_DEFAULT_EMPTY_SECTION,
-    "modules.eap.gtc.auth_type", "PAP",
-    "modules.eap.mschapv2", RP_DEFAULT_EMPTY_SECTION,
-    "modules.mschap.authtype", "MS-CHAP",
-    "modules.realm(suffix).format", "suffix",
-    "modules.realm(suffix).delimiter", "\"@\"",
-    "modules.realm(suffix).ignore_default", "no",
-    "modules.realm(suffix).ignore_null", "no",
-    "modules.detail.detailfile", "${radacctdir}/%{Client-IP-Address}/detail-%Y%m%d",
-    "modules.detail.detailperm", "0600",
-    "modules.acct_unique.key", "\"User-Name, Acct-Session-Id, NAS-IP-Address, Client-IP-Address, NAS-Port\"",
-
-    "preacct.acct_unique", NULL,
-    "accounting.detail", NULL,
-        
-    "authorize.chap", NULL,
-    "authorize.mschap", NULL,
-    "authorize.eap", NULL,
-    "authorize.files", NULL,
-    "authenticate.Auth-Type(PAP).pap", NULL,
-    "authenticate.Auth-Type(CHAP).chap", NULL,
-    "authenticate.Auth-Type(MS-CHAP).mschap", NULL,
-    "authenticate.eap", NULL,
-#if 1
-    "post-auth.files", NULL,    /* Patched FreeRADIUS is required */
-#endif
-    NULL, NULL
-};
-
-static te_bool
-rp_delete_all(radius_parameter *rp, void *extra)
+te_errno
+ta_unix_conf_supplicant_init()
 {
-    UNUSED(extra);
-
-    INFO("Wiping out RADIUS parameter %s %s", rp->name, 
-         rp->value == NULL ? "" : rp->value);
-    if (rp->kind != RP_SECTION && rp->value != NULL)
-    {
-        free(rp->value);
-        rp->value = NULL;
-    }
-    rp->deleted = TRUE;
-    if (rp->kind == RP_SECTION)
-        wipe_rp_section(rp);
-    mark_rp_changes(rp);
-    return FALSE;
+    return rcf_pch_add_node("/agent/interface", &node_ds_supplicant);
 }
 
 /**
- * Initializes support for RADIUS server.
- * - The config files are read and parsed
- * - Ignored and defaulted parameters are processed
- * - RP_RADIUS_USERS_FILE is created and opened
+ * Get the name of interface from the name of interface resource
+ * e.g. "/agent:Agt_A/interface:eth0" -> "eth0"
+ *
+ * @param name  Name of interface resource
+ *
+ * @return Name of interface.
  */
-te_errno 
-radiusserver_grab(const char *name)
+const char *
+supplicant_get_name(const char *name)
 {
-    const char **ignored;
-    const char **defaulted;
-    
-    te_errno rc;
-    
-    UNUSED(name);
+    const char *instance = strrchr(name, ':');
 
-    /* Supplicant is not dependent on presence of RADIUS server */
-    rc = rcf_pch_add_node("/agent", &node_ds_supplicant);
-    RING("Supplicant registering rc %d", rc);
+    if (instance == NULL || *instance == '\0')
+    {
+        ERROR("%s(): invalid interface resource name '%s'",
+              __FUNCTION__, name);
+        return NULL;
+    }
+    return instance + 1;
+}
 
-    RING("Initializing RADIUS");
-    if ((rc = rcf_pch_add_node("/agent", &node_ds_radiusserver)) != 0)
-        return rc;
+te_errno
+supplicant_grab(const char *name)
+{
+    const char *instance = supplicant_get_name(name);
 
-    if (file_exists("/etc/raddb/radiusd.conf"))
-        radius_conf = read_radius_file("/etc/raddb/radiusd.conf", NULL);
-    else if (file_exists("/etc/freeradius/radiusd.conf"))
-        radius_conf = read_radius_file("/etc/freeradius/radiusd.conf", NULL);
-    else
-    {
-        ERROR("No RADIUS config found");
-        rcf_pch_del_node(&node_ds_radiusserver);
-        /*
-         * Temporary solution - we have to split up
-         * Supplicant & RADIUS Server!
-         */
-        return 0;
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
+    if (instance == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    RING("%s('%s') at '%s'", __FUNCTION__, name, instance);
 
-    for (ignored = radius_ignored_params; *ignored != NULL; ignored++)
-    {
-        find_rp(radius_conf, *ignored, FALSE, FALSE, rp_delete_all, NULL);
-    }
-    for (defaulted = radius_predefined_params; *defaulted != NULL; defaulted += 2)
-    {
-        update_rp(radius_conf, defaulted[1] == NULL ? RP_FLAG :
-                  (defaulted[1] == RP_DEFAULT_EMPTY_SECTION ? RP_SECTION : 
-                   RP_ATTRIBUTE), *defaulted, 
-                  defaulted[1] == RP_DEFAULT_EMPTY_SECTION ? NULL : defaulted[1]);
-    }
-    write_radius(radius_conf);
-    {
-        int fd = creat(RADIUS_USERS_FILE, S_IRUSR | S_IROTH | S_IWUSR);
-        
-        RING("Open %s, fd=%d", RADIUS_USERS_FILE, fd);
-        if (fd < 0)
-        {
-            ERROR("Unable to create " RADIUS_USERS_FILE ", %s", strerror(errno));
-        }
-        else
-        {
-            RING("Reopen fd %d", fd);
-            radius_users_file = fdopen(fd, "w");
-            if (radius_users_file == NULL)
-            {
-                close(fd);
-                ERROR("cannot reopen " RADIUS_USERS_FILE ", %s", strerror(errno));
-            }
-        }
-    }
+    if (find_supplicant(instance) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+    if (make_supplicant(instance) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
     return 0;
 }
 
 te_errno
-radiusserver_release(const char *name)
+supplicant_release(const char *name)
 {
-    UNUSED(name);
+    const char *instance = supplicant_get_name(name);
+    supplicant *supp;
+    supplicant *prev = NULL;
+    supplicant *iter;
 
-    rcf_pch_del_node(&node_ds_radiusserver);
-    if (radius_users_file != NULL)
+    if (instance == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    supp = find_supplicant(instance);
+    if (supp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    for (iter = supplicant_list; iter != NULL; prev = iter, iter = iter->next)
     {
-        fclose(radius_users_file);
-        remove(RADIUS_USERS_FILE);
+        if (supp == iter)
+            break;
     }
-    rcf_pch_del_node(&node_ds_supplicant);
+    if (iter != NULL)
+    {
+        if (prev != NULL)
+            prev->next = iter->next;
+        else
+            supplicant_list = iter->next;
+    }
+
+    if (supp->started)
+        xsupplicant_stop(supp->ifname);
+
+    destroy_rp(supp->config);
+    free(supp->ifname);
+    free(supp);
 
     return 0;
 }
-
-#endif /* ! WITH_RADIUS_SERVER */
+#endif

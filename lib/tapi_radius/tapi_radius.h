@@ -43,7 +43,7 @@
 #include "te_defs.h"
 #include "tad_common.h"
 #include "tapi_tad.h"
-
+#include "conf_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -681,6 +681,23 @@ typedef struct tapi_supp_auth_md5_info_s {
 } tapi_supp_auth_md5_info_t;
 
 /**
+ * Enable/disable supplicant at specified interface
+ *
+ * @param ta_name   Name of TA where supplicant resides
+ * @param if_name   Name of interface which is controlled by supplicant
+ * @param value     Required supplicant state (0 to disable, 1 to enable)
+ * 
+ * @return Status of the operation.
+ */
+static inline te_errno
+tapi_supp_set(const char *ta_name, const char *if_name, int value)
+{
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
+                                "/agent:%s/interface:%s/supplicant:",
+                                ta_name, if_name);
+}
+
+/**
  * Configure supplicant to use EAP-MD5 authentication and set
  * MD5-specific parameters on the Agent.
  *
@@ -690,9 +707,9 @@ typedef struct tapi_supp_auth_md5_info_s {
  *
  * @return Status of the operation
  */
-extern int tapi_supp_set_md5(const char *ta_name,
-                             const char *if_name,
-                             tapi_supp_auth_md5_info_t *info);
+extern te_errno tapi_supp_set_md5(const char *ta_name,
+                                  const char *if_name,
+                                  tapi_supp_auth_md5_info_t *info);
 
 /**
  * Configure supplicant to use specific EAP identity string.
@@ -703,8 +720,25 @@ extern int tapi_supp_set_md5(const char *ta_name,
  *
  * @return Status of the operation
  */
-extern int tapi_supp_set_identity(const char *ta_name, const char *if_name,
-                                  const char *identity);
+static inline te_errno
+tapi_supp_set_identity(const char *ta_name, const char *if_name,
+                       const char *identity)
+{
+    return cfg_set_instance_fmt(CFG_VAL(STRING, identity),
+                                "/agent:%s/interface:%s/supplicant:/identity:",
+                                ta_name, if_name);
+}
+
+/**
+ * Reset supplicant parameters to default values
+ *
+ * @param ta_name  Test Agent name where supplicant reside
+ * @param if_name  Interface name
+ *
+ * @return Status of the operation.
+ */
+extern te_errno tapi_supp_reset(const char *ta_name, const char *if_name);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

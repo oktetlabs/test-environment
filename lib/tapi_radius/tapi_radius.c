@@ -31,7 +31,6 @@
 
 #include "tapi_radius.h"
 #include "tapi_udp.h"
-#include "conf_api.h"
 #include "logger_api.h"
 #include "te_errno.h"
 #include "asn_usr.h"
@@ -960,38 +959,59 @@ tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
 
 /* Supplicant related functions @todo Should not be here */
 
-int
-tapi_supp_set_identity(const char *ta_name, const char *if_name,
-                       const char *identity)
-{
-    return cfg_set_instance_fmt(CFG_VAL(STRING, identity),
-                                "/agent:%s/supplicant:%s/identity:",
-                                ta_name, if_name);
-}
-
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_supp_set_md5(const char *ta_name, const char *if_name,
                   tapi_supp_auth_md5_info_t *info)
 {
-    int        rc;
+    te_errno rc;
+    char     supp_oid[128];
+
+    snprintf(supp_oid, sizeof(supp_oid),
+             "/agent:%s/interface:%s/supplicant:", ta_name, if_name);
 
     /* Set MD5 related parameters */
     rc = cfg_set_instance_fmt(CFG_VAL(STRING, info->user),
-                              "/agent:%s/supplicant:%s/method:%s/username:",
-                              ta_name, if_name, "eap-md5");
+                    "%s/method:eap-md5/username:", supp_oid);
     if (rc != 0)
         return rc;
 
     rc = cfg_set_instance_fmt(CFG_VAL(STRING, info->passwd),
-                              "/agent:%s/supplicant:%s/method:%s/passwd:",
-                              ta_name, if_name, "eap-md5");
+                    "%s/method:eap-md5/passwd:", supp_oid);
     if (rc != 0)
         return rc;
 
     /* Now set current authentication method to MD5 */
     rc = cfg_set_instance_fmt(CFG_VAL(STRING, "eap-md5"),
-                              "/agent:%s/supplicant:%s/cur_method:",
-                              ta_name, if_name);
+                    "%s/cur_method:", supp_oid);
+    return rc;
+}
+
+te_errno
+tapi_supp_reset(const char *ta_name, const char *if_name)
+{
+    te_errno rc;
+    char     supp_oid[128];
+
+    snprintf(supp_oid, sizeof(supp_oid),
+             "/agent:%s/interface:%s/supplicant:", ta_name, if_name);
+
+    /* Common parameters */
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""), "%s/identity:", supp_oid);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""), "%s/cur_method:", supp_oid);
+    if (rc != 0)
+        return rc;
+
+    /* Method-specific parameters */
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""),
+                              "%s/method:eap-md5/username:", supp_oid);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""),
+                              "%s/method:eap-md5/passwd:", supp_oid);
     return rc;
 }

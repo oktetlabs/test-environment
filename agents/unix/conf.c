@@ -129,6 +129,11 @@
 
 #undef NEIGH_USE_NETLINK
 
+#ifdef ENABLE_8021X
+extern te_errno ta_unix_conf_supplicant_init();
+extern te_errno supplicant_grab(const char *name);
+extern te_errno supplicant_release(const char *name);
+#endif
 
 #ifdef ENABLE_WIFI_SUPPORT
 extern te_errno ta_unix_conf_wifi_init();
@@ -402,6 +407,22 @@ RCF_PCH_CFG_NODE_AGENT(node_agent, &node_user);
 
 static te_bool init = FALSE;
 
+#ifdef ENABLE_8021X
+/** Grab interface-specific resources */
+static te_errno
+interface_grab(const char *name)
+{
+    return supplicant_grab(name);
+}
+
+/** Release interface-specific resources */
+static te_errno
+interface_release(const char *name)
+{
+    return supplicant_release(name);
+}
+#endif
+
 /**
  * Get root of the tree of supported objects.
  *
@@ -438,9 +459,15 @@ rcf_ch_conf_root(void)
 
         init = TRUE;
 
+#ifdef ENABLE_8021X
+        rcf_pch_rsrc_info("/agent/interface", 
+                          interface_grab,
+                          interface_release);
+#else
         rcf_pch_rsrc_info("/agent/interface", 
                           rcf_pch_rsrc_grab_dummy,
                           rcf_pch_rsrc_release_dummy);
+#endif
 
         rcf_pch_rsrc_info("/agent/ip4_fw", 
                           rcf_pch_rsrc_grab_dummy,
@@ -473,6 +500,10 @@ rcf_ch_conf_root(void)
 #endif        
 #ifdef ENABLE_WIFI_SUPPORT
         if (ta_unix_conf_wifi_init() != 0)
+            return NULL;
+#endif
+#ifdef ENABLE_8021X
+        if (ta_unix_conf_supplicant_init() != 0)
             return NULL;
 #endif
 

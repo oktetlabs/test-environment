@@ -62,6 +62,18 @@ fi
 
 AM_CONDITIONAL([CFG_UNIX_WIFI], test x"$ac_cv_enable_wifi" != xno)
 
+AC_ARG_ENABLE([8021x],
+              AS_HELP_STRING([--enable-8021x],
+                             [enable IEEE802.1x support (default is NO)]),
+              [ac_cv_enable_8021x=$enableval], [ac_cv_enable_8021x=no])
+AC_CACHE_CHECK([whether to enable 802.1x],
+               [ac_cv_enable_8021x], [ac_cv_enable_8021x=no])
+
+if test x"$ac_cv_enable_8021x" != xno
+then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DENABLE_8021X"
+fi
+
 if test -z "$with_tad" ; then
     with_tad=tad
 fi
@@ -174,12 +186,12 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_NAMED,
     [expr "$with_cfg_unix_daemons" : ".*dns" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_ISC_DHCP_SERVER,
     [expr "$with_cfg_unix_daemons" : ".*dhcp" >/dev/null])
-AM_CONDITIONAL(CFG_UNIX_DAEMONS_RADIUS_SERVER,
-    [expr "$with_cfg_unix_daemons" : ".*radius" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_VTUND, 
     [expr "$with_cfg_unix_daemons" : ".*vtund" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
-
+AM_CONDITIONAL([CFG_UNIX_AUTH],
+    [test x"$ac_cv_enable_8021x" != xno ||
+     expr "$with_cfg_unix_daemons" : ".*radius" >/dev/null])
 AM_CONDITIONAL(ISCSI_TARGET_USE, test -n "$with_iscsi")
 
 
