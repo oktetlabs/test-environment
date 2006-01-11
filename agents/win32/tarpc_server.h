@@ -31,9 +31,6 @@
 #ifndef __TARPC_SERVER_H__
 #define __TARPC_SERVER_H__
 
-#include "config.h"
-#include "te_config.h"
-
 #include <winsock2.h>
 #include <winerror.h>
 #include <mswsock.h>
@@ -41,14 +38,6 @@
 #define _SYS_SOCKET_H
 #define _NETINET_IN_H
 #include "tarpc.h"
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <string.h>
-#include <fcntl.h>
-#include <pwd.h>
 
 #ifdef _WINSOCK_H
 struct timezone {
@@ -63,8 +52,6 @@ struct timezone {
 #include "te_errno.h"
 #include "rcf_pch.h"
 #include "logger_api.h"
-#include "logfork.h"
-#include "rcf_ch_api.h"
 #include "rcf_rpc_defs.h"
 #include "te_rpc_types.h"
 

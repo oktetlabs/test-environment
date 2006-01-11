@@ -30,7 +30,6 @@
 
 #include "tarpc_server.h"
 
-extern sigset_t rpcs_received_signals;
 extern HINSTANCE ta_hinstance;
 
 LPFN_CONNECTEX            pf_connect_ex;
@@ -214,17 +213,25 @@ _create_process_1_svc(tarpc_create_process_in *in,
                       tarpc_create_process_out *out,
                       struct svc_req *rqstp)
 {
+    char cmdline[256];
+    
+    PROCESS_INFORMATION info;
+    
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
     
-    out->pid = fork();
-
-    if (out->pid == 0)
+    TE_SPRINTF(cmdline, "%s rpc_server %s", GetCommandLine(), 
+               in->name.name_val);
+    
+    if (!CreateProcess(NULL, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
+                       NULL, &info))
     {
-        rcf_pch_detach();
-        rcf_pch_rpc_server(in->name.name_val);
-        exit(EXIT_FAILURE);
+        ERROR("CreateProcess() failed with error %d", GetLastError());
+        out->pid= -1;
+        return TRUE;
     }
+    
+    out->pid = info.dwProcessId;
     
     return TRUE;
 }
@@ -262,131 +269,6 @@ _thread_cancel_1_svc(tarpc_thread_cancel_in *in,
 
     return TRUE;
 }
-
-/**
- * Check, if some signals were received by the RPC server (as a process)
- * and return the mask of received signals.
- */
-
-bool_t
-_sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
-                   struct svc_req *rqstp)
-{
-    static rcf_pch_mem_id id = 0;
-    
-    UNUSED(in);
-    UNUSED(rqstp);
-    memset(out, 0, sizeof(*out));
-    
-    if (id == 0)
-        id = rcf_pch_mem_alloc(&rpcs_received_signals);
-    out->set = id;
-
-    return TRUE;
-}
-
-/*-------------- signal() --------------------------------*/
-
-/**
- * Find the pointer to function by its name in table.
- * Try to convert string to long int and cast it to the pointer
- * in the case if function is implemented as a static one.
- *
- * @param name  function name (or pointer value converted to string)
- * @param handler returned pointer to function or NULL if error
- *
- * @return errno if error or 0
- */
-static int
-name2handler(const char *name, void **handler)
-{
-    if (name == NULL || *name == 0)
-    {
-        *handler = NULL;
-        return 0;
-    } 
-
-    *handler = rcf_ch_symbol_addr(name, 1);
-    if (*handler == NULL)
-    {
-        char *tmp;
-        int   id;
-        
-        id = strtol(name, &tmp, 10);
-        if (tmp == name || *tmp != 0)
-            return TE_RC(TE_TA_UNIX, TE_ENOENT);
-            
-        *handler = rcf_pch_mem_get(id);
-    }
-    return 0;
-}
-
-/**
- * Find the function name in table according to pointer to one.
- * Try to convert pointer value to string in the case if function
- * is implemented as a static one.
- *
- * @param handler  pointer to function
- *
- * @return Allocated name or NULL in the case of memory allocation failure
- */
-static char *
-handler2name(void *handler)
-{
-    char *tmp;
-
-    if (handler == NULL)
-        tmp = strdup("0");
-    else if ((tmp = rcf_ch_symbol_name(handler)) != NULL)
-        tmp = strdup(tmp);
-    else if ((tmp = calloc(1, 16)) != NULL)
-    {
-        int id = rcf_pch_mem_get_id(handler);
-        
-        if (id == 0)
-            id = rcf_pch_mem_alloc(handler);
-
-        sprintf(tmp, "%d", id);
-    }
-    
-    if (tmp == NULL)
-    {
-        ERROR("Out of memory");
-        return strdup("");
-    }
-
-    return tmp;
-}
-
-
-typedef void (*sighandler_t)(int);
-
-/*-------------- signal() --------------------------------*/
-
-TARPC_FUNC(signal,
-{
-    if (in->signum == RPC_SIGINT)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
-        return TRUE;
-    }
-},
-{
-    sighandler_t handler;
-    int          signum = signum_rpc2h(in->signum);
-    
-    if ((out->common._errno = name2handler(in->handler, 
-                                           (void **)&handler)) == 0)
-    {
-        void *old_handler;
-        
-        MAKE_CALL(old_handler = (void *)signal(signum, handler));
-        
-        if (old_handler != SIG_ERR)
-            out->handler = handler2name(old_handler);
-    }
-}
-)
 
 /*-------------- socket() ------------------------------*/
 
@@ -1883,63 +1765,6 @@ TARPC_FUNC(gethostbyaddr, {},
 }
 )
 
-/*-------------- getpwnam() --------------------------------*/
-#define PUT_STR(_field) \
-        do {                                                            \
-            out->passwd._field._field##_val = strdup(pw->pw_##_field);  \
-            if (out->passwd._field._field##_val == NULL)                \
-            {                                                           \
-                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);     \
-                goto finish;                                            \
-            }                                                           \
-            out->passwd._field._field##_len =                           \
-                strlen(out->passwd._field._field##_val) + 1;            \
-        } while (0)
-TARPC_FUNC(getpwnam, {}, 
-{ 
-    struct passwd *pw;
-    
-    MAKE_CALL(pw = getpwnam(in->name.name_val));
-    
-    if (pw != NULL)
-    {
-            
-        PUT_STR(name);
-        PUT_STR(passwd);
-        out->passwd.uid = pw->pw_uid;
-        out->passwd.gid = pw->pw_gid;
-        PUT_STR(gecos);
-        PUT_STR(dir);
-        PUT_STR(shell);
-
-    } 
-    finish:
-    if (out->common._errno != 0)
-    {
-        free(out->passwd.name.name_val);
-        free(out->passwd.passwd.passwd_val);
-        free(out->passwd.gecos.gecos_val);
-        free(out->passwd.dir.dir_val);
-        free(out->passwd.shell.shell_val);
-        memset(&(out->passwd), 0, sizeof(out->passwd));
-    }
-    ;
-}
-)
-#undef PUT_STR
-
-/*-------------- getuid() --------------------------------*/
-TARPC_FUNC(getuid, {}, { MAKE_CALL(out->uid = getuid()); })
-
-/*-------------- geteuid() --------------------------------*/
-TARPC_FUNC(geteuid, {}, { MAKE_CALL(out->uid = geteuid()); })
-
-/*-------------- setuid() --------------------------------*/
-TARPC_FUNC(setuid, {}, { MAKE_CALL(out->retval = setuid(in->uid)); })
-
-/*-------------- seteuid() --------------------------------*/
-TARPC_FUNC(seteuid, {}, { MAKE_CALL(out->retval = seteuid(in->uid)); })
-
 /*-------------- simple_sender() -----------------------------*/
 /**
  * Simple sender.
@@ -2555,209 +2380,6 @@ TARPC_FUNC(echoer, {},
 }
 )
 
-/*-------------- socket_to_file() ----------------------------*/
-#define SOCK2FILE_BUF_LEN  4096
-
-/**
- * Routine which receives data from socket and write data
- * to specified path.
- *
- * @return -1 in the case of failure or some positive value in other cases
- */
-int
-socket_to_file(tarpc_socket_to_file_in *in)
-{
-    int      sock = in->sock;
-    char    *path = in->path.path_val;
-    long     time2run = in->timeout;
-
-    int      rc = 0, err;
-    int      file_d = -1;
-    int      written;
-    int      received;
-    size_t   total = 0;
-    char     buffer[SOCK2FILE_BUF_LEN];
-
-    fd_set          rfds;
-
-    struct timeval  timeout;
-    struct timeval  timestamp;
-    struct timeval  call_timeout;
-    te_bool         time2run_not_expired = TRUE;
-    te_bool         next_read;
-
-    path[in->path.path_len] = '\0';
-    INFO("socket_to_file() called with: sock=%d, path=%s, timeout=%ld",
-         sock, path, time2run);
-    {
-        u_long on = 1;
-
-        if ((ioctlsocket(sock, FIONBIO, &on)) != 0)
-        {
-            ERROR("%s(): ioctl(FIONBIO) failed: %d", __FUNCTION__, errno);
-            rc = -1;
-            goto local_exit;
-        }
-    }
-
-    file_d = open(path, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG | S_IRWXO);
-    if (file_d < 0)
-    {
-        ERROR("%s(): open(%s, O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO) "
-              "failed: %d", __FUNCTION__, path, errno);
-        rc = -1;
-        goto local_exit;
-    }
-    INFO("socket_to_file(): file %s opened with descriptor=%d",
-         path, file_d);
-
-    if (gettimeofday(&timeout, NULL))
-    {
-        ERROR("%s(): gettimeofday(timeout) failed: %d",
-              __FUNCTION__, errno);
-        rc = -1;
-        goto local_exit;
-    }
-    timeout.tv_sec += time2run;
-
-    call_timeout.tv_sec = time2run;
-    call_timeout.tv_usec = 0;
-
-    INFO("%s(): time2run=%ld, timeout=%ld.%06ld", __FUNCTION__,
-         time2run, (long)timeout.tv_sec, (long)timeout.tv_usec);
-
-    do {
-        /* Prepare sets of file descriptors */
-        FD_ZERO(&rfds);
-        FD_SET((unsigned int)sock, &rfds);
-
-        rc = select(sock + 1, &rfds, NULL, NULL, &call_timeout);
-        if (rc < 0)
-        {
-            ERROR("%s(): select() failed: %d", __FUNCTION__, errno);
-            rc = -1;
-            goto local_exit;
-        }
-        INFO("socket_to_file(): select finishes for waiting of events");
-
-        /* Receive data from socket that are ready */
-        if (FD_ISSET(sock, &rfds))
-        {
-            next_read = TRUE;
-            do {
-                INFO("socket_to_file(): select observes data for "
-                     "reading on the socket=%d", sock);
-                received = recv(sock, buffer, sizeof(buffer), 0);
-                err = GetLastError();
-                if (received < 0 && err != WSAEWOULDBLOCK)
-                {
-                    ERROR("%s(): read() failed: %d", __FUNCTION__, err);
-                    rc = -1;
-                    goto local_exit;
-                }
-                INFO("socket_to_file(): read() retrieve %d bytes",
-                     received);
-                if (received < 0)
-                {
-                    next_read = FALSE;
-                }
-                else
-                {
-                    total += received;
-                    INFO("socket_to_file(): write retrieved data to file");
-                    written = write(file_d, buffer, received);
-                    INFO("socket_to_file(): %d bytes are written to file",
-                         written);
-                    if (written < 0)
-                    {
-                        ERROR("%s(): write() failed: %d", 
-                              __FUNCTION__, err);
-                        rc = -1;
-                        goto local_exit;
-                    }
-                    if (written != received)
-                    {
-                        ERROR("%s(): write() cannot write all received in "
-                              "the buffer data to the file "
-                              "(received=%d, written=%d): %d",
-                              __FUNCTION__, received, written, errno);
-                        rc = -1;
-                        goto local_exit;
-                    }
-                }
-            } while (next_read);
-        }
-
-        if (time2run_not_expired)
-        {
-            if (gettimeofday(&timestamp, NULL))
-            {
-                ERROR("%s(): gettimeofday(timestamp) failed): %d",
-                      __FUNCTION__, errno);
-                rc = -1;
-                goto local_exit;
-            }
-            call_timeout.tv_sec  = timeout.tv_sec  - timestamp.tv_sec;
-            call_timeout.tv_usec = timeout.tv_usec - timestamp.tv_usec;
-            if (call_timeout.tv_usec < 0)
-            {
-                --(call_timeout.tv_sec);
-                call_timeout.tv_usec += 1000000;
-#ifdef DEBUG
-                if (call_timeout.tv_usec < 0)
-                {
-                    ERROR("Unexpected situation, assertation failed\n"
-                          "%s:%d", __FILE__, __LINE__);
-                }
-#endif
-            }
-            if (call_timeout.tv_sec < 0)
-            {
-                time2run_not_expired = FALSE;
-                INFO("%s(): time2run expired", __FUNCTION__);
-            }
-#ifdef DEBUG
-            else if (call_timeout.tv_sec < time2run)
-            {
-                VERB("%s(): timeout %ld.%06ld", __FUNCTION__,
-                     call_timeout.tv_sec, call_timeout.tv_usec);
-                time2run >>= 1;
-            }
-#endif
-        }
-    } while (time2run_not_expired);
-
-local_exit:
-    INFO("%s(): %s", __FUNCTION__, (rc == 0)? "OK" : "FAILED");
-
-    if (file_d != -1)
-        close(file_d);
-
-    {
-        u_long off = 1;
-
-        if ((ioctlsocket(sock, FIONBIO, &off)) != 0)
-        {
-            ERROR("%s(): ioctl(FIONBIO, off) failed: %d",
-                  __FUNCTION__, errno);
-            rc = -1;
-        }
-    }
-    /* Clean up errno */
-    if (!rc)
-    {
-        errno = 0;
-        rc = total;
-    }
-    return rc;
-}
-
-TARPC_FUNC(socket_to_file, {},
-{
-   MAKE_CALL(out->retval = socket_to_file(in));
-}
-)
-
 /*-------------- WSACreateEvent ----------------------------*/
 
 TARPC_FUNC(create_event, {},
@@ -3149,7 +2771,7 @@ TARPC_FUNC(wsa_get_overlapped_result,
 )
 
 /*-------------- getpid() --------------------------------*/
-TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = getpid()); })
+TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = GetCurrentProcessId()); })
 
 /*-------------- WSADuplicateSocket() ---------------------------*/
 TARPC_FUNC(duplicate_socket,
@@ -3502,115 +3124,27 @@ TARPC_FUNC(wsa_recv_msg,
 }
 )
 
-/*-------------- sigset_t constructor ---------------------------*/
-
-bool_t
-_sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
-                  struct svc_req *rqstp)
-{
-    sigset_t *set;
-
-    UNUSED(rqstp);
-    UNUSED(in);
-
-    memset(out, 0, sizeof(*out));
-
-    errno = 0;
-    if ((set = (sigset_t *)malloc(sizeof(sigset_t))) == NULL)
-    {
-        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-    }
-    else
-    {
-        out->common._errno = win_rpc_errno(GetLastError());
-        out->set = rcf_pch_mem_alloc(set);
-    }
-
-    return TRUE;
-}
-
-/*-------------- sigset_t destructor ----------------------------*/
-
-bool_t
-_sigset_delete_1_svc(tarpc_sigset_delete_in *in,
-                     tarpc_sigset_delete_out *out,
-                     struct svc_req *rqstp)
-{
-    UNUSED(rqstp);
-
-    memset(out, 0, sizeof(*out));
-
-    errno = 0;
-    free(rcf_pch_mem_get(in->set));
-    rcf_pch_mem_free(in->set);
-    out->common._errno = win_rpc_errno(GetLastError());
-
-    return TRUE;
-}
-
-/*-------------- sigemptyset() ------------------------------*/
-
-TARPC_FUNC(sigemptyset, {},
-{
-    MAKE_CALL(out->retval = sigemptyset(IN_SIGSET));
-}
-)
-
-/*-------------- sigpendingt() ------------------------------*/
-
-TARPC_FUNC(sigpending, {},
-{
-    MAKE_CALL(out->retval = sigpending(IN_SIGSET));
-}
-)
-
-/*-------------- sigsuspend() ------------------------------*/
-
-TARPC_FUNC(sigsuspend, {},
-{
-    MAKE_CALL(out->retval = sigsuspend(IN_SIGSET));
-}
-)
-
-/*-------------- sigfillset() ------------------------------*/
-
-TARPC_FUNC(sigfillset, {},
-{
-    MAKE_CALL(out->retval = sigfillset(IN_SIGSET));
-}
-)
-
-/*-------------- sigaddset() -------------------------------*/
-
-TARPC_FUNC(sigaddset, {},
-{
-    MAKE_CALL(out->retval = sigaddset(IN_SIGSET, signum_rpc2h(in->signum)));
-}
-)
-
-/*-------------- sigdelset() -------------------------------*/
-
-TARPC_FUNC(sigdelset, {},
-{
-    MAKE_CALL(out->retval = sigdelset(IN_SIGSET, signum_rpc2h(in->signum)));
-}
-)
-
-/*-------------- sigismember() ------------------------------*/
-
-TARPC_FUNC(sigismember, {},
-{
-    INIT_CHECKED_ARG((char *)(IN_SIGSET), sizeof(sigset_t), 0);
-    MAKE_CALL(out->retval = sigismember(IN_SIGSET, 
-                                        signum_rpc2h(in->signum)));
-}
-)
-
 /*-------------- kill() --------------------------------*/
 
 TARPC_FUNC(kill, {},
 {
-    MAKE_CALL(out->retval = kill(in->pid, signum_rpc2h(in->signum)));
+    HANDLE hp;
+
+    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE, 
+                          in->pid)) == NULL)
+    {
+        out->common._errno = win_rpc_errno(GetLastError());
+        out->retval = -1;
+        ERROR("Cannot open process, error = %d\n", GetLastError());
+        goto finish;
+    }
+
+    MAKE_CALL(out->retval = TerminateProcess(hp, 0) ? 0 : -1);
+
+    CloseHandle(hp);
+    
+    finish:
+    ;
 }
 )
 
@@ -4438,3 +3972,10 @@ TARPC_FUNC(gettimeofday,
 }
 )
 
+/*-------------- signal() --------------------------------*/
+
+TARPC_FUNC(signal, {},
+{
+    ERROR("signal() is called on winsock2!");
+}
+)
