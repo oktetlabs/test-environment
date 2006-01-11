@@ -696,6 +696,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
                                                                         \
         arg->in = *in;                                                  \
         arg->out = *out;                                                \
+        arg->done = FALSE;                                              \
                                                                         \
         if (pthread_create(&_tid, NULL, _func##_proc,                   \
                            (void *)arg) != 0)                           \
