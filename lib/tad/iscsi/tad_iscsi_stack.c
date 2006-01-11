@@ -219,8 +219,8 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
 
     if (pkt == NULL || tad_pkt_seg_num(pkt) != 1)
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
-    buf     = pkt->segs.cqh_first->data_ptr;
-    buf_len = pkt->segs.cqh_first->data_len;
+    buf     = tad_pkt_first_seg(pkt)->data_ptr;
+    buf_len = tad_pkt_first_seg(pkt)->data_len;
 #endif
     int         fd;
     te_errno    rc = 0;

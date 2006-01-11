@@ -361,7 +361,7 @@ tad_ip4_upper_checksum_pkt_cb(tad_pkt *pkt, void *opaque)
     uint8_t                            *ptr;
 
     assert(pkt->n_segs > 0);
-    assert(pkt->segs.cqh_first->data_len >= pkt_data->offset + 2);
+    assert(tad_pkt_first_seg(pkt)->data_len >= pkt_data->offset + 2);
 
     /* FIXME: Not aligned memory access */
     *((uint16_t *)(pkt_data->pseudo_header + 10)) =
@@ -369,7 +369,7 @@ tad_ip4_upper_checksum_pkt_cb(tad_pkt *pkt, void *opaque)
     seg_data.checksum = calculate_checksum(pkt_data->pseudo_header,
                                            sizeof(pkt_data->pseudo_header));
 
-    ptr = pkt->segs.cqh_first->data_ptr;
+    ptr = tad_pkt_first_seg(pkt)->data_ptr;
     /* FIXME: Not aligned memory access */
     *((uint16_t *)(ptr + pkt_data->offset)) = (uint16_t)0;
 
@@ -590,7 +590,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
         }
 
         pkt_len = ip4_pld_real_len + (h_len * 4);
-        p = hdr = pkt->segs.cqh_first->data_ptr;
+        p = hdr = tad_pkt_first_seg(pkt)->data_ptr;
 
         /* version, header len */
         {

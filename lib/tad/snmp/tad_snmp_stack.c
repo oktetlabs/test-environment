@@ -238,8 +238,8 @@ tad_snmp_write_cb(csap_p csap, const tad_pkt *pkt)
 
     if (pkt == NULL || tad_pkt_seg_num(pkt) != 1)
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
-    buf     = pkt->segs.cqh_first->data_ptr;
-    buf_len = pkt->segs.cqh_first->data_len;
+    buf     = tad_pkt_first_seg(pkt)->data_ptr;
+    buf_len = tad_pkt_first_seg(pkt)->data_len;
 #endif
     int layer;
 
@@ -282,7 +282,7 @@ tad_snmp_write_read_cb(csap_p csap, int timeout,
     snmp_csap_specific_data_p   spec_data;
     struct snmp_session       * ss;
     struct snmp_pdu           * pdu =
-        (struct snmp_pdu *)w_pkt->segs.cqh_first->data_ptr;
+        (struct snmp_pdu *)tad_pkt_first_seg(w_pkt)->data_ptr;
 
     UNUSED(timeout);
     UNUSED(r_buf_len);

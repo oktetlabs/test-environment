@@ -147,7 +147,7 @@ tad_icmp_error(csap_p csap, const char *usr_param,
         ERROR("%s(): no memory!", __FUNCTION__);
         return TE_ENOMEM;
     }
-    p = msg = pkt->segs.cqh_first->data_ptr;
+    p = msg = tad_pkt_first_seg(pkt)->data_ptr;
 
     /* Ethernet header */
     memcpy(p, orig_pkt + ETHER_ADDR_LEN, ETHER_ADDR_LEN); 
