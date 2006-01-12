@@ -97,15 +97,8 @@ make_rp(enum radius_parameters kind,
     parm->deleted = FALSE;
     parm->modified = FALSE;
     parm->kind = kind;
-    parm->name = name ? strdup(name) : NULL;
-    if (value != NULL)
-    {
-        parm->value = expand_rp(value, parent);
-    }
-    else
-    {
-        parm->value = NULL;
-    }
+    parm->name = (name != NULL) ? strdup(name) : NULL;
+    parm->value = expand_rp(value, parent);
     parm->next = parm->children = parm->last_child = NULL;
     parm->parent = parent;
     if (parent != NULL)
@@ -544,9 +537,15 @@ retrieve_rp (radius_parameter *top, const char *name, const char **value)
 }
 
 /**
- * Expands a string which may contain references to RADIUS parameters*
+ * Expands a string with references to RADIUS parameters
+ * (in the form of ${param_name}) by replacing such references
+ * with corresponding parameter value.
  *
- * @returns A malloced string with references expanded.
+ * @param value   String to expand
+ * @param top     Top node of the RADIUS parameters tree
+ *
+ * @returns A malloced string with references expanded
+ *          or NULL in the case of error.
  */
 static char *
 expand_rp(const char *value, radius_parameter *top)
@@ -555,6 +554,9 @@ expand_rp(const char *value, radius_parameter *top)
     char   *new_val;
     char   *new_ptr;
     char   *next;
+
+    if (value == NULL)
+        return NULL;
 
     if ((new_val = strdup(value)) == NULL)
     {
@@ -577,6 +579,7 @@ expand_rp(const char *value, radius_parameter *top)
             {
                 ERROR("Undefined RADIUS parameter '%s' in '%s'",
                       new_ptr + 2, value);
+                *next = '}';
                 continue;
             }
             rpv_len = strlen(rp_val);
@@ -613,6 +616,7 @@ static void
 mark_rp_changes(radius_parameter *rp)
 {
     radius_parameter *file;
+
     for (file = rp->parent; file->kind != RP_FILE; file = file->parent)
         ;
     file->modified = TRUE;
