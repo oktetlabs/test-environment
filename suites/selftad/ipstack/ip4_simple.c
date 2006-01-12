@@ -39,10 +39,8 @@
 
 #define USE_RPC_CHECK 0
 
-#define USE_TAPI 1
 
 
-#if USE_TAPI
 static void 
 user_pkt_handler(const tapi_ip4_packet_t *pkt, void *userdata)
 {
@@ -57,7 +55,6 @@ user_pkt_handler(const tapi_ip4_packet_t *pkt, void *userdata)
     UNUSED(userdata);
 }
 
-#endif
 int
 main(int argc, char *argv[])
 {
@@ -75,9 +72,6 @@ main(int argc, char *argv[])
     char *agt_b;
     size_t  len = sizeof(ta);
 
-#if !(USE_TAPI)
-    char path[1000];
-#endif
 
 
     TEST_START; 
@@ -105,34 +99,9 @@ main(int argc, char *argv[])
         INFO("Test: Created session: %d", sid); 
     }
 
-#if USE_RPC_CHECK
-    if ((rc = rcf_rpc_server_create(agt_b, "FIRST", &srv_src)) != 0)
-    {
-        TEST_FAIL("Cannot create server %x", rc);
-    }
-    srv_src->def_timeout = 5000;
-    
-    rcf_rpc_setlibname(srv_src, NULL);
-
-
-    if ((rc = rcf_rpc_server_create(agt_a, "SECOND", &srv_dst)) != 0)
-    {
-        TEST_FAIL("Cannot create server %x", rc);
-    }
-    srv_dst->def_timeout = 5000;
-    
-    rcf_rpc_setlibname(srv_dst, NULL);
-#endif
  
     do {
-#if !(USE_TAPI)
-        struct timeval to;
-        asn_value *csap_spec, *pattern;
-
-        int rc_code;
-#else
         in_addr_t my_addr = inet_addr("192.168.37.18");
-#endif
 
         int csap;
         int num;
@@ -152,28 +121,9 @@ main(int argc, char *argv[])
         }
 #endif
 
-#if USE_TAPI
         rc = tapi_ip4_eth_csap_create(ta, sid, "eth0", NULL, NULL,
                                       htonl(INADDR_ANY), htonl(INADDR_ANY),
                                       &csap);
-#else
-        rc = asn_parse_value_text("{ ip4:{max-packet-size plain:100000},"
-                                  " eth:{device-id plain:\"eth0\"}}", 
-                                  ndn_csap_spec, &csap_spec, &num);
-
-        VERB("CSAP spec parse rc %X, syms %d", rc, num);
-        if (rc)
-            TEST_FAIL("ASN error"); 
-
-        strcpy(path, "/tmp/te_tcp_csap_create.XXXXXX"); 
-        mkstemp(path); 
-        VERB("file name for csap spec: '%s'", path);
-
-        asn_save_to_file(csap_spec, path);
-
-
-        rc = rcf_ta_csap_create(ta, sid, "ip4.eth", path, &csap); 
-#endif
         if ((rc_mod = TE_RC_GET_MODULE(rc)) != 0)
         {
             TEST_FAIL("CSAP create failed, rc from module %d is %r\n", 
@@ -181,30 +131,10 @@ main(int argc, char *argv[])
 
         } 
 
-#if USE_TAPI
         
         rc = tapi_ip4_eth_recv_start(ta, sid, csap, NULL, NULL,
                                      htonl(INADDR_ANY), my_addr,
                                      5000, 4, RCF_TRRECV_PACKETS);
-#else
-        strcpy(path, "/tmp/te_ip4_pattern.XXXXXX"); 
-        mkstemp(path); 
-        VERB("file name for tcp pattern: '%s'", path);
-
-        num = 0; 
-        rc = asn_parse_value_text(
-                        "{{pdus { ip4:{dst-addr plain:'c3 13 fe 28'H}, "
-                        "eth:{eth-type plain:2048}}}}",
-                                  ndn_traffic_pattern, &pattern, &num);
-        VERB("Pattern parse rc %X, syms %d", rc, num);
-        if (rc)
-            TEST_FAIL("ASN error"); 
-
-        asn_save_to_file(pattern, path);
-        rc = rcf_ta_trrecv_start(ta, sid, csap, path, 0, 0,
-                                 RCF_TRRECV_PACKETS);
-        INFO("trrecv_start: %r \n", rc);
-#endif /* USE_TAPI */
 
         if (rc) break;
 
