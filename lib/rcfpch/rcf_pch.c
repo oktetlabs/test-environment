@@ -698,7 +698,7 @@ rcf_pch_run(const char *confstr, const char *info)
                     goto bad_protocol;
 
                 rc = rcf_ch_file(conn, cmd, cmd_buf_len, answer_plen,
-                                 ba, len, put, filename);
+                                 ba, len, opcode, filename);
                 if (rc < 0)
                     rc = rcf_pch_file(conn, cmd, cmd_buf_len, answer_plen,
                                       ba, len, opcode, filename);

@@ -39,6 +39,7 @@
 #include <sys/resource.h>
 #endif
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <fcntl.h>
@@ -352,17 +353,120 @@ rcf_ch_file(struct rcf_comm_connection *handle,
             const uint8_t *ba, size_t cmdlen,
             rcf_op_t op, const char *filename)
 {
-    UNUSED(handle);
-    UNUSED(cbuf);
-    UNUSED(buflen);
-    UNUSED(answer_plen);
-    UNUSED(ba);
-    UNUSED(cmdlen);
-    UNUSED(op);
-    UNUSED(filename);
 
-    /* Standard handler is OK */
-    return -1;
+    UNUSED(ba);
+
+#ifdef AUX_BUFFER_LEN
+#undef AUX_BUFFER_LEN
+#endif
+#define AUX_BUFFER_LEN       16384
+    size_t     reply_buflen = buflen - answer_plen;
+    int        rc;
+    int        fd = -1;
+    int8_t    *auxbuf = NULL;
+    int8_t    *auxbuf_p = NULL;
+    size_t    procfile_len = 0;
+
+    if ((auxbuf = malloc(AUX_BUFFER_LEN)) == NULL)
+    {
+        ERROR("Impossible allocate buffer");
+        rc = TE_RC(TE_RCF_PCH, TE_ENOMEM);
+        goto reject;
+    }
+
+    if (strncmp(RCF_FILE_PROC_PREFIX, filename,
+                strlen(RCF_FILE_PROC_PREFIX)) == 0)
+    {
+        VERB("file operation in '/proc/'");
+        if (op != RCFOP_FGET)
+        {
+            ERROR("Unsupported file operation in '/proc/': %d", op);
+            rc = TE_RC(TE_RCF_PCH, TE_EPERM);
+            goto reject;
+        }
+
+        fd = open(filename, O_RDONLY, S_IRWXU | S_IRWXG | S_IRWXO);
+        if (fd < 0)
+        {
+            ERROR("failed to open file '%s'", filename);
+            rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
+            goto reject;
+        }
+
+        /*
+         * We should read /proc/filename before replying to requester
+         * because we can not know the length of /proc/filename
+         * in advice. If the number of bytes returned by read()
+         * equal to AUX_BUFFER_LEN then possibly there was more bytes
+         * to read.
+         */
+        rc = read(fd, auxbuf, AUX_BUFFER_LEN);
+        if (rc < 0)
+        {
+            rc = TE_OS_RC(TE_RCF_PCH, errno);
+            ERROR("rcfpch", "read(/proc/...) failed %r", rc);
+            goto reject;
+        }
+        else if (rc == AUX_BUFFER_LEN)
+        {
+            WARN("Because of insufficient buffer length only part of "
+                 "data retrieved from %s", filename);
+        }
+        procfile_len = (size_t)rc;
+
+        if ((size_t)snprintf(cbuf + answer_plen, reply_buflen,
+                    "0 attach %u", (unsigned int)procfile_len)
+                >= reply_buflen)
+        {
+            ERROR("Command buffer too small for reply");
+            rc = TE_RC(TE_RCF_PCH, TE_E2BIG);
+            goto reject;
+        }
+
+        rcf_ch_lock();
+        rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);
+
+        auxbuf_p = auxbuf;
+        while ((rc == 0) && (procfile_len > 0))
+        {
+            int len = (procfile_len > buflen) ? buflen : procfile_len;
+            procfile_len -= len;
+            memcpy(cbuf, auxbuf_p, len);
+            auxbuf_p += len;
+            rc = rcf_comm_agent_reply(handle, cbuf, len);
+        }
+        rcf_ch_unlock();
+        close(fd);
+
+        EXIT("%r", rc);
+        return rc;
+reject:
+        free(auxbuf);
+        if (fd != -1)
+            close(fd);
+        if (cmdlen > buflen)
+        {
+            int     error;
+            size_t  rest;
+
+            do {
+                rest = reply_buflen;
+                error = rcf_comm_agent_wait(handle, cbuf + answer_plen,
+                        &rest, NULL);
+                if (error != 0 && TE_RC_GET_ERROR(error) != TE_EPENDING)
+                {
+                    return TE_RC(TE_RCF_PCH, error);
+                }
+            } while (error != 0);
+        }
+        EXIT("%r", rc);
+        SEND_ANSWER("%d", rc);
+    } else
+    {
+        /* Standard handler is OK */
+        return -1;
+    }
+#undef AUX_BUFFER_LEN
 }
 
 
