@@ -867,7 +867,7 @@ put_instance(FILE *f, cfg_instance *inst)
  * @return status code (errno.h)
  */
 int 
-cfg_backup_create_file(char *filename)
+cfg_backup_create_file(const char *filename)
 {
     FILE *f= fopen(filename, "w");
     

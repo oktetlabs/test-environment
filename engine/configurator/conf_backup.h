@@ -61,7 +61,7 @@ extern int cfg_backup_restore_ta(char *ta);
  *
  * @return status code (errno.h)
  */
-extern int cfg_backup_create_file(char *filename);
+extern int cfg_backup_create_file(const char *filename);
  
 #ifdef __cplusplus
 }
