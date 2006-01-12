@@ -1397,14 +1397,15 @@ iscsi_initiator_l5_set(const int target_id, const int cid, int oper)
             
             if (strcmp(target->conns[cid].session_type, "Discovery") != 0)
             {
-                rc = te_shell_cmd_ex("cd %s; ./iscsi_stopconns target%d_conn%d", 
+                rc = ta_system_ex("cd %s; ./iscsi_stopconns target%d_conn%d", 
                                      init_data->script_path,
                                      target_id, cid);
                 if (rc != 0)
                 {
-                    ERROR("Unable to stop initiator connection %d, %d", 
-                          target_id, cid);
-                    return TE_RC(TE_TA_UNIX, rc);
+                    ERROR("Unable to stop initiator connection %d, %d, "
+                          "status = %d", 
+                          target_id, cid, rc);
+                    return TE_RC(TE_TA_UNIX, TE_ESHCMD);
                 }
             }
             if (target->number_of_open_connections > 0)
