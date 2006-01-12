@@ -59,8 +59,6 @@
 /** Prefix for files, which should be created on in FTP public directory */
 #define RCF_FILE_FTP_PREFIX     "ftp/"
 
-/** Prefix for file operations in /proc directory */
-#define RCF_FILE_PROC_PREFIX     "/proc/"
 
 /** 
  * Parameter and variable types.

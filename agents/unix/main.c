@@ -360,6 +360,13 @@ rcf_ch_file(struct rcf_comm_connection *handle,
 #undef AUX_BUFFER_LEN
 #endif
 #define AUX_BUFFER_LEN       16384
+
+/** Prefix for file operations in /proc directory */
+#ifdef RCF_FILE_PROC_PREFIX
+#undef RCF_FILE_PROC_PREFIX
+#endif
+#define RCF_FILE_PROC_PREFIX  "/proc/"
+
     size_t     reply_buflen = buflen - answer_plen;
     int        rc;
     int        fd = -1;
@@ -467,6 +474,7 @@ reject:
         return -1;
     }
 #undef AUX_BUFFER_LEN
+#undef RCF_FILE_PROC_PREFIX
 }
 
 
