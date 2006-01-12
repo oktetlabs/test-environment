@@ -97,6 +97,7 @@ make_rp(enum radius_parameters kind,
     parm->deleted = FALSE;
     parm->modified = FALSE;
     parm->kind = kind;
+    parm->backup_index = UNIX_SERVICE_MAX;
     parm->name = (name != NULL) ? strdup(name) : NULL;
     parm->value = expand_rp(value, parent);
     parm->next = parm->children = parm->last_child = NULL;
@@ -125,6 +126,14 @@ static void
 destroy_rp(radius_parameter *parm)
 {
     radius_parameter *child, *next;
+
+#ifdef WITH_RADIUS_SERVER
+    if (parm->kind == RP_FILE && parm->backup_index != UNIX_SERVICE_MAX)
+    {
+        ds_restore_backup(parm->backup_index);
+        parm->backup_index = UNIX_SERVICE_MAX;
+    }
+#endif
 
     if (parm->name != NULL)
         free(parm->name);
@@ -720,7 +729,7 @@ update_rp(radius_parameter *top, enum radius_parameters kind,
  */
 
 /** Root entry of the tree created from RADIUS configuration file */
-static struct radius_parameter *radius_conf;
+static struct radius_parameter *radius_conf = NULL;
 
 /** Temporary FreeRADIUS users file created for TE */
 static FILE *radius_users_file = NULL;
@@ -1939,7 +1948,11 @@ radiusserver_release(const char *name)
         remove(RADIUS_USERS_FILE);
         radius_users_file = NULL;
     }
-
+    if (radius_conf != NULL)
+    {
+        destroy_rp(radius_conf);
+        radius_conf = NULL;
+    }
     return 0;
 }
 #endif /* WITH_RADIUS_SERVER */
