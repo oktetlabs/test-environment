@@ -38,23 +38,23 @@ fi
 if test -e builder.conf.processed ; then
     . builder.conf.processed
 else
-    SCRIPT_DIR=`dirname $0`
+    SCRIPT_DIR="`dirname $0`"
     host=`${SCRIPT_DIR}/te_discover_host`
 fi
 
-SUITE=$1
-SOURCES=$2
+SUITE="$1"
+SOURCES="$2"
 FROM_MAKEFILE=$3
 
 if test "${SOURCES:0:1}" != "/" ; then
-    if test -z ${TE_BASE} ; then
+    if test -z "${TE_BASE}" ; then
         echo 'Export TE_BASE or full path to suite sources, please'
         exit 1
     fi
-    SOURCES=${TE_BASE}/suites/${SOURCES}
+    SOURCES="${TE_BASE}/suites/${SOURCES:-${SUITE}}"
 fi
 
-pushd ${SOURCES} >/dev/null
+pushd "${SOURCES}" >/dev/null
 if test -e configure.ac ; then
     if test ! -e configure ; then
         aclocal || exit 1 ;
@@ -68,11 +68,11 @@ fi
 popd >/dev/null
 
 if test -n "${TE_BUILD}" ; then
-    cd ${TE_BUILD}
-    mkdir -p suites/${SUITE}
-    cd suites/${SUITE}
+    cd "${TE_BUILD}"
+    mkdir -p "suites/${SUITE}"
+    cd "suites/${SUITE}"
 else
-    cd $SOURCES
+    cd "${SOURCES}"
 fi
 
 if test ! -e Makefile ; then
@@ -80,16 +80,16 @@ if test ! -e Makefile ; then
     ADD_CPPFLAGS="`eval echo '$'${PLATFORM_NAME}'_CPPFLAGS'`"
     ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'`"
     ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'`"
-    echo ${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} --build=${host} 
+    echo "${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} --build=${host}"
     
-    TE_INSTALL=${TE_INSTALL} \
-    TE_PATH=${TE_PATH} \
-    TE_BASE=${TE_BASE} \
+    TE_INSTALL="${TE_INSTALL}" \
+    TE_PATH="${TE_PATH}" \
+    TE_BASE="${TE_BASE}" \
     TE_CFLAGS="-O0 -ggdb -Wall -W ${ADD_CFLAGS} " \
     TE_CPPFLAGS="-I${TE_INSTALL}/${host}/include ${ADD_CPPFLAGS}" \
     TE_LDFLAGS="-L${TE_INSTALL}/${host}/lib ${ADD_LDFLAGS}" \
     CFLAGS="" \
-    eval ${SOURCES}/configure -q --prefix=${TE_INSTALL_SUITE} --build=${host} || exit 1
+    eval "${SOURCES}/configure" -q --prefix="${TE_INSTALL_SUITE}" --build=${host} || exit 1
 fi
 make install || exit 1
 
@@ -99,8 +99,8 @@ fi
 
 # Now upgrade dynamic builder.conf
 if test -n "${TE_BUILD}" ; then
-   if ! cat ${TE_BUILD}/suites/Makefile.suites | grep -q "=${SUITE}" ; then
-       echo TE_BS_SUITES+=${SUITE} >> ${TE_BUILD}/suites/Makefile.suites
+   if ! cat "${TE_BUILD}/suites/Makefile.suites" | grep -q "=${SUITE}" ; then
+       echo TE_BS_SUITES+=${SUITE} >> "${TE_BUILD}/suites/Makefile.suites"
    fi
 fi
 
