@@ -191,6 +191,13 @@ static const char * const trc_diff_stats_table =
 "      <TD><FONT class=\"U\">%u</FONT></TD>\n"
 "      <TD><FONT class=\"U\">%u</FONT></TD>\n"
 "    </TR>\n"
+"    <TR>\n"
+"      <TD ALIGN=LEFT COLSPAN=5>[<FONT class=\"S\">X</FONT>+]"
+                                "<FONT class=\"U\">Y</FONT>+"
+                                "<FONT class=\"E\">Z</FONT><BR/>"
+"X - result match, Y - result does not match (to be fixed), "
+"Z - result does not match (excluded)</TD>"
+"    </TR>\n"
 "  </TBODY>\n"
 "</TABLE>\n";
 
