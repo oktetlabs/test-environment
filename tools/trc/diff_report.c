@@ -146,7 +146,7 @@ static const char * const trc_diff_stats_table =
 "<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>\n"
 "  <THEAD>\n"
 "    <TR>\n"
-"      <TD ROWSPAN=3>\n"
+"      <TD ROWSPAN=2>\n"
 "        <B>%s</B>\n"
 "      </TD>\n"
 "      <TD COLSPAN=4 ALIGN=CENTER>\n"
