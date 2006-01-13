@@ -4,7 +4,7 @@
  * Generator of two set of tags comparison report in HTML format.
  *
  *
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
@@ -69,8 +69,50 @@ extern char *trc_diff_title;
 /** Template of keys to be excluded */
 extern lh_string trc_diff_exclude_keys;
 
-static FILE   *f;
-static int     fd;
+
+/**
+ * Types of statistics collected per set X vs set Y.
+ */
+typedef enum trc_diff_stats_index {
+    TRC_DIFF_STATS_PASSED = 0,
+    TRC_DIFF_STATS_PASSED_DIFF,
+    TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE,
+    TRC_DIFF_STATS_FAILED,
+    TRC_DIFF_STATS_FAILED_DIFF,
+    TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE,
+    TRC_DIFF_STATS_SKIPPED,
+    TRC_DIFF_STATS_OTHER,
+
+    TRC_DIFF_STATS_MAX
+} trc_diff_stats_index;
+
+
+/** Type of simple counter. */
+typedef unsigned int trc_diff_stats_counter;
+
+/**
+ * Set X vs set Y statistics are two dimension array of simple
+ * counters. Indices are the results of the corresponding set together
+ * with equal/different knowledge, when main result is the same.
+ */
+typedef trc_diff_stats_counter trc_diff_stats_counters[TRC_DIFF_STATS_MAX]
+                                                      [TRC_DIFF_STATS_MAX];
+
+/**
+ * TRC differencies statistics are two dimension array of statistics per
+ * set X vs set Y statistics.
+ * 
+ * A half of this array is used in fact (the first index is always
+ * greater than the second one).
+ */
+typedef trc_diff_stats_counters trc_diff_stats[TRC_DIFF_IDS]
+                                              [TRC_DIFF_IDS - 1];
+
+
+static FILE            *f;
+static int              fd;
+static trc_diff_stats   stats;
+
 
 static const char * const trc_diff_html_title_def =
     "Testing Results Expectations Differences Report";
@@ -82,6 +124,14 @@ static const char * const trc_diff_html_doc_start =
 "  <META HTTP-EQUIV=\"CONTENT-TYPE\" CONTENT=\"text/html; "
 "charset=utf-8\">\n"
 "  <TITLE>%s</TITLE>\n"
+"  <style type=\"text/css\">\n"
+"    .S {font-weight: bold; color: green; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .U {font-weight: bold; color: red; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"    .E {font-weight: italic; color: blue; "
+        "padding-left: 0.08in; padding-right: 0.08in}\n"
+"  </style>\n"
 "</HEAD>\n"
 "<BODY LANG=\"en-US\" DIR=\"LTR\">\n"
 "<H1 ALIGN=CENTER>%s</H1>\n"
@@ -90,6 +140,60 @@ static const char * const trc_diff_html_doc_start =
 static const char * const trc_diff_html_doc_end =
 "</BODY>\n"
 "</HTML>\n";
+
+
+static const char * const trc_diff_stats_table =
+"<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>\n"
+"  <THEAD>\n"
+"    <TR>\n"
+"      <TD ROWSPAN=3>\n"
+"        <B>%s</B>\n"
+"      </TD>\n"
+"      <TD COLSPAN=4 ALIGN=CENTER>\n"
+"        <B>%s</B>\n"
+"      </TD>\n"
+"    </TR>\n"
+"    <TR>\n"
+"      <TD ALIGN=CENTER><B>%s</B></TD>\n"
+"      <TD ALIGN=CENTER><B>%s</B></TD>\n"
+"      <TD ALIGN=CENTER><B>%s</B></TD>\n"
+"      <TD ALIGN=CENTER><B>%s</B></TD>\n"
+"    </TR>\n"
+"  </THEAD>\n"
+"  <TBODY ALIGN=RIGHT>\n"
+"    <TR>\n"
+"      <TD ALIGN=LEFT><B>%s</B></TD>\n"
+"      <TD><FONT class=\"S\">%u</FONT>+<FONT class=\"U\">%u</FONT>+"
+          "<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"    </TR>\n"
+"    <TR>\n"
+"      <TD ALIGN=LEFT><B>%s</B></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"S\">%u</FONT>+<FONT class=\"U\">%u</FONT>+"
+          "<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"    </TR>\n"
+"    <TR>\n"
+"      <TD ALIGN=LEFT><B>%s</B></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"S\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT></TD>\n"
+"    </TR>\n"
+"    <TR>\n"
+"      <TD ALIGN=LEFT><B>%s</B></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT>+<FONT class=\"E\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT></TD>\n"
+"      <TD><FONT class=\"U\">%u</FONT></TD>\n"
+"    </TR>\n"
+"  </TBODY>\n"
+"</TABLE>\n";
+
 
 static const char * const trc_diff_full_table_heading_start =
 "<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>\n"
@@ -226,6 +330,14 @@ trc_test_result_to_string(trc_test_result result)
 
 static char trc_args_buf[0x10000];
 
+/**
+ * Convert test arguments to string for HTML report.
+ *
+ * @param args          Arguments
+ *
+ * @result Pointer to static buffer with arguments in string
+ *         representation.
+ */
 static const char *
 trc_test_args_to_string(const test_args *args)
 {
@@ -239,6 +351,99 @@ trc_test_args_to_string(const test_args *args)
     return trc_args_buf;
 }
 
+
+/**
+ * Map test result, match and exclude status to statistics index.
+ *
+ * @param result        Result
+ * @param match         Do results match?
+ * @param exclude       Does exclude of such differencies requested?
+ *
+ * @return Index of statistics counter.
+ */
+static trc_diff_stats_index
+trc_diff_result_to_stats_index(trc_test_result result,
+                               te_bool match, te_bool exclude)
+{
+    switch (result)
+    {
+        case TRC_TEST_PASSED:
+            if (match)
+                return TRC_DIFF_STATS_PASSED;
+            else if (exclude)
+                return TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE;
+            else
+                return TRC_DIFF_STATS_PASSED_DIFF;
+
+        case TRC_TEST_FAILED:
+            if (match)
+                return TRC_DIFF_STATS_FAILED;
+            else if (exclude)
+                return TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE;
+            else
+                return TRC_DIFF_STATS_FAILED_DIFF;
+
+        case TRC_TEST_SKIPPED:
+            return TRC_DIFF_STATS_SKIPPED;
+
+        default:
+            return TRC_DIFF_STATS_OTHER;
+    }
+}
+
+/**
+ * Update total statistics for sets X and Y based on an iteration data.
+ *
+ * @param iter          Test iteration
+ * @param tags_x        Set X of tags
+ * @param tags_y        Set Y of tags
+ */
+static void
+trc_diff_iter_stats(const test_iter      *iter,
+                    const trc_tags_entry *tags_x,
+                    const trc_tags_entry *tags_y)
+{
+    te_bool match;
+    te_bool exclude;
+
+    /* 
+     * Do nothing if an index of the first set is greater or equal to the
+     * index of the second set.
+     */
+    if (tags_x->id >= tags_y->id)
+        return;
+
+    /*
+     * Exclude iterations of test packages
+     */
+    if (iter->tests.head.tqh_first != NULL)
+        return;
+
+    match = (iter->diff_exp[tags_x->id].value ==
+             iter->diff_exp[tags_y->id].value) &&
+            TRUE /* TODO compare verdicts */;
+
+    exclude = !match && trc_diff_exclude_by_key(iter);
+
+    assert(tags_y->id > 0);
+
+    stats[tags_x->id][tags_y->id - 1]
+         [trc_diff_result_to_stats_index(iter->diff_exp[tags_x->id].value,
+                                         match, exclude)]
+         [trc_diff_result_to_stats_index(iter->diff_exp[tags_y->id].value,
+                                         match, exclude)]++;
+}
+                    
+
+/**
+ * Do test iterations have different expected results?
+ *
+ * @param[in]  tests    Set of tests
+ * @param[in]  flags    Processing flags
+ * @param[out] all_out  Do @e all iterations have output?
+ * @param[out] diff_exp Array with expected result for the test as whole
+ *                      for each set of tags
+ */
 static te_bool
 trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
                         te_bool *all_out, trc_test_result *diff_exp)
@@ -247,46 +452,70 @@ trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
     te_bool         iter_has_diff;
     trc_test_result iter_result;
     te_bool         has_no_out;
-    trc_tags_entry *entry;
+    trc_tags_entry *tags_i;
+    trc_tags_entry *tags_j;
     test_iter      *p;
 
     for (has_diff = FALSE, has_no_out = FALSE, p = iters->head.tqh_first;
          p != NULL;
-         p = p->links.tqe_next)
+         has_diff = has_diff || p->output, p = p->links.tqe_next)
     {
         iter_has_diff = FALSE;
         iter_result = TRC_TEST_UNSET;
 
-        for (entry = tags_diff.tqh_first;
-             entry != NULL;
-             entry = entry->links.tqe_next)
+        for (tags_i = tags_diff.tqh_first;
+             tags_i != NULL;
+             tags_i = tags_i->links.tqe_next)
         {
-            if (diff_exp[entry->id] == TRC_TEST_UNSET)
-                diff_exp[entry->id] = p->diff_exp[entry->id].value;
-            else if (diff_exp[entry->id] != p->diff_exp[entry->id].value)
-                diff_exp[entry->id] = TRC_TEST_MIXED;
+            if (diff_exp[tags_i->id] == TRC_TEST_UNSET)
+                diff_exp[tags_i->id] = p->diff_exp[tags_i->id].value;
+            else if (diff_exp[tags_i->id] != p->diff_exp[tags_i->id].value)
+                diff_exp[tags_i->id] = TRC_TEST_MIXED;
 
             if (iter_result == TRC_TEST_UNSET)
-                iter_result = p->diff_exp[entry->id].value;
-            else if (iter_result != p->diff_exp[entry->id].value)
+                iter_result = p->diff_exp[tags_i->id].value;
+            else if (iter_result != p->diff_exp[tags_i->id].value)
                 iter_has_diff = TRUE;
+
+            for (tags_j = tags_diff.tqh_first;
+                 tags_j != NULL;
+                 tags_j = tags_j->links.tqe_next)
+            {
+                trc_diff_iter_stats(p, tags_i, tags_j);
+            }
         }
 
         /* The routine should be called first to be called in any case */
         p->output = trc_diff_tests_has_diff(&p->tests, flags) ||
                     (iter_has_diff && !trc_diff_exclude_by_key(p));
+        /*<
+         * Iteration is output, if its tests have differencies or
+         * expected results of the test iteration are different and it
+         * shouldn't be excluded because of keys pattern.
+         */
 
         if (!p->output)
+        {
+            /* At least one iteration has no output */
             has_no_out = TRUE;
-
-        has_diff = has_diff || p->output;
+        }
     }
 
+    /* 
+     * All iterations have output if at least one have output and there
+     * are no iterations without output.
+     */
     *all_out = has_diff && !has_no_out;
 
     return has_diff;
 }
 
+/**
+ * Do tests in the set have different expected results?
+ *
+ * @param tests         Set of tests
+ * @param flags         Processing flags
+ */
 static te_bool
 trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
 {
@@ -297,31 +526,46 @@ trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
 
     for (has_diff = FALSE, p = tests->head.tqh_first;
          p != NULL;
-         p = p->links.tqe_next)
+         has_diff = has_diff || p->diff_out, p = p->links.tqe_next)
     {
+        /* Initialize expected result of the test as whole */
         for (entry = tags_diff.tqh_first;
              entry != NULL;
              entry = entry->links.tqe_next)
         {
             p->diff_exp[entry->id] = TRC_TEST_UNSET;
         }
-        
+
+        /* Output the test, if  iteration has differencies. */
         p->diff_out = trc_diff_iters_has_diff(&p->iters, flags,
                                               &all_iters_out,
                                               p->diff_exp);
 
+        /**
+         * Output test iterations if and only if test should be output
+         * itself and:
+         *  - set of iterations is empty, or
+         *  - 
+         *  - it is not leaf of the tests tree.
+         */
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
              !all_iters_out ||
              p->iters.head.tqh_first->tests.head.tqh_first != NULL);
-
-        has_diff = has_diff || p->diff_out;
     }
 
     return has_diff;
 }
 
 
+/**
+ * String representation (with HTML markers) of test iteration keys
+ * for all tags.
+ *
+ * @param iter          Test iteration
+ *
+ * @return Pointer to a static buffer with HTML text string.
+ */
 static const char *
 trc_diff_test_iter_keys(const test_iter *iter)
 {
@@ -346,6 +590,14 @@ trc_diff_test_iter_keys(const test_iter *iter)
     return buf;
 }
 
+/**
+ * String representation (with HTML markers) of test iteration notes
+ * for all tags.
+ *
+ * @param iter          Test iteration
+ *
+ * @return Pointer to a static buffer with HTML text string.
+ */
 static const char *
 trc_diff_test_iter_notes(const test_iter *iter)
 {
@@ -374,6 +626,14 @@ trc_diff_test_iter_notes(const test_iter *iter)
     return buf;
 }
 
+/**
+ * Output test iterations differencies into a file @a f (global
+ * variable).
+ *
+ * @param iters         Test iterations
+ * @param flags         Processing flags
+ * @param level         Level of this test in whole test suite
+ */
 static int
 trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                        unsigned int level)
@@ -482,6 +742,13 @@ trc_diff_test_iters_get_keys(test_run *test, unsigned int id)
     return buf;
 }
 
+/**
+ * Output tests differencies into a file @a f (global variable).
+ *
+ * @param tests         Tests
+ * @param flags         Processing flags
+ * @param level         Level of this test in whole test suite
+ */
 static int
 trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
                        unsigned int level)
@@ -596,6 +863,11 @@ cleanup:
 }
 
 
+/**
+ * Output set of tags used for comparison to HTML report.
+ *
+ * @param tags_list     List of tags
+ */
 void
 trc_diff_tags_to_html(const trc_tags_list *tags_list)
 {
@@ -623,13 +895,117 @@ trc_diff_tags_to_html(const trc_tags_list *tags_list)
     }
 }
 
+
+/**
+ * Output statistics for one comparison to HTML report.
+ *
+ * @param tags_x        The first set of tags
+ * @param tags_y        The second set of tags
+ * @param flags         Processing flags
+ */
+static void
+trc_diff_one_stats_to_html(const trc_tags_entry *tags_x,
+                           const trc_tags_entry *tags_y,
+                           unsigned int flags)
+{
+    trc_diff_stats_counters *counters = &stats[tags_x->id][tags_y->id - 1];
+
+    UNUSED(flags);
+    fprintf(f, trc_diff_stats_table,
+            tags_x->name, tags_y->name,
+            "PASSED", "FAILED", "SKIPPED", "other",
+            "PASSED",
+            (*counters)[TRC_DIFF_STATS_PASSED][TRC_DIFF_STATS_PASSED],
+            (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
+                       [TRC_DIFF_STATS_PASSED_DIFF],
+            (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
+                       [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE],
+            (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
+                       [TRC_DIFF_STATS_FAILED_DIFF],
+            (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
+                       [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE],
+            (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
+                       [TRC_DIFF_STATS_SKIPPED],
+            (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
+                       [TRC_DIFF_STATS_SKIPPED],
+            (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
+                       [TRC_DIFF_STATS_OTHER],
+            (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
+                       [TRC_DIFF_STATS_OTHER],
+            "FAILED",
+            (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
+                       [TRC_DIFF_STATS_PASSED_DIFF],
+            (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
+                       [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE],
+            (*counters)[TRC_DIFF_STATS_FAILED][TRC_DIFF_STATS_FAILED],
+            (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
+                       [TRC_DIFF_STATS_FAILED_DIFF],
+            (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
+                       [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE],
+            (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
+                       [TRC_DIFF_STATS_SKIPPED],
+            (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
+                       [TRC_DIFF_STATS_SKIPPED],
+            (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
+                       [TRC_DIFF_STATS_OTHER],
+            (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
+                       [TRC_DIFF_STATS_OTHER],
+            "SKIPPED",
+            (*counters)[TRC_DIFF_STATS_SKIPPED]
+                       [TRC_DIFF_STATS_PASSED_DIFF],
+            (*counters)[TRC_DIFF_STATS_SKIPPED]
+                       [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE],
+            (*counters)[TRC_DIFF_STATS_SKIPPED]
+                       [TRC_DIFF_STATS_FAILED_DIFF],
+            (*counters)[TRC_DIFF_STATS_SKIPPED]
+                       [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE],
+            (*counters)[TRC_DIFF_STATS_SKIPPED][TRC_DIFF_STATS_SKIPPED],
+            (*counters)[TRC_DIFF_STATS_SKIPPED][TRC_DIFF_STATS_OTHER],
+            "other",
+            (*counters)[TRC_DIFF_STATS_OTHER]
+                       [TRC_DIFF_STATS_PASSED_DIFF],
+            (*counters)[TRC_DIFF_STATS_OTHER]
+                       [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE],
+            (*counters)[TRC_DIFF_STATS_OTHER]
+                       [TRC_DIFF_STATS_FAILED_DIFF],
+            (*counters)[TRC_DIFF_STATS_OTHER]
+                       [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE],
+            (*counters)[TRC_DIFF_STATS_OTHER][TRC_DIFF_STATS_SKIPPED],
+            (*counters)[TRC_DIFF_STATS_OTHER][TRC_DIFF_STATS_OTHER]);
+}
+
+/**
+ * Output all statistics to HTML report
+ *
+ * @param flags         Processing flags
+ */
+static void
+trc_diff_stats_to_html(unsigned int flags)
+{
+    const trc_tags_entry *tags_i;
+    const trc_tags_entry *tags_j;
+
+    for (tags_i = tags_diff.tqh_first;
+         tags_i != NULL;
+         tags_i = tags_i->links.tqe_next)
+    {
+        for (tags_j = tags_diff.tqh_first;
+             tags_j != NULL;
+             tags_j = tags_j->links.tqe_next)
+        {
+            if (tags_i->id < tags_j->id)
+                trc_diff_one_stats_to_html(tags_i, tags_j, flags);
+        }
+    }
+}
     
 /** See descriptino in trc_db.h */
 int
 trc_diff_report_to_html(trc_database *db, unsigned int flags,
                         const char *filename)
 {
-    int rc;
+    int     rc;
+    te_bool has_diff;
 
     f = fopen(filename, "w");
     if (f == NULL)
@@ -656,11 +1032,20 @@ trc_diff_report_to_html(trc_database *db, unsigned int flags,
     /* Compared sets */
     trc_diff_tags_to_html(&tags_diff);
 
+    /* Initialize statistics */
+    memset(stats, 0, sizeof(stats));
+
+    /* Preprocess tests tree and gather statistics */
+    has_diff = trc_diff_tests_has_diff(&db->tests, flags);
+
+    /* Output statistics */
+    trc_diff_stats_to_html(flags);
+
     /* Initial test name is empty */
     test_name[0] = '\0';
     
     /* Report */
-    if (trc_diff_tests_has_diff(&db->tests, flags) &&
+    if (has_diff &&
         ((rc = trc_diff_tests_to_html(&db->tests,
                                       flags | TRC_DIFF_BRIEF, 0)) != 0 ||
          (rc = trc_diff_tests_to_html(&db->tests, flags, 0)) != 0))
