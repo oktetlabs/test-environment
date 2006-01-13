@@ -4,7 +4,7 @@ AM_CFLAGS = @TE_CFLAGS@ $(SNMP_F)
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
 
-TESTS=parse_simple put_get parse_file val_set03 write_ind2
+TESTS=parse_simple put_get parse_file val_set03 write_ind2 save_to_file1
 check_PROGRAMS=$(TESTS)
 
 extra_DIST= \
@@ -19,7 +19,8 @@ val_set02.c \
 val_set03.c \
 val_set04.c \
 write_ind1.c \
-write_ind2.c
+write_ind2.c \
+save_to_file1.c
 
 noinst_HEADERS=test_types.h
 
