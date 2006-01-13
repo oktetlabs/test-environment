@@ -1004,7 +1004,10 @@ rpc_setrlimit(rcf_rpc_server *rpcs,
     tarpc_setrlimit_out out;
     tarpc_int           rpc_resource = rlimit_resource_h2rpc(resource);
 
-    RING("%s() started", __FUNCTION__);
+    RING("%s(res=%s(%d), rlim={cur=%d, max=%d}) started on Agent %s", 
+         __FUNCTION__,
+         rlimit_resource_rpc2str(rpc_resource),
+         resource, rlim->rlim_cur, rlim->rlim_max, rpcs->ta);
 
     if (rpcs == NULL)
     {
@@ -1017,7 +1020,7 @@ rpc_setrlimit(rcf_rpc_server *rpcs,
 
     if ((in.rlim.rlim_val = malloc(sizeof(struct tarpc_rlimit))) == NULL)
     {
-        ERROR("Cannot allocate memory for rpc_getrlimit() call");
+        ERROR("Cannot allocate memory for rpc_setrlimit() call");
         return TE_RC(TE_RCF, ENOMEM);
     }
     in.rlim.rlim_len = sizeof(struct tarpc_rlimit);
@@ -1053,7 +1056,10 @@ rpc_getrlimit(rcf_rpc_server *rpcs,
     tarpc_getrlimit_out out;
     tarpc_int           rpc_resource = rlimit_resource_h2rpc(resource);
 
-    RING("%s() started", __FUNCTION__);
+    RING("%s(res=%s(%d), rlim={cur=%d, max=%d}) started on Agent %s", 
+         __FUNCTION__,
+         rlimit_resource_rpc2str(rpc_resource),
+         resource, rlim->rlim_cur, rlim->rlim_max, rpcs->ta);
 
     if (rpcs == NULL)
     {
@@ -1085,7 +1091,7 @@ rpc_getrlimit(rcf_rpc_server *rpcs,
         return TE_RC(TE_RCF, EINVAL);
 
 
-    rcf_rpc_call(rpcs, "setrlimit", &in, &out);
+    rcf_rpc_call(rpcs, "getrlimit", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -1097,7 +1103,7 @@ rpc_getrlimit(rcf_rpc_server *rpcs,
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: getrlimit(%s, {%u, %u}) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 rlimit_resource_rpc2str(resource), 
+                 rlimit_resource_rpc2str(rpc_resource), 
                  rlim->rlim_cur, rlim->rlim_max,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
