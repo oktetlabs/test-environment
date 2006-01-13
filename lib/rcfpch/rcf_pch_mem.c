@@ -38,12 +38,13 @@
 #include <pthread.h>
 #endif
 
-#include "rcf_pch_internal.h"
+#ifdef STDC_HEADERS
+#include <stdlib.h>
+#include <string.h>
+#endif
 
-#include "te_errno.h"
-#include "te_defs.h"
 #include "te_stdint.h"
-#include "rcf_pch.h"
+#include "rcf_pch_mem.h"
 
 /** Chunk of reallocation of identifiers array */
 #define IDS_CHUNK   128
