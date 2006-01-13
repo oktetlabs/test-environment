@@ -185,7 +185,7 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
     } 
     pt++; 
 
-    while (*pt != '"')
+    while (*pt != '"' && *pt != '\0')
     { 
         l = strcspn(pt, "\\\""); /* find first \ or " */ 
         memcpy(pb, pt, l); 
@@ -197,8 +197,15 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
             *pb = *pt;
             pb++, pt++, total++;
         }
-    } 
-    *pb = 0;
+    }
+    
+    if (*pt == '\0')
+    {
+        /* We reached the end of the string, but haven't found quote mark */
+        return TE_EASNTXTPARSE;
+    }
+
+    *pb = '\0';
 
     *parsed = asn_init_value(type); 
     *syms_parsed = pt - text + 1; 
