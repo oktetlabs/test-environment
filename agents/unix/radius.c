@@ -1195,7 +1195,7 @@ radiusserver_find_name()
             return 0;
         }
         else
-            ERROR("'test -x /etc/init.d/%s' fails", candidate[i]);
+            VERB("'test -x /etc/init.d/%s' fails", candidate[i]);
     }
     return TE_ENOENT;
 }
