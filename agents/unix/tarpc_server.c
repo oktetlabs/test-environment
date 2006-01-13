@@ -4890,3 +4890,70 @@ _set_buf_pattern_1_svc(tarpc_set_buf_pattern_in *in,
     
     return TRUE;
 }
+
+/*-------------- setrlimit() ------------------------------*/
+
+TARPC_FUNC(setrlimit, {},
+{
+    struct rlimit rlim;
+
+    int resource;
+
+    resource = rlimit_resource_rpc2h(in->resource);
+
+    rlim.rlim_cur = in->rlim.rlim_val->rlim_cur;
+    rlim.rlim_max = in->rlim.rlim_val->rlim_max;
+
+    RING("setrlimit(%s, cur=%u, max=%u)", 
+         rlimit_resource_rpc2str(in->resource),
+         (int)rlim.rlim_cur, (int)rlim.rlim_max);
+
+    errno = 0;
+    
+    MAKE_CALL(out->retval = func(resource, &rlim));
+
+    if (out->retval != 0)
+    {
+        ERROR("setrlimit() failed, errno=%d", errno);
+    }
+
+    ;
+}
+)
+
+/*-------------- getrlimit() ------------------------------*/
+
+TARPC_FUNC(getrlimit, {},
+{
+    struct rlimit rlim;
+
+    int resource;
+
+    RING("getrlimit(%s)", 
+         rlimit_resource_rpc2str(in->resource));
+
+    resource = rlimit_resource_rpc2h(in->resource);
+
+    memset(&rlim, 0, sizeof(rlim));
+    memset(out, 0, sizeof(*out));
+    out->rlim.rlim_val = (tarpc_rlimit *)calloc(1, sizeof(tarpc_rlimit));
+    out->rlim.rlim_len = 1;
+
+    errno = 0;
+
+    MAKE_CALL(out->retval = func(resource, &rlim));
+
+    if (out->retval == 0)
+    {
+        out->rlim.rlim_val->rlim_cur = rlim.rlim_cur;
+        out->rlim.rlim_val->rlim_max = rlim.rlim_max;
+    }
+    else
+    {
+        ERROR("getrlimit() failed, errno=%r", out->common._errno);
+    }
+
+    ;
+}
+)
+
