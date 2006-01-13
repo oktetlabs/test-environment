@@ -1142,6 +1142,42 @@ log_msg(cfg_msg *msg, te_bool before)
 #undef GET_STRS
 }
 
+/** 
+ * Check if the current DB changes from the backup.
+ *
+ * @param filename      backup filename
+ * @param log           if TRUE, log changes
+ *
+ * @return 0 if DB state does not differ from backup; status code otherwise
+ */
+static inline te_errno
+verify_backup(const char *backup, te_bool log)
+{
+    char diff_file[RCF_MAX_PATH];
+    int  rc;
+
+    if ((rc = cfg_backup_create_file(filename)) != 0)
+        return rc;
+        
+    TE_SPRINTF(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
+    sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", backup,
+            filename, diff_file);
+            
+    rc = ((system(tmp_buf) == 0) ? 0 : TE_EBACKUP);
+    if (rc != 0 && log)
+    {
+        if (cs_flags & CS_LOG_DIFF)
+            te_log_message(__FILE__, __LINE__,
+                           TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+                           "Backup diff:\n%Tf", diff_file);
+        else
+            INFO("Backup diff:\n%Tf", diff_file);
+    }
+    unlink(diff_file); 
+    
+    return rc;
+}
+
 /**
  * Process backup user request.
  *
@@ -1185,17 +1221,8 @@ process_backup(cfg_backup_msg *msg)
                 
                 cfg_conf_delay_reset();
                 cfg_ta_sync("/:", TRUE);
-
-                TE_SPRINTF(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
                 
-                /* Check that it is really restored */
-                if ((msg->rc = cfg_backup_create_file(filename)) != 0)
-                    return;
-
-                sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
-                        filename, diff_file);
-                    
-                if (system(tmp_buf) == 0)
+                if ((msg->rc = verify_backup(msg->filename, FALSE)) == 0)
                 {
                     rcf_log_cfg_changes(FALSE);
                     return;
@@ -1215,32 +1242,21 @@ process_backup(cfg_backup_msg *msg)
 
         case CFG_BACKUP_VERIFY:
         {
-            char diff_file[RCF_MAX_PATH];
-            
             /* Check agents */
             int rc = rcf_check_agents();
             
             if (TE_RC_GET_ERROR(rc) == TE_ETAREBOOTED)
                 cfg_ta_sync("/:", TRUE);
                 
-            if ((msg->rc = cfg_backup_create_file(filename)) != 0)
-                return;
-            TE_SPRINTF(diff_file, "%s/te_cs.diff", getenv("TE_TMP"));
-            sprintf(tmp_buf, "diff -u %s %s >%s 2>&1", msg->filename,
-                    filename, diff_file);
-            msg->rc = ((system(tmp_buf) == 0) ? 0 : TE_EBACKUP);
-            if (msg->rc == 0)
+            if ((msg->rc = verify_backup(msg->filename, TRUE)) == 0)
                 cfg_dh_release_after(msg->filename);
             else
             {
-                if (cs_flags & CS_LOG_DIFF)
-                    te_log_message(__FILE__, __LINE__,
-                                   TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
-                                   "Backup diff:\n%Tf", diff_file);
-                else
-                    INFO("Backup diff:\n%Tf", diff_file);
+                cfg_ta_sync("/:", TRUE);
+                if ((msg->rc = verify_backup(msg->filename, TRUE)) == 0)
+                    cfg_dh_release_after(msg->filename);
             }
-            unlink(diff_file); 
+
             break;
         }
 
