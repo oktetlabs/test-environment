@@ -192,6 +192,11 @@ static const char * const trc_diff_stats_table =
 "      <TD><FONT class=\"U\">%u</FONT></TD>\n"
 "    </TR>\n"
 "    <TR>\n"
+"      <TD ALIGN=LEFT COLSPAN=5>Total run: <FONT class=\"S\">%u</FONT>+"
+                                          "<FONT class=\"U\">%u</FONT>+"
+                                          "<FONT class=\"E\">%u</FONT>=%u"
+"    </TR>\n"
+"    <TR>\n"
 "      <TD ALIGN=LEFT COLSPAN=5>[<FONT class=\"S\">X</FONT>+]"
                                 "<FONT class=\"U\">Y</FONT>+"
                                 "<FONT class=\"E\">Z</FONT><BR/>"
@@ -916,8 +921,36 @@ trc_diff_one_stats_to_html(const trc_tags_entry *tags_x,
                            unsigned int flags)
 {
     trc_diff_stats_counters *counters = &stats[tags_x->id][tags_y->id - 1];
+    trc_diff_stats_counter   total_match;
+    trc_diff_stats_counter   total_no_match;
+    trc_diff_stats_counter   total_excluded;
+    trc_diff_stats_counter   total;
 
     UNUSED(flags);
+
+    total_match =
+        (*counters)[TRC_DIFF_STATS_PASSED][TRC_DIFF_STATS_PASSED] +
+        (*counters)[TRC_DIFF_STATS_FAILED][TRC_DIFF_STATS_FAILED];
+    total_no_match =
+        (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
+                   [TRC_DIFF_STATS_PASSED_DIFF] +
+        (*counters)[TRC_DIFF_STATS_PASSED_DIFF]
+                   [TRC_DIFF_STATS_FAILED_DIFF] +
+        (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
+                   [TRC_DIFF_STATS_PASSED_DIFF] +
+        (*counters)[TRC_DIFF_STATS_FAILED_DIFF]
+                   [TRC_DIFF_STATS_FAILED_DIFF];
+    total_excluded =
+        (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
+                   [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE] +
+        (*counters)[TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE]
+                   [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE] +
+        (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
+                   [TRC_DIFF_STATS_PASSED_DIFF_EXCLUDE] +
+        (*counters)[TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE]
+                   [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE];
+    total = total_match + total_no_match + total_excluded;
+
     fprintf(f, trc_diff_stats_table,
             tags_x->name, tags_y->name,
             "PASSED", "FAILED", "SKIPPED", "other",
@@ -978,7 +1011,8 @@ trc_diff_one_stats_to_html(const trc_tags_entry *tags_x,
             (*counters)[TRC_DIFF_STATS_OTHER]
                        [TRC_DIFF_STATS_FAILED_DIFF_EXCLUDE],
             (*counters)[TRC_DIFF_STATS_OTHER][TRC_DIFF_STATS_SKIPPED],
-            (*counters)[TRC_DIFF_STATS_OTHER][TRC_DIFF_STATS_OTHER]);
+            (*counters)[TRC_DIFF_STATS_OTHER][TRC_DIFF_STATS_OTHER],
+            total_match, total_no_match, total_excluded, total);
 }
 
 /**
