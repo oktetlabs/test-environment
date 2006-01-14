@@ -269,8 +269,11 @@ static const char * const trc_diff_table_row_end =
 "      <TD>%s</TD>\n"           /* Notes */
 "    </TR>\n";
 
-static const char * const trc_diff_table_row_col =
-"      <TD>%s</TD>\n";
+static const char * const trc_diff_table_row_col_start =
+"      <TD>";
+
+static const char * const trc_diff_table_row_col_end =
+"</TD>\n";
 
 
 static char test_name[1024];
@@ -461,7 +464,7 @@ trc_diff_iters_has_diff(test_run *test, unsigned int flags,
 {
     te_bool         has_diff;
     te_bool         iter_has_diff;
-    trc_test_result iter_result;
+    trc_exp_result *iter_result;
     trc_tags_entry *tags_i;
     trc_tags_entry *tags_j;
     test_iter      *p;
@@ -472,25 +475,46 @@ trc_diff_iters_has_diff(test_run *test, unsigned int flags,
          has_diff = has_diff || p->output, p = p->links.tqe_next)
     {
         iter_has_diff = FALSE;
-        iter_result = TRC_TEST_UNSET;
+        iter_result = NULL;
 
         for (tags_i = tags_diff.tqh_first;
              tags_i != NULL;
              tags_i = tags_i->links.tqe_next)
         {
             if (test->diff_exp[tags_i->id] == TRC_TEST_UNSET)
+            {
                 test->diff_exp[tags_i->id] = p->diff_exp[tags_i->id].value;
+                test->diff_verdicts[tags_i->id] =
+                    &p->diff_exp[tags_i->id].verdicts;
+            }
+            else if (test->diff_exp[tags_i->id] == TRC_TEST_MIXED)
+            {
+                /* Nothing to do */
+            }
             else if (test->diff_exp[tags_i->id] !=
-                     p->diff_exp[tags_i->id].value)
+                     p->diff_exp[tags_i->id].value ||
+                     !tq_strings_equal(test->diff_verdicts[tags_i->id],
+                                       &p->diff_exp[tags_i->id].verdicts))
             {
                 test->diff_exp[tags_i->id] = TRC_TEST_MIXED;
+                test->diff_verdicts[tags_i->id] = NULL;
                 *all_equal = FALSE;
             }
 
-            if (iter_result == TRC_TEST_UNSET)
-                iter_result = p->diff_exp[tags_i->id].value;
-            else if (iter_result != p->diff_exp[tags_i->id].value)
+            if (iter_result == NULL)
+            {
+                iter_result = p->diff_exp + tags_i->id;
+            }
+            else if (iter_has_diff)
+            {
+                /* Nothing to do */
+            }
+            else if (iter_result->value != p->diff_exp[tags_i->id].value ||
+                     !tq_strings_equal(&iter_result->verdicts,
+                                       &p->diff_exp[tags_i->id].verdicts))
+            {
                 iter_has_diff = TRUE;
+            }
 
             for (tags_j = tags_diff.tqh_first;
                  tags_j != NULL;
@@ -639,7 +663,9 @@ trc_diff_expectations_equal(const test_iter *p, const test_iter *q)
 
     for (tags = tags_diff.tqh_first;
          tags != NULL &&
-         p->diff_exp[tags->id].value == q->diff_exp[tags->id].value;
+         p->diff_exp[tags->id].value == q->diff_exp[tags->id].value &&
+         tq_strings_equal(&p->diff_exp[tags->id].verdicts,
+                          &q->diff_exp[tags->id].verdicts);
          tags = tags->links.tqe_next);
 
     return (tags == NULL);
@@ -714,9 +740,12 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                      entry != NULL;
                      entry = entry->links.tqe_next)
                 {
-                    fprintf(f, trc_diff_table_row_col,
-                            trc_test_result_to_string(
-                                p->diff_exp[entry->id].value));
+                    fputs(trc_diff_table_row_col_start, f);
+                    fputs(trc_test_result_to_string(
+                              p->diff_exp[entry->id].value), f);
+                    trc_verdicts_to_html(f,
+                        &p->diff_exp[entry->id].verdicts);
+                    fputs(trc_diff_table_row_col_end, f);
                 }
                 fprintf(f, trc_diff_table_row_end,
                         p->diff_keys,
@@ -848,8 +877,11 @@ trc_diff_tests_to_html(const test_runs *tests, unsigned int flags,
                  entry != NULL;
                  entry = entry->links.tqe_next)
             {
-                fprintf(f, trc_diff_table_row_col,
-                        trc_test_result_to_string(p->diff_exp[entry->id]));
+                fputs(trc_diff_table_row_col_start, f);
+                fputs(trc_test_result_to_string(
+                          p->diff_exp[entry->id]), f);
+                trc_verdicts_to_html(f, p->diff_verdicts[entry->id]);
+                fputs(trc_diff_table_row_col_end, f);
 
                 keys = trc_diff_test_iters_get_keys(p, entry->id);
                 if (strlen(keys) > 0)

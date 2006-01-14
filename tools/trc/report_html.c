@@ -484,15 +484,7 @@ test_iters_to_html(te_bool stats, unsigned int flags,
                     trc_test_args_to_string(&p->args));
             
             fputs(trc_test_result_to_string(p->exp_result.value), f);
-            if (p->exp_result.verdicts.tqh_first != NULL)
-                fputs("<BR/><BR/>", f);
-            for (v = p->exp_result.verdicts.tqh_first;
-                 v != NULL;
-                 v = v->links.tqe_next)
-            {
-                fputc(' ', f);
-                fputs(v->str, f);
-            }
+            trc_verdicts_to_html(f, &p->exp_result.verdicts);
             
             fputs(trc_test_exp_got_row_mid, f);
             

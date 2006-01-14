@@ -246,7 +246,10 @@ typedef struct test_run {
     te_bool         diff_out;       /**< Should the test be output */
     te_bool         diff_out_iters; /**< Should the test iterations
                                          be output */
-    trc_test_result diff_exp[TRC_DIFF_IDS]; /**< The expected results */
+    /** The expected results */
+    trc_test_result     diff_exp[TRC_DIFF_IDS];
+    /** The expected verdicts */
+    tqh_string         *diff_verdicts[TRC_DIFF_IDS];
 } test_run;
 
 
@@ -333,5 +336,27 @@ extern int trc_report_to_html(const char *filename, FILE *header,
  */
 extern int trc_diff_report_to_html(trc_database *db, unsigned int flags,
                                    const char *filename);
+
+/**
+ * Output verdicts to HTML.
+ *
+ * @param f         File
+ * @param verdicts  Verdicts
+ */
+static inline void
+trc_verdicts_to_html(FILE *f, const tqh_string *verdicts)
+{
+    const tqe_string   *v;
+
+    if (verdicts == NULL || verdicts->tqh_first == NULL)
+        return;
+
+    fputs("<BR/><BR/>", f);
+    for (v = verdicts->tqh_first; v != NULL; v = v->links.tqe_next)
+    {
+        fputc(' ', f);
+        fputs(v->str, f);
+    }
+}
 
 #endif /* !__TE_TRC_DB_H__ */
