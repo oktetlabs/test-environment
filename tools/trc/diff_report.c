@@ -450,25 +450,23 @@ trc_diff_iter_stats(const test_iter      *iter,
 /**
  * Do test iterations have different expected results?
  *
- * @param[in]  tests    Set of tests
- * @param[in]  flags    Processing flags
- * @param[out] all_out  Do @e all iterations have output?
- * @param[out] diff_exp Array with expected result for the test as whole
- *                      for each set of tags
+ * @param[in]  test         Test
+ * @param[in]  flags        Processing flags
+ * @param[out] all_equal    Do @e all iterations have output?
  */
 static te_bool
-trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
-                        te_bool *all_out, trc_test_result *diff_exp)
+trc_diff_iters_has_diff(test_run *test, unsigned int flags,
+                        te_bool *all_equal)
 {
     te_bool         has_diff;
     te_bool         iter_has_diff;
     trc_test_result iter_result;
-    te_bool         has_no_out;
     trc_tags_entry *tags_i;
     trc_tags_entry *tags_j;
     test_iter      *p;
 
-    for (has_diff = FALSE, has_no_out = FALSE, p = iters->head.tqh_first;
+    *all_equal = TRUE;
+    for (has_diff = FALSE, p = test->iters.head.tqh_first;
          p != NULL;
          has_diff = has_diff || p->output, p = p->links.tqe_next)
     {
@@ -479,10 +477,14 @@ trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
              tags_i != NULL;
              tags_i = tags_i->links.tqe_next)
         {
-            if (diff_exp[tags_i->id] == TRC_TEST_UNSET)
-                diff_exp[tags_i->id] = p->diff_exp[tags_i->id].value;
-            else if (diff_exp[tags_i->id] != p->diff_exp[tags_i->id].value)
-                diff_exp[tags_i->id] = TRC_TEST_MIXED;
+            if (test->diff_exp[tags_i->id] == TRC_TEST_UNSET)
+                test->diff_exp[tags_i->id] = p->diff_exp[tags_i->id].value;
+            else if (test->diff_exp[tags_i->id] !=
+                     p->diff_exp[tags_i->id].value)
+            {
+                test->diff_exp[tags_i->id] = TRC_TEST_MIXED;
+                *all_equal = FALSE;
+            }
 
             if (iter_result == TRC_TEST_UNSET)
                 iter_result = p->diff_exp[tags_i->id].value;
@@ -493,7 +495,8 @@ trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
                  tags_j != NULL;
                  tags_j = tags_j->links.tqe_next)
             {
-                trc_diff_iter_stats(p, tags_i, tags_j);
+                if (!test->aux)
+                    trc_diff_iter_stats(p, tags_i, tags_j);
             }
         }
 
@@ -505,19 +508,7 @@ trc_diff_iters_has_diff(test_iters *iters, unsigned int flags,
          * expected results of the test iteration are different and it
          * shouldn't be excluded because of keys pattern.
          */
-
-        if (!p->output)
-        {
-            /* At least one iteration has no output */
-            has_no_out = TRUE;
-        }
     }
-
-    /* 
-     * All iterations have output if at least one have output and there
-     * are no iterations without output.
-     */
-    *all_out = has_diff && !has_no_out;
 
     return has_diff;
 }
@@ -534,7 +525,7 @@ trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
     trc_tags_entry *entry;
     test_run       *p;
     te_bool         has_diff;
-    te_bool         all_iters_out;
+    te_bool         all_iters_equal;
 
     for (has_diff = FALSE, p = tests->head.tqh_first;
          p != NULL;
@@ -549,20 +540,19 @@ trc_diff_tests_has_diff(test_runs *tests, unsigned int flags)
         }
 
         /* Output the test, if  iteration has differencies. */
-        p->diff_out = trc_diff_iters_has_diff(&p->iters, flags,
-                                              &all_iters_out,
-                                              p->diff_exp);
+        p->diff_out = trc_diff_iters_has_diff(p, flags,
+                                              &all_iters_equal);
 
         /**
          * Output test iterations if and only if test should be output
          * itself and:
          *  - set of iterations is empty, or
-         *  - 
+         *  - all iterations are not equal, or
          *  - it is not leaf of the tests tree.
          */
         p->diff_out_iters = p->diff_out &&
             (p->iters.head.tqh_first == NULL ||
-             !all_iters_out ||
+             !all_iters_equal ||
              p->iters.head.tqh_first->tests.head.tqh_first != NULL);
     }
 
@@ -639,6 +629,22 @@ trc_diff_test_iter_notes(const test_iter *iter)
 }
 
 /**
+ * Are expected results for two iterations equal?
+ */
+static te_bool
+trc_diff_expectations_equal(const test_iter *p, const test_iter *q)
+{
+    trc_tags_entry *tags;
+
+    for (tags = tags_diff.tqh_first;
+         tags != NULL &&
+         p->diff_exp[tags->id].value == q->diff_exp[tags->id].value;
+         tags = tags->links.tqe_next);
+
+    return (tags == NULL);
+}
+
+/**
  * Output test iterations differencies into a file @a f (global
  * variable).
  *
@@ -681,12 +687,14 @@ trc_diff_iters_to_html(const test_iters *iters, unsigned int flags,
                     /* 
                      * We are in the brief mode, therefore, it is
                      * a test script (not session or package) iteration.
-                     * We don't want to see iterations with equal keys.
+                     * We don't want to see iterations with equal
+                     * expectations and keys.
                      */
                     for (q = iters->head.tqh_first;
                          (q != p) &&
                          (!q->output ||
-                          strcmp(p->diff_keys, q->diff_keys) != 0);
+                          strcmp(p->diff_keys, q->diff_keys) != 0 ||
+                          !trc_diff_expectations_equal(p, q));
                          q = q->links.tqe_next);
 
                     if (p != q)
