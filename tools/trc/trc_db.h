@@ -230,6 +230,7 @@ typedef struct test_run {
     trc_stats       stats;          /**< Statistics */
 
     trc_test_type   type;           /**< Type of the test */
+    te_bool         aux;            /**< Is test auxiliary? */
     char           *name;           /**< Test name */
     char           *notes;          /**< Some notes */
 

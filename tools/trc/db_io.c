@@ -542,8 +542,9 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         ERROR("Name of the test is missing");
         return EINVAL;
     }
+
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("type")));
-    if (p->name == NULL)
+    if (tmp == NULL)
     {
         p->type = TRC_TEST_SCRIPT;
     }
@@ -565,8 +566,28 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         free(tmp);
         return EINVAL;
     }
-    INFO("Parsing test '%s' type=%d", p->name, p->type);
     free(tmp);
+
+    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("auxiliary")));
+    if (tmp == NULL ||
+        strcmp(tmp, "false") == 0)
+    {
+        p->aux = FALSE;
+    }
+    else if (strcmp(tmp, "true") == 0)
+    {
+        p->aux = TRUE;
+    }
+    else
+    {
+        ERROR("Invalid auxiliary property value '%s' of the test '%s'",
+              tmp, p->name);
+        free(tmp);
+        return EINVAL;
+    }
+    free(tmp);
+
+    INFO("Parsing test '%s' type=%d aux=%d", p->name, p->type, p->aux);
 
     node = xmlNodeChildren(node);
 
