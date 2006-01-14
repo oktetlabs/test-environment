@@ -527,7 +527,8 @@ trc_diff_iters_has_diff(test_run *test, unsigned int flags,
 
         /* The routine should be called first to be called in any case */
         p->output = trc_diff_tests_has_diff(&p->tests, flags) ||
-                    (iter_has_diff && !trc_diff_exclude_by_key(p));
+                    (test->type == TRC_TEST_SCRIPT && iter_has_diff &&
+                     !trc_diff_exclude_by_key(p));
         /*<
          * Iteration is output, if its tests have differencies or
          * expected results of the test iteration are different and it
