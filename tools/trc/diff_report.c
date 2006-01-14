@@ -433,7 +433,8 @@ trc_diff_iter_stats(const test_iter      *iter,
 
     match = (iter->diff_exp[tags_x->id].value ==
              iter->diff_exp[tags_y->id].value) &&
-            TRUE /* TODO compare verdicts */;
+            tq_strings_equal(&iter->diff_exp[tags_x->id].verdicts,
+                             &iter->diff_exp[tags_y->id].verdicts);
 
     exclude = !match && trc_diff_exclude_by_key(iter);
 

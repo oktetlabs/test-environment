@@ -81,10 +81,10 @@ typedef TAILQ_HEAD(tqh_string, tqe_string) tqh_string;
  * @retval FALSE    Not equal
  */
 static inline te_bool
-tq_strings_equal(tqh_string *s1, tqh_string *s2)
+tq_strings_equal(const tqh_string *s1, const tqh_string *s2)
 {
-    tqe_string *p1;
-    tqe_string *p2;
+    const tqe_string *p1;
+    const tqe_string *p2;
 
     if (s1 == s2)
         return TRUE;
