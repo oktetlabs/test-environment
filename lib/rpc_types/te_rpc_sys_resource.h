@@ -24,9 +24,6 @@
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
- * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
- * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  * $Id: $
  */
@@ -61,6 +58,14 @@ typedef enum rpc_rlimit_resource {
   RPC_RLIMIT_SBSIZE,
   RPC_RLIMIT_NLIMITS,
 } rpc_rlimit_resource;
+
+#ifndef RLIMIT_NLIMITS
+#ifdef RLIM_NLIMITS
+#define RLIMIT_NLIMITS  RLIM_NLIMITS
+#else
+#error RLIMIT_NLIMITS can't be defined
+#endif
+#endif
 
 /** Convert RPC resource type (setrlimit/getrllimit) to native resource type */
 static inline int
