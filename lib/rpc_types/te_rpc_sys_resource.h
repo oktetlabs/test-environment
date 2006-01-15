@@ -63,7 +63,7 @@ typedef enum rpc_rlimit_resource {
 #ifdef RLIM_NLIMITS
 #define RLIMIT_NLIMITS  RLIM_NLIMITS
 #else
-#error RLIMIT_NLIMITS can't be defined
+#error RLIMIT_NLIMITS cannot be defined
 #endif
 #endif
 
