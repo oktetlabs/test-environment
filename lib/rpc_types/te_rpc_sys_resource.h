@@ -78,11 +78,21 @@ rlimit_resource_rpc2h(rpc_rlimit_resource resource)
         RPC2H(RLIMIT_DATA);
         RPC2H(RLIMIT_STACK);
         RPC2H(RLIMIT_CORE);
+#ifdef RLIMIT_RSS
         RPC2H(RLIMIT_RSS);
+#endif
+#ifdef RLIMIT_NOFILE
         RPC2H(RLIMIT_NOFILE);
+#endif
+#ifdef RLIMIT_AS
         RPC2H(RLIMIT_AS);
+#endif
+#ifdef RLIMIT_NPROC
         RPC2H(RLIMIT_NPROC);
+#endif
+#ifdef RLIMIT_MEMLOCK
         RPC2H(RLIMIT_MEMLOCK);
+#endif
 #ifdef RLIMIT_LOCKS
         RPC2H(RLIMIT_LOCKS);
 #endif
@@ -110,11 +120,21 @@ rlimit_resource_h2rpc(int resource)
         H2RPC(RLIMIT_DATA);
         H2RPC(RLIMIT_STACK);
         H2RPC(RLIMIT_CORE);
+#ifdef RLIMIT_RSS
         H2RPC(RLIMIT_RSS);
+#endif
+#ifdef RLIMIT_NOFILE
         H2RPC(RLIMIT_NOFILE);
+#endif
+#ifdef RLIMIT_AS
         H2RPC(RLIMIT_AS);
+#endif
+#ifdef RLIMIT_NPROC
         H2RPC(RLIMIT_NPROC);
+#endif
+#ifdef RLIMIT_MEMLOCK
         H2RPC(RLIMIT_MEMLOCK);
+#endif
 #ifdef RLIMIT_LOCKS
         H2RPC(RLIMIT_LOCKS);
 #endif
