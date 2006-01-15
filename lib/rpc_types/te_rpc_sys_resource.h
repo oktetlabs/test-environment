@@ -58,6 +58,7 @@ typedef enum rpc_rlimit_resource {
   RPC_RLIMIT_LOCKS,
   RPC_RLIMIT_SIGPENDING,
   RPC_RLIMIT_MSGQUEUE,
+  RPC_RLIMIT_SBSIZE,
   RPC_RLIMIT_NLIMITS,
 } rpc_rlimit_resource;
 
@@ -77,7 +78,18 @@ rlimit_resource_rpc2h(rpc_rlimit_resource resource)
         RPC2H(RLIMIT_AS);
         RPC2H(RLIMIT_NPROC);
         RPC2H(RLIMIT_MEMLOCK);
+#ifdef RLIMIT_LOCKS
         RPC2H(RLIMIT_LOCKS);
+#endif
+#ifdef RLIMIT_SIGPENDING
+        RPC2H(RLIMIT_SIGPENDING);
+#endif
+#ifdef RLIMIT_MSGQUEUE
+        RPC2H(RLIMIT_MSGQUEUE);
+#endif
+#ifdef RLIMIT_SBSIZE
+        RPC2H(RLIMIT_SBSIZE);
+#endif
         default: return RLIMIT_NLIMITS;
     }
 }
@@ -98,7 +110,18 @@ rlimit_resource_h2rpc(int resource)
         H2RPC(RLIMIT_AS);
         H2RPC(RLIMIT_NPROC);
         H2RPC(RLIMIT_MEMLOCK);
+#ifdef RLIMIT_LOCKS
         H2RPC(RLIMIT_LOCKS);
+#endif
+#ifdef RLIMIT_SIGPENDING
+        H2RPC(RLIMIT_SIGPENDING);
+#endif
+#ifdef RLIMIT_MSGQUEUE
+        H2RPC(RLIMIT_MSGQUEUE);
+#endif
+#ifdef RLIMIT_SBSIZE
+        H2RPC(RLIMIT_SBSIZE);
+#endif
         default: return RPC_RLIMIT_NLIMITS;
     }
 }
