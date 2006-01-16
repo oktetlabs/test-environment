@@ -49,7 +49,8 @@ wsa_func_handles_discover()
     GUID  guid_transmit_file = WSAID_TRANSMITFILE;
     GUID  guid_wsa_recvmsg = WSAID_WSARECVMSG;
     DWORD bytes_returned;
-    int   s = socket(AF_INET, SOCK_DGRAM, 0);
+    int   s = socket(AF_INET, SOCK_STREAM, 
+                     wsp_proto_rpc2h(RPC_SOCK_STREAM, RPC_IPPROTO_TCP));
     
 #define DISCOVER_FUNC(_func, _func_cup) \
     do {                                                                \
