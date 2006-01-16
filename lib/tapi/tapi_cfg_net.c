@@ -730,8 +730,8 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
                                     CFG_IVP(&ip4_net_addr));
         if (rc != 0)
         {
-            ERROR("%s(): cfg_get_inst_name_type(0x%x) failed",
-                  __FUNCTION__, ip4_net_hndl);
+            ERROR("%s(): cfg_get_inst_name_type(0x%x) failed: %r",
+                  __FUNCTION__, ip4_net_hndl, rc);
             break;
         }
 
@@ -739,8 +739,8 @@ tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
         rc = cfg_get_oid_str(ip4_net_hndl, &ip4_net_oid);
         if (rc != 0)
         {
-            ERROR("%s(): cfg_get_oid_str(0x%x) failed",
-                  __FUNCTION__, ip4_net_hndl);
+            ERROR("%s(): cfg_get_oid_str(0x%x) failed: %r",
+                  __FUNCTION__, ip4_net_hndl, rc);
             break;
         }
         /* Get prefix length */
@@ -932,8 +932,8 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
                                     CFG_IVP(&ip4_net_addr));
         if (rc != 0)
         {
-            ERROR("%s(): cfg_get_inst_name_type(0x%x) failed",
-                  __FUNCTION__, ip4_net_hndl);
+            ERROR("%s(): cfg_get_inst_name_type(0x%x) failed: %r",
+                  __FUNCTION__, ip4_net_hndl, rc);
             break;
         }
 
@@ -941,8 +941,8 @@ tapi_cfg_net_assign_ip4_one_end(cfg_net_t *net,
         rc = cfg_get_oid_str(ip4_net_hndl, &ip4_net_oid);
         if (rc != 0)
         {
-            ERROR("%s(): cfg_get_oid_str(0x%x) failed",
-                  __FUNCTION__, ip4_net_hndl);
+            ERROR("%s(): cfg_get_oid_str(0x%x) failed: %r",
+                  __FUNCTION__, ip4_net_hndl, rc);
             break;
         }
         /* Get prefix length */
