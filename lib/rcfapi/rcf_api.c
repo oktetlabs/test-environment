@@ -1865,7 +1865,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
     {
         *csap_id = msg->handle;
         LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
-                "Created CSAP #%u '%s' (%s:%d) with parameters:\n%Tf",
+                "Created CSAP %u '%s' (%s:%d) with parameters:\n%Tf",
                 msg->handle, stack_id, ta_name, session, params);
     }
         
