@@ -51,11 +51,11 @@ extern int number_of_digits(int value);
 int asn_impl_fall_down_to_tree_nc(const asn_value *, char *,
                                   asn_value const **);
 
-int asn_impl_write_value_field(asn_value_p , const void *, size_t , char *);
+int asn_impl_write_value_field(asn_value *, const void *, size_t , char *);
 
 int asn_impl_read_value_field(const asn_value *, void *, size_t *, char *);
 
-int asn_impl_write_component_value(asn_value_p , const asn_value *,  char *);
+int asn_impl_write_component_value(asn_value *, const asn_value *,  char *);
 
 
 static int asn_put_child_value_by_index(asn_value *container,
@@ -148,10 +148,10 @@ asn_tag_equal(asn_tag_t l, asn_tag_t r)
  *
  * @return pointer to new ASN_value instance or NULL if error occurred. 
  */
-asn_value_p 
+asn_value *
 asn_init_value(const asn_type * type)
 {
-    asn_value_p new_value;
+    asn_value *new_value;
     int arr_len;
 
     if (type == NULL) return NULL;
@@ -179,7 +179,7 @@ asn_init_value(const asn_type * type)
         case SEQUENCE:
         case SET:
             {
-                size_t  sz = arr_len * sizeof(asn_value_p);
+                size_t  sz = arr_len * sizeof(asn_value *);
                 void   *ptr = malloc(sz);
 
                 new_value->len = arr_len;
@@ -208,10 +208,10 @@ asn_init_value(const asn_type * type)
  *
  * @return pointer to new ASN_value instance or NULL if error occurred. 
  */
-asn_value_p 
+asn_value *
 asn_init_value_tagged(const asn_type * type, asn_tag_class tc, uint16_t tag)
 {
-    asn_value_p new_value = asn_init_value(type);
+    asn_value *new_value = asn_init_value(type);
 
     if (new_value == NULL)
         return NULL;
@@ -234,7 +234,7 @@ asn_init_value_tagged(const asn_type * type, asn_tag_class tc, uint16_t tag)
 asn_value * 
 asn_copy_value(const asn_value *value)
 {
-    asn_value_p new_value;
+    asn_value *new_value;
     int len;
 
     if (!value) { /* ERROR! */ return NULL; } 
@@ -258,9 +258,9 @@ asn_copy_value(const asn_value *value)
     if (value->syntax & CONSTRAINT)
     {
         int i;
-        asn_value_p src_elem;
-        asn_value_p *arr = new_value->data.array = 
-            malloc(len * sizeof(asn_value_p));
+        asn_value *src_elem;
+        asn_value **arr = new_value->data.array = 
+            malloc(len * sizeof(asn_value *));
 
         if (arr==NULL)
         { /* ERROR! */
@@ -325,14 +325,14 @@ asn_copy_value(const asn_value *value)
  * @return nothing
  */
 void 
-asn_free_value(asn_value_p value)
+asn_free_value(asn_value *value)
 {
     if (!value) return;
     
     if (value->syntax & CONSTRAINT) 
     {
         unsigned int i;
-        asn_value_p *arr = value->data.array; 
+        asn_value **arr = value->data.array; 
         for (i = 0; i < value->len; i++, arr++)
         {
             asn_free_value(*arr);
@@ -364,14 +364,14 @@ asn_free_value(asn_value_p value)
  * @return zero on success, otherwise error code.
  */
 int 
-asn_free_subvalue(asn_value_p value, const char* labels)
+asn_free_subvalue(asn_value *value, const char* labels)
 {
     int   len;
     char *low_label;
     char *up_labels = asn_strdup(labels);
     int   rc = 0;
 
-    asn_value_p subvalue;
+    asn_value *subvalue;
 
     if (!value || !labels)
     {
@@ -410,7 +410,7 @@ asn_free_subvalue(asn_value_p value, const char* labels)
 }
 
 int
-asn_free_child_value(asn_value_p value, 
+asn_free_child_value(asn_value *value, 
                      asn_tag_class tag_class, uint16_t tag_val)
 {
     int rc = 0;
@@ -665,12 +665,12 @@ asn_put_child_value_by_index(asn_value *container, asn_value *new_value,
                 new_len = leaf_type_index + 1;
                 if ((container->data.array = 
                       realloc(container->data.array, 
-                              new_len * sizeof(asn_value_p))) 
+                              new_len * sizeof(asn_value *))) 
                      == NULL) 
                     return TE_ENOMEM; 
 
                 memset((void *)(container->data.array + container->len),
-                       0, sizeof(asn_value_p) * (new_len - container->len));
+                       0, sizeof(asn_value *) * (new_len - container->len));
 
                 container->len = new_len;
             }
@@ -734,7 +734,7 @@ asn_put_child_value_by_index(asn_value *container, asn_value *new_value,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_write_value_field(asn_value_p container, const void *data, size_t d_len, 
+asn_write_value_field(asn_value *container, const void *data, size_t d_len, 
                       const char *field_labels)
 {
     char *field_labels_int_copy = asn_strdup(field_labels); 
@@ -766,7 +766,7 @@ asn_write_value_field(asn_value_p container, const void *data, size_t d_len,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_impl_write_value_field(asn_value_p container, 
+asn_impl_write_value_field(asn_value *container, 
                            const void *data, size_t d_len, 
                            char *field_labels)
 {
@@ -1129,7 +1129,7 @@ asn_read_string(const asn_value *container, char **value,
         return TE_EASNWRONGTYPE;
 
     if (leaf_val->data.other == NULL)
-        return TE_EASNINCOMPLVAL; 
+        return TE_EASNINCOMPLVAL;
 
     *value = asn_strdup(leaf_val->data.other); 
  
@@ -1183,16 +1183,16 @@ asn_write_component_value(asn_value *container,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_impl_write_component_value(asn_value_p container, 
+asn_impl_write_component_value(asn_value *container, 
                                const asn_value *elem_value,
                                char *subval_labels)
 {
     char        *rest_field_labels = subval_labels;
     char        *cur_label = "";
-    asn_value_p  subvalue;
+    asn_value * subvalue;
     int          rc;
 
-                asn_value_p new_value = NULL;
+                asn_value *new_value = NULL;
 
     if (!container || !elem_value || !subval_labels) return TE_EWRONGPTR; 
 
@@ -1526,7 +1526,7 @@ asn_read_component_value (const asn_value *container,
     if ( (*elem_value)->syntax == CHOICE ||
          (*elem_value)->syntax == TAGGED   )
     {
-        asn_value_p transparent_val = *elem_value;
+        asn_value *transparent_val = *elem_value;
         *elem_value = asn_copy_value(transparent_val->data.array[0]);
         asn_free_value(transparent_val);
     }
@@ -1550,10 +1550,10 @@ asn_read_component_value (const asn_value *container,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_write_indexed(asn_value_p container, const asn_value_p elem_value, 
+asn_write_indexed(asn_value *container, const asn_value *elem_value, 
                   int index, const char *subval_labels)
 {
-    asn_value_p value = container;
+    asn_value *value = container;
 
     int rc;
 
@@ -1595,7 +1595,7 @@ asn_write_indexed(asn_value_p container, const asn_value_p elem_value,
  *
  * @return pointer to new ASN_value instance or NULL if error occurred. 
  */ 
-asn_value_p
+asn_value *
 asn_read_indexed(const asn_value *container, int index,
                  const char *subval_labels)
 {
@@ -1614,7 +1614,7 @@ asn_read_indexed(const asn_value *container, int index,
         case SEQUENCE_OF:
         case SET_OF:
         {
-            asn_value_p subval = value->data.array[index];
+            asn_value * subval = value->data.array[index];
             while ((subval->syntax == CHOICE ) || (subval->syntax == TAGGED ))
                 if ((subval = subval->data.array[0]) == NULL) 
                     return NULL;
@@ -1644,10 +1644,10 @@ asn_read_indexed(const asn_value *container, int index,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_insert_indexed(asn_value_p container, const asn_value_p elem_value, 
+asn_insert_indexed(asn_value * container, const asn_value * elem_value, 
                               int index, const char *subval_labels )
 {
-    asn_value_p value;
+    asn_value * value;
     int r_c; 
     int new_len;
 
@@ -1673,7 +1673,7 @@ asn_insert_indexed(asn_value_p container, const asn_value_p elem_value,
         case SEQUENCE_OF:
         case SET_OF:
         {
-            asn_value_p *arr = malloc(new_len * sizeof(asn_value_p));
+            asn_value * *arr = malloc(new_len * sizeof(asn_value *));
             unsigned int i;
             if (arr == NULL) return TE_ENOMEM;
 
@@ -1712,9 +1712,9 @@ asn_insert_indexed(asn_value_p container, const asn_value_p elem_value,
  * @return zero on success, otherwise error code.
  */ 
 int
-asn_remove_indexed(asn_value_p container, int index, const char *subval_labels)
+asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
 {
-    asn_value_p value = container;
+    asn_value * value = container;
     int r_c; 
 
     r_c = asn_impl_fall_down_to_tree_writable(container, subval_labels, &value); 
@@ -1732,12 +1732,12 @@ asn_remove_indexed(asn_value_p container, int index, const char *subval_labels)
         case SEQUENCE_OF:
         case SET_OF:
         {
-            asn_value_p *arr = NULL;
+            asn_value * *arr = NULL;
             unsigned int i;
             
             if (value->len > 1)
             {
-                arr = malloc((value->len - 1) * sizeof(asn_value_p)); 
+                arr = malloc((value->len - 1) * sizeof(asn_value *)); 
                 if (arr == NULL) return TE_ENOMEM;
             }
 
@@ -1832,7 +1832,7 @@ asn_impl_fall_down_to_tree_nc (const asn_value *container, char *field_labels,
         if (r_c) break;
     }
 
-    *found_value = (asn_value_p) value;
+    *found_value = (asn_value *) value;
 
     return r_c;
 }
@@ -1868,7 +1868,7 @@ asn_impl_find_subvalue(const asn_value *container, const char *label,
     { /* we have current node constraint with named subtrees */
         int index;
         int rc;
-        const asn_value_p * arr = container->data.array; 
+        const asn_value **arr = (const asn_value **)container->data.array;
 
         switch (container->syntax)
         {

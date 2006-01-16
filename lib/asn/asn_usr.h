@@ -156,7 +156,7 @@ extern asn_value *asn_copy_value(const asn_value *value);
  *
  * @return nothing
  */
-extern void asn_free_value(asn_value_p value);
+extern void asn_free_value(asn_value *value);
 
 /**
  * Free subvalue of constraint ASN value instance.
@@ -171,7 +171,7 @@ extern void asn_free_value(asn_value_p value);
  *
  * @return zero on success, otherwise error code.
  */
-extern int asn_free_subvalue(asn_value_p value, const char *labels);
+extern int asn_free_subvalue(asn_value *value, const char *labels);
 
 /**
  * Free one-level subvalue of constraint ASN value instance by tag.
@@ -183,7 +183,7 @@ extern int asn_free_subvalue(asn_value_p value, const char *labels);
  *
  * @return zero on success, otherwise error code.
  */
-extern int asn_free_child_value(asn_value_p value, 
+extern int asn_free_child_value(asn_value *value, 
                                asn_tag_class tag_class, uint16_t tag_val);
 
 
@@ -221,7 +221,7 @@ extern const char *asn_get_type_name(const asn_type *type);
  * @return zero on success, otherwise error code.
  */ 
 extern int asn_parse_value_text(const char *string, const asn_type *type, 
-                                asn_value_p *parsed_val, int *parsed_syms); 
+                                asn_value **parsed_val, int *parsed_syms); 
 
 /**
  * Parse ASN.1 text with "Value assignment" (see ASN.1 specification) 
@@ -267,7 +267,7 @@ extern int asn_parse_file(const char *filename, char **found_names, int *found_l
  * @return zero on success, otherwise error code.
  */ 
 extern int asn_parse_dvalue_in_file(const char *filename, const asn_type *type, 
-                                asn_value_p *parsed_value, int *syms_parsed); 
+                                asn_value **parsed_value, int *syms_parsed); 
 
 /**
  * Prepare textual ASN.1 presentation of passed value and put it into specified
@@ -305,7 +305,7 @@ extern int asn_save_to_file(const asn_value *value, const char *filename);
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_encode(void *buf, size_t *buf_len, asn_value_p value); 
+extern int asn_encode(void *buf, size_t *buf_len, asn_value *value); 
 
 /**
  * BER decoding of passed data.
@@ -314,7 +314,7 @@ extern int asn_encode(void *buf, size_t *buf_len, asn_value_p value);
  *
  * @return pointer to new asn_value instance or NULL if error occurred. 
  */ 
-extern asn_value_p asn_decode(const void *data);
+extern asn_value *asn_decode(const void *data);
 
 
 
@@ -364,7 +364,7 @@ extern int asn_put_child_value_by_label(asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_write_value_field(asn_value_p container, 
+extern int asn_write_value_field(asn_value *container, 
                                  const void *data, size_t d_len, 
                                  const char *labels);
 
@@ -494,7 +494,7 @@ extern int asn_write_component_value(asn_value *container,
  * @return zero on success, otherwise error code.
  */ 
 extern int asn_read_component_value(const asn_value *container, 
-                                    asn_value_p *elem_value,
+                                    asn_value **elem_value,
                                     const char *labels);
 
 
@@ -511,8 +511,8 @@ extern int asn_read_component_value(const asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_write_indexed(asn_value_p container,
-                             const asn_value_p elem_value, 
+extern int asn_write_indexed(asn_value *container,
+                             const asn_value *elem_value, 
                              int index, const char *labels);
 
 /**
@@ -526,7 +526,7 @@ extern int asn_write_indexed(asn_value_p container,
  *
  * @return pointer to new asn_value instance or NULL if error occurred. 
  */ 
-extern asn_value_p asn_read_indexed(const asn_value *container, 
+extern asn_value *asn_read_indexed(const asn_value *container, 
                                     int index, const char *labels);
 
 /**
@@ -543,8 +543,8 @@ extern asn_value_p asn_read_indexed(const asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_insert_indexed(asn_value_p container,
-                              const asn_value_p elem_value, 
+extern int asn_insert_indexed(asn_value *container,
+                              const asn_value *elem_value, 
                               int index, const char *labels );
 
 /**
@@ -558,7 +558,7 @@ extern int asn_insert_indexed(asn_value_p container,
  *
  * @return zero on success, otherwise error code.
  */ 
-extern int asn_remove_indexed(asn_value_p container, 
+extern int asn_remove_indexed(asn_value *container, 
                               int index, const char *labels );
 
 /**

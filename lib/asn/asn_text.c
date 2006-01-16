@@ -59,38 +59,38 @@ int asn_impl_pt_label(const char*text, char *label, int *parsed_syms);
 
 
 int asn_impl_pt_charstring(const char *text, const asn_type *type, 
-                           asn_value_p *parsed, int *parsed_syms);
+                           asn_value **parsed, int *parsed_syms);
 
 int asn_impl_pt_bool(const char *text, const asn_type *type, 
-                     asn_value_p *parsed, int *parsed_syms);
+                     asn_value **parsed, int *parsed_syms);
 
 int asn_impl_pt_integer(const char *text, const asn_type *type, 
-                        asn_value_p *parsed, int *parsed_syms);
+                        asn_value **parsed, int *parsed_syms);
 
 int asn_impl_pt_null(const char*text, const asn_type *type, 
-                     asn_value_p *parsed, int *parsed_syms);
+                     asn_value **parsed, int *parsed_syms);
 
 int asn_impl_pt_objid(const char*text, const asn_type *type,
-                      asn_value_p *parsed, int *parsed_syms);
+                      asn_value **parsed, int *parsed_syms);
 
 
 int asn_impl_pt_octstring(const char *text, const asn_type *type, 
-                          asn_value_p *parsed, int *parsed_syms);
+                          asn_value **parsed, int *parsed_syms);
 
 int asn_impl_pt_enum(const char*text, const asn_type *type, 
-                     asn_value_p *parsed, int *parsed_syms);
+                     asn_value **parsed, int *parsed_syms);
 
 int asn_impl_pt_named_array(const char*text, const asn_type *type, 
-                            asn_value_p *parsed, int *parsed_syms);
+                            asn_value **parsed, int *parsed_syms);
 
 int asn_impl_pt_indexed_array(const char*text, const asn_type *type, 
-                              asn_value_p *parsed, int *parsed_syms);
+                              asn_value **parsed, int *parsed_syms);
 
-int asn_impl_pt_choice(const char*text, const asn_type *type, 
-                       asn_value_p *parsed, int *parsed_syms);
+int asn_impl_pt_choice(const char *txt, const asn_type *type, 
+                       asn_value **parsed, int *parsed_syms);
 
 int asn_parse_value_text(const char*text, const asn_type *type, 
-                         asn_value_p *parsed, int *parsed_syms);
+                         asn_value **parsed, int *parsed_syms);
 
 
 #define PARSE_BUF 0x1000
@@ -160,7 +160,7 @@ asn_impl_pt_label(const char *text, char *label, int *syms)
  */ 
 int 
 asn_impl_pt_charstring(const char *text, const asn_type *type, 
-                       asn_value_p *parsed, int *syms_parsed)
+                       asn_value **parsed, int *syms_parsed)
 {
     const char *pt = text; 
 
@@ -231,7 +231,7 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
  */ 
 int 
 asn_impl_pt_octstring(const char *text, const asn_type *type, 
-                      asn_value_p *parsed, int *syms_parsed)
+                      asn_value **parsed, int *syms_parsed)
 {
     const char *pt = text; 
     uint8_t    *buffer;
@@ -336,7 +336,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
  */ 
 int 
 asn_impl_pt_integer(const char *text, const asn_type *type, 
-                    asn_value_p *parsed, int *syms_parsed)
+                    asn_value **parsed, int *syms_parsed)
 {
     int   p_value;
     char *endptr; 
@@ -378,7 +378,7 @@ asn_impl_pt_integer(const char *text, const asn_type *type,
  */ 
 int 
 asn_impl_pt_bool(const char*text, const asn_type *type, 
-                 asn_value_p *parsed, int *syms_parsed)
+                 asn_value **parsed, int *syms_parsed)
 {
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR; 
@@ -415,7 +415,7 @@ asn_impl_pt_bool(const char*text, const asn_type *type,
  */ 
 int 
 asn_impl_pt_null(const char *text, const asn_type *type, 
-                 asn_value_p *parsed, int *syms_parsed)
+                 asn_value **parsed, int *syms_parsed)
 {
     static const char *null_string = "NULL";
 
@@ -450,7 +450,7 @@ asn_impl_pt_null(const char *text, const asn_type *type,
  */ 
 int 
 asn_impl_pt_enum(const char*text, const asn_type *type, 
-                 asn_value_p *parsed, int *syms_parsed)
+                 asn_value **parsed, int *syms_parsed)
 {
     int   rc;
     int   p_value;
@@ -515,7 +515,7 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
  */
 int 
 asn_impl_pt_objid(const char *text, const asn_type *type,
-                  asn_value_p *parsed, int *parsed_syms)
+                  asn_value **parsed, int *parsed_syms)
 {
     const char *pt = text; 
     int         cur_index = 0;
@@ -616,7 +616,7 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
  */
 int 
 asn_impl_pt_named_array(const char *text, const asn_type *type, 
-                        asn_value_p *parsed, int *parsed_syms)
+                        asn_value **parsed, int *parsed_syms)
 {
     const char *pt = text; 
 
@@ -714,7 +714,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
  */
 int 
 asn_impl_pt_indexed_array(const char*text, const asn_type * type, 
-                          asn_value_p *parsed, int *parsed_syms)
+                          asn_value **parsed, int *parsed_syms)
 {
     const char *pt = text; 
 
@@ -787,10 +787,10 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
  * @return zero on success, otherwise error code.
  */
 int 
-asn_impl_pt_choice(const char*text, const asn_type *type, 
-                   asn_value_p *parsed, int *parsed_syms)
+asn_impl_pt_choice(const char *txt, const asn_type *type, 
+                   asn_value **parsed, int *parsed_syms)
 {
-    const char *pt = text; 
+    const char *pt = txt; 
 
     char  l_b[100];
     char *label_buf;
@@ -803,7 +803,7 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
 
     label_buf = l_b;
 
-    if (!text || !type || !parsed || !parsed_syms)
+    if (!txt || !type || !parsed || !parsed_syms)
         return TE_EWRONGPTR; 
 
     *parsed = asn_init_value(type); 
@@ -820,7 +820,7 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
     {
         WARN("%s(): subtype for label '%s' not found",
              __FUNCTION__, label_buf);
-        *parsed_syms = pt - text;
+        *parsed_syms = pt - txt;
         return TE_EASNTXTVALNAME;
     }
 
@@ -829,7 +829,7 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
     {
         asn_free_value(*parsed);
         *parsed = NULL;
-        *parsed_syms = pt - text;
+        *parsed_syms = pt - txt;
         return TE_EASNTXTSEPAR;
     }
     pt++;
@@ -838,7 +838,7 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
 
     rc = asn_parse_value_text(pt, subtype, &subval, &p_s);
 
-    *parsed_syms = pt - text + p_s;
+    *parsed_syms = pt - txt + p_s;
 
     if (rc) 
     {
@@ -875,7 +875,7 @@ asn_impl_pt_choice(const char*text, const asn_type *type,
  */ 
 int 
 asn_parse_value_text(const char *text, const asn_type *type, 
-                     asn_value_p *parsed, int *syms_parsed)
+                     asn_value **parsed, int *syms_parsed)
 {
     if (!text || !type || !parsed || !syms_parsed)
         return TE_EWRONGPTR;
@@ -1079,7 +1079,7 @@ asn_count_len_tagged(const asn_value *value, unsigned int indent)
 
     if (value->txt_len < 0)
     {
-        asn_value_p v_el = value->data.array[0];
+        asn_value *v_el = value->data.array[0];
         if (v_el)
         { 
             all_used += strlen(t_class[(int)value->tag.cl]); 
@@ -1108,7 +1108,7 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
     int  all_used = 0; 
     int *txt_len_p;
 
-    asn_value_p v_el;
+    asn_value *v_el;
 
     if (value == NULL)
         return 0; 
@@ -1319,7 +1319,8 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
         string = quote_place + 1;
     }
 
-    PUT_PIECE(string, strlen(string));
+    if (string != NULL && string[0] != '\0')
+        PUT_PIECE(string, strlen(string));
     
     strcpy(buf_place, "\""); 
     total_syms++;
@@ -1383,7 +1384,7 @@ asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
 {
     int all_used = 0, used;
 
-    asn_value_p v_el;
+    asn_value *v_el;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0; 
@@ -1429,7 +1430,7 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
 {
     int all_used = 0, used;
 
-    asn_value_p v_el;
+    asn_value *v_el;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0; 
@@ -1554,7 +1555,7 @@ asn_sprint_array_fields(const asn_value *value, char *buffer,
 
     for (i = 0; i < value->len; i++)
     { 
-        asn_value_p v_el = value->data.array[i];
+        asn_value *v_el = value->data.array[i];
 
         if (v_el)
         {
@@ -1766,7 +1767,7 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
 
         for (i = 0; i < value->len; i++)
         { 
-            asn_value_p v_el = value->data.array[i];
+            asn_value *v_el = value->data.array[i];
 
             if (v_el)
             { 
@@ -1835,6 +1836,21 @@ asn_save_to_file(const asn_value *value, const char *filename)
 }
 
 
+static int
+file_len(const char *filename, size_t *len)
+{
+    struct stat fst;
+
+    if (len == NULL)
+        return TE_EWRONGPTR;
+
+    if (stat(filename, &fst) != 0)
+        return errno; 
+
+    *len = fst.st_size;
+    return 0;
+}
+
 /**
  * Read ASN.1 text file, parse DefinedValue of specified ASN type
  *
@@ -1847,10 +1863,9 @@ asn_save_to_file(const asn_value *value, const char *filename)
  */ 
 int 
 asn_parse_dvalue_in_file(const char *filename, const asn_type *type, 
-                         asn_value_p *parsed_value, int *syms_parsed) 
-{
-    struct stat fst;
-
+                         asn_value **parsed_value, int *syms_parsed) 
+{ 
+    size_t flen;
     char *buf;
     int   fd;
     int   read_sz;
@@ -1858,17 +1873,17 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
 
     if (filename == NULL || type == NULL || 
         parsed_value == NULL || syms_parsed == NULL)
-        return TE_EWRONGPTR;
+        return TE_EWRONGPTR; 
 
-    if (stat(filename, &fst) != 0)
-        return errno; 
+    if ((rc = file_len(filename, &flen)) != 0)
+        return rc;
 
-    buf = malloc(fst.st_size + 1); 
+    buf = calloc(flen + 1, 1); 
     fd = open(filename, O_RDONLY);
     if (fd < 0)
         return errno; 
 
-    read_sz = read(fd, buf, fst.st_size + 1);
+    read_sz = read(fd, buf, flen + 1);
     close(fd);
 
     rc = asn_parse_value_text(buf, type, parsed_value, syms_parsed);

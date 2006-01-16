@@ -133,7 +133,7 @@ struct asn_value
     union {
         int          integer;
         void        *other;
-        asn_value_p *array;
+        asn_value  **array;
     } data;
 
     int txt_len;   /**< Length of textual presentation of value, 
