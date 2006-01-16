@@ -2069,29 +2069,19 @@ env_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     if (env_is_hidden(name, -1))
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
+        return TE_RC(TE_TA_WIN32, TE_EPERM);
 
-    /* Don't check if env. var exists */
-    /* if (getenv(name) == NULL) */
-    /* Just set it */
-    if (1)
+    if (setenv(name, value, 1) == 0)
     {
-        if (SetEnvironmentVariable(name, value) == TRUE)
-        {
-            return 0;
-        }
-        else
-        {
-            te_errno rc = TE_OS_RC(TE_TA_WIN32, GetLastError());
-
-            ERROR("Failed to add Environment variable '%s=%s'",
-                  name, value);
-            return rc;
-        }
+        return 0;
     }
     else
     {
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+        te_errno rc = TE_RC(TE_TA_WIN32, TE_EFAIL);
+
+        ERROR("Failed to add Environment variable '%s=%s'; error %d",
+              name, value, GetLastError());
+        return rc;
     }
 }
 
@@ -2180,3 +2170,18 @@ env_list(unsigned int gid, const char *oid, char **list)
 
     return 0;
 }
+
+#include "windows.h"
+
+int 
+setenv(const char *name, const char *value, int overwrite)
+{
+    return SetEnvironmentVariable(name, value) ? 0 : -1;
+}
+
+void 
+unsetenv(const char *name)
+{
+    SetEnvironmentVariable(name, NULL);
+}
+

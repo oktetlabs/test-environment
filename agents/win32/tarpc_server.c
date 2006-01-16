@@ -218,14 +218,25 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
 te_errno
 create_process_rpc_server(const char *name, int32_t *pid)
 {
-    char cmdline[256];
+    char  cmdline[256];
+    char *tmp;
     
     PROCESS_INFORMATION info;
     STARTUPINFO         si;
     
-    TE_SPRINTF(cmdline, "%s rpc_server %s", GetCommandLine(), name);
+    strcpy(cmdline, GetCommandLine());
+    if ((tmp = strchr(cmdline, ' ')) != NULL)
+        *(tmp + 1) = 0;
+    
+    sprintf(cmdline + strlen(cmdline), "rpc_server %s", name);    
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
+    
+    {
+        char buf[10] = { 0};
+        GetEnvironmentVariable("TE_LOG_PORT", buf, 10);
+        RING("TE_LOG_PORT=%s", buf);
+    }
     
     if (!CreateProcess(NULL, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
                        &si, &info))
@@ -3992,3 +4003,4 @@ TARPC_FUNC(gettimeofday,
     }
 }
 )
+

@@ -85,6 +85,9 @@ char *ta_name = "(win32)";
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
+#ifdef RCF_RPC
+extern te_errno create_process_rpc_server(const char *name, int32_t *pid);
+#endif
 
 /* See description in rcf_ch_api.h */
 int
@@ -257,6 +260,11 @@ rcf_ch_start_process(int *pid,
     UNUSED(priority);
 
     VERB("Start task handler is executed");
+
+#ifdef RCF_RPC
+    if (strcmp(rtn, "rcf_pch_rpc_server_argv") == 0)
+        return create_process_rpc_server((char *)params[0], (int32_t *)pid);
+#endif        
 
     while (addr != NULL)
     {
@@ -603,19 +611,6 @@ ta_sigpipe_handler(int sig)
     WARN("Test Agent received SIGPIPE signal");
 }
 
-sigset_t rpcs_received_signals;
-
-/**
- * Special signal handler which registers signals.
- * 
- * @param signum    received signal
- */
-void
-signal_registrar(int signum)
-{
-    sigaddset(&rpcs_received_signals, signum);
-}
-
 int
 rcf_ch_shutdown(struct rcf_comm_connection *handle,
                 char *cbuf, size_t buflen, size_t answer_plen)
@@ -685,7 +680,13 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     strncpy(cmd, lpCmdLine, sizeof(cmd) - 1);
     ta_name = strtok(cmd, " ");
     tmp = strtok(NULL, " ");
-
+    
+    if (strcmp(ta_name, "rpc_server") == 0)
+    {
+        rcf_pch_rpc_server(tmp);
+        _exit(0);
+    }
+    
     (void)signal(SIGINT, ta_sigint_handler);
     (void)signal(SIGPIPE, ta_sigpipe_handler);
 
@@ -701,8 +702,6 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     sprintf(buf, "PID %u", getpid());
 
     pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
-
-    sigemptyset(&rpcs_received_signals);
 
     rc = rcf_pch_run(tmp, buf);
     if (rc != 0)
