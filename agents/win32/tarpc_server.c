@@ -221,11 +221,14 @@ create_process_rpc_server(const char *name, int32_t *pid)
     char cmdline[256];
     
     PROCESS_INFORMATION info;
+    STARTUPINFO         si;
     
     TE_SPRINTF(cmdline, "%s rpc_server %s", GetCommandLine(), name);
+    memset(&si, 0, sizeof(si));
+    si.cb = sizeof(si);
     
     if (!CreateProcess(NULL, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
-                       NULL, &info))
+                       &si, &info))
     {
         ERROR("CreateProcess() failed with error %d", GetLastError());
         return win_rpc_errno(GetLastError());
@@ -2595,6 +2598,8 @@ TARPC_FUNC(create_overlapped, {},
         tmp->overlapped.hEvent = IN_HEVENT;
         tmp->overlapped.Offset = in->offset;
         tmp->overlapped.OffsetHigh = in->offset_high;
+        tmp->cookie1 = in->cookie1;
+        tmp->cookie2 = in->cookie2;
         out->retval = rcf_pch_mem_alloc(tmp);
         RING("Overlapped structure %x (index %d) is allocated", tmp, 
             out->retval);
