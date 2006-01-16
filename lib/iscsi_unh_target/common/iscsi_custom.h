@@ -30,7 +30,11 @@
 #ifndef __TE_TAD_ISCSI_CUSTOM_H__
 #define __TE_TAD_ISCSI_CUSTOM_H__
 
+#include <limits.h>
+
 typedef struct iscsi_custom_data iscsi_custom_data;
+
+#define ISCSI_CUSTOM_DEFAULT INT_MAX
 
 iscsi_custom_data *iscsi_register_custom(int id);
 void iscsi_deregister_custom(iscsi_custom_data *block);

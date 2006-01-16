@@ -42,7 +42,7 @@
 
 #define ISCSI_TARGET_SET_PARAM(ta_, param_id_, value_) \
     do {                                                            \
-        if (param_id < 0)                                           \
+        if (param_id_ < 0)                                          \
             TEST_FAIL("Invalid parameter name used");               \
                                                                     \
         CHECK_RC(tapi_iscsi_target_set_parameter((ta_), (param_id_),\

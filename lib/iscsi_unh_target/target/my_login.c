@@ -1056,7 +1056,8 @@ handle_login(struct iscsi_conn *conn, uint8_t *buffer)
         conn->stat_sn = pdu->exp_stat_sn;
         session->cmd_sn = pdu->cmd_sn;
         session->exp_cmd_sn = pdu->cmd_sn;
-        session->max_cmd_sn = pdu->cmd_sn + QUEUE_DEPTH_ALLOWED;
+        session->max_cmd_sn = pdu->cmd_sn + 
+            iscsi_get_custom_value(conn->custom, "max_cmd_sn_delta");
 
         memcpy(session->isid, pdu->isid, 6);
 

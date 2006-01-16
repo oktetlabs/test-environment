@@ -2285,7 +2285,7 @@ static te_errno
 command_open(iscsi_io_handle_t *ioh, int *fd, 
              void *data, ssize_t length)
 {
-    *fd = rpc_open(ioh->rpcs, data, length | RPC_O_DIRECT,
+    *fd = rpc_open(ioh->rpcs, data, length,
                    RPC_S_IREAD | RPC_S_IWRITE);
     return (*fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
 }
@@ -2356,6 +2356,7 @@ command_write(iscsi_io_handle_t *ioh, int *fd,
     if (!realloc_buffer(ioh, length))
         return RPC_ERRNO(ioh->rpcs);
     
+    RING("Doing RPC write");
     rpc_set_buf(ioh->rpcs, data, length, ioh->buffer, 0);
     result_len = rpc_write(ioh->rpcs, *fd, data, length);
     return (result_len < 0 ?
@@ -2685,7 +2686,7 @@ tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
     {
         cmd.cmd       = command_open;
         cmd.fd        = -1;
-        cmd.length    = (ssize_t)(RPC_O_RDWR | RPC_O_SYNC);
+        cmd.length    = (ssize_t)(RPC_O_RDWR);
         cmd.data      = ioh->device;
         cmd.spread_fd = TRUE;
         cmd.destroy   = NULL;
@@ -2754,7 +2755,8 @@ tapi_iscsi_initiator_open(iscsi_io_handle_t *ioh,
     
     cmd.cmd       = command_open;
     cmd.fd        = -1;
-    cmd.length    = fcntl_flags_h2rpc(mode) | RPC_O_SYNC;
+    cmd.length    = fcntl_flags_h2rpc(mode) 
+        /* | RPC_O_SYNC | RPC_O_DIRECT */;
     cmd.data      = strdup(fname);
     cmd.spread_fd = TRUE;
     cmd.leader    = TRUE;

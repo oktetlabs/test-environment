@@ -55,7 +55,11 @@ struct iscsi_custom_data
 };
 
 static pthread_mutex_t custom_mutex = PTHREAD_MUTEX_INITIALIZER;
-static iscsi_custom_data *custom_data_list;
+
+static iscsi_custom_data default_block = { id: ISCSI_CUSTOM_DEFAULT };
+static iscsi_custom_data *custom_data_list = &default_block;
+
+
 
 iscsi_custom_data *
 iscsi_register_custom(int id)
@@ -68,6 +72,7 @@ iscsi_register_custom(int id)
         return NULL;
     }
     memset(block, 0, sizeof(*block));
+    memcpy(block->params, default_block.params, sizeof(block->params));
     sem_init(&block->on_change, 0, 0);
     block->id = id;
     pthread_mutex_lock(&custom_mutex);
@@ -201,7 +206,7 @@ iscsi_set_custom_value(int id, const char *param, const char *value)
         {
             block->params[param_no] = intvalue;
             block->changed[param_no] = TRUE;
-            if (need_post)
+            if (need_post && block->id != ISCSI_CUSTOM_DEFAULT)
             {
                 RING("Awakening the manager");
                 sem_post(&block->on_change);
