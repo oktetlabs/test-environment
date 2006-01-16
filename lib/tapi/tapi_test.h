@@ -155,7 +155,8 @@ extern "C" {
  */
 #define TEST_FAIL(fmt...) \
     do {                                                            \
-        ERROR("Test Failed on line %d", __LINE__);                  \
+        ERROR("Test Failed in %s, line %d, %s()",                   \
+              __FILE__, __LINE__, __FUNCTION__);                    \
         ERROR(fmt);                                                 \
         TEST_STOP;                                                  \
     } while (0)
@@ -361,6 +362,68 @@ extern "C" {
 
 
 /**
+ * The macro to get parameter of type 'char *[]', i.e. array of 
+ * string values
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_STRING_LIST_PARAM(var_name_, var_len_) \
+    do {                                                            \
+        const char *str_val_;                                       \
+                                                                    \
+        if ((str_val_ = test_get_param(argc, argv,                  \
+                                       #var_name_)) == NULL)        \
+        {                                                           \
+            TEST_STOP;                                              \
+        }                                                           \
+        (var_len_) = test_split_param_list(str_val_, &(var_name_)); \
+        if ((var_len_) == 0)                                        \
+        {                                                           \
+            TEST_STOP;                                              \
+        }                                                           \
+    } while (0)
+
+
+/**
+ * The macro to get parameter of type 'int []', i.e. array of numbers
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_INT_LIST_PARAM(var_name_, var_len_) \
+    do {                                                                \
+        const char  *str_val_;                                          \
+        char       **str_array;                                         \
+        int          i;                                                 \
+        char        *end_ptr;                                           \
+                                                                        \
+        if ((str_val_ = test_get_param(argc, argv,                      \
+                                       #var_name_)) == NULL)            \
+        {                                                               \
+            TEST_STOP;                                                  \
+        }                                                               \
+        (var_len_) = test_split_param_list(str_val_, &str_array);       \
+        if ((var_len_) == 0 ||                                          \
+            ((var_name_) = calloc(sizeof(int), (var_len_))) == NULL)    \
+        {                                                               \
+            TEST_STOP;                                                  \
+        }                                                               \
+        for (i = 0; i < (var_len_); i++)                                \
+        {                                                               \
+            (var_name_)[i] = (int)strtol(str_array[i], &end_ptr, 10);   \
+            if (end_ptr == str_array[i] || *end_ptr != '\0')            \
+            {                                                           \
+                TEST_FAIL("The value of '%s' parameter should be "      \
+                          "a list of interger, but %d-th entry "        \
+                          "is '%s'", #var_name_, i, str_array[i]);      \
+            }                                                           \
+        }                                                               \
+        free(str_array[0]); free(str_array);                            \
+    } while (0)
+
+
+/**
  * The list of values allowed for parameter of type 'te_bool'
  */
 #define BOOL_MAPPING_LIST \
@@ -466,6 +529,18 @@ extern uint8_t *test_get_octet_string_param(const char *str_val,
  */
 extern const char *print_octet_string(const uint8_t *oct_string,
                                       size_t len);
+
+/**
+ * Split parameter string into array of string, using ',' as separator.
+ * This function creates a duplicate parameter sting to avoid changing the
+ * real parameter.
+ * 
+ * @param list      String to parse
+ * @param array_p   Array to return
+ *
+ * @return Length of the list or 0 on error
+ */
+extern int test_split_param_list(const char *list, char ***array_p);
 
 /**
  * Signal handler to close TE when Ctrl-C is pressed.

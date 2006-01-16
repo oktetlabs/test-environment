@@ -207,3 +207,53 @@ print_octet_string(const uint8_t *oct_string, size_t len)
 
     return buf;
 }
+
+#define TEST_LIST_PARAM_CHUNK       8
+#define TEST_LIST_PARAM_SEPARATOR   ','
+
+/** See the description in tapi_test.h */
+int
+test_split_param_list(const char *list, char ***array_p)
+{
+    char  **array = NULL;
+    char   *ptr = strdup(list);
+    char    size = 0;
+    int     length = 0;
+
+    while (1)
+    {
+        /* Allocate memory if necessary */
+        if (length <= size)
+        {
+            array = realloc(array, 
+                            (size + TEST_LIST_PARAM_CHUNK) * 
+                            sizeof(char *));
+            if (array == NULL)
+                return 0;
+            memset((char *)array + size, 0, 
+                   TEST_LIST_PARAM_CHUNK * sizeof(char *));
+            size += TEST_LIST_PARAM_CHUNK;
+        }
+
+        /* get next value from the list */
+        array[length] = ptr;
+        length++;
+
+        /* Find next value */
+        ptr = strchr(ptr, TEST_LIST_PARAM_SEPARATOR);
+        if (ptr == NULL)
+        {
+            /* No new separators */
+            *array_p = array;
+            return length;
+        }
+
+        /* Replace separator by end of string and skip all spaces */
+        *ptr = '\0';
+        ptr++;
+        while (isspace(*ptr))
+            ptr++;
+    }
+    /* Unreachable */
+}
+
