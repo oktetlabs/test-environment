@@ -122,6 +122,7 @@ run_path_param_value(char **path, te_bool *more)
 {
     char   *s;
     size_t  l;
+    te_bool quotes = FALSE;
 
     assert(path != NULL);
     assert(*path != NULL);
@@ -130,12 +131,39 @@ run_path_param_value(char **path, te_bool *more)
     s = *path;
     /* Try to find one of possible separators */
     l = strcspn(s, ",/");
+
+    /* Check for quotes */
+    if (s[0] == '"' || s[0] == '\'' || s[0] == '`')
+    {
+        char *ptr;
+
+        quotes = TRUE;
+        ptr = strchr(s + 1, s[0]);
+        if (ptr == NULL)
+        {
+            ERROR("Missing pair for quote symbol %c", s[0]);
+            return NULL;
+        }
+        /* Quotes should be removed from the parameter value */
+        s++;
+        l = strcspn(ptr, ",/");
+        if (l != 1)
+        {
+            ERROR("Quotes should enclose parameter value "
+                  "without any trailing characters");
+            return NULL;
+        }
+        l += ptr - s;
+    }
+
     /* If found separator is open paranthesis, parameters follow */
     *more = (s[l] == ',');
     /* Move path forward */
     *path = s + l + (s[l] != '\0');
     /* Terminate token with '\0' (possibly just overwrite '\0') */
     s[l] = '\0';
+    if (quotes)
+        s[l - 1] = '\0';
 
     return s;
 }
@@ -263,7 +291,19 @@ tester_run_path_new(tester_run_path *root, char *path, unsigned int flags)
                 tester_run_path_free(p);
                 return TE_RC(TE_TESTER, TE_EINVAL);
             }
+            VERB("%s(): parameter name is '%s', path '%s'", __FUNCTION__,
+                 param->name, path);
             param->value = run_path_param_value(&path, &params);
+            if (param->value == NULL)
+            {
+                ERROR("Failed to parse value for parameter '%s'", 
+                      param->name);
+                free(param);
+                tester_run_path_free(p);
+                return TE_RC(TE_TESTER, TE_EINVAL);
+            }
+            VERB("%s(): parameter name is '%s', value '%s', path '%s'", 
+                 __FUNCTION__, param->name, param->value, path);
 
             TAILQ_INSERT_TAIL(&p->params, param, links);
         }
