@@ -1543,8 +1543,17 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     {
                         *(int *)optval =
                             out.optval.optval_val[0].option_value_u.opt_int;
-                        snprintf(opt_val_str, sizeof(opt_val_str), "%d",
-                                 *(int *)optval);
+                        if (level == RPC_SOL_SOCKET &&
+                            optname == RPC_SO_ERROR)
+                        {
+                            snprintf(opt_val_str, sizeof(opt_val_str),
+                                     "%s", te_rc_err2str(*(int *)optval));
+                        }
+                        else
+                        {
+                            snprintf(opt_val_str, sizeof(opt_val_str),
+                                     "%d", *(int *)optval);
+                        }
                     }
                     break;
             }
