@@ -207,32 +207,46 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
     return TRUE;
 }
 
+/**
+ * Create RPC server process using CreateProcess().
+ *
+ * @param name  RPC server name
+ * @param pid   location for process identifier
+ *
+ * @return Status code
+ */
+te_errno
+create_process_rpc_server(const char *name, int32_t *pid)
+{
+    char cmdline[256];
+    
+    PROCESS_INFORMATION info;
+    
+    TE_SPRINTF(cmdline, "%s rpc_server %s", GetCommandLine(), name);
+    
+    if (!CreateProcess(NULL, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
+                       NULL, &info))
+    {
+        ERROR("CreateProcess() failed with error %d", GetLastError());
+        return win_rpc_errno(GetLastError());
+    }
+    
+    *pid = info.dwProcessId;
+    
+    return 0;
+}
+
 /*-------------- create_process() ---------------------------------*/
 bool_t
 _create_process_1_svc(tarpc_create_process_in *in, 
                       tarpc_create_process_out *out,
                       struct svc_req *rqstp)
 {
-    char cmdline[256];
-    
-    PROCESS_INFORMATION info;
-    
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
     
-    TE_SPRINTF(cmdline, "%s rpc_server %s", GetCommandLine(), 
-               in->name.name_val);
-    
-    if (!CreateProcess(NULL, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
-                       NULL, &info))
-    {
-        ERROR("CreateProcess() failed with error %d", GetLastError());
-        out->pid= -1;
-        return TRUE;
-    }
-    
-    out->pid = info.dwProcessId;
-    
+    out->common._errno = create_process_rpc_server(in->name.name_val, 
+                                                   &out->pid);
     return TRUE;
 }
 
@@ -2582,6 +2596,8 @@ TARPC_FUNC(create_overlapped, {},
         tmp->overlapped.Offset = in->offset;
         tmp->overlapped.OffsetHigh = in->offset_high;
         out->retval = rcf_pch_mem_alloc(tmp);
+        RING("Overlapped structure %x (index %d) is allocated", tmp, 
+            out->retval);
     }
 }
 )
@@ -3969,13 +3985,5 @@ TARPC_FUNC(gettimeofday,
         if (TE_RC_GET_ERROR(out->common._errno) == TE_EH2RPC)
             out->retval = -1;
     }
-}
-)
-
-/*-------------- signal() --------------------------------*/
-
-TARPC_FUNC(signal, {},
-{
-    ERROR("signal() is called on winsock2!");
 }
 )
