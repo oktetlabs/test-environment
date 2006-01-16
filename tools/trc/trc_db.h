@@ -354,7 +354,8 @@ trc_verdicts_to_html(FILE *f, const tqh_string *verdicts)
     fputs("<BR/><BR/>", f);
     for (v = verdicts->tqh_first; v != NULL; v = v->links.tqe_next)
     {
-        fputc(' ', f);
+        if (v != verdicts->tqh_first)
+            fputs("; ", f);
         fputs(v->str, f);
     }
 }
