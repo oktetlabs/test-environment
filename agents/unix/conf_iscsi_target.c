@@ -35,6 +35,7 @@
 #include "chap.h"
 #include "target_negotiate.h"
 #include "iscsi_target_api.h"
+#include "iscsi_custom.h"
 
 extern struct iscsi_global *devdata;
 extern int iscsi_server_init();
@@ -419,7 +420,7 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
     iscsi_start_new_session_group();
     iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
                                 "AuthMethod",
-                                value,
+                                *value == '\0' ? "None" : value,
                                 *devdata->param_tbl);
     return 0;
 }   
@@ -800,8 +801,45 @@ iscsi_target_get(unsigned int gid, const char *oid,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_if_mark_int, "if_mark_int",
+
+static int max_cmd_sn_delta;
+
+/** Get a default MaxCmdSn - ExpCmdSn value */
+static te_errno
+iscsi_tgt_max_cmd_sn_delta_get(unsigned int gid, const char *oid,
+                               char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    sprintf(value, "%d", max_cmd_sn_delta);
+    return 0;
+}
+
+/** Get a default MaxCmdSn - ExpCmdSn value */
+static te_errno
+iscsi_tgt_max_cmd_sn_delta_set(unsigned int gid, const char *oid,
+                               const char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+    
+    max_cmd_sn_delta = strtol(value, NULL, 10);
+    return iscsi_set_custom_value(ISCSI_CUSTOM_DEFAULT, 
+                                  "max_cmd_sn_delta",
+                                  value);
+}
+
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_cmd_sn_delta, "max_cmd_sn_delta",
                     NULL, NULL,
+                    iscsi_tgt_max_cmd_sn_delta_get, 
+                    iscsi_tgt_max_cmd_sn_delta_set);
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_if_mark_int, "if_mark_int",
+                    NULL, &node_iscsi_target_oper_max_cmd_sn_delta,
                     iscsi_target_oper_get, iscsi_target_oper_set);
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_of_mark_int, "of_mark_int",
