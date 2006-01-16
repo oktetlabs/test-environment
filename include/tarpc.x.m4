@@ -1422,6 +1422,8 @@ struct tarpc_create_overlapped_in {
     tarpc_wsaevent      hevent;
     tarpc_uint          offset;
     tarpc_uint          offset_high;
+    tarpc_uint          cookie1;
+    tarpc_uint          cookie2;
 };
 
 struct tarpc_create_overlapped_out {
