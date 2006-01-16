@@ -262,6 +262,16 @@ extern te_bool sockaddr_is_multicast(const struct sockaddr *addr);
 
 /**
  * Returns the size of a particular sockaddr structure according to
+ * its family.
+ *
+ * @param af    Address family
+ *
+ * @return Address size
+ */
+extern int sockaddr_get_size_by_af(int af);
+
+/**
+ * Returns the size of a particular sockaddr structure according to
  * 'sa_family' field of the structure
  *
  * @param addr   Generic address structure

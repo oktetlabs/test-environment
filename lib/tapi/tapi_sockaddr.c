@@ -222,9 +222,9 @@ sockaddr_is_multicast(const struct sockaddr *addr)
 
 /* See the description in tapi_sockaddr.h */
 int
-sockaddr_get_size(const struct sockaddr *addr)
+sockaddr_get_size_by_af(int af)
 {
-    switch (addr->sa_family)
+    switch (af)
     {
         case AF_INET:
             return sizeof(struct sockaddr_in);
@@ -234,10 +234,17 @@ sockaddr_get_size(const struct sockaddr *addr)
             
         default:
             ERROR("%s(): Address family %d is not supported, ",
-                  "operation has no effect", __FUNCTION__, addr->sa_family);
+                  "operation has no effect", __FUNCTION__, af);
     }
 
     return 0;
+}
+
+/* See the description in tapi_sockaddr.h */
+int
+sockaddr_get_size(const struct sockaddr *addr)
+{
+    return sockaddr_get_size_by_af(addr->sa_family);
 }
 
 /* See description in tapi_sockaaddr.h */
