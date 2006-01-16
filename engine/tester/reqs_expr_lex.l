@@ -35,7 +35,7 @@ extern int reqs_expr_str_pos;
 "&"                             { return AND; }
 "|"                             { return OR; }
 "!"                             { return NOT; }
-[-_[:alnum:]]+                  {
+[-_[:alnum:].]+                 {
                                     yylval->str = strdup(yytext);
                                     return TOKEN;
                                 }
