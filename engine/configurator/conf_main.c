@@ -457,8 +457,6 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     /* Synchronize /agent/volatile subtree if necessary */
     if ((msg->rc = cfg_sync_agt_volatile(oid)) != 0)
     {
-        ERROR("Cannot synchronize /agent/volatile subtree, "
-              "errno %r", msg->rc);
         cfg_wipe_cmd_error(CFG_ADD, CFG_HANDLE_INVALID);
         return;
     }
@@ -1323,8 +1321,6 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             if (((*msg)->rc = cfg_sync_agt_volatile(
                                   ((cfg_find_msg *)*msg)->oid)) != 0)
             {
-                ERROR("Cannot synchronize /agent/volatile subtree, "
-                      "errno %r", (*msg)->rc);
                 break;
             }
             cfg_process_msg_find((cfg_find_msg *)*msg);
@@ -1347,8 +1343,6 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             if (((*msg)->rc = cfg_sync_agt_volatile(
                                   ((cfg_pattern_msg *)*msg)->pattern)) != 0)
             {
-                ERROR("Cannot synchronize /agent/volatile subtree, "
-                      "errno %r", (*msg)->rc);
                 break;
             }
 
