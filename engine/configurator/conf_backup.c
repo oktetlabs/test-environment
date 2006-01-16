@@ -797,7 +797,8 @@ put_object(FILE *f, cfg_object *obj)
                 obj->type == CVT_ADDRESS ? "address" : "string");
                 
         if (obj->def_val != NULL)
-            fprintf(f, " default=\"%s\"", obj->def_val);
+            fprintf(f, " default=\"%s\"", 
+                    xmlEncodeEntitiesReentrant(NULL, obj->def_val));
         if (obj->depends_on == NULL)
             fprintf(f, "/>\n");
         else
@@ -815,7 +816,6 @@ put_object(FILE *f, cfg_object *obj)
     for (obj = obj->son; obj != NULL; obj = obj->brother)
         put_object(f, obj);
 }
-
 
 /**
  * Put description of the object instance and its (grand-...)children to
@@ -847,7 +847,8 @@ put_instance(FILE *f, cfg_instance *inst)
                 return rc;
             }
                 
-            fprintf(f, "value=\"%s\"", val_str);
+            fprintf(f, "value=\"%s\"", 
+                    xmlEncodeEntitiesReentrant(NULL, val_str));
             free(val_str);
          }
          fprintf(f, "/>\n"); 

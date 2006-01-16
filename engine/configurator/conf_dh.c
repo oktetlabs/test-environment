@@ -596,7 +596,9 @@ cfg_dh_create_file(char *filename)
                         msg->val_type == CVT_ADDRESS ? "address" :
                                                        "string");
                 if (msg->def_val)
-                    fprintf(f, " default=\"%s\"", msg->oid + msg->def_val);
+                    fprintf(f, " default=\"%s\"", 
+                            xmlEncodeEntitiesReentrant(NULL, 
+                                msg->oid + msg->def_val));
                 fprintf(f, "/>\n  </register>\n");
                 break;
             }
@@ -631,7 +633,8 @@ cfg_dh_create_file(char *filename)
                     if (rc != 0)
                         RETERR(rc);
                         
-                    fprintf(f, "value=\"%s\"", val_str);
+                    fprintf(f, "value=\"%s\"", 
+                            xmlEncodeEntitiesReentrant(NULL, val_str));
                     free(val_str);
                  }
                  fprintf(f, "/>\n  </%s>\n", 
