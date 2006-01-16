@@ -829,6 +829,8 @@ asn_impl_write_value_field(asn_value *container,
             str[d_len] = '\0';
             container->len = d_len + 1; /* quantity of ALL used octets */
             container->txt_len = strlen(container->data.other) + 2;
+            for (;*str != '\0'; str++)
+                if (*str == '"') container->txt_len++;
         }
         break;
 
@@ -1129,9 +1131,9 @@ asn_read_string(const asn_value *container, char **value,
         return TE_EASNWRONGTYPE;
 
     if (leaf_val->data.other == NULL)
-        return TE_EASNINCOMPLVAL;
-
-    *value = asn_strdup(leaf_val->data.other); 
+        *value = asn_strdup("");
+    else
+        *value = asn_strdup(leaf_val->data.other); 
  
     return (*value != NULL) ? 0 : TE_ENOMEM;
 }
