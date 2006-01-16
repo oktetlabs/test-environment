@@ -1076,10 +1076,14 @@ rpc_set_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
 
 rpc_overlapped
 rpc_create_overlapped(rcf_rpc_server *rpcs, rpc_wsaevent hevent,
-                      unsigned int offset, unsigned int offset_high)
+                      unsigned int offset, unsigned int offset_high, ...)
 {
     tarpc_create_overlapped_in  in;
     tarpc_create_overlapped_out out;
+    
+    va_list ap;
+    
+    va_start(ap, offset_high);
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1094,6 +1098,10 @@ rpc_create_overlapped(rcf_rpc_server *rpcs, rpc_wsaevent hevent,
     in.hevent = (tarpc_wsaevent)hevent;
     in.offset = offset;
     in.offset_high = offset_high;
+    in.cookie1 = va_arg(ap, uint32_t);
+    in.cookie2 = va_arg(ap, uint32_t);
+    
+    va_end(ap);
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "create_overlapped", &in, &out);

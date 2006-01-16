@@ -795,13 +795,14 @@ extern rpc_handle rpc_wsa_async_get_serv_by_port(rcf_rpc_server *rpcs,
  * @param offset      position at which to start the transfert
  * @param offset_high high-order word of the position at which to start
  *                    the transfert
+ * @param ...         cookie1 and cookie2 may be passed
  * 
  * @return WSAOVERLAPPED structure upon successful completion or RPC_NULL
  */
 extern rpc_overlapped rpc_create_overlapped(rcf_rpc_server *rpcs,
                                             rpc_wsaevent hevent,
                                             unsigned int offset,
-                                            unsigned int offset_high);
+                                            unsigned int offset_high, ...);
 
 /** 
  * Delete specified WSAOVERLAPPED structure.
