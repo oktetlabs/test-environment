@@ -978,8 +978,6 @@ dhcp_pkt_handler(const char *pkt_fname, void *user_param)
     asn_value_p               pkt;
     asn_value_p               dhcp_pkt;
 
-    RING("%s called", __FUNCTION__);
-
     rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet, &pkt,
                                   &s_parsed);
     if (rc != 0)
@@ -1005,7 +1003,6 @@ dhcp_pkt_handler(const char *pkt_fname, void *user_param)
     }
 
     rcv_pkt->dhcp_msg = dhcp_msg;
-    RING("%s msg op %d", __FUNCTION__, dhcp_msg->op);
 }
 
 
