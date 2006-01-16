@@ -2610,13 +2610,9 @@ handle_nopin(struct iscsi_cmnd *cmnd,
 
     max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
                                               "max_cmd_sn_delta");
-    if (max_cmd_sn_delta == 0)
-        hdr->max_cmd_sn = htonl(session->max_cmd_sn);
-    else
-    {
-        RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
-        hdr->max_cmd_sn = htonl(session->exp_cmd_sn + max_cmd_sn_delta);
-    }
+
+    RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
+    hdr->max_cmd_sn = htonl(session->exp_cmd_sn + max_cmd_sn_delta);
     
 	if (!(cmnd->opcode_byte & I_BIT)) {
 		/* the nopout command pdu was not immediate, CmdSN advances */
@@ -3720,13 +3716,8 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 
     max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
                                               "max_cmd_sn_delta");
-    if (max_cmd_sn_delta == 0)
-        rsp->max_cmd_sn = htonl(session->max_cmd_sn);
-    else
-    {
-        RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
-        rsp->max_cmd_sn = htonl(session->exp_cmd_sn + max_cmd_sn_delta);
-    }
+    RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
+    rsp->max_cmd_sn = htonl(session->exp_cmd_sn + max_cmd_sn_delta);
 
 	if (flags & SEND_SENSE_FLAG) {
 		/* sense data has to be sent as part of SCSI Response pdu */
@@ -3924,14 +3915,9 @@ send_read_data(struct iscsi_cmnd *cmnd,
             max_cmd_sn_delta = iscsi_get_custom_value(conn->custom, 
                                                       "max_cmd_sn_delta");
 
-            if (max_cmd_sn_delta == 0)
-                hdr->max_cmd_sn = htonl(session->max_cmd_sn);
-            else
-            {
-                RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
-                hdr->max_cmd_sn = htonl(session->exp_cmd_sn + 
-                                        max_cmd_sn_delta);
-            }
+            RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
+            hdr->max_cmd_sn = htonl(session->exp_cmd_sn + 
+                                    max_cmd_sn_delta);
 
 			/* re-transmit only the requested Data PDU - SAI */
 			if (!cmnd->retransmit_flg)
