@@ -295,47 +295,52 @@ tad_dhcp_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
 te_errno
 tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt)
 {
-#if 1
-    const void *buf;
-    size_t      buf_len;
+    dhcp_csap_specific_data_t  *spec_data;
 
-    if (pkt == NULL || tad_pkt_seg_num(pkt) != 1)
-        return TE_RC(TE_TAD_CSAP, TE_EINVAL);
-    buf     = tad_pkt_first_seg(pkt)->data_ptr;
-    buf_len = tad_pkt_first_seg(pkt)->data_len;
-#endif
-    dhcp_csap_specific_data_t * spec_data;
-    int rc;
-    struct sockaddr_in dest;
-    
-    if (csap == NULL)
-    {
-        return -1;
-    }
-    
+    struct sockaddr_in  dest;
+    ssize_t             ret;
+    struct msghdr       msg;
+    size_t              iovlen = tad_pkt_seg_num(pkt);
+    struct iovec        iov[iovlen];
+    te_errno            rc;
+
+    assert(csap != NULL);
     spec_data = csap_get_rw_data(csap); 
+
+    if (spec_data->out < 0)
+    {
+        ERROR(CSAP_LOG_FMT "no output socket", CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_EIO);
+    }
+
+    /* Convert packet segments to IO vector */
+    rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
+    if (rc != 0)
+    {
+        ERROR("Failed to convert segments to IO vector: %r", rc);
+        return rc;
+    }
+
+    memset(&dest, 0, sizeof(dest));
     dest.sin_family = AF_INET;
     dest.sin_port = htons(spec_data->mode == DHCP4_CSAP_MODE_SERVER ? 
                           DHCP_CLIENT_PORT : DHCP_SERVER_PORT);
     dest.sin_addr.s_addr = INADDR_BROADCAST;
-    
-    
 
-#ifdef TALOGDEBUG
-    printf("Writing data to socket: %d", spec_data->out);
-#endif        
+    msg.msg_name = SA(&dest);
+    msg.msg_namelen = sizeof(dest);
+    msg.msg_iov = iov;
+    msg.msg_iovlen = iovlen;
+    msg.msg_control = NULL;
+    msg.msg_controllen = 0;
+    msg.msg_flags = 0;
 
-    if(spec_data->out < 0)
+    ret = sendmsg(spec_data->out, &msg, 0);
+    if (ret < 0) 
     {
-        return -1;
-    }
-    rc = sendto (spec_data->out, buf, buf_len, 0, 
-                 (struct sockaddr *)&dest, sizeof(dest));
-    if (rc < 0) 
-    {
-        perror("dhcp sendto fail");
         csap->last_errno = errno;
+        return TE_OS_RC(TE_TAD_CSAP, csap->last_errno);
     }
 
-    return rc;
+    return 0;
 }
