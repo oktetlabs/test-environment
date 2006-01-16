@@ -1844,7 +1844,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
     te_bool   success = TRUE;
     
     pthread_mutex_lock(&target_map_mutex);
-    if (command->cmd[0] == READ_6)
+    if (command->cmd[0] == READ_6 || command->cmd[0] == WRITE_6)
     {
         scsi_io6_payload *data = (void *)command->req->sr_cmnd;
         lun = data->lun_and_lba >> 5;
