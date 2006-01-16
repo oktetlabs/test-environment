@@ -39,9 +39,7 @@ LPFN_GETACCEPTEXSOCKADDRS pf_get_accept_ex_sockaddrs;
 LPFN_TRANSMITFILE         pf_transmit_file;
 LPFN_WSARECVMSG           pf_wsa_recvmsg;
 
-static te_bool init = FALSE;
-
-static void 
+void 
 wsa_func_handles_discover()
 {
     GUID  guid_connect_ex = WSAID_CONNECTEX;

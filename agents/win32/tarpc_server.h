@@ -656,12 +656,6 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     _func##_arg  *arg;                                                  \
     enum xdr_op  op = XDR_FREE;                                         \
                                                                         \
-    if (!init)                                                          \
-    {                                                                   \
-        wsa_func_handles_discover();                                    \
-        init = TRUE;                                                    \
-    }                                                                   \
-                                                                        \
     UNUSED(rqstp);                                                      \
     memset(out, 0, sizeof(*out));                                       \
     VERB("PID=%d TID=%d: Entry %s",                                     \
