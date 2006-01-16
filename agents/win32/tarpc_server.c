@@ -216,7 +216,7 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
  * @return Status code
  */
 te_errno
-create_process_rpc_server(const char *name, int32_t *pid)
+create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
 {
     char  cmdline[256];
     char *tmp;
@@ -238,7 +238,7 @@ create_process_rpc_server(const char *name, int32_t *pid)
         RING("TE_LOG_PORT=%s", buf);
     }
     
-    if (!CreateProcess(NULL, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
+    if (!CreateProcess(NULL, cmdline, NULL, NULL, inherit, 0, NULL, NULL,
                        &si, &info))
     {
         ERROR("CreateProcess() failed with error %d", GetLastError());
@@ -260,7 +260,7 @@ _create_process_1_svc(tarpc_create_process_in *in,
     memset(out, 0, sizeof(*out));
     
     out->common._errno = create_process_rpc_server(in->name.name_val, 
-                                                   &out->pid);
+                                                   &out->pid, TRUE);
     return TRUE;
 }
 

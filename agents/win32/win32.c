@@ -86,7 +86,8 @@ char *ta_name = "(win32)";
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef RCF_RPC
-extern te_errno create_process_rpc_server(const char *name, int32_t *pid);
+extern te_errno create_process_rpc_server(const char *name, int32_t *pid, 
+                                          te_bool inherit);
 #endif
 
 /* See description in rcf_ch_api.h */
@@ -263,7 +264,8 @@ rcf_ch_start_process(int *pid,
 
 #ifdef RCF_RPC
     if (strcmp(rtn, "rcf_pch_rpc_server_argv") == 0)
-        return create_process_rpc_server((char *)params[0], (int32_t *)pid);
+        return create_process_rpc_server((char *)params[0], (int32_t *)pid, 
+                                         FALSE);
 #endif        
 
     while (addr != NULL)
