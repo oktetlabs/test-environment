@@ -18,7 +18,7 @@ MY_LDADD=symtbl.o -lrcfpch -lrpcxdr \
 noinst_HEADERS=tarpc_server.h
 
 MY_LDAFLAGS=-rdynamic -export-dynamic 
-MY_SOURCES=win32.c win32conf.c inet_pton.c
+MY_SOURCES=win32.c win32conf.c inet_pton.c common.c
 MY_SYMTBL_OBJECTS=win32.o 
 
 SYMTBL_LIBS= \
@@ -76,7 +76,7 @@ tawin32tmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
 
-bin_PROGRAMS=tawin32tmpl
+bin_PROGRAMS=tawin32tmpl tawin32tmpl_rpcserver
 
 symtbl.c: $(MY_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
@@ -85,7 +85,26 @@ install-exec-hook:
 	mv $(DESTDIR)/$(bindir)/tawin32tmpl.exe \
 		$(DESTDIR)/$(bindir)/ta@with_name@.exe
 	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
+	mv $(DESTDIR)/$(bindir)/tawin32tmpl_rpcserver.exe \
+		$(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
+	ln -fs ta@with_name@_rpcserver.exe \
+	       $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver
 
 uninstall-hook:
 	rm -f $(DESTDIR)/$(bindir)/ta@with_name@ \
-		$(DESTDIR)/$(bindir)/ta@with_name@.exe
+		$(DESTDIR)/$(bindir)/ta@with_name@.exe \
+		$(DESTDIR)/$(bindir)/ta@with_name@_rpcserver \
+		$(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
+
+tawin32tmpl_rpcserver_SOURCES=\
+                  tarpc_server.c rpc_unsupported.c rpcserver.c common.c \
+                  ${srcdir}/../../lib/rcfpch/rcf_pch_mem.c \
+                  ${srcdir}/../../lib/loggerta/logfork.c \
+                  ${srcdir}/../../lib/tools/te_format.c 
+                  
+tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -lrpcxdr -lrpc \
+                            -lws2_32 -lmswsock -lwsock32 -liphlpapi 
+
+rpcserver_symtbl.c: tarpc_server.o
+	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
+

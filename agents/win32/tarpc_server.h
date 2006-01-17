@@ -38,6 +38,7 @@
 #define _SYS_SOCKET_H
 #define _NETINET_IN_H
 #include "tarpc.h"
+#include "ta_common.h"
 
 #ifdef _WINSOCK_H
 struct timezone {
@@ -203,7 +204,7 @@ extern LPFN_WSARECVMSG           pf_wsa_recvmsg;
 /**
  * Converts the windows error to RPC one.
  */ 
-static inline int 
+static inline te_errno 
 win_rpc_errno(int err)
 {
     switch (err)
@@ -256,6 +257,109 @@ win_rpc_errno(int err)
             ERROR("Unknown windows error code %d", err);
             return RPC_EUNKNOWN; 
     }
+}
+
+/**
+ * Create a thread.
+ *
+ * @param func          entry point
+ * @param arg           argument
+ * @param tid           location for thread identifier
+ *
+ * @return Status code
+ */
+static inline te_errno
+thread_create(void *func, void *arg, uint32_t *tid)
+{
+    DWORD  tmp;
+    HANDLE hp = CreateThread(NULL, 0, func, arg, 0, &tmp);
+    
+    if (hp == NULL)
+        return win_rpc_errno(GetLastError());
+    
+    *tid = rcf_pch_mem_alloc(hp);
+    
+    SetLastError(0);
+
+    return 0;
+}
+
+/** 
+ * Cancel the thread.
+ *
+ * @param tid   thread identifier
+ *
+ * @return Status code
+ */
+static inline te_errno
+thread_cancel(uint32_t tid)
+{
+    HANDLE hp = rcf_pch_mem_get(tid);
+
+    if (!TerminateThread(hp, 0))
+        return win_rpc_errno(GetLastError());
+        
+    rcf_pch_mem_free(tid);
+
+    return 0;
+}
+
+/** 
+ * Exit from the thread returning DWORD exit code.
+ *
+ * @param argument to return
+ */
+static inline void
+thread_exit(void *ret)
+{
+    DWORD rc = rcf_pch_mem_alloc(ret);
+    
+    if (rc == STILL_ACTIVE)
+    {
+        DWORD new_rc = rcf_pch_mem_alloc(ret);
+        
+        rcf_pch_mem_free(rc);
+        
+        ExitThread(new_rc);
+        
+        return;
+    }
+
+    ExitThread(rc);
+}
+
+/** 
+ * Join the thread.
+ *
+ * @param tid   thread identifier
+ * @param arg   location for thread result
+ *
+ * @return Status code
+ */
+static inline te_errno
+thread_join(uint32_t tid, void **arg)
+{
+    HANDLE hp = rcf_pch_mem_get(tid);
+    DWORD  rc;
+
+    while (TRUE)
+    {
+        if (!GetExitCodeThread(hp, &rc))
+            return win_rpc_errno(GetLastError());
+            
+        if (rc != STILL_ACTIVE)
+            break;
+            
+        SleepEx(10, TRUE);
+    }
+    
+    if (arg != NULL)
+        *arg = rcf_pch_mem_get(rc);
+    
+    rcf_pch_mem_free(rc);
+    rcf_pch_mem_free(tid);
+            
+    return 0;
 }
 
 /** 
@@ -643,7 +747,7 @@ _func##_proc(void *arg)                                                 \
                                                                         \
     ((_func##_arg *)arg)->done = TRUE;                                  \
                                                                         \
-    pthread_exit(arg);                                                  \
+    thread_exit(arg);                                                   \
                                                                         \
     return NULL;                                                        \
 }                                                                       \
@@ -659,7 +763,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     UNUSED(rqstp);                                                      \
     memset(out, 0, sizeof(*out));                                       \
     VERB("PID=%d TID=%d: Entry %s",                                     \
-         (int)getpid(), (int)pthread_self(), #_func);                   \
+         (int)getpid(), (int)thread_self(), #_func);                    \
                                                                         \
     _copy_args                                                          \
                                                                         \
@@ -671,7 +775,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
                                                                         \
     if (in->common.op == RCF_RPC_CALL)                                  \
     {                                                                   \
-        pthread_t _tid;                                                 \
+        uint32_t _tid;                                                  \
                                                                         \
         if ((arg = malloc(sizeof(*arg))) == NULL)                       \
         {                                                               \
@@ -683,8 +787,8 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
         arg->out = *out;                                                \
         arg->done = FALSE;                                              \
                                                                         \
-        if (pthread_create(&_tid, NULL, _func##_proc,                   \
-                           (void *)arg) != 0)                           \
+        if (thread_create(_func##_proc,                                 \
+                          (void *)arg, &_tid) != 0)                     \
         {                                                               \
             free(arg);                                                  \
             out->common._errno = TE_OS_RC(TE_TA_WIN32, errno);          \
@@ -692,16 +796,15 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
                                                                         \
         memset(in, 0, sizeof(*in));                                     \
         memset(out, 0, sizeof(*out));                                   \
-        out->common.tid = rcf_pch_mem_alloc(_tid);                      \
+        out->common.tid = _tid;                                         \
         out->common.done = rcf_pch_mem_alloc(&arg->done);               \
                                                                         \
         return TRUE;                                                    \
     }                                                                   \
                                                                         \
-    if (pthread_join((pthread_t)rcf_pch_mem_get(in->common.tid),        \
-                     (void *)(&arg)) != 0)                              \
+    if ((out->common._errno =                                           \
+             thread_join(in->common.tid, (void *)(&arg))) != 0)         \
     {                                                                   \
-        out->common._errno = TE_OS_RC(TE_TA_WIN32, errno);              \
         return TRUE;                                                    \
     }                                                                   \
     if (arg == NULL)                                                    \
@@ -712,7 +815,6 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     xdr_tarpc_##_func##_out((XDR *)&op, out);                           \
     *out = arg->out;                                                    \
     rcf_pch_mem_free(in->common.done);                                  \
-    rcf_pch_mem_free(in->common.tid);                                   \
     free(arg);                                                          \
     return TRUE;                                                        \
 }

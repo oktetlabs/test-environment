@@ -12,7 +12,8 @@ lib_LIBRARIES=librcfpch.a
 librcfpch_a_SOURCES=rcf_pch.c rcf_pch_rpc.c rcf_pch_mem.c \
                     rcf_pch_file.c rcf_pch_conf.c rcf_pch_var.c \
                     rcf_pch_ta_cfg.c
-                    
+
+EXTRA_DIST=rcf_pch_rpc_server.c                    
 
 install-exec-hook:
 	touch -c -r librcfpch.a $(DESTDIR)/$(libdir)/librcfpch.a

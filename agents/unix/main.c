@@ -63,6 +63,7 @@
 #include "logger_ta.h"
 #include "logger_ta_lock.h"
 #include "logfork.h"
+#include "ta_common.h"
 
 #include "unix_internal.h"
 
@@ -1454,6 +1455,68 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
     return -1; /* Call default callback as well */
 }
 
+/** 
+ * Get identifier of the current thread. 
+ *
+ * @return Thread identifier
+ */
+uint32_t
+thread_self()
+{
+    return (unsigned int)pthread_self();
+}
+
+/** 
+ * Create a mutex.
+ *
+ * @return Mutex handle
+ */
+void *
+thread_mutex_create(void)
+{
+    static pthread_mutex_t init = PTHREAD_MUTEX_INITIALIZER;
+    
+    pthread_mutex_t *mutex = (pthread_mutex_t *)calloc(1, sizeof(*mutex));
+    
+    if (mutex != NULL)
+        *mutex = init;
+        
+    return (void *)mutex;
+}
+
+/** 
+ * Destroy a mutex.
+ *
+ * @param mutex     mutex handle
+ */
+void 
+thread_mutex_destroy(void *mutex)
+{
+    free(mutex);
+}
+
+/** 
+ * Lock the mutex.
+ *
+ * @param mutex     mutex handle
+ *
+ */
+void 
+thread_mutex_lock(void *mutex)
+{
+    pthread_mutex_lock(mutex);
+}
+
+/** 
+ * Unlock the mutex.
+ *
+ * @param mutex     mutex handle
+ */
+void 
+thread_mutex_unlock(void *mutex)
+{
+    pthread_mutex_unlock(mutex);
+}
 
 /**
  * Entry point of the Unix Test Agent.

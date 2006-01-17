@@ -75,10 +75,6 @@
         return _rc;                                                     \
     } while (FALSE)
 
-
-extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
-extern char *rcf_ch_symbol_name_auto(const void *addr);
-
 DEFINE_LGR_ENTITY("(win32)");
 
 char *ta_name = "(win32)";
@@ -191,21 +187,6 @@ rcf_ch_vwrite(struct rcf_comm_connection *handle,
     
     return -1;
 }
-
-/* See description in rcf_ch_api.h */
-void *
-rcf_ch_symbol_addr(const char *name, te_bool is_func)
-{
-    return rcf_ch_symbol_addr_auto(name, is_func);
-}
-
-/* See description in rcf_ch_api.h */
-char *
-rcf_ch_symbol_name(const void *addr)
-{
-    return rcf_ch_symbol_name_auto(addr);
-}
-
 
 /* See description in rcf_ch_api.h */
 int
@@ -640,13 +621,6 @@ die(void)
     _exit(0);
 }
 
-/** Sleep in waitable state */
-void 
-sleep_waitable(int msec)
-{
-    SleepEx(msec, TRUE);
-} 
-
 HINSTANCE ta_hinstance;
 
 /**
@@ -687,7 +661,7 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     if (strcmp(ta_name, "rpc_server") == 0)
     {
         extern void wsa_func_handles_discover();
-
+        
         wsa_func_handles_discover();
         rcf_pch_rpc_server(tmp);
         _exit(0);

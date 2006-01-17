@@ -550,8 +550,10 @@ log_atfork_child(void)
 te_errno
 ta_log_init(void)
 {
+#if HAVE_PTHREAD_H
     if (pthread_atfork(NULL, NULL, log_atfork_child) != 0)
         return -1;
+#endif        
 
     if (ta_log_lock_init() != 0)
         return -1;

@@ -57,9 +57,6 @@
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#if HAVE_PTHREAD_H
-#include <pthread.h>
-#endif
 #if HAVE_STDARG_H
 #include <stdarg.h>
 #endif
@@ -73,7 +70,7 @@
 #include "logger_api.h"
 #include "logfork.h"
 #include "te_tools.h"
-
+#include "ta_common.h"
 
 /** Common information in the message */
 typedef struct udp_msg {
@@ -111,10 +108,7 @@ typedef struct list {
 /** Socket used by all client to register */
 static int logfork_clnt_sockd = -1;
 
-#if HAVE_PTHREAD_H
-static pthread_mutex_t logfork_clnt_sockd_lock =
-                           PTHREAD_MUTEX_INITIALIZER;
-#endif
+static void *logfork_clnt_sockd_lock;
 
 /** 
  * Find process name by its pid and tid in the internal list of
@@ -379,21 +373,16 @@ open_sock(void)
         return -1;
     }
 
-#if HAVE_PTHREAD_H
-    pthread_mutex_lock(&logfork_clnt_sockd_lock);
-#endif
+    thread_mutex_lock(logfork_clnt_sockd_lock);
+
     if (logfork_clnt_sockd < 0)
     {
         logfork_clnt_sockd = sock;
-#if HAVE_PTHREAD_H
-        pthread_mutex_unlock(&logfork_clnt_sockd_lock);
-#endif
+        thread_mutex_unlock(logfork_clnt_sockd_lock);
     }
     else
     {
-#if HAVE_PTHREAD_H
-        pthread_mutex_unlock(&logfork_clnt_sockd_lock);
-#endif
+        thread_mutex_unlock(&logfork_clnt_sockd_lock);
         close(sock);
     }
 
@@ -409,10 +398,11 @@ logfork_register_user(const char *name)
     memset(&msg, 0, sizeof(msg));
     strncpy(msg.__name, name, sizeof(msg.__name) - 1);
     msg.pid = getpid();
-#if HAVE_PTHREAD_H
-    msg.tid = (uint32_t)pthread_self();
-#endif    
+    msg.tid = thread_self();
     msg.is_notif = TRUE;
+    
+    if (logfork_clnt_sockd_lock == NULL)
+        logfork_clnt_sockd_lock = thread_mutex_create();
     
     if (logfork_clnt_sockd == -1 && open_sock() != 0)
     {
@@ -459,9 +449,7 @@ logfork_log_message(const char *file, unsigned int line,
     va_end(ap);
 
     msg.pid = getpid();
-#if HAVE_PTHREAD_H
-    msg.tid = (uint32_t)pthread_self();
-#endif    
+    msg.tid = thread_self();
     msg.is_notif = FALSE;
     strncpy(msg.__lgr_user, user, sizeof(msg.__lgr_user) - 1);
     msg.__log_level = level;

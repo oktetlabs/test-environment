@@ -77,6 +77,13 @@ wsa_func_handles_discover()
     closesocket(s);
 }
 
+/** Sleep in waitable state */
+void 
+sleep_waitable(int msec)
+{
+    SleepEx(msec, TRUE);
+} 
+
 bool_t
 _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
                  struct svc_req *rqstp)
@@ -244,52 +251,32 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
 }
 
 /*-------------- create_process() ---------------------------------*/
-bool_t
-_create_process_1_svc(tarpc_create_process_in *in, 
-                      tarpc_create_process_out *out,
-                      struct svc_req *rqstp)
+TARPC_FUNC(create_process, {}, 
 {
-    UNUSED(rqstp);
-    memset(out, 0, sizeof(*out));
-    
-    out->common._errno = create_process_rpc_server(in->name.name_val, 
-                                                   &out->pid, TRUE);
-    return TRUE;
+    MAKE_CALL(out->common._errno = 
+                  create_process_rpc_server(in->name.name_val, 
+                                            &out->pid, TRUE));
 }
+)
 
 /*-------------- thread_create() -----------------------------*/
-bool_t
-_thread_create_1_svc(tarpc_thread_create_in *in, 
-                     tarpc_thread_create_out *out,
-                     struct svc_req *rqstp)
+TARPC_FUNC(thread_create, {},
 {
-    pthread_t tid;
-    
-    UNUSED(rqstp);
-    memset(out, 0, sizeof(*out));
-    
-    out->retval = pthread_create(&tid, NULL, (void *)rcf_pch_rpc_server,
-                                 strdup(in->name.name_val));
-    if (out->retval == 0)                                 
-        out->tid = rcf_pch_mem_alloc((void *)tid);
-
-    return TRUE;
+    MAKE_CALL(out->common._errno = thread_create(rcf_pch_rpc_server,
+                                                 strdup(in->name.name_val), 
+                                                 &out->tid));
+    out->retval = out->common._errno != 0 ? -1 : 0;
 }
+)
+
 
 /*-------------- thread_cancel() -----------------------------*/
-bool_t
-_thread_cancel_1_svc(tarpc_thread_cancel_in *in, 
-                     tarpc_thread_cancel_out *out,
-                     struct svc_req *rqstp)
-{ 
-    UNUSED(rqstp);
-    memset(out, 0, sizeof(*out));
-    
-    out->retval = pthread_cancel((pthread_t)rcf_pch_mem_get(in->tid));
-    rcf_pch_mem_free(in->tid);
-
-    return TRUE;
+TARPC_FUNC(thread_cancel, {},
+{
+    MAKE_CALL(out->common._errno = thread_cancel(in->tid));
+    out->retval = out->common._errno != 0 ? -1 : 0;
 }
+)
 
 /*-------------- socket() ------------------------------*/
 
@@ -760,13 +747,17 @@ TARPC_FUNC(get_sys_info, {},
 
 /*-------------------- VM trasher --------------------*/
 
-static pthread_mutex_t vm_trasher_lock = PTHREAD_MUTEX_INITIALIZER;
+/* Lock */
+static void *vm_trasher_lock;
+
 /* Is set to TRUE when the VM trasher thread must exit */
 static volatile te_bool vm_trasher_stop = FALSE;
-/* VM trasher thread identifier */
-static pthread_t vm_trasher_thread_id = (pthread_t)-1;
 
-void *vm_trasher_thread(void *arg)
+/* VM trasher thread identifier */
+static uint32_t vm_trasher_thread_id;
+
+void *
+vm_trasher_thread(void *arg)
 {
     MEMORYSTATUS    ms;
     SIZE_T          len;
@@ -813,39 +804,42 @@ TARPC_FUNC(vm_trasher, {},
 {
     UNUSED(list);
     UNUSED(out);
+    
+    if (vm_trasher_lock == NULL)
+        vm_trasher_lock = thread_mutex_create();
 
-    pthread_mutex_lock(&vm_trasher_lock);
+    thread_mutex_lock(vm_trasher_lock);
 
     if (in->start)
     {
         /* If the VM trasher thread is not started yet */
-        if (vm_trasher_thread_id == (pthread_t)-1)
+        if (vm_trasher_thread_id == 0)
         {
             /* Start the VM trasher thread */
-            pthread_create(&vm_trasher_thread_id, NULL,
-                              vm_trasher_thread, NULL);
+            thread_create(vm_trasher_thread, NULL, &vm_trasher_thread_id);
         }
     }
     else
     {
         /* If the VM trasher thread is already started */
-        if (vm_trasher_thread_id != (pthread_t)-1)
+        if (vm_trasher_thread_id != 0)
         {
+            int rc;
+            
             /* Stop the VM trasher thread */
             vm_trasher_stop = TRUE;
             /* Wait for VM trasher thread exit */
-            if (pthread_join(vm_trasher_thread_id, NULL) != 0)
+            if ((rc = thread_join(vm_trasher_thread_id, NULL)) != 0)
             {
-                INFO("vm_trasher: pthread_join() returned "
-                              "non-zero, errno = ", errno);
+                INFO("vm_trasher: thread_join() failed %r", rc);
             }
             /* Allow another one VM trasher thread to start later */
             vm_trasher_stop = FALSE;
-            vm_trasher_thread_id = (pthread_t)-1;
+            vm_trasher_thread_id = 0;
         }
     }
 
-    pthread_mutex_unlock(&vm_trasher_lock);
+    thread_mutex_unlock(vm_trasher_lock);
 }
 )
 
@@ -2629,7 +2623,7 @@ static int completion_called = 0;
 static int completion_error = 0;
 static int completion_bytes = 0;
 static tarpc_overlapped completion_overlapped = 0;
-static pthread_mutex_t completion_lock = PTHREAD_MUTEX_INITIALIZER;
+static void *completion_lock;
 
 void CALLBACK
 default_completion_callback(DWORD error, DWORD bytes, 
@@ -2638,28 +2632,31 @@ default_completion_callback(DWORD error, DWORD bytes,
 {
     UNUSED(flags);
 
-    pthread_mutex_lock(&completion_lock);
+    thread_mutex_lock(completion_lock);
     completion_called++;
     completion_error = win_rpc_errno(error);
     completion_bytes = bytes;
     completion_overlapped = 
         (tarpc_overlapped)rcf_pch_mem_get_id(overlapped);
-    pthread_mutex_unlock(&completion_lock);
+    thread_mutex_unlock(completion_lock);
 }
 
 TARPC_FUNC(completion_callback, {},
 {
     UNUSED(list);
     UNUSED(in);
+    
+    if (completion_lock == NULL)
+        completion_lock = thread_mutex_create();
 
-    pthread_mutex_lock(&completion_lock);
+    thread_mutex_lock(completion_lock);
     out->called = completion_called;
     completion_called = 0;
     out->bytes = completion_bytes;
     completion_bytes = 0;
     out->error = completion_error;
     out->overlapped = completion_overlapped;
-    pthread_mutex_unlock(&completion_lock);
+    thread_mutex_unlock(completion_lock);
 }
 )
 
