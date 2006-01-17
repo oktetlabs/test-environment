@@ -657,17 +657,6 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     ta_name = strtok(cmd, " ");
     tmp = strtok(NULL, " ");
     
-#ifdef RCF_RPC
-    if (strcmp(ta_name, "rpc_server") == 0)
-    {
-        extern void wsa_func_handles_discover();
-        
-        wsa_func_handles_discover();
-        rcf_pch_rpc_server(tmp);
-        _exit(0);
-    }
-#endif
-    
     (void)signal(SIGINT, ta_sigint_handler);
     (void)signal(SIGPIPE, ta_sigpipe_handler);
 

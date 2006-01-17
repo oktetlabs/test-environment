@@ -232,9 +232,9 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     
     strcpy(cmdline, GetCommandLine());
     if ((tmp = strchr(cmdline, ' ')) != NULL)
-        *(tmp + 1) = 0;
+        *tmp = 0;
     
-    sprintf(cmdline + strlen(cmdline), "rpc_server %s", name);    
+    sprintf(cmdline + strlen(cmdline), "_rpcserver %s", name);    
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
     

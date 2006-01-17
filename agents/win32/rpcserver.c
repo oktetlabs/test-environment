@@ -59,14 +59,14 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     UNUSED(hPrevInstance);
     UNUSED(nCmdShow);
     
-    printf("Hello, world!\n");
-    Sleep(1000);
-    
     ta_hinstance = hinstance;
     
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
+
+    wsa_func_handles_discover();
     
     rcf_pch_rpc_server(lpCmdLine);
+    
     _exit(0);
 }
