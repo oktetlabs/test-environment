@@ -1397,7 +1397,7 @@ iscsi_initiator_l5_set(const int target_id, const int cid, int oper)
             
             if (strcmp(target->conns[cid].session_type, "Discovery") != 0)
             {
-                rc = ta_system_ex("cd %s; ./iscsi_stopconns target%d_conn%d", 
+                rc = te_shell_cmd_ex("cd %s; ./iscsi_stopconns target%d_conn%d", 
                                      init_data->script_path,
                                      target_id, cid);
                 if (rc != 0)
