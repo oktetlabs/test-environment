@@ -231,12 +231,6 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
     
-    {
-        char buf[10] = { 0};
-        GetEnvironmentVariable("TE_LOG_PORT", buf, 10);
-        RING("TE_LOG_PORT=%s", buf);
-    }
-    
     if (!CreateProcess(NULL, cmdline, NULL, NULL, inherit, 0, NULL, NULL,
                        &si, &info))
     {
