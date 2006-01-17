@@ -420,6 +420,33 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         return rc;
     }
     
+    if (!(*flags & TA_FAKE) && strcmp_start("win32", ta->ta_type) == 0)
+    {
+        /* Copy RPC server image */
+        FILE *f;
+        
+        sprintf(cmd, "%s_rpcserver", path);
+        if ((f = fopen(cmd, "r")) != NULL)
+        {
+            fclose(f);
+            sprintf(cmd, "scp -Bpq %s_rpcserver %s:/tmp/%s_rpcserver",
+                    path, ta->host, ta->exec_name);
+                
+            if ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0)
+            {
+                ERROR("Failed to copy RPC server image %s_rpcserver "
+                      "to the %s:/tmp: %r", ta->exec_name, ta->host, rc);
+                sprintf(cmd, "ssh %s rm /tmp/%s", ta->host, ta->exec_name);
+                
+                if (system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT) != 0)
+                    ERROR("Failed to remove TA image from %s", ta->host);
+                    
+                free(dup);
+                return rc;
+            }
+        }
+    }
+    
     /* Clean up command string */
     cmd[0] = '\0';
 
@@ -560,12 +587,12 @@ rcfunix_finish(rcf_talib_handle handle, char *parms)
     }
 
     /* FIXME */
-    if ((*(ta->flags) & TA_DEAD) || strcmp(ta->ta_type, "win32") == 0)
+    if ((*(ta->flags) & TA_DEAD) || strcmp_start("win32", ta->ta_type) == 0)
     {
         if (ta->is_local)
-            sprintf(cmd, "rm -f /tmp/%s", ta->exec_name);
+            sprintf(cmd, "rm -f /tmp/%s*", ta->exec_name);
         else
-            sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s\"",
+            sprintf(cmd, RCFUNIX_SSH " %s \"rm -f /tmp/%s*\"",
                     ta->host, ta->exec_name);
         rc = system_with_timeout(cmd, RCFUNIX_KILL_TIMEOUT);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
