@@ -24,6 +24,7 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include "test_types.h"
 #include "ndn.h"
@@ -101,6 +102,12 @@ main(void)
         }
 
         free(new_str);
+    }
+
+    if (unlink("save_to_file1.asn") != 0)
+    {
+        TEST_FAIL("Failed to unlink save_to_file1.asn: errno=%d", errno);
+        return 7;
     }
 
     return 0;
