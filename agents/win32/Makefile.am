@@ -118,11 +118,15 @@ uninstall-hook:
 	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver \
 	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
 
-build_native: rpcserver.c
-	CPPFLAGS="@TE_CPPFLAGS@ \
-                  -I$(DESTDIR)/$(prefix)/../@host@/include \
-                  -include $(srcdir)/rpcserver.h" \
-        $(srcdir)/build_native.sh $<
+RPCSERVER_CPPFLAGS=@TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
+                   -include $(srcdir)/rpcserver.h -DDUMMY
+
+build_native: $(srcdir)/rpcserver.c
+	CC=$(CC)  \
+	RPCSERVER_CPPFLAGS="$(RPCSERVER_CPPFLAGS)" \
+	$(srcdir)/build_native.sh $<
+	cp tawin32tmpl_rpcserver.exe \
+	   $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
 
 else
 

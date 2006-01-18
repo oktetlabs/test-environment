@@ -28,8 +28,7 @@
  * $Id$
  */
  
-#include <winsock2.h>
-
+#ifndef DUMMY 
 #include "tarpc_server.h"
 #include "rpc_xdr.h"
 #include "te_format.h"
@@ -45,10 +44,9 @@ extern void logfork_log_message(const char *file, unsigned int line,
 
 te_log_message_f te_log_message = logfork_log_message;
 
-#include "../../lib/rcfpch/rcf_pch_rpc_server.c"
-
-
 HINSTANCE ta_hinstance;
+
+#include "../../lib/rcfpch/rcf_pch_rpc_server.c"
 
 int WINAPI 
 WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, 
@@ -65,10 +63,48 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
-
+    
     wsa_func_handles_discover();
     
     rcf_pch_rpc_server(lpCmdLine);
     
     _exit(0);
 }
+
+#else
+
+HINSTANCE ta_hinstance;
+
+int WINAPI 
+WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, 
+        LPSTR lpCmdLine, int nCmdShow) 
+{
+    WSADATA data;
+    
+    int s, s1;
+    struct sockaddr_in addr;
+    int len = sizeof(addr);
+    
+    WSAStartup(MAKEWORD(2,2), &data);
+    
+    ta_hinstance = hinstance;
+    
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+    
+    printf("Hello, it's me\n");
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(9000);
+    s = socket(AF_INET, SOCK_STREAM, 0);
+    bind(s, (struct sockaddr *)&addr, len);
+    listen(s, 5);
+    s1 = accept(s, (struct sockaddr *)&addr, (int *)&len);
+    closesocket(s);
+    s = s1;
+    
+    send(s, "Hello\n", 7, 0);
+    
+    _exit(0);
+}
+#endif

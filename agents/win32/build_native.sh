@@ -37,7 +37,7 @@ fi
 cat >cl.m4 <<EOF
 changequote([,])
 
-define([INCLUDE],[#include <$1>])
+define([INCLUDE],[#include <\$1>])
 EOF
 
 FILES= 
@@ -49,14 +49,19 @@ for i in $* ; do
     rm ${FILENAME}.tmp ; 
 done
 
-exit 0
-scp ${FILES} ${TE_WIN32_BUILD_HOST}:
-ssh ${TE_WIN32_BUILD_HOST} cl -o tawin32tmpl_rpcserver  
-    -lws2_32 -lmswsock -lwsock32 -liphlpapi ${FILES}
-ssh ${TE_WIN32_BUILD_HOST} rm ${FILES}
-scp ${TE_WIN32_BUILD_HOST}:tawin32tmpl_rpcserver .
-ssh ${TE_WIN32_BUILD_HOST} rm tawin32tmpl_rpcserver
-rm ${FILES}
+LIBRARIES="ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib"
+
 rm cl.m4
+
+scp ${FILES} ${TE_WIN32_BUILD_HOST}:
+rm ${FILES}
+ssh ${TE_WIN32_BUILD_HOST} "\
+export PATH=/usr/local/bin:/usr/bin:/bin:/usr/X11R6/bin:/cygdrive/c/WINDOWS/system32:/cygdrive/c/WINDOWS:/cygdrive/c/WINDOWS/System32/Wbem:/bin:/cygdrive/e/SDK/Bin:/cygdrive/e/P/msvs.net/Common7/IDE:/cygdrive/e/P/msvs.net/VC7/BIN:/cygdrive/e/P/msvs.net/Common7/Tools:/cygdrive/e/P/msvs.net/Common7/Tools/bin/prerelease:/cygdrive/e/P/msvs.net/Common7/Tools/bin:/cygdrive/e/P/msvs.net/SDK/v1.1/bin:/cygdrive/c/WINDOWS/Microsoft.NET/Framework/v1.1.4322 ;\
+export LIB='E:\P\SDK\Lib;;E:\P\msvs.net\VC7\ATLMFC\LIB;E:\P\msvs.net\VC7\LIB;E:\P\msvs.net\VC7\PlatformSDK\lib\prerelease;E:\P\msvs.net\VC7\PlatformSDK\lib;E:\P\msvs.net\SDK\v1.1\lib;E:\P\msvs.net\SDK\v1.1\Lib' ; \
+export INCLUDE='E:\P\SDK\Include;;E:\P\msvs.net\VC7\ATLMFC\INCLUDE;E:\P\msvs.net\VC7\INCLUDE;E:\P\msvs.net\VC7\PlatformSDK\include\prerelease;E:\P\msvs.net\VC7\PlatformSDK\include;E:\P\msvs.net\SDK\v1.1\include;E:\P\msvs.net\SDK\v1.1\include\' ; \
+cl -o tawin32tmpl_rpcserver ${FILES} /link ${LIBRARIES}"
+ssh ${TE_WIN32_BUILD_HOST} rm ${FILES} 
+scp ${TE_WIN32_BUILD_HOST}:tawin32tmpl_rpcserver.exe .
+ssh ${TE_WIN32_BUILD_HOST} rm -f tawin32tmpl_rpcserver.exe *.obj
 
 exit 0
