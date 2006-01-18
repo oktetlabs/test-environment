@@ -27,7 +27,8 @@
  *
  * $Id$
  */
-
+ 
+#include <winsock2.h>
 
 #include "tarpc_server.h"
 #include "rpc_xdr.h"
@@ -45,6 +46,7 @@ extern void logfork_log_message(const char *file, unsigned int line,
 te_log_message_f te_log_message = logfork_log_message;
 
 #include "../../lib/rcfpch/rcf_pch_rpc_server.c"
+
 
 HINSTANCE ta_hinstance;
 

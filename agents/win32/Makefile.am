@@ -17,7 +17,7 @@ MY_LDADD=symtbl.o -lrcfpch -lrpcxdr \
          
 noinst_HEADERS=tarpc_server.h rpcserver.h
 
-EXTRA_DIST=cl.m4
+EXTRA_DIST=build_native.sh
 
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 MY_SOURCES=win32.c win32conf.c inet_pton.c common.c
@@ -84,6 +84,25 @@ if CFG_STANDALONE_RPCSERVER
 
 bin_PROGRAMS=tawin32tmpl tawin32tmpl_rpcserver
 
+
+tawin32tmpl_rpcserver_DEPENDENCIES=\
+    rpcserver_symtbl.o \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a 
+
+tawin32tmpl_rpcserver_SOURCES=\
+                  tarpc_server.c rpc_unsupported.c rpcserver.c common.c \
+                  ${srcdir}/../../lib/rcfpch/rcf_pch_mem.c \
+                  ${srcdir}/../../lib/loggerta/logfork.c \
+                  ${srcdir}/../../lib/tools/te_format.c 
+
+tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -lrpcxdr -ltalib -lrpc \
+                            -lws2_32 -lmswsock -lwsock32 -liphlpapi 
+
+rpcserver_symtbl.c: tarpc_server.o \
+                    $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a
+	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
+
 install-exec-hook: build_native
 	mv $(DESTDIR)/$(bindir)/tawin32tmpl.exe \
 		$(DESTDIR)/$(bindir)/ta@with_name@.exe
@@ -95,36 +114,15 @@ install-exec-hook: build_native
 
 uninstall-hook:
 	rm -f $(DESTDIR)/$(bindir)/ta@with_name@ \
-		$(DESTDIR)/$(bindir)/ta@with_name@.exe \
-		$(DESTDIR)/$(bindir)/ta@with_name@_rpcserver \
-		$(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
-
-tawin32tmpl_rpcserver_DEPENDENCIES=\
-    rpcserver_symtbl.o \
-    $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a 
-    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a 
-
-tawin32tmpl_rpcserver_SOURCES=\
-                  tarpc_server.c rpc_unsupported.c rpcserver.c common.c \
-                  ${srcdir}/../../lib/rcfpch/rcf_pch_mem.c \
-                  ${srcdir}/../../lib/loggerta/logfork.c \
-                  ${srcdir}/../../lib/tools/te_format.c 
-                  
-tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -lrpcxdr -ltalib -lrpc \
-                            -lws2_32 -lmswsock -lwsock32 -liphlpapi 
-
-rpcserver_symtbl.c: tarpc_server.o @RPCSERVER_DEPENDENCIES@
-	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
+	      $(DESTDIR)/$(bindir)/ta@with_name@.exe \
+	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver \
+	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
 
 build_native: rpcserver.c
-	FILES= ; \
-	for i in $< ; do \
-	    FILENAME=`basename $${i}` ;
-	    FILES="$${FILES} $${FILENAME}"
-	    ${CC} $(RPCSERVER_CPPFLAGS) $${i} -o $${FILENAME}.tmp ; \
-	    cat $(srcdir)/cl.m4 $${FILENAME}.tmp > $${FILENAME} ; \
-	    rm $${FILENAME}.tmp ; \
-	done
+	CPPFLAGS="@TE_CPPFLAGS@ \
+                  -I$(DESTDIR)/$(prefix)/../@host@/include \
+                  -include $(srcdir)/rpcserver.h" \
+        $(srcdir)/build_native.sh $<
 
 else
 
