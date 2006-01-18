@@ -98,8 +98,8 @@ trc_free_tags(trc_tags *tags)
 
 
 /* See description in trc_tag.h */
-int
-trc_diff_set_name(trc_tags_list *tags, unsigned int id, const char *name)
+static trc_tags_entry *
+trc_diff_find_tags(trc_tags_list *tags, unsigned int id, te_bool create)
 {
     trc_tags_entry *p;
 
@@ -107,19 +107,31 @@ trc_diff_set_name(trc_tags_list *tags, unsigned int id, const char *name)
          p != NULL && p->id != id;
          p = p->links.tqe_next);
 
-    if (p == NULL)
+    if (p == NULL && create)
     {
         p = calloc(1, sizeof(*p));
         if (p == NULL)
         {
             ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
-            return ENOMEM;
+            return NULL;
         }
         TAILQ_INSERT_TAIL(tags, p, links);
 
         p->id = id;
         TAILQ_INIT(&p->tags);
     }
+ 
+    return p;
+}
+
+/* See description in trc_tag.h */
+int
+trc_diff_set_name(trc_tags_list *tags, unsigned int id, const char *name)
+{
+    trc_tags_entry *p = trc_diff_find_tags(tags, id, TRUE);
+
+    if (p == NULL)
+        return ENOMEM;
 
     free(p->name);
     p->name = strdup(name);
@@ -134,27 +146,26 @@ trc_diff_set_name(trc_tags_list *tags, unsigned int id, const char *name)
 
 /* See description in trc_tag.h */
 int
-trc_diff_add_tag(trc_tags_list *tags, unsigned int id, const char *name)
+trc_diff_show_keys(trc_tags_list *tags, unsigned int id)
 {
-    trc_tags_entry *p;
-
-    for (p = tags->tqh_first;
-         p != NULL && p->id != id;
-         p = p->links.tqe_next);
+    trc_tags_entry *p = trc_diff_find_tags(tags, id, TRUE);
 
     if (p == NULL)
-    {
-        p = calloc(1, sizeof(*p));
-        if (p == NULL)
-        {
-            ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
-            return ENOMEM;
-        }
-        TAILQ_INSERT_TAIL(tags, p, links);
+        return ENOMEM;
 
-        p->id = id;
-        TAILQ_INIT(&p->tags);
-    }
+    p->show_keys = TRUE;
+ 
+    return 0;
+}
+
+/* See description in trc_tag.h */
+int
+trc_diff_add_tag(trc_tags_list *tags, unsigned int id, const char *name)
+{
+    trc_tags_entry *p = trc_diff_find_tags(tags, id, TRUE);
+
+    if (p == NULL)
+        return ENOMEM;
 
     return trc_add_tag(&p->tags, name);
 }

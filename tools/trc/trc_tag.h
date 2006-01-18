@@ -37,6 +37,8 @@
 #error sys/queue.h is required for TRC tool
 #endif
 
+#include "te_defs.h"
+
 
 /** Named tag */
 typedef struct trc_tag {
@@ -51,9 +53,12 @@ typedef TAILQ_HEAD(trc_tags, trc_tag)   trc_tags;   /**< List of tags */
 /** Entry in the list of list of named tags */
 typedef struct trc_tags_entry {
     TAILQ_ENTRY(trc_tags_entry) links;  /**< List links */
-    unsigned int                id;     /**< ID of the list */
-    char                       *name;   /**< Name of the set */
-    trc_tags                    tags;   /**< List of tags */
+
+    unsigned int    id;         /**< ID of the list */
+    trc_tags        tags;       /**< List of tags */
+    char           *name;       /**< Name of the set */
+    te_bool         show_keys;  /**< Show table with keys which explain
+                                     differences */
 } trc_tags_entry;
 
 /** List of lists of named tags */
@@ -96,6 +101,16 @@ extern void trc_free_tags(trc_tags *tags);
  */
 extern int trc_diff_set_name(trc_tags_list *tags, unsigned int id,
                              const char *name);
+
+/**
+ * Enable showing keys of the TRC tags set with specified ID.
+ *
+ * @param tags      List of sets of tags
+ * @param id        Identifier of the list to be used
+ *
+ * @return Status code.
+ */
+extern int trc_diff_show_keys(trc_tags_list *tags, unsigned int id);
 
 /**
  * Add tag in the end of the TRC tags set with specified ID.

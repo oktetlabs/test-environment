@@ -287,6 +287,160 @@ static int trc_diff_tests_to_html(const test_runs *tests,
                                   unsigned int level);
 
 
+/** Statistics for each key which makes differences */
+typedef struct trc_diff_key_stats {
+    CIRCLEQ_ENTRY(trc_diff_key_stats)   links;  /**< List links */
+
+    trc_tags_entry *tags;   /**< Set of tags for which this key is used */
+    const char     *key;    /**< Key */
+    unsigned int    count;  /**< How many times this key is added */
+} trc_diff_key_stats;
+
+/** List of statistics for all keys */
+static CIRCLEQ_HEAD(trc_diff_keys_stats, trc_diff_key_stats)    keys_stats;
+
+
+/**
+ * Add key used for specified tags set.
+ *
+ * @param tags          Set of tags for which the key is used
+ * @param key           Key value
+ *
+ * @retval 0            Success
+ * @retval ENOMEM       Memory allocation failure
+ */
+static int
+tad_diff_key_add(trc_tags_entry *tags, const char *key)
+{
+    trc_diff_key_stats *p;
+
+    for (p = keys_stats.cqh_first;
+         (p != (void *)&keys_stats) &&
+         (p->tags != tags || strcmp(p->key, key) != 0);
+         p = p->links.cqe_next);
+
+    if (p == (void *)&keys_stats)
+    {
+        p = malloc(sizeof(*p));
+        if (p == NULL)
+            return ENOMEM;
+
+        p->tags = tags;
+        p->key = key;
+        p->count = 0;
+
+        CIRCLEQ_INSERT_TAIL(&keys_stats, p, links);
+    }
+
+    p->count++;
+
+    return 0;
+}
+
+/**
+ * Add iterations keys in set of keys with make differencies.
+ *
+ * @param iter          Test iteration
+ *
+ * @retval 0            Success
+ * @retval ENOMEM       Memory allocation failure
+ */
+static int
+trc_diff_key_add_iter(const test_iter *iter)
+{
+    trc_tags_entry *tags;
+    int             rc;
+
+    for (tags = tags_diff.tqh_first;
+         tags != NULL;
+         tags = tags->links.tqe_next)
+    {
+        const char *key = iter->diff_exp[tags->id].key;
+
+        if (key == NULL)
+            key = "";
+
+        rc = tad_diff_key_add(tags, key);
+        if (rc != 0)
+            return rc;
+    }
+    return 0;
+}
+
+/** Sort list of keys by 'count' in decreasing order. */
+static void
+trc_diff_keys_sort(void)
+{
+    trc_diff_key_stats *curr, *prev, *p;
+
+    assert(keys_stats.cqh_first != (void *)&keys_stats);
+    for (prev = keys_stats.cqh_first;
+         (curr = prev->links.cqe_next) != (void *)&keys_stats;
+         prev = curr)
+    {
+        if (prev->count < curr->count)
+        {
+            CIRCLEQ_REMOVE(&keys_stats, curr, links);
+            for (p = keys_stats.cqh_first;
+                 p != prev && p->count >= curr->count;
+                 p = p->links.cqe_next);
+
+            /* count have to fire */
+            assert(p->count < curr->count);
+            CIRCLEQ_INSERT_BEFORE(&keys_stats, p, curr, links);
+        }
+    }
+}
+
+static const char * const trc_diff_key_table_heading =
+"<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=3>\n"
+"  <THEAD>\n"
+"    <TR>\n"
+"      <TD>\n"
+"        <B>Key</B>\n"
+"      </TD>\n"
+"      <TD>\n"
+"        <B>Number of caused differences</B>\n"
+"      </TD>\n"
+"    </TR>\n"
+"  </THEAD>\n"
+"  <TBODY>\n";
+
+static const char * const trc_diff_key_table_row =
+"    <TR>\n"
+"      <TD>%s</TD>\n"
+"      <TD ALIGN=RIGHT>%u</TD>\n"
+"    </TR>\n";
+
+static int
+trc_diff_key_to_html(void)
+{
+    int                 rc = 0;
+    trc_diff_key_stats *p;
+
+    if (keys_stats.cqh_first == (void *)&keys_stats)
+        return 0;
+
+    trc_diff_keys_sort();
+
+    WRITE_STR(trc_diff_key_table_heading);
+    for (p = keys_stats.cqh_first;
+         p != (void *)&keys_stats;
+         p = p->links.cqe_next)
+    {
+        if (p->tags->show_keys)
+        {
+            fprintf(f, trc_diff_key_table_row,
+                    p->key, p->count);
+        }
+    }
+    WRITE_STR(trc_diff_table_end);
+
+cleanup:
+    return rc;
+}
+
+
 static te_bool
 trc_diff_exclude_by_key(const test_iter *iter)
 {
@@ -534,6 +688,11 @@ trc_diff_iters_has_diff(test_run *test, unsigned int flags,
          * expected results of the test iteration are different and it
          * shouldn't be excluded because of keys pattern.
          */
+
+        if (p->output && test->type == TRC_TEST_SCRIPT)
+        {
+            trc_diff_key_add_iter(p);
+        }
     }
 
     return has_diff;
@@ -1117,12 +1276,16 @@ trc_diff_report_to_html(trc_database *db, unsigned int flags,
 
     /* Initialize statistics */
     memset(stats, 0, sizeof(stats));
+    CIRCLEQ_INIT(&keys_stats);
 
     /* Preprocess tests tree and gather statistics */
     has_diff = trc_diff_tests_has_diff(&db->tests, flags);
 
     /* Output statistics */
     trc_diff_stats_to_html(flags);
+
+    /* Output per-key summary */
+    trc_diff_key_to_html();
 
     /* Initial test name is empty */
     test_name[0] = '\0';

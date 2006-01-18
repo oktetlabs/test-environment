@@ -82,6 +82,16 @@ enum {
     TRC_DIFF_OPT_NAME7,
     TRC_DIFF_OPT_NAME8,
     TRC_DIFF_OPT_NAME9,
+    TRC_DIFF_OPT_SHOW_KEYS0,
+    TRC_DIFF_OPT_SHOW_KEYS1,
+    TRC_DIFF_OPT_SHOW_KEYS2,
+    TRC_DIFF_OPT_SHOW_KEYS3,
+    TRC_DIFF_OPT_SHOW_KEYS4,
+    TRC_DIFF_OPT_SHOW_KEYS5,
+    TRC_DIFF_OPT_SHOW_KEYS6,
+    TRC_DIFF_OPT_SHOW_KEYS7,
+    TRC_DIFF_OPT_SHOW_KEYS8,
+    TRC_DIFF_OPT_SHOW_KEYS9,
 };
 
 
@@ -134,8 +144,8 @@ process_cmd_line_opts(int argc, char **argv)
           "(if template is empty).", NULL },
 
 #define TRC_DIFF_TAG_OPT(id_) \
-        { "tag" #id_, '0' + id_,                                \
-           POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG##id_,        \
+        { "tag" #id_, '0' + id_,                            \
+          POPT_ARG_STRING, NULL, TRC_DIFF_OPT_TAG##id_,     \
           "Name of the tag from corresponding set.", "TAG" }
 
         TRC_DIFF_TAG_OPT(0),
@@ -152,8 +162,8 @@ process_cmd_line_opts(int argc, char **argv)
 #undef TRC_DIFF_TAG_OPT
 
 #define TRC_DIFF_NAME_OPT(id_) \
-        { "name" #id_, '\0',                                    \
-           POPT_ARG_STRING, NULL, TRC_DIFF_OPT_NAME##id_,       \
+        { "name" #id_, '\0',                                \
+          POPT_ARG_STRING, NULL, TRC_DIFF_OPT_NAME##id_,    \
           "Name of the corresponding set of tags.", "NAME" }
 
         TRC_DIFF_NAME_OPT(0),
@@ -168,6 +178,24 @@ process_cmd_line_opts(int argc, char **argv)
         TRC_DIFF_NAME_OPT(9),
 
 #undef TRC_DIFF_NAME_OPT
+
+#define TRC_DIFF_SHOW_KEYS_OPT(id_) \
+        { "show-keys" #id_, '\0',                                  \
+          POPT_ARG_NONE, NULL, TRC_DIFF_OPT_SHOW_KEYS##id_,        \
+          "Show table with keys which cause differences.",  NULL }
+
+        TRC_DIFF_SHOW_KEYS_OPT(0),
+        TRC_DIFF_SHOW_KEYS_OPT(1),
+        TRC_DIFF_SHOW_KEYS_OPT(2),
+        TRC_DIFF_SHOW_KEYS_OPT(3),
+        TRC_DIFF_SHOW_KEYS_OPT(4),
+        TRC_DIFF_SHOW_KEYS_OPT(5),
+        TRC_DIFF_SHOW_KEYS_OPT(6),
+        TRC_DIFF_SHOW_KEYS_OPT(7),
+        TRC_DIFF_SHOW_KEYS_OPT(8),
+        TRC_DIFF_SHOW_KEYS_OPT(9),
+
+#undef TRC_DIFF_SHOW_KEYS_OPT
 
         { "version", '\0', POPT_ARG_NONE, NULL, TRC_DIFF_OPT_VERSION, 
           "Display version information.", NULL },
@@ -229,6 +257,24 @@ process_cmd_line_opts(int argc, char **argv)
             case TRC_DIFF_OPT_NAME9:
                 if (trc_diff_set_name(&tags_diff, rc - TRC_DIFF_OPT_NAME0,
                                       poptGetOptArg(optCon)) != 0)
+                {
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                break;
+
+            case TRC_DIFF_OPT_SHOW_KEYS0:
+            case TRC_DIFF_OPT_SHOW_KEYS1:
+            case TRC_DIFF_OPT_SHOW_KEYS2:
+            case TRC_DIFF_OPT_SHOW_KEYS3:
+            case TRC_DIFF_OPT_SHOW_KEYS4:
+            case TRC_DIFF_OPT_SHOW_KEYS5:
+            case TRC_DIFF_OPT_SHOW_KEYS6:
+            case TRC_DIFF_OPT_SHOW_KEYS7:
+            case TRC_DIFF_OPT_SHOW_KEYS8:
+            case TRC_DIFF_OPT_SHOW_KEYS9:
+                if (trc_diff_show_keys(&tags_diff,
+                                       rc - TRC_DIFF_OPT_SHOW_KEYS0) != 0)
                 {
                     poptFreeContext(optCon);
                     return EXIT_FAILURE;
