@@ -253,9 +253,15 @@ sighow_rpc2h(rpc_sighow how)
 {
     switch (how)
     {
+#ifdef SIG_BLOCK    
         RPC2H(SIG_BLOCK);
+#endif        
+#ifdef SIG_UNBLOCK    
         RPC2H(SIG_UNBLOCK);
+#endif
+#ifdef SIG_SETMASK
         RPC2H(SIG_SETMASK);
+#endif        
         default: return SIG_INVALID;
     }
 }
