@@ -3,7 +3,8 @@
 # Windows Test Agent
 # Build standalone RPC server using native compiler
 # Agruments: list of RPC server source files (pathnames).
-# Pre-processor flags may be passed via CPPFLAGS environment variable.
+# Pre-processor flags may be passed via RPCSERVER_CPPFLAGS 
+# environment variable.
 #
 # Copyright (C) 2006 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
@@ -33,21 +34,22 @@ if test -z ${TE_WIN32_BUILD_HOST} ; then
     exit 0 
 fi  
 
-cat >>cl.m4 <<EOF
+cat >cl.m4 <<EOF
 changequote([,])
 
 define([INCLUDE],[#include <$1>])
 EOF
-  
 
 FILES= 
 for i in $* ; do 
     FILENAME=`basename ${i}` 
     FILES="${FILES} ${FILENAME}"
-    ${CC} ${CPPFLAGS} -P -E ${i} -o ${FILENAME}.tmp ; 
-    cat cl.m4 ${FILENAME}.tmp > ${FILENAME} ; 
+    ${CC} ${RPCSERVER_CPPFLAGS} -P -E ${i} -o ${FILENAME}.tmp ; 
+    cat cl.m4 ${FILENAME}.tmp | m4 > ${FILENAME} ; 
     rm ${FILENAME}.tmp ; 
 done
+
+exit 0
 scp ${FILES} ${TE_WIN32_BUILD_HOST}:
 ssh ${TE_WIN32_BUILD_HOST} cl -o tawin32tmpl_rpcserver  
     -lws2_32 -lmswsock -lwsock32 -liphlpapi ${FILES}
