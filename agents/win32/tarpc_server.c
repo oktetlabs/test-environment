@@ -227,6 +227,9 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     char  cmdline[256];
     char *tmp;
     
+    int i;
+    
+    
     PROCESS_INFORMATION info;
     STARTUPINFO         si;
     
@@ -238,11 +241,19 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
     
-    if (!CreateProcess(NULL, cmdline, NULL, NULL, inherit, 0, NULL, NULL,
-                       &si, &info))
+    for (i = 0; i < 2; i++)
     {
-        ERROR("CreateProcess() failed with error %d", GetLastError());
-        return win_rpc_errno(GetLastError());
+        if (CreateProcess(NULL, cmdline, NULL, NULL, inherit, 0, NULL, NULL,
+                          &si, &info))
+            break;
+           
+       if (i == 1)
+        {
+            ERROR("CreateProcess() failed with error %d", GetLastError());
+            return win_rpc_errno(GetLastError());
+        }
+        *tmp = 0;
+        sprintf(cmdline + strlen(cmdline), " rpcserver %s", name);    
     }
     
     *pid = info.dwProcessId;
