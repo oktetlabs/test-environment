@@ -77,7 +77,6 @@ tcp_nodelay_enable(int sock)
     }
     return 0;
 #else
-#error Temporary error for debugging
     UNUSED(sock);
     return TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP);
 #endif
