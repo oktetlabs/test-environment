@@ -96,15 +96,19 @@ uninstall-hook:
 		$(DESTDIR)/$(bindir)/ta@with_name@_rpcserver \
 		$(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
 
+tawin32tmpl_rpcserver_DEPENDENCIES=@TE_DEPENDENCIES@ rpcserver_symtbl.o \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a 
+
 tawin32tmpl_rpcserver_SOURCES=\
                   tarpc_server.c rpc_unsupported.c rpcserver.c common.c \
                   ${srcdir}/../../lib/rcfpch/rcf_pch_mem.c \
                   ${srcdir}/../../lib/loggerta/logfork.c \
                   ${srcdir}/../../lib/tools/te_format.c 
                   
-tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -lrpcxdr -lrpc \
+tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -lrpcxdr -ltalib -lrpc \
                             -lws2_32 -lmswsock -lwsock32 -liphlpapi 
 
-rpcserver_symtbl.c: tarpc_server.o
+rpcserver_symtbl.c: tarpc_server.o \
+                    $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a 
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
