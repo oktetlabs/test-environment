@@ -29,7 +29,7 @@
 # $Id:  $
 #
 
-if test -n ${TE_WIN32_BUILD_HOST} ; then
+if test -z ${TE_WIN32_BUILD_HOST} ; then
     exit 0 
 fi  
 
