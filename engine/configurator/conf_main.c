@@ -1145,11 +1145,12 @@ log_msg(cfg_msg *msg, te_bool before)
  *
  * @param filename      backup filename
  * @param log           if TRUE, log changes
+ * @param error_msg     if not NULL, log failure with specified message
  *
  * @return 0 if DB state does not differ from backup; status code otherwise
  */
 static inline te_errno
-verify_backup(const char *backup, te_bool log)
+verify_backup(const char *backup, te_bool log, const char *msg)
 {
     char diff_file[RCF_MAX_PATH];
     int  rc;
@@ -1162,14 +1163,19 @@ verify_backup(const char *backup, te_bool log)
             filename, diff_file);
             
     rc = ((system(tmp_buf) == 0) ? 0 : TE_EBACKUP);
-    if (rc != 0 && log)
+    if (rc != 0)
     {
-        if (cs_flags & CS_LOG_DIFF)
-            te_log_message(__FILE__, __LINE__,
-                           TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
-                           "Backup diff:\n%Tf", diff_file);
-        else
-            INFO("Backup diff:\n%Tf", diff_file);
+        if (msg != NULL)
+            ERROR("%s\n%Tf", diff_file);
+        else if (log)
+        {
+            if (cs_flags & CS_LOG_DIFF)
+                te_log_message(__FILE__, __LINE__,
+                               TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+                               "Backup diff:\n%Tf", diff_file);
+            else
+                INFO("Backup diff:\n%Tf", diff_file);
+        }
     }
     unlink(diff_file); 
     
@@ -1215,18 +1221,16 @@ process_backup(cfg_backup_msg *msg)
             /* Try to restore using dynamic history */
             if ((msg->rc = cfg_dh_restore_backup(msg->filename, TRUE)) == 0)
             {
-                char diff_file[RCF_MAX_PATH];
-                
                 cfg_conf_delay_reset();
                 cfg_ta_sync("/:", TRUE);
                 
-                if ((msg->rc = verify_backup(msg->filename, FALSE)) == 0)
+                if ((msg->rc = verify_backup(msg->filename, FALSE, 
+                                   "Restoring backup from history failed:")
+                                             ) == 0)
                 {
                     rcf_log_cfg_changes(FALSE);
                     return;
                 }
-                WARN("Restoring backup from history failed:\n%Tf", 
-                     diff_file);
             }
             else
                 WARN("Restoring backup from history failed; "
@@ -1246,12 +1250,13 @@ process_backup(cfg_backup_msg *msg)
             if (TE_RC_GET_ERROR(rc) == TE_ETAREBOOTED)
                 cfg_ta_sync("/:", TRUE);
                 
-            if ((msg->rc = verify_backup(msg->filename, TRUE)) == 0)
+            if ((msg->rc = verify_backup(msg->filename, TRUE, NULL)) == 0)
                 cfg_dh_release_after(msg->filename);
             else
             {
                 cfg_ta_sync("/:", TRUE);
-                if ((msg->rc = verify_backup(msg->filename, TRUE)) == 0)
+                if ((msg->rc = verify_backup(msg->filename, TRUE, 
+                                             NULL)) == 0)
                     cfg_dh_release_after(msg->filename);
             }
 
