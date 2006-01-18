@@ -31,18 +31,11 @@ AC_SUBST([TAD], [$with_tad])
 
 AC_SUBST([TAD_LIBS])
 
-RPCSERVER_DEPENDENCIES=
-for i in $TE_DEPENDENCIES ; do
-    if echo $i | grep -q talib ; then
-        RPCSERVER_DEPENDENCIES="$RPCSERVER_DEPENDENCIES $i"
-    fi
-done
-
-AC_SUBST(RPCSERVER_DEPENDENCIES)
-
 AC_CONFIG_HEADERS([config.h])
 
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
+AM_CONDITIONAL(CFG_STANDALONE_RPCSERVER, 
+               test -n "$with_standalone_rpcserver")
 
 export PKG_CONFIG_PATH=$DESTDIR/$prefix/../$host/lib/pkgconfig/
 

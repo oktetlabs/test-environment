@@ -15,7 +15,9 @@ MY_LDADD=symtbl.o -lrcfpch -lrpcxdr \
          -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin \
          -lexpat 
          
-noinst_HEADERS=tarpc_server.h
+noinst_HEADERS=tarpc_server.h rpcserver.h
+
+EXTRA_DIST=cl.m4
 
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 MY_SOURCES=win32.c win32conf.c inet_pton.c common.c
@@ -47,7 +49,7 @@ rpc_supported.h: tarpc_server.o
 
 else
 
-EXTRA_DIST=tarpc_server.c
+EXTRA_DIST+=tarpc_server.c
         
 endif
 
@@ -75,13 +77,14 @@ tawin32tmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
 #
 AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
 
-
-bin_PROGRAMS=tawin32tmpl tawin32tmpl_rpcserver
-
 symtbl.c: $(MY_SYMTBL_OBJECTS) $(SYMTBL_LIBS) @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
-install-exec-hook:
+if CFG_STANDALONE_RPCSERVER
+
+bin_PROGRAMS=tawin32tmpl tawin32tmpl_rpcserver
+
+install-exec-hook: build_native
 	mv $(DESTDIR)/$(bindir)/tawin32tmpl.exe \
 		$(DESTDIR)/$(bindir)/ta@with_name@.exe
 	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
@@ -97,7 +100,8 @@ uninstall-hook:
 		$(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
 
 tawin32tmpl_rpcserver_DEPENDENCIES=\
-    @RPCSERVER_DEPENDENCIES@ rpcserver_symtbl.o \
+    rpcserver_symtbl.o \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a 
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a 
 
 tawin32tmpl_rpcserver_SOURCES=\
@@ -112,3 +116,29 @@ tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -lrpcxdr -ltalib -lrpc \
 rpcserver_symtbl.c: tarpc_server.o @RPCSERVER_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_generate_symtbl "${NM}" $@ $^ 
 
+build_native: rpcserver.c
+	FILES= ; \
+	for i in $< ; do \
+	    FILENAME=`basename $${i}` ;
+	    FILES="$${FILES} $${FILENAME}"
+	    ${CC} $(RPCSERVER_CPPFLAGS) $${i} -o $${FILENAME}.tmp ; \
+	    cat $(srcdir)/cl.m4 $${FILENAME}.tmp > $${FILENAME} ; \
+	    rm $${FILENAME}.tmp ; \
+	done
+
+else
+
+bin_PROGRAMS=tawin32tmpl 
+
+EXTRA_DIST+=rpcserver.c
+
+install-exec-hook:
+	mv $(DESTDIR)/$(bindir)/tawin32tmpl.exe \
+		$(DESTDIR)/$(bindir)/ta@with_name@.exe
+	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
+
+uninstall-hook:
+	rm -f $(DESTDIR)/$(bindir)/ta@with_name@ \
+		$(DESTDIR)/$(bindir)/ta@with_name@.exe 
+
+endif
