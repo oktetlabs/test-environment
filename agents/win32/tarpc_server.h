@@ -249,6 +249,7 @@ win_rpc_errno(int err)
         case ERROR_IO_PENDING: return RPC_E_IO_PENDING;
         case ERROR_NOACCESS: return RPC_EFAULT; /* FIXME? */
         case ERROR_MORE_DATA: return RPC_EMSGSIZE; /* FIXME? */
+        case ERROR_INVALID_PARAMETER: return RPC_EINVAL; /* FIXME? */
         case WAIT_TIMEOUT: return RPC_E_WAIT_TIMEOUT;
         
         case ERROR_UNSPEC: return RPC_EUNSPEC;
