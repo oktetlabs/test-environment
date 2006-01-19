@@ -158,7 +158,9 @@ extern te_errno tad_aal5_match_bin_cb(csap_p           csap,
                                       asn_value       *parsed_packet);
 
 
-const uint32_t init_crc32 = 0xffffffff; /**< Init CRC32 value */
+enum {
+    CRC32_INIT = 0xffffffff, /**< Init CRC32 value */
+};
 
 /**
  * Calculate CRC32 hash value for new portion of data,
