@@ -3352,21 +3352,22 @@ TARPC_FUNC(set_buf, {},
 
 TARPC_FUNC(get_buf, {},
 {
-    void *src_buf; 
+    uint8_t *src_buf; 
     
     UNUSED(list);
 
     src_buf = rcf_pch_mem_get(in->src_buf);
     if (src_buf != NULL && in->len != 0)
     {
-        char *buf;
+        uint8_t *buf;
 
         buf = malloc(in->len);
         if (buf == NULL)
             out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         else
         {
-            memcpy(buf, src_buf + (unsigned int)in->offset, in->len);
+            memcpy(buf, (char *)src_buf + 
+                   (unsigned int)in->offset, in->len);
             out->dst_buf.dst_buf_val = buf;
             out->dst_buf.dst_buf_len = in->len;
         }
@@ -3390,7 +3391,8 @@ _set_buf_pattern_1_svc(tarpc_set_buf_pattern_in *in,
     UNUSED(rqstp);
     UNUSED(out);
     
-    dst_buf = rcf_pch_mem_get(in->dst_buf) + (unsigned int)in->offset;
+    dst_buf = (uint8_t *)rcf_pch_mem_get(in->dst_buf) + 
+              (unsigned int)in->offset;
     if (dst_buf != NULL)
     {
         if (in->pattern < TAPI_RPC_BUF_RAND)
