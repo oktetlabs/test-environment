@@ -157,4 +157,21 @@ extern te_errno tad_aal5_match_bin_cb(csap_p           csap,
                                       csap_pkts       *payload,
                                       asn_value       *parsed_packet);
 
+
+const uint32_t init_crc32 = 0xffffffff; /**< Init CRC32 value */
+
+/**
+ * Calculate CRC32 hash value for new portion of data,
+ * using ready value for previous data. 
+ * If there are no previous data, pass 0xffffffff as 'previous_value'.
+ *
+ * @param previous_value        Ready CRC32 value for previous data block.
+ * @param next_pkt              Pointer to new portion of data.
+ * @param next_len              Length of new portion of data.
+ *
+ * @return updated CRC32 value or zero if NULL pointer passed.
+ */
+extern uint32_t calculate_crc32(uint32_t previous_value, 
+                                uint8_t *next_pkt,
+                                size_t   next_len);
 #endif /* !__TE_TAD_ATM_IMPL_H__ */

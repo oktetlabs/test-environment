@@ -79,6 +79,62 @@ static const tad_bps_pkt_frag tad_all5_bps_cpcs_trailer[] =
 static uint8_t  tad_all5_pad[ATM_PAYLOAD_LEN - 1] = { 0, };
 
 
+
+
+/**
+ * Calculate product of a(x) by x^k in 
+ * the residue-class ring of polynomials by modulo G(x) 
+ *
+ * G(x) = x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 + 
+ *             + x^8  + x^7  + x^5  + x^4  + x^2  + x    + 1
+ *
+ * Note, that bitwise XOR is åddition for polynomials over Z_2 field. 
+ *
+ * @param a     Bitmask, representing coefficients of polynomial over 
+ *              Z_2 field with degree, less then 32.
+ * @param k     Degree of monome, with which product should be obtained.
+ *
+ * @return bitmask, represenging coefficients of production result.
+ */
+static inline uint32_t
+product_in_ring_to_power(uint32_t a, int k)
+{
+    const uint32_t g_defect = 0x04c11db7; /* G(x) - x^32 */
+    uint32_t r = 0;
+
+    for (; k > 0; k--)
+    {
+        /* perform a(x) := (a(x) * x) mod G(x) */
+        r = a << 1;
+        if (a & 0x80000000)
+            a = r ^ g_defect;
+        else 
+            a = r;
+    }
+
+    return a;
+}
+
+/* See description in tad_atm_impl.h */
+uint32_t
+calculate_crc32(uint32_t previous_value, 
+                uint8_t *next_pkt,
+                size_t   next_len)
+{ 
+    uint32_t result = previous_value;
+
+    if (next_pkt == NULL) 
+        return 0;
+
+    for (result = previous_value; next_len > 0; next_pkt++, next_len--)
+        result = product_in_ring_to_power(result, 8) ^ 
+                 product_in_ring_to_power(next_pkt[0], 32);
+
+    return result;
+}
+
+
+
 /* See description in tad_atm_impl.h */
 te_errno
 tad_aal5_init_cb(csap_p csap, unsigned int layer)
