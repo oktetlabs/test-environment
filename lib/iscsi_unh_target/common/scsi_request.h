@@ -25,6 +25,7 @@ struct scsi_request {
 						 * when CHECK CONDITION is
 						 * received on original command 
 						 * (auto-sense) */
+    uint32_t sr_sense_length;
 
 	struct Scsi_Host *sr_host;
 	struct scsi_device *sr_device;

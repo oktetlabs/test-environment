@@ -110,6 +110,7 @@ struct target_map_item
     uint32_t         last_lba;
     te_bool          in_use;			/* 1 if this item is defined, else 0 */
     int              mmap_fd;
+    int              error_code;
 };
 
 	/* doubly-linked circular list, one entry for every iscsi target
@@ -424,6 +425,19 @@ iscsi_read_from_device(uint8_t target, uint8_t lun,
     return rc;
 }
 
+te_errno
+iscsi_set_device_failure_state(uint8_t target, uint8_t lun, uint32_t error)
+{
+    if (target >= MAX_TARGETS || lun >= MAX_LUNS ||
+        !target_map[target][lun].in_use)
+    {
+        TRACE_ERROR("Invalid target %d or lun %d",
+                    target, lun);
+        return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
+    }
+    target_map[target][lun].error_code = error;
+    return 0;
+}
 
 /*
  * scsi_target_cleanup_module: Removal of the module from the kernel
@@ -1805,6 +1819,20 @@ struct scsi_io10_payload
 
 typedef struct scsi_io10_payload scsi_io10_payload;
 
+struct scsi_fixed_sense_data
+{
+    uint8_t  response;
+    uint8_t  obsolete;
+    uint8_t  sense_key_and_flags;
+    uint32_t information;
+    uint8_t  additional_length;
+    uint32_t csi;
+    uint8_t  asc;
+    uint8_t  ascq;
+    uint8_t  fruc;
+    uint8_t  sks[3];
+} __attribute__ ((packed));
+
 
 static te_bool
 iscsi_accomodate_buffer (struct target_map_item *target, uint32_t size)
@@ -1840,10 +1868,13 @@ do_scsi_io(Target_Scsi_Cmnd *command,
 {
     uint8_t   lun;
     uint32_t  lba;
+    uint32_t  offset;
     uint32_t  length;
     te_bool   success = TRUE;
+    int       sense_key = 0;
     
     pthread_mutex_lock(&target_map_mutex);
+
     if (command->cmd[0] == READ_6 || command->cmd[0] == WRITE_6)
     {
         scsi_io6_payload *data = (void *)command->req->sr_cmnd;
@@ -1870,6 +1901,12 @@ do_scsi_io(Target_Scsi_Cmnd *command,
     {
         TRACE_ERROR("Invalid LUN %u specified for target %d", 
                     lun, command->target_id);
+        sense_key = ILLEGAL_REQUEST;
+        success = FALSE;
+    }
+    else if (target_map[command->target_id][lun].error_code != 0)
+    {
+        sense_key = target_map[command->target_id][lun].error_code;
         success = FALSE;
     }
     else
@@ -1880,29 +1917,54 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         {
             TRACE_ERROR("LBA %lu is out of range for lun %d, target %d",
                         lba, lun, command->target_id);
+            sense_key = ILLEGAL_REQUEST;
             success = FALSE;
         }
         else if (lba + length >= target->storage_size)
         {
             TRACE_ERROR("LBA %lu + %lu is out of range for lun %d, target %d",
                         lba, length, lun, command->target_id);
+            sense_key = ILLEGAL_REQUEST;
             success = FALSE;
         }
         TRACE(VERBOSE, 
               "Got SCSI I/O request at %x, length = %d",
               lba, length);
-        lba    *= SCSI_BLOCKSIZE;
+        offset = lba * SCSI_BLOCKSIZE;
         length *= SCSI_BLOCKSIZE;
-        success = iscsi_accomodate_buffer(target, lba + length);
+        success = iscsi_accomodate_buffer(target, offset + length);
         if (success)
-            success = op(command, lun, lba);
+        {
+            success = op(command, lun, offset);
+            if (!success)
+                sense_key = HARDWARE_ERROR;
+        }
+        else
+        {
+            sense_key = ILLEGAL_REQUEST;
+        }
     }
 
     if (!success)
-        command->req->sr_result = DID_ERROR << 16;
+    {
+        struct scsi_fixed_sense_data *sense = 
+            (void *)command->req->sr_sense_buffer;
+        command->req->sr_result    = DID_ERROR << 16;
+        sense->response            = 0xF0; /* current error + VALID bit */
+        sense->sense_key_and_flags = sense_key;
+        sense->information         = htonl(lba);
+        sense->additional_length   = sizeof(*sense) - 1;
+        sense->csi                 = 0;
+        sense->asc                 = 0;
+        sense->ascq                = 0;
+        sense->fruc                = 0;
+        memset(sense->sks, 0, sizeof(sense->sks));
+        command->req->sr_sense_length = sizeof(*sense);
+    }
     else
     {
         command->req->sr_result = DID_OK << 16;
+        command->req->sr_sense_buffer[0] = 0;
         if (length != 0)
             target_map[command->target_id][lun].last_lba = 
                 lba + length - 1;
@@ -1919,7 +1981,7 @@ do_scsi_read(Target_Scsi_Cmnd *command, uint8_t lun,
     struct scatterlist *st_list = command->req->sr_buffer;
     int                 st_idx;
 
-    TRACE(VERBOSE, "Doing read from lun %u at 0x%x",
+    TRACE(NORMAL, "Doing read from lun %u at 0x%x",
           lun, offset);
     dataptr = target->buffer + offset;
     for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)
@@ -1941,7 +2003,7 @@ do_scsi_write(Target_Scsi_Cmnd *command, uint8_t lun,
     struct scatterlist *st_list = command->req->sr_buffer;
     int                 st_idx;
 
-    TRACE(VERBOSE, "Doing write to lun %u at %lx",
+    TRACE(NORMAL, "Doing write to lun %u at %lx",
           lun, offset);
     dataptr = target->buffer + offset;
     for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)

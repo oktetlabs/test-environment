@@ -3679,6 +3679,7 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 		uint16_t	len;						/* added by iscsi standard */
 		uint8_t	data[SCSI_SENSE_BUFFERSIZE];/* direct from scsi */
 		} sense_data = {0, {0}};
+    int sense_data_len = 0;
 	uint32_t flags = 0;
 	int residual_count = 0;
     int max_cmd_sn_delta = 0;
@@ -3692,11 +3693,15 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 	rsp->init_task_tag = htonl(cmnd->init_task_tag);
 
 	req = cmnd->cmnd->req;
+#if 0
 	if ((req->sr_data_direction == SCSI_DATA_READ)
 									&& host_byte(req->sr_result) == DID_OK) {
+#endif
 		flags = do_command_status(cmnd,req,&data_length_left,&residual_count);
 		rsp->exp_data_sn = htonl(cmnd->data_sn);
+#if 0
 	}
+#endif
 
 	/* cdeng 3/24/02 */
 	if (flags & OVERFLOW_FLAG) {
@@ -3722,7 +3727,6 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 	if (flags & SEND_SENSE_FLAG) {
 		/* sense data has to be sent as part of SCSI Response pdu */
 		rsp->status = CHECK_CONDITION << 1;	/* why does Linux do this shift? */
-		sense_data.len = SCSI_SENSE_BUFFERSIZE;
 		if (flags & UNDERFLOW_FLAG) {
 			TRACE(DEBUG, "underflow is found");
 			memset(sense_data.data, 0x0, SCSI_SENSE_BUFFERSIZE);
@@ -3730,14 +3734,20 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 			sense_data.data[2] = 0x20;		/* scsi ILI bit */
 			sense_data.data[7] = 0x07;		/* scsi additional length = 7 */
 			memcpy(sense_data.data + 3, req->sr_sense_buffer + 3, 4);
+            sense_data_len = 8 + 7;
 		} else {
-			TRACE(DEBUG, "sense key 0x%x",
-				  req->sr_sense_buffer[2] & 0xf);
-			memcpy(sense_data.data,req->sr_sense_buffer,SCSI_SENSE_BUFFERSIZE);
+			TRACE(DEBUG, "sense key 0x%x, length %d",
+				  req->sr_sense_buffer[2] & 0xf,
+                  (int)req->sr_sense_length);
+            sense_data_len = req->sr_sense_length;
+			memcpy(sense_data.data,
+                   req->sr_sense_buffer, 
+                   req->sr_sense_length);
 		}
-		sense_data.len += 2;	/* for the extra iscsi 2-byte length header */
-	}
-	rsp->length = htonl(sense_data.len);
+        sense_data.len = htons(sense_data_len - 2);
+		sense_data_len += 2;	/* for the extra iscsi 2-byte length header */
+    }
+	rsp->length = htonl(sense_data_len);
 
 	TRACE(DEBUG, "send_iscsi_response: sending status for cmnd_rn %.8x "
 		  "init_task_tag %.8x target_xfer_tag %.8x\n", cmnd->cmd_sn,
@@ -3745,7 +3755,7 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 
 	cmnd->retransmit_flg = 0;
 	cmnd->state = ISCSI_SENT;
-	if (send_hdr_plus_1_data(conn, iscsi_hdr, &sense_data, sense_data.len) < 0){
+	if (send_hdr_plus_1_data(conn, iscsi_hdr, &sense_data, sense_data_len) < 0){
 		return -1;
 	}
 

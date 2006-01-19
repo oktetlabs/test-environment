@@ -568,6 +568,8 @@ extern int tapi_iscsi_target_will_drop(const char *ta, int id,
                                        te_bool drop_all,
                                        int time2wait, int time2retain);
 
+extern int tapi_iscsi_target_set_failure_state(const char *ta, 
+                                               const char *error);
 
 typedef int iscsi_target_id;
 typedef int iscsi_cid;

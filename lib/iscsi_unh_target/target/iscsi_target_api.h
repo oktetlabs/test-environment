@@ -118,6 +118,18 @@ extern int iscsi_read_from_device(uint8_t target, uint8_t lun,
                                   uint32_t len);
 
 /**
+ * Sets a device failure state.
+ *
+ * @param target Target No
+ * @param lun    LUN
+ * @param error  Failure state (0 means normal operation).
+ *
+ * @return Status code
+ */
+extern te_errno iscsi_set_device_failure_state(uint8_t target, uint8_t lun, 
+                                               uint32_t error);
+
+/**
  * Informs the target that the following sessions will be 
  * somewhat different from the previous ones.
  * In practice, that means informing the target that a new test

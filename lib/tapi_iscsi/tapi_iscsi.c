@@ -1358,6 +1358,46 @@ tapi_iscsi_target_will_drop(const char *ta, int id, te_bool drop_all,
 }
 
 
+int
+tapi_iscsi_target_set_failure_state(const char *ta, const char *failure)
+{
+    te_errno local_rc;
+    te_errno remote_rc;
+
+    /* The following are meant to match SCSI sense keys (see SPC-3, p.41) */
+    static char *failures[] = 
+        {"none", 
+         "recovered error",
+         "not ready",
+         "medium error",
+         "hardware error",
+         "illegal request",
+         "unit attention",
+         "data protect",
+         "blank check",
+         "vendor specific",
+         "copy aborted",
+         "aborted command",
+         NULL
+        };
+    char **found;
+
+
+    for (found = failures; *found != NULL; found++)
+    {
+        if (strcmp(*found, failure) == 0)
+            break;
+    }
+    if (found == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    local_rc = rcf_ta_call(ta, 0, "iscsi_set_device_failure_state", 
+                           &remote_rc,
+                           3, FALSE, 
+                           RCF_UINT8, 0, RCF_UINT8, 0,
+                           RCF_UINT32, found - failures);
+    return local_rc != 0 ? local_rc : remote_rc;
+}
 
 int
 tapi_iscsi_initiator_advertize_set(const char *ta,
