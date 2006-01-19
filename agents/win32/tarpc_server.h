@@ -40,7 +40,7 @@
 #include "tarpc.h"
 #include "ta_common.h"
 
-#ifdef _WINSOCK_H
+#if defined(_WINSOCK_H) || defined(__CYGWIN__)
 struct timezone {
   int tz_minuteswest;
   int tz_dsttime;
@@ -196,7 +196,6 @@ extern LPFN_WSARECVMSG           pf_wsa_recvmsg;
 #define IN_HWND         ((HWND)(rcf_pch_mem_get(in->hwnd)))
 #define IN_HEVENT       ((WSAEVENT)(rcf_pch_mem_get(in->hevent)))
 #define IN_OVERLAPPED   ((rpc_overlapped *)rcf_pch_mem_get(in->overlapped))
-#define IN_SIGSET       ((sigset_t *)(rcf_pch_mem_get(in->set)))
 #define IN_FDSET        ((fd_set *)(rcf_pch_mem_get(in->set)))
 #define IN_CALLBACK     ((LPWSAOVERLAPPED_COMPLETION_ROUTINE) \
                              rcf_ch_symbol_addr(in->callback, 1))
@@ -729,7 +728,6 @@ check_args(checked_arg *list)
 typedef struct _func##_arg {                                            \
     tarpc_##_func##_in  in;                                             \
     tarpc_##_func##_out out;                                            \
-    sigset_t            mask;                                           \
     te_bool             done;                                           \
 } _func##_arg;                                                          \
                                                                         \
