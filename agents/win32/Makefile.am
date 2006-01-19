@@ -121,7 +121,7 @@ uninstall-hook:
 RPCSERVER_CPPFLAGS=@TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
                    -include $(srcdir)/rpcserver.h -DDUMMY
 
-build_native: $(srcdir)/rpcserver.c
+build_native: $(tawin32tmpl_rpcserver_SOURCES)
 	CC=$(CC)  \
 	RPCSERVER_CPPFLAGS="$(RPCSERVER_CPPFLAGS)" \
 	$(srcdir)/build_native.sh $<
