@@ -3188,8 +3188,9 @@ TARPC_FUNC(simple_sender, {},
 int
 simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
 {
-    api_func send_func;
-    char         *buf;
+    int         errno_save = errno;
+    api_func    send_func;
+    char       *buf;
 
     int size = rand_range(in->size_min, in->size_max);
     int delay = rand_range(in->delay_min, in->delay_max);
@@ -3263,6 +3264,9 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
          out->bytes);
          
     free(buf);
+
+    /* Clean up errno */
+    errno = errno_save;
 
     return 0;
 }
