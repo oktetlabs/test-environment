@@ -27,11 +27,10 @@
  *
  * $Id$
  */
- 
-#ifndef DUMMY 
-#include "tarpc_server.h"
-#include "rpc_xdr.h"
+
+#include "logger_api.h" 
 #include "te_format.h"
+#include "rpc_xdr.h"
 
 DEFINE_LGR_ENTITY("(win32_rpcserver)");
 
@@ -71,40 +70,3 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
     _exit(0);
 }
 
-#else
-
-HINSTANCE ta_hinstance;
-
-int WINAPI 
-WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, 
-        LPSTR lpCmdLine, int nCmdShow) 
-{
-    WSADATA data;
-    
-    int s, s1;
-    struct sockaddr_in addr;
-    int len = sizeof(addr);
-    
-    WSAStartup(MAKEWORD(2,2), &data);
-    
-    ta_hinstance = hinstance;
-    
-    setvbuf(stdout, NULL, _IONBF, 0);
-    setvbuf(stderr, NULL, _IONBF, 0);
-    
-    printf("Hello, it's me\n");
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(9000);
-    s = socket(AF_INET, SOCK_STREAM, 0);
-    bind(s, (struct sockaddr *)&addr, len);
-    listen(s, 5);
-    s1 = accept(s, (struct sockaddr *)&addr, (int *)&len);
-    closesocket(s);
-    s = s1;
-    
-    send(s, "Hello\n", 7, 0);
-    
-    _exit(0);
-}
-#endif
