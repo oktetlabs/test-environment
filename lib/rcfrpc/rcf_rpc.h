@@ -51,7 +51,7 @@
 #include "tarpc.h"
 
 /** Default RPC timeout in milliseconds */
-#define RCF_RPC_DEFAULT_TIMEOUT     100000
+#define RCF_RPC_DEFAULT_TIMEOUT     10000
 
 
 /** Return RPC server context errno */
