@@ -28,7 +28,7 @@
  * $Id$
  */
 
-#include "windows.h"
+#include "winsock2.h"
 #include "te_defs.h"
 #include "ta_common.h"
 
