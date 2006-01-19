@@ -2224,7 +2224,7 @@ TARPC_FUNC(flooder, {},
     if (in->iomux != FUNC_SELECT)
     {
        ERROR("Unsipported iomux type for flooder");
-       out->retval = TE_RC(TE_TA_WIN32, TE_ENOTSUP);
+       out->retval = TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
        return 0;
     }
     MAKE_CALL(out->retval = flooder(in));
@@ -2397,7 +2397,7 @@ TARPC_FUNC(echoer, {},
     if (in->iomux != FUNC_SELECT)
     {
        ERROR("Unsipported iomux type for echoer");
-       out->retval = TE_RC(TE_TA_WIN32, TE_ENOTSUP);
+       out->retval = TE_RC(TE_TA_WIN32, TE_EOPNOTSUPP);
        return 0;
     }
     MAKE_CALL(out->retval = echoer(in));
