@@ -2883,6 +2883,8 @@ TARPC_FUNC(wsa_send_to,
     rpc_overlapped *overlapped = IN_OVERLAPPED;
     rpc_overlapped  tmp;
 
+    PREPARE_ADDR(in->to, 0);
+
     if (overlapped == NULL)
     {
         memset(&tmp, 0, sizeof(tmp));
@@ -2894,8 +2896,6 @@ TARPC_FUNC(wsa_send_to,
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
-
-    PREPARE_ADDR(in->to, 0);
 
     MAKE_CALL(out->retval =
         WSASendTo(in->s,
@@ -2932,6 +2932,9 @@ TARPC_FUNC(wsa_recv_from,
     rpc_overlapped *overlapped = IN_OVERLAPPED;
     rpc_overlapped  tmp;
 
+    PREPARE_ADDR(out->from, out->fromlen.fromlen_len == 0 ? 0 :
+                                    *out->fromlen.fromlen_val);
+
     if (overlapped == NULL)
     {
         memset(&tmp, 0, sizeof(tmp));
@@ -2946,9 +2949,6 @@ TARPC_FUNC(wsa_recv_from,
     if (out->flags.flags_len > 0)
         out->flags.flags_val[0] =
             send_recv_flags_rpc2h(out->flags.flags_val[0]);
-
-    PREPARE_ADDR(out->from, out->fromlen.fromlen_len == 0 ? 0 :
-                                    *out->fromlen.fromlen_val);
 
     MAKE_CALL(out->retval =
         WSARecvFrom(in->s,
@@ -3060,6 +3060,8 @@ TARPC_FUNC(wsa_recv_msg,
     rpc_overlapped        tmp;
     struct tarpc_msghdr  *rpc_msg;
 
+    memset(&msg, 0, sizeof(msg));
+
     if (overlapped == NULL)
     {
         memset(&tmp, 0, sizeof(tmp));
@@ -3079,9 +3081,8 @@ TARPC_FUNC(wsa_recv_msg,
     }
     else
     {
-        memset(&msg, 0, sizeof(msg));
-
         PREPARE_ADDR(rpc_msg->msg_name, rpc_msg->msg_namelen);
+        
         msg.namelen = rpc_msg->msg_namelen;
         msg.name = a;
 
