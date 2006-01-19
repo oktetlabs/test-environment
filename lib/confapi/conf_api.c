@@ -537,8 +537,8 @@ te_errno
 cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
                        cfg_inst_val *val)
 {
-    int             rc;
-    char           *str;
+    te_errno    rc;
+    char       *str;
 
     rc = cfg_get_inst_name(handle, &str);
     if (rc != 0)
@@ -546,7 +546,13 @@ cfg_get_inst_name_type(cfg_handle handle, cfg_val_type type,
 
     rc = cfg_types[type].str2val(str, val);
     if (rc != 0)
+    {
+        ERROR("%s(): Failed to convert '%s' to value of type %u: %r",
+              __FUNCTION__, str, type, rc);
+        free(str);
         return rc;
+    }
+    free(str);
 
     return 0;
 }
