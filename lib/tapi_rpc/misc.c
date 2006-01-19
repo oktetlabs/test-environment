@@ -458,6 +458,11 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
 
     in.s = s;
     in.time2run = time2run;
+    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
+        rpcs->timeout == rpcs->def_timeout)
+    {
+        rpcs->timeout = (time2run + 1) * 1000;
+    }
 
     rcf_rpc_call(rpcs, "simple_receiver", &in, &out);
 
@@ -560,6 +565,13 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     in.time2wait = time2wait;
     in.iomux = iomux;
     in.rx_nonblock = rx_nonblock;
+
+    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
+        rpcs->timeout == rpcs->def_timeout)
+    {
+        rpcs->timeout = (time2run + 1) * 1000;
+    }
+
     if (tx_stat != NULL)
     {
         in.tx_stat.tx_stat_val = tx_stat;
@@ -625,6 +637,13 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
     in.sockets.sockets_len = socknum;
     in.time2run = time2run;
     in.iomux = iomux;
+    
+    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
+        rpcs->timeout == rpcs->def_timeout)
+    {
+        rpcs->timeout = (time2run + 1) * 1000;
+    }
+    
     if (tx_stat != NULL)
     {
         in.tx_stat.tx_stat_val = tx_stat;
