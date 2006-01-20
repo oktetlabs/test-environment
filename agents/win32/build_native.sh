@@ -84,7 +84,7 @@ LIBRARIES="ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib"
 scp ${FILES} ${TE_WIN32_BUILD_HOST}: 
 rm ${FILES}
 ssh ${TE_WIN32_BUILD_HOST} bash -l -c "\"
-cl -o tawin32tmpl_rpcserver ${FILES} /link librpc.lib ${LIBRARIES}\""
+cl -o tawin32tmpl_rpcserver.exe ${FILES} /link librpc.lib ${LIBRARIES}\""
 ssh ${TE_WIN32_BUILD_HOST} rm ${FILES} 
 scp ${TE_WIN32_BUILD_HOST}:tawin32tmpl_rpcserver.exe .
 ssh ${TE_WIN32_BUILD_HOST} rm -f tawin32tmpl_rpcserver.exe *.obj librpc.lib

@@ -66,6 +66,15 @@
 
 typedef int bool_t;
 typedef int enum_t;
+typedef char *caddr_t;
+typedef unsigned char u_char;
+typedef unsigned short u_short;
+typedef unsigned int u_int;
+typedef unsigned long u_long;
+typedef unsigned long long int u_quad_t;
+typedef long long int quad_t;
+
+
 /* This needs to be changed to uint32_t in the future */
 typedef unsigned long rpcprog_t;
 typedef unsigned long rpcvers_t;
@@ -76,15 +85,19 @@ typedef unsigned long rpcport_t;
 #define        __dontcare__    -1
 
 #ifndef FALSE
-#      define  FALSE   (0)
+#define  FALSE   (0)
 #endif
 
 #ifndef TRUE
-#      define  TRUE    (1)
+#define  TRUE    (1)
 #endif
 
 #ifndef NULL
-#      define  NULL 0
+#define  NULL 0
+#endif
+
+#ifndef __THROW
+#define __THROW
 #endif
 
 #include <stdlib.h>		/* For malloc decl.  */

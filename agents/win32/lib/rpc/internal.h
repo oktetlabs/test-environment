@@ -45,22 +45,14 @@
 #define uint32_t   UINT32
 #define uint64_t   UINT64
 
-# define INTUSE(name) name
-# define INTDEF(name)
-# define INTVARDEF(name)
-# define INTDEF2(name, newname)
-# define INTVARDEF2(name, newname)
+#define INTUSE(name) name
+#define INTDEF(name)
+#define INTVARDEF(name)
+#define INTDEF2(name, newname)
+#define INTVARDEF2(name, newname)
 
 #define _(x)    x
 #define __const
-#define __THROW
-typedef char *caddr_t;
-typedef unsigned char u_char;
-typedef unsigned short u_short;
-typedef unsigned int u_int;
-typedef unsigned long u_long;
-typedef unsigned long long int u_quad_t;
-typedef long long int quad_t;
 
 #include "types.h"
 #include "xdr.h"

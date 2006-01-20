@@ -35,4 +35,8 @@
 
 #include "rpc/xdr.h"
 
+#define CLIENT  void
+
+#define SVCXPRT void
+
 #endif

@@ -132,7 +132,7 @@ typedef int ssize_t;
 typedef int pid_t;
 
 #define inline
-
+#define __const
 #undef __stdcall 
 
 #define int8_t     INT8
