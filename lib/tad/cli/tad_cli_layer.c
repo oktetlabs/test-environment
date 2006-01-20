@@ -70,6 +70,7 @@ tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
               __FUNCTION__, msg_len);
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
+    read_len = msg_len;
     rc = asn_read_value_field(tmpl_pdu, msg, &read_len, "message");
     if (rc != 0)
     {
