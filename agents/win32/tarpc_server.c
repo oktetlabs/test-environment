@@ -1839,7 +1839,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         if (delay / 1000000 > (time_t)in->time2run - (now - start) + 1)
             break;
 
-        usleep(delay);
+        SleepEx(delay / 1000 + 1, TRUE);
 
         len = send(in->s, buf, size, 0);
     

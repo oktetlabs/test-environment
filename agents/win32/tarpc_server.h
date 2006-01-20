@@ -692,7 +692,7 @@ check_args(checked_arg *list)
         {                                                       \
             RING("Sleep %u microseconds before call",           \
                  (msec_start - msec_now) * 1000);               \
-            usleep((msec_start - msec_now) * 1000);             \
+            Sleep(msec_start - msec_now);                       \
         }                                                       \
         else if (msec_start != 0)                               \
             WARN("Start time is gone");                         \

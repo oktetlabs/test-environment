@@ -79,61 +79,7 @@ INCLUDE(assert.h)
 #define HAVE_STDIO_H 1
 #define HAVE_STDLIB_H 1
 #define HAVE_STRING_H 1
-
-/* The size of a `char', as computed by sizeof. */
-#define SIZEOF_CHAR 1
-
-/* The size of a `int', as computed by sizeof. */
-#define SIZEOF_INT 4
-
-/* The size of a `long', as computed by sizeof. */
-#define SIZEOF_LONG 4
-
-/* The size of a `long long', as computed by sizeof. */
-#define SIZEOF_LONG_LONG 8
-
-/* The size of a `short', as computed by sizeof. */
-#define SIZEOF_SHORT 2
-
-/* The size of a `size_t', as computed by sizeof. */
-#define SIZEOF_SIZE_T 4
-
-/* The size of a `socklen_t', as computed by sizeof. */
-#define SIZEOF_SOCKLEN_T 4
-
-/* The size of a `te_log_id', as computed by sizeof. */
-#define SIZEOF_TE_LOG_ID 4
-
-/* The size of a `te_log_level', as computed by sizeof. */
-#define SIZEOF_TE_LOG_LEVEL 2
-
-/* The size of a `te_log_nfl', as computed by sizeof. */
-#define SIZEOF_TE_LOG_NFL 2
-
-/* The size of a `te_log_seqno', as computed by sizeof. */
-#define SIZEOF_TE_LOG_SEQNO 4
-
-/* The size of a `te_log_ts_sec', as computed by sizeof. */
-#define SIZEOF_TE_LOG_TS_SEC 4
-
-/* The size of a `te_log_ts_usec', as computed by sizeof. */
-#define SIZEOF_TE_LOG_TS_USEC 4
-
-/* The size of a `te_log_version', as computed by sizeof. */
-#define SIZEOF_TE_LOG_VERSION 1
-
-/* The size of a `void *', as computed by sizeof. */
-#define SIZEOF_VOID_P 4
-
-/* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
- 
-typedef int ssize_t;
-typedef int pid_t;
-
-#define inline
-#define __const
-#undef __stdcall 
 
 #define int8_t     INT8
 #define int16_t    INT16
@@ -144,6 +90,33 @@ typedef int pid_t;
 #define uint32_t   UINT32
 #define uint64_t   UINT64
 
-#include "te_defs.h"
+/*---------- FIXME: should be calculated by configure */
+#define SIZEOF_CHAR             1
+#define SIZEOF_INT              4
+#define SIZEOF_LONG             4
+#define SIZEOF_LONG_LONG        8
+#define SIZEOF_SHORT            2
+#define SIZEOF_SIZE_T           4
+#define SIZEOF_SOCKLEN_T        4
+#define SIZEOF_TE_LOG_ID        4
+#define SIZEOF_TE_LOG_LEVEL     2
+#define SIZEOF_TE_LOG_NFL       2
+#define SIZEOF_TE_LOG_SEQNO     4
+#define SIZEOF_TE_LOG_TS_SEC    4
+#define SIZEOF_TE_LOG_TS_USEC   4
+#define SIZEOF_TE_LOG_VERSION   1
+#define SIZEOF_VOID_P           4
+/*-----------------------------------------------------*/
+
+typedef int ssize_t;
+typedef int pid_t;
+
+#define inline
+#define __const
+#undef __stdcall 
+
+#define snprintf                _snprintf
+#define vsnprintf               _vsnprintf
+#define va_copy(_dest, _src)    _dest = _src;
 
 #endif

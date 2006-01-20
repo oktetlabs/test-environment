@@ -120,7 +120,7 @@ uninstall-hook:
 	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver \
 	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
 
-RPCSERVER_CPPFLAGS=-I$(srcdir)/lib @TE_CPPFLAGS@ \
+RPCSERVER_CPPFLAGS=-I$(srcdir) -I$(srcdir)/lib -I. @TE_CPPFLAGS@ \
                    -I$(DESTDIR)/$(prefix)/../@host@/include \
                    -include $(srcdir)/rpcserver.h 
 

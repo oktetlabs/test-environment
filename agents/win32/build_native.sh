@@ -79,7 +79,7 @@ rm -f *~ cl.m4
 
 # Build the result
 
-LIBRARIES="ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib"
+LIBRARIES="ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
 
 scp ${FILES} ${TE_WIN32_BUILD_HOST}: 
 rm ${FILES}
