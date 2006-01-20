@@ -276,7 +276,7 @@ logfork_entry(void)
     {         
         int len;
         
-        if ((len = recv(sockd, &msg, msg_len, 0)) <= 0)
+        if ((len = recv(sockd, (char *)&msg, msg_len, 0)) <= 0)
         {
             WARN("logfork_entry(): recv() failed, len=%d; errno %d", 
                  len, errno);
@@ -411,7 +411,7 @@ logfork_register_user(const char *name)
         return -1;
     }
 
-    if (send(logfork_clnt_sockd, (udp_msg *)&msg, sizeof(msg), 0) !=
+    if (send(logfork_clnt_sockd, (char *)&msg, sizeof(msg), 0) !=
             (ssize_t)sizeof(msg))
     {
         fprintf(stderr, "logfork_register_user() - cannot send "
@@ -463,7 +463,7 @@ logfork_log_message(const char *file, unsigned int line,
         return;
     }
 
-    if (send(logfork_clnt_sockd, (udp_msg *)&msg, sizeof(msg), 0) !=
+    if (send(logfork_clnt_sockd, (char *)&msg, sizeof(msg), 0) !=
             (ssize_t)sizeof(msg))
     {       
         fprintf(stderr, "%s(): sendto() failed: %s\n",
