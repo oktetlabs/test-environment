@@ -2,7 +2,7 @@
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir) -include config.h
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CFLAGS = @TE_CFLAGS@ -Wno-unused-parameter -Wno-unused-variable
 include_HEADERS=rpc_xdr.h tarpc.h
 
 lib_LIBRARIES=librpcxdr.a
@@ -28,10 +28,6 @@ tarpc.h tarpc_xdr.c tarpc_dummy.c: $(srcdir)/../../include/tarpc.x.m4 @RPCDEFS@
 	m4 tmp.x.m4 > tarpc.x
 	rpcgen -h -M tarpc.x -o tarpc.h
 	rpcgen -c -M tarpc.x -o tarpc_xdr.c
-	awk '\
-            /buf;/ { print $0 ; printf("\t(void)buf;") ; next ; } \
-            { print $0 ; next ;}' tarpc_xdr.c > tarpc_xdr.c.new
-	mv tarpc_xdr.c.new tarpc_xdr.c
 	$(srcdir)/../../engine/builder/te_generate_rpctbl tmp.x.m4 --generate-dummy
 	rm -f tarpc.x tmp.x.m4
 
