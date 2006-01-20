@@ -15,6 +15,12 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_CHECK_TOOL(NM, nm)
 
+if test -z ${PRIV_LIB_DIR} ; then
+    PRIV_LIB_DIR=${TE_BASE}/lib
+fi
+AC_ARG_VAR([PRIV_LIB_DIR])
+AC_SUBST(PRIV_LIB_DIR)
+    
 if test -z "$host" ; then
 AC_CANONICAL_HOST
 fi 

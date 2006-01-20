@@ -128,7 +128,8 @@ RPCSERVER_CPPFLAGS=-I$(srcdir) -I$(srcdir)/lib -I. @TE_CPPFLAGS@ \
 
 build_native: $(tawin32tmpl_rpcserver_SOURCES) rpcserver_symtbl.c \
               ${srcdir}/../../lib/rpcxdr/rpc_xdr.c \
-              ../../lib/@_host_@_rpcxdr/tarpc_xdr.c 
+              ../../lib/@_host_@_rpcxdr/tarpc_xdr.c \
+              @PRIV_LIB_DIR@/talib/rpc.c
 	CC=$(CC)  \
 	RPCSERVER_CPPFLAGS="$(RPCSERVER_CPPFLAGS)" \
 	$(srcdir)/build_native.sh $(srcdir) $^
