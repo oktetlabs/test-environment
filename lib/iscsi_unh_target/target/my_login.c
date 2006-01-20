@@ -3548,6 +3548,7 @@ iscsi_tx_r2t(struct iscsi_cmnd *cmnd,
 				continue;
 			}
 		} else {
+            int custom_xfer_len = iscsi_get_custom_value(conn->custom, "xfer_len");
 
 			hdr->r2t_sn = htonl(cmnd->r2t_sn++);
 			hdr->offset = htonl(cmnd->data_length - data_length_left);
@@ -3561,19 +3562,39 @@ iscsi_tx_r2t(struct iscsi_cmnd *cmnd,
 				if (cookie) {
 					cookie->seq = cmnd->r2t_sn - 1;
 					cookie->offset = cmnd->data_length - data_length_left;
-					cookie->xfer_len = (data_length_left <= max_burst_len)
-											? data_length_left : max_burst_len;
+                    if (custom_xfer_len != 0)
+                        cookie->xfer_len = custom_xfer_len;
+                    else
+                    {
+                        cookie->xfer_len = (data_length_left <= max_burst_len)
+                            ? data_length_left : max_burst_len;
+                    }
 				}
 			}
 
-			if (data_length_left <= max_burst_len) {
-				/* this is the last R2T we need to send for this command */
-				hdr->xfer_len = htonl(data_length_left);
-				data_length_left = 0;
-			} else {
-				hdr->xfer_len = htonl(max_burst_len);
-				data_length_left -= max_burst_len;
-			}
+
+            if (custom_xfer_len != 0)
+            {
+                if (data_length_left <= custom_xfer_len) {
+                    /* this is the last R2T we need to send for this command */
+                    hdr->xfer_len = htonl(data_length_left);
+                    data_length_left = 0;
+                } else {
+                    hdr->xfer_len = htonl(custom_xfer_len);
+                    data_length_left -= custom_xfer_len;
+                }
+            }
+            else
+            {
+                if (data_length_left <= max_burst_len) {
+                    /* this is the last R2T we need to send for this command */
+                    hdr->xfer_len = htonl(data_length_left);
+                    data_length_left = 0;
+                } else {
+                    hdr->xfer_len = htonl(max_burst_len);
+                    data_length_left -= max_burst_len;
+                }
+            }
 			cmnd->r2t_data = data_length_left;
 
 			/* if DataSequenceInOrder is no, send r2t offset in reverse order */

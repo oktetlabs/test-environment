@@ -1819,21 +1819,6 @@ struct scsi_io10_payload
 
 typedef struct scsi_io10_payload scsi_io10_payload;
 
-struct scsi_fixed_sense_data
-{
-    uint8_t  response;
-    uint8_t  obsolete;
-    uint8_t  sense_key_and_flags;
-    uint32_t information;
-    uint8_t  additional_length;
-    uint32_t csi;
-    uint8_t  asc;
-    uint8_t  ascq;
-    uint8_t  fruc;
-    uint8_t  sks[3];
-} __attribute__ ((packed));
-
-
 static te_bool
 iscsi_accomodate_buffer (struct target_map_item *target, uint32_t size)
 {

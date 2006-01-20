@@ -650,18 +650,19 @@ struct response_pdu {
  *      unsigned char sense_buffer[SCSI_SENSE_BUFFERSIZE];
  */
 
-struct scsi_sense_data {
-    uint8_t response;       
-    uint8_t obsolete;       
-    uint8_t sense_key;      
-    uint8_t info[4];        
-    uint8_t asl;        
-    uint8_t cmnd_spec_info[4];  
-    uint8_t asc;        
-    uint8_t ascq;       
-    uint8_t f_r_unit_code;  
-    uint8_t sense_specific[3];  
-};
+struct scsi_fixed_sense_data
+{
+    uint8_t  response;
+    uint8_t  obsolete;
+    uint8_t  sense_key_and_flags;
+    uint32_t information;
+    uint8_t  additional_length;
+    uint32_t csi;
+    uint8_t  asc;
+    uint8_t  ascq;
+    uint8_t  fruc;
+    uint8_t  sks[3];
+} __attribute__ ((packed));
 
 
 /** 
