@@ -54,7 +54,9 @@ struct timezone {
 #include "rcf_pch.h"
 #include "logger_api.h"
 #include "rcf_rpc_defs.h"
+
 #include "te_rpc_types.h"
+INCLUDE(te_rpc_types.h)
 
 /** Unspecified error code */
 #define ERROR_UNSPEC    0xFFFFFF

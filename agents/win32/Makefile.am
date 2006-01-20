@@ -2,7 +2,8 @@
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 MY_CPPFLAGS=@TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
-            -include te_config.h -include config.h -fno-strict-aliasing
+            -include te_config.h -include config.h -fno-strict-aliasing \
+            -D'INCLUDE(x)='
             
 MY_CFLAGS=--disable-stdcall-fixup            
 
@@ -122,7 +123,8 @@ uninstall-hook:
 
 RPCSERVER_CPPFLAGS=-I$(srcdir) -I$(srcdir)/lib -I. @TE_CPPFLAGS@ \
                    -I$(DESTDIR)/$(prefix)/../@host@/include \
-                   -include $(srcdir)/rpcserver.h 
+                   -include $(srcdir)/rpcserver.h \
+                   -D __TE_RPC_TYPES_H__
 
 build_native: $(tawin32tmpl_rpcserver_SOURCES) rpcserver_symtbl.c \
               ${srcdir}/../../lib/rpcxdr/rpc_xdr.c \

@@ -107,3 +107,18 @@ thread_mutex_unlock(void *mutex)
     if (mutex != NULL)
         ReleaseMutex(mutex);
 }
+
+/** Replaces cygwin function */
+int 
+setenv(const char *name, const char *value, int overwrite)
+{
+    return SetEnvironmentVariable(name, value) ? 0 : -1;
+}
+
+/** Replaces cygwin function */
+void 
+unsetenv(const char *name)
+{
+    SetEnvironmentVariable(name, NULL);
+}
+

@@ -63,7 +63,9 @@ rm librpc.lib
 cat >cl.m4 <<EOF
 changequote($$,$$)
 
-define($$INCLUDE$$,$$#include <\$1>$$)
+define($$INCLUDE$$,
+$$#include <\$1>
+$$)
 EOF
 
 FILES= 
@@ -80,13 +82,34 @@ rm -f *~ cl.m4
 # Build the result
 
 LIBRARIES="ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
+CFLAGS="-Irpc_types \
+        -D__TE_RPC_AIO_H__ \
+        -D__TE_RPC_FCNTL_H__ \
+        -D__TE_RPC_NET_IF_H__ \
+        -D__TE_RPC_NET_IF_ARP_H__ \
+        -D__TE_RPC_NETDB_H__ \
+        -D__TE_RPC_SIGNAL_H__ \
+        -D__TE_RPC_SYS_POLL_H__ \
+        -D__TE_RPC_SYS_RESOURCE_H__ \
+        -D__TE_RPC_SYS_STAT_H__ \
+        -D__TE_RPC_SYS_WAIT_H__ \
+        -D__TE_RPC_SYS_TIME_H__ \
+        -Duint32_t=UINT32 -Dinline= -Dconst="
+
 
 scp ${FILES} ${TE_WIN32_BUILD_HOST}: 
 rm ${FILES}
+cp -r ${SRCDIR}/../../lib/rpc_types .
+tar czf rpc_types.tgz rpc_types
+scp rpc_types.tgz ${TE_WIN32_BUILD_HOST}:
+rm -rf rpc_types rpc_types.tgz
+
 ssh ${TE_WIN32_BUILD_HOST} bash -l -c "\"
-cl -o tawin32tmpl_rpcserver.exe ${FILES} /link librpc.lib ${LIBRARIES}\""
-ssh ${TE_WIN32_BUILD_HOST} rm ${FILES} 
+tar xzf rpc_types.tgz ; \
+cl -o tawin32tmpl_rpcserver.exe ${CFLAGS} \
+   ${FILES} /link librpc.lib ${LIBRARIES} ; \
+rm -rf rpc_types rpc.tgz *.obj ${FILES} librpc.lib\""
 scp ${TE_WIN32_BUILD_HOST}:tawin32tmpl_rpcserver.exe .
-ssh ${TE_WIN32_BUILD_HOST} rm -f tawin32tmpl_rpcserver.exe *.obj librpc.lib
+ssh ${TE_WIN32_BUILD_HOST} rm -f tawin32tmpl_rpcserver.exe 
 
 exit 0

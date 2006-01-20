@@ -66,10 +66,7 @@ INCLUDE(assert.h)
 #define _SYS_TYPES_H
 #define _SIGNAL_H_
 #define _SCHED_H
-#define __TE_RPC_SYS_RESOURCE_H__
-#define __TE_RPC_SYS_WAIT_H__
 #define __TE_SHELL_CMD_H__
-
 
 /* We cannot use CYGWIN configure output */
 #define __TE_CONFIG_H__

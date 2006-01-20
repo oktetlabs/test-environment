@@ -42,6 +42,48 @@ extern void logfork_log_message(const char *file, unsigned int line,
 
 te_log_message_f te_log_message = logfork_log_message;
 
+/**
+ * Convert 'struct timeval' to 'struct tarpc_timeval'.
+ * 
+ * @param tv_h      Pointer to 'struct timeval'
+ * @param tv_rpc    Pointer to 'struct tarpc_timeval'
+ */
+int
+timeval_h2rpc(const struct timeval *tv_h, struct tarpc_timeval *tv_rpc)
+{
+    tv_rpc->tv_sec  = tv_h->tv_sec;
+    tv_rpc->tv_usec = tv_h->tv_usec;
+
+    return 0;
+}
+
+/**
+ * Convert 'struct tarpc_timeval' to 'struct timeval'.
+ * 
+ * @param tv_rpc    Pointer to 'struct tarpc_timeval'
+ * @param tv_h      Pointer to 'struct timeval'
+ */
+int
+timeval_rpc2h(const struct tarpc_timeval *tv_rpc, struct timeval *tv_h)
+{
+    tv_h->tv_sec  = tv_rpc->tv_sec;
+    tv_h->tv_usec = tv_rpc->tv_usec;
+
+    return 0;
+}
+
+int 
+gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+    SYSTEMTIME t;
+
+    UNUSED(tz);
+    
+    GetSystemTime(&t);
+    tv->tv_sec = time(NULL);
+    tv->tv_usec = t.wMilliseconds * 1000;
+}
+
 HINSTANCE ta_hinstance;
 
 #include "../../lib/rcfpch/rcf_pch_rpc_server.c"
