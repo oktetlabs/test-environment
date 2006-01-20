@@ -1,4 +1,6 @@
 
+SUBDIRS=lib
+
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 MY_CPPFLAGS=@TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
