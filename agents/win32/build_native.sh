@@ -72,7 +72,7 @@ FILES=
 for i in $* ; do 
     FILENAME=`basename ${i}` 
     FILES="${FILES} ${FILENAME}"
-    ${CC} ${RPCSERVER_CPPFLAGS} -P -E ${i} -o ${FILENAME}.tmp ; 
+    ${CC} ${RPCSERVER_CPPFLAGS} -P -E ${i} -DCL -o ${FILENAME}.tmp ; 
     cat cl.m4 ${FILENAME}.tmp | m4 > ${FILENAME} ; 
     rm ${FILENAME}.tmp ; 
     indent ${FILENAME} ;
@@ -108,7 +108,7 @@ ssh ${TE_WIN32_BUILD_HOST} bash -l -c "\"
 tar xzf rpc_types.tgz ; \
 cl -o tawin32tmpl_rpcserver.exe ${CFLAGS} \
    ${FILES} /link librpc.lib ${LIBRARIES} ; \
-rm -rf rpc_types rpc.tgz *.obj ${FILES} librpc.lib\""
+rm -rf rpc_types rpc_types.tgz *.obj ${FILES} librpc.lib\""
 scp ${TE_WIN32_BUILD_HOST}:tawin32tmpl_rpcserver.exe .
 ssh ${TE_WIN32_BUILD_HOST} rm -f tawin32tmpl_rpcserver.exe 
 
