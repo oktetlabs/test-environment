@@ -28,8 +28,7 @@
  * $Id$
  */
 
-#include "logger_api.h" 
-#include "te_format.h"
+#include "tarpc_server.h"
 #include "rpc_xdr.h"
 
 DEFINE_LGR_ENTITY("(win32_rpcserver)");

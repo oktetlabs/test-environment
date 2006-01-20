@@ -52,6 +52,7 @@ INCLUDE(assert.h)
 #define _WINERROR_H
 #define _MSWSOCK_H
 #define _WS2TCPIP_H
+#define _MSTCPIP_H
 
 /* Standard C headers */ 
 #define _STDIO_H_
@@ -69,20 +70,6 @@ INCLUDE(assert.h)
 #define __TE_RPC_SYS_WAIT_H__
 #define __TE_SHELL_CMD_H__
 
-/*---------- FIXME: rpc/rpc.h should be included-------- */
-#define __RPC_HEADER__
-#define CLIENT  void
-#define SVCXPRT void
-#define XDR void
-#define bool_t int
-typedef void * xdrproc_t;
-typedef char * caddr_t;
-enum xdr_op {
-  XDR_ENCODE = 0,
-  XDR_DECODE = 1,
-  XDR_FREE = 2
-};
-/*------------------------------------------------------*/
 
 /* We cannot use CYGWIN configure output */
 #define __TE_CONFIG_H__
@@ -148,7 +135,15 @@ typedef int pid_t;
 
 #undef __stdcall 
 
+#define int8_t     INT8
+#define int16_t    INT16
+#define int32_t    INT32
+#define int64_t    INT64
+#define uint8_t    UINT8
+#define uint16_t   UINT16
+#define uint32_t   UINT32
+#define uint64_t   UINT64
+
 #include "te_defs.h"
-#include "te_stdint.h"
 
 #endif
