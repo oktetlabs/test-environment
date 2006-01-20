@@ -108,7 +108,7 @@ typedef struct list {
 /** Socket used by all client to register */
 static int logfork_clnt_sockd = -1;
 
-static void *logfork_clnt_sockd_lock;
+static void *logfork_clnt_sockd_lock = NULL;
 
 /** 
  * Find process name by its pid and tid in the internal list of
@@ -373,6 +373,8 @@ open_sock(void)
         return -1;
     }
 
+    if (logfork_clnt_sockd_lock == NULL)
+        logfork_clnt_sockd_lock = thread_mutex_create();
     thread_mutex_lock(logfork_clnt_sockd_lock);
 
     if (logfork_clnt_sockd < 0)
