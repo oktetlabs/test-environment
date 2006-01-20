@@ -69,24 +69,39 @@ cat >> $RESULT <<\EOF
 #endif
 #endif
 
+#ifndef CL
+#define CALLBACK
+#endif
+
 EOF
 
 awk --posix '
 {                                                   \
+    callback = 0 ;                                  \
     if ($3 == "") next ;                            \
     if (match($3, "@") != 0)                        \
     {                                               \
         if ($2 != "T")                              \
             next;                                   \
         else                                        \
+        {                                           \
             name=substr($3, 0, index($3, "@") - 1); \
+            if (name != "WinMain")                  \
+                callback = 1;                       \
+        }                                           \
     }                                               \
     else                                            \
         name = $3 ;                                 \
     if ($2 != "T")                                  \
         printf("extern int %s;\n", name) ;          \
     else                                            \
-        printf("extern int %s();\n", name);         \
+    {                                               \
+        if (callback)                               \
+            printf("extern void CALLBACK %s(DWORD, DWORD, LPWSAOVERLAPPED," \
+                   "DWORD);\n", name);              \
+        else                                        \
+            printf("extern int %s();\n", name);     \
+    }                                               \
 } ' te_bs_symtbl.tmp >> $RESULT
 
 
