@@ -20,8 +20,6 @@ noinst_HEADERS=tarpc_server.h rpcserver.h
 
 EXTRA_DIST=build_native.sh 
 
-DIST_SUBDIRS=lib/rpc
-
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 MY_SOURCES=win32.c win32conf.c inet_pton.c common.c
 MY_SYMTBL_OBJECTS=win32.o 
@@ -128,7 +126,7 @@ RPCSERVER_CPPFLAGS=-I$(srcdir) -I$(srcdir)/lib -I. @TE_CPPFLAGS@ \
 
 build_native: $(tawin32tmpl_rpcserver_SOURCES) rpcserver_symtbl.c \
               ${srcdir}/../../lib/rpcxdr/rpc_xdr.c \
-              ../../lib/@_host_@_rpcxdr/tarpc_xdr.c
+              ../../lib/@_host_@_rpcxdr/tarpc_xdr.c 
 	CC=$(CC)  \
 	RPCSERVER_CPPFLAGS="$(RPCSERVER_CPPFLAGS)" \
 	$(srcdir)/build_native.sh $(srcdir) $^
