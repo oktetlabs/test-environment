@@ -39,7 +39,7 @@ SRCDIR=$1
 shift 1
 
 # Build SUN RPC library
-cp -r ${SRCDIR}/rpc .
+cp -r ${SRCDIR}/lib/rpc .
 tar czf rpc.tgz rpc
 scp rpc.tgz ${TE_WIN32_BUILD_HOST}:
 rm -rf rpc rpc.tgz
