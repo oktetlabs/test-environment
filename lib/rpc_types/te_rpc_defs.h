@@ -32,9 +32,6 @@
 #ifndef __TE_RPC_DEFS_H__
 #define __TE_RPC_DEFS_H__
 
-#include "te_rpc_defs.h"
-
-
 /**
  * Coverts system native constant to its mirror in RPC namespace
  */
