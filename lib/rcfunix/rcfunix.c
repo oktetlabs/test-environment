@@ -102,9 +102,9 @@
 #define RCFUNIX_SSH         "ssh -qxTn -o BatchMode=yes "
 #define RCFUNIX_REDIRECT    ">/dev/null 2>&1"
 
-#define RCFUNIX_KILL_TIMEOUT    15
-#define RCFUNIX_COPY_TIMEOUT    30
-#define RCFUNIX_START_TIMEOUT   20
+#define RCFUNIX_KILL_TIMEOUT    60
+#define RCFUNIX_COPY_TIMEOUT    60
+#define RCFUNIX_START_TIMEOUT   40
 
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
