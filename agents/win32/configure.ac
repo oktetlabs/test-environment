@@ -18,6 +18,8 @@ AC_CHECK_TOOL(NM, nm)
 if test -z "$host" ; then
 AC_CANONICAL_HOST
 fi 
+_host_=`echo $host | sed s/-/_/g`
+AC_SUBST(_host_)
 
 TE_APP_SET
 
