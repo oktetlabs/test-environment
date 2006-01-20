@@ -1,2 +1,2 @@
 
-DIST_SUBDIRS=rpc
+SUBDIRS=rpc
