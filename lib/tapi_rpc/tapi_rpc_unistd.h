@@ -713,4 +713,30 @@ extern rpc_ptr rpc_memalign(rcf_rpc_server *rpcs,
 extern int rpc_gettimeofday(rcf_rpc_server *rpcs,
                             tarpc_timeval *tv, tarpc_timezone *tz);
 
+/**
+ * Set resource limits and usage
+ *
+ * @param rpcs          RPC server
+ * @param resource      Resource type (see 'man 2 setrlimit').
+ * @param rlim          RPC analog of rlimit structure
+ *                      (see 'man 2 setrlimit').
+ *
+ * @return    -1 in the case of failure or 0 on success
+ */
+extern int rpc_setrlimit(rcf_rpc_server *rpcs,
+                         int resource, const tarpc_rlimit *rlim);
+
+/**
+ * Get resource limits and usage
+ *
+ * @param rpcs          RPC server
+ * @param resource      Resource type (see 'man 2 getrlimit').
+ * @param rlim          RPC analog of rlimit structure
+ *                      (see 'man 2 getrlimit').
+ *
+ * @return    -1 in the case of failure or 0 on success
+ */
+extern int rpc_getrlimit(rcf_rpc_server *rpcs,
+                         int resource, tarpc_rlimit *rlim);
+
 #endif /* !__TE_TAPI_RPC_UNISTD_H__ */

@@ -1488,3 +1488,86 @@ rpc_memalign(rcf_rpc_server *rpcs, size_t alignment, size_t size)
 
     RETVAL_RPC_PTR(memalign, (rpc_ptr)out.retval);
 }
+
+int
+rpc_setrlimit(rcf_rpc_server *rpcs,
+              int resource, const tarpc_rlimit *rlim)
+{
+    tarpc_setrlimit_in  in;
+    tarpc_setrlimit_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(setrlimit, -1);
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.resource = resource;
+    if (rlim != NULL)
+    {
+        in.rlim.rlim_len = 1;
+        in.rlim.rlim_val = (tarpc_rlimit *)rlim;
+    }
+
+    rcf_rpc_call(rpcs, "setrlimit", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(setrlimit, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): setrlimit(%s, %p{%u, %u}) -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 rlimit_resource_rpc2str(resource), rlim,
+                 rlim == NULL ? 0 : rlim->rlim_cur,
+                 rlim == NULL ? 0 : rlim->rlim_max,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(setrlimit, out.retval);
+}
+
+int
+rpc_getrlimit(rcf_rpc_server *rpcs,
+              int resource, tarpc_rlimit *rlim)
+{
+    tarpc_getrlimit_in  in;
+    tarpc_getrlimit_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(getrlimit, -1);
+    }
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.resource = resource;
+    if (rlim != NULL)
+    {
+        in.rlim.rlim_len = 1;
+        in.rlim.rlim_val = rlim;
+    }
+
+    rcf_rpc_call(rpcs, "getrlimit", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs) && rlim != NULL && out.rlim.rlim_val != NULL)
+    {
+        *rlim = *out.rlim.rlim_val;
+    }
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(getrlimit, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s): getrlimit(%s, %p) -> %d (%s) {%u, %u}",
+                 rpcs->ta, rpcs->name,
+                 rlimit_resource_rpc2str(resource), rlim,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 rlim == NULL ? 0 : rlim->rlim_cur,
+                 rlim == NULL ? 0 : rlim->rlim_max);
+
+    RETVAL_INT(getrlimit, out.retval);
+}

@@ -4901,63 +4901,37 @@ TARPC_FUNC(setrlimit, {},
 {
     struct rlimit rlim;
 
-    int resource;
-
-    resource = rlimit_resource_rpc2h(in->resource);
-
     rlim.rlim_cur = in->rlim.rlim_val->rlim_cur;
     rlim.rlim_max = in->rlim.rlim_val->rlim_max;
 
-    RING("setrlimit(%s, cur=%u, max=%u)", 
-         rlimit_resource_rpc2str(in->resource),
-         (int)rlim.rlim_cur, (int)rlim.rlim_max);
-
-    errno = 0;
-    
-    MAKE_CALL(out->retval = func(resource, &rlim));
-
-    if (out->retval != 0)
-    {
-        ERROR("setrlimit() failed, errno=%d", errno);
-    }
-
-    ;
+    MAKE_CALL(out->retval = func(rlimit_resource_rpc2h(in->resource),
+                                 &rlim));
 }
 )
 
 /*-------------- getrlimit() ------------------------------*/
 
-TARPC_FUNC(getrlimit, {},
+TARPC_FUNC(getrlimit,
+{
+    COPY_ARG(rlim);
+},
 {
     struct rlimit rlim;
 
-    int resource;
+    if (out->rlim.rlim_len > 0)
+    {
+        rlim.rlim_cur = out->rlim.rlim_val->rlim_cur;
+        rlim.rlim_max = out->rlim.rlim_val->rlim_max;
+    }
 
-    RING("getrlimit(%s)", 
-         rlimit_resource_rpc2str(in->resource));
+    MAKE_CALL(out->retval = func(rlimit_resource_rpc2h(in->resource),
+                                 &rlim));
 
-    resource = rlimit_resource_rpc2h(in->resource);
-
-    memset(&rlim, 0, sizeof(rlim));
-    memset(out, 0, sizeof(*out));
-    out->rlim.rlim_val = (tarpc_rlimit *)calloc(1, sizeof(tarpc_rlimit));
-    out->rlim.rlim_len = 1;
-
-    errno = 0;
-
-    MAKE_CALL(out->retval = func(resource, &rlim));
-
-    if (out->retval == 0)
+    if (out->rlim.rlim_len > 0)
     {
         out->rlim.rlim_val->rlim_cur = rlim.rlim_cur;
         out->rlim.rlim_val->rlim_max = rlim.rlim_max;
     }
-    else
-    {
-        ERROR("getrlimit() failed, errno=%r", out->common._errno);
-    }
-
-    ;
 }
 )
 
