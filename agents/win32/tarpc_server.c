@@ -2475,7 +2475,7 @@ TARPC_FUNC(enum_network_events,
 )
 /*-------------- CreateWindow ----------------------------*/
 
-LRESULT CALLBACK
+static LRESULT CALLBACK
 message_callback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     if (uMsg > WM_USER)
