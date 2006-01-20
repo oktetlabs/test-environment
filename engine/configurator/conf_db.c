@@ -1519,6 +1519,13 @@ cfg_oid_match_volatile(const char *oid_s, char **ta)
 {
     cfg_oid *oid = cfg_convert_oid_str(oid_s);
     
+    if (oid == NULL)
+    {
+        ERROR("Incorrect OID %s is passed to %s", oid_s, 
+              __FUNCTION__);
+        return FALSE;
+    }
+    
     cfg_inst_subid *subids = (cfg_inst_subid *)(oid->ids);
     
     te_bool match = FALSE;
