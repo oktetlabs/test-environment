@@ -93,8 +93,9 @@ tawin32tmpl_rpcserver_DEPENDENCIES=\
     $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a 
 
-tawin32tmpl_rpcserver_SOURCES=\
-                  tarpc_server.c rpc_unsupported.c rpcserver.c common.c \
+tawin32tmpl_rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c 
+
+nodist_tawin32tmpl_rpcserver_SOURCES=rpc_unsupported.c \
                   ${srcdir}/../../lib/rcfpch/rcf_pch_mem.c \
                   ${srcdir}/../../lib/loggerta/logfork.c \
                   ${srcdir}/../../lib/tools/te_format.c 
@@ -126,7 +127,9 @@ RPCSERVER_CPPFLAGS=-I$(srcdir) -I$(srcdir)/lib -I. @TE_CPPFLAGS@ \
                    -include $(srcdir)/rpcserver.h \
                    -D __TE_RPC_TYPES_H__
 
-build_native: $(tawin32tmpl_rpcserver_SOURCES) rpcserver_symtbl.c \
+build_native: $(tawin32tmpl_rpcserver_SOURCES) \
+              $(nodist_tawin32tmpl_rpcserver_SOURCES) \
+              rpcserver_symtbl.c \
               ${srcdir}/../../lib/rpcxdr/rpc_xdr.c \
               ../../lib/@_host_@_rpcxdr/tarpc_xdr.c \
               @PRIV_LIB_DIR@/talib/rpc.c
