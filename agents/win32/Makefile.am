@@ -30,7 +30,7 @@ SYMTBL_LIBS= \
     $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a 
 
-CLEANFILES=symtbl.c
+CLEANFILES=symtbl.c rpcserver_symtbl.c
 
 if CFG_RCF_RPC
 
