@@ -181,6 +181,15 @@ rcf_pch_rpc_server(const char *name)
                 "logfork_register_user() failed to register %s server\n",
                 name);
     }
+    
+    if (getenv("TE_RPC_PORT") == NULL)
+    {
+        fprintf(stderr, "TE_RPC_PORT is not exported\n"); fflush(stderr);
+        
+        ERROR("RPC server %s: TE_RPC_PORT is not exported", name);
+        
+        return NULL;
+    }
 
 #ifndef __CYGWIN__
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -222,7 +231,6 @@ rcf_pch_rpc_server(const char *name)
         err = TE_OS_RC(TE_RCF_PCH, errno);
         STOP("Failed to connect to TA; errno = %r", err);
     }
-
     /* Enable linger with positive timeout on the socket  */
     {
         struct linger l = { 1, 1 };
@@ -243,7 +251,7 @@ rcf_pch_rpc_server(const char *name)
 
     RING("RPC server '%s' (re-)started (PID %d, TID %u)",
          name, (int)getpid(), thread_self());
-         
+
     while (TRUE)
     {
         char      rpc_name[RCF_RPC_MAX_NAME];        
