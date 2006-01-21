@@ -409,6 +409,12 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
     in.time2run = time2run;
     in.ignore_err = ignore_err;
 
+    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
+        rpcs->timeout == rpcs->def_timeout)
+    {
+        rpcs->timeout = (time2run + 1) * 1000;
+    }
+
     rcf_rpc_call(rpcs, "simple_sender", &in, &out);
 
     if (out.retval == 0)
@@ -748,6 +754,11 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
 
     in.sock = sock;
     in.timeout = timeout;
+    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
+        rpcs->timeout == rpcs->def_timeout)
+    {
+        rpcs->timeout = (timeout + 1) * 1000;
+    }
     if (path != NULL && rpcs->op != RCF_RPC_WAIT)
     {
         in.path.path_len = strlen(path) + 1;
