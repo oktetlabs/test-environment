@@ -229,9 +229,10 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
     memcpy(name, buf + XML_CALL_PREFIX_LEN, n);
     name[n] = 0;
 #else   
-    uint32_t len;
+    uint32_t len = 0;
     
     /* Decode routine name */
+#define BYTE(i) (unsigned int)(((char *)buf)[i])
     xdrmem_create(&xdrs, buf, buflen, XDR_DECODE);
     xdrs.x_ops->x_getint32(&xdrs, (int32_t *)&len);
     xdrs.x_ops->x_getbytes(&xdrs, name, len);
@@ -239,6 +240,8 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
 
     if ((info = rpc_find_info(name)) == NULL)
     {
+        printf("%s %d: Cannot find info for %s\n", 
+               __FUNCTION__, __LINE__, name);
         return TE_RC(TE_RCF_RPC, TE_ENOENT);
     }
     
@@ -287,7 +290,7 @@ rpc_xdr_encode_result(char *name, te_bool rc,
 
     if ((info = rpc_find_info(name)) == NULL)
     {
-        printf("%s %d: Cannot find info for %s", 
+        printf("%s %d: Cannot find info for %s\n", 
                __FUNCTION__, __LINE__, name);
         rc = FALSE;
     }
