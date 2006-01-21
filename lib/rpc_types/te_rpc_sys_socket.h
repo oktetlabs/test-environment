@@ -374,7 +374,9 @@ typedef enum rpc_send_recv_flags {
     RPC_MSG_CONFIRM   = 0x1000, /**< Tell the link layer that forward
                                      progress happened */
     RPC_MSG_EOR       = 0x2000, /**< Terminates a record */
-    RPC_MSG_UNKNOWN   = 0x8000  /**< Incorrect flag */
+    RPC_MSG_PARTIAL   = 0x8000, /**< Don't fail if the message is trancated;
+                                     indicates trancated message on output*/
+    RPC_MSG_UNKNOWN   = 0x10000  /**< Incorrect flag */
 } rpc_send_recv_flags;
 
 /** Bitmask of all possible receive flags  */
@@ -383,7 +385,7 @@ typedef enum rpc_send_recv_flags {
                          RPC_MSG_NOSIGNAL | RPC_MSG_TRUNC |               \
                          RPC_MSG_CTRUNC | RPC_MSG_ERRQUEUE |              \
                          RPC_MSG_MORE | RPC_MSG_CONFIRM | RPC_MSG_EOR |   \
-                         RPC_MSG_MCAST | RPC_MSG_BCAST)
+                         RPC_MSG_PARTIAL | RPC_MSG_MCAST | RPC_MSG_BCAST)
 
 #ifdef MSG_OOB
 #define HAVE_MSG_OOB    1
@@ -427,16 +429,18 @@ typedef enum rpc_send_recv_flags {
 #define MSG_NOSIGNAL        0
 #endif
 
-#ifdef MSG_TRUNC
-#define HAVE_MSG_TRUNC   1
-#else
 #ifdef MSG_PARTIAL
-#define MSG_TRUNC MSG_PARTIAL
+#define HAVE_MSG_PARTIAL    1
+#else
+#define HAVE_MSG_PARTIAL    0
+#define MSG_PARTIAL         0
+#endif
+
+#ifdef MSG_TRUNC
 #define HAVE_MSG_TRUNC   1
 #else
 #define HAVE_MSG_TRUNC   0
 #define MSG_TRUNC        0
-#endif
 #endif
 
 #ifdef MSG_CTRUNC
@@ -503,6 +507,7 @@ typedef enum rpc_send_recv_flags {
             RPC_BIT_MAP_ENTRY(MSG_MORE),        \
             RPC_BIT_MAP_ENTRY(MSG_CONFIRM),     \
             RPC_BIT_MAP_ENTRY(MSG_EOR),         \
+            RPC_BIT_MAP_ENTRY(MSG_PARTIAL),     \
             RPC_BIT_MAP_ENTRY(MSG_UNKNOWN)
 
 /**
@@ -519,7 +524,7 @@ RPCBITMAP2STR(send_recv_flags, SEND_RECV_FLAGS_MAPPING_LIST)
                          MSG_NOSIGNAL | MSG_TRUNC |             \
                          MSG_CTRUNC | MSG_ERRQUEUE |            \
                          MSG_MORE | MSG_CONFIRM | MSG_EOR |     \
-                         MSG_MCAST | MSG_BCAST)
+                         MSG_MCAST | MSG_BCAST | MSG_PARTIAL)
 
 /**
  * Generate warning in the log, if requested RPC mask contains flag
@@ -560,6 +565,7 @@ send_recv_flags_rpc2h(unsigned int flags)
            (!!(flags & RPC_MSG_MORE) * MSG_MORE) |
            (!!(flags & RPC_MSG_CONFIRM) * MSG_CONFIRM) |
            (!!(flags & RPC_MSG_EOR) * MSG_EOR) |
+           (!!(flags & RPC_MSG_PARTIAL) * MSG_PARTIAL) |
            (!!(flags & RPC_MSG_UNKNOWN) * MSG_MAX) |
            (!!(flags & ~RPC_MSG_ALL) * MSG_MAX);
 }
@@ -581,6 +587,7 @@ send_recv_flags_h2rpc(unsigned int flags)
            (!!(flags & MSG_MORE) * RPC_MSG_MORE) |
            (!!(flags & MSG_CONFIRM) * RPC_MSG_CONFIRM) |
            (!!(flags & MSG_EOR) * RPC_MSG_EOR) |
+           (!!(flags & MSG_PARTIAL) * RPC_MSG_PARTIAL) |
            (!!(flags & MSG_ERRQUEUE) * RPC_MSG_ERRQUEUE) |
            (!!(flags & ~MSG_ALL) * RPC_MSG_UNKNOWN);
 }
@@ -592,6 +599,7 @@ send_recv_flags_h2rpc(unsigned int flags)
 #undef HAVE_MSG_MORE
 #undef HAVE_MSG_CONFIRM
 #undef HAVE_MSG_EOR
+#undef HAVE_MSG_PARTIAL
 
 
 /**
