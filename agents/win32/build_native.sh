@@ -60,24 +60,19 @@ rm librpc.lib
 
 # Apply pre-processor
 
-cat >cl.m4 <<EOF
-changequote($$,$$)
-
-define($$INCLUDE$$,
-$$#include <\$1>
-$$)
-EOF
-
 FILES= 
 for i in $* ; do 
     FILENAME=`basename ${i}` 
     FILES="${FILES} ${FILENAME}"
     ${CC} ${RPCSERVER_CPPFLAGS} -P -E ${i} -DCL -o ${FILENAME}.tmp ; 
-    cat cl.m4 ${FILENAME}.tmp | m4 > ${FILENAME} ; 
+    cat ${FILENAME}.tmp | awk --posix '\
+    /^INCLUDE/ { printf("#include <%s>\n", \
+                 substr($1, 9, length($1) - 9)); next; } \
+    { print $0; }'  > ${FILENAME} ; 
     rm ${FILENAME}.tmp ; 
     indent ${FILENAME} ;
 done
-rm -f *~ cl.m4
+rm -f *~ 
 
 # Build the result
 
