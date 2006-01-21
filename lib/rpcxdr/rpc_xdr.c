@@ -287,7 +287,8 @@ rpc_xdr_encode_result(char *name, te_bool rc,
 
     if ((info = rpc_find_info(name)) == NULL)
     {
-        printf("%s %d: Cannot find info", __FUNCTION__, __LINE__);
+        printf("%s %d: Cannot find info for %s", 
+               __FUNCTION__, __LINE__, name);
         rc = FALSE;
     }
     
