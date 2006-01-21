@@ -86,31 +86,39 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
     tv->tv_usec = t.wMilliseconds * 1000;
 }
 
+char *
+index(const char *s, int c)
+{
+    if (s == NULL)
+        return NULL;
+        
+    while (*s != c && *s != 0)
+        s++;
+        
+    return *s == 0 ? NULL : s;
+}
+
 #endif
 
 HINSTANCE ta_hinstance;
 
 #include "../../lib/rcfpch/rcf_pch_rpc_server.c"
 
-int WINAPI 
-WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, 
-        LPSTR lpCmdLine, int nCmdShow) 
+int 
+main(int argc, char **argv)
 {
     WSADATA data;
-
+    
     WSAStartup(MAKEWORD(2,2), &data);
     
-    UNUSED(hPrevInstance);
-    UNUSED(nCmdShow);
-    
-    ta_hinstance = hinstance;
+    ta_hinstance = GetModuleHandle(NULL);
     
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
     
     wsa_func_handles_discover();
     
-    rcf_pch_rpc_server(lpCmdLine);
+    rcf_pch_rpc_server(argv[1] == NULL ? "Unnamed" : argv[1]);
     
     _exit(0);
 }
