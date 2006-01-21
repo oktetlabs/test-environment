@@ -54,11 +54,12 @@
 #define _(x)    x
 #define __const
 #define __bzero(s, n)           memset(s, 0, n)
+
 #define ntohl(n) \
-    (((uint8_t *)&(n))[0] << 32 + \
-     ((uint8_t *)&(n))[1] << 24 + \
-     ((uint8_t *)&(n))[2] << 16 + \
-     ((uint8_t *)&(n))[3])
+    ((uint32_t)(((uint8_t *)&(n))[0] << 24) + \
+     (uint32_t)(((uint8_t *)&(n))[1] << 16) + \
+     (uint32_t)(((uint8_t *)&(n))[2] << 8) + \
+     (uint32_t)(((uint8_t *)&(n))[3]))
 
 #define htonl(n)                ntohl(n)     
 
