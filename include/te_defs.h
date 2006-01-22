@@ -133,6 +133,14 @@ typedef unsigned char te_bool;
 #define SIN6(_p)        ((struct sockaddr_in6 *)(_p))
 
 
+/** Convert seconds to milliseconds */
+#define TE_SEC2MS(_sec)         ((_sec) * 1000)
+/** Convert seconds to microseconds */
+#define TE_SEC2US(_sec)         ((_sec) * 1000000L)
+/** Convert seconds to nanoseconds */
+#define TE_SEC2NS(_sec)         ((_sec) * 1000000000L)
+
+
 /** 
  * Number of elements in array.
  *
