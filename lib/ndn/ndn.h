@@ -182,6 +182,7 @@ extern const asn_type *const ndn_data_unit_int5;
 extern const asn_type *const ndn_data_unit_int8;
 extern const asn_type *const ndn_data_unit_int16;
 extern const asn_type *const ndn_data_unit_int16;
+extern const asn_type *const ndn_data_unit_int24;
 extern const asn_type *const ndn_data_unit_int32;
 
     /* DATA-UNIT(OCTET STRING) */

@@ -78,6 +78,7 @@ extern asn_type ndn_data_unit_int8_s;
 extern asn_type ndn_data_unit_int9_s;  
 extern asn_type ndn_data_unit_int12_s;  
 extern asn_type ndn_data_unit_int16_s;  
+extern asn_type ndn_data_unit_int24_s;  
 extern asn_type ndn_data_unit_int32_s;  
 
 extern asn_type ndn_data_unit_octet_string_s;  

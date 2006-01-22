@@ -149,6 +149,7 @@ NDN_DATA_UNIT_TYPE(int8,  asn_base_int8_s,    INTEGER(0..255));
 NDN_DATA_UNIT_TYPE(int9,  asn_base_int9_s,    INTEGER(0..511));
 NDN_DATA_UNIT_TYPE(int12, asn_base_int12_s,   INTEGER(0..4095));
 NDN_DATA_UNIT_TYPE(int16, asn_base_int16_s,   INTEGER(0..65535));
+NDN_DATA_UNIT_TYPE(int24, asn_base_int24_s,   INTEGER(0..16777215));
 NDN_DATA_UNIT_TYPE(int32, asn_base_int32_s,   INTEGER(0..4294967295));
 
 NDN_DATA_UNIT_TYPE(octet_string,  asn_base_octstring_s,  OCTET STRING);
