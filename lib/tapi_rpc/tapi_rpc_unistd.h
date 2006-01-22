@@ -217,6 +217,15 @@ extern tarpc_ssize_t rpc_readbuf(rcf_rpc_server *rpcs,
 extern tarpc_off_t rpc_lseek(rcf_rpc_server *rpcs,
                              int fd, tarpc_off_t pos, rpc_lseek_mode mode);
 
+/**
+ * RPC equivalent of 'fsync'
+ *
+ * @param rpcs    RPC server handle
+ * @param fd      file descriptor
+ *
+ * @return 0 on success, -1 on failure
+ */
+extern int rpc_fsync(rcf_rpc_server *rpcs, int fd);
 
 
 /** Sturcture to store vector of buffers */

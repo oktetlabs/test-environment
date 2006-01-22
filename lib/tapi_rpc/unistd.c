@@ -479,6 +479,37 @@ rpc_lseek(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_fsync(rcf_rpc_server *rpcs, int fd)
+{
+    rcf_rpc_op      op;
+    tarpc_fsync_in  in;
+    tarpc_fsync_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+    
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(fsync, -1);
+    }
+
+    op = rpcs->op;
+
+    in.fd = fd;
+
+    rcf_rpc_call(rpcs, "fsync", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(fsync, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: fsync(%d) -> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 fd, out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(fsync, out.retval);
+}
+
+int
 rpc_readv_gen(rcf_rpc_server *rpcs,
               int fd, const struct rpc_iovec *iov,
               size_t iovcnt, size_t riovcnt)

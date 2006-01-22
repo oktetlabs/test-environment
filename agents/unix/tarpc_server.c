@@ -909,6 +909,13 @@ TARPC_FUNC(lseek, {},
         lseek_mode_rpc2h(in->mode)));
 })
 
+/*-------------- fsync() ------------------------------*/
+
+TARPC_FUNC(fsync, {},
+{
+    MAKE_CALL(out->retval = func(in->fd));
+})
+
 
 /*-------------- getsockname() ------------------------------*/
 TARPC_FUNC(getsockname,

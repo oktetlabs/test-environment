@@ -2358,6 +2358,22 @@ command_close(iscsi_io_handle_t *ioh, int *fd,
 }
 
 static te_errno
+command_fsync(iscsi_io_handle_t *ioh, int *fd, 
+              void *data, ssize_t length)
+{
+    UNUSED(data);
+    UNUSED(length);
+    if (*fd < 0)
+        return TE_RC(TE_TAPI, TE_EBADF);
+    else
+    {
+        return rpc_fsync(ioh->rpcs, *fd) == 0 ? 0 :
+            RPC_ERRNO(ioh->rpcs);
+    }
+}
+
+
+static te_errno
 command_seek(iscsi_io_handle_t *ioh, int *fd, 
              void *data, ssize_t length)
 {
@@ -2815,6 +2831,23 @@ tapi_iscsi_initiator_close(iscsi_io_handle_t *ioh,
         return TE_RC(TE_TAPI, TE_ENOTBLK);
     
     cmd.cmd       = command_close;
+    cmd.fd        = -1;
+    cmd.length    = 0;
+    cmd.data      = NULL;
+    cmd.spread_fd = FALSE;
+    cmd.leader    = FALSE;
+    cmd.do_signal = (taskid != NULL);
+    cmd.destroy   = NULL;
+    return post_command(ioh, &cmd, taskid);
+}
+
+te_errno
+tapi_iscsi_initiator_fsync(iscsi_io_handle_t *ioh,
+                           iscsi_io_taskid *taskid)
+{
+    iscsi_io_cmd_t cmd;
+
+    cmd.cmd       = command_fsync;
     cmd.fd        = -1;
     cmd.length    = 0;
     cmd.data      = NULL;

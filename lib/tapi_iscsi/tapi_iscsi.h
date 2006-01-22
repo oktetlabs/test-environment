@@ -1118,6 +1118,19 @@ extern te_errno tapi_iscsi_initiator_open(iscsi_io_handle_t *ioh,
 extern te_errno tapi_iscsi_initiator_close(iscsi_io_handle_t *ioh,
                                            iscsi_io_taskid *taskid);
 
+/**
+ * Syncs the written data of an iSCSI-mounted filesystem file or 
+ * a SCSI block device.
+ *
+ * @param ioh           I/O handler
+ * @param taskid        A pointer to store a task ID or NULL (OUT)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_iscsi_initiator_fsync(iscsi_io_handle_t *ioh,
+                                           iscsi_io_taskid *taskid);
+
+
 
 /**
  * Request a seek operation on an iSCSI device.

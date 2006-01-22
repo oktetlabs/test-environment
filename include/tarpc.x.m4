@@ -466,6 +466,16 @@ struct tarpc_lseek_out {
     tarpc_off_t          retval;
 };
 
+/* lseek() */
+
+struct tarpc_fsync_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_int           fd;
+};
+
+typedef struct tarpc_int_retval_out tarpc_fsync_out;
+
 /* send() */
 
 struct tarpc_send_in {
@@ -3096,6 +3106,8 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(writev)
 
         RPC_DEF(lseek)
+
+        RPC_DEF(fsync)
 
         RPC_DEF(send)
         RPC_DEF(recv)
