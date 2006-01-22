@@ -133,12 +133,33 @@ typedef unsigned char te_bool;
 #define SIN6(_p)        ((struct sockaddr_in6 *)(_p))
 
 
-/** Convert seconds to milliseconds */
+/** Convert seconds to milliseconds. */
 #define TE_SEC2MS(_sec)         ((_sec) * 1000)
-/** Convert seconds to microseconds */
+/** Convert seconds to microseconds. */
 #define TE_SEC2US(_sec)         ((_sec) * 1000000L)
-/** Convert seconds to nanoseconds */
+/** Convert seconds to nanoseconds. */
 #define TE_SEC2NS(_sec)         ((_sec) * 1000000000L)
+
+/** Convert milliseconds to seconds. */
+#define TE_MS2SEC(_ms)          ((_ms) / 1000)
+/** Convert milliseconds to microseconds. */
+#define TE_MS2US(_ms)           ((_ms) * 1000)
+/** Convert milliseconds to nanoseconds. */
+#define TE_MS2NS(_ms)           ((_ms) * 1000000L)
+
+/** Convert microseconds to seconds. */
+#define TE_US2SEC(_us)          ((_us) / 1000000L)
+/** Convert microseconds to milliseconds. */
+#define TE_US2MS(_us)           ((_us) / 1000)
+/** Convert microseconds to nanoseconds. */
+#define TE_US2NS(_us)           ((_us) * 1000)
+
+/** Convert nanoseconds to seconds. */
+#define TE_NS2SEC(_ns)          ((_ns) / 1000000000L)
+/** Convert nanoseconds to milliseconds. */
+#define TE_NS2MS(_ns)           ((_ns) / 1000000L)
+/** Convert nanoseconds to microseconds. */
+#define TE_NS2US(_ns)           ((_ns) / 1000)
 
 
 /** 
