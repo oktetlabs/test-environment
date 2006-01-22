@@ -832,9 +832,46 @@ iscsi_tgt_max_cmd_sn_delta_set(unsigned int gid, const char *oid,
                                   value);
 }
 
+static te_errno
+iscsi_tgt_phase_collapse_get(unsigned int gid, const char *oid,
+                               char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    DEVDATA_GET_CHECK;
+
+    *value = (devdata->phase_collapse == 0 ? '0' : '1');
+    value[1] = '\0';
+
+    return 0;
+}
+
+static te_errno
+iscsi_tgt_phase_collapse_set(unsigned int gid, const char *oid,
+                             const char *value, const char *instance, ...)
+{
+    UNUSED(gid);
+    UNUSED(instance);
+    UNUSED(oid);
+
+    DEVDATA_SET_CHECK;
+
+    devdata->phase_collapse = (*value != '0' && *value != '\0');
+
+    return 0;
+}
+
+
+RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_phase_collapse, "phase_collapse",
+                    NULL, NULL,
+                    iscsi_tgt_phase_collapse_get, 
+                    iscsi_tgt_phase_collapse_set);
+
 
 RCF_PCH_CFG_NODE_RW(node_iscsi_target_oper_max_cmd_sn_delta, "max_cmd_sn_delta",
-                    NULL, NULL,
+                    NULL, &node_iscsi_target_oper_phase_collapse,
                     iscsi_tgt_max_cmd_sn_delta_get, 
                     iscsi_tgt_max_cmd_sn_delta_set);
 
