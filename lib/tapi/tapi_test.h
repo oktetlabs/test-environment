@@ -120,16 +120,16 @@ extern "C" {
      */                                                             \
     (void)signal(SIGINT, sigint_handler);                           \
                                                                     \
+    TAPI_ON_JMP(TEST_ON_JMP_DO);                                    \
+    TEST_GET_INT_PARAM(te_test_id);                                 \
+                                                                    \
     /* Initialize pseudo-random generator */                        \
     {                                                               \
-        unsigned int seed = time(NULL);                             \
+        unsigned int seed = time(NULL) + te_test_id;                \
                                                                     \
         srand(seed);                                                \
         RING("Pseudo-random seed is %u", seed);                     \
     }                                                               \
-                                                                    \
-    TAPI_ON_JMP(TEST_ON_JMP_DO);                                    \
-    TEST_GET_INT_PARAM(te_test_id);                                 \
                                                                     \
     TEST_START_SPECIFIC
 
