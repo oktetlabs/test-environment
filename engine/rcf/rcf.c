@@ -1947,7 +1947,7 @@ send_cmd(ta *agent, usrreq *req)
                 PUT("attach %u", (unsigned int)msg->intparm);
                 msg->flags |= BINARY_ATTACHMENT;
             }
-            req->timeout = msg->timeout / 1000 + 5;
+            req->timeout = TE_MS2SEC(msg->timeout) + 5;
             break;
         }
 
