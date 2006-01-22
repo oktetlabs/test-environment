@@ -184,7 +184,8 @@ extern int asn_free_subvalue(asn_value *value, const char *labels);
  * @return zero on success, otherwise error code.
  */
 extern int asn_free_child_value(asn_value *value, 
-                               asn_tag_class tag_class, uint16_t tag_val);
+                                asn_tag_class tag_class,
+                                uint16_t tag_val);
 
 
 /**
@@ -864,6 +865,7 @@ extern const asn_type  asn_base_int8_s;
 extern const asn_type  asn_base_int9_s;
 extern const asn_type  asn_base_int12_s;
 extern const asn_type  asn_base_int16_s;
+extern const asn_type  asn_base_int24_s;
 extern const asn_type  asn_base_int32_s;
 
 

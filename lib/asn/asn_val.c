@@ -2212,6 +2212,8 @@ const asn_type  asn_base_int12_s =
 { "INTEGER (0..4095)",   {UNIVERSAL, 2}, INTEGER, 12, {0}};
 const asn_type  asn_base_int16_s = 
 { "INTEGER (0..65535)",   {UNIVERSAL, 2}, INTEGER, 16, {0}};
+const asn_type  asn_base_int24_s = 
+{ "INTEGER (0..16777215)",   {UNIVERSAL, 2}, INTEGER, 24, {0}};
 const asn_type  asn_base_int32_s = 
 { "INTEGER (0..4294967295)",   {UNIVERSAL, 2}, INTEGER, 32, {0}};
 
