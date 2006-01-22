@@ -52,6 +52,8 @@
 
 /** Default RPC timeout in milliseconds */
 #define RCF_RPC_DEFAULT_TIMEOUT     10000
+/** Unspecified RPC timeout in milliseconds */
+#define RCF_RPC_UNSPEC_TIMEOUT      0
 
 
 /** Return RPC server context errno */

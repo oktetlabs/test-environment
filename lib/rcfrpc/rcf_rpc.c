@@ -272,6 +272,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rpcs->iut_err_jump = TRUE;
     rpcs->op = RCF_RPC_CALL_WAIT;
     rpcs->def_timeout = RCF_RPC_DEFAULT_TIMEOUT;
+    rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;
     rpcs->sid = sid;
     if (p_handle != NULL)
         *p_handle = rpcs;
@@ -461,7 +462,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     pthread_mutex_lock(&rpcs->lock);
     rpcs->_errno = 0;
     rpcs->err_log = FALSE;
-    if (rpcs->timeout == 0)
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = rpcs->def_timeout;
     
     if (rpcs->op == RCF_RPC_CALL || rpcs->op == RCF_RPC_CALL_WAIT)
@@ -505,7 +506,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
                                    rpcs->timeout, proc, in, out);
 
     if (rpcs->op != RCF_RPC_CALL)
-        rpcs->timeout = 0;
+        rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;
     rpcs->start = 0;
     *(rpcs->lib) = '\0';
     if (TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCTIMEOUT ||
