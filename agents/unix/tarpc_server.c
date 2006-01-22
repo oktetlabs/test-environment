@@ -42,6 +42,7 @@
 #include <netinet/in_systm.h>
 #endif
 
+#include "te_defs.h"
 #include "te_tools.h"
 
 #include "unix_internal.h"
