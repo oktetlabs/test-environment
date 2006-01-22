@@ -286,3 +286,53 @@ tad_iscsi_gen_pattern_cb(csap_p            csap,
 
     return 0;
 }
+
+
+
+/* See description in tad_iscsi_impl.h */
+te_errno
+tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
+                          asn_value_p layer_pdu,
+                          void **p_opaque)
+{
+    te_errno    rc = 0;
+
+    const asn_value *iscsi_csap_pdu;
+    asn_value       *iscsi_pdu;
+
+    tad_iscsi_layer_data *spec_data = csap_get_proto_spec_data(csap, layer);
+
+    UNUSED(p_opaque);
+    UNUSED(layer);
+
+    if (asn_get_syntax(layer_pdu, "") == CHOICE)
+    {
+        if ((rc = asn_get_choice_value(layer_pdu,
+                                       (const asn_value **)&iscsi_pdu,
+                                       NULL, NULL))
+             != 0)
+            return rc;
+    }
+    else
+        iscsi_pdu = layer_pdu; 
+
+    iscsi_csap_pdu = csap->layers[layer].csap_layer_pdu; 
+
+#define CONVERT_FIELD(tag_, du_field_)                                  \
+    do {                                                                \
+        rc = tad_data_unit_convert(iscsi_pdu, tag_,                       \
+                                   &(spec_data->du_field_));            \
+        if (rc != 0)                                                    \
+        {                                                               \
+            ERROR("%s(csap %d),line %d, convert %s failed, rc %r",      \
+                  __FUNCTION__, csap->id, __LINE__, #du_field_, rc);\
+            return rc;                                                  \
+        }                                                               \
+    } while (0) 
+
+    CONVERT_FIELD(NDN_TAG_ISCSI_I_BIT, du_i_bit);
+    CONVERT_FIELD(NDN_TAG_ISCSI_OPCODE, du_opcode);
+    CONVERT_FIELD(NDN_TAG_ISCSI_F_BIT, du_f_bit);
+
+    return rc;
+}

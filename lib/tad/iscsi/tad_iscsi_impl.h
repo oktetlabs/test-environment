@@ -40,6 +40,7 @@
 #include "tad_csap_support.h"
 #include "ndn_iscsi.h"
 
+#include "tad_utils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,6 +68,9 @@ typedef struct tad_iscsi_layer_data {
 
     uint32_t    total_received;
 
+    tad_data_unit_t  du_i_bit;
+    tad_data_unit_t  du_opcode;
+    tad_data_unit_t  du_f_bit;
 } tad_iscsi_layer_data;
 
 
@@ -190,6 +194,18 @@ extern te_errno tad_iscsi_prepare_send_cb(csap_p csap);
  */ 
 extern te_errno tad_iscsi_prepare_recv_cb(csap_p csap);
 
+
+
+/**
+ * Confirm pattern callback
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ *
+ * @return status code.
+ */ 
+extern te_errno tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
+                                          asn_value_p layer_pdu,
+                                          void **p_opaque);
 
 #ifdef __cplusplus
 } /* extern "C" */
