@@ -95,7 +95,8 @@ main(int argc, char *argv[])
     TEST_GET_BOOL_PARAM(clp);
     TEST_GET_INT_PARAM(gfc);
 
-    CHECK_NOT_NULL(payload = te_make_buf(0, ATM_PAYLOAD_LEN, &payload_len));
+    /* It may be NULL, if payload_len is 0 */
+    payload = te_make_buf(0, ATM_PAYLOAD_LEN, &payload_len);
 
     CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, 
                                          SIN(iut_addr)->sin_addr.s_addr,
