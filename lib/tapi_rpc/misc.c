@@ -59,10 +59,6 @@
 #include "tapi_rpc_winsock2.h"
 
 
-/** Extra time in seconds to be added to time2run before RPC timeout */
-#define TAPI_RPC_TIMEOUT_EXTRA_SEC      10
-
-
 /* See description in tapi_rpc_misc.h */
 tarpc_ssize_t
 rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
@@ -414,8 +410,7 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
     in.time2run = time2run;
     in.ignore_err = ignore_err;
 
-    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
-        rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
     {
         rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
     }
@@ -469,8 +464,7 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
 
     in.s = s;
     in.time2run = time2run;
-    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
-        rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
     {
         rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
     }
@@ -577,8 +571,7 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     in.iomux = iomux;
     in.rx_nonblock = rx_nonblock;
 
-    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
-        rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
     {
         rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
     }
@@ -649,8 +642,7 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
     in.time2run = time2run;
     in.iomux = iomux;
     
-    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
-        rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
     {
         rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
     }
@@ -759,8 +751,7 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
 
     in.sock = sock;
     in.timeout = timeout;
-    if ((op == RCF_RPC_WAIT || op == RCF_RPC_CALL_WAIT) &&
-        rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
     {
         rpcs->timeout = TE_SEC2MS(timeout + TAPI_RPC_TIMEOUT_EXTRA_SEC);
     }

@@ -851,6 +851,13 @@ rpc_select(rcf_rpc_server *rpcs,
         timeout_in = *timeout;
     }
 
+    if ((timeout != NULL) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(timeout->tv_sec +
+                                  TAPI_RPC_TIMEOUT_EXTRA_SEC) +
+                        TE_US2MS(timeout->tv_usec);
+    }
+
     rcf_rpc_call(rpcs, "select", &in, &out);
 
     if (op != RCF_RPC_CALL && timeout != NULL &&
@@ -907,6 +914,13 @@ rpc_pselect(rcf_rpc_server *rpcs,
         tv.tv_nsec = timeout->tv_nsec;
         in.timeout.timeout_len = 1;
         in.timeout.timeout_val = &tv;
+    }
+
+    if ((timeout != NULL) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(timeout->tv_sec +
+                                  TAPI_RPC_TIMEOUT_EXTRA_SEC) +
+                        TE_NS2MS(timeout->tv_nsec);
     }
 
     rcf_rpc_call(rpcs, "pselect", &in, &out);
@@ -1011,6 +1025,11 @@ rpc_poll_gen(rcf_rpc_server *rpcs,
     in.nfds = nfds;
 
     pollreq2str(ufds, rnfds, str_buf_1, sizeof(str_buf_1));
+
+    if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
+    {
+        rpcs->timeout = TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC) + timeout;
+    }
 
     rcf_rpc_call(rpcs, "poll", &in, &out);
 

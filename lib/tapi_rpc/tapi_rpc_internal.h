@@ -54,6 +54,10 @@
 #include "tarpc.h"
 #include "tapi_jmp.h"
 
+
+/** Extra time in seconds to be added to time2run before RPC timeout */
+#define TAPI_RPC_TIMEOUT_EXTRA_SEC      10
+
 /**
  * Log TAPI RPC call.
  * If RPC call status is OK, log as ring, else log as error.
