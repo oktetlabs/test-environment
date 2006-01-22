@@ -3236,7 +3236,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         if (!in->delay_rnd_once)
             delay = rand_range(in->delay_min, in->delay_max);
 
-        if (delay / 1000000 > (int)(in->time2run) - (now - start) + 1)
+        if (TE_US2SEC(delay) > (int)(in->time2run) - (now - start) + 1)
             break;
 
         usleep(delay);
@@ -3648,7 +3648,7 @@ flooder(tarpc_flooder_in *in)
             else
             {
                 ts.tv_sec  = call_timeout.tv_sec;
-                ts.tv_nsec = call_timeout.tv_usec * 1000;
+                ts.tv_nsec = TE_US2NS(call_timeout.tv_usec);
                 rc = pselect_func(max_descr + 1, &rfds,
                                   time2run_not_expired ? &wfds : NULL,
                                   NULL, &ts, NULL);
@@ -3725,8 +3725,8 @@ flooder(tarpc_flooder_in *in)
         else if (iomux == FUNC_POLL) /* poll() should be used as iomux */
         {
             rc = poll_func(ufds, ufds_elements,
-                           call_timeout.tv_sec * 1000 +
-                           call_timeout.tv_usec / 1000);
+                           TE_SEC2MS(call_timeout.tv_sec) +
+                           TE_US2MS(call_timeout.tv_usec));
 
             if (rc < 0)
             {
@@ -3991,7 +3991,7 @@ echoer(tarpc_echoer_in *in)
             else
             {
                 ts.tv_sec  = call_timeout.tv_sec;
-                ts.tv_nsec = call_timeout.tv_usec * 1000;
+                ts.tv_nsec = TE_US2NS(call_timeout.tv_usec);
                 rc = pselect_func(max_descr + 1, &rfds, NULL, NULL, &ts,
                                   NULL);
             }
@@ -4032,8 +4032,8 @@ echoer(tarpc_echoer_in *in)
         else if (iomux == FUNC_POLL) /* poll() should be used as iomux */
         {
             rc = poll_func(ufds, ufds_elements,
-                           call_timeout.tv_sec * 1000 +
-                           call_timeout.tv_usec / 1000);
+                           TE_SEC2MS(call_timeout.tv_sec) +
+                           TE_US2MS(call_timeout.tv_usec));
 
             if (rc < 0)
             {
@@ -4435,7 +4435,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         FD_ZERO(&writefds);
         FD_SET(in->sock, &writefds);
         tv.tv_sec  = 0;
-        tv.tv_usec = 100 * 1000;
+        tv.tv_usec = TE_MS2US(100);
         rc = select_func(in->sock + 1, NULL, &writefds, NULL, &tv);
         if (rc < 0)
         {

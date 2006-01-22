@@ -389,8 +389,8 @@ check_args(checked_arg *list)
         if (msec_start > msec_now)                              \
         {                                                       \
             RING("Sleep %u microseconds before call",           \
-                 (msec_start - msec_now) * 1000);               \
-            usleep((msec_start - msec_now) * 1000);             \
+                 (unsigned)TE_MS2US(msec_start - msec_now));    \
+            usleep(TE_MS2US(msec_start - msec_now));            \
         }                                                       \
         else if (msec_start != 0)                               \
             WARN("Start time is gone");                         \
@@ -415,7 +415,7 @@ check_args(checked_arg *list)
         out->common._errno = RPC_ERRNO;                          \
         gettimeofday(&t_finish, NULL);                           \
         out->common.duration =                                   \
-            (t_finish.tv_sec - t_start.tv_sec) * 1000000 +       \
+            TE_SEC2US(t_finish.tv_sec - t_start.tv_sec) +        \
             t_finish.tv_usec - t_start.tv_usec;                  \
         _rc = check_args(*list_ptr);                             \
         if (out->common._errno == 0 && _rc != 0)                 \
