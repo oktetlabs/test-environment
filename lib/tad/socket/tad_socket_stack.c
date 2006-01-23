@@ -464,7 +464,7 @@ tad_socket_write_cb(csap_p csap, const tad_pkt *pkt)
     ret = sendmsg(spec_data->socket, &msg, 0);
     if (ret < 0) 
     {
-        csap->last_errno = errno;
+        csap->last_errno = te_rc_os2te(errno);
         return TE_OS_RC(TE_TAD_CSAP, csap->last_errno);
     }
 

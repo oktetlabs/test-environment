@@ -1044,6 +1044,7 @@ tad_receiver_thread(void *arg)
             if (d_len < 0)
             {
                 csap->state |= TAD_STATE_COMPLETE;
+                rc = csap->last_errno;
                 ERROR("CSAP read callback failed; rc: %r", rc);
                 continue;
             } 
@@ -1176,7 +1177,7 @@ tad_receiver_thread(void *arg)
     {
         csap->command = TAD_OP_IDLE;
         csap->state   = 0;
-        SEND_ANSWER("%d %u", TE_OS_RC(TE_TAD_CSAP, csap->last_errno),
+        SEND_ANSWER("%d %u", TE_RC(TE_TAD_CSAP, csap->last_errno),
                     pkt_count);
     }
     else

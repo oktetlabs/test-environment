@@ -188,11 +188,19 @@ tad_iscsi_read_cb(csap_p csap, int timeout,
             rc = read(fd, buf, buf_len);
             INFO("%s(CSAP %d): read rc %d", 
                  __FUNCTION__, csap->id, rc);
-            if (rc >= 0)
+
+            if (rc == 0)
+            {
+                INFO(CSAP_LOG_FMT "Peer closed connection", 
+                     CSAP_LOG_ARGS(csap));
+                csap->last_errno = TE_ETADENDOFDATA;
+                return -1;
+            }
+            else if (rc > 0)
                 len = rc;
             else
             {
-                csap->last_errno = errno;
+                csap->last_errno = te_rc_os2te(errno);
                 WARN("%s(CSAP %d) error %d on read", __FUNCTION__, 
                      csap->id, csap->last_errno);
                 return -1;
