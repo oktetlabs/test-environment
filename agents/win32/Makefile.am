@@ -13,7 +13,7 @@ MY_CFLAGS=--disable-stdcall-fixup
 # -lrcfpch must be before @TE_LDADD@ since the last may contain
 # -ltad_ch with names used in -lrcfpch.
 #
-MY_LDADD=symtbl.o -lrcfpch -lrpcxdr \
+MY_LDADD=symtbl.o -lrcfpch -lrpcxdrta \
          -l@TAD@ @TE_LDADD@ -lconf_oid -lloggerta -lpthread \
          -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin \
          -lexpat 
@@ -41,14 +41,13 @@ MY_SYMTBL_OBJECTS+=tarpc_server.o
 
 CLEANFILES+=rpc_unsupported.c rpc_supported.h
 
-rpc_unsupported.c: $(srcdir)/../../include/tarpc.x.m4 rpc_supported.h \
+rpc_unsupported.c: $(DESTDIR)/$(prefix)/../@host@/include/tarpc.h \
+                   rpc_supported.h \
                    $(srcdir)/../../include/rpc_unsupported.m4
-	cat $< | grep 'RPC_DEF(' > tmp
-	cat $(srcdir)/../../include/rpc_unsupported.m4 tmp | m4 > $@
-	rm -f tmp
+	$(srcdir)/../../engine/builder/te_rpc_unsupported $< 
         
-rpc_supported.h: tarpc_server.o
-	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" tarpc_server.o
+rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
+	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" $^
 
 else
 
@@ -66,7 +65,7 @@ tawin32tmpl_LDADD=$(MY_LDADD)
 
 tawin32tmpl_DEPENDENCIES=@TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdrta.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/lib@TAD@.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libcomm_net_agent.a \
@@ -91,7 +90,7 @@ bin_PROGRAMS=tawin32tmpl tawin32tmpl_rpcserver
 tawin32tmpl_rpcserver_DEPENDENCIES=\
     rpcserver_symtbl.o \
     $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a \
-    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdr.a 
+    $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdrta.a 
 
 tawin32tmpl_rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c 
 
@@ -100,7 +99,7 @@ nodist_tawin32tmpl_rpcserver_SOURCES=rpc_unsupported.c \
                   ${srcdir}/../../lib/loggerta/logfork.c \
                   ${srcdir}/../../lib/tools/te_format.c 
 
-tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -lrpcxdr -ltalib -lrpc \
+tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -lrpcxdrta -ltalib -lrpc \
                             -lws2_32 -lmswsock -lwsock32 -liphlpapi 
 
 rpcserver_symtbl.c: tarpc_server.o \
