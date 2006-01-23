@@ -2367,6 +2367,7 @@ command_fsync(iscsi_io_handle_t *ioh, int *fd,
         return TE_RC(TE_TAPI, TE_EBADF);
     else
     {
+        ioh->rpcs->timeout = 120000;
         return rpc_fsync(ioh->rpcs, *fd) == 0 ? 0 :
             RPC_ERRNO(ioh->rpcs);
     }
@@ -2742,7 +2743,7 @@ tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
     {
         cmd.cmd       = command_open;
         cmd.fd        = -1;
-        cmd.length    = (ssize_t)(RPC_O_RDWR);
+        cmd.length    = (ssize_t)(RPC_O_RDWR | RPC_O_DIRECT);
         cmd.data      = ioh->device;
         cmd.spread_fd = TRUE;
         cmd.destroy   = NULL;
