@@ -13,7 +13,7 @@ AM_YFLAGS=-d
 # functions provided by -l@TAD@. @TE_LDADD@ must be after -l@TAD@,
 # since @TE_LDADD@ may contain ASN and NDN libraries.
 #
-MY_LDADD=symtbl.o @TE_LDADD@ -lrcfpch -lrpcxdr -l@TAD@ \
+MY_LDADD=symtbl.o @TE_LDADD@ -lrcfpch -lrpcxdrta -l@TAD@ \
          -lconf_oid -lloggerta -lrcfpch -ltools
 
 #if HAS_NET_SNMP
@@ -49,15 +49,13 @@ MY_SYMTBL_OBJECTS+=tarpc_server.o
 
 CLEANFILES+=rpc_unsupported.c rpc_supported.h
 
-rpc_unsupported.c: $(srcdir)/../../include/tarpc.x.m4 rpc_supported.h \
+rpc_unsupported.c: $(DESTDIR)/$(prefix)/../@host@/include/tarpc.h \
+                   rpc_supported.h \
                    $(srcdir)/../../include/rpc_unsupported.m4
-	cat $< | grep 'RPC_DEF(' > tmp
-	cat $(srcdir)/../../include/rpc_unsupported.m4 tmp | m4 > $@
-	rm -f tmp
+	$(srcdir)/../../engine/builder/te_rpc_unsupported $< 
         
-rpc_supported.h: tarpc_server.o
-	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" \
-            tarpc_server.o @TE_DEPENDENCIES@
+rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
+	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" $^
 
 else
 
