@@ -49,8 +49,6 @@
 #include "ndn_eth.h"
 #include "tapi_tad.h"
 
-#include "tapi_test.h"
-
 
 /**
  * Create ASN.1 value for Ethernet CSAP layer.

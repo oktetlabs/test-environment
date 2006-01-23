@@ -58,6 +58,8 @@
 #include "tapi_tad.h"
 #include "tapi_eth.h"
 
+#include "tapi_test.h"
+
 
 /**
  * Print ethernet address to the specified file stream
