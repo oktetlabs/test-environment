@@ -38,6 +38,7 @@ dist_mybin_SCRIPTS = \
     te_generate_symtbl \
     te_generate_rpctbl \
     te_rpc_supported \
+    te_rpc_unsupported \
     te_build_suite \
     te_tests_info.sh
 
