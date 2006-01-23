@@ -254,6 +254,21 @@ tad_iscsi_match_bin_cb(csap_p           csap,
         goto cleanup;
     }
 
+    /* received message successfully processed and reassembled */
+
+    do {
+        uint8_t    tmp8;
+        uint8_t   *p = spec_data->stored_buffer; 
+
+        UNUSED(tmp8);
+        UNUSED(p);
+        /* Here is a big ASS with matching: if packet 
+         * does not match, but there are many pattern_units, 
+         * what we have to do with stored reassembled buffer???
+         */
+    } while(0);
+
+
     memset(payload, 0 , sizeof(*payload));
     payload->len = spec_data->wait_length;
     payload->data = spec_data->stored_buffer; 
