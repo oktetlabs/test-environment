@@ -1277,6 +1277,7 @@ prepare_pcos(tapi_env_hosts *hosts)
                                                     host->libname);
                             if (rc != 0)
                             {
+                                rc = pco->rpcs->_errno;
                                 ERROR("Failed to set RPC server '%s' "
                                       "dynamic library name '%s': %r", 
                                       pco->rpcs->name,
