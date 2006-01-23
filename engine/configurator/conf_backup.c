@@ -532,7 +532,7 @@ restore_entries(cfg_instance *list)
         
         while (tmp != NULL)
         {
-            RING("Processing instance %s", tmp->oid);
+            RING("Restoring instance %s", tmp->oid);
 
             switch (rc = add_or_set(tmp))
             {
