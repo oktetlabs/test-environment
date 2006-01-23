@@ -146,8 +146,11 @@ cleanup:
     CLEANUP_RPC_CLOSE(pco_tst, tst_s);
 
     if (iut_host != NULL)
+    {
+        CLEANUP_CHECK_RC(rcf_ta_csap_destroy(iut_host->ta, 0, csap));
         CLEANUP_CHECK_RC(rcf_ta_csap_destroy(iut_host->ta, 0,
                                              tcp_srv_csap));
+    }
 
     TEST_END;
 }
