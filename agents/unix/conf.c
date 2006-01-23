@@ -4266,7 +4266,7 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
                const char *instance, ...)
 {
     FILE    *resolver = NULL;
-    char     buf[256];
+    char     buf[256] = { 0, };
     char    *found = NULL, *endaddr = NULL;
     te_errno rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -4275,7 +4275,7 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
-
+    
     *result = '\0';
     resolver = fopen("/etc/resolv.conf", "r");
     if (!resolver)
@@ -4286,13 +4286,16 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
     }
     while ((fgets(buf, sizeof(buf), resolver)) != NULL)
     {
-        if((found = strstr(buf, "nameserver")) != NULL)
+        if ((found = strstr(buf, "nameserver")) != NULL)
         {
             found += strcspn(found, ip_symbols);
-            if(*found != '\0')
+            if (*found != '\0')
             {
                 endaddr = found + strspn(found, ip_symbols);
                 *endaddr = '\0';
+
+                if (inet_addr(found) == INADDR_NONE)
+                    continue;
                 if(endaddr - found > RCF_MAX_VAL)
                     rc = TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
                 else
