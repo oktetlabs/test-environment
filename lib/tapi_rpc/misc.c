@@ -69,13 +69,13 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(get_sizeof, -1);
     }
-    
+
     if (type_name == NULL)
     {
         ERROR("%s(): NULL type name", __FUNCTION__);
@@ -83,7 +83,7 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
-    
+
     in.typename = strdup(type_name);
 
     rcf_rpc_call(rpcs, "get_sizeof", &in, &out);
@@ -107,13 +107,13 @@ rpc_get_addrof(rcf_rpc_server *rpcs, const char *name)
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_RPC_PTR(get_addrof, RPC_NULL);
     }
-    
+
     if (name == NULL)
     {
         ERROR("%s(): NULL type name", __FUNCTION__);
@@ -135,7 +135,7 @@ rpc_get_addrof(rcf_rpc_server *rpcs, const char *name)
 }
 
 /* See description in tapi_rpc_misc.h */
-uint64_t 
+uint64_t
 rpc_get_var(rcf_rpc_server *rpcs, const char *name, tarpc_size_t size)
 {
     struct tarpc_get_var_in  in;
@@ -143,14 +143,14 @@ rpc_get_var(rcf_rpc_server *rpcs, const char *name, tarpc_size_t size)
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
-    if (rpcs == NULL || name == NULL || 
+
+    if (rpcs == NULL || name == NULL ||
         !(size == 1 || size == 2 || size == 4 || size == 8))
     {
         ERROR("%s(): Invalid parameter is provided", __FUNCTION__);
         TAPI_JMP_DO(TE_EFAIL);
     }
-    
+
     rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.name = strdup(name);
@@ -161,19 +161,19 @@ rpc_get_var(rcf_rpc_server *rpcs, const char *name, tarpc_size_t size)
     free(in.name);
 
     CHECK_RETVAL_VAR_IS_BOOL(get_var, out.found);
-    
+
     TAPI_RPC_LOG("RPC (%s,%s): get_var(%s, %u) -> %llu%s",
                  rpcs->ta, rpcs->name, name, size, out.found ? out.val : 0,
                  out.found ? "" : " (not found)");
 
     TAPI_RPC_OUT(get_var, !out.found);
-    
+
     return out.val;
 }
 
 /* See description in tapi_rpc_misc.h */
-void 
-rpc_set_var(rcf_rpc_server *rpcs, const char *name, 
+void
+rpc_set_var(rcf_rpc_server *rpcs, const char *name,
             tarpc_size_t size, uint64_t val)
 {
     struct tarpc_set_var_in  in;
@@ -181,14 +181,14 @@ rpc_set_var(rcf_rpc_server *rpcs, const char *name,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
-    if (rpcs == NULL || name == NULL || 
+
+    if (rpcs == NULL || name == NULL ||
         !(size == 1 || size == 2 || size == 4 || size == 8))
     {
         ERROR("%s(): Invalid parameter is provided", __FUNCTION__);
         TAPI_JMP_DO(TE_EFAIL);
     }
-    
+
     rpcs->op = RCF_RPC_CALL_WAIT;
 
     in.name = strdup(name);
@@ -200,7 +200,7 @@ rpc_set_var(rcf_rpc_server *rpcs, const char *name,
     free(in.name);
 
     CHECK_RETVAL_VAR_IS_BOOL(get_var, out.found);
-    
+
     TAPI_RPC_LOG("RPC (%s,%s): set_var(%s, %u, %llu) -> %s",
                  rpcs->ta, rpcs->name, name, size, in.val,
                  out.found ? "OK" : "not found");
@@ -391,7 +391,7 @@ rpc_simple_sender(rcf_rpc_server *rpcs,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -453,7 +453,7 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -496,7 +496,7 @@ rpc_recv_verify(rcf_rpc_server *rpcs, int s,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -520,7 +520,7 @@ rpc_recv_verify(rcf_rpc_server *rpcs, int s,
     {
         in.fname.fname_len = strlen(gen_data_fname) + 1;
         in.fname.fname_val = strdup(gen_data_fname);
-    } 
+    }
 #endif
 
     rcf_rpc_call(rpcs, "recv_verify", &in, &out);
@@ -538,7 +538,7 @@ rpc_recv_verify(rcf_rpc_server *rpcs, int s,
 int
 rpc_iomux_flooder(rcf_rpc_server *rpcs,
                   int *sndrs, int sndnum, int *rcvrs, int rcvnum,
-                  int bulkszs, int time2run, int time2wait, int iomux, 
+                  int bulkszs, int time2run, int time2wait, int iomux,
                   te_bool rx_nonblock, uint64_t *tx_stat, uint64_t *rx_stat)
 {
     rcf_rpc_op        op;
@@ -546,7 +546,7 @@ rpc_iomux_flooder(rcf_rpc_server *rpcs,
     tarpc_flooder_out out;
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -622,7 +622,7 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -641,12 +641,12 @@ rpc_iomux_echoer(rcf_rpc_server *rpcs,
     in.sockets.sockets_len = socknum;
     in.time2run = time2run;
     in.iomux = iomux;
-    
+
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
     {
         rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
     }
-    
+
     if (tx_stat != NULL)
     {
         in.tx_stat.tx_stat_val = tx_stat;
@@ -691,7 +691,7 @@ rpc_sendfile(rcf_rpc_server *rpcs, int out_fd, int in_fd,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -740,7 +740,7 @@ rpc_socket_to_file(rcf_rpc_server *rpcs, int sock,
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    
+
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
@@ -869,7 +869,7 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 
     if ((out.retval == 0) && (sent != NULL))
         *sent = out.bytes;
-    
+
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_buffers, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_buffers(%d) -> %d (%s) sent=%d",
@@ -914,7 +914,7 @@ rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
     rcf_rpc_call(rpcs, "set_buf", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): set_buf() -> (%s)",
-                 rpcs->ta, rpcs->name, 
+                 rpcs->ta, rpcs->name,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(set_buf);
@@ -948,7 +948,7 @@ rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
     rcf_rpc_call(rpcs, "get_buf", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): get_buf() -> (%s)",
-                 rpcs->ta, rpcs->name, 
+                 rpcs->ta, rpcs->name,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     if ((out.dst_buf.dst_buf_len != 0) && (out.dst_buf.dst_buf_val != NULL))
@@ -957,10 +957,10 @@ rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
     RETVAL_VOID(get_buf);
 }
 
-/** 
+/**
  * Fill buffer by the pattern
  */
-void 
+void
 rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
                     size_t len, rpc_ptr dst_buf, rpc_ptr offset)
 {
@@ -986,11 +986,11 @@ rpc_set_buf_pattern(rcf_rpc_server *rpcs, int pattern,
     rcf_rpc_call(rpcs, "set_buf_pattern", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s): set_buf_pattern() -> (%s)",
-                 rpcs->ta, rpcs->name, 
+                 rpcs->ta, rpcs->name,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_VOID(set_buf_pattern);
-}                    
+}
 
 
 void
@@ -1021,8 +1021,8 @@ rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start)
     RETVAL_VOID(vm_trasher);
 }
 
-void 
-rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s, 
+void
+rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s,
                                 rpc_socket_domain domain,
                                 rpc_socket_type sock_type,
                                 rcf_rpc_server **pco_child, int *child_s)
@@ -1032,22 +1032,62 @@ rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s,
     int                     info_len = sizeof(info);
     char                    process_name[12];
     static int              counter = 1;
-    
+
     sprintf(process_name, "pco_child%d", counter);
-    
+
     if (rpc_is_winsock2(pco_father))
     {
         rcf_rpc_server_create(pco_father->ta, process_name, pco_child);
         process_id = rpc_getpid(*pco_child);
-        rpc_wsa_duplicate_socket(pco_father, father_s, process_id, 
+        rpc_wsa_duplicate_socket(pco_father, father_s, process_id,
                                  info, &info_len);
-        *child_s = rpc_wsa_socket(*pco_child, domain, sock_type, 
+        *child_s = rpc_wsa_socket(*pco_child, domain, sock_type,
                                   RPC_PROTO_DEF, info, info_len, 0);
-    } 
+    }
     else
-    {    
+    {
         rcf_rpc_server_fork(pco_father, process_name, pco_child);
         *child_s = father_s;
     }
     counter++;
-}    
+}
+
+/**
+ * Get readability (there are data to read) or writability (it is allowed
+ * to write) of a particular socket.
+ *
+ * @param answer     answer location
+ * @param rpcs       RPC server handle
+ * @param s          socket to be checked
+ * @param timeout    timeout in seconds
+ * @param type       type of checking: "READ" or "WRITE"
+ *
+ * @return status code
+ */
+int
+tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
+                        int s, int timeout, char *type)
+{
+    tarpc_timeval   tv = { 0 , 0 };
+    rpc_fd_set_p    fds = RPC_NULL;
+    int             rc = -1;
+    int             result = -1;
+
+    fds = rpc_fd_set_new(rpcs);
+    rpc_do_fd_zero(rpcs, fds);
+    rpc_do_fd_set(rpcs, s, fds);
+
+    tv.tv_sec = timeout;
+
+    if (type[0] == 'R')
+        rc = rpc_select(rpcs, s + 1, fds, RPC_NULL, RPC_NULL, &tv);
+    else
+        rc = rpc_select(rpcs, s + 1, RPC_NULL, fds, RPC_NULL, &tv);
+
+    *answer = (rc == 1);
+    result = 0;
+
+    rpc_fd_set_delete(rpcs, fds);
+
+    return result;
+}
