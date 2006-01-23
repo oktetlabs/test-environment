@@ -528,9 +528,12 @@ restore_entries(cfg_instance *list)
         cfg_instance *tmp = list;
         te_bool       done = FALSE;
         int           rc;
+
         
         while (tmp != NULL)
         {
+            RING("Processing instance %s", tmp->oid);
+
             switch (rc = add_or_set(tmp))
             {
                 case 0:
