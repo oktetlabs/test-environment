@@ -111,8 +111,8 @@
         {                                                           \
             if (_cond)                                              \
             {                                                       \
-                ERROR("Function %s() returned incorrect value",     \
-                      #_func);                                      \
+                ERROR("Function %s() returned incorrect value %lu", \
+                      #_func, (unsigned long)(_var));               \
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);       \
                 (_var) = (_error_val);                              \
             }                                                       \
