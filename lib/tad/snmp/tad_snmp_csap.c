@@ -86,6 +86,9 @@ te_errno
 csap_support_snmp_register(void)
 { 
     init_snmp("snmpapp");
+#if 0
+    snmp_shutdown("snmpapp");
+#endif
 
     return csap_spt_add(&snmp_csap_spt);
 }
