@@ -57,8 +57,6 @@
 #include "tapi_tad.h"
 #include "tapi_ndn.h"
 
-#include "tapi_test.h"
-
 
 #define SEC_USEC_SEPARATOR  '.'
 
@@ -540,12 +538,25 @@ tapi_tad_forward_all(const char *ta_name, int session,
 te_errno 
 tapi_tad_socket_add_csap_layer(asn_value **csap_spec, int fd)
 {
+    te_errno    rc;
     asn_value  *layer;
 
-    CHECK_RC(tapi_tad_csap_add_layer(csap_spec, ndn_socket_csap,
-                                     "#socket", &layer));
+    rc = tapi_tad_csap_add_layer(csap_spec, ndn_socket_csap,
+                                 "#socket", &layer);
+    if (rc != 0)
+    {
+        ERROR("Failed to add 'socket' layer in CSAP parameters: %r",
+              rc);
+        return TE_RC(TE_TAPI, rc);
+    }
 
-    CHECK_RC(asn_write_int32(layer, fd, "type.#file-descr"));
+    rc = asn_write_int32(layer, fd, "type.#file-descr");
+    if (rc != 0)
+    {
+        ERROR("Failed to write file descriptor to 'socket' layer in "
+              "CSAP parameters: %r", rc);
+        return TE_RC(TE_TAPI, rc);
+    }
 
     return 0;
 }
