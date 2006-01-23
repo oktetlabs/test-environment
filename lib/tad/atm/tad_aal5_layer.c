@@ -173,9 +173,14 @@ tad_aal5_init_cb(csap_p csap, unsigned int layer)
 te_errno
 tad_aal5_destroy_cb(csap_p csap, unsigned int layer)
 {
-    tad_aal5_proto_data        *proto_data;
+    tad_aal5_proto_data    *proto_data;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
+    csap_set_proto_spec_data(csap, layer, NULL);
+
+    tad_bps_pkt_frag_free(&proto_data->trailer);
+
+    free(proto_data);
 
     return 0;
 }

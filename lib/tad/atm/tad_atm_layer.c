@@ -178,8 +178,11 @@ tad_atm_destroy_cb(csap_p csap, unsigned int layer)
     tad_atm_proto_data *proto_data;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
+    csap_set_proto_spec_data(csap, layer, NULL);
 
     tad_bps_pkt_frag_free(&proto_data->hdr);
+
+    free(proto_data);
 
     return 0;
 }

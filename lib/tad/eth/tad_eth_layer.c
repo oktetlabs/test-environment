@@ -298,20 +298,30 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
 te_errno
 tad_eth_destroy_cb(csap_p csap, unsigned int layer)
 {
-#if 1
-    tad_eth_proto_data         *proto_data;
-    eth_csap_specific_data_p    spec_data;
+    tad_eth_proto_data *proto_data;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
-    spec_data = &proto_data->old;
+    csap_set_proto_spec_data(csap, layer, NULL);
 
-    tad_data_unit_clear(&spec_data->du_dst_addr);
-    tad_data_unit_clear(&spec_data->du_src_addr);
-    tad_data_unit_clear(&spec_data->du_eth_type);
-    tad_data_unit_clear(&spec_data->du_cfi);
-    tad_data_unit_clear(&spec_data->du_priority);
-    tad_data_unit_clear(&spec_data->du_vlan_id);
+    tad_bps_pkt_frag_free(&proto_data->hdr_d);
+    tad_bps_pkt_frag_free(&proto_data->hdr_q);
+
+#if 1
+    {
+        eth_csap_specific_data_p    spec_data;
+
+        spec_data = &proto_data->old;
+
+        tad_data_unit_clear(&spec_data->du_dst_addr);
+        tad_data_unit_clear(&spec_data->du_src_addr);
+        tad_data_unit_clear(&spec_data->du_eth_type);
+        tad_data_unit_clear(&spec_data->du_cfi);
+        tad_data_unit_clear(&spec_data->du_priority);
+        tad_data_unit_clear(&spec_data->du_vlan_id);
+    }
 #endif
+
+    free(proto_data);
 
     return 0;
 }

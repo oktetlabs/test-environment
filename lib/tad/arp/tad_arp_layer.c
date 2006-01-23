@@ -121,7 +121,15 @@ tad_arp_init_cb(csap_p csap, unsigned int layer)
 te_errno
 tad_arp_destroy_cb(csap_p csap, unsigned int layer)
 {
-    F_ENTRY("(%d:%u)", csap->id, layer);
+    tad_arp_proto_data *proto_data;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+    csap_set_proto_spec_data(csap, layer, NULL);
+
+    tad_bps_pkt_frag_free(&proto_data->hdr);
+    tad_bps_pkt_frag_free(&proto_data->addrs);
+
+    free(proto_data);
 
     return 0;
 }
