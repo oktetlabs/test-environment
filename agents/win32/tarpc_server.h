@@ -199,8 +199,28 @@ extern LPFN_WSARECVMSG           pf_wsa_recvmsg;
 #define IN_HEVENT       ((WSAEVENT)(rcf_pch_mem_get(in->hevent)))
 #define IN_OVERLAPPED   ((rpc_overlapped *)rcf_pch_mem_get(in->overlapped))
 #define IN_FDSET        ((fd_set *)(rcf_pch_mem_get(in->set)))
-#define IN_CALLBACK     ((LPWSAOVERLAPPED_COMPLETION_ROUTINE) \
-                             rcf_ch_symbol_addr(in->callback, 1))
+#define IN_CALLBACK     completion_callback_addr(in->callback)
+
+/**
+ * Get address of completion callback.
+ *
+ * @param name  name of the callback
+ *
+ * @return Callback address
+ */                          
+extern LPWSAOVERLAPPED_COMPLETION_ROUTINE completion_callback_addr(
+           const char *name);
+
+/**
+ * Register pair name:callback.
+ *
+ * @param name     symbolic name of the callback which may be passed in RPC
+ * @param callback callback function
+ *
+ * @return Status code
+ */
+extern te_errno completion_callback_register(const char *name, 
+                    LPWSAOVERLAPPED_COMPLETION_ROUTINE callback);
 
 /**
  * Converts the windows error to RPC one.

@@ -2657,6 +2657,9 @@ TARPC_FUNC(completion_callback, {},
     UNUSED(list);
     UNUSED(in);
     
+    completion_callback_register("default_completion_callback",
+                                 default_completion_callback);
+    
     if (completion_lock == NULL)
         completion_lock = thread_mutex_create();
 
@@ -2733,8 +2736,13 @@ TARPC_FUNC(wsa_recv,
         goto finish;
     }
     if (out->flags.flags_len > 0)
+    {
+       RING("Flags: %x %x MSG_PARTIAL %x", out->flags.flags_val[0],
+            send_recv_flags_rpc2h(out->flags.flags_val[0]),
+            MSG_PARTIAL);
         out->flags.flags_val[0] =
             send_recv_flags_rpc2h(out->flags.flags_val[0]);
+    }       
 
     MAKE_CALL(out->retval =
                   WSARecv(in->s, overlapped->buffers, in->count,
@@ -4008,3 +4016,80 @@ TARPC_FUNC(gettimeofday,
 }
 )
 
+#define MAX_CALLBACKS   1024
+
+/** Completion callbacks registry */
+static struct {
+    const char                        *name;
+    LPWSAOVERLAPPED_COMPLETION_ROUTINE callback;
+} callback_registry[MAX_CALLBACKS] = { 
+    { "default_completion_callback", default_completion_callback }, };
+
+/**
+ * Get address of completion callback.
+ *
+ * @param name  name of the callback
+ *
+ * @return Callback address
+ */                          
+LPWSAOVERLAPPED_COMPLETION_ROUTINE 
+completion_callback_addr(const char *name)
+{
+    int i;
+    
+    if (name == NULL || *name == 0)
+        return NULL;
+    
+    for (i = 0; 
+         i < MAX_CALLBACKS && callback_registry[i].name != NULL; 
+         i++)
+    {
+        if (strcmp(callback_registry[i].name, name) == 0)
+            return callback_registry[i].callback;
+    }
+    
+    ERROR("Failed to find completion callback for %s", name);
+    
+    return NULL;
+}
+
+/**
+ * Register pair name:callback.
+ *
+ * @param name     symbolic name of the callback which may be passed in RPC
+ * @param callback callback function
+ *
+ * @return Status code
+ */
+te_errno
+completion_callback_register(const char *name, 
+                             LPWSAOVERLAPPED_COMPLETION_ROUTINE callback)
+{
+    int i;
+    
+    if (name == NULL || *name == 0 || callback == NULL)
+    {
+        ERROR("Try to register completion callback "
+              "with invalid name/address");
+        return TE_RC(TE_TA_WIN32, TE_EINVAL);
+    }
+    
+    for (i = 0; 
+         i < MAX_CALLBACKS && callback_registry[i].name != NULL; 
+         i++)
+    {
+        if (strcmp(callback_registry[i].name, name) == 0)
+            return 0;
+    }
+    
+    if (i == MAX_CALLBACKS)
+    {
+        ERROR("Too many callbacks are registered");
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    }
+    
+    callback_registry[i].name = name;
+    callback_registry[i].callback = callback;
+
+    return 0;
+}                             
