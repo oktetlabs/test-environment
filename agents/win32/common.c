@@ -32,14 +32,14 @@
 #include "te_defs.h"
 #include "ta_common.h"
 
-extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
+extern void *rcf_ch_symbol_addr_auto(const char *name, int is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
 /* See description in rcf_ch_api.h */
 void *
 rcf_ch_symbol_addr(const char *name, te_bool is_func)
 {
-    return rcf_ch_symbol_addr_auto(name, is_func);
+    return rcf_ch_symbol_addr_auto(name, (int)is_func);
 }
 
 /* See description in rcf_ch_api.h */
