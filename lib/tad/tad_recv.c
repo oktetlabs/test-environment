@@ -109,6 +109,8 @@ tad_perform_action(csap_p csap,
                               &t_class, &t_val);
     VERB("%s(): get action choice rc %r, class %d, tag %d", 
          __FUNCTION__, rc, (int)t_class, (int)t_val);
+    if (rc != 0)
+        return rc;
 
     switch (t_val)
     {
@@ -198,6 +200,14 @@ tad_perform_action(csap_p csap,
                 } 
             }
             break; 
+
+        case NDN_ACT_BREAK: 
+            csap->state |= TAD_STATE_COMPLETE;
+            break;
+
+        case NDN_ACT_REPORT: 
+            /* do nothing: processed on higher layers. */
+            break;
 
         default:
             WARN("%s(CSAP %d) unsupported action tag %d",
