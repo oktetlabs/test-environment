@@ -55,51 +55,6 @@
 #include "tad_bps.h"
 
 
-/**
- * @param dst       Destination
- * @param pos       Byte offset from destination
- * @param src       Data source
- * @param len       Length to be copied in bytes
- *
- */
-void
-tad_bps_write_byte_aligned(uint8_t *dst, unsigned int pos,
-                           const uint8_t *src, unsigned int len)
-{
-    memcpy(dst + pos, src, len);
-}
-
-#if 0
-tad_bsp_write_not_aligned(uint8_t *dst, unsigned int pos,
-                          const uint8_t *src, unsigned int len)
-{
-    unsigned int    pos_shift = (pos & 7);
-    unsigned int    len_shift = (len & 7);
-    unsigned int    bytes = (len + 7) >> 3;
-    uint16_t tmp;
-
-    assert(len > 0);
-    if (pos_shitf != 0)
-    {
-        
-    }
-    if (len_shift != 0)
-    {
-        /* Length in bits is not aligned to bytes. It is assumed that
-         * we need to shift all bit */
-        
-    }
-    if ((pos & 7) | (len & 7))
-    {
-    }
-    else
-    {
-        /* Both initial position and length are byte aligned */
-        tad_bps_write_byte_aligned(dst, pos >> 3, src, len >> 3);
-    }
-}
-#endif
-
 /* See description in tad_bps.h */
 te_errno
 tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
@@ -178,6 +133,25 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
 }
 
 /* See description in tad_bps.h */
+void
+tad_bps_pkt_frag_free(tad_bps_pkt_frag_def *bps)
+{
+    unsigned int    i;
+
+    if (bps == NULL)
+        return;
+
+    for (i = 0; i < bps->fields; ++i)
+    {
+        tad_data_unit_clear(bps->tx_def + i);
+        tad_data_unit_clear(bps->rx_def + i);
+    }
+    free(bps->tx_def);
+    free(bps->rx_def);
+}
+
+
+/* See description in tad_bps.h */
 te_errno
 tad_bps_nds_to_data_units(const tad_bps_pkt_frag_def *def,
                           const asn_value            *layer_pdu,
@@ -216,6 +190,26 @@ tad_bps_nds_to_data_units(const tad_bps_pkt_frag_def *def,
     data->dus = dus;
 
     return 0;
+}
+
+/* See description in tad_bps.h */
+void
+tad_bps_free_pkt_frag_data(const tad_bps_pkt_frag_def *def,
+                           tad_bps_pkt_frag_data      *data)
+{
+    tad_data_unit_t    *dus;
+    unsigned int        i;
+
+    assert(def != NULL);
+    assert(data != NULL);
+
+    dus = data->dus;
+    data->dus = NULL;
+    for (i = 0; i < def->fields; ++i)
+    {
+        tad_data_unit_clear(dus + i);
+    }
+    free(dus);
 }
 
 /* See description in tad_bps.h */

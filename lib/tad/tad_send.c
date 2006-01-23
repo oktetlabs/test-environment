@@ -369,9 +369,20 @@ tad_sender_preprocess_template(csap_p csap, asn_value *template,
  * @param data  TAD Sender data associated with traffic template unit
  */
 static void
-tad_sender_free_template_unit_data(tad_sender_tmpl_unit_data *data)
+tad_sender_free_template_unit_data(csap_p csap,
+                                   tad_sender_tmpl_unit_data *data)
 {
     /* ASN.1 value freed for whole template */
+    unsigned int layer;
+
+    for (layer = 0; layer < csap->depth; ++layer)
+    {
+        csap_layer_release_opaque_cb_t  release_tmpl_cb =
+            csap_get_proto_support(csap, layer)->release_tmpl_cb;
+
+        if (release_tmpl_cb != NULL)
+            release_tmpl_cb(csap, layer, data->layer_opaque[layer]);
+    }
 
     free(data->layer_opaque);
 
@@ -389,12 +400,12 @@ tad_sender_free_template_unit_data(tad_sender_tmpl_unit_data *data)
  * @param data  TAD Sender data associated with traffic template
  */
 static void
-tad_sender_free_template_data(tad_sender_template_data *data)
+tad_sender_free_template_data(csap_p csap, tad_sender_template_data *data)
 {
     unsigned int    i;
 
     for (i = 0; i < data->n_units; ++i)
-        tad_sender_free_template_unit_data(data->units + i);
+        tad_sender_free_template_unit_data(csap, data->units + i);
 
     free(data->units);
     asn_free_value(data->nds);
@@ -408,7 +419,8 @@ tad_sender_free_template_data(tad_sender_template_data *data)
 static void
 tad_sender_free_context(tad_sender_context *context)
 {
-    tad_sender_free_template_data(&context->tmpl_data);
+    tad_sender_free_template_data(context->task.csap,
+                                  &context->tmpl_data);
     free(context);
 }
 

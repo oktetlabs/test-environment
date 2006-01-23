@@ -25,7 +25,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: $
+ * $Id$
  */
 
 #ifndef __TE_TAD_BPS_H__
@@ -100,10 +100,30 @@ extern te_errno tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
                                       const asn_value        *layer_spec,
                                       tad_bps_pkt_frag_def   *bps);
 
+/**
+ * Free resources allocated by tad_bps_pkt_frag_init().
+ *
+ * @param bsp           BPS internal data to be freed
+ */
+extern void tad_bps_pkt_frag_free(tad_bps_pkt_frag_def *bps);
+
+
 extern te_errno tad_bps_nds_to_data_units(
                     const tad_bps_pkt_frag_def *def,
                     const asn_value            *layer_pdu,
                     tad_bps_pkt_frag_data      *data);
+
+/**
+ * Free resources allocated for packet fragment data.
+ *
+ * @param def           Binary packet fragment definition filled in by
+ *                      tad_bps_pkt_frag_init() function
+ * @param data          Binary packet fragment instance data filled in
+ *                      by tad_bps_nds_to_data_units() function
+ */
+extern void tad_bps_free_pkt_frag_data(const tad_bps_pkt_frag_def *def,
+                                       tad_bps_pkt_frag_data      *data);
+
 
 /**
  * Confirm that template plus defaults are enough to generate binary

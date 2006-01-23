@@ -51,7 +51,7 @@ static csap_spt_type_t atm_csap_spt =
 
     confirm_tmpl_cb     : tad_atm_confirm_pdu_cb,
     generate_pkts_cb    : tad_atm_gen_bin_cb,
-    release_tmpl_cb     : NULL,
+    release_tmpl_cb     : tad_atm_release_pdu_cb,
 
     confirm_ptrn_cb     : tad_atm_confirm_pdu_cb,
     match_do_cb         : tad_atm_match_bin_cb,

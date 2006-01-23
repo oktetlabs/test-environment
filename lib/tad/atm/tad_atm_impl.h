@@ -79,6 +79,15 @@ extern te_errno tad_atm_confirm_pdu_cb(csap_p         csap,
                                        void         **p_opaque); 
 
 /**
+ * Callback to release PDU with ATM layer private data.
+ *
+ * The function complies with csap_layer_release_opaque_cb_t prototype.
+ */
+extern void tad_atm_release_pdu_cb(csap_p csap, unsigned int layer,
+                                   void *opaque);
+
+
+/**
  * Callback for generate binary data to be sent to media.
  *
  * The function complies with csap_layer_generate_pkts_cb_t prototype.

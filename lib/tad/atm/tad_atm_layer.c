@@ -179,6 +179,8 @@ tad_atm_destroy_cb(csap_p csap, unsigned int layer)
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
+    tad_bps_pkt_frag_free(&proto_data->hdr);
+
     return 0;
 }
 
@@ -225,6 +227,22 @@ tad_atm_confirm_pdu_cb(csap_p csap, unsigned int  layer,
     }
 
     return rc;
+}
+
+/* See description in tad_atm_impl.h */
+void
+tad_atm_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
+{
+    tad_atm_proto_data         *proto_data;
+    tad_atm_proto_tmpl_data    *tmpl_data = opaque;
+
+    if (tmpl_data == NULL)
+        return;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
+    tad_bps_free_pkt_frag_data(&proto_data->hdr, &tmpl_data->hdr);
+    free(tmpl_data);
 }
 
 
