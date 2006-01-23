@@ -1901,6 +1901,7 @@ update_etc_hosts(char *ip)
     fclose(g);
     
     /* Commit all changes in config files */
+    sync();
     ta_system("/usr/sbin/nscd -i hosts");
     sync();
 
