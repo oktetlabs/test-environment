@@ -117,6 +117,7 @@ recv_timeout(int s, void *buf, int len, int t)
     
     if (rc <= 0)
         return -2;
+
 #else
     struct timeval tv = { t, 0 };
     
@@ -272,11 +273,8 @@ rcf_pch_rpc_server(const char *name)
          * alertable state and async I/O callbacks are not called.
          */
         
-        if (recv_timeout(s, &len, sizeof(len), 0xFFFF) < 
-            (int)sizeof(len))
-        {
-            STOP("recv() failed");
-        }
+        if (recv_timeout(s, &len, sizeof(len), 0xFFFF) <  (int)sizeof(len))
+            STOP("recv() failed in RPC server main loop");
         
         if (strcmp((char *)&len, "FIN") == 0)
         {
@@ -296,7 +294,7 @@ rcf_pch_rpc_server(const char *name)
             int n = recv(s, buf + offset, RCF_RPC_HUGE_BUF_LEN - offset, 0);
             
             if (n <= 0)
-                STOP("recv() failed");
+                STOP("recv() returned %d in main RPC server loop", n);
 
             offset += n;
         }
@@ -336,7 +334,7 @@ rcf_pch_rpc_server(const char *name)
         if (send(s, (void *)&len, sizeof(len), MSG_MORE) < 
             (ssize_t)sizeof(len) || send(s, buf, len, 0) < (ssize_t)len)
         {
-            STOP("send() failed");
+            STOP("send() failed in main RPC server loop");
         }
     }
 
