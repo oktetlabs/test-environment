@@ -2737,9 +2737,6 @@ TARPC_FUNC(wsa_recv,
     }
     if (out->flags.flags_len > 0)
     {
-       RING("Flags: %x %x MSG_PARTIAL %x", out->flags.flags_val[0],
-            send_recv_flags_rpc2h(out->flags.flags_val[0]),
-            MSG_PARTIAL);
         out->flags.flags_val[0] =
             send_recv_flags_rpc2h(out->flags.flags_val[0]);
     }       
