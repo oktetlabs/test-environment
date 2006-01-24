@@ -559,6 +559,7 @@ cfg_dh_create_file(char *filename)
     FILE *f= fopen(filename, "w");
     
     cfg_dh_entry *tmp;
+    xmlChar      *str;
     
     cfg_dh_optimize();
     
@@ -596,9 +597,14 @@ cfg_dh_create_file(char *filename)
                         msg->val_type == CVT_ADDRESS ? "address" :
                                                        "string");
                 if (msg->def_val)
-                    fprintf(f, " default=\"%s\"", 
-                            xmlEncodeEntitiesReentrant(NULL, 
-                                msg->oid + msg->def_val));
+                {
+                    str = xmlEncodeEntitiesReentrant(NULL,
+                              msg->oid + msg->def_val);
+                    if (str == NULL)
+                        RETERR(TE_RC(TE_CS, TE_ENOMEM));
+                    fprintf(f, " default=\"%s\"", str);
+                    xmlFree(str);
+                }
                 fprintf(f, "/>\n  </register>\n");
                 break;
             }
@@ -633,9 +639,12 @@ cfg_dh_create_file(char *filename)
                     if (rc != 0)
                         RETERR(rc);
                         
-                    fprintf(f, "value=\"%s\"", 
-                            xmlEncodeEntitiesReentrant(NULL, val_str));
+                    str = xmlEncodeEntitiesReentrant(NULL, val_str);
                     free(val_str);
+                    if (str == NULL)
+                        RETERR(TE_RC(TE_CS, TE_ENOMEM));
+                    fprintf(f, "value=\"%s\"", str);
+                    xmlFree(str);
                  }
                  fprintf(f, "/>\n  </%s>\n", 
                          tmp->cmd->type == CFG_ADD ? "add" : "set");

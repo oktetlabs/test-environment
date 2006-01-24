@@ -118,7 +118,7 @@ static cfg_object *topological_order;
 
 
 /**
- *  Create a dependency record.
+ * Create a dependency record.
  *
  * @param master        Master object
  * @param obj           Dependant object
@@ -132,18 +132,25 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
     VERB("Creating a dependency %s to %s (%p)", obj->oid, master->oid);
 
     newdep = calloc(1, sizeof(*newdep));
+    if (newdep == NULL)
+    {
+        ERROR("%s(): calloc() failed", __FUNCTION__);
+        return;
+    }
+
     newdep->next = obj->depends_on;
     newdep->depends = master;
     obj->depends_on = newdep;
     obj->num_deps++;
 
-    /** Find a place for a new record in the topologically sorted list.
-     *  The idea is that when a new dependency is added, 
-     *  we move a dependent object beyond all the objects with 
-     *  the same or lesser number of master objects.
+    /**
+     * Find a place for a new record in the topologically sorted list.
+     * The idea is that when a new dependency is added, 
+     * we move a dependent object beyond all the objects with 
+     * the same or lesser number of master objects.
      *
-     *  Actually, this is a "real-time" version of an topological sorting
-     *  algorithm given in Knuth 2.2.3 (Algorithm T).
+     * Actually, this is a "real-time" version of an topological sorting
+     * algorithm given in Knuth 2.2.3 (Algorithm T).
      *
      * NOTE: there is no explicit checking for loops.
      */
@@ -169,10 +176,17 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
         obj->dep_prev = prev;
     }
 
-    /* Now we add the object to the dependants list of its master, keeping
+    /* 
+     * Now we add the object to the dependants list of its master, keeping
      * the list in lexicographic order
      */
     newdep = calloc(1, sizeof(*newdep));
+    if (newdep == NULL)
+    {
+        ERROR("%s(): calloc() failed", __FUNCTION__);
+        return;
+    }
+
     newdep->depends = obj;
 
     if (master->dependants == NULL)

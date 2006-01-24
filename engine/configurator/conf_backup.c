@@ -73,6 +73,7 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
         if (node->children != NULL)
         {
             ERROR("<depends> cannot have children");
+            xmlFree(oid);
             return TE_EINVAL;
         }
         len = sizeof(*msg) + strlen(oid) + 1;
@@ -89,6 +90,7 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
             rc = msg->rc;
         }
         free(msg);
+        xmlFree(oid);
     }
     return rc;
 }
@@ -800,8 +802,18 @@ put_object(FILE *f, cfg_object *obj)
                 obj->type == CVT_ADDRESS ? "address" : "string");
                 
         if (obj->def_val != NULL)
-            fprintf(f, " default=\"%s\"", 
-                    xmlEncodeEntitiesReentrant(NULL, obj->def_val));
+        {
+            xmlChar *xml_str = xmlEncodeEntitiesReentrant(NULL,
+                                                          obj->def_val);
+
+            if (xml_str == NULL)
+            {
+                ERROR("xmlEncodeEntitiesReentrant() failed");
+                return;
+            }
+            fprintf(f, " default=\"%s\"", xml_str);
+            xmlFree(xml_str);
+        }
         if (obj->depends_on == NULL)
             fprintf(f, "/>\n");
         else
@@ -839,8 +851,9 @@ put_instance(FILE *f, cfg_instance *inst)
         
         if (inst->obj->type != CVT_NONE)
         {
-            char *val_str = NULL;
-            int   rc;
+            char    *val_str = NULL;
+            xmlChar *xml_str;
+            int      rc;
             
             rc = cfg_types[inst->obj->type].val2str(inst->val, &val_str);
             if (rc != 0)
@@ -849,10 +862,14 @@ put_instance(FILE *f, cfg_instance *inst)
                        inst->oid, inst->obj->type);
                 return rc;
             }
-                
-            fprintf(f, "value=\"%s\"", 
-                    xmlEncodeEntitiesReentrant(NULL, val_str));
+
+            xml_str = xmlEncodeEntitiesReentrant(NULL, val_str);
             free(val_str);
+            if (xml_str == NULL)
+                return TE_ENOMEM;
+
+            fprintf(f, "value=\"%s\"", xml_str);
+            free(xml_str);
          }
          fprintf(f, "/>\n"); 
     }
