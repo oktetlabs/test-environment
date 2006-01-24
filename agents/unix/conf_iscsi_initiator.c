@@ -2447,6 +2447,7 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
     glob_t      devices;
     int         rc = 0;
     char       *nameptr;
+    FILE       *hba = NULL;
 
 
     UNUSED(gid);
@@ -2465,10 +2466,30 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
                 return 0;
             }
             break;
+        case L5:
+            hba = popen("T=`grep -l efabiscsi "
+                        "/sys/class/scsi_host/host*/proc_name` && "
+                        "B=${T%/proc_name} && "
+                        "echo ${B##*/host}", "r");
+            if (hba == NULL)
+            {
+                ERROR("Failed to get host bus adapter for the L5 Initiator");
+                return TE_RC(TE_TA_UNIX, TE_ENOENT);
+            }
+            
+            rc = fscanf(hba, "%d", &init_data->host_bus_adapter);
+            if (rc <= 0)
+            {
+                ERROR("Failed to read the host bus adapter from the file");
+                return TE_RC(TE_TA_UNIX, TE_ENOENT);
+            }
+            pclose(hba);
+            break;
         default:
             WARN("Cannot verify that a host bus is set correctly!!!");
     }
 
+       
     sprintf(dev_pattern, "/sys/bus/scsi/devices/%d:*:%d/block", 
             init_data->host_bus_adapter, iscsi_get_target_id(oid));
     if ((rc = glob(dev_pattern, GLOB_ERR, NULL, &devices)) != 0)
