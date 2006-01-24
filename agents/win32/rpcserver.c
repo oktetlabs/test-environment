@@ -84,6 +84,8 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
     GetSystemTime(&t);
     tv->tv_sec = time(NULL);
     tv->tv_usec = t.wMilliseconds * 1000;
+    
+    return 0;
 }
 
 char *
