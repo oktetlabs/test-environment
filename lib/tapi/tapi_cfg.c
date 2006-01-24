@@ -1233,15 +1233,15 @@ tapi_cfg_get_hwaddr(const char *ta,
 }
 
 /* See the description in tapi_cfg.h */
-int
+te_errno
 tapi_cfg_set_hwaddr(const char *ta,
                     const char *ifname,
-                    void *hwaddr, unsigned int hwaddr_len)
+                    const void *hwaddr, unsigned int hwaddr_len)
 {
-    char     buf[1024];
-    int      rc;
-    char   *ifname_bkp;
-    char   *ptr;
+    char        buf[1024];
+    te_errno    rc;
+    char       *ifname_bkp;
+    char       *ptr;
 
     if (hwaddr == NULL || hwaddr_len == 0)
     {
