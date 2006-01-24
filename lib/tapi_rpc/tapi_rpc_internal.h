@@ -275,4 +275,7 @@
         return __retval;                                            \
     } while(0)
 
+/** Follow pointer if not NULL; otherwise return 0 */
+#define PTR_VAL(_param) ((_param == NULL) ? 0 : *(_param))
+
 #endif /* !__TE_TAPI_RPC_INTERNAL_H__ */

@@ -168,7 +168,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG("RPC (%s,%s)%s: ConnectEx(%d, %s, %u, %p, %u, %d, %u) "
                  "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  s, sockaddr2str(addr), addrlen, 
-                 buf, len_buf, *bytes_sent, 
+                 buf, len_buf, PTR_VAL(bytes_sent), 
                  overlapped,
                  out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -220,9 +220,7 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
                socklen_t *addrlen, socklen_t raddrlen,
                accept_cond *cond, int cond_num)
 {
-    rcf_rpc_op       op;
-    socklen_t        save_addrlen =
-                         (addrlen == NULL) ? (socklen_t)-1 : *addrlen;
+    rcf_rpc_op           op;
     tarpc_wsa_accept_in  in;
     tarpc_wsa_accept_out out;
 
@@ -310,13 +308,12 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(wsa_accept, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: WSAAccept(%d, %p[%u], %p(%u)) -> %d (%s) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WSAAccept(%d, %p, %p(%u)) -> %d (%s) "
                  "peer=%s addrlen=%u",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, addr, raddrlen, addrlen, save_addrlen,
+                 s, addr, addrlen, PTR_VAL(addrlen),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 sockaddr2str(addr),
-                 (addrlen == NULL) ? (socklen_t)-1 : *addrlen);
+                 sockaddr2str(addr), PTR_VAL(addrlen));
 
     RETVAL_INT(wsa_accept, out.retval);
 }
@@ -368,10 +365,10 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: AcceptEx(%d, %d, %d, %u, %d) -> %s (%s) "
                  "bytes received %u", rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, s_a, len, overlapped, *bytes_received, 
+                 s, s_a, len, overlapped, PTR_VAL(bytes_received), 
                  out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)),
-                 (bytes_received == NULL) ? (size_t)-1 : *bytes_received);
+                 PTR_VAL(bytes_received));
 
     RETVAL_BOOL(accept_ex, out.retval);
 }
@@ -501,7 +498,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
     CHECK_RETVAL_VAR_IS_BOOL(transmit_file, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "TransmitFile(%d, %x, %d, %d, %u, %p, %d, %p, %d, %d) "
+                 "TransmitFile(%d, %d, %d, %d, %u, %p, %d, %p, %d, %d) "
                  "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  s, file, len, len_per_send, overlapped,
                  head, head_len, tail, tail_len, flags,
@@ -558,7 +555,7 @@ rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, int file,
     CHECK_RETVAL_VAR_IS_BOOL(transmitfile_tabufs, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "TransmitFile(%d, %x, %d, %d, %u, "
+                 "TransmitFile(%d, %d, %d, %d, %u, "
                  "%p, %d, %p, %d, %d) -> %s (%s)", 
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, file, len, bytes_per_send, overlapped,
@@ -741,7 +738,7 @@ rpc_create_io_completion_port(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(create_io_completion_port, 
                                       out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: CreateIoCompletionPort(%x, %x, %d, %u)"
+    TAPI_RPC_LOG("RPC (%s,%s)%s: CreateIoCompletionPort(%d, %d, %d, %u)"
                  " -> %x (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  file_handle, existing_completion_port,
                  completion_key, number_of_concurrent_threads,
@@ -783,7 +780,7 @@ rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
     
     CHECK_RETVAL_VAR_IS_BOOL(get_queued_completion_status, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: GetQueuedCompletionStatus(%x, %u)"
+    TAPI_RPC_LOG("RPC (%s,%s)%s: GetQueuedCompletionStatus(%d, %u)"
                  " -> %s %u, %d, %d (%s)", rpcs->ta, rpcs->name,
                  rpcop2str(op), 
                  completion_port, milliseconds,
@@ -836,7 +833,7 @@ rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_BOOL(post_queued_completion_status, out.retval);
     
     TAPI_RPC_LOG("RPC (%s,%s)%s: PostQueuedCompletionStatus"
-                 "(%x, %u, %d, %u) -> %s (%s)", rpcs->ta,
+                 "(%d, %u, %d, %u) -> %s (%s)", rpcs->ta,
                  rpcs->name, rpcop2str(op), completion_port,
                  number_of_bytes, completion_key, overlapped, 
                  out.retval ? "true" : "false", 
@@ -892,7 +889,7 @@ rpc_get_sys_info(rcf_rpc_server *rpcs, rpc_sys_info *sys_info)
 
     rcf_rpc_call(rpcs, "get_sys_info", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: GetSysInfo -> %llu, %u, %u (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: GetSysInfo() -> %llu, %u, %u (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  out.ram_size, out.page_size, out.number_of_processors,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -963,13 +960,12 @@ rpc_wsa_recv_ex(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(wsa_recv_ex, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSARecvEx(%d, %p[%u], 0x%X (%u->%u), %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WSARecvEx(%d, %p, %u, %s)"
+                 " -> %d (%s) flags %s",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, buf, rbuflen, len,
-                 flags, send_recv_flags_rpc2str(in_flags),
-                 send_recv_flags_rpc2str(flags == NULL ? 0 : *flags),
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+                 s, buf, len, send_recv_flags_rpc2str(in_flags),
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 send_recv_flags_rpc2str(PTR_VAL(flags)));
 
     RETVAL_INT(wsa_recv_ex, out.retval);
 }
@@ -993,7 +989,7 @@ rpc_create_event(rcf_rpc_server *rpcs)
 
     rcf_rpc_call(rpcs, "create_event", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): WSACreateEvent() -> %p (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): WSACreateEvent() -> %u (%s)",
                  rpcs->ta, rpcs->name,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -1122,7 +1118,7 @@ rpc_create_overlapped(rcf_rpc_server *rpcs, rpc_wsaevent hevent,
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "create_overlapped", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s): create_overlapped(%u, %u, %u) -> %p (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): create_overlapped(%u, %u, %u) -> %u (%s)",
                  rpcs->ta, rpcs->name, hevent, offset, offset_high,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -1196,11 +1192,9 @@ rpc_completion_callback(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(completion_callback, rc);
 
-    TAPI_RPC_LOG("RPC (%s,%s): completion_callback(%p, %p, %p, %p) "
-                 "-> %d %d %d %u",
-                 rpcs->ta, rpcs->name, 
-                 called, error, bytes, overlapped,
-                 out.called, out.error, out.bytes,
+    TAPI_RPC_LOG("RPC (%s,%s): completion_callback() -> "
+                 "called %d times;  error %d; bytes %d; overlapped %u",
+                 rpcs->ta, rpcs->name, out.called, out.error, out.bytes,
                  out.overlapped);
 
     RETVAL_INT(completion_callback, rc);
@@ -1233,7 +1227,7 @@ rpc_wsa_event_select(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(event_select, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s): WSAEventSelect(%d, 0x%X, %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s): WSAEventSelect(%d, %u, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name,
                  s, event_object, network_event_rpc2str(event),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -1278,12 +1272,11 @@ rpc_enum_network_events(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(enum_network_events, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s): WSAEnumNetworkEvents(%d, 0x%X, %s) "
+    TAPI_RPC_LOG("RPC (%s,%s): WSAEnumNetworkEvents(%d, %u, %p) "
                  "-> %d (%s) returned event %s",
-                 rpcs->ta, rpcs->name, s, event_object, 
-                 network_event_rpc2str(*event),
+                 rpcs->ta, rpcs->name, s, event_object, event,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 network_event_rpc2str(event != NULL ? *event : 0));
+                 network_event_rpc2str(PTR_VAL(event)));
 
     RETVAL_INT(enum_network_events, out.retval);
 }
@@ -1499,12 +1492,11 @@ rpc_wsa_send(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_send, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSASend(%d, %s, %u, %s, %d, %u, %p) -> %d (%s)",
+                 "WSASend(%d, %s, %u, %s, %d, %u, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), 
                  s, (*str_buf == '\0') ? "(nil)" : str_buf, iovcnt,
-                 send_recv_flags_rpc2str(flags), *bytes_sent,
-                 overlapped, callback,
-                 out.retval,
+                 send_recv_flags_rpc2str(flags), PTR_VAL(bytes_sent),
+                 overlapped, callback, out.retval,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(wsa_send, out.retval);
@@ -1621,11 +1613,11 @@ rpc_wsa_recv(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_recv, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSARecv(%d, %s, %d, %d, %s, %d, %u, %p) -> %d (%s)",
+                 "WSARecv(%d, %s, %d, %s, %d, %u, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, (*str_buf == '\0') ? "(nil)" : str_buf, 
-                 iovcnt, riovcnt, 
-                 send_recv_flags_rpc2str(*flags), *bytes_received,
+                 iovcnt, send_recv_flags_rpc2str(PTR_VAL(flags)), 
+                 PTR_VAL(bytes_received),
                  overlapped, callback,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -1731,12 +1723,12 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_send_to, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSASendTo(%d, %s, %d, %s, %d, %s, %u, %u, %p) "
+                 "WSASendTo(%d, %s, %d, %s, %d, %s, %u, %u, %s) "
                  "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, (*str_buf == '\0') ? "(nil)" : str_buf,
                  iovcnt, send_recv_flags_rpc2str(flags),
-                 *bytes_sent,
+                 PTR_VAL(bytes_sent),
                  sockaddr2str(to), tolen,         
                  overlapped, callback,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -1899,13 +1891,12 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_recv_from, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSARecvFrom(%d, %s, %d, %d, %s, %d, %s, %u) -> %d (%s)",
+                 "WSARecvFrom(%d, %s, %d, %s, %d, %s, %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), 
                  s, (*str_buf == '\0') ? "(nil)" : str_buf,
-                 iovcnt, riovcnt, send_recv_flags_rpc2str(*flags), 
-                 *bytes_received,
-                 sockaddr2str(from),
-                 (fromlen == NULL) ? (unsigned int)-1 : *fromlen,
+                 iovcnt, send_recv_flags_rpc2str(PTR_VAL(flags)), 
+                 PTR_VAL(bytes_received), sockaddr2str(from),
+                 PTR_VAL(fromlen), 
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(wsa_recv_from, out.retval);
@@ -1960,12 +1951,10 @@ rpc_wsa_send_disconnect(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_send_disconnect, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSASendDisconnect(%d, %s) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WSASendDisconnect(%d, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op), 
                  s, (*str_buf == '\0') ? "(nil)" : str_buf,
-                 out.retval,
-                 errno_rpc2str(RPC_ERRNO(rpcs)));
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(wsa_send_disconnect, out.retval);
 }
@@ -2343,16 +2332,13 @@ rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_BOOL(wsa_get_overlapped_result, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSAGetOverlappedResult(%d, %u, %d, %s, %s, %p[%d]) "
-                 "-> %s (%s) bytes transferred %u",
+                 "WSAGetOverlappedResult(%d, %u, %s]) "
+                 "-> %s (%s) bytes transferred %u flags %s",
                  rpcs->ta, rpcs->name, rpcop2str(op), 
-                 s, overlapped, *bytes, 
-                 wait ? "true" : "false",
-                 send_recv_flags_rpc2str(*flags),
-                 buf, buflen,
+                 s, overlapped, wait ? "wait" : "don't wait",
                  out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)),
-                 out.bytes.bytes_val != NULL ? *bytes : 0);
+                 PTR_VAL(bytes), send_recv_flags_rpc2str(PTR_VAL(flags)));
 
     RETVAL_BOOL(wsa_get_overlapped_result, out.retval);
 }
@@ -2723,7 +2709,7 @@ rpc_wsa_cancel_async_request(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_cancel_async_request,
                                                        out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: WSACancelAsyncRequest(%p) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WSACancelAsyncRequest(%u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  async_task_handle,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -2760,7 +2746,7 @@ rpc_alloc_wsabuf(rcf_rpc_server *rpcs, size_t len,
     rcf_rpc_call(rpcs, "alloc_wsabuf", &in, &out);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: alloc_wsabuf(%d, %p, %p) -> "
-                 "%d (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 "%u (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  len, wsabuf, wsabuf_buf,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -2792,7 +2778,7 @@ rpc_free_wsabuf(rcf_rpc_server *rpcs, rpc_ptr wsabuf)
 
     rcf_rpc_call(rpcs, "free_wsabuf", &in, &out);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: free_wsabuf(%p) -> (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: free_wsabuf(%u) -> (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  wsabuf,
                  errno_rpc2str(RPC_ERRNO(rpcs)));
@@ -2870,11 +2856,10 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_connect, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSAConnect(%d, %s, %u, %p, %p, %p) -> %d (%s)",
+                 "WSAConnect(%d, %s, %u, %u, %u, %p) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, sockaddr2str(addr), addrlen,
-                 caller_wsabuf, callee_wsabuf,
-                 sqos,
+                 caller_wsabuf, callee_wsabuf, sqos,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(wsa_connect, out.retval);
@@ -3124,12 +3109,12 @@ call:
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(wsa_ioctl, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSAIoctl(%d, %s, %p, %u, %p, %u, %u, %u, %p) "
+                 "WSAIoctl(%d, %s, %p, %u, %p, %u, %u, %u, %s) "
                  "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, ioctl_rpc2str(control_code),
                  inbuf, inbuf_len, outbuf, outbuf_len,
-                 *bytes_returned, overlapped, callback,
+                 PTR_VAL(bytes_returned), overlapped, callback,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(wsa_ioctl, out.retval);
@@ -3200,16 +3185,13 @@ rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
     }
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSAGetOverlappedResult(%d, %u, %d, %s, %s, %p, %s) "
+                 "WSAGetOverlappedResult(%d, %u, %s) for ioctl %s"
                  "-> %s (%s) bytes transferred %u",
                  rpcs->ta, rpcs->name, rpcop2str(op), 
-                 s, overlapped,
-                 *bytes, wait? "true" : "false",
-                 send_recv_flags_rpc2str(*flags), buf,
+                 s, overlapped, wait? "wait" : "don't wait",
                  ioctl_rpc2str(control_code),
                  out.retval ? "true" : "false",
-                 errno_rpc2str(RPC_ERRNO(rpcs)),
-                 out.bytes.bytes_val != NULL ? *bytes : 0);
+                 errno_rpc2str(RPC_ERRNO(rpcs)), PTR_VAL(bytes));
 
     RETVAL_BOOL(get_wsa_ioctl_overlapped_result, out.retval);
 }
@@ -3562,7 +3544,7 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(wsa_join_leaf, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSAJoinLeaf(%d, %s, %u, %p, %p, %p, %s) -> %d (%s)",
+                 "WSAJoinLeaf(%d, %s, %u, %u, %u, %p, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, sockaddr2str(addr), addrlen, 
                  caller_wsabuf, callee_wsabuf, sqos, 
@@ -3624,7 +3606,7 @@ rpc_read_file(rcf_rpc_server *rpcs,
                  "-> %d %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  fd, buf, count, received, overlapped, 
-                 out.retval, received == NULL ? 0 : *received, 
+                 out.retval, PTR_VAL(received), 
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_BOOL(read_file, out.retval);
@@ -3679,7 +3661,7 @@ rpc_write_file(rcf_rpc_server *rpcs,
                  "-> %d %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  fd, buf, count, sent, overlapped, 
-                 out.retval, sent == NULL ? 0 : *sent, 
+                 out.retval, PTR_VAL(sent), 
                  errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_BOOL(write_file, out.retval);
