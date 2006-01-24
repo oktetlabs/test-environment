@@ -490,6 +490,9 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
     }
     in.flags = flags;
 
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 10;
+
     rcf_rpc_call(rpcs, "transmit_file", &in, &out);
     
     if (op == RCF_RPC_CALL)
@@ -543,6 +546,9 @@ rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, int file,
     in.tail = (tarpc_ptr)tail;
     in.tail_len = tail_len;
     in.flags = flags;
+
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 10;
 
     rcf_rpc_call(rpcs, "transmitfile_tabufs", &in, &out);
 
