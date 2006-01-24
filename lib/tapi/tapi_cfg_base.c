@@ -171,7 +171,6 @@ tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac)
     int                 rc;
     char                buf[strlen(oid) + strlen("/link_addr:") + 1];
     cfg_handle          handle;
-    cfg_val_type        type = CVT_ADDRESS;
     struct sockaddr     addr;
 
     memset(&addr, 0, sizeof(struct sockaddr));
@@ -186,7 +185,7 @@ tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac)
 
     memcpy(addr.sa_data, mac, ETHER_ADDR_LEN);
 
-    rc = cfg_set_instance(handle, type, &addr);
+    rc = cfg_set_instance(handle, CVT_ADDRESS, &addr);
     if (rc != 0)
     {
         ERROR("Failed to set MAC address using OID %s", buf);
