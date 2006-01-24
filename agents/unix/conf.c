@@ -237,6 +237,9 @@ static te_errno broadcast_set(unsigned int, const char *, const char *,
 static te_errno link_addr_get(unsigned int, const char *, char *,
                               const char *);
 
+static te_errno link_addr_set(unsigned int, const char *, char *,
+                              const char *);
+
 static te_errno ifindex_get(unsigned int, const char *, char *,
                             const char *);
 
@@ -369,8 +372,8 @@ RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
 RCF_PCH_CFG_NODE_RW(node_arp, "arp", NULL, &node_mtu,
                     arp_get, arp_set);
 
-RCF_PCH_CFG_NODE_RO(node_link_addr, "link_addr", NULL, &node_arp,
-                    link_addr_get);
+RCF_PCH_CFG_NODE_RW(node_link_addr, "link_addr", NULL, &node_arp,
+                    link_addr_get, link_addr_set);
 
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
                     broadcast_get, broadcast_set);
@@ -2511,6 +2514,95 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     return 0;
+}
+
+/**
+ * Set hardware address of the interface.
+ * Only MAC addresses are supported now.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         hardware address (address should be
+ *                      provided as XX:XX:XX:XX:XX:XX)
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+link_addr_set(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
+{
+    uint8_t *ll_addr = NULL;
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (value == NULL)
+    {
+       ERROR("A link layer address is not provided to "
+             "ioctl(SIOCSIFHWADDR)");
+       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    strcpy(req.ifr_name, ifname);
+    req.ifr_hwaddr.sa_family = AF_LOCAL;
+    ll_addr = req.ifr_hwaddr.sa_data;
+
+    {
+        /* Conversion MAC address to binary value */
+        char *ptr = value;
+        char *aux_ptr;
+        int i;
+
+        for (i = 0; i < 6; i++)
+        {
+            aux_ptr = ptr;
+            if (!isxdigit(*aux_ptr))
+            {
+                ERROR("Invalid MAC address (unexpected symbol %c)",
+                      *aux_ptr);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+            aux_ptr++;
+            if (isxdigit(*aux_ptr))
+                aux_ptr++;
+            if ((*aux_ptr == ':') || (*aux_ptr == '\0'))
+            {
+                aux_ptr = ptr;
+                ll_addr[i] = strtol(ptr, &aux_ptr, 16);
+                ptr = aux_ptr + 1;
+                if (i == 5)
+                {
+                    if ((*aux_ptr == '\0'))
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        ERROR("Invalid MAC address");
+                        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                    }
+                }
+            }
+            else
+            {
+                ERROR("Invalid MAC address (unexp. symbol %c)", *aux_ptr);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+        }
+    }
+
+    if (ioctl(cfg_socket, SIOCSIFHWADDR, &req) < 0)
+    {
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("ioctl(SIOCSIFHWADDR) failed to set : %r", rc);
+    }
+
+    return rc;
 }
 
 /**

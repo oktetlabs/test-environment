@@ -61,6 +61,17 @@ extern int tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled);
 extern int tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac);
 
 /**
+ * Set MAC address of TA interface.
+ *
+ * @param oid       instance OID of TA interface
+ * @param mac       location of MAC address to be set 
+ *                  (at least ETHER_ADDR_LEN)
+ *
+ * @return Status code.
+ */
+extern int tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac);
+
+/**
  * Get link address of TA interface.
  *
  * @param ta        Test Agent

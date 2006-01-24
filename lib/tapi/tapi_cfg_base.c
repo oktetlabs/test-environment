@@ -164,6 +164,37 @@ tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac)
     return rc;
 }
 
+/* See description in tapi_cfg_base.h */
+int
+tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac)
+{
+    int                 rc;
+    char                buf[strlen(oid) + strlen("/link_addr:") + 1];
+    cfg_handle          handle;
+    cfg_val_type        type = CVT_ADDRESS;
+    struct sockaddr     addr;
+
+    memset(&addr, 0, sizeof(struct sockaddr));
+    addr.sa_family = AF_LOCAL;
+    sprintf(buf, "%s/link_addr:", oid);
+    rc = cfg_find_str(buf, &handle);
+    if (rc != 0)
+    {
+        ERROR("Failed to find MAC address OID handle for %s", oid);
+        return rc;
+    }
+
+    memcpy(addr.sa_data, mac, ETHER_ADDR_LEN);
+
+    rc = cfg_set_instance(handle, type, &addr);
+    if (rc != 0)
+    {
+        ERROR("Failed to set MAC address using OID %s", buf);
+        return rc;
+    }
+
+    return rc;
+}
 
 /* See description in tapi_cfg_base.h */
 int

@@ -401,6 +401,23 @@ extern int tapi_cfg_get_hwaddr(const char *ta,
                                const char *ifname,
                                void *hwaddr, unsigned int *hwaddr_len);
 
+
+/**
+ * Sets hardware address of specified interface on a particular
+ * test agent.
+ *
+ * @param ta          Test agent name
+ * @param ifname      Interface name whose hardware address should be set
+ * @param hwaddr      Hardware address - link-layer address (OUT)
+ * @param hwaddr_len  Length of 'hwaddr' buffer (OUT)
+ *
+ * @return Status of the oprtation
+ * @retval 0            on success
+ * @retval TE_EMSGSIZE  Buffer is too short to fit the hardware address
+ */
+extern int tapi_cfg_set_hwaddr(const char *ta, const char *ifname,
+                               void *hwaddr, unsigned int hwaddr_len);
+
 /**
  * Get Configurator handle of free child. The function assumes that
  * all children of the parent has integer value. Zero value is considered
