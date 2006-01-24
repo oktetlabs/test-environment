@@ -237,7 +237,7 @@ static te_errno broadcast_set(unsigned int, const char *, const char *,
 static te_errno link_addr_get(unsigned int, const char *, char *,
                               const char *);
 
-static te_errno link_addr_set(unsigned int, const char *, char *,
+static te_errno link_addr_set(unsigned int, const char *, const char *,
                               const char *);
 
 static te_errno ifindex_get(unsigned int, const char *, char *,
@@ -2529,7 +2529,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
  * @return              Status code
  */
 static te_errno
-link_addr_set(unsigned int gid, const char *oid, char *value,
+link_addr_set(unsigned int gid, const char *oid, const char *value,
               const char *ifname)
 {
     uint8_t *ll_addr = NULL;
@@ -2554,9 +2554,9 @@ link_addr_set(unsigned int gid, const char *oid, char *value,
 
     {
         /* Conversion MAC address to binary value */
-        char *ptr = value;
-        char *aux_ptr;
-        int i;
+        const char *ptr = value;
+        const char *aux_ptr;
+        int         i;
 
         for (i = 0; i < 6; i++)
         {
@@ -2573,7 +2573,7 @@ link_addr_set(unsigned int gid, const char *oid, char *value,
             if ((*aux_ptr == ':') || (*aux_ptr == '\0'))
             {
                 aux_ptr = ptr;
-                ll_addr[i] = strtol(ptr, &aux_ptr, 16);
+                ll_addr[i] = strtol(ptr, (char **)&aux_ptr, 16);
                 ptr = aux_ptr + 1;
                 if (i == 5)
                 {
