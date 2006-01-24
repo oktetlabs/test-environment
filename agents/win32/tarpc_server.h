@@ -266,6 +266,7 @@ win_rpc_errno(int err)
         case WSA_INVALID_HANDLE: return RPC_EBADF;
         
         case ERROR_UNEXP_NET_ERR: return RPC_E_UNEXP_NET_ERR;
+        case ERROR_OPERATION_ABORTED: return RPC_E_OPERATION_ABORTED;
         case ERROR_IO_INCOMPLETE: return RPC_E_IO_INCOMPLETE;
         case ERROR_IO_PENDING: return RPC_E_IO_PENDING;
         case ERROR_NOACCESS: return RPC_EFAULT; /* FIXME? */
