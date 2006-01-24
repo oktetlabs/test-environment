@@ -13,10 +13,17 @@ MY_CFLAGS=--disable-stdcall-fixup
 # -lrcfpch must be before @TE_LDADD@ since the last may contain
 # -ltad_ch with names used in -lrcfpch.
 #
+if CFG_RCF_RPC
 MY_LDADD=symtbl.o -lrcfpch -lrpcxdrta \
          -l@TAD@ @TE_LDADD@ -lconf_oid -lloggerta -lpthread \
          -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin \
          -lexpat 
+else
+MY_LDADD=symtbl.o -lrcfpch -lrpcxdr \
+         -l@TAD@ @TE_LDADD@ -lconf_oid -lloggerta -lpthread \
+         -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin \
+         -lexpat 
+endif
          
 noinst_HEADERS=tarpc_server.h rpcserver.h
 
@@ -32,8 +39,8 @@ SYMTBL_LIBS= \
 
 CLEANFILES=symtbl.c rpcserver_symtbl.c
 
-if CFG_RCF_RPC
 
+if CFG_RCF_RPC
 MY_CPPFLAGS+=-DRCF_RPC -I.
 MY_SOURCES+=tarpc_server.c 
 MY_NODIST_SOURCES=rpc_unsupported.c rpc_unsupported.h
