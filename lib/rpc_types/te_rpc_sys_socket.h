@@ -174,6 +174,7 @@ domain_h2rpc(int domain)
     }
 }
 
+
 /** Convert native address family to RPC address family */
 static inline rpc_socket_addr_family
 addr_family_h2rpc(int addr_family)
@@ -651,7 +652,11 @@ typedef enum rpc_sockopt {
     RPC_SO_TYPE,            /**< Return the socket's communication 
                                  type (the value of the second 
                                  argument used in 'socket' call) */
-
+ 
+    RPC_SO_CONNECT_TIME,    /**< The number of seconds that the socket has
+                                 been connected or 0xFFFFFFFF if it is not
+                                 connected */
+        
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */
     RPC_IP_HDRINCL,         /**< If enabled, the user supplies an IP
@@ -830,6 +835,9 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef SO_TYPE
         RPC2H(SO_TYPE);
 #endif
+#ifdef SO_CONNECT_TIME
+        RPC2H(SO_CONNECT_TIME);
+#endif
 #ifdef IP_ADD_MEMBERSHIP
         RPC2H(IP_ADD_MEMBERSHIP);
 #endif
@@ -955,6 +963,9 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC(SO_SNDLOWAT);
                 H2RPC(SO_SNDTIMEO);
                 H2RPC(SO_TYPE);
+#ifdef SO_CONNECT_TIME
+                H2RPC(SO_CONNECT_TIME);
+#endif
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
@@ -1138,6 +1149,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_SNDLOWAT);
         RPC2STR(SO_SNDTIMEO);
         RPC2STR(SO_TYPE);
+        RPC2STR(SO_CONNECT_TIME);
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
         RPC2STR(IP_MULTICAST_IF);
