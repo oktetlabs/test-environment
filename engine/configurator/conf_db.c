@@ -209,6 +209,23 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
 }
 
 /**
+ * Destroy dependency list.
+ *
+ * @param deps   Dependency list
+ */
+static void
+cfg_destroy_deps(cfg_dependency *deps)
+{
+    cfg_dependency *next;
+    
+    for (; deps != NULL; deps = next)
+    {
+        next = deps->next;
+        free(deps);
+    }
+}
+
+/**
  * Initialize the database during startup or re-initialization.
  *
  * @return 0 (success) or TE_ENOMEM
@@ -281,6 +298,8 @@ cfg_db_destroy(void)
         {
             free(cfg_all_obj[i]->oid);
             free(cfg_all_obj[i]->def_val);
+            cfg_destroy_deps(cfg_all_obj[i]->depends_on);
+            cfg_destroy_deps(cfg_all_obj[i]->dependants);
             free(cfg_all_obj[i]);
         }
     }
