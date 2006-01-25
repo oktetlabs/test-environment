@@ -376,4 +376,12 @@ extern void tester_out_done(run_item_type type, const char *name,
                             test_id parent, test_id self,
                             unsigned int flags, int result);
 
+/**
+ * Cleanup curses structures to make valgrind happy. Should not be called
+ * before any other terminal-handling functions.
+ *
+ * @return 0 on success
+ */
+extern int tester_term_cleanup(void);
+
 #endif /* !__TE_TESTER_INTERNAL_H__ */

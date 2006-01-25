@@ -139,9 +139,9 @@ colored_verdict(int color, const char *text)
     }
     else
     {
-        putp(tparm(tigetstr("setaf"), color));
+        putp(str = tparm(tigetstr("setaf"), color));
         printf("%s", text);
-        putp(tparm(tigetstr("sgr0")));
+        putp(str = tparm(tigetstr("sgr0")));
         printf("\n");
     }
 #else
@@ -242,8 +242,9 @@ tester_out_done(run_item_type type, const char *name,
             if (c != NULL)
                 cols = atoi(c);
             if (rc != 0) /* Warn only if setupterm failed. */
-                fprintf(stderr, "Failed to initialize terminal %s", term);
-        } else
+                fprintf(stderr, "Failed to initialize terminal %s\n", term);
+        } 
+        else
             cols = columns;
     }
 #else
@@ -391,4 +392,13 @@ tester_out_done(run_item_type type, const char *name,
 #if HAVE_PTHREAD_H
     CHECK_RC_ZERO(pthread_mutex_unlock(&win_lock));
 #endif
+}
+
+/* See description in internal.h */
+int
+tester_term_cleanup(void)
+{
+    if (cur_term != NULL)
+        return (del_curterm(cur_term) == OK) ? 0 : -1;
+    return 0;
 }
