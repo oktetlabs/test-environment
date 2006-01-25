@@ -2532,7 +2532,6 @@ static te_errno
 link_addr_set(unsigned int gid, const char *oid, const char *value,
               const char *ifname)
 {
-    uint8_t *ll_addr = NULL;
     te_errno rc = 0;
 
     UNUSED(gid);
@@ -2548,12 +2547,13 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
+#ifdef SIOCSIFHWADDR
     strcpy(req.ifr_name, ifname);
     req.ifr_hwaddr.sa_family = AF_LOCAL;
-    ll_addr = req.ifr_hwaddr.sa_data;
 
     {
         /* Conversion MAC address to binary value */
+        uint8_t    *ll_addr = req.ifr_hwaddr.sa_data;
         const char *ptr = value;
         const char *aux_ptr;
         int         i;
@@ -2601,6 +2601,10 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("ioctl(SIOCSIFHWADDR) failed to set : %r", rc);
     }
+#else
+    ERROR("Set of link-layer address is not supported");
+    rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
 
     return rc;
 }
