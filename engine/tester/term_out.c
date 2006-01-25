@@ -139,9 +139,9 @@ colored_verdict(int color, const char *text)
     }
     else
     {
-        putp(str = tparm(tigetstr("setaf"), color));
+        putp(tparm(tigetstr("setaf"), color));
         printf("%s", text);
-        putp(str = tparm(tigetstr("sgr0")));
+        putp(tparm(tigetstr("sgr0")));
         printf("\n");
     }
 #else
