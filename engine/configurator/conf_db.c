@@ -129,7 +129,7 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
     cfg_dependency *newdep;
     cfg_object     *place, *prev;
     
-    VERB("Creating a dependency %s to %s (%p)", obj->oid, master->oid);
+    VERB("Creating a dependency %s to %s", obj->oid, master->oid);
 
     newdep = calloc(1, sizeof(*newdep));
     if (newdep == NULL)
@@ -477,6 +477,10 @@ cfg_process_msg_register(cfg_register_msg *msg)
     }
     topological_order          = cfg_all_obj[i];
     cfg_maybe_adopt_objects(cfg_all_obj[i], oid);
+    if (father != &cfg_obj_root && father != &cfg_obj_agent)
+    {
+        cfg_create_dep(father, cfg_all_obj[i]);
+    }
 
     cfg_free_oid(oid);
     msg->handle = i;
