@@ -115,6 +115,12 @@
  */
 #define DEFAULT_LUN_NUMBER 0
 
+
+#define WRITE_TO_ISCSI_DEVICE "T=`grep -l UNH " \
+                              "/sys/bus/scsi/devices/*/vendor` && " \
+                              "B=`readlink ${T%/vendor}/block` && " \
+                              "echo test >/dev/`basename $B`"
+
 /**
  * Types of the Initiator to configure.
  * The default type of the Initiator is UNH.
@@ -1362,7 +1368,8 @@ iscsi_initiator_unh_set(const int target_id, const int cid,
 #endif
     /* Now the connection should be opened */
     rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
-                         "cid=%d target=%d host=%d lun=%d",
+                         "cid=%d target=%d host=%d lun=%d &&"
+                         WRITE_TO_ISCSI_DEVICE,
                          target->target_addr,
                          target->target_port,
                          cid, target_id, init_data->host_bus_adapter,
@@ -1421,7 +1428,8 @@ iscsi_initiator_l5_set(const int target_id, const int cid, int oper)
 
             if (strcmp(target->conns[cid].session_type, "Discovery") != 0)
             {
-                rc = te_shell_cmd_ex("cd %s; ./iscsi_startconns target%d_conn%d", 
+                rc = te_shell_cmd_ex("cd %s; ./iscsi_startconns target%d_conn%d && " 
+                                     WRITE_TO_ISCSI_DEVICE,
                                      init_data->script_path,
                                      target_id, cid);
             }
