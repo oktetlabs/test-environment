@@ -428,13 +428,14 @@ cleanup:
 }
 
 /* See description in tapi_iscsi.h */
-int
+te_errno
 tapi_iscsi_exchange_until_silent(const char *ta, int session, 
                                  csap_handle_t csap_a,
                                  csap_handle_t csap_b,
                                  unsigned int timeout)
 {
-    int         rc = 0, syms;
+    te_errno    rc = 0;
+    int         syms;
     asn_value  *pattern = NULL;
     unsigned    pkts_a = 0, pkts_b = 0, 
                 prev_pkts_a, prev_pkts_b;
@@ -518,6 +519,168 @@ cleanup:
     asn_free_value(pattern);
     return rc;
 }
+
+te_errno
+tapi_iscsi_exchange_until_pattern(const char *ta, int session, 
+                                  csap_handle_t csap_a,
+                                  csap_handle_t csap_b,
+                                  asn_value *pattern,
+                                  uint8_t *buffer, size_t  *length,
+                                  unsigned int timeout)
+{
+    te_errno    rc = 0;
+    int         syms;
+    int         num;
+    asn_value  *pattern_a = NULL;
+    asn_value  *pattern_b = NULL;
+
+    struct iscsi_data_message msg;
+
+    if (ta == NULL || pattern == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    if (csap_a == CSAP_INVALID_HANDLE || 
+        csap_b == CSAP_INVALID_HANDLE)
+    { 
+        ERROR("%s(): both CSAPs should be valid", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if ((rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
+                              ndn_traffic_pattern, &pattern_a, &syms)) != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    } 
+
+    if (buffer != NULL)
+    {
+        if (length == NULL)
+            return TE_EWRONGPTR;
+
+        RING("%s(): called with length %d", __FUNCTION__, *length);
+        msg.params = NULL;
+        msg.data   = buffer;
+        msg.length = *length;
+    }
+
+    pattern_b = asn_copy_value(pattern_a);
+
+    /*First, start receive on A */
+    asn_write_int32(pattern_a, csap_b, "0.actions.0.#forw-pld");
+    asn_write_int32(pattern_b, csap_a, "0.actions.0.#forw-pld");
+
+    asn_write_value_field(pattern, NULL, 0, "actions.0.#report");
+    asn_write_value_field(pattern, NULL, 0, "actions.0.#break");
+
+    if ((rc = asn_insert_indexed(pattern_a, pattern, 0, "")) != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern_a, 
+                               timeout, 0, RCF_TRRECV_COUNT);
+    if (rc != 0)
+    {
+        ERROR("%s(): trrecv_start on csap A (%d) failed %r",
+              __FUNCTION__, csap_a, rc);
+        goto cleanup;
+    }
+
+    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern_b, 
+                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
+    if (rc != 0)
+    {
+        ERROR("%s(): trrecv_start on csap B (%d) failed %r",
+              __FUNCTION__, csap_b, rc);
+        goto cleanup;
+    }
+
+    if (rc != 0)
+    {
+        ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    msg.error  = 0;
+
+
+    if ((rc = rcf_ta_trrecv_wait(ta, session, csap_a,
+                                 buffer == NULL ? NULL : iscsi_msg_handler,
+                                 buffer == NULL ? NULL : &msg, &num)) != 0)
+    {
+        WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
+        rc = 0;
+    }
+
+    if (buffer != NULL)
+        *length = msg.length;
+
+    if (msg.error != 0)
+    {
+        rc = msg.error;
+        ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, rc);
+    }
+
+    if ((rc = rcf_ta_trrecv_stop(ta, session, csap_b, NULL, NULL, &num))
+         != 0) 
+    {
+        WARN("%s() trrecv_stop failed: %r", __FUNCTION__, rc);
+        rc = 0;
+    }
+cleanup:
+    asn_free_value(pattern_a);
+    asn_free_value(pattern_b);
+
+    return rc; 
+}
+
+
+te_errno
+tapi_iscsi_prepare_pattern_unit(iscsi_bit_spec_t i_bit,
+                                uint8_t opcode,
+                                iscsi_bit_spec_t f_bit,
+                                asn_value **pattern)
+{
+    te_errno rc = 0;
+    int syms;
+
+    if (pattern == NULL) 
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
+
+    rc = asn_parse_value_text("{pdus { iscsi:{} } }",
+                              ndn_traffic_pattern, pattern, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN pattern failed %r, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    }
+
+    if (i_bit != ISCSI_BIT_UNDEF)
+    {
+        asn_write_bool(*pattern, i_bit == ISCSI_BIT_TRUE, 
+                       "pdus.0.#iscsi.i-bit.#plain");
+    }
+
+    if (opcode != ISCSI_OPCODE_UNDEF)
+    {
+        asn_write_int32(*pattern, opcode, 
+                        "pdus.0.#iscsi.opcode.#plain");
+    }
+
+    if (f_bit != ISCSI_BIT_UNDEF)
+    {
+        asn_write_bool(*pattern, f_bit == ISCSI_BIT_TRUE, 
+                       "pdus.0.#iscsi.f-bit.#plain");
+    }
+
+    return 0;
+}
+
 
 /* See description in tapi_iscsi.h */
 int 

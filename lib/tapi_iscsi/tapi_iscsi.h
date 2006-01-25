@@ -243,7 +243,6 @@ extern int tapi_iscsi_send_pkt(const char            *ta_name,
  * @param ta_name       test Agent name
  * @param sid           RCF SID
  * @param csap          identifier of CSAP
- * @param params        iSCSI new params
  * @param buffer        data to be sent
  * @param length        length of buffer
  * 
@@ -278,7 +277,8 @@ extern int tapi_iscsi_forward_all(const char *ta_name, int session,
 
 /**
  * Pass all iSCSI PDUs from one iSCSI CSAP to another and reverse, 
- * until in both directions silence will be established. 
+ * until in both directions silence will be established during specified 
+ * timeout. 
  *
  * @param ta            TA name
  * @param sid           RCF session id
@@ -288,11 +288,68 @@ extern int tapi_iscsi_forward_all(const char *ta_name, int session,
  *
  * @return status code
  */
-extern int tapi_iscsi_exchange_until_silent(const char *ta, int session, 
-                                            csap_handle_t csap_a,
-                                            csap_handle_t csap_b,
-                                            unsigned int timeout);
+extern te_errno tapi_iscsi_exchange_until_silent(const char *ta,
+                                                 int session, 
+                                                 csap_handle_t csap_a,
+                                                 csap_handle_t csap_b,
+                                                 unsigned int timeout);
+
+/**
+ * Pass all iSCSI PDUs from one iSCSI CSAP to another and reverse, 
+ * until packet, matching to specified pattern, will be catched on
+ * csap_a. 
+ * This packet will be passed to the test, if 'buffer' is not NULL.
+ *
+ * @param ta            TA name.
+ * @param sid           RCF session id.
+ * @param csap_a        Identifier of one side CSAP.
+ * @param csap_b        Identifier of another side CSAP.
+ * @param pattern       ASN value with PatternUnit NDS.
+ * @param buffer        Location for received data (OUT).
+ * @param length        Length of buffer / received data (IN/OUT).
+ * @param timeout       Timeout to wait data, in milliseconds.
+ *
+ * @return status code
+ */
+extern te_errno tapi_iscsi_exchange_until_pattern(const char *ta,
+                                                  int session, 
+                                                  csap_handle_t csap_a,
+                                                  csap_handle_t csap_b,
+                                                  asn_value *pattern,
+                                                  uint8_t *buffer,
+                                                  size_t  *length,
+                                                  unsigned int timeout);
+
+typedef enum {
+    ISCSI_BIT_UNDEF,
+    ISCSI_BIT_TRUE,
+    ISCSI_BIT_FALSE,
+} iscsi_bit_spec_t;
+
+enum {
+    ISCSI_OPCODE_UNDEF = 0xff,
+};
+
+/**
+ * Prepare pattern_unit with iSCSI PDU. 
+ *
+ * @param i_bit         Pattern for i-bit field.
+ * @param opcode        Pattern for opcode field, while opcode has
+ *                      only 6 bits, value 0xff used for mark unset.
+ * @param f_bit         Pattern for i-bit field.
+ * @param pattern       location for ASN value prepared (OUT).
+ *
+ * @return status code
+ */
+extern te_errno tapi_iscsi_prepare_pattern_unit(iscsi_bit_spec_t i_bit,
+                                                uint8_t opcode,
+                                                iscsi_bit_spec_t f_bit,
+                                                asn_value **pattern);
+
+
+
 #define TAPI_ISCSI_KEY_INVALID     -1
+
 
 /* To read iSCSI PDU Segment Data */
 
