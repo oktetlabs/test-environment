@@ -187,7 +187,7 @@ tad_iscsi_match_bin_cb(csap_p           csap,
     tad_iscsi_layer_data *spec_data; 
 
     asn_value *iscsi_msg = asn_init_value(ndn_iscsi_message);
-    int        rc;
+    int        rc = 0;
     int        defect;
 
 
@@ -198,31 +198,18 @@ tad_iscsi_match_bin_cb(csap_p           csap,
     INFO("%s(CSAP %d): got pkt %d bytes",
          __FUNCTION__, csap->id, pkt->len);
 
+    /* Parse and reassembly iSCSI PDU */
+
     if (spec_data->wait_length == 0)
     {
-#if 0
-        iscsi_digest_type digest = ISCSI_DIGEST_NONE;
-        const             asn_value *sval;
-
-        rc = asn_get_child_value(pattern_pdu, &sval, PRIVATE, 
-                                 NDN_TAG_ISCSI_HAVE_HDIG);
-        if (rc == 0)
-            digest |= ISCSI_DIGEST_HEADER;
-
-        rc = asn_get_child_value(pattern_pdu, &sval, PRIVATE, 
-                                 NDN_TAG_ISCSI_HAVE_DDIG);
-        if (rc == 0)
-            digest |= ISCSI_DIGEST_DATA;
-#else
-        UNUSED(pattern_pdu);
-#endif
         spec_data->wait_length = ISCSI_BHS_LENGTH + 
              iscsi_rest_data_len(pkt->data,
                                  spec_data->hdig, spec_data->ddig);
         INFO("%s(CSAP %d), calculated wait length %d",
                 __FUNCTION__, csap->id, spec_data->wait_length);
     }
-    rc = 0;
+    else if (spec_data->wait_length == spec_data->stored_length)
+        goto begin_match;
 
     if (spec_data->stored_buffer == NULL)
     {
@@ -256,16 +243,37 @@ tad_iscsi_match_bin_cb(csap_p           csap,
 
     /* received message successfully processed and reassembled */
 
+begin_match:
     do {
         uint8_t    tmp8;
+        uint8_t    op_specific[3];
         uint8_t   *p = spec_data->stored_buffer; 
 
-        UNUSED(tmp8);
-        UNUSED(p);
         /* Here is a big ASS with matching: if packet 
          * does not match, but there are many pattern_units, 
          * what we have to do with stored reassembled buffer???
          */
+
+        tmp8 = (*p >> 6) & 1;
+        if ((rc = ndn_match_data_units(pattern_pdu, NULL, 
+                                       &tmp8, 1, "i-bit")) != 0)
+            goto cleanup;
+
+        tmp8 = *p & 0x3f;
+        if ((rc = ndn_match_data_units(pattern_pdu, NULL, 
+                                       &tmp8, 1, "opcode")) != 0)
+            goto cleanup;
+
+        p++;
+        tmp8 = *p >> 7;
+        if ((rc = ndn_match_data_units(pattern_pdu, NULL, 
+                                       &tmp8, 1, "f-bit")) != 0)
+            goto cleanup;
+
+        if ((rc = ndn_match_data_units(pattern_pdu, NULL, 
+                                       p, 3, "op-specific")) != 0)
+            goto cleanup;
+
     } while(0);
 
 
@@ -303,6 +311,7 @@ tad_iscsi_gen_pattern_cb(csap_p            csap,
 }
 
 
+#if 0 
 
 /* See description in tad_iscsi_impl.h */
 te_errno
@@ -351,3 +360,4 @@ tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
     return rc;
 }
+#endif
