@@ -148,6 +148,8 @@ static asn_named_entry_t _ndn_iscsi_message_ne_array [] =
     { "i-bit",   &ndn_data_unit_int1_s, {PRIVATE, NDN_TAG_ISCSI_I_BIT} },
     { "opcode",  &ndn_data_unit_int6_s, {PRIVATE, NDN_TAG_ISCSI_OPCODE} },
     { "f-bit",   &ndn_data_unit_int1_s, {PRIVATE, NDN_TAG_ISCSI_F_BIT} },
+    { "op-specific",
+        &ndn_data_unit_int24_s, {PRIVATE, NDN_TAG_ISCSI_OP_SPECIFIC} },
     { "ahs-len", &ndn_data_unit_int8_s, {PRIVATE, NDN_TAG_ISCSI_AHS_LEN} },
     { "ds-len",  &ndn_data_unit_int24_s,{PRIVATE, NDN_TAG_ISCSI_DS_LEN} },
     { "length",  &asn_base_integer_s,   {PRIVATE, NDN_TAG_ISCSI_LEN} },
