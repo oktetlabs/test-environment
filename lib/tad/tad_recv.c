@@ -1022,7 +1022,7 @@ tad_receiver_thread(void *arg)
                     (s_diff == 0 &&
                      current.tv_usec > csap->wait_for.tv_usec))
                 {
-                    csap->last_errno = ETIMEDOUT;
+                    csap->last_errno = TE_ETIMEDOUT;
                     csap->state |= TAD_STATE_COMPLETE;
                     VERB("CSAP %d status complete by timeout, "
                          "wait for: %u.%u, current: %u.%u",
