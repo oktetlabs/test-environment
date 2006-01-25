@@ -923,15 +923,6 @@ extern te_errno rcf_ta_call_rpc(const char *ta_name, int session,
                                 const char *rpc_name, void *in, void *out);
 
 /**
- * Clean up resources allocated by RCF API.
- * This routine should be called from each thread used RCF API.
- *
- * Usually user should not worry about calling of the function, since
- * it is called automatically using atexit() or similar mechanism.
- */
-extern void rcf_api_cleanup(void);
-
-/**
  * This function is used to check that all running are still
  * working.
  *
@@ -952,6 +943,15 @@ extern te_errno rcf_check_agents(void);
  * @return error code
  */
 extern te_errno rcf_shutdown_call(void);
+
+/**
+ * Clean up resources allocated by RCF API.
+ * This routine should be called from each thread used RCF API.
+ *
+ * Usually user should not worry about calling of the function, since
+ * it is called automatically using atexit() or similar mechanism.
+ */
+extern void rcf_api_cleanup(void);
 
 #ifdef __cplusplus
 } /* extern "C" */
