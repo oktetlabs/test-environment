@@ -773,6 +773,9 @@ rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
     in.completion_port = completion_port;
     in.milliseconds = milliseconds;
 
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 10;
+
     rcf_rpc_call(rpcs, "get_queued_completion_status", &in, &out);
     
     if (op == RCF_RPC_CALL)
