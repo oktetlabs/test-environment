@@ -587,16 +587,19 @@ te_log_msg_raw_put_no_check(te_log_msg_raw_data *data,
             int         fd = *(int *)addr;
             char        buf[1];
             ssize_t     r;
-            uint8_t    *start = data->ptr;
 
             while ((len > 0) &&
                    (r = read(fd, buf, MIN(len, sizeof(buf)))) > 0)
             {
                 memcpy(data->ptr, buf, r);
                 data->ptr += r;
+                /* 
+                 * We have to track length here, since file can have
+                 * more data, if we have decided to truncate it.
+                 */
+                len -= r;
             }
             (void)close(fd);
-            len -= (data->ptr - start);
             if (len > 0)
             {
                 /* Unexpected EOF */
