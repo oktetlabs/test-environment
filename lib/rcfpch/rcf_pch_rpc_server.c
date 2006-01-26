@@ -117,6 +117,13 @@ recv_timeout(int s, void *buf, int len, int t)
     
     if (rc <= 0)
         return -2;
+        
+    rc = recv(s, buf, len, 0);
+    if (rc < 0)
+        ERROR("recv_timeout(): recv() failed with error %d", 
+              GetLastError());
+
+    return rc;              
 
 #else
     struct timeval tv = { t, 0 };
@@ -130,9 +137,8 @@ recv_timeout(int s, void *buf, int len, int t)
             return -2;
     }
     
-#endif
-        
     return recv(s, buf, len, 0);
+#endif
 }
 
 #ifdef HAVE_SIGNAL_H
