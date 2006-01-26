@@ -142,8 +142,7 @@ build_native: $(tawin32tmpl_rpcserver_SOURCES) \
 	CC=$(CC)  \
 	RPCSERVER_CPPFLAGS="$(RPCSERVER_CPPFLAGS)" \
 	$(srcdir)/build_native.sh $(srcdir) $^
-	cp tawin32tmpl_rpcserver.exe \
-	   $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
+	cp tawin32tmpl_rpcserver.exe $(DESTDIR)/$(bindir)/
 
 else
 
