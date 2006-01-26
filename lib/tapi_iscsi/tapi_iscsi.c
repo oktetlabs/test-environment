@@ -529,6 +529,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
                                   unsigned int timeout)
 {
     te_errno    rc = 0;
+    te_errno    result = 0;
     int         syms;
     int         num;
     asn_value  *pattern_a = NULL;
@@ -572,7 +573,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     asn_write_int32(pattern_b, csap_a, "0.actions.0.#forw-pld");
 
     asn_write_value_field(pattern, NULL, 0, "actions.0.#report");
-    asn_write_value_field(pattern, NULL, 0, "actions.0.#break");
+    asn_write_value_field(pattern, NULL, 0, "actions.1.#break");
 
     if ((rc = asn_insert_indexed(pattern_a, pattern, 0, "")) != 0)
     {
@@ -599,12 +600,6 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
         goto cleanup;
     }
 
-    if (rc != 0)
-    {
-        ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
-        goto cleanup;
-    }
-
     msg.error  = 0;
 
 
@@ -613,16 +608,17 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
                                  buffer == NULL ? NULL : &msg, &num)) != 0)
     {
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
+        result = rc;
         rc = 0;
     }
 
     if (buffer != NULL)
         *length = msg.length;
 
-    if (msg.error != 0)
+    if (result == 0 && msg.error != 0)
     {
-        rc = msg.error;
-        ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, rc);
+        result = msg.error;
+        ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, result);
     }
 
     if ((rc = rcf_ta_trrecv_stop(ta, session, csap_b, NULL, NULL, &num))
@@ -635,7 +631,7 @@ cleanup:
     asn_free_value(pattern_a);
     asn_free_value(pattern_b);
 
-    return rc; 
+    return result; 
 }
 
 
@@ -652,7 +648,7 @@ tapi_iscsi_prepare_pattern_unit(iscsi_bit_spec_t i_bit,
         return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     rc = asn_parse_value_text("{pdus { iscsi:{} } }",
-                              ndn_traffic_pattern, pattern, &syms);
+                              ndn_traffic_pattern_unit, pattern, &syms);
     if (rc != 0)
     {
         ERROR("%s(): parse ASN pattern failed %r, sym %d", 
