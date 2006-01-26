@@ -202,10 +202,12 @@ tad_perform_action(csap_p csap,
             break; 
 
         case NDN_ACT_BREAK: 
+            RING("%s(CSAP %d) break action", __FUNCTION__, csap->id);
             csap->state |= TAD_STATE_COMPLETE;
             break;
 
         case NDN_ACT_REPORT: 
+            RING("%s(CSAP %d) report action", __FUNCTION__, csap->id);
             /* do nothing: processed on higher layers. */
             break;
 
