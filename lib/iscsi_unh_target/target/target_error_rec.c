@@ -99,7 +99,9 @@ targ_session_recovery(struct iscsi_conn *current_connection)
 
 	sess = current_connection->session;
 
+#if 0
     iscsi_release_session(sess);
+#endif
 
 	TRACE(DEBUG, "Leave targ_session_recovery\n");
 
