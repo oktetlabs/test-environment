@@ -22,5 +22,5 @@ TE_LIB_PARMS([tad], [], [],
              [], [], [])
 
 TE_TA_TYPE([linux], [], [unix],
-           [--with-rcf-rpc],
+           [--with-rcf-rpc --with-iscsi],
            [], [], [], [comm_net_agent ndn asn])
