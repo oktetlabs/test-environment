@@ -147,6 +147,8 @@ asn_impl_pt_label(const char *text, char *label, int *syms)
     return 0; 
 }
 
+
+#define TEXT_BLOCK 0x400
 /**
  * Parse textual presentation of single ASN.1 value of UniversalString type,
  * create new instance of asn_value type with its internal presentation.
@@ -164,6 +166,7 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
 {
     const char *pt = text; 
 
+    size_t num_blocks = 1;
     char  *buffer;
     char  *pb;       
     int    rc = 0;
@@ -174,7 +177,7 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR; 
 
-    pb = buffer = malloc(strlen(text));       
+    pb = buffer = malloc(TEXT_BLOCK);       
     while (isspace(*pt))
         pt++;
 
@@ -188,6 +191,12 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
     while (*pt != '"' && *pt != '\0')
     { 
         l = strcspn(pt, "\\\""); /* find first \ or " */ 
+        while (total + l > num_blocks * TEXT_BLOCK)
+        {
+            num_blocks++;
+            buffer = realloc(buffer, num_blocks * TEXT_BLOCK);
+            pb = buffer + total;
+        }
         memcpy(pb, pt, l); 
         pt+= l, pb += l, total += l;
 
