@@ -2936,8 +2936,11 @@ neigh_find_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     if (p->dynamic == !!(r->ndm_state & NUD_PERMANENT))
         return 0;
 
+    if (tb[NDA_LLADDR] == NULL)
+        return 0;
+
     /* Save MAC address */
-    if (p->mac_addr != NULL && tb[NDA_LLADDR] != NULL)
+    if (p->mac_addr != NULL)
     {
         int      i;
         char    *s = p->mac_addr;
@@ -3358,7 +3361,7 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
  
     if (ll_name_to_index(p->ifname) != r->ndm_ifindex)
         return 0;
-    
+
     if (r->ndm_state == NUD_NONE || (r->ndm_state & NUD_INCOMPLETE) != 0)
         return 0;
     
@@ -3370,6 +3373,9 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     if (tb[NDA_DST] == NULL ||
         inet_ntop(r->ndm_family, RTA_DATA(tb[NDA_DST]), s,
                   INET6_ADDRSTRLEN) == NULL)
+        return 0;
+
+    if (tb[NDA_LLADDR] == NULL)
         return 0;
         
     s += strlen(s);
