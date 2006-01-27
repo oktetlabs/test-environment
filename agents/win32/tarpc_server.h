@@ -269,6 +269,7 @@ win_rpc_errno(int err)
         case ERROR_OPERATION_ABORTED: return RPC_E_OPERATION_ABORTED;
         case ERROR_IO_INCOMPLETE: return RPC_E_IO_INCOMPLETE;
         case ERROR_IO_PENDING: return RPC_E_IO_PENDING;
+        case ERROR_OPERATION_ABORTED: return RPC_E_OP_ABORTED;
         case ERROR_NOACCESS: return RPC_EFAULT; /* FIXME? */
         case ERROR_MORE_DATA: return RPC_EMSGSIZE; /* FIXME? */
         case ERROR_INVALID_PARAMETER: return RPC_EINVAL; /* FIXME? */
