@@ -2598,7 +2598,7 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
 
     if (ioctl(cfg_socket, SIOCSIFHWADDR, &req) < 0)
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         ERROR("ioctl(SIOCSIFHWADDR) failed to set : %r", rc);
     }
 #else

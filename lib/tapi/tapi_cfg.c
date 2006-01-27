@@ -1239,7 +1239,6 @@ tapi_cfg_set_hwaddr(const char *ta,
                     const void *hwaddr, unsigned int hwaddr_len)
 {
     char        buf[1024];
-    te_errno    rc;
     char       *ifname_bkp;
     char       *ptr;
 
@@ -1271,12 +1270,7 @@ tapi_cfg_set_hwaddr(const char *ta,
     snprintf(buf, sizeof(buf), "/agent:%s/interface:%s",
              ta, ifname_bkp);
     free(ifname_bkp);
-    if ((rc = tapi_cfg_base_if_set_mac(buf, hwaddr)) != 0)
-    {
-        return rc;
-    }
-
-    return 0;
+    return tapi_cfg_base_if_set_mac(buf, hwaddr);
 }
 
 
