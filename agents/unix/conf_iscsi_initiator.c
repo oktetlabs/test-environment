@@ -116,7 +116,7 @@
 #define DEFAULT_LUN_NUMBER 0
 
 
-#define WRITE_TO_ISCSI_DEVICE "T=`grep -l UNH " \
+#define WRITE_TO_ISCSI_DEVICE " && T=`grep -l UNH " \
                               "/sys/bus/scsi/devices/*/vendor` && " \
                               "B=`readlink ${T%/vendor}/block` && " \
                               "echo test >/dev/`basename $B`"
@@ -1368,12 +1368,13 @@ iscsi_initiator_unh_set(const int target_id, const int cid,
 #endif
     /* Now the connection should be opened */
     rc = te_shell_cmd_ex("iscsi_config up ip=%s port=%d "
-                         "cid=%d target=%d host=%d lun=%d &&"
-                         WRITE_TO_ISCSI_DEVICE,
+                         "cid=%d target=%d host=%d lun=%d %s",
                          target->target_addr,
                          target->target_port,
                          cid, target_id, init_data->host_bus_adapter,
-                         DEFAULT_LUN_NUMBER);
+                         DEFAULT_LUN_NUMBER,
+                         target->number_of_open_connections == 0 ?
+                         WRITE_TO_ISCSI_DEVICE : "");
     if (rc != 0)
     {
         ERROR("Failed to establish connection with cid=%d", cid);
@@ -1428,10 +1429,11 @@ iscsi_initiator_l5_set(const int target_id, const int cid, int oper)
 
             if (strcmp(target->conns[cid].session_type, "Discovery") != 0)
             {
-                rc = te_shell_cmd_ex("cd %s; ./iscsi_startconns target%d_conn%d && " 
-                                     WRITE_TO_ISCSI_DEVICE,
+                rc = te_shell_cmd_ex("cd %s; ./iscsi_startconns target%d_conn%d %s", 
                                      init_data->script_path,
-                                     target_id, cid);
+                                     target_id, cid, 
+                                     (target->number_of_open_connections == 0 ? 
+                                      WRITE_TO_ISCSI_DEVICE : ""));
             }
             else
             {
