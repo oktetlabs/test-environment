@@ -32,6 +32,7 @@
 
 #define TE_LGR_USER "iSCSI Target"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <semaphore.h>
@@ -45,8 +46,11 @@
 
 #define ISCSI_CUSTOM_MAX_PARAM 13
 
+#define ISCSI_CUSTOM_MAGIC 0xeba1eba1
+
 struct iscsi_custom_data
 {
+    unsigned long magic;
     int id;
     struct iscsi_custom_data *next, *prev;
     int params[ISCSI_CUSTOM_MAX_PARAM];
@@ -56,7 +60,8 @@ struct iscsi_custom_data
 
 static pthread_mutex_t custom_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static iscsi_custom_data default_block = { id: ISCSI_CUSTOM_DEFAULT };
+static iscsi_custom_data default_block = { magic: ISCSI_CUSTOM_MAGIC,
+                                           id: ISCSI_CUSTOM_DEFAULT };
 static iscsi_custom_data *custom_data_list = &default_block;
 
 
@@ -74,10 +79,13 @@ iscsi_register_custom(int id)
     memset(block, 0, sizeof(*block));
     memcpy(block->params, default_block.params, sizeof(block->params));
     sem_init(&block->on_change, 0, 0);
+    block->magic = ISCSI_CUSTOM_MAGIC;
     block->id = id;
+    assert(custom_data_list->magic == ISCSI_CUSTOM_MAGIC);
     pthread_mutex_lock(&custom_mutex);
-    block->next = custom_data_list;
-    custom_data_list = block;
+    block->next = custom_data_list->next;
+    block->prev = custom_data_list;
+    custom_data_list->next = block;
     pthread_mutex_unlock(&custom_mutex);
     return block;
 }
@@ -88,6 +96,8 @@ iscsi_deregister_custom(iscsi_custom_data *block)
     if (block == NULL)
         return;
 
+    assert(block->magic == ISCSI_CUSTOM_MAGIC);
+
     pthread_mutex_lock(&custom_mutex);
     if (block->next != NULL)
         block->next->prev = block->prev;
@@ -95,6 +105,7 @@ iscsi_deregister_custom(iscsi_custom_data *block)
         block->prev->next = block->next;
     else
         custom_data_list = block->next;
+    block->magic = 0;
     pthread_mutex_unlock(&custom_mutex);
     free(block);
 }
@@ -203,6 +214,7 @@ iscsi_set_custom_value(int id, const char *param, const char *value)
     pthread_mutex_lock(&custom_mutex);
     for (block = custom_data_list; block != NULL; block = block->next)
     {
+        assert(block->magic == ISCSI_CUSTOM_MAGIC);
         if (id < 0 || block->id == id)
         {
             block->params[param_no] = intvalue;
@@ -227,6 +239,8 @@ iscsi_get_custom_value(iscsi_custom_data *block,
 {
     int value;
     int param_no = find_custom_param(param, NULL);
+
+    assert(block->magic == ISCSI_CUSTOM_MAGIC);
 
     if (param_no < 0)
     {
