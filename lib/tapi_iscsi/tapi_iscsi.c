@@ -2560,6 +2560,7 @@ command_read(iscsi_io_handle_t *ioh, int *fd,
     {
         rpc_get_buf(ioh->rpcs, ioh->buffer, 0, length, data);
     }
+    
     return status;
 }
 
@@ -2574,6 +2575,7 @@ command_write(iscsi_io_handle_t *ioh, int *fd,
     
     RING("Doing RPC write");
     rpc_set_buf(ioh->rpcs, data, length, ioh->buffer, 0);
+    ioh->rpcs->timeout = 120000;
     result_len = rpc_write(ioh->rpcs, *fd, data, length);
     return (result_len < 0 ?
             RPC_ERRNO(ioh->rpcs) :
@@ -2666,6 +2668,8 @@ iscsi_io_signal_handler(int signo)
 }
 
 
+#define ISCSI_RPC_TIMEOUT 120000
+
 te_errno
 tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id, 
                       te_bool use_signal, te_bool use_fs,
@@ -2716,6 +2720,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
         *ioh = NULL;
         return rc;
     }
+    (*ioh)->rpcs->def_timeout = ISCSI_RPC_TIMEOUT;
     sem_init(&(*ioh)->cmd_wait, 0, 0);
     for (i = 0; i < MAX_ISCSI_IO_CMDS; i++)
     {
