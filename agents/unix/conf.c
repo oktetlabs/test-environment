@@ -3358,6 +3358,8 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     struct ndmsg   *r = NLMSG_DATA(n);
     struct rtattr  *tb[NDA_MAX+1] = {NULL,};
     char           *s = p->list + strlen(p->list);
+
+    UNUSED(who);
  
     if (ll_name_to_index(p->ifname) != r->ndm_ifindex)
         return 0;
@@ -3370,18 +3372,17 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
 
     parse_rtattr(tb, NDA_MAX, NDA_RTA(r), n->nlmsg_len -
                  NLMSG_LENGTH(sizeof(*r)));
+
+    if (tb[NDA_LLADDR] == NULL)
+        return 0;
+
     if (tb[NDA_DST] == NULL ||
         inet_ntop(r->ndm_family, RTA_DATA(tb[NDA_DST]), s,
                   INET6_ADDRSTRLEN) == NULL)
         return 0;
-
-    if (tb[NDA_LLADDR] == NULL)
-        return 0;
         
     s += strlen(s);
     sprintf(s, " ");
-
-    UNUSED(who);
     
     return 0;
 }
