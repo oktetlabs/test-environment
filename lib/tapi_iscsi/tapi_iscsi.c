@@ -27,7 +27,6 @@
  */
 
 #define TE_LGR_USER "TAPI iSCSI"
-#define TE_LOG_LEVEL 0xff
 
 #include "te_config.h"
 
