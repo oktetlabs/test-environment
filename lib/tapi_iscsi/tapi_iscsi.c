@@ -27,6 +27,7 @@
  */
 
 #define TE_LGR_USER "TAPI iSCSI"
+#define TE_LOG_LEVEL 0xff
 
 #include "te_config.h"
 
@@ -482,6 +483,29 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
     }
 
     do { 
+#if 1
+        tad_csap_status_t csap_a_status, csap_b_status;
+
+        rc = tapi_csap_get_status(ta, session, csap_a, &csap_a_status);
+        if (rc != 0)
+        {
+            ERROR("%s(): get CSAP A status failed %r", __FUNCTION__, rc);
+            goto cleanup;
+        }
+        rc = tapi_csap_get_status(ta, session, csap_b, &csap_b_status);
+        if (rc != 0)
+        {
+            ERROR("%s(): get CSAP B status failed %r", __FUNCTION__, rc);
+            goto cleanup;
+        }
+        if (csap_a_status != CSAP_BUSY || csap_b_status != CSAP_BUSY)
+        {
+            WARN("%s(): csap status are not 'busy': A %d, B %d", 
+                 __FUNCTION__, csap_a_status, csap_b_status);
+            break;
+        }
+#endif
+
         prev_pkts_a = pkts_a;
         prev_pkts_b = pkts_b;
 
@@ -510,13 +534,15 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
         INFO("%s(): a %d, b %d, new a %d, new b %d", 
              __FUNCTION__, prev_pkts_a, prev_pkts_b, pkts_a, pkts_b);
 
-    } while(prev_pkts_a < pkts_a || prev_pkts_b < pkts_b);
+    } while (prev_pkts_a < pkts_a || prev_pkts_b < pkts_b);
 
+
+cleanup:
     tapi_tad_trrecv_stop(ta, session, csap_a, NULL, &pkts_a);
     tapi_tad_trrecv_stop(ta, session, csap_b, NULL, &pkts_b);
 
-cleanup:
     asn_free_value(pattern);
+
     return rc;
 }
 
