@@ -383,8 +383,8 @@ check_args(checked_arg *list)
         uint64_t msec_now;                                      \
                                                                 \
         gettimeofday(&t, NULL);                                 \
-        msec_now = (uint64_t)((uint32_t)(t.tv_sec) * 1000 +     \
-                              (uint32_t)(t.tv_usec) / 1000);    \
+        msec_now = ((uint64_t)(t.tv_sec)) * 1000ULL +           \
+                   (t.tv_usec) / 1000;                          \
                                                                 \
         if (msec_start > msec_now)                              \
         {                                                       \
