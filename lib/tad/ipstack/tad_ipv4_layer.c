@@ -568,7 +568,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
          fr_index < fr_number;
          fr_index++, pkt = pkt->links.cqe_next)
     {
-        const asn_value *frag_spec = NULL;
+        asn_value *frag_spec = NULL;
         int32_t          hdr_field;
         size_t           ip4_pld_real_len;
         int32_t          frag_offset;
@@ -578,7 +578,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
 
         if (fragments_seq != NULL)
         {
-            rc = asn_get_indexed(fragments_seq, &frag_spec, fr_index); 
+            rc = asn_get_indexed(fragments_seq, &frag_spec, fr_index, NULL); 
             CHECK(rc != 0, "%s(): get frag fail %X", __FUNCTION__, rc);
             /* FIXME */
             asn_read_int32(frag_spec, &hdr_field, "real-length");

@@ -106,22 +106,9 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
     {
         ERROR("Failed to add a new generic layer in CSAP specification: "
               "%r", rc);
-        asn_free_value(gen_layer);
         return TE_RC(TE_TAPI, rc);
     }
-    /* FIXME: Remove it when non-coping insert is supported */
-    {
-        asn_free_value(gen_layer);
 
-        /* FIXME: Use -1 as index */
-        rc = asn_get_indexed(*csap_spec, (const asn_value **)&gen_layer,
-                             asn_get_length(*csap_spec, "") - 1);
-        if (rc != 0)
-        {
-            ERROR("Failed to get just inserted ASN.1 value: %r", rc);
-            return TE_RC(TE_TAPI, rc);
-        }
-    }
     
     layer = asn_init_value(layer_type);
     if (layer == NULL)
@@ -219,13 +206,12 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
                 asn_free_value(unit_spec);
                 return TE_RC(TE_TAPI, rc);
             }
-            asn_free_value(unit_spec);
             len = 1;
         }
 
         /* FIXME: Avoid type cast and asn_get_length() */
-        rc = asn_get_indexed(*obj_spec, (const asn_value **)&unit_spec,
-                             len - 1);
+        rc = asn_get_indexed(*obj_spec, &unit_spec,
+                             len - 1, NULL);
         if (rc != 0)
         {
             ERROR("Failed to get just inserted ASN.1 value: %r", rc);
@@ -288,21 +274,7 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
     if (rc != 0)
     {
         ERROR("Failed to add a new generic PDU in sequence: %r", rc);
-        asn_free_value(gen_pdu);
         return TE_RC(TE_TAPI, rc);
-    }
-    /* FIXME: Remove it when non-coping insert is supported */
-    {
-        asn_free_value(gen_pdu);
-
-        /* FIXME: Use -1 as index */
-        rc = asn_get_indexed(pdus, (const asn_value **)&gen_pdu,
-                             asn_get_length(pdus, "") - 1);
-        if (rc != 0)
-        {
-            ERROR("Failed to get just inserted ASN.1 value: %r", rc);
-            return TE_RC(TE_TAPI, rc);
-        }
     }
     
     pdu = asn_init_value(pdu_type);

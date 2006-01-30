@@ -1225,10 +1225,10 @@ tad_check_pdu_seq(csap_p csap, asn_value *pdus)
 
     for (i = 0; i < nds_len; i++)
     {
-        const asn_value *gen_pdu;
+        asn_value *gen_pdu;
         uint16_t pdu_tag;
 
-        rc = asn_get_indexed(pdus, &gen_pdu, i);
+        rc = asn_get_indexed(pdus, &gen_pdu, i, NULL);
         if (rc != 0)
         {
             ERROR("%s(CSAP %d): asn_get_indexed failed %r", 

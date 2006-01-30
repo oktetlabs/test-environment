@@ -761,7 +761,6 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
             return rc; 
 
         asn_insert_indexed(*parsed, subval, -1, "");
-        asn_free_value(subval);
 
         while (isspace(*pt)) 
             pt++;

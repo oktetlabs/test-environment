@@ -118,11 +118,11 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
 
     for (i = 0; i < num_var_bind; i++)
     {
-        const asn_value *var_bind;
+        asn_value *var_bind;
         oid              oid[MAX_OID_LEN];
         size_t           oid_len = MAX_OID_LEN;
 
-        if ((rc = asn_get_indexed(var_bind_list, &var_bind, i)) != 0) 
+        if ((rc = asn_get_indexed(var_bind_list, &var_bind, i, NULL)) != 0) 
         {
             ERROR("Cannot get VarBind %d from PDU, rc %r", i, rc);
             break;
@@ -341,14 +341,14 @@ tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
 
         for (i = 0; i < pat_vb_num; i++)
         { 
-            const asn_value *pat_var_bind;
+            asn_value *pat_var_bind;
             const asn_value *pat_vb_value;
             const oid       *pat_oid;
             const uint8_t   *pat_vb_val_data;
             size_t           pat_oid_len;
             asn_syntax       pat_value_syntax;
 
-            rc = asn_get_indexed(pat_vb_list, &pat_var_bind, i);
+            rc = asn_get_indexed(pat_vb_list, &pat_var_bind, i, NULL);
             if (rc != 0)
             {
                 WARN("SNMP match: get of var bind pattern fails %r", rc);
@@ -597,8 +597,6 @@ tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
         rc = asn_insert_indexed(vb_seq, var_bind, -1, "");
 
         VERB("in SNMP MATCH, rc from varbind insert: %x", rc);
-
-        asn_free_value(var_bind);
 
         if (rc != 0)
             break;

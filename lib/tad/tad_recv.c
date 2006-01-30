@@ -263,7 +263,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap,
     /* Check if there is 'result' in actions */
     if (rc == 0)
     {
-        const asn_value *action_val;
+        asn_value *action_val;
         const asn_value *action_ch_val;
         asn_tag_class    t_class;
         uint16_t         t_val; 
@@ -272,7 +272,7 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap,
 
         for (i = 0; i < act_num; i++)
         { 
-            rc = asn_get_indexed(action_seq, &action_val, i);
+            rc = asn_get_indexed(action_seq, &action_val, i, NULL);
             if (rc != 0)
             {
                 ERROR("%s(): get %d action failed: %r",
@@ -348,7 +348,6 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap,
         if ((csap->state & TAD_STATE_RESULTS) || action_result)
         {
             rc = asn_insert_indexed(*packet, parsed_pdu, 0, "pdus");
-            asn_free_value(parsed_pdu);
             if (rc != 0)
             {
                 ERROR("ASN error in add next pdu %r", rc);
@@ -430,10 +429,11 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap,
     /* process action, if it present. */
     if (rc == 0) 
     { 
-        const asn_value *action_val;
+        asn_value *action_val;
+
         for (i = 0; i < act_num; i++)
         { 
-            rc = asn_get_indexed(action_seq, &action_val, i);
+            rc = asn_get_indexed(action_seq, &action_val, i, NULL);
 
             if (rc != 0)
             {
@@ -650,7 +650,6 @@ tad_tr_sr_generate_pattern(csap_p csap, asn_value_p template,
             rc = asn_insert_indexed(pattern_unit, gen_pattern_pdu, 
                                     layer, "pdus");
 
-        asn_free_value(gen_pattern_pdu);
         asn_free_value(layer_pattern);
         asn_free_value(layer_tmpl_pdu);
 
@@ -664,7 +663,6 @@ tad_tr_sr_generate_pattern(csap_p csap, asn_value_p template,
         rc = asn_insert_indexed(*pattern, pattern_unit, 0, "");
     }
     VERB("%s, returns %r", __FUNCTION__, rc);
-    asn_free_value(pattern_unit);
     return rc;
 }
 
@@ -907,7 +905,7 @@ tad_receiver_thread(void *arg)
             asn_free_value(result);
             result = NULL;
 
-            asn_get_indexed(pattern, &pattern_unit, 0);
+            asn_get_indexed(pattern, &pattern_unit, 0, NULL);
             rc = tad_tr_recv_match_with_unit(read_buffer, d_len, csap,
                                              pattern_unit, &result); 
 
@@ -1055,7 +1053,7 @@ tad_receiver_thread(void *arg)
 
             for (unit = 0; unit < num_pattern_units; unit ++)
             {
-                rc = asn_get_indexed(nds, &pattern_unit, unit);
+                rc = asn_get_indexed(nds, &pattern_unit, unit, NULL);
                 if (rc != 0)
                 {
                     WARN("Get pattern unit fails %r", rc);

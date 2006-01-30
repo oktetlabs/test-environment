@@ -543,12 +543,10 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
     pattern = asn_init_value(ndn_traffic_pattern);
     if ((rc = asn_insert_indexed(pattern, pattern_unit, 0, "")) != 0)
     {
-        asn_free_value(pattern_unit);
         asn_free_value(pattern);
         ERROR("%s: pattern unit insertion error: %r", __FUNCTION__, rc);
         return rc;
     }
-    asn_free_value(pattern_unit);
 
     rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern,
                                timeout, 0, mode);

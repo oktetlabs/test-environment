@@ -271,13 +271,10 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
 
     if ((rc = asn_insert_indexed(pattern, pattern_unit, 0, "")) != 0)
     {
-        asn_free_value(pattern_unit);
         asn_free_value(pattern);
         ERROR("%s: insert pattern unit error %r", __FUNCTION__, rc);
         return rc; 
     } 
-
-    asn_free_value(pattern_unit);
 
     if ((rc = tapi_tad_trrecv_start(ta_name, sid, csap, pattern,
                                     timeout, num, mode)) != 0) 
@@ -485,7 +482,6 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     }
 
 cleanup:
-    asn_free_value(tcp_pdu); 
     if (rc != 0)
         asn_free_value(*tmpl); 
 
@@ -542,8 +538,6 @@ tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
     }
 
 cleanup:
-    asn_free_value(tcp_pdu); 
-
     if (rc != 0)
         asn_free_value(*pattern); 
 

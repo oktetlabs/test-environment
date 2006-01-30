@@ -763,7 +763,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
         asn_value *pdus = NULL;
 
         if (!sr_flag)
-            asn_get_indexed(nds, (const asn_value **)&pattern_unit, i);
+            asn_get_indexed(nds, &pattern_unit, i, NULL);
         else
             pattern_unit = nds;
 

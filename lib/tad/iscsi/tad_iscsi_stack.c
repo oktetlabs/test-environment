@@ -88,7 +88,7 @@ tad_iscsi_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 {
     te_errno            rc;
     int32_t             int32_val;
-    const asn_value    *iscsi_nds;
+    asn_value          *iscsi_nds;
     tad_iscsi_rw_data  *rw_data; 
 
 
@@ -100,7 +100,7 @@ tad_iscsi_rw_init_cb(csap_p csap, const asn_value *csap_nds)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     csap_set_rw_data(csap, rw_data);
 
-    rc = asn_get_indexed(csap_nds, &iscsi_nds, 0);
+    rc = asn_get_indexed(csap_nds, &iscsi_nds, 0, NULL);
     if (rc != 0)
     {
         ERROR("%s() get iSCSI csap spec failed %r", __FUNCTION__, rc);

@@ -584,7 +584,6 @@ ndn_forw_action_plain_to_asn(const ndn_forw_action_plain *forw_action,
                                                 pair_val, i, "#discr");
                         VERB("%s: insert discr.pair N %d to delay, rc: %r",
                              __FUNCTION__, i, rc);
-                        asn_free_value(pair_val);
                     }
                     if (rc != 0)
                         break;

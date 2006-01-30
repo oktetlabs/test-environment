@@ -386,7 +386,6 @@ tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
             {
                 /* END and PAD options don't have length and value */
                 rc = asn_insert_indexed(opt_list, opt, -1, "");
-                asn_free_value(opt);
                 continue;
             }
 
@@ -419,7 +418,6 @@ tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
                         FILL_DHCP_OPT_FIELD(sub_opt, "value", sub_opt_len);
 
                         asn_insert_indexed(sub_opt_list, sub_opt, -1, "");
-                        asn_free_value(sub_opt);
                     }
                     rc = asn_write_component_value(opt, sub_opt_list,
                                                    "options");
@@ -427,7 +425,6 @@ tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
                 }
             }
             rc = asn_insert_indexed(opt_list, opt, -1, "");
-            asn_free_value(opt);
         }
         if (parsed_packet != NULL)
         {

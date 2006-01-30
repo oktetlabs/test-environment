@@ -178,8 +178,6 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
         rc = asn_insert_indexed(csap_spec, csap_level_spec, 0, "");
         if (rc != 0) break;
 
-        asn_free_value(csap_level_spec);
-
         csap_level_spec = asn_init_value(ndn_generic_csap_level);
 
         if (eth_dev)
@@ -220,7 +218,6 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
     asn_free_value(csap_spec);
     asn_free_value(csap_ip4_level);
     asn_free_value(csap_eth_level);
-    asn_free_value(csap_level_spec);
 
     unlink(csap_fname); 
 

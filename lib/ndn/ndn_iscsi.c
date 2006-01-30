@@ -216,9 +216,8 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
 #define MAX_INT_VALUE_LEN           10    
     while (segment_data_index < segment_data_len)
     {
-        if ((rc = asn_get_indexed(segment_data, 
-                                  (const asn_value **)&key_pair, 
-                                  segment_data_index++)) != 0)
+        if ((rc = asn_get_indexed(segment_data, &key_pair, 
+                                  segment_data_index++, NULL)) != 0)
         {
             ERROR("%s, %d: cannot get segment data length, %r", 
                   __FUNCTION__, __LINE__, rc);
@@ -271,9 +270,8 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
         
         while (key_values_index < key_values_len)
         {
-            if ((rc = asn_get_indexed(key_values, 
-                                      (const asn_value **)&key_value, 
-                                      key_values_index++)) != 0)
+            if ((rc = asn_get_indexed(key_values, &key_value, 
+                                      key_values_index++, NULL)) != 0)
             {
                 ERROR("%s, %d: cannot get key_value, %r",
                       __FUNCTION__, __LINE__, rc);
@@ -468,8 +466,6 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
                   __FUNCTION__, __LINE__, rc);
             return rc;
         }
-        asn_free_value(key_value);
-        asn_free_value(key_pair);
     }
     
 padding:

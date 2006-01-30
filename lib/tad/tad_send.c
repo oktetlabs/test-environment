@@ -1270,8 +1270,9 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
     for (i = 0; i < arg_num; i++)
     { 
         const asn_value *arg_val;
-        const asn_value *arg_spec_elem;
-        rc = asn_get_indexed(arg_set, &arg_spec_elem, i);
+        asn_value *arg_spec_elem;
+
+        rc = asn_get_indexed(arg_set, &arg_spec_elem, i, NULL);
         if (rc) break;
 
         rc = asn_get_choice_value(arg_spec_elem, &arg_val,
@@ -1297,8 +1298,9 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
                     unsigned j;
                     for (j = 0; j < enum_len; j++)
                     {
-                        const asn_value *int_val;
-                        asn_get_indexed(arg_val, &int_val, j);
+                        asn_value *int_val;
+
+                        asn_get_indexed(arg_val, &int_val, j, NULL);
                         asn_read_int32(int_val, &arg_param, "");
                         arg_specs[i].int_seq.ints[j] = arg_param;
                     }

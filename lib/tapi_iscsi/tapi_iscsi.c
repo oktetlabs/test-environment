@@ -27,6 +27,7 @@
  */
 
 #define TE_LGR_USER "TAPI iSCSI"
+#define TE_LOG_LEVEl 0xff
 
 #include "te_config.h"
 
@@ -609,7 +610,8 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     asn_write_value_field(pattern, NULL, 0, "actions.0.#report");
     asn_write_value_field(pattern, NULL, 0, "actions.1.#break");
 
-    if ((rc = asn_insert_indexed(pattern_a, pattern, 0, "")) != 0)
+    if ((rc = asn_insert_indexed(pattern_a,
+                                 asn_copy_value(pattern), 0, "")) != 0)
     {
         ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
               __FUNCTION__, rc, syms);
@@ -731,13 +733,12 @@ tapi_iscsi_get_key_num(iscsi_segment_data data)
 char *
 tapi_iscsi_get_key_name(iscsi_segment_data segment_data, int key_index)
 {
-    int rc;
-    const asn_value *key_pair;
-    char            *name;
+    int         rc;
+    asn_value  *key_pair;
+    char       *name;
 
-    if ((rc = asn_get_indexed(segment_data, 
-                              &key_pair,
-                              key_index)) != 0)
+    if ((rc = asn_get_indexed(segment_data, &key_pair,
+                              key_index, NULL)) != 0)
     {
         ERROR("%s, %d: cannot get key pair, %r",
               __FUNCTION__, __LINE__, rc);
@@ -765,7 +766,7 @@ tapi_iscsi_get_key_index_by_name(iscsi_segment_data data, char *name)
 
     char *key;
 
-    const asn_value *key_pair;
+    asn_value *key_pair;
 
     if ((key_num = asn_get_length(data, "")) == -1)
     {
@@ -775,7 +776,7 @@ tapi_iscsi_get_key_index_by_name(iscsi_segment_data data, char *name)
     }
     for (key_index = 0; key_index < key_num; key_index++)
     {
-       if ((rc = asn_get_indexed(data, &key_pair, key_index)) != 0)
+       if ((rc = asn_get_indexed(data, &key_pair, key_index, NULL)) != 0)
        {
            ERROR("%s, %d: cannot get key from segment data, %r",
                  __FUNCTION__, __LINE__, rc);
@@ -807,12 +808,11 @@ tapi_iscsi_get_key_values(iscsi_segment_data data,
 {
     int rc;
 
-    const asn_value *key_pair;
+    asn_value *key_pair;
     const asn_value *key_values;
 
-    if ((rc = asn_get_indexed(data, 
-                              &key_pair,
-                              key_index)) != 0)
+    if ((rc = asn_get_indexed(data, &key_pair,
+                              key_index, NULL)) != 0)
     {
         ERROR("%s, %d: cannot get key pair, %r",
               __FUNCTION__, __LINE__, rc);
@@ -853,9 +853,9 @@ tapi_iscsi_get_key_value(iscsi_key_values values,
 {
     int rc;
     
-    const asn_value     *elem;
+    asn_value     *elem;
 
-    if ((rc = asn_get_indexed(values, &elem, key_value_index)) != 0)
+    if ((rc = asn_get_indexed(values, &elem, key_value_index, NULL)) != 0)
     {
         ERROR("%s, %d: cannot get value, %r",
               __FUNCTION__, __LINE__, rc);
@@ -931,7 +931,6 @@ tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
         return TAPI_ISCSI_KEY_INVALID;
     }
 
-    asn_free_value(key_pair);
     return (key_index == TAPI_ISCSI_KEY_INVALID) ? key_num : key_index;
 }
 
@@ -983,7 +982,6 @@ tapi_iscsi_key_values_create(int num, ...)
                   __FUNCTION__, __LINE__, rc);
             goto cleanup;
         }
-        asn_free_value(key_value);
     }
 cleanup:
     if (key_values == NULL || rc != 0)
@@ -1004,9 +1002,8 @@ tapi_iscsi_set_key_values(iscsi_segment_data data,
 
     asn_value *key_pair;
 
-    if ((rc = asn_get_indexed(data, 
-                              (const asn_value **)&key_pair, 
-                              key_index)) != 0)
+    if ((rc = asn_get_indexed(data, &key_pair, 
+                              key_index, NULL)) != 0)
     {
         ERROR("%s, %d: cannot get element, %r",
               __FUNCTION__, __LINE__, rc);
@@ -1101,7 +1098,6 @@ cleanup:
         asn_free_value(segment_data);
         segment_data = NULL;
     }
-    asn_free_value(key_pair);
     return segment_data;
 }
            
@@ -1204,7 +1200,6 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
                   __FUNCTION__, __LINE__);
             return -1;
         }
-        asn_free_value(key_value);
     }
     va_end(list);
     return 0;
@@ -1366,9 +1361,9 @@ tapi_iscsi_key_value_read(iscsi_key_values val_array,
 {
     int rc;
 
-    const asn_value *key_value;
+    asn_value *key_value;
 
-    if ((rc = asn_get_indexed(val_array, &key_value, val_index)) != 0)
+    if ((rc = asn_get_indexed(val_array, &key_value, val_index, NULL)) != 0)
     {
         ERROR("%s(): asn_get_indexed failed %r", __FUNCTION__, rc);
         return rc;
@@ -1401,8 +1396,8 @@ tapi_iscsi_key_value_write(iscsi_key_values val_array,
         return rc;
     }
 
-    if ((rc = asn_get_indexed(val_array, (const asn_value **)&key_value, 
-                              val_index)) != 0)
+    if ((rc = asn_get_indexed(val_array, &key_value, 
+                              val_index, NULL)) != 0)
     {
         ERROR("%s(): asn_get_indexed failed %r", __FUNCTION__, rc);
         return rc;

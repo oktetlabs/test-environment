@@ -506,7 +506,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     CHECK_ERROR("get pdus error");
 
     val = subval;
-    rc = asn_get_indexed(val, &subval, 0);
+    rc = asn_get_indexed(val, &subval, 0, NULL);
     CHECK_ERROR("get TCP gen pdu error");
 
     val = subval;

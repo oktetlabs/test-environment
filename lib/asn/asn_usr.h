@@ -158,35 +158,6 @@ extern asn_value *asn_copy_value(const asn_value *value);
  */
 extern void asn_free_value(asn_value *value);
 
-/**
- * Free subvalue of constraint ASN value instance.
- *
- * @param container   ASN value which subvalue should be destroyed
- * @param labels      string with dot-separated sequence of textual field
- *                    labels, specifying subvalue in ASN value tree with 
- *                    'container' as a root. Label for 'SEQUENCE OF' and 
- *                    'SET OF' subvalues is decimal notation of its integer 
- *                    index in array. Choice labels shouls be prepended by
- *                    symbol '#'
- *
- * @return zero on success, otherwise error code.
- */
-extern int asn_free_subvalue(asn_value *value, const char *labels);
-
-/**
- * Free one-level subvalue of constraint ASN value instance by tag.
- * For CHOICE syntax value tag is ignored.
- *
- * @param value       ASN value which subvalue should be destroyed
- * @param tag_class   class of ASN tag
- * @param tag_val     value of ASN tag
- *
- * @return zero on success, otherwise error code.
- */
-extern int asn_free_child_value(asn_value *value, 
-                                asn_tag_class tag_class,
-                                uint16_t tag_val);
-
 
 /**
  * Obtain ASN type to which specified value belongs. 
@@ -206,6 +177,11 @@ extern const asn_type *asn_get_type(const asn_value *value);
  */
 extern const char *asn_get_type_name(const asn_type *type);
 
+
+
+/*
+ * Text processing methods
+ */
 
 
 /**
@@ -270,6 +246,7 @@ extern int asn_parse_file(const char *filename, char **found_names, int *found_l
 extern int asn_parse_dvalue_in_file(const char *filename, const asn_type *type, 
                                 asn_value **parsed_value, int *syms_parsed); 
 
+
 /**
  * Prepare textual ASN.1 presentation of passed value and put it into specified
  * buffer. 
@@ -296,6 +273,13 @@ extern int asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len
 extern int asn_save_to_file(const asn_value *value, const char *filename);
 
 
+/*
+ * BER encode/decode, unsupported now...
+ */
+
+
+
+
 /**
  * BER encoding of passed ASN value.
  *
@@ -316,6 +300,157 @@ extern int asn_encode(void *buf, size_t *buf_len, asn_value *value);
  * @return pointer to new asn_value instance or NULL if error occurred. 
  */ 
 extern asn_value *asn_decode(const void *data);
+
+
+/*
+ * New API routines
+ */
+
+
+/**
+ * Free one-level subvalue of constraint ASN value instance by tag.
+ * For CHOICE syntax value tag is ignored.
+ *
+ * @param value       ASN value which subvalue should be destroyed
+ * @param tag_class   class of ASN tag
+ * @param tag_val     value of ASN tag
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern int asn_free_child(asn_value *value,
+                          asn_tag_class tag_class, uint16_t tag_val);
+
+/**
+ * Free subvalue of constraint ASN value instance, which may be
+ * very deep in value-constrain tree. 
+ *
+ * @param container   ASN value which subvalue should be destroyed
+ * @param labels      string with dot-separated sequence of textual field
+ *                    labels, specifying subvalue in ASN value tree with 
+ *                    'container' as a root. Label for 'SEQUENCE OF' and 
+ *                    'SET OF' subvalues is decimal notation of its integer 
+ *                    index in array. Choice labels shouls be prepended by
+ *                    symbol '#'
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern int asn_free_descendant(asn_value *value, const char *labels);
+
+
+
+
+
+/**
+ * Get descendent subvalue of some ASN value with CONSTRAINT syntax.
+ * Got subvalue should NOT be freed!
+ *
+ * This method is much faster then "asn_read_component_value' because it does
+ * not make external copy of subvalue. 
+ * 
+ * @param container     root of ASN value tree which subvalue is interested
+ * @param subval        location for pointer to ASN sub-value (OUT)
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success or error code.
+ */ 
+extern int asn_get_descendent(asn_value *container, 
+                              asn_value **subval, 
+                              const char *labels);
+
+
+
+/**
+ * Insert array element in indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF') 
+ * subvalue of root ASN value container. 
+ * Passed subvalue will NOT copied, do not free it after this method!
+ *
+ * @param container     root of ASN value tree which subvalue is interested
+ * @param elem_value    ASN value to be placed into the array, specified 
+ *                      by labels at place, specified by index
+ * @param index         array index of place to which element should be
+ *                      inserted
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success, otherwise error code.
+ */ 
+extern int asn_insert_indexed(asn_value *container,
+                              asn_value *elem_value, 
+                              int index, const char *labels);
+
+/**
+ * Remove array element from indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF')
+ * subvalue of root ASN value container.
+ *
+ * @param container     root of ASN value tree which subvalue is interested
+ * @param index         array index of element to be removed
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success, otherwise error code.
+ */ 
+extern int asn_remove_indexed(asn_value *container, 
+                              int index, const char *labels);
+
+/**
+ * Get subvalue of ASN value with indexed ('SEQUENCE OF' or 'SET OF') 
+ * syntax. Got subvalue should NOT be freed!
+ *
+ * This method does not make external copy of subvalue. 
+ * 
+ * @param container     root of ASN value tree which subvalue is interested
+ * @param subval        location for pointer to ASN sub-value (OUT)
+ * @param index         index of subvalue
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ *
+ * @return zero on success or error code.
+ */ 
+extern int asn_get_indexed(asn_value *container, 
+                           asn_value **subval, 
+                           int index, const char *labels);
+
+
+/* ======================================================================
+ * All methods below are depricated, or will become such in nearest 
+ * future. It is recommended to use methods above, if there is 
+ * applicable to your task.
+ * ======================================================================
+ */
+
+/**
+ * Free subvalue of constraint ASN value instance.
+ *
+ * @param container   ASN value which subvalue should be destroyed
+ * @param labels      string with dot-separated sequence of textual field
+ *                    labels, specifying subvalue in ASN value tree with 
+ *                    'container' as a root. Label for 'SEQUENCE OF' and 
+ *                    'SET OF' subvalues is decimal notation of its integer 
+ *                    index in array. Choice labels shouls be prepended by
+ *                    symbol '#'
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern int asn_free_subvalue(asn_value *value, const char *labels);
+
+/**
+ * Free one-level subvalue of constraint ASN value instance by tag.
+ * For CHOICE syntax value tag is ignored.
+ *
+ * @param value       ASN value which subvalue should be destroyed
+ * @param tag_class   class of ASN tag
+ * @param tag_val     value of ASN tag
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern int asn_free_child_value(asn_value *value, 
+                                asn_tag_class tag_class,
+                                uint16_t tag_val);
+
+
+
+
 
 
 
@@ -514,7 +649,8 @@ extern int asn_read_component_value(const asn_value *container,
  */ 
 extern int asn_write_indexed(asn_value *container,
                              const asn_value *elem_value, 
-                             int index, const char *labels);
+                             int index,
+                             const char *labels);
 
 /**
  * Read array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue 
@@ -529,38 +665,6 @@ extern int asn_write_indexed(asn_value *container,
  */ 
 extern asn_value *asn_read_indexed(const asn_value *container, 
                                     int index, const char *labels);
-
-/**
- * Insert array element in indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF') 
- * subvalue of root ASN value container. 
- *
- * @param container     root of ASN value tree which subvalue is interested
- * @param elem_value    ASN value to be placed into the array, specified 
- *                      by labels at place, specified by index
- * @param index         array index of place to which element should be
- *                      inserted
- * @param labels        textual ASN labels of subvalue; see 
- *                      asn_free_subvalue method for more description
- *
- * @return zero on success, otherwise error code.
- */ 
-extern int asn_insert_indexed(asn_value *container,
-                              const asn_value *elem_value, 
-                              int index, const char *labels );
-
-/**
- * Remove array element from indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF')
- * subvalue of root ASN value container. 
- *
- * @param container     root of ASN value tree which subvalue is interested
- * @param index         array index of element to be removed
- * @param labels        textual ASN labels of subvalue; see 
- *                      asn_free_subvalue method for more description
- *
- * @return zero on success, otherwise error code.
- */ 
-extern int asn_remove_indexed(asn_value *container, 
-                              int index, const char *labels );
 
 /**
  * Get length of subvalue of root ASN value container. 
@@ -679,25 +783,6 @@ extern int asn_get_subvalue(const asn_value *container,
                             const char *labels);
 
 
-/**
- * Get constant pointer to subvalue of ASN value with indexed 
- * ('SEQUENCE OF' or 'SET OF') syntax. 
- * User may try to discard 'const' qualifier of obtained subvalue only 
- * if he (she) knows very well what he doing with ASN value. 
- * In particular, got subvalue should NOT be freed!
- *
- * This method is much faster then "asn_read_component_value' because it does
- * not make external copy of subvalue. 
- * 
- * @param container     root of ASN value tree which subvalue is interested
- * @param subval        location for pointer to ASN sub-value (OUT)
- * @param index         index of subvalue
- *
- * @return zero on success or error code.
- */ 
-extern int asn_get_indexed(const asn_value *container, 
-                           const asn_value **subval, 
-                           int index);
 
 /**
  * Get ASN type of on-level child of constaint ASN type by child tag.
