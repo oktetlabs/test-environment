@@ -274,7 +274,6 @@ extern int tapi_iscsi_forward_all(const char *ta_name, int session,
                                   unsigned int timeout, int *forwarded);
 
 
-
 /**
  * Pass all iSCSI PDUs from one iSCSI CSAP to another and reverse, 
  * until in both directions silence will be established during specified 

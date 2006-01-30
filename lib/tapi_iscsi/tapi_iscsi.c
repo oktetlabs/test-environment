@@ -427,6 +427,9 @@ cleanup:
     return rc;
 }
 
+/* In milliseconds */
+#define INTERNAL_SLEEP_TIMEOUT 256
+
 /* See description in tapi_iscsi.h */
 te_errno
 tapi_iscsi_exchange_until_silent(const char *ta, int session, 
@@ -439,6 +442,8 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
     asn_value  *pattern = NULL;
     unsigned    pkts_a = 0, pkts_b = 0, 
                 prev_pkts_a, prev_pkts_b;
+
+    uint32_t    periods_silent = 0;
 
     struct timespec ts_timeout;
 
@@ -482,7 +487,6 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
     }
 
     do { 
-#if 1
         tad_csap_status_t csap_a_status, csap_b_status;
 
         rc = tapi_csap_get_status(ta, session, csap_a, &csap_a_status);
@@ -497,20 +501,21 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
             ERROR("%s(): get CSAP B status failed %r", __FUNCTION__, rc);
             goto cleanup;
         }
+
         if (csap_a_status != CSAP_BUSY || csap_b_status != CSAP_BUSY)
         {
             WARN("%s(): csap status are not 'busy': A %d, B %d", 
                  __FUNCTION__, csap_a_status, csap_b_status);
             break;
         }
-#endif
 
         prev_pkts_a = pkts_a;
         prev_pkts_b = pkts_b;
 
-        ts_timeout.tv_sec  = timeout / 1000;
-        ts_timeout.tv_nsec = (timeout % 1000) * 1000000;
-        INFO("%s(): Sleeping %u milliseconds", __FUNCTION__, timeout);
+        ts_timeout.tv_sec  = 0;
+        ts_timeout.tv_nsec = INTERNAL_SLEEP_TIMEOUT * 1000000;
+        INFO("%s(): Sleeping %u milliseconds", 
+             __FUNCTION__, INTERNAL_SLEEP_TIMEOUT);
         if (nanosleep(&ts_timeout, NULL) != 0)
         {
             INFO("Sleep interrupted");
@@ -532,8 +537,12 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
         } 
         INFO("%s(): a %d, b %d, new a %d, new b %d", 
              __FUNCTION__, prev_pkts_a, prev_pkts_b, pkts_a, pkts_b);
+        if (prev_pkts_a < pkts_a || prev_pkts_b < pkts_b)
+            periods_silent = 0;
+        else 
+            periods_silent++;
 
-    } while (prev_pkts_a < pkts_a || prev_pkts_b < pkts_b);
+    } while (periods_silent < (timeout/INTERNAL_SLEEP_TIMEOUT + 1));
 
 
 cleanup:
