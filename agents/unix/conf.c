@@ -36,6 +36,7 @@
 #endif
 
 #include <stdio.h>
+#include <ctype.h>
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -302,6 +303,10 @@ static te_errno route_dev_get(unsigned int, const char *, char *,
                               const char *);
 static te_errno route_dev_set(unsigned int, const char *, const char *,
                               const char *);
+static te_errno route_type_get(unsigned int, const char *, char *,
+                              const char *);
+static te_errno route_type_set(unsigned int, const char *, const char *,
+                              const char *);
 static te_errno route_get(unsigned int, const char *, char *, const char *);
 static te_errno route_set(unsigned int, const char *, const char *,
                           const char *);
@@ -325,7 +330,10 @@ static te_errno user_del(unsigned int, const char *, const char *);
 
 static rcf_pch_cfg_object node_route;
 
-RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, NULL,
+RCF_PCH_CFG_NODE_RWC(node_route_type, "type", NULL, NULL,
+                     route_type_get, route_type_set, &node_route);
+
+RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, &node_route_type,
                      route_irtt_get, route_irtt_set, &node_route);
 
 RCF_PCH_CFG_NODE_RWC(node_route_win, "win", NULL, &node_route_irtt,
@@ -3552,6 +3560,7 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
     return 0;
 }
 
+
 /** 
  * The code of this function is based on iproute2 GPL package.
  *
@@ -3562,6 +3571,20 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
 static te_errno
 route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
 {
+    static unsigned ta_rt_type2rtm_type[TA_RT_TYPE_MAX_VALUE] = 
+        {
+            RTN_UNSPEC,
+            RTN_UNICAST,
+            RTN_LOCAL,
+            RTN_BROADCAST,
+            RTN_ANYCAST,
+            RTN_MULTICAST,
+            RTN_BLACKHOLE,
+            RTN_UNREACHABLE,
+            RTN_PROHIBIT,
+            RTN_THROW,
+            RTN_NAT
+        };
     struct nl_request  req;
     struct rtnl_handle rth;
     te_errno           rc;
@@ -3583,7 +3606,7 @@ route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
     {
         req.r.rtm_protocol = RTPROT_BOOT;
         req.r.rtm_scope = RT_SCOPE_UNIVERSE;
-        req.r.rtm_type = RTN_UNICAST;
+        req.r.rtm_type  = ta_rt_type2rtm_type[rt_info->type];
     }
 
     /* Sending the netlink message */
@@ -3608,22 +3631,28 @@ route_change(ta_rt_info_t *rt_info, int action, unsigned flags)
         return rc;
     }
     
+    switch (req.r.rtm_type)
     {
-        if (req.r.rtm_type == RTN_LOCAL ||
-            req.r.rtm_type == RTN_NAT)
+        case RTN_LOCAL:
+        case RTN_NAT:
             req.r.rtm_scope = RT_SCOPE_HOST;
-        else if (req.r.rtm_type == RTN_BROADCAST ||
-                 req.r.rtm_type == RTN_MULTICAST ||
-                 req.r.rtm_type == RTN_ANYCAST)
-            req.r.rtm_scope = RT_SCOPE_LINK;
-        else if (req.r.rtm_type == RTN_UNICAST ||
-                 req.r.rtm_type == RTN_UNSPEC)
+            break;
+        case RTN_UNICAST:
+        case RTN_UNSPEC:
         {
             if (action == RTM_DELROUTE)
                 req.r.rtm_scope = RT_SCOPE_NOWHERE;
             else if ((rt_info->flags & TA_RT_INFO_FLG_GW) == 0)
                 req.r.rtm_scope = RT_SCOPE_LINK;
+            break;
         }
+        case RTN_BLACKHOLE:
+        case RTN_UNREACHABLE:
+        case RTN_PROHIBIT:
+            req.r.rtm_scope = RT_SCOPE_NOWHERE;
+            break;
+        default:
+            req.r.rtm_scope = RT_SCOPE_LINK;
     }
 
     if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
@@ -3657,6 +3686,20 @@ static int
 rtnl_get_route_cb(const struct sockaddr_nl *who,
                   const struct nlmsghdr *n, void *arg)
 {
+    static ta_route_type rtm_type2ta_rt_type[TA_RT_TYPE_MAX_VALUE] = 
+        {
+            TA_RT_TYPE_UNSPECIFIED,
+            TA_RT_TYPE_UNICAST,
+            TA_RT_TYPE_LOCAL,
+            TA_RT_TYPE_BROADCAST,
+            TA_RT_TYPE_ANYCAST,
+            TA_RT_TYPE_MULTICAST,
+            TA_RT_TYPE_BLACKHOLE,
+            TA_RT_TYPE_UNREACHABLE,
+            TA_RT_TYPE_PROHIBIT,
+            TA_RT_TYPE_THROW,
+            TA_RT_TYPE_NAT
+        };
     struct rtmsg        *r = NLMSG_DATA(n);
     int                  len = n->nlmsg_len;
     rtnl_cb_user_data_t *user_data = (rtnl_cb_user_data_t *)arg;
@@ -3676,6 +3719,8 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
     {
        return 0;        
     }
+
+    user_data->rt_info->type = rtm_type2ta_rt_type[r->rtm_type];
 
     len -= NLMSG_LENGTH(sizeof(*r));
 
@@ -3919,7 +3964,7 @@ route_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE ,route_name, value);
+    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value);
 }
 
 /**
@@ -3959,9 +4004,18 @@ route_load_attrs(ta_cfg_obj_t *obj)
     if (rt_info.flags & TA_RT_INFO_FLG_IF &&
         (rc = ta_obj_set(TA_OBJ_TYPE_ROUTE,
                         obj->name, "dev",
-                        val, NULL) != 0))
+                         val, NULL)) != 0)
     {
         ERROR("Invalid interface");
+        return rc;
+    }
+
+    if ((rc = ta_obj_set(TA_OBJ_TYPE_ROUTE,
+                         obj->name, "type",
+                         ta_rt_type2name(rt_info.type), 
+                         NULL)) != 0)
+    {
+        ERROR("Invalid route type");
         return rc;
     }
 
@@ -4018,6 +4072,7 @@ DEF_ROUTE_SET_FUNC(win);
 DEF_ROUTE_GET_FUNC(irtt);
 DEF_ROUTE_SET_FUNC(irtt);
 DEF_ROUTE_SET_FUNC(dev);
+DEF_ROUTE_SET_FUNC(type);
 
 static te_errno
 route_dev_get(unsigned int gid, const char *oid,
@@ -4035,6 +4090,27 @@ route_dev_get(unsigned int gid, const char *oid,
     sprintf(value, "%s", rt_info.ifname);
     return 0;
 }
+
+static te_errno
+route_type_get(unsigned int gid, const char *oid,
+              char *value, const char *route) 
+{
+    te_errno     rc;
+    ta_rt_info_t rt_info;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    if ((rc = route_find(route, &rt_info)) != 0)
+        return rc;
+
+    if (rt_info.type >= TA_RT_TYPE_MAX_VALUE)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    sprintf(value, "%s", ta_rt_type2name(rt_info.type));
+    return 0;
+}
+
 
 #undef DEF_ROUTE_GET_FUNC
 #undef DEF_ROUTE_SET_FUNC
@@ -4083,10 +4159,10 @@ route_del(unsigned int gid, const char *oid, const char *route)
 
 #ifdef USE_NETLINK
 
-typedef struct{
+typedef struct {
     int           family;        /**< Route address family */
     char         *buf;           /**< Where to print the route */
-}rtnl_print_route_cb_user_data_t;
+} rtnl_print_route_cb_user_data_t;
 
 static int
 rtnl_print_route_cb(const struct sockaddr_nl *who,
@@ -4145,10 +4221,13 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
 
     parse_rtattr(tb, RTA_MAX, RTM_RTA(r), len);
 
-    ifname = ll_index_to_name(*(int *)RTA_DATA(tb[RTA_OIF]));
-    if (!INTERFACE_IS_MINE(ifname))
-        return 0;
-   
+    if (tb[RTA_OIF] != NULL)
+    {
+        ifname = ll_index_to_name(*(int *)RTA_DATA(tb[RTA_OIF]));
+        if (!INTERFACE_IS_MINE(ifname))
+            return 0;
+    }
+
     p = user_data->buf;
     
     if (tb[RTA_DST] == NULL)
@@ -4321,7 +4400,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         ta_obj_free(obj);
         return rc;
     }
-   
+
     obj_action = obj->action;
     ta_rt_parse_inst_name(obj->name, &rt_info_name_only);
 
@@ -4352,7 +4431,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
                 return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
         
-    rc = route_change(&rt_info, nlm_action, nlm_flags);
+        rc = route_change(&rt_info, nlm_action, nlm_flags);
     }
     
     return rc;

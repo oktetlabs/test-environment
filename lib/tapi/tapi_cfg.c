@@ -87,6 +87,7 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              int addr_family,
                              const void *dst_addr, int prefix,
                              const void *gw_addr, const char *dev,
+                             const char *type,
                              uint32_t flags, int metric, int tos, int mtu,
                              int win, int irtt, cfg_handle *cfg_hndl);
 
@@ -598,9 +599,25 @@ tapi_cfg_add_route(const char *ta, int addr_family,
                    int win, int irtt, cfg_handle *cfg_hndl)
 {
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev,
+                             dst_addr, prefix, gw_addr, dev, NULL,
                              flags, metric, tos, mtu, win, irtt, cfg_hndl);
 }
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_add_typed_route(const char *ta, int addr_family,
+                         const void *dst_addr, int prefix,
+                         const void *gw_addr, const char *dev, 
+                         const char *type,
+                         uint32_t flags, int metric, int tos, int mtu,
+                         int win, int irtt, cfg_handle *cfg_hndl)
+{
+    return tapi_cfg_route_op(OP_ADD, ta, addr_family,
+                             dst_addr, prefix, gw_addr, dev, type,
+                             flags, metric, tos, mtu, win, irtt, cfg_hndl);
+}
+
+
 
 /* See the description in tapi_cfg.h */
 int
@@ -611,10 +628,24 @@ tapi_cfg_modify_route(const char *ta, int addr_family,
                    int win, int irtt, cfg_handle *cfg_hndl)
 {
     return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev,
+                             dst_addr, prefix, gw_addr, dev, NULL,
                              flags, metric, tos, mtu, win, irtt, cfg_hndl);
 }
 
+
+/* See the description in tapi_cfg.h */
+int
+tapi_cfg_modify_typed_route(const char *ta, int addr_family,
+                            const void *dst_addr, int prefix,
+                            const void *gw_addr, const char *dev,
+                            const char *type,
+                            uint32_t flags, int metric, int tos, int mtu,
+                            int win, int irtt, cfg_handle *cfg_hndl)
+{
+    return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
+                             dst_addr, prefix, gw_addr, dev, type,
+                             flags, metric, tos, mtu, win, irtt, cfg_hndl);
+}
 
 /* See the description in tapi_cfg.h */
 int
@@ -625,7 +656,7 @@ tapi_cfg_del_route_tmp(const char *ta, int addr_family,
                        int mtu, int win, int irtt)
 {
     return tapi_cfg_route_op(OP_DEL, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev,
+                             dst_addr, prefix, gw_addr, dev, NULL,
                              flags, metric, tos, mtu, win, irtt, NULL);
 }
 
@@ -746,6 +777,8 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
  * @param dst_addr      Destination address of the route
  * @param prefix        Prefix for dst_addr
  * @param gw_addr       Gateway address of the route
+ * @param dev           Interface name
+ * @param type          Route type
  * @param cfg_hndl      Handle of the route in Configurator DB (OUT)
  *
  * @return Status code
@@ -755,7 +788,7 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
 static int
 tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                   const void *dst_addr, int prefix, const void *gw_addr,
-                  const char *dev, uint32_t flags,
+                  const char *dev, const char *type, uint32_t flags,
                   int metric, int tos, int mtu, int win, int irtt,
                   cfg_handle *cfg_hndl)
 {
@@ -917,6 +950,17 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                           __FUNCTION__, dev, route_inst_name, ta, rc);
                     break;
                 }
+
+                if ((type != NULL) &&
+                    ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, type),
+                          "/agent:%s/route:%s/type:", ta, route_inst_name))
+                      != 0))
+                {
+                    ERROR("%s() fails to set type to %s "
+                          "on route %s on '%s' Agent errno = %r",
+                          __FUNCTION__, type, route_inst_name, ta, rc);
+                    break;
+                }
                 
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);
@@ -974,6 +1018,17 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                     ERROR("%s() fails to set dev to %s "
                           "on a new route %s on '%s' Agent errno = %r",
                           __FUNCTION__, dev, route_inst_name, ta, rc);
+                    break;
+                }
+
+                if ((type != NULL) &&
+                    ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, type),
+                          "/agent:%s/route:%s/type:", ta, route_inst_name))
+                      != 0))
+                {
+                    ERROR("%s() fails to set type to %s "
+                          "on route %s on '%s' Agent errno = %r",
+                          __FUNCTION__, type, route_inst_name, ta, rc);
                     break;
                 }
                 

@@ -227,8 +227,33 @@ extern int ta_obj_del(const char *type, const char *name, void *user_data);
 /** Name for object of type route */
 #define TA_OBJ_TYPE_ROUTE "route"
 
+/** System-independent route types */
+typedef enum ta_route_type {
+    TA_RT_TYPE_UNSPECIFIED,
+    TA_RT_TYPE_UNICAST,
+    TA_RT_TYPE_LOCAL,
+    TA_RT_TYPE_BROADCAST,
+    TA_RT_TYPE_ANYCAST,
+    TA_RT_TYPE_MULTICAST,
+    TA_RT_TYPE_BLACKHOLE,
+    TA_RT_TYPE_UNREACHABLE,
+    TA_RT_TYPE_PROHIBIT,
+    TA_RT_TYPE_THROW,
+    TA_RT_TYPE_NAT,
+    TA_RT_TYPE_MAX_VALUE
+} ta_route_type;    
+
+/**
+ * Converts a route type id to a string representation 
+ *
+ * @param   Route type id
+ *
+ * @return  A pointer to static buffer holding the type name
+ */
+extern const char *ta_rt_type2name(ta_route_type type);
+
 /** Structure that keeps system independent representation of the route */
-typedef struct ta_rt_info {
+typedef struct ta_rt_info_t {
     struct sockaddr_storage dst; /**< Route destination address */
     uint32_t                prefix; /**< Route destination address prefix */
     /** Gateway address - for indirect routes */
@@ -241,6 +266,7 @@ typedef struct ta_rt_info {
     uint32_t                win;    /**< Route window size */
     uint32_t                irtt;   /**< Route transfer time */
     uint32_t                tos;    /**< Route type of service */
+    ta_route_type           type;   /**< Route type (e.g. unicast) */
 } ta_rt_info_t;
 
 /** Gateway address is specified for the route */

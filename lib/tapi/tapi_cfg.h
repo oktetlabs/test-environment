@@ -187,6 +187,19 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
                               cfg_handle *rt_hndl);
 
 /**
+ * Same as tapi_cfg_add_route() but allows to specify a route type
+ */
+extern int tapi_cfg_add_typed_route(const char *ta, int addr_family,
+                                    const void *dst_addr, int prefix,
+                                    const void *gw_addr, const char *dev, 
+                                    const char *type,
+                                    uint32_t flags, int metric, 
+                                    int tos, int mtu,
+                                    int win, int irtt, 
+                                    cfg_handle *cfg_hndl);
+
+
+/**
  * Changes attribute of the existing route. 
  *
  * @param ta           Test agent name
@@ -219,6 +232,19 @@ extern int tapi_cfg_modify_route(const char *ta, int addr_family,
                                  int metric, int tos, int mtu, int win,
                                  int irtt,
                                  cfg_handle *rt_hndl);
+
+/**
+ * Same as tapi_cfg_modify_route() but allows to specify a route type
+ */
+extern int tapi_cfg_modify_typed_route(const char *ta, int addr_family,
+                                       const void *dst_addr, int prefix,
+                                       const void *gw_addr, const char *dev,
+                                       const char *type,
+                                       uint32_t flags, int metric, 
+                                       int tos, int mtu,
+                                       int win, int irtt, 
+                                       cfg_handle *cfg_hndl);
+
 
 /**
  * Delete specified route

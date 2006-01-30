@@ -360,6 +360,47 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
     return 0;
 }
 
+static char *rt_type_names[TA_RT_TYPE_MAX_VALUE] = 
+{
+    "",
+    "unicast",
+    "local",
+    "broadcast",
+    "anycast",
+    "multicast",
+    "blackhole",
+    "unreachable",
+    "prohibit",
+    "throw",
+    "nat"
+};
+
+const char *
+ta_rt_type2name(ta_route_type type)
+{
+    if (type >= TA_RT_TYPE_MAX_VALUE)
+    {
+        ERROR("Invalid route type number: %d", type);
+        return "";
+    }
+    return rt_type_names[type];
+}
+
+static ta_route_type
+ta_rt_name2type(const char *name)
+{
+    char **iter;
+    
+    for (iter = rt_type_names + 1;  
+         iter < rt_type_names + TE_ARRAY_LEN(rt_type_names); 
+         iter++)
+    {
+        if (strcmp(name, *iter) == 0)
+            return iter - rt_type_names;
+    }
+    return TA_RT_TYPE_UNSPECIFIED;
+}
+
 /* See the description in rcf_pch_ta_cfg.h */
 int
 ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
@@ -416,6 +457,7 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
     char              *end_ptr;
     int                int_val;
 
+    rt_info->type = TA_RT_TYPE_UNICAST;
     for (attr = attrs; attr != NULL; attr = attr->next)
     {
         if (strcmp(attr->name, "dev") == 0)
@@ -468,6 +510,17 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
             }
             rt_info->irtt = int_val;
             rt_info->flags |= TA_RT_INFO_FLG_IRTT;
+        }
+        else if (strcmp(attr->name, "type") == 0)
+        {
+            ta_route_type type = ta_rt_name2type(attr->value);
+
+            if (type == TA_RT_TYPE_UNSPECIFIED)
+            {
+                ERROR("Invalid route type: %s", attr->value);
+                return TE_EINVAL;
+            }
+            rt_info->type = type;
         }
         else
         {
