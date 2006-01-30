@@ -103,6 +103,7 @@ recv_timeout(int s, void *buf, int len, int t)
 #ifdef __CYGWIN__
     int i;
     
+    again:
     for (i = 0; i < t && rc <= 0; i++)
     {
         struct timeval tv = { 0, 990000 };
@@ -117,13 +118,18 @@ recv_timeout(int s, void *buf, int len, int t)
     
     if (rc <= 0)
         return -2;
-        
+    
     rc = recv(s, buf, len, 0);
-    if (rc < 0)
-        ERROR("recv_timeout(): recv() failed with error %d", 
-              GetLastError());
+    if (rc >= 0)
+        return rc;
+        
+    if (GetLastError() == ERROR_IO_PENDING)
+        goto again;
+        
+    ERROR("recv_timeout(): recv() failed with error %d on "
+          "socket %d", GetLastError(), s);
 
-    return rc;              
+    return rc;          
 
 #else
     struct timeval tv = { t, 0 };
@@ -256,8 +262,9 @@ rcf_pch_rpc_server(const char *name)
     (void)tcp_nodelay_enable(s);
 #endif
 
-    RING("RPC server '%s' (re-)started (PID %d, TID %u)",
-         name, (int)getpid(), thread_self());
+    RING("RPC server '%s' (%s-bit) (re-)started (PID %d, TID %u)",
+         name, sizeof(void *) == 8 ? "64" : "32",  
+         (int)getpid(), thread_self());
 
     while (TRUE)
     {
@@ -293,7 +300,7 @@ rcf_pch_rpc_server(const char *name)
         }
         
         if (len > RCF_RPC_HUGE_BUF_LEN)
-            STOP("Too long RPC data bulk");
+            STOP("Too long RPC data bulk %u", len);
         
         while (offset < len)
         {
@@ -347,7 +354,11 @@ rcf_pch_rpc_server(const char *name)
 cleanup:    
     free(buf);
     if (s >= 0)
+#ifdef __CYGWIN__
+        closesocket(s);
+#else
         close(s);
+#endif                
     
 #undef STOP    
 
