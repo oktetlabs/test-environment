@@ -103,7 +103,6 @@ recv_timeout(int s, void *buf, int len, int t)
 #ifdef __CYGWIN__
     int i;
     
-    again:
     for (i = 0; i < t && rc <= 0; i++)
     {
         struct timeval tv = { 0, 990000 };
@@ -119,17 +118,7 @@ recv_timeout(int s, void *buf, int len, int t)
     if (rc <= 0)
         return -2;
     
-    rc = recv(s, buf, len, 0);
-    if (rc >= 0)
-        return rc;
-        
-    if (GetLastError() == ERROR_IO_PENDING)
-        goto again;
-        
-    ERROR("recv_timeout(): recv() failed with error %d on "
-          "socket %d", GetLastError(), s);
-
-    return rc;          
+    return recv(s, buf, len, 0);
 
 #else
     struct timeval tv = { t, 0 };
