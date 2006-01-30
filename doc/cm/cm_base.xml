@@ -148,7 +148,7 @@
     <!-- Route type.
          Name:  empty
          Value: Type of the route (e.g. unicast, blackhole etc) -->
-    <object oid="/agent/route/dev" access="read_write" type="string"/>
+    <object oid="/agent/route/type" access="read_write" type="string"/>
 
     <!-- Route MTU.
          Name:  empty
