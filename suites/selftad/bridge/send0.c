@@ -139,7 +139,6 @@ main()
         if (rc == 0)
             rc = asn_insert_indexed(asn_pdus, asn_pdu, 0, "");
  
-        asn_free_value(asn_pdu);
         asn_pdu = asn_init_value(ndn_generic_pdu); 
         if (rc == 0)
             rc = asn_write_component_value(asn_pdu, asn_eth_hdr, "#eth");
