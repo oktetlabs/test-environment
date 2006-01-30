@@ -715,13 +715,10 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
 
 handle_result:
 
-    if (ret != 0 && local_cmd_seq)
+    if (ret == 0 && local_cmd_seq)
     {
-        /* Restore configuration before the first local SET/ADD */
-        local_cmd_seq = FALSE;
-        rc = cfg_dh_restore_backup(local_cmd_bkp, FALSE);
-        WARN("Restore backup to configuration which was before "
-             "the first local ADD/SET commands restored with code %r", rc);
+        /* Call DH function to tell that local operations are commit */
+        cfg_dh_apply_commit(inst->oid);
     }
 
     EXIT("%r", ret);
@@ -808,13 +805,27 @@ cfg_tas_commit(const char *oid)
 
         rc = cfg_ta_commit(ta_inst->name, inst);
     }
-    
-    if (rc == 0 && local_cmd_seq)
+
+    if (local_cmd_seq)    
     {
-        /* Save configuration changes */
         local_cmd_seq = FALSE;
-        cfg_dh_release_backup(local_cmd_bkp);
-        cfg_conf_delay_update(inst->oid);
+
+        if (rc == 0)
+        {
+            /* Save configuration changes */
+            cfg_dh_release_backup(local_cmd_bkp);
+            cfg_conf_delay_update(inst->oid);
+        }
+        else
+        {
+            int ret;
+
+            /* Restore configuration before the first local SET/ADD */
+            ret = cfg_dh_restore_backup(local_cmd_bkp, FALSE);
+            WARN("Restore backup to configuration which was before "
+                 "the first local ADD/SET commands restored with code %r",
+                 ret);
+        }
     }
 
     EXIT("%r", rc);

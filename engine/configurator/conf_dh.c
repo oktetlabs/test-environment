@@ -50,6 +50,8 @@ typedef struct cfg_dh_entry {
     cfg_val_type         type;    /**< Type of the old_val */
     cfg_inst_val         old_val; /**< Data for reversing delete and set */
     int                  seq;     /**< Sequence number for debugging */
+    te_bool              committed; /**< Wheter the command kept in this 
+                                         entry is committed or not */
 } cfg_dh_entry;
 
 static cfg_dh_entry *first = NULL;
@@ -794,7 +796,20 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
                     break;
                 }
                
-                cfg_process_msg(&p_msg, FALSE);
+                /* Roll back only messages that were committed */
+                if (tmp->committed)
+                {
+                    cfg_process_msg(&p_msg, FALSE);
+                }
+                else
+                {
+                    VERB("Do not restore %s as it is locally added",
+                         (char *)(tmp->cmd) +
+                                 ((cfg_add_msg *)(tmp->cmd))->oid_offset);
+
+                    cfg_db_del(msg.handle);
+                    break;
+                }
                
                 if (msg.rc != 0 && (hard_check ||
                     (msg.rc != TE_RC(TE_TA_UNIX, TE_ESRCH) && 
@@ -840,7 +855,15 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
                 cfg_types[msg->val_type].put_to_msg(tmp->old_val, 
                                                     (cfg_msg *)msg);
                 
-                cfg_process_msg((cfg_msg **)&msg, FALSE);
+                if (tmp->committed)
+                {
+                    cfg_process_msg((cfg_msg **)&msg, FALSE);
+                }
+                else
+                {
+                    VERB("Do not restore %s as it is locally modified",
+                         tmp->old_oid);
+                }
                
                 rc = msg->rc;
                 free(msg);
@@ -900,7 +923,8 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
 /**
  * Add a command to the history.
  *
- * @param msg   message with set, add or delete user request.
+ * @param msg    message with set, add or delete user request.
+ * @param local  whether this command is local or not.
  *
  * @return status code
  * @retval 0            success
@@ -909,7 +933,7 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
  *                      history
  */
 int 
-cfg_dh_add_command(cfg_msg *msg)
+cfg_dh_add_command(cfg_msg *msg, te_bool local)
 {
     cfg_dh_entry *entry = (cfg_dh_entry *)calloc(sizeof(cfg_dh_entry), 1);
     
@@ -926,6 +950,9 @@ cfg_dh_add_command(cfg_msg *msg)
         return TE_ENOMEM;
     }
     
+    /* Local commands are not comitted yet, and vice versa */
+    entry->committed = !local;
+
     memcpy(entry->cmd, msg, msg->len);
     if (msg->type == CFG_ADD)
     {
@@ -1247,3 +1274,56 @@ cfg_dh_release_backup(char *filename)
     return 0;
 }
 
+/**
+ * Notify history DB about successfull commit operation.
+ * The result of calling of this function is that some entries in DH DB
+ * enter committed state.
+ *
+ * @param oid  OID of the instance that was successfully committed
+ *
+ * @return status code (errno.h)
+ */
+int
+cfg_dh_apply_commit(const char *oid)
+{
+    cfg_dh_entry *tmp;
+    const char   *entry_oid;
+    size_t        oid_len;
+
+    if (oid == NULL)
+    {
+        /* Let think that we've committed the whole tree */
+        oid = "";
+    }
+
+    oid_len = strlen(oid);
+
+    for (tmp = first; tmp != NULL; tmp = tmp->next)
+    {
+        switch (tmp->cmd->type)
+        {
+            /* 
+             * We are only interested in ADD and SET commands, 
+             * which could be local.
+             */
+            case CFG_ADD:
+            case CFG_SET:
+            {
+                entry_oid = (tmp->cmd->type == CFG_ADD) ?
+                    (const char *)(tmp->cmd) + 
+                        ((cfg_add_msg *)(tmp->cmd))->oid_offset :
+                    tmp->old_oid;
+
+                if (strncmp(entry_oid, oid, oid_len) == 0)
+                    tmp->committed = TRUE;
+                
+                break;
+            }
+            
+            default:
+                break;
+        }
+    }
+
+    return 0;
+}

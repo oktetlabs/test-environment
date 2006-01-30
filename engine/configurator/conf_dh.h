@@ -83,11 +83,23 @@ extern int cfg_dh_restore_backup(char *filename, te_bool hard_check);
 /**
  * Add a command to the history.
  *
- * @param msg   message with set, add or delete user request.
+ * @param msg    message with set, add or delete user request.
+ * @param local  whether this command is local or not.
  *
  * @return 0 (success) or TE_ENOMEM
  */
-extern int cfg_dh_add_command(cfg_msg *msg);
+extern int cfg_dh_add_command(cfg_msg *msg, te_bool local);
+
+/**
+ * Notify history DB about successfull commit operation.
+ * The result of calling of this function is that some entries in DH DB
+ * enter committed state.
+ *
+ * @param oid  OID of the instance that was successfully committed
+ *
+ * @return status code (errno.h)
+ */
+extern int cfg_dh_apply_commit(const char *oid);
 
 /**
  * Delete last command from the history.

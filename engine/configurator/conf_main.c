@@ -493,7 +493,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
+    if (update_dh &&
+        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local)) != 0)
     {
         ERROR("Failed to add a new instance %s in DH: error=%r", 
               oid, msg->rc);
@@ -662,7 +663,8 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
+    if (update_dh &&
+        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local)) != 0)
     {
         ERROR("Failed to add command in DH: error=%r", msg->rc);
         cfg_types[obj->type].free(val);
@@ -770,7 +772,8 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
+    if (update_dh &&
+        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE)) != 0)
     {
         ERROR("%s: Failed to add into DH errno %r", 
               __FUNCTION__, msg->rc);
@@ -1280,7 +1283,8 @@ process_backup(cfg_backup_msg *msg)
 static void
 process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
 {
-    if (update_dh && (msg->rc = cfg_dh_add_command((cfg_msg *)msg)) != 0)
+    if (update_dh &&
+        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE)) != 0)
         return;
 
     msg->rc = rcf_ta_reboot(msg->ta_name, NULL, NULL);
@@ -1309,7 +1313,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
         case CFG_REGISTER:
             if (update_dh)
             {
-                if (((*msg)->rc = cfg_dh_add_command(*msg)) != 0)
+                if (((*msg)->rc = cfg_dh_add_command(*msg, FALSE)) != 0)
                     break;
             }
             cfg_process_msg_register((cfg_register_msg *)*msg);
@@ -1426,7 +1430,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             ERROR("Unknown message is received");
             break;
     }
-    
+
     (*msg)->rc = TE_RC(TE_CS, (*msg)->rc);
 
     log_msg(*msg, FALSE);
