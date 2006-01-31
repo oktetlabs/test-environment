@@ -15,7 +15,7 @@ librcfpch_lib_SOURCES=rcf_pch_mem.c
 
 librcfpch.lib: $(librcfpch_lib_SOURCES) 
 	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
-        $(DESTDIR)/$(prefix)/include $(librcfpch_lib_SOURCES)
+        $(DESTDIR)/$(prefix) $(librcfpch_lib_SOURCES)
 
 EXTRA_DIST=rcf_pch.c rcf_pch_rpc.c rcf_pch_file.c rcf_pch_conf.c \
            rcf_pch_var.c rcf_pch_ta_cfg.c

@@ -20,7 +20,7 @@ librpc_lib_SOURCES=$(RPC_SOURCES)
 
 librpc.lib: $(RPC_SOURCES) 
 	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
-        $(DESTDIR)/$(prefix)/include $(RPC_SOURCES)
+        $(DESTDIR)/$(prefix) $(RPC_SOURCES)
 
 else
 

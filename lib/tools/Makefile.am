@@ -20,7 +20,7 @@ libtools_lib_SOURCES = te_format.c
 
 libtools.lib: $(libtools_lib_SOURCES) 
 	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
-        $(DESTDIR)/$(prefix)/include $(libtools_lib_SOURCES)
+        $(DESTDIR)/$(prefix) $(libtools_lib_SOURCES)
         
 EXTRA_DIST=te_shell_cmd.c te_bufs.c te_log_fmt.c
 
