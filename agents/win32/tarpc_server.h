@@ -31,12 +31,17 @@
 #ifndef __TARPC_SERVER_H__
 #define __TARPC_SERVER_H__
 
+#ifndef WINDOWS
 #include <winsock2.h>
 #include <winerror.h>
 #include <mswsock.h>
 #include <ws2tcpip.h>
 #define _SYS_SOCKET_H
 #define _NETINET_IN_H
+#else
+INCLUDE(te_win_defs.h)
+#endif
+
 #include "tarpc.h"
 #include "ta_common.h"
 
@@ -54,9 +59,11 @@ struct timezone {
 #include "rcf_pch.h"
 #include "logger_api.h"
 #include "rcf_rpc_defs.h"
-
+#ifndef WINDOWS
 #include "te_rpc_types.h"
+#else
 INCLUDE(te_rpc_types.h)
+#endif
 
 /** Unspecified error code */
 #define ERROR_UNSPEC    0xFFFFFF

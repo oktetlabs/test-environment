@@ -28,7 +28,11 @@
  * $Id$
  */
 
-#include "winsock2.h"
+#ifdef WINDOWS
+INCLUDE(winsock2.h)
+#else
+#include <winsock2.h>
+#endif
 #include "te_defs.h"
 #include "ta_common.h"
 

@@ -42,7 +42,7 @@ extern void logfork_log_message(const char *file, unsigned int line,
 
 te_log_message_f te_log_message = logfork_log_message;
 
-#ifdef CL
+#ifdef WINDOWS
 
 /**
  * Convert 'struct timeval' to 'struct tarpc_timeval'.
@@ -86,18 +86,6 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
     tv->tv_usec = t.wMilliseconds * 1000;
     
     return 0;
-}
-
-char *
-index(const char *s, int c)
-{
-    if (s == NULL)
-        return NULL;
-        
-    while (*s != c && *s != 0)
-        s++;
-        
-    return *s == 0 ? NULL : s;
 }
 
 #endif

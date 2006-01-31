@@ -1,6 +1,4 @@
 
-SUBDIRS=lib
-
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 MY_CPPFLAGS=@TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
@@ -25,9 +23,7 @@ MY_LDADD=symtbl.o -lrcfpch -lrpcxdr \
          -lexpat 
 endif
          
-noinst_HEADERS=tarpc_server.h rpcserver.h
-
-EXTRA_DIST=build_native.sh 
+noinst_HEADERS=tarpc_server.h 
 
 MY_LDAFLAGS=-rdynamic -export-dynamic 
 MY_SOURCES=win32.c win32conf.c inet_pton.c common.c
@@ -41,6 +37,7 @@ CLEANFILES=symtbl.c rpcserver_symtbl.c
 
 
 if CFG_RCF_RPC
+
 MY_CPPFLAGS+=-DRCF_RPC -I.
 MY_SOURCES+=tarpc_server.c 
 MY_NODIST_SOURCES=rpc_unsupported.c rpc_unsupported.h
@@ -56,9 +53,11 @@ rpc_unsupported.c: $(DESTDIR)/$(prefix)/../@host@/include/tarpc.h \
 rpc_supported.h: tarpc_server.o @TE_DEPENDENCIES@
 	$(srcdir)/../../engine/builder/te_rpc_supported "${NM}" $^
 
+EXTRA_DIST=
+
 else
 
-EXTRA_DIST+=tarpc_server.c
+EXTRA_DIST=tarpc_server.c
         
 endif
 
@@ -93,20 +92,20 @@ if CFG_STANDALONE_RPCSERVER
 
 bin_PROGRAMS=tawin32tmpl tawin32tmpl_rpcserver
 
-
 tawin32tmpl_rpcserver_DEPENDENCIES=\
     rpcserver_symtbl.o \
+    $(DESTDIR)/$(prefix)/../@host@/lib/librcfpch.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libloggerta.a \
+    $(DESTDIR)/$(prefix)/../@host@/lib/libtools.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/libtalib.a \
     $(DESTDIR)/$(prefix)/../@host@/lib/librpcxdrta.a 
 
 tawin32tmpl_rpcserver_SOURCES=tarpc_server.c rpcserver.c common.c 
 
-nodist_tawin32tmpl_rpcserver_SOURCES=rpc_unsupported.c \
-                  ${srcdir}/../../lib/rcfpch/rcf_pch_mem.c \
-                  ${srcdir}/../../lib/loggerta/logfork.c \
-                  ${srcdir}/../../lib/tools/te_format.c 
+nodist_tawin32tmpl_rpcserver_SOURCES=$(MY_NODIST_SOURCES)
 
-tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -lrpcxdrta -ltalib -lrpc \
+tawin32tmpl_rpcserver_LDADD=rpcserver_symtbl.o -ltalib -lrpcxdrta \
+                            -lrcfpch -lloggerta -ltools -lrpc \
                             -lws2_32 -lmswsock -lwsock32 -liphlpapi 
 
 rpcserver_symtbl.c: tarpc_server.o \
@@ -119,32 +118,38 @@ install-exec-hook: build_native
 	ln -fs ta@with_name@.exe $(DESTDIR)/$(bindir)/ta@with_name@
 	mv $(DESTDIR)/$(bindir)/tawin32tmpl_rpcserver.exe \
 		$(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
-	ln -fs ta@with_name@_rpcserver.exe \
-	       $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver
 
 uninstall-hook:
 	rm -f $(DESTDIR)/$(bindir)/ta@with_name@ \
 	      $(DESTDIR)/$(bindir)/ta@with_name@.exe \
-	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver \
-	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver.exe
+	      $(DESTDIR)/$(bindir)/ta@with_name@_rpcserver*
 
-RPCSERVER_CPPFLAGS=-I$(srcdir) -I$(srcdir)/lib -I. @TE_CPPFLAGS@ \
-                   -I$(DESTDIR)/$(prefix)/../@host@/include \
-                   -include $(srcdir)/rpcserver.h \
-                   -D __TE_RPC_TYPES_H__
+RPCSERVER_LIBS="librcfpch.lib libloggerta.lib libtools.lib librpc.lib \
+                ws2_32.lib mswsock.lib wsock32.lib iphlpapi.lib user32.lib"
 
 build_native: $(tawin32tmpl_rpcserver_SOURCES) \
-              $(nodist_tawin32tmpl_rpcserver_SOURCES) \
-              rpcserver_symtbl.c \
+              rpcserver_symtbl.c rpc_unsupported.c \
               ${srcdir}/../../lib/rpcxdr/rpc_xdr.c \
               ../../lib/@_host_@_rpcxdr/tarpc_xdr.c \
               @PRIV_LIB_DIR@/talib/rpc.c
-	CC=$(CC)  \
-	RPCSERVER_CPPFLAGS="$(RPCSERVER_CPPFLAGS)" \
-	$(srcdir)/build_native.sh $(srcdir) $^
-	cp tawin32tmpl_rpcserver.exe $(DESTDIR)/$(bindir)/
+	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
+        $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
+            i686-pc-windows ta@with_name@_rpcserver.exe \
+            \"$(RPCSERVER_LIBS)\" $^ 
+	if test -e ta@with_name@_rpcserver.exe ; then \
+            cp ta@with_name@_rpcserver.exe $(DESTDIR)/$(bindir) ; \
+        fi
+	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
+        $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
+            x86_64-pc-windows ta@with_name@_rpcserver64.exe \
+            \"$(RPCSERVER_LIBS)\" $^
+	if test -e ta@with_name@_rpcserver64.exe ; then \
+            cp ta@with_name@_rpcserver64.exe $(DESTDIR)/$(bindir) ; \
+        fi
 
 else
+
+# Built-in RPC server
 
 bin_PROGRAMS=tawin32tmpl 
 
