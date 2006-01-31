@@ -60,9 +60,12 @@ INCLUDE(limits.h)
 
 /* Standard C headers */ 
 #define _STDIO_H_
+#define _STDIO_H
 #define _STDARG_H
 #define _STDLIB_H_
+#define _STDLIB_H
 #define _STRING_H_
+#define _STRING_H
 #define __ERRNO_H__
 
 /* UNIX-specific headers */

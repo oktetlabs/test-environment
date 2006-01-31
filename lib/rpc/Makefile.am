@@ -14,6 +14,8 @@ xdr_sizeof.c
 
 if WINDOWS
 
+RANLIB=touch
+
 lib_LIBRARIES=librpc.lib
 
 librpc_lib_SOURCES=$(RPC_SOURCES)

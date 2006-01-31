@@ -10,6 +10,8 @@ include_HEADERS = logger_ta.h logger_ta_fast.h logger_ta_lock.h \
 
 if WINDOWS
 
+RANLIB=touch
+
 lib_LIBRARIES = libloggerta.lib
 
 libloggerta_lib_SOURCES = logfork.c

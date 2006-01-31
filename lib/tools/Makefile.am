@@ -14,6 +14,8 @@ include_HEADERS = \
 
 if WINDOWS
 
+RANLIB=touch
+
 lib_LIBRARIES = libtools.lib
 
 libtools_lib_SOURCES = te_format.c 

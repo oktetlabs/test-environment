@@ -9,6 +9,8 @@ noinst_HEADERS=rcf_pch_internal.h
 
 if WINDOWS
 
+RANLIB=touch
+
 lib_LIBRARIES=librcfpch.lib
 
 librcfpch_lib_SOURCES=rcf_pch_mem.c 
