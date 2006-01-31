@@ -27,6 +27,33 @@ AH_BOTTOM([
 
 AC_HEADER_STDC
 
+if test x$host != x${host%windows} ; then
+
+# Native Windows compiler
+
+# In fact, it's simple to check this dynamically, but it is VERY long
+
+if test $host != ${host#x86_64} ; then
+
+SIZEOF_SIZE_T=8
+SIZEOF_VOID_P=8
+
+else
+
+SIZEOF_SIZE_T=4
+SIZEOF_VOID_P=4
+
+fi
+
+AC_CONFIG_FILES([te_win.h])
+
+AC_SUBST(SIZEOF_SIZE_T)
+AC_SUBST(SIZEOF_VOID_P)
+
+else
+
+# Standard platforms
+
 dnl
 dnl At first check headers used by other headers to be checked
 dnl 
@@ -178,6 +205,10 @@ AC_CHECK_SIZEOF([te_log_id],      [], [#include "te_raw_log.h"])
 AC_CHECK_SIZEOF([te_log_seqno],   [], [#include "te_raw_log.h"])
 
 AC_C_INLINE
+
+fi
+
+AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
 
 AC_CONFIG_FILES([Makefile])
 

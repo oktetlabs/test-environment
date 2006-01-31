@@ -31,11 +31,22 @@ te_headers = te_defs.h te_errno.h te_proto.h te_stdint.h te_printf.h \
              comm_agent.h rcf_methods.h rcf_common.h tad_common.h \
              rcf_rpc_defs.h cs_common.h \
              te_raw_log.h logger_api.h logger_defs.h logger_int.h \
-             rcf_internal.h te_config.h te_expand.h ta_common.h
+             rcf_internal.h te_config.h te_expand.h ta_common.h \
+             te_win_defs.h
 
 include_HEADERS = te_config_internal.h $(te_headers)
 
 EXTRA_DIST=tarpc.x.m4 rpc_unsupported.m4
+
+if WINDOWS
+
+include_HEADERS+=te_win.h
+
+else
+
+EXTRA_DIST+=te_win.h.in
+
+endif
 
 all: install
 
