@@ -425,11 +425,12 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         /* Copy RPC server image */
         FILE *f;
         
-        sprintf(cmd, "%s_rpcserver", path);
+        sprintf(cmd, "%s_rpcserver.exe", path);
         if ((f = fopen(cmd, "r")) != NULL)
         {
             fclose(f);
-            sprintf(cmd, "scp -Bpq %s_rpcserver %s:/tmp/%s_rpcserver",
+            sprintf(cmd, 
+                    "scp -Bpq %s_rpcserver.exe %s:/tmp/%s_rpcserver",
                     path, ta->host, ta->exec_name);
                 
             if ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0)
@@ -437,6 +438,28 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
                 ERROR("Failed to copy RPC server image %s_rpcserver "
                       "to the %s:/tmp: %r", ta->exec_name, ta->host, rc);
                 sprintf(cmd, "ssh %s rm /tmp/%s", ta->host, ta->exec_name);
+                
+                if (system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT) != 0)
+                    ERROR("Failed to remove TA image from %s", ta->host);
+                    
+                free(dup);
+                return rc;
+            }
+        }
+
+        sprintf(cmd, "%s_rpcserver64.exe", path);
+        if ((f = fopen(cmd, "r")) != NULL)
+        {
+            fclose(f);
+            sprintf(cmd, 
+                    "scp -Bpq %s_rpcserver64.exe %s:/tmp/%s_rpcserver64",
+                    path, ta->host, ta->exec_name);
+                
+            if ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0)
+            {
+                ERROR("Failed to copy RPC server image %s_rpcserver "
+                      "to the %s:/tmp: %r", ta->exec_name, ta->host, rc);
+                sprintf(cmd, "ssh %s rm /tmp/%s*", ta->host, ta->exec_name);
                 
                 if (system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT) != 0)
                     ERROR("Failed to remove TA image from %s", ta->host);
