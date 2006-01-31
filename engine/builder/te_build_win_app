@@ -1,0 +1,113 @@
+#! /bin/sh
+#
+# Windows Test Agent
+# Build application using native compiler
+# Agruments: 
+#     source directory
+#     platform
+#     application name
+#     list of libraries
+#     list of source files
+#
+# TE_INSTALL should be exported.
+#     
+# Copyright (C) 2006 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+#
+# $Id:  $
+#
+
+SRCDIR=$1
+PLATFORM=$2
+APPNAME=$3
+LIBS=$4
+LIBS=`eval "echo "$LIBS`
+shift 4
+
+
+BUILDDIR=`pwd`
+
+rm -rf tmpsrc
+
+if test $PLATFORM != ${PLATFORM#x86_64} ; then
+
+BUILD_HOST=${TE_WIN64_BUILD_HOST}
+
+else
+
+BUILD_HOST=${TE_WIN32_BUILD_HOST}
+
+fi
+
+if test -z "$BUILD_HOST" ; then
+    exit 0
+fi    
+
+# Copy libraries and headers to the build host
+cd ${TE_INSTALL}
+tar czf ${BUILDDIR}/${PLATFORM}.tgz ${PLATFORM}
+cd ${BUILDDIR}
+scp ${PLATFORM}.tgz ${BUILD_HOST}:
+rm ${PLATFORM}.tgz
+
+mkdir tmpsrc
+
+# Apply pre-processor to application files
+
+FILES=
+for i in $* ; do 
+    FILENAME=`basename ${i}` 
+    FILES="${FILES} ${FILENAME}"
+    gcc -I${TE_INSTALL}/i686-pc-cygwin/include \
+        -I${TE_INSTALL}/${PLATFORM}/include \
+        -I${SRCDIR} -I. -DWINDOWS -D__CYGWIN__ \
+        -include ${TE_INSTALL}/${PLATFORM}/include/te_win.h \
+        -P -E $i -o ${FILENAME}.tmp ; 
+    cat ${FILENAME}.tmp | awk --posix '\
+    /^INCLUDE/ { printf("#include <%s>\n", \
+                 substr($1, 9, length($1) - 9)); next; } \
+    { print $0; }'  > tmpsrc/${FILENAME} ; 
+    rm ${FILENAME}.tmp ; 
+    indent tmpsrc/${FILENAME} ;
+done
+
+ssh ${BUILD_HOST} "rm -rf tmpsrc; rm -rf ${PLATFORM}; mkdir tmpsrc"
+
+# Build the application
+
+scp tmpsrc/*.c ${BUILD_HOST}:tmpsrc
+rm -rf tmpsrc 
+
+ssh ${BUILD_HOST} bash -l -c "\"
+tar xzf ${PLATFORM}.tgz ; \
+rm ${PLATFORM}.tgz ; \
+cd tmpsrc ; \
+cl -I../${PLATFORM}/include -DWINDOWS *.c \
+   /link /OUT:${APPNAME} /LIBPATH:../${PLATFORM}/lib ${LIBS} ; \""
+
+scp ${BUILD_HOST}:tmpsrc/${APPNAME} .
+
+if test -e ${APPNAME} ; then
+    ssh ${BUILD_HOST} "rm -rf tmpsrc ${PLATFORM}"
+    exit 0
+fi
+
+exit 1

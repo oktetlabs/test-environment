@@ -41,6 +41,7 @@ dist_mybin_SCRIPTS = \
     te_rpc_unsupported \
     te_build_suite \
     te_build_win_lib \
+    te_build_win_app \
     te_tests_info.sh
 
 # Scripts to be installed by 'install'
