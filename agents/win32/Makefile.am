@@ -147,6 +147,12 @@ build_native: $(tawin32tmpl_rpcserver_SOURCES) \
             cp ta@with_name@_rpcserver64.exe $(DESTDIR)/$(bindir) ; \
         fi
 
+clean-local:
+	rm -f *.exe
+
+distclean-local:
+	rm -f *.exe
+
 else
 
 # Built-in RPC server
