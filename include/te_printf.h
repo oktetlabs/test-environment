@@ -77,6 +77,8 @@
 #define TE_PRINTF_SIZE_T    ""
 #elif (SIZEOF_LONG == SIZEOF_SIZE_T)
 #define TE_PRINTF_SIZE_T    "l"
+#elif (SIZEOF_LONG_LONG == SIZEOF_SIZE_T)
+#define TE_PRINTF_SIZE_T    "ll"
 #else
 #error Unable to print (s)size_t integers
 #endif
