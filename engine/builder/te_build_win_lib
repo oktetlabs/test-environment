@@ -1,0 +1,96 @@
+#! /bin/sh
+#
+# Windows Test Agent
+# Build library using native compiler
+# Agruments: 
+#     source directory
+#     platform
+#     library name
+#     path to headers directory
+#     list of source files
+#     
+# Copyright (C) 2006 Test Environment authors (see file AUTHORS in
+# the root directory of the distribution).
+#
+# Test Environment is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of
+# the License, or (at your option) any later version.
+#
+# Test Environment is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA  02111-1307  USA
+#
+#
+# Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+#
+# $Id:  $
+#
+
+SRCDIR=$1
+PLATFORM=$2
+LIBNAME=$3
+INCLUDE=$4
+shift 4
+
+if test $PLATFORM != ${PLATFORM#x86_64} ; then
+
+BUILD_HOST=${TE_WIN64_BUILD_HOST}
+
+else
+
+BUILD_HOST=${TE_WIN32_BUILD_HOST}
+
+fi
+
+if test -z "$BUILD_HOST" ; then
+    echo "Warning: build host for $PLATFORM is not specified; \
+          library $LIBNAME is not (re-)built"
+    touch ${LIBNAME}
+    exit 0
+fi    
+
+mkdir tmpsrc
+cd tmpsrc
+
+# Apply pre-processor
+
+for i in $* ; do 
+    gcc -I${INCLUDE} -I${SRCDIR} -include te_win.h -DWINDOWS \
+        -P -E ${SRCDIR}/${i} -o ${i}.tmp ; 
+    cat ${i}.tmp | awk --posix '\
+    /^INCLUDE/ { printf("#include <%s>\n", \
+                 substr($1, 9, length($1) - 9)); next; } \
+    { print $0; }'  > ${i} ; 
+    rm ${i}.tmp ; 
+    indent ${i} ;
+done
+rm -f *~
+
+ssh ${BUILD_HOST} "rm -rf tmpsrc; mkdir tmpsrc"
+
+# Build the library
+
+scp $* ${BUILD_HOST}:tmpsrc
+cd ..
+rm -rf tmpsrc 
+
+ssh ${BUILD_HOST} bash -l -c "\"
+cd tmpsrc ; \
+cl *.c /LD ; \
+lib /OUT:${LIBNAME} *.obj\""
+
+scp ${BUILD_HOST}:tmpsrc/${LIBNAME} .
+
+if test -e ${LIBNAME} ; then
+    ssh ${BUILD_HOST} rm -rf tmpsrc 
+    exit 0
+fi
+
+exit 1
