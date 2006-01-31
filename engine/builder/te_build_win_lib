@@ -6,8 +6,8 @@
 #     source directory
 #     platform
 #     library name
-#     path to headers directory
-#     list of source files
+#     installation prefix for the platform
+#     list of source files (basenames only)
 #     
 # Copyright (C) 2006 Test Environment authors (see file AUTHORS in
 # the root directory of the distribution).
@@ -36,7 +36,7 @@
 SRCDIR=$1
 PLATFORM=$2
 LIBNAME=$3
-INCLUDE=$4
+INCLUDE=$4/include
 shift 4
 
 if test $PLATFORM != ${PLATFORM#x86_64} ; then
@@ -83,7 +83,7 @@ rm -rf tmpsrc
 
 ssh ${BUILD_HOST} bash -l -c "\"
 cd tmpsrc ; \
-cl *.c /LD ; \
+cl *.c /c ; \
 lib /OUT:${LIBNAME} *.obj\""
 
 scp ${BUILD_HOST}:tmpsrc/${LIBNAME} .
