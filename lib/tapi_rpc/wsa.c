@@ -2882,6 +2882,10 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
             struct sockaddr *addr;
             unsigned int    i;
             
+            *(unsigned int *)buf = res->wsa_ioctl_request_u.req_saa.
+                                        req_saa_len;
+            buf += sizeof(unsigned int);
+            
             if (res->wsa_ioctl_request_u.req_saa.req_saa_len * 
                 sizeof(struct sockaddr_storage) > RPC_WSA_IOCTL_OUTBUF_MAX)
             {
@@ -2904,6 +2908,7 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
                            sa_data.sa_data_val,
                        res->wsa_ioctl_request_u.req_saa.req_saa_val[i].
                            sa_data.sa_data_len);
+ 
             }
 
             break;

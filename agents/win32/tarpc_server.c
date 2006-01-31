@@ -1624,9 +1624,8 @@ TARPC_FUNC(ioctl,
 
     if (in->access == IOCTL_WR)
         INIT_CHECKED_ARG(req, reqlen, 0);
-    MAKE_CALL(out->retval = WSAIoctl(in->s, ioctl_rpc2h(in->code), req,
-                                     reqlen, req, reqlen, &ret_num,
-                                     NULL, NULL));
+    MAKE_CALL(out->retval = ioctlsocket(in->s, ioctl_rpc2h(in->code),
+                                        (u_long *) req));
     if (req != NULL)
     {
         switch(out->req.req_val[0].type)
@@ -3553,15 +3552,21 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
         {
             SOCKET_ADDRESS_LIST *sal;
             tarpc_sa            *tsa;
-            int                 i;
-            
+            int                  i;
+
             res->type = WSA_IOCTL_SAA;
         
             sal = (SOCKET_ADDRESS_LIST *)buf;
             tsa = (tarpc_sa *)calloc(sal->iAddressCount, sizeof(tarpc_sa));
         
             for (i = 0; i < sal->iAddressCount; i++)
+            {
+                tsa[i].sa_data.sa_data_len = sal->Address[i].
+                                                  iSockaddrLength;
+                tsa[i].sa_data.sa_data_val = (uint8_t *)malloc(sal->
+                                             Address[i].iSockaddrLength);
                 sockaddr_h2rpc(sal->Address[i].lpSockaddr, &tsa[i]);
+            }
 
             res->wsa_ioctl_request_u.req_saa.req_saa_val = tsa;
             res->wsa_ioctl_request_u.req_saa.req_saa_len = i;
