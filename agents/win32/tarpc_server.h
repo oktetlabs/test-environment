@@ -75,52 +75,58 @@ INCLUDE(te_rpc_types.h)
             out->common._errno = rc_;               \
     } while (FALSE)
 
-#ifdef WSP_PRIVATE_PROTO
-
 #define WSP_IPPROTO_TCP 200
 #define WSP_IPPROTO_UDP 201
 static inline int 
 wsp_proto_rpc2h(int socktype, int proto)
 {
+    static int use_private_wsp = -1;
     int proto_h = proto_rpc2h(proto);
 
-    switch (proto_h)
+    /* If this is called first time */
+    if (use_private_wsp == -1)
     {
-        case IPPROTO_TCP:
+      char *value = getenv("EF_USE_PRIVATE_WSP");
+
+      if (value == NULL)
+      {
+        use_private_wsp = 0;
+      }
+      else
+      {
+        use_private_wsp = strtol(value, NULL, 10);
+      }
+    }
+
+    if (use_private_wsp)
+    {
+        switch (proto_h)
+        {
+          case IPPROTO_TCP:
             proto_h = WSP_IPPROTO_TCP;
             break;
-         
-        case IPPROTO_UDP:
+
+          case IPPROTO_UDP:
             proto_h = WSP_IPPROTO_UDP;
             break;
-        
-        case 0:
+
+          case 0:
             switch (socktype_rpc2h(socktype))
             {
-                case SOCK_STREAM:
-                    proto_h = WSP_IPPROTO_TCP;
-                    break;
-                  
-                case SOCK_DGRAM:
-                    proto_h = WSP_IPPROTO_UDP;
-                    break;
+              case SOCK_STREAM:
+                proto_h = WSP_IPPROTO_TCP;
+                break;
+
+              case SOCK_DGRAM:
+                proto_h = WSP_IPPROTO_UDP;
+                break;
             }
             break;
+        }
     }
 
     return proto_h;
 }
-
-#else
-
-static inline int 
-wsp_proto_rpc2h(int socktype, int proto)
-{
-    UNUSED(socktype);
-    return proto_rpc2h(proto);
-}
-
-#endif
 
 /* Microsoft extended defines */
 #define WSAID_ACCEPTEX \
