@@ -63,6 +63,20 @@
 /** Buffer size limit */
 #define TEF_BUFFER_MAX          0x10000
 
+#ifdef WINDOWS
+char *
+index(const char *s, int c)
+{
+    if (s == NULL)
+        return NULL;
+        
+    while (*s != c && *s != 0)
+        s++;
+        
+    return *s == 0 ? NULL : s;
+}
+#endif
+
 /**
  * Output the message to log - va_list version.
  *

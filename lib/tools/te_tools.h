@@ -34,8 +34,10 @@
 #define __TE_TOOLS_H__
 
 #include "te_bufs.h"
-#include "te_shell_cmd.h"
 #include "te_format.h"
+#ifndef WINDOWS
+#include "te_shell_cmd.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

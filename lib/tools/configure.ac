@@ -16,6 +16,10 @@ AC_PROG_CC
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 
+AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
+
+AC_SUBST(host)
+
 TE_LIB_SET
 
 AC_CONFIG_HEADERS([package.h])
