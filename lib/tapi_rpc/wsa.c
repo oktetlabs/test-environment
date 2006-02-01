@@ -112,7 +112,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
     tarpc_connect_ex_in  in;
     tarpc_connect_ex_out out;
     rcf_rpc_op           op;
-    tarpc_size_t         sent = 0;
+    tarpc_size_t         sent = PTR_VAL(bytes_sent);
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -321,7 +321,7 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
     rcf_rpc_op          op;
     tarpc_accept_ex_in  in;
     tarpc_accept_ex_out out;
-    tarpc_size_t        received = 0;
+    tarpc_size_t        received = PTR_VAL(bytes_received);
     
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -3569,7 +3569,7 @@ rpc_read_file(rcf_rpc_server *rpcs,
     tarpc_read_file_in  in;
     tarpc_read_file_out out;
     rcf_rpc_op          op;
-    tarpc_size_t        rcvd = 0;
+    tarpc_size_t        rcvd = PTR_VAL(received);
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -3627,7 +3627,7 @@ rpc_write_file(rcf_rpc_server *rpcs,
     tarpc_write_file_in  in;
     tarpc_write_file_out out;
     rcf_rpc_op           op;
-    tarpc_size_t         snd = 0;
+    tarpc_size_t         snd = PTR_VAL(sent);
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
