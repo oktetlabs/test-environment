@@ -3161,8 +3161,8 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     {
         err = GetLastError();
         rc = -1;
-        ERROR("%s(): Failed to move socket to non-blocking state", 
-              __FUNCTION__);
+        ERROR("%s(): Failed to move socket to non-blocking state; error %r",
+              __FUNCTION__, win_rpc_errno(err));
         goto overfill_buffers_exit;
     }
 
@@ -3173,7 +3173,8 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
             
             if (rc == -1 && err != WSAEWOULDBLOCK)
             {
-                ERROR("%s(): send() failed", __FUNCTION__);
+                ERROR("%s(): send() failed; error %r", __FUNCTION__, 
+                      win_rpc_errno(err));
                 goto overfill_buffers_exit;
             }
             if (rc != -1)
@@ -3201,10 +3202,10 @@ overfill_buffers_exit:
     {
         err = GetLastError();
         rc = -1;
-        ERROR("%s(): Failed to move socket back to blocking state", 
-              __FUNCTION__);
+        ERROR("%s(): Failed to move socket back to blocking state; "
+              "error %r", __FUNCTION__, win_rpc_errno(err));
     }
-    out->common._errno = win_rpc_errno(GetLastError());
+    out->common._errno = win_rpc_errno(err);
 
     return rc;
 }
