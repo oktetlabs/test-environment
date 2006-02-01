@@ -35,6 +35,7 @@
 
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_socket.h"
+#include "tapi_rpc_misc.h"
 
 
 /** Windows Event Objects */
@@ -111,7 +112,7 @@ extern int rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
  * @param addr         pointer to a @b sockaddr structure containing the 
  *                     address to connect to.
  * @param addrlen      length of sockaddr structure
- * @param buf          pointer to buffer containing connect data
+ * @param buf          RPC pointer to buffer containing connect data
  * @param len_buf      length of the buffer @b buf
  * @param bytes_sent   pointer a the number of bytes sent 
  * @param overlapped   @b overlapped object or RPC_NULL
@@ -121,7 +122,7 @@ extern int rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
 extern te_bool rpc_connect_ex(rcf_rpc_server *rpcs,
                               int s, const struct sockaddr *addr,
                               socklen_t addrlen,
-                              void *buf, ssize_t len_buf,
+                              rpc_ptr buf, ssize_t len_buf,
                               size_t *bytes_sent,
                               rpc_overlapped overlapped);
 
@@ -184,16 +185,36 @@ extern int rpc_wsa_accept(rcf_rpc_server *rpcs,
  *                          called with the listen function
  * @param s_a               descriptor idenfifying a socket on which to 
  *                          accept an incomming connection
+ * @param buf               RPC pointer to the buffer to receive data
  * @param len               length of the buffer to receive data (should not
  *                          include the size of local and remote addresses)
- * @param overlapped        @b overlapped object or RPC_NULL
+ * @param laddr_len         length of the local address
+ * @param raddr_len         length of the remote address
  * @param bytes_received    number of received data bytes
+ * @param overlapped        @b overlapped object or RPC_NULL
  *
  * @return Value returned by AcceptEx() function.
  */
 extern te_bool rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
-                             size_t len, rpc_overlapped overlapped,
-                             size_t *bytes_received);
+                             rpc_ptr buf, size_t len, size_t laddr_len, 
+                             size_t raddr_len, size_t *bytes_received, 
+                             rpc_overlapped overlapped);
+
+/** 
+ * Calculate length of buffer to be allocated for @b rpc_accept_ex().
+ *
+ * @param rpcs    RPC server
+ * @param datalen space required for data
+ *
+ * @return Amount of space required for data and addresses.
+ */
+static inline size_t
+rpc_accept_ex_buflen(rcf_rpc_server *rpcs, size_t datalen)
+{
+    return rpc_get_sizeof(rpcs, "struct sockaddr_storage") * 2 + 32 +
+           datalen;
+}
+
 
 /**
  * @b GetAcceptExSockAddr() remote call.

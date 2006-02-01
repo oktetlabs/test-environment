@@ -47,6 +47,7 @@
 #include "te_printf.h"
 #include "tapi_rpc_winsock2.h"
 #include "conf_api.h"
+#include "tapi_rpc_misc.h"
 
 #define FILL_CALLBACK(func) \
    do {                                                                 \
@@ -103,10 +104,11 @@ te_bool
 rpc_connect_ex(rcf_rpc_server *rpcs,
                int s, const struct sockaddr *addr,
                socklen_t addrlen,
-               void *buf, ssize_t len_buf,
+               rpc_ptr buf, ssize_t len_buf,
                size_t *bytes_sent,
                rpc_overlapped overlapped)
 {
+    
     tarpc_connect_ex_in  in;
     tarpc_connect_ex_out out;
     rcf_rpc_op           op;
@@ -140,32 +142,24 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
         }
     }
     in.len = addrlen;
-    if (buf == NULL)
-        in.buf.buf_len = 0;
-    else
-        in.buf.buf_len = len_buf;
 
-    if (bytes_sent == NULL)
-        in.len_sent.len_sent_len = 0;
-    else
-        in.len_sent.len_sent_len = 1;
-
-    in.buf.buf_val = buf;
+    in.send_buf = buf;
+    
     in.len_sent.len_sent_val = bytes_sent == NULL ? NULL : &sent;
-    in.len_buf = len_buf;
+    in.buflen = len_buf;
     in.overlapped = (tarpc_overlapped)overlapped;
 
     rcf_rpc_call(rpcs, "connect_ex", &in, &out);
 
-    if (bytes_sent != NULL)
+    if (bytes_sent != NULL && out.len_sent.len_sent_val != NULL)
         *bytes_sent = out.len_sent.len_sent_val[0];
 
     if (op == RCF_RPC_CALL)
         out.retval = TRUE;
-
+    
     CHECK_RETVAL_VAR_IS_BOOL(connect_ex, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: ConnectEx(%d, %s, %u, %p, %u, %d, %u) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: ConnectEx(%d, %s, %u, %u, %u, %d, %u) "
                  "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  s, sockaddr2str(addr), addrlen, 
                  buf, len_buf, PTR_VAL(bytes_sent), 
@@ -321,8 +315,8 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
 
 te_bool
 rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
-              size_t len, rpc_overlapped overlapped,
-              size_t *bytes_received)
+              rpc_ptr buf, size_t len, size_t laddr_len, size_t raddr_len, 
+              size_t *bytes_received, rpc_overlapped overlapped)
 {
     rcf_rpc_op          op;
     tarpc_accept_ex_in  in;
@@ -342,7 +336,11 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
     
     in.fd = s;
     in.fd_a = s_a;
+    in.out_buf = buf;
     in.buflen = len;
+    in.laddr_len = laddr_len;
+    in.raddr_len = raddr_len;
+    
     if (bytes_received == NULL)
         in.count.count_len = 0;
     else
@@ -354,7 +352,7 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
 
     if (RPC_IS_CALL_OK(rpcs))
     {
-        if ((bytes_received != NULL) && (out.count.count_val != 0))
+        if ((bytes_received != NULL) && (out.count.count_val != NULL))
             *bytes_received = out.count.count_val[0];
     }
 
@@ -363,9 +361,10 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
 
     CHECK_RETVAL_VAR_IS_BOOL(accept_ex, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: AcceptEx(%d, %d, %d, %u, %d) -> %s (%s) "
-                 "bytes received %u", rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, s_a, len, overlapped, PTR_VAL(bytes_received), 
+    TAPI_RPC_LOG("RPC (%s,%s)%s: AcceptEx(%d, %d, %u, %d, %d, %d, %d, %u)"
+                 " -> %s (%s) bytes received %u", rpcs->ta, rpcs->name, 
+                 rpcop2str(op), s, s_a, buf, len, laddr_len, raddr_len,
+                 PTR_VAL(bytes_received), overlapped,
                  out.retval ? "true" : "false",
                  errno_rpc2str(RPC_ERRNO(rpcs)),
                  PTR_VAL(bytes_received));

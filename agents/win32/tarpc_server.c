@@ -113,6 +113,7 @@ static type_info_t type_info[] =
     {"struct timeval", sizeof(struct timeval)},
     {"struct linger", sizeof(struct linger)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
+    {"struct sockaddr_storage", sizeof(struct sockaddr_storage)},
 #if 0
     {"struct ip_mreqn", sizeof(struct ip_mreqn)}
 #endif
@@ -348,40 +349,13 @@ TARPC_FUNC(connect_ex,
     COPY_ARG(len_sent);
 },
 {
-    rpc_overlapped *overlapped = IN_OVERLAPPED;
-    
     PREPARE_ADDR(in->addr, 0);
-    if (overlapped != NULL)
-    {
-        if (buf2overlapped(overlapped, in->buf.buf_len,
-                           in->buf.buf_val) != 0)
-        {
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-        }
-        else
-        {
-            MAKE_CALL(out->retval =
-                          (*pf_connect_ex)(in->fd, a, in->len,
-                               overlapped->buffers[0].buf,
-                               in->len_buf,
-                               out->len_sent.len_sent_len == 0 ? NULL :
-                                   (LPDWORD)(out->len_sent.len_sent_val),
-                               (LPWSAOVERLAPPED)overlapped));
-        }
-    }
-    else
-    {
-        MAKE_CALL(out->retval =
-                      (*pf_connect_ex)(in->fd, a, in->len,
-                                       in->buf.buf_len == 0 ? NULL :
-                                           in->buf.buf_val,
-                                       in->len_buf,
-                                       out->len_sent.len_sent_len == 0 ?
-                                           NULL :
-                                           (LPDWORD)(out->len_sent.
-                                                          len_sent_val),
-                                       NULL));
-    }
+    MAKE_CALL(out->retval = (*pf_connect_ex)(in->fd, a, in->len,
+              rcf_pch_mem_get(in->send_buf),
+              in->buflen,
+              out->len_sent.len_sent_len == 0 ? NULL :
+              (LPDWORD)(out->len_sent.len_sent_val),
+              (LPWSAOVERLAPPED)IN_OVERLAPPED));
 }
 )
 
@@ -511,40 +485,18 @@ TARPC_FUNC(accept_ex,
     COPY_ARG(count);
 },
 {
-    int             buflen;
-    rpc_overlapped *overlapped = IN_OVERLAPPED;
-    rpc_overlapped  tmp;
-
-    buflen = in->buflen + 2 * (sizeof(struct sockaddr_storage) + 16);
-    if (overlapped == NULL)
-    {
-        memset(&tmp, 0, sizeof(tmp));
-        overlapped = &tmp;
-    }
-    if (in->buflen > 0)
-    {
-        if (buf2overlapped(overlapped, buflen, NULL) != 0)
-        {
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-            goto finish;
-        }
-    }
+    
     MAKE_CALL(out->retval =
               (*pf_accept_ex)(in->fd, in->fd_a,
-                              in->buflen == 0 ? NULL : 
-                              overlapped->buffers[0].buf, 
+                              rcf_pch_mem_get(in->out_buf), 
                               in->buflen,
-                              sizeof(struct sockaddr_storage) + 16,
-                              sizeof(struct sockaddr_storage) + 16,
+                              in->laddr_len,
+                              in->raddr_len,
                               out->count.count_len == 0 ? NULL :
                               (LPDWORD)out->count.count_val, 
-                              in->overlapped == 0 ? NULL :
-                              (LPWSAOVERLAPPED)overlapped)); 
-    if (overlapped == &tmp)
-        rpc_overlapped_free_memory(overlapped);
-
-    finish:
-    ;
+                              (LPWSAOVERLAPPED)IN_OVERLAPPED)); 
+    
+    
 }
 )
 

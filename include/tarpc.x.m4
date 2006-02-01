@@ -29,6 +29,7 @@
  * $Id$
  */
 
+
 %#include "te_config.h"
 
 
@@ -660,11 +661,12 @@ struct tarpc_connect_ex_in {
     tarpc_int               fd;       /**< TA-local socket */
     struct tarpc_sa         addr;     /**< Remote address */
     tarpc_socklen_t         len;      /**< Length to be passed to connectEx() */
-    uint8_t                 buf<>;    /**< Buffer for data to be sent */
-    tarpc_size_t            len_buf;  /**< Size of data passed to connectEx() */
-    tarpc_overlapped        overlapped; /**< WSAOVERLAPPED structure */
+    tarpc_ptr               send_buf; /**< RPC pointer for data to be sent */
+    tarpc_size_t            buflen;   /**< Size of data passed to connectEx() */
     tarpc_size_t            len_sent<>; /**< Returned by the function
                                              size of sent data from buf */
+    tarpc_overlapped        overlapped; /**< WSAOVERLAPPED structure */
+    
 };                                               
 
 struct tarpc_connect_ex_out {
@@ -760,11 +762,22 @@ struct tarpc_accept_ex_in {
     tarpc_int               fd_a;         /**< TA-local socket to wich the
                                                connection will be actually
                                                made */
+    tarpc_ptr               out_buf;      /**< Pointer to a buffer that receives
+                                               the first block of data, the 
+                                               local address, and the remote
+                                               address.*/
     tarpc_size_t            buflen;       /**< Length of the buffer
                                                passed to the AcceptEx() */
-    tarpc_overlapped        overlapped;   /**< WSAOVERLAPPED structure */
+                                               
+    tarpc_size_t            laddr_len;    /**< Number of bytes reserved for 
+                                               the local address information */
+    tarpc_size_t            raddr_len;    /**< Number of bytes reserved for 
+                                               the remote address information */
+                                                                                       
     tarpc_size_t            count<>;      /**< Location for
-                                               count of received bytes */ 
+                                               count of received bytes */
+    tarpc_overlapped        overlapped;   /**< WSAOVERLAPPED structure */
+
 };
 
 struct tarpc_accept_ex_out {
