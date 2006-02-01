@@ -229,7 +229,6 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     
     int i;
     
-    
     PROCESS_INFORMATION info;
     STARTUPINFO         si;
     
@@ -238,11 +237,12 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
         *tmp = 0;
     
     sprintf(cmdline + strlen(cmdline), "_rpcserver64 %s", name);    
-    memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
     
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < 3; i++)
     {
+        memset(&si, 0, sizeof(si));
+        
         if (CreateProcess(NULL, cmdline, NULL, NULL, inherit, 0, NULL, NULL,
                           &si, &info))
             break;
@@ -253,7 +253,7 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
             return win_rpc_errno(GetLastError());
         }
         *tmp = 0;
-        if (i == 1)
+        if (i == 0)
             sprintf(cmdline + strlen(cmdline), "_rpcserver %s", name);    
         else
             sprintf(cmdline + strlen(cmdline), " rpcserver %s", name);    
