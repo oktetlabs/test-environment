@@ -233,6 +233,7 @@ rcf_pch_rpc_server(const char *name)
         err = TE_OS_RC(TE_RCF_PCH, errno);
         STOP("Failed to connect to TA; errno = %r", err);
     }
+    
     /* Enable linger with positive timeout on the socket  */
     {
         struct linger l = { 1, 1 };
@@ -343,7 +344,7 @@ rcf_pch_rpc_server(const char *name)
 cleanup:    
     free(buf);
     if (s >= 0)
-#ifdef __CYGWIN__
+#ifdef WINDOWS
         closesocket(s);
 #else
         close(s);
