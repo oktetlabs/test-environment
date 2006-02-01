@@ -565,35 +565,6 @@ ta_rtn_unlink(char *arg)
     return (rc == 0) ? 0 : errno;
 }
 
-
-/**
- * Signal handler to be registered for SIGINT signal.
- * 
- * @param sig   Signal number
- */
-static void
-ta_sigint_handler(int sig)
-{
-    /*
-     * We can't log here using TE logging facilities, but we need
-     * to make a mark, that TA was killed.
-     */
-    fprintf(stderr, "Test Agent killed by %d signal\n", sig);
-    _exit(EXIT_FAILURE);
-}
-
-/**
- * Signal handler to be registered for SIGPIPE signal.
- * 
- * @param sig   Signal number
- */
-static void
-ta_sigpipe_handler(int sig)
-{
-    UNUSED(sig);
-    WARN("Test Agent received SIGPIPE signal");
-}
-
 int
 rcf_ch_shutdown(struct rcf_comm_connection *handle,
                 char *cbuf, size_t buflen, size_t answer_plen)
@@ -621,6 +592,11 @@ die(void)
     _exit(0);
 }
 
+#ifdef RCF_RPC
+extern void wsa_func_handles_discover();
+#endif
+
+
 HINSTANCE ta_hinstance;
 
 /**
@@ -629,47 +605,34 @@ HINSTANCE ta_hinstance;
  * Usage:
  *     tawin32 <ta_name> <communication library configuration string>
  */
-int WINAPI 
-WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance, 
-        LPSTR lpCmdLine, int nCmdShow) 
+int 
+main(int argc, char **argv)
 {
     int rc, retval = 0;
     
-    char  buf[16];
-    char  cmd[256] = { 0, };
-    char *tmp;
+    char buf[16];
 
     pthread_t tid;
 
     WSADATA data;
 
     WSAStartup(MAKEWORD(2,2), &data);
-    
-    UNUSED(hPrevInstance);
-    UNUSED(nCmdShow);
-    
-    ta_hinstance = hinstance;
+
+    ta_hinstance = GetModuleHandle(NULL);
     
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
     
-    strncpy(cmd, lpCmdLine, sizeof(cmd) - 1);
-    ta_name = strtok(cmd, " ");
-    tmp = strtok(NULL, " ");
+    ta_name = argv[1];
 
 #ifdef RCF_RPC
     if (strcmp(ta_name, "rpcserver") == 0)
     {
-        extern void wsa_func_handles_discover();
-
         wsa_func_handles_discover();
-        rcf_pch_rpc_server(tmp);
+        rcf_pch_rpc_server(argv[2]);
         _exit(0);
     }
 #endif
-    
-    (void)signal(SIGINT, ta_sigint_handler);
-    (void)signal(SIGPIPE, ta_sigpipe_handler);
 
     if ((rc = ta_log_init()) != 0)
     {
@@ -684,7 +647,7 @@ WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
 
     pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
 
-    rc = rcf_pch_run(tmp, buf);
+    rc = rcf_pch_run(argv[2], buf);
     if (rc != 0)
     {
         fprintf(stderr, "rcf_pch_run() failed: error=0x%X\n", rc);
