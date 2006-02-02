@@ -105,7 +105,7 @@ ssh ${BUILD_HOST} bash -l -c "\"
 tar xzf ${PLATFORM}.tgz ; \
 rm ${PLATFORM}.tgz ; \
 cd tmpsrc ; \
-cl -I../${PLATFORM}/include -DWINDOWS *.c \
+cl /nologo -I../${PLATFORM}/include -DWINDOWS *.c \
    /link /OUT:${APPNAME} /LIBPATH:../${PLATFORM}/lib ${LIBS} ; \""
 
 scp ${BUILD_HOST}:tmpsrc/${APPNAME} .

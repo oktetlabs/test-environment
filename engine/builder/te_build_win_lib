@@ -90,7 +90,7 @@ rm -rf tmpsrc
 
 ssh ${BUILD_HOST} bash -l -c "\"
 cd tmpsrc ; \
-cl *.c /c ; \
+cl /nologo *.c /c ; \
 lib /OUT:${LIBNAME} *.obj\""
 
 scp ${BUILD_HOST}:tmpsrc/${LIBNAME} .
