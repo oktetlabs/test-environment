@@ -1568,7 +1568,7 @@ TARPC_FUNC(ioctl,
             }
 
             default:
-                ERROR("incorrect request type %d is received",
+                ERROR("incorrect ioctl request type %d is received",
                       out->req.req_val[0].type);
                 out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
                 out->retval = -1;
