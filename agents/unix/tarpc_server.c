@@ -1034,7 +1034,7 @@ _do_fd_clr_1_svc(tarpc_do_fd_clr_in *in, tarpc_do_fd_clr_out *out,
 
     memset(out, 0, sizeof(*out));
 
-    FD_SET(in->fd, IN_FDSET);
+    FD_CLR(in->fd, IN_FDSET);
     return TRUE;
 }
 
