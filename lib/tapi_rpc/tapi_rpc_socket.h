@@ -430,7 +430,7 @@ extern int rpc_listen(rcf_rpc_server *rpcs,
  *                 in @b addr address 
  * @param raddrlen real size of @b addr
  *
- * @return 0 on success or -1 on failure
+ * @return Socket for new connection or -1
  */
 extern int rpc_accept_gen(rcf_rpc_server *rpcs,
                           int s, struct sockaddr *addr,
@@ -454,7 +454,7 @@ extern int rpc_accept_gen(rcf_rpc_server *rpcs,
  *                 contain the actual size of the returned in @b addr 
  *                 address 
  *
- * @return 0 on success or -1 on failure
+ * @return Socket for new connection or -1
  */
 static inline int
 rpc_accept(rcf_rpc_server *rpcs,
