@@ -61,6 +61,11 @@ if test -z "$BUILD_HOST" ; then
     exit 0
 fi    
 
+if ! ssh $BUILD_HOST ls >/dev/null; then
+    exit 0
+fi
+
+
 # Copy libraries and headers to the build host
 cd ${TE_INSTALL}
 tar czf ${BUILDDIR}/${PLATFORM}.tgz ${PLATFORM}

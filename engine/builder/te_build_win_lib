@@ -50,11 +50,18 @@ BUILD_HOST=${TE_WIN32_BUILD_HOST}
 fi
 
 if test -z "$BUILD_HOST" ; then
-    echo "Warning: build host for $PLATFORM is not specified; \
+    echo "Warning: build host for $PLATFORM platform is not specified; \
           library $LIBNAME is not (re-)built"
     touch ${LIBNAME}
     exit 0
-fi    
+fi
+
+if ! ssh $BUILD_HOST ls >/dev/null; then
+    echo "Warning: build host $BUILD_HOST is unreachable; \
+          library $LIBNAME for $PLATFORM platform is not (re-)built"
+    touch ${LIBNAME}
+    exit 0
+fi
 
 mkdir tmpsrc
 cd tmpsrc
