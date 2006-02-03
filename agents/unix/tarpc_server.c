@@ -380,8 +380,10 @@ static type_info_t type_info[] =
     {"struct linger", sizeof(struct linger)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
 #if HAVE_STRUCT_IP_MREQN
-    {"struct ip_mreqn", sizeof(struct ip_mreqn)}
+    {"struct ip_mreqn", sizeof(struct ip_mreqn)},
 #endif
+    {"struct sockaddr", sizeof(struct sockaddr)},
+    {"struct sockaddr_storage", sizeof(struct sockaddr_storage)},
 };
 
 /*-------------- get_sizeof() ---------------------------------*/
