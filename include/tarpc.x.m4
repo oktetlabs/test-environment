@@ -793,7 +793,7 @@ struct tarpc_get_accept_addr_in {
     struct tarpc_in_arg    common;
 
     tarpc_int       fd;          /**< TA-local socket */
-    uint8_t         buf<>;       /**< Buffer with addresses */
+    tarpc_ptr       buf;         /**< Buffer with addresses */
     tarpc_size_t    buflen;      /**< Length of the buffer
                                       passed to the AcceptEx() */
     struct tarpc_sa laddr;       /**< Local address */

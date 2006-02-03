@@ -224,15 +224,14 @@ rpc_accept_ex_buflen(rcf_rpc_server *rpcs, size_t datalen)
  *                      to rpc_accept_ex() fuinction as 3d parameter
  * @param buf           pointer to a buffer passed to
  *                      rpc_wsa_get_overlapped_result()
- * @param buflen        size of the buffer passed to
- *                      rpc_wsa_get_overlapped_result()
  * @param len           buffer size wich was passed to rpc_accept_ex()
  * @param laddr         local address returned by GetAcceptExSockAddr()
  * @param raddr         remote address returned by GetAcceptExSockAddr()
  */
 extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
-                                int s, void *buf, size_t buflen, size_t len,
-                                struct sockaddr *laddr,
+                                int s, rpc_ptr buf, 
+                                size_t len,
+                                struct sockaddr *laddr, 
                                 struct sockaddr *raddr);
 /**
  * Transmit file data over a connected socket. This function uses the 

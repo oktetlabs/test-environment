@@ -515,7 +515,7 @@ TARPC_FUNC(get_accept_addr,
 
     UNUSED(list);
 
-    (*pf_get_accept_ex_sockaddrs)(in->buf.buf_val,
+    (*pf_get_accept_ex_sockaddrs)(rcf_pch_mem_get(in->buf),
                                   in->buflen,
                                   sizeof(struct sockaddr_storage) + 16,
                                   sizeof(struct sockaddr_storage) + 16,

@@ -374,7 +374,7 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
 
 void
 rpc_get_accept_addr(rcf_rpc_server *rpcs,
-                    int s, void *buf, size_t buflen, size_t len,
+                    int s, rpc_ptr buf, size_t len,
                     struct sockaddr *laddr,
                     struct sockaddr *raddr)
 {
@@ -392,6 +392,7 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
     
     in.fd = s;
     in.buflen = len;
+    in.buf = (tarpc_ptr)buf;
     if (laddr != NULL)
     {
         in.laddr.sa_family = addr_family_h2rpc(laddr->sa_family);
@@ -406,8 +407,6 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
             sizeof(struct sockaddr_storage) - SA_COMMON_LEN;
         in.raddr.sa_data.sa_data_val = raddr->sa_data;
     }
-    in.buf.buf_val = buf;
-    in.buf.buf_len = buflen;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     rcf_rpc_call(rpcs, "get_accept_addr", &in, &out);
@@ -429,10 +428,10 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
     }
     
     TAPI_RPC_LOG("RPC (%s,%s): "
-                 "GetAcceptExSockaddrs(%d, %p[%d], %d, %p, %p) -> "
+                 "GetAcceptExSockaddrs(%d, %u, %d, %p, %p) -> "
                  "(%s) laddr=%s raddr=%s",
                  rpcs->ta, rpcs->name,
-                 s, buf, buflen, len, laddr, raddr, 
+                 s, buf, len, laddr, raddr, 
                  errno_rpc2str(RPC_ERRNO(rpcs)),
                  ((out.laddr.sa_data.sa_data_val == NULL) ||
                   (laddr == NULL)) ? "NULL" : sockaddr2str(laddr),
