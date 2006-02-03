@@ -114,6 +114,7 @@ static type_info_t type_info[] =
     {"struct linger", sizeof(struct linger)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
     {"struct sockaddr_storage", sizeof(struct sockaddr_storage)},
+    {"struct sockaddr", sizeof(struct sockaddr)},
 #if 0
     {"struct ip_mreqn", sizeof(struct ip_mreqn)}
 #endif
