@@ -100,7 +100,7 @@ typedef struct {
     char           type_name[MAX_TYPE_NAME_SIZE];
     tarpc_ssize_t  type_size;
 } type_info_t;
-
+ 
 static type_info_t type_info[] =
 {
     {"char", sizeof(char)},
@@ -502,26 +502,42 @@ TARPC_FUNC(accept_ex,
 
 /*-------------- GetAcceptExSockAddr() ---------------------------*/
 
-TARPC_FUNC(get_accept_addr,
+TARPC_FUNC(get_accept_addr, 
 {
-    COPY_ARG_ADDR(laddr);
-    COPY_ARG_ADDR(raddr);
+    COPY_ARG(l_sa_len);
+    COPY_ARG(r_sa_len);
 },
 {
-    struct sockaddr *l_a = 0;
-    struct sockaddr *r_a = 0 ;
-    int               addrlen1 = 0;
-    int               addrlen2 = 0;
+    struct sockaddr *la = NULL;
+    struct sockaddr *ra = NULL;
 
     UNUSED(list);
 
     (*pf_get_accept_ex_sockaddrs)(rcf_pch_mem_get(in->buf),
                                   in->buflen,
-                                  sizeof(struct sockaddr_storage) + 16,
-                                  sizeof(struct sockaddr_storage) + 16,
-                                  &l_a, &addrlen1, &r_a, &addrlen2);
-    sockaddr_h2rpc(l_a, &(out->laddr));
-    sockaddr_h2rpc(r_a, &(out->raddr));
+                                  in->laddr_len,
+                                  in->raddr_len,
+                                  in->l_sa_null ? NULL : &la, 
+                                  (LPINT)out->l_sa_len.l_sa_len_val, 
+                                  in->r_sa_null ? NULL : &ra, 
+                                  (LPINT)out->r_sa_len.r_sa_len_val);
+
+    if (!in->l_sa_null)
+    {
+        out->laddr.sa_data.sa_data_len = 
+           sizeof(struct sockaddr_storage) - SA_COMMON_LEN;
+        out->laddr.sa_data.sa_data_val = 
+            calloc(sizeof(struct sockaddr_storage) - SA_COMMON_LEN, 1);
+        sockaddr_h2rpc(la, &(out->laddr));
+    }
+    if (!in->r_sa_null)
+    {
+        out->raddr.sa_data.sa_data_len = 
+           sizeof(struct sockaddr_storage) - SA_COMMON_LEN;
+        out->raddr.sa_data.sa_data_val = 
+            calloc(sizeof(struct sockaddr_storage) - SA_COMMON_LEN, 1);
+        sockaddr_h2rpc(ra, &(out->raddr));
+    }
 }
 )
 

@@ -576,7 +576,7 @@ sockaddr_rpc2h(struct tarpc_sa *rpc_addr, struct sockaddr_storage *addr)
 {
     uint32_t len = SA_DATA_MAX_LEN;
 
-    if (rpc_addr->sa_data.sa_data_len == 0)
+    if (rpc_addr->sa_data.sa_data_val == NULL)
         return NULL;
 
     memset(addr, 0, sizeof(struct sockaddr_storage));

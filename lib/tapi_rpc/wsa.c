@@ -372,11 +372,16 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
     RETVAL_BOOL(accept_ex, out.retval);
 }
 
-void
-rpc_get_accept_addr(rcf_rpc_server *rpcs,
-                    int s, rpc_ptr buf, size_t len,
-                    struct sockaddr *laddr,
-                    struct sockaddr *raddr)
+void 
+rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
+                        int s, rpc_ptr buf, 
+                        size_t len,
+                        size_t laddr_len,
+                        size_t raddr_len,
+                        struct sockaddr *laddr, 
+                        size_t *l_sa_len,
+                        struct sockaddr *raddr, 
+                        size_t *r_sa_len)
 {
     tarpc_get_accept_addr_in  in;
     tarpc_get_accept_addr_out out;
@@ -393,19 +398,19 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
     in.fd = s;
     in.buflen = len;
     in.buf = (tarpc_ptr)buf;
-    if (laddr != NULL)
+    in.laddr_len = laddr_len;
+    in.raddr_len = raddr_len;
+    in.l_sa_null = laddr == NULL;
+    in.r_sa_null = raddr == NULL;
+    if (l_sa_len != NULL)
     {
-        in.laddr.sa_family = addr_family_h2rpc(laddr->sa_family);
-        in.laddr.sa_data.sa_data_len =
-            sizeof(struct sockaddr_storage) - SA_COMMON_LEN;
-        in.laddr.sa_data.sa_data_val = laddr->sa_data;
+        in.l_sa_len.l_sa_len_len = 1;
+        in.l_sa_len.l_sa_len_val = l_sa_len;
     }
-    if (raddr != NULL)
+    if (r_sa_len != NULL)
     {
-        in.raddr.sa_family = addr_family_h2rpc(raddr->sa_family);
-        in.raddr.sa_data.sa_data_len =
-            sizeof(struct sockaddr_storage) - SA_COMMON_LEN;
-        in.raddr.sa_data.sa_data_val = raddr->sa_data;
+        in.r_sa_len.r_sa_len_len = 1;
+        in.r_sa_len.r_sa_len_val = r_sa_len;
     }
 
     rpcs->op = RCF_RPC_CALL_WAIT;
@@ -425,18 +430,23 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
                    out.raddr.sa_data.sa_data_len);
             raddr->sa_family = addr_family_rpc2h(out.raddr.sa_family);
         }
+
+        if (l_sa_len != NULL && out.l_sa_len.l_sa_len_val != NULL)
+            *l_sa_len = out.l_sa_len.l_sa_len_val[0];
+        
+        if (r_sa_len != NULL && out.r_sa_len.r_sa_len_val != NULL)
+            *r_sa_len = out.r_sa_len.r_sa_len_val[0];
     }
     
     TAPI_RPC_LOG("RPC (%s,%s): "
-                 "GetAcceptExSockaddrs(%d, %u, %d, %p, %p) -> "
-                 "(%s) laddr=%s raddr=%s",
+                 "GetAcceptExSockaddrs(%d, %u, %d, %d, %d, %p, %p,"
+                 " %p, %p) -> (%s) laddr=%s raddr=%s",
                  rpcs->ta, rpcs->name,
-                 s, buf, len, laddr, raddr, 
+                 s, buf, len, laddr_len, raddr_len, 
+                 laddr, l_sa_len, raddr, r_sa_len, 
                  errno_rpc2str(RPC_ERRNO(rpcs)),
-                 ((out.laddr.sa_data.sa_data_val == NULL) ||
-                  (laddr == NULL)) ? "NULL" : sockaddr2str(laddr),
-                 ((out.raddr.sa_data.sa_data_val == NULL) ||
-                  (raddr == NULL)) ? "NULL" : sockaddr2str(raddr));
+                 laddr == NULL ? "NULL" : sockaddr2str(laddr),
+                 raddr == NULL ? "NULL" : sockaddr2str(raddr));
     
     RETVAL_VOID(get_accept_addr);
 }

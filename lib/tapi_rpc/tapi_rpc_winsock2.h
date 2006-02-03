@@ -215,6 +215,32 @@ rpc_accept_ex_buflen(rcf_rpc_server *rpcs, size_t datalen)
            datalen;
 }
 
+/**
+ * @b GetAcceptExSockAddr() remote call.
+ *
+ * @param rpcs          RPC server
+ * @param s             descriptor of socket that was passed
+ *                      to rpc_accept_ex() fuinction as 3d parameter
+ * @param buf           pointer to a buffer passed to
+ *                      rpc_wsa_get_overlapped_result()
+ * @param len           buffer size passed to AcceptEx()
+ * @param laddr_len     length of the local address passed to AcceptEx()
+ * @param raddr_len     length of the remote address passed to AcceptEx()
+ * @param laddr         local address returned by GetAcceptExSockAddr()
+ * @param l_sa_len      LocalSockaddrLen (passed transparently)
+ * @param raddr         remote address returned by GetAcceptExSockAddr()
+ * @param r_sa_len      RemoteSockaddrLen (passed transparently)
+ */
+extern void rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
+                                    int s, rpc_ptr buf, 
+                                    size_t len,
+                                    size_t laddr_len,
+                                    size_t raddr_len,
+                                    struct sockaddr *laddr, 
+                                    size_t *l_sa_len,
+                                    struct sockaddr *raddr, 
+                                    size_t *r_sa_len);
+
 
 /**
  * @b GetAcceptExSockAddr() remote call.
@@ -228,11 +254,21 @@ rpc_accept_ex_buflen(rcf_rpc_server *rpcs, size_t datalen)
  * @param laddr         local address returned by GetAcceptExSockAddr()
  * @param raddr         remote address returned by GetAcceptExSockAddr()
  */
-extern void rpc_get_accept_addr(rcf_rpc_server *rpcs,
-                                int s, rpc_ptr buf, 
-                                size_t len,
-                                struct sockaddr *laddr, 
-                                struct sockaddr *raddr);
+static inline void 
+rpc_get_accept_addr(rcf_rpc_server *rpcs,
+                    int s, rpc_ptr buf, size_t len,
+                    struct sockaddr *laddr, 
+                    struct sockaddr *raddr)
+{
+    size_t ss_len;
+    
+    ss_len = rpc_get_sizeof(rpcs, "struct sockaddr_storage");
+    
+    return rpc_get_accept_addr_gen(rpcs, s, buf, len, 
+                                   ss_len + 16, ss_len + 16, 
+                                   laddr, &ss_len, raddr, &ss_len);
+}
+                    
 /**
  * Transmit file data over a connected socket. This function uses the 
  * operating system cache manager to retrive the file data, and perform 

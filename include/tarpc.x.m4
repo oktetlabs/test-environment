@@ -796,15 +796,26 @@ struct tarpc_get_accept_addr_in {
     tarpc_ptr       buf;         /**< Buffer with addresses */
     tarpc_size_t    buflen;      /**< Length of the buffer
                                       passed to the AcceptEx() */
+    tarpc_size_t    laddr_len;   /**< Number of bytes reserved for 
+                                      the local address information */
+    tarpc_size_t    raddr_len;   /**< Number of bytes reserved for 
+                                      the remote address information */
+
+    tarpc_bool      l_sa_null;   /**< LocalSockaddr is NULL */
+    tarpc_bool      r_sa_null;   /**< RemoteSockaddr is NULL */
     struct tarpc_sa laddr;       /**< Local address */
     struct tarpc_sa raddr;       /**< Remote address */
+    tarpc_size_t    l_sa_len<>;  /**< LocalSockaddrLength (transparent) */
+    tarpc_size_t    r_sa_len<>;  /**< RemoteSockaddrLength (transparent) */
 };
 
 struct tarpc_get_accept_addr_out {
     struct tarpc_out_arg    common;
 
     struct tarpc_sa laddr;       /**< Local address */
+    tarpc_size_t    l_sa_len<>;  /**< LocalSockaddrLength (transparent) */
     struct tarpc_sa raddr;       /**< Remote address */
+    tarpc_size_t    r_sa_len<>;  /**< RemoteSockaddrLength (transparent) */
 };
 
 /* TransmitFile() */
