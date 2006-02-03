@@ -1292,6 +1292,10 @@ wsa_name_convert(const char *name)
         return "wsa_connect";
     else if (strcmp(name, "WSADisconnect") == 0)
         return "wsa_disconnect";
+    else if (strcmp(name, "AcceptEx") == 0)
+        return "accept_ex";
+    else if (strcmp(name, "ConnectEx") == 0)
+        return "connect_ex";
     else
         return name;
 }
