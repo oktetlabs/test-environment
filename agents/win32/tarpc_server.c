@@ -1290,7 +1290,8 @@ TARPC_FUNC(setsockopt, {},
     {
         char *opt;
         int   optlen;
-
+        HANDLE handle;
+        
         struct linger   linger;
         struct in_addr  addr;
         struct timeval  tv;
@@ -1362,6 +1363,14 @@ TARPC_FUNC(setsockopt, {},
                     opt_string.opt_string_val;
                 optlen = in->optval.optval_val[0].option_value_u.
                     opt_string.opt_string_len;
+                break;
+            }
+            
+            case OPT_HANDLE:
+            {
+                opt = (char *)&handle;
+                handle = in->optval.optval_val[0].option_value_u.opt_handle;
+                optlen = sizeof(handle);
                 break;
             }
 

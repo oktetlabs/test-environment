@@ -1739,6 +1739,16 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
 
                 break;
             }
+            
+            case RPC_SO_UPDATE_ACCEPT_CONTEXT:
+            {
+                val.opttype = OPT_HANDLE;
+                val.option_value_u.opt_handle = *(int *)optval;
+                if (optlen == sizeof(int))
+                    in.optlen = RPC_OPTLEN_AUTO;
+                break;
+
+            }
 
             default:
                 val.option_value_u.opt_int = *(int *)optval;

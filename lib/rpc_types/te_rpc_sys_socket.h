@@ -636,6 +636,9 @@ typedef enum rpc_sockopt {
                                  in the buffer until the socket layer
                                  will pass the data to the user on
                                  receiving */
+    RPC_SO_UPDATE_ACCEPT_CONTEXT, /**< Update the accepting socket
+                                  with content of listening socket */    
+    RPC_SO_UPDATE_CONNECT_CONTEXT, /** Update connected socket's state */
     RPC_SO_RCVTIMEO,        /**< Specify the receiving timeouts until
                                  reporting an error */
     RPC_SO_REUSEADDR,       /**< Indicate that the rules used in
@@ -827,7 +830,13 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H(SO_SNDBUF);
 #endif
 #ifdef SO_SNDLOWAT
-        RPC2H(SO_SNDLOWAT);
+       RPC2H(SO_SNDLOWAT);
+#endif
+#ifdef SO_UPDATE_ACCEPT_CONTEXT
+        RPC2H(SO_UPDATE_ACCEPT_CONTEXT);
+#endif
+#ifdef SO_UPDATE_CONNECT_CONTEXT
+        RPC2H(SO_UPDATE_CONNECT_CONTEXT);
 #endif
 #ifdef SO_SNDTIMEO
         RPC2H(SO_SNDTIMEO);
@@ -961,6 +970,12 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC(SO_REUSEADDR);
                 H2RPC(SO_SNDBUF);
                 H2RPC(SO_SNDLOWAT);
+#ifdef SO_UPDATE_CONNECT_CONTEXT
+                H2RPC(SO_UPDATE_CONNECT_CONTEXT);
+#endif
+#ifdef SO_UPDATE_ACCEPT_CONTEXT
+                H2RPC(SO_UPDATE_ACCEPT_CONTEXT);
+#endif
                 H2RPC(SO_SNDTIMEO);
                 H2RPC(SO_TYPE);
 #ifdef SO_CONNECT_TIME
@@ -1147,6 +1162,8 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_REUSEADDR);
         RPC2STR(SO_SNDBUF);
         RPC2STR(SO_SNDLOWAT);
+        RPC2STR(SO_UPDATE_ACCEPT_CONTEXT);
+        RPC2STR(SO_UPDATE_CONNECT_CONTEXT);
         RPC2STR(SO_SNDTIMEO);
         RPC2STR(SO_TYPE);
         RPC2STR(SO_CONNECT_TIME);

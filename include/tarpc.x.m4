@@ -1704,7 +1704,8 @@ enum option_type {
     OPT_MREQ            = 5,
     OPT_IPADDR          = 6,
     OPT_STRING          = 7,
-    OPT_TCP_INFO        = 8
+    OPT_TCP_INFO        = 8,
+    OPT_HANDLE          = 9
 };
 
 struct tarpc_linger {
@@ -1778,6 +1779,7 @@ union option_value switch (option_type opttype) {
     case OPT_IPADDR:            uint32_t opt_ipaddr;
     case OPT_STRING:            char opt_string<>;
     case OPT_TCP_INFO:          struct option_value_tcp_info opt_tcp_info;
+    case OPT_HANDLE:            int opt_handle;
 };
 
 /* setsockopt() */
