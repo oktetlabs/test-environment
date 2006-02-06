@@ -3559,6 +3559,14 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
         case RPC_SIO_GET_BROADCAST_ADDRESS:
         case RPC_SIO_ROUTING_INTERFACE_QUERY:
             res->type = WSA_IOCTL_SA;
+
+            res->wsa_ioctl_request_u.req_sa.sa_data.sa_data_len =
+            (SA(buf)->sa_family == PF_INET6) ?
+             sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
+            res->wsa_ioctl_request_u.req_sa.sa_data.sa_data_val =
+            (uint8_t *)malloc(res->wsa_ioctl_request_u.
+                              req_sa.sa_data.sa_data_len);
+
             sockaddr_h2rpc((struct sockaddr *)buf,
                 &res->wsa_ioctl_request_u.req_sa);
             break;
@@ -3687,7 +3695,7 @@ TARPC_FUNC(wsa_ioctl,
             guid.Data3 = req->wsa_ioctl_request_u.req_guid.data3;
             memcpy(guid.Data4,
                    req->wsa_ioctl_request_u.req_guid.data4,
-                   sizeof(guid.Data4)); 
+                   sizeof(guid.Data4));
             inbuf = &guid;
             inbuf_len = sizeof(GUID);
             break;
