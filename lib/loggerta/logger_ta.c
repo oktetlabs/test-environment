@@ -161,7 +161,7 @@ ta_log_message(const char *file, unsigned int line,
                 break;
             }
 
-            case 't':
+            case 'T':
                 if ((*++p_str != 0) && (*p_str == 'm'))
                 {
                     uint8_t    *addr;
