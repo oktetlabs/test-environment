@@ -298,6 +298,22 @@ struct tarpc_duplicate_socket_out {
     char        info<>;
 };
 
+/* DuplicateHandle; used for sockets only with option DUPLICATE_SAME_ACCESS */
+struct tarpc_duplicate_handle_in {
+    struct tarpc_in_arg common;
+    
+    tarpc_pid_t src;  /**< Source process */
+    tarpc_pid_t tgt;  /**< Target process */
+    tarpc_int   fd;   /**< File descriptor to be duplicated */
+};
+
+struct tarpc_duplicate_handle_out {
+    struct tarpc_out_arg common;
+    
+    tarpc_bool retval;   /**< Value returned by DuplicateHandle */
+    tarpc_int  fd;       /**< New file descriptor */
+};    
+
 /* dup() */
 
 struct tarpc_dup_in {
@@ -3117,6 +3133,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(socket)
         RPC_DEF(wsa_socket)
         RPC_DEF(duplicate_socket)
+        RPC_DEF(duplicate_handle)
         RPC_DEF(dup)
         RPC_DEF(dup2)
         RPC_DEF(close)
