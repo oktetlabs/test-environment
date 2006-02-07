@@ -2356,7 +2356,7 @@ rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
 
 int
 rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
-                         int s, int pid, uint8_t *info, int *info_len)
+                         int s, pid_t pid, uint8_t *info, int *info_len)
 {
     rcf_rpc_op op;
 
@@ -2414,6 +2414,68 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
 
     RETVAL_INT(duplicate_socket, out.retval);
 }
+
+/**
+ * @b DuplicateHandle() remote call. 
+ *
+ * @param rpcs          RPC server
+ * @param src           source process PID
+ * @param old_fd        old socket
+ * @param dst           destination process PID
+ * @param new_fd        new socket location
+ *
+ * @return Value returned by DuplicateHandle() function
+ *
+ * @note @a bInheritHandle is TRUE, @a dwOptions is DUPLICATE_SAME_ACCESS
+ */
+int 
+rpc_wsa_duplicate_handle(rcf_rpc_server *rpcs,
+                         pid_t src, int old_fd,
+                         pid_t tgt, int *new_fd)
+{
+    tarpc_duplicate_handle_in  in;
+    tarpc_duplicate_handle_out out;
+    rcf_rpc_op                 op;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_BOOL(duplicate_handle, FALSE);
+    }
+
+    if (new_fd == NULL)
+    {
+        ERROR("%s(): Invalid new handle pointer", __FUNCTION__);
+        RETVAL_BOOL(duplicate_handle, FALSE);
+    }
+    
+    op = rpcs->op;
+    
+    in.src = src;
+    in.tgt = tgt;
+    in.fd = old_fd;
+
+    rcf_rpc_call(rpcs, "duplicate_handle", &in, &out);
+
+    if (op == RCF_RPC_CALL)
+        out.retval = TRUE;
+        
+    *new_fd = out.fd;
+
+    CHECK_RETVAL_VAR_IS_BOOL(duplicate_handle, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: DuplicateHandle(%u, %d, %u) -> "
+                 "%s (%s) New Handle %d",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 src, old_fd, tgt, 
+                 out.retval ? "true" : "false",
+                 errno_rpc2str(RPC_ERRNO(rpcs)), out.fd);
+
+    RETVAL_BOOL(duplicate_handle, out.retval);
+}                         
 
 int
 rpc_wait_for_multiple_events(rcf_rpc_server *rpcs,

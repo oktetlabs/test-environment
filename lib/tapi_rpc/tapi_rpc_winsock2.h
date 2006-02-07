@@ -100,8 +100,25 @@ extern int rpc_wsa_socket(rcf_rpc_server *rpcs,
  * @return Value returned by WSADuplicateSocket() function
  */
 extern int rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
-                                    int s, int pid,
+                                    int s, pid_t pid,
                                     uint8_t *info, int *info_len);
+
+/**
+ * @b DuplicateHandle() remote call. 
+ *
+ * @param rpcs          RPC server
+ * @param src           source process PID
+ * @param old_fd        old socket
+ * @param tgt           target process PID
+ * @param new_fd        new socket location
+ *
+ * @return Value returned by DuplicateHandle() function
+ *
+ * @note @a bInheritHandle is TRUE, @a dwOptions is DUPLICATE_SAME_ACCESS
+ */
+extern int rpc_wsa_duplicate_handle(rcf_rpc_server *rpcs,
+                                    pid_t src, int old_fd,
+                                    pid_t tgt, int *new_fd);
 
 /**
  * Establish a connection to a specified socket, and optionally send data
