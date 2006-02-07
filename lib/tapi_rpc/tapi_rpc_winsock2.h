@@ -116,7 +116,7 @@ extern int rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
  *
  * @note @a bInheritHandle is TRUE, @a dwOptions is DUPLICATE_SAME_ACCESS
  */
-extern int rpc_wsa_duplicate_handle(rcf_rpc_server *rpcs,
+extern te_bool rpc_duplicate_handle(rcf_rpc_server *rpcs,
                                     pid_t src, int old_fd,
                                     pid_t tgt, int *new_fd);
 

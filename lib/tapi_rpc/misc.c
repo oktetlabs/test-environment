@@ -1055,6 +1055,53 @@ rpc_create_child_process_socket(rcf_rpc_server *pco_father, int father_s,
     counter++;
 }
 
+void
+rpc_create_child_process_socket1(const char *method,
+                                rcf_rpc_server *pco_father, int father_s,
+                                rpc_socket_domain domain,
+                                rpc_socket_type sock_type,
+                                rcf_rpc_server **pco_child, int *child_s)
+{
+    pid_t       pid1, pid2;
+    char        info[512];
+    int         info_len = sizeof(info);
+    char        process_name[12];
+    static int  counter = 1;
+
+
+    if (strcmp(method, "inherit") == 0)
+    {
+        rcf_rpc_server_fork(pco_father, process_name, pco_child);
+        *child_s = father_s;
+        return;
+    }
+    
+    sprintf(process_name, "pco_child%d", counter++);
+    
+   if (strcmp(method, "DuplicateSocket") == 0)
+    {
+        rcf_rpc_server_create(pco_father->ta, process_name, pco_child);
+        pid1 = rpc_getpid(*pco_child);
+        rpc_wsa_duplicate_socket(pco_father, father_s, pid1,
+                                 info, &info_len);
+        *child_s = rpc_wsa_socket(*pco_child, domain, sock_type,
+                                  RPC_PROTO_DEF, info, info_len, 0);
+    }
+    else if (strcmp(method, "DuplicateHandle") == 0)
+    {
+        rcf_rpc_server_create(pco_father->ta, process_name, pco_child);
+        pid1 = rpc_getpid(pco_father);
+        pid2 = rpc_getpid(*pco_child);
+        rpc_duplicate_handle(pco_father, pid1, father_s, pid2, child_s);
+    }
+    else
+    {
+        ERROR("Incorrect method %s is passed to %s", method,
+              __FUNCTION__);
+        TAPI_JMP_DO(TE_EFAIL);
+    }
+}
+
 /**
  * Get readability (there are data to read) or writability (it is allowed
  * to write) of a particular socket.

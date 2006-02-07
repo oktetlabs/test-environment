@@ -2356,7 +2356,7 @@ rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
 
 int
 rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
-                         int s, pid_t pid, uint8_t *info, int *info_len)
+                     int s, pid_t pid, uint8_t *info, int *info_len)
 {
     rcf_rpc_op op;
 
@@ -2415,23 +2415,10 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
     RETVAL_INT(duplicate_socket, out.retval);
 }
 
-/**
- * @b DuplicateHandle() remote call. 
- *
- * @param rpcs          RPC server
- * @param src           source process PID
- * @param old_fd        old socket
- * @param dst           destination process PID
- * @param new_fd        new socket location
- *
- * @return Value returned by DuplicateHandle() function
- *
- * @note @a bInheritHandle is TRUE, @a dwOptions is DUPLICATE_SAME_ACCESS
- */
-int 
-rpc_wsa_duplicate_handle(rcf_rpc_server *rpcs,
-                         pid_t src, int old_fd,
-                         pid_t tgt, int *new_fd)
+te_bool 
+rpc_duplicate_handle(rcf_rpc_server *rpcs,
+                     pid_t src, int old_fd,
+                     pid_t tgt, int *new_fd)
 {
     tarpc_duplicate_handle_in  in;
     tarpc_duplicate_handle_out out;
