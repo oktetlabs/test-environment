@@ -276,7 +276,11 @@ AC_SUBST([SUITE_SCRIPTS])
 
 if test -z "$no_create" ; then
     mkdir -p ${TE_BUILD}/suites
-    echo "TE_BS_SUITES=$TE_BS_SUITES" > ${TE_BUILD}/suites/Makefile.suites
+    if test -e ${TE_BASE}/suites/Makefile.suites ; then
+        cp ${TE_BASE}/suites/Makefile.suites ${TE_BUILD}/suites/Makefile.suites
+    else
+        echo "TE_BS_SUITES=$TE_BS_SUITES" > ${TE_BUILD}/suites/Makefile.suites
+    fi
 fi    
 
 AC_CONFIG_FILES(Makefile lib/Makefile 
