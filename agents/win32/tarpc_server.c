@@ -228,42 +228,46 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
 {
     char  cmdline[256];
     char *tmp;
+    char *val;
     
-    int i;
+    const char *postfix[] = { 
+        "_rpcserver64 %s",
+        "_rpcserver %s",  
+        " rpcserver %s"
+    };
+    
+    int i = 0;
     
     PROCESS_INFORMATION info;
     STARTUPINFO         si;
     
     strcpy(cmdline, GetCommandLine());
-    if ((tmp = strchr(cmdline, ' ')) != NULL)
-        *tmp = 0;
+    if ((tmp = strchr(cmdline, ' ')) == NULL)
+        tmp = cmdline + strlen(cmdline);
     
-    sprintf(cmdline + strlen(cmdline), "_rpcserver64 %s", name);    
     si.cb = sizeof(si);
     
-    for (i = 0; i < 3; i++)
+    if ((val =  getenv_reliable("TE_WIN32_TA")) != NULL &&
+        strcmp(val, "yes") == 0)
     {
+        i = 1;
+    }
+    
+    for (; i < 3; i++)
+    {
+        sprintf(tmp, postfix[i], name);
         memset(&si, 0, sizeof(si));
         
         if (CreateProcess(NULL, cmdline, NULL, NULL, inherit, 0, NULL, NULL,
                           &si, &info))
-            break;
-           
-       if (i == 2)
         {
-            ERROR("CreateProcess() failed with error %d", GetLastError());
-            return win_rpc_errno(GetLastError());
+            *pid = info.dwProcessId;
+            return 0;
         }
-        *tmp = 0;
-        if (i == 0)
-            sprintf(cmdline + strlen(cmdline), "_rpcserver %s", name);    
-        else
-            sprintf(cmdline + strlen(cmdline), " rpcserver %s", name);    
     }
-    
-    *pid = info.dwProcessId;
-    
-    return 0;
+
+    ERROR("CreateProcess() failed with error %d", GetLastError());
+    return win_rpc_errno(GetLastError());
 }
 
 /*-------------- create_process() ---------------------------------*/
@@ -1288,8 +1292,8 @@ TARPC_FUNC(setsockopt, {},
     }
     else
     {
-        char *opt;
-        int   optlen;
+        char  *opt;
+        int    optlen;
         HANDLE handle;
         
         struct linger   linger;
@@ -1369,7 +1373,8 @@ TARPC_FUNC(setsockopt, {},
             case OPT_HANDLE:
             {
                 opt = (char *)&handle;
-                handle = in->optval.optval_val[0].option_value_u.opt_handle;
+                handle = (HANDLE)
+                    (in->optval.optval_val[0].option_value_u.opt_handle);
                 optlen = sizeof(handle);
                 break;
             }
@@ -2809,6 +2814,44 @@ TARPC_FUNC(duplicate_socket,
                       out->info.info_len == 0 ? NULL :
                       (LPWSAPROTOCOL_INFO)(out->info.info_val)));
     out->info.info_len = sizeof(WSAPROTOCOL_INFO);
+}
+)
+
+/*-------------- DuplicateHandle() ---------------------------*/
+TARPC_FUNC(duplicate_handle, {},
+{
+    HANDLE src;
+    HANDLE tgt;
+    HANDLE old_fd;
+    HANDLE new_fd;
+    
+    if ((src = OpenProcess(SYNCHRONIZE, FALSE, in->src)) == NULL)
+    {
+        out->common._errno = win_rpc_errno(GetLastError());
+        out->retval = FALSE;
+        ERROR("Cannot open process, error = %d\n", GetLastError());
+        goto finish;
+    }
+
+    if ((tgt = OpenProcess(SYNCHRONIZE, FALSE, in->tgt)) == NULL)
+    {
+        out->common._errno = win_rpc_errno(GetLastError());
+        out->retval = FALSE;
+        ERROR("Cannot open process, error = %d\n", GetLastError());
+        CloseHandle(src);
+        goto finish;
+    }
+    
+    old_fd = (HANDLE)(in->fd);
+    
+    MAKE_CALL(out->retval = DuplicateHandle(src, old_fd, tgt, &new_fd,
+                                            0, TRUE, 
+                                            DUPLICATE_SAME_ACCESS));
+                                            
+    out->fd = (tarpc_int)new_fd;   
+                      
+    finish:
+    ;
 }
 )
 
