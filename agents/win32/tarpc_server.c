@@ -2825,7 +2825,8 @@ TARPC_FUNC(duplicate_handle, {},
     HANDLE old_fd;
     HANDLE new_fd;
     
-    if ((src = OpenProcess(SYNCHRONIZE, FALSE, in->src)) == NULL)
+    if ((src = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE, 
+                           FALSE, in->src)) == NULL)
     {
         out->common._errno = win_rpc_errno(GetLastError());
         out->retval = FALSE;
@@ -2833,7 +2834,8 @@ TARPC_FUNC(duplicate_handle, {},
         goto finish;
     }
 
-    if ((tgt = OpenProcess(SYNCHRONIZE, FALSE, in->tgt)) == NULL)
+    if ((tgt = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE, FALSE, 
+                           in->tgt)) == NULL)
     {
         out->common._errno = win_rpc_errno(GetLastError());
         out->retval = FALSE;
