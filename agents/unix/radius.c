@@ -30,6 +30,15 @@
 #include <stddef.h>
 #include "conf_daemons.h"
 
+/*
+ * Do not use TE configuration backup functions if need only supplicants
+ * - their configs are created from scratch.
+ */
+#undef USE_TE_BACKUP
+#ifdef WITH_RADIUS_SERVER
+#define USE_TE_BACKUP
+#endif
+
 /* Part 1: Common parsing and creating configuration files */
 
 /**
@@ -78,8 +87,16 @@ typedef struct radius_parameter
 
 static char *expand_rp (const char *value, radius_parameter *top);
 
-/** 
- * Creates a new RADIUS parameter inside 'parent' 
+/**
+ * Creates a new node and place it into the tree as a last child
+ * of the specified node.
+ *
+ * @param kind      Type of node
+ * @param name      Name of node (may be NULL)
+ * @param value     Value of node (may be NULL)
+ * @param parent    Node that should be a parent of created node
+ *
+ * @return Pointer to the new node (or NULL if creation failed)
  */
 static radius_parameter *
 make_rp(enum radius_parameters kind,
@@ -118,6 +135,8 @@ make_rp(enum radius_parameters kind,
 /**
  * Destroys the parameter and all its children if any
  *
+ * @param parm  Node to destroy
+ *
  * Note: this function does not exclude the parameter
  * from its parent's children list, so it's normally
  * should be called on a topmost parameter only.
@@ -127,7 +146,7 @@ destroy_rp(radius_parameter *parm)
 {
     radius_parameter *child, *next;
 
-#ifdef WITH_RADIUS_SERVER
+#ifdef USE_TE_BACKUP
     if (parm->kind == RP_FILE && parm->backup_index != UNIX_SERVICE_MAX)
     {
         ds_restore_backup(parm->backup_index);
@@ -147,12 +166,6 @@ destroy_rp(radius_parameter *parm)
     free(parm);
 }
 
-#ifdef WITH_RADIUS_SERVER
-/**
- * Note: Supplicant configuration files are created from scratch,
- * without reading - so we mark reading as radiusserver-specific
- */
-
 static void read_radius(FILE *conf, radius_parameter *top);
 
 /**
@@ -165,7 +178,9 @@ read_radius_file (const char *filename, radius_parameter *top)
 {
     FILE *newfile; 
     radius_parameter *fp;
+#ifdef USE_TE_BACKUP
     int index;
+#endif
     static char directory[PATH_MAX + 1];
     const char *dirptr;
 
@@ -177,8 +192,10 @@ read_radius_file (const char *filename, radius_parameter *top)
         memcpy(directory, filename, dirptr - filename + 1);
         directory[dirptr - filename + 2] = '\0';
     }
+#ifdef USE_TE_BACKUP
     if (ds_create_backup(directory, dirptr == NULL ? filename : dirptr + 1, &index) != 0)
         return NULL;
+#endif
 
     RING("Reading RADIUS config %s", filename);
     newfile = fopen(filename, "r");
@@ -191,7 +208,9 @@ read_radius_file (const char *filename, radius_parameter *top)
     fp = make_rp(RP_FILE, filename, NULL, top);
     if (fp != NULL)
     {
+#ifdef USE_TE_BACKUP
         fp->backup_index = index;
+#endif
         read_radius(newfile, fp);
     }
     fclose(newfile);
@@ -271,7 +290,6 @@ read_radius(FILE *conf, radius_parameter *top)
     if (top != initial_top)
         ERROR("section %s is not closed!!!", top->name);
 }
-#endif
 
 static int write_radius(radius_parameter *top);
 
@@ -301,6 +319,7 @@ write_radius_parameter (FILE *outfile, radius_parameter *parm, int indent)
             case RP_SECTION:
             {
                 radius_parameter *child;
+
                 fprintf(outfile, "%s %s {\n", parm->name,
                         (parm->value == NULL || *parm->value == '#') ?
                         "" : parm->value);
@@ -345,8 +364,7 @@ write_radius(radius_parameter *top)
     else
     {
         top->modified = FALSE;
-#ifdef WITH_RADIUS_SERVER
-        /* Supplicant files were not backed up at all */
+#ifdef USE_TE_BACKUP
         ds_config_touch(top->backup_index);
 #endif
         outfile = fopen(top->name, "w");
@@ -888,7 +906,7 @@ delete_radius_user(const char *name)
 static te_errno
 radius_parse_attr_value_pair(const char **string, char **attr, char **value)
 {
-    const char *p, *start;
+    const char *p, *start, *next_pair;
     size_t      len;
 
     if (string == NULL)
@@ -919,9 +937,15 @@ radius_parse_attr_value_pair(const char **string, char **attr, char **value)
     /* Attribute value */
     start = p + 1;
     if ((p = strchr(start, ',')) != NULL)
+    {
         len = p - start;
+        next_pair = p + 1;
+    }
     else
+    {
         len = strlen(start);
+        next_pair = start + len;
+    }
 
     if (len == 0)
     {
@@ -940,7 +964,7 @@ radius_parse_attr_value_pair(const char **string, char **attr, char **value)
     }
     memcpy(*value, start, len);
 
-    *string = start + len;
+    *string = next_pair;
     return 0;
 }
 
@@ -1127,10 +1151,20 @@ write_radius_users(FILE *conf)
 #ifdef HAVE_FREERADIUS_UPDATE
         else
         {
-            /* Common part */
+            /* Common part (also Access-Challenge configuration, because
+             * at the moment when Access-Challenge is created there is
+             * no Response-Packet-Type defined) */
             fprintf(conf, "\"%s\" ", user->name);
             radius_write_attr_array(conf, user->checks,
                                     user->n_checks, "==", " ");
+            if (user->n_challenge_replies > 0)
+            {
+                fputs("\n\t", conf);
+                radius_write_attr_array(conf, user->challenge_replies,
+                                        user->n_challenge_replies,
+                                        ":=", "\n\t");
+                fputs(",", conf);
+            }
             fputs("\n\tFall-Through = Yes\n\n", conf);
 
             /* Access-Accept configuration */
@@ -1138,17 +1172,12 @@ write_radius_users(FILE *conf)
             radius_write_attr_array(conf, user->checks,
                                     user->n_checks, "==", " ");
             fputs(", Response-Packet-Type == Access-Accept\n\t", conf);
+            radius_write_attr_array(conf, user->challenge_replies,
+                                    user->n_challenge_replies, "-=", "\n\t");
+            if (user->n_challenge_replies > 0 && user->n_accept_replies > 0)
+                fputs(",\n\t", conf);
             radius_write_attr_array(conf, user->accept_replies,
                                     user->n_accept_replies, ":=", "\n\t");
-            fputs("\n\n", conf);
-
-            /* Access-Challenge configuration */
-            fprintf(conf, "\"%s\" ", user->name);
-            radius_write_attr_array(conf, user->checks,
-                                    user->n_checks, "==", " ");
-            fputs(", Response-Packet-Type == Access-Challenge\n\t", conf);
-            radius_write_attr_array(conf, user->challenge_replies,
-                                    user->n_challenge_replies, ":=", "\n\t");
             fputs("\n\n", conf);
         }
 #endif
@@ -1719,66 +1748,84 @@ ds_radiusserver_netaddr_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-static te_errno
-ds_radiusserver_acctport_get(unsigned int gid, const char *oid,
-                            char *value, const char *instance, ...)
-{
-    const char *v;
+#define DS_RADIUSSERVER_GET(_func_name, _attr_name) \
+    static te_errno                                                     \
+    _func_name(unsigned int gid, const char *oid,                       \
+               char *value, const char *instance, ...)                  \
+    {                                                                   \
+        const char *v;                                                  \
+                                                                        \
+        UNUSED(gid);                                                    \
+        UNUSED(oid);                                                    \
+        UNUSED(instance);                                               \
+                                                                        \
+        retrieve_rp(radius_conf, (_attr_name), &v);                     \
+        if (v == NULL)                                                  \
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);                        \
+        strcpy(value, v);                                               \
+        return 0;                                                       \
+    }
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
+#define DS_RADIUSSERVER_SET(_func_name, _attr_name) \
+    static te_errno                                                     \
+    _func_name(unsigned int gid, const char *oid,                       \
+               const char *value, const char *instance, ...)            \
+    {                                                                   \
+        UNUSED(gid);                                                    \
+        UNUSED(oid);                                                    \
+        UNUSED(instance);                                               \
+                                                                        \
+        update_rp(radius_conf, RP_ATTRIBUTE, (_attr_name), value);      \
+        write_radius(radius_conf);                                      \
+        radiusserver_reload();                                          \
+        return 0;                                                       \
+    }
 
-    retrieve_rp(radius_conf, "listen(#acct).port", &v);
-    strcpy(value, v);
-    return 0;
-}
+DS_RADIUSSERVER_GET(ds_radiusserver_acctport_get, "listen(#acct).port")
+DS_RADIUSSERVER_SET(ds_radiusserver_acctport_set, "listen(#acct).port")
+DS_RADIUSSERVER_GET(ds_radiusserver_authport_get, "listen(#auth).port")
+DS_RADIUSSERVER_SET(ds_radiusserver_authport_set, "listen(#auth).port")
+DS_RADIUSSERVER_GET(ds_radiusserver_tls_cert_get,
+                    "modules.eap.tls.certificate_file")
+DS_RADIUSSERVER_SET(ds_radiusserver_tls_cert_set,
+                    "modules.eap.tls.certificate_file")
+DS_RADIUSSERVER_GET(ds_radiusserver_tls_key_get,
+                    "modules.eap.tls.private_key_file")
+DS_RADIUSSERVER_SET(ds_radiusserver_tls_key_set,
+                    "modules.eap.tls.private_key_file")
+DS_RADIUSSERVER_GET(ds_radiusserver_tls_key_passwd_get,
+                    "modules.eap.tls.private_key_password")
+DS_RADIUSSERVER_SET(ds_radiusserver_tls_key_passwd_set,
+                    "modules.eap.tls.private_key_password")
+DS_RADIUSSERVER_GET(ds_radiusserver_tls_root_cert_get,
+                    "modules.eap.tls.CA_file")
+DS_RADIUSSERVER_SET(ds_radiusserver_tls_root_cert_set,
+                    "modules.eap.tls.CA_file")
 
-static te_errno
-ds_radiusserver_acctport_set(unsigned int gid, const char *oid,
-                            const char *value, const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_tls_cert, "cert",
+                    NULL, NULL,
+                    ds_radiusserver_tls_cert_get,
+                    ds_radiusserver_tls_cert_set);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_tls_key, "key",
+                    NULL, &node_ds_radiusserver_tls_cert,
+                    ds_radiusserver_tls_key_get,
+                    ds_radiusserver_tls_key_set);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_tls_key_passwd, "key_passwd",
+                    NULL, &node_ds_radiusserver_tls_key,
+                    ds_radiusserver_tls_key_passwd_get,
+                    ds_radiusserver_tls_key_passwd_set);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_tls_root_cert, "root_cert",
+                    NULL, &node_ds_radiusserver_tls_key_passwd,
+                    ds_radiusserver_tls_root_cert_get,
+                    ds_radiusserver_tls_root_cert_set);
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_tls, "eap-tls",
+                    &node_ds_radiusserver_tls_root_cert,
+                    &node_ds_radiusserver_client,
+                    NULL, NULL);
 
-    update_rp(radius_conf, RP_ATTRIBUTE, "listen(#acct).port", value);
-    write_radius(radius_conf);
-    radiusserver_reload();
-    return 0;
-}
-
-static te_errno
-ds_radiusserver_authport_get(unsigned int gid, const char *oid,
-                            char *value, const char *instance, ...)
-{
-    const char *v;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    retrieve_rp(radius_conf, "listen(#auth).port", &v);
-    strcpy(value, v);
-    return 0;
-}
-
-static te_errno
-ds_radiusserver_authport_set(unsigned int gid, const char *oid,
-                            const char *value, const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    update_rp(radius_conf, RP_ATTRIBUTE, "listen(#auth).port", value);
-    write_radius(radius_conf);
-    radiusserver_reload();
-    return 0;
-}
 
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_net_addr, "net_addr",
-                    NULL, &node_ds_radiusserver_client,
+                    NULL, &node_ds_radiusserver_tls,
                     ds_radiusserver_netaddr_get, 
                     ds_radiusserver_netaddr_set);
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_acct_port, "acct_port",
@@ -1822,8 +1869,12 @@ const char *radius_predefined_params[] = {
     "modules.files.usersfile", RADIUS_USERS_FILE,
     "modules.eap.default_eap_type", "md5",
     "modules.eap.md5", RP_DEFAULT_EMPTY_SECTION,
-    "modules.eap.gtc.auth_type", "PAP",
-    "modules.eap.mschapv2", RP_DEFAULT_EMPTY_SECTION,
+    "modules.eap.tls.certificate_file", "${raddbdir}/certs/cert-srv.pem",
+    "modules.eap.tls.private_key_file", "${raddbdir}/certs/cert-srv.pem",
+    "modules.eap.tls.private_key_password", "whatever",
+    "modules.eap.tls.CA_file", "${raddbdir}/certs/root.pem",
+    "modules.eap.tls.dh_file", "${raddbdir}/certs/dh",
+    "modules.eap.tls.random_file", "${raddbdir}/certs/random",
     "modules.mschap.authtype", "MS-CHAP",
     "modules.realm(suffix).format", "suffix",
     "modules.realm(suffix).delimiter", "\"@\"",
@@ -1960,86 +2011,62 @@ radiusserver_release(const char *name)
 #ifdef ENABLE_8021X
 /* Part 3: Supplicant-specific functions */
 
+/** Identifiers for supplicant parameters */
+typedef enum {
+    SP_NETWORK,             /**< Network name, usually ESSID */
+    SP_METHOD,              /**< EAP method: "eap-md5", "eap-tls" etc. */
+    SP_IDENTITY,            /**< EAP identity */
+    SP_PROTO,               /**< Protocol: "", "WPA", "RSN" */
+    SP_MD5_USERNAME,        /**< EAP-MD5 username */
+    SP_MD5_PASSWORD,        /**< EAP-MD5 password */
+    SP_TLS_CERT_PATH,       /**< EAP-TLS path to user certificate file */
+    SP_TLS_KEY_PATH,        /**< EAP-TLS path to user private key file */
+    SP_TLS_KEY_PASSWD,      /**< EAP-TLS password for user private key */
+    SP_TLS_ROOT_CERT_PATH,  /**< EAP-TLS path to root certificate file */
+    SP_MAX                  /**< Last value to determine the size of array */
+} supp_param_t;
+
+struct supplicant;
+
+/** Callbacks for handling supplicant implementation */
+typedef struct supplicant_impl
+{
+    te_bool  (*get)(const char *ifname);
+    te_errno (*start)(const char *ifname, const char *confname);
+    te_errno (*stop)(const char *ifname);
+    void     (*write_config)(FILE *f, const struct supplicant *supp);
+} supplicant_impl;
+
 /** A supplicant <-> interface correspondence */
 typedef struct supplicant
 {
     char              *ifname;     /**< interface name */
+    char               confname[256];
+                                   /**< Name of configuration file */
     te_bool            started;    /**< Supplicant was started and
                                         is supposed to be running */
-    radius_parameter  *config;     /**< Supplicant config tree */
+    te_bool            changed;    /**< Configuration is changed
+                                        but not commited into file yet */
+    char              *params[SP_MAX];
+                                   /**< Supplicant parameters,
+                                        according to supp_param_t */
+    const supplicant_impl *impl;
     struct supplicant *next;       /**< chain link */
 } supplicant;
 
 /** List of all available supplicants */
 static supplicant *supplicant_list = NULL;
 
-/**
- * Create new supplicant structure for the interface
- *
- * @param ifname   Name of interface to create supplicant at
- *
- * @return Pointer to new supplicant structure, or NULL if creation failed.
- */
-static supplicant *
-make_supplicant(const char *ifname)
-{
-    static char  conf_name[64];
-    supplicant  *ns;
+static const char *supp_get_param(const supplicant *supp, supp_param_t id);
+static te_errno supp_set_param(supplicant *supp, supp_param_t id,
+                               const char *value);
+static supplicant *supp_create(const char *ifname);
+static void supp_destroy(supplicant *supp);
+static supplicant *supp_find(const char *ifname);
+static te_errno supp_update(supplicant *supp);
 
-    if ((ns = calloc(1, sizeof(supplicant))) == NULL)
-        return NULL;
-
-    ns->ifname = strdup(ifname);
-    if (ns->ifname == NULL)
-    {
-        free(ns);
-        return NULL;
-    }
-    ns->started = FALSE;
-
-    snprintf(conf_name, sizeof(conf_name), 
-             "/tmp/te_supp_%s.conf", ifname);
-    ns->config    = make_rp(RP_FILE, conf_name, NULL, NULL);
-    update_rp(ns->config, RP_ATTRIBUTE, "network_list", "tester");
-    update_rp(ns->config, RP_ATTRIBUTE, "default_netname", "tester");
-    update_rp(ns->config, RP_ATTRIBUTE, "logfile", "/tmp/te_supp.log");
-    update_rp(ns->config, RP_SECTION, "tester", NULL);
-    update_rp(ns->config, RP_ATTRIBUTE, "tester.allow_types", "all");
-
-    /* Set default value for all available methods */
-    update_rp(ns->config, RP_SECTION, "tester.eap-md5", NULL);
-    update_rp(ns->config, RP_ATTRIBUTE, "tester.eap-md5.username", "\"\"");
-    update_rp(ns->config, RP_ATTRIBUTE, "tester.eap-md5.password", "\"\"");
-
-    write_radius(ns->config);
-
-    ns->next = supplicant_list;
-    supplicant_list = ns;
-
-    return ns;
-}
-
-/**
- * Find the supplicant for specified interface in the list of available
- * supplicants
- *
- * @param ifname  Name of interface to find
- *
- * @return Pointer to supplicant structure or NULL if there is no supplicant
- *         configured at the specified interface.
- */
-static supplicant *
-find_supplicant(const char *ifname)
-{
-    supplicant *found;
-
-    for (found = supplicant_list; found != NULL; found = found->next)
-    {
-        if (strcmp(found->ifname, ifname) == 0)
-            return found;
-    }
-    return NULL;
-}
+extern te_errno wifi_essid_get(unsigned int gid, const char *oid,
+                               char *value, const char *ifname);
 
 /**
  * XSupplicant service control functions
@@ -2155,6 +2182,7 @@ xsupplicant_start(const char *ifname, const char *conf_fname)
 {
     char  buf[128];
 
+    RING("%s('%s', '%s')", __FUNCTION__, ifname, conf_fname);
     if (xsupplicant_get(ifname))
     {
         if (xsupplicant_get_valid(ifname))
@@ -2187,17 +2215,349 @@ xsupplicant_start(const char *ifname, const char *conf_fname)
     return 0;
 }
 
+static void
+xsupplicant_write_config(FILE *f, const supplicant *supp)
+{
+    const char template[] = 
+        "network_list = all\n"
+        "default { }\n"
+        "%s {\n"
+        "  identity = \"%s\"\n"
+        "  allow_types = %s\n"
+        "  eap-md5 {\n"
+        "    username = \"%s\"\n"
+        "    password = \"%s\"\n"
+        "  }\n"
+        "  eap-tls {\n"
+        "    user_cert = \"%s\"\n"
+        "    user_key = \"%s\"\n"
+        "    user_key_pass = \"%s\"\n"
+        "    root_cert = \"%s\"\n"
+        "  }\n"
+        "}";
+    const char *method = supp_get_param(supp, SP_METHOD);
+
+    fprintf(f, template,
+            supp_get_param(supp, SP_NETWORK),
+            supp_get_param(supp, SP_IDENTITY),
+            method[0] == '\0' ? "all" : method,
+            supp_get_param(supp, SP_MD5_USERNAME),
+            supp_get_param(supp, SP_MD5_PASSWORD),
+            supp_get_param(supp, SP_TLS_CERT_PATH),
+            supp_get_param(supp, SP_TLS_KEY_PATH),
+            supp_get_param(supp, SP_TLS_KEY_PASSWD),
+            supp_get_param(supp, SP_TLS_ROOT_CERT_PATH)
+            );
+}
+
+/** Callbacks for xsupplicant */
+const supplicant_impl xsupplicant = {
+    xsupplicant_get,
+    xsupplicant_start,
+    xsupplicant_stop,
+    xsupplicant_write_config
+};
+
+static te_bool
+wpa_supp_get(const char *ifname)
+{
+    char buf[128];
+
+    snprintf(buf, sizeof(buf),
+             "ps ax | grep wpa_supplicant | grep -v grep | grep -q %s",
+             ifname);
+    if (ta_system(buf) == 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+static te_errno
+wpa_supp_start(const char *ifname, const char *conf_fname)
+{
+    char  buf[128];
+
+    RING("%s('%s', '%s')", __FUNCTION__, ifname, conf_fname);
+    if (wpa_supp_get(ifname))
+    {
+        WARN("%s: wpa_supplicant on %s is already running, doing nothing",
+             __FUNCTION__, ifname);
+        return 0;
+    }
+    RING("Starting wpa_supplicant on %s", ifname);
+    snprintf(buf, sizeof(buf), "wpa_supplicant -i %s -c %s -B >/dev/null 2>&1", 
+             ifname, conf_fname);
+    if (ta_system(buf) != 0)
+    {
+        ERROR("Command '%s' failed", buf);
+        return TE_ESHCMD;
+    }
+    if (!wpa_supp_get(ifname))
+    {
+        ERROR("Failed to start wpa_supplicant on %s", ifname);
+        return TE_EFAIL;
+    }
+    return 0;
+}
+
+static te_errno
+wpa_supp_stop(const char *ifname)
+{
+    char buf[256];
+
+    if (!wpa_supp_get(ifname))
+    {
+        WARN("%s: wpa_supplicant on %s is not running", __FUNCTION__, ifname);
+        return 0;
+    }
+    RING("Stopping wpa_supplicant on %s", ifname);
+    if (wpa_supp_get(ifname))
+    {
+        snprintf(buf, sizeof(buf),
+                 "kill `ps ax | grep wpa_supplicant | grep %s | grep -v grep"
+                 "| awk ' { print $1 }'`", ifname);
+        if (ta_system(buf) != 0)
+            WARN("Command '%s' failed", buf);
+    }
+    return 0;
+}
+
 /**
- * XSupplicant daemon configuration reload
+ * Create configuration file for wpa_supplicant
+ *
+ * @param f     File for writing config (already opened)
+ * @param supp  Supplicant to process
  */
 static void
-reload_supplicant(supplicant *supp)
+wpa_supp_write_config(FILE *f, const supplicant *supp)
 {
-    if (supp != NULL && supp->started)
+    const char template[] =
+        "network = {\n"
+        "  ssid = \"%s\"\n"
+        "  identity = \"%s\"\n"
+        "  eap = %s"
+        "  proto = %s"
+        "  pairwise = %s"
+        "}\n";
+    const char *method;
+    const char *s = supp_get_param(supp, SP_METHOD);
+    const char *proto = supp_get_param(supp, SP_PROTO);
+
+    if (strcmp(s, "eap-md5") == 0)
+        method = "MD5";
+    else if (strcmp(s, "eap-tls") == 0)
+        method = "TLS";
+    else
     {
-        xsupplicant_stop(supp->ifname);
-        xsupplicant_start(supp->ifname, supp->config->name);
+        ERROR("%s(): unknown EAP method '%s'", __FUNCTION__, s);
+        method = "";
     }
+    fprintf(f, template,
+            supp_get_param(supp, SP_NETWORK),
+            supp_get_param(supp, SP_IDENTITY),
+            method, proto,
+            strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP"
+           );
+}
+
+/** Callbacks for wpa_supplicant */
+const supplicant_impl wpa_supplicant = {
+    wpa_supp_get,
+    wpa_supp_start,
+    wpa_supp_stop,
+    wpa_supp_write_config
+};
+
+/**
+ * Get supplicant parameter value
+ *
+ * @param supp     Supplicant to query
+ * @param id       Identifier of parameter to query
+ *
+ * @return Value of specified parameter of the supplicant, or empty
+ *         string if parameter is not set or @p id is invalid.
+ */
+static const char *
+supp_get_param(const supplicant *supp, supp_param_t id)
+{
+    if (id >= SP_MAX)
+    {
+        ERROR("%s(): invalid supplicant parameter number %u",
+              __FUNCTION__, id);
+        return "";
+    }
+    return (supp->params[id] == NULL) ? "" : supp->params[id];
+}
+
+/**
+ * Set supplicant parameter value
+ *
+ * @param supp      Supplicant to change
+ * @param id        Identifier of parameter to set
+ * @param value     New value of the supplicant parameter (may be NULL)
+ *
+ * @return Status code.
+ */
+static te_errno
+supp_set_param(supplicant *supp, supp_param_t id, const char *value)
+{
+    if (id >= SP_MAX)
+    {
+        ERROR("%s(): invalid supplicant parameter number %u",
+              __FUNCTION__, id);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    if (value == NULL)
+    {
+        if (supp->params[id] != NULL)
+        {
+            free(supp->params[id]);
+            supp->changed = TRUE;
+            return 0;
+        }
+        return 0;
+    }
+    if (supp->params[id] != NULL)
+    {
+        if (strcmp(supp->params[id], value) == 0)
+            return 0;
+
+        free(supp->params[id]);
+    }
+    if ((supp->params[id] = strdup(value)) == NULL)
+    {
+        ERROR("%s(): failed to allocate memory for value '%s'",
+              __FUNCTION__, value);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    supp->changed = TRUE;
+    return 0;
+}
+
+/**
+ * Create new supplicant structure for the interface
+ *
+ * @param ifname   Name of interface to create supplicant at
+ *
+ * @return Pointer to new supplicant structure, or NULL if creation failed.
+ */
+static supplicant *
+supp_create(const char *ifname)
+{
+    supplicant   *ns;
+    unsigned int  i;
+
+    if ((ns = calloc(1, sizeof(supplicant))) == NULL)
+        return NULL;
+
+    if ((ns->ifname = strdup(ifname)) == NULL)
+    {
+        free(ns);
+        return NULL;
+    }
+    ns->started = FALSE;
+    ns->changed = TRUE;
+    ns->impl = &xsupplicant;
+
+    snprintf(ns->confname, sizeof(ns->confname),
+             "/tmp/te_supp_%s.conf", ifname);
+
+    for (i = 0; i < SP_MAX; i++)
+        ns->params[i] = NULL;
+
+    supp_set_param(ns, SP_NETWORK, "tester");
+
+    ns->next = supplicant_list;
+    supplicant_list = ns;
+
+    return ns;
+}
+
+/**
+ * Free the memory allocated for the supplicant structure 
+ * and its parameters
+ *
+ * @param supp      Supplicant to destroy
+ */
+static void
+supp_destroy(supplicant *supp)
+{
+    unsigned int i;
+
+    for (i = 0; i < SP_MAX; i++)
+        free(supp->params[i]);
+
+    remove(supp->confname);
+    free(supp->ifname);
+    free(supp);
+}
+
+/**
+ * Find the supplicant for specified interface in the list of available
+ * supplicants
+ *
+ * @param ifname  Name of interface to find
+ *
+ * @return Pointer to supplicant structure or NULL if there is no supplicant
+ *         configured at the specified interface.
+ */
+static supplicant *
+supp_find(const char *ifname)
+{
+    supplicant *found;
+
+    for (found = supplicant_list; found != NULL; found = found->next)
+    {
+        if (strcmp(found->ifname, ifname) == 0)
+            return found;
+    }
+    return NULL;
+}
+
+/**
+ * Check the changed made in supplicant configuration,
+ * create new configuration file and restart supplicant if needed.
+ *
+ * @param  supp  Supplicant to process
+ *
+ * @return Status code.
+ */
+static te_errno
+supp_update(supplicant *supp)
+{
+    FILE     *conf;
+    const supplicant_impl *new_impl;
+    const char *proto;
+
+    if (supp == NULL || !supp->changed)
+        return 0;
+
+    if ((conf = fopen(supp->confname, "w")) == NULL)
+        return TE_RC(TE_TA_UNIX, errno);
+
+    /* Check protocol value and detect the type of supplicant */
+    proto = supp_get_param(supp, SP_PROTO);
+    if (proto[0] == '\0')
+        new_impl = &xsupplicant;
+    else if (strcmp(proto, "WPA") == 0 || strcmp(proto, "RSN") == 0 ||
+             strcmp(proto, "WPA2") == 0)
+        new_impl = &wpa_supplicant;
+    else
+    {
+        ERROR("%s(): unknown proto '%s'", __FUNCTION__, proto);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    new_impl->write_config(conf, supp);
+    fclose(conf);
+
+    supp->changed = FALSE;
+    if (supp->started)
+    {
+        supp->impl->stop(supp->ifname);
+        new_impl->start(supp->ifname, supp->confname);
+    }
+    supp->impl = new_impl;
+    return 0;
 }
 
 static te_errno
@@ -2209,13 +2569,13 @@ ds_supplicant_get(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((supp = find_supplicant(instance)) == NULL)
+    if ((supp = supp_find(instance)) == NULL)
     {
-        if ((supp = make_supplicant(instance)) == NULL)
+        if ((supp = supp_create(instance)) == NULL)
             return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    if (xsupplicant_get(supp->ifname))
+    if (supp->impl->get(supp->ifname))
         strcpy(value, "1");
     else
         strcpy(value, "0");
@@ -2227,7 +2587,7 @@ static te_errno
 ds_supplicant_set(unsigned int gid, const char *oid,
                   const char *value, const char *instance, ...)
 {
-    supplicant *supp = find_supplicant(instance);
+    supplicant *supp = supp_find(instance);
     te_errno    rc;
 
     UNUSED(gid);
@@ -2238,13 +2598,14 @@ ds_supplicant_set(unsigned int gid, const char *oid,
 
     if (*value == '0')
     {
-        if ((rc = xsupplicant_stop(supp->ifname)) != 0)
+        if ((rc = supp->impl->stop(supp->ifname)) != 0)
             return TE_RC(TE_TA_UNIX, rc);
         supp->started = FALSE;
     }
     else
     {
-        if ((rc = xsupplicant_start(supp->ifname, supp->config->name)) != 0)
+        RING("%s(1)", __FUNCTION__);
+        if ((rc = supp->impl->start(supp->ifname, supp->confname)) != 0)
             return TE_RC(TE_TA_UNIX, rc);
         supp->started = TRUE;
     }
@@ -2252,286 +2613,165 @@ ds_supplicant_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-/* Temporary buffers for string operations */
-static char supplicant_buffer[256];
-static char supplicant_buffer2[256];
-
-static te_errno
-ds_supp_method_username_set(unsigned int gid, const char *oid,
-                            const char *value, const char *instance, 
-                            const char *supp_inst, const char *method, ...)
+/**
+ * Set value of ESSID for supplicant
+ *
+ * Note: function is not static to be called from conf_wifi.c
+ * when changing ESSID
+ */
+te_errno
+ds_supplicant_network_set(unsigned int gid, const char *oid,
+                          const char *value, const char *instance, ...)
 {
-    supplicant *supp = find_supplicant(instance);
-    int rc;
+    supplicant *supp = supp_find(instance);
+    te_errno    rc;
 
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(supp_inst);
 
+    RING("%s('%s','%s')", __FUNCTION__, instance, value);
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(supplicant_buffer2, sizeof(supplicant_buffer2),
-             "tester.%s.username", method);
-    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "\"%s\"", value);
-    rc = update_rp(supp->config, RP_ATTRIBUTE, supplicant_buffer2,
-                   supplicant_buffer);
-    if (rc != 0)
+    if ((rc = supp_set_param(supp, SP_NETWORK, value)) != 0)
         return rc;
-    write_radius(supp->config);
-    reload_supplicant(supp);
 
-    return 0;
+    return supp_update(supp);
 }
+
+#define DS_SUPP_PARAM_GET(_func_name, _param_name) \
+    static te_errno                                                     \
+    _func_name(unsigned int gid, const char *oid,                       \
+               char *value, const char *instance, ...)                  \
+    {                                                                   \
+        supplicant *supp = supp_find(instance);                         \
+                                                                        \
+        UNUSED(gid);                                                    \
+        UNUSED(oid);                                                    \
+                                                                        \
+        if (supp == NULL)                                               \
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);                        \
+                                                                        \
+        strcpy(value, supp_get_param(supp, (_param_name)));             \
+        return 0;                                                       \
+    }
+
+
+#define DS_SUPP_PARAM_SET(_func_name, _param_name) \
+    static te_errno                                                     \
+    _func_name(unsigned int gid, const char *oid,                       \
+               const char *value, const char *instance, ...)            \
+    {                                                                   \
+        supplicant *supp = supp_find(instance);                         \
+        te_errno    rc;                                                 \
+                                                                        \
+        UNUSED(gid);                                                    \
+        UNUSED(oid);                                                    \
+                                                                        \
+        if (supp == NULL)                                               \
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);                        \
+                                                                        \
+        if ((rc = supp_set_param(supp, (_param_name), value)) != 0)     \
+            return rc;                                                  \
+                                                                        \
+        return supp_update(supp);                                       \
+    }
 
 /**
- * Copy null-terminated string with removing enclosing quotes if they exist
- * (e.g. from strings "text" or "\"text\"" we get "text" in both cases)
- *
- * @param src   Source string
- * @param dst   Destination string
+ * EAP-MD5 support
+ * Parameters:
+ *      SP_MD5_USERNAME   User name
+ *      SP_MD5_PASSWORD   User password
  */
-static void
-strcpy_dequote(char *dst, const char *src)
-{
-    size_t len = strlen(src);
+DS_SUPP_PARAM_GET(ds_supp_eapmd5_username_get, SP_MD5_USERNAME)
+DS_SUPP_PARAM_SET(ds_supp_eapmd5_username_set, SP_MD5_USERNAME)
+DS_SUPP_PARAM_GET(ds_supp_eapmd5_passwd_get, SP_MD5_PASSWORD)
+DS_SUPP_PARAM_SET(ds_supp_eapmd5_passwd_set, SP_MD5_PASSWORD)
 
-    if (len > 1 && src[0] == '"' && src[len - 1] == '"')
-    {
-        /* Quoted */
-        strcpy(dst, src + 1);
-        dst[len - 2] = '\0';
-    }
-    else
-    {
-        /* Not quoted */
-        strcpy(dst, src);
-    }
-}
-
-static te_errno
-ds_supp_method_username_get(unsigned int gid, const char *oid,
-                            char *value, const char *instance, 
-                            const char *supp_inst, const char *method, ...)
-{
-    supplicant *supp = find_supplicant(instance);
-    const char *username;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(supp_inst);
-
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "tester.%s.username", method);
-    retrieve_rp(supp->config, supplicant_buffer, &username);
-
-    if (username == NULL)
-        *value = '\0';
-    else
-        strcpy_dequote(value, username);
-
-    return 0;
-}
-
-static te_errno
-ds_supp_method_passwd_set(unsigned int gid, const char *oid,
-                          const char *value, const char *instance, 
-                          const char *supp_inst, const char *method, ...)
-{
-    supplicant *supp = find_supplicant(instance);
-    int rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(supp_inst);
-
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    snprintf(supplicant_buffer2, sizeof(supplicant_buffer2),
-             "tester.%s.password", method);
-    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "\"%s\"", value);
-    rc = update_rp(supp->config, RP_ATTRIBUTE, supplicant_buffer2,
-                   supplicant_buffer);
-    if (rc != 0)
-        return rc;
-    write_radius(supp->config);
-    reload_supplicant(supp);
-    return 0;
-}
-
-static te_errno
-ds_supp_method_passwd_get(unsigned int gid, const char *oid,
-                          char *value, const char *instance, 
-                          const char *supp_inst, const char *method, ...)
-{
-    supplicant *supp = find_supplicant(instance);
-    const char *password;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(supp_inst);
-
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    snprintf(supplicant_buffer, sizeof(supplicant_buffer),
-             "tester.%s.password", method);
-    retrieve_rp(supp->config, supplicant_buffer, &password);
-
-    if (password == NULL)
-        *value = '\0';
-    else
-        strcpy_dequote(value, password);
-
-    return 0;
-}
-
-static te_errno
-ds_supplicant_method_list(unsigned int gid, const char *oid,
-                         char **list,
-                         const char *instance, ...)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-
-    *list = strdup("eap-md5");
-    if (*list == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
-}
-
-static te_errno
-ds_supplicant_cur_method_get(unsigned int gid, const char *oid,
-                           char *value, const char *instance, ...)
-{
-    supplicant *supp = find_supplicant(instance);
-    const char *type;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    retrieve_rp(supp->config, "tester.allow_types", &type);
-
-    if (type == NULL || strcmp(type, "all") == 0)
-        *value = '\0';
-    else
-        strcpy(value, type);
-
-    return 0;
-}
-
-static te_errno
-ds_supplicant_cur_method_set(unsigned int gid, const char *oid,
-                             const char *value, const char *instance, ...)
-{
-    supplicant *supp = find_supplicant(instance);
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (*value == '\0')
-        update_rp(supp->config, RP_ATTRIBUTE, "tester.allow_types", "all");
-    else
-        update_rp(supp->config, RP_ATTRIBUTE, "tester.allow_types", value);
-    write_radius(supp->config);
-    reload_supplicant(supp);
-    return 0;
-}
-
-static te_errno
-ds_supplicant_identity_get(unsigned int gid, const char *oid,
-                           char *value, const char *instance, ...)
-{
-    supplicant *supp = find_supplicant(instance);
-    const char *identity;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    retrieve_rp(supp->config, "tester.identity", &identity);
-
-    if (identity == NULL)
-        *value = '\0';
-    else
-        strcpy(value, identity);
-
-    return 0;
-}
-
-static te_errno
-ds_supplicant_identity_set(unsigned int gid, const char *oid,
-                           char *value, const char *instance, ...)
-{
-    supplicant *supp = find_supplicant(instance);
-    int rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    rc = update_rp(supp->config, RP_ATTRIBUTE, "tester.identity", value);
-    if (rc != 0)
-        return rc;
-
-    write_radius(supp->config);
-    reload_supplicant(supp);
-    return 0;
-}
-
-RCF_PCH_CFG_NODE_RW(node_ds_supp_method_passwd, "passwd",
+RCF_PCH_CFG_NODE_RW(node_ds_supp_eapmd5_passwd, "passwd",
                     NULL, NULL,
-                    ds_supp_method_passwd_get, 
-                    ds_supp_method_passwd_set);
+                    ds_supp_eapmd5_passwd_get, 
+                    ds_supp_eapmd5_passwd_set);
 
-RCF_PCH_CFG_NODE_RW(node_ds_supp_method_username, "username",
-                    NULL, &node_ds_supp_method_passwd,
-                    ds_supp_method_username_get, 
-                    ds_supp_method_username_set);
+RCF_PCH_CFG_NODE_RW(node_ds_supp_eapmd5_username, "username",
+                    NULL, &node_ds_supp_eapmd5_passwd,
+                    ds_supp_eapmd5_username_get, 
+                    ds_supp_eapmd5_username_set);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_ds_supplicant_method, "method",
-                            &node_ds_supp_method_username, NULL,
-                            NULL,
-                            NULL,
-                            ds_supplicant_method_list, 
-                            NULL);
+RCF_PCH_CFG_NODE_RO(node_ds_supp_eapmd5, "eap-md5",
+                    &node_ds_supp_eapmd5_username, NULL, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_ds_supplicant_cur_method, "cur_method",
-                    NULL, &node_ds_supplicant_method,
-                    ds_supplicant_cur_method_get, 
-                    ds_supplicant_cur_method_set);
+/**
+ * EAP-TLS support
+ * Parameters:
+ *      SP_TLS_CERT_PATH       Path to user certificate file
+ *      SP_TLS_KEY_PATH        Path to user private key file
+ *      SP_TLS_KEY_PASSWD      Password for user private key
+ *      SP_TLS_ROOT_CERT_PATH  Path to root certificate file
+ */
+DS_SUPP_PARAM_GET(ds_supp_eaptls_cert_get, SP_TLS_CERT_PATH)
+DS_SUPP_PARAM_SET(ds_supp_eaptls_cert_set, SP_TLS_CERT_PATH)
+DS_SUPP_PARAM_GET(ds_supp_eaptls_key_get, SP_TLS_KEY_PATH)
+DS_SUPP_PARAM_SET(ds_supp_eaptls_key_set, SP_TLS_KEY_PATH)
+DS_SUPP_PARAM_GET(ds_supp_eaptls_key_passwd_get, SP_TLS_KEY_PASSWD)
+DS_SUPP_PARAM_SET(ds_supp_eaptls_key_passwd_set, SP_TLS_KEY_PASSWD)
+DS_SUPP_PARAM_GET(ds_supp_eaptls_root_cert_get, SP_TLS_ROOT_CERT_PATH)
+DS_SUPP_PARAM_SET(ds_supp_eaptls_root_cert_set, SP_TLS_ROOT_CERT_PATH)
 
-RCF_PCH_CFG_NODE_RW(node_ds_supplicant_identity, "identity",
-                    NULL, &node_ds_supplicant_cur_method,
-                    ds_supplicant_identity_get, 
-                    ds_supplicant_identity_set);
+RCF_PCH_CFG_NODE_RW(node_ds_supp_eaptls_cert, "cert",
+                    NULL, NULL,
+                    ds_supp_eaptls_cert_get,
+                    ds_supp_eaptls_cert_set);
 
-static rcf_pch_cfg_object node_ds_supplicant = {
-    "supplicant", 0,
-    &node_ds_supplicant_identity, NULL,
-    (rcf_ch_cfg_get)ds_supplicant_get,
-    (rcf_ch_cfg_set)ds_supplicant_set,
-    NULL, /*(rcf_ch_cfg_add)ds_supplicant_add,*/
-    NULL, /*(rcf_ch_cfg_del)ds_supplicant_del,*/
-    NULL, /*ds_supplicant_list,*/
-    NULL, NULL
-};
+RCF_PCH_CFG_NODE_RW(node_ds_supp_eaptls_key, "key",
+                    NULL, &node_ds_supp_eaptls_cert,
+                    ds_supp_eaptls_key_get,
+                    ds_supp_eaptls_key_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_eaptls_key_passwd, "key_passwd",
+                    NULL, &node_ds_supp_eaptls_key,
+                    ds_supp_eaptls_key_passwd_get,
+                    ds_supp_eaptls_key_passwd_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_eaptls_root_cert, "root_cert",
+                    NULL, &node_ds_supp_eaptls_key_passwd,
+                    ds_supp_eaptls_root_cert_get,
+                    ds_supp_eaptls_root_cert_set);
+
+RCF_PCH_CFG_NODE_RO(node_ds_supp_eaptls, "eap-tls",
+                    &node_ds_supp_eaptls_root_cert,
+                    &node_ds_supp_eapmd5, NULL);
+
+/**
+ * Common EAP parameters
+ */
+DS_SUPP_PARAM_GET(ds_supp_identity_get, SP_IDENTITY)
+DS_SUPP_PARAM_SET(ds_supp_identity_set, SP_IDENTITY)
+DS_SUPP_PARAM_GET(ds_supp_method_get, SP_METHOD)
+DS_SUPP_PARAM_SET(ds_supp_method_set, SP_METHOD)
+DS_SUPP_PARAM_GET(ds_supp_proto_get, SP_PROTO)
+/*TODO*/
+DS_SUPP_PARAM_GET(ds_supp_proto_set, SP_PROTO)
+
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_proto, "proto",
+                    NULL, &node_ds_supp_eaptls,
+                    ds_supp_proto_get, 
+                    ds_supp_proto_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_method, "cur_method",
+                    NULL, &node_ds_supp_proto,
+                    ds_supp_method_get, 
+                    ds_supp_method_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_identity, "identity",
+                    NULL, &node_ds_supp_method,
+                    ds_supp_identity_get, 
+                    ds_supp_identity_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supplicant, "supplicant",
+                    &node_ds_supp_identity, NULL,
+                    ds_supplicant_get, ds_supplicant_set);
 
 te_errno
 ta_unix_conf_supplicant_init()
@@ -2568,12 +2808,11 @@ supplicant_grab(const char *name)
 
     if (instance == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    RING("%s('%s') at '%s'", __FUNCTION__, name, instance);
 
-    if (find_supplicant(instance) != NULL)
+    if (supp_find(instance) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if (make_supplicant(instance) == NULL)
+    if (supp_create(instance) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
@@ -2590,8 +2829,7 @@ supplicant_release(const char *name)
     if (instance == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    supp = find_supplicant(instance);
-    if (supp == NULL)
+    if ((supp = supp_find(instance)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     for (iter = supplicant_list; iter != NULL; prev = iter, iter = iter->next)
@@ -2608,12 +2846,9 @@ supplicant_release(const char *name)
     }
 
     if (supp->started)
-        xsupplicant_stop(supp->ifname);
+        supp->impl->stop(supp->ifname);
 
-    destroy_rp(supp->config);
-    free(supp->ifname);
-    free(supp);
-
+    supp_destroy(supp);
     return 0;
 }
 #endif

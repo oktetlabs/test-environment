@@ -1460,6 +1460,7 @@ wifi_essid_set(unsigned int gid, const char *oid, char *value,
 {
     struct iwreq wrq;
     char         essid[IW_ESSID_MAX_SIZE + 1];
+    te_errno     rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1483,7 +1484,12 @@ wifi_essid_set(unsigned int gid, const char *oid, char *value,
     wrq.u.essid.pointer = (caddr_t)essid;
     wrq.u.essid.length = strlen(essid) + 1;
 
-    return wifi_set_item(ifname, SIOCSIWESSID, &wrq);
+    rc = wifi_set_item(ifname, SIOCSIWESSID, &wrq);
+#ifdef ENABLE_8021X
+    ds_supplicant_network_set(0, NULL, value, ifname);
+#endif
+
+    return rc;
 }
 
 
