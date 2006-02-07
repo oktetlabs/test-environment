@@ -2003,6 +2003,16 @@ env_get(unsigned int gid, const char *oid, char *value,
 
     UNUSED(gid);
     UNUSED(oid);
+    
+    if (tmp == NULL)
+    {
+        static char buf[RCF_MAX_VAL];
+        
+        *buf = 0;
+        GetEnvironmentVariable(name, buf, sizeof(buf));
+        if (*buf != 0)
+            tmp = buf;
+    }
 
     if (!env_is_hidden(name, -1) && (tmp != NULL))
     {
@@ -2037,18 +2047,10 @@ env_set(unsigned int gid, const char *oid, const char *value,
     if (env_is_hidden(name, -1))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
 
-    if (SetEnvironmentVariable(name, value) == TRUE)
-    {
-        return 0;
-    }
-    else
-    {
-        te_errno rc = TE_OS_RC(TE_TA_WIN32, GetLastError());
-
-        ERROR("Failed to set Environment variable '%s' to '%s'; errno %r",
-              name, value, rc);
-        return rc;
-    }
+    setenv(name, value, 1);
+    SetEnvironmentVariable(name, value);
+    
+    return 0;
 }
 
 /**
@@ -2071,18 +2073,10 @@ env_add(unsigned int gid, const char *oid, const char *value,
     if (env_is_hidden(name, -1))
         return TE_RC(TE_TA_WIN32, TE_EPERM);
 
-    if (setenv(name, value, 1) == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        te_errno rc = TE_RC(TE_TA_WIN32, TE_EFAIL);
+    setenv(name, value, 1);
+    SetEnvironmentVariable(name, value);
 
-        ERROR("Failed to add Environment variable '%s=%s'; error %d",
-              name, value, GetLastError());
-        return rc;
-    }
+    return 0;
 }
 
 /**

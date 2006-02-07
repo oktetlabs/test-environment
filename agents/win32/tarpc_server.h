@@ -65,6 +65,25 @@ struct timezone {
 INCLUDE(te_rpc_types.h)
 #endif
 
+/** Try to get both cygwin and windows environment; non-reenterable */
+static inline char *
+getenv_reliable(const char *name)
+{
+    char *tmp = getenv(name);
+    
+    if (tmp == NULL)
+    {
+        static char buf[128];
+        
+        *buf = 0;
+        GetEnvironmentVariable(name, buf, sizeof(buf));
+        if (*buf != 0)
+            tmp = buf;
+    }
+    
+    return tmp;
+}
+
 /** Unspecified error code */
 #define ERROR_UNSPEC    0xFFFFFF
 
@@ -93,7 +112,7 @@ wsp_proto_rpc2h(int socktype, int proto)
     /* If this is called first time */
     if (use_private_wsp == -1)
     {
-        char *value = getenv("EF_USE_PRIVATE_WSP");
+        char *value = getenv_reliable("EF_USE_PRIVATE_WSP");
 
         if (value == NULL)
         {
