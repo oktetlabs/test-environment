@@ -88,47 +88,47 @@ static inline int
 wsp_proto_rpc2h(int socktype, int proto)
 {
     static int use_private_wsp = -1;
-    int proto_h = proto_rpc2h(proto);
+    int        proto_h = proto_rpc2h(proto);
 
     /* If this is called first time */
     if (use_private_wsp == -1)
     {
-      char *value = getenv("EF_USE_PRIVATE_WSP");
+        char *value = getenv("EF_USE_PRIVATE_WSP");
 
-      if (value == NULL)
-      {
-        use_private_wsp = 0;
-      }
-      else
-      {
-        use_private_wsp = strtol(value, NULL, 10);
-      }
+        if (value == NULL)
+        {
+            use_private_wsp = 0;
+        }
+        else
+        {
+            use_private_wsp = strtol(value, NULL, 10);
+        }
     }
 
     if (use_private_wsp)
     {
         switch (proto_h)
         {
-          case IPPROTO_TCP:
-            proto_h = WSP_IPPROTO_TCP;
-            break;
-
-          case IPPROTO_UDP:
-            proto_h = WSP_IPPROTO_UDP;
-            break;
-
-          case 0:
-            switch (socktype_rpc2h(socktype))
-            {
-              case SOCK_STREAM:
+            case IPPROTO_TCP:
                 proto_h = WSP_IPPROTO_TCP;
                 break;
 
-              case SOCK_DGRAM:
+            case IPPROTO_UDP:
                 proto_h = WSP_IPPROTO_UDP;
                 break;
-            }
-            break;
+
+            case 0:
+                switch (socktype_rpc2h(socktype))
+                {
+                    case SOCK_STREAM:
+                        proto_h = WSP_IPPROTO_TCP;
+                        break;
+
+                   case SOCK_DGRAM:
+                        proto_h = WSP_IPPROTO_UDP;
+                        break;
+                }
+                break;
         }
     }
 
