@@ -672,14 +672,21 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     char    buf[16];
     char   *tmp;
     size_t  len = 16;
+    char   *host;
     
     (void)select_tm;
 
     unix_ta *ta = (unix_ta *)handle;
+    
+    host = strchr(ta->host, '@');
+    if (host != NULL)
+        host++;
+    else
+        host = ta->host;
 
     VERB("Connecting to TA '%s'", ta->ta_name);
 
-    if ((rc = rcf_net_engine_connect(ta->host, ta->port, &ta->conn, 
+    if ((rc = rcf_net_engine_connect(host, ta->port, &ta->conn, 
                                      select_set)) != 0)
     {
         return rc;
