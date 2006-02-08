@@ -34,6 +34,7 @@
 
 /** This structure is used to store some context for each connection. */
 struct rcf_comm_connection;
+typedef struct rcf_comm_connection rcf_comm_connection;
 
 
 /**
@@ -50,7 +51,7 @@ struct rcf_comm_connection;
  * @retval other value  errno.
  */
 extern int rcf_comm_agent_init(const char *config_str, 
-                               struct rcf_comm_connection **p_rcc);
+                               rcf_comm_connection **p_rcc);
 
 
 
@@ -94,7 +95,7 @@ extern int rcf_comm_agent_init(const char *config_str,
  *                      read.
  * @retval other value  errno.
  */
-extern int rcf_comm_agent_wait(struct rcf_comm_connection *rcc, 
+extern int rcf_comm_agent_wait(rcf_comm_connection *rcc, 
                                char *buffer, size_t *pbytes, char **pba);
 
 
@@ -109,7 +110,7 @@ extern int rcf_comm_agent_wait(struct rcf_comm_connection *rcc,
  * @retval 0            Success.
  * @retval other value  errno.
  */
-extern int rcf_comm_agent_reply(struct rcf_comm_connection *rcc,
+extern int rcf_comm_agent_reply(rcf_comm_connection *rcc,
                                 const void *p_buffer, size_t length);
 
 /** 
@@ -122,6 +123,6 @@ extern int rcf_comm_agent_reply(struct rcf_comm_connection *rcc,
  * @retval 0            Success.
  * @retval other value  errno.
  */
-extern int rcf_comm_agent_close(struct rcf_comm_connection **p_rcc);
+extern int rcf_comm_agent_close(rcf_comm_connection **p_rcc);
 
 #endif /* !__TE_COMM_AGENT_H__ */
