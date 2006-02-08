@@ -161,6 +161,12 @@ typedef unsigned char te_bool;
 /** Convert nanoseconds to microseconds. */
 #define TE_NS2US(_ns)           ((_ns) / 1000)
 
+/** Convert microseconds to struct timeval. */
+#define TE_US2TV(_us, _p_tv) \
+    do {                                        \
+        (_p_tv)->tv_sec = TE_US2SEC(_us);       \
+        (_p_tv)->tv_usec = (_us) % 1000000L;    \
+    } while (0)
 
 /** 
  * Number of elements in array.
