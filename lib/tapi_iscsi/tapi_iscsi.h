@@ -1026,6 +1026,8 @@ extern te_errno tapi_iscsi_target_raw_read(const char *ta, off_t offset,
 typedef struct iscsi_io_handle_t iscsi_io_handle_t;
 typedef unsigned iscsi_io_taskid;
 
+#define ISCSI_IO_SIGNAL        SIGPOLL
+
 /**
  * Create a new asynchronous I/O handler 
  * 

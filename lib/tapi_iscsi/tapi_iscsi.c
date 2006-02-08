@@ -2411,17 +2411,25 @@ get_host_device(const char *ta, unsigned id)
 te_bool
 tapi_iscsi_initiator_is_device_ready(const char *ta, iscsi_target_id id)
 {
-    char    *dev = get_host_device(ta, id);
-    te_bool  result;
-    
-    if (dev == NULL)
+    static te_bool device_created[MAX_TARGETS_NUMBER];
+
+    if (id >= MAX_TARGETS_NUMBER)
         return FALSE;
-    result = (*dev != '\0');
-    free(dev);
-    return result;
+
+    if (device_created[id])
+        return TRUE;
+    else
+    {
+        char    *dev = get_host_device(ta, id);
+        
+        if (dev == NULL)
+            return FALSE;
+        device_created[id] = (*dev != '\0');
+        free(dev);
+        return device_created[id];
+    }
 }
 
-#define ISCSI_IO_SIGNAL        SIGPOLL
 
 static void
 rpc_server_destructor (void *arg)
