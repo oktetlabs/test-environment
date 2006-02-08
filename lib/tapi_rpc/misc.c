@@ -1068,7 +1068,8 @@ rpc_create_child_process_socket1(const char *method,
     char        process_name[12];
     static int  counter = 1;
 
-
+    sprintf(process_name, "pco_child%d", counter++);
+    
     if (strcmp(method, "inherit") == 0)
     {
         rcf_rpc_server_fork(pco_father, process_name, pco_child);
@@ -1076,9 +1077,7 @@ rpc_create_child_process_socket1(const char *method,
         return;
     }
     
-    sprintf(process_name, "pco_child%d", counter++);
-    
-   if (strcmp(method, "DuplicateSocket") == 0)
+    if (strcmp(method, "DuplicateSocket") == 0)
     {
         rcf_rpc_server_create(pco_father->ta, process_name, pco_child);
         pid1 = rpc_getpid(*pco_child);
