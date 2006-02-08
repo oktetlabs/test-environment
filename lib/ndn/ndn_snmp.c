@@ -192,9 +192,12 @@ NDN_DATA_UNIT_TYPE(snmp_msgtype, ndn_snmp_message_type_s, SnmpMessageType);
 
 static asn_named_entry_t _ndn_snmp_simple_ne_array [] = 
 {
-    { "integer-value",   &ndn_snmp_obj_syntax_integer_s, {PRIVATE, 1} },
-    { "string-value",    &ndn_snmp_obj_syntax_string_s, {PRIVATE, 1} },
-    { "objectID-value",  &ndn_snmp_obj_syntax_objid_s, {PRIVATE, 1} }
+    { "integer-value",   &ndn_snmp_obj_syntax_integer_s,
+        {APPLICATION, NDN_SNMP_OBJSYN_INT} },
+    { "string-value",    &ndn_snmp_obj_syntax_string_s, 
+        {APPLICATION, NDN_SNMP_OBJSYN_STR} },
+    { "objectID-value",  &ndn_snmp_obj_syntax_objid_s,
+        {APPLICATION, NDN_SNMP_OBJSYN_OID} },
 };
 
 asn_type ndn_snmp_simple_s =
@@ -210,12 +213,18 @@ const asn_type * const ndn_snmp_simple = &ndn_snmp_simple_s;
 
 static asn_named_entry_t _ndn_snmp_appl_ne_array [] = 
 {
-    {"ipAddress-value",  &ndn_snmp_obj_syntax_ipaddr_s,     {PRIVATE, 1}},
-    {"counter-value",    &ndn_snmp_obj_syntax_counter_s,    {PRIVATE, 1}},
-    {"timeticks-value",  &ndn_snmp_obj_syntax_timeticks_s,  {PRIVATE, 1}},
-    {"arbitrary-value",  &ndn_snmp_obj_syntax_arbitrary_s,  {PRIVATE, 1}},
-    {"big-counter-value",&ndn_snmp_obj_syntax_big_counter_s,{PRIVATE, 1}},
-    {"unsigned-value",   &ndn_snmp_obj_syntax_unsigned_s,   {PRIVATE, 1}},
+    {"ipAddress-value",  &ndn_snmp_obj_syntax_ipaddr_s, 
+        {APPLICATION, NDN_SNMP_OBJSYN_IPADDR} },
+    {"counter-value",    &ndn_snmp_obj_syntax_counter_s, 
+        {APPLICATION, NDN_SNMP_OBJSYN_COUNTER} },
+    {"timeticks-value",  &ndn_snmp_obj_syntax_timeticks_s,
+        {APPLICATION, NDN_SNMP_OBJSYN_TIMETICKS} }, 
+    {"arbitrary-value",  &ndn_snmp_obj_syntax_arbitrary_s, 
+        {APPLICATION, NDN_SNMP_OBJSYN_ARB} },
+    {"big-counter-value",&ndn_snmp_obj_syntax_big_counter_s,
+        {APPLICATION, NDN_SNMP_OBJSYN_BIGCOUNTER} },
+    {"unsigned-value",   &ndn_snmp_obj_syntax_unsigned_s,
+        {APPLICATION, NDN_SNMP_OBJSYN_UINT} },
 };
 
 asn_type ndn_snmp_appl_s =
