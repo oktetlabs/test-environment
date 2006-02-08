@@ -459,12 +459,12 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 tmp_length = 0;
 
                 do {
-                    if ((uint8_t *)arg_str > ring_last)
-                        arg_str = (char *)log_buffer.rb;
-
                     LGR_CHECK_LENGTH(1);
                     *tmp_buf = *arg_str;
                     tmp_buf++; arg_str++; tmp_length++;
+
+                    if ((uint8_t *)arg_str == ring_last)
+                        arg_str = (char *)log_buffer.rb;
                 } while (*arg_str != '\0');
 
                 *arglen_location = log_nfl_hton(tmp_length);
