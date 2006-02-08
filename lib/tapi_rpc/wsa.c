@@ -2930,7 +2930,7 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
  */
 static int 
 convert_wsa_ioctl_result(rpc_ioctl_code code,
-                         wsa_ioctl_request *res, char *buf)
+                         wsa_ioctl_request *res, char *buf, ssize_t buf_len)
 {
     switch (code)
     {
@@ -2950,7 +2950,8 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
             }
 
             for (i = 0; 
-                 i < res->wsa_ioctl_request_u.req_saa.req_saa_len;
+                 i < res->wsa_ioctl_request_u.req_saa.req_saa_len &&
+                 (i + 1) * sizeof(struct sockaddr_storage) <= buf_len;
                  i++)
             {
                 addr = (struct sockaddr *)
@@ -3154,14 +3155,17 @@ call:
 
     if (RPC_IS_CALL_OK(rpcs) && (out.retval == 0))
     {
-        if (bytes_returned != NULL)
+        if (bytes_returned != NULL && 
+            out.bytes_returned.bytes_returned_val != NULL)
+        {
             *bytes_returned = *(out.bytes_returned.bytes_returned_val);
+        }
             
         if (outbuf != NULL && out.outbuf.outbuf_val != NULL)
         {
             if (convert_wsa_ioctl_result(control_code, 
                                          out.outbuf.outbuf_val,
-                                         outbuf) < 0)
+                                         outbuf, out.outbuf.outbuf_len) < 0)
             {
                 ERROR("Cannot convert the result: increase "
                       "RPC_WSA_IOCTL_OUTBUF_MAX");
@@ -3242,7 +3246,7 @@ rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
         if (out.retval && (buf != NULL))
         {
             if (convert_wsa_ioctl_result(control_code, &out.result, 
-                                         buf) < 0)
+                                         buf, RPC_WSA_IOCTL_OUTBUF_MAX) < 0)
             {
                 out.retval = 0;
             }
