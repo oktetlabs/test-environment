@@ -107,8 +107,8 @@ tapi_snmp_log_op_end(tapi_log_buf *log_buf, int rc,
                      int err_status, int err_index)
 {
     tapi_log_buf_append(log_buf,
-            "} TAPI RESULT: %r, SNMP RESULT: %s, ERR INDEX: %d",
-            rc, snmp_error_h2str(err_status), err_index);
+            "} TAPI RESULT: %s, SNMP RESULT: %s, ERR INDEX: %d",
+            te_rc_err2str(rc), snmp_error_h2str(err_status), err_index);
 }
 
 /**
