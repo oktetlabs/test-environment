@@ -40,7 +40,7 @@ The following tools are required for development, but not required
 to build and run from distributive:
 
 - autoconf (at least 2.59)
-- automake (at least 1.8)
+- automake (at least 1.9.5)
 - pkg-config (on Debian) or pkgconfig (on RedHat or FC)
 - libtool
 
