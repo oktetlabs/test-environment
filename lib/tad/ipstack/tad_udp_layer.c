@@ -98,8 +98,8 @@ tad_udp_destroy_cb(csap_p csap, unsigned int layer)
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_udp_confirm_pdu_cb(csap_p csap, unsigned int layer,
-                       asn_value_p layer_pdu, void **p_opaque)
+tad_udp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
+                        asn_value_p layer_pdu, void **p_opaque)
 {
     te_errno                  rc;
     asn_value                *udp_layer_pdu;
@@ -145,15 +145,31 @@ tad_udp_confirm_pdu_cb(csap_p csap, unsigned int layer,
 
 
     /* Update pattern with CSAP defaults */
-    if (csap->command == TAD_OP_RECV)
+    /* send, local is source */
+    if (udp_spec_data->du_src_port.du_type == TAD_DU_UNDEF &&
+        udp_spec_data->local_port != 0)
     {
-        /* receive, local is destination */
-        if (udp_spec_data->dst_port == 0 && 
-            udp_spec_data->local_port != 0)
+        VERB("%s: set src-port to %u",
+              __FUNCTION__, udp_spec_data->local_port);
+        rc = asn_write_int32(layer_pdu, udp_spec_data->local_port,
+                             "src-port.#plain");
+        if (rc != 0)
+        {
+            ERROR("%s: failed to update src-port in pattern: %r",
+                  __FUNCTION__, rc);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
+        udp_spec_data->src_port = udp_spec_data->local_port;
+        udp_spec_data->du_src_port.val_i32 = udp_spec_data->local_port;
+        udp_spec_data->du_src_port.du_type = TAD_DU_I32;
+    }
+    if (udp_spec_data->du_dst_port.du_type == TAD_DU_UNDEF)
+    {
+        if (udp_spec_data->remote_port != 0)
         {
             VERB("%s: set dst-port to %u",
-                  __FUNCTION__, udp_spec_data->local_port);
-            rc = asn_write_int32(layer_pdu, udp_spec_data->local_port,
+                  __FUNCTION__, udp_spec_data->remote_port);
+            rc = asn_write_int32(layer_pdu, udp_spec_data->remote_port,
                                  "dst-port.#plain");
             if (rc != 0)
             {
@@ -161,71 +177,102 @@ tad_udp_confirm_pdu_cb(csap_p csap, unsigned int layer,
                       __FUNCTION__, rc);
                 return TE_RC(TE_TAD_CSAP, rc);
             }
-            udp_spec_data->dst_port = udp_spec_data->local_port;
+            udp_spec_data->dst_port = udp_spec_data->remote_port;
+            udp_spec_data->du_dst_port.val_i32 =
+                                      udp_spec_data->remote_port;
+            udp_spec_data->du_dst_port.du_type = TAD_DU_I32;
         }
-        if (udp_spec_data->src_port == 0 &&
-            udp_spec_data->remote_port != 0)
+        else
         {
-            VERB("%s: set src-port to %u",
-                  __FUNCTION__, udp_spec_data->remote_port);
-            rc = asn_write_int32(layer_pdu, udp_spec_data->remote_port,
-                                 "src-port.#plain");
-            if (rc != 0)
-            {
-                ERROR("%s: failed to update src-port in pattern: %r",
-                      __FUNCTION__, rc);
-                return TE_RC(TE_TAD_CSAP, rc);
-            }
-            udp_spec_data->src_port = udp_spec_data->remote_port;
+            ERROR("%s: sending csap #%d, "
+                  "has no dst-port in template and has no remote port",
+                  __FUNCTION__, csap->id);
+            return TE_RC(TE_TAD_CSAP, TE_EINVAL);
         }
     }
-    else
+
+    return 0;
+}
+
+/* See description in tad_ipstack_impl.h */
+te_errno
+tad_udp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
+                        asn_value_p layer_pdu, void **p_opaque)
+{
+    te_errno                  rc;
+    asn_value                *udp_layer_pdu;
+    udp_csap_specific_data_t *udp_spec_data;
+
+    UNUSED(p_opaque);
+
+    udp_spec_data = csap_get_proto_spec_data(csap, layer);
+    if (udp_spec_data == NULL)
     {
-        /* send, local is source */
-        if (udp_spec_data->du_src_port.du_type == TAD_DU_UNDEF &&
-            udp_spec_data->local_port != 0)
+        ERROR("%s: CSAP-specific data is NULL", __FUNCTION__);
+        return TE_EWRONGPTR;
+    } 
+
+    if(asn_get_syntax(layer_pdu, "") != CHOICE)
+        asn_get_choice_value(layer_pdu, (const asn_value **)&udp_layer_pdu,
+                             NULL, NULL);
+    else
+        udp_layer_pdu = layer_pdu;
+
+    rc = tad_data_unit_convert(layer_pdu, NDN_TAG_UDP_SRC_PORT,
+                              &(udp_spec_data->du_src_port)); 
+    if (rc != 0)
+    {
+        ERROR("%s: failed to convert src-port from pattern: %r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
+    if (udp_spec_data->du_src_port.du_type == TAD_DU_I32)
+        udp_spec_data->src_port = udp_spec_data->du_src_port.val_i32;
+
+
+    rc = tad_data_unit_convert(layer_pdu, NDN_TAG_UDP_DST_PORT,
+                              &(udp_spec_data->du_dst_port)); 
+    if (rc != 0)
+    {
+        ERROR("%s: failed to convert dst-port from pattern: %r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAD_CSAP, rc);
+    }
+    if (udp_spec_data->du_dst_port.du_type == TAD_DU_I32)
+        udp_spec_data->dst_port = udp_spec_data->du_dst_port.val_i32;
+
+
+    /* Update pattern with CSAP defaults */
+    /* receive, local is destination */
+    if (udp_spec_data->dst_port == 0 && 
+        udp_spec_data->local_port != 0)
+    {
+        VERB("%s: set dst-port to %u",
+              __FUNCTION__, udp_spec_data->local_port);
+        rc = asn_write_int32(layer_pdu, udp_spec_data->local_port,
+                             "dst-port.#plain");
+        if (rc != 0)
         {
-            VERB("%s: set src-port to %u",
-                  __FUNCTION__, udp_spec_data->local_port);
-            rc = asn_write_int32(layer_pdu, udp_spec_data->local_port,
-                                 "src-port.#plain");
-            if (rc != 0)
-            {
-                ERROR("%s: failed to update src-port in pattern: %r",
-                      __FUNCTION__, rc);
-                return TE_RC(TE_TAD_CSAP, rc);
-            }
-            udp_spec_data->src_port = udp_spec_data->local_port;
-            udp_spec_data->du_src_port.val_i32 = udp_spec_data->local_port;
-            udp_spec_data->du_src_port.du_type = TAD_DU_I32;
+            ERROR("%s: failed to update dst-port in pattern: %r",
+                  __FUNCTION__, rc);
+            return TE_RC(TE_TAD_CSAP, rc);
         }
-        if (udp_spec_data->du_dst_port.du_type == TAD_DU_UNDEF)
+        udp_spec_data->dst_port = udp_spec_data->local_port;
+    }
+    if (udp_spec_data->src_port == 0 &&
+        udp_spec_data->remote_port != 0)
+    {
+        VERB("%s: set src-port to %u",
+              __FUNCTION__, udp_spec_data->remote_port);
+        rc = asn_write_int32(layer_pdu, udp_spec_data->remote_port,
+                             "src-port.#plain");
+        if (rc != 0)
         {
-            if (udp_spec_data->remote_port != 0)
-            {
-                VERB("%s: set dst-port to %u",
-                      __FUNCTION__, udp_spec_data->remote_port);
-                rc = asn_write_int32(layer_pdu, udp_spec_data->remote_port,
-                                     "dst-port.#plain");
-                if (rc != 0)
-                {
-                    ERROR("%s: failed to update dst-port in pattern: %r",
-                          __FUNCTION__, rc);
-                    return TE_RC(TE_TAD_CSAP, rc);
-                }
-                udp_spec_data->dst_port = udp_spec_data->remote_port;
-                udp_spec_data->du_dst_port.val_i32 =
-                                          udp_spec_data->remote_port;
-                udp_spec_data->du_dst_port.du_type = TAD_DU_I32;
-            }
-            else
-            {
-                ERROR("%s: sending csap #%d, "
-                      "has no dst-port in template and has no remote port",
-                      __FUNCTION__, csap->id);
-                return TE_RC(TE_TAD_CSAP, TE_EINVAL);
-            }
+            ERROR("%s: failed to update src-port in pattern: %r",
+                  __FUNCTION__, rc);
+            return TE_RC(TE_TAD_CSAP, rc);
         }
+        udp_spec_data->src_port = udp_spec_data->remote_port;
     }
 
     return 0;
@@ -330,32 +377,35 @@ tad_udp_gen_bin_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_udp_match_bin_cb(csap_p csap, unsigned int layer,
-                     const asn_value *pattern_pdu,
-                     const csap_pkts *pkt, csap_pkts *payload,
-                     asn_value_p parsed_packet)
+tad_udp_match_bin_cb(csap_p csap,
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu)
 {
+    uint8_t    *data_ptr; 
+    uint8_t    *data; 
+    size_t      data_len;
     asn_value  *udp_header_pdu = NULL;
-    uint8_t    *data;
-    int         rc = 0;
+    te_errno    rc;
+
+    assert(tad_pkt_seg_num(pdu) == 1);
+    assert(tad_pkt_first_seg(pdu) != NULL);
+    data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
+    data_len = tad_pkt_first_seg(pdu)->data_len;
+
+    if (csap->state & CSAP_STATE_RESULTS)
+        udp_header_pdu = meta_pkt->layers[layer].nds =
+            asn_init_value(ndn_udp_header);
 
     UNUSED(csap);
     UNUSED(layer);
 
-    if (pkt == NULL || payload == NULL)
-    {
-        ERROR("%s: pkt or payload is NULL", __FUNCTION__);
-        return TE_EWRONGPTR;
-    }
-    data = (uint8_t *)(pkt->data);
-
-    /* Match UDP header fields */
-    if (parsed_packet != 0)
-        udp_header_pdu = asn_init_value(ndn_udp_header);
-
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = ndn_match_data_units(pattern_pdu, udp_header_pdu,  \
+        rc = ndn_match_data_units(ptrn_pdu, udp_header_pdu,  \
                                   data, _size, _asn_label);     \
         if (rc != 0)                                            \
         {                                                       \
@@ -373,26 +423,15 @@ tad_udp_match_bin_cb(csap_p csap, unsigned int layer,
 #undef CHECK_FIELD
 
     /* Passing payload to upper layer */
-    memset(payload, 0, sizeof(*payload));
-    payload->len = (pkt->len - (data - (uint8_t *)(pkt->data)));
-    payload->data = malloc(payload->len);
-    if (payload->data == NULL)
+    rc = tad_pkt_get_frag(sdu, pdu, data - data_ptr,
+                          data_len - (data - data_ptr),
+                          TAD_PKT_GET_FRAG_ERROR);
+    if (rc != 0)
     {
-        ERROR("%s: failed to allocate memory for payload", __FUNCTION__);
-        asn_free_value(udp_header_pdu);
-        return TE_ENOMEM;
+        ERROR(CSAP_LOG_FMT "Failed to prepare UDP SDU: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
     }
-    memcpy(payload->data, data, payload->len);
-
-    /* Insert UDP header data */
-    if (parsed_packet != NULL)
-    {
-        rc = asn_write_component_value(parsed_packet, udp_header_pdu, "#udp");
-        if (rc != 0)
-            ERROR("%s: failed to insert UDP header to packet: %r",
-                  __FUNCTION__, rc);
-    }
-    asn_free_value(udp_header_pdu);
 
     return rc;
 }

@@ -57,6 +57,7 @@ static csap_spt_type_t ip4_csap_spt =
     release_tmpl_cb     : NULL,
 
     confirm_ptrn_cb     : tad_ip4_confirm_pdu_cb,
+    match_pre_cb        : NULL,
     match_do_cb         : tad_ip4_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
@@ -89,11 +90,12 @@ static csap_spt_type_t udp_csap_spt =
     destroy_cb          : tad_udp_destroy_cb,
     get_param_cb        : NULL,
 
-    confirm_tmpl_cb     : tad_udp_confirm_pdu_cb,
+    confirm_tmpl_cb     : tad_udp_confirm_tmpl_cb,
     generate_pkts_cb    : tad_udp_gen_bin_cb,
     release_tmpl_cb     : NULL,
 
-    confirm_ptrn_cb     : tad_udp_confirm_pdu_cb,
+    confirm_ptrn_cb     : tad_udp_confirm_ptrn_cb,
+    match_pre_cb        : NULL,
     match_do_cb         : tad_udp_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
@@ -120,6 +122,7 @@ static csap_spt_type_t tcp_csap_spt =
     release_tmpl_cb     : NULL,
 
     confirm_ptrn_cb     : tad_tcp_confirm_pdu_cb,
+    match_pre_cb        : NULL,
     match_do_cb         : tad_tcp_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,

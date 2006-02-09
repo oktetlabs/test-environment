@@ -257,7 +257,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
         spec_data->src_addr.s_addr = INADDR_ANY;
-        if (csap->state & TAD_STATE_RECV && 
+        if (csap->state & CSAP_STATE_RECV && 
             (rc = asn_get_child_value(ip4_csap_pdu, &du_field, PRIVATE,
                                       NDN_TAG_IP4_REMOTE_ADDR)) == 0)
         { 
@@ -283,7 +283,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
     {
         spec_data->dst_addr.s_addr = INADDR_ANY;
 
-        if (csap->state & TAD_STATE_SEND)
+        if (csap->state & CSAP_STATE_SEND)
         { 
             if (spec_data->remote_addr.s_addr == INADDR_ANY)
             {
@@ -718,37 +718,44 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_ip4_match_bin_cb(csap_p csap, unsigned int layer,
-                     const asn_value *pattern_pdu,
-                     const csap_pkts *pkt, csap_pkts *payload, 
-                     asn_value_p parsed_packet)
+tad_ip4_match_bin_cb(csap_p           csap, 
+                     unsigned int     layer,
+                     const asn_value *ptrn_pdu,
+                     void            *ptrn_opaque,
+                     tad_recv_pkt    *meta_pkt,
+                     tad_pkt         *pdu,
+                     tad_pkt         *sdu)
 { 
     ip4_csap_specific_data_t *spec_data;
 
-    uint8_t *data;
+    uint8_t    *data; 
+    size_t      data_len;
+    asn_value  *ip4_header_pdu = NULL;
+    te_errno    rc;
+
     uint8_t  tmp8;
-    int      rc = 0;
     size_t   h_len = 0;
     size_t   ip_len = 0;
 
-    asn_value *ip4_header_pdu = NULL;
+    assert(tad_pkt_seg_num(pdu) == 1);
+    assert(tad_pkt_first_seg(pdu) != NULL);
+    data = tad_pkt_first_seg(pdu)->data_ptr;
+    data_len = tad_pkt_first_seg(pdu)->data_len;
 
-    if (parsed_packet != NULL)
-        ip4_header_pdu = asn_init_value(ndn_ip4_header); 
+    if (csap->state & CSAP_STATE_RESULTS)
+        ip4_header_pdu = meta_pkt->layers[layer].nds =
+            asn_init_value(ndn_ip4_header); 
 
     spec_data = csap_get_proto_spec_data(csap, layer); 
 
-
-    data = pkt->data; 
-
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu,  \
+        rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu,     \
                                   data, _size, _asn_label);     \
         if (rc != 0)                                            \
         {                                                       \
             F_VERB("%s: csap %d field %s not match, rc %r",     \
-                   csap->id, __FUNCTION__, _asn_label, rc);\
+                   __FUNCTION__, csap->id, _asn_label, rc);     \
             goto cleanup;                                       \
         }                                                       \
         data += _size;                                          \
@@ -756,7 +763,7 @@ tad_ip4_match_bin_cb(csap_p csap, unsigned int layer,
 
 
     tmp8 = (*data) >> 4;
-    rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
                               &tmp8, 1, "version");
     if (rc) 
     {
@@ -765,7 +772,7 @@ tad_ip4_match_bin_cb(csap_p csap, unsigned int layer,
     }
 
     h_len = tmp8 = (*data) & 0x0f;
-    rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
                               &tmp8, 1, "header-len");
     if (rc) 
     {
@@ -781,7 +788,7 @@ tad_ip4_match_bin_cb(csap_p csap, unsigned int layer,
     CHECK_FIELD("ip-ident", 2);
 
     tmp8 = (*data) >> 5;
-    rc = ndn_match_data_units(pattern_pdu, ip4_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
                               &tmp8, 1, "flags");
     if (rc != 0) 
         goto cleanup;
@@ -799,25 +806,17 @@ tad_ip4_match_bin_cb(csap_p csap, unsigned int layer,
     /* TODO: Process IPv4 options */
 
     /* passing payload to upper layer */ 
+    rc = tad_pkt_get_frag(sdu, pdu, h_len * 4, ip_len - (h_len * 4),
+                          TAD_PKT_GET_FRAG_ERROR);
+    if (rc != 0)
     {
-        memset(payload, 0 , sizeof(*payload));
-        payload->len = ip_len - (h_len * 4);
-        payload->data = malloc(payload->len);
-        memcpy(payload->data, pkt->data + (h_len * 4), payload->len);
+        ERROR(CSAP_LOG_FMT "Failed to prepare IPv4 SDU: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
     }
-
-    if (parsed_packet)
-    {
-        rc = asn_write_component_value(parsed_packet, ip4_header_pdu, "#ip4"); 
-        if (rc)
-            ERROR("%s, write IPv4 header to packet fails %r", 
-                  __FUNCTION__, rc);
-    } 
 
     VERB("%s, return %r", __FUNCTION__, rc);
     
 cleanup:
-    asn_free_value(ip4_header_pdu); 
-
     return TE_RC(TE_TAD_CSAP, rc);
 }

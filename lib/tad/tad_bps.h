@@ -31,6 +31,9 @@
 #ifndef __TE_TAD_BPS_H__
 #define __TE_TAD_BPS_H__
 
+#include "te_stdint.h"
+#include "asn_usr.h"
+#include "tad_types.h"
 #include "tad_utils.h"
 
 
@@ -56,6 +59,7 @@ typedef struct tad_bps_pkt_frag {
     asn_tag_value   tag_rx_def; /**< ASN.1 tag of the field in CSAP
                                      parameters default for receiving */
     uint32_t        value;      /**< Constant value */
+    tad_du_type_t   plain_du;   /**< Type of plain data unit */
 } tad_bps_pkt_frag;
 
 /**
@@ -73,7 +77,7 @@ typedef struct tad_bps_pkt_frag_def {
 } tad_bps_pkt_frag_def;
 
 /**
- * Internal data of PBS for binary packet fragment.
+ * Internal data of BPS for binary packet fragment.
  */
 typedef struct tad_bps_pkt_frag_data {
     tad_data_unit_t    *dus;    /**< Array of TAD data units for
@@ -175,5 +179,21 @@ extern te_errno tad_bps_pkt_frag_gen_bin(
                     uint8_t                     *bin,
                     unsigned int                *bitoff,
                     unsigned int                 max_bitlen);
+
+extern te_errno tad_bps_pkt_frag_match_pre(
+                    const tad_bps_pkt_frag_def *def,
+                    tad_bps_pkt_frag_data *pkt_data);
+
+extern te_errno tad_bps_pkt_frag_match_do(
+                    const tad_bps_pkt_frag_def *def,
+                    const tad_bps_pkt_frag_data *ptrn,
+                    tad_bps_pkt_frag_data *pkt_data,
+                    const tad_pkt *pkt, unsigned int *bitoff);
+
+extern te_errno tad_bps_pkt_frag_match_post(
+                    const tad_bps_pkt_frag_def *def,
+                    tad_bps_pkt_frag_data *pkt_data,
+                    const tad_pkt *pkt, unsigned int *bitoff,
+                    asn_value *nds);
 
 #endif /* !__TE_TAD_BPS_H__ */

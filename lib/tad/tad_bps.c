@@ -408,3 +408,255 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
     }
     return 0;
 }
+
+
+
+/* See description in tad_bps.h */
+te_errno
+tad_bps_pkt_frag_match_pre(const tad_bps_pkt_frag_def *def,
+                           tad_bps_pkt_frag_data *pkt_data)
+{
+    unsigned int    i;
+
+    if (def == NULL || pkt_data == NULL)
+    {
+        return TE_RC(TE_TAD_BPS, TE_EWRONGPTR);
+    }
+
+    pkt_data->dus = calloc(def->fields, sizeof(*pkt_data->dus));
+    if (pkt_data->dus == NULL)
+        return TE_RC(TE_TAD_BPS, TE_ENOMEM);
+
+    for (i = 0; i < def->fields; ++i)
+    {
+        pkt_data->dus[i].du_type = def->descr[i].plain_du;
+        if (pkt_data->dus[i].du_type == TAD_DU_OCTS)
+        {
+            assert((def->descr[i].len & 7) == 0);
+            pkt_data->dus[i].val_data.len = def->descr[i].len >> 3;
+            pkt_data->dus[i].val_data.oct_str =
+                calloc(1, def->descr[i].len);
+            if (pkt_data->dus[i].val_data.oct_str == NULL)
+                return TE_RC(TE_TAD_BPS, TE_ENOMEM);
+        }
+    }
+    return 0;
+}
+
+/**
+ * Read data starting from specified offset in bits and of specified
+ * length in bits to prepared data unit.
+ *
+ * @param pkt           Packet
+ * @param bitoff        Offset in bits
+ * @param bitlen        Number of bits to read starting from offset
+ * @param du            Destination data unit
+ */
+void
+tad_bin_to_data_unit(const tad_pkt *pkt, unsigned int bitoff,
+                     unsigned int bitlen, tad_data_unit_t *du)
+{
+    assert(du != NULL);
+
+    ENTRY("pkt=%p bitoff=%u bitlen=%u du_type=%u",
+          pkt, bitoff, bitlen, du->du_type);
+
+    switch (du->du_type)
+    {
+        case TAD_DU_I32:
+            assert(bitlen <= 32);
+            du->val_i32 = 0; /* FIXME: May assert be used here */
+            tad_pkt_read_bits(pkt, bitoff, bitlen,
+                ((uint8_t *)(&du->val_i32)) + ((32 - bitlen) >> 3));
+            du->val_i32 = ntohl(du->val_i32);
+            break;
+
+        case TAD_DU_I64:
+            assert(bitlen <= 64);
+            assert(du->val_i64 == 0);
+            tad_pkt_read_bits(pkt, bitoff, bitlen,
+                ((uint8_t *)(&du->val_i64)) + ((64 - bitlen) >> 3));
+            du->val_i64 = tad_ntohll(du->val_i64);
+            break;
+
+        case TAD_DU_OCTS:
+            assert(bitlen == (du->val_data.len << 3));
+            tad_pkt_read_bits(pkt, bitoff, bitlen, du->val_data.oct_str);
+            break;
+
+        default:
+            /* The rest is not supported/meaningless */
+            assert(FALSE);
+    }
+    EXIT();
+}
+
+te_errno
+tad_data_unit_match(const tad_data_unit_t *ptrn,
+                    const tad_data_unit_t *value)
+{
+    if (ptrn->du_type != value->du_type)
+    {
+        ERROR("%s(): Matching of data units of different types is not "
+              "yet supported", __FUNCTION__);
+        return TE_EOPNOTSUPP;
+    }
+
+    switch (value->du_type)
+    {
+        case TAD_DU_I32:
+            if (ptrn->val_i32 == value->val_i32)
+                return 0;
+            else
+            {
+                VERB("%s(): match failed %u vs %u", __FUNCTION__,
+                     (unsigned)ptrn->val_i32, (unsigned)value->val_i32);
+                return TE_ETADNOTMATCH;
+            }
+            break;
+
+        case TAD_DU_I64:
+            if (ptrn->val_i64 == value->val_i64)
+                return 0;
+            else
+                return TE_ETADNOTMATCH;
+            break;
+
+        case TAD_DU_OCTS:
+            if ((ptrn->val_data.len == value->val_data.len) &&
+                (memcmp(ptrn->val_data.oct_str, value->val_data.oct_str,
+                        ptrn->val_data.len) == 0))
+                return 0;
+            else
+                return TE_ETADNOTMATCH;
+            break;
+
+        default:
+            ERROR("%s(): Matching of data units of type %u is not yet "
+                  "supported", __FUNCTION__, value->du_type);
+            return EOPNOTSUPP;
+    }
+}
+
+/* See description in tad_bps.h */
+te_errno
+tad_bps_pkt_frag_match_do(const tad_bps_pkt_frag_def *def,
+                          const tad_bps_pkt_frag_data *ptrn,
+                          tad_bps_pkt_frag_data *pkt_data,
+                          const tad_pkt *pkt, unsigned int *bitoff)
+{
+    te_errno                rc = 0;
+    unsigned int            i;
+    const tad_data_unit_t  *du;
+    size_t                  len;
+
+    if (def == NULL || ptrn == NULL || pkt_data == NULL ||
+        pkt == NULL || bitoff == NULL)
+    {
+        return TE_RC(TE_TAD_BPS, TE_EWRONGPTR);
+    }
+
+    for (i = 0; i < def->fields; ++i, *bitoff += len)
+    {
+        if (ptrn->dus[i].du_type != TAD_DU_UNDEF)
+            du = ptrn->dus + i;
+        else if (def->tx_def[i].du_type != TAD_DU_UNDEF)
+            du = def->rx_def + i;
+        else
+            du = NULL;
+
+        if (def->descr[i].len > 0)
+            len = def->descr[i].len;
+#if 0 /* FIXME: It is necessary to understand what does it mean for Rx */
+        else if (du->du_type == TAD_DU_OCTS)
+            len = du->val_data.len << 3;
+#endif
+        else
+            assert(FALSE);
+
+        if ((pkt_data->dus[i].du_type == TAD_DU_UNDEF) ||
+            ((du == NULL) && (def->descr[i].tag_rx_def != ASN_TAG_USER)))
+        {
+            continue;
+        }
+
+        tad_bin_to_data_unit(pkt, *bitoff, len, pkt_data->dus + i);
+
+        if (du != NULL)
+        {
+            rc = tad_data_unit_match(du, pkt_data->dus + i);
+            if (rc != 0)
+            {
+                VERB("%s(): match failed for '%s': %r",
+                     __FUNCTION__, def->descr[i].name, rc);
+                break;
+            }
+        }
+    }
+
+    return rc;
+}
+
+/* See description in tad_bps.h */
+te_errno
+tad_data_unit_to_nds(asn_value *nds, const char *name,
+                     tad_data_unit_t *du)
+{
+    te_errno    rc;
+    char        tmp[32];
+
+    snprintf(tmp, sizeof(tmp), "%s.#plain", name);
+
+    switch (du->du_type)
+    {
+        case TAD_DU_I32:
+            rc = asn_write_int32(nds, du->val_i32, tmp);
+            break;
+        case TAD_DU_I64:
+            rc = TE_RC(TE_TAD_CH, TE_EOPNOTSUPP);
+            break;
+        case TAD_DU_OCTS:
+            rc = asn_write_value_field(nds, du->val_data.oct_str,
+                                       du->val_data.len, tmp);
+            break;
+        default:
+            rc = TE_EFAULT;
+    }
+
+    return rc;
+}
+
+/* See description in tad_bps.h */
+te_errno
+tad_bps_pkt_frag_match_post(const tad_bps_pkt_frag_def *def,
+                            tad_bps_pkt_frag_data *pkt_data,
+                            const tad_pkt *pkt, unsigned int *bitoff,
+                            asn_value *nds)
+{
+    te_errno                rc = 0;
+    unsigned int            i;
+    size_t                  len;
+
+    if (nds == NULL)
+        return 0;
+
+    if (def == NULL || pkt_data == NULL || pkt == NULL || bitoff == NULL)
+    {
+        return TE_RC(TE_TAD_BPS, TE_EWRONGPTR);
+    }
+
+    for (i = 0; (rc == 0) && (i < def->fields); ++i, *bitoff += len)
+    {
+        if (def->descr[i].len > 0)
+            len = def->descr[i].len;
+        else
+            assert(FALSE);
+
+        /* FIXME: Optimize - do not read twice */
+        tad_bin_to_data_unit(pkt, *bitoff, len, pkt_data->dus + i);
+
+        rc = tad_data_unit_to_nds(nds, def->descr[i].name, pkt_data->dus + i);
+    }
+
+    return rc;
+}

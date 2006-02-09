@@ -210,14 +210,8 @@ tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 
     free(interface);
 
-
-    /* default read timeout */
-    dhcp_spec_data->read_timeout = 200000;
-
     csap_set_rw_data(csap, dhcp_spec_data);
 
-    csap->timeout = 500000;
-    
     return 0;
 }
 
@@ -238,56 +232,17 @@ tad_dhcp_rw_destroy_cb(csap_p csap)
 
  
 /* See description tad_dhcp_impl.h */
-int 
-tad_dhcp_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
+te_errno
+tad_dhcp_read_cb(csap_p csap, unsigned int timeout,
+                 tad_pkt *pkt, size_t *pkt_len)
 {
-    int    rc; 
-    fd_set read_set;
-    dhcp_csap_specific_data_t *spec_data;
-    
-    struct timeval timeout_val;
-    
-    if (csap == NULL)
-    {
-        return -1;
-    }
-    
-    spec_data = csap_get_rw_data(csap); 
+    dhcp_csap_specific_data_t  *spec_data = csap_get_rw_data(csap);
+    te_errno                    rc;
 
-#ifdef TALOGDEBUG
-    printf("Reading data from the socket: %d", spec_data->in);
-#endif       
+    rc = tad_common_read_cb_sock(csap, spec_data->in, 0, timeout,
+                                 pkt, NULL, NULL, pkt_len);
 
-    if(spec_data->in < 0)
-    {
-        return -1;
-    }
-
-    FD_ZERO(&read_set);
-    FD_SET(spec_data->in, &read_set);
-
-    if (timeout == 0)
-    {
-        timeout_val.tv_sec = spec_data->read_timeout;
-        timeout_val.tv_usec = 0;
-    }
-    else
-    {
-        timeout_val.tv_sec = timeout / 1000000L; 
-        timeout_val.tv_usec = timeout % 1000000L;
-    }
-    
-    rc = select(spec_data->in + 1, &read_set, NULL, NULL, &timeout_val); 
-    VERB("%s(): select = %d", __FUNCTION__, rc);
-    
-    if (rc == 0)
-        return 0;
-
-    if (rc < 0)
-        return -1;
-    
-    /* Note: possibly MSG_TRUNC and other flags are required */
-    return recv (spec_data->in, buf, buf_len, 0); 
+    return rc;
 }
 
 
@@ -338,8 +293,7 @@ tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt)
     ret = sendmsg(spec_data->out, &msg, 0);
     if (ret < 0) 
     {
-        csap->last_errno = errno;
-        return TE_OS_RC(TE_TAD_CSAP, csap->last_errno);
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     return 0;

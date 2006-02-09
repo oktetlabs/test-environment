@@ -177,7 +177,8 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
     if (rc == 0)
     {
         tad_pkts_move(pdus, sdus);
-        rc = tad_pkts_add_new_seg(pdus, TRUE, pdu, 0, tad_snmp_free_pdu);
+        rc = tad_pkts_add_new_seg(pdus, TRUE, pdu, sizeof(*pdu),
+                                  tad_snmp_free_pdu);
     }
 
     if (rc != 0)
@@ -191,39 +192,45 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
-                      const asn_value *pattern_pdu,
-                      const csap_pkts *pkt, csap_pkts *payload,
-                      asn_value *parsed_packet )
+tad_snmp_match_bin_cb(csap_p           csap,
+                      unsigned int     layer,
+                      const asn_value *ptrn_pdu,
+                      void            *ptrn_opaque,
+                      tad_recv_pkt    *meta_pkt,
+                      tad_pkt         *pdu,
+                      tad_pkt         *sdu)
 { 
-    int type;
-    int rc;
+    struct snmp_pdu        *my_pdu;
+    struct variable_list   *vars;
+    asn_value              *snmp_msg = NULL;
+    asn_value              *vb_seq = NULL;
+    te_errno                rc;
+    int                     type;
 
-    struct snmp_pdu      *pdu = (struct snmp_pdu *)pkt->data;
-    struct variable_list *vars;
+    UNUSED(ptrn_opaque);
+    UNUSED(sdu);
 
-    asn_value *snmp_msg = NULL;
-    asn_value *vb_seq = NULL;
+    assert(tad_pkt_seg_num(pdu) == 1);
+    assert(tad_pkt_first_seg(pdu) != NULL);
+    assert(tad_pkt_first_seg(pdu)->data_len == sizeof(*my_pdu));
+    my_pdu = tad_pkt_first_seg(pdu)->data_ptr;
+    assert(my_pdu != NULL);
 
-    UNUSED(csap);
-
-    if (parsed_packet != NULL)
+    if (csap->state & CSAP_STATE_RESULTS)
     {
-        snmp_msg = asn_init_value(ndn_snmp_message);
+        meta_pkt->layers[layer].nds = snmp_msg =
+            asn_init_value(ndn_snmp_message);
         vb_seq = asn_init_value(ndn_snmp_var_bind_seq);
     }
-
-    if (parsed_packet == NULL && pattern_pdu == NULL)
+    else if (ptrn_pdu == NULL)
+    {
         return 0;
+    }
 
-    /* never use buffer for upper payload. */
-    if (payload != NULL)
-        memset(payload, 0, sizeof (csap_pkts));
+    VERB("%s, layer %d, my_pdu 0x%x, my_pdu command: <%d>", 
+         __FUNCTION__, layer, my_pdu, my_pdu->command);
 
-    VERB("%s, layer %d, pdu 0x%x, pdu command: <%d>", 
-         __FUNCTION__, layer, pdu, pdu->command);
-
-    switch (pdu->command)
+    switch (my_pdu->command)
     {
         case SNMP_MSG_GET:
             type = NDN_SNMP_MSG_GET;
@@ -259,13 +266,13 @@ tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
 
         default:
             RING("%s(): UNKNOWN PDU command %d ",
-                  __FUNCTION__, pdu->command);
+                  __FUNCTION__, my_pdu->command);
             return TE_ETADNOTMATCH;
     }
 
 #define CHECK_FIELD(asn_label_, data_, size_) \
     do {                                                        \
-        rc = ndn_match_data_units(pattern_pdu, snmp_msg,        \
+        rc = ndn_match_data_units(ptrn_pdu, snmp_msg,           \
                                   (uint8_t *)data_, size_,      \
                                   asn_label_);                  \
         if (rc != 0)                                            \
@@ -286,43 +293,33 @@ tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
 
     CHECK_INT_FIELD("type", type);
 
-    if (pdu->community != NULL)
-        CHECK_FIELD("community", pdu->community, pdu->community_len + 1);
+    if (my_pdu->community != NULL)
+        CHECK_FIELD("community", my_pdu->community, my_pdu->community_len + 1);
 
-    CHECK_INT_FIELD("request-id", pdu->reqid);
-    CHECK_INT_FIELD("err-status", pdu->errstat);
-    CHECK_INT_FIELD("err-index", pdu->errindex); 
+    CHECK_INT_FIELD("request-id", my_pdu->reqid);
+    CHECK_INT_FIELD("err-status", my_pdu->errstat);
+    CHECK_INT_FIELD("err-index", my_pdu->errindex); 
 
-    if (pdu->errstat || pdu->errindex)
+    if (my_pdu->errstat || my_pdu->errindex)
         RING("in %s, errstat %d, errindex %d",
-                __FUNCTION__, pdu->errstat, pdu->errindex);
+                __FUNCTION__, my_pdu->errstat, my_pdu->errindex);
 
     if (type == NDN_SNMP_MSG_TRAP1)
     {
-        CHECK_FIELD("enterprise", pdu->enterprise, pdu->enterprise_length);
-        CHECK_INT_FIELD("gen-trap", pdu->trap_type); 
-        CHECK_INT_FIELD("spec-trap", pdu->specific_type); 
-        CHECK_FIELD("agent-addr", pdu->agent_addr, sizeof(pdu->agent_addr));
+        CHECK_FIELD("enterprise", my_pdu->enterprise, my_pdu->enterprise_length);
+        CHECK_INT_FIELD("gen-trap", my_pdu->trap_type); 
+        CHECK_INT_FIELD("spec-trap", my_pdu->specific_type); 
+        CHECK_FIELD("agent-addr", my_pdu->agent_addr, sizeof(my_pdu->agent_addr));
     }
 
 #undef CHECK_INT_FIELD
 #undef CHECK_FIELD
 
-    if (parsed_packet != NULL)
-    {
-        rc = asn_write_component_value(parsed_packet, snmp_msg, "#snmp"); 
-        if (rc)
-            ERROR("%s, write SNMP message to packet fails %r", 
-                  __FUNCTION__, rc);
-        asn_free_value(snmp_msg);
-        snmp_msg = NULL;
-    } 
-
     do { /* Match VarBinds */
         const asn_value *pat_vb_list;
         int              pat_vb_num, i;
 
-        rc = asn_get_subvalue(pattern_pdu, &pat_vb_list,
+        rc = asn_get_subvalue(ptrn_pdu, &pat_vb_list,
                               "variable-bindings");
         if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
@@ -366,7 +363,7 @@ tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
             }
             pat_oid_len = asn_get_length(pat_var_bind, "name.#plain"); 
 
-            for (vars = pdu->variables;
+            for (vars = my_pdu->variables;
                  vars != NULL;
                  vars = vars->next_variable)
             {
@@ -502,8 +499,8 @@ tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
     } while(0); /* match on varbinds finished */
 
     /* fill varbinds into parsed packet */
-    for (vars = pdu->variables;
-         rc == 0 && vars != NULL;
+    for (vars = my_pdu->variables;
+         rc == 0 && snmp_msg != NULL && vars != NULL;
          vars = vars->next_variable)
     {
         asn_value_p var_bind = NULL;
@@ -511,15 +508,9 @@ tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
 
         VERB("BEGIN of LOOP rc %r", rc);
 
-        if (parsed_packet != NULL)
-        {
-            var_bind = asn_init_value(ndn_snmp_var_bind);
-            asn_write_value_field(var_bind, vars->name, vars->name_length, 
-                                  "name.#plain");
-        }
-
-        if (parsed_packet == NULL)
-            continue;
+        var_bind = asn_init_value(ndn_snmp_var_bind);
+        asn_write_value_field(var_bind, vars->name, vars->name_length, 
+                              "name.#plain");
 
         VERB(" SNMP MATCH: vars type: %d\n", vars->type);
 
@@ -602,13 +593,12 @@ tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
             break;
     } /* end of loop fill of varbinds */
 
-    if (rc == 0 && parsed_packet != NULL)
-        rc = asn_write_component_value(parsed_packet, vb_seq,
-                                       "#snmp.variable-bindings");
-
-#ifdef SNMPDEBUG
-    printf ("in SNMP MATCH, rc from vb_seq insert: %x\n", rc);
-#endif
+    if (rc == 0 && snmp_msg != NULL)
+    {
+        assert(vb_seq != NULL);
+        rc = asn_write_component_value(snmp_msg, vb_seq,
+                                       "variable-bindings");
+    }
 
     asn_free_value(vb_seq);
 
@@ -619,11 +609,11 @@ tad_snmp_match_bin_cb(csap_p csap, unsigned int layer,
 te_errno
 tad_snmp_gen_pattern_cb(csap_p csap, unsigned int layer,
                         const asn_value *tmpl_pdu, 
-                        asn_value_p *pattern_pdu)
+                        asn_value_p *ptrn_pdu)
 { 
     UNUSED(tmpl_pdu);
 
-    *pattern_pdu = asn_init_value(ndn_snmp_message);
+    *ptrn_pdu = asn_init_value(ndn_snmp_message);
     VERB("%s callback, CSAP # %d, layer %d",
          __FUNCTION__, csap->id, layer); 
     return 0;

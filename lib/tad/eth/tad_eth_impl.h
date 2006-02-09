@@ -72,10 +72,6 @@
 #define ETH_COMPLETE_FREE 1
 #endif
 
-#ifndef ETH_CSAP_DEFAULT_TIMEOUT  /* Seconds to wait for incoming data */ 
-#define ETH_CSAP_DEFAULT_TIMEOUT 5 
-#endif
-
 /* special eth type/length value for tagged frames. */
 #define ETH_TAGGED_TYPE_LEN 0x8100
 
@@ -110,8 +106,8 @@ extern te_errno tad_eth_rw_destroy_cb(csap_p csap);
  *
  * The function complies with csap_read_cb_t prototype.
  */ 
-extern int tad_eth_read_cb(csap_p csap, int timeout,
-                           char *buf, size_t buf_len);
+extern te_errno tad_eth_read_cb(csap_p csap, unsigned int timeout,
+                                tad_pkt *pkt, size_t *pkt_len);
 
 /**
  * Open transmit socket for Ethernet CSAP. 
@@ -147,16 +143,6 @@ extern te_errno tad_eth_prepare_recv(csap_p csap);
  * The function complies with csap_low_resource_cb_t prototype.
  */
 extern te_errno tad_eth_shutdown_recv(csap_p csap);
-
-/**
- * Callback for write data to media of Ethernet CSAP and read
- * data from media just after write, to get answer to sent request. 
- *
- * The function complies with csap_write_read_cb_t prototype.
- */ 
-extern int tad_eth_write_read_cb(csap_p csap, int timeout,
-                                 const tad_pkt *w_pkt,
-                                 char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -219,33 +205,26 @@ extern te_errno tad_eth_gen_bin_cb(csap_p                csap,
                                    tad_pkts             *sdus,
                                    tad_pkts             *pdus);
 
+extern te_errno tad_eth_match_pre_cb(csap_p              csap,
+                                     unsigned int        layer,
+                                     tad_recv_pkt_layer *meta_pkt_layer);
+
+extern te_errno tad_eth_match_post_cb(csap_p              csap,
+                                      unsigned int        layer,
+                                      tad_recv_pkt_layer *meta_pkt_layer);
 
 /**
  * Callback for parse received packet and match it with pattern. 
  *
- * The function complies with csap_layer_match_bin_cb_t prototype.
+ * The function complies with csap_layer_match_do_cb_t prototype.
  */
-extern te_errno tad_eth_match_bin_cb(csap_p           csap,
-                                     unsigned int     layer,
-                                     const asn_value *pattern_pdu,
-                                     const csap_pkts *pkt,
-                                     csap_pkts       *payload,
-                                     asn_value_p      parsed_packet);
-
-/**
- * Create and bind raw socket to listen specified interface
- *
- * @param eth_type  Etherner protocol type 
- * @param pkt_type  Type of packet socket (PACKET_HOST, PACKET_OTHERHOST,
- *                  PACKET_OUTGOING
- * @param if_index  interface index
- * @param sock      pointer to place where socket handler will be saved
- *
- * @param 0 on succees, -1 on fail
- */
-extern int open_raw_socket(int eth_type, int pkt_type, int if_index,
-                           int *sock);
-
+extern te_errno tad_eth_match_do_cb(csap_p           csap,
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 
 /**

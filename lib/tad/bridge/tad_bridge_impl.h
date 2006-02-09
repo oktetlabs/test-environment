@@ -87,14 +87,26 @@ extern te_errno tad_bridge_eth_destroy_cb(csap_p       csap,
                                           unsigned int layer);
 
 /**
- * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
+ * Callback for confirm template PDU with ehternet CSAP parameters and
+ * possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_bridge_confirm_pdu_cb(csap_p       csap,
-                                          unsigned int layer,
-                                          asn_value_p  layer_pdu,
-                                       void         **p_opaque); 
+extern te_errno tad_bridge_confirm_tmpl_cb(csap_p         csap,
+                                           unsigned int   layer,
+                                           asn_value_p    layer_pdu,
+                                           void         **p_opaque); 
+
+/**
+ * Callback for confirm pattern PDU with ehternet CSAP parameters and
+ * possibilities.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */ 
+extern te_errno tad_bridge_confirm_ptrn_cb(csap_p         csap,
+                                           unsigned int   layer,
+                                           asn_value_p    layer_pdu,
+                                           void         **p_opaque); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -117,11 +129,12 @@ extern te_errno tad_bridge_gen_bin_cb(csap_p                csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_bridge_match_bin_cb(csap_p           csap,
-                                        unsigned int     layer,
-                                        const asn_value *pattern_pdu,
-                                        const csap_pkts *pkt,
-                                        csap_pkts       *payload, 
-                                        asn_value_p      parsed_packet);
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 /**
  * Callback for generating pattern to filter 

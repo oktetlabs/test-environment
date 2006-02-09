@@ -307,8 +307,6 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
             return TE_ETADWRONGNDS;
     }
 
-    csap->timeout = 100000;
-
     return 0;
 }
 
@@ -336,71 +334,90 @@ tad_socket_rw_destroy_cb(csap_p csap)
 
 
 /* See description tad_socket_impl.h */
-int 
-tad_socket_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
+te_errno
+tad_socket_read_cb(csap_p csap, unsigned int timeout,
+                   tad_pkt *pkt, size_t *pkt_len)
 {
     tad_socket_rw_data *spec_data = csap_get_rw_data(csap);
-
     fd_set              read_set;
     struct timeval      timeout_val;
     int                 ret;
+    te_errno            rc;
 
     if (spec_data->socket < 0)
     {
-        ERROR("%s(): no input socket", __FUNCTION__);
-        return -1;
+        ERROR(CSAP_LOG_FMT "Socket is not open", CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_EIO);
     }
+
     FD_ZERO(&read_set);
     FD_SET(spec_data->socket, &read_set);
 
-    if (timeout == 0)
-    {
-        timeout_val.tv_sec = 0;
-        timeout_val.tv_usec = 100 * 1000; /* 0.1 sec */
-    }
-    else
-    {
-        timeout_val.tv_sec = timeout / 1000000L; 
-        timeout_val.tv_usec = timeout % 1000000L;
-    }
+    TE_US2TV(timeout, &timeout_val);
     VERB("%s(): timeout set to %u.%u", __FUNCTION__, 
          timeout_val.tv_sec, timeout_val.tv_usec);
 
     ret = select(spec_data->socket + 1, &read_set, NULL, NULL,
-                     &timeout_val); 
+                 &timeout_val); 
 
     VERB("%s(): select return %d", __FUNCTION__,  ret);
     
     if (ret == 0)
-        return 0;
+        return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
 
     if (ret < 0)
     {
-        VERB("select fails: spec_data->socket = %d", spec_data->socket);
-        csap->last_errno = errno;
-        return -1;
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        VERB("select failed: spec_data->in = %d: %r",
+             spec_data->socket, rc);
+        return rc;
     }
 
     if (spec_data->data_tag == NDN_TAG_SOCKET_TYPE_TCP_SERVER)
     {
+        tad_pkt_seg *seg;
+
         ret = accept(spec_data->socket, NULL, NULL);
 
         if (ret < 0)
         {
-            csap->last_errno = errno;
-            return -1;
+            return TE_OS_RC(TE_TAD_CSAP, errno);
         }
         INFO("%s(CSAP %d) TCP 'server', accepted socket %d", 
              __FUNCTION__, csap->id, ret);
 
-        assert(buf_len >= sizeof(int));
-        /* FIXME: Not-aligned access */
-        *((int *)buf) = ret; 
+        seg = tad_pkt_first_seg(pkt);
+        if (seg == NULL)
+        {
+            seg = tad_pkt_alloc_seg(NULL, sizeof(int), NULL);
+            if (seg == NULL)
+            {
+                close(ret);
+                return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+            }
+            tad_pkt_append_seg(pkt, seg);
+        }
+        else if (seg->data_len < sizeof(int))
+        {
+            void *ptr = malloc(sizeof(int));
 
-        return sizeof(int);
+            if (ptr == NULL)
+            {
+                close(ret);
+                return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+            }
+            tad_pkt_put_seg_data(pkt, seg, ptr, sizeof(int),
+                                 tad_pkt_seg_data_free);
+        }
+        memcpy(seg->data_ptr, &ret, sizeof(int));
+        *pkt_len = sizeof(int);
+
+        return 0;
     } 
     else 
     {
+        size_t buf_len = pkt->segs.cqh_first->data_len;
+
         if (spec_data->wait_length > 0)
         {
             size_t rest_length = spec_data->wait_length -
@@ -411,15 +428,15 @@ tad_socket_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
         }
 
         /* Note: possibly MSG_TRUNC and other flags are required */
-        ret = recv(spec_data->socket, buf, buf_len, 0); 
+        ret = recv(spec_data->socket, pkt->segs.cqh_first->data_ptr,
+                   buf_len, 0); 
         if (ret == 0)
         {
             INFO(CSAP_LOG_FMT "Peer closed connection", 
                  CSAP_LOG_ARGS(csap));
-            csap->last_errno = TE_ETADENDOFDATA;
-            return -1;
+            return TE_RC(TE_TAD_CSAP, TE_ETADENDOFDATA);
         }
-        return ret;
+        return 0;
     }
 }
 
@@ -464,8 +481,7 @@ tad_socket_write_cb(csap_p csap, const tad_pkt *pkt)
     ret = sendmsg(spec_data->socket, &msg, 0);
     if (ret < 0) 
     {
-        csap->last_errno = te_rc_os2te(errno);
-        return TE_OS_RC(TE_TAD_CSAP, csap->last_errno);
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     return 0;
@@ -532,7 +548,6 @@ tad_socket_write_cb(csap_p csap, const tad_pkt *pkt)
                  (struct sockaddr *)&source, sizeof(source)) == -1)
         {
             perror ("udp csap socket bind");
-            csap->last_errno = errno;
             return TE_OS_RC(TE_TAD_CSAP, errno);
         }
     }
@@ -542,7 +557,7 @@ tad_socket_write_cb(csap_p csap, const tad_pkt *pkt)
     if (rc < 0) 
     {
         perror("udp sendto fail");
-        csap->last_errno = errno;
+        rc = te_rc_os2te(errno);
     }
 
     ip4_spec_data->src_addr.s_addr = INADDR_ANY;
@@ -556,7 +571,7 @@ tad_socket_write_cb(csap_p csap, const tad_pkt *pkt)
     if (bind(udp_spec_data->socket, (struct sockaddr *)&source, sizeof(source)) == -1)
     {
         perror ("udp csap socket reverse bind");
-        rc = csap->last_errno = errno;
+        rc = te_rc_os2te(errno);
     }
 
     return TE_RC(TE_TAD_CSAP, rc);

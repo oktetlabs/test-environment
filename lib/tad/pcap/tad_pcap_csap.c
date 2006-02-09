@@ -54,7 +54,8 @@ static csap_spt_type_t pcap_csap_spt =
     generate_pkts_cb    : NULL,
     release_tmpl_cb     : NULL,
 
-    confirm_ptrn_cb     : tad_pcap_confirm_pdu_cb,
+    confirm_ptrn_cb     : tad_pcap_confirm_ptrn_cb,
+    match_pre_cb        : NULL,
     match_do_cb         : tad_pcap_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,

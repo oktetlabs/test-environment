@@ -121,32 +121,28 @@ open_packet_socket(const char *ifname, int *sock)
     rc = eth_find_interface(ifname,  &ifdescr);
     if (rc != 0)
     {
-        ERROR("%s(): find interface %s failed %d", 
+        ERROR("%s(): Interface '%s' not found rc=%d", 
               __FUNCTION__, ifname, rc);
         return ENOENT;
     }
 
     if (sock == NULL)
     {
-        ERROR("Location for socket is NULL");
+        ERROR("%s(): Location for socket is NULL", __FUNCTION__);
         return EINVAL;
     }
 
     /* Create packet socket */
     *sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-    VERB("OPEN SOCKET (%d): %s:%d", *sock,
-               __FILE__, __LINE__);
-
-    VERB("socket system call returns %d\n", *sock);
-
     if (*sock < 0)
     {
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("Socket creation failed, errno %d, \"%s\"", 
-                rc, err_buf);
+        ERROR("Raw packet socket creation failed: %r - %s", 
+              te_rc_os2te(rc), err_buf);
         return rc;
     }
+    INFO("%s(): Opened raw packet socket %d", __FUNCTION__, *sock);
 
     bind_addr.sll_family = AF_PACKET;
     bind_addr.sll_protocol = htons(ETH_P_ALL);
@@ -154,8 +150,6 @@ open_packet_socket(const char *ifname, int *sock)
     bind_addr.sll_hatype = ARPHRD_ETHER;
     bind_addr.sll_pkttype = 0;
     bind_addr.sll_halen = ETHER_ADDR_LEN;
-
-    VERB("RAW Socket opened");
 
 #if 0
     switch (dir)
@@ -180,27 +174,29 @@ open_packet_socket(const char *ifname, int *sock)
     {
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("Socket bind failed, errno %d, \"%s\"", 
-                rc, err_buf);
+        ERROR("Raw packet socket bind failed: %r - %s", 
+              te_rc_os2te(rc), err_buf);
 
-        VERB("CLOSE SOCKET (%d): %s:%d", 
-                *sock, __FILE__, __LINE__);
         if (close(*sock) < 0)
             assert(0);
-
+        INFO("%s(): Closed raw packet socket %d", __FUNCTION__, *sock);
         *sock = -1;
+
         return rc;
     }
+
 #if 1
     memset(&mr, 0, sizeof(mr));
     mr.mr_ifindex = ifdescr.if_index;
     mr.mr_type    = PACKET_MR_PROMISC;
-    if (setsockopt(*sock, SOL_PACKET,
-        PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) == -1)
+    if (setsockopt(*sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
+                   &mr, sizeof(mr)) != 0)
     {
-        ERROR("setsockopt: PACKET_ADD_MEMBERSHIP failed");
+        ERROR("setsockopt: PACKET_ADD_MEMBERSHIP failed: %r",
+              te_rc_os2te(errno));
     }
 #endif
+
     return 0;
 }
 
@@ -229,6 +225,7 @@ close_packet_socket(const char* ifname, int sock)
     }
 
     close(sock);
+    INFO("%s(): Closed raw packet socket %d", __FUNCTION__, sock);
 
     return 0;
 }

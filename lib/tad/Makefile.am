@@ -7,11 +7,18 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ @TAD_CH_DEFS@ \
               -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@
 
-include_HEADERS = tad_csap_inst.h tad_pkt.h
+include_HEADERS = \
+	tad_csap_inst.h \
+	tad_types.h \
+	tad_pkt.h \
+	tad_send_recv.h \
+	tad_send.h \
+	tad_recv.h \
+	tad_recv_pkt.h
+
 noinst_HEADERS = \
 	csap_id.h \
 	tad_csap_support.h \
-	tad_send_recv.h \
 	tad_utils.h \
 	pkt_socket.h \
 	tad_bps.h
@@ -31,6 +38,7 @@ libtad_core_a_SOURCES = \
 	csap_spt_db.c \
 	csap_inst.c \
 	tad_send.c \
+	tad_recv_pkt.c \
 	tad_recv.c \
 	tad_bps.c
 endif 

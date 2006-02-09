@@ -2,8 +2,7 @@
  * @brief TAD Sender/Receiver
  *
  * Traffic Application Domain Command Handler.
- * Declarations of types and functions for TAD Sender, Receiver and
- * Send-Receiver.
+ * Declarations of types and functions common for TAD Sender and Receiver.
  *
  * Copyright (C) 2005-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -32,9 +31,32 @@
 #ifndef __TE_TAD_SEND_RECV_H__
 #define __TE_TAD_SEND_RECV_H__ 
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
+#include "te_defs.h"
 #include "asn_usr.h" 
 #include "comm_agent.h"
+#include "logger_api.h"
+#include "rcf_ch_api.h"
 #include "tad_csap_inst.h"
+
+
+/* TODO: this constant should be placed to more appropriate header! */
+/**
+ * Maximum length of the test protocol answer to be sent by TAD.
+ */
+#define TAD_ANSWER_LEN  0x100
 
 
 #ifdef __cplusplus
@@ -44,128 +66,85 @@ extern "C" {
 
 /** Traffic operation thread special data. */
 typedef struct tad_task_context {
-    csap_p     csap; /**< Pointer to CSAP instance */
-    asn_value *nds;  /**< ASN value with NDS */
 
-    struct rcf_comm_connection *rcfc; /**< RCF connection to answer */
+    rcf_comm_connection    *rcfc;       /**< RCF connection to answer */
+
+    char    answer_buf[TAD_ANSWER_LEN]; /**< Prefix for test-protocol
+                                             answer to the current
+                                             command */
+    size_t  prefix_len;                 /**< Length of the Test Protocol
+                                             answer prefix */
 } tad_task_context;
 
+/* See description in tad_send_recv.h */
+static inline te_errno
+tad_task_init(tad_task_context *task, rcf_comm_connection *rcfc,
+              const char *answer_pfx, size_t pfx_len)
+{
+    if (pfx_len >= sizeof(task->answer_buf))
+    {
+        ERROR("Too small buffer for Test Protocol command answer in TAD "
+              "task structure");
+        return TE_RC(TE_TAD_CH, TE_ESMALLBUF);
+    }
+
+    task->rcfc = rcfc;
+    task->prefix_len = pfx_len;
+    memcpy(task->answer_buf, answer_pfx, pfx_len);
+
+    return 0;
+}
+
+static inline te_errno
+tad_task_reply(tad_task_context *task, const char *fmt, ...)
+{
+    te_errno    rc;
+    va_list     ap;
+    int         buf_len = sizeof(task->answer_buf) - task->prefix_len;
+
+    va_start(ap, fmt);
+    if (vsnprintf(task->answer_buf + task->prefix_len, buf_len,
+                  fmt, ap) >= buf_len)
+    {
+        ERROR("TE protocol answer is truncated");
+        /* Try to continue */
+    }
+    INFO("Sending reply: '%s'", task->answer_buf);
+    rcf_ch_lock();
+    rc = rcf_comm_agent_reply(task->rcfc, task->answer_buf,
+                              strlen(task->answer_buf) + 1);
+    rcf_ch_unlock();
+
+    return rc;
+}
 
 /**
- * Per-template unit data of the TAD Sender.
- */
-typedef struct tad_sender_tmpl_unit_data {
-    asn_value              *nds;            /**< ASN.1 value with
-                                                 traffic template unit */
-    tad_payload_spec_t      pld_spec;
-    unsigned int            arg_num;
-    tad_tmpl_iter_spec_t   *arg_specs;
-    tad_tmpl_arg_t         *arg_iterated;
-    uint32_t                delay;
-
-    void                  **layer_opaque;
-
-} tad_sender_tmpl_unit_data;
-
-/**
- * Per-template data of the TAD Sender.
- */
-typedef struct tad_sender_template_data {
-    asn_value                  *nds;        /**< ASN.1 value with
-                                                 traffic template */
-    unsigned int                n_units;    /**< Number of units in
-                                                 the template */
-    tad_sender_tmpl_unit_data  *units;      /**< Array with per-unit
-                                                 unit data */
-} tad_sender_template_data;
-
-
-/** TAD Sender context data. */
-typedef struct tad_sender_context {
-    tad_task_context            task;
-    tad_sender_template_data    tmpl_data;
-} tad_sender_context;
-
-
-/** TAD Receiver context data. */
-typedef struct tad_receiver_context {
-    tad_task_context    task;
-} tad_receiver_context;
-
-
-/**
- * Prepare TAD Sender to generate traffic by template to specified CSAP.
+ * Clean up TAD task parameters (to make sure that no more answers
+ * are send in this task).
  *
- * @param csap          CSAP instance to generate traffic
- * @param template      Traffic template (owned by the routine in any
- *                      case)
- * @param rcfc          RCF connection handle to be used for answers
- * @param context       Location for TAD Sender context pointer
+ * @param task          TAD task structure
+ */
+static inline void
+tad_task_free(tad_task_context *task)
+{
+    task->rcfc = NULL;
+    task->prefix_len = 0;
+    memset(task->answer_buf, 0, sizeof(task->answer_buf));
+}
+
+
+/**
+ * Generate Traffic Pattern NDS by template for send/receive command.
+ *
+ * @param csap          Structure with CSAP parameters
+ * @param template      Traffic template
+ * @param pattern       Generated Traffic Pattern
  *
  * @return Status code.
  */
-extern te_errno tad_sender_prepare(csap_p                       csap,
-                                   asn_value                   *tmpl_unit,
-                                   struct rcf_comm_connection  *rcfc,
-                                   tad_sender_context         **context);
-
-/**
- * Release TAD Sender context.
- *
- * @param context       TAD Sender context pointer
- *
- * @return Status code.
- */
-extern te_errno tad_sender_release(tad_sender_context *context);
-
-/**
- * Start routine for Sender thread. 
- *
- * @param arg           start argument, should be pointer to 
- *                      tad_sender_context structure
- *
- * @return NULL 
- */
-extern void *tad_sender_thread(void *arg);
-
-/**
- * Start routine for Receiver thread. 
- *
- * @param arg           start argument, should be pointer to 
- *                      tad_receiver_context structure
- *
- * @return NULL 
- */
-extern void *tad_receiver_thread(void *arg);
-
-
-/**
- * Prepare binary data by NDS.
- *
- * @param csap    CSAP description structure
- * @param nds           ASN value with traffic-template NDS, should be
- *                      preprocessed (all iteration and function calls
- *                      performed)
- * @param args          array with template iteration parameter values,
- *                      may be used to prepare binary data, 
- *                      references to interation parameter values may
- *                      be set in ASN traffic template PDUs
- * @param arg_num       length of array above
- * @param pld_type      type of payload in nds, passed to make function
- *                      more fast
- * @param pld_data      payload data read from original NDS
- * @param pkts_per_layer    array with packets per generated layer (OUT)
- *
- * @return zero on success, otherwise error code.  
- */
-extern int tad_tr_send_prepare_bin(csap_p csap, asn_value *nds, 
-                                   const tad_tmpl_arg_t *args, 
-                                   size_t arg_num, 
-                                   tad_payload_spec_t *pld_data,
-                                   void **layer_opaque,
-                                   tad_pkts *pkts_per_layer);
-
-
+extern te_errno tad_send_recv_generate_pattern(csap_p       csap,
+                                               asn_value_p  template, 
+                                               asn_value_p *pattern);
 
 /**
  * Confirm traffic template or pattern PDUS set with CSAP settings and 
@@ -186,6 +165,7 @@ extern int tad_tr_send_prepare_bin(csap_p csap, asn_value *nds,
  */
 extern int tad_confirm_pdus(csap_p csap, te_bool recv,
                             asn_value *pdus, void **layer_opaque);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

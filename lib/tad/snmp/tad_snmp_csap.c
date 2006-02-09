@@ -54,6 +54,7 @@ static csap_spt_type_t snmp_csap_spt =
     release_tmpl_cb     : NULL,
 
     confirm_ptrn_cb     : NULL,
+    match_pre_cb        : NULL,
     match_do_cb         : tad_snmp_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
@@ -72,7 +73,7 @@ static csap_spt_type_t snmp_csap_spt =
     read_cb             : tad_snmp_read_cb,
     shutdown_recv_cb    : tad_snmp_release_cb,
 
-    write_read_cb       : tad_snmp_write_read_cb,
+    write_read_cb       : NULL, /* tad_common_write_read_cb */
 };
 
 

@@ -47,8 +47,9 @@
  * @return 
  *      quantity of read octets, or -1 if error occured, 0 if timeout expired. 
  */ 
-int 
-tcpip_read_cb(csap_p csap, int timeout, char *buf, int buf_len)
+te_errno
+tcpip_read_cb(csap_p csap, unsigned int timeout,
+              tad_pkt *pkt, size_t *pkt_len)
 {
     int    rc; 
     int    layer;    
@@ -70,9 +71,9 @@ tcpip_read_cb(csap_p csap, int timeout, char *buf, int buf_len)
     printf("Reading data from the socket: %d", spec_data->in);
 #endif       
 
-    if(spec_data->pcap == NULL)
+    if (spec_data->pcap == NULL)
     {
-        return -1;
+        return TE_RC();
     }
 
     packet = pcap_next(pcap, &pkt);

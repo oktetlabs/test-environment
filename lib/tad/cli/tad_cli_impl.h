@@ -148,7 +148,6 @@ typedef struct cli_csap_specific_data
 
     struct exp_case prompts[CLI_MAX_PROMPTS]; /**< expect cases structure that
                                                    contains known prompts     */
-
     int   read_timeout; /**< Number of second to wait for data                */
     
 } cli_csap_specific_data_t;
@@ -159,8 +158,8 @@ typedef struct cli_csap_specific_data
  *
  * The function complies with csap_read_cb_t prototype.
  */ 
-extern int tad_cli_read_cb(csap_p csap, int timeout, char *buf,
-                           size_t buf_len);
+extern te_errno tad_cli_read_cb(csap_p csap, unsigned int timeout,
+                                tad_pkt *pkt, size_t *pkt_len);
 
 /**
  * Callback for write data to media of CLI CSAP. 
@@ -175,9 +174,9 @@ extern te_errno tad_cli_write_cb(csap_p csap, const tad_pkt *pkt);
  *
  * The function complies with csap_write_read_cb_t prototype.
  */ 
-extern int tad_cli_write_read_cb(csap_p csap, int timeout,
-                                 const tad_pkt *w_pkt,
-                                 char *r_buf, size_t r_buf_len);
+extern te_errno tad_cli_write_read_cb(csap_p csap, unsigned int timeout,
+                                      const tad_pkt *w_pkt,
+                                      tad_pkt *r_pkt, size_t *r_pkt_len);
 
 
 /**
@@ -214,11 +213,12 @@ extern te_errno tad_cli_gen_bin_cb(csap_p                csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_cli_match_bin_cb(csap_p          csap,
-                                     unsigned int    layer, 
-                                     const asn_value *pattern_pdu,
-                                     const csap_pkts *pkt,
-                                     csap_pkts       *payload, 
-                                     asn_value       *parsed_packet);
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 /**
  * Callback for generating pattern to filter 
@@ -231,20 +231,6 @@ extern te_errno tad_cli_gen_pattern_cb(csap_p            csap,
                                        unsigned int      layer,
                                        const asn_value  *tmpl_pdu, 
                                        asn_value       **pattern_pdu);
-
-
-/**
- * Create and bind raw socket to listen specified interface
- *
- * @param cli_type  CLI protocol type 
- * @param pkt_type  Type of packet socket (PACKET_HOST, PACKET_OTHERHOST,
- *                  PACKET_OUTGOING
- * @param if_index  interface index
- * @param sock      pointer to place where socket handler will be saved
- *
- * @param 0 on succees, -1 on fail
- */
-extern int open_raw_socket(int cli_type, int pkt_type, int if_index, int *sock);
 
 
 /**

@@ -94,8 +94,8 @@ extern te_errno tad_iscsi_rw_destroy_cb(csap_p csap);
  *
  * The function complies with csap_read_cb_t prototype.
  */ 
-extern int tad_iscsi_read_cb(csap_p csap, int timeout, char *buf,
-                             size_t buf_len);
+extern te_errno tad_iscsi_read_cb(csap_p csap, unsigned int timeout,
+                                  tad_pkt *pkt, size_t *pkt_len);
 
 /**
  * Callback for write data to media of iSCSI CSAP. 
@@ -103,16 +103,6 @@ extern int tad_iscsi_read_cb(csap_p csap, int timeout, char *buf,
  * The function complies with csap_write_cb_t prototype.
  */ 
 extern te_errno tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt);
-
-/**
- * Callback for write data to media of iSCSI CSAP and read data from 
- * media just after write, to get answer to sent request. 
- *
- * The function complies with csap_write_read_cb_t prototype.
- */ 
-extern int tad_iscsi_write_read_cb(csap_p csap, int timeout,
-                                   const tad_pkt *w_pkt,
-                                   char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -159,11 +149,12 @@ extern te_errno tad_iscsi_gen_bin_cb(csap_p                csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_iscsi_match_bin_cb(csap_p           csap,
-                                       unsigned int     layer,
-                                       const asn_value *pattern_pdu,
-                                       const csap_pkts *pkt,
-                                       csap_pkts       *payload, 
-                                       asn_value       *parsed_packet);
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 /**
  * Callback for generating pattern to filter just one response to 

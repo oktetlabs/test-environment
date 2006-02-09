@@ -79,8 +79,6 @@
 #define IFNAME_SIZE 256
 #endif
 
-#define PCAP_CSAP_DEFAULT_TIMEOUT   5
-
 
 typedef struct tad_pcap_rw_data {
     char       *ifname;         /**< Name of the net interface to filter
@@ -91,9 +89,6 @@ typedef struct tad_pcap_rw_data {
     uint8_t     recv_mode;      /**< Receive mode, bit mask from values
                                      in enum pcap_csap_receive_mode i
                                      n ndn_pcap.h */
-
-    int         read_timeout;   /**< Number of second to wait for data */
-
 } tad_pcap_rw_data;
 
 
@@ -148,11 +143,6 @@ tad_pcap_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     {
         spec_data->recv_mode = PCAP_RECV_MODE_DEF;
     }
-
-    /* default read timeout */
-    spec_data->read_timeout = PCAP_CSAP_DEFAULT_TIMEOUT; 
-
-    csap->timeout = 500000;
 
     return 0;
 }
@@ -217,6 +207,7 @@ te_errno
 tad_pcap_shutdown_recv(csap_p csap)
 {
     tad_pcap_rw_data   *spec_data = csap_get_rw_data(csap);
+    te_errno            rc = 0;
 
     if (spec_data->in >= 0)
     {
@@ -224,106 +215,55 @@ tad_pcap_shutdown_recv(csap_p csap)
              __FUNCTION__, csap->id, spec_data->in);
         if (close(spec_data->in) < 0)
         {
-            csap->last_errno = errno;
-            perror("close input socket");
-            WARN("%s: CLOSE input socket error %d", 
-                 __FUNCTION__, csap->last_errno);
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            WARN("%s: CLOSE input socket error %r", 
+                 __FUNCTION__, rc);
         }
         spec_data->in = -1;
     }
 
-    return 0;
+    return rc;
 }
 
 /* See description tad_pcap_impl.h */
-int
-tad_pcap_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
+te_errno
+tad_pcap_read_cb(csap_p csap, unsigned int timeout,
+                 tad_pkt *pkt, size_t *pkt_len)
 {
-    tad_pcap_rw_data   *spec_data;
-    int                 ret_val;
-    fd_set              read_set;
+    tad_pcap_rw_data   *spec_data = csap_get_rw_data(csap);
     struct sockaddr_ll  from;
     socklen_t           fromlen = sizeof(from);
-    struct timeval      timeout_val;
-    int                 pkt_size;
+    te_errno            rc;
 
-    spec_data = csap_get_rw_data(csap); 
+    rc = tad_common_read_cb_sock(csap, spec_data->in, MSG_TRUNC, timeout,
+                                 pkt, SA(&from), &fromlen, pkt_len);
+    if (rc != 0)
+        return rc;
 
-    VERB("IN pcap_read_cb: spec_data->in = %d", spec_data->in);
-
-    if (spec_data->in < 0)
-    {
-        assert(0);
-        return -1;
-    }
-
-    FD_ZERO(&read_set);
-    FD_SET(spec_data->in, &read_set);
-
-    if (timeout == 0)
-    {
-        timeout_val.tv_sec = spec_data->read_timeout;
-        timeout_val.tv_usec = 0;
-    }
-    else
-    {
-        timeout_val.tv_sec = timeout / 1000000L; 
-        timeout_val.tv_usec = timeout % 1000000L;
-    }
-    
-    ret_val = select(spec_data->in + 1, &read_set, NULL, NULL, &timeout_val); 
-    
-    if (ret_val == 0)
-        return 0;
-
-    if (ret_val < 0)
-    {
-        VERB("select fails: spec_data->in = %d",
-                   spec_data->in);
-
-        csap->last_errno = errno;
-        return -1;
-    }
-    
-    /* TODO: possibly MSG_TRUNC and other flags are required */
-
-    pkt_size = recvfrom(spec_data->in, buf, buf_len, MSG_TRUNC,
-                        (struct sockaddr *)&from, &fromlen);
-
-    if (pkt_size < 0)
-    {
-        VERB("recvfrom fails: spec_data->in = %d",
-                   spec_data->in);
-        csap->last_errno = errno;
-        return -1;
-    }
-    if (pkt_size == 0)
-        return 0;
-
-    switch(from.sll_pkttype)
+    switch (from.sll_pkttype)
     {
         case PACKET_HOST:
             if ((spec_data->recv_mode & PCAP_RECV_HOST) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
 
         case PACKET_BROADCAST:
             if ((spec_data->recv_mode & PCAP_RECV_BROADCAST) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
         case PACKET_MULTICAST:
             if ((spec_data->recv_mode & PCAP_RECV_MULTICAST) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
         case PACKET_OTHERHOST:
             if ((spec_data->recv_mode & PCAP_RECV_OTHERHOST) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
         case PACKET_OUTGOING:
             if ((spec_data->recv_mode & PCAP_RECV_OUTGOING) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
     }
 
-    return pkt_size;
+    return 0;
 }

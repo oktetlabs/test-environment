@@ -38,6 +38,9 @@
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#if HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#endif
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -50,150 +53,98 @@
 
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "logger_api.h"
 #include "asn_usr.h" 
 #include "tad_common.h"
+
+#include "tad_types.h"
 #include "tad_pkt.h"
+#include "tad_send_recv.h"
+#include "tad_send.h"
+#include "tad_recv.h"
 
-
-/* ============= Macros definitions =============== */
-
-
-/**
- * Insert element p into queue _after_ element q 
- *
- * @param new_    Pointer to new element, to be inserted.
- * @param place_  Pointer to the element, after which new should be placed.
- */
-#ifndef INSQUE
-#define INSQUE(new_, place_) \
-    do {                                \
-        (new_)->prev = place_;          \
-        (new_)->next = (place_)->next;  \
-        (place_)->next = new_;          \
-        (new_)->next->prev = new_;      \
-    } while (0)
-
-/**
- * Remove element p from queue (double linked list)
- *
- * @param elem_         Pointer to the element to be removed.
- */
-#define REMQUE(elem_) \
-    do {                                        \
-        (elem_)->prev->next = (elem_)->next;    \
-        (elem_)->next->prev = (elem_)->prev;    \
-        (elem_)->next = (elem_)->prev = elem_;  \
-    } while (0)
-#endif
-
-
-/**
- * Default timeout for waiting write possibility. This macro should 
- * be used only for initialization of 'struct timeval' variables. 
- */
-#define TAD_WRITE_TIMEOUT_DEFAULT   {1, 0}
-/**
- * Number of retries to write data in low layer
- */
-#define TAD_WRITE_RETRIES           128
 
 /**
  * Locks access to CSAP shared flags and data. 
  * If already locked, wait until unlocked. 
  *
- * @param csap_inst_   Pointer to CSAP instance structure. 
+ * @param csap_inst_   CSAP instance
  */
-#define CSAP_DA_LOCK(csap_inst_)\
-    do {                                                                \
-        int rc = pthread_mutex_lock(&((csap_inst_)->data_access_lock)); \
-                                                                        \
-        if (rc != 0)                                                    \
-            ERROR("%s: mutex_lock fails %d", __FUNCTION__, rc);         \
+#define CSAP_LOCK(csap_inst_) \
+    do {                                                            \
+        int rc_ = pthread_mutex_lock(&((csap_inst_)->lock));        \
+                                                                    \
+        if (rc_ != 0)                                               \
+            ERROR("%s(): pthread_mutex_lock() failed %d, errno %d", \
+                  __FUNCTION__, rc_, errno);                        \
     } while (0)
 
 /**
  * Try to lock access to CSAP shared flags and data. 
- * If already locked, sets _rc to EBUSY.
  *
- * @param csap_inst_   Pointer to CSAP instance structure. 
- * @param rc_          Variable for return code.
+ * @param csap_inst_   CSAP instance
+ * @param rc_          Variable for return code
  */
-#define CSAP_DA_TRYLOCK(csap_inst_, rc_)\
-    do {                                                                  \
-        (rc_) = pthread_mutex_trylock(&((csap_inst_)->data_access_lock)); \
-        if (rc_ != 0 && rc_ != EBUSY)                                     \
-            ERROR("%s: mutex_trylock fails %d", __FUNCTION__, rc_);       \
+#define CSAP_TRYLOCK(csap_inst_, rc_) \
+    do {                                                            \
+        (rc_) = pthread_mutex_trylock(&((csap_inst_)->lock));       \
+        if ((rc_ != 0) && (errno != EBUSY))                         \
+            ERROR("%s(): pthread_mutex_trylock() failed %d, "       \
+                  "errno %d", __FUNCTION__, rc_, errno);            \
     } while (0)
 
 /**
  * Unlocks access to CSAP shared flags and data. 
  *
- * @param csap_inst_   Pointer to CSAP descriptor structure. 
+ * @param csap_inst_   CSAP instance
  */
-#define CSAP_DA_UNLOCK(csap_inst_)\
-    do {                                                                  \
-        int rc = pthread_mutex_unlock(&((csap_inst_)->data_access_lock)); \
-                                                                          \
-        if (rc != 0)                                                      \
-            ERROR("%s: mutex_unlock fails %d", __FUNCTION__, rc);         \
+#define CSAP_UNLOCK(csap_inst_)\
+    do {                                                            \
+        int rc_ = pthread_mutex_unlock(&((csap_inst_)->lock));      \
+                                                                    \
+        if (rc_ != 0)                                               \
+            ERROR("%s(): pthread_mutex_unlock() failed %d, "        \
+                  "errno %d", __FUNCTION__, rc_, errno);            \
     } while (0)
 
 
-/* TODO: this constant should be placed to more appropriate header! */
-/**
- * Maximum length of RCF message prefix
- */
-#define MAX_ANS_PREFIX 16
-
-
-
-/* ============= Types and structures definitions =============== */
-
-/**
- * Pointer type to CSAP instance
- */
-typedef struct csap_instance *csap_p;
-
+/* Forward declaration */
 struct csap_spt_type_t;
-
 
 
 /**
  * Collection of common protocol layer attributes of CSAP.
  */
 typedef struct csap_layer_t { 
-    char               *proto;    /**< protocol layer text label */
-    te_tad_protocols_t  proto_tag;/**< protocol layer int tag */
+    char               *proto;      /**< Protocol layer text label */
+    te_tad_protocols_t  proto_tag;  /**< Protocol layer int tag */
 
-    void        *specific_data;   /**< protocol-specific data */ 
-    asn_value   *csap_layer_pdu;  /**< ASN value with CSAP specification
-                                       layer PDU */
+    void        *specific_data;     /**< Protocol-specific data */ 
+    asn_value   *csap_layer_pdu;    /**< ASN value with CSAP
+                                         specification layer PDU */
 
-    struct csap_spt_type_t *proto_support; /**< protocol layer 
-                                                support descroptor */
+    struct csap_spt_type_t *proto_support; /**< Protocol layer 
+                                                support descriptor */
 } csap_layer_t;
 
-/**
- * Constants for last unprocessed traffic command to the CSAP 
- */
-typedef enum {
-    TAD_OP_IDLE,        /**< no traffic operation, waiting for command */
-    TAD_OP_SEND,        /**< trsend_start */
-    TAD_OP_SEND_RECV,   /**< trsend_recv */
-    TAD_OP_RECV,        /**< trrecv_start */
-    TAD_OP_GET,         /**< trrecv_get */
-    TAD_OP_WAIT,        /**< trrecv_wait */
-    TAD_OP_STOP,        /**< tr{send|recv}_stop */
-    TAD_OP_DESTROY,     /**< csap_destroy */
-} tad_traffic_op_t;
 
 /** @name CSAP processing flags */
 enum {
-    TAD_STATE_SEND       =    1, /**< CSAP is sending */
-    TAD_STATE_RECV       =    2, /**< CSAP is receiving */
-    TAD_STATE_FOREGROUND =    4, /**< RCF answer is pending */
-    TAD_STATE_COMPLETE   =    8, /**< traffic operation complete */
-    TAD_STATE_RESULTS    = 0x10, /**< receive results are required */
+    CSAP_STATE_IDLE       = 0x0001, /**< CSAP is idle */
+    CSAP_STATE_SEND       = 0x0002, /**< CSAP is sending or idle after
+                                         the send operation */
+    CSAP_STATE_RECV       = 0x0004, /**< CSAP is receiving or idle after
+                                         the receive operation */
+    CSAP_STATE_DONE       = 0x0010, /**< Processing has been finished */
+    CSAP_STATE_SEND_DONE  = 0x0020, /**< Send has been finished */
+    CSAP_STATE_RECV_DONE  = 0x0040, /**< Receive has been finished */
+    CSAP_STATE_COMPLETE   = 0x0100, /**< Receive operation complete */
+    CSAP_STATE_RESULTS    = 0x0800, /**< Receive results are required */
+    CSAP_STATE_FOREGROUND = 0x1000, /**< RCF answer is pending */
+    CSAP_STATE_WAIT       = 0x2000, /**< User request to wait for
+                                         end of processing */
+    CSAP_STATE_STOP       = 0x4000, /**< User request to stop */
+    CSAP_STATE_DESTROY    = 0x8000, /**< CSAP is being destroyed */
 };
 /*@}*/
 
@@ -202,98 +153,48 @@ enum {
  * CSAP instance support resources and attributes.
  */
 typedef struct csap_instance {
-    unsigned int    id;         /**< CSAP id */
+    unsigned int    id;         /**< CSAP ID */
+    char           *csap_type;  /**< Pointer to original CSAP type, proto[]
+                                     entries are blocks of this string */
+    unsigned int    depth;      /**< Number of layers in stack */
+    csap_layer_t   *layers;     /**< Array of protocol layer descroptors */
 
-    unsigned int    depth;      /**< number of layers in stack */
-    char           *csap_type;  /**< pointer to original CSAP type, proto[]
-                                     entries are blocks of this string. */
+    unsigned int    rw_layer;   /**< Index of layer in protocol stack
+                                     responsible for read and write
+                                     operations, usually lower */
+    void           *rw_data;    /**< Private data of read/write layer */
 
-    csap_layer_t   *layers;/**< array of protocol layer descroptors */
+    unsigned int    timeout;    /**< Maximum timeout for read operations
+                                     in microseconds (it affects latency
+                                     of stop/destroy operations) */
 
+    struct timeval  wait_for;   /**< Zero or moment of timeout
+                                     current CSAP operation */
+    struct timeval  first_pkt;  /**< Moment of first good packet
+                                     processed: matched or sent */ 
+    struct timeval  last_pkt;   /**< Moment of last good packet 
+                                     processed: matched or sent */
 
-    unsigned int    read_write_layer;   /**< index of layer in protocol
-                                             stack responsible for read and
-                                             write operations, usually
-                                             upper or lower */
-    void           *read_write_data;    /**< Private data of read/write
-                                             layer */
+    pthread_cond_t  event;      /**< Event condition */
+    unsigned int    state;      /**< Current state bitmask */
+    pthread_mutex_t lock;       /**< Mutex for lock CSAP data which are
+                                     changed from different threads
+                                     (event, state, queue of received
+                                     packets) */
 
-    te_errno    last_errno;      /**< errno of last operation */
-    int         timeout;         /**< timeout for read operations in 
-                                      microseconds */
+    tad_send_context    sender;     /**< Sender context */
+    tad_recv_context    receiver;   /**< Receiver context */
 
-    char        answer_prefix[MAX_ANS_PREFIX]; 
-                                 /**< prefix for test-protocol answer to 
-                                      the current command */
+    TAILQ_HEAD(, tad_recv_op_context)   recv_ops;   /**< Receiver
+                                                         operations
+                                                         queue */
 
-    struct timeval  wait_for;       /**< Zero or moment of timeout
-                                         current CSAP operation */
-    struct timeval  first_pkt;      /**< moment of first good packet
-                                         processed: matched or sent */ 
-    struct timeval  last_pkt;       /**< moment of last good packet 
-                                         processed: matched or sent */
-
-    unsigned int     num_packets;   /**< number of good packets to be 
-                                         processed */
-    unsigned int     sent_packets;  /**< number of sent packets */
-
-    tad_traffic_op_t command;       /**< last unprocessed command */
-    uint8_t          state;         /**< current state bitmask */
-    pthread_t        traffic_thread; 
-                                 /**< ID of traffic operation thread */
-    pthread_mutex_t  data_access_lock; 
-                                 /**< mutex for lock CSAP data changing 
-                                      from different threads */
 } csap_instance;
 
-
-
-/**
- * Type for reference to user function for some magic processing 
- * with matched pkt
- *
- * @param csap  CSAP descriptor structure.
- * @param usr_param   String passed by user.
- * @param pkt         Packet binary data, as it was caught from net.
- * @param pkt_len     Length of pkt data.
- *
- * @return zero on success or error code.
- */
-typedef int (*tad_processing_pkt_method)(csap_p csap,
-                                         const char *usr_param, 
-                                         const uint8_t *pkt, 
-                                         size_t pkt_len);
-
-
-/**
- * Type for reference to user function for generating data to be sent.
- *
- * @param csap_id       Identifier of CSAP
- * @param layer         Numeric index of layer in CSAP type to be processed.
- * @param tmpl          ASN value with template. 
- *                      function should replace that field (which it should
- *                      generate) with #plain (in headers) or #bytes 
- *                      (in payload) choice (IN/OUT)
- *
- * @return zero on success or error code.
- */
-typedef int (*tad_user_generate_method)(int csap_id, int layer,
-                                        asn_value *tmpl);
-
-
-
-
-/* ============= Function prototypes declarations =============== */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/**
- * Init TAD Command Handler.
- */
-extern void tad_ch_init(void);
 
 
 /**
@@ -304,21 +205,23 @@ extern void tad_ch_init(void);
  * It only allocates memory for csap_instance sturture, set fields
  * 'id', 'depth' and 'proto' in it and allocates memory for 'layer_data'.
  * 
- * @param type  Type of CSAP: dot-separated sequence of textual layer 
- *              labels.
+ * @param type          Type of CSAP: dot-separated sequence of textual
+ *                      layer labels
+ * @param csap          Location for CSAP structure pointer
  *
- * @return identifier of new CSAP or zero if error occured.
+ * @return Status code.
  */ 
-extern csap_handle_t csap_create(const char *type);
+extern te_errno csap_create(const char *type, csap_p *csap);
 
 /**
  * Destroy CSAP.
- *      Before call this DB method, all protocol-specific data in 
- *      'layer-data' and underground media resources should be freed. 
- *      This method will free all non-NULL pointers in 'layer-data', but 
- *      does not know nothing about what structures are pointed by them, 
- *      therefore if there are some more pointers in that structures, 
- *      memory may be lost. 
+ *
+ * Before call this DB method, all protocol-specific data in 
+ * 'layer-data' and underground media resources should be freed. 
+ * This method will free all non-NULL pointers in 'layer-data', but 
+ * does not know nothing about what structures are pointed by them, 
+ * therefore if there are some more pointers in that structures, 
+ * memory may be lost. 
  *
  * @param csap_id       Identifier of CSAP to be destroyed
  *
@@ -339,6 +242,75 @@ extern te_errno csap_destroy(csap_handle_t csap_id);
 extern csap_p csap_find(csap_handle_t csap_id);
 
 /**
+ * CSAP state transition by command.
+ *
+ * The function have to be called under CSAP lock only.
+ *
+ * @param csap          CSAP instance
+ * @param command       Command
+ *
+ * @return Status code.
+ *
+ * @sa csap_command
+ */
+extern te_errno csap_command_under_lock(csap_p           csap,
+                                        tad_traffic_op_t command);
+
+/**
+ * CSAP state transition by command.
+ *
+ * @param csap          CSAP instance
+ * @param command       Command
+ *
+ * @return Status code.
+ *
+ * @sa csap_command_under_lock
+ */
+static inline te_errno
+csap_command(csap_p csap, tad_traffic_op_t command)
+{
+    te_errno    rc;
+
+    CSAP_LOCK(csap);
+
+    rc = csap_command_under_lock(csap, command);
+
+    CSAP_UNLOCK(csap);
+
+    return rc;
+}
+
+/**
+ * Wait for one of bit in CSAP state.
+ *
+ * @param csap          CSAP instance
+ * @param state_bits    Set of state bits to wait for at least one of them
+ *
+ * @return Status code.
+ */
+static inline te_errno
+csap_wait(csap_p csap, unsigned int state_bits)
+{
+    te_errno    rc = 0;
+
+    CSAP_LOCK(csap);
+    while (~csap->state & state_bits)
+    {
+        rc = pthread_cond_wait(&csap->event, &csap->lock);
+        if (rc != 0)
+        {
+            rc = TE_OS_RC(TE_TAD_CH, errno);
+            assert(TE_RC_GET_ERROR(rc) != TE_ENOENT);
+            ERROR("%s(): pthread_cond_wait() failed: %r",
+                  __FUNCTION__, rc);
+        }
+    }
+    CSAP_UNLOCK(csap);
+
+    return rc;
+}
+
+/**
  * Get CSAP read/write layer number.
  *
  * @param csap          CSAP instance
@@ -348,7 +320,7 @@ extern csap_p csap_find(csap_handle_t csap_id);
 static inline unsigned int
 csap_get_rw_layer(csap_p csap)
 {
-    return csap->read_write_layer;
+    return csap->rw_layer;
 }
 
 /**
@@ -362,7 +334,7 @@ static inline void *
 csap_get_rw_data(csap_p csap)
 {
     assert(csap != NULL);
-    return csap->read_write_data;
+    return csap->rw_data;
 }
 
 /**
@@ -375,7 +347,7 @@ static inline void
 csap_set_rw_data(csap_p csap, void *data)
 {
     assert(csap != NULL);
-    csap->read_write_data = data;
+    csap->rw_data = data;
 }
 
 /**
@@ -439,6 +411,32 @@ csap_set_proto_support(csap_p csap, unsigned int layer,
     assert(csap != NULL);
     assert(layer < csap->depth);
     csap->layers[layer].proto_support = proto_support;
+}
+
+/**
+ * Get TAD Sender context pointer.
+ *
+ * @param csap          CSAP instance
+ */
+static inline tad_send_context *
+csap_get_send_context(csap_p csap)
+{
+    assert(csap != NULL);
+    assert(csap->state & CSAP_STATE_SEND);
+    return &csap->sender;
+}
+
+/**
+ * Get TAD Receiver context pointer.
+ *
+ * @param csap          CSAP instance
+ */
+static inline tad_recv_context *
+csap_get_recv_context(csap_p csap)
+{
+    assert(csap != NULL);
+    assert(csap->state & CSAP_STATE_RECV);
+    return &csap->receiver;
 }
 
 #ifdef __cplusplus

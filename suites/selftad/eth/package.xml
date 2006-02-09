@@ -16,7 +16,7 @@
                 <value>5</value>
             </arg>
             <arg name="timeout"> 
-                <value>200</value><!-- in milliseconds -->
+                <value>2000</value><!-- in milliseconds -->
             </arg>
             <arg name="pass_results">
                 <value>FALSE</value>

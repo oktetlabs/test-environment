@@ -63,16 +63,16 @@ typedef struct tad_aal5_proto_tmpl_data {
 
 
 /**
- * Definition of AAL5 cell NNI header.
+ * Definition of AAL5 CPCS PDU trailer.
  */
 static const tad_bps_pkt_frag tad_all5_bps_cpcs_trailer[] =
 {
-    { "cpcs-uu",    8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPCS_UU) },
-    { "cpi",        8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPI) },
+    { "cpcs-uu",    8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPCS_UU), TAD_DU_I32 },
+    { "cpi",        8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPI), TAD_DU_I32 },
     { "length",     16, NDN_TAG_AAL5_LENGTH,
-                        ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
+                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32 },
     { "crc",        32, NDN_TAG_AAL5_CRC,
-                        ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
+                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32 },
 };
 
 /** Array filled in with zeros to be used as padding */
@@ -188,8 +188,8 @@ tad_aal5_destroy_cb(csap_p csap, unsigned int layer)
 
 /* See description in tad_atm_impl.h */
 te_errno
-tad_aal5_confirm_pdu_cb(csap_p csap, unsigned int  layer, 
-                        asn_value *layer_pdu, void **p_opaque)
+tad_aal5_confirm_tmpl_cb(csap_p csap, unsigned int  layer, 
+                         asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                    rc;
     tad_aal5_proto_data         *proto_data;
@@ -209,12 +209,35 @@ tad_aal5_confirm_pdu_cb(csap_p csap, unsigned int  layer,
     if (rc != 0)
         return rc;
 
-    if (csap->command == TAD_OP_SEND)
-    {
-        rc = tad_bps_confirm_send(&proto_data->trailer, &tmpl_data->trailer);
-        if (rc != 0)
-            return rc;
-    }
+    rc = tad_bps_confirm_send(&proto_data->trailer, &tmpl_data->trailer);
+    if (rc != 0)
+        return rc;
+
+    return rc;
+}
+
+/* See description in tad_atm_impl.h */
+te_errno
+tad_aal5_confirm_ptrn_cb(csap_p csap, unsigned int  layer, 
+                         asn_value *layer_pdu, void **p_opaque)
+{
+    te_errno                    rc;
+    tad_aal5_proto_data         *proto_data;
+    tad_aal5_proto_tmpl_data    *tmpl_data;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
+    /* FIXME: Use malloc() and initialize data units at first */
+    tmpl_data = calloc(1, sizeof(*tmpl_data));
+    if (tmpl_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    *p_opaque = tmpl_data;
+
+    /* Get template values for AAL5 cell header fields */
+    rc = tad_bps_nds_to_data_units(&proto_data->trailer, layer_pdu,
+                                   &tmpl_data->trailer);
+    if (rc != 0)
+        return rc;
 
     return rc;
 }
@@ -375,15 +398,12 @@ tad_aal5_gen_bin_cb(csap_p                csap,
 /* See description in tad_atm_impl.h */
 te_errno
 tad_aal5_match_bin_cb(csap_p           csap,
-                      unsigned int     layer,
-                      const asn_value *pattern_pdu,
-                      const csap_pkts *pkt,
-                      csap_pkts       *payload,
-                      asn_value       *parsed_packet)
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu)
 {
-    F_ENTRY("(%d:%u) pattern_pdu=%p pkt=%p payload=%p parsed_packet=%p",
-            csap->id, layer, (void *)pattern_pdu, pkt, payload,
-            (void *)parsed_packet);
-
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }

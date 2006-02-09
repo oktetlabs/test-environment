@@ -39,6 +39,12 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <ctype.h>
+#if HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
 
 /* for ntohs, etc */
 #include <sys/socket.h> 
@@ -55,38 +61,6 @@
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
-
-/**
- * Description see in tad_utils.h
- */
-tad_payload_type 
-tad_payload_asn_label_to_enum(const char *label)
-{
-    if (strcmp(label, "function") == 0)
-        return TAD_PLD_FUNCTION;
-    else if (strcmp(label, "bytes") == 0)
-        return TAD_PLD_BYTES;
-    else if (strcmp(label, "length") == 0)
-        return TAD_PLD_LENGTH;
-
-    return TAD_PLD_UNKNOWN;
-}
-
-/**
- * Description see in tad_utils.h
- */
-tad_payload_type 
-tad_payload_asn_tag_to_enum(uint16_t tag)
-{
-    switch (tag)
-    {
-        case NDN_PLD_BYTES:  return TAD_PLD_BYTES;
-        case NDN_PLD_FUNC:   return TAD_PLD_FUNCTION;
-        case NDN_PLD_LEN:    return TAD_PLD_LENGTH;
-        case NDN_PLD_STREAM: return TAD_PLD_STREAM;
-        default: return TAD_PLD_UNKNOWN;
-    }
-}
 
 /**
  * Description see in tad_utils.h
@@ -1443,9 +1417,9 @@ te_proto_to_str(te_tad_protocols_t proto)
 
 /* See description tad_utils.h */
 te_errno
-tad_common_write_read_cb(csap_p csap, int timeout,
+tad_common_write_read_cb(csap_p csap, unsigned int timeout,
                          const tad_pkt *w_pkt,
-                         char *r_buf, size_t r_buf_len)
+                         tad_pkt *r_pkt, size_t *r_pkt_len)
 {
     te_errno        rc;
     unsigned int    layer = csap_get_rw_layer(csap);
@@ -1454,7 +1428,499 @@ tad_common_write_read_cb(csap_p csap, int timeout,
     
     if (rc == 0)  
         rc = csap_get_proto_support(csap, layer)->read_cb(csap, timeout,
-                                                          r_buf, r_buf_len);
+                                                          r_pkt, r_pkt_len);
 
     return rc;
+}
+
+/* See description tad_utils.h */
+te_errno
+tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
+                        unsigned int timeout, tad_pkt *pkt,
+                        struct sockaddr *from, socklen_t *fromlen,
+                        size_t *pkt_len)
+{
+    struct pollfd       pfd = { sock, POLLIN, 0 };
+    int                 ret_val;
+    te_errno            rc;
+    int                 nread;
+
+    if (sock < 0)
+    {
+        ERROR(CSAP_LOG_FMT "Input socket is not open",
+              CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_EIO);
+    }
+
+    ret_val = poll(&pfd, 1, TE_US2MS(timeout)); 
+
+    if (ret_val == 0)
+        return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+
+    if (ret_val < 0)
+    {
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        WARN(CSAP_LOG_FMT "poll failed: sock=%d: %r",
+             CSAP_LOG_ARGS(csap), sock, rc);
+        return rc;
+    }
+
+    if (ioctl(sock, FIONREAD, &nread) != 0)
+    {
+        ERROR("FIONREAD failed");
+        nread = 0x10000;
+    }
+    if (nread > (int)tad_pkt_len(pkt))
+    {
+#if 1
+        tad_pkt_free_segs(pkt);
+#endif
+        size_t       len = nread - tad_pkt_len(pkt);
+        tad_pkt_seg *seg = tad_pkt_first_seg(pkt);
+
+        if ((seg != NULL) && (seg->data_ptr == NULL))
+        {
+            void *mem = malloc(len);
+
+            if (mem == NULL)
+            {
+                rc = TE_OS_RC(TE_TAD_CSAP, errno);
+                assert(rc != 0);
+                return rc;
+            }
+            VERB("%s(): reuse the first segment of packet", __FUNCTION__);
+            tad_pkt_put_seg_data(pkt, seg,
+                                 mem, len, tad_pkt_seg_data_free);
+        }
+        else
+        {
+            seg = tad_pkt_alloc_seg(NULL, len, NULL);
+            VERB("%s(): append segment with %u bytes space", __FUNCTION__,
+                 (unsigned)len);
+            tad_pkt_append_seg(pkt, seg);
+        }
+    }
+
+    /* Logical block to allocate iov of volatile length on the stack */
+    {
+        size_t          iovlen = tad_pkt_seg_num(pkt);
+        struct iovec    iov[iovlen];
+        struct msghdr   msg = { from, fromlen == NULL ? 0 : *fromlen,
+                                iov, iovlen, NULL, 0, 0 };
+        ssize_t         r;
+
+        /* Convert packet segments to IO vector */
+        rc = tad_pkt_segs_to_iov(pkt, iov, iovlen);
+        if (rc != 0)
+        {
+            ERROR("Failed to convert segments to I/O vector: %r", rc);
+            return rc;
+        }
+
+        /* TODO: possibly MSG_TRUNC and other flags are required */
+
+        r = recvmsg(sock, &msg, flags);
+
+        if (r < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            WARN(CSAP_LOG_FMT "recvfrom failed: sock=%d: %r",
+                 CSAP_LOG_ARGS(csap), sock, rc);
+            return rc;
+        }
+        if (r == 0)
+        {
+            /* 
+             * FIXME: Not sure, that it is correct return code for this 
+             * situation
+             */
+            return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+        }
+
+        if (fromlen != NULL)
+            *fromlen = msg.msg_namelen;
+        if (pkt_len != NULL)
+            *pkt_len = r;
+    }
+
+    return 0;
+}
+
+
+/* See description in tad_utils.h */
+te_errno
+tad_pthread_create(pthread_t *thread,
+                   void * (*start_routine)(void *), void *arg)
+{
+    te_errno        rc;
+    pthread_attr_t  pthread_attr;
+    pthread_t       my_thread;
+
+    if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
+        (rc = pthread_attr_setdetachstate(&pthread_attr,
+                                          PTHREAD_CREATE_DETACHED)) != 0)
+    {
+        rc = TE_OS_RC(TE_TAD_CH, errno);
+        assert(rc != 0);
+        ERROR("Cannot initialize pthread attribute variable: %r", rc);
+        return rc;
+    }
+
+    rc = pthread_create(thread == NULL ? &my_thread : thread,
+                        &pthread_attr, start_routine, arg);
+    if (rc != 0)
+    {
+        rc = TE_OS_RC(TE_TAD_CH, errno);
+        assert(rc != 0);
+        ERROR("Cannot create a new TAD Sender thread: %r", rc);
+        (void)pthread_attr_destroy(&pthread_attr);
+        return rc;
+    }
+
+    return 0;
+}
+
+
+/**
+ * Generate Traffic Pattern NDS by template for send/receive command.
+ *
+ * @param csap          Structure with CSAP parameters
+ * @param template      Traffic template
+ * @param pattern       Generated Traffic Pattern
+ *
+ * @return Status code.
+ */
+te_errno
+tad_send_recv_generate_pattern(csap_p csap, asn_value_p template, 
+                               asn_value_p *pattern)
+{
+    te_errno     rc = 0;
+    unsigned int layer;
+
+    ENTRY(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
+
+    asn_value_p pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
+    asn_value_p pdus         = asn_init_value(ndn_generic_pdu_sequence);
+
+    rc = asn_write_component_value(pattern_unit, pdus, "pdus");
+    if (rc != 0) 
+        return rc;
+    asn_free_value(pdus);
+
+    for (layer = 0; layer < csap->depth; layer++)
+    {
+        csap_spt_type_p csap_spt_descr; 
+
+        asn_value_p layer_tmpl_pdu; 
+        asn_value_p layer_pattern; 
+        asn_value_p gen_pattern_pdu = asn_init_value(ndn_generic_pdu);
+
+        csap_spt_descr = csap_get_proto_support(csap, layer);
+
+        layer_tmpl_pdu = asn_read_indexed(template, layer, "pdus"); 
+
+        rc = csap_spt_descr->generate_pattern_cb(csap, layer,
+                                                 layer_tmpl_pdu,
+                                                 &layer_pattern);
+
+        VERB("%s(): layer %u: generate pattern cb rc %r", 
+             __FUNCTION__, layer, rc);
+
+        if (rc == 0) 
+            rc = asn_write_component_value(gen_pattern_pdu, 
+                                           layer_pattern, "");
+
+        if (rc == 0) 
+            rc = asn_insert_indexed(pattern_unit, gen_pattern_pdu, 
+                                    layer, "pdus");
+        else
+            asn_free_value(gen_pattern_pdu);
+
+        asn_free_value(layer_pattern);
+        asn_free_value(layer_tmpl_pdu);
+
+        if (rc != 0) 
+            break;
+    } 
+
+    if (rc == 0)
+    {
+        *pattern = asn_init_value(ndn_traffic_pattern);
+        rc = asn_insert_indexed(*pattern, pattern_unit, 0, "");
+    }
+    else
+    {
+        asn_free_value(pattern_unit);
+    }
+
+    EXIT(CSAP_LOG_FMT "%r", CSAP_LOG_ARGS(csap), rc);
+
+    return rc;
+}
+
+
+/* See the description in tad_utils.h */
+te_errno
+tad_convert_payload(const asn_value *ndn_payload, 
+                    tad_payload_spec_t *pld_spec)
+{
+    const asn_value *payload;
+
+    asn_tag_class   t_class;
+    uint16_t        t_val;
+    te_errno        rc = 0;
+
+    if (ndn_payload == NULL || pld_spec == NULL)
+        return TE_EWRONGPTR;
+
+    rc = asn_get_choice_value(ndn_payload, &payload, &t_class, &t_val);
+    if (rc != 0)
+    {
+        ERROR("%s(): get choice of payload failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    switch (t_val)
+    {
+        case NDN_PLD_BYTES:  
+        {
+            int     len;
+            size_t  rlen;
+            void   *data;
+
+            len = asn_get_length(payload, "");
+            if (len < 0)
+            {
+                ERROR("%s(): invalid length of payload %d",
+                      __FUNCTION__, len);
+                rc = TE_EINVAL;
+                break;
+            }
+            rlen = len;
+            data = malloc(rlen);
+            if (data == NULL)
+            {
+                rc = TE_ENOMEM;
+                break;
+            }
+            rc = asn_read_value_field(payload, data, &rlen, "");
+            if (rc != 0)
+            {
+                ERROR("%s(): failed to read payload from NDS: %r",
+                      __FUNCTION__, rc);
+                free(data);
+                break;
+            }
+            pld_spec->plain.length = rlen;
+            pld_spec->plain.data = data;
+            pld_spec->type = TAD_PLD_BYTES;
+            break;
+        }
+
+        case NDN_PLD_MASK:
+        {
+            int     len;
+            size_t  v_len;
+            size_t  m_len;
+            void   *data;
+
+            rc = asn_read_bool(payload, &pld_spec->mask.exact_len,
+                               "exact-len");
+            if (rc != 0)
+            {
+                ERROR("%s(): failed to read 'exact-len' from payload "
+                      "mask specification: %r", __FUNCTION__, rc);
+                break;
+            }
+
+            len = asn_get_length(payload, "v");
+            if (len < 0)
+            {
+                ERROR("%s(): invalid length of value %d",
+                      __FUNCTION__, len);
+                rc = TE_EINVAL;
+                break;
+            }
+            v_len = len;
+
+            len = asn_get_length(payload, "m");
+            if (len < 0)
+            {
+                ERROR("%s(): invalid length of value %d",
+                      __FUNCTION__, len);
+                rc = TE_EINVAL;
+                break;
+            }
+            m_len = len;
+
+            if (v_len != m_len)
+            {
+                ERROR("Length of the value %u is not equal to the "
+                      "length of the mask %u in NDS",
+                      (unsigned)v_len, (unsigned)m_len);
+                rc = TE_ETADWRONGNDS;
+                break;
+            }
+            pld_spec->mask.length = len;
+
+            data = malloc(v_len);
+            if (data == NULL)
+            {
+                rc = TE_ENOMEM;
+                break;
+            }
+            rc = asn_read_value_field(payload, data, &v_len, "v");
+            if (rc != 0)
+            {
+                ERROR("%s(): failed to read 'value' from NDS: %r",
+                      __FUNCTION__, rc);
+                free(data);
+                break;
+            }
+            pld_spec->mask.value = data;
+
+            data = malloc(m_len);
+            if (data == NULL)
+            {
+                rc = TE_ENOMEM;
+                break;
+            }
+            rc = asn_read_value_field(payload, data, &m_len, "m");
+            if (rc != 0)
+            {
+                ERROR("%s(): failed to read 'mask' from NDS: %r",
+                      __FUNCTION__, rc);
+                free(data);
+                break;
+            }
+            pld_spec->mask.mask = data;
+
+            pld_spec->type = TAD_PLD_MASK;
+            break;
+        }
+
+        case NDN_PLD_FUNC:  
+        {
+            char   func_name[256];
+            size_t fn_len = sizeof(func_name);
+
+            rc = asn_read_value_field(payload, func_name, &fn_len, "");
+            if (rc != 0)
+            {
+                ERROR("%s(): cannot get function name from NSD: %r",
+                      __FUNCTION__, rc);
+                break;
+            }
+            if ((pld_spec->func = (tad_user_generate_method) 
+                        rcf_ch_symbol_addr(func_name, 1)) == NULL)
+            {
+                ERROR("Function '%s' for payload generation not found",
+                      func_name);
+                rc = TE_ENOENT;
+                break;
+            }
+            pld_spec->type = TAD_PLD_FUNCTION;
+            break;
+        }
+
+        case NDN_PLD_LEN:   
+        {
+            int32_t len;
+
+            rc = asn_read_int32(payload, &len, "");
+            if (rc != 0)
+            {
+                ERROR("%s(): failed to get payload length from NDS: %r",
+                      __FUNCTION__, rc);
+                break;
+            }
+            pld_spec->plain.length = len;
+            pld_spec->plain.data = NULL;
+            pld_spec->type = TAD_PLD_LENGTH;
+            break;
+        }
+
+        case NDN_PLD_STREAM:
+            {
+                char   func_name[256];
+                size_t fn_len = sizeof(func_name);
+
+                const asn_value *du_field;
+
+                pld_spec->type = TAD_PLD_STREAM;
+                rc = asn_read_value_field(payload, func_name, &fn_len,
+                                          "function");
+                if (rc != 0)
+                    break;
+                INFO("%s(): stream function <%s>", __FUNCTION__, func_name);
+                if ((pld_spec->stream.func = (tad_stream_callback) 
+                                    rcf_ch_symbol_addr(func_name, 1)) 
+                    == NULL)
+                {
+                    ERROR("Function %s for stream NOT found",
+                          func_name);
+                    rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
+                }
+
+                if ((rc = asn_get_child_value(payload, &du_field, PRIVATE,
+                                              NDN_PLD_STR_OFF)) != 0)
+                    break;
+
+                tad_data_unit_convert_simple(du_field, 
+                                             &(pld_spec->stream.offset));
+
+                if ((rc = asn_get_child_value(payload, &du_field, PRIVATE,
+                                              NDN_PLD_STR_LEN)) != 0)
+                    break;
+
+                tad_data_unit_convert_simple(du_field, 
+                                             &(pld_spec->stream.length));
+            }
+            break;
+
+        default: 
+            pld_spec->type = TAD_PLD_UNKNOWN;
+            rc = TE_ETADWRONGNDS;
+    }
+
+    if (rc != 0)
+        ERROR("%s() failed %r", __FUNCTION__, rc);
+
+    return rc;
+}
+
+/* see description in tad_utils.h */
+void
+tad_payload_spec_clear(tad_payload_spec_t *pld_spec)
+{
+    if (pld_spec == NULL)
+        return;
+    switch (pld_spec->type)
+    {
+        case TAD_PLD_UNKNOWN:
+        case TAD_PLD_UNSPEC:
+        case TAD_PLD_LENGTH:
+        case TAD_PLD_FUNCTION:
+            /* do nothing */
+            break;
+
+        case TAD_PLD_BYTES:
+            free(pld_spec->plain.data);
+            break;
+
+        case TAD_PLD_MASK:
+            free(pld_spec->mask.value);
+            free(pld_spec->mask.mask);
+            break;
+
+        case TAD_PLD_STREAM:
+            tad_data_unit_clear(&pld_spec->stream.offset);
+            tad_data_unit_clear(&pld_spec->stream.length);
+            break;
+
+        default:
+            assert(FALSE);
+    }
+    memset(pld_spec, 0, sizeof(*pld_spec));
+    pld_spec->type = TAD_PLD_UNKNOWN;
 }

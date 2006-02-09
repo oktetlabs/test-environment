@@ -44,6 +44,9 @@
 #if HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -54,8 +57,8 @@
 #include "tad_csap_support.h"
 
 
-#define CSAP_LOG_FMT            "CSAP %u: "
-#define CSAP_LOG_ARGS(_csap)    (_csap)->id
+#define CSAP_LOG_FMT            "CSAP %u (0x%x): "
+#define CSAP_LOG_ARGS(_csap)    (_csap)->id, (_csap)->state
 
 
 #ifdef __cplusplus
@@ -69,193 +72,6 @@ extern "C" {
 
 
 
-/**
- * Template argument iteration enums and structures
- */ 
-
-
-/** 
- * Type of iteration argument
- */
-typedef enum {
-    TAD_TMPL_ARG_INT, /**< Integer */
-    TAD_TMPL_ARG_STR, /**< Character string */
-    TAD_TMPL_ARG_OCT, /**< Octet array */
-} tad_tmpl_arg_type_t;
-
-/**
- * Template argument value plain C presentation
- */
-struct tad_tmpl_arg_t { 
-    tad_tmpl_arg_type_t type;  /**< Type of argument */
-
-    size_t       length;       /**< Length of argument data */
-    union {
-        int      arg_int;      /**< Integer value */
-        char    *arg_str;      /**< Pointer to character sting value */
-        uint8_t *arg_oct;      /**< Pointer to octet array value */
-    };
-};
-
-/**
- * Type of template iterator.
- */
-typedef enum {
-    TAD_TMPL_ITER_INT_SEQ,   /**< explicit sequence of int values */
-    TAD_TMPL_ITER_INT_ASSOC, /**< explicit sequence of int values, 
-                                    not iterated separately, but associated
-                                    with previour iterator */
-    TAD_TMPL_ITER_STR_SEQ,   /**< explicit sequence of string values */
-    TAD_TMPL_ITER_FOR,       /**< simple for - arithmetical progression */
-} tad_tmpl_iter_type_t;   
-
-
-/** Default value of begin of 'simple-for' iterator */
-#define TAD_ARG_SIMPLE_FOR_BEGIN_DEF  1
-/** Default value of step of 'simple-for' iterator */
-#define TAD_ARG_SIMPLE_FOR_STEP_DEF   1
-
-/**
- * Template iterator plain C structure
- */
-typedef struct {
-    tad_tmpl_iter_type_t type; /**< Iterator type */
-    union {
-        struct {
-            size_t length;     /**< Length of sequence */
-            int    last_index; /**< Index of last value, -1 means none */ 
-            int   *ints;       /**< Array with sequence */
-        } int_seq;             /**< Explicit integer sequence */
-        struct {
-            size_t length;     /**< Length of sequence */
-            int    last_index; /**< Index of last value, -1 means none */ 
-            char **strings;    /**< Array with sequence */
-        } str_seq;             /**< Explicit string sequence */
-        struct {
-            int begin;         /**< Begin of progression */
-            int end;           /**< End of progression */
-            int step;          /**< Step of progression */
-        } simple_for;          /**< Arithmetical progression */
-    };
-} tad_tmpl_iter_spec_t;
-
-
-          
-/** 
- * Type of payload specification in traffic template.
- */
-typedef enum {
-    TAD_PLD_UNKNOWN,  /**< undefined, used when there is no pld spec. */
-    TAD_PLD_BYTES,    /**< byte sequence */
-    TAD_PLD_LENGTH,   /**< only length specified, bytes are random */
-    TAD_PLD_FUNCTION, /**< name of function, which generate payload */
-    TAD_PLD_STREAM,   /**< parameters for data stream generating */
-} tad_payload_type;
-
-
-
-/**
- * Type of node in arithmetical expression presentation tree 
- */
-typedef enum {
-    TAD_EXPR_CONSTANT = 0, /**< Constant value */
-    TAD_EXPR_ARG_LINK,     /**< Link to some arg value */
-    TAD_EXPR_ADD,          /**< Binary addition node */
-    TAD_EXPR_SUBSTR,       /**< Binary substraction node */
-    TAD_EXPR_MULT,         /**< Binary multiplication node */
-    TAD_EXPR_DIV,          /**< Binary division node */
-    TAD_EXPR_MOD,          /**< Binary modulo */
-    TAD_EXPR_U_MINUS,      /**< Unary minus node */
-} tad_expr_node_type;
-
-/**
- * Type for expression presentation struct
- */
-typedef struct tad_int_expr_t tad_int_expr_t;
-
-/**
- * Struct for arithmetic (and boolean?) expressions in traffic operations
- * Expression is constructed with for arithmetical operations from 
- * constants and "variables", which are references to iterated artuments.
- */
-struct tad_int_expr_t { 
-    tad_expr_node_type  n_type; /**< node type */
-    size_t              d_len;  /**< length of data: 
-                                     - for node with operation is length
-                                       of array with operands. 
-                                     - for constant node is 'sizeof' 
-                                       integer variable, may be 4 or 8.  */
-    union {
-        int32_t val_i32;        /**< int 32 value */
-        int64_t val_i64;        /**< int 64 value */
-        int     arg_num;        /**< number of referenced argument */
-        tad_int_expr_t *exprs;  /**< array with operands */
-    };
-};
-
-/**
- * Struct for octet or character string handling.
- */
-typedef struct tad_du_data_t {
-    size_t len;             /**< length */
-    union {
-        uint8_t *oct_str;   /**< pointer to octet string */
-        char    *char_str;  /**< pointer to character string */
-    };
-} tad_du_data_t;
-
-/**
- * Types of data unit, which may occure in traffic generaing template.
- */
-typedef enum {
-    TAD_DU_UNDEF,  /**< leaf is undefined, should be taken from default */
-    TAD_DU_I32,    /**< uxplicit 32-bit integer value */
-    TAD_DU_I64,    /**< uxplicit 64-bit integer value */
-    TAD_DU_STRING, /**< character string */
-    TAD_DU_OCTS,   /**< octet string */
-    TAD_DU_EXPR,   /**< arithmetic expression */
-} tad_du_type_t;
-
-/**
- * Handler of message field data unit
- */
-typedef struct {
-    tad_du_type_t       du_type;        /**< Type of data unit */
-    union {
-        int32_t         val_i32;        /**< 32-bit integer */
-        int64_t         val_i64;        /**< 64-bit integer */
-        tad_du_data_t   val_data;       /**< character or octet string */
-        tad_int_expr_t *val_int_expr;   /**< arithmetic expression */
-    };
-} tad_data_unit_t;
-
-
-
-/**
- * Preprocessed payload specification, ready for iteration 
- * and binary generating. 
- */
-typedef struct {
-    tad_payload_type type;      /**< Type of payload spec */
-
-    union {
-        /* specs for 'bytes' and 'length' choices */
-        struct {
-            size_t   length;    /**< Payload length */
-            uint8_t *data;      /**< Byte array */
-        } plain;                
-
-        /* 'stream' */
-        struct {
-            tad_data_unit_t     offset;
-            tad_data_unit_t     length;
-            tad_stream_callback func;
-        } stream; 
-
-        /* function */
-        tad_user_generate_method func;
-    };
-} tad_payload_spec_t;
 
 
 /* ============= Function prototypes declarations =============== */
@@ -300,15 +116,6 @@ extern int tad_convert_payload(const asn_value *ndn_payload,
  * @param pld_spec      pointer to payload spec to be cleared
  */
 extern void tad_payload_spec_clear(tad_payload_spec_t *pld_spec);
-
-/**
- * Transform payload symbolic type label of ASN choice to enum.
- *
- * @param label         Char string with ASN choice label.
- *
- * @return tad_payload_type enum value.
- */
-extern tad_payload_type tad_payload_asn_label_to_enum(const char *label);
 
 
 
@@ -366,7 +173,7 @@ extern void tad_int_expr_free(tad_int_expr_t *expr);
  * @return status code.
  */
 extern int tad_int_expr_calculate(const tad_int_expr_t *expr, 
-                                  const tad_tmpl_arg_t *args,
+                                  const struct tad_tmpl_arg_t *args,
                                   size_t num_args,
                                   int64_t *result);
 
@@ -394,7 +201,7 @@ extern uint64_t tad_ntohll(uint64_t n);
  */
 extern int tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                               size_t arg_specs_num, 
-                              tad_tmpl_arg_t *arg_iterated);
+                              struct tad_tmpl_arg_t *arg_iterated);
 
 
 /**
@@ -410,7 +217,7 @@ extern int tad_init_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
  */
 extern int tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                                  size_t arg_specs_num, 
-                                 tad_tmpl_arg_t *arg_iterated);
+                                 struct tad_tmpl_arg_t *arg_iterated);
 
 /**
  * Clear internal data in template iterate args specı
@@ -554,7 +361,8 @@ extern int tad_univ_match_field(const tad_data_unit_t *pattern,
  * @return status code
  */
 extern int tad_data_unit_to_bin(const tad_data_unit_t *du_tmpl, 
-                                const tad_tmpl_arg_t *args, size_t arg_num, 
+                                const struct tad_tmpl_arg_t *args,
+                                size_t arg_num, 
                                 uint8_t *data_place, size_t d_len);
 
 
@@ -587,7 +395,7 @@ extern te_errno tad_tcp_push_fin(int socket, const uint8_t *data,
  * has only one 'ip4' PDU), error returned.
  * If ASN pdus sequence has extra PDU, error returned. 
  *
- * @param csap    Pointer to CSAP descriptor
+ * @param csap          Pointer to CSAP descriptor
  * @param pdus          ASN value, 'SEQUENCE OF Generic-PDU' (IN/OUT)
  *
  * @return status code
@@ -600,9 +408,46 @@ extern int tad_check_pdu_seq(csap_p csap, asn_value *pdus);
  *
  * This function complies with csap_write_read_cb_t prototype.
  */
-extern te_errno tad_common_write_read_cb(csap_p csap, int timeout,
+extern te_errno tad_common_write_read_cb(csap_p csap, unsigned int timeout,
                                          const tad_pkt *w_pkt,
-                                         char *r_buf, size_t r_buf_len);
+                                         tad_pkt *r_pkt, size_t *r_pkt_len);
+
+/**
+ * Generic implementation of read method over socket using poll and
+ * recvmsg calls.
+ *
+ * @param csap          CSAP structure
+ * @param sock          Socket file descriptor
+ * @param flags         Flags to be forwarded to recvmsg
+ * @param timeout       Timeout in microseconds
+ * @param pkt           Packet with location from received data
+ * @param from          Location from peer address
+ * @param fromlen       On input length of the buffer for peer address,
+ *                      on output length of the peer address
+ * @param pkt_len       Location for received packet length
+ *
+ * @return Status code.
+ */
+extern te_errno tad_common_read_cb_sock(csap_p csap, int sock,
+                                        unsigned int flags,
+                                        unsigned int timeout,
+                                        tad_pkt *pkt,
+                                        struct sockaddr *from,
+                                        socklen_t *fromlen,
+                                        size_t *pkt_len);
+
+/**
+ * Create detached thread.
+ *
+ * @param thread        Location for thread handle (may be NULL)
+ * @param start_routine Thread entry point
+ * @param arg           Thread entry point argument
+ *
+ * @return Status code.
+ */
+extern te_errno tad_pthread_create(pthread_t *thread,
+                                   void * (*start_routine)(void *),
+                                   void *arg);
 
 #ifdef __cplusplus
 } /* extern "C" */

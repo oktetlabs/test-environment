@@ -73,14 +73,24 @@
 #include "tad_eth_impl.h"
 
 
+/**
+ * Default timeout for waiting write possibility. This macro should 
+ * be used only for initialization of 'struct timeval' variables. 
+ */
+#define TAD_WRITE_TIMEOUT_DEFAULT   {1, 0}
+
+/**
+ * Number of retries to write data in low layer
+ */
+#define TAD_WRITE_RETRIES           128
+
+
 /** Ethernet layer read/write specific data */
 typedef struct tad_eth_rw_data {
     eth_interface_p interface;  /**< Ethernet interface data */
 
     int     out;            /**< Socket for sending data to the media */
     int     in;             /**< Socket for receiving data */
-   
-    int     read_timeout;   /**< Number of second to wait for data */
 
     uint8_t recv_mode;      /**< Receive mode, bit mask from values in 
                                  enum eth_csap_receive_mode in ndn_eth.h */
@@ -125,7 +135,8 @@ tad_eth_prepare_send(csap_p csap)
 te_errno
 tad_eth_shutdown_send(csap_p csap)
 {
-    tad_eth_rw_data *spec_data = csap_get_rw_data(csap);
+    tad_eth_rw_data    *spec_data = csap_get_rw_data(csap);
+    te_errno            rc = 0;
 
     if (spec_data->out >= 0)
     {
@@ -151,14 +162,14 @@ tad_eth_shutdown_send(csap_p csap)
         if (close_packet_socket(spec_data->interface->name,
                                 spec_data->out) < 0)
         {
-            csap->last_errno = errno;
-            WARN("%s: CLOSE output socket error 0x%X", 
-                 __FUNCTION__, csap->last_errno);
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            WARN("%s: CLOSE output socket error %r", 
+                 __FUNCTION__, rc);
         }
         spec_data->out = -1;
     }
 
-    return 0;
+    return rc;
 }
 
 
@@ -202,7 +213,8 @@ tad_eth_prepare_recv(csap_p csap)
 te_errno
 tad_eth_shutdown_recv(csap_p csap)
 {
-    tad_eth_rw_data *spec_data = csap_get_rw_data(csap);
+    tad_eth_rw_data    *spec_data = csap_get_rw_data(csap);
+    te_errno            rc = 0;
 
     if (spec_data->in >= 0)
     {
@@ -211,175 +223,58 @@ tad_eth_shutdown_recv(csap_p csap)
         if (close_packet_socket(spec_data->interface->name,
                                 spec_data->in) < 0)
         {
-            csap->last_errno = errno;
-            WARN("%s: CLOSE input socket error %d", 
-                 __FUNCTION__, csap->last_errno);
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            WARN("%s: CLOSE input socket error %r", 
+                 __FUNCTION__, rc);
         }
         spec_data->in = -1;
     }
 
-#if 0
-    tad_data_unit_clear(&spec_data->du_dst_addr);
-    tad_data_unit_clear(&spec_data->du_src_addr);
-    tad_data_unit_clear(&spec_data->du_eth_type);
-    tad_data_unit_clear(&spec_data->du_cfi);
-    tad_data_unit_clear(&spec_data->du_priority);
-    tad_data_unit_clear(&spec_data->du_vlan_id);
-#endif
-
-    return 0;
-}
-
-
-/**
- * Free all memory allocated by eth csap specific data
- *
- * @param tad_eth_rw_data * poiner to structure
- * @param is_complete if ETH_COMPLETE_FREE the free() will be called on passed pointer
- *
- */ 
-void 
-free_eth_csap_data(tad_eth_rw_data *spec_data, char is_complete)
-{
-    free(spec_data->interface);
-#if 0
-    free(spec_data->remote_addr);
-    free(spec_data->local_addr);   
-#endif
-       
-    if (is_complete)
-       free(spec_data);   
+    return rc;
 }
 
 
 /* See description tad_eth_impl.h */
-int 
-tad_eth_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
+te_errno
+tad_eth_read_cb(csap_p csap, unsigned int timeout,
+                tad_pkt *pkt, size_t *pkt_len)
 {
-    tad_eth_rw_data *spec_data = csap_get_rw_data(csap);
+    tad_eth_rw_data    *spec_data = csap_get_rw_data(csap);
+    struct sockaddr_ll  from;
+    socklen_t           fromlen = sizeof(from);
+    te_errno            rc;
 
-    int                      ret_val;
-    int                      layer;
-    fd_set                   read_set;
-    struct sockaddr_ll       from;
-    socklen_t                fromlen = sizeof(from);
-    struct timeval           timeout_val;
-    int                      pkt_size;
+    rc = tad_common_read_cb_sock(csap, spec_data->in, MSG_TRUNC, timeout,
+                                 pkt, SA(&from), &fromlen, pkt_len);
+    if (rc != 0)
+        return rc;
 
-    if (csap == NULL)
-    {
-        ERROR("%s called with NULL csap", __FUNCTION__);
-        return -1;
-    }
-    
-    layer = csap_get_rw_layer(csap);
-    
-    gettimeofday(&timeout_val, NULL);
-    VERB("%s(CSAP %d): spec_data->in = %d, mcs %d",
-           __FUNCTION__, csap->id, spec_data->in,
-           timeout_val.tv_usec);
-
-#ifdef TALOGDEBUG
-    printf ("ETH recv: timeout %d; spec_data->read_timeout: %d\n", 
-            timeout, spec_data->read_timeout);
-
-    printf("Reading data from the socket: %d", spec_data->in);
-#endif       
-
-    if (spec_data->in < 0)
-    {
-        assert(0);
-        return -1;
-    }
-
-    FD_ZERO(&read_set);
-    FD_SET(spec_data->in, &read_set);
-
-    if (timeout == 0)
-    {
-        timeout_val.tv_sec = spec_data->read_timeout;
-        timeout_val.tv_usec = 0;
-    }
-    else
-    {
-        timeout_val.tv_sec = timeout / 1000000L; 
-        timeout_val.tv_usec = timeout % 1000000L;
-    }
-    
-    ret_val = select(spec_data->in + 1, &read_set, NULL, NULL, &timeout_val); 
-
-#ifdef TALOGDEBUG
-    printf ("ETH select return %d\n", ret_val);
-#endif
-    
-    if (ret_val == 0)
-        return 0;
-
-    if (ret_val < 0)
-    {
-        VERB("select fails: spec_data->in = %d",
-                   spec_data->in);
-
-        csap->last_errno = errno;
-        return -1;
-    }
-    
-    /* TODO: possibly MSG_TRUNC and other flags are required */
-
-    pkt_size = recvfrom(spec_data->in, buf, buf_len, MSG_TRUNC,
-                       (struct sockaddr *)&from, &fromlen);
-
-    if (pkt_size < 0)
-    {
-        csap->last_errno = errno;
-        WARN("recvfrom fails: spec_data->in = %d",
-                   spec_data->in);
-        return -1;
-    }
-    if (pkt_size == 0)
-        return 0;
-
-    gettimeofday(&timeout_val, NULL);
-    VERB("%s(): CSAP %d read %d bytes, pkttype %d, mcs %d, begin 0x%x, "
-         "ethtype %x", 
-         __FUNCTION__, csap->id, pkt_size, from.sll_pkttype,
-         timeout_val.tv_usec, *((uint32_t *)buf),
-         (uint32_t)(*((uint16_t *)(buf + 12))));
-
-    switch(from.sll_pkttype)
+    switch (from.sll_pkttype)
     {
         case PACKET_HOST:
             if ((spec_data->recv_mode & ETH_RECV_HOST) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
 
         case PACKET_BROADCAST:
             if ((spec_data->recv_mode & ETH_RECV_BROADCAST) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
         case PACKET_MULTICAST:
             if ((spec_data->recv_mode & ETH_RECV_MULTICAST) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
         case PACKET_OTHERHOST:
             if ((spec_data->recv_mode & ETH_RECV_OTHERHOST) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
         case PACKET_OUTGOING:
             if ((spec_data->recv_mode & ETH_RECV_OUTGOING) == 0)
-                return 0;
+                return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
             break;
     }
 
-
-#if 0 
-    /* Correction for number of read bytes was insered to synchronize 
-     * with OS interface statistics, but it cause many side effects, 
-     * therefore it is disabled now. */
-    return pkt_size + ETHER_CRC_LEN;
-#else
-    return pkt_size;
-#endif
+    return 0;
 }
 
 
@@ -424,7 +319,6 @@ tad_eth_write_cb(csap_p csap, const tad_pkt *pkt)
                          &wr_timeout);
         if (ret_val == 0)
         {
-            csap->last_errno = ETIMEDOUT; /* ??? */
             F_INFO("ETH write select timedout, retry %d", retries);
             continue;
         }
@@ -434,52 +328,35 @@ tad_eth_write_cb(csap_p csap, const tad_pkt *pkt)
 
         if (ret_val < 0)
         {
-            csap->last_errno = errno;
-            VERB("CSAP #%d, errno %d, retry %d",
-                   csap->id, errno, retries);
-            switch (errno)
+            rc = te_rc_os2te(errno);
+            VERB("CSAP #%d, errno %r, retry %d",
+                   csap->id, rc, retries);
+            switch (rc)
             {
-                case ENOBUFS:
-                    {
-                        /* 
-                         * It seems that 0..127 microseconds is enough
-                         * to hope that buffers will be cleared and
-                         * does not fall down performance.
-                         */
-                        struct timeval clr_delay = { 0, rand() & 0x3f };
+                case TE_ENOBUFS:
+                {
+                    /* 
+                     * It seems that 0..127 microseconds is enough
+                     * to hope that buffers will be cleared and
+                     * does not fall down performance.
+                     */
+                    struct timeval clr_delay = { 0, rand() & 0x3f };
 
-                        select(0, NULL, NULL, NULL, &clr_delay);
-                    }
+                    select(0, NULL, NULL, NULL, &clr_delay);
                     continue;
+                }
 
                 default:
-#if 0
-                    {
-                        unsigned int    i;
-                        size_t          total = 0;
-
-                        ERROR("pkt=%p iovlen=%u iov=%p",
-                              pkt, (unsigned)iovlen, iov);
-                        for (i = 0; i < iovlen; ++i)
-                        {
-                            total += iov[i].iov_len;
-                            ERROR("#%u: len=%u ptr=%p", i,
-                                  iov[i].iov_len, iov[i].iov_base);
-                        }
-                        ERROR("total=%u", (unsigned)total);
-                    }
-#endif
-                    ERROR("%s(CSAP %d): internal error %d, socket %d", 
+                    ERROR("%s(CSAP %d): internal error %r, socket %d", 
                           __FUNCTION__, csap->id,
-                          csap->last_errno, spec_data->out);
-                    return TE_OS_RC(TE_TAD_CSAP, errno);
+                          rc, spec_data->out);
+                    return rc;
             }
         } 
     }
     if (retries == TAD_WRITE_RETRIES)
     {
         ERROR("csap #%d, too many retries made, failed");
-        csap->last_errno = ENOBUFS;
         return TE_RC(TE_TAD_CSAP, TE_ENOBUFS);;
     }
 
@@ -572,12 +449,7 @@ tad_eth_rw_init_cb(csap_p csap, const asn_value *csap_nds)
         spec_data->recv_mode = ETH_RECV_MODE_DEF;
     }
 
-    /* default read timeout */
-    spec_data->read_timeout = ETH_CSAP_DEFAULT_TIMEOUT; 
-
     csap_set_rw_data(csap, spec_data);
-
-    csap->timeout = 500000;
 
     return 0;
 }
@@ -594,8 +466,7 @@ tad_eth_rw_destroy_cb(csap_p csap)
         WARN("Not ethernet CSAP %d special data found!", csap->id);
         return 0;
     }
-
-    eth_free_interface(spec_data->interface);
+    csap_set_rw_data(csap, NULL); 
 
     if (spec_data->in >= 0)
     {
@@ -615,54 +486,10 @@ tad_eth_rw_destroy_cb(csap_p csap)
         spec_data->out = -1;
     }
 
-    free_eth_csap_data(spec_data, ETH_COMPLETE_FREE);
+    eth_free_interface(spec_data->interface);
+    free(spec_data->interface);
 
-    csap_set_rw_data(csap, NULL); 
+    free(spec_data);   
 
     return 0;
 }
-
-
-#if 0
-/**
- * Ethernet echo CSAP method. 
- * Method should prepare binary data to be send as "echo" and call 
- * respective write method to send it. 
- * Method may change data stored at passed location.  
- *
- * @param csap    identifier of CSAP
- * @param pkt           Got packet, plain binary data. 
- * @param len           length of data.
- *
- * @return zero on success or error code.
- */
-int 
-eth_echo_method(csap_p csap, uint8_t *pkt, size_t len)
-{
-    uint8_t tmp_buffer [10000]; 
-
-    if (csap == NULL || pkt == NULL || len == 0)
-        return TE_EINVAL;
-#if 1
-    memcpy(tmp_buffer, pkt + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
-    memcpy(tmp_buffer + ETHER_ADDR_LEN, pkt, ETHER_ADDR_LEN);
-    memcpy(tmp_buffer + 2*ETHER_ADDR_LEN, pkt + 2*ETHER_ADDR_LEN,
-           len - 2 * ETHER_ADDR_LEN);
-
-#if 0
-    /* Correction for number of read bytes was insered to synchronize 
-     * with OS interface statistics, but it cause many side effects, 
-     * therefore it is disabled now. */
-
-    tad_eth_write_cb(csap, tmp_buffer, len - ETHER_CRC_LEN);
-#else
-    tad_eth_write_cb(csap, tmp_buffer, len);
-#endif
-
-
-#endif
-
-    return 0;
-    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
-}
-#endif

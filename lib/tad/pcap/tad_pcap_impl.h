@@ -95,8 +95,8 @@ extern te_errno tad_pcap_shutdown_recv(csap_p csap);
  *
  * The function complies with csap_read_cb_t prototype.
  */ 
-extern int tad_pcap_read_cb(csap_p csap, int timeout,
-                            char *buf, size_t buf_len);
+extern te_errno tad_pcap_read_cb(csap_p csap, unsigned int timeout,
+                                 tad_pkt *pkt, size_t *pkt_len);
 
 
 /**
@@ -114,15 +114,15 @@ extern te_errno tad_pcap_init_cb(csap_p csap, unsigned int layer);
 extern te_errno tad_pcap_destroy_cb(csap_p csap, unsigned int layer);
 
 /**
- * Callback for confirm PDU with Ethernet-PCAP CSAP parameters and
- * possibilities.
+ * Callback for confirm pattern PDU with Ethernet-PCAP CSAP parameters
+ * and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_pcap_confirm_pdu_cb(csap_p         csap,
-                                        unsigned int   layer,
-                                        asn_value_p    layer_pdu,
-                                        void         **p_opaque); 
+extern te_errno tad_pcap_confirm_ptrn_cb(csap_p         csap,
+                                         unsigned int   layer,
+                                         asn_value_p    layer_pdu,
+                                         void         **p_opaque); 
 
 /**
  * Callback for parse received packet and match it with pattern. 
@@ -130,11 +130,12 @@ extern te_errno tad_pcap_confirm_pdu_cb(csap_p         csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_pcap_match_bin_cb(csap_p           csap,
-                                      unsigned int     layer,
-                                      const asn_value *pattern_pdu,
-                                      const csap_pkts *pkt,
-                                      csap_pkts       *payload, 
-                                      asn_value_p      parsed_packet);
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 /**
  * Callback to release data prepared by confirm callback.

@@ -34,10 +34,6 @@
 #include "config.h"
 #endif
 
-#include "tad_snmp_impl.h"
-#include "logger_api.h"
-
-
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -56,6 +52,10 @@
 #else
 #define assert(x)
 #endif
+
+#include "tad_snmp_impl.h"
+#include "logger_api.h"
+#include "logger_ta_fast.h"
 
 
 #undef SNMPDEBUG
@@ -126,12 +126,27 @@ snmp_csap_input(int                  op,
     VERB("input callback, operation: %d", op); 
 
     if (op == RECEIVED_MESSAGE)
-        spec_data->pdu = snmp_clone_pdu(pdu); 
-
-    if ( op == TIMED_OUT )
     {
-        ;
+#if 1
+        assert(spec_data->pdu == NULL);
+#else
+        snmp_free_pdu(spec_data->pdu);
+#endif
+
+        spec_data->pdu = snmp_clone_pdu(pdu);
+
+        if (spec_data->pdu == NULL)
+            ERROR("%s(): Failed to clone received SNMP PDU",
+                  __FUNCTION__);
+        else
+            F_VERB("%s(): SNMP PDU received", __FUNCTION__);
     }
+
+    if (op == TIMED_OUT)
+    {
+        F_VERB("%s(): SNMP operation timed out", __FUNCTION__);
+    }
+
     return 1; 
 }
 
@@ -146,84 +161,102 @@ snmp_csap_input(int                  op,
 te_errno
 tad_snmp_release_cb(csap_p csap)
 {
-    int layer = csap_get_rw_layer(csap);
     snmp_csap_specific_data_p spec_data = 
-        csap_get_proto_spec_data(csap, layer);
+        csap_get_proto_spec_data(csap, csap_get_rw_layer(csap));
 
-    if (spec_data->pdu != NULL)
-        tad_snmp_free_pdu(spec_data->pdu, 0);
+#if 1
+    assert(spec_data->pdu == NULL);
+#else
+    tad_snmp_free_pdu(spec_data->pdu, 0);
     spec_data->pdu = NULL;
+#endif
 
     return 0;
 }
 
 /* See description in tad_snmp_impl.h */
-int 
-tad_snmp_read_cb(csap_p csap, int timeout,
-                 char *buf, size_t buf_len)
+te_errno
+tad_snmp_read_cb(csap_p csap, unsigned int timeout,
+                 tad_pkt *pkt, size_t *pkt_len)
 { 
-    int rc = 0; 
-    int layer;
-
-    fd_set fdset;
-    int    n_fds = 0;
-    int    block = 0;
-    struct timeval sel_timeout; 
-
-
     snmp_csap_specific_data_p   spec_data;
-    struct snmp_session       * ss;
 
-    VERB("read callback");
+    te_errno        rc; 
+    int             ret;
 
-    if (csap == NULL) return -1;
+    int             n_fds = 0;
+    int             block = 0;
+    fd_set          fdset;
+    struct timeval  sel_timeout; 
 
-    layer = csap_get_rw_layer(csap);
+    assert(pkt != NULL);
+    assert(pkt_len != NULL);
 
-    spec_data = csap_get_proto_spec_data(csap, layer); 
-    ss = spec_data->ss;
+    spec_data = csap_get_proto_spec_data(csap, csap_get_rw_layer(csap)); 
 
     FD_ZERO(&fdset);
-    sel_timeout.tv_sec =  timeout / 1000000L;
-    sel_timeout.tv_usec = timeout % 1000000L;
+    TE_US2TV(timeout, &sel_timeout);
 
     if (spec_data->sock < 0)
+    {
         snmp_select_info(&n_fds, &fdset, &sel_timeout, &block);
+    }
     else
     {
         FD_SET(spec_data->sock, &fdset);
         n_fds = spec_data->sock + 1;
     }
     
-    if (spec_data->pdu) 
-        tad_snmp_free_pdu(spec_data->pdu, 0); 
+#if 1
+    assert(spec_data->pdu == NULL);
+#else
+    tad_snmp_free_pdu(spec_data->pdu, 0); 
     spec_data->pdu = NULL;
+#endif
 
-    rc = select(n_fds, &fdset, 0, 0, &sel_timeout);
-    VERB("%s(): CSAP %d, after select, rc %d\n",
-         __FUNCTION__, csap->id, rc);
+    ret = select(n_fds, &fdset, 0, 0, &sel_timeout);
+    VERB("%s(): CSAP %d, after select, ret %d\n",
+         __FUNCTION__, csap->id, ret);
 
-    if (rc > 0) 
+    if (ret > 0) 
     { 
-        size_t n_bytes = buf_len;
-        
+        tad_pkt_seg *seg;
+
+        seg = tad_pkt_first_seg(pkt);
+        if (seg == NULL)
+        {
+            seg = tad_pkt_alloc_seg(NULL, 0, NULL);
+            if (seg == NULL)
+                return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+            tad_pkt_append_seg(pkt, seg);
+        }
+
+        /* snmp_csap_input() callback is called */
         snmp_read(&fdset);
         
-        if (n_bytes < sizeof(struct snmp_pdu))
+        if (spec_data->pdu != NULL)
         {
-            RING("In %s, buf_len %d less then sizeof struct snmp_pdu %d", 
-                 __FUNCTION__, buf_len, sizeof(struct snmp_pdu));
+            tad_pkt_put_seg_data(pkt, seg, spec_data->pdu,
+                                 sizeof(*spec_data->pdu), 
+                                 tad_snmp_free_pdu);
+            spec_data->pdu = NULL;
+            *pkt_len = sizeof(*spec_data->pdu);
+            rc = 0;
         }
         else
-            n_bytes = sizeof(struct snmp_pdu);
-
-        if (spec_data->pdu)
         {
-            memcpy(buf, spec_data->pdu, n_bytes);
-            return n_bytes;
+            rc = TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
         }
-        rc = 0;
     } 
+    else if (ret == 0)
+    {
+        rc = TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+    }
+    else
+    {
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        assert(rc != 0);
+    }
     
     return rc;
 }
@@ -232,109 +265,42 @@ tad_snmp_read_cb(csap_p csap, int timeout,
 te_errno
 tad_snmp_write_cb(csap_p csap, const tad_pkt *pkt)
 {
-#if 1
-    const void *buf;
-    size_t      buf_len;
+    snmp_csap_specific_data_p   spec_data;
+    struct snmp_pdu            *pdu = NULL;
 
-    if (pkt == NULL || tad_pkt_seg_num(pkt) != 1)
+    assert(pkt != NULL);
+
+    spec_data = csap_get_proto_spec_data(csap, csap_get_rw_layer(csap)); 
+
+    if ((tad_pkt_seg_num(pkt) != 1) ||
+        ((pdu = tad_pkt_first_seg(pkt)->data_ptr) == NULL) ||
+        (tad_pkt_first_seg(pkt)->data_len != sizeof(*pdu)))
+    {
+        ERROR(CSAP_LOG_FMT "Invalid packet to be sent as SNMP PDU: "
+              "n_segs=%u pdu=%p len=%u(vs %u)", CSAP_LOG_ARGS(csap),
+              tad_pkt_seg_num(pkt), pdu,
+              tad_pkt_first_seg(pkt)->data_len, sizeof(*pdu));
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
-    buf     = tad_pkt_first_seg(pkt)->data_ptr;
-    buf_len = tad_pkt_first_seg(pkt)->data_len;
-#endif
-    int layer;
-
-    snmp_csap_specific_data_p   spec_data;
-    struct snmp_session       * ss;
-    struct snmp_pdu           * pdu = (struct snmp_pdu *) buf;
-
-    VERB("write callback\n"); 
-    UNUSED(buf_len);
-
-    if (csap == NULL) return -1;
-
-    layer = csap_get_rw_layer(csap);
-
-    spec_data = csap_get_proto_spec_data(csap, layer); 
-    ss = spec_data->ss;
-
-    if (!snmp_send(ss, pdu))
-    {
-        VERB("send SNMP pdu failed\n");
-    } 
-
-    return 1;
-}
-
-/* See description in tad_snmp_impl.h */
-int 
-tad_snmp_write_read_cb(csap_p csap, int timeout,
-                       const tad_pkt *w_pkt,
-                       char *r_buf, size_t r_buf_len)
-{
-    fd_set fdset;
-    int    n_fds = 0; 
-    int    block = 0;
-    struct timeval sel_timeout; 
-
-    int layer;
-    int rc = 0; 
-
-    snmp_csap_specific_data_p   spec_data;
-    struct snmp_session       * ss;
-    struct snmp_pdu           * pdu =
-        (struct snmp_pdu *)tad_pkt_first_seg(w_pkt)->data_ptr;
-
-    UNUSED(timeout);
-    UNUSED(r_buf_len);
-
-    if (csap == NULL) return -1;
-    layer = csap_get_rw_layer(csap);
-
-    spec_data = csap_get_proto_spec_data(csap, layer); 
-    ss = spec_data->ss; 
-
-    FD_ZERO(&fdset);
-    sel_timeout.tv_sec  = (ss->timeout) / 1000000L;
-    sel_timeout.tv_usec = (ss->timeout) % 1000000L;
-
-    if (snmp_send(ss, pdu) == 0)
-    {
-        ERROR("Send PDU failed, see the reason in stderr output");
-        snmp_perror("Send PDU failed");
-        return 0;
-    } 
-
-    if (spec_data->sock < 0)
-        snmp_select_info(&n_fds, &fdset, &sel_timeout, &block);
-    else
-    {
-        FD_SET(spec_data->sock, &fdset);
-        n_fds = spec_data->sock + 1;
     }
 
-    if (spec_data->pdu)
-        tad_snmp_free_pdu(spec_data->pdu, 0);
-
-    spec_data->pdu = NULL;
-
-    rc = select(n_fds, &fdset, 0, 0, &sel_timeout);
-    
-    VERB("%s(): CSAP %d, after select, rc %d\n",
-         __FUNCTION__, csap->id, rc);
-
-    if (rc > 0) 
+    /* TODO: Investigate how to avoid PDU coping */
+    pdu = snmp_clone_pdu(pdu);
+    if (pdu == NULL)
     {
-        snmp_read(&fdset);
-        
-        if (spec_data->pdu)
-        {
-            memcpy(r_buf, spec_data->pdu, sizeof(struct snmp_pdu));
-            return sizeof(struct snmp_pdu);
-        }
-        rc = 0;
+        ERROR(CSAP_LOG_FMT "Failed to close SNMP PDU to be sent",
+              CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
 
-    return rc; 
+    if (snmp_send(spec_data->ss, pdu) == 0)
+    {
+        /* PDU is not owned, have to free it */
+        snmp_free_pdu(pdu);
+        ERROR(CSAP_LOG_FMT "Send SNMP PDU failed", CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_EIO);
+    } 
+
+    return 0;
 }
 
 
@@ -694,8 +660,6 @@ tad_snmp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
         return TE_ENOMEM;
     }
     
-    csap->timeout = 2000000; 
-
     VERB("try to open SNMP session: \n");
     VERB("  version:    %d\n", csap_session.version);
     VERB("  rem-port:   %d\n", csap_session.remote_port);
@@ -778,8 +742,12 @@ tad_snmp_rw_destroy_cb(csap_p csap)
     snmp_csap_specific_data_p spec_data = csap_get_rw_data(csap);
 
     VERB("Destroy callback, id %d\n", csap->id);
-    if (spec_data->pdu != NULL)
-        tad_snmp_free_pdu(spec_data->pdu, 0);
+#if 1
+    assert(spec_data->pdu == NULL);
+#else
+    tad_snmp_free_pdu(spec_data->pdu, 0);
+    spec_data->pdu = NULL;
+#endif
 
     if (spec_data->ss)
     {

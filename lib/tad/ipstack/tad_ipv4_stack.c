@@ -76,7 +76,6 @@
 /** IPv4 layer as read/write specific data */
 typedef struct tad_ip4_rw_data {
     int                 socket;
-    int                 read_timeout;
     struct sockaddr_in  sa_op;
 } tad_ip4_rw_data;
 
@@ -117,9 +116,6 @@ tad_ip4_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     spec_data->sa_op.sin_family = AF_INET;
     spec_data->sa_op.sin_port = 0;
 
-    /* default read timeout */
-    spec_data->read_timeout = 200000; /* FIXME */
-
     /* opening incoming socket */
     spec_data->socket = socket(AF_INET, SOCK_RAW, IPPROTO_IP); 
     if (spec_data->socket < 0)
@@ -131,8 +127,6 @@ tad_ip4_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     {
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
-
-    csap->timeout          = 500000; /* FIXME */
 
     return 0;
 }
@@ -154,47 +148,17 @@ tad_ip4_rw_destroy_cb(csap_p csap)
 
 
 /* See description tad_ipstack_impl.h */
-int 
-tad_ip4_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
+te_errno
+tad_ip4_read_cb(csap_p csap, unsigned int timeout,
+                tad_pkt *pkt, size_t *pkt_len)
 {
-    fd_set              read_set;
-    tad_ip4_rw_data    *spec_data;
-    int                 ret; 
-    
-    struct timeval timeout_val;
-    
-    spec_data = csap_get_rw_data(csap); 
+    tad_ip4_rw_data    *spec_data = csap_get_rw_data(csap); 
+    te_errno            rc;
 
-    if (spec_data->socket < 0)
-    {
-        return -1; /* TE_EIO */
-    }
+    rc = tad_common_read_cb_sock(csap, spec_data->socket, 0, timeout,
+                                 pkt, NULL, NULL, pkt_len);
 
-    FD_ZERO(&read_set);
-    FD_SET(spec_data->socket, &read_set);
-
-    if (timeout == 0)
-    {
-        timeout_val.tv_sec = spec_data->read_timeout;
-        timeout_val.tv_usec = 0;
-    }
-    else
-    {
-        timeout_val.tv_sec = timeout / 1000000L; 
-        timeout_val.tv_usec = timeout % 1000000L;
-    }
-    
-    ret = select(spec_data->socket + 1, &read_set, NULL, NULL,
-                 &timeout_val); 
-    
-    if (ret == 0)
-        return 0;
-
-    if (ret < 0)
-        return -1;
-    
-    /* Note: possibly MSG_TRUNC and other flags are required */
-    return recv(spec_data->socket, buf, buf_len, 0); 
+    return rc;
 }
 
 
@@ -233,8 +197,8 @@ tad_ip4_write_cb(csap_p csap, const tad_pkt *pkt)
     ret = sendmsg(spec_data->socket, &msg, 0);
     if (ret < 0) 
     {
-        csap->last_errno = errno;
-        return TE_OS_RC(TE_TAD_CSAP, csap->last_errno);
+        rc = TE_OS_RC(TE_TAD_CSAP, errno);
+        return rc;
     }
 
     return 0;

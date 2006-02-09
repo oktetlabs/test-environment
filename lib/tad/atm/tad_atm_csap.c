@@ -49,11 +49,12 @@ static csap_spt_type_t atm_csap_spt =
     destroy_cb          : tad_atm_destroy_cb,
     get_param_cb        : NULL,
 
-    confirm_tmpl_cb     : tad_atm_confirm_pdu_cb,
+    confirm_tmpl_cb     : tad_atm_confirm_tmpl_cb,
     generate_pkts_cb    : tad_atm_gen_bin_cb,
     release_tmpl_cb     : tad_atm_release_pdu_cb,
 
-    confirm_ptrn_cb     : tad_atm_confirm_pdu_cb,
+    confirm_ptrn_cb     : tad_atm_confirm_ptrn_cb,
+    match_pre_cb        : NULL,
     match_do_cb         : tad_atm_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
@@ -73,11 +74,12 @@ static csap_spt_type_t aal5_csap_spt =
     destroy_cb          : tad_aal5_destroy_cb,
     get_param_cb        : NULL,
 
-    confirm_tmpl_cb     : tad_aal5_confirm_pdu_cb,
+    confirm_tmpl_cb     : tad_aal5_confirm_tmpl_cb,
     generate_pkts_cb    : tad_aal5_gen_bin_cb,
     release_tmpl_cb     : NULL,
 
-    confirm_ptrn_cb     : tad_aal5_confirm_pdu_cb,
+    confirm_ptrn_cb     : tad_aal5_confirm_ptrn_cb,
+    match_pre_cb        : NULL,
     match_do_cb         : tad_aal5_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,

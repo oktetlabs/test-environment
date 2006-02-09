@@ -7,11 +7,16 @@ main()
 {
     char my_type[] = "a.b";
     int id;
-    csap_p cp;
+    csap_p cp = NULL;
 
     csap_id_init(); 
-    id = csap_create(my_type); 
-    printf("new csap id: %d\n", id);
+    if (csap_create(my_type, &cp) != 0)
+    {
+        fprintf (stderr, "Failed to create a new CSAP!\n");
+        return 1;
+    }
+    id = cp->id;
+
     cp = csap_find(id);
     if (cp == NULL)
     {

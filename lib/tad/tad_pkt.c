@@ -52,6 +52,16 @@
 #include "tad_pkt.h"
 
 
+#undef assert
+#define assert(x) \
+    ( { do {                    \
+        if (!(x))           \
+        {                   \
+            *(int *)0 = 0;  \
+        }                   \
+    } while (0); } )
+
+
 /* See description in tad_pkt.h */
 void
 tad_pkt_seg_data_free(void *ptr, size_t len)
@@ -82,9 +92,7 @@ tad_pkt_put_seg_data(tad_pkt *pkt, tad_pkt_seg *seg,
     pkt->segs_len -= seg->data_len;
 
     tad_pkt_free_seg_data(seg);
-    seg->data_ptr = ptr;
-    seg->data_len = len;
-    seg->data_free = free;
+    tad_pkt_init_seg_data(seg, ptr, len, free);
 
     pkt->segs_len += len;
 
@@ -211,6 +219,17 @@ tad_pkt_alloc_seg(void *data_ptr, size_t data_len,
 
 /* See description in tad_pkt.h */
 void
+tad_pkt_cleanup_seg_data(tad_pkt_seg *seg)
+{
+    F_ENTRY("seg=%p", seg);
+
+    if (seg->data_free != NULL)
+        seg->data_free(seg->data_ptr, seg->data_len);
+    tad_pkt_init_seg_data(seg, NULL, 0, NULL);
+}
+
+/* See description in tad_pkt.h */
+void
 tad_pkt_free_seg_data(tad_pkt_seg *seg)
 {
     if (seg->data_free != NULL)
@@ -233,6 +252,29 @@ tad_pkt_init_segs(tad_pkt *pkt)
 {
     CIRCLEQ_INIT(&pkt->segs);
     pkt->n_segs = 0;
+    pkt->segs_len = 0;
+}
+
+/* See description in tad_pkt.h */
+void
+tad_pkt_cleanup_segs(tad_pkt *pkt)
+{
+    tad_pkt_seg    *p;
+
+    F_ENTRY("pkt=%p", pkt);
+
+    /* 
+     * Clean up each segment of the list in reverse direction.
+     * Don't care about integrity of the total packet data length.
+     */
+    for (p = pkt->segs.cqh_last;
+         p != (void *)&(pkt->segs);
+         p = p->links.cqe_prev)
+    {
+        tad_pkt_cleanup_seg_data(p);
+    }
+
+    /* Reset packet total data length */
     pkt->segs_len = 0;
 }
 
@@ -267,6 +309,22 @@ tad_pkt_init(tad_pkt *pkt, tad_pkt_ctrl_free my_free,
     pkt->opaque_free = opaque_free;
 
     pkt->my_free = my_free;
+}
+
+/* See description in tad_pkt.h */
+void
+tad_pkt_cleanup(tad_pkt *pkt)
+{
+    F_ENTRY("pkt=%p", pkt);
+
+    /* Free packet segments data */
+#if 1
+    tad_pkt_free_segs(pkt);
+#else
+    tad_pkt_cleanup_segs(pkt);
+#endif
+
+    /* TODO: Is it necessary to cleanup opaque data here? */
 }
 
 /* See description in tad_pkt.h */
@@ -330,6 +388,23 @@ tad_pkts_init(tad_pkts *pkts)
 {
     CIRCLEQ_INIT(&pkts->pkts);
     pkts->n_pkts = 0;
+}
+
+/* See description in tad_pkt.h */
+void
+tad_cleanup_pkts(tad_pkts *pkts)
+{
+    tad_pkt    *p;
+
+    F_ENTRY("pkts=%p", pkts);
+
+    /* 
+     * Clean up each packet of the list in reverse direction.
+     */
+    TAD_PKT_FOR_EACH_PKT_REV(&pkts->pkts, p)
+    {
+        tad_pkt_cleanup(p);
+    }
 }
 
 /* See description in tad_pkt.h */
@@ -468,6 +543,9 @@ tad_pkt_alloc(unsigned int n_segs, size_t first_seg_len)
         }
         tad_pkt_append_seg(pkt, seg);
     }
+
+    F_EXIT("pkt=%p n_segs=%u len=%u", pkt, tad_pkt_seg_num(pkt),
+           tad_pkt_len(pkt));
 
     return pkt;
 }
@@ -714,9 +792,9 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
     size_t          dst_seg_len;
     tad_pkt_seg    *new_seg;
 
-    ENTRY("pkt=%p skip_first_seg=%d src_pkt=%p src_seg=%p src_data=%p "
-          "src_len=%u", pkt, (int)data->skip_first_seg, data->src_pkt,
-          data->src_seg, data->src_data, (unsigned)data->src_len);
+    F_ENTRY("pkt=%p skip_first_seg=%d src_pkt=%p src_seg=%p src_data=%p "
+            "src_len=%u", pkt, (int)data->skip_first_seg, data->src_pkt,
+            data->src_seg, data->src_data, (unsigned)data->src_len);
 
     /* If we have allocated additional segment as header, skip it */
     if (data->skip_first_seg)
@@ -727,7 +805,7 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
     /* Destination segment have to be empty yet */
     assert(dst_seg->data_ptr == NULL && dst_seg->data_len == 0);
 
-    VERB("%s(): Destination segment is %p", __FUNCTION__, dst_seg);
+    F_VERB("%s(): Destination segment is %p", __FUNCTION__, dst_seg);
 
     do {
         if (data->src_len == 0)
@@ -736,14 +814,14 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
                                                        data->src_seg);
             if (data->src_seg == NULL)
             {
-                VERB("%s(): No more non-empty source segments",
-                     __FUNCTION__);
+                F_VERB("%s(): No more non-empty source segments",
+                       __FUNCTION__);
                 return 0;
             }
             data->src_data = data->src_seg->data_ptr;
             data->src_len = data->src_seg->data_len;
-            VERB("%s(): Next source segment ptr=%p len=%u",
-                 __FUNCTION__, data->src_data, (unsigned)data->src_len);
+            F_VERB("%s(): Next source segment ptr=%p len=%u",
+                   __FUNCTION__, data->src_data, (unsigned)data->src_len);
         }
 
         /* 
@@ -754,8 +832,8 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
 
         tad_pkt_put_seg_data(pkt, dst_seg, data->src_data, dst_seg_len,
                              NULL);
-        VERB("%s(): destionation segment %p put ptr=%p len=%u",
-             __FUNCTION__, dst_seg, data->src_data, dst_seg_len);
+        F_VERB("%s(): destionation segment %p put ptr=%p len=%u",
+               __FUNCTION__, dst_seg, data->src_data, dst_seg_len);
 
         /* Data remaining in the source segment */
         data->src_data += dst_seg_len;
@@ -765,8 +843,8 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
 
         if (dst_rest == 0)
         {
-            VERB("%s(): No space rest in destination packet",
-                 __FUNCTION__);
+            F_VERB("%s(): No space rest in destination packet",
+                   __FUNCTION__);
             break;
         }
 
@@ -777,7 +855,7 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
         }
         tad_pkt_insert_after_seg(pkt, dst_seg, new_seg);
         dst_seg = new_seg;
-        VERB("%s(): New segment %p allocated", __FUNCTION__, new_seg);
+        F_VERB("%s(): New segment %p allocated", __FUNCTION__, new_seg);
 
     } while (TRUE);
 
@@ -862,10 +940,10 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     tad_pkt_get_frag_cb_data   *data = opaque;
     size_t                      next_seg_off;
 
-    ENTRY("pkt=%p seg=%p seg_num=%u opaque=%p "
-          "{frag_off=%u frag_end=%u seg_off=%u dst=%p}",
-          pkt, seg, seg_num, opaque,
-          data->frag_off, data->frag_end, data->seg_off, data->dst);
+    F_ENTRY("pkt=%p seg=%p seg_num=%u opaque=%p "
+            "{frag_off=%u frag_end=%u seg_off=%u dst=%p}",
+            pkt, seg, seg_num, opaque,
+            data->frag_off, data->frag_end, data->seg_off, data->dst);
 
     next_seg_off = data->seg_off + seg->data_len;
 
@@ -893,7 +971,7 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     }
     data->seg_off = next_seg_off;
 
-    EXIT();    
+    F_EXIT();    
 
     /* 
      * TODO: May be it is usefull to interrupt iteration here,
@@ -988,6 +1066,154 @@ tad_pkt_get_frag(tad_pkt *dst, tad_pkt *src,
     }
 
     F_EXIT("OK");
+
+    return 0;
+}
+
+
+/* See description in tad_pkt.h */
+void
+tad_pkt_read(const tad_pkt *pkt, const tad_pkt_seg *seg,
+             size_t off, size_t len, uint8_t *dst)
+{
+    size_t  r;
+
+    assert(pkt != NULL);
+    assert(seg != NULL);
+    assert(off < seg->data_len);
+    assert(dst != NULL);
+
+    F_ENTRY("pkt=%p seg=%p off=%u len=%u dst=%p",
+            pkt, seg, (unsigned)off, (unsigned)len, dst);
+
+    r = MIN(len, seg->data_len - off);
+    memcpy(dst, (uint8_t *)(seg->data_ptr) + off, r);
+    len -= r;
+    if (len > 0)
+    {
+        do {
+            dst += r;
+            seg = tad_pkt_next_seg(pkt, seg);
+            assert(seg != NULL);
+            r = MIN(len, seg->data_len);
+            memcpy(dst, seg->data_ptr, r);
+            len -= r;
+        } while (len > 0);
+    }
+}
+
+/* See description in tad_pkt.h */
+void
+tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff, size_t bitlen,
+                  uint8_t *dst)
+{
+    const tad_pkt_seg  *seg;
+    size_t              off;
+
+    F_ENTRY("pkt=%p bitoff=%u bitlen=%u dst=%p",
+            pkt, (unsigned)bitoff, (unsigned)bitlen, dst);
+
+    assert((tad_pkt_len(pkt) << 3) >= (bitoff + bitlen));
+
+    /* Find the first segment with data to read */
+    seg = tad_pkt_first_seg(pkt);
+    assert(seg != NULL);
+    for (off = bitoff >> 3; off >= seg->data_len; )
+    {
+        off -= seg->data_len;
+        seg = tad_pkt_next_seg(pkt, seg);
+        assert(seg != NULL);
+    }
+
+    if (((bitoff & 7) == 0) && ((bitlen & 7) == 0))
+    {
+        /* Everything it byte-aligned */
+        tad_pkt_read(pkt, seg, off, bitlen >> 3, dst);
+    }
+    else if (((bitoff + bitlen) & 7) == 0)
+    {
+        /* End of the data to read is byte aligned */
+
+        /* Read required part of the first byte */
+        *dst = ((uint8_t *)(seg->data_ptr))[off] &
+               (0xff >> (bitoff & 7));
+
+        if ((bitlen >> 3) > 0)
+        {
+            /* Possibly we run out from the current segment */
+            for (++off; off >= seg->data_len; off -= seg->data_len)
+            {
+                seg = tad_pkt_next_seg(pkt, seg);
+                assert(seg != NULL);
+            }
+            tad_pkt_read(pkt, seg, off, bitlen >> 3, dst + 1);
+        }
+    }
+    else if ((bitoff + bitlen) > 8)
+    {
+        /* No support yet */
+        assert(FALSE);
+    }
+    else
+    {
+        unsigned int shift = 8 - bitoff - bitlen;
+
+        *dst = (((uint8_t *)(seg->data_ptr))[off] >> shift) &
+               (0xff >> (8 - bitlen));
+    }
+}
+
+
+/* See description in tad_pkt.h */
+/**
+ * Match packet content by mask.
+ *
+ * @param pkt           Packet
+ * @param len           Length of the mask/value
+ * @param mask          Mask bytes
+ * @param value         Value bytes
+ * @param exact_len     Is packet length should be equal to length of
+ *                      the mask or may be greater?
+ *
+ * @return Status code.
+ */
+te_errno
+tad_pkt_match_mask(const tad_pkt *pkt, size_t len, const uint8_t *mask,
+                   const uint8_t *value, te_bool exact_len)
+{
+    const tad_pkt_seg  *seg;
+    size_t              slen;
+    const uint8_t      *d, *m, *v;
+
+    if (exact_len && (tad_pkt_len(pkt) != len))
+    {
+        VERB("%s(): mask_len %u not equal packet len %u",
+             __FUNCTION__, (unsigned)len, (unsigned)tad_pkt_len(pkt));
+        return TE_ETADNOTMATCH;
+    }
+
+    if (len > tad_pkt_len(pkt))
+        len = tad_pkt_len(pkt);
+
+    F_VERB("%s(): length to be matched is %u", __FUNCTION__,
+           (unsigned)len);
+
+    m = mask; v = value;
+    TAD_PKT_FOR_EACH_SEG_FWD(&pkt->segs, seg)
+    {
+        for (slen = seg->data_len, d = seg->data_ptr;
+             (len > 0) && (slen > 0);
+             d++, m++, v++, len--, slen--)
+        {
+            if ((*d & *m) != (*v & *m))
+            { 
+                return TE_ETADNOTMATCH;
+            }
+        }
+        if (len == 0)
+            break;
+    }
+    assert(len == 0);
 
     return 0;
 }

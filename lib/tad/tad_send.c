@@ -61,7 +61,7 @@
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
-#include "tad_send_recv.h"
+#include "tad_send.h"
 
 
 /* buffer for send answer */
@@ -81,8 +81,8 @@
  * @return Status code.
  */
 static te_errno
-tad_sender_preprocess_pdus(csap_p csap, const asn_value *tmpl_unit,
-                           tad_sender_tmpl_unit_data *data)
+tad_send_preprocess_pdus(csap_p csap, const asn_value *tmpl_unit,
+                           tad_send_tmpl_unit_data *data)
 {
     te_errno            rc;
     const asn_value    *nds_pdus = NULL;
@@ -134,8 +134,8 @@ tad_sender_preprocess_pdus(csap_p csap, const asn_value *tmpl_unit,
  * @return Status code.
  */
 static te_errno
-tad_sender_preprocess_payload(csap_p csap, const asn_value *tmpl_unit,
-                              tad_sender_tmpl_unit_data *data)
+tad_send_preprocess_payload(csap_p csap, const asn_value *tmpl_unit,
+                              tad_send_tmpl_unit_data *data)
 {
     te_errno            rc;
     const asn_value    *nds_payload;
@@ -150,6 +150,7 @@ tad_sender_preprocess_payload(csap_p csap, const asn_value *tmpl_unit,
     {
         VERB(CSAP_LOG_FMT "No payload in template unit",
              CSAP_LOG_ARGS(csap));
+        data->pld_spec.type = TAD_PLD_UNSPEC;
         return 0;
     }
     if (rc != 0)
@@ -167,6 +168,12 @@ tad_sender_preprocess_payload(csap_p csap, const asn_value *tmpl_unit,
               "%r", CSAP_LOG_ARGS(csap), rc);
         return rc;
     } 
+    if (data->pld_spec.type == TAD_PLD_MASK)
+    {
+        ERROR(CSAP_LOG_FMT "Payload cannot be specified using mask",
+              CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CH, TE_ETADWRONGNDS);
+    }
 
     return 0;
 }
@@ -183,8 +190,8 @@ tad_sender_preprocess_payload(csap_p csap, const asn_value *tmpl_unit,
  * @return Status code.
  */
 static te_errno
-tad_sender_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
-                           tad_sender_tmpl_unit_data *data)
+tad_send_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
+                           tad_send_tmpl_unit_data *data)
 {
     te_errno            rc;
     const asn_value    *arg_sets;
@@ -252,8 +259,8 @@ tad_sender_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
  * @return Status code.
  */
 static te_errno
-tad_sender_preprocess_delays(csap_p csap, const asn_value *tmpl_unit,
-                             tad_sender_tmpl_unit_data *data)
+tad_send_preprocess_delays(csap_p csap, const asn_value *tmpl_unit,
+                             tad_send_tmpl_unit_data *data)
 {
     te_errno    rc;
     size_t      len = sizeof(data->delay);
@@ -284,14 +291,14 @@ tad_sender_preprocess_delays(csap_p csap, const asn_value *tmpl_unit,
  * @return Status code.
  */
 static te_errno
-tad_sender_preprocess_template_unit(csap_p csap, asn_value *tmpl_unit,
-                                    tad_sender_tmpl_unit_data *data)
+tad_send_preprocess_template_unit(csap_p csap, asn_value *tmpl_unit,
+                                    tad_send_tmpl_unit_data *data)
 {
     te_errno    rc;
 
     data->nds = tmpl_unit;
 
-    rc = tad_sender_preprocess_pdus(csap, tmpl_unit, data);
+    rc = tad_send_preprocess_pdus(csap, tmpl_unit, data);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Preprocessing of PDUs failed: %r",
@@ -299,7 +306,7 @@ tad_sender_preprocess_template_unit(csap_p csap, asn_value *tmpl_unit,
         return rc;
     }
 
-    rc = tad_sender_preprocess_payload(csap, tmpl_unit, data);
+    rc = tad_send_preprocess_payload(csap, tmpl_unit, data);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Preprocessing of payload failed: %r",
@@ -307,7 +314,7 @@ tad_sender_preprocess_template_unit(csap_p csap, asn_value *tmpl_unit,
         return rc;
     }
 
-    rc = tad_sender_preprocess_args(csap, tmpl_unit, data);
+    rc = tad_send_preprocess_args(csap, tmpl_unit, data);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Preprocessing of arguments failed: %r",
@@ -315,7 +322,7 @@ tad_sender_preprocess_template_unit(csap_p csap, asn_value *tmpl_unit,
         return rc;
     }
 
-    rc = tad_sender_preprocess_delays(csap, tmpl_unit, data);
+    rc = tad_send_preprocess_delays(csap, tmpl_unit, data);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Preprocessing of delays failed: %r",
@@ -339,8 +346,8 @@ tad_sender_preprocess_template_unit(csap_p csap, asn_value *tmpl_unit,
  * @return Status code.
  */
 static te_errno
-tad_sender_preprocess_template(csap_p csap, asn_value *template,
-                               tad_sender_template_data *data)
+tad_send_preprocess_template(csap_p csap, asn_value *template,
+                               tad_send_template_data *data)
 {
     te_errno    rc;
 
@@ -356,7 +363,7 @@ tad_sender_preprocess_template(csap_p csap, asn_value *template,
     if (data->units == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
 
-    rc = tad_sender_preprocess_template_unit(csap, template,
+    rc = tad_send_preprocess_template_unit(csap, template,
                                              data->units);
 
     return rc;
@@ -369,8 +376,8 @@ tad_sender_preprocess_template(csap_p csap, asn_value *template,
  * @param data  TAD Sender data associated with traffic template unit
  */
 static void
-tad_sender_free_template_unit_data(csap_p csap,
-                                   tad_sender_tmpl_unit_data *data)
+tad_send_free_template_unit_data(csap_p csap,
+                                   tad_send_tmpl_unit_data *data)
 {
     /* ASN.1 value freed for whole template */
     unsigned int layer;
@@ -400,12 +407,12 @@ tad_sender_free_template_unit_data(csap_p csap,
  * @param data  TAD Sender data associated with traffic template
  */
 static void
-tad_sender_free_template_data(csap_p csap, tad_sender_template_data *data)
+tad_send_free_template_data(csap_p csap, tad_send_template_data *data)
 {
     unsigned int    i;
 
     for (i = 0; i < data->n_units; ++i)
-        tad_sender_free_template_unit_data(csap, data->units + i);
+        tad_send_free_template_unit_data(csap, data->units + i);
 
     free(data->units);
     asn_free_value(data->nds);
@@ -414,42 +421,49 @@ tad_sender_free_template_data(csap_p csap, tad_sender_template_data *data)
 /**
  * Free TAD Sender context.
  *
+ * @param csap          CSAP
  * @param context       Context to be freed
  */
 static void
-tad_sender_free_context(tad_sender_context *context)
+tad_send_free_context(csap_p csap, tad_send_context *context)
 {
-    tad_sender_free_template_data(context->task.csap,
-                                  &context->tmpl_data);
-    free(context);
+    tad_send_free_template_data(csap, &context->tmpl_data);
 }
 
 
-/* See description in tad_send_recv.h */
-te_errno
-tad_sender_prepare(csap_p csap, asn_value *template,
-                   struct rcf_comm_connection *rcfc,
-                   tad_sender_context **context)
+/* See description in tad_send.h */
+void
+tad_send_init_context(tad_send_context *context)
 {
-    tad_sender_context     *my_ctx;
+    memset(context, 0, sizeof(*context));
+}
+
+/* See description in tad_send.h */
+te_errno
+tad_send_prepare(csap_p csap, asn_value *template,
+                   rcf_comm_connection *rcfc,
+                   const char *answer_pfx, size_t pfx_len)
+{
+    tad_send_context     *my_ctx = csap_get_send_context(csap);
     te_errno                rc;
     csap_low_resource_cb_t  prepare_send_cb;
 
     assert(csap != NULL);
     assert(template != NULL);
-    assert(context != NULL);
 
-    my_ctx = calloc(1, sizeof(*my_ctx));
-    my_ctx->task.csap = csap;
-    my_ctx->task.rcfc = rcfc;
+    my_ctx->status = 0;
 
-    rc = tad_sender_preprocess_template(csap, template,
-                                        &my_ctx->tmpl_data);
+    rc = tad_task_init(&my_ctx->task, rcfc, answer_pfx, pfx_len);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_send_preprocess_template(csap, template,
+                                      &my_ctx->tmpl_data);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Failed to preprocess template: %r",
               CSAP_LOG_ARGS(csap), rc);
-        tad_sender_free_context(my_ctx);
+        tad_send_free_context(csap, my_ctx);
         return rc;
     }
 
@@ -460,46 +474,35 @@ tad_sender_prepare(csap_p csap, asn_value *template,
     {
         ERROR(CSAP_LOG_FMT "Prepare for send failed: %r",
               CSAP_LOG_ARGS(csap), rc);
-        tad_sender_free_context(my_ctx);
+        tad_send_free_context(csap, my_ctx);
         return rc;
     }
-
-    *context = my_ctx;
 
     return 0;
 }
 
-/* See description in tad_send_recv.h */
+/* See description in tad_send.h */
 te_errno
-tad_sender_release(tad_sender_context *context)
+tad_send_release(csap_p csap, tad_send_context *context)
 {
     te_errno                result = 0;
     te_errno                rc;
-    csap_p                  csap;
     csap_low_resource_cb_t  shutdown_send_cb;
 
-#if 0
-    csap_layer_release_opaque_cb_t  release_cb;
-#endif
+    assert(csap != NULL);
+    assert(context != NULL);
 
-    if (context == NULL)
-        return 0;
+    shutdown_send_cb = csap_get_proto_support(csap,
+                           csap_get_rw_layer(csap))->shutdown_send_cb;
 
-    csap = context->task.csap;
-    if (csap != NULL)
+    if (shutdown_send_cb != NULL && (rc = shutdown_send_cb(csap)) != 0)
     {
-        shutdown_send_cb = csap_get_proto_support(csap,
-                               csap_get_rw_layer(csap))->shutdown_send_cb;
-
-        if (shutdown_send_cb != NULL && (rc = shutdown_send_cb(csap)) != 0)
-        {
-            ERROR(CSAP_LOG_FMT "Shut down sending failed: %r",
-                  CSAP_LOG_ARGS(csap), rc);
-            TE_RC_UPDATE(result, rc);
-        }
+        ERROR(CSAP_LOG_FMT "Shut down sending failed: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        TE_RC_UPDATE(result, rc);
     }
 
-    tad_sender_free_context(context);
+    tad_send_free_context(csap, context);
 
     return result;
 }
@@ -507,7 +510,7 @@ tad_sender_release(tad_sender_context *context)
 
 #if 0
 static te_errno
-tad_sender_delay()
+tad_send_delay()
 {
     uint32_t    delay;
     struct timeval npt; /* Next packet time moment */
@@ -568,7 +571,7 @@ tad_sender_delay()
  * The function complies with tad_pkt_enum_cb prototype.
  */
 static te_errno
-tad_sender_send_cb(tad_pkt *pkt, void *opaque)
+tad_send_cb(tad_pkt *pkt, void *opaque)
 {
     csap_p          csap = opaque;
     te_errno        rc;
@@ -582,20 +585,19 @@ tad_sender_send_cb(tad_pkt *pkt, void *opaque)
         /* An error occured */
         F_ERROR(CSAP_LOG_FMT "write callback error: %r",
                 CSAP_LOG_ARGS(csap), rc);
-        csap->last_errno = rc;
         /* Stop packets enumeration */
         return rc;
     }
     /* Written successfull */
     
     gettimeofday(&csap->last_pkt, NULL);
-    if (csap->sent_packets == 0)
+    if (csap->sender.sent_pkts == 0)
         csap->first_pkt = csap->last_pkt;
 
-    csap->sent_packets++;
+    csap->sender.sent_pkts++;
     
     F_VERB(CSAP_LOG_FMT "write callback OK, sent %u packets",
-           CSAP_LOG_ARGS(csap), csap->sent_packets);
+           CSAP_LOG_ARGS(csap), csap->sender.sent_pkts);
     
     /* Continue packets enumeration */
     return 0;
@@ -609,9 +611,9 @@ tad_sender_send_cb(tad_pkt *pkt, void *opaque)
  * @return Status code.
  */
 static te_errno
-tad_sender_send_packets(csap_p csap, tad_pkts *pkts)
+tad_send_packets(csap_p csap, tad_pkts *pkts)
 {
-    return tad_pkt_enumerate(pkts, tad_sender_send_cb, csap);
+    return tad_pkt_enumerate(pkts, tad_send_cb, csap);
 }
 
 
@@ -622,7 +624,7 @@ tad_sender_send_packets(csap_p csap, tad_pkts *pkts)
  * @param num       Number of elements in array
  */
 static void
-tad_sender_free_packets(tad_pkts *pkts, unsigned int num)
+tad_send_free_packets(tad_pkts *pkts, unsigned int num)
 {
     unsigned int    i;
 
@@ -641,8 +643,8 @@ tad_sender_free_packets(tad_pkts *pkts, unsigned int num)
  * @return Status code.
  */
 static te_errno
-tad_sender_send_by_template_unit(csap_p csap,
-                                 tad_sender_tmpl_unit_data *tu_data)
+tad_send_by_template_unit(csap_p csap,
+                                 tad_send_tmpl_unit_data *tu_data)
 {
     te_errno    rc;
     tad_pkts   *pkts;
@@ -654,51 +656,49 @@ tad_sender_send_by_template_unit(csap_p csap,
         return TE_RC(TE_TAD_CH, TE_ENOMEM);
 
     do { 
-        /* Check CSAP state/command */
-        if (!(csap->state & TAD_STATE_FOREGROUND) &&
-            (csap->command == TAD_OP_STOP ||
-             csap->command == TAD_OP_DESTROY))
+        /* Check CSAP state */
+        if (csap->state & CSAP_STATE_STOP)
         {
-            INFO(CSAP_LOG_FMT "Send operation terminated by command %u",
-                 CSAP_LOG_ARGS(csap), csap->command);
+            INFO(CSAP_LOG_FMT "Send operation terminated",
+                 CSAP_LOG_ARGS(csap));
             rc = TE_RC(TE_TAD_CH, TE_EINTR);
             break;
         }
 
         /* Generate packets to be send */
-        rc = tad_tr_send_prepare_bin(csap, tu_data->nds, 
-                                     tu_data->arg_iterated,
-                                     tu_data->arg_num, 
-                                     &tu_data->pld_spec,
-                                     tu_data->layer_opaque,
-                                     pkts);
+        rc = tad_send_prepare_bin(csap, tu_data->nds, 
+                                  tu_data->arg_iterated,
+                                  tu_data->arg_num, 
+                                  &tu_data->pld_spec,
+                                  tu_data->layer_opaque,
+                                  pkts);
         F_VERB("send_prepare_bin rc: %r", rc);
 
         /* Delay requested amount of time between iterations */
         if (rc == 0)
         {
 #if 0
-            rc = tad_sender_delay();
+            rc = tad_send_delay();
 #endif
         }
 
         /* Send generated packets */
         if (rc == 0)
         {
-            rc = tad_sender_send_packets(csap, pkts);
+            rc = tad_send_packets(csap, pkts);
             F_VERB(CSAP_LOG_FMT "send done for a template unit "
                    "iteration: %r", CSAP_LOG_ARGS(csap), rc);
         }
 
         /* Free resources allocated for packets */
-        tad_sender_free_packets(pkts, csap->depth + 1);
+        tad_send_free_packets(pkts, csap->depth + 1);
         
     } while (rc == 0 &&
              tad_iterate_tmpl_args(tu_data->arg_specs, 
                                    tu_data->arg_num,
                                    tu_data->arg_iterated) > 0);
 
-    tad_sender_free_packets(pkts, csap->depth + 1);
+    tad_send_free_packets(pkts, csap->depth + 1);
     free(pkts);
 
     F_EXIT("%r", rc);
@@ -716,8 +716,8 @@ tad_sender_send_by_template_unit(csap_p csap,
  * @return Status code.
  */
 extern te_errno
-tad_sender_send_by_template(csap_p csap,
-                            tad_sender_template_data *tmpl_data)
+tad_send_by_template(csap_p csap,
+                            tad_send_template_data *tmpl_data)
 {
     te_errno        rc;
     unsigned int    i;
@@ -726,7 +726,7 @@ tad_sender_send_by_template(csap_p csap,
 
     for (rc = 0, i = 0; rc == 0 && i < tmpl_data->n_units; ++i)
     {
-        rc = tad_sender_send_by_template_unit(csap,
+        rc = tad_send_by_template_unit(csap,
                                               tmpl_data->units + i);
         F_VERB(CSAP_LOG_FMT "send done for a template unit: %r",
                CSAP_LOG_ARGS(csap), rc);
@@ -737,279 +737,121 @@ tad_sender_send_by_template(csap_p csap,
     return rc;
 }
 
-/* See description in tad_send_recv.h */
+/* See description in tad_send.h */
 void * 
-tad_sender_thread(void *arg)
+tad_send_thread(void *arg)
 {
-    tad_sender_context         *context = arg; 
-    struct rcf_comm_connection *rcfc;
+    csap_p              csap = arg;
+    tad_send_context   *context; 
+    te_errno            rc;
 
-    csap_p      csap;
+    assert(csap != NULL);
+    F_ENTRY(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
 
-    uint32_t    sent = 0;
-    int         rc = 0;
-
-    char        answer_buffer[RBUF];  
-    size_t      ans_len;
-
-    F_ENTRY("%p", arg);
-
+    context = csap_get_send_context(csap);
     assert(context != NULL);
 
-    csap = context->task.csap;
-    assert(csap != NULL);
-    rcfc = context->task.rcfc;
-    assert(rcfc != NULL);
-
-    /* FIXME: Manage answer prefixes in a bit wiser way */
-    strcpy(answer_buffer, csap->answer_prefix);
-    ans_len = strlen(answer_buffer);
-
-    rc = tad_sender_send_by_template(csap, &context->tmpl_data);
-    F_VERB(CSAP_LOG_FMT "send done: %r", CSAP_LOG_ARGS(csap), rc);
-
-    /* Release all resources, finish task */
-    /* FIXME: Precess return value */
-    tad_sender_release(context);
-
-#if 0
-            /* STOP and DESTROY can use another RCF SID */
-            strcpy(answer_buffer, csap->answer_prefix);
-            ans_len = strlen(answer_buffer); 
-            break;
-#endif
-#define SEND_ANSWER(_fmt...) \
-    do {                                                        \
-        int r_c;                                                \
-                                                                \
-        if (snprintf(answer_buffer + ans_len,                   \
-                     RBUF - ans_len, _fmt) >=                   \
-                (int)(RBUF - ans_len))                          \
-        {                                                       \
-            ERROR("answer is truncated");                       \
-        }                                                       \
-        rcf_ch_lock();                                          \
-        VERB("Answer to send (%s:%d): %s",                      \
-               __FILE__, __LINE__, answer_buffer);              \
-        r_c = rcf_comm_agent_reply(rcfc, answer_buffer,         \
-                                   strlen(answer_buffer) + 1);  \
-        rcf_ch_unlock();                                        \
-    } while (0)
-
-    if (csap->command == TAD_OP_DESTROY &&
-        !(csap->state & TAD_STATE_FOREGROUND))
+    if (csap->state & CSAP_STATE_FOREGROUND)
     {
-        RING("%s(CSAP %d) destroy flag", __FUNCTION__, csap->id);
-        csap->command = TAD_OP_IDLE;
-        csap->state   = 0;
-    }
-    else if ((csap->state & TAD_STATE_FOREGROUND) ||
-             (csap->command == TAD_OP_STOP) )
-    {
-        VERB("blocked or long trsend finished. rc %x, sent %d", 
-             rc, sent);
-
-        csap->command = TAD_OP_IDLE;
-        csap->state   = 0;
-
-        if (rc != 0)
-            SEND_ANSWER("%d",  TE_RC(TE_TAD_CH, rc)); 
-        else 
-            SEND_ANSWER("0 %d", sent); 
-    }
-    else if (rc != 0)
-    { 
-        csap->last_errno = rc; 
-        csap->state |= TAD_STATE_COMPLETE;
-
-        while (1) 
-        {
-            te_bool need_answer = (csap->command != TAD_OP_DESTROY);
-
-            usleep(30*1000);
-
-            if (csap->command == TAD_OP_STOP ||
-                csap->command == TAD_OP_DESTROY)
-            {
-                csap->command = TAD_OP_IDLE;
-                csap->state = 0;
-                if (need_answer)
-                {
-                    strcpy(answer_buffer, csap->answer_prefix);
-                    ans_len = strlen(answer_buffer); 
-                    SEND_ANSWER("%d",  TE_RC(TE_TAD_CH, rc)); 
-                }
-                break;
-            }
-        }
+        /*
+         * When traffic send start is executed in foreground (with
+         * waiting for end of operation or in the case of send/receive),
+         * just send TE proto ACK to release the RCF session, since
+         * we have gone to own thread.
+         */
+        rc = tad_task_reply(&context->task,
+                            "%u", TE_RC(TE_TAD_CH, TE_EACK));
     }
     else
     {
-        csap->command = TAD_OP_IDLE;
-        csap->state = 0;
+        /*
+         * When traffic send start is executed in background
+         * (non-blocking mode), notify that operation is ready to start.
+         */
+        rc = tad_task_reply(&context->task, "0 0");
+        tad_task_free(&context->task);
+    }
+    /* 
+     * May be if TE proto reply is failed, it's better not to start at
+     * all, but let's try.
+     */
+    TE_RC_UPDATE(context->status, rc);
+
+    /* Send by preprocessed template */
+    rc = tad_send_by_template(csap, &context->tmpl_data);
+    F_VERB(CSAP_LOG_FMT "send done: %r", CSAP_LOG_ARGS(csap), rc);
+    TE_RC_UPDATE(context->status, rc);
+
+    /* Release all resources */
+    rc = tad_send_release(csap, context);
+    TE_RC_UPDATE(context->status, rc);
+
+    /*
+     * Transition of the CSAP state to DONE and send of TE protocol
+     * reply have to be done under common lock. Otherwise,
+     *  - if we send TE protocol reply and then transit to DONE-IDLE
+     *    state, it is possible to get the next command before state
+     *    transition and reply that CSAP is busy;
+     *  - if we transit to DONE-IDLE state and then send TE protocol
+     *    reply using Sender context structures, CSAP can be destroyed
+     *    before processing with reply.
+     *
+     * When both operations are done under common lock, order does not
+     * matter, since processing of any other command or continue with
+     * CSAP destruction requires lock.
+     *
+     * Note that CSAP can be destroyed when lock is released.
+     */
+    CSAP_LOCK(csap);
+
+    /* Ignore errors, since we can do nothing usefull here. */
+    (void)csap_command_under_lock(csap, TAD_OP_SEND_DONE);
+
+    if (csap->state & CSAP_STATE_RECV)
+    {
+        /*
+         * Send/receive request - nothing to be reported by Sender.
+         */
+    }
+    else if (csap->state & CSAP_STATE_FOREGROUND)
+    {
+        if (context->status != 0)
+            rc = tad_task_reply(&context->task,
+                                "%u", context->status);
+        else 
+            rc = tad_task_reply(&context->task,
+                                "0 %u", context->sent_pkts); 
+        tad_task_free(&context->task);
+
+        /* We can do nothing helpfull, if reply failed, just remember it */
+        TE_RC_UPDATE(context->status, rc);
+    }
+    else
+    {
+        /* 
+         * Send operation was started in background, we have to preserve
+         * the state and status of the operation to be reported on stop.
+         */
     }
 
-#undef SEND_ANSWER
+    /* 
+     * Log under the lock, since CSAP can be destroyed when lock is
+     * released.
+     */
+    F_EXIT(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
+
+    CSAP_UNLOCK(csap);
 
     return NULL;
 }
 
-
-/* see description in tad_utils.h */
-int
-tad_convert_payload(const asn_value *ndn_payload, 
-                    tad_payload_spec_t *pld_spec)
-{
-    const asn_value *payload;
-
-    asn_tag_class t_class;
-    uint16_t      t_val;
-
-    int rc = 0;
-
-    if (ndn_payload == NULL || pld_spec == NULL)
-        return TE_EWRONGPTR;
-
-    rc = asn_get_choice_value(ndn_payload, &payload, &t_class, &t_val);
-    if (rc != 0)
-    {
-        ERROR("%s(): get choice of Payload failed %r", __FUNCTION__, rc);
-        return rc;
-    }
-
-    switch (t_val)
-    {
-        case NDN_PLD_BYTES:  
-            pld_spec->type = TAD_PLD_BYTES;
-            {
-                size_t d_len = asn_get_length(payload, "");
-                void  *data = malloc(d_len);
-
-                rc = asn_read_value_field(payload, data, &d_len, "");
-                if (rc)
-                {
-                    free(data);
-                    return TE_RC(TE_TAD_CH, rc);
-                }
-                pld_spec->plain.length = d_len;
-                pld_spec->plain.data = data;
-            }
-            break;
-
-        case NDN_PLD_FUNC:  
-            {
-                char   func_name[256];
-                size_t fn_len = sizeof(func_name);
-
-                pld_spec->type = TAD_PLD_FUNCTION;
-                rc = asn_read_value_field(payload, func_name, &fn_len, "");
-
-                if (rc == 0 && 
-                    (pld_spec->func = (tad_user_generate_method) 
-                            rcf_ch_symbol_addr(func_name, 1)) 
-                    == NULL)
-                {
-                    ERROR("Function %s for pld generation NOT found",
-                          func_name);
-                    rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
-                }
-            }
-            break;
-
-        case NDN_PLD_LEN:   
-            pld_spec->type = TAD_PLD_LENGTH;
-            {
-                int32_t len;
-                asn_read_int32(payload, &len, "");
-                pld_spec->plain.length = len;
-                pld_spec->plain.data = NULL;
-            }
-            break;
-
-        case NDN_PLD_STREAM:
-            {
-                char   func_name[256];
-                size_t fn_len = sizeof(func_name);
-
-                const asn_value *du_field;
-
-                pld_spec->type = TAD_PLD_STREAM;
-                rc = asn_read_value_field(payload, func_name, &fn_len,
-                                          "function");
-                if (rc != 0)
-                    break;
-                INFO("%s(): stream function <%s>", __FUNCTION__, func_name);
-                if ((pld_spec->stream.func = (tad_stream_callback) 
-                                    rcf_ch_symbol_addr(func_name, 1)) 
-                    == NULL)
-                {
-                    ERROR("Function %s for stream NOT found",
-                          func_name);
-                    rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
-                }
-
-                if ((rc = asn_get_child_value(payload, &du_field, PRIVATE,
-                                              NDN_PLD_STR_OFF)) != 0)
-                    break;
-
-                tad_data_unit_convert_simple(du_field, 
-                                             &(pld_spec->stream.offset));
-
-                if ((rc = asn_get_child_value(payload, &du_field, PRIVATE,
-                                              NDN_PLD_STR_LEN)) != 0)
-                    break;
-
-                tad_data_unit_convert_simple(du_field, 
-                                             &(pld_spec->stream.length));
-            }
-            break;
-
-        default: 
-            pld_spec->type = TAD_PLD_UNKNOWN;
-    }
-
-    if (rc != 0)
-        ERROR("%s failed %r", __FUNCTION__, rc);
-
-    return rc;
-}
-
-/* see description in tad_utils.h */
-void
-tad_payload_spec_clear(tad_payload_spec_t *pld_spec)
-{
-    if (pld_spec == NULL)
-        return;
-    switch (pld_spec->type)
-    {
-        case TAD_PLD_UNKNOWN:
-        case TAD_PLD_LENGTH:
-        case TAD_PLD_FUNCTION:
-            /* do nothing */
-            break;
-
-        case TAD_PLD_BYTES:
-            free(pld_spec->plain.data);
-            break;
-
-        case TAD_PLD_STREAM:
-            tad_data_unit_clear(&pld_spec->stream.offset);
-            tad_data_unit_clear(&pld_spec->stream.length);
-            break;
-    }
-    memset(pld_spec, 0, sizeof(*pld_spec));
-    pld_spec->type = TAD_PLD_UNKNOWN;
-}
-
-/* see description in tad_utils.h */
-int
-tad_tr_send_prepare_bin(csap_p csap, asn_value_p nds, 
-                        const tad_tmpl_arg_t *args, size_t arg_num,
-                        tad_payload_spec_t *pld_data, void **layer_opaque,
-                        tad_pkts *pkts_per_layer)
+/* See the description in tad_send.h */
+te_errno
+tad_send_prepare_bin(csap_p csap, asn_value_p nds, 
+                     const tad_tmpl_arg_t *args, size_t arg_num,
+                     tad_payload_spec_t *pld_data, void **layer_opaque,
+                     tad_pkts *pkts_per_layer)
 { 
-    tad_payload_spec_t local_pld_data;
-
     tad_pkts   *pdus = pkts_per_layer + csap->depth;
     tad_pkts   *sdus;
 
@@ -1017,28 +859,6 @@ tad_tr_send_prepare_bin(csap_p csap, asn_value_p nds,
     te_errno        rc = 0;
     const asn_value *layer_pdu = NULL; 
     char  label[20];
-
-    if (pld_data == NULL)
-    {
-        const asn_value *ndn_payload;
-
-        pld_data = &local_pld_data;
-
-        rc = asn_get_child_value(nds, &ndn_payload, PRIVATE,
-                                 NDN_TMPL_PAYLOAD);
-        if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
-        {
-            pld_data->type = TAD_PLD_UNKNOWN;
-            rc = 0;
-        }
-        else if (rc != 0)
-            return TE_RC(TE_TAD_CH, rc);
-        else 
-        { 
-            if ((rc = tad_convert_payload(ndn_payload, pld_data)) != 0)
-                return TE_RC(TE_TAD_CH, rc); 
-        }
-    }
 
     tad_pkts_init(pdus);
     rc = tad_pkts_alloc(pdus, 1, 0, 0);
@@ -1050,7 +870,7 @@ tad_tr_send_prepare_bin(csap_p csap, asn_value_p nds,
 
     switch (pld_data->type)
     {
-        case TAD_PLD_UNKNOWN:
+        case TAD_PLD_UNSPEC:
             break;
 
         case TAD_PLD_FUNCTION:

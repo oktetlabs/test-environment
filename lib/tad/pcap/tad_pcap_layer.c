@@ -104,8 +104,8 @@ tad_pcap_destroy_cb(csap_p csap, unsigned int layer)
 
 /* See description in tad_pcap_impl.h */
 te_errno
-tad_pcap_confirm_pdu_cb(csap_p csap, unsigned int layer,
-                        asn_value_p layer_pdu, void **p_opaque)
+tad_pcap_confirm_ptrn_cb(csap_p csap, unsigned int layer,
+                         asn_value_p layer_pdu, void **p_opaque)
 {
     tad_pcap_layer_data    *layer_data;
 
@@ -178,34 +178,66 @@ tad_pcap_confirm_pdu_cb(csap_p csap, unsigned int layer,
     return 0;
 }
 
+/* See description tad_pcap_impl.h */
+void
+tad_pcap_release_ptrn_cb(csap_p csap, unsigned int layer, void *opaque)
+{
+    tad_pcap_layer_data    *layer_data;
+    int                     bpf_id;
+
+    UNUSED(opaque);
+
+    layer_data = csap_get_proto_spec_data(csap, layer); 
+
+    for (bpf_id = 1; bpf_id <= layer_data->bpf_count; bpf_id++)
+    {
+        if (layer_data->bpfs[bpf_id] != NULL)
+        {
+            pcap_freecode(layer_data->bpfs[bpf_id]);
+            free(layer_data->bpfs[bpf_id]);
+            layer_data->bpfs[bpf_id] = NULL;
+        }
+    }
+
+    layer_data->bpf_count = 0;
+}
+
 
 /* See description in tad_pcap_impl.h */
 te_errno
-tad_pcap_match_bin_cb(csap_p csap, unsigned int layer,
-                      const asn_value *pattern_pdu,
-                      const csap_pkts *pkt, csap_pkts *payload,
-                      asn_value_p parsed_packet)
+tad_pcap_match_bin_cb(csap_p csap,
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu)
 {
     tad_pcap_layer_data    *layer_data;
-    int                     rc;
+    te_errno                rc;
+    int                     ret;
     uint8_t                *data;
+    size_t                  data_len;
     int                     bpf_id;
     struct bpf_program     *bpf_program;
     struct bpf_insn        *bpf_code;
     size_t                  tmp_len;
 
-    VERB("%s() started", __FUNCTION__);
+    UNUSED(ptrn_opaque);
+    UNUSED(meta_pkt);
+
+    F_VERB("%s() started", __FUNCTION__);
+
+    assert(tad_pkt_seg_num(pdu) == 1);
+    assert(tad_pkt_first_seg(pdu) != NULL);
+    data = tad_pkt_first_seg(pdu)->data_ptr;
+    data_len = tad_pkt_first_seg(pdu)->data_len;
 
     layer_data = csap_get_proto_spec_data(csap, layer);
-    data = pkt->data;
-
-    if (pattern_pdu == NULL)
-    {
-        VERB("pattern pdu is NULL, packet matches");
-    }
+    assert(layer_data != NULL);
 
     tmp_len = sizeof(int);
-    rc = asn_read_value_field(pattern_pdu, &bpf_id, &tmp_len, "bpf-id");
+    rc = asn_read_value_field(ptrn_pdu, &bpf_id, &tmp_len, "bpf-id");
     if (rc != 0)
     {
         ERROR("%s(): Cannot read \"bpf-id\" field from PDU pattern",
@@ -229,9 +261,9 @@ tad_pcap_match_bin_cb(csap_p csap, unsigned int layer,
 
     bpf_code = bpf_program->bf_insns;
 
-    rc = bpf_filter(bpf_code, pkt->data, pkt->len, pkt->len);
-    VERB("bpf_filter() returns 0x%x (%d)", rc, rc);
-    if (rc <= 0)
+    ret = bpf_filter(bpf_code, data, data_len, data_len);
+    F_VERB("bpf_filter() returns 0x%x (%d)", ret, ret);
+    if (ret <= 0)
     {
         return TE_ETADNOTMATCH;
     }
@@ -246,20 +278,20 @@ tad_pcap_match_bin_cb(csap_p csap, unsigned int layer,
 
         filter_len = sizeof(int);
 
-        if (asn_read_value_field(pattern_pdu, &filter_id,
+        if (asn_read_value_field(ptrn_pdu, &filter_id,
                                  &filter_len, "filter-id") < 0)
         {
             ERROR("Cannot get filter-id");
             filter_id = -1;
         }
 
-        rc = asn_get_length(pattern_pdu, "filter");
-        if (rc < 0)
+        ret = asn_get_length(ptrn_pdu, "filter");
+        if (ret < 0)
         {
             ERROR("Cannot get length of filter string");
             break;
         }
-        filter_len = rc;
+        filter_len = ret;
 
         filter = (char *) malloc(filter_len + 1);
         if (filter == NULL)
@@ -268,7 +300,7 @@ tad_pcap_match_bin_cb(csap_p csap, unsigned int layer,
             break;
         }
 
-        if (asn_read_value_field(pattern_pdu, filter,
+        if (asn_read_value_field(ptrn_pdu, filter,
                                  &filter_len, "filter") < 0)
         {
             ERROR("Cannot get filter string");
@@ -285,49 +317,17 @@ tad_pcap_match_bin_cb(csap_p csap, unsigned int layer,
     } while (0);
 #endif
 
-    /* Fill parsed packet value */
-    if (parsed_packet)
+    rc = tad_pkt_get_frag(sdu, pdu, 0, data_len,
+                          TAD_PKT_GET_FRAG_ERROR);
+    if (rc != 0)
     {
-        rc = asn_write_component_value(parsed_packet, pattern_pdu, "#pcap");
-        if (rc)
-            ERROR("write pcap filter to packet rc %r", rc);
+        ERROR(CSAP_LOG_FMT "Failed to prepare Ethernet SDU: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
     }
 
-    VERB("Try to copy payload of %u bytes", (unsigned)(pkt->len));
-
-    /* passing payload to upper layer */
-    memset(payload, 0 , sizeof(*payload));
-    payload->len = pkt->len;
-
-    payload->data = malloc(payload->len);
-    memcpy(payload->data, pkt->data, payload->len);
-
-    F_VERB("PCAP csap N %d, packet matches, pkt len %ld, pld len %ld",
-           csap->id, pkt->len, payload->len);
+    F_VERB(CSAP_LOG_FMT "PCAP packet (len=%u) matched",
+           CSAP_LOG_ARGS(csap), (unsigned)data_len);
 
     return 0;
-}
-
-/* See description tad_pcap_impl.h */
-void
-tad_pcap_release_ptrn_cb(csap_p csap, unsigned int layer, void *opaque)
-{
-    tad_pcap_layer_data    *layer_data;
-    int                     bpf_id;
-
-    UNUSED(opaque);
-
-    layer_data = csap_get_proto_spec_data(csap, layer); 
-
-    for (bpf_id = 1; bpf_id <= layer_data->bpf_count; bpf_id++)
-    {
-        if (layer_data->bpfs[bpf_id] != NULL)
-        {
-            pcap_freecode(layer_data->bpfs[bpf_id]);
-            free(layer_data->bpfs[bpf_id]);
-            layer_data->bpfs[bpf_id] = NULL;
-        }
-    }
-
-    layer_data->bpf_count = 0;
 }

@@ -377,7 +377,7 @@ process_sync_pipe(cli_csap_specific_data_p spec_data)
  *
  * @param spec_data      Pointer to CSAP-specific data
  * @param cmd_buf_len    The length of the command we capturing reply from.
- *                       It is necessary to stip that number of starting 
+ *                       It is necessary to strip that number of starting 
  *                       bytes from the reply because they just echoed.
  * @param reply_buf      Buffer for reply message, can be NULL (OUT)
  * @param reply_buf_len  Length of reply buffer
@@ -596,31 +596,32 @@ free_cli_csap_data(cli_csap_specific_data_p spec_data)
 
 
 /* See description tad_cli_impl.h */
-int 
-tad_cli_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
+te_errno
+tad_cli_read_cb(csap_p csap, unsigned int timeout,
+                tad_pkt *pkt, size_t *pkt_len)
 {
     cli_csap_specific_data_p spec_data;
 
-    int    timeout_rate;
-    int    rc;
+    tad_pkt_seg    *seg;
 
-    struct timeval tv = { timeout / 100000, timeout % 100000 };
-    
-    if (csap == NULL)
-        return -1;
+    int     my_timeout = timeout;
+    int     timeout_rate;
+    int     rc;
 
-    VERB("%s() Called with CSAP %d", __FUNCTION__, csap->id);
+    struct timeval tv;
 
     spec_data = csap_get_rw_data(csap); 
 
+    VERB("%s() Called with CSAP %d", __FUNCTION__, csap->id);
     assert(spec_data->io >= 0);
 
     if (!cli_session_alive(spec_data))
     {
         ERROR("CLI session is not running");
-        return -1;
+        return TE_RC(TE_TAD_CSAP, TE_EIO);
     }
 
+#if 0
     if ((spec_data->status & CLI_CSAP_STATUS_REPLY_WAITING) == 0)
     {
         VERB("Nothing to read!");
@@ -630,8 +631,11 @@ tad_cli_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
          * from the CSAP. Behave like we returned by timeout.
          * @todo May be sleep(timeout) should be executed here?
          */
-        return 0;
+        return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
     }
+#endif
+
+    TE_US2TV(timeout, &tv);
 
     /* Try to wait for command reply during timeout */
     timeout_rate = timeout / 10;
@@ -639,19 +643,36 @@ tad_cli_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
     {
         if ((rc = process_sync_pipe(spec_data)) != 0)
         {
-            if (rc == EBUSY && timeout != 0)
+            if (rc == EBUSY && my_timeout != 0)
             {
                 /* Sleep for a while */
                 usleep(timeout_rate);
-                if ((timeout -= timeout_rate) < 0)
-                    timeout = 0;
+                if ((my_timeout -= timeout_rate) < 0)
+                    my_timeout = 0;
                 continue;
             }
             
-            return -1;
+            return TE_OS_RC(TE_TAD_CSAP, rc);
         }
         else
             break;
+    }
+
+    seg = tad_pkt_first_seg(pkt);
+    if (seg == NULL)
+    {
+        seg = tad_pkt_alloc_seg(NULL, 0x1000, NULL);
+        if (seg == NULL)
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        tad_pkt_append_seg(pkt, seg);
+    }
+    else if (seg->data_ptr == NULL)
+    {
+        void *mem = malloc(0x1000);
+
+        if (mem == NULL)
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        tad_pkt_put_seg_data(pkt, seg, mem, 0x1000, tad_pkt_seg_data_free);
     }
     
     /*
@@ -659,11 +680,17 @@ tad_cli_read_cb(csap_p csap, int timeout, char *buf, size_t buf_len)
      * so read out the reply.
      */
     rc = parent_read_reply(spec_data, spec_data->last_cmd_len,
-                           buf, buf_len, &tv);
+                           seg->data_ptr, seg->data_len, &tv);
     if (rc < 0)
     {
-        csap->last_errno = -rc;
-        rc = -1;
+        rc = -rc;
+    }
+    else
+    {
+        *pkt_len = rc;
+        VERB("%s(): read data length %u", __FUNCTION__,
+             (unsigned)*pkt_len);
+        rc = 0;
     }
 
     return rc;
@@ -687,12 +714,11 @@ tad_cli_write_cb(csap_p csap, const tad_pkt *pkt)
 
     int    timeout;
     size_t bytes_written;
-    int    rc;
+    int    ret;
+    te_errno rc;
 
     struct timeval tv;
 
-    if (csap == NULL)
-        return -1;
 
     VERB("%s() Called with CSAP %d", __FUNCTION__, csap->id);
 
@@ -712,50 +738,55 @@ tad_cli_write_cb(csap_p csap, const tad_pkt *pkt)
          * We haven't got a reply for the previous command,
          * see if it has finished by now.
          */
-        if ((rc = process_sync_pipe(spec_data)) != 0)
-            return -1;
+        if ((ret = process_sync_pipe(spec_data)) != 0)
+            return TE_RC(TE_TAD_CSAP, TE_EIO);
     }
 
     timeout = csap->timeout;
 
-    rc = write(spec_data->data_sock, &timeout, sizeof(timeout));
+    ret = write(spec_data->data_sock, &timeout, sizeof(timeout));
     bytes_written = write(spec_data->data_sock, buf, buf_len);
-    if (rc != (int)sizeof(timeout) || bytes_written != buf_len)
+    if (ret != (int)sizeof(timeout) || bytes_written != buf_len)
     {
         ERROR("%s(): Cannot write '%s' command to Expect side, "
               "rc = %d, errno = %d",
               __FUNCTION__, buf, bytes_written, errno);
-        return -1;
+        return TE_RC(TE_TAD_CSAP, TE_EIO);
     }
 
     spec_data->last_cmd_len = buf_len;
 
+#if 0
     /* Wait for CLI response */
     tv.tv_sec =  csap->timeout / 1000000;
     tv.tv_usec = csap->timeout % 1000000;
-    if ((rc = parent_read_reply(spec_data, buf_len, NULL, 0, &tv)) <= 0)
+    if ((ret = parent_read_reply(spec_data, buf_len, NULL, 0, &tv)) <= 0)
     {
-        if (rc < 0)
+        if (ret < 0)
         {
-            csap->last_errno = -rc;
-            rc = -1;
+            rc = TE_RC(TE_TAD_CSAP, -ret);
         }
-        /*
-         * @todo Remove this checking when CSAP interpret rc 0 as timeout
-         * on write operation.
-         */
-        return rc == 0 ? -1 : rc;
+        else
+        {
+            /*
+             * @todo Remove this checking when CSAP interpret rc 0 as timeout
+             * on write operation.
+             */
+            rc = TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+        }
+        return rc;
     }
+#endif
 
-    return bytes_written;
+    return 0;
 }
 
 
 /* See description tad_cli_impl.h */
-int 
-tad_cli_write_read_cb(csap_p csap, int timeout,
+te_errno
+tad_cli_write_read_cb(csap_p csap, unsigned int timeout,
                       const tad_pkt *w_pkt,
-                      char *r_buf, size_t r_buf_len)
+                      tad_pkt *r_pkt, size_t *r_pkt_len)
 {
 #if 1
     const void *w_buf;
@@ -769,9 +800,10 @@ tad_cli_write_read_cb(csap_p csap, int timeout,
     cli_csap_specific_data_p spec_data;
 
     size_t bytes_written;
-    int    rc;
+    int    ret;
+    te_errno    rc;
 
-    struct timeval tv = { timeout / 100000, timeout % 100000 };
+    struct timeval tv = { timeout / 1000000, timeout % 1000000 };
 
     VERB("%s() Called with CSAP %d", __FUNCTION__, csap->id);
 
@@ -796,49 +828,59 @@ tad_cli_write_read_cb(csap_p csap, int timeout,
          */
         VERB("A reply for the previous command hasn't been got yet, "
              "so read out sync_pipe to see if now it's waiting us");
-        if ((rc = process_sync_pipe(spec_data)) != 0)
+        if ((ret = process_sync_pipe(spec_data)) != 0)
         {
             VERB("Not yet ...");
-            return -1;
+            return TE_RC(TE_TAD_CSAP, TE_EIO);
         }
         VERB("Yes we've just read out reply notification!\n"
              "We are ready to run next command.");
 
         /* Read out pending reply */
-        rc = parent_read_reply(spec_data, spec_data->last_cmd_len, 
+        ret = parent_read_reply(spec_data, spec_data->last_cmd_len, 
                                NULL, 0, &tv);
-        if (rc < 0)
+        if (ret < 0)
         {
-            csap->last_errno = -rc;
-            rc = -1;
+            rc = TE_RC(TE_TAD_CSAP, -ret);
+        }
+        else
+        {
+            rc = 0;
         }
 
-        if (rc <= 0)
+        if (rc != 0)
             return rc;
     }
 
     VERB("Send command '%s' to Expect side", w_buf);
 
-    rc = write(spec_data->data_sock, &timeout, sizeof(timeout));
+    ret = write(spec_data->data_sock, &timeout, sizeof(timeout));
     bytes_written = write(spec_data->data_sock, w_buf, w_buf_len);
-    if (rc != (int)sizeof(timeout) || bytes_written != w_buf_len)
+    if (ret != (int)sizeof(timeout) || bytes_written != w_buf_len)
     {
         ERROR("%s(): Cannot write '%s' command to Expect side, "
               "rc = %d, errno = %d",
               __FUNCTION__, w_buf, bytes_written, errno);
-        return -1;
+        return TE_RC(TE_TAD_CSAP, TE_EIO);
     }
 
     spec_data->last_cmd_len = w_buf_len;
 
     /* Wait for CLI response */
-    rc = parent_read_reply(spec_data, w_buf_len, r_buf, r_buf_len, &tv);
+    ret = parent_read_reply(spec_data, w_buf_len,
+                            r_pkt->segs.cqh_first->data_ptr,
+                            r_pkt->segs.cqh_first->data_len, &tv);
 
-    if (rc < 0)
+    if (ret < 0)
     {
-        VERB("Reading reply from Expect side finishes with %x return code", -rc);
-        csap->last_errno = -rc;
-        rc = -1;
+        rc = TE_RC(TE_TAD_CSAP, -ret);
+        VERB("Reading reply from Expect side finishes with %r return code",
+             rc);
+    }
+    else
+    {
+        *r_pkt_len = ret;
+        rc = 0;
     }
 
     return rc;
@@ -1093,12 +1135,9 @@ tad_cli_rw_init_cb(csap_p csap, const asn_value *csap_nds)
         goto error;
     }
 
-    /* Default read timeout */
-    cli_spec_data->read_timeout = CLI_CSAP_DEFAULT_TIMEOUT; 
-
     csap_set_rw_data(csap, cli_spec_data);
 
-    csap->timeout           = 500000;
+    cli_spec_data->read_timeout = CLI_CSAP_DEFAULT_TIMEOUT;
 
     if ((cli_spec_data->expect_pid = fork()) == -1)
     {

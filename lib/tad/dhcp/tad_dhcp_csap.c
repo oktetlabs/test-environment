@@ -54,6 +54,7 @@ static csap_spt_type_t dhcp_csap_spt =
     release_tmpl_cb     : NULL,
 
     confirm_ptrn_cb     : tad_dhcp_confirm_pdu_cb,
+    match_pre_cb        : NULL,
     match_do_cb         : tad_dhcp_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,

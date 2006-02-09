@@ -52,6 +52,7 @@
 
 #include "ndn.h" 
 
+#include "tad_types.h"
 #include "csap_id.h"
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
@@ -179,6 +180,9 @@ check_init(void)
     is_initialized = 1;
 }
 
+/**
+ * Init TAD Command Handler.
+ */
 void
 tad_ch_init(void)
 {
@@ -254,33 +258,30 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
 
     check_init();
 
-    new_csap_id = csap_create(stack);
-    if (new_csap_id == CSAP_INVALID_HANDLE)
+    rc = csap_create(stack, &new_csap);
+    if (rc != 0)
     {
-        rc = TE_RC(TE_TAD_CH, errno);
-        SEND_ANSWER("%d CSAP creation internal error", rc);
         ERROR("CSAP '%s' creation internal error %r", stack, rc);
+        SEND_ANSWER("%u", rc);
         return 0;
     }
+    new_csap_id = new_csap->id;
 
-    INFO("CSAP '%s' created, new id: %d", stack, new_csap_id);
+    INFO("CSAP '%s' created, new id: %u", stack, new_csap_id);
 
     if (ba == NULL)
     {
-        SEND_ANSWER("%d missing attached NDS", TE_ETADMISSNDS);
-        ERROR("Missing attached NDS");
+        ERROR("Missing attached NDS with CSAP parameters");
         csap_destroy(new_csap_id);
+        SEND_ANSWER("%u", TE_ETADMISSNDS);
         return 0;
     }
-
-    new_csap = csap_find(new_csap_id); 
-    assert(new_csap != NULL);
 
     rc = asn_parse_value_text(ba, ndn_csap_spec, &csap_nds, &syms);
     if (rc != 0)
     {
         ERROR("CSAP NDS parse error sym=%d: %r", syms, rc);
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
         csap_destroy(new_csap_id); 
         return 0;
     }
@@ -325,7 +326,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
         /*
          * Initialize read/write layer (the lowest)
          */
-        new_csap->read_write_layer = new_csap->depth - 1;
+        new_csap->rw_layer = new_csap->depth - 1;
         if (csap_get_proto_support(new_csap, csap_get_rw_layer(new_csap))
                 ->rw_init_cb == NULL)
         {
@@ -357,6 +358,9 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
 #endif
 }
 
+#define PRINT(msg...) \
+    do { printf(msg); printf("\n"); fflush(stdout); } while (0)
+
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
@@ -380,38 +384,29 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
     
     check_init();
 
-    VERB("%s: CSAP %d\n", __FUNCTION__, csap_id); 
-    VERB("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap_id,  cbuf);
+    VERB("%s: CSAP %u\n", __FUNCTION__, csap_id); 
+    VERB("%s(CSAP %u), answer prefix %s", __FUNCTION__, csap_id,  cbuf);
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
-        WARN("%s: CSAP %d not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%d CSAP not exists", 
-                    TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
+        WARN("%s: CSAP %u not exists", __FUNCTION__, csap_id);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
-    CSAP_DA_LOCK(csap);
-    if (csap->command != TAD_OP_IDLE)
+    rc = csap_command(csap, TAD_OP_DESTROY);
+    if (rc != 0)
     {
-        csap->command = TAD_OP_DESTROY;
-        CSAP_DA_UNLOCK(csap);
-#if 0
-        void *th_return;
+        SEND_ANSWER("%u", rc);
+        return 0;
+    }
 
-        rc = pthread_join(csap->traffic_thread, &th_return);
-        if (rc != 0)
-        {
-            ERROR("%s(): thread join failed, rc %d, errno %d", 
-                  __FUNCTION__, rc, errno);
-        }
-#else
-        while (csap->command != TAD_OP_IDLE)
-            usleep(10*1000);
-#endif
-    } 
-    else
-        CSAP_DA_UNLOCK(csap);
+    if (~csap->state & CSAP_STATE_IDLE)
+    {
+        rc = csap_wait(csap, CSAP_STATE_DONE);
+    }
+
+    INFO(CSAP_LOG_FMT "Starting destruction", CSAP_LOG_ARGS(csap));
 
     csap_spt_descr = csap_get_proto_support(csap, csap_get_rw_layer(csap));
     if (csap_spt_descr->rw_destroy_cb != NULL &&
@@ -439,10 +434,8 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
     csap_destroy(csap_id);
 
     cbuf[answer_plen] = 0;
-    VERB("%s(CSAP %d), answer prefix %s", __FUNCTION__, csap_id,  cbuf);
+    VERB("%s(CSAP %u), answer prefix %s", __FUNCTION__, csap_id,  cbuf);
 
-    usleep(100*1000);
-    
     SEND_ANSWER("0");
 
     return 0;
@@ -473,112 +466,73 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
     int            syms;
     asn_value     *nds; 
     csap_p         csap;
-    pthread_attr_t pthread_attr;
 
-    tad_sender_context *send_context;
 
     UNUSED(cmdlen);
 
-    VERB("%s(CSAP %d)", __FUNCTION__, csap_id);
+    VERB("%s(CSAP %u)", __FUNCTION__, csap_id);
     cbuf[answer_plen] = 0;
 
     check_init();
 
-    if (ba == NULL)
-    {
-        INFO("No NDS attached to traffic send start command");
-        SEND_ANSWER("%d missing attached NDS", 
-                    TE_RC(TE_TAD_CH, TE_ETADMISSNDS));
-        return 0;
-    }
-
     if ((csap = csap_find(csap_id)) == NULL)
     {
         WARN("CSAP %u does not exist", csap_id);
-        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
-    CSAP_DA_LOCK(csap);
-    if (csap->command != TAD_OP_IDLE)
+    rc = csap_command(csap, TAD_OP_SEND);
+    if (rc != 0)
     {
-        CSAP_DA_UNLOCK(csap);
-        WARN("%s(CSAP %d) is busy", __FUNCTION__, csap_id);
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
+        SEND_ANSWER("%u", rc);
         return 0;
     }
-    CSAP_DA_UNLOCK(csap);
 
-    csap->first_pkt = tv_zero;
-    csap->last_pkt  = tv_zero;
-
+    if (ba == NULL)
+    {
+        ERROR(CSAP_LOG_FMT "No NDS attached to traffic send start "
+              "command", CSAP_LOG_ARGS(csap));
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADMISSNDS));
+        return 0;
+    }
 
     rc = asn_parse_value_text(ba, ndn_traffic_template, &nds, &syms);
     if (rc != 0)
     {
-        ERROR("parse error in attached NDS, code %r, symbol: %d",
-              rc, syms);
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
+        ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
+              CSAP_LOG_ARGS(csap), syms, rc);
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
         return 0;
     } 
 
-    CSAP_DA_LOCK(csap);
-
-    strncpy(csap->answer_prefix, cbuf, MAX_ANS_PREFIX - 1);
-    csap->answer_prefix[answer_plen] = 0; 
-
-    csap->command = TAD_OP_SEND;
-
-    csap->state = TAD_STATE_SEND;
+    CSAP_LOCK(csap);
 
     if (postponed)
-        csap->state |= TAD_STATE_FOREGROUND;
+        csap->state |= CSAP_STATE_FOREGROUND;
 
-    CSAP_DA_UNLOCK(csap);
+    csap->first_pkt = tv_zero;
+    csap->last_pkt  = tv_zero;
 
-    rc = tad_sender_prepare(csap, nds, rcfc, &send_context);
+    CSAP_UNLOCK(csap);
+
+    rc = tad_send_prepare(csap, nds, rcfc, cbuf, answer_plen);
     if (rc != 0)
     {
-        SEND_ANSWER("%d", rc);
-        csap->command = TAD_OP_IDLE;
-        csap->state = 0;
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", rc);
         return 0;
     }
     
-    if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
-        (rc = pthread_attr_setdetachstate(&pthread_attr,
-                                          PTHREAD_CREATE_DETACHED)) != 0)
-    {
-        ERROR("Cannot initialize pthread attribute variable: %d", rc);
-        SEND_ANSWER("%d cannot initialize pthread attribute variable",
-                    TE_RC(TE_TAD_CH, rc));
-        (void)tad_sender_release(send_context);
-        csap->command = TAD_OP_IDLE;
-        csap->state = 0;
-        return 0;
-    }
-
-    /*
-     * FIXME: Ideally it should be done after successfull start-up of
-     * the Sender thread only, however it requires carefull CSAP state
-     * protection.
-     */
-    if (csap->state & TAD_STATE_FOREGROUND) 
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_EACK));
-    else
-        SEND_ANSWER("0 0"); 
-
-    rc = pthread_create(&csap->traffic_thread, &pthread_attr, 
-                        tad_sender_thread, send_context);
+    rc = tad_pthread_create(NULL, tad_send_thread, csap);
     if (rc != 0)
     {
-        ERROR("Cannot create a new SEND thread: %d", rc);
-        SEND_ANSWER("%d cannot create a new SEND thread", 
-                    TE_RC(TE_TAD_CH, rc));
-        (void)pthread_attr_destroy(&pthread_attr);
-        (void)tad_sender_release(send_context);
-        csap->command = TAD_OP_IDLE;
-        csap->state = 0;
+        (void)tad_send_release(csap, csap_get_send_context(csap));
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", rc);
+        return 0;
     }
 
     return 0;
@@ -601,35 +555,48 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *rcfc,
     VERB("TRSEND stop CSAP %u\n", csap_id);
     return -1;
 #else
-    csap_p csap;
+    csap_p      csap;
+    te_errno    rc;
+    te_errno    status = 0;
 
-    VERB("trsend_stop CSAP %d", csap_id);
+    VERB("trsend_stop CSAP %u", csap_id);
 
     check_init(); 
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
-        WARN("%s: CSAP %d not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
+        WARN("%s: CSAP %u not exists", __FUNCTION__, csap_id);
+        SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
-    CSAP_DA_LOCK(csap);
-
-    if (csap->command == TAD_OP_SEND)
+    rc = csap_command(csap, TAD_OP_STOP);
+    if (rc != 0)
     {
-        strncpy(csap->answer_prefix, cbuf, answer_plen);
-        csap->answer_prefix[answer_plen] = 0; 
-        csap->command = TAD_OP_STOP;
-        CSAP_DA_UNLOCK(csap);
+        SEND_ANSWER("%u 0", rc);
+        return 0;
+    }
+
+    if (csap->state & CSAP_STATE_SEND)
+    {
+        rc = csap_wait(csap, CSAP_STATE_DONE);
+        if (rc == 0)
+        {
+            status = csap_get_send_context(csap)->status;
+        }
     }
     else
     {
-        CSAP_DA_UNLOCK(csap);
-        F_VERB("Inappropriate command, CSAP is not sending ");
-        SEND_ANSWER("%d Inappropriate command in current state", 
-                    TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
+        rc = TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE);
     }
+
+    if ((rc == 0) && (~csap->state & CSAP_STATE_FOREGROUND))
+    {
+        rc = csap_command(csap, TAD_OP_IDLE);
+    }
+    TE_RC_UPDATE(rc, status);
+
+    SEND_ANSWER("%u %u", rc, csap_get_send_context(csap)->sent_pkts);
 
     return 0;
 #endif
@@ -644,19 +611,13 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
                     unsigned int num, te_bool results, unsigned int timeout)
 {
 #ifndef DUMMY_TAD 
-    int         syms;
-    int         rc;
-    asn_value_p nds = NULL; 
     csap_p      csap;
-    int         i, num_units;
-
-    tad_task_context *recv_context;
-    pthread_attr_t    pthread_attr;
-    char              srname[] = "trsend_recv";
-    te_bool           sr_flag = FALSE;
+    te_errno    rc;
+    int         syms;
+    asn_value_p nds = NULL; 
 #endif
 
-    INFO("%s: csap %d, num %u, timeout %u ms, %s", __FUNCTION__,
+    INFO("%s: csap %u, num %u, timeout %u ms, %s", __FUNCTION__,
          csap_id, num, timeout, results ? "results" : "");
 
 #ifdef DUMMY_TAD 
@@ -678,157 +639,65 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
 
     check_init(); 
 
-    if (strncmp(cbuf + answer_plen, srname, strlen(srname)) == 0)
-        sr_flag = TRUE;
+    if ((csap = csap_find(csap_id)) == NULL)
+    {
+        ERROR("%s: CSAP %u not exists", __FUNCTION__, csap_id);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
+        return 0;
+    }
+
+    rc = csap_command(csap, TAD_OP_RECV);
+    if (rc != 0)
+    {
+        SEND_ANSWER("%u", rc);
+        return 0;
+    }
 
     if (ba == NULL)
     {
-        WARN("missing attached NDS");
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_ETADMISSNDS));
+        ERROR(CSAP_LOG_FMT "No NDS attached to traffic receive start "
+              "command", CSAP_LOG_ARGS(csap));
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADMISSNDS));
         return 0;
     }
 
-    if ((csap = csap_find(csap_id)) == NULL)
-    {
-        WARN("%s: CSAP %d not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
-        return 0;
-    }
-
-    CSAP_DA_LOCK(csap);
-    if (csap->command != TAD_OP_IDLE)
-    {
-        CSAP_DA_UNLOCK(csap);
-        WARN("CSAP is busy");
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
-        return 0;
-    }
-    CSAP_DA_UNLOCK(csap);
-
-    csap->first_pkt = tv_zero;
-    csap->last_pkt  = tv_zero;
-
-    if (sr_flag)
-        rc = asn_parse_value_text(ba, ndn_traffic_template, &nds, &syms);
-    else
-        rc = asn_parse_value_text(ba, ndn_traffic_pattern, &nds, &syms);
-
-    if (rc)
+    rc = asn_parse_value_text(ba, ndn_traffic_pattern, &nds, &syms);
+    if (rc != 0)
     { 
-        ERROR("parse error in NDS, rc: %r, sym: %d", rc, syms);
-        INFO("sr_flag %d, NDS: <%s>", (int)sr_flag, ba);
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
+        ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
+              CSAP_LOG_ARGS(csap), syms, rc);
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
         return 0;
     } 
-    VERB("nds parsed, pointer: %x", nds);
 
     
-    CSAP_DA_LOCK(csap);
+    CSAP_LOCK(csap);
 
-    csap->state = TAD_STATE_RECV;
-
-    if (sr_flag) 
-    {
-        csap->command = TAD_OP_SEND_RECV; 
-        csap->state |= TAD_STATE_FOREGROUND | TAD_STATE_SEND;
-    }
-    else
-        csap->command = TAD_OP_RECV; 
-
-    strncpy(csap->answer_prefix, cbuf, answer_plen);
-    csap->answer_prefix[answer_plen] = 0; 
-
-    CSAP_DA_UNLOCK(csap);
-
-    csap->num_packets = num;
-
-    CSAP_DA_LOCK(csap);
     if (results)
-        csap->state |= TAD_STATE_RESULTS;
-    CSAP_DA_UNLOCK(csap);
+        csap->state |= CSAP_STATE_RESULTS;
 
-    recv_context = calloc(1, sizeof(tad_task_context));
-    recv_context->csap = csap;
-    recv_context->nds  = nds;
-    recv_context->rcfc = rcfc; 
+    csap->first_pkt = csap->last_pkt = tv_zero;
 
-    if (!sr_flag)
-        num_units = asn_get_length(nds, "");
-    else
-        num_units = 1; /* There is a single unit */
-    rc = 0;
-    for (i = 0; i < num_units; i++)
+    CSAP_UNLOCK(csap);
+
+
+    rc = tad_recv_prepare(csap, nds, num, timeout, rcfc, cbuf, answer_plen);
+    if (rc != 0)
     {
-        asn_value *pattern_unit = NULL;
-        asn_value *pdus = NULL;
-
-        if (!sr_flag)
-            asn_get_indexed(nds, &pattern_unit, i, NULL);
-        else
-            pattern_unit = nds;
-
-        if (pattern_unit == NULL)
-        {
-            WARN("%s: NULL pattern unit #%d", __FUNCTION__, i); 
-            rc = TE_ETADWRONGNDS;
-            break;
-        }
-
-        asn_get_subvalue(pattern_unit, (const asn_value **)&pdus, "pdus");
-
-        rc = tad_confirm_pdus(csap, TRUE, pdus, NULL);
-        if (rc != 0)
-            break; 
-    } /* loop by pattern units */
-
-    if (rc) 
-    {
-        WARN("pattern does not confirm to CSAP; rc %r", rc);
-        asn_free_value(nds);
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
-        csap->command = TAD_OP_IDLE;
-        csap->state = 0;
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", rc);
         return 0;
     }
-
-    if (timeout && timeout != TAD_TIMEOUT_INF)
-    { 
-        gettimeofday(&csap->wait_for, NULL);
-        csap->wait_for.tv_usec += timeout * 1000;
-        csap->wait_for.tv_sec += 
-            (csap->wait_for.tv_usec / 1000000);
-        csap->wait_for.tv_usec %= 1000000;
-
-        VERB("%s(): csap %d, wait_for set to %u.%u", __FUNCTION__,
-             csap->id,
-             csap->wait_for.tv_sec,
-             csap->wait_for.tv_usec);
-    }
-    else 
-        memset(&csap->wait_for, 0, sizeof(struct timeval));
-
-    if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
-        (rc = pthread_attr_setdetachstate(&pthread_attr,
-                                          PTHREAD_CREATE_DETACHED)) != 0)
+    
+    rc = tad_pthread_create(NULL, tad_recv_thread, csap);
+    if (rc != 0)
     {
-        ERROR("Cannot initialize pthread attribute variable: %d", rc);
-        free(recv_context);
-        csap->command = TAD_OP_IDLE;
-        csap->state = 0;
-        SEND_ANSWER("%d cannot initialize pthread attribute variable",
-                    TE_RC(TE_TAD_CH, rc));
+        (void)tad_recv_release(csap, csap_get_recv_context(csap));
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", rc);
         return 0;
-    }
-
-    if ((rc = pthread_create(&csap->traffic_thread, &pthread_attr,
-                             tad_receiver_thread, recv_context)) != 0)
-    {
-        ERROR("recv thread create error; rc %d", rc);
-        asn_free_value(recv_context->nds);
-        free(recv_context);
-        csap->command = TAD_OP_IDLE;
-        csap->state = 0;
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, rc));
     }
 
     return 0;
@@ -836,9 +705,59 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
 }
 
 
+#ifndef DUMMY_TAD 
+/**
+ * Generic implementation of trrecv_stop/wait/get.
+ *
+ * @param rcfc          RCF communication handle
+ * @param cbuf          Buffer with request
+ * @param answer_plen   Answer prefix length
+ * @param csap_id       CSAP ID
+ * @param op            Operation (stop/wait/get)
+ * 
+ * @return Status code.
+ */
+static te_errno
+tad_trrecv_op(rcf_comm_connection *rcfc,
+              char *cbuf, size_t buflen, size_t answer_plen,
+              csap_handle_t csap_id, tad_traffic_op_t op)
+{
+    csap_p      csap;
+    te_errno    rc;
+
+    VERB("%s: CSAP %u OP %u", __FUNCTION__, csap_id, op);
+
+    check_init();
+
+    if ((csap = csap_find(csap_id)) == NULL)
+    {
+        WARN("%s: CSAP %u not exists", __FUNCTION__, csap_id);
+        SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
+        return 0;
+    }
+
+    rc = csap_command(csap, op);
+    if (rc != 0)
+    {
+        SEND_ANSWER("%u 0", rc);
+        return 0;
+    }
+
+    rc = tad_recv_op_enqueue(csap, op, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+    {
+        /* Keep set flags, there is only one way now - destroy */
+        SEND_ANSWER("%u 0", rc);
+        return 0;
+    }
+
+    return 0;
+}
+#endif
+
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_trrecv_stop(struct rcf_comm_connection *rcfc,
+rcf_ch_trrecv_stop(rcf_comm_connection *rcfc,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap_id)
 {
@@ -851,54 +770,10 @@ rcf_ch_trrecv_stop(struct rcf_comm_connection *rcfc,
     VERB("TRRECV stop CSAP %u\n", csap_id);
     return -1;
 #else
-    csap_p csap;
-
-    VERB("%s: CSAP %d", __FUNCTION__, csap_id);
-
-    check_init();
-
-    if ((csap = csap_find(csap_id)) == NULL)
-    {
-        WARN("%s: CSAP %d not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
-        return 0;
-    }
-
-    CSAP_DA_LOCK(csap); 
-
-    /* Note: watch carefully, that unlock made in every 
-     * conditional branch. */
-    if (csap->command == TAD_OP_RECV)
-    {
-        csap->command = TAD_OP_STOP; 
-
-        if (csap->state & TAD_STATE_FOREGROUND)
-        {
-            CSAP_DA_UNLOCK(csap);
-            /* With some probability number of received packets, 
-             * reported here, may be wrong. */
-            SEND_ANSWER("0 %u", csap->num_packets); 
-        }
-        else
-        { 
-            strncpy(csap->answer_prefix, cbuf, answer_plen);
-            csap->answer_prefix[answer_plen] = 0; 
-            CSAP_DA_UNLOCK(csap);
-        }
-    }
-    else
-    {
-        WARN("%s: inappropriate command, CSAP %d is not receiving; "
-             "command %d; state %x ", __FUNCTION__, csap->id, 
-             (int)csap->command, (int)csap->state);
-        CSAP_DA_UNLOCK(csap);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
-    }
-
-    return 0;
+    return tad_trrecv_op(rcfc, cbuf, buflen, answer_plen, csap_id,
+                         TAD_OP_STOP);
 #endif
 }
-
 
 /* See description in rcf_ch_api.h */
 int
@@ -913,43 +788,12 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *rcfc,
     UNUSED(answer_plen);
     UNUSED(csap_id);
 
-    VERB("%s: CSAP %d", __FUNCTION__, csap_id);
+    VERB("%s: CSAP %u", __FUNCTION__, csap_id);
     
     return -1;
 #else
-    csap_p csap;
-
-    VERB("%s: CSAP %d", __FUNCTION__, csap_id);
-
-    check_init();
-
-    if ((csap = csap_find(csap_id)) == NULL)
-    {
-        WARN("%s: CSAP %d not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
-        return 0;
-    }
-
-    CSAP_DA_LOCK(csap);
-
-    if (csap->command == TAD_OP_RECV)
-    {
-        SEND_ANSWER("%d", TE_RC(TE_TAD_CH, TE_EACK));
-        csap->command = TAD_OP_WAIT; 
-        strncpy(csap->answer_prefix, cbuf, answer_plen);
-        csap->answer_prefix[answer_plen] = 0; 
-        CSAP_DA_UNLOCK(csap);
-    }
-    else
-    {
-        ERROR("Inappropriate command, CSAP %d is not receiving; "
-              "command %d; state %x",
-              csap->id, 
-              (int)csap->command, (int)csap->state);
-        CSAP_DA_UNLOCK(csap);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
-    }
-    return 0;
+    return tad_trrecv_op(rcfc, cbuf, buflen, answer_plen, csap_id,
+                         TAD_OP_WAIT);
 #endif
 }
 
@@ -968,37 +812,164 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *rcfc,
     VERB("TRRECV get CSAP %u\n", csap_id);
     return -1;
 #else
+    return tad_trrecv_op(rcfc, cbuf, buflen, answer_plen, csap_id,
+                         TAD_OP_GET);
+#endif
+}
+
+
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
+                   char *cbuf, size_t buflen, size_t answer_plen,
+                   const uint8_t *ba, size_t cmdlen, csap_handle_t csap_id,
+                   te_bool results, unsigned int timeout)
+{ 
+#ifndef DUMMY_TAD 
     csap_p      csap;
+    te_errno    rc;
+    int         syms;
+    asn_value_p tmpl = NULL; 
+    asn_value_p ptrn = NULL;
+#endif
 
-    check_init();
+    INFO("%s: csap %u, timeout %u ms, %s", __FUNCTION__,
+         csap_id, timeout, results ? "results" : "");
 
-    VERB("trrecv_get for CSAP %d", csap_id);
+#ifdef DUMMY_TAD 
+    UNUSED(rcfc);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(ba);
+    UNUSED(cmdlen);
+
+    return -1;
+#else
+
+    UNUSED(cmdlen);
+
+    check_init(); 
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
-        WARN("%s: CSAP %d not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
+        ERROR("%s: CSAP %u not exists", __FUNCTION__, csap_id);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
         return 0;
     }
 
-    CSAP_DA_LOCK(csap);
-    if (csap->command == TAD_OP_RECV)
+    rc = csap_command(csap, TAD_OP_SEND_RECV);
+    if (rc != 0)
     {
-        csap->command = TAD_OP_GET;
-        strncpy(csap->answer_prefix, cbuf, answer_plen);
-        csap->answer_prefix[answer_plen] = 0; 
-        CSAP_DA_UNLOCK(csap);
-    }
-    else
-    {
-        ERROR("Inappropriate command, CSAP %d is not receiving; "
-              "command %d; state %x ", csap->id, 
-              (int)csap->command, (int)csap->state);
-        CSAP_DA_UNLOCK(csap);
-
-        SEND_ANSWER("%d 0", TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
+        SEND_ANSWER("%u", rc);
+        return 0;
     }
 
+    if (ba == NULL)
+    {
+        ERROR(CSAP_LOG_FMT "No NDS attached to traffic send/receive start "
+              "command", CSAP_LOG_ARGS(csap));
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADMISSNDS));
+        return 0;
+    }
+
+    rc = asn_parse_value_text(ba, ndn_traffic_template, &tmpl, &syms);
+    if (rc != 0)
+    { 
+        ERROR(CSAP_LOG_FMT "Parse error in attached NDS on symbol %d: %r",
+              CSAP_LOG_ARGS(csap), syms, rc);
+        (void)csap_command(csap, TAD_OP_IDLE);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
+        return 0;
+    } 
+
+    CSAP_LOCK(csap);
+
+    if (results)
+        csap->state |= CSAP_STATE_RESULTS;
+
+    csap->first_pkt = tv_zero;
+    csap->last_pkt  = tv_zero;
+
+    CSAP_UNLOCK(csap);
+
+    rc = tad_send_prepare(csap, tmpl, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+    {
+        goto exit;
+    }
+    if (csap_get_send_context(csap)->tmpl_data.n_units != 1)
+    {
+        rc = TE_RC(TE_TAD_CH, TE_ETADWRONGNDS);
+        ERROR(CSAP_LOG_FMT "Invalid number of units in send/recv template",
+              CSAP_LOG_ARGS(csap));
+        (void)tad_send_release(csap, csap_get_send_context(csap));
+        goto exit;
+    }
+
+    rc = tad_send_recv_generate_pattern(csap, tmpl, &ptrn);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to generate pattern by template: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        (void)tad_send_release(csap, csap_get_send_context(csap));
+        goto exit;
+    }
+
+    rc = tad_recv_prepare(csap, ptrn, 1, timeout, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+    {
+        (void)tad_send_release(csap, csap_get_send_context(csap));
+        goto exit;
+    }
+
+    /*
+     * Start threads in reverse order.
+     */
+
+    /* Emulate 'trrecv_wait' operation */
+    rc = tad_recv_op_enqueue(csap, TAD_OP_WAIT, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+    {
+        (void)tad_recv_release(csap, csap_get_recv_context(csap));
+        (void)tad_send_release(csap, csap_get_send_context(csap));
+        goto exit;
+    }
+    /* 
+     * Don't care about Receiver context any more, since 'trrecv_wait'
+     * operation is responsible for destruction. However, now it is
+     * necessary to care about stop of 'trrecv_wait' operation.
+     */
+
+    if ((rc = tad_pthread_create(NULL, tad_recv_thread, csap)) != 0)
+    {
+        /* Set status of the Receiver */
+        csap_get_recv_context(csap)->status = rc;
+        /* We can release Sender context, since it has not been started */
+        (void)tad_send_release(csap, csap_get_send_context(csap));
+        /* Unblock 'trrecv_wait' operation */
+        (void)csap_command(csap, TAD_OP_RECV_DONE);
+    }
+    else if ((rc = tad_pthread_create(NULL, tad_send_thread, csap)) != 0)
+    {
+        /* Set status of the Sender */
+        csap_get_send_context(csap)->status = rc;
+        /* We can release Sender context, since it has not been started */
+        (void)tad_send_release(csap, csap_get_send_context(csap));
+        /* Notify Receiver that send has been finished */
+        (void)csap_command(csap, TAD_OP_SEND_DONE);
+    }
+
+    /* 
+     * Emulated 'trrecv_wait' is responsible for send of answer and 
+     * transition to IDLE state.
+     */
+    return 0;
+
+exit:
+    (void)csap_command(csap, TAD_OP_IDLE);
+    SEND_ANSWER("%u", rc);
     return 0;
 #endif
 }
@@ -1022,35 +993,39 @@ rcf_ch_csap_param(struct rcf_comm_connection *rcfc,
     csap_p              csap = csap_find(csap_id);
     csap_layer_get_param_cb_t get_param_cb;
     int                 layer = csap == NULL ?
-                                0 : csap->read_write_layer;
+                                0 : csap->rw_layer;
 
     check_init();
     VERB("CSAP param: CSAP %u param <%s>\n", csap_id, param);
     if ((csap = csap_find(csap_id)) == NULL)
     {
-        WARN("%s: CSAP %d not exists", __FUNCTION__, csap_id);
-        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
+        WARN("%s: CSAP %u not exists", __FUNCTION__, csap_id);
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
     }
     else if (strcmp(param, CSAP_PARAM_STATUS) == 0)
     {
         tad_csap_status_t status = 0;
 
-        CSAP_DA_LOCK(csap);
-        if (csap->command == TAD_OP_IDLE)
-            status = CSAP_IDLE;
-        else if (csap->state & TAD_STATE_COMPLETE)
+        CSAP_LOCK(csap);
+        if (csap->state & CSAP_STATE_IDLE)
         {
+            status = CSAP_IDLE;
+        }
+        else if (csap->state & CSAP_STATE_DONE)
+        {
+#if 0
             if (csap->last_errno)
                 status = CSAP_ERROR;
             else
+#endif
                 status = CSAP_COMPLETED;
         }
         else
             status = CSAP_BUSY;
 
-        F_VERB("CSAP get_param, status %d, command flag %d\n", 
-               (int)status, (int)csap->command);
-        CSAP_DA_UNLOCK(csap);
+        F_VERB("CSAP get_param, state 0x%x, status %d\n", 
+               csap->state, (int)status);
+        CSAP_UNLOCK(csap);
 
         SEND_ANSWER("0 %d", (int)status);
     }
@@ -1075,8 +1050,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *rcfc,
              == NULL)
     {
         VERB("CSAP does not support get_param\n");
-        SEND_ANSWER("%d CSAP does not support get_param", 
-                    TE_RC(TE_TAD_CH, TE_EOPNOTSUPP));
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_EOPNOTSUPP));
     }
     else
     {
@@ -1090,62 +1064,10 @@ rcf_ch_csap_param(struct rcf_comm_connection *rcfc,
         else
         {
             VERB("CSAP return error for get_param\n");
-            SEND_ANSWER("%d CSAP return error for get_param", 
-                        TE_RC(TE_TAD_CH, TE_EOPNOTSUPP));
+            SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_EOPNOTSUPP));
         }
     }
 
     return 0;
 #endif
 }
-
-
-/* See description in rcf_ch_api.h */
-int
-rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
-                   char *cbuf, size_t buflen, size_t answer_plen,
-                   const uint8_t *ba, size_t cmdlen, csap_handle_t csap_id,
-                   te_bool results, unsigned int timeout)
-{ 
-#ifdef DUMMY_TAD 
-    UNUSED(rcfc);
-    UNUSED(cbuf);
-    UNUSED(buflen);
-    UNUSED(answer_plen);
-    UNUSED(ba);
-    UNUSED(cmdlen);
-
-    VERB("TRSEND recv: CSAP %u timeout %u %s\n",
-         csap_id, timeout, results ? "results" : "");
-    return -1;
-#else
-    csap_p csap;
-
-    UNUSED(cmdlen);
-
-    VERB("CSAP %d", csap_id);
-
-    check_init(); 
-
-    if ((csap = csap_find(csap_id)) == NULL)
-    {
-        SEND_ANSWER("%d Wrong CSAP id", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
-        return 0;
-    }
-    CSAP_DA_LOCK(csap);
-    if (csap->command != TAD_OP_IDLE)
-    {
-        CSAP_DA_UNLOCK(csap);
-        SEND_ANSWER("%d Specified CSAP is busy", 
-            TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE));
-        return 0;
-    }
-    CSAP_DA_UNLOCK(csap);
-
-    return rcf_ch_trrecv_start(rcfc, cbuf, buflen, answer_plen, ba,
-                               cmdlen, csap_id, 1 /* one packet */, 
-                               results, timeout);
-#endif
-}
-
-

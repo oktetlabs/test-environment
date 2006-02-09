@@ -300,33 +300,44 @@ tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_dhcp_impl.h */
 te_errno
-tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
-                      const asn_value *pattern_pdu,
-                      const csap_pkts *pkt, csap_pkts *payload, 
-                      asn_value *parsed_packet)
+tad_dhcp_match_bin_cb(csap_p csap,
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu)
 { 
+    uint8_t    *data_ptr; 
     uint8_t    *data; 
+    size_t      data_len;
     asn_value  *opt_list;
     asn_value  *dhcp_message_pdu = NULL;
     te_errno    rc;
 
-    UNUSED(payload); 
+    UNUSED(ptrn_opaque);
+    UNUSED(sdu); /* DHCP does not carry any payload */
 
-    if (pattern_pdu == NULL || pkt == NULL)
+    if (ptrn_pdu == NULL || pdu == NULL)
         return TE_EWRONGPTR;
 
+    assert(tad_pkt_seg_num(pdu) == 1);
+    assert(tad_pkt_first_seg(pdu) != NULL);
+    data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
+    data_len = tad_pkt_first_seg(pdu)->data_len;
+
     ENTRY("%s: CSAP %d, layer %d, pkt len: %d", 
-          __FUNCTION__, csap->id, layer, pkt->len);
+          __FUNCTION__, csap->id, layer, data_len);
 
-    data = pkt->data;
-    VERB("DHCP match callback called: %Tm", data, pkt->len);
+    VERB("DHCP match callback called: %Tm", data_ptr, data_len);
 
-    if (parsed_packet != NULL)
-        dhcp_message_pdu = asn_init_value(ndn_dhcpv4_message);
+    if (csap->state & CSAP_STATE_RESULTS)
+        dhcp_message_pdu = meta_pkt->layers[layer].nds =
+            asn_init_value(ndn_dhcpv4_message);
 
 #define FILL_DHCP_HEADER_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = ndn_match_data_units(pattern_pdu, dhcp_message_pdu,\
+        rc = ndn_match_data_units(ptrn_pdu, dhcp_message_pdu,   \
                                   data, _size, _asn_label);     \
         if (rc != 0)                                            \
         {                                                       \
@@ -355,7 +366,7 @@ tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
 #undef FILL_DHCP_HEADER_FIELD
 
     /* check for magic DHCP cookie, see RFC2131, section 3. */
-    if ((((void *)data) + sizeof(magic_dhcp)) > (pkt->data + pkt->len) || 
+    if ((data + sizeof(magic_dhcp)) > (data_ptr + data_len) || 
         memcmp(magic_dhcp, data, sizeof(magic_dhcp)) != 0)
     {
         VERB("DHCP magic does not match: "
@@ -365,9 +376,12 @@ tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
     { 
         data += sizeof(magic_dhcp); 
 
-        opt_list = asn_init_value(ndn_dhcpv4_options); 
+        if (dhcp_message_pdu != NULL)
+            opt_list = asn_init_value(ndn_dhcpv4_options); 
+        else
+            opt_list = NULL;
 
-        while (((void *)data) < (pkt->data + pkt->len))
+        while (data < (data_ptr + data_len))
         {
             asn_value_p opt = asn_init_value(ndn_dhcpv4_option);
             uint8_t     opt_len;
@@ -385,7 +399,8 @@ tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
             if (opt_type == 255 || opt_type == 0)
             {
                 /* END and PAD options don't have length and value */
-                rc = asn_insert_indexed(opt_list, opt, -1, "");
+                if (opt_list != NULL)
+                    rc = asn_insert_indexed(opt_list, opt, -1, "");
                 continue;
             }
 
@@ -424,31 +439,16 @@ tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
                     break;
                 }
             }
-            rc = asn_insert_indexed(opt_list, opt, -1, "");
+            if (opt_list != NULL)
+                rc = asn_insert_indexed(opt_list, opt, -1, "");
         }
-        if (parsed_packet != NULL)
+        if (dhcp_message_pdu != NULL)
         {
-            asn_write_component_value(parsed_packet, opt_list,
-                                      "#dhcp.options");
+            asn_write_component_value(dhcp_message_pdu, opt_list,
+                                      "options");
         }
         asn_free_value(opt_list);
     }
-
-    if (parsed_packet != NULL)
-    {
-        rc = asn_write_component_value(parsed_packet, dhcp_message_pdu,
-                                       "#dhcp"); 
-        if (rc != 0)
-        {
-            ERROR("%s, write DHCP message to packet fails %r", 
-                  __FUNCTION__, rc);
-            /* FIXME: Is it OK, that an error is ignored? */
-        }
-    } 
-
-    asn_free_value(dhcp_message_pdu); 
-
-    memset(payload, 0 , sizeof(*payload));
 
     VERB("MATCH CALLBACK OK\n");
 
@@ -459,7 +459,7 @@ tad_dhcp_match_bin_cb(csap_p csap, unsigned int layer,
 te_errno
 tad_dhcp_gen_pattern_cb(csap_p csap, unsigned int layer,
                         const asn_value *tmpl_pdu, 
-                        asn_value **pattern_pdu)
+                        asn_value **ptrn_pdu)
 {
     te_errno    rc;
     int         xid;
@@ -468,11 +468,11 @@ tad_dhcp_gen_pattern_cb(csap_p csap, unsigned int layer,
     UNUSED(csap);
     UNUSED(layer);
 
-    *pattern_pdu = asn_init_value(ndn_dhcpv4_message); 
+    *ptrn_pdu = asn_init_value(ndn_dhcpv4_message); 
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
     if (rc == 0)
     {
-        rc = asn_write_int32(*pattern_pdu, xid, "xid.#plain");
+        rc = asn_write_int32(*ptrn_pdu, xid, "xid.#plain");
     }
     /* TODO: DHCP options to be inserted into pattern */
 

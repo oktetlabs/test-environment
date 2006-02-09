@@ -54,6 +54,7 @@
 
 #include "tad_csap_inst.h"
 #include "tad_pkt.h"
+#include "tad_recv_pkt.h"
 
 
 #ifdef __cplusplus
@@ -177,37 +178,41 @@ typedef te_errno (*csap_layer_generate_pkts_cb_t)(
                        tad_pkts             *sdus,
                        tad_pkts             *pdus);
 
-struct csap_pkts;
 
 /**
- * Pointer to packet struct
+ * Callback to allocate and/or prepare per received packet layer opaque
+ * data.
+ *
+ * It called on match fast path for each matched packet plus one.
+ *
+ * @param csap              CSAP instance
+ * @param layer             Numeric index of the layer
+ * @param meta_pkt_layer    Receiver meta-packet layer
+ *
+ * @return Status code.
  */
-typedef struct csap_pkts *csap_pkts_p;
+typedef te_errno (*csap_layer_match_pre_cb_t)(
+                       csap_p              csap,
+                       unsigned int        layer,
+                       tad_recv_pkt_layer *meta_pkt_layer);
 
-/**
- * List of packet fragments, which compose one "message".
- * This list used for passing prepared/parsed packets from one layer
- * to another: from low to up during match, and from up to low 
- * constructing message to be sent. 
- */
-typedef struct csap_pkts {
-    csap_pkts_p next;   /**< Pointer to next message fragment or NULL */
-
-    void       *data;   /**< Pointer to data of this fragment */
-    size_t      len;    /**< Length of this fragment */
-
-    void (*free_data_cb)(void *); /**< Pointer to callback for free 
-                                       fragment data, or NULL if usual 
-                                       free() may be used. */
-} csap_pkts;
+typedef csap_layer_match_pre_cb_t csap_layer_match_post_cb_t;
 
 
 /**
  * Callback type to parse received packet and match it with pattern. 
  *
- * @param csap    CSAP instance.
+ * It called on match fast path for each received packet.
+ *
+ * @param csap          CSAP instance
  * @param layer         Numeric index of layer in CSAP type to be processed
- * @param pattern_pdu   Pattern NDS 
+ * @param ptrn_pdu      Pattern NDS for the layer
+ * @param ptrn_opaque   Opaque data prepared by confirm_ptrn_cb
+ * @param meta_pkt      Receiver meta-packet
+ * @param pdu           Received packet (protocol data unit of the layer)
+ * @param sdu           Rest upper layer payload (service data unit of
+ *                      the layer)
+ *
  * @param pkt           Recevied packet, may be list of fragments, which 
  *                      all should be defragmented by this callback and 
  *                      information should be put into single PDU
@@ -222,13 +227,13 @@ typedef struct csap_pkts {
 typedef te_errno (*csap_layer_match_do_cb_t)(
                        csap_p           csap,
                        unsigned int     layer,
-                       const asn_value *pattern_pdu,
-                       const csap_pkts *pkt,
-                       csap_pkts       *payload,
-                       asn_value       *parsed_packet);
+                       const asn_value *ptrn_pdu,
+                       void            *ptrn_opaque,
+                       tad_recv_pkt    *meta_pkt,
+                       tad_pkt         *pdu,
+                       tad_pkt         *sdu);
 
 typedef csap_layer_match_do_cb_t csap_layer_match_done_cb_t;
-typedef csap_layer_match_do_cb_t csap_layer_match_post_cb_t;
 
 
 /**
@@ -286,21 +291,20 @@ typedef te_errno (*csap_rw_destroy_cb_t)(csap_p csap);
 typedef te_errno (*csap_low_resource_cb_t)(csap_p csap);
 
 /**
- * Callback type to read data from media of CSAP. 
+ * Callback type to read data from media of the CSAP.
  *
- * @param csap    CSAP instance. 
- * @param timeout       Timeout of waiting for data in microseconds.
- * @param buf           Buffer for read data.
- * @param buf_len       Length of available buffer.
+ * @param csap          CSAP instance
+ * @param timeout       Timeout of waiting for data in microseconds
+ * @param pkt           Packet for received data
+ * @param pkt_len       Location for real length of the received packet
  *
- * @return Quantity of read octets, or -1 if error occured, 
- *         0 if timeout expired. 
+ * @return Status code.
  */ 
-typedef int (*csap_read_cb_t)(csap_p csap, int timeout, 
-                              char *buf, size_t buf_len);
+typedef te_errno (*csap_read_cb_t)(csap_p csap, unsigned int timeout,
+                                   tad_pkt *pkt, size_t *pkt_len);
 
 /**
- * Callback type to write data to media of CSAP. 
+ * Callback type to write data to media of the CSAP.
  *
  * @param csap          CSAP instance
  * @param pkt           Packet to send
@@ -313,18 +317,17 @@ typedef te_errno (*csap_write_cb_t)(csap_p csap, const tad_pkt *pkt);
  * Callback type to write data to media of CSAP and read
  *  data from media just after write, to get answer to sent request. 
  *
- * @param csap    CSAP instance. 
- * @param timeout       Timeout of waiting for data in microseconds.
+ * @param csap          CSAP instance
+ * @param timeout       Timeout of waiting for data in microseconds
  * @param w_pkt         Packet to be sent
- * @param r_buf         Buffer for data to be read.
- * @param r_buf_len     Available length r_buf.
+ * @param r_pkt         Packet for received data
+ * @param r_pkt_len     Location for real length of the received packet
  *
- * @return Quantity of read octets, or -1 if error occured, 
- *         0 if timeout expired. 
+ * @return Status code.
  */ 
-typedef int (*csap_write_read_cb_t)(csap_p csap, int timeout,
-                                    const tad_pkt *w_pkt,
-                                    char *r_buf, size_t r_buf_len);
+typedef te_errno (*csap_write_read_cb_t)(csap_p csap, unsigned int timeout,
+                                         const tad_pkt *w_pkt,
+                                         tad_pkt *r_pkt, size_t *r_pkt_len);
 
 #if 0
 /**
@@ -398,6 +401,7 @@ typedef struct csap_spt_type_t {
     csap_layer_release_opaque_cb_t  release_tmpl_cb;
 
     csap_layer_confirm_pdu_cb_t     confirm_ptrn_cb;
+    csap_layer_match_pre_cb_t       match_pre_cb;
     csap_layer_match_do_cb_t        match_do_cb;
     csap_layer_match_done_cb_t      match_done_cb;
     csap_layer_match_post_cb_t      match_post_cb;

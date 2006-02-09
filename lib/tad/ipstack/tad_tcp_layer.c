@@ -206,7 +206,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
     CONVERT_FIELD(NDN_TAG_TCP_SRC_PORT, du_src_port); 
     if (spec_data->du_src_port.du_type == TAD_DU_UNDEF)
     {
-        if (csap->state & TAD_STATE_SEND)
+        if (csap->state & CSAP_STATE_SEND)
         {
             rc = tad_data_unit_convert(tcp_csap_pdu,
                                        NDN_TAG_TCP_LOCAL_PORT,
@@ -235,7 +235,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
     CONVERT_FIELD(NDN_TAG_TCP_DST_PORT, du_dst_port);
     if (spec_data->du_dst_port.du_type == TAD_DU_UNDEF)
     {
-        if (csap->state & TAD_STATE_SEND)
+        if (csap->state & CSAP_STATE_SEND)
         {
             rc = tad_data_unit_convert(tcp_csap_pdu,
                                        NDN_TAG_TCP_REMOTE_PORT,
@@ -518,36 +518,35 @@ tad_tcp_gen_bin_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_tcp_match_bin_cb(csap_p csap, unsigned int layer,
-                     const asn_value *pattern_pdu,
-                     const csap_pkts *pkt, csap_pkts *payload, 
-                     asn_value_p parsed_packet)
+tad_tcp_match_bin_cb(csap_p           csap, 
+                     unsigned int     layer,
+                     const asn_value *ptrn_pdu,
+                     void            *ptrn_opaque,
+                     tad_recv_pkt    *meta_pkt,
+                     tad_pkt         *pdu,
+                     tad_pkt         *sdu)
 { 
-    tcp_csap_specific_data_t *spec_data;
+    uint8_t    *data_ptr; 
+    uint8_t    *data; 
+    size_t      data_len;
+    asn_value  *tcp_header_pdu = NULL;
+    te_errno    rc;
 
-    uint8_t *data;
     uint8_t  tmp8;
-    int      rc = 0;
     size_t   h_len = 0;
 
-    uint8_t *pld_data = pkt->data;
-    size_t   pld_len  = pkt->len;
+    assert(tad_pkt_seg_num(pdu) == 1);
+    assert(tad_pkt_first_seg(pdu) != NULL);
+    data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
+    data_len = tad_pkt_first_seg(pdu)->data_len;
 
-    asn_value *tcp_header_pdu = NULL;
-
-
-    if (parsed_packet)
-        tcp_header_pdu = asn_init_value(ndn_tcp_header);
-
-    spec_data = csap_get_proto_spec_data(csap, layer);
-
-    data = pkt->data; 
-
-    INFO("%s(CSAP %d)", __FUNCTION__, csap->id);
+    if (csap->state & CSAP_STATE_RESULTS)
+        tcp_header_pdu = meta_pkt->layers[layer].nds =
+            asn_init_value(ndn_tcp_header);
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu,  \
+        rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu,     \
                                   data, _size, _asn_label);     \
         if (rc)                                                 \
         {                                                       \
@@ -564,14 +563,14 @@ tad_tcp_match_bin_cb(csap_p csap, unsigned int layer,
     CHECK_FIELD("ackn", 4);
 
     h_len = tmp8 = (*data) >> 4;
-    rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu, 
                               &tmp8, 1, "hlen");
     if (rc)
         goto cleanup;
     data ++;
 
     tmp8 = (*data) & 0x3f;
-    rc = ndn_match_data_units(pattern_pdu, tcp_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu, 
                               &tmp8, 1, "flags");
     if (rc)
         goto cleanup;
@@ -585,37 +584,16 @@ tad_tcp_match_bin_cb(csap_p csap, unsigned int layer,
 
     /* TODO: Process TCP options */
 
-    pld_data += (h_len * 4);
-    pld_len  -= (h_len * 4); 
-
-    /* passing payload to upper layer */ 
-    memset(payload, 0 , sizeof(*payload));
-
-    if ((payload->len = pld_len) > 0)
+    /* Passing payload to upper layer */
+    rc = tad_pkt_get_frag(sdu, pdu, h_len * 4, data_len - (h_len * 4),
+                          TAD_PKT_GET_FRAG_ERROR);
+    if (rc != 0)
     {
-        payload->data = malloc(pld_len);
-        memcpy(payload->data, pld_data, payload->len); 
-    }
-
-    if (parsed_packet)
-    {
-        rc = asn_write_component_value(parsed_packet, tcp_header_pdu,
-                                       "#tcp"); 
-        if (rc)
-            ERROR("%s, write TCP header to packet fails %r", 
-                  __FUNCTION__, rc);
-    } 
-
-    if (spec_data->wait_length > 0)
-    { 
-        free(spec_data->stored_buffer);
-        spec_data->stored_buffer = NULL;
-        spec_data->stored_length = 0;
-        spec_data->wait_length = 0;
+        ERROR(CSAP_LOG_FMT "Failed to prepare TCP SDU: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
     }
 
 cleanup:
-    asn_free_value(tcp_header_pdu);
-
     return rc;
 }

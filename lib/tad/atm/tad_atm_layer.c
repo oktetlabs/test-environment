@@ -74,14 +74,14 @@ typedef struct tad_atm_proto_tmpl_data {
  */
 static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
 {
-    { "gfc",            4,  BPS_FLD_NO_DEF(NDN_TAG_ATM_GFC) },
-    { "vpi",            8,  BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI) },
-    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI) },
+    { "gfc",            4,  BPS_FLD_NO_DEF(NDN_TAG_ATM_GFC), TAD_DU_I32 },
+    { "vpi",            8,  BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI), TAD_DU_I32 },
+    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI), TAD_DU_I32 },
     { "payload-type",   3,  NDN_TAG_ATM_PAYLOAD_TYPE,
-                            ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
-    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP) },
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32 },
+    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP), TAD_DU_I32 },
     { "hec",            8,  NDN_TAG_ATM_HEC,
-                            ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32 },
 };
 
 /**
@@ -89,13 +89,13 @@ static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_atm_nni_bps_hdr[] =
 {
-    { "vpi",            12, BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI) },
-    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI) },
+    { "vpi",            12, BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI), TAD_DU_I32 },
+    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI), TAD_DU_I32 },
     { "payload-type",   3,  NDN_TAG_ATM_PAYLOAD_TYPE,
-                            ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
-    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP) },
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32 },
+    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP), TAD_DU_I32 },
     { "hec",            8,  NDN_TAG_ATM_HEC,
-                            ASN_TAG_CONST, ASN_TAG_INVALID, 0 },
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32 },
 };
 
 
@@ -190,8 +190,8 @@ tad_atm_destroy_cb(csap_p csap, unsigned int layer)
 
 /* See description in tad_atm_impl.h */
 te_errno
-tad_atm_confirm_pdu_cb(csap_p csap, unsigned int  layer, 
-                       asn_value *layer_pdu, void **p_opaque)
+tad_atm_confirm_tmpl_cb(csap_p csap, unsigned int  layer, 
+                        asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                    rc;
     tad_atm_proto_data         *proto_data;
@@ -222,12 +222,46 @@ tad_atm_confirm_pdu_cb(csap_p csap, unsigned int  layer,
     if (rc != 0)
         return rc;
 
-    if (csap->command == TAD_OP_SEND)
+    rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    return rc;
+}
+
+/* See description in tad_atm_impl.h */
+te_errno
+tad_atm_confirm_ptrn_cb(csap_p csap, unsigned int  layer, 
+                        asn_value *layer_pdu, void **p_opaque)
+{
+    te_errno                    rc;
+    tad_atm_proto_data         *proto_data;
+    tad_atm_proto_tmpl_data    *tmpl_data;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+
+    /* FIXME: Use malloc() and initialize data units at first */
+    tmpl_data = calloc(1, sizeof(*tmpl_data));
+    if (tmpl_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    *p_opaque = tmpl_data;
+
+    /* Get template value for congestion state */
+    rc = tad_data_unit_convert(layer_pdu,
+                               NDN_TAG_ATM_CONGESTION,
+                               &tmpl_data->congestion);
+    if (rc != 0)
     {
-        rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
-        if (rc != 0)
-            return rc;
+        ERROR(CSAP_LOG_FMT "Failed to get congestion default from "
+              "layer parameters: %r", CSAP_LOG_ARGS(csap), rc);
+        return rc;
     }
+
+    /* Get template values for ATM cell header fields */
+    rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
+                                   &tmpl_data->hdr);
+    if (rc != 0)
+        return rc;
 
     return rc;
 }
@@ -364,15 +398,12 @@ tad_atm_gen_bin_cb(csap_p                csap,
 /* See description in tad_atm_impl.h */
 te_errno
 tad_atm_match_bin_cb(csap_p           csap,
-                     unsigned int     layer,
-                     const asn_value *pattern_pdu,
-                     const csap_pkts *pkt,
-                     csap_pkts       *payload,
-                     asn_value       *parsed_packet)
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu)
 {
-    F_ENTRY("(%d:%u) pattern_pdu=%p pkt=%p payload=%p parsed_packet=%p",
-            csap->id, layer, (void *)pattern_pdu, pkt, payload,
-            (void *)parsed_packet);
-
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }

@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#define TE_TEST_NAME    "ipstack/ip4_simple"
+#define TE_TEST_NAME    "ipstack/ip4_recv_send"
 
 #define TE_LOG_LEVEL 0xff
 

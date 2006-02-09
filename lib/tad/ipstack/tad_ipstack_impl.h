@@ -68,7 +68,6 @@ typedef struct ip4_csap_specific_data
     int    socket;             /**< Socket for receiving data to the media */
     struct sockaddr_in sa_op;  /**< Sockaddr for current operation 
                                     to the media   */ 
-    int    read_timeout;       /**< Number of second to wait for data   */ 
 
     uint16_t         protocol; /**< Up layer default protocol */
 
@@ -124,9 +123,6 @@ typedef struct tcp_csap_specific_data
     unsigned short   dst_port;    /**< Dest.  TCP port for current packet*/
 
     uint16_t         data_tag;
-    size_t           wait_length;
-    uint8_t         *stored_buffer;
-    size_t           stored_length;
 
     tad_data_unit_t  du_src_port;
     tad_data_unit_t  du_dst_port;
@@ -167,8 +163,8 @@ extern te_errno tad_ip4_rw_destroy_cb(csap_p csap);
  *
  * The function complies with csap_read_cb_t prototype.
  */ 
-extern int tad_ip4_read_cb(csap_p csap, int timeout,
-                           char *buf, size_t buf_len);
+extern te_errno tad_ip4_read_cb(csap_p csap, unsigned int timeout,
+                                tad_pkt *pkt, size_t *pkt_len);
 
 /**
  * Callback for write data to media of IPv4 CSAP. 
@@ -224,166 +220,17 @@ extern te_errno tad_ip4_gen_bin_cb(csap_p                csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_ip4_match_bin_cb(csap_p           csap,
-                                     unsigned int     layer,
-                                     const asn_value *pattern_pdu,
-                                     const csap_pkts *pkt,
-                                     csap_pkts       *payload, 
-                                     asn_value_p      parsed_packet);
-
-
-/*
- * ICMP callbacks
- */ 
-
-/**
- * Callback for read parameter value of ICMP CSAP.
- *
- * The function complies with csap_layer_get_param_cb_t prototype.
- */ 
-extern char *tad_icmp4_get_param_cb(csap_p        csap,
-                                    unsigned int  layer,
-                                    const char   *param);
-
-/**
- * Callback for read data from media of ICMP CSAP. 
- *
- * The function complies with csap_read_cb_t prototype.
- */ 
-extern int tad_icmp4_read_cb(csap_p csap, int timeout,
-                             char *buf, size_t buf_len);
-
-/**
- * Callback for write data to media of ICMP CSAP. 
- *
- * The function complies with csap_write_read_cb_t prototype.
- */ 
-extern te_errno tad_icmp4_write_cb(csap_p csap, const tad_pkt *pkt);
-
-/**
- * Callback for write data to media of ICMP CSAP and read
- * data from media just after write, to get answer to sent request. 
- *
- * The function complies with csap_write_cb_t prototype.
- */ 
-extern int tad_icmp4_write_read_cb(csap_p csap, int timeout,
-                                   const tad_pkt *w_pkt,
-                                   char *r_buf, size_t r_buf_len);
-
-
-/**
- * Callback for init 'file' CSAP layer if single in stack.
- *
- * The function complies with csap_nbr_init_cb_t prototype.
- */ 
-extern te_errno tad_icmp4_single_init_cb(csap_p           csap,
-                                         unsigned int     layer,
-                                         const asn_value *csap_nds);
-
-/**
- * Callback for destroy 'file' CSAP layer if single in stack.
- *
- * The function complies with csap_nbr_destroy_cb_t prototype.
- */ 
-extern te_errno tad_icmp4_single_destroy_cb(csap_p       csap,
-                                            unsigned int layer);
-
-/**
- * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
- *
- * The function complies with csap_layer_confirm_pdu_cb_t prototype.
- */ 
-extern te_errno tad_icmp4_confirm_pdu_cb(csap_p       csap,
-                                         unsigned int layer,
-                                         asn_value_p  tmpl_pdu); 
-
-/**
- * Callback for generate binary data to be sent to media.
- *
- * The function complies with csap_layer_generate_pkts_cb_t prototype.
- */ 
-extern te_errno tad_icmp4_gen_bin_cb(csap_p                csap,
-                                     unsigned int          layer,
-                                     const asn_value      *tmpl_pdu,
-                                     const tad_tmpl_arg_t *args,
-                                     size_t                arg_num, 
-                                     tad_pkts             *sdus,
-                                     tad_pkts             *pdus);
-
-
-/**
- * Callback for parse received packet and match it with pattern. 
- *
- * The function complies with csap_layer_match_bin_cb_t prototype.
- */
-extern te_errno tad_icmp4_match_bin_cb(csap_p           csap,
-                                       unsigned int     layer,
-                                       const asn_value *pattern_pdu,
-                                       const csap_pkts *pkt,
-                                       csap_pkts       *payload, 
-                                       asn_value_p      parsed_packet);
-
-/**
- * Callback for generating pattern to filter 
- * just one response to the packet which will be sent by this CSAP 
- * according to this template. 
- *
- * The function complies with csap_layer_gen_pattern_cb_t prototype.
- */
-extern te_errno tad_icmp4_gen_pattern_cb(csap_p           csap,
-                                         unsigned int     layer,
-                                         const asn_value *tmpl_pdu, 
-                                         asn_value_p     *pattern_pdu);
-
-
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 
 /*
  * UDP callbacks
  */ 
-
-
-/**
- * Callback for init 'udp' CSAP layer if over 'ip4' in stack.
- *
- * The function complies with csap_nbr_init_cb_t prototype.
- */ 
-extern te_errno tad_udp_ip4_init_cb(csap_p           csap,
-                                    unsigned int     layer,
-                                    const asn_value *csap_nds);
-
-/**
- * Callback for destroy 'udp' CSAP layer if over 'ip4' in stack.
- *
- * The function complies with csap_nbr_destroy_cb_t prototype.
- */ 
-extern te_errno tad_udp_ip4_destroy_cb(csap_p       csap,
-                                       unsigned int layer);
-
-/**
- * Callback for read data from media of UDP CSAP. 
- *
- * The function complies with csap_read_cb_t prototype.
- */ 
-extern int tad_udp_read_cb(csap_p csap, int timeout,
-                           char *buf, size_t buf_len);
-
-/**
- * Callback for write data to media of UDP CSAP. 
- *
- * The function complies with csap_write_read_cb_t prototype.
- */ 
-extern te_errno tad_udp_ip4_write_cb(csap_p csap, const tad_pkt *pkt);
-
-/**
- * Callback for write data to media of UDP CSAP and read
- * data from media just after write, to get answer to sent request. 
- *
- * The function complies with csap_write_cb_t prototype.
- */ 
-extern int tad_udp_ip4_write_read_cb(csap_p csap, int timeout,
-                                     const tad_pkt *w_pkt,
-                                     char *r_buf, size_t r_buf_len);
-
 
 /**
  * Callback for init 'udp' CSAP layer.
@@ -400,14 +247,26 @@ extern te_errno tad_udp_init_cb(csap_p csap, unsigned int layer);
 extern te_errno tad_udp_destroy_cb(csap_p csap, unsigned int layer);
 
 /**
- * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
+ * Callback for confirm template PDU with ehternet CSAP parameters and
+ * possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_udp_confirm_pdu_cb(csap_p         csap,
-                                       unsigned int   layer,
-                                       asn_value_p    tmpl_pdu,
-                                       void         **p_opaque); 
+extern te_errno tad_udp_confirm_tmpl_cb(csap_p         csap,
+                                        unsigned int   layer,
+                                        asn_value_p    tmpl_pdu,
+                                        void         **p_opaque); 
+
+/**
+ * Callback for confirm pattern PDU with ehternet CSAP parameters and
+ * possibilities.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */ 
+extern te_errno tad_udp_confirm_ptrn_cb(csap_p         csap,
+                                        unsigned int   layer,
+                                        asn_value_p    tmpl_pdu,
+                                        void         **p_opaque); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -430,42 +289,17 @@ extern te_errno tad_udp_gen_bin_cb(csap_p                csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_udp_match_bin_cb(csap_p           csap,
-                                     unsigned int     layer,
-                                     const asn_value *pattern_pdu,
-                                     const csap_pkts *pkt,
-                                     csap_pkts       *payload, 
-                                     asn_value_p      parsed_packet);
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 
 /*
  * TCP callbacks
  */ 
-
-/**
- * Callback for read data from media of TCP CSAP. 
- *
- * The function complies with csap_read_cb_t prototype.
- */ 
-extern int tad_tcp_read_cb(csap_p csap, int timeout,
-                           char *buf, size_t buf_len);
-
-/**
- * Callback for write data to media of TCP CSAP. 
- *
- * The function complies with csap_write_read_cb_t prototype.
- */ 
-extern te_errno tad_tcp_write_cb(csap_p csap, const tad_pkt *pkt);
-
-/**
- * Callback for write data to media of TCP CSAP and read
- *  data from media just after write, to get answer to sent request. 
- *
- * The function complies with csap_write_cb_t prototype.
- */ 
-extern int tad_tcp_write_read_cb(csap_p csap, int timeout,
-                                 const tad_pkt *w_pkt,
-                                 char *r_buf, size_t r_buf_len);
-
 
 /**
  * Callback for init 'tcp' CSAP layer.
@@ -519,11 +353,12 @@ extern te_errno tad_tcp_gen_bin_cb(csap_p                csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_tcp_match_bin_cb(csap_p           csap,
-                                     unsigned int     layer,
-                                     const asn_value *pattern_pdu,
-                                     const csap_pkts *pkt,
-                                     csap_pkts       *payload, 
-                                     asn_value_p      parsed_packet);
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 
 #ifdef __cplusplus

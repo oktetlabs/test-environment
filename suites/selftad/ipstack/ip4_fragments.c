@@ -27,7 +27,7 @@
  * $Id$
  */
 
-#define TE_TEST_NAME    "ipstack/ip4_udp_dgm"
+#define TE_TEST_NAME    "ipstack/ip4_fragments"
 
 #define TE_LOG_LEVEL 0xff
 

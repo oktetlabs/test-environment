@@ -45,24 +45,19 @@
 
 /* See description in tad_bridge_impl.h */
 te_errno
-tad_bridge_confirm_pdu_cb(csap_p csap, unsigned int layer,
-                          asn_value_p layer_pdu, void **p_opaque)
+tad_bridge_confirm_tmpl_cb(csap_p csap, unsigned int layer,
+                           asn_value_p layer_pdu, void **p_opaque)
 {
     int    rc = 0; 
     char   buffer[8]; /* maximum length of field in Config BPDU*/
 
+    UNUSED(csap);
     UNUSED(layer);
     UNUSED(p_opaque);
 
     memset(buffer, 0, sizeof(buffer));
 
     VERB("bridge confirm called\n");
-    if (csap->command == TAD_OP_RECV)
-    {
-        VERB("Noting to do with RX CSAP\n");
-        return 0;
-
-    } 
 
 #define CHECK_FIELD(label, val, len)    \
     do if (rc == 0) {                                           \
@@ -121,6 +116,21 @@ tad_bridge_confirm_pdu_cb(csap_p csap, unsigned int layer,
     return rc;
 }
 
+/* See description in tad_bridge_impl.h */
+te_errno
+tad_bridge_confirm_ptrn_cb(csap_p csap, unsigned int layer,
+                           asn_value_p layer_pdu, void **p_opaque)
+{
+    UNUSED(csap);
+    UNUSED(layer);
+    UNUSED(layer_pdu);
+    UNUSED(p_opaque);
+
+    VERB("bridge confirm called\n");
+    VERB("Noting to do with RX CSAP\n");
+
+    return 0;
+} 
 
 /* See description in tad_bridge_impl.h */
 te_errno
@@ -224,10 +234,13 @@ tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_bridge_impl.h */
 te_errno
-tad_bridge_match_bin_cb(csap_p csap, unsigned int layer,
-                        const asn_value *pattern_pdu,
-                        const csap_pkts *pkt, csap_pkts *payload, 
-                        asn_value_p parsed_packet )
+tad_bridge_match_bin_cb(csap_p csap,
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu)
 {
     int      rc = 0;
     uint8_t *data;
@@ -236,8 +249,9 @@ tad_bridge_match_bin_cb(csap_p csap, unsigned int layer,
    
     UNUSED(csap);
     UNUSED(layer);
-    UNUSED(payload);
+    UNUSED(sdu);
  
+#if 0
     data = pkt->data; 
 
     /* TODO: check LLC header */
@@ -287,4 +301,7 @@ tad_bridge_match_bin_cb(csap_p csap, unsigned int layer,
 
     asn_free_value(bridge_pdu); 
     return rc; 
+#else
+    return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+#endif
 }

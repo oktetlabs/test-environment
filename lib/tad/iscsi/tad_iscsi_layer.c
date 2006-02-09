@@ -178,32 +178,44 @@ tad_iscsi_gen_bin_cb(csap_p csap, unsigned int layer,
 /* See description in tad_iscsi_impl.h */
 te_errno
 tad_iscsi_match_bin_cb(csap_p           csap,
-                       unsigned int     layer,
-                       const asn_value *pattern_pdu,
-                       const csap_pkts *pkt,
-                       csap_pkts       *payload, 
-                       asn_value       *parsed_packet)
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu)
 { 
-    tad_iscsi_layer_data *spec_data; 
+    tad_iscsi_layer_data   *spec_data; 
+    tad_pkt_seg            *seg;
 
-    asn_value *iscsi_msg = asn_init_value(ndn_iscsi_message);
-    int        rc = 0;
-    int        defect;
+    uint8_t    *data_ptr; 
+    size_t      data_len;
+    asn_value  *iscsi_msg = NULL;
+    te_errno    rc;
+    int         defect;
 
+    UNUSED(ptrn_opaque);
 
-    ENTRY("(%d:%u)", csap->id, layer);
+    assert(tad_pkt_seg_num(pdu) == 1);
+    assert(tad_pkt_first_seg(pdu) != NULL);
+    data_ptr = tad_pkt_first_seg(pdu)->data_ptr;
+    data_len = tad_pkt_first_seg(pdu)->data_len;
+
+    if (csap->state & CSAP_STATE_RESULTS)
+        iscsi_msg = meta_pkt->layers[layer].nds =
+            asn_init_value(ndn_iscsi_message);
 
     spec_data = csap_get_proto_spec_data(csap, layer); 
 
-    INFO("%s(CSAP %d): got pkt %d bytes",
-         __FUNCTION__, csap->id, pkt->len);
+    INFO("%s(CSAP %d): got pkt %u bytes",
+         __FUNCTION__, csap->id, (unsigned)data_len);
 
     /* Parse and reassembly iSCSI PDU */
 
     if (spec_data->wait_length == 0)
     {
         spec_data->wait_length = ISCSI_BHS_LENGTH + 
-             iscsi_rest_data_len(pkt->data,
+             iscsi_rest_data_len(data_ptr,
                                  spec_data->hdig, spec_data->ddig);
         INFO("%s(CSAP %d), calculated wait length %d",
                 __FUNCTION__, csap->id, spec_data->wait_length);
@@ -217,21 +229,21 @@ tad_iscsi_match_bin_cb(csap_p           csap,
         spec_data->stored_length = 0;
     }
     defect = spec_data->wait_length - 
-            (spec_data->stored_length + pkt->len);
+            (spec_data->stored_length + data_len);
 
     if (defect < 0)
     {
-        ERROR("%s(CSAP %d) get too many data: %d bytes, "
+        ERROR("%s(CSAP %d) get too many data: %u bytes, "
               "wait for %d, stored %d", 
-              __FUNCTION__, csap->id, pkt->len,
+              __FUNCTION__, csap->id, (unsigned)data_len,
               spec_data->wait_length, spec_data->stored_length); 
         rc = TE_ETADLOWER;
         goto cleanup;
     }
 
     memcpy(spec_data->stored_buffer + spec_data->stored_length, 
-           pkt->data, pkt->len);
-    spec_data->stored_length += pkt->len;
+           data_ptr, data_len);
+    spec_data->stored_length += data_len;
 
     if (defect > 0)
     {
@@ -246,7 +258,6 @@ tad_iscsi_match_bin_cb(csap_p           csap,
 begin_match:
     do {
         uint8_t    tmp8;
-        uint8_t    op_specific[3];
         uint8_t   *p = spec_data->stored_buffer; 
 
         /* Here is a big ASS with matching: if packet 
@@ -255,41 +266,47 @@ begin_match:
          */
 
         tmp8 = (*p >> 6) & 1;
-        if ((rc = ndn_match_data_units(pattern_pdu, NULL, 
+        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
                                        &tmp8, 1, "i-bit")) != 0)
             goto cleanup;
 
         tmp8 = *p & 0x3f;
-        if ((rc = ndn_match_data_units(pattern_pdu, NULL, 
+        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
                                        &tmp8, 1, "opcode")) != 0)
             goto cleanup;
 
         p++;
         tmp8 = *p >> 7;
-        if ((rc = ndn_match_data_units(pattern_pdu, NULL, 
+        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
                                        &tmp8, 1, "f-bit")) != 0)
             goto cleanup;
 
-        if ((rc = ndn_match_data_units(pattern_pdu, NULL, 
+        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
                                        p, 3, "op-specific")) != 0)
             goto cleanup;
 
     } while(0);
 
-
-    memset(payload, 0 , sizeof(*payload));
-    payload->len = spec_data->wait_length;
-    payload->data = spec_data->stored_buffer; 
+    seg = tad_pkt_alloc_seg(spec_data->stored_buffer,
+                           spec_data->wait_length,
+                           tad_pkt_seg_data_free);
+    if (seg == NULL)
+    {
+        free(spec_data->stored_buffer);
+        ERROR(CSAP_LOG_FMT "tad_pkt_alloc_seg() failed",
+              CSAP_LOG_ARGS(csap));
+        rc = TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+    else
+    {
+        tad_pkt_append_seg(sdu, seg);
+    }
 
     spec_data->wait_length = 0;
     spec_data->stored_length = 0;
     spec_data->stored_buffer = NULL;
 
-    asn_write_component_value(parsed_packet, iscsi_msg, "#iscsi");
-
 cleanup:
-    asn_free_value(iscsi_msg);
-
     return rc;
 }
 
@@ -299,13 +316,13 @@ te_errno
 tad_iscsi_gen_pattern_cb(csap_p            csap,
                          unsigned int      layer,
                          const asn_value  *tmpl_pdu, 
-                         asn_value       **pattern_pdu)
+                         asn_value       **ptrn_pdu)
 {
-    ENTRY("(%d:%u) tmpl_pdu=%p pattern_pdu=%p",
-          csap->id, layer, tmpl_pdu, pattern_pdu);
+    ENTRY("(%d:%u) tmpl_pdu=%p ptrn_pdu=%p",
+          csap->id, layer, tmpl_pdu, ptrn_pdu);
 
-    assert(pattern_pdu != NULL);
-    *pattern_pdu = asn_init_value(ndn_iscsi_message); 
+    assert(ptrn_pdu != NULL);
+    *ptrn_pdu = asn_init_value(ndn_iscsi_message); 
 
     return 0;
 }

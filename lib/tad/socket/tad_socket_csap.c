@@ -24,7 +24,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tad_socket_csap.c 22403 2006-01-05 15:59:36Z arybchik $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD Socket"
@@ -54,6 +54,7 @@ static csap_spt_type_t socket_csap_spt =
     release_tmpl_cb     : NULL,
 
     confirm_ptrn_cb     : tad_socket_confirm_ptrn_cb,
+    match_pre_cb        : NULL,
     match_do_cb         : tad_socket_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,

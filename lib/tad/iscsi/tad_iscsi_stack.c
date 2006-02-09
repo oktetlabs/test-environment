@@ -115,8 +115,6 @@ tad_iscsi_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     }
     rw_data->socket = int32_val;
 
-    csap->timeout = 100 * 1000; /* FIXME */
-
     return 0;
 }
 
@@ -141,79 +139,118 @@ tad_iscsi_rw_destroy_cb(csap_p csap)
 
 
 /* See description tad_iscsi_impl.h */
-int 
-tad_iscsi_read_cb(csap_p csap, int timeout,
-                  char *buf, size_t buf_len)
+te_errno
+tad_iscsi_read_cb(csap_p csap, unsigned int timeout,
+                  tad_pkt *pkt, size_t *pkt_len)
 {
     tad_iscsi_rw_data      *rw_data = csap_get_rw_data(csap);
     tad_iscsi_layer_data   *layer_data =
-        csap_get_proto_spec_data(csap, csap_get_rw_layer(csap));;
+        csap_get_proto_spec_data(csap, csap_get_rw_layer(csap));
 
-    size_t    len = 0;
+    tad_pkt_seg    *seg = tad_pkt_first_seg(pkt);
+    size_t          len = 0;
+    te_errno        rc;
 
-    assert(csap != NULL);
-    F_ENTRY("(%d:-) timeout=%d buf=%p buf_len=%u",
-            csap->id, timeout, buf, (unsigned)buf_len);
+    F_ENTRY(CSAP_LOG_FMT "timeout=%u pkt=%p pkt_len=%p",
+            CSAP_LOG_ARGS(csap), timeout, pkt, pkt_len);
 
     INFO("%s(CSAP %d) called, wait len %d, timeout %d",
          __FUNCTION__, csap->id, layer_data->wait_length, timeout);
 
     if (layer_data->wait_length == 0)
+    {
+        assert(layer_data->stored_length == 0);
         len = ISCSI_BHS_LENGTH;
+    }
     else
+    {
+        assert(layer_data->wait_length > layer_data->stored_length);
         len = layer_data->wait_length - layer_data->stored_length;
+    }
 
-    if (buf_len > len)
-        buf_len = len;
+    if (seg == NULL)
+    {
+        seg = tad_pkt_alloc_seg(NULL, len, NULL);
+        if (seg == NULL)
+        {
+            rc = TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+            return rc;
+        }
+        tad_pkt_append_seg(pkt, seg);
+    }
+    else if (seg->data_len < len)
+    {
+        void *mem = malloc(len);
+
+        if (mem == NULL)
+        {
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            assert(rc != 0);
+            return rc;
+        }
+        VERB("%s(): reuse the first segment of packet", __FUNCTION__);
+        tad_pkt_put_seg_data(pkt, seg,
+                             mem, len, tad_pkt_seg_data_free);
+    }
 
     {
-        struct timeval tv = {0, 0};
+        struct timeval tv;
         fd_set rset;
-        int rc, fd = rw_data->socket;
+        int ret, fd = rw_data->socket;
 
         /* timeout in microseconds */
-        tv.tv_usec = timeout % (1000 * 1000);
-        tv.tv_sec =  timeout / (1000 * 1000);
+        TE_US2TV(timeout, &tv);
 
         FD_ZERO(&rset);
         FD_SET(fd, &rset);
 
-        rc = select(fd + 1, &rset, NULL, NULL, &tv); 
+        ret = select(fd + 1, &rset, NULL, NULL, &tv); 
 
-        INFO("%s(CSAP %d): select on fd %d rc %d", 
-             __FUNCTION__, csap->id, fd, rc);
+        INFO("%s(CSAP %d): select on fd %d ret %d", 
+             __FUNCTION__, csap->id, fd, ret);
 
-        if (rc > 0)
+        if (ret > 0)
         {
-            rc = read(fd, buf, buf_len);
-            INFO("%s(CSAP %d): read rc %d", 
-                 __FUNCTION__, csap->id, rc);
+            ret = read(fd, seg->data_ptr, len);
+            INFO("%s(CSAP %d): read ret %d", 
+                 __FUNCTION__, csap->id, ret);
 
-            if (rc == 0)
+            if (ret == 0)
             {
                 INFO(CSAP_LOG_FMT "Peer closed connection", 
                      CSAP_LOG_ARGS(csap));
-                csap->last_errno = TE_ETADENDOFDATA;
-                return -1;
+                return TE_RC(TE_TAD_CSAP, TE_ETADENDOFDATA);
             }
-            else if (rc > 0)
-                len = rc;
+            else if (ret > 0)
+            {
+                *pkt_len = ret;
+                len = ret;
+            }
             else
             {
-                csap->last_errno = te_rc_os2te(errno);
-                WARN("%s(CSAP %d) error %d on read", __FUNCTION__, 
-                     csap->id, csap->last_errno);
-                return -1;
+                rc = te_rc_os2te(errno);
+                WARN("%s(CSAP %d) error %r on read", __FUNCTION__, 
+                     csap->id, rc);
+                return TE_RC(TE_TAD_CSAP, rc);
             }
         }
-        else 
-            len = 0;
+        else if (ret == 0)
+        {
+            return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+        }
+        else
+        {
+            rc = te_rc_os2te(errno);
+            ERROR("%s(CSAP %d) select failed %r", __FUNCTION__,
+                  csap->id, rc);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
     }
     INFO("%s(CSAP %d), return %d", __FUNCTION__, csap->id, len);
 
     layer_data->total_received += len;
 
-    return len;
+    return 0;
 }
 
 
@@ -282,8 +319,6 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     if (rc != 0)
     {
         WARN("%s(CSAP %u) error %r on read", __FUNCTION__, csap->id, rc);
-        /* FIXME: Is it necessary? */
-        csap->last_errno = rc;
     } 
     else
     {

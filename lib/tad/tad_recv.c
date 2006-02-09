@@ -22,6 +22,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
  *
  * $Id$
@@ -53,67 +54,631 @@
 #include "tad_csap_inst.h"
 #include "tad_csap_support.h"
 #include "tad_utils.h"
-#include "tad_send_recv.h"
-
-
-
-#define SEND_ANSWER(_fmt...) \
-    do {                                                             \
-        int r_c;                                                     \
-                                                                     \
-        if (snprintf(answer_buffer + ans_len,                        \
-                     ANS_BUF - ans_len, _fmt) >= ANS_BUF - ans_len)  \
-        {                                                            \
-            VERB("answer is truncated");                             \
-        }                                                            \
-        rcf_ch_lock();                                               \
-        r_c = rcf_comm_agent_reply(context->rcfc, answer_buffer,     \
-                                   strlen(answer_buffer) + 1);       \
-        rcf_ch_unlock();                                             \
-    } while (0)
+#include "tad_recv.h"
 
 
 #define ANS_BUF 100
 #define RBUF 0x4000
 
 /**
- * Process action for received packet.
+ * Preprocess traffic pattern sequence of PDUs using protocol-specific
+ * callbacks.
  *
- * @param csap    CSAP descriptor
- * @param raw_pkt       binary data with original packet received
- * @param raw_len       length of original packet
- * @param payload       binary data with payload after match
- * @param payload_len   length of payload
- * @param action        ASN value of Packet-Action type
+ * @param csap          CSAP instance
+ * @param ptrn_unit     Traffic pattern unit
+ * @param data          Location for pattern unit auxiluary data to be
+ *                      prepared during preprocessing and used during
+ *                      binary data generation
  *
- * @return status of operation
+ * @return Status code.
  */
-int
-tad_perform_action(csap_p csap,
-                   uint8_t *raw_pkt, size_t raw_len,
-                   uint8_t *payload, size_t payload_len,
-                   const asn_value *action)
+static te_errno
+tad_recv_preprocess_pdus(csap_p csap, const asn_value *ptrn_unit,
+                         tad_recv_ptrn_unit_data *data)
+{
+    te_errno            rc;
+    const asn_value    *nds_pdus = NULL;
+
+    data->layer_opaque = calloc(csap->depth, sizeof(data->layer_opaque[0]));
+    if (data->layer_opaque == NULL)
+        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+
+    /* 
+     * Get sequence of PDUs and preprocess by protocol-specific
+     * callbacks
+     */
+    rc = asn_get_child_value(ptrn_unit, &nds_pdus, PRIVATE, NDN_PU_PDUS);
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        VERB(CSAP_LOG_FMT "No PDUs in pattern unit",
+             CSAP_LOG_ARGS(csap));
+        nds_pdus = NULL;
+    }
+    else if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to get PDUs specification from "
+              "pattern: %r", CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    /* FIXME: Remove type cast */
+    rc = tad_confirm_pdus(csap, TRUE, (asn_value *)nds_pdus,
+                          data->layer_opaque); 
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Confirmation of PDUs to send failed: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/**
+ * Preprocess traffic pattern payload specification.
+ *
+ * @param csap          CSAP instance
+ * @param ptrn_unit     Traffic pattern unit
+ * @param data          Location for pattern unit auxiluary data to be
+ *                      prepared during preprocessing and used during
+ *                      binary data generation
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_preprocess_payload(csap_p csap, const asn_value *ptrn_unit,
+                            tad_recv_ptrn_unit_data *data)
+{
+    te_errno            rc;
+    const asn_value    *nds_payload;
+
+    /*
+     * Get payload specification and convert to convinient
+     * representation.
+     */
+    rc = asn_get_child_value(ptrn_unit, &nds_payload,
+                             PRIVATE, NDN_PU_PAYLOAD); 
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        VERB(CSAP_LOG_FMT "No payload in pattern unit",
+             CSAP_LOG_ARGS(csap));
+        data->pld_spec.type = TAD_PLD_UNSPEC;
+        return 0;
+    }
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to get payload specification from "
+              "pattern: %r", CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    memset(&data->pld_spec, 0, sizeof(data->pld_spec));
+    rc = tad_convert_payload(nds_payload, &data->pld_spec);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to preprocess payload specification: "
+              "%r", CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    } 
+
+    return 0;
+}
+
+/**
+ * Preprocess specification of one action in traffic pattern unit.
+ *
+ * @param nds_action    ASN.1 value with action specification
+ * @param data          Location for action specification data
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_preprocess_action(const asn_value *nds_action,
+                           tad_action_spec *data)
 {
     const asn_value *action_ch_val;
     asn_tag_class    t_class;
-    uint16_t         t_val; 
-    int              rc = 0;
+    asn_tag_value    t_val; 
+    te_errno         rc;
 
-    if (csap == NULL || action == NULL || raw_pkt == NULL)
-    {
-        ERROR("%s(): NULL parameters passed", __FUNCTION__);
-        return TE_EWRONGPTR;
-    }
+    assert(nds_action != NULL);
+    assert(data != NULL);
 
-    rc = asn_get_choice_value(action, &action_ch_val,
+    rc = asn_get_choice_value(nds_action, &action_ch_val,
                               &t_class, &t_val);
     VERB("%s(): get action choice rc %r, class %d, tag %d", 
          __FUNCTION__, rc, (int)t_class, (int)t_val);
     if (rc != 0)
         return rc;
 
+    data->type = t_val;
+
     switch (t_val)
     {
+        case NDN_ACT_BREAK: 
+        case NDN_ACT_REPORT: 
+        case NDN_ACT_ECHO:
+            break;
+
+        case NDN_ACT_FUNCTION: 
+        {
+            char    buffer[200] = {0,};
+            size_t  buf_len = sizeof(buffer);
+            char   *sep;
+
+            rc = asn_read_value_field(action_ch_val, buffer,
+                                      &buf_len, "");
+            if (rc != 0)
+            {
+                ERROR("%s(): asn_read_value_field() for function "
+                      "action specification: %r", __FUNCTION__, rc);
+                break;
+            }
+            sep = index(buffer, ':');
+            if (sep != NULL)
+            {
+                *sep = '\0';
+                data->function.opaque = strdup(sep + 1);
+            }
+            VERB("%s(): action function name: '%s';, opaque '%s'",
+                 __FUNCTION__, buffer, data->function.opaque);
+
+            data->function.func = rcf_ch_symbol_addr(buffer, 1);
+            if (data->function.func == NULL)
+            {
+                ERROR("No funcion named '%s' found", buffer);
+                rc = TE_ENOENT; 
+            }
+            break;
+        }
+
+        case NDN_ACT_FORWARD_PLD:
+        {
+            int32_t target_csap_id;
+            csap_p  target_csap;
+
+            rc = asn_read_int32(action_ch_val, &target_csap_id, "");
+            if (rc != 0)
+            {
+                ERROR("%s(): asn_read_int32() failed to target CSAP ID "
+                      "of the forward payload action", __FUNCTION__);
+                break;
+            }
+            target_csap = csap_find(target_csap_id);
+            if (target_csap == NULL)
+            {
+                ERROR("Target CSAP #%u of forward payload action does "
+                      "not exist", target_csap_id);
+                rc = TE_ETADCSAPNOTEX;
+            }
+            else if (csap_get_proto_support(target_csap,
+                         csap_get_rw_layer(target_csap))->write_cb == NULL)
+            {
+                ERROR("Target CSAP #%u of forward payload action unable "
+                      "to send anything", target_csap_id);
+                rc = TE_EOPNOTSUPP;
+            }
+            else
+            {
+                data->fwd_pld.csap_id = target_csap_id;
+            }
+            break; 
+        }
+
+        default:
+            WARN("Unsupported action tag %d", (int)t_val);
+            rc = TE_EINVAL;
+            break;
+    }
+
+    return TE_RC(TE_TAD_CH, rc);
+}
+
+/**
+ * Preprocess specification of actions in traffic pattern unit.
+ *
+ * @param csap          CSAP instance
+ * @param ptrn_unit     Traffic pattern unit
+ * @param data          Location for pattern unit auxiluary data to be
+ *                      prepared during preprocessing and used during
+ *                      binary data matching
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_preprocess_actions(csap_p csap, const asn_value *ptrn_unit,
+                            tad_recv_ptrn_unit_data *data)
+{
+    te_errno            rc;
+    const asn_value    *nds_actions = NULL;
+    int                 tmp;
+    unsigned int        i;
+
+    rc = asn_get_child_value(ptrn_unit, &nds_actions,
+                             PRIVATE, NDN_PU_ACTIONS);
+    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
+    {
+        INFO(CSAP_LOG_FMT "No actions in pattern unit",
+             CSAP_LOG_ARGS(csap));
+        return 0;
+    }
+    else if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to get actions specification from "
+              "pattern: %r", CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    tmp = asn_get_length(nds_actions, ""); 
+    if (tmp < 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to get length of actions "
+              "specification from pattern: %r", CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+    else if (tmp == 0)
+    {
+        INFO(CSAP_LOG_FMT "Empty sequence of actions in pattern unit",
+             CSAP_LOG_ARGS(csap));
+        return 0;
+    }
+    data->n_actions = tmp;
+
+    data->actions = calloc(data->n_actions, sizeof(data->actions[0]));
+    if (data->actions == NULL)
+        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+
+    for (i = 0; i < data->n_actions; ++i)
+    { 
+        const asn_value *nds_action;
+
+        /* FIXME: Avoid type cast */
+        rc = asn_get_indexed((asn_value *)nds_actions,
+                             (asn_value **)&nds_action, i, NULL);
+        if (rc != 0)
+        {
+            ERROR(CSAP_LOG_FMT "Get action #%u failed: %r",
+                  CSAP_LOG_ARGS(csap), i, rc);
+            break;
+        }
+        rc = tad_recv_preprocess_action(nds_action,
+                                        data->actions + i);
+        if (rc != 0)
+        {
+            ERROR(CSAP_LOG_FMT "Preprocessing of action #%u failed: %r",
+                  CSAP_LOG_ARGS(csap), i, rc);
+            break;
+        }
+    }
+    if (rc == 0)
+    {
+        for (i = 0;
+             (i < data->n_actions) &&
+             (data->actions[i].type != NDN_ACT_REPORT);
+             ++i);
+        data->action_report = (i < data->n_actions);
+    }
+
+    return rc;
+}
+
+/**
+ * Preprocess traffic pattern unit. Check its correctness. Set default
+ * values based on CSAP parameters.
+ *
+ * @param csap          CSAP instance
+ * @param ptrn_unit     Traffic pattern unit
+ * @param data          Location for pattern unit auxiluary data to be
+ *                      prepared during preprocessing and used during
+ *                      binary data generation
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_preprocess_pattern_unit(csap_p csap, asn_value *ptrn_unit,
+                                 tad_recv_ptrn_unit_data *data)
+{
+    te_errno    rc;
+
+    data->nds = ptrn_unit;
+
+    rc = tad_recv_preprocess_pdus(csap, ptrn_unit, data);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Preprocessing of PDUs failed: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    rc = tad_recv_preprocess_payload(csap, ptrn_unit, data);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Preprocessing of payload failed: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    rc = tad_recv_preprocess_actions(csap, ptrn_unit, data);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Preprocessing of payload failed: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/**
+ * Preprocess traffic pattern.
+ *
+ * @param csap          CSAP instance
+ * @param pattern       Traffic pattern (owned by the routine in any
+ *                      case)
+ * @param data          Location for pattern auxiluary data to be
+ *                      prepared during preprocessing and used during
+ *                      binary data generation
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_preprocess_pattern(csap_p csap, asn_value *pattern,
+                            tad_recv_pattern_data *data)
+{
+    int             n_units;
+    unsigned int    i;
+    te_errno        rc = 0;
+
+    data->nds = pattern;
+
+    n_units = asn_get_length(data->nds, "");
+    if (n_units <= 0)
+    {
+        ERROR(CSAP_LOG_FMT "Invalid number of units (%d) in pattern",
+              CSAP_LOG_ARGS(csap), n_units);
+        return TE_RC(TE_TAD_CH, TE_ETADWRONGNDS);
+    }
+    data->n_units = n_units;
+
+    data->units = calloc(data->n_units, sizeof(data->units[0]));
+    if (data->units == NULL)
+        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+
+    for (i = 0; i < data->n_units; ++i)
+    {
+        asn_value *pattern_unit = NULL;
+
+        rc = asn_get_indexed(data->nds, &pattern_unit, i, NULL);
+        if (rc != 0)
+        {
+            ERROR(CSAP_LOG_FMT "Failed to get pattern unit #%u: %r",
+                  CSAP_LOG_ARGS(csap), i, rc);
+            break;
+        }
+
+        rc = tad_recv_preprocess_pattern_unit(csap, pattern_unit,
+                                                  data->units + i);
+        if (rc != 0)
+        {
+            ERROR(CSAP_LOG_FMT "Preprocessing of pattern unit #%u "
+                  "failed: %r", CSAP_LOG_ARGS(csap), i, rc);
+            break;
+        }
+    }
+
+    return rc;
+}
+
+
+/**
+ * Free TAD Receiver data associated with traffic pattern unit.
+ *
+ * @param data  TAD Receiver data associated with traffic pattern unit
+ */
+static void
+tad_recv_free_pattern_unit_data(csap_p csap,
+                                tad_recv_ptrn_unit_data *data)
+{
+    /* ASN.1 value freed for whole pattern */
+    unsigned int layer;
+
+    for (layer = 0; layer < csap->depth; ++layer)
+    {
+        csap_layer_release_opaque_cb_t  release_ptrn_cb =
+            csap_get_proto_support(csap, layer)->release_ptrn_cb;
+
+        if (release_ptrn_cb != NULL)
+            release_ptrn_cb(csap, layer, data->layer_opaque[layer]);
+    }
+
+    free(data->layer_opaque);
+
+    tad_payload_spec_clear(&data->pld_spec);
+}
+
+/**
+ * Free TAD Receiver data associated with traffic pattern.
+ *
+ * @param data  TAD Receiver data associated with traffic pattern
+ */
+static void
+tad_recv_free_pattern_data(csap_p csap, tad_recv_pattern_data *data)
+{
+    unsigned int    i;
+
+    for (i = 0; i < data->n_units; ++i)
+        tad_recv_free_pattern_unit_data(csap, data->units + i);
+    data->n_units = 0;
+
+    free(data->units);
+    data->units = NULL;
+    asn_free_value(data->nds);
+    data->nds = NULL;
+}
+
+/**
+ * Release TAD Receiver context (received packets queue, status and
+ * counters are preserved).
+ *
+ * @param csap          CSAP instance
+ * @param context       Context to be released
+ */
+static void
+tad_recv_release_context(csap_p csap, tad_recv_context *context)
+{
+    tad_recv_free_pattern_data(csap, &context->ptrn_data);
+}
+
+
+/* See description in tad_recv.h */
+void
+tad_recv_init_context(tad_recv_context *context)
+{
+    memset(context, 0, sizeof(*context));
+    TAILQ_INIT(&context->packets);
+}
+
+/* See description in tad_recv.h */
+te_errno
+tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num, 
+                     unsigned int timeout, rcf_comm_connection *rcfc,
+                     const char *answer_pfx, size_t pfx_len)
+{
+    tad_recv_context       *my_ctx = csap_get_recv_context(csap);
+    te_errno                rc;
+    csap_low_resource_cb_t  prepare_recv_cb;
+
+    assert(csap != NULL);
+    assert(pattern != NULL);
+
+    assert(my_ctx->packets.tqh_first == NULL);
+
+    my_ctx->status = 0;
+    my_ctx->wait_pkts = num;
+    my_ctx->match_pkts = my_ctx->got_pkts = 0;
+
+    if (timeout && timeout != TAD_TIMEOUT_INF)
+    { 
+        gettimeofday(&csap->wait_for, NULL);
+        csap->wait_for.tv_usec += timeout * 1000;
+        csap->wait_for.tv_sec += 
+            (csap->wait_for.tv_usec / 1000000);
+        csap->wait_for.tv_usec %= 1000000;
+
+        VERB("%s(): csap %u, wait_for set to %u.%u", __FUNCTION__,
+             csap->id,
+             csap->wait_for.tv_sec,
+             csap->wait_for.tv_usec);
+    }
+    else 
+        memset(&csap->wait_for, 0, sizeof(struct timeval));
+
+    rc = tad_task_init(&my_ctx->task, rcfc, answer_pfx, pfx_len);
+    if (rc != 0)
+    {
+        tad_recv_release_context(csap, my_ctx);
+        return rc;
+    }
+
+    rc = tad_recv_preprocess_pattern(csap, pattern, &my_ctx->ptrn_data);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to preprocess pattern: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        tad_recv_release_context(csap, my_ctx);
+        return rc;
+    }
+
+    prepare_recv_cb = csap_get_proto_support(csap,
+                          csap_get_rw_layer(csap))->prepare_recv_cb;
+
+    if (prepare_recv_cb != NULL && (rc = prepare_recv_cb(csap)) != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Prepare for receive failed: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        tad_recv_release_context(csap, my_ctx);
+        return rc;
+    }
+
+    return 0;
+}
+
+/**
+ * Shutdown receiver on the CSAP.
+ *
+ * @param csap      CSAP structure
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_shutdown(csap_p csap)
+{
+    te_errno                rc;
+    csap_low_resource_cb_t  shutdown_recv_cb;
+
+    shutdown_recv_cb = csap_get_proto_support(csap,
+                           csap_get_rw_layer(csap))->shutdown_recv_cb;
+
+    if (shutdown_recv_cb != NULL && (rc = shutdown_recv_cb(csap)) != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Shut down receiver failed: %r",
+              CSAP_LOG_ARGS(csap), rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/* See description in tad_recv.h */
+te_errno
+tad_recv_release(csap_p csap, tad_recv_context *context)
+{
+    te_errno    rc = 0;
+
+    assert(csap != NULL);
+    assert(context != NULL);
+
+    rc = tad_recv_shutdown(csap);
+
+    tad_recv_release_context(csap, context);
+
+    return rc;
+}
+
+
+/*
+ * Time critical processing (receive and match).
+ */
+
+/**
+ * Process action for received packet.
+ *
+ * @param csap          CSAP descriptor
+ * @param action_spec   Preprocessed action specification
+ * @param low_pkts      Lowest layer packets
+ * @param payload       Packet with payload
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
+                   const tad_pkts *low_pkts, const tad_pkt *payload)
+{
+    te_errno    rc = 0;
+
+    assert(csap != NULL);
+    assert(action_spec != NULL);
+
+    switch (action_spec->type)
+    {
+        case NDN_ACT_BREAK: 
+            csap->state |= CSAP_STATE_COMPLETE;
+            break;
+
+        case NDN_ACT_REPORT: 
+            /* do nothing: processed on higher layers. */
+            break;
+
 #if 0
         case NDN_ACT_ECHO:
             if (csap->echo_cb != NULL)
@@ -129,93 +694,149 @@ tad_perform_action(csap_p csap,
 #endif
 
         case NDN_ACT_FUNCTION: 
+            if (tad_pkts_get_num(low_pkts) == 1)
             {
-                tad_processing_pkt_method method_addr;
+                uint8_t    *raw_pkt = NULL;
+                size_t      raw_len = 0;
 
-                char  buffer[200] = {0,};
-                char *usr_place;
-                size_t buf_len = sizeof(buffer);
-
-                rc = asn_read_value_field(action_ch_val, buffer,
-                                          &buf_len, "");
+                rc = tad_pkt_flatten_copy(tad_pkts_first_pkt(low_pkts),
+                                          &raw_pkt, &raw_len);
                 if (rc != 0)
-                    ERROR("csap #%d, ASN read value error %r", 
-                          csap->id, rc); 
+                {
+                    ERROR("Failed to make flatten copy of packet: %r",
+                          rc);
+                }
                 else
-                { 
-                    /* 
-                     * If there is no user string for function after colon,
-                     * valid pointer to zero-length string will be passed.
-                     */
-                    for (usr_place = buffer; *usr_place; usr_place++)
-                        if (*usr_place == ':')
-                        {
-                            *usr_place = 0;
-                            usr_place++;
-                            break;
-                        }
-
-                    VERB("function name: \"%s\"", buffer);
-
-                    method_addr = (tad_processing_pkt_method) 
-                        rcf_ch_symbol_addr((char *)buffer, 1);
-
-                    if (method_addr == NULL)
+                {
+                    rc = action_spec->function.func(csap,
+                             action_spec->function.opaque, raw_pkt,
+                             raw_len);
+                    if (rc != 0)
                     {
-                        ERROR("No funcion named '%s' found", buffer);
-                        rc = TE_RC(TE_TAD_CH, TE_ENOENT); 
-                    }
-                    else
-                    {
-                        rc = method_addr(csap, usr_place,
-                                         raw_pkt, raw_len);
-                        if (rc != 0)
-                            WARN("rc from user method %r", rc);
-                        rc = 0;
+                        WARN(CSAP_LOG_FMT "User function failed: %r",
+                             CSAP_LOG_ARGS(csap), rc);
                     }
                 }
+                /* Don't want to stop receiver */
+                rc = 0;
+            }
+            else
+            {
+                WARN("Unsupported number %u of the lowest layer "
+                     "packets in 'function' action", 
+                     tad_pkts_get_num(low_pkts));
+                /* Don't want to stop receiver */
             }
             break;
 
         case NDN_ACT_FORWARD_PLD:
+        {
+            csap_p          target_csap;
+            csap_spt_type_p cbs;
+
+            target_csap = csap_find(action_spec->fwd_pld.csap_id);
+            if (target_csap == NULL)
             {
-                int32_t         target_csap_id;
-                csap_p          target_csap;
-                csap_spt_type_p cbs;
-
-                asn_read_int32(action_ch_val, &target_csap_id, "");
-                if ((target_csap = csap_find(target_csap_id)) != NULL)
-                {
-                    tad_pkt     pkt;
-                    tad_pkt_seg seg;
-
-                    tad_pkt_init(&pkt, NULL, NULL, NULL);
-                    tad_pkt_init_seg_data(&seg, payload, payload_len, NULL);
-                    tad_pkt_append_seg(&pkt, &seg);
-
-                    cbs = csap_get_proto_support(target_csap,
-                              csap_get_rw_layer(target_csap));
-                    rc = cbs->write_cb(target_csap, &pkt);
-                    VERB("action 'forward payload' processed");
-                } 
+                WARN(CSAP_LOG_FMT "target CSAP #%u for 'forward "
+                     "payload' action disappeared",
+                     CSAP_LOG_ARGS(csap), action_spec->fwd_pld.csap_id);
+                /* Don't want to stop receiver */
             }
+            else
+            {
+                cbs = csap_get_proto_support(target_csap,
+                          csap_get_rw_layer(target_csap));
+                if (cbs != NULL && cbs->write_cb != NULL)
+                {
+                    rc = cbs->write_cb(target_csap, payload);
+                    F_VERB(CSAP_LOG_FMT "action 'forward payload' to "
+                           "CSAP #%u processed: %r", CSAP_LOG_ARGS(csap),
+                           target_csap->id, rc);
+                    /* Don't want to stop receiver */
+                    rc = 0;
+                }
+                else
+                {
+                    WARN(CSAP_LOG_FMT "target CSAP #%u for 'forward "
+                         "payload' action invalid", CSAP_LOG_ARGS(csap),
+                         action_spec->fwd_pld.csap_id);
+                    /* Don't want to stop receiver */
+                }
+            } 
             break; 
+        }
 
-        case NDN_ACT_BREAK: 
-            RING("%s(CSAP %d) break action", __FUNCTION__, csap->id);
-            csap->state |= TAD_STATE_COMPLETE;
+        default:
+            /* It have to be caught by preprocessing */
+            assert(FALSE);
+    }
+
+    return rc;
+}
+
+/**
+ * Process actions for received packet.
+ *
+ * @param csap          CSAP descriptor
+ * @param n_action      Number of actions to do
+ * @param action_specs  Preprocessed actions specification array
+ * @param low_pkts      Lowest layer packets
+ * @param payload       Packet with payload
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_do_actions(csap_p csap, unsigned int n_actions,
+                    tad_action_spec *action_specs,
+                    const tad_pkts *low_pkts, const tad_pkt *payload)
+{
+    te_errno        rc = 0;
+    unsigned int    i;
+
+    for (i = 0; i < n_actions; ++i)
+    { 
+        rc = tad_recv_do_action(csap, action_specs + i,
+                                low_pkts, payload);
+        if (rc != 0)
+        {
+            ERROR(CSAP_LOG_FMT "Action #%u failed: %r",
+                  CSAP_LOG_ARGS(csap), i, rc);
             break;
+        }
+    }
+    return rc;
+}
 
-        case NDN_ACT_REPORT: 
-            RING("%s(CSAP %d) report action", __FUNCTION__, csap->id);
-            /* do nothing: processed on higher layers. */
+/**
+ * Match received payload against specified in pattern.
+ *
+ * @param pattern       Preprocessed payload specificatin from pattern
+ * @param payload       Received payload
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_match_payload(tad_payload_spec_t *pattern, const tad_pkt *payload)
+{
+    te_errno    rc;
+
+    ENTRY("payload_type=%d payload=%p payload_len=%u", pattern->type,
+          payload, (unsigned)tad_pkt_len(payload));
+
+    switch (pattern->type)
+    {
+        case TAD_PLD_MASK:
+            rc = tad_pkt_match_mask(payload, pattern->mask.length,
+                                    pattern->mask.mask,
+                                    pattern->mask.value,
+                                    pattern->mask.exact_len);
             break;
 
         default:
-            WARN("%s(CSAP %d) unsupported action tag %d",
-                 __FUNCTION__, csap->id, t_val);
-            break;
+            rc = TE_EOPNOTSUPP;
     }
+
+    EXIT("%r", rc);
 
     return rc;
 }
@@ -224,98 +845,40 @@ tad_perform_action(csap_p csap,
  * Try match binary data with Traffic-Pattern-Unit and prepare ASN value 
  * with packet if it satisfies to the pattern unit.
  *
- * @param data          binary data to be matched
- * @param d_len         length of data
- * @param csap    CSAP instance
- * @param pattern_unit  ASN value of 'Traffic-Pattern-Unit' type
- * @param packet        parsed packet (OUT)
+ * @param csap          CSAP instance
+ * @param unit_data     Unit data prepared during preprocessing
+ * @param meta_pkt      Receiver meta packet
  *
- * @return zero on success, otherwise error code.  
+ * @return Status code.
+ * @retval 0                Received packet match, meta_pkt is owned and
+ *                          segments from pkt are extracted
+ * @retval TE_ETADLESSDATA  Need more data, meta_pkt is owned and
+ *                          segments from pkt are extracted
+ * @retval TE_ETADNOTMATCH  Received packet not match, meta_pkt is not
+ *                          owned
+ * @retval other            Unexpected error, meta_pkt is not owned
  */
-int
-tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap, 
-                            const asn_value *pattern_unit,
-                            asn_value_p *packet)
+static te_errno
+tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
+                         tad_recv_pkt *meta_pkt)
 {
-    const asn_value *action_seq = NULL;
-    int              act_num = 0, i;
-    te_bool          action_result = FALSE;
+    const asn_value    *pattern_unit = unit_data->nds;
+    unsigned int        layer;
+    te_errno            rc;
+    tad_pkt            *pdu;
+    tad_pkt            *sdu;
 
-    int  layer;
-    int  rc;
     char label[20] = "pdus";
 
-    struct timeval current;
+    /* Start from the bottom */
+    layer = csap->depth - 1;
+    sdu = tad_pkts_first_pkt(&meta_pkt->layers[layer].pkts);
+    assert(sdu != NULL);
 
-    gettimeofday(&current, NULL);
-
-    csap_pkts data_to_check;
-    csap_pkts rest_payload;
-
-
-    memset(&rest_payload,  0, sizeof(rest_payload));
-    memset(&data_to_check, 0, sizeof(data_to_check));
-
-
-    rc = asn_get_child_value(pattern_unit, &action_seq,
-                             PRIVATE, NDN_PU_ACTIONS);
-
-    /* Check if there is 'result' in actions */
-    if (rc == 0)
-    {
-        asn_value *action_val;
-        const asn_value *action_ch_val;
-        asn_tag_class    t_class;
-        uint16_t         t_val; 
-
-        act_num = asn_get_length(action_seq, ""); 
-
-        for (i = 0; i < act_num; i++)
-        { 
-            rc = asn_get_indexed(action_seq, &action_val, i, NULL);
-            if (rc != 0)
-            {
-                ERROR("%s(): get %d action failed: %r",
-                      __FUNCTION__, i, rc);
-                break;
-            }
-            rc = asn_get_choice_value(action_val, &action_ch_val,
-                                      &t_class, &t_val);
-            if (rc == 0 && t_val == NDN_ACT_REPORT)
-            {
-                action_result = TRUE;
-                break;
-            }
-        }
-    }
-    rc = 0;
-
-    *packet = NULL;
-    if ((csap->state & TAD_STATE_RESULTS) || action_result)
-    {
-        asn_value_p pdus = asn_init_value(ndn_generic_pdu_sequence);
-
-        *packet = asn_init_value(ndn_raw_packet);
-        asn_write_int32(*packet, current.tv_sec, "received.seconds");
-        asn_write_int32(*packet, current.tv_usec, "received.micro-seconds");
-
-        asn_write_component_value(*packet, pdus, "pdus");
-        asn_free_value(pdus);
-    }
-
-    data_to_check.data = malloc(d_len);
-    data_to_check.len  = d_len;
-    
-    memcpy(data_to_check.data, data, d_len);
-
-    for (layer = csap->depth; layer-- > 0; )
-    {
+    /* Match layer by layer */
+    do {
         csap_spt_type_p  csap_spt_descr; 
         const asn_value *layer_pdu = NULL; 
-        asn_value_p      parsed_pdu = NULL;
-
-        if ((csap->state & TAD_STATE_RESULTS) || action_result)
-            parsed_pdu = asn_init_value(ndn_generic_pdu);
 
         sprintf(label + sizeof("pdus") - 1, ".%d", layer);
         rc = asn_get_subvalue(pattern_unit, &layer_pdu, label); 
@@ -324,881 +887,847 @@ tad_tr_recv_match_with_unit(uint8_t *data, int d_len, csap_p csap,
 
         csap_spt_descr = csap_get_proto_support(csap, layer);
 
+        pdu = sdu;
+        sdu = (layer == 0) ? &meta_pkt->payload :
+                  tad_pkts_first_pkt(&meta_pkt->layers[layer - 1].pkts);
+        assert(sdu != NULL);
+
         rc = csap_spt_descr->match_do_cb(csap, layer, layer_pdu, 
-                                         &data_to_check, &rest_payload,
-                                         parsed_pdu); 
-
-        INFO("match cb 0x%x for lev %d returned %r",
-             csap_spt_descr->match_do_cb, layer, rc);
-
-        if (data_to_check.free_data_cb) 
-            data_to_check.free_data_cb(data_to_check.data);
-        else
-            free(data_to_check.data);
-
-        memset(&data_to_check, 0, sizeof(data_to_check));
+                                         unit_data->layer_opaque[layer],
+                                         meta_pkt, pdu, sdu);
+        INFO("match cb 0x%x for layer %u sdu_len=%u returned %r",
+             csap_spt_descr->match_do_cb, layer,
+             (unsigned)tad_pkt_len(sdu), rc);
         if (rc != 0)
-        {
-            asn_free_value(*packet);
-            asn_free_value(parsed_pdu);
-            *packet = NULL;
             return rc;
-        }
+    } while (layer-- > 0);
 
-        if ((csap->state & TAD_STATE_RESULTS) || action_result)
-        {
-            rc = asn_insert_indexed(*packet, parsed_pdu, 0, "pdus");
-            if (rc != 0)
-            {
-                ERROR("ASN error in add next pdu %r", rc);
-                asn_free_value(*packet);
-                *packet = NULL;
-                return rc;
-            } 
-
-#ifdef TALOGDEBUG 
-            {
-                char buf[RBUF];
-                asn_sprint_value(*packet, buf, 1000, 0);
-                printf("packet: %s\n", buf);
-            }
-#endif
-        }
-
-        if (rest_payload.len)
-        {
-            memcpy(&data_to_check, &rest_payload, sizeof(rest_payload));
-            memset(&rest_payload, 0, sizeof(rest_payload));
-        }
-        else break;
-    }
-
-    /* match payload */
-    rc = asn_get_choice(pattern_unit, "payload", label, sizeof(label));
-    if (rc == 0)
+    /* Match payload */
+    if ((unit_data->pld_spec.type != TAD_PLD_UNSPEC) &&
+        ((rc = tad_recv_match_payload(&unit_data->pld_spec,
+                                      &meta_pkt->payload)) != 0))
     {
-        if (strcmp(label, "mask") == 0)
-        {
-            const asn_value *mask_pat;
-            rc = asn_get_subvalue(pattern_unit, &mask_pat,
-                                  "payload.#mask");
-            if (rc != 0)
-            {
-                ERROR("%s(): get mask failed %r", __FUNCTION__, rc);
-                asn_free_value(*packet);
-                *packet = NULL;
-                return rc;
-            }
-            rc = ndn_match_mask(mask_pat,
-                                data_to_check.data, data_to_check.len);
-            VERB("CSAP %d, rc from ndn_match_mask %r",
-                 csap->id, rc);
-        }
-
-        if (rc != 0)
-        {
-            F_VERB("CSAP %d, Error matching pattern, rc %r",
-                   csap->id, rc);
-            asn_free_value(*packet);
-            *packet = NULL;
-        }
-    }
-    else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
-        rc = 0;
-
-
-    if (rc == 0 && ((csap->state & TAD_STATE_RESULTS) || 
-                    action_result))
-    {
-        if (data_to_check.len)
-        {
-            /* There are non-parsed payload rest */
-            rc = asn_write_value_field(*packet, data_to_check.data, 
-                                       data_to_check.len, "payload.#bytes");
-            if (rc)
-            {
-                ERROR( "ASN error in add rest payload %r", rc);
-                asn_free_value(*packet);
-                *packet = NULL;
-                return rc;
-            }
-        } 
+        return rc;
     }
 
-
-    /* process action, if it present. */
-    if (rc == 0) 
+    /* Do action, if it presents. */
+    if (rc == 0 && unit_data->n_actions > 0) 
     { 
-        asn_value *action_val;
-
-        for (i = 0; i < act_num; i++)
-        { 
-            rc = asn_get_indexed(action_seq, &action_val, i, NULL);
-
-            if (rc != 0)
-            {
-                ERROR("%s(): get %d action failed: %r",
-                      __FUNCTION__, i, rc);
-                break;
-            }
-
-            rc = tad_perform_action(csap, data, d_len, 
-                                    data_to_check.data,
-                                    data_to_check.len,
-                                    action_val);
-            if (rc != 0)
-            {
-                ERROR("%s(): perform %d action failed: %r",
-                      __FUNCTION__, i, rc);
-                break;
-            }
-        }
-    }
-
-    F_VERB("Packet to RX CSAP #%d matches", csap->id);
-
-    if (data_to_check.free_data_cb)
-        data_to_check.free_data_cb(data_to_check.data);
-    else
-        free(data_to_check.data); 
-
-    if (rc != 0)
-    {
-        asn_free_value(*packet);
-        *packet = NULL;
+        rc = tad_recv_do_actions(csap, unit_data->n_actions,
+                                 unit_data->actions,
+                                 &meta_pkt->layers[csap->depth - 1].pkts,
+                                 &meta_pkt->payload);
+        /* Errors are logged in the called function */
     }
 
     return rc; 
 }
 
-
 /**
- * Struct for element in queue of received packets. 
+ * Try match binary data with Traffic-Pattern.
+ *
+ * @param csap          CSAP instance
+ * @param ptrn_data     Traffic pattern data prepared during
+ *                      preprocessing
+ * @param meta_pkt      Receiver meta packet
+ * @param pkt           Packet with received data
+ * @param pkt_len       Real length of usefull data in pkt
+ *
+ * @return Status code.
  */
-typedef struct received_packets_queue_t {
-    struct received_packets_queue_t *next;
-    struct received_packets_queue_t *prev;
-
-    asn_value_p pkt;
-} received_packets_queue_t;
-
-/**
- * Send received packet to the test via RCF
- *
- * @param packet        ASN value with received packets; 
- * @param rcfc          handle of RCF connection;
- * @param answer_buffer buffer with begin of answer;
- * @param ans_len       index of first significant symbols in answer_buffer;
- *
- * @return zero on success, otherwise error code.  
- */
-int
-tad_report_packet(asn_value_p packet, struct rcf_comm_connection *rcfc, 
-                  char *answer_buffer, int ans_len) 
-
+static te_errno
+tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
+               tad_recv_pkt *meta_pkt, tad_pkt *pkt, size_t pkt_len)
 {
-    int   rc;
-    int   attach_len;
-    char *buffer;
-    char *attach;
+    unsigned int    unit = 0;
+    te_errno        rc;
+    tad_pkt        *raw_pkt = tad_pkts_first_pkt(&meta_pkt->raw);
 
-    if (packet == NULL)
-    {
-        WARN("%s(): NULL packet passed", __FUNCTION__);
-        return 0;
-    }
-
-    attach_len = asn_count_txt_len(packet, 0);
-
-    /* 
-     * 20 is upper estimation for "attach" and decimal presentation
-     * of attach length 
-     */
-    if ((buffer = calloc(1, ans_len + 20 + attach_len)) == NULL)
-        return TE_ENOMEM;
-
-    memcpy(buffer, answer_buffer, ans_len);
-    rc = sprintf(buffer + ans_len, " attach %d", attach_len);
-
-    attach = buffer + strlen(buffer) + 1; 
-    if (asn_sprint_value(packet, attach, attach_len + 1, 0) > attach_len)
-    {
-        ERROR("asn_sprint_value returns greater than expected!");
-    } 
-
-    VERB("%s():  attach len %d", __FUNCTION__, attach_len);
-
-    rcf_ch_lock();
-    rc = rcf_comm_agent_reply(rcfc, buffer,
-                              strlen(buffer) + 1 + attach_len);
-    rcf_ch_unlock(); 
-    free(buffer);
-    return rc;
-}
-
-/**
- * Send received packets in queue to the test via RCF and clear queue. 
- *
- * @param queue_root    queue with received packets
- * @param rcfc          handle of RCF connection
- * @param answer_buffer buffer with begin of answer
- * @param ans_len       index of first significant symbols in answer_buffer
- *
- * @return zero on success, otherwise error code
- */
-int
-tad_tr_recv_send_results(received_packets_queue_t *queue_root,
-                         struct rcf_comm_connection *rcfc, 
-                         char *answer_buffer, int ans_len) 
-{
-    int rc;
-    int pkt_num = 0;
-
-    received_packets_queue_t *pkt_qelem;
-
-    for (pkt_qelem = queue_root->next; pkt_qelem != queue_root; 
-         pkt_qelem = queue_root->next)
-   {
-        if(pkt_qelem->pkt != NULL)
-        {
-            rc = tad_report_packet(pkt_qelem->pkt, rcfc, 
-                                    answer_buffer, ans_len);
-            if (rc != 0) 
-                return rc;
-
-            pkt_num++;
-            asn_free_value(pkt_qelem->pkt);
-        } 
-        REMQUE(pkt_qelem);
-        free(pkt_qelem);
-    }
-    
-    VERB("The number of reported packets is %d", pkt_num);
-
-    return 0; 
-}
-
-
-
-void
-tad_tr_recv_clear_results(received_packets_queue_t *queue_root)
-{
-    received_packets_queue_t *pkt_qelem;
-
-    for (pkt_qelem = queue_root->next; pkt_qelem != queue_root; 
-         pkt_qelem = queue_root->next)
-   {
-        if(pkt_qelem->pkt != NULL)
-        {
-            asn_free_value(pkt_qelem->pkt);
-        } 
-        REMQUE(pkt_qelem);
-        free(pkt_qelem);
-    }
-}
-
-/**
- * Generate Traffic Pattern NDS by template for trsend_recv command
- *
- * @param csap    structure with CSAP parameters
- * @param template      traffic template
- * @param pattern       generated Traffic Pattern (OUT)
- *
- * @return zero on success, otherwise error code.  
- */
-static int
-tad_tr_sr_generate_pattern(csap_p csap, asn_value_p template, 
-                           asn_value_p *pattern)
-{
-    te_errno     rc = 0;
-    unsigned int layer;
-
-    asn_value_p pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
-    asn_value_p pdus         = asn_init_value(ndn_generic_pdu_sequence);
-
-    VERB("%s called for csap # %d", __FUNCTION__, csap->id);
-
-    rc = asn_write_component_value(pattern_unit, pdus, "pdus");
-    if (rc != 0) 
-        return rc;
-    asn_free_value(pdus);
-
-    for (layer = 0; layer < csap->depth; layer++)
-    {
-        csap_spt_type_p csap_spt_descr; 
-
-        asn_value_p layer_tmpl_pdu; 
-        asn_value_p layer_pattern; 
-        asn_value_p gen_pattern_pdu = asn_init_value(ndn_generic_pdu);
-
-        csap_spt_descr = csap_get_proto_support(csap, layer);
-
-        layer_tmpl_pdu = asn_read_indexed(template, layer, "pdus"); 
-
-        rc = csap_spt_descr->generate_pattern_cb(csap, layer,
-                                                 layer_tmpl_pdu,
-                                                 &layer_pattern);
-
-        VERB("%s, lev %d, generate pattern cb rc %r", 
-                __FUNCTION__, layer, rc);
-
-        if (rc == 0) 
-            rc = asn_write_component_value(gen_pattern_pdu, 
-                                           layer_pattern, "");
-
-        if (rc == 0) 
-            rc = asn_insert_indexed(pattern_unit, gen_pattern_pdu, 
-                                    layer, "pdus");
-
-        asn_free_value(layer_pattern);
-        asn_free_value(layer_tmpl_pdu);
-
-        if (rc != 0) 
-            break;
-    } 
-
-    if (rc == 0)
-    {
-        *pattern = asn_init_value(ndn_traffic_pattern);
-        rc = asn_insert_indexed(*pattern, pattern_unit, 0, "");
-    }
-    VERB("%s, returns %r", __FUNCTION__, rc);
-    return rc;
-}
-
-/**
- * Prepare CSAP for operations 
- *
- * @param csap    structure with CSAP parameters
- * @param pattern       patter of operation, need for check actions
- *
- * @return zero on success, otherwise error code
- */
-int 
-tad_prepare_csap(csap_p csap, const asn_value *pattern)
-{
-    int  rc;
-    int  pu_num, i;
-    int  echo_need = 0;
-    char label[20];
-
-    const asn_value *pu;
-
-    csap_low_resource_cb_t  prepare_send_cb;
-    csap_low_resource_cb_t  prepare_recv_cb;
-
-
-    prepare_recv_cb = csap_get_proto_support(csap,
-                          csap_get_rw_layer(csap))->prepare_recv_cb;
-    prepare_send_cb = csap_get_proto_support(csap,
-                          csap_get_rw_layer(csap))->prepare_send_cb;
-
-    if (prepare_recv_cb)
-    {
-        rc = prepare_recv_cb(csap);
-        if (rc != 0)
-        {
-            ERROR("prepare for recv failed %r", rc);
-            return rc;
-        }
-    } 
-    
-    pu_num = asn_get_length(pattern, ""); 
-
-    for (i = 0; i < pu_num; i++)
-    {
-        sprintf(label, "%d", i);
-        rc = asn_get_subvalue(pattern, &pu, label);
-        if (rc != 0)
-            break;
-        rc = asn_get_choice(pu, "action", label, sizeof(label));
-        if(rc == 0 && (strcmp(label, "echo") == 0))
-        {
-            echo_need = 1;
-            break;
-        }
-    }
-
-    if (prepare_send_cb && 
-        ((csap->state & TAD_STATE_SEND) || echo_need))
-    {
-        rc = prepare_send_cb(csap);
-        if (rc != 0)
-        {
-            ERROR("prepare for recv failed %r", rc);
-            return rc;
-        }
-    }
-
-    return 0;
-}
-
-/**
- * Start routine for tr_recv thread. 
- *
- * @param arg      start argument, should be pointer to tad_task_context.
- *
- * @return NULL 
- */
-void *
-tad_receiver_thread(void *arg)
-{
-    tad_task_context *context = arg; 
-
-    int           rc = 0;
-    csap_p        csap;
-    char          answer_buffer[ANS_BUF];  
-    int           ans_len = 0;
-    int           d_len = 0;
-    unsigned int  pkt_count = 0;
-    char         *read_buffer = NULL;
-
-    asn_value_p   result = NULL;
-    asn_value_p   nds = NULL; 
-
-    csap_read_cb_t          read_cb;
-    csap_write_read_cb_t    write_read_cb;
-
-    received_packets_queue_t received_packets; 
-
-    received_packets.pkt = NULL;
-    received_packets.next = &received_packets;
-    received_packets.prev = &received_packets; 
-
-    if (arg == NULL)
-    {
-        ERROR("trrecv thread start point: null argument! exit");
-        return NULL;
-    }
-
-
-    csap = context->csap;
-    nds        = context->nds; 
-    context->nds = NULL;
-
-    VERB("START %s() CSAP %d, timeout %u", __FUNCTION__,
-         csap->id, csap->timeout);
-
-    if (csap == NULL)
-    {
-        ERROR("trrecv thread start point: null csap! exit.");
-        asn_free_value(nds);
-        return NULL;
-    }
-    asn_save_to_file(nds, "/tmp/nds.asn");
-
-    read_cb = csap_get_proto_support(csap,
-                  csap_get_rw_layer(csap))->read_cb;
-    write_read_cb = csap_get_proto_support(csap,
-                        csap_get_rw_layer(csap))->write_read_cb;
-
-    do { /* symbolic do {} while(0) for traffic operation init block */
-
-        rc = tad_prepare_csap(csap, nds);
-        if (rc != 0)
-            break; 
-
-        strcpy(answer_buffer, csap->answer_prefix);
-        ans_len = strlen(answer_buffer); 
-
-        if ((read_buffer = malloc(RBUF)) == NULL)
-        {
-            rc = TE_ENOMEM; 
-            break;
-        }
-
-    } while (0); 
-
-    if (!(csap->state & TAD_STATE_FOREGROUND))
-    {
-        SEND_ANSWER("0 0");
-    }
-    VERB("trrecv thread for CSAP %d started", csap->id);
-
+    rc = tad_pkt_get_frag(
+             tad_pkts_first_pkt(&meta_pkt->layers[csap->depth - 1].pkts),
+             pkt, 0, pkt_len, TAD_PKT_GET_FRAG_ERROR);
     if (rc != 0)
     {
-        csap->last_errno = rc;
-        csap->state |= TAD_STATE_COMPLETE;
-        csap->state |= TAD_STATE_FOREGROUND;
-        rc = 0;
+        assert(TE_RC_GET_ERROR(rc) != TE_ETADLESSDATA);
+        assert(TE_RC_GET_ERROR(rc) != TE_ETADNOTMATCH);
+        return rc;
     }
 
-    /*
-     * trsend_recv processing. 
-     */
-    if (!(csap->state   & TAD_STATE_COMPLETE) &&
-         (csap->command == TAD_OP_SEND_RECV))
-    {
-        do {
-            const asn_value *pattern_unit;
-            tad_pkts        *pkts;
+#if 0 /* FIXME */
+    *raw_pkt = *pkt;
+#endif
 
-            asn_value_p pattern = NULL;
-
-            tad_sender_context *send_context;
-
-            rc = tad_sender_prepare(csap, nds, context->rcfc,
-                                    &send_context);
-            if (rc != 0)
-            {
-                ERROR("%s(): tad_sender_prepare failed: %r",
-                      __FUNCTION__, rc);
-                break;
-            }
-            if (send_context->tmpl_data.n_units != 1)
-            {
-                ERROR("%s(): invalid number of units in send/recv template",
-                      __FUNCTION__);
-                rc = TE_RC(TE_TAD_CH, TE_EINVAL);
-                break;
-            }
-
-            pkts = malloc((csap->depth + 1) * sizeof(*pkts));
-            if (pkts == NULL)
-            {
-                ERROR("%s(): memory allocation failure", __FUNCTION__);
-                rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
-                break;
-            }
-
-
-            rc = tad_tr_send_prepare_bin(csap,
-                     send_context->tmpl_data.units[0].nds, 
-                     NULL, 0, NULL,
-                     send_context->tmpl_data.units[0].layer_opaque,
-                     pkts);
-            if (rc != 0)
-            {
-                ERROR("%s(): tad_tr_send_prepare_bin failed: %r",
-                      __FUNCTION__, rc);
-                break;
-            }
-
-            rc = tad_tr_sr_generate_pattern(csap, nds, &pattern);
-            INFO("generate pattern rc %r", rc);
-            if (rc != 0)
-                break;
-
-            asn_free_value(nds);
-            nds = pattern; 
-
-            d_len = write_read_cb(csap, csap->timeout,
-                                  pkts->pkts.cqh_first,
-                                  read_buffer, RBUF); 
-
-            /* only single packet processed in send_recv command */
-            VERB("write_read cb return d_len %d", d_len);
-            gettimeofday(&csap->first_pkt, NULL);
-            csap->last_pkt = csap->first_pkt;
-
-            if (d_len < 0)
-            {
-                rc = csap->last_errno;
-                F_ERROR("CSAP #%d internal write_read error 0x%X", 
-                         csap->id, csap->last_errno);
-                break;
-            }
-
-            if (d_len == 0)
-                break;
-
-            asn_free_value(result);
-            result = NULL;
-
-            asn_get_indexed(pattern, &pattern_unit, 0, NULL);
-            rc = tad_tr_recv_match_with_unit(read_buffer, d_len, csap,
-                                             pattern_unit, &result); 
-
-            INFO("CSAP %d: match_with_unit return %r", csap->id, rc);
-
-            if (rc != 0)
-            {
-                if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH)
-                    rc = 0;
-                break;
-            }
-
-            if (result != NULL)
-            { 
-                received_packets_queue_t *new_qelem = 
-                            malloc(sizeof(*new_qelem));
-                new_qelem->pkt = result;
-                INSQUE(new_qelem, received_packets.prev); 
-                VERB("insert packet in queue");
-            }
-            csap->state |= TAD_STATE_COMPLETE;
-        } while (0); 
-    } /* finish of 'trsend_recv' special actions */
-
-    if (rc != 0) 
-    {
-        /* non-zero rc may occure only from trsend_recv special block,
-         * this is in foreground mode. */
-        csap->state |= TAD_STATE_COMPLETE;
-        csap->last_errno = rc;
-        F_ERROR("generate binary data error: %r", rc); 
-        rc = 0;
-    }
-
-    /* Loop for receiving/matching packages and wait for STOP/GET/WAIT. 
-     * This loop should be braked only if 'foreground' operation complete 
-     * of "STOP" received for 'background' operation. */ 
-    while(!(csap->state & TAD_STATE_COMPLETE)  || 
-          !(csap->state & TAD_STATE_FOREGROUND)  )
-    {
-        int num_pattern_units;
-        int unit;
-
-        const asn_value *pattern_unit;
-
-        CSAP_DA_LOCK(csap);
-        if (csap->command == TAD_OP_STOP || 
-            csap->command == TAD_OP_DESTROY)
+    assert(ptrn_data->n_units > 0);
+    do {
+        rc = tad_recv_match_with_unit(csap, ptrn_data->units + unit,
+                                      meta_pkt);
+        switch (TE_RC_GET_ERROR(rc))
         {
-            strcpy(answer_buffer, csap->answer_prefix);
-            ans_len = strlen(answer_buffer); 
+            case 0: /* received data matches to this pattern unit */
+            case TE_ETADLESSDATA:
+                /* Packet with received data is owned */
+                tad_pkt_init(pkt, NULL, NULL, NULL);
+                F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r", 
+                       CSAP_LOG_ARGS(csap), unit, rc);
+                return rc;
 
-            CSAP_DA_UNLOCK(csap);
-            VERB("trrecv_stop flag detected"); 
+            case TE_ETADNOTMATCH:
+                F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r", 
+                       CSAP_LOG_ARGS(csap), unit, rc);
+                continue;
+
+            default: 
+                ERROR(CSAP_LOG_FMT "Match with pattern unit #%u failed: "
+                      "%r", CSAP_LOG_ARGS(csap), unit, rc);
+                break;
+        }
+        if (rc != 0)
+            break;
+
+    } while (++unit < ptrn_data->n_units);
+
+#if 0 /* FIXME */
+    /* Packet with received data is not owned */
+    tad_pkt_init(raw_pkt, NULL, NULL, NULL);
+#endif
+
+    return rc;
+}
+
+/**
+ * Add packet into the queue of received packet.
+ *
+ * @param csap          CSAP instance
+ * @param pkts          Queue of received packets
+ * @param pkt           Receiver meta packet
+ */
+static void
+tad_recv_pkt_enqueue(csap_p csap, tad_recv_pkts *pkts, tad_recv_pkt *pkt)
+{
+    CSAP_LOCK(csap);
+    TAILQ_INSERT_TAIL(pkts, pkt, links);
+    if (pthread_cond_broadcast(&csap->event) != 0)
+    {
+        te_errno rc = TE_OS_RC(TE_TAD_CH, errno);
+        assert(rc != 0);
+        ERROR(CSAP_LOG_FMT "Failed to broadcast CSAP event - received "
+              "packet: %r - ignore", CSAP_LOG_ARGS(csap), rc);
+    }
+    CSAP_UNLOCK(csap);
+}
+
+
+/* See description in tad_recv.h */
+void *
+tad_recv_thread(void *arg)
+{
+    csap_p              csap = arg;
+    tad_recv_context   *context;
+    csap_read_cb_t      read_cb;
+    te_bool             stop_on_timeout = FALSE;
+    te_errno            rc;
+    tad_recv_pkt       *recv_pkt = NULL;
+    tad_pkt             my_pkt;
+    size_t              read_len;
+
+    tad_pkt_init(&my_pkt, NULL, NULL, NULL);
+
+    assert(csap != NULL);
+    read_cb = csap_get_proto_support(csap,
+                  csap_get_rw_layer(csap))->read_cb;
+    assert(read_cb != NULL);
+
+    context = csap_get_recv_context(csap);
+    assert(context != NULL);
+    assert(context->match_pkts == 0);
+    assert(context->packets.tqh_first == NULL);
+
+    ENTRY(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
+
+    if (csap->state & CSAP_STATE_SEND)
+    {
+        /*
+         * When traffic receive start is executed together with send
+         * (it can be send/receive only), there is no necessity to
+         * send TE proto ACK, since it will be done by Sender.
+         */
+        tad_task_free(&context->task);
+
+        /* Start receiver only when send is done. */
+        rc = csap_wait(csap, CSAP_STATE_SEND_DONE);
+        if (rc != 0)
+            goto exit;
+
+        /* Check Sender status. */
+        rc = csap_get_send_context(csap)->status;
+        if (rc != 0)
+        {
+            ERROR(CSAP_LOG_FMT "send/receive Sender failed, do not "
+                  "start Receiver", CSAP_LOG_ARGS(csap));
+            goto exit;
+        }
+    }
+    else
+    {
+        /*
+         * When traffic receive start is executed stand alone (always
+         * non-blocking mode), notify that operation is ready to start.
+         */
+        rc = tad_task_reply(&context->task, "0 0");
+        tad_task_free(&context->task);
+        if (rc != 0)
+            goto exit;
+    }
+
+    /* 
+     * Allocate Receiver packet to avoid extra memory allocation on 
+     * failed match path.
+     */
+    if ((recv_pkt = tad_recv_pkt_alloc(csap)) == NULL)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to initialize Receiver packet",
+              CSAP_LOG_ARGS(csap));
+        rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
+        goto exit;
+    }
+
+    while (TRUE)
+    {
+        unsigned int    timeout;
+        struct timeval  pkt_caught;
+
+        /* Check CSAP state */
+        if (csap->state & CSAP_STATE_COMPLETE)
+        {
+            INFO(CSAP_LOG_FMT "Receive operation completed",
+                 CSAP_LOG_ARGS(csap));
+            assert(rc == 0);
+            break;
+        }
+        if (csap->state & CSAP_STATE_STOP)
+        {
+            INFO(CSAP_LOG_FMT "Receive operation terminated",
+                 CSAP_LOG_ARGS(csap));
+            rc = TE_RC(TE_TAD_CH, TE_EINTR);
             break;
         }
 
-        if ((csap->command == TAD_OP_WAIT) || 
-            (csap->command == TAD_OP_GET))
-        { 
-            strcpy(answer_buffer, csap->answer_prefix);
-            ans_len = strlen(answer_buffer); 
-
-            if (csap->command == TAD_OP_WAIT)
-            {
-                csap->state |= TAD_STATE_FOREGROUND;
-                csap->command = TAD_OP_RECV;
-                F_VERB("%s: wait flag encountered. %d packets got",
-                       __FUNCTION__, pkt_count);
-            }
-
-            rc = tad_tr_recv_send_results(&received_packets, context->rcfc, 
-                                          answer_buffer, ans_len);
-            if (rc != 0) 
-            {
-                ERROR("send 'trrecv_get' results failed with rc %r",
-                      rc);
-                /**
-                 * @todo fix it. 
-                 * Really, I don't know yet what to do if this failed. 
-                 * If there is not bugs ;) this failure means that happens 
-                 * something awful, such as lost connection with RCF. 
-                 * But some bug seems to be more probable variant, so 
-                 * process it as other errors: try to transmit via RCF
-                 **/
-                csap->last_errno = rc;
-                csap->state |= TAD_STATE_COMPLETE;
-                rc = 0;
-            }
-
-            if (csap->command == TAD_OP_GET)
-            {
-                csap->command = TAD_OP_RECV;
-                SEND_ANSWER("0 %u", pkt_count); /* trrecv_get is finished */
-                VERB("trrecv_get #%d OK, pkts: %u, state %x",
-                     csap->id, pkt_count, (int)csap->state);
-            }
-        }
-        CSAP_DA_UNLOCK(csap);
-
-        if (!(csap->state & TAD_STATE_COMPLETE))
+        /* Check for timeout */
+        timeout = csap->timeout;
+        if (csap->wait_for.tv_sec != 0)
         {
-            struct timeval pkt_caught;
+            struct timeval  current;
+            int             wait_timeout;
 
-            if (csap->wait_for.tv_sec)
+            gettimeofday(&current, NULL);
+            wait_timeout =
+                TE_SEC2US(csap->wait_for.tv_sec - current.tv_sec) +
+                csap->wait_for.tv_usec - current.tv_usec;
+
+            if (wait_timeout < 0)
             {
-                struct timeval  current;
-                int             s_diff;
-
-                gettimeofday(&current, NULL);
-                s_diff = current.tv_sec - csap->wait_for.tv_sec; 
-
-                if (s_diff > 0 ||
-                    (s_diff == 0 &&
-                     current.tv_usec > csap->wait_for.tv_usec))
+                if (stop_on_timeout)
                 {
-                    csap->last_errno = TE_ETIMEDOUT;
-                    csap->state |= TAD_STATE_COMPLETE;
-                    VERB("CSAP %d status complete by timeout, "
+                    INFO("CSAP %d status complete by timeout, "
                          "wait for: %u.%u, current: %u.%u",
                          csap->id,
-                         (uint32_t)csap->wait_for.tv_sec,
-                         (uint32_t)csap->wait_for.tv_usec,
-                         (uint32_t)current.tv_sec,
-                         (uint32_t)current.tv_usec);
-                    continue;
-                }
-            }
-
-            d_len = read_cb(csap, csap->timeout, read_buffer, RBUF); 
-            gettimeofday(&pkt_caught, NULL);
-
-            if (d_len == 0)
-                continue;
-
-            if (d_len < 0)
-            {
-                csap->state |= TAD_STATE_COMPLETE;
-                rc = csap->last_errno;
-                ERROR("CSAP read callback failed; rc: %r", rc);
-                continue;
-            } 
-            
-            num_pattern_units = asn_get_length(nds, ""); 
-
-            for (unit = 0; unit < num_pattern_units; unit ++)
-            {
-                rc = asn_get_indexed(nds, &pattern_unit, unit, NULL);
-                if (rc != 0)
-                {
-                    WARN("Get pattern unit fails %r", rc);
+                         (unsigned)csap->wait_for.tv_sec,
+                         (unsigned)csap->wait_for.tv_usec,
+                         (unsigned)current.tv_sec,
+                         (unsigned)current.tv_usec);
+                    rc = TE_RC(TE_TAD_CH, TE_ETIMEDOUT);
                     break;
-                }
-                rc = tad_tr_recv_match_with_unit(read_buffer, d_len, 
-                                                 csap,
-                                                 pattern_unit, &result); 
-                INFO("CSAP %d, Match pkt return %x, unit %d", 
-                     csap->id, rc, unit);
-                switch (TE_RC_GET_ERROR(rc))
-                {
-                    case 0: /* received data matches to this pattern unit */
-                        csap->last_pkt = pkt_caught;
-                        if (!pkt_count)
-                            csap->first_pkt = csap->last_pkt;
-                        unit = num_pattern_units; /* to break from 'for' */
-                        pkt_count++;
-                        F_VERB("Match pkt, d_len %d, pkts %u",
-                               d_len, pkt_count);
-                        break;
-
-                    case TE_ETADLESSDATA: /* @todo fragmentation */
-                        unit = num_pattern_units; /* to break from 'for' */
-                    case TE_ETADNOTMATCH:
-                        continue;
-
-                    default: 
-                        ERROR("Match with pattern-unit failed "
-                              "with code: %r", rc);
-                        break;
-                }
-                if (rc != 0)
-                    break;
-            }
-
-            if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH ||
-                TE_RC_GET_ERROR(rc) == TE_ETADLESSDATA)
-            {
-                rc = 0;
-                continue;
-            }
-
-            /* Here packet is successfully received, parsed and matched */
-
-            if ((rc == 0) && (result != NULL))
-            { 
-                if (csap->state & TAD_STATE_FOREGROUND)
-                {
-                    F_VERB("in foreground mode");
-                    rc = tad_report_packet(result, context->rcfc,
-                                           answer_buffer, ans_len);
-                    asn_free_value(result);
                 }
                 else
                 {
-                    F_VERB("Put packet into the queue");
-                    received_packets_queue_t *new_qelem = 
-                                            malloc(sizeof(*new_qelem));
-                    new_qelem->pkt = result;
-                    INSQUE(new_qelem, received_packets.prev);
-                }
-                result = NULL;
-            } 
-
-            if (rc != 0) 
-            {
-                csap->last_errno = rc;
-                csap->state |= TAD_STATE_COMPLETE;
-                rc = 0;
-                continue;
-            }
-
-            if (csap->num_packets)
-            {
-                F_VERB("%s(): check for num_pkts, want %d, got %d",
-                       __FUNCTION__, csap->num_packets, pkt_count);
-                if (csap->num_packets <= pkt_count)
-                {
-                    csap->state |= TAD_STATE_COMPLETE;
-                    INFO("%s(): CSAP %d status complete", 
-                         __FUNCTION__, csap->id); 
+                    INFO(CSAP_LOG_FMT "timed out, but don't want to "
+                         "stop ", CSAP_LOG_ARGS(csap));
+                    wait_timeout = 0;
                 }
             }
-        } /* if (need packets) */
-    } /* while (background mode or not completed) */
+            /* Here, it is guaranteed that wait_timeout is not negative */
+            timeout = MIN(timeout, (unsigned int)wait_timeout);
+        }
 
-    /* either stop got or foreground operation completed */ 
+        /* Read one packet from media */
+        rc = read_cb(csap, timeout, &my_pkt, &read_len); 
+        gettimeofday(&pkt_caught, NULL);
 
-    if (csap->command == TAD_OP_DESTROY)
-        tad_tr_recv_clear_results(&received_packets);
-    else
-        rc = tad_tr_recv_send_results(&received_packets, context->rcfc, 
-                                      answer_buffer, ans_len);
-    if (rc != 0)
-    {
-        ERROR("trrecv thread: send results failed with code %r", rc);
-        if (csap->last_errno == 0)
-            csap->last_errno = rc;
-        rc = 0;
-    } 
+        /* We have read something, now allow to stop on timeout */
+        stop_on_timeout = TRUE;
 
-#if 0
+        if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT)
+        {
+            VERB(CSAP_LOG_FMT "read callback timed out, check state and "
+                 "total timeout", CSAP_LOG_ARGS(csap));
+            continue;
+        }
+        if (rc != 0)
+        {
+            /* Unexpected read callback error */
+            ERROR(CSAP_LOG_FMT "read callback failed: %r",
+                  CSAP_LOG_ARGS(csap), rc);
+            break;
+        }
+
+        if ((recv_pkt == NULL) &&
+            ((recv_pkt = tad_recv_pkt_alloc(csap)) == NULL))
+        {
+            ERROR(CSAP_LOG_FMT "Failed to initialize Receiver packet",
+                  CSAP_LOG_ARGS(csap));
+            rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
+            goto exit;
+        }
+        recv_pkt->ts = pkt_caught;
+
+        /* Match received packet against pattern */
+        rc = tad_recv_match(csap, &context->ptrn_data, recv_pkt,
+                            &my_pkt, read_len);
+        if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH)
+        {
+            VERB(CSAP_LOG_FMT "received packet does not match",
+                 CSAP_LOG_ARGS(csap));
+            /* Nothing is owned by match routine */
+            tad_recv_pkt_cleanup(csap, recv_pkt);
+            continue;
+        }
+        if (TE_RC_GET_ERROR(rc) == TE_ETADLESSDATA)
+        {
+            VERB(CSAP_LOG_FMT "received packet does not match since "
+                 "more data are available", CSAP_LOG_ARGS(csap));
+
+            /* Receiver meta packet is owned by match */
+            recv_pkt = NULL;
+
+            /* 
+             * Packet can match, if more data is available. Therefore,
+             * don't want to stop because of timeout, at least continue
+             * to poll with zero timeout.
+             */
+            stop_on_timeout = FALSE;
+            continue;
+        }
+        if (rc != 0) /* Unexpected match error */
+        {
+            /* Nothing is owned by match routine */
+            ERROR(CSAP_LOG_FMT "match failed: %r",
+                  CSAP_LOG_ARGS(csap), rc);
+            break;
+        }
+
+        /* Here packet is successfully received, parsed and matched */
+        csap->last_pkt = pkt_caught;
+        if (context->match_pkts == 0)
+            csap->first_pkt = csap->last_pkt;
+        context->match_pkts++;
+
+        if (csap->state & CSAP_STATE_RESULTS)
+        { 
+            F_VERB(CSAP_LOG_FMT "put packet into the queue",
+                   CSAP_LOG_ARGS(csap));
+            tad_recv_pkt_enqueue(csap, &context->packets, recv_pkt);
+            recv_pkt = NULL;
+        } 
+        else
+        {
+            tad_recv_pkt_cleanup(csap, recv_pkt);
+        }
+
+        /* Check for total number of packets to be received */
+        if ((context->wait_pkts != 0) &&
+            (context->match_pkts >= context->wait_pkts))
+        {
+            assert(context->match_pkts == context->wait_pkts);
+            INFO(CSAP_LOG_FMT "received all packets",
+                 CSAP_LOG_ARGS(csap)); 
+            assert(rc == 0);
+            break;
+        }
+    }
+
+exit:
+    context->status = rc;
+
     /* 
-     * Release resources, this should be done before clearing 
-     * CSAP state fields, becouse zero state during release means 
-     * CSAP destroy procedure. 
+     * Shutdown receiver and release resources allocated during pattern
+     * preprocessing.
      */
-    if (csap->release_cb)
-        csap->release_cb(csap);
-#endif
+    rc = tad_recv_release(csap, context);
+    TE_RC_UPDATE(context->status, rc);
 
-    memset(&csap->wait_for, 0, sizeof(csap->wait_for)); 
-    asn_free_value(nds);
-    free(read_buffer);
+    tad_recv_pkt_free(csap, recv_pkt);
 
-    CSAP_DA_LOCK(csap);
+    INFO(CSAP_LOG_FMT "receive process finished, %u packets match: %r",
+         CSAP_LOG_ARGS(csap), context->match_pkts, context->status);
 
-    if (csap->command != TAD_OP_DESTROY ||
-        csap->state & TAD_STATE_FOREGROUND)
-    {
-        csap->command = TAD_OP_IDLE;
-        csap->state   = 0;
-        SEND_ANSWER("%d %u", TE_RC(TE_TAD_CSAP, csap->last_errno),
-                    pkt_count);
-    }
-    else
-    {
-        RING("%s(): There was non-foreground operation, destroy CSAP", 
-             __FUNCTION__);
-        csap->command = TAD_OP_IDLE;
-        csap->state   = 0;
-    }
+    /* 
+     * Log exit before DONE command on the CSAP, since it can be
+     * destroyed just after the command.
+     */
+    F_EXIT(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
 
-    csap->answer_prefix[0] = '\0';
-    csap->num_packets      = pkt_count;
-    csap->last_errno       = 0;
-    CSAP_DA_UNLOCK(csap);
+    /* 
+     * Notify that operation has been finished. CSAP can't be used
+     * in this context after the command, since it can already be
+     * destroyed.
+     * Ignore errors, since all are logged inside the function and
+     * we can do nothing helpfull here.
+     */
+    (void)csap_command(csap, TAD_OP_RECV_DONE);
 
-    INFO("CSAP %d (type '%s') recv process finished, %d pkts got",
-         csap->id, csap->csap_type, pkt_count);
+    tad_pkt_free(&my_pkt);
 
-    free(context);
     return NULL;
 }
 
 
 
+/*
+ * Traffic receive get/wait/stop and busy CSAP destroy processing.
+ */
+
+/**
+ * Send received packet to the test via RCF.
+ *
+ * @param packet        ASN.1 value with received packets
+ * @param rcfc          Handle of RCF connection
+ * @param answer_buffer Buffer with begin of answer
+ * @param ans_len       Index of first significant symbols in answer_buffer
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc, 
+                       const char *answer_buffer, size_t ans_len) 
+{
+/* 
+ * It is an upper estimation for "attach" and decimal presentation
+ * of attach length.  
+ */
+#define EXTRA_BUF_SPACE     20
+
+    te_errno    rc;
+    int         ret;
+    size_t      attach_len;
+#if 1 /* FIXME ASN */
+    int         attach_rlen;
+#endif
+    char       *buffer;
+    size_t      cmd_len;
+
+    assert(packet != NULL);
+
+    attach_len = asn_count_txt_len(packet, 0);
+    VERB("%s(): attach len %u", __FUNCTION__, (unsigned)attach_len);
+
+    buffer = calloc(1, ans_len + EXTRA_BUF_SPACE + attach_len);
+    if (buffer == NULL)
+    {
+        return TE_ENOMEM;
+    }
+
+    memcpy(buffer, answer_buffer, ans_len);
+    ret = snprintf(buffer + ans_len, EXTRA_BUF_SPACE, " attach %u",
+                   (unsigned)attach_len);
+    if (ret >= EXTRA_BUF_SPACE)
+    {
+        ERROR("%s(): Upper estimation on required buffer space is wrong",
+              __FUNCTION__);
+        free(buffer);
+        return TE_ESMALLBUF;
+    }
+    cmd_len = strlen(buffer) + 1;
+
+    if ((attach_rlen =
+         asn_sprint_value(packet, buffer + cmd_len, attach_len
+#if 1 /* FIXME ASN */
+                          + 1
+#endif
+                          , 0))
+        != (int)attach_len)
+    {
+        ERROR("%s(): asn_sprint_value() returns unexpected number: "
+              "expected %u, got %d", __FUNCTION__, (unsigned)attach_len,
+              attach_rlen);
+#if 0 /* FIXME ASN */
+        free(buffer);
+        return TE_EFAULT;
+#endif
+    } 
+
+    rcf_ch_lock();
+    rc = rcf_comm_agent_reply(rcfc, buffer, cmd_len + attach_len);
+    rcf_ch_unlock(); 
+    free(buffer);
+
+    return rc;
+
+#undef EXTRA_BUF_SPACE
+}
+
+
+/**
+ * Get packets from queue of received packets.
+ *
+ * @param csap          CSAP
+ * @param wait          Block until packet is available or receive is
+ *                      finished
+ * @param pkt           Location for received packet pointer
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_get_packet(csap_p csap, te_bool wait, tad_recv_pkt **pkt)
+{
+    tad_recv_context   *ctx = csap_get_recv_context(csap);
+    te_errno            rc = 0;
+
+    CSAP_LOCK(csap);
+    while (((*pkt = ctx->packets.tqh_first) == NULL) && wait &&
+           (~csap->state & CSAP_STATE_DONE))
+    {
+        rc = pthread_cond_wait(&csap->event, &csap->lock);
+        if (rc != 0)
+        {
+            rc = TE_OS_RC(TE_TAD_CH, errno);
+            assert(TE_RC_GET_ERROR(rc) != TE_ENOENT);
+            ERROR("%s(): pthread_cond_wait() failed: %r",
+                  __FUNCTION__, rc);
+        }
+    }
+    if (*pkt != NULL)
+    {
+        TAILQ_REMOVE(&ctx->packets, *pkt, links);
+    }
+    else if (rc == 0)
+    {
+        rc = TE_RC(TE_TAD_CH, TE_ENOENT);
+    }
+    CSAP_UNLOCK(csap);
+
+    return rc;
+}
+
+/**
+ * Get matched packet from TAD receiver packets queue.
+ *
+ * @param csap      CSAP structure
+ * @param task      TAD task context for reporting
+ * @param wait      Wait for more packets or end of processing
+ * @param got       Location for number of got packets
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_recv_get_packets(csap_p csap, tad_task_context *task, te_bool wait,
+                     unsigned int *got)
+{
+    te_errno        rc;
+    tad_recv_pkt   *pkt = NULL;
+    asn_value      *pdus;
+    asn_value      *pdu;
+    unsigned int    layer;
+    uint8_t        *payload = NULL;
+    size_t          payload_len = 0;
+
+    ENTRY(CSAP_LOG_FMT "wait=%u got=%p(%u)", CSAP_LOG_ARGS(csap),
+          (unsigned)wait, got, (got == NULL) ? 0 : (int)*got);
+
+    while ((rc = tad_recv_get_packet(csap, wait, &pkt)) == 0)
+    {
+        (*got)++;
+
+        /* Process packet */
+        pkt->nds = asn_init_value(ndn_raw_packet);
+        asn_write_int32(pkt->nds, pkt->ts.tv_sec,
+                        "received.seconds");
+        asn_write_int32(pkt->nds, pkt->ts.tv_usec,
+                        "received.micro-seconds");
+        pdus = asn_init_value(ndn_generic_pdu_sequence);
+        if (asn_put_child_value(pkt->nds, pdus, PRIVATE, NDN_PKT_PDUS) != 0)
+            ERROR("ERROR: %s:%u", __FILE__, __LINE__);
+        for (layer = 0; layer < csap->depth; ++layer)
+        {
+            if (csap_get_proto_support(csap, layer)->match_post_cb != NULL)
+            {
+                rc = csap_get_proto_support(csap, layer)->match_post_cb(
+                         csap, layer, pkt->layers + layer);
+                if (rc != 0)
+                    ERROR("post_cb: %r", rc);
+            }
+
+            pdu = asn_init_value(ndn_generic_pdu);
+            if (asn_put_child_value(pdu, pkt->layers[layer].nds, PRIVATE,
+                                    csap->layers[layer].proto_tag) != 0)
+                ERROR("ERROR: %s:%u", __FILE__, __LINE__);
+            if (asn_insert_indexed(pdus, pdu, layer, "") != 0)
+                ERROR("ERROR: %s:%u", __FILE__, __LINE__);
+        }
+
+        rc = tad_pkt_flatten_copy(&pkt->payload, &payload, &payload_len);
+        if (rc != 0)
+        {
+            ERROR(CSAP_LOG_FMT "Failed to make flatten copy of payload: "
+                  "%r", CSAP_LOG_ARGS(csap), rc);
+            /* TODO: Is it better to continue or to report an error? */
+        }
+        else
+        {
+            rc = asn_write_value_field(pkt->nds, payload, payload_len, 
+                                       "payload.#bytes");
+            if (rc != 0)
+            {
+                ERROR("ASN error in add rest payload %r", rc);
+            }
+            free(payload); /* FIXME: Avoid it */
+            payload = NULL;
+            payload_len = 0;
+        }
+
+        rc = tad_recv_report_packet(pkt->nds, task->rcfc,
+                                    task->answer_buf, task->prefix_len);
+        if (rc != 0)
+        {
+            /* TODO: Error processing here */
+        }
+
+        tad_recv_pkt_free(csap, pkt);
+    }
+
+    VERB(CSAP_LOG_FMT "%s() status before correction is %r",
+         CSAP_LOG_ARGS(csap), __FUNCTION__, rc);
+
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        rc = 0;
+    }
+
+    EXIT(CSAP_LOG_FMT "%r", CSAP_LOG_ARGS(csap), rc);
+
+    return rc;
+}
+
+/**
+ * Execute traffic receive get/wait/stop or CSAP destroy operation.
+ *
+ * @param csap          CSAP
+ * @param op_context    Operation context
+ */
+static void
+tad_recv_op(csap_p csap, tad_recv_op_context *op_context)
+{
+    tad_recv_context   *recv_context;
+    te_errno            rc;
+    unsigned int        got;
+
+
+    assert(csap != NULL);
+    assert(op_context != NULL);
+
+    ENTRY(CSAP_LOG_FMT "op=%u", CSAP_LOG_ARGS(csap), op_context->op);
+
+    recv_context = csap_get_recv_context(csap);
+    assert(recv_context != NULL);
+
+    if (csap->state & CSAP_STATE_RESULTS)
+    {
+        got = 0;
+        rc = tad_recv_get_packets(csap, &op_context->task,
+                                  op_context->op != TAD_OP_GET,
+                                  &got);
+    }
+    else
+    {
+        rc = 0; /* Just initialize */
+
+        if ((op_context->op != TAD_OP_GET) &&
+            (~csap->state & CSAP_STATE_DONE))
+        {
+            rc = csap_wait(csap, CSAP_STATE_DONE);
+        }
+
+        /* 
+         * Nobody can modify got_pkts at the time and match_pkts can
+         * grow only, so do calculations without lock.
+         */
+        got = recv_context->match_pkts - recv_context->got_pkts;
+    }
+
+    /* 
+     * Nobody can modify got_pkts at the time and match_pkts can
+     * grow only, so do increment and assert without lock.
+     */
+    recv_context->got_pkts += got;
+    assert(recv_context->got_pkts <= recv_context->match_pkts);
+
+    if ((op_context->op != TAD_OP_GET) && (rc == 0))
+    {
+        /* It is not a get request and all go smoothly */
+
+        /* Received packets queue has to be empty */
+        assert(recv_context->packets.tqh_first == NULL);
+
+        (void)csap_command(csap, TAD_OP_IDLE);
+
+        /* 
+         * In the case of wait/stop requests total number of matched
+         * packets should be reported.
+         */
+        got = recv_context->got_pkts;
+
+        /*
+         * Return status of the Receiver.
+         */
+        rc = recv_context->status;
+        if ((TE_RC_GET_ERROR(rc) == TE_EINTR) &&
+            (op_context->op == TAD_OP_STOP))
+        {
+            rc = 0;
+        }
+    }
+
+    INFO(CSAP_LOG_FMT "Traffic receive op %u finished: rc=%r, got=%u",
+         CSAP_LOG_ARGS(csap), op_context->op, rc, got);
+
+    /* 
+     * We have no more chance to report and error (logged of course),
+     * just ignore it.
+     */
+    (void)tad_task_reply(&op_context->task, "%u %u", rc, got);
+
+    EXIT();
+}
+
+
+/**
+ * Free traffic receive stop/wait/get operation context.
+ *
+ * @parma context       Context pointer
+ */
+static void
+tad_recv_op_free(tad_recv_op_context *context)
+{
+    tad_task_free(&context->task);
+    free(context);
+}
+
+
+/**
+ * Start routine for stop/wait/get receive operation.
+ * It forwards received packets to test.
+ *
+ * @param arg           Start argument, should be pointer to 
+ *                      CSAP structure
+ *
+ * @return NULL 
+ */
+static void *
+tad_recv_op_thread(void *arg)
+{
+    csap_p                  csap = arg;
+    tad_recv_op_context    *context;
+
+
+    assert(csap != NULL);
+    F_ENTRY(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
+
+    CSAP_LOCK(csap);
+
+    while ((context = csap->recv_ops.tqh_first) != NULL)
+    {
+        CSAP_UNLOCK(csap);
+
+        tad_recv_op(csap, context);
+
+        CSAP_LOCK(csap);
+
+        assert(context == csap->recv_ops.tqh_first);
+        TAILQ_REMOVE(&csap->recv_ops, context, links);
+        tad_recv_op_free(context);
+    }
+
+    /* 
+     * Log exit under CSAP lock, since CSAP can be destroyed just after
+     * unlocking.
+     */
+    F_EXIT(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
+
+    CSAP_UNLOCK(csap);
+
+    return NULL;
+}
+
+
+/* See description in tad_recv.h */
+te_errno
+tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
+                    rcf_comm_connection *rcfc,
+                    const char *answer_pfx, size_t pfx_len)
+{
+    tad_recv_op_context    *context;
+    te_errno                rc;
+    te_bool                 start_thread;
+
+    context = malloc(sizeof(*context));
+    if (context == NULL)
+        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+
+    rc = tad_task_init(&context->task, rcfc, answer_pfx, pfx_len);
+    if (rc != 0)
+    {
+        free(context);
+        return rc;
+    }
+
+    context->op = op;
+
+
+    CSAP_LOCK(csap);
+
+    start_thread = (csap->recv_ops.tqh_first == NULL);
+
+    TAILQ_INSERT_TAIL(&csap->recv_ops, context, links);
+
+    if (start_thread)
+    {
+        rc = tad_pthread_create(NULL, tad_recv_op_thread, csap);
+        if (rc != 0)
+        {
+            TAILQ_REMOVE(&csap->recv_ops, context, links);
+        }
+    }
+
+    /* 
+     * Do not unlock CSAP before send of ACK, since unlocking allows
+     * thread to process request and it can be finished very fast
+     * (final reply is sent and task context freed).
+     */
+
+    if (rc == 0)
+    {
+        /*
+         * Processing of traffic receive get/wait/stop/destroy has
+         * enqueued, sent TE proto ACK.
+         */
+        rc = tad_task_reply(&context->task,
+                            "%u", TE_RC(TE_TAD_CH, TE_EACK));
+        CSAP_UNLOCK(csap);
+        if (rc != 0)
+        {
+            /* 
+             * In general, nothing can help, error has already been
+             * logged. Operation is enqueue and it will try to send
+             * final answer at the end of processing, so do not forward
+             * an error to caller.
+             */
+            rc = 0;
+        }
+    }
+    else
+    {
+        CSAP_UNLOCK(csap);
+        tad_recv_op_free(context);
+    }
+
+    return rc;
+}

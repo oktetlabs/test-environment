@@ -111,42 +111,74 @@ tad_socket_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_socket_impl.h */
 te_errno
-tad_socket_match_bin_cb(csap_p csap, unsigned int layer,
-                        const asn_value *pattern_pdu,
-                        const csap_pkts *pkt, csap_pkts *payload, 
-                        asn_value_p parsed_packet)
+tad_socket_match_bin_cb(csap_p           csap,
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu)
 {
     tad_socket_rw_data *spec_data = csap_get_rw_data(csap); 
     te_errno            rc = 0;
-    asn_value          *pdu = NULL;
+    asn_value          *nds = NULL;
 
-    uint8_t            *pld_data = pkt->data;
-    size_t              pld_len = pkt->len;
-
-    UNUSED(pattern_pdu);
+    UNUSED(ptrn_pdu);
+    UNUSED(ptrn_opaque);
 
     assert(csap_get_rw_layer(csap) == layer);
 
     ENTRY(CSAP_LOG_FMT "type is %d", CSAP_LOG_ARGS(csap), 
-         spec_data->data_tag);
+          spec_data->data_tag);
 
-    if (parsed_packet != NULL)
-        pdu = asn_init_value(ndn_socket_message);
+    if ((csap->state & CSAP_STATE_RESULTS) &&
+        ((nds = meta_pkt->layers[layer].nds) == NULL) &&
+        ((nds = meta_pkt->layers[layer].nds =
+              asn_init_value(ndn_socket_message)) == NULL))
+    {
+        ERROR(CSAP_LOG_FMT "Failed to initialize 'socket' message NDS",
+              CSAP_LOG_ARGS(csap));
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
 
     if (spec_data->data_tag == NDN_TAG_SOCKET_TYPE_TCP_SERVER)
     {
-        int acc_sock = *((int *)pld_data);
+        if (csap->state & CSAP_STATE_RESULTS)
+        {
+            tad_pkt_seg    *seg = tad_pkt_first_seg(pdu);
+            int             acc_sock;
 
-        INFO("match data server CSAP, socket %d", acc_sock);
+            if (seg == NULL || seg->data_len != sizeof(int))
+            {
+                ERROR(CSAP_LOG_FMT "Invalid PDU for TCP socket server",
+                      CSAP_LOG_ARGS(csap));
+                rc = TE_RC(TE_TAD_CSAP, TE_EFAULT);
+                goto cleanup;
+            }
+            assert(seg->data_ptr != NULL);
 
-        if (parsed_packet != NULL)
-            rc = asn_write_int32(pdu, acc_sock, "file-descr");
-        if (rc != 0)
-            ERROR("write socket error: %r", rc);
-        pld_len = 0;
+            memcpy(&acc_sock, seg->data_ptr, sizeof(int));
+            INFO("Match data server CSAP, socket %d", acc_sock);
+
+            rc = asn_write_int32(nds, acc_sock, "file-descr");
+            if (rc != 0)
+            {
+                ERROR(CSAP_LOG_FMT "Failed to write 'file-descr' to "
+                      "NDS: %r", CSAP_LOG_ARGS(csap), rc);
+                goto cleanup;
+            }
+        }
+        else
+        {
+            /* Nothing to do */
+        }
     }
     else
     {
+#if 0
+        uint8_t    *pld_data = pkt->data;
+        size_t      pld_len = pkt->len;
+
         if (spec_data->wait_length > 0)
         {
             int defect = spec_data->wait_length - 
@@ -197,35 +229,26 @@ tad_socket_match_bin_cb(csap_p csap, unsigned int layer,
                 goto cleanup;
             }
         }
+        /* passing payload to upper layer */
+        memset(payload, 0 , sizeof(*payload));
+
+        if ((payload->len = pld_len) > 0)
+        {
+            payload->data = malloc(pld_len);
+            memcpy(payload->data, pld_data, payload->len);
+        }
+        if (spec_data->wait_length > 0)
+        {
+            free(spec_data->stored_buffer);
+            spec_data->stored_buffer = NULL;
+            spec_data->stored_length = 0;
+            spec_data->wait_length = 0;
+        }
+#endif
     }
 
-    /* passing payload to upper layer */
-    memset(payload, 0 , sizeof(*payload));
-
-    if ((payload->len = pld_len) > 0)
-    {
-        payload->data = malloc(pld_len);
-        memcpy(payload->data, pld_data, payload->len);
-    }
-
-    if (parsed_packet)
-    {
-        rc = asn_write_component_value(parsed_packet, pdu, "#socket");
-        if (rc)
-            ERROR("%s, write TCP header to packet fails %r",
-                  __FUNCTION__, rc);
-    }
-
-    if (spec_data->wait_length > 0)
-    {
-        free(spec_data->stored_buffer);
-        spec_data->stored_buffer = NULL;
-        spec_data->stored_length = 0;
-        spec_data->wait_length = 0;
-    }
 
 cleanup:
-    asn_free_value(pdu);
 
     return rc;
 }

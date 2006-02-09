@@ -136,8 +136,8 @@ tad_arp_destroy_cb(csap_p csap, unsigned int layer)
 
 /* See description in tad_arp_impl.h */
 te_errno
-tad_arp_confirm_pdu_cb(csap_p csap, unsigned int layer, 
-                       asn_value *layer_pdu, void **p_opaque)
+tad_arp_confirm_tmpl_cb(csap_p csap, unsigned int layer, 
+                        asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                    rc;
     tad_arp_proto_data         *proto_data;
@@ -162,15 +162,43 @@ tad_arp_confirm_pdu_cb(csap_p csap, unsigned int layer,
     if (rc != 0)
         return rc;
 
-    if (csap->command == TAD_OP_SEND)
-    {
-        rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
-        if (rc != 0)
-            return rc;
-        rc = tad_bps_confirm_send(&proto_data->addrs, &tmpl_data->addrs);
-        if (rc != 0)
-            return rc;
-    }
+    rc = tad_bps_confirm_send(&proto_data->hdr, &tmpl_data->hdr);
+    if (rc != 0)
+        return rc;
+    rc = tad_bps_confirm_send(&proto_data->addrs, &tmpl_data->addrs);
+    if (rc != 0)
+        return rc;
+
+    return rc;
+}
+
+/* See description in tad_arp_impl.h */
+te_errno
+tad_arp_confirm_ptrn_cb(csap_p csap, unsigned int layer, 
+                        asn_value *layer_pdu, void **p_opaque)
+{
+    te_errno                    rc;
+    tad_arp_proto_data         *proto_data;
+    tad_arp_proto_tmpl_data    *tmpl_data;
+
+    F_ENTRY("(%d:%u) layer_pdu=%p", csap->id, layer,
+            (void *)layer_pdu);
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+    tmpl_data = malloc(sizeof(*tmpl_data));
+    if (tmpl_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    *p_opaque = tmpl_data;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
+                                   &tmpl_data->hdr);
+    if (rc != 0)
+        return rc;
+
+    rc = tad_bps_nds_to_data_units(&proto_data->addrs, layer_pdu,
+                                   &tmpl_data->addrs);
+    if (rc != 0)
+        return rc;
 
     return rc;
 }
@@ -273,15 +301,12 @@ tad_arp_gen_bin_cb(csap_p                csap,
 /* See description in tad_arp_impl.h */
 te_errno
 tad_arp_match_bin_cb(csap_p           csap,
-                     unsigned int     layer,
-                     const asn_value *pattern_pdu,
-                     const csap_pkts *pkt,
-                     csap_pkts       *payload,
-                     asn_value       *parsed_packet)
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu)
 {
-    F_ENTRY("(%d:%u) pattern_pdu=%p pkt=%p payload=%p parsed_packet=%p",
-            csap->id, layer, (void *)pattern_pdu, pkt, payload,
-            (void *)parsed_packet);
-
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }

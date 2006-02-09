@@ -102,46 +102,77 @@ tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
 te_errno
 tad_cli_match_bin_cb(csap_p           csap,
                      unsigned int     layer,
-                     const asn_value *pattern_pdu,
-                     const csap_pkts *pkt,
-                     csap_pkts       *payload, 
-                     asn_value       *parsed_packet)
+                     const asn_value *ptrn_pdu,
+                     void            *ptrn_opaque,
+                     tad_recv_pkt    *meta_pkt,
+                     tad_pkt         *pdu,
+                     tad_pkt         *sdu)
 {
-    char *msg = (char*) pkt->data;
-    int msg_len = pkt->len;
+    te_errno    rc;
 #if 1
-    int rc;
+    asn_value  *cli_msg;
+    char       *msg;
+    size_t      msg_len;
 #endif
 
-    UNUSED(csap);
-    UNUSED(layer);
-    UNUSED(pattern_pdu);
-    UNUSED(payload);
-#if 0
-    UNUSED(parsed_packet);
-#endif
-
-    VERB("cli_match. len: %d, message: %s\n", msg_len, msg);
+    UNUSED(ptrn_pdu);
+    UNUSED(ptrn_opaque);
 
 #if 1
-    rc = asn_write_value_field(parsed_packet, msg, msg_len, 
-                               "#cli.message.#plain");
 
-    if (rc)
+    UNUSED(sdu);
+
+    if (csap->state & CSAP_STATE_RESULTS)
     {
-        VERB("cli_match. asn_write_value_field() failed");
-    /*    free(buf); */
-        return rc;
+        cli_msg = meta_pkt->layers[layer].nds =
+            asn_init_value(ndn_cli_message);
+
+        if (tad_pkt_seg_num(pdu) < 1)
+        {
+            ERROR("opps");
+            return TE_EINVAL;
+        }
+        else if (tad_pkt_seg_num(pdu) > 1)
+        {
+            ERROR("opps2");
+            return TE_EINVAL;
+        }
+        assert(tad_pkt_seg_num(pdu) == 1);
+        assert(tad_pkt_first_seg(pdu) != NULL);
+        msg = tad_pkt_first_seg(pdu)->data_ptr;
+        msg_len = tad_pkt_first_seg(pdu)->data_len;
+
+        VERB("cli_match. len: %d, message: %s\n", msg_len, msg);
+
+        rc = asn_write_value_field(cli_msg, msg, msg_len,
+                                   "message.#plain");
+        if (rc != 0)
+        {
+            ERROR(CSAP_LOG_FMT "%s(): asn_write_value_field() failed: "
+                  "%r", CSAP_LOG_ARGS(csap), __FUNCTION__, rc);
+        }
+    }
+    else
+    {
+        rc = 0;
     }
 
 #else
-    memset(payload, 0 , sizeof(*payload));
-    payload->len = pkt->len;
-    payload->data = malloc(payload->len);
-    memcpy(payload->data, pkt->data, payload->len);
+
+    UNUSED(layer);
+    UNUSED(meta_pkt);
+
+    rc = tad_pkt_get_frag(sdu, pdu, 0, tad_pkt_len(pdu),
+                          TAD_PKT_GET_FRAG_ERROR);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to prepare CLI SDU: %r",
+              CSAP_LOG_ARGS(csap), rc);
+    }
+
 #endif
 
-    return 0;
+    return rc;
 }
 
 /* See description in tad_cli_impl.h */

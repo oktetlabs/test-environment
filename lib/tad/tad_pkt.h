@@ -50,6 +50,10 @@
 #error sys/queue.h is required for TAD packets representation library
 #endif
 
+#include "te_defs.h"
+#include "te_stdint.h"
+#include "te_errno.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -289,6 +293,13 @@ extern void tad_pkt_init(tad_pkt *pkt, tad_pkt_ctrl_free my_free,
                          void *opaque, tad_pkt_ctrl_free opaque_free);
 
 /**
+ * Free all data resources, but keep control structures.
+ *
+ * @param pkt       Packet to be cleaned up
+ */
+extern void tad_pkt_cleanup(tad_pkt *pkt);
+
+/**
  * Free packet.
  *
  * @param pkt       Pointer to a packet
@@ -497,11 +508,33 @@ extern unsigned int tad_pkts_get_num(const tad_pkts *pkts);
 extern void tad_pkts_init(tad_pkts *pkts);
 
 /**
+ * Free all data resources, but keep control structures.
+ *
+ * @param pkts      List of packets to be cleaned up
+ */
+extern void tad_cleanup_pkts(tad_pkts *pkts);
+
+/**
  * Free packets.
  *
  * @param pkts      Pointer to the list of packets
  */
 extern void tad_free_pkts(tad_pkts *pkts);
+
+/**
+ * Get the first packet from the list.
+ *
+ * @param pkts      List of packets
+ *
+ * @return Pointer to the first packet or NULL.
+ */
+static inline tad_pkt *
+tad_pkts_first_pkt(const tad_pkts *pkts)
+{
+    assert(pkts != NULL);
+    return (pkts->pkts.cqh_first != (void *)&pkts->pkts) ?
+               pkts->pkts.cqh_first : NULL;
+}
 
 /**
  * Add packet to the list.
@@ -617,6 +650,51 @@ typedef enum {
 extern te_errno tad_pkt_get_frag(tad_pkt *dst, tad_pkt *src,
                                  size_t frag_off, size_t frag_len,
                                  tad_pkt_get_frag_mode mode);
+
+/**
+ * Read byte-aligned data from packet starting from offset in specified
+ * segment. Offset have to fit in data available in the segment.
+ * Packet have to have enoght data to read.
+ *
+ * @param pkt           Packet
+ * @param seg           Packet segment
+ * @param off           Offset in the segment
+ * @param len           Total length of data to read
+ * @param dst           Destination
+ */
+extern void tad_pkt_read(const tad_pkt *pkt, const tad_pkt_seg *seg,
+                         size_t off, size_t len, uint8_t *dst);
+
+/**
+ * Read bits from packet. If length is not byte aligned, the bit string
+ * is prepended by zero bits to be byte aligned.
+ *
+ * It is assumed that packet has enough data.
+ *
+ * @param pkt           Packet
+ * @param bitoff        Offset in bits
+ * @param bitlen        Number of bits to read starting from offset
+ * @param dst           Destination
+ */
+extern void tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff,
+                              size_t bitlen, uint8_t *dst);
+
+/**
+ * Match packet content by mask.
+ *
+ * @param pkt           Packet
+ * @param len           Length of the mask/value
+ * @param mask          Mask bytes
+ * @param value         Value bytes
+ * @param exact_len     Is packet length should be equal to length of
+ *                      the mask or may be greater?
+ *
+ * @return Status code.
+ */
+extern te_errno tad_pkt_match_mask(const tad_pkt *pkt, size_t len,
+                                   const uint8_t *mask,
+                                   const uint8_t *value,
+                                   te_bool exact_len);
 
 
 #ifdef __cplusplus

@@ -2,7 +2,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT([tad],[0.1],[konst@oktetlabs.ru])
+AC_INIT([tad],[0.2],[konst@oktetlabs.ru])
 
 AC_CONFIG_SRCDIR([tad_ch.c])
     

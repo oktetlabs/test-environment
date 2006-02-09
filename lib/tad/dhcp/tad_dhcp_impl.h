@@ -65,45 +65,9 @@ typedef struct dhcp_csap_specific_data {
     int   in;           /**< Socket for receiving data to the media  */
     int   out;          /**< Socket for sending data to the media  */
     int   mode;
-    int   read_timeout; /**< Number of second to wait for data     */ 
     char *ipaddr;       /**< Address of asked interface, socket binds to it */
 
 } dhcp_csap_specific_data_t;
-
-
-/**
- * Callback for read parameter value of DHCP CSAP.
- *
- * The function complies with csap_layer_get_param_cb_t prototype.
- */ 
-extern char *tad_dhcp_get_param_cb(csap_p        csap,
-                                   unsigned int  layer,
-                                   const char    *param);
-
-/**
- * Callback for read data from media of DHCP CSAP. 
- *
- * The function complies with csap_read_cb_t prototype.
- */ 
-extern int tad_dhcp_read_cb(csap_p csap, int timeout, char *buf,
-                            size_t buf_len);
-
-/**
- * Callback for write data to media of DHCP CSAP. 
- *
- * The function complies with csap_write_cb_t prototype.
- */ 
-extern te_errno tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt);
-
-/**
- * Callback for write data to media of DHCP CSAP and read
- * data from media just after write, to get answer to sent request. 
- *
- * The function complies with csap_write_read_cb_t prototype.
- */ 
-extern int tad_dhcp_write_read_cb(csap_p csap, int timeout,
-                                  const tad_pkt *w_pkt,
-                                  char *r_buf, size_t r_buf_len);
 
 
 /**
@@ -119,6 +83,22 @@ extern te_errno tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds);
  * The function complies with csap_rw_destroy_cb_t prototype.
  */ 
 extern te_errno tad_dhcp_rw_destroy_cb(csap_p csap);
+
+/**
+ * Callback for read data from media of DHCP CSAP. 
+ *
+ * The function complies with csap_read_cb_t prototype.
+ */ 
+extern te_errno tad_dhcp_read_cb(csap_p csap, unsigned int timeout,
+                                 tad_pkt *pkt, size_t *pkt_len);
+
+/**
+ * Callback for write data to media of DHCP CSAP. 
+ *
+ * The function complies with csap_write_cb_t prototype.
+ */ 
+extern te_errno tad_dhcp_write_cb(csap_p csap, const tad_pkt *pkt);
+
 
 /**
  * Callback for confirm PDU with ehternet CSAP parameters and possibilities.
@@ -150,11 +130,12 @@ extern te_errno tad_dhcp_gen_bin_cb(csap_p                csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_dhcp_match_bin_cb(csap_p           csap,
-                                      unsigned int     layer,
-                                      const asn_value *pattern_pdu,
-                                      const csap_pkts *pkt,
-                                      csap_pkts       *payload, 
-                                      asn_value       *parsed_packet);
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 /**
  * Callback for generating pattern to filter 
@@ -166,8 +147,17 @@ extern te_errno tad_dhcp_match_bin_cb(csap_p           csap,
 extern te_errno tad_dhcp_gen_pattern_cb(csap_p            csap,
                                         unsigned int      layer,
                                         const asn_value  *tmpl_pdu, 
-                                        asn_value       **pattern_pdu);
+                                        asn_value       **ptrn_pdu);
 
+
+/**
+ * Callback for read parameter value of DHCP CSAP.
+ *
+ * The function complies with csap_layer_get_param_cb_t prototype.
+ */ 
+extern char *tad_dhcp_get_param_cb(csap_p        csap,
+                                   unsigned int  layer,
+                                   const char    *param);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -42,6 +42,15 @@
 #include "te_errno.h"
 #include "logger_api.h"
 
+#ifndef INSQUE
+/* macros to insert element p into queue _after_ element q */
+#define INSQUE(p, q) do {(p)->prev = q; (p)->next = (q)->next; \
+                      (q)->next = p; (p)->next->prev = p; } while (0)
+/* macros to remove element p from queue  */
+#define REMQUE(p) do {(p)->prev->next = (p)->next; \
+                   (p)->next->prev = (p)->prev; \
+                   (p)->next = (p)->prev = p; } while(0)
+#endif
 
 struct csap_spt_entry;
 typedef struct csap_spt_entry *csap_spt_entry_p;

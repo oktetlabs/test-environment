@@ -101,7 +101,9 @@ main(int argc, char *argv[])
     TEST_GET_INT_PARAM(cpcs_uu);
     TEST_GET_INT_PARAM(cpi);
 
-    CHECK_NOT_NULL(payload = te_make_buf(0, 0xff, &payload_len));
+    payload = te_make_buf(0, 0xff, &payload_len);
+    if (payload == NULL && payload_len != 0)
+        TEST_FAIL("Memory allocation failure");
 
     CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, 
                                          SIN(iut_addr)->sin_addr.s_addr,

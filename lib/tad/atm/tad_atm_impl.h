@@ -69,14 +69,26 @@ extern te_errno tad_atm_destroy_cb(csap_p csap, unsigned int layer);
 
 
 /**
- * Callback for confirm PDU with ATM CSAP parameters and possibilities.
+ * Callback for confirm template PDU with ATM CSAP parameters and
+ * possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
-extern te_errno tad_atm_confirm_pdu_cb(csap_p         csap,
-                                       unsigned int   layer, 
-                                       asn_value     *layer_pdu,
-                                       void         **p_opaque); 
+extern te_errno tad_atm_confirm_tmpl_cb(csap_p         csap,
+                                        unsigned int   layer, 
+                                        asn_value     *layer_pdu,
+                                        void         **p_opaque); 
+
+/**
+ * Callback for confirm pattern PDU with ATM CSAP parameters and
+ * possibilities.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */
+extern te_errno tad_atm_confirm_ptrn_cb(csap_p         csap,
+                                        unsigned int   layer, 
+                                        asn_value     *layer_pdu,
+                                        void         **p_opaque); 
 
 /**
  * Callback to release PDU with ATM layer private data.
@@ -107,12 +119,12 @@ extern te_errno tad_atm_gen_bin_cb(csap_p                csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_atm_match_bin_cb(csap_p           csap,
-                                     unsigned int     layer,
-                                     const asn_value *pattern_pdu,
-                                     const csap_pkts *pkt,
-                                     csap_pkts       *payload,
-                                     asn_value       *parsed_packet);
-
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 
 /**
@@ -131,14 +143,26 @@ extern te_errno tad_aal5_destroy_cb(csap_p csap, unsigned int layer);
 
 
 /**
- * Callback for confirm PDU with ATM CSAP parameters and possibilities.
+ * Callback for confirm template PDU with ATM CSAP parameters and
+ * possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */
-extern te_errno tad_aal5_confirm_pdu_cb(csap_p         csap,
-                                        unsigned int   layer, 
-                                        asn_value     *layer_pdu,
-                                        void         **p_opaque); 
+extern te_errno tad_aal5_confirm_tmpl_cb(csap_p         csap,
+                                         unsigned int   layer, 
+                                         asn_value     *layer_pdu,
+                                         void         **p_opaque); 
+
+/**
+ * Callback for confirm pattern PDU with ATM CSAP parameters and
+ * possibilities.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */
+extern te_errno tad_aal5_confirm_ptrn_cb(csap_p         csap,
+                                         unsigned int   layer, 
+                                         asn_value     *layer_pdu,
+                                         void         **p_opaque); 
 
 /**
  * Callback for generate binary data to be sent to media.
@@ -160,11 +184,12 @@ extern te_errno tad_aal5_gen_bin_cb(csap_p                csap,
  * The function complies with csap_layer_match_bin_cb_t prototype.
  */
 extern te_errno tad_aal5_match_bin_cb(csap_p           csap,
-                                      unsigned int     layer,
-                                      const asn_value *pattern_pdu,
-                                      const csap_pkts *pkt,
-                                      csap_pkts       *payload,
-                                      asn_value       *parsed_packet);
+                        unsigned int     layer,
+                        const asn_value *ptrn_pdu,
+                        void            *ptrn_opaque,
+                        tad_recv_pkt    *meta_pkt,
+                        tad_pkt         *pdu,
+                        tad_pkt         *sdu);
 
 
 enum {
