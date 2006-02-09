@@ -142,7 +142,7 @@ typedef enum {
     NDN_ACT_FUNCTION,
     NDN_ACT_FILE,
     NDN_ACT_BREAK,
-    NDN_ACT_REPORT,
+    NDN_ACT_NO_REPORT,
 } ndn_packet_action_tags_t;
 
 

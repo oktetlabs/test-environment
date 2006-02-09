@@ -196,7 +196,7 @@ tad_recv_preprocess_action(const asn_value *nds_action,
     switch (t_val)
     {
         case NDN_ACT_BREAK: 
-        case NDN_ACT_REPORT: 
+        case NDN_ACT_NO_REPORT: 
         case NDN_ACT_ECHO:
             break;
 
@@ -354,9 +354,9 @@ tad_recv_preprocess_actions(csap_p csap, const asn_value *ptrn_unit,
     {
         for (i = 0;
              (i < data->n_actions) &&
-             (data->actions[i].type != NDN_ACT_REPORT);
+             (data->actions[i].type != NDN_ACT_NO_REPORT);
              ++i);
-        data->action_report = (i < data->n_actions);
+        data->no_report = (i < data->n_actions);
     }
 
     return rc;
@@ -675,7 +675,7 @@ tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
             csap->state |= CSAP_STATE_COMPLETE;
             break;
 
-        case NDN_ACT_REPORT: 
+        case NDN_ACT_NO_REPORT: 
             /* do nothing: processed on higher layers. */
             break;
 
@@ -932,12 +932,15 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
  * @param meta_pkt      Receiver meta packet
  * @param pkt           Packet with received data
  * @param pkt_len       Real length of usefull data in pkt
+ * @param no_report     If match, include in statistics but does not
+ *                      report raw packet to the test
  *
  * @return Status code.
  */
 static te_errno
 tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
-               tad_recv_pkt *meta_pkt, tad_pkt *pkt, size_t pkt_len)
+               tad_recv_pkt *meta_pkt, tad_pkt *pkt, size_t pkt_len,
+               te_bool *no_report)
 {
     unsigned int    unit = 0;
     te_errno        rc;
@@ -964,6 +967,8 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
         switch (TE_RC_GET_ERROR(rc))
         {
             case 0: /* received data matches to this pattern unit */
+                assert(no_report != NULL);
+                *no_report = ptrn_data->units[unit].no_report;
             case TE_ETADLESSDATA:
                 /* Packet with received data is owned */
                 tad_pkt_init(pkt, NULL, NULL, NULL);
@@ -1027,6 +1032,7 @@ tad_recv_thread(void *arg)
     te_bool             stop_on_timeout = FALSE;
     te_errno            rc;
     tad_recv_pkt       *recv_pkt = NULL;
+    te_bool             no_report = FALSE;
     tad_pkt             my_pkt;
     size_t              read_len;
 
@@ -1182,7 +1188,7 @@ tad_recv_thread(void *arg)
 
         /* Match received packet against pattern */
         rc = tad_recv_match(csap, &context->ptrn_data, recv_pkt,
-                            &my_pkt, read_len);
+                            &my_pkt, read_len, &no_report);
         if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH)
         {
             VERB(CSAP_LOG_FMT "received packet does not match",
@@ -1221,7 +1227,7 @@ tad_recv_thread(void *arg)
             csap->first_pkt = csap->last_pkt;
         context->match_pkts++;
 
-        if (csap->state & CSAP_STATE_RESULTS)
+        if ((csap->state & CSAP_STATE_RESULTS) && !no_report)
         { 
             F_VERB(CSAP_LOG_FMT "put packet into the queue",
                    CSAP_LOG_ARGS(csap));
@@ -1230,6 +1236,7 @@ tad_recv_thread(void *arg)
         } 
         else
         {
+            no_report = FALSE;
             tad_recv_pkt_cleanup(csap, recv_pkt);
         }
 
