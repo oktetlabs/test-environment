@@ -111,6 +111,7 @@ csap_create(const char *type, csap_p *csap)
     if (new_csap != NULL)
     {
         TAILQ_INIT(&new_csap->recv_ops);
+        LIST_INIT(&new_csap->poll_ops);
         tad_recv_init_context(&new_csap->receiver);
         new_csap->csap_type = csap_type = strdup(type);
         new_csap->timeout = TAD_CSAP_DEFAULT_TIMEOUT;
@@ -431,4 +432,44 @@ csap_command_under_lock(csap_p csap, tad_traffic_op_t command)
     }
 
     return TE_RC(TE_TAD_CH, rc);
+}
+
+/* See description in tad_csap_inst.h */
+te_errno
+csap_timedwait(csap_p csap, unsigned int state_bits, unsigned int ms)
+{
+    struct timeval  now;
+    struct timespec timeout;
+    te_errno    rc = 0;
+
+    CSAP_LOCK(csap);
+    gettimeofday(&now, NULL);
+    timeout.tv_sec = now.tv_sec + TE_MS2SEC(ms);
+    timeout.tv_nsec = now.tv_usec * 1000 + TE_MS2NS(ms % 1000);
+    if (timeout.tv_nsec >= TE_SEC2NS(1))
+    {
+        timeout.tv_sec++;
+        timeout.tv_nsec -= TE_SEC2NS(1);
+        assert(timeout.tv_nsec < TE_SEC2NS(1));
+    }
+    while (~csap->state & state_bits)
+    {
+        rc = pthread_cond_timedwait(&csap->event, &csap->lock, &timeout);
+        if (rc == ETIMEDOUT)
+        {
+            rc = TE_RC(TE_TAD_CH, TE_ETIMEDOUT);
+            break;
+        }
+        if (rc != 0)
+        {
+            rc = TE_OS_RC(TE_TAD_CH, errno);
+            assert(TE_RC_GET_ERROR(rc) != TE_ENOENT);
+            ERROR("%s(): pthread_cond_wait() failed: %r",
+                  __FUNCTION__, rc);
+            break;
+        }
+    }
+    CSAP_UNLOCK(csap);
+
+    return rc;
 }

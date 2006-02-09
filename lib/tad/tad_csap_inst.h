@@ -62,6 +62,7 @@
 #include "tad_send_recv.h"
 #include "tad_send.h"
 #include "tad_recv.h"
+#include "tad_poll.h"
 
 
 /**
@@ -189,6 +190,11 @@ typedef struct csap_instance {
                                                          operations
                                                          queue */
 
+    unsigned int                    poll_id;    /**< ID of the last
+                                                     poll request */
+    LIST_HEAD(, tad_poll_context)   poll_ops;   /**< List of poll
+                                                     requests */
+
 } csap_instance;
 
 
@@ -303,12 +309,26 @@ csap_wait(csap_p csap, unsigned int state_bits)
             assert(TE_RC_GET_ERROR(rc) != TE_ENOENT);
             ERROR("%s(): pthread_cond_wait() failed: %r",
                   __FUNCTION__, rc);
+            break;
         }
     }
     CSAP_UNLOCK(csap);
 
     return rc;
 }
+
+/**
+ * Wait for one of bit in CSAP state with timeout.
+ *
+ * @param csap          CSAP instance
+ * @param state_bits    Set of state bits to wait for at least one of them
+ * @param ms            Timeout in milliseconds
+ *
+ * @return Status code.
+ */
+extern te_errno csap_timedwait(csap_p csap, unsigned int state_bits,
+                               unsigned int ms);
+
 
 /**
  * Get CSAP read/write layer number.

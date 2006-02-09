@@ -312,6 +312,7 @@ get_opcode(char **ptr, rcf_op_t *opcode)
     TRY_CMD(TRRECV_GET);
     TRY_CMD(TRRECV_WAIT);
     TRY_CMD(TRSEND_RECV);
+    TRY_CMD(TRPOLL);
     TRY_CMD(EXECUTE);
     TRY_CMD(RPC);
     TRY_CMD(KILL);
@@ -808,6 +809,45 @@ rcf_pch_run(const char *confstr, const char *info)
                  }
 
                 if (rtn(conn, cmd, cmd_buf_len, answer_plen, handle) < 0)
+                    SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
+
+                break;
+            }
+
+            case RCFOP_TRPOLL:
+            case RCFOP_TRPOLL_CANCEL:
+            {
+                int (*rtn)(struct rcf_comm_connection *, char *,
+                           size_t, size_t, csap_handle_t, unsigned int);
+
+                int   handle;
+                int   intparam;
+
+                if (*ptr == 0 || ba != NULL)
+                    goto bad_protocol;
+
+                READ_INT(handle);
+                READ_INT(intparam);
+                if (*ptr != 0)
+                    goto bad_protocol;
+
+                switch (opcode)
+                {
+                    case RCFOP_TRPOLL:
+                        rtn = rcf_ch_trpoll;
+                        break;
+
+                    case RCFOP_TRPOLL_CANCEL:
+                        rtn = rcf_ch_trpoll_cancel;
+                        break;
+
+                    default:
+                        assert(FALSE);
+                        rtn = NULL;
+                 }
+
+                if (rtn(conn, cmd, cmd_buf_len, answer_plen,
+                        handle, intparam) < 0)
                     SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EOPNOTSUPP));
 
                 break;

@@ -551,6 +551,53 @@ extern int rcf_ch_trsend_recv(struct rcf_comm_connection *handle,
                               csap_handle_t csap, te_bool results,
                               unsigned int timeout);
 
+/**
+ * "trpoll" command handler.
+ *
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
+ *
+ * @param csap          CSAP handle
+ * @param timeout       maximum duration (in milliseconds) of poll
+ *
+ *
+ * @return Indication of command support or error code
+ *
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
+ */
+extern int rcf_ch_trpoll(struct rcf_comm_connection *handle,
+                         char *cbuf, size_t buflen, size_t answer_plen,
+                         csap_handle_t csap, unsigned int timeout);
+
+/**
+ * "trpoll_cancel" command handler.
+ *
+ * @param handle        connection handle
+ * @param cbuf          command buffer
+ * @param buflen        length of the command buffer
+ * @param answer_plen   number of bytes in the command buffer to be
+ *                      copied to the answer
+ *
+ * @param csap          CSAP handle
+ * @param poll_id       Poll request ID
+ *
+ *
+ * @return Indication of command support or error code
+ *
+ * @retval  0       command is supported
+ * @retval -1       command is not supported
+ * @retval other    error returned by communication library
+ */
+extern int rcf_ch_trpoll_cancel(struct rcf_comm_connection *handle,
+                                char *cbuf, size_t buflen,
+                                size_t answer_plen, csap_handle_t csap,
+                                unsigned int poll_id);
+
 
 /**
  * Execute routine on the Test Agent or NUT served by it.

@@ -98,6 +98,8 @@ typedef enum {
     RCFOP_TRRECV_GET,       /**< Get received packets */
     RCFOP_TRRECV_WAIT,      /**< Wait for finish receiving packets */
     RCFOP_TRSEND_RECV,      /**< Send one packet and receive an answer */
+    RCFOP_TRPOLL,           /**< Wait for send or receive completion */
+    RCFOP_TRPOLL_CANCEL,    /**< Cancel poll request with specified ID */
     RCFOP_EXECUTE,          /**< Execute a routine in various contexts */
     RCFOP_RPC,              /**< Execute an RPC */
     RCFOP_KILL,             /**< Kill the process */
@@ -119,7 +121,8 @@ typedef struct rcf_msg {
     int      num;                /**< Number of sent/received packets 
                                       or process priority*/
     uint32_t timeout;            /**< Timeout value (RCFOP_TRSEND_RECV,
-                                      RCFOP_TRRECV_START, RCFOP_RPC) */
+                                      RCFOP_TRRECV_START, RCFOP_TRPOLL,
+                                      RCFOP_RPC) */
     int      intparm;            /**< Integer parameter: 
                                        variable type;
                                        routine arguments passing mode;
@@ -128,7 +131,9 @@ typedef struct rcf_msg {
                                        (tr_* commands);
                                        routine return code (RCFOP_EXECUTE);
                                        encode data length (RCFOP_RPC);
-                                       answer error (RCFOP_TRSEND_RECV) */
+                                       answer error (RCFOP_TRSEND_RECV);
+                                       poll request ID (RCFOP_TRPOLL,
+                                       RCFOP_TRPOLL_CANCEL) */
     size_t   data_len;          /**< Length of additional data */
     char     id[RCF_MAX_ID];    /**< TA type;
                                      variable name;
@@ -215,6 +220,8 @@ rcf_op_to_string(rcf_op_t op)
         case RCFOP_TRRECV_GET:      return "trrecv get";
         case RCFOP_TRRECV_WAIT:     return "trrecv wait";
         case RCFOP_TRSEND_RECV:     return "trsendrecv";
+        case RCFOP_TRPOLL:          return "trpoll";
+        case RCFOP_TRPOLL_CANCEL:   return "trpoll_cancel";
         case RCFOP_EXECUTE:         return "execute";
         case RCFOP_RPC:             return "rpc";
         case RCFOP_KILL:            return "kill";

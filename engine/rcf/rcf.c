@@ -1361,6 +1361,7 @@ process_reply(ta *agent)
             case RCFOP_FDEL:
             case RCFOP_CSAP_DESTROY:
             case RCFOP_KILL:
+            case RCFOP_TRPOLL_CANCEL:
                 break;
 
             case RCFOP_CONFGET:
@@ -1405,6 +1406,17 @@ process_reply(ta *agent)
                 if (isdigit(*ptr))
                 {
                     READ_INT(msg->intparm);
+                }
+                break;
+
+            case RCFOP_TRPOLL:
+                READ_INT(msg->intparm);
+                if (msg->intparm != 0)
+                {
+                    /* poll started, but not finished yet */
+                    msg->flags = INTERMEDIATE_ANSWER;
+                    answer_user_request(req);
+                    return;
                 }
                 break;
 
@@ -1856,16 +1868,13 @@ send_cmd(ta *agent, usrreq *req)
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
-        case RCFOP_TRRECV_WAIT:
-            PUT(TE_PROTO_TRRECV_WAIT " %u", msg->handle);
-            req->timeout = RCF_CMD_TIMEOUT_HUGE;
-            break;
-
-        case RCFOP_TRRECV_STOP:
         case RCFOP_TRRECV_GET:
+        case RCFOP_TRRECV_WAIT:
+        case RCFOP_TRRECV_STOP:
             PUT("%s %u", 
-                msg->opcode == RCFOP_TRRECV_STOP ?
-                TE_PROTO_TRRECV_STOP : TE_PROTO_TRRECV_GET,
+                msg->opcode == RCFOP_TRRECV_GET ? TE_PROTO_TRRECV_GET :
+                msg->opcode == RCFOP_TRRECV_WAIT ? TE_PROTO_TRRECV_WAIT :
+                TE_PROTO_TRRECV_STOP,
                 msg->handle);
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
@@ -1876,6 +1885,17 @@ send_cmd(ta *agent, usrreq *req)
                 (msg->intparm & TR_RESULTS) ? " results" : "");
             msg->num = 0;
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
+            break;
+
+        case RCFOP_TRPOLL:
+            PUT(TE_PROTO_TRPOLL " %u %u", msg->handle, msg->timeout);
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
+            break;
+
+        case RCFOP_TRPOLL_CANCEL:
+            PUT(TE_PROTO_TRPOLL_CANCEL " %u %u", msg->handle,
+                msg->intparm);
+            req->timeout = RCF_CMD_TIMEOUT;
             break;
 
         case RCFOP_EXECUTE:

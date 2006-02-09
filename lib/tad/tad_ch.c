@@ -974,6 +974,107 @@ exit:
 #endif
 }
 
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
+              char *cbuf, size_t buflen, size_t answer_plen,
+              csap_handle_t csap_id, unsigned int timeout)
+{
+#ifdef DUMMY_TAD 
+    UNUSED(rcfc);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(csap_id);
+
+    return -1;
+#else
+    csap_p      csap;
+    te_errno    rc;
+
+    check_init(); 
+
+    /*
+     * Answers are send with 0 in poll ID, since no request to be
+     * canceled.
+     */
+
+    if ((csap = csap_find(csap_id)) == NULL)
+    {
+        ERROR("%s: CSAP %u not exists", __FUNCTION__, csap_id);
+        SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
+        return 0;
+    }
+
+    if (csap->state == CSAP_STATE_IDLE)
+    {
+        /* Just created CSAP */
+        rc = TE_ETADCSAPSTATE;
+    }
+    else if (csap->state & CSAP_STATE_DONE)
+    {
+        /* send and/or receive is done */
+        rc = 0;
+    }
+    else
+    {
+        /* send and/or receive is in progress */
+        rc = TE_ETIMEDOUT;
+    }
+
+    if ((rc != TE_ETIMEDOUT) || (timeout == 0))
+    {
+        SEND_ANSWER("%u 0", TE_RC(TE_TAD_CH, rc));
+        return 0;
+    }
+
+    rc = tad_poll_enqueue(csap, timeout, rcfc, cbuf, answer_plen);
+    if (rc != 0)
+    {
+        ERROR(CSAP_LOG_FMT "Failed to enqueue poll request: %r",
+              CSAP_LOG_ARGS(csap));
+        SEND_ANSWER("%u 0", rc);
+        return 0;
+    }
+
+    return 0;
+#endif
+}
+
+/* See description in rcf_ch_api.h */
+int
+rcf_ch_trpoll_cancel(struct rcf_comm_connection *rcfc,
+                     char *cbuf, size_t buflen, size_t answer_plen,
+                     csap_handle_t csap_id, unsigned int poll_id)
+{
+#ifdef DUMMY_TAD 
+    UNUSED(rcfc);
+    UNUSED(cbuf);
+    UNUSED(buflen);
+    UNUSED(answer_plen);
+    UNUSED(csap_id);
+    UNUSED(poll_id);
+
+    return -1;
+#else
+    csap_p      csap;
+    te_errno    rc;
+
+    check_init(); 
+
+    if ((csap = csap_find(csap_id)) == NULL)
+    {
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, TE_ETADCSAPNOTEX));
+        return 0;
+    }
+
+    CSAP_LOCK(csap);
+    CSAP_UNLOCK(csap);
+
+    return 0;
+
+#endif
+}
 
 /* See description in rcf_ch_api.h */
 int

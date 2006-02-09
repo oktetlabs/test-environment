@@ -800,6 +800,47 @@ extern te_errno rcf_ta_trsend_recv(const char      *ta_name,
                                    unsigned int     timeout,
                                    int             *error);
 
+
+/** CSAP parameters to be used for polling of many CSAPs. */
+typedef struct rcf_trpoll_csap {
+    const char     *ta;         /**< Test Agent name */
+    int             sid;        /**< TA session (different IDs have to
+                                     be used when many CSAP are polled
+                                     on one TA) */
+    csap_handle_t   csap_id;    /**< CSAP handle */
+    te_errno        status;     /**< Returned status of the CSAP */
+} rcf_trpoll_csap;
+
+/**
+ * Wait for completion of send and/or receive operation on one of CSAPs.
+ *
+ * @param csaps         Array with CSAPs to be polled
+ * @param n_csaps       Number of entries in @a csaps array
+ * @param timeout       Timeout (in milliseconds) to wait for send or
+ *                      receive processing (may be TAD_TIMEOUT_INF)
+ *
+ * If @a csap_id in rcf_trpoll_csap structure is CSAP_INVALID_HANDLE,
+ * the entry is ignored (does not cause break of timeout) and
+ * TE_ETADCSAPNOTEX is returned in @a status.
+ *
+ * @a status in rcf_trpoll_csap structure contains status code of the
+ * request to Test Agent. The following values are expeted:
+ *  - TE_ETADCSAPNOTEX - CSAP does not exist;
+ *  - TE_ETADCSAPSTATE - CSAP is idle, no send and/or receive operations
+ *                       have been executed;
+ *  - TE_ETIMEDOUT     - send or receive operation is in progress and it
+ *                       has not finished until timeout or completion of
+ *                       another request;
+ *  - 0                - send or receive operation has been finished.
+ *
+ * @return Status code.
+ * @retval 0            One of requests has been finished before timeout
+ * @retval TE_ETIMEDOUT Requests to all CSAPs are timed out
+ */
+extern te_errno rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
+                           unsigned int timeout);
+
+
 /**
  * This function is used to call remotely a routine on the Test Agent or
  * NUT served by it.
