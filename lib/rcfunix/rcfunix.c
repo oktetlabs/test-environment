@@ -83,7 +83,8 @@
 /*
  * Configuration string for UNIX TA should have format:
  *
- * [<IP address or hostname>]:<port>[:notcopy][:sudo][:<shell>[:parameters]]
+ * [[user@]<IP address or hostname>]:<port>
+ *     [:key=<ssh private key file>][:notcopy][:sudo][:<shell>][:parameters]
  *
  * If host is not specified, the Test Agent is started on the local
  * host.  It is assumed that user starting Dispatcher may use ssh/scp
@@ -126,6 +127,7 @@ typedef struct unix_ta {
     char     host[RCF_MAX_NAME];      /**< Test Agent host */
     char     port[RCF_MAX_NAME];      /**< TCP port */
     char     exec_name[RCF_MAX_PATH]; /**< Name of the started file */
+    char     key[RCF_MAX_PATH];       /**< Private ssh key file */
     te_bool  sudo;                    /**< Manipulate process using sudo */
     te_bool  notcopy;                 /**< Do not copy TA image to remote
                                            host */
@@ -357,6 +359,15 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     strncpy(ta->port, token, RCF_MAX_NAME);
 
     GET_TOKEN;
+    if (token != NULL && strcmp_start("key=", token) == 0)
+    {
+        char *key = token + strlen("key=");
+        
+        if (strlen(key) > 0)
+            sprintf(ta->key, "-i %s", key); 
+        
+        GET_TOKEN;
+    }
     if (token != NULL && strcmp(token, "notcopy") == 0)
     {
         ta->notcopy = TRUE;
@@ -394,8 +405,8 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
     {
         if (ta->notcopy)
         {
-            sprintf(cmd, "ssh %s ln -s %s /tmp/%s",
-                    ta->host, path, ta->exec_name);
+            sprintf(cmd, RCFUNIX_SSH "%s %s ln -s %s /tmp/%s",
+                    ta->key, ta->host, path, ta->exec_name);
         }
         else
         {
@@ -405,12 +416,12 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
              * Be quite, but DO NOT suppress command output in order
              * to have to see possible problems.
              */
-            sprintf(cmd, "scp -Bpq %s %s:/tmp/%s",
-                    path, ta->host, ta->exec_name);
+            sprintf(cmd, "scp -Bpq %s %s %s:/tmp/%s",
+                    ta->key, path, ta->host, ta->exec_name);
         }
     }
 
-    VERB("Copy image '%s' to the %s:/tmp", ta->exec_name, ta->host);
+    VERB("%s", cmd);
     if (!(*flags & TA_FAKE) &&
         ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0))
     {
@@ -430,14 +441,15 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         {
             fclose(f);
             sprintf(cmd, 
-                    "scp -Bpq %s_rpcserver.exe %s:/tmp/%s_rpcserver",
-                    path, ta->host, ta->exec_name);
+                    "scp -Bpq %s %s_rpcserver.exe %s:/tmp/%s_rpcserver",
+                    ta->key, path, ta->host, ta->exec_name);
                 
             if ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0)
             {
                 ERROR("Failed to copy RPC server image %s_rpcserver "
                       "to the %s:/tmp: %r", ta->exec_name, ta->host, rc);
-                sprintf(cmd, "ssh %s rm /tmp/%s", ta->host, ta->exec_name);
+                sprintf(cmd, RCFUNIX_SSH "%s %s rm /tmp/%s", 
+                        ta->key, ta->host, ta->exec_name);
                 
                 if (system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT) != 0)
                     ERROR("Failed to remove TA image from %s", ta->host);
@@ -452,14 +464,15 @@ rcfunix_start(char *ta_name, char *ta_type, char *conf_str,
         {
             fclose(f);
             sprintf(cmd, 
-                    "scp -Bpq %s_rpcserver64.exe %s:/tmp/%s_rpcserver64",
-                    path, ta->host, ta->exec_name);
+                    "scp -Bpq %s %s_rpcserver64.exe %s:/tmp/%s_rpcserver64",
+                    ta->key, path, ta->host, ta->exec_name);
                 
             if ((rc = system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT)) != 0)
             {
                 ERROR("Failed to copy RPC server image %s_rpcserver "
                       "to the %s:/tmp: %r", ta->exec_name, ta->host, rc);
-                sprintf(cmd, "ssh %s rm /tmp/%s*", ta->host, ta->exec_name);
+                sprintf(cmd, RCFUNIX_SSH "%s %s rm /tmp/%s*", 
+                        ta->key, ta->host, ta->exec_name);
                 
                 if (system_with_timeout(cmd, RCFUNIX_COPY_TIMEOUT) != 0)
                     ERROR("Failed to remove TA image from %s", ta->host);
