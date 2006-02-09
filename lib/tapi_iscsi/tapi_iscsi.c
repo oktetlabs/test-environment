@@ -235,6 +235,7 @@ iscsi_msg_handler(const char *pkt_fname, void *user_param)
         msg->error = rc; 
         return;
     }
+    msg->error = 0;
 
     len = asn_get_length(pkt, "payload.#bytes");
 
@@ -283,6 +284,7 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
         msg.params = params;
         msg.data   = buffer;
         msg.length = *length;
+        msg.error  = TE_EFAIL;
     }
 
     rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
@@ -326,7 +328,10 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
     if (msg.error != 0)
     {
         rc = msg.error;
-        ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, rc);
+        if (rc == TE_EFAIL)
+            ERROR("%s(): iscsi callback was not called", __FUNCTION__);
+        else 
+            ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, rc);
     }
 
 cleanup:
@@ -590,6 +595,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
         return rc;
     } 
 
+    msg.error  = 0;
     if (buffer != NULL)
     {
         if (length == NULL)
@@ -599,6 +605,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
         msg.params = NULL;
         msg.data   = buffer;
         msg.length = *length;
+        msg.error  = TE_EFAIL;
     }
 
     pattern_b = asn_copy_value(pattern_a);
@@ -636,7 +643,6 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
         goto cleanup;
     }
 
-    msg.error  = 0;
 
 
     if ((rc = rcf_ta_trrecv_wait(ta, session, csap_a,
@@ -654,7 +660,10 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     if (result == 0 && msg.error != 0)
     {
         result = msg.error;
-        ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, result);
+        if (msg.error == TE_EFAIL)
+            ERROR("%s(): iscsi callback was not called", __FUNCTION__);
+        else
+            ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, result);
     }
 
     if ((rc = rcf_ta_trrecv_stop(ta, session, csap_b, NULL, NULL, &num))
