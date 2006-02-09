@@ -145,10 +145,12 @@
          Value: Name of the interface -->
     <object oid="/agent/route/dev" access="read_write" type="string"/>
 
-    <!-- Route type.
+    <!-- This node is temporarily left off.
+         Route type.
          Name:  empty
-         Value: Type of the route (e.g. unicast, blackhole etc) -->
+         Value: Type of the route (e.g. unicast, blackhole etc)
     <object oid="/agent/route/type" access="read_write" type="string"/>
+    -->
 
     <!-- Route MTU.
          Name:  empty
@@ -165,6 +167,10 @@
          Value: irtt value for the route -->
     <object oid="/agent/route/irtt" access="read_write" type="integer"/>
 
+
+    <!-- Blackhole route
+         Name: address+prefix -->
+    <object oid="/agent/blackhole" access="read_create" type="none"/>
 
     <!-- RPC server.
          Name: RPC server name
