@@ -614,7 +614,6 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     asn_write_int32(pattern_a, csap_b, "0.actions.0.#forw-pld");
     asn_write_value_field(pattern_a, NULL, 0, "actions.1.#no-report");
     asn_write_int32(pattern_b, csap_a, "0.actions.0.#forw-pld");
-    asn_write_value_field(pattern_b, NULL, 0, "actions.1.#no-report");
 
     asn_write_value_field(pattern, NULL, 0, "actions.0.#break");
 
@@ -627,7 +626,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     }
 
     rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern_a, 
-                               timeout, 0, RCF_TRRECV_COUNT);
+                               timeout, 0, RCF_TRRECV_PACKETS);
     if (rc != 0)
     {
         ERROR("%s(): trrecv_start on csap A (%d) failed %r",
