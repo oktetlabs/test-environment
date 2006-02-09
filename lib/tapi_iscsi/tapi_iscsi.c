@@ -321,17 +321,19 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
                             buffer == NULL ? NULL : &msg, &num);
     if (rc != 0)
         WARN("%s() trrecv_wait failed: %r", __FUNCTION__, rc);
-
-    if (buffer != NULL)
-        *length = msg.length;
-
-    if (msg.error != 0)
+    else
     {
-        rc = msg.error;
-        if (rc == TE_EFAIL)
-            ERROR("%s(): iscsi callback was not called", __FUNCTION__);
-        else 
-            ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, rc);
+        if (buffer != NULL)
+            *length = msg.length;
+        
+        if (msg.error != 0)
+        {
+            rc = msg.error;
+            if (rc == TE_EFAIL)
+                ERROR("%s(): iscsi callback was not called", __FUNCTION__);
+            else 
+                ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, rc);
+        }
     }
 
 cleanup:
