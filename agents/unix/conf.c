@@ -303,10 +303,14 @@ static te_errno route_dev_get(unsigned int, const char *, char *,
                               const char *);
 static te_errno route_dev_set(unsigned int, const char *, const char *,
                               const char *);
+
+/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
+#if 0
 static te_errno route_type_get(unsigned int, const char *, char *,
                               const char *);
 static te_errno route_type_set(unsigned int, const char *, const char *,
                               const char *);
+#endif
 static te_errno route_get(unsigned int, const char *, char *, const char *);
 static te_errno route_set(unsigned int, const char *, const char *,
                           const char *);
@@ -317,6 +321,11 @@ static te_errno route_del(unsigned int, const char *,
 static te_errno route_list(unsigned int, const char *, char **);
 
 static te_errno route_commit(unsigned int gid, const cfg_oid *p_oid);
+
+static te_errno blackhole_list(unsigned int, const char *, char **);
+static te_errno blackhole_add(unsigned int, const char *, const char *,
+                              const char *);
+static te_errno blackhole_del(unsigned int, const char *, const char *);
 
 static te_errno nameserver_get(unsigned int, const char *, char *,
                                const char *, ...);
@@ -330,10 +339,13 @@ static te_errno user_del(unsigned int, const char *, const char *);
 
 static rcf_pch_cfg_object node_route;
 
+/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
+#if 0
 RCF_PCH_CFG_NODE_RWC(node_route_type, "type", NULL, NULL,
                      route_type_get, route_type_set, &node_route);
+#endif
 
-RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, &node_route_type,
+RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, NULL,
                      route_irtt_get, route_irtt_set, &node_route);
 
 RCF_PCH_CFG_NODE_RWC(node_route_win, "win", NULL, &node_route_irtt,
@@ -345,8 +357,13 @@ RCF_PCH_CFG_NODE_RWC(node_route_mtu, "mtu", NULL, &node_route_win,
 RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, &node_route_mtu,
                      route_dev_get, route_dev_set, &node_route);
 
+RCF_PCH_CFG_NODE_COLLECTION(node_blackhole, "blackhole",
+                            NULL, NULL,
+                            blackhole_add, blackhole_del,
+                            blackhole_list, NULL);
+
 static rcf_pch_cfg_object node_route =
-    {"route", 0, &node_route_dev, NULL,
+    {"route", 0, &node_route_dev, &node_blackhole,
      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
      (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL};
@@ -4072,7 +4089,10 @@ DEF_ROUTE_SET_FUNC(win);
 DEF_ROUTE_GET_FUNC(irtt);
 DEF_ROUTE_SET_FUNC(irtt);
 DEF_ROUTE_SET_FUNC(dev);
+/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
+#if 0
 DEF_ROUTE_SET_FUNC(type);
+#endif
 
 static te_errno
 route_dev_get(unsigned int gid, const char *oid,
@@ -4091,6 +4111,8 @@ route_dev_get(unsigned int gid, const char *oid,
     return 0;
 }
 
+/* FIXME: Route types are disabled until Configurator is redesigned - A.A */
+#if 0
 static te_errno
 route_type_get(unsigned int gid, const char *oid,
               char *value, const char *route) 
@@ -4110,6 +4132,7 @@ route_type_get(unsigned int gid, const char *oid,
     sprintf(value, "%s", ta_rt_type2name(rt_info.type));
     return 0;
 }
+#endif
 
 
 #undef DEF_ROUTE_GET_FUNC
@@ -4221,12 +4244,12 @@ rtnl_print_route_cb(const struct sockaddr_nl *who,
 
     parse_rtattr(tb, RTA_MAX, RTM_RTA(r), len);
 
-    if (tb[RTA_OIF] != NULL)
-    {
-        ifname = ll_index_to_name(*(int *)RTA_DATA(tb[RTA_OIF]));
-        if (!INTERFACE_IS_MINE(ifname))
-            return 0;
-    }
+    if (tb[RTA_OIF] == NULL)
+        return 0;
+    
+    ifname = ll_index_to_name(*(int *)RTA_DATA(tb[RTA_OIF]));
+    if (!INTERFACE_IS_MINE(ifname))
+        return 0;
 
     p = user_data->buf;
     
@@ -4442,6 +4465,270 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif /* USE_NETLINK */
 }
+
+#ifdef USE_NETLINK
+static int
+rtnl_print_blackhole_cb(const struct sockaddr_nl *who,
+                        const struct nlmsghdr *n, void *arg)
+{
+    struct rtmsg        *r = NLMSG_DATA(n);
+    int                  len = n->nlmsg_len;
+    char                *p;
+    
+    rtnl_print_route_cb_user_data_t *user_data = 
+                         (rtnl_print_route_cb_user_data_t *)arg;
+    
+    struct rtattr       *tb[RTA_MAX + 1] = {NULL,};
+    int                  family;
+
+    UNUSED(who);
+
+      
+    family = r->rtm_family;
+    
+    if (family != user_data->family)
+    {
+        return 0;
+    }
+
+    if (family != AF_INET && family != AF_INET6)
+    {
+        return 0;
+    }
+    
+    if (r->rtm_table != RT_TABLE_MAIN || r->rtm_type != RTN_BLACKHOLE)
+        return 0;
+
+
+    len -= NLMSG_LENGTH(sizeof(*r));
+
+    parse_rtattr(tb, RTA_MAX, RTM_RTA(r), len);
+
+    p = user_data->buf;
+    
+    if (tb[RTA_DST] == NULL)
+    {
+        if (r->rtm_dst_len != 0)
+        {
+            ERROR("NULL destination with non-zero prefix");
+            return 0;
+        }
+        else
+        {
+            if (family == AF_INET)
+            {
+                p += sprintf(p, "0.0.0.0|0");
+            }
+            else
+            {    
+                p += sprintf(p, "::|0");
+            }
+        }
+    }
+    else
+    {
+        inet_ntop(family, RTA_DATA(tb[RTA_DST]), p, INET6_ADDRSTRLEN);
+        p += strlen(p);
+        p += sprintf(p, "|%d", r->rtm_dst_len);        
+    }
+
+    p += sprintf(p, " ");
+    user_data->buf = p;
+
+    return 0;
+}
+
+#endif
+
+/**
+ * Get instance list for object "agent/blackhole".
+ *
+ * @param id            full identifier of the father instance
+ * @param list          location for the list pointer
+ *
+ * @return              Status code
+ * @retval 0                       success
+ * @retval TE_ENOENT               no such instance
+ * @retval TE_ENOMEM               cannot allocate memory
+ */
+static te_errno
+blackhole_list(unsigned int gid, const char *oid, char **list)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY();
+
+    buf[0] = '\0';
+
+#ifdef USE_NETLINK
+
+    struct rtnl_handle               rth;
+    rtnl_print_route_cb_user_data_t  user_data;    
+
+    memset(&user_data, 0, sizeof(user_data));
+
+    user_data.buf = buf;
+
+    memset(&rth, 0, sizeof(rth));
+    if (rtnl_open(&rth, 0) < 0)
+    {
+        ERROR("Failed to open a netlink socket");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    
+#define GET_ALL_ROUTES_OF_FAMILY(__family)                      \
+do {                                                            \
+    if (rtnl_wilddump_request(&rth, __family,                   \
+                              RTM_GETROUTE) < 0)                \
+    {                                                           \
+        rtnl_close(&rth);                                       \
+        ERROR("Cannot send dump request to netlink");           \
+        return TE_OS_RC(TE_TA_UNIX, errno);                     \
+    }                                                           \
+                                                                \
+    /* Fill in user_data, which will be passed to callback function */  \
+    user_data.family = __family;                                \
+    if (rtnl_dump_filter(&rth, rtnl_print_blackhole_cb,         \
+                         &user_data, NULL, NULL) < 0)           \
+    {                                                           \
+        rtnl_close(&rth);                                       \
+        ERROR("Dump terminated");                               \
+        return TE_OS_RC(TE_TA_UNIX, errno);                     \
+    }                                                           \
+} while (0)
+
+    GET_ALL_ROUTES_OF_FAMILY(AF_INET);
+#if 0
+    GET_ALL_ROUTES_OF_FAMILY(AF_INET6);
+#endif
+
+#undef GET_ALL_ROUTES_OF_FAMILY    
+    
+    rtnl_close(&rth);
+#else
+    ERROR("Only routes via Netlink are currently supported");
+#endif
+
+    INFO("%s: Blackholes: %s", __FUNCTION__, buf);
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    return 0;
+}
+
+static te_errno
+blackhole_add(unsigned int gid, const char *oid, const char *value,
+              const char *route)
+{
+#ifdef USE_NETLINK
+    struct nl_request  req;
+    struct rtnl_handle rth;
+    te_errno           rc;
+    ta_rt_info_t       rt_info;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    
+    ta_rt_parse_inst_name(route, &rt_info);
+
+    memset(&req, 0, sizeof(req));
+
+    req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
+    req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_EXCL;
+    req.n.nlmsg_type = RTM_NEWROUTE;
+
+    req.r.rtm_family = SA(&rt_info.dst)->sa_family;
+    req.r.rtm_table = RT_TABLE_MAIN;
+    req.r.rtm_scope = RT_SCOPE_NOWHERE;
+    req.r.rtm_protocol = RTPROT_BOOT;
+    req.r.rtm_type = RTN_BLACKHOLE;
+
+    /* Sending the netlink message */
+    if (rtnl_open(&rth, 0) < 0)
+    {
+        ERROR("Failed to open the netlink socket");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    if ((rc = rt_info2nl_req(&rt_info, &req)) != 0)
+    {
+        rtnl_close(&rth);
+        return rc;
+    }
+
+    if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
+    {
+        ERROR("Failed to send the netlink message");
+        rtnl_close(&rth);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    rtnl_close(&rth);
+    return 0;
+#else /* !USE_NETLINK */
+    UNUSED(gid);
+    UNUSED(p_oid);
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif /* USE_NETLINK */
+
+}
+
+static te_errno 
+blackhole_del(unsigned int gid, const char *oid, const char *route)
+{
+#ifdef USE_NETLINK
+    struct nl_request  req;
+    struct rtnl_handle rth;
+    te_errno           rc;
+    ta_rt_info_t       rt_info;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    ta_rt_parse_inst_name(route, &rt_info);
+
+    memset(&req, 0, sizeof(req));
+
+    req.n.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
+    req.n.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_EXCL;
+    req.n.nlmsg_type = RTM_DELROUTE;
+
+    req.r.rtm_family = SA(&rt_info.dst)->sa_family;
+    req.r.rtm_table = RT_TABLE_MAIN;
+    req.r.rtm_scope = RT_SCOPE_NOWHERE;
+    req.r.rtm_type = RTN_BLACKHOLE;
+
+    /* Sending the netlink message */
+    if (rtnl_open(&rth, 0) < 0)
+    {
+        ERROR("Failed to open the netlink socket");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    if ((rc = rt_info2nl_req(&rt_info, &req)) != 0)
+    {
+        rtnl_close(&rth);
+        return rc;
+    }
+
+    if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
+    {
+        ERROR("Failed to send the netlink message");
+        rtnl_close(&rth);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    rtnl_close(&rth);
+    return 0;
+#else /* !USE_NETLINK */
+    UNUSED(gid);
+    UNUSED(p_oid);
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif /* USE_NETLINK */
+}
+
 
 static te_errno
 nameserver_get(unsigned int gid, const char *oid, char *result,

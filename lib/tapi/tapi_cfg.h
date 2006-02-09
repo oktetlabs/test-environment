@@ -188,6 +188,7 @@ extern int tapi_cfg_add_route(const char *ta, int addr_family,
 
 /**
  * Same as tapi_cfg_add_route() but allows to specify a route type
+ * NOTE: currently only "blackhole" and "unicast" types are supported.
  */
 extern int tapi_cfg_add_typed_route(const char *ta, int addr_family,
                                     const void *dst_addr, int prefix,
@@ -234,7 +235,9 @@ extern int tapi_cfg_modify_route(const char *ta, int addr_family,
                                  cfg_handle *rt_hndl);
 
 /**
- * Same as tapi_cfg_modify_route() but allows to specify a route type
+ * Same as tapi_cfg_modify_route() but allows to specify a route type.
+ * NOTE: currently "unicast" type is supported, so the function behaves
+ * exactly like tapi_cfg_modify_route().
  */
 extern int tapi_cfg_modify_typed_route(const char *ta, int addr_family,
                                        const void *dst_addr, int prefix,

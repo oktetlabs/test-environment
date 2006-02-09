@@ -603,6 +603,40 @@ tapi_cfg_add_route(const char *ta, int addr_family,
                              flags, metric, tos, mtu, win, irtt, cfg_hndl);
 }
 
+static int
+tapi_cfg_add_blackhole(const char *ta, int addr_family,
+                       const void *dst_addr, int prefix,
+                       cfg_handle *handle)
+{
+    char        dst_addr_str[INET6_ADDRSTRLEN];
+    int         netaddr_size = netaddr_get_size(addr_family);
+
+    if (netaddr_size < 0)
+    {
+        ERROR("%s() unknown address family value", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    
+    if (prefix != netaddr_size * CHAR_BIT)
+    {
+        ERROR("%s() fails: Incorrect prefix value specified %d "
+              "(must be %d for blackhole routes)", 
+              __FUNCTION__,
+              prefix, netaddr_size);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (inet_ntop(addr_family, dst_addr, dst_addr_str, 
+                  sizeof(dst_addr_str)) == NULL)
+    {
+        ERROR("%s() fails converting binary destination address "
+              "into a character string", __FUNCTION__);
+        return TE_OS_RC(TE_TAPI, errno);
+    }
+    return cfg_add_instance_fmt(handle, CFG_VAL(NONE, NULL),
+                                "/agent:%s/blackhole:%s|%d",
+                                ta, dst_addr_str, prefix);
+}
+
 /* See the description in tapi_cfg.h */
 int
 tapi_cfg_add_typed_route(const char *ta, int addr_family,
@@ -612,6 +646,16 @@ tapi_cfg_add_typed_route(const char *ta, int addr_family,
                          uint32_t flags, int metric, int tos, int mtu,
                          int win, int irtt, cfg_handle *cfg_hndl)
 {
+    if (type != NULL && strcmp(type, "blackhole") == 0)
+    {
+        return tapi_cfg_add_blackhole(ta, addr_family, dst_addr,
+                                      prefix, cfg_hndl);
+    }
+    if (type != NULL && strcmp(type, "unicast") != 0)
+    {
+        ERROR("Route type '%s' is not supported yet", type);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, type,
                              flags, metric, tos, mtu, win, irtt, cfg_hndl);
@@ -642,6 +686,11 @@ tapi_cfg_modify_typed_route(const char *ta, int addr_family,
                             uint32_t flags, int metric, int tos, int mtu,
                             int win, int irtt, cfg_handle *cfg_hndl)
 {
+    if (type != NULL && strcmp(type, "unicast") != 0)
+    {
+        ERROR("Route type '%s' is not supported yet", type);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
     return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, type,
                              flags, metric, tos, mtu, win, irtt, cfg_hndl);
@@ -951,6 +1000,8 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                     break;
                 }
 
+/* Commented out until route type support is back into Configurator - A.A */
+#if 0
                 if ((type != NULL) &&
                     ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, type),
                           "/agent:%s/route:%s/type:", ta, route_inst_name))
@@ -961,6 +1012,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                           __FUNCTION__, type, route_inst_name, ta, rc);
                     break;
                 }
+#endif
                 
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);
