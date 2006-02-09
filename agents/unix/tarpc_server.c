@@ -4488,6 +4488,55 @@ overfill_buffers_exit:
 
 #ifdef HAVE_AIO_H
 
+#ifdef HAVE_UNION_SIGVAL_SIVAL_PTR
+#define SIVAL_PTR sival_ptr
+#elif defined(HAVE_UNION_SIGVAL_SIGVAL_PTR)
+#define SIVAL_PTR sigval_ptr
+#else        
+#error "Failed to discover memeber names of the union sigval."
+#endif
+
+#ifdef HAVE_UNION_SIGVAL_SIVAL_INT
+#define SIVAL_INT       sival_int
+#elif defined(HAVE_UNION_SIGVAL_SIGVAL_INT)
+#define SIVAL_INT       sigval_int
+#else        
+#error "Failed to discover memeber names of the union sigval."
+#endif
+
+#ifdef SIGEV_THREAD    
+static te_errno
+fill_sigev_thread(struct sigevent *sig, char *function)
+{
+    if (strlen(function) > 0)
+    {
+        memset(&(sig->_sigev_un), 0, sizeof(sig->_sigev_un));
+        if ((sig->_sigev_un._sigev_thread._function = 
+                rcf_ch_symbol_addr(function, 1)) == NULL)
+        {
+            if (strcmp(function, AIO_WRONG_CALLBACK) == 0)
+                sig->_sigev_un._sigev_thread._function = 
+                    (void *)(long)rand_range(1, 0xFFFFFFFF);
+            else
+                WARN("Failed to find address of AIO callback %s - "
+                     "use NULL callback", function);
+        }
+     }
+     else
+     {
+         memset(&(sig->_sigev_un), 0, sizeof(sig->_sigev_un));
+     }
+    
+    return 0;
+}
+#else
+static te_errno
+fill_sigev_thread(struct sigevent *sig, char *function)
+{
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+}
+#endif
+
 /*-------------- AIO control block constructor -------------------------*/
 bool_t
 _create_aiocb_1_svc(tarpc_create_aiocb_in *in, tarpc_create_aiocb_out *out,
@@ -4541,56 +4590,19 @@ _fill_aiocb_1_svc(tarpc_fill_aiocb_in *in,
     cb->aio_nbytes = in->nbytes;
     if (in->sigevent.value.pointer)
     {
-#ifdef HAVE_UNION_SIGVAL_SIVAL_PTR
-        cb->aio_sigevent.sigev_value.sival_ptr = 
-#elif defined(HAVE_UNION_SIGVAL_SIGVAL_PTR)
-        cb->aio_sigevent.sigev_value.sigval_ptr = 
-#else        
-#error "Failed to discover memeber names of the union sigval."
-#endif
+        cb->aio_sigevent.sigev_value.SIVAL_PTR = 
             rcf_pch_mem_get(in->sigevent.value.tarpc_sigval_u.sival_ptr);
     }
     else
     {
-#ifdef HAVE_UNION_SIGVAL_SIVAL_INT
-        cb->aio_sigevent.sigev_value.sival_int = 
-#elif defined(HAVE_UNION_SIGVAL_SIGVAL_INT)
-        cb->aio_sigevent.sigev_value.sigval_int = 
-#else        
-#error "Failed to discover memeber names of the union sigval."
-#endif
+        cb->aio_sigevent.sigev_value.SIVAL_INT = 
             in->sigevent.value.tarpc_sigval_u.sival_int;
     }
     
     cb->aio_sigevent.sigev_signo = signum_rpc2h(in->sigevent.signo);
     cb->aio_sigevent.sigev_notify = sigev_notify_rpc2h(in->sigevent.notify);
-    if (strlen(in->sigevent.function) > 0)
-    {
-#ifdef SIGEV_THREAD    
-        memset(&(cb->aio_sigevent._sigev_un), 0, 
-               sizeof(cb->aio_sigevent._sigev_un));
-        if ((cb->aio_sigevent._sigev_un._sigev_thread._function = 
-             rcf_ch_symbol_addr(in->sigevent.function, 1)) == NULL)
-        {
-            if (strcmp(in->sigevent.function, AIO_WRONG_CALLBACK) == 0)
-                cb->aio_sigevent._sigev_un._sigev_thread._function = 
-                    (void *)(long)rand_range(1, 0xFFFFFFFF);
-            else
-                WARN("Failed to find address of AIO callback %s - "
-                     "use NULL callback", in->sigevent.function);
-        }
-#else
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-#endif        
-    }
-    else
-    {
-#ifdef SIGEV_THREAD        
-        memset(&(cb->aio_sigevent._sigev_un), 0, 
-               sizeof(cb->aio_sigevent._sigev_un));
-#endif            
-    }
-
+    out->common._errno = fill_sigev_thread(&(cb->aio_sigevent), 
+                                           in->sigevent.function);
     return TRUE;
 }
 
@@ -4695,6 +4707,7 @@ TARPC_FUNC(aio_suspend, {},
 }
 )
 
+
 /*---------------------- lio_listio() --------------------------*/
 TARPC_FUNC(lio_listio, {},
 {
@@ -4708,49 +4721,18 @@ TARPC_FUNC(lio_listio, {},
         
         if (ev->value.pointer)
         {
-#ifdef HAVE_UNION_SIGVAL_SIVAL_PTR
-            sig.sigev_value.sival_ptr = 
-#elif defined(HAVE_UNION_SIGVAL_SIGVAL_PTR)
-            sig.sigev_value.sigval_ptr = 
-#else        
-#error "Failed to discover memeber names of the union sigval."
-#endif
+            sig.sigev_value.SIVAL_PTR = 
                 rcf_pch_mem_get(ev->value.tarpc_sigval_u.sival_ptr);
         }
         else
         {
-#ifdef HAVE_UNION_SIGVAL_SIVAL_INT
-            sig.sigev_value.sival_int = 
-#elif defined(HAVE_UNION_SIGVAL_SIGVAL_INT)
-            sig.sigev_value.sigval_int = 
-#else        
-#error "Failed to discover memeber names of the union sigval."
-#endif
+            sig.sigev_value.SIVAL_PTR = 
                 ev->value.tarpc_sigval_u.sival_int;
         }
 
         sig.sigev_signo = signum_rpc2h(ev->signo);
         sig.sigev_notify = sigev_notify_rpc2h(ev->notify);
-        if (strlen(ev->function) > 0)
-        {
-#ifdef SIGEV_THREAD        
-            memset(&(sig._sigev_un), 0, sizeof(sig._sigev_un));
-            if ((sig._sigev_un._sigev_thread._function = 
-                     rcf_ch_symbol_addr(ev->function, 1)) == NULL)
-            {
-                WARN("Failed to find address of AIO callback %s - "
-                     "use NULL callback", ev->function);
-            }
-#else
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-#endif        
-        }
-        else
-        {
-#ifdef SIGEV_THREAD        
-            memset(&(sig._sigev_un), 0, sizeof(sig._sigev_un));
-#endif            
-        }
+        out->common._errno = fill_sigev_thread(&sig, ev->function);
         INIT_CHECKED_ARG((char *)&sig, sizeof(sig), 0);
     }
     if (in->cb.cb_len > 0 &&
