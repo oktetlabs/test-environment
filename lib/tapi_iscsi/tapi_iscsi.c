@@ -612,10 +612,11 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
 
     /*First, start receive on A */
     asn_write_int32(pattern_a, csap_b, "0.actions.0.#forw-pld");
+    asn_write_value_field(pattern_a, NULL, 0, "actions.1.#no-report");
     asn_write_int32(pattern_b, csap_a, "0.actions.0.#forw-pld");
+    asn_write_value_field(pattern_b, NULL, 0, "actions.1.#no-report");
 
-    asn_write_value_field(pattern, NULL, 0, "actions.0.#report");
-    asn_write_value_field(pattern, NULL, 0, "actions.1.#break");
+    asn_write_value_field(pattern, NULL, 0, "actions.0.#break");
 
     if ((rc = asn_insert_indexed(pattern_a,
                                  asn_copy_value(pattern), 0, "")) != 0)
