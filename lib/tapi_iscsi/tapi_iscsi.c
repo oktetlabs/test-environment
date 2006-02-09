@@ -612,7 +612,15 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
 
     /*First, start receive on A */
     asn_write_int32(pattern_a, csap_b, "0.actions.0.#forw-pld");
-    asn_write_value_field(pattern_a, NULL, 0, "actions.1.#no-report");
+    rc = asn_write_value_field(pattern_a, NULL, 0, 
+                               "0.actions.1.#no-report");
+    if (rc != NULL)
+    {
+        ERROR("%s(): asn_write_value_field(actions.1.#no-report) "
+              "failed: %r", __FUNCTION__, rc);
+        result = rc;
+        goto cleanup;
+    }
     asn_write_int32(pattern_b, csap_a, "0.actions.0.#forw-pld");
 
     asn_write_value_field(pattern, NULL, 0, "actions.0.#break");
@@ -1230,6 +1238,12 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
     int                i = 0;
 
     va_list list;
+
+    if (segment_data == NULL)
+    {
+        ERROR("%s , segment_data pointer is NULL", __FUNCTION__);
+        return -1;
+    }
 
     if ((key_index = 
          tapi_iscsi_get_key_index_by_name(segment_data, 
@@ -2071,7 +2085,7 @@ iscsi_digest_str2enum(const char *digest_type)
     if (strcmp(digest_type, "CRC32C") == 0)
         return ISCSI_DIGEST_CRC32C;
 
-    return -1;
+    return ISCSI_DIGEST_NONE;
 }
 
 char* 
