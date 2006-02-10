@@ -42,10 +42,12 @@ shift 4
 if test $PLATFORM != ${PLATFORM#x86_64} ; then
 
 BUILD_HOST=${TE_WIN64_BUILD_HOST}
+KEY=${TE_WIN64_BUILD_HOST_KEY}
 
 else
 
 BUILD_HOST=${TE_WIN32_BUILD_HOST}
+KEY=${TE_WIN32_BUILD_HOST_KEY}
 
 fi
 
@@ -56,7 +58,7 @@ if test -z "$BUILD_HOST" ; then
     exit 0
 fi
 
-if ! ssh $BUILD_HOST ls >/dev/null; then
+if ! ssh $KEY $BUILD_HOST ls >/dev/null; then
     echo "Warning: build host $BUILD_HOST is unreachable; \
           library $LIBNAME for $PLATFORM platform is not (re-)built"
     touch ${LIBNAME}
@@ -80,7 +82,7 @@ for i in $* ; do
 done
 rm -f *~
 
-ssh ${BUILD_HOST} "rm -rf tmpsrc; mkdir tmpsrc"
+ssh $KEY ${BUILD_HOST} "rm -rf tmpsrc; mkdir tmpsrc"
 
 # Build the library
 
@@ -88,7 +90,7 @@ scp $* ${BUILD_HOST}:tmpsrc
 cd ..
 rm -rf tmpsrc 
 
-ssh ${BUILD_HOST} bash -l -c "\"
+ssh $KEY ${BUILD_HOST} bash -l -c "\"
 cd tmpsrc ; \
 cl /nologo *.c /c ; \
 lib /OUT:${LIBNAME} *.obj\""
@@ -96,7 +98,7 @@ lib /OUT:${LIBNAME} *.obj\""
 scp ${BUILD_HOST}:tmpsrc/${LIBNAME} .
 
 if test -e ${LIBNAME} ; then
-    ssh ${BUILD_HOST} rm -rf tmpsrc 
+    ssh $KEY ${BUILD_HOST} rm -rf tmpsrc 
     exit 0
 fi
 

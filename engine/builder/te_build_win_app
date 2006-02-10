@@ -50,10 +50,12 @@ rm -rf tmpsrc
 if test $PLATFORM != ${PLATFORM#x86_64} ; then
 
 BUILD_HOST=${TE_WIN64_BUILD_HOST}
+KEY=${TE_WIN64_BUILD_HOST_KEY}
 
 else
 
 BUILD_HOST=${TE_WIN32_BUILD_HOST}
+KEY=${TE_WIN32_BUILD_HOST_KEY}
 
 fi
 
@@ -61,7 +63,11 @@ if test -z "$BUILD_HOST" ; then
     exit 0
 fi    
 
-if ! ssh $BUILD_HOST ls >/dev/null; then
+if test -n "$KEY" ; then
+    KEY="-i $KEY "
+fi    
+
+if ! ssh $KEY $BUILD_HOST ls >/dev/null; then
     exit 0
 fi
 
@@ -94,14 +100,14 @@ for i in $* ; do
     indent tmpsrc/${FILENAME} ;
 done
 
-ssh ${BUILD_HOST} "rm -rf tmpsrc; rm -rf ${PLATFORM}; mkdir tmpsrc"
+ssh $KEY ${BUILD_HOST} "rm -rf tmpsrc; rm -rf ${PLATFORM}; mkdir tmpsrc"
 
 # Build the application
 
 scp tmpsrc/*.c ${BUILD_HOST}:tmpsrc
 rm -rf tmpsrc 
 
-ssh ${BUILD_HOST} bash -l -c "\"
+ssh $KEY ${BUILD_HOST} bash -l -c "\"
 tar xzf ${PLATFORM}.tgz ; \
 rm ${PLATFORM}.tgz ; \
 cd tmpsrc ; \
@@ -111,7 +117,7 @@ cl /nologo -I../${PLATFORM}/include -DWINDOWS *.c \
 scp ${BUILD_HOST}:tmpsrc/${APPNAME} .
 
 if test -e ${APPNAME} ; then
-    ssh ${BUILD_HOST} "rm -rf tmpsrc ${PLATFORM}"
+    ssh $KEY ${BUILD_HOST} "rm -rf tmpsrc ${PLATFORM}"
     exit 0
 fi
 
