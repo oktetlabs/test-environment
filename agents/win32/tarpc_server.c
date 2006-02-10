@@ -941,6 +941,8 @@ TARPC_FUNC(read,
                   out->common._errno, GetLastError());
             rc = -1;
         }
+        else
+            out->common._errno = win_rpc_errno(GetLastError());
     }
     out->retval = rc;
 }
@@ -977,6 +979,8 @@ TARPC_FUNC(write, {},
                  "error %r (%d)", out->common._errno, GetLastError());
             rc = -1;
         }
+        else
+            out->common._errno = win_rpc_errno(GetLastError());
     }
     out->retval = rc;
 }
