@@ -161,44 +161,61 @@ validate_type(int var_type, int var_len)
 
 
 /**
- * Match RCF IPC message with opcode and session id. 
+ * Callback to match RCF message.
  *
- * @param msg      pointer to RCF message
- * @param opcode   RCF operational code
- * @param sid      session id
- *
+ * @param msg           RCF message
+ * @param opaque        Opaque data
+ * 
  * @retval 0    message matches
  * @retval 1    message NOT matches
  */
+typedef int (*rcf_message_match_cb)(rcf_msg *msg, void *opaque);
+
+
+/** Opaque data for simple RCF message matching. */
+typedef struct rcf_message_match_simple {
+    rcf_op_t    opcode;     /**< Operation code */
+    const char *ta_name;    /**< Test Agent name */
+    int         sid;        /**< RCF session */
+} rcf_message_match_simple;
+
+/**
+ * Match RCF IPC message with TA name, opcode and session id. 
+ *
+ * The function complies with rcf_message_match_cb prototype.
+ */
 static int
-rcf_message_match(rcf_msg *msg, rcf_op_t opcode, int sid)
+rcf_message_match(rcf_msg *msg, void *opaque)
 {
+    rcf_message_match_simple   *data = opaque;
+
     if (msg == NULL) 
         return 1;
 
-    if (opcode != msg->opcode)
+    if (msg->opcode != data->opcode)
         return 1;
 
-    switch (opcode)
+    switch (msg->opcode)
     {
         case RCFOP_TALIST:
         case RCFOP_TACHECK:
+            /* These requests do not have TA name and SID */
+            return 0;
+
+        default:
+            if (msg->sid != data->sid)
+                return 1;
+            /* FALLTHROUGH */
+
         case RCFOP_TATYPE:
         case RCFOP_SESSION:
         case RCFOP_REBOOT: 
-            return 0;
-
-            /* 
-             * all other messages which may occure in RCF API has SID
-             * and should be matched by SID 
-             */
-        default:
-            if (msg->sid != sid)
+            if (strcmp(msg->ta, data->ta_name) != 0)
                 return 1;
-            else 
-                return 0;
+            return 0;
     }
 }
+
 /**
  * Clear RCF message buffer
  *
@@ -265,15 +282,16 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
  * Find message in RCF message buffer with desired SID, and remove 
  * it from buffer.
  *
- * @param msg_buf         RCF message buffer head
- * @param opcode          RCF operational code
- * @param session         SID which message must have
+ * @param msg_buf       RCF message buffer head
+ * @param match_cb      Callback function to be used to match
+ * @param opaque        Opaque data of the callback function
  *
  * @return pointer to found message or zero if not found
  * After ussage of message pointer should be freed. 
  */
-rcf_msg *
-msg_buffer_find(msg_buf_head_t *msg_buf, rcf_op_t opcode, int session)
+static rcf_msg *
+msg_buffer_find(msg_buf_head_t *msg_buf, rcf_message_match_cb match_cb,
+                void *opaque)
 {
     msg_buf_entry_t *buf_entry;
 
@@ -284,7 +302,7 @@ msg_buffer_find(msg_buf_head_t *msg_buf, rcf_op_t opcode, int session)
          buf_entry != (void *)msg_buf;
          buf_entry = buf_entry->link.cqe_next)
     { 
-        if (rcf_message_match(buf_entry->message, opcode, session) == 0)
+        if (match_cb(buf_entry->message, opaque) == 0)
         {
             rcf_msg *msg = buf_entry->message;
 
@@ -366,22 +384,22 @@ rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg,
  * If message is too long, the memory is allocated and its address
  * is placed to p_answer.
  *
- * @param ipcc            pointer to the ipc_client structure returned
- *                        by ipc_init_client()
- * @param rcf_msg_queue   message buffer head
- * @param opcode          RCF operational code
- * @param sid             session id
- * @param recv_msg        pointer to the buffer for answer
- * @param recv_size       pointer to the variable to store:
- * @param p_answer        location for address of the memory
- *                        allocated for the answer or NULL
+ * @param ipcc          pointer to the ipc_client structure returned
+ *                      by ipc_init_client()
+ * @param rcf_msg_queue message buffer head
+ * @param match_cb      Callback function to be used to match
+ * @param opaque        Opaque data of the callback function
+ * @param recv_msg      pointer to the buffer for answer
+ * @param recv_size     pointer to the variable to store:
+ * @param p_answer      location for address of the memory
+ *                      allocated for the answer or NULL
  * 
  * @return zero on success or error code
  */
 static int
 wait_rcf_ipc_message(struct ipc_client *ipcc,
                      msg_buf_head_t *rcf_msg_queue,
-                     rcf_op_t opcode, int session, 
+                     rcf_message_match_cb match_cb, void *opaque,
                      rcf_msg *recv_msg, size_t *recv_size, 
                      rcf_msg **p_answer)
 {
@@ -391,13 +409,14 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
     if (ipcc == NULL || recv_msg == NULL || recv_size == NULL)
         return TE_EWRONGPTR;
 
-    if ((message = msg_buffer_find(rcf_msg_queue, opcode, session)) != NULL)
+    message = msg_buffer_find(rcf_msg_queue, match_cb, opaque);
+    if (message != NULL)
     {
         size_t len = sizeof(*message) + message->data_len;
         
         VERB("Message found: TA %s, SID %d flags %x;"
              " waiting for SID %d", 
-             message->ta, message->sid, message->flags, session);
+             message->ta, message->sid, message->flags, message->sid);
 
         if (len > *recv_size)
         {
@@ -430,9 +449,9 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
 
         VERB("Message cought: TA %s, SID %d flags %x;"
              " waiting for SID %d", 
-             message->ta, message->sid, message->flags, session);
+             message->ta, message->sid, message->flags, message->sid);
 
-        if (rcf_message_match(message, opcode, session) == 0)
+        if (match_cb(message, opaque) == 0)
             break; 
 
         if (msg_buffer_insert(rcf_msg_queue, message) != 0)
@@ -470,17 +489,22 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
                           rcf_msg *recv_buf, size_t *recv_size,
                           rcf_msg **p_answer)
 { 
-    te_errno    rc;
-    int         sid;
-    rcf_op_t    opcode;
-    rcf_msg    *message;
+    te_errno                    rc;
+    char                        ta[RCF_MAX_NAME];
+    rcf_msg                    *message;
+    rcf_message_match_simple    match_data;
+
 
     if (ctx == NULL || ctx->ipc_handle == NULL ||
         send_buf == NULL || recv_buf == NULL || recv_size == NULL)
         return TE_RC(TE_RCF_API, TE_EWRONGPTR);
 
-    sid = send_buf->sid;
-    opcode = send_buf->opcode;
+    /* The same memory may be used for send_buf and recv_buf */
+    strcpy(ta, send_buf->ta);
+    match_data.ta_name = ta;
+    match_data.sid = send_buf->sid;
+    match_data.opcode = send_buf->opcode;
+
     send_buf->seqno = ctx->seqno++;
 
     INFO("%s: send request %u:%d:'%s'", ipc_client_name(ctx->ipc_handle),
@@ -500,7 +524,7 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
 
     message = (p_answer != NULL && *p_answer != NULL) ? *p_answer 
                                                       : recv_buf;
-    if (rcf_message_match(recv_buf, opcode, sid) == 0)
+    if (rcf_message_match(recv_buf, &match_data) == 0)
         return 0;
         
     if (msg_buffer_insert(&ctx->msg_buf_head, message) != 0)
@@ -510,7 +534,8 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
         free(message);
             
     return wait_rcf_ipc_message(ctx->ipc_handle, &ctx->msg_buf_head,
-                                opcode, sid, recv_buf, recv_size, p_answer);
+                                rcf_message_match, &match_data,
+                                recv_buf, recv_size, p_answer);
 }
 
 #ifndef PTHREAD_SETSPECIFIC_BUG
@@ -2182,9 +2207,10 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
                  rcf_pkt_handler handler, void *user_param, 
                  unsigned int *num, int opcode)
 {
-    te_errno      rc;
-    rcf_msg       msg;
-    size_t        anslen = sizeof(msg);
+    te_errno                    rc;
+    rcf_msg                     msg;
+    size_t                      anslen = sizeof(msg);
+    rcf_message_match_simple    match_data = { opcode, ta_name, session };
     
     RCF_API_INIT;
     
@@ -2220,8 +2246,8 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         anslen = sizeof(msg);
         if ((rc = wait_rcf_ipc_message(ipc_handle, 
                                        &(ctx_handle->msg_buf_head),
-                                       opcode, session, &msg, 
-                                       &anslen, NULL)) != 0)
+                                       rcf_message_match, &match_data,
+                                       &msg, &anslen, NULL)) != 0)
         {
             ERROR("%s: IPC receive answer fails, rc %r", 
                   __FUNCTION__, rc);
@@ -2349,10 +2375,12 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
                    const char *templ, rcf_pkt_handler handler, 
                    void *user_param, unsigned int timeout, int *error)
 {
-    rcf_msg       msg;
-    size_t        anslen = sizeof(msg);
-    int           fd;
-    te_errno      rc;
+    rcf_msg                     msg;
+    size_t                      anslen = sizeof(msg);
+    int                         fd;
+    te_errno                    rc;
+    rcf_message_match_simple    match_data = { RCFOP_TRSEND_RECV,
+                                               ta_name, session };
     
     RCF_API_INIT;
 
@@ -2404,7 +2432,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
         anslen = sizeof(msg);
         if ((rc = wait_rcf_ipc_message(ipc_handle, 
                                        &(ctx_handle->msg_buf_head),
-                                       RCFOP_TRSEND_RECV, session,
+                                       rcf_message_match, &match_data,
                                        &msg, &anslen, NULL)) != 0)
         {
             return rc;
@@ -2419,6 +2447,285 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     
     return 0;
 }
+
+/**
+ * Send poll request to CSAP located on TA using specified RCF session
+ * ID.
+ *
+ * @param ta_name       Test Agent name
+ * @param session       RCF session
+ * @param csap_id       CSAP handle
+ * @param timeout       Timeout of the poll request (in milliseconds)
+ * @param poll_id       Location for poll request ID (may be NULL, iff
+ *                      timeout is equal to zero)
+ *
+ * @return Status code.
+ */
+static te_errno 
+rcf_ta_trpoll_start(const char *ta_name, int session,
+                    csap_handle_t csap_id, unsigned int timeout,
+                    unsigned int *poll_id)
+{
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
+
+    RCF_API_INIT;
+
+    if (BAD_TA)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    if ((poll_id == NULL) && (timeout > 0))
+    {
+        ERROR("%s(): Location for poll ID may be NULL, iff timeout is "
+              "zero", __FUNCTION__);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+    }
+
+    memset((char *)&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_TRPOLL;
+    strcpy(msg.ta, ta_name);
+    msg.sid = session;
+    msg.handle = csap_id;
+    msg.timeout = timeout;
+    
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Start poll operation on the CSAP %d (%s:%d) with timeout "
+            "%u ms", csap_id, ta_name, session, timeout);
+
+    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
+                                   &msg, &anslen, NULL);
+    if (rc != 0)
+        return rc;
+    
+    if (msg.flags & INTERMEDIATE_ANSWER)
+    {
+        assert(poll_id != NULL);
+        *poll_id = msg.intparm;
+    }
+    
+    return msg.error;
+}
+
+/**
+ * Cancel poll request to CSAP located on TA using specified RCF session
+ * ID.
+ *
+ * @param ta_name       Test Agent name
+ * @param session       RCF session
+ * @param csap_id       CSAP handle
+ * @param poll_id       Poll request ID returned by rcf_ta_trpoll_start()
+ *
+ * @return Status code.
+ */
+static te_errno 
+rcf_ta_trpoll_cancel(const char *ta_name, int session,
+                     csap_handle_t csap_id, unsigned int poll_id)
+{
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
+
+    RCF_API_INIT;
+
+    if (BAD_TA)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    if (poll_id == 0)
+    {
+        ERROR("%s(): Poll ID cannot be 0", __FUNCTION__);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+    }
+
+    memset((char *)&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_TRPOLL_CANCEL;
+    strcpy(msg.ta, ta_name);
+    msg.sid = session;
+    msg.handle = csap_id;
+    msg.intparm = poll_id;
+
+    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
+                                   &msg, &anslen, NULL);
+    if (rc != 0)
+        return rc;
+
+    rc = msg.error;
+
+    LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
+            "Canceled poll operation #%u on the CSAP %d (%s:%d): %r",
+            poll_id, csap_id, ta_name, session, rc);
+ 
+    return rc;
+}
+
+
+/** Traffic poll operation internal data for each request. */
+typedef struct rcf_trpoll_int {
+    unsigned int    poll_id;    /**< Poll request ID returned from TA */
+    int             start_sid;  /**< RCF session allocated for start */
+    int             cancel_sid; /**< RCF session allocated for cancel */
+} rcf_trpoll_int;
+
+/** Opaque data of the rcf_message_match_poll callback. */
+typedef struct rcf_message_match_poll_data {
+    unsigned int     n_csaps;   /**< Number of CSAPs */
+    rcf_trpoll_csap *csaps;     /**< Request data */
+    rcf_trpoll_int  *internal;  /**< Poll internal data */
+} rcf_message_match_poll_data;
+
+/**
+ */
+static int
+rcf_message_match_poll(rcf_msg *msg, void *opaque)
+{
+    rcf_message_match_poll_data *data = opaque;
+    unsigned int                 i;
+    rcf_message_match_simple     match_data;
+
+    assert(msg != NULL);
+    assert(data != NULL);
+
+    match_data.opcode = RCFOP_TRPOLL;
+    for (i = 0; i < data->n_csaps; ++i)
+    {
+        if (data->internal[i].poll_id == 0)
+            continue;
+
+        match_data.ta_name = data->csaps[i].ta;
+        match_data.sid = data->internal[i].start_sid;
+        if (rcf_message_match(msg, &match_data) == 0)
+        {
+            data->csaps[i].status = msg->error;
+            data->internal[i].poll_id = 0;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/* See the description in rcf_api.h */
+te_errno 
+rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
+           unsigned int timeout)
+{
+    rcf_message_match_poll_data poll_match_data;
+
+    unsigned int    i;
+    rcf_trpoll_int *data;
+    te_bool         cancel;
+    te_errno        rc;
+    unsigned int    n_active = 0;
+    rcf_msg         msg;
+    size_t          anslen;
+
+    RCF_API_INIT;
+
+    if (n_csaps == 0)
+    {
+        ERROR("%s(): No CSAPs to be polled");
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+    }
+    if (csaps == NULL)
+    {
+        ERROR("%s(): Invalid pointer to array with per CSAP parameters");
+        return TE_RC(TE_RCF_API, TE_EFAULT);
+    }
+
+    data = calloc(n_csaps, sizeof(*data));
+    if (data == NULL)
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
+
+    /* Start poll operation for all CSAPs */
+    for (cancel = FALSE, i = 0; i < n_csaps; ++i)
+    {
+        if (csaps[i].csap_id == CSAP_INVALID_HANDLE)
+        {
+            csaps[i].status = TE_RC(TE_RCF_API, TE_ETADCSAPNOTEX);
+            continue;
+        }
+
+        csaps[i].status = rcf_ta_create_session(csaps[i].ta,
+                                                &data[i].start_sid);
+        if (csaps[i].status == 0)
+        {
+            csaps[i].status = rcf_ta_trpoll_start(csaps[i].ta,
+                                                  data[i].start_sid,
+                                                  csaps[i].csap_id,
+                                                  timeout,
+                                                  &data[i].poll_id);
+        }
+        if (csaps[i].status != 0)
+            cancel = TRUE;
+        else
+            n_active++;
+    }
+
+    poll_match_data.n_csaps = n_csaps;
+    poll_match_data.csaps = csaps;
+    poll_match_data.internal = data;
+
+    while (!cancel && (n_active > 0))
+    {
+        anslen = sizeof(msg);
+        rc = wait_rcf_ipc_message(ipc_handle, &(ctx_handle->msg_buf_head),
+                                  rcf_message_match_poll, &poll_match_data,
+                                  &msg, &anslen, NULL);
+        if (rc != 0)
+        {
+            cancel = TRUE;
+        }
+        else
+        {
+            n_active--;
+            cancel = (TE_RC_GET_ERROR(msg.error) != TE_ETIMEDOUT);
+        }
+    }
+
+    /* Cancel started poll operations */
+    for (i = 0; i < n_csaps; ++i)
+    {
+        if (data[i].poll_id != 0)
+        {
+            rc = rcf_ta_create_session(csaps[i].ta, &data[i].cancel_sid);
+            if (rc == 0)
+            {
+                rc = rcf_ta_trpoll_cancel(csaps[i].ta,
+                                          data[i].cancel_sid,
+                                          csaps[i].csap_id,
+                                          data[i].poll_id);
+            }
+            else
+            {
+                /* 
+                 * Failed to allocate session, can't cancel poll
+                 * request, however, it doesn't matter, since something
+                 * critical has happened.
+                 */
+            }
+            TE_RC_UPDATE(csaps[i].status, rc);
+        }
+    }
+
+    /* Pick up final replies of started and not picked up poll operations */
+    while (n_active > 0)
+    {
+        anslen = sizeof(msg);
+        rc = wait_rcf_ipc_message(ipc_handle, &(ctx_handle->msg_buf_head),
+                                  rcf_message_match_poll, &poll_match_data,
+                                  &msg, &anslen, NULL);
+        if (rc == 0)
+        {
+            n_active--;
+        }
+        else
+        {
+            /* TODO: Try to understand usefull actions here */
+        }
+    }
+
+    return 0;
+}
+
 
 /**
  * Auxiliary function to check and code routine of task

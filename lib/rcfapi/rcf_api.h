@@ -804,9 +804,6 @@ extern te_errno rcf_ta_trsend_recv(const char      *ta_name,
 /** CSAP parameters to be used for polling of many CSAPs. */
 typedef struct rcf_trpoll_csap {
     const char     *ta;         /**< Test Agent name */
-    int             sid;        /**< TA session (different IDs have to
-                                     be used when many CSAP are polled
-                                     on one TA) */
     csap_handle_t   csap_id;    /**< CSAP handle */
     te_errno        status;     /**< Returned status of the CSAP */
 } rcf_trpoll_csap;
