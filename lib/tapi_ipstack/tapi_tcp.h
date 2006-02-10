@@ -59,7 +59,7 @@ typedef uint32_t tapi_tcp_pos_t;
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param loc_addr      Local IP address in network order (or NULL)
+ * @param loc_addr      Local IP address in network order
  * @param loc_port      Local TCP port in network byte order 
  * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
  *
@@ -74,8 +74,8 @@ extern int tapi_tcp_server_csap_create(const char *ta_name, int sid,
  *
  * @param ta_name       Test Agent name
  * @param sid           RCF SID
- * @param loc_addr      Local IP address in network order (or NULL)
- * @param rem_addr      Remote IP address in network order (or NULL)
+ * @param loc_addr      Local IP address in network order
+ * @param rem_addr      Remote IP address in network order
  * @param loc_port      Local TCP port in network byte order 
  * @param rem_port      Remote TCP port in network byte order 
  * @param tcp_csap      Location for the IPv4 CSAP handle (OUT)
