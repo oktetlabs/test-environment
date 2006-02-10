@@ -49,6 +49,8 @@
 
 #include "tapi_test.h"
 
+#include "asn_usr.h"
+#include "ndn.h"
 #include "tapi_sockaddr.h"
 #include "tapi_env.h"
 #include "tapi_tcp.h"
@@ -71,6 +73,32 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, 
                                          htonl(INADDR_ANY), port,
                                          &tcp_srv_csap));
+#if 0
+    CHECK_RC(tapi_tcp_server_recv(iut_host->ta, 0, tcp_srv_csap,
+                                  1000000, &iut_s));
+#else
+    {
+        asn_value *pattern = NULL;
+
+        int rc = 0, syms, num;
+
+        rc = asn_parse_value_text("{ { pdus { socket:{} } } }",
+                                  ndn_traffic_pattern, &pattern, &syms);
+        if (rc != 0)
+        {
+            TEST_FAIL("%s(): parse ASN csap_spec failed %X, sym %d", 
+                      __FUNCTION__, rc, syms);
+            return rc;
+        }
+
+        rc = tapi_tad_trrecv_start(iut_host->ta, 0, tcp_srv_csap,
+                                   pattern, 2000, 1, RCF_TRRECV_PACKETS);
+        if (rc != 0)
+        {
+            TEST_FAIL("%s(): trrecv_start failed %r", __FUNCTION__, rc);
+        }
+    }
+#endif
 
     csapd.ta = iut_host->ta;
     csapd.csap_id = tcp_srv_csap;
