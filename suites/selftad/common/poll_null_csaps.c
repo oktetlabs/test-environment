@@ -24,22 +24,21 @@
  * $Id: example.c 18619 2005-09-22 16:47:08Z artem $
  */
 
-/** @page common-poll_zero_csaps Call traffic poll operation with zero CSAPs
+/** @page common-poll_null_csaps Call traffic poll operation with NULL CSAPs pointer and positive number of CSAPs
  *
- * @objective Check that @b rcf_trpoll() returns @c TE_EINVAL, if it is
- *            called zero number of CSAPs.
- *
- * @param csaps_null    Should @a csaps pointer be @c NULL
+ * @objective Check that @b rcf_trpoll() returns @c TE_EFAULT, if it is
+ *            called with positive number of CSAPs and @c NULL @a csaps
+ *            pointer.
  *
  * @par Scenario:
  * 
- * -# Call @b rcf_trpoll( @c NULL or @c not-NULL, @c 0, @c 0 ).
- *    Check that @c TE_EINVAL is returned.
+ * -# Call @b rcf_trpoll( @c NULL, @c 1, @c 0 ).
+ *    Check that @c TE_EFAULT is returned.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
-#define TE_TEST_NAME    "common/poll_zero_csaps"
+#define TE_TEST_NAME    "common/poll_null_csaps"
 
 #include "te_config.h"
 
@@ -49,17 +48,13 @@
 int
 main(int argc, char *argv[])
 {
-    rcf_trpoll_csap     csaps = { NULL, CSAP_INVALID_HANDLE, 0 };
-    te_bool             csaps_null;
-
     TEST_START;
-    TEST_GET_BOOL_PARAM(csaps_null);
 
-    rc = rcf_trpoll(csaps_null ? NULL : &csaps, 0, 0);
-    if (TE_RC_GET_ERROR(rc) != TE_EINVAL)
+    rc = rcf_trpoll(NULL, 1, 0);
+    if (TE_RC_GET_ERROR(rc) != TE_EFAULT)
     {
-        TEST_FAIL("rcf_trpoll(%sNULL, 0, 0) returned %r instead of %r",
-                  csaps_null ? "" : "not-", rc, TE_EINVAL);
+        TEST_FAIL("rcf_trpoll(NULL, 1, 0) returned %r instead of %r",
+                  rc, TE_EFAULT);
     }
 
     TEST_SUCCESS;

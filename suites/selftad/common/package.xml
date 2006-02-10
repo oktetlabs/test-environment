@@ -6,6 +6,7 @@
     <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
 
     <session>
+
         <run>
             <script name="poll_zero_csaps"/>
             <arg name="csaps_null" type="boolean">
@@ -13,6 +14,11 @@
                 <value>TRUE</value>
             </arg>
         </run>
+
+        <run>
+            <script name="poll_null_csaps"/>
+        </run>
+
    </session>
 
 </package>
