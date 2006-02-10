@@ -96,6 +96,36 @@
     <object oid="/agent/radiusserver/user/accept-attrs" access="read_write"
             type="string"/>
 
+    <!-- EAP-TLS method parameters subtree
+         Name: empty
+         Value: none -->
+    <object oid="/agent/radiusserver/eap-tls" access="read_write"
+            type="none"/>
+
+    <!-- EAP-TLS-specific object - Certificate file name
+         Name: empty
+         Value: path to certificate file -->
+    <object oid="/agent/radiusserver/eap-tls/cert" access="read_write"
+            type="string"/>
+
+    <!-- EAP-TLS-specific object - Private key file name
+         Name: empty
+         Value: path to private key file -->
+    <object oid="/agent/radiusserver/eap-tls/key"
+            access="read_write" type="string"/>
+
+    <!-- EAP-TLS-specific object - Private key password
+         Name: empty
+         Value: password for the private key file -->
+    <object oid="/agent/radiusserver/eap-tls/cert"
+            access="read_write" type="string"/>
+
+    <!-- EAP-TLS-specific object - Root (CA) file name
+         Name: empty
+         Value: path to CA certificate file -->
+    <object oid="/agent/radiusserver/eap-tls/root_cert"
+            access="read_write" type="string"/>
+
             
     <!-- IEEE 802.1x Supplicant Service configuration model -->
 
@@ -114,29 +144,59 @@
     
     <!-- EAP method that is currently being used on the supplicant.
          Name: empty
-         Value: md5, tls -->
+         Value: eap-md5, eap-tls -->
     <object oid="/agent/interface/supplicant/cur_method" access="read_write"
             type="string"/>
 
     
-    <!-- Configuration subtree for supported EAP methods.
-         Name: EAP method - any value valid for "cur_method" object
+    <!-- Configuration subtrees for supported EAP methods. -->
+
+    <!-- EAP-MD5 method parameters subtree
+         Name: empty
          Value: none -->
-    <object oid="/agent/interface/supplicant/method" access="read_create"
+    <object oid="/agent/interface/supplicant/eap-md5" access="read_write"
             type="none"/>
 
-    <!-- MD5-specific object - User name
+    <!-- EAP-MD5-specific object - User name
          Name: empty
          Value: username for EAP-MD5 -->
-    <object oid="/agent/interface/supplicant/method/username"
+    <object oid="/agent/interface/supplicant/eap-md5/username"
             access="read_write" type="string"/>
     
-    <!-- MD5-specific object - User password
+    <!-- EAP-MD5-specific object - User password
          Name: empty
          Value: password for EAP-MD5 -->
-    <object oid="/agent/interface/supplicant/method/passwd"
+    <object oid="/agent/interface/supplicant/eap-md5/passwd"
             access="read_write" type="string"/>
 
-    <!-- @todo Write objects for TLS -->
+    <!-- EAP-TLS method parameters subtree
+         Name: empty
+         Value: none -->
+    <object oid="/agent/interface/supplicant/eap-tls" access="read_write"
+            type="none"/>
+
+    <!-- EAP-TLS-specific object - Certificate file name
+         Name: empty
+         Value: path to certificate file -->
+    <object oid="/agent/interface/supplicant/eap-tls/cert"
+            access="read_write" type="string"/>
+
+    <!-- EAP-TLS-specific object - Private key file name
+         Name: empty
+         Value: path to private key file -->
+    <object oid="/agent/interface/supplicant/eap-tls/key"
+            access="read_write" type="string"/>
+
+    <!-- EAP-TLS-specific object - Private key password
+         Name: empty
+         Value: password for the private key file -->
+    <object oid="/agent/interface/supplicant/eap-tls/cert"
+            access="read_write" type="string"/>
+
+    <!-- EAP-TLS-specific object - Root (CA) file name
+         Name: empty
+         Value: path to CA certificate file -->
+    <object oid="/agent/interface/supplicant/eap-tls/root_cert"
+            access="read_write" type="string"/>
 
 </backup>
