@@ -20,7 +20,11 @@
         </run>
 
         <run>
-            <script name="poll_one_invalid"/>
+            <script name="poll_invalid_only"/>
+            <arg name="n_csaps">
+                <value>1</value>
+                <value>3</value>
+            </arg>
             <arg name="ta_null" type="boolean">
                 <value>FALSE</value>
                 <value>TRUE</value>
