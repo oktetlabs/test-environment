@@ -99,6 +99,7 @@ AC_DEFINE_UNQUOTED(SUITE_SRCDIR, "$srcdir", [The suite source directory])
 
 AC_CONFIG_FILES([\
 Makefile \
+common/Makefile \
 atm/Makefile \
 eth/Makefile \
 ipstack/Makefile \

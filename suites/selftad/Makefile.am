@@ -1,7 +1,7 @@
 
 #EXTRA_DIST = mainpage.dox
 
-SUBDIRS = atm eth ipstack dhcp snmp cli iscsi
+SUBDIRS = common atm eth ipstack dhcp snmp cli iscsi
 
 tetestdir=$(prefix)/@PACKAGE_NAME@/$(subdir)
 
