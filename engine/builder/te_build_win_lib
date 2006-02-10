@@ -58,6 +58,10 @@ if test -z "$BUILD_HOST" ; then
     exit 0
 fi
 
+if test -n "$KEY" ; then
+    KEY="-i $KEY "
+fi    
+
 if ! ssh $KEY $BUILD_HOST ls >/dev/null; then
     echo "Warning: build host $BUILD_HOST is unreachable; \
           library $LIBNAME for $PLATFORM platform is not (re-)built"
