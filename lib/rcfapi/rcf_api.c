@@ -2622,12 +2622,13 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
 
     if (n_csaps == 0)
     {
-        ERROR("%s(): No CSAPs to be polled");
+        ERROR("%s(): No CSAPs to be polled", __FUNCTION__);
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
     if (csaps == NULL)
     {
-        ERROR("%s(): Invalid pointer to array with per CSAP parameters");
+        ERROR("%s(): Invalid pointer to array with per CSAP parameters",
+              __FUNCTION__);
         return TE_RC(TE_RCF_API, TE_EFAULT);
     }
 
