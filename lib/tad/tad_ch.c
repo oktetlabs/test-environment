@@ -1057,8 +1057,10 @@ rcf_ch_trpoll_cancel(struct rcf_comm_connection *rcfc,
 
     return -1;
 #else
-    csap_p      csap;
-    te_errno    rc;
+    csap_p              csap;
+    tad_poll_context   *p;
+    te_errno            rc = TE_ENOENT;
+    int                 ret;
 
     check_init(); 
 
@@ -1069,8 +1071,26 @@ rcf_ch_trpoll_cancel(struct rcf_comm_connection *rcfc,
     }
 
     CSAP_LOCK(csap);
+    for (p = csap->poll_ops.lh_first; p != NULL; p = p->links.le_next)
+    {
+        if (p->id == poll_id)
+        {
+            ret = pthread_cancel(p->thread);
+            if (ret != 0)
+            {
+                /* FIXME: */
+                rc = te_rc_os2te(errno);
+            }
+            else
+            {
+                rc = 0;
+            }
+            break;
+        }
+    }
     CSAP_UNLOCK(csap);
 
+    SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
     return 0;
 
 #endif

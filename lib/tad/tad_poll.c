@@ -97,7 +97,7 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
     context->csap = csap;
     context->timeout = timeout;
     /* Status to be returned on cancellation */
-    context->status = TE_RC(TE_TAD_CH, TE_ETIMEDOUT);
+    context->status = TE_RC(TE_TAD_CH, TE_ECANCELED);
 
     CSAP_LOCK(csap);
 
