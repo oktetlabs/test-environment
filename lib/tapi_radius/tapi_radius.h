@@ -400,8 +400,8 @@ extern void tapi_radius_attr_list_init(tapi_radius_attr_list_t *list);
  * @return Zero on success or error code.
  */
 
-extern int tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
-                                      const tapi_radius_attr_t *attr);
+extern te_errno tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
+                                          const tapi_radius_attr_t *attr);
 
 /**
  * Create RADIUS attribute by name and value and push it to the end
@@ -417,8 +417,8 @@ extern int tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
-                                            const char *name, ...);
+extern te_errno tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
+                                                 const char *name, ...);
 
 /**
  * Free memory allocated for attribute list
@@ -435,8 +435,8 @@ extern void tapi_radius_attr_list_free(tapi_radius_attr_list_t *list);
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
-                                      const tapi_radius_attr_list_t *src);
+extern te_errno tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
+                                           const tapi_radius_attr_list_t *src);
 
 /**
  * Find specified attribute in the attribute list
@@ -460,8 +460,9 @@ extern const tapi_radius_attr_t
  *
  * @return Zero on success or result code.
  */
-extern int tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
-                                           char **str);
+extern te_errno
+       tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
+                                       char **str);
 
 /**
  * Parse binary RADIUS packet payload to C structure
@@ -472,8 +473,8 @@ extern int tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
-                                    tapi_radius_packet_t *packet);
+extern te_errno tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
+                                         tapi_radius_packet_t *packet);
 
 
 /**
@@ -503,10 +504,11 @@ extern tapi_tad_trrecv_cb_data *tapi_radius_trrecv_cb_data(
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_csap_create(const char *ta, int sid,
-                                   const char *device,
-                                   const in_addr_t net_addr, uint16_t port,
-                                   csap_handle_t *csap);
+extern te_errno tapi_radius_csap_create(const char *ta, int sid,
+                                        const char *device,
+                                        const in_addr_t net_addr,
+                                        uint16_t port,
+                                        csap_handle_t *csap);
 
 /*
  * Interface to configure RADIUS Server:
@@ -554,7 +556,7 @@ typedef struct tapi_radius_clnt_s {
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_serv_enable(const char *ta_name);
+extern te_errno tapi_radius_serv_enable(const char *ta_name);
 
 /**
  * Disables RADIUS Server on the particular Agent.
@@ -563,7 +565,7 @@ extern int tapi_radius_serv_enable(const char *ta_name);
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_serv_disable(const char *ta_name);
+extern te_errno tapi_radius_serv_disable(const char *ta_name);
 
 /**
  * Update RADIUS Server Configuration.
@@ -573,8 +575,8 @@ extern int tapi_radius_serv_disable(const char *ta_name);
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_serv_set(const char *ta_name,
-                                const tapi_radius_serv_t *cfg);
+extern te_errno tapi_radius_serv_set(const char *ta_name,
+                                     const tapi_radius_serv_t *cfg);
 
 /**
  * Add a new RADIUS Client record on RADIUS Server.
@@ -586,8 +588,8 @@ extern int tapi_radius_serv_set(const char *ta_name,
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_serv_add_client(const char *ta_name,
-                                       const tapi_radius_clnt_t *cfg);
+extern te_errno tapi_radius_serv_add_client(const char *ta_name,
+                                            const tapi_radius_clnt_t *cfg);
 
 /**
  * Delete RADIUS Client record from RADIUS Server.
@@ -597,8 +599,8 @@ extern int tapi_radius_serv_add_client(const char *ta_name,
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_serv_del_client(const char *ta_name,
-                                       const struct in_addr *net_addr);
+extern te_errno tapi_radius_serv_del_client(const char *ta_name,
+                                            const struct in_addr *net_addr);
 
 
 /** Enumeration for user attribute list */
@@ -626,7 +628,7 @@ typedef enum {
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_serv_add_user(
+extern te_errno tapi_radius_serv_add_user(
                             const char *ta_name,
                             const char *user_name,
                             te_bool acpt_user,
@@ -645,7 +647,7 @@ extern int tapi_radius_serv_add_user(
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_serv_set_user_attr(
+extern te_errno tapi_radius_serv_set_user_attr(
                             const char *ta_name,
                             const char *user_name,
                             tapi_radius_usr_list_t list_type,
@@ -659,14 +661,21 @@ extern int tapi_radius_serv_set_user_attr(
  *
  * @return Zero on success or error code.
  */
-extern int tapi_radius_serv_del_user(const char *ta_name,
-                                     const char *user_name);
+extern te_errno tapi_radius_serv_del_user(const char *ta_name,
+                                          const char *user_name);
 
-/** Authentication methods supported by supplicant */
+/** Key management types supported by supplicant */
 typedef enum {
-    TAPI_SUPP_AUTH_MD5, /**< EAP-MD5 authentication */
-    TAPI_SUPP_AUTH_TLS, /**< EAP-TLS authentication */
-} tapi_supp_auth_method_t;
+    TAPI_AUTH_KEY_PSK,      /**< Pre-shared key authentication */
+    TAPI_AUTH_KEY_EAP_MD5,  /**< EAP-MD5 authentication */
+    TAPI_AUTH_KEY_EAP_TLS,  /**< EAP-TLS authentication */
+} tapi_auth_key_mgmt_t;
+
+typedef enum {
+    TAPI_AUTH_PROTO_PLAIN,  /**< WPA disabled */
+    TAPI_AUTH_PROTO_WPA,    /**< WPA */
+    TAPI_AUTH_PROTO_RSN     /**< WPA2 */
+} tapi_auth_proto_t;
 
 /** Maximum allowed length for user name */
 #define TAPI_SUPP_USER_MAX_LEN   24
@@ -674,11 +683,58 @@ typedef enum {
 /** Maximum allowed length for user's password */
 #define TAPI_SUPP_PASSWD_MAX_LEN 24
 
-/** Configuration parameters for EAP-MD5 authentication */
-typedef struct tapi_supp_auth_md5_info_s {
-    char user[TAPI_SUPP_USER_MAX_LEN]; /**< User name */
-    char passwd[TAPI_SUPP_PASSWD_MAX_LEN]; /**< User's password */
-} tapi_supp_auth_md5_info_t;
+/** Maximum allowed length of file path */
+#define TAPI_SUPP_PATH_MAX       256
+
+/** TLS private key and certificate info */
+typedef struct tapi_auth_tls_s {
+    char *cert_fname;                   /**< Certificate file name */
+    char *key_fname;                    /**< Private key file name */
+    char *key_passwd;                   /**< Password to private key file */
+} tapi_auth_tls_t;
+
+/** Configuration parameters for EAP authentication */
+typedef struct tapi_auth_info_s {
+    char                    *identity;  /**< EAP identity */
+    tapi_auth_key_mgmt_t     key_mgmt;  /**< Key management type */
+    te_bool                  valid;     /**< Whether the user allowed */
+    union {
+        struct {
+            char *username;             /**< User name */
+            char *passwd;               /**< User's password */
+        } md5;                          /**< EAP-MD5 parameters */
+        struct {
+            tapi_auth_tls_t server;     /**< Server TLS info */
+            tapi_auth_tls_t client;     /**< Client TLS info */
+            char *root_cert_fname;      /**< CA certificate file name */
+        } tls;                          /**< EAP-TLS parameters */
+    };
+} tapi_auth_info_t;
+
+extern te_errno tapi_radius_add_auth(const char *ta_name,
+                                     const tapi_auth_info_t *auth,
+                                     const tapi_radius_attr_list_t *acpt_attrs,
+                                     const tapi_radius_attr_list_t *chlg_attrs);
+
+static inline te_errno
+tapi_radius_del_auth(const char *ta_name, const tapi_auth_info_t *auth)
+{
+    if (auth == NULL)
+        return 0;
+
+    return tapi_radius_serv_del_user(ta_name, auth->identity);
+}
+
+static inline te_errno
+tapi_radius_disable_auth(const char *ta_name,
+                         tapi_auth_info_t *auth)
+{
+    assert(auth != NULL);
+    auth->valid = FALSE;
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+                                "/agent:%s/radiusserver:/user:%s",
+                                ta_name, auth->identity);
+}
 
 /**
  * Enable/disable supplicant at specified interface
@@ -697,37 +753,22 @@ tapi_supp_set(const char *ta_name, const char *if_name, int value)
                                 ta_name, if_name);
 }
 
+extern te_errno tapi_supp_set_proto(const char *ta_name,
+                                    const char *if_name,
+                                    tapi_auth_proto_t proto_id);
 /**
- * Configure supplicant to use EAP-MD5 authentication and set
- * MD5-specific parameters on the Agent.
+ * Configure supplicant to use EAP authentication and set
+ * method-specific parameters on the Agent.
  *
  * @param ta_name  Test Agent name where supplicant reside
  * @param if_name  Interface name
- * @param info     MD5-specific information
+ * @param info     EAP method-specific information
  *
  * @return Status of the operation
  */
-extern te_errno tapi_supp_set_md5(const char *ta_name,
-                                  const char *if_name,
-                                  tapi_supp_auth_md5_info_t *info);
-
-/**
- * Configure supplicant to use specific EAP identity string.
- *
- * @param ta_name  Test Agent name where supplicant reside
- * @param if_name  Interface name
- * @param identity EAP identity string
- *
- * @return Status of the operation
- */
-static inline te_errno
-tapi_supp_set_identity(const char *ta_name, const char *if_name,
-                       const char *identity)
-{
-    return cfg_set_instance_fmt(CFG_VAL(STRING, identity),
-                                "/agent:%s/interface:%s/supplicant:/identity:",
-                                ta_name, if_name);
-}
+extern te_errno tapi_supp_set_auth(const char *ta_name,
+                                   const char *if_name,
+                                   tapi_auth_info_t *info);
 
 /**
  * Reset supplicant parameters to default values

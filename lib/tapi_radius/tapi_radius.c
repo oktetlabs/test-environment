@@ -206,7 +206,7 @@ tapi_radius_dict_lookup_by_name(const char *name)
     return NULL;
 }
 
-int
+te_errno
 tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
                            const tapi_radius_attr_t *attr)
 {
@@ -226,14 +226,14 @@ tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
 }
 
 /* See description in tapi_radius.h */
-int
+te_errno
 tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
                                  const char *name, ...)
 {
     const tapi_radius_attr_info_t  *info;
     tapi_radius_attr_t              attr;
     va_list                         va;
-    int                             rc = 0;
+    te_errno                        rc = 0;
 
     info = tapi_radius_dict_lookup_by_name(name);
     if (info == NULL)
@@ -329,7 +329,7 @@ tapi_radius_attr_list_free(tapi_radius_attr_list_t *list)
     list->attr = NULL;
 }
 
-int
+te_errno
 tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
                                 char **str)
 {
@@ -483,7 +483,7 @@ tapi_radius_attr_init(tapi_radius_attr_t *attr,
 }
 #endif
 
-int
+te_errno
 tapi_radius_attr_copy(tapi_radius_attr_t *dst,
                       const tapi_radius_attr_t *src)
 {
@@ -501,12 +501,12 @@ tapi_radius_attr_copy(tapi_radius_attr_t *dst,
     return 0;
 }
 
-int
+te_errno
 tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
                            const tapi_radius_attr_list_t *src)
 {
-    int    rc;
-    size_t i;
+    te_errno rc;
+    size_t   i;
 
     memcpy(dst, src, sizeof(*dst));
     dst->attr = (tapi_radius_attr_t *)malloc(src->len * sizeof(src->attr[0]));
@@ -524,7 +524,7 @@ tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
 }
 
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
                          tapi_radius_packet_t *packet)
 {
@@ -629,7 +629,7 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
 }
 
 
-int
+te_errno
 tapi_radius_csap_create(const char *ta, int sid, const char *device,
                         const in_addr_t net_addr, uint16_t port,
                         csap_handle_t *csap)
@@ -689,7 +689,7 @@ tapi_radius_trrecv_cb_data(radius_callback  user_callback,
 
 
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_radius_serv_enable(const char *ta_name)
 {
     assert(ta_name != NULL);
@@ -699,7 +699,7 @@ tapi_radius_serv_enable(const char *ta_name)
 }
 
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_radius_serv_disable(const char *ta_name)
 {
     assert(ta_name != NULL);
@@ -709,7 +709,7 @@ tapi_radius_serv_disable(const char *ta_name)
 }
 
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_radius_serv_set(const char *ta_name, const tapi_radius_serv_t *cfg)
 {
     struct sockaddr_in addr;
@@ -722,7 +722,7 @@ tapi_radius_serv_set(const char *ta_name, const tapi_radius_serv_t *cfg)
 
 #define RADIUS_CFG_SET_VALUE(sub_oid_, cfg_value_, err_msg_)        \
     do {                                                            \
-        int rc;                                                     \
+        te_errno rc;                                                     \
                                                                     \
         rc = cfg_set_instance_fmt(cfg_value_,                       \
                  "/agent:%s/radiusserver:/" sub_oid_ ":", ta_name); \
@@ -747,11 +747,11 @@ tapi_radius_serv_set(const char *ta_name, const tapi_radius_serv_t *cfg)
 }
 
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_radius_serv_add_client(const char *ta_name,
                             const tapi_radius_clnt_t *cfg)
 {
-    int        rc;
+    te_errno   rc;
     cfg_handle handle;
     char       clnt_name[INET_ADDRSTRLEN];
 
@@ -788,12 +788,12 @@ tapi_radius_serv_add_client(const char *ta_name,
 }
 
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_radius_serv_del_client(const char *ta_name,
                             const struct in_addr *net_addr)
 {
-    int  rc;
-    char clnt_name[INET_ADDRSTRLEN];
+    te_errno rc;
+    char     clnt_name[INET_ADDRSTRLEN];
 
     assert(ta_name != NULL && net_addr != NULL);
 
@@ -817,7 +817,7 @@ tapi_radius_serv_del_client(const char *ta_name,
 }
 
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_radius_serv_add_user(const char *ta_name,
                           const char *user_name,
                           te_bool acpt_user,
@@ -825,7 +825,7 @@ tapi_radius_serv_add_user(const char *ta_name,
                           const tapi_radius_attr_list_t *acpt_attrs,
                           const tapi_radius_attr_list_t *chlg_attrs)
 {
-    int        rc;
+    te_errno   rc;
     cfg_handle handle;
 
     assert(ta_name != NULL && user_name != NULL);
@@ -886,7 +886,7 @@ tapi_radius_usr_list_type2str(tapi_radius_usr_list_t list_type)
 }
 
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_radius_serv_set_user_attr(const char *ta_name,
                                const char *user_name,
                                tapi_radius_usr_list_t list_type,
@@ -894,7 +894,7 @@ tapi_radius_serv_set_user_attr(const char *ta_name,
 {
     const char *cfg_name;
     char       *attr_str = NULL;
-    int         rc;
+    te_errno    rc;
 
     if (attrs != NULL)
     {
@@ -943,10 +943,10 @@ tapi_radius_serv_set_user_attr(const char *ta_name,
 }
 
 /* See the description in tapi_radius.h */
-int
+te_errno
 tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
 {
-    int rc;
+    te_errno rc;
 
     if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/radiusserver:/user:%s",
                                    ta_name, user_name)) != 0)
@@ -957,12 +957,98 @@ tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
     return rc;
 }
 
+te_errno
+tapi_radius_add_auth(const char *ta_name, const tapi_auth_info_t *auth,
+                     const tapi_radius_attr_list_t *acpt_attrs,
+                     const tapi_radius_attr_list_t *chlg_attrs)
+{
+    te_errno rc;
+    tapi_radius_attr_list_t attrs;
+    char oid[128];
+
+    snprintf(oid, sizeof(oid), "/agent:%s/radiusserver:", ta_name);
+    switch (auth->key_mgmt)
+    {
+        case TAPI_AUTH_KEY_EAP_MD5:
+            tapi_radius_attr_list_init(&attrs);
+            if ((rc = tapi_radius_attr_list_push_value(&attrs,
+                                                    "User-Password",
+                                                     auth->md5.passwd)) != 0)
+                break;
+            rc = tapi_radius_serv_add_user(ta_name,
+                                           auth->identity, auth->valid,
+                                           &attrs, acpt_attrs, chlg_attrs);
+            tapi_radius_attr_list_free(&attrs);
+            if (rc != 0)
+                break;
+            rc = cfg_set_instance_fmt(CFG_VAL(STRING, "md5"),
+                                      "%s/eap:", oid);
+            break;
+
+        case TAPI_AUTH_KEY_EAP_TLS:
+
+#define CFG_SET_PARAM(_field, _suboid) \
+    do {                                                                \
+        if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, auth->_field),   \
+                                       "%s" _suboid, oid)) != 0)        \
+            break;                                                      \
+    } while (FALSE)
+
+            CFG_SET_PARAM(tls.server.cert_fname, "/eap-tls:/cert:");
+            CFG_SET_PARAM(tls.server.key_fname, "/eap-tls:/key:");
+            CFG_SET_PARAM(tls.server.key_passwd, "/eap-tls:/key_passwd:");
+            CFG_SET_PARAM(tls.root_cert_fname, "/eap-tls:/root_cert:");
+#undef CFG_SET_PARAM
+            if ((rc = tapi_radius_serv_add_user(ta_name,
+                                           auth->identity, auth->valid,
+                                           NULL, acpt_attrs,
+                                           chlg_attrs)) != 0)
+                break;
+            rc = cfg_set_instance_fmt(CFG_VAL(STRING, "tls"),
+                                      "%s/eap:", oid);
+            break;
+
+        default:
+            ERROR("%s(): unknown key management type %d",
+                  __FUNCTION__, auth->key_mgmt);
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+            break;
+    }
+    return rc;
+}
+
 /* Supplicant related functions @todo Should not be here */
+
+te_errno
+tapi_supp_set_proto(const char *ta_name, const char *if_name,
+                    tapi_auth_proto_t proto_id)
+{
+    const char *proto;
+
+    switch (proto_id)
+    {
+        case TAPI_AUTH_PROTO_PLAIN:
+            proto = NULL;
+            break;
+        case TAPI_AUTH_PROTO_WPA:
+            proto = "WPA";
+            break;
+        case TAPI_AUTH_PROTO_RSN:
+            proto = "RSN";
+            break;
+        default:
+            ERROR("%s(): unknown protocol id '%d'", __FUNCTION__, proto_id);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    return cfg_set_instance_fmt(CFG_VAL(STRING, proto),
+                                "/agent:%s/interface:%s/supplicant:/proto:",
+                                ta_name, if_name);
+}
 
 /* See the description in tapi_radius.h */
 te_errno
-tapi_supp_set_md5(const char *ta_name, const char *if_name,
-                  tapi_supp_auth_md5_info_t *info)
+tapi_supp_set_auth(const char *ta_name, const char *if_name,
+                   tapi_auth_info_t *info)
 {
     te_errno rc;
     char     supp_oid[128];
@@ -970,21 +1056,44 @@ tapi_supp_set_md5(const char *ta_name, const char *if_name,
     snprintf(supp_oid, sizeof(supp_oid),
              "/agent:%s/interface:%s/supplicant:", ta_name, if_name);
 
-    /* Set MD5 related parameters */
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, info->user),
-                    "%s/method:eap-md5/username:", supp_oid);
-    if (rc != 0)
-        return rc;
+#define SUPP_SET_PARAM(_field, _suboid) \
+    do {                                                                \
+        if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, info->_field),   \
+                                       "%s" _suboid, supp_oid)) != 0)   \
+        return rc;                                                      \
+    } while (FALSE)
 
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, info->passwd),
-                    "%s/method:eap-md5/passwd:", supp_oid);
-    if (rc != 0)
-        return rc;
+    SUPP_SET_PARAM(identity, "/identity:");
+    switch (info->key_mgmt)
+    {
+        case TAPI_AUTH_KEY_EAP_TLS:
+            /* Set EAP-TLS related parameters */
+            SUPP_SET_PARAM(tls.client.cert_fname, "/eap-tls:/cert:");
+            SUPP_SET_PARAM(tls.client.key_fname, "/eap-tls:/key:");
+            SUPP_SET_PARAM(tls.client.key_passwd, "/eap-tls:/key_passwd:");
+            SUPP_SET_PARAM(tls.root_cert_fname, "/eap-tls:/root_cert:");
 
-    /* Now set current authentication method to MD5 */
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, "eap-md5"),
-                    "%s/cur_method:", supp_oid);
-    return rc;
+            /* Set current key management type to EAP-TLS */
+            return cfg_set_instance_fmt(CFG_VAL(STRING, "eap-tls"),
+                                        "%s/cur_method:", supp_oid);
+            break;
+
+        case TAPI_AUTH_KEY_EAP_MD5:
+            /* Set MD5 related parameters */
+            SUPP_SET_PARAM(md5.username, "/eap-md5:/username:");
+            SUPP_SET_PARAM(md5.passwd, "/eap-md5:/passwd:");
+
+            /* Now set current key management type to EAP-MD5 */
+            return cfg_set_instance_fmt(CFG_VAL(STRING, "eap-md5"),
+                                        "%s/cur_method:", supp_oid);
+            break;
+
+        default:
+            ERROR("%s(): unknown key management type %d", __FUNCTION__,
+                  info->key_mgmt);
+    }
+#undef SUPP_SET_PARAM
+    return TE_RC(TE_TAPI, TE_EINVAL);
 }
 
 te_errno
@@ -996,22 +1105,23 @@ tapi_supp_reset(const char *ta_name, const char *if_name)
     snprintf(supp_oid, sizeof(supp_oid),
              "/agent:%s/interface:%s/supplicant:", ta_name, if_name);
 
-    /* Common parameters */
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""), "%s/identity:", supp_oid);
-    if (rc != 0)
+#define SUPP_SET_EMPTY(_suboid) \
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""), "%s" _suboid, supp_oid); \
+    if (rc != 0)                                                            \
         return rc;
 
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""), "%s/cur_method:", supp_oid);
-    if (rc != 0)
-        return rc;
+    /* Common parameters */
+    SUPP_SET_EMPTY("/identity:");
+    SUPP_SET_EMPTY("/cur_method:");
 
     /* Method-specific parameters */
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""),
-                              "%s/method:eap-md5/username:", supp_oid);
-    if (rc != 0)
-        return rc;
+    SUPP_SET_EMPTY("/eap-md5:/username:");
+    SUPP_SET_EMPTY("/eap-md5:/passwd:");
+    SUPP_SET_EMPTY("/eap-tls:/cert:");
+    SUPP_SET_EMPTY("/eap-tls:/key:");
+    SUPP_SET_EMPTY("/eap-tls:/key_passwd:");
+    SUPP_SET_EMPTY("/eap-tls:/root_cert:");
+#undef SUPP_SET_EMPTY
 
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""),
-                              "%s/method:eap-md5/passwd:", supp_oid);
     return rc;
 }
