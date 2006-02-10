@@ -1467,6 +1467,8 @@ ds_radius_user_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     user->reject = (*value == '0');
+    write_radius_users(radius_users_file);
+    radiusserver_reload();
     return 0;
 }
 
@@ -2220,7 +2222,7 @@ xsupplicant_write_config(FILE *f, const supplicant *supp)
 {
     const char template[] = 
         "network_list = all\n"
-        "default { }\n"
+        "default_netname = %s\n"
         "%s {\n"
         "  identity = \"%s\"\n"
         "  allow_types = %s\n"
@@ -2238,6 +2240,7 @@ xsupplicant_write_config(FILE *f, const supplicant *supp)
     const char *method = supp_get_param(supp, SP_METHOD);
 
     fprintf(f, template,
+            supp_get_param(supp, SP_NETWORK),
             supp_get_param(supp, SP_NETWORK),
             supp_get_param(supp, SP_IDENTITY),
             method[0] == '\0' ? "all" : method,
@@ -2750,9 +2753,7 @@ DS_SUPP_PARAM_SET(ds_supp_identity_set, SP_IDENTITY)
 DS_SUPP_PARAM_GET(ds_supp_method_get, SP_METHOD)
 DS_SUPP_PARAM_SET(ds_supp_method_set, SP_METHOD)
 DS_SUPP_PARAM_GET(ds_supp_proto_get, SP_PROTO)
-/*TODO*/
 DS_SUPP_PARAM_GET(ds_supp_proto_set, SP_PROTO)
-
 
 RCF_PCH_CFG_NODE_RW(node_ds_supp_proto, "proto",
                     NULL, &node_ds_supp_eaptls,
