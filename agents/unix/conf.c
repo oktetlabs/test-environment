@@ -4669,7 +4669,7 @@ blackhole_add(unsigned int gid, const char *oid, const char *value,
     return 0;
 #else /* !USE_NETLINK */
     UNUSED(gid);
-    UNUSED(p_oid);
+    UNUSED(oid);
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif /* USE_NETLINK */
 
@@ -4724,7 +4724,7 @@ blackhole_del(unsigned int gid, const char *oid, const char *route)
     return 0;
 #else /* !USE_NETLINK */
     UNUSED(gid);
-    UNUSED(p_oid);
+    UNUSED(oid);
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif /* USE_NETLINK */
 }
