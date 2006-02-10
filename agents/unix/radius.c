@@ -348,16 +348,11 @@ write_radius(radius_parameter *top)
 {
     FILE *outfile;
 
-    if (top->kind != RP_FILE)
-    {
-        ERROR("attempt to write a RADIUS branch that is not a file");
-        return TE_EINVAL;
-    }
-    if (!top->modified)
+    if (top->kind != RP_FILE || !top->modified)
     {
         for (top = top->children; top != NULL; top = top->next)
         { 
-            if (top->kind == RP_FILE)
+            if (top->kind == RP_FILE || top->kind == RP_SECTION)
                 write_radius(top);
         }
     }
@@ -1803,6 +1798,8 @@ DS_RADIUSSERVER_GET(ds_radiusserver_tls_root_cert_get,
                     "modules.eap.tls.CA_file")
 DS_RADIUSSERVER_SET(ds_radiusserver_tls_root_cert_set,
                     "modules.eap.tls.CA_file")
+DS_RADIUSSERVER_GET(ds_radiusserver_eap_get, "modules.eap.default_eap_type")
+DS_RADIUSSERVER_SET(ds_radiusserver_eap_set, "modules.eap.default_eap_type")
 
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_tls_cert, "cert",
                     NULL, NULL,
@@ -1825,9 +1822,13 @@ RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_tls, "eap-tls",
                     &node_ds_radiusserver_client,
                     NULL, NULL);
 
+RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_eap, "eap",
+                    NULL, &node_ds_radiusserver_tls,
+                    ds_radiusserver_eap_get,
+                    ds_radiusserver_eap_set);
 
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_net_addr, "net_addr",
-                    NULL, &node_ds_radiusserver_tls,
+                    NULL, &node_ds_radiusserver_eap,
                     ds_radiusserver_netaddr_get, 
                     ds_radiusserver_netaddr_set);
 RCF_PCH_CFG_NODE_RW(node_ds_radiusserver_acct_port, "acct_port",
