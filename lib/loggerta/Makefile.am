@@ -31,7 +31,7 @@ libloggerta_a_SOURCES = logger_ta.c logfork.c
 endif
 
 install-exec-hook:
-	touch -c -r libloggerta.* ${prefix}/lib/libloggerta.*
+	touch -c -r libloggerta.* $(DESTDIR)/$(libdir)/libloggerta.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
