@@ -19,6 +19,9 @@
         </prologue>
 
         <run>
+            <package name="common"/>
+        </run>
+        <run>
             <package name="atm"/>
         </run>
         <run>

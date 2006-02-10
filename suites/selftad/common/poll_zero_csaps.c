@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment
  *
- * A test example
+ * Tests on generic TAD functionality.
  * 
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -56,7 +56,7 @@ main(int argc, char *argv[])
     te_bool             csaps_null;
 
     TEST_START;
-    TE_GET_BOOL_PARAM(csaps_null);
+    TEST_GET_BOOL_PARAM(csaps_null);
 
     rc = rcf_trpoll(csaps_null ? NULL : &csaps, 0, 0);
     if (TE_RC_GET_ERROR(rc) != TE_EINVAL)

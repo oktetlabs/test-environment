@@ -11,7 +11,7 @@ AM_CFLAGS = @TE_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 
-tetest_PROGRAMS = poll_inval
+tetest_PROGRAMS = poll_zero_csaps
 
 LDADD = -ltapi_rpc -ltapi_env -ltapi_tad -ltapi_ipstack -ltapi_atm \
 	-ltapi_arp -ltapi_eth -lndn -lasn -ltapi -lrcfrpc -lrcfapi -lrpcxdr \
