@@ -39,6 +39,15 @@
             </arg>
         </run>
 
+        <run>
+            <script name="poll_one"/>
+            <arg name="env" value="{'iut_host'{if:'iut_if'}}"/>
+            <arg name="zero_timeout" type="boolean">
+                <value>FALSE</value>
+                <value>TRUE</value>
+            </arg>
+        </run>
+
    </session>
 
 </package>
