@@ -379,6 +379,7 @@ rcf_pch_run(const char *confstr, const char *info)
     
     size_t   answer_plen = 0;
     rcf_op_t opcode = 0;
+    te_errno rc2;
     
 /**
  * Read any integer parameter from the command.
@@ -427,6 +428,17 @@ rcf_pch_run(const char *confstr, const char *info)
         goto exit;
     }
     rcf_pch_cfg_init();
+
+    rc = rcf_ch_tad_init();
+    if (TE_RC_GET_ERROR(rc) == TE_ENOSYS)
+    {
+        WARN("Traffic Application Domain operations are not supported");
+    }
+    else if (rc != 0)
+    {
+        ERROR("Traffic Application Domain initialization failed: %r", rc);
+        /* Continue, but TAD operation will fail */
+    }
 
     if ((cmd = (char *)malloc(RCF_MAX_LEN)) == NULL)
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
@@ -1144,10 +1156,17 @@ rcf_pch_run(const char *confstr, const char *info)
 
 communication_problem:
     ERROR("Fatal communication error %r", rc);
-    PRINT("Fatal communication error 0x%X", rc);
-    goto exit;
+    PRINT("Fatal communication error %s", te_rc_err2str(rc));
 
 exit:
+    rc2 = rcf_ch_tad_shutdown();
+    if (rc2 != 0)
+    {
+        ERROR("Traffic Application Domain shutdown failed: %r", rc2);
+        PRINT("Traffic Application Domain shutdown failed: %s",
+              te_rc_err2str(rc2));
+        TE_RC_UPDATE(rc, rc2);
+    }
     rcf_ch_conf_release();
     rcf_pch_rpc_shutdown();
     if (opcode == RCFOP_SHUTDOWN &&

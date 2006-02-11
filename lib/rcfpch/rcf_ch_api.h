@@ -39,6 +39,7 @@
 
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_errno.h"
 #include "tad_common.h"
 #include "rcf_common.h"
 #include "rcf_internal.h"
@@ -283,6 +284,22 @@ extern int rcf_ch_file(struct rcf_comm_connection *handle,
                        char *cbuf, size_t buflen, size_t answer_plen,
                        const uint8_t *ba, size_t cmdlen,
                        rcf_op_t op, const char *filename);
+
+
+/**
+ * Initialize RCF TAD (Traffic Application Domain).
+ *
+ * @return Status code.
+ * @retval TE_ENOSYS    Traffic Application Domain is not supported
+ */
+extern te_errno rcf_ch_tad_init(void);
+
+/**
+ * Shutdown RCF TAD (Traffic Application Domain).
+ *
+ * @return Status code.
+ */
+extern te_errno rcf_ch_tad_shutdown(void);
 
 
 /**
