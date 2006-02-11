@@ -1145,11 +1145,16 @@ rcf_ch_csap_param(struct rcf_comm_connection *rcfc,
         }
         else if (csap->state & CSAP_STATE_DONE)
         {
-#if 0
-            if (csap->last_errno)
+            te_errno    rc;
+
+            if (csap->state & CSAP_STATE_RECV)
+                rc = csap_get_recv_context(csap)->status;
+            else
+                rc = csap_get_send_context(csap)->status;
+
+            if (rc != 0)
                 status = CSAP_ERROR;
             else
-#endif
                 status = CSAP_COMPLETED;
         }
         else
