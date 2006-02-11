@@ -26,8 +26,8 @@ noinst_HEADERS = \
 
 noinst_LIBRARIES = libtad_core.a
 
-if DUMMY_TAD
-AM_CPPFLAGS += -DDUMMY_TAD
+if TAD_DUMMY
+AM_CPPFLAGS += -DTAD_DUMMY
 libtad_core_a_SOURCES = tad_ch.c
 else 
 libtad_core_a_SOURCES = \

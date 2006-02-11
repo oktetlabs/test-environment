@@ -75,7 +75,7 @@ static csap_spt_entry_t csap_spt_root = {
  *
  * @return zero on success, otherwise error code. 
  */
-int 
+te_errno
 csap_spt_init(void)
 {
     return 0;

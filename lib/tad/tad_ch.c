@@ -48,7 +48,7 @@
 #include "rcf_pch.h"
 #include "te_defs.h"
 
-#ifndef DUMMY_TAD
+#ifndef TAD_DUMMY
 
 #include "ndn.h" 
 
@@ -80,116 +80,127 @@ static struct timeval tv_zero = {0,0};
 
 #endif
 
-static int is_initialized = 0;
-
-#ifdef WITH_ATM
-extern te_errno csap_support_atm_register(void);
-#endif
-
-#ifdef WITH_ETH
-extern te_errno csap_support_eth_register(void);
-#endif
-
-#ifdef WITH_ARP
-extern te_errno csap_support_arp_register(void);
-#endif
-
-#ifdef WITH_IPSTACK
-extern te_errno csap_support_ipstack_register(void);
-#endif
-
-#ifdef WITH_FILE
-extern te_errno csap_support_file_register(void);
-#endif
-
-#ifdef WITH_SNMP
-extern te_errno csap_support_snmp_register(void);
-#endif
-
-#ifdef WITH_DHCP
-extern te_errno csap_support_dhcp_register(void);
-#endif
-
-#ifdef WITH_BRIDGE
-extern te_errno csap_support_bridge_register(void);
-#endif
-
-#ifdef WITH_CLI
-extern te_errno csap_support_cli_register(void);
-#endif
-
-#ifdef WITH_PCAP
-extern te_errno csap_support_pcap_register(void);
-#endif
-
-#ifdef WITH_ISCSI
-extern te_errno csap_support_iscsi_register(void);
-#endif
-
-#ifdef WITH_SOCKET
-extern te_errno csap_support_socket_register(void);
-#endif
-
-
-static void
-check_init(void)
-{
-    if (is_initialized) return;
-
-#ifndef DUMMY_TAD
-    csap_id_init();
-    csap_spt_init();
-#ifdef WITH_ATM
-    csap_support_atm_register();
-#endif
-#ifdef WITH_ETH
-    csap_support_eth_register();
-#endif 
-#ifdef WITH_ARP
-    csap_support_arp_register();
-#endif
-#ifdef WITH_IPSTACK
-    csap_support_ipstack_register();
-#endif
-#ifdef WITH_FILE
-    csap_support_file_register();
-#endif
-#ifdef WITH_SNMP
-    csap_support_snmp_register();
-#endif
-#ifdef WITH_CLI
-    csap_support_cli_register();
-#endif
-#ifdef WITH_DHCP
-    csap_support_dhcp_register();
-#endif
-#ifdef WITH_BRIDGE
-    csap_support_bridge_register();
-#endif
-#ifdef WITH_PCAP
-    csap_support_pcap_register();
-#endif
-#ifdef WITH_ISCSI
-    csap_support_iscsi_register();
-#endif
-#ifdef WITH_SOCKET
-    csap_support_socket_register();
-#endif
-#endif /* DUMMY_TAD */
-
-    is_initialized = 1;
-}
 
 /**
- * Init TAD Command Handler.
+ * Check TAD initialization. It is intended to be called from RCF
+ * Command Handler routines only. If initialization is not done or
+ * failed, the macro calls return with -1 (no support).
  */
-void
-tad_ch_init(void)
+#define TAD_CHECK_INIT \
+    do {                            \
+        if (!tad_is_initialized)    \
+            return -1;              \
+    } while (0)
+
+
+static te_bool tad_is_initialized = FALSE;
+
+
+/* See description in rcf_ch_api.h */
+te_errno
+rcf_ch_tad_init(void)
 {
-    check_init();
+    if (tad_is_initialized)
+        return TE_RC(TE_TAD_CH, TE_EALREADY);
+
+    /*
+     * Set initialized flag in any case, if error occur it will be
+     * unsed, by shutdown routine.
+     */
+    tad_is_initialized = TRUE;
+    
+#ifdef TAD_DUMMY
+
+    return TE_RC(TE_TAD_CH, TE_ENOSYS);
+
+#else /* !TAD_DUMMY */
+
+#define CHECK_RC(_expr) \
+    do {                                            \
+        te_errno rc_ = (_expr);                     \
+                                                    \
+        if (rc_ != 0)                               \
+        {                                           \
+            ERROR("%s failed: %r",  #_expr, rc_);   \
+            return rc_;                             \
+        }                                           \
+    } while (0)
+
+    csap_id_init();
+    CHECK_RC(csap_spt_init());
+
+#ifdef WITH_ATM
+    extern te_errno csap_support_atm_register(void);
+    CHECK_RC(csap_support_atm_register());
+#endif
+#ifdef WITH_ETH
+    extern te_errno csap_support_eth_register(void);
+    CHECK_RC(csap_support_eth_register());
+#endif 
+#ifdef WITH_ARP
+    extern te_errno csap_support_arp_register(void);
+    CHECK_RC(csap_support_arp_register());
+#endif
+#ifdef WITH_IPSTACK
+    extern te_errno csap_support_ipstack_register(void);
+    CHECK_RC(csap_support_ipstack_register());
+#endif
+#ifdef WITH_SNMP
+    extern te_errno csap_support_snmp_register(void);
+    CHECK_RC(csap_support_snmp_register());
+#endif
+#ifdef WITH_CLI
+    extern te_errno csap_support_cli_register(void);
+    CHECK_RC(csap_support_cli_register());
+#endif
+#ifdef WITH_DHCP
+    extern te_errno csap_support_dhcp_register(void);
+    CHECK_RC(csap_support_dhcp_register());
+#endif
+#ifdef WITH_BRIDGE
+    extern te_errno csap_support_bridge_register(void);
+    CHECK_RC(csap_support_bridge_register());
+#endif
+#ifdef WITH_PCAP
+    extern te_errno csap_support_pcap_register(void);
+    CHECK_RC(csap_support_pcap_register());
+#endif
+#ifdef WITH_ISCSI
+    extern te_errno csap_support_iscsi_register(void);
+    CHECK_RC(csap_support_iscsi_register());
+#endif
+#ifdef WITH_SOCKET
+    extern te_errno csap_support_socket_register(void);
+    CHECK_RC(csap_support_socket_register());
+#endif
+
+#undef CHECK_RC
+
+    return 0;
+    
+#endif /* !TAD_DUMMY */
 }
 
-#ifndef DUMMY_TAD 
+/* See description in rcf_ch_api.h */
+te_errno
+rcf_ch_tad_shutdown(void)
+{
+    te_errno    rc = 0;
+
+    if (!tad_is_initialized)
+        return TE_RC(TE_TAD_CH, TE_EINVAL);
+
+    /* The function continues shutdown even in the case of failures */
+    tad_is_initialized = FALSE;
+
+
+
+    csap_id_destroy();
+
+    return rc;
+}
+
+#ifndef TAD_DUMMY 
 
 /**
  * Safe compare two strings. Almost equivalent to standard "strcmp", but
@@ -224,7 +235,7 @@ strcmp_imp(const char *l, const char *r)
     return strcmp(l, r);
 }
 
-#endif /* DUMMY_TAD */
+#endif /* TAD_DUMMY */
 
 /* See description in rcf_ch_api.h */
 int
@@ -233,7 +244,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
                    const uint8_t *ba, size_t cmdlen,
                    const char *stack, const char *params)
 {
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -256,7 +267,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     UNUSED(params);
 
 
-    check_init();
+    TAD_CHECK_INIT;
 
     rc = csap_create(stack, &new_csap);
     if (rc != 0)
@@ -367,7 +378,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
                     char *cbuf, size_t buflen, size_t answer_plen,
                     csap_handle_t csap_id)
 {
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -382,7 +393,7 @@ rcf_ch_csap_destroy(struct rcf_comm_connection *rcfc,
     unsigned int layer;
     te_errno     rc; 
     
-    check_init();
+    TAD_CHECK_INIT;
 
     VERB("%s: CSAP %u\n", __FUNCTION__, csap_id); 
     VERB("%s(CSAP %u), answer prefix %s", __FUNCTION__, csap_id,  cbuf);
@@ -450,7 +461,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
                     const uint8_t *ba, size_t cmdlen,
                     csap_handle_t csap_id, te_bool postponed)
 {
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -473,7 +484,7 @@ rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
     VERB("%s(CSAP %u)", __FUNCTION__, csap_id);
     cbuf[answer_plen] = 0;
 
-    check_init();
+    TAD_CHECK_INIT;
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -546,7 +557,7 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *rcfc,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap_id)
 {
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -561,7 +572,7 @@ rcf_ch_trsend_stop(struct rcf_comm_connection *rcfc,
 
     VERB("trsend_stop CSAP %u", csap_id);
 
-    check_init(); 
+    TAD_CHECK_INIT; 
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -610,7 +621,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
                     const uint8_t *ba, size_t cmdlen, csap_handle_t csap_id,
                     unsigned int num, te_bool results, unsigned int timeout)
 {
-#ifndef DUMMY_TAD 
+#ifndef TAD_DUMMY 
     csap_p      csap;
     te_errno    rc;
     int         syms;
@@ -620,7 +631,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
     INFO("%s: csap %u, num %u, timeout %u ms, %s", __FUNCTION__,
          csap_id, num, timeout, results ? "results" : "");
 
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -637,7 +648,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
 
     UNUSED(cmdlen);
 
-    check_init(); 
+    TAD_CHECK_INIT; 
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -705,7 +716,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
 }
 
 
-#ifndef DUMMY_TAD 
+#ifndef TAD_DUMMY 
 /**
  * Generic implementation of trrecv_stop/wait/get.
  *
@@ -727,7 +738,7 @@ tad_trrecv_op(rcf_comm_connection *rcfc,
 
     VERB("%s: CSAP %u OP %u", __FUNCTION__, csap_id, op);
 
-    check_init();
+    TAD_CHECK_INIT;
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -761,7 +772,7 @@ rcf_ch_trrecv_stop(rcf_comm_connection *rcfc,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap_id)
 {
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -781,7 +792,7 @@ rcf_ch_trrecv_wait(struct rcf_comm_connection *rcfc,
                    char *cbuf, size_t buflen, size_t answer_plen,
                    csap_handle_t csap_id)
 {
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -803,7 +814,7 @@ rcf_ch_trrecv_get(struct rcf_comm_connection *rcfc,
                   char *cbuf, size_t buflen, size_t answer_plen,
                   csap_handle_t csap_id)
 {
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -825,7 +836,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
                    const uint8_t *ba, size_t cmdlen, csap_handle_t csap_id,
                    te_bool results, unsigned int timeout)
 { 
-#ifndef DUMMY_TAD 
+#ifndef TAD_DUMMY 
     csap_p      csap;
     te_errno    rc;
     int         syms;
@@ -836,7 +847,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
     INFO("%s: csap %u, timeout %u ms, %s", __FUNCTION__,
          csap_id, timeout, results ? "results" : "");
 
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -849,7 +860,7 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
 
     UNUSED(cmdlen);
 
-    check_init(); 
+    TAD_CHECK_INIT; 
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -980,7 +991,7 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
               char *cbuf, size_t buflen, size_t answer_plen,
               csap_handle_t csap_id, unsigned int timeout)
 {
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -992,7 +1003,7 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
     csap_p      csap;
     te_errno    rc;
 
-    check_init(); 
+    TAD_CHECK_INIT; 
 
     /*
      * Answers are send with 0 in poll ID, since no request to be
@@ -1047,7 +1058,7 @@ rcf_ch_trpoll_cancel(struct rcf_comm_connection *rcfc,
                      char *cbuf, size_t buflen, size_t answer_plen,
                      csap_handle_t csap_id, unsigned int poll_id)
 {
-#ifdef DUMMY_TAD 
+#ifdef TAD_DUMMY 
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -1062,7 +1073,7 @@ rcf_ch_trpoll_cancel(struct rcf_comm_connection *rcfc,
     te_errno            rc = TE_ENOENT;
     int                 ret;
 
-    check_init(); 
+    TAD_CHECK_INIT; 
 
     if ((csap = csap_find(csap_id)) == NULL)
     {
@@ -1102,7 +1113,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *rcfc,
                   char *cbuf, size_t buflen, size_t answer_plen,
                   csap_handle_t csap_id, const char *param)
 {
-#ifdef DUMMY_TAD
+#ifdef TAD_DUMMY
     UNUSED(rcfc);
     UNUSED(cbuf);
     UNUSED(buflen);
@@ -1116,7 +1127,7 @@ rcf_ch_csap_param(struct rcf_comm_connection *rcfc,
     int                 layer = csap == NULL ?
                                 0 : csap->rw_layer;
 
-    check_init();
+    TAD_CHECK_INIT;
     VERB("CSAP param: CSAP %u param <%s>\n", csap_id, param);
     if ((csap = csap_find(csap_id)) == NULL)
     {
