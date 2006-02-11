@@ -560,7 +560,7 @@ tad_bps_pkt_frag_match_do(const tad_bps_pkt_frag_def *def,
     {
         if (ptrn->dus[i].du_type != TAD_DU_UNDEF)
             du = ptrn->dus + i;
-        else if (def->tx_def[i].du_type != TAD_DU_UNDEF)
+        else if (def->rx_def[i].du_type != TAD_DU_UNDEF)
             du = def->rx_def + i;
         else
             du = NULL;
