@@ -116,7 +116,15 @@ csap_id_init(void)
 void
 csap_id_destroy(void)
 {
-    /* FIXME */
+    csap_id_entry  *entry;
+    
+    while ((entry = csap_id_db.lh_first) != NULL)
+    {
+        WARN("Destroy CSAP IDs database entry: ID=%u PTR=%p",
+             entry->id, entry->ptr);
+        LIST_REMOVE(entry, links);
+        free(entry);
+    }
 }
 
 
@@ -236,6 +244,11 @@ csap_id_delete(csap_handle_t csap_id)
 void
 csap_id_enum(csap_id_enum_cb cb)
 {
-    UNUSED(cb);
-    ERROR("%s() is not implemented yet", __FUNCTION__);
+    csap_id_entry  *p, *q;
+
+    for (p = csap_id_db.lh_first; p != NULL; p = q)
+    {
+        q = p->links.le_next;
+        cb(p->id, p->ptr);
+    }
 }
