@@ -231,6 +231,9 @@ extern te_errno tad_eth_match_post_cb(csap_p              csap,
                                       unsigned int        layer,
                                       tad_recv_pkt_layer *meta_pkt_layer);
 
+extern void tad_eth_match_free_cb(csap_p csap, unsigned int layer,
+                                  void *opaque);
+
 /**
  * Callback for parse received packet and match it with pattern. 
  *

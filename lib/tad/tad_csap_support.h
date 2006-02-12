@@ -414,6 +414,7 @@ typedef struct csap_spt_type_t {
     csap_layer_match_do_cb_t        match_do_cb;
     csap_layer_match_done_cb_t      match_done_cb;
     csap_layer_match_post_cb_t      match_post_cb;
+    csap_layer_release_opaque_cb_t  match_free_cb;
     csap_layer_release_opaque_cb_t  release_ptrn_cb;
 
     csap_layer_gen_pattern_cb_t     generate_pattern_cb;

@@ -62,6 +62,7 @@ static csap_spt_type_t ip4_csap_spt =
     match_do_cb         : tad_ip4_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
+    match_free_cb       : NULL,
     release_ptrn_cb     : NULL,
 
     generate_pattern_cb : NULL,
@@ -101,6 +102,7 @@ static csap_spt_type_t udp_csap_spt =
     match_do_cb         : tad_udp_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
+    match_free_cb       : NULL,
     release_ptrn_cb     : NULL,
 
     generate_pattern_cb : NULL,
@@ -129,6 +131,7 @@ static csap_spt_type_t tcp_csap_spt =
     match_do_cb         : tad_tcp_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
+    match_free_cb       : NULL,
     release_ptrn_cb     : NULL,
 
     generate_pattern_cb : NULL,

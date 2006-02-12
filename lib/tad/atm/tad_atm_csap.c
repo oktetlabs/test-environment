@@ -59,6 +59,7 @@ static csap_spt_type_t atm_csap_spt =
     match_do_cb         : tad_atm_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
+    match_free_cb       : NULL,
     release_ptrn_cb     : NULL,
 
     generate_pattern_cb : NULL,
@@ -85,6 +86,7 @@ static csap_spt_type_t aal5_csap_spt =
     match_do_cb         : tad_aal5_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
+    match_free_cb       : NULL,
     release_ptrn_cb     : NULL,
 
     generate_pattern_cb : NULL,

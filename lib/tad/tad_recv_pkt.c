@@ -61,12 +61,16 @@ tad_recv_pkt_free(csap_p csap, tad_recv_pkt *pkt)
     {
         for (layer = 0; layer < csap->depth; ++layer)
         {
+            csap_layer_release_opaque_cb_t  cb =
+                csap_get_proto_support(csap, layer)->match_free_cb;
+
             if (pkt->nds == NULL)
                 asn_free_value(pkt->layers[layer].nds);
 
             tad_free_pkts(&pkt->layers[layer].pkts);
 
-            /* TODO: Free opaque */
+            if (cb != NULL)
+                cb(csap, layer, pkt->layers[layer].opaque);
         }
         free(pkt->layers);
     }

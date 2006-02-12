@@ -424,6 +424,23 @@ tad_eth_match_post_cb(csap_p              csap,
 }
 
 /* See description in tad_eth_impl.h */
+void
+tad_eth_match_free_cb(csap_p csap, unsigned int layer, void *opaque)
+{
+    tad_eth_proto_data     *proto_data;
+    tad_eth_proto_pdu_data *pkt_data = opaque;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+    assert(proto_data != NULL);
+
+    if (pkt_data != NULL)
+    {
+        tad_bps_free_pkt_frag_data(&proto_data->hdr_d, &pkt_data->hdr);
+        free(pkt_data);
+    }
+}
+
+/* See description in tad_eth_impl.h */
 te_errno
 tad_eth_match_do_cb(csap_p           csap,
                     unsigned int     layer,

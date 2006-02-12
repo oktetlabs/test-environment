@@ -59,6 +59,7 @@ static csap_spt_type_t dhcp_csap_spt =
     match_do_cb         : tad_dhcp_match_bin_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
+    match_free_cb       : NULL,
     release_ptrn_cb     : NULL,
 
     generate_pattern_cb : tad_dhcp_gen_pattern_cb,
