@@ -129,6 +129,14 @@ typedef struct asn_tag_t {
 extern asn_value_p asn_init_value(const asn_type *type);
 
 /**
+ * Macro to log failures of asn_init_value() function.
+ */
+#define ERROR_ASN_INIT_VALUE(_type) \
+    ERROR("%s(): Failed to initialize ASN.1 value of type " #_type, \
+          __FUNCTION__)
+
+
+/**
  * Init empty ASN value of specified type with a certain ASN tag.
  *
  * @param type       ASN type to which value should belong
