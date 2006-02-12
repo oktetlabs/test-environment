@@ -545,6 +545,14 @@ tad_pkts_first_pkt(const tad_pkts *pkts)
 extern void tad_pkts_add_one(tad_pkts *pkts, tad_pkt *pkt);
 
 /**
+ * Delete packet from the list.
+ *
+ * @param pkts      List with packets
+ * @param pkt       Packet to delete
+ */
+extern void tad_pkts_del_one(tad_pkts *pkts, tad_pkt *pkt);
+
+/**
  * Move packets from one list to other.
  *
  * @param dst       Destination list with packets 
