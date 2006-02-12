@@ -1009,11 +1009,14 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
 static void
 tad_recv_pkt_enqueue(csap_p csap, tad_recv_pkts *pkts, tad_recv_pkt *pkt)
 {
+    int ret;
+
     CSAP_LOCK(csap);
     TAILQ_INSERT_TAIL(pkts, pkt, links);
-    if (pthread_cond_broadcast(&csap->event) != 0)
+    if ((ret = pthread_cond_broadcast(&csap->event)) != 0)
     {
-        te_errno rc = TE_OS_RC(TE_TAD_CH, errno);
+        te_errno rc = TE_OS_RC(TE_TAD_CH, ret);
+        
         assert(rc != 0);
         ERROR(CSAP_LOG_FMT "Failed to broadcast CSAP event - received "
               "packet: %r - ignore", CSAP_LOG_ARGS(csap), rc);
@@ -1388,15 +1391,16 @@ tad_recv_get_packet(csap_p csap, te_bool wait, tad_recv_pkt **pkt)
 {
     tad_recv_context   *ctx = csap_get_recv_context(csap);
     te_errno            rc = 0;
+    int                 ret;
 
     CSAP_LOCK(csap);
     while (((*pkt = ctx->packets.tqh_first) == NULL) && wait &&
            (~csap->state & CSAP_STATE_DONE))
     {
-        rc = pthread_cond_wait(&csap->event, &csap->lock);
-        if (rc != 0)
+        ret = pthread_cond_wait(&csap->event, &csap->lock);
+        if (ret != 0)
         {
-            rc = TE_OS_RC(TE_TAD_CH, errno);
+            rc = TE_OS_RC(TE_TAD_CH, ret);
             assert(TE_RC_GET_ERROR(rc) != TE_ENOENT);
             ERROR("%s(): pthread_cond_wait() failed: %r",
                   __FUNCTION__, rc);
@@ -1672,6 +1676,7 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
                     const char *answer_pfx, size_t pfx_len)
 {
     tad_recv_op_context    *context;
+    int                     ret;
     te_errno                rc;
     te_bool                 start_thread;
 
@@ -1697,9 +1702,10 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
 
     if (start_thread)
     {
-        rc = tad_pthread_create(NULL, tad_recv_op_thread, csap);
-        if (rc != 0)
+        ret = tad_pthread_create(NULL, tad_recv_op_thread, csap);
+        if (ret != 0)
         {
+            rc = te_rc_os2te(ret);
             TAILQ_REMOVE(&csap->recv_ops, context, links);
         }
     }

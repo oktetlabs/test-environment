@@ -1091,8 +1091,7 @@ rcf_ch_trpoll_cancel(struct rcf_comm_connection *rcfc,
             ret = pthread_cancel(p->thread);
             if (ret != 0)
             {
-                /* FIXME: */
-                rc = te_rc_os2te(errno);
+                rc = te_rc_os2te(ret);
             }
             else
             {

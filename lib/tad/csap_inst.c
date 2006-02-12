@@ -145,11 +145,11 @@ csap_create(const char *type, csap_p *csap)
     VERB("%s(): new id: %u", __FUNCTION__, new_csap->id);
 
     if ((ret = pthread_cond_init(&new_csap->event, NULL)) != 0)
-        CSAP_CREATE_ERROR(te_rc_os2te(errno),
+        CSAP_CREATE_ERROR(te_rc_os2te(ret),
                           "%s(): pthread_cond_init() failed: %d",
                           __FUNCTION__, ret); 
     if ((ret = pthread_mutex_init(&new_csap->lock, NULL)) != 0)
-        CSAP_CREATE_ERROR(te_rc_os2te(errno),
+        CSAP_CREATE_ERROR(te_rc_os2te(ret),
                           "%s(): pthread_mutex_init() failed: %d",
                           __FUNCTION__, ret); 
 
@@ -250,6 +250,7 @@ te_errno
 csap_command_under_lock(csap_p csap, tad_traffic_op_t command)
 {
     te_errno    rc = 0;
+    int         ret;
 
     /* At first, check current state agains this command */
     switch (command)
@@ -422,9 +423,9 @@ csap_command_under_lock(csap_p csap, tad_traffic_op_t command)
                 rc = TE_EINVAL;
         }
 
-        if (pthread_cond_broadcast(&csap->event) != 0)
+        if ((ret = pthread_cond_broadcast(&csap->event)) != 0)
         {
-            rc = TE_OS_RC(TE_TAD_CH, errno);
+            rc = TE_OS_RC(TE_TAD_CH, ret);
             assert(rc != 0);
             ERROR(CSAP_LOG_FMT "Failed to broadcast CSAP event: %r",
                   CSAP_LOG_ARGS(csap), rc);
@@ -438,9 +439,10 @@ csap_command_under_lock(csap_p csap, tad_traffic_op_t command)
 te_errno
 csap_timedwait(csap_p csap, unsigned int state_bits, unsigned int ms)
 {
-    struct timeval  now;
-    struct timespec timeout;
-    te_errno    rc = 0;
+    struct timeval      now;
+    struct timespec     timeout;
+    te_errno            rc = 0;
+    int                 ret;
 
     CSAP_LOCK(csap);
     gettimeofday(&now, NULL);
@@ -454,15 +456,15 @@ csap_timedwait(csap_p csap, unsigned int state_bits, unsigned int ms)
     }
     while (~csap->state & state_bits)
     {
-        rc = pthread_cond_timedwait(&csap->event, &csap->lock, &timeout);
-        if (rc == ETIMEDOUT)
+        ret = pthread_cond_timedwait(&csap->event, &csap->lock, &timeout);
+        if (ret == ETIMEDOUT)
         {
             rc = TE_RC(TE_TAD_CH, TE_ETIMEDOUT);
             break;
         }
-        if (rc != 0)
+        if (ret != 0)
         {
-            rc = TE_OS_RC(TE_TAD_CH, errno);
+            rc = TE_OS_RC(TE_TAD_CH, ret);
             assert(TE_RC_GET_ERROR(rc) != TE_ENOENT);
             ERROR("%s(): pthread_cond_wait() failed: %r",
                   __FUNCTION__, rc);

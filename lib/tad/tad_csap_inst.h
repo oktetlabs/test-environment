@@ -72,12 +72,12 @@
  * @param csap_inst_   CSAP instance
  */
 #define CSAP_LOCK(csap_inst_) \
-    do {                                                            \
-        int rc_ = pthread_mutex_lock(&((csap_inst_)->lock));        \
-                                                                    \
-        if (rc_ != 0)                                               \
-            ERROR("%s(): pthread_mutex_lock() failed %d, errno %d", \
-                  __FUNCTION__, rc_, errno);                        \
+    do {                                                        \
+        int rc_ = pthread_mutex_lock(&((csap_inst_)->lock));    \
+                                                                \
+        if (rc_ != 0)                                           \
+            ERROR("%s(): pthread_mutex_lock() failed %r",       \
+                  __FUNCTION__, te_rc_os2te(rc_));              \
     } while (0)
 
 /**
@@ -87,11 +87,11 @@
  * @param rc_          Variable for return code
  */
 #define CSAP_TRYLOCK(csap_inst_, rc_) \
-    do {                                                            \
-        (rc_) = pthread_mutex_trylock(&((csap_inst_)->lock));       \
-        if ((rc_ != 0) && (errno != EBUSY))                         \
-            ERROR("%s(): pthread_mutex_trylock() failed %d, "       \
-                  "errno %d", __FUNCTION__, rc_, errno);            \
+    do {                                                        \
+        (rc_) = pthread_mutex_trylock(&((csap_inst_)->lock));   \
+        if (((rc_) != 0) && ((rc_) != EBUSY))                   \
+            ERROR("%s(): pthread_mutex_trylock() failed %r",    \
+                  __FUNCTION__, te_rc_os2te(rc_));              \
     } while (0)
 
 /**
@@ -100,12 +100,12 @@
  * @param csap_inst_   CSAP instance
  */
 #define CSAP_UNLOCK(csap_inst_)\
-    do {                                                            \
-        int rc_ = pthread_mutex_unlock(&((csap_inst_)->lock));      \
-                                                                    \
-        if (rc_ != 0)                                               \
-            ERROR("%s(): pthread_mutex_unlock() failed %d, "        \
-                  "errno %d", __FUNCTION__, rc_, errno);            \
+    do {                                                        \
+        int rc_ = pthread_mutex_unlock(&((csap_inst_)->lock));  \
+                                                                \
+        if (rc_ != 0)                                           \
+            ERROR("%s(): pthread_mutex_unlock() failed %r",     \
+                  __FUNCTION__, te_rc_os2te(rc_));              \
     } while (0)
 
 
@@ -298,14 +298,15 @@ static inline te_errno
 csap_wait(csap_p csap, unsigned int state_bits)
 {
     te_errno    rc = 0;
+    int         ret;
 
     CSAP_LOCK(csap);
     while (~csap->state & state_bits)
     {
-        rc = pthread_cond_wait(&csap->event, &csap->lock);
-        if (rc != 0)
+        ret = pthread_cond_wait(&csap->event, &csap->lock);
+        if (ret != 0)
         {
-            rc = TE_OS_RC(TE_TAD_CH, errno);
+            rc = TE_OS_RC(TE_TAD_CH, ret);
             assert(TE_RC_GET_ERROR(rc) != TE_ENOENT);
             ERROR("%s(): pthread_cond_wait() failed: %r",
                   __FUNCTION__, rc);

@@ -1552,25 +1552,26 @@ te_errno
 tad_pthread_create(pthread_t *thread,
                    void * (*start_routine)(void *), void *arg)
 {
+    int             ret;
     te_errno        rc;
     pthread_attr_t  pthread_attr;
     pthread_t       my_thread;
 
-    if ((rc = pthread_attr_init(&pthread_attr)) != 0 ||
-        (rc = pthread_attr_setdetachstate(&pthread_attr,
-                                          PTHREAD_CREATE_DETACHED)) != 0)
+    if ((ret = pthread_attr_init(&pthread_attr)) != 0 ||
+        (ret = pthread_attr_setdetachstate(&pthread_attr,
+                                           PTHREAD_CREATE_DETACHED)) != 0)
     {
-        rc = TE_OS_RC(TE_TAD_CH, errno);
+        rc = TE_OS_RC(TE_TAD_CH, ret);
         assert(rc != 0);
         ERROR("Cannot initialize pthread attribute variable: %r", rc);
         return rc;
     }
 
-    rc = pthread_create(thread == NULL ? &my_thread : thread,
-                        &pthread_attr, start_routine, arg);
-    if (rc != 0)
+    ret = pthread_create(thread == NULL ? &my_thread : thread,
+                         &pthread_attr, start_routine, arg);
+    if (ret != 0)
     {
-        rc = TE_OS_RC(TE_TAD_CH, errno);
+        rc = TE_OS_RC(TE_TAD_CH, ret);
         assert(rc != 0);
         ERROR("Cannot create a new TAD Sender thread: %r", rc);
         (void)pthread_attr_destroy(&pthread_attr);

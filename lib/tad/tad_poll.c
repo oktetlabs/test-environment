@@ -82,6 +82,7 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
 {
     tad_poll_context   *context;
     te_errno            rc;
+    int                 ret;
 
     context = malloc(sizeof(*context));
     if (context == NULL)
@@ -107,9 +108,10 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
 
     LIST_INSERT_HEAD(&csap->poll_ops, context, links);
 
-    rc = tad_pthread_create(&context->thread, tad_poll_thread, context);
-    if (rc != 0)
+    ret = tad_pthread_create(&context->thread, tad_poll_thread, context);
+    if (ret != 0)
     {
+        rc = te_rc_os2te(ret);
         free(context);
     }
     else
