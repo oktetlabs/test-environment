@@ -72,8 +72,8 @@ tad_recv_pkt_free(csap_p csap, tad_recv_pkt *pkt)
     }
 
     tad_free_pkts(&pkt->raw);
-
     asn_free_value(pkt->nds);
+    free(pkt);
 }
 
 /* See the description in tad_recv_pkt.h */
@@ -88,8 +88,8 @@ tad_recv_pkts_free(csap_p csap, tad_recv_pkts *pkts)
 
     while ((pkt = pkts->tqh_first) != NULL)
     {
-        tad_recv_pkt_free(csap, pkt);
         TAILQ_REMOVE(pkts, pkt, links);
+        tad_recv_pkt_free(csap, pkt);
     }
 }
 
