@@ -201,9 +201,13 @@ tad_iscsi_match_bin_cb(csap_p           csap,
     data_ptr = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
 
-    if (csap->state & CSAP_STATE_RESULTS)
-        iscsi_msg = meta_pkt->layers[layer].nds =
-            asn_init_value(ndn_iscsi_message);
+    if ((csap->state & CSAP_STATE_RESULTS) &&
+        (iscsi_msg = meta_pkt->layers[layer].nds =
+             asn_init_value(ndn_iscsi_message)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_iscsi_message);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
 
     spec_data = csap_get_proto_spec_data(csap, layer); 
 
@@ -322,7 +326,11 @@ tad_iscsi_gen_pattern_cb(csap_p            csap,
           csap->id, layer, tmpl_pdu, ptrn_pdu);
 
     assert(ptrn_pdu != NULL);
-    *ptrn_pdu = asn_init_value(ndn_iscsi_message); 
+    if ((*ptrn_pdu = asn_init_value(ndn_iscsi_message)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_iscsi_message);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
 
     return 0;
 }

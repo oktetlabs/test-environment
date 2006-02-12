@@ -332,8 +332,15 @@ tad_dhcp_match_bin_cb(csap_p csap,
     VERB("DHCP match callback called: %Tm", data_ptr, data_len);
 
     if (csap->state & CSAP_STATE_RESULTS)
+    {
         dhcp_message_pdu = meta_pkt->layers[layer].nds =
             asn_init_value(ndn_dhcpv4_message);
+        if (dhcp_message_pdu == NULL)
+        {
+            ERROR_ASN_INIT_VALUE(ndn_dhcpv4_message);
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        }
+    }
 
 #define FILL_DHCP_HEADER_FIELD(_asn_label, _size) \
     do {                                                        \
@@ -468,7 +475,11 @@ tad_dhcp_gen_pattern_cb(csap_p csap, unsigned int layer,
     UNUSED(csap);
     UNUSED(layer);
 
-    *ptrn_pdu = asn_init_value(ndn_dhcpv4_message); 
+    if ((*ptrn_pdu = asn_init_value(ndn_dhcpv4_message)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_dhcpv4_message);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
     rc = asn_read_value_field(tmpl_pdu, &xid, &len, "xid.#plain");
     if (rc == 0)
     {

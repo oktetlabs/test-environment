@@ -257,8 +257,12 @@ tad_bridge_match_bin_cb(csap_p csap,
     /* TODO: check LLC header */
 
     data += 3;
-    if (parsed_packet != NULL)
-        bridge_pdu = asn_init_value(ndn_bridge_pdu);
+    if ((parsed_packet != NULL) &&
+        (bridge_pdu = asn_init_value(ndn_bridge_pdu)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_bridge_pdu);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
 
     f_len = 0;
 

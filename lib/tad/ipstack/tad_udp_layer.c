@@ -396,9 +396,13 @@ tad_udp_match_bin_cb(csap_p csap,
     data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
 
-    if (csap->state & CSAP_STATE_RESULTS)
-        udp_header_pdu = meta_pkt->layers[layer].nds =
-            asn_init_value(ndn_udp_header);
+    if ((csap->state & CSAP_STATE_RESULTS) &&
+        (udp_header_pdu = meta_pkt->layers[layer].nds =
+             asn_init_value(ndn_udp_header)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_udp_header);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
 
     UNUSED(csap);
     UNUSED(layer);

@@ -220,7 +220,18 @@ tad_snmp_match_bin_cb(csap_p           csap,
     {
         meta_pkt->layers[layer].nds = snmp_msg =
             asn_init_value(ndn_snmp_message);
+        if (snmp_msg == NULL)
+        {
+            ERROR_ASN_INIT_VALUE(ndn_snmp_message);
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        }
+
         vb_seq = asn_init_value(ndn_snmp_var_bind_seq);
+        if (vb_seq == NULL)
+        {
+            ERROR_ASN_INIT_VALUE(ndn_snmp_var_bind_seq);
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        }
     }
     else if (ptrn_pdu == NULL)
     {
@@ -508,7 +519,12 @@ tad_snmp_match_bin_cb(csap_p           csap,
 
         VERB("BEGIN of LOOP rc %r", rc);
 
-        var_bind = asn_init_value(ndn_snmp_var_bind);
+        if ((var_bind = asn_init_value(ndn_snmp_var_bind)) == NULL)
+        {
+            ERROR_ASN_INIT_VALUE(ndn_snmp_var_bind);
+            rc = TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+            break;
+        }
         asn_write_value_field(var_bind, vars->name, vars->name_length, 
                               "name.#plain");
 
@@ -613,9 +629,16 @@ tad_snmp_gen_pattern_cb(csap_p csap, unsigned int layer,
 { 
     UNUSED(tmpl_pdu);
 
-    *ptrn_pdu = asn_init_value(ndn_snmp_message);
     VERB("%s callback, CSAP # %d, layer %d",
          __FUNCTION__, csap->id, layer); 
+
+    assert(ptrn_pdu != NULL);
+    if ((*ptrn_pdu = asn_init_value(ndn_snmp_message)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_snmp_message);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+
     return 0;
 }
 

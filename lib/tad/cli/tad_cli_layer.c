@@ -124,19 +124,13 @@ tad_cli_match_bin_cb(csap_p           csap,
 
     if (csap->state & CSAP_STATE_RESULTS)
     {
-        cli_msg = meta_pkt->layers[layer].nds =
-            asn_init_value(ndn_cli_message);
+        if ((cli_msg = meta_pkt->layers[layer].nds =
+                 asn_init_value(ndn_cli_message)) == NULL)
+        {
+            ERROR_ASN_INIT_VALUE(ndn_cli_message);
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        }
 
-        if (tad_pkt_seg_num(pdu) < 1)
-        {
-            ERROR("opps");
-            return TE_EINVAL;
-        }
-        else if (tad_pkt_seg_num(pdu) > 1)
-        {
-            ERROR("opps2");
-            return TE_EINVAL;
-        }
         assert(tad_pkt_seg_num(pdu) == 1);
         assert(tad_pkt_first_seg(pdu) != NULL);
         msg = tad_pkt_first_seg(pdu)->data_ptr;
@@ -180,12 +174,18 @@ te_errno
 tad_cli_gen_pattern_cb(csap_p            csap,
                        unsigned int      layer,
                        const asn_value  *tmpl_pdu, 
-                       asn_value       **pattern_pdu)
+                       asn_value       **ptrn_pdu)
 {
     UNUSED(csap);
+    UNUSED(layer);
     UNUSED(tmpl_pdu);
 
-    *pattern_pdu = asn_init_value(ndn_cli_message);
-    VERB("%s(): called, layer %d", __FUNCTION__, layer);
+    assert(ptrn_pdu != NULL);
+    if ((*ptrn_pdu = asn_init_value(ndn_cli_message)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_cli_message);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+
     return 0;
 }

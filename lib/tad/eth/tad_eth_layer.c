@@ -413,8 +413,12 @@ tad_eth_match_post_cb(csap_p              csap,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    if (csap->state & CSAP_STATE_RESULTS)
-        meta_pkt_layer->nds = asn_init_value(ndn_eth_header);
+    if ((csap->state & CSAP_STATE_RESULTS) &&
+        (meta_pkt_layer->nds = asn_init_value(ndn_eth_header)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_eth_header);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
 
     rc = tad_bps_pkt_frag_match_post(&proto_data->hdr_d, &pkt_data->hdr,
              tad_pkts_first_pkt(&meta_pkt_layer->pkts),

@@ -136,8 +136,7 @@ tad_socket_match_bin_cb(csap_p           csap,
         ((nds = meta_pkt->layers[layer].nds =
               asn_init_value(ndn_socket_message)) == NULL))
     {
-        ERROR(CSAP_LOG_FMT "Failed to initialize 'socket' message NDS",
-              CSAP_LOG_ARGS(csap));
+        ERROR_ASN_INIT_VALUE(ndn_socket_message);
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
 

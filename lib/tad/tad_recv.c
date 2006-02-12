@@ -1437,6 +1437,7 @@ tad_recv_get_packets(csap_p csap, tad_task_context *task, te_bool wait,
 
         /* Process packet */
         pkt->nds = asn_init_value(ndn_raw_packet);
+        /* FIXME: Check pkt->nds */
         asn_write_int32(pkt->nds, pkt->ts.tv_sec,
                         "received.seconds");
         asn_write_int32(pkt->nds, pkt->ts.tv_usec,

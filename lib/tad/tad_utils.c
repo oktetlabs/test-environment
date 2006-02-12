@@ -1595,17 +1595,32 @@ te_errno
 tad_send_recv_generate_pattern(csap_p csap, asn_value_p template, 
                                asn_value_p *pattern)
 {
-    te_errno     rc = 0;
-    unsigned int layer;
+    te_errno        rc = 0;
+    unsigned int    layer;
+    asn_value_p     pattern_unit;
+    asn_value_p     pdus;
 
     ENTRY(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
 
-    asn_value_p pattern_unit = asn_init_value(ndn_traffic_pattern_unit);
-    asn_value_p pdus         = asn_init_value(ndn_generic_pdu_sequence);
+    if ((pattern_unit = asn_init_value(ndn_traffic_pattern_unit)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_traffic_pattern_unit);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
+    if ((pdus = asn_init_value(ndn_generic_pdu_sequence)) == NULL)
+    {
+        ERROR_ASN_INIT_VALUE(ndn_generic_pdu_sequence);
+        asn_free_value(pattern_unit);
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    }
 
     rc = asn_write_component_value(pattern_unit, pdus, "pdus");
     if (rc != 0) 
+    {
+        asn_free_value(pdus);
+        asn_free_value(pattern_unit);
         return rc;
+    }
     asn_free_value(pdus);
 
     for (layer = 0; layer < csap->depth; layer++)
@@ -1615,6 +1630,13 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value_p template,
         asn_value_p layer_tmpl_pdu; 
         asn_value_p layer_pattern; 
         asn_value_p gen_pattern_pdu = asn_init_value(ndn_generic_pdu);
+
+        if (gen_pattern_pdu == NULL)
+        {
+            ERROR_ASN_INIT_VALUE(ndn_generic_pdu);
+            rc = TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+            break;
+        }
 
         csap_spt_descr = csap_get_proto_support(csap, layer);
 
@@ -1646,8 +1668,15 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value_p template,
 
     if (rc == 0)
     {
-        *pattern = asn_init_value(ndn_traffic_pattern);
-        rc = asn_insert_indexed(*pattern, pattern_unit, 0, "");
+        if ((*pattern = asn_init_value(ndn_traffic_pattern)) == NULL)
+        {
+            ERROR_ASN_INIT_VALUE(ndn_traffic_pattern);
+            rc = TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        }
+        else
+        {
+            rc = asn_insert_indexed(*pattern, pattern_unit, 0, "");
+        }
     }
     else
     {
