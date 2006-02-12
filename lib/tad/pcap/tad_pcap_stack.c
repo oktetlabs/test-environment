@@ -124,7 +124,7 @@ tad_pcap_rw_init_cb(csap_p csap, const asn_value *csap_nds)
         return TE_RC(TE_TAD_CSAP, rc);
     }
     
-    spec_data = calloc (1, sizeof(*spec_data));
+    spec_data = calloc(1, sizeof(*spec_data));
     if (spec_data == NULL)
     {
         ERROR("Init, not memory for spec_data");

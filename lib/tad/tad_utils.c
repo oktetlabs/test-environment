@@ -330,7 +330,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
 
     VERB("%s <%s> called", __FUNCTION__, string);
 
-    if ((*expr = calloc(1, sizeof(tad_int_expr_t))) == NULL)
+    if ((*expr = calloc(1, sizeof(**expr))) == NULL)
         return TE_ENOMEM;
 
     *syms = 0; 
@@ -627,7 +627,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
 tad_int_expr_t *
 tad_int_expr_constant(int64_t n)
 {
-    tad_int_expr_t *ret = calloc(1, sizeof(tad_int_expr_t));
+    tad_int_expr_t *ret = calloc(1, sizeof(*ret));
 
     if (ret == NULL) 
         return NULL; 
@@ -661,7 +661,7 @@ tad_int_expr_constant_arr(uint8_t *arr, size_t len)
     if (len > sizeof(int64_t))
         return NULL;
             
-    ret = calloc(1, sizeof(tad_int_expr_t));
+    ret = calloc(1, sizeof(*ret));
 
     if (ret == NULL) 
         return NULL; 

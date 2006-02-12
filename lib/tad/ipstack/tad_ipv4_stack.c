@@ -101,7 +101,7 @@ tad_ip4_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 
     spec_data = calloc(1, sizeof(*spec_data));
     if (spec_data == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     csap_set_rw_data(csap, spec_data);
 
     /* FIXME */

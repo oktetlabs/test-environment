@@ -1113,9 +1113,14 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
                 arg_specs[i].int_seq.last_index = -1;
                 arg_specs[i].int_seq.ints = calloc(enum_len,
                                                    sizeof(int32_t));
-
+                if (arg_specs[i].int_seq.ints == NULL)
+                {
+                    rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
+                }
+                else
                 {
                     unsigned j;
+
                     for (j = 0; j < enum_len; j++)
                     {
                         asn_value *int_val;

@@ -68,7 +68,7 @@ tad_tcp_init_cb(csap_p csap, unsigned int layer)
 
     spec_data = calloc(1, sizeof(*spec_data));
     if (spec_data == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     csap_set_proto_spec_data(csap, layer, spec_data);
 

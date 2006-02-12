@@ -54,9 +54,9 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
     VERB("%s called for csap %d, layer %d",
          __FUNCTION__, csap->id, layer); 
 
-    spec_data = calloc(1, sizeof(ip4_csap_specific_data_t));
+    spec_data = calloc(1, sizeof(*spec_data));
     if (spec_data == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     csap_set_proto_spec_data(csap, layer, spec_data);
 
@@ -736,6 +736,8 @@ tad_ip4_match_bin_cb(csap_p           csap,
     uint8_t  tmp8;
     size_t   h_len = 0;
     size_t   ip_len = 0;
+
+    UNUSED(ptrn_opaque);
 
     assert(tad_pkt_seg_num(pdu) == 1);
     assert(tad_pkt_first_seg(pdu) != NULL);

@@ -74,32 +74,26 @@
 te_errno
 tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 {
-    dhcp_csap_specific_data_t *   dhcp_spec_data; 
+    dhcp_csap_specific_data_t *dhcp_spec_data; 
     struct sockaddr_in local;
     struct sockaddr_in *ifa;
 
     int             opt = 1;
     int             mode, rc;
     size_t          len;
-    struct ifreq   *interface = calloc(sizeof(struct ifreq) + 
-                                       sizeof(struct sockaddr_storage) - 
-                                       sizeof(struct sockaddr), 1); 
+    struct ifreq   *interface;
 
     if (csap_nds == NULL)
         return TE_EWRONGPTR;
 
     len = sizeof(mode);
     rc = asn_read_value_field(csap_nds, &mode, &len, "0.mode");
-    if (rc)
+    if (rc != 0)
         return rc; /* If this field is not set, then CSAP cannot process */ 
 
-    dhcp_spec_data = malloc (sizeof(dhcp_csap_specific_data_t));
-    
+    dhcp_spec_data = malloc(sizeof(*dhcp_spec_data));
     if (dhcp_spec_data == NULL)
-    {
-        return TE_ENOMEM;
-    }
-    
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     
     dhcp_spec_data->ipaddr = malloc(INET_ADDRSTRLEN + 1);
     dhcp_spec_data->mode = mode;
@@ -108,14 +102,14 @@ tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     dhcp_spec_data->in = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
     if (dhcp_spec_data->in < 0)
     {
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     opt = 1;
     if (setsockopt(dhcp_spec_data->in, SOL_SOCKET, SO_REUSEADDR, 
                    (void *)&opt, sizeof(opt)) != 0)
     {
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     local.sin_family = AF_INET;
@@ -125,8 +119,7 @@ tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 
     if (bind(dhcp_spec_data->in, SA(&local), sizeof(local)) != 0)
     {
-        perror ("dhcp csap socket bind");
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
     /* 
      * shutdown(SHUT_WR) looks reasonable here, but it can't be
@@ -138,15 +131,21 @@ tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     dhcp_spec_data->out = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
     if (dhcp_spec_data->out < 0)
     {
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     opt = 1;
     if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_REUSEADDR, 
                    (void *)&opt, sizeof(opt)) != 0)
     {
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     } 
+
+    interface = calloc(sizeof(struct ifreq) + 
+                       sizeof(struct sockaddr_storage) - 
+                       sizeof(struct sockaddr), 1);
+    if (interface == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     len = IFNAMSIZ;
     rc = asn_read_value_field(csap_nds, interface->ifr_ifrn.ifrn_name,
@@ -157,8 +156,7 @@ tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
                        interface->ifr_ifrn.ifrn_name,
                        strlen(interface->ifr_ifrn.ifrn_name) + 1) != 0) 
         {
-            perror("setsockopt, BINDTODEVICE");
-            rc  = errno;
+            rc  = TE_OS_RC(TE_TAD_CSAP, errno);
         }
     }
     else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
@@ -166,24 +164,26 @@ tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
         rc = 0;
     }
 
-    if (rc)
+    if (rc != 0)
     {
+        free(interface);
         tad_dhcp_rw_destroy_cb(csap);
         return rc;
     }
 
     if (ioctl(dhcp_spec_data->in, SIOCGIFADDR, interface) != 0)
     {
-        perror ("ioctl get ifaddr");
+        free(interface);
         return errno;
     }
-    ifa = (struct sockaddr_in *) &interface->ifr_addr;
+    ifa = (struct sockaddr_in *)&interface->ifr_addr;
     strncpy(dhcp_spec_data->ipaddr, 
             inet_ntoa(ifa->sin_addr), 
             INET_ADDRSTRLEN);
 
     if (rc != 0)
     {
+        free(interface);
         tad_dhcp_rw_destroy_cb(csap);
         return rc;
     }
@@ -192,16 +192,17 @@ tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BROADCAST, 
                    (void *)&opt, sizeof(opt)) != 0)
     {
+        free(interface);
         tad_dhcp_rw_destroy_cb(csap);
-        return errno;
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
     local.sin_addr.s_addr = ifa->sin_addr.s_addr;
 
     if (bind(dhcp_spec_data->out, SA(&local), sizeof(local)) != 0)
     {
-        perror ("dhcp csap socket bind");
-        return errno;
+        free(interface);
+        return TE_OS_RC(TE_TAD_CSAP, errno);
     }
     /* 
      * shutdown(SHUT_RD) looks reasonable here, but it can't be

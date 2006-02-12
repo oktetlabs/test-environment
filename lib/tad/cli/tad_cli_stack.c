@@ -912,9 +912,9 @@ tad_cli_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 
     cli_csap_spec = csap->layers[csap_get_rw_layer(csap)].csap_layer_pdu;
 
-    cli_spec_data = calloc(1, sizeof(cli_csap_specific_data_t));
+    cli_spec_data = calloc(1, sizeof(*cli_spec_data));
     if (cli_spec_data == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     /* Initialize pipe descriptors to undefined value */
     cli_spec_data->data_sock = cli_spec_data->sync_pipe = -1;

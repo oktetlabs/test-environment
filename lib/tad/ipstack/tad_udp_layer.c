@@ -56,7 +56,7 @@ tad_udp_init_cb(csap_p csap, unsigned int layer)
 
     proto_nds = csap->layers[layer].csap_layer_pdu;
 
-    udp_spec_data = calloc (1, sizeof(udp_csap_specific_data_t));
+    udp_spec_data = calloc(1, sizeof(*udp_spec_data));
     if (udp_spec_data == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 

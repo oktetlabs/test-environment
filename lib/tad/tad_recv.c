@@ -1319,9 +1319,7 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
 
     buffer = calloc(1, ans_len + EXTRA_BUF_SPACE + attach_len);
     if (buffer == NULL)
-    {
         return TE_ENOMEM;
-    }
 
     memcpy(buffer, answer_buffer, ans_len);
     ret = snprintf(buffer + ans_len, EXTRA_BUF_SPACE, " attach %u",
