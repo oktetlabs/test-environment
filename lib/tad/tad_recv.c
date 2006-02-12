@@ -701,6 +701,7 @@ tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
                         WARN(CSAP_LOG_FMT "User function failed: %r",
                              CSAP_LOG_ARGS(csap), rc);
                     }
+                    free(raw_pkt);
                 }
                 /* Don't want to stop receiver */
                 rc = 0;
