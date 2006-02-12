@@ -437,6 +437,14 @@ tad_pkts_add_one(tad_pkts *pkts, tad_pkt *pkt)
 
 /* See description in tad_pkt.h */
 void
+tad_pkts_del_one(tad_pkts *pkts, tad_pkt *pkt)
+{
+    CIRCLEQ_REMOVE(&pkts->pkts, pkt, links);
+    pkts->n_pkts--;
+}
+
+/* See description in tad_pkt.h */
+void
 tad_pkts_move(tad_pkts *dst, tad_pkts *src)
 {
     if (src->pkts.cqh_first != (void *)&src->pkts)
