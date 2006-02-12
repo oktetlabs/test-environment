@@ -181,6 +181,15 @@ extern te_errno tad_eth_confirm_tmpl_cb(csap_p         csap,
                                         void         **p_opaque); 
 
 /**
+ * Callback to release data prepared by confirm callback.
+ *
+ * The function complies with csap_layer_release_opaque_cb_t prototype.
+ */
+extern void tad_eth_release_tmpl_cb(csap_p csap, unsigned int layer,
+                                    void *opaque);
+
+
+/**
  * Callback for confirm pattern PDU with Ethernet protocol CSAP
  * arameters and possibilities.
  *

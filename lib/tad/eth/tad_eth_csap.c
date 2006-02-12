@@ -52,7 +52,7 @@ static csap_spt_type_t eth_csap_spt =
 
     confirm_tmpl_cb     : tad_eth_confirm_tmpl_cb,
     generate_pkts_cb    : tad_eth_gen_bin_cb,
-    release_tmpl_cb     : NULL,
+    release_tmpl_cb     : tad_eth_release_tmpl_cb,
 
     confirm_ptrn_cb     : tad_eth_confirm_ptrn_cb,
     match_pre_cb        : tad_eth_match_pre_cb,
