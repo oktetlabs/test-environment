@@ -270,8 +270,6 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
         goto promisc_mode;
     }
 
-    ir = calloc(1, sizeof(*ir));
-
     memset(&if_req, 0, sizeof(if_req));
     strcpy(if_req.ifr_name, name);
 
@@ -303,6 +301,12 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
     strncpy(ifdescr->name, if_req.ifr_name, (IFNAME_SIZE - 1));
     ifdescr->name[IFNAME_SIZE - 1] = '\0';
 
+    ir = calloc(1, sizeof(*ir));
+    if (ir == NULL)
+    {
+        close(cfg_socket);
+        return ETH_IFACE_NOT_FOUND;
+    }
 
     memcpy(&(ir->descr), ifdescr, sizeof(*ifdescr));
     INSQUE(ir, &iface_users_root); 
