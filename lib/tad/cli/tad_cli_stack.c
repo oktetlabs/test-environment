@@ -715,9 +715,6 @@ tad_cli_write_cb(csap_p csap, const tad_pkt *pkt)
     int    timeout;
     size_t bytes_written;
     int    ret;
-    te_errno rc;
-
-    struct timeval tv;
 
 
     VERB("%s() Called with CSAP %d", __FUNCTION__, csap->id);
@@ -755,28 +752,6 @@ tad_cli_write_cb(csap_p csap, const tad_pkt *pkt)
     }
 
     spec_data->last_cmd_len = buf_len;
-
-#if 0
-    /* Wait for CLI response */
-    tv.tv_sec =  csap->timeout / 1000000;
-    tv.tv_usec = csap->timeout % 1000000;
-    if ((ret = parent_read_reply(spec_data, buf_len, NULL, 0, &tv)) <= 0)
-    {
-        if (ret < 0)
-        {
-            rc = TE_RC(TE_TAD_CSAP, -ret);
-        }
-        else
-        {
-            /*
-             * @todo Remove this checking when CSAP interpret rc 0 as timeout
-             * on write operation.
-             */
-            rc = TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
-        }
-        return rc;
-    }
-#endif
 
     return 0;
 }
@@ -889,7 +864,7 @@ tad_cli_write_read_cb(csap_p csap, unsigned int timeout,
 
 /* See description tad_cli_impl.h */
 te_errno
-tad_cli_rw_init_cb(csap_p csap, const asn_value *csap_nds)
+tad_cli_rw_init_cb(csap_p csap)
 {
     int rc;
     size_t tmp_len;
@@ -907,10 +882,7 @@ tad_cli_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     
     VERB("%s() entered", __FUNCTION__);
 
-    if (csap_nds == NULL)
-        return TE_EWRONGPTR;
-
-    cli_csap_spec = csap->layers[csap_get_rw_layer(csap)].csap_layer_pdu;
+    cli_csap_spec = csap->layers[csap_get_rw_layer(csap)].nds;
 
     cli_spec_data = calloc(1, sizeof(*cli_spec_data));
     if (cli_spec_data == NULL)

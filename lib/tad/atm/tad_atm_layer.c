@@ -116,7 +116,7 @@ tad_atm_init_cb(csap_p csap, unsigned int layer)
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
-    layer_nds = csap->layers[layer].csap_layer_pdu;
+    layer_nds = csap->layers[layer].nds;
 
     rc = asn_read_int32(layer_nds, &type, "type");
     if (rc != 0)

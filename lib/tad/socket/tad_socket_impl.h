@@ -72,15 +72,14 @@ typedef struct tad_socket_rw_data {
 /**
  * Callback for init 'socket' CSAP layer if single in stack.
  *
- * The function complies with csap_nbr_init_cb_t prototype.
+ * The function complies with csap_rw_init_cb_t prototype.
  */ 
-extern te_errno tad_socket_rw_init_cb(csap_p           csap,
-                                      const asn_value *csap_nds);
+extern te_errno tad_socket_rw_init_cb(csap_p csap);
 
 /**
  * Callback for destroy 'socket' CSAP layer if single in stack.
  *
- * The function complies with csap_nbr_destroy_cb_t prototype.
+ * The function complies with csap_rw_destroy_cb_t prototype.
  */ 
 extern te_errno tad_socket_rw_destroy_cb(csap_p csap);
 
@@ -126,17 +125,6 @@ extern te_errno tad_socket_gen_bin_cb(csap_p                csap,
                                       tad_pkts             *sdus,
                                       tad_pkts             *pdus);
 
-
-/**
- * Callback for confirm pattern PDU with Socket protocol CSAP
- * arameters and possibilities.
- *
- * The function complies with csap_layer_confirm_pdu_cb_t prototype.
- */ 
-extern te_errno tad_socket_confirm_ptrn_cb(csap_p         csap,
-                                           unsigned int   layer,
-                                           asn_value_p    layer_pdu,
-                                           void         **p_opaque); 
 
 /**
  * Callback for parse received packet and match it with pattern. 

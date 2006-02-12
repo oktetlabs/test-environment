@@ -22,8 +22,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author Andrew Duka <duke@oktet.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+ * @author Andrew Duka <duke@oktet.ru>
  *
  * $Id$
  */
@@ -372,7 +372,7 @@ tad_eth_write_cb(csap_p csap, const tad_pkt *pkt)
 
 /* See description tad_eth_impl.h */
 te_errno
-tad_eth_rw_init_cb(csap_p csap, const asn_value *csap_nds)
+tad_eth_rw_init_cb(csap_p csap)
 {
     te_errno            rc; 
     unsigned int        layer = csap_get_rw_layer(csap);
@@ -383,15 +383,14 @@ tad_eth_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     const asn_value    *eth_csap_spec; 
     
 
-    UNUSED(csap_nds);
-    eth_csap_spec = csap->layers[layer].csap_layer_pdu;
+    eth_csap_spec = csap->layers[layer].nds;
     
     val_len = sizeof(device_id);
     rc = asn_read_value_field(eth_csap_spec, device_id, &val_len,
                               "device-id");
     if (rc != 0) 
     {
-        ERROR("device-id for ethernet not found: %r", rc);
+        ERROR("device-id for Ethernet not found: %r", rc);
         return TE_RC(TE_TAD_CSAP, rc);
     }
     

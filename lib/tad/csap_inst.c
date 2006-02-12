@@ -77,8 +77,11 @@ csap_free(csap_p csap)
 
         for (i = 0; i < csap->depth; i++)
         {
-            free(csap->layers[i].specific_data);
-            asn_free_value(csap->layers[i].csap_layer_pdu);
+            /*
+             * Nothing to be done per layer:
+             *  - NDS is freed as whole;
+             *  - opaque data have to be freed by destroy callbacks.
+             */
         }
 
         free(csap->layers); 
@@ -131,7 +134,7 @@ csap_create(const char *type, csap_p *csap)
 #define CSAP_CREATE_ERROR(errno_, fmt_...) \
     do {               \
         rc = (errno_); \
-        ERROR(fmt_); \
+        ERROR(fmt_);   \
         goto error;    \
     } while (0)
 
@@ -232,6 +235,7 @@ csap_destroy(csap_handle_t csap_id)
     if (csap == NULL)
         return TE_RC(TE_TAD_CH, TE_ENOENT);
 
+    asn_free_value(csap->nds);
     csap_free(csap);
 
     return 0;

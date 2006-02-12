@@ -461,7 +461,7 @@ tad_send_prepare(csap_p csap, asn_value *template,
                                       &my_ctx->tmpl_data);
     if (rc != 0)
     {
-        ERROR(CSAP_LOG_FMT "Failed to preprocess template: %r",
+        ERROR(CSAP_LOG_FMT "Failed to preprocess traffic template: %r",
               CSAP_LOG_ARGS(csap), rc);
         tad_send_free_context(csap, my_ctx);
         return rc;
@@ -583,7 +583,7 @@ tad_send_cb(tad_pkt *pkt, void *opaque)
     if (rc != 0)
     {
         /* An error occured */
-        F_ERROR(CSAP_LOG_FMT "write callback error: %r",
+        F_ERROR(CSAP_LOG_FMT "Write callback error: %r",
                 CSAP_LOG_ARGS(csap), rc);
         /* Stop packets enumeration */
         return rc;
@@ -864,7 +864,8 @@ tad_send_prepare_bin(csap_p csap, asn_value_p nds,
     rc = tad_pkts_alloc(pdus, 1, 0, 0);
     if (rc != 0)
     {
-        ERROR("%s(): tad_pkts_alloc() for payload failed", __FUNCTION__);
+        ERROR(CSAP_LOG_FMT "tad_pkts_alloc() for payload failed: %r",
+              CSAP_LOG_ARGS(csap), rc);
         return TE_RC(TE_TAD_CH, rc);
     }
 
@@ -880,17 +881,22 @@ tad_send_prepare_bin(csap_p csap, asn_value_p nds,
 
             if (pld_data->func == NULL)
             {
-                ERROR("%s(): null function pointer, error", __FUNCTION__);
-                return TE_RC(TE_TAD_CH, TE_ETADMISSNDS);
+                ERROR(CSAP_LOG_FMT "NULL function to generate payload",
+                      CSAP_LOG_ARGS(csap));
+                return TE_RC(TE_TAD_CH, TE_ETADWRONGNDS);
             }
 
             rc = pld_data->func(csap->id, -1 /* payload */,
                                 nds); 
-            if (rc)
-                return TE_RC(TE_TAD_CH, rc); 
+            if (rc != 0)
+            {
+                ERROR(CSAP_LOG_FMT "Function to generate payload "
+                      "failed: %r", CSAP_LOG_ARGS(csap), rc);
+                return TE_RC(TE_TAD_CH, rc);
+            }
 
             rc = asn_read_value_field(nds, data, &d_len, "payload.#bytes");
-            if (rc)
+            if (rc != 0)
             {
                 free(data);
                 return TE_RC(TE_TAD_CH, rc);
@@ -915,40 +921,46 @@ tad_send_prepare_bin(csap_p csap, asn_value_p nds,
             break;
 
         case TAD_PLD_STREAM: 
+        {
+            uint32_t offset;
+            uint32_t length;
+
+            if (pld_data->stream.func == NULL)
             {
-                uint32_t offset;
-                uint32_t length;
-
-                if (pld_data->stream.func == NULL)
-                {
-                    ERROR("%s(): null stream function pointer, error",
-                          __FUNCTION__);
-                    return TE_RC(TE_TAD_CH, TE_ETADMISSNDS);
-                }
-                rc = tad_data_unit_to_bin(&pld_data->stream.length,
-                                          args, arg_num,
-                                          (uint8_t *)&length,
-                                          sizeof(length));
-                if (rc != 0)
-                    break;
-                length = ntohl(length);
-
-                rc = tad_data_unit_to_bin(&pld_data->stream.offset,
-                                          args, arg_num,
-                                          (uint8_t *)&offset,
-                                          sizeof(offset));
-                if (rc != 0)
-                    break;
-                offset = ntohl(offset);
-
-                rc = tad_pkts_add_new_seg(pdus, TRUE, NULL,
-                                          length, NULL);
-#if 0 /* FIXME */
-                rc = pld_data->stream.func(offset, length, 
-                                           up_packets->data);
-#endif
+                ERROR(CSAP_LOG_FMT "NULL stream function to generate "
+                      "payload", CSAP_LOG_ARGS(csap));
+                return TE_RC(TE_TAD_CH, TE_ETADWRONGNDS);
             }
+            rc = tad_data_unit_to_bin(&pld_data->stream.length,
+                                      args, arg_num,
+                                      (uint8_t *)&length,
+                                      sizeof(length));
+            if (rc != 0)
+                break;
+            length = ntohl(length);
+
+            rc = tad_data_unit_to_bin(&pld_data->stream.offset,
+                                      args, arg_num,
+                                      (uint8_t *)&offset,
+                                      sizeof(offset));
+            if (rc != 0)
+                break;
+            offset = ntohl(offset);
+
+            rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, length, NULL);
+            if (rc != 0)
+            {
+                ERROR(CSAP_LOG_FMT "Failed to add a new segment with "
+                      "%u bytes of data for all PDUs",
+                      CSAP_LOG_ARGS(csap), (unsigned)length);
+                break;
+            }
+#if 0 /* FIXME */
+            rc = pld_data->stream.func(offset, length, 
+                                       up_packets->data);
+#endif
             break;
+        }
 
         default:
             rc = TE_RC(TE_TAD_CH, TE_EOPNOTSUPP);
@@ -975,7 +987,8 @@ tad_send_prepare_bin(csap_p csap, asn_value_p nds,
             rc = asn_get_subvalue(nds, &layer_pdu, label); 
             if (rc != 0)
             {
-                ERROR("get subvalue in generate packet fails %r", rc);
+                ERROR(CSAP_LOG_FMT "Failed to get PDU template for "
+                      "layer %u: %r", CSAP_LOG_ARGS(csap), layer, rc);
             }
         }
         if (rc == 0)
@@ -985,8 +998,9 @@ tad_send_prepare_bin(csap_p csap, asn_value_p nds,
                      args, arg_num, sdus, pdus); 
             if (rc != 0) 
             {
-                ERROR(CSAP_LOG_FMT "generate binary data on layer %u "
-                      "failed: %r", CSAP_LOG_ARGS(csap), layer, rc);
+                ERROR(CSAP_LOG_FMT "Generate binary data on layer %u "
+                      "(%s) failed: %r", CSAP_LOG_ARGS(csap), layer,
+                      csap_get_proto_support(csap, layer)->proto, rc);
             }
         }
     }

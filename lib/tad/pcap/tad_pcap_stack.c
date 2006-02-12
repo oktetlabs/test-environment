@@ -94,7 +94,7 @@ typedef struct tad_pcap_rw_data {
 
 /* See description tad_pcap_impl.h */
 te_errno
-tad_pcap_rw_init_cb(csap_p csap, const asn_value *csap_nds)
+tad_pcap_rw_init_cb(csap_p csap)
 {
     int      rc; 
     char     choice[100] = "";
@@ -107,10 +107,7 @@ tad_pcap_rw_init_cb(csap_p csap, const asn_value *csap_nds)
                                                      parameters  */
                         
     
-    if (csap_nds == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
-
-    pcap_csap_spec = csap->layers[csap_get_rw_layer(csap)].csap_layer_pdu;
+    pcap_csap_spec = csap->layers[csap_get_rw_layer(csap)].nds;
 
     rc = asn_get_choice(pcap_csap_spec, "", choice, sizeof(choice));
     VERB("eth_single_init_cb called for csap %d, ndn with type %s\n", 

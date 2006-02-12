@@ -77,15 +77,14 @@ typedef struct tad_iscsi_layer_data {
 /**
  * Callback for init iSCSI CSAP layer.
  *
- * The function complies with csap_nbr_init_cb_t prototype.
+ * The function complies with csap_rw_init_cb_t prototype.
  */ 
-extern te_errno tad_iscsi_rw_init_cb(csap_p csap,
-                                     const asn_value *csap_nds);
+extern te_errno tad_iscsi_rw_init_cb(csap_p csap);
 
 /**
  * Callback for destroy iSCSI CSAP layer.
  *
- * The function complies with csap_nbr_destroy_cb_t prototype.
+ * The function complies with csap_rw_destroy_cb_t prototype.
  */ 
 extern te_errno tad_iscsi_rw_destroy_cb(csap_p csap);
 

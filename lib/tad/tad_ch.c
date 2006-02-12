@@ -258,7 +258,6 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     return -1;
 #else
     csap_p          new_csap;
-    asn_value_p     csap_nds;
 
     csap_handle_t   new_csap_id; 
     unsigned int    layer;
@@ -285,44 +284,69 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
     if (ba == NULL)
     {
         ERROR("Missing attached NDS with CSAP parameters");
-        csap_destroy(new_csap_id);
-        SEND_ANSWER("%u", TE_ETADMISSNDS);
-        return 0;
+        goto exit;
     }
 
-    rc = asn_parse_value_text(ba, ndn_csap_spec, &csap_nds, &syms);
+    rc = asn_parse_value_text(ba, ndn_csap_spec, &new_csap->nds, &syms);
     if (rc != 0)
     {
         ERROR("CSAP NDS parse error sym=%d: %r", syms, rc);
-        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
-        csap_destroy(new_csap_id); 
-        return 0;
+        goto exit;
     }
-    assert(csap_nds != NULL);
-
-    /* FIXME: Where is it used? */
-    syms = asn_get_length(csap_nds, "");
-    INFO("Length of PDU list in NDS: %d, csap depth %u", 
-          syms, new_csap->depth); 
+    assert(new_csap->nds != NULL);
 
     /*
-     * Init csap layers from lower to upper 
+     * Get CSAP specification parameters for each layer 
+     */
+    for (layer = 0; layer < new_csap->depth; ++layer)
+    {
+        rc = asn_get_indexed(new_csap->nds,
+                             &new_csap->layers[layer].nds, layer, NULL);
+        if (rc != 0)
+        {
+            ERROR("Get %u layer generic PDU from CSAP NDS failed: %r",
+                  layer, rc);
+            goto exit;
+        }
+        rc = asn_get_choice_value(new_csap->layers[layer].nds,
+                                  &new_csap->layers[layer].nds,
+                                  NULL, NULL);
+        if (rc != 0)
+        {
+            ERROR("Get choice on %u layer from generic PDU in CSAP NDS "
+                  "failed: %r", layer, rc);
+            goto exit;
+        }
+    }
+
+    /*
+     * Initialize read/write layer (the lowest) af first.
+     */
+    new_csap->rw_layer = new_csap->depth - 1;
+    if (csap_get_proto_support(new_csap, csap_get_rw_layer(new_csap))
+            ->rw_init_cb == NULL)
+    {
+        ERROR("The lowest CSAP layer does not have read/write "
+              "initialization routine");
+        rc = TE_RC(TE_TAD_CH, TE_EPROTONOSUPPORT);
+        goto exit;
+    }
+    else if ((rc = csap_get_proto_support(new_csap,
+                                          csap_get_rw_layer(new_csap))
+                       ->rw_init_cb(new_csap)) != 0)
+    {
+        ERROR("Initialization of the lowest layer to read/write "
+              "failed: %r", rc);
+        goto exit;
+    }
+
+    /*
+     * Initialize CSAP layers from lower to upper 
      */
     for (layer = new_csap->depth; layer-- > 0; )
     {
-        asn_value       *nds_pdu;
-        csap_spt_type_p  csap_spt_descr; 
-
-        nds_pdu = asn_read_indexed(csap_nds, layer, "");
-        if (nds_pdu == NULL)
-        {
-            ERROR("Copy %u layer PDU from NDS ASN value failed", layer);
-            rc = TE_EASNGENERAL;
-            break;
-        }
-
-        new_csap->layers[layer].csap_layer_pdu = nds_pdu;
-        csap_spt_descr = csap_get_proto_support(new_csap, layer);
+        csap_spt_type_p  csap_spt_descr = 
+            csap_get_proto_support(new_csap, layer);
 
         if ((csap_spt_descr->init_cb != NULL) &&
             (rc = csap_spt_descr->init_cb(new_csap, layer)) != 0)
@@ -334,38 +358,15 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
         }
     }
 
-    if (rc == 0)
-    {
-        /*
-         * Initialize read/write layer (the lowest)
-         */
-        new_csap->rw_layer = new_csap->depth - 1;
-        if (csap_get_proto_support(new_csap, csap_get_rw_layer(new_csap))
-                ->rw_init_cb == NULL)
-        {
-            ERROR("The lowest CSAP layer does not have read/write "
-                  "initialization routine");
-            rc = TE_RC(TE_TAD_CH, TE_EPROTONOSUPPORT);
-        }
-        else if ((rc = csap_get_proto_support(new_csap,
-                                              csap_get_rw_layer(new_csap))
-                           ->rw_init_cb(new_csap, csap_nds)) != 0)
-        {
-            ERROR("Initialization of the lowest layer to read/write "
-                  "failed: %r", rc);
-        }
-    }
-
-    asn_free_value(csap_nds);
-
+exit:
     if (rc == 0)
     {
         SEND_ANSWER("0 %u", new_csap_id); 
     }
     else
     {
-        csap_destroy(new_csap_id); 
-        SEND_ANSWER("%u Csap creation error", TE_RC(TE_TAD_CH, rc));
+        (void)csap_destroy(new_csap_id); 
+        SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
     }
     return 0; 
 #endif

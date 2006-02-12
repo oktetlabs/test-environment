@@ -684,9 +684,9 @@ tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
             if (csap->echo_cb != NULL)
             {
                 rc = csap->echo_cb(csap, raw_pkt, raw_len);
-                if (rc)
-                    ERROR("csap #%d, echo_cb returned %r code.", 
-                          csap->id, rc);
+                if (rc != 0)
+                    ERROR(CSAP_LOG_FMT "echo callback failed: %r", 
+                          CSAP_LOG_ARGS(csap), rc);
                 /* Have no reason to stop receiving. */
                 rc = 0;
             }
@@ -703,8 +703,8 @@ tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
                                           &raw_pkt, &raw_len);
                 if (rc != 0)
                 {
-                    ERROR("Failed to make flatten copy of packet: %r",
-                          rc);
+                    ERROR(CSAP_LOG_FMT "Failed to make flatten copy "
+                          "of packet: %r", CSAP_LOG_ARGS(csap), rc);
                 }
                 else
                 {
@@ -1060,7 +1060,7 @@ tad_recv_thread(void *arg)
         rc = csap_get_send_context(csap)->status;
         if (rc != 0)
         {
-            ERROR(CSAP_LOG_FMT "send/receive Sender failed, do not "
+            ERROR(CSAP_LOG_FMT "Send/receive: Sender failed, do not "
                   "start Receiver", CSAP_LOG_ARGS(csap));
             goto exit;
         }
@@ -1083,7 +1083,7 @@ tad_recv_thread(void *arg)
      */
     if ((meta_pkt = tad_recv_pkt_alloc(csap)) == NULL)
     {
-        ERROR(CSAP_LOG_FMT "Failed to initialize Receiver packet",
+        ERROR(CSAP_LOG_FMT "Failed to initialize Receiver meta-packet",
               CSAP_LOG_ARGS(csap));
         rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
         goto exit;
@@ -1149,7 +1149,7 @@ tad_recv_thread(void *arg)
         if ((meta_pkt == NULL) &&
             ((meta_pkt = tad_recv_pkt_alloc(csap)) == NULL))
         {
-            ERROR(CSAP_LOG_FMT "Failed to initialize Receiver packet",
+            ERROR(CSAP_LOG_FMT "Failed to initialize Receiver meta-packet",
                   CSAP_LOG_ARGS(csap));
             rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
             goto exit;
@@ -1173,7 +1173,7 @@ tad_recv_thread(void *arg)
         if (rc != 0)
         {
             /* Unexpected read callback error */
-            ERROR(CSAP_LOG_FMT "read callback failed: %r",
+            ERROR(CSAP_LOG_FMT "Read callback failed: %r",
                   CSAP_LOG_ARGS(csap), rc);
             break;
         }
@@ -1208,7 +1208,7 @@ tad_recv_thread(void *arg)
         if (rc != 0) /* Unexpected match error */
         {
             /* Nothing is owned by match routine */
-            ERROR(CSAP_LOG_FMT "match failed: %r",
+            ERROR(CSAP_LOG_FMT "Match unexpectedly failed: %r",
                   CSAP_LOG_ARGS(csap), rc);
             break;
         }
@@ -1387,8 +1387,9 @@ tad_recv_get_packet(csap_p csap, te_bool wait, tad_recv_pkt **pkt)
         {
             rc = TE_OS_RC(TE_TAD_CH, ret);
             assert(TE_RC_GET_ERROR(rc) != TE_ENOENT);
-            ERROR("%s(): pthread_cond_wait() failed: %r",
-                  __FUNCTION__, rc);
+            ERROR(CSAP_LOG_FMT "%s(): pthread_cond_wait() failed: %r",
+                  CSAP_LOG_ARGS(csap), __FUNCTION__, rc);
+            break;
         }
     }
     if (*pkt != NULL)

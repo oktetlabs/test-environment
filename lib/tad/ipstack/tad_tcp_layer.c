@@ -72,7 +72,7 @@ tad_tcp_init_cb(csap_p csap, unsigned int layer)
 
     csap_set_proto_spec_data(csap, layer, spec_data);
 
-    tcp_pdu = csap->layers[layer].csap_layer_pdu;
+    tcp_pdu = csap->layers[layer].nds;
 
     /*
      * Set local port
@@ -189,7 +189,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
     else
         tcp_pdu = layer_pdu; 
 
-    tcp_csap_pdu = csap->layers[layer].csap_layer_pdu; 
+    tcp_csap_pdu = csap->layers[layer].nds;
 
 #define CONVERT_FIELD(tag_, du_field_)                                  \
     do {                                                                \
@@ -534,6 +534,8 @@ tad_tcp_match_bin_cb(csap_p           csap,
 
     uint8_t  tmp8;
     size_t   h_len = 0;
+
+    UNUSED(ptrn_opaque);
 
     assert(tad_pkt_seg_num(pdu) == 1);
     assert(tad_pkt_first_seg(pdu) != NULL);

@@ -294,7 +294,7 @@ tad_snmp_write_cb(csap_p csap, const tad_pkt *pkt)
 
 /* See description in tad_snmp_impl.h */
 te_errno
-tad_snmp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
+tad_snmp_rw_init_cb(csap_p csap)
 {
     int      rc;
     char     community[COMMUNITY_MAX_LEN + 1]; 
@@ -308,7 +308,7 @@ tad_snmp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 
     snmp_csap_specific_data_p   snmp_spec_data;
     const asn_value            *snmp_csap_spec =
-        csap->layers[csap_get_rw_layer(csap)].csap_layer_pdu;
+        csap->layers[csap_get_rw_layer(csap)].nds;
 
     char                        security_model_name[32];
     ndn_snmp_sec_model_t        security_model;
@@ -323,9 +323,6 @@ tad_snmp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
 
 
     VERB("Init callback\n");
-
-    if (!csap_nds)
-        return TE_EWRONGPTR;
 
 #if NEW_SNMP_API
     snmp_sess_init(&csap_session);

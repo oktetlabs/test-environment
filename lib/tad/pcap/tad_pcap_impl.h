@@ -67,7 +67,7 @@ extern "C" {
  *
  * The function complies with csap_rw_init_cb_t prototype.
  */ 
-extern te_errno tad_pcap_rw_init_cb(csap_p csap, const asn_value *csap_nds);
+extern te_errno tad_pcap_rw_init_cb(csap_p csap);
 
 /**
  * Callback for destroy Ethernet-PCAP CSAP layer if single in stack.

@@ -100,7 +100,7 @@ tad_arp_init_cb(csap_p csap, unsigned int layer)
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
-    layer_nds = csap->layers[layer].csap_layer_pdu;
+    layer_nds = csap->layers[layer].nds;
 
     rc = tad_bps_pkt_frag_init(tad_arp_bps_hdr,
                                TE_ARRAY_LEN(tad_arp_bps_hdr),

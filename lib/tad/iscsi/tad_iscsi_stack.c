@@ -84,30 +84,21 @@ typedef struct tad_iscsi_rw_data {
 
 /* See description tad_iscsi_impl.h */
 te_errno
-tad_iscsi_rw_init_cb(csap_p csap, const asn_value *csap_nds)
+tad_iscsi_rw_init_cb(csap_p csap)
 {
     te_errno            rc;
     int32_t             int32_val;
-    asn_value          *iscsi_nds;
     tad_iscsi_rw_data  *rw_data; 
 
-
-    if (csap_nds == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_EWRONGPTR);
 
     rw_data = calloc(1, sizeof(*rw_data));
     if (rw_data == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    rw_data->socket = -1;
     csap_set_rw_data(csap, rw_data);
 
-    rc = asn_get_indexed(csap_nds, &iscsi_nds, 0, NULL);
-    if (rc != 0)
-    {
-        ERROR("%s() get iSCSI csap spec failed %r", __FUNCTION__, rc);
-        return TE_RC(TE_TAD_CSAP, rc);
-    } 
-    
-    if ((rc = asn_read_int32(iscsi_nds, &int32_val, "socket")) != 0)
+    if ((rc = asn_read_int32(csap->layers[csap_get_rw_layer(csap)].nds,
+                             &int32_val, "socket")) != 0)
     {
         ERROR("%s(): asn_read_int32() failed for 'socket': %r", 
               __FUNCTION__, rc);

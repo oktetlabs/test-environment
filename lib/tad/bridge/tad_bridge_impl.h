@@ -72,7 +72,7 @@ typedef struct bridge_csap_specific_data {
 /**
  * Callback for init 'bridge' CSAP layer over 'eth' in stack.
  *
- * The function complies with csap_nbr_init_cb_t prototype.
+ * The function complies with csap_layer_init_cb_t prototype.
  */ 
 extern te_errno tad_bridge_eth_init_cb(csap_p           csap,
                                        unsigned int     layer,
@@ -81,7 +81,7 @@ extern te_errno tad_bridge_eth_init_cb(csap_p           csap,
 /**
  * Callback for destroy 'bridge' CSAP layer over 'eth' in stack.
  *
- * The function complies with csap_nbr_destroy_cb_t prototype.
+ * The function complies with csap_layer_destroy_cb_t prototype.
  */ 
 extern te_errno tad_bridge_eth_destroy_cb(csap_p       csap,
                                           unsigned int layer);

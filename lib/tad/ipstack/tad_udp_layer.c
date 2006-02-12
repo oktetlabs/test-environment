@@ -54,7 +54,7 @@ tad_udp_init_cb(csap_p csap, unsigned int layer)
     size_t len; 
     int    rc; 
 
-    proto_nds = csap->layers[layer].csap_layer_pdu;
+    proto_nds = csap->layers[layer].nds;
 
     udp_spec_data = calloc(1, sizeof(*udp_spec_data));
     if (udp_spec_data == NULL)
@@ -390,6 +390,8 @@ tad_udp_match_bin_cb(csap_p csap,
     size_t      data_len;
     asn_value  *udp_header_pdu = NULL;
     te_errno    rc;
+
+    UNUSED(ptrn_opaque);
 
     assert(tad_pkt_seg_num(pdu) == 1);
     assert(tad_pkt_first_seg(pdu) != NULL);

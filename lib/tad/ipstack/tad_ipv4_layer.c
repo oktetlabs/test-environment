@@ -61,7 +61,7 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
     csap_set_proto_spec_data(csap, layer, spec_data);
 
     val_len = sizeof(spec_data->remote_addr);
-    rc = asn_read_value_field(csap->layers[layer].csap_layer_pdu,
+    rc = asn_read_value_field(csap->layers[layer].nds,
                               &spec_data->remote_addr, &val_len,
                               "remote-addr.#plain");
     if (rc != 0)
@@ -71,7 +71,7 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
     }
 
     val_len = sizeof(spec_data->local_addr);
-    rc = asn_read_value_field(csap->layers[layer].csap_layer_pdu,
+    rc = asn_read_value_field(csap->layers[layer].nds,
                               &spec_data->local_addr, &val_len,
                               "local-addr.#plain");
     if (rc != 0)
@@ -168,7 +168,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
 
 
 
-    ip4_csap_pdu = csap->layers[layer].csap_layer_pdu; 
+    ip4_csap_pdu = csap->layers[layer].nds; 
     if (asn_get_syntax(ip4_csap_pdu, "") == CHOICE)
     {
         if ((rc = asn_get_choice_value(ip4_csap_pdu, &ip4_csap_pdu,

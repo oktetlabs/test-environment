@@ -72,7 +72,7 @@
 
 /* See description tad_dhcp_impl.h */
 te_errno
-tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
+tad_dhcp_rw_init_cb(csap_p csap)
 {
     dhcp_csap_specific_data_t *dhcp_spec_data; 
     struct sockaddr_in local;
@@ -83,11 +83,10 @@ tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     size_t          len;
     struct ifreq   *interface;
 
-    if (csap_nds == NULL)
-        return TE_EWRONGPTR;
 
     len = sizeof(mode);
-    rc = asn_read_value_field(csap_nds, &mode, &len, "0.mode");
+    rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds,
+                              &mode, &len, "mode");
     if (rc != 0)
         return rc; /* If this field is not set, then CSAP cannot process */ 
 
@@ -148,8 +147,9 @@ tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
     len = IFNAMSIZ;
-    rc = asn_read_value_field(csap_nds, interface->ifr_ifrn.ifrn_name,
-                              &len, "0.iface");
+    rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds,
+                              interface->ifr_ifrn.ifrn_name, &len,
+                              "iface");
     if (rc == 0)
     {
         if (setsockopt(dhcp_spec_data->out, SOL_SOCKET, SO_BINDTODEVICE,

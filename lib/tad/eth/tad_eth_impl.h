@@ -88,15 +88,14 @@ extern "C" {
 /**
  * Callback for init 'eth' CSAP layer if single in stack.
  *
- * The function complies with csap_nbr_init_cb_t prototype.
+ * The function complies with csap_rw_init_cb_t prototype.
  */ 
-extern te_errno tad_eth_rw_init_cb(csap_p           csap,
-                                   const asn_value *csap_nds);
+extern te_errno tad_eth_rw_init_cb(csap_p csap);
 
 /**
  * Callback for destroy 'eth' CSAP layer if single in stack.
  *
- * The function complies with csap_nbr_destroy_cb_t prototype.
+ * The function complies with csap_rw_destroy_cb_t prototype.
  */ 
 extern te_errno tad_eth_rw_destroy_cb(csap_p csap);
 

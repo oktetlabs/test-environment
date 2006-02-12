@@ -75,7 +75,7 @@ typedef struct dhcp_csap_specific_data {
  *
  * The function complies with csap_rw_init_cb_t prototype.
  */ 
-extern te_errno tad_dhcp_rw_init_cb(csap_p csap, const asn_value *csap_nds);
+extern te_errno tad_dhcp_rw_init_cb(csap_p csap);
 
 /**
  * Callback for destroy 'file' CSAP layer as read/write layer.

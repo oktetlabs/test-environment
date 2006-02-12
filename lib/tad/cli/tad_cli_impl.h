@@ -184,7 +184,7 @@ extern te_errno tad_cli_write_read_cb(csap_p csap, unsigned int timeout,
  *
  * The function complies with csap_rw_init_cb_t prototype.
  */ 
-extern te_errno tad_cli_rw_init_cb(csap_p csap, const asn_value *csap_nds);
+extern te_errno tad_cli_rw_init_cb(csap_p csap);
 
 /**
  * Callback for destroy 'file' CSAP layer.

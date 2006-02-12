@@ -192,8 +192,8 @@ open_packet_socket(const char *ifname, int *sock)
     if (setsockopt(*sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
                    &mr, sizeof(mr)) != 0)
     {
-        ERROR("setsockopt: PACKET_ADD_MEMBERSHIP failed: %r",
-              te_rc_os2te(errno));
+        ERROR("%s(): setsockopt: PACKET_ADD_MEMBERSHIP failed: %r",
+              __FUNCTION__, te_rc_os2te(errno));
     }
 #endif
 
@@ -211,16 +211,16 @@ close_packet_socket(const char* ifname, int sock)
     ir = find_iface_user_rec(ifname);
     if (ir == NULL)
     {
-        ERROR("%s(): iface %d not used before for create packet socket", 
-              __FUNCTION__, ifname);
+        ERROR("%s(): Interface '%s' not used before for create packet "
+              "socket", __FUNCTION__, ifname);
         return EINVAL;
     }
 
     rc = eth_free_interface(&(ir->descr));
     if (rc != 0)
     {
-        ERROR("%s(): error free interface %d",
-              __FUNCTION__, ir->descr.name);
+        ERROR("%s(): eth_free_interface(%s) failed %d",
+              __FUNCTION__, ir->descr.name, rc);
         return rc;
     }
 
@@ -277,7 +277,8 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
     {
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("get if addr error %d \"%s\"", rc, err_buf);
+        ERROR("%s(): ioctl(SIOCGIFHWADDR) failed: %r - %s",
+              __FUNCTION__, te_rc_os2te(rc), err_buf);
         close(cfg_socket);
         return ETH_IFACE_HWADDR_ERROR;
     }
@@ -289,7 +290,8 @@ eth_find_interface(const char *name, eth_interface_p ifdescr)
     {
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("get if index error %d \"%s\"", rc, err_buf);
+        ERROR("%s(): ioctl(SIOCGIFINDEX) failed: %r - %s",
+              __FUNCTION__, te_rc_os2te(rc), err_buf);
         close(cfg_socket);
         return ETH_IFACE_IFINDEX_ERROR;
     }
@@ -323,7 +325,8 @@ promisc_mode:
     {
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("get if flags error %d \"%s\"", rc, err_buf);
+        ERROR("%s(): ioctl(SIOCGIFFLAGS) failed: %r - %s",
+              __FUNCTION__, te_rc_os2te(rc), err_buf);
         return ETH_IFACE_NOT_FOUND;
     }
 
@@ -338,7 +341,8 @@ promisc_mode:
     { 
         rc = errno;
         strerror_r(rc, err_buf, sizeof(err_buf)); 
-        ERROR("set PROMISC mode error %d \"%s\"", rc, err_buf);
+        ERROR("%s(): ioctl(SIOCGIFFLAGS) to enable promiscuous mode "
+              "failed: %r", __FUNCTION__, te_rc_os2te(rc));
         return ETH_IFACE_NOT_FOUND;
     }
 #endif
@@ -367,8 +371,9 @@ eth_free_interface(eth_interface_p iface)
 
     if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-        ERROR("%s(): create cfg sock fails, errno %d", __FUNCTION__, rc);
         rc = errno;
+        ERROR("%s(): socket(AF_INET, SOCK_DGRAM, 0) failed: %r",
+              __FUNCTION__, te_rc_os2te(rc));
     }
 
     memset(&if_request, 0, sizeof(if_request));
@@ -377,8 +382,8 @@ eth_free_interface(eth_interface_p iface)
     if (ioctl(cfg_socket, SIOCGIFFLAGS, &if_request) < 0)
     {
         rc = errno;
-        ERROR("%s(): get flags of interface failed, errno %d",
-              __FUNCTION__, rc);
+        ERROR("%s(): ioctl(SIOCGIFFLAGS) failed: %r",
+              __FUNCTION__, te_rc_os2te(rc));
         close(cfg_socket);
         return rc;
     }
@@ -389,7 +394,8 @@ eth_free_interface(eth_interface_p iface)
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &if_request))
     { 
         rc = errno;
-        ERROR("%s(): unset promisc mode failed %d", __FUNCTION__, rc);
+        ERROR("%s(): ioctl(SIOCGIFFLAGS) to disable promiscuous mode "
+              "failed: %r", __FUNCTION__, te_rc_os2te(rc));
     }
     close(cfg_socket);
 #endif 

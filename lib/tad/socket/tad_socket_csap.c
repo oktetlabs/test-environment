@@ -54,7 +54,7 @@ static csap_spt_type_t socket_csap_spt =
     generate_pkts_cb    : tad_socket_gen_bin_cb,
     release_tmpl_cb     : NULL,
 
-    confirm_ptrn_cb     : tad_socket_confirm_ptrn_cb,
+    confirm_ptrn_cb     : NULL,
     match_pre_cb        : NULL,
     match_do_cb         : tad_socket_match_bin_cb,
     match_done_cb       : NULL,

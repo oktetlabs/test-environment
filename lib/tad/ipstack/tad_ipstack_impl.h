@@ -148,7 +148,7 @@ typedef struct tcp_csap_specific_data
  *
  * The function complies with csap_rw_init_cb_t prototype.
  */
-extern te_errno tad_ip4_rw_init_cb(csap_p csap, const asn_value *nds);
+extern te_errno tad_ip4_rw_init_cb(csap_p csap);
 
 
 /**

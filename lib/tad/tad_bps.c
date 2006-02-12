@@ -68,7 +68,7 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
 
     if (descr == NULL || bps == NULL)
     {
-        ERROR("%s(): invalid arguments", __FUNCTION__);
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
         return TE_RC(TE_TAD_BPS, TE_EWRONGPTR);
     }
 

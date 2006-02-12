@@ -52,7 +52,7 @@ extern te_errno tad_arp_init_cb(csap_p csap, unsigned int layer);
 /**
  * Callback to destroy 'arp' CSAP layer.
  *
- * The function complies with csap_nbr_destroy_cb_t prototype.
+ * The function complies with csap_layer_destroy_cb_t prototype.
  */
 extern te_errno tad_arp_destroy_cb(csap_p csap, unsigned int layer);
 

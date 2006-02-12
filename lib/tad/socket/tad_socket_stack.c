@@ -66,11 +66,11 @@
 
 /* See description tad_socket_impl.h */
 te_errno
-tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
+tad_socket_rw_init_cb(csap_p csap)
 {
     te_errno            rc; 
     unsigned int        layer = csap_get_rw_layer(csap);
-    const asn_value    *csap_spec = csap->layers[layer].csap_layer_pdu; 
+    const asn_value    *csap_spec = csap->layers[layer].nds; 
     tad_socket_rw_data *spec_data; 
     
     const asn_value    *data_csap_spec, *subval;
@@ -82,8 +82,6 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     size_t              addr_len;
 
 
-    UNUSED(csap_nds);
-    
     spec_data = calloc(1, sizeof(*spec_data));
     if (spec_data == NULL)
     {
@@ -102,7 +100,7 @@ tad_socket_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     }
     else if (rc != 0)
     {
-        ERROR("%s(CSAP %d): unexpected error reading 'data': %r", 
+        ERROR("%s(CSAP %d): unexpected error reading 'type': %r", 
               __FUNCTION__, csap->id, rc); 
         return rc;
     } 

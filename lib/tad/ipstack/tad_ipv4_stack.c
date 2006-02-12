@@ -82,22 +82,14 @@ typedef struct tad_ip4_rw_data {
 
 /* See description tad_ipstack_impl.h */
 te_errno
-tad_ip4_rw_init_cb(csap_p csap, const asn_value *csap_nds)
+tad_ip4_rw_init_cb(csap_p csap)
 { 
     tad_ip4_rw_data    *spec_data;
 
-    struct sockaddr_in local;
-
     int    opt = 1;
     int    rc;
-    char   opt_label[100];
     size_t len;
 
-    UNUSED(local);
-
-
-    if (csap_nds == NULL)
-        return TE_EWRONGPTR;
 
     spec_data = calloc(1, sizeof(*spec_data));
     if (spec_data == NULL)
@@ -105,11 +97,10 @@ tad_ip4_rw_init_cb(csap_p csap, const asn_value *csap_nds)
     csap_set_rw_data(csap, spec_data);
 
     /* FIXME */
-    sprintf(opt_label, "%u.local-addr", csap_get_rw_layer(csap));
     len = sizeof(struct in_addr);
-    rc = asn_read_value_field(csap_nds, 
+    rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds, 
                               &spec_data->sa_op.sin_addr.s_addr, &len, 
-                              opt_label);
+                              "local-addr");
     if (rc != 0 && rc != TE_EASNINCOMPLVAL)
         return TE_RC(TE_TAD_CSAP, rc);
 

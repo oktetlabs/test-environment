@@ -24,7 +24,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tad_aal5_layer.c 22584 2006-01-09 09:46:17Z arybchik $
+ * $Id$
  */
 
 #define TE_LGR_USER     "TAD AAL5"
@@ -149,7 +149,7 @@ tad_aal5_init_cb(csap_p csap, unsigned int layer)
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
-    layer_nds = csap->layers[layer].csap_layer_pdu;
+    layer_nds = csap->layers[layer].nds;
 
     /* Initialize AAL5 cell header binary support */
     rc = tad_bps_pkt_frag_init(tad_all5_bps_cpcs_trailer,

@@ -121,7 +121,7 @@ typedef struct csap_layer_t {
     te_tad_protocols_t  proto_tag;  /**< Protocol layer int tag */
 
     void        *specific_data;     /**< Protocol-specific data */ 
-    asn_value   *csap_layer_pdu;    /**< ASN value with CSAP
+    asn_value   *nds;               /**< ASN.1 value with CSAP
                                          specification layer PDU */
 
     struct csap_spt_type_t *proto_support; /**< Protocol layer 
@@ -157,6 +157,7 @@ typedef struct csap_instance {
     unsigned int    id;         /**< CSAP ID */
     char           *csap_type;  /**< Pointer to original CSAP type, proto[]
                                      entries are blocks of this string */
+    asn_value      *nds;        /**< ASN.1 value with CSAP specification */
     unsigned int    depth;      /**< Number of layers in stack */
     csap_layer_t   *layers;     /**< Array of protocol layer descroptors */
 

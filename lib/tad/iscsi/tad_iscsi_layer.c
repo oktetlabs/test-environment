@@ -76,7 +76,7 @@ tad_iscsi_init_cb(csap_p csap, unsigned int layer)
     if (spec_data == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
-    iscsi_nds = csap->layers[layer].csap_layer_pdu;
+    iscsi_nds = csap->layers[layer].nds;
 
     if ((rc = asn_read_int32(iscsi_nds, &int32_val, "header-digest")) != 0)
     {
@@ -365,16 +365,16 @@ tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     else
         iscsi_pdu = layer_pdu; 
 
-    iscsi_csap_pdu = csap->layers[layer].csap_layer_pdu; 
+    iscsi_csap_pdu = csap->layers[layer].nds; 
 
 #define CONVERT_FIELD(tag_, du_field_)                                  \
     do {                                                                \
-        rc = tad_data_unit_convert(iscsi_pdu, tag_,                       \
+        rc = tad_data_unit_convert(iscsi_pdu, tag_,                     \
                                    &(spec_data->du_field_));            \
         if (rc != 0)                                                    \
         {                                                               \
             ERROR("%s(csap %d),line %d, convert %s failed, rc %r",      \
-                  __FUNCTION__, csap->id, __LINE__, #du_field_, rc);\
+                  __FUNCTION__, csap->id, __LINE__, #du_field_, rc);    \
             return rc;                                                  \
         }                                                               \
     } while (0) 

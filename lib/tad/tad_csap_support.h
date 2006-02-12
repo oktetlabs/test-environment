@@ -268,12 +268,10 @@ typedef te_errno (*csap_layer_gen_pattern_cb_t)(
  * read/write.
  *
  * @param csap          CSAP instance.
- * @param csap_nds      Asn_value with CSAP init parameters
  *
  * @return Status code.
  */ 
-typedef te_errno (*csap_rw_init_cb_t)(csap_p           csap,
-                                      const asn_value *csap_nds);
+typedef te_errno (*csap_rw_init_cb_t)(csap_p csap);
 
 /**
  * Callback type to destroy CSAP layer part which is responsible for

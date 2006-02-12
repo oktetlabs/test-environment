@@ -88,29 +88,6 @@ tad_socket_gen_bin_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_socket_impl.h */
 te_errno
-tad_socket_confirm_ptrn_cb(csap_p csap, unsigned int layer,
-                           asn_value *layer_pdu, void **p_opaque)
-{
-#if 0
-    if (spec_data->data_tag != NDN_TAG_SOCKET_TYPE_TCP_SERVER)
-    {
-        uint32_t len;
-        rc = asn_read_int32(tcp_pdu, &len, "length");
-
-        INFO("TCP data CSAP confirm, length read rc %r, value %d",
-             rc, len);
-
-        if (rc == 0)
-            spec_data->wait_length = len;
-    }
-    return 0;
-#endif
-    return 0;
-}
-
-
-/* See description in tad_socket_impl.h */
-te_errno
 tad_socket_match_bin_cb(csap_p           csap,
                         unsigned int     layer,
                         const asn_value *ptrn_pdu,
@@ -243,6 +220,8 @@ tad_socket_match_bin_cb(csap_p           csap,
             spec_data->stored_length = 0;
             spec_data->wait_length = 0;
         }
+#else
+        UNUSED(sdu);
 #endif
     }
 
