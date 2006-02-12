@@ -1529,7 +1529,8 @@ main(int argc, char **argv)
 {
     int rc, retval = 0;
     
-    pthread_t tid;
+    pthread_t   logfork_tid;
+    te_bool     logfork_join = FALSE;
     
     char buf[16];
     
@@ -1583,7 +1584,17 @@ main(int argc, char **argv)
 
     sprintf(buf, "PID %u", getpid());
 
-    pthread_create(&tid, NULL, (void *)logfork_entry, NULL);
+    rc = pthread_create(&logfork_tid, NULL, (void *)logfork_entry, NULL);
+    if (rc != 0)
+    {
+        fprintf(stderr, "pthread_create(logfork_entry) failed: rc=%d\n",
+                rc);
+        /* Continue */
+    }
+    else
+    {
+        logfork_join = TRUE;
+    }
 
     /* FIXME Is it OK position? */
     init_tce_subsystem();
@@ -1595,7 +1606,23 @@ main(int argc, char **argv)
         if (retval == 0)
             retval = rc;
     }
-    
+
+    /* Cancel and join logfork thread */
+    rc = pthread_cancel(logfork_tid);
+    if (rc != 0)
+    {
+        fprintf(stderr, "pthread_cancel(logfork_tid) failed: rc=%d\n", rc);
+    }
+    else
+    {
+        rc = pthread_join(logfork_tid, NULL);
+        if (rc != 0)
+        {
+            fprintf(stderr, "pthread_join(logfork_tid) failed: rc=%d\n",
+                    rc);
+        }
+    }
+
     unlink(argv[0]);
 
     /* FIXME Correct retval to return */
