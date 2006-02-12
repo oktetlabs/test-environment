@@ -334,22 +334,6 @@ typedef te_errno (*csap_write_read_cb_t)(csap_p csap, unsigned int timeout,
                                          const tad_pkt *w_pkt,
                                          tad_pkt *r_pkt, size_t *r_pkt_len);
 
-#if 0
-/**
- * Callback type to echo CSAP method. 
- * Method should prepare binary data to be send as "echo" and call 
- * respective write method to send it. 
- * Method may change data stored at passed location.
- *
- * @param csap          CSAP instance. 
- * @param pkt           Got packet, plain binary data. 
- * @param len           Length of packet.
- *
- * @return Status code.
- */
-typedef te_errno (*csap_echo_method)(csap_p csap, uint8_t *pkt, 
-                                     size_t len);
-#endif
 
 /*=====================================================================
  * Structures for CSAP types support specifications. 
@@ -430,9 +414,6 @@ typedef struct csap_spt_type_t {
     csap_low_resource_cb_t  shutdown_recv_cb;
 
     csap_write_read_cb_t    write_read_cb;
-#if 0
-    csap_echo_method     echo_cb;       /**< method for echo */
-#endif
 
 } *csap_spt_type_p, csap_spt_type_t;
 

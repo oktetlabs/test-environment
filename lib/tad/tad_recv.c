@@ -197,7 +197,6 @@ tad_recv_preprocess_action(const asn_value *nds_action,
     {
         case NDN_ACT_BREAK: 
         case NDN_ACT_NO_REPORT: 
-        case NDN_ACT_ECHO:
             break;
 
         case NDN_ACT_FUNCTION: 
@@ -678,20 +677,6 @@ tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
         case NDN_ACT_NO_REPORT: 
             /* do nothing: processed on higher layers. */
             break;
-
-#if 0
-        case NDN_ACT_ECHO:
-            if (csap->echo_cb != NULL)
-            {
-                rc = csap->echo_cb(csap, raw_pkt, raw_len);
-                if (rc != 0)
-                    ERROR(CSAP_LOG_FMT "echo callback failed: %r", 
-                          CSAP_LOG_ARGS(csap), rc);
-                /* Have no reason to stop receiving. */
-                rc = 0;
-            }
-            break;
-#endif
 
         case NDN_ACT_FUNCTION: 
             if (tad_pkts_get_num(low_pkts) == 1)

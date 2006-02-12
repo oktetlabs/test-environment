@@ -136,7 +136,6 @@ typedef enum {
  * ASN.1 tag values for entries in 'Packet-Action' type.
  */ 
 typedef enum {
-    NDN_ACT_ECHO,
     NDN_ACT_FORWARD_PLD,
     NDN_ACT_FORWARD_RAW,
     NDN_ACT_FUNCTION,
