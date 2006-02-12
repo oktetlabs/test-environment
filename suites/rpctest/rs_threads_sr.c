@@ -226,6 +226,7 @@ main(int argc, char *argv[])
     te_bool         one_of_threads_failed = FALSE;
     void           *tret;
     int             i;
+    int             ret;
 
     TEST_START;
 
@@ -306,10 +307,11 @@ main(int argc, char *argv[])
     /* Start server threads */
     for (i = 0; i < (int)CLIENTS_NUM; i++)
     {
-        if (pthread_create(&st_ids[i], NULL, server_thread,
-                           (void *)&st_args[i]) != 0)
+        ret = pthread_create(&st_ids[i], NULL, server_thread,
+                             (void *)&st_args[i]);
+        if (ret != 0)
         {
-            rc = errno;
+            rc = te_rc_os2te(ret);
             TEST_FAIL("Failed to create %dth server thread", i);
         }
     }
@@ -317,10 +319,11 @@ main(int argc, char *argv[])
     /* Start client threads */
     for (i = 0; i < CLIENTS_NUM; i++)
     {
-        if (pthread_create(&ct_ids[i], NULL, client_thread,
-                           (void *)&ct_args[i]) != 0)
+        ret = pthread_create(&ct_ids[i], NULL, client_thread,
+                             (void *)&ct_args[i]);
+        if (ret != 0)
         {
-            rc = errno;
+            rc = te_rc_os2te(ret);
             TEST_FAIL("Failed to create %dth client thread", i);
         }
     }
@@ -328,8 +331,11 @@ main(int argc, char *argv[])
     /* Wait for server threads termination */
     for (i = 0; i < (int)CLIENTS_NUM; i++)
     {
-        if ((rc = pthread_join(st_ids[i], &tret)) != 0)
-            TEST_FAIL("ST pthread_join() failed with 0x%X", rc);
+        if ((ret = pthread_join(st_ids[i], &tret)) != 0)
+        {
+            rc = te_rc_os2te(ret);
+            TEST_FAIL("ST pthread_join() failed with %r", rc);
+        }
 
         st_ids[i] = 0;
 
@@ -340,8 +346,11 @@ main(int argc, char *argv[])
     /* Wait for client threads termination */
     for (i = 0; i < CLIENTS_NUM; i++)
     {
-        if ((rc = pthread_join(ct_ids[i], &tret)) != 0)
-            TEST_FAIL("CT pthread_join() failed with 0x%X", rc);
+        if ((ret = pthread_join(ct_ids[i], &tret)) != 0)
+        {
+            rc = te_rc_os2te(ret);
+            TEST_FAIL("CT pthread_join() failed with %r", rc);
+        }
 
         ct_ids[i] = 0;
 
