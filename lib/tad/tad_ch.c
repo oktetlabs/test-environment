@@ -195,7 +195,9 @@ rcf_ch_tad_shutdown(void)
 
 
 
+#ifndef TAD_DUMMY 
     csap_id_destroy();
+#endif
 
     return rc;
 }
