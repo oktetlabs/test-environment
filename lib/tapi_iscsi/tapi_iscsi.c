@@ -616,7 +616,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     asn_write_int32(pattern_a, csap_b, "0.actions.0.#forw-pld");
     rc = asn_write_value_field(pattern_a, NULL, 0, 
                                "0.actions.1.#no-report");
-    if (rc != NULL)
+    if (rc != 0)
     {
         ERROR("%s(): asn_write_value_field(actions.1.#no-report) "
               "failed: %r", __FUNCTION__, rc);
