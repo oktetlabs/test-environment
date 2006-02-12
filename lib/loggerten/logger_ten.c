@@ -179,10 +179,10 @@ log_client_close(void)
     int res;
 
 #ifdef HAVE_PTHREAD_H
-    if (pthread_mutex_trylock(&lgr_lock) != 0)
+    if ((res = pthread_mutex_trylock(&lgr_lock)) != 0)
     {
         fprintf(stderr, "%s(): pthread_mutex_trylock() failed: %s\n",
-                __FUNCTION__, strerror(errno));
+                __FUNCTION__, strerror(res));
         return;
     }
 #endif
@@ -202,10 +202,10 @@ log_client_close(void)
     lgr_out.args = NULL;
     lgr_out.args_max = 0;
 #ifdef HAVE_PTHREAD_H
-    if (pthread_mutex_unlock(&lgr_lock) != 0)
+    if ((res = pthread_mutex_unlock(&lgr_lock)) != 0)
     {
         fprintf(stderr, "%s(): pthread_mutex_unlock() failed: %s\n",
-                __FUNCTION__, strerror(errno));
+                __FUNCTION__, strerror(res));
     }
 #endif
 }

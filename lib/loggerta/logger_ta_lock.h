@@ -62,8 +62,8 @@ ta_log_lock_init(void)
 
     if (rc != 0)
     {
-        fprintf(stderr, "%s(): pthread_mutex_init() failed: errno=%d\n",
-                __FUNCTION__, errno);
+        fprintf(stderr, "%s(): pthread_mutex_init() failed: error=%s\n",
+                __FUNCTION__, te_rc_err2str(te_rc_os2te(rc)));
     }
     return rc;
 }
@@ -83,8 +83,8 @@ ta_log_lock(ta_log_lock_key *key)
     rc = pthread_mutex_lock(&ta_log_mutex);
     if (rc != 0)
     {
-        fprintf(stderr, "%s(): pthread_mutex_lock() failed: errno=%d",
-                __FUNCTION__, errno);
+        fprintf(stderr, "%s(): pthread_mutex_lock() failed: error=%s",
+                __FUNCTION__, te_rc_err2str(te_rc_os2te(rc)));
     }
 
     return rc;
@@ -99,8 +99,8 @@ ta_log_unlock(ta_log_lock_key *key)
     rc = pthread_mutex_unlock(&ta_log_mutex);
     if (rc != 0)
     {
-        fprintf(stderr, "%s(): pthread_mutex_unlock() failed: errno=%d",
-                __FUNCTION__, errno);
+        fprintf(stderr, "%s(): pthread_mutex_unlock() failed: error=%s",
+                __FUNCTION__, te_rc_err2str(te_rc_os2te(rc)));
     }
 
     return rc;
@@ -113,10 +113,10 @@ ta_log_trylock(ta_log_lock_key *key)
 
     UNUSED(key);
     rc = pthread_mutex_trylock(&ta_log_mutex);
-    if ((rc != 0) && (errno != EBUSY))
+    if ((rc != 0) && (rc != EBUSY))
     {
-        fprintf(stderr, "%s(): pthread_mutex_trylock() failed: errno=%d\n",
-                __FUNCTION__, errno);
+        fprintf(stderr, "%s(): pthread_mutex_trylock() failed: error=%s\n",
+                __FUNCTION__, te_rc_err2str(te_rc_os2te(rc)));
     }
 
     return rc;
