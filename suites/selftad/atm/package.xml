@@ -34,7 +34,7 @@
             </arg>
         </run>
 
-        <run iterate="4">
+        <run>
             <script name="aal5_send"/>
             <arg name="gfc">
                 <value>8</value>
