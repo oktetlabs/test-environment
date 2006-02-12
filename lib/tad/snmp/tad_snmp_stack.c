@@ -127,11 +127,7 @@ snmp_csap_input(int                  op,
 
     if (op == RECEIVED_MESSAGE)
     {
-#if 1
         assert(spec_data->pdu == NULL);
-#else
-        snmp_free_pdu(spec_data->pdu);
-#endif
 
         spec_data->pdu = snmp_clone_pdu(pdu);
 
@@ -164,12 +160,7 @@ tad_snmp_release_cb(csap_p csap)
     snmp_csap_specific_data_p spec_data = 
         csap_get_proto_spec_data(csap, csap_get_rw_layer(csap));
 
-#if 1
     assert(spec_data->pdu == NULL);
-#else
-    tad_snmp_free_pdu(spec_data->pdu, 0);
-    spec_data->pdu = NULL;
-#endif
 
     return 0;
 }
@@ -207,12 +198,7 @@ tad_snmp_read_cb(csap_p csap, unsigned int timeout,
         n_fds = spec_data->sock + 1;
     }
     
-#if 1
     assert(spec_data->pdu == NULL);
-#else
-    tad_snmp_free_pdu(spec_data->pdu, 0); 
-    spec_data->pdu = NULL;
-#endif
 
     ret = select(n_fds, &fdset, 0, 0, &sel_timeout);
     VERB("%s(): CSAP %d, after select, ret %d\n",
@@ -742,12 +728,7 @@ tad_snmp_rw_destroy_cb(csap_p csap)
     snmp_csap_specific_data_p spec_data = csap_get_rw_data(csap);
 
     VERB("Destroy callback, id %d\n", csap->id);
-#if 1
     assert(spec_data->pdu == NULL);
-#else
-    tad_snmp_free_pdu(spec_data->pdu, 0);
-    spec_data->pdu = NULL;
-#endif
 
     if (spec_data->ss)
     {
