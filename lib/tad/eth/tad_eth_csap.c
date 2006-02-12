@@ -59,7 +59,7 @@ static csap_spt_type_t eth_csap_spt =
     match_do_cb         : tad_eth_match_do_cb,
     match_done_cb       : NULL,
     match_post_cb       : tad_eth_match_post_cb,
-    release_ptrn_cb     : NULL,
+    release_ptrn_cb     : tad_eth_release_ptrn_cb,
 
     generate_pattern_cb : NULL,
 

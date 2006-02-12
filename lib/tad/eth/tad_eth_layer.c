@@ -343,6 +343,23 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     return rc;
 }
 
+/* See description in tad_eth_impl.h */
+void
+tad_eth_release_ptrn_cb(csap_p csap, unsigned int layer, void *opaque)
+{
+    tad_eth_proto_data     *proto_data;
+    tad_eth_proto_pdu_data *ptrn_data = opaque;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+    assert(proto_data != NULL);
+
+    if (ptrn_data != NULL)
+    {
+        tad_bps_free_pkt_frag_data(&proto_data->hdr_d, &ptrn_data->hdr);
+        free(ptrn_data);
+    }
+}
+
 
 /* See description in tad_eth_impl.h */
 te_errno
