@@ -929,8 +929,8 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
  * @param csap          CSAP instance
  * @param ptrn_data     Traffic pattern data prepared during
  *                      preprocessing
- * @param meta_pkt      Receiver meta packet
- * @param pkt           Packet with received data
+ * @param meta_pkt      Receiver meta packet (the first raw packet
+ *                      contains just received data)
  * @param pkt_len       Real length of usefull data in pkt
  * @param no_report     If match, include in statistics but does not
  *                      report raw packet to the test
@@ -939,26 +939,22 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
  */
 static te_errno
 tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
-               tad_recv_pkt *meta_pkt, tad_pkt *pkt, size_t pkt_len,
-               te_bool *no_report)
+               tad_recv_pkt *meta_pkt, size_t pkt_len, te_bool *no_report)
 {
     unsigned int    unit = 0;
     te_errno        rc;
-    tad_pkt        *raw_pkt = tad_pkts_first_pkt(&meta_pkt->raw);
 
+    /* Create a packet with received data only for the bottom layer */
     rc = tad_pkt_get_frag(
              tad_pkts_first_pkt(&meta_pkt->layers[csap->depth - 1].pkts),
-             pkt, 0, pkt_len, TAD_PKT_GET_FRAG_ERROR);
+             tad_pkts_first_pkt(&meta_pkt->raw), 0, pkt_len,
+             TAD_PKT_GET_FRAG_ERROR);
     if (rc != 0)
     {
         assert(TE_RC_GET_ERROR(rc) != TE_ETADLESSDATA);
         assert(TE_RC_GET_ERROR(rc) != TE_ETADNOTMATCH);
         return rc;
     }
-
-#if 0 /* FIXME */
-    *raw_pkt = *pkt;
-#endif
 
     assert(ptrn_data->n_units > 0);
     do {
@@ -970,10 +966,9 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
                 assert(no_report != NULL);
                 *no_report = ptrn_data->units[unit].no_report;
             case TE_ETADLESSDATA:
-                /* Packet with received data is owned */
-                tad_pkt_init(pkt, NULL, NULL, NULL);
                 F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r", 
                        CSAP_LOG_ARGS(csap), unit, rc);
+                /* Meta-packet with received data is owned */
                 return rc;
 
             case TE_ETADNOTMATCH:
@@ -990,11 +985,6 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
             break;
 
     } while (++unit < ptrn_data->n_units);
-
-#if 0 /* FIXME */
-    /* Packet with received data is not owned */
-    tad_pkt_init(raw_pkt, NULL, NULL, NULL);
-#endif
 
     return rc;
 }
@@ -1034,12 +1024,11 @@ tad_recv_thread(void *arg)
     csap_read_cb_t      read_cb;
     te_bool             stop_on_timeout = FALSE;
     te_errno            rc;
-    tad_recv_pkt       *recv_pkt = NULL;
     te_bool             no_report = FALSE;
-    tad_pkt             my_pkt;
+    tad_recv_pkt       *meta_pkt = NULL;
+    tad_pkt            *pkt;
     size_t              read_len;
 
-    tad_pkt_init(&my_pkt, NULL, NULL, NULL);
 
     assert(csap != NULL);
     read_cb = csap_get_proto_support(csap,
@@ -1092,7 +1081,7 @@ tad_recv_thread(void *arg)
      * Allocate Receiver packet to avoid extra memory allocation on 
      * failed match path.
      */
-    if ((recv_pkt = tad_recv_pkt_alloc(csap)) == NULL)
+    if ((meta_pkt = tad_recv_pkt_alloc(csap)) == NULL)
     {
         ERROR(CSAP_LOG_FMT "Failed to initialize Receiver packet",
               CSAP_LOG_ARGS(csap));
@@ -1103,7 +1092,6 @@ tad_recv_thread(void *arg)
     while (TRUE)
     {
         unsigned int    timeout;
-        struct timeval  pkt_caught;
 
         /* Check CSAP state */
         if (csap->state & CSAP_STATE_COMPLETE)
@@ -1158,9 +1146,20 @@ tad_recv_thread(void *arg)
             timeout = MIN(timeout, (unsigned int)wait_timeout);
         }
 
+        if ((meta_pkt == NULL) &&
+            ((meta_pkt = tad_recv_pkt_alloc(csap)) == NULL))
+        {
+            ERROR(CSAP_LOG_FMT "Failed to initialize Receiver packet",
+                  CSAP_LOG_ARGS(csap));
+            rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
+            goto exit;
+        }
+        pkt = tad_pkts_first_pkt(&meta_pkt->raw);
+        assert(pkt != NULL);
+
         /* Read one packet from media */
-        rc = read_cb(csap, timeout, &my_pkt, &read_len); 
-        gettimeofday(&pkt_caught, NULL);
+        rc = read_cb(csap, timeout, pkt, &read_len); 
+        gettimeofday(&meta_pkt->ts, NULL);
 
         /* We have read something, now allow to stop on timeout */
         stop_on_timeout = TRUE;
@@ -1179,25 +1178,15 @@ tad_recv_thread(void *arg)
             break;
         }
 
-        if ((recv_pkt == NULL) &&
-            ((recv_pkt = tad_recv_pkt_alloc(csap)) == NULL))
-        {
-            ERROR(CSAP_LOG_FMT "Failed to initialize Receiver packet",
-                  CSAP_LOG_ARGS(csap));
-            rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
-            goto exit;
-        }
-        recv_pkt->ts = pkt_caught;
-
         /* Match received packet against pattern */
-        rc = tad_recv_match(csap, &context->ptrn_data, recv_pkt,
-                            &my_pkt, read_len, &no_report);
+        rc = tad_recv_match(csap, &context->ptrn_data, meta_pkt,
+                            read_len, &no_report);
         if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH)
         {
             VERB(CSAP_LOG_FMT "received packet does not match",
                  CSAP_LOG_ARGS(csap));
             /* Nothing is owned by match routine */
-            tad_recv_pkt_cleanup(csap, recv_pkt);
+            tad_recv_pkt_cleanup(csap, meta_pkt);
             continue;
         }
         if (TE_RC_GET_ERROR(rc) == TE_ETADLESSDATA)
@@ -1206,7 +1195,7 @@ tad_recv_thread(void *arg)
                  "more data are available", CSAP_LOG_ARGS(csap));
 
             /* Receiver meta packet is owned by match */
-            recv_pkt = NULL;
+            meta_pkt = NULL;
 
             /* 
              * Packet can match, if more data is available. Therefore,
@@ -1225,7 +1214,7 @@ tad_recv_thread(void *arg)
         }
 
         /* Here packet is successfully received, parsed and matched */
-        csap->last_pkt = pkt_caught;
+        csap->last_pkt = meta_pkt->ts;
         if (context->match_pkts == 0)
             csap->first_pkt = csap->last_pkt;
         context->match_pkts++;
@@ -1234,13 +1223,13 @@ tad_recv_thread(void *arg)
         { 
             F_VERB(CSAP_LOG_FMT "put packet into the queue",
                    CSAP_LOG_ARGS(csap));
-            tad_recv_pkt_enqueue(csap, &context->packets, recv_pkt);
-            recv_pkt = NULL;
+            tad_recv_pkt_enqueue(csap, &context->packets, meta_pkt);
+            meta_pkt = NULL;
         } 
         else
         {
             no_report = FALSE;
-            tad_recv_pkt_cleanup(csap, recv_pkt);
+            tad_recv_pkt_cleanup(csap, meta_pkt);
         }
 
         /* Check for total number of packets to be received */
@@ -1265,7 +1254,7 @@ exit:
     rc = tad_recv_release(csap, context);
     TE_RC_UPDATE(context->status, rc);
 
-    tad_recv_pkt_free(csap, recv_pkt);
+    tad_recv_pkt_free(csap, meta_pkt);
 
     INFO(CSAP_LOG_FMT "receive process finished, %u packets match: %r",
          CSAP_LOG_ARGS(csap), context->match_pkts, context->status);
@@ -1284,8 +1273,6 @@ exit:
      * we can do nothing helpfull here.
      */
     (void)csap_command(csap, TAD_OP_RECV_DONE);
-
-    tad_pkt_free(&my_pkt);
 
     return NULL;
 }
