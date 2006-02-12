@@ -44,6 +44,7 @@
 static csap_spt_type_t atm_csap_spt = 
 {
     proto               : "atm",
+    unregister_cb       : NULL,
 
     init_cb             : tad_atm_init_cb,
     destroy_cb          : tad_atm_destroy_cb,
@@ -69,6 +70,7 @@ static csap_spt_type_t atm_csap_spt =
 static csap_spt_type_t aal5_csap_spt = 
 {
     proto               : "aal5",
+    unregister_cb       : NULL,
 
     init_cb             : tad_aal5_init_cb,
     destroy_cb          : tad_aal5_destroy_cb,

@@ -47,6 +47,7 @@
 static csap_spt_type_t ip4_csap_spt = 
 {
     proto               : "ip4",
+    unregister_cb       : NULL,
 
     init_cb             : tad_ip4_init_cb,
     destroy_cb          : tad_ip4_destroy_cb,
@@ -85,6 +86,7 @@ static csap_spt_type_t ip4_csap_spt =
 static csap_spt_type_t udp_csap_spt = 
 {
     proto               : "udp",
+    unregister_cb       : NULL,
 
     init_cb             : tad_udp_init_cb,
     destroy_cb          : tad_udp_destroy_cb,
@@ -112,6 +114,7 @@ static csap_spt_type_t udp_csap_spt =
 static csap_spt_type_t tcp_csap_spt = 
 {
     proto               : "tcp",
+    unregister_cb       : NULL,
 
     init_cb             : tad_tcp_init_cb,
     destroy_cb          : tad_tcp_destroy_cb,

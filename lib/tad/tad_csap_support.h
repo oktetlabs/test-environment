@@ -70,6 +70,13 @@ extern "C" {
 struct tad_tmpl_arg_t; 
 typedef struct tad_tmpl_arg_t tad_tmpl_arg_t;
 
+/**
+ * Callback type to release resources allocated by CSAP protocol
+ * support initialization.
+ *
+ * @return Status code.
+ */
+typedef void (*csap_spt_unregister_cb_t)(void);
 
 /**
  * Callback type to initialize CSAP layer.
@@ -391,6 +398,8 @@ typedef te_errno (*csap_echo_method)(csap_p csap, uint8_t *pkt,
 typedef struct csap_spt_type_t {
     const char *proto;  /**< Symbolic label of the protocol layer */
 
+    csap_spt_unregister_cb_t        unregister_cb;
+
     /** @name protocol-specific callbacks */ 
     csap_layer_init_cb_t            init_cb;
     csap_layer_destroy_cb_t         destroy_cb;
@@ -450,8 +459,6 @@ typedef struct csap_spt_type_t {
 /**
  * Init CSAP support database
  *
- * @param spt_descr     CSAP layer support structure
- *
  * @return Status code.
  */
 extern te_errno csap_spt_init(void);
@@ -473,6 +480,11 @@ extern te_errno csap_spt_add(csap_spt_type_p spt_descr);
  * @return Pointer to structure or NULL if not found. 
  */
 extern csap_spt_type_p csap_spt_find(const char *proto);
+
+/**
+ * Destroy CSAP support database.
+ */
+extern void csap_spt_destroy(void);
 
 
 #ifdef __cplusplus

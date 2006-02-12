@@ -41,9 +41,13 @@
 #include "tad_snmp_impl.h"
 
 
+static void tad_snmp_unregister_cb(void);
+
+
 static csap_spt_type_t snmp_csap_spt = 
 {
     proto               : "snmp",
+    unregister_cb       : tad_snmp_unregister_cb,
 
     init_cb             : NULL,
     destroy_cb          : NULL,
@@ -78,6 +82,15 @@ static csap_spt_type_t snmp_csap_spt =
 
 
 /**
+ * Release SNMP application resources.
+ */
+static void
+tad_snmp_unregister_cb(void)
+{
+    snmp_shutdown("snmpapp");
+}
+
+/**
  * Register 'snmp' CSAP callbacks and support structures in TAD 
  * Command Handler.
  *
@@ -87,9 +100,6 @@ te_errno
 csap_support_snmp_register(void)
 { 
     init_snmp("snmpapp");
-#if 0
-    snmp_shutdown("snmpapp");
-#endif
 
     return csap_spt_add(&snmp_csap_spt);
 }

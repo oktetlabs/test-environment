@@ -45,6 +45,7 @@
 static csap_spt_type_t pcap_csap_spt = 
 {
     proto               : "pcap",
+    unregister_cb       : NULL,
 
     init_cb             : tad_pcap_init_cb,
     destroy_cb          : tad_pcap_destroy_cb,

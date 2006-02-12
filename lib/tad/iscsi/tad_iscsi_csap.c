@@ -44,6 +44,7 @@
 static csap_spt_type_t iscsi_csap_spt = 
 {
     proto               : "iscsi",
+    unregister_cb       : NULL,
 
     init_cb             : tad_iscsi_init_cb,
     destroy_cb          : tad_iscsi_destroy_cb,

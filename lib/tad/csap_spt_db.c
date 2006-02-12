@@ -34,50 +34,45 @@
 #include "config.h"
 #endif
 
+#if HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#if HAVE_STRING_H
 #include <string.h>
+#endif
+#if HAVE_ASSERT_H
+#include <assert.h>
+#endif
+#if HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#endif
 
-#include "tad_csap_inst.h"
-#include "tad_csap_support.h"
 #include "te_errno.h"
 #include "logger_api.h"
 
-#ifndef INSQUE
-/* macros to insert element p into queue _after_ element q */
-#define INSQUE(p, q) do {(p)->prev = q; (p)->next = (q)->next; \
-                      (q)->next = p; (p)->next->prev = p; } while (0)
-/* macros to remove element p from queue  */
-#define REMQUE(p) do {(p)->prev->next = (p)->next; \
-                   (p)->next->prev = (p)->prev; \
-                   (p)->next = (p)->prev = p; } while(0)
-#endif
+#include "tad_csap_support.h"
 
-struct csap_spt_entry;
-typedef struct csap_spt_entry *csap_spt_entry_p;
 
 /**
  * CSAP protocol layer support DB entry
  */
 typedef struct csap_spt_entry { 
-    csap_spt_entry_p  next;     /**< Next descr in queue */
-    csap_spt_entry_p  prev;     /**< Prev layer in queue */
+    TAILQ_ENTRY(csap_spt_entry) links;  /**< List links */
+
     csap_spt_type_p   spt_data; /**< Pointer to support descriptor */ 
+
 } csap_spt_entry_t;
 
-static csap_spt_entry_t csap_spt_root = {
-    &csap_spt_root,
-    &csap_spt_root,
-    NULL
-};
 
-/**
- * Init CSAP support database
- *
- * @return zero on success, otherwise error code. 
- */
+/** Head of the CSAP protocol support list */
+static TAILQ_HEAD(, csap_spt_entry) csap_spt_root;
+
+
+/* See the description in tad_csap_support.h */
 te_errno
 csap_spt_init(void)
 {
+    TAILQ_INIT(&csap_spt_root);
     return 0;
 }
 
@@ -93,45 +88,59 @@ csap_spt_init(void)
 te_errno
 csap_spt_add(csap_spt_type_p spt_descr)
 {
-    csap_spt_entry_p new_spt_entry = malloc(sizeof(*new_spt_entry));
+    csap_spt_entry_t   *new_spt_entry;
 
+    if (spt_descr == NULL)
+        return TE_EINVAL;
+
+    new_spt_entry = malloc(sizeof(*new_spt_entry));
     if (new_spt_entry == NULL) 
         return TE_ENOMEM;
 
     new_spt_entry->spt_data = spt_descr;
-    INSQUE(new_spt_entry, &csap_spt_root);
+    TAILQ_INSERT_TAIL(&csap_spt_root, new_spt_entry, links);
 
     INFO("Registered '%s' protocol support", spt_descr->proto);
 
     return 0;
 }
 
-/**
- * Find structure for CSAP support respective to passed protocol label.
- *
- * @param proto      protocol label.
- *
- * @return pointer to structure or NULL if not found. 
- */
+/* See the description in tad_csap_support.h */
 csap_spt_type_p 
 csap_spt_find(const char *proto)
 {
-    csap_spt_entry_p spt_entry;
+    csap_spt_entry_t   *spt_entry;
 
     VERB("%s(): asked proto %s", __FUNCTION__, proto);
 
-    for (spt_entry = csap_spt_root.next; 
-         spt_entry!= &csap_spt_root; 
-         spt_entry = spt_entry->next)
+    for (spt_entry = csap_spt_root.tqh_first; 
+         spt_entry != NULL; 
+         spt_entry = spt_entry->links.tqe_next)
     { 
-        if (spt_entry->spt_data)
-            VERB("test proto %s", spt_entry->spt_data->proto);
+        assert(spt_entry->spt_data != NULL);
+        VERB("%s(): test proto %s", __FUNCTION__,
+             spt_entry->spt_data->proto);
 
-        if (spt_entry->spt_data && 
-            (strcmp(spt_entry->spt_data->proto, proto) == 0))
+        if (strcmp(spt_entry->spt_data->proto, proto) == 0)
             return spt_entry->spt_data;
     } 
     return NULL;
 }
 
+/* See the description in tad_csap_support.h */
+void
+csap_spt_destroy(void)
+{
+    csap_spt_entry_t   *entry;
 
+    while ((entry = csap_spt_root.tqh_first) != NULL)
+    {
+        TAILQ_REMOVE(&csap_spt_root, entry, links);
+
+        assert(entry->spt_data != NULL);
+        if (entry->spt_data->unregister_cb != NULL)
+            entry->spt_data->unregister_cb();
+
+        free(entry);
+    }
+}

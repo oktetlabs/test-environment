@@ -44,6 +44,7 @@
 static csap_spt_type_t dhcp_csap_spt = 
 {
     proto               : "dhcp",
+    unregister_cb       : NULL,
 
     init_cb             : NULL,
     destroy_cb          : NULL,

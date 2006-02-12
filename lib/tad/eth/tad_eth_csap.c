@@ -44,6 +44,7 @@
 static csap_spt_type_t eth_csap_spt =
 {
     proto               : "eth",
+    unregister_cb       : NULL,
 
     init_cb             : tad_eth_init_cb,
     destroy_cb          : tad_eth_destroy_cb,

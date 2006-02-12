@@ -44,6 +44,7 @@
 static csap_spt_type_t cli_csap_spt = 
 {
     proto               : "cli",
+    unregister_cb       : NULL,
 
     init_cb             : NULL,
     destroy_cb          : NULL,

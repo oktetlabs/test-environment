@@ -44,6 +44,7 @@
 static csap_spt_type_t bridge_csap_spt = 
 {
     proto               : "bridge",
+    unregister_cb       : NULL,
 
     init_cb             : NULL,
     destroy_cb          : NULL,

@@ -44,6 +44,7 @@
 static csap_spt_type_t arp_csap_spt = 
 {
     proto               : "arp",
+    unregister_cb       : NULL,
 
     init_cb             : tad_arp_init_cb,
     destroy_cb          : tad_arp_destroy_cb,

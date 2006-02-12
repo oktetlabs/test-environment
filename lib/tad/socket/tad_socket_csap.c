@@ -44,6 +44,7 @@
 static csap_spt_type_t socket_csap_spt =
 {
     proto               : "socket",
+    unregister_cb       : NULL,
 
     init_cb             : NULL,
     destroy_cb          : NULL,

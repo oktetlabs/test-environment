@@ -194,8 +194,8 @@ rcf_ch_tad_shutdown(void)
     tad_is_initialized = FALSE;
 
 
-
 #ifndef TAD_DUMMY 
+    csap_spt_destroy();
     csap_id_destroy();
 #endif
 
