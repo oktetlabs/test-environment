@@ -308,8 +308,9 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
                   layer, rc);
             goto exit;
         }
+        /* FIXME: Remove type cast */
         rc = asn_get_choice_value(new_csap->layers[layer].nds,
-                                  &new_csap->layers[layer].nds,
+                 (const asn_value **)&new_csap->layers[layer].nds,
                                   NULL, NULL);
         if (rc != 0)
         {
@@ -1000,6 +1001,7 @@ rcf_ch_trpoll(struct rcf_comm_connection *rcfc,
     UNUSED(buflen);
     UNUSED(answer_plen);
     UNUSED(csap_id);
+    UNUSED(timeout);
 
     return -1;
 #else
