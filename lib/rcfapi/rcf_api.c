@@ -2175,8 +2175,10 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     msg.timeout = timeout;
 
     LOG_MSG(rcf_tr_op_ring ? TE_LL_RING : TE_LL_INFO,
-            "Starting receive operation on the CSAP %d (%s:%d) with "
-            "pattern\n%Tf", csap_id, ta_name, session, pattern);
+            "Starting receive operation on the CSAP %d (%s:%d) "
+            "timeout %u ms waiting for %u%s packets with pattern\n%Tf",
+            csap_id, ta_name, session, timeout, num,
+            (num == 0) ? "(unlimited)" : "", pattern);
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
