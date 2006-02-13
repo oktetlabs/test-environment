@@ -1415,8 +1415,6 @@ process_reply(ta *agent)
                 {
                     /* poll started, but not finished yet */
                     msg->flags = INTERMEDIATE_ANSWER;
-                    answer_user_request(req);
-                    return;
                 }
                 break;
 
