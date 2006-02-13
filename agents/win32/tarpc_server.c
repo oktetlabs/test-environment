@@ -242,8 +242,11 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     STARTUPINFO         si;
     
     strcpy(cmdline, GetCommandLine());
-    if ((tmp = strchr(cmdline, ' ')) == NULL)
+    if ((tmp = strstr(cmdline, "_rpcserver")) == NULL &&
+        (tmp = strchr(cmdline, ' ')) == NULL)
+    {
         tmp = cmdline + strlen(cmdline);
+    }
     
     si.cb = sizeof(si);
     
