@@ -55,7 +55,8 @@ trc_database trc_db;
 static xmlDocPtr trc_db_doc = NULL;
 
 
-static int get_tests(xmlNodePtr *node, test_runs *tests);
+static int get_tests(xmlNodePtr *node, test_runs *tests,
+                     const test_iter *parent_iter);
 
 
 /**
@@ -381,14 +382,18 @@ exit:
 /**
  * Allocate and get test iteration.
  *
- * @param node      XML node
- * @param iters     List of iterations to be filled in
+ * @param node          XML node
+ * @param test_name     Name of the test
+ * @param test_type     Type of the test
+ * @param iters         List of iterations to be filled in
+ * @param parent_iter   Parent test iteration
  *
  * @return Status code.
  */
 static int
-alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
-                        test_iters *iters)
+alloc_and_get_test_iter(xmlNodePtr node, const char *test_name, 
+                        trc_test_type test_type, test_iters *iters,
+                        const test_iter *parent_iter)
 {
     int             rc;
     test_iter      *p;
@@ -397,6 +402,8 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
     trc_tags_entry *tags_entry;
     unsigned int    i;
 
+    UNUSED(test_name);
+
     p = calloc(1, sizeof(*p));
     if (p == NULL)
     {
@@ -404,7 +411,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
         return errno;
     }
     p->node = p->tests.node = node;
-    if (type == TRC_TEST_SCRIPT)
+    if (test_type == TRC_TEST_SCRIPT)
         p->stats.not_run = 1;
     TAILQ_INIT(&p->args.head);
     TAILQ_INIT(&p->tests.head);
@@ -454,6 +461,15 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
         ERROR("Expected result of the test iteration is missing/invalid");
         return rc;
     }
+    if ((parent_iter != NULL) && 
+        (parent_iter->exp_result.value == TRC_TEST_SKIPPED) &&
+        (p->exp_result.value != TRC_TEST_SKIPPED))
+    {
+        INFO("Package iteration expects skipped result,\n"
+             "but its item '%s' iteration doesn't - "
+             "force to expect skipped.\n", test_name);
+        p->exp_result.value = TRC_TEST_SKIPPED;
+    }
 
     /* Get expected result in accordance with sets to diff */
     for (tags_entry = tags_diff.tqh_first;
@@ -469,10 +485,20 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
                   "missing/invalid");
             return rc;
         }
+        if ((parent_iter != NULL) && 
+            (parent_iter->diff_exp[tags_entry->id].value ==
+                 TRC_TEST_SKIPPED) &&
+            (p->diff_exp[tags_entry->id].value != TRC_TEST_SKIPPED))
+        {
+            INFO("Package iteration expects skipped result,\n"
+                 "but its item '%s' iteration doesn't - "
+                 "force to expect skipped.\n", test_name);
+            p->diff_exp[tags_entry->id].value = TRC_TEST_SKIPPED;
+        }
     }
 
     /* Get sub-tests */
-    rc = get_tests(&node, &p->tests);
+    rc = get_tests(&node, &p->tests, p);
     if (rc != 0)
         return rc;
 
@@ -488,13 +514,18 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test_type type,
 /**
  * Get test iterations.
  *
- * @param node      XML node
- * @param iters     List of iterations to be filled in
+ * @param node          XML node
+ * @param test_name     Name of the test
+ * @param test_type     Type of the test
+ * @param iters         List of iterations to be filled in
+ * @param parent_iter   Parent test iteration
  *
  * @return Status code
  */
 static int
-get_test_iters(xmlNodePtr *node, trc_test_type type, test_iters *iters)
+get_test_iters(xmlNodePtr *node, const char *test_name, 
+               trc_test_type test_type, test_iters *iters,
+               const test_iter *parent_iter)
 {
     int rc = 0;
 
@@ -503,7 +534,8 @@ get_test_iters(xmlNodePtr *node, trc_test_type type, test_iters *iters)
 
     while (*node != NULL &&
            xmlStrcmp((*node)->name, CONST_CHAR2XML("iter")) == 0 &&
-           (rc = alloc_and_get_test_iter(*node, type, iters)) == 0)
+           (rc = alloc_and_get_test_iter(*node, test_name, test_type, 
+                                         iters, parent_iter)) == 0)
     {
         *node = xmlNodeNext(*node);
     }
@@ -514,13 +546,15 @@ get_test_iters(xmlNodePtr *node, trc_test_type type, test_iters *iters)
 /**
  * Get expected result of the test.
  *
- * @param node      XML node
- * @param tests     List of tests to add the new test
+ * @param node          XML node
+ * @param tests         List of tests to add the new test
+ * @param parent_iter   Parent test iteration
  *
  * @return Status code.
  */
 static int
-alloc_and_get_test(xmlNodePtr node, test_runs *tests)
+alloc_and_get_test(xmlNodePtr node, test_runs *tests,
+                   const test_iter *parent_iter)
 {
     int         rc;
     test_run   *p;
@@ -609,7 +643,7 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
         }
     }
 
-    rc = get_test_iters(&node, p->type, &p->iters);
+    rc = get_test_iters(&node, p->name, p->type, &p->iters, parent_iter);
     if (rc != 0)
     {
         ERROR("Failed to get iterations of the test '%s'", p->name);
@@ -622,13 +656,14 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests)
 /**
  * Get tests.
  *
- * @param node      XML node
- * @param tests     List of tests to be filled in
+ * @param node          XML node
+ * @param tests         List of tests to be filled in
+ * @param parent_iter   Parent test iteration
  *
  * @return Status code
  */
 static int
-get_tests(xmlNodePtr *node, test_runs *tests)
+get_tests(xmlNodePtr *node, test_runs *tests, const test_iter *parent_iter)
 {
     int rc = 0;
 
@@ -637,7 +672,7 @@ get_tests(xmlNodePtr *node, test_runs *tests)
 
     while (*node != NULL &&
            xmlStrcmp((*node)->name, CONST_CHAR2XML("test")) == 0 &&
-           (rc = alloc_and_get_test(*node, tests)) == 0)
+           (rc = alloc_and_get_test(*node, tests, parent_iter)) == 0)
     {
         *node = xmlNodeNext(*node);
     }
@@ -714,7 +749,7 @@ trc_parse_db(const char *filename)
         }
 
         node = xmlNodeChildren(node);
-        rc = get_tests(&node, &trc_db.tests);
+        rc = get_tests(&node, &trc_db.tests, NULL);
         if (rc != 0)
         {
             ERROR("Preprocessing of DB with expected testing results in "
