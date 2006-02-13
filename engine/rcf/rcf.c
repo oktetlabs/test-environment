@@ -693,7 +693,9 @@ answer_user_request(usrreq *req)
     {
         int rc;
 
-        INFO("Send reply for %u:%d:'%s' to user '%s'",
+        INFO("Send %sreply for %u:%d:'%s' to user '%s'",
+             (req->message->flags & INTERMEDIATE_ANSWER) ?
+                 "intermediate " : "",
              (unsigned)req->message->seqno, req->message->sid,
              rcf_op_to_string(req->message->opcode),
              ipc_server_client_name(req->user));
@@ -1410,13 +1412,28 @@ process_reply(ta *agent)
                 break;
 
             case RCFOP_TRPOLL:
-                READ_INT(msg->intparm);
-                if (msg->intparm != 0)
+            {
+                int poll_id; 
+
+                READ_INT(poll_id);
+                if (poll_id != 0)
                 {
-                    /* poll started, but not finished yet */
-                    msg->flags = INTERMEDIATE_ANSWER;
+                    if (msg->intparm == 0)
+                    {
+                        /* intermediate reply with poll ID */
+                        msg->intparm = poll_id;
+                        msg->flags = INTERMEDIATE_ANSWER;
+                    }
+                    /* final reply with successful result */
+                    else if (msg->intparm != poll_id)
+                    {
+                        ERROR("Invalid traffic poll ID in final reply: "
+                              "CSAP %u, poll id %u, new %u",
+                              msg->handle, msg->intparm, poll_id);
+                    }
                 }
                 break;
+            }
 
             case RCFOP_EXECUTE:
                 if(msg->intparm == RCF_FUNC)
