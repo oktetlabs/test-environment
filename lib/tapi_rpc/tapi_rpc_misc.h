@@ -365,23 +365,6 @@ extern void rpc_get_buf(rcf_rpc_server *rpcs, rpc_ptr src_buf,
 /**
  * Create a child process (with a duplicated socket in case of winsock2).
  *
- * @param pco_father     RPC server handle
- * @param father_s       socket on @b pco_father
- * @param domain         domain, used in test
- * @param sock_type      type of socket, used in test
- * @param pco_child      new process
- * @param child_s        duplicated socket on @b pco_child
- */
-extern void rpc_create_child_process_socket(rcf_rpc_server *pco_father, 
-                                            int father_s, 
-                                            rpc_socket_domain domain,
-                                            rpc_socket_type sock_type,
-                                            rcf_rpc_server **pco_child, 
-                                            int *child_s);
-
-/**
- * Create a child process (with a duplicated socket in case of winsock2).
- *
  * @param method         "inherit", "DuplicateSocket" or "DuplicateHandle"
  * @param pco_father     RPC server handle
  * @param father_s       socket on @b pco_father
@@ -390,7 +373,7 @@ extern void rpc_create_child_process_socket(rcf_rpc_server *pco_father,
  * @param pco_child      new process
  * @param child_s        duplicated socket on @b pco_child
  */
-extern void rpc_create_child_process_socket1(const char *method,
+extern void rpc_create_child_process_socket(const char *method,
                                             rcf_rpc_server *pco_father, 
                                             int father_s, 
                                             rpc_socket_domain domain,
