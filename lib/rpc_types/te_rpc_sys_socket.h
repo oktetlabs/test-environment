@@ -765,6 +765,8 @@ typedef enum rpc_sockopt {
     RPC_TCP_KEEPINTVL,      /**< Interval between keepalive probes */
     RPC_TCP_KEEPCNT,        /**< Number of keepalive probess before death */
     RPC_TCP_INFO,
+    RPC_TCP_DEFER_ACCEPT,   /**<  Allows a listener to be awakened only when
+                                  data arrives on the socket.*/
     RPC_SOCKOPT_UNKNOWN     /**< Invalid socket option */
 
 } rpc_sockopt;
@@ -916,6 +918,9 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef TCP_INFO
         RPC2H(TCP_INFO);
 #endif
+#ifdef TCP_DEFER_ACCEPT
+        RPC2H(TCP_DEFER_ACCEPT);
+#endif        
         default: return RPC_SOCKOPT_MAX;
     }
 }
@@ -1214,6 +1219,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(TCP_KEEPINTVL);
         RPC2STR(TCP_KEEPCNT);
         RPC2STR(TCP_INFO);
+        RPC2STR(TCP_DEFER_ACCEPT);
 
         RPC2STR(SOCKOPT_UNKNOWN);
         default: return "<SOCKOPT_FATAL_ERROR>";
