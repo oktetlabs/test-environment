@@ -24,7 +24,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
- * $Id: tad_recv.h 23847 2006-02-09 06:45:22Z arybchik $
+ * $Id$
  */
 
 #include "te_config.h"
@@ -67,7 +67,6 @@ tad_poll_free(tad_poll_context *context)
                          (unsigned)context->status, context->id);
     tad_task_free(&context->task);
 
-    CSAP_LOCK(context->csap);
     LIST_REMOVE(context, links);
     CSAP_UNLOCK(context->csap);
 
@@ -168,6 +167,7 @@ tad_poll_thread(void *arg)
     {
         context->status = rc;
     }
+    CSAP_LOCK(context->csap);
     pthread_cleanup_pop(!0);
 
     return NULL;
