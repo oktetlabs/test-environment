@@ -313,6 +313,7 @@ get_opcode(char **ptr, rcf_op_t *opcode)
     TRY_CMD(TRRECV_WAIT);
     TRY_CMD(TRSEND_RECV);
     TRY_CMD(TRPOLL);
+    TRY_CMD(TRPOLL_CANCEL);
     TRY_CMD(EXECUTE);
     TRY_CMD(RPC);
     TRY_CMD(KILL);
