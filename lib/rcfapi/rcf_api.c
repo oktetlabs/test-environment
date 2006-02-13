@@ -2657,7 +2657,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
                                                   timeout,
                                                   &data[i].poll_id);
         }
-        if (csaps[i].status != 0)
+        if (csaps[i].status != 0 || data[i].poll_id == 0)
             cancel = TRUE;
         else
             n_active++;
