@@ -217,6 +217,41 @@ extern int tapi_iscsi_recv_pkt(const char            *ta_name,
                                size_t                *length);
 
 /**
+ * Prepare for receive a message on one of several CSAPS
+ *
+ * @param n_csaps       Number of CSAPs to poll
+ * @param csaps         CSAP poll structures
+ * @param timeout       Timeout of a receive in milliseconds
+ *
+ * @return Status code
+ */
+extern int tapi_iscsi_start_poll_recv_pkt(unsigned n_csaps,
+                                          rcf_trpoll_csap *csaps,
+                                          int timeout);
+
+
+/**
+ * Wait for a message on one of several CSAPs
+ *
+ * @param n_csaps       Number of CSAPs to poll
+ * @param csaps         CSAP poll structures
+ * @param timeout       Timeout of a receive in milliseconds
+ * @param params        Location for iSCSI current params (OUT)
+ * @param ready_index   An index in @p csaps of a CSAP on which 
+                        a message has been get, or (-1) in case of
+                        a timeout on all CSAPs.
+ * @param buffer        Location for received data (OUT)
+ * @param length        Length of buffer / received data (IN/OUT)
+ *
+ * @return Status code
+ */
+extern int tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
+                                      iscsi_target_params_t *params,
+                                      uint8_t *buffer, 
+                                      size_t  *length);
+
+
+/**
  * Send one message via iSCSI CSAP.
  * 
  * @param ta_name       test Agent name

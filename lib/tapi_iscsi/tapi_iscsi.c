@@ -343,6 +343,112 @@ cleanup:
 
 /* See description in tapi_iscsi.h */
 int
+tapi_iscsi_start_poll_recv_pkt(unsigned n_csaps,
+                               rcf_trpoll_csap *csaps,
+                               int timeout)
+{
+    asn_value *pattern = NULL;
+
+    int rc = 0, syms, num;
+    unsigned i;
+ 
+    if (socket == NULL)
+        return TE_EWRONGPTR;
+
+    rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
+                              ndn_traffic_pattern, &pattern, &syms);
+    if (rc != 0)
+    {
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+              __FUNCTION__, rc, syms);
+        return rc;
+    } 
+
+    for (i = 0; i < n_csaps; i++)
+    {
+        rc = tapi_tad_trrecv_start(csaps[i].ta, 0, 
+                                   csaps[i].csap_id, 
+                                   pattern, timeout, 1,
+                                   RCF_TRRECV_PACKETS);
+        if (rc != 0)
+        {
+            ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
+            csaps[i].status = rc;
+            i--;
+            do
+            {
+                tapi_tad_trrecv_stop(csaps[i].ta, 0, csaps[i].csap_id,
+                                     NULL, &num);
+            } while(i--);
+            break;
+        }
+    }
+
+    asn_free_value(pattern);
+    return rc;
+}
+
+/* See description in tapi_iscsi.h */
+int
+tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
+                           iscsi_target_params_t *params,
+                           uint8_t *buffer, 
+                           size_t  *length)
+{
+    int rc;
+    int num;
+
+    struct iscsi_data_message msg;
+
+    if (socket == NULL || buffer == NULL || length == NULL)
+        return TE_EWRONGPTR;
+
+    msg.error  = 0;
+
+    RING("%s(): called with length %d", __FUNCTION__, *length);
+    msg.params = params;
+    msg.data   = buffer;
+    msg.length = *length;
+    msg.error  = TE_EFAIL;
+
+    rc = rcf_ta_trrecv_stop(the_csap->ta, 0, 
+                            the_csap->csap_id,
+                            iscsi_msg_handler,
+                            &msg, &num);
+    if (rc != 0)
+        WARN("%s() trrecv_stop failed: %r", __FUNCTION__, rc);
+    else
+    {
+        if (num == 0)
+        {
+            return TE_RC(TE_TAPI, TE_ETIMEDOUT);
+        }
+        else
+        {
+            *length = msg.length;
+        
+            if (msg.error != 0)
+            {
+                rc = msg.error;
+                if (rc == TE_EFAIL)
+                {
+                    ERROR("%s(): iscsi callback was not called",
+                          __FUNCTION__);
+                }
+                else 
+                {
+                    ERROR("%s(): iscsi callback failed: %r", 
+                          __FUNCTION__, rc);
+                }
+            }
+        }
+    }
+    return rc;
+}
+
+
+/* See description in tapi_iscsi.h */
+int
 tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
                     iscsi_target_params_t *params,
                     uint8_t *buffer, size_t  length)
