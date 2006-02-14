@@ -10,22 +10,33 @@ EthernetAddress ::= IMPLICIT OCTET STRING (SIZE (6))
 
 
 Ethernet-Header ::= IMPLICIT SEQUENCE { 
-    dst-addr [1] DATA-UNIT{EthernetAddress} OPTIONAL,
-    src-addr [2] DATA-UNIT{EthernetAddress} OPTIONAL,
-    eth-type [3] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL,
-    cfi      [4] INTEGER {false(0), true(1),} OPTIONAL,
-    priority [5] DATA-UNIT{INTEGER(0..7)} OPTIONAL,
-    vlan-id  [6] DATA-UNIT{INTEGER(0..4095)} OPTIONAL,
+    dst-addr        [4] DATA-UNIT{EthernetAddress} OPTIONAL,
+    src-addr        [5] DATA-UNIT{EthernetAddress} OPTIONAL,
+    eth-type        [6] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL,
+    is-snap         [7] BOOLEAN OPTIONAL,
+    snap-header     [8] DATA-UNIT{OCTET STRING (SIZE 3)}OPTIONAL,
+    snap-pid        [9] DATA-UNIT{OCTET STRING (SIZE 3)}OPTIONAL,
+    tag-type       [10] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL,
+    cfi            [11] INTEGER {false(0), true(1),} OPTIONAL,
+    priority       [12] DATA-UNIT{INTEGER(0..7)} OPTIONAL,
+    vlan-id        [13] DATA-UNIT{INTEGER(0..4095)} OPTIONAL,
+    e-rif-rc-rt    [14] DATA-UNIT{INTEGER(0..7)}OPTIONAL,
+    e-rif-rc-lth   [15] DATA-UNIT{INTEGER(0..31)}OPTIONAL,
+    e-rif-rc-d     [16] DATA-UNIT{INTEGER(0..1)}OPTIONAL,
+    e-rif-rc-lf    [17] DATA-UNIT{INTEGER(0..63)}OPTIONAL,
+    e-rif-rc-ncfi  [18] DATA-UNIT{INTEGER(0..1)}OPTIONAL,
+    e-rif-rt       [19] DATA-UNIT{OCTET STRING}OPTIONAL,
 }
 
 Ethernet-CSAP ::= IMPLICIT SEQUENCE { 
     device-id   [0] DATA-UNIT{UniversalString},
-    local-addr  [1] DATA-UNIT{EthernetAddress} OPTIONAL,
-    remote-addr [2] DATA-UNIT{EthernetAddress} OPTIONAL,
-    eth-type    [3] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL, 
-    cfi         [4] INTEGER {false(0), true(1),} OPTIONAL,
-    priority    [5] DATA-UNIT{INTEGER(0..7)} OPTIONAL,
-    vlan-id     [6] DATA-UNIT{INTEGER(0..4095)} OPTIONAL,
+    receive-mode[1] DATA-UNIT{INTEGER(0..31)}, 
+    local-addr  [2] DATA-UNIT{EthernetAddress} OPTIONAL,
+    remote-addr [3] DATA-UNIT{EthernetAddress} OPTIONAL,
+    eth-type    [6] DATA-UNIT{OCTET STRING (SIZE 2)}OPTIONAL, 
+    cfi        [11] INTEGER {false(0), true(1),} OPTIONAL,
+    priority   [12] DATA-UNIT{INTEGER(0..7)} OPTIONAL,
+    vlan-id    [13] DATA-UNIT{INTEGER(0..4095)} OPTIONAL,
 }
 
 END
