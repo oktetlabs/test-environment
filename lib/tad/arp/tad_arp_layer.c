@@ -67,11 +67,16 @@ typedef struct tad_arp_proto_tmpl_data {
  */
 static const tad_bps_pkt_frag tad_arp_bps_hdr[] =
 {
-    { "hw-type",    16, BPS_FLD_SIMPLE(NDN_TAG_ARP_HW_TYPE)     },
-    { "proto-type", 16, BPS_FLD_SIMPLE(NDN_TAG_ARP_PROTO)       },
-    { "hw-size",    8,  BPS_FLD_SIMPLE(NDN_TAG_ARP_HW_SIZE),    },
-    { "proto-size", 8,  BPS_FLD_SIMPLE(NDN_TAG_ARP_PROTO_SIZE), },
-    { "opcode",     16, BPS_FLD_NO_DEF(NDN_TAG_ARP_OPCODE),     },
+    { "hw-type",    16,
+      BPS_FLD_SIMPLE(NDN_TAG_ARP_HW_TYPE),    TAD_DU_I32 },
+    { "proto-type", 16,
+      BPS_FLD_SIMPLE(NDN_TAG_ARP_PROTO),      TAD_DU_I32 },
+    { "hw-size",    8,
+      BPS_FLD_SIMPLE(NDN_TAG_ARP_HW_SIZE),    TAD_DU_I32 },
+    { "proto-size", 8,
+      BPS_FLD_SIMPLE(NDN_TAG_ARP_PROTO_SIZE), TAD_DU_I32 },
+    { "opcode",     16,
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_OPCODE),     TAD_DU_I32 },
 };
 
 /**
@@ -79,10 +84,14 @@ static const tad_bps_pkt_frag tad_arp_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_arp_bps_addrs[] =
 {
-    { "snd-hw-addr",    0, BPS_FLD_NO_DEF(NDN_TAG_ARP_SND_HW_ADDR)    },
-    { "snd-proto-addr", 0, BPS_FLD_NO_DEF(NDN_TAG_ARP_SND_PROTO_ADDR) },
-    { "tgt-hw-addr",    0, BPS_FLD_NO_DEF(NDN_TAG_ARP_TGT_HW_ADDR)    },
-    { "tgt-proto-addr", 0, BPS_FLD_NO_DEF(NDN_TAG_ARP_TGT_PROTO_ADDR) },
+    { "snd-hw-addr",    0,
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_SND_HW_ADDR),    TAD_DU_OCTS },
+    { "snd-proto-addr", 0,
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_SND_PROTO_ADDR), TAD_DU_OCTS },
+    { "tgt-hw-addr",    0,
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_TGT_HW_ADDR),    TAD_DU_OCTS },
+    { "tgt-proto-addr", 0,
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_TGT_PROTO_ADDR), TAD_DU_OCTS },
 };
 
 
