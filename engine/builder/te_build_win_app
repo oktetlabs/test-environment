@@ -51,11 +51,18 @@ if test $PLATFORM != ${PLATFORM#x86_64} ; then
 
 BUILD_HOST=${TE_WIN64_BUILD_HOST}
 KEY=${TE_WIN64_BUILD_HOST_KEY}
+ADD_CMD='export PATH=`cygpath -u \"\$MSSDK\bin\win64\x86\AMD64\"`:\$PATH ; \
+if test -n \"\$MSSDK\" ; then \
+export LIB=\"\$MSSDK\lib\AMD64;\$MSSDK\lib\AMD64\atlmfc;\$MSSDK\lib;\
+C:\WINDDK\3790.1830\lib\wnet\amd64\" ; fi ;'
+ADD_LIB="bufferoverflowU.lib"
 
 else
 
 BUILD_HOST=${TE_WIN32_BUILD_HOST}
 KEY=${TE_WIN32_BUILD_HOST_KEY}
+ADD_CMD=
+ADD_LIB=
 
 fi
 
@@ -108,11 +115,12 @@ scp tmpsrc/*.c ${BUILD_HOST}:tmpsrc
 rm -rf tmpsrc 
 
 ssh $KEY ${BUILD_HOST} bash -l -c "\"
+$ADD_CMD \
 tar xzf ${PLATFORM}.tgz ; \
 rm ${PLATFORM}.tgz ; \
 cd tmpsrc ; \
 cl /nologo -I../${PLATFORM}/include -DWINDOWS *.c \
-   /link /OUT:${APPNAME} /LIBPATH:../${PLATFORM}/lib ${LIBS} ; \""
+   /link /OUT:${APPNAME} /LIBPATH:../${PLATFORM}/lib ${LIBS} ${ADD_LIB} ; \""
 
 scp ${BUILD_HOST}:tmpsrc/${APPNAME} .
 
