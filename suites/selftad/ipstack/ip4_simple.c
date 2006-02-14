@@ -159,8 +159,7 @@ main(int argc, char *argv[])
         INFO("trrecv_wait: %r num: %d\n", rc, num);
         if (rc)
         {
-            if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT && 
-                TE_RC_GET_MODULE(rc) == TE_TAD_CSAP)
+            if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT)
             {
                 RING("wait for packets timedout");
                 rc = 0;
