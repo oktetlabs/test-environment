@@ -43,11 +43,13 @@ if test $PLATFORM != ${PLATFORM#x86_64} ; then
 
 BUILD_HOST=${TE_WIN64_BUILD_HOST}
 KEY=${TE_WIN64_BUILD_HOST_KEY}
+ADD_CMD='export PATH=`cygpath -u \"\$MSSDK\bin\win64\x86\AMD64\"`:\$PATH ;'
 
 else
 
 BUILD_HOST=${TE_WIN32_BUILD_HOST}
 KEY=${TE_WIN32_BUILD_HOST_KEY}
+ADD_CMD=
 
 fi
 
@@ -95,6 +97,7 @@ cd ..
 rm -rf tmpsrc 
 
 ssh $KEY ${BUILD_HOST} bash -l -c "\"
+$ADD_CMD \
 cd tmpsrc ; \
 cl /nologo *.c /c ; \
 lib /OUT:${LIBNAME} *.obj\""
