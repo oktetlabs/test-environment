@@ -85,6 +85,18 @@ extern "C" {
 #endif
 
 
+/** Ethernet layer read/write specific data */
+typedef struct tad_eth_rw_data {
+    eth_interface_p interface;  /**< Ethernet interface data */
+
+    int     out;            /**< Socket for sending data to the media */
+    int     in;             /**< Socket for receiving data */
+
+    uint8_t recv_mode;      /**< Receive mode, bit mask from values in 
+                                 enum eth_csap_receive_mode in ndn_eth.h */
+} tad_eth_rw_data;
+
+
 /**
  * Callback for init 'eth' CSAP layer if single in stack.
  *

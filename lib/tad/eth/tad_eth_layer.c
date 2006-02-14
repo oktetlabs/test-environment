@@ -133,6 +133,32 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
         return rc;
 
     /* FIXME */
+    if ((proto_data->hdr_d.tx_def[1].du_type == TAD_DU_UNDEF) &&
+        (csap_get_rw_layer(csap) == layer))
+    {
+        /* Source address is not specified, use local interface address */
+        tad_eth_rw_data    *rw_data = csap_get_rw_data(csap);
+        eth_interface_p     iface;
+
+        assert(rw_data != NULL);
+        iface = rw_data->interface;
+        assert(rw_data != NULL);
+
+        proto_data->hdr_d.tx_def[1].val_data.len =
+            sizeof(iface->local_addr);
+        proto_data->hdr_d.tx_def[1].val_data.oct_str =
+            malloc(proto_data->hdr_d.tx_def[1].val_data.len);
+        if (proto_data->hdr_d.tx_def[1].val_data.oct_str == NULL)
+            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+        memcpy(proto_data->hdr_d.tx_def[1].val_data.oct_str,
+               iface->local_addr, sizeof(iface->local_addr));
+
+        /* Successfully got */
+        proto_data->hdr_d.tx_def[1].du_type = TAD_DU_OCTS;
+    }
+
+    /* FIXME */
     if (layer > 0 &&
         proto_data->hdr_d.tx_def[2].du_type == TAD_DU_UNDEF &&
         proto_data->hdr_d.rx_def[2].du_type == TAD_DU_UNDEF)
