@@ -145,7 +145,12 @@ tad_poll_thread(void *arg)
     csap = context->csap;
     assert(csap != NULL);
 
-    pthread_cleanup_push((void (*)(void *))tad_poll_free, (void *)context);
+    /*
+     * There is only one cancellation point in the thread context is
+     * pthread_cond_timedwait() (inside csap_timedwait()).
+     */
+
+    pthread_cleanup_push((void (*)(void *))tad_poll_free, context);
     rc = csap_timedwait(csap, CSAP_STATE_DONE, context->timeout);
     if (rc == 0)
     {
@@ -167,6 +172,11 @@ tad_poll_thread(void *arg)
     {
         context->status = rc;
     }
+    /* 
+     * Clean up handler assumes that lock is acquired, since it is
+     * acquired when cleanup handler is called on cancellation from
+     * pthread_cond_timedwait().
+     */
     CSAP_LOCK(context->csap);
     pthread_cleanup_pop(!0);
 
