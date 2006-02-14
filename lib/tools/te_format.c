@@ -358,7 +358,7 @@ case mod_:\
                     FLUSH("\n");
                     for (i = 0; i < len; i++)
                     {
-                        FLUSH("%02hhX", base + i);
+                        FLUSH("%02hhX", base[i]);
                         if (i % 16 == 15)
                         {
                             FLUSH("\n");
