@@ -2259,9 +2259,6 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     
     if ((num != NULL) && (msg.error == 0 || opcode != RCFOP_TRRECV_GET))
         *num = msg.num;
-
-    if (msg.error != 0)
-        WARN("RCF traffic operation fails with status code %r", msg.error);
     
     return msg.error;
 }
