@@ -419,7 +419,7 @@ create_test()
 
 /** @page ${SUITE_NAME}${TEST_NAME}  ${TEST_DESCR}
  *
- * @objective 
+ * @objective X
  *
  * @param p             description
  *
