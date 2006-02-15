@@ -644,6 +644,7 @@ topo_sort_instances(cfg_instance *list)
         }
         seq = tmp->obj->ordinal_number;
     }
+
     return list;
 }
 
@@ -673,7 +674,7 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
         
     if ((rc = parse_instances(cur, &list)) != 0)
         return rc;
-
+    
     if (!restore)
     {
         if ((rc = cfg_ta_sync("/:", TRUE)) != 0)
@@ -684,8 +685,6 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
         }
     }
 
-    cfg_order_objects_topologically();
-
     if ((rc = remove_excessive("/", list)) != 0)
     {
         ERROR("Failed to remove excessive entries");
@@ -694,7 +693,7 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore)
     }
 
     list = topo_sort_instances(list);
-    
+
     return restore_entries(list);
 }
 
@@ -718,9 +717,6 @@ cfg_backup_restore_ta(char *ta)
     int            i;
     
     sprintf(buf, CFG_TA_PREFIX"%s", ta);
-
-    /* Topologically sort instances */
-    cfg_order_objects_topologically();
 
     /* Create list of instances on the TA */
     for (i = 0; i < cfg_all_inst_size; i++)
@@ -752,7 +748,6 @@ cfg_backup_restore_ta(char *ta)
         }
         tmp->handle = inst->handle;
         tmp->obj = inst->obj;
-
 
         if (prev ==  NULL)
             list = tmp;

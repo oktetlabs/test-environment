@@ -59,7 +59,6 @@ typedef struct cfg_object {
     /*@}*/
 
     /** @name Dependency tracking */
-    unsigned               num_deps; /**< The length of depends_on list */
     unsigned               ordinal_number; 
     /**< Ordinal number of this object in the topologically sorted list */
     struct cfg_dependency *depends_on; 
@@ -72,7 +71,7 @@ typedef struct cfg_object {
                                           order */
 } cfg_object;
 
-#define CFG_DEP_INITIALIZER  0, 0, NULL, NULL, NULL, NULL
+#define CFG_DEP_INITIALIZER  0, NULL, NULL, NULL, NULL
 
 extern cfg_object cfg_obj_root;
 extern cfg_object **cfg_all_obj;
@@ -304,12 +303,6 @@ uint32_t cfg_conf_delay;
  * @param oid   instance OID
  */
 extern void cfg_conf_delay_update(const char *oid);
-
-/**
- * Order the objects according to their dependencies 
- *
- */
-extern void cfg_order_objects_topologically(void);
 
 /** Sleep the delay and reset it */
 static inline void

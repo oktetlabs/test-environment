@@ -128,7 +128,7 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
 {
     cfg_dependency *newdep;
     cfg_object     *place, *prev;
-    
+
     VERB("Creating a dependency %s to %s", obj->oid, master->oid);
 
     newdep = calloc(1, sizeof(*newdep));
@@ -141,7 +141,8 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
     newdep->next = obj->depends_on;
     newdep->depends = master;
     obj->depends_on = newdep;
-    obj->num_deps++;
+    if (master->ordinal_number >= obj->ordinal_number)
+        obj->ordinal_number = master->ordinal_number + 1;
 
     /**
      * Find a place for a new record in the topologically sorted list.
@@ -154,13 +155,14 @@ cfg_create_dep(cfg_object *master, cfg_object *obj)
      *
      * NOTE: there is no explicit checking for loops.
      */
-    if (obj->dep_next != NULL && obj->dep_next->num_deps <= obj->num_deps)
+    if (obj->dep_next != NULL && 
+        obj->dep_next->ordinal_number <= obj->ordinal_number)
     {
         for (prev = obj, place = obj->dep_next; 
              place != NULL; 
              prev = place, place = place->dep_next)
         {
-            if (place->num_deps > obj->num_deps)
+            if (place->ordinal_number > obj->ordinal_number)
                 break;
         }
         if (obj->dep_next != NULL)
@@ -333,23 +335,6 @@ cfg_maybe_adopt_objects (cfg_object *master, cfg_oid *oid)
     }
 }
 
-/**
- * Order the objects according to their dependencies 
- *
- */
-void
-cfg_order_objects_topologically(void)
-{
-    cfg_object *iter;
-    unsigned    seqno;
-    
-    for (iter = topological_order, seqno = 0;
-         iter != NULL;
-         iter = iter->dep_next, seqno++)
-    {
-        iter->ordinal_number = seqno;
-    }
-}
 
 /**
  * Process message with user request.
@@ -466,7 +451,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
     cfg_all_obj[i]->brother = father->son;
     father->son = cfg_all_obj[i];
 
-    cfg_all_obj[i]->num_deps   = 0;
+    cfg_all_obj[i]->ordinal_number = 0;
     cfg_all_obj[i]->depends_on = NULL;
     cfg_all_obj[i]->dependants = NULL;
     cfg_all_obj[i]->dep_next   = topological_order;
