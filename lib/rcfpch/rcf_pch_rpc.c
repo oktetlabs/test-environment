@@ -759,16 +759,15 @@ rcf_pch_rpc_shutdown(void)
 #ifndef TCP_TRANSPORT
     char *pipename = getenv("TE_RPC_PORT");
 #endif        
-    
-    rcf_pch_rpc_close_sockets();
-        
+
 #ifndef TCP_TRANSPORT
     if (pipename != NULL)
         unlink(pipename);
 #endif        
-        
-    usleep(100000);
+
     pthread_mutex_lock(&lock);
+    rcf_pch_rpc_close_sockets();
+    usleep(100000);
     for (rpcs = list; rpcs != NULL; rpcs = next)
     {
         next = rpcs->next;
