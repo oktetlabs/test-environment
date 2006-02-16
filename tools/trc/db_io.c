@@ -650,6 +650,12 @@ alloc_and_get_test(xmlNodePtr node, test_runs *tests,
         return rc;
     }
 
+    if (node != NULL)
+    {
+        ERROR("Unexpected element '%s' in test entry", node->name);
+        return EINVAL;
+    }
+
     return 0;
 }
 
