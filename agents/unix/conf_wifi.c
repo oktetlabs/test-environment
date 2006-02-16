@@ -52,6 +52,12 @@
 #include "logger_api.h"
 #include "unix_internal.h"
 
+#ifdef ENABLE_8021X
+extern te_errno ds_supplicant_network_set(unsigned int gid, const char *oid,
+                                          const char *value,
+                                          const char *instance, ...);
+#endif
+
 /** The list of ioctls supported by the Agent */
 enum ta_priv_ioctl_e {
     TA_PRIV_IOCTL_RESET = 0, /**< ioctl for card reset */
