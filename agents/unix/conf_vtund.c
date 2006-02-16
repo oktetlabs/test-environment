@@ -503,7 +503,7 @@ vtund_server_start(vtund_server *server)
             "  speed %s:%s;\n"
             "  multi %s;\n"
             "  up {\n"
-            "    ppp \"10.0.0.%d:10.0.0.%d proxyarp noauth mtu 10000 mru 10000\";\n"
+            "    ppp \"10.0.0.%d:10.0.0.%d proxyarp noauth nomagic mtu 10000 mru 10000\";\n"
             "  };\n"
             "  down {\n"
             "  };\n"
