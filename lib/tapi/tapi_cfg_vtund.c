@@ -84,7 +84,6 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
                               ta_clnt, ta_srv, ta_clnt);
     if (rc != 0)
         return rc;
-    SLEEP(3); /* Wait for server setup. */
     
     rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, srv_addr),
                               "/agent:%s/vtund:/client:%s-%s/server:",
