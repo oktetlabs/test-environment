@@ -594,7 +594,7 @@ expand_rp(const char *value, radius_parameter *top)
         {
             const char *rp_val;
             size_t      rpv_len;
-            size_t      diff_len;
+            int         diff_len;
 
             *next = '\0';
             if (!retrieve_rp(top, new_ptr + 2, &rp_val))
