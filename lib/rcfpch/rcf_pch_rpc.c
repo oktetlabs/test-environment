@@ -535,6 +535,7 @@ dispatch(void *arg)
                 rpc_error(rpcs, TE_ERPCTIMEOUT);
                 continue;
             } 
+            assert(rpcs->sock >= 0);
             FD_SET(rpcs->sock, &set1);
 
             if (!FD_ISSET(rpcs->sock, &set0))
