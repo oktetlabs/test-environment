@@ -288,7 +288,7 @@ update_package_dox()
         if test -n "$RES" ; then
             return ;
         fi
-        echo Adding $NAME reference to ${START_DIR}/package.dox
+        echo Adding $NAME reference to ${DIRNAME}/package.dox
         cat ${DIRNAME}/package.dox | grep -v '*/' >tmp
         echo '-# @ref '${SUITE_NAME}${NAME} >>tmp
         echo '*/' >>tmp
