@@ -296,6 +296,7 @@ win_rpc_errno(int err)
         case WSAEHOSTDOWN: return RPC_EHOSTDOWN;
         case WSAEHOSTUNREACH: return RPC_EHOSTUNREACH;
         case WSA_INVALID_HANDLE: return RPC_EBADF;
+        case WSAEINTR: return RPC_EINTR;
         
         case ERROR_UNEXP_NET_ERR: return RPC_E_UNEXP_NET_ERR;
         case ERROR_OPERATION_ABORTED: return RPC_E_OPERATION_ABORTED;
