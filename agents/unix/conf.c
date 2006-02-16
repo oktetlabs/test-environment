@@ -2062,6 +2062,11 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         if (ifa->ifa_index != ifindex)
             continue;
 
+        /* We get IPv4 addresses in IPv6 list at hosts without IPv6 */
+        if (inet6_addresses == 1 && ifa->ifa_family != AF_INET6 ||
+            inet6_addresses == 0 && ifa->ifa_family != AF_INET)
+            continue;
+
         memset(rta_tb, 0, sizeof(rta_tb));
         parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa),
                      hdr->nlmsg_len - NLMSG_LENGTH(sizeof(*ifa)));
