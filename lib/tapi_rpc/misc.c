@@ -1062,7 +1062,7 @@ rpc_create_child_process_socket(const char *method,
         pid2 = rpc_getpid(*pco_child);
         rpc_duplicate_handle(pco_father, pid1, father_s, pid2, child_s);
     }
-    if (strcmp(method, "DuplicateSocket_self") == 0)
+    else if (strcmp(method, "DuplicateSocket_self") == 0)
     {
         pid1 = rpc_getpid(pco_father);
         rpc_wsa_duplicate_socket(pco_father, father_s, 
