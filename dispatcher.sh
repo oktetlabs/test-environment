@@ -258,13 +258,23 @@ process_opts()
                 ;;
 
             --env=* )
-                ENV_FILE="${1#--env=}" ;
-                if test "${ENV_FILE:0:1}" != "/" ; then 
-                    ENV_FILE="${CONF_DIR}/${ENV_FILE}" ;
+                env_req="${1#--env=}"
+                env_req="${env_req//:/ }"
+                env_file=
+                env_opts=
+                for req in ${env_req} ; do
+                    if test -z "${env_file}" ; then
+                        env_file=${req}
+                    else
+                        env_opts="$env_opts $req"
+                    fi
+                done
+                if test "${env_file:0:1}" != "/" ; then 
+                    env_file="${CONF_DIR}/${env_file}"
                 fi ;
-                if test -f ${ENV_FILE} ; then
+                if test -f "${env_file}" ; then
                     TE_EXTRA_OPTS=
-                    . ${ENV_FILE}
+                    . ${env_file}
                     if test -n "${TE_EXTRA_OPTS}" ; then
                         process_opts ${TE_EXTRA_OPTS}
                         TE_EXTRA_OPTS=
