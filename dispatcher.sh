@@ -34,7 +34,8 @@ Generic options:
   --conf-tester=<filename>      Tester config file (tester.conf by default)
   --conf-nut=<filename>         NUT config file (nut.conf by default)
 
-  --env=<filename>              Name of the file to get shell variables
+  --script=<filename>           Name of the file with shell script to be
+                                included as source
 
   --live-log                    Run RGT in live mode
 
@@ -257,31 +258,30 @@ process_opts()
                 fi
                 ;;
 
-            --env=* )
-                env_req="${1#--env=}"
-                env_req="${env_req//:/ }"
-                env_file=
-                env_opts=
-                for req in ${env_req} ; do
-                    if test -z "${env_file}" ; then
-                        env_file=${req}
+            --script=* )
+                script_req="${1#--script=}"
+                script_file=
+                script_opts=
+                for i in ${script_req//:/ } ; do
+                    if test -z "${script_file}" ; then
+                        script_file="$i"
                     else
-                        env_opts="$env_opts $req"
+                        script_opts="$script_opts $i"
                     fi
                 done
-                if test "${env_file:0:1}" != "/" ; then 
-                    env_file="${CONF_DIR}/${env_file}"
+                if test "${script_file:0:1}" != "/" ; then 
+                    script_file="${CONF_DIR}/${script_file}"
                 fi ;
-                if test -f "${env_file}" ; then
+                if test -f "${script_file}" ; then
                     TE_EXTRA_OPTS=
-                    . ${env_file}
+                    . "${script_file}"
                     if test -n "${TE_EXTRA_OPTS}" ; then
                         process_opts ${TE_EXTRA_OPTS}
                         TE_EXTRA_OPTS=
                     fi
                 else
-                    echo "File with environment variables ${ENV_FILE} not found" >&2 ;
-                    exit 1 ;
+                    echo "File with shell script ${script_file} not found" >&2
+                    exit 1
                 fi
                 ;;
 
