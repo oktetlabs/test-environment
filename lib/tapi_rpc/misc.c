@@ -1086,6 +1086,7 @@ rpc_create_child_process_socket(const char *method,
         pid_t pid = rpc_getpid(pco_father);
         
         rpc_duplicate_handle(pco_father, pid, father_s, pid, child_s);
+        *pco_child = pco_father;
     }
     else
     {
