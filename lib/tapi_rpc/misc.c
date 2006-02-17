@@ -1053,7 +1053,8 @@ rpc_create_child_process_socket(const char *method,
         rpc_wsa_duplicate_socket(pco_father, father_s, pid1,
                                  info, &info_len);
         *child_s = rpc_wsa_socket(*pco_child, domain, sock_type,
-                                  RPC_PROTO_DEF, info, info_len, 0);
+                                  RPC_PROTO_DEF, info, info_len, 
+                                  RPC_WSA_FLAG_OVERLAPPED);
     }
     else if (strcmp(method, "DuplicateHandle") == 0)
     {
@@ -1069,7 +1070,8 @@ rpc_create_child_process_socket(const char *method,
                                  pid1, info, &info_len);
         *pco_child = pco_father;
         *child_s = rpc_wsa_socket(pco_father, domain, sock_type,
-                                  RPC_PROTO_DEF, info, info_len, 0);
+                                  RPC_PROTO_DEF, info, info_len, 
+                                  RPC_WSA_FLAG_OVERLAPPED);
     }
     else if (strcmp(method, "DuplicateHandle_self") == 0)
     {
