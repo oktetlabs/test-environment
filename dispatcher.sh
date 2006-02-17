@@ -232,7 +232,8 @@ RGT_LOG_HTML=
 process_opts()
 {
     while test -n "$1" ; do
-        case $1 in 
+        opt="$1"
+        case "$1" in 
             --help ) usage ; exit 0 ;;
 
             --daemon=* )    DAEMON="${1#--daemon=}" ; SHUTDOWN= ;;
@@ -248,6 +249,8 @@ process_opts()
                 fi ;
                 if test -f ${OPTS} ; then
                     process_opts $(cat ${OPTS}) ;
+                    # Don't want to see the option after expansion
+                    opt=
                 else
                     echo "File with options ${OPTS} not found" >&2 ;
                     exit 1 ;
@@ -260,7 +263,12 @@ process_opts()
                     ENV_FILE="${CONF_DIR}/${ENV_FILE}" ;
                 fi ;
                 if test -f ${ENV_FILE} ; then
-                    . ${ENV_FILE} ;
+                    TE_EXTRA_OPTS=
+                    . ${ENV_FILE}
+                    if test -n "${TE_EXTRA_OPTS}" ; then
+                        process_opts ${TE_EXTRA_OPTS}
+                        TE_EXTRA_OPTS=
+                    fi
                 else
                     echo "File with environment variables ${ENV_FILE} not found" >&2 ;
                     exit 1 ;
@@ -346,6 +354,7 @@ process_opts()
                 usage ;
                 exit 1 ;;
         esac
+        test -n "$opt" && cmd_line_opts_all="${cmd_line_opts_all} $opt"
         shift 1 ;
     done
 }
@@ -353,9 +362,9 @@ process_opts()
 
 # Export TE_BASE
 if test -z "${TE_BASE}" ; then
-    if test -e ${DISPATCHER_DIR}/configure.ac ; then
+    if test -e "${DISPATCHER_DIR}/configure.ac" ; then
         echo "TE source directory is ${DISPATCHER_DIR} - exporting TE_BASE." ;
-        export TE_BASE=${DISPATCHER_DIR} ;
+        export TE_BASE="${DISPATCHER_DIR}" ;
     fi
 fi
 
@@ -369,7 +378,8 @@ fi
 
 
 # Process command-line options
-CMD_LINE_OPTS="$@"
+cmd_line_opts="$@"
+cmd_line_opts_all=
 process_opts "$@"
 
 if test -z "$TE_BASE" -a -n "$BUILDER" ; then
@@ -489,7 +499,9 @@ fi
 
 # Intitialize log
 test -n "${DAEMON}" || te_log_init
-te_log_message Engine Dispatcher "Command-line options: ${CMD_LINE_OPTS}"
+te_log_message Engine Dispatcher "Command-line options: ${cmd_line_opts}"
+te_log_message Engine Dispatcher \
+    "Expanded command-line options: ${cmd_line_opts_all}"
 
 # Log TRC tool options
 if test -n "${TRC_OPTS}" ; then
