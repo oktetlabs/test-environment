@@ -1031,7 +1031,6 @@ rpc_create_child_process_socket(const char *method,
                                 rpc_socket_type sock_type,
                                 rcf_rpc_server **pco_child, int *child_s)
 {
-    pid_t       pid1, pid2;
     char        info[512];
     int         info_len = sizeof(info);
     char        process_name[12];
@@ -1043,31 +1042,40 @@ rpc_create_child_process_socket(const char *method,
     {
         rcf_rpc_server_fork(pco_father, process_name, pco_child);
         *child_s = father_s;
+        RING("Inherit socket %d from process %d to process %d",
+             father_s, rpc_getpid(pco_father), rpc_getpid(*pco_child));
         return;
     }
     
     if (strcmp(method, "DuplicateSocket") == 0)
     {
+        pid_t pid;
+        
         rcf_rpc_server_create(pco_father->ta, process_name, pco_child);
-        pid1 = rpc_getpid(*pco_child);
-        rpc_wsa_duplicate_socket(pco_father, father_s, pid1,
+        pid = rpc_getpid(*pco_child);
+        rpc_wsa_duplicate_socket(pco_father, father_s, pid,
                                  info, &info_len);
         *child_s = rpc_wsa_socket(*pco_child, domain, sock_type,
                                   RPC_PROTO_DEF, info, info_len, 
                                   RPC_WSA_FLAG_OVERLAPPED);
+        RING("Duplicate socket: %d (process %d) -> %d (process %d)",
+             father_s, rpc_getpid(pco_father), *child_s, pid);
     }
     else if (strcmp(method, "DuplicateHandle") == 0)
     {
+        pid_t pid1, pid2;
+        
         rcf_rpc_server_create(pco_father->ta, process_name, pco_child);
         pid1 = rpc_getpid(pco_father);
         pid2 = rpc_getpid(*pco_child);
         rpc_duplicate_handle(pco_father, pid1, father_s, pid2, child_s);
+        RING("Duplicate handle: %d (process %d) -> %d (process %d)",
+             father_s, pid1, *child_s, pid2);
     }
     else if (strcmp(method, "DuplicateSocket_self") == 0)
     {
-        pid1 = rpc_getpid(pco_father);
         rpc_wsa_duplicate_socket(pco_father, father_s, 
-                                 pid1, info, &info_len);
+                                 rpc_getpid(pco_father), info, &info_len);
         *pco_child = pco_father;
         *child_s = rpc_wsa_socket(pco_father, domain, sock_type,
                                   RPC_PROTO_DEF, info, info_len, 
@@ -1075,8 +1083,9 @@ rpc_create_child_process_socket(const char *method,
     }
     else if (strcmp(method, "DuplicateHandle_self") == 0)
     {
-        pid1 = rpc_getpid(pco_father);
-        rpc_duplicate_handle(pco_father, pid1, father_s, pid1, child_s);
+        pid_t pid = rpc_getpid(pco_father);
+        
+        rpc_duplicate_handle(pco_father, pid, father_s, pid, child_s);
     }
     else
     {
