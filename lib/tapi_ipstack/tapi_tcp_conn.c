@@ -598,7 +598,8 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                          const struct sockaddr *local_addr, 
                          const struct sockaddr *remote_addr, 
                          const char *local_iface,
-                         uint8_t *local_mac, uint8_t *remote_mac,
+                         const uint8_t *local_mac, 
+                         const uint8_t *remote_mac,
                          int window, tapi_tcp_handler_t *handler)
 {
     int rc;
