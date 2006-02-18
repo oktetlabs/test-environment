@@ -2950,13 +2950,13 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
             }
 
             for (i = 0; 
-                 i < res->wsa_ioctl_request_u.req_saa.req_saa_len &&
-                 (i + 1) * sizeof(struct sockaddr_storage) <= buf_len;
+                 (i < res->wsa_ioctl_request_u.req_saa.req_saa_len) &&
+                 ((i + 1) * sizeof(struct sockaddr_storage) <=
+                 (unsigned)buf_len);
                  i++)
             {
                 addr = (struct sockaddr *)
                            (((struct sockaddr_storage *)buf) + i);
-
                 addr->sa_family = addr_family_rpc2h(
                     res->wsa_ioctl_request_u.req_saa.req_saa_val[i]
                         .sa_family);
@@ -3118,6 +3118,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
                 *(tarpc_tcp_keepalive *)inbuf;
             break;
 
+        case RPC_SIO_SET_GROUP_QOS:
         case RPC_SIO_SET_QOS:
         {
             tarpc_qos *rqos;
@@ -3165,7 +3166,7 @@ call:
         {
             if (convert_wsa_ioctl_result(control_code, 
                                          out.outbuf.outbuf_val,
-                                         outbuf, out.outbuf.outbuf_len) < 0)
+                                         outbuf, in.outbuf_len) < 0)
             {
                 ERROR("Cannot convert the result: increase "
                       "RPC_WSA_IOCTL_OUTBUF_MAX");
