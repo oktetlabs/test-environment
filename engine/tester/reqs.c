@@ -476,7 +476,7 @@ reqs_expr_to_string_buf(const reqs_expr *expr, char **buf, ssize_t *left,
 static const char *
 reqs_expr_to_string(const reqs_expr *expr)
 {
-    static char buf[1024];
+    static char buf[0x10000];
 
     char       *s = buf;
     ssize_t     left = sizeof(buf);
