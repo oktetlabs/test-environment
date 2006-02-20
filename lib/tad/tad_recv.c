@@ -28,7 +28,6 @@
  * $Id$
  */
 
-#define TE_LOG_LEVEL 0xff
 #define TE_LGR_USER     "TAD Recv"
 
 #include "te_config.h"
@@ -1324,8 +1323,8 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
          asn_sprint_value(packet, buffer + cmd_len, attach_len, 0))
         != (int)(attach_len - 1))
     {
-        WARN("%s(): asn_sprint_value() returns unexpected number: "
-             "expected %u, got %d", __FUNCTION__, (unsigned)attach_len,
+        ERROR("%s(): asn_sprint_value() returns unexpected number: "
+              "expected %u, got %d", __FUNCTION__, (unsigned)attach_len,
               attach_rlen);
 #if 0 /* FIXME ASN */
         free(buffer);
