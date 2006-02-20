@@ -58,6 +58,7 @@ extern te_errno ds_supplicant_network_set(unsigned int gid, const char *oid,
                                           const char *instance, ...);
 #endif
 
+#if 0
 /** The list of ioctls supported by the Agent */
 enum ta_priv_ioctl_e {
     TA_PRIV_IOCTL_RESET = 0, /**< ioctl for card reset */
@@ -102,7 +103,6 @@ typedef struct ta_auth_alg_map {
  * information about ioctls.
  */
 #ifdef WIFI_CARD_PRISM54
-
 static ta_auth_alg_map prism54_auth_alg_map = {
     /*
      * OpenSystem is mappen onto - 1
@@ -117,13 +117,63 @@ static ta_priv_ioctl priv_ioctl[TA_PRIV_IOCTL_MAX] = {
      { TRUE, "g_privinvok", "s_privinvok", NULL },
      { TRUE, "g_exunencrypt", "s_exunencrypt", NULL }
 };
-
 #else
 
 /* Default WiFi card - dupports nothing */
 static ta_priv_ioctl priv_ioctl[TA_PRIV_IOCTL_MAX];
 
 #endif
+#endif
+
+/** The number of default WEP keys */
+#define WEP_KEYS_NUM 4
+
+/**
+ * Length of 40 bits WEP key.
+ * @todo Extend agent to support 104 bits keys.
+ */
+#define WEP_KEY_LEN 5
+
+/** Information about station's settings */
+typedef struct wifi_sta_info_s {
+    te_bool valid; /**< Wheter this structure keeps valid data */
+    te_bool wep_enc; /**< Wheter WEP encryption is enabled */
+    uint8_t def_key_id; /**< Default TX key index [0..3] */
+    uint8_t def_keys[WEP_KEYS_NUM][WEP_KEY_LEN]; /**< Default WEP keys */
+    te_bool auth_open; /**< Wheter authentication algorithm is open */
+    te_bool prev_auth_open; /**< Wheter authentication algorithm should be 
+                                 open after enabling WEP */
+} wifi_sta_info_t;
+
+wifi_sta_info_t wifi_sta_info;
+
+/**
+ * Returns ponter to structure that keeps information about WiFi station.
+ *
+ * @param ifname_  Name of the interface on which WiFi station reside
+ * @param ptr_     Location for the pointer
+ *
+ */
+#define GET_WIFI_STA_INFO(ifname_, ptr_) \
+    (ptr_) = (&wifi_sta_info)
+
+#define CHECK_CONSISTENCY(ifname_, info_) \
+    do                                                         \
+    {                                                          \
+        te_bool check_rc_ = sta_info_check(ifname_, info_);    \
+                                                               \
+        if (!check_rc_)                                        \
+            fprintf(stderr, "%s(): line %d Checking FAILED\n", \
+                    __FUNCTION__, __LINE__);                   \
+        assert(check_rc_);                                     \
+    } while (0)
+
+static te_errno sta_restore_encryption(const char *ifname, 
+                                       wifi_sta_info_t *info);
+static te_errno init_sta_info(const char *ifname, wifi_sta_info_t *info);
+static te_bool sta_info_check(const char *ifname, wifi_sta_info_t *info);
+static te_errno parse_wep_key_index(const char *in_value, int *out_value);
+
 
 static te_errno wifi_wep_get(unsigned int gid, const char *oid,
                              char *value, const char *ifname);
@@ -557,147 +607,6 @@ set_private(const char *ifname, /* Dev name */
   return rc;
 }
 
-#if 0
-/**
- * Find private ioctl by its name.
- *
- * @param ifname      interface name
- * @param ioctl_name  ioctl name
- * @param priv        private ioctl info to be filled in (OUT)
- */
-static int
-wifi_ta_priv_find(const char *ifname, const char *ioctl_name,
-                  iwprivargs *priv)
-{
-    iwprivargs *privs;
-    int         i;
-    int         num; /* Max of private ioctl */
-    int         subcmd = 0; /* sub-ioctl index */
-    int         offset = 0; /* Space for sub-ioctl index */
-    int         skfd = wifi_get_skfd();
-
-    WIFI_CHECK_SKFD(skfd);
-
-    /* Read the private ioctls */
-    num = iw_get_priv_info(skfd, ifname, &privs);
-
-    /* Is there any ? */
-    if(num <= 0)
-    {
-        /* Could skip this message ? */
-        ERROR("There is no private ioctls available for the WiFi "
-              "card on %s interface", ifname);
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
-    }
-
-    for (i = 0; i < num; i++)
-    {
-        if (strcmp(privs[i].name, ioctl_name) == 0)
-        {
-            priv = &privs[i];
-            break;
-        }
-    }
-    
-    if (i = num)
-    {
-        free(privs);
-        ERROR("Cannot find private ioctl '%s' on %s interface",
-              ioctl_name, ifname);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-
-    if(priv.cmd < SIOCDEVPRIVATE)
-    {
-        int j = -1;
-
-        /* Find the matching *real* ioctl */
-        while ((++j < num) &&
-               ((priv[j].name[0] != '\0') ||
-                (priv[j].set_args != priv->set_args) ||
-                (priv[j].get_args != priv->get_args)));
-
-        /* If not found... */
-        if (j == num)
-        {
-            free(privs);
-            ERROR("Invalid private ioctl definition for %s command",
-            ioctl_name);
-            return TE_RC(TE_TA_UNIX, TE_EFAULT);
-        }
-
-        /* Save sub-ioctl number */
-        subcmd = priv[k].cmd;
-
-        /* Reserve one int (simplify alignement issues) */
-        offset = sizeof(__u32);
-
-        /* Use real ioctl definition from now on */
-        priv = &priv[j];
-    }
-    
-    /*
-     * Those two tests are important. They define how the driver
-     * will have to handle the data
-     */
-    if ((priv->set_args & IW_PRIV_SIZE_FIXED) &&
-        ((iw_get_priv_size(priv[k].set_args) + offset) <= IFNAMSIZ))
-    {
-      /* First case : all SET args fit within wrq */
-      if(offset)
-	wrq.u.mode = subcmd;
-      memcpy(wrq.u.name + offset, buffer, IFNAMSIZ - offset);
-    }
-  else
-    {
-      if((priv[k].set_args == 0) &&
-	 (priv[k].get_args & IW_PRIV_SIZE_FIXED) &&
-	 (iw_get_priv_size(priv[k].get_args) <= IFNAMSIZ))
-	{
-	  /* Second case : no SET args, GET args fit within wrq */
-	  if(offset)
-	    wrq.u.mode = subcmd;
-	}
-      else
-	{
-	  /* Thirst case : args won't fit in wrq, or variable number of args */
-	  wrq.u.data.pointer = (caddr_t) buffer;
-	  wrq.u.data.flags = subcmd;
-	}
-    }
-
-    free(privs);
-
-    return 0;
-}
-#endif
-
-
-
-/**
- * Returns configuration information about WiFi card.
- *
- * @param ifname  Wireless interface name
- * @param cfg     Configuration information (OUT)
- *
- * @return Status of the operation
- */
-static int
-wifi_get_config(const char *ifname, wireless_config *cfg)
-{
-    int skfd = wifi_get_skfd();
-
-    WIFI_CHECK_SKFD(skfd);
-
-    memset(cfg, 0, sizeof(*cfg));
-
-    if (iw_get_basic_config(skfd, ifname, cfg) != 0)
-    {
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    return 0;
-}
-
 /**
  * Update a configuration item in WiFi card.
  *
@@ -783,6 +692,237 @@ wifi_get_item(const char *ifname, int req, struct iwreq *wrp)
     if (retry != 0)
         WARN("%s: The number of retries %d", __FUNCTION__, retry);
  
+    return rc;
+}
+
+static te_errno
+sta_restore_encryption(const char *ifname, wifi_sta_info_t *info)
+{
+    te_errno rc = 0;
+
+    if (!info->wep_enc)
+    {
+        struct iwreq wrq;
+
+        wrq.u.data.pointer = (caddr_t)NULL;
+        wrq.u.data.flags = IW_ENCODE_DISABLED | IW_ENCODE_NOKEY;
+        wrq.u.data.length = 0;
+
+        if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
+        {
+            ERROR("%s(): Cannot disable WEP encryption: %r",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+    }
+
+    CHECK_CONSISTENCY(ifname, info);
+
+    return 0;
+}
+
+static te_errno
+init_sta_info(const char *ifname, wifi_sta_info_t *info)
+{
+    struct iwreq wrq;
+    uint8_t      key[IW_ENCODING_TOKEN_MAX];
+    int          i;
+    te_errno     rc;
+
+    memset(info, 0, sizeof(*info));
+
+    wrq.u.data.pointer = (caddr_t)key;
+    wrq.u.data.length = sizeof(key);
+    wrq.u.data.flags = 0; /* Set index to zero to get current */
+  
+    if ((rc = wifi_get_item(ifname, SIOCGIWENCODE, &wrq)) == 0)
+    {
+        info->def_key_id = (wrq.u.data.flags & IW_ENCODE_INDEX) - 1;
+
+        info->auth_open = TRUE;
+	if (wrq.u.data.flags & IW_ENCODE_RESTRICTED)
+        {
+            assert(!(wrq.u.data.flags & IW_ENCODE_DISABLED));
+            info->auth_open = FALSE;
+        }
+        info->prev_auth_open = info->auth_open;
+
+        if (!(wrq.u.data.flags & IW_ENCODE_DISABLED))
+            info->wep_enc = TRUE;
+
+        /* Set default keys to zero */
+        for (i = 1; i <= WEP_KEYS_NUM; i++)
+        {
+            wrq.u.data.pointer = (caddr_t)info->def_keys[i];
+            wrq.u.data.flags = 0;
+            wrq.u.data.length = sizeof(info->def_keys[i]);
+            wrq.u.encoding.flags = i;
+
+            if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
+            {
+                ERROR("%s(): Cannot initialize Default WEP key [%d]: %r",
+                      __FUNCTION__, i, rc);
+                return rc;
+            }
+        }
+
+        /*
+         * Some cards enable WEP when updating default TX Key,
+         * so restore encryption configuration here.
+         */
+        sta_restore_encryption(ifname, info);
+
+        info->valid = TRUE;
+    }
+    else
+    {
+        ERROR("%s(): Cannot read wireless configuration on %s interface",
+              __FUNCTION__, ifname);
+    }
+
+    return rc;
+}
+
+static te_bool
+sta_info_check(const char *ifname, wifi_sta_info_t *info)
+{
+    struct iwreq wrq;
+    uint8_t      key[IW_ENCODING_TOKEN_MAX];
+    uint8_t      sta_key_index;
+    te_bool      sta_auth_open;
+    te_errno     rc;
+
+    wrq.u.data.pointer = (caddr_t)key;
+    wrq.u.data.length = sizeof(key);
+    wrq.u.data.flags = 0; /* Set index to zero to get current */
+  
+    if ((rc = wifi_get_item(ifname, SIOCGIWENCODE, &wrq)) != 0)
+    {
+        ERROR("%s(): Cannot get Default WEP key index: %r",
+              __FUNCTION__, rc);
+        fprintf(stderr, "%s(): Cannot get Default WEP key index: %d\n",
+              __FUNCTION__, rc);
+        return FALSE;
+    }
+
+    /* Check that Default WEP Key index is consistent */
+    sta_key_index = (wrq.u.data.flags & IW_ENCODE_INDEX) - 1;
+    if (sta_key_index != info->def_key_id)
+    {
+        ERROR("%s(): Inconsistency with Default WEP Key index: "
+              "STA expected Default WEP Key index %d, but it is %d",
+              __FUNCTION__, info->def_key_id, sta_key_index);
+        fprintf(stderr, "%s(): Inconsistency with Default WEP Key index: "
+              "STA expected Default WEP Key index %d, but it is %d\n",
+              __FUNCTION__, info->def_key_id, sta_key_index);
+        return FALSE;
+    }
+
+    if ((!(wrq.u.data.flags & IW_ENCODE_DISABLED)) != info->wep_enc)
+    {
+        ERROR("%s(): Inconsistency with WEP encryption: "
+              "STA expected encryption %s, actually it is %s",
+              __FUNCTION__,
+              info->wep_enc ? "true" : "false",
+              !(wrq.u.data.flags & IW_ENCODE_DISABLED) ? "true" : "false");
+        fprintf(stderr, "%s(): Inconsistency with WEP encryption: "
+              "STA expected encryption %s, actually it is %s\n",
+              __FUNCTION__,
+              info->wep_enc ? "true" : "false",
+              !(wrq.u.data.flags & IW_ENCODE_DISABLED) ? "true" : "false");
+        return FALSE;
+    }
+
+    sta_auth_open = !(wrq.u.data.flags & IW_ENCODE_RESTRICTED);
+
+    if ((!info->wep_enc || info->auth_open) != sta_auth_open)
+    {
+        ERROR("%s(): Inconsistency with authentication method being used: "
+              "STA expected to operate in %s authentication mode, but "
+              "it operated in %s mode", __FUNCTION__,
+              info->auth_open ? "Open" : "SharedKey",
+              sta_auth_open ? "Open" : "SharedKey");
+        fprintf(stderr, "%s(): Inconsistency with authentication method being used: "
+              "STA expected to operate in %s authentication mode, but "
+              "it operated in %s mode\n", __FUNCTION__,
+              info->auth_open ? "Open" : "SharedKey",
+              sta_auth_open ? "Open" : "SharedKey");
+        return FALSE;
+    }
+
+    /* Check PrivacyInvoked and ExcludeUnencrypted */
+    
+    memset(&wrq, 0, sizeof(wrq));
+    wrq.u.param.flags = IW_AUTH_DROP_UNENCRYPTED;
+    if ((rc = wifi_get_item(ifname, SIOCGIWAUTH, &wrq)) != 0)
+    {
+        ERROR("%s(): Cannot get DROP_UNENCRYPTED flag", __FUNCTION__);
+        return FALSE;
+    }
+    if (wrq.u.param.value != info->wep_enc)
+    {
+        ERROR("%s(): Inconsistency in DROP_UNENCRYPTED flag: "
+              "STA is operating with %s WEP, but DROP_UNENCRYPTED is %s",
+              __FUNCTION__,
+              info->wep_enc ? "enabled" : "disabled",
+              wrq.u.param.value ? "enabled" : "disabled");
+        fprintf(stderr, "%s(): Inconsistency in DROP_UNENCRYPTED flag: "
+              "STA is operating with %s WEP, but DROP_UNENCRYPTED is %s",
+              __FUNCTION__,
+              info->wep_enc ? "enabled" : "disabled",
+              wrq.u.param.value ? "enabled" : "disabled");
+
+        wrq.u.param.flags = IW_AUTH_DROP_UNENCRYPTED;
+        wrq.u.param.value = info->wep_enc;
+        if ((rc = wifi_set_item(ifname, SIOCSIWAUTH, &wrq)) != 0)
+        {
+            ERROR("%s(): Cannot restore DROP_UNENCRYPTED flag", __FUNCTION__);
+            return FALSE;
+        }
+        WARN("DROP_UNENCRYPTED flag is restored");
+    }
+    wrq.u.param.flags = IW_AUTH_PRIVACY_INVOKED;
+    if ((rc = wifi_get_item(ifname, SIOCGIWAUTH, &wrq)) != 0)
+    {
+        ERROR("%s(): Cannot change PRIVACY_INVOKED flag", __FUNCTION__);
+        return rc;
+    }
+    if (wrq.u.param.value != info->wep_enc)
+    {
+        ERROR("%s(): Inconsistency in PRIVACY_INVOKED flag: "
+              "STA is operating with %s WEP, but PRIVACY_INVOKED is %s",
+              __FUNCTION__,
+              info->wep_enc ? "enabled" : "disabled",
+              wrq.u.param.value ? "enabled" : "disabled");
+        fprintf(stderr, "%s(): Inconsistency in PRIVACY_INVOKED flag: "
+              "STA is operating with %s WEP, but PRIVACY_INVOKED is %s",
+              __FUNCTION__,
+              info->wep_enc ? "enabled" : "disabled",
+              wrq.u.param.value ? "enabled" : "disabled");
+        wrq.u.param.flags = IW_AUTH_PRIVACY_INVOKED;
+        wrq.u.param.value = info->wep_enc;
+        if ((rc = wifi_set_item(ifname, SIOCSIWAUTH, &wrq)) != 0)
+        {
+            ERROR("%s(): Cannot restore PRIVACY_INVOKED flag", __FUNCTION__);
+            return rc;
+        }
+        WARN("PRIVACY_INVOKED flag is restored");
+    }
+    
+    return TRUE;
+}
+
+static te_errno
+parse_wep_key_index(const char *in_value, int *out_value)
+{
+    if (sscanf(in_value, "%i", out_value) != 1 ||
+        (*out_value < 0) || (*out_value >= IW_ENCODE_INDEX))
+    {
+        ERROR("Incorrect value for WEP key index: '%s'\n"
+              "Allowed values are: 0, 1, 2, 3.", in_value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
     return 0;
 }
 
@@ -800,25 +940,112 @@ static te_errno
 wifi_list(unsigned int gid, const char *oid, char **list,
           const char *ifname)
 {
-    wireless_config cfg;
-    int             rc;
+    wifi_sta_info_t *info;
+    struct iwreq     wrq;
+    te_errno         rc;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
+    if ((rc = wifi_get_item(ifname, SIOCGIWNAME, &wrq)) != 0)
     {
-        if (TE_RC_GET_ERROR(rc) == TE_EOPNOTSUPP)
-        {
-            /* Interface does not support wireless extension */
-            *list = strdup("");
-            rc = 0;
-        }
+        /* Interface does not support wireless extension */
+        RING("Interface %s does not support WiFi", ifname);
+        *list = strdup("");
+        return 0;
+    }
 
+    /* Fill in station parameters */
+    GET_WIFI_STA_INFO(ifname, info);
+    if (info->valid)
+    {
+        *list = strdup("enabled");
+        return 0;
+    }
+
+    if ((rc = init_sta_info(ifname, info)) != 0)
+        return rc;
+
+    *list = strdup("enabled");
+    return 0;
+}
+
+/**
+ * Get Default Tx WEP key index on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   ilocation for Default WEP key index
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static te_errno
+wifi_wep_def_key_id_get(unsigned int gid, const char *oid, char *value,
+                        const char *ifname)
+{
+    wifi_sta_info_t *info;
+    
+    UNUSED(gid);
+    UNUSED(oid);
+
+    GET_WIFI_STA_INFO(ifname, info);
+    CHECK_CONSISTENCY(ifname, info);
+
+    sprintf(value, "%d", info->def_key_id);
+    return 0;
+}
+
+/**
+ * Update Default Tx WEP key index on the wireless interface.
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param value   new WEP key index value (0..3)
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static te_errno
+wifi_wep_def_key_id_set(unsigned int gid, const char *oid, char *value,
+                        const char *ifname)
+{
+    struct iwreq     wrq;
+    int              key_index;
+    te_errno         rc;
+    wifi_sta_info_t *info;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    
+    GET_WIFI_STA_INFO(ifname, info);
+    CHECK_CONSISTENCY(ifname, info);
+
+    if ((rc = parse_wep_key_index(value, &key_index)) != 0)
+        return rc;
+   
+    memset(&wrq, 0, sizeof(wrq));
+
+    wrq.u.encoding.flags = (key_index + 1);
+    wrq.u.data.pointer = (caddr_t)NULL;
+    wrq.u.data.flags |= IW_ENCODE_NOKEY;
+    wrq.u.data.length = 0;
+
+    if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
+    {
+        ERROR("%s(): Cannot set Default WEP key [%d]: %r",
+              __FUNCTION__, key_index, rc);
         return rc;
     }
 
-    *list = strdup("enabled");
+    info->def_key_id = key_index;
+
+    /*
+     * Some cards enable WEP on changing Default TX Key, 
+     * so that we need to restore current configuration.
+     */
+    sta_restore_encryption(ifname, info);
+
     return 0;
 }
 
@@ -829,34 +1056,35 @@ wifi_list(unsigned int gid, const char *oid, char **list,
  * @param oid     full object instence identifier
  * @param value   location for the value in format "XXXXXXXXXX" (5 bytes)
  * @param ifname  interface name
+ * @param key_id  index of the WEP key which value to be returned
  *
  * @return error code
  */
 static te_errno
 wifi_wep_key_get(unsigned int gid, const char *oid, char *value,
-                 const char *ifname)
+                 const char *ifname, const char *p1, const char *p2,
+                 const char *key_id)
 {
-    int             rc;
-    wireless_config cfg;
-    int             i;
+    int              key_index;
+    unsigned int     i;
+    te_errno         rc;
+    wifi_sta_info_t *info;
     
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(p1);
+    UNUSED(p2);
 
-    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
+    GET_WIFI_STA_INFO(ifname, info);
+    CHECK_CONSISTENCY(ifname, info);
+
+    if ((rc = parse_wep_key_index(key_id, &key_index)) != 0)
         return rc;
 
-    if (!cfg.has_key)
-    {
-        ERROR("Cannot get information about encryption "
-              "on %s interface", ifname);
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
-    }
-
     value[0] = '\0';
-    for (i = 0; i < cfg.key_size; i++)
+    for (i = 0; i < sizeof(info->def_keys[key_index]); i++)
     {
-        sprintf(value + strlen(value), "%02x", cfg.key[i]);
+        sprintf(value + strlen(value), "%02x", info->def_keys[key_index][i]);
     }
 
     return 0;
@@ -867,58 +1095,81 @@ wifi_wep_key_get(unsigned int gid, const char *oid, char *value,
  *
  * @param gid     group identifier (unused)
  * @param oid     full object instence identifier
- * @param value   location for the value in format "XXXXXXXXXX" (5 bytes)
+ * @param value   WEP key value in format "XXXXXXXXXX" (5 bytes)
  * @param ifname  interface name
+ * @param key_id  index of the WEP key which value to be updated
  *
  * @return error code
  */
 static te_errno
 wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
-                 const char *ifname)
+                 const char *ifname, const char *p1, const char *p2,
+                 const char *key_id)
 {
-    int          rc;
-    struct iwreq wrq;
-    uint8_t      key[IW_ENCODING_TOKEN_MAX];
-    int          keylen;
-    int          skfd = wifi_get_skfd();
-    char         alg_buf[128];
-    char         wep_buf[128];
+    int              rc;
+    struct iwreq     wrq;
+    uint8_t          key[IW_ENCODING_TOKEN_MAX];
+    int              key_index;
+    int              keylen;
+    wifi_sta_info_t *info;
+    char             def_key_id[10];
  
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(p1);
+    UNUSED(p2);
 
-    WIFI_CHECK_SKFD(skfd);
+    GET_WIFI_STA_INFO(ifname, info);
+    CHECK_CONSISTENCY(ifname, info);
 
-    /* Before setting KEY save authentication algorithm and WEP setting */
-    if ((rc = wifi_wep_get(gid, oid, wep_buf, ifname)) != 0 ||
-        (rc = wifi_auth_get(gid, oid, alg_buf, ifname)) != 0)
-    {
-        ERROR("Cannot get current WEP and algorithm settings");
+    if ((rc = parse_wep_key_index(key_id, &key_index)) != 0)
         return rc;
-    }
 
     memset(&wrq, 0, sizeof(wrq));
 
-    keylen = iw_in_key_full(skfd, ifname, value, key, &wrq.u.data.flags);
+    keylen = iw_in_key(value, key);
     if (keylen <= 0)
     {
-        ERROR("Cannot set '%s' key on %s interface", value, ifname);
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        ERROR("%s(): Incorrect WEP key value '%s' specified",
+              __FUNCTION__, value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    wrq.u.data.length = keylen;
+    wrq.u.data.length = WEP_KEY_LEN;
     wrq.u.data.pointer = (caddr_t)key;
-
+    wrq.u.encoding.flags = (key_index + 1);
+    
     if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
         return rc;
-    
-    /* Restore the previous value for WEP and auth algorithm */
-    if ((rc = wifi_wep_set(gid, oid, wep_buf, ifname)) != 0 ||
-        (rc = wifi_auth_set(gid, oid, alg_buf, ifname)) != 0)
-    {
-        ERROR("Cannot restore WEP and algorithm settings");
-    }
-    
-    return rc;
+
+    memcpy(info->def_keys[key_index], key, sizeof(info->def_keys[key_index]));
+
+    sta_restore_encryption(ifname, info);
+
+    return 0;
+}
+
+/**
+ * Returns the list of Default WEP keys (always four keys present 
+ * in the system).
+ *
+ * @param gid     group identifier (unused)
+ * @param oid     full object instence identifier
+ * @param list    location for the list pointer
+ * @param ifname  interface name
+ *
+ * @return error code
+ */
+static te_errno
+wifi_wep_key_list(unsigned int gid, const char *oid, char **list,
+                  const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+
+    /* Any interface supporting WEP should keep four default WEP keys */
+    *list = strdup("0 1 2 3");
+    return 0;
 }
 
 /**
@@ -935,46 +1186,15 @@ static te_errno
 wifi_wep_get(unsigned int gid, const char *oid, char *value,
              const char *ifname)
 {
-    int             rc;
-    wireless_config cfg;
+    wifi_sta_info_t *info;
     
     UNUSED(gid);
     UNUSED(oid);
 
-    if (priv_ioctl[TA_PRIV_IOCTL_PRIV_INVOKED].supp)
-    {
-        char rp_inv_buf[128];
-        char ex_une_buf[128];
+    GET_WIFI_STA_INFO(ifname, info);
+    CHECK_CONSISTENCY(ifname, info);
 
-        if (set_private(ifname,
-                        priv_ioctl[TA_PRIV_IOCTL_PRIV_INVOKED].g_name,
-                        1, rp_inv_buf) != 0 ||
-            set_private(ifname,
-                        priv_ioctl[TA_PRIV_IOCTL_EXCLUDE_UNENCR].g_name,
-                        1, &ex_une_buf) != 0)
-        {
-            ERROR("Cannot set WEP to %s ioctl", value);
-            return TE_RC(TE_TA_UNIX, TE_EFAULT);
-        }
-        assert(strcmp(rp_inv_buf, ex_une_buf) == 0);
-        
-        strcpy(value, rp_inv_buf);
-        return 0;
-    }
-
-    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
-        return rc;
-
-    if (!cfg.has_key)
-    {
-        ERROR("Cannot get information about encryption "
-              "on %s interface", ifname);
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
-    }
-    if (cfg.key_flags & IW_ENCODE_DISABLED || cfg.key_size == 0)
-        sprintf(value, "0");
-    else
-        sprintf(value, "1");
+    sprintf(value, "%d", info->wep_enc);
 
     return 0;
 }
@@ -984,7 +1204,7 @@ wifi_wep_get(unsigned int gid, const char *oid, char *value,
  *
  * @param gid     group identifier (unused)
  * @param oid     full object instence identifier
- * @param value   location for the value ("0" - false or "1" - true)
+ * @param value   the new status value ("0" - false or "1" - true)
  * @param ifname  interface name
  *
  * @return error code
@@ -993,175 +1213,103 @@ static te_errno
 wifi_wep_set(unsigned int gid, const char *oid, char *value,
              const char *ifname)
 {
-    struct iwreq wrq;
+    int      int_val;
+    te_bool  new_wep_enc;
+
+    uint8_t          key[IW_ENCODING_TOKEN_MAX];
+    wifi_sta_info_t *info;
+    te_errno         rc;
+    struct iwreq     wrq;
 
     UNUSED(gid);
+    UNUSED(oid);
 
-    if (priv_ioctl[TA_PRIV_IOCTL_PRIV_INVOKED].supp)
-    {
-        int int_value;
-        
-        if (sscanf(value, "%d", &int_value) != 1)
-        {
-            ERROR("Incorrect value for WEP passed %s", value);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-        assert(int_value == 1 || int_value == 0);
-                
-        if (set_private(ifname,
-                        priv_ioctl[TA_PRIV_IOCTL_PRIV_INVOKED].s_name,
-                        1, int_value) != 0 ||
-            set_private(ifname,
-                        priv_ioctl[TA_PRIV_IOCTL_EXCLUDE_UNENCR].s_name,
-                        1, int_value) != 0)
-        {
-            ERROR("Cannot set WEP to %s ioctl", value);
-            return TE_RC(TE_TA_UNIX, TE_EFAULT);
-        }
-
-        return 0;
-    }
-
-    memset(&wrq, 0, sizeof(wrq));
-
-    if (strcmp(value, "0") == 0)
-    {
-        wrq.u.data.flags |= IW_ENCODE_DISABLED;
-    }
-    else if (strcmp(value, "1") != 0)
-    {
-        ERROR("Canot set '%s' instance to '%s'", oid, value);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    wrq.u.data.flags |= IW_ENCODE_NOKEY;
-
-    return wifi_set_item(ifname, SIOCSIWENCODE, &wrq);
-}
-
-static int
-wifi_ta_get_auth_alg(const char *ifname, ta_auth_alg_e *alg)
-{
-    int             rc;
-    wireless_config cfg;
-
-    if (priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].supp)
-    {
-        unsigned int *algs = priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].data;
-        char          buf[128];
-        unsigned int  int_alg;
-        int           i;
-
-        rc = set_private(ifname,
-                         priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].g_name,
-                         1, buf);
-        if (rc != 0)
-        {
-            ERROR("Cannot get the value of %s ioctl",
-                  priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].g_name);
-            return TE_RC(TE_TA_UNIX, TE_EFAULT);
-        }
-
-        if (sscanf(buf, "%u", &int_alg) != 1)
-        {
-            ERROR("Cannot convert algorithm %s", buf);
-            return TE_RC(TE_TA_UNIX, TE_EFAULT);
-        }
-        
-        for (i = 0; i < (int)TA_AUTH_ALG_MAX; i++)
-        {
-            if (algs[i] == int_alg)
-            {
-                *alg = (ta_auth_alg_e)i;
-                return 0;
-            }
-        }
-
-        ERROR("Cannot find mapping for %d authentication algorithm",
-              int_alg);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
+    GET_WIFI_STA_INFO(ifname, info);
+    CHECK_CONSISTENCY(ifname, info);
 
     /*
-     * There is no private ioctl for authentication algorithm value,
-     * so process it in generic way.
+     * Here I use variable of type "int" to be sure that 
+     * there is enough space for integer value, which is 
+     * not the case for "te_bool"!
      */
-
-    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
-        return rc;
-
-    if (!cfg.has_key)
+    if (sscanf(value, "%d", &int_val) != 1)
     {
-        ERROR("Cannot get information about encryption "
-              "on %s interface", ifname);
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        ERROR("Incorrect value for WEP encryption passed %s", value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    if (cfg.key_flags & IW_ENCODE_RESTRICTED)
+    new_wep_enc = (int_val == 1);
+
+    if (new_wep_enc == info->wep_enc)
+        return 0;
+
+    if (new_wep_enc)
     {
-        *alg = TA_AUTH_ALG_SHARED_KEY;
+        /*
+         * We enable WEP, which current disabled, so we might 
+         * need to restore authentication method.
+         */
+        wrq.u.data.pointer = (caddr_t)key;
+        wrq.u.data.length = sizeof(key);
+	wrq.u.data.flags = 0;
+        if ((rc = wifi_get_item(ifname, SIOCGIWENCODE, &wrq)) != 0)
+        {
+            ERROR("%s(): Cannot read out current WiFi information",
+                  __FUNCTION__);
+            return rc;
+        }
+        wrq.u.data.flags &= ~IW_ENCODE_DISABLED; /* Enable */
+
+        if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
+        {
+            ERROR("%s(): Cannot enable WEP encryption",
+                  __FUNCTION__);
+            return rc;
+        }
+        info->auth_open = info->prev_auth_open;
     }
     else
     {
-        *alg = TA_AUTH_ALG_OPEN_SYSTEM;
+        wrq.u.data.pointer = (caddr_t) NULL;
+        wrq.u.data.flags = IW_ENCODE_DISABLED | IW_ENCODE_NOKEY;
+        wrq.u.data.length = 0;
 
-        if (!(cfg.key_flags & IW_ENCODE_DISABLED) && 
-            !(cfg.key_flags & IW_ENCODE_OPEN))
+        if ((rc = wifi_set_item(ifname, SIOCSIWENCODE, &wrq)) != 0)
         {
-            WARN("Although authentication algorithm is not sharedKey, "
-                 "WiFi card does not set set IW_ENCODE_DISABLED, nor "
-                 "IW_ENCODE_OPEN flag.");
+            ERROR("%s(): Cannot disable WEP encryption",
+                  __FUNCTION__);
+            return rc;
         }
+
+        /*
+         * We've disabled WEP encryption, and if we used sharedKey
+         * authentication method, it has just been changed to Open.
+         * When we turn WEP on in the future we should remember 
+         * about that, so save current authentication method.
+         */
+        info->prev_auth_open = info->auth_open;
+        info->auth_open = TRUE;
     }
+    info->wep_enc = !info->wep_enc;
+
+    /* Update PrivacyInvoked and ExcludeUnencrypted */
+    memset(&wrq, 0, sizeof(wrq));
+    wrq.u.param.flags = IW_AUTH_DROP_UNENCRYPTED;
+    wrq.u.param.value = info->wep_enc;
+    if ((rc = wifi_set_item(ifname, SIOCSIWAUTH, &wrq)) != 0)
+    {
+        ERROR("%s(): Cannot change DROP_UNENCRYPTED flag", __FUNCTION__);
+        return rc;
+    }
+    wrq.u.param.flags = IW_AUTH_PRIVACY_INVOKED;
+    if ((rc = wifi_set_item(ifname, SIOCSIWAUTH, &wrq)) != 0)
+    {
+        ERROR("%s(): Cannot change PRIVACY_INVOKED flag", __FUNCTION__);
+        return rc;
+    }
+
+    CHECK_CONSISTENCY(ifname, info);
 
     return 0;
-}
-
-static int
-wifi_ta_set_auth_alg(const char *ifname, ta_auth_alg_e alg)
-{
-    int             rc;
-    struct iwreq    wrq;
-
-    if (priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].supp)
-    {
-        enum ta_auth_alg_e *algs = priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].data;
-
-        rc = set_private(ifname,
-                         priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].s_name,
-                         1, algs[alg]);
-        if (rc != 0)
-        {
-            ERROR("Cannot set the value of %s ioctl",
-                  priv_ioctl[TA_PRIV_IOCTL_AUTH_ALG].s_name);
-            return TE_RC(TE_TA_UNIX, TE_EFAULT);
-        }
-
-        return 0;
-    }
-
-    /*
-     * There is no private ioctl for authentication algorithm value,
-     * so process it in generic way.
-     */
-
-    memset(&wrq, 0, sizeof(wrq));
-
-    if (alg == TA_AUTH_ALG_OPEN_SYSTEM)
-    {
-        wrq.u.data.flags |= IW_ENCODE_OPEN;
-    }
-    else if (alg == TA_AUTH_ALG_SHARED_KEY)
-    {
-        wrq.u.data.flags |= IW_ENCODE_RESTRICTED;
-    }
-    else
-    {
-        ERROR("Canot set authentication algorithm to '%u'", alg);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    wrq.u.data.flags |= IW_ENCODE_NOKEY;
-
-    return wifi_set_item(ifname, SIOCSIWENCODE, &wrq);
 }
 
 /**
@@ -1180,28 +1328,19 @@ static te_errno
 wifi_auth_get(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
-    enum ta_auth_alg_e alg;
-    int                rc;
+    wifi_sta_info_t *info;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = wifi_ta_get_auth_alg(ifname, &alg)) != 0)
-        return rc;
+    GET_WIFI_STA_INFO(ifname, info);
+    CHECK_CONSISTENCY(ifname, info);
 
-    if (alg == TA_AUTH_ALG_OPEN_SYSTEM)
-    {
+    if (info->auth_open)
         sprintf(value, "open");
-    }
-    else if (alg == TA_AUTH_ALG_SHARED_KEY)
-    {
-        sprintf(value, "shared");
-    }
     else
-    {
-        ERROR("WiFi card works with unknown authentication algorithm");
-        return TE_RC(TE_TA_UNIX, TE_EFAULT);
-    }
+        sprintf(value, "shared");
+
     return 0;
 }
 
@@ -1221,16 +1360,33 @@ static te_errno
 wifi_auth_set(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
+    wifi_sta_info_t *info;
+    te_errno         rc;
+    struct iwreq     wrq;
+
     UNUSED(gid);
     UNUSED(oid);
 
+    GET_WIFI_STA_INFO(ifname, info);
+    CHECK_CONSISTENCY(ifname, info);
+
+    wrq.u.data.pointer = (caddr_t)NULL;
+    wrq.u.data.flags = IW_ENCODE_NOKEY;
+    wrq.u.data.length = 0;
+
     if (strcmp(value, "open") == 0)
     {
-        return wifi_ta_set_auth_alg(ifname, TA_AUTH_ALG_OPEN_SYSTEM);
+        wrq.u.param.value = IW_AUTH_ALG_OPEN_SYSTEM;
     }
     else if (strcmp(value, "shared") == 0)
     {
-        return wifi_ta_set_auth_alg(ifname, TA_AUTH_ALG_SHARED_KEY);
+        if (!info->wep_enc)
+        {
+            ERROR("SharedKey authentication can't be enabled when "
+                  "WEP is disabled on the interface.");
+            return TE_RC(TE_TA_UNIX, EPERM);
+        }
+        wrq.u.param.value = IW_AUTH_ALG_SHARED_KEY;
     }
     else
     {
@@ -1238,7 +1394,20 @@ wifi_auth_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    assert(0);
+    wrq.u.param.flags = IW_AUTH_80211_AUTH_ALG;
+    if ((rc = wifi_set_item(ifname, SIOCSIWAUTH, &wrq)) != 0)
+    {
+        ERROR("%s(): Cannot change Authentication algorithm", __FUNCTION__);
+        return rc;
+    }
+
+    info->prev_auth_open = info->auth_open = (strcmp(value, "open") == 0);
+
+    if (!info->auth_open)
+        sta_restore_encryption(ifname, info);
+
+    CHECK_CONSISTENCY(ifname, info);
+
     return 0;
 }
 
@@ -1267,6 +1436,8 @@ wifi_channel_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     WIFI_CHECK_SKFD(skfd);
+
+    memset(&wrq, 0, sizeof(wrq));
 
     if (iw_get_range_info(skfd, ifname, &range) < 0)
         return TE_RC(TE_TA_UNIX, TE_EFAULT);
@@ -1399,6 +1570,8 @@ wifi_ap_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
+    memset(&wrq, 0, sizeof(wrq));
+
     if ((rc = wifi_get_item(ifname, SIOCGIWAP, &wrq)) != 0)
         return rc;
 
@@ -1436,16 +1609,25 @@ static te_errno
 wifi_essid_get(unsigned int gid, const char *oid, char *value,
                const char *ifname)
 {
-    int             rc;
-    wireless_config cfg;
+    struct iwreq wrq;
+    char         essid[IW_ESSID_MAX_SIZE + 1] = {};
+    te_errno     rc;
     
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = wifi_get_config(ifname, &cfg)) != 0)
-        return rc;
+    wrq.u.essid.pointer = (caddr_t)essid;
+    wrq.u.essid.length = sizeof(essid);
+    wrq.u.essid.flags = 0;
 
-    sprintf(value, "%s", cfg.has_essid ? cfg.essid : "");
+    if ((rc = wifi_get_item(ifname, SIOCGIWESSID, &wrq)) != 0)
+    {
+        ERROR("%s(): Cannot read ESSID value for %s interface",
+              __FUNCTION__, ifname);
+        return rc;
+    }
+
+    strcpy(value, essid);
 
     return 0;
 }
@@ -1500,8 +1682,16 @@ wifi_essid_set(unsigned int gid, const char *oid, char *value,
 
 
 /* Unix Test Agent WiFi configuration subtree */
-RCF_PCH_CFG_NODE_RW(node_wifi_wep_key, "key", NULL, NULL,
-                    wifi_wep_key_get, wifi_wep_key_set);
+
+RCF_PCH_CFG_NODE_RW(node_wifi_wep_def_key_id, "def_key_id", NULL, NULL,
+                    wifi_wep_def_key_id_get,
+                    wifi_wep_def_key_id_set);
+
+static rcf_pch_cfg_object node_wifi_wep_key = {
+    "key", 0, NULL, &node_wifi_wep_def_key_id,
+    (rcf_ch_cfg_get)wifi_wep_key_get, (rcf_ch_cfg_set)wifi_wep_key_set,
+    NULL, NULL, (rcf_ch_cfg_list)wifi_wep_key_list, NULL, NULL
+};
 
 RCF_PCH_CFG_NODE_RW(node_wifi_wep, "wep", &node_wifi_wep_key, NULL,
                     wifi_wep_get, wifi_wep_set);
