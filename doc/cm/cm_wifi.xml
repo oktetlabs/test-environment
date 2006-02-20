@@ -64,9 +64,14 @@
                 1 - WEP is enabled -->
     <object oid="/agent/interface/wifi/wep" access="read_write" type="integer"/>
 
-    <!-- WEP key currently used (has sense only if WEP is enabled)
-         Name: empty
+    <!-- Default WEP key (has sense only if WEP is enabled)
+         Name: Key index (0..3)
          Value: Key in format XXXXXXXX -->
-    <object oid="/agent/interface/wifi/wep/key" access="read_write" type="string"/>
+    <object oid="/agent/interface/wifi/wep/key" access="read_create" type="string"/>
+
+    <!-- Index of Default WEP key to use for transmission of encrypted MPDUs.
+         Name: Key index (0..3)
+         Value: Key in format XXXXXXXX -->
+    <object oid="/agent/interface/wifi/wep/def_key_id" access="read_write" type="integer"/>
 
 </backup>
