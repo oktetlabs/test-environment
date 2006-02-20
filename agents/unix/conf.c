@@ -85,6 +85,9 @@
 #if HAVE_NET_ROUTE_H
 #include <net/route.h>
 #endif
+#ifdef HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#endif 
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -146,10 +149,17 @@ extern te_errno ta_unix_iscsi_initiator_init();
 #endif
 
 #ifdef USE_NETLINK
-struct nlmsg_list {
-    struct nlmsg_list *next;
-    struct nlmsghdr    h;
-};
+/** Netlink message storage */
+typedef struct agt_nlmsg_entry {
+    TAILQ_ENTRY(agt_nlmsg_entry) links;  /**< List links */
+    struct nlmsghdr *hdr; /**< Pointer to netlink message */
+} agt_nlmsg_entry;
+
+/** Head of netlink messages list */
+typedef TAILQ_HEAD(agt_nlmsg_list, agt_nlmsg_entry) agt_nlmsg_list;
+
+static void free_nlmsg_list(agt_nlmsg_list *list);
+
 #endif
 
 /** Check that interface is locked for using of this TA */
@@ -646,38 +656,40 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 
 #ifdef USE_NETLINK
 /**
- * Store answer from RTM_GETXXX in nlmsg list.
+ * Store answer from RTM_GETXXX in netlink message list.
  *
- * @param who           address pointer
- * @param msg           address info to be stored
- * @param arg           location for nlmsg list
+ * @param who  address pointer
+ * @param msg  address info to be stored
+ * @param arg  list for netlink messages, which should be filled in
  *
- * @retval 0            success
- * @retval -1           failure
+ * @retval  0  success
+ * @retval -1  failure
  */
 static int
 store_nlmsg(const struct sockaddr_nl *who,
             const struct nlmsghdr *msg,
             void *arg)
 {
-    struct nlmsg_list **linfo = (struct nlmsg_list **)arg;
-    struct nlmsg_list  *h;
-    struct nlmsg_list **lp;
+    agt_nlmsg_list  *list = (agt_nlmsg_list *)arg;
+    agt_nlmsg_entry *entry;
 
-    h = malloc(msg->nlmsg_len + sizeof(void *));
-    if (h == NULL)
+    /*
+     * Allocate contiguous piece of memory for "list entry" and
+     * netlink message:
+     * [List Entry: <hdr> ] [netlink message]
+     *                |      ^
+     *                |------|
+     */
+    entry = (agt_nlmsg_entry *)malloc(sizeof(*entry) + msg->nlmsg_len);
+    if (entry == NULL)
         return -1;
 
-    memcpy(&h->h, msg, msg->nlmsg_len);
-    h->next = NULL;
+    entry->hdr = (struct nlmsghdr *)(entry + 1);
+    memcpy(entry->hdr, msg, msg->nlmsg_len);
 
-    for (lp = linfo; *lp != NULL; lp = &(*lp)->next);
+    TAILQ_INSERT_TAIL(list, entry, links);
 
-    *lp = h;
-
-    ll_remember_index(who, msg, NULL);
-
-    return 0;
+    return ll_remember_index(who, msg, NULL);
 }
 
 /**
@@ -686,37 +698,34 @@ store_nlmsg(const struct sockaddr_nl *who,
  * @param linfo   nlmsg list to be freed
  */
 static void
-free_nlmsg(struct nlmsg_list *linfo)
+free_nlmsg_list(agt_nlmsg_list *list)
 {
-    struct nlmsg_list *next;
-    struct nlmsg_list *cur;
+    agt_nlmsg_entry *entry;
 
-    for (cur = linfo; cur != NULL; cur = next)
+    while ((entry = list->tqh_first) != NULL)
     {
-        next = cur->next;
-        free(cur);
+        TAILQ_REMOVE(list, entry, links);
+        free(entry);
     }
-    return;
 }
 
 /**
- * Get link/protocol addresses information
+ * Get link/protocol addresses information from all interfaces.
  *
- * @param family   AF_INET, AF_INET6
- * @param list     location for nlmsg list
- *                 containing address information
+ * @param family  AF_INET, AF_INET6
+ * @param list    list to be filled in with address entries
  *
- * @return         Status code
+ * @return Status code
  */
 static te_errno
-ip_addr_get(int family, struct nlmsg_list **list)
+ip_addr_get(int family, agt_nlmsg_list *list)
 {
     struct rtnl_handle rth;
 
     if (family != AF_INET && family != AF_INET6)
     {
         ERROR("%s: invalid address family (%d)", __FUNCTION__, family);
-        return TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
     }
 
     memset(&rth, 0, sizeof(rth));
@@ -766,14 +775,17 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
                  gen_ip_address *bcast)
 {
     gen_ip_address     ip_addr;
-    
-    struct nlmsg_list *ainfo = NULL;
-    struct nlmsg_list *a = NULL;
+    agt_nlmsg_list     addr_list;
+    agt_nlmsg_entry   *a;
     struct nlmsghdr   *n = NULL;
     struct ifaddrmsg  *ifa = NULL;
     struct rtattr     *rta_tb[IFA_MAX + 1];
     int                ifindex = 0;
     int                family;
+    int                rc;
+
+
+    TAILQ_INIT(&addr_list);
 
     /* If address contains a colon, it is IPv6 address */
     family = (strchr(str_addr, ':') == NULL) ? AF_INET : AF_INET6;
@@ -787,28 +799,30 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
         return NULL;
     }
 
-    if (inet_pton(family, str_addr, &ip_addr) <= 0)
+    if ((rc = inet_pton(family, str_addr, &ip_addr)) <= 0)
     {
-        ERROR("%s(): inet_pton() failed for address '%s'",
-              __FUNCTION__, str_addr);
+        ERROR("%s(): inet_pton() failed for address '%s': %s",
+              __FUNCTION__, str_addr,
+              (rc < 0) ? 
+              "Address family not supported" : "Incorrect address");
         return NULL;
     }
        
-    if (ip_addr_get(family, &ainfo) != 0)
+    if (ip_addr_get(family, &addr_list) != 0)
     {
         ERROR("%s(): Cannot get addresses list", __FUNCTION__);
         return NULL;
     }
 
-    for (a = ainfo; a != NULL; a = a->next)
+    for (a = addr_list.tqh_first; a != NULL; a = a->links.tqe_next)
     {
-        n = &a->h;
+        n = a->hdr;
         ifa = NLMSG_DATA(n);
 
         if (n->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
         {
             ERROR("%s(): Bad netlink message header length", __FUNCTION__);
-            free_nlmsg(ainfo);
+            free_nlmsg_list(&addr_list);
             return NULL;
         }
 
@@ -862,7 +876,7 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
         }
     }
 
-    free_nlmsg(ainfo);
+    free_nlmsg_list(&addr_list);
 
     return (a == NULL) ? NULL :
            (ifname != NULL) ? ifname :
@@ -1988,53 +2002,26 @@ static te_errno
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
-    int                len = ADDR_LIST_BULK;
-    te_errno           rc;
-    struct nlmsg_list *ainfo = NULL;
-    struct nlmsg_list *a6info = NULL;
-    struct nlmsg_list *n = NULL;
-    int                ifindex;
-    int                inet6_addresses = 0;
+    int               len = 0;
+    te_errno          rc;
+    agt_nlmsg_list    addr_list;
+    agt_nlmsg_entry **first_inet6_addr;
+    agt_nlmsg_entry  *a;
+    sa_family_t       cur_family;
+    char             *cur_ptr;
+    int               ifindex;
 
     UNUSED(gid);
     UNUSED(oid);
     
+    TAILQ_INIT(&addr_list);
+
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
     {
         /* Alias does not exist from Configurator point of view */
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    *list = (char *)calloc(ADDR_LIST_BULK, 1);
-    if (*list == NULL)
-    {
-        ERROR("calloc() failed");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-    if ((rc = ip_addr_get(AF_INET, &ainfo)) != 0)
-    {
-        ERROR("%s: ip_addr_get() for IPv4 failed", __FUNCTION__);
-        return rc;
-    }
-
-    if ((rc = ip_addr_get(AF_INET6, &a6info)) != 0)
-    {
-        ERROR("%s: ip_addr_get() for IPv6 failed", __FUNCTION__);
-        return rc;
-    }
-
-    /* Join lists of IPv4 and IPv6 addresses */
-    if (ainfo == NULL)
-    {
-        ainfo = a6info;
-    }
-    else
-    {
-        for (n = ainfo; n->next != NULL; n = n->next);
-
-        n->next = a6info;
-    }
-    
     ifindex = ll_name_to_index(ifname);
     if (ifindex <= 0)
     {
@@ -2042,29 +2029,58 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
     }
 
-    for (n = ainfo; n; n = n->next)
+    if ((rc = ip_addr_get(AF_INET, &addr_list)) != 0)
     {
-        struct nlmsghdr *hdr = &n->h;
+        ERROR("%s: ip_addr_get() for IPv4 failed", __FUNCTION__);
+        return rc;
+    }
+    /* 
+     * Keep in mind "next" field of the last entry 
+     * in the list of IPv4 addresses.
+     */
+    first_inet6_addr = addr_list.tqh_last;
+
+    if ((rc = ip_addr_get(AF_INET6, &addr_list)) != 0)
+    {
+        free_nlmsg_list(&addr_list);
+        ERROR("%s: ip_addr_get() for IPv6 failed", __FUNCTION__);
+        return rc;
+    }
+
+    if ((*list = strdup("")) == NULL)
+    {
+        free_nlmsg_list(&addr_list);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    for (a = addr_list.tqh_first, cur_family = AF_INET, cur_ptr = *list;
+         a != NULL;
+         a = a->links.tqe_next)
+    {
+        struct nlmsghdr  *hdr = a->hdr;
         struct ifaddrmsg *ifa = NLMSG_DATA(hdr);
-        struct rtattr * rta_tb[IFA_MAX+1];
+        struct rtattr    *rta_tb[IFA_MAX + 1];
 
         /* IPv4 addresses are all printed, start printing IPv6 addresses */
-        if (n == a6info)
-        {
-            inet6_addresses = 1;
-        }            
+        if (a == *first_inet6_addr)
+            cur_family = AF_INET6;
 
         if (hdr->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
         {
-            ERROR("%s: bad netlink message hdr length");
+            ERROR("%s(): bad netlink message hdr length", __FUNCTION__);
+            free(*list);
+            free_nlmsg_list(&addr_list);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
+
         if (ifa->ifa_index != ifindex)
             continue;
 
-        /* We get IPv4 addresses in IPv6 list at hosts without IPv6 */
-        if (inet6_addresses == 1 && ifa->ifa_family != AF_INET6 ||
-            inet6_addresses == 0 && ifa->ifa_family != AF_INET)
+        /*
+         * Sometimes netlink does not take into account family type
+         * specified in request, so check it here explicitly.
+         */
+        if (ifa->ifa_family != cur_family)
             continue;
 
         memset(rta_tb, 0, sizeof(rta_tb));
@@ -2076,79 +2092,43 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         if (!rta_tb[IFA_ADDRESS])
             rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
 
-        if (len - strlen(*list) <= INET6_ADDRSTRLEN)
+        assert(cur_ptr >= *list);
+        assert(cur_ptr - (*list) <= len);
+        /*
+         * We need space at least for one IPv6 address and 
+         * one space char. 
+         */
+        if ((*list + len - cur_ptr) <= (INET6_ADDRSTRLEN + 1))
         {
             char *tmp;
+            uint32_t str_len = cur_ptr - *list;
 
             len += ADDR_LIST_BULK;
-            tmp = (char *)realloc(*list, len);
-            if (tmp == NULL)
+            if ((tmp = (char *)realloc(*list, len)) == NULL)
             {
+                ERROR("%s(): realloc() failed", __FUNCTION__);
                 free(*list);
-                ERROR("realloc() failed");
+                free_nlmsg_list(&addr_list);
                 return TE_RC(TE_TA_UNIX, TE_ENOMEM);
             }
             *list = tmp;
+            cur_ptr = *list + str_len;
         }
 
-        if (!inet6_addresses)
+        if (inet_ntop(cur_family, RTA_DATA(rta_tb[IFA_LOCAL]),
+                      cur_ptr, INET6_ADDRSTRLEN) == NULL)
         {
-             sprintf(*list + strlen(*list), "%d.%d.%d.%d ",
-                     ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[0],
-                     ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[1],
-                     ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[2],
-                     ((unsigned char *)RTA_DATA(rta_tb[IFA_LOCAL]))[3]);
+            ERROR("%s(): Cannot save network address", __FUNCTION__);
+            free(*list);
+            free_nlmsg_list(&addr_list);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
-        else
-        {
-            int i;
-            int zeroes_printed = 0;
-
-           /* Print IPv6 address */
-            for (i = 0; i < 8; i++)
-            {
-                /*
-                 * zeroes_printed is equal to 1 while zeroes are skipped
-                 * and replaced with '::'
-                 */
-                if (((uint16_t *)RTA_DATA(rta_tb[IFA_LOCAL]))[i] == 0)
-                {
-                    if (zeroes_printed != 2)
-                    {
-                        zeroes_printed = 1;
-                        /*
-                         * If zero sequence starts from the beginning,
-                         * print a colon 
-                         */
-                        if (i == 0)
-                        {
-                            sprintf(*list + strlen(*list), ":");
-                        }                            
-                        continue;
-                    }
-                }
-                else if (zeroes_printed == 1)
-                {
-                    zeroes_printed = 2;
-                    sprintf(*list + strlen(*list), ":");
-                }       
-
-                sprintf(*list + strlen(*list), "%x",
-                        ntohs(((uint16_t *)
-                        RTA_DATA(rta_tb[IFA_LOCAL]))[i]));
-                /* 
-                 * Print a colon after each 4 hexadecimal digits
-                 * except the last ones 
-                 */
-                if (i < 7)
-                {
-                    sprintf(*list + strlen(*list), ":");
-                }
-            }
-            sprintf(*list + strlen(*list), " ");
-        }
+        cur_ptr += strlen(cur_ptr);
+        snprintf(cur_ptr, (*list + len - cur_ptr), " ");
+        cur_ptr += strlen(cur_ptr);
     }
-    free_nlmsg(ainfo);
+
+    free_nlmsg_list(&addr_list);
     return 0;
 }
 #endif
