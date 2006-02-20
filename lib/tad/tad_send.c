@@ -197,7 +197,7 @@ tad_send_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
     const asn_value    *arg_sets;
     int                 len;
 
-    rc = asn_get_subvalue(tmpl_unit, &arg_sets, "arg-sets");
+    rc = asn_get_subvalue(tmpl_unit, (asn_value **)&arg_sets, "arg-sets");
 
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
     {
@@ -984,7 +984,7 @@ tad_send_prepare_bin(csap_p csap, asn_value_p nds,
         if (rc == 0)
         {
             sprintf(label, "pdus.%u", layer);
-            rc = asn_get_subvalue(nds, &layer_pdu, label); 
+            rc = asn_get_subvalue(nds, (asn_value **)&layer_pdu, label);
             if (rc != 0)
             {
                 ERROR(CSAP_LOG_FMT "Failed to get PDU template for "
@@ -1104,12 +1104,13 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
     for (i = 0; i < arg_num; i++)
     { 
         const asn_value *arg_val;
-        asn_value *arg_spec_elem;
+        const asn_value *arg_spec_elem;
 
-        rc = asn_get_indexed(arg_set, &arg_spec_elem, i, NULL);
+        rc = asn_get_indexed(arg_set, (asn_value **)&arg_spec_elem,
+                             i, NULL);
         if (rc) break;
 
-        rc = asn_get_choice_value(arg_spec_elem, &arg_val,
+        rc = asn_get_choice_value(arg_spec_elem, (asn_value **)&arg_val,
                                   &t_class, &t_val);
         if (rc) break;
 
@@ -1137,9 +1138,10 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
 
                     for (j = 0; j < enum_len; j++)
                     {
-                        asn_value *int_val;
+                        const asn_value *int_val;
 
-                        asn_get_indexed(arg_val, &int_val, j, NULL);
+                        asn_get_indexed(arg_val, (asn_value **)&int_val,
+                                        j, NULL);
                         asn_read_int32(int_val, &arg_param, "");
                         arg_specs[i].int_seq.ints[j] = arg_param;
                     }

@@ -21,7 +21,7 @@ test_string_parse(const char *string, const asn_type *type)
 {
     int rc;
     int s_parsed;
-    asn_value_p new_val; 
+    asn_value *new_val; 
 
     rc = asn_parse_value_text(string, type, &new_val, &s_parsed);
     if (rc != 0)
@@ -31,8 +31,11 @@ test_string_parse(const char *string, const asn_type *type)
         result = 1;
         return;
     }
-    asn_sprint_value(new_val, buffer, 1000, 0);
-    printf("type %s, parsed value: \n--\n%s\n--\n", type->name, buffer);
+    rc = asn_count_txt_len(new_val, 0);
+    printf("\ncount len: %d, ", rc);
+    rc = asn_sprint_value(new_val, buffer, 1000, 0);
+    printf("printed len: %d\n", rc);
+    printf("type %s, parsed value: \n--\n%s\n==\n", type->name, buffer);
     asn_free_value(new_val);
     rc = asn_parse_value_text(buffer, type, &new_val, &s_parsed);
     if (rc != 0)

@@ -659,7 +659,7 @@ tcp_server_handler(const char *pkt_fname, void *user_param)
 
         return;
     }
-    rc = asn_read_int32(pkt, socket, "pdus.0.file-descr");
+    rc = asn_read_int32(pkt, socket, "pdus.0.#socket.file-descr");
     if (rc != 0)
         ERROR("%s(): read socket failed, rc %r", __FUNCTION__, rc);
 
@@ -816,7 +816,7 @@ tapi_tcp_buffer_recv(const char *ta_name, int sid,
         if (length == NULL)
             return TE_EWRONGPTR;
         else
-            asn_write_int32(pattern, *length, "0.pdus.0.length");
+            asn_write_int32(pattern, *length, "0.pdus.0.#tcp.length");
     }
 
     rc = tapi_tad_trrecv_start(ta_name, sid, tcp_csap, pattern, timeout, 1,
@@ -1000,7 +1000,7 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
     }
 
     rc = asn_read_int32(pkt, &(context->loc_start_seq), 
-                        "pdus.0.seqn.#plain");
+                        "pdus.0.#tcp.seqn.#plain");
     if (rc != 0)
     {
         ERROR("%s(): read loc seq failed %r", __FUNCTION__, rc);
@@ -1010,7 +1010,7 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
          __FUNCTION__, context->loc_start_seq);
 
     rc = asn_read_int32(pkt, &(context->rem_start_seq), 
-                        "pdus.0.ackn.#plain");
+                        "pdus.0.#tcp.ackn.#plain");
     if (rc != 0)
     {
         ERROR("%s(): read rem seq failed %r", __FUNCTION__, rc);
@@ -1020,7 +1020,7 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
          __FUNCTION__, context->rem_start_seq);
 
 
-    rc = asn_read_int32(pkt, &port, "pdus.0.dst-port.#plain");
+    rc = asn_read_int32(pkt, &port, "pdus.0.#tcp.dst-port.#plain");
     if (rc != 0)
     {
         ERROR("%s(): read dst-port for 'ini' side failed %r",
@@ -1032,7 +1032,7 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
 
     if (context->loc_port == 0)
     {
-        asn_read_int32(pkt, &port, "pdus.0.src-port.#plain");
+        asn_read_int32(pkt, &port, "pdus.0.#tcp.src-port.#plain");
         context->loc_port = port;
     }
     v_len = sizeof(context->rem_mac);

@@ -310,8 +310,7 @@ rcf_ch_csap_create(struct rcf_comm_connection *rcfc,
         }
         /* FIXME: Remove type cast */
         rc = asn_get_choice_value(new_csap->layers[layer].nds,
-                 (const asn_value **)&new_csap->layers[layer].nds,
-                                  NULL, NULL);
+                 &new_csap->layers[layer].nds, NULL, NULL);
         if (rc != 0)
         {
             ERROR("Get choice on %u layer from generic PDU in CSAP NDS "
@@ -366,6 +365,7 @@ exit:
     }
     else
     {
+        ERROR("%s(): failed %r", __FUNCTION__, rc);
         (void)csap_destroy(new_csap_id); 
         SEND_ANSWER("%u", TE_RC(TE_TAD_CH, rc));
     }

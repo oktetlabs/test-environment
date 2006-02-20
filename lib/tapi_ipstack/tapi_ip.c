@@ -443,25 +443,27 @@ tapi_ip4_eth_pattern_unit(const uint8_t *src_mac_addr,
     } while (0)
 
 #define FILL_IP4_ADDR(dir_) \
-    do {                                                                  \
-        if (dir_ ## _ip4_addr != INADDR_ANY)                              \
-        {                                                                 \
-            rc = asn_write_value_field(*pattern_unit,                     \
-                                       &( dir_ ## _ip4_addr),             \
-                                       4, "pdus.0." #dir_ "-addr.#plain");\
-            CHECK_ERROR(dir_, ip4);                                       \
-        }                                                                 \
+    do {                                                        \
+        if (dir_ ## _ip4_addr != INADDR_ANY)                    \
+        {                                                       \
+            rc = asn_write_value_field(*pattern_unit,           \
+                                       &( dir_ ## _ip4_addr),   \
+                                       4, "pdus.0.#ip4."        \
+                                       #dir_ "-addr.#plain");   \
+            CHECK_ERROR(dir_, ip4);                             \
+        }                                                       \
     } while (0)
 
 #define FILL_MAC_ADDR(dir_) \
-    do {                                                                  \
-        if (dir_ ## _mac_addr != NULL)                                    \
-        {                                                                 \
-            rc = asn_write_value_field(*pattern_unit,                     \
-                                       dir_ ## _mac_addr,                 \
-                                       6, "pdus.1." #dir_ "-addr.#plain");\
-            CHECK_ERROR(dir_, mac);                                       \
-        }                                                                 \
+    do {                                                        \
+        if (dir_ ## _mac_addr != NULL)                          \
+        {                                                       \
+            rc = asn_write_value_field(*pattern_unit,           \
+                                       dir_ ## _mac_addr,       \
+                                       6, "pdus.1.#eth."        \
+                                       #dir_ "-addr.#plain");   \
+            CHECK_ERROR(dir_, mac);                             \
+        }                                                       \
     } while (0)
 
     FILL_IP4_ADDR(src);

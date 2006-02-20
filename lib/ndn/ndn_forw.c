@@ -439,7 +439,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
 
 
 
-    rc = asn_get_subvalue(val, &subval, "reorder");
+    rc = asn_get_subvalue(val, (asn_value **)&subval, "reorder");
     VERB("%s: get reorder: %r", __FUNCTION__, rc); 
     if (rc == 0) 
     {

@@ -180,8 +180,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
 
     if (asn_get_syntax(layer_pdu, "") == CHOICE)
     {
-        if ((rc = asn_get_choice_value(layer_pdu,
-                                       (const asn_value **)&tcp_pdu,
+        if ((rc = asn_get_choice_value(layer_pdu, &tcp_pdu,
                                        NULL, NULL))
              != 0)
             return rc;
@@ -532,6 +531,8 @@ tad_tcp_match_bin_cb(csap_p           csap,
     asn_value  *tcp_header_pdu = NULL;
     te_errno    rc;
 
+    const asn_value *tcp_ptrn_pdu;
+
     uint8_t  tmp8;
     size_t   h_len = 0;
 
@@ -541,6 +542,12 @@ tad_tcp_match_bin_cb(csap_p           csap,
     assert(tad_pkt_first_seg(pdu) != NULL);
     data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
+
+    if (asn_get_syntax(ptrn_pdu, "") == CHOICE)
+        asn_get_choice_value(ptrn_pdu, (asn_value **)&tcp_ptrn_pdu,
+                             NULL, NULL);
+    else 
+        tcp_ptrn_pdu = ptrn_pdu;
 
     if ((csap->state & CSAP_STATE_RESULTS) &&
         (tcp_header_pdu = meta_pkt->layers[layer].nds =
@@ -552,7 +559,7 @@ tad_tcp_match_bin_cb(csap_p           csap,
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu,     \
+        rc = ndn_match_data_units(tcp_ptrn_pdu, tcp_header_pdu, \
                                   data, _size, _asn_label);     \
         if (rc)                                                 \
         {                                                       \
@@ -569,14 +576,14 @@ tad_tcp_match_bin_cb(csap_p           csap,
     CHECK_FIELD("ackn", 4);
 
     h_len = tmp8 = (*data) >> 4;
-    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu, 
+    rc = ndn_match_data_units(tcp_ptrn_pdu, tcp_header_pdu, 
                               &tmp8, 1, "hlen");
     if (rc)
         goto cleanup;
     data ++;
 
     tmp8 = (*data) & 0x3f;
-    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu, 
+    rc = ndn_match_data_units(tcp_ptrn_pdu, tcp_header_pdu, 
                               &tmp8, 1, "flags");
     if (rc)
         goto cleanup;

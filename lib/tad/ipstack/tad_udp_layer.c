@@ -115,7 +115,7 @@ tad_udp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     } 
 
     if(asn_get_syntax(layer_pdu, "") != CHOICE)
-        asn_get_choice_value(layer_pdu, (const asn_value **)&udp_layer_pdu,
+        asn_get_choice_value(layer_pdu, &udp_layer_pdu,
                              NULL, NULL);
     else
         udp_layer_pdu = layer_pdu;
@@ -213,7 +213,7 @@ tad_udp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     } 
 
     if(asn_get_syntax(layer_pdu, "") != CHOICE)
-        asn_get_choice_value(layer_pdu, (const asn_value **)&udp_layer_pdu,
+        asn_get_choice_value(layer_pdu, &udp_layer_pdu,
                              NULL, NULL);
     else
         udp_layer_pdu = layer_pdu;
@@ -391,12 +391,21 @@ tad_udp_match_bin_cb(csap_p csap,
     asn_value  *udp_header_pdu = NULL;
     te_errno    rc;
 
+    const asn_value *udp_ptrn_pdu;
+
     UNUSED(ptrn_opaque);
 
     assert(tad_pkt_seg_num(pdu) == 1);
     assert(tad_pkt_first_seg(pdu) != NULL);
     data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
+
+    if (asn_get_syntax(ptrn_pdu, "") == CHOICE)
+        asn_get_choice_value(ptrn_pdu, (asn_value **)&udp_ptrn_pdu,
+                             NULL, NULL);
+    else 
+        udp_ptrn_pdu = ptrn_pdu;
+
 
     if ((csap->state & CSAP_STATE_RESULTS) &&
         (udp_header_pdu = meta_pkt->layers[layer].nds =
@@ -411,7 +420,7 @@ tad_udp_match_bin_cb(csap_p csap,
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = ndn_match_data_units(ptrn_pdu, udp_header_pdu,  \
+        rc = ndn_match_data_units(udp_ptrn_pdu, udp_header_pdu, \
                                   data, _size, _asn_label);     \
         if (rc != 0)                                            \
         {                                                       \

@@ -94,7 +94,14 @@ extern asn_type_p ndn_snmp_csap;
 extern asn_type_p ndn_snmp_var_bind;
 extern asn_type_p ndn_snmp_var_bind_seq;
 
-extern int snmp_asn_syntaxes[]; 
+#if 0
+/**
+ * Convert NDN SNMP Object syntax tag value 
+ * (from enum 'ndn_snmp_objsyn_t') int generic SNMP ASN syntax 
+ */
+extern int snmp_asn_syntaxes(unsigned short ndn_snmp_objsyn_tag); 
+#endif
+extern int snmp_asn_syntaxes[];
 
 extern const asn_type * const ndn_snmp_obj_syntax_integer;
 extern const asn_type * const ndn_snmp_obj_syntax_string;

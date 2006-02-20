@@ -851,10 +851,10 @@ int
 dhcpv4_prepare_traffic_template(const dhcp_message *dhcp_msg,
                                 const char **templ_fname)
 {
-    asn_value_p asn_dhcp_msg;
-    asn_value_p asn_traffic;
-    asn_value_p asn_pdus;
-    asn_value_p asn_pdu;
+    asn_value *asn_dhcp_msg;
+    asn_value *asn_traffic;
+    asn_value *asn_pdus;
+    asn_value *asn_pdu;
 
     /* Create ASN.1 representation of DHCP message */
     CHECK_RC(ndn_dhcpv4_plain_to_packet(dhcp_msg, &asn_dhcp_msg));
@@ -989,10 +989,11 @@ dhcp_pkt_handler(const char *pkt_fname, void *user_param)
         return;
     }
 
-    dhcp_pkt = asn_read_indexed(pkt, 0, "pdus");
-    if (dhcp_pkt == NULL)
+    rc = asn_get_subvalue(pkt, &dhcp_pkt, "pdus.0.#dhcp");
+    if (rc != 0)
     {
-        ERROR("Failed to get 'pdus' from packet");
+        ERROR("Failed to get 'pdus' from packet, rc %r", rc);
+        asn_free_value(pkt);
         return;
     }
 

@@ -154,7 +154,7 @@ struct asn_value
  * @return zero on success, otherwise error code. 
  */ 
 extern int asn_impl_find_subtype(const asn_type * type, const char *label,
-                                  const asn_type ** found_type);
+                                 const asn_type ** found_type);
 
 /**
  * Find one-depth subvalue in ASN value tree by its label.
@@ -173,18 +173,23 @@ extern int asn_impl_find_subvalue(const asn_value *container,
                                   asn_value const **found_val);
 
 /**
- * Determine numeric index of field label in structure presenting ASN.1 type.
- * This method is applicable only to values with CONSTRAINT syntax with named
- * components: 'SEQUENCE', 'SET' and 'CHOICE'. 
+ * Find numeric index of subvalue in ASN type specification by 
+ * symbolic label. 
  *
- * @param type       ASN type which subvalue is interested. 
- * @param label      textual field label, specifying subvalue in type. 
- * @param index      found index, unchanged if error occurred (OUT).
+ * If type syntax in CHOICE, 'labels' may start from 
+ * CHOICE field label with leading '#'. 
+ * For CHOICE  got index is offset of child specification in ASN type 
+ * definition, but not in ASN value instance. 
  *
- * @return zero on success, otherwise error code. 
+ * @param type          ASN type.
+ * @param labels        Labels string.
+ * @param index         Location for found index (OUT).
+ * @param rest_labels   Location for pointer to rest labels (OUT).
+ *
+ * @return status code
  */
-extern int asn_impl_named_subvalue_index(const asn_type *type,
-                                         const char *label, int *index);
+extern int asn_child_named_index(const asn_type *type, const char *labels, 
+                                 int *index, const char **rest_labels);
 
 /**
  * Determine numeric index of field in structure presenting ASN.1 type
@@ -202,6 +207,47 @@ extern int asn_impl_named_subvalue_index(const asn_type *type,
 extern int asn_child_tag_index(const asn_type *type,
                                asn_tag_class tag_class, uint16_t tag_val,
                                int *index);
+
+
+/**
+ * Internal method for insert child by its index in container
+ * type named-array. For CHOICE syntax index used for check 
+ * that new_value has respective type as specified in ASN type. 
+ *
+ * This method does not check that incoming pointers are not NULL,
+ * so be carefull, when call it directly. 
+ *
+ * @param container     ASN value which child should be updated, 
+ *                      have to be of syntax SEQUENCE, SET, or CHOICE
+ * @param child         New ASN value for child, may be NULL.
+ * @param index         Index of child.
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern int asn_put_child_by_index(asn_value *container, 
+                                  asn_value *child, 
+                                  int index);
+
+/**
+ * Internal method for get child by its index in container
+ * type named-array. For CHOICE syntax index used for check 
+ * that really contained subvalue has respective type and choice name
+ * as specified in ASN type. 
+ *
+ * This method does not check that incoming pointers are not NULL,
+ * so be carefull, when call it directly. 
+ *
+ * @param container     ASN value which child should be updated, 
+ *                      have to be of syntax SEQUENCE, SET, or CHOICE
+ * @param child         Location for pointer to the child (OUT).
+ * @param index         Index of child.
+ *
+ *
+ * @return zero on success, otherwise error code.
+ */
+extern int asn_get_child_by_index(const asn_value *container, 
+                                  asn_value **child, 
+                                  int index);
 
 #ifdef __cplusplus
 } /* extern "C" */

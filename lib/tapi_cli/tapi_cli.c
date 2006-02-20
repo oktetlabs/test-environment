@@ -507,9 +507,9 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
 {
     int                       rc;
     int                       s_parsed;
-    asn_value_p               cli_response;
+    asn_value *               cli_response;
 #if 1
-    asn_value_p               cli_msg;
+    const asn_value *         cli_msg;
 #endif
     size_t                    msg_len;
     char                     *msg = NULL;
@@ -527,10 +527,10 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
     }
 
 #if 1
-    cli_msg = asn_read_indexed(cli_response, 0, "pdus");
-    if (cli_msg == NULL)
+    rc = asn_get_subvalue(cli_response, &cli_msg, "pdus.0.#cli"); 
+    if (rc != 0)
     {
-        ERROR("Failed to get 'pdus' from CLI response");
+        ERROR("Failed to get 'pdus' from CLI response: %r", rc);
         return;
     }
 

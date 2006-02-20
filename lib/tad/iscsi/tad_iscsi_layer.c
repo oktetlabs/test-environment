@@ -193,6 +193,7 @@ tad_iscsi_match_bin_cb(csap_p           csap,
     asn_value  *iscsi_msg = NULL;
     te_errno    rc;
     int         defect;
+    const asn_value *iscsi_ptrn_pdu;
 
     UNUSED(ptrn_opaque);
 
@@ -200,6 +201,13 @@ tad_iscsi_match_bin_cb(csap_p           csap,
     assert(tad_pkt_first_seg(pdu) != NULL);
     data_ptr = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
+
+    
+    if (asn_get_syntax(ptrn_pdu, "") == CHOICE)
+        asn_get_choice_value(ptrn_pdu, (asn_value **)&iscsi_ptrn_pdu,
+                             NULL, NULL);
+    else 
+        iscsi_ptrn_pdu = ptrn_pdu;
 
     if ((csap->state & CSAP_STATE_RESULTS) &&
         (iscsi_msg = meta_pkt->layers[layer].nds =
@@ -270,22 +278,22 @@ begin_match:
          */
 
         tmp8 = (*p >> 6) & 1;
-        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
+        if ((rc = ndn_match_data_units(iscsi_ptrn_pdu, NULL, 
                                        &tmp8, 1, "i-bit")) != 0)
             goto cleanup;
 
         tmp8 = *p & 0x3f;
-        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
+        if ((rc = ndn_match_data_units(iscsi_ptrn_pdu, NULL, 
                                        &tmp8, 1, "opcode")) != 0)
             goto cleanup;
 
         p++;
         tmp8 = *p >> 7;
-        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
+        if ((rc = ndn_match_data_units(iscsi_ptrn_pdu, NULL, 
                                        &tmp8, 1, "f-bit")) != 0)
             goto cleanup;
 
-        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
+        if ((rc = ndn_match_data_units(iscsi_ptrn_pdu, NULL, 
                                        p, 3, "op-specific")) != 0)
             goto cleanup;
 

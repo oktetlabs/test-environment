@@ -28,6 +28,7 @@
  * $Id$
  */
 
+#define TE_LOG_LEVEL 0xff
 #define TE_LGR_USER     "TAD Recv"
 
 #include "te_config.h"
@@ -184,7 +185,7 @@ tad_recv_preprocess_action(const asn_value *nds_action,
     assert(nds_action != NULL);
     assert(data != NULL);
 
-    rc = asn_get_choice_value(nds_action, &action_ch_val,
+    rc = asn_get_choice_value(nds_action, (asn_value **)&action_ch_val,
                               &t_class, &t_val);
     VERB("%s(): get action choice rc %r, class %d, tag %d", 
          __FUNCTION__, rc, (int)t_class, (int)t_val);
@@ -357,7 +358,6 @@ tad_recv_preprocess_actions(csap_p csap, const asn_value *ptrn_unit,
              ++i);
         data->no_report = (i < data->n_actions);
     }
-
     return rc;
 }
 
@@ -867,7 +867,8 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
         const asn_value *layer_pdu = NULL; 
 
         sprintf(label + sizeof("pdus") - 1, ".%d", layer);
-        rc = asn_get_subvalue(pattern_unit, &layer_pdu, label); 
+        rc = asn_get_subvalue(pattern_unit, (asn_value **)&layer_pdu, 
+                              label);
         VERB("get subval with pattern unit for label %s rc %r",
              label, rc);
 
@@ -1300,7 +1301,7 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
 
     assert(packet != NULL);
 
-    attach_len = asn_count_txt_len(packet, 0);
+    attach_len = asn_count_txt_len(packet, 0) + 1;
     VERB("%s(): attach len %u", __FUNCTION__, (unsigned)attach_len);
 
     buffer = calloc(1, ans_len + EXTRA_BUF_SPACE + attach_len);
@@ -1320,15 +1321,11 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
     cmd_len = strlen(buffer) + 1;
 
     if ((attach_rlen =
-         asn_sprint_value(packet, buffer + cmd_len, attach_len
-#if 1 /* FIXME ASN */
-                          + 1
-#endif
-                          , 0))
-        != (int)attach_len)
+         asn_sprint_value(packet, buffer + cmd_len, attach_len, 0))
+        != (int)(attach_len - 1))
     {
-        ERROR("%s(): asn_sprint_value() returns unexpected number: "
-              "expected %u, got %d", __FUNCTION__, (unsigned)attach_len,
+        WARN("%s(): asn_sprint_value() returns unexpected number: "
+             "expected %u, got %d", __FUNCTION__, (unsigned)attach_len,
               attach_rlen);
 #if 0 /* FIXME ASN */
         free(buffer);

@@ -281,7 +281,7 @@ tapi_tad_csap_create(const char *ta_name, int session,
 
     unlink(tmp_name);
     if (rc != 0)
-        ERROR("Csap create failed with rc %r", rc);
+        ERROR("%s(): CSAP create failed with rc %r", __FUNCTION__, rc);
     return rc;
 }
 

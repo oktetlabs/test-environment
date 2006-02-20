@@ -87,10 +87,11 @@ tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
         snprintf(label, sizeof(label), "%d.#%s", 
                 layer, csap->layers[layer].proto);
 
-        rc = asn_get_subvalue(pdus, (const asn_value **)&layer_pdu, label);
+        rc = asn_get_subvalue(pdus, &layer_pdu, label);
 
         if (rc != 0) 
         {
+asn_save_to_file(pdus, "/tmp/tad-confirm-pdus-err.asn");
             ERROR("%s(CSAP %d): asn_get_subvalue rc %r, "
                   "confirm layer %d, label %s",
                   __FUNCTION__, csap->id, rc, layer, label);
@@ -722,8 +723,9 @@ tad_data_unit_convert_by_label(const asn_value *pdu_val,
     
     if (asn_get_syntax(pdu_val, "") == CHOICE)
     {
-        if ((rc = asn_get_choice_value(pdu_val, &clear_pdu_val, NULL, NULL))
-             != 0)
+        if ((rc = asn_get_choice_value(pdu_val, 
+                                       (asn_value **)&clear_pdu_val,
+                                       NULL, NULL)) != 0)
             return rc;
     }
     else
@@ -799,7 +801,8 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
     if (location->du_type != TAD_DU_UNDEF)
         tad_data_unit_clear(location);
 
-    rc = asn_get_choice_value(ch_du_field, &du_field, &t_class, &t_val); 
+    rc = asn_get_choice_value(ch_du_field, (asn_value **)&du_field,
+                              &t_class, &t_val); 
     if (rc != 0)
     {
         ERROR("%s(field name %s): rc from get choice: %r",
@@ -1703,7 +1706,8 @@ tad_convert_payload(const asn_value *ndn_payload,
     if (ndn_payload == NULL || pld_spec == NULL)
         return TE_EWRONGPTR;
 
-    rc = asn_get_choice_value(ndn_payload, &payload, &t_class, &t_val);
+    rc = asn_get_choice_value(ndn_payload, (asn_value **)&payload,
+                              &t_class, &t_val);
     if (rc != 0)
     {
         ERROR("%s(): get choice of payload failed %r", __FUNCTION__, rc);

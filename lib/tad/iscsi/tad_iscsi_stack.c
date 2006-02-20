@@ -260,7 +260,7 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
 #endif
     int         fd;
     te_errno    rc = 0;
-    ssize_t     sent;
+    ssize_t     sent = 0;
 
     tad_iscsi_rw_data      *rw_data = csap_get_rw_data(csap);
     tad_iscsi_layer_data   *layer_data =
@@ -313,7 +313,7 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     } 
     else
     {
-        INFO("%s(CSAP %u) written %d bytes to fd %d", 
+        RING("%s(CSAP %u) written %d bytes to fd %d", 
              __FUNCTION__, csap->id, (int)sent, fd);
     }
 

@@ -544,15 +544,16 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
 
     int      rc = 0;
     uint32_t user_int = 0;
+    const char *rest_labels;
 
     if (pattern == NULL || data == NULL || label == NULL)
         return TE_EWRONGPTR; 
 
-    rc = asn_impl_named_subvalue_index(pattern->asn_type, label,
-                                       &field_index);
+    rc = asn_child_named_index(pattern->asn_type, label,
+                               &field_index, &rest_labels);
     if (rc != 0)
     {
-        ERROR("%s(): find field %s index failed %r",
+        ERROR("%s(): find field '%s' index failed %r",
               __FUNCTION__, label, rc);
         return rc;
     }
@@ -564,13 +565,14 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
 
     if (du_ch_val != NULL)
     {
-        rc = asn_get_choice_value(du_ch_val, &du_val, &t_class, &t_val);
+        rc = asn_get_choice_value(du_ch_val, (asn_value **)&du_val, 
+                                  &t_class, &t_val);
         if (rc != 0)
             return rc;
     } 
 
     /* 
-     * since rc from 'asn_impl_named_subvalue_index' was zero,
+     * since rc from 'asn_child_named_index' was zero,
      * we may be sure that named_entries field here is correct;
      * get first subtype in Data-Unit, that is "plain" allways.
      */

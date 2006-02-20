@@ -157,8 +157,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
 
     if (asn_get_syntax(layer_pdu, "") == CHOICE)
     {
-        if ((rc = asn_get_choice_value(layer_pdu,
-                                       (const asn_value **)&ip4_pdu,
+        if ((rc = asn_get_choice_value(layer_pdu, &ip4_pdu,
                                        NULL, NULL))
              != 0)
             return rc;
@@ -171,7 +170,8 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
     ip4_csap_pdu = csap->layers[layer].nds; 
     if (asn_get_syntax(ip4_csap_pdu, "") == CHOICE)
     {
-        if ((rc = asn_get_choice_value(ip4_csap_pdu, &ip4_csap_pdu,
+        if ((rc = asn_get_choice_value(ip4_csap_pdu, 
+                                       (asn_value **)&ip4_csap_pdu,
                                        NULL, NULL)) != 0)
         {
             ERROR("%s(CSAP %d) get choice value of csap layer_pdu fails %r",
@@ -728,6 +728,8 @@ tad_ip4_match_bin_cb(csap_p           csap,
 { 
     ip4_csap_specific_data_t *spec_data;
 
+    const asn_value *ip4_ptrn_pdu;
+
     uint8_t    *data; 
     size_t      data_len;
     asn_value  *ip4_header_pdu = NULL;
@@ -744,6 +746,12 @@ tad_ip4_match_bin_cb(csap_p           csap,
     data = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
 
+    if (asn_get_syntax(ptrn_pdu, "") == CHOICE)
+        asn_get_choice_value(ptrn_pdu, (asn_value **)&ip4_ptrn_pdu,
+                             NULL, NULL);
+    else 
+        ip4_ptrn_pdu = ptrn_pdu;
+
     if ((csap->state & CSAP_STATE_RESULTS) &&
         (ip4_header_pdu = meta_pkt->layers[layer].nds =
              asn_init_value(ndn_ip4_header)) == NULL)
@@ -756,7 +764,7 @@ tad_ip4_match_bin_cb(csap_p           csap,
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu,     \
+        rc = ndn_match_data_units(ip4_ptrn_pdu, ip4_header_pdu, \
                                   data, _size, _asn_label);     \
         if (rc != 0)                                            \
         {                                                       \
@@ -769,7 +777,7 @@ tad_ip4_match_bin_cb(csap_p           csap,
 
 
     tmp8 = (*data) >> 4;
-    rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
+    rc = ndn_match_data_units(ip4_ptrn_pdu, ip4_header_pdu, 
                               &tmp8, 1, "version");
     if (rc) 
     {
@@ -778,7 +786,7 @@ tad_ip4_match_bin_cb(csap_p           csap,
     }
 
     h_len = tmp8 = (*data) & 0x0f;
-    rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
+    rc = ndn_match_data_units(ip4_ptrn_pdu, ip4_header_pdu, 
                               &tmp8, 1, "header-len");
     if (rc) 
     {
@@ -794,7 +802,7 @@ tad_ip4_match_bin_cb(csap_p           csap,
     CHECK_FIELD("ip-ident", 2);
 
     tmp8 = (*data) >> 5;
-    rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
+    rc = ndn_match_data_units(ip4_ptrn_pdu, ip4_header_pdu, 
                               &tmp8, 1, "flags");
     if (rc != 0) 
         goto cleanup;

@@ -31,6 +31,7 @@
 #include <sys/types.h>
 
 #include "te_stdint.h"
+#include "te_errno.h"
 #include "te_defs.h"
 
 #ifdef __cplusplus
@@ -51,12 +52,6 @@ struct asn_type;
 typedef struct asn_type asn_type;
 typedef struct asn_type *asn_type_p;
 
-/** 
- * Type: asn_value
- */ 
-struct asn_value;
-typedef struct asn_value asn_value;
-typedef struct asn_value *asn_value_p;
 
 /**
  * Enumerated type with ASN syntax codes. All syntax codes are devided into
@@ -110,13 +105,73 @@ typedef enum {
 } asn_tag_class;
 
 /** Value of the ASN.1 tag */
-typedef unsigned short asn_tag_value;
+typedef uint16_t asn_tag_value;
 
 typedef struct asn_tag_t {
     asn_tag_class   cl;
     asn_tag_value   val;
 } asn_tag_t;
 
+
+
+/**
+ * Obtain textual label of ASN type. 
+ *
+ * @param type       ASN type which name is interested
+ *
+ * @return plain string with type name or NULL if error occurred. 
+ */
+extern const char *asn_get_type_name(const asn_type *type);
+
+/**
+ * Obtain ASN syntax type;
+ *
+ * @param type          ASN value which leaf syntax is interested
+ *
+ * @return syntax of specified leaf in value.
+ */
+extern asn_syntax asn_get_syntax_of_type(const asn_type *type);
+
+
+/**
+ * Get constant pointer to subtype of some ASN type.
+ * 
+ * @param type          ASN type
+ * @param subtype       location for pointer to ASN sub-type (OUT)
+ * @param labels        textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description
+ * @param labels        string with dot-separated sequence of textual field
+ *                      labels, specifying interested sub-type
+ *
+ * @return zero or error code.
+ */ 
+extern int asn_get_subtype(const asn_type *type, 
+                           const asn_type ** subtype, const char *labels);
+
+
+/**
+ * Get ASN type of on-level child of constaint ASN type by child tag.
+ * 
+ * @param type      root of ASN value tree which subvalue is interested
+ * @param subtype   location for pointer to ASN sub-value (OUT)
+ * @param tag_class class of ASN tag
+ * @param tag_val   value of ASN tag
+ *
+ * @return zero on success or error code.
+ */ 
+extern int asn_get_child_type(const asn_type *type,
+                              const asn_type **subtype,
+                              asn_tag_class tag_class, 
+                              asn_tag_value tag_val);
+
+
+
+/** 
+ * Type: asn_value
+ */ 
+struct asn_value;
+typedef struct asn_value asn_value;
+typedef struct asn_value *asn_value_p;
 
 
 /**
@@ -146,7 +201,7 @@ extern asn_value_p asn_init_value(const asn_type *type);
  * @return pointer to new asn_value instance or NULL if error occurred. 
  */
 extern asn_value_p asn_init_value_tagged(const asn_type *type, 
-                                         asn_tag_class tc, uint16_t tag);
+                                         asn_tag_class tc, asn_tag_value tag);
 
 /**
  * Make a copy of ASN value instance.
@@ -175,15 +230,6 @@ extern void asn_free_value(asn_value *value);
  * @return pointer to asn_type instance or NULL if error occurred. 
  */
 extern const asn_type *asn_get_type(const asn_value *value);
-
-/**
- * Obtain textual label of ASN type. 
- *
- * @param type       ASN type which name is interested
- *
- * @return plain string with type name or NULL if error occurred. 
- */
-extern const char *asn_get_type_name(const asn_type *type);
 
 
 
@@ -256,15 +302,24 @@ extern int asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
 
 
 /**
- * Prepare textual ASN.1 presentation of passed value and put it into specified
- * buffer. 
+ * Prepare textual ASN.1 presentation of passed value and put it into
+ * specified buffer. 
+ * This method writes trailing zero to the text buffer, and checks that
+ * there is spæce for it, but does not include it in amount of 
+ * printed symbols - excactly like standard snprintf(). 
+ * 
+ * Besides, if required buffer length is greater, then passed, last buffer
+ * byte will be set to zero, and textual presentation of value will be
+ * printed so match, as possible. In this case asn_sprint_value will return
+ * amount of total number of bytes, which are required for this value.
  *
  * @param value         ASN value to be printed
  * @param buffer        buffer for ASN text
  * @param buf_len       length of buffer
  * @param indent        current indent, usually zero
  *
- * @return number characters written to buffer or -1 if error occured. 
+ * @return number characters should be written to buffer 
+ * (without trailing zero), or -1 if error occured. 
  */ 
 extern int asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len, 
                             unsigned int indent);
@@ -281,11 +336,13 @@ extern int asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len
 extern int asn_save_to_file(const asn_value *value, const char *filename);
 
 
+
+
+
+
 /*
  * BER encode/decode, unsupported now...
- */
-
-
+ */ 
 
 
 /**
@@ -310,8 +367,12 @@ extern int asn_encode(void *buf, size_t *buf_len, asn_value *value);
 extern asn_value *asn_decode(const void *data);
 
 
+
+
+
+
 /*
- * New API routines
+ *  ================== New API routines ==================
  */
 
 
@@ -326,7 +387,7 @@ extern asn_value *asn_decode(const void *data);
  * @return zero on success, otherwise error code.
  */
 extern int asn_free_child(asn_value *value,
-                          asn_tag_class tag_class, uint16_t tag_val);
+                          asn_tag_class tag_class, asn_tag_value tag_val);
 
 /**
  * Free subvalue of constraint ASN value instance, which may be
@@ -346,6 +407,46 @@ extern int asn_free_descendant(asn_value *value, const char *labels);
 
 
 
+/**
+ * Find descendant value in ASN value tree by textual labels specifier. 
+ * This method fails and return NULL if specified subvalue does not 
+ * exists in 'value'.
+ * Besides, if some CHOICE specifier is absent, this methods 
+ * silently go down to specific value.
+ *
+ * NOTE for user: do not change got subvalue, if you are not sure, 
+ * what are you doing. Especially - do not free it!
+ *
+ * @param value         Root of ASN value tree. 
+ * @param status        Status of operation (OUT).
+ * @param labels_fmt    Format (*printf-like) string for labels string.
+ * @param ...           Respective parameters for format string.
+ *
+ * @return pointer to found subvalue.
+ */
+extern asn_value *asn_find_descendant(const asn_value *value, 
+                                      te_errno *status,
+                                      const char *labels_fmt, ...);
+
+
+/**
+ * Find descendant value in ASN value tree by textual labels specifier. 
+ * This method creates subvalue, respective to labels, if it is absent
+ * in 'value'. 
+ * If some CHOICE specifier is absent, but there is specific subvalue 
+ * at that node, this methods fails and set 'status' to TE_EASNWRONGLABEL.
+ *
+ * @param value         Root of ASN value tree. 
+ * @param status        Status of operation (OUT).
+ * @param labels_fmt    Format (*printf-like) string for labels string.
+ * @param ...           Respective parameters for format string.
+ *
+ * @return pointer to found subvalue.
+ */
+extern asn_value *asn_retrieve_descendant(asn_value *value, 
+                                          te_errno *status,
+                                          const char *labels_fmt, ...);
+
 
 
 /**
@@ -362,10 +463,29 @@ extern int asn_free_descendant(asn_value *value, const char *labels);
  *
  * @return zero on success or error code.
  */ 
-extern int asn_get_descendent(asn_value *container, 
+extern int asn_get_descendent(const asn_value *container, 
                               asn_value **subval, 
                               const char *labels);
 
+
+
+/**
+ * Put descendent subvalue to some ASN value with CONSTRAINT syntax.
+ * Passed ASN value simply inserted іnto tree without copy, old 
+ * value on respective place is freed!
+ *
+ * @param container     Root of ASN value tree.
+ * @param subvalue      ASN sub-value which should be inserted, may
+ *                      be NULL, if respecive part of 'container'
+ *                      just should be cleared.
+ * @param labels        Textual ASN labels of subvalue; see 
+ *                      asn_free_subvalue method for more description.
+ *
+ * @return zero on success or error code.
+ */ 
+extern int asn_put_descendent(asn_value *container, 
+                              asn_value *subval, 
+                              const char *labels);
 
 
 /**
@@ -415,17 +535,24 @@ extern int asn_remove_indexed(asn_value *container,
  *
  * @return zero on success or error code.
  */ 
-extern int asn_get_indexed(asn_value *container, 
+extern int asn_get_indexed(const asn_value *container, 
                            asn_value **subval, 
                            int index, const char *labels);
 
 
-/* ======================================================================
+
+
+/* 
+ * ======================================================================
  * All methods below are depricated, or will become such in nearest 
  * future. It is recommended to use methods above, if there is 
  * applicable to your task.
  * ======================================================================
  */
+
+
+
+
 
 /**
  * Free subvalue of constraint ASN value instance.
@@ -454,7 +581,7 @@ extern int asn_free_subvalue(asn_value *value, const char *labels);
  */
 extern int asn_free_child_value(asn_value *value, 
                                 asn_tag_class tag_class,
-                                uint16_t tag_val);
+                                asn_tag_value tag_val);
 
 
 
@@ -476,7 +603,7 @@ extern int asn_free_child_value(asn_value *value,
  * @return zero on success, otherwise error code.
  */
 extern int asn_put_child_value(asn_value *container, asn_value *subvalue, 
-                               asn_tag_class tag_class, uint16_t tag_val);
+                               asn_tag_class tag_class, asn_tag_value tag_val);
 
 /**
  * The same as 'asn_put_child_value', but take as child specificator
@@ -710,15 +837,6 @@ extern int asn_get_length(const asn_value *container, const char *labels );
 extern asn_syntax asn_get_syntax(const asn_value *value, const char *labels);
 
 
-/**
- * Obtain ASN syntax type;
- *
- * @param type          ASN value which leaf syntax is interested
- *
- * @return syntax of specified leaf in value.
- */
-extern asn_syntax asn_get_syntax_of_type(const asn_type *type);
-
 
 /**
  * Get choice in subvalue of root ASN value container.  
@@ -756,21 +874,6 @@ extern const char *asn_get_name(const asn_value *container);
 
 
 /**
- * Get constant pointer to subtype of some ASN type.
- * 
- * @param type          ASN type
- * @param subtype       location for pointer to ASN sub-type (OUT)
- * @param labels        textual ASN labels of subvalue; see 
- *                      asn_free_subvalue method for more description
- * @param labels        string with dot-separated sequence of textual field
- *                      labels, specifying interested sub-type
- *
- * @return zero or error code.
- */ 
-extern int asn_get_subtype(const asn_type *type, 
-                           const asn_type ** subtype, const char *labels);
-
-/**
  * Get constant pointer to subvalue of some ASN value with CONSTRAINT syntax.
  * User may to try discard 'const' qualifier of obtained subvalue only 
  * if he (she) knows very well what he doing with ASN value. 
@@ -787,25 +890,9 @@ extern int asn_get_subtype(const asn_type *type,
  * @return zero on success or error code.
  */ 
 extern int asn_get_subvalue(const asn_value *container, 
-                            const asn_value ** subval, 
-                            const char *labels);
+                            asn_value ** subval, const char *labels);
 
 
-
-/**
- * Get ASN type of on-level child of constaint ASN type by child tag.
- * 
- * @param type      root of ASN value tree which subvalue is interested
- * @param subtype   location for pointer to ASN sub-value (OUT)
- * @param tag_class class of ASN tag
- * @param tag_val   value of ASN tag
- *
- * @return zero on success or error code.
- */ 
-extern int asn_get_child_type(const asn_type *type,
-                              const asn_type **subtype,
-                              asn_tag_class tag_class, 
-                              uint16_t tag_val);
 
 /**
  * Get constant pointer to direct subvalue of ASN value with named syntax 
@@ -829,7 +916,7 @@ extern int asn_get_child_type(const asn_type *type,
 extern int asn_get_child_value(const asn_value *container,
                                const asn_value **subval,
                                asn_tag_class tag_class, 
-                               uint16_t tag_val);
+                               asn_tag_value tag_val);
 
 
 /**
@@ -850,9 +937,9 @@ extern int asn_get_child_value(const asn_value *container,
  * @return zero on success or error code.
  */ 
 extern int asn_get_choice_value(const asn_value *container,
-                                const asn_value **subval,
+                                asn_value **subval,
                                 asn_tag_class *tag_class, 
-                                uint16_t *tag_val);
+                                asn_tag_value *tag_val);
 
 /**
  * Get constant pointer to data related to leaf plain-syntax sub-value 
@@ -894,7 +981,10 @@ extern unsigned short asn_get_tag(const asn_value *container);
 
 
 /**
- * Count required length of string for textual presentation of specified value. 
+ * Count required length of string for textual presentation of specified value,
+ * without trailing zero byte. 
+ * So, while using this meþhod to calculate required buffer, add 1 to got
+ * value. 
  *
  * @param value         ASN value
  * @param indent        current indent, usually should be zero
@@ -918,6 +1008,8 @@ extern size_t asn_count_txt_len(const asn_value *value, unsigned int indent);
  */
 extern int asn_label_to_tag(const asn_type *type, const char *label, 
                             asn_tag_t *tag);
+
+
 
 /**
  * declaration of structures which describes basic ASN types. 

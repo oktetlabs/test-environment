@@ -105,7 +105,7 @@ tad_socket_rw_init_cb(csap_p csap)
         return rc;
     } 
 
-    rc = asn_get_choice_value(data_csap_spec, &subval, 
+    rc = asn_get_choice_value(data_csap_spec, (asn_value **)&subval, 
                               &t_class, &(spec_data->data_tag));
     if (rc != 0)
     {
