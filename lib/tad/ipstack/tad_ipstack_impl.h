@@ -194,9 +194,9 @@ extern te_errno tad_ip4_destroy_cb(csap_p csap, unsigned int layer);
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
  */ 
-extern te_errno tad_ip4_confirm_pdu_cb(csap_p       csap,
-                                       unsigned int layer,
-                                       asn_value_p  layer_pdu,
+extern te_errno tad_ip4_confirm_pdu_cb(csap_p         csap,
+                                       unsigned int   layer,
+                                       asn_value     *layer_pdu,
                                        void         **p_opaque); 
 
 /**
@@ -254,7 +254,7 @@ extern te_errno tad_udp_destroy_cb(csap_p csap, unsigned int layer);
  */ 
 extern te_errno tad_udp_confirm_tmpl_cb(csap_p         csap,
                                         unsigned int   layer,
-                                        asn_value_p    tmpl_pdu,
+                                        asn_value     *tmpl_pdu,
                                         void         **p_opaque); 
 
 /**
@@ -265,7 +265,7 @@ extern te_errno tad_udp_confirm_tmpl_cb(csap_p         csap,
  */ 
 extern te_errno tad_udp_confirm_ptrn_cb(csap_p         csap,
                                         unsigned int   layer,
-                                        asn_value_p    tmpl_pdu,
+                                        asn_value     *tmpl_pdu,
                                         void         **p_opaque); 
 
 /**
@@ -330,7 +330,7 @@ extern char *tad_tcp_get_param_cb(csap_p csap, unsigned int layer,
  */ 
 extern te_errno tad_tcp_confirm_pdu_cb(csap_p         csap,
                                        unsigned int   layer,
-                                       asn_value_p    tmpl_pdu,
+                                       asn_value     *tmpl_pdu,
                                        void         **p_opaque); 
 
 /**

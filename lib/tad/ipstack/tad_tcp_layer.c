@@ -165,7 +165,7 @@ tad_tcp_get_param_cb(csap_p csap, unsigned int layer, const char *param)
 /* See description in tad_ipstack_impl.h */
 te_errno
 tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
-                       asn_value_p layer_pdu, void **p_opaque)
+                       asn_value *layer_pdu, void **p_opaque)
 { 
     te_errno    rc = 0;
 
@@ -269,9 +269,9 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
  * @return number of octets or -1 if error occured.
  */
 int
-tcp_calculate_options_data(asn_value_p options)
+tcp_calculate_options_data(asn_value *options)
 {
-    asn_value_p sub_opts;
+    asn_value *sub_opts;
     int n_opts = asn_get_length(options, "");
     int i;
     int data_len = 0;
@@ -296,9 +296,9 @@ tcp_calculate_options_data(asn_value_p options)
 }
 
 static int
-fill_tcp_options(void *buf, asn_value_p options)
+fill_tcp_options(void *buf, asn_value *options)
 {
-    asn_value_p opt;
+    asn_value  *opt;
     int         i;
     size_t      len;
     int         n_opts;
@@ -330,7 +330,7 @@ fill_tcp_options(void *buf, asn_value_p options)
 
         if (asn_get_length(opt, "options") > 0)
         {
-            asn_value_p sub_opts;
+            asn_value *sub_opts;
 
             if ((rc = asn_read_component_value(opt, &sub_opts, 
                                                "options")) != 0)

@@ -103,9 +103,9 @@ tad_dhcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
  * @return number of octets or -1 if error occured.
  */
 int
-dhcp_calculate_options_data(asn_value_p options)
+dhcp_calculate_options_data(asn_value *options)
 {
-    asn_value_p sub_opts;
+    asn_value *sub_opts;
     int n_opts = asn_get_length(options, "");
     int i;
     int data_len = 0;
@@ -130,9 +130,9 @@ dhcp_calculate_options_data(asn_value_p options)
 }
 
 static int
-fill_dhcp_options(void *buf, asn_value_p options)
+fill_dhcp_options(void *buf, asn_value *options)
 {
-    asn_value_p opt;
+    asn_value  *opt;
     int         i;
     size_t      len;
     int         n_opts;
@@ -161,7 +161,7 @@ fill_dhcp_options(void *buf, asn_value_p options)
         buf += len;
         if (asn_get_length(opt, "options") > 0)
         {
-            asn_value_p sub_opts;
+            asn_value *sub_opts;
 
             if ((rc = asn_read_component_value(opt, &sub_opts, "options")) != 0)
                 return rc;
@@ -192,7 +192,7 @@ tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
     uint8_t    *msg;
     uint8_t    *p; 
 #if OPTIONS_IMPL
-    asn_value_p options = NULL;
+    asn_value  *options = NULL;
 #endif
 
     UNUSED(csap); 
@@ -390,7 +390,7 @@ tad_dhcp_match_bin_cb(csap_p csap,
 
         while (data < (data_ptr + data_len))
         {
-            asn_value_p opt = asn_init_value(ndn_dhcpv4_option);
+            asn_value  *opt = asn_init_value(ndn_dhcpv4_option);
             uint8_t     opt_len;
             uint8_t     opt_type;
         
@@ -420,9 +420,9 @@ tad_dhcp_match_bin_cb(csap_p csap,
             {
                 case 43:
                 {
-                    asn_value_p  sub_opt_list;
+                    asn_value   *sub_opt_list;
                     uint8_t      sub_opt_len;
-                    asn_value_p  sub_opt;
+                    asn_value   *sub_opt;
                     void        *start_opt_value;
 
                     /* Set pointer to the beginning of the Option data */

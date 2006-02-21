@@ -1594,13 +1594,13 @@ tad_pthread_create(pthread_t *thread,
  * @return Status code.
  */
 te_errno
-tad_send_recv_generate_pattern(csap_p csap, asn_value_p template, 
-                               asn_value_p *pattern)
+tad_send_recv_generate_pattern(csap_p csap, asn_value *template, 
+                               asn_value **pattern)
 {
     te_errno        rc = 0;
     unsigned int    layer;
-    asn_value_p     pattern_unit;
-    asn_value_p     pdus;
+    asn_value      *pattern_unit;
+    asn_value      *pdus;
 
     ENTRY(CSAP_LOG_FMT, CSAP_LOG_ARGS(csap));
 
@@ -1629,9 +1629,9 @@ tad_send_recv_generate_pattern(csap_p csap, asn_value_p template,
     {
         csap_spt_type_p csap_spt_descr; 
 
-        asn_value_p layer_tmpl_pdu; 
-        asn_value_p layer_pattern; 
-        asn_value_p gen_pattern_pdu = asn_init_value(ndn_generic_pdu);
+        asn_value *layer_tmpl_pdu; 
+        asn_value *layer_pattern; 
+        asn_value *gen_pattern_pdu = asn_init_value(ndn_generic_pdu);
 
         if (gen_pattern_pdu == NULL)
         {

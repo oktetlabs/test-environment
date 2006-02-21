@@ -182,10 +182,10 @@ extern te_errno tad_snmp_match_bin_cb(csap_p           csap,
  *
  * The function complies with csap_layer_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_snmp_gen_pattern_cb(csap_p           csap,
-                                        unsigned int     layer,
-                                        const asn_value *tmpl_pdu, 
-                                        asn_value_p     *pattern_pdu);
+extern te_errno tad_snmp_gen_pattern_cb(csap_p            csap,
+                                        unsigned int      layer,
+                                        const asn_value  *tmpl_pdu, 
+                                        asn_value       **pattern_pdu);
 
 /**
  * Free snmp pdu

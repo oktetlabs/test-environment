@@ -188,7 +188,7 @@ extern char *tad_eth_get_param_cb(csap_p        csap,
  */ 
 extern te_errno tad_eth_confirm_tmpl_cb(csap_p         csap,
                                         unsigned int   layer,
-                                        asn_value_p    layer_pdu,
+                                        asn_value     *layer_pdu,
                                         void         **p_opaque); 
 
 /**
@@ -208,7 +208,7 @@ extern void tad_eth_release_tmpl_cb(csap_p csap, unsigned int layer,
  */ 
 extern te_errno tad_eth_confirm_ptrn_cb(csap_p         csap,
                                         unsigned int   layer,
-                                        asn_value_p    layer_pdu,
+                                        asn_value     *layer_pdu,
                                         void         **p_opaque); 
 
 /**

@@ -46,7 +46,7 @@
 /* See description in tad_bridge_impl.h */
 te_errno
 tad_bridge_confirm_tmpl_cb(csap_p csap, unsigned int layer,
-                           asn_value_p layer_pdu, void **p_opaque)
+                           asn_value *layer_pdu, void **p_opaque)
 {
     int    rc = 0; 
     char   buffer[8]; /* maximum length of field in Config BPDU*/
@@ -119,7 +119,7 @@ tad_bridge_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 /* See description in tad_bridge_impl.h */
 te_errno
 tad_bridge_confirm_ptrn_cb(csap_p csap, unsigned int layer,
-                           asn_value_p layer_pdu, void **p_opaque)
+                           asn_value *layer_pdu, void **p_opaque)
 {
     UNUSED(csap);
     UNUSED(layer);

@@ -108,7 +108,7 @@ extern te_errno tad_socket_write_cb(csap_p csap, const tad_pkt *pkt);
  */ 
 extern te_errno tad_socket_confirm_tmpl_cb(csap_p         csap,
                                            unsigned int   layer,
-                                           asn_value_p    layer_pdu,
+                                           asn_value     *layer_pdu,
                                            void         **p_opaque); 
 
 /**

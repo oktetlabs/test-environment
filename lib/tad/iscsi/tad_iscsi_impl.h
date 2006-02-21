@@ -194,7 +194,7 @@ extern te_errno tad_iscsi_prepare_recv_cb(csap_p csap);
  * @return status code.
  */ 
 extern te_errno tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
-                                          asn_value_p layer_pdu,
+                                          asn_value *layer_pdu,
                                           void **p_opaque);
 
 #ifdef __cplusplus

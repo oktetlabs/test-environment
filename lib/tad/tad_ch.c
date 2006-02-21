@@ -628,7 +628,7 @@ rcf_ch_trrecv_start(struct rcf_comm_connection *rcfc,
     csap_p      csap;
     te_errno    rc;
     int         syms;
-    asn_value_p nds = NULL; 
+    asn_value  *nds = NULL; 
 #endif
 
     INFO("%s: csap %u, num %u, timeout %u ms, %s", __FUNCTION__,
@@ -843,8 +843,8 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
     csap_p      csap;
     te_errno    rc;
     int         syms;
-    asn_value_p tmpl = NULL; 
-    asn_value_p ptrn = NULL;
+    asn_value  *tmpl = NULL; 
+    asn_value  *ptrn = NULL;
 #endif
 
     INFO("%s: csap %u, timeout %u ms, %s", __FUNCTION__,

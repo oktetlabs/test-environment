@@ -332,7 +332,7 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
 
 /* See description in ndn_iscsi.h */
 int
-bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
+bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
 {
     int rc;
 
@@ -352,7 +352,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value_p *value)
 
     uint32_t   parsed_len = 0;
 
-    asn_value_p     key_pair;
+    asn_value *key_pair;
 
     packet = calloc(1, data_len);
     if (packet == NULL)

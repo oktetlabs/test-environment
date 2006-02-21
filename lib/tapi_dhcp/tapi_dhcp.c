@@ -106,9 +106,9 @@ static te_bool rcv_op_busy = FALSE;
 static pthread_mutex_t tapi_dhcp_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-static int ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt,
+static int ndn_dhcpv4_option_to_plain(asn_value *dhcp_opt,
                                       struct dhcp_option **opt_p);
-static int ndn_dhcpv4_add_opts(asn_value_p container,
+static int ndn_dhcpv4_add_opts(asn_value *container,
                                struct dhcp_option *opt);
 static void dhcp_options_destroy(struct dhcp_option *opt);
 
@@ -126,12 +126,12 @@ static void dhcp_options_destroy(struct dhcp_option *opt);
  *     which should be freed with dhcpv4_message_destroy
  */
 int
-ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
+ndn_dhcpv4_packet_to_plain(asn_value *pkt, struct dhcp_message **dhcp_msg)
 {
     struct dhcp_option **opt_p;
 
-    asn_value_p dhcp_opts;
-    asn_value_p opt;
+    asn_value  *dhcp_opts;
+    asn_value  *opt;
     int         rc = 0;
     size_t      len;
     int         i;
@@ -231,7 +231,7 @@ ndn_dhcpv4_packet_to_plain(asn_value_p pkt, struct dhcp_message **dhcp_msg)
  * @return Zero on success or error code
  */
 static int
-ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
+ndn_dhcpv4_option_to_plain(asn_value *dhcp_opt, struct dhcp_option **opt_p)
 {
     int rc = 0;
     uint8_t len_buf;
@@ -296,8 +296,8 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
     if ((n_subopts = asn_get_length(dhcp_opt, "options")) > 0)
     {
         struct dhcp_option **sub_opt_p;
-        asn_value_p sub_opt;
-        asn_value_p sub_opts;
+        asn_value           *sub_opt;
+        asn_value           *sub_opts;
 
         sub_opt_p = &((*opt_p)->subopts);
         rc = asn_read_component_value(dhcp_opt, &sub_opts, "options");
@@ -336,7 +336,7 @@ ndn_dhcpv4_option_to_plain(asn_value_p dhcp_opt, struct dhcp_option **opt_p)
  */
 int
 ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
-                           asn_value_p *pkt)
+                           asn_value **pkt)
 {
     size_t len;
     int rc = 0;
@@ -391,9 +391,9 @@ ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
 }
 
 static int
-ndn_dhcpv4_add_opts(asn_value_p container, struct dhcp_option *opt)
+ndn_dhcpv4_add_opts(asn_value *container, struct dhcp_option *opt)
 {
-    asn_value_p dhcp_opt, opts;
+    asn_value  *dhcp_opt, *opts;
 
     opts = asn_init_value(ndn_dhcpv4_options);
     dhcp_opt = asn_init_value(ndn_dhcpv4_option);
@@ -800,9 +800,9 @@ tapi_dhcpv4_plain_csap_create(const char *ta_name,
 {
     int         rc;
     const char *csap_fname;
-    asn_value_p asn_dhcp_csap;
-    asn_value_p csap_spec;
-    asn_value_p csap_level_spec;
+    asn_value  *asn_dhcp_csap;
+    asn_value  *csap_spec;
+    asn_value  *csap_level_spec;
 
     csap_spec       = asn_init_value(ndn_csap_spec);
     csap_level_spec = asn_init_value(ndn_generic_csap_level);
@@ -887,11 +887,11 @@ int
 dhcpv4_prepare_traffic_pattern(const dhcp_message *dhcp_msg,
                                char **pattern_fname)
 {
-    asn_value_p asn_dhcp_msg;
-    asn_value_p asn_pattern;
-    asn_value_p asn_pattern_unit;
-    asn_value_p asn_pdus;
-    asn_value_p asn_pdu;
+    asn_value  *asn_dhcp_msg;
+    asn_value  *asn_pattern;
+    asn_value  *asn_pattern_unit;
+    asn_value  *asn_pdus;
+    asn_value  *asn_pdu;
     int         rc;
 
     if (pattern_fname == NULL)
@@ -977,8 +977,8 @@ dhcp_pkt_handler(const char *pkt_fname, void *user_param)
     struct dhcp_message      *dhcp_msg;
     int                       rc;
     int                       s_parsed;
-    asn_value_p               pkt;
-    asn_value_p               dhcp_pkt;
+    asn_value                *pkt;
+    asn_value                *dhcp_pkt;
 
     rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet, &pkt,
                                   &s_parsed);

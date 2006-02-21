@@ -875,7 +875,7 @@ tad_cli_rw_init_cb(csap_p csap)
                                      from the CLI session                     */
 
     cli_csap_specific_data_p    cli_spec_data; /**< CLI CSAP specific data    */
-    asn_value_p                 cli_csap_spec; /**< ASN value with csap init
+    asn_value                  *cli_csap_spec; /**< ASN value with csap init
                                                     parameters */
 
     setvbuf(stdout, NULL, _IONBF, 0);

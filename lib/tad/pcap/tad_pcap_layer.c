@@ -105,7 +105,7 @@ tad_pcap_destroy_cb(csap_p csap, unsigned int layer)
 /* See description in tad_pcap_impl.h */
 te_errno
 tad_pcap_confirm_ptrn_cb(csap_p csap, unsigned int layer,
-                         asn_value_p layer_pdu, void **p_opaque)
+                         asn_value *layer_pdu, void **p_opaque)
 {
     tad_pcap_layer_data    *layer_data;
 

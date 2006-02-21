@@ -342,8 +342,7 @@ tad_iscsi_gen_pattern_cb(csap_p            csap,
 /* See description in tad_iscsi_impl.h */
 te_errno
 tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
-                          asn_value_p layer_pdu,
-                          void **p_opaque)
+                          asn_value *layer_pdu, void **p_opaque)
 {
     te_errno    rc = 0;
 

@@ -94,7 +94,7 @@ extern te_errno tad_bridge_eth_destroy_cb(csap_p       csap,
  */ 
 extern te_errno tad_bridge_confirm_tmpl_cb(csap_p         csap,
                                            unsigned int   layer,
-                                           asn_value_p    layer_pdu,
+                                           asn_value     *layer_pdu,
                                            void         **p_opaque); 
 
 /**
@@ -105,7 +105,7 @@ extern te_errno tad_bridge_confirm_tmpl_cb(csap_p         csap,
  */ 
 extern te_errno tad_bridge_confirm_ptrn_cb(csap_p         csap,
                                            unsigned int   layer,
-                                           asn_value_p    layer_pdu,
+                                           asn_value     *layer_pdu,
                                            void         **p_opaque); 
 
 /**
@@ -143,10 +143,10 @@ extern te_errno tad_bridge_match_bin_cb(csap_p           csap,
  *
  * The function complies with csap_layer_gen_pattern_cb_t prototype.
  */
-extern te_errno tad_bridge_gen_pattern_cb(csap_p           csap,
-                                          unsigned int     layer,
-                                          const asn_value *tmpl_pdu, 
-                                          asn_value_p     *pattern_pdu);
+extern te_errno tad_bridge_gen_pattern_cb(csap_p            csap,
+                                          unsigned int      layer,
+                                          const asn_value  *tmpl_pdu, 
+                                          asn_value       **ptrn_pdu);
 
 
 /**

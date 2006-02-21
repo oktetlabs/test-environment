@@ -154,7 +154,7 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
             case NDN_SNMP_MSG_INFORM:
             {
                 const char  *val_name;
-                asn_value_p  value;
+                asn_value   *value;
                 uint8_t      buffer[1000];
                 size_t       d_len = sizeof(buffer);
 
@@ -522,7 +522,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
          rc == 0 && snmp_msg != NULL && vars != NULL;
          vars = vars->next_variable)
     {
-        asn_value_p var_bind = NULL;
+        asn_value  *var_bind = NULL;
         char        os_choice[100]; 
 
         VERB("BEGIN of LOOP rc %r", rc);
@@ -633,7 +633,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
 te_errno
 tad_snmp_gen_pattern_cb(csap_p csap, unsigned int layer,
                         const asn_value *tmpl_pdu, 
-                        asn_value_p *ptrn_pdu)
+                        asn_value **ptrn_pdu)
 { 
     UNUSED(tmpl_pdu);
 

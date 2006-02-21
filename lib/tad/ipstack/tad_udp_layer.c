@@ -99,7 +99,7 @@ tad_udp_destroy_cb(csap_p csap, unsigned int layer)
 /* See description in tad_ipstack_impl.h */
 te_errno
 tad_udp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
-                        asn_value_p layer_pdu, void **p_opaque)
+                        asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                  rc;
     udp_csap_specific_data_t *udp_spec_data;
@@ -190,7 +190,7 @@ tad_udp_confirm_tmpl_cb(csap_p csap, unsigned int layer,
 /* See description in tad_ipstack_impl.h */
 te_errno
 tad_udp_confirm_ptrn_cb(csap_p csap, unsigned int layer,
-                        asn_value_p layer_pdu, void **p_opaque)
+                        asn_value *layer_pdu, void **p_opaque)
 {
     te_errno                  rc;
     udp_csap_specific_data_t *udp_spec_data;

@@ -123,9 +123,8 @@ asn2bin_data(asn_value *segment_data,
  *
  * @return Status code
  */ 
-extern int
-bin_data2asn(uint8_t *data, uint32_t data_len, 
-            asn_value_p *value);
+extern int bin_data2asn(uint8_t *data, uint32_t data_len,
+                        asn_value **value);
 
 /**
  * Calculate extra (non-BHS) length of iSCSI PDU. 

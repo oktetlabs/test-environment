@@ -142,9 +142,9 @@ tad_task_free(tad_task_context *task)
  *
  * @return Status code.
  */
-extern te_errno tad_send_recv_generate_pattern(csap_p       csap,
-                                               asn_value_p  template, 
-                                               asn_value_p *pattern);
+extern te_errno tad_send_recv_generate_pattern(csap_p      csap,
+                                               asn_value  *template, 
+                                               asn_value **pattern);
 
 /**
  * Confirm traffic template or pattern PDUS set with CSAP settings and 

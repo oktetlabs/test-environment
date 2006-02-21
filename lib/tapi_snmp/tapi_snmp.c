@@ -823,8 +823,8 @@ tapi_snmp_pkt_handler(const char *fn, void *p)
 {
     int         rc;
     int         s_parsed;
-    asn_value_p packet;
-    asn_value_p snmp_message;
+    asn_value  *packet;
+    asn_value  *snmp_message;
 
 #if DEBUG
     VERB("%s, file: %s\n", __FUNCTION__, fn);
@@ -3081,8 +3081,8 @@ tapi_snmp_trap_handler(const char *fn, void *user_param)
         (struct tapi_snmp_pkt_handler_data *)user_param;
     tapi_snmp_message_t plain_msg;
 
-    int rc, s_parsed;
-    asn_value_p packet, snmp_message;
+    int        rc, s_parsed;
+    asn_value *packet, *snmp_message;
 
     rc = asn_parse_dvalue_in_file(fn, ndn_raw_packet, &packet, &s_parsed);
     VERB("SNMP pkt handler, parse file rc: %x, syms: %d\n", rc, s_parsed);

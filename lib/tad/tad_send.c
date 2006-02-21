@@ -847,7 +847,7 @@ tad_send_thread(void *arg)
 
 /* See the description in tad_send.h */
 te_errno
-tad_send_prepare_bin(csap_p csap, asn_value_p nds, 
+tad_send_prepare_bin(csap_p csap, asn_value *nds, 
                      const tad_tmpl_arg_t *args, size_t arg_num,
                      tad_payload_spec_t *pld_data, void **layer_opaque,
                      tad_pkts *pkts_per_layer)
