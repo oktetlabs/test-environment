@@ -226,13 +226,13 @@ tad_arp_gen_bin_cb(csap_p                csap,
     tad_arp_proto_data         *proto_data;
     tad_arp_proto_tmpl_data    *tmpl_data = opaque;
 
-    te_errno    rc;
-    size_t      hdr_bitlen;
-    size_t      addrs_bitlen;
-    size_t      bitlen;
-    size_t      bitoff;
-    uint8_t    *data;
-    size_t      len;
+    te_errno        rc;
+    size_t          hdr_bitlen;
+    size_t          addrs_bitlen;
+    size_t          bitlen;
+    unsigned int    bitoff;
+    uint8_t        *data;
+    size_t          len;
 
 
     assert(csap != NULL);

@@ -295,11 +295,11 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
     tad_eth_proto_data     *proto_data;
     tad_eth_proto_pdu_data *tmpl_data = opaque;
 
-    te_errno    rc;
-    size_t      bitlen;
-    size_t      bitoff;
-    uint8_t    *data;
-    size_t      len;
+    te_errno        rc;
+    size_t          bitlen;
+    unsigned int    bitoff;
+    uint8_t        *data;
+    size_t          len;
 
 
     assert(csap != NULL);
@@ -435,7 +435,7 @@ tad_eth_match_post_cb(csap_p              csap,
     tad_eth_proto_data     *proto_data;
     tad_eth_proto_pdu_data *pkt_data = meta_pkt_layer->opaque;
     te_errno                rc;
-    size_t                  bitoff = 0;
+    unsigned int            bitoff = 0;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
@@ -484,7 +484,7 @@ tad_eth_match_do_cb(csap_p           csap,
     tad_eth_proto_pdu_data *ptrn_data = ptrn_opaque;
     tad_eth_proto_pdu_data *pkt_data = meta_pkt->layers[layer].opaque;
     te_errno                rc;
-    size_t                  bitoff = 0;
+    unsigned int            bitoff = 0;
 
     UNUSED(ptrn_pdu);
 
