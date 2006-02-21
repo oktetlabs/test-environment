@@ -4714,11 +4714,11 @@ TARPC_FUNC(lio_listio, {},
     struct aiocb  **cb = NULL;
     struct sigevent sig;
     int             i;
-
+    
     if (in->sig.sig_len > 0)
     {
-        tarpc_sigevent *ev = in->sig.sig_val;
-        
+        tarpc_sigevent *ev = in->sig.sig_val; 
+
         if (ev->value.pointer)
         {
             sig.sigev_value.SIVAL_PTR = 
@@ -4726,7 +4726,7 @@ TARPC_FUNC(lio_listio, {},
         }
         else
         {
-            sig.sigev_value.SIVAL_PTR = 
+            sig.sigev_value.SIVAL_INT = 
                 ev->value.tarpc_sigval_u.sival_int;
         }
 
@@ -4735,6 +4735,7 @@ TARPC_FUNC(lio_listio, {},
         out->common._errno = fill_sigev_thread(&sig, ev->function);
         INIT_CHECKED_ARG((char *)&sig, sizeof(sig), 0);
     }
+    
     if (in->cb.cb_len > 0 &&
         (cb = (struct aiocb **)calloc(in->cb.cb_len, 
                                       sizeof(void *))) == NULL)
