@@ -106,6 +106,7 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
     {
         ERROR("Failed to add a new generic layer in CSAP specification: "
               "%r", rc);
+        asn_free_value(gen_layer);
         return TE_RC(TE_TAPI, rc);
     }
 
@@ -118,25 +119,13 @@ tapi_tad_csap_add_layer(asn_value       **csap_spec,
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
 
-    rc = asn_write_component_value(gen_layer, layer, layer_choice);
+    rc = asn_put_child_value_by_label(gen_layer, layer, layer_choice);
     if (rc != 0)
     {
         ERROR("Failed to put layer as choice of generic CSAP "
               "specification layer: %r", rc);
-        return rc;
-    }
-    /* FIXME: Remove it when non-coping write (put) is supported */
-    {
         asn_free_value(layer);
-
-        rc = asn_get_choice_value(gen_layer, (const asn_value **)&layer,
-                                  NULL, NULL);
-        if (rc != 0)
-        {
-            ERROR("Failed to get just written ASN.1 value as choice: "
-                  "%r", rc);
-            return TE_RC(TE_TAPI, rc);
-        }
+        return rc;
     }
 
     if (layer_spec != NULL)
@@ -239,22 +228,15 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
                   "sequence");
             return TE_RC(TE_TAPI, TE_ENOMEM);
         }
-        rc = asn_write_component_value(unit_spec, pdus, "pdus");
+        rc = asn_put_child_value_by_label(unit_spec, pdus, "pdus");
         if (rc != 0)
         {
             ERROR("Failed to put 'pdus' in ASN.1 value: %r", rc);
+            asn_free_value(pdus);
             return rc;
         }
-        /* FIXME: Remove it when non-coping write (put) is supported */
-        {
-            asn_free_value(pdus);
-            rc = asn_get_child_value(unit_spec, (const asn_value **)&pdus,
-                                     PRIVATE,
-                                     (is_pattern) ? NDN_PU_PDUS :
-                                                    NDN_TMPL_PDUS);
-        }
     }
-    if (rc != 0)
+    else if (rc != 0)
     {
         ERROR("Failed to get 'pdus' from ASN.1 value: %r", rc);
         return TE_RC(TE_TAPI, rc);
@@ -274,6 +256,7 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
     if (rc != 0)
     {
         ERROR("Failed to add a new generic PDU in sequence: %r", rc);
+        asn_free_value(gen_pdu);
         return TE_RC(TE_TAPI, rc);
     }
     
@@ -284,24 +267,12 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
 
-    rc = asn_write_component_value(gen_pdu, pdu, pdu_choice);
+    rc = asn_put_child_value_by_label(gen_pdu, pdu, pdu_choice);
     if (rc != 0)
     {
         ERROR("Failed to put PDU as choice of generic PDU: %r", rc);
-        return rc;
-    }
-    /* FIXME: Remove it when non-coping write (put) is supported */
-    {
         asn_free_value(pdu);
-
-        rc = asn_get_choice_value(gen_pdu, (const asn_value **)&pdu,
-                                  NULL, NULL);
-        if (rc != 0)
-        {
-            ERROR("Failed to get just written ASN.1 value as choice: "
-                  "%r", rc);
-            return TE_RC(TE_TAPI, rc);
-        }
+        return rc;
     }
 
     if (pdu_spec != NULL)
