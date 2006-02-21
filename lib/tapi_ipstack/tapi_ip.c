@@ -103,7 +103,7 @@ ip4_pkt_handler(asn_value *pkt, void *user_param)
         }                       \
     } while (0)
 
-    rc = asn_get_subvalue(pkt, &ip_pdu, "pdus.0.#ip4");
+    rc = asn_get_subvalue(pkt, (asn_value **)&ip_pdu, "pdus.0.#ip4");
     CHECK_FAIL("%s(): get IP4 PDU fails, rc = %r",
               __FUNCTION__, rc);
 
@@ -339,9 +339,7 @@ tapi_ip4_pdu(in_addr_t  src_ip4_addr, in_addr_t  dst_ip4_addr,
                                    result_value, &syms)) != 0)
         return TE_RC(TE_TAPI, rc);
 
-    if ((rc = asn_get_choice_value(*result_value,
-                                   (const asn_value **)&ip4_pdu,
-                                   NULL, NULL))
+    if ((rc = asn_get_choice_value(*result_value, &ip4_pdu, NULL, NULL))
             != 0)
     {
         ERROR("%s(): get ip4 pdu subvalue failed %r", __FUNCTION__, rc);

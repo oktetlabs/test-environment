@@ -356,9 +356,7 @@ tapi_tcp_pdu(uint16_t src_port, uint16_t dst_port,
                                    &g_pdu, &syms)) != 0)
         return TE_RC(TE_TAPI, rc);
 
-    if ((rc = asn_get_choice_value(g_pdu,
-                                   (const asn_value **)&tcp_pdu,
-                                   NULL, NULL))
+    if ((rc = asn_get_choice_value(g_pdu, &tcp_pdu, NULL, NULL))
             != 0)
     {
         ERROR("%s(): get tcp pdu subvalue failed %r", __FUNCTION__, rc);
@@ -458,8 +456,7 @@ tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
         int32_t flags;
         asn_value *raw_tcp_pdu = NULL;
 
-        asn_get_choice_value(tcp_pdu, (const asn_value **)&raw_tcp_pdu,
-                                  NULL, NULL);
+        asn_get_choice_value(tcp_pdu, &raw_tcp_pdu, NULL, NULL);
 
         ndn_du_read_plain_int(raw_tcp_pdu, NDN_TAG_TCP_FLAGS, &flags);
         flags |= TCP_PSH_FLAG;

@@ -506,11 +506,11 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     CHECK_ERROR("get pdus error");
 
     val = subval;
-    rc = asn_get_indexed(val, &subval, 0, NULL);
+    rc = asn_get_indexed(val, (asn_value **)&subval, 0, NULL);
     CHECK_ERROR("get TCP gen pdu error");
 
     val = subval;
-    rc = asn_get_choice_value(val, &subval, NULL, NULL);
+    rc = asn_get_choice_value(val, (asn_value **)&subval, NULL, NULL);
     CHECK_ERROR("get TCP special choice error");
 
     tcp_pdu = subval;
