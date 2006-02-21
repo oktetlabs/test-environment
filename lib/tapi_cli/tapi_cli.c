@@ -527,8 +527,8 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
     }
 
 #if 1
-    rc = asn_get_subvalue(cli_response, (asn_value **)&cli_msg,
-                          "pdus.0.#cli"); 
+    rc = asn_get_descendent(cli_response, (asn_value **)&cli_msg,
+                            "pdus.0.#cli"); 
     if (rc != 0)
     {
         ERROR("Failed to get 'pdus' from CLI response: %r", rc);

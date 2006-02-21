@@ -110,8 +110,8 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
         pdu->non_repeaters = 0;
     }
 
-    rc = asn_get_subvalue(tmpl_pdu, (asn_value **)&var_bind_list,
-                          "variable-bindings");
+    rc = asn_get_descendent(tmpl_pdu, (asn_value **)&var_bind_list,
+                            "variable-bindings");
     if (rc != 0)
     {
         ERROR("%s(): get subvalue 'variable-bindings' list failed %r", 
@@ -336,8 +336,8 @@ tad_snmp_match_bin_cb(csap_p           csap,
         const asn_value *pat_vb_list;
         int              pat_vb_num, i;
 
-        rc = asn_get_subvalue(ptrn_pdu, (asn_value **)&pat_vb_list,
-                              "variable-bindings");
+        rc = asn_get_descendent(ptrn_pdu, (asn_value **)&pat_vb_list,
+                                "variable-bindings");
         if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
             rc = 0;
@@ -399,8 +399,9 @@ tad_snmp_match_bin_cb(csap_p           csap,
                 break;
             }
 
-            rc = asn_get_subvalue(pat_var_bind, (asn_value **)&pat_vb_value,
-                                  "value.#plain");
+            rc = asn_get_descendent(pat_var_bind,
+                                    (asn_value **)&pat_vb_value,
+                                    "value.#plain");
 
             if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
             {

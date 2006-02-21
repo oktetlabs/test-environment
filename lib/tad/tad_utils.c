@@ -87,11 +87,11 @@ tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
         snprintf(label, sizeof(label), "%d.#%s", 
                 layer, csap->layers[layer].proto);
 
-        rc = asn_get_subvalue(pdus, &layer_pdu, label);
+        rc = asn_get_descendent(pdus, &layer_pdu, label);
 
         if (rc != 0) 
         {
-            ERROR("%s(CSAP %d): asn_get_subvalue rc %r, "
+            ERROR("%s(CSAP %d): asn_get_descendent rc %r, "
                   "confirm layer %d, label %s",
                   __FUNCTION__, csap->id, rc, layer, label);
             break;

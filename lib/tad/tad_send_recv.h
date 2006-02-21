@@ -153,7 +153,7 @@ extern te_errno tad_send_recv_generate_pattern(csap_p       csap,
  * will be set in traffic template or pattern ASN value which will be used 
  * in next operation. This may be done by such ways:
  *
- * Pass pointer got by asn_get_subvalue method, or write modified value 
+ * Pass pointer got by asn_get_descendent method, or write modified value 
  * into original NDS. 
  *
  * @param csap    CSAP descriptor.

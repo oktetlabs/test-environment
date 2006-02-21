@@ -867,8 +867,8 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
 
         sprintf(label + sizeof("pdus") - 1, ".%d.#%s",
                 layer, csap->layers[layer].proto);
-        rc = asn_get_subvalue(pattern_unit, (asn_value **)&layer_pdu, 
-                              label);
+        rc = asn_get_descendent(pattern_unit, (asn_value **)&layer_pdu, 
+                                label);
         VERB("get subval with pattern unit for label %s rc %r",
              label, rc);
 

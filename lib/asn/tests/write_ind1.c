@@ -31,7 +31,7 @@ main (int argc, char *argv[])
         return 1;
     }
 
-    rc = asn_get_subvalue(packet, &pdus, "pdus"); 
+    rc = asn_get_descendent(packet, &pdus, "pdus"); 
     if (rc)
     {
         printf ("rc from parse: %x, syms: %d\n", rc, s_parsed);

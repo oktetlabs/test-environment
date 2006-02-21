@@ -249,7 +249,7 @@ tapi_bpdu_pkt_handler(const char *fn, void *user_param)
         return; 
     }
 
-    rc = asn_get_subvalue(frame_val, &stp_pkt_val, "pdus.0.#bridge");
+    rc = asn_get_descendent(frame_val, &stp_pkt_val, "pdus.0.#bridge");
     if (rc)
     {
         ERROR("%s(): get_subvalue rc %r", __FUNCTION__, rc);

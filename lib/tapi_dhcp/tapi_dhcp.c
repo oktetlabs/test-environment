@@ -989,7 +989,7 @@ dhcp_pkt_handler(const char *pkt_fname, void *user_param)
         return;
     }
 
-    rc = asn_get_subvalue(pkt, &dhcp_pkt, "pdus.0.#dhcp");
+    rc = asn_get_descendent(pkt, &dhcp_pkt, "pdus.0.#dhcp");
     if (rc != 0)
     {
         ERROR("Failed to get 'pdus' from packet, rc %r", rc);

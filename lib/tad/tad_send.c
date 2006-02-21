@@ -197,7 +197,7 @@ tad_send_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
     const asn_value    *arg_sets;
     int                 len;
 
-    rc = asn_get_subvalue(tmpl_unit, (asn_value **)&arg_sets, "arg-sets");
+    rc = asn_get_descendent(tmpl_unit, (asn_value **)&arg_sets, "arg-sets");
 
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL) 
     {
@@ -858,7 +858,7 @@ tad_send_prepare_bin(csap_p csap, asn_value_p nds,
     unsigned int    layer = 0;
     te_errno        rc = 0;
     const asn_value *layer_pdu = NULL; 
-    char  label[20];
+    char  label[32];
 
     tad_pkts_init(pdus);
     rc = tad_pkts_alloc(pdus, 1, 0, 0);
@@ -983,8 +983,8 @@ tad_send_prepare_bin(csap_p csap, asn_value_p nds,
 
         if (rc == 0)
         {
-            sprintf(label, "pdus.%u", layer);
-            rc = asn_get_subvalue(nds, (asn_value **)&layer_pdu, label);
+            sprintf(label, "pdus.%u.#%s", layer, csap->layers[layer].proto);
+            rc = asn_get_descendent(nds, (asn_value **)&layer_pdu, label);
             if (rc != 0)
             {
                 ERROR(CSAP_LOG_FMT "Failed to get PDU template for "
