@@ -45,6 +45,11 @@ extern "C" {
  *                  OUT: previous state of the forwarding
  *
  * @return Status code.
+ *
+ * @note Allocates ip4_fw resource on the Test Agent (if it is not
+ * allocated). The resource is not released, because it should be locked
+ * until forwarding state is important for the test. It is recommended
+ * to use silent configuration tracking for tests using this function.
  */
 extern int tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled);
 

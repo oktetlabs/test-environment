@@ -74,6 +74,18 @@ tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
     int             rc;
     cfg_val_type    val_type = CVT_INTEGER;
     int             val;
+    char           *val_str;
+    
+    if (cfg_get_instance_fmt(NULL, &val_str, 
+                             "/agent:%s/rsrc:ip4_fw", ta) != 0)
+    {
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, "/agent/ip4_fw"), 
+                                  "/agent:%s/rsrc:ip4_fw", ta);
+        if (rc != 0)
+            return rc;
+    }        
+    else
+        free(val_str);                     
 
     rc = cfg_get_instance_fmt(&val_type, &val,
                               "/agent:%s/ip4_fw:", ta);
