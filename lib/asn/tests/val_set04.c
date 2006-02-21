@@ -40,9 +40,9 @@ char buffer [1000];
 int 
 main (void)
 { 
-    asn_value_p seq_val  = asn_init_value(&my_sequence_of);
-    asn_value_p for_ins  = asn_init_value(&asn_base_integer);
-    asn_value_p n_array  = asn_init_value(&named_array);
+    asn_value *seq_val  = asn_init_value(&my_sequence_of);
+    asn_value *for_ins  = asn_init_value(&asn_base_integer);
+    asn_value *n_array  = asn_init_value(&named_array);
 
     int a = 1981;
     int r; 

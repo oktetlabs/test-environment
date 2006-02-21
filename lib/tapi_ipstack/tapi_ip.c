@@ -145,10 +145,10 @@ tapi_ip4_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
 {
     int         rc = 0;
     char        csap_fname[100] = "/tmp/te_ip4_csap.XXXXXX";
-    asn_value_p csap_ip4_level = NULL;
-    asn_value_p csap_eth_level = NULL;
-    asn_value_p csap_spec = NULL;
-    asn_value_p csap_level_spec = NULL;
+    asn_value  *csap_ip4_level = NULL;
+    asn_value  *csap_eth_level = NULL;
+    asn_value  *csap_spec = NULL;
+    asn_value  *csap_level_spec = NULL;
 
     unsigned short ip_eth = 0x0800;
 

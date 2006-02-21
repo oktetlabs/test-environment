@@ -4,7 +4,7 @@
 
 #define FIRST_TEST 0
 
-extern int asn_sprint_integer(asn_value_p value, char *buffer, int buf_len);
+extern int asn_sprint_integer(asn_value *value, char *buffer, int buf_len);
 
 asn_type base_integer = 
 {
@@ -74,7 +74,7 @@ main (void)
         4, 
         {"test"/* value itself */}
     };
-    asn_value_p val_arr[] = {&test_int_value, &test_str};
+    asn_value *val_arr[] = {&test_int_value, &test_str};
 
     asn_value seq_val = 
     {
@@ -86,7 +86,7 @@ main (void)
         {&val_arr}
     };
 #endif
-    asn_value_p ch_val;
+    asn_value *ch_val;
 
 #if FIRST_TEST
     seq_val.data.array[0]->name = my_sequence.sp.named_entries[0].name;

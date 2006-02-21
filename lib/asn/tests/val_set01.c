@@ -23,7 +23,7 @@ char buffer[1000];
 int 
 main (void)
 {
-    asn_value_p my_val = asn_init_value(&asn_base_integer);
+    asn_value *my_val = asn_init_value(&asn_base_integer);
     int a = 10;
 
     asn_write_value_field(my_val, &a, sizeof(a), "");
@@ -34,7 +34,7 @@ main (void)
 
     {
         int r;
-        asn_value_p copy;
+        asn_value *copy;
         char new_str[] = "My beautiful string for testing ... ";
 
         asn_value test_int_value = 
@@ -55,7 +55,7 @@ main (void)
             4, 
             {"test"/* value itself */}
         };
-        asn_value_p val_arr[] = {&test_int_value, &test_str};
+        asn_value *val_arr[] = {&test_int_value, &test_str};
 
         asn_value seq_val = { &my_sequence, {APPLICATION, 1}, SEQUENCE,
         "seq-value", 2, {&val_arr} };

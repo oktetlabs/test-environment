@@ -18,7 +18,7 @@ main (int argc, char *argv[])
 #else
     asn_type *a_type = ndn_traffic_template;
 #endif
-    asn_value_p packet, eth_header, snmp_message;
+    asn_value *packet, *eth_header, *snmp_message;
 
     const asn_value *pattern_unit;
 

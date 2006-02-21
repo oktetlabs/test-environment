@@ -9,7 +9,7 @@ int
 main (int argc, char *argv[])
 { 
     int rc, s_parsed;
-    asn_value_p packet, eth_header, snmp_message;
+    asn_value *packet, *eth_header, *snmp_message;
     tapi_snmp_message_t msg;
     unsigned i;
 

@@ -4,12 +4,12 @@
 
 char buffer[1000];
 
-extern int asn_count_txt_len (asn_value_p, int);
+extern int asn_count_txt_len(asn_value *, int);
 
 void test_string_parse(const char * str, const asn_type * type)
 {
     int rc;
-    asn_value_p new_val;
+    asn_value *new_val;
     int s_parsed;
 
     rc = asn_parse_value_text(str, type, &new_val, &s_parsed);
@@ -28,11 +28,11 @@ main (void)
 { 
     int rc;
     int s_parsed;
-    asn_value_p new_val; 
+    asn_value *new_val; 
 
     char filename[1000];
     int fn_len = 1000;
-    asn_value_p gen;
+    asn_value *gen;
 
 #if 0
     rc = asn_parse_value_text("8", &at_our_names, &new_val, &s_parsed);

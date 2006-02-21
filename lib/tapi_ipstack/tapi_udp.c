@@ -100,7 +100,7 @@ typedef struct {
  * should be freed with dhcpv4_message_destroy
  */
 int
-ndn_udp4_dgram_to_plain(asn_value_p pkt, udp4_datagram **udp_dgram)
+ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
 {
     int         rc = 0;
     size_t      len;
@@ -285,9 +285,9 @@ tapi_udp4_csap_create(const char *ta_name, int sid,
                       csap_handle_t *udp_csap)
 {
     te_errno        rc;
-    asn_value_p     csap_spec;
-    asn_value_p     csap_level_spec;
-    asn_value_p     csap_socket;
+    asn_value      *csap_spec;
+    asn_value      *csap_level_spec;
+    asn_value      *csap_socket;
 
     struct in_addr  loc_addr = { 0 };
     struct in_addr  rem_addr = { 0 };

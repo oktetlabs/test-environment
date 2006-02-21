@@ -79,9 +79,9 @@ char buf_to_read[BUF_TO_READ];
 int 
 main (void)
 { 
-    asn_value_p seq_val   = asn_init_value(&my_sequence);
-    asn_value_p compl_seq = asn_init_value(&complex_sequence);
-    asn_value_p for_read;
+    asn_value *seq_val   = asn_init_value(&my_sequence);
+    asn_value *compl_seq = asn_init_value(&complex_sequence);
+    asn_value *for_read;
 
     int a = 1981, b = 1234; 
     char str[] = "uura..";

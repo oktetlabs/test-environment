@@ -22,15 +22,15 @@ char buffer [1000];
 char buf_to_read[BUF_TO_READ];
 
 int 
-main (void)
+main(void)
 { 
-    asn_value_p seq_val = asn_init_value(&at_plain_seq1);
-    asn_value_p int_val; 
-    asn_value_p str_val; 
-    asn_value_p child_val; 
-    asn_value_p choice_val; 
-    size_t syms; 
-    int rc;
+    asn_value  *seq_val = asn_init_value(&at_plain_seq1);
+    asn_value  *int_val; 
+    asn_value  *str_val; 
+    asn_value  *child_val; 
+    asn_value  *choice_val; 
+    size_t      syms; 
+    int         rc;
 
     asn_parse_value_text("15", asn_base_integer, &int_val, &syms);
 

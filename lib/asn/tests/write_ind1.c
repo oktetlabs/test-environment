@@ -15,7 +15,7 @@ main (int argc, char *argv[])
 #else
     const asn_type *a_type = ndn_csap_spec;
 #endif
-    asn_value_p packet;
+    asn_value *packet;
     asn_value *pdus;
 
     if (argc < 2)

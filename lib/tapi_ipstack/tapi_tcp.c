@@ -557,9 +557,9 @@ tapi_tcp_server_csap_create(const char *ta_name, int sid,
                             csap_handle_t *tcp_csap)
 {
     te_errno        rc;
-    asn_value_p     csap_spec;
-    asn_value_p     csap_level_spec;
-    asn_value_p     csap_socket;
+    asn_value      *csap_spec;
+    asn_value      *csap_level_spec;
+    asn_value      *csap_socket;
 
     csap_spec       = asn_init_value(ndn_csap_spec);
     csap_level_spec = asn_init_value(ndn_generic_csap_level);
@@ -607,9 +607,9 @@ tapi_tcp_socket_csap_create(const char *ta_name, int sid,
                             int socket, csap_handle_t *tcp_csap)
 {
     te_errno        rc;
-    asn_value_p     csap_spec;
-    asn_value_p     csap_level_spec;
-    asn_value_p     csap_socket;
+    asn_value      *csap_spec;
+    asn_value      *csap_level_spec;
+    asn_value      *csap_socket;
 
     csap_spec       = asn_init_value(ndn_csap_spec);
     csap_level_spec = asn_init_value(ndn_generic_csap_level);

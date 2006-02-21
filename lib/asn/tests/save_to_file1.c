@@ -50,8 +50,8 @@ main(void)
     unsigned int i;
     int          rc;
     int          syms_parsed;
-    asn_value_p  p;
-    asn_value_p  ret_p = NULL;
+    asn_value   *p;
+    asn_value   *ret_p = NULL;
 
     if ((p = asn_init_value(ndn_data_unit_char_string)) == NULL)
     {

@@ -12,7 +12,7 @@ char print_buffer[1000];
 
 
 extern int asn_impl_parse_text(const char*text, asn_type_p, 
-                               asn_value_p *parsed, int *parsed_syms);
+                               asn_value **parsed, int *parsed_syms);
 
 
 main (void)

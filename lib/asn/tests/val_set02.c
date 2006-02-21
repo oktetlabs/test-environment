@@ -33,7 +33,7 @@ char buf_to_read[BUF_TO_READ];
 int 
 main (void)
 { 
-    asn_value_p seq_val = asn_init_value(&at_plain_seq1);
+    asn_value *seq_val = asn_init_value(&at_plain_seq1);
     int a = 1981; 
     char str[] = "test string";
     int r; 
@@ -64,7 +64,8 @@ main (void)
 #endif
 
     {
-        asn_value_p cmpl = asn_init_value(&my_complex);
+        asn_value *cmpl = asn_init_value(&my_complex);
+
         r = asn_write_value_field(cmpl, &a, sizeof(a), "subseq.number");
         if (r) 
         { 

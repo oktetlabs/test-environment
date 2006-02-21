@@ -75,7 +75,7 @@ typedef void (*udp4_callback)(const udp4_datagram *pkt, void *userdata);
  * @note Function allocates memory under dhcp_message data structure, which
  * should be freed with dhcpv4_message_destroy
  */
-extern int ndn_udp4_dgram_to_plain(asn_value_p pkt, 
+extern int ndn_udp4_dgram_to_plain(asn_value *pkt, 
                                    struct udp4_datagram **udp_dgram);
 
 

@@ -223,8 +223,8 @@ main(int argc, char *argv[])
 #if 1
         do {
             asn_free_subvalue(pattern, "0.pdus.0.#eth.vlan-id");
-            asn_value_p interval;
-            asn_value_p ints_seq = asn_init_value(ndn_interval_sequence);
+            asn_value *interval;
+            asn_value *ints_seq = asn_init_value(ndn_interval_sequence);
             const asn_type *type = NULL;
             int parsed = 0;
 

@@ -11,8 +11,8 @@ char buffer [1000];
 int 
 main (void)
 { 
-    asn_value_p gen_pdu  = asn_init_value(ndn_generic_pdu);
-    asn_value_p file_pdu  = asn_init_value(ndn_file_message);
+    asn_value *gen_pdu  = asn_init_value(ndn_generic_pdu);
+    asn_value *file_pdu  = asn_init_value(ndn_file_message);
 
     int a = 1981;
     int rc; 
@@ -46,8 +46,9 @@ main (void)
     printf ("gen_pdu: \n%s", buffer); 
 
     {
-        asn_value_p subv;
-        const char * name;
+        asn_value  *subv;
+        const char *name;
+
         rc = asn_read_component_value(gen_pdu, &subv, "value");
         if (rc) { printf ("read comp rc: %x\n", rc); return 0; } 
 

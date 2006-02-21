@@ -17,7 +17,7 @@ main (int argc, char *argv[])
     int oid_vals[100];
     size_t oid_len = sizeof(oid_vals)/sizeof(oid_vals[0]);
     int s_parsed;
-    asn_value_p new_val; 
+    asn_value *new_val; 
     if (argc < 2)
         return 0;
 

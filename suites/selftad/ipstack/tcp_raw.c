@@ -55,7 +55,7 @@ void
 tcp_handler(char *fn, void *p)
 { 
     int rc, s_parsed;
-    asn_value_p packet, eth_header;
+    asn_value *packet, *eth_header;
 
     UNUSED(p);
 

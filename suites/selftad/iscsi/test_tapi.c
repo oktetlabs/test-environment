@@ -146,7 +146,7 @@ main(int argc, char *argv[])
     
 #if 1
     {
-        asn_value_p segment_data;
+        asn_value *segment_data;
         int key_num; 
         char *key_name;
         int key_index;
