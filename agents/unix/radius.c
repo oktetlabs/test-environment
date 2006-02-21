@@ -751,23 +751,25 @@ static FILE *radius_users_file = NULL;
 #define RADIUS_USERS_FILE "/tmp/te_radius_users"
 
 /** An attribute==value pair for RADIUS users file */
-typedef struct radius_attr
-{
+typedef struct radius_attr {
     char               *name;   /**< Attribute name */
     char               *value;  /**< Attribute value in textual form */
 } radius_attr;
+
+/** Dynamic array of radius_attr structures */
+typedef struct radius_attr_array {
+    radius_attr  *data;         /**< Array items */
+    unsigned int  len;          /**< Number of items in array */
+} radius_attr_array;
 
 /** A record for a RADIUS user */
 typedef struct radius_user
 {
     te_bool             reject;
     char               *name;
-    radius_attr        *checks;
-    unsigned int        n_checks;
-    radius_attr        *accept_replies;
-    unsigned int        n_accept_replies;
-    radius_attr        *challenge_replies;
-    unsigned int        n_challenge_replies;
+    radius_attr_array   checks;
+    radius_attr_array   accept_replies;
+    radius_attr_array   challenge_replies;
     struct radius_user *next;
 } radius_user;
 
@@ -803,12 +805,12 @@ make_radius_user(const char *name)
         free(user);
         return NULL;
     }
-    user->n_checks = 0;
-    user->checks = NULL;
-    user->n_accept_replies = 0;
-    user->accept_replies = NULL;
-    user->n_challenge_replies = 0;
-    user->challenge_replies = NULL;
+    user->checks.len = 0;
+    user->checks.data = NULL;
+    user->accept_replies.len = 0;
+    user->accept_replies.data = NULL;
+    user->challenge_replies.len = 0;
+    user->challenge_replies.data = NULL;
     user->next = NULL;
 
     if (radius_last_user != NULL)
@@ -840,18 +842,18 @@ find_radius_user(const char *name)
  * Free an array of 'attribute=value' pairs.
  */
 static void
-radius_free_attr_array(radius_attr **attrs, unsigned int *n_attrs)
+radius_free_attr_array(radius_attr_array *attrs)
 {
     unsigned int i;
 
-    for (i = 0; i < *n_attrs; i++)
+    for (i = 0; i < attrs->len; i++)
     {
-        free((*attrs)[i].name);
-        free((*attrs)[i].value);
+        free(attrs->data[i].name);
+        free(attrs->data[i].value);
     }
-    free(*attrs);
-    *attrs = NULL;
-    *n_attrs = 0;
+    free(attrs->data);
+    attrs->data = NULL;
+    attrs->len = 0;
 }
 
 /**
@@ -874,11 +876,9 @@ delete_radius_user(const char *name)
                 radius_last_user = prev;
 
             free(user->name);
-            radius_free_attr_array(&user->checks, &user->n_checks);
-            radius_free_attr_array(&user->accept_replies,
-                                   &user->n_accept_replies);
-            radius_free_attr_array(&user->challenge_replies,
-                                   &user->n_challenge_replies);
+            radius_free_attr_array(&user->checks);
+            radius_free_attr_array(&user->accept_replies);
+            radius_free_attr_array(&user->challenge_replies);
             free(user);
             return;
         }
@@ -968,14 +968,12 @@ radius_parse_attr_value_pair(const char **string, char **attr, char **value)
  * creates corresponding array of radius_attr structures
  *
  * @param attr_array     Pointer to array of radius_attr structures
- *                       (if *attr_array is not NULL, the old array will
+ *                       (if attr_array is not empty, the old data will
  *                       be deallocated)
- * @param attr_array_len Number of items in 'attr_array'
  * @param attr_string    String of comma-separated 'Attribute=Value' pairs
  */
 static te_errno
-radius_set_attr_array(radius_attr **attr_array, unsigned int *attr_array_len,
-                      const char *attr_string)
+radius_set_attr_array(radius_attr_array *attr_array, const char *attr_string)
 {
     unsigned int  n_attrs = 0;
     radius_attr  *attrs = NULL;
@@ -1009,9 +1007,9 @@ radius_set_attr_array(radius_attr **attr_array, unsigned int *attr_array_len,
         n_attrs++;
     }
 
-    radius_free_attr_array(attr_array, attr_array_len);
-    *attr_array = attrs;
-    *attr_array_len = n_attrs;
+    radius_free_attr_array(attr_array);
+    attr_array->data = attrs;
+    attr_array->len = n_attrs;
     return 0;
 }
 
@@ -1021,18 +1019,16 @@ radius_set_attr_array(radius_attr **attr_array, unsigned int *attr_array_len,
  *
  * @param dest           The address of the buffer to put data
  * @param attr_array     Attribute array to convert
- * @param attr_array_len Number of items in 'attr_array'
  */
 static void
-stringify_attr_array(char *dest, radius_attr *attr_array,
-                     unsigned int attr_array_len)
+stringify_attr_array(char *dest, radius_attr_array *attr_array)
 {
     unsigned int i;
     size_t       len;
 
-    for (i = 0; i < attr_array_len; i++)
+    for (i = 0; i < attr_array->len; i++)
     {
-        radius_attr *attr = &attr_array[i];
+        radius_attr *attr = &attr_array->data[i];
 
         if (i != 0)
             *dest++ = ',';
@@ -1055,25 +1051,23 @@ stringify_attr_array(char *dest, radius_attr *attr_array,
  * (arrays are equal if they contains the same items in the same order)
  *
  * @param attrs1    First array
- * @param n_attrs1  Number of items in 'attrs1'
  * @param attrs2    Second array
- * @param n_attrs2  Number of items in 'attrs2'
  *
  * @return TRUE if arrays are equal, FALSE otherwise.
  */
 static te_bool
-radius_equal_attr_array(const radius_attr *attrs1, unsigned int n_attrs1,
-                        const radius_attr *attrs2, unsigned int n_attrs2)
+radius_equal_attr_array(const radius_attr_array *attrs1,
+                        const radius_attr_array *attrs2)
 {
     unsigned int i;
 
-    if (n_attrs1 != n_attrs2)
+    if (attrs1->len != attrs2->len)
         return FALSE;
 
-    for (i = 0; i < n_attrs1; i++)
+    for (i = 0; i < attrs1->len; i++)
     {
-        if (strcmp(attrs1[i].name, attrs2[i].name) != 0 ||
-            strcmp(attrs1[i].value, attrs2[i].value) != 0)
+        if (strcmp(attrs1->data[i].name, attrs2->data[i].name) != 0 ||
+            strcmp(attrs1->data[i].value, attrs2->data[i].value) != 0)
             return FALSE;
     }
     return TRUE;
@@ -1086,25 +1080,24 @@ radius_equal_attr_array(const radius_attr *attrs1, unsigned int n_attrs1,
  *
  * @param f          Opened file to write to
  * @param attrs      Array to write
- * @param n_attrs    Number of items in 'attrs'
  * @param operator   'Operator' string to place between attribute name and
  *                   its value (e.g., operator ':=' gives 'Attribute := Value')
  * @param separator  Additional symbols to place after separating commas
  *                   (usually space or "\n\t")
  */
 static void
-radius_write_attr_array(FILE *f, const radius_attr *attrs,
-                        unsigned int n_attrs,
+radius_write_attr_array(FILE *f, const radius_attr_array *attrs,
                         const char *operator, const char *separator)
 {
     unsigned int i;
 
-    for (i = 0; i < n_attrs; i++)
+    for (i = 0; i < attrs->len; i++)
     {
         if (i != 0)
             fprintf(f, ",%s", separator);
 
-        fprintf(f, "%s %s %s", attrs[i].name, operator, attrs[i].value);
+        fprintf(f, "%s %s %s", attrs->data[i].name, operator,
+                attrs->data[i].value);
     }
 }
 
@@ -1128,19 +1121,15 @@ write_radius_users(FILE *conf)
         }
         else
 #ifdef HAVE_FREERADIUS_UPDATE
-        if (radius_equal_attr_array(user->accept_replies,
-                                    user->n_accept_replies,
-                                    user->challenge_replies,
-                                    user->n_challenge_replies))
+        if (radius_equal_attr_array(&user->accept_replies,
+                                    &user->challenge_replies))
 #endif
         {
             /* Common configuration for all replies */
             fprintf(conf, "\"%s\" ", user->name);
-            radius_write_attr_array(conf, user->checks,
-                                    user->n_checks, "==", " ");
+            radius_write_attr_array(conf, &user->checks, "==", " ");
             fputs("\n\t", conf);
-            radius_write_attr_array(conf, user->accept_replies,
-                                    user->n_accept_replies, ":=", "\n\t");
+            radius_write_attr_array(conf, &user->accept_replies, ":=", "\n\t");
             fputs("\n\n", conf);
         }
 #ifdef HAVE_FREERADIUS_UPDATE
@@ -1150,13 +1139,11 @@ write_radius_users(FILE *conf)
              * at the moment when Access-Challenge is created there is
              * no Response-Packet-Type defined) */
             fprintf(conf, "\"%s\" ", user->name);
-            radius_write_attr_array(conf, user->checks,
-                                    user->n_checks, "==", " ");
-            if (user->n_challenge_replies > 0)
+            radius_write_attr_array(conf, &user->checks, "==", " ");
+            if (user->challenge_replies.len > 0)
             {
                 fputs("\n\t", conf);
-                radius_write_attr_array(conf, user->challenge_replies,
-                                        user->n_challenge_replies,
+                radius_write_attr_array(conf, &user->challenge_replies,
                                         ":=", "\n\t");
                 fputs(",", conf);
             }
@@ -1164,15 +1151,14 @@ write_radius_users(FILE *conf)
 
             /* Access-Accept configuration */
             fprintf(conf, "\"%s\" ", user->name);
-            radius_write_attr_array(conf, user->checks,
-                                    user->n_checks, "==", " ");
+            radius_write_attr_array(conf, &user->checks, "==", " ");
             fputs(", Response-Packet-Type == Access-Accept\n\t", conf);
-            radius_write_attr_array(conf, user->challenge_replies,
-                                    user->n_challenge_replies, "-=", "\n\t");
-            if (user->n_challenge_replies > 0 && user->n_accept_replies > 0)
+            radius_write_attr_array(conf, &user->challenge_replies,
+                                    "-=", "\n\t");
+            if (user->challenge_replies.len > 0 && user->accept_replies.len > 0)
                 fputs(",\n\t", conf);
-            radius_write_attr_array(conf, user->accept_replies,
-                                    user->n_accept_replies, ":=", "\n\t");
+
+            radius_write_attr_array(conf, &user->accept_replies, ":=", "\n\t");
             fputs("\n\n", conf);
         }
 #endif
@@ -1296,7 +1282,7 @@ ds_radius_accept_get(unsigned int gid, const char *oid,
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    stringify_attr_array(value, user->accept_replies, user->n_accept_replies);
+    stringify_attr_array(value, &user->accept_replies);
     return 0;
 }
 
@@ -1318,8 +1304,7 @@ ds_radius_accept_set(unsigned int gid, const char *oid,
     if ((user = find_radius_user(username)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if ((rc = radius_set_attr_array(&user->accept_replies,
-                                    &user->n_accept_replies, value)) == 0)
+    if ((rc = radius_set_attr_array(&user->accept_replies, value)) == 0)
     {
         write_radius_users(radius_users_file);
         radiusserver_reload();
@@ -1341,8 +1326,7 @@ ds_radius_challenge_get(unsigned int gid, const char *oid,
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    stringify_attr_array(value, user->challenge_replies,
-                         user->n_challenge_replies);
+    stringify_attr_array(value, &user->challenge_replies);
     return 0;
 }
 
@@ -1364,8 +1348,7 @@ ds_radius_challenge_set(unsigned int gid, const char *oid,
     if ((user = find_radius_user(username)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if ((rc = radius_set_attr_array(&user->challenge_replies,
-                                    &user->n_challenge_replies, value)) == 0)
+    if ((rc = radius_set_attr_array(&user->challenge_replies, value)) == 0)
     {
         write_radius_users(radius_users_file);
         radiusserver_reload();
@@ -1387,7 +1370,7 @@ ds_radius_check_get(unsigned int gid, const char *oid,
     if (user == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    stringify_attr_array(value, user->checks, user->n_checks);
+    stringify_attr_array(value, &user->checks);
     return 0;
 }
 
@@ -1409,8 +1392,7 @@ ds_radius_check_set(unsigned int gid, const char *oid,
     if ((user = find_radius_user(username)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if ((rc = radius_set_attr_array(&user->checks,
-                                    &user->n_checks, value)) == 0)
+    if ((rc = radius_set_attr_array(&user->checks, value)) == 0)
     {
         write_radius_users(radius_users_file);
         radiusserver_reload();
