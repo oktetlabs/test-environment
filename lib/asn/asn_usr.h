@@ -171,7 +171,6 @@ extern int asn_get_child_type(const asn_type *type,
  */ 
 struct asn_value;
 typedef struct asn_value asn_value;
-typedef struct asn_value *asn_value_p;
 
 
 /**
@@ -181,7 +180,7 @@ typedef struct asn_value *asn_value_p;
  *
  * @return pointer to new asn_value instance or NULL if error occurred. 
  */
-extern asn_value_p asn_init_value(const asn_type *type);
+extern asn_value *asn_init_value(const asn_type *type);
 
 /**
  * Macro to log failures of asn_init_value() function.
@@ -200,8 +199,8 @@ extern asn_value_p asn_init_value(const asn_type *type);
  *
  * @return pointer to new asn_value instance or NULL if error occurred. 
  */
-extern asn_value_p asn_init_value_tagged(const asn_type *type, 
-                                         asn_tag_class tc, asn_tag_value tag);
+extern asn_value *asn_init_value_tagged(const asn_type *type, 
+                                        asn_tag_class tc, asn_tag_value tag);
 
 /**
  * Make a copy of ASN value instance.
