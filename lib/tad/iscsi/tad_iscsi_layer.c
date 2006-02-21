@@ -193,7 +193,6 @@ tad_iscsi_match_bin_cb(csap_p           csap,
     asn_value  *iscsi_msg = NULL;
     te_errno    rc;
     int         defect;
-    const asn_value *iscsi_ptrn_pdu;
 
     UNUSED(ptrn_opaque);
 
@@ -203,12 +202,6 @@ tad_iscsi_match_bin_cb(csap_p           csap,
     data_len = tad_pkt_first_seg(pdu)->data_len;
 
     
-    if (asn_get_syntax(ptrn_pdu, "") == CHOICE)
-        asn_get_choice_value(ptrn_pdu, (asn_value **)&iscsi_ptrn_pdu,
-                             NULL, NULL);
-    else 
-        iscsi_ptrn_pdu = ptrn_pdu;
-
     if ((csap->state & CSAP_STATE_RESULTS) &&
         (iscsi_msg = meta_pkt->layers[layer].nds =
              asn_init_value(ndn_iscsi_message)) == NULL)
@@ -278,22 +271,22 @@ begin_match:
          */
 
         tmp8 = (*p >> 6) & 1;
-        if ((rc = ndn_match_data_units(iscsi_ptrn_pdu, NULL, 
+        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
                                        &tmp8, 1, "i-bit")) != 0)
             goto cleanup;
 
         tmp8 = *p & 0x3f;
-        if ((rc = ndn_match_data_units(iscsi_ptrn_pdu, NULL, 
+        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
                                        &tmp8, 1, "opcode")) != 0)
             goto cleanup;
 
         p++;
         tmp8 = *p >> 7;
-        if ((rc = ndn_match_data_units(iscsi_ptrn_pdu, NULL, 
+        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
                                        &tmp8, 1, "f-bit")) != 0)
             goto cleanup;
 
-        if ((rc = ndn_match_data_units(iscsi_ptrn_pdu, NULL, 
+        if ((rc = ndn_match_data_units(ptrn_pdu, NULL, 
                                        p, 3, "op-specific")) != 0)
             goto cleanup;
 
@@ -355,29 +348,17 @@ tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     te_errno    rc = 0;
 
     const asn_value *iscsi_csap_pdu;
-    asn_value       *iscsi_pdu;
 
     tad_iscsi_layer_data *spec_data = csap_get_proto_spec_data(csap, layer);
 
     UNUSED(p_opaque);
     UNUSED(layer);
 
-    if (asn_get_syntax(layer_pdu, "") == CHOICE)
-    {
-        if ((rc = asn_get_choice_value(layer_pdu,
-                                       (const asn_value **)&iscsi_pdu,
-                                       NULL, NULL))
-             != 0)
-            return rc;
-    }
-    else
-        iscsi_pdu = layer_pdu; 
-
     iscsi_csap_pdu = csap->layers[layer].nds; 
 
 #define CONVERT_FIELD(tag_, du_field_)                                  \
     do {                                                                \
-        rc = tad_data_unit_convert(iscsi_pdu, tag_,                     \
+        rc = tad_data_unit_convert(layer_pdu, tag_,                     \
                                    &(spec_data->du_field_));            \
         if (rc != 0)                                                    \
         {                                                               \

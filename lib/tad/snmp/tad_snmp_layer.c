@@ -47,7 +47,7 @@
 /* See description in tad_snmp_impl.h */
 te_errno
 tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
-                    const asn_value *tmpl_gen_pdu, void *opaque,
+                    const asn_value *tmpl_pdu, void *opaque,
                     const tad_tmpl_arg_t *args, size_t arg_num, 
                     tad_pkts *sdus, tad_pkts *pdus)
 {
@@ -61,7 +61,6 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
 
     struct snmp_pdu *pdu;
     const asn_value *var_bind_list;
-    const asn_value *tmpl_pdu;
 
     UNUSED(csap);
     UNUSED(opaque);
@@ -69,12 +68,6 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
     UNUSED(arg_num);
 
     VERB("%s, layer %d", __FUNCTION__, layer);
-
-    if (asn_get_syntax(tmpl_gen_pdu, "") == CHOICE)
-        asn_get_choice_value(tmpl_gen_pdu, (asn_value **)&tmpl_pdu,
-                             NULL, NULL);
-    else 
-        tmpl_pdu = tmpl_gen_pdu;
 
     rc = asn_read_value_field(tmpl_pdu, &operation, &operation_len, "type");
     if (rc != 0)
@@ -218,7 +211,6 @@ tad_snmp_match_bin_cb(csap_p           csap,
     asn_value              *vb_seq = NULL;
     te_errno                rc;
     int                     type;
-    const asn_value *snmp_ptrn_pdu = ptrn_pdu;
 
     UNUSED(ptrn_opaque);
     UNUSED(sdu);
@@ -251,10 +243,6 @@ tad_snmp_match_bin_cb(csap_p           csap,
     {
         return 0;
     }
-
-    if (asn_get_syntax(ptrn_pdu, "") == CHOICE)
-        asn_get_choice_value(ptrn_pdu, (asn_value **)&snmp_ptrn_pdu, 
-                             NULL, NULL);
 
     VERB("%s, layer %d, my_pdu 0x%x, my_pdu command: <%d>", 
          __FUNCTION__, layer, my_pdu, my_pdu->command);
@@ -301,7 +289,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
 
 #define CHECK_FIELD(asn_label_, data_, size_) \
     do {                                                        \
-        rc = ndn_match_data_units(snmp_ptrn_pdu, snmp_msg,      \
+        rc = ndn_match_data_units(ptrn_pdu, snmp_msg,           \
                                   (uint8_t *)data_, size_,      \
                                   asn_label_);                  \
         if (rc != 0)                                            \
@@ -348,7 +336,7 @@ tad_snmp_match_bin_cb(csap_p           csap,
         const asn_value *pat_vb_list;
         int              pat_vb_num, i;
 
-        rc = asn_get_subvalue(snmp_ptrn_pdu, (asn_value **)&pat_vb_list,
+        rc = asn_get_subvalue(ptrn_pdu, (asn_value **)&pat_vb_list,
                               "variable-bindings");
         if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {

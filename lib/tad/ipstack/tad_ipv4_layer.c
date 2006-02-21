@@ -148,37 +148,13 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
 
     const asn_value *ip4_csap_pdu;
     const asn_value *du_field;
-    asn_value       *ip4_pdu;
 
     ip4_csap_specific_data_t * spec_data = 
         (ip4_csap_specific_data_t *) csap_get_proto_spec_data(csap, layer); 
 
     UNUSED(p_opaque);
 
-    if (asn_get_syntax(layer_pdu, "") == CHOICE)
-    {
-        if ((rc = asn_get_choice_value(layer_pdu, &ip4_pdu,
-                                       NULL, NULL))
-             != 0)
-            return rc;
-    }
-    else
-        ip4_pdu = layer_pdu; 
-
-
-
     ip4_csap_pdu = csap->layers[layer].nds; 
-    if (asn_get_syntax(ip4_csap_pdu, "") == CHOICE)
-    {
-        if ((rc = asn_get_choice_value(ip4_csap_pdu, 
-                                       (asn_value **)&ip4_csap_pdu,
-                                       NULL, NULL)) != 0)
-        {
-            ERROR("%s(CSAP %d) get choice value of csap layer_pdu fails %r",
-                  __FUNCTION__, csap->id, rc);
-            return TE_RC(TE_TAD_CSAP, rc);
-        }
-    }
 
     /**
      * Macro only set into gen-bin du fields specifications according
@@ -192,7 +168,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
      */
 #define CONFIRM_FIELD(du_field_name_, tag_, label_) \
     do {                                                                \
-        rc = tad_data_unit_convert(ip4_pdu, tag_,                       \
+        rc = tad_data_unit_convert(layer_pdu, tag_,                     \
                                    &(spec_data-> du_field_name_ ));     \
         if (rc == 0 &&                                                  \
             spec_data-> du_field_name_ .du_type == TAD_DU_UNDEF &&      \
@@ -234,7 +210,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
     if (spec_data->du_protocol.du_type == TAD_DU_UNDEF &&
         spec_data->protocol != 0)
     {
-        rc = ndn_du_write_plain_int(ip4_pdu, NDN_TAG_IP4_PROTOCOL,
+        rc = ndn_du_write_plain_int(layer_pdu, NDN_TAG_IP4_PROTOCOL,
                                     spec_data->protocol);
         if (rc != 0)
         {
@@ -261,7 +237,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
             (rc = asn_get_child_value(ip4_csap_pdu, &du_field, PRIVATE,
                                       NDN_TAG_IP4_REMOTE_ADDR)) == 0)
         { 
-            rc = asn_write_component_value(ip4_pdu, du_field, "src-addr");
+            rc = asn_write_component_value(layer_pdu, du_field, "src-addr");
             if (rc != 0)
             {
                 ERROR("%s(): write src-addr to ip4 layer_pdu failed %r",
@@ -297,7 +273,7 @@ tad_ip4_confirm_pdu_cb(csap_p csap, unsigned int layer,
         else if ((rc = asn_get_child_value(ip4_csap_pdu, &du_field, PRIVATE,
                                            NDN_TAG_IP4_LOCAL_ADDR)) == 0)
         {
-            rc = asn_write_component_value(ip4_pdu, du_field, "dst-addr");
+            rc = asn_write_component_value(layer_pdu, du_field, "dst-addr");
             if (rc != 0)
             {
                 ERROR("%s(): write dst-addr to ip4 layer_pdu failed %r",
@@ -728,8 +704,6 @@ tad_ip4_match_bin_cb(csap_p           csap,
 { 
     ip4_csap_specific_data_t *spec_data;
 
-    const asn_value *ip4_ptrn_pdu;
-
     uint8_t    *data; 
     size_t      data_len;
     asn_value  *ip4_header_pdu = NULL;
@@ -746,12 +720,6 @@ tad_ip4_match_bin_cb(csap_p           csap,
     data = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
 
-    if (asn_get_syntax(ptrn_pdu, "") == CHOICE)
-        asn_get_choice_value(ptrn_pdu, (asn_value **)&ip4_ptrn_pdu,
-                             NULL, NULL);
-    else 
-        ip4_ptrn_pdu = ptrn_pdu;
-
     if ((csap->state & CSAP_STATE_RESULTS) &&
         (ip4_header_pdu = meta_pkt->layers[layer].nds =
              asn_init_value(ndn_ip4_header)) == NULL)
@@ -764,7 +732,7 @@ tad_ip4_match_bin_cb(csap_p           csap,
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = ndn_match_data_units(ip4_ptrn_pdu, ip4_header_pdu, \
+        rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu,     \
                                   data, _size, _asn_label);     \
         if (rc != 0)                                            \
         {                                                       \
@@ -777,7 +745,7 @@ tad_ip4_match_bin_cb(csap_p           csap,
 
 
     tmp8 = (*data) >> 4;
-    rc = ndn_match_data_units(ip4_ptrn_pdu, ip4_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
                               &tmp8, 1, "version");
     if (rc) 
     {
@@ -786,7 +754,7 @@ tad_ip4_match_bin_cb(csap_p           csap,
     }
 
     h_len = tmp8 = (*data) & 0x0f;
-    rc = ndn_match_data_units(ip4_ptrn_pdu, ip4_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
                               &tmp8, 1, "header-len");
     if (rc) 
     {
@@ -802,7 +770,7 @@ tad_ip4_match_bin_cb(csap_p           csap,
     CHECK_FIELD("ip-ident", 2);
 
     tmp8 = (*data) >> 5;
-    rc = ndn_match_data_units(ip4_ptrn_pdu, ip4_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, ip4_header_pdu, 
                               &tmp8, 1, "flags");
     if (rc != 0) 
         goto cleanup;

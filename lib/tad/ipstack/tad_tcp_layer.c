@@ -171,33 +171,22 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
 
     const asn_value *tcp_csap_pdu;
     const asn_value *du_field;
-    asn_value       *tcp_pdu;
 
     tcp_csap_specific_data_t *spec_data = 
         csap_get_proto_spec_data(csap, layer);
 
     UNUSED(p_opaque);
 
-    if (asn_get_syntax(layer_pdu, "") == CHOICE)
-    {
-        if ((rc = asn_get_choice_value(layer_pdu, &tcp_pdu,
-                                       NULL, NULL))
-             != 0)
-            return rc;
-    }
-    else
-        tcp_pdu = layer_pdu; 
-
     tcp_csap_pdu = csap->layers[layer].nds;
 
 #define CONVERT_FIELD(tag_, du_field_)                                  \
     do {                                                                \
-        rc = tad_data_unit_convert(tcp_pdu, tag_,                       \
+        rc = tad_data_unit_convert(layer_pdu, tag_,                     \
                                    &(spec_data->du_field_));            \
         if (rc != 0)                                                    \
         {                                                               \
             ERROR("%s(csap %d),line %d, convert %s failed, rc %r",      \
-                  __FUNCTION__, csap->id, __LINE__, #du_field_, rc);\
+                  __FUNCTION__, csap->id, __LINE__, #du_field_, rc);    \
             return rc;                                                  \
         }                                                               \
     } while (0) 
@@ -221,7 +210,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
         {
             if (asn_get_child_value(tcp_csap_pdu, &du_field, PRIVATE,
                                     NDN_TAG_TCP_REMOTE_PORT) == 0 &&
-                (rc = asn_write_component_value(tcp_pdu, du_field,
+                (rc = asn_write_component_value(layer_pdu, du_field,
                                                "src-port")) != 0)
             {
                 ERROR("%s(): write src-port to tcp layer_pdu failed %r",
@@ -250,7 +239,7 @@ tad_tcp_confirm_pdu_cb(csap_p csap, unsigned int layer,
         {
             if (asn_get_child_value(tcp_csap_pdu, &du_field, PRIVATE,
                                     NDN_TAG_TCP_LOCAL_PORT) == 0 &&
-                (rc = asn_write_component_value(tcp_pdu, du_field,
+                (rc = asn_write_component_value(layer_pdu, du_field,
                                                "dst-port")) != 0)
             {
                 ERROR("%s(): write dst-port to tcp layer_pdu failed %r",
@@ -531,8 +520,6 @@ tad_tcp_match_bin_cb(csap_p           csap,
     asn_value  *tcp_header_pdu = NULL;
     te_errno    rc;
 
-    const asn_value *tcp_ptrn_pdu;
-
     uint8_t  tmp8;
     size_t   h_len = 0;
 
@@ -542,12 +529,6 @@ tad_tcp_match_bin_cb(csap_p           csap,
     assert(tad_pkt_first_seg(pdu) != NULL);
     data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
     data_len = tad_pkt_first_seg(pdu)->data_len;
-
-    if (asn_get_syntax(ptrn_pdu, "") == CHOICE)
-        asn_get_choice_value(ptrn_pdu, (asn_value **)&tcp_ptrn_pdu,
-                             NULL, NULL);
-    else 
-        tcp_ptrn_pdu = ptrn_pdu;
 
     if ((csap->state & CSAP_STATE_RESULTS) &&
         (tcp_header_pdu = meta_pkt->layers[layer].nds =
@@ -559,7 +540,7 @@ tad_tcp_match_bin_cb(csap_p           csap,
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
-        rc = ndn_match_data_units(tcp_ptrn_pdu, tcp_header_pdu, \
+        rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu,     \
                                   data, _size, _asn_label);     \
         if (rc)                                                 \
         {                                                       \
@@ -576,14 +557,14 @@ tad_tcp_match_bin_cb(csap_p           csap,
     CHECK_FIELD("ackn", 4);
 
     h_len = tmp8 = (*data) >> 4;
-    rc = ndn_match_data_units(tcp_ptrn_pdu, tcp_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu, 
                               &tmp8, 1, "hlen");
     if (rc)
         goto cleanup;
     data ++;
 
     tmp8 = (*data) & 0x3f;
-    rc = ndn_match_data_units(tcp_ptrn_pdu, tcp_header_pdu, 
+    rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu, 
                               &tmp8, 1, "flags");
     if (rc)
         goto cleanup;
