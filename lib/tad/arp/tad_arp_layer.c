@@ -310,12 +310,20 @@ tad_arp_gen_bin_cb(csap_p                csap,
 /* See description in tad_arp_impl.h */
 te_errno
 tad_arp_match_bin_cb(csap_p           csap,
-                        unsigned int     layer,
-                        const asn_value *ptrn_pdu,
-                        void            *ptrn_opaque,
-                        tad_recv_pkt    *meta_pkt,
-                        tad_pkt         *pdu,
-                        tad_pkt         *sdu)
+                     unsigned int     layer,
+                     const asn_value *ptrn_pdu,
+                     void            *ptrn_opaque,
+                     tad_recv_pkt    *meta_pkt,
+                     tad_pkt         *pdu,
+                     tad_pkt         *sdu)
 {
+    UNUSED(csap);
+    UNUSED(layer);
+    UNUSED(ptrn_pdu);
+    UNUSED(ptrn_opaque);
+    UNUSED(meta_pkt);
+    UNUSED(pdu);
+    UNUSED(sdu);
+
     return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 }
