@@ -124,8 +124,8 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
     for (i = 0; i < num_var_bind; i++)
     {
         asn_value *var_bind;
-        oid              oid[MAX_OID_LEN];
-        size_t           oid_len = MAX_OID_LEN;
+        oid        oid[MAX_OID_LEN];
+        size_t     oid_len = MAX_OID_LEN;
 
         if ((rc = asn_get_indexed(var_bind_list, &var_bind, i, NULL)) != 0) 
         {
@@ -145,6 +145,7 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
                 if (snmp_add_null_var(pdu, oid, oid_len) == NULL)
                 {
                     ERROR("Cannot add OID into PDU %d", operation);
+                    rc = TE_ENOMEM;
                 }
                 break;
 
@@ -159,11 +160,25 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
                 size_t       d_len = sizeof(buffer);
 
 
-                rc = asn_read_component_value(var_bind, &value, "value");
-                if (rc != 0) break; 
+                rc = asn_get_subvalue(var_bind, &value, "value");
+                if (rc != 0)
+                    break;
+                
+                rc = asn_get_choice_value(value, &value, NULL, NULL);
+                if (rc != 0)
+                    break;
+
+                rc = asn_get_choice_value(value, &value, NULL, NULL);
+                if (rc != 0)
+                    break;
+
+                rc = asn_get_choice_value(value, &value, NULL, NULL);
+                if (rc != 0)
+                    break;
 
                 rc = asn_read_value_field(value, buffer, &d_len, "");
-                if (rc != 0) break; 
+                if (rc != 0)
+                    break; 
 
                 val_name = asn_get_name(value);
                 if (val_name == NULL)
@@ -173,10 +188,11 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
                 } 
                 snmp_pdu_add_variable(pdu, oid, oid_len, 
                                       snmp_asn_syntaxes[asn_get_tag(value)],
-                                      buffer, d_len );
+                                      buffer, d_len);
             }
         } 
-        if (rc != 0) break;
+        if (rc != 0)
+            break;
     }
 
     if (rc == 0)
