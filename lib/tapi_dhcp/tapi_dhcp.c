@@ -106,7 +106,7 @@ static te_bool rcv_op_busy = FALSE;
 static pthread_mutex_t tapi_dhcp_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-static int ndn_dhcpv4_option_to_plain(asn_value *dhcp_opt,
+static int ndn_dhcpv4_option_to_plain(const asn_value *dhcp_opt,
                                       struct dhcp_option **opt_p);
 static int ndn_dhcpv4_add_opts(asn_value *container,
                                struct dhcp_option *opt);
@@ -126,12 +126,13 @@ static void dhcp_options_destroy(struct dhcp_option *opt);
  *     which should be freed with dhcpv4_message_destroy
  */
 int
-ndn_dhcpv4_packet_to_plain(asn_value *pkt, struct dhcp_message **dhcp_msg)
+ndn_dhcpv4_packet_to_plain(const asn_value *pkt,
+                           struct dhcp_message **dhcp_msg)
 {
     struct dhcp_option **opt_p;
+    const asn_value     *dhcp_opts;
+    const asn_value     *opt;
 
-    asn_value  *dhcp_opts;
-    asn_value  *opt;
     int         rc = 0;
     size_t      len;
     int         i;
@@ -194,7 +195,8 @@ ndn_dhcpv4_packet_to_plain(asn_value *pkt, struct dhcp_message **dhcp_msg)
 #undef PKT_GET_VALUE
 
     if (rc != 0 ||
-        (rc = asn_read_component_value(pkt, &dhcp_opts, "options")) != 0)
+        (rc = asn_get_descendent(pkt, (asn_value **)&dhcp_opts,
+                                 "options")) != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
         {
@@ -210,8 +212,9 @@ ndn_dhcpv4_packet_to_plain(asn_value *pkt, struct dhcp_message **dhcp_msg)
     opt_p = &((*dhcp_msg)->opts);
     for (i = 0; i < n_opts; i++)
     {
-        opt = asn_read_indexed(dhcp_opts, i, "");
-        if ((rc = ndn_dhcpv4_option_to_plain(opt, opt_p)) != 0)
+        if ((rc = asn_get_indexed(dhcp_opts, (asn_value **)&opt, i,
+                                  NULL)) != 0 ||
+            (rc = ndn_dhcpv4_option_to_plain(opt, opt_p)) != 0)
         {
             dhcpv4_message_destroy(*dhcp_msg);
             return rc;
@@ -231,7 +234,8 @@ ndn_dhcpv4_packet_to_plain(asn_value *pkt, struct dhcp_message **dhcp_msg)
  * @return Zero on success or error code
  */
 static int
-ndn_dhcpv4_option_to_plain(asn_value *dhcp_opt, struct dhcp_option **opt_p)
+ndn_dhcpv4_option_to_plain(const asn_value *dhcp_opt,
+                           struct dhcp_option **opt_p)
 {
     int rc = 0;
     uint8_t len_buf;
@@ -296,11 +300,12 @@ ndn_dhcpv4_option_to_plain(asn_value *dhcp_opt, struct dhcp_option **opt_p)
     if ((n_subopts = asn_get_length(dhcp_opt, "options")) > 0)
     {
         struct dhcp_option **sub_opt_p;
-        asn_value           *sub_opt;
-        asn_value           *sub_opts;
+        const asn_value     *sub_opt;
+        const asn_value     *sub_opts;
 
         sub_opt_p = &((*opt_p)->subopts);
-        rc = asn_read_component_value(dhcp_opt, &sub_opts, "options");
+        rc = asn_get_descendent(dhcp_opt, (asn_value **)&sub_opts,
+                                "options");
         if (rc != 0)
         {
             free((*opt_p)->val);
@@ -311,8 +316,9 @@ ndn_dhcpv4_option_to_plain(asn_value *dhcp_opt, struct dhcp_option **opt_p)
 
         for (i = 0; i < n_subopts; i++)
         {
-            sub_opt = asn_read_indexed(sub_opts, i, "");
-            if ((rc = ndn_dhcpv4_option_to_plain(sub_opt, sub_opt_p)) != 0)
+            if ((rc = asn_get_indexed(sub_opts, (asn_value **)&sub_opt,
+                                      i, NULL)) != 0 ||
+                (rc = ndn_dhcpv4_option_to_plain(sub_opt, sub_opt_p)) != 0)
             {
                 free((*opt_p)->val);
                 free(*opt_p);

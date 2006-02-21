@@ -245,7 +245,7 @@ typedef struct dhcp_message {
                 memcpy((msg_)->file, value_, str_len + 1); \
             } while (0)
 
-extern int ndn_dhcpv4_packet_to_plain(asn_value *pkt,
+extern int ndn_dhcpv4_packet_to_plain(const asn_value *pkt,
                                       struct dhcp_message **dhcp_msg);
 extern int ndn_dhcpv4_plain_to_packet(const dhcp_message *dhcp_msg,
                                       asn_value **pkt);
