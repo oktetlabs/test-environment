@@ -91,7 +91,6 @@ tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
 
         if (rc != 0) 
         {
-asn_save_to_file(pdus, "/tmp/tad-confirm-pdus-err.asn");
             ERROR("%s(CSAP %d): asn_get_subvalue rc %r, "
                   "confirm layer %d, label %s",
                   __FUNCTION__, csap->id, rc, layer, label);
