@@ -88,7 +88,7 @@ static csap_spt_type_t snmp_csap_spt =
 static void
 tad_snmp_unregister_cb(void)
 {
-    snmp_shutdown("snmpapp");
+    snmp_shutdown("__snmpapp__");
 }
 
 /**
@@ -100,7 +100,7 @@ tad_snmp_unregister_cb(void)
 te_errno
 csap_support_snmp_register(void)
 { 
-    init_snmp("snmpapp");
+    init_snmp("__snmpapp__");
 
     return csap_spt_add(&snmp_csap_spt);
 }
