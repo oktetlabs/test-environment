@@ -922,6 +922,8 @@ TARPC_FUNC(read,
     WSAOVERLAPPED overlapped;
     
     memset(&overlapped, 0, sizeof(overlapped));
+
+    overlapped.hEvent = WSACreateEvent();
     
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
@@ -935,18 +937,34 @@ TARPC_FUNC(read,
             INFO("read(): ReadFile() failed with error %r (%d)", 
                   out->common._errno, GetLastError());
             rc = -1;
+            goto finish;
         }
-        else if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+
+        if (WSAWaitForMultipleEvents(1, &overlapped.hEvent, TRUE, 
+                                     WSA_INFINITE, TRUE)
+                 != WSA_WAIT_EVENT_0)
+        {
+            out->common._errno = win_rpc_errno(GetLastError());
+            ERROR("read(): WSAWaitForMultipleEvents() failed with "
+                  "error %r (%d)", out->common._errno, GetLastError());
+            rc = -1;
+            goto finish;
+        }
+
+        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
             out->common._errno = win_rpc_errno(GetLastError());
             ERROR("read(): GetOverlappedResult() failed with error %r (%d)",
                   out->common._errno, GetLastError());
             rc = -1;
+            goto finish;
         }
-        else
-            out->common._errno = win_rpc_errno(GetLastError());
+
+        out->common._errno = win_rpc_errno(GetLastError());
     }
+finish:    
+    WSACloseEvent(overlapped.hEvent);
     out->retval = rc;
 }
 )
@@ -961,6 +979,8 @@ TARPC_FUNC(write, {},
     
     memset(&overlapped, 0, sizeof(overlapped));
     
+    overlapped.hEvent = WSACreateEvent();
+    
     INIT_CHECKED_ARG(in->buf.buf_val, in->buf.buf_len, 0);
 
     MAKE_CALL(out->retval = WriteFile((HANDLE)(in->fd), in->buf.buf_val, 
@@ -970,21 +990,37 @@ TARPC_FUNC(write, {},
     {
         if (out->common._errno != RPC_E_IO_PENDING)
         {
-            INFO("write(): WriteFile() failed with error %r (%d)", 
-                 out->common._errno, GetLastError());
+            INFO("write(): ReadFile() failed with error %r (%d)", 
+                  out->common._errno, GetLastError());
             rc = -1;
+            goto finish;
         }
-        else if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
+
+        if (WSAWaitForMultipleEvents(1, &overlapped.hEvent, TRUE, 
+                                     WSA_INFINITE, TRUE)
+                 != WSA_WAIT_EVENT_0)
+        {
+            out->common._errno = win_rpc_errno(GetLastError());
+            ERROR("write(): WSAWaitForMultipleEvents() failed with "
+                  "error %r (%d)", out->common._errno, GetLastError());
+            rc = -1;
+            goto finish;
+        }
+
+        if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
             out->common._errno = win_rpc_errno(GetLastError());
-            ERROR("write(): GetOverlappedResult() failed with "
-                 "error %r (%d)", out->common._errno, GetLastError());
+            ERROR("write(): GetOverlappedResult() failed with error %r "
+                  "(%d)", out->common._errno, GetLastError());
             rc = -1;
+            goto finish;
         }
-        else
-            out->common._errno = win_rpc_errno(GetLastError());
+
+        out->common._errno = win_rpc_errno(GetLastError());
     }
+finish:    
+    WSACloseEvent(overlapped.hEvent);
     out->retval = rc;
 }
 )
