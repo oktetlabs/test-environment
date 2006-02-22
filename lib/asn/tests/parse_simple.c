@@ -55,6 +55,8 @@ main (void)
     test_string_parse("\"berb\\\"erber\"", asn_base_charstring);
     test_string_parse("\"Somethins long string with ''' oo   \n aaa\"",
                       asn_base_charstring); 
+    test_string_parse("'00 01 03 05 23 5F 8A 5B CC 00 00 0 0 'H",
+                      asn_base_octstring); 
 
     test_string_parse("0", asn_base_integer);
     test_string_parse("14", asn_base_integer);

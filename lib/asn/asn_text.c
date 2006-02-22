@@ -826,7 +826,7 @@ asn_impl_pt_choice(const char *txt, const asn_type *type,
     rc = asn_impl_find_subtype(type, label_buf, &subtype);
     if (rc)
     {
-        WARN("%s(): subtype for label '%s' not found",
+        WARN("%s(): subtype for label '%s' not found\n",
              __FUNCTION__, label_buf);
         *parsed_syms = pt - txt;
         return TE_EASNTXTVALNAME;
@@ -1029,34 +1029,6 @@ asn_count_len_enum(const asn_value *value)
 }
 
 
-/**
- * Count required length of string for textual presentation 
- * of specified value. 
- *
- * @param value         ASN value.   
- *
- * @return length of requiered string. 
- */ 
-size_t
-asn_count_len_octstring(const asn_value *value)
-{ 
-    int *txt_len_p;
-
-    if (value == NULL)
-        return 0;
-
-    /* Explicit discards of 'const' qualifier, whereas field 'txt_len' 
-     * should have 'mutable' semantic */
-    txt_len_p = (int *)&(value->txt_len);
-
-    if (value->syntax != OCT_STRING)
-        return -1; 
-
-    if (value->txt_len < 0)
-        *txt_len_p = value->len * 3 + 3;
-
-    return value->txt_len;
-}
 
 static char t_class[4][30] = {"UNIVERSAL ", "APPLICATION ", "", "PRIVATE "};
 
@@ -1133,7 +1105,7 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
         v_el = value->data.array[0];
         if (v_el)
         { 
-            all_used += strlen(v_el->name) + 1; 
+            all_used += strlen(v_el->name) + 1; /* ₁ symbol for ':'*/
             all_used += asn_count_txt_len(v_el, indent);
         } 
         *txt_len_p = all_used;
@@ -1177,7 +1149,8 @@ asn_count_len_objid(const asn_value *value)
 
         for (i = 0; i < value->len; i++)
         { 
-            all_used += number_of_digits (subid[i]) + 1;
+            /* 1 for separating space */
+            all_used += number_of_digits(subid[i]) + 1; 
         } 
         *txt_len_p = all_used;
     }
@@ -1203,16 +1176,13 @@ int
 asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
 {
     int          used;
-    unsigned int i;
+    unsigned int i, need;
     const char  *val_label = NULL;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0;
 
     if (value->syntax != ENUMERATED)
-        return -1;
-
-    if (buf_len <= asn_count_len_enum(value))
         return -1;
 
 
@@ -1226,9 +1196,13 @@ asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
         }
     }
     if (i < value->asn_type->len) 
-        used = sprintf (buffer, "%s", val_label);
+        used = snprintf(buffer, buf_len, "%s", val_label);
     else
-        used = sprintf (buffer, "%d", value->data.integer);
+        used = snprintf(buffer, buf_len, "%d", value->data.integer);
+
+    if (buf_len <= (need = asn_count_len_enum(value)))
+        return need;
+
 
     return used;
 }
@@ -1236,44 +1210,12 @@ asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
 
 
 
-/**
- * Prepare textual ASN.1 presentation of passed value INTEGER 
- * and put it into specified buffer. 
- *
- * @param value         ASN value to be printed, should have INTEGER type.  
- * @param buffer        buffer for ASN text.  
- * @param buf_len       length of buffer. 
- *
- * @return number characters written to buffer or -1 if error occured. 
- */ 
-int
-asn_sprint_integer(const asn_value *value, char *buffer, size_t buf_len)
-{
-    char         loc_buf[16];
-    unsigned int used;
-
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
-        return 0;
-
-    if (value->syntax != INTEGER)
-        return -1;
-
-    if ((int)buf_len <= value->txt_len)
-        return -1;
-
-    used = sprintf (loc_buf, "%d", value->data.integer);
-
-    if (used > buf_len) 
-        return -1;
-
-    strncpy (buffer, loc_buf, buf_len);
-
-    return used;
-}
 
 /**
  * Prepare textual ASN.1 presentation of passed value Character String 
  * and put it into specified buffer. 
+ * NOTE: see description for asn_sprint_value(), this function is very 
+ * similar, just syntax-specific. 
  *
  * @param value         ASN value to be printed, should have INTEGER type.
  * @param buffer        buffer for ASN text.  
@@ -1295,8 +1237,8 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
     if (value->syntax != CHAR_STRING)
         return -1;
 
-    if ((int)buf_len <= value->txt_len)
-        return -1;
+    if (buf_len == 1)
+        goto finish;
 
     buf_place = buffer;
     strcpy(buf_place, "\""); 
@@ -1304,12 +1246,15 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
     buf_place++;
 
 #define PUT_PIECE(_src, _len) \
-    do {                                        \
-        total_syms += (interval = (_len));      \
-        if (total_syms >= buf_len)              \
-            return -1;                          \
-        strncpy(buf_place, (_src), interval);   \
-        buf_place += interval;                  \
+    do {                                                \
+        interval = (buf_len - total_syms);              \
+        strncpy(buf_place, (_src),                      \
+                (interval > (size_t)(_len)) ?           \
+                            (size_t)(_len) : interval); \
+        if (interval <= (size_t)(_len))                 \
+            goto finish;                                \
+        total_syms += (_len);                           \
+        buf_place += (_len);                            \
     } while (0)
 
     string = value->data.other;
@@ -1330,12 +1275,19 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
     if (string != NULL && string[0] != '\0')
         PUT_PIECE(string, strlen(string));
     
+    if (total_syms + 2 >= buf_len)
+        goto finish;
+
     strcpy(buf_place, "\""); 
     total_syms++;
 
 #undef PUT_PIECE
 
-    return total_syms;
+finish:
+    buffer[buf_len - 1] = 0; 
+    return value->txt_len; /* assume, that for character string 'txt_len'
+                              is allways correct - it is updated when
+                              value is changed */
 }
 
 
@@ -1353,7 +1305,11 @@ int
 asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
 {
     char        *pb = buffer;
+    char        *last_b = buffer + buf_len;
     unsigned int i;
+    static char  hex_digits[] = {'0', '1', '2', '3', '4', '5', '6', '7', 
+                                 '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', };
+    uint8_t     *cur_byte;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0;
@@ -1361,18 +1317,28 @@ asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
     if (value->syntax != OCT_STRING)
         return -1;
 
-    if (buf_len <= asn_count_len_octstring(value))
-        return -1;
+#define PUT_OCT_SYM(_byte) \
+    do { \
+        *pb++ = (_byte); \
+        if (pb == last_b) \
+            goto finish; \
+    } while (0)
 
-    strcpy(buffer, "\'"); 
-    pb++;
-    for (i = 0; i < value->len; i++)
-        pb += sprintf(pb, "%02X ", ((uint8_t*)value->data.other)[i]);
+    PUT_OCT_SYM('\'');
 
-    strcat(pb, "\'H"); 
-    pb += 2;
+    for (i = 0, cur_byte = (uint8_t*)value->data.other; i < value->len; 
+         i++, cur_byte++)
+    {
+        PUT_OCT_SYM(hex_digits[(*cur_byte) >> 4  ]);
+        PUT_OCT_SYM(hex_digits[(*cur_byte) & 0x0f]);
+        PUT_OCT_SYM(' ');
+    }
+    PUT_OCT_SYM('\'');
+    PUT_OCT_SYM('H');
 
-    return pb - buffer;
+finish: 
+    *pb = '\0';
+    return value->txt_len;
 }
 
 /**
@@ -1451,7 +1417,7 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
 
     if ((v_el = value->data.array[0]) == NULL)
     {
-        WARN("%s(): incomplete", __FUNCTION__);
+        printf("%s(): incomplete", __FUNCTION__);
         return -1;
     }
 
@@ -1635,7 +1601,7 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
                 return sprintf(buffer, "FALSE");
 
         case INTEGER:
-            return asn_sprint_integer(value, buffer, buf_len);
+            return snprintf(buffer, buf_len, "%d", value->data.integer);
 
         case ENUMERATED: 
             return asn_sprint_enum(value, buffer, buf_len);
@@ -1706,7 +1672,7 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
             return value->txt_len;
 
         case OCT_STRING:
-            return asn_count_len_octstring(value);
+            return value->txt_len;
 
         case PR_ASN_NULL:
             return strlen("NULL");
@@ -1724,16 +1690,16 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
          * are made. 
          * TODO: found and fix bugs. */
         case CHOICE:
-            return asn_count_len_choice(value, indent) + 10;
+            return asn_count_len_choice(value, indent);
 
         case TAGGED:
-            return asn_count_len_tagged(value, indent) + 10;
+            return asn_count_len_tagged(value, indent);
 
         case SEQUENCE:
         case SEQUENCE_OF:
         case SET:
         case SET_OF:
-            return asn_count_len_array_fields(value, indent) + 10;
+            return asn_count_len_array_fields(value, indent);
 
         default: 
             return 0; /* nothing to do. */

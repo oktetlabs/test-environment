@@ -1092,7 +1092,8 @@ asn_impl_write_value_field(asn_value *container,
         {
             void * val = malloc(m_len);
 
-            if (container->asn_type->len && (container->asn_type->len != d_len))
+            if (container->asn_type->len > 0 &&
+                container->asn_type->len != d_len)
             {
                 return TE_EASNGENERAL;
             }
@@ -1102,6 +1103,7 @@ asn_impl_write_value_field(asn_value *container,
             container->data.other = val;
             memcpy(val,  data, m_len);
             container->len = d_len; 
+            container->txt_len = d_len * 3 + 3; 
         }
         break;
 
