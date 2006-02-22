@@ -939,7 +939,7 @@ TARPC_FUNC(read,
             rc = -1;
             goto finish;
         }
-
+#if 0
         if (WSAWaitForMultipleEvents(1, &overlapped.hEvent, TRUE, 
                                      WSA_INFINITE, TRUE)
                  != WSA_WAIT_EVENT_0)
@@ -950,7 +950,7 @@ TARPC_FUNC(read,
             rc = -1;
             goto finish;
         }
-
+#endif
         if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
@@ -990,12 +990,12 @@ TARPC_FUNC(write, {},
     {
         if (out->common._errno != RPC_E_IO_PENDING)
         {
-            INFO("write(): ReadFile() failed with error %r (%d)", 
+            INFO("write(): WriteFile() failed with error %r (%d)", 
                   out->common._errno, GetLastError());
             rc = -1;
             goto finish;
         }
-
+#if 0
         if (WSAWaitForMultipleEvents(1, &overlapped.hEvent, TRUE, 
                                      WSA_INFINITE, TRUE)
                  != WSA_WAIT_EVENT_0)
@@ -1006,7 +1006,7 @@ TARPC_FUNC(write, {},
             rc = -1;
             goto finish;
         }
-
+#endif
         if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
