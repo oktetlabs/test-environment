@@ -167,8 +167,10 @@ main(int argc, char *argv[])
     VERB("csap created, id: %d\n", (int)eth_csap);
 
 
-    rc = tapi_eth_csap_create(ta_B, sid_b, eth_device, mac_a, mac_b, 
-                              &eth_type, &eth_listen_csap); 
+    rc = tapi_eth_csap_create(ta_B, sid_b, eth_device, 
+                              (send_src_csap || send_src_tmpl) ? 
+                                  mac_a : NULL,  
+                              mac_b, &eth_type, &eth_listen_csap); 
     if (rc)
         TEST_FAIL("csap for listen create error: %x", rc);
 
