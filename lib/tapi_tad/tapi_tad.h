@@ -108,7 +108,7 @@ extern int tapi_csap_get_duration(const char *ta_name, int ta_sid,
 extern int tapi_csap_param_get_llint(const char *ta_name, int ta_sid,
                                      csap_handle_t csap_id,
                                      const char *param_name,
-                                     long long int *p_llint);
+                                     int64_t *p_llint);
 
 /**
  * Get timestamp CSAP parameter from TA in format "<sec>.<usec>".

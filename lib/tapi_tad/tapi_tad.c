@@ -78,7 +78,7 @@ int
 tapi_csap_param_get_llint(const char *ta_name, int ta_sid,
                           csap_handle_t csap_id,
                           const char *param_name,
-                          long long int *p_llint)
+                          int64_t *p_llint)
 {
     int     rc;
     char    buf[RCF_MAX_VAL] = { 0, };
@@ -165,8 +165,8 @@ tapi_csap_get_total_bytes(const char *ta_name, int ta_sid,
                           csap_handle_t csap_id,
                           unsigned long long int *p_bytes)
 {
-    int             rc;
-    long long int   tmp;
+    int     rc;
+    int64_t tmp;
 
 
     ENTRY("TA=%s, SID=%d, CSAP=%d, location=0x%08x",
@@ -243,8 +243,8 @@ int
 tapi_csap_get_status(const char *ta_name, int ta_sid, csap_handle_t csap_id,
                                 tad_csap_status_t *status)
 {
-    int             rc;
-    long long int   tmp;
+    int     rc;
+    int64_t tmp;
 
 
     ENTRY("TA=%s, SID=%d, CSAP=%d, location=0x%08x",
