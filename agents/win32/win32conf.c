@@ -226,7 +226,8 @@ static const char * const env_hidden[] = {
     "TARPC_DL_NAME",
     "TCE_CONNECTION",
     "TZ",
-    "_"
+    "_",
+    "CYGWIN"
 };
 
 /* win32 Test Agent configuration tree */
