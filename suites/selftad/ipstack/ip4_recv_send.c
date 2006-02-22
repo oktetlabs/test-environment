@@ -148,11 +148,13 @@ main(int argc, char *argv[])
             asn_value *int_val = asn_init_value(asn_base_integer);
 
             asn_write_int32(int_val, j * 2 + 10, "");
-            rc = asn_insert_indexed(template, int_val, -1,
+            rc = asn_insert_indexed(template, 
+                                    asn_copy_value(int_val), -1,
                                     "arg-sets.0.#ints");
 
             asn_write_int32(int_val, j * 2 + 41, "");
-            rc = asn_insert_indexed(template, int_val, -1,
+            rc = asn_insert_indexed(template, 
+                                    asn_copy_value(int_val), -1,
                                     "arg-sets.1.#ints-assoc");
         }
         if (rc != 0)
