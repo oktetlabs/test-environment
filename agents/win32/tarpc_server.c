@@ -939,18 +939,7 @@ TARPC_FUNC(read,
             rc = -1;
             goto finish;
         }
-#if 0
-        if (WSAWaitForMultipleEvents(1, &overlapped.hEvent, TRUE, 
-                                     WSA_INFINITE, TRUE)
-                 != WSA_WAIT_EVENT_0)
-        {
-            out->common._errno = win_rpc_errno(GetLastError());
-            ERROR("read(): WSAWaitForMultipleEvents() failed with "
-                  "error %r (%d)", out->common._errno, GetLastError());
-            rc = -1;
-            goto finish;
-        }
-#endif
+
         if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
@@ -995,18 +984,7 @@ TARPC_FUNC(write, {},
             rc = -1;
             goto finish;
         }
-#if 0
-        if (WSAWaitForMultipleEvents(1, &overlapped.hEvent, TRUE, 
-                                     WSA_INFINITE, TRUE)
-                 != WSA_WAIT_EVENT_0)
-        {
-            out->common._errno = win_rpc_errno(GetLastError());
-            ERROR("write(): WSAWaitForMultipleEvents() failed with "
-                  "error %r (%d)", out->common._errno, GetLastError());
-            rc = -1;
-            goto finish;
-        }
-#endif
+
         if (GetOverlappedResult((HANDLE)(in->fd), &overlapped, 
                                      &rc, 1) == 0)
         {
@@ -1034,12 +1012,12 @@ TARPC_FUNC(read_file,
 },
 {
     rpc_overlapped *overlapped = IN_OVERLAPPED;
-    rpc_overlapped  tmp;
 
     if (overlapped == NULL)
     {
-        memset(&tmp, 0, sizeof(tmp));
-        overlapped = &tmp;
+        ERROR("NULL overlapped is passed to the ReadFile()");
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
+        goto finish;
     }
     
     if (buf2overlapped(overlapped, out->buf.buf_len, out->buf.buf_val) != 0)
@@ -1080,6 +1058,52 @@ TARPC_FUNC(read_file,
 }
 )
 
+/*-------------- ReadFileEx() ------------------------------*/
+
+TARPC_FUNC(read_file_ex, {},
+{
+    rpc_overlapped *overlapped = IN_OVERLAPPED;
+
+    if (overlapped == NULL)
+    {
+        ERROR("NULL overlapped is passed to the ReadFileEx()");
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
+        goto finish;
+    }
+    
+    if (buf2overlapped(overlapped, in->buf.buf_len, in->buf.buf_val) != 0)
+    {
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+        goto finish;
+    }
+    
+    MAKE_CALL(out->retval = ReadFileEx((HANDLE)(in->fd), 
+                                       overlapped->buffers[0].buf,
+                                       in->len, 
+                                       (LPWSAOVERLAPPED)overlapped,
+                                       IN_CALLBACK));
+                                     
+    if (!out->retval)
+    {
+        /* Failure */
+        free(overlapped->buffers);
+        overlapped->buffers = NULL;
+        overlapped->bufnum = 0;
+    }
+    else
+    {
+        /* 
+         * Overlapped request is posted, let's avoid releasing of the
+         * buffer by RPC.
+         */
+        in->buf.buf_val = NULL;
+        in->buf.buf_len = 0;
+    }
+    finish:
+    ;
+}
+)
+
 /*-------------- WriteFile() ------------------------------*/
 
 TARPC_FUNC(write_file, 
@@ -1088,12 +1112,12 @@ TARPC_FUNC(write_file,
 },
 {
     rpc_overlapped *overlapped = IN_OVERLAPPED;
-    rpc_overlapped  tmp;
 
     if (overlapped == NULL)
     {
-        memset(&tmp, 0, sizeof(tmp));
-        overlapped = &tmp;
+        ERROR("NULL overlapped is passed to the WriteFile()");
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
+        goto finish;
     }
 
     if (buf2overlapped(overlapped, in->buf.buf_len, in->buf.buf_val) != 0)
@@ -1117,6 +1141,52 @@ TARPC_FUNC(write_file,
     if (out->retval || out->common._errno != RPC_E_IO_PENDING)
         rpc_overlapped_free_memory(overlapped);
         
+    finish:
+    ;
+}
+)
+
+/*-------------- WriteFileEx() ------------------------------*/
+
+TARPC_FUNC(write_file_ex, {},
+{
+    rpc_overlapped *overlapped = IN_OVERLAPPED;
+
+    if (overlapped == NULL)
+    {
+        ERROR("NULL overlapped is passed to the WriteFileEx()");
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
+        goto finish;
+    }
+    
+    if (buf2overlapped(overlapped, in->buf.buf_len, in->buf.buf_val) != 0)
+    {
+        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+        goto finish;
+    }
+    
+    MAKE_CALL(out->retval = WriteFileEx((HANDLE)(in->fd), 
+                                        overlapped->buffers[0].buf,
+                                        in->len, 
+                                        (LPWSAOVERLAPPED)overlapped,
+                                        IN_CALLBACK));
+                                     
+    if (!out->retval)
+    {
+        /* Failure */
+        free(overlapped->buffers);
+        overlapped->buffers = NULL;
+        overlapped->bufnum = 0;
+    }
+    else
+    {
+        /* 
+         * Overlapped request is posted, let's avoid releasing of the
+         * buffer by RPC.
+         */
+        in->buf.buf_val = NULL;
+        in->buf.buf_len = 0;
+    }
     finish:
     ;
 }
