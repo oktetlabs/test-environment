@@ -2343,7 +2343,7 @@ rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_BOOL(wsa_get_overlapped_result, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
-                 "WSAGetOverlappedResult(%d, %u, %s]) "
+                 "WSAGetOverlappedResult(%d, %u, %s) "
                  "-> %s (%s) bytes transferred %u flags %s",
                  rpcs->ta, rpcs->name, rpcop2str(op), 
                  s, overlapped, wait ? "wait" : "don't wait",
@@ -3683,6 +3683,51 @@ rpc_read_file(rcf_rpc_server *rpcs,
 }                  
 
 te_bool 
+rpc_read_file_ex(rcf_rpc_server *rpcs,
+                 int fd, void *buf, size_t count,
+                 rpc_overlapped overlapped, const char *callback)
+{
+    tarpc_read_file_ex_in  in;
+    tarpc_read_file_ex_out out;
+    rcf_rpc_op             op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return FALSE;
+    }
+
+    op = rpcs->op;
+
+    in.fd = fd;
+    in.len = count;
+    in.buf.buf_val = buf;
+    in.buf.buf_len = buf == NULL ? 0 : count;
+    in.overlapped = (tarpc_overlapped)overlapped;
+    FILL_CALLBACK(read_file_ex);
+    
+    rcf_rpc_call(rpcs, "read_file_ex", &in, &out);
+    
+    free(in.callback);
+
+    if (op == RCF_RPC_CALL)
+        out.retval = TRUE;
+
+    CHECK_RETVAL_VAR_IS_BOOL(read_file_ex, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: ReadFileEx(%d, %p, %u, %u, %s) "
+                 "-> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 fd, buf, count, overlapped, callback,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_BOOL(read_file_ex, out.retval);
+}                  
+
+te_bool 
 rpc_write_file(rcf_rpc_server *rpcs,
                int fd, void *buf, size_t count,
                size_t *sent, rpc_overlapped overlapped)
@@ -3736,3 +3781,48 @@ rpc_write_file(rcf_rpc_server *rpcs,
 
     RETVAL_BOOL(write_file, out.retval);
 }               
+
+te_bool 
+rpc_write_file_ex(rcf_rpc_server *rpcs,
+                 int fd, void *buf, size_t count,
+                 rpc_overlapped overlapped, const char *callback)
+{
+    tarpc_write_file_ex_in  in;
+    tarpc_write_file_ex_out out;
+    rcf_rpc_op              op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return FALSE;
+    }
+
+    op = rpcs->op;
+
+    in.fd = fd;
+    in.len = count;
+    in.buf.buf_val = buf;
+    in.buf.buf_len = buf == NULL ? 0 : count;
+    in.overlapped = (tarpc_overlapped)overlapped;
+    FILL_CALLBACK(write_file_ex);
+    
+    rcf_rpc_call(rpcs, "write_file_ex", &in, &out);
+    
+    free(in.callback);
+
+    if (op == RCF_RPC_CALL)
+        out.retval = TRUE;
+
+    CHECK_RETVAL_VAR_IS_BOOL(write_file_ex, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: ReadFileEx(%d, %p, %u, %u, %s) "
+                 "-> %d (%s)",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 fd, buf, count, overlapped, callback,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_BOOL(write_file_ex, out.retval);
+}                  

@@ -1283,6 +1283,40 @@ extern te_bool rpc_write_file(rcf_rpc_server *rpcs,
                               int fd, void *buf, size_t count,
                               size_t *sent, rpc_overlapped overlapped);
 
+/**
+ * @b ReadFileEx() remote call.
+ *
+ * @param rpcs       RPC server handle
+ * @param fd         file descriptor
+ * @param buf        buffer for data 
+ * @param count      number of bytes to be read
+ * @param overlapped @b overlapped object or RPC_NULL
+ * @param callback   completion callback name
+ *
+ * @return  TRUE (success) of FALSE (failure)
+ */
+extern te_bool rpc_read_file_ex(rcf_rpc_server *rpcs,
+                                int fd, void *buf, size_t count,
+                                rpc_overlapped overlapped,
+                                const char *callback);
+
+/**
+ * @b WriteFile() remote call.
+ *
+ * @param rpcs       RPC server handle
+ * @param fd         file descriptor
+ * @param buf        buffer for data 
+ * @param count      number of bytes to be sent
+ * @param overlapped @b overlapped object or RPC_NULL
+ * @param callback   completion callback name
+ *
+ * @return  TRUE (success) of FALSE (failure)
+ */
+extern te_bool rpc_write_file_ex(rcf_rpc_server *rpcs,
+                                 int fd, void *buf, size_t count,
+                                 rpc_overlapped overlapped,
+                                 const char *callback);
+
 /** Convert WSA function name to RPC name */
 static inline const char *
 wsa_name_convert(const char *name)
@@ -1301,8 +1335,12 @@ wsa_name_convert(const char *name)
         return "wsa_recv_msg";
     else if (strcmp(name, "ReadFile") == 0)
         return "read_file";
+    else if (strcmp(name, "ReadFileEx") == 0)
+        return "read_file_ex";
     else if (strcmp(name, "WriteFile") == 0)
         return "write_file";
+    else if (strcmp(name, "WriteFileEx") == 0)
+        return "write_file_ex";
     else if (strcmp(name, "WSAAccept") == 0)
         return "wsa_accept";
     else if (strcmp(name, "WSAConnect") == 0)
