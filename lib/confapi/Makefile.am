@@ -12,12 +12,12 @@ libconfapi_la_SOURCES=conf_api.c conf_types.c
 libconf_types_la_SOURCES=conf_types.c
 
 install-exec-hook:
-	touch -c -r .libs/libconfapi.la $(DESTDIR)/$(libdir)/libconfapi.*
-	touch -c -r .libs/libconf_types.la $(DESTDIR)/$(libdir)/libconf_types.*
+	touch -c -r libconfapi.la $(DESTDIR)/$(libdir)/libconfapi.*
+	touch -c -r libconf_types.la $(DESTDIR)/$(libdir)/libconf_types.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

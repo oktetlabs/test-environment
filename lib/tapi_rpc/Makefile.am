@@ -35,12 +35,11 @@ libtapi_rpc_la_SOURCES= \
     wsa.c 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_rpc.la \
-		$(DESTDIR)/$(libdir)/libtapi_rpc.*
+	touch -c -r libtapi_rpc.la $(DESTDIR)/$(libdir)/libtapi_rpc.*
 
 install-data-hook: 
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

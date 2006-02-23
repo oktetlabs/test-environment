@@ -12,12 +12,11 @@ libtapi_ipstack_la_SOURCES=tapi_ip.c tapi_tcp.c tapi_udp.c tapi_tcp_conn.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_ipstack.la \
-		$(DESTDIR)/$(libdir)/libtapi_ipstack.*
+	touch -c -r libtapi_ipstack.la $(DESTDIR)/$(libdir)/libtapi_ipstack.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

@@ -22,11 +22,11 @@ BUILT_SOURCES = env_gram.h
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_env.la $(DESTDIR)/$(libdir)/libtapi_env.*
+	touch -c -r libtapi_env.la $(DESTDIR)/$(libdir)/libtapi_env.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

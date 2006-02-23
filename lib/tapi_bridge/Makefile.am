@@ -12,12 +12,11 @@ libtapi_bridge_la_SOURCES=tapi_stp.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_bridge.la \
-		$(DESTDIR)/$(libdir)/libtapi_bridge.*
+	touch -c -r libtapi_bridge.la $(DESTDIR)/$(libdir)/libtapi_bridge.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

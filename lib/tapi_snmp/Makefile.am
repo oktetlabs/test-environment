@@ -22,11 +22,11 @@ extra_DIST=tests/mib_table1.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_snmp.la $(DESTDIR)/$(libdir)/libtapi_snmp.*
+	touch -c -r libtapi_snmp.la $(DESTDIR)/$(libdir)/libtapi_snmp.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

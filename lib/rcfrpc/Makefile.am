@@ -13,11 +13,11 @@ lib_LTLIBRARIES=librcfrpc.la
 librcfrpc_la_SOURCES=rcf_rpc.c 
 
 install-exec-hook:
-	touch -c -r .libs/librcfrpc.la $(DESTDIR)/$(libdir)/librcfrpc.*
+	touch -c -r librcfrpc.la $(DESTDIR)/$(libdir)/librcfrpc.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

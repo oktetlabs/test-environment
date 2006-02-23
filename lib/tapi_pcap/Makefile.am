@@ -13,11 +13,11 @@ libtapi_pcap_la_SOURCES=tapi_pcap.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_pcap.la $(DESTDIR)/$(libdir)/libtapi_pcap.*
+	touch -c -r libtapi_pcap.la $(DESTDIR)/$(libdir)/libtapi_pcap.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

@@ -13,7 +13,7 @@ libtapi_atm_la_SOURCES = tapi_atm.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_atm.la $(DESTDIR)/$(libdir)/libtapi_atm.*
+	touch -c -r libtapi_atm.la $(DESTDIR)/$(libdir)/libtapi_atm.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \

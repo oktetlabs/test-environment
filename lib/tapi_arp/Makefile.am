@@ -13,11 +13,11 @@ libtapi_arp_la_SOURCES=tapi_arp.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_arp.la $(DESTDIR)/$(libdir)/libtapi_arp.*
+	touch -c -r libtapi_arp.la $(DESTDIR)/$(libdir)/libtapi_arp.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

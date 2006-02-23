@@ -11,11 +11,11 @@ include_HEADERS=tapi_dhcp.h
 libtapi_dhcp_la_SOURCES=tapi_dhcp.c
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_dhcp.la $(DESTDIR)/$(libdir)/libtapi_dhcp.*
+	touch -c -r libtapi_dhcp.la $(DESTDIR)/$(libdir)/libtapi_dhcp.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

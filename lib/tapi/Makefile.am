@@ -37,11 +37,11 @@ libtapi_la_SOURCES = \
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi.la $(DESTDIR)/$(libdir)/libtapi.*
+	touch -c -r libtapi.la $(DESTDIR)/$(libdir)/libtapi.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install

@@ -13,11 +13,11 @@ libtapi_radius_la_SOURCES=tapi_radius.c
 
 
 install-exec-hook:
-	touch -c -r .libs/libtapi_radius.la $(DESTDIR)/$(libdir)/libtapi_radius.*
+	touch -c -r libtapi_radius.la $(DESTDIR)/$(libdir)/libtapi_radius.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
-	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
+		touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \
 	done
 
 all: install
