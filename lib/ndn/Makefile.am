@@ -50,7 +50,7 @@ libndn_la_SOURCES = \
 
 
 install-exec-hook:
-	touch -c -r .libs/libndn.la $(DESTDIR)/$(libdir)/libndn.*
+	touch -c -r libndn.la $(DESTDIR)/$(libdir)/libndn.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
