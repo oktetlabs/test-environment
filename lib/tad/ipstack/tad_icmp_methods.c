@@ -166,6 +166,7 @@ tad_icmp_error(csap_p csap, const char *usr_param,
     p += 2;
     *p++ = 64;
     *p++ = IPPROTO_ICMP;
+    *(uint16_t *)p = 0; /* initialize checksum as 0 */
     p += 2; /* leave place for header checksum */
     memcpy(p, orig_pkt + 16, 4);
     p += 4;
@@ -179,6 +180,7 @@ tad_icmp_error(csap_p csap, const char *usr_param,
 
     *p++ = type;
     *p++ = code;
+    *(uint16_t *)p = 0; /* initialize checksum as 0 */
     p += 2; /* leave place for ICMP checksum */
     *(uint32_t *)p = htonl(unused);
     p += 4; 
