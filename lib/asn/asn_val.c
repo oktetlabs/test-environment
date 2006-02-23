@@ -541,7 +541,7 @@ asn_child_named_index(const asn_type *type, const char *labels,
                      *p != 0 && *p != '.' && *p == *q; 
                      p++, q++);
 
-                if (*p == 0 || *p == '.')
+                if ((*p == 0 || *p == '.') && *q == 0)
                 {
                     *index = i;
                     break;
