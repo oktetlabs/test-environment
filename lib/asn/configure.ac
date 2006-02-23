@@ -13,13 +13,8 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_INSTALL
-
-AC_CHECK_TOOL(AR, ar)
-AC_CHECK_TOOL(NM, nm)
-AC_CHECK_TOOL(OBJDUMP, objdump)
-AC_CHECK_TOOL(OBJCOPY, objcopy)
 
 # We use APP here as we need to build tests
 TE_APP_SET
