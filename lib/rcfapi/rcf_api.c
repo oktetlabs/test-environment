@@ -1893,6 +1893,11 @@ rcf_ta_csap_create(const char *ta_name, int session,
                 "Created CSAP %u '%s' (%s:%d) with parameters:\n%Tf",
                 msg->handle, stack_id, ta_name, session, params);
     }
+    else
+    {
+        ERROR("Create CSAP '%s' (%s:%d) failed: %r\n%Tf",
+              stack_id, ta_name, session, rc, params);
+    }
         
     free(msg);
         
