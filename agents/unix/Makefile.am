@@ -105,7 +105,7 @@ if CFG_UNIX_DAEMONS_VTUND
 MY_SOURCES+=conf_vtund.c
 endif
 
-LIBS+=@TAD_LIBS@
+LIBS=-Wl,-Bdynamic @TAD_LIBS@ @LIBS@
 
 AM_CPPFLAGS = $(MY_CPPFLAGS) @EXTRA_CPPFLAGS@
 AM_CFLAGS = @TE_CFLAGS@ 
@@ -115,7 +115,7 @@ AM_CFLAGS = @TE_CFLAGS@
 # host which does not have required dynamically linked libraries.
 # Use -static.
 #
-AM_LDFLAGS=@TE_LDFLAGS@ -L$(DESTDIR)/$(prefix)/../@host@/lib
+AM_LDFLAGS=-L$(DESTDIR)/$(prefix)/../@host@/lib -Wl,-Bstatic @TE_LDFLAGS@
 
 bin_PROGRAMS=taunixtmpl
 
