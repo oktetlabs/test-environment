@@ -14,7 +14,7 @@ SNMP_H =
 endif
 
 
-lib_LIBRARIES = libndn.a
+lib_LTLIBRARIES=libndn.la
 
 include_HEADERS = \
 	ndn.h \
@@ -32,7 +32,7 @@ include_HEADERS = \
 	ndn_iscsi.h \
 	ndn_socket.h
 
-libndn_a_SOURCES = \
+libndn_la_SOURCES = \
 	ndn_generic.c \
 	ndn_context.c \
 	ndn_pcap.c \
@@ -50,7 +50,7 @@ libndn_a_SOURCES = \
 
 
 install-exec-hook:
-	touch -c -r libndn.a $(DESTDIR)/$(libdir)/libndn.a 
+	touch -c -r .libs/libndn.la $(DESTDIR)/$(libdir)/libndn.*
 
 install-data-hook:
 	for i in $(include_HEADERS) ; do \
