@@ -98,7 +98,7 @@ tad_icmp_error(csap_p csap, const char *usr_param,
     endptr++;
     code = strtol(endptr, &endptr, 10);
 
-    if (endptr != NULL)
+    if (endptr != NULL && *endptr != '\0')
     {
         if (*endptr != ':')
         {
@@ -107,7 +107,7 @@ tad_icmp_error(csap_p csap, const char *usr_param,
         }
         endptr++;
         unused = strtol(endptr, &endptr, 10);
-        if (endptr != NULL)
+        if (endptr != NULL && *endptr != '\0')
         {
             if (*endptr != ':')
             {
