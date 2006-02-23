@@ -3714,15 +3714,8 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
 	rsp->init_task_tag = htonl(cmnd->init_task_tag);
 
 	req = cmnd->cmnd->req;
-#if 0
-	if ((req->sr_data_direction == SCSI_DATA_READ)
-									&& host_byte(req->sr_result) == DID_OK) {
-#endif
-		flags = do_command_status(cmnd,req,&data_length_left,&residual_count);
-		rsp->exp_data_sn = htonl(cmnd->data_sn);
-#if 0
-	}
-#endif
+    flags = do_command_status(cmnd,req,&data_length_left,&residual_count);
+    rsp->exp_data_sn = htonl(cmnd->data_sn);
 
 	/* cdeng 3/24/02 */
 	if (flags & OVERFLOW_FLAG) {
@@ -3744,10 +3737,10 @@ send_iscsi_response(struct iscsi_cmnd *cmnd,
                                               "max_cmd_sn_delta");
     RING("Using MaxCmdSN delta %d", max_cmd_sn_delta);
     rsp->max_cmd_sn = htonl(session->exp_cmd_sn + max_cmd_sn_delta);
+    rsp->status = req->sr_result;
 
 	if (flags & SEND_SENSE_FLAG) {
 		/* sense data has to be sent as part of SCSI Response pdu */
-		rsp->status = CHECK_CONDITION << 1;	/* why does Linux do this shift? */
 		if (flags & UNDERFLOW_FLAG) {
 			TRACE(DEBUG, "underflow is found");
 			memset(sense_data.data, 0x0, SCSI_SENSE_BUFFERSIZE);
@@ -3827,7 +3820,13 @@ send_read_data(struct iscsi_cmnd *cmnd,
 	int data_payload_length;
 	int total_data_length;
     int max_cmd_sn_delta;
+    int zero_dsl_interval = iscsi_get_custom_value(conn->custom, 
+                                                   "zero_dsl_interval");
+    int zero_dsl_counter = zero_dsl_interval;
 
+
+    RING("Sending zero-data-length PDU every %d packets", 
+         zero_dsl_interval);
 /* Daren Hayward, darenh@4bridgeworks.com */
 #if defined(MANGLE_INQUIRY_DATA)
 	int miov, siov;
@@ -3882,9 +3881,17 @@ send_read_data(struct iscsi_cmnd *cmnd,
 			hdr->opcode = ISCSI_TARG_SCSI_DATA_IN;
 			hdr->target_xfer_tag = ALL_ONES;
 
-			if (seq_length > conn->max_send_length) {
+            if (zero_dsl_interval != 0 && zero_dsl_counter-- == 0)
+            {
+                data_payload_length = 0;
+                zero_dsl_counter = zero_dsl_interval;
+            }
+            else if (seq_length > conn->max_send_length) 
+            {
 				data_payload_length = conn->max_send_length;
-			} else {
+			} 
+            else 
+            {
 				/* this is the last data-in pdu in this sequence */
 				data_payload_length = seq_length;
 				hdr->flags |= F_BIT;
@@ -3957,6 +3964,17 @@ send_read_data(struct iscsi_cmnd *cmnd,
 				hdr->data_sn = htonl(prevsn);
 
 			hdr->offset = htonl(pdu_offset);
+
+            if (data_payload_length == 0)
+            {
+                err = send_hdr_only(conn, hdr);
+                if (err < 0)
+                {
+                    ERROR("Error sending zero data PDU");
+                    goto out;
+                }
+                continue;
+            }
 
 			st_list = (struct scatterlist *)cmnd->cmnd->req->sr_buffer;
 
@@ -4152,8 +4170,8 @@ handle_iscsi_done(struct iscsi_cmnd *cmnd,
 		goto out;
 	}
 
-	if ((req->sr_data_direction == SCSI_DATA_READ)
-									&& host_byte(req->sr_result) == DID_OK) 
+	if (req->sr_data_direction == SCSI_DATA_READ &&
+        req->sr_result == SAM_STAT_GOOD)
     {
         TRACE(VERBOSE, "Sending data");
         err = send_read_data(cmnd, conn, session, &phase_collapse);

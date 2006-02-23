@@ -110,7 +110,10 @@ struct target_map_item
     uint32_t         last_lba;
     te_bool          in_use;			/* 1 if this item is defined, else 0 */
     int              mmap_fd;
-    int              error_code;
+    int              status_code;
+    int              sense_key;
+    int              asc;
+    int              ascq;
 };
 
 	/* doubly-linked circular list, one entry for every iscsi target
@@ -375,8 +378,14 @@ iscsi_write_to_device(uint8_t target, uint8_t lun,
         rc = TE_OS_RC(TE_ISCSI_TARGET, errno);
     else
     {
-        rc = ((size_t)result_len == len ? 0 : 
-              TE_RC(TE_ISCSI_TARGET, TE_EFAIL));
+        if (result_len == (int)len)
+            rc = 0;
+        else
+        {
+            ERROR("Transfer failed: read %d instead of %d",
+                  (int)result_len, (int)len);
+            rc = TE_RC(TE_ISCSI_TARGET, TE_EFAIL);
+        }
     }
     close(src_fd);
     return rc;
@@ -426,7 +435,8 @@ iscsi_read_from_device(uint8_t target, uint8_t lun,
 }
 
 te_errno
-iscsi_set_device_failure_state(uint8_t target, uint8_t lun, uint32_t error)
+iscsi_set_device_failure_state(uint8_t target, uint8_t lun, uint32_t status,
+                               uint32_t sense, uint32_t asc, uint32_t ascq)
 {
     if (target >= MAX_TARGETS || lun >= MAX_LUNS ||
         !target_map[target][lun].in_use)
@@ -435,7 +445,11 @@ iscsi_set_device_failure_state(uint8_t target, uint8_t lun, uint32_t error)
                     target, lun);
         return TE_RC(TE_ISCSI_TARGET, TE_EINVAL);
     }
-    target_map[target][lun].error_code = error;
+    RING("(1) Setting sense to %x/%x/%x/%x", status, sense, asc, ascq);
+    target_map[target][lun].status_code = status;
+    target_map[target][lun].sense_key   = sense;
+    target_map[target][lun].asc         = asc;
+    target_map[target][lun].ascq        = ascq;
     return 0;
 }
 
@@ -752,6 +766,7 @@ scsi_target_process(void)
 	struct scatterlist *st_list;
 	Target_Scsi_Cmnd *cmd_curr;
 	Target_Scsi_Message *msg;
+    uint32_t target_id;
 	uint32_t lun;
 # ifdef DISKIO
 	Scsi_Device *this_device = NULL;
@@ -876,6 +891,7 @@ scsi_target_process(void)
         if (cmd_curr->state == ST_NEW_CMND) 
         {
             lun = cmd_curr->lun;
+            target_id = cmd_curr->target_id;
             
             cmd_curr->req = (Scsi_Request *)malloc(sizeof(Scsi_Request));
             
@@ -885,6 +901,31 @@ scsi_target_process(void)
                 
                 if (lun >= MAX_LUNS)
                     cmd_curr->req->sr_allowed = 1;
+                else
+                {
+                    struct scsi_fixed_sense_data *sense;
+
+                    int status_code = target_map[target_id][lun].status_code;
+                    int sense_key   = target_map[target_id][lun].sense_key;
+                    int asc         = target_map[target_id][lun].asc;
+                    int ascq        = target_map[target_id][lun].ascq;
+
+                    sense = (void *)cmd_curr->req->sr_sense_buffer;
+                    cmd_curr->req->sr_result    = status_code;
+                    
+                    if (status_code == SAM_STAT_CHECK_CONDITION)
+                    {
+                        sense->response            = 0xF0; /* current error + VALID bit */
+                        sense->sense_key_and_flags = sense_key;
+                        sense->additional_length   = sizeof(*sense) - 7;
+                        sense->csi                 = 0;
+                        sense->asc                 = asc;
+                        sense->ascq                = ascq;
+                        sense->fruc                = 0;
+                        memset(sense->sks, 0, sizeof(sense->sks));
+                        cmd_curr->req->sr_sense_length = sizeof(*sense);
+                    }
+                }
             }
             
             if (!cmd_curr->req) 
@@ -1655,7 +1696,7 @@ get_inquiry_response(Scsi_Request * req, int len, int type)
 		memcpy(buffer, ptr, len);
 	}
 
-	req->sr_result = DID_OK << 16;
+	req->sr_result = SAM_STAT_GOOD;
 
 	if (req->sr_allowed == 1) {
 		inq = ((struct scatterlist *) req->sr_buffer)->address;
@@ -1704,9 +1745,9 @@ get_read_capacity_response(Target_Scsi_Cmnd *cmnd)
 
 	/* Bjorn Thordarson, 9-May-2004 */
 	/*****
-	req->sr_result = DID_OK << 16;
+	req->sr_result = SAM_STAT_GOOD;
 	*****/
-	cmnd->req->sr_result = DID_OK << 16;
+	cmnd->req->sr_result = SAM_STAT_GOOD;
 	return 0;
 }
 
@@ -1732,7 +1773,7 @@ get_mode_sense_response(Scsi_Request * req, uint32_t len)
 
 	buffer[10] = 0x02;			// density code and block length
 
-	req->sr_result = DID_OK << 16;
+	req->sr_result = SAM_STAT_GOOD;
 	return 0;
 }
 
@@ -1792,7 +1833,7 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 
 	/* change status */
 	cmnd->state = ST_DONE;
-	cmnd->req->sr_result = DID_OK << 16;
+	cmnd->req->sr_result = SAM_STAT_GOOD;
 	return 0;
 }
 
@@ -1856,6 +1897,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
     uint32_t  offset;
     uint32_t  length;
     te_bool   success = TRUE;
+    int       status_code = SAM_STAT_GOOD;
     int       sense_key = 0;
     
     pthread_mutex_lock(&target_map_mutex);
@@ -1886,12 +1928,12 @@ do_scsi_io(Target_Scsi_Cmnd *command,
     {
         TRACE_ERROR("Invalid LUN %u specified for target %d", 
                     lun, command->target_id);
+        status_code = SAM_STAT_CHECK_CONDITION;
         sense_key = ILLEGAL_REQUEST;
         success = FALSE;
     }
-    else if (target_map[command->target_id][lun].error_code != 0)
+    else if (command->req->sr_result != SAM_STAT_GOOD)
     {
-        sense_key = target_map[command->target_id][lun].error_code;
         success = FALSE;
     }
     else
@@ -1902,6 +1944,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         {
             TRACE_ERROR("LBA %lu is out of range for lun %d, target %d",
                         lba, lun, command->target_id);
+            status_code = SAM_STAT_CHECK_CONDITION;
             sense_key = ILLEGAL_REQUEST;
             success = FALSE;
         }
@@ -1909,6 +1952,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         {
             TRACE_ERROR("LBA %lu + %lu is out of range for lun %d, target %d",
                         lba, length, lun, command->target_id);
+            status_code = SAM_STAT_CHECK_CONDITION;
             sense_key = ILLEGAL_REQUEST;
             success = FALSE;
         }
@@ -1922,10 +1966,14 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         {
             success = op(command, lun, offset);
             if (!success)
+            {
                 sense_key = HARDWARE_ERROR;
+                status_code = SAM_STAT_CHECK_CONDITION;
+            }
         }
         else
         {
+            status_code = SAM_STAT_CHECK_CONDITION;
             sense_key = ILLEGAL_REQUEST;
         }
     }
@@ -1934,21 +1982,25 @@ do_scsi_io(Target_Scsi_Cmnd *command,
     {
         struct scsi_fixed_sense_data *sense = 
             (void *)command->req->sr_sense_buffer;
-        command->req->sr_result    = DID_ERROR << 16;
-        sense->response            = 0xF0; /* current error + VALID bit */
-        sense->sense_key_and_flags = sense_key;
-        sense->information         = htonl(lba);
-        sense->additional_length   = sizeof(*sense) - 1;
-        sense->csi                 = 0;
-        sense->asc                 = 0;
-        sense->ascq                = 0;
-        sense->fruc                = 0;
-        memset(sense->sks, 0, sizeof(sense->sks));
-        command->req->sr_sense_length = sizeof(*sense);
+        if (command->req->sr_result == SAM_STAT_GOOD)
+            command->req->sr_result = status_code;
+        if (command->req->sr_result == SAM_STAT_CHECK_CONDITION)
+        {
+            if (sense_key != 0)
+                sense->sense_key_and_flags = sense_key;
+            sense->information         = htonl(lba);
+            command->req->sr_sense_length = sizeof(*sense);
+        }
+        else
+        {
+            command->req->sr_sense_length = 0;
+            command->req->sr_sense_buffer[0] = 0;
+        }
     }
     else
     {
-        command->req->sr_result = DID_OK << 16;
+        command->req->sr_result = SAM_STAT_GOOD;
+        command->req->sr_sense_length = 0;
         command->req->sr_sense_buffer[0] = 0;
         if (length != 0)
             target_map[command->target_id][lun].last_lba = 
@@ -2186,7 +2238,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
             
 			/* change status */
 			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
+			cmnd->req->sr_result = SAM_STAT_GOOD;
 
 			err = 0;
 			break;
@@ -2234,7 +2286,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
             
 			/* change status */
 			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
+			cmnd->req->sr_result = SAM_STAT_GOOD;
             
 			err = 0;
 			break;
@@ -2248,7 +2300,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
 			cmnd->req->sr_use_sg = 0;
 			cmnd->req->sr_bufflen = 0;
-			cmnd->req->sr_result = DID_OK << 16;
+			cmnd->req->sr_result = SAM_STAT_GOOD;
 			cmnd->state = ST_DONE;
 			err = 0;
 			break;
@@ -2308,7 +2360,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
             
 			/* change status */
 			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
+			cmnd->req->sr_result = SAM_STAT_GOOD;
 			err = 0;
 			break;
 		}
@@ -2321,7 +2373,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			cmnd->req->sr_use_sg = 0;
 			cmnd->req->sr_bufflen = 0;
 			cmnd->state = ST_DONE;
-			cmnd->req->sr_result = DID_OK << 16;
+			cmnd->req->sr_result = SAM_STAT_GOOD;
 			err = 0;
 			break;
 		}

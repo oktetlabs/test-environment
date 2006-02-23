@@ -122,12 +122,18 @@ extern int iscsi_read_from_device(uint8_t target, uint8_t lun,
  *
  * @param target Target No
  * @param lun    LUN
- * @param error  Failure state (0 means normal operation).
+ * @param status  Status code (0 means normal operation).
+ * @param sense   Sense key
+ * @param asc     SAM ASC
+ * @param ascq    SAM ASCQ
  *
  * @return Status code
  */
 extern te_errno iscsi_set_device_failure_state(uint8_t target, uint8_t lun, 
-                                               uint32_t error);
+                                               uint32_t status,
+                                               uint32_t sense,
+                                               uint32_t asc,
+                                               uint32_t ascq);
 
 /**
  * Informs the target that the following sessions will be 

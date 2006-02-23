@@ -118,45 +118,6 @@ extern const char *const scsi_device_types[MAX_SCSI_DEVICE_CODE];
 
 
 /*
- *  SCSI Architecture Model (SAM) Status codes. Taken from SAM-3 draft
- *  T10/1561-D Revision 4 Draft dated 7th November 2002.
- */
-#define SAM_STAT_GOOD            0x00
-#define SAM_STAT_CHECK_CONDITION 0x02
-#define SAM_STAT_CONDITION_MET   0x04
-#define SAM_STAT_BUSY            0x08
-#define SAM_STAT_INTERMEDIATE    0x10
-#define SAM_STAT_INTERMEDIATE_CONDITION_MET 0x14
-#define SAM_STAT_RESERVATION_CONFLICT 0x18
-#define SAM_STAT_COMMAND_TERMINATED 0x22	/* obsolete in SAM-3 */
-#define SAM_STAT_TASK_SET_FULL   0x28
-#define SAM_STAT_ACA_ACTIVE      0x30
-#define SAM_STAT_TASK_ABORTED    0x40
-
-/** scsi_status_is_good - check the status return.
- *
- * @status: the status passed up from the driver (including host and
- *          driver components)
- *
- * This returns true for known good conditions that may be treated as
- * command completed normally
- */
-static inline int scsi_status_is_good(int status)
-{
-	/*
-	 * FIXME: bit0 is listed as reserved in SCSI-2, but is
-	 * significant in SCSI-3.  For now, we follow the SCSI-2
-	 * behaviour and ignore reserved bits.
-	 */
-	status &= 0xfe;
-	return ((status == SAM_STAT_GOOD) ||
-		(status == SAM_STAT_INTERMEDIATE) ||
-		(status == SAM_STAT_INTERMEDIATE_CONDITION_MET) ||
-		/* FIXME: this is obsolete in SAM-3 */
-		(status == SAM_STAT_COMMAND_TERMINATED));
-}
-
-/*
  *  Status codes. These are deprecated as they are shifted 1 bit right
  *  from those found in the SCSI standards. This causes confusion for
  *  applications that are ported to several OSes. Prefer SAM Status codes

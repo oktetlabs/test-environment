@@ -44,7 +44,7 @@
 #include <pthread.h>
 #include "iscsi_custom.h"
 
-#define ISCSI_CUSTOM_MAX_PARAM 13
+#define ISCSI_CUSTOM_MAX_PARAM 14
 
 #define ISCSI_CUSTOM_MAGIC 0xeba1eba1
 
@@ -142,6 +142,7 @@ static iscsi_custom_descr param_descr[ISCSI_CUSTOM_MAX_PARAM + 1] =
     {"max_cmd_sn_delta", FALSE, NULL},
     {"send_nopin", TRUE, boolean_values},
     {"xfer_len", FALSE, NULL},
+    {"zero_dsl_interval", FALSE, NULL},
     {NULL, FALSE, NULL},
 };
     

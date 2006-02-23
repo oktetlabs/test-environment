@@ -660,7 +660,9 @@ extern int tapi_iscsi_target_will_drop(const char *ta, int id,
                                        int time2wait, int time2retain);
 
 extern int tapi_iscsi_target_set_failure_state(const char *ta, 
-                                               const char *error);
+                                               const char *status,
+                                               const char *sense,
+                                               const char *add_code);
 
 typedef int iscsi_target_id;
 typedef int iscsi_cid;
@@ -1210,6 +1212,20 @@ extern te_errno tapi_iscsi_initiator_open(iscsi_io_handle_t *ioh,
  */
 extern te_errno tapi_iscsi_initiator_close(iscsi_io_handle_t *ioh,
                                            iscsi_io_taskid *taskid);
+
+/**
+ * Does nothing. 
+ * Its sole purpose is to providc a task to wait for that never fails
+ * (useful when testing for a I/O failure).
+ *
+ * @param ioh           I/O handler
+ * @param taskid        A pointer to store a task ID or NULL (OUT)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_iscsi_initiator_noop(iscsi_io_handle_t *ioh,
+                                          iscsi_io_taskid *taskid);
+
 
 /**
  * Syncs the written data of an iSCSI-mounted filesystem file or 

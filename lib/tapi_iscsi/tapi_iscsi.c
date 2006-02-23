@@ -1678,13 +1678,28 @@ tapi_iscsi_target_will_drop(const char *ta, int id, te_bool drop_all,
 
 
 int
-tapi_iscsi_target_set_failure_state(const char *ta, const char *failure)
+tapi_iscsi_target_set_failure_state(const char *ta, const char *status,
+                                    const char *sense, 
+                                    const char *additional_code)
 {
     te_errno local_rc;
     te_errno remote_rc;
 
+    typedef struct status_mapping
+    {
+        const char *name;
+        int         key;
+    } status_mapping;
+
+    typedef struct asc_mapping
+    {
+        const char *name;
+        int         asc;
+        int         ascq;
+    } asc_mapping;
+
     /* The following are meant to match SCSI sense keys (see SPC-3, p.41) */
-    static char *failures[] = 
+    static char *senses[] = 
         {"none", 
          "recovered error",
          "not ready",
@@ -1699,22 +1714,80 @@ tapi_iscsi_target_set_failure_state(const char *ta, const char *failure)
          "aborted command",
          NULL
         };
-    char **found;
+    char **found_sense = NULL;
 
+    static status_mapping statuses[] =
+        {{"good", SAM_STAT_GOOD},
+         {"check condition", SAM_STAT_CHECK_CONDITION},
+         {"busy", SAM_STAT_BUSY},
+         {"reservation conflict", SAM_STAT_RESERVATION_CONFLICT},
+         {NULL, 0}};
+    status_mapping *found_status = NULL;
 
-    for (found = failures; *found != NULL; found++)
+    static asc_mapping asc_values[] =
+        {{"protocol_service_crc_error", 0x47, 0x05},
+         {"unexpected_unsolicited_data", 0x0c, 0x0c},
+         {"not_enough_unsolicited_data", 0x0c, 0x0d},
+         {NULL, 0, 0}};
+    asc_mapping  custom_asc;
+    asc_mapping *found_asc = NULL;
+
+    for (found_status = statuses; 
+         found_status->name != NULL; 
+         found_status++)
     {
-        if (strcmp(*found, failure) == 0)
+        if (strcmp(found_status->name, status) == 0)
             break;
     }
-    if (found == NULL)
+    if (found_status == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
+
+    if (sense != NULL)
+    {
+        for (found_sense = senses; *found_sense != NULL; found_sense++)
+        {
+            if (strcmp(*found_sense, sense) == 0)
+                break;
+        }
+        if (found_sense == NULL)
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (additional_code != NULL)
+    {
+        for (found_asc = asc_values; found_asc->name != NULL; found_asc++)
+        {
+            if (strcmp(found_asc->name, additional_code) == 0)
+                break;
+        }
+        if (found_asc == NULL)
+        {
+            char *next;
+            custom_asc.asc =  strtol(additional_code, &next, 0);
+            custom_asc.ascq = strtol(next, &next, 0);
+            if (*next != '\0')
+                return TE_RC(TE_TAPI, TE_EINVAL);
+            found_asc = &custom_asc;
+        }
+    }
+
+    RING("Setting device failure state to %x/%x/%x/%x",
+         found_status->key,
+         found_sense != NULL ? found_sense - senses : 0,
+         found_asc != NULL ? found_asc->asc : 0,
+         found_asc != NULL ? found_asc->ascq : 0);
 
     local_rc = rcf_ta_call(ta, 0, "iscsi_set_device_failure_state", 
                            &remote_rc,
-                           3, FALSE, 
+                           6, FALSE, 
                            RCF_UINT8, 0, RCF_UINT8, 0,
-                           RCF_UINT32, found - failures);
+                           RCF_UINT32, found_status->key,
+                           RCF_UINT32, 
+                           found_sense != NULL ? found_sense - senses : 0,
+                           RCF_UINT32, 
+                           found_asc != NULL ? found_asc->asc : 0,
+                           RCF_UINT32, 
+                           found_asc != NULL ? found_asc->ascq : 0);
     return local_rc != 0 ? local_rc : remote_rc;
 }
 
@@ -2291,7 +2364,7 @@ multiply_file_content(const char *fname, int multiply,
     for (; multiply != 0; multiply--)
     {
         result_len = write(fd, data, length);
-        if (result_len != 0)
+        if (result_len != (ssize_t)length)
         {
             status = (result_len < 0 ? TE_OS_RC(TE_TAPI, errno) : 
                       TE_RC(TE_TAPI, TE_ENOSPC));
@@ -2392,7 +2465,11 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
         return TE_RC(TE_TAPI, TE_EBADF);
 
     if (multiply > 1)
-        multiply_file_content(localfname, multiply, data, length);
+    {
+        rc = multiply_file_content(localfname, multiply, data, length);
+        if (rc != 0)
+            return rc;
+    }
 
     rc = rcf_ta_put_file(ta, 0, localfname, remotefname);
     if (rc != 0)
@@ -2406,7 +2483,7 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
                      RCF_UINT8, 0, RCF_UINT8, 0,
                      RCF_UINT32, offset, 
                      RCF_STRING, remotefname,
-                     RCF_UINT32, length);
+                     RCF_UINT32, length * multiply);
     return rc == 0 ? result : rc;
 }
 
@@ -2506,6 +2583,7 @@ struct iscsi_io_handle_t
                                                  initiator's side */
     char            device[RCF_MAX_NAME]; /**< A SCSI device associated with
                                              an iSCSI initiator */
+    te_bool         terminate;  /**< The thread must terminate when TRUE */
 };
 
 
@@ -2566,10 +2644,12 @@ static void
 rpc_server_destructor (void *arg)
 {
     iscsi_io_handle_t *ioh = arg;
-    
+
+    puts("trying to destroy RPC server");
     if (ioh->buffer != RPC_NULL)
         rpc_free(ioh->rpcs, ioh->buffer);
     rcf_rpc_server_destroy(ioh->rpcs);
+    puts("destroyed RPC server");
 }
 
 /**
@@ -2588,10 +2668,16 @@ tapi_iscsi_io_thread(void *param)
     sigaddset(&mask, ISCSI_IO_SIGNAL);
     sigaddset(&mask, SIGALRM);
     pthread_sigmask(SIG_BLOCK, &mask, NULL);
+#if 0
+    pthread_cleanup_push(puts, "thread terminated");
     pthread_cleanup_push(rpc_server_destructor, ioh);
+#endif
     for (;;)
     {
         sem_wait(&ioh->cmd_wait);
+        if (ioh->terminate)
+            break;
+        
         cmd = NULL;
         for (i = 0; i < MAX_ISCSI_IO_CMDS; i++)
         {
@@ -2642,10 +2728,13 @@ tapi_iscsi_io_thread(void *param)
                 RING("Sending task completion signal");
                 kill(getpid(), ISCSI_IO_SIGNAL);
             }
-            pthread_testcancel();
         }
     }
+#if 0
     pthread_cleanup_pop(1);
+    pthread_cleanup_pop(1);
+#endif
+    return NULL;
 }
 
 static te_errno
@@ -2683,6 +2772,18 @@ command_close(iscsi_io_handle_t *ioh, int *fd,
             RPC_ERRNO(ioh->rpcs);
     }
 }
+
+static te_errno
+command_noop(iscsi_io_handle_t *ioh, int *fd, 
+              void *data, ssize_t length)
+{
+    UNUSED(data);
+    UNUSED(length);
+    UNUSED(fd);
+    UNUSED(ioh);
+    return 0;
+}
+
 
 static te_errno
 command_fsync(iscsi_io_handle_t *ioh, int *fd, 
@@ -2879,6 +2980,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     (*ioh)->chunksize      = chunksize;
     (*ioh)->bufsize        = 0;
     (*ioh)->buffer         = RPC_NULL;
+    (*ioh)->terminate      = FALSE;
 
     sprintf(name, "iscsi_%u", id);
     rc = rcf_rpc_server_create(ta, name, &((*ioh)->rpcs));
@@ -2937,17 +3039,23 @@ tapi_iscsi_io_enable_signal(iscsi_io_handle_t *ioh, te_bool enable)
 te_errno
 tapi_iscsi_io_finish(iscsi_io_handle_t *ioh)
 {
+    int rc = 0;
     int i;
 
-    pthread_cancel(ioh->thread);
+    ioh->terminate = TRUE;
+    sem_post(&ioh->cmd_wait);
     pthread_join(ioh->thread, NULL);
     for (i = 0; i < MAX_ISCSI_IO_CMDS; i++)
     {
         if (ioh->cmds[i].destroy != NULL)
             ioh->cmds[i].destroy(ioh->cmds[i].data);
     }
+    if (ioh->buffer != RPC_NULL)
+        rpc_free(ioh->rpcs, ioh->buffer);
+    rcf_rpc_server_destroy(ioh->rpcs);
+
     free(ioh);
-    return 0;
+    return rc;
 }
 
 te_errno
@@ -3168,11 +3276,29 @@ tapi_iscsi_initiator_close(iscsi_io_handle_t *ioh,
     cmd.length    = 0;
     cmd.data      = NULL;
     cmd.spread_fd = FALSE;
-    cmd.leader    = FALSE;
+    cmd.leader    = TRUE;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = NULL;
     return post_command(ioh, &cmd, taskid);
 }
+
+te_errno
+tapi_iscsi_initiator_noop(iscsi_io_handle_t *ioh,
+                          iscsi_io_taskid *taskid)
+{
+    iscsi_io_cmd_t cmd;
+
+    cmd.cmd       = command_noop;
+    cmd.fd        = -1;
+    cmd.length    = 0;
+    cmd.data      = NULL;
+    cmd.spread_fd = FALSE;
+    cmd.leader    = TRUE;
+    cmd.do_signal = (taskid != NULL);
+    cmd.destroy   = NULL;
+    return post_command(ioh, &cmd, taskid);
+}
+
 
 te_errno
 tapi_iscsi_initiator_fsync(iscsi_io_handle_t *ioh,
