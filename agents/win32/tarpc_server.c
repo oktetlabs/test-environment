@@ -1081,7 +1081,8 @@ TARPC_FUNC(read_file_ex, {},
                                        overlapped->buffers[0].buf,
                                        in->len, 
                                        (LPWSAOVERLAPPED)overlapped,
-                                       IN_CALLBACK));
+                                       (LPOVERLAPPED_COMPLETION_ROUTINE)
+                                           IN_CALLBACK));
                                      
     if (!out->retval)
     {
@@ -1169,7 +1170,8 @@ TARPC_FUNC(write_file_ex, {},
                                         overlapped->buffers[0].buf,
                                         in->len, 
                                         (LPWSAOVERLAPPED)overlapped,
-                                        IN_CALLBACK));
+                                        (LPOVERLAPPED_COMPLETION_ROUTINE)
+                                            IN_CALLBACK));
                                      
     if (!out->retval)
     {
@@ -1535,6 +1537,8 @@ TARPC_FUNC(getsockopt,
     else
     {
         char opt[sizeof(struct linger)];
+        
+        memset(opt, 0, sizeof(opt));
         
         if (out->optlen.optlen_val != NULL &&
             *(out->optlen.optlen_val) == RPC_OPTLEN_AUTO)
