@@ -1368,16 +1368,15 @@ asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
     if (value->syntax != TAGGED) 
         return -1; 
     
-    if (buf_len <= asn_count_len_tagged(value, indent))
-        return -1;
-
     v_el = value->data.array[0];
     if (v_el)
     { 
         char t_class[4][30] = {"UNIVERSAL ","APPLICATION ","","PRIVATE "};
 
-        used = sprintf(buffer, "[%s%d]", 
-                       t_class[(int)value->tag.cl], value->tag.val); 
+        used = snprintf(buffer, buf_len, "[%s%d]", 
+                        t_class[(int)value->tag.cl], value->tag.val); 
+        if (used >= buf_len)
+            return used;
         all_used += used; buffer += used; 
 
         used = asn_sprint_value(v_el, buffer, buf_len - all_used, indent);
@@ -1403,6 +1402,7 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
                   unsigned int indent)
 {
     int all_used = 0, used;
+    char *p;
 
     asn_value *v_el;
 
@@ -1421,7 +1421,7 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
         return -1;
     }
 
-    strcpy(buffer, v_el->name);
+    p = strcpy(buffer, v_el->name, buf_len);
     strcat(buffer, ":");
 
     used = strlen(buffer);
