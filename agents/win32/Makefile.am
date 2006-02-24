@@ -137,7 +137,8 @@ build_native: $(tawin32tmpl_rpcserver_SOURCES) \
             i686-pc-windows ta@with_name@_rpcserver.exe \
             \"$(RPCSERVER_LIBS)\" $^ 
 	if test -e ta@with_name@_rpcserver.exe ; then \
-            cp ta@with_name@_rpcserver.exe $(DESTDIR)/$(bindir) ; \
+            cp ta@with_name@_rpcserver.exe \
+               $(DESTDIR)/$(bindir)/tawin32tmpl_rpcserver.exe ; \
         fi
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
         $(srcdir)/../../engine/builder/te_build_win_app $(srcdir) \
