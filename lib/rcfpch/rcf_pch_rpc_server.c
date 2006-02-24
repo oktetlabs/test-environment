@@ -103,9 +103,9 @@ recv_timeout(int s, void *buf, int len, int t)
 #ifdef __CYGWIN__
     int i;
     
-    for (i = 0; i < t && rc <= 0; i++)
+    for (i = 0; i < t * 100 && rc <= 0; i++)
     {
-        struct timeval tv = { 0, 990000 };
+        struct timeval tv = { 0, 0 };
         
         sleep_waitable(10);
         
