@@ -1421,7 +1421,7 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
         return -1;
     }
 
-    p = strcpy(buffer, v_el->name, buf_len);
+    p = memcpy(buffer, v_el->name, strlen(v_el->name));
     strcat(buffer, ":");
 
     used = strlen(buffer);
