@@ -41,6 +41,11 @@ INCLUDE(winerror.h)
 INCLUDE(mswsock.h)
 INCLUDE(ws2tcpip.h)
 INCLUDE(mstcpip.h)
+typedef unsigned char uchar;
+typedef unsigned short ushort;
+typedef unsigned int uint;
+typedef unsigned long ulong;
+INCLUDE(tcpioctl.h)    
 INCLUDE(stdio.h)
 INCLUDE(stdarg.h)
 INCLUDE(stdlib.h)

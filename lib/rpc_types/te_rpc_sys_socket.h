@@ -1384,6 +1384,8 @@ typedef enum rpc_ioctl_code {
     RPC_SIO_SET_QOS,
     RPC_SIO_TRANSLATE_HANDLE,
     RPC_SIO_UDP_CONNRESET,
+    RPC_SIO_INDEX_BIND,
+    RPC_SIO_UCAST_IF,
 
     RPC_SIOUNKNOWN          /**< Invalid ioctl code */
     
@@ -1503,6 +1505,8 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H(SIO_SET_QOS);
         RPC2H(SIO_TRANSLATE_HANDLE);
         RPC2H(SIO_UDP_CONNRESET);
+        RPC2H(SIO_INDEX_BIND);
+        RPC2H(SIO_UCAST_IF);
 #endif
         default: return IOCTL_MAX;
     }
@@ -1564,6 +1568,8 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SIO_SET_QOS);
         RPC2STR(SIO_TRANSLATE_HANDLE);
         RPC2STR(SIO_UDP_CONNRESET);
+        RPC2STR(SIO_INDEX_BIND);
+        RPC2STR(SIO_UCAST_IF);
         default: return "<IOCTL_FATAL_ERROR>";
     }
 }

@@ -680,7 +680,8 @@ rcf_ta_call_rpc(const char *ta_name, int session,
 
         if ((rc = rpc_xdr_encode_call(rpc_name, msg->file, &len, in)) != 0)
         {
-            ERROR("Encoding of RPC %s input parameters failed", rpc_name);
+            ERROR("Encoding of RPC %s input parameters failed: error %r",
+                  rpc_name, rc);
             free(msg);
             return rc;
         }
@@ -715,7 +716,8 @@ rcf_ta_call_rpc(const char *ta_name, int session,
     rc = rpc_xdr_decode_result(rpc_name, msg->file, msg->intparm, out);
     
     if (rc != 0)
-        ERROR("Decoding of RPC %s output parameters failed", rpc_name);
+        ERROR("Decoding of RPC %s output parameters failed: error %r",
+              rpc_name, rc);
         
     if ((char *)msg != msg_buf)
         free(msg);

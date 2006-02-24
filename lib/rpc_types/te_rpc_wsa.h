@@ -396,6 +396,15 @@ servicetype_flags_h2rpc(unsigned int flags)
 #endif
 #ifndef SIO_KEEPALIVE_VALS
 #define SIO_KEEPALIVE_VALS    _WSAIOW(IOC_VENDOR,4)
+#ifndef SIO_UCAST_IF
+#define SIO_UCAST_IF          _WSAIOW(IOC_VENDOR,6)
+#endif
+#ifndef SIO_LIMIT_BROADCASTS
+#define SIO_LIMIT_BROADCASTS  _WSAIOW(IOC_VENDOR,7)
+#endif
+#ifndef SIO_INDEX_BIND
+#define SIO_INDEX_BIND        _WSAIOW(IOC_VENDOR,8)
+#endif
 struct tcp_keepalive {
     u_long  onoff;
     u_long  keepalivetime;

@@ -32,7 +32,7 @@
 
 
 #ifndef __TE_WIN_DEFS_H__
-#define __TE_WIN__DEFS_H__
+#define __TE_WIN_DEFS_H__
 
 typedef INT8   int8_t;
 typedef INT16  int16_t;
