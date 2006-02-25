@@ -1247,14 +1247,15 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
 
 #define PUT_PIECE(_src, _len) \
     do {                                                \
+        size_t loc_len = (_len);                        \
         interval = (buf_len - total_syms);              \
         strncpy(buf_place, (_src),                      \
-                (interval > (size_t)(_len)) ?           \
-                            (size_t)(_len) : interval); \
-        if (interval <= (size_t)(_len))                 \
+                (interval > loc_len) ?                  \
+                            loc_len : interval);        \
+        if (interval <= loc_len)                        \
             goto finish;                                \
-        total_syms += (_len);                           \
-        buf_place += (_len);                            \
+        total_syms += loc_len;                          \
+        buf_place += loc_len;                           \
     } while (0)
 
     string = value->data.other;
@@ -1275,7 +1276,7 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
     if (string != NULL && string[0] != '\0')
         PUT_PIECE(string, strlen(string));
     
-    if (total_syms + 2 >= buf_len)
+    if (total_syms + 1 >= buf_len)
         goto finish;
 
     strcpy(buf_place, "\""); 
@@ -1305,7 +1306,7 @@ int
 asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
 {
     char        *pb = buffer;
-    char        *last_b = buffer + buf_len;
+    char        *last_b = buffer + buf_len - 1;
     unsigned int i;
     static char  hex_digits[] = {'0', '1', '2', '3', '4', '5', '6', '7', 
                                  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', };
@@ -1318,10 +1319,10 @@ asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
         return -1;
 
 #define PUT_OCT_SYM(_byte) \
-    do { \
-        *pb++ = (_byte); \
-        if (pb == last_b) \
-            goto finish; \
+    do {                        \
+        if (pb == last_b)       \
+            goto finish;        \
+        *pb++ = (_byte);        \
     } while (0)
 
     PUT_OCT_SYM('\'');
@@ -1336,6 +1337,7 @@ asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
     PUT_OCT_SYM('\'');
     PUT_OCT_SYM('H');
 
+#undef PUT_OCT_SYM
 finish: 
     *pb = '\0';
     return value->txt_len;
@@ -1356,7 +1358,7 @@ int
 asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len, 
         unsigned int indent)
 {
-    int all_used = 0, used;
+    unsigned int all_used = 0, used;
 
     asn_value *v_el;
 
@@ -1401,8 +1403,10 @@ int
 asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len, 
                   unsigned int indent)
 {
-    int all_used = 0, used;
-    char *p;
+    int   used;
+    char *p = buffer, 
+         *last = buffer + buf_len - 1,
+         *name_p;
 
     asn_value *v_el;
 
@@ -1412,25 +1416,28 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
     if (value->syntax != CHOICE) 
         return -1; 
     
-    if (buf_len <= asn_count_len_choice(value, indent))
+    if ((v_el = value->data.array[0]) == NULL)
         return -1;
 
-    if ((v_el = value->data.array[0]) == NULL)
+    
+    for (name_p = v_el->name; 
+         (*name_p != '\0') && (p < last);
+         p++, name_p++)
+        *p = *name_p;
+
+    if (p < last)
+        *p++ = ':';
+
+    if (p == last) 
     {
-        printf("%s(): incomplete", __FUNCTION__);
-        return -1;
+        *p = '\0';
+        return asn_count_len_choice(value, indent);
     }
 
-    p = memcpy(buffer, v_el->name, strlen(v_el->name));
-    strcat(buffer, ":");
+    used = p - buffer;
+    used += asn_sprint_value(v_el, p, buf_len - used, indent);
 
-    used = strlen(buffer);
-    all_used += used; buffer += used; 
-
-    used = asn_sprint_value(v_el, buffer, buf_len - all_used, indent);
-    all_used += used; 
-
-    return all_used;
+    return used;
 }
 
 
@@ -1448,8 +1455,9 @@ int
 asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
 {
     unsigned int i;
+    char *last = buffer + buf_len - 1;
 
-    int  all_used = 0, used;
+    unsigned int all_used = 0, used;
     int *subid;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
@@ -1458,26 +1466,32 @@ asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
     if (value->syntax != OID) 
         return -1; 
     
-    if (buf_len <= asn_count_len_objid(value))
-        return -1;
 
+    if (buf_len == 1)
+        goto error;
     strcpy(buffer, "{");
 
-    all_used++; buffer++;
+    all_used++; buffer++; buf_len--;
 
     subid = (int *)value->data.other; 
 
     for (i = 0; i < value->len; i++)
     { 
-        used = sprintf(buffer, "%d", subid[i]);
-        all_used += used; buffer += used;
-        strcat(buffer, " ");
-        all_used++; buffer++;
+        used = snprintf(buffer, buf_len, "%d ", subid[i]);
+        if (used >= buf_len)
+            goto error;
+        all_used += used, buffer += used, buf_len -= used;
     } 
-    strcat(buffer, "}"); 
+    if (buffer == last)
+        goto error; 
+    strcpy(buffer, "}"); 
     all_used++;
 
     return all_used;
+
+error:
+    *last = '\0';
+    return asn_count_len_objid(value);
 }
 
 
@@ -1497,12 +1511,11 @@ int
 asn_sprint_array_fields(const asn_value *value, char *buffer, 
                         size_t buf_len, unsigned int indent)
 {
-    unsigned int i;
-
-    int all_used = 0, used;
+    unsigned int i, j; 
+    unsigned int all_used = 0, used;
     int was_element = 0;
     
-    char *str_indent = malloc(indent + 3);
+    char *last = buffer + buf_len - 1;
 
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0; 
@@ -1511,64 +1524,68 @@ asn_sprint_array_fields(const asn_value *value, char *buffer,
      * may have arbitrary last two bits*/
     if ((value->syntax & ((-1)<<2) )!= SEQUENCE) 
         return -1; 
+
+#define PUT_OCT_SYM(_byte) \
+    do {                        \
+        if (buffer == last)     \
+            goto error;         \
+        *buffer++ = (_byte);    \
+        all_used++;             \
+    } while (0)
     
-    if (buf_len <= asn_count_txt_len(value, indent))
-        return -1;
+    PUT_OCT_SYM('{');
 
-    /* strcpy (buffer, asn_print_current_indent); */
-    strcpy(buffer, "{");
-
-    used = strlen(buffer);
-    all_used += used; buffer += used;
-
-    /* set indent string */
     indent += 2;
-    for (i = 0; i < indent; i++)  
-        str_indent[i] = ' ';
-    str_indent[i] = '\0';
 
     for (i = 0; i < value->len; i++)
     { 
         asn_value *v_el = value->data.array[i];
 
+
         if (v_el)
         {
             if (was_element) 
-                strcat(buffer, ",\n"); 
-            else 
-                strcat(buffer, "\n"); 
+                PUT_OCT_SYM(',');
 
-            strcat(buffer, str_indent); 
-            if ( ! (value->syntax & 1) )
-            { /* We have structure with named components. */
-                strcat(buffer, v_el->name);
-                strcat(buffer, " ");
-            }
+            PUT_OCT_SYM('\n');
 
-            used = strlen(buffer);
-            all_used += used; buffer += used; 
+            for (j = 0; j < indent; j++)
+                PUT_OCT_SYM(' ');
+
+            /* Check if we have structure with named components. */
+            if (!(value->syntax & 1))
+            {
+                used = snprintf(buffer, buf_len - all_used, "%s ",
+                                v_el->name);
+                if (used >= buf_len - all_used)
+                    goto error;
+                all_used += used; buffer += used; 
+            } 
 
             used = asn_sprint_value(v_el, buffer, buf_len - all_used, 
                                     indent);
+            if (used >= buf_len - all_used)
+                goto error;
             all_used += used; buffer += used;
 
             was_element = 1;
         }
     } 
-    strcat(buffer, "\n"); 
+    PUT_OCT_SYM('\n');
 
-    /* decrease indent */
-    str_indent[indent - 2] = '\0';
+    indent -= 2;
+    for (j = 0; j < indent; j++)
+        PUT_OCT_SYM(' ');
 
-    strcat(buffer, str_indent);
-    strcat(buffer, "}");
+    PUT_OCT_SYM('}'); 
+    *buffer = '\0';
 
-    used = strlen(buffer);
-    all_used += used;
-
-    free(str_indent);
+#undef PUT_OCT_SYM
 
     return all_used;
+error:
+    *last = '\0';
+    return asn_count_txt_len(value, indent);
 }
 
 /**
@@ -1589,16 +1606,13 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
     if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
         return 0;
 
-    if (buf_len <= asn_count_txt_len(value, indent))
-        return -1;
-
     switch (value->syntax)
     {
         case BOOL:
             if (value->data.integer) 
-                return sprintf(buffer, "TRUE");
+                return snprintf(buffer, buf_len, "TRUE");
             else
-                return sprintf(buffer, "FALSE");
+                return snprintf(buffer, buf_len, "FALSE");
 
         case INTEGER:
             return snprintf(buffer, buf_len, "%d", value->data.integer);
@@ -1613,7 +1627,7 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
             return asn_sprint_octstring(value, buffer, buf_len);
 
         case PR_ASN_NULL:
-            return sprintf(buffer, "NULL");
+            return snprintf(buffer, buf_len, "NULL");
 
         case LONG_INT:
         case BIT_STRING:

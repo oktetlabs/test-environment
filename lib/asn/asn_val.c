@@ -1103,8 +1103,9 @@ asn_impl_write_value_field(asn_value *container,
             container->data.other = val;
             memcpy(val,  data, m_len);
             container->len = d_len; 
-            container->txt_len = d_len * 3 + 3; 
         }
+        if (container->syntax == OCT_STRING)
+            container->txt_len = d_len * 3 + 3; 
         break;
 
     case SEQUENCE:
