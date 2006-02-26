@@ -132,7 +132,6 @@ main(int argc, char *argv[])
 #else
         uint8_t rem_addr[6] = {0x20,0x03,0x20,0x04,0x14,0x30};
 #endif
-        uint8_t loc_addr[6] = {0xff, 0xff,0xff,0xff,0xff,0xff};
 
                     
         memset (&plain_hdr, 0, sizeof(plain_hdr));
@@ -187,7 +186,7 @@ main(int argc, char *argv[])
         if (rc)
             TEST_FAIL("template create error %x\n", rc);
         VERB ("template created successfully \n");
-        rc = tapi_eth_csap_create(ta, sid, eth_device, rem_addr, loc_addr, 
+        rc = tapi_eth_csap_create(ta, sid, eth_device, rem_addr, NULL, 
                               &eth_type, &eth_csap);
 
         if (rc)
@@ -195,13 +194,9 @@ main(int argc, char *argv[])
         else 
             VERB ("csap created, id: %d\n", (int)eth_csap);
 
-
-#if 1
-        eth_type = 0;
-#endif
         rc = tapi_eth_csap_create_with_mode(ta, sid, eth_device,
                                             ETH_RECV_ALL, NULL, NULL,
-                                            &eth_type, &eth_listen_csap);
+                                            NULL, &eth_listen_csap);
         if (rc)
             TEST_FAIL("csap for listen create error: %x\n", rc);
         else 
@@ -220,15 +215,17 @@ main(int argc, char *argv[])
             TEST_FAIL("write dst to pattern failed %X", rc);
 
 
-#if 1
+#if 0
         do {
-            asn_free_subvalue(pattern, "0.pdus.0.#eth.vlan-id");
+            asn_free_subvalue(pattern,
+                              "0.pdus.0.#eth.frame-type.#tagged.vlan-id");
             asn_value *interval;
             asn_value *ints_seq = asn_init_value(ndn_interval_sequence);
             const asn_type *type = NULL;
             int parsed = 0;
 
-            rc = asn_get_subtype(ndn_generic_pdu, &type, "#eth.vlan-id");
+            rc = asn_get_subtype(ndn_generic_pdu, &type,
+                                 "#eth.frame-type.#tagged.vlan-id");
             if (rc)
             {
                 ERROR("get subtype for vlan-id failed %x", rc);
@@ -253,7 +250,7 @@ main(int argc, char *argv[])
             if (rc != 0) break;
             VERB("parse intervals ok");
             rc = asn_write_component_value(pattern, ints_seq,
-                        "0.pdus.0.#eth.vlan-id");
+                     "0.pdus.0.#eth.frame-type.#tagged.vlan-id");
             if (rc) break;
             VERB("write intervals seq ok"); 
             UNUSED(interval);
@@ -266,7 +263,7 @@ main(int argc, char *argv[])
             if (rc) break;
             VERB("insert indexed ok");
             rc = asn_write_component_value(pattern, ints_seq,
-                        "0.pdus.0.#eth.vlan-id.#intervals");
+                     "0.pdus.0.#eth.frame-type.#tagged.vlan-id.#intervals");
             if (rc) break;
             VERB("write intervals seq ok");
 #endif
@@ -274,7 +271,7 @@ main(int argc, char *argv[])
         } while(0);
 
         if (rc)
-            TEST_FAIL("write intervals to pattern failed, rc %x\n", rc);
+            TEST_FAIL("write intervals to pattern failed, rc %r\n", rc);
 
 #endif
 

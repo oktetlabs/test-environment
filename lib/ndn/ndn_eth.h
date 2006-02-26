@@ -65,36 +65,48 @@ typedef struct ndn_eth_header_plain {
 
 
 enum eth_csap_receive_mode {
-    ETH_RECV_HOST = 1,
-    ETH_RECV_BROADCAST = 2,
-    ETH_RECV_MULTICAST = 4,
-    ETH_RECV_OTHERHOST = 8,
-    ETH_RECV_OUTGOING = 16,
-    ETH_RECV_ALL = 31,
+    ETH_RECV_HOST      = 0x01,
+    ETH_RECV_BROADCAST = 0x02,
+    ETH_RECV_MULTICAST = 0x04,
+    ETH_RECV_OTHERHOST = 0x08,
+    ETH_RECV_OUTGOING  = 0x10,
+    ETH_RECV_ALL       = ETH_RECV_HOST | ETH_RECV_BROADCAST |
+                         ETH_RECV_MULTICAST | ETH_RECV_OTHERHOST |
+                         ETH_RECV_OUTGOING,
 };
 
 typedef enum {
+
     NDN_TAG_ETH_DEVICE = 0,
     NDN_TAG_ETH_RECV_MODE,
     NDN_TAG_ETH_LOCAL,
     NDN_TAG_ETH_REMOTE,
+
+    NDN_TAG_ETH_FRAME_TYPE,
+    NDN_TAG_ETH_UNTAGGED,
+    NDN_TAG_ETH_TAGGED,
+    NDN_TAG_ETH_SNAP,
+
     NDN_TAG_ETH_DST,
     NDN_TAG_ETH_SRC,
-    NDN_TAG_ETH_TYPE_LEN,
-    NDN_TAG_ETH_IS_SNAP,
-    NDN_TAG_ETH_SNAP_HEADER,
+    NDN_TAG_ETH_LENGTH_TYPE,
+
+    NDN_TAG_ETH_SNAP_OUI,
     NDN_TAG_ETH_SNAP_PID,
-    NDN_TAG_ETH_TAG_TYPE,
-    NDN_TAG_ETH_CFI,
+
     NDN_TAG_ETH_PRIO,
+    NDN_TAG_ETH_CFI,
     NDN_TAG_ETH_VLAN_ID,
+
     NDN_TAG_ETH_ERIF_RC_RT,
     NDN_TAG_ETH_ERIF_RC_LTH,
     NDN_TAG_ETH_ERIF_RC_D,
     NDN_TAG_ETH_ERIF_RC_LF,
     NDN_TAG_ETH_ERIF_RC_NCFI,
     NDN_TAG_ETH_ERIF_RT,
+
 } ndn_eth_tags_t;
+
 
 /** 
  * Convert Ethernet-Header ASN value to plain C structure. 

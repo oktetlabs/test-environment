@@ -273,7 +273,7 @@ tapi_ip4_eth_recv_start(const char      *ta_name,
     }
 
     fprintf(f, "   },\n" ); /* closing  'ip4' */
-    fprintf(f, "   eth:{eth-type plain:2048");
+    fprintf(f, "   eth:{length-type plain:2048");
 
     if ((b = src_mac_addr))
         fprintf(f, ",\n    "

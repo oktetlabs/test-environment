@@ -476,9 +476,9 @@ tapi_eth_prepare_pattern(const uint8_t *src_mac,
 
     if (eth_type == NULL)
     {
-        if ((rc = asn_free_subvalue(frame_hdr, "eth-type")) != 0)
+        if ((rc = asn_free_subvalue(frame_hdr, "length-type")) != 0)
         {
-            ERROR("Cannot delete 'eth-type' subvalue from ETH header");
+            ERROR("Cannot delete 'length-type' subvalue from ETH header");
             return rc;
         }
     }
@@ -546,7 +546,7 @@ tapi_eth_prepare_pattern_unit(uint8_t *src_mac, uint8_t *dst_mac,
 
         if (eth_type)
             rc = asn_write_int32(pat_unit, eth_type, 
-                                 "pdus.0.#eth.eth-type.#plain");
+                                 "pdus.0.#eth.length-type.#plain");
         if (rc) break;
     } while(0);
 
