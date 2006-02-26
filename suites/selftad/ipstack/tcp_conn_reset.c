@@ -26,7 +26,7 @@
  * $Id$
  */
 
-#define TE_TEST_NAME    "ipstack/tcp_conn"
+#define TE_TEST_NAME    "ipstack/tcp_conn_reset"
 
 #define TE_LOG_LEVEL 0xff
 
@@ -88,24 +88,18 @@ main(int argc, char *argv[])
     int acc_sock = -1;
     int opt_val = 1;
 
-    te_bool is_server;
-    te_bool init_close;
-
     const struct sockaddr *csap_addr;
     size_t csap_addr_len;
 
     const struct sockaddr *sock_addr;
     size_t sock_addr_len;
 
-    // uint8_t csap_mac[6] = {0x00, 0x05, 0x5D, 0x74, 0xAB, 0xB4};
     uint8_t csap_mac[6] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
     uint8_t sock_mac[6];
     size_t  sock_mac_len = sizeof(sock_mac);
 
     TEST_START; 
 
-    TEST_GET_BOOL_PARAM(is_server);
-    TEST_GET_BOOL_PARAM(init_close);
     TEST_GET_HOST(host_csap);
     TEST_GET_PCO(sock_pco);
     TEST_GET_IF(sock_if);
@@ -156,31 +150,19 @@ main(int argc, char *argv[])
         TEST_FAIL("bind failed");
 
 
-
-    if (!is_server) /*Csap is server, socket is client */
-    {
-        rc = rpc_listen(sock_pco, socket, 1);
-        if (rc != 0)
-            TEST_FAIL("listen failed");
-    }
-
     rc = tapi_tcp_init_connection(agt_a,
-                                  is_server ? TAPI_TCP_SERVER :
-                                              TAPI_TCP_CLIENT, 
+                                  TAPI_TCP_SERVER, 
                                   csap_addr, sock_addr, 
                                   csap_if->if_name, csap_mac, sock_mac,
                                   1000, &conn_hand);
     if (rc != 0)
         TEST_FAIL("init connection failed: %r", rc); 
 
-    if (is_server)
-    {
-        sock_pco->op = RCF_RPC_CALL;
-        rc = rpc_connect(sock_pco, socket,
-                         csap_addr, csap_addr_len);
-        if (rc != 0)
-            TEST_FAIL("connect() 'call' failed: %r", rc); 
-    } 
+    sock_pco->op = RCF_RPC_CALL;
+    rc = rpc_connect(sock_pco, socket,
+                     csap_addr, csap_addr_len);
+    if (rc != 0)
+        TEST_FAIL("connect() 'call' failed: %r", rc); 
 
     rc = tapi_tcp_wait_open(conn_hand, 2000);
     if (rc != 0)
@@ -188,22 +170,11 @@ main(int argc, char *argv[])
 
     RING("connection inited, handle %d", conn_hand);
 
-    if (is_server)
-    {
-        sock_pco->op = RCF_RPC_WAIT;
-        rc = rpc_connect(sock_pco, socket,
-                         SA(&csap_addr), sizeof(csap_addr));
-        if (rc != 0)
-            TEST_FAIL("connect() 'wait' failed: %r", rc); 
-    }
-    else
-    { 
-        acc_sock = rpc_accept(sock_pco, socket, NULL, NULL);
-
-        rpc_close(sock_pco, socket);
-        socket = acc_sock;
-        acc_sock = -1;
-    } 
+    sock_pco->op = RCF_RPC_WAIT;
+    rc = rpc_connect(sock_pco, socket,
+                     SA(&csap_addr), sizeof(csap_addr));
+    if (rc != 0)
+        TEST_FAIL("connect() 'wait' failed: %r", rc); 
 
     opt_val = 1;
     rpc_setsockopt(sock_pco, socket, RPC_SOL_SOCKET, RPC_SO_REUSEADDR,
@@ -256,36 +227,14 @@ main(int argc, char *argv[])
         tapi_tcp_update_sent_seq(conn_hand, length);
     }
 
-    /*
-     * Closing connection
-     */
-    if (!init_close)
-    {
-        rpc_close(sock_pco, socket);
-        socket = -1;
-    }
-
-    rc = tapi_tcp_send_fin(conn_hand, 1000);
+    rc = tapi_tcp_send_rst(conn_hand);
     if (rc != 0)
-        TEST_FAIL("wait for ACK to our FIN failed: %r", rc); 
+        TEST_FAIL("send RST failed: %r", rc); 
 
-    if (init_close)
-    {
-        rpc_close(sock_pco, socket);
-        socket = -1;
-    }
-
-    do {
-        rc = tapi_tcp_recv_msg(conn_hand, 2000, TAPI_TCP_AUTO,
-                               NULL, 0, NULL, NULL, &flags);
-        if (rc != 0)
-            TEST_FAIL("close connection failed: %r", rc); 
-
-        if (flags & TCP_FIN_FLAG)
-        {
-            RING("FIN received!");
-        }
-    } while (!(flags & TCP_FIN_FLAG) && !(flags & TCP_RST_FLAG));
+    RPC_AWAIT_IUT_ERROR(sock_pco);
+    rc = rpc_recv(sock_pco, socket, buffer, sizeof(buffer), 0);
+    if (rc != -1 || sock_pco->_errno != RPC_ECONNRESET)
+        TEST_FAIL("unexpected rc %d and error %r", rc, (sock_pco->_errno));
 
     TEST_SUCCESS;
 

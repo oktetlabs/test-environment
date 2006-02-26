@@ -73,6 +73,17 @@
         </run> 
 
         <run>
+            <script name="tcp_conn_reset">
+                <req id="TAD_TCP"/>
+            </script>
+            <arg name="env">
+                <value>{'host_csap'{addr:'csap_addr':inet:fake,if:'csap_if'},
+                {{'sock_pco':tester},addr:'sock_addr':inet:unicast,if:'sock_if'}}
+                </value>
+            </arg>
+        </run> 
+
+        <run>
             <script name="tcp_data">
                 <req id="TAD_TCP"/>
             </script>
