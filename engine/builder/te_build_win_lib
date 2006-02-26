@@ -92,7 +92,7 @@ ssh $KEY ${BUILD_HOST} "rm -rf tmpsrc; mkdir tmpsrc"
 
 # Build the library
 
-scp $* ${BUILD_HOST}:tmpsrc
+scp $KEY $* ${BUILD_HOST}:tmpsrc
 cd ..
 rm -rf tmpsrc 
 
@@ -102,7 +102,7 @@ cd tmpsrc ; \
 cl /nologo *.c /c ; \
 lib /OUT:${LIBNAME} *.obj\""
 
-scp ${BUILD_HOST}:tmpsrc/${LIBNAME} .
+scp $KEY ${BUILD_HOST}:tmpsrc/${LIBNAME} .
 
 if test -e ${LIBNAME} ; then
     ssh $KEY ${BUILD_HOST} rm -rf tmpsrc 

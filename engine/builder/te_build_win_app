@@ -83,7 +83,7 @@ fi
 cd ${TE_INSTALL}
 tar czf ${BUILDDIR}/${PLATFORM}.tgz ${PLATFORM}
 cd ${BUILDDIR}
-scp ${PLATFORM}.tgz ${BUILD_HOST}:
+scp $KEY ${PLATFORM}.tgz ${BUILD_HOST}:
 rm ${PLATFORM}.tgz
 
 mkdir tmpsrc
@@ -111,7 +111,7 @@ ssh $KEY ${BUILD_HOST} "rm -rf tmpsrc; rm -rf ${PLATFORM}; mkdir tmpsrc"
 
 # Build the application
 
-scp tmpsrc/*.c ${BUILD_HOST}:tmpsrc
+scp $KEY tmpsrc/*.c ${BUILD_HOST}:tmpsrc
 rm -rf tmpsrc 
 
 ssh $KEY ${BUILD_HOST} bash -l -c "\"
@@ -122,7 +122,7 @@ cd tmpsrc ; \
 cl /nologo -I../${PLATFORM}/include -DWINDOWS *.c \
    /link /OUT:${APPNAME} /LIBPATH:../${PLATFORM}/lib ${LIBS} ${ADD_LIB} ; \""
 
-scp ${BUILD_HOST}:tmpsrc/${APPNAME} .
+scp $KEY ${BUILD_HOST}:tmpsrc/${APPNAME} .
 
 if test -e ${APPNAME} ; then
     ssh $KEY ${BUILD_HOST} "rm -rf tmpsrc ${PLATFORM}"
