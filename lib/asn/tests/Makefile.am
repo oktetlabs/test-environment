@@ -3,8 +3,8 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ $(SNMP_F)
 AM_LDFLAGS = @TE_LDFLAGS@ 
 
-
-TESTS=parse_simple put_get parse_file val_set03 write_ind2 save_to_file1
+#TESTS=parse_simple
+TESTS=put_get parse_file val_set03 write_ind2 save_to_file1
 check_PROGRAMS=$(TESTS)
 
 extra_DIST= \
