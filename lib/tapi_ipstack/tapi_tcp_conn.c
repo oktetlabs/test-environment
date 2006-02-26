@@ -975,7 +975,7 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
     tapi_tcp_template(conn_next_seq(conn_descr), new_ackn, FALSE, TRUE, 
                       NULL, 0, &rst_template);
 
-    flags = TCP_FIN_FLAG | TCP_ACK_FLAG;
+    flags = TCP_RST_FLAG | TCP_ACK_FLAG;
     rc = asn_write_int32(rst_template, flags, "pdus.0.#tcp.flags.#plain");
     if (rc != 0)
     {
