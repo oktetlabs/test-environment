@@ -96,7 +96,8 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
             bps->tx_def[i].val_i32 = bps->descr[i].value;
         }
         else if (bps->descr[i].tag_tx_def != ASN_TAG_INVALID &&
-                 bps->descr[i].tag_tx_def != ASN_TAG_USER)
+                 bps->descr[i].tag_tx_def != ASN_TAG_USER &&
+                 layer_spec != NULL)
         {
             rc = tad_data_unit_convert(layer_spec,
                                        bps->descr[i].tag_tx_def,
@@ -115,7 +116,8 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
             bps->rx_def[i].val_i32 = bps->descr[i].value;
         }
         else if (bps->descr[i].tag_rx_def != ASN_TAG_INVALID &&
-                 bps->descr[i].tag_rx_def != ASN_TAG_USER)
+                 bps->descr[i].tag_rx_def != ASN_TAG_USER &&
+                 layer_spec != NULL)
         {
             rc = tad_data_unit_convert(layer_spec,
                                        bps->descr[i].tag_rx_def,
