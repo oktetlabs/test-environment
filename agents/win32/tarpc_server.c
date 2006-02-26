@@ -1076,30 +1076,18 @@ TARPC_FUNC(read_file_ex, {},
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
+    in->buf.buf_val = NULL;
+    in->buf.buf_len = 0;
     
     MAKE_CALL(out->retval = ReadFileEx((HANDLE)(in->fd), 
                                        overlapped->buffers[0].buf,
                                        in->len, 
                                        (LPWSAOVERLAPPED)overlapped,
-                                       (LPOVERLAPPED_COMPLETION_ROUTINE)
-                                           IN_CALLBACK));
+                                       IN_FILE_CALLBACK));
                                      
     if (!out->retval)
-    {
-        /* Failure */
-        free(overlapped->buffers);
-        overlapped->buffers = NULL;
-        overlapped->bufnum = 0;
-    }
-    else
-    {
-        /* 
-         * Overlapped request is posted, let's avoid releasing of the
-         * buffer by RPC.
-         */
-        in->buf.buf_val = NULL;
-        in->buf.buf_len = 0;
-    }
+        rpc_overlapped_free_memory(overlapped);
+
     finish:
     ;
 }
@@ -1165,30 +1153,18 @@ TARPC_FUNC(write_file_ex, {},
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
         goto finish;
     }
+    in->buf.buf_val = NULL;
+    in->buf.buf_len = 0;
     
     MAKE_CALL(out->retval = WriteFileEx((HANDLE)(in->fd), 
                                         overlapped->buffers[0].buf,
                                         in->len, 
                                         (LPWSAOVERLAPPED)overlapped,
-                                        (LPOVERLAPPED_COMPLETION_ROUTINE)
-                                            IN_CALLBACK));
+                                        IN_FILE_CALLBACK));
                                      
     if (!out->retval)
-    {
-        /* Failure */
-        free(overlapped->buffers);
-        overlapped->buffers = NULL;
-        overlapped->bufnum = 0;
-    }
-    else
-    {
-        /* 
-         * Overlapped request is posted, let's avoid releasing of the
-         * buffer by RPC.
-         */
-        in->buf.buf_val = NULL;
-        in->buf.buf_len = 0;
-    }
+        rpc_overlapped_free_memory(overlapped);
+
     finish:
     ;
 }
@@ -2758,6 +2734,23 @@ default_completion_callback(DWORD error, DWORD bytes,
     thread_mutex_unlock(completion_lock);
 }
 
+void CALLBACK
+default_file_completion_callback(DWORD error, DWORD bytes, 
+                                LPWSAOVERLAPPED overlapped)
+{
+    default_completion_callback(error, bytes, overlapped, 0);
+}
+
+/** Dummy callback */
+void CALLBACK
+empty_file_completion_callback(DWORD error, DWORD bytes, 
+                               LPWSAOVERLAPPED overlapped)
+{
+    UNUSED(error);
+    UNUSED(bytes);
+    UNUSED(overlapped);
+}
+
 TARPC_FUNC(completion_callback, {},
 {
     UNUSED(list);
@@ -2765,7 +2758,13 @@ TARPC_FUNC(completion_callback, {},
     
     completion_callback_register("default_completion_callback",
                                  default_completion_callback);
-    
+                                 
+    completion_callback_register("default_file_completion_callback",
+                                 default_file_completion_callback);
+
+    completion_callback_register("empty_file_completion_callback",
+                                 default_file_completion_callback);
+
     if (completion_lock == NULL)
         completion_lock = thread_mutex_create();
 
@@ -4178,10 +4177,14 @@ TARPC_FUNC(gettimeofday,
 
 /** Completion callbacks registry */
 static struct {
-    const char                        *name;
-    LPWSAOVERLAPPED_COMPLETION_ROUTINE callback;
+    const char *name;
+    void       *callback;
 } callback_registry[MAX_CALLBACKS] = { 
-    { "default_completion_callback", default_completion_callback }, };
+    { "default_completion_callback", default_completion_callback }, 
+    { "default_file_completion_callback", 
+      default_file_completion_callback },
+    { "empty_file_completion_callback", empty_file_completion_callback },
+};
 
 /**
  * Get address of completion callback.
@@ -4190,7 +4193,7 @@ static struct {
  *
  * @return Callback address
  */                          
-LPWSAOVERLAPPED_COMPLETION_ROUTINE 
+void *
 completion_callback_addr(const char *name)
 {
     int i;
@@ -4221,7 +4224,7 @@ completion_callback_addr(const char *name)
  */
 te_errno
 completion_callback_register(const char *name, 
-                             LPWSAOVERLAPPED_COMPLETION_ROUTINE callback)
+                             void *callback)
 {
     int i;
     
