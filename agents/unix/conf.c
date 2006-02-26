@@ -220,6 +220,8 @@ static const char * const env_hidden[] = {
     "LD_PRELOAD"
 };
 
+static te_errno ip4_rt_default_if_get(unsigned int, const char *, char *);
+
 static te_errno ip4_fw_get(unsigned int, const char *, char *);
 static te_errno ip4_fw_set(unsigned int, const char *, const char *);
 
@@ -282,6 +284,8 @@ static te_errno neigh_del(unsigned int, const char *,
                           const char *, const char *);
 static te_errno neigh_list(unsigned int, const char *, char **,
                            const char *);
+
+static te_errno route_find(const char *, ta_rt_info_t *);
 
 /* 
  * This is a bit of hack - there are same handlers for static and dynamic
@@ -413,6 +417,7 @@ RCF_PCH_CFG_NODE_RW(node_link_addr, "link_addr", NULL, &node_arp,
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
                     broadcast_get, broadcast_set);
 
+
 static rcf_pch_cfg_object node_net_addr =
     { "net_addr", 0, &node_broadcast, &node_link_addr,
       (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
@@ -427,14 +432,20 @@ RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
                             interface_add, interface_del,
                             interface_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_interface,
+RCF_PCH_CFG_NODE_RO(node_rt_default_if, "ip4_rt_default_if", NULL, 
+                    &node_interface, ip4_rt_default_if_get);
+
+RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_rt_default_if,
                     ip4_fw_get, ip4_fw_set);
+
 
 static rcf_pch_cfg_object node_env =
     { "env", 0, NULL, &node_ip4_fw,
       (rcf_ch_cfg_get)env_get, (rcf_ch_cfg_set)env_set,
       (rcf_ch_cfg_add)env_add, (rcf_ch_cfg_del)env_del,
       (rcf_ch_cfg_list)env_list, NULL, NULL };
+
+
 
 RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
                             NULL, &node_env,
@@ -653,6 +664,80 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 
     return 0;
 }
+
+
+/**
+ * Obtain ifname from IPv4 default route record.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param ifname        default route ifname
+ *
+ * @return              Status code
+ */
+static te_errno
+ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
+{
+
+    ta_rt_info_t  attr;
+    te_errno      rc;
+    char         *route_name = "0.0.0.0|0";
+    char          value[INET_ADDRSTRLEN];
+    char         *ret_val = NULL;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = route_find(route_name, &attr)) != 0)
+    {
+        ERROR("Route %s cannot be found", route_name);
+        return rc;
+    }
+
+    switch (attr.dst.ss_family)
+    {
+        case AF_INET:
+        {
+            ret_val = inet_ntop(AF_INET, &SIN(&attr.gw)->sin_addr,
+                                value, INET_ADDRSTRLEN);
+            if (ret_val == NULL)
+            {
+                ERROR("Convertaion failure of the address of family: %d",
+                      attr.dst.ss_family);
+                return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
+            }
+
+            strncpy(ifname, attr.ifname, IF_NAMESIZE);
+            break;
+        }
+
+        case AF_INET6:
+        {
+            ret_val = inet_ntop(AF_INET6, &SIN6(&attr.gw)->sin6_addr,
+                                value, INET6_ADDRSTRLEN);
+            if (ret_val == NULL)
+            {
+                ERROR("Convertaion failure of the address of family: %d",
+                      attr.dst.ss_family);
+                return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
+            }
+
+            RING("Default route for AF_INET6 is found");
+            return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+            break;
+        }
+
+        default:
+        {
+            ERROR("Unexpected destination address family: %d",
+                  attr.dst.ss_family);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+    }
+
+    return 0;
+}
+
 
 #ifdef USE_NETLINK
 /**
