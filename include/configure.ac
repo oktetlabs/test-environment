@@ -110,6 +110,7 @@ pthread.h \
 pwd.h \
 regex.h \
 rpc/pmap_clnt.h \
+scsi/sg.h \
 semaphore.h \
 setjmp.h \
 signal.h \
