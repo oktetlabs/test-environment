@@ -663,12 +663,6 @@ typedef enum rpc_sockopt {
     RPC_SO_OPENTYPE,        /**< Once set, subsequent sockets created 
                                  will be non-overlapped. */
 
-    RPC_SO_SYNCHRONOUS_NONALERT,        /**< This value is passed to the 
-                                             SO_OPENTYPE option */
-
-    RPC_SO_SYNCHRONOUS_ALERT,        /**< This value is passed to the 
-                                             SO_OPENTYPE option */
-
         
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */
@@ -862,15 +856,6 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef SO_OPENTYPE
         RPC2H(SO_OPENTYPE);
 #endif
-#ifdef SO_SYNCHRONOUS_NONALERT
-        RPC2H(SO_SYNCHRONOUS_NONALERT);
-#endif
-#ifdef SO_SYNCHRONOUS_ALERT
-        RPC2H(SO_SYNCHRONOUS_ALERT);
-#endif
-#ifdef IP_ADD_MEMBERSHIP
-        RPC2H(IP_ADD_MEMBERSHIP);
-#endif
 #ifdef IP_DROP_MEMBERSHIP
         RPC2H(IP_DROP_MEMBERSHIP);
 #endif
@@ -1007,12 +992,6 @@ sockopt_h2rpc(int opt_type, int opt)
 #endif
 #ifdef SO_OPENTYPE
                 H2RPC(SO_OPENTYPE);
-#endif
-#ifdef SO_SYNCHRONOUS_NONALERT
-                H2RPC(SO_SYNCHRONOUS_NONALERT);
-#endif
-#ifdef SO_SYNCHRONOUS_ALERT
-                H2RPC(SO_SYNCHRONOUS_ALERT);
 #endif
                 default: return RPC_SOCKOPT_MAX;
             }
@@ -1201,8 +1180,6 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_TYPE);
         RPC2STR(SO_CONNECT_TIME);
         RPC2STR(SO_OPENTYPE);
-        RPC2STR(SO_SYNCHRONOUS_NONALERT);
-        RPC2STR(SO_SYNCHRONOUS_ALERT);
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
         RPC2STR(IP_MULTICAST_IF);
