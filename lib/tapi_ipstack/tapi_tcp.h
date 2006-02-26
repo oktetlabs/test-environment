@@ -472,6 +472,17 @@ extern int tapi_tcp_wait_open(tapi_tcp_handler_t hanlder, int timeout);
  */
 extern int tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout);
 
+/**
+ * Send RST in TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection;
+ * @param timeout       time in milliseconds, while TA should wait 
+ *                      for answer for FIN;
+ *
+ * @return Status code
+ */
+extern int tapi_tcp_send_rst(tapi_tcp_handler_t handler);
+
 
 /**
  * Send TCP message via established connection.

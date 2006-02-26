@@ -955,6 +955,47 @@ tapi_tcp_send_fin(tapi_tcp_handler_t handler, int timeout)
 }
 
 int
+tapi_tcp_send_rst(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+    asn_value             *rst_template = NULL;
+    tapi_tcp_pos_t         new_ackn;
+
+    int     rc; 
+    uint8_t flags;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    new_ackn = conn_descr->ack_sent;
+
+    INFO("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
+    tapi_tcp_template(conn_next_seq(conn_descr), new_ackn, FALSE, TRUE, 
+                      NULL, 0, &rst_template);
+
+    flags = TCP_FIN_FLAG | TCP_ACK_FLAG;
+    rc = asn_write_int32(rst_template, flags, "pdus.0.#tcp.flags.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): set fin flag failed %r", 
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    } 
+
+    rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
+                               conn_descr->snd_csap, 
+                               rst_template, RCF_MODE_BLOCKING);
+    if (rc != 0)
+    {
+        ERROR("%s(): send FIN failed %r", __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    } 
+    return 0;
+}
+
+int
 tapi_tcp_destroy_connection(tapi_tcp_handler_t handler)
 {
     int rc = 0;
