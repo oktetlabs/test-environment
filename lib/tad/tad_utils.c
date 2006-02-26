@@ -106,13 +106,10 @@ tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
             rc = confirm_cb(csap, layer, layer_pdu,
                             (layer_opaque == NULL) ?
                                 NULL : (layer_opaque + layer));
-            VERB("confirm rc: %d", rc);
-
             if (rc != 0)
             {
-                ERROR("pdus do not confirm to CSAP; "
-                      "rc: %r, csap id: %d, layer: %d", 
-                      rc, csap->id, layer);
+                ERROR(CSAP_LOG_FMT "PDUs do not confirm to CSAP on the "
+                      "layer %u: %r", CSAP_LOG_ARGS(csap), layer, rc);
                 break;
             }
         }
