@@ -34,9 +34,10 @@
 
 #include <stdarg.h>
 
-#include "asn_impl.h" 
-#include "te_errno.h"
 #include "te_defs.h"
+#include "te_errno.h"
+#include "logger_api.h"
+#include "asn_impl.h" 
 
 
 #define ASN_STOP_AT_CHOICE 1
@@ -208,7 +209,8 @@ asn_init_value(const asn_type * type)
  * @return pointer to new ASN_value instance or NULL if error occurred. 
  */
 asn_value *
-asn_init_value_tagged(const asn_type * type, asn_tag_class tc, uint16_t tag)
+asn_init_value_tagged(const asn_type *type,
+                      asn_tag_class tc, asn_tag_value tag)
 {
     asn_value *new_value = asn_init_value(type);
 
@@ -350,8 +352,9 @@ asn_free_value(asn_value *value)
 
 
 
-int asn_free_child(asn_value *value,
-                   asn_tag_class tag_class, uint16_t tag_val)
+int
+asn_free_child(asn_value *value,
+               asn_tag_class tag_class, asn_tag_value tag_val)
 {
     int rc = 0;
     int index;
@@ -441,7 +444,7 @@ asn_free_subvalue(asn_value *value, const char* labels)
 /* see description in asn_usr.h */
 int
 asn_free_child_value(asn_value *value, 
-                     asn_tag_class tag_class, uint16_t tag_val)
+                     asn_tag_class tag_class, asn_tag_value tag_val)
 {
     return asn_free_child(value, tag_class, tag_val);
 }
@@ -485,7 +488,7 @@ asn_get_name(const asn_value *value)
 
 int 
 asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
-                    uint16_t tag_val, int *index)
+                    asn_tag_value tag_val, int *index)
 {
     const asn_named_entry_t *n_en;
     unsigned i; 
@@ -642,7 +645,7 @@ asn_find_descendant(const asn_value *value, te_errno *status,
 /* see description in asn_usr.h */
 int
 asn_put_child_value(asn_value *container, asn_value *subvalue, 
-                    asn_tag_class tag_class, uint16_t tag_val)
+                    asn_tag_class tag_class, asn_tag_value tag_val)
 {
     int rc;
     int index;
@@ -1578,7 +1581,7 @@ asn_get_subvalue(const asn_value *container, asn_value **subval,
  */
 int
 asn_get_child_type(const asn_type *type, const asn_type **subtype,
-                   asn_tag_class tag_class, uint16_t tag_val)
+                   asn_tag_class tag_class, asn_tag_value tag_val)
 {
     int index, rc;
 
@@ -1599,7 +1602,7 @@ asn_get_child_type(const asn_type *type, const asn_type **subtype,
  */
 int
 asn_get_child_value(const asn_value *container, const asn_value **subval,
-                    asn_tag_class tag_class, uint16_t tag_val)
+                    asn_tag_class tag_class, asn_tag_value tag_val)
 {
     int index, rc;
 
@@ -2234,12 +2237,12 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
  *
  * @return tag value or -1 on error.
  */ 
-unsigned short 
-asn_get_tag (const asn_value *container )
+asn_tag_value
+asn_get_tag(const asn_value *container)
 {
     if (container)
         return container->tag.val;
-    return (unsigned short)-1;
+    return (asn_tag_value)-1;
 }
 
 /**

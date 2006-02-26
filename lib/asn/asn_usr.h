@@ -976,7 +976,7 @@ extern int asn_get_field_data(const asn_value *container,
  *
  * @return value's name or NULL.
  */ 
-extern unsigned short asn_get_tag(const asn_value *container);
+extern asn_tag_value asn_get_tag(const asn_value *container);
 
 
 /**
