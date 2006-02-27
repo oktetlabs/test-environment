@@ -43,6 +43,9 @@ typedef uint32_t    tarpc_wait_status_flag;
 typedef uint32_t    tarpc_wait_status_value;
 typedef uint32_t    tarpc_uid_t;
 
+typedef uint8_t     tarpc_uchar;
+typedef uint16_t    tarpc_usint;
+
 /** RPC size_t analog */
 typedef uint32_t    tarpc_size_t;
 /** RPC pid_t analog */
@@ -189,28 +192,28 @@ struct tarpc_arpreq {
 
 /** struct tarpc_sgio */
 struct tarpc_sgio {
-    int interface_id;           /**< [i] 'S' for SCSI generic (required) */
-    int dxfer_direction;        /**< [i] data transfer direction */
-    unsigned char cmd_len;      /**< [i] SCSI command length ( <= 16 bytes) */
-    unsigned char mx_sb_len;    /**< [i] max length to write to sbp */
-    unsigned short int iovec_count; /**< [i] 0 implies no scatter gather */
-    unsigned int dxfer_len;     /**< [i] byte count of data transfer */
-    unsigned char dxferp<>;     /**< [i], [*io] */
-    unsigned char cmdp<>;       /**< [i], [*i] points to command to perform */
-    unsigned char sbp<>;        /**< [i], [*o] points to sense_buffer memory */
-    unsigned int timeout;       /**< [i] MAX_UINT->no timeout (in millisec) */
-    unsigned int flags;         /**< [i] 0 -> default, see SG_FLAG... */
-    int          pack_id;       /**< [i->o] unused internally (normally) */
-    unsigned char usr_ptr<>;    /**< [i->o] unused internally */
-    unsigned char status;       /**< [o] scsi status */
-    unsigned char masked_status;/**< [o] shifted, masked scsi status */
-    unsigned char msg_status;   /**< [o] messaging level data (optional) */
-    unsigned char sb_len_wr;    /**< [o] byte count actually written to sbp */
-    unsigned short int host_status; /**< [o] errors from host adapter */
-    unsigned short int driver_status; /**< [o] errors from software driver */
-    int resid;                  /**< [o] dxfer_len - actual_transferred */
-    unsigned int duration;      /**< [o] time taken by cmd (unit: millisec) */
-    unsigned int info;          /**< [o] auxiliary information */
+    tarpc_int   interface_id;    /**< [i] 'S' for SCSI generic (required) */
+    tarpc_int   dxfer_direction; /**< [i] data transfer direction */
+    tarpc_uchar cmd_len;         /**< [i] SCSI command length ( <= 16 bytes) */
+    tarpc_uchar mx_sb_len;       /**< [i] max length to write to sbp */
+    tarpc_usint iovec_count;     /**< [i] 0 implies no scatter gather */
+    tarpc_uint  dxfer_len;       /**< [i] byte count of data transfer */
+    tarpc_uchar dxferp<>;        /**< [i], [*io] */
+    tarpc_uchar cmdp<>;          /**< [i], [*i] points to command to perform */
+    tarpc_uchar sbp<>;           /**< [i], [*o] points to sense_buffer memory */
+    tarpc_uint  timeout;         /**< [i] MAX_UINT->no timeout (in millisec) */
+    tarpc_uint  flags;           /**< [i] 0 -> default, see SG_FLAG... */
+    tarpc_int   pack_id;         /**< [i->o] unused internally (normally) */
+    tarpc_uchar usr_ptr<>;       /**< [i->o] unused internally */
+    tarpc_uchar status;          /**< [o] scsi status */
+    tarpc_uchar masked_status;   /**< [o] shifted, masked scsi status */
+    tarpc_uchar msg_status;      /**< [o] messaging level data (optional) */
+    tarpc_uchar sb_len_wr;       /**< [o] byte count actually written to sbp */
+    tarpc_usint host_status;     /**< [o] errors from host adapter */
+    tarpc_usint driver_status;   /**< [o] errors from software driver */
+    tarpc_int   resid;           /**< [o] dxfer_len - actual_transferred */
+    tarpc_uint  duration;        /**< [o] time taken by cmd (unit: millisec) */
+    tarpc_uint  info;            /**< [o] auxiliary information */
 };
 
 /** struct timespec */
