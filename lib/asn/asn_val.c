@@ -352,7 +352,7 @@ asn_free_value(asn_value *value)
 
 
 
-int
+te_errno
 asn_free_child(asn_value *value,
                asn_tag_class tag_class, asn_tag_value tag_val)
 {
@@ -387,7 +387,7 @@ asn_free_child(asn_value *value,
 }
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_free_descendant(asn_value *value, const char *labels)
 {
     int   len;
@@ -435,14 +435,14 @@ asn_free_descendant(asn_value *value, const char *labels)
 
 
 /* see description in asn_usr.h */
-int 
+te_errno 
 asn_free_subvalue(asn_value *value, const char* labels)
 {
     return asn_free_descendant(value, labels);
 }
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_free_child_value(asn_value *value, 
                      asn_tag_class tag_class, asn_tag_value tag_val)
 {
@@ -486,7 +486,7 @@ asn_get_name(const asn_value *value)
     return value->name;
 }
 
-int 
+te_errno 
 asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
                     asn_tag_value tag_val, int *index)
 {
@@ -518,7 +518,7 @@ asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
 }
 
 /* see description in asn_impl.h */
-int 
+te_errno 
 asn_child_named_index(const asn_type *type, const char *labels, 
                       int *index, const char **rest_labels)
 {
@@ -572,7 +572,7 @@ asn_child_named_index(const asn_type *type, const char *labels,
 }
 
 /* see description in asn_impl.h */
-int
+te_errno
 asn_impl_find_subtype(const asn_type *type, const char *label, 
                       const asn_type **found_type)
 { 
@@ -643,7 +643,7 @@ asn_find_descendant(const asn_value *value, te_errno *status,
 
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_put_child_value(asn_value *container, asn_value *subvalue, 
                     asn_tag_class tag_class, asn_tag_value tag_val)
 {
@@ -666,7 +666,7 @@ asn_put_child_value(asn_value *container, asn_value *subvalue,
 
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_put_child_value_by_label(asn_value *container, asn_value *subvalue,
                              const char *label)
 {
@@ -693,7 +693,7 @@ asn_put_child_value_by_label(asn_value *container, asn_value *subvalue,
 
 
 /* see description in asn_impl.h */
-int
+te_errno
 asn_get_child_by_index(const asn_value *container, asn_value **child,
                        int index)
 {
@@ -745,7 +745,7 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
 
 
 /* see description in asn_impl.h */
-int
+te_errno
 asn_put_child_by_index(asn_value *container, asn_value *new_value, 
                        int leaf_type_index)
 {
@@ -826,7 +826,7 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
 
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_get_descendent(const asn_value *container,
                    asn_value **found_value, 
                    const char *labels)
@@ -867,7 +867,7 @@ asn_get_descendent(const asn_value *container,
 
 
 /* See description in asn_usr.h */
-int
+te_errno
 asn_put_descendent(asn_value *container, asn_value *subval, 
                    const char *labels)
 {
@@ -922,7 +922,7 @@ asn_put_descendent(asn_value *container, asn_value *subval,
 }
 
 /* See description in asn_usr.h */
-int
+te_errno
 asn_get_indexed(const asn_value *container, asn_value **subval, 
                 int index, const char *labels)
 {
@@ -978,7 +978,7 @@ asn_get_indexed(const asn_value *container, asn_value **subval,
  *
  * @return zero on success, otherwise error code.
  */ 
-int
+te_errno
 asn_write_value_field(asn_value *container, const void *data, size_t d_len, 
                       const char *field_labels)
 {
@@ -1010,7 +1010,7 @@ asn_write_value_field(asn_value *container, const void *data, size_t d_len,
  *
  * @return zero on success, otherwise error code.
  */ 
-int
+te_errno
 asn_impl_write_value_field(asn_value *container, 
                            const void *data, size_t d_len, 
                            char *field_labels)
@@ -1185,7 +1185,7 @@ asn_impl_write_value_field(asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-int
+te_errno
 asn_read_value_field(const asn_value *container, void *data, size_t *d_len,
                      const char *field_labels)
 {
@@ -1216,7 +1216,7 @@ asn_read_value_field(const asn_value *container, void *data, size_t *d_len,
  *
  * @return zero on success, otherwise error code.
  */ 
-int
+te_errno
 asn_impl_read_value_field(const asn_value *container,  void *data, 
                           size_t *d_len, char *field_labels)
 {
@@ -1318,14 +1318,14 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
 
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_write_int32(asn_value *container, int32_t value, const char *labels)
 {
     return asn_write_value_field(container, &value, sizeof(value), labels);
 }
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_read_int32(const asn_value *container, int32_t *value,
                const char *labels)
 {
@@ -1334,14 +1334,14 @@ asn_read_int32(const asn_value *container, int32_t *value,
 }
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_write_bool(asn_value *container, te_bool value, const char *labels)
 {
     return asn_write_value_field(container, &value, sizeof(value), labels);
 }
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_read_bool(const asn_value *container, te_bool *value,
               const char *labels)
 {
@@ -1350,7 +1350,7 @@ asn_read_bool(const asn_value *container, te_bool *value,
 }
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_write_string(asn_value *container, const char *value,
                  const char *labels)
 {
@@ -1372,7 +1372,7 @@ asn_write_string(asn_value *container, const char *value,
 }
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_read_string(const asn_value *container, char **value,
                 const char *labels)
 {
@@ -1412,7 +1412,7 @@ asn_read_string(const asn_value *container, char **value,
  *
  * @return zero on success, otherwise error code.
  */ 
-int
+te_errno
 asn_write_component_value(asn_value *container, 
                           const asn_value *elem_value,
                           const char *subval_labels)
@@ -1443,7 +1443,7 @@ asn_write_component_value(asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-int
+te_errno
 asn_impl_write_component_value(asn_value *container, 
                                const asn_value *elem_value,
                                char *subval_labels)
@@ -1567,7 +1567,7 @@ asn_impl_write_component_value(asn_value *container,
 /**
  * See description in asn_usr.h
  */
-int 
+te_errno 
 asn_get_subvalue(const asn_value *container, asn_value **subval,
                  const char *subval_labels)
 {
@@ -1579,7 +1579,7 @@ asn_get_subvalue(const asn_value *container, asn_value **subval,
 /**
  * See description in asn_usr.h
  */
-int
+te_errno
 asn_get_child_type(const asn_type *type, const asn_type **subtype,
                    asn_tag_class tag_class, asn_tag_value tag_val)
 {
@@ -1600,7 +1600,7 @@ asn_get_child_type(const asn_type *type, const asn_type **subtype,
 /**
  * See description in asn_usr.h
  */
-int
+te_errno
 asn_get_child_value(const asn_value *container, const asn_value **subval,
                     asn_tag_class tag_class, asn_tag_value tag_val)
 {
@@ -1628,7 +1628,7 @@ asn_get_child_value(const asn_value *container, const asn_value **subval,
 /**
  * See description in asn_usr.h
  */
-int
+te_errno
 asn_get_choice_value(const asn_value *container, asn_value **subval,
                      asn_tag_class *tag_class, asn_tag_value *tag_val)
 {
@@ -1658,7 +1658,7 @@ asn_get_choice_value(const asn_value *container, asn_value **subval,
 /**
  * See description in asn_usr.h
  */
-int 
+te_errno 
 asn_get_field_data(const asn_value *container, 
                    void *location, const char *subval_labels)
 {
@@ -1724,7 +1724,7 @@ asn_get_field_data(const asn_value *container,
 /**
  * See description in asn_usr.h
  */ 
-int
+te_errno
 asn_read_component_value (const asn_value *container, 
                 asn_value ** elem_value, const char *subval_labels)
 {
@@ -1766,7 +1766,7 @@ asn_read_component_value (const asn_value *container,
  *
  * @return zero on success, otherwise error code.
  */ 
-int
+te_errno
 asn_write_indexed(asn_value *container, const asn_value *elem_value, 
                   int index, const char *subval_labels)
 {
@@ -1847,7 +1847,7 @@ asn_read_indexed(const asn_value *container, int index,
 }
 
 /* see description in asn_usr.h */
-int
+te_errno
 asn_insert_indexed(asn_value *container, asn_value *elem_value, 
                    int index, const char *subval_labels)
 {
@@ -1917,7 +1917,7 @@ asn_insert_indexed(asn_value *container, asn_value *elem_value,
  *
  * @return zero on success, otherwise error code.
  */ 
-int
+te_errno
 asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
 {
     asn_value * value = container;
@@ -1979,7 +1979,7 @@ asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
  *
  * @return number of elements in constractive subvalue, -1 if error occurred. 
  */ 
-int
+te_errno
 asn_get_length(const asn_value *container, const char *subval_labels)
 {
     const asn_value *val;
@@ -2010,7 +2010,7 @@ asn_get_length(const asn_value *container, const char *subval_labels)
  *
  * @return zero on success, otherwise error code.
  */
-int 
+te_errno 
 asn_impl_fall_down_to_tree_nc(const asn_value *container, char *field_labels,
                               const asn_value **found_value)
 {
@@ -2065,7 +2065,7 @@ asn_impl_fall_down_to_tree_nc(const asn_value *container, char *field_labels,
  *
  * @return zero on success, otherwise error code. 
  */ 
-int
+te_errno
 asn_impl_find_subvalue(const asn_value *container, const char *label, 
                        asn_value const **found_val)
 { 
@@ -2183,7 +2183,7 @@ asn_get_choice_ptr(const asn_value *container)
  *
  * @return zero or error code.
  */ 
-int 
+te_errno 
 asn_get_choice(const asn_value *container, const char *subval_labels,
                char *choice_label, size_t ch_lb_len)
 {
@@ -2317,7 +2317,7 @@ asn_get_syntax(const asn_value *value, const char *subval_labels)
  *
  * @return zero or error code.
  */ 
-int 
+te_errno 
 asn_get_subtype(const asn_type *container, 
                 const asn_type **found_subtype, const char *labels)
 {
@@ -2360,7 +2360,7 @@ asn_get_subtype(const asn_type *container,
 }
 
 /* See description in asn_usr.h */
-int
+te_errno
 asn_label_to_tag(const asn_type *type, const char *label, asn_tag_t *tag)
 {
     int rc = 0;
