@@ -42,6 +42,10 @@
 #include <netinet/in_systm.h>
 #endif
 
+#if HAVE_SCSI_SG_H
+#include <scsi/sg.h>
+#endif
+
 #include "te_defs.h"
 #include "te_tools.h"
 
@@ -2038,11 +2042,12 @@ TARPC_FUNC(fcntl, {},
 /*-------------- ioctl() --------------------------------*/
 
 typedef union ioctl_param {
-    int             integer;
-    struct timeval  tv;
-    struct ifreq    ifreq;
-    struct ifconf   ifconf;
-    struct arpreq   arpreq;
+    int              integer;
+    struct timeval   tv;
+    struct ifreq     ifreq;
+    struct ifconf    ifconf;
+    struct arpreq    arpreq;
+    struct sg_io_hdr sg;
 } ioctl_param;
 
 static void
@@ -2166,6 +2171,49 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             }
 #endif
             break;
+
+        case IOCTL_SGIO:
+            {
+                reqlen = sizeof(struct sg_io_hdr);
+
+                req->sg.interface_id = out->req.req_val[0].ioctl_request_u.
+                    req_sgio.interface_id;
+                req->sg.dxfer_direction = out->req.req_val[0].
+                    ioctl_request_u.req_sgio.dxfer_direction;
+                req->sg.cmd_len = out->req.req_val[0].ioctl_request_u.
+                    req_sgio.cmd_len;
+                req->sg.mx_sb_len = out->req.req_val[0].ioctl_request_u.
+                    req_sgio.mx_sb_len;
+                req->sg.iovec_count = out->req.req_val[0].ioctl_request_u.
+                    req_sgio.iovec_count;
+                
+                req->sg.dxfer_len = out->req.req_val[0].ioctl_request_u.
+                    req_sgio.dxfer_len;
+                req->sg.dxferp = calloc(req->sg.dxfer_len, 1);
+                memcpy(req->sg.dxferp, out->req.req_val[0].ioctl_request_u.
+                       req_sgio.dxferp.dxferp_val,
+                       req->sg.dxfer_len);
+
+                req->sg.cmdp = calloc(req->sg.cmd_len, 1);
+                memcpy(req->sg.cmdp, out->req.req_val[0].ioctl_request_u.
+                       req_sgio.cmdp.cmdp_val,
+                       req->sg.cmd_len);
+
+                req->sg.sbp = calloc(req->sg.mx_sb_len, 1);
+                memcpy(req->sg.sbp, out->req.req_val[0].ioctl_request_u.
+                       req_sgio.sbp.sbp_val,
+                       req->sg.mx_sb_len);
+                
+                
+                req->sg.timeout = out->req.req_val[0].ioctl_request_u.
+                    req_sgio.timeout;
+                req->sg.flags = out->req.req_val[0].ioctl_request_u.
+                    req_sgio.flags;
+                req->sg.pack_id = out->req.req_val[0].ioctl_request_u.
+                    req_sgio.pack_id;
+
+                break;
+            }
 
         default:
             ERROR("Incorrect request type %d is received",
@@ -2317,6 +2365,29 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 out->req.req_val[0].ioctl_request_u.req_arpreq.
                     rpc_arp_flags = arp_fl_h2rpc(req->arpreq.arp_flags);
             }
+            break;
+        }
+        case IOCTL_SGIO:
+        {
+            out->req.req_val[0].ioctl_request_u.req_sgio.
+                status = req->sg.status;
+            out->req.req_val[0].ioctl_request_u.req_sgio.
+                masked_status = req->sg.masked_status;
+            out->req.req_val[0].ioctl_request_u.req_sgio.
+                msg_status = req->sg.msg_status;
+            out->req.req_val[0].ioctl_request_u.req_sgio.
+                sb_len_wr = req->sg.sb_len_wr;
+            out->req.req_val[0].ioctl_request_u.req_sgio.
+                host_status = req->sg.host_status;
+            out->req.req_val[0].ioctl_request_u.req_sgio.
+                driver_status = req->sg.driver_status;
+            out->req.req_val[0].ioctl_request_u.req_sgio.
+                resid = req->sg.resid;
+            out->req.req_val[0].ioctl_request_u.req_sgio.
+                duration = req->sg.duration;
+            out->req.req_val[0].ioctl_request_u.req_sgio.
+                info = req->sg.info;
+            
             break;
         }
 

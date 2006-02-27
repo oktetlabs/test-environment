@@ -72,6 +72,9 @@
 #if HAVE_STDARG_H
 #include <stdarg.h>
 #endif
+#if HAVE_SCSI_SG_H
+#include <scsi/sg.h>
+#endif
 
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
@@ -100,8 +103,6 @@ rpc_ioctl(rcf_rpc_server *rpcs,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(ioctl, -1);
     }
-
-    rpcs->op = RCF_RPC_CALL_WAIT;
 
     va_start(ap, request);
     arg = va_arg(ap, int *);
@@ -307,6 +308,88 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             }
             break;
 #undef FILL_ARPREQ_ADDR
+        case RPC_SG_IO:
+            in.access = IOCTL_RW;
+
+            if (arg != NULL)
+            {
+                in.req.req_val[0].type = IOCTL_SGIO;
+                
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    interface_id = ((sg_io_hdr_t *) arg)->interface_id;
+                
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    dxfer_direction = ((sg_io_hdr_t *) arg)->
+                    dxfer_direction;
+                
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    cmd_len = ((sg_io_hdr_t *) arg)->cmd_len;
+                
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    mx_sb_len = ((sg_io_hdr_t *) arg)->mx_sb_len;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    iovec_count = ((sg_io_hdr_t *) arg)->iovec_count;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    dxfer_len = ((sg_io_hdr_t *) arg)->dxfer_len;
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    dxferp.dxferp_len = ((sg_io_hdr_t *) arg)->dxfer_len;
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    dxferp.dxferp_val = ((sg_io_hdr_t *) arg)->dxferp;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    cmdp.cmdp_len = ((sg_io_hdr_t *) arg)->cmd_len;
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    cmdp.cmdp_val = ((sg_io_hdr_t *) arg)->cmdp;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    sbp.sbp_len = ((sg_io_hdr_t *) arg)->mx_sb_len;
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    sbp.sbp_val = ((sg_io_hdr_t *) arg)->sbp;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    timeout = ((sg_io_hdr_t *) arg)->timeout;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    flags = ((sg_io_hdr_t *) arg)->flags;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    pack_id = ((sg_io_hdr_t *) arg)->pack_id;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    usr_ptr.usr_ptr_len = 0;
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    usr_ptr.usr_ptr_val = NULL;
+#if 0
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    status = ((sg_io_hdr_t *) arg)->status;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    masked_status = ((sg_io_hdr_t *) arg)->masked_status;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    msg_status = ((sg_io_hdr_t *) arg)->msg_status;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    sb_len_wr = ((sg_io_hdr_t *) arg)->sb_len_wr;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    host_status = ((sg_io_hdr_t *) arg)->host_status;
+
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    driver_status = ((sg_io_hdr_t *) arg)->driver_status;
+                
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    resid = ((sg_io_hdr_t *) arg)->resid;
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                    duration = ((sg_io_hdr_t *) arg)->duration;
+                in.req.req_val[0].ioctl_request_u.req_sgio.
+                   info = ((sg_io_hdr_t *) arg)->info;
+#endif
+                break;
+            }
+
         default:
             ERROR("Unsupported ioctl code: %d", request);
             rpcs->_errno = TE_RC(TE_RCF, TE_EOPNOTSUPP);
@@ -430,6 +513,54 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                                   req_arpreq.rpc_arp_flags);
                 break;
             }
+            case IOCTL_SGIO:
+            {
+                memset(&out.req.req_val[0].ioctl_request_u.req_sgio, 0, 
+                       sizeof(out.req.req_val[0].ioctl_request_u.req_sgio));
+                memcpy(((sg_io_hdr_t *) arg)->dxferp, 
+                       out.req.req_val[0].ioctl_request_u.req_sgio. 
+                       dxferp.dxferp_val, 
+                       out.req.req_val[0].ioctl_request_u.req_sgio.
+                       dxferp.dxferp_len);
+                memcpy(((sg_io_hdr_t *) arg)->cmdp, 
+                       out.req.req_val[0].ioctl_request_u.req_sgio. 
+                       cmdp.cmdp_val, 
+                       out.req.req_val[0].ioctl_request_u.req_sgio.
+                       cmdp.cmdp_len);
+                memcpy(((sg_io_hdr_t *) arg)->sbp, 
+                       out.req.req_val[0].ioctl_request_u.req_sgio. 
+                       sbp.sbp_val, 
+                       out.req.req_val[0].ioctl_request_u.req_sgio.
+                       sbp.sbp_len);
+                ((sg_io_hdr_t *) arg)->status =
+                    out.req.req_val[0].ioctl_request_u.req_sgio.
+                    status;
+                ((sg_io_hdr_t *) arg)->masked_status =
+                    out.req.req_val[0].ioctl_request_u.req_sgio.
+                    masked_status;
+                ((sg_io_hdr_t *) arg)->msg_status =
+                    out.req.req_val[0].ioctl_request_u.req_sgio.
+                    msg_status;
+                ((sg_io_hdr_t *) arg)->sb_len_wr =
+                    out.req.req_val[0].ioctl_request_u.req_sgio.
+                    sb_len_wr;
+                ((sg_io_hdr_t *) arg)->host_status =
+                    out.req.req_val[0].ioctl_request_u.req_sgio.
+                    host_status;
+                ((sg_io_hdr_t *) arg)->driver_status =
+                    out.req.req_val[0].ioctl_request_u.req_sgio.
+                    driver_status;
+                ((sg_io_hdr_t *) arg)->resid =
+                    out.req.req_val[0].ioctl_request_u.req_sgio.
+                    resid;
+                ((sg_io_hdr_t *) arg)->duration =
+                    out.req.req_val[0].ioctl_request_u.req_sgio.
+                    duration;
+                ((sg_io_hdr_t *) arg)->info =
+                    out.req.req_val[0].ioctl_request_u.req_sgio.
+                    info;
+                break;
+            }
 
             default:
                 assert(FALSE);
@@ -438,6 +569,19 @@ rpc_ioctl(rcf_rpc_server *rpcs,
     
     switch (in.req.req_val != NULL ? in.req.req_val[0].type : IOCTL_UNKNOWN)
     {
+        case IOCTL_SGIO:
+#if 0
+            {
+                static char status_buf[128];
+
+                sprintf(status_buf, "%c", 
+                        out.req.req_val[0].ioctl_request_u.req_sgio.status);
+
+                req_val = status_buf;
+            }
+#endif
+            req_val = "OK";
+            break;
         case IOCTL_TIMEVAL:
             req_val = tarpc_timeval2str((struct tarpc_timeval *)arg);
             break;
@@ -587,7 +731,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 }
                 case RPC_SIOCDARP:
                 {
-                     snprintf(arpreq_buf + strlen(arpreq_buf),
+                    snprintf(arpreq_buf + strlen(arpreq_buf),
                              sizeof(arpreq_buf) - strlen(arpreq_buf),
                              "delete: ");
                     snprintf(arpreq_buf + strlen(arpreq_buf),

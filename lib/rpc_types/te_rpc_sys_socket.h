@@ -36,7 +36,7 @@
 #define __TE_RPC_SYS_SOCKET_H__
 
 #include "te_rpc_defs.h"
-
+#include <scsi/sg.h>
 
 #ifndef AF_LOCAL        
 #define AF_LOCAL        AF_UNIX
@@ -1367,6 +1367,7 @@ typedef enum rpc_ioctl_code {
     RPC_SIOCSARP,           /**< Set ARP mapping */
     RPC_SIOCDARP,           /**< Delete ARP mapping */ 
     RPC_SIOCGARP,           /**< Get ARP mapping */
+    RPC_SG_IO,
     
     /* Winsock2-specific codes */
     RPC_SIO_ADDRESS_LIST_CHANGE,
@@ -1516,6 +1517,7 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H(SIO_INDEX_BIND);
         RPC2H(SIO_UCAST_IF);
 #endif
+        RPC2H(SG_IO);
         default: return IOCTL_MAX;
     }
 }
@@ -1552,6 +1554,7 @@ ioctl_rpc2str(rpc_ioctl_code code)
         RPC2STR(SIOCSARP);
         RPC2STR(SIOCDARP);
         RPC2STR(SIOCGARP);
+        RPC2STR(SG_IO);
 
         RPC2STR(SIO_ADDRESS_LIST_CHANGE);
         RPC2STR(SIO_ADDRESS_LIST_QUERY);
