@@ -36,7 +36,9 @@
 #define __TE_RPC_SYS_SOCKET_H__
 
 #include "te_rpc_defs.h"
+#ifdef HAVE_SCSI_SG_H
 #include <scsi/sg.h>
+#endif
 
 #ifndef AF_LOCAL        
 #define AF_LOCAL        AF_UNIX
@@ -856,6 +858,9 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef SO_OPENTYPE
         RPC2H(SO_OPENTYPE);
 #endif
+#ifdef IP_ADD_MEMBERSHIP
+        RPC2H(IP_ADD_MEMBERSHIP);
+#endif
 #ifdef IP_DROP_MEMBERSHIP
         RPC2H(IP_DROP_MEMBERSHIP);
 #endif
@@ -1517,7 +1522,11 @@ ioctl_rpc2h(rpc_ioctl_code code)
         RPC2H(SIO_INDEX_BIND);
         RPC2H(SIO_UCAST_IF);
 #endif
+
+#ifdef SG_IO
         RPC2H(SG_IO);
+#endif
+        
         default: return IOCTL_MAX;
     }
 }
