@@ -4456,6 +4456,41 @@ do {                                                            \
 }
 
 /**
+ * Flush routing table cache.
+ *
+ * @param family    Address family
+ *
+ * @return Status code.
+ */
+static te_errno
+route_flush(sa_family_t family)
+{
+    const char *fn = (family == AF_INET) ?
+                     "/proc/sys/net/ipv4/route/flush" :
+                     "/proc/sys/net/ipv6/route/flush";
+    const char *cmd = "1\n";
+    int         fd;
+    te_errno    rc = 0;
+
+    fd = open(fn, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    
+    if ((fd < 0) || (write(fd, cmd, strlen(cmd)) < 0))
+    {
+        rc = te_rc_os2te(errno);
+        WARN("Failed to flush routing table cache - %s %s: %r",
+             (fd < 0) ? "cannot open file" : "cannot write to file",
+             fn, rc);
+    }
+
+    if ((fd >= 0) && (close(fd) != 0))
+    {
+        rc = te_rc_os2te(errno);
+    }
+
+    return rc;
+}
+
+/**
  * Commit changes made for the route.
  *
  * @param gid           group identifier (unused)
@@ -4525,6 +4560,12 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         }
         
         rc = route_change(&rt_info, nlm_action, nlm_flags);
+
+        if (rc == 0)
+        {
+            /* Flush routing cache on success, but ignore errors */
+            (void)route_flush(rt_info.dst.ss_family);
+        }
     }
     
     return rc;
