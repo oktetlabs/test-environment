@@ -164,7 +164,6 @@ tad_bps_nds_to_data_units(const tad_bps_pkt_frag_def *def,
     unsigned int            i;
 
     assert(def != NULL);
-    assert(layer_pdu != NULL);
     assert(data != NULL);
 
     dus = calloc(def->fields, sizeof(dus[0]));
@@ -176,16 +175,23 @@ tad_bps_nds_to_data_units(const tad_bps_pkt_frag_def *def,
 
     for (i = 0; i < def->fields; ++i)
     {
-        rc = tad_data_unit_convert(layer_pdu, def->descr[i].tag,
-                                   dus + i);
-        if (rc != 0)
+        if (layer_pdu == NULL || def->descr[i].tag == ASN_TAG_INVALID)
         {
-            ERROR("%s(): Failed to convert '%s' NDS to data unit: %r",
-                  __FUNCTION__, def->descr[i].name, rc);
-            while (i-- > 0)
-                tad_data_unit_clear(dus + i);
-            free(dus);
-            return rc;
+            tad_data_unit_clear(dus + i);
+        }
+        else
+        {
+            rc = tad_data_unit_convert(layer_pdu, def->descr[i].tag,
+                                       dus + i);
+            if (rc != 0)
+            {
+                ERROR("%s(): Failed to convert '%s' NDS to data unit: %r",
+                      __FUNCTION__, def->descr[i].name, rc);
+                while (i-- > 0)
+                    tad_data_unit_clear(dus + i);
+                free(dus);
+                return rc;
+            }
         }
     }
 
@@ -206,12 +212,15 @@ tad_bps_free_pkt_frag_data(const tad_bps_pkt_frag_def *def,
     assert(data != NULL);
 
     dus = data->dus;
-    data->dus = NULL;
-    for (i = 0; i < def->fields; ++i)
+    if (dus != NULL)
     {
-        tad_data_unit_clear(dus + i);
+        data->dus = NULL;
+        for (i = 0; i < def->fields; ++i)
+        {
+            tad_data_unit_clear(dus + i);
+        }
+        free(dus);
     }
-    free(dus);
 }
 
 /* See description in tad_bps.h */
