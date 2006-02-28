@@ -582,26 +582,25 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     else if (tmpl_data->type == TAD_ETH_FRAME_TYPE_TAGGED)
     {
         /* Nothing to check for TPID - it is a constant */
-        tad_data_unit_t *tci_du;
+        tad_data_unit_t *cfi_du =
+            (tmpl_data->tci.dus[1].du_type == TAD_DU_UNDEF) ?
+            (proto_data->tci.tx_def + 1) : (tmpl_data->tci.dus + 1);
 
         rc = tad_bps_confirm_send(&proto_data->tci, &tmpl_data->tci);
         if (rc != 0)
             return rc;
 
 #if 1
-        if ((tmpl_data->tci.dus[1].du_type == TAD_DU_UNDEF &&
-             (tci_du = proto_data->tci.tx_def + 1)->du_type !=
-                 TAD_DU_I32) ||
-            ((tci_du = tmpl_data->tci.dus + 1)->du_type != TAD_DU_I32))
+        if (cfi_du->du_type != TAD_DU_I32)
         {
             ERROR("%s(): Not plain (%u) CFI is not supported yet",
-                  __FUNCTION__, tci_du->du_type);
+                  __FUNCTION__, cfi_du->du_type);
             return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
         }
 #endif
 
         /* If CFI bit is set, confirm E-RIF */
-        if (tci_du->val_i32 == 1)
+        if (cfi_du->val_i32 == 1)
         {
             rc = tad_bps_confirm_send(&proto_data->e_rif, &tmpl_data->e_rif);
             if (rc != 0)
