@@ -1,9 +1,25 @@
 /** @file
- * @brief Socket API Test Suite
+ * @brief Environment Library
  *
  * Common includes and definitions.
  *
- * Copyright (C) 2004 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  *
@@ -260,8 +276,8 @@ typedef LIST_HEAD(tapi_env_processes, tapi_env_process)
             tapi_env_processes;
 
 /** Host entry in environment */
-typedef struct tapi_env_host {
-    CIRCLEQ_ENTRY(tapi_env_host)    links;  /**< Links */
+typedef struct tapi_env_host_if {
+    CIRCLEQ_ENTRY(tapi_env_host_if) links;  /**< Links */
 
     char    name[TAPI_ENV_NAME_MAX];    /**< Name of the host */
 
@@ -282,10 +298,14 @@ typedef struct tapi_env_host {
     te_bool ip4_unicast_used;   /**< Is IPv4 address assigned to the
                                      host in this net used? */
 
-} tapi_env_host;
+} tapi_env_host_if;
+
+/** From user point of view its just a host, not host/interface pair */
+typedef tapi_env_host_if tapi_env_host;
 
 /** List of hosts required in environment */
-typedef CIRCLEQ_HEAD(tapi_env_hosts, tapi_env_host) tapi_env_hosts;
+typedef CIRCLEQ_HEAD(tapi_env_hosts_ifs, tapi_env_host_if) \
+            tapi_env_hosts_ifs;
 
 
 /* Forward */
@@ -319,10 +339,11 @@ typedef struct tapi_env_pco {
 typedef struct tapi_env_addr {
     CIRCLEQ_ENTRY(tapi_env_addr)    links;  /**< Links */
 
-    tapi_env_net   *net;    /**< Net the address belongs to */
-    tapi_env_host  *host;   /**< Host the address belongs to */
-
     char name[TAPI_ENV_NAME_MAX];       /**< Name of the address */
+
+    tapi_env_net           *net;        /**< Net the address belongs to */
+    tapi_env_host_if       *host_if;    /**< Host interface the address
+                                             belongs to */
 
     rpc_socket_addr_family  family;     /**< Address family */
     tapi_env_addr_type      type;       /**< Address type */
@@ -346,10 +367,11 @@ typedef struct tapi_env_if {
     char name[TAPI_ENV_NAME_MAX];   /**< Name of the interface
                                          in configuration string */
 
-    tapi_env_net   *net;    /**< Net the interface belongs to */
-    tapi_env_host  *host;   /**< Host the interface belongs to */
+    tapi_env_net       *net;        /**< Net the interface belongs to */
+    tapi_env_host_if   *host_if;    /**< Host/interface the interface is
+                                         associated with */
 
-    struct if_nameindex info;   /**< Interface info */
+    struct if_nameindex info;       /**< Interface info */
 
 } tapi_env_if;
 
@@ -375,7 +397,7 @@ typedef struct tapi_env {
     unsigned int        n_nets;     /**< Total number of networks */
 
     tapi_env_nets       nets;       /**< List of networks */
-    tapi_env_hosts      hosts;      /**< List of hosts */
+    tapi_env_hosts_ifs  hosts_ifs;  /**< List of hosts */
     tapi_env_addrs      addrs;      /**< List of addresses */
     tapi_env_ifs        ifs;        /**< List of interfaces */
     tapi_env_aliases    aliases;    /**< List of aliases */

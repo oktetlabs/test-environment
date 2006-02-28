@@ -78,7 +78,7 @@ create_host(void)
 
     if (p != 0)
     {
-        CIRCLEQ_INSERT_TAIL(&env->hosts, p, links);
+        CIRCLEQ_INSERT_TAIL(&env->hosts_ifs, p, links);
 
         LIST_INIT(&p->nets);
         LIST_INIT(&p->processes);
@@ -303,7 +303,7 @@ address:
             {
                 strcpy(p->name, name);
                 p->net = curr_net;
-                p->host = curr_host;
+                p->host_if = curr_host;
                 p->family = $5;
                 p->type = $7;
                 p->handle = CFG_HANDLE_INVALID;
@@ -329,7 +329,7 @@ interface:
             {
                 strcpy(p->name, name);
                 p->net = curr_net;
-                p->host = curr_host;
+                p->host_if = curr_host;
                 LIST_INSERT_HEAD(&env->ifs, p, links);
             }
         }
