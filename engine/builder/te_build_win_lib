@@ -99,8 +99,8 @@ rm -rf tmpsrc
 ssh $KEY ${BUILD_HOST} bash -l -c "\"
 $ADD_CMD \
 cd tmpsrc ; \
-cl /nologo *.c /c ; \
-lib /OUT:${LIBNAME} *.obj\""
+cl -D_WIN32_WINNT=0x0501 -D_CRT_SECURE_NO_DEPRECATE /nologo *.c /c ; \
+lib /nologo /OUT:${LIBNAME} *.obj\""
 
 scp $KEY ${BUILD_HOST}:tmpsrc/${LIBNAME} .
 

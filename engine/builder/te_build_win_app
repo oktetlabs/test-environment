@@ -119,7 +119,8 @@ $ADD_CMD \
 tar xzf ${PLATFORM}.tgz ; \
 rm ${PLATFORM}.tgz ; \
 cd tmpsrc ; \
-cl /nologo -I../${PLATFORM}/include -DWINDOWS *.c \
+cl /nologo -I../${PLATFORM}/include -DWINDOWS -D_CRT_SECURE_NO_DEPRECATE \
+   -D_WIN32_WINNT=0x0501 *.c \
    /link /OUT:${APPNAME} /LIBPATH:../${PLATFORM}/lib ${LIBS} ${ADD_LIB} ; \""
 
 scp $KEY ${BUILD_HOST}:tmpsrc/${APPNAME} .
