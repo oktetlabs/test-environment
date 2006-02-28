@@ -174,11 +174,20 @@ extern int tapi_cfg_net_get_switch_port(const char *ta_node,
 
 
 /**
+ * Reserve resources for all interfaces mentioned in networks
+ * configuration.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_reserve_all(void);
+
+/**
  * Set UP state for all interfaces (nodes) of networks configuration.
  *
  * @return Status code.
  */
-extern int tapi_cfg_net_all_up(void);
+extern te_errno tapi_cfg_net_all_up(void);
+
 
 /** Information about made assignments */
 typedef struct tapi_cfg_net_assigned {
