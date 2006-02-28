@@ -240,6 +240,7 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     
     PROCESS_INFORMATION info;
     STARTUPINFO         si;
+    SYSTEM_INFO         sys_info;
     
     strcpy(cmdline, GetCommandLine());
     if ((tmp = strstr(cmdline, "_rpcserver")) == NULL &&
@@ -249,8 +250,13 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     }
     
     si.cb = sizeof(si);
+
+    memset(&sys_info, 0, sizeof(sys_info));
+    GetNativeSystemInfo(&sys_info);
     
-    if ((val =  getenv_reliable("TE_WIN32_TA")) != NULL &&
+    if (sys_info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL)
+        i = 1;
+    else if ((val =  getenv_reliable("TE_WIN32_TA")) != NULL &&
         strcmp(val, "yes") == 0)
     {
         i = 1;
