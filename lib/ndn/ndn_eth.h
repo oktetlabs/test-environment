@@ -131,6 +131,11 @@ extern int ndn_eth_packet_to_plain(const asn_value *pkt,
 extern asn_value *ndn_eth_plain_to_packet(const ndn_eth_header_plain 
                                           *eth_header);
 
+
+extern const asn_type * const ndn_eth_tagged;
+extern const asn_type * const ndn_eth_snap;
+extern const asn_type * const ndn_eth_frame_type;
+
 extern const asn_type * const ndn_eth_header;
 extern const asn_type * const ndn_eth_csap;
 extern const asn_type * const ndn_data_unit_eth_address;  

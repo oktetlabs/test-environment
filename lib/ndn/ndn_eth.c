@@ -85,6 +85,8 @@ asn_type ndn_eth_tagged_s =
     { _ndn_eth_tagged_ne_array }
 };
 
+const asn_type * const ndn_eth_tagged = &ndn_eth_tagged_s;
+
 
 static asn_named_entry_t _ndn_eth_snap_ne_array[] =
 {
@@ -100,6 +102,8 @@ asn_type ndn_eth_snap_s =
     TE_ARRAY_LEN(_ndn_eth_snap_ne_array),
     { _ndn_eth_snap_ne_array }
 };
+
+const asn_type * const ndn_eth_snap = &ndn_eth_snap_s;
 
 
 static asn_named_entry_t _ndn_eth_frame_type_ne_array[] =
@@ -118,6 +122,8 @@ asn_type ndn_eth_frame_type_s =
     TE_ARRAY_LEN(_ndn_eth_frame_type_ne_array),
     { _ndn_eth_frame_type_ne_array }
 };
+
+const asn_type * const ndn_eth_frame_type = &ndn_eth_frame_type_s;
 
 
 static asn_named_entry_t _ndn_eth_header_ne_array[] = 
