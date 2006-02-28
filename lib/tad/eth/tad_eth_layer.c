@@ -132,9 +132,12 @@ static const tad_bps_pkt_frag tad_802_1q_tpid_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_802_1q_tci_bps_hdr[] =
 {
-    { "priority",  3, BPS_FLD_SIMPLE(NDN_TAG_ETH_PRIO),    TAD_DU_I32 },
-    { "cfi",       1, BPS_FLD_SIMPLE(NDN_TAG_ETH_CFI),     TAD_DU_I32 },
-    { "vlan-id",  12, BPS_FLD_SIMPLE(NDN_TAG_ETH_VLAN_ID), TAD_DU_I32 },
+    { "priority",  3, BPS_FLD_CONST_DEF(NDN_TAG_ETH_PRIO, 0),
+      TAD_DU_I32 },
+    { "cfi",       1, BPS_FLD_CONST_DEF(NDN_TAG_ETH_CFI, 0),
+      TAD_DU_I32 },
+    { "vlan-id",  12, BPS_FLD_CONST_DEF(NDN_TAG_ETH_VLAN_ID, 0),
+      TAD_DU_I32 },
 };
 
 /**

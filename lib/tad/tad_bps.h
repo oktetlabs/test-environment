@@ -45,6 +45,8 @@
 #define BPS_FLD_NO_DEF(_x)  _x, ASN_TAG_INVALID, ASN_TAG_INVALID, 0
 #define BPS_FLD_CONST(_val) ASN_TAG_INVALID, ASN_TAG_CONST, \
                             ASN_TAG_CONST, (_val)
+#define BPS_FLD_CONST_DEF(_tag, _val) \
+    (_tag), ASN_TAG_CONST, ASN_TAG_INVALID, (_val)
 
 /**
  * Binary protocol packet fragment field description.
