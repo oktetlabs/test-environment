@@ -669,11 +669,11 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 /**
  * Obtain ifname from IPv4 default route record.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
- * @param ifname        default route ifname
+ * @param gid          group identifier (unused)
+ * @param oid          full object instence identifier (unused)
+ * @param ifname       default route ifname
  *
- * @return              Status code
+ * @return             Status code
  */
 static te_errno
 ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
@@ -683,7 +683,7 @@ ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
     te_errno      rc;
     char         *route_name = "0.0.0.0|0";
     char          value[INET_ADDRSTRLEN];
-    char         *ret_val = NULL;
+    const char   *ret_val = NULL;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -4473,7 +4473,7 @@ route_flush(sa_family_t family)
     te_errno    rc = 0;
 
     fd = open(fn, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    
+
     if ((fd < 0) || (write(fd, cmd, strlen(cmd)) < 0))
     {
         rc = te_rc_os2te(errno);
