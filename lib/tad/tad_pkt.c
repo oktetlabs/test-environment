@@ -1126,14 +1126,14 @@ tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff, size_t bitlen,
     /* Find the first segment with data to read */
     seg = tad_pkt_first_seg(pkt);
     assert(seg != NULL);
-    for (off = bitoff >> 3; off >= seg->data_len; )
+    for (off = bitoff >> 3, bitoff &= 7; off >= seg->data_len; )
     {
         off -= seg->data_len;
         seg = tad_pkt_next_seg(pkt, seg);
         assert(seg != NULL);
     }
 
-    if (((bitoff & 7) == 0) && ((bitlen & 7) == 0))
+    if ((bitoff == 0) && ((bitlen & 7) == 0))
     {
         /* Everything it byte-aligned */
         tad_pkt_read(pkt, seg, off, bitlen >> 3, dst);
@@ -1143,8 +1143,7 @@ tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff, size_t bitlen,
         /* End of the data to read is byte aligned */
 
         /* Read required part of the first byte */
-        *dst = ((uint8_t *)(seg->data_ptr))[off] &
-               (0xff >> (bitoff & 7));
+        *dst = ((uint8_t *)(seg->data_ptr))[off] & (0xff >> bitoff);
 
         if ((bitlen >> 3) > 0)
         {
@@ -1157,17 +1156,17 @@ tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff, size_t bitlen,
             tad_pkt_read(pkt, seg, off, bitlen >> 3, dst + 1);
         }
     }
-    else if ((bitoff + bitlen) > 8)
-    {
-        /* No support yet */
-        assert(FALSE);
-    }
-    else
+    else if ((bitoff + bitlen) < 8)
     {
         unsigned int shift = 8 - bitoff - bitlen;
 
         *dst = (((uint8_t *)(seg->data_ptr))[off] >> shift) &
                (0xff >> (8 - bitlen));
+    }
+    else
+    {
+        /* No support yet */
+        assert(FALSE);
     }
 }
 
