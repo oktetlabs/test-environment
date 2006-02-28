@@ -192,15 +192,6 @@ extern te_errno tad_eth_confirm_tmpl_cb(csap_p         csap,
                                         void         **p_opaque); 
 
 /**
- * Callback to release data prepared by confirm callback.
- *
- * The function complies with csap_layer_release_opaque_cb_t prototype.
- */
-extern void tad_eth_release_tmpl_cb(csap_p csap, unsigned int layer,
-                                    void *opaque);
-
-
-/**
  * Callback for confirm pattern PDU with Ethernet protocol CSAP
  * arameters and possibilities.
  *
@@ -210,14 +201,6 @@ extern te_errno tad_eth_confirm_ptrn_cb(csap_p         csap,
                                         unsigned int   layer,
                                         asn_value     *layer_pdu,
                                         void         **p_opaque); 
-
-/**
- * Callback to release data prepared by confirm callback.
- *
- * The function complies with csap_layer_release_opaque_cb_t prototype.
- */
-extern void tad_eth_release_ptrn_cb(csap_p csap, unsigned int layer,
-                                    void *opaque);
 
 
 /**
@@ -234,6 +217,7 @@ extern te_errno tad_eth_gen_bin_cb(csap_p                csap,
                                    tad_pkts             *sdus,
                                    tad_pkts             *pdus);
 
+
 extern te_errno tad_eth_match_pre_cb(csap_p              csap,
                                      unsigned int        layer,
                                      tad_recv_pkt_layer *meta_pkt_layer);
@@ -241,9 +225,6 @@ extern te_errno tad_eth_match_pre_cb(csap_p              csap,
 extern te_errno tad_eth_match_post_cb(csap_p              csap,
                                       unsigned int        layer,
                                       tad_recv_pkt_layer *meta_pkt_layer);
-
-extern void tad_eth_match_free_cb(csap_p csap, unsigned int layer,
-                                  void *opaque);
 
 /**
  * Callback for parse received packet and match it with pattern. 
@@ -257,6 +238,15 @@ extern te_errno tad_eth_match_do_cb(csap_p           csap,
                         tad_recv_pkt    *meta_pkt,
                         tad_pkt         *pdu,
                         tad_pkt         *sdu);
+
+
+/**
+ * Callback to release data prepared by confirm callback or packet match.
+ *
+ * The function complies with csap_layer_release_opaque_cb_t prototype.
+ */
+extern void tad_eth_release_pdu_cb(csap_p csap, unsigned int layer,
+                                   void *opaque);
 
 
 /**
