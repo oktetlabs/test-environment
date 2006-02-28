@@ -620,6 +620,9 @@ rcf_ch_conf_root()
         rcf_pch_rpc_init();
 #endif        
         rcf_pch_rsrc_init();
+        rcf_pch_rsrc_info("/agent/interface", 
+                          rcf_pch_rsrc_grab_dummy,
+                          rcf_pch_rsrc_release_dummy);
     }
 
     return &node_agent;
