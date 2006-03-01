@@ -622,6 +622,64 @@ asn_find_descendant(const asn_value *value, te_errno *status,
                     const char *labels_fmt, ...)
 {
     va_list     list;
+    te_errno    rc = 0;
+    char        labels_buf[200]; 
+    const char *rest_labels = labels_buf;
+    asn_value  *tmp_value = (asn_value *)value;
+    int         subval_index;
+
+    va_start(list, labels_fmt);
+    if (labels_fmt != NULL) 
+    {
+        vsnprintf(labels_buf, sizeof(labels_buf), labels_fmt, list); 
+    }
+    va_end(list);
+
+    if (status != NULL)
+        *status = 0;
+
+    if (!value)
+    {
+        if (status != NULL)
+            *status = TE_EWRONGPTR; 
+        return NULL; 
+    }
+
+    if (labels_fmt == NULL || *labels_fmt == '\0')
+        return (asn_value *)value;
+
+    while (rest_labels != NULL && (*rest_labels != '\0'))
+    { 
+        rc = asn_child_named_index(tmp_value->asn_type, rest_labels, 
+                                   &subval_index, &rest_labels);
+        if (rc != 0)
+        {
+            if ((asn_get_syntax(tmp_value, NULL) == CHOICE) && 
+                ((rc = asn_get_choice_value(tmp_value, &tmp_value, 
+                                            NULL, NULL)) == 0))
+                continue;
+
+            break;
+        }
+
+        rc = asn_get_child_by_index(tmp_value, &tmp_value, subval_index);
+        if (rc != 0)
+            break;
+    }
+
+    if (rc != 0 && status != NULL)
+        *status = rc; 
+
+    return (rc == 0) ? tmp_value : NULL;
+}
+
+
+
+asn_value *
+asn_retrieve_descendant(asn_value *value, te_errno *status,
+                        const char *labels_fmt, ...)
+{
+    va_list     list;
     te_errno    rc;
     asn_value  *found_result;
     char        labels_buf[200]; 
@@ -639,6 +697,8 @@ asn_find_descendant(const asn_value *value, te_errno *status,
 
     return (rc == 0) ? found_result : NULL;
 }
+
+
 
 
 
@@ -831,11 +891,19 @@ asn_get_descendent(const asn_value *container,
                    asn_value **found_value, 
                    const char *labels)
 {
+    te_errno    rc = 0;
+#if 0
+
+    if (!container || !found_value)
+        return TE_EWRONGPTR; 
+
+    *found_value = asn_find_descendant(container, &rc, labels);
+
+#else
     const char *rest_labels = labels;
     asn_value  *tmp_value = (asn_value *)container;
 
     int index;
-    int rc = 0;
 
     if (!container || !found_value)
         return TE_EWRONGPTR; 
@@ -861,7 +929,7 @@ asn_get_descendent(const asn_value *container,
 
     if (rc == 0)
         *found_value = tmp_value;
-
+#endif
     return rc;
 }
 

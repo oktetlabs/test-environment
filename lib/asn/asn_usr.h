@@ -487,7 +487,8 @@ extern te_errno asn_free_descendant(asn_value *value, const char *labels);
  * what are you doing. Especially - do not free it!
  *
  * @param value         Root of ASN value tree. 
- * @param status        Status of operation (OUT).
+ * @param status        Location of status of operation, 
+ *                      allways changed unless NULL (OUT).
  * @param labels_fmt    Format (*printf-like) string for labels string.
  * @param ...           Respective parameters for format string.
  *
@@ -505,8 +506,12 @@ extern asn_value *asn_find_descendant(const asn_value *value,
  * If some CHOICE specifier is absent, but there is specific subvalue 
  * at that node, this methods fails and set 'status' to TE_EASNWRONGLABEL.
  *
+ * NOTE for user: do not change got subvalue, if you are not sure, 
+ * what are you doing. Especially - do not free it!
+ *
  * @param value         Root of ASN value tree. 
- * @param status        Status of operation (OUT).
+ * @param status        Location of status of operation, 
+ *                      allways changed unless NULL (OUT).
  * @param labels_fmt    Format (*printf-like) string for labels string.
  * @param ...           Respective parameters for format string.
  *
