@@ -198,12 +198,11 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
             len = 1;
         }
 
-        /* FIXME: Avoid type cast and asn_get_length() */
-        rc = asn_get_indexed(*obj_spec, &unit_spec,
-                             len - 1, NULL);
+        rc = asn_get_indexed(*obj_spec, &unit_spec, len - 1, NULL);
         if (rc != 0)
         {
-            ERROR("Failed to get just inserted ASN.1 value: %r", rc);
+            ERROR("Failed to get ASN.1 value by index %d: %r",
+                  len - 1, rc);
             return TE_RC(TE_TAPI, rc);
         }
     }
