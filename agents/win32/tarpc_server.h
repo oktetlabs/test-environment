@@ -871,6 +871,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     }                                                                   \
     if (arg == NULL)                                                    \
     {                                                                   \
+        ERROR("Internal error: thread_join() returned NULL");           \
         out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);             \
         return TRUE;                                                    \
     }                                                                   \
