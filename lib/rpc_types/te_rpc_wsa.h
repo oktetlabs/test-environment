@@ -405,6 +405,10 @@ servicetype_flags_h2rpc(unsigned int flags)
 #ifndef SIO_INDEX_BIND
 #define SIO_INDEX_BIND        _WSAIOW(IOC_VENDOR,8)
 #endif
+#ifndef SIO_ADDRESS_LIST_SORT
+#define SIO_ADDRESS_LIST_SORT _WSAIORW(IOC_WS2,25)
+#endif
+
 struct tcp_keepalive {
     u_long  onoff;
     u_long  keepalivetime;

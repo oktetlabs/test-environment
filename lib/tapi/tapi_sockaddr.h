@@ -408,6 +408,15 @@ tapi_allocate_port_htons(uint16_t *p_port)
 extern te_errno sockaddr_netaddr_from_string(const char      *addr_str,
                                              struct sockaddr *addr);
 
+/**
+ * Convert IPv4 address to IPv4-mapped IPv6 one.
+ *
+ * @param addr         Sockaddr structure containing address.
+ *                     It must be large enough to hold IPv6 address.
+ *
+ * @return             Status code.
+ */
+extern te_errno sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

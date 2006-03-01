@@ -2935,6 +2935,7 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
     switch (code)
     {
         case RPC_SIO_ADDRESS_LIST_QUERY:
+        case RPC_SIO_ADDRESS_LIST_SORT:
         {
             struct sockaddr *addr;
             unsigned int    i;
@@ -3079,6 +3080,35 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
 
     switch (control_code)
     {
+        case RPC_SIO_ADDRESS_LIST_SORT:
+        {
+            int i;
+            int list_size = *(uint32_t *)inbuf;
+            
+            struct sockaddr_storage *p;
+            struct tarpc_sa         *q;
+            
+            in_req.type = WSA_IOCTL_SAA;
+            in_req.wsa_ioctl_request_u.req_saa.req_saa_len = list_size;
+            in_req.wsa_ioctl_request_u.req_saa.req_saa_val =
+                malloc(list_size * sizeof(struct tarpc_sa));
+
+            p = (struct sockaddr_storage *)(inbuf + sizeof(uint32_t));
+            q = in_req.wsa_ioctl_request_u.req_saa.req_saa_val;
+
+            for (i = 0; i < list_size; i++, p++, q++)
+            {                
+                q->sa_family = addr_family_h2rpc(p->ss_family);
+                q->sa_data.sa_data_len = sizeof(struct sockaddr_storage) -
+                                         sizeof(q->sa_family);
+                q->sa_data.sa_data_val = malloc(q->sa_data.sa_data_len);
+                memcpy(q->sa_data.sa_data_val, SA(p)->sa_data,
+                       q->sa_data.sa_data_len);
+            }
+
+            break;
+        }
+            
         case RPC_FIONBIO:
         case RPC_FIONREAD:
         case RPC_SIO_CHK_QOS:

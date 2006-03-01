@@ -3702,6 +3702,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
     switch (code)
     {
         case RPC_SIO_ADDRESS_LIST_QUERY:
+        case RPC_SIO_ADDRESS_LIST_SORT:
         {
             SOCKET_ADDRESS_LIST *sal;
             tarpc_sa            *tsa;
@@ -3847,8 +3848,32 @@ TARPC_FUNC(wsa_ioctl,
     switch (req->type)
     {
         case WSA_IOCTL_VOID:
-        case WSA_IOCTL_SAA:
             break;
+
+        case WSA_IOCTL_SAA:
+        {
+            struct sockaddr_storage *p;
+            int                      i;
+            struct tarpc_sa         *q = (tarpc_sa *)req->
+                                         wsa_ioctl_request_u.req_saa.
+                                         req_saa_val;
+
+            inbuf = malloc(sizeof(uint32_t) +
+                           sizeof(struct sockaddr_storage) *
+                           req->wsa_ioctl_request_u.req_saa.req_saa_len);
+
+            p = (struct sockaddr_storage *)
+                ((char *)inbuf + sizeof(uint32_t));
+            
+            for (i = 0; i < *(uint32_t *)inbuf; i++, p++, q++)
+            {
+                p->ss_family = addr_family_rpc2h(q->sa_family);
+                memcpy(SA(p)->sa_data, q->sa_data.sa_data_val,
+                       q->sa_data.sa_data_len);
+            } 
+            
+            break;
+        }
 
         case WSA_IOCTL_INT:
             inbuf = &req->wsa_ioctl_request_u.req_int;

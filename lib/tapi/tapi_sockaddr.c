@@ -622,3 +622,28 @@ sockaddr_netaddr_from_string(const char      *addr_str,
     }
     return TE_RC(TE_TAPI, TE_EINVAL);
 }
+
+te_errno
+sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
+{
+    uint32_t    ip4_addr;
+    uint16_t    port;
+    
+    if (addr->sa_family != AF_INET)
+    {
+        ERROR("Specified address is not IPv4 one");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    ip4_addr = (uint32_t)SIN(addr)->sin_addr.s_addr;
+    port = (uint32_t)SIN(addr)->sin_port;
+    
+    memset(addr, 0, sizeof(struct sockaddr_in6));
+
+    SIN6(addr)->sin6_family = AF_INET6;
+    SIN6(addr)->sin6_port = port;
+    SIN6(addr)->sin6_addr.s6_addr32[3] = ip4_addr;
+    SIN6(addr)->sin6_addr.s6_addr16[5] = htons(0xFFFF);
+    return 0;
+}
+
