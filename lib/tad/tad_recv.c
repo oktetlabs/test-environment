@@ -555,7 +555,7 @@ tad_recv_prepare(csap_p csap, asn_value *pattern, unsigned int num,
     my_ctx->wait_pkts = num;
     my_ctx->match_pkts = my_ctx->got_pkts = 0;
 
-    if (timeout && timeout != TAD_TIMEOUT_INF)
+    if (timeout != TAD_TIMEOUT_INF)
     { 
         gettimeofday(&csap->wait_for, NULL);
         csap->wait_for.tv_usec += timeout * 1000;
