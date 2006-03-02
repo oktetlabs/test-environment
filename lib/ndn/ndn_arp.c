@@ -103,57 +103,70 @@ asn_type ndn_arp_csap_s =
 const asn_type * const ndn_arp_csap = &ndn_arp_csap_s;
 
 
-#if 0
 /* See description in ndn_arp.h */
 te_errno
-ndn_arp_packet_to_plain(const asn_value *pkt, 
+ndn_arp_packet_to_plain(const asn_value *asn_arp_hdr, 
                         ndn_arp_header_plain *arp_header)
 {
-    int rc;
-    int val;
-    size_t len;
+    te_errno    rc;
+    int32_t     tmp;
+    size_t      len;
 
-    len = ETHER_ADDR_LEN;
-    rc = asn_read_value_field(pkt, arp_header->dst_addr, &len, 
-                              "dst-addr.#plain"); 
-    len = ETHER_ADDR_LEN;
-    if (rc == 0) 
-        rc = asn_read_value_field(pkt, arp_header->src_addr, &len, 
-                                  "src-addr.#plain"); 
-    len = 2;
-    if (rc == 0) 
-        rc = asn_read_value_field(pkt, &arp_header->arp_type_len, &len, 
-                                  "arp-type.#plain"); 
-    len = sizeof(val);
-    if (rc == 0) 
-        rc = asn_read_value_field(pkt, &val, &len, "cfi"); 
+    rc = asn_read_int32(asn_arp_hdr, &tmp, "hw-type.#plain");
+    if (rc != 0)
+        return rc;
+    arp_header->hw_type = tmp;
 
-    if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
-    {
-        arp_header->is_tagged = 0;
-        return 0;
-    }
-    else
-        arp_header->is_tagged = 1;
-    
-    if (rc) 
+    rc = asn_read_int32(asn_arp_hdr, &tmp, "proto-type.#plain");
+    if (rc != 0)
+        return rc;
+    arp_header->proto_type = tmp;
+
+    rc = asn_read_int32(asn_arp_hdr, &tmp, "hw-size.#plain");
+    if (rc != 0)
+        return rc;
+    arp_header->hw_size = tmp;
+    if (arp_header->hw_size > sizeof(arp_header->snd_hw_addr))
+        return TE_RC(TE_TAPI, TE_ESMALLBUF);
+
+    rc = asn_read_int32(asn_arp_hdr, &tmp, "proto-size.#plain");
+    if (rc != 0)
+        return rc;
+    arp_header->proto_size = tmp;
+    if (arp_header->proto_size > sizeof(arp_header->snd_proto_addr))
+        return TE_RC(TE_TAPI, TE_ESMALLBUF);
+
+    rc = asn_read_int32(asn_arp_hdr, &tmp, "opcode.#plain");
+    if (rc != 0)
+        return rc;
+    arp_header->opcode = tmp;
+
+    len = arp_header->hw_size;
+    rc = asn_read_value_field(asn_arp_hdr, arp_header->snd_hw_addr,
+                              &len, "snd-hw-addr.#plain");
+    if (rc != 0)
         return rc;
 
-    arp_header->cfi = val;
+    len = arp_header->proto_size;
+    rc = asn_read_value_field(asn_arp_hdr, arp_header->snd_proto_addr,
+                              &len, "snd-proto-addr.#plain");
+    if (rc != 0)
+        return rc;
 
-    len = sizeof(arp_header->priority);
-    rc = asn_read_value_field(pkt, &arp_header->priority, &len, 
-                              "priority.#plain"); 
+    len = arp_header->hw_size;
+    rc = asn_read_value_field(asn_arp_hdr, arp_header->tgt_hw_addr,
+                              &len, "tgt-hw-addr.#plain");
+    if (rc != 0)
+        return rc;
 
-    len = sizeof(arp_header->vlan_id);
-    if (rc == 0)
-        rc = asn_read_value_field(pkt, &arp_header->vlan_id, &len, 
-                                  "vlan-id.#plain"); 
+    len = arp_header->proto_size;
+    rc = asn_read_value_field(asn_arp_hdr, arp_header->tgt_proto_addr,
+                              &len, "tgt-proto-addr.#plain");
+    if (rc != 0)
+        return rc;
 
-    return rc;
+    return 0;
 }
-#endif
-
 
 /* See description in ndn_arp.h */
 asn_value *
