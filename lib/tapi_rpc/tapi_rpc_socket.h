@@ -363,7 +363,23 @@ extern ssize_t rpc_recvmsg(rcf_rpc_server *rpcs,
                            int s, struct rpc_msghdr *msg,
                            rpc_send_recv_flags flags);
 
-
+/**
+ * Parse TA-dependent in_pktinfo structure type data returned 
+ * in msg_control data field of rpc_msghdr during rpc_recvmsg() 
+ * call in case when IP_PKTINFO option is enabled on socket.
+ *
+ * @param rpcs          RPC server handle
+ * @param data          msg_control data
+ * @param data_len      msg_control data length
+ * @param ipi_address   ipi_address value of in_pktinfo type data (OUT)
+ * @param ipi_ifindex   ipi_ifindex value of in_pktinfo type data (OUT) 
+ *  
+ * @return Status code
+ */ 
+extern int rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
+                                          uint8_t *data, uint32_t data_len,
+                                          struct in_addr *ipi_addr,
+                                          int *ipi_ifindex);
 /**
  * Assign a name to an unnamed socket. When o socket is created, it exists
  * in an address family, but it does not have a name assigned to it. 

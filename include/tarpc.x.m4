@@ -704,7 +704,19 @@ struct tarpc_recvmsg_out {
     struct tarpc_msghdr     msg<>;
 };
 
+struct tarpc_cmsg_data_parse_ip_pktinfo_in {
+    struct tarpc_in_arg common;
 
+    uint8_t             data<>;
+};
+
+struct tarpc_cmsg_data_parse_ip_pktinfo_out {
+    struct tarpc_out_arg    common;
+    tarpc_int               retval;
+    tarpc_uint              ipi_addr;
+    tarpc_int               ipi_ifindex;
+};
+    
 
 /* bind() */
 
@@ -3379,6 +3391,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(wsa_connect)
         RPC_DEF(wsa_ioctl)
         RPC_DEF(get_wsa_ioctl_overlapped_result)
+        RPC_DEF(cmsg_data_parse_ip_pktinfo)
 
         RPC_DEF(create_window)
         RPC_DEF(destroy_window)

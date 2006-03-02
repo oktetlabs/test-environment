@@ -946,6 +946,55 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
     RETVAL_INT(recvmsg, out.retval);
 }
 
+
+int 
+rpc_cmsg_data_parse_ip_pktinfo(rcf_rpc_server *rpcs,
+                               uint8_t *data, uint32_t data_len,
+                               struct in_addr *ipi_addr,
+                               int *ipi_ifindex)
+{
+    tarpc_cmsg_data_parse_ip_pktinfo_in  in;
+    tarpc_cmsg_data_parse_ip_pktinfo_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(cmsg_data_parse_ip_pktinfo, -1);
+    }
+
+    if (data == NULL || data_len == 0 ||
+        ipi_addr == NULL || ipi_ifindex == 0)
+    {
+        ERROR("%s(): Invalid parameters to function", __FUNCTION__);
+        RETVAL_INT(cmsg_data_parse_ip_pktinfo, -1);
+    }
+    in.data.data_val = data;
+    in.data.data_len = data_len;
+    
+    rcf_rpc_call(rpcs, "cmsg_data_parse_ip_pktinfo", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(cmsg_data_parse_ip_pktinfo, 
+                                          out.retval);
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        ipi_addr->s_addr = out.ipi_addr;
+        *ipi_ifindex = out.ipi_ifindex;
+    }
+    TAPI_RPC_LOG("RPC (%s,%s): "
+                 "cmsg_data_parse_ip_pktinfo(%p, %p, %p->%s, %p->%d)"
+                 " -> %d (%s)",
+                 rpcs->ta, rpcs->name,
+                 data, data_len, ipi_addr, 
+                 (out.retval == 0) ? inet_ntoa(*ipi_addr) : "undetermined",
+                 ipi_ifindex,
+                 (out.retval == 0) ? *ipi_ifindex : 0,
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_INT(cmsg_data_parse_ip_pktinfo, out.retval);
+}
+
 int
 rpc_getsockname_gen(rcf_rpc_server *rpcs,
                     int s, struct sockaddr *name,

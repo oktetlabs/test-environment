@@ -83,6 +83,20 @@ sleep_waitable(int msec)
 {
     SleepEx(msec, TRUE);
 } 
+#ifdef WINDOWS
+/** Calculate the auxiliary buffer length for msghdr */
+static inline int
+calculate_msg_controllen(struct tarpc_msghdr *rpc_msg)
+{
+    unsigned int i;
+    int          len = 0;
+
+    for (i = 0; i < rpc_msg->msg_control.msg_control_len; i++)
+        len += WSA_CMSG_SPACE(rpc_msg->msg_control.msg_control_val[i].
+                              data.data_len);
+    return len;
+}
+#endif
 
 bool_t
 _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
@@ -3253,14 +3267,34 @@ TARPC_FUNC(wsa_recv_msg,
             }
             msg.lpBuffers = overlapped->buffers;
         }
-
+    
         if (rpc_msg->msg_control.msg_control_len > 0)
         {
+#ifdef WINDOWS             
+            int len = calculate_msg_controllen(rpc_msg);
+            int rlen = len * 2;
+            int data_len = rpc_msg->msg_control.msg_control_val[0].
+                data.data_len;
+
+            free(rpc_msg->msg_control.msg_control_val[0].data.data_val);
+            free(rpc_msg->msg_control.msg_control_val);
+            rpc_msg->msg_control.msg_control_val = NULL;
+            rpc_msg->msg_control.msg_control_len = 0;
+            msg.Control.len = len;
+            if ((msg.Control.buf = calloc(1, rlen)) == NULL)
+            {
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+                goto finish;
+            }
+            WSA_CMSG_FIRSTHDR(&msg)->cmsg_len = WSA_CMSG_LEN(data_len);
+            INIT_CHECKED_ARG((char *)(msg.Control.buf), rlen, len);
+#else
             ERROR("Non-zero Control is not supported");
             out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
             goto finish;
+#endif            
         }
-
+        
         msg.dwFlags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
 
         /*
@@ -3301,6 +3335,60 @@ TARPC_FUNC(wsa_recv_msg,
             sockaddr_h2rpc(a, &(rpc_msg->msg_name));
             rpc_msg->msg_namelen = msg.namelen;
             rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.dwFlags);
+
+#ifdef WINDOWS            
+            if (msg.Control.buf != NULL)
+            {
+                WSACMSGHDR     *c;
+                int             i;
+
+                struct tarpc_cmsghdr *rpc_c;
+
+                /* Calculate number of elements to allocate an array */
+                for (i = 0, c = WSA_CMSG_FIRSTHDR(&msg);
+                     c != NULL;
+                     i++, c = WSA_CMSG_NXTHDR(&msg, c));
+
+                rpc_c = rpc_msg->msg_control.msg_control_val = 
+                    calloc(1, sizeof(*rpc_c) * i);
+
+                if (rpc_msg->msg_control.msg_control_val == NULL)
+                {
+                    out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+                    goto finish;
+                }
+                /* Fill the array */
+                for (i = 0, c = WSA_CMSG_FIRSTHDR(&msg); 
+                     c != NULL;
+                     i++, c = WSA_CMSG_NXTHDR(&msg, c))
+                {
+                    char *data = WSA_CMSG_DATA(c);
+
+                    rpc_c->level = socklevel_h2rpc(c->cmsg_level);
+                    rpc_c->type = sockopt_h2rpc(c->cmsg_level, 
+                                                c->cmsg_type);
+                    if ((rpc_c->data.data_len = 
+                         c->cmsg_len - (data - (char *)c)) > 0)
+                    {
+                        rpc_c->data.data_val = malloc(rpc_c->data.data_len);
+                        if (rpc_c->data.data_val == NULL)
+                        {
+                            for (i--, rpc_c--; i >= 0; i--, rpc_c--)
+                                free(rpc_c->data.data_val);
+                            free(rpc_msg->msg_control.msg_control_val);
+                            rpc_msg->msg_control.msg_control_val = NULL;
+
+                            out->common._errno = TE_RC(TE_TA_WIN32, 
+                                                       TE_ENOMEM);
+                            goto finish;
+                        }
+                        memcpy(rpc_c->data.data_val, data, 
+                               rpc_c->data.data_len);
+                    }
+                }
+                rpc_msg->msg_control.msg_control_len = i;
+            }
+#endif            
         }
         else if (in->overlapped == 0 ||
                  out->common._errno != RPC_E_IO_PENDING)
@@ -4203,6 +4291,28 @@ TARPC_FUNC(gettimeofday,
     }
 }
 )
+
+TARPC_FUNC(cmsg_data_parse_ip_pktinfo,
+{},
+{
+    IN_PKTINFO *pktinfo = (IN_PKTINFO *)(in->data.data_val);
+
+    UNUSED(list);
+ 
+    if (in->data.data_len < sizeof(IN_PKTINFO))
+    {
+        ERROR("Too small buffer is provided as pktinfo data");
+        out->retval = -1;
+    }    
+    else
+    {
+        out->ipi_addr = pktinfo->ipi_addr.S_un.S_addr;
+        out->ipi_ifindex = pktinfo->ipi_ifindex;
+        out->retval = 0; 
+    }
+}
+)
+
 
 #define MAX_CALLBACKS   1024
 
