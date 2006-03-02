@@ -50,13 +50,18 @@
 
 #include "logger_api.h"
 
-void
-local_eth_frame_handler(const ndn_eth_header_plain *header, 
-                   const uint8_t *payload, uint16_t plen, 
-                   void *userdata)
+
+static void
+local_eth_frame_handler(const asn_value *packet, int layer,
+                        const ndn_eth_header_plain *header, 
+                        const uint8_t *payload, uint16_t plen, 
+                        void *userdata)
 {
     int i;
     char buffer [100];
+    
+    UNUSED(packet);
+    UNUSED(layer);
     UNUSED(payload);
     UNUSED(userdata);
 

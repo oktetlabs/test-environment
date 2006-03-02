@@ -186,6 +186,8 @@ extern te_errno tapi_eth_csap_create(const char     *ta_name,
  * Callback function for the tapi_eth_pkt_handler_data @a callback
  * parameter, it is called for each packet received by CSAP.
  *
+ * @param packet        Packet in ASN.1 representation.
+ * @param layer         Index of the Ethernet layer in packet.
  * @param header        Structure with Ethernet header of the frame.
  * @param payload       Payload of the frame.
  * @param plen          Length of the frame payload.
@@ -193,7 +195,8 @@ extern te_errno tapi_eth_csap_create(const char     *ta_name,
  *                      field of tapi_eth_pkt_handler_data.
  */
 typedef void (*tapi_eth_frame_callback)
-                  (const ndn_eth_header_plain *header,
+                  (const asn_value *packet, int layer,
+                   const ndn_eth_header_plain *header,
                    const uint8_t *payload, uint16_t plen,
                    void *user_data);
 

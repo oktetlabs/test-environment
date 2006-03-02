@@ -112,105 +112,54 @@ typedef struct tapi_arp_pkt_handler_data {
 } tapi_arp_pkt_handler_data;
 
 static void
-eth_frame_callback(const ndn_eth_header_plain *header,
+eth_frame_callback(const asn_value *packet, int layer,
+                   const ndn_eth_header_plain *header,
                    const uint8_t *payload, uint16_t plen,
                    void *user_data)
 {
     struct tapi_arp_pkt_handler_data *i_data = 
         (struct tapi_arp_pkt_handler_data *)user_data;
 
-    tapi_arp_frame_t  arp_frame;
-    uint16_t          short_var;
-    /* 
-     * Flag meaning is payload length minimal. 
-     * Minimal Eth frame length = 64 bytes, 
-     *         Eth header + tailing checksum = 18 bytes. 
-     */
-    te_bool  plen_minimal = (plen <= (64 - 18));
+    te_errno            rc;
+    tapi_arp_frame_t    arp_frame;
+    const asn_value    *arp_hdr_val;
+
 
     memset(&arp_frame, 0, sizeof(arp_frame));
 
     memcpy(&(arp_frame.eth_hdr), header, sizeof(arp_frame.eth_hdr));
 
 
-    /* Parse ARP packet structure */
-#define ARP_GET_SHORT_VAR(fld_) \
-    do {                                                           \
-        if (plen < sizeof(short_var))                              \
-        {                                                          \
-            ERROR("ARP Header is truncated at '%s' field", #fld_); \
-            return;                                                \
-        }                                                          \
-        memcpy(&short_var, payload, sizeof(short_var));            \
-        arp_frame.arp_hdr.fld_ = ntohs(short_var);                 \
-        payload += sizeof(short_var);                              \
-        plen -= sizeof(short_var);                                 \
-    } while (0)
-
-    ARP_GET_SHORT_VAR(hw_type);
-    ARP_GET_SHORT_VAR(proto_type);
-
-    if (plen < sizeof(arp_frame.arp_hdr.hw_size))
+    rc = asn_get_indexed(packet, (asn_value **)&arp_hdr_val,
+                         layer - 1, "pdus");
+    if (rc != 0)
     {
-        ERROR("ARP Header is truncated at 'hw_size' field");
+        ERROR("%s(): cannot get PDU from packet: %r", __FUNCTION__, rc);
         return;
     }
-    arp_frame.arp_hdr.hw_size = *(payload++);
-    plen--;
-    if (plen < sizeof(arp_frame.arp_hdr.proto_size))
+
+    rc = asn_get_choice_value(arp_hdr_val, (asn_value **)&arp_hdr_val,
+                              NULL, NULL);
+    if (rc != 0)
     {
-        ERROR("ARP Header is truncated at 'proto_size' field");
+        ERROR("%s(): cannot get PDU choice from packet: %r",
+              __FUNCTION__, rc);
         return;
     }
-    arp_frame.arp_hdr.proto_size = *(payload++);
-    plen--;
 
-    ARP_GET_SHORT_VAR(opcode);
-
-#undef ARP_GET_SHORT_VAR
-
-#define ARP_GET_ARRAY(fld_, size_fld_) \
-    do {                                                           \
-        if (arp_frame.arp_hdr.size_fld_ >                          \
-            sizeof(arp_frame.arp_hdr.fld_))                        \
-        {                                                          \
-            ERROR("The length of '%s' field is too big to "        \
-                  "fit in TAPI data structure", #fld_);            \
-            return;                                                \
-        }                                                          \
-        if (plen < arp_frame.arp_hdr.size_fld_)                    \
-        {                                                          \
-            ERROR("ARP Header is truncated at '%s' field", #fld_); \
-            return;                                                \
-        }                                                          \
-        memcpy(arp_frame.arp_hdr.fld_, payload,                    \
-               arp_frame.arp_hdr.size_fld_);                       \
-        payload += arp_frame.arp_hdr.size_fld_;                    \
-        plen -= arp_frame.arp_hdr.size_fld_;                       \
-    } while (0)
-
-    ARP_GET_ARRAY(snd_hw_addr, hw_size);
-    ARP_GET_ARRAY(snd_proto_addr, proto_size);
-    ARP_GET_ARRAY(tgt_hw_addr, hw_size);
-    ARP_GET_ARRAY(tgt_proto_addr, proto_size);
-
-#undef ARP_GET_ARRAY
-
-    if (!plen_minimal && plen > 0)
+    rc = ndn_arp_packet_to_plain(arp_hdr_val, &arp_frame.arp_hdr);
+    if (rc != 0)
     {
-        INFO("ARP frame has some data after ARP header, plen %d", plen);
-        if ((arp_frame.data = (uint8_t *)malloc(plen)) == NULL)
-        {
-            ERROR("Cannot allocate memory under ARP payload");
-            return;
-        }
-        memcpy(arp_frame.data, payload, plen);
-        arp_frame.data_len = plen;
+        ERROR("%s(): packet to plain conversion error: %r",
+              __FUNCTION__, rc);
+        return;
     }
+
+    arp_frame.data_len = plen;
+    arp_frame.data = (uint8_t *)payload;
 
     i_data->callback(&arp_frame, i_data->user_data);
 
-    free(arp_frame.data);
     return;
 }
 

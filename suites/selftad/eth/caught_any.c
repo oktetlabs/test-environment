@@ -53,13 +53,17 @@
 
 #define TE_LOG_LEVEL 255
 
+
 static int cb_called = 0;
 
-void
-local_eth_frame_handler(const ndn_eth_header_plain *header, 
+static void
+local_eth_frame_handler(const asn_value *packet, int layer,
+                        const ndn_eth_header_plain *header, 
                         const uint8_t *payload, uint16_t plen, 
                         void *userdata)
 {
+    UNUSED(packet);
+    UNUSED(layer);
     UNUSED(payload);
     UNUSED(userdata);
 

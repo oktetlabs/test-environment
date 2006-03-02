@@ -265,7 +265,8 @@ tapi_eth_pkt_handler(asn_value *packet, void *user_param)
         return;
     }
 
-    i_data->callback(&header, payload, p_len, i_data->user_data);
+    i_data->callback(packet, -1, &header, payload, p_len,
+                     i_data->user_data);
 
     free(payload);
     asn_free_value(packet);
