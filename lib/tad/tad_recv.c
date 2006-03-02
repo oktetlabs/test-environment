@@ -1293,9 +1293,7 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
     te_errno    rc;
     int         ret;
     size_t      attach_len;
-#if 1 /* FIXME ASN */
     int         attach_rlen;
-#endif
     char       *buffer;
     size_t      cmd_len;
 
@@ -1327,10 +1325,8 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
         ERROR("%s(): asn_sprint_value() returns unexpected number: "
               "expected %u, got %d", __FUNCTION__, (unsigned)attach_len,
               attach_rlen);
-#if 0 /* FIXME ASN */
         free(buffer);
         return TE_EFAULT;
-#endif
     } 
 
     rcf_ch_lock();
