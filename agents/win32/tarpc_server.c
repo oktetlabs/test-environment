@@ -3940,26 +3940,30 @@ TARPC_FUNC(wsa_ioctl,
 
         case WSA_IOCTL_SAA:
         {
-            struct sockaddr_storage *p;
+            SOCKET_ADDRESS_LIST     *sal;
             int                      i;
-            struct tarpc_sa         *q = (tarpc_sa *)req->
-                                         wsa_ioctl_request_u.req_saa.
-                                         req_saa_val;
 
             inbuf = malloc(sizeof(uint32_t) +
-                           sizeof(struct sockaddr_storage) *
+                           sizeof(SOCKET_ADDRESS) *
                            req->wsa_ioctl_request_u.req_saa.req_saa_len);
 
-            p = (struct sockaddr_storage *)
-                ((char *)inbuf + sizeof(uint32_t));
-            
-            for (i = 0; i < *(uint32_t *)inbuf; i++, p++, q++)
+            sal = (SOCKET_ADDRESS_LIST *)inbuf;
+ 
+            sal->iAddressCount = req->wsa_ioctl_request_u.req_saa.
+                                 req_saa_len;
+
+            for (i = 0; i < sal->iAddressCount; i++)
             {
-                p->ss_family = addr_family_rpc2h(q->sa_family);
-                memcpy(SA(p)->sa_data, q->sa_data.sa_data_val,
-                       q->sa_data.sa_data_len);
-            } 
-            
+                sal->Address[i].iSockaddrLength =
+                    sizeof(struct sockaddr_in6);
+                sal->Address[i].lpSockaddr =
+                    (LPSOCKADDR)malloc(sizeof(struct sockaddr_in6));
+                sockaddr_rpc2h(req->wsa_ioctl_request_u.req_saa.
+                               req_saa_val + i,
+                               (struct sockaddr_storage *)
+                                   (sal->Address[i].lpSockaddr));
+            }
+
             break;
         }
 
@@ -4023,7 +4027,6 @@ TARPC_FUNC(wsa_ioctl,
 
     INIT_CHECKED_ARG(inbuf, inbuf_len, 0);
 
-
 call:
     MAKE_CALL(out->retval = WSAIoctl(in->s, ioctl_rpc2h(in->code),
                                      inbuf,
@@ -4034,11 +4037,14 @@ call:
                                      in->overlapped == 0 ? NULL
                                        : (LPWSAOVERLAPPED)overlapped,
                                      IN_CALLBACK));
+       
     if (out->retval == 0)
     {
         if (outbuf != NULL && out->outbuf.outbuf_val != NULL)
+        {
             convert_wsa_ioctl_result(in->code, outbuf, 
                                      out->outbuf.outbuf_val);
+        }
 
         if (overlapped != NULL)
             rpc_overlapped_free_memory(overlapped);

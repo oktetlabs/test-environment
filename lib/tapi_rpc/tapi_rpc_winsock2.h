@@ -650,7 +650,7 @@ extern int rpc_wsa_connect(rcf_rpc_server *rpcs, int s,
                            rpc_qos *sqos);
                            
 /** Maximum length of expected result */                           
-#define RPC_WSA_IOCTL_OUTBUF_MAX        1024                           
+#define RPC_WSA_IOCTL_OUTBUF_MAX        4096
 
 /**
  * @b WSAIoctl() remote call.
