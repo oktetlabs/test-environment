@@ -8,6 +8,7 @@
 
 #include "asn_usr.h"
 #include "ndn.h"
+#include "ndn_eth.h"
 
 #include "test_types.h"
 
@@ -72,6 +73,7 @@ int
 main (void)
 { 
 
+#if 1
     test_string_parse("\"berb\\\"erber\"", asn_base_charstring);
     test_string_parse("\"Somethins long string with ''' oo   \n aaa\"",
                       asn_base_charstring); 
@@ -93,12 +95,17 @@ main (void)
                       "arg-sets {simple-for:{ begin 1, end 10 } },"
                       " payload function:\"eth_udp_payload64\" }",
                       ndn_traffic_template); 
+#endif
+    test_string_parse(
+" {       src-addr plain:'00 0E A6 41 D5 2E 'H,"
+"        dst-addr plain:'FF FF FF FF FF FF 'H,"
+"        length-type plain:2054 }", ndn_eth_header);
 #if 1
     test_string_parse(
 "{ { pdus { eth:{"
 "        src-addr plain:'00 0E A6 41 D5 2E 'H,"
 "        dst-addr plain:'FF FF FF FF FF FF 'H,"
-"        eth-type plain:2054"
+"        length-type plain:2054"
 "      } },"
 "      payload mask:{"
 "      v '00 01 08 00 06 04 00 01 00 0E A6 41 D5 2E 00 00 00 00 00 00 00 00 0 0 00 0A 12 0A 03 'H,"
@@ -109,6 +116,8 @@ main (void)
 "      function:\"tad_eth_arp_reply:01:02:03:04:05:06\""
 "} } }",
                       ndn_traffic_pattern); 
+#endif
+#if 1
     test_string_parse(
 "{\
   received {\
@@ -144,7 +153,7 @@ main (void)
     eth:{\
       src-addr plain:'00 0E A6 41 D5 2E 'H,\
       dst-addr plain:'01 02 03 04 05 06 'H,\
-      eth-type plain:2048\
+      length-type plain:2048\
     }\
   },\
   payload bytes:''H\
