@@ -84,7 +84,7 @@ udp_handler(char *fn, void *p)
             VERB("\nsrc - %02x", eh.src_addr[0]);
             for (i = 1; i < 6; i++)
                 VERB (":%02x", eh.src_addr[i]);
-            VERB("\ntype - %04x\n", eh.eth_type_len);
+            VERB("\ntype - %04x\n", eh.len_type);
         } 
     }
     else

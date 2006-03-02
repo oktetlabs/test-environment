@@ -74,14 +74,14 @@ typedef struct tad_atm_proto_tmpl_data {
  */
 static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
 {
-    { "gfc",            4,  BPS_FLD_NO_DEF(NDN_TAG_ATM_GFC), TAD_DU_I32 },
-    { "vpi",            8,  BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI), TAD_DU_I32 },
-    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI), TAD_DU_I32 },
+    { "gfc",            4,  BPS_FLD_NO_DEF(NDN_TAG_ATM_GFC), TAD_DU_I32, FALSE },
+    { "vpi",            8,  BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI), TAD_DU_I32, FALSE },
+    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI), TAD_DU_I32, FALSE },
     { "payload-type",   3,  NDN_TAG_ATM_PAYLOAD_TYPE,
-                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32 },
-    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP), TAD_DU_I32 },
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32, FALSE },
+    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP), TAD_DU_I32, FALSE },
     { "hec",            8,  NDN_TAG_ATM_HEC,
-                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32 },
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32, FALSE },
 };
 
 /**
@@ -89,13 +89,13 @@ static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_atm_nni_bps_hdr[] =
 {
-    { "vpi",            12, BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI), TAD_DU_I32 },
-    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI), TAD_DU_I32 },
+    { "vpi",            12, BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI), TAD_DU_I32, FALSE },
+    { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI), TAD_DU_I32, FALSE },
     { "payload-type",   3,  NDN_TAG_ATM_PAYLOAD_TYPE,
-                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32 },
-    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP), TAD_DU_I32 },
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32, FALSE },
+    { "clp",            1,  BPS_FLD_SIMPLE(NDN_TAG_ATM_CLP), TAD_DU_I32, FALSE },
     { "hec",            8,  NDN_TAG_ATM_HEC,
-                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32 },
+                            ASN_TAG_CONST, ASN_TAG_INVALID, 0, TAD_DU_I32, TRUE },
 };
 
 

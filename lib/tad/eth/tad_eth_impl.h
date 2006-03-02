@@ -76,10 +76,6 @@
 #define ETH_TAGGED_TYPE_LEN 0x8100
 
 
-/* Default recv mode: all except OUTGOING packets. */
-#define ETH_RECV_MODE_DEF (ETH_RECV_HOST      | ETH_RECV_BROADCAST | \
-                           ETH_RECV_MULTICAST | ETH_RECV_OTHERHOST )
-
 #ifdef __cplusplus
 extern "C" {
 #endif

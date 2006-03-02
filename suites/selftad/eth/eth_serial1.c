@@ -112,6 +112,7 @@ main(int argc, char *argv[])
     uint16_t   eth_type = ETH_P_IP;
     size_t     pld_len = PAYLOAD_LENGTH;
     
+    asn_value *csap_spec = NULL;
     asn_value *pattern; /* eth frame pattern  for filtering */
     asn_value *template;/* eth frame template for traffic generation */ 
 
@@ -148,14 +149,15 @@ main(int argc, char *argv[])
     {
         TEST_FAIL("TX CSAP creation failure: %r", rc);
     } 
-    
-    if ((rc = tapi_eth_csap_create_with_mode(agent_b, sid_b, agent_b_if,
-                                             ETH_RECV_ALL,
-                                             src_bin_mac, dst_bin_mac, 
-                                             &eth_type, &rx_csap)) != 0)
+
+    CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, agent_b_if, ETH_RECV_ALL,
+                                     src_bin_mac, dst_bin_mac, &eth_type));
+    if ((rc = tapi_tad_csap_create(agent_b, sid_b, "eth", csap_spec,
+                                   &rx_csap)) != 0)
     {
         TEST_FAIL(" RX CSAP creation failure");
-    } 
+    }
+    asn_free_value(csap_spec); csap_spec = NULL;
 
     /* Set AGENT side function parameters  */
     if ((rc = mi_set_agent_params(agent_a, sid_a, PAYLOAD_LENGTH, 
@@ -312,6 +314,8 @@ cleanup:
     if (rx_csap != CSAP_INVALID_HANDLE &&
         (rc = rcf_ta_csap_destroy(agent_b, sid_b, rx_csap) != 0) )
         ERROR("ETH listen csap destroy fails, rc %X", rc);
+
+    asn_free_value(csap_spec); csap_spec = NULL;
 
     TEST_END; 
     

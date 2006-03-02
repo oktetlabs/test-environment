@@ -55,7 +55,7 @@ typedef struct ndn_eth_header_plain {
     uint8_t  dst_addr[ETHER_ADDR_LEN];  /**< Destination MAC address */
     uint8_t  src_addr[ETHER_ADDR_LEN];  /**< Source MAC address */ 
 
-    uint16_t eth_type_len;  /**< Ethernet Length/Type */
+    uint16_t len_type;      /**< Ethernet Length/Type */
     int      is_tagged;     /**< BOOL, flag - is frame tagged. */
     int      cfi;           /**< BOOL, Canonical Format Indicator*/
     uint8_t  priority;      /**< Priority */
@@ -73,6 +73,7 @@ enum eth_csap_receive_mode {
     ETH_RECV_ALL       = ETH_RECV_HOST | ETH_RECV_BROADCAST |
                          ETH_RECV_MULTICAST | ETH_RECV_OTHERHOST |
                          ETH_RECV_OUTGOING,
+    ETH_RECV_DEF       = ETH_RECV_ALL & (~ETH_RECV_OUTGOING),
 };
 
 typedef enum {

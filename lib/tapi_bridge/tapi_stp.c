@@ -71,6 +71,24 @@
 static uint8_t bridge_group_addr[ETHER_ADDR_LEN] =
     {0x01, 0x80, 0xC2, 0x00, 0x00, 0x00};
 
+/**
+ * Print ethernet address to the specified file stream
+ *
+ * @param f     File stream handle
+ * @param addr  Pointer to the array with Ethernet MAC address
+ *
+ * @return nothing.
+ */
+static void
+tapi_eth_fprint_mac (FILE *f, const uint8_t *addr)
+{
+    if ((f != NULL) && (addr != NULL))
+    {
+        fprintf(f, "'%02x %02x %02x %02x %02x %02x'H",
+                addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+    }
+}
+
 
 /**
  * Creates STP CSAP that can be used for sending/receiving
@@ -249,7 +267,8 @@ tapi_bpdu_pkt_handler(const char *fn, void *user_param)
         return; 
     }
 
-    rc = asn_get_descendent(frame_val, &stp_pkt_val, "pdus.0.#bridge");
+    rc = asn_get_descendent(frame_val, (asn_value **)&stp_pkt_val,
+                            "pdus.0.#bridge");
     if (rc)
     {
         ERROR("%s(): get_subvalue rc %r", __FUNCTION__, rc);

@@ -104,9 +104,9 @@ typedef struct tad_eth_proto_pdu_data {
 static const tad_bps_pkt_frag tad_eth_addrs_bps_hdr[] =
 {
     { "dst-addr", 48, NDN_TAG_ETH_DST,
-      NDN_TAG_ETH_REMOTE, NDN_TAG_ETH_LOCAL, 0, TAD_DU_OCTS },
+      NDN_TAG_ETH_REMOTE, NDN_TAG_ETH_LOCAL, 0, TAD_DU_OCTS, FALSE },
     { "src-addr", 48, NDN_TAG_ETH_SRC,
-      NDN_TAG_ETH_LOCAL, NDN_TAG_ETH_REMOTE, 0, TAD_DU_OCTS },
+      NDN_TAG_ETH_LOCAL, NDN_TAG_ETH_REMOTE, 0, TAD_DU_OCTS, FALSE },
 };
 
 /**
@@ -116,7 +116,7 @@ static const tad_bps_pkt_frag tad_eth_addrs_bps_hdr[] =
 static const tad_bps_pkt_frag tad_eth_length_type_bps_hdr[] =
 {
     { "length-type", 16, BPS_FLD_SIMPLE(NDN_TAG_ETH_LENGTH_TYPE),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
 };
 
 /**
@@ -124,7 +124,7 @@ static const tad_bps_pkt_frag tad_eth_length_type_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_802_1q_tpid_bps_hdr[] =
 {
-    { "tpid", 16, BPS_FLD_CONST(TAD_802_1Q_TAG_TYPE), TAD_DU_I32 },
+    { "tpid", 16, BPS_FLD_CONST(TAD_802_1Q_TAG_TYPE), TAD_DU_I32, FALSE },
 };
 
 /**
@@ -133,11 +133,11 @@ static const tad_bps_pkt_frag tad_802_1q_tpid_bps_hdr[] =
 static const tad_bps_pkt_frag tad_802_1q_tci_bps_hdr[] =
 {
     { "priority",  3, BPS_FLD_CONST_DEF(NDN_TAG_ETH_PRIO, 0),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
     { "cfi",       1, BPS_FLD_CONST_DEF(NDN_TAG_ETH_CFI, 0),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
     { "vlan-id",  12, BPS_FLD_CONST_DEF(NDN_TAG_ETH_VLAN_ID, 0),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
 };
 
 /**
@@ -146,17 +146,17 @@ static const tad_bps_pkt_frag tad_802_1q_tci_bps_hdr[] =
 static const tad_bps_pkt_frag tad_802_1q_e_rif_bps_hdr[] =
 {
     { "e-rif-rc-rt",   3, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_RT),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
     { "e-rif-rc-lth",  5, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_LTH),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
     { "e-rif-rc-d",    1, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_D),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
     { "e-rif-rc-lf",   6, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_LF),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
     { "e-rif-rc-ncfi", 1, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_NCFI),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
     { "e-rif-rt",      0, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RT),
-      TAD_DU_I32 },
+      TAD_DU_I32, FALSE },
 };
 
 /**
@@ -164,9 +164,12 @@ static const tad_bps_pkt_frag tad_802_1q_e_rif_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_802_snap_bps_hdr[] =
 {
-    { "llc-addr", 24, BPS_FLD_CONST(0xaaaa03),              TAD_DU_I32 },
-    { "snap-oui", 24, BPS_FLD_NO_DEF(NDN_TAG_ETH_SNAP_OUI), TAD_DU_I32 },
-    { "snap-pid", 16, BPS_FLD_NO_DEF(NDN_TAG_ETH_SNAP_PID), TAD_DU_I32 },
+    { "llc-addr", 24, BPS_FLD_CONST(0xaaaa03),             
+      TAD_DU_I32, FALSE },
+    { "snap-oui", 24, BPS_FLD_NO_DEF(NDN_TAG_ETH_SNAP_OUI),
+      TAD_DU_I32, FALSE },
+    { "snap-pid", 16, BPS_FLD_NO_DEF(NDN_TAG_ETH_SNAP_PID),
+      TAD_DU_I32, FALSE },
 };
 
 

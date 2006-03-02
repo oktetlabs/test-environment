@@ -69,8 +69,7 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
         sprintf(buffer, "%02x ", header->src_addr[i]);
     VERB("addrs: %s", buffer);
 
-    VERB("eth_len_type: 0x%x = %d", header->eth_type_len,
-                                    header->eth_type_len);
+    VERB("len_type: 0x%x = %d", header->len_type, header->len_type);
 
     if(header->is_tagged)
     {
@@ -116,6 +115,7 @@ main(int argc, char *argv[])
 
         ndn_eth_header_plain plain_hdr;
 
+        asn_value *csap_spec = NULL;
         asn_value *asn_eth_hdr;
         asn_value *template;
         asn_value *asn_pdus;
@@ -137,7 +137,7 @@ main(int argc, char *argv[])
         memset (&plain_hdr, 0, sizeof(plain_hdr));
         memcpy (plain_hdr.dst_addr, rem_addr, ETHER_ADDR_LEN);  
         memset (payload, 0, sizeof(payload));
-        plain_hdr.eth_type_len = ETH_P_IP; 
+        plain_hdr.len_type = ETH_P_IP; 
 
         plain_hdr.is_tagged = 1;
         plain_hdr.vlan_id = 16;
@@ -194,14 +194,15 @@ main(int argc, char *argv[])
         else 
             VERB ("csap created, id: %d\n", (int)eth_csap);
 
-        rc = tapi_eth_csap_create_with_mode(ta, sid, eth_device,
-                                            ETH_RECV_ALL, NULL, NULL,
-                                            NULL, &eth_listen_csap);
-        if (rc)
+        CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, eth_device,
+                                         ETH_RECV_ALL, NULL, NULL, NULL));
+        if ((rc = tapi_tad_csap_create(ta, sid, "eth", csap_spec,
+                                       &eth_listen_csap)) != 0)
             TEST_FAIL("csap for listen create error: %x\n", rc);
         else 
             VERB("csap for listen created, id: %d\n",
                  (int)eth_listen_csap);
+        asn_free_value(csap_spec); csap_spec = NULL;
 
 
         rc = asn_parse_value_text("{{ pdus { eth:{ }}}}", 

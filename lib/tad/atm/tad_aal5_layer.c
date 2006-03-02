@@ -67,12 +67,12 @@ typedef struct tad_aal5_proto_tmpl_data {
  */
 static const tad_bps_pkt_frag tad_all5_bps_cpcs_trailer[] =
 {
-    { "cpcs-uu",    8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPCS_UU), TAD_DU_I32 },
-    { "cpi",        8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPI), TAD_DU_I32 },
+    { "cpcs-uu",    8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPCS_UU), TAD_DU_I32, FALSE },
+    { "cpi",        8,  BPS_FLD_SIMPLE(NDN_TAG_AAL5_CPI), TAD_DU_I32, FALSE },
     { "length",     16, NDN_TAG_AAL5_LENGTH,
-                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32 },
+                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32, TRUE },
     { "crc",        32, NDN_TAG_AAL5_CRC,
-                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32 },
+                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32, TRUE },
 };
 
 /** Array filled in with zeros to be used as padding */

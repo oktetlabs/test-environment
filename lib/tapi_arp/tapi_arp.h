@@ -1,14 +1,14 @@
 /** @file
- * @brief Proteos, TAPI ARP.
+ * @brief TAPI TAD ARP
  *
- * Declarations of API for TAPI ARP.
+ * Declarations of test API for ARP TAD.
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1 of
  * the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
@@ -16,11 +16,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
+ * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  * $Id$
@@ -30,15 +31,18 @@
 #define __TE_TAPI_ARP_H__
 
 #include <stdio.h>
-#ifdef HAVE_ASSERT_H
+#if HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#ifdef HAVE_NETINET_IN_H
+#if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-
+#if HAVE_NET_ETHERNET_H
 #include <net/ethernet.h>
+#endif
+#if HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_defs.h"
@@ -75,7 +79,7 @@ typedef struct tapi_arp_frame {
         memcpy((arp_frame_)->eth_hdr.src_addr, src_mac_, ETHER_ADDR_LEN); \
         assert(sizeof((arp_frame_)->eth_hdr.dst_addr) == ETHER_ADDR_LEN); \
         memcpy((arp_frame_)->eth_hdr.dst_addr, dst_mac_, ETHER_ADDR_LEN); \
-        (arp_frame_)->eth_hdr.eth_type_len = ETHERTYPE_ARP;               \
+        (arp_frame_)->eth_hdr.len_type = ETHERTYPE_ARP;                   \
         (arp_frame_)->eth_hdr.is_tagged = FALSE;                          \
     } while (0)
     
@@ -117,6 +121,7 @@ typedef struct tapi_arp_frame {
         (arp_frame_)->data_len = 0;                                     \
     } while (0)
 
+
 /**
  * Create ARP CSAP that runs over Ethernet RFC 894.
  *
@@ -132,15 +137,218 @@ typedef struct tapi_arp_frame {
  *                      case frames will be sent with src specifed in
  *                      template or native for outgoing device (if not
  *                      present in template).
+ * @param hw_type       Pointer to ARP header hardware type or NULL
+ * @param proto_type    Pointer to ARP header protocol type or NULL
+ * @param hw_size       Pointer to ARP header hardware address size or NULL
+ * @param proto_size    Pointer to ARP header protocol address size or NULL
  * @param arp_csap      Identifier of created CSAP (OUT)
  *
  * @return zero on success, otherwise standard or common TE error code. 
  */
-extern int tapi_arp_csap_create(const char *ta_name, int sid,
-                                const char *device,
-                                const uint8_t *remote_addr, 
-                                const uint8_t *local_addr, 
-                                csap_handle_t *arp_csap);
+extern te_errno tapi_arp_eth_csap_create(const char     *ta_name,
+                                         int             sid,
+                                         const char     *device,
+                                         const uint8_t  *remote_addr, 
+                                         const uint8_t  *local_addr, 
+                                         const uint16_t *hw_type,
+                                         const uint16_t *proto_type,
+                                         const uint8_t  *hw_size,
+                                         const uint8_t  *proto_size,
+                                         csap_handle_t  *arp_csap);
+
+/**
+ * Create 'arp.eth' CSAP to deal with IPv4 over Ethernet.
+ *
+ * See tapi_arp_eth_csap_create() for details.
+ */
+static inline te_errno
+tapi_arp_eth_csap_create_ip4(const char     *ta_name,
+                             int             sid,
+                             const char     *device,
+                             const uint8_t  *remote_addr, 
+                             const uint8_t  *local_addr, 
+                             csap_handle_t  *arp_csap)
+{
+    uint16_t    hw_type = ARPHRD_ETHER;
+    uint16_t    proto_type = ETHERTYPE_IP;
+    uint8_t     hw_size = ETHER_ADDR_LEN;
+    uint8_t     proto_size = sizeof(in_addr_t);
+
+    return tapi_arp_eth_csap_create(ta_name, sid, device,
+                                    remote_addr, local_addr,
+                                    &hw_type, &proto_type,
+                                    &hw_size, &proto_size,
+                                    arp_csap);
+}
+
+/**
+ * Add Ethernet layer for ARP protocol in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ * @param device        Interface name on TA host or NULL (have to
+ *                      be not-NULL, if Ethernet is the bottom layer)
+ * @param remote_addr   Default remote MAC address, may be NULL - in this
+ *                      case frames will be sent only dst is specified in
+ *                      template, and frames from all src's will be
+ *                      catched.
+ * @param local_addr    Default local MAC address, may be NULL - in this
+ *                      case frames will be sent with src specifed in
+ *                      template or native for outgoing device (if not
+ *                      present in template), frames to all dst's will
+ *                      be caugth.
+ *
+ * @retval Status code.
+ *
+ * @sa tapi_eth_add_csap_layer, tapi_eth_add_csap_layer_tagged
+ */
+extern te_errno tapi_arp_add_csap_layer_eth(asn_value      **csap_spec,
+                                            const char      *device,
+                                            const uint8_t   *remote_addr,
+                                            const uint8_t   *local_addr);
+
+/**
+ * Add ARP layer in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ * @param hw_type       Pointer to Hardware Type or NULL. If NULL, it
+ *                      have to be specified in traffic templates and
+ *                      match any, if it is not specified in traffic
+ *                      pattern.
+ * @param proto_type    Pointer to Protocol Type or NULL. If NULL, it
+ *                      have to be specified in traffic templates and
+ *                      match any, if it is not specified in traffic
+ *                      pattern.
+ * @param hw_size       Pointer to Hardware Address Length or NULL.
+ *                      If NULL, it have to be specified in traffic
+ *                      templates and match any, if it is not
+ *                      specified in traffic pattern.
+ * @param proto_size    Pointer to Protocol Address Length or NULL.
+ *                      If NULL, it have to be specified in traffic
+ *                      templates and match any, if it is not
+ *                      specified in traffic pattern.
+ *
+ * @retval Status code.
+ *
+ * @sa tapi_arp_add_csap_layer_eth_ip4
+ */
+extern te_errno tapi_arp_add_csap_layer(asn_value      **csap_spec,
+                                        const uint16_t  *hw_type,
+                                        const uint16_t  *proto_type,
+                                        const uint8_t   *hw_size,
+                                        const uint8_t   *proto_size);
+
+/**
+ * Add ARP layer for IPv4 over Ethernet in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ *
+ * @retval Status code.
+ *
+ * @sa tapi_arp_add_csap_layer
+ */
+extern te_errno tapi_arp_add_csap_layer_eth_ip4(asn_value **csap_spec);
+
+
+/**
+ * Add ARP PDU as the last PDU to the last unit of the traffic 
+ * template or pattern.
+ *
+ * @param tmpl_or_ptrn  Location of ASN.1 value with traffic template or
+ *                      pattern
+ * @param is_pattern    Is the first argument template or pattern
+ * @param hw_type       Pointer to Hardware Type field value or NULL
+ *                      (default value for template have to be specified
+ *                      during CSAP creation)
+ * @param proto_type    Pointer to Protocol Type field value or NULL
+ *                      (default value for template have to be specified
+ *                      during CSAP creation)
+ * @param hw_size       Pointer to Hardware Address Length field value or
+ *                      NULL (default value for template have to be
+ *                      specified during CSAP creation)
+ * @param proto_size    Pointer to Protocol Address Length field value or
+ *                      NULL (default value for template have to be
+ *                      specified during CSAP creation)
+ * @param opcode        Pointer to OpCode field value or NULL (cannot be
+ *                      used in the case of template, match any on
+ *                      receive)
+ *
+ * @param hw_addr_len       Sender/Target hardware address real length
+ * @param proto_addr_len    Sender/Target protocol address real length
+ * @param snd_hw_addr       Sender hardware address or NULL (cannot be
+ *                          used on transmit, match any on receive)
+ * @param snd_proto_addr    Sender protocol address or NULL (cannot be
+ *                          used on transmit, match any on receive)
+ * @param tgt_hw_addr       Target hardware address or NULL (cannot be
+ *                          used on transmit, match any on receive)
+ * @param tgt_proto_addr    Target protocol address or NULL (cannot be
+ *                          used on transmit, match any on receive)
+ *
+ * @return Status code.
+ *
+ * @sa tapi_arp_add_csap_layer, tapi_arp_add_pdu_eth_ip4
+ */
+extern te_errno tapi_arp_add_pdu(asn_value      **tmpl_or_ptrn,
+                                 te_bool          is_pattern,
+                                 const uint16_t  *hw_type,
+                                 const uint16_t  *proto_type,
+                                 const uint8_t   *hw_size,
+                                 const uint8_t   *proto_size,
+                                 const uint16_t  *opcode,
+                                 size_t           hw_addr_len,
+                                 size_t           proto_addr_len,
+                                 const uint8_t   *snd_hw_addr,
+                                 const uint8_t   *snd_proto_addr,
+                                 const uint8_t   *tgt_hw_addr,
+                                 const uint8_t   *tgt_proto_addr);
+
+/**
+ * Add ARP PDU for IPv4 over Ethernet as the last PDU to the last unit
+ * of the traffic template or pattern.
+ *
+ * It is assumed that CSAP is created using
+ * tapi_arp_add_csap_layer_eth_ip4() function, length of hardware
+ * address is equal to ETHER_ADDR_LEN, length of protocol address is
+ * equal to sizeof(in_addr_t).
+ *
+ * @param tmpl_or_ptrn      Location of ASN.1 value with traffic template
+ *                          or pattern
+ * @param is_pattern        Is the first argument template or pattern
+ * @param opcode            Pointer to OpCode field value or NULL (cannot
+ *                          be used in the case of template, match any on
+ *                          receive)
+ * @param snd_hw_addr       Sender hardware address or NULL (cannot be
+ *                          used on transmit, match any on receive)
+ * @param snd_proto_addr    Sender protocol address or NULL (cannot be
+ *                          used on transmit, match any on receive)
+ * @param tgt_hw_addr       Target hardware address or NULL (cannot be
+ *                          used on transmit, match any on receive)
+ * @param tgt_proto_addr    Target protocol address or NULL (cannot be
+ *                          used on transmit, match any on receive)
+ *
+ * @return Status code.
+ *
+ * @sa tapi_arp_add_csap_layer_eth_ip4, tapi_arp_add_pdu
+ */
+extern te_errno tapi_arp_add_pdu_eth_ip4(asn_value      **tmpl_or_ptrn,
+                                         te_bool          is_pattern,
+                                         const uint16_t  *opcode,
+                                         const uint8_t   *snd_hw_addr,
+                                         const uint8_t   *snd_proto_addr,
+                                         const uint8_t   *tgt_hw_addr,
+                                         const uint8_t   *tgt_proto_addr);
+
+
+/**
+ * Creates traffic template for a single ARP frame.
+ *
+ * @param frame  ARP frame data structure as the source of ARP frame values
+ * @param templ  Placeholder for ARP template (OUT)
+ *
+ * @returns Status code.
+ */
+extern te_errno tapi_arp_prepare_template(const tapi_arp_frame_t *frame,
+                                          asn_value **templ);
+
 
 /**
  * Callback function for the tapi_arp_recv_start() routine, it is called
@@ -188,62 +396,11 @@ extern tapi_tad_trrecv_cb_data *tapi_arp_trrecv_cb_data(
  *
  * @return zero on success, otherwise standard or common TE error code.
  */
-extern int tapi_arp_recv(const char *ta_name, int sid,
-                         csap_handle_t arp_csap,
-                         const asn_value *pattern, unsigned int timeout,
-                         tapi_arp_frame_t **frames, int *num);
+extern te_errno tapi_arp_recv(const char *ta_name, int sid,
+                              csap_handle_t arp_csap,
+                              const asn_value *pattern,
+                              unsigned int timeout,
+                              tapi_arp_frame_t **frames, int *num);
 
-/**
- * Creates traffic template for a single ARP frame.
- *
- * @param frame  ARP frame data structure as the source of ARP frame values
- * @param templ  Placeholder for ARP template (OUT)
- *
- * @returns Status of the operation
- */
-extern int tapi_arp_prepare_template(const tapi_arp_frame_t *frame,
-                                     asn_value **templ);
-
-/**
- * Creates traffic pattern for a single Ethernet frame with 'type' field 
- * set to ARP and specified source and destination MAC addresses.
- *
- * @param src_mac  Desired source MAC address value. if NULL, source address
- *                 of the Ethernet frame is not matched
- * @param dst_mac  Desired destination MAC address value. if NULL,
- *                 destination address of the Ethernet frame is not matched
- * @param pattern  Placeholder for the pattern (OUT)
- *
- * @returns Status of the operation
- */
-extern int tapi_arp_prepare_pattern_eth_only(const uint8_t *src_mac,
-                                             const uint8_t *dst_mac,
-                                             asn_value **pattern);
-
-/**
- * Creates traffic pattern for a single ARP frame with specified 
- * Ethernet source, destination MAC addresses and ARP header fields.
- *
- * @param eth_src_mac     Desired source MAC address value
- * @param eth_dst_mac     Desired destination MAC address value
- * @param opcode          Desired operation code
- * @param snd_hw_addr     Desired sender hardware address
- * @param snd_proto_addr  Desired sender protocol address
- * @param tgt_hw_addr     Desired target hardware address
- * @param tgt_proto_addr  Desired target protocol address
- * @param pattern         Placeholder for the pattern (OUT)
- *
- * @note If the pointer is NULL, the field is not matched
- *
- * @returns Status of the operation
- */
-extern int tapi_arp_prepare_pattern_with_arp(const uint8_t *eth_src_mac,
-                                             const uint8_t *eth_dst_mac,
-                                             const uint16_t *opcode,
-                                             const uint8_t *snd_hw_addr,
-                                             const uint8_t *snd_proto_addr,
-                                             const uint8_t *tgt_hw_addr,
-                                             const uint8_t *tgt_proto_addr,
-                                             asn_value **pattern);
 
 #endif /* __TE_TAPI_ARP_H__ */

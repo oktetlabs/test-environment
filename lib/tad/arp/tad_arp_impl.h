@@ -92,12 +92,21 @@ extern te_errno tad_arp_gen_bin_cb(csap_p                csap,
                                    tad_pkts             *sdus,
                                    tad_pkts             *pdus);
 
+
+extern te_errno tad_arp_match_pre_cb(csap_p              csap,
+                                     unsigned int        layer,
+                                     tad_recv_pkt_layer *meta_pkt_layer);
+
+extern te_errno tad_arp_match_post_cb(csap_p              csap,
+                                      unsigned int        layer,
+                                      tad_recv_pkt_layer *meta_pkt_layer);
+
 /**
- * Callback for parse received packet and match it with pattern.
+ * Callback for parse received packet and match it with pattern. 
  *
- * The function complies with csap_layer_match_bin_cb_t prototype.
+ * The function complies with csap_layer_match_do_cb_t prototype.
  */
-extern te_errno tad_arp_match_bin_cb(csap_p           csap,
+extern te_errno tad_arp_match_do_cb(csap_p           csap,
                         unsigned int     layer,
                         const asn_value *ptrn_pdu,
                         void            *ptrn_opaque,

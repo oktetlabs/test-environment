@@ -62,8 +62,7 @@ local_eth_frame_handler(const ndn_eth_header_plain *header,
     INFO("++++ Ethernet frame received\n");
     INFO("dst: %Tm", header->dst_addr, ETHER_ADDR_LEN);
     INFO("src: %Tm", header->src_addr, ETHER_ADDR_LEN); 
-    INFO("eth_len_type: 0x%x = %d",
-           header->eth_type_len,  header->eth_type_len); 
+    INFO("len_type: 0x%x = %d", header->len_type,  header->len_type); 
     INFO("payload len: %d", plen);
 }
 
@@ -131,7 +130,7 @@ main(int argc, char *argv[])
     memcpy(plain_hdr.dst_addr, mac_b, ETHER_ADDR_LEN);  
     memcpy(plain_hdr.src_addr, mac_a, ETHER_ADDR_LEN);  
     memset(payload, 0, sizeof(payload));
-    plain_hdr.eth_type_len = ETH_P_IP; 
+    plain_hdr.len_type = ETH_P_IP; 
 
     if ((asn_eth_hdr = ndn_eth_plain_to_packet(&plain_hdr)) == NULL)
         TEST_FAIL("make eth pkt fails");

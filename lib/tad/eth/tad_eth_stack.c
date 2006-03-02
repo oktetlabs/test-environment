@@ -433,7 +433,7 @@ tad_eth_rw_init_cb(csap_p csap)
                               &val_len, "receive-mode");
     if (rc != 0)
     {
-        spec_data->recv_mode = ETH_RECV_MODE_DEF;
+        spec_data->recv_mode = ETH_RECV_DEF;
     }
 
     csap_set_rw_data(csap, spec_data);

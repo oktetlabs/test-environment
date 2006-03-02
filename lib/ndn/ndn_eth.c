@@ -194,7 +194,7 @@ ndn_eth_packet_to_plain(const asn_value *pkt,
                                   "src-addr.#plain"); 
     len = 2;
     if (rc == 0) 
-        rc = asn_read_value_field(pkt, &eth_header->eth_type_len, &len, 
+        rc = asn_read_value_field(pkt, &eth_header->len_type, &len, 
                                   "length-type.#plain"); 
     len = sizeof(val);
     if (rc == 0) 
@@ -250,7 +250,7 @@ ndn_eth_plain_to_packet(const ndn_eth_header_plain *eth_header)
                                    "src-addr.#plain");
 
     if (rc == 0) 
-        rc = asn_write_int32(asn_eth_hdr, eth_header->eth_type_len,
+        rc = asn_write_int32(asn_eth_hdr, eth_header->len_type,
                              "length-type.#plain"); 
     if (rc == 0 && eth_header->is_tagged)
     {

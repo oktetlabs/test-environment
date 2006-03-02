@@ -23,6 +23,7 @@
 #include "ndn_eth.h"
 #include "tapi_eth.h"
 #include "tapi_tad.h"
+#include "tapi_test.h"
 
 
 /* The number of packets to be processed */
@@ -86,6 +87,7 @@ int main()
 
     uint32_t    eth_payload_length = PAYLOAD_LENGTH;
     
+    asn_value *csap_spec = NULL;
     asn_value *pattern;
         /* ether frame pattern used for recv csap filtering */
     asn_value *template;
@@ -148,13 +150,15 @@ int main()
     
     if (agent_a == agent_b)
     {
-        if (tapi_eth_csap_create_with_mode(agent_b, sid_b, 
-                                agent_b_if, ETH_RECV_ALL,
-                                NULL, dst_bin_mac, 
-                                NULL, &rx_csap))
+        CHECK_RC(tapi_eth_add_csap_layer(&csap_spec, agent_b_if,
+                                         ETH_RECV_ALL, NULL, dst_bin_mac,
+                                         NULL));
+        if ((rc = tapi_tad_csap_create(agent_b, sid_b, "eth", csap_spec,
+                                       &rx_csap)) != 0)
         {
-            TEST_TERMINATION(" RX CSAP creation failure");
+            TEST_FAIL(" RX CSAP creation failure");
         }
+        asn_free_value(csap_spec); csap_spec = NULL;
     }
     else
     {

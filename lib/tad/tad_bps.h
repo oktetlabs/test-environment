@@ -62,6 +62,8 @@ typedef struct tad_bps_pkt_frag {
                                      parameters default for receiving */
     uint32_t        value;      /**< Constant value */
     tad_du_type_t   plain_du;   /**< Type of plain data unit */
+    te_bool         force_read; /**< Force to read from binary packet 
+                                     in any case */
 } tad_bps_pkt_frag;
 
 /**

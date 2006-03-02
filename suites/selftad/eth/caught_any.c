@@ -90,8 +90,7 @@ main(int argc, char *argv[])
 
     csap_handle_t              eth_listen_csap = CSAP_INVALID_HANDLE;
 
-    asn_value *pattern_unit;
-    asn_value *pattern;
+    asn_value *pattern = NULL;
     char       eth_device[] = "eth0"; 
 
 
@@ -124,29 +123,21 @@ main(int argc, char *argv[])
     else 
         VERB("csap for listen created, id: %d\n", (int)eth_listen_csap);
 
-    rc = tapi_eth_prepare_pattern_unit(NULL, NULL, eth_type,
-                                       &pattern_unit);
+    rc = tapi_eth_add_pdu(&pattern, TRUE, NULL, NULL, &eth_type);
     if (rc != 0)
         TEST_FAIL("prepare eth pattern unit fails %X", rc);
-
-
 
     if (dump_packets)
     {
         char dump_fname[] = "tad_dump_hex";
-        rc = asn_write_value_field(pattern_unit,
+
+        rc = asn_write_value_field(pattern,
                                    dump_fname, sizeof(dump_fname), 
-                                   "actions.0.#function");
+                                   "0.actions.0.#function");
         if (rc != 0)
             TEST_FAIL("set action 'function' for pattern unit fails %r",
                       rc);
     } 
-
-    pattern = asn_init_value(ndn_traffic_pattern);
-
-    rc = asn_insert_indexed(pattern, pattern_unit, -1, ""); 
-    if (rc != 0)
-        TEST_FAIL("Add pattern unit fails %X", rc);
 
     rc = tapi_tad_trrecv_start(ta, sid, eth_listen_csap, pattern, 
                                timeout, num_pkts,
