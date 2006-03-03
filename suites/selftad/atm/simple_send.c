@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  * 
- * $Id: example.c 18619 2005-09-22 16:47:08Z artem $
+ * $Id$
  */
 
 /** @page simple_send Create ATM over Socket CSAP and send one cell
@@ -33,7 +33,7 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  */
 
-#define TE_TEST_NAME    "simple_send"
+#define TE_TEST_NAME    "atm/simple_send"
 
 #define TEST_START_VARS     TEST_START_ENV_VARS
 #define TEST_START_SPECIFIC TEST_START_ENV
