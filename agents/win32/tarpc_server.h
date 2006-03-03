@@ -311,6 +311,7 @@ win_rpc_errno(int err)
         case ERROR_MORE_DATA: return RPC_EMSGSIZE; /* FIXME? */
         case ERROR_INVALID_PARAMETER: return RPC_EINVAL; /* FIXME? */
         case ERROR_FILE_NOT_FOUND: return RPC_ENOENT;
+        case ERROR_NETNAME_DELETED: return RPC_E_NETNAME_DELETED;                           
         case WAIT_TIMEOUT: return RPC_E_WAIT_TIMEOUT;
 
         

@@ -184,6 +184,8 @@ typedef enum {
     TE_ECANCELED,     /**< Operation is cancelled */
     
     /* Windows-specific error codes */
+    TE_E_NETNAME_DELETED,/**< The specified network name is no longer
+                              available */ 
     TE_E_UNEXP_NET_ERR,  /**< Unexpected network error */
     TE_E_WAIT_TIMEOUT,   /**< The wait operation timed out */
     TE_E_OPERATION_ABORTED, /**< Operation aborted */
@@ -595,6 +597,7 @@ te_rc_err2str(te_errno err)
         ERR2STR(E_OPERATION_ABORTED);
         ERR2STR(E_IO_INCOMPLETE);
         ERR2STR(E_IO_PENDING);
+        ERR2STR(E_NETNAME_DELETED);
 
         ERR2STR(EUNSPEC);
         ERR2STR(EUNKNOWN);
