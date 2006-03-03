@@ -35,6 +35,88 @@
         </run>
 
         <run>
+            <script name="simple_recv"/>
+            <arg name="type">
+                <value>uni</value>
+<!--                <value>nni</value> -->
+            </arg>
+            <arg name="csap_vpi"> 
+                <value>unspec</value>
+<!--                <value>match</value> -->
+                <value>nomatch</value>
+            </arg>
+            <arg name="csap_vci"> 
+                <value>unspec</value>
+<!--                <value>match</value> -->
+                <value>nomatch</value>
+            </arg>
+            <arg name="csap_congestion"> 
+                <value>unspec</value>
+<!--                <value>match</value> -->
+                <value>nomatch</value>
+            </arg>
+            <arg name="csap_clp"> 
+                <value>unspec</value>
+<!--                <value>match</value> -->
+                <value>nomatch</value>
+            </arg>
+            <arg name="ptrn_gfc"> 
+                <value>unspec</value>
+<!--                <value>match</value>
+                <value>nomatch</value> -->
+            </arg>
+            <arg name="ptrn_vpi"> 
+                <value>unspec</value>
+                <value>match</value>
+<!--                <value>nomatch</value> -->
+            </arg>
+            <arg name="ptrn_vci"> 
+                <value>unspec</value>
+<!--                <value>match</value>
+                <value>nomatch</value> -->
+            </arg>
+            <arg name="ptrn_payload_type"> 
+                <value>unspec</value>
+<!--                <value>match</value>
+                <value>nomatch</value> -->
+            </arg>
+            <arg name="ptrn_congestion"> 
+                <value>unspec</value>
+<!--                <value>match</value>
+                <value>nomatch</value> -->
+            </arg>
+            <arg name="ptrn_clp"> 
+                <value>unspec</value>
+<!--                <value>match</value>
+                <value>nomatch</value> -->
+            </arg>
+            <arg name="gfc">
+                <value>0</value>
+<!--                <value>1</value>
+                <value>8</value> -->
+            </arg>
+            <arg name="vpi"> 
+                <value>129</value>
+            </arg>
+            <arg name="vci">
+                <value>32769</value>
+            </arg>
+            <arg name="payload_type">
+<!--                <value>0</value> -->
+                <value>1</value>
+<!--                <value>7</value> -->
+            </arg>
+            <arg name="congestion">
+                <value>FALSE</value>
+<!--                <value>TRUE</value> -->
+            </arg>
+            <arg name="clp">
+<!--                <value>FALSE</value> -->
+                <value>TRUE</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="aal5_send"/>
             <arg name="gfc">
                 <value>8</value>
