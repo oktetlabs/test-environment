@@ -3848,7 +3848,7 @@ rpc_write_file_ex(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR_IS_BOOL(write_file_ex, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: ReadFileEx(%d, %p, %u, %u, %s) "
+    TAPI_RPC_LOG("RPC (%s,%s)%s: WriteFileEx(%d, %p, %u, %u, %s) "
                  "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  fd, buf, count, overlapped, callback,
