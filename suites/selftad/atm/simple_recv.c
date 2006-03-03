@@ -100,6 +100,36 @@ static uint8_t                 payload_type;
 static te_bool                 congestion;
 static te_bool                 clp;
 
+static void
+my_callback(asn_value *packet, void *user_data)
+{
+    int32_t tmp;
+
+    UNUSED(user_data);
+
+    CHECK_RC(asn_read_int32(packet, &tmp, "pdus.0.#atm.gfc.#plain"));
+    if (tmp != gfc)
+        TEST_FAIL("Invalid GFC in received packet");
+
+    CHECK_RC(asn_read_int32(packet, &tmp, "pdus.0.#atm.vpi.#plain"));
+    if (tmp != vpi)
+        TEST_FAIL("Invalid VPI in received packet");
+
+    CHECK_RC(asn_read_int32(packet, &tmp, "pdus.0.#atm.vci.#plain"));
+    if (tmp != vci)
+        TEST_FAIL("Invalid VCI in received packet");
+
+    CHECK_RC(asn_read_int32(packet, &tmp, "pdus.0.#atm.payload-type.#plain"));
+    if (tmp != payload_type)
+        TEST_FAIL("Invalid payload-type in received packet");
+
+    CHECK_RC(asn_read_int32(packet, &tmp, "pdus.0.#atm.clp.#plain"));
+    if (tmp != clp)
+        TEST_FAIL("Invalid CLP in received packet");
+
+    RING("Packet verification - OK");
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -161,9 +191,11 @@ main(int argc, char *argv[])
         TEST_FAIL("Too big VPI parameter");
     vpi_nomatch = (vpi + 1) & 0xff;
     TEST_GET_INT_PARAM(vci);
-    if (vci >= (1 << 12))
+#if 0
+    if (vci >= (1 << 16))
         TEST_FAIL("Too big VCI parameter");
-    vci_nomatch = (vci + 1) & 0xfff;
+#endif
+    vci_nomatch = (vci + 1) & 0xffff;
     TEST_GET_INT_PARAM(payload_type);
     if (payload_type >= (1 << 3))
         TEST_FAIL("Too big payload-type parameter");
@@ -176,7 +208,7 @@ main(int argc, char *argv[])
     if (strcmp(type, "uni") == 0)
         cell_hdr |= gfc << 28;
     cell_hdr |= vpi << 20;
-    cell_hdr |= vci << 8;
+    cell_hdr |= vci << 4;
     cell_hdr |= payload_type << 1;
     cell_hdr |= ((congestion) ? 1 : 0) << 2;
     cell_hdr |= (clp) ? 1 : 0;
@@ -243,8 +275,13 @@ main(int argc, char *argv[])
     RING("Sent ATM cell is %Tm", cell, sizeof(cell));
 
     rc = tapi_tad_trrecv_wait(iut_host->ta, 0, csap,
-                              NULL /*tapi_tad_trrecv_make_cb_data()*/,
+                              tapi_tad_trrecv_make_cb_data(my_callback,
+                                                           NULL),
                               &got);
+    if ((rc != 0) && (TE_RC_GET_ERROR(rc) != TE_ETIMEDOUT))
+        TEST_FAIL("Unexpected result of the trrecv_wait operation: %r", rc);
+
+    /* TODO: Check that packet have (not) to be catched */
 
     TEST_SUCCESS;
 
