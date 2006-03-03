@@ -721,6 +721,9 @@ typedef enum rpc_sockopt {
     RPC_IP_MTU_DISCOVER,    /**< Enable/disable Path MTU discover
                                  on the socket */
 
+    RPC_IP_RECEIVE_BROADCAST,/**< Winsock2 specific option. 
+                                 Allows or blocks broadcast reception. */
+
     RPC_IPV6_UNICAST_HOPS,  /**< Hop limit for unicast packets */
 
     RPC_IPV6_MULTICAST_HOPS,
@@ -906,6 +909,9 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef IP_MTU_DISCOVER
         RPC2H(IP_MTU_DISCOVER);
 #endif
+#ifdef IP_RECEIVE_BROADCAST
+        RPC2H(IP_RECEIVE_BROADCAST);
+#endif
 #ifdef TCP_MAXSEG
         RPC2H(TCP_MAXSEG);
 #endif
@@ -1082,6 +1088,9 @@ sockopt_h2rpc(int opt_type, int opt)
 #ifdef IP_MTU_DISCOVER
                 H2RPC(IP_MTU_DISCOVER);
 #endif
+#ifdef IP_RECEIVE_BROADCAST
+                H2RPC(IP_RECEIVE_BROADCAST);
+#endif
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
@@ -1201,6 +1210,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IP_TTL);
         RPC2STR(IP_MTU);
         RPC2STR(IP_MTU_DISCOVER);
+        RPC2STR(IP_RECEIVE_BROADCAST);
 
         RPC2STR(IPV6_UNICAST_HOPS);
         RPC2STR(IPV6_MULTICAST_HOPS);
