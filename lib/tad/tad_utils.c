@@ -1454,7 +1454,11 @@ tad_common_read_cb_sock(csap_p csap, int sock, unsigned int flags,
     ret_val = poll(&pfd, 1, TE_US2MS(timeout)); 
 
     if (ret_val == 0)
+    {
+        F_VERB(CSAP_LOG_FMT "poll({%d, POLLIN}, %u) timed out",
+               CSAP_LOG_ARGS(csap), sock, TE_US2MS(timeout));
         return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+    }
 
     if (ret_val < 0)
     {
