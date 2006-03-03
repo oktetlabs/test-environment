@@ -221,7 +221,14 @@ tad_socket_match_bin_cb(csap_p           csap,
             spec_data->wait_length = 0;
         }
 #else
-        UNUSED(sdu);
+        rc = tad_pkt_get_frag(sdu, pdu, 0, tad_pkt_len(pdu),
+                              TAD_PKT_GET_FRAG_ERROR);
+        if (rc != 0)
+        {
+            ERROR(CSAP_LOG_FMT "Failed to prepare Socket SDU: %r",
+                  CSAP_LOG_ARGS(csap), rc);
+            return rc;
+        }
 #endif
     }
 
