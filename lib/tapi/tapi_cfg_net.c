@@ -774,6 +774,7 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
             cfg_val_type    type;
             char           *oid_str;
             cfg_oid        *oid;
+            char           *def_route_if;
 
             type = CVT_STRING;
             rc = cfg_get_instance(net->nodes[j].handle, &type, &oid_str);
@@ -791,6 +792,34 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
                 rc = TE_RC(TE_TAPI, TE_EINVAL);
                 break;
             }
+
+            rc = cfg_get_instance_fmt(&type, &def_route_if,
+                                      "/agent:%s/ip4_rt_default_if:",
+                                      CFG_OID_GET_INST_NAME(oid, 1));
+            if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+            {
+                def_route_if = NULL;
+            }
+            else if (rc != 0)
+            {
+                ERROR("Failed to get /agent:%s/ip4_rt_default_if: %r",
+                      CFG_OID_GET_INST_NAME(oid, 1), rc);
+                cfg_free_oid(oid);
+                free(oid_str);
+                break;
+            }
+
+            if ((def_route_if != NULL) && 
+                strcmp(def_route_if, CFG_OID_GET_INST_NAME(oid, 2)) == 0)
+            {
+                WARN("Do not remove any IPv4 addresses from %s, since "
+                     "the interface is used by default route", oid_str);
+                free(def_route_if);
+                cfg_free_oid(oid);
+                free(oid_str);
+                continue;
+            }
+            free(def_route_if);
 
             rc = tapi_cfg_del_if_ip4_addresses(
                       CFG_OID_GET_INST_NAME(oid, 1),
