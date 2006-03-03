@@ -55,12 +55,12 @@ static csap_spt_type_t atm_csap_spt =
     release_tmpl_cb     : tad_atm_release_pdu_cb,
 
     confirm_ptrn_cb     : tad_atm_confirm_ptrn_cb,
-    match_pre_cb        : NULL,
-    match_do_cb         : tad_atm_match_bin_cb,
+    match_pre_cb        : tad_atm_match_pre_cb,
+    match_do_cb         : tad_atm_match_do_cb,
     match_done_cb       : NULL,
-    match_post_cb       : NULL,
-    match_free_cb       : NULL,
-    release_ptrn_cb     : NULL,
+    match_post_cb       : tad_atm_match_post_cb,
+    match_free_cb       : tad_atm_release_pdu_cb,
+    release_ptrn_cb     : tad_atm_release_pdu_cb,
 
     generate_pattern_cb : NULL,
 
