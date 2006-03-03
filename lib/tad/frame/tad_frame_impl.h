@@ -56,6 +56,25 @@ extern te_errno tad_frame_gen_bin_cb(csap_p                csap,
                                      tad_pkts             *sdus,
                                      tad_pkts             *pdus);
 
+
+/**
+ * Callback for initialize pattern opaque data.
+ *
+ * The function complies with csap_layer_confirm_pdu_cb_t prototype.
+ */
+extern te_errno tad_frame_confirm_ptrn_cb(csap_p         csap,
+                                          unsigned int   layer, 
+                                          asn_value     *layer_pdu,
+                                          void         **p_opaque); 
+
+/**
+ * Callback to release pattern opaque data.
+ *
+ * The function complies with csap_layer_release_opaque_cb_t prototype.
+ */
+extern void tad_frame_release_ptrn_cb(csap_p csap, unsigned int layer,
+                                      void *opaque);
+
 /**
  * Callback for parse received packet and match it with pattern. 
  *

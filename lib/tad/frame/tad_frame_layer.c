@@ -47,6 +47,13 @@
 #include "tad_frame_impl.h"
 
 
+/** Frame layer pattern data */
+typedef struct tad_frame_ptrn_data {
+    uint32_t        rest_len;
+    tad_recv_pkt   *reassemble_pkt;
+} tad_frame_ptrn_data;
+
+
 /**
  * Fill in frame length field.
  *
@@ -111,6 +118,49 @@ tad_frame_gen_bin_cb(csap_p                csap,
 
 /* See description in tad_frame_impl.h */
 te_errno
+tad_frame_confirm_ptrn_cb(csap_p csap, unsigned int  layer, 
+                          asn_value *layer_pdu, void **p_opaque)
+{
+    tad_frame_ptrn_data    *ptrn_data;
+
+    UNUSED(csap);
+    UNUSED(layer);
+    UNUSED(layer_pdu);
+
+    ptrn_data = malloc(sizeof(*ptrn_data));
+    if (ptrn_data == NULL)
+        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    *p_opaque = ptrn_data;
+
+    ptrn_data->rest_len = 0;
+    ptrn_data->reassemble_pkt = NULL;
+
+    return 0;
+}
+
+/* See description in tad_frame_impl.h */
+void
+tad_frame_release_ptrn_cb(csap_p csap, unsigned int layer, void *opaque)
+{
+    tad_frame_ptrn_data *ptrn_data = opaque;
+
+    UNUSED(layer);
+
+    if (ptrn_data == NULL)
+        return;
+
+    if (ptrn_data->reassemble_pkt != NULL)
+    {
+        tad_recv_pkt_free(csap, ptrn_data->reassemble_pkt);
+        WARN("Incompletely reassembled frame destructed.\n"
+             "Possibly garbage remains in frame layer media.\n");
+    }
+
+    free(ptrn_data);
+}
+
+/* See description in tad_frame_impl.h */
+te_errno
 tad_frame_match_do_cb(csap_p           csap,
                       unsigned int     layer,
                       const asn_value *ptrn_pdu,
@@ -119,8 +169,16 @@ tad_frame_match_do_cb(csap_p           csap,
                       tad_pkt         *pdu,
                       tad_pkt         *sdu)
 {
-    UNUSED(ptrn_pdu);
-    UNUSED(ptrn_opaque);
+    tad_frame_ptrn_data *ptrn_data = ptrn_opaque;
 
-    return 0;
+    UNUSED(csap);
+    UNUSED(layer);
+    UNUSED(ptrn_pdu);
+    UNUSED(meta_pkt);
+    UNUSED(pdu);
+    UNUSED(sdu);
+
+    UNUSED(ptrn_data);
+
+    return TE_RC(TE_TAD_CSAP, TE_ENOSYS);
 }

@@ -54,13 +54,13 @@ static csap_spt_type_t frame_csap_spt =
     generate_pkts_cb    : tad_frame_gen_bin_cb,
     release_tmpl_cb     : NULL,
 
-    confirm_ptrn_cb     : NULL,
+    confirm_ptrn_cb     : tad_frame_confirm_ptrn_cb,
     match_pre_cb        : NULL,
     match_do_cb         : tad_frame_match_do_cb,
     match_done_cb       : NULL,
     match_post_cb       : NULL,
     match_free_cb       : NULL,
-    release_ptrn_cb     : NULL,
+    release_ptrn_cb     : tad_frame_release_ptrn_cb,
 
     generate_pattern_cb : NULL,
 
