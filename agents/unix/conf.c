@@ -938,7 +938,7 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
                          &ip_addr.ip6_addr, sizeof(struct in6_addr)) == 0)))
             {
                 if (ifname == NULL ||
-                    (ll_name_to_index(ifname) == ifa->ifa_index))
+                    (if_nametoindex(ifname) == ifa->ifa_index))
                     break;
 
                 WARN("Interfaces '%s' and '%s' have the same address '%s'",
@@ -1064,7 +1064,7 @@ nl_ip_addr_add_del(int cmd, const char *ifname,
     }
 
     ll_init_map(&rth);
-    req.ifa.ifa_index = ll_name_to_index(ifname);
+    req.ifa.ifa_index = if_nametoindex(ifname);
 
     if (rtnl_talk(&rth, &req.n, 0, 0, NULL, NULL, NULL) < 0)
     {
@@ -2120,7 +2120,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    ifindex = ll_name_to_index(ifname);
+    ifindex = if_nametoindex(ifname);
     if (ifindex <= 0)
     {
         ERROR("Device \"%s\" does not exist", ifname);
@@ -3018,7 +3018,7 @@ neigh_find_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     }
 
     /* Neighbour from alien interface */
-    if (ll_name_to_index(p->ifname) != r->ndm_ifindex)
+    if (if_nametoindex(p->ifname) != r->ndm_ifindex)
     {
         return 0;
     }
@@ -3284,7 +3284,7 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
 
     ll_init_map(&rth);
 
-    if ((req.ndm.ndm_ifindex = ll_name_to_index(ifname)) == 0)
+    if ((req.ndm.ndm_ifindex = if_nametoindex(ifname)) == 0)
     {
         rtnl_close(&rth);
         ERROR("No device (%s) found", ifname);
@@ -3469,7 +3469,7 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
 
     UNUSED(who);
  
-    if (ll_name_to_index(p->ifname) != r->ndm_ifindex)
+    if (if_nametoindex(p->ifname) != r->ndm_ifindex)
         return 0;
 
     if (r->ndm_state == NUD_NONE || (r->ndm_state & NUD_INCOMPLETE) != 0)
@@ -3626,7 +3626,7 @@ rt_info2nl_req(const ta_rt_info_t *rt_info,
     {
         int idx;
 
-        if ((idx = ll_name_to_index(rt_info->ifname)) == 0)
+        if ((idx = if_nametoindex(rt_info->ifname)) == 0)
         {
             ERROR("Cannot find interface %s", rt_info->ifname);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
