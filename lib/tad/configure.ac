@@ -146,6 +146,14 @@ AC_ARG_WITH([arp],,
  fi
 ], [w_arp=false])
     
+AC_ARG_WITH([frame],, 
+[if test "${withval}" = yes; then
+   w_frame=true;
+   proto_specific frame;
+   AC_CONFIG_FILES([frame/Makefile])
+ fi
+], [w_frame=false])
+
 AC_ARG_WITH([ipstack],, 
 [if test "${withval}" = yes; then
    w_ipstack=true;
