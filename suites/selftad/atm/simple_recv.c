@@ -56,6 +56,50 @@
 #include "tapi_test.h"
 
 
+/** CSAP parameter specification type */
+typedef enum csap_param_spec_type {
+    CSAP_PARAM_UNSPEC,  /**< Unspecified */
+    CSAP_PARAM_MATCH,   /**< Match with value to be sent */
+    CSAP_PARAM_NOMATCH, /**< No match with value to be sent */
+} csap_param_spec_type;
+
+/**
+ * The list of values allowed for parameter of type 'rpc_socket_domain'
+ */
+#define CSAP_PARAM_MAPPING_LIST \
+    { "unspec",   CSAP_PARAM_UNSPEC },  \
+    { "match",    CSAP_PARAM_MATCH },   \
+    { "nomatch",  CSAP_PARAM_NOMATCH }
+
+/**
+ * Get the value of parameter of type 'csap_param_spec_type'
+ *
+ * @param var_name_  Name of the variable used to get the value of
+ *                   "var_name_" parameter of type 'csap_param_spec_type'
+ *                   (OUT)
+ */
+#define TEST_GET_CSAP_PARAM(var_name_) \
+    TEST_GET_ENUM_PARAM(var_name_, CSAP_PARAM_MAPPING_LIST)
+
+
+static const char             *type;
+static csap_param_spec_type    csap_vpi;
+static csap_param_spec_type    csap_vci;
+static csap_param_spec_type    csap_congestion;
+static csap_param_spec_type    csap_clp;
+static csap_param_spec_type    ptrn_gfc;
+static csap_param_spec_type    ptrn_vpi;
+static csap_param_spec_type    ptrn_vci;
+static csap_param_spec_type    ptrn_payload_type;
+static csap_param_spec_type    ptrn_congestion;
+static csap_param_spec_type    ptrn_clp;
+static uint8_t                 gfc;
+static uint16_t                vpi;
+static uint16_t                vci;
+static uint8_t                 payload_type;
+static te_bool                 congestion;
+static te_bool                 clp;
+
 int
 main(int argc, char *argv[])
 {
@@ -65,23 +109,26 @@ main(int argc, char *argv[])
     const struct sockaddr  *iut_addr = NULL;
     socklen_t               iut_addrlen;
 
-    ndn_atm_type            type = NDN_ATM_UNI; /* PARAM */
-    uint16_t                vpi;
-    uint16_t                vci;
-    te_bool                 congestion;
-    te_bool                 clp;
-    uint8_t                 gfc;
+    uint8_t                 gfc_nomatch;
+    uint16_t                vpi_nomatch;
+    uint16_t                vci_nomatch;
+    uint8_t                 payload_type_nomatch;
+    te_bool                 congestion_nomatch;
+    te_bool                 clp_nomatch;
 
     csap_handle_t           tcp_srv_csap = CSAP_INVALID_HANDLE;
     int                     tst_s = -1;
+    int                     enable = 1;
     int                     iut_s = -1;
     asn_value              *csap_spec = NULL;
     csap_handle_t           csap = CSAP_INVALID_HANDLE;
-    void                   *payload = NULL;
-    size_t                  payload_len;
-    asn_value              *tmpl = NULL;
+    asn_value              *ptrn = NULL;
+
+    uint32_t                cell_hdr = 0;
     uint8_t                 cell[ATM_CELL_LEN];
+
     ssize_t                 r;
+    unsigned int            got = 0;
 
 
     TEST_START;
@@ -89,14 +136,58 @@ main(int argc, char *argv[])
     TEST_GET_HOST(iut_host);
     TEST_GET_PCO(pco_tst);
     TEST_GET_ADDR(iut_addr, iut_addrlen);
-    TEST_GET_INT_PARAM(vpi);
-    TEST_GET_INT_PARAM(vci);
-    TEST_GET_BOOL_PARAM(congestion);
-    TEST_GET_BOOL_PARAM(clp);
-    TEST_GET_INT_PARAM(gfc);
 
-    /* It may be NULL, if payload_len is 0 */
-    payload = te_make_buf(0, ATM_PAYLOAD_LEN, &payload_len);
+    TEST_GET_STRING_PARAM(type);
+
+    TEST_GET_CSAP_PARAM(csap_vpi);
+    TEST_GET_CSAP_PARAM(csap_vci);
+    TEST_GET_CSAP_PARAM(csap_congestion);
+    TEST_GET_CSAP_PARAM(csap_clp);
+
+    TEST_GET_CSAP_PARAM(ptrn_gfc);
+    TEST_GET_CSAP_PARAM(ptrn_vpi);
+    TEST_GET_CSAP_PARAM(ptrn_vci);
+    TEST_GET_CSAP_PARAM(ptrn_payload_type);
+    TEST_GET_CSAP_PARAM(ptrn_congestion);
+    TEST_GET_CSAP_PARAM(ptrn_clp);
+
+    if (strcmp(type, "uni") == 0)
+    {
+        TEST_GET_INT_PARAM(gfc);
+        gfc_nomatch = (gfc + 1) & 0xf;
+    }
+    TEST_GET_INT_PARAM(vpi);
+    if (vpi >= (1 << ((strcmp(type, "uni") == 0) ? 8 : 12)))
+        TEST_FAIL("Too big VPI parameter");
+    vpi_nomatch = (vpi + 1) & 0xff;
+    TEST_GET_INT_PARAM(vci);
+    if (vci >= (1 << 12))
+        TEST_FAIL("Too big VCI parameter");
+    vci_nomatch = (vci + 1) & 0xfff;
+    TEST_GET_INT_PARAM(payload_type);
+    if (payload_type >= (1 << 3))
+        TEST_FAIL("Too big payload-type parameter");
+    payload_type_nomatch = (payload_type + 1) & 0x7;
+    TEST_GET_BOOL_PARAM(congestion);
+    congestion_nomatch = !congestion;
+    TEST_GET_BOOL_PARAM(clp);
+    clp_nomatch = !clp;
+
+    if (strcmp(type, "uni") == 0)
+        cell_hdr |= gfc << 28;
+    cell_hdr |= vpi << 20;
+    cell_hdr |= vci << 8;
+    cell_hdr |= payload_type << 1;
+    cell_hdr |= ((congestion) ? 1 : 0) << 2;
+    cell_hdr |= (clp) ? 1 : 0;
+    cell_hdr = htonl(cell_hdr);
+
+    /* Copy cell header */
+    memcpy(cell, &cell_hdr, sizeof(cell_hdr));
+    /* Initialize HEC as zero */
+    cell[ATM_HEADER_LEN - 1] = 0;
+    /* Fill in payload */
+    te_fill_buf(cell + ATM_HEADER_LEN, ATM_PAYLOAD_LEN);
 
     CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, 
                                          SIN(iut_addr)->sin_addr.s_addr,
@@ -105,6 +196,8 @@ main(int argc, char *argv[])
 
     tst_s = rpc_socket(pco_tst, rpc_socket_domain_by_addr(iut_addr),
                        RPC_SOCK_STREAM, RPC_PROTO_DEF);
+    rpc_setsockopt(pco_tst, tst_s, RPC_SOL_TCP, RPC_TCP_NODELAY,
+                   &enable, sizeof(enable));
     rpc_connect(pco_tst, tst_s, iut_addr, iut_addrlen);
 
     CHECK_RC(tapi_tcp_server_recv(iut_host->ta, 0, tcp_srv_csap,
@@ -114,33 +207,49 @@ main(int argc, char *argv[])
     tcp_srv_csap = CSAP_INVALID_HANDLE;
 
     CHECK_RC(tapi_atm_add_csap_layer(&csap_spec,
-                                     type, &vpi, &vci, &congestion, &clp));
+                 (strcmp(type, "uni") == 0) ?  NDN_ATM_UNI : NDN_ATM_NNI,
+                 (csap_vpi == CSAP_PARAM_UNSPEC) ?  NULL :
+                 (csap_vpi == CSAP_PARAM_MATCH) ?  &vpi : &vpi_nomatch,
+                 (csap_vci == CSAP_PARAM_UNSPEC) ?  NULL :
+                 (csap_vci == CSAP_PARAM_MATCH) ?  &vci : &vci_nomatch,
+                 (csap_congestion == CSAP_PARAM_UNSPEC) ?  NULL :
+                 (csap_congestion == CSAP_PARAM_MATCH) ?  &congestion :
+                     &congestion_nomatch,
+                 (csap_clp == CSAP_PARAM_UNSPEC) ?  NULL :
+                 (csap_clp == CSAP_PARAM_MATCH) ?  &clp : &clp_nomatch));
     CHECK_RC(tapi_tad_socket_add_csap_layer(&csap_spec, iut_s));
     CHECK_RC(tapi_tad_csap_create(iut_host->ta, 0, "atm.socket",
                                   csap_spec, &csap));
 
-    CHECK_RC(tapi_atm_add_pdu(&tmpl, FALSE, &gfc, NULL, NULL, NULL, NULL));
-    CHECK_RC(tapi_atm_add_payload(tmpl, payload_len, payload));
-    CHECK_RC(tapi_tad_trsend_start(iut_host->ta, 0, csap, tmpl,
-                                   RCF_MODE_BLOCKING));
+    CHECK_RC(tapi_atm_add_pdu(&ptrn, TRUE,
+                 (ptrn_gfc == CSAP_PARAM_UNSPEC ||
+                     strcmp(type, "uni") != 0) ?  NULL :
+                 (ptrn_gfc == CSAP_PARAM_MATCH) ?  &gfc : &gfc_nomatch,
+                 (ptrn_vpi == CSAP_PARAM_UNSPEC) ?  NULL :
+                 (ptrn_vpi == CSAP_PARAM_MATCH) ?  &vpi : &vpi_nomatch,
+                 (ptrn_vci == CSAP_PARAM_UNSPEC) ?  NULL :
+                 (ptrn_vci == CSAP_PARAM_MATCH) ?  &vci : &vci_nomatch,
+                 (ptrn_payload_type == CSAP_PARAM_UNSPEC) ?  NULL :
+                 (ptrn_payload_type == CSAP_PARAM_MATCH) ?  &payload_type :
+                     &payload_type_nomatch,
+                 (ptrn_clp == CSAP_PARAM_UNSPEC) ?  NULL :
+                 (ptrn_clp == CSAP_PARAM_MATCH) ?  &clp : &clp_nomatch));
+    CHECK_RC(tapi_tad_trrecv_start(iut_host->ta, 0, csap, ptrn, 1000, 1,
+                                   RCF_TRRECV_PACKETS));
 
-    r = rpc_read(pco_tst, tst_s, cell, sizeof(cell));
+    r = rpc_write(pco_tst, tst_s, cell, sizeof(cell));
+    if (r != (ssize_t)sizeof(cell))
+        TEST_FAIL("Failed to send ATM cell via socket");
+    RING("Sent ATM cell is %Tm", cell, sizeof(cell));
 
-    if (memcmp(payload, cell + ATM_HEADER_LEN, payload_len) != 0)
-    {
-        TEST_FAIL("Payload received in ATM cell%Tm\n"
-                  "does not match sent data%Tm",
-                  cell + ATM_HEADER_LEN, payload_len,
-                  payload, payload_len);
-    }
-
-    RING("Sent payload is %Tm\nReceived cell is %Tm",
-         payload, payload_len, cell, sizeof(cell));
+    rc = tapi_tad_trrecv_wait(iut_host->ta, 0, csap,
+                              NULL /*tapi_tad_trrecv_make_cb_data()*/,
+                              &got);
 
     TEST_SUCCESS;
 
 cleanup:
-    asn_free_value(tmpl);
+    asn_free_value(ptrn);
     asn_free_value(csap_spec);
 
     CLEANUP_RPC_CLOSE(pco_tst, tst_s);
