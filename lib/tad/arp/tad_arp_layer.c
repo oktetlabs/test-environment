@@ -342,7 +342,6 @@ tad_arp_match_post_cb(csap_p              csap,
     tad_arp_proto_data     *proto_data;
     tad_arp_proto_pdu_data *pkt_data = meta_pkt_layer->opaque;
     tad_pkt                *pkt;
-    asn_value              *frame_type = NULL;
     te_errno                rc;
     unsigned int            bitoff = 0;
 
