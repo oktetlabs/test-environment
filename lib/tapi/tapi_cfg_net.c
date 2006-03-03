@@ -753,9 +753,10 @@ tapi_cfg_net_all_up(void)
 te_errno
 tapi_cfg_net_delete_all_ip4_addresses(void)
 {
-    int             rc;
-    cfg_nets_t      nets;
-    unsigned int    i, j;
+    int                 rc;
+    cfg_nets_t          nets;
+    unsigned int        i, j;
+    struct sockaddr_in  dummy_ip4;
 
     /* Get available networks configuration */
     rc = tapi_cfg_net_get_nets(&nets);
@@ -764,6 +765,9 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
         ERROR("Failed to get networks from Configurator: %r", rc);
         return rc;
     }
+
+    memset(&dummy_ip4, 0, sizeof(dummy_ip4));
+    dummy_ip4.sin_family = AF_INET;
 
     for (i = 0; i < nets.n_nets; ++i)
     {
@@ -824,7 +828,7 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
             rc = tapi_cfg_del_if_ip4_addresses(
                       CFG_OID_GET_INST_NAME(oid, 1),
                       CFG_OID_GET_INST_NAME(oid, 2),
-                      NULL);
+                      SA(&dummy_ip4));
             if (rc != 0)
             {
                 ERROR("Failed to delete IPv4 addresses from %s: %r",
