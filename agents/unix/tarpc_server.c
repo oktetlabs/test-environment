@@ -42,7 +42,7 @@
 #include <netinet/in_systm.h>
 #endif
 
-#if HAVE_SCSI_SG_H
+#if HAVE_SCSI_SG_H && defined (__linux__)
 #include <scsi/sg.h>
 #endif
 
@@ -2047,7 +2047,9 @@ typedef union ioctl_param {
     struct ifreq     ifreq;
     struct ifconf    ifconf;
     struct arpreq    arpreq;
+#ifdef __linux__
     struct sg_io_hdr sg;
+#endif
 } ioctl_param;
 
 static void
@@ -2171,7 +2173,7 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             }
 #endif
             break;
-
+#ifdef __linux__
         case IOCTL_SGIO:
             {
                 reqlen = sizeof(struct sg_io_hdr);
@@ -2214,7 +2216,7 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 
                 break;
             }
-
+#endif
         default:
             ERROR("Incorrect request type %d is received",
                   out->req.req_val[0].type);
@@ -2367,6 +2369,7 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             }
             break;
         }
+#ifdef __linux__
         case IOCTL_SGIO:
         {
             out->req.req_val[0].ioctl_request_u.req_sgio.
@@ -2390,7 +2393,7 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             
             break;
         }
-
+#endif
         default:
             assert(FALSE);
     }
