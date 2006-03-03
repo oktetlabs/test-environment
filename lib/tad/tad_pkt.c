@@ -43,6 +43,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -1117,6 +1120,8 @@ tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff, size_t bitlen,
 {
     const tad_pkt_seg  *seg;
     size_t              off;
+    uint8_t            *data_start;
+    size_t              bitoff_end;
 
     F_ENTRY("pkt=%p bitoff=%u bitlen=%u dst=%p",
             pkt, (unsigned)bitoff, (unsigned)bitlen, dst);
@@ -1132,18 +1137,20 @@ tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff, size_t bitlen,
         seg = tad_pkt_next_seg(pkt, seg);
         assert(seg != NULL);
     }
+    data_start = ((uint8_t *)(seg->data_ptr)) + off;
+    bitoff_end = bitoff + bitlen;
 
     if ((bitoff == 0) && ((bitlen & 7) == 0))
     {
         /* Everything it byte-aligned */
         tad_pkt_read(pkt, seg, off, bitlen >> 3, dst);
     }
-    else if (((bitoff + bitlen) & 7) == 0)
+    else if ((bitoff_end & 7) == 0)
     {
         /* End of the data to read is byte aligned */
 
         /* Read required part of the first byte */
-        *dst = ((uint8_t *)(seg->data_ptr))[off] & (0xff >> bitoff);
+        *dst = *data_start & (0xff >> bitoff);
 
         if ((bitlen >> 3) > 0)
         {
@@ -1156,12 +1163,23 @@ tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff, size_t bitlen,
             tad_pkt_read(pkt, seg, off, bitlen >> 3, dst + 1);
         }
     }
-    else if ((bitoff + bitlen) < 8)
+    else if (bitoff_end < 8)
     {
-        unsigned int shift = 8 - bitoff - bitlen;
+        unsigned int shift = 8 - bitoff_end;
 
-        *dst = (((uint8_t *)(seg->data_ptr))[off] >> shift) &
-               (0xff >> (8 - bitlen));
+        *dst = (*data_start >> shift) & (0xff >> (8 - bitlen));
+    }
+    else if ((bitoff + bitlen) < 32)
+    {
+        /* Bit offset end can't be byte aligned here */
+        size_t          rbytes = (bitoff_end >> 3) + 1;
+        size_t          wbytes = (bitlen + 7) >> 3;
+        unsigned int    shift = 32 - bitoff_end;
+        uint32_t        tmp;
+
+        tad_pkt_read(pkt, seg, off, rbytes, (uint8_t *)&tmp);
+        tmp = htonl((ntohl(tmp) >> shift) & (0xffffffff >> (32 - bitlen)));
+        memcpy(dst, ((uint8_t *)&tmp) + 4 - wbytes, wbytes);
     }
     else
     {
