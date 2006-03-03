@@ -337,10 +337,6 @@ tad_socket_read_cb(csap_p csap, unsigned int timeout,
                    tad_pkt *pkt, size_t *pkt_len)
 {
     tad_socket_rw_data *spec_data = csap_get_rw_data(csap);
-    fd_set              read_set;
-    struct timeval      timeout_val;
-    int                 ret;
-    te_errno            rc;
 
     if (spec_data->socket < 0)
     {
@@ -348,32 +344,36 @@ tad_socket_read_cb(csap_p csap, unsigned int timeout,
         return TE_RC(TE_TAD_CSAP, TE_EIO);
     }
 
-    FD_ZERO(&read_set);
-    FD_SET(spec_data->socket, &read_set);
-
-    TE_US2TV(timeout, &timeout_val);
-    VERB("%s(): timeout set to %u.%u", __FUNCTION__, 
-         timeout_val.tv_sec, timeout_val.tv_usec);
-
-    ret = select(spec_data->socket + 1, &read_set, NULL, NULL,
-                 &timeout_val); 
-
-    VERB("%s(): select return %d", __FUNCTION__,  ret);
-    
-    if (ret == 0)
-        return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
-
-    if (ret < 0)
-    {
-        rc = TE_OS_RC(TE_TAD_CSAP, errno);
-        VERB("select failed: spec_data->in = %d: %r",
-             spec_data->socket, rc);
-        return rc;
-    }
-
     if (spec_data->data_tag == NDN_TAG_SOCKET_TYPE_TCP_SERVER)
     {
-        tad_pkt_seg *seg;
+        fd_set          read_set;
+        struct timeval  timeout_val;
+        int             ret;
+        te_errno        rc;
+        tad_pkt_seg    *seg;
+
+        FD_ZERO(&read_set);
+        FD_SET(spec_data->socket, &read_set);
+
+        TE_US2TV(timeout, &timeout_val);
+        VERB("%s(): timeout set to %u.%u", __FUNCTION__, 
+             timeout_val.tv_sec, timeout_val.tv_usec);
+
+        ret = select(spec_data->socket + 1, &read_set, NULL, NULL,
+                     &timeout_val); 
+
+        VERB("%s(): select return %d", __FUNCTION__,  ret);
+        
+        if (ret == 0)
+            return TE_RC(TE_TAD_CSAP, TE_ETIMEDOUT);
+
+        if (ret < 0)
+        {
+            rc = TE_OS_RC(TE_TAD_CSAP, errno);
+            VERB("select failed: spec_data->in = %d: %r",
+                 spec_data->socket, rc);
+            return rc;
+        }
 
         ret = accept(spec_data->socket, NULL, NULL);
 
@@ -414,27 +414,8 @@ tad_socket_read_cb(csap_p csap, unsigned int timeout,
     } 
     else 
     {
-        size_t buf_len = pkt->segs.cqh_first->data_len;
-
-        if (spec_data->wait_length > 0)
-        {
-            size_t rest_length = spec_data->wait_length -
-                                 spec_data->stored_length;
-
-            if (buf_len > rest_length)
-                buf_len = rest_length;
-        }
-
-        /* Note: possibly MSG_TRUNC and other flags are required */
-        ret = recv(spec_data->socket, pkt->segs.cqh_first->data_ptr,
-                   buf_len, 0); 
-        if (ret == 0)
-        {
-            INFO(CSAP_LOG_FMT "Peer closed connection", 
-                 CSAP_LOG_ARGS(csap));
-            return TE_RC(TE_TAD_CSAP, TE_ETADENDOFDATA);
-        }
-        return 0;
+        return tad_common_read_cb_sock(csap, spec_data->socket, 0,
+                                       timeout, pkt, NULL, NULL, pkt_len);
     }
 }
 
