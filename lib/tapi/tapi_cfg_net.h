@@ -188,6 +188,13 @@ extern te_errno tapi_cfg_net_reserve_all(void);
  */
 extern te_errno tapi_cfg_net_all_up(void);
 
+/**
+ * Delete IPv4 addresses from all nodes in networks configuration.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_delete_all_ip4_addresses(void);
+
 
 /** Information about made assignments */
 typedef struct tapi_cfg_net_assigned {

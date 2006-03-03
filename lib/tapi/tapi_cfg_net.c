@@ -750,6 +750,74 @@ tapi_cfg_net_all_up(void)
 
 
 /* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_delete_all_ip4_addresses(void)
+{
+    int             rc;
+    cfg_nets_t      nets;
+    unsigned int    i, j;
+
+    /* Get available networks configuration */
+    rc = tapi_cfg_net_get_nets(&nets);
+    if (rc != 0)
+    {
+        ERROR("Failed to get networks from Configurator: %r", rc);
+        return rc;
+    }
+
+    for (i = 0; i < nets.n_nets; ++i)
+    {
+        cfg_net_t  *net = nets.nets + i;
+
+        for (j = 0; j < net->n_nodes; ++j)
+        {
+            cfg_val_type    type;
+            char           *oid_str;
+            cfg_oid        *oid;
+
+            type = CVT_STRING;
+            rc = cfg_get_instance(net->nodes[j].handle, &type, &oid_str);
+            if (rc != 0)
+            {
+                ERROR("Failed to get Configurator instance by handle "
+                      "0x%x: %r", net->nodes[j].handle, rc);
+                break;
+            }
+            oid = cfg_convert_oid_str(oid_str);
+            if (oid == NULL)
+            {
+                ERROR("Failed to convert OID '%s' to structure", oid_str);
+                free(oid_str);
+                rc = TE_RC(TE_TAPI, TE_EINVAL);
+                break;
+            }
+
+            rc = tapi_cfg_del_if_ip4_addresses(
+                      CFG_OID_GET_INST_NAME(oid, 1),
+                      CFG_OID_GET_INST_NAME(oid, 2),
+                      NULL);
+            if (rc != 0)
+            {
+                ERROR("Failed to delete IPv4 addresses from %s: %r",
+                      oid_str, rc);
+                cfg_free_oid(oid);
+                free(oid_str);
+                break;
+            }
+            cfg_free_oid(oid);
+            free(oid_str);
+        }
+        if (rc != 0)
+            break;
+    }
+
+    tapi_cfg_net_free_nets(&nets);
+
+    return rc;
+}
+
+
+/* See description in tapi_cfg_net.h */
 int
 tapi_cfg_net_assign_ip4(cfg_net_t *net, tapi_cfg_net_assigned *assigned)
 {
