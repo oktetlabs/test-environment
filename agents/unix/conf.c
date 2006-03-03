@@ -163,19 +163,29 @@ static void free_nlmsg_list(agt_nlmsg_list *list);
 #endif
 
 /** Check that interface is locked for using of this TA */
-#if 1 /* Until dependencies in configurator are implemented */
 #define INTERFACE_IS_MINE(ifname) \
     (strcmp(ifname, "lo") == 0 || \
      rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
-#else
-#define INTERFACE_IS_MINE(ifname)       TRUE
-#endif
 
-#define CHECK_INTERFACE(ifname)                     \
-    ((ifname == NULL)? TE_EINVAL :                  \
-     (strlen(ifname) > IFNAMSIZ)? TE_E2BIG :        \
-     (strchr(ifname, ':') != NULL ||                \
-      !INTERFACE_IS_MINE(ifname))? TE_ENODEV : 0)   \
+/** Strip off .VLAN from interface name */
+static inline char *
+ifname_without_vlan(const char *ifname)
+{
+    static char tmp[IFNAMSIZ];
+    char       *s;
+    
+    strcpy(tmp, ifname);
+    if ((s = strchr(tmp, '.')) != NULL)
+        *s = 0;
+        
+    return tmp;
+}
+
+#define CHECK_INTERFACE(ifname)                                         \
+    ((ifname == NULL)? TE_EINVAL :                                      \
+     (strlen(ifname) > IFNAMSIZ)? TE_E2BIG :                            \
+     (strchr(ifname, ':') != NULL ||                                    \
+      !INTERFACE_IS_MINE(ifname_without_vlan(ifname)))? TE_ENODEV : 0)  \
 
 /**
  * Type for both IPv4 and IPv6 address
@@ -1258,7 +1268,7 @@ interface_exists(const char *ifname)
 
     fclose(f);
 
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
 
@@ -1459,17 +1469,15 @@ interface_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
-
+    
     if ((devname = strdup(ifname)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    if ((rc = CHECK_INTERFACE(devname)) != 0)
-    {
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
-    if (interface_exists(ifname))
+    rc = interface_exists(ifname);
+    if (rc == 0)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        return rc;
 
     if ((vlan = strchr(devname, '.')) == NULL)
     {
@@ -1477,15 +1485,20 @@ interface_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     *vlan++ = 0;
+
+    if ((rc = CHECK_INTERFACE(devname)) != 0)
+    {
+        return TE_RC(TE_TA_UNIX, rc);
+    }
     
     vid = strtol(vlan, &tmp, 10);
-    if (tmp == vlan || *tmp != 0 || !interface_exists(devname))
+    if (tmp == vlan || *tmp != 0 || interface_exists(devname) != 0)
     {
         free(devname);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-
-    sprintf(buf, "/sbin/vconfig add %s %d", devname, vid);
+    
+    sprintf(buf, "/sbin/vconfig add %s %d >/dev/null", devname, vid);
     free(devname);
 
     return ta_system(buf) != 0 ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
@@ -1510,9 +1523,9 @@ interface_del(unsigned int gid, const char *oid, const char *ifname)
     
     UNUSED(gid);
     UNUSED(oid);
-
-    if (!interface_exists(ifname))
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    
+    if ((rc = interface_exists(ifname)) != 0)
+        return rc;
 
     if ((devname = strdup(ifname)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1531,7 +1544,7 @@ interface_del(unsigned int gid, const char *oid, const char *ifname)
     }
     free(devname);
 
-    sprintf(buf, "/sbin/vconfig rem %s", ifname);
+    sprintf(buf, "/sbin/vconfig rem %s >/dev/null", ifname);
 
     return (ta_system(buf) != 0) ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
 }
