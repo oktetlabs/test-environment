@@ -210,6 +210,16 @@ AC_CHECK_TYPES([struct ip_mreqn], [], [],
                [#include <netinet/in.h>])
 
 dnl
+dnl Check for 'struct lifreq'
+dnl
+AC_CHECK_TYPES([struct lifreq], [], [], [#include <net/if.h>])
+
+dnl
+dnl Check for 'ifr_mtu' member in 'struct ifreq'.
+dnl
+AC_CHECK_MEMBERS([struct ifreq.ifr_mtu], [], [], [#include <net/if.h>])
+
+dnl
 dnl Check for 'sa_restorer' member in 'struct sigaction'.
 dnl
 AC_CHECK_MEMBERS([struct sigaction.sa_restorer], [], [],
@@ -246,6 +256,14 @@ AC_CHECK_MEMBERS([union sigval.sigval_ptr], [], [],
                  [#include <signal.h>])
 
 dnl
+dnl Berkley Socket API is provided by:
+dnl - -lc on Linux, FreeBSD (5, 6), NetNSD (1.6, 2.0);
+dnl - -lsocket on Solaris2 (SunOS 5.11).
+dnl
+AC_SEARCH_LIBS([socket], [socket], [],
+    AC_MSG_ERROR([No library with Berkley Socket API found]))
+
+dnl
 dnl POSIX threads are provided by:
 dnl - -lpthread in Linux;
 dnl - -lc_r (-lkse) in FreeBSD;
@@ -258,11 +276,12 @@ AC_SEARCH_LIBS([pthread_atfork], [pthread kse c_r], [],
 
 dnl
 dnl POSIX semaphores are provided by:
-dnl - -lpthread in Linux;
-dnl - -lc_r in FreeBSD;
-dnl - -lsemaphore in NetNSD ('pthread-sem' package).
+dnl - -lpthread on Linux;
+dnl - -lc_r on FreeBSD (5, 6);
+dnl - -lsemaphore on NetBSD ('pthread-sem' package);
+dnl - -lrt on Solaris2 (SunOS 5.11).
 dnl
-AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore], [],
+AC_SEARCH_LIBS([sem_init], [pthread c_r semaphore rt], [],
                AC_MSG_ERROR([No POSIX semaphores]))
 
 if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
@@ -289,11 +308,20 @@ if test -n "$with_rcf_rpc" ; then
     dnl Asynchronous I/O:
     dnl - FreeBSD has in -lc;
     dnl - Linux has in -lnsl -lrt;
+    dnl - Solaris2 (SunOS 5.11) in -lrt;
     dnl - NetBSD does not have.
     dnl
     AC_CHECK_FUNC([aio_read], [],
-        AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
-            AC_MSG_WARN([Asynchronous I/O not supported]), [-lrt]))
+        AC_SEARCH_LIBS([aio_read], [rt], [],
+            AC_CHECK_LIB([nsl], [aio_read], [LIBS="-lnsl -lrt ${LIBS}"],
+                 AC_MSG_WARN([Asynchronous I/O not supported]), [-lrt])))
+
+    dnl
+    dnl Find library with SunRPC XDR functions.
+    dnl -lnsl on Solaris2 (SunOS 5.11);
+    dnl
+    AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
+                   AC_MSG_ERROR([No RPC library found]))
 
     AH_TEMPLATE([xdr_uint8_t], [RPC XDR for unsigned 8bit width type])
     AC_CHECK_FUNC([xdr_uint8_t], [],
