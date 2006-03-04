@@ -52,6 +52,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "rcf_api.h"
 #include "logger_api.h"
 #include "conf_api.h"
 
@@ -778,6 +779,7 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
             cfg_val_type    type;
             char           *oid_str;
             cfg_oid        *oid;
+            char            ta_type[RCF_MAX_NAME];
             char           *def_route_if;
 
             type = CVT_STRING;
@@ -797,6 +799,27 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
                 break;
             }
 
+            /* Do not delete addresses from Win32 hosts */
+            rc = rcf_ta_name2type(CFG_OID_GET_INST_NAME(oid, 1), ta_type);
+            if (rc != 0)
+            {
+                ERROR("Failed to get type of TA '%s': %r",
+                      CFG_OID_GET_INST_NAME(oid, 1), rc);
+                cfg_free_oid(oid);
+                free(oid_str);
+                break;
+            }
+            if (strcmp(ta_type, "win32") == 0)
+            {
+                cfg_free_oid(oid);
+                free(oid_str);
+                continue;
+            }
+
+            /* 
+             * Do not delete addresses from interfaces used by default
+             * route.
+             */
             rc = cfg_get_instance_fmt(&type, &def_route_if,
                                       "/agent:%s/ip4_rt_default_if:",
                                       CFG_OID_GET_INST_NAME(oid, 1));
