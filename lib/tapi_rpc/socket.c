@@ -56,6 +56,12 @@
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
+#ifdef HAVE_NET_IF_H
+#include <net/if.h>
+#else
+#define IFNAMSIZ        16
+#endif
+
 
 #include "te_printf.h"
 #include "tapi_rpc_internal.h"
@@ -1207,7 +1213,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             case RPC_SO_BINDTODEVICE:
                 val.opttype = OPT_STRING;
                 val.option_value_u.opt_string.opt_string_len = 
-                    (roptlen == RPC_OPTLEN_AUTO)? IFNAMSIZ : roptlen;
+                    (roptlen == RPC_OPTLEN_AUTO)?
+                    MIN(IFNAMSIZ, strlen(optval) + 1) : roptlen;
                 val.option_value_u.opt_string.opt_string_val =
                     (char *)optval;
                 break;
@@ -1345,7 +1352,9 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
     if (RPC_IS_CALL_OK(rpcs))
     {
         if (optlen != NULL && out.optlen.optlen_val[0] != RPC_OPTLEN_AUTO)
+        {
             *optlen = out.optlen.optlen_val[0];
+        }
         if (optval != NULL)
         {
             switch (optname)
@@ -1356,6 +1365,10 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                     if (optlen != NULL)
                     {
                         char *buf;
+
+                        *optlen = strlen(out.optval.optval_val[0].
+                                        option_value_u.opt_string.
+                                        opt_string_val);
 
                         if ((buf = (char *)malloc(*optlen + 1)) == NULL)
                         {
