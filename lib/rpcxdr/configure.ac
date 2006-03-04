@@ -29,9 +29,10 @@ AC_CHECK_HEADERS([rpc/xdr.h], [], [], [
 # First we need to define which library we should use in our
 # environment. This macro updates LIBS variable, which is used
 # in the next checkings against in AC_CHECK_MEMBER() macro.
+# - Solaris2 (SunOS 5.11) -lnsl
 #
 LIBS=${TE_LDFLAGS}
-AC_SEARCH_LIBS([xdr_bytes], [rpc], [],
+AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
                AC_MSG_ERROR([No RPC library found]))
 
 AH_TEMPLATE([x_putint32], [Put 32-bit integer to the stream])
