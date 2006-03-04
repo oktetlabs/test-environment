@@ -1187,7 +1187,7 @@ create_lock(const char *name)
     {
         rc = TE_OS_RC(TE_RCF_PCH, errno);
     }
-    else if (fprintf(f, "%d", getpid()) < 0)
+    else if (fprintf(f, "%ld", (long)getpid()) < 0)
     {
         rc = TE_OS_RC(TE_RCF_PCH, errno);
         fclose(f);
