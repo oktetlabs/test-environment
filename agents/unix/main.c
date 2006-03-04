@@ -200,8 +200,8 @@ kill_tasks(void)
             rc = kill(-tasks[i], SIGTERM);
             if (!(rc == -1 && errno == ESRCH))
             {
-                PRINT("Sent SIGTERM to PID=%d - rc=%d, errno=%d",
-                      -tasks[i], rc, (rc == 0) ? 0 : errno);
+                PRINT("Sent SIGTERM to PID=%ld - rc=%d, errno=%d",
+                      (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
             }
             else 
                 tasks[i] = 0;
@@ -213,8 +213,8 @@ kill_tasks(void)
         if (tasks[i] != 0)
         {
             rc = kill(-tasks[i], SIGKILL);
-            PRINT("Sent SIGKILL to PID=%d - rc=%d, errno=%d",
-                  -tasks[i], rc, (rc == 0) ? 0 : errno);
+            PRINT("Sent SIGKILL to PID=%ld - rc=%d, errno=%d",
+                  (long)-tasks[i], rc, (rc == 0) ? 0 : errno);
         }
     }
     free(tasks);
@@ -501,7 +501,7 @@ rcf_ch_call(struct rcf_comm_connection *handle,
 
 /* See description in rcf_ch_api.h */
 int
-rcf_ch_start_process(int *pid, 
+rcf_ch_start_process(pid_t *pid, 
                     int priority, const char *rtn, te_bool is_argv,
                     int argc, void **params)
 {
@@ -1582,7 +1582,7 @@ main(int argc, char **argv)
 
     RING("Starting");
 
-    sprintf(buf, "PID %u", getpid());
+    sprintf(buf, "PID %lu", (unsigned long)getpid());
 
     rc = pthread_create(&logfork_tid, NULL, (void *)logfork_entry, NULL);
     if (rc != 0)
