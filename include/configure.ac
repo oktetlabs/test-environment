@@ -122,6 +122,7 @@ stdlib.h \
 string.h \
 strings.h \
 sys/errno.h \
+sys/ethernet.h \
 sys/ioctl.h \
 sys/poll.h \
 sys/resource.h \
