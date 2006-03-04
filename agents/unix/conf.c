@@ -938,7 +938,7 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
                          &ip_addr.ip6_addr, sizeof(struct in6_addr)) == 0)))
             {
                 if (ifname == NULL ||
-                    (if_nametoindex(ifname) == ifa->ifa_index))
+                    ((int)if_nametoindex(ifname) == ifa->ifa_index))
                     break;
 
                 WARN("Interfaces '%s' and '%s' have the same address '%s'",
@@ -3018,7 +3018,7 @@ neigh_find_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     }
 
     /* Neighbour from alien interface */
-    if (if_nametoindex(p->ifname) != r->ndm_ifindex)
+    if ((int)if_nametoindex(p->ifname) != r->ndm_ifindex)
     {
         return 0;
     }
@@ -3469,7 +3469,7 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
 
     UNUSED(who);
  
-    if (if_nametoindex(p->ifname) != r->ndm_ifindex)
+    if ((int)if_nametoindex(p->ifname) != r->ndm_ifindex)
         return 0;
 
     if (r->ndm_state == NUD_NONE || (r->ndm_state & NUD_INCOMPLETE) != 0)
