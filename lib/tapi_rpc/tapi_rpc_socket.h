@@ -42,6 +42,7 @@
 
 #include "rcf_rpc.h"
 #include "te_rpc_sys_socket.h"
+#include "te_rpc_types.h"
 
 
 /**
@@ -542,6 +543,18 @@ rpc_getsockopt(rcf_rpc_server *rpcs,
 {
     return rpc_getsockopt_gen(rpcs, s, level, optname, optval, optlen,
                               (optlen != NULL) ? *optlen : 0);
+}
+
+/**
+ * Same as rpc_getsockopt, but argument length is detected automatically.
+ */
+static inline int
+rpc_getsockopt_smart(rcf_rpc_server *rpcs, int s,
+                     rpc_socklevel level, rpc_sockopt optname, void *optval)
+{
+    socklen_t opt_len = RPC_OPTLEN_AUTO;
+    return rpc_getsockopt_gen(rpcs, s, level, optname, optval, &opt_len,
+                              opt_len);
 }
 
 /**

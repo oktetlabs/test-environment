@@ -1158,7 +1158,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                    void *optval, socklen_t *optlen, socklen_t roptlen)
 {
     tarpc_getsockopt_in   in;
-    tarpc_getsockopt_out  out;
+    tarpc_getsockopt_out  out;    
     struct option_value   val;
     char                  opt_val_str[4096] = {};
     
@@ -1183,6 +1183,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
         RETVAL_INT(getsockopt, -1);
     }
 
+    /* Copy parameters to tarpc_getsockopt_in structure */
     rpcs->op = RCF_RPC_CALL_WAIT;
     in.s = s;
     in.level = level;
@@ -1250,61 +1251,26 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
             case RPC_IP_ADD_MEMBERSHIP:
             case RPC_IP_DROP_MEMBERSHIP:
-                val.opttype = OPT_MREQN;
-                if (roptlen >= sizeof(struct ip_mreqn))
-                {
-                    memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
-                        &(((struct ip_mreqn *)optval)->imr_multiaddr),
-                        sizeof(((struct ip_mreqn *)optval)->imr_multiaddr));
-                    memcpy(&val.option_value_u.opt_mreqn.imr_address,
-                        &(((struct ip_mreqn *)optval)->imr_address),
-                        sizeof(((struct ip_mreqn *)optval)->imr_address));
-                    val.option_value_u.opt_mreqn.imr_ifindex =
-                          ((struct ip_mreqn *)optval)->imr_ifindex;
-                }
-                else
-                {
-                    WARN("Length of socket option %s value is less than "
-                         "sizeof(struct ip_mreqn)=%u, value is ignored",
-                         sockopt_rpc2str(optname), sizeof(struct ip_mreqn));
-                }
-                if (optlen_copy == sizeof(struct ip_mreqn))
-                    optlen_copy = RPC_OPTLEN_AUTO;
-                break;
-
             case RPC_IP_MULTICAST_IF:
-                val.opttype = OPT_IPADDR;
-                if (roptlen >= sizeof(struct in_addr))
-                {
-                    if (roptlen < sizeof(struct ip_mreq))
-                    {
-                        memcpy(&val.option_value_u.opt_ipaddr,
-                               optval, sizeof(struct in_addr));
-                    }
-#ifdef __linux__
-                    else if (roptlen >= sizeof(struct ip_mreqn))
-                    {
-                        val.opttype = OPT_MREQN;
-                        memcpy(&val.option_value_u.opt_mreqn,
-                               optval, sizeof(struct ip_mreqn));
-                    }
-#endif 
-                    else
-                    {
-                        val.opttype = OPT_MREQ;
-                        memcpy(&val.option_value_u.opt_mreq,
-                               optval, sizeof(struct ip_mreq));
-                    }
-               }
-                else
-                {
-                    WARN("Length of socket option %s value is less than "
-                         "sizeof(struct in_addr)=%u, value is ignored",
-                         sockopt_rpc2str(optname), sizeof(struct in_addr));
-                }
-                if (optlen_copy == sizeof(struct in_addr))
+            {
+                tarpc_mreqn *opt = (tarpc_mreqn *)optval;
+                /* 
+                 * Default type is OPT_MREQN (as one containing data of
+                 * all types allowed for these options, but returned value
+                 * has type OPT_IPADDR. Type is changed on Agent.
+                 */
+                val.opttype = OPT_MREQN; 
+                   
+                memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
+                       &opt->multiaddr, sizeof(opt->multiaddr));
+                memcpy(&val.option_value_u.opt_mreqn.imr_address,
+                       &opt->address, sizeof(opt->address));
+                val.option_value_u.opt_mreqn.imr_ifindex = opt->ifindex;
+                        
+                if (opt->len_diff == 0)
                     optlen_copy = RPC_OPTLEN_AUTO;
                 break;
+            }
 
             case RPC_TCP_INFO:
                 val.opttype = OPT_TCP_INFO;
@@ -1446,86 +1412,23 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
 
                 case RPC_IP_ADD_MEMBERSHIP:
                 case RPC_IP_DROP_MEMBERSHIP:
-                    if (roptlen >= sizeof(struct ip_mreqn))
-                    {
-                        char addr_buf1[INET_ADDRSTRLEN];
-                        char addr_buf2[INET_ADDRSTRLEN];
-
-                        memcpy(
-                            &(((struct ip_mreqn *)optval)->imr_multiaddr),
-                            &out.optval.optval_val[0].option_value_u.
-                                 opt_mreqn.imr_multiaddr,
-                            sizeof(((struct ip_mreqn *)optval)->
-                                       imr_multiaddr));
-                        memcpy(&(((struct ip_mreqn *)optval)->imr_address),
-                               &out.optval.optval_val[0].option_value_u.
-                                    opt_mreqn.imr_address,
-                               sizeof(((struct ip_mreqn *)optval)->
-                                      imr_address));
-                        ((struct ip_mreqn *)optval)->imr_ifindex =
-                            val.option_value_u.opt_mreqn.imr_ifindex;
-
-                        snprintf(opt_val_str, sizeof(opt_val_str),
-                                 "{ imr_multiaddr: %s, imr_address: %s, "
-                                 "imr_ifindex: %d}",
-                                 inet_ntop(AF_INET,
-                                     &(((struct ip_mreqn *)optval)->
-                                         imr_multiaddr),
-                                     addr_buf1, sizeof(addr_buf1)),
-                                 inet_ntop(AF_INET,
-                                     &(((struct ip_mreqn *)optval)->
-                                         imr_address),
-                                     addr_buf2, sizeof(addr_buf2)),
-                                 ((struct ip_mreqn *)optval)->imr_ifindex);
-                    }
-                    break;
-
                 case RPC_IP_MULTICAST_IF:
-                    if (roptlen >= sizeof(struct in_addr))
-                    {
-                        char addr_buf[INET_ADDRSTRLEN];
-                        
-                        if (roptlen < sizeof(struct ip_mreq))
-                        {
-                            memcpy(optval,
-                                   &out.optval.optval_val[0].option_value_u.
-                                   opt_ipaddr, sizeof(struct in_addr));
-                            snprintf(opt_val_str, sizeof(opt_val_str),
-                                     "{ addr: %s }",
-                                     inet_ntop(AF_INET, optval,
-                                               addr_buf, sizeof(addr_buf)));
-                        }
-#ifdef __linux__                        
-                        else if (roptlen >= sizeof(struct ip_mreqn))
-                        {
-                            memcpy(optval,
-                                   &out.optval.optval_val[0].option_value_u.
-                                   opt_mreqn, sizeof(struct ip_mreqn));
-                            snprintf(opt_val_str, sizeof(opt_val_str),
-                                     "{ addr: %s if: %d }",
-                                     inet_ntop(AF_INET,
-                                               &((struct ip_mreqn *)
-                                               optval)->imr_address,
-                                               addr_buf, sizeof(addr_buf)),
-                                               ((struct ip_mreqn *)optval)
-                                               ->imr_ifindex);
-                            break;
-                        }
-#endif
-                        else
-                        {
-                            memcpy(optval,
-                                   &out.optval.optval_val[0].option_value_u.
-                                   opt_mreq, sizeof(struct ip_mreq));
-                            snprintf(opt_val_str, sizeof(opt_val_str),
-                                     "{ addr: %s }",
-                                     inet_ntop(AF_INET, &((struct ip_mreq *)
-                                               optval)->imr_interface,
-                                               addr_buf, sizeof(addr_buf)));
-                            break;
-                        }
-                   }
+                {
+                    tarpc_mreqn *opt = (tarpc_mreqn *)optval;
+                    char         addr_buf[INET_ADDRSTRLEN];
+ 
+                    memset(opt, 0, sizeof(*opt));
+                    opt->type = out.optval.optval_val[0].opttype;
+                    memcpy(&opt->address, &out.optval.optval_val[0].
+                           option_value_u.opt_ipaddr,
+                           sizeof(opt->address));
+                    opt->len_diff = sizeof(opt->address) - sizeof(*opt);
+                    snprintf(opt_val_str, sizeof(opt_val_str),
+                             "{ addr: %s }",
+                             inet_ntop(AF_INET, &opt->address,
+                                       addr_buf, sizeof(addr_buf)));
                     break;
+                }
 
                 case RPC_TCP_INFO:
                     if (roptlen >= sizeof(struct tcp_info))
@@ -1629,6 +1532,7 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
     tarpc_setsockopt_out out;
     struct option_value  val;
     char                 opt_val_str[128] = {};
+    socklen_t            optlen_cpy = optlen;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1709,82 +1613,92 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
 
             case RPC_IP_ADD_MEMBERSHIP:
             case RPC_IP_DROP_MEMBERSHIP:
+            case RPC_IP_MULTICAST_IF:
             {
+                tarpc_mreqn *opt = (tarpc_mreqn *)optval;
+
                 char addr_buf1[INET_ADDRSTRLEN];
                 char addr_buf2[INET_ADDRSTRLEN];
 
-                memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
-                    (char *)&(((struct ip_mreqn *)optval)->imr_multiaddr),
-                    sizeof(((struct ip_mreqn *)optval)->imr_multiaddr));
-                memcpy(&val.option_value_u.opt_mreqn.imr_address,
-                    (char *)&(((struct ip_mreqn *)optval)->imr_address),
-                    sizeof(((struct ip_mreqn *)optval)->imr_address));
-                val.option_value_u.opt_mreqn.imr_ifindex =
-                       ((struct ip_mreqn *)optval)->imr_ifindex;
-                val.opttype = OPT_MREQN;
-
-                if (optlen == sizeof(struct ip_mreqn))
-                    in.optlen = RPC_OPTLEN_AUTO;
-
-                snprintf(opt_val_str, sizeof(opt_val_str),
-                         "{ imr_multiaddr: %s, imr_address: %s, "
-                         "imr_ifindex: %d}",
-                         inet_ntop(AF_INET,
-                              (char *)&(((struct ip_mreqn *)optval)->
-                                            imr_multiaddr),
-                              addr_buf1, sizeof(addr_buf1)),
-                         inet_ntop(AF_INET,
-                              (char *)&(((struct ip_mreqn *)optval)->
-                                            imr_address),
-                              addr_buf2, sizeof(addr_buf2)),
-                         ((struct ip_mreqn *)optval)->imr_ifindex);
-                break;
-            }
-
-            case RPC_IP_MULTICAST_IF:
-            {
-                char addr_buf[INET_ADDRSTRLEN];
-
-                if (optlen < sizeof(struct ip_mreq))
+                val.opttype = opt->type;
+                optlen_cpy = (signed)optlen_cpy + opt->len_diff;
+                in.optlen = (opt->len_diff == 0)?
+                            RPC_OPTLEN_AUTO : optlen_cpy;
+                        
+                switch (opt->type)
                 {
-                    val.opttype = OPT_IPADDR;
-                    memcpy(&(val.option_value_u.opt_ipaddr), optval,
-                           sizeof(struct in_addr));
-                    snprintf(opt_val_str, sizeof(opt_val_str),
-                             "{ addr: %s } ",
-                             inet_ntop(AF_INET, (char *)optval,
-                                       addr_buf, sizeof(addr_buf)));
+                    case OPT_IPADDR:
+                    {
+                        if (optname != RPC_IP_MULTICAST_IF)
+                        {
+                            ERROR("IP_MULTICAST_IF socket option does not"
+                                  " support 'struct in_addr' argument");
+                            return TE_RC(TE_TAPI, TE_EINVAL);
+                        }
+                        
+                        memcpy(&val.option_value_u.opt_ipaddr,
+                               (char *)&(opt->address),
+                               sizeof(opt->address));
+                        snprintf(opt_val_str, sizeof(opt_val_str),
+                                 "{ address: %s }",
+                                 inet_ntop(AF_INET,
+                                           (char *)&(opt)->address,
+                                           addr_buf1,
+                                           sizeof(addr_buf1)));
+                        break;
+                    }
+                    case OPT_MREQ:
+                    {
+                        memcpy(&val.option_value_u.opt_mreq.imr_multiaddr,
+                              (char *)&(opt->multiaddr),
+                              sizeof(opt->multiaddr));
+                        memcpy(&val.option_value_u.opt_mreq.imr_address,
+                               (char *)&(opt->address),
+                               sizeof(opt->address));
+
+                        snprintf(opt_val_str, sizeof(opt_val_str),
+                                 "{ imr_multiaddr: %s, imr_address: %s }",
+                                 inet_ntop(AF_INET,
+                                           (char *)&(opt->multiaddr),
+                                            addr_buf1, sizeof(addr_buf1)),
+                                 inet_ntop(AF_INET,
+                                           (char *)&(opt->address),
+                                            addr_buf2, sizeof(addr_buf2)));
+                        
+                        break;
+                    }
+                    case OPT_MREQN:
+                    {
+                        memcpy(&val.option_value_u.opt_mreqn.imr_multiaddr,
+                              (char *)&(opt->multiaddr),
+                              sizeof(opt->multiaddr));
+                        memcpy(&val.option_value_u.opt_mreqn.imr_address,
+                               (char *)&(opt->address),
+                               sizeof(opt->address));
+                        val.option_value_u.opt_mreqn.imr_ifindex =
+                        opt->ifindex;
+
+                        snprintf(opt_val_str, sizeof(opt_val_str),
+                                 "{ imr_multiaddr: %s, imr_address: %s, "
+                                 "imr_ifindex: %d}",
+                                 inet_ntop(AF_INET,
+                                           (char *)&(opt->multiaddr),
+                                            addr_buf1, sizeof(addr_buf1)),
+                                 inet_ntop(AF_INET,
+                                           (char *)&(opt->address),
+                                            addr_buf2, sizeof(addr_buf2)),
+                                 opt->ifindex);
+                        
+                        break;
+                    } 
+                    
+                   default:
+                   {
+                       ERROR("Invalid argument type for socket option");
+                       return TE_RC(TE_TAPI, TE_EINVAL); 
+                   }
+                   
                 }
-#ifdef __linux__                
-                else if (optlen >= sizeof(struct ip_mreqn))
-                {
-                    val.opttype = OPT_MREQN;
-                    memcpy(&val.option_value_u.opt_mreqn, optval,
-                           sizeof(struct ip_mreqn));
-                    snprintf(opt_val_str, sizeof(opt_val_str),
-                             "{ addr: %s if: %d } ",
-                             inet_ntop(AF_INET,
-                                       &((struct ip_mreq *)optval)->
-                                       imr_interface, addr_buf,
-                                       sizeof(addr_buf)),
-                             ((struct ip_mreqn *)optval)->imr_ifindex);
-                }
-#endif                
-                else
-                {
-                    val.opttype = OPT_MREQ;
-                    memcpy(&val.option_value_u.opt_mreq, optval,
-                           sizeof(struct ip_mreq));
-                    snprintf(opt_val_str, sizeof(opt_val_str),
-                             "{ addr: %s } ",
-                             inet_ntop(AF_INET,
-                                       &((struct ip_mreq *)optval)->
-                                       imr_interface,
-                                       addr_buf, sizeof(addr_buf)));
-                }                
- 
-                if (optlen == sizeof(struct in_addr))
-                    in.optlen = RPC_OPTLEN_AUTO;
 
                 break;
             }
@@ -1819,7 +1733,7 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG("RPC (%s,%s): setsockopt(%d, %s, %s, %p(%s), %d) "
                  "-> %d (%s)", rpcs->ta, rpcs->name,
                  s, socklevel_rpc2str(level), sockopt_rpc2str(optname),
-                 optval, opt_val_str, optlen,
+                 optval, opt_val_str, optlen_cpy,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(setsockopt, out.retval);
