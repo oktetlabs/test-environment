@@ -1206,7 +1206,8 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             case RPC_SO_ACCEPTFILTER:
             case RPC_SO_BINDTODEVICE:
                 val.opttype = OPT_STRING;
-                val.option_value_u.opt_string.opt_string_len = roptlen;
+                val.option_value_u.opt_string.opt_string_len = 
+                    (roptlen == RPC_OPTLEN_AUTO)? IFNAMSIZ : roptlen;
                 val.option_value_u.opt_string.opt_string_val =
                     (char *)optval;
                 break;
