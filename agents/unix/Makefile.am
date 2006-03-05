@@ -16,14 +16,21 @@ AM_YFLAGS=-d
 MY_LDADD=symtbl.o @TE_LDADD@ -lrcfpch -lrpcxdr -l@TAD@ \
          -lconf_oid -lloggerta -lrcfpch -ltools
 
-#if HAS_NET_SNMP
-#MY_LDADD+= @NET_SNMP_LIBS@
-#endif
+noinst_HEADERS = \
+	unix_internal.h \
+	conf_route.h \
+	conf_daemons.h \
+	tarpc_server.h
 
-MY_SOURCES=main.c conf.c ftp_routines.c log_serial.c
-MY_SYMTBL_OBJECTS=main.o ftp_routines.o log_serial.o 
+MY_SOURCES = \
+	main.c \
+	conf.c \
+	conf_route.c \
+	conf_route_netlink.c \
+	ftp_routines.c \
+	log_serial.c
 
-noinst_HEADERS=unix_internal.h conf_daemons.h tarpc_server.h
+MY_SYMTBL_OBJECTS = main.o ftp_routines.o log_serial.o 
 
 CLEANFILES=symtbl.c
 BUILT_SOURCES=
