@@ -1474,6 +1474,7 @@ typedef union opt_param {
 #if HAVE_STRUCT_IP_MREQN
     struct ip_mreqn     mreqn;
 #endif
+    struct ipv6_mreq    mreq6;
     struct ip_mreq      mreq;
     struct in_addr      addr;
     struct timeval      tv;
@@ -1532,6 +1533,18 @@ tarpc_setsockopt(tarpc_setsockopt_in *in, tarpc_setsockopt_out *out,
             break;
         }
 #endif
+        case OPT_MREQ6:
+        {
+            memcpy(&(param->mreq6.ipv6mr_multiaddr),
+                   &in->optval.optval_val[0].option_value_u.opt_mreq6.
+                   ipv6mr_multiaddr.ipv6mr_multiaddr_val,
+                   sizeof(struct in6_addr));
+            param->mreq6.ipv6mr_interface = 
+                in->optval.optval_val[0].option_value_u.opt_mreq6.
+                ipv6mr_ifindex;
+            *optlen = sizeof(param->mreq6);
+            break;
+        }
 
         case OPT_IPADDR:
         {
@@ -1614,7 +1627,6 @@ TARPC_FUNC(setsockopt,
     } while (0)
 
 #ifdef __linux__
-
 TARPC_FUNC(getsockopt,
 {
     COPY_ARG(optval);
@@ -1642,14 +1654,18 @@ TARPC_FUNC(getsockopt,
             {
                 case OPT_INT:
                     optlen_in = optlen_out = sizeof(int);
-                    break;
+                break;
                     
                 case OPT_LINGER:
                     optlen_in = optlen_out = sizeof(struct linger);
-                    break;
+                break;
 
                 case OPT_MREQN:
                     optlen_in = optlen_out = sizeof(struct ip_mreqn);
+                    break;
+
+                case OPT_MREQ6:
+                    optlen_in = optlen_out = sizeof(struct ipv6_mreq);
                     break;
 
                 case OPT_IPADDR:
@@ -1693,7 +1709,7 @@ TARPC_FUNC(getsockopt,
                 /* Adjust option type from OPT_MREQN to OPT_IPADDR */
                 out->optval.optval_val[0].opttype = OPT_IPADDR;
             }
-       }
+        }
 
         switch (out->optval.optval_val[0].opttype)
         {
@@ -1762,6 +1778,18 @@ TARPC_FUNC(getsockopt,
                 memcpy(&out->optval.optval_val[0].option_value_u.opt_mreq.
                        imr_address, (char *)&(mreq->imr_interface),
                        sizeof(mreq->imr_interface));
+                break;
+            }
+
+            case OPT_MREQ6:
+            {
+                struct ipv6_mreq *mreq6 = (struct ipv6_mreq *)opt;
+
+                memcpy(&out->optval.optval_val[0].option_value_u.opt_mreq6.
+                       ipv6mr_multiaddr, &(mreq6->ipv6mr_multiaddr),
+                       sizeof(struct ipv6_mreq));
+                out->optval.optval_val[0].option_value_u.opt_mreq6.
+                ipv6mr_ifindex = mreq6->ipv6mr_interface;
                 break;
             }
             
@@ -1877,6 +1905,10 @@ TARPC_FUNC(getsockopt,
                     *(out->optlen.optlen_val) = sizeof(struct ip_mreq);
                     break;
 
+                case OPT_MREQ6:
+                    *(out->optlen.optlen_val) = sizeof(struct ipv6_mreq);
+                    break;
+
                 case OPT_IPADDR:
                     *(out->optlen.optlen_val) = sizeof(struct in_addr);
                     break;
@@ -1951,6 +1983,18 @@ TARPC_FUNC(getsockopt,
                 memcpy(&out->optval.optval_val[0].option_value_u.opt_mreq.
                        imr_address, (char *)&(mreq->imr_interface),
                        sizeof(mreq->imr_interface));
+                break;
+            }
+
+            case OPT_MREQ6:
+            {
+                struct ipv6_mreq *mreq6 = (struct ipv6_mreq *)opt;
+
+                memcpy(&out->optval.optval_val[0].option_value_u.opt_mreq6.
+                       ipv6mr_multiaddr, &(mreq6->ipv6mr_multiaddr),
+                       sizeof(struct ipv6_mreq));
+                out->optval.optval_val[0].option_value_u.opt_mreq6.
+                ipv6mr_ifindex = mreq6->ipv6mr_ifindex;
                 break;
             }
 

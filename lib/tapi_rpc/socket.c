@@ -1256,10 +1256,35 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 if (optlen_copy == sizeof(tarpc_timeval))
                     optlen_copy = RPC_OPTLEN_AUTO;
                 break;
+                
+            case RPC_IPV6_PKTOPTIONS:
+                ERROR("IPV6_PKTOPTIONS is not supported yet");
+                RETVAL_INT(getsockopt, -1);
+                break;
+    
+            case RPC_IPV6_ADD_MEMBERSHIP:
+            case RPC_IPV6_DROP_MEMBERSHIP:
+            case RPC_IPV6_JOIN_ANYCAST:
+            case RPC_IPV6_LEAVE_ANYCAST:
+            {
+                struct ipv6_mreq *opt = (struct ipv6_mreq *)optval;
+                
+                val.opttype = OPT_MREQ6;
+
+                memcpy(&val.option_value_u.opt_mreq6.ipv6mr_multiaddr.
+                       ipv6mr_multiaddr_val,
+                       &opt->ipv6mr_multiaddr, sizeof(struct in6_addr));
+                val.option_value_u.opt_mreq6.ipv6mr_ifindex =
+                    opt->ipv6mr_interface;
+
+                if (optlen_copy == sizeof(struct ipv6_mreq))
+                    optlen_copy = RPC_OPTLEN_AUTO;
+                
+                break;
+            }
 
             case RPC_IP_ADD_MEMBERSHIP:
             case RPC_IP_DROP_MEMBERSHIP:
-            case RPC_IP_MULTICAST_IF:
             {
                 tarpc_mreqn *opt = (tarpc_mreqn *)optval;
                 /* 
@@ -1624,6 +1649,42 @@ rpc_setsockopt(rcf_rpc_server *rpcs,
                          ((tarpc_timeval *)optval)->tv_sec,
                          ((tarpc_timeval *)optval)->tv_usec);
                 break;
+
+            case RPC_IPV6_PKTOPTIONS:
+                ERROR("IPV6_PKTOPTIONS is not supported yet");
+                RETVAL_INT(getsockopt, -1);
+                break;
+    
+            case RPC_IPV6_ADD_MEMBERSHIP:
+            case RPC_IPV6_DROP_MEMBERSHIP:
+            case RPC_IPV6_JOIN_ANYCAST:
+            case RPC_IPV6_LEAVE_ANYCAST:
+            {
+                char buf[INET6_ADDRSTRLEN];
+
+                inet_ntop(AF_INET6,
+                          &((struct ipv6_mreq *)optval)->ipv6mr_multiaddr,
+                          buf, sizeof(buf));
+                
+                val.opttype = OPT_MREQ6;
+                val.option_value_u.opt_mreq6.ipv6mr_multiaddr.
+                ipv6mr_multiaddr_val = (uint32_t *)
+                    &((struct ipv6_mreq *)optval)->ipv6mr_multiaddr;
+                
+                val.option_value_u.opt_mreq6.ipv6mr_multiaddr.
+                ipv6mr_multiaddr_len = sizeof(struct in6_addr);
+
+                val.option_value_u.opt_mreq6.ipv6mr_ifindex =
+                    ((struct ipv6_mreq *)optval)->ipv6mr_interface;
+
+                if (optlen == sizeof(struct ipv6_mreq))
+                    in.optlen = RPC_OPTLEN_AUTO;
+
+                snprintf(opt_val_str, sizeof(opt_val_str),
+                         "{ multiaddr: %s, ifindex: %d }",
+                         buf, val.option_value_u.opt_mreq6.ipv6mr_ifindex);
+                break;
+            }
 
             case RPC_IP_ADD_MEMBERSHIP:
             case RPC_IP_DROP_MEMBERSHIP:

@@ -735,14 +735,15 @@ typedef enum rpc_sockopt {
 
     RPC_IPV6_PKTINFO,       /**< Whether to receive control messages
                                  on incoming datagrams */
-#if 0
-    RPC_IPV6_RTHDR,
-    RPC_IPV6_AUTHHDR,
-    RPC_IPV6_DSTOPS,
-    RPC_IPV6_HOPOPTS,
-    RPC_IPV6_FLOWINFO,
-    RPC_IPV6_HOPLIMIT,
-#endif               
+    
+    RPC_IPV6_PKTOPTIONS,    /**< Specify packet options */
+    
+    RPC_IPV6_CHECKSUM,      /**< Offset of checksum for raw sockets */
+    
+    RPC_IPV6_NEXTHOP,       /**< Enable specifying next hop */
+    
+    RPC_IPV6_ROUTER_ALERT,  /**< Pass packets containing router
+                                 alert option */
     
     RPC_IPV6_MULTICAST_LOOP,
                             /**< Whether to loopback outgoing
@@ -756,15 +757,33 @@ typedef enum rpc_sockopt {
     
     RPC_IPV6_MTU,           /**< MTU of current connected socket */
     
-    RPC_IPV6_MTU_DISCOVER,  /**< enable/disable Path MTU discover */
+    RPC_IPV6_MTU_DISCOVER,  /**< Enable/disable Path MTU discover */
 
     RPC_IPV6_RECVERR,       /**< Whether to receive asyncronous
                                  error messages */
-
-#if 0    
-    RPC_IPV6_ROUTER_ALERT,
-#endif        
-
+    
+    RPC_IPV6_V6ONLY,        /**< Use socket for IPv6 communication only */
+    
+    RPC_IPV6_JOIN_ANYCAST,  /**< Join an anycast group */
+    
+    RPC_IPV6_LEAVE_ANYCAST, /**< Leave an anycast group */
+    
+    RPC_IPV6_IPSEC_POLICY,
+    
+    RPC_IPV6_XFRM_POLICY,
+    
+    RPC_IPV6_RTHDR,         /**< Deliver the routing header */
+    
+    RPC_IPV6_AUTHHDR,       /**< Deliver the authentification header */
+    
+    RPC_IPV6_DSTOPTS,       /**< Deliver the destination options */
+    
+    RPC_IPV6_HOPOPTS,       /**< Deliver the hop options */
+    
+    RPC_IPV6_FLOWINFO,      /**< Deliver the flow ID */
+    
+    RPC_IPV6_HOPLIMIT,      /**< Deliver the hop count of the packet */
+ 
     RPC_TCP_MAXSEG,         /**< Set/get the maximum segment size for
                                  outgoing TCP packets */
     RPC_TCP_NODELAY,        /**< Enable/disable the Nagle algorithm */
@@ -912,6 +931,81 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef IP_RECEIVE_BROADCAST
         RPC2H(IP_RECEIVE_BROADCAST);
 #endif
+#ifdef IPV6_ADDRFORM
+        RPC2H(IPV6_ADDRFORM);
+#endif
+#ifdef IPV6_PKTINFO
+        RPC2H(IPV6_PKTINFO);
+#endif
+#ifdef IPV6_HOPOPTS
+        RPC2H(IPV6_HOPOPTS);
+#endif
+#ifdef IPV6_DSTOPTS
+        RPC2H(IPV6_DSTOPTS);
+#endif
+#ifdef IPV6_RTHDR
+        RPC2H(IPV6_RTHDR);
+#endif
+#ifdef IPV6_PKTOPTIONS
+        RPC2H(IPV6_PKTOPTIONS);
+#endif
+#ifdef IPV6_CHECKSUM
+        RPC2H(IPV6_CHECKSUM);
+#endif
+#ifdef IPV6_HOPLIMIT
+        RPC2H(IPV6_HOPLIMIT);
+#endif
+#ifdef IPV6_NEXTHOP
+        RPC2H(IPV6_NEXTHOP);
+#endif
+#ifdef IPV6_AUTHHDR
+        RPC2H(IPV6_AUTHHDR);
+#endif
+#ifdef IPV6_UNICAST_HOPS
+        RPC2H(IPV6_UNICAST_HOPS);
+#endif
+#ifdef IPV6_MULTICAST_IF
+        RPC2H(IPV6_MULTICAST_IF);
+#endif
+#ifdef IPV6_MULTICAST_HOPS
+        RPC2H(IPV6_MULTICAST_HOPS);
+#endif
+#ifdef IPV6_MULTICAST_LOOP
+        RPC2H(IPV6_MULTICAST_LOOP);
+#endif        
+#ifdef IPV6_ADD_MEMBERSHIP
+        RPC2H(IPV6_ADD_MEMBERSHIP);
+#endif
+#ifdef IPV6_DROP_MEMBERSHIP
+        RPC2H(IPV6_DROP_MEMBERSHIP);
+#endif
+#ifdef IPV6_ROUTER_ALERT
+        RPC2H(IPV6_ROUTER_ALERT);
+#endif
+#ifdef IPV6_MTU_DISCOVER
+        RPC2H(IPV6_MTU_DISCOVER);
+#endif        
+#ifdef IPV6_MTU
+        RPC2H(IPV6_MTU);
+#endif        
+#ifdef IPV6_RECVERR
+        RPC2H(IPV6_RECVERR);
+#endif        
+#ifdef IPV6_V6ONLY
+        RPC2H(IPV6_V6ONLY);
+#endif
+#ifdef IPV6_JOIN_ANYCAST
+        RPC2H(IPV6_JOIN_ANYCAST);
+#endif
+#ifdef IPV6_LEAVE_ANYCAST
+        RPC2H(IPV6_LEAVE_ANYCAST);
+#endif        
+#ifdef IPV6_IPSEC_POLICY
+        RPC2H(IPV6_IPSEC_POLICY);
+#endif        
+#ifdef IPV6_XFRM_POLICY
+        RPC2H(IPV6_XFRM_POLICY);
+#endif        
 #ifdef TCP_MAXSEG
         RPC2H(TCP_MAXSEG);
 #endif
@@ -1114,16 +1208,21 @@ sockopt_h2rpc(int opt_type, int opt)
 #endif
 #ifdef IPV6_PKTINFO                
                 H2RPC(IPV6_PKTINFO);
-#endif                
-#if 0
+#endif
+#ifdef IPV6_PKTOPTIONS
+                H2RPC(IPV6_PKTOPTIONS);
+#endif
+#ifdef IPV6_CHECKSUM
+                H2RPC(IPV6_CHECKSUM);
+#endif
 #ifdef IPV6_RTHDR
                 H2RPC(IPV6_RTHDR);
 #endif
 #ifdef IPV6_AUTHHDR
                 H2RPC(IPV6_AUTHHDR);
 #endif
-#ifdef IPV6_DSTOPS
-                H2RPC(IPV6_DSTOPS);
+#ifdef IPV6_DSTOPTS
+                H2RPC(IPV6_DSTOPTS);
 #endif
 #ifdef IPV6_HOPOPTS
                 H2RPC(IPV6_HOPOPTS);
@@ -1134,7 +1233,9 @@ sockopt_h2rpc(int opt_type, int opt)
 #ifdef IPV6_HOPLIMIT
                 H2RPC(IPV6_HOPLIMIT);
 #endif
-#endif                
+#ifdef IPV6_NEXTHOP
+                H2RPC(IPV6_NEXTHOP);
+#endif
 #ifdef IPV6_MULTICAST_LOOP
                 H2RPC(IPV6_MULTICAST_LOOP);
 #endif
@@ -1152,11 +1253,24 @@ sockopt_h2rpc(int opt_type, int opt)
 #endif
 #ifdef IPV6_RECVERR
                 H2RPC(IPV6_RECVERR);
-#endif                
-#if 0
-#if IPV6_ROUTER_ALERT
+#endif
+#ifdef IPV6_V6ONLY
+                H2RPC(IPV6_V6ONLY);
+#endif
+#ifdef IPV6_JOIN_ANYCAST
+                H2RPC(IPV6_JOIN_ANYCAST);
+#endif
+#ifdef IPV6_LEAVE_ANYCAST
+                H2RPC(IPV6_LEAVE_ANYCAST);
+#endif
+#ifdef IPV6_IPSEC_POLICY
+                H2RPC(IPV6_IPSEC_POLICY);
+#endif
+#ifdef IPV6_XFRM_POLICY
+                H2RPC(IPV6_XFRM_POLICY);
+#endif
+#ifdef IPV6_ROUTER_ALERT
                 H2RPC(IPV6_ROUTER_ALERT);
-#endif                
 #endif                
                 default: return RPC_SOCKOPT_MAX;
             }
@@ -1217,23 +1331,27 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IPV6_MULTICAST_IF);
         RPC2STR(IPV6_ADDRFORM);
         RPC2STR(IPV6_PKTINFO);
-#if 0                
+        RPC2STR(IPV6_PKTOPTIONS);
+        RPC2STR(IPV6_CHECKSUM);
         RPC2STR(IPV6_RTHDR);
         RPC2STR(IPV6_AUTHHDR);
-        RPC2STR(IPV6_DSTOPS);
+        RPC2STR(IPV6_DSTOPTS);
         RPC2STR(IPV6_HOPOPTS);
         RPC2STR(IPV6_FLOWINFO);
         RPC2STR(IPV6_HOPLIMIT);
-#endif                
+        RPC2STR(IPV6_NEXTHOP);
         RPC2STR(IPV6_MULTICAST_LOOP);
         RPC2STR(IPV6_ADD_MEMBERSHIP);
         RPC2STR(IPV6_DROP_MEMBERSHIP);
         RPC2STR(IPV6_MTU);
         RPC2STR(IPV6_MTU_DISCOVER);
         RPC2STR(IPV6_RECVERR);
-#if 0                
         RPC2STR(IPV6_ROUTER_ALERT);
-#endif
+        RPC2STR(IPV6_V6ONLY);
+        RPC2STR(IPV6_JOIN_ANYCAST);
+        RPC2STR(IPV6_LEAVE_ANYCAST);
+        RPC2STR(IPV6_IPSEC_POLICY);
+        RPC2STR(IPV6_XFRM_POLICY);
 
         RPC2STR(TCP_MAXSEG);
         RPC2STR(TCP_NODELAY);

@@ -128,10 +128,7 @@ static type_info_t type_info[] =
     {"struct linger", sizeof(struct linger)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
     {"struct sockaddr_storage", sizeof(struct sockaddr_storage)},
-    {"struct sockaddr", sizeof(struct sockaddr)},
-#if 0
-    {"struct ip_mreqn", sizeof(struct ip_mreqn)}
-#endif
+    {"struct sockaddr", sizeof(struct sockaddr)}
 };
 
 /*-------------- get_sizeof() ---------------------------------*/
@@ -149,9 +146,11 @@ _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
         if (strcmp(in->typename, type_info[i].type_name) == 0)
         {
             out->size = type_info[i].type_size;
+            return TRUE;
         }
     }
-    return TRUE;
+    ERROR("Unknown type (%s)", out->size);
+    return FALSE;
 }
 
 /*-------------- get_addrof() ---------------------------------*/
@@ -1407,9 +1406,11 @@ TARPC_FUNC(setsockopt, {},
         int    optlen;
         HANDLE handle;
         
-        struct linger   linger;
-        struct in_addr  addr;
-        struct timeval  tv;
+        struct linger           linger;
+        struct in_addr          addr;
+        struct timeval          tv;
+        struct ip_mreq          mreq;
+        struct ipv6_mreq        mreq6;
         
         if (in->optname == RPC_SO_SNDTIMEO || 
             in->optname == RPC_SO_RCVTIMEO)
@@ -1490,6 +1491,35 @@ TARPC_FUNC(setsockopt, {},
                 break;
             }
 
+            case OPT_MREQN:
+            case OPT_MREQ:
+            {
+                opt = (char *)&mreq;
+                memcpy(&mreq.imr_multiaddr,
+                       &(in->optval.optval_val[0].option_value_u.opt_mreqn.
+                         imr_multiaddr), sizeof(struct in_addr));
+                
+                memcpy(&mreq.imr_interface,
+                       &(in->optval.optval_val[0].option_value_u.opt_mreqn.
+                         imr_address), sizeof(struct in_addr));
+                
+                optlen = sizeof(mreq);
+                break;
+            }
+
+            case OPT_MREQ6:
+            {
+                
+                opt = (char *)&mreq6;
+
+                memcpy(&mreq6.ipv6mr_multiaddr,
+                       &(in->optval.optval_val[0].option_value_u.opt_mreq6.
+                         ipv6mr_multiaddr), sizeof(struct in6_addr));
+                mreq6.ipv6mr_interface = in->optval.optval_val[0].
+                    option_value_u.opt_mreq6.ipv6mr_ifindex;
+                optlen = sizeof(mreq6);
+                break;
+
             default:
                 ERROR("incorrect option type %d is received",
                       in->optval.optval_val[0].opttype);
@@ -1502,6 +1532,7 @@ TARPC_FUNC(setsockopt, {},
         INIT_CHECKED_ARG(opt, optlen, 0);
         if (in->optlen == RPC_OPTLEN_AUTO)
             in->optlen = optlen;
+
         MAKE_CALL(out->retval = setsockopt(in->s,
                                            socklevel_rpc2h(in->level),
                                            sockopt_rpc2h(in->optname),
@@ -1555,6 +1586,10 @@ TARPC_FUNC(getsockopt,
 
                 case OPT_TIMEVAL:
                     optlen_in = optlen_out = sizeof(struct timeval);
+                    break;
+
+                case OPT_MREQ6:
+                    optlen_in = optlen_out = sizeof(struct ipv6_mreq);
                     break;
 
                 default:
