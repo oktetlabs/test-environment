@@ -658,5 +658,5 @@ blackhole_del(unsigned int gid, const char *oid, const char *route)
     if (rc != 0)
         return rc;
 
-    return ta_unix_conf_route_blackhole_add(&rt_info);
+    return ta_unix_conf_route_blackhole_del(&rt_info);
 }
