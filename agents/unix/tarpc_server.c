@@ -101,7 +101,7 @@ tarpc_setlibname(const char *libname)
         ERROR("Dynamic library has already been set to %s", old);
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
-    dynamic_library_handle = dlopen(libname == '\0' ? NULL : libname,
+    dynamic_library_handle = dlopen(*libname == '\0' ? NULL : libname,
                                     RTLD_LAZY);
     if (dynamic_library_handle == NULL)
     {
