@@ -1044,7 +1044,7 @@ rcf_pch_run(const char *confstr, const char *info)
                         }
                         else
                         {
-                            SEND_ANSWER("0 %d", pid);
+                            SEND_ANSWER("0 %ld", (long)pid);
                         }
                         
                         break;
