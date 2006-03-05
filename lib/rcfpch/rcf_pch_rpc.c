@@ -117,7 +117,7 @@ typedef struct rpcserver {
     int  sock;             /**< Socket for interaction with the server */
     int  ref;              /**< Number of thread children */
     
-    int       pid;         /**< Process identifier */
+    pid_t     pid;         /**< Process identifier */
     uint32_t  tid;         /**< Thread identifier or 0 */
     time_t    sent;        /**< Time of the last request sending */
     uint32_t  timeout;     /**< Timeout for the last sent request */
@@ -652,7 +652,7 @@ rcf_pch_rpc_init()
 #else
     addr.sun_family = AF_UNIX;
     snprintf(addr.sun_path, sizeof(addr.sun_path), 
-             "/tmp/terpc_%d", getpid());
+             "/tmp/terpc_%ld", (long)getpid());
     len = sizeof(struct sockaddr_un) - PIPENAME_LEN +  
           strlen(addr.sun_path);
 #endif    
