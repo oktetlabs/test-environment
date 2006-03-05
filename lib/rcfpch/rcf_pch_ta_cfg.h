@@ -30,10 +30,6 @@
 #ifndef __TE_RCF_PCH_TA_CFG_H__
 #define __TE_RCF_PCH_TA_CFG_H__
 
-#if HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "rcf_common.h"

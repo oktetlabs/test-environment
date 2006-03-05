@@ -1519,6 +1519,7 @@ TARPC_FUNC(setsockopt, {},
                     option_value_u.opt_mreq6.ipv6mr_ifindex;
                 optlen = sizeof(mreq6);
                 break;
+            }
 
             default:
                 ERROR("incorrect option type %d is received",
