@@ -4499,6 +4499,7 @@ do {                                                            \
     return 0;
 }
 
+#ifdef USE_NETLINK
 /**
  * Flush routing table cache.
  *
@@ -4533,6 +4534,7 @@ route_flush(sa_family_t family)
 
     return rc;
 }
+#endif /* USE_NETLINK */
 
 /**
  * Commit changes made for the route.
