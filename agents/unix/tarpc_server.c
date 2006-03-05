@@ -30,6 +30,15 @@
 
 #define TE_LGR_USER     "RPC"
 
+#if __sun__
+/* Required on Solaris2 (SunOS 5.11) to get msg_control etc. */
+#define _XOPEN_SOURCE           
+#define _XOPEN_SOURCE_EXTENDED  1
+#define __EXTENSIONS__
+/* Required on Solaris2 (SunOS 5.11) to see IOCTLs */
+#define BSD_COMP
+#endif
+
 #include "tarpc_server.h"
 
 #include "config.h"
@@ -1415,6 +1424,7 @@ TARPC_FUNC(sigaction,
         act.sa_flags = sigaction_flags_rpc2h(in_act->flags);
         act.sa_mask = *((sigset_t *)rcf_pch_mem_get(in_act->mask));
 
+#undef _sigaction
         out->common._errno = 
             name2handler(in_act->handler, 
                          (act.sa_flags & SA_SIGINFO) ?
@@ -2100,9 +2110,13 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                     break;
 
                 case RPC_SIOCSIFMTU:
+#if HAVE_STRUCT_IFREQ_IFR_MTU
                     req->ifreq.ifr_mtu =
                         out->req.req_val[0].ioctl_request_u.
                         req_ifreq.rpc_ifr_mtu;
+#else
+                    WARN("'struct ifreq' has no 'ifr_mtu'");
+#endif
                     break;
 
                 case RPC_SIOCSIFADDR:
@@ -2257,8 +2271,12 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 
                 case RPC_SIOCGIFMTU:
                 case RPC_SIOCSIFMTU:
+#if HAVE_STRUCT_IFREQ_IFR_MTU
                     out->req.req_val[0].ioctl_request_u.req_ifreq.
                         rpc_ifr_mtu = req->ifreq.ifr_mtu;
+#else
+                    WARN("'struct ifreq' has no 'ifr_mtu'");
+#endif
                     break;
 
                 case RPC_SIOCGIFADDR:
@@ -4584,22 +4602,22 @@ fill_sigev_thread(struct sigevent *sig, char *function)
 {
     if (strlen(function) > 0)
     {
-        memset(&(sig->_sigev_un), 0, sizeof(sig->_sigev_un));
-        if ((sig->_sigev_un._sigev_thread._function = 
+        if ((sig->sigev_notify_function = 
                 rcf_ch_symbol_addr(function, 1)) == NULL)
         {
             if (strcmp(function, AIO_WRONG_CALLBACK) == 0)
-                sig->_sigev_un._sigev_thread._function = 
+                sig->sigev_notify_function = 
                     (void *)(long)rand_range(1, 0xFFFFFFFF);
             else
                 WARN("Failed to find address of AIO callback %s - "
                      "use NULL callback", function);
         }
-     }
-     else
-     {
-         memset(&(sig->_sigev_un), 0, sizeof(sig->_sigev_un));
-     }
+    }
+    else
+    {
+        sig->sigev_notify_function = NULL;
+    }
+    sig->sigev_notify_attributes = NULL;
     
     return 0;
 }
