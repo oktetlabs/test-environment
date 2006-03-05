@@ -4,7 +4,7 @@
  * Unix TA configuring support
  *
  *
- * Copyright (C) 2004,2005 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -59,6 +59,7 @@
 #include <sys/socket.h>
 #endif
 #if HAVE_SYS_IOCTL_H
+#define BSD_COMP
 #include <sys/ioctl.h>
 #endif
 #if HAVE_NETINET_IN_H
@@ -73,12 +74,6 @@
 #if HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
 #endif
-#if HAVE_NET_ETHERNET_H
-#include <net/ethernet.h>
-#endif
-#if HAVE_NET_IF_ETHER_H
-#include <net/if_ether.h>
-#endif
 #if HAVE_NET_IF_DL_H
 #include <net/if_dl.h>
 #endif
@@ -92,6 +87,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_ethernet.h"
 #include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
@@ -198,7 +194,39 @@ typedef union gen_ip_address {
 const char *te_lockdir = "/tmp";
 
 /* Auxiliary variables used for during configuration request processing */
-static struct ifreq req;
+#if HAVE_STRUCT_LIFREQ
+#define my_ifconf       lifconf
+#define my_ifc_len      lifc_len
+#define my_ifc_buf      lifc_buf
+#define my_ifc_req      lifc_req
+#define my_ifreq        lifreq
+#define my_ifr_name     lifr_name
+#define my_ifr_flags    lifr_flags
+#define my_ifr_addr     lifr_addr
+#define my_ifr_mtu      lifr_mtu
+#define MY_SIOCGIFCONF      SIOCGLIFCONF
+#define MY_SIOCGIFFLAGS     SIOCGLIFFLAGS
+#define MY_SIOCGIFADDR      SIOCGLIFADDR
+#define MY_SIOCSIFNETMASK   SIOCSLIFNETMASK
+#define MY_SIOCGIFBRDADDR   SIOCGLIFBRDADDR
+#else
+#define my_ifconf       ifconf
+#define my_ifc_len      ifc_len
+#define my_ifc_buf      ifc_buf
+#define my_ifc_req      ifc_req
+#define my_ifreq        ifreq
+#define my_ifr_name     ifr_name
+#define my_ifr_flags    ifr_flags
+#define my_ifr_addr     ifr_addr
+#define my_ifr_mtu      ifr_mtu
+#define my_ifr_hwaddr   ifr_hwaddr
+#define MY_SIOCGIFCONF      SIOCGIFCONF
+#define MY_SIOCGIFFLAGS     SIOCGIFFLAGS
+#define MY_SIOCGIFADDR      SIOCGIFADDR
+#define MY_SIOCSIFNETMASK   SIOCSIFNETMASK
+#define MY_SIOCGIFBRDADDR   SIOCGIFBRDADDR
+#endif
+static struct my_ifreq req;
 
 static char buf[4096];
 static char trash[128];
@@ -1169,8 +1197,8 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
 static te_errno
 get_addr(const char *ifname, struct in_addr *addr)
 {
-    strcpy(req.ifr_name, ifname);
-    if (ioctl(cfg_socket, SIOCGIFADDR, (int)&req) < 0)
+    strcpy(req.my_ifr_name, ifname);
+    if (ioctl(cfg_socket, MY_SIOCGIFADDR, (int)&req) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
@@ -1179,7 +1207,7 @@ get_addr(const char *ifname, struct in_addr *addr)
               ifname, rc);
         return rc;
     }
-    *addr = SIN(&(req.ifr_addr))->sin_addr;
+    *addr = SIN(&(req.my_ifr_addr))->sin_addr;
     return 0;
 }
 
@@ -1210,11 +1238,11 @@ set_prefix(const char *ifname, unsigned int prefix)
 
     memset(&req, 0, sizeof(req));
 
-    strcpy(req.ifr_name, ifname);
+    strcpy(req.my_ifr_name, ifname);
 
-    req.ifr_addr.sa_family = AF_INET;
-    SIN(&(req.ifr_addr))->sin_addr.s_addr = htonl(mask);
-    if (ioctl(cfg_socket, SIOCSIFNETMASK, &req) < 0)
+    SA(&req.my_ifr_addr)->sa_family = AF_INET;
+    SIN(&(req.my_ifr_addr))->sin_addr.s_addr = htonl(mask);
+    if (ioctl(cfg_socket, MY_SIOCSIFNETMASK, &req) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
@@ -1366,17 +1394,18 @@ interface_list(unsigned int gid, const char *oid, char **list)
 static int
 aliases_list()
 {
-    struct ifconf conf;
-    struct ifreq *req;
-    te_bool       first = TRUE;
-    char         *name = NULL;
-    char         *ptr = buf;
+    struct my_ifconf    conf;
+    struct my_ifreq    *req;
 
-    conf.ifc_len = sizeof(buf);
-    conf.ifc_buf = buf;
+    te_bool     first = TRUE;
+    char       *name = NULL;
+    char       *ptr = buf;
+
+    conf.my_ifc_len = sizeof(buf);
+    conf.my_ifc_buf = buf;
 
     memset(buf, 0, sizeof(buf));
-    if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
+    if (ioctl(cfg_socket, MY_SIOCGIFCONF, &conf) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
         
@@ -1384,12 +1413,12 @@ aliases_list()
         return rc;
     }
 
-    for (req = conf.ifc_req; *(req->ifr_name) != 0; req++)
+    for (req = conf.my_ifc_req; *(req->my_ifr_name) != 0; req++)
     {
-        if (name != NULL && strcmp(req->ifr_name, name) == 0)
+        if (name != NULL && strcmp(req->my_ifr_name, name) == 0)
             continue;
 
-        name = req->ifr_name;
+        name = req->my_ifr_name;
 
         if (first)
         {
@@ -1759,7 +1788,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     if (strlen(cur) != 0)
     {
-        strncpy(req.ifr_name, cur, IFNAMSIZ);
+        strncpy(req.my_ifr_name, cur, IFNAMSIZ);
     }
     else
     {
@@ -1771,13 +1800,13 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
             return TE_RC(TE_TA_UNIX, TE_EPERM);
 
         sprintf(trash, "%s:%d", ifname, n);
-        strncpy(req.ifr_name, trash, IFNAMSIZ);
+        strncpy(req.my_ifr_name, trash, IFNAMSIZ);
     }
 
     memset(&sin, 0, sizeof(struct sockaddr));
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = new_addr;
-    memcpy(&req.ifr_addr, &sin, sizeof(struct sockaddr));
+    memcpy(&req.my_ifr_addr, &sin, sizeof(struct sockaddr));
     if (ioctl(cfg_socket, SIOCSIFADDR, &req) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -2021,12 +2050,12 @@ net_addr_del(unsigned int gid, const char *oid,
     }
     if (strcmp(name, ifname) == 0)
     {
-        strncpy(req.ifr_name, ifname, IFNAMSIZ);
+        strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
 
         memset(&sin, 0, sizeof(struct sockaddr));
         sin.sin_family = AF_INET;
         sin.sin_addr.s_addr = INADDR_ANY;
-        memcpy(&req.ifr_addr, &sin, sizeof(struct sockaddr));
+        memcpy(&req.my_ifr_addr, &sin, sizeof(struct sockaddr));
 
         if (ioctl(cfg_socket, SIOCSIFADDR, (int)&req) < 0)
         {
@@ -2038,8 +2067,8 @@ net_addr_del(unsigned int gid, const char *oid,
     }
     else
     {
-        strncpy(req.ifr_name, name, IFNAMSIZ);
-        if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
+        strncpy(req.my_ifr_name, name, IFNAMSIZ);
+        if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, &req) < 0)
         {
             te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
@@ -2047,8 +2076,8 @@ net_addr_del(unsigned int gid, const char *oid,
             return rc;
         }
 
-        strncpy(req.ifr_name, name, IFNAMSIZ);
-        req.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
+        strncpy(req.my_ifr_name, name, IFNAMSIZ);
+        req.my_ifr_flags &= ~(IFF_UP | IFF_RUNNING);
         if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
         {
             te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -2235,12 +2264,13 @@ static te_errno
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
-    struct ifconf conf;
-    struct ifreq *req;
-    char         *name = NULL;
-    in_addr_t     tmp_addr;
-    int           len = ADDR_LIST_BULK;
-    te_errno      rc;
+    struct my_ifconf    conf;
+    struct my_ifreq    *req;
+
+    char       *name = NULL;
+    in_addr_t   tmp_addr;
+    int         len = ADDR_LIST_BULK;
+    te_errno    rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2249,11 +2279,11 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     {
         return TE_RC(TE_TA_UNIX, rc);
     }
-    conf.ifc_len = sizeof(buf);
-    conf.ifc_buf = buf;
+    conf.my_ifc_len = sizeof(buf);
+    conf.my_ifc_buf = buf;
 
     memset(buf, 0, sizeof(buf));
-    if (ioctl(cfg_socket, SIOCGIFCONF, &conf) < 0)
+    if (ioctl(cfg_socket, MY_SIOCGIFCONF, &conf) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
@@ -2266,12 +2296,12 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         ERROR("calloc() failed");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    for (req = conf.ifc_req; strlen(req->ifr_name) != 0; req++)
+    for (req = conf.my_ifc_req; strlen(req->my_ifr_name) != 0; req++)
     {
-        if (name != NULL && strcmp(req->ifr_name, name) == 0)
+        if (name != NULL && strcmp(req->my_ifr_name, name) == 0)
             continue;
 
-        name = req->ifr_name;
+        name = req->my_ifr_name;
 
         if (strcmp(name, ifname) != 0 && !is_alias_of(name, ifname))
             continue;
@@ -2333,8 +2363,8 @@ prefix_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 #elif defined(USE_IOCTL)
-    strncpy(req.ifr_name, ifname, sizeof(req.ifr_name));
-    if (inet_pton(AF_INET, addr, &SIN(&req.ifr_addr)->sin_addr) <= 0)
+    strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+    if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
     {
         ERROR("inet_pton() failed");
         return TE_RC(TE_TA_UNIX, TE_EFMT);
@@ -2347,7 +2377,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
               ifname, addr, rc);
         return rc;
     }
-    MASK2PREFIX(ntohl(SIN(&req.ifr_addr)->sin_addr.s_addr), prefix);
+    MASK2PREFIX(ntohl(SIN(&req.my_ifr_addr)->sin_addr.s_addr), prefix);
 #else
 #error Way to work with network addresses is not defined.
 #endif
@@ -2442,13 +2472,13 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 #elif defined(USE_IOCTL)
-    strncpy(req.ifr_name, ifname, sizeof(req.ifr_name));
-    if (inet_pton(AF_INET, addr, &SIN(&req.ifr_addr)->sin_addr) <= 0)
+    strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+    if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
     {
         ERROR("inet_pton() failed");
         return TE_RC(TE_TA_UNIX, TE_EFMT);
     }
-    if (ioctl(cfg_socket, SIOCGIFBRDADDR, &req) < 0)
+    if (ioctl(cfg_socket, MY_SIOCGIFBRDADDR, &req) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
@@ -2456,7 +2486,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
               ifname, addr, rc);
         return rc;
     }
-    bcast.ip4_addr.s_addr = SIN(&req.ifr_addr)->sin_addr.s_addr;
+    bcast.ip4_addr.s_addr = SIN(&req.my_ifr_addr)->sin_addr.s_addr;
 #else
 #error Way to work with network addresses is not defined.
 #endif
@@ -2514,9 +2544,9 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
         }
 
-        strcpy(req.ifr_name, name);
-        req.ifr_addr.sa_family = AF_INET;
-        SIN(&(req.ifr_addr))->sin_addr = bcast.ip4_addr;
+        strcpy(req.my_ifr_name, name);
+        SA(&req.my_ifr_addr)->sa_family = AF_INET;
+        SIN(&(req.my_ifr_addr))->sin_addr = bcast.ip4_addr;
         if (ioctl(cfg_socket, SIOCSIFBRDADDR, (int)&req) < 0)
         {
             te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -2558,7 +2588,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, rc);
 
 #ifdef SIOCGIFHWADDR
-    strcpy(req.ifr_name, ifname);
+    strcpy(req.my_ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFHWADDR, (int)&req) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -2567,32 +2597,33 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
         return rc;
     }
 
-    ptr = req.ifr_hwaddr.sa_data;
+    ptr = req.my_ifr_hwaddr.sa_data;
 
 #elif defined(__FreeBSD__)
 
-    struct ifconf  ifc;
-    struct ifreq  *p;
+    struct my_ifconf    ifc;
+    struct my_ifreq    *p;
 
     memset(&ifc, 0, sizeof(ifc));
-    ifc.ifc_len = sizeof(buf);
-    ifc.ifc_buf = (caddr_t)buf;
+    ifc.my_ifc_len = sizeof(buf);
+    ifc.my_ifc_buf = (caddr_t)buf;
     memset(buf, 0, sizeof(buf));
-    if (ioctl(cfg_socket, SIOCGIFCONF, &ifc) < 0)
+    if (ioctl(cfg_socket, MY_SIOCGIFCONF, &ifc) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
         return rc;
     }
-    for (p = (struct ifreq *)ifc.ifc_buf;
-         ifc.ifc_len >= (int)sizeof(*p);
-         p = (struct ifreq *)((caddr_t)p + _SIZEOF_ADDR_IFREQ(*p)))
+    for (p = (struct my_ifreq *)ifc.my_ifc_buf;
+         ifc.my_ifc_len >= (int)sizeof(*p);
+         p = (struct my_ifreq *)((caddr_t)p + _SIZEOF_ADDR_IFREQ(*p)))
     {
-        if ((strcmp(p->ifr_name, ifname) == 0) &&
-            (p->ifr_addr.sa_family == AF_LINK))
+        if ((strcmp(p->my_ifr_name, ifname) == 0) &&
+            (p->my_ifr_addr.sa_family == AF_LINK))
         {
-            struct sockaddr_dl *sdl = (struct sockaddr_dl *)&(p->ifr_addr);
+            struct sockaddr_dl *sdl =
+                (struct sockaddr_dl *)&(p->my_ifr_addr);
 
             if (sdl->sdl_alen == ETHER_ADDR_LEN)
             {
@@ -2656,12 +2687,12 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
     }
 
 #ifdef SIOCSIFHWADDR
-    strcpy(req.ifr_name, ifname);
-    req.ifr_hwaddr.sa_family = AF_LOCAL;
+    strcpy(req.my_ifr_name, ifname);
+    req.my_ifr_hwaddr.sa_family = AF_LOCAL;
 
     {
         /* Conversion MAC address to binary value */
-        uint8_t    *ll_addr = req.ifr_hwaddr.sa_data;
+        uint8_t    *ll_addr = req.my_ifr_hwaddr.sa_data;
         const char *ptr = value;
         const char *aux_ptr;
         int         i;
@@ -2739,7 +2770,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    strcpy(req.ifr_name, ifname);
+    strcpy(req.my_ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCGIFMTU, (int)&req) != 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -2747,7 +2778,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
         ERROR("ioctl(SIOCGIFMTU) failed: %r", rc);
         return rc;
     }
-    sprintf(value, "%d", req.ifr_mtu);
+    sprintf(value, "%d", req.my_ifr_mtu);
     return 0;
 }
 
@@ -2774,11 +2805,11 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    req.ifr_mtu = strtol(value, &tmp, 10);
+    req.my_ifr_mtu = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strcpy(req.ifr_name, ifname);
+    strcpy(req.my_ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) != 0)
     {
         rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -2836,8 +2867,8 @@ arp_get(unsigned int gid, const char *oid, char *value, const char *ifname)
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    strcpy(req.ifr_name, ifname);
-    if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
+    strcpy(req.my_ifr_name, ifname);
+    if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, (int)&req) != 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
@@ -2845,7 +2876,7 @@ arp_get(unsigned int gid, const char *oid, char *value, const char *ifname)
         return rc;
     }
 
-    sprintf(value, "%d", (req.ifr_flags & IFF_NOARP) != IFF_NOARP);
+    sprintf(value, "%d", (req.my_ifr_flags & IFF_NOARP) != IFF_NOARP);
 
     return 0;
 }
@@ -2873,8 +2904,8 @@ arp_set(unsigned int gid, const char *oid, const char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    strncpy(req.ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
+    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, &req) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
@@ -2883,13 +2914,13 @@ arp_set(unsigned int gid, const char *oid, const char *value,
     }
 
     if (strcmp(value, "1") == 0)
-        req.ifr_flags &= (~IFF_NOARP);
+        req.my_ifr_flags &= (~IFF_NOARP);
     else if (strcmp(value, "0") == 0)
-        req.ifr_flags |= (IFF_NOARP);
+        req.my_ifr_flags |= (IFF_NOARP);
     else
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strncpy(req.ifr_name, ifname, IFNAMSIZ);
+    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -2922,8 +2953,8 @@ status_get(unsigned int gid, const char *oid, char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    strcpy(req.ifr_name, ifname);
-    if (ioctl(cfg_socket, SIOCGIFFLAGS, (int)&req) != 0)
+    strcpy(req.my_ifr_name, ifname);
+    if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, (int)&req) != 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
@@ -2931,7 +2962,7 @@ status_get(unsigned int gid, const char *oid, char *value,
         return rc;
     }
 
-    sprintf(value, "%d", (req.ifr_flags & IFF_UP) != 0);
+    sprintf(value, "%d", (req.my_ifr_flags & IFF_UP) != 0);
 
     return 0;
 }
@@ -2960,8 +2991,8 @@ status_set(unsigned int gid, const char *oid, const char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    strncpy(req.ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(cfg_socket, SIOCGIFFLAGS, &req) < 0)
+    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, &req) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
@@ -2970,13 +3001,13 @@ status_set(unsigned int gid, const char *oid, const char *value,
     }
 
     if (strcmp(value, "0") == 0)
-        req.ifr_flags &= ~(IFF_UP | IFF_RUNNING);
+        req.my_ifr_flags &= ~(IFF_UP | IFF_RUNNING);
     else if (strcmp(value, "1") == 0)
-        req.ifr_flags |= (IFF_UP | IFF_RUNNING);
+        req.my_ifr_flags |= (IFF_UP | IFF_RUNNING);
     else
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strncpy(req.ifr_name, ifname, IFNAMSIZ);
+    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
     if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -3366,7 +3397,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    arp_req.arp_ha.sa_family = AF_LOCAL;
+    arp_req.arp_ha.sa_family = AF_UNIX; /* AF_LOCAL */
     for (i = 0; i < 6; i++)
         (arp_req.arp_ha.sa_data)[i] = (unsigned char)(int_addr[i]);
 
