@@ -513,9 +513,12 @@ dispatch(void *arg)
 
         if ((rc = select(FD_SETSIZE, &set0, NULL, NULL, &tv)) < 0)
         {
-            int err = TE_OS_RC(TE_RCF_PCH, errno);
+            if (errno != EINTR)
+            {
+                te_errno err = TE_OS_RC(TE_RCF_PCH, errno);
             
-            WARN("select() failed: error=%r", err);
+                WARN("select() failed with unexpected error=%r", err);
+            }
         }
         
         FD_ZERO(&set1);
