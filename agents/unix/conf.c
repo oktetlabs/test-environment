@@ -85,6 +85,7 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_ethernet.h"
+#include "cs_common.h"
 #include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
@@ -92,7 +93,7 @@
 #include "rcf_pch_ta_cfg.h"
 #include "logger_api.h"
 #include "unix_internal.h"
-#include "cs_common.h"
+#include "conf_route.h"
 
 #ifdef CFG_UNIX_DAEMONS
 #include "conf_daemons.h"
@@ -152,7 +153,7 @@ static void free_nlmsg_list(agt_nlmsg_list *list);
 
 /** Check that interface is locked for using of this TA */
 #define INTERFACE_IS_MINE(ifname) \
-    (strcmp(ifname, "lo") == 0 || \
+    (strncmp(ifname, "lo", strlen("lo")) == 0 || \
      rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
 
 /** Strip off .VLAN from interface name */
@@ -169,11 +170,40 @@ ifname_without_vlan(const char *ifname)
     return tmp;
 }
 
+/**
+ * Determine family of the address in string representation.
+ *
+ * @param str_addr      Address in string representation
+ *
+ * @return Address family.
+ * @retval AF_INET      IPv4
+ * @retval AF_INET6     IPv6
+ */
+static inline sa_family_t
+str_addr_family(const char *str_addr)
+{
+    return (strchr(str_addr, ':') == NULL) ? AF_INET : AF_INET6;
+}
+
 #define CHECK_INTERFACE(ifname)                                         \
     ((ifname == NULL)? TE_EINVAL :                                      \
      (strlen(ifname) > IFNAMSIZ)? TE_E2BIG :                            \
      (strchr(ifname, ':') != NULL ||                                    \
       !INTERFACE_IS_MINE(ifname_without_vlan(ifname)))? TE_ENODEV : 0)  \
+
+/**
+ * Configuration IOCTL request.
+ * On failure, ERROR is logged and return with 'te_errno' status is done.
+ */
+#define CFG_IOCTL(_s, _id, _req) \
+    if (ioctl((_s), (_id), (caddr_t)(_req)) != 0)       \
+    {                                                   \
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);      \
+                                                        \
+        ERROR("line %u: ioctl(" #_id ") failed: %r",    \
+              __LINE__, rc);                            \
+        return rc;                                      \
+    } while (0)
 
 /**
  * Type for both IPv4 and IPv6 address
@@ -187,42 +217,42 @@ const char *te_lockdir = "/tmp";
 
 /* Auxiliary variables used for during configuration request processing */
 #if HAVE_STRUCT_LIFREQ
-#define my_ifconf       lifconf
-#define my_ifc_len      lifc_len
-#define my_ifc_buf      lifc_buf
-#define my_ifc_req      lifc_req
 #define my_ifreq        lifreq
 #define my_ifr_name     lifr_name
 #define my_ifr_flags    lifr_flags
 #define my_ifr_addr     lifr_addr
 #define my_ifr_mtu      lifr_mtu
-#define MY_SIOCGIFCONF      SIOCGLIFCONF
 #define MY_SIOCGIFFLAGS     SIOCGLIFFLAGS
+#define MY_SIOCSIFFLAGS     SIOCSLIFFLAGS
 #define MY_SIOCGIFADDR      SIOCGLIFADDR
+#define MY_SIOCSIFADDR      SIOCSLIFADDR
+#define MY_SIOCGIFNETMASK   SIOCGLIFNETMASK
 #define MY_SIOCSIFNETMASK   SIOCSLIFNETMASK
 #define MY_SIOCGIFBRDADDR   SIOCGLIFBRDADDR
+#define MY_SIOCSIFBRDADDR   SIOCSLIFBRDADDR
 #else
-#define my_ifconf       ifconf
-#define my_ifc_len      ifc_len
-#define my_ifc_buf      ifc_buf
-#define my_ifc_req      ifc_req
 #define my_ifreq        ifreq
 #define my_ifr_name     ifr_name
 #define my_ifr_flags    ifr_flags
 #define my_ifr_addr     ifr_addr
 #define my_ifr_mtu      ifr_mtu
 #define my_ifr_hwaddr   ifr_hwaddr
-#define MY_SIOCGIFCONF      SIOCGIFCONF
 #define MY_SIOCGIFFLAGS     SIOCGIFFLAGS
+#define MY_SIOCSIFFLAGS     SIOCSIFFLAGS
 #define MY_SIOCGIFADDR      SIOCGIFADDR
+#define MY_SIOCSIFADDR      SIOCSIFADDR
+#define MY_SIOCGIFNETMASK   SIOCGIFNETMASK
 #define MY_SIOCSIFNETMASK   SIOCSIFNETMASK
 #define MY_SIOCGIFBRDADDR   SIOCGIFBRDADDR
+#define MY_SIOCSIFBRDADDR   SIOCSIFBRDADDR
 #endif
 static struct my_ifreq req;
 
 static char buf[4096];
 static char trash[128];
-static te_errno  cfg_socket = -1;
+
+static int cfg_socket = -1;
+static int cfg6_socket = -1;
 
 /*
  * Access routines prototypes (comply to procedure types
@@ -360,7 +390,16 @@ static rcf_pch_cfg_object node_neigh_static =
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
       (rcf_ch_cfg_list)neigh_list, NULL, NULL};
       
-RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_neigh_static,
+RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
+                    broadcast_get, broadcast_set);
+
+static rcf_pch_cfg_object node_net_addr =
+    { "net_addr", 0, &node_broadcast, &node_neigh_static,
+      (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
+      (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
+      (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
+
+RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_net_addr,
                     status_get, status_set);
 
 RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_status,
@@ -372,17 +411,7 @@ RCF_PCH_CFG_NODE_RW(node_arp, "arp", NULL, &node_mtu,
 RCF_PCH_CFG_NODE_RW(node_link_addr, "link_addr", NULL, &node_arp,
                     link_addr_get, link_addr_set);
 
-RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
-                    broadcast_get, broadcast_set);
-
-
-static rcf_pch_cfg_object node_net_addr =
-    { "net_addr", 0, &node_broadcast, &node_link_addr,
-      (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
-      (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
-      (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
-
-RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_net_addr,
+RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_link_addr,
                     ifindex_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
@@ -451,7 +480,7 @@ rcf_ch_conf_root(void)
         rtnl_close(&rth);
 #endif
 
-        if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP)) < 0)
+        if ((cfg_socket = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
         {
             return NULL;
         }
@@ -459,6 +488,15 @@ rcf_ch_conf_root(void)
         {
             ERROR("Failed to set close-on-exec flag on configuration "
                   "socket: %r", errno);
+        }
+        /* Ignore IPv6 configuration socket creation failure */
+        if ((cfg6_socket = socket(AF_INET6, SOCK_DGRAM, 0)) >= 0)
+        {
+            if (fcntl(cfg6_socket, F_SETFD, FD_CLOEXEC) != 0)
+            {
+                ERROR("Failed to set close-on-exec flag on IPv6 "
+                      "configuration socket: %r", errno);
+            }
         }
 
         init = TRUE;
@@ -476,6 +514,9 @@ rcf_ch_conf_root(void)
         rcf_pch_rsrc_info("/agent/ip4_fw", 
                           rcf_pch_rsrc_grab_dummy,
                           rcf_pch_rsrc_release_dummy);
+
+        if (ta_unix_conf_route_init() != 0)
+            return NULL;
 
 #ifdef RCF_RPC
         /* Link RPC nodes */
@@ -620,6 +661,43 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
     return 0;
 }
 
+/**
+ * Convert and check address prefix value.
+ *
+ * @param value     Pointer to the new network mask in dotted notation
+ * @param family    Address family
+ *
+ * @return Status code.
+ */
+static te_errno
+prefix_check(const char *value, sa_family_t family, unsigned int *prefix)
+{
+    char *end;
+
+    if (family != AF_INET && family != AF_INET6)
+    {
+        ERROR("%s(): unsupported address family %d", __FUNCTION__,
+              (int)family);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    *prefix = strtoul(value, &end, 10);
+    if (value == end)
+    {
+        ERROR("Invalid value '%s' of prefix length", value);
+        return TE_RC(TE_TA_UNIX, TE_EFMT);
+    }
+    if (((family == AF_INET) &&
+         (*prefix > (sizeof(struct in_addr) << 3))) ||
+        ((family == AF_INET6) &&
+         (*prefix > (sizeof(struct in6_addr) << 3))))
+    {
+        ERROR("Invalid prefix '%s' to be set", value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    return 0;
+}
 
 #ifdef USE_NETLINK
 /**
@@ -748,14 +826,14 @@ nl_find_net_addr(const char *str_addr, const char *ifname,
     struct ifaddrmsg  *ifa = NULL;
     struct rtattr     *rta_tb[IFA_MAX + 1];
     int                ifindex = 0;
-    int                family;
+    sa_family_t        family;
     int                rc;
 
 
     TAILQ_INIT(&addr_list);
 
     /* If address contains a colon, it is IPv6 address */
-    family = (strchr(str_addr, ':') == NULL) ? AF_INET : AF_INET6;
+    family = str_addr_family(str_addr);
 
     if (bcast != NULL)
         memset(bcast, 0, sizeof(*bcast));
@@ -979,11 +1057,11 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
     unsigned int    prefix = 0;
     gen_ip_address  bcast;
     te_errno        rc = 0;
-    int             family;
+    sa_family_t     family;
     gen_ip_address  ip_addr;
 
     /* If address contains ';', it is IPv6 address */
-    family = (strchr(addr, ':') == NULL) ? AF_INET : AF_INET6;
+    family = str_addr_family(addr);
 
     if (cmd == NET_ADDR_ADD)
     {
@@ -1033,25 +1111,21 @@ nl_ip_addr_modify(enum net_addr_ops cmd,
  *
  *
  * @param ifname        interface name (like "eth0")
- * @param addr          location for the address (address is returned in
- *                      network byte order)
+ * @param af            address family
+ * @param addr          location for the address pointer
  *
  * @return OS errno
  */
 static te_errno
-get_addr(const char *ifname, struct in_addr *addr)
+get_addr(const char *ifname, sa_family_t af, void **addr)
 {
     strcpy(req.my_ifr_name, ifname);
-    if (ioctl(cfg_socket, MY_SIOCGIFADDR, (int)&req) < 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-        
-        /* It's not always called for correct arguments */
-        VERB("ioctl(SIOCGIFADDR) for '%s' failed: %r",
-              ifname, rc);
-        return rc;
-    }
-    *addr = SIN(&(req.my_ifr_addr))->sin_addr;
+    CFG_IOCTL((af == AF_INET6) ? cfg6_socket : cfg_socket,
+              MY_SIOCGIFADDR, &req);
+    if (af == AF_INET)
+        *addr = &SIN(&req.my_ifr_addr)->sin_addr;
+    else
+        *addr = &SIN6(&req.my_ifr_addr)->sin6_addr;
     return 0;
 }
 
@@ -1086,13 +1160,61 @@ set_prefix(const char *ifname, unsigned int prefix)
 
     SA(&req.my_ifr_addr)->sa_family = AF_INET;
     SIN(&(req.my_ifr_addr))->sin_addr.s_addr = htonl(mask);
-    if (ioctl(cfg_socket, MY_SIOCSIFNETMASK, &req) < 0)
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFNETMASK, &req);
+    return 0;
+}
+#endif
+
+#ifdef USE_IOCTL
+/**
+ * Get interfaces configuration via SIOCGIFCONF/SIOCGLIFCONF to 'buf'.
+ * Be carefull, if HAVE_STRUCT_LIFREQ, 'buf' contains array of
+ * 'struct lifreq', otherwise - array of 'struct ifreq'.
+ *
+ * @param buf       Location for pointer to the allocated buffer.
+ * @param p_req     Location for pointer to the first interface data.
+ *
+ * @return Status code.
+ */
+static te_errno
+get_ifconf_to_buf(void **buf, void **p_req)
+{
+#if defined(HAVE_STRUCT_LIFREQ)
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-        
-        ERROR("ioctl(SIOCSIFNETMASK) failed: %r", rc);
-        return rc;
+        struct lifnum   ifnum;
+        struct lifconf  conf;
+
+        ifnum.lifn_family = conf.lifc_family = AF_UNSPEC;
+        ifnum.lifn_flags = conf.lifc_flags = 0;
+        CFG_IOCTL(cfg_socket, SIOCGLIFNUM, &ifnum);
+
+        *buf = calloc(ifnum.lifn_count + 1, sizeof(struct lifreq));
+        if (*buf == NULL)
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+        conf.lifc_len = sizeof(struct lifreq) * (ifnum.lifn_count + 1);
+        conf.lifc_buf = (caddr_t)*buf;
+
+        CFG_IOCTL(cfg_socket, SIOCGLIFCONF, &conf);
+
+        *p_req = conf.lifc_req;
     }
+#else
+    {
+        struct ifconf   conf;
+
+        *buf = calloc(32, sizeof(struct ifreq));
+        if (*buf == NULL)
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+        conf.ifc_len = sizeof(buf);
+        conf.ifc_buf = (caddr_t)*buf;
+
+        CFG_IOCTL(cfg_socket, SIOCGIFCONF, &conf);
+
+        *p_req = conf.ifc_req;
+    }
+#endif
     return 0;
 }
 #endif
@@ -1198,6 +1320,38 @@ interface_list(unsigned int gid, const char *oid, char **list)
 
         fclose(f);
     }
+#elif defined(SIOCGIFCONF)
+    {
+        te_errno         rc;
+        void            *ifconf_buf = NULL;
+        struct my_ifreq *first_req;
+        struct my_ifreq *p, *q;
+
+        rc = get_ifconf_to_buf(&ifconf_buf, (void **)&first_req);
+        if (rc != 0)
+        {
+            free(ifconf_buf);
+            return rc;
+        }
+
+        for (p = first_req; *(p->my_ifr_name) != '\0'; p++)
+        {
+            /* Aliases/logical interfaces are skipped here */
+            if (CHECK_INTERFACE(p->my_ifr_name) != 0)
+                continue;
+
+            /* Skip duplicates */
+            for (q = first_req; q != p; q++)
+                if (strcmp(p->my_ifr_name, q->my_ifr_name) == 0)
+                    break;
+            if (q != p)
+                continue;
+
+            off += snprintf(buf + off, sizeof(buf) - off,
+                            "%s ", p->my_ifr_name);
+        }
+        free(ifconf_buf);
+    }
 #else
     {
         /*
@@ -1238,26 +1392,22 @@ interface_list(unsigned int gid, const char *oid, char **list)
 static int
 aliases_list()
 {
-    struct my_ifconf    conf;
+    te_errno            rc;
+    void               *ifconf_buf = NULL;
     struct my_ifreq    *req;
 
     te_bool     first = TRUE;
     char       *name = NULL;
     char       *ptr = buf;
 
-    conf.my_ifc_len = sizeof(buf);
-    conf.my_ifc_buf = buf;
-
-    memset(buf, 0, sizeof(buf));
-    if (ioctl(cfg_socket, MY_SIOCGIFCONF, &conf) < 0)
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&req);
+    if (rc != 0)
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-        
-        ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
+        free(ifconf_buf);
         return rc;
     }
 
-    for (req = conf.my_ifc_req; *(req->my_ifr_name) != 0; req++)
+    for (; *(req->my_ifr_name) != 0; req++)
     {
         if (name != NULL && strcmp(req->my_ifr_name, name) == 0)
             continue;
@@ -1271,6 +1421,7 @@ aliases_list()
         }
         ptr += sprintf(ptr, "%s ", name);
     }
+    free(ifconf_buf);
 
 #ifdef __linux__
     {
@@ -1467,113 +1618,22 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
  * @return              Status code
  */
 #ifdef USE_IOCTL
-#ifdef USE_IFCONFIG
 static te_errno
 net_addr_add(unsigned int gid, const char *oid, const char *value,
              const char *ifname, const char *addr)
 {
-    unsigned int  new_addr;
-    unsigned int  tmp_addr;
-    te_errno      rc;
-    char         *cur;
-    char         *next;
-    char          slots[32] = { 0, };
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
-    if (strlen(ifname) >= IF_NAMESIZE)
-        return TE_RC(TE_TA_UNIX, TE_E2BIG);
-
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
-        new_addr == 0 ||
-        (new_addr & 0xe0000000) == 0xe0000000)
-    {
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    if ((rc = aliases_list()) != 0)
-        return rc;
-
-    cur = buf;
-    while (cur != NULL)
-    {
-        next = strchr(cur, ' ');
-        if (next != NULL)
-            *next++ = 0;
-
-        rc = get_addr(cur, (struct in_addr *)&tmp_addr);
-
-        if (rc == 0 && tmp_addr == new_addr)
-            return TE_RC(TE_TA_UNIX, TE_EEXIST);
-
-        if (strcmp(cur, ifname) == 0)
-        {
-            if (rc != 0)
-                break;
-            else
-                goto next;
-
-        }
-
-        if (!is_alias_of(cur, ifname))
-            goto next;
-
-        if (rc != 0)
-            break;
-
-        slots[atoi(strchr(cur, ':') + 1)] = 1;
-
-        next:
-        cur = next;
-    }
-
-    if (cur != NULL)
-    {
-        sprintf(trash, "/sbin/ifconfig %s %s up", cur, addr);
-    }
-    else
-    {
-        unsigned int n;
-
-        for (n = 0; n < sizeof(slots) && slots[n] != 0; n++);
-
-        if (n == sizeof(slots))
-            return TE_RC(TE_TA_UNIX, TE_EPERM);
-
-        sprintf(trash, "/sbin/ifconfig %s:%d %s up", ifname, n, addr);
-    }
-
-    if (ta_system(trash) != 0)
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-
-    if (*value != 0)
-    {
-        if ((rc = prefix_set(gid, oid, value, ifname, addr)) != 0)
-        {
-            net_addr_del(gid, oid, ifname, addr);
-            return rc;
-        }
-    }
-
-    return 0;
-}
-#else
-static te_errno
-net_addr_add(unsigned int gid, const char *oid, const char *value,
-             const char *ifname, const char *addr)
-{
-    in_addr_t    new_addr;
-    te_errno     rc;
+    gen_ip_address  new_addr;
+    te_errno        rc;
+    sa_family_t     family = str_addr_family(addr);
+    size_t          addrlen = (family == AF_INET) ?
+                                  sizeof(struct in_addr) :
+                                  sizeof(struct in6_addr);
+    uint8_t         zeros[addrlen];
+    unsigned int    prefix;
+    char           *cur;
+    char           *next;
 #ifdef __linux__
-    char         *cur;
-    char         *next;
-    char          slots[32] = { 0, };
-    struct        sockaddr_in sin;
+    char            slots[32] = { 0, };
 #endif
 
     UNUSED(gid);
@@ -1586,20 +1646,26 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    if (inet_pton(AF_INET, addr, (void *)&new_addr) <= 0 ||
-        new_addr == 0 ||
-        (ntohl(new_addr) & 0xe0000000) == 0xe0000000)
+    memset(zeros, 0, addrlen);
+
+    if (((inet_pton(family, addr, &new_addr) <= 0) ||
+        (memcmp(&new_addr, zeros, addrlen) == 0) ||
+        ((family == AF_INET) &&
+         (ntohl(new_addr.ip4_addr.s_addr) & 0xe0000000) == 0xe0000000)))
     {
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-#ifdef __linux__
+    rc = prefix_check(value, family, &prefix);
+    if (rc != 0)
+        return rc;
+
     if ((rc = aliases_list()) != 0)
         return rc;
 
     for (cur = buf; strlen(cur) > 0; cur = next)
     {
-        unsigned int  tmp_addr;
+        void   *tmp_addr;
 
         next = strchr(cur, ' ');
         if (next != NULL)
@@ -1609,8 +1675,8 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
                 continue;
         }
 
-        rc = get_addr(cur, (struct in_addr *)&tmp_addr);
-        if (rc == 0 && tmp_addr == new_addr)
+        rc = get_addr(cur, family, &tmp_addr);
+        if (rc == 0 && memcmp(tmp_addr, &new_addr, addrlen) == 0)
             return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
         if (strcmp(cur, ifname) == 0)
@@ -1627,7 +1693,16 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         if (rc != 0)
             break;
 
+#ifdef __linux__
         slots[atoi(strchr(cur, ':') + 1)] = 1;
+#endif
+    }
+
+#ifdef __linux__
+    if (family != AF_INET)
+    {
+        ERROR("Only addition of IPv4 address is supported on Linux");
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
     }
 
     if (strlen(cur) != 0)
@@ -1647,16 +1722,56 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         strncpy(req.my_ifr_name, trash, IFNAMSIZ);
     }
 
-    memset(&sin, 0, sizeof(struct sockaddr));
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = new_addr;
-    memcpy(&req.my_ifr_addr, &sin, sizeof(struct sockaddr));
-    if (ioctl(cfg_socket, SIOCSIFADDR, &req) < 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+    SIN(&req.my_ifr_addr)->sin_family = AF_INET;
+    SIN(&req.my_ifr_addr)->sin_addr = new_addr.ip4_addr;
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFADDR, &req);
 
-        ERROR("ioctl(SIOCSIFADDR) failed: %r", rc);
-        return rc;
+#elif defined(SIOCLIFADDIF)
+    {
+        int             sock = (family == AF_INET6) ?
+                               cfg6_socket : cfg_socket;
+        struct lifreq   lreq;
+
+        memset(&lreq, 0, sizeof(lreq));
+        strncpy(lreq.lifr_name, ifname, sizeof(lreq.lifr_name));
+
+        /*
+         * It is impossible to specify netmask/prefixlen when address
+         * is added. We don't want to have address with incorrect mask,
+         * since it can be fatal (unexpected routing, etc). Therefore,
+         *  - add logical interface with unspecified address;
+         *  - set required netmaks / prefix length;
+         *  - set required address;
+         *  - push interface up.
+         */
+        lreq.lifr_addr.ss_family = family;
+        CFG_IOCTL(sock, SIOCLIFADDIF, &lreq);
+        /* NOTE: Name of logical interface was set in 'lreq' */
+
+        if (family == AF_INET)
+        {
+            lreq.lifr_addr.ss_family = family;
+            SIN(&lreq.lifr_addr)->sin_addr.s_addr = 
+                htonl(PREFIX2MASK(prefix));
+            CFG_IOCTL(sock, SIOCSLIFNETMASK, &lreq);
+        }
+        else
+        {
+            lreq.lifr_addrlen = prefix;
+            ERROR("Set IPv6 address prefix!!!");
+        }
+
+        lreq.lifr_addr.ss_family = family;
+        memcpy((family == AF_INET) ?
+                   (void *)&SIN(&lreq.lifr_addr)->sin_addr :
+                   (void *)&SIN6(&lreq.lifr_addr)->sin6_addr,
+               &new_addr, addrlen);
+        CFG_IOCTL(sock, SIOCSLIFADDR, &lreq);
+
+        /* Push logical interface up */
+        CFG_IOCTL(sock, SIOCGLIFFLAGS, &lreq);
+        lreq.lifr_flags |= IFF_UP;
+        CFG_IOCTL(sock, SIOCSLIFFLAGS, &lreq);
     }
 #elif defined(SIOCALIFADDR)
     {
@@ -1664,20 +1779,19 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
         memset(&lreq, 0, sizeof(lreq));
         strncpy(lreq.iflr_name, ifname, IFNAMSIZ);
-        lreq.addr.ss_family = AF_INET;
-        lreq.addr.ss_len = sizeof(struct sockaddr_in);
-        if (inet_pton(AF_INET, addr, &SIN(&lreq.addr)->sin_addr) <= 0)
+        lreq.addr.ss_family = family;
+        lreq.addr.ss_len =
+            (family == AF_INET) ? sizeof(struct sockaddr_in) :
+                                  sizeof(struct sockaddr_in6);
+        if (inet_pton(family, addr,
+                      (family == AF_INET) ? &SIN(&lreq.addr)->sin_addr :
+                          &SIN6(&lreq.addr)->sin6_addr) <= 0)
         {
             ERROR("inet_pton() failed");
             return TE_RC(TE_TA_UNIX, TE_EFMT);
         }
-        if (ioctl(cfg_socket, SIOCALIFADDR, &lreq) < 0)
-        {
-            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-            ERROR("ioctl(SIOCALIFADDR) failed: %r", rc);
-            return rc;
-        }
+        CFG_IOCTL((family == AF_INET6) ? cfg6_socket : cfg_socket,
+                  SIOCALIFADDR, &lreq);
     }
 #else
     ERROR("%s(): %s", __FUNCTION__, strerror(EOPNOTSUPP));
@@ -1696,7 +1810,6 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 #endif
-#endif
 #ifdef USE_NETLINK
 static te_errno
 net_addr_add(unsigned int gid, const char *oid, const char *value,
@@ -1708,7 +1821,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     in_addr_t       mask;
     gen_ip_address  broadcast;
 
-    int             family;
+    sa_family_t     family;
     gen_ip_address  ip_addr;
     te_errno        rc;
 
@@ -1727,7 +1840,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
 
-    family = (strchr(addr, ':') == NULL) ? AF_INET : AF_INET6;
+    family = str_addr_family(addr);
 
     /* Validate address to be added */    
     if (inet_pton(family, addr, &ip_addr) <= 0 ||
@@ -1788,25 +1901,32 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 static char *
 find_net_addr(const char *ifname, const char *addr)
 {
-    in_addr_t     int_addr;
-    in_addr_t     tmp_addr;
-    char         *cur;
-    char         *next;
-    te_errno      rc;
+    gen_ip_address  tgt_addr;
+    te_errno        rc;
+    sa_family_t     family = str_addr_family(addr);
+    size_t          addrlen = (family == AF_INET) ?
+                                  sizeof(struct in_addr) :
+                                  sizeof(struct in6_addr);
+    char           *cur;
+    char           *next;
 
     if (CHECK_INTERFACE(ifname) != 0)
         return NULL;
 
-    if (inet_pton(AF_INET, addr, (void *)&int_addr) <= 0)
+    if (inet_pton(family, addr, &tgt_addr) <= 0)
     {
         ERROR("inet_pton() failed for address %s", addr);
         return NULL;
     }
+
+    /* Get list of aliases/logical interfaces in 'buf' */
     if ((rc = aliases_list()) != 0)
         return NULL;
 
     for (cur = buf; strlen(cur) > 0; cur = next)
     {
+        void   *tmp_addr;
+
         next = strchr(cur, ' ');
         if (next != NULL)
         {
@@ -1820,8 +1940,8 @@ find_net_addr(const char *ifname, const char *addr)
             continue;
         }
 
-        if ((get_addr(cur, (struct in_addr *)&tmp_addr) == 0) &&
-            (tmp_addr == int_addr))
+        rc = get_addr(cur, family, &tmp_addr);
+        if (rc == 0 && memcmp(tmp_addr, &tgt_addr, addrlen) == 0)
         {
             return cur;
         }
@@ -1840,116 +1960,62 @@ find_net_addr(const char *ifname, const char *addr)
  *
  * @return              Status code
  */
-
-#ifdef USE_IOCTL
-#ifdef USE_IFCONFIG
 static te_errno
 net_addr_del(unsigned int gid, const char *oid,
              const char *ifname, const char *addr)
 {
-    char    *name;
-    te_errno rc;
-  
-    UNUSED(gid);
-    UNUSED(oid);
+    te_errno    rc;
 
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-    {
-        /* Alias does not exist from Configurator point of view */
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
-    if ((name = find_net_addr(ifname, addr)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (strcmp(name, ifname) == 0)
-        sprintf(trash, "/sbin/ifconfig %s 0.0.0.0", ifname);
-    else
-        sprintf(trash, "/sbin/ifconfig %s down", name);
-
-    return ta_system(trash) != 0 ? TE_RC(TE_TA_UNIX, TE_ESHCMD) : 0;
-}
-#else
-static te_errno
-net_addr_del(unsigned int gid, const char *oid,
-             const char *ifname, const char *addr)
-{
-    char              *name;
-    struct sockaddr_in sin;
-    te_errno           rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-    {
-        /* Alias does not exist from Configurator point of view */
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
-    if ((name = find_net_addr(ifname, addr)) == NULL)
-    {
-        ERROR("Address %s on interface %s not found", addr, ifname);
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-    if (strcmp(name, ifname) == 0)
-    {
-        strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
-
-        memset(&sin, 0, sizeof(struct sockaddr));
-        sin.sin_family = AF_INET;
-        sin.sin_addr.s_addr = INADDR_ANY;
-        memcpy(&req.my_ifr_addr, &sin, sizeof(struct sockaddr));
-
-        if (ioctl(cfg_socket, SIOCSIFADDR, (int)&req) < 0)
-        {
-            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-            ERROR("ioctl(SIOCSIFADDR) failed: %r", rc);
-            return rc;
-        }
-    }
-    else
-    {
-        strncpy(req.my_ifr_name, name, IFNAMSIZ);
-        if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, &req) < 0)
-        {
-            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-            ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
-            return rc;
-        }
-
-        strncpy(req.my_ifr_name, name, IFNAMSIZ);
-        req.my_ifr_flags &= ~(IFF_UP | IFF_RUNNING);
-        if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
-        {
-            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-            ERROR("ioctl(SIOCSIFFLAGS) failed: %r", rc);
-            return rc;
-        }
-    }
-    return 0;
-}
-#endif
-#endif
-#ifdef USE_NETLINK
-static te_errno
-net_addr_del(unsigned int gid, const char *oid,
-             const char *ifname, const char *addr)
-{
-    te_errno rc;
-    
     UNUSED(gid);
     UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
+#if defined(USE_NETLINK)
     return nl_ip_addr_modify(NET_ADDR_DELETE, ifname, addr, NULL, NULL);
-}
+#elif defined(USE_IOCTL)
+    {
+        sa_family_t  family = str_addr_family(addr);
+        int          sock = (family == AF_INET6) ? cfg6_socket : cfg_socket;
+        char        *name;
+
+        if ((name = find_net_addr(ifname, addr)) == NULL)
+        {
+            ERROR("Address %s on interface %s not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        memset(&req, 0, sizeof(req));
+        strncpy(req.my_ifr_name, name, sizeof(req.my_ifr_name));
+
+        if (strcmp(name, ifname) == 0)
+        {
+            /* It is a physical interface */
+            /* Set unspecified address */
+            SA(&req.my_ifr_addr)->sa_family = str_addr_family(addr);
+            CFG_IOCTL(sock, MY_SIOCSIFADDR, &req);
+        }
+        else
+        {
+            /* It is a logical/alias interface */
+            /* Push logical interface down */
+            CFG_IOCTL(sock, MY_SIOCGIFFLAGS, &req);
+            req.my_ifr_flags &= ~IFF_UP;
+            CFG_IOCTL(sock, MY_SIOCSIFFLAGS, &req);
+#if HAVE_STRUCT_LIFREQ
+            /* On Solaris - remove logical interface directly */
+            CFG_IOCTL(sock, SIOCLIFREMOVEIF, &req);
+#else
+            /* On Linux - nothing special to be done */
 #endif
+        }
+        return 0;
+    }
+#else
+#error Cannot delete network addresses from interfaces
+#endif
+}
 
 
 #define ADDR_LIST_BULK      (INET6_ADDRSTRLEN * 4)
@@ -2108,13 +2174,14 @@ static te_errno
 net_addr_list(unsigned int gid, const char *oid, char **list,
               const char *ifname)
 {
-    struct my_ifconf    conf;
     struct my_ifreq    *req;
+    void               *ifconf_buf = NULL;
 
-    char       *name = NULL;
-    in_addr_t   tmp_addr;
     int         len = ADDR_LIST_BULK;
     te_errno    rc;
+    char       *p;
+    size_t      str_addrlen;
+    void       *net_addr;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2123,37 +2190,41 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
     {
         return TE_RC(TE_TA_UNIX, rc);
     }
-    conf.my_ifc_len = sizeof(buf);
-    conf.my_ifc_buf = buf;
 
-    memset(buf, 0, sizeof(buf));
-    if (ioctl(cfg_socket, MY_SIOCGIFCONF, &conf) < 0)
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&req);
+    if (rc != 0)
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
+        free(ifconf_buf);
         return rc;
     }
+
     *list = (char *)calloc(ADDR_LIST_BULK, 1);
     if (*list == NULL)
     {
+        free(ifconf_buf);
         ERROR("calloc() failed");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    for (req = conf.my_ifc_req; strlen(req->my_ifr_name) != 0; req++)
+    for (p = *list; *(req->my_ifr_name) != '\0'; req++)
     {
-        if (name != NULL && strcmp(req->my_ifr_name, name) == 0)
+        if (strcmp(req->my_ifr_name, ifname) != 0 &&
+            !is_alias_of(req->my_ifr_name, ifname))
             continue;
 
-        name = req->my_ifr_name;
-
-        if (strcmp(name, ifname) != 0 && !is_alias_of(name, ifname))
+        if (SA(&req->my_ifr_addr)->sa_family == AF_INET)
+        {
+            str_addrlen = INET_ADDRSTRLEN;
+            net_addr = &SIN(&req->my_ifr_addr)->sin_addr;
+        }
+        else if (SA(&req->my_ifr_addr)->sa_family == AF_INET6)
+        {
+            str_addrlen = INET6_ADDRSTRLEN;
+            net_addr = &SIN6(&req->my_ifr_addr)->sin6_addr;
+        }
+        else
             continue;
 
-        if (get_addr(name, (struct in_addr *)&tmp_addr) != 0)
-            continue;
-
-        if (len - strlen(*list) <= INET_ADDRSTRLEN)
+        while ((size_t)(len - (p - *list)) <= (str_addrlen + 1))
         {
             char *tmp;
 
@@ -2165,14 +2236,23 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
                 ERROR("realloc() failed");
                 return TE_RC(TE_TA_UNIX, TE_ENOMEM);
             }
+            p = tmp + (p - *list);
             *list = tmp;
         }
-        sprintf(*list + strlen(*list), "%d.%d.%d.%d ",
-                ((unsigned char *)&tmp_addr)[0],
-                ((unsigned char *)&tmp_addr)[1],
-                ((unsigned char *)&tmp_addr)[2],
-                ((unsigned char *)&tmp_addr)[3]);
-   }
+
+        if (inet_ntop(SA(&req->my_ifr_addr)->sa_family, net_addr,
+                      p, str_addrlen) == NULL)
+        {
+            free(ifconf_buf);
+            ERROR("Failed to convert address to string");
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+        p += strlen(p);
+
+        strcat(p++, " ");
+    }
+    free(ifconf_buf);
+    PRINT("IF=%s: ADDRS=%s", ifname, *list);
     return 0;
 }
 #endif
@@ -2192,7 +2272,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
  */
 static te_errno
 prefix_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname, const char *addr)
+           const char *ifname, const char *addr)
 {
     unsigned int prefix = 0;
 
@@ -2208,20 +2288,34 @@ prefix_get(unsigned int gid, const char *oid, char *value,
     }
 #elif defined(USE_IOCTL)
     strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
-    if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
+    if (strchr(addr, ':') == NULL)
     {
-        ERROR("inet_pton() failed");
-        return TE_RC(TE_TA_UNIX, TE_EFMT);
+        SIN(&req.my_ifr_addr)->sin_family = AF_INET;
+        if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
+        {
+            ERROR("inet_pton(AF_INET) failed for '%s'", addr);
+            return TE_RC(TE_TA_UNIX, TE_EFMT);
+        }
+        CFG_IOCTL(cfg_socket, MY_SIOCGIFNETMASK, &req);
+        MASK2PREFIX(ntohl(SIN(&req.my_ifr_addr)->sin_addr.s_addr), prefix);
     }
-    if (ioctl(cfg_socket, SIOCGIFNETMASK, &req) < 0)
+    else
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCGIFNETMASK) failed for if=%s addr=%s: %r",
-              ifname, addr, rc);
-        return rc;
+#ifdef SIOCGLIFSUBNET
+        SIN6(&req.my_ifr_addr)->sin6_family = AF_INET6;
+        if (inet_pton(AF_INET6, addr,
+                      &SIN6(&req.my_ifr_addr)->sin6_addr) <= 0)
+        {
+            ERROR("inet_pton(AF_INET6) failed for '%s'", addr);
+            return TE_RC(TE_TA_UNIX, TE_EFMT);
+        }
+        CFG_IOCTL(cfg6_socket, SIOCGLIFSUBNET, &req);
+        prefix = req.lifr_addrlen;
+#else
+        ERROR("Unable to get IPv6 address prefix");
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
     }
-    MASK2PREFIX(ntohl(SIN(&req.my_ifr_addr)->sin_addr.s_addr), prefix);
 #else
 #error Way to work with network addresses is not defined.
 #endif
@@ -2246,23 +2340,15 @@ static te_errno
 prefix_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname, const char *addr)
 {
+    te_errno        rc;
     unsigned int    prefix;
-    char           *end;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    prefix = strtoul(value, &end, 10);
-    if (value == end)
-    {
-        ERROR("Invalid value '%s' of prefix length", value);
-        return TE_RC(TE_TA_UNIX, TE_EFMT);
-    }
-    if ((strchr(addr, ':') == NULL && prefix > 32) || prefix > 128)
-    {
-        ERROR("Invalid prefix '%s' to be set", value);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    rc = prefix_check(value, str_addr_family(addr), &prefix);
+    if (rc != 0)
+        return rc;
 
 #if defined(USE_NETLINK)
     return nl_ip_addr_modify(NET_ADDR_MODIFY, ifname, addr, &prefix, NULL);
@@ -2299,9 +2385,8 @@ static te_errno
 broadcast_get(unsigned int gid, const char *oid, char *value,
             const char *ifname, const char *addr)
 {
-    gen_ip_address bcast;
-    
-    int family = (strchr(addr, ':') == NULL) ? AF_INET : AF_INET6;
+    gen_ip_address  bcast;
+    sa_family_t     family = str_addr_family(addr);
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2317,20 +2402,41 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
     }
 #elif defined(USE_IOCTL)
     strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
-    if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
+    if (family == AF_INET)
     {
-        ERROR("inet_pton() failed");
-        return TE_RC(TE_TA_UNIX, TE_EFMT);
-    }
-    if (ioctl(cfg_socket, MY_SIOCGIFBRDADDR, &req) < 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
+        {
+            ERROR("inet_pton(AF_INET) failed for '%s'", addr);
+            return TE_RC(TE_TA_UNIX, TE_EFMT);
+        }
+        if (ioctl(cfg_socket, MY_SIOCGIFBRDADDR, &req) < 0)
+        {
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
-        ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %r",
-              ifname, addr, rc);
-        return rc;
+            /* 
+             * Solaris2 (SunOS 5.11) returns EADDRNOTAVAIL on request for
+             * broadcast address on loopback.
+             */
+            if (TE_RC_GET_ERROR(rc) != TE_EADDRNOTAVAIL)
+            {
+                ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %r",
+                      ifname, addr, rc);
+                return rc;
+            }
+            else
+            {
+                bcast.ip4_addr.s_addr = htonl(INADDR_ANY);
+            }
+        }
+        else
+        {
+            bcast.ip4_addr.s_addr = SIN(&req.my_ifr_addr)->sin_addr.s_addr;
+        }
     }
-    bcast.ip4_addr.s_addr = SIN(&req.my_ifr_addr)->sin_addr.s_addr;
+    else
+    {
+        /* Keep broadcast unspecified for IPv6 */
+    }
 #else
 #error Way to work with network addresses is not defined.
 #endif
@@ -2360,12 +2466,17 @@ static te_errno
 broadcast_set(unsigned int gid, const char *oid, const char *value,
             const char *ifname, const char *addr)
 {
-    gen_ip_address bcast;
-    
-    int family = (strchr(addr, ':') == NULL) ? AF_INET : AF_INET6;
+    gen_ip_address  bcast;
+    sa_family_t     family = str_addr_family(addr);
 
     UNUSED(gid);
     UNUSED(oid);
+
+    if (family != AF_INET)
+    {
+        ERROR("Broadcast address can be set for IPv4 only");
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    }
 
     if (inet_pton(family, value, &bcast) <= 0 ||
         ((family == AF_INET) && (bcast.ip4_addr.s_addr == 0 ||
@@ -2391,13 +2502,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
         strcpy(req.my_ifr_name, name);
         SA(&req.my_ifr_addr)->sa_family = AF_INET;
         SIN(&(req.my_ifr_addr))->sin_addr = bcast.ip4_addr;
-        if (ioctl(cfg_socket, SIOCSIFBRDADDR, (int)&req) < 0)
-        {
-            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-            ERROR("ioctl(SIOCSIFBRDADDR) failed: %s", rc);
-            return rc;
-        }
+        CFG_IOCTL(cfg_socket, MY_SIOCSIFBRDADDR, &req);
         return 0;
     }
 #else
@@ -2422,8 +2527,8 @@ static te_errno
 link_addr_get(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
-    uint8_t *ptr = NULL;
-    te_errno rc;
+    te_errno        rc;
+    const uint8_t  *ptr = NULL;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2432,42 +2537,49 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, rc);
 
 #ifdef SIOCGIFHWADDR
+    memset(&req, 0, sizeof(req));
     strcpy(req.my_ifr_name, ifname);
-    if (ioctl(cfg_socket, SIOCGIFHWADDR, (int)&req) < 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-    
-        ERROR("ioctl(SIOCGIFHWADDR) failed: %r", rc);
-        return rc;
-    }
+    CFG_IOCTL(cfg_socket, SIOCGIFHWADDR, &req);
 
     ptr = req.my_ifr_hwaddr.sa_data;
 
+#elif defined(SIOCGENADDR)
+    memset(&req, 0, sizeof(req));
+#if 0
+    if (0 && strcmp(ifname, "lo0") != 0)
+    {
+        strcpy(req.my_ifr_name, ifname);
+        CFG_IOCTL(cfg_socket, SIOCGENADDR, &req);
+
+        ptr = req.ifr_enaddr;
+    }
+    else
+#endif
+    {
+        const uint8_t   all_zeros[ETHER_ADDR_LEN] = { 0, };
+
+        ptr = all_zeros;
+    }
 #elif defined(__FreeBSD__)
 
-    struct my_ifconf    ifc;
-    struct my_ifreq    *p;
+    void           *ifconf_buf = NULL;
+    struct ifreq   *p;
 
-    memset(&ifc, 0, sizeof(ifc));
-    ifc.my_ifc_len = sizeof(buf);
-    ifc.my_ifc_buf = (caddr_t)buf;
-    memset(buf, 0, sizeof(buf));
-    if (ioctl(cfg_socket, MY_SIOCGIFCONF, &ifc) < 0)
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&p);
+    if (rc != 0)
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCGIFCONF) failed: %r", rc);
+        free(ifconf_buf);
         return rc;
     }
-    for (p = (struct my_ifreq *)ifc.my_ifc_buf;
-         ifc.my_ifc_len >= (int)sizeof(*p);
-         p = (struct my_ifreq *)((caddr_t)p + _SIZEOF_ADDR_IFREQ(*p)))
+
+    for (; *(p->ifr_name) != '\0';
+         p = (struct ifreq *)((caddr_t)p + _SIZEOF_ADDR_IFREQ(*p)))
     {
-        if ((strcmp(p->my_ifr_name, ifname) == 0) &&
-            (p->my_ifr_addr.sa_family == AF_LINK))
+        if ((strcmp(p->ifr_name, ifname) == 0) &&
+            (p->ifr_addr.sa_family == AF_LINK))
         {
             struct sockaddr_dl *sdl =
-                (struct sockaddr_dl *)&(p->my_ifr_addr);
+                (struct sockaddr_dl *)&(p->ifr_addr);
 
             if (sdl->sdl_alen == ETHER_ADDR_LEN)
             {
@@ -2482,6 +2594,7 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
             break;
         }
     }
+    free(ifconf_buf);
 #else
     ERROR("%s(): %s", __FUNCTION__, strerror(EOPNOTSUPP));
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
@@ -2525,8 +2638,7 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
 
     if (value == NULL)
     {
-       ERROR("A link layer address is not provided to "
-             "ioctl(SIOCSIFHWADDR)");
+       ERROR("A link layer address to set is not provided");
        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
@@ -2579,11 +2691,7 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
         }
     }
 
-    if (ioctl(cfg_socket, SIOCSIFHWADDR, &req) < 0)
-    {
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-        ERROR("ioctl(SIOCSIFHWADDR) failed to set : %r", rc);
-    }
+    CFG_IOCTL(cfg_socket, SIOCSIFHWADDR, &req);
 #else
     ERROR("Set of link-layer address is not supported");
     rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
@@ -2614,15 +2722,26 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    strcpy(req.my_ifr_name, ifname);
-    if (ioctl(cfg_socket, SIOCGIFMTU, (int)&req) != 0)
+#if defined(SIOCGIFMTU) && defined(HAVE_STRUCT_IFREQ_IFR_MTU)
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-        
-        ERROR("ioctl(SIOCGIFMTU) failed: %r", rc);
-        return rc;
+        struct ifreq req;
+
+        strncpy(req.ifr_name, ifname, sizeof(req.ifr_name));
+        CFG_IOCTL(cfg_socket, SIOCGIFMTU, &req);
+        sprintf(value, "%d", req.ifr_mtu);
     }
-    sprintf(value, "%d", req.my_ifr_mtu);
+#elif defined(SIOCGLIFMTU)
+    {
+        struct lifreq req;
+
+        strncpy(req.lifr_name, ifname, sizeof(req.lifr_name));
+        CFG_IOCTL(cfg_socket, SIOCGLIFMTU, &req);
+        sprintf(value, "%d", req.lifr_mtu);
+    }
+#else
+#error Cannot get interface MTU
+#endif
+
     return 0;
 }
 
@@ -2642,6 +2761,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
 {
     char     *tmp;
     te_errno  rc = 0;
+    long      mtu;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2649,10 +2769,12 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    req.my_ifr_mtu = strtol(value, &tmp, 10);
+    mtu = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
+#if HAVE_STRUCT_IFREQ_IFR_MTU
+    req.my_ifr_mtu = mtu;
     strcpy(req.my_ifr_name, ifname);
     if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) != 0)
     {
@@ -2682,7 +2804,10 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
             }
         }
     }
-    
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
     if (rc != 0)
         ERROR("ioctl(SIOCSIFMTU) failed: %r", rc);
 
@@ -2712,13 +2837,7 @@ arp_get(unsigned int gid, const char *oid, char *value, const char *ifname)
         return TE_RC(TE_TA_UNIX, rc);
 
     strcpy(req.my_ifr_name, ifname);
-    if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, (int)&req) != 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
-        return rc;
-    }
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
 
     sprintf(value, "%d", (req.my_ifr_flags & IFF_NOARP) != IFF_NOARP);
 
@@ -2749,13 +2868,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, rc);
 
     strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, &req) < 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
-        return rc;
-    }
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
 
     if (strcmp(value, "1") == 0)
         req.my_ifr_flags &= (~IFF_NOARP);
@@ -2765,13 +2878,8 @@ arp_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
 
-        ERROR("ioctl(SIOCSIFFLAGS) failed: %r", rc);
-        return rc;
-    }
     return 0;
 }
 
@@ -2798,13 +2906,7 @@ status_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, rc);
 
     strcpy(req.my_ifr_name, ifname);
-    if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, (int)&req) != 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
-        return rc;
-    }
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
 
     sprintf(value, "%d", (req.my_ifr_flags & IFF_UP) != 0);
 
@@ -2836,13 +2938,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, rc);
 
     strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(cfg_socket, MY_SIOCGIFFLAGS, &req) < 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCGIFFLAGS) failed: %r", rc);
-        return rc;
-    }
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
 
     if (strcmp(value, "0") == 0)
         req.my_ifr_flags &= ~(IFF_UP | IFF_RUNNING);
@@ -2851,14 +2947,7 @@ status_set(unsigned int gid, const char *oid, const char *value,
     else
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
-    if (ioctl(cfg_socket, SIOCSIFFLAGS, &req) < 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCSIFFLAGS) failed: %r", rc);
-        return rc;
-    }
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
 
     return 0;
 }
@@ -2880,8 +2969,7 @@ neigh_find_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
               void *arg)
 {    
     neigh_find_cb_param *p = (neigh_find_cb_param *)arg;
-    int                  af = (strchr(p->addr, ':') == NULL)?
-                              AF_INET : AF_INET6;
+    sa_family_t          af = str_addr_family(p->addr);
     struct ndmsg        *r = NLMSG_DATA(n);
     struct rtattr       *tb[NDA_MAX+1] = {NULL,};
     uint8_t              addr_buf[sizeof(struct in6_addr)];    
@@ -2974,8 +3062,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
     user_data.mac_addr = mac_p;
     user_data.found = FALSE;
 
-    rtnl_wilddump_request(&rth, strchr(addr, ':') == NULL?
-                          AF_INET : AF_INET6, RTM_GETNEIGH);
+    rtnl_wilddump_request(&rth, str_addr_family(addr), RTM_GETNEIGH);
     rtnl_dump_filter(&rth, neigh_find_cb, &user_data, NULL, NULL);
     
     if (!user_data.found)
@@ -3120,7 +3207,7 @@ neigh_change(const char *oid, const char *addr, const char *ifname,
         
     req.n.nlmsg_type = cmd;
 
-    dst.family = (strchr(addr, ':') != NULL) ? AF_INET6 : AF_INET;
+    dst.family = str_addr_family(addr);
     dst.bytelen = (dst.family == AF_INET) ?
                   sizeof(struct in_addr) : sizeof(struct in6_addr);
     dst.bitlen = dst.bytelen << 3;
@@ -3253,13 +3340,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     }
 
 #ifdef SIOCSARP
-    if (ioctl(cfg_socket, SIOCSARP, &arp_req) < 0)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("ioctl(SIOCSARP) failed: %r", rc);
-        return rc;
-    }
+    CFG_IOCTL(cfg_socket, SIOCSARP, &arp_req);
 
     return 0;
 #else
@@ -3299,23 +3380,17 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 #else /* USE_IOCTL */
     {
         struct arpreq arp_req;
-        int           family;
+        sa_family_t   family;
         
         memset(&arp_req, 0, sizeof(arp_req));
-        family = (strchr(addr, ':') != NULL)? AF_INET6 : AF_INET;
+        family = str_addr_family(addr);
         arp_req.arp_pa.sa_family = family;
         if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
 #ifdef SIOCDARP
 
-        if (ioctl(cfg_socket, SIOCDARP, &arp_req) < 0)
-        {
-            if (errno == ENXIO || errno == ENETDOWN || errno == ENETUNREACH)
-                return 0;
-            else
-                return TE_OS_RC(TE_TA_UNIX, errno);
-        }
+        CFG_IOCTL(cfg_socket, SIOCDARP, &arp_req);
 
         return 0;
 #else
