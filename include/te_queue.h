@@ -1,15 +1,22 @@
 /** @file
  * @brief sys/queue.h
  *
- * Macros to deal with linked lists. It is exact copy of sys/queue.h,
- * since it is widely used in TE sources, but does not present on some
- * platforms.
+ * Macros to deal with linked lists. DO NOT MODIFY IT! It is almost
+ * exact copy of sys/queue.h, since it is widely used in TE sources,
+ * but does not present on some platforms.
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
- * $Id: te_proto.h 23977 2006-02-13 14:11:34Z artem $
+ * $Id$
  */
+
+#ifndef	__TE_QUEUE_H__
+#define	__TE_QUEUE_H__
+
+#if HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
+#else
 
 /*
  * Copyright (c) 1991, 1993
@@ -41,9 +48,6 @@
  *
  *	@(#)queue.h	8.3 (Berkeley) 12/13/93
  */
-
-#ifndef	__TE_QUEUE_H__
-#define	__TE_QUEUE_H__
 
 /*
  * This file defines three types of data structures: lists, tail queues,
@@ -252,4 +256,5 @@ struct {								\
 		    (elm)->field.cqe_next;				\
 }
 
+#endif /* !HAVE_SYS_QUEUE_H */
 #endif /* !__TE_QUEUE_H__ */
