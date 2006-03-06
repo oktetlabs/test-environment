@@ -34,15 +34,11 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#else
-#error TAD cannot be compiled without sys/queue.h
-#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_queue.h"
 #include "asn_usr.h" 
 #include "comm_agent.h"
 

@@ -31,13 +31,10 @@
 #ifndef __TE_TRC_DB_H__
 #define __TE_TRC_DB_H__
 
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
-
 #include <libxml/tree.h>
 
 #include "te_defs.h"
+#include "te_queue.h"
 
 
 /** Number of IDs supported by TRC-diff */

@@ -31,13 +31,8 @@
 #ifndef __TE_TRC_TAG_H__
 #define __TE_TRC_TAG_H__
 
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#else
-#error sys/queue.h is required for TRC tool
-#endif
-
 #include "te_defs.h"
+#include "te_queue.h"
 
 
 /** Named tag */

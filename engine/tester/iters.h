@@ -31,11 +31,8 @@
 #ifndef __TE_TESTER_ITERS_H__
 #define __TE_TESTER_ITERS_H__
 
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif 
-
 #include "te_defs.h"
+#include "te_queue.h"
 
 #include "test_params.h"
 

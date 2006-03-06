@@ -29,9 +29,6 @@
 
 #include "te_config.h"
 
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 #if HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -40,14 +37,12 @@
 #else
 #error pthread.h is required for TAD poll support
 #endif
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
 
 #include "te_errno.h"
+#include "te_queue.h"
 #include "comm_agent.h"
 #include "logger_api.h"
 

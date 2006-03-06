@@ -42,13 +42,11 @@
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "te_queue.h"
 #include "logger_api.h"
 #include "conf_api.h"
 #include "tapi_cfg.h"

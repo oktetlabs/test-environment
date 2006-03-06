@@ -44,13 +44,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#else
-#error sys/queue.h is required for CSAP IDs database
-#endif
 
 #include "te_defs.h"
+#include "te_queue.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 #include "tad_common.h"

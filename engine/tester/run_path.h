@@ -31,10 +31,7 @@
 #ifndef __TE_TESTER_RUN_PATH_H__
 #define __TE_TESTER_RUN_PATH_H__
 
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif 
-
+#include "te_queue.h"
 #include "test_params.h"
 
 

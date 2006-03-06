@@ -8,9 +8,8 @@
 #ifndef __TE_TA_UNIX_DHCP_SERVER_H__
 #define __TE_TA_UNIX_DHCP_SERVER_H__
 
-#include <sys/queue.h>
-
 #include "te_defs.h"
+#include "te_queue.h"
 
 
 enum {

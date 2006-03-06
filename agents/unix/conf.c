@@ -77,13 +77,11 @@
 #if HAVE_NET_IF_DL_H
 #include <net/if_dl.h>
 #endif
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif 
 
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_queue.h"
 #include "te_ethernet.h"
 #include "cs_common.h"
 #include "logger_api.h"

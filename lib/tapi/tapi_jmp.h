@@ -31,11 +31,6 @@
 #ifndef __TE_TAPI_JMP_H__
 #define __TE_TAPI_JMP_H__
 
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#else
-#error Required sys/queue.h not found
-#endif
 #if HAVE_SETJMP_H
 #include <setjmp.h>
 #else
@@ -43,6 +38,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_queue.h"
 
 
 #ifdef __cplusplus

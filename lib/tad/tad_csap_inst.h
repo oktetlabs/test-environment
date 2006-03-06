@@ -38,9 +38,6 @@
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -53,6 +50,7 @@
 
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_queue.h"
 #include "logger_api.h"
 #include "asn_usr.h" 
 #include "tad_common.h"

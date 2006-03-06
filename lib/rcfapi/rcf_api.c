@@ -58,14 +58,12 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_printf.h"
+#include "te_queue.h"
 #include "logger_api.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"

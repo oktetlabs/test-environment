@@ -31,12 +31,7 @@
 #ifndef __TE_TAD_RECV_PKT_H__
 #define __TE_TAD_RECV_PKT_H__ 
 
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#else
-#error TAD cannot be compiled without sys/queue.h
-#endif
-
+#include "te_queue.h"
 #include "asn_usr.h" 
 #include "tad_pkt.h"
 #include "tad_types.h"

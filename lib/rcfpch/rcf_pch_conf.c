@@ -45,9 +45,6 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #endif
@@ -60,6 +57,7 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_queue.h"
 #include "comm_agent.h"
 #include "conf_oid.h"
 #include "rcf_common.h"

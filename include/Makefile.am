@@ -32,7 +32,7 @@ te_headers = te_defs.h te_errno.h te_proto.h te_stdint.h te_printf.h \
              rcf_rpc_defs.h cs_common.h \
              te_raw_log.h logger_api.h logger_defs.h logger_int.h \
              rcf_internal.h te_config.h te_expand.h ta_common.h \
-             te_win_defs.h te_ethernet.h
+             te_win_defs.h te_ethernet.h te_queue.h
 
 include_HEADERS = te_config_internal.h $(te_headers)
 

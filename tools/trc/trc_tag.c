@@ -41,11 +41,8 @@
 #if HAVE_ERRNO_H
 #include <errno.h>
 #endif
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#else
-#error sys/queue.h is required for TRC tool
-#endif
+
+#include "te_queue.h"
 
 #include "trc_log.h"
 #include "trc_tag.h"

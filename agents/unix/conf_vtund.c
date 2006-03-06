@@ -30,9 +30,9 @@
 
 #ifdef WITH_VTUND
 
-#include <sys/queue.h>
-
+#include "te_queue.h"
 #include "conf_daemons.h"
+
 
 /** Template for VTund configuration file name */
 #define VTUND_TMP_FILE_TEMPLATE     "/tmp/vtund.XXXXXX"

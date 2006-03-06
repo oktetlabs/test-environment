@@ -31,11 +31,8 @@
 #ifndef __TE_TESTER_TEST_PARAMS_H__
 #define __TE_TESTER_TEST_PARAMS_H__
 
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif 
-
 #include "te_defs.h"
+#include "te_queue.h"
 
 #include "reqs.h"
 

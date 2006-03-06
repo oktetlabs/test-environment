@@ -53,9 +53,6 @@
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 
 #ifndef TE_IPC_AF_UNIX
 #if HAVE_NETINET_IN_H
@@ -71,6 +68,7 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_queue.h"
 #include "ipc_server.h"
 
 #include "ipc_internal.h"

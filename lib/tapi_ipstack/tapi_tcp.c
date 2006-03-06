@@ -40,11 +40,6 @@
 #include <strings.h>
 #endif
 
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
-
-
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif

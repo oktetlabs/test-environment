@@ -35,9 +35,6 @@
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -46,6 +43,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_queue.h"
 #include "conf_api.h"
 #include "tapi_cfg_net.h"
 #include "tapi_rpc.h"

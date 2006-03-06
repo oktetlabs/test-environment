@@ -43,11 +43,9 @@
 #if HAVE_ASSERT_H
 #include <assert.h>
 #endif
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 
 #include "te_errno.h"
+#include "te_queue.h"
 #include "logger_api.h"
 
 #include "tad_csap_support.h"

@@ -40,10 +40,6 @@
 #include <strings.h>
 #endif
 
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
-
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -62,6 +58,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "te_queue.h"
 #include "rcf_api.h"
 #include "conf_api.h"
 

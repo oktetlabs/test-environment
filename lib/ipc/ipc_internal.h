@@ -43,9 +43,6 @@
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
 
 #ifndef UNIX_PATH_MAX
 /** There is no common place with UNIX_PATH_MAX define */
@@ -53,6 +50,7 @@
 #endif
 
 #include "te_stdint.h"
+#include "te_queue.h"
 
 
 #ifndef SA

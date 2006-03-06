@@ -44,15 +44,11 @@
 #if HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#else
-#error sys/queue.h is required for TAD packets representation library
-#endif
 
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_queue.h"
 
 
 #ifdef __cplusplus
