@@ -36,23 +36,33 @@ TE_TA_TYPE([linux_lite], [], [unix],
             [], [], [], [comm_net_agent])
 
 #
-# FreeBSD5 platform
+# Solaris2 platform
 #
-TE_PLATFORM([i686-pc-freebsd6], [],
+TE_PLATFORM([i386-pc-solaris2], [], 
+            [-I${SOLARIS2_HOME}/sys-include], [], [-L${SOLARIS2_HOME}/lib],
+            [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
+
+TE_TA_TYPE([solaris2], [i386-pc-solaris2], [unix],
+           [--with-rcf-rpc], [], [], [], [comm_net_agent])
+
+#
+# FreeBSD6 platform
+#
+TE_PLATFORM([i386-pc-freebsd6], [],
             [-I${FREEBSD6_HOME}/sys-include], [], [-L${FREEBSD6_HOME}/lib],
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
-TE_TA_TYPE([freebsd6], [i686-pc-freebsd6], [unix],
+TE_TA_TYPE([freebsd6], [i386-pc-freebsd6], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
 
 #
 # NetBSD platform
 #
-TE_PLATFORM([i686-pc-netbsdelf], [], 
+TE_PLATFORM([i386-pc-netbsdelf], [], 
             [-I${NETBSD_HOME}/sys-include], [], [-L${NETBSD_HOME}/lib],
             [tools rpc_types loggerta comm_net_agent conf_oid rpcxdr rcfpch tad])
 
-TE_TA_TYPE([netbsd], [i686-pc-netbsdelf], [unix],
+TE_TA_TYPE([netbsd], [i386-pc-netbsdelf], [unix],
            [--with-rcf-rpc], [], [], [], [comm_net_agent])
 
 #
