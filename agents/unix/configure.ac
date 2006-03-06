@@ -210,6 +210,17 @@ AC_CHECK_TYPES([struct ip_mreqn], [], [],
                [#include <netinet/in.h>])
 
 dnl
+dnl Check for 'ipv6mr_interface' member in 'struct ipv6_mreq'.
+dnl
+AC_CHECK_MEMBERS([struct ipv6_mreq.ipv6mr_interface], [], [],
+                 [#include <netinet/in.h>])
+dnl
+dnl Check for 'ipv6mr_ifindex' member in 'struct ipv6_mreq'.
+dnl
+AC_CHECK_MEMBERS([struct ipv6_mreq.ipv6mr_ifindex], [], [],
+                 [#include <netinet/in.h>])
+
+dnl
 dnl Check for 'struct lifreq'
 dnl
 AC_CHECK_TYPES([struct lifreq], [], [], [#include <net/if.h>])

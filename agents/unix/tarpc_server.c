@@ -1467,6 +1467,14 @@ TARPC_FUNC(sigaction,
 
 /*-------------- setsockopt() ------------------------------*/
 
+#if HAVE_STRUCT_IPV6_MREQ_IPV6MR_IFINDEX
+#define IPV6MR_IFINDEX  ipv6mr_ifindex
+#elif HAVE_STRUCT_IPV6_MREQ_IPV6MR_INTERFACE
+#define IPV6MR_IFINDEX  ipv6mr_interface
+#else
+#error No interface index in struct ipv6_mreq
+#endif
+
 typedef union opt_param {
     int                 integer;
     char               *str;
@@ -1789,7 +1797,7 @@ TARPC_FUNC(getsockopt,
                        ipv6mr_multiaddr, &(mreq6->ipv6mr_multiaddr),
                        sizeof(struct ipv6_mreq));
                 out->optval.optval_val[0].option_value_u.opt_mreq6.
-                ipv6mr_ifindex = mreq6->ipv6mr_interface;
+                    ipv6mr_ifindex = mreq6->IPV6MR_IFINDEX;
                 break;
             }
             
@@ -1994,7 +2002,7 @@ TARPC_FUNC(getsockopt,
                        ipv6mr_multiaddr, &(mreq6->ipv6mr_multiaddr),
                        sizeof(struct ipv6_mreq));
                 out->optval.optval_val[0].option_value_u.opt_mreq6.
-                ipv6mr_ifindex = mreq6->ipv6mr_ifindex;
+                    ipv6mr_ifindex = mreq6->IPV6MR_IFINDEX;
                 break;
             }
 
