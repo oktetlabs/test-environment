@@ -3462,7 +3462,7 @@ TARPC_FUNC(kill, {},
 }
 )
 
-/*-------------- overfill_buffers() -----------------------------*/
+/*-------------- overfill_buffers() --------------------------*/
 int
 overfill_buffers(tarpc_overfill_buffers_in *in,
                  tarpc_overfill_buffers_out *out)
@@ -3475,16 +3475,18 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     uint8_t    c = 0xAB;
 
     out->bytes = 0;
-    
-    /* ATTENTION! socket is assumed in blocking state */
-    
-    if (ioctlsocket(in->sock, FIONBIO, &val) < 0)
+
+    if (!in->is_nonblocking)
     {
-        err = GetLastError();
-        rc = -1;
-        ERROR("%s(): Failed to move socket to non-blocking state; error %r",
-              __FUNCTION__, win_rpc_errno(err));
-        goto overfill_buffers_exit;
+        if (ioctlsocket(in->sock, FIONBIO, &val) < 0)
+        {
+            err = GetLastError();
+            rc = -1;
+            ERROR("%s(): Failed to move socket to non-blocking state; "
+                  "error %r",
+                  __FUNCTION__, win_rpc_errno(err));
+            goto overfill_buffers_exit;
+        }
     }
 
     do {
@@ -3518,13 +3520,16 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     } while (unchanged != 30);
     
 overfill_buffers_exit:
-    val = 0;
-    if (ioctlsocket(in->sock, FIONBIO, &val) < 0)
+    if (!in->is_nonblocking)
     {
-        err = GetLastError();
-        rc = -1;
-        ERROR("%s(): Failed to move socket back to blocking state; "
-              "error %r", __FUNCTION__, win_rpc_errno(err));
+        val = 0;
+        if (ioctlsocket(in->sock, FIONBIO, &val) < 0)
+        {
+            err = GetLastError();
+            rc = -1;
+            ERROR("%s(): Failed to move socket back to blocking state; "
+                  "error %r", __FUNCTION__, win_rpc_errno(err));
+        }
     }
     out->common._errno = win_rpc_errno(err);
 

@@ -1317,6 +1317,25 @@ extern te_bool rpc_write_file_ex(rcf_rpc_server *rpcs,
                                  rpc_overlapped overlapped,
                                  const char *callback);
 
+/**
+ * Overfill the buffers on receive and send sides of TCP connection.
+ * If socket is blocking, it will be set non-blocking inside and
+ * changed back on return.
+ *
+ * @param rpcs          RPC server
+ * @param sock          socket for sending
+ * @param sent          total bytes written to sending socket
+ *                      while both sending and receiving side buffers
+ *                      are overfilled
+ * @param is_nonblocking TRUE if socket is in non-blocking mode, FALSE
+ *                      otherwise.
+ *
+ * @return -1 in the case of failure or 0 on success
+ */
+extern int rpc_overfill_buffers_ex(rcf_rpc_server *rpcs, int sock,
+                                   uint64_t *sent, te_bool is_nonblocking);
+
+
 /** Convert WSA function name to RPC name */
 static inline const char *
 wsa_name_convert(const char *name)

@@ -864,6 +864,7 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
     memset(&out, 0, sizeof(out));
 
     in.sock = sock;
+    in.is_nonblocking = FALSE;
 
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 4;

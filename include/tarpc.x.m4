@@ -3088,6 +3088,7 @@ struct tarpc_overfill_buffers_in {
     struct tarpc_in_arg common;
 
     tarpc_int       sock;
+    tarpc_bool      is_nonblocking;
 };
 
 struct tarpc_overfill_buffers_out {
@@ -3097,6 +3098,7 @@ struct tarpc_overfill_buffers_out {
 
     uint64_t    bytes;      /**< Number of sent bytes */
 };
+
 
 /* setrlimit() */
 

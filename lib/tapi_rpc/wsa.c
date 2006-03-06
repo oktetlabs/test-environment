@@ -3856,3 +3856,43 @@ rpc_write_file_ex(rcf_rpc_server *rpcs,
 
     RETVAL_BOOL(write_file_ex, out.retval);
 }                  
+
+int
+rpc_overfill_buffers_ex(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
+                        te_bool is_nonblocking)
+{
+    rcf_rpc_op                 op;
+    tarpc_overfill_buffers_in in;
+    tarpc_overfill_buffers_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(overfill_buffers, -1);
+    }
+    op = rpcs->op;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.sock = sock;
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 4;
+    in.is_nonblocking = is_nonblocking;
+
+    rcf_rpc_call(rpcs, "overfill_buffers", &in, &out);
+
+    if ((out.retval == 0) && (sent != NULL))
+        *sent = out.bytes;
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_buffers, out.retval);
+
+    TAPI_RPC_LOG("RPC (%s,%s)%s: overfill_buffers(%d,%s) -> %d (%s) "
+                 "sent=%d",
+                 rpcs->ta, rpcs->name, rpcop2str(op),
+                 sock, is_nonblocking?"TRUE":"FALSE",
+                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 (sent != NULL) ? (int)(*sent) : -1);
+
+    RETVAL_INT(overfill_buffers, out.retval);
+}

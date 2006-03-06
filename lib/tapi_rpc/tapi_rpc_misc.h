@@ -299,6 +299,8 @@ extern int rpc_ftp_close(rcf_rpc_server *handle, int sock);
 
 /**
  * Overfill the buffers on receive and send sides of TCP connection.
+ * On Windows, this call excepts socket to be in blocking mode. To use
+ * it on non-blocking sockets refer to rpc_overfill_buffers_ex.
  *
  * @param rpcs          RPC server
  * @param sock          socket for sending
