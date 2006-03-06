@@ -265,7 +265,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
               S_IRWXU | S_IRWXG | S_IRWXO);
     if (fd < 0)
     {
-        ERROR("failed to open file '%s'", fname);
+        ERROR("failed to open file '%s' errno %d", fname, errno);
         rc = TE_RC(TE_RCF_PCH, TE_ENOENT);
         goto reject;
     }
