@@ -665,6 +665,22 @@ typedef enum rpc_sockopt {
     RPC_SO_OPENTYPE,        /**< Once set, subsequent sockets created 
                                  will be non-overlapped. */
 
+    RPC_SO_DONTLINGER,      /**< MS Windows specific: Indicates whether 
+                                 a linger value was set on a socket. */
+    RPC_SO_CONDITIONAL_ACCEPT,/**< MS Windows specific: Indicates incoming
+                                 connections will be accepted or rejected
+                                 by the application and not the stack. */
+    RPC_SO_MAX_MSG_SIZE,    /**< MS Windows specific: Returns the maximum
+                                 outbound message size for message-oriented
+                                 sockets supported by the protocol.  Has no
+                                 meaning for stream-oriented sockets. */
+    RPC_SO_USELOOPBACK,     /**< MS Windows specific. */
+    RPC_SO_EXCLUSIVEADDRUSE,/**< MS Windows specific. Prevents any other
+                                 socket from binding to the same address
+                                 and port. Option must be set before bind.
+                                 */
+    RPC_SO_GROUP_ID,        /**< MS Windows specific. */
+    RPC_SO_GROUP_PRIORITY,  /**< MS Windows specific. */
         
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */
@@ -723,6 +739,12 @@ typedef enum rpc_sockopt {
 
     RPC_IP_RECEIVE_BROADCAST,/**< Winsock2 specific option. 
                                  Allows or blocks broadcast reception. */
+    RPC_IP_DONTFRAGMENT,    /**< Winsock2 specific option. 
+                                 Indicates that data should not be
+                                 fragmented regardless of the local MTU.
+                                 Valid only for message oriented protocols.
+                                 All Microsoft providers silently ignore
+                                 this option. */
 
     RPC_IPV6_UNICAST_HOPS,  /**< Hop limit for unicast packets */
 
@@ -793,8 +815,16 @@ typedef enum rpc_sockopt {
     RPC_TCP_KEEPINTVL,      /**< Interval between keepalive probes */
     RPC_TCP_KEEPCNT,        /**< Number of keepalive probess before death */
     RPC_TCP_INFO,
-    RPC_TCP_DEFER_ACCEPT,   /**<  Allows a listener to be awakened only when
-                                  data arrives on the socket.*/
+    RPC_TCP_DEFER_ACCEPT,   /**< Allows a listener to be awakened only when
+                                 data arrives on the socket.*/
+    RPC_UDP_NOCHECKSUM,     /**< MS Windows specific. 
+                                 When TRUE, UDP datagrams are sent with
+                                 the checksum of zero. Required for service
+                                 providers. If a service provider does not
+                                 have a mechanism to disable UDP checksum
+                                 calculation, it may simply store this
+                                 option without taking any action. */
+
     RPC_SOCKOPT_UNKNOWN     /**< Invalid socket option */
 
 } rpc_sockopt;
@@ -880,6 +910,27 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef SO_OPENTYPE
         RPC2H(SO_OPENTYPE);
 #endif
+#ifdef SO_DONTLINGER
+        RPC2H(SO_DONTLINGER);
+#endif
+#ifdef SO_CONDITIONAL_ACCEPT
+        RPC2H(SO_CONDITIONAL_ACCEPT);
+#endif
+#ifdef SO_MAX_MSG_SIZE
+        RPC2H(SO_MAX_MSG_SIZE);
+#endif
+#ifdef SO_USELOOPBACK
+        RPC2H(SO_USELOOPBACK);
+#endif
+#ifdef SO_EXCLUSIVEADDRUSE
+        RPC2H(SO_EXCLUSIVEADDRUSE);
+#endif
+#ifdef SO_GROUP_ID
+        RPC2H(SO_GROUP_ID);
+#endif
+#ifdef SO_GROUP_PRIORITY
+        RPC2H(SO_GROUP_PRIORITY);
+#endif
 #ifdef IP_ADD_MEMBERSHIP
         RPC2H(IP_ADD_MEMBERSHIP);
 #endif
@@ -930,6 +981,9 @@ sockopt_rpc2h(rpc_sockopt opt)
 #endif
 #ifdef IP_RECEIVE_BROADCAST
         RPC2H(IP_RECEIVE_BROADCAST);
+#endif
+#ifdef IP_DONTFRAGMENT
+        RPC2H(IP_DONTFRAGMENT);
 #endif
 #ifdef IPV6_ADDRFORM
         RPC2H(IPV6_ADDRFORM);
@@ -1098,6 +1152,27 @@ sockopt_h2rpc(int opt_type, int opt)
 #ifdef SO_OPENTYPE
                 H2RPC(SO_OPENTYPE);
 #endif
+#ifdef SO_DONTLINGER
+                H2RPC(SO_DONTLINGER);
+#endif
+#ifdef SO_CONDITIONAL_ACCEPT
+                H2RPC(SO_CONDITIONAL_ACCEPT);
+#endif
+#ifdef SO_MAX_MSG_SIZE
+                H2RPC(SO_MAX_MSG_SIZE);
+#endif
+#ifdef SO_USELOOPBACK
+                H2RPC(SO_USELOOPBACK);
+#endif
+#ifdef SO_EXCLUSIVEADDRUSE
+                H2RPC(SO_EXCLUSIVEADDRUSE);
+#endif
+#ifdef SO_GROUP_ID
+                H2RPC(SO_GROUP_ID);
+#endif
+#ifdef SO_GROUP_PRIORITY
+                H2RPC(SO_GROUP_PRIORITY);
+#endif
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
@@ -1184,6 +1259,9 @@ sockopt_h2rpc(int opt_type, int opt)
 #endif
 #ifdef IP_RECEIVE_BROADCAST
                 H2RPC(IP_RECEIVE_BROADCAST);
+#endif
+#ifdef IP_DONTFRAGMENT
+                H2RPC(IP_DONTFRAGMENT);
 #endif
                 default: return RPC_SOCKOPT_MAX;
             }
@@ -1274,7 +1352,20 @@ sockopt_h2rpc(int opt_type, int opt)
 #endif                
                 default: return RPC_SOCKOPT_MAX;
             }
+            break;
+#endif
+#ifdef SOL_UDP
+        case SOL_UDP:
+            switch (opt)
+            {
+#ifdef UDP_NOCHECKSUM
+                H2RPC(UDP_NOCHECKSUM);
 #endif                
+                default: return RPC_SOCKOPT_MAX;
+            }
+            break;
+#endif
+
         default: return RPC_SOCKOPT_MAX;
     }
 }
@@ -1308,6 +1399,13 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_TYPE);
         RPC2STR(SO_CONNECT_TIME);
         RPC2STR(SO_OPENTYPE);
+        RPC2STR(SO_DONTLINGER);
+        RPC2STR(SO_CONDITIONAL_ACCEPT);
+        RPC2STR(SO_MAX_MSG_SIZE);
+        RPC2STR(SO_USELOOPBACK);
+        RPC2STR(SO_EXCLUSIVEADDRUSE);
+        RPC2STR(SO_GROUP_ID);
+        RPC2STR(SO_GROUP_PRIORITY);
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
         RPC2STR(IP_MULTICAST_IF);
@@ -1325,6 +1423,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IP_MTU);
         RPC2STR(IP_MTU_DISCOVER);
         RPC2STR(IP_RECEIVE_BROADCAST);
+        RPC2STR(IP_DONTFRAGMENT);
 
         RPC2STR(IPV6_UNICAST_HOPS);
         RPC2STR(IPV6_MULTICAST_HOPS);
@@ -1361,6 +1460,8 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(TCP_KEEPCNT);
         RPC2STR(TCP_INFO);
         RPC2STR(TCP_DEFER_ACCEPT);
+
+        RPC2STR(UDP_NOCHECKSUM);
 
         RPC2STR(SOCKOPT_UNKNOWN);
         default: return "<SOCKOPT_FATAL_ERROR>";
