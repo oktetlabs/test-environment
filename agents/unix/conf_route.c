@@ -38,7 +38,6 @@
 #endif
 
 #include <stdio.h>
-//#include <ctype.h>
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -51,31 +50,15 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
-//#if HAVE_UNISTD_H
-//#include <unistd.h>
-//#endif
-//#if HAVE_FCNTL_H
-//#include <fcntl.h>
-//#endif
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-//#if HAVE_SYS_IOCTL_H
-//#define BSD_COMP
-//#include <sys/ioctl.h>
-//#endif
 #if HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
-//#if HAVE_NET_IF_DL_H
-//#include <net/if_dl.h>
-//#endif
-//#if HAVE_NET_ROUTE_H
-//#include <net/route.h>
-//#endif
 
 #include "te_stdint.h"
 #include "te_errno.h"
