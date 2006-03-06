@@ -309,7 +309,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             break;
 #undef FILL_ARPREQ_ADDR
         case RPC_SG_IO:
-            in.access = IOCTL_RW;
+            in.access = IOCTL_RD;
 
             if (arg != NULL)
             {
@@ -515,8 +515,15 @@ rpc_ioctl(rcf_rpc_server *rpcs,
             }
             case IOCTL_SGIO:
             {
-                memset(&out.req.req_val[0].ioctl_request_u.req_sgio, 0, 
-                       sizeof(out.req.req_val[0].ioctl_request_u.req_sgio));
+
+                RING("### status=0x%x, host_status=0x%x, "
+                     "driver_status=0x%x",
+                     out.req.req_val[0].ioctl_request_u.req_sgio.status, 
+                     out.req.req_val[0].ioctl_request_u.
+                     req_sgio.host_status, 
+                     out.req.req_val[0].ioctl_request_u.
+                     req_sgio.driver_status);
+
                 memcpy(((sg_io_hdr_t *) arg)->dxferp, 
                        out.req.req_val[0].ioctl_request_u.req_sgio. 
                        dxferp.dxferp_val, 
@@ -570,17 +577,9 @@ rpc_ioctl(rcf_rpc_server *rpcs,
     switch (in.req.req_val != NULL ? in.req.req_val[0].type : IOCTL_UNKNOWN)
     {
         case IOCTL_SGIO:
-#if 0
             {
-                static char status_buf[128];
-
-                sprintf(status_buf, "%c", 
-                        out.req.req_val[0].ioctl_request_u.req_sgio.status);
-
-                req_val = status_buf;
+                req_val = "OK";
             }
-#endif
-            req_val = "OK";
             break;
         case IOCTL_TIMEVAL:
             req_val = tarpc_timeval2str((struct tarpc_timeval *)arg);
