@@ -962,6 +962,7 @@ te_errno
 rcf_pch_add_node(const char *father, rcf_pch_cfg_object *node)
 {
     rcf_pch_cfg_object *tmp = rcf_ch_conf_root();
+    rcf_pch_cfg_object *next;
     cfg_oid            *oid = cfg_convert_oid_str(father);
     int                 i = 1;
     
@@ -993,10 +994,13 @@ rcf_pch_add_node(const char *father, rcf_pch_cfg_object *node)
             break;
         tmp = tmp->son;
     }
-    
-    node->brother = tmp->son;
-    tmp->son = node;
     cfg_free_oid(oid);
+    
+    next = tmp->son;
+    tmp->son = node;
+    while (node->brother != NULL)
+        node = node->brother;
+    node->brother = next;
     
     return 0;
 }
