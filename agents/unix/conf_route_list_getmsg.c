@@ -265,47 +265,4 @@ ta_unix_conf_route_list(char **list)
 }
 
 
-/* See the description in conf_route.h. */
-te_errno
-ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
-                          ta_rt_info_t        *rt_info)
-{
-    UNUSED(action);
-    UNUSED(rt_info);
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-}
-
-/* See the description in conf_route.h */
-te_errno
-ta_unix_conf_route_find(ta_rt_info_t *rt_info)
-{
-    UNUSED(rt_info);
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-}
-
-/* See the description in conf_route.h */
-te_errno
-ta_unix_conf_route_blackhole_list(char **list)
-{
-    *list = NULL;
-    return 0;
-}
-
-/* See the description in conf_route.h */
-te_errno
-ta_unix_conf_route_blackhole_add(ta_rt_info_t *rt_info)
-{
-    UNUSED(rt_info);
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-}
-
-/* See the description in conf_route.h */
-te_errno 
-ta_unix_conf_route_blackhole_del(ta_rt_info_t *rt_info)
-{
-    UNUSED(rt_info);
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-}
-
-
 #endif /* __sun__ */
