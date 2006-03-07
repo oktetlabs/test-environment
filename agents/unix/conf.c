@@ -1782,8 +1782,9 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
             (family == AF_INET) ? sizeof(struct sockaddr_in) :
                                   sizeof(struct sockaddr_in6);
         if (inet_pton(family, addr,
-                      (family == AF_INET) ? &SIN(&lreq.addr)->sin_addr :
-                          &SIN6(&lreq.addr)->sin6_addr) <= 0)
+                      (family == AF_INET) ?
+                          (void *)&SIN(&lreq.addr)->sin_addr :
+                          (void *)&SIN6(&lreq.addr)->sin6_addr) <= 0)
         {
             ERROR("inet_pton() failed");
             return TE_RC(TE_TA_UNIX, TE_EFMT);
