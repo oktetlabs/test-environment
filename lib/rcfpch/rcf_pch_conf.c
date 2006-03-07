@@ -1134,6 +1134,7 @@ rcf_pch_rsrc_release_dummy(const char *name)
     return 0;
 }
 
+#ifndef __CYGWIN__
 /*
  * Create a lock for the resource with specified name.
  *
@@ -1232,6 +1233,7 @@ delete_lock(const char *name)
         ERROR("Failed to delete lock %s: %r", fname,
               TE_OS_RC(TE_RCF_PCH, rc));
 }
+#endif /* !__CYGWIN__ */
 
 /** Registered resources list entry */
 typedef struct rsrc {
@@ -1398,14 +1400,16 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
         RETERR(TE_ENOMEM);
     }
 
-#ifndef __CYGWIN__    
+#ifndef __CYGWIN__
     if ((rc = create_lock(tmp->name)) != 0)
         RETERR(rc);
 #endif        
         
     if ((rc = info->grab(tmp->name)) != 0)
     {
+#ifndef __CYGWIN__
         delete_lock(tmp->name);
+#endif        
         RETERR(rc);
     }
     
@@ -1459,7 +1463,7 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
             if ((rc = info->release(cur->name)) != 0)
                 return rc;
                 
-#ifndef __CYGWIN__    
+#ifndef __CYGWIN__
             delete_lock(cur->name);
 #endif
                 
