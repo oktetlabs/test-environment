@@ -110,6 +110,7 @@ pthread.h \
 pwd.h \
 regex.h \
 rpc/types.h \
+rpc/xdr.h \
 rpc/pmap_clnt.h \
 scsi/sg.h \
 semaphore.h \
@@ -168,6 +169,10 @@ unistd.h \
 #if HAVE_RPC_TYPES_H
 /* NetBSD: rpc/pmap_clnt.h */
 #include <rpc/types.h>
+#endif
+#if HAVE_RPC_XDR_H
+/* NetBSD: rpc/pmap_clnt.h */
+#include <rpc/xdr.h>
 #endif
 ])
 
