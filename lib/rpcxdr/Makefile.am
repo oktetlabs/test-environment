@@ -31,6 +31,8 @@ tarpc.h tarpc_xdr.c tarpc_dummy.c: $(srcdir)/../../include/tarpc.x.m4 @RPCDEFS@
 	cat $^ > tmp.x.m4
 	m4 tmp.x.m4 > tarpc.x
 	rpcgen -h -M tarpc.x -o tarpc.h
+	cat tarpc.h | grep -v "#define _.* " > tarpc.h.tmp ; 
+	mv tarpc.h.tmp tarpc.h
 	rpcgen -c -M tarpc.x -o tarpc_xdr.c
 	$(srcdir)/../../engine/builder/te_generate_rpctbl tmp.x.m4 --generate-dummy
 	rm -f tarpc.x tmp.x.m4
