@@ -111,6 +111,7 @@ pwd.h \
 regex.h \
 rpc/types.h \
 rpc/xdr.h \
+rpc/auth.h \
 rpc/clnt.h \
 rpc/pmap_clnt.h \
 scsi/sg.h \
@@ -174,6 +175,10 @@ unistd.h \
 #if HAVE_RPC_XDR_H
 /* NetBSD: rpc/pmap_clnt.h */
 #include <rpc/xdr.h>
+#endif
+#if HAVE_RPC_AUTH_H
+/* NetBSD: rpc/clnt.h */
+#include <rpc/auth.h>
 #endif
 #if HAVE_RPC_CLNT_H
 /* NetBSD: rpc/pmap_clnt.h */
