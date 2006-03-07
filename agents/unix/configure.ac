@@ -366,9 +366,7 @@ if test -n "$with_rcf_rpc" ; then
             [AC_MSG_ERROR([There is no xdr_uint64_t or xdr_u_int64_t!])])])
 fi
 
-if test -n "$with_ifconfig" ; then
-    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_IFCONFIG"
-elif test -n "$ifcfg_via_netlink" ; then
+if test -n "$ifcfg_via_netlink" ; then
     # On Linux netlink is default way to configure interfaces and IP
     use_netlink=yes
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_NETLINK"
@@ -376,7 +374,7 @@ elif test -n "$ifcfg_via_netlink" ; then
                  AC_MSG_ERROR([Cannot find libnetlink!]))
 else 
     # The rest should use IOCTL interface for now
-    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_IOCTL"
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DUSE_IOCTL -DUSE_ROUTE_SOCKET"
 fi
 AM_CONDITIONAL(CFG_NETLINK_USE, test -n "$use_netlink")
 
