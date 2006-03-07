@@ -70,12 +70,9 @@
 #if HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-//#if HAVE_UNISTD_H
-//#include <unistd.h>
-//#endif
-//#if HAVE_NETINET_IN_H
-//#include <netinet/in.h>
-//#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
