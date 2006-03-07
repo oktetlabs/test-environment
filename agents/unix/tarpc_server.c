@@ -1437,7 +1437,6 @@ TARPC_FUNC(sigaction,
         act.sa_flags = sigaction_flags_rpc2h(in_act->flags);
         act.sa_mask = *((sigset_t *)rcf_pch_mem_get(in_act->mask));
 
-#undef _sigaction
         out->common._errno = 
             name2handler(in_act->handler, 
                          (act.sa_flags & SA_SIGINFO) ?
