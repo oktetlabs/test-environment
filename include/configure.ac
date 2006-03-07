@@ -109,6 +109,7 @@ popt.h \
 pthread.h \
 pwd.h \
 regex.h \
+rpc/types.h \
 rpc/pmap_clnt.h \
 scsi/sg.h \
 semaphore.h \
@@ -163,6 +164,10 @@ unistd.h \
 #if HAVE_NETINET_IP_H
 /* NetBSD: netinet/ip_icmp.h */
 #include <netinet/ip.h>
+#endif
+#if HAVE_RPC_TYPES_H
+/* NetBSD: rpc/pmap_clnt.h */
+#include <rpc/types.h>
 #endif
 ])
 
