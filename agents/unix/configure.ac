@@ -229,16 +229,9 @@ dnl
 dnl Check for 'ifr_mtu' member in 'struct ifreq'.
 dnl
 AC_CHECK_MEMBERS([struct ifreq.ifr_mtu], [], [], [
-#include "te_config.h"
-#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
-#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-#endif
-#if HAVE_NET_IF_H
 #include <net/if.h>
-#endif
 ])
 
 dnl
