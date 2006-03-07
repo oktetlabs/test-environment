@@ -152,6 +152,14 @@ unistd.h \
 #if HAVE_NET_IF_H
 #include <net/if.h>
 #endif
+#if HAVE_NETINET_IN_H
+/* NetBSD: netinet/ip.h, netinet/ip_icmp.h  */
+#include <netinet/in.h>
+#endif
+#if HAVE_NETINET_IN_SYSTM_H
+/* NetBSD: netinet/ip.h, netinet/ip_icmp.h */
+#include <netinet/in_systm.h>
+#endif
 ])
 
 dnl
