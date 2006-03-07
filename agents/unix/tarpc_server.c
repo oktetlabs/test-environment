@@ -4677,6 +4677,8 @@ fill_sigev_thread(struct sigevent *sig, char *function)
 static te_errno
 fill_sigev_thread(struct sigevent *sig, char *function)
 {
+    UNUSED(sig);
+    UNUSED(function);
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 }
 #endif
