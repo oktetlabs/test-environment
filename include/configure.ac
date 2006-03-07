@@ -160,6 +160,10 @@ unistd.h \
 /* NetBSD: netinet/ip.h, netinet/ip_icmp.h */
 #include <netinet/in_systm.h>
 #endif
+#if HAVE_NETINET_IP_H
+/* NetBSD: netinet/ip_icmp.h */
+#include <netinet/ip.h>
+#endif
 ])
 
 dnl
