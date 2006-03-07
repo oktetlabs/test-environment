@@ -66,6 +66,10 @@
 #include <netinet/in.h>
 #endif
 
+#ifdef HAVE_NETINET_IN_SYSTM_H
+#include <netinet/in_systm.h>
+#endif
+
 #ifdef HAVE_NET_IF_ARP_H
 #include <net/if_arp.h>
 #endif
