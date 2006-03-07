@@ -228,7 +228,17 @@ AC_CHECK_TYPES([struct lifreq], [], [], [#include <net/if.h>])
 dnl
 dnl Check for 'ifr_mtu' member in 'struct ifreq'.
 dnl
-AC_CHECK_MEMBERS([struct ifreq.ifr_mtu], [], [], [#include <net/if.h>])
+AC_CHECK_MEMBERS([struct ifreq.ifr_mtu], [], [], [
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+])
 
 dnl
 dnl Check for 'sa_restorer' member in 'struct sigaction'.
