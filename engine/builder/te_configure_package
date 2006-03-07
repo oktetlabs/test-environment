@@ -68,9 +68,9 @@ configure_package()
     
     TE_BASE="$TE_BASE" \
     TE_M4="$TE_BASE/auxdir" \
-    TE_CPPFLAGS="${ADD_CPPFLAGS} -I${PREFIX}/include" \
+    TE_CPPFLAGS="-I${PREFIX}/include ${ADD_CPPFLAGS}" \
     TE_CFLAGS="-O2 -ggdb -Wall -W ${ADD_CFLAGS} " \
-    TE_LDFLAGS="${ADD_LDFLAGS} -L${PREFIX}/lib" \
+    TE_LDFLAGS="-L${PREFIX}/lib ${ADD_LDFLAGS}" \
     TE_LDADD="$LDADD" \
     TE_DEPENDENCIES="$DEPENDENCIES" \
     CFLAGS="" \
