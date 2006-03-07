@@ -409,6 +409,19 @@ _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
     UNUSED(rqstp);    
     
     out->size = -1;
+    
+    if (in->typename == NULL)
+    {
+        ERROR("Name of type not specified");
+        return FALSE;
+    }
+    
+    if (in->typename[0] == '*')
+    {
+        out->size = sizeof(void *);
+        return TRUE;
+    }
+    
     for (i = 0; i < sizeof(type_info) / sizeof(type_info_t); i++)
     {
         if (strcmp(in->typename, type_info[i].type_name) == 0)
