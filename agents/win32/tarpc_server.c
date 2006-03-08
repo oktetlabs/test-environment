@@ -3630,7 +3630,10 @@ TARPC_FUNC(malloc, {},
     buf = malloc(in->size);
 
     if (buf == NULL)
-        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    {
+        out->common._errno = RPC_ENOMEM;
+        out->retval = 0;
+    }
     else
         out->retval = rcf_pch_mem_alloc(buf);
 }
