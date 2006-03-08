@@ -3277,8 +3277,7 @@ wsa_recv_msg_control_in(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
     if ((msg->Control.buf = calloc(1, rlen)) == NULL)
         return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
-    WSA_CMSG_FIRSTHDR(&msg)->cmsg_len = WSA_CMSG_LEN(data_len);
-    INIT_CHECKED_ARG((char *)(msg->Control.buf), rlen, len);
+    WSA_CMSG_FIRSTHDR(msg)->cmsg_len = WSA_CMSG_LEN(data_len);
     return 0;
 #else
     ERROR("Non-zero Control is not supported");
@@ -3305,7 +3304,7 @@ wsa_recv_msg_control_out(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
         calloc(1, sizeof(*rpc_c) * i);
 
     if (rpc_msg->msg_control.msg_control_val == NULL)
-        return = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
 
     /* Fill the array */
     for (i = 0, c = WSA_CMSG_FIRSTHDR(msg); 
