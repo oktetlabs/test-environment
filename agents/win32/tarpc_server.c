@@ -293,7 +293,8 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
         sprintf(tmp, postfix[i], name);
         memset(&si, 0, sizeof(si));
         
-        if (CreateProcess(NULL, cmdline, NULL, NULL, inherit, 0, NULL, NULL,
+        if (CreateProcess(NULL, cmdline, NULL, NULL, FALSE, 
+                          inherit, NULL, NULL,
                           &si, &info))
         {
             *pid = info.dwProcessId;
@@ -3259,6 +3260,84 @@ TARPC_FUNC(wsa_recv_disconnect, {},
 }
 )
 
+/** Copy control-related stuff from RPC */
+static te_errno
+wsa_recv_msg_control_in(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
+{
+#ifdef WINDOWS             
+    int len = calculate_msg_controllen(rpc_msg);
+    int rlen = len * 2;
+    int data_len = rpc_msg->msg_control.msg_control_val[0].data.data_len;
+
+    free(rpc_msg->msg_control.msg_control_val[0].data.data_val);
+    free(rpc_msg->msg_control.msg_control_val);
+    rpc_msg->msg_control.msg_control_val = NULL;
+    rpc_msg->msg_control.msg_control_len = 0;
+    msg->Control.len = len;
+    if ((msg->Control.buf = calloc(1, rlen)) == NULL)
+        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+
+    WSA_CMSG_FIRSTHDR(&msg)->cmsg_len = WSA_CMSG_LEN(data_len);
+    INIT_CHECKED_ARG((char *)(msg->Control.buf), rlen, len);
+    return 0;
+#else
+    ERROR("Non-zero Control is not supported");
+    return TE_RC(TE_TA_WIN32, TE_EINVAL);
+#endif            
+}                            
+
+/** Copy control-related stuff to RPC */
+static te_errno
+wsa_recv_msg_control_out(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
+{
+#ifdef WINDOWS
+    WSACMSGHDR     *c;
+    int             i;
+
+    struct tarpc_cmsghdr *rpc_c;
+
+    /* Calculate number of elements to allocate an array */
+    for (i = 0, c = WSA_CMSG_FIRSTHDR(msg);
+         c != NULL;
+         i++, c = WSA_CMSG_NXTHDR(msg, c));
+
+    rpc_c = rpc_msg->msg_control.msg_control_val = 
+        calloc(1, sizeof(*rpc_c) * i);
+
+    if (rpc_msg->msg_control.msg_control_val == NULL)
+        return = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+
+    /* Fill the array */
+    for (i = 0, c = WSA_CMSG_FIRSTHDR(msg); 
+         c != NULL;
+         i++, c = WSA_CMSG_NXTHDR(msg, c))
+    {
+        char *data = WSA_CMSG_DATA(c);
+
+        rpc_c->level = socklevel_h2rpc(c->cmsg_level);
+        rpc_c->type = sockopt_h2rpc(c->cmsg_level, 
+                                    c->cmsg_type);
+        if ((rpc_c->data.data_len = 
+             c->cmsg_len - (data - (char *)c)) > 0)
+        {
+            rpc_c->data.data_val = malloc(rpc_c->data.data_len);
+            if (rpc_c->data.data_val == NULL)
+            {
+                for (i--, rpc_c--; i >= 0; i--, rpc_c--)
+                    free(rpc_c->data.data_val);
+                free(rpc_msg->msg_control.msg_control_val);
+                rpc_msg->msg_control.msg_control_val = NULL;
+
+                return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+            }
+            memcpy(rpc_c->data.data_val, data, rpc_c->data.data_len);
+        }
+    }
+    rpc_msg->msg_control.msg_control_len = i;
+#endif    
+    return 0;
+}
+
 /*--------------- WSARecvMsg() -----------------------------*/
 TARPC_FUNC(wsa_recv_msg,
 {
@@ -3319,29 +3398,12 @@ TARPC_FUNC(wsa_recv_msg,
     
         if (rpc_msg->msg_control.msg_control_len > 0)
         {
-#ifdef WINDOWS             
-            int len = calculate_msg_controllen(rpc_msg);
-            int rlen = len * 2;
-            int data_len = rpc_msg->msg_control.msg_control_val[0].
-                data.data_len;
-
-            free(rpc_msg->msg_control.msg_control_val[0].data.data_val);
-            free(rpc_msg->msg_control.msg_control_val);
-            rpc_msg->msg_control.msg_control_val = NULL;
-            rpc_msg->msg_control.msg_control_len = 0;
-            msg.Control.len = len;
-            if ((msg.Control.buf = calloc(1, rlen)) == NULL)
+            out->common._errno = wsa_recv_msg_control_in(rpc_msg, &msg);
+            if (out->common._errno != 0)
             {
-                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+                out->retval = -1;
                 goto finish;
             }
-            WSA_CMSG_FIRSTHDR(&msg)->cmsg_len = WSA_CMSG_LEN(data_len);
-            INIT_CHECKED_ARG((char *)(msg.Control.buf), rlen, len);
-#else
-            ERROR("Non-zero Control is not supported");
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
-            goto finish;
-#endif            
         }
         
         msg.dwFlags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
@@ -3385,59 +3447,16 @@ TARPC_FUNC(wsa_recv_msg,
             rpc_msg->msg_namelen = msg.namelen;
             rpc_msg->msg_flags = send_recv_flags_h2rpc(msg.dwFlags);
 
-#ifdef WINDOWS            
-            if (msg.Control.buf != NULL)
+            if (msg.Control.buf != NULL && out->retval >= 0)
             {
-                WSACMSGHDR     *c;
-                int             i;
-
-                struct tarpc_cmsghdr *rpc_c;
-
-                /* Calculate number of elements to allocate an array */
-                for (i = 0, c = WSA_CMSG_FIRSTHDR(&msg);
-                     c != NULL;
-                     i++, c = WSA_CMSG_NXTHDR(&msg, c));
-
-                rpc_c = rpc_msg->msg_control.msg_control_val = 
-                    calloc(1, sizeof(*rpc_c) * i);
-
-                if (rpc_msg->msg_control.msg_control_val == NULL)
+                out->common._errno = 
+                    wsa_recv_msg_control_out(rpc_msg, &msg);
+                if (out->common._errno != 0)
                 {
-                    out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
+                    out->retval = -1;
                     goto finish;
                 }
-                /* Fill the array */
-                for (i = 0, c = WSA_CMSG_FIRSTHDR(&msg); 
-                     c != NULL;
-                     i++, c = WSA_CMSG_NXTHDR(&msg, c))
-                {
-                    char *data = WSA_CMSG_DATA(c);
-
-                    rpc_c->level = socklevel_h2rpc(c->cmsg_level);
-                    rpc_c->type = sockopt_h2rpc(c->cmsg_level, 
-                                                c->cmsg_type);
-                    if ((rpc_c->data.data_len = 
-                         c->cmsg_len - (data - (char *)c)) > 0)
-                    {
-                        rpc_c->data.data_val = malloc(rpc_c->data.data_len);
-                        if (rpc_c->data.data_val == NULL)
-                        {
-                            for (i--, rpc_c--; i >= 0; i--, rpc_c--)
-                                free(rpc_c->data.data_val);
-                            free(rpc_msg->msg_control.msg_control_val);
-                            rpc_msg->msg_control.msg_control_val = NULL;
-
-                            out->common._errno = TE_RC(TE_TA_WIN32, 
-                                                       TE_ENOMEM);
-                            goto finish;
-                        }
-                        memcpy(rpc_c->data.data_val, data, 
-                               rpc_c->data.data_len);
-                    }
-                }
-                rpc_msg->msg_control.msg_control_len = i;
             }
-#endif            
         }
         else if (in->overlapped == 0 ||
                  out->common._errno != RPC_E_IO_PENDING)
