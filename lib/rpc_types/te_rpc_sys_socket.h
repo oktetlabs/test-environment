@@ -1084,6 +1084,9 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef TCP_DEFER_ACCEPT
         RPC2H(TCP_DEFER_ACCEPT);
 #endif        
+#ifdef UDP_NOCHECKSUM
+        RPC2H(UDP_NOCHECKSUM);
+#endif        
         default: return RPC_SOCKOPT_MAX;
     }
 }
