@@ -104,7 +104,7 @@ typedef enum {
     NDN_TAG_ETH_ERIF_RC_D,
     NDN_TAG_ETH_ERIF_RC_LF,
     NDN_TAG_ETH_ERIF_RC_NCFI,
-    NDN_TAG_ETH_ERIF_RT,
+    NDN_TAG_ETH_ERIF_RD,
 
 } ndn_eth_tags_t;
 

@@ -74,8 +74,8 @@ static asn_named_entry_t _ndn_eth_tagged_ne_array[] =
       { PRIVATE, NDN_TAG_ETH_ERIF_RC_LF } },
     { "e-rif-rc-ncfi", &ndn_data_unit_int1_s,
       { PRIVATE, NDN_TAG_ETH_ERIF_RC_NCFI } },
-    { "e-rif-rt", &ndn_data_unit_octet_string_s,
-      { PRIVATE, NDN_TAG_ETH_ERIF_RT } },
+    { "e-rif-rd", &ndn_data_unit_octet_string_s,
+      { PRIVATE, NDN_TAG_ETH_ERIF_RD } },
 };
 
 asn_type ndn_eth_tagged_s =

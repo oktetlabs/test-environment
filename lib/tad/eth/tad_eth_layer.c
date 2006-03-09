@@ -155,8 +155,8 @@ static const tad_bps_pkt_frag tad_802_1q_e_rif_bps_hdr[] =
       TAD_DU_I32, FALSE },
     { "e-rif-rc-ncfi", 1, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RC_NCFI),
       TAD_DU_I32, FALSE },
-    { "e-rif-rt",      0, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RT),
-      TAD_DU_I32, FALSE },
+    { "e-rif-rd",      0, BPS_FLD_NO_DEF(NDN_TAG_ETH_ERIF_RD),
+      TAD_DU_OCTS, FALSE },
 };
 
 /**
