@@ -809,7 +809,11 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
                 free(oid_str);
                 break;
             }
-            if (strcmp(ta_type, "win32") == 0)
+            if (strcmp(ta_type, "win32") == 0 ||
+                /* The following types have issues in /agent/route */
+                strcmp(ta_type, "solaris2") == 0 ||
+                strcmp(ta_type, "freebsd6") == 0 ||
+                strcmp(ta_type, "netbsd") == 0)
             {
                 cfg_free_oid(oid);
                 free(oid_str);
