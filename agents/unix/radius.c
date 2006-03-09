@@ -1152,7 +1152,9 @@ write_radius_users(FILE *conf)
             /* Access-Accept configuration */
             fprintf(conf, "\"%s\" ", user->name);
             radius_write_attr_array(conf, &user->checks, "==", " ");
-            fputs(", Response-Packet-Type == Access-Accept\n\t", conf);
+            if (user->checks.len > 0)
+                fputs(", ", conf);
+            fputs("Response-Packet-Type == Access-Accept\n\t", conf);
             radius_write_attr_array(conf, &user->challenge_replies,
                                     "-=", "\n\t");
             if (user->challenge_replies.len > 0 && user->accept_replies.len > 0)
