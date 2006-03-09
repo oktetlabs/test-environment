@@ -497,7 +497,7 @@ tapi_udp4_dgram_recv_start(const char *ta_name,  int sid,
 {
     char pattern_fname[] = "/tmp/te_udp4_pattern.XXXXXX";
     int              rc;
-    unsigned int     timeout = 0; /** @todo Fix me */
+    unsigned int     timeout = TAD_TIMEOUT_INF; 
 
     mktemp(pattern_fname);
 
@@ -519,7 +519,7 @@ tapi_udp_ip4_eth_recv_start(const char *ta_name,  int sid,
                             rcf_trrecv_mode mode)
 {
     int              rc;
-    unsigned int     timeout = 0; /** @todo Fix me */
+    unsigned int     timeout = TAD_TIMEOUT_INF; 
     asn_value       *pattern;
     asn_value       *pattern_unit;
 
