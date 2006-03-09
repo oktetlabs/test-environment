@@ -395,8 +395,13 @@ route_log(const struct rt_msghdr *rtm)
          "ifa=%s\n"
          "author=%s\n"
          "brd=%s\n"
+#ifdef RTAX_SRC
          "src=%s\n"
-         "srcifp=%s\n",
+#endif
+#ifdef RTAX_SRCIFP
+         "srcifp=%s\n"
+#endif
+         ,
          rtm->rtm_msglen, rtm->rtm_version,
          rt_msghdr_type2str(rtm->rtm_type), rtm->rtm_index,
          (long)rtm->rtm_pid, rtm->rtm_seq, rtm->rtm_errno, rtm->rtm_use,
@@ -411,8 +416,14 @@ route_log(const struct rt_msghdr *rtm)
          rtm->rtm_rmx.rmx_pksent,
          addrs[RTAX_DST], addrs[RTAX_GATEWAY], addrs[RTAX_NETMASK],
          addrs[RTAX_GENMASK], addrs[RTAX_IFP], addrs[RTAX_IFA],
-         addrs[RTAX_AUTHOR], addrs[RTAX_BRD], addrs[RTAX_SRC],
-         addrs[RTAX_SRCIFP]);
+         addrs[RTAX_AUTHOR], addrs[RTAX_BRD]
+#ifdef RTAX_SRC
+         , addrs[RTAX_SRC]
+#endif
+#ifdef RTAX_SRCIFP
+         , addrs[RTAX_SRCIFP]
+#endif
+         );
 }
 
 /**
