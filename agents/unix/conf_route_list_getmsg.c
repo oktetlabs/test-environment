@@ -93,7 +93,7 @@ handle_route_entry(mib2_ipRouteEntry_t *routeEntry)
     if (routeEntry->ipRouteInfo.re_ire_type & IRE_CACHETABLE)
         return;
 
-    MASK2PREFIX(routeEntry->ipRouteMask, prefixlen);
+    MASK2PREFIX(ntohl(routeEntry->ipRouteMask), prefixlen);
         
     inet_ntop(AF_INET, &routeEntry->ipRouteDest, p, INET_ADDRSTRLEN);
     p += strlen(p);
