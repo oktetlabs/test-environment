@@ -43,6 +43,9 @@
 #include "logger_api.h"
 
 
+#define PRINT(msg...) \
+    do { printf(msg); printf("\n"); fflush(stdout); } while (0)
+
 /** Size of the log data sent in one request */
 #define RCF_PCH_LOG_BULK        8192
 
@@ -126,9 +129,6 @@ write_str_in_quotes(char *dst, const char *src, size_t len)
     *p++ = '\"';
     *p = '\0';
 }
-
-#define PRINT(msg...) \
-    do { printf(msg); printf("\n"); fflush(stdout); } while (0)
 
 
 /*
