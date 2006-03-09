@@ -794,6 +794,9 @@ ta_unix_conf_route_blackhole_del(ta_rt_info_t *rt_info)
 
 
 #if HAVE_SYS_SYSCTL_H
+#if HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
 #include <sys/sysctl.h>
 
 #if 0
