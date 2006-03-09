@@ -58,7 +58,7 @@ dnl
 dnl At first check headers used by other headers to be checked
 dnl 
 
-AC_CHECK_HEADERS([sys/types.h sys/queue.h])
+AC_CHECK_HEADERS([sys/types.h sys/queue.h sys/param.h])
 
 AC_CHECK_HEADERS([sys/socket.h], [], [], [
 #if HAVE_SYS_TYPES_H
@@ -153,6 +153,10 @@ unistd.h \
 #endif
 #if HAVE_SYS_QUEUE_H
 #include <sys/queue.h>
+#endif
+#if HAVE_SYS_PARAM_H
+/* NetBSD: sys/sysctl.h */
+#include <sys/param.h>
 #endif
 #if HAVE_NET_IF_H
 #include <net/if.h>
