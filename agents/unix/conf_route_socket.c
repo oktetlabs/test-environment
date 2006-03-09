@@ -99,6 +99,18 @@ rt_msghdr_type2str(unsigned int type)
         RT_MSGHDR_TYPE2STR(NEWADDR);
         RT_MSGHDR_TYPE2STR(DELADDR);
         RT_MSGHDR_TYPE2STR(IFINFO);
+#ifdef RTM_NEWMADDR
+        RT_MSGHDR_TYPE2STR(NEWMADDR);
+#endif
+#ifdef RTM_DELMADDR
+        RT_MSGHDR_TYPE2STR(DELMADDR);
+#endif
+#ifdef RTM_IFANNOUNCE
+        RT_MSGHDR_TYPE2STR(IFANNOUNCE);
+#endif
+#ifdef RTM_IEEE80211
+        RT_MSGHDR_TYPE2STR(IEEE80211);
+#endif
 
 #undef RT_MSGHDR_TYPE2STR
 
@@ -149,17 +161,46 @@ rt_msghdr_flags2str(unsigned int flags)
     RT_MSGHDR_FLAG2STR(DYNAMIC);
     RT_MSGHDR_FLAG2STR(MODIFIED);
     RT_MSGHDR_FLAG2STR(DONE);
+#ifdef RTF_MASK
     RT_MSGHDR_FLAG2STR(MASK);
+#endif
     RT_MSGHDR_FLAG2STR(CLONING);
     RT_MSGHDR_FLAG2STR(XRESOLVE);
     RT_MSGHDR_FLAG2STR(LLINFO);
     RT_MSGHDR_FLAG2STR(STATIC);
     RT_MSGHDR_FLAG2STR(BLACKHOLE);
+#ifdef RTF_PRIVATE
     RT_MSGHDR_FLAG2STR(PRIVATE);
+#endif
     RT_MSGHDR_FLAG2STR(PROTO2);
     RT_MSGHDR_FLAG2STR(PROTO1);
+#ifdef RTF_MULTIRT
     RT_MSGHDR_FLAG2STR(MULTIRT);
+#endif
+#ifdef RTF_SETSRC
     RT_MSGHDR_FLAG2STR(SETSRC);
+#endif
+#ifdef RTF_PRCLONING
+    RT_MSGHDR_FLAG2STR(PRCLONING);
+#endif
+#ifdef RTF_WASCLONED
+    RT_MSGHDR_FLAG2STR(WASCLONED);
+#endif
+#ifdef RTF_PROTO3
+    RT_MSGHDR_FLAG2STR(PROTO3);
+#endif
+#ifdef RTF_PINNED
+    RT_MSGHDR_FLAG2STR(PINNED);
+#endif
+#ifdef RTF_LOCAL
+    RT_MSGHDR_FLAG2STR(LOCAL);
+#endif
+#ifdef RTF_BROADCAST
+    RT_MSGHDR_FLAG2STR(BROADCAST);
+#endif
+#ifdef RTF_MULTICAST
+    RT_MSGHDR_FLAG2STR(MULTICAST);
+#endif
 
 #undef RT_MSGHDR_FLAG2STR
 
@@ -220,8 +261,12 @@ rt_msghdr_addrs2str(unsigned int addrs)
     RT_MSGHDR_ADDR2STR(IFA);
     RT_MSGHDR_ADDR2STR(AUTHOR);
     RT_MSGHDR_ADDR2STR(BRD);
+#ifdef RTA_SRC
     RT_MSGHDR_ADDR2STR(SRC);
+#endif
+#ifdef RTA_SRCIFP
     RT_MSGHDR_ADDR2STR(SRCIFP);
+#endif
 
 #undef RT_MSGHDR_ADDR2STR
 
@@ -680,7 +725,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
     } while ((rtm->rtm_type != RTM_GET) || (rtm->rtm_seq != rt_seq) ||
              (rtm->rtm_pid != rt_pid));
 
-#if 0
+#if 1
     /* Reply got */
     route_log(rtm);
 #endif
