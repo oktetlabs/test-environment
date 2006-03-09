@@ -599,6 +599,7 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
         addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
     }
 
+#ifdef RTA_SRC
     if (msg->rtm_addrs & RTA_SRC)
     {
 #if HAVE_STRUCT_SOCKADDR_SA_LEN
@@ -616,7 +617,9 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
 #endif
         addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
     }
+#endif
 
+#ifdef RTA_SRCIFP
     if (msg->rtm_addrs & RTA_SRCIFP)
     {
 #if HAVE_STRUCT_SOCKADDR_SA_LEN
@@ -634,6 +637,7 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
 #endif
         addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
     }
+#endif
 
     rt_info->ifname[0] = '\0';
 
