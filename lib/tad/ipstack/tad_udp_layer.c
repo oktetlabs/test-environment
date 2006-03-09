@@ -363,21 +363,19 @@ tad_udp_gen_bin_cb(csap_p csap, unsigned int layer,
 
 /* See description in tad_ipstack_impl.h */
 te_errno
-tad_udp_match_bin_cb(csap_p csap,
-                        unsigned int     layer,
-                        const asn_value *ptrn_pdu,
-                        void            *ptrn_opaque,
-                        tad_recv_pkt    *meta_pkt,
-                        tad_pkt         *pdu,
-                        tad_pkt         *sdu)
+tad_udp_match_bin_cb(csap_p           csap,
+                     unsigned int     layer,
+                     const asn_value *ptrn_pdu,
+                     void            *ptrn_opaque,
+                     tad_recv_pkt    *meta_pkt,
+                     tad_pkt         *pdu,
+                     tad_pkt         *sdu)
 {
     uint8_t    *data_ptr; 
     uint8_t    *data; 
     size_t      data_len;
     asn_value  *udp_header_pdu = NULL;
     te_errno    rc;
-
-    UNUSED(ptrn_opaque);
 
     assert(tad_pkt_seg_num(pdu) == 1);
     assert(tad_pkt_first_seg(pdu) != NULL);
@@ -394,6 +392,7 @@ tad_udp_match_bin_cb(csap_p csap,
 
     UNUSED(csap);
     UNUSED(layer);
+    UNUSED(ptrn_opaque); 
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
