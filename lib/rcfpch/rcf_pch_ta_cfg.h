@@ -30,13 +30,15 @@
 #ifndef __TE_RCF_PCH_TA_CFG_H__
 #define __TE_RCF_PCH_TA_CFG_H__
 
-#if HAVE_NET_IF_H
+#if HAVE_NET_IF_H && !defined(__CYGWIN__)
 #include <net/if.h>
 #endif
 
 #ifndef IF_NAMESIZE
 #ifdef IFNAMSIZ
 #define IF_NAMESIZE IFNAMSIZ
+#elif defined(__CYGWIN__)
+#define IF_NAMESIZE 16
 #else
 #error Neither IF_NAMESIZE nor IFNAMSIZ defined
 #endif
