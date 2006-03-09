@@ -2251,7 +2251,6 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
         strcat(p++, " ");
     }
     free(ifconf_buf);
-    PRINT("IF=%s: ADDRS=%s", ifname, *list);
     return 0;
 }
 #endif
