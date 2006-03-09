@@ -242,7 +242,7 @@ ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
             }
 
             RING("Default route for AF_INET6 is found");
-            return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+            return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
             break;
         }
 
