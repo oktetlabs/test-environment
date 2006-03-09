@@ -1147,6 +1147,7 @@ tad_recv_thread(void *arg)
         /* Read one packet from media */
         rc = read_cb(csap, timeout, pkt, &read_len); 
         gettimeofday(&meta_pkt->ts, NULL);
+        VERB("%s(CSAP %d) read %d", __FUNCTION__, csap->id, read_len);
 
         /* We have read something, now allow to stop on timeout */
         stop_on_timeout = TRUE;
@@ -1323,8 +1324,8 @@ tad_recv_report_packet(const asn_value *packet, rcf_comm_connection *rcfc,
         != (int)(attach_len - 1))
     {
         ERROR("%s(): asn_sprint_value() returns unexpected number: "
-              "expected %u, got %d", __FUNCTION__, (unsigned)attach_len,
-              attach_rlen);
+              "expected %u, got %d",
+              __FUNCTION__, (unsigned)(attach_len - 1), attach_rlen);
         free(buffer);
         return TE_EFAULT;
     } 
