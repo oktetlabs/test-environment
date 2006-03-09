@@ -305,12 +305,15 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                             inst_names[0], inst_names[1], inst_names[2],
                             inst_names[3], inst_names[4], inst_names[5],
                             inst_names[6], inst_names[7], inst_names[8],
-                            inst_names[9]) != 0 || tmp_list == NULL)
+                            inst_names[9]) != 0)
             {
+                ERROR("List method failed for '%s'", parsed);
                 free(dup);
                 RET(0);
             }
             free(dup);
+            if ((tmp_list == NULL) && ((tmp_list = strdup(" ")) == NULL))
+                RET(TE_ENOMEM);
         }
 
         for (tmp_inst_name = tmp_list;
