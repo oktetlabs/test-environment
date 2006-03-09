@@ -133,6 +133,7 @@ sys/resource.h \
 sys/select.h \
 sys/sendfile.h \
 sys/stat.h \
+sys/sysctl.h \
 sys/time.h \
 sys/uio.h \
 sys/un.h \
