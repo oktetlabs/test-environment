@@ -30,6 +30,18 @@
 #ifndef __TE_RCF_PCH_TA_CFG_H__
 #define __TE_RCF_PCH_TA_CFG_H__
 
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+
+#ifndef IF_NAMESIZE
+#ifdef IFNAMSIZ
+#define IF_NAMESIZE IFNAMSIZ
+#else
+#error Neither IF_NAMESIZE nor IFNAMSIZ defined
+#endif
+#endif
+
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "rcf_common.h"
@@ -87,9 +99,6 @@
 extern "C" {
 #endif
 
-#ifndef IF_NAMESIZE
-#define IF_NAMESIZE     16
-#endif
 
 /** Object attribute data structure */
 typedef struct ta_cfg_obj_attr {
