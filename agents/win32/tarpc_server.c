@@ -293,8 +293,8 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
         sprintf(tmp, postfix[i], name);
         memset(&si, 0, sizeof(si));
         
-        if (CreateProcess(NULL, cmdline, NULL, NULL, FALSE, 
-                          inherit, NULL, NULL,
+        if (CreateProcess(NULL, cmdline, NULL, NULL, 
+                          inherit, 0, NULL, NULL,
                           &si, &info))
         {
             *pid = info.dwProcessId;
