@@ -167,7 +167,7 @@ extern void sockaddr_set_port(struct sockaddr *addr, uint16_t port);
  *
  * @return Pointer to corresponding network address
  */
-extern const void *sockaddr_get_netaddr(const struct sockaddr *addr);
+extern void *sockaddr_get_netaddr(const struct sockaddr *addr);
 
 /**
  * Returns pointer to the IP 4/6 address in human representation 

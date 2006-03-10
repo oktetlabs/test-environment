@@ -114,7 +114,7 @@ sockaddr_set_port(struct sockaddr *addr, uint16_t port)
 }
 
 /* See the description in tapi_sockaddr.h */
-const void *
+void *
 sockaddr_get_netaddr(const struct sockaddr *addr)
 {
     switch (addr->sa_family)
