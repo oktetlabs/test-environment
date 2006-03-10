@@ -1147,7 +1147,8 @@ tad_recv_thread(void *arg)
         /* Read one packet from media */
         rc = read_cb(csap, timeout, pkt, &read_len); 
         gettimeofday(&meta_pkt->ts, NULL);
-        VERB("%s(CSAP %d) read %d", __FUNCTION__, csap->id, read_len);
+        F_VERB(CSAP_LOG_FMT "read callback returned len=%u: %r",
+               CSAP_LOG_ARGS(csap), (unsigned)read_len, rc);
 
         /* We have read something, now allow to stop on timeout */
         stop_on_timeout = TRUE;
