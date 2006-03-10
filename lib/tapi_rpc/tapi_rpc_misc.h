@@ -69,6 +69,28 @@ extern tarpc_ssize_t rpc_get_sizeof(rcf_rpc_server *rpcs,
                                     const char *type_name);
 
 /**
+ * Compare protocol information (WSAPROTOCOL_INFO)
+ *
+ * @param rpcs               RPC server
+ * @param buf1               buffer containing protocol info to compare
+ * @param buf2               buffer containing protocol info to compare
+ * @param is_wide1           boolean defining if fields of first 
+ *                           protocol info  are wide-character 
+ * @param is_wide2           boolean defining if fields of second 
+ *                           protocol info are wide-character       
+ *
+ * @return                   TRUE if information in @p buf1 is equal to 
+ *                           information in buf2
+ */
+extern tarpc_bool rpc_protocol_info_cmp(rcf_rpc_server *rpcs, 
+                                        const uint8_t *buf1,
+                                        const uint8_t *buf2,
+                                        tarpc_bool is_wide1,
+                                        tarpc_bool is_wide2);
+
+
+
+/**
  * Get address of the variable known on RPC server.
  *
  * @param handle RPC server

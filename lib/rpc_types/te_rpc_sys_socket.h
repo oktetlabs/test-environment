@@ -681,6 +681,9 @@ typedef enum rpc_sockopt {
                                  */
     RPC_SO_GROUP_ID,        /**< MS Windows specific. */
     RPC_SO_GROUP_PRIORITY,  /**< MS Windows specific. */
+
+    RPC_SO_PROTOCOL_INFOA,  /**< Returns the WSAPROTOCOL_INFOA structure */
+    RPC_SO_PROTOCOL_INFOW,  /**< Returns the WSAPROTOCOL_INFOW structure */
         
     RPC_IP_ADD_MEMBERSHIP,  /**< Join a multicast group */
     RPC_IP_DROP_MEMBERSHIP, /**< Leave a multicast group */
@@ -931,6 +934,12 @@ sockopt_rpc2h(rpc_sockopt opt)
 #ifdef SO_GROUP_PRIORITY
         RPC2H(SO_GROUP_PRIORITY);
 #endif
+#ifdef SO_PROTOCOL_INFOA
+        RPC2H(SO_PROTOCOL_INFOA);
+#endif
+#ifdef SO_PROTOCOL_INFOW
+        RPC2H(SO_PROTOCOL_INFOW);
+#endif
 #ifdef IP_ADD_MEMBERSHIP
         RPC2H(IP_ADD_MEMBERSHIP);
 #endif
@@ -1176,6 +1185,12 @@ sockopt_h2rpc(int opt_type, int opt)
 #ifdef SO_GROUP_PRIORITY
                 H2RPC(SO_GROUP_PRIORITY);
 #endif
+#ifdef SO_PROTOCOL_INFOA
+                H2RPC(SO_PROTOCOL_INFOA);
+#endif
+#ifdef SO_PROTOCOL_INFOW
+                H2RPC(SO_PROTOCOL_INFOW);
+#endif
                 default: return RPC_SOCKOPT_MAX;
             }
             break;
@@ -1409,6 +1424,8 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(SO_EXCLUSIVEADDRUSE);
         RPC2STR(SO_GROUP_ID);
         RPC2STR(SO_GROUP_PRIORITY);
+        RPC2STR(SO_PROTOCOL_INFOA);
+        RPC2STR(SO_PROTOCOL_INFOW);
         RPC2STR(IP_ADD_MEMBERSHIP);
         RPC2STR(IP_DROP_MEMBERSHIP);
         RPC2STR(IP_MULTICAST_IF);

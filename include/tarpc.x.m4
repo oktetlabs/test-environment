@@ -1795,7 +1795,8 @@ enum option_type {
     OPT_STRING          = 7,
     OPT_TCP_INFO        = 8,
     OPT_HANDLE          = 9,
-    OPT_MREQ6           = 10
+    OPT_MREQ6           = 10,
+    OPT_RAW_DATA        = 11
 };
 
 struct tarpc_linger {
@@ -1809,15 +1810,16 @@ struct option_value_mreqn {
     tarpc_int   imr_ifindex;    /**< Interface index */
 };
 
+struct option_value_mreq6 {
+     uint32_t            ipv6mr_multiaddr<>;
+     tarpc_int           ipv6mr_ifindex;
+};
+
+
 struct option_value_mreq{
     uint32_t    imr_multiaddr;  /**< IP multicast group address */
     uint32_t    imr_address;    /**< IP address of local interface */
-};
-
-struct option_value_mreq6 {
-    uint32_t            ipv6mr_multiaddr<>;
-    tarpc_int           ipv6mr_ifindex;
-};
+};    
 
 struct tarpc_mreqn {
     enum option_type    type;
@@ -1876,6 +1878,7 @@ union option_value switch (option_type opttype) {
     case OPT_STRING:            char opt_string<>;
     case OPT_TCP_INFO:          struct option_value_tcp_info opt_tcp_info;
     case OPT_HANDLE:            int opt_handle;
+    case OPT_RAW_DATA:          uint8_t opt_raw<>;
 };
 
 /* setsockopt() */
@@ -3142,6 +3145,22 @@ struct tarpc_get_sizeof_out {
     tarpc_ssize_t size;
 };
 
+/* protocol_info_cmp() */
+
+struct tarpc_protocol_info_cmp_in {
+    struct tarpc_in_arg common;
+
+    uint8_t buf1<>;
+    uint8_t buf2<>;
+    tarpc_bool is_wide1;
+    tarpc_bool is_wide2;
+};
+
+struct tarpc_protocol_info_cmp_out {
+    struct tarpc_out_arg common;
+    tarpc_bool retval;
+};
+
 /* get_addrof() */
 struct tarpc_get_addrof_in {
     struct tarpc_in_arg common;
@@ -3199,6 +3218,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
 
         RPC_DEF(get_sizeof)
         RPC_DEF(get_addrof)
+        RPC_DEF(protocol_info_cmp)
 
         RPC_DEF(get_var)
         RPC_DEF(set_var)

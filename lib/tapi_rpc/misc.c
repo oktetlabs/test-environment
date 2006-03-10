@@ -99,6 +99,59 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
 }
 
 /* See description in tapi_rpc_misc.h */
+te_bool 
+rpc_protocol_info_cmp(rcf_rpc_server *rpcs, 
+                                        const uint8_t *buf1,
+                                        const uint8_t *buf2,
+                                        tarpc_bool is_wide1,
+                                        tarpc_bool is_wide2)
+{
+    struct tarpc_protocol_info_cmp_in  in;
+    struct tarpc_protocol_info_cmp_out out;
+    tarpc_bool                         rc;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(protocol_info_cmp, -1);
+    }
+
+    if (buf1 == NULL || buf2 == NULL)
+    {
+        ERROR("%s(): NULL buffer", __FUNCTION__);
+        RETVAL_INT(protocol_info_cmp, -1);
+    }
+
+    rpcs->op = RCF_RPC_CALL_WAIT;
+
+    in.buf1.buf1_val = buf1;
+    in.buf2.buf2_val = buf2;
+    if (is_wide1)
+        in.buf1.buf1_len = rpc_get_sizeof(rpcs, "WSAPROTOCOL_INFOW");
+    else
+        in.buf1.buf1_len = rpc_get_sizeof(rpcs, "WSAPROTOCOL_INFOA");
+    if (is_wide2)
+        in.buf2.buf2_len = rpc_get_sizeof(rpcs, "WSAPROTOCOL_INFOW");
+    else
+        in.buf2.buf2_len = rpc_get_sizeof(rpcs, "WSAPROTOCOL_INFOA");
+    in.is_wide1 = is_wide1;
+    in.is_wide2 = is_wide2;
+    
+
+    rcf_rpc_call(rpcs, "protocol_info_cmp", &in, &out);
+
+    rc = out.retval;
+
+    TAPI_RPC_LOG("RPC (%s,%s): protocol_info_cmp() -> %d",
+                 rpcs->ta, rpcs->name, rc);
+
+    RETVAL_INT(protocol_info_cmp, rc);
+}
+
+/* See description in tapi_rpc_misc.h */
 rpc_ptr
 rpc_get_addrof(rcf_rpc_server *rpcs, const char *name)
 {

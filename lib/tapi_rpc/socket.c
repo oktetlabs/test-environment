@@ -1256,7 +1256,15 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 if (optlen_copy == sizeof(tarpc_timeval))
                     optlen_copy = RPC_OPTLEN_AUTO;
                 break;
-                
+            case RPC_SO_PROTOCOL_INFOA:
+            case RPC_SO_PROTOCOL_INFOW:
+            {
+                val.opttype = OPT_RAW_DATA;
+                optlen_copy = *optlen;
+                val.option_value_u.opt_raw.opt_raw_len = *optlen;
+                val.option_value_u.opt_raw.opt_raw_val = (char *)optval;
+                break;
+            }
             case RPC_IPV6_PKTOPTIONS:
                 ERROR("IPV6_PKTOPTIONS is not supported yet");
                 RETVAL_INT(getsockopt, -1);
@@ -1448,7 +1456,13 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                  ((tarpc_timeval *)optval)->tv_usec);
                     }
                     break;
-
+                case RPC_SO_PROTOCOL_INFOA:
+                case RPC_SO_PROTOCOL_INFOW:
+                {
+                    memcpy(optval, out.optval.optval_val[0].
+                               option_value_u.opt_raw.opt_raw_val, *optlen);
+                    break;
+                }
                 case RPC_IP_ADD_MEMBERSHIP:
                 case RPC_IP_DROP_MEMBERSHIP:
                 case RPC_IP_MULTICAST_IF:

@@ -128,7 +128,12 @@ static type_info_t type_info[] =
     {"struct linger", sizeof(struct linger)},
     {"struct ip_mreq", sizeof(struct ip_mreq)},
     {"struct sockaddr_storage", sizeof(struct sockaddr_storage)},
-    {"struct sockaddr", sizeof(struct sockaddr)}
+    {"struct sockaddr", sizeof(struct sockaddr)},
+    {"WSAPROTOCOL_INFOA", sizeof(WSAPROTOCOL_INFOA)},
+    {"WSAPROTOCOL_INFOW", sizeof(WSAPROTOCOL_INFOW)},
+#if 0
+    {"struct ip_mreqn", sizeof(struct ip_mreqn)}
+#endif
 };
 
 /*-------------- get_sizeof() ---------------------------------*/
@@ -164,6 +169,88 @@ _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
     }
     ERROR("Unknown type (%s)", out->size);
     return FALSE;
+}
+
+/*-------------- protocol_info_cmp() ---------------------------------*/
+bool_t
+_protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in, 
+                         tarpc_protocol_info_cmp_out *out,
+                         struct svc_req *rqstp)
+{
+    UNUSED(rqstp); 
+
+    WSAPROTOCOL_INFO *info1, *info2;
+   
+    int protocol_len = 0;
+    int protocol_widelen = 0;    
+    
+    info1 = (WSAPROTOCOL_INFO*)(in->buf1.buf1_val);
+    info2 = (WSAPROTOCOL_INFO*)(in->buf2.buf2_val);
+
+    if (in->is_wide1)
+        protocol_widelen = sizeof(info1->szProtocol) / sizeof(wchar_t);
+    else if (in->is_wide2)
+        protocol_widelen = sizeof(info2->szProtocol) / sizeof(wchar_t);
+
+    if (!in->is_wide1)
+        protocol_len = sizeof(info1->szProtocol);
+    else if (!in->is_wide2)
+        protocol_len = sizeof(info2->szProtocol);
+    else
+        protocol_len = protocol_widelen;  
+  
+    char info1_char[protocol_len];
+    char info2_char[protocol_len];
+    out->retval = TRUE;   
+
+    if ( (info1->dwServiceFlags1 != info2->dwServiceFlags1) || 
+       (info1->dwServiceFlags2 != info2->dwServiceFlags2) ||
+       (info1->dwServiceFlags3 != info2->dwServiceFlags3) ||
+       (info1->dwServiceFlags4 != info2->dwServiceFlags4) ||
+       (info1->dwProviderFlags != info2->dwProviderFlags) ||
+       (memcmp(&(info1->ProviderId), &(info2->ProviderId), 
+                  sizeof(GUID)) != 0) ||
+       (info1->dwCatalogEntryId != info2->dwCatalogEntryId) ||
+       (memcmp(&(info1->ProtocolChain), &(info2->ProtocolChain),
+               sizeof(WSAPROTOCOLCHAIN)) != 0) ||
+       (info1->iVersion != info2->iVersion) ||
+       (info1->iAddressFamily != info2->iAddressFamily) ||
+       (info1->iMaxSockAddr != info2->iMaxSockAddr) ||
+       (info1->iSocketType != info2->iSocketType) ||
+       (info1->iMinSockAddr != info2->iMinSockAddr) || 
+       (info1->iProtocol != info2->iProtocol) ||
+       (info1->iProtocolMaxOffset != info2->iProtocolMaxOffset) ||
+       (info1->iNetworkByteOrder != info2->iNetworkByteOrder) ||
+       (info1->iSecurityScheme != info2->iSecurityScheme) ||
+       (info1->dwMessageSize != info2->dwMessageSize) )
+        out->retval = FALSE;
+    
+    if (in->is_wide1 && !in->is_wide2)
+    {    
+        WideCharToMultiByte(CP_ACP, 0, (wchar_t *)&(info1->szProtocol), 
+                            protocol_widelen, info1_char, 
+                            protocol_len, NULL, NULL);
+        strncpy(info2_char, info2->szProtocol, protocol_len);
+    }
+    if (in->is_wide2 && !in->is_wide1)  
+    {  
+        WideCharToMultiByte(CP_ACP, 0, (wchar_t *)&(info2->szProtocol), 
+                            protocol_widelen, info2_char, 
+                            protocol_len, NULL, NULL);
+        strncpy(info1_char, info1->szProtocol, protocol_len);
+    }
+    if (!in->is_wide1 && !in->is_wide2)
+    {
+        if (strcmp(info1->szProtocol, info2->szProtocol) != 0)
+            out->retval = FALSE; 
+    }
+    else 
+    {
+        if (strcmp(info1_char, info2_char) != 0)
+             out->retval = FALSE; 
+    }
+
+    return TRUE;
 }
 
 /*-------------- get_addrof() ---------------------------------*/
@@ -1578,7 +1665,7 @@ TARPC_FUNC(getsockopt,
     }
     else
     {
-        char opt[sizeof(struct linger)];
+        char opt[sizeof(WSAPROTOCOL_INFOW)];
         
         memset(opt, 0, sizeof(opt));
         
@@ -1607,6 +1694,12 @@ TARPC_FUNC(getsockopt,
                     optlen_in = optlen_out = sizeof(struct ipv6_mreq);
                     break;
 
+                case OPT_RAW_DATA:
+                {
+                    optlen_in = optlen_out = *(out->optlen.optlen_val);
+                    break;
+                }
+
                 default:
                     ERROR("incorrect option type %d is received",
                           out->optval.optval_val[0].opttype);
@@ -1622,16 +1715,16 @@ TARPC_FUNC(getsockopt,
         MAKE_CALL(out->retval = 
                       getsockopt(in->s, socklevel_rpc2h(in->level),
                                  sockopt_rpc2h(in->optname),
-                                 opt, out->optlen.optlen_val == NULL ?
+                                 opt, 
+                                 out->optlen.optlen_val == NULL ?
                                       NULL : &optlen_out));
-                                 
         if (optlen_in != optlen_out &&
             !(in->optname == RPC_SO_SNDTIMEO || 
               in->optname == RPC_SO_RCVTIMEO))
         {
             *(out->optlen.optlen_val) = optlen_out;
         }
-
+        
         switch (out->optval.optval_val[0].opttype)
         {
             case OPT_INT:
@@ -1718,7 +1811,15 @@ TARPC_FUNC(getsockopt,
                        opt_string_len);
                 break;
             }
-
+            case OPT_RAW_DATA:
+            {
+                char *str = (char *)opt;
+                memcpy(out->optval.optval_val[0].option_value_u.opt_raw.
+                       opt_raw_val, str,
+                       out->optval.optval_val[0].option_value_u.opt_raw.
+                       opt_raw_len);
+                break;
+            }
             default:
                 ERROR("incorrect option type %d is received",
                       out->optval.optval_val[0].opttype);
