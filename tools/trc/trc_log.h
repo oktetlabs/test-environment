@@ -41,5 +41,6 @@
 
 #define ERROR(fmt_...)     LOG("ERROR: " fmt_)
 #define INFO(fmt_...)
+#define VERB(fmt_...)
 
 #endif /* !__TE_TRC_LOG_H__ */

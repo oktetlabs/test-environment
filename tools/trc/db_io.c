@@ -46,6 +46,7 @@
 #include "trc_tag.h"
 #include "trc_db.h"
 #include "trc_xml.h"
+#include "logic_expr.h"
 
 
 /** Testing results comparison database */
@@ -247,16 +248,17 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
                     trc_tags *tags, trc_exp_result *result)
 {
     int         rc = 0;
-    trc_tag    *tag = NULL;
     xmlNodePtr  result_node;
+    int         tagged_result_prio;
 
     struct trc_tagged_result {
         LIST_ENTRY(trc_tagged_result)   links;
         
         xmlNodePtr          node;
-        char               *tag;
+        char               *tags_expr_str;
+        logic_expr         *tags_expr;
         trc_test_result     value;
-    } *tagged_result;
+    } *tagged_result, *tmp;
 
     LIST_HEAD(trc_tagged_results, trc_tagged_result)    tagged_results;
 
@@ -280,8 +282,14 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
             }
             LIST_INSERT_HEAD(&tagged_results, tagged_result, links);
             tagged_result->node = *node;
-            tagged_result->tag =
+            tagged_result->tags_expr_str =
                 XML2CHAR(xmlGetProp(*node, CONST_CHAR2XML("tag")));
+            if (logic_expr_parse(tagged_result->tags_expr_str,
+                                 &tagged_result->tags_expr) != 0)
+            {
+                rc = EINVAL;
+                goto exit;
+            }
             rc = get_result(*node, "value", &tagged_result->value);
             if (rc != 0)
                 goto exit;
@@ -290,34 +298,27 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
     }
 
     /* Do we have a tag with expected SKIPPED result? */
-    for (tagged_result = tagged_results.lh_first;
-         tagged_result != NULL;
-         tagged_result = tagged_result->links.le_next)
+    for (tagged_result = NULL, tagged_result_prio = 0,
+             tmp = tagged_results.lh_first;
+         tmp != NULL;
+         tmp = tmp->links.le_next)
     {
-        if (tagged_result->value == TRC_TEST_SKIPPED)
-        {
-            for (tag = tags->tqh_first;
-                 tag != NULL && strcmp(tagged_result->tag, tag->name) != 0;
-                 tag = tag->links.tqe_next);
-            if (tag != NULL)
-                break;
-        }
-    }
-    if (tagged_result == NULL)
-    {
-        /* We have no tag with expected SKIPPED result */
-        for (tag = tags->tqh_first;
-             tag != NULL;
-             tag = tag->links.tqe_next)
-        {
-            for (tagged_result = tagged_results.lh_first;
-                 tagged_result != NULL &&
-                 (tagged_result->value == TRC_TEST_SKIPPED ||
-                  strcmp(tagged_result->tag, tag->name) != 0);
-                 tagged_result = tagged_result->links.le_next);
+        int res = logic_expr_match(tmp->tags_expr, tags);
 
-            if (tagged_result != NULL)
+        if (res != 0)
+        {
+            if (tmp->value == TRC_TEST_SKIPPED)
+            {
+                /* Skipped results have top priority in any case */
+                tagged_result = tmp;
+                tagged_result_prio = res;
                 break;
+            }
+            if (tagged_result == NULL || res < tagged_result_prio)
+            {
+                tagged_result = tmp;
+                tagged_result_prio = res;
+            }
         }
     }
 
@@ -372,7 +373,8 @@ exit:
     while ((tagged_result = tagged_results.lh_first) != NULL)
     {
         LIST_REMOVE(tagged_result, links);
-        free(tagged_result->tag);
+        free(tagged_result->tags_expr_str);
+        logic_expr_free(tagged_result->tags_expr);
         free(tagged_result);
     }
 

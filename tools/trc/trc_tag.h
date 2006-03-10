@@ -33,17 +33,19 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "logic_expr.h"
 
 
-/** Named tag */
-typedef struct trc_tag {
-    TAILQ_ENTRY(trc_tag)    links;  /**< List links */
+/**
+ * Tag is just a string as list element.
+ */
+typedef tqe_string trc_tag;
 
-    char                   *name;   /**< Tag name */
-} trc_tag;
+/**
+ * List of tags is just a order list of strings.
+ */
+typedef tqh_string trc_tags;
 
-/** List of named tags */
-typedef TAILQ_HEAD(trc_tags, trc_tag)   trc_tags;   /**< List of tags */
 
 /** Entry in the list of list of named tags */
 typedef struct trc_tags_entry {

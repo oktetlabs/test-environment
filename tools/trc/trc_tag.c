@@ -70,8 +70,8 @@ trc_add_tag(trc_tags *tags, const char *name)
         return ENOMEM;
     }
     TAILQ_INSERT_TAIL(tags, p, links);
-    p->name = strdup(name);
-    if (p->name == NULL)
+    p->str = strdup(name);
+    if (p->str == NULL)
     {
         ERROR("strdup(%s) failed", name);
         return ENOMEM;
@@ -88,7 +88,7 @@ trc_free_tags(trc_tags *tags)
     while ((p = tags->tqh_first) != NULL)
     {
         TAILQ_REMOVE(tags, p, links);
-        free(p->name);
+        free(p->str);
         free(p);
     }
 }

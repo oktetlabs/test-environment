@@ -35,6 +35,7 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "logic_expr.h"
 
 
 /** Number of IDs supported by TRC-diff */
@@ -53,17 +54,6 @@ typedef struct le_string {
 
 /** List of strings */
 typedef LIST_HEAD(lh_string, le_string) lh_string;
-
-
-/** Entry of the queue of strings */
-typedef struct tqe_string {
-    TAILQ_ENTRY(tqe_string)     links;  /**< List links */
-
-    char                       *str;    /**< String */
-} tqe_string;
-
-/** Queue of strings */
-typedef TAILQ_HEAD(tqh_string, tqe_string) tqh_string;
 
 
 /**

@@ -29,9 +29,24 @@
 #ifndef __TE_LOGIC_EXPR_H__
 #define __TE_LOGIC_EXPR_H__
 
+#include "te_queue.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/** Entry of the queue of strings */
+typedef struct tqe_string {
+    TAILQ_ENTRY(tqe_string)     links;  /**< List links */
+
+    char                       *str;    /**< String */
+} tqe_string;
+
+/** Queue of strings */
+typedef TAILQ_HEAD(tqh_string, tqe_string) tqh_string;
+
 
 /** Types of expression elements */
 typedef enum logic_expr_type {
@@ -74,6 +89,16 @@ extern int logic_expr_parse(const char *str, logic_expr **expr);
  * @param expr      Expression to be freed
  */
 extern void logic_expr_free(logic_expr *expr);
+
+/**
+ * Is set of string match logical expression?
+ *
+ * @param re        Logical expression
+ * @param set       Set of strings
+ *
+ * @return Index in the set (starting from 1) or 0.
+ */
+extern int logic_expr_match(const logic_expr *re, const tqh_string *set);
 
 
 #ifdef __cplusplus

@@ -1099,9 +1099,9 @@ trc_diff_tags_to_html(const trc_tags_list *tags_list)
              tag = tag->links.tqe_next)
         {
             if (tag->links.tqe_next != NULL ||
-                strcmp(tag->name, "result") != 0)
+                strcmp(tag->str, "result") != 0)
             {
-                fprintf(f, " %s", tag->name);
+                fprintf(f, " %s", tag->str);
             }
         }
         fprintf(f, "<BR/><BR/>");
