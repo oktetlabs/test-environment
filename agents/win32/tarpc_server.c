@@ -177,15 +177,18 @@ _protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in,
                          tarpc_protocol_info_cmp_out *out,
                          struct svc_req *rqstp)
 {
-    UNUSED(rqstp); 
-
     WSAPROTOCOL_INFO *info1, *info2;
    
     int protocol_len = 0;
     int protocol_widelen = 0;    
+
+    char info1_char[sizeof(info1->szProtocol) * 2];
+    char info2_char[sizeof(info1->szProtocol) * 2];
     
-    info1 = (WSAPROTOCOL_INFO*)(in->buf1.buf1_val);
-    info2 = (WSAPROTOCOL_INFO*)(in->buf2.buf2_val);
+    UNUSED(rqstp); 
+
+    info1 = (WSAPROTOCOL_INFO *)(in->buf1.buf1_val);
+    info2 = (WSAPROTOCOL_INFO *)(in->buf2.buf2_val);
 
     if (in->is_wide1)
         protocol_widelen = sizeof(info1->szProtocol) / sizeof(wchar_t);
@@ -199,8 +202,6 @@ _protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in,
     else
         protocol_len = protocol_widelen;  
   
-    char info1_char[protocol_len];
-    char info2_char[protocol_len];
     out->retval = TRUE;   
 
     if ( (info1->dwServiceFlags1 != info2->dwServiceFlags1) || 
@@ -2896,6 +2897,7 @@ default_completion_callback(DWORD error, DWORD bytes,
 {
     UNUSED(flags);
 
+    PRINT("Callback error %d bytes %d", error, bytes);
     thread_mutex_lock(completion_lock);
     completion_called++;
     completion_error = win_rpc_errno(error);
@@ -2909,6 +2911,7 @@ void CALLBACK
 default_file_completion_callback(DWORD error, DWORD bytes, 
                                 LPWSAOVERLAPPED overlapped)
 {
+    
     default_completion_callback(error, bytes, overlapped, 0);
 }
 
@@ -4116,30 +4119,26 @@ TARPC_FUNC(wsa_ioctl,
 
         case WSA_IOCTL_SAA:
         {
-            SOCKET_ADDRESS_LIST     *sal;
+            struct sockaddr_storage *p;
             int                      i;
+            struct tarpc_sa         *q = (tarpc_sa *)req->
+                                         wsa_ioctl_request_u.req_saa.
+                                         req_saa_val;
 
             inbuf = malloc(sizeof(uint32_t) +
-                           sizeof(SOCKET_ADDRESS) *
+                           sizeof(struct sockaddr_storage) *
                            req->wsa_ioctl_request_u.req_saa.req_saa_len);
 
-            sal = (SOCKET_ADDRESS_LIST *)inbuf;
- 
-            sal->iAddressCount = req->wsa_ioctl_request_u.req_saa.
-                                 req_saa_len;
-
-            for (i = 0; i < sal->iAddressCount; i++)
+            p = (struct sockaddr_storage *)
+                ((char *)inbuf + sizeof(uint32_t));
+            
+            for (i = 0; i < *(uint32_t *)inbuf; i++, p++, q++)
             {
-                sal->Address[i].iSockaddrLength =
-                    sizeof(struct sockaddr_in6);
-                sal->Address[i].lpSockaddr =
-                    (LPSOCKADDR)malloc(sizeof(struct sockaddr_in6));
-                sockaddr_rpc2h(req->wsa_ioctl_request_u.req_saa.
-                               req_saa_val + i,
-                               (struct sockaddr_storage *)
-                                   (sal->Address[i].lpSockaddr));
-            }
-
+                p->ss_family = addr_family_rpc2h(q->sa_family);
+                memcpy(SA(p)->sa_data, q->sa_data.sa_data_val,
+                       q->sa_data.sa_data_len);
+            } 
+            
             break;
         }
 
@@ -4203,6 +4202,7 @@ TARPC_FUNC(wsa_ioctl,
 
     INIT_CHECKED_ARG(inbuf, inbuf_len, 0);
 
+
 call:
     MAKE_CALL(out->retval = WSAIoctl(in->s, ioctl_rpc2h(in->code),
                                      inbuf,
@@ -4213,14 +4213,11 @@ call:
                                      in->overlapped == 0 ? NULL
                                        : (LPWSAOVERLAPPED)overlapped,
                                      IN_CALLBACK));
-       
     if (out->retval == 0)
     {
         if (outbuf != NULL && out->outbuf.outbuf_val != NULL)
-        {
             convert_wsa_ioctl_result(in->code, outbuf, 
                                      out->outbuf.outbuf_val);
-        }
 
         if (overlapped != NULL)
             rpc_overlapped_free_memory(overlapped);
