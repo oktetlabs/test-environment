@@ -955,16 +955,22 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
 }
 
 static const char *
-iscsi_openiscsi_find_free_recid (iscsi_initiator_data_t *data)
+iscsi_openiscsi_alloc_node(iscsi_initiator_data_t *data,
+                           const char *target, 
+                           int target_port)
 {
-    char  buffer[80];
-    FILE *nodelist;
-    int   i;
+    char      buffer[80];
+    FILE     *nodelist;
+    int       i;
+    int       status;
 
     static char recid[RECORD_ID_LENGTH];
 
     
-    nodelist = popen("iscsiadm -m node", "r");
+    snprintf(buffer, sizeof(buffer), 
+             "iscsiadm -m node --op=new --portal=%s:%d",
+             target, target_port);
+    nodelist = popen(buffer, "r");
     if (nodelist == NULL)
     {
         ERROR("Unable to get the list of records: %s",
@@ -972,32 +978,32 @@ iscsi_openiscsi_find_free_recid (iscsi_initiator_data_t *data)
         return NULL;
     }
 
-    while (fgets(buffer, sizeof(buffer), nodelist) != NULL)
+    
+    if (fgets(buffer, sizeof(buffer), nodelist) == NULL)
     {
-        VERB("Got '%s' from iscsiadm", buffer);
-        *recid = '\0';
-        if (sscanf(buffer, "[%[^]]] %*s %*s", recid) != 1)
-        {
-            ERROR("Spurious record line '%s'", buffer);
-            continue;
-        }
-        for (i = 0; i < MAX_TARGETS_NUMBER; i++)
-        {
-            if (strcmp(data->targets[i].record_id, recid) == 0)
-            {
-                *recid = '\0';
-                break;
-            }
-        }
-        if (*recid != '\0')
-        {
-            pclose(nodelist);
-            return recid;
-        }
+        ERROR("EOF from iscsiadm, something's wrong");
+        return NULL;
     }
-    pclose(nodelist);
-    ERROR("No available record ids!");
-    return NULL;
+    
+    VERB("Got '%s' from iscsiadm", buffer);
+    status = pclose(nodelist);
+    if (status != 0)
+    {
+        if (status < 0)
+            WARN("Error while waiting for iscsiadm: %s", strerror(errno));
+        else
+            WARN("iscsiadm terminated abnormally wuth code %x", 
+                 (unsigned)status);
+    }
+    
+    *recid = '\0';
+    if (sscanf(buffer, "new iSCSI node record added: [%[^]]]", recid) != 1)
+    {
+        ERROR("Unparsable output from iscsiadm: '%s'", buffer);
+        return NULL;
+    }
+
+    return recid;
 }
 
 /** Format of the set command for UNH Initiator */
@@ -1463,6 +1469,7 @@ static int
 iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
 {
     int                     rc = -1;
+    int                     rc2 = -1;
     iscsi_target_data_t    *target = init_data->targets + target_id;
 
     if (oper == ISCSI_CONNECTION_DOWN)
@@ -1487,20 +1494,13 @@ iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
         }
         rc = ta_system_ex("iscsiadm -m node --record=%s --logout",
                           target->record_id);
+        rc2 = ta_system_ex("iscsiadm -m node --record=%s --op=delete",
+                           target->record_id);
+        *target->record_id = '\0';
         if (target->number_of_open_connections > 0)
             target->number_of_open_connections--;
-        if (target->number_of_open_connections == 0)
-        {
-            /** Stop the iscsid daemon if there are no more session */
-            for (i = 0; i < MAX_TARGETS_NUMBER; i++)
-            {
-                if (init_data->targets[i].number_of_open_connections > 0)
-                    break;
-            }
-            if (i < MAX_TARGETS_NUMBER)
-                iscsi_openiscsi_stop_daemon();
-        }
-        return rc ? TE_RC(TE_TA_UNIX, rc) : 0;
+        return rc != 0? TE_RC(TE_TA_UNIX, rc) : 
+            (rc2 != 0 ? TE_RC(TE_TA_UNIX, rc2) : 0);
     }
     else
     {
@@ -1512,18 +1512,26 @@ iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
         }
         if (*target->record_id == '\0')
         {
-            const char *id = iscsi_openiscsi_find_free_recid(init_data);
+            const char *id = iscsi_openiscsi_alloc_node(init_data,
+                                                        target->target_addr,
+                                                        target->target_port);
             if (id == NULL)
+            {
                 return TE_RC(TE_TA_UNIX, TE_ETOOMANY);
+            }
             strcpy(target->record_id, id);
         }
         rc = iscsi_openiscsi_set_target_params(target);
         if (rc != 0)
+        {
             return rc;
+        }
+        
         rc = ta_system_ex("iscsiadm -m node -d255 --record=%s --login",
                              target->record_id);
         if (rc == 0)
             target->number_of_open_connections++;
+
         return TE_RC(TE_TA_UNIX, rc);
     }
     
@@ -2603,6 +2611,8 @@ static te_errno
 iscsi_type_set(unsigned int gid, const char *oid,
                char *value, const char *instance, ...)
 {
+    int previous_type = init_data->init_type;
+
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(oid);
@@ -2618,6 +2628,12 @@ iscsi_type_set(unsigned int gid, const char *oid,
     else
         return TE_RC(TE_TA_UNIX, EINVAL);
 
+    if (previous_type != init_data->init_type &&
+        previous_type == OPENISCSI)
+    {
+        iscsi_openiscsi_stop_daemon();
+    }
+
     return 0;
 }
 
@@ -2626,7 +2642,7 @@ iscsi_type_get(unsigned int gid, const char *oid,
                char *value, const char *instance, ...)
 {
     static char *types[] = {"unh", "l5", 
-                            "microsoft", "open-iscsi"};
+                            "open-iscsi", "microsoft"};
             
     UNUSED(gid);
     UNUSED(instance);
