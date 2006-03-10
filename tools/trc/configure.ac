@@ -12,6 +12,8 @@ AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_LEX
+AC_PROG_YACC
 AC_PROG_INSTALL
 
 TE_APP_SET
