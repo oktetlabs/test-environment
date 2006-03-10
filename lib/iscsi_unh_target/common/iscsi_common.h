@@ -40,7 +40,6 @@
 #define ISCSI_WKP_STRING		"3260"	/* IANA's iSCSI WKP as string */
 #define ISCSI_SYSTEM_PORT		860	/* IANA's iSCSI system port */
 #define ISCSI_SYSTEM_PORT_STRING	"860"	/* IANA's system port as strng*/
-#define ISCSI_HDR_LEN			48	/* Basic Header Len */
 #define ISCSI_CDB_LEN			16	/* CDB len within BHS */
 #define CRC_LEN				4	/* Digest length */
 #define MAX_KEY_NAME_LENGTH		63	/* max len of key name */

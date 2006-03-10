@@ -31,6 +31,8 @@
 #ifndef __TE_ISCSI_H__
 #define __TE_ISCSI_H__
 
+#define ISCSI_HDR_LEN 48    /* Basic Header Len */
+
 /** iSCSI opcodes */
 /** RFC 3720, Section 10.2.1.2 Opcode */
 

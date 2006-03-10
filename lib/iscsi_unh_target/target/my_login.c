@@ -5456,6 +5456,7 @@ iscsi_server_rx_thread(void *param)
     volatile te_bool terminate = FALSE;
     iscsi_target_thread_params_t local_params;
     sigset_t mask;
+    int reject_reason;
 
     /****************/ 
 
@@ -5553,6 +5554,15 @@ iscsi_server_rx_thread(void *param)
 					  ntohl(digest));
 			}
 		}
+
+        reject_reason = iscsi_get_custom_value(conn->custom, "reject_reason");
+        if (reject_reason != 0)
+        {
+            enqueue_reject(conn, reject_reason);
+            targ_session_recovery(conn);
+            terminate = TRUE;
+            continue;
+        }
 
 		switch (opcode) 
         {

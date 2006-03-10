@@ -44,7 +44,7 @@
 #include <pthread.h>
 #include "iscsi_custom.h"
 
-#define ISCSI_CUSTOM_MAX_PARAM 14
+#define ISCSI_CUSTOM_MAX_PARAM 15
 
 #define ISCSI_CUSTOM_MAGIC 0xeba1eba1
 
@@ -127,6 +127,23 @@ static char *async_messages[] = {"scsi_async_event",
 
 static char *boolean_values[] = {"no", "yes", NULL};
 
+static char *reject_reasons[] = {
+    "none",
+    "reserved1",
+    "data_digest_error",
+    "data_snack",
+    "protocol_error",
+    "command_not_supported",
+    "too_many_immediate_commands",
+    "task_in_progress",
+    "invalid_snack",
+    "invalid_pdu_field",
+    "out_of_resources",
+    "negotiation_reset",
+    "waiting_for_logout",
+    NULL,
+};
+
 static iscsi_custom_descr param_descr[ISCSI_CUSTOM_MAX_PARAM + 1] = 
 {
     {"reject", FALSE, NULL},
@@ -143,6 +160,7 @@ static iscsi_custom_descr param_descr[ISCSI_CUSTOM_MAX_PARAM + 1] =
     {"send_nopin", TRUE, boolean_values},
     {"xfer_len", FALSE, NULL},
     {"zero_dsl_interval", FALSE, NULL},
+    {"reject_reason", FALSE, reject_reasons},
     {NULL, FALSE, NULL},
 };
     
