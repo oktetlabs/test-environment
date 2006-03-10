@@ -377,6 +377,10 @@ tad_udp_match_bin_cb(csap_p           csap,
     asn_value  *udp_header_pdu = NULL;
     te_errno    rc;
 
+    UNUSED(csap);
+    UNUSED(layer);
+    UNUSED(ptrn_opaque); 
+
     assert(tad_pkt_seg_num(pdu) == 1);
     assert(tad_pkt_first_seg(pdu) != NULL);
     data_ptr = data = tad_pkt_first_seg(pdu)->data_ptr;
@@ -389,10 +393,6 @@ tad_udp_match_bin_cb(csap_p           csap,
         ERROR_ASN_INIT_VALUE(ndn_udp_header);
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
-
-    UNUSED(csap);
-    UNUSED(layer);
-    UNUSED(ptrn_opaque); 
 
 #define CHECK_FIELD(_asn_label, _size) \
     do {                                                        \
