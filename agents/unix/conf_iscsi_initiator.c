@@ -235,7 +235,7 @@ typedef struct iscsi_initiator_data {
 
 
 /** Initiator data */
-static iscsi_initiator_data_t *init_data;
+static iscsi_initiator_data_t *init_data = NULL;
 
 /**
  * Function returns target ID from the name of the
@@ -253,11 +253,8 @@ iscsi_get_target_id(const char *oid)
     char *c;
     int   tgt_id;
     
-    c = strstr(oid, "target_");
-    c = strstr(c + 1, "target_");
-    c += strlen("target_");
-
-    tgt_id = strtol(c, NULL, 10);
+    sscanf(oid, "/agent:%*[^/]/iscsi_initiator:/target_data:target_%d", 
+           &tgt_id);
 
     return tgt_id;
 }
@@ -275,10 +272,9 @@ iscsi_get_cid(const char *oid)
     char *c;
     int cid;
 
-    c = strstr(oid, "conn:");
-    c += strlen("conn:");
-
-    cid = strtol(c, NULL, 10);
+    sscanf(oid, 
+           "/agent:%*[^/]/iscsi_initiator:/target_data:target_%*d/conn:%d", 
+           &cid);
 
     return cid;
 }
@@ -2719,14 +2715,16 @@ iscsi_parameters2advertize_get(unsigned int gid, const char *oid,
                                char *value, const char *instance, ...)
 {
     int tgt_id;
+    int cid;
     
     UNUSED(gid);
     UNUSED(instance);
 
     tgt_id = iscsi_get_target_id(oid);
+    cid    = iscsi_get_cid(oid);
+    RING("iscsi_parameters2advertize_get: %d, %d", tgt_id, cid);
     sprintf(value, "%d", 
-            init_data->targets[iscsi_get_target_id(oid)].
-            conns[iscsi_get_cid(oid)].conf_params);
+            init_data->targets[tgt_id].conns[cid].conf_params);
     
     return 0;
 }
