@@ -317,12 +317,16 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
                 /* Skipped results have top priority in any case */
                 tagged_result = tmp;
                 tagged_result_prio = res;
+                INFO("Stop on SKIPPED tagged result %#08x: tag='%s'",
+                     (unsigned)tmp, tmp->tags_expr_str);
                 break;
             }
             if (tagged_result == NULL || res < tagged_result_prio)
             {
                 tagged_result = tmp;
                 tagged_result_prio = res;
+                INFO("Intermediate tagged result %#08x: tag='%s' prio=%d",
+                     (unsigned)tmp, tmp->tags_expr_str, res);
             }
         }
     }
