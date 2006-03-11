@@ -293,6 +293,9 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
             rc = get_result(*node, "value", &tagged_result->value);
             if (rc != 0)
                 goto exit;
+            INFO("Tagged result %#08x: tag='%s' value=%d",
+                 (unsigned)tagged_result, tagged_result->tags_expr_str,
+                 tagged_result->value);
         }
         *node = xmlNodeNext(*node); 
     }
@@ -305,6 +308,8 @@ get_expected_result(xmlNodePtr iter_node, xmlNodePtr *node,
     {
         int res = logic_expr_match(tmp->tags_expr, tags);
 
+        INFO("Tagged result %#08x: tag='%s' value=%u match=%u",
+             (unsigned)tmp, tmp->tags_expr_str, tmp->value, res);
         if (res != 0)
         {
             if (tmp->value == TRC_TEST_SKIPPED)
@@ -405,6 +410,8 @@ alloc_and_get_test_iter(xmlNodePtr node, const char *test_name,
     unsigned int    i;
 
     UNUSED(test_name);
+
+    INFO("New iteration of the test %s", test_name);
 
     p = calloc(1, sizeof(*p));
     if (p == NULL)

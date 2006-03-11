@@ -24,14 +24,14 @@ te_trc_SOURCES = main.c trc_tag.c db_io.c report_html.c log_parse.c
 
 te_trc_LDADD = -llogic_expr -lpopt -lfl @XML2_LIBS@ @TE_LDADD@
 
-te_trc_DEPENDENCIES = @TE_DEPENDENCIES@
+te_trc_DEPENDENCIES = @TE_DEPENDENCIES@ liblogic_expr.a
 
 
 te_trc_diff_SOURCES = trc_diff.c trc_tag.c db_io.c diff_report.c
 
 te_trc_diff_LDADD = -llogic_expr -lpopt -lfl @XML2_LIBS@ @TE_LDADD@
 
-te_trc_diff_DEPENDENCIES = @TE_DEPENDENCIES@
+te_trc_diff_DEPENDENCIES = @TE_DEPENDENCIES@ liblogic_expr.a
 
 
 CLEANFILES = logic_expr_gram.h logic_expr_gram.c \

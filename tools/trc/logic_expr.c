@@ -156,8 +156,7 @@ logic_expr_match(const logic_expr *re, const tqh_string *set)
         case LOGIC_EXPR_OR:
         {
             int lhr = logic_expr_match(re->u.binary.lhv, set);
-            int rhr = (lhr == 0) ? 0 :
-                          logic_expr_match(re->u.binary.rhv, set);
+            int rhr = logic_expr_match(re->u.binary.rhv, set);
 
             if (lhr == 0)
                 result = rhr;
