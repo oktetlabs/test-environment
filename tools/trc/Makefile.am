@@ -7,7 +7,7 @@ AM_LFLAGS = --header-file=$*.h -o $(LEX_OUTPUT_ROOT).c
 AM_YFLAGS = -d
 AM_LDFLAGS = -L. @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
-noinst_HEADERS = trc_log.h trc_db.h trc_xml.h trc_tag.h
+noinst_HEADERS = trc_log.h trc_db.h trc_xml.h trc_tag.h logic_expr.h
 
 
 dist_bin_SCRIPTS = te_trc.sh
