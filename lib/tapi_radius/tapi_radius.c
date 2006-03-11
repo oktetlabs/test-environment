@@ -967,9 +967,9 @@ tapi_radius_add_auth(const char *ta_name, const tapi_auth_info_t *auth,
     char oid[128];
 
     snprintf(oid, sizeof(oid), "/agent:%s/radiusserver:", ta_name);
-    switch (auth->key_mgmt)
+    switch (auth->eap_type)
     {
-        case TAPI_AUTH_KEY_EAP_MD5:
+        case TAPI_AUTH_EAP_MD5:
             tapi_radius_attr_list_init(&attrs);
             if ((rc = tapi_radius_attr_list_push_value(&attrs,
                                                     "User-Password",
@@ -985,7 +985,7 @@ tapi_radius_add_auth(const char *ta_name, const tapi_auth_info_t *auth,
                                       "%s/eap:", oid);
             break;
 
-        case TAPI_AUTH_KEY_EAP_TLS:
+        case TAPI_AUTH_EAP_TLS:
 
 #define CFG_SET_PARAM(_field, _suboid) \
     do {                                                                \
@@ -1009,8 +1009,7 @@ tapi_radius_add_auth(const char *ta_name, const tapi_auth_info_t *auth,
             break;
 
         default:
-            ERROR("%s(): unknown key management type %d",
-                  __FUNCTION__, auth->key_mgmt);
+            ERROR("%s(): unknown EAP type %d", __FUNCTION__, auth->eap_type);
             rc = TE_RC(TE_TAPI, TE_EINVAL);
             break;
     }
@@ -1020,12 +1019,12 @@ tapi_radius_add_auth(const char *ta_name, const tapi_auth_info_t *auth,
 /* Supplicant related functions @todo Should not be here */
 
 te_errno
-tapi_supp_set_proto(const char *ta_name, const char *if_name,
-                    tapi_auth_proto_t proto_id)
+tapi_supp_set_wifi_auth(const char *ta_name, const char *if_name,
+                        const tapi_auth_wifi_t *wifi)
 {
     const char *proto;
 
-    switch (proto_id)
+    switch (wifi->proto)
     {
         case TAPI_AUTH_PROTO_PLAIN:
             proto = NULL;
@@ -1037,18 +1036,21 @@ tapi_supp_set_proto(const char *ta_name, const char *if_name,
             proto = "RSN";
             break;
         default:
-            ERROR("%s(): unknown protocol id '%d'", __FUNCTION__, proto_id);
+            ERROR("%s(): unknown WPA protocol id '%d'", __FUNCTION__,
+                  wifi->proto);
             return TE_RC(TE_TAPI, TE_EINVAL);
     }
     return cfg_set_instance_fmt(CFG_VAL(STRING, proto),
                                 "/agent:%s/interface:%s/supplicant:/proto:",
                                 ta_name, if_name);
+
+    /* TODO setting cipher */
 }
 
 /* See the description in tapi_radius.h */
 te_errno
 tapi_supp_set_auth(const char *ta_name, const char *if_name,
-                   tapi_auth_info_t *info)
+                   const tapi_auth_info_t *info)
 {
     te_errno rc;
     char     supp_oid[128];
@@ -1064,9 +1066,9 @@ tapi_supp_set_auth(const char *ta_name, const char *if_name,
     } while (FALSE)
 
     SUPP_SET_PARAM(identity, "/identity:");
-    switch (info->key_mgmt)
+    switch (info->eap_type)
     {
-        case TAPI_AUTH_KEY_EAP_TLS:
+        case TAPI_AUTH_EAP_TLS:
             /* Set EAP-TLS related parameters */
             SUPP_SET_PARAM(tls.client.cert_fname, "/eap-tls:/cert:");
             SUPP_SET_PARAM(tls.client.key_fname, "/eap-tls:/key:");
@@ -1078,7 +1080,7 @@ tapi_supp_set_auth(const char *ta_name, const char *if_name,
                                         "%s/cur_method:", supp_oid);
             break;
 
-        case TAPI_AUTH_KEY_EAP_MD5:
+        case TAPI_AUTH_EAP_MD5:
             /* Set MD5 related parameters */
             SUPP_SET_PARAM(md5.username, "/eap-md5:/username:");
             SUPP_SET_PARAM(md5.passwd, "/eap-md5:/passwd:");
@@ -1089,8 +1091,7 @@ tapi_supp_set_auth(const char *ta_name, const char *if_name,
             break;
 
         default:
-            ERROR("%s(): unknown key management type %d", __FUNCTION__,
-                  info->key_mgmt);
+            ERROR("%s(): unknown EAP type %d", __FUNCTION__, info->eap_type);
     }
 #undef SUPP_SET_PARAM
     return TE_RC(TE_TAPI, TE_EINVAL);

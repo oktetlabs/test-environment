@@ -199,4 +199,10 @@
     <object oid="/agent/interface/supplicant/eap-tls/root_cert"
             access="read_write" type="string"/>
 
+    <!-- Authentication protocol
+         Name: empty
+         Value: empty (no WPA), "WPA" or "RSN" -->
+    <object oid="/agent/interface/supplicant/proto" access="read_write"
+            type="string"/>
+
 </backup>

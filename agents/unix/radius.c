@@ -2021,6 +2021,7 @@ typedef struct supplicant_impl
     te_bool  (*get)(const char *ifname);
     te_errno (*start)(const char *ifname, const char *confname);
     te_errno (*stop)(const char *ifname);
+    te_errno (*reload)(const char *ifname);
     void     (*write_config)(FILE *f, const struct supplicant *supp);
 } supplicant_impl;
 
@@ -2221,7 +2222,7 @@ xsupplicant_write_config(FILE *f, const supplicant *supp)
         "    user_key_pass = \"%s\"\n"
         "    root_cert = \"%s\"\n"
         "  }\n"
-        "}";
+        "}\n";
     const char *method = supp_get_param(supp, SP_METHOD);
 
     fprintf(f, template,
@@ -2243,6 +2244,7 @@ const supplicant_impl xsupplicant = {
     xsupplicant_get,
     xsupplicant_start,
     xsupplicant_stop,
+    NULL,
     xsupplicant_write_config
 };
 
@@ -2301,9 +2303,31 @@ wpa_supp_stop(const char *ifname)
     RING("Stopping wpa_supplicant on %s", ifname);
     if (wpa_supp_get(ifname))
     {
-        snprintf(buf, sizeof(buf),
-                 "kill `ps ax | grep wpa_supplicant | grep %s | grep -v grep"
-                 "| awk ' { print $1 }'`", ifname);
+        snprintf(buf, sizeof(buf), "wpa_cli -i %s terminate", ifname);
+        if (ta_system(buf) != 0)
+            WARN("Command '%s' failed", buf);
+
+        snprintf(buf, sizeof(buf), "/sbin/ifconfig %s up", ifname);
+        if (ta_system(buf) != 0)
+            WARN("Command '%s' failed", buf);
+    }
+    return 0;
+}
+
+static te_errno
+wpa_supp_reload(const char *ifname)
+{
+    char buf[256];
+
+    if (!wpa_supp_get(ifname))
+    {
+        WARN("%s: wpa_supplicant on %s is not running", __FUNCTION__, ifname);
+        return 0;
+    }
+    RING("Reloading wpa_supplicant configuration on %s", ifname);
+    if (wpa_supp_get(ifname))
+    {
+        snprintf(buf, sizeof(buf), "wpa_cli -i %s reconfigure", ifname);
         if (ta_system(buf) != 0)
             WARN("Command '%s' failed", buf);
     }
@@ -2320,12 +2344,19 @@ static void
 wpa_supp_write_config(FILE *f, const supplicant *supp)
 {
     const char template[] =
-        "network = {\n"
-        "  ssid = \"%s\"\n"
-        "  identity = \"%s\"\n"
-        "  eap = %s"
-        "  proto = %s"
-        "  pairwise = %s"
+        "ctrl_interface=/var/run/wpa_supplicant\n"
+        "network={\n"
+        "  ssid=\"%s\"\n"
+        "  identity=\"%s\"\n"
+        "  eap=%s\n"
+        "  proto=%s\n"
+        "  pairwise=%s\n"
+        "  group=%s\n"
+        "  key_mgmt=WPA-EAP\n"
+        "  ca_cert=\"%s\"\n"
+        "  client_cert=\"%s\"\n"
+        "  private_key=\"%s\"\n"
+        "  private_key_passwd=\"%s\"\n"
         "}\n";
     const char *method;
     const char *s = supp_get_param(supp, SP_METHOD);
@@ -2344,7 +2375,12 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
             supp_get_param(supp, SP_NETWORK),
             supp_get_param(supp, SP_IDENTITY),
             method, proto,
-            strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP"
+            strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP",
+            strcmp(proto, "WPA") == 0 ? "TKIP" : "CCMP",
+            supp_get_param(supp, SP_TLS_ROOT_CERT_PATH),
+            supp_get_param(supp, SP_TLS_CERT_PATH),
+            supp_get_param(supp, SP_TLS_KEY_PATH),
+            supp_get_param(supp, SP_TLS_KEY_PASSWD)
            );
 }
 
@@ -2353,6 +2389,7 @@ const supplicant_impl wpa_supplicant = {
     wpa_supp_get,
     wpa_supp_start,
     wpa_supp_stop,
+    wpa_supp_reload,
     wpa_supp_write_config
 };
 
@@ -2516,6 +2553,7 @@ supp_update(supplicant *supp)
     FILE     *conf;
     const supplicant_impl *new_impl;
     const char *proto;
+    const char *method;
 
     if (supp == NULL || !supp->changed)
         return 0;
@@ -2525,7 +2563,8 @@ supp_update(supplicant *supp)
 
     /* Check protocol value and detect the type of supplicant */
     proto = supp_get_param(supp, SP_PROTO);
-    if (proto[0] == '\0')
+    method = supp_get_param(supp, SP_METHOD);
+    if (proto[0] == '\0' || method[0] == '\0')
         new_impl = &xsupplicant;
     else if (strcmp(proto, "WPA") == 0 || strcmp(proto, "RSN") == 0 ||
              strcmp(proto, "WPA2") == 0)
@@ -2541,8 +2580,13 @@ supp_update(supplicant *supp)
     supp->changed = FALSE;
     if (supp->started)
     {
-        supp->impl->stop(supp->ifname);
-        new_impl->start(supp->ifname, supp->confname);
+        if (supp->impl == new_impl && supp->impl->reload != NULL)
+            supp->impl->reload(supp->ifname);
+        else
+        {
+            supp->impl->stop(supp->ifname);
+            new_impl->start(supp->ifname, supp->confname);
+        }
     }
     supp->impl = new_impl;
     return 0;
@@ -2738,7 +2782,7 @@ DS_SUPP_PARAM_SET(ds_supp_identity_set, SP_IDENTITY)
 DS_SUPP_PARAM_GET(ds_supp_method_get, SP_METHOD)
 DS_SUPP_PARAM_SET(ds_supp_method_set, SP_METHOD)
 DS_SUPP_PARAM_GET(ds_supp_proto_get, SP_PROTO)
-DS_SUPP_PARAM_GET(ds_supp_proto_set, SP_PROTO)
+DS_SUPP_PARAM_SET(ds_supp_proto_set, SP_PROTO)
 
 RCF_PCH_CFG_NODE_RW(node_ds_supp_proto, "proto",
                     NULL, &node_ds_supp_eaptls,

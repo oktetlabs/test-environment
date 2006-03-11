@@ -667,24 +667,30 @@ extern te_errno tapi_radius_serv_del_user(const char *ta_name,
 /** Key management types supported by supplicant */
 typedef enum {
     TAPI_AUTH_KEY_PSK,      /**< Pre-shared key authentication */
-    TAPI_AUTH_KEY_EAP_MD5,  /**< EAP-MD5 authentication */
-    TAPI_AUTH_KEY_EAP_TLS,  /**< EAP-TLS authentication */
+    TAPI_AUTH_KEY_8021X     /**< IEEE802.1x/EAP authentication */
 } tapi_auth_key_mgmt_t;
 
+/** EAP key management types */
 typedef enum {
-    TAPI_AUTH_PROTO_PLAIN,  /**< WPA disabled */
-    TAPI_AUTH_PROTO_WPA,    /**< WPA */
-    TAPI_AUTH_PROTO_RSN     /**< WPA2 */
+    TAPI_AUTH_EAP_MD5,      /**< EAP-MD5 authentication */
+    TAPI_AUTH_EAP_TLS,      /**< EAP-TLS authentication */
+} tapi_auth_eap_t;
+
+/** Wireless authentication protocol */
+typedef enum {
+    TAPI_AUTH_PROTO_PLAIN,  /**< No WPA/WPA2 */
+    TAPI_AUTH_PROTO_WPA,    /**< Wi-Fi Protected Access (WPA) */
+    TAPI_AUTH_PROTO_RSN     /**< Robust Security Network (RSN), IEEE 802.11i */
 } tapi_auth_proto_t;
 
-/** Maximum allowed length for user name */
-#define TAPI_SUPP_USER_MAX_LEN   24
-
-/** Maximum allowed length for user's password */
-#define TAPI_SUPP_PASSWD_MAX_LEN 24
-
-/** Maximum allowed length of file path */
-#define TAPI_SUPP_PATH_MAX       256
+/** Wireless cipher algorithms */
+#define TAPI_AUTH_CIPHER_NONE       0x00
+#define TAPI_AUTH_CIPHER_WEP40      0x01
+#define TAPI_AUTH_CIPHER_WEP104     0x02
+#define TAPI_AUTH_CIPHER_TKIP       0x04
+#define TAPI_AUTH_CIPHER_CCMP       0x08
+#define TAPI_AUTH_CIPHER_WEP \
+        (TAPI_AUTH_CIPHER_WEP40 | TAPI_AUTH_CIPHER_WEP104)
 
 /** TLS private key and certificate info */
 typedef struct tapi_auth_tls_s {
@@ -696,7 +702,7 @@ typedef struct tapi_auth_tls_s {
 /** Configuration parameters for EAP authentication */
 typedef struct tapi_auth_info_s {
     char                    *identity;  /**< EAP identity */
-    tapi_auth_key_mgmt_t     key_mgmt;  /**< Key management type */
+    tapi_auth_eap_t          eap_type;  /**< EAP type */
     te_bool                  valid;     /**< Whether the user allowed */
     union {
         struct {
@@ -710,6 +716,13 @@ typedef struct tapi_auth_info_s {
         } tls;                          /**< EAP-TLS parameters */
     };
 } tapi_auth_info_t;
+
+typedef struct tapi_auth_wifi_s {
+    tapi_auth_proto_t    proto;
+    uint16_t             cipher_pairwise;
+    uint16_t             cipher_group;
+    tapi_auth_key_mgmt_t key_mgmt;
+} tapi_auth_wifi_t;
 
 extern te_errno tapi_radius_add_auth(const char *ta_name,
                                      const tapi_auth_info_t *auth,
@@ -753,9 +766,9 @@ tapi_supp_set(const char *ta_name, const char *if_name, int value)
                                 ta_name, if_name);
 }
 
-extern te_errno tapi_supp_set_proto(const char *ta_name,
-                                    const char *if_name,
-                                    tapi_auth_proto_t proto_id);
+extern te_errno tapi_supp_set_wifi_auth(const char *ta_name,
+                                        const char *if_name,
+                                        const tapi_auth_wifi_t *wifi);
 /**
  * Configure supplicant to use EAP authentication and set
  * method-specific parameters on the Agent.
@@ -768,7 +781,7 @@ extern te_errno tapi_supp_set_proto(const char *ta_name,
  */
 extern te_errno tapi_supp_set_auth(const char *ta_name,
                                    const char *if_name,
-                                   tapi_auth_info_t *info);
+                                   const tapi_auth_info_t *info);
 
 /**
  * Reset supplicant parameters to default values
