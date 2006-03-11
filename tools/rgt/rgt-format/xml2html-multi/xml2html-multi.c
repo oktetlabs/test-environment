@@ -53,6 +53,10 @@ typedef struct gen_ctx_user {
 typedef struct depth_ctx_user {
     FILE *fd; /**< File descriptor of the node currently being processed
                    on the particular depth */
+    FILE *dir_fd; /**< File descriptor of the node currently being processed
+                       on the particular depth */
+    char *name;
+    te_bool is_test;
     char *log_level; /**< Log level value in string representation */
 
     GHashTable *depth_log_names; /**< Hash table for log names for 
@@ -75,6 +79,8 @@ static void add_log_user(gen_ctx_user_t *gen_user,
                          const char *entity, const char *user);
 static void output_log_names(GHashTable **entity_hash,
                              uint32_t depth, uint32_t seq);
+static void lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
+                     const char *result, rgt_depth_ctx_t *prev_depth_ctx);
 
 
 RGT_DEF_FUNC(proc_document_start)
@@ -151,11 +157,15 @@ RGT_DEF_FUNC(proc_document_start)
     depth_ctx->user_data = alloc_depth_user_data(ctx->depth);
     depth_user = depth_ctx->user_data;
     depth_user->depth_log_names = NULL;
+    depth_user->is_test = FALSE;
+    depth_user->name = strdup("SUITE");
 
     if ((depth_user->fd = fopen("node_1_0.html", "w")) == NULL)
     {
         exit(1);
     }
+
+    lf_start(ctx, depth_ctx, NULL, NULL);
 
     attrs = rgt_tmpls_attrs_new(NULL);
     rgt_tmpls_attrs_add_fstr(attrs, "reporter", "TE start-up");
@@ -365,6 +375,101 @@ RGT_DEF_FUNC(proc_document_end)
     free_depth_user_data();
 }
 
+static void
+lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
+     rgt_depth_ctx_t *prev_depth_ctx)
+{
+    depth_ctx_user_t *depth_user = depth_ctx->user_data;
+    te_bool           is_test = depth_user->is_test;
+    char              fname[255];
+    rgt_attrs_t      *attrs;
+    unsigned int      i;
+
+    attrs = rgt_tmpls_attrs_new(NULL);
+
+    if (!is_test)
+    {
+        depth_ctx_user_t *cur_user;
+        rgt_depth_ctx_t  *cur_ctx;
+
+        snprintf(fname, sizeof(fname), "n_%d_%d.html",
+                 ctx->depth, depth_ctx->seq);
+        if ((depth_user->dir_fd = fopen(fname, "w")) == NULL)
+        {
+            fprintf(stderr, "Cannot create %s file: %s\n",
+                fname, strerror(errno));
+            exit(1);
+        }
+
+        rgt_tmpls_attrs_set_uint32(attrs, "depth", ctx->depth);
+        rgt_tmpls_attrs_set_uint32(attrs, "seq", depth_ctx->seq);
+        rgt_tmpls_output(depth_user->dir_fd,
+                     &xml2fmt_tmpls[LF_DOC_START], attrs);
+
+        for (i = 0; i < ctx->depth; i++)
+        {
+            cur_ctx = &g_array_index(ctx->depth_info,
+                                     rgt_depth_ctx_t, i);
+            cur_user = cur_ctx->user_data;
+
+            rgt_tmpls_attrs_set_uint32(attrs, "depth", i + 1);
+            rgt_tmpls_attrs_set_uint32(attrs, "seq", cur_ctx->seq);
+            rgt_tmpls_attrs_set_fstr(attrs, "name", cur_user->name);
+
+            rgt_tmpls_output(depth_user->dir_fd,
+                         &xml2fmt_tmpls[LF_REF_PART], attrs);
+        }
+
+        rgt_tmpls_output(depth_user->dir_fd,
+                     &xml2fmt_tmpls[LF_START_TABLE], NULL);
+
+        if (prev_depth_ctx != NULL)
+    {
+            rgt_tmpls_attrs_set_uint32(attrs, "depth", ctx->depth - 1);
+        rgt_tmpls_attrs_set_uint32(attrs, "seq", prev_depth_ctx->seq);
+            rgt_tmpls_attrs_set_fstr(attrs, "name", "..");
+            rgt_tmpls_output(depth_user->dir_fd,
+                         &xml2fmt_tmpls[LF_ROW_FOLDER], attrs);
+        }
+    }
+
+    if (prev_depth_ctx != NULL)
+    {
+        depth_ctx_user_t *prev_depth_user = prev_depth_ctx->user_data;
+
+        rgt_tmpls_attrs_set_uint32(attrs, "depth", ctx->depth);
+        rgt_tmpls_attrs_set_uint32(attrs, "seq", depth_ctx->seq);
+        rgt_tmpls_attrs_set_fstr(attrs, "name", depth_user->name);
+        if (is_test)
+    {
+            rgt_tmpls_attrs_add_fstr(attrs, "result", result);
+            rgt_tmpls_output(prev_depth_user->dir_fd,
+                             &xml2fmt_tmpls[LF_ROW_TEST], attrs);
+    }
+    else
+    {
+            rgt_tmpls_output(prev_depth_user->dir_fd,
+                             &xml2fmt_tmpls[LF_ROW_FOLDER], attrs);
+    }
+    }
+
+    rgt_tmpls_attrs_free(attrs);
+}
+
+static void
+lf_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx)
+{
+    depth_ctx_user_t *depth_user = depth_ctx->user_data;
+
+    UNUSED(ctx);
+
+    if (!depth_user->is_test)
+    {
+        rgt_tmpls_output(depth_user->dir_fd, &xml2fmt_tmpls[LF_DOC_END], NULL);
+
+        fclose(depth_user->dir_fd);
+    }
+}
 /**
  * Function for processing start of control node event.
  * 
@@ -393,6 +498,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
     if (name == NULL)
         name = "session";
+    
+    depth_user->is_test = strcmp(node_type, "Test") == 0;
 
     prev_depth_ctx = &g_array_index(ctx->depth_info,
                                     rgt_depth_ctx_t, (ctx->depth - 2));
@@ -406,43 +513,40 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
         exit(1);
     }
 
+    depth_user->name = strdup(name);
+    lf_start(ctx, depth_ctx, result, prev_depth_ctx);
+
     attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_attrs_add_fstr(attrs, "reporter", "%s %s", node_type,
                              name == NULL ? "<anonimous>" : name);
     rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
     rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[DOC_START], attrs);
-    rgt_tmpls_attrs_free(attrs);
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_attrs_add_fstr(attrs, "node_type", node_type);
     rgt_tmpls_attrs_add_fstr(attrs, "name", name);
     rgt_tmpls_attrs_add_fstr(attrs, "result", result);
     rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[DOC_CNTRL_NODE_TITLE], attrs);
-    rgt_tmpls_attrs_free(attrs);
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "node_type", node_type);
-    rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
-    rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_attrs_add_fstr(attrs, "fname", fname);
-    rgt_tmpls_attrs_add_fstr(attrs, "name", name);
-    rgt_tmpls_attrs_add_fstr(attrs, "result", result);
+
+    fname[0] = '\0';
+    if (depth_user->is_test)
+    {
+        snprintf(fname, sizeof(fname), "n_%d_%d",
+                 ctx->depth - 1, prev_depth_ctx->seq);
+    }
+    rgt_tmpls_attrs_add_fstr(attrs, "par_name", fname);
+
     rgt_tmpls_output(prev_depth_user->fd, &xml2fmt_tmpls[DOC_REF_TO_NODE], attrs);
-    rgt_tmpls_attrs_free(attrs);
 
-    attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_uint32(attrs, "depth", ctx->depth);
     rgt_tmpls_attrs_add_uint32(attrs, "prev_depth", ctx->depth - 1);
-    rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
-    rgt_tmpls_attrs_add_fstr(attrs, "fname", fname);
-    rgt_tmpls_attrs_add_fstr(attrs, "name", name);
-    rgt_tmpls_attrs_add_fstr(attrs, "result", result);
 
-    if (strcmp(node_type, "Test") == 0)
+    if (depth_user->is_test)
         rgt_tmpls_output(gen_user->js_fd, &xml2fmt_tmpls[JS_ADD_TEST_NODE], attrs);
     else
         rgt_tmpls_output(gen_user->js_fd, &xml2fmt_tmpls[JS_ADD_FOLDER_NODE], attrs);
+
     rgt_tmpls_attrs_free(attrs);
 }
 
@@ -459,7 +563,7 @@ control_node_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                  const char **xml_attrs, const char *node_type)
 {
     depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
-    FILE             *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd;
+    FILE             *fd = depth_user->fd;
 
     UNUSED(ctx);
     UNUSED(xml_attrs);
@@ -470,6 +574,8 @@ control_node_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
     rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
     fclose(fd);
+
+    lf_end(ctx, depth_ctx);
 }
 
 RGT_DEF_FUNC(proc_session_start)

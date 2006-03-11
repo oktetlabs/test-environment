@@ -1,0 +1,9 @@
+BODY {background-color: white}
+TD {font-size: 10pt;
+    font-family: verdana,helvetica;
+    text-decoration: none;
+    white-space:nowrap;}
+A  {text-decoration: none;
+    color: black}
+
+.specialClass {font-family:garamond; font-size:12pt;color:green;font-weight:bold;text-decoration:underline}

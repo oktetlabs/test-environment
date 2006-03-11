@@ -647,8 +647,13 @@ function clickOnFolder(folderId)
   if (isLinked(clicked.hreference)) {
       highlightObjLink(clicked);
   }
-} 
- 
+  
+  /* Save current folder name in parent context */
+/*  parent.lfId = folderId;
+  parent.hlName = null;
+*/
+}
+
 function clickOnNode(folderId) 
 { 
   fOb = findObj(folderId);
@@ -768,14 +773,31 @@ function highlightObjLink(nodeObj) {
         lastClickedBgColor  = clickedDOMObj.style.backgroundColor;
         clickedDOMObj.style.color=HIGHLIGHT_COLOR;
         clickedDOMObj.style.backgroundColor=HIGHLIGHT_BG;
+      
+        lastClicked = nodeObj;
+
+        /* Update current left frame ID */
+	if (nodeObj.nChildren > 0)
+	{
+	    /* We highlight folder, so use it as ID */
+	    parent.lfId = nodeObj.getID();
+            parent.hlName = null;
+//	    alert("Folder - name: " + parent.lfId);
+	}
+	else
+	{
+	    /* We highlight a file */
+            parent.lfId = nodeObj.parentObj.getID();
+//	    alert("File - Par name: " + parent.lfId);
+            parent.hlName = nodeObj.getID();
+	}
     }
   }
-  lastClicked = nodeObj;
   if (PRESERVESTATE)
     SetCookie('highlightedTreeviewLink', nodeObj.getID());
 }
 
-function insFld(parentFolder, childFolder) 
+function insFld(parentFolder, childFolder)
 { 
   return parentFolder.addChild(childFolder) 
 } 
@@ -938,17 +960,6 @@ if(typeof HTMLElement!="undefined" && !HTMLElement.prototype.insertAdjacentEleme
 	}
 }
 
-function getElById(idVal) {
-  if (document.getElementById != null)
-    return document.getElementById(idVal)
-  if (document.all != null)
-    return document.all[idVal]
-  
-  alert("Problem getting element by id")
-  return null
-}
-
-
 // Functions for cookies
 // Note: THESE FUNCTIONS ARE OPTIONAL. No cookies are used unless
 // the PRESERVESTATE variable is set to 1 (default 0)
@@ -1067,6 +1078,26 @@ function ExpireCookie (name)
 }
 
 
+function OpenFolders(folderId)
+{
+    if (folderId == null)
+        return;
+
+    var obj = findObj(folderId);
+ 
+    obj.forceOpeningOfAncestorFolders();
+    clickOnNodeObj(obj);
+    
+    if (parent.hlName != null)
+    {
+        /* we should activate a test */
+        obj = findObj(parent.hlName);
+    }
+    highlightObjLink(obj);
+}
+
+
+
 //To customize the tree, overwrite these variables in the configuration file (demoFramesetNode.js, etc.)
 var USETEXTLINKS = 0;
 var STARTALLOPEN = 0;
@@ -1089,7 +1120,6 @@ var lastClickedColor;
 var lastClickedBgColor;
 var indexOfEntries = new Array 
 var nEntries = 0 
-var browserVersion = 0 
 var selectedFolder=0
 var lastOpenedFolder=null
 var t=5
@@ -1107,27 +1137,6 @@ doc.yPos = 0
 function initializeDocument() 
 { 
   preLoadIcons();
-  switch(navigator.family)
-  {
-    case 'ie4':
-      browserVersion = 1 //Simply means IE > 3.x
-      break;
-    case 'opera':
-      browserVersion = (navigator.version > 6 ? 1 : 0); //opera7 has a good DOM
-      break;
-    case 'nn4':
-      browserVersion = 2 //NS4.x 
-      break;
-    case 'gecko':
-      browserVersion = 3 //NS6.x
-      break;
-    case 'safari':
-      browserVersion = 1 //Safari Beta 3 seems to behave like IE in spite of being based on Konkeror
-      break;
-	default:
-      browserVersion = 0 //other, possibly without DHTML  
-      break;
-  }
 
   // backward compatibility
   if (PERSERVESTATE)

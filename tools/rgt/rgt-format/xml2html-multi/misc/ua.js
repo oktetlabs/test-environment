@@ -32,6 +32,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+var browserVersion = 0
+
 function xbDetectBrowser()
 {
   var oldOnError = window.onerror;
@@ -145,6 +147,39 @@ function xbDetectBrowser()
   }
 
   window.onerror = oldOnError;
+  
+  switch(navigator.family)
+  {
+    case 'ie4':
+      browserVersion = 1 //Simply means IE > 3.x
+      break;
+    case 'opera':
+      browserVersion = (navigator.version > 6 ? 1 : 0); //opera7 has a good DOM
+      break;
+    case 'nn4':
+      browserVersion = 2 //NS4.x 
+      break;
+    case 'gecko':
+      browserVersion = 3 //NS6.x
+      break;
+    case 'safari':
+      browserVersion = 1 //Safari Beta 3 seems to behave like IE in spite of being based on Konkeror
+      break;
+	default:
+      browserVersion = 0 //other, possibly without DHTML  
+      break;
+  }
+
+}
+
+function getElById(idVal) {
+  if (document.getElementById != null)
+    return document.getElementById(idVal)
+  if (document.all != null)
+    return document.all[idVal]
+
+  alert("Problem getting element by id")
+  return null
 }
 
 xbDetectBrowser();

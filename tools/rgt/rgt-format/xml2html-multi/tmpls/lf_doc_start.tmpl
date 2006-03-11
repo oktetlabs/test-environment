@@ -1,0 +1,116 @@
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="lframe_style.css">
+
+<!-- Code for browser detection -->
+<script src="ua.js"></script>
+
+<script>
+    var lastClickedId = null;
+    var lastClickedColor;
+    var lastClickedBgColor;
+    var HIGHLIGHT_COLOR = 'white';
+    var HIGHLIGHT_BG    = 'blue';
+
+    function activate_node(name, par_name)
+    {
+        if (highlightObjLink(name) != 1)
+	{
+	    /* User select a folder */
+	    fname = name;    
+	    if (par_name != "")
+                fname = par_name;
+
+	    document.location.href = fname + ".html";
+	    parent.hlName = name;
+	}
+	else
+	{
+	    /* User select a test */
+	    parent.hlName = name;
+	}
+    }
+    
+    function UpHl()
+    {
+        if (parent.hlName != null)
+	{
+            highlightObjLink(parent.hlName);
+	}
+    }
+
+    function change_node(depth, seq, is_test)
+    {
+        id = "n_" + depth + "_" + seq;
+
+        var cmd = "parent.basefrm.location.href='" + 
+                  "node_" + depth + "_" + seq + ".html" + "'";
+        eval(cmd);
+
+        if (!is_test)
+	{
+            document.location.href = id + ".html";
+	    parent.hlName = null;
+	}
+	else
+	{
+	    /* Highlight link */
+            highlightObjLink(id);
+	    parent.hlName = id;
+	}
+    }
+    
+    function highlightObjLink(id)
+    {
+      if (browserVersion == 1 || browserVersion == 3)
+      {
+        var clickedDOMObj = getElById(id);
+            
+	if (clickedDOMObj != null)
+	{
+          if (lastClickedId != null)
+	  {
+            var prevClickedDOMObj = getElById(lastClickedId);
+            prevClickedDOMObj.style.color=lastClickedColor;
+            prevClickedDOMObj.style.backgroundColor=lastClickedBgColor;
+          }
+
+          lastClickedColor    = clickedDOMObj.style.color;
+          lastClickedBgColor  = clickedDOMObj.style.backgroundColor;
+          clickedDOMObj.style.color=HIGHLIGHT_COLOR;
+          clickedDOMObj.style.backgroundColor=HIGHLIGHT_BG;
+
+          lastClickedId = id;
+	  return 1;
+        }
+	else
+	{
+	  return 0;
+	}
+      }
+      return 2;
+    }
+    
+    function TreeView()
+    {
+        parent.PageId = "n_@@%d:depth@@_@@%d:seq@@";
+        document.location.href = "left_frame.html";
+    }
+</script>
+
+</head>
+
+<body topmargin=16 marginheight=16 onLoad='javascript:UpHl()'>
+
+<a href='javascript:TreeView()'>Tree View</a><br>
+<table border=0 cellspacing=0 cellpadding=1 width=100% bgcolor="#FFFFFF">
+<tr bgcolor="#FFFFFF">
+<td bgcolor="#FFFFFF">
+<table border=0 cellspacing=0 cellpadding=0 width=100% height=1>
+<tr>
+<td bgcolor="#000000">
+</td></tr>
+</table>
+
+</td></tr>
+</table>

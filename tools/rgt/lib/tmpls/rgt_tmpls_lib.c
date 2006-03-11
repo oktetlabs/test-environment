@@ -110,6 +110,34 @@ rgt_tmpls_attrs_free(rgt_attrs_t *attrs)
     attr_locked = FALSE;
 }
 
+/**
+ * Adds a new string attribute in the list of attributes.
+ *
+ * @param attrs    Rgt attributes list
+ * @param name     A new attribute name
+ * @param fmt_str  Format string for the attribute value
+ * @param ap       List of values connected with @p fmt_str
+ */
+static void
+attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
+               const char *fmt_str, va_list ap)
+{
+    assert(attr_locked == TRUE);
+    assert(global_attr_num + 2 <= ATTR_NUM);
+    assert(cur_buf + 1 <= N_BUFS);
+    assert(attrs == global_attrs);
+
+    global_attrs[global_attr_num].type = RGT_ATTR_TYPE_STR;
+    global_attrs[global_attr_num].name = name;
+    vsnprintf(bufs[cur_buf], BUF_LEN, fmt_str, ap);
+    global_attrs[global_attr_num].str_val = bufs[cur_buf];
+
+    cur_buf++;
+    global_attr_num++;
+
+    global_attrs[global_attr_num].type = RGT_ATTR_TYPE_UNKNOWN;
+}
+
 /* The description see in rgt_tmpls_lib.h */
 void
 rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
@@ -117,24 +145,40 @@ rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
 {
     va_list ap;
 
+    va_start(ap, fmt_str);
+    attrs_add_fstr(attrs, name, fmt_str, ap);
+    va_end(ap);
+}
+
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_tmpls_attrs_set_fstr(rgt_attrs_t *attrs, const char *name,
+                         const char *fmt_str, ...)
+{
+    va_list  ap;
+    uint32_t i;
+
     assert(attr_locked == TRUE);
     assert(global_attr_num + 2 <= ATTR_NUM);
-    assert(cur_buf + 1 <= N_BUFS);
     assert(attrs == global_attrs);
-    
+
     va_start(ap, fmt_str);
 
-    global_attrs[global_attr_num].type = RGT_ATTR_TYPE_STR;
-    global_attrs[global_attr_num].name = name;
-    vsnprintf(bufs[cur_buf], BUF_LEN, fmt_str, ap);
-    global_attrs[global_attr_num].str_val = bufs[cur_buf];
+    for (i = 0; i < global_attr_num; i++)
+    {
+        if (strcmp(global_attrs[i].name, name) == 0)
+        {
+            global_attrs[i].type = RGT_ATTR_TYPE_STR;
+            vsnprintf((char *)global_attrs[i].str_val,
+                      BUF_LEN, fmt_str, ap);
+            va_end(ap);
+            return;
+        }
+    }
 
+    /* we haven't found the attribute, use add instead */
+    attrs_add_fstr(attrs, name, fmt_str, ap);
     va_end(ap);
-    
-    cur_buf++;
-    global_attr_num++;
-
-    global_attrs[global_attr_num].type = RGT_ATTR_TYPE_UNKNOWN;
 }
 
 /* The description see in rgt_tmpls_lib.h */
@@ -153,6 +197,31 @@ rgt_tmpls_attrs_add_uint32(rgt_attrs_t *attrs, const char *name,
     global_attr_num++;
 
     global_attrs[global_attr_num].type = RGT_ATTR_TYPE_UNKNOWN;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_tmpls_attrs_set_uint32(rgt_attrs_t *attrs, const char *name,
+                           uint32_t val)
+{
+    uint32_t i;
+
+    assert(attr_locked == TRUE);
+    assert(global_attr_num + 2 <= ATTR_NUM);
+    assert(attrs == global_attrs);
+
+    for (i = 0; i < global_attr_num; i++)
+    {
+        if (strcmp(global_attrs[i].name, name) == 0)
+        {
+            global_attrs[i].type = RGT_ATTR_TYPE_UINT32;
+            global_attrs[i].uint32_val = val;
+            return;
+        }
+    }
+
+    /* we haven't found the attribute, use add instead */
+    rgt_tmpls_attrs_add_uint32(attrs, name, val);
 }
 
 /* The description see in rgt_tmpls_lib.h */

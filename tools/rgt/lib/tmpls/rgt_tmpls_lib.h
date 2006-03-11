@@ -159,6 +159,18 @@ extern void rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
                                      const char *fmt_str, ...);
 
 /**
+ * Update the value of string attribute in the list of rgt attributes.
+ * If not exist it adds this attribute.
+ * 
+ * @param attrs    Rgt attributes list
+ * @param name     A new attribute name
+ * @param fmt_str  Format string for the attribute value followed by 
+ *                 the list of arguments
+ */
+extern void rgt_tmpls_attrs_set_fstr(rgt_attrs_t *attrs, const char *name,
+                                     const char *fmt_str, ...);
+
+/**
  * Add a new uint32_t attribute into the list of rgt attributes.
  * 
  * @param attrs  Rgt attributes list
@@ -166,6 +178,17 @@ extern void rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
  * @param val    Attribute value
  */
 extern void rgt_tmpls_attrs_add_uint32(rgt_attrs_t *attrs, const char *name,
+                                       uint32_t val);
+
+/**
+ * Update the value of uint32_t attribute in the list of rgt attributes.
+ * If not exist it adds this attribute.
+ * 
+ * @param attrs  Rgt attributes list
+ * @param name   A new attribute name
+ * @param val    Attribute value
+ */
+extern void rgt_tmpls_attrs_set_uint32(rgt_attrs_t *attrs, const char *name,
                                        uint32_t val);
 
 /**

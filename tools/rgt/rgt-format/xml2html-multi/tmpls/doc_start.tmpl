@@ -33,9 +33,9 @@ function open_filter_window()
         "width=400,height=300,top=0,left=1000,scrollbars=no");
 }
 
-function activate_link(name, doc_name)
+function activate_link(name, doc_name, par_name)
 {
-    parent.treeframe.activate_node(name);
+    parent.treeframe.activate_node(name, par_name);
     document.location.href=doc_name;
 }
 

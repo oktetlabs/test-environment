@@ -68,4 +68,10 @@ dist_pkgdata_DATA = \
     mem_elem_end.tmpl\
     log_msg_file_end.tmpl\
     log_msg_file_start.tmpl\
-    log_br.tmpl
+    log_br.tmpl\
+    lf_doc_end.tmpl\
+    lf_doc_start.tmpl\
+    lf_ref_part.tmpl\
+    lf_row_folder.tmpl\
+    lf_row_test.tmpl\
+    lf_start_table.tmpl
