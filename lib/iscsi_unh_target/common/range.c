@@ -32,8 +32,7 @@
  * 	written permission.
 */
 #include <stdlib.h>
-#include <linux/kernel.h>
-#include <linux/types.h>
+#include <sys/types.h>
 
 #include "my_memory.h"
 #include "iscsi_common.h"

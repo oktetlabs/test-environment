@@ -29,13 +29,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <linux/kernel.h>
 #include <string.h>
-#include <asm/types.h>
-#include <linux/stddef.h>
-#include <linux/random.h>
-
-#include <linux/spinlock.h>
+#include <stddef.h>
 
 #include "misc_func.h"
 

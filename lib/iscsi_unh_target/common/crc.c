@@ -7,8 +7,7 @@
  */
 
 #include <stdint.h>
-#include <linux/types.h>
-#include <linux/ip.h>
+#include <sys/types.h>
 
 #include "crc.h"
 
