@@ -34,24 +34,19 @@
 #include <assert.h>
 #endif
 
-#ifdef HAVE_PTHREAD_H
-#include <pthread.h>
-#endif
-
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <string.h>
 #endif
 
 #include "te_stdint.h"
+#include "ta_common.h"
 #include "rcf_pch_mem.h"
 
 /** Chunk of reallocation of identifiers array */
 #define IDS_CHUNK   128
 
-#ifdef HAVE_PTHREAD_H
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
+static void *lock = NULL;
 
 static void   **ids;            /**< Array of identifiers       */
 static uint32_t ids_len;        /**< Current array length       */
@@ -68,11 +63,12 @@ rcf_pch_mem_id
 rcf_pch_mem_alloc(void *mem)
 {
     rcf_pch_mem_id id = 0;
-    
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&lock);
-#endif
 
+    if (lock == NULL)
+        lock = thread_mutex_create();
+        
+    thread_mutex_lock(lock);
+    
     if (ids_len == used)
     {
         void **tmp = realloc(ids, (ids_len + IDS_CHUNK) * sizeof(void *));
@@ -80,9 +76,7 @@ rcf_pch_mem_alloc(void *mem)
         if (tmp == NULL)
         {
             fprintf(stderr, "Out of memory!");
-#ifdef HAVE_PTHREAD_H
-            pthread_mutex_unlock(&lock);
-#endif            
+            thread_mutex_unlock(lock);
             return 0;
         }
             
@@ -99,9 +93,7 @@ rcf_pch_mem_alloc(void *mem)
     ids[id] = mem;
     used++;
 
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lock);
-#endif            
+    thread_mutex_unlock(lock);
 
     return id + 1;
 }
@@ -114,9 +106,7 @@ rcf_pch_mem_alloc(void *mem)
 void 
 rcf_pch_mem_free(rcf_pch_mem_id id)
 {
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&lock);
-#endif
+    thread_mutex_lock(lock);
 
     /* Convert id to array index */
     if (id > 0 && (id--, id < ids_len) && ids[id] != NULL)
@@ -125,9 +115,7 @@ rcf_pch_mem_free(rcf_pch_mem_id id)
         used--;
     }
 
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lock);
-#endif
+    thread_mutex_unlock(lock);
 }
 
 /**
@@ -140,9 +128,7 @@ rcf_pch_mem_free_mem(void *mem)
 {
     rcf_pch_mem_id id;
     
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&lock);
-#endif
+    thread_mutex_lock(lock);
 
     for (id = 0; id < ids_len && ids[id] != mem; id++);
     
@@ -152,9 +138,7 @@ rcf_pch_mem_free_mem(void *mem)
         used--;
     }
 
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lock);
-#endif
+    thread_mutex_unlock(lock);
 }
 
 /**
@@ -168,17 +152,13 @@ void *
 rcf_pch_mem_get(rcf_pch_mem_id id)
 {
     void *m = NULL;
-    
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&lock);
-#endif
+
+    thread_mutex_lock(lock);
 
     if (id > 0 && (id--, id < ids_len)) 
         m = ids[id];
 
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lock);
-#endif
+    thread_mutex_unlock(lock);
 
     return m;
 }
@@ -194,10 +174,8 @@ rcf_pch_mem_id
 rcf_pch_mem_get_id(void *mem)
 {
     rcf_pch_mem_id id;
-    
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&lock);
-#endif
+
+    thread_mutex_lock(lock);
 
     for (id = 0; id < ids_len && ids[id] != mem; id++);
     
@@ -206,9 +184,7 @@ rcf_pch_mem_get_id(void *mem)
     else
         id = 0;
 
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&lock);
-#endif
+    thread_mutex_unlock(lock);
 
     return id;
 }
