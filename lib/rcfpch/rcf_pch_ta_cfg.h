@@ -63,7 +63,7 @@
  *    a new instance whose children have not default values but some
  *    particular ones.
  *    Of course we can perform SET operations for just created children,
- *    but this might not be what we want (sequense of ADD, SET operations
+ *    but this might not be what we want (sequence of ADD, SET operations
  *    is not the same as atomic ADD with all specified values).
  *    In this circumstance we should consider the second way of creating
  *    object instances;
@@ -72,20 +72,20 @@
  *    In this case we accumulate all the values in so called cache, and
  *    install it as a bulk in COMMIT.
  *
- * Which way to chose depends on the implementation of Test Agent,
- * because from programmer's point of view the only difference in this 
- * to ways is that to support the second approach they should provide 
+ * Which way to choose depends on the implementation of Test Agent,
+ * because from programmer's point of view the only difference in these
+ * two ways is that to support the second approach they should provide 
  * callback function for COMMIT operation, and save all the information 
  * obtained in ADD and SET callbacks in some local data structures.
  *
- * This library plays a roule of such local data structure where all the
+ * This library plays a role of such local data structure where all the
  * information can be locally stored (in ADD, or SET callbacks) and 
  * then extracted (in COMMIT callback).
  *
  * How to work with it:
  * The library uses term "object", which has no in common with term object
  * defined in Configurator context.
- * Each object is associated with a patricular type (a constant string)
+ * Each object is associated with a particular type (a constant string)
  * and a name (also a constant string). These two strings is a key for
  * objects, which means that you can identify each object with this pair.
  * Each object can keep a set of attributes with their values.
@@ -94,7 +94,7 @@
  * In addition, each object keeps "action" value, which defines the type of
  * operation that should be performed with it (in most of the cases this
  * value is used in commit callback to define what to do - whether to add
- * a new instnace, delete an existing instance, or just update some 
+ * a new instance, delete an existing instance, or just update some 
  * attributes of an existing instance).
  */
 #ifdef __cplusplus
