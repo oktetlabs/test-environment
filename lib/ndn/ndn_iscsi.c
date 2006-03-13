@@ -392,13 +392,14 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
             goto padding;
         }
         *eq_delimiter = '\0';
-        
+
         if ((key_pair = asn_init_value(ndn_iscsi_key_pair)) == NULL)
         {
             ERROR("%s, %d: cannot init asn_value",
                   __FUNCTION__, __LINE__);
             return TE_ENOMEM;
         }
+        
         if ((rc = asn_write_string(key_pair, current, "key")) != 0)
         {
             ERROR("%s, %d: cannot write string, %r",
@@ -440,7 +441,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
             }
 
             if ((rc = asn_insert_indexed(key_values, 
-                                         key_value, 
+                                         asn_copy_value(key_value), 
                                          key_values_index++, "")) != 0)
             {
                 ERROR("%s, %d: cannot insert indexed, %r",
@@ -449,6 +450,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
             }
             current = comma_delimiter + 1;
         }
+        asn_free_value(key_value);
 
         if ((rc = asn_put_child_value_by_label(key_pair, 
                                                key_values, 
@@ -458,8 +460,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
                   __FUNCTION__, __LINE__, rc);
             return rc;
         }
-        if ((rc = asn_insert_indexed(segment_data, 
-                                     key_pair, 
+        if ((rc = asn_insert_indexed(segment_data, key_pair, 
                                      segment_data_index++, "")) != 0)
         {
             ERROR("%s, %d: cannot insert indexed, %r",
