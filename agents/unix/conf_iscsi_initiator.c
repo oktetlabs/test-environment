@@ -792,6 +792,7 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target)
                                   -1, NULL, NULL);
     if (iscsid_process == (pid_t)-1)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    RING("Open iSCSI daemon started");
     return 0;
 }
 
@@ -1527,7 +1528,8 @@ iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
             return rc;
         }
         
-        rc = ta_system_ex("iscsiadm -m node -d255 --record=%s --login",
+        rc = te_shell_cmd_ex("iscsiadm -m node -d255 --record=%s --login "
+                             WRITE_TO_ISCSI_DEVICE,
                              target->record_id);
         if (rc == 0)
             target->number_of_open_connections++;
@@ -2470,16 +2472,6 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
 
     switch (init_data->init_type)
     {
-        case UNH:
-            sprintf(dev_pattern, "/proc/scsi/iscsi_initiator/%d", 
-                    init_data->host_bus_adapter);
-            if (access(dev_pattern, 0))
-            {
-                WARN("Host bus adapter %d is not an iSCSI device");
-                *value = '\0';
-                return 0;
-            }
-            break;
         case L5:
             hba = popen("T=`grep -l efabiscsi "
                         "/sys/class/scsi_host/host*/proc_name` && "
@@ -2500,7 +2492,23 @@ iscsi_host_device_get(unsigned int gid, const char *oid,
             pclose(hba);
             break;
         default:
-            WARN("Cannot verify that a host bus is set correctly!!!");
+        {
+            hba = popen("grep -l UNH /sys/bus/scsi/devices/*/vendor", "r");
+            if (hba == NULL)
+            {
+                ERROR("Cannot detect a host bus adapter");
+                return TE_RC(TE_TA_UNIX, TE_ENOENT);
+            }
+            rc = fscanf(hba, "/sys/bus/scsi/devices/%d:", &init_data->host_bus_adapter);
+            if (rc != 1)
+            {
+                ERROR("Cannot detect a host bus adapter");
+                return TE_RC(TE_TA_UNIX, TE_ENOENT);
+            }
+            pclose(hba);
+            RING("Host bus adapter detected as %d", init_data->host_bus_adapter);
+            break;
+        }
     }
 
        
@@ -2759,9 +2767,6 @@ iscsi_cid_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    oper = (oper == ISCSI_CONNECTION_DOWN ?
-            ISCSI_CONNECTION_DOWN : 
-            ISCSI_CONNECTION_UP);
     switch (init_data->init_type)
     {
         case UNH:
