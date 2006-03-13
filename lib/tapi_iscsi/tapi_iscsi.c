@@ -986,6 +986,7 @@ tapi_iscsi_get_key_value(iscsi_key_values values,
               __FUNCTION__, __LINE__, rc);
         return rc;
     }
+
     if ((rc = asn_read_string(elem, str, "")) != 0)
     {
         ERROR("%s, %d: cannot read string, %r",
@@ -1382,14 +1383,14 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
 
     while (i++ < num)
     {
+        char *search_value = va_arg(list, char *);
+        char *key_value;
+
         found = FALSE;
         for (key_values_index = 0;
              (key_values_index < key_values_num) && (found == FALSE);
              key_values_index++)
         {
-            char *search_value = va_arg(list, char *);
-            char *key_value;
-
             if ((rc = 
                  tapi_iscsi_get_key_value(
                                           key_values,
@@ -1403,14 +1404,14 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
             if (strcmp(search_value, key_value) == 0)
             {
                 found = TRUE;
-                continue;
+                break;
             }
         }
         if (found == FALSE)
         {
             va_end(list);
-            ERROR("%s, %d: cannot find value for key %s",
-                  __FUNCTION__, __LINE__, key_name);
+            ERROR("%s, %d: cannot find value '%s' for key %s",
+                  __FUNCTION__, __LINE__, search_value, key_name);
             return -1;
         }
     }    
