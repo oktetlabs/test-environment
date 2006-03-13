@@ -312,8 +312,8 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                 RET(0);
             }
             free(dup);
-            if ((tmp_list == NULL) && ((tmp_list = strdup(" ")) == NULL))
-                RET(TE_ENOMEM);
+            if (tmp_list == NULL)
+                continue;
         }
 
         for (tmp_inst_name = tmp_list;
