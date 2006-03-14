@@ -106,6 +106,9 @@ rcf_pch_mem_alloc(void *mem)
 void 
 rcf_pch_mem_free(rcf_pch_mem_id id)
 {
+    if (lock == NULL)
+        lock = thread_mutex_create();
+        
     thread_mutex_lock(lock);
 
     /* Convert id to array index */
@@ -128,6 +131,9 @@ rcf_pch_mem_free_mem(void *mem)
 {
     rcf_pch_mem_id id;
     
+    if (lock == NULL)
+        lock = thread_mutex_create();
+        
     thread_mutex_lock(lock);
 
     for (id = 0; id < ids_len && ids[id] != mem; id++);
@@ -153,6 +159,9 @@ rcf_pch_mem_get(rcf_pch_mem_id id)
 {
     void *m = NULL;
 
+    if (lock == NULL)
+        lock = thread_mutex_create();
+        
     thread_mutex_lock(lock);
 
     if (id > 0 && (id--, id < ids_len)) 
@@ -175,6 +184,9 @@ rcf_pch_mem_get_id(void *mem)
 {
     rcf_pch_mem_id id;
 
+    if (lock == NULL)
+        lock = thread_mutex_create();
+        
     thread_mutex_lock(lock);
 
     for (id = 0; id < ids_len && ids[id] != mem; id++);
