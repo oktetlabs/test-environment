@@ -1504,7 +1504,10 @@ thread_mutex_destroy(void *mutex)
 void 
 thread_mutex_lock(void *mutex)
 {
-    pthread_mutex_lock(mutex);
+    if (mutex == NULL)
+        ERROR("%s: try to lock NULL mutex", __FUNCTION__);
+    else
+        pthread_mutex_lock(mutex);
 }
 
 /** 
@@ -1515,7 +1518,10 @@ thread_mutex_lock(void *mutex)
 void 
 thread_mutex_unlock(void *mutex)
 {
-    pthread_mutex_unlock(mutex);
+    if (mutex == NULL)
+        ERROR("%s: try to unlock NULL mutex", __FUNCTION__);
+    else        
+        pthread_mutex_unlock(mutex);
 }
 
 /**
