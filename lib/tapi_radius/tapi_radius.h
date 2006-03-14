@@ -717,11 +717,12 @@ typedef struct tapi_auth_info_s {
     };
 } tapi_auth_info_t;
 
+/** Wireless-specific authentication parameters */
 typedef struct tapi_auth_wifi_s {
-    tapi_auth_proto_t    proto;
-    uint16_t             cipher_pairwise;
-    uint16_t             cipher_group;
-    tapi_auth_key_mgmt_t key_mgmt;
+    tapi_auth_proto_t    proto;             /**< WPA protocol version */
+    uint16_t             cipher_pairwise;   /**< Pairwise ciphers set */
+    uint16_t             cipher_group;      /**< Group ciphers set */
+    tapi_auth_key_mgmt_t key_mgmt;          /**< Key management type */
 } tapi_auth_wifi_t;
 
 extern te_errno tapi_radius_add_auth(const char *ta_name,
