@@ -545,6 +545,13 @@ extern int tapi_cfg_add_ip4_addr(cfg_handle           ip4_net,
  */
 extern te_errno tapi_cfg_env_local_to_agent(void);
 
+/**
+ * Add RPC server from /local:<ta-name> tree to /agent:<ta-name> tree.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_rpcs_local_to_agent(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

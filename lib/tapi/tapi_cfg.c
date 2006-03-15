@@ -1944,3 +1944,64 @@ tapi_cfg_env_local_to_agent(void)
 
     return rc;
 }
+
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_rpcs_local_to_agent(void)
+{
+    const char * const  pattern = "/local:*/rpcserver:*";
+
+    te_errno        rc;
+    unsigned int    num;
+    cfg_handle     *handles = NULL;
+    unsigned int    i;
+    cfg_oid        *oid = NULL;
+    cfg_val_type    type = CVT_STRING;
+    char           *new_value = NULL;
+
+    rc = cfg_find_pattern(pattern, &num, &handles);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        return 0;
+    }
+    else if (rc != 0)
+    {
+        ERROR("Failed to find by pattern '%s': %r", pattern, rc);
+        return rc;
+    }
+
+    for (i = 0; i < num; ++i)
+    {
+        rc = cfg_get_instance(handles[i], &type, &new_value);
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_instance() failed for #%u: %r",
+                  __FUNCTION__, i, rc);
+            break;
+        }
+        rc = cfg_get_oid(handles[i], &oid);
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_oid() failed for #%u: %r",
+                  __FUNCTION__, i, rc);
+            break;
+        }
+        rc = cfg_add_instance_fmt(NULL, type, new_value,
+                                  "/agent:%s/rpcserver:%s",
+                                  CFG_OID_GET_INST_NAME(oid, 1),
+                                  CFG_OID_GET_INST_NAME(oid, 2));
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed on #%u: %r", __FUNCTION__, i, rc);
+            break;
+        }
+        free(new_value); new_value = NULL;
+        cfg_free_oid(oid); oid = NULL;
+    }
+
+    free(new_value);
+    cfg_free_oid(oid);
+    free(handles);
+
+    return rc;
+}
