@@ -4119,24 +4119,30 @@ TARPC_FUNC(wsa_ioctl,
 
         case WSA_IOCTL_SAA:
         {
-            struct sockaddr_storage *p;
+            SOCKET_ADDRESS_LIST     *sal;
+            SOCKET_ADDRESS          *p;
             int                      i;
             struct tarpc_sa         *q = (tarpc_sa *)req->
                                          wsa_ioctl_request_u.req_saa.
                                          req_saa_val;
 
-            inbuf = malloc(sizeof(uint32_t) +
-                           sizeof(struct sockaddr_storage) *
-                           req->wsa_ioctl_request_u.req_saa.req_saa_len);
+            inbuf_len = sizeof(uint32_t) + req->wsa_ioctl_request_u.
+                        req_saa.req_saa_len * sizeof(SOCKET_ADDRESS);
+            inbuf = malloc(inbuf_len);
+            sal = (SOCKET_ADDRESS_LIST *)inbuf;
+            sal->iAddressCount = req->wsa_ioctl_request_u.req_saa.
+                                 req_saa_len;
 
-            p = (struct sockaddr_storage *)
-                ((char *)inbuf + sizeof(uint32_t));
-            
-            for (i = 0; i < *(uint32_t *)inbuf; i++, p++, q++)
+            p = sal->Address;
+
+            for (i = 0; i < sal->iAddressCount; i++, p++, q++)
             {
-                p->ss_family = addr_family_rpc2h(q->sa_family);
-                memcpy(SA(p)->sa_data, q->sa_data.sa_data_val,
-                       q->sa_data.sa_data_len);
+                p->lpSockaddr = (LPSOCKADDR)
+                                malloc(sizeof(struct sockaddr_storage));
+                sockaddr_rpc2h(q, (struct sockaddr_storage *)p->lpSockaddr);
+                p->iSockaddrLength = (q->sa_family == RPC_AF_INET)?
+                                     sizeof(SOCKADDR_IN) :
+                                     sizeof(SOCKADDR_IN6);
             } 
             
             break;
