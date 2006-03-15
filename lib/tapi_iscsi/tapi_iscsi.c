@@ -2012,7 +2012,7 @@ tapi_iscsi_initiator_conn_establish(const char *ta,
     int  rc;
     char cmd[10];
     
-    sprintf(cmd, "%d", cid);
+    sprintf(cmd, "%d", ISCSI_CONNECTION_UP);
 
     INFO("Setting: /agent:%s/iscsi_initiator:/target_data:"
          "target_%d/conn:%d/cid:", ta, tgt_id, cid);

@@ -735,25 +735,24 @@ struct scsi_fixed_sense_data
 #define OFFER_DATA_SEQUENCE_IN_ORDER            (1 << 12)
 #define OFFER_ERROR_RECOVERY_LEVEL              (1 << 13)
 
+
 /** 
- * When the connection is added but not configured it is the
- * cid field of the connection structure.
+ * Connection status (up, down or non-existant.
+ * Note: it is essential that ISCSI_CONNECTION_DOWN == 0
+ * and ISCSI_CONNECTION_UP == 1, or things will break.
  */
-#define ISCSI_CONNECTION_DOWN   -1
-
-#define ISCSI_CONNECTION_UP     -4
-
-/**
- * When the connection is removed or was not added at all it is
- * the cid field of the connection structure.
- */
-#define ISCSI_CONNECTION_REMOVED -2
+typedef enum iscsi_connection_status
+{
+    ISCSI_CONNECTION_REMOVED = -1, /**< Connection is removed */
+    ISCSI_CONNECTION_DOWN,         /**< Connection is down */ 
+    ISCSI_CONNECTION_UP            /**< Connection is up */
+} iscsi_connection_status;
 
 /**
  * If the parameters is session wide, than this value should be passed
  * to the set parameter function as a cid
  */
-#define ISCSI_ALL_CONNECTIONS -3
+#define ISCSI_ALL_CONNECTIONS -1
 
 #ifdef __cplusplus
 extern "C" {

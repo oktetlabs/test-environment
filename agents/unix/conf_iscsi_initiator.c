@@ -167,7 +167,7 @@ typedef struct iscsi_tgt_chap_data {
 } iscsi_tgt_chap_data_t;
 
 typedef struct iscsi_connection_data {
-    int               cid;
+    iscsi_connection_status status;
 
     int               conf_params; /**< OR of OFFER_XXX flags */
 
@@ -291,7 +291,7 @@ iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
 {
     memset(conn_data, 0, sizeof(conn_data));
     
-    conn_data->cid = ISCSI_CONNECTION_REMOVED;
+    conn_data->status = ISCSI_CONNECTION_REMOVED;
     strcpy(conn_data->initiator_name, DEFAULT_INITIATOR_NAME);
     strcpy(conn_data->initiator_alias, DEFAULT_INITIATOR_ALIAS);
     
@@ -598,7 +598,7 @@ iscsi_l5_write_target_params(FILE *destination,
          connection < target->conns + MAX_CONNECTIONS_NUMBER;
          connection++)
     {
-        if (connection->cid != ISCSI_CONNECTION_REMOVED)
+        if (connection->status != ISCSI_CONNECTION_REMOVED)
         {
             fprintf(destination, "\n\n[target%d_conn%d]\n"
                     "Host: %s\n"
@@ -682,7 +682,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
             target->is_active = FALSE;
             for (conn_no = 0; conn_no < MAX_CONNECTIONS_NUMBER; conn_no++)
             {
-                if (target->conns[conn_no].cid != ISCSI_CONNECTION_REMOVED)
+                if (target->conns[conn_no].status != ISCSI_CONNECTION_REMOVED)
                 {
                     target->is_active = TRUE;
                     break;
@@ -712,7 +712,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
             is_first = TRUE;
             for (conn_no = 0; conn_no < MAX_CONNECTIONS_NUMBER; conn_no++)
             {
-                if (target->conns[conn_no].cid != ISCSI_CONNECTION_REMOVED)
+                if (target->conns[conn_no].status != ISCSI_CONNECTION_REMOVED)
                 {
                     fprintf(destination, "%s target%d_conn%d",
                             is_first ? "" : ",",
@@ -1246,7 +1246,7 @@ iscsi_initiator_unh_set(const int target_id, const int cid,
     
     if (oper == ISCSI_CONNECTION_DOWN)
     {
-        conn->cid = ISCSI_CONNECTION_DOWN;
+        conn->status = ISCSI_CONNECTION_DOWN;
 
         rc = ta_system_ex("iscsi_config down cid=%d target=%d host=%d",
                           cid, target_id, 
@@ -1383,6 +1383,7 @@ iscsi_initiator_unh_set(const int target_id, const int cid,
         ERROR("Failed to establish connection with cid=%d", cid);
         return TE_RC(TE_TA_UNIX, rc);
     }
+    conn->status = ISCSI_CONNECTION_UP;
     target->number_of_open_connections++;
     return 0;
 }
@@ -1482,6 +1483,7 @@ iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
             ERROR("Target %d has no associated record id", target_id);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
+#if 0
         /** Open iSCSI allows connection logouts only in the order
             they have been brought up, so checking for it
         */
@@ -1493,6 +1495,7 @@ iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
                 return TE_RC(TE_TA_UNIX, TE_EINVAL);
             }
         }
+#endif
         rc = ta_system_ex("iscsiadm -m node --record=%s --logout",
                           target->record_id);
         rc2 = ta_system_ex("iscsiadm -m node --record=%s --op=delete",
@@ -1686,7 +1689,7 @@ iscsi_conn_add(unsigned int gid, const char *oid,
     iscsi_init_default_connection_parameters(&init_data->targets[tgt_id].
                                              conns[cid]);
 
-    init_data->targets[tgt_id].conns[cid].cid = ISCSI_CONNECTION_DOWN;
+    init_data->targets[tgt_id].conns[cid].status = ISCSI_CONNECTION_DOWN;
 
     return 0;
 }
@@ -1699,7 +1702,7 @@ iscsi_conn_del(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     init_data->targets[iscsi_get_target_id(oid)].
-        conns[iscsi_get_cid(oid)].cid = ISCSI_CONNECTION_REMOVED;
+        conns[iscsi_get_cid(oid)].status = ISCSI_CONNECTION_REMOVED;
 
     return 0;
 }
@@ -1720,7 +1723,7 @@ iscsi_conn_list(unsigned int gid, const char *oid,
     
     for (cid = 0; cid < MAX_CONNECTIONS_NUMBER; cid++)
     {
-        if (init_data->targets[tgt_id].conns[cid].cid != 
+        if (init_data->targets[tgt_id].conns[cid].status != 
             ISCSI_CONNECTION_REMOVED)
         {
             sprintf(conn,
@@ -2790,7 +2793,7 @@ iscsi_cid_get(unsigned int gid, const char *oid,
     UNUSED(instance);
     
     sprintf(value, "%d", init_data->targets[iscsi_get_target_id(oid)].
-            conns[iscsi_get_cid(oid)].cid);
+            conns[iscsi_get_cid(oid)].status);
 
     return 0;
 }
