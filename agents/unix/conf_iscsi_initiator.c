@@ -788,7 +788,7 @@ iscsi_openiscsi_start_daemon(iscsi_target_data_t *target)
         fprintf(name_file, "InitiatorAlias=%s\n", target->conns[0].initiator_alias);
     fclose(name_file);
 
-    iscsid_process = te_shell_cmd("iscsid -f -c /dev/null -i /tmp/initiatorname.iscsi -d255",
+    iscsid_process = te_shell_cmd("iscsid -f -c /dev/null -i /tmp/initiatorname.iscsi",
                                   -1, NULL, NULL);
     if (iscsid_process == (pid_t)-1)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
@@ -1531,7 +1531,7 @@ iscsi_initiator_openiscsi_set(const int target_id, const int cid, int oper)
             return rc;
         }
         
-        rc = te_shell_cmd_ex("iscsiadm -m node -d255 --record=%s --login "
+        rc = te_shell_cmd_ex("iscsiadm -m node --record=%s --login "
                              WRITE_TO_ISCSI_DEVICE,
                              target->record_id);
         if (rc == 0)
