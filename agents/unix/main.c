@@ -360,7 +360,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
 #ifdef AUX_BUFFER_LEN
 #undef AUX_BUFFER_LEN
 #endif
-#define AUX_BUFFER_LEN       16384
+#define AUX_BUFFER_LEN       65536
 
 /** Prefix for file operations in /proc directory */
 #ifdef RCF_FILE_PROC_PREFIX
