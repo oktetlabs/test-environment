@@ -282,6 +282,7 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
                                   TARPC_CF_ACCEPT :
                                   cond[i].verdict == CF_REJECT ?
                                   TARPC_CF_REJECT : TARPC_CF_DEFER;
+            rpc_cond[i].timeout = cond[i].timeout;
         }
     }
 

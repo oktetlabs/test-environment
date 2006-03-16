@@ -530,6 +530,7 @@ TARPC_FUNC(accept,
 typedef struct accept_cond {
      unsigned short port;
      int            verdict;
+     int            timeout;
 } accept_cond;
 
 static int CALLBACK
@@ -538,6 +539,8 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
                 GROUP *g, DWORD_PTR user_data)
 {
     accept_cond *cond = (accept_cond *)user_data;
+    struct timeval timeout = 
+        { cond->timeout / 1000, (cond->timeout % 1000) * 1000 };
 
     struct sockaddr_in *addr;
 
@@ -547,6 +550,8 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
     UNUSED(callee_id);
     UNUSED(callee_data);
     UNUSED(g);
+
+    select(0, NULL, NULL, NULL, &timeout);
 
     if (cond == NULL)
         return CF_ACCEPT;
@@ -559,6 +564,7 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
     for (; cond->port != 0; cond++)
         if (cond->port == addr->sin_port)
                return cond->verdict;
+
 
     return CF_REJECT;
 }

@@ -165,8 +165,9 @@ typedef enum accept_verdict {
 
 /** Accept Condition */
 typedef struct accept_cond {
-    unsigned short port;      /**< port*/
+    unsigned short port;      /**< port */
     accept_verdict verdict;   /**< accept decision maker */
+    int            timeout;   /**< timeout to sleep in ms*/
 } accept_cond;
 
 /** Maximal number of accept conditions */

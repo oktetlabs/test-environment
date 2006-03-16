@@ -821,6 +821,7 @@ enum tarpc_accept_verdict {
 struct tarpc_accept_cond {
     uint16_t             port;       /**< Caller port             */
     tarpc_accept_verdict verdict;    /**< Verdict for this caller */
+    tarpc_int            timeout;    /**< Timeout to sleep, ms */
 };
 
 struct tarpc_wsa_accept_in {
