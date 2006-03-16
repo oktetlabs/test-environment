@@ -148,7 +148,7 @@ logic_expr_match(const logic_expr *re, const tqh_string *set)
             if (lhr == 0 || rhr == 0)
                 result = 0;
             else
-                result = MAX(lhr, rhr);
+                result = MIN(lhr, rhr);
             VERB("%s(): && -> %d", __FUNCTION__, result);
             break;
         }
