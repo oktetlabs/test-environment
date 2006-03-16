@@ -374,12 +374,11 @@ tapi_iscsi_start_poll_recv_pkt(unsigned n_csaps,
         {
             ERROR("%s(): trrecv_start failed %r", __FUNCTION__, rc);
             csaps[i].status = rc;
-            i--;
-            do
+            while ((int)(--i) >= 0)
             {
                 tapi_tad_trrecv_stop(csaps[i].ta, 0, csaps[i].csap_id,
                                      NULL, &num);
-            } while(i--);
+            }
             break;
         }
     }
