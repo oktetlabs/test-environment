@@ -362,8 +362,6 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     {
         tmp = cmdline + strlen(cmdline);
     }
-    
-    si.cb = sizeof(si);
 
     memset(&sys_info, 0, sizeof(sys_info));
     GetNativeSystemInfo(&sys_info);
@@ -380,6 +378,7 @@ create_process_rpc_server(const char *name, int32_t *pid, te_bool inherit)
     {
         sprintf(tmp, postfix[i], name);
         memset(&si, 0, sizeof(si));
+        si.cb = sizeof(si);
         
         if (CreateProcess(NULL, cmdline, NULL, NULL, 
                           inherit, 0, NULL, NULL,
