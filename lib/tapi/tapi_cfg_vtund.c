@@ -156,6 +156,16 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
         free(str);
         return rc;
     }
+
+    rc = tapi_cfg_base_if_up(ta_srv, str);
+    if (rc != 0)
+    {
+        ERROR("Failed to UP interface '%s' on TA '%s': %r",
+              str, ta_srv, rc);
+        free(str);
+        return rc;
+    }
+
     free(str);
 
     if (ta_srv_if != NULL)
