@@ -1,0 +1,13 @@
+# rgt_duration_filter --
+#    Procedure that checks if duration value conforms user specified filter.
+#
+# PARAMETERS:
+#    node_type  - Type of the node ("TEST", "SESSION" or "PACKAGE")
+#    duration   - Duration value in seconds to be checked
+#
+# RETURNS:
+#    In the case when the timestamp passes through user filter
+#    it returns "pass" string, otherwise "fail".
+#
+proc rgt_duration_filter { node_type duration } {
+    switch $node_type {

@@ -1,0 +1,13 @@
+# rgt_branch_filter --
+#    Procedure that defines filtering mode for specific flow tree node.
+#
+# PARAMETERS:
+#    path - Path of node to be checked.
+#
+# RETURNS:
+#    In the case when the node is in include filtering mode returns "pass"
+#    otherwise "fail". If filtering mode isn't determined for the node it
+#    returns "default".
+#
+proc rgt_branch_filter { path } {
+    switch $path {

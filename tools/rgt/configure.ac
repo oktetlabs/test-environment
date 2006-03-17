@@ -20,15 +20,6 @@ AC_PROG_INSTALL
 
 TE_APP_SET
 
-AC_CHECK_PROGS(XSLT_PROC, [xsltproc sabcmd])
-
-if test -z "$XSLT_PROC" ; then 
-  AC_MSG_WARN([No one XSLT processor was found.
-  You can download one of xslt processors from http://xmlsoft.org/
-  Some utilities don't work without XSLT processor])
-fi
-AC_SUBST([XSLT_PROC])
-
 # Checks for libraries.
 AC_CHECK_LIB([tcl], [Tcl_CreateInterp],,,-lm -ldl)
 AC_CHECK_HEADER([tcl.h], ac_cv_header_tcl_h=yes, ac_cv_header_tcl_h=no)
@@ -111,11 +102,12 @@ struct _xmlSAXHandler.serror \
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/tmpls/Makefile
+                 rgt-cfg/Makefile
+                 rgt-cfg/tmpls/Makefile
+                 rgt-cfg/tests/Makefile
+                 rgt-cfg/tests/rgt-filter-xml2tcl/Makefile
                  rgt-core/Makefile 
-                 rgt-core/rgt-filter-prepare
                  rgt-core/rgt-conv
-                 rgt-core/tests/Makefile
-                 rgt-core/tests/filter-prepare/Makefile
                  rgt-format/Makefile
                  rgt-format/xml2html-multi/Makefile
                  rgt-format/xml2html-multi/tmpls/Makefile

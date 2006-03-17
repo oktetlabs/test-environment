@@ -1,7 +1,3 @@
-#
-# automake file for Report Generator Core directory
-# Process it with automake
-#
 # Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
 # root directory of the distribution).
 #
@@ -20,32 +16,27 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 # MA  02111-1307  USA
 #
-#
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = .
+SUBDIRS = . 
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(top_srcdir) @EXTRA_CPPFLAGS@
-AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @TCL_CFLAGS@
+pkgdatadir = $(datadir)/$(subdir)
 
-bin_PROGRAMS = rgt-core
-
-rgt_core_SOURCES = filter.c filter.h \
-                   flow_tree.c flow_tree.h \
-                   log_msg.c log_msg.h \
-                   log_format.c log_format.h \
-                   log_format_v1.c \
-                   io.c io.h \
-                   memory.c memory.h \
-                   live_mode.c live_mode.h \
-                   postponed_mode.c postponed_mode.h \
-                   rgt_core.c rgt_common.h
-
-rgt_core_LDADD = @GLIB_LIBS@ -lpopt @TCL_LIB_SPEC@ -lm -ldl
-
-bin_SCRIPTS = rgt-conv
-
-EXTRA_DIST = rgt-conv.in
-
-CLEANFILES = rgt-conv
+dist_pkgdata_DATA = doc_start.tmpl \
+                    doc_end.tmpl \
+                    entity_filter_end.tmpl \
+                    entity_filter_entry_start_def.tmpl \
+                    entity_filter_entry_start.tmpl \
+                    entity_filter_start.tmpl \
+                    entity_filter_user_entry_def.tmpl \
+                    entity_filter_user_entry.tmpl \
+                    time_filter.tmpl \
+                    branch_filter_start.tmpl \
+                    branch_filter_entry.tmpl \
+                    branch_filter_end.tmpl \
+                    duration_filter_start.tmpl \
+                    duration_filter_end.tmpl \
+                    duration_filter_node_start.tmpl \
+                    duration_filter_node_end.tmpl \
+                    duration_filter_entry.tmpl

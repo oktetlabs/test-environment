@@ -1,0 +1,71 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test17.tcl"
+source "test_gen.tcl"
+
+
+# We should pass:
+# all messages, but not WARN from "Tester" "A", 
+# and not ERROR from "Tester" "B".
+
+set test_cases_pass_not_error_warn [list \
+    "Tester" "ANY"        \
+    "ANY"    "A"          \
+    "ANY"    "B"          \
+    "ANY"    "ANY"        \
+    "Tester" "A"          \
+    "Tester" "B"          \
+]
+
+set test_cases_pass_error [list \
+    "Tester" "ANY"        \
+    "ANY"    "A"          \
+    "ANY"    "B"          \
+    "ANY"    "ANY"        \
+    "Tester" "A"          \
+]
+
+set test_cases_fail_error [list \
+    "Tester" "B"          \
+]
+
+set test_cases_pass_warn [list \
+    "Tester" "ANY"        \
+    "ANY"    "A"          \
+    "ANY"    "B"          \
+    "ANY"    "ANY"        \
+    "Tester" "B"          \
+]
+
+set test_cases_fail_warn [list \
+    "Tester" "A"          \
+]
+
+foreach { level } $all_log_levels {
+  if {[string compare $level "ERROR"] == 0 || \
+      [string compare $level "WARN"] == 0} {
+      continue
+  }
+
+  foreach { entity user } $test_cases_pass_not_error_warn {
+      check_rgt_entity_filter $entity $user $level "pass"
+  }
+}
+
+foreach { entity user } $test_cases_pass_error {
+      check_rgt_entity_filter $entity $user "ERROR" "pass"
+}
+
+foreach { entity user } $test_cases_fail_error {
+      check_rgt_entity_filter $entity $user "ERROR" "fail"
+}
+
+foreach { entity user } $test_cases_pass_warn {
+      check_rgt_entity_filter $entity $user "WARN" "pass"
+}
+
+foreach { entity user } $test_cases_fail_warn {
+      check_rgt_entity_filter $entity $user "WARN" "fail"
+}

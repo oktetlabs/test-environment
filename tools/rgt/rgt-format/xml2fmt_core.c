@@ -376,42 +376,50 @@ rgt_log_start_element(void *user_data,
 
             if (strcmp(tag, "start-ts") == 0)
             {
-                proc_meta_start_ts_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                proc_meta_start_ts_start(ctx, depth_ctx,
+                                         RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_START_TS;
             }
             else if (strcmp(tag, "end-ts") == 0)
             {
-                proc_meta_end_ts_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                proc_meta_end_ts_start(ctx, depth_ctx,
+                                       RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_END_TS;
             }
             else if (strcmp(tag, "duration") == 0)
             {
-                proc_meta_duration_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                proc_meta_duration_start(ctx, depth_ctx,
+                                         RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_DURATION;
             }
             else if (strcmp(tag, "objective") == 0)
             {
-                proc_meta_objective_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                proc_meta_objective_start(ctx, depth_ctx,
+                                          RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_OBJECTIVE;
             }
             else if (strcmp(tag, "authors") == 0)
             {
-                proc_meta_authors_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                proc_meta_authors_start(ctx, depth_ctx,
+                                        RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_AUTHORS;
             }
             else if (strcmp(tag, "verdicts") == 0)
             {
-                proc_meta_verdicts_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                proc_meta_verdicts_start(ctx, depth_ctx,
+                                         RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_VERDICTS;
             }
             else if (strcmp(tag, "params") == 0)
             {
-                proc_meta_params_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                proc_meta_params_start(ctx, depth_ctx,
+                                       RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_PARAMS;
             }
             else
             {
-                fprintf(stderr, "Unexpected TAG '%s' in META state\n", tag);
+                fprintf(stderr, "Unexpected TAG '%s' in META state\n",
+                        tag);
                 assert(0);
             }
 
@@ -456,7 +464,8 @@ rgt_log_start_element(void *user_data,
             }
             else if (strcmp(tag, "file") == 0)
             {
-                proc_log_msg_file_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+                proc_log_msg_file_start(ctx, depth_ctx,
+                                        RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_FILE;
             }
             else
@@ -529,8 +538,8 @@ rgt_log_characters(void *user_data, const xmlChar *ch, int len)
  * The callback is called for resolving entities (& NAME ;)
  * In case of SAX parser it converts standard entities into their values
  * (&gt; -> ">", &lt; -> "<", &amp; -> "&"),
- * but in case of HTML we must not convert them, but leave them as they are,
- * so that this function makes a HACK for that.
+ * but in case of HTML we must not convert them, but leave them as they 
+ * are, so that this function makes a HACK for that.
  * If you want how to force libxml2 SAX parser leave standard entries 
  * without expanding - update this code!
  */
@@ -581,7 +590,10 @@ rgt_report_problem(void *user_data, const char *msg, ...)
     va_end(ap);
 }
 
-/** The structure specifies all types callback routines that should be called */
+/**
+ * The structure specifies all types callback routines that
+ * should be called.
+ */
 static xmlSAXHandler sax_handler = {
     .internalSubset         = NULL,
     .isStandalone           = NULL,
@@ -636,7 +648,8 @@ static xmlSAXHandler sax_handler = {
  *
  * @return  Nothing.
  *
- * @se  Frees popt Context (specified in optCon) and exits with specified code.
+ * @se Frees popt Context (specified in optCon) and 
+ * exits with specified code.
  */
 static void
 usage(poptContext optCon, int exitcode, char *error, char *addl)
@@ -659,11 +672,12 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
 
 /**
  * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated if some new
- * options are going to be added.
+ * The procedure contains "Option table" that should be updated 
+ * if some new options are going to be added.
  *
  * @param  argc   Number of elements in array "argv".
- * @param  argv   Array of strings that represents all command line arguments.
+ * @param  argv   Array of strings that represents all command 
+ *                line arguments.
  *
  * @return  Nothing.
  *
@@ -698,10 +712,11 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     };
 
     /* Process command line options */
-    optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
+    optCon = poptGetContext(NULL, argc, (const char **)argv,
+                            optionsTable, 0);
 
     poptSetOtherOptionHelp(optCon,
-                           "[OPTIONS...] [<xml report file>] [<output file>]");
+                "[OPTIONS...] [<xml report file>] [<output file>]");
 
     while ((rc = poptGetNextOpt(optCon)) >= 0)
     {
@@ -774,19 +789,24 @@ main(int argc, char **argv)
 
     process_cmd_line_opts(argc, argv, &gen_ctx);
 
-    if (rgt_tmpls_parse(xml2fmt_files, xml2fmt_tmpls, xml2fmt_tmpls_num) != 0)
+    if (rgt_tmpls_parse(xml2fmt_files, xml2fmt_tmpls,
+                        xml2fmt_tmpls_num) != 0)
+    {
         assert(0);
+    }
 
     gen_ctx.state = RGT_XML2HTML_STATE_INITIAL;
     gen_ctx.depth = 0;
-    gen_ctx.depth_info = g_array_new(FALSE, FALSE, sizeof(rgt_depth_ctx_t));
+    gen_ctx.depth_info = g_array_new(FALSE, FALSE, 
+                                     sizeof(rgt_depth_ctx_t));
     if (gen_ctx.depth_info == NULL)
     {
         fprintf(stderr, "Cannot allocate resourses for the programm\n");
         exit(1);
     }
 
-    if (xmlSAXUserParseFile(&sax_handler, &gen_ctx, gen_ctx.xml_fname) != 0)
+    if (xmlSAXUserParseFile(&sax_handler, &gen_ctx,
+                            gen_ctx.xml_fname) != 0)
     {
         fprintf(stderr, "Cannot parse XML document\n");
         rc = 1;

@@ -33,6 +33,7 @@
 #define __TE_RGT_FILTER_H__
 
 #include "rgt_common.h"
+#include "te_raw_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,11 +80,11 @@ extern void rgt_filter_destroy();
  * @retval  NFMODE_INCLUDE  the tuple is passed through the filter.
  * @retval  NFMODE_EXCLUDE  the tuple is rejected by the filter.
  */
-extern enum node_fltr_mode rgt_filter_check_message(const char *level,
-                                                    const char *entity,
-                                                    const char *user,
-                                                    const uint32_t
-                                                        *timestamp);
+extern enum node_fltr_mode rgt_filter_check_message(
+                                const char *entity,
+                                const char *user,
+                                te_log_level level,
+                                const uint32_t *timestamp);
 
 /**
  * Verifies if the whole branch of execution flow should be excluded or 

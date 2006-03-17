@@ -1,0 +1,30 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test11.tcl"
+
+set test_cases_pass [list \
+    "A"   "CA"          \
+    "A"   "AS"          \
+    ""    "BB"          \
+    ""    ""            \
+    "ABS" "B1"          \
+    "Tester" "B"        \
+    "Tester" "C"        \
+    "A"      "B"        \
+    "A"      "A"        \
+    "C"      "C"        \
+    ""       "B"        \
+]
+
+set test_cases_fail [list \
+    "Tester" "A"      \
+    "Tester" "BB"     \
+    "Tester" "CC"     \
+    "Tester" ""       \
+    "Tester" "AA"     \
+]
+
+set any_log_level 1
+source "test_gen.tcl"

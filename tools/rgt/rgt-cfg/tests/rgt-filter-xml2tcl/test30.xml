@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<filters>
+    <branch-filter>
+        <include path="a/b/c"/>
+        <exclude path="a/b"/>
+        <include path="a/b/test1"/>
+    </branch-filter>
+</filters>

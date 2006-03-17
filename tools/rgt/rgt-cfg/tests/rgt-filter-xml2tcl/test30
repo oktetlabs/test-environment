@@ -1,0 +1,33 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test30.tcl"
+source "test_gen.tcl"
+
+# The fileter should exclude everything
+set test_cases_pass [list \
+    "a/b/c"               \
+    "a/b/test1"           \
+]
+
+set test_cases_fail [list \
+    "a/b"                 \
+]
+
+set test_cases_default [list \
+    "a/b/c/d"                \
+    "a/b/A"                  \
+]
+
+foreach { path } $test_cases_pass {
+    check_rgt_branch_filter $path "pass"
+}
+
+foreach { path } $test_cases_fail {
+    check_rgt_branch_filter $path "fail"
+}
+
+foreach { path } $test_cases_default {
+    check_rgt_branch_filter $path "default"
+}

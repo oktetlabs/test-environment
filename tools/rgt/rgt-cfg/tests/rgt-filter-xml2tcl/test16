@@ -1,0 +1,29 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test16.tcl"
+source "test_gen.tcl"
+
+# We should pass:
+# any messages but "VERB" messages
+
+set test_cases_pass_not_verb [list \
+    "Tester" "ANY"        \
+    "Tester" "A"          \
+    "Tester" "B"          \
+    "ANY"    "A"          \
+    "ANY"    "B"          \
+    "ANY"    "ANY"        \
+]
+
+foreach { level } $all_log_levels {
+  set exp_result "pass"
+  if {[string compare $level "VERB"] == 0} {
+      set exp_result "fail"
+  }
+
+  foreach { entity user } $test_cases_pass_not_verb {
+      check_rgt_entity_filter $entity $user $level $exp_result
+  }
+}

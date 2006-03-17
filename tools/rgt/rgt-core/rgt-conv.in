@@ -257,7 +257,7 @@ if [ -n "$cfg_file" ]; then
     trap 'exit_status=$?; rm -f $TMP_FILE && exit $exit_status' 0
     trap '{ (exit 1); exit 1; }' 1 2 13 15
 
-    $bindir/rgt-filter-prepare $cfg_file $TMP_FILE || exit 1
+    $bindir/rgt-filter-xml2tcl $cfg_file $TMP_FILE || exit 1
     extra_flags="$extra_flags -f $TMP_FILE"
 fi
 

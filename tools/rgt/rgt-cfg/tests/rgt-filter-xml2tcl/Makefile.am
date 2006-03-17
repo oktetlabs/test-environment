@@ -1,5 +1,5 @@
 #
-# automake file for Report Generator Core directory
+# automake file for Report Generator tests directory
 # Process it with automake
 #
 # Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
@@ -24,28 +24,23 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = .
+LOCAL_TESTS = test1 test2 test3 test4 test5 \
+              test6 test7 test8 test9 test10 \
+              test11 test12 test13 test14 \
+              test15 test16 test17 test18 \
+              test30 \
+              test40 test41 test42
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(top_srcdir) @EXTRA_CPPFLAGS@
-AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @TCL_CFLAGS@
+check_SCRIPTS=$(LOCAL_TESTS)
+TESTS = $(LOCAL_TESTS)
 
-bin_PROGRAMS = rgt-core
+EXTRA_DIST = $(LOCAL_TESTS) $(LOCAL_TESTS:%=%.xml) test_gen_inc.tcl
+BUILT_SOURCES = $(LOCAL_TESTS:%=%.tcl) test_gen.tcl
+CLEANFILES = $(LOCAL_TESTS:%=%.tcl) test_gen.tcl
 
-rgt_core_SOURCES = filter.c filter.h \
-                   flow_tree.c flow_tree.h \
-                   log_msg.c log_msg.h \
-                   log_format.c log_format.h \
-                   log_format_v1.c \
-                   io.c io.h \
-                   memory.c memory.h \
-                   live_mode.c live_mode.h \
-                   postponed_mode.c postponed_mode.h \
-                   rgt_core.c rgt_common.h
+test_gen.tcl: $(srcdir)/test_gen_inc.tcl
+	cp $(srcdir)/test_gen_inc.tcl test_gen.tcl
 
-rgt_core_LDADD = @GLIB_LIBS@ -lpopt @TCL_LIB_SPEC@ -lm -ldl
+%.tcl: %.xml test_gen.tcl
+	$(bindir)/rgt-filter-xml2tcl $< > $@
 
-bin_SCRIPTS = rgt-conv
-
-EXTRA_DIST = rgt-conv.in
-
-CLEANFILES = rgt-conv

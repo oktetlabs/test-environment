@@ -154,9 +154,9 @@ run_tcl_cmd(const char *cmd, const char *func_name)
  * Validates if log message with a particular tuple (level, entity name, 
  * user name and timestamp) passes through user defined filter.
  *
- * @param level         Log level
  * @param entity        Entity name
  * @param user          User name
+ * @param level         Log level
  * @param timestamp     Timestamp
  *
  * @return Returns filtering mode for the tuple.
@@ -166,14 +166,14 @@ run_tcl_cmd(const char *cmd, const char *func_name)
  * @retval NFMODE_EXCLUDE   the tuple is rejected by the filter.
  */
 enum node_fltr_mode
-rgt_filter_check_message(const char *level,
-                         const char *entity, const char *user,
+rgt_filter_check_message(const char *entity, const char *user,
+                         te_log_level level,
                          const uint32_t *timestamp)
 {
     char cmd[MAX_CMD_LEN];
 
-    snprintf(cmd, sizeof(cmd), "rgt_msg_filter {%s} {%s} {%s} %d",
-             level, entity, user, *timestamp);
+    snprintf(cmd, sizeof(cmd), "rgt_msg_filter {%s} {%s} %u %d",
+             entity, user, level, *timestamp);
 
     return run_tcl_cmd(cmd, "rgt_msg_filter");
 }
@@ -228,6 +228,6 @@ rgt_filter_check_duration(const char *node_type,
              node_type, duration[0]);
 
     fmode = run_tcl_cmd(cmd, "rgt_duration_filter");
-    
+
     return (fmode == NFMODE_DEFAULT) ? NFMODE_INCLUDE : fmode;
 }

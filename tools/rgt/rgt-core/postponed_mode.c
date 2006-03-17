@@ -496,7 +496,7 @@ postponed_process_regular_msg(log_msg *msg)
     }
     fprintf(rgt_ctx.out_fd,
             "<msg level=\"%s\" entity=\"%s\" user=\"%s\" ts=\"",
-            msg->level, msg->entity, msg->user);
+            msg->level_str, msg->entity, msg->user);
     print_ts(rgt_ctx.out_fd, msg->timestamp);
     fprintf(rgt_ctx.out_fd, "\">");
     output_regular_log_msg(msg);

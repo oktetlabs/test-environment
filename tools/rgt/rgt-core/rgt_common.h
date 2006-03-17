@@ -104,6 +104,7 @@ extern "C" {
 #include "io.h"
 
 #include "te_defs.h"
+#include "te_raw_log.h"
 
 #ifndef TRUE
 #define TRUE 1
@@ -273,20 +274,21 @@ typedef struct log_msg {
     struct obstack *obstk;    /**< Internal field: 
                                    Obstack for the message */
 
-    unsigned    id;           /**< ID of the log message, which currently
+    unsigned      id;           /**< ID of the log message, which currently
                                    defines which test is logged this 
                                    message */
-    char       *entity;       /**< Entity name of the message */
-    char       *user;         /**< User name of the message */
-    uint32_t    timestamp[2]; /**< Timestamp value */
-    const char *level;        /**< Log level */
-    char       *fmt_str;      /**< Raw format string */
-    msg_arg    *args;         /**< List of arguments for format string */
-    msg_arg    *cur_arg;      /**< Internal field: 
+    char         *entity;       /**< Entity name of the message */
+    char         *user;         /**< User name of the message */
+    uint32_t      timestamp[2]; /**< Timestamp value */
+    te_log_level  level;        /**< Log level */
+    const char   *level_str;        /**< Log level in string format */
+    char         *fmt_str;      /**< Raw format string */
+    msg_arg      *args;         /**< List of arguments for format string */
+    msg_arg      *cur_arg;      /**< Internal field: 
                                    used by get_next_arg function */
-    int         args_count;   /**< Total number of the arguments */
+    int           args_count;   /**< Total number of the arguments */
 
-    char       *txt_msg;
+    char         *txt_msg;
 } log_msg;
 
 #ifdef __cplusplus

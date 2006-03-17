@@ -235,7 +235,7 @@ live_process_regular_msg(log_msg *msg)
     rgt_expand_regular_log_msg(msg);
 
     fprintf(rgt_ctx.out_fd, "%s %s %s ",
-            msg->level, msg->entity, msg->user);
+            msg->level_str, msg->entity, msg->user);
     print_ts(msg->timestamp);
     fprintf(rgt_ctx.out_fd, "\n  %s\n\n", msg->txt_msg);
 

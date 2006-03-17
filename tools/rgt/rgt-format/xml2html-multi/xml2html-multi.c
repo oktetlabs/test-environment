@@ -397,7 +397,7 @@ lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
         if ((depth_user->dir_fd = fopen(fname, "w")) == NULL)
         {
             fprintf(stderr, "Cannot create %s file: %s\n",
-                fname, strerror(errno));
+                    fname, strerror(errno));
             exit(1);
         }
 
@@ -417,19 +417,19 @@ lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
             rgt_tmpls_attrs_set_fstr(attrs, "name", cur_user->name);
 
             rgt_tmpls_output(depth_user->dir_fd,
-                         &xml2fmt_tmpls[LF_REF_PART], attrs);
+                             &xml2fmt_tmpls[LF_REF_PART], attrs);
         }
 
         rgt_tmpls_output(depth_user->dir_fd,
-                     &xml2fmt_tmpls[LF_START_TABLE], NULL);
+                         &xml2fmt_tmpls[LF_START_TABLE], NULL);
 
         if (prev_depth_ctx != NULL)
-    {
+        {
             rgt_tmpls_attrs_set_uint32(attrs, "depth", ctx->depth - 1);
-        rgt_tmpls_attrs_set_uint32(attrs, "seq", prev_depth_ctx->seq);
+            rgt_tmpls_attrs_set_uint32(attrs, "seq", prev_depth_ctx->seq);
             rgt_tmpls_attrs_set_fstr(attrs, "name", "..");
             rgt_tmpls_output(depth_user->dir_fd,
-                         &xml2fmt_tmpls[LF_ROW_FOLDER], attrs);
+                             &xml2fmt_tmpls[LF_ROW_FOLDER], attrs);
         }
     }
 
@@ -441,16 +441,16 @@ lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
         rgt_tmpls_attrs_set_uint32(attrs, "seq", depth_ctx->seq);
         rgt_tmpls_attrs_set_fstr(attrs, "name", depth_user->name);
         if (is_test)
-    {
+        {
             rgt_tmpls_attrs_add_fstr(attrs, "result", result);
             rgt_tmpls_output(prev_depth_user->dir_fd,
                              &xml2fmt_tmpls[LF_ROW_TEST], attrs);
-    }
-    else
-    {
+        }
+        else
+        {
             rgt_tmpls_output(prev_depth_user->dir_fd,
                              &xml2fmt_tmpls[LF_ROW_FOLDER], attrs);
-    }
+        }
     }
 
     rgt_tmpls_attrs_free(attrs);
@@ -465,7 +465,8 @@ lf_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx)
 
     if (!depth_user->is_test)
     {
-        rgt_tmpls_output(depth_user->dir_fd, &xml2fmt_tmpls[LF_DOC_END], NULL);
+        rgt_tmpls_output(depth_user->dir_fd, 
+                         &xml2fmt_tmpls[LF_DOC_END], NULL);
 
         fclose(depth_user->dir_fd);
     }
@@ -509,7 +510,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
              ctx->depth, depth_ctx->seq);
     if ((depth_user->fd = fopen(fname, "w")) == NULL)
     {
-        fprintf(stderr, "Cannot create %s file: %s\n", fname, strerror(errno));
+        fprintf(stderr, "Cannot create %s file: %s\n",
+                fname, strerror(errno));
         exit(1);
     }
 
@@ -526,7 +528,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_tmpls_attrs_add_fstr(attrs, "node_type", node_type);
     rgt_tmpls_attrs_add_fstr(attrs, "name", name);
     rgt_tmpls_attrs_add_fstr(attrs, "result", result);
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[DOC_CNTRL_NODE_TITLE], attrs);
+    rgt_tmpls_output(depth_user->fd,
+                     &xml2fmt_tmpls[DOC_CNTRL_NODE_TITLE], attrs);
 
     rgt_tmpls_attrs_add_fstr(attrs, "fname", fname);
 
@@ -538,14 +541,21 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     }
     rgt_tmpls_attrs_add_fstr(attrs, "par_name", fname);
 
-    rgt_tmpls_output(prev_depth_user->fd, &xml2fmt_tmpls[DOC_REF_TO_NODE], attrs);
+    rgt_tmpls_output(prev_depth_user->fd,
+                     &xml2fmt_tmpls[DOC_REF_TO_NODE], attrs);
 
     rgt_tmpls_attrs_add_uint32(attrs, "prev_depth", ctx->depth - 1);
 
     if (depth_user->is_test)
-        rgt_tmpls_output(gen_user->js_fd, &xml2fmt_tmpls[JS_ADD_TEST_NODE], attrs);
+    {
+        rgt_tmpls_output(gen_user->js_fd,
+                         &xml2fmt_tmpls[JS_ADD_TEST_NODE], attrs);
+    }
     else
-        rgt_tmpls_output(gen_user->js_fd, &xml2fmt_tmpls[JS_ADD_FOLDER_NODE], attrs);
+    {
+        rgt_tmpls_output(gen_user->js_fd,
+                         &xml2fmt_tmpls[JS_ADD_FOLDER_NODE], attrs);
+    }
 
     rgt_tmpls_attrs_free(attrs);
 }
@@ -728,7 +738,8 @@ RGT_DEF_FUNC(proc_meta_author_start)
     attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_attrs_add_fstr(attrs, "name", name);
 
-    rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_AUTHOR_START], attrs);
+    rgt_tmpls_output(depth_user->fd,
+                     &xml2fmt_tmpls[META_AUTHOR_START], attrs);
 
     rgt_tmpls_attrs_free(attrs);
 

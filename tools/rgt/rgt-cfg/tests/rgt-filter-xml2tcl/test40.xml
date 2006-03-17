@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<filters>
+    <duration-filter>
+        <exclude node="pkg" min="0" max="10"/>
+        <exclude node="test" min="40"/>
+    </duration-filter>
+</filters>

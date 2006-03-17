@@ -35,9 +35,7 @@
 #include <obstack.h>
 #include <glib.h>
 
-#include "te_raw_log.h"
 #include "logger_defs.h"
-
 
 
 /** @name A set of macros used in string representation of log level */
@@ -121,7 +119,9 @@ node_type2str(node_type_t node_type)
         NODE_TYPE_CASE(SESSION);
         NODE_TYPE_CASE(PACKAGE);
         NODE_TYPE_CASE(TEST);
-        
+
+#undef NODE_TYPE_CASE
+
         default:
             assert(0);
             return "Unknown";

@@ -1,0 +1,23 @@
+# rgt_msg_filter --
+#    Determines if log message with particular "entity name",
+#    "user name", "level" and "timestamp" passes through the filters.
+#
+# PARAMETERS:
+#    entity    - Entity name
+#    user      - User name
+#    level     - Log level
+#    timestamp - Message timestamp
+#
+# RETURNS:
+#    pass - Message with the particular attributes passed through the filters.
+#    fail - Otherwise.
+#
+proc rgt_msg_filter { entity user level timestamp } {
+
+    if {[string compare [rgt_entity_filter $entity $user $level] "pass"] == 0 &&
+        [string compare [rgt_time_filter $timestamp] "pass"] == 0} {
+        return "pass"
+    }
+
+    return "fail"
+}

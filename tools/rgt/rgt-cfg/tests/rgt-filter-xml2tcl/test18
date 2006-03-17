@@ -1,0 +1,106 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test18.tcl"
+source "test_gen.tcl"
+
+# We should pass:
+# for generic messages - everything not from ERROR and WARN
+# from "Tester" "A" - exclude RING and WARN
+# from "Tester" "B" - exclude ERROR, WARN and VERB
+
+set test_cases_pass_not_from_spec_level [list \
+    "Tester" "ANY"        \
+    "ANY"    "A"          \
+    "ANY"    "B"          \
+    "ANY"    "ANY"        \
+    "Tester" "A"          \
+    "Tester" "B"          \
+]
+
+set test_cases_pass_error [list \
+    "Tester" "A"          \
+]
+
+set test_cases_fail_error [list \
+    "Tester" "ANY"        \
+    "ANY"    "A"          \
+    "ANY"    "B"          \
+    "ANY"    "ANY"        \
+    "Tester" "B"          \
+]
+
+set test_cases_fail_warn [list \
+    "Tester" "ANY"        \
+    "ANY"    "A"          \
+    "ANY"    "B"          \
+    "ANY"    "ANY"        \
+    "Tester" "A"          \
+    "Tester" "B"          \
+]
+
+set test_cases_pass_ring [list \
+    "Tester" "ANY"        \
+    "ANY"    "A"          \
+    "ANY"    "B"          \
+    "ANY"    "ANY"        \
+    "Tester" "B"          \
+]
+
+set test_cases_fail_ring [list \
+    "Tester" "A"          \
+]
+
+set test_cases_pass_verb [list \
+    "Tester" "ANY"        \
+    "ANY"    "A"          \
+    "ANY"    "B"          \
+    "ANY"    "ANY"        \
+    "Tester" "A"          \
+]
+
+set test_cases_fail_verb [list \
+    "Tester" "B"          \
+]
+
+foreach { level } $all_log_levels {
+  if {[string compare $level "ERROR"] == 0 || \
+      [string compare $level "WARN"] == 0 || \
+      [string compare $level "RING"] == 0 || \
+      [string compare $level "VERB"] == 0} {
+      continue
+  }
+
+  foreach { entity user } $test_cases_pass_not_from_spec_level {
+      check_rgt_entity_filter $entity $user $level "pass"
+  }
+}
+
+foreach { entity user } $test_cases_pass_error {
+      check_rgt_entity_filter $entity $user "ERROR" "pass"
+}
+
+foreach { entity user } $test_cases_fail_error {
+      check_rgt_entity_filter $entity $user "ERROR" "fail"
+}
+
+foreach { entity user } $test_cases_fail_warn {
+      check_rgt_entity_filter $entity $user "WARN" "fail"
+}
+
+foreach { entity user } $test_cases_pass_ring {
+      check_rgt_entity_filter $entity $user "RING" "pass"
+}
+
+foreach { entity user } $test_cases_fail_ring {
+      check_rgt_entity_filter $entity $user "RING" "fail"
+}
+
+foreach { entity user } $test_cases_pass_verb {
+      check_rgt_entity_filter $entity $user "VERB" "pass"
+}
+
+foreach { entity user } $test_cases_fail_verb {
+      check_rgt_entity_filter $entity $user "VERB" "fail"
+}

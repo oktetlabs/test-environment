@@ -1,0 +1,23 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test4.tcl"
+
+# The fileter should include everything, but TEST_ENTITY/TEST_USER
+set test_cases_pass [list \
+    "A"   "B"         \
+    "A"   ""          \
+    ""    "B"         \
+    ""    ""          \
+    "ABA" "BBB"       \
+    "TEST_ENTITY" "B" \
+    "A" "TEST_USER"   \
+]
+
+set test_cases_fail [list \
+    "TEST_ENTITY" "TEST_USER" \
+]
+
+set any_log_level 1
+source "test_gen.tcl"

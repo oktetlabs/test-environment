@@ -1,0 +1,23 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test7.tcl"
+
+set test_cases_pass [list \
+    "Tester" "FlowNoRGT"  \
+    "ABS"    "FlowNoRGT"  \
+]
+
+set test_cases_fail [list \
+    "A"   "B"         \
+    "A"   ""          \
+    ""    "B"         \
+    ""    ""          \
+    "ABS" "BBB"       \
+    "Tester" "ABS"    \
+    "Tester" ""       \
+]
+
+set any_log_level 1
+source "test_gen.tcl"

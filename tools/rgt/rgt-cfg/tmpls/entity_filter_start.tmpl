@@ -1,0 +1,15 @@
+# rgt_entity_filter --
+#    Gives a verdict for a log message based on tuple 
+#    "entity name", "user name" and "log level".
+# 
+# PARAMETERS:
+#    entity - Entity name to be checked
+#    user   - User name of the message
+#    level  - Log level of the message
+#
+# RETURNS:
+#    In the case when the pair passes through user filter 
+#    it returns "pass" string, otherwise "fail".
+#
+proc rgt_entity_filter { entity user level } {
+    switch $entity {

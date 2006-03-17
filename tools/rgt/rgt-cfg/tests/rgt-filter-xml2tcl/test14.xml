@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<filters>
+    <entity-filter>
+        <exclude entity="" level="VERB"/>
+        <include entity="Tester" level="RING">
+            <user name="A"/>
+        </include>
+    </entity-filter>
+</filters>

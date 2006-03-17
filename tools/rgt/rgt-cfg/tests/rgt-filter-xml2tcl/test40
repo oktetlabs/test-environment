@@ -1,0 +1,35 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
+source "test40.tcl"
+source "test_gen.tcl"
+
+set test_cases_pass [list \
+    "pkg"     11          \
+    "pkg"     39          \
+    "pkg"     40          \
+    "pkg"     41          \
+    "session" 1           \
+    "session" 10          \
+    "session" 11          \
+    "session" 40          \
+    "session" 41          \
+    "test"    20          \
+    "test"    39          \
+]
+
+set test_cases_fail [list \
+    "pkg"     9           \
+    "pkg"     10          \
+    "test"    40          \
+    "test"    41          \
+]
+
+foreach { node duration } $test_cases_pass {
+    check_rgt_duration_filter $node $duration "pass"
+}
+
+foreach { node duration } $test_cases_fail {
+    check_rgt_duration_filter $node $duration "fail"
+}

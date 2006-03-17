@@ -310,8 +310,8 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
     switch (log_level)
     {
 #define RGT_LL_CASE(lvl_) \
-        case TE_LL_ ## lvl_:                         \
-            (*msg)->level = RGT_LL_ ## lvl_ ## _STR; \
+        case TE_LL_ ## lvl_:                             \
+            (*msg)->level_str = RGT_LL_ ## lvl_ ## _STR; \
             break
 
         RGT_LL_CASE(ERROR);
@@ -327,8 +327,10 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
             LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_UNKNOWN_LOGLEVEL);
             PRINT_ERROR;
 
-            (*msg)->level = RGT_LL_UNKNOWN_STR;
+            (*msg)->level_str = RGT_LL_UNKNOWN_STR;
     }
+
+    (*msg)->level = log_level;
 
     obstk = NULL;
 
