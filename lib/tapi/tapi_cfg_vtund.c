@@ -40,6 +40,7 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "tapi_sockaddr.h"
+#include "tapi_cfg_base.h"
 #include "tapi_cfg_vtund.h"
 
 
@@ -200,6 +201,16 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
         free(str);
         return rc;
     }
+
+    rc = tapi_cfg_base_if_up(ta_clnt, str);
+    if (rc != 0)
+    {
+        ERROR("Failed to UP interface '%s' on TA '%s': %r",
+              str, ta_clnt, rc);
+        free(str);
+        return rc;
+    }
+
     free(str);
     
     if (ta_clnt_if != NULL)
