@@ -1398,7 +1398,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     {
         ctx->fd = stdout;
     }
-    else if ((ctx->fd = fopen(out_fname, "r")) == NULL)
+    else if ((ctx->fd = fopen(out_fname, "w")) == NULL)
     {
         perror(out_fname);
         poptFreeContext(optCon);
