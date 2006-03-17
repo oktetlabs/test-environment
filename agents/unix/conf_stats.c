@@ -46,6 +46,7 @@
 #include "rcf_pch.h"
 #include "logger_api.h"
 #include "unix_internal.h"
+#include "te_shell_cmd.h"
 
 #ifndef IF_NAMESIZE
 #define IF_NAMESIZE IFNAMSIZ
@@ -53,68 +54,68 @@
 
 
 typedef struct if_stats {
-    uint64      in_octets;
-    uint64      in_ucast_pkts;
-    uint64      in_nucast_pkts;
-    uint64      in_discards;
-    uint64      in_errors;
-    uint64      in_unknown_protos;
-    uint64      out_octets;
-    uint64      out_ucast_pkts;
-    uint64      out_nucast_pkts;
-    uint64      out_discards;
-    uint64      out_errors;
+    uint64_t      in_octets;
+    uint64_t      in_ucast_pkts;
+    uint64_t      in_nucast_pkts;
+    uint64_t      in_discards;
+    uint64_t      in_errors;
+    uint64_t      in_unknown_protos;
+    uint64_t      out_octets;
+    uint64_t      out_ucast_pkts;
+    uint64_t      out_nucast_pkts;
+    uint64_t      out_discards;
+    uint64_t      out_errors;
 } if_stats;
 
 
 typedef struct net_stats_ipv4{
-    uint64      in_recvs;
-    uint64      in_hdr_errs;
-    uint64      in_addr_errs;
-    uint64      forw_dgrams;
-    uint64      in_unknown_protos;
-    uint64      in_discards;
-    uint64      in_delivers;
-    uint64      out_requests;
-    uint64      out_discards;
-    uint64      out_no_routes;
-    uint64      reasm_timeout;
-    uint64      reasm_reqds;
-    uint64      reasm_oks;
-    uint64      reasm_fails;
-    uint64      frag_oks;
-    uint64      frag_fails;
-    uint64      frag_creates;
+    uint64_t      in_recvs;
+    uint64_t      in_hdr_errs;
+    uint64_t      in_addr_errs;
+    uint64_t      forw_dgrams;
+    uint64_t      in_unknown_protos;
+    uint64_t      in_discards;
+    uint64_t      in_delivers;
+    uint64_t      out_requests;
+    uint64_t      out_discards;
+    uint64_t      out_no_routes;
+    uint64_t      reasm_timeout;
+    uint64_t      reasm_reqds;
+    uint64_t      reasm_oks;
+    uint64_t      reasm_fails;
+    uint64_t      frag_oks;
+    uint64_t      frag_fails;
+    uint64_t      frag_creates;
 } net_stats_ipv4;
 
 typedef struct net_stats_icmp {
-    uint64      in_msgs;
-    uint64      in_errs;
-    uint64      in_dest_unreachs;
-    uint64      in_time_excds;
-    uint64      in_parm_probs;
-    uint64      in_src_quenchs;
-    uint64      in_redirects;
-    uint64      in_echos;
-    uint64      in_echo_reps;
-    uint64      in_timestamps;
-    uint64      in_timestamp_reps;
-    uint64      in_addr_masks;
-    uint64      in_addr_mask_reps;
+    uint64_t      in_msgs;
+    uint64_t      in_errs;
+    uint64_t      in_dest_unreachs;
+    uint64_t      in_time_excds;
+    uint64_t      in_parm_probs;
+    uint64_t      in_src_quenchs;
+    uint64_t      in_redirects;
+    uint64_t      in_echos;
+    uint64_t      in_echo_reps;
+    uint64_t      in_timestamps;
+    uint64_t      in_timestamp_reps;
+    uint64_t      in_addr_masks;
+    uint64_t      in_addr_mask_reps;
 
-    uint64      out_msgs;
-    uint64      out_errs;
-    uint64      out_dest_unreachs;
-    uint64      out_time_excds;
-    uint64      out_parm_probs;
-    uint64      out_src_quenchs;
-    uint64      out_redirects;
-    uint64      out_echos;
-    uint64      out_echo_reps;
-    uint64      out_timestamps;
-    uint64      out_timestamp_reps;
-    uint64      out_addr_masks;
-    uint64      out_addr_mask_reps;
+    uint64_t      out_msgs;
+    uint64_t      out_errs;
+    uint64_t      out_dest_unreachs;
+    uint64_t      out_time_excds;
+    uint64_t      out_parm_probs;
+    uint64_t      out_src_quenchs;
+    uint64_t      out_redirects;
+    uint64_t      out_echos;
+    uint64_t      out_echo_reps;
+    uint64_t      out_timestamps;
+    uint64_t      out_timestamp_reps;
+    uint64_t      out_addr_masks;
+    uint64_t      out_addr_mask_reps;
 } net_stats_icmp;
 
 typedef struct {
@@ -153,15 +154,16 @@ if_stats_get(const char *ifname, if_stats *stats)
     char *ptr = NULL;
     int   pid;
     int   out_fd;
+    int   line = 0;
     char  cmd[MAX_IFCONFIG_CMD_LEN];
     FILE *ifcfg_output;
 
-    uint64 in_overruns;
-    uint64 in_frame_losses;
-    uint64 out_overruns;
-    uint64 out_carrier_losses;
+    uint64_t in_overruns;
+    uint64_t in_frame_losses;
+    uint64_t out_overruns;
+    uint64_t out_carrier_losses;
 
-    memset(stats, 0, sizeof(if_stats);
+    memset(stats, 0, sizeof(if_stats));
 
 #if __linux__
     if ((ifname == NULL) || (stats == NULL))
@@ -305,20 +307,19 @@ static char *stats_snmp_icmp_fmt =
   "%u %u %u %u %u "
   "%u %u %u";
 
-typedef struct if_stats {
-} if_stats;
 
 #define MAX_PROC_NET_SNMP_SIZE  1024
 
 static te_errno
 net_stats_get(net_stats *stats)
 {
+    int   rc = 0;
     char *buf = NULL;
 
 #if __linux__
     FILE *fstats;
 
-    memset(stats, 0, sizeof(net_stats);
+    memset(stats, 0, sizeof(net_stats));
 
     buf = (char *)malloc(MAX_PROC_NET_SNMP_SIZE);
     if (buf == NULL)
