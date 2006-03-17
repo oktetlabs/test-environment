@@ -33,6 +33,19 @@
 #ifndef __TE_TAPI_CFG_BASE_H__
 #define __TE_TAPI_CFG_BASE_H__
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#include "te_defs.h"
+#include "te_stdint.h"
+#include "te_errno.h"
+#include "conf_api.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
