@@ -1,9 +1,9 @@
                 default {
-		    if {[expr 0x@@%x:levels@@ & $level]} {
-		        return "pass" 
-		    } else {
-		        return "fail"
-		    }
-		}
+                    if {[expr 0x@@%x:levels@@ & $level]} {
+                        return "pass" 
+                    } else {
+                        return "fail"
+                    }
+                }
             }
         }
