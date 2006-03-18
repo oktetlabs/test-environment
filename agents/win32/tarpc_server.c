@@ -539,8 +539,6 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
                 GROUP *g, DWORD_PTR user_data)
 {
     accept_cond *cond = (accept_cond *)user_data;
-    struct timeval timeout = 
-        { cond->timeout / 1000, (cond->timeout % 1000) * 1000 };
 
     struct sockaddr_in *addr;
 
@@ -551,10 +549,10 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
     UNUSED(callee_data);
     UNUSED(g);
 
-    select(0, NULL, NULL, NULL, &timeout);
-
     if (cond == NULL)
         return CF_ACCEPT;
+
+    SleepEx(cond->timeout, TRUE);
 
     if (caller_id == NULL || caller_id->len == 0)
         return CF_REJECT;
@@ -600,7 +598,6 @@ TARPC_FUNC(wsa_accept,
                     CF_REJECT : CF_DEFER;
         }
     }
-
     MAKE_CALL(out->retval = WSAAccept(in->fd, a,
                                       out->len.len_len == 0 ? NULL :
                                       (int *)(out->len.len_val),
