@@ -2,10 +2,10 @@
  * @brief Network Configuration Model TAPI
  *
  * Implementation of test API for network configuration model
- * (storage/cm/cm_net.xml).
+ * (doc/cm/cm_net.xml).
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * This library is free software; you can redistribute it and/or
