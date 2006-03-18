@@ -107,6 +107,14 @@ extern const char *te_lgr_entity;
  */    
 #define TE_LL_ENTRY_EXIT    0x0020
 
+/** @name A set of macros used for string representation of log level */
+#define TE_LL_ERROR_STR       "ERROR"
+#define TE_LL_WARN_STR        "WARN"
+#define TE_LL_RING_STR        "RING"
+#define TE_LL_INFO_STR        "INFO"
+#define TE_LL_VERB_STR        "VERB"
+#define TE_LL_ENTRY_EXIT_STR  "ENTRY/EXIT"
+/*@}*/
 
 /*
  * Override default level macros into the user' module for logging 

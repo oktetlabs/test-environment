@@ -33,8 +33,10 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-
 #include <errno.h>
+
+#include "logger_defs.h"
+#include "te_raw_log.h"
 
 #include "xml2gen.h"
 #include "xml2html-multi.h"
@@ -82,6 +84,7 @@ static void output_log_names(GHashTable **entity_hash,
 static void lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                      const char *result, rgt_depth_ctx_t *prev_depth_ctx);
 
+static te_log_level te_log_level_str2h(const char *ll);
 
 RGT_DEF_FUNC(proc_document_start)
 {
@@ -647,6 +650,8 @@ RGT_DEF_FUNC(proc_log_msg_start)
     add_log_user(gen_user, depth_user, entity, user);
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
+    rgt_tmpls_attrs_add_uint32(attrs, "level_id",
+                               te_log_level_str2h(level));
     rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
     rgt_tmpls_attrs_free(attrs);
 }
@@ -914,4 +919,36 @@ free_depth_user_data()
     g_ptr_array_foreach(depth_array, free_depth_user_data_part, NULL);
     g_ptr_array_free(depth_array, TRUE);
     depth_array = NULL;
+}
+
+static te_log_level
+te_log_level_str2h(const char *ll)
+{
+    struct ll_map {
+        const char   *str;
+        te_log_level  num;
+    } maps[] = {
+#define MAP_ENTRY(ll_) \
+        { TE_LL_ ## ll_ ## _STR, TE_LL_ ## ll_ }
+
+        MAP_ENTRY(ERROR),
+        MAP_ENTRY(WARN),
+        MAP_ENTRY(RING),
+        MAP_ENTRY(INFO),
+        MAP_ENTRY(VERB),
+        MAP_ENTRY(ENTRY_EXIT),
+
+#undef MAP_ENTRY
+    };
+    unsigned int i;
+
+    for (i = 0; i < sizeof(maps) / sizeof(maps[0]); i++)
+    {
+        if (strcmp(maps[i].str, ll) == 0)
+            return maps[i].num;
+    }
+
+    assert(0);
+
+    return 0;
 }

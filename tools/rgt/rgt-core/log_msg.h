@@ -37,17 +37,6 @@
 
 #include "logger_defs.h"
 
-
-/** @name A set of macros used in string representation of log level */
-#define RGT_LL_ERROR_STR       "ERROR"
-#define RGT_LL_WARN_STR        "WARN"
-#define RGT_LL_RING_STR        "RING"
-#define RGT_LL_INFO_STR        "INFO"
-#define RGT_LL_VERB_STR        "VERB"
-#define RGT_LL_ENTRY_EXIT_STR  "ENTRY/EXIT"
-#define RGT_LL_UNKNOWN_STR     "UNKNOWN"
-/*@}*/
-
 /* 
  * The following declarations are about Control Log Messages that 
  * outline test execution flow.

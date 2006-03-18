@@ -1,13 +1,20 @@
 </body>
 <script>
+/*
+    levels = window.top.level_s;
+*/
+    levels = window.top.level_info[0];
     all_entities = window.top.entities;
     divList = getAllLogs();
       
     for (i = 0; i < divList.length; i++)
     {
         DivElem = divList.item(i);
+        level = DivElem.getAttribute("level");
 
-        if (all_entities[DivElem.getAttribute("entityname")][DivElem.getAttribute("username")])
+        if ((levels & level) &&
+            (all_entities[DivElem.getAttribute("entityname")]
+                         [DivElem.getAttribute("username")] & level))
         {
             divList.item(i).style.display = "";
         }

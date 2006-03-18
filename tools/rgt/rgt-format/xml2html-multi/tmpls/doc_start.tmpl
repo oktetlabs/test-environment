@@ -39,8 +39,6 @@ function activate_link(name, doc_name, par_name)
     document.location.href=doc_name;
 }
 
-var filter_win_reloaded = false;
-
 function refresh_filter_window()
 {
     if (typeof(window.top.filter_win) != "undefined")
@@ -48,7 +46,6 @@ function refresh_filter_window()
         // test to see if a window is still open
         if (!(window.top.filter_win.closed))
         {
-            filter_win_reloaded = true;
             window.top.filter_win.location.reload();
         }
     }

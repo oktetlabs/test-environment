@@ -5,49 +5,274 @@
 
 <script>
 
-function logsUpdate(cb_name, value)
-{
-    all_entities = window.opener.top.entities;
-    var cbox;
+var all_bits = 0x3f;
+var n_entries = 0;
 
-    for (i = 0, cbox = eval("document." + cb_name + i);
-         cbox;
-         i++, cbox = eval("document." + cb_name + i))
+/*
+ * 
+ * @note We use most significant bit of entity/user value to decide 
+ * wheter we need to flush this entry or not, that is why throught 
+ * the code you can meet values like 0x80000 or 0x7fff.
+ */
+function applyChanges()
+{
+    nd_entities = window.opener.entities;
+/*
+    var levels_changed = window.opener.levels_changed;
+    var levels_updated = window.opener.levels_updated;
+    var levels = window.opener.levels;
+    var g_levels = window.opener.top.levels;
+*/
+    var levels = window.opener.level_info[0];
+    var levels_changed = window.opener.level_info[1];
+    var levels_updated = window.opener.level_info[2];
+    var g_levels = window.opener.top.level_info[0];
+
+    all_entities = window.opener.top.entities;
+    var i;
+
+    for (entity in nd_entities)
     {
-        if (cbox.checked)
+        user_array = nd_entities[entity];
+        for (user in user_array)
         {
-            all_entities[cbox.getAttribute("entity")][cbox.getAttribute("user")] = value;
-            cbox.checked = false;
+            if ((nd_entities[entity][user] & 0x8000) == 0)
+            {
+                all_entities[entity][user] = nd_entities[entity][user];
+            }
+        }
+    }
+    
+//    alert("Updated " + levels_updated + " | Changed " + levels_changed);
+    if (levels_updated)
+    {
+        var inc_levels = 0;
+        var excl_levels = 0;
+
+        /* Change levels */
+        for (i = 0; i < 6; i++)
+        {
+            if (levels_updated & (1 << i))
+            {
+                if (levels & (1 << i))
+                    inc_levels |= (1 << i);
+                else
+                    excl_levels |= (1 << i);
+            }
+        }
+        g_levels |= inc_levels;
+        g_levels &= ~excl_levels;
+
+        /*
+         * Global level policy is updated, so go through the list of 
+         * all entries and turn ON/OFF their corresponding log levels.
+         */
+        for (entity in all_entities)
+        {
+            user_array = all_entities[entity];
+            for (user in user_array)
+            {
+                all_entities[entity][user] |= inc_levels;
+                all_entities[entity][user] &= ~excl_levels;
+            }
         }
     }
 
-    self.location.reload();
+    if (levels_changed)
+    {
+        /* Change levels */
+        for (i = 0; i < 6; i++)
+        {
+            if (levels_changed & (1 << i))
+                g_levels |= (1 << i);
+        }
+    }
+
+    window.opener.top.level_info[0] = g_levels;
+/*
+    window.opener.top.levels = g_levels;
+*/
+    /* Reload parent frame, which in turn will reload us */
+    window.opener.location.reload();
+}
+
+/*
+ * This function is called when user changes value of the lefthand
+ * checkbox, which is responsible for updating all log-level specific
+ * checkboxes.
+ *
+ * @param id  Log entity ID
+ *
+ * @se This function enables/disables all log-level specific checkboxes.
+ */
+function mainCbChange(id)
+{
+    nd_entities = window.opener.entities;
+    levels_updated = window.opener.levels_updated;
+    var cb = eval("document.cb_form.cb" + id);
+    var ll_cb;
+    var i;
+
+    for (i = 0, ll_cb = eval("document.cb_form.cb" + id + "_" + i);
+         ll_cb;
+         i++, ll_cb = eval("document.cb_form.cb" + id + "_" + i))
+    {
+        ll_cb.checked = cb.checked;
+    }
+
+    nd_entities[cb.getAttribute("entity")][cb.getAttribute("user")] = 
+        cb.checked ? 0x7fff : 0;
+}
+
+function update_lefthand_cb(m_id)
+{
+    nd_entities = window.opener.entities;
+    var cb = eval("document.cb_form.cb" + m_id);
+    var m_checked = true;
+    var ll_cb;
+    var i;
+
+    for (i = 0, ll_cb = eval("document.cb_form.cb" + m_id + "_" + i);
+         ll_cb;
+         i++, ll_cb = eval("document.cb_form.cb" + m_id + "_" + i))
+    {
+        if (!ll_cb.checked)
+        {
+            m_checked = false;
+            break;
+        }
+    }
+    cb.checked = m_checked;
+}
+
+/*
+ * This function is called when user changes value of the one of 
+ * righthand checkboxes, which is log-level specific checkboxes.
+ *
+ * @param m_id  Log entity ID
+ * @param id    Log level ID
+ *
+ * @se This function may enable/disable lefthand checkbox.
+ */
+function levelCbChange(m_id, id)
+{
+    nd_entities = window.opener.entities;
+/*
+    levels_changed = window.opener.levels_changed;
+    levels_updated = window.opener.levels_updated;
+*/
+    var levels_changed = window.opener.level_info[1];
+    var levels_updated = window.opener.level_info[2];
+
+    var cb = eval("document.cb_form.cb" + m_id + "_" + id);
+
+    if (cb.checked)
+    {
+        nd_entities[cb.getAttribute("entity")][cb.getAttribute("user")] |= (1 << id);
+        nd_entities[cb.getAttribute("entity")][cb.getAttribute("user")] &= 0x7fff;
+    }
+    else
+    {
+        nd_entities[cb.getAttribute("entity")][cb.getAttribute("user")] &= ((~(1 << id)) & 0x7fff);
+    }
+
+    update_lefthand_cb(m_id);
+
+    /* 
+     * We change the particular entry making generic level policy 
+     * incorrect, so clear level policy update flag here.
+     */
+    levels_updated &= ~(1 << id);
+
+    /* Enable it unconditionally (has only sence when it is disabled) */
+    cb = eval("document.cb_form.lcb" + id);
+    cb.checked = true;
+
+    /*
+     * We should enable level of this type without updating 
+     * current situation with log messages.
+     */
+    levels_changed |= (1 << id);
+    
+    //alert("Updated " + levels_updated + " | Changed " + levels_changed);
+
+    window.opener.level_info[1] = levels_changed;
+    window.opener.level_info[2] = levels_updated;
+}
+
+/*
+ * This function is called when user changes value of the one of 
+ * global log level checkboxes.
+ *
+ * @param id    Log level ID
+ */
+function gLevelCbChange(id)
+{
+    nd_entities = window.opener.entities;
+/*
+    levels = window.opener.levels;
+    levels_updated = window.opener.levels_updated;
+    levels_changed = window.opener.levels_changed;
+*/
+    var levels = window.opener.level_info[0];
+    var levels_changed = window.opener.level_info[1];
+    var levels_updated = window.opener.level_info[2];
+
+    var cb = eval("document.cb_form.lcb" + id);
+    var ll_cb;
+    var i;
+
+    for (i = 0; i < n_entries; i++)
+    {
+        ll_cb = eval("document.cb_form.cb" + i + "_" + id);
+
+        ll_cb.checked = cb.checked;
+
+        if (cb.checked)
+        {
+            nd_entities[ll_cb.getAttribute("entity")]
+                       [ll_cb.getAttribute("user")] |= (1 << id);
+            nd_entities[ll_cb.getAttribute("entity")]
+                       [ll_cb.getAttribute("user")] &= 0x7fff;
+        }
+        else
+        {
+            nd_entities[ll_cb.getAttribute("entity")]
+                       [ll_cb.getAttribute("user")] &= ((~(1 << id)) & 0x7fff);
+        }
+
+        /*
+         * In case we enable bit we should check if it is time to
+         * enable lefthand checkbox too.
+         */
+        if (cb.checked)
+        {
+            update_lefthand_cb(i);
+        }
+        else
+        {
+            ll_cb = eval("document.cb_form.cb" + i);
+            ll_cb.checked = false;
+        }
+    }
+
+    if (cb.checked)
+        levels |= (1 << id);
+    else
+        levels &= ~(1 << id);
+
+    levels_updated |= (1 << id);
+    levels_changed &= ~(1 << id);
+
+    //alert("Updated " + levels_updated + " | Changed " + levels_changed);
+
+    window.opener.level_info[0] = levels;
+    window.opener.level_info[1] = levels_changed;
+    window.opener.level_info[2] = levels_updated;
 }
 
 function process_on_load_event()
 {
-    if (window.opener.filter_win_reloaded)
-    {
-        /* 
-         * We were just loaded from node frame, so that 
-         * frame does not need to be refreshed, just reset the variable.
-         */
-        window.opener.filter_win_reloaded = false;
-    }
-    else
-    {
-        /*
-         * We've been just opened from the frame, 
-         * or some filtering settings have been updated and we've just
-         * reloaded ourselves.
-         * In first case we do not need to reload frame, but we do it
-         * just to simplify JS code.
-         * In the second case we have to reload frame as some messages
-         * have to be hiden or shown according to new filtering 
-         * information.
-         */
-        window.opener.location.reload();
-    }
     self.focus();
 }
 
@@ -56,138 +281,115 @@ function process_on_load_event()
   </head>
   <body onLoad='javascript:process_on_load_event()'>
 
+<table border='0' cellpadding='0' cellspacing='0' width='100%'>
+<form name='cb_form'>
+<tr>
+  <td width='30' class='tdsubhead'>&nbsp;</td>
+  <td width='40%' class='tdsubhead'>Entity Name</td>
+  <td width='60%' class='tdsubhead'>User Name</td>
+  <td width='30' class='tdsubhead' align='center'>E</td>
+  <td width='30' class='tdsubhead' align='center'>W</td>
+  <td width='30' class='tdsubhead' align='center'>R</td>
+  <td width='30' class='tdsubhead' align='center'>I</td>
+  <td width='30' class='tdsubhead' align='center'>V</td>
+  <td width='30' class='tdsubhead' align='center'>E/E</td>
+</tr>
+<tr>
+  <td colspan='9'>
+    <img border='0' src='images/tr.gif' width='1' height='10'><br>
+  </td>
+</tr>
+
 <script>
     nd_entities = window.opener.entities;
     all_entities = window.opener.top.entities;
-    var enabled_msgs = "";
-    var disabled_msgs = "";
+/*
+    levels = window.opener.top.levels;
+*/
+    var levels = window.opener.top.level_info[0];
+    var head_msg = "";
+    var msg = "";
+    var show_all = true;
     var i = 0;
-    var j = 0;
+    var j;
 
+    //alert("levels " + levels);
     for (entity in nd_entities)
     {
         user_array = nd_entities[entity];
         for (user in user_array)
         {
-            if (!all_entities[entity][user])
-            {
-                if (i == 0)
-                {
-                    disabled_msgs += 
-"Logs from the following objects are hidden:<br>" +
-"<table border='0' cellpadding='0' cellspacing='0' width='100%'>" +
-"<form name='show_form'>" +
-"<tr>" +
-"  <td>" +
-"      <table border='0' cellpadding='0' cellspacing='0' width='100%'>" +
-"      <tr>" +
-"        <td class='tdsubheading'>" +
-"          <table border='0' cellpadding='0' cellspacing='0'>" +
-"          <tr>" +
-"            <td width='30' class='tdsubhead'>&nbsp;</td>" +
-"            <td width='150' class='tdsubhead'>Entity Name</td>" +
-"            <td width='150' class='tdsubhead'>User Name</td>" +
-"          </tr>" +
-"          </table>" +
-"        </td>" +
-"      </tr>" +
-"      </table>" +
-"      <img border='0' src='images/tr.gif' width='1' height='10'><br>";
-                }
-                
-                disabled_msgs +=
-"      <table border='0' cellpadding='0' cellspacing='0' width='100%'>" +
-"      <tr>" +
-"        <td class='" + ((i % 2 == 0) ? "tdlight" : "tddark") + "'>" +
-"          <table border='0' cellpadding='0' cellspacing='0'>" +
-"          <tr>" +
-"            <td width='30' align='center'><input type='checkbox' entity='" + entity +"' user='" + user + "' name='chd" + i + "'></td>" +
-"            <td width='150' class='entityname'>" + entity + "</td>" +
-"            <td width='150' class='username'>" + user + "</td>" +
-"          </tr>" +
-"          </table>" +
-"        </td>" +
-"      </tr>" +
-"      </table>";
-                i++;
-            }
-            else
-            {
-                if (j == 0)
-                {
-                    enabled_msgs += 
-"Logs from the following objects are shown:<br>" +
-"<table border='0' cellpadding='0' cellspacing='0' width='100%'>" +
-"<form name='hide_form'>" +
-"<tr>" +
-"  <td>" +
-"      <table border='0' cellpadding='0' cellspacing='0' width='100%'>" +
-"      <tr>" +
-"        <td class='tdsubheading'>" +
-"          <table border='0' cellpadding='0' cellspacing='0'>" +
-"          <tr>" +
-"            <td width='30' class='tdsubhead'>&nbsp;</td>" +
-"            <td width='150' class='tdsubhead'>Entity Name</td>" +
-"            <td width='150' class='tdsubhead'>User Name</td>" +
-"          </tr>" +
-"          </table>" +
-"        </td>" +
-"      </tr>" +
-"      </table>" +
-"      <img border='0' src='images/tr.gif' width='1' height='10'><br>";
-                }
+            tdclass = (i % 2 == 0) ? "tdlight" : "tddark";
 
-                enabled_msgs +=
-"      <table border='0' cellpadding='0' cellspacing='0' width='100%'>" +
-"      <tr>" +
-"        <td class='" + ((j % 2 == 0) ? "tdlight" : "tddark") + "'>" +
-"          <table border='0' cellpadding='0' cellspacing='0'>" +
-"          <tr>" +
-"            <td width='30' align='center'><input type='checkbox' entity='" + entity +"' user='" + user + "' name='che" + j + "'></td>" +
-"            <td width='150' class='entityname'>" + entity + "</td>" +
-"            <td width='150' class='username'>" + user + "</td>" +
-"          </tr>" +
-"          </table>" +
-"        </td>" +
-"      </tr>" +
-"      </table>";
-                j++;
+            bits = all_entities[entity][user];
+            
+            /* Copy current values of global configuration */
+            nd_entities[entity][user] = bits;
+            enabled = ((levels & bits & all_bits) == all_bits);
+            
+            if (!enabled)
+                show_all = false;
+
+            msg +=
+"<tr class='" + tdclass +  "'>" +
+"  <td width='30' align='center'>" +
+"    <input type='checkbox' onClick='javascript:mainCbChange(" + i + ")' " +
+           "entity='" + entity +"' user='" + user + "' " +
+            (enabled ? "checked" : "") + " name='cb" + i + "'></td>" +
+"  <td width='40%' class='entityname'>" + entity + "</td>" +
+"  <td width='60%' class='username'>" + user + "</td>";
+
+            for (j = 0; j < 6; j++)
+            {
+                enabled = (levels & bits & (1 << j));
+                msg +=
+"  <td width='30' align='center'><input type='checkbox' " + 
+                 "onClick='javascript:levelCbChange(" + i + ", " + j + ")' " + 
+                 "entity='" + entity +"' user='" + user + "' " +
+                (enabled ? "checked" : "") + 
+                " name='cb" + i + "_" + j + "'></td>"; 
             }
+
+            msg += 
+"</tr>";
+            i++;
         }
     }
 
     if (i > 0)
     {
-        disabled_msgs += 
-"      <img border='0' src='images/tr.gif' width='1' height='10'><br>" +
-"  </td>" +
-"</tr>" +
-"<tr>" + 
-"  <td>" +
-"      <input type='button' value='Show' onClick='javascript:logsUpdate(\"show_form.chd\", true)'>" +
-"  </td>" +
-"</tr>" +
-"</form>" +
-"</table>";
-    }
-    if (j > 0)
-    {
-        enabled_msgs += 
-"      <img border='0' src='images/tr.gif' width='1' height='10'><br>" +
-"  </td>" +
-"</tr>" +
-"<tr>" + 
-"  <td>" +
-"      <input type='button' value='Hide' onClick='javascript:logsUpdate(\"hide_form.che\", false)'>" +
-"  </td>" +
-"</tr>" +
-"</form>" +
-"</table>";
-    }
+        head_msg = 
+"<tr class='tdsubhead'>" +
+"  <td width='30' align='center'>" +
+"    <input type='checkbox' onClick='javascript:mainCbChange(0)' " +
+            (show_all ? "checked" : "") + " name='mcb'></td>" +
+"  <td width='40%' class='entityname'>&nbsp;</td>" +
+"  <td width='60%' class='username'>&nbsp;</td>";
 
-    document.write(disabled_msgs + enabled_msgs);
-</script>
+            for (j = 0; j < 6; j++)
+            {
+                enabled = (levels & (1 << j));
+                head_msg +=
+"  <td width='30' align='center'><input type='checkbox' " + 
+                 "onClick='javascript:gLevelCbChange(" + j + ")' " + 
+                (enabled ? "checked" : "") + 
+                " name='lcb" + j + "'></td>"; 
+            }
+        head_msg += 
+"</tr>";
+
     
-</table>
+        msg += 
+"      <tr><td colspan=9><img border='0' src='images/tr.gif' width='1' height='10'><br>" +
+"      <input type='button' value='Apply' onClick='javascript:applyChanges()'>" +
+"</td></tr>";
+    }
+    n_entries = i;
+
+    document.write(head_msg);
+    document.write(msg);
+</script>
+
+</form></table>
 </body>
 </html>
