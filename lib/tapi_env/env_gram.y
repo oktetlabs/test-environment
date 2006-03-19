@@ -28,7 +28,7 @@ int myindex;
 
 static tapi_env          *env;
 static tapi_env_net      *curr_net;
-static tapi_env_host     *curr_host;
+static tapi_env_if       *curr_host_if;
 static tapi_env_process  *curr_proc;
 
 
@@ -45,7 +45,7 @@ env_cfg_parse(tapi_env *e, const char *cfg)
     env = e;
     /* Reset pointers to current nodes to NULL */
     curr_net  = NULL;
-    curr_host = NULL;
+    curr_host_if = NULL;
     curr_proc = NULL;
     
     mybuf = cfg;
@@ -61,6 +61,7 @@ create_net(void)
 {
     tapi_env_net *p = calloc(1, sizeof(*p));
 
+    assert(p != NULL);
     if (p != 0)
     {
         TAILQ_INIT(&p->ip4addrs);
@@ -71,29 +72,35 @@ create_net(void)
     return p;
 }
 
-static tapi_env_host *
-create_host(void)
+static tapi_env_if *
+create_host_if(void)
 {
-    tapi_env_host *p = calloc(1, sizeof(*p));
+    tapi_env_if    *iface = calloc(1, sizeof(*iface));
 
-    if (p != 0)
+    assert(iface != NULL);
+    if (iface != NULL)
     {
-        CIRCLEQ_INSERT_TAIL(&env->hosts_ifs, p, links);
+        tapi_env_host  *host = calloc(1, sizeof(*host));
 
-        LIST_INIT(&p->nets);
-        LIST_INIT(&p->processes);
+        assert(host != NULL);
+        if (host != NULL)
+        {
+            LIST_INIT(&host->processes);
+        }
+
+        CIRCLEQ_INSERT_TAIL(&env->ifs, iface, links);
 
         if (curr_net == NULL)
             curr_net = create_net();
-        if (curr_net != NULL)
-        {
-            curr_net->n_hosts++;
-            p->n_nets++;
-            LIST_INSERT_HEAD(&p->nets, curr_net, inhost);
-        }
+
+        iface->net = curr_net;
+        iface->host = host;
+
+        assert(iface->net != NULL);
+        assert(iface->host != NULL);
     }
 
-    return p;
+    return iface;
 }
 
 static tapi_env_process *
@@ -101,13 +108,14 @@ create_process(void)
 {
     tapi_env_process *p = calloc(1, sizeof(*p));
 
-    if (p != 0)
+    assert(p != NULL);
+    if (p != NULL)
     {
         TAILQ_INIT(&p->pcos);
-        if (curr_host == NULL)
-            curr_host = create_host();
-        if (curr_host != NULL)
-            LIST_INSERT_HEAD(&curr_host->processes, p, links);
+        if (curr_host_if == NULL)
+            curr_host_if = create_host_if();
+        if (curr_host_if != NULL && curr_host_if->host != NULL)
+            LIST_INSERT_HEAD(&curr_host_if->host->processes, p, links);
     }
 
     return p;
@@ -208,10 +216,14 @@ hosts:
 host:
     OBRACE host_items EBRACE
     {
-        if (curr_host == NULL)
-            (void)create_host();
-        else
-            curr_host = NULL;
+        if (curr_host_if == NULL)
+            curr_host_if = create_host_if();
+        if (curr_host_if != NULL && curr_host_if->host != NULL)
+        {
+            /* Host is unnamed, so it does not match any other */
+            LIST_INSERT_HEAD(&env->hosts, curr_host_if->host, links);
+        }
+        curr_host_if = NULL;
     }
     |
     quotedname OBRACE host_items EBRACE
@@ -220,14 +232,46 @@ host:
 
         if (strlen(name) < TAPI_ENV_NAME_MAX)
         {
-            if (curr_host == NULL)
-                curr_host = create_host();
-            if (curr_host != NULL)
+            if (curr_host_if == NULL)
+                curr_host_if = create_host_if();
+            if (curr_host_if != NULL && curr_host_if->host != NULL)
             {
-                strcpy(curr_host->name, name);
+                tapi_env_host  *p = NULL;
+
+                strcpy(curr_host_if->host->name, name);
+                if (*name != '\0')
+                {
+                    for (p = env->hosts.lh_first;
+                         p != NULL &&
+                         strcmp(p->name, curr_host_if->host->name) != 0;
+                         p = p->links.le_next);
+
+                    if (p != NULL)
+                    {
+                        tapi_env_process *proc;
+
+                        /* Host with the same name found: */
+                        /* - copy processes */
+                        while ((proc = curr_host_if->host->
+                                           processes.lh_first) != NULL)
+                        {
+                            LIST_REMOVE(proc, links);
+                            LIST_INSERT_HEAD(&p->processes, proc, links);
+                        }
+                        /* - substitute reference in interface */
+                        free(curr_host_if->host);
+                        curr_host_if->host = p;
+                    }
+                }
+                if (p == NULL)
+                {
+                    /* Host is unnamed or not found */
+                    LIST_INSERT_HEAD(&env->hosts, curr_host_if->host,
+                                     links);
+                }
             }
         }
-        curr_host = NULL;
+        curr_host_if = NULL;
     }
     ;
 
@@ -273,6 +317,7 @@ pco:
         {
             tapi_env_pco *p = calloc(1, sizeof(*p));
 
+            assert(p != NULL);
             if (p != NULL)
             {
                 strcpy(p->name, name);
@@ -292,18 +337,18 @@ address:
     {
         const char *name = $3;
 
-        if (curr_host == NULL)
-            curr_host = create_host();
+        if (curr_host_if == NULL)
+            curr_host_if = create_host_if();
 
         if (strlen(name) < TAPI_ENV_NAME_MAX)
         {
             tapi_env_addr   *p = calloc(1, sizeof(*p));
 
+            assert(p != NULL);
             if (p != NULL)
             {
                 strcpy(p->name, name);
-                p->net = curr_net;
-                p->host_if = curr_host;
+                p->iface = curr_host_if;
                 p->family = $5;
                 p->type = $7;
                 p->handle = CFG_HANDLE_INVALID;
@@ -320,17 +365,12 @@ interface:
 
         if (strlen(name) < TAPI_ENV_NAME_MAX)
         {
-            tapi_env_if  *p = calloc(1, sizeof(*p));
+            if (curr_host_if == NULL)
+                curr_host_if = create_host_if();
 
-            if (curr_host == NULL)
-                curr_host = create_host();
-
-            if (p != NULL)
+            if (curr_host_if != NULL)
             {
-                strcpy(p->name, name);
-                p->net = curr_net;
-                p->host_if = curr_host;
-                LIST_INSERT_HEAD(&env->ifs, p, links);
+                strcpy(curr_host_if->name, name);
             }
         }
     }
@@ -354,6 +394,7 @@ alias:
         {
             tapi_env_alias   *p = calloc(1, sizeof(*p));
 
+            assert(p != NULL);
             if (p != NULL)
             {
                 strcpy(p->alias, alias);

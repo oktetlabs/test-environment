@@ -242,14 +242,10 @@ typedef TAILQ_HEAD(cfg_handle_tqh, cfg_handle_tqe) cfg_handle_tqh;
 /** Network entry */
 typedef struct tapi_env_net {
     LIST_ENTRY(tapi_env_net)    links;  /**< Links of the networks list */
-    LIST_ENTRY(tapi_env_net)    inhost; /**< Links of the host networks
-                                             list */
     
     char name[TAPI_ENV_NAME_MAX];   /**< Name of the net */
 
     tapi_env_type       type;       /**< Type of the net */
-
-    unsigned int        n_hosts;    /**< Number of hosts in network */
 
     unsigned int        i_net;      /**< Index of the associated net */
     cfg_net_t          *cfg_net;    /**< Configuration net */
@@ -273,37 +269,46 @@ struct tapi_env_process;
 typedef LIST_HEAD(tapi_env_processes, tapi_env_process)
             tapi_env_processes;
 
+
 /** Host entry in environment */
-typedef struct tapi_env_host_if {
-    CIRCLEQ_ENTRY(tapi_env_host_if) links;  /**< Links */
+typedef struct tapi_env_host {
+    LIST_ENTRY(tapi_env_host)   links;  /**< Links */
 
     char    name[TAPI_ENV_NAME_MAX];    /**< Name of the host */
 
-    char   *ta;                 /**< Name of TA located on the host */
-    char   *libname;            /**< Name of dynamic library to be
-                                     used on the host as IUT */
+    tapi_env_processes  processes;  /** List of processes on a host */
 
-    unsigned int n_nets;        /**< Number of nets the host belongs to */
+    char   *ta;         /**< Name of TA located on the host */
+    char   *libname;    /**< Name of dynamic library to be used on
+                             the host as IUT */
 
-    /** List of networks the host belongs to */
-    tapi_env_nets         nets;
-    /** List of processes on a host */
-    tapi_env_processes    processes;
+} tapi_env_host;
+
+/** List of required hosts in environment */
+typedef LIST_HEAD(tapi_env_hosts, tapi_env_host) tapi_env_hosts;
+
+
+/** Host/interface entry in environment */
+typedef struct tapi_env_if {
+    CIRCLEQ_ENTRY(tapi_env_if)  links;  /**< Links */
+
+    char name[TAPI_ENV_NAME_MAX];   /**< Name of the interface
+                                         in configuration string */
+
+    tapi_env_net   *net;        /**< Net the interface belongs to */
+    tapi_env_host  *host;       /**< Host the interface is belongs to */
+
+    unsigned int    i_node;     /**< Index of the associated node */
     
-    unsigned int i_net;         /**< Index of the associated net */
-    unsigned int i_node;        /**< Index of the associated node */
+    struct if_nameindex info;   /**< Interface info */
     
-    te_bool ip4_unicast_used;   /**< Is IPv4 address assigned to the
-                                     host in this net used? */
+    te_bool ip4_unicast_used;   /**< Is IPv4 address assigned to
+                                     the host in this net used? */
 
-} tapi_env_host_if;
+} tapi_env_if;
 
-/** From user point of view its just a host, not host/interface pair */
-typedef tapi_env_host_if tapi_env_host;
-
-/** List of hosts required in environment */
-typedef CIRCLEQ_HEAD(tapi_env_hosts_ifs, tapi_env_host_if) \
-            tapi_env_hosts_ifs;
+/** List of host interfaces required in environment */
+typedef CIRCLEQ_HEAD(tapi_env_ifs, tapi_env_if) tapi_env_ifs;
 
 
 /* Forward */
@@ -339,8 +344,7 @@ typedef struct tapi_env_addr {
 
     char name[TAPI_ENV_NAME_MAX];       /**< Name of the address */
 
-    tapi_env_net           *net;        /**< Net the address belongs to */
-    tapi_env_host_if       *host_if;    /**< Host interface the address
+    tapi_env_if            *iface;      /**< Host interface the address
                                              belongs to */
 
     rpc_socket_addr_family  family;     /**< Address family */
@@ -356,25 +360,6 @@ typedef struct tapi_env_addr {
 
 /** List of addresses in environment */
 typedef CIRCLEQ_HEAD(tapi_env_addrs, tapi_env_addr) tapi_env_addrs;
-
-
-/** Entry of interface nick name to interface info mapping */
-typedef struct tapi_env_if {
-    LIST_ENTRY(tapi_env_if) links;  /**< Links */
-
-    char name[TAPI_ENV_NAME_MAX];   /**< Name of the interface
-                                         in configuration string */
-
-    tapi_env_net       *net;        /**< Net the interface belongs to */
-    tapi_env_host_if   *host_if;    /**< Host/interface the interface is
-                                         associated with */
-
-    struct if_nameindex info;       /**< Interface info */
-
-} tapi_env_if;
-
-/** List of interfaces in environment */
-typedef LIST_HEAD(tapi_env_ifs, tapi_env_if) tapi_env_ifs;
 
 
 /** Alias in Socket API testing environment */
@@ -395,9 +380,9 @@ typedef struct tapi_env {
     unsigned int        n_nets;     /**< Total number of networks */
 
     tapi_env_nets       nets;       /**< List of networks */
-    tapi_env_hosts_ifs  hosts_ifs;  /**< List of hosts */
-    tapi_env_addrs      addrs;      /**< List of addresses */
+    tapi_env_hosts      hosts;      /**< List of hosts */
     tapi_env_ifs        ifs;        /**< List of interfaces */
+    tapi_env_addrs      addrs;      /**< List of addresses */
     tapi_env_aliases    aliases;    /**< List of aliases */
 
     cfg_nets_t          cfg_nets;   /**< Configuration networks */
@@ -512,6 +497,7 @@ extern const struct if_nameindex * tapi_env_get_if(tapi_env *env,
  * Get address assigned to the host in specified HW net and address
  * space.
  *
+ * @param env           Environment
  * @param net           Environment net
  * @param host          Environment host
  * @param assigned      Information about assigned addresses
@@ -520,7 +506,8 @@ extern const struct if_nameindex * tapi_env_get_if(tapi_env *env,
  *
  * @return Status code.
  */
-extern te_errno tapi_env_get_net_host_addr(const tapi_env_net      *net,
+extern te_errno tapi_env_get_net_host_addr(const tapi_env          *env,
+                                           const tapi_env_net      *net,
                                            const tapi_env_host     *host,
                                            tapi_cfg_net_assigned   *assigned,
                                            struct sockaddr        **addr,

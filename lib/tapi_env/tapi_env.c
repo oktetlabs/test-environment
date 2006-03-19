@@ -86,24 +86,23 @@ typedef LIST_HEAD(node_indexes, node_index) node_indexes;
 
 static te_errno prepare_nets(tapi_env_nets *nets,
                              cfg_nets_t    *cfg_nets);
-static te_errno prepare_hosts_ifs(tapi_env_hosts_ifs *hosts_ifs,
-                                  cfg_nets_t         *cfg_nets);
+static te_errno prepare_hosts(tapi_env *env);
 static te_errno prepare_addresses(tapi_env_addrs *addrs,
                                   cfg_nets_t     *cfg_nets);
 static te_errno prepare_interfaces(tapi_env_ifs *ifs,
                                    cfg_nets_t   *cfg_nets);
-static te_errno prepare_pcos(tapi_env_hosts_ifs *hosts_ifs);
+static te_errno prepare_pcos(tapi_env_hosts *hosts);
 
 static te_errno add_address(tapi_env_addr         *env_addr,
                             cfg_nets_t            *cfg_nets,
                             const struct sockaddr *addr);
 
-static te_errno bind_env_hosts_to_cfg_nets(tapi_env_hosts_ifs *hosts_ifs,
-                                           cfg_nets_t         *cfg_nets);
-static te_bool bind_host(tapi_env_host_if   *host_if,
-                         tapi_env_hosts_ifs *hosts_ifs,
-                         cfg_nets_t         *cfg_nets,
-                         node_indexes       *used_nodes);
+static te_errno bind_env_to_cfg_nets(tapi_env_ifs *ifs,
+                                     cfg_nets_t   *cfg_nets);
+static te_bool bind_host_if(tapi_env_if  *iface,
+                            tapi_env_ifs *ifs,
+                            cfg_nets_t   *cfg_nets,
+                            node_indexes *used_nodes);
 
 static int cmp_agent_names(cfg_handle node1, cfg_handle node2);
 
@@ -121,14 +120,15 @@ static te_bool node_is_used(node_indexes *used_nodes,
 static te_bool check_net_type_cfg_vs_env(cfg_net_t *net,
                                          tapi_env_type net_type);
 
-static te_bool check_node_type_vs_pcos(enum net_node_type node_type,
-                                       tapi_env_host_if *host_if);
+static te_bool check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
+                                       cfg_net_node_t     *node,
+                                       tapi_env_processes *processes);
 
 
 /* See description in tapi_env.h */
 te_errno
 tapi_env_allocate_addr(tapi_env_net *net, int af,
-                     struct sockaddr **addr, socklen_t *addrlen)
+                       struct sockaddr **addr, socklen_t *addrlen)
 {
     te_errno        rc;
     cfg_handle_tqe *handle;
@@ -189,9 +189,9 @@ tapi_env_get(const char *cfg, tapi_env *env)
     /* Initialize lists */
     env->n_nets = 0;
     LIST_INIT(&env->nets);
-    CIRCLEQ_INIT(&env->hosts_ifs);
+    LIST_INIT(&env->hosts);
+    CIRCLEQ_INIT(&env->ifs);
     CIRCLEQ_INIT(&env->addrs);
-    LIST_INIT(&env->ifs);
     LIST_INIT(&env->aliases);
 
     /* Parse environment configuration string */
@@ -221,10 +221,10 @@ tapi_env_get(const char *cfg, tapi_env *env)
         return TE_EENV;
     }
     
-    rc = bind_env_hosts_to_cfg_nets(&env->hosts_ifs, &env->cfg_nets);
+    rc = bind_env_to_cfg_nets(&env->ifs, &env->cfg_nets);
     if (rc != 0)
     {
-        /* ERROR is logged in bind_env_hosts_to_cfg_nets function */
+        /* ERROR is logged in bind_env_to_cfg_nets function */
         return rc;
     }
 
@@ -235,7 +235,7 @@ tapi_env_get(const char *cfg, tapi_env *env)
         return rc;
     }
 
-    rc = prepare_hosts_ifs(&env->hosts_ifs, &env->cfg_nets);
+    rc = prepare_hosts(env);
     if (rc != 0)
     {
         ERROR("Failed to prepare hosts/interfaces");
@@ -256,7 +256,7 @@ tapi_env_get(const char *cfg, tapi_env *env)
         return rc;
     }
 
-    rc = prepare_pcos(&env->hosts_ifs);
+    rc = prepare_pcos(&env->hosts);
     if (rc != 0)
     {
         ERROR("Failed to prepare PCOs");
@@ -273,7 +273,7 @@ tapi_env_free(tapi_env *env)
 {
     int               result = 0;
     te_errno          rc;
-    tapi_env_host_if *host_if;
+    tapi_env_host    *host;
     tapi_env_process *proc;
     tapi_env_pco     *pco;
     tapi_env_addr    *addr;
@@ -291,10 +291,10 @@ tapi_env_free(tapi_env *env)
         return 0;
 
     /* Destroy list of hosts */
-    while ((host_if = env->hosts_ifs.cqh_first) != (void *)&env->hosts_ifs)
+    while ((host = env->hosts.lh_first) != NULL)
     {
         /* Destroy list of processes */
-        while ((proc = host_if->processes.lh_first) != NULL)
+        while ((proc = host->processes.lh_first) != NULL)
         {
             /* Destroy PCOs */
             while ((pco = proc->pcos.tqh_first) != NULL)
@@ -327,8 +327,8 @@ tapi_env_free(tapi_env *env)
             LIST_REMOVE(proc, links);
             free(proc);
         }
-        CIRCLEQ_REMOVE(&env->hosts_ifs, host_if, links);
-        free(host_if);
+        LIST_REMOVE(host, links);
+        free(host);
     }
     /* Destroy list of addresses in reverse order */
     while ((addr = env->addrs.cqh_last) != (void *)&env->addrs)
@@ -407,12 +407,13 @@ tapi_env_free(tapi_env *env)
             }
             free(ip4_net_oid);
         }
+        free(net->ip4addr);
         free(net);
     }
     /* Destroy list of interfaces */
-    while ((iface = env->ifs.lh_first) != NULL)
+    while ((iface = env->ifs.cqh_first) != (void *)&env->ifs)
     {
-        LIST_REMOVE(iface, links);
+        CIRCLEQ_REMOVE(&env->ifs, iface, links);
         free(iface);
     }
     /* Destroy list of aliases */
@@ -456,10 +457,10 @@ tapi_env_get_net(tapi_env *env, const char *name)
 }
 
 /* See description in tapi_env.h */
-tapi_env_host_if *
+tapi_env_host *
 tapi_env_get_host(tapi_env *env, const char *name)
 {
-    tapi_env_host_if *p;
+    tapi_env_host    *p;
     tapi_env_alias   *a;
 
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
@@ -471,9 +472,7 @@ tapi_env_get_host(tapi_env *env, const char *name)
             break;
         }
     }
-    for (p = env->hosts_ifs.cqh_first;
-         p != (void *)&(env->hosts_ifs);
-         p = p->links.cqe_next)
+    for (p = env->hosts.lh_first; p != NULL; p = p->links.le_next)
     {
         if (strcmp(p->name, name) == 0)
             return p;
@@ -489,7 +488,7 @@ rcf_rpc_server *
 tapi_env_get_pco(tapi_env *env, const char *name)
 {
     tapi_env_alias   *a;
-    tapi_env_host_if *host_if;
+    tapi_env_host    *host;
     tapi_env_process *proc;
     tapi_env_pco     *pco;
 
@@ -503,11 +502,11 @@ tapi_env_get_pco(tapi_env *env, const char *name)
         }
     }
 
-    for (host_if = env->hosts_ifs.cqh_first;
-         host_if != (void *)&env->hosts_ifs;
-         host_if = host_if->links.cqe_next)
+    for (host = env->hosts.lh_first;
+         host != NULL;
+         host = host->links.le_next)
     {
-        for (proc = host_if->processes.lh_first;
+        for (proc = host->processes.lh_first;
              proc != NULL;
              proc = proc->links.le_next)
         {
@@ -567,6 +566,12 @@ tapi_env_get_if(tapi_env *env, const char *name)
     tapi_env_if      *p;
     tapi_env_alias   *a;
 
+    if (env == NULL || name == NULL || *name == '\0')
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
+
     for (a = env->aliases.lh_first; a != NULL; a = a->links.le_next)
     {
         if (strcmp(a->alias, name) == 0)
@@ -576,7 +581,9 @@ tapi_env_get_if(tapi_env *env, const char *name)
             break;
         }
     }
-    for (p = env->ifs.lh_first; p != NULL; p = p->links.le_next)
+    for (p = env->ifs.cqh_first;
+         p != (void *)&env->ifs;
+         p = p->links.cqe_next)
     {
         if (strcmp(p->name, name) == 0)
             return &p->info;
@@ -599,7 +606,7 @@ static te_errno
 prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
 {
     te_errno        rc = 0;
-    tapi_env_net *env_net;
+    tapi_env_net   *env_net;
     cfg_val_type    val_type;
     unsigned int    i;
     char           *net_oid;
@@ -703,40 +710,53 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
 }
 
 /**
- * Prepare required hosts in accordance with bound network configuration.
+ * Prepare required hosts in accordance with bound network
+ * configuration.
  *
- * @param hosts_ifs     list of hosts/interfaces
- * @param cfg_nets      networks configuration
+ * @param env           current state of environment
  *
  * @return Status code.
  */
 static te_errno
-prepare_hosts_ifs(tapi_env_hosts_ifs *hosts_ifs, cfg_nets_t *cfg_nets)
+prepare_hosts(tapi_env *env)
 {
-    te_errno            rc = 0;
-    tapi_env_host_if   *host_if;
-    cfg_handle          handle;
-    cfg_val_type        type;
+    tapi_env_host  *host;
+    tapi_env_if    *iface;
+    te_errno        rc = 0;
+    cfg_handle      handle;
+    cfg_val_type    type;
 
-    for (host_if = hosts_ifs->cqh_first;
-         host_if != (void *)hosts_ifs;
-         host_if = host_if->links.cqe_next)
+    for (host = env->hosts.lh_first;
+         host != NULL;
+         host = host->links.le_next)
     {
+        /* Find any interface instance which refers to the host */
+        for (iface = env->ifs.cqh_first;
+             iface != (void *)&env->ifs && iface->host != host;
+             iface = iface->links.cqe_next);
+
+        if (iface == (void *)&env->ifs)
+        {
+            ERROR("%s(): Failed to find any interface which refer to "
+                  "the host 0x%x", __FUNCTION__, host);
+            return TE_RC(TE_TAPI, TE_EFAULT);
+        }
+
         /* Get name of the Test Agent */
         rc = node_value_get_ith_inst_name(
-                 cfg_nets->nets[host_if->i_net].
-                     nodes[host_if->i_node].handle,
-                 1, &host_if->ta);
+                 env->cfg_nets.nets[iface->net->i_net].
+                     nodes[iface->i_node].handle,
+                 1, &host->ta);
         if (rc != 0)
             break;
         
         /* Get name of the dynamic library with IUT */
-        rc = cfg_find_fmt(&handle, "/local:%s/socklib:", host_if->ta);
+        rc = cfg_find_fmt(&handle, "/local:%s/socklib:", host->ta);
         if (rc != 0)
         {
             if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
             {
-                host_if->libname = NULL;
+                host->libname = NULL;
                 rc = 0;
             }
             else
@@ -748,7 +768,7 @@ prepare_hosts_ifs(tapi_env_hosts_ifs *hosts_ifs, cfg_nets_t *cfg_nets)
         else
         {
             type = CVT_STRING;
-            rc = cfg_get_instance(handle, &type, &host_if->libname);
+            rc = cfg_get_instance(handle, &type, &host->libname);
             if (rc != 0)
             {
                 ERROR("Failed to get instance by handle 0x%x: %r",
@@ -770,9 +790,10 @@ prepare_ip4_unicast(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
 
     assert(addr != NULL);
 
-    if (env_addr->host_if->ip4_unicast_used)
+    if (env_addr->iface->ip4_unicast_used)
     {
-        rc = tapi_env_allocate_addr(env_addr->net, AF_INET, addr, NULL);
+        rc = tapi_env_allocate_addr(env_addr->iface->net,
+                                    AF_INET, addr, NULL);
         if (rc != 0)
         {
             ERROR("Failed to allocate additional IPv4 "
@@ -796,8 +817,8 @@ prepare_ip4_unicast(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
         cfg_val_type    val_type;
 
         /* Handle of the assosiated network node */
-        handle = cfg_nets->nets[env_addr->host_if->i_net].
-                     nodes[env_addr->host_if->i_node].handle;
+        handle = cfg_nets->nets[env_addr->iface->net->i_net].
+                     nodes[env_addr->iface->i_node].handle;
 
         /* Get IPv4 address assigned to the node */
         rc = cfg_get_oid_str(handle, &node_oid);
@@ -821,21 +842,23 @@ prepare_ip4_unicast(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
         {
             ERROR("No IPv4 addresses are assigned to node '%s'",
                   node_oid);
+            free(ip4_addrs);
             free(node_oid);
             return TE_EENV;
         }
+        free(node_oid);
 
         /* Get IPv4 address */
         val_type = CVT_ADDRESS;
         rc = cfg_get_instance(ip4_addrs[0], &val_type, addr);
-        free(node_oid);
+        free(ip4_addrs);
         if (rc != 0)
         {
             ERROR("Failed to get node IPv4 address: %r", rc);
             return rc;
         }
 
-        env_addr->host_if->ip4_unicast_used = TRUE;
+        env_addr->iface->ip4_unicast_used = TRUE;
     }
 
     return 0;
@@ -853,11 +876,11 @@ prepare_ip4_unicast(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
 static te_errno
 prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
 {
-    te_errno            rc;
-    tapi_env_addr      *env_addr;
-    tapi_env_host_if   *host_if;
-    cfg_handle          handle;
-    cfg_val_type        val_type;
+    te_errno        rc;
+    tapi_env_addr  *env_addr;
+    tapi_env_if    *iface;
+    cfg_handle      handle;
+    cfg_val_type    val_type;
 
     for (env_addr = addrs->cqh_first;
          env_addr != (void *)addrs;
@@ -866,11 +889,11 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
         env_addr->handle = CFG_HANDLE_INVALID;
         env_addr->addr   = SA(&env_addr->addr_st);
 
-        host_if = env_addr->host_if;
+        iface = env_addr->iface;
 
         /* Handle of the assosiated network node */
-        handle = cfg_nets->nets[host_if->i_net].
-                     nodes[host_if->i_node].handle;
+        handle = cfg_nets->nets[iface->net->i_net].
+                     nodes[iface->i_node].handle;
 
         if (env_addr->family == RPC_AF_ETHER)
         {
@@ -947,7 +970,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
             else if (env_addr->type == TAPI_ENV_ADDR_FAKE_UNICAST)
             {
-                rc = tapi_env_allocate_addr(env_addr->net, AF_INET,
+                rc = tapi_env_allocate_addr(env_addr->iface->net, AF_INET,
                                             &env_addr->addr, NULL);
                 if (rc != 0)
                 {
@@ -984,8 +1007,8 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
             else if (env_addr->type == TAPI_ENV_ADDR_BROADCAST)
             {
-                memcpy(env_addr->addr, &env_addr->net->ip4bcast,
-                       sizeof(env_addr->net->ip4bcast));
+                memcpy(env_addr->addr, &env_addr->iface->net->ip4bcast,
+                       sizeof(env_addr->iface->net->ip4bcast));
             }
             else
             {
@@ -1096,8 +1119,8 @@ add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
     cfg_val_type    val_type = CVT_STRING;
 
 
-    handle = cfg_nets->nets[env_addr->host_if->i_net].
-                       nodes[env_addr->host_if->i_node].handle;
+    handle = cfg_nets->nets[env_addr->iface->net->i_net].
+                       nodes[env_addr->iface->i_node].handle;
     rc = cfg_get_instance(handle, &val_type, &str);
     if (rc != 0)
     {
@@ -1109,7 +1132,7 @@ add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
     /* All is logged inside the function */
     rc = tapi_cfg_base_add_net_addr(str,
                                     addr,
-                                    env_addr->net->ip4pfx,
+                                    env_addr->iface->net->ip4pfx,
                                     TRUE,
                                     &env_addr->handle);
     if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
@@ -1141,14 +1164,13 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
     cfg_val_type    val_type;
     char           *oid = NULL;
 
-    for (p = ifs->lh_first; p != NULL; p = p->links.le_next)
+    for (p = ifs->cqh_first; p != (void *)ifs; p = p->links.cqe_next)
     {
         if (strcmp(p->name, "lo") != 0)
         {
             /* Get name of the interface from network node value */
             rc = node_value_get_ith_inst_name(
-                     cfg_nets->nets[p->host_if->i_net].
-                               nodes[p->host_if->i_node].handle,
+                     cfg_nets->nets[p->net->i_net].nodes[p->i_node].handle,
                      2, &p->info.if_name);
             if (rc != 0)
             {
@@ -1157,8 +1179,8 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
             }
 
             val_type = CVT_STRING;
-            rc = cfg_get_instance(cfg_nets->nets[p->host_if->i_net].
-                                      nodes[p->host_if->i_node].handle,
+            rc = cfg_get_instance(cfg_nets->nets[p->net->i_net].
+                                      nodes[p->i_node].handle,
                                   &val_type, &oid);
             if (rc != 0)
             {
@@ -1184,8 +1206,7 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 
             /* Get name of the test agent */
             rc = node_value_get_ith_inst_name(
-                     cfg_nets->nets[p->host_if->i_net].
-                               nodes[p->host_if->i_node].handle,
+                     cfg_nets->nets[p->net->i_net].nodes[p->i_node].handle,
                      1, &ta);
             if (rc != 0)
             {
@@ -1225,16 +1246,16 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 /**
  * Prepare required PCOs in accordance with bound network configuration.
  *
- * @param pcos          list of PCOs
+ * @param hosts         list of hosts
  * @param cfg_nets      networks configuration
  *
  * @return Status code.
  */
 static te_errno
-prepare_pcos(tapi_env_hosts_ifs *hosts_ifs)
+prepare_pcos(tapi_env_hosts *hosts)
 {
     te_errno            rc = 0;
-    tapi_env_host_if   *host_if;
+    tapi_env_host      *host;
     tapi_env_process   *proc;
     tapi_env_pco       *pco;
     te_bool             main_thread;
@@ -1252,11 +1273,11 @@ prepare_pcos(tapi_env_hosts_ifs *hosts_ifs)
     }
     rc = 0;
 
-    for (host_if = hosts_ifs->cqh_first;
-         host_if != (void *)hosts_ifs && rc == 0;
-         host_if = host_if->links.cqe_next)
+    for (host = hosts->lh_first;
+         host != NULL && rc == 0;
+         host = host->links.le_next)
     {
-        for (proc = host_if->processes.lh_first;
+        for (proc = host->processes.lh_first;
              proc != NULL && rc == 0;
              proc = proc->links.le_next)
         {
@@ -1268,11 +1289,11 @@ prepare_pcos(tapi_env_hosts_ifs *hosts_ifs)
             {
                 if (main_thread)
                 {
-                    if (rcf_rpc_server_get(host_if->ta, pco->name,
+                    if (rcf_rpc_server_get(host->ta, pco->name,
                                            NULL, FALSE, TRUE, FALSE, 
                                            &(pco->rpcs)) != 0)
                     {
-                        rc = rcf_rpc_server_create(host_if->ta, pco->name,
+                        rc = rcf_rpc_server_create(host->ta, pco->name,
                                                    &(pco->rpcs));
                         if (rc != 0)
                         {
@@ -1290,17 +1311,17 @@ prepare_pcos(tapi_env_hosts_ifs *hosts_ifs)
                         pco->rpcs->errno_change_check =
                             !iut_errno_change_no_check;
 
-                        if (host_if->libname != NULL)
+                        if (host->libname != NULL)
                         {
                             rc = rcf_rpc_setlibname(pco->rpcs,
-                                                    host_if->libname);
+                                                    host->libname);
                             if (rc != 0)
                             {
                                 rc = pco->rpcs->_errno;
                                 ERROR("Failed to set RPC server '%s' "
                                       "dynamic library name '%s': %r", 
                                       pco->rpcs->name,
-                                      host_if->libname ? : "(NULL)", rc);
+                                      host->libname ? : "(NULL)", rc);
                                 break;
                             }
                         }
@@ -1337,8 +1358,7 @@ prepare_pcos(tapi_env_hosts_ifs *hosts_ifs)
 
 
 static te_errno
-bind_env_hosts_to_cfg_nets(tapi_env_hosts_ifs *hosts_ifs,
-                           cfg_nets_t         *cfg_nets)
+bind_env_to_cfg_nets(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 {
     te_errno        rc = 0;
     node_indexes    used_nodes;
@@ -1348,7 +1368,7 @@ bind_env_hosts_to_cfg_nets(tapi_env_hosts_ifs *hosts_ifs,
     LIST_INIT(&used_nodes);
 
     /* Recursively bind all hosts */
-    if (!bind_host(hosts_ifs->cqh_first, hosts_ifs, cfg_nets, &used_nodes))
+    if (!bind_host_if(ifs->cqh_first, ifs, cfg_nets, &used_nodes))
     {
         ERROR("Failed to bind requested environment configuration to "
               "available network configuration");
@@ -1369,8 +1389,8 @@ bind_env_hosts_to_cfg_nets(tapi_env_hosts_ifs *hosts_ifs,
 /**
  * Bind host to the node in network model.
  *
- * @param host_if       host/interface to be bound
- * @param hosts_ifs     list with all hosts/interfaces
+ * @param iface         host interface to be bound
+ * @param ifs           list with all hosts/interfaces
  * @param cfg_nets      network model configuration
  * @param used_nodes    list with used (net, node) indexes
  *
@@ -1378,16 +1398,21 @@ bind_env_hosts_to_cfg_nets(tapi_env_hosts_ifs *hosts_ifs,
  * @retval FALSE        failure
  */
 static te_bool
-bind_host(tapi_env_host_if *host_if, tapi_env_hosts_ifs *hosts_ifs,
-          cfg_nets_t *cfg_nets, node_indexes *used_nodes)
+bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
+             cfg_nets_t *cfg_nets, node_indexes *used_nodes)
 {
-    unsigned int        i, j;
-    tapi_env_host_if   *p;
+    unsigned int    i, j;
+    tapi_env_if    *p;
 
-    if (host_if == (void *)hosts_ifs)
+    if (iface == (void *)ifs)
         return TRUE;
 
-    VERB("Try to bind host '%s'", host_if->name);
+    assert(iface != NULL);
+    assert(iface->net != NULL);
+    assert(iface->host != NULL);
+
+    VERB("Try to bind host '%s' interface '%s'",
+         iface->host->name, iface->name);
 
     for (i = 0; i < cfg_nets->n_nets; ++i)
     {
@@ -1400,85 +1425,84 @@ bind_host(tapi_env_host_if *host_if, tapi_env_hosts_ifs *hosts_ifs,
             }
 
             if (!check_net_type_cfg_vs_env(cfg_nets->nets + i,
-                                           host_if->nets.lh_first->type))
+                                           iface->net->type))
             {
                 VERB("Node (%u,%u) type=%u is not suitable for the host "
                      "in the net with type=%u", i, j,
-                     cfg_nets->nets[i].nodes[j].type,
-                     host_if->nets.lh_first->type);
+                     cfg_nets->nets[i].nodes[j].type, iface->net->type);
                 continue;
             }
 
-            if (!check_node_type_vs_pcos(cfg_nets->nets[i].nodes[j].type,
-                                         host_if))
+            if (!check_node_type_vs_pcos(cfg_nets,
+                                         cfg_nets->nets[i].nodes + j,
+                                         &iface->host->processes))
             {
                 VERB("Node (%u,%u) type=%u is not suitable for the host",
                      i, j, cfg_nets->nets[i].nodes[j].type);
                 continue;
             }
+            VERB("Node (%u,%u) match PCOs type", i, j);
 
             /* Check that there is no conflicts with already bound nodes */
-            p = host_if;
-            while ((p = p->links.cqe_prev) != (void *)hosts_ifs)
+            p = iface;
+            while ((p = p->links.cqe_prev) != (void *)ifs)
             {
                 te_bool one_host;
                 te_bool one_ta;
 
-                if (host_if->nets.lh_first == p->nets.lh_first)
+                if (iface->net == p->net)
                 {
-                    if (i != p->i_net)
+                    if (i != p->net->i_net)
                     {
-                        VERB("Hosts '%s'(0x%x) and '%s'(0x%x) must be "
-                             "in one net", host_if->name, host_if,
+                        VERB("Hosts '%s/%s'(0x%x) and '%s/%s'(0x%x) "
+                             "must be in one net", iface->host->name,
+                             iface->name, iface, p->host->name,
                              p->name, p);
                         break;
                     }
                 }
-                one_host = (strlen(host_if->name) > 0) &&
-                           (strcmp(host_if->name, p->name) == 0);
+                one_host = (iface->host == p->host);
                 one_ta = (cmp_agent_names(
                               cfg_nets->nets[i].nodes[j].handle,
-                              cfg_nets->nets[p->i_net].
+                              cfg_nets->nets[p->net->i_net].
                                   nodes[p->i_node].handle) == 0);
-                if (((strlen(host_if->name) > 0) ||
-                     (strlen(p->name) > 0)) &&
-                    (one_host != one_ta))
+                if (one_host != one_ta)
                 {
-                    VERB("Hosts with %s names ('%s' vs '%s') can't be "
-                         "bound to nodes %s",
+                    VERB("Hosts with %s names ('%s/%s' vs '%s/%s') "
+                         "can't be bound to nodes %s",
                          one_host ? "the same" : "different",
-                         host_if->name, p->name,
+                         iface->host->name, iface->name,
+                         p->host->name, p->name,
                          one_ta ? "with the same test agent" :
                                   "on different agents");
                     break;
                 }
             }
-            if (p == (void *)hosts_ifs)
+            if (p == (void *)ifs)
             {
                 /* No conflicts discovered */
-                host_if->nets.lh_first->i_net = i;
-                host_if->i_net = i;
-                host_if->i_node = j;
+                iface->net->i_net = i;
+                iface->i_node = j;
                 if (node_mark_used(used_nodes, i, j) != 0)
                     return FALSE;
-                VERB("Mark (%u,%u) as used by '%s'", i, j, host_if->name);
-                /* Try to bind the next host */
-                if (bind_host(host_if->links.cqe_next, hosts_ifs, cfg_nets,
-                              used_nodes))
+                VERB("Mark (%u,%u) as used by '%s/%s'", i, j,
+                     iface->host->name, iface->name);
+                /* Try to bind the next host/interface */
+                if (bind_host_if(iface->links.cqe_next, ifs, cfg_nets,
+                                 used_nodes))
                 {
                     return TRUE;
                 }
-                VERB("Failed to bind host '%s', unmark (%u,%u)",
-                     host_if->name, i, j);
+                VERB("Failed to bind host '%s/%s', unmark (%u,%u)",
+                     iface->host->name, iface->name, i, j);
                 /* Failed to bind the host */
                 node_unmark_used(used_nodes, i, j);
-                host_if->nets.lh_first->i_net =
-                    host_if->i_net = host_if->i_node = UINT_MAX;
+                iface->net->i_net = iface->i_node = UINT_MAX;
             }
         }
     }
 
-    VERB("Failed to bind host '%s'", host_if->name);
+    VERB("Failed to bind host '%s/%s'", iface->host->name, iface->name);
 
     return FALSE;
 }
@@ -1615,62 +1639,88 @@ node_is_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
 }
 
 /**
- * Check that network node type matches type of requested PCOs.
+ * Get type of PCOs.
  *
- * @param node_type     Type of the network node
- * @param host_if       Host/interface to be bound
+ * @param procs         List of processes
  *
- * @return Whether types match?
+ * @return Environment node type.
+ * @retval TAPI_ENV_IUT     At least one process should have IUT
+ * @retval TAPI_ENV_TESTER  All processes are Testers
  */
-static te_bool
-check_node_type_vs_pcos(enum net_node_type node_type,
-                        tapi_env_host_if *host_if)
+static tapi_env_type
+get_pcos_type(tapi_env_processes *procs)
 {
-#if 0
     tapi_env_process *proc;
     tapi_env_pco     *pco;
-    tapi_env_type     matched1;
-    tapi_env_type     matched2;
 
-    switch (node_type)
-    {
-        case NET_NODE_TYPE_AGENT:
-            matched1 = TAPI_ENV_TESTER;
-            matched2 = TAPI_ENV_TESTER;
-            break;
-
-        case NET_NODE_TYPE_NUT:
-            matched1 = TAPI_ENV_IUT;
-            matched2 = TAPI_ENV_TESTER;
-            break;
-
-        default:
-            ERROR("Unknown network node type %u", node_type);
-            return FALSE;
-    }
-
-    for (proc = host_if->processes.lh_first;
-         proc != NULL;
-         proc = proc->links.le_next)
+    for (proc = procs->lh_first; proc != NULL; proc = proc->links.le_next)
     {
         for (pco = proc->pcos.tqh_first;
              pco != NULL;
              pco = pco->links.tqe_next)
         {
-            if ((pco->type != matched1) && (pco->type != matched2))
+            if (pco->type == TAPI_ENV_IUT)
             {
-                VERB("Type of PCO '%s' is %u, "
-                     "it does not match to %u or %u",
-                     pco->name, pco->type, matched1, matched2);
-                return FALSE;
+                VERB("%s(): PCOs are IUT", __FUNCTION__);
+                return TAPI_ENV_IUT;
             }
         }
     }
-#else
-    UNUSED(node_type);
-    UNUSED(host_if);
-#endif
-    return TRUE;
+    VERB("%s(): PCOs are Tester", __FUNCTION__);
+    return TAPI_ENV_TESTER;
+}
+
+/**
+ * Get TA type associated with specified configuration network node.
+ *
+ * @param cfg_nets      All information about configuration networks
+ * @param node          Configuration network node
+ *
+ * @return Configuration network node type.
+ */
+static enum net_node_type
+get_ta_type(cfg_nets_t *cfg_nets, cfg_net_node_t *node)
+{
+    enum net_node_type  type = node->type;
+    unsigned int        i;
+    unsigned int        j;
+
+    for (i = 0; i < cfg_nets->n_nets && type == NET_NODE_TYPE_AGENT; ++i)
+    {
+        for (j = 0;
+             j < cfg_nets->nets[i].n_nodes && type == NET_NODE_TYPE_AGENT;
+             ++j)
+        {
+            if ((node->handle != cfg_nets->nets[i].nodes[j].handle) &&
+                cmp_agent_names(node->handle,
+                    cfg_nets->nets[i].nodes[j].handle) == 0 &&
+                cfg_nets->nets[i].nodes[j].type != NET_NODE_TYPE_AGENT)
+            {
+                type = cfg_nets->nets[i].nodes[j].type;
+            }
+        }
+    }
+    VERB("%s(): TA type is %u", __FUNCTION__, type);
+
+    return type;
+}
+
+/**
+ * Check that network node type matches type of requested PCOs.
+ *
+ * @param cfg_nets      All information about configuration networks
+ * @param node          Configuration network node
+ * @param processes     Processes with PCOs on the host to be bound
+ *
+ * @return Whether types match?
+ */
+static te_bool
+check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
+                        cfg_net_node_t     *node,
+                        tapi_env_processes *processes)
+{
+    return (get_pcos_type(processes) == TAPI_ENV_IUT) ==
+           (get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT);
 }
 
 /**
@@ -1718,36 +1768,43 @@ check_net_type_cfg_vs_env(cfg_net_t *net, tapi_env_type net_type)
 
 /* See description in tapi_env.h */
 te_errno
-tapi_env_get_net_host_addr(const tapi_env_net      *net,
-                           const tapi_env_host_if  *host_if,
+tapi_env_get_net_host_addr(const tapi_env          *env,
+                           const tapi_env_net      *net,
+                           const tapi_env_host     *host,
                            tapi_cfg_net_assigned   *assigned,
                            struct sockaddr        **addr,
                            socklen_t               *addrlen)
 {
-    te_errno        rc;
-    cfg_val_type    val_type;
-    char           *node_oid;
+    te_errno            rc;
+    cfg_val_type        val_type;
+    char               *node_oid;
+    const tapi_env_if  *iface;
 
 
-    if (net == NULL || host_if == NULL || assigned == NULL || addr == NULL)
+    if (net == NULL || host == NULL || assigned == NULL || addr == NULL)
     {
         ERROR("%s(): Invalid parameter", __FUNCTION__);
         return TE_EINVAL;
     }
 
-    if (host_if->i_net != net->i_net)
+    for (iface = env->ifs.cqh_first;
+         iface != (void *)&env->ifs &&
+            (iface->net != net || iface->host != host);
+         iface = iface->links.cqe_next);
+    
+    if (iface == (void *)&env->ifs)
     {
-        ERROR("Such configuration is not supported yet!!!");
-        return TE_EOPNOTSUPP;
+        ERROR("Host '%s' does not belong to the net", host->name);
+        return TE_RC(TE_TAPI, TE_ESRCH);
     }
 
     /* Get string OID of the associated net in networks configuration */
-    rc = cfg_get_oid_str(net->cfg_net->nodes[host_if->i_node].handle,
+    rc = cfg_get_oid_str(net->cfg_net->nodes[iface->i_node].handle,
                          &node_oid);
     if (rc != 0)
     {
         ERROR("Failed to string OID by handle 0x%x: %r",
-              net->cfg_net->nodes[host_if->i_node], rc);
+              net->cfg_net->nodes[iface->i_node], rc);
         return rc;
     }
 
@@ -1755,12 +1812,12 @@ tapi_env_get_net_host_addr(const tapi_env_net      *net,
     val_type = CVT_ADDRESS;
     rc = cfg_get_instance_fmt(&val_type, addr,
                               "%s/ip4_address:%u", node_oid,
-                              assigned->entries[host_if->i_node]);
+                              assigned->entries[iface->i_node]);
     if (rc != 0)
     {
         ERROR("Failed to get IPv4 address assigned to the node '%s' "
               "with handle 0x%x: %r", node_oid,
-              assigned->entries[host_if->i_node], rc);
+              assigned->entries[iface->i_node], rc);
         free(node_oid);
         return rc;
     }
