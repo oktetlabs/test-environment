@@ -236,7 +236,7 @@ rcf_ch_lock()
     int rc = pthread_mutex_lock(&ta_lock);
 
     if (rc != 0)
-        ERROR("%s(): pthread_mutex_lock() failed - rc=%d, errno=%d",
+        PRINT("%s(): pthread_mutex_lock() failed - rc=%d, errno=%d",
               __FUNCTION__, rc, errno);
 }
 
@@ -247,7 +247,7 @@ rcf_ch_unlock()
     int rc = pthread_mutex_unlock(&ta_lock);
 
     if (rc != 0)
-        ERROR("%s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
+        PRINT("%s(): pthread_mutex_unlock() failed - rc=%d, errno=%d",
               __FUNCTION__, rc, errno);
 }
 
@@ -438,6 +438,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
         while ((rc == 0) && (procfile_len > 0))
         {
             int len = (procfile_len > buflen) ? buflen : procfile_len;
+
             procfile_len -= len;
             memcpy(cbuf, auxbuf_p, len);
             auxbuf_p += len;
