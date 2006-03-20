@@ -943,11 +943,11 @@ tapi_tcp_reset_hack_init(const char *ta_name, int session,
 
     if (context->rem_ip_addr)
         asn_write_value_field(syn_ack_pat, &(context->rem_ip_addr), 4, 
-                              "pdus.1.#ip4.dst-addr.#plain");
+                              "0.pdus.1.#ip4.dst-addr.#plain");
 
     if (context->loc_ip_addr)
         asn_write_value_field(syn_ack_pat, &(context->loc_ip_addr), 4, 
-                              "pdus.1.#ip4.src-addr.#plain");
+                              "0.pdus.1.#ip4.src-addr.#plain");
 
     rc = tapi_tad_trrecv_start(ta_name, session, 
                                context->tcp_hack_csap,  syn_ack_pat,
