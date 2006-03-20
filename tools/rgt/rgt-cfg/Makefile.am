@@ -28,7 +28,7 @@ SUBDIRS = tmpls . tests
 
 pkgdatadir = $(datadir)/$(subdir)
 
-AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ \
+AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) \
               -I$(top_srcdir)/lib/tmpls @EXTRA_CPPFLAGS@
 AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @XML2_CFLAGS@
 
@@ -47,6 +47,9 @@ rgt_filter_xml2tcl_DEPENDENCIES = $(GEN_DEP)
 BUILT_SOURCES = rgt-filter-xml2tcl.h
 
 CLEANFILES = rgt-filter-xml2tcl.h
+
+dist-hook:
+	rm -f $(distdir)/rgt-filter-xml2tcl.h
 
 rgt-filter-xml2tcl.h: tmpls/Makefile
 	for util in rgt-filter-xml2tcl; do \

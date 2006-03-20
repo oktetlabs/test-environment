@@ -41,6 +41,6 @@ CLEANFILES = $(LOCAL_TESTS:%=%.tcl) test_gen.tcl
 test_gen.tcl: $(srcdir)/test_gen_inc.tcl
 	cp $(srcdir)/test_gen_inc.tcl test_gen.tcl
 
-%.tcl: %.xml test_gen.tcl
-	$(bindir)/rgt-filter-xml2tcl $< > $@
+%.tcl: %.xml test_gen.tcl $(top_builddir)/rgt-cfg/rgt-filter-xml2tcl
+	$(top_builddir)/rgt-cfg/rgt-filter-xml2tcl $< > $@
 

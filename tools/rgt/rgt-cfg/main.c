@@ -101,6 +101,10 @@ typedef enum suite_node {
     SUITE_NODE_NUM = 3,
 } suite_node_t;
 
+#define SUITE_NODE_PACKAGE_STR "pkg"
+#define SUITE_NODE_SESSION_STR "session"
+#define SUITE_NODE_TEST_STR "test"
+
 /** Structure to keep informaiton about duration */
 typedef struct duration_entry {
     te_bool  include; /**< Whether this is inclusive duration */
@@ -190,7 +194,7 @@ suite_node_h2str(suite_node_t node_type)
     switch (node_type)
     {
 #define NODE_TYPE_CASE(val_) \
-        case SUITE_NODE_ ## val_: return #val_
+        case SUITE_NODE_ ## val_: return SUITE_NODE_ ## val_ ## _STR
         
         NODE_TYPE_CASE(PACKAGE);
         NODE_TYPE_CASE(SESSION);
@@ -292,18 +296,18 @@ get_node_range(const char *node, suite_node_t *start_i, suite_node_t *end_i)
         return;
     }
 
-#define CHECK_NODE(name_, id_) \
-    do {                              \
-        if (strcmp(node, name_) == 0) \
-        {                             \
-            *start_i = *end_i = id_;  \
-            return;                   \
-        }                             \
+#define CHECK_NODE(val_) \
+    do {                                     \
+        if (strcmp(node, val_ ## _STR) == 0) \
+        {                                    \
+            *start_i = *end_i = val_;        \
+            return;                          \
+        }                                    \
     } while (0)
 
-    CHECK_NODE("pkg", SUITE_NODE_PACKAGE);
-    CHECK_NODE("session", SUITE_NODE_SESSION);
-    CHECK_NODE("test", SUITE_NODE_TEST);
+    CHECK_NODE(SUITE_NODE_PACKAGE);
+    CHECK_NODE(SUITE_NODE_SESSION);
+    CHECK_NODE(SUITE_NODE_TEST);
     
     assert(0);
 }
