@@ -587,8 +587,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
     if (rc == 0)
     {
         rc = rcf_comm_agent_reply(conn, tmp, strlen(tmp) + 1);
-        VERB("Sent binary attachment len=%u rc=%d",
-                             strlen(tmp) + 1, rc);
+        VERB("Sent binary attachment len=%u rc=%d", strlen(tmp) + 1, rc);
     }
     rcf_ch_unlock();
     
