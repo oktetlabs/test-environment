@@ -101,10 +101,10 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
 /* See description in tapi_rpc_misc.h */
 te_bool 
 rpc_protocol_info_cmp(rcf_rpc_server *rpcs, 
-                                        const uint8_t *buf1,
-                                        const uint8_t *buf2,
-                                        tarpc_bool is_wide1,
-                                        tarpc_bool is_wide2)
+                      const uint8_t *buf1,
+                      const uint8_t *buf2,
+                      tarpc_bool is_wide1,
+                      tarpc_bool is_wide2)
 {
     struct tarpc_protocol_info_cmp_in  in;
     struct tarpc_protocol_info_cmp_out out;
@@ -127,8 +127,8 @@ rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
 
     rpcs->op = RCF_RPC_CALL_WAIT;
 
-    in.buf1.buf1_val = buf1;
-    in.buf2.buf2_val = buf2;
+    in.buf1.buf1_val = (uint8_t *)buf1;
+    in.buf2.buf2_val = (uint8_t *)buf2;
     if (is_wide1)
         in.buf1.buf1_len = rpc_get_sizeof(rpcs, "WSAPROTOCOL_INFOW");
     else
