@@ -43,7 +43,6 @@ function applyChanges()
         }
     }
     
-//    alert("Updated " + levels_updated + " | Changed " + levels_changed);
     if (levels_updated)
     {
         var inc_levels = 0;
@@ -97,31 +96,75 @@ function applyChanges()
 }
 
 /*
+ * This function is called when user changes value of top-left
+ * checkbox, which updates all checkboxes.
+ */
+function gCbChange()
+{
+    var mcb = document.cb_form.mcb;
+    var nd_entities = window.opener.entities;
+    var levels = window.opener.level_info[0];
+    var levels_changed = window.opener.level_info[1];
+    var levels_updated = window.opener.level_info[2];
+    var cb, ll_cb;
+    var m_id, id;
+
+    for (m_id = 0; m_id < n_entries; m_id++)
+    {
+        for (id = 0; id < 6; id++)
+        {
+            ll_cb = eval("document.cb_form.cb" + m_id + "_" + id);
+
+            ll_cb.checked = mcb.checked;
+        }
+        cb = eval("document.cb_form.cb" + m_id);
+
+        nd_entities[cb.getAttribute("entity")][cb.getAttribute("user")] = 
+                mcb.checked ? all_bits : 0;
+
+        cb.checked = mcb.checked;
+    }
+
+    for (id = 0; id < 6; id++)
+    {
+        cb = eval("document.cb_form.lcb" + id);
+        cb.checked = mcb.checked;
+    }
+
+    levels = mcb.checked ? all_bits : 0;
+
+    /* Update on the level of global Log levels */
+    levels_updated = all_bits;
+    levels_changed &= ~(all_bits);
+
+    window.opener.level_info[0] = levels;
+    window.opener.level_info[1] = levels_changed;
+    window.opener.level_info[2] = levels_updated;
+}
+
+/*
  * This function is called when user changes value of the lefthand
  * checkbox, which is responsible for updating all log-level specific
  * checkboxes.
  *
- * @param id  Log entity ID
+ * @param m_id  Log entity ID
  *
  * @se This function enables/disables all log-level specific checkboxes.
  */
-function mainCbChange(id)
+function mainCbChange(m_id)
 {
-    nd_entities = window.opener.entities;
-    levels_updated = window.opener.levels_updated;
-    var cb = eval("document.cb_form.cb" + id);
-    var ll_cb;
-    var i;
+    var id;
+    var cb = eval("document.cb_form.cb" + m_id);
+    var lcb;
 
-    for (i = 0, ll_cb = eval("document.cb_form.cb" + id + "_" + i);
-         ll_cb;
-         i++, ll_cb = eval("document.cb_form.cb" + id + "_" + i))
+    for (id = 0; id < 6; id++)
     {
-        ll_cb.checked = cb.checked;
+        lcb = eval("document.cb_form.cb" + m_id + "_" + id);
+        lcb.checked = cb.checked;
+        levelCbChange(m_id, id, false);
     }
 
-    nd_entities[cb.getAttribute("entity")][cb.getAttribute("user")] = 
-        cb.checked ? 0x7fff : 0;
+    update_lefthand_cb(m_id);
 }
 
 function update_lefthand_cb(m_id)
@@ -149,12 +192,13 @@ function update_lefthand_cb(m_id)
  * This function is called when user changes value of the one of 
  * righthand checkboxes, which is log-level specific checkboxes.
  *
- * @param m_id  Log entity ID
- * @param id    Log level ID
+ * @param m_id         Log entity ID
+ * @param id           Log level ID
+ * @param update_lhcb  Whether to update left hand checkbox or not
  *
  * @se This function may enable/disable lefthand checkbox.
  */
-function levelCbChange(m_id, id)
+function levelCbChange(m_id, id, update_lhcb)
 {
     nd_entities = window.opener.entities;
 /*
@@ -176,7 +220,8 @@ function levelCbChange(m_id, id)
         nd_entities[cb.getAttribute("entity")][cb.getAttribute("user")] &= ((~(1 << id)) & 0x7fff);
     }
 
-    update_lefthand_cb(m_id);
+    if (update_lhcb)
+        update_lefthand_cb(m_id);
 
     /* 
      * We change the particular entry making generic level policy 
@@ -193,8 +238,6 @@ function levelCbChange(m_id, id)
      * current situation with log messages.
      */
     levels_changed |= (1 << id);
-    
-    //alert("Updated " + levels_updated + " | Changed " + levels_changed);
 
     window.opener.level_info[1] = levels_changed;
     window.opener.level_info[2] = levels_updated;
@@ -264,8 +307,6 @@ function gLevelCbChange(id)
     levels_updated |= (1 << id);
     levels_changed &= ~(1 << id);
 
-    //alert("Updated " + levels_updated + " | Changed " + levels_changed);
-
     window.opener.level_info[0] = levels;
     window.opener.level_info[1] = levels_changed;
     window.opener.level_info[2] = levels_updated;
@@ -303,17 +344,15 @@ function process_on_load_event()
 <script>
     nd_entities = window.opener.entities;
     all_entities = window.opener.top.entities;
-/*
-    levels = window.opener.top.levels;
-*/
     var levels = window.opener.top.level_info[0];
     var head_msg = "";
     var msg = "";
     var show_all = true;
+    var entry, user, tdclass, enabled;
     var i = 0;
+    var bits;
     var j;
 
-    //alert("levels " + levels);
     for (entity in nd_entities)
     {
         user_array = nd_entities[entity];
@@ -344,7 +383,7 @@ function process_on_load_event()
                 enabled = (levels & bits & (1 << j));
                 msg +=
 "  <td width='30' align='center'><input type='checkbox' " + 
-                 "onClick='javascript:levelCbChange(" + i + ", " + j + ")' " + 
+                 "onClick='javascript:levelCbChange(" + i + ", " + j + ", true)' " + 
                  "entity='" + entity +"' user='" + user + "' " +
                 (enabled ? "checked" : "") + 
                 " name='cb" + i + "_" + j + "'></td>"; 
@@ -361,7 +400,7 @@ function process_on_load_event()
         head_msg = 
 "<tr class='tdsubhead'>" +
 "  <td width='30' align='center'>" +
-"    <input type='checkbox' onClick='javascript:mainCbChange(0)' " +
+"    <input type='checkbox' onClick='javascript:gCbChange()' " +
             (show_all ? "checked" : "") + " name='mcb'></td>" +
 "  <td width='40%' class='entityname'>&nbsp;</td>" +
 "  <td width='60%' class='username'>&nbsp;</td>";
