@@ -4555,7 +4555,8 @@ int
 overfill_buffers(tarpc_overfill_buffers_in *in,
                  tarpc_overfill_buffers_out *out)
 {
-    ssize_t         rc = 0;
+    int             ret = 0;
+    ssize_t         sent = 0;
     int             errno_save = errno;
     api_func        send_func;
     api_func        select_func;
@@ -4573,7 +4574,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     {
         ERROR("%s(): Out of memory", __FUNCTION__);
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        rc = -1;
+        ret = -1;
         goto overfill_buffers_exit;
     }
 
@@ -4582,14 +4583,14 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     if (tarpc_find_func(in->common.lib, "send", &send_func) != 0)
     {
         ERROR("%s(): Failed to resolve send() function", __FUNCTION__);
-        rc = -1;
+        ret = -1;
         goto overfill_buffers_exit;
     }
 
     if (tarpc_find_func(in->common.lib, "select", &select_func) != 0)
     {
         ERROR("%s(): Failed to resolve select() function", __FUNCTION__);
-        rc = -1;
+        ret = -1;
         goto overfill_buffers_exit;
     }
 
@@ -4602,19 +4603,28 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         FD_SET(in->sock, &writefds);
         tv.tv_sec  = 0;
         tv.tv_usec = TE_MS2US(100);
-        rc = select_func(in->sock + 1, NULL, &writefds, NULL, &tv);
-        if (rc < 0)
+        ret = select_func(in->sock + 1, NULL, &writefds, NULL, &tv);
+        if (ret < 0)
         {
             ERROR("%s(): select() failed", __FUNCTION__);
             out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
             goto overfill_buffers_exit;
         }
 
-        rc = 0;
+        sent = 0;
         do {
-            out->bytes += rc;
-            rc = send_func(in->sock, buf, max_len, MSG_DONTWAIT);
-        } while (rc > 0);
+            out->bytes += sent;
+            sent = send_func(in->sock, buf, max_len, MSG_DONTWAIT);
+            if ((ret > 0) && (sent <= 0))
+            {
+                ERROR("%s(): I/O multiplexing has returned write event, "
+                      "but send() function with MSG_DONTWAIT hasn't "
+                      "sent any data", __FUNCTION__);
+                ret = -1;
+                goto overfill_buffers_exit;
+            }
+            ret = 0;
+        } while (sent > 0);
         if (errno != EAGAIN)
         {
             ERROR("%s(): send() failed", __FUNCTION__);
@@ -4630,16 +4640,16 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         else
         {
             unchanged++;
-            rc = 0;
+            ret = 0;
         }
     } while (unchanged != 3);
 
 overfill_buffers_exit:
 
     free(buf);
-    if (rc == 0)
+    if (ret == 0)
         errno = errno_save;
-    return rc;
+    return ret;
 }
 
 #ifdef HAVE_AIO_H
