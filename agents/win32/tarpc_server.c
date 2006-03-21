@@ -4472,13 +4472,13 @@ TARPC_FUNC(get_queued_completion_status,
 {},
 {
     OVERLAPPED *overlapped = NULL;
+    ULONG_PTR   key = 0;
 
     UNUSED(list);
 
     MAKE_CALL(out->retval = GetQueuedCompletionStatus(
         (HANDLE)(in->completion_port),
-        (DWORD *)&out->number_of_bytes,
-        (ULONG_PTR *)&out->completion_key,
+        (DWORD *)&out->number_of_bytes, &key, 
         &overlapped, (DWORD)in->milliseconds)
     );
 
@@ -4486,6 +4486,7 @@ TARPC_FUNC(get_queued_completion_status,
         out->overlapped = (tarpc_overlapped)rcf_pch_mem_get_id(overlapped);
     else
         out->overlapped = (tarpc_overlapped)0;
+    out->completion_key = key;        
 }
 )
 
