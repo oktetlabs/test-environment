@@ -6,23 +6,23 @@ source "test41.tcl"
 source "test_gen.tcl"
 
 set test_cases_pass [list \
-    "pkg"     11          \
-    "session" 11          \
-    "test"    4           \
-    "test"    10          \
-    "test"    11          \
+    "PACKAGE" 11          \
+    "SESSION" 11          \
+    "TEST"    4           \
+    "TEST"    10          \
+    "TEST"    11          \
 ]
 
 set test_cases_fail [list \
-    "pkg"     4           \
-    "pkg"     5           \
-    "pkg"     10          \
-    "session" 3           \
-    "session" 4           \
-    "session" 5           \
-    "session" 10          \
-    "test"    1           \
-    "test"    3           \
+    "PACKAGE" 4           \
+    "PACKAGE" 5           \
+    "PACKAGE" 10          \
+    "SESSION" 3           \
+    "SESSION" 4           \
+    "SESSION" 5           \
+    "SESSION" 10          \
+    "TEST"    1           \
+    "TEST"    3           \
 ]
 
 foreach { node duration } $test_cases_pass {

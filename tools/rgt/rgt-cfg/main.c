@@ -194,7 +194,7 @@ suite_node_h2str(suite_node_t node_type)
     switch (node_type)
     {
 #define NODE_TYPE_CASE(val_) \
-        case SUITE_NODE_ ## val_: return SUITE_NODE_ ## val_ ## _STR
+        case SUITE_NODE_ ## val_: return #val_
         
         NODE_TYPE_CASE(PACKAGE);
         NODE_TYPE_CASE(SESSION);
