@@ -1065,7 +1065,7 @@ struct tarpc_create_io_completion_port_in {
     struct tarpc_in_arg  common;
     tarpc_int            file_handle;
     tarpc_int            existing_completion_port;
-    tarpc_int            completion_key;
+    uint64_t             completion_key;
     tarpc_uint           number_of_concurrent_threads;
 };    
 
@@ -1085,7 +1085,7 @@ struct tarpc_get_queued_completion_status_in {
 struct tarpc_get_queued_completion_status_out {
     struct tarpc_out_arg  common;
     tarpc_uint            number_of_bytes;
-    tarpc_int             completion_key;
+    uint64_t              completion_key;
     tarpc_overlapped      overlapped;
     tarpc_bool            retval;
 };    
@@ -1096,7 +1096,7 @@ struct tarpc_post_queued_completion_status_in {
     struct tarpc_in_arg   common;
     tarpc_int             completion_port;
     tarpc_uint            number_of_bytes;
-    tarpc_int             completion_key;
+    uint64_t              completion_key;
     tarpc_overlapped      overlapped;
 };    
 
