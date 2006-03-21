@@ -1700,6 +1700,9 @@ TARPC_FUNC(getsockopt,
                     optlen_in = optlen_out = sizeof(struct tcp_info);
                     break;
 
+                case OPT_STRING:
+                    break;
+
                 default:
                     ERROR("incorrect option type %d is received",
                           out->optval.optval_val[0].opttype);
@@ -1935,6 +1938,9 @@ TARPC_FUNC(getsockopt,
 
                 case OPT_TIMEVAL:
                     *(out->optlen.optlen_val) = sizeof(struct timeval);
+                    break;
+
+                case OPT_STRING:
                     break;
 
                 default:
