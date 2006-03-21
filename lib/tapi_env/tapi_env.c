@@ -1824,7 +1824,7 @@ tapi_env_get_net_host_addr(const tapi_env          *env,
     free(node_oid);
 
     if (addrlen != NULL)
-        *addrlen = sockaddr_get_size(*addr);
+        *addrlen = te_sockaddr_get_size(*addr);
 
     return 0;
 }

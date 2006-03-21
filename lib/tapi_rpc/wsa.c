@@ -161,7 +161,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: ConnectEx(%d, %s, %u, %u, %u, %d, %u) "
                  "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, sockaddr2str(addr), addrlen, 
+                 s, te_sockaddr2str(addr), addrlen, 
                  buf, len_buf, PTR_VAL(bytes_sent), 
                  overlapped,
                  out.retval ? "true" : "false",
@@ -308,7 +308,7 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, addr, addrlen, PTR_VAL(addrlen),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 sockaddr2str(addr), PTR_VAL(addrlen));
+                 te_sockaddr2str(addr), PTR_VAL(addrlen));
 
     RETVAL_INT(wsa_accept, out.retval);
 }
@@ -446,8 +446,8 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
                  s, buf, len, laddr_len, raddr_len, 
                  laddr, l_sa_len, raddr, r_sa_len, 
                  errno_rpc2str(RPC_ERRNO(rpcs)),
-                 laddr == NULL ? "NULL" : sockaddr2str(laddr),
-                 raddr == NULL ? "NULL" : sockaddr2str(raddr));
+                 laddr == NULL ? "NULL" : te_sockaddr2str(laddr),
+                 raddr == NULL ? "NULL" : te_sockaddr2str(raddr));
     
     RETVAL_VOID(get_accept_addr);
 }
@@ -1786,7 +1786,7 @@ rpc_wsa_send_to(rcf_rpc_server *rpcs, int s, const struct rpc_iovec *iov,
                  s, (*str_buf == '\0') ? "(nil)" : str_buf,
                  iovcnt, send_recv_flags_rpc2str(flags),
                  PTR_VAL(bytes_sent),
-                 sockaddr2str(to), tolen,         
+                 te_sockaddr2str(to), tolen,         
                  overlapped, callback,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -1952,7 +1952,7 @@ rpc_wsa_recv_from(rcf_rpc_server *rpcs, int s,
                  rpcs->ta, rpcs->name, rpcop2str(op), 
                  s, (*str_buf == '\0') ? "(nil)" : str_buf,
                  iovcnt, send_recv_flags_rpc2str(PTR_VAL(flags)), 
-                 PTR_VAL(bytes_received), sockaddr2str(from),
+                 PTR_VAL(bytes_received), te_sockaddr2str(from),
                  PTR_VAL(fromlen), 
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -2715,7 +2715,7 @@ rpc_wsa_address_to_string(rcf_rpc_server *rpcs, struct sockaddr *addr,
                  "WSAAddressToString(%s, %u, %p, %d, %s, %d) "
                  "-> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 sockaddr2str(addr), addrlen, info, info_len,
+                 te_sockaddr2str(addr), addrlen, info, info_len,
                  addrstr, *addrstr_len,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -2780,7 +2780,7 @@ rpc_wsa_string_to_address(rcf_rpc_server *rpcs, char *addrstr,
                  "WSAStringToAddress(%s, %s, %p, %d, %s, %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  addrstr, domain_rpc2str(address_family),
-                 info, info_len, sockaddr2str(addr),
+                 info, info_len, te_sockaddr2str(addr),
                  *addrlen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -2964,7 +2964,7 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
                  "WSAConnect(%d, %s, %u, %u, %u, %p) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, sockaddr2str(addr), addrlen,
+                 s, te_sockaddr2str(addr), addrlen,
                  caller_wsabuf, callee_wsabuf, sqos,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
@@ -3692,7 +3692,7 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, struct sockaddr *addr,
     TAPI_RPC_LOG("RPC (%s,%s)%s: "
                  "WSAJoinLeaf(%d, %s, %u, %u, %u, %p, %s) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, sockaddr2str(addr), addrlen, 
+                 s, te_sockaddr2str(addr), addrlen, 
                  caller_wsabuf, callee_wsabuf, sqos, 
                  join_leaf_flags_rpc2str(flags),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));

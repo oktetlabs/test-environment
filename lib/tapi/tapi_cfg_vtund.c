@@ -62,7 +62,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
     cfg_val_type    val_type;
     char           *str;
 
-    srv_port = ntohs(sockaddr_get_port(srv_addr));
+    srv_port = ntohs(te_sockaddr_get_port(srv_addr));
     if (srv_port == 0)
         srv_port = TAPI_CFG_VTUND_PORT_DEF;
 

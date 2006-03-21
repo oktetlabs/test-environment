@@ -609,7 +609,7 @@ tapi_cfg_add_blackhole(const char *ta, int addr_family,
                        cfg_handle *handle)
 {
     char        dst_addr_str[INET6_ADDRSTRLEN];
-    int         netaddr_size = netaddr_get_size(addr_family);
+    int         netaddr_size = te_netaddr_get_size(addr_family);
 
     if (netaddr_size < 0)
     {
@@ -846,7 +846,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     char        dst_addr_str_orig[INET6_ADDRSTRLEN];
     char        route_inst_name[1024];
     int         rc;
-    int         netaddr_size = netaddr_get_size(addr_family);
+    int         netaddr_size = te_netaddr_get_size(addr_family);
     uint8_t    *dst_addr_copy;
     int         i;
     int         diff;
@@ -872,7 +872,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     {
         ERROR("%s() cannot allocate %d bytes for the copy of "
               "the network address", __FUNCTION__,
-              netaddr_get_size(addr_family));
+              te_netaddr_get_size(addr_family));
 
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
@@ -947,7 +947,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
            
     if (gw_addr != NULL)
     {
-        sockaddr_set_netaddr(SA(&ss), gw_addr);
+        te_sockaddr_set_netaddr(SA(&ss), gw_addr);
     }
     
     switch (op)

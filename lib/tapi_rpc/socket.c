@@ -147,7 +147,7 @@ rpc_bind(rcf_rpc_server *rpcs,
 
     TAPI_RPC_LOG("RPC (%s,%s): bind(%d, %s, %u) -> %d (%s)",
                  rpcs->ta, rpcs->name,
-                 s, sockaddr2str(my_addr), addrlen,
+                 s, te_sockaddr2str(my_addr), addrlen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(bind, out.retval);
@@ -196,7 +196,7 @@ rpc_connect(rcf_rpc_server *rpcs,
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: connect(%d, %s, %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 s, sockaddr2str(addr), addrlen,
+                 s, te_sockaddr2str(addr), addrlen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(connect, out.retval);
@@ -304,7 +304,7 @@ rpc_accept_gen(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, addr, raddrlen, addrlen, save_addrlen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 sockaddr2str(addr),
+                 te_sockaddr2str(addr),
                  (addrlen == NULL) ? (socklen_t)-1 : *addrlen);
 
     RETVAL_INT(accept, out.retval);
@@ -397,7 +397,7 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
                  s, buf, rbuflen, len, send_recv_flags_rpc2str(flags),
                  from, rfrombuflen, (int)save_fromlen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 sockaddr2str(from),
+                 te_sockaddr2str(from),
                  (fromlen == NULL) ? -1 : (int)*fromlen);
 
     RETVAL_INT(recvfrom, out.retval);
@@ -540,7 +540,7 @@ rpc_sendto(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG("RPC (%s,%s)%s: sendto(%d, %p, %u, %s, %s, %u) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
                  s, buf, len, send_recv_flags_rpc2str(flags),
-                 sockaddr2str(to), tolen,
+                 te_sockaddr2str(to), tolen,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(sendto, out.retval);
@@ -1073,7 +1073,7 @@ rpc_getsockname_gen(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name,
                  s, name, rnamelen, namelen_save,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 sockaddr2str(name),
+                 te_sockaddr2str(name),
                  (namelen == NULL) ? (unsigned int)-1 : *namelen);
 
     RETVAL_INT(getsockname, out.retval);
@@ -1152,7 +1152,7 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
                  rpcs->ta, rpcs->name,
                  s, name, rnamelen, namelen_save,
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)),
-                 sockaddr2str(name),
+                 te_sockaddr2str(name),
                  (namelen == NULL) ? (unsigned int)-1 : *namelen);
 
     RETVAL_INT(getpeername, out.retval);

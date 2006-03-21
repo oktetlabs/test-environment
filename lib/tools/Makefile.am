@@ -7,6 +7,7 @@ AM_CFLAGS = @TE_CFLAGS@
 include_HEADERS = \
 	te_tools.h \
 	te_bufs.h \
+	te_sockaddr.h \
 	te_shell_cmd.h \
 	te_log_fmt.h \
 	te_format.h \
@@ -24,7 +25,7 @@ libtools.lib: $(libtools_lib_SOURCES)
 	$(srcdir)/../../engine/builder/te_build_win_lib $(srcdir) @host@ $@ \
         $(DESTDIR)/$(prefix) $(libtools_lib_SOURCES)
         
-EXTRA_DIST=te_shell_cmd.c te_bufs.c te_log_fmt.c
+EXTRA_DIST=te_shell_cmd.c te_bufs.c te_log_fmt.c te_sockaddr.c
 
 else
 
@@ -32,6 +33,7 @@ lib_LIBRARIES = libtools.a
 
 libtools_a_SOURCES = \
 	te_bufs.c \
+	te_sockaddr.c \
 	te_shell_cmd.c \
 	te_log_fmt.c \
 	te_format.c

@@ -374,7 +374,8 @@ tapi_cfg_del_if_ip4_addresses(const char *ta,
             ERROR("Failed to get instance name: %r", rc);
             break;
         }
-        if ((rc = sockaddr_netaddr_from_string(addr_str, SA(&addr))) != 0)
+        if ((rc = te_sockaddr_netaddr_from_string(addr_str,
+                                                  SA(&addr))) != 0)
         {
             ERROR("Failed to convert address from string '%s': %r",
                   addr_str, rc);
