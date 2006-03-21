@@ -2952,6 +2952,7 @@ TARPC_FUNC(completion_callback, {},
     out->error = completion_error;
     out->overlapped = completion_overlapped;
     thread_mutex_unlock(completion_lock);
+    out->common._errno = 0;
 }
 )
 
