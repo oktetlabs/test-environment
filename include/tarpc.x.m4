@@ -958,6 +958,52 @@ struct tarpc_transmitfile_tabufs_in {
     tarpc_size_t        flags;        /**< Parameter of TransmitFile() */
 };
 
+
+/* TransmitPackets() */
+enum tarpc_transmit_packet_type {
+    TARPC_TP_MEM = 1,                /**< Transmit data from buffer */
+    TARPC_TP_FILE = 2                /**< Transmit data from file */
+};
+
+struct tarpc_file_data {
+    tarpc_off_t offset; /**< Data offset in the file */
+    tarpc_int   file;   /**< Handle to the open file to be transmitted */
+};
+
+union tarpc_transmit_packet_source
+    switch (tarpc_transmit_packet_type type)
+{
+    case TARPC_TP_MEM:  tarpc_ptr       buf;
+    case TARPC_TP_FILE: tarpc_file_data file_data;
+};
+    
+struct tarpc_transmit_packets_element {
+    tarpc_int           length;      /**< Number of bytes to transmit */
+    tarpc_transmit_packet_source 
+                        packet_src;  /**< Where to get transmission data */
+};
+
+struct tarpc_transmit_packets_in {
+    struct tarpc_in_arg             common;
+    
+    tarpc_int                       s;              
+                                    /**< TA-local socket */
+    tarpc_transmit_packets_element  packet_array<>;
+                                    /**< Data to transmit */
+    tarpc_int                       send_size;
+                                    /**< Size of data sent per operation */
+    tarpc_overlapped                overlapped;
+                                    /**< Overlapped structure */
+    tarpc_size_t                    flags;
+                                    /** Flags parameter */
+};
+
+struct tarpc_transmit_packets_out {
+    struct tarpc_out_arg            common;
+
+    tarpc_bool                      retval;
+};
+
 typedef struct tarpc_int_retval_out tarpc_transmitfile_tabufs_out;
 
 /* Windows CreateFile() */

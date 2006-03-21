@@ -171,6 +171,9 @@ wsp_proto_rpc2h(int socktype, int proto)
 #define WSAID_WSARECVMSG \
     {0xf689d7c8,0x6f1f,0x436b,{0x8a,0x53,0xe5,0x4f,0xe3,0x51,0xc3,0x22}}
 
+/* TransmitPackets parameter type */
+typedef TRANSMIT_PACKETS_ELEMENT *PTRANSMIT_PACKETS_ELEMENT, FAR *LPTRANSMIT_PACKETS_ELEMENT;
+
 /** Function prototypes for Microsoft extended functions
  *  from Windows Sockets 2 */
 /* ConnectEx() */
@@ -212,6 +215,12 @@ typedef BOOL (__stdcall *LPFN_TRANSMITFILE)(SOCKET hSocket,
                                   LPOVERLAPPED lpOverlapped,
                                   TRANSMIT_FILE_BUFFERS *lpTransmitBuffers,
                                   DWORD dwFlags);
+/* TransmitPackets() */
+typedef BOOL (PASCAL *LPFN_TRANSMITPACKETS)(SOCKET hSocket, LPTRANSMIT_PACKETS_ELEMENT lpPacketArray,
+                                  DWORD nElementCount,
+                                  DWORD nSendSize,
+                                  LPOVERLAPPED lpOverlapped,
+                                  DWORD dwFlags);
 /* WSARecvMsg() */
 typedef int (__stdcall *LPFN_WSARECVMSG)(SOCKET s,
                                LPWSAMSG lpMsg,
@@ -225,6 +234,7 @@ extern LPFN_DISCONNECTEX         pf_disconnect_ex;
 extern LPFN_ACCEPTEX             pf_accept_ex;
 extern LPFN_GETACCEPTEXSOCKADDRS pf_get_accept_ex_sockaddrs;
 extern LPFN_TRANSMITFILE         pf_transmit_file;
+extern LPFN_TRANSMITPACKETS      pf_transmit_packets;
 extern LPFN_WSARECVMSG           pf_wsa_recvmsg;
 
 #define IN_HWND         ((HWND)(rcf_pch_mem_get(in->hwnd)))

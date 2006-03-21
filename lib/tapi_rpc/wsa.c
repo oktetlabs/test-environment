@@ -453,6 +453,51 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
 }
 
 te_bool
+rpc_transmit_packets(rcf_rpc_server *rpcs, int s,
+                     tarpc_transmit_packets_element *data,
+                     ssize_t element_count, ssize_t send_size,
+                     rpc_overlapped overlapped, ssize_t flags)
+{
+    rcf_rpc_op                 op; 
+    tarpc_transmit_packets_in  in;
+    tarpc_transmit_packets_out out;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_BOOL(transmit_packets, FALSE);
+    }
+
+    op = rpcs->op;
+    
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));                     
+
+    in.s = s;
+    in.packet_array.packet_array_len = element_count;
+    in.packet_array.packet_array_val = data;
+    in.send_size = send_size;
+    in.overlapped = overlapped;
+    in.flags = flags;
+ 
+    rcf_rpc_call(rpcs, "transmit_packets", &in, &out);
+ 
+    if (op == RCF_RPC_CALL)
+        out.retval = TRUE;
+
+    CHECK_RETVAL_VAR_IS_BOOL(transmit_packets, out.retval);
+   
+    TAPI_RPC_LOG("RPC (%s,%s)%s: "
+                 "TransmitPackets(%d, %d, %d, %u, %d) "
+                 "-> %s (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
+                 s, element_count, send_size, overlapped, flags,
+                 out.retval ? "true" : "false",
+                 errno_rpc2str(RPC_ERRNO(rpcs)));
+
+    RETVAL_BOOL(transmit_packets, out.retval);
+}   
+       
+te_bool
 rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
                   ssize_t len, ssize_t len_per_send,
                   rpc_overlapped overlapped,

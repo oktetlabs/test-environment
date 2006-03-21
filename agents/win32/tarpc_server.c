@@ -37,6 +37,7 @@ LPFN_DISCONNECTEX         pf_disconnect_ex;
 LPFN_ACCEPTEX             pf_accept_ex;
 LPFN_GETACCEPTEXSOCKADDRS pf_get_accept_ex_sockaddrs;
 LPFN_TRANSMITFILE         pf_transmit_file;
+LPFN_TRANSMITPACKETS      pf_transmit_packets;
 LPFN_WSARECVMSG           pf_wsa_recvmsg;
 
 void 
@@ -47,6 +48,7 @@ wsa_func_handles_discover()
     GUID  guid_accept_ex = WSAID_ACCEPTEX;
     GUID  guid_get_accept_ex_sockaddrs = WSAID_GETACCEPTEXSOCKADDRS;
     GUID  guid_transmit_file = WSAID_TRANSMITFILE;
+    GUID  guid_transmit_packets = WSAID_TRANSMITPACKETS;
     GUID  guid_wsa_recvmsg = WSAID_WSARECVMSG;
     DWORD bytes_returned;
     int   s = socket(AF_INET, SOCK_STREAM, 
@@ -69,7 +71,8 @@ wsa_func_handles_discover()
     DISCOVER_FUNC(disconnect_ex, DISCONNECTEX);
     DISCOVER_FUNC(accept_ex, ACCEPTEX);
     DISCOVER_FUNC(get_accept_ex_sockaddrs, GETACCEPTEXSOCKADDRS);
-    DISCOVER_FUNC(transmit_file, TRANSMITFILE);
+    DISCOVER_FUNC(transmit_packets, TRANSMITPACKETS);
+    DISCOVER_FUNC(transmit_file, TRANSMITFILE);    
     DISCOVER_FUNC(wsa_recvmsg, WSARECVMSG);
     
 #undef DISCOVER_FUNC    
@@ -672,6 +675,57 @@ TARPC_FUNC(get_accept_addr,
 }
 )
 
+/*-------------- TransmitPackets() -------------------------*/
+TARPC_FUNC(transmit_packets, {},
+{
+    TRANSMIT_PACKETS_ELEMENT   *transmit_buffers;
+    rpc_overlapped             *overlapped = IN_OVERLAPPED;
+    int                         i;
+
+    transmit_buffers = (TRANSMIT_PACKETS_ELEMENT *)
+                       calloc(in->packet_array.packet_array_len,
+                              sizeof(TRANSMIT_PACKETS_ELEMENT));
+    memset(transmit_buffers, 0,
+           in->packet_array.packet_array_len *
+           sizeof(TRANSMIT_PACKETS_ELEMENT));
+    for (i = 0; i < in->packet_array.packet_array_len; i++)
+    {
+        switch (in->packet_array.packet_array_val[i].packet_src.type)
+        {
+            case TARPC_TP_MEM:
+                transmit_buffers[i].dwElFlags = TP_ELEMENT_MEMORY;
+                transmit_buffers[i].pBuffer =
+                    (PVOID)in->packet_array.packet_array_val[i].packet_src.
+                    tarpc_transmit_packet_source_u.buf;
+                break;
+            
+            case TARPC_TP_FILE:
+                transmit_buffers[i].dwElFlags = TP_ELEMENT_FILE;
+                transmit_buffers[i].hFile = 
+                    (HANDLE)in->packet_array.packet_array_val[i].packet_src.
+                    tarpc_transmit_packet_source_u.file_data.file;
+                transmit_buffers[i].nFileOffset = (LARGE_INTEGER)
+                    in->packet_array.packet_array_val[i].packet_src.
+                    tarpc_transmit_packet_source_u.file_data.offset;
+                break;
+            default:
+                ERROR("Incorrect data source: %d",
+                      in->packet_array.packet_array_val[i].packet_src.type);
+                out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
+        }
+        transmit_buffers[i].cLength = 
+            in->packet_array.packet_array_val[i].length;
+    }
+    MAKE_CALL( out->retval =
+                   (*pf_transmit_packets)((SOCKET)in->s, transmit_buffers,
+                                          in->packet_array.packet_array_len,
+                                          in->send_size,
+                                          (LPWSAOVERLAPPED)in->overlapped,
+                                          in->flags); );
+finish:
+    ;    
+}
+)
 /*-------------- TransmitFile() ----------------------------*/
 
 TARPC_FUNC(transmit_file, {},
