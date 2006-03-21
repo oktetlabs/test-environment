@@ -713,7 +713,7 @@ struct tarpc_cmsg_data_parse_ip_pktinfo_in {
 struct tarpc_cmsg_data_parse_ip_pktinfo_out {
     struct tarpc_out_arg    common;
     tarpc_int               retval;
-    tarpc_uint              ipi_addr;
+    uint32_t                ipi_addr;
     tarpc_int               ipi_ifindex;
 };
     
