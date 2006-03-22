@@ -133,6 +133,71 @@
     <object oid="/agent/interface/neigh_dynamic/state" access="read_only" 
             type="integer" volatile="true"/>
 
+    <!-- Interface statistics.
+         Name:  Interface statistics -->
+    <object oid="/agent/interface/stats" access="read_only" 
+            type="string" volatile="true"/>
+
+    <!-- Total amount of octets received on the interface.
+         Name:  Received octets counter -->
+    <object oid="/agent/interface/stats/in_octets" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of unicast packets received on the interface.
+         Name:  Received unicast packets counter -->
+    <object oid="/agent/interface/stats/in_ucast_pkts" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of non-unicast packets received on the interface.
+         Name:  Received non-unicast packets counter -->
+    <object oid="/agent/interface/stats/in_nucast_pkts" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of discarded packets on the interface.
+         Name:  Discarded packets counter -->
+    <object oid="/agent/interface/stats/in_discards" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of packets containing an error received
+         on the interface.
+         Name:  Erroneous packets (In) counter -->
+    <object oid="/agent/interface/stats/in_errors" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of packets with unsupported protocol received
+         on the interface.
+         Name:  Erroneous packets counter -->
+    <object oid="/agent/interface/stats/in_unknown_protos" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of octets transmitted on the interface.
+         Name:  Transmitted octets counter -->
+    <object oid="/agent/interface/stats/out_octets" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of unicast packets transmitted on the interface.
+         Name:  Transmitted unicast packets counter -->
+    <object oid="/agent/interface/stats/out_ucast_pkts" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of non-unicast packets transmitted on the interface.
+         Name:  Transmitted non-unicast packets counter -->
+    <object oid="/agent/interface/stats/out_nucast_pkts" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of packets discarded from the transmit queue of
+         the interface.
+         Name:  Discarded packets (Out) counter -->
+    <object oid="/agent/interface/stats/out_discards" access="read_only" 
+            type="integer" volatile="true"/>
+
+    <!-- Total amount of packets dropped from the transmit queue of the
+         interface due to some errors.
+         Name:  Erroneous packets (Out) counter -->
+    <object oid="/agent/interface/stats/out_errors" access="read_only" 
+            type="integer" volatile="true"/>
+
+
     <!-- Routing table entry.
          Name: (network address in human notation)'|'(prefix)[,metric:Metric][,tos:Tos];
          e.g. "1.2.3.4|24,metric=20,tos=5"         
