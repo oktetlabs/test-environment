@@ -1860,6 +1860,18 @@ struct scsi_io10_payload
 
 typedef struct scsi_io10_payload scsi_io10_payload;
 
+struct scsi_io12_payload
+{
+    uint8_t  opcode;
+    uint8_t  lun_and_flags;
+    uint32_t lba;
+    uint32_t length;
+    uint8_t  reserved;
+    uint8_t  control;
+} __attribute__ ((packed));
+
+typedef struct scsi_io12_payload scsi_io12_payload;
+
 static te_bool
 iscsi_accomodate_buffer (struct target_map_item *target, uint32_t size)
 {
@@ -1910,7 +1922,7 @@ do_scsi_io(Target_Scsi_Cmnd *command,
             (uint32_t)ntohs(data->lba);
         length = data->length == 0 ? 256 : ntohs(data->length);
     }
-    else
+    else if (command->cmd[0] == READ_10 || command->cmd[0] == WRITE_10)
     {
         scsi_io10_payload *data = (void *)command->req->sr_cmnd;
         lun = data->lun_and_flags >> 5;
@@ -1923,6 +1935,20 @@ do_scsi_io(Target_Scsi_Cmnd *command,
         }
         length = ntohs(data->length);
     }
+    else
+    {
+        scsi_io12_payload *data = (void *)command->req->sr_cmnd;
+        lun = data->lun_and_flags >> 5;
+        lba = ntohl(data->lba);
+        if ((data->lun_and_flags & 1) == 1)
+        {
+            TRACE_WARNING("Using relative addressing");
+            lba = target_map[command->target_id][lun].last_lba +
+                (int32_t)lba;
+        }
+        length = ntohs(data->length);
+    }
+
     if (lun >= MAX_LUNS || 
         !target_map[command->target_id][lun].in_use)
     {
@@ -2184,6 +2210,105 @@ aen_notify(int fn, uint64_t lun)
 #endif
 }
 
+static 
+const char *scsi_command_name(int code)
+{
+    static struct 
+    {
+        int code;
+        char *name;
+    } scsi_names[] = {
+        {TEST_UNIT_READY, "TEST_UNIT_READY"},
+        {REZERO_UNIT, "REZERO_UNIT"},
+        {REQUEST_SENSE, "REQUEST_SENSE"},
+        {FORMAT_UNIT, "FORMAT_UNIT"},
+        {READ_BLOCK_LIMITS, "READ_BLOCK_LIMITS"},
+        {REASSIGN_BLOCKS, "REASSIGN_BLOCKS"},
+        {INITIALIZE_ELEMENT_STATUS, "INITIALIZE_ELEMENT_STATUS"},
+        {READ_6, "READ_6"},
+        {WRITE_6, "WRITE_6"},
+        {SEEK_6, "SEEK_6"},
+        {READ_REVERSE, "READ_REVERSE"},
+        {WRITE_FILEMARKS, "WRITE_FILEMARKS"},
+        {SPACE, "SPACE"},
+        {INQUIRY, "INQUIRY"},
+        {RECOVER_BUFFERED_DATA, "RECOVER_BUFFERED_DATA"},
+        {MODE_SELECT, "MODE_SELECT"},
+        {RESERVE, "RESERVE"},
+        {RELEASE, "RELEASE"},
+        {COPY, "COPY"},
+        {ERASE, "ERASE"},
+        {MODE_SENSE, "MODE_SENSE"},
+        {START_STOP, "START_STOP"},
+        {RECEIVE_DIAGNOSTIC, "RECEIVE_DIAGNOSTIC"},
+        {SEND_DIAGNOSTIC, "SEND_DIAGNOSTIC"},
+        {ALLOW_MEDIUM_REMOVAL, "ALLOW_MEDIUM_REMOVAL"},
+
+        {SET_WINDOW, "SET_WINDOW"},
+        {READ_CAPACITY, "READ_CAPACITY"},
+        {READ_10, "READ_10"},
+        {WRITE_10, "WRITE_10"},
+        {SEEK_10, "SEEK_10"},
+        {POSITION_TO_ELEMENT, "POSITION_TO_ELEMENT"},
+        {WRITE_VERIFY, "WRITE_VERIFY"},
+        {VERIFY, "VERIFY"},
+        {SEARCH_HIGH, "SEARCH_HIGH"},
+        {SEARCH_EQUAL, "SEARCH_EQUAL"},
+        {SEARCH_LOW, "SEARCH_LOW"},
+        {SET_LIMITS, "SET_LIMITS"},
+        {PRE_FETCH, "PRE_FETCH"},
+        {READ_POSITION, "READ_POSITION"},
+        {SYNCHRONIZE_CACHE, "SYNCHRONIZE_CACHE"},
+        {LOCK_UNLOCK_CACHE, "LOCK_UNLOCK_CACHE"},
+        {READ_DEFECT_DATA, "READ_DEFECT_DATA"},
+        {MEDIUM_SCAN, "MEDIUM_SCAN"},
+        {COMPARE, "COMPARE"},
+        {COPY_VERIFY, "COPY_VERIFY"},
+        {WRITE_BUFFER, "WRITE_BUFFER"},
+        {READ_BUFFER, "READ_BUFFER"},
+        {UPDATE_BLOCK, "UPDATE_BLOCK"},
+        {READ_LONG, "READ_LONG"},
+        {WRITE_LONG, "WRITE_LONG"},
+        {CHANGE_DEFINITION, "CHANGE_DEFINITION"},
+        {WRITE_SAME, "WRITE_SAME"},
+        {READ_TOC, "READ_TOC"},
+        {LOG_SELECT, "LOG_SELECT"},
+        {LOG_SENSE, "LOG_SENSE"},
+        {MODE_SELECT_10, "MODE_SELECT_10"},
+        {RESERVE_10, "RESERVE_10"},
+        {RELEASE_10, "RELEASE_10"},
+        {MODE_SENSE_10, "MODE_SENSE_10"},
+        {PERSISTENT_RESERVE_IN, "PERSISTENT_RESERVE_IN"},
+        {PERSISTENT_RESERVE_OUT, "PERSISTENT_RESERVE_OUT"},
+        {REPORT_LUNS, "REPORT_LUNS"},
+        {MOVE_MEDIUM, "MOVE_MEDIUM"},
+        {EXCHANGE_MEDIUM, "EXCHANGE_MEDIUM"},
+        {READ_12, "READ_12"},
+        {WRITE_12, "WRITE_12"},
+        {WRITE_VERIFY_12, "WRITE_VERIFY_12"},
+        {SEARCH_HIGH_12, "SEARCH_HIGH_12"},
+        {SEARCH_EQUAL_12, "SEARCH_EQUAL_12"},
+        {SEARCH_LOW_12, "SEARCH_LOW_12"},
+        {READ_ELEMENT_STATUS, "READ_ELEMENT_STATUS"},
+        {SEND_VOLUME_TAG, "SEND_VOLUME_TAG"},
+        {WRITE_LONG_2, "WRITE_LONG_2"},
+        {READ_16, "READ_16"},
+        {WRITE_16, "WRITE_16"},
+        {VERIFY_16, "VERIFY_16"},
+        {SERVICE_ACTION_IN, "SERVICE_ACTION_IN"},
+        {-1, NULL}
+    };
+    
+    int i;
+    
+    for (i = 0; scsi_names[i].code >= 0; i++)
+    {
+        if (scsi_names[i].code == code)
+            return scsi_names[i].name;
+    }
+    return "unknown SCSI opcode";
+}
+
 /********************************************************************
  * THESE ARE FUNCTIONS WHICH ARE SPECIFIC TO MEMORY IO - I lump them*
  * 	together just to help me keep track of what is where	    *
@@ -2204,11 +2329,12 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 	int to_read;
 
 	TRACE(VERBOSE, "Entering MEMORYIO handle_cmd");
+	TRACE(VERBOSE, "%s received", 
+          scsi_command_name(cmnd->req->sr_cmnd[0]));
 
 	switch (cmnd->req->sr_cmnd[0]) {
         case READ_CAPACITY:
 		{
-			TRACE(VERBOSE, "READ_CAPACITY received");
 			/* perform checks on READ_CAPACITY - LATER */
 
 			/* set data direction */
@@ -2246,7 +2372,6 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
         
         case INQUIRY:
         {
-			TRACE(VERBOSE, "INQUIRY received");
 			/* perform checks on INQUIRY - LATER */
 
 			/* set data direction */
@@ -2294,8 +2419,6 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
         case TEST_UNIT_READY:
 		{
-			TRACE(VERBOSE, "TEST UNIT READY received");
-
 			/* perform checks on TEST UNIT READY */
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
 			cmnd->req->sr_use_sg = 0;
@@ -2324,7 +2447,6 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
         
         case MODE_SENSE:
 		{
-			TRACE(VERBOSE, "MODE_SENSE received");
 			/* perform checks on MODE_SENSE - LATER */
 
 			/* set data direction */
@@ -2366,8 +2488,9 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 		}
         
         case VERIFY:
+        case SEEK_6:
+        case SEEK_10:
 		{
-			TRACE(VERBOSE, "VERIFY received");
 			/* perform checks on TEST UNIT READY */
 			cmnd->req->sr_data_direction = SCSI_DATA_NONE;
 			cmnd->req->sr_use_sg = 0;
@@ -2380,13 +2503,8 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
         case READ_6:
         case READ_10:
+        case READ_12:
 		{
-			if (cmnd->req->sr_cmnd[0] == READ_6)
-				TRACE(VERBOSE, "READ_6 received");
-			else
-				TRACE(VERBOSE, "READ_10 received");
-			/* perform checks for READ_10 */
-
 			/* set data direction */
 			cmnd->req->sr_data_direction = SCSI_DATA_READ;
 			/* get length */
@@ -2418,12 +2536,8 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
         
         case WRITE_6:
         case WRITE_10:
+        case WRITE_12:
 		{
-			if (cmnd->req->sr_cmnd[0] == WRITE_6)
-				TRACE(VERBOSE, "WRITE_6 received");
-			else
-				TRACE(VERBOSE, "WRITE_10 received");
-
 			if (cmnd->state == ST_NEW_CMND) {
 				/* perform checks on the received WRITE_10 */
 
@@ -2462,8 +2576,22 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
         default:
 		{
+            struct scsi_fixed_sense_data *sense = 
+                (void *)cmnd->req->sr_sense_buffer;
+
 			TRACE_ERROR("MEMORYIO handle_cmd: unknown command 0x%02x\n",
                    cmnd->req->sr_cmnd[0]);
+            cmnd->state = ST_DONE;
+            cmnd->req->sr_result = SAM_STAT_CHECK_CONDITION;
+            sense->response            = 0xF0; /* current error + VALID bit */
+            sense->sense_key_and_flags = ILLEGAL_REQUEST;
+            sense->additional_length   = sizeof(*sense) - 7;
+            sense->csi                 = 0;
+            sense->asc                 = 0x20; /* INVALID COMMAND OP CODE */
+            sense->ascq                = 0;
+            sense->fruc                = 0;
+            memset(sense->sks, 0, sizeof(sense->sks));
+            cmnd->req->sr_sense_length = sizeof(*sense);
 			break;
 		}
 	}
