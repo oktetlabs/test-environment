@@ -599,6 +599,7 @@ TARPC_FUNC(wsa_accept,
                     CF_ACCEPT :
                 in->cond.cond_val[i].verdict == TARPC_CF_REJECT ?
                     CF_REJECT : CF_DEFER;
+            cond[i].timeout = in->cond.cond_val[i].timeout;
         }
     }
     MAKE_CALL(out->retval = WSAAccept(in->fd, a,
