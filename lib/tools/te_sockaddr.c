@@ -222,7 +222,7 @@ te_sockaddr_is_multicast(const struct sockaddr *addr)
 
 /* See the description in te_sockaddr.h */
 size_t
-te_netaddr_get_size(sa_family_t af)
+te_netaddr_get_size(int af)
 {
     switch (af)
     {
@@ -242,7 +242,7 @@ te_netaddr_get_size(sa_family_t af)
 
 /* See the description in te_sockaddr.h */
 size_t
-te_sockaddr_get_size_by_af(sa_family_t af)
+te_sockaddr_get_size_by_af(int af)
 {
     switch (af)
     {
@@ -508,7 +508,7 @@ te_sockaddr2str(const struct sockaddr *sa)
 
 /* See the description in te_sockaddr.h */
 void
-te_mreq_set_mr_multiaddr(sa_family_t af, void *mreq, const void *addr)
+te_mreq_set_mr_multiaddr(int af, void *mreq, const void *addr)
 {
     switch (af)
     {
@@ -525,7 +525,7 @@ te_mreq_set_mr_multiaddr(sa_family_t af, void *mreq, const void *addr)
 
 /* See the description in te_sockaddr.h */
 void
-te_mreq_set_mr_interface(sa_family_t af, void *mreq, const void *addr)
+te_mreq_set_mr_interface(int af, void *mreq, const void *addr)
 {
     switch (af)
     {
@@ -543,7 +543,7 @@ te_mreq_set_mr_interface(sa_family_t af, void *mreq, const void *addr)
 #if 0
 /* See the description in te_sockaddr.h */
 void
-te_mreq_set_mr_ifindex(sa_family_t af, void *mreq, int ifindex)
+te_mreq_set_mr_ifindex(int af, void *mreq, int ifindex)
 {
     switch (af)
     {

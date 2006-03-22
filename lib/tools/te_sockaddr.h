@@ -100,7 +100,7 @@ extern "C" {
  * @param af        Address family
  */
 static inline te_bool
-te_sockaddr_is_af_supported(sa_family_t af)
+te_sockaddr_is_af_supported(int af)
 {
     return (af == AF_INET) || (af == AF_INET6);   
 }
@@ -269,7 +269,7 @@ extern te_bool te_sockaddr_is_multicast(const struct sockaddr *addr);
  *
  * @return Address size
  */
-extern size_t te_sockaddr_get_size_by_af(sa_family_t af);
+extern size_t te_sockaddr_get_size_by_af(int af);
 
 /**
  * Returns the size of a particular sockaddr structure according to
@@ -330,7 +330,7 @@ extern const char *te_sockaddr2str(const struct sockaddr *sa);
  *
  * @return Number of bytes used under network address
  */
-extern size_t te_netaddr_get_size(sa_family_t af);
+extern size_t te_netaddr_get_size(int af);
 
 /**
  * Set multicast address part of XXX_mreq(n) structure
@@ -339,7 +339,7 @@ extern size_t te_netaddr_get_size(sa_family_t af);
  * @param mreq          Generic mreq structure
  * @param addr          Multicast address
  */
-extern void te_mreq_set_mr_multiaddr(sa_family_t af,
+extern void te_mreq_set_mr_multiaddr(int af,
                                      void *mreq, const void *addr);
 
 /**
@@ -349,8 +349,7 @@ extern void te_mreq_set_mr_multiaddr(sa_family_t af,
  * @param mreq          Generic mreq structure
  * @param addr          Interface address
  */
-extern void te_mreq_set_mr_interface(sa_family_t af,
-                                     void *mreq, const void *addr);
+extern void te_mreq_set_mr_interface(int af, void *mreq, const void *addr);
 
 /**
  * Set interface index part of XXX_mreq(n) structure
@@ -359,8 +358,7 @@ extern void te_mreq_set_mr_interface(sa_family_t af,
  * @param mreq          Generic mreq structure
  * @param ifindex       Interface index
  */
-extern void te_mreq_set_mr_ifindex(sa_family_t af,
-                                   void *mreq, int ifindex);
+extern void te_mreq_set_mr_ifindex(int af, void *mreq, int ifindex);
 
 
 /**
