@@ -286,7 +286,29 @@ rpc_get_accept_addr(rcf_rpc_server *rpcs,
                                    ss_len + 16, ss_len + 16, 
                                    laddr, &ss_len, raddr, &ss_len);
 }
-                    
+ 
+/**
+ * Transmit data over a connected socket. Data can be transferred
+ * from memory or from file(s).
+ *
+ * @param rpcs          RPC server handle
+ * @param s             connected socket descriptor
+ * @param data          structure describing data sources
+ * @param element_count quantity of data sources
+ * @param send_size     size of data sent by one pass
+ * @param overlapped    @b overlapped object or RPC_NULL
+ * @param flags         call flags
+ *
+ * @return TRUE         if data were successfully sent,
+ *         FALSE        if some error occured
+ *                      (and errno is set to respective value)
+ */
+extern te_bool
+rpc_transmit_packets(rcf_rpc_server *rpcs, int s,
+                     tarpc_transmit_packets_element *data,
+                     ssize_t element_count, ssize_t send_size,
+                     rpc_overlapped overlapped, ssize_t flags);
+
 /**
  * Transmit file data over a connected socket. This function uses the 
  * operating system cache manager to retrive the file data, and perform 
