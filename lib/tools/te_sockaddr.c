@@ -28,6 +28,8 @@
  * $Id$
  */
 
+#ifndef __CYGWIN__
+
 #define TE_LGR_USER      "SockAddr"
 
 #include "te_config.h"
@@ -41,9 +43,6 @@
 #endif
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
-#endif
-#if HAVE_PTHREAD_H
-#include <pthread.h>
 #endif
 
 #include "logger_api.h"
@@ -609,3 +608,4 @@ te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
 }
 #endif
 
+#endif /* __CYGWIN__ */
