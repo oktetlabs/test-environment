@@ -417,7 +417,6 @@ iscsi_target_chap_set(unsigned int gid, const char *oid,
 
     DEVDATA_SET_CHECK;
 
-    iscsi_start_new_session_group();
     iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
                                 "AuthMethod",
                                 *value == '\0' ? "None" : value,
@@ -529,7 +528,6 @@ iscsi_target_oper_set(unsigned int gid, const char *oid,
     }
     else
     {
-        iscsi_start_new_session_group();
         iscsi_configure_param_value(KEY_TO_BE_NEGOTIATED,
                                     map_oid_to_param(oid),
                                     value,
@@ -644,8 +642,6 @@ iscsi_target_backstore_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
     UNUSED(oid);
-
-    iscsi_start_new_session_group();
 
     while (is_backstore_mounted > 0)
         iscsi_target_backstore_unmount();
@@ -785,7 +781,6 @@ iscsi_tgt_verbose_set(unsigned int gid, const char *oid,
     UNUSED(instance);
     UNUSED(oid);
     
-    iscsi_start_new_session_group();
     return iscsi_set_verbose(value) ? 0 : TE_RC(TE_TA_UNIX, TE_EINVAL);
 }
 
