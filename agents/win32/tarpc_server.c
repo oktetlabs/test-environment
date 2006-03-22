@@ -700,14 +700,17 @@ TARPC_FUNC(transmit_packets, {},
                 break;
             
             case TARPC_TP_FILE:
+            {
                 transmit_buffers[i].dwElFlags = TP_ELEMENT_FILE;
                 transmit_buffers[i].hFile = 
                     (HANDLE)in->packet_array.packet_array_val[i].packet_src.
                     tarpc_transmit_packet_source_u.file_data.file;
-                transmit_buffers[i].nFileOffset = (LARGE_INTEGER)
+                transmit_buffers[i].nFileOffset.QuadPart = 
                     in->packet_array.packet_array_val[i].packet_src.
                     tarpc_transmit_packet_source_u.file_data.offset;
                 break;
+             }
+                
             default:
                 ERROR("Incorrect data source: %d",
                       in->packet_array.packet_array_val[i].packet_src.type);
