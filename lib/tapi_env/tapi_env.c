@@ -304,7 +304,8 @@ tapi_env_free(tapi_env *env)
                     VERB("Destroy RPC Server (%s,%s)",
                          pco->rpcs->ta, pco->rpcs->name);
                          
-                    if (pco->created)
+                    if (pco->created && 
+                        !rcf_rpc_server_has_children(pco->rpcs))
                     {
                         rc = rcf_rpc_server_destroy(pco->rpcs);
                         if (rc != 0)
