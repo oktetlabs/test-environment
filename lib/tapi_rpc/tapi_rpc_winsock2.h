@@ -448,7 +448,7 @@ extern te_bool rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
 extern int rpc_create_io_completion_port(rcf_rpc_server *rpcs,
                                          int file_handle,
                                          int existing_completion_port,
-                                         int completion_key,
+                                         uint64_t completion_key,
                                          unsigned int 
                                              number_of_concurrent_threads);
 
@@ -470,7 +470,7 @@ extern int rpc_create_io_completion_port(rcf_rpc_server *rpcs,
 extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
                                  int completion_port,
                                  unsigned int *number_of_bytes,
-                                 int *completion_key,
+                                 uint64_t *completion_key,
                                  rpc_overlapped *overlapped,
                                  unsigned int milliseconds);
 
@@ -488,7 +488,7 @@ extern te_bool rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
 extern te_bool rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
                                  int completion_port,
                                  unsigned int number_of_bytes,
-                                 int completion_key,
+                                 uint64_t completion_key,
                                  rpc_overlapped overlapped);
 
 /**

@@ -764,7 +764,7 @@ int
 rpc_create_io_completion_port(rcf_rpc_server *rpcs,
                               int file_handle,
                               int existing_completion_port,
-                              int completion_key,
+                              uint64_t completion_key,
                               unsigned int number_of_concurrent_threads)
 {
     rcf_rpc_op                          op;
@@ -789,10 +789,10 @@ rpc_create_io_completion_port(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "create_io_completion_port", &in, &out);
 
-    CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(create_io_completion_port, 
-                                      out.retval);
+    CHECK_RETVAL_VAR(create_io_completion_port, 
+                     out.retval, out.retval <= 0, 0);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: CreateIoCompletionPort(%d, %d, %d, %u)"
+    TAPI_RPC_LOG("RPC (%s,%s)%s: CreateIoCompletionPort(%d, %d, %llu, %u)"
                  " -> %x (%s)", rpcs->ta, rpcs->name, rpcop2str(op),
                  file_handle, existing_completion_port,
                  completion_key, number_of_concurrent_threads,
@@ -805,7 +805,7 @@ te_bool
 rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
                                  int completion_port,
                                  unsigned int *number_of_bytes,
-                                 int *completion_key,
+                                 uint64_t *completion_key,
                                  rpc_overlapped *overlapped,
                                  unsigned int milliseconds)
 {
@@ -838,7 +838,7 @@ rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_BOOL(get_queued_completion_status, out.retval);
 
     TAPI_RPC_LOG("RPC (%s,%s)%s: GetQueuedCompletionStatus(%d, %u)"
-                 " -> %s %u, %d, %d (%s)", rpcs->ta, rpcs->name,
+                 " -> %s %u, %llu, %u (%s)", rpcs->ta, rpcs->name,
                  rpcop2str(op), 
                  completion_port, milliseconds,
                  out.retval ? "true" : "false", 
@@ -859,7 +859,7 @@ te_bool
 rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
                                   int completion_port,
                                   unsigned int number_of_bytes,
-                                  int completion_key,
+                                  uint64_t completion_key,
                                   rpc_overlapped overlapped)
 {
     rcf_rpc_op                              op;
@@ -890,7 +890,7 @@ rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_BOOL(post_queued_completion_status, out.retval);
     
     TAPI_RPC_LOG("RPC (%s,%s)%s: PostQueuedCompletionStatus"
-                 "(%d, %u, %d, %u) -> %s (%s)", rpcs->ta,
+                 "(%d, %u, %llu, %u) -> %s (%s)", rpcs->ta,
                  rpcs->name, rpcop2str(op), completion_port,
                  number_of_bytes, completion_key, overlapped, 
                  out.retval ? "true" : "false", 
@@ -1217,7 +1217,7 @@ rpc_completion_callback(rcf_rpc_server *rpcs,
 {
     tarpc_completion_callback_in  in;
     tarpc_completion_callback_out out;
-
+    
     int rc = 0;
 
     memset(&in, 0, sizeof(in));
@@ -1246,13 +1246,13 @@ rpc_completion_callback(rcf_rpc_server *rpcs,
         *bytes = out.bytes;
         *overlapped = (rpc_overlapped)(out.overlapped);
     }
-
+    
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(completion_callback, rc);
 
-    TAPI_RPC_LOG("RPC (%s,%s): completion_callback() -> "
+    TAPI_RPC_LOG("RPC (%s,%s): completion_callback() -> %r "
                  "called %d times;  error %d; bytes %d; overlapped %u",
-                 rpcs->ta, rpcs->name, out.called, out.error, out.bytes,
-                 out.overlapped);
+                 rpcs->ta, rpcs->name, errno_rpc2str(RPC_ERRNO(rpcs)),
+                 out.called, out.error, out.bytes, out.overlapped);
 
     RETVAL_INT(completion_callback, rc);
 }
