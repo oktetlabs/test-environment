@@ -553,7 +553,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     }
 
     conn_descr->seq_got = seq_got;
-    RING("%s seq received %d", __FUNCTION__, seq_got);
+
     if (flags & TCP_ACK_FLAG)
         conn_descr->ack_got = ack_got;
 
