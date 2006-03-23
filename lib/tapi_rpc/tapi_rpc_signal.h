@@ -45,9 +45,9 @@
  * Establish an action to be taken when a given signal @b signum occurs
  * on RPC server.
  *
- * @param rpcs  RPC server handle
- * @param signum signal whose behavior is controlled 
- * @param handler signal handler
+ * @param rpcs      RPC server handle
+ * @param signum    Signal whose behavior is controlled 
+ * @param handler   Signal handler
  *
  * return Pointer to the signal handler function.
  */
@@ -58,9 +58,9 @@ extern char *rpc_signal(rcf_rpc_server *rpcs,
  * Send signal with number @b signum to process or process group 
  * whose pid's @b pid.
  *
- * @param rpcs RPC server handle.
- * @param pid  process or process group pid.
- * @param signum number of signal to be sent.
+ * @param rpcs      RPC server handle
+ * @param pid       Process or process group PID
+ * @param signum    Number of signal to be sent
  *
  * @return 0 on success or -1 on failure
  */
@@ -71,12 +71,12 @@ extern int rpc_kill(rcf_rpc_server *rpcs,
  * Wait for termination of process @b pid or process group whose pid's @b
  * pid.
  *
- * @param rpcs RPC server handle.
- * @param pid  process or process group pid.
- * @param status status of the process.
- * @process options options how to wait for process.
+ * @param rpcs      RPC server handle
+ * @param pid       Process or process group PID
+ * @param status    Status of the process
+ * @param options   Options how to wait for process
  *
- * @return pid of the process exited, or zero if none is exited, 
+ * @return PID of the process exited, or zero if none is exited, 
  *         or -1 on error.
  */
 extern tarpc_pid_t rpc_waitpid(rcf_rpc_server *rpcs,
@@ -103,13 +103,13 @@ typedef struct rpc_struct_sigaction {
  * Allow the calling process to examin or specify the action to be 
  * associated with a given signal.
  *
- * @param rpcs    RPC server handle
- * @param signum  signal number
- * @param act     pointer to a rpc_struct_sigaction structure storing 
- *                information of action to be associated with the signal 
- *                or NULL
- * @param oldact  pointer to previously associated with the signal action 
- *                or NULL
+ * @param rpcs      RPC server handle
+ * @param signum    Signal number
+ * @param act       Pointer to a rpc_struct_sigaction structure storing
+ *                  information of action to be associated with
+ *                  the signal or NULL
+ * @param oldact    Pointer to previously associated with the signal
+ *                  action or NULL
  *
  * @return 0 on success or -1 on failure
  */
@@ -132,7 +132,7 @@ extern rpc_sigset_p rpc_sigset_new(rcf_rpc_server *rpcs);
  * Free allocated using rpc_sigset_new() signal set.
  *
  * @param rpcs      RPC server handle
- * @param set       signal set handler
+ * @param set       Signal set handler
  */
 extern void rpc_sigset_delete(rcf_rpc_server *rpcs, rpc_sigset_p set);
 
