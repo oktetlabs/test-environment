@@ -981,7 +981,13 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    new_ackn = conn_descr->ack_sent;
+    if ((new_ackn = conn_descr->ack_sent) == 0)
+    {
+        /* There was no any ACK sent yet, dont need save new ack
+         *  connection will be broken by this method. */
+        new_ackn = conn_descr->peer_isn; 
+    }
+
 
     INFO("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
     tapi_tcp_template(conn_next_seq(conn_descr), new_ackn, FALSE, TRUE, 
@@ -991,7 +997,7 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
     rc = asn_write_int32(rst_template, flags, "pdus.0.#tcp.flags.#plain");
     if (rc != 0)
     {
-        ERROR("%s(): set fin flag failed %r", 
+        ERROR("%s(): set RST flag failed %r", 
               __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     } 
@@ -1001,7 +1007,7 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
                                rst_template, RCF_MODE_BLOCKING);
     if (rc != 0)
     {
-        ERROR("%s(): send FIN failed %r", __FUNCTION__, rc);
+        ERROR("%s(): send RST failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     } 
     return 0;
