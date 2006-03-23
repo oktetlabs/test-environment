@@ -122,6 +122,11 @@ static pid_t           *tasks = NULL;
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/** Default SIGINT action */
+static struct sigaction sigaction_int;
+/** Default SIGPIPE action */
+static struct sigaction sigaction_pipe;
+
 
 /** Length of pre-allocated list for dead children records. */
 #define TA_CHILDREN_DEAD_MAX 1024
@@ -911,34 +916,29 @@ ta_rtn_unlink(char *arg)
 /**
  * Signal handler to be registered for SIGINT signal.
  * 
- * @param sig   Signal number
- *
  * @note It is declared as non-static to be visible in TA symbol table.
  */
 /* static, see above */ void
-ta_sigint_handler(int sig)
+ta_sigint_handler(void)
 {
     /*
      * We can't log here using TE logging facilities, but we need
      * to make a mark, that TA was killed.
      */
-    fprintf(stderr, "Test Agent killed by %d signal\n", sig);
+    fprintf(stderr, "Test Agent killed by SIGINT\n");
     exit(EXIT_FAILURE);
 }
 
 /**
  * Signal handler to be registered for SIGPIPE signal.
  * 
- * @param sig   Signal number
- *
  * @note It is declared as non-static to be visible in TA symbol table.
  */
 /* static, see above */ void
-ta_sigpipe_handler(int sig)
+ta_sigpipe_handler(void)
 {
     static te_bool here = FALSE;
 
-    UNUSED(sig);
     if (!here)
     {
         here = TRUE;
@@ -1017,7 +1017,6 @@ ta_sigchld_handler(int sig)
     te_bool logger = is_logger_available();
     int     saved_errno = errno;
 
-    UNUSED(sig);
     if (!ta_children_dead_heap_inited)
         ta_children_dead_heap_init();
 
@@ -1446,8 +1445,8 @@ rcf_ch_shutdown(struct rcf_comm_connection *handle,
     UNUSED(buflen);
     UNUSED(answer_plen);
 
-    (void)signal(SIGINT, SIG_DFL);
-    (void)signal(SIGPIPE, SIG_DFL);
+    (void)sigaction(SIGINT, &sigaction_int, NULL);
+    (void)sigaction(SIGPIPE, &sigaction_pipe, NULL);
 
     rc = ta_log_shutdown();
     if (rc != 0)
@@ -1544,6 +1543,8 @@ main(int argc, char **argv)
     
     pthread_t   logfork_tid;
     te_bool     logfork_join = FALSE;
+
+    struct sigaction    sigact;
     
     char buf[16];
     
@@ -1561,11 +1562,32 @@ main(int argc, char **argv)
     /* FIXME */
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);    
 
-    (void)signal(SIGINT, ta_sigint_handler);
-    (void)signal(SIGPIPE, ta_sigpipe_handler);
+    sigact.sa_flags = SA_RESTART;
+    sigfillset(&sigact.sa_mask);
 
-    /* FIXME */
-    (void)signal(SIGCHLD, ta_sigchld_handler);
+    /* FIXME: Is it used by RPC */
+    sigact.sa_handler = ta_sigint_handler;
+    if (sigaction(SIGINT, &sigact, &sigaction_int) != 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Cannot set SIGINT action: %r");
+    }
+
+    /* FIXME: Is it used by RPC */
+    sigact.sa_handler = ta_sigpipe_handler;
+    if (sigaction(SIGPIPE, &sigact, &sigaction_pipe) != 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Cannot set SIGPIPE action: %r");
+    }
+
+    /* FIXME: Is it used by RPC */
+    sigact.sa_handler = ta_sigchld_handler;
+    if (sigaction(SIGCHLD, &sigact, NULL) != 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Cannot set SIGCHLD action: %r");
+    }
     pthread_atfork(NULL, NULL, ta_children_cleanup);
 
     /* FIXME */
