@@ -973,7 +973,7 @@ struct tarpc_file_data {
 union tarpc_transmit_packet_source
     switch (tarpc_transmit_packet_type type)
 {
-    case TARPC_TP_MEM:  tarpc_ptr       buf;
+    case TARPC_TP_MEM:  char            buf<>;
     case TARPC_TP_FILE: tarpc_file_data file_data;
 };
     
@@ -3424,6 +3424,7 @@ define([RPC_DEF], [tarpc_$1_out _$1(tarpc_$1_in *) = counter;])
         RPC_DEF(enum_network_events)
         RPC_DEF(transmit_file)
         RPC_DEF(transmitfile_tabufs)
+        RPC_DEF(transmit_packets)
         RPC_DEF(create_file)
         RPC_DEF(closesocket)
         RPC_DEF(has_overlapped_io_completed)

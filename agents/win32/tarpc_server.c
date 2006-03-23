@@ -599,7 +599,6 @@ TARPC_FUNC(wsa_accept,
                     CF_ACCEPT :
                 in->cond.cond_val[i].verdict == TARPC_CF_REJECT ?
                     CF_REJECT : CF_DEFER;
-            cond[i].timeout = in->cond.cond_val[i].timeout;
         }
     }
     MAKE_CALL(out->retval = WSAAccept(in->fd, a,
@@ -681,7 +680,14 @@ TARPC_FUNC(transmit_packets, {},
 {
     TRANSMIT_PACKETS_ELEMENT   *transmit_buffers;
     rpc_overlapped             *overlapped = IN_OVERLAPPED;
+    rpc_overlapped              tmp;
     int                         i;
+
+    if (overlapped == NULL)
+    {
+        memset(&tmp, 0, sizeof(tmp));
+        overlapped = &tmp;
+    }    
 
     transmit_buffers = (TRANSMIT_PACKETS_ELEMENT *)
                        calloc(in->packet_array.packet_array_len,
@@ -689,6 +695,10 @@ TARPC_FUNC(transmit_packets, {},
     memset(transmit_buffers, 0,
            in->packet_array.packet_array_len *
            sizeof(TRANSMIT_PACKETS_ELEMENT));
+
+    overlapped->buffers = calloc(in->packet_array.packet_array_len,
+                                 sizeof(WSABUF));
+
     for (i = 0; i < in->packet_array.packet_array_len; i++)
     {
         switch (in->packet_array.packet_array_val[i].packet_src.type)
@@ -696,12 +706,25 @@ TARPC_FUNC(transmit_packets, {},
             case TARPC_TP_MEM:
                 transmit_buffers[i].dwElFlags = TP_ELEMENT_MEMORY;
                 transmit_buffers[i].pBuffer =
-                    (PVOID)in->packet_array.packet_array_val[i].packet_src.
-                    tarpc_transmit_packet_source_u.buf;
+                overlapped->buffers[i].buf = in->packet_array.
+                                       packet_array_val[i].packet_src.
+                                       tarpc_transmit_packet_source_u.
+                                       buf.buf_val;
+                overlapped->buffers[i].len = in->packet_array.
+                                       packet_array_val[i].packet_src.
+                                       tarpc_transmit_packet_source_u.
+                                       buf.buf_len;
+                in->packet_array.packet_array_val[i].packet_src.
+                    tarpc_transmit_packet_source_u.buf.buf_val = NULL;
+                in->packet_array.packet_array_val[i].packet_src.
+                    tarpc_transmit_packet_source_u.buf.buf_len = 0;
+                
                 break;
             
             case TARPC_TP_FILE:
             {
+                overlapped->buffers[i].buf = NULL;
+                overlapped->buffers[i].len = 0;
                 transmit_buffers[i].dwElFlags = TP_ELEMENT_FILE;
                 transmit_buffers[i].hFile = 
                     (HANDLE)in->packet_array.packet_array_val[i].packet_src.

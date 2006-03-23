@@ -55,7 +55,6 @@
 #include "te_stdint.h"
 #include "rcf_rpc.h"
 #include "te_rpc_sys_resource.h"
-#include "tapi_rpc_signal.h"
 
 /**
  * Get host value of sizeof(type_name).
@@ -356,7 +355,7 @@ extern void rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start);
  * @param offset   displacement in the destination buffer
  */
 extern void rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
-                        size_t len, rpc_ptr dst_buf, rpc_ptr offset);
+                        size_t len, rpc_ptr dst_buf, size_t offset);
 
 /**
  * Fill @b dst_buf located in TA address space by specified pattern
@@ -405,22 +404,5 @@ extern void rpc_create_child_process_socket(const char *method,
                                             rpc_socket_type sock_type,
                                             rcf_rpc_server **pco_child, 
                                             int *child_s);
-
-/**
- * Wrapper for rpc_sigaction() function to install 'sa_sigaction'
- * with blocking of all signals and @c SA_RESTART flag.
- *
- * @param rpcs      RPC server handle
- * @param signum    Signal number
- * @param handler   Signal handler 'sa_sigaction'
- * @param oldact    Pointer to previously associated with the signal
- *                  action or NULL
- *
- * @return Status code.
- */
-extern te_errno tapi_sigaction_simple(rcf_rpc_server *rpcs,
-                                      rpc_signum signum,
-                                      const char *handler,
-                                      struct rpc_struct_sigaction *oldact);
 
 #endif /* !__TE_TAPI_RPC_MISC_H__ */

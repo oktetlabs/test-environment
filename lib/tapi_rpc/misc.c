@@ -57,7 +57,7 @@
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
 #include "tapi_rpc_winsock2.h"
-
+#include "tapi_rpc_signal.h"
 
 /* See description in tapi_rpc_misc.h */
 tarpc_ssize_t
@@ -943,7 +943,7 @@ rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
  */
 void
 rpc_set_buf(rcf_rpc_server *rpcs, const uint8_t *src_buf,
-            size_t len, rpc_ptr dst_buf, rpc_ptr offset)
+            size_t len, rpc_ptr dst_buf, size_t offset)
 {
     tarpc_set_buf_in  in;
     tarpc_set_buf_out out;
