@@ -553,6 +553,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     }
 
     conn_descr->seq_got = seq_got;
+    RING("%s seq received %d", __FUNCTION__, seq_got);
     if (flags & TCP_ACK_FLAG)
         conn_descr->ack_got = ack_got;
 
@@ -985,11 +986,12 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
     {
         /* There was no any ACK sent yet, dont need save new ack
          *  connection will be broken by this method. */
-        new_ackn = conn_descr->peer_isn; 
+        new_ackn = conn_descr->peer_isn + 1; 
     }
 
+    INFO("%s(conn %d) seq %d, new ack %u",
+         __FUNCTION__, handler, conn_next_seq(conn_descr), new_ackn);
 
-    INFO("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
     tapi_tcp_template(conn_next_seq(conn_descr), new_ackn, FALSE, TRUE, 
                       NULL, 0, &rst_template);
 
