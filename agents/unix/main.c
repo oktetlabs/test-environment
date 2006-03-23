@@ -1009,7 +1009,7 @@ log_child_death(int pid, int status)
  * @note It is declared as non-static to be visible in TA symbol table.
  */
 /* static, see above */ void
-ta_sigchld_handler(int sig)
+ta_sigchld_handler(void)
 {
     int     status;
     int     pid;
