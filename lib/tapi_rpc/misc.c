@@ -1189,3 +1189,41 @@ tapi_rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
 
     return result;
 }
+
+
+/* See the description in tapi_rpc_misc.h */
+te_errno
+tapi_sigaction_simple(rcf_rpc_server *rpcs,
+                      rpc_signum signum, const char *handler,
+                      struct rpc_struct_sigaction *oldact)
+{
+    rpc_struct_sigaction    act;
+    te_errno                rc;
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handler", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (handler == NULL || strlen(handler) >= RCF_RPC_MAX_FUNC_NAME)
+    {
+        ERROR("%s(): Invalid 'handler'", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    memset(&act, 0, sizeof(act));
+    strcpy(act.mm_handler, handler);
+    act.mm_flags = RPC_SA_RESTART | RPC_SA_SIGINFO;
+    act.mm_mask = rpc_sigset_new(rpcs);
+    if (rpc_sigfillset(rpcs, act.mm_mask) != 0)
+        return rpcs->_errno;
+
+    if (rpc_sigaction(rpcs, signum, &act, oldact) != 0)
+        rc = rpcs->_errno;
+    else
+        rc = 0;
+
+    rpc_sigset_delete(rpcs, act.mm_mask);
+
+    return rc;
+}
