@@ -1566,7 +1566,7 @@ main(int argc, char **argv)
     sigfillset(&sigact.sa_mask);
 
     /* FIXME: Is it used by RPC */
-    sigact.sa_handler = ta_sigint_handler;
+    sigact.sa_handler = (void *)ta_sigint_handler;
     if (sigaction(SIGINT, &sigact, &sigaction_int) != 0)
     {
         rc = te_rc_os2te(errno);
@@ -1574,7 +1574,7 @@ main(int argc, char **argv)
     }
 
     /* FIXME: Is it used by RPC */
-    sigact.sa_handler = ta_sigpipe_handler;
+    sigact.sa_handler = (void *)ta_sigpipe_handler;
     if (sigaction(SIGPIPE, &sigact, &sigaction_pipe) != 0)
     {
         rc = te_rc_os2te(errno);
@@ -1582,7 +1582,7 @@ main(int argc, char **argv)
     }
 
     /* FIXME: Is it used by RPC */
-    sigact.sa_handler = ta_sigchld_handler;
+    sigact.sa_handler = (void *)ta_sigchld_handler;
     if (sigaction(SIGCHLD, &sigact, NULL) != 0)
     {
         rc = te_rc_os2te(errno);
