@@ -102,8 +102,12 @@ endif
 
 endif
 
-if CFG_UNIX_AUTH
+if CFG_UNIX_DAEMONS_RADIUS
 MY_SOURCES+=radius.c
+endif
+
+if CFG_UNIX_8021X
+MY_SOURCES+=conf_8021x.c
 endif
 
 if CFG_UNIX_WIFI

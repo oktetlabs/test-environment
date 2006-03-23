@@ -69,6 +69,8 @@ AC_ARG_ENABLE([8021x],
 AC_CACHE_CHECK([whether to enable 802.1x],
                [ac_cv_enable_8021x], [ac_cv_enable_8021x=no])
 
+AM_CONDITIONAL([CFG_UNIX_8021X], test x"$ac_cv_enable_8021x" != xno)
+
 if test x"$ac_cv_enable_8021x" != xno
 then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DENABLE_8021X"
@@ -189,9 +191,8 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_ISC_DHCP_SERVER,
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_VTUND, 
     [expr "$with_cfg_unix_daemons" : ".*vtund" >/dev/null])
 AM_CONDITIONAL(CFG_RCF_RPC, test -n "$with_rcf_rpc")
-AM_CONDITIONAL([CFG_UNIX_AUTH],
-    [test x"$ac_cv_enable_8021x" != xno ||
-     expr "$with_cfg_unix_daemons" : ".*radius" >/dev/null])
+AM_CONDITIONAL([CFG_UNIX_DAEMONS_RADIUS],
+    [expr "$with_cfg_unix_daemons" : ".*radius" >/dev/null])
 AM_CONDITIONAL(ISCSI_TARGET_USE, test -n "$with_iscsi")
 
 

@@ -1023,6 +1023,11 @@ tapi_supp_set_wifi_auth(const char *ta_name, const char *if_name,
                         const tapi_auth_wifi_t *wifi)
 {
     const char *proto;
+    char        supp_oid[128];
+    te_errno    rc;
+
+    snprintf(supp_oid, sizeof(supp_oid),
+             "/agent:%s/interface:%s/supplicant:", ta_name, if_name);
 
     switch (wifi->proto)
     {
@@ -1040,11 +1045,13 @@ tapi_supp_set_wifi_auth(const char *ta_name, const char *if_name,
                   wifi->proto);
             return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    return cfg_set_instance_fmt(CFG_VAL(STRING, proto),
-                                "/agent:%s/interface:%s/supplicant:/proto:",
-                                ta_name, if_name);
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, proto),
+                                   "%s/proto:", supp_oid)) != 0)
+        return rc;
 
     /* TODO setting cipher */
+
+    return cfg_commit_fmt(supp_oid);
 }
 
 /* See the description in tapi_radius.h */
@@ -1059,10 +1066,10 @@ tapi_supp_set_auth(const char *ta_name, const char *if_name,
              "/agent:%s/interface:%s/supplicant:", ta_name, if_name);
 
 #define SUPP_SET_PARAM(_field, _suboid) \
-    do {                                                                \
-        if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, info->_field),   \
-                                       "%s" _suboid, supp_oid)) != 0)   \
-        return rc;                                                      \
+    do {                                                                    \
+        if ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, info->_field), \
+                                             "%s" _suboid, supp_oid)) != 0) \
+        return rc;                                                          \
     } while (FALSE)
 
     SUPP_SET_PARAM(identity, "/identity:");
@@ -1076,8 +1083,11 @@ tapi_supp_set_auth(const char *ta_name, const char *if_name,
             SUPP_SET_PARAM(tls.root_cert_fname, "/eap-tls:/root_cert:");
 
             /* Set current key management type to EAP-TLS */
-            return cfg_set_instance_fmt(CFG_VAL(STRING, "eap-tls"),
-                                        "%s/cur_method:", supp_oid);
+            if ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, "eap-tls"),
+                                                 "%s/cur_method:",
+                                                 supp_oid)) != 0)
+                return rc;
+
             break;
 
         case TAPI_AUTH_EAP_MD5:
@@ -1086,15 +1096,20 @@ tapi_supp_set_auth(const char *ta_name, const char *if_name,
             SUPP_SET_PARAM(md5.passwd, "/eap-md5:/passwd:");
 
             /* Now set current key management type to EAP-MD5 */
-            return cfg_set_instance_fmt(CFG_VAL(STRING, "eap-md5"),
-                                        "%s/cur_method:", supp_oid);
+            if ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, "eap-md5"),
+                                                 "%s/cur_method:",
+                                                 supp_oid)) != 0)
+                return rc;
+
             break;
 
         default:
             ERROR("%s(): unknown EAP type %d", __FUNCTION__, info->eap_type);
+            return TE_RC(TE_TAPI, TE_EINVAL);
     }
 #undef SUPP_SET_PARAM
-    return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return cfg_commit_fmt(supp_oid);
 }
 
 te_errno
@@ -1107,7 +1122,8 @@ tapi_supp_reset(const char *ta_name, const char *if_name)
              "/agent:%s/interface:%s/supplicant:", ta_name, if_name);
 
 #define SUPP_SET_EMPTY(_suboid) \
-    rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""), "%s" _suboid, supp_oid); \
+    rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, ""), "%s" _suboid,      \
+                                    supp_oid);                              \
     if (rc != 0)                                                            \
         return rc;
 
@@ -1124,5 +1140,5 @@ tapi_supp_reset(const char *ta_name, const char *if_name)
     SUPP_SET_EMPTY("/eap-tls:/root_cert:");
 #undef SUPP_SET_EMPTY
 
-    return rc;
+    return cfg_commit_fmt(supp_oid);
 }
