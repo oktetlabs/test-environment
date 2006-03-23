@@ -403,17 +403,17 @@ tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
     else
         return EINVAL;
 
-    p += sprintf(p, "Opcode = 0x%2x, ", opcode);
+    p += sprintf(p, "Opcode = 0x%02x, ", opcode);
 
     switch (opcode)
     {
         case 0x01: /* SCSI Command */
-            p += sprintf(p, "SCSI Opcode = 0x%2x, ", data[32]);
+            p += sprintf(p, "SCSI Opcode = 0x%02x, ", data[32]);
             p += sprintf(p, "SCSI CmdSN = %d, ", ntohl(*((int *)(data + 24)))); 
             break;
         case 0x21: /* SCSI Response */
             p += sprintf(p, "SCSI StatSN = %d, ", ntohl(*((int *)(data + 24)))); 
-            p += sprintf(p, "SCSI Opcode = 0x%2x, ", data[3]);
+            p += sprintf(p, "SCSI Opcode = 0x%02x, ", data[3]);
             break;
         default:
             break;
