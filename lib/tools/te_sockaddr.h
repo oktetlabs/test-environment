@@ -282,6 +282,20 @@ extern size_t te_sockaddr_get_size_by_af(int af);
 extern size_t te_sockaddr_get_size(const struct sockaddr *addr);
 
 /**
+ * Create mask in 'struct sockaddr' by prefix length.
+ *
+ * @param mask      Location for mask
+ * @param masklen   Size of the memory for mask
+ * @param af        Address family
+ * @param prefix    Prefix length
+ *
+ * @return Status code.
+ */
+extern te_errno te_sockaddr_mask_by_prefix(struct sockaddr *mask,
+                                           socklen_t masklen,
+                                           int af, unsigned int prefix);
+
+/**
  * Compare 'struct sockaddr'.
  *
  * @param a1        the first address
