@@ -126,6 +126,8 @@ wsp_proto_rpc2h(int socktype, int proto)
 
     if (use_private_wsp)
     {
+        RING("WSP usage mode: PRIVATE");
+
         switch (proto_h)
         {
             case IPPROTO_TCP:
@@ -149,6 +151,10 @@ wsp_proto_rpc2h(int socktype, int proto)
                 }
                 break;
         }
+    }
+    else
+    {
+        RING("WSP usage mode: PUBLIC");
     }
 
     return proto_h;
