@@ -912,8 +912,10 @@ ta_rtn_unlink(char *arg)
  * Signal handler to be registered for SIGINT signal.
  * 
  * @param sig   Signal number
+ *
+ * @note It is declared as non-static to be visible in TA symbol table.
  */
-static void
+/* static, see above */ void
 ta_sigint_handler(int sig)
 {
     /*
@@ -928,8 +930,10 @@ ta_sigint_handler(int sig)
  * Signal handler to be registered for SIGPIPE signal.
  * 
  * @param sig   Signal number
+ *
+ * @note It is declared as non-static to be visible in TA symbol table.
  */
-static void
+/* static, see above */ void
 ta_sigpipe_handler(int sig)
 {
     static te_bool here = FALSE;
@@ -1001,8 +1005,10 @@ log_child_death(int pid, int status)
 
 /**
  * Wait for a child and log its exit status information.
+ *
+ * @note It is declared as non-static to be visible in TA symbol table.
  */
-static void
+/* static, see above */ void
 ta_sigchld_handler(int sig)
 {
     int     status;
