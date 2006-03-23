@@ -145,9 +145,6 @@ tad_iscsi_read_cb(csap_p csap, unsigned int timeout,
     F_ENTRY(CSAP_LOG_FMT "timeout=%u pkt=%p pkt_len=%p",
             CSAP_LOG_ARGS(csap), timeout, pkt, pkt_len);
 
-    INFO("%s(CSAP %d) called, wait len %d, timeout %d",
-         __FUNCTION__, csap->id, layer_data->wait_length, timeout);
-
     if (layer_data->wait_length == 0)
     {
         assert(layer_data->stored_length == 0);
@@ -158,6 +155,10 @@ tad_iscsi_read_cb(csap_p csap, unsigned int timeout,
         assert(layer_data->wait_length > layer_data->stored_length);
         len = layer_data->wait_length - layer_data->stored_length;
     }
+
+    INFO("%s(CSAP %d) called, wait len %d, stored len %u, len=%u timeout %d",
+         __FUNCTION__, csap->id, layer_data->wait_length,
+     (unsigned)layer_data->stored_length, len, timeout);
 
     if (seg == NULL)
     {
@@ -261,6 +262,7 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     int         fd;
     te_errno    rc = 0;
     ssize_t     sent = 0;
+    size_t      total = 0;
 
     tad_iscsi_rw_data      *rw_data = csap_get_rw_data(csap);
     tad_iscsi_layer_data   *layer_data =
@@ -275,20 +277,33 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     switch (layer_data->send_mode)
     { 
         case ISCSI_SEND_USUAL:
-            sent = send(fd, buf, buf_len, MSG_DONTWAIT);
-            if (sent < 0)
-            {
-                rc = te_rc_os2te(errno); 
-                if (rc == TE_EAGAIN)
+            do {
+                sent = send(fd, buf + total, buf_len - total, MSG_DONTWAIT);
+                if (sent < 0)
                 {
-                    struct timeval tv = {0, 1000};
+                    rc = te_rc_os2te(errno); 
+                    if (rc == TE_EAGAIN)
+                    {
+                        struct timeval tv = {3, 0};
+            fd_set         set;
 
-                    select(0, NULL, NULL, NULL, &tv); 
-                    sent = send(fd, buf, buf_len, MSG_DONTWAIT);
-                    if (sent < 0)
-                        rc = te_rc_os2te(errno); 
-                } 
+            FD_ZERO(&set);
+            FD_SET(fd, &set);
+                        if (select(fd + 1, NULL, &set, NULL, &tv) <= 0)
+            {
+                           rc = te_rc_os2te(errno);
+               break;
             }
+            rc = 0;
+            }
+            else
+            break;
+                } 
+                else
+                { 
+                    total += sent;
+                } 
+            } while (total != buf_len);
             break;
 
         case ISCSI_SEND_LAST:
@@ -314,7 +329,7 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     else
     {
         RING("%s(CSAP %u) written %d bytes to fd %d", 
-             __FUNCTION__, csap->id, (int)sent, fd);
+             __FUNCTION__, csap->id, (int)total, fd);
     }
 
     return TE_RC(TE_TAD_CSAP, rc);
