@@ -394,6 +394,19 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
     return 0;
 }
 
+int
+tapi_tcp_wait_msg(tapi_tcp_handler_t handler, int timeout)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    /* It is simply wrapper for external use of static inline method. */
+    return conn_wait_msg(conn_descr, timeout);
+}
+
+
 
 static inline tapi_tcp_msg_queue_t *
 conn_get_oldest_msg(tapi_tcp_connection_t *conn_descr)

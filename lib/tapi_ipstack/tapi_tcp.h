@@ -460,6 +460,21 @@ extern int tapi_tcp_destroy_connection(tapi_tcp_handler_t handler);
 extern int tapi_tcp_wait_open(tapi_tcp_handler_t hanlder, int timeout);
 
 /**
+ * Wait for some incoming message in emulated TCP connection. 
+ * If message was got, all internal state fields will be updated
+ * in accordance. If it was PUSH, it will be stored in internal buffer, 
+ * and may be got with tapi_tcp_recv_msg(). 
+ *
+ * @param handler       TAPI handler of TCP connection;
+ * @param timeout       time in milliseconds, while TA should wait for 
+ *                      SYN or ACK for his SYN;
+ *
+ * @return Status code
+ */ 
+extern int tapi_tcp_wait_msg(tapi_tcp_handler_t handler, int timeout);
+
+
+/**
  * Send FIN in TCP connection, and wait ACK for it.
  * This is either part of close process, or shutdown for writing.
  * This method blocks until ACK will be received. 
