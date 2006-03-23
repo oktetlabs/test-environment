@@ -1211,6 +1211,9 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
+    if (oldact != NULL && oldact->mm_mask == RPC_NULL)
+        oldact->mm_mask = rpc_sigset_new(rpcs);
+
     memset(&act, 0, sizeof(act));
     strcpy(act.mm_handler, handler);
     act.mm_flags = RPC_SA_RESTART | RPC_SA_SIGINFO;

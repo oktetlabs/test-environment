@@ -234,6 +234,35 @@
     } while (0)
 
 /**
+ * Restore signal action set before the test
+ *
+ * @param rpcs_         RPC server handle
+ * @param signum_       Signal number
+ * @param action_       Signal action to restore
+ * @param old_handler_  Expected value of rpc_signal function, NULL
+ *                      if we do not want to check return value
+ */
+#define CLEANUP_RPC_SIGACTION(rpcs_, signum_, action_, old_handler_) \
+    do {                                                                \
+        if ((rpcs_ != NULL) && (action_) != NULL )                      \
+        {                                                               \
+            rpc_struct_sigaction    _old_act;                           \
+                                                                        \
+            rpc_sigaction((rpcs_), (signum_), (action_), &_old_act);    \
+            rpc_sigset_delete((rpcs_), (action_)->mm_mask);             \
+            if ((old_handler_) != NULL)                                 \
+            {                                                           \
+                if (strcmp(_old_act.mm_handler, (old_handler_)) != 0)   \
+                {                                                       \
+                    ERROR("Value returned from rpc_sigaction() is "     \
+                          "not the same as expected ");                 \
+                    MACRO_TEST_ERROR;                                   \
+                }                                                       \
+            }                                                           \
+        }                                                               \
+    } while (0)
+
+/**
  * Close a socket in cleanup part of the test
  *
  * @param rpcs_     RPC server handle
