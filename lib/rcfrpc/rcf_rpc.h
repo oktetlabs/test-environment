@@ -365,7 +365,7 @@ rcf_rpc_free_result(void *out_arg, xdrproc_t out_proc)
 /**
  * Convert RCF RPC operation to string.
  *
- * @param op    - RCF RPC operation
+ * @param op      RCF RPC operation
  *
  * @return null-terminated string
  */
@@ -382,5 +382,14 @@ rpcop2str(rcf_rpc_op op)
     }
     return " (unknown)";
 }
+
+/**
+ * Check is the RPC server has children.
+ *
+ * @param rpcs          RPC server
+ *
+ * @return TRUE if RPC server has children
+ */
+extern te_bool rcf_rpc_server_has_children(rcf_rpc_server *rpcs);
 
 #endif /* !__TE_RCF_RPC_H__ */

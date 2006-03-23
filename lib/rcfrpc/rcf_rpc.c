@@ -727,3 +727,46 @@ rcf_ta_call_rpc(const char *ta_name, int session,
 #undef INSIDE_LEN    
 #undef PREFIX_LEN    
 }
+
+/**
+ * Check is the RPC server has children.
+ *
+ * @param rpcs          RPC server
+ *
+ * @return TRUE if RPC server has children
+ */
+te_bool
+rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
+{
+    unsigned int num, i;
+    cfg_handle  *servers;
+    
+    if (rpcs == NULL)
+        return FALSE;
+    
+    if (cfg_find_pattern_fmt(&num, &servers, "/agent:%s/rpcserver:*",
+                             rpcs->ta) != 0)
+    {
+        return FALSE;
+    }
+    
+    for (i = 0; i < num; i++)
+    {
+        char *name;
+        
+        if (cfg_get_instance(servers[i], NULL, &name) != 0)
+            continue;
+            
+        if (strcmp_start("thread_", name) == 0 &&
+            strcmp(name + strlen("thread_"), rpcs->name) == 0)
+        {
+            free(name);
+            free(servers);
+            return TRUE;
+        }
+        free(name);
+    }              
+    
+    free(servers);
+    return FALSE;    
+}
