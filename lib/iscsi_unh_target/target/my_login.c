@@ -822,7 +822,7 @@ iscsi_tx_data(struct iscsi_conn *conn, struct iovec *iov, int niov, int data)
         TRACE_BUFFER(DEBUG, buffer, iov->iov_len, "sending PDU chunk");
         while (current_tx < iov->iov_len) 
         {
-            TRACE(DEBUG, "iscsi_tx_data: niov %d, data %d, total_tx %d",
+            TRACE(DEBUG, "iscsi_tx_data: niov %d, data %u, total_tx %u",
                   i, iov->iov_len, current_tx);
 
             tx_loop = send(conn->conn_socket, buffer, (iov->iov_len - current_tx), 0);
@@ -2147,7 +2147,7 @@ build_conn_sess(int sock, int custom_id, struct portal_group *ptr)
         return NULL;
     }
 
-    TRACE(DEBUG, "new conn %p for sock %p", conn, sock);
+    TRACE(DEBUG, "new conn %p for sock %d", conn, sock);
     memset(conn, 0, sizeof(struct iscsi_conn));
 
     INIT_LIST_HEAD(&conn->conn_link);
@@ -3668,8 +3668,8 @@ fill_iovec(struct iovec *iov, int p, int niov,
 
 		data -= iov->iov_len;
 
-		TRACE(DEBUG, "iov %p, p %d, iov_base %p, iov_len %d", iov,
-			  p, iov->iov_base, iov->iov_len);
+		TRACE(DEBUG, "iov %p, p %d, iov_base %p, iov_len %u", iov,
+			  p, iov->iov_base, (unsigned)iov->iov_len);
 
 		p++;
 		iov++;

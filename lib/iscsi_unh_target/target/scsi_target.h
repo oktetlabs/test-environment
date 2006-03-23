@@ -397,6 +397,69 @@ Target_Scsi_Message*	rx_task_mgmt_fn	(Scsi_Target_Device*,int,void*);
 /** Default size of an iSCSI backing store in 512-blocks */
 #define DEFAULT_STORAGE_SIZE   16384
 
+struct scsi_report_luns_payload
+{
+    uint8_t  opcode;
+    uint8_t  reserved;
+    uint8_t  select_report;
+    uint16_t reserved2;
+    uint32_t length;
+    uint8_t  reserved3;
+    uint8_t  control;
+} __attribute__ ((packed));
+
+typedef struct scsi_report_luns_payload scsi_report_luns_payload;
+
+
+struct scsi_inquiry_payload
+{
+    uint8_t opcode;
+    uint8_t lun_and_flags;
+    uint8_t page_code;
+    uint16_t length;
+    uint8_t control;
+} __attribute__ ((packed));
+
+typedef struct scsi_inquiry_payload scsi_inquiry_payload;
+
+struct scsi_io6_payload
+{
+    uint8_t  opcode;
+    uint8_t  lun_and_lba;
+    uint16_t lba;
+    uint8_t  length;
+    uint8_t  control;
+} __attribute__ ((packed));
+
+typedef struct scsi_io6_payload scsi_io6_payload;
+
+struct scsi_io10_payload
+{
+    uint8_t  opcode;
+    uint8_t  lun_and_flags;
+    uint32_t lba;
+    uint8_t  reserved;
+    uint16_t length;
+    uint8_t  control;
+} __attribute__ ((packed));
+
+typedef struct scsi_io10_payload scsi_io10_payload;
+
+struct scsi_io12_payload
+{
+    uint8_t  opcode;
+    uint8_t  lun_and_flags;
+    uint32_t lba;
+    uint32_t length;
+    uint8_t  reserved;
+    uint8_t  control;
+} __attribute__ ((packed));
+
+typedef struct scsi_io12_payload scsi_io12_payload;
+
+
+extern const char *get_scsi_command_name(int code);
+
 extern int scsi_target_init(void);
 extern void scsi_target_cleanup(void);
 

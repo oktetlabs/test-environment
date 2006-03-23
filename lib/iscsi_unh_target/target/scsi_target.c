@@ -114,6 +114,7 @@ struct target_map_item
     int              sense_key;
     int              asc;
     int              ascq;
+    uint32_t         reservation;
 };
 
 	/* doubly-linked circular list, one entry for every iscsi target
@@ -1570,67 +1571,59 @@ allocate_report_lun_space(Target_Scsi_Cmnd * cmnd)
  * INPUT: pointer to command received
  * OUTPUT: buffer needing to be allocated or < 0 if there is an error
  */
-static uint32_t __attribute__ ((no_instrument_function))
+static uint32_t 
 get_allocation_length(uint8_t *cmd)
 {
-	uint32_t err = 0;
-
-
-	switch (cmd[0]) {
-	case INQUIRY:
-	case MODE_SENSE:
-	case MODE_SELECT:
+    uint32_t length = 0;
+    
+	switch (cmd[0]) 
+    {
+        case INQUIRY:
+        case MODE_SENSE:
+        case MODE_SELECT:
 		{
-			err = cmd[ALLOC_LEN_6];
-			TRACE(VERBOSE,
-                  "get_allocation_length: INQUIRY/MODE SENSE/MODE SELECT length %d",
-                  err);
+            struct scsi_inquiry_payload *payload = (void *)cmd;
+            length = ntohs(payload->length);
+            break;
+		}
+        
+        case WRITE_10:
+        case READ_10:
+        case VERIFY:
+		{
+            struct scsi_io10_payload *payload = (void *)cmd;
+            length = ntohs(payload->length) * SCSI_BLOCKSIZE;
 			break;
 		}
-
-	case WRITE_10:
-	case READ_10:
-	case VERIFY:
+        case REPORT_LUNS:
 		{
-			err = (cmd[ALLOC_LEN_10] << BYTE) + cmd[ALLOC_LEN_10 + 1];
-			err *= SCSI_BLOCKSIZE;
-			TRACE(VERBOSE, 
-                  "get_allocation_length: READ_10/WRITE_10 length %d", err);
+            struct scsi_report_luns_payload *payload = (void *)cmd;
+            length = ntohl(payload->length);
 			break;
 		}
-
-		/* cdeng, August 24 2002, Report luns */
-	case REPORT_LUNS:
+        case READ_12:
+        case WRITE_12:
+        {
+            struct scsi_io12_payload *payload = (void *)cmd;
+            length = ntohl(payload->length) * SCSI_BLOCKSIZE;
+            break;
+        }
+        
+        case READ_6:
+        case WRITE_6:
 		{
-			/* Bjorn Thordarson, 10 May 2004 */
-			/*****
-			err = (cmd[6] << 24) + (cmd[7] << 16) + (cmd[8] << 8) + cmd[9];
-			*****/
-			err = 0;
-
-			TRACE(VERBOSE,
-                  "get_allocation_length: REPORT_LUNS length %d - FIXME", err);
+            struct scsi_io6_payload *payload = (void *)cmd;
+            length = payload->length * SCSI_BLOCKSIZE;
 			break;
 		}
-
-	case READ_6:
-	case WRITE_6:
-		{
-			err = cmd[4] * SCSI_BLOCKSIZE;
-			if (err == 0)
-				err = 256 * SCSI_BLOCKSIZE;
-			TRACE(VERBOSE,
-                  "get_allocation_length: READ_6/WRITE_6 length %d", err);
-			break;
-		}
-	default:
-		{
-			TRACE_ERROR("get_allocation_length: unknown command 0x%02x\n", cmd[0]);
-			break;
-		}
+        default:
+        {
+            TRACE_ERROR("Unknown SCSI command: %d, length set to 0", cmd[0]);
+        }
 	}
-
-	return err;
+    TRACE(VERBOSE, "allocation length for %s is %u", 
+          get_scsi_command_name(cmd[0]), length);
+    return length;
 }
 
 /*
@@ -1837,40 +1830,6 @@ get_report_luns_response(Target_Scsi_Cmnd *cmnd, uint32_t len)
 	return 0;
 }
 
-struct scsi_io6_payload
-{
-    uint8_t  opcode;
-    uint8_t  lun_and_lba;
-    uint16_t lba;
-    uint8_t  length;
-    uint8_t  control;
-} __attribute__ ((packed));
-
-typedef struct scsi_io6_payload scsi_io6_payload;
-
-struct scsi_io10_payload
-{
-    uint8_t  opcode;
-    uint8_t  lun_and_flags;
-    uint32_t lba;
-    uint8_t  reserved;
-    uint16_t length;
-    uint8_t  control;
-} __attribute__ ((packed));
-
-typedef struct scsi_io10_payload scsi_io10_payload;
-
-struct scsi_io12_payload
-{
-    uint8_t  opcode;
-    uint8_t  lun_and_flags;
-    uint32_t lba;
-    uint32_t length;
-    uint8_t  reserved;
-    uint8_t  control;
-} __attribute__ ((packed));
-
-typedef struct scsi_io12_payload scsi_io12_payload;
 
 static te_bool
 iscsi_accomodate_buffer (struct target_map_item *target, uint32_t size)
@@ -2066,8 +2025,8 @@ do_scsi_write(Target_Scsi_Cmnd *command, uint8_t lun,
     struct scatterlist *st_list = command->req->sr_buffer;
     int                 st_idx;
 
-    TRACE(NORMAL, "Doing write to lun %u at %lx",
-          lun, offset);
+    TRACE(NORMAL, "Doing write to lun %u at %x",
+          lun, (unsigned)offset);
     dataptr = target->buffer + offset;
     for (st_idx = 0; st_idx < command->req->sr_use_sg; st_idx++)
     {
@@ -2210,8 +2169,8 @@ aen_notify(int fn, uint64_t lun)
 #endif
 }
 
-static 
-const char *scsi_command_name(int code)
+const char *
+get_scsi_command_name(int code)
 {
     static struct 
     {
@@ -2330,7 +2289,7 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 
 	TRACE(VERBOSE, "Entering MEMORYIO handle_cmd");
 	TRACE(VERBOSE, "%s received", 
-          scsi_command_name(cmnd->req->sr_cmnd[0]));
+          get_scsi_command_name(cmnd->req->sr_cmnd[0]));
 
 	switch (cmnd->req->sr_cmnd[0]) {
         case READ_CAPACITY:
@@ -2573,7 +2532,6 @@ handle_cmd(Target_Scsi_Cmnd * cmnd)
 			err = 0;
 			break;
 		}
-
         default:
 		{
             struct scsi_fixed_sense_data *sense = 
