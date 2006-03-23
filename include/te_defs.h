@@ -127,10 +127,16 @@ typedef unsigned char te_bool;
 
 /** Cast to 'struct sockaddr *' type. */
 #define SA(_p)          ((struct sockaddr *)(_p))
+/** Cast to 'const struct sockaddr *' type. */
+#define CONST_SA(_p)    ((const struct sockaddr *)(_p))
 /** Cast to 'struct sockaddr_in *' type. */
 #define SIN(_p)         ((struct sockaddr_in *)(_p))
+/** Cast to 'const struct sockaddr_in *' type. */
+#define CONST_SIN(_p)   ((const struct sockaddr_in *)(_p))
 /** Cast to 'struct sockaddr_in6 *' type. */
 #define SIN6(_p)        ((struct sockaddr_in6 *)(_p))
+/** Cast to 'const struct sockaddr_in6 *' type. */
+#define CONST_SIN6(_p)  ((const struct sockaddr_in6 *)(_p))
 
 
 /** Convert seconds to milliseconds. */
