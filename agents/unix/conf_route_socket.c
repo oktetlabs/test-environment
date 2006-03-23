@@ -1,5 +1,5 @@
 /** @file
- * @brief Unix Test Agent
+ * @crief Unix Test Agent
  *
  * Unix TA routing configuring support using routing sockets interface.
  *
@@ -61,6 +61,7 @@
 #endif
 
 #include "te_errno.h"
+#include "te_sockaddr.h"
 #include "logger_api.h"
 #include "rcf_pch_ta_cfg.h"
 #include "unix_internal.h"
@@ -350,7 +351,7 @@ route_log(const struct rt_msghdr *rtm)
     char                    inits[64];
     char                    locks[64];
     char                    addrs[RTAX_MAX][100];
-    const struct sockaddr  *addr = (const struct sockaddr *)(rtm + 1);
+    const struct sockaddr  *addr = CONST_SA(rtm + 1);
     socklen_t               addrlen;
     unsigned int            i;
 
@@ -375,7 +376,7 @@ route_log(const struct rt_msghdr *rtm)
                 ERROR("Unknown address family %u", addr->sa_family);
                 break;
             }
-            addr = (const struct sockaddr *)(((uint8_t *)addr) + addrlen);
+            addr = CONST_SA(((uint8_t *)addr) + addrlen);
         }
         else
         {
@@ -442,65 +443,33 @@ route_log(const struct rt_msghdr *rtm)
 static te_errno
 rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
 {
-    const struct sockaddr  *addr = (const struct sockaddr *)(msg + 1);
+    const struct sockaddr  *addr = CONST_SA(msg + 1);
     socklen_t               addrlen;
 
     rt_info->flags = 0;
 
     if (msg->rtm_addrs & RTA_DST)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
+        addrlen = te_sockaddr_get_size(addr);
         memcpy(&rt_info->dst, addr, addrlen);
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
+    }
+    else
+    {
+        WARN("Route without destination address specification");
     }
 
     if (msg->rtm_addrs & RTA_GATEWAY)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
+        addrlen = te_sockaddr_get_size(addr);
         memcpy(&rt_info->gw, addr, addrlen);
         rt_info->flags |= TA_RT_INFO_FLG_GW;
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 
     if (msg->rtm_addrs & RTA_NETMASK)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
+        addrlen = te_sockaddr_get_size(addr);
         if (addr->sa_family == AF_INET)
         {
             MASK2PREFIX(ntohl(SIN(addr)->sin_addr.s_addr),
@@ -510,136 +479,52 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
             rt_info->prefix = 0; /* FIXME */
         else
             assert(FALSE);
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 
     if (msg->rtm_addrs & RTA_GENMASK)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addrlen = te_sockaddr_get_size(addr);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 
     if (msg->rtm_addrs & RTA_IFP)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addrlen = te_sockaddr_get_size(addr);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 
     if (msg->rtm_addrs & RTA_IFA)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addrlen = te_sockaddr_get_size(addr);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 
     if (msg->rtm_addrs & RTA_AUTHOR)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addrlen = te_sockaddr_get_size(addr);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 
     if (msg->rtm_addrs & RTA_BRD)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addrlen = te_sockaddr_get_size(addr);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 
 #ifdef RTA_SRC
     if (msg->rtm_addrs & RTA_SRC)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addrlen = te_sockaddr_get_size(addr);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 #endif
 
 #ifdef RTA_SRCIFP
     if (msg->rtm_addrs & RTA_SRCIFP)
     {
-#if HAVE_STRUCT_SOCKADDR_SA_LEN
-        addrlen = addr->sa_len;
-#else
-        if (addr->sa_family == AF_INET)
-            addrlen = sizeof(struct sockaddr_in);
-        else if (addr->sa_family == AF_INET6)
-            addrlen = sizeof(struct sockaddr_in6);
-        else
-        {
-            ERROR("Unknown address family %u", addr->sa_family);
-            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
-#endif
-        addr = (const struct sockaddr *)(((const uint8_t *)addr) + addrlen);
+        addrlen = te_sockaddr_get_size(addr);
+        addr = CONST_SA(((const uint8_t *)addr) + addrlen);
     }
 #endif
 
@@ -662,6 +547,152 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
     /* TODO: Wiser mapping */
     rt_info->type = (msg->rtm_flags & RTF_BLACKHOLE) ?
                         TA_RT_TYPE_BLACKHOLE : TA_RT_TYPE_UNICAST;
+
+    return 0;
+}
+
+/**
+ * Convert system-independent route representation to routing socket
+ * message.
+ *
+ * @param action    Action
+ * @param rt_info   System-independed route representation
+ * @param msg       Routing socket message
+ * @param msglen    Length of memory buffer for the message
+ *
+ * @return Status code.
+ */
+static te_errno
+ta_rt_info_to_rt_msghdr(ta_cfg_obj_action_e action,
+                        const ta_rt_info_t *rt_info,
+                        struct rt_msghdr *msg, size_t msglen)
+{
+    struct sockaddr    *addr = SA((msg + 1));
+    socklen_t           addrlen;
+    te_errno            rc;
+
+    if (msglen < sizeof(*msg))
+        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+    msglen -= sizeof(*msg);
+
+    memset(msg, 0, sizeof(*msg));
+    msg->rtm_msglen = sizeof(*msg);
+    msg->rtm_version = RTM_VERSION;
+    switch (action)
+    {
+        case TA_CFG_OBJ_CREATE:
+            msg->rtm_type = RTM_ADD;
+            break;
+
+        case TA_CFG_OBJ_DELETE:
+            msg->rtm_type = RTM_DELETE;
+            break;
+
+        case TA_CFG_OBJ_SET:
+            msg->rtm_type = RTM_CHANGE;
+            break;
+
+        default:
+            ERROR("Route action %u is supported", (unsigned)action);
+            return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    }
+    /* msg->rtm_index is 0 */
+    msg->rtm_pid = getpid();
+    /* msg->rtm_addrs is 0 */
+    msg->rtm_seq = ++rt_seq;
+    /* msg->rtm_errno is 0 */
+    /* msg->rtm_flags is 0 */
+    /* msg->rtm_use is 0 */
+    /* msg->rtm_inits is 0 */
+    /* msg->rtm_rmx has all zeros */
+
+    /* Route type */
+    switch (rt_info->type)
+    {
+        case TA_RT_TYPE_UNICAST:
+            break;
+
+        case TA_RT_TYPE_BLACKHOLE:
+            msg->rtm_flags |= RTF_BLACKHOLE;
+            break;
+
+        default:
+            ERROR("Routes of type %d are not supported yet");
+            return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    }
+
+    /* Destination */
+    addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->dst));
+    if (msglen < addrlen)
+        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+    msglen -= addrlen;
+    msg->rtm_msglen += addrlen;
+    memcpy(addr, &rt_info->dst, addrlen);
+    msg->rtm_addrs |= RTA_DST;
+    addr = SA(((const uint8_t *)addr) + addrlen);
+
+    /* Gateway */
+    if (rt_info->flags & TA_RT_INFO_FLG_GW)
+    {
+        addrlen = te_sockaddr_get_size(CONST_SA(&rt_info->gw));
+        if (msglen < addrlen)
+            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        msglen -= addrlen;
+        msg->rtm_msglen += addrlen;
+        memcpy(addr, &rt_info->gw, addrlen);
+        msg->rtm_addrs |= RTA_GATEWAY;
+        addr = SA(((const uint8_t *)addr) + addrlen);
+    }
+
+    /* Netmask */
+    addrlen = te_sockaddr_get_size_by_af(rt_info->dst.ss_family);
+    if (msglen < addrlen)
+        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+    msglen -= addrlen;
+    msg->rtm_msglen += addrlen;
+    rc = te_sockaddr_mask_by_prefix(addr, addrlen, rt_info->dst.ss_family,
+                                    rt_info->prefix);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+    msg->rtm_addrs |= RTA_NETMASK;
+    addr = SA(((const uint8_t *)addr) + addrlen);
+
+    /* Interface */
+    if (rt_info->flags & TA_RT_INFO_FLG_IF)
+    {
+        ERROR("Direct routes are not supported yet");
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    }
+
+    if (rt_info->flags & TA_RT_INFO_FLG_METRIC)
+    {
+        msg->rtm_rmx.rmx_hopcount = rt_info->metric;
+        msg->rtm_inits |= RTV_HOPCOUNT;
+    }
+
+    if (rt_info->flags & TA_RT_INFO_FLG_MTU)
+    {
+        msg->rtm_rmx.rmx_mtu = rt_info->mtu;
+        msg->rtm_inits |= RTV_MTU;
+    }
+
+    if (rt_info->flags & TA_RT_INFO_FLG_WIN)
+    {
+        ERROR("Routes with 'win' specification are not supported");
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    }
+
+    if (rt_info->flags & TA_RT_INFO_FLG_IRTT)
+    {
+        msg->rtm_rmx.rmx_rtt = rt_info->irtt;
+        msg->rtm_inits |= RTV_RTT;
+    }
+
+    if (rt_info->flags & TA_RT_INFO_FLG_TOS)
+    {
+        ERROR("Routes with TOS specification are not supported");
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    }
 
     return 0;
 }
@@ -763,9 +794,73 @@ te_errno
 ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
                           ta_rt_info_t        *rt_info)
 {
-    UNUSED(action);
-    UNUSED(rt_info);
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    int                 rt_sock = -1;
+    size_t              rt_buflen = sizeof(struct rt_msghdr) +
+                                    sizeof(struct sockaddr_in6) * RTAX_MAX;
+                        /* Assume that IPv6 sockaddr is the biggest */
+    uint8_t             rt_buf[rt_buflen];
+    unsigned int        rt_cmd;
+    pid_t               rt_pid;
+    te_errno            rc;
+    struct rt_msghdr   *rtm = (struct rt_msghdr *)rt_buf;
+    ssize_t             ret;
+
+    rc = ta_rt_info_to_rt_msghdr(action, rt_info, rtm, rt_buflen);
+    if (rc != 0)
+        return rc;
+
+    rt_cmd = rtm->rtm_type;
+    rt_pid = rtm->rtm_pid;
+
+    /*
+     * 'man -s 7P route' on SunOS 5.X suggests to use AF_* as the last
+     * argument.
+     */
+    rt_sock = socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
+    if (rt_sock < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Cannot open routing socket: %r", rc);
+        return rc;
+    }
+
+    ret = write(rt_sock, rt_buf, rtm->rtm_msglen);
+    if (ret != rtm->rtm_msglen)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_EIO);
+        ERROR("Failed to send route request to kernel");
+        goto cleanup;
+    }
+
+    do {
+
+        ret = read(rt_sock, rt_buf, rt_buflen);
+        if (ret < 0)
+        {
+            rc = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("Failed to receive route reply from kernel");
+            goto cleanup;
+        }
+        if (ret != rtm->rtm_msglen)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EIO);
+            ERROR("Unexpected route reply from kernel");
+            goto cleanup;
+        }
+
+    } while ((rtm->rtm_type != rt_cmd) || (rtm->rtm_seq != rt_seq) ||
+             (rtm->rtm_pid != rt_pid));
+
+#if 1
+    RING("ROUTE CHANGE RESULT MESSAGE:");
+    route_log(rtm);
+#endif
+
+cleanup:
+    if (rt_sock != -1)
+        close(rt_sock);
+
+    return rc;
 }
 
 /* See the description in conf_route.h */
