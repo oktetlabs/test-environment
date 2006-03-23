@@ -2787,7 +2787,10 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
                 *status == '1' && status_set(0, NULL, "0", ifname) == 0)
             {
                 int rc1;
-                
+
+                WARN("Interface '%s' is pushed down/up to set a new MTU",
+                     ifname);
+
                 if (ioctl(cfg_socket, SIOCSIFMTU, (int)&req) == 0)
                 {
                     rc = 0;
