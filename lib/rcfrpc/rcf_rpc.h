@@ -384,7 +384,7 @@ rpcop2str(rcf_rpc_op op)
 }
 
 /**
- * Check is the RPC server has children.
+ * Check is the RPC server has thread children.
  *
  * @param rpcs          RPC server
  *

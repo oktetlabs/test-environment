@@ -729,7 +729,7 @@ rcf_ta_call_rpc(const char *ta_name, int session,
 }
 
 /**
- * Check is the RPC server has children.
+ * Check is the RPC server has thread children.
  *
  * @param rpcs          RPC server
  *
