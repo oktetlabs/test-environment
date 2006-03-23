@@ -197,6 +197,22 @@ extern te_errno tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
                                           asn_value *layer_pdu,
                                           void **p_opaque);
 
+typedef enum 
+{
+    ISCSI_DUMP_SEND,
+    ISCSI_DUMP_RECV,
+} iscsi_dump_mode_t;
+/**
+ * Dump some significant fields from iSCSI PDU to log.
+ *
+ * @param buffer        Buffer with PDU.
+ * @param mode          Dump mode, take influence only to words.
+ *
+ * @return status code
+ */
+extern te_errno tad_iscsi_dump_iscsi_pdu(const uint8_t *buffer,
+                                         iscsi_dump_mode_t mode);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

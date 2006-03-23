@@ -49,6 +49,10 @@
 #include <assert.h>
 #endif
 
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 #include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
@@ -311,6 +315,7 @@ begin_match:
     spec_data->stored_length = 0;
     spec_data->stored_buffer = NULL;
 
+    tad_iscsi_dump_iscsi_pdu(seg->data_ptr, ISCSI_DUMP_RECV);
 cleanup:
     return rc;
 }
@@ -374,3 +379,48 @@ tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     return rc;
 }
 #endif
+
+
+
+te_errno
+tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
+{
+    char  message[1000];
+    char *p = message;
+
+    uint8_t opcode = data[0];
+    te_bool dir_t_i = !!(opcode & 0x20);
+
+    if (dir_t_i) 
+        p += sprintf(p, "Target -> Initiator PDU ");
+    else
+        p += sprintf(p, "Initiator -> Target PDU ");
+
+    if (mode == ISCSI_DUMP_RECV)
+        p += sprintf(p, "received: ");
+    else if (mode == ISCSI_DUMP_SEND)
+        p += sprintf(p, "to send : ");
+    else
+        return EINVAL;
+
+    p += sprintf(p, "Opcode = 0x%2x, ", opcode);
+
+    switch (opcode)
+    {
+        case 0x01: /* SCSI Command */
+            p += sprintf(p, "SCSI Opcode = 0x%2x, ", data[32]);
+            p += sprintf(p, "SCSI CmdSN = %d, ", ntohl(*((int *)(data + 24)))); 
+            break;
+        case 0x21: /* SCSI Response */
+            p += sprintf(p, "SCSI StatSN = %d, ", ntohl(*((int *)(data + 24)))); 
+            p += sprintf(p, "SCSI Opcode = 0x%2x, ", data[3]);
+            break;
+        default:
+            break;
+    } 
+
+    RING("iSCSI : %s", message);
+
+    return 0;
+}
+

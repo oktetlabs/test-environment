@@ -274,6 +274,8 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
 
     fd = rw_data->socket;
 
+    tad_iscsi_dump_iscsi_pdu(buf, ISCSI_DUMP_SEND);
+
     switch (layer_data->send_mode)
     { 
         case ISCSI_SEND_USUAL:
@@ -285,19 +287,19 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
                     if (rc == TE_EAGAIN)
                     {
                         struct timeval tv = {3, 0};
-            fd_set         set;
+                        fd_set         set;
 
-            FD_ZERO(&set);
-            FD_SET(fd, &set);
+                        FD_ZERO(&set);
+                        FD_SET(fd, &set);
                         if (select(fd + 1, NULL, &set, NULL, &tv) <= 0)
-            {
-                           rc = te_rc_os2te(errno);
-               break;
-            }
-            rc = 0;
-            }
-            else
-            break;
+                        {
+                            rc = te_rc_os2te(errno);
+                            break;
+                        }
+                        rc = 0;
+                    }
+                    else
+                        break;
                 } 
                 else
                 { 
