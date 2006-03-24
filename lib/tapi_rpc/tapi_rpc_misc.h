@@ -55,6 +55,7 @@
 #include "te_stdint.h"
 #include "rcf_rpc.h"
 #include "te_rpc_sys_resource.h"
+#include "tapi_rpc_signal.h"
 
 /**
  * Get host value of sizeof(type_name).
@@ -404,5 +405,22 @@ extern void rpc_create_child_process_socket(const char *method,
                                             rpc_socket_type sock_type,
                                             rcf_rpc_server **pco_child, 
                                             int *child_s);
+
+/**
+ * Wrapper for rpc_sigaction() function to install 'sa_sigaction'
+ * with blocking of all signals and @c SA_RESTART flag.
+ *
+ * @param rpcs      RPC server handle
+ * @param signum    Signal number
+ * @param handler   Signal handler 'sa_sigaction'
+ * @param oldact    Pointer to previously associated with the signal
+ *                  action or NULL
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_sigaction_simple(rcf_rpc_server *rpcs,
+                                      rpc_signum signum,
+                                      const char *handler,
+                                      struct rpc_struct_sigaction *oldact);
 
 #endif /* !__TE_TAPI_RPC_MISC_H__ */
