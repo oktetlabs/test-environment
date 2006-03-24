@@ -310,6 +310,11 @@ typedef enum rpc_sa_flags {
     RPC_BIT_MAP_ENTRY(SA_RESTORER),  \
     RPC_BIT_MAP_ENTRY(SA_UNKNOWN)
 
+/**
+ * sigaction_flags_rpc2str()
+ */
+RPCBITMAP2STR(sigaction_flags, SA_FLAGS_MAPPING_LIST)
+
 
 #if HAVE_SIGNAL_H
 
