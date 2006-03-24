@@ -1218,7 +1218,7 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
     strcpy(act.mm_handler, handler);
     act.mm_flags = RPC_SA_RESTART | RPC_SA_SIGINFO;
     act.mm_mask = rpc_sigset_new(rpcs);
-    if (rpc_sigfillset(rpcs, act.mm_mask) != 0)
+    if (rpc_sigemptyset(rpcs, act.mm_mask) != 0)
         return rpcs->_errno;
 
     if (rpc_sigaction(rpcs, signum, &act, oldact) != 0)
