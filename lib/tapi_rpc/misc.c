@@ -1198,7 +1198,6 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
                       struct rpc_struct_sigaction *oldact)
 {
     rpc_struct_sigaction    act;
-    te_errno                rc;
 
     if (rpcs == NULL)
     {
@@ -1214,19 +1213,23 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
     if (oldact != NULL && oldact->mm_mask == RPC_NULL)
         oldact->mm_mask = rpc_sigset_new(rpcs);
 
-    memset(&act, 0, sizeof(act));
-    strcpy(act.mm_handler, handler);
-    act.mm_flags = RPC_SA_RESTART | RPC_SA_SIGINFO;
-    act.mm_mask = rpc_sigset_new(rpcs);
-    if (rpc_sigemptyset(rpcs, act.mm_mask) != 0)
-        return rpcs->_errno;
+    /* Save initial state */
+    rpc_sigaction(rpcs, signum, NULL, oldact);
 
-    if (rpc_sigaction(rpcs, signum, &act, oldact) != 0)
-        rc = rpcs->_errno;
-    else
-        rc = 0;
+    /* Install handler using signal() to don't care about mask */
+    free(rpc_signal(rpcs, signum, handler));
+
+    /* Get current installed state with mask and flags */
+    memset(&act, 0, sizeof(act));
+    act.mm_mask = rpc_sigset_new(rpcs);
+    rpc_sigaction(rpcs, signum, NULL, &act);
+
+    /* Clean up SA_RESETHAND flag and set SA_SIGINFO */
+    act.mm_flags &= ~RPC_SA_RESETHAND;
+    act.mm_flags |= RPC_SA_SIGINFO;
+    rpc_sigaction(rpcs, signum, &act, NULL);
 
     rpc_sigset_delete(rpcs, act.mm_mask);
 
-    return rc;
+    return 0;
 }

@@ -218,6 +218,8 @@
         {                                                               \
             rpc_struct_sigaction    _old_act;                           \
                                                                         \
+            memset(&_old_act, 0, sizeof(_old_act));                     \
+            _old_act.mm_mask = RPC_NULL;                                \
             rpc_sigaction((rpcs_), (signum_), (action_), &_old_act);    \
             rpc_sigset_delete((rpcs_), (action_)->mm_mask);             \
             if ((old_handler_) != NULL)                                 \

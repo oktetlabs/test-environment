@@ -616,6 +616,9 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
         in.oldact.oldact_len = 1;
         in.oldact.oldact_val->handler = strdup("");
         in.oldact.oldact_val->restorer = strdup("");
+
+        in_oldact.mask = (tarpc_sigset_t)oldact->mm_mask;
+        in_oldact.flags = oldact->mm_flags;
     }
 
     rcf_rpc_call(rpcs, "sigaction", &in, &out);
@@ -634,9 +637,23 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaction, out.retval);
 
-    TAPI_RPC_LOG("RPC (%s,%s)%s: sigaction(%s, %p, %p) -> %d (%s)",
+    TAPI_RPC_LOG("RPC (%s,%s)%s: sigaction(%s, "
+                 "%p{'%s', '%s', 0x%x, %s}, "
+                 "%p{'%s', '%s', 0x%x, %s}) -> %d (%s)",
                  rpcs->ta, rpcs->name, rpcop2str(op),
-                 signum_rpc2str(signum), act, oldact,
+                 signum_rpc2str(signum),
+                 act,
+                 (act == NULL) ? "" : act->mm_handler,
+                 (act == NULL) ? "" : act->mm_restorer,
+                 (act == NULL) ? 0 : (unsigned)act->mm_mask,
+                 (act == NULL) ? "0" :
+                     sigaction_flags_rpc2str(act->mm_flags),
+                 oldact,
+                 (oldact == NULL) ? "" : oldact->mm_handler,
+                 (oldact == NULL) ? "" : oldact->mm_restorer,
+                 (oldact == NULL) ? 0 : (unsigned)oldact->mm_mask,
+                 (oldact == NULL) ? "0" :
+                     sigaction_flags_rpc2str(oldact->mm_flags),
                  out.retval, errno_rpc2str(RPC_ERRNO(rpcs)));
 
     RETVAL_INT(sigaction, out.retval);

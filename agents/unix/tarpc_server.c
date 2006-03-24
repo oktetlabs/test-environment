@@ -1417,25 +1417,33 @@ TARPC_FUNC(sigaction,
     COPY_ARG(oldact);
 },
 {
-    tarpc_sigaction *in_act;
-    tarpc_sigaction *out_oldact;
+    tarpc_sigaction  *out_oldact = out->oldact.oldact_val;
 
     struct sigaction  act;
     struct sigaction *p_act = NULL;
     struct sigaction  oldact;
     struct sigaction *p_oldact = NULL;
+    sigset_t         *oldact_mask = NULL;
 
     memset(&act, 0, sizeof(act));
     memset(&oldact, 0, sizeof(oldact));
-    in_act = in->act.act_val;
-    out_oldact = out->oldact.oldact_val;
     
     if (in->act.act_len != 0)
     {
+        tarpc_sigaction *in_act = in->act.act_val;
+        sigset_t        *act_mask;
+
         p_act = &act;
         
         act.sa_flags = sigaction_flags_rpc2h(in_act->flags);
-        act.sa_mask = *((sigset_t *)rcf_pch_mem_get(in_act->mask));
+        act_mask = rcf_pch_mem_get(in_act->mask);
+        if (act_mask == NULL)
+        {
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EFAULT);
+            out->retval = -1;
+            goto finish;     
+        }
+        act.sa_mask = *act_mask;
 
         out->common._errno = 
             name2handler(in_act->handler, 
@@ -1459,16 +1467,52 @@ TARPC_FUNC(sigaction,
     }
 
     if (out->oldact.oldact_len != 0)
+    {
         p_oldact = &oldact;
+
+        oldact.sa_flags = sigaction_flags_rpc2h(out_oldact->flags);
+        if ((out_oldact->mask != RPC_NULL) &&
+            (oldact_mask = rcf_pch_mem_get(out_oldact->mask)) == NULL)
+        {
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EFAULT);
+            out->retval = -1;
+            goto finish;     
+        }
+        if (oldact_mask != NULL)
+            oldact.sa_mask = *oldact_mask;
+
+        out->common._errno = 
+            name2handler(out_oldact->handler, 
+                         (oldact.sa_flags & SA_SIGINFO) ?
+                         (void **)&(act.sa_sigaction) :
+                         (void **)&(act.sa_handler));
+                             
+        if (out->common._errno != 0)
+        {
+            out->retval = -1;
+            goto finish;     
+        }
+        
+        out->common._errno = name2handler(out_oldact->restorer,
+                                          get_sa_restorer(&act));
+        if (out->common._errno != 0)
+        {
+            out->retval = -1;
+            goto finish;     
+        }
+    }
 
     MAKE_CALL(out->retval = func(signum_rpc2h(in->signum),
                                  p_act, p_oldact));
 
-    if (out->retval == 0 && p_oldact != NULL)
+    if (p_oldact != NULL)
     {
         out_oldact->flags = sigaction_flags_h2rpc(oldact.sa_flags);
-        out_oldact->mask = rcf_pch_mem_alloc(&oldact.sa_mask);
-        out_oldact->handler = handler2name(oldact.sa_handler);
+        if (oldact_mask != NULL)
+            *oldact_mask = oldact.sa_mask;
+        out_oldact->handler = handler2name((oldact.sa_flags & SA_SIGINFO) ?
+                                           (void *)oldact.sa_sigaction :
+                                           (void *)oldact.sa_handler);
         out_oldact->restorer = handler2name(*(get_sa_restorer(&oldact)));
     }
     
