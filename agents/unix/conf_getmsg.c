@@ -78,10 +78,16 @@
 #define PATH_GETMSG_DEV     "/dev/arp"
 
 
+static void *getmsg_buf = NULL;
+static size_t getmsg_buflen = 0;
+
+static char hugebuf[8192];
+
+
 /* See the description in */
 te_errno
 ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
-                     void **buf, size_t *buflen)
+                     void **buf, size_t *buflen, size_t *miblen)
 {
     static int  dev = -1;
 
@@ -230,11 +236,77 @@ ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
 
     if (used == 0)
         rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+    else
+        *miblen = used;
 
 exit:
-    close(dev);
     return rc;
 }
+
+
+/* See the description in */
+te_errno
+ta_unix_conf_neigh_list(const char *iface, char **list)
+{
+    static unsigned int ipNetToMediaEntrySize = 0;
+
+    size_t                      iface_len = strlen(iface);
+    size_t                      miblen;
+    te_errno                    rc;
+    mib2_ipNetToMediaEntry_t   *ip4;
+    size_t                      off = 0;
+
+    if (ipNetToMediaEntrySize == 0)
+    {
+        rc = ta_unix_conf_get_mib(MIB2_IP, 0,
+                                  &getmsg_buf, &getmsg_buflen, NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to get MIB2_IP_MEDIA: %r", rc);
+            return rc;
+        }
+        ipNetToMediaEntrySize =
+            ((mib2_ip_t *)getmsg_buf)->ipNetToMediaEntrySize;
+        assert(ipNetToMediaEntrySize != 0);
+    }
+
+    *hugebuf = '\0';
+
+    rc = ta_unix_conf_get_mib(MIB2_IP, MIB2_IP_MEDIA,
+                              &getmsg_buf, &getmsg_buflen, &miblen);
+    if (rc != 0)
+    {
+        ERROR("Failed to get MIB2_IP_MEDIA: %r", rc);
+        return rc;
+    }
+
+    for (ip4 = (mib2_ipNetToMediaEntry_t *)getmsg_buf;
+         (void *)ip4 < (void *)((uint8_t *)getmsg_buf + miblen);
+         ip4 = (mib2_ipNetToMediaEntry_t *)
+            ((uint8_t *)ip4 + ipNetToMediaEntrySize))
+    {
+        if ((ip4->ipNetToMediaIfIndex.o_length == (int)iface_len) &&
+            (memcmp(ip4->ipNetToMediaIfIndex.o_bytes, iface,
+                    iface_len) == 0))
+        {
+            if (inet_ntop(AF_INET, &ip4->ipNetToMediaNetAddress,
+                          hugebuf + off, sizeof(hugebuf) - off) == NULL ||
+                (off += strlen(hugebuf + off)) == sizeof(hugebuf))
+            {
+                ERROR("%s(): hugebuf is too small", __FUNCTION__);
+                return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+            }
+            strcat(hugebuf + off++, " ");
+        }
+    }
+
+    INFO("%s(): Neighbours: %s", __FUNCTION__, hugebuf);
+    if ((*list = strdup(hugebuf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    return rc;
+}
+
 
 #endif /* HAVE_INET_MIB2_H */
 #endif /* HAVE_SYS_TIHDR_H */
