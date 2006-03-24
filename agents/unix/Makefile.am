@@ -28,6 +28,7 @@ MY_SOURCES = \
 	conf_route.c \
 	conf_route_netlink.c \
 	conf_route_socket.c \
+	conf_getmsg.c \
 	conf_route_list_getmsg.c \
 	ftp_routines.c \
 	log_serial.c
