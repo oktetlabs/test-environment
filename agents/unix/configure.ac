@@ -280,6 +280,13 @@ AC_SEARCH_LIBS([socket], [socket], [],
     AC_MSG_ERROR([No library with Berkley Socket API found]))
 
 dnl
+dnl sendfile() is provided by:
+dnl - -lc on Linux;
+dnl - -lsendfile on Solaris2 (SunOS 5.11).
+dnl
+AC_SEARCH_LIBS([sendfile], [sendfile], [], [])
+
+dnl
 dnl POSIX threads are provided by:
 dnl - -lpthread in Linux;
 dnl - -lc_r (-lkse) in FreeBSD;
