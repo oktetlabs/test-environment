@@ -88,6 +88,7 @@ dlfcn.h \
 errno.h \
 expect.h \
 fcntl.h \
+inet/mib2.h \
 inttypes.h \
 limits.h \
 math.h \
@@ -125,6 +126,7 @@ stdio.h \
 stdlib.h \
 string.h \
 strings.h \
+stropts.h \
 sys/errno.h \
 sys/ethernet.h \
 sys/ioctl.h \
@@ -134,6 +136,7 @@ sys/select.h \
 sys/sendfile.h \
 sys/stat.h \
 sys/sysctl.h \
+sys/tihdr.h \
 sys/time.h \
 sys/uio.h \
 sys/un.h \
