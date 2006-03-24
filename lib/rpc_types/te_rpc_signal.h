@@ -273,18 +273,18 @@ sighow_rpc2h(rpc_sighow how)
 typedef enum rpc_sa_flags {
     RPC_SA_NOCLDSTOP  = 1,     /**< Don't receive notification when
                                     child process stop */
-    RPC_SA_ONESHOT    = 2,     /* with alias */
     RPC_SA_RESETHAND  = 2,     /**< Restore the signal action to the
                                     default state once the signal handler
                                     has been called */
+    RPC_SA_ONESHOT    = 2,     /**< Alias of RPC_SA_RESETHAND */
     RPC_SA_ONSTACK    = 4,     /**< Call the signal handler on an alternate
                                     signal  stack */
     RPC_SA_RESTART    = 8,     /**< Make certain system calls restartable
                                     across signals */
-    RPC_SA_NOMASK     = 0x10,  /* with alias */
     RPC_SA_NODEFER    = 0x10,  /**< Do not prevent the signal from being
                                     received from within its own signal
                                     handler */
+    RPC_SA_NOMASK     = 0x10,  /**< Alias of RPC_SA_NODEFER */
     RPC_SA_SIGINFO    = 0x20,  /**< In this case, sa_sigaction() should be
                                     set instead of sa_handler */
     RPC_SA_RESTORER   = 0x40,   /** < element is obsolete and
@@ -300,12 +300,12 @@ typedef enum rpc_sa_flags {
 
 #define SA_FLAGS_MAPPING_LIST \
     RPC_BIT_MAP_ENTRY(SA_NOCLDSTOP), \
-    RPC_BIT_MAP_ENTRY(SA_ONESHOT),   \
     RPC_BIT_MAP_ENTRY(SA_RESETHAND), \
+    RPC_BIT_MAP_ENTRY(SA_ONESHOT),   \
     RPC_BIT_MAP_ENTRY(SA_ONSTACK),   \
     RPC_BIT_MAP_ENTRY(SA_RESTART),   \
-    RPC_BIT_MAP_ENTRY(SA_NOMASK),    \
     RPC_BIT_MAP_ENTRY(SA_NODEFER),   \
+    RPC_BIT_MAP_ENTRY(SA_NOMASK),    \
     RPC_BIT_MAP_ENTRY(SA_SIGINFO),   \
     RPC_BIT_MAP_ENTRY(SA_RESTORER),  \
     RPC_BIT_MAP_ENTRY(SA_UNKNOWN)
