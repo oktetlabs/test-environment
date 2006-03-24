@@ -204,36 +204,6 @@
 
 
 /**
- * Restore signal handler set before the test
- *
- * @param rpcs_         RPC server handle
- * @param signum_       Signal number
- * @param handler_      Signal handler to restore
- * @param old_handler_  Expected value of rpc_signal function, NULL
- *                      if we do not want to check return value
- */
-#define CLEANUP_RPC_SIGNAL(rpcs_, signum_, handler_, old_handler_) \
-    do {                                                                \
-        if ((rpcs_ != NULL) && (handler_) != NULL)                      \
-        {                                                               \
-            char *ret_handler_;                                         \
-                                                                        \
-            (ret_handler_) = rpc_signal((rpcs_), (signum_), (handler_));\
-            if ((old_handler_) != NULL)                                 \
-            {                                                           \
-                if (ret_handler_ == NULL ||                             \
-                    strcmp(ret_handler_, (old_handler_)) != 0)          \
-                {                                                       \
-                    ERROR("Value returned from rpc_signal() is "        \
-                          "not the same as expected ");                 \
-                    MACRO_TEST_ERROR;                                   \
-                }                                                       \
-                free(ret_handler_);                                     \
-            }                                                           \
-        }                                                               \
-    } while (0)
-
-/**
  * Restore signal action set before the test
  *
  * @param rpcs_         RPC server handle
