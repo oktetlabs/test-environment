@@ -37,6 +37,14 @@
 #include <stdarg.h>
 #endif
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -118,17 +126,17 @@ typedef struct net_stats_icmp {
     uint64_t      out_addr_mask_reps;
 } net_stats_icmp;
 
-typedef struct {
+typedef struct net_stats {
     net_stats_ipv4  ipv4;
     net_stats_icmp  icmp;
 } net_stats;
 
 
 static char *if_stats_rx_pkts_fmt =
-    "RX packets:%llu errors:%lu dropped:%lu overruns:%lu frame:%lu";
+    "RX packets:%llu errors:%llu dropped:%llu overruns:%llu frame:%llu";
 
 static char *if_stats_tx_pkts_fmt =
-    "TX packets:%llu errors:%lu dropped:%lu overruns:%lu frame:%lu";
+    "TX packets:%llu errors:%llu dropped:%llu overruns:%llu carrier:%llu";
 
 static char *if_stats_rx_octets_fmt =
     "RX bytes:%llu";
@@ -143,8 +151,8 @@ static char *if_stats_tx_octets_fmt =
 #define IFCONFIG_OUTPUT_RX_TX_BYTES_LINE    7
 #define MAX_IFCONFIG_OUTPUT_LINE            9
 
-#define IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS     6
-#define IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS     6
+#define IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS     5
+#define IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS     5
 
 static te_errno
 if_stats_get(const char *ifname, if_stats *stats)
@@ -152,11 +160,12 @@ if_stats_get(const char *ifname, if_stats *stats)
     int   rc = 0;
     char *buf = NULL;
     char *ptr = NULL;
-    int   pid;
-    int   out_fd;
+    int   pid = -1;
+    int   out_fd = -1;
     int   line = 0;
     char  cmd[MAX_IFCONFIG_CMD_LEN];
-    FILE *ifcfg_output;
+    FILE *ifcfg_output = NULL;
+    int   status = 0;
 
     uint64_t in_overruns;
     uint64_t in_frame_losses;
@@ -164,6 +173,8 @@ if_stats_get(const char *ifname, if_stats *stats)
     uint64_t out_carrier_losses;
 
     memset(stats, 0, sizeof(if_stats));
+
+    RING("if_stats_get(ifname=\"%s\") started", ifname);
 
 #if __linux__
     if ((ifname == NULL) || (stats == NULL))
@@ -206,33 +217,58 @@ if_stats_get(const char *ifname, if_stats *stats)
             goto cleanup;
         }
         
+        RING("Ifconfig output for interface \"%s\", line %d\n>%s",
+             ifname, line, buf);
+        
         switch (line)
         {
             case IFCONFIG_OUTPUT_RX_STAT_LINE:
-                if (sscanf(buf, if_stats_rx_pkts_fmt,
-                           &stats->in_ucast_pkts,
-                           &stats->in_errors,
-                           &stats->in_discards,
-                           &in_overruns,
-                           &in_frame_losses) !=
+                if ((ptr = strstr(buf, "RX packets")) == NULL)
+                {
+                    ERROR("Invalid format of the Rx stats line, "
+                         "no \"RX packets\" substring found");
+                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+                    goto cleanup;
+                }
+                RING("Try to parse string \"%s\" with format string \"%s\"",
+                     ptr, if_stats_rx_pkts_fmt);
+                if ((rc = sscanf(ptr, if_stats_rx_pkts_fmt,
+                                 &stats->in_ucast_pkts,
+                                 &stats->in_errors,
+                                 &stats->in_discards,
+                                 &in_overruns,
+                                 &in_frame_losses)) !=
                     IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS)
                 {
-                    ERROR("Invalid format of the Rx stats line");
+                    ERROR("Invalid format of the Rx stats line, "
+                          "only %d args parsed, but %d required", rc,
+                          IFCONFIG_OUTPUT_RX_STAT_LINE_PARAMS);
                     rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
                     goto cleanup;
                 }
                 break;
 
             case IFCONFIG_OUTPUT_TX_STAT_LINE:
-                if (sscanf(buf, if_stats_tx_pkts_fmt,
-                           &stats->out_ucast_pkts,
-                           &stats->out_errors,
-                           &stats->out_discards,
-                           &out_overruns,
-                           &out_carrier_losses) !=
+                if ((ptr = strstr(buf, "TX packets")) == NULL)
+                {
+                    ERROR("Invalid format of the Rx stats line, "
+                         "no \"TX packets\" substring found");
+                    rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
+                    goto cleanup;
+                }
+                RING("Try to parse string \"%s\" with format string \"%s\"",
+                     ptr, if_stats_tx_pkts_fmt);
+                if ((rc = sscanf(ptr, if_stats_tx_pkts_fmt,
+                                 &stats->out_ucast_pkts,
+                                 &stats->out_errors,
+                                 &stats->out_discards,
+                                 &out_overruns,
+                                 &out_carrier_losses)) !=
                     IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS)
                 {
-                    ERROR("Invalid format of the Tx stats line");
+                    ERROR("Invalid format of the Tx stats line, "
+                          "only %d args parsed, but %d required", rc,
+                          IFCONFIG_OUTPUT_TX_STAT_LINE_PARAMS);
                     rc = TE_OS_RC(TE_TA_UNIX, EINVAL);
                     goto cleanup;
                 }
@@ -285,7 +321,7 @@ cleanup:
     if (pid >=0)
         ta_waitpid(pid, &status, 0);
         
-    if (out_fd > 0)
+    if (out_fd >= 0)
         close(out_fd);
 
     if (buf != NULL)
@@ -296,28 +332,34 @@ cleanup:
 }
 
 static char *stats_net_snmp_ipv4_fmt =
-  "Ip: %d %d %u %u %u %u "
-  "%u %u %u %u %u %u "
-  "%u %u %u %u %u %u %u";
+  "Ip: %lld %lld %llu %llu %llu %llu "
+  "%llu %llu %llu %llu %llu %llu "
+  "%llu %llu %llu %llu %llu %llu %llu";
 
-static char *stats_snmp_icmp_fmt =
-  "Icmp: %u %u %u %u %u %u "
-  "%u %u %u %u %u %u "
-  "%u %u %u %u %u %u "
-  "%u %u %u %u %u "
-  "%u %u %u";
+#define STATS_SNMP_IPV4_PARAM_COUNT     19
 
+static char *stats_net_snmp_icmp_fmt =
+  "Icmp: %llu %llu %llu %llu %llu %llu "
+  "%llu %llu %llu %llu %llu %llu "
+  "%llu %llu %llu %llu %llu %llu "
+  "%llu %llu %llu %llu %llu "
+  "%llu %llu %llu";
 
-#define MAX_PROC_NET_SNMP_SIZE  1024
+#define STATS_SNMP_ICMP_PARAM_COUNT     26
+
+#define MAX_PROC_NET_SNMP_SIZE  4096
 
 static te_errno
 net_stats_get(net_stats *stats)
 {
-    int   rc = 0;
-    char *buf = NULL;
+    int         rc = 0;
+    char       *buf = NULL;
+    char       *ptr = NULL;
+    uint64_t    forwarding;
+    uint64_t    default_ttl;
 
 #if __linux__
-    FILE *fstats;
+    int fd = -1;
 
     memset(stats, 0, sizeof(net_stats));
 
@@ -327,61 +369,69 @@ net_stats_get(net_stats *stats)
         return TE_OS_RC(TE_TA_UNIX, ENOMEM);
     }
 
-    if ((fstats = fopen("/proc/net/snmp", "r")) == NULL)
+    RING("Try to open /proc/net/snmp file");
+
+    if ((fd = open("/proc/net/snmp", O_RDONLY)) < 0)
     {
-        ERROR("Cannot do fdopen() on ifconfig output file descriptor");
+        ERROR("Cannot open() /proc/net/snmp");
         rc = TE_OS_RC(TE_TA_UNIX, errno);
         goto cleanup;
     }
 
-    if (fread(buf, MAX_NET_SNMP_STATS_LEN, 1, fstats) < 0)
+    RING("Try to read /proc/net/snmp file");
+
+    if (read(fd, buf, MAX_PROC_NET_SNMP_SIZE) <= 0)
     {
         ERROR("Cannot read /proc/net/snmp file");
         rc = TE_OS_RC(TE_TA_UNIX, errno);
         goto cleanup;
     }
 
-    fclose(fstats);
+    RING("Close /proc/net/snmp file");
+
+    close(fd);
+
+    RING("/proc/net/snmp file dump:\n%s", buf);
 
     ptr = buf;
 
-#define STATS_GO_TO_NEXT_LINE() \
+#define STATS_GO_TO_NEXT_LINE \
     do                                                      \
     {                                                       \
-        ptr = strchr(buf, '\n');                            \
+        ptr = strchr(ptr, '\n');                            \
         if ((ptr == NULL) ||                                \
-           (ptr + 1 - buf >= MAX_PROC_NET_SNMP_SIZE))       \
+            (ptr + 1 - buf >= MAX_PROC_NET_SNMP_SIZE))      \
         {                                                   \
             ERROR("Invalid /proc/net/snmp file format");    \
             return TE_OS_RC(TE_TA_UNIX, EINVAL);            \
         }                                                   \
         ptr++;                                              \
-    }
+    } while (0)
 
     /* Skip IPv4 header */
     STATS_GO_TO_NEXT_LINE;
 
     /* Read IPv4 counters */
-    if ((rc = sscanf(ptr, stats_snmp_ipv4_fmt,
+    if ((rc = sscanf(ptr, stats_net_snmp_ipv4_fmt,
                      &forwarding,
                      &default_ttl,
-                     &stats.ipv4.in_recvs,
-                     &stats.ipv4.in_hdr_errs,
-                     &stats.ipv4.in_addr_errs,
-                     &stats.ipv4.forw_dgrams,
-                     &stats.ipv4.in_unknown_protos,
-                     &stats.ipv4.in_discards,
-                     &stats.ipv4.in_delivers,
-                     &stats.ipv4.out_requests,
-                     &stats.ipv4.out_discards,
-                     &stats.ipv4.out_no_routes,
-                     &stats.ipv4.reasm_timeout,
-                     &stats.ipv4.reasm_reqds,
-                     &stats.ipv4.reasm_oks,
-                     &stats.ipv4.reasm_fails,
-                     &stats.ipv4.frag_oks,
-                     &stats.ipv4.frag_fails,
-                     &stats.ipv4.frag_creates)) !=
+                     &stats->ipv4.in_recvs,
+                     &stats->ipv4.in_hdr_errs,
+                     &stats->ipv4.in_addr_errs,
+                     &stats->ipv4.forw_dgrams,
+                     &stats->ipv4.in_unknown_protos,
+                     &stats->ipv4.in_discards,
+                     &stats->ipv4.in_delivers,
+                     &stats->ipv4.out_requests,
+                     &stats->ipv4.out_discards,
+                     &stats->ipv4.out_no_routes,
+                     &stats->ipv4.reasm_timeout,
+                     &stats->ipv4.reasm_reqds,
+                     &stats->ipv4.reasm_oks,
+                     &stats->ipv4.reasm_fails,
+                     &stats->ipv4.frag_oks,
+                     &stats->ipv4.frag_fails,
+                     &stats->ipv4.frag_creates)) !=
         STATS_SNMP_IPV4_PARAM_COUNT)
     {
         WARN("Invalid /proc/net/snmp file format, "
@@ -397,33 +447,33 @@ net_stats_get(net_stats *stats)
     STATS_GO_TO_NEXT_LINE;
 
     /* Read ICMP counters */
-    if ((rc = sscanf(ptr, stats_snmp_icmp_fmt,
-                     &stats.icmp.in_msgs,
-                     &stats.icmp.in_errs,
-                     &stats.icmp.in_dest_unreachs,
-                     &stats.icmp.in_time_excds,
-                     &stats.icmp.in_parm_probs,
-                     &stats.icmp.in_src_quenchs,
-                     &stats.icmp.in_redirects,
-                     &stats.icmp.in_echos,
-                     &stats.icmp.in_echo_reps,
-                     &stats.icmp.in_timestamps,
-                     &stats.icmp.in_timestamp_reps,
-                     &stats.icmp.in_addr_masks,
-                     &stats.icmp.in_addr_mask_reps,
-                     &stats.icmp.out_msgs,
-                     &stats.icmp.out_errs,
-                     &stats.icmp.out_dest_unreachs,
-                     &stats.icmp.out_time_excds,
-                     &stats.icmp.out_parm_probs,
-                     &stats.icmp.out_src_quenchs,
-                     &stats.icmp.out_redirects,
-                     &stats.icmp.out_echos,
-                     &stats.icmp.out_echo_reps,
-                     &stats.icmp.out_timestamps,
-                     &stats.icmp.out_timestamp_reps,
-                     &stats.icmp.out_addr_masks,
-                     &stats.icmp.out_addr_mask_reps)) != 
+    if ((rc = sscanf(ptr, stats_net_snmp_icmp_fmt,
+                     &stats->icmp.in_msgs,
+                     &stats->icmp.in_errs,
+                     &stats->icmp.in_dest_unreachs,
+                     &stats->icmp.in_time_excds,
+                     &stats->icmp.in_parm_probs,
+                     &stats->icmp.in_src_quenchs,
+                     &stats->icmp.in_redirects,
+                     &stats->icmp.in_echos,
+                     &stats->icmp.in_echo_reps,
+                     &stats->icmp.in_timestamps,
+                     &stats->icmp.in_timestamp_reps,
+                     &stats->icmp.in_addr_masks,
+                     &stats->icmp.in_addr_mask_reps,
+                     &stats->icmp.out_msgs,
+                     &stats->icmp.out_errs,
+                     &stats->icmp.out_dest_unreachs,
+                     &stats->icmp.out_time_excds,
+                     &stats->icmp.out_parm_probs,
+                     &stats->icmp.out_src_quenchs,
+                     &stats->icmp.out_redirects,
+                     &stats->icmp.out_echos,
+                     &stats->icmp.out_echo_reps,
+                     &stats->icmp.out_timestamps,
+                     &stats->icmp.out_timestamp_reps,
+                     &stats->icmp.out_addr_masks,
+                     &stats->icmp.out_addr_mask_reps)) != 
         STATS_SNMP_ICMP_PARAM_COUNT)
     {
         WARN("Invalid /proc/net/snmp file format, "
@@ -431,23 +481,38 @@ net_stats_get(net_stats *stats)
              rc, STATS_SNMP_ICMP_PARAM_COUNT);
         return TE_OS_RC(TE_TA_UNIX, EINVAL);
     }
+
+    free(buf);
 #endif    
+
+cleanup:
+
+    return 0;
 }
 
 #define STATS_IFTABLE_COUNTER_GET(_counter_, _field_) \
-static te_errno if_stats_ ## __counter_ ## _get(unsigned int gid_,      \
-                                                const char  *oid_,      \
-                                                int         *value,     \
-                                                const char  *if_name_)  \
+static te_errno net_if_stats_##_counter_##_get(unsigned int gid_,       \
+                                               const char  *oid_,       \
+                                               char        *value_,     \
+                                               const char  *if_name_)   \
 {                                                                       \
+    int        rc = 0;                                                  \
     if_stats   if_stats;                                                \
+                                                                        \
+    UNUSED(gid_);                                                       \
+    UNUSED(oid_);                                                       \
+                                                                        \
+    memset(&if_stats, 0, sizeof(if_stats));                             \
                                                                         \
     if ((rc = if_stats_get((if_name_), &if_stats)) != 0)                \
     {                                                                   \
         ERROR("Cannot get statistics for interface %s", (if_name_));    \
     }                                                                   \
                                                                         \
-    snprintf(value, RCF_MAX_VAL, "%llu", if_stats. ##_field_);          \
+    snprintf((value_), RCF_MAX_VAL, "%llu", if_stats. _field_);         \
+                                                                        \
+    RING("if_counter_get(if_name=%s, counter=%s) returns %s",           \
+         if_name_, #_counter_, value_);                                 \
                                                                         \
     return 0;                                                           \
 }
@@ -467,22 +532,32 @@ STATS_IFTABLE_COUNTER_GET(out_errors, out_errors);
 #undef STATS_IFTABLE_COUNTER_GET
 
 
-#define STATS_NET_SNMP_IPV4_COUNTER_GET(_counter_, _field_) \
-static te_errno if_stats_ ## __counter_ ## _get(unsigned int gid_,      \
-                                                const char  *oid_,      \
-                                                int         *value),    \
-{                                                                       \
-    net_stats   net_stats;                                              \
-                                                                        \
-    if ((rc = net_stats_get(&net_stats)) != 0)                          \
-    {                                                                   \
-        ERROR("Cannot get network statistics for system");              \
-    }                                                                   \
-                                                                        \
-    snprintf(value, RCF_MAX_VAL, "%llu",                                \
-             net_stats.ipv4. ##_field_);                                \
-                                                                        \
-    return 0;                                                           \
+#define STATS_NET_SNMP_IPV4_COUNTER_GET(_counter_, _field_)     \
+static te_errno                                                 \
+net_snmp_ipv4_stats_##_counter_##_get(unsigned int gid_,        \
+                                      const char  *oid_,        \
+                                      char        *value_)      \
+{                                                               \
+    int         rc = 0;                                         \
+    net_stats   net_stats;                                      \
+                                                                \
+    UNUSED(gid_);                                               \
+    UNUSED(oid_);                                               \
+                                                                \
+    memset(&net_stats, 0, sizeof(net_stats));                   \
+                                                                \
+    if ((rc = net_stats_get(&net_stats)) != 0)                  \
+    {                                                           \
+        ERROR("Cannot get network statistics for system");      \
+    }                                                           \
+                                                                \
+    snprintf((value_), RCF_MAX_VAL, "%llu",                     \
+             net_stats.ipv4._field_);                           \
+                                                                \
+    RING("net_snmp_ipv4_counter_get(counter=%s) returns %s",    \
+         #_counter_, value_);                                   \
+                                                                \
+    return 0;                                                   \
 }
 
 STATS_NET_SNMP_IPV4_COUNTER_GET(in_recvs, in_recvs);
@@ -508,19 +583,28 @@ STATS_NET_SNMP_IPV4_COUNTER_GET(frag_creates, frag_creates);
 
 #define STATS_NET_SNMP_ICMP_COUNTER_GET(_counter_, _field_) \
 static te_errno                                                 \
-net_snmp_icmp_stats_ ## __counter_ ## _get(unsigned int gid_,   \
-                                           const char  *oid_,   \
-                                           int         *value), \
+net_snmp_icmp_stats_ ## _counter_ ## _get(unsigned int gid_,    \
+                                          const char  *oid_,    \
+                                          char        *value_)  \
 {                                                               \
+    int         rc = 0;                                         \
     net_stats   net_stats;                                      \
+                                                                \
+    UNUSED(gid_);                                               \
+    UNUSED(oid_);                                               \
+                                                                \
+    memset(&net_stats, 0, sizeof(net_stats));                   \
                                                                 \
     if ((rc = net_stats_get(&net_stats)) != 0)                  \
     {                                                           \
         ERROR("Cannot get network statistics for system");      \
     }                                                           \
                                                                 \
-    snprintf(value, RCF_MAX_VAL, "%llu",                        \
-             net_stats.icmp. ##_field_);                        \
+    snprintf((value_), RCF_MAX_VAL, "%llu",                     \
+             net_stats.icmp._field_);                           \
+                                                                \
+    RING("net_snmp_icmp_counter_get(counter=%s) returns %s",    \
+         #_counter_, value_);                                   \
                                                                 \
     return 0;                                                   \
 }
@@ -608,15 +692,15 @@ STATS_NET_SNMP_IPV4_ATTR(frag_creates, frag_fails);
 
 /* /proc/net/snmp/icmp counters */
 
-RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_in_recvs, "in_msgs",
-                    NULL, NULL, net_snmp_ipv4_stats_in_recvs_get);
+RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_in_msgs, "in_msgs",
+                    NULL, &node_stats_net_snmp_ipv4_frag_creates,
+                    net_snmp_icmp_stats_in_msgs_get);
 
 #define STATS_NET_SNMP_ICMP_ATTR(_name_, _next) \
     RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_##_name_, #_name_, \
                         NULL, &node_stats_net_snmp_icmp_##_next,    \
                         net_snmp_icmp_stats_##_name_##_get);
 
-STATS_NET_SNMP_ICMP_ATTR(in_msgs, in_msgs);
 STATS_NET_SNMP_ICMP_ATTR(in_errs, in_msgs);
 STATS_NET_SNMP_ICMP_ATTR(in_dest_unreachs, in_errs);
 STATS_NET_SNMP_ICMP_ATTR(in_time_excds, in_dest_unreachs);
