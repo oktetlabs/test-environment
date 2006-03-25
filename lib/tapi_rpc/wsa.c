@@ -516,12 +516,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
         RETVAL_BOOL(transmit_file, FALSE);
     }
-#if 0
-    if ((buf != NULL) && (bytes_sent == NULL))
-    {
-        RETVAL_BOOL(transmit_file, FALSE);
-    }
-#endif
+
     op = rpcs->op;
     
     in.fd = s;
@@ -542,7 +537,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
     in.flags = flags;
 
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
-        rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 10;
+        rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 20;
 
     rcf_rpc_call(rpcs, "transmit_file", &in, &out);
     
