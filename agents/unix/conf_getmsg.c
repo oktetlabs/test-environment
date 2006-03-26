@@ -67,6 +67,9 @@
 
 #include <stropts.h>
 #include <sys/tihdr.h>
+#include <inet/common.h>
+#include <inet/ip.h>
+#include <inet/arp.h>
 #include <inet/mib2.h>
 
 #include "te_errno.h"
@@ -120,8 +123,8 @@ ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
     }
 
     req->PRIM_type = T_SVR4_OPTMGMT_REQ;
-    req->OPT_offset = sizeof(req);
-    req->OPT_length = sizeof(hdr);
+    req->OPT_offset = sizeof(*req);
+    req->OPT_length = sizeof(*hdr);
     req->MGMT_flags = T_CURRENT;
 
     hdr = (struct opthdr *)(req + 1);
@@ -174,10 +177,9 @@ ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
         if (ctrl.len >= (int)sizeof(struct T_error_ack) &&
             err->PRIM_type == T_ERROR_ACK)
         {
-            ERROR("%s(): getmsg(ctrl) - T_ERROR_ACK: TLI_error = 0x%lx, "
-                  "UNIX_error = 0x%lx", __FUNCTION__,
-                  (unsigned long)err->TLI_error,
-                  (unsigned long)err->UNIX_error);
+            ERROR("%s(): getmsg(ctrl) - T_ERROR_ACK: TLI_error = 0x%x, "
+                  "UNIX_error = 0x%x", __FUNCTION__,
+                  (unsigned)err->TLI_error, (unsigned)err->UNIX_error);
             rc = TE_OS_RC(TE_TA_UNIX, (err->TLI_error == TSYSERR) ?
                                       err->UNIX_error : EPROTO);
             goto exit;
@@ -236,7 +238,7 @@ ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
 
     if (used == 0)
         rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
-    else
+    else if (miblen != NULL)
         *miblen = used;
 
 exit:
@@ -246,7 +248,7 @@ exit:
 
 /* See the description in */
 te_errno
-ta_unix_conf_neigh_list(const char *iface, char **list)
+ta_unix_conf_neigh_list(const char *iface, te_bool is_static, char **list)
 {
     static unsigned int ipNetToMediaEntrySize = 0;
 
@@ -262,7 +264,7 @@ ta_unix_conf_neigh_list(const char *iface, char **list)
                                   &getmsg_buf, &getmsg_buflen, NULL);
         if (rc != 0)
         {
-            ERROR("Failed to get MIB2_IP_MEDIA: %r", rc);
+            ERROR("Failed to get MIB2_IP: %r", rc);
             return rc;
         }
         ipNetToMediaEntrySize =
@@ -285,7 +287,16 @@ ta_unix_conf_neigh_list(const char *iface, char **list)
          ip4 = (mib2_ipNetToMediaEntry_t *)
             ((uint8_t *)ip4 + ipNetToMediaEntrySize))
     {
-        if ((ip4->ipNetToMediaIfIndex.o_length == (int)iface_len) &&
+        if (/* Filter out published entries */
+            (~ip4->ipNetToMediaInfo.ntm_flags & ACE_F_PUBLISH) &&
+            /* Filter out dying entries */
+            (~ip4->ipNetToMediaInfo.ntm_flags & ACE_F_DYING) &&
+            /* Filter out multicast mapping entries */
+            (~ip4->ipNetToMediaInfo.ntm_flags & ACE_F_MAPPING) &&
+            /* Are static or dynamic entries requested? */
+            (!(ip4->ipNetToMediaInfo.ntm_flags & ACE_F_PERMANENT) ==
+                 !is_static) &&
+            (ip4->ipNetToMediaIfIndex.o_length == (int)iface_len) &&
             (memcmp(ip4->ipNetToMediaIfIndex.o_bytes, iface,
                     iface_len) == 0))
         {
@@ -300,7 +311,77 @@ ta_unix_conf_neigh_list(const char *iface, char **list)
         }
     }
 
-    INFO("%s(): Neighbours: %s", __FUNCTION__, hugebuf);
+    INFO("%s(): %s neighbours: %s", __FUNCTION__,
+         (is_static) ? "Static" : "Dynamic", hugebuf);
+    if ((*list = strdup(hugebuf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    return rc;
+}
+
+
+static void
+handle_route_entry(mib2_ipRouteEntry_t *routeEntry)
+{
+    char           *p = hugebuf + strlen(hugebuf);
+    unsigned int    prefixlen;
+
+    /* arybchik: I don't know what it means, but it is from Zebra src */
+    if (routeEntry->ipRouteInfo.re_ire_type & IRE_CACHETABLE)
+        return;
+
+    MASK2PREFIX(ntohl(routeEntry->ipRouteMask), prefixlen);
+        
+    inet_ntop(AF_INET, &routeEntry->ipRouteDest, p, INET_ADDRSTRLEN);
+    p += strlen(p);
+    p += sprintf(p, "|%u", prefixlen);
+
+    /* No support for 'metric' and 'tos' yet, assume defaults */
+
+    p += sprintf(p, " ");
+}
+
+/* See the description in conf_route.h */
+te_errno
+ta_unix_conf_route_list(char **list)
+{
+    static unsigned int ipRouteEntrySize = 0;
+
+    size_t                  miblen;
+    te_errno                rc;
+    mib2_ipRouteEntry_t    *rt;
+
+    if (ipRouteEntrySize == 0)
+    {
+        rc = ta_unix_conf_get_mib(MIB2_IP, 0,
+                                  &getmsg_buf, &getmsg_buflen, NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to get MIB2_IP: %r", rc);
+            return rc;
+        }
+        ipRouteEntrySize = ((mib2_ip_t *)getmsg_buf)->ipRouteEntrySize;
+        assert(ipRouteEntrySize != 0);
+    }
+
+    *hugebuf = '\0';
+
+    rc = ta_unix_conf_get_mib(MIB2_IP, MIB2_IP_ROUTE,
+                              &getmsg_buf, &getmsg_buflen, &miblen);
+    if (rc != 0)
+    {
+        ERROR("Failed to get MIB2_IP_ROUTE: %r", rc);
+        return rc;
+    }
+
+    for (rt = (mib2_ipRouteEntry_t *)getmsg_buf;
+         (void *)rt < (void *)((uint8_t *)getmsg_buf + miblen);
+         rt = (mib2_ipRouteEntry_t *) ((uint8_t *)rt + ipRouteEntrySize))
+    {
+        handle_route_entry(rt);
+    }
+
+    INFO("%s(): Routes: %s", __FUNCTION__, hugebuf);
     if ((*list = strdup(hugebuf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
