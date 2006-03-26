@@ -775,7 +775,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
     } while ((rtm->rtm_type != RTM_GET) || (rtm->rtm_seq != rt_seq) ||
              (rtm->rtm_pid != rt_pid));
 
-#if 1
+#if 0
     /* Reply got */
     route_log(rtm);
 #endif
