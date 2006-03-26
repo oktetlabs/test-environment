@@ -134,6 +134,7 @@ static type_info_t type_info[] =
     {"struct sockaddr", sizeof(struct sockaddr)},
     {"WSAPROTOCOL_INFOA", sizeof(WSAPROTOCOL_INFOA)},
     {"WSAPROTOCOL_INFOW", sizeof(WSAPROTOCOL_INFOW)},
+    {"QOS", sizeof(QOS)}
 #if 0
     {"struct ip_mreqn", sizeof(struct ip_mreqn)}
 #endif
