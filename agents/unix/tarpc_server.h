@@ -31,8 +31,19 @@
 #ifndef __TARPC_SERVER_H__
 #define __TARPC_SERVER_H__
 
-#include "config.h"
 #include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#if __sun__
+/* Required on Solaris2 (SunOS 5.11) to get msg_control etc. */
+#define _XOPEN_SOURCE           
+#define _XOPEN_SOURCE_EXTENDED  1
+#define __EXTENSIONS__
+/* Required on Solaris2 (SunOS 5.11) to see IOCTLs */
+#define BSD_COMP
+#endif
 
 #ifdef HAVE_STDIO_H
 #include <stdio.h>

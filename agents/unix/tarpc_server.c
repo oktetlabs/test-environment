@@ -30,15 +30,6 @@
 
 #define TE_LGR_USER     "RPC"
 
-#if __sun__
-/* Required on Solaris2 (SunOS 5.11) to get msg_control etc. */
-#define _XOPEN_SOURCE           
-#define _XOPEN_SOURCE_EXTENDED  1
-#define __EXTENSIONS__
-/* Required on Solaris2 (SunOS 5.11) to see IOCTLs */
-#define BSD_COMP
-#endif
-
 #include "tarpc_server.h"
 
 #include "config.h"
