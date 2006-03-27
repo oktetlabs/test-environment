@@ -617,7 +617,7 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
 
         if (csap_a_status != CSAP_BUSY || csap_b_status != CSAP_BUSY)
         {
-            WARN("%s(): csap status are not 'busy': A %d, B %d", 
+            INFO("%s(): csap status are not 'busy': A %d, B %d", 
                  __FUNCTION__, csap_a_status, csap_b_status);
             break;
         }
