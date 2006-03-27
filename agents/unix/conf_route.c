@@ -437,7 +437,7 @@ route_ ## field_ ## _get(unsigned int gid, const char *oid, \
     UNUSED(gid);                                            \
     UNUSED(oid);                                            \
                                                             \
-    if ((rc = route_find(route, &rt_info)) != 0)             \
+    if ((rc = route_find(route, &rt_info)) != 0)            \
         return rc;                                          \
                                                             \
     sprintf(value, "%d", rt_info.field_);                   \
