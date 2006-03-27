@@ -280,16 +280,16 @@ te_sockaddr_mask_by_prefix(struct sockaddr *mask, socklen_t masklen,
 
     if (max == (size_t)-1)
         return TE_EAFNOSUPPORT;
-    if ((prefix << 3) > max)
+    if (prefix > (max << 3))
         return TE_EINVAL;
+
+    memset(mask, 0, masklen);
+    mask->sa_family = af;
 
     ptr = te_sockaddr_get_netaddr(mask);
     assert(ptr != NULL);
     if (masklen < ((ptr - (uint8_t *)mask) + ((prefix + 7) >> 3)))
         return TE_ESMALLBUF;
-
-    memset(mask, 0, masklen);
-    mask->sa_family = af;
 
     memset(ptr, 0xff, prefix >> 3);
     if (prefix & 7)
