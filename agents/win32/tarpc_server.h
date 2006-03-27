@@ -334,7 +334,7 @@ win_rpc_errno(int err)
         case ERROR_UNSPEC: return RPC_EUNSPEC;
         
         default: 
-            ERROR("Unknown windows error code %d", err);
+            WARN("Unknown windows error code %d", err);
             return RPC_EUNKNOWN; 
     }
 }
