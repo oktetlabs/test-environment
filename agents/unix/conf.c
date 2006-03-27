@@ -78,6 +78,14 @@
 #include <net/if_dl.h>
 #endif
 
+/* Solaris/SunOS uses DLPI as interface to link-layer */
+#if HAVE_SYS_DLPI_H
+#include <sys/dlpi.h>
+#endif
+#if HAVE_LIBDLPI_H
+#include <libdlpi.h>
+#endif
+
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -194,13 +202,15 @@ str_addr_family(const char *str_addr)
  * On failure, ERROR is logged and return with 'te_errno' status is done.
  */
 #define CFG_IOCTL(_s, _id, _req) \
-    if (ioctl((_s), (_id), (caddr_t)(_req)) != 0)       \
-    {                                                   \
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);      \
-                                                        \
-        ERROR("line %u: ioctl(" #_id ") failed: %r",    \
-              __LINE__, rc);                            \
-        return rc;                                      \
+    do {                                                    \
+        if (ioctl((_s), (_id), (caddr_t)(_req)) != 0)       \
+        {                                                   \
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);      \
+                                                            \
+            ERROR("line %u: ioctl(" #_id ") failed: %r",    \
+                  __LINE__, rc);                            \
+            return rc;                                      \
+        }                                                   \
     } while (0)
 
 /**
@@ -2541,22 +2551,59 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
 
     ptr = req.my_ifr_hwaddr.sa_data;
 
-#elif defined(SIOCGENADDR)
-    memset(&req, 0, sizeof(req));
-#if 0
-    if (0 && strcmp(ifname, "lo0") != 0)
-    {
-        strcpy(req.my_ifr_name, ifname);
-        CFG_IOCTL(cfg_socket, SIOCGENADDR, &req);
-
-        ptr = req.ifr_enaddr;
-    }
-    else
-#endif
+#elif HAVE_LIBDLPI_H
+    if (strcmp(ifname, "lo0") == 0)
     {
         const uint8_t   all_zeros[ETHER_ADDR_LEN] = { 0, };
 
         ptr = all_zeros;
+    }
+    else
+    {
+        int             fd;
+        dlpi_if_attr_t  if_attr;
+        dl_info_ack_t   dl_info;
+        int             len;
+
+        /* Open DLPI interface */
+        fd = dlpi_if_open(ifname, &if_attr, FALSE);
+        if (fd < 0)
+        {
+            rc = te_rc_os2te(errno);
+            ERROR("%s(): dlpi_if_open() failed: %r", __FUNCTION__, rc);
+            assert(rc != 0);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+        /* Request generic information to get address length */
+        if (dlpi_info(fd, -1, &dl_info, NULL, NULL, NULL, NULL, NULL,
+                      NULL) < 0)
+        {
+            rc = te_rc_os2te(errno);
+            ERROR("%s(): dlpi_info() failed: %r", __FUNCTION__, rc);
+            (void)dlpi_close(fd);
+            assert(rc != 0);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+        len = dl_info.dl_addr_length - abs(dl_info.dl_sap_length);
+        if (len != ETHER_ADDR_LEN)
+        {
+            ERROR("%s(): Unsupported link-layer address length %d",
+                  __FUNCTION__, len);
+            (void)dlpi_close(fd);
+            return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+        }
+        /* Get link-layer address */
+        if (dlpi_phys_addr(fd, -1, DL_CURR_PHYS_ADDR, buf, NULL) < 0)
+        {
+            rc = te_rc_os2te(errno);
+            ERROR("%s(): dlpi_phys_addr(DL_CURR_PHYS_ADDR) failed: %r",
+                  __FUNCTION__, rc);
+            (void)dlpi_close(fd);
+            assert(rc != 0);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+        (void)dlpi_close(fd);
+        ptr = buf;
     }
 #elif defined(__FreeBSD__)
 
@@ -3083,7 +3130,51 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
 #else
     UNUSED(oid);
     UNUSED(ifname);
-    UNUSED(addr);
+    {
+        struct arpreq arp_req;
+        sa_family_t   family;
+        
+        memset(&arp_req, 0, sizeof(arp_req));
+        family = str_addr_family(addr);
+        arp_req.arp_pa.sa_family = family;
+        if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+#ifdef SIOCGARP
+        if (ioctl(cfg_socket, SIOCGARP, (caddr_t)&arp_req) != 0)
+        {
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        
+            /* Temporary hack to avoid failures */
+            WARN("line %u: ioctl(SIOCGARP) failed: %r", __LINE__, rc);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+        if (mac_p != NULL)
+        {
+            int      i;
+            char    *s = mac_p;
+
+            for (i = 0; i < 6; i++) /* FIXME */
+            {
+                sprintf(s, "%02x:",
+                        ((const uint8_t *)arp_req.arp_ha.sa_data)[i]);
+                s += strlen(s);
+            }
+            *(s - 1) = '\0';
+        }
+        if (state_p != NULL)
+        {
+            if (arp_req.arp_flags & ATF_COM)
+                *state_p = 2; /* FIXME */
+            else
+                *state_p = 1; /* FIXME */
+        }
+
+        return 0;
+#else
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+    }
     UNUSED(mac_p);
     UNUSED(state_p);
 
@@ -3111,12 +3202,11 @@ neigh_state_get(unsigned int gid, const char *oid, char *value,
 {
     unsigned int state;
     te_errno     rc;
-    char         mac[ETHER_ADDR_LEN * 3];
     
     UNUSED(gid);
     UNUSED(oid);
     
-    if ((rc = neigh_find("dynamic", ifname, addr, mac, &state)) != 0)
+    if ((rc = neigh_find("dynamic", ifname, addr, NULL, &state)) != 0)
         return rc;
 
     sprintf(value, "%u", state);
@@ -3445,23 +3535,11 @@ neigh_print_cb(const struct sockaddr_nl *who, const struct nlmsghdr *n,
     
     return 0;
 }
-#endif
- 
-/**
- * Get instance list for object "agent/arp" and "agent/volatile/arp".
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier
- * @param list          location for the list pointer
- * @param ifname        interface name
- *
- * @return Status code
- */
+
 static te_errno
-neigh_list(unsigned int gid, const char *oid, char **list, 
-           const char *ifname)
+ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
+                        char **list)
 {
-#ifdef USE_NETLINK /* NEIGH_USE_NETLINK */
     struct rtnl_handle   rth;    
     neigh_print_cb_param user_data;
     
@@ -3479,7 +3557,7 @@ neigh_list(unsigned int gid, const char *oid, char **list,
     ll_init_map(&rth);
 
     strcpy(user_data.ifname, ifname);
-    user_data.dynamic = strstr(oid, "dynamic") != NULL;
+    user_data.dynamic = !is_static;
     user_data.list = buf;
 
     rtnl_wilddump_request(&rth, AF_INET, RTM_GETNEIGH);
@@ -3498,19 +3576,42 @@ neigh_list(unsigned int gid, const char *oid, char **list,
 
     rtnl_close(&rth);
 
-#else
-    UNUSED(oid);
-    UNUSED(ifname);
-
-    *buf = '\0';
-#endif
-
-    UNUSED(gid);
-
     if ((*list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
+}
+#elif !HAVE_INET_MIB2_H
+static te_errno
+ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
+                        char **list)
+{
+    UNUSED(ifname);
+    UNUSED(is_static);
+    *list = NULL;
+    return 0;
+}
+#endif
+ 
+/**
+ * Get instance list for object "agent/arp" and "agent/volatile/arp".
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier
+ * @param list          location for the list pointer
+ * @param ifname        interface name
+ *
+ * @return Status code
+ */
+static te_errno
+neigh_list(unsigned int gid, const char *oid, char **list, 
+           const char *ifname)
+{
+    UNUSED(gid);
+
+    return ta_unix_conf_neigh_list(ifname,
+                                   strstr(oid, "dynamic") == NULL,
+                                   list);
 }
 
 
