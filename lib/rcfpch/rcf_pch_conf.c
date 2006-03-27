@@ -675,7 +675,7 @@ commit(const rcf_pch_cfg_object *commit_obj, cfg_oid **pp_oid)
 static int
 commit_all_postponed(void)
 {
-    int                     rc = 0, ret;
+    te_errno                rc = 0, ret;
     rcf_pch_commit_op_t    *p;
 
     ENTRY();
@@ -687,7 +687,7 @@ commit_all_postponed(void)
         ret = p->func(gid, p->oid);
         if (ret != 0)
         {
-            ERROR("Commit failed: error=%d", ret);
+            ERROR("Commit failed: error=%r", ret);
             if (rc == 0)
                 rc = TE_RC(TE_RCF_PCH, ret);
         }
