@@ -575,9 +575,9 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     
 
     UNUSED(gid);
-    ENTRY("%s", route);
 
     route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
+    ENTRY("%s", route);
     
     if ((obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route)) == NULL)
     {
@@ -589,6 +589,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
 
     if ((rc = ta_rt_parse_obj(obj, &rt_info)) != 0)
     {
+        ERROR("%s(): ta_rt_parse_obj() failed: %r", __FUNCTION__, rc);
         ta_obj_free(obj);
         return rc;
     }
