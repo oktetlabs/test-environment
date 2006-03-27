@@ -1,7 +1,7 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-MY_CPPFLAGS=@TE_CPPFLAGS@ -I$(DESTDIR)/$(prefix)/../@host@/include \
+MY_CPPFLAGS=-I$(DESTDIR)/$(prefix)/../@host@/include @TE_CPPFLAGS@ \
             -include te_config.h -include config.h -fno-strict-aliasing 
 
 AM_YFLAGS=-d
@@ -49,7 +49,7 @@ endif
 
 if CFG_RCF_RPC
 
-MY_CPPFLAGS+=-DRCF_RPC -I.
+MY_CPPFLAGS+=-DRCF_RPC
 MY_SOURCES+=tarpc_server.c 
 MY_NODIST_SOURCES=rpc_unsupported.c rpc_unsupported.h
 MY_SYMTBL_OBJECTS+=tarpc_server.o
