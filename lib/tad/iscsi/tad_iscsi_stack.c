@@ -330,7 +330,7 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
     } 
     else
     {
-        RING("%s(CSAP %u) written %d bytes to fd %d", 
+        INFO("%s(CSAP %u) written %d bytes to fd %d", 
              __FUNCTION__, csap->id, (int)total, fd);
     }
 
