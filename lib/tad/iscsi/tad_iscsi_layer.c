@@ -64,6 +64,8 @@
 
 #include "tad_iscsi_impl.h"
 
+#include "te_iscsi.h"
+
 
 /* See description tad_iscsi_impl.h */
 te_errno
@@ -383,7 +385,8 @@ tad_iscsi_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
 
 #define ISCSI_DIR_OPCODE_MASK 0x20
-#define ISCSI_CMD_STAT_SN_OFFSET 24
+#define ISCSI_OPCODE_OFFSET 0
+#define ISCSI_SN_OFFSET 24
 #define ISCSI_SCSI_OPCODE_OFFSET 32
 #define ISCSI_SCSI_STATUS_OFFSET 3
 
@@ -393,8 +396,14 @@ tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
     char  message[1000];
     char *p = message;
 
-    uint8_t opcode = data[0];
-    te_bool dir_t_i = !!(opcode & ISCSI_DIR_OPCODE_MASK);
+    uint8_t opcode;
+    te_bool dir_t_i;
+
+    if (data == NULL)
+        return TE_EWRONGPTR;
+
+    opcode = data[ISCSI_OPCODE_OFFSET];
+    dir_t_i = !!(opcode & ISCSI_DIR_OPCODE_MASK);
 
     if (dir_t_i) 
         p += sprintf(p, "(Target -> Initiator) PDU ");
@@ -416,11 +425,11 @@ tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
             p += sprintf(p, ", SCSI Opcode = 0x%02x",
                          data[ISCSI_SCSI_OPCODE_OFFSET]);
             p += sprintf(p, ", SCSI CmdSN = %d",
-                         ntohl(*((int *)(data + ISCSI_CMD_STAT_SN_OFFSET)))); 
+                         ntohl(*((int *)(data + ISCSI_SN_OFFSET)))); 
             break;
         case ISCSI_TARG_SCSI_RSP: 
             p += sprintf(p, ", SCSI StatSN = %d",
-                         ntohl(*((int *)(data + ISCSI_CMD_STAT_SN_OFFSET)))); 
+                         ntohl(*((int *)(data + ISCSI_SN_OFFSET)))); 
             p += sprintf(p, ", SCSI Status = 0x%02x",
                          data[ISCSI_SCSI_STATUS_OFFSET]);
             break;
