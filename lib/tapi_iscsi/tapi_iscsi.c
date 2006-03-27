@@ -280,7 +280,7 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
         if (length == NULL)
             return TE_EWRONGPTR;
 
-        RING("%s(): called with length %d", __FUNCTION__, *length);
+        VERB("%s(): called with length %d", __FUNCTION__, *length);
         msg.params = params;
         msg.data   = buffer;
         msg.length = *length;
@@ -404,7 +404,7 @@ tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
 
     msg.error  = 0;
 
-    RING("%s(): called with length %d", __FUNCTION__, *length);
+    VERB("%s(): called with length %d", __FUNCTION__, *length);
     msg.params = params;
     msg.data   = buffer;
     msg.length = *length;
@@ -708,7 +708,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
         if (length == NULL)
             return TE_EWRONGPTR;
 
-        RING("%s(): called with length %d", __FUNCTION__, *length);
+        VERB("%s(): called with length %d", __FUNCTION__, *length);
         msg.params = NULL;
         msg.data   = buffer;
         msg.length = *length;
