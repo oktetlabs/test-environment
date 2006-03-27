@@ -65,8 +65,7 @@
 uint8_t buffer[10000];
 
 int
-main(int argc, char *argv[])
-
+main(int argc, char *argv[]) 
 { 
     tapi_env_host *host_csap;
     const struct if_nameindex *sock_if;
@@ -78,11 +77,9 @@ main(int argc, char *argv[])
 
     rcf_rpc_server *sock_pco = NULL;
 
-    char  ta[32];
-    char *agt_a = ta;
-
-    size_t  len = sizeof(ta);
-    uint8_t flags;
+    char    *agt_a;
+    size_t   len; 
+    uint8_t  flags;
 
     int socket = -1;
     int acc_sock = -1;
@@ -130,16 +127,7 @@ main(int argc, char *argv[])
         TEST_FAIL("parse complex template failed %X syms %d", rc, syms); 
 
     
-    if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
-
-    INFO("Found first TA: %s; len %d", ta, len);
-
     agt_a = host_csap->ta;
-    agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
-        TEST_FAIL("There is no second Test Agent");
-
 
     if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_STREAM, 
                                   RPC_IPPROTO_TCP)) < 0 ||

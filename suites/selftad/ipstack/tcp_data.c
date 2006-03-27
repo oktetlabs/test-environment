@@ -42,6 +42,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#include "ipstack-ts.h" 
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -51,6 +52,7 @@
 #include "conf_api.h"
 #include "tapi_rpc.h"
 
+#include "tapi_env.h"
 #include "tapi_test.h"
 #include "tapi_ip.h"
 #include "tapi_tcp.h"
@@ -67,89 +69,60 @@ uint8_t rx_buffer[100000];
 int
 main(int argc, char *argv[]) 
 { 
+    tapi_env_host *host_csap = NULL;
     csap_handle_t csap = CSAP_INVALID_HANDLE;
     csap_handle_t acc_csap = CSAP_INVALID_HANDLE;
 
-    rcf_rpc_server *rpc_srv = NULL;
+    rcf_rpc_server *sock_pco = NULL;
 
-    char  ta[32];
-    char *agt_a = ta;
-    char *agt_b;
+    int    socket = -1;
+    int    acc_sock;
+    size_t len;
 
-    size_t  len = sizeof(ta);
+    const struct sockaddr *csap_addr;
+    size_t csap_addr_len;
 
-    int socket = -1;
-    int acc_sock;
+    const struct sockaddr *sock_addr;
+    size_t sock_addr_len;
 
-    struct sockaddr_in sock_addr;
-    struct sockaddr_in csap_addr;
-
-
-    in_addr_t csap_ip_addr = inet_addr("192.168.72.18");
-    in_addr_t sock_ip_addr = inet_addr("192.168.72.38");
 
     TEST_START; 
 
-    if ((rc = rcf_get_ta_list(ta, &len)) != 0)
-        TEST_FAIL("rcf_get_ta_list failed: %r", rc);
+    TEST_GET_HOST(host_csap);
+    TEST_GET_PCO(sock_pco);
+    TEST_GET_ADDR(sock_addr, sock_addr_len);
+    TEST_GET_ADDR(csap_addr, csap_addr_len);
 
-    INFO("Found first TA: %s; len %d", ta, len);
 
-    agt_a = ta;
-    if (strlen(ta) + 1 >= len) 
-        TEST_FAIL("There is no second Test Agent");
-
-    agt_b = ta + strlen(ta) + 1;
-
-    INFO("Found second TA: %s", agt_b, len);
-
-    if ((rc = rcf_rpc_server_create(agt_b, "FIRST", &rpc_srv)) != 0)
-        TEST_FAIL("Cannot create server %x", rc);
-
-    rpc_srv->def_timeout = 5000;
-    
-    rcf_rpc_setlibname(rpc_srv, NULL); 
-
-    memset(&sock_addr, 0, sizeof(sock_addr)); 
-
-    sock_addr.sin_family = AF_INET;
-    sock_addr.sin_addr.s_addr = sock_ip_addr;
-    sock_addr.sin_port = htons(rand_range(20000, 21000));
-
-    memset(&csap_addr, 0, sizeof(csap_addr)); 
-
-    csap_addr.sin_family = AF_INET;
-    csap_addr.sin_addr.s_addr = csap_ip_addr;
-    csap_addr.sin_port = htons(rand_range(20000, 21000));
-
-    if ((socket = rpc_socket(rpc_srv, RPC_AF_INET, RPC_SOCK_STREAM, 
+    if ((socket = rpc_socket(sock_pco, RPC_AF_INET, RPC_SOCK_STREAM, 
                                   RPC_IPPROTO_TCP)) < 0 ||
-        rpc_srv->_errno != 0)
-        TEST_FAIL("Calling of RPC socket() failed %r", rpc_srv->_errno);
+        sock_pco->_errno != 0)
+        TEST_FAIL("Calling of RPC socket() failed %r", sock_pco->_errno);
 
 
-    rc = rpc_bind(rpc_srv, socket, SA(&sock_addr), sizeof(sock_addr));
+    rc = rpc_bind(sock_pco, socket, sock_addr, sock_addr_len);
     if (rc != 0)
         TEST_FAIL("bind failed");
 
 
-    rc = tapi_tcp_server_csap_create(agt_a, 0, csap_ip_addr, 
-                                     csap_addr.sin_port, &csap);
+    rc = tapi_tcp_server_csap_create(host_csap->ta, 0,
+                                     SIN(csap_addr)->sin_addr.s_addr, 
+                                     SIN(csap_addr)->sin_port, &csap);
     if (rc != 0)
         TEST_FAIL("server csap create failed: %r", rc); 
-    rc = rpc_connect(rpc_srv, socket,
-                     SA(&csap_addr), sizeof(csap_addr));
+    rc = rpc_connect(sock_pco, socket,
+                     csap_addr, csap_addr_len);
     if (rc != 0)
         TEST_FAIL("connect() 'call' failed: %r", rc); 
 
-    rc = tapi_tcp_server_recv(agt_a, 0, csap, 1000, &acc_sock);
+    rc = tapi_tcp_server_recv(host_csap->ta, 0, csap, 1000, &acc_sock);
     if (rc != 0)
         TEST_FAIL("recv accepted socket failed: %r", rc); 
 
 
     RING("acc socket: %d", acc_sock);
 
-    rc = tapi_tcp_socket_csap_create(agt_a, 0, acc_sock, &acc_csap);
+    rc = tapi_tcp_socket_csap_create(host_csap->ta, 0, acc_sock, &acc_csap);
     if (rc != 0)
         TEST_FAIL("create CSAP over accepted socket failed, %r", rc);
 
@@ -162,11 +135,11 @@ main(int argc, char *argv[])
 
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
-    rc = rpc_send(rpc_srv, socket, tx_buffer, len, 0); 
+    rc = rpc_send(sock_pco, socket, tx_buffer, len, 0); 
     RING("%d bytes sent from RPC socket", rc);
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
-    rc = tapi_tcp_buffer_recv(agt_a, 0, acc_csap, 2000, 
+    rc = tapi_tcp_buffer_recv(host_csap->ta, 0, acc_csap, 2000, 
                               CSAP_INVALID_HANDLE, TRUE, 
                               rx_buffer, &len);
     if (rc != 0)
@@ -182,14 +155,14 @@ main(int argc, char *argv[])
 
     te_fill_buf(tx_buffer, len);
     INFO("+++++++++++ Prepared data: %Tm", tx_buffer, len);
-    rc = tapi_tcp_buffer_send(agt_a, 0, acc_csap, 
+    rc = tapi_tcp_buffer_send(host_csap->ta, 0, acc_csap, 
                               tx_buffer, len);
     if (rc != 0)
         TEST_FAIL("recv on CSAP failed: %r", rc); 
 
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
-    rc = rpc_recv(rpc_srv, socket, rx_buffer, sizeof(rx_buffer), 0); 
+    rc = rpc_recv(sock_pco, socket, rx_buffer, sizeof(rx_buffer), 0); 
     if (rc != (int)len)
         TEST_FAIL("CSAP->RPC: len received %d, expected %d", rc, len);
 
@@ -197,11 +170,11 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("CSAP->RPC: sent and received data differ, rc = %d", rc);
 
-    rpc_close(rpc_srv, socket);
+    rpc_close(sock_pco, socket);
     socket = -1;
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
-    rc = tapi_tcp_buffer_recv(agt_a, 0, acc_csap, 2000, 
+    rc = tapi_tcp_buffer_recv(host_csap->ta, 0, acc_csap, 2000, 
                               CSAP_INVALID_HANDLE, TRUE, 
                               rx_buffer, &len);
     if (rc != 0)
@@ -219,11 +192,12 @@ main(int argc, char *argv[])
         asn_value *template;
         uint8_t rem_addr[] = {0x00, 0x0E, 0xA6, 0x41, 0xD5, 0x2E};
 
-        rc = tapi_tcp_ip4_eth_csap_create(agt_a, 0, "eth0", 
+        rc = tapi_tcp_ip4_eth_csap_create(host_csap->ta, 0, "eth0", 
                                           NULL, rem_addr, 
-                                          &csap_ip_addr, &sock_ip_addr,
-                                          csap_addr.sin_port,
-                                          sock_addr.sin_port,
+                                          SIN(csap_addr)->sin_addr.s_addr,
+                                          SIN(sock_addr)->sin_addr.s_addr,
+                                          SIN(csap_addr)->sin_port,
+                                          SIN(sock_addr)->sin_port,
                                           &tcp_raw);
         if (rc != 0)
             TEST_FAIL("create raw TCP socket failed, %r", rc); 
@@ -237,13 +211,13 @@ main(int argc, char *argv[])
         if (rc != 0)
             TEST_FAIL("write RESET to TCP template failed, %r", rc); 
 
-        rc = tapi_tad_trsend_start(agt_a, 0, tcp_raw, template,
+        rc = tapi_tad_trsend_start(host_csap->ta, 0, tcp_raw, template,
                                    RCF_MODE_BLOCKING);
         if (rc != 0)
             TEST_FAIL("send RESET via TCP raw ♣SAP failed, %r", rc); 
     }
 
-    rc = rpc_recv(rpc_srv, socket, rx_buffer, sizeof(rx_buffer), 0); 
+    rc = rpc_recv(sock_pco, socket, rx_buffer, sizeof(rx_buffer), 0); 
 
     RING("++++++++++++ recv rc %d", rc);
 
@@ -251,19 +225,15 @@ main(int argc, char *argv[])
 
 cleanup:
 
-    if (csap != CSAP_INVALID_HANDLE)
-        rcf_ta_csap_destroy(agt_a, 0, csap);
+    if (host_csap != NULL)
+        rcf_ta_csap_destroy(host_csap->ta, 0, csap);
 
-    if (acc_csap != CSAP_INVALID_HANDLE)
-        rcf_ta_csap_destroy(agt_a, 0, acc_csap);
+    if (host_csap != NULL)
+        rcf_ta_csap_destroy(host_csap->ta, 0, acc_csap);
 
     if (socket > 0)
-        rpc_close(rpc_srv, socket);
+        rpc_close(sock_pco, socket);
 
-    if (rpc_srv && (rcf_rpc_server_destroy(rpc_srv) != 0))
-    {
-        WARN("Cannot delete dst RPC server\n");
-    } 
 
     TEST_END;
 }
