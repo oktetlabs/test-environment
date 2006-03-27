@@ -392,28 +392,28 @@ tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
     te_bool dir_t_i = !!(opcode & 0x20);
 
     if (dir_t_i) 
-        p += sprintf(p, "Target -> Initiator PDU ");
+        p += sprintf(p, "(Target -> Initiator) PDU ");
     else
-        p += sprintf(p, "Initiator -> Target PDU ");
+        p += sprintf(p, "(Initiator -> Target) PDU ");
 
     if (mode == ISCSI_DUMP_RECV)
-        p += sprintf(p, "received: ");
+        p += sprintf(p, "IN : ");
     else if (mode == ISCSI_DUMP_SEND)
-        p += sprintf(p, "to send : ");
+        p += sprintf(p, "OUT : ");
     else
         return EINVAL;
 
-    p += sprintf(p, "Opcode = 0x%02x, ", opcode);
+    p += sprintf(p, "Opcode = 0x%02x", opcode);
 
     switch (opcode)
     {
         case 0x01: /* SCSI Command */
-            p += sprintf(p, "SCSI Opcode = 0x%02x, ", data[32]);
-            p += sprintf(p, "SCSI CmdSN = %d, ", ntohl(*((int *)(data + 24)))); 
+            p += sprintf(p, ", SCSI Opcode = 0x%02x", data[32]);
+            p += sprintf(p, ", SCSI CmdSN = %d", ntohl(*((int *)(data + 24)))); 
             break;
         case 0x21: /* SCSI Response */
-            p += sprintf(p, "SCSI StatSN = %d, ", ntohl(*((int *)(data + 24)))); 
-            p += sprintf(p, "SCSI Opcode = 0x%02x, ", data[3]);
+            p += sprintf(p, ", SCSI StatSN = %d", ntohl(*((int *)(data + 24)))); 
+            p += sprintf(p, ", SCSI Opcode = 0x%02x", data[3]);
             break;
         default:
             break;
