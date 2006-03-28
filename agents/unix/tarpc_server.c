@@ -4597,8 +4597,11 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
                  tarpc_overfill_buffers_out *out)
 {
     int             ret = 0;
+    int             rc;
+    int             val;
     ssize_t         sent = 0;
     int             errno_save = errno;
+    api_func        ioctl_func;
     api_func        send_func;
     api_func        select_func;
     size_t          max_len = 4096;
@@ -4621,6 +4624,13 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 
     memset(buf, 0xAD, sizeof(max_len));
 
+    if (tarpc_find_func(in->common.lib, "ioctl", &ioctl_func) != 0)
+    {
+        ERROR("%s(): Failed to resolve ioctl() function", __FUNCTION__);
+        ret = -1;
+        goto overfill_buffers_exit;
+    }
+
     if (tarpc_find_func(in->common.lib, "send", &send_func) != 0)
     {
         ERROR("%s(): Failed to resolve send() function", __FUNCTION__);
@@ -4635,6 +4645,22 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         goto overfill_buffers_exit;
     }
 
+#ifdef __sun__
+    /* SunOS has MSG_DONTWAIT flag, but does not support it for send */
+    if (!in->is_nonblocking)
+    {
+        val = 1;
+        rc = ioctl_func(in->sock, FIONBIO, &val);
+        if (rc != 0)
+        {
+            out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("%s(): ioctl() failed: %r", __FUNCTION__, rc);
+            ret = -1;
+            goto overfill_buffers_exit;
+        }
+    }
+#endif
+
     /*
      * If total bytes is left unchanged after 3 attempts the socket
      * can be considered as not writable.
@@ -4647,8 +4673,8 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         ret = select_func(in->sock + 1, NULL, &writefds, NULL, &tv);
         if (ret < 0)
         {
-            ERROR("%s(): select() failed", __FUNCTION__);
             out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("%s(): select() failed", __FUNCTION__);
             goto overfill_buffers_exit;
         }
 
@@ -4668,8 +4694,8 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         } while (sent > 0);
         if (errno != EAGAIN)
         {
-            ERROR("%s(): send() failed", __FUNCTION__);
             out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("%s(): send() failed", __FUNCTION__);
             goto overfill_buffers_exit;
         }
 
@@ -4686,6 +4712,20 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     } while (unchanged != 3);
 
 overfill_buffers_exit:
+
+#ifdef __sun__
+    if (!in->is_nonblocking)
+    {
+        val = 0;
+        rc = ioctl_func(in->sock, FIONBIO, &val);
+        if (rc != 0)
+        {
+            out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("%s(): ioctl() failed: %r", __FUNCTION__, rc);
+            ret = -1;
+        }
+    }
+#endif
 
     free(buf);
     if (ret == 0)
