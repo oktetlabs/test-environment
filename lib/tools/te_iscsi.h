@@ -258,9 +258,11 @@ typedef struct {
 } iscsi_target_thread_params_t;
 
 /** iSCSI PDU formats */
+/* parse layout */
 struct iscsi_init_scsi_cmnd {
     uint8_t  opcode;
     uint8_t  flags;
+    /* reserved: yes; */
     uint16_t rsvd1;
     uint32_t length;
     uint64_t lun;
@@ -295,6 +297,7 @@ struct iscsi_targ_scsi_rsp {
 struct iscsi_init_task_mgt_command {    
     uint8_t  opcode;
     uint8_t  function;
+    /* reserved: yes; */
     uint16_t rsvd1;
     uint32_t length;
     uint64_t lun;
@@ -313,6 +316,7 @@ struct iscsi_targ_task_mgt_response {
     uint8_t  opcode;
     uint8_t  flags;
     uint8_t  response;
+    /* reserved: yes; */
     uint8_t  rsvd1;
     uint32_t length;
     uint64_t lun;
@@ -330,16 +334,20 @@ struct iscsi_targ_task_mgt_response {
 struct iscsi_init_scsi_data_out {
     uint8_t  opcode;
     uint8_t  flags;
+    /* reserved: yes; */
     uint16_t rsvd2;
     uint32_t length;
     uint64_t lun;
     uint32_t init_task_tag;
     uint32_t target_xfer_tag;
+    /* reserved: yes; */
     uint32_t rsvd3;
     uint32_t exp_stat_sn;
+    /* reserved: yes; */
     uint32_t rsvd4;
     uint32_t data_sn;
     uint32_t offset;
+    /* reserved: yes; */
     uint32_t rsvd5;
     uint32_t header_digest;
 };
@@ -348,6 +356,7 @@ struct iscsi_init_scsi_data_out {
 struct iscsi_targ_scsi_data_in {    
     uint8_t  opcode;
     uint8_t  flags;
+    /* reserved: yes; */
     uint8_t  rsvd1;
     uint8_t  status;
     uint32_t length;
@@ -367,6 +376,7 @@ struct iscsi_targ_scsi_data_in {
 struct iscsi_targ_r2t {     
     uint8_t  opcode;
     uint8_t  flags;
+    /* reserved: yes; */
     uint16_t rsvd2;
     uint32_t length;
     uint64_t lun;
@@ -385,10 +395,12 @@ struct iscsi_targ_r2t {
 struct iscsi_targ_async_msg {   
     uint8_t  opcode;
     uint8_t  flags;
+    /* reserved: yes; */
     uint16_t rsvd2;
     uint32_t length;
     uint64_t lun;
     uint32_t init_task_tag;
+    /* reserved: yes; */
     uint32_t rsvd3;
     uint32_t stat_sn;
     uint32_t exp_cmd_sn;
@@ -398,6 +410,7 @@ struct iscsi_targ_async_msg {
     uint16_t parameter1;
     uint16_t parameter2;
     uint16_t parameter3;
+    /* reserved: yes; */
     uint32_t rsvd5;
     uint32_t header_digest;
 };
@@ -415,6 +428,7 @@ enum iscsi_targ_async_msg_events {
 struct iscsi_init_text_cmnd {   
     uint8_t  opcode;
     uint8_t  flags;
+    /* reserved: yes; */
     uint16_t rsvd2;
     uint32_t length;
     uint64_t lun;
@@ -422,7 +436,9 @@ struct iscsi_init_text_cmnd {
     uint32_t target_xfer_tag;
     uint32_t cmd_sn;
     uint32_t exp_stat_sn;
+    /* reserved: yes; */
     uint64_t rsvd4;
+    /* reserved: yes; */
     uint64_t rsvd5;
     uint32_t header_digest;
 };
@@ -431,6 +447,7 @@ struct iscsi_init_text_cmnd {
 struct iscsi_targ_text_rsp {    
     uint8_t  opcode;
     uint8_t  flags;
+    /* reserved: yes; */
     uint16_t rsvd2;
     uint32_t length;
     uint64_t lun;
@@ -439,7 +456,9 @@ struct iscsi_targ_text_rsp {
     uint32_t stat_sn;
     uint32_t exp_cmd_sn;
     uint32_t max_cmd_sn;
+    /* reserved: yes; */
     uint32_t rsvd4;
+    /* reserved: yes; */
     uint64_t rsvd5;
     uint32_t header_digest;
 };
@@ -455,10 +474,13 @@ struct iscsi_init_login_cmnd {
     uint16_t tsih;
     uint32_t init_task_tag;
     uint16_t cid;
+    /* reserved: yes; */
     uint16_t rsvd1;
     uint32_t cmd_sn;
     uint32_t exp_stat_sn;
+    /* reserved: yes; */
     uint64_t rsvd2;
+    /* reserved: yes; */
     uint64_t rsvd3;
     uint32_t header_digest;
 };
@@ -473,13 +495,16 @@ struct iscsi_targ_login_rsp {
     uint8_t  isid[6];
     uint16_t tsih;
     uint32_t init_task_tag;
+    /* reserved: yes; */
     uint32_t rsvd1;
     uint32_t stat_sn;
     uint32_t exp_cmd_sn;
     uint32_t max_cmd_sn;
     uint8_t  status_class;
     uint8_t  status_detail;
+    /* reserved: yes; */
     uint16_t rsvd2;
+    /* reserved: yes; */
     uint64_t rsvd3;
     uint32_t header_digest;
 };
@@ -488,15 +513,19 @@ struct iscsi_targ_login_rsp {
 struct iscsi_init_logout_cmnd { 
     uint8_t  opcode;
     uint8_t  reason;
+    /* reserved: yes; */
     uint16_t rsvd1;
     uint32_t length;
     uint64_t lun;
     uint32_t init_task_tag;
     uint16_t cid;
+    /* reserved: yes; */
     uint16_t rsvd2;
     uint32_t cmd_sn;
     uint32_t exp_stat_sn;
+    /* reserved: yes; */
     uint64_t rsvd4;
+    /* reserved: yes; */
     uint64_t rsvd5;
     uint32_t header_digest;
 };
@@ -506,17 +535,21 @@ struct iscsi_targ_logout_rsp {
     uint8_t  opcode;
     uint8_t  flags;
     uint8_t  response;
+    /* reserved: yes; */
     uint8_t  rsvd1;
     uint32_t length;
     uint64_t lun;
     uint32_t init_task_tag;
+    /* reserved: yes; */
     uint32_t rsvd3;
     uint32_t stat_sn;
     uint32_t exp_cmd_sn;
     uint32_t max_cmd_sn;
+    /* reserved: yes; */
     uint32_t rsvd4;
     uint16_t time2wait;
     uint16_t time2retain;
+    /* reserved: yes; */
     uint32_t rsvd5;
     uint32_t header_digest;
 };
@@ -666,6 +699,7 @@ struct scsi_fixed_sense_data
     uint8_t  sks[3];
 } __attribute__ ((packed));
 
+/* end parse layout */
 
 /*
  *  SCSI Architecture Model (SAM) Status codes. Taken from SAM-3 draft
