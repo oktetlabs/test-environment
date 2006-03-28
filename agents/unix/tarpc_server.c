@@ -3862,8 +3862,14 @@ flooder(tarpc_flooder_in *in)
             }
             if (rc < 0)
             {
-                ERROR("%s(): (p)select() failed: %d", __FUNCTION__, errno);
-                return -1;
+                if (errno != 0 && errno != EINTR)
+                {
+                    ERROR("%s(): (p)select() failed: %d",
+                          __FUNCTION__, errno);
+                    return -1;
+                }
+                else
+                    rc = 0;
             }
 
             /*
@@ -3883,6 +3889,7 @@ flooder(tarpc_flooder_in *in)
                                          MSG_DONTWAIT);
 #endif
                         if ((sent < 0) &&
+                            (errno != 0) && (errno != EINTR) &&
                             (errno != EAGAIN) && (errno != EWOULDBLOCK))
                         {
                             ERROR("%s(): write() failed: %d",
@@ -3910,6 +3917,7 @@ flooder(tarpc_flooder_in *in)
                                          sizeof(rcv_buf), MSG_DONTWAIT);
 #endif
                     if ((received < 0) &&
+                        (errno != 0) && (errno != EINTR) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
                         ERROR("%s(): read() failed: %d",
@@ -3937,8 +3945,13 @@ flooder(tarpc_flooder_in *in)
 
             if (rc < 0)
             {
-                ERROR("%s(): poll() failed: %d", __FUNCTION__, errno);
-                return -1;
+                if (errno != 0 && errno != EINTR)
+                {
+                    ERROR("%s(): poll() failed: %d", __FUNCTION__, errno);
+                    return -1;
+                }
+                else
+                    rc = 0;
             }
 
             for (i = 0; (rc > 0) && i < ufds_elements; i++)
@@ -3947,6 +3960,7 @@ flooder(tarpc_flooder_in *in)
                 {
                     sent = write_func(ufds[i].fd, snd_buf, bulkszs);
                     if ((sent < 0) &&
+                        (errno != 0) && (errno != EINTR) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
                         ERROR("%s(): write() failed: %d",
@@ -3963,6 +3977,7 @@ flooder(tarpc_flooder_in *in)
                     received = read_func(ufds[i].fd, rcv_buf,
                                          sizeof(rcv_buf));
                     if ((received < 0) &&
+                        (errno != 0) && (errno != EINTR) &&
                         (errno != EAGAIN) && (errno != EWOULDBLOCK))
                     {
                         ERROR("%s(): read() failed: %d",
