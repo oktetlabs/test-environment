@@ -524,6 +524,7 @@ rtnl_get_route_cb(const struct sockaddr_nl *who,
 te_errno
 ta_unix_conf_route_find(ta_rt_info_t *rt_info)
 {
+    te_errno            rc;
     struct rtnl_handle  rth;
     rtnl_cb_user_data_t user_data;
 
@@ -532,17 +533,19 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
     memset(&rth, 0, sizeof(rth));
     if (rtnl_open(&rth, 0) < 0)
     {
-        ERROR("Failed to open a netlink socket");
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Failed to open a netlink socket: %r", rc);
+        return rc;
     }
     ll_init_map(&rth);
 
     if (rtnl_wilddump_request(&rth, rt_info->dst.ss_family,
                               RTM_GETROUTE) < 0)
     {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         rtnl_close(&rth);
-        ERROR("Cannot send dump request to netlink");
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Cannot send dump request to netlink: %r");
+        return rc;
     }
 
     /* Fill in user_data, which will be passed to callback function */
@@ -552,14 +555,15 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
     if (rtnl_dump_filter(&rth, rtnl_get_route_cb,
                          &user_data, NULL, NULL) < 0)
     {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
         rtnl_close(&rth);
-        ERROR("Dump terminated");
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Dump terminated: %r");
+        return rc;
     }
     rtnl_close(&rth);
 
     if (!user_data.filled)
-        return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     return 0;
 }
