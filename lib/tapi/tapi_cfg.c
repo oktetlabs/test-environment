@@ -1175,6 +1175,12 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
         {
             struct sockaddr *lnk_addr = NULL;
 
+            rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/"
+                                           "neigh_static:%s", 
+                                     ta, ifname, net_addr_str);
+            if (rc != 0)
+                break;
+
             rc = cfg_get_instance_fmt(NULL, &lnk_addr,
                                       "/agent:%s/interface:%s/"
                                       "neigh_static:%s",
@@ -1208,6 +1214,8 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
             else if ((rc == 0) && (is_static != NULL))
             {
                 *is_static = TRUE;
+                if (state != NULL)
+                    *state = CS_NEIGH_REACHABLE;
             }
 
             if (rc == 0)
