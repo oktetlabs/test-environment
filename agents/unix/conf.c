@@ -3154,7 +3154,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
             int      i;
             char    *s = mac_p;
 
-            for (i = 0; i < 6; i++) /* FIXME */
+            for (i = 0; i < ETHER_ADDR_LEN; i++)
             {
                 sprintf(s, "%02x:",
                         ((const uint8_t *)arp_req.arp_ha.sa_data)[i]);
@@ -3165,9 +3165,9 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
         if (state_p != NULL)
         {
             if (arp_req.arp_flags & ATF_COM)
-                *state_p = 2; /* FIXME */
+                *state_p = CS_NEIGH_REACHABLE;
             else
-                *state_p = 1; /* FIXME */
+                *state_p = CS_NEIGH_INCOMPLETE;
         }
 
         return 0;
