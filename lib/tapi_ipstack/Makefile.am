@@ -4,11 +4,12 @@ ACLOCAL_AMFLAGS = -I @TE_M4@
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
 AM_CFLAGS = @TE_CFLAGS@ 
 
-include_HEADERS=tapi_ip.h tapi_tcp.h tapi_udp.h
+include_HEADERS=tapi_ip.h tapi_tcp.h tapi_udp.h tapi_socket.h
 
 lib_LTLIBRARIES=libtapi_ipstack.la
 
-libtapi_ipstack_la_SOURCES=tapi_ip.c tapi_tcp.c tapi_udp.c tapi_tcp_conn.c
+libtapi_ipstack_la_SOURCES=tapi_ip.c tapi_tcp.c tapi_udp.c tapi_tcp_conn.c \
+		    tapi_socket.c
 
 
 install-exec-hook:
