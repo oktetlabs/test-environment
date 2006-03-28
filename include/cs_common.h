@@ -44,4 +44,29 @@ typedef enum {
     CS_NEIGH_FAILED = 6      /**< Neighbour is not reachable */
 } cs_neigh_entry_state;
 
+/**
+ * String representation of neighbour entry state.
+ */
+static inline const char *
+cs_neigh_entry_state2str(cs_neigh_entry_state state)
+{
+    switch (state)
+    {
+#define NEIGH_STATE2STR(_state) \
+        case CS_NEIGH_##_state: return #_state
+
+        NEIGH_STATE2STR(INCOMPLETE);
+        NEIGH_STATE2STR(REACHABLE);
+        NEIGH_STATE2STR(STALE);
+        NEIGH_STATE2STR(DELAY);
+        NEIGH_STATE2STR(PROBE);
+        NEIGH_STATE2STR(FAILED);
+
+#undef NEIGH_STATE2STR
+
+        default:
+            return "<UNKNOWN>";
+    }
+}
+
 #endif /* !__TE_CS_COMMON_H__ */
