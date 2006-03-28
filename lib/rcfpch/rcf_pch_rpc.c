@@ -401,7 +401,7 @@ connect_getpid(rpcserver *rpcs)
             ERROR("RPC server '%s' does not try to connect", rpcs->name);
             return TE_RC(TE_RCF_PCH, TE_ETIMEDOUT);
         }
-        else if (errno != EINTR)
+        else if (errno != EINTR && errno != 0)
         {
             int err = TE_OS_RC(TE_RCF_PCH, errno);
         
@@ -513,7 +513,7 @@ dispatch(void *arg)
 
         if ((rc = select(FD_SETSIZE, &set0, NULL, NULL, &tv)) < 0)
         {
-            if (errno != EINTR)
+            if (errno != EINTR && errno != 0)
             {
                 te_errno err = TE_OS_RC(TE_RCF_PCH, errno);
             
