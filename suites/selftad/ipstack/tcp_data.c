@@ -54,16 +54,17 @@
 
 #include "tapi_env.h"
 #include "tapi_test.h"
-#include "tapi_ip.h"
-#include "tapi_tcp.h"
+#include "tapi_socket.h"
 
 #include "te_bufs.h"
 
+#if 0
 #include "ndn_eth.h"
 #include "ndn_ipstack.h"
+#endif
 
-uint8_t tx_buffer[100000];
-uint8_t rx_buffer[100000];
+uint8_t tx_buffer[0x10000];
+uint8_t rx_buffer[0x10000];
 
 
 int
