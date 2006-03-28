@@ -103,7 +103,7 @@ if test -n "$with_config" ; then
     cat ${TE_BASE}/engine/builder/builder.m4 $with_config | m4 >> ${TE_BUILD}/builder.conf.processed.new
 else        
     # Fill default configuration
-    HOST=`echo $host | sed s/-/_/g`
+    HOST=`echo $host | tr .- _`
     TE_BS_PLATFORMS=$HOST
     echo TE_BS_PLATFORMS=$TE_BS_PLATFORMS >> ${TE_BUILD}/builder.conf.processed.new
     eval ${HOST}_LIBS="ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad"

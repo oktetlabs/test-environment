@@ -109,7 +109,7 @@ process_libs()
 }
 
 
-PLATFORM_NAME=`echo $PLATFORM | sed s/-/_/g`
+PLATFORM_NAME=`echo $PLATFORM | tr .- _`
 
 if test "$KIND" = TA ; then
     cd agents

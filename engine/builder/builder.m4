@@ -67,7 +67,7 @@ PLATFORM=$1
 if test -z "$PLATFORM" ; then
     PLATFORM=$host
 fi    
-PLATFORM_NAME=`echo $PLATFORM | sed s/-/_/g`
+PLATFORM_NAME=`echo $PLATFORM | tr .- _`
 TE_BS_PLATFORMS="$TE_BS_PLATFORMS $PLATFORM_NAME"
 eval `echo ${PLATFORM_NAME}_PARMS=\"$2\"`
 eval `echo ${PLATFORM_NAME}_CPPFLAGS=\"$3\"`
@@ -99,7 +99,7 @@ SOURCES=$3
 if test -z "$PLATFORM" ; then
     PLATFORM=$host
 fi
-PLATFORM_NAME=`echo $PLATFORM | sed s/-/_/g`
+PLATFORM_NAME=`echo $PLATFORM | tr .- _`
 eval `echo TE_BS_LIB_${PLATFORM_NAME}_$1_PLATFORM=$PLATFORM`
 
 if test -z "$SOURCES" ; then 

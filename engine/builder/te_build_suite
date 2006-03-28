@@ -76,7 +76,7 @@ else
 fi
 
 if test ! -e Makefile ; then
-    PLATFORM_NAME=`echo ${host} | sed s/-/_/g`
+    PLATFORM_NAME=`echo ${host} | tr .- _`
     ADD_CPPFLAGS="`eval echo '$'${PLATFORM_NAME}'_CPPFLAGS'`"
     ADD_CFLAGS="`eval echo '$'${PLATFORM_NAME}'_CFLAGS'`"
     ADD_LDFLAGS="`eval echo '$'${PLATFORM_NAME}'_LDFLAGS'`"
