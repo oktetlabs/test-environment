@@ -1,0 +1,145 @@
+/^ *\/\*+ *parse layout *\*\/ *$/ {
+    do_parse = 1;
+    next;
+}
+
+/^ *\/\*+ *end parse layout *\*\/ *$/ {
+    do_parse = 0;
+    next;
+}
+    
+do_parse && $1 == "struct"  && ($2 !~ /;$/) {
+    in_struct = (next_name ? next_name : $2);
+    next_name = "";
+    next_offset= "0";
+    next;
+}
+
+do_parse && $1 == "typedef" && $2 == "struct" && ($4 !~ /;$/) {
+    in_struct = (next_name ? next_name : $3);
+    next_name = "";
+    next_offset = "0";
+    next;
+}
+
+in_struct && ($0 ~ /^\}/) {
+    next_offset = "";
+    mostly_reserved = "";
+    next;
+}
+
+function print_bits()
+{
+    if (field_bit_shift)
+    {
+        printf "#define %s_%s_SHIFT (%s)\n", toupper(in_struct), toupper(varname), field_bit_shift;
+        printf "#define %s_%s_MASK (%s)\n", toupper(in_struct), toupper(varname), field_bit_mask;
+    }
+    if (field_reader)
+    {
+        result_type = field_bit_shift ? (bit_field_type ? bit_field_type : "unsigned") : field_type;
+        printf "\nstatic inline %s\n%s(const void *x%s)\n", 
+            result_type, field_reader, (array_boundary ? ", int idx" : "");
+        printf "{\n   %s val = ((%s *)((uint8_t *)x + %s))[%s]
+    }
+    field_bit_shift = "";
+    field_bit_mask = "";
+}
+
+in_struct && ($1 ~ /^[[:alpha:]_][[:alnum:]_]*/) && ($2 ~ /^\**[[:alpha:]][[:alnum:]_]*(\[[^\]]+\])*;$/) {
+    if (next_name)
+        varname = next_name;
+    else
+    {
+        varname = $2;
+        gsub(/[^[:alnum:]_]/, "", varname);
+    }
+    if (!reserved_field)
+    {
+        printf "#define %s_%s_OFFSET (%s)\n", toupper(in_struct), toupper(varname), next_offset;
+        next_offset = toupper(in_struct) "_" toupper(varname) "_OFFSET";
+    }
+    pointers = $2;
+    gsub(/\[[^\]]+\]/, "", pointers); # to eliminate possible multiply signs in array boundary 
+    gsub(/[^*]/, "", pointers);
+    size = "sizeof(" $1 pointers ")";
+    array_boundary = $2;
+    sub(/^[^\[]*/, "", array_boundary);
+    sub(/[^\]]*$/, "", array_boundary);
+    gsub(/\[/, " * (", array_boundary);
+    gsub(/\]/, ")", array_boundary);
+    size = size array_boundary;
+    field_type = $1 pointers;
+    if (!reserved_field)
+    {
+        printf "#define %s_%s_SIZE (%s)\n", toupper(in_struct), toupper(varname), size;
+        print_bits();
+    }
+    next_offset = next_offset " + " size;
+    reserved_field = mostly_reserved;
+    field_bit_shift = "";
+    field_bit_mask = "";
+    next_name = "";
+    next;
+}
+
+do_parse && ($0 ~ /^ *\/\*+( *[[:alpha:]_]+: *[^;]*;)+ *\**\/ *$/) {
+    sub(/^ *\/\**/, "");
+    sub(/ *\**\/ *$/, "");
+    split($0, subfields, ";");
+    for (sf in subfields)
+    {
+        fieldname = subfields[sf];
+        fieldval = subfields[sf];
+        sub(/:.*$/, "", fieldname);
+        sub(/^ */, "", fieldname);
+        sub(/^[^:]*: */, "", fieldval);
+        sub(/ *$/, "", fieldval);
+        if (fieldname == "reserved")
+        {
+            reserved_field = (fieldval == "yes");
+        }
+        else if (fieldname == "mostly_reserved")
+        {
+            mostly_reserved = (fieldval == "yes");
+            if (mostly_reserved) reserved_field = 1;
+        }
+        else if (fieldname == "bits" || fieldname == "bit")
+        {
+            field_bit_shift = fieldval;
+            sub(/-.*$/, "", field_bit_shift);
+            field_bit_mask = fieldval;
+            sub(/^.*-/, "", field_bit_mask);
+            if (!field_bit_mask)
+                field_bit_mask = 1;
+            else
+            {
+                field_bit_mask -= field_bit_shift;
+                field_bit_mask++;
+                field_bit_mask = "((1 << " field_bit_mask ") - 1)"
+            }   
+        }
+        else if (fieldname == "bittype")
+        {
+            bit_field_type = fieldval;
+        }
+        else if (fieldname == "array")
+        {
+            use_array = (fieldval == "yes");
+        }
+        else if (fieldname == "reader")
+        {
+            field_reader = fieldval;
+        }
+        else if (fieldname == "writer")
+        {
+            field_writer = fieldval;
+        }
+        else if (fieldname == "name")
+        {
+            next_name = fieldval;
+        }
+    }
+}
+    
+
